@@ -2,13 +2,15 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow: hidden;
 }
 
 /* Tool Bar Area */
 .toolbar {
   padding: 12px 16px 0;
   display: flex;
-  flex-direction: column; /* Stack search and buttons if needed, or keep row */
+  flex-direction: column;
   gap: 12px;
 }
 
@@ -31,7 +33,7 @@
   background-color: var(--bg-element);
   border: 1px solid var(--border-default);
   border-radius: 6px;
-  padding: 8px 12px 8px 32px; /* Space for icon */
+  padding: 8px 12px 8px 32px; 
   font-size: 13px;
   color: var(--text-primary);
   outline: none;
@@ -58,7 +60,7 @@
   border-bottom: 2px solid transparent;
   transition: all 0.2s;
   color: var(--text-secondary);
-  flex: 1; /* Equal layout */
+  flex: 1;
   text-align: center;
 }
 
@@ -87,26 +89,7 @@
   padding: 16px;
 }
 
-/* Empty State / Headers */
-.sectionHeader {
-  margin-bottom: 16px;
-}
-
-.sectionTitle {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 4px;
-}
-
-.sectionDesc {
-  font-size: 12px;
-  color: var(--text-tertiary);
-}
-
-/* Card Styles */
+/* LIST CARDS */
 .card {
   background: var(--bg-element);
   border: 1px solid var(--border-default);
@@ -135,9 +118,83 @@
   color: var(--text-primary);
 }
 
-/* Synopsis Area */
-.synopsisArea {
+/* DETAIL VIEW (Drill-down) */
+.detailView {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
   height: 100%;
+  background-color: var(--bg-panel);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideIn {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.detailHeader {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.backButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.backButton:hover {
+  background-color: var(--bg-element-hover);
+  color: var(--text-primary);
+}
+
+.detailTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.detailContent {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.detailSection {
+  margin-bottom: 24px;
+}
+
+.detailLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.detailText {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+.synopsisArea {
+    /* Same as before */
   width: 100%;
   border: 1px solid var(--border-default);
   border-radius: 8px;
@@ -148,23 +205,5 @@
   resize: none;
   font-family: var(--font-sans);
   line-height: 1.6;
-}
-.synopsisArea:focus {
-  outline: none;
-  border-color: var(--border-focus);
-}
-
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 8px;
-}
-
-.tag {
-  font-size: 10px;
-  padding: 2px 6px;
-  background-color: var(--bg-sidebar);
-  color: var(--text-secondary);
-  border-radius: 4px;
+  min-height: 200px;
 }
