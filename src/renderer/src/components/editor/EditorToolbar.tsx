@@ -1,52 +1,76 @@
-import { useState } from 'react';
 import { 
-  Bold, Italic, Underline, 
-  Heading1, Heading2, Quote,
-  Target, Eye
+  Undo2, Redo2, 
+  Bold, Italic, Underline, Strikethrough, 
+  AlignLeft, AlignCenter, AlignRight, AlignJustify,
+  Highlighter, Type, MoreVertical,
+  Smartphone, Monitor, ChevronDown
 } from 'lucide-react';
 import styles from '../../styles/components/EditorToolbar.module.css';
 
-export default function EditorToolbar() {
-  const [isFocusMode, setFocusMode] = useState(false);
-  const wordCount = 1250;
-  const targetCount = 3000;
-  const progress = Math.min((wordCount / targetCount) * 100, 100);
+interface EditorToolbarProps {
+  isMobileView?: boolean;
+  onToggleMobileView?: () => void;
+}
 
+export default function EditorToolbar({ isMobileView, onToggleMobileView }: EditorToolbarProps) {
   return (
-    <div className={styles.toolbar} style={{ position: 'relative' }}>
-      <div className={styles.group}>
-        <button className={styles.button} title="Bold"><Bold size={18} /></button>
-        <button className={styles.button} title="Italic"><Italic size={18} /></button>
-        <button className={styles.button} title="Underline"><Underline size={18} /></button>
-        
-        <div className={styles.separator} />
-        
-        <button className={styles.button} title="Heading 1"><Heading1 size={18} /></button>
-        <button className={styles.button} title="Heading 2"><Heading2 size={18} /></button>
-        <button className={styles.button} title="Quote"><Quote size={18} /></button>
-      </div>
+    <div className={styles.toolbar}>
+      {/* Row 1: Common Formatting */}
+      <div className={styles.row}>
+        {/* Left: History & Font */}
+        <div className={styles.tgroup}>
+          <button className={styles.iconBtn} title="Undo"><Undo2 size={16}/></button>
+          <button className={styles.iconBtn} title="Redo"><Redo2 size={16}/></button>
+          
+          <div className={styles.separator} />
+          
+          {/* Font Picker Fake */}
+          <button className={styles.selectBtn}>
+            <span>나눔고딕</span>
+            <ChevronDown size={12}/>
+          </button>
+          
+          <div className={styles.separator} />
+          
+          {/* Size Picker Fake */}
+          <button className={styles.iconBtn}><span style={{fontSize:14}}>-</span></button>
+          <input className={styles.numberInput} defaultValue={16} />
+          <button className={styles.iconBtn}><span style={{fontSize:14}}>+</span></button>
+          
+          <div className={styles.separator} />
 
-      <div className={styles.rightGroup}>
-        {/* Target Widget */}
-        <div className={styles.targetWidget} title={`Current: ${wordCount} / Target: ${targetCount}`}>
-           <Target size={14} />
-           <div className={styles.progressBarTrack}>
-             <div className={styles.progressBarFill} style={{ width: `${progress}%` }} />
-           </div>
-           <span className={styles.targetLabel}>{Math.round(progress)}%</span>
+          <button className={styles.iconBtn} title="Bold"><Bold size={16}/></button>
+          <button className={styles.iconBtn} title="Italic"><Italic size={16}/></button>
+          <button className={styles.iconBtn} title="Underline"><Underline size={16}/></button>
+          <button className={styles.iconBtn} title="Strikethrough"><Strikethrough size={16}/></button>
+          
+          <div className={styles.separator} />
+          
+          <button className={styles.iconBtn} style={{color:'var(--text-primary)'}} title="Text Color"><Type size={16}/></button>
+          <button className={styles.iconBtn} title="Highlight"><Highlighter size={16}/></button>
         </div>
 
-        <div className={styles.separator} />
+        {/* Right: Align & Mobile Toggle */}
+        <div className={styles.tgroup}>
+          <button className={styles.iconBtn} title="Align Left"><AlignLeft size={16}/></button>
+          <button className={styles.iconBtn} title="Align Center"><AlignCenter size={16}/></button>
+          <button className={styles.iconBtn} title="Align Right"><AlignRight size={16}/></button>
+          <button className={styles.iconBtn} title="Justify"><AlignJustify size={16}/></button>
+          
+          <div className={styles.separator} />
+          
+          <button 
+            className={styles.mobileToggle} 
+            data-active={isMobileView}
+            onClick={onToggleMobileView}
+            title="Toggle Mobile Typesetting View"
+          >
+            {isMobileView ? <Smartphone size={14} /> : <Monitor size={14} />}
+            <span>{isMobileView ? 'Mobile' : 'PC'}</span>
+          </button>
 
-        {/* Focus Mode Toggle */}
-        <button 
-          className={isFocusMode ? styles.focusToggleActive : styles.focusToggle}
-          onClick={() => setFocusMode(!isFocusMode)}
-          title="Toggle Focus Mode (Typewriter)"
-        >
-          <Eye size={14} />
-          <span>Focus</span>
-        </button>
+          <button className={styles.iconBtn}><MoreVertical size={16}/></button>
+        </div>
       </div>
     </div>
   );

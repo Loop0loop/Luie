@@ -17,6 +17,7 @@ interface SidebarProps {
   onSelectChapter: (id: string) => void;
   onAddChapter: () => void;
   onOpenSettings: () => void;
+  onSelectResearchItem: (type: 'character' | 'world' | 'scrap') => void;
 }
 
 export default function Sidebar({ 
@@ -24,7 +25,8 @@ export default function Sidebar({
   activeChapterId, 
   onSelectChapter,
   onAddChapter,
-  onOpenSettings
+  onOpenSettings,
+  onSelectResearchItem
 }: SidebarProps) {
   // Section collapse states
   const [isManuscriptOpen, setManuscriptOpen] = useState(true);
@@ -79,15 +81,15 @@ export default function Sidebar({
 
         {isResearchOpen && (
           <div className={styles.sectionContent}>
-            <div className={styles.item}>
+            <div className={styles.item} onClick={() => onSelectResearchItem('character')}>
               <FolderOpen size={14} className={styles.itemIcon} />
               <span>등장인물 (Characters)</span>
             </div>
-            <div className={styles.item}>
+            <div className={styles.item} onClick={() => onSelectResearchItem('world')}>
               <FolderOpen size={14} className={styles.itemIcon} />
               <span>세계관 (World)</span>
             </div>
-            <div className={styles.item}>
+            <div className={styles.item} onClick={() => onSelectResearchItem('scrap')}>
               <BookOpen size={14} className={styles.itemIcon} />
               <span>자료 스크랩</span>
             </div>

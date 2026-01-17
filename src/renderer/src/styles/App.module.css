@@ -1,0 +1,34 @@
+/* Split View Container */
+.splitContainer {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.editorPane {
+  flex: 1;
+  min-width: 0;
+  transition: flex 0.3s ease;
+}
+
+.researchPane {
+  width: 50%;
+  min-width: 300px;
+  max-width: 800px;
+  border-left: 1px solid var(--border-default);
+  transition: width 0.3s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .researchPane {
+    width: 45%;
+  }
+}
+
+@media (max-width: 900px) {
+  .researchPane {
+    width: 40%;
+    min-width: 250px;
+  }
+}

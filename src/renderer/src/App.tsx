@@ -1,12 +1,25 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import MainLayout from "./components/layout/MainLayout";
 import Sidebar from "./components/sidebar/Sidebar";
 import Editor from "./components/editor/Editor";
 import ContextPanel from "./components/context/ContextPanel";
+import SettingsModal from "./components/settings/SettingsModal";
+import ProjectTemplateSelector from "./components/layout/ProjectTemplateSelector";
+import ResearchPanel from "./components/research/ResearchPanel";
+import styles from "./styles/App.module.css";
 
-export default function App() {
-  const [activeChapterId, setActiveChapterId] = useState("2");
-  const [content, setContent] = useState(`그는 천천히 눈을 떴다.
+type ViewState = 'template' | 'editor';
+type ContextTab = 'synopsis' | 'characters' | 'terms';
+
+// Mock Data Constants
+const MOCK_CHAPTERS = [
+  { id: "1", title: "프롤로그: 시작된 비극", order: 1 },
+  { id: "2", title: "1화. 눈을 떠보니 악역이었다", order: 2 },
+  { id: "3", title: "2화. 살아남기 위한 거래", order: 3 },
+  { id: "4", title: "3화. 그림자 기사단의 비밀", order: 4 },
+];
+
+const INITIAL_CONTENT = `그는 천천히 눈을 떴다.
   
 낯선 천장이다. 아니, 정확히 말하면 천장이라기보다는 거대한 돔 형태의 구조물이었다. 희미하게 빛나는 푸른 보석들이 박혀 있는 것을 보아하니 평범한 건물은 아닌 듯했다.
 
@@ -22,44 +35,99 @@ export default function App() {
 
 "전하, 폐하께서 찾으십니다."
 
-루시안의 손이 검 자루에 머물러 있었다. 긴장감이 등줄기를 타고 흘렀다. 당황하지 말자. 나는 이 소설의 작가다. 이 세계의 모든 것을 알고 있다.`);
+루시안의 손이 검 자루에 머물러 있었다. 긴장감이 등줄기를 타고 흘렀다. 당황하지 말자. 나는 이 소설의 작가다. 이 세계의 모든 것을 알고 있다.`;
 
-  const mockChapters = [
-    { id: "1", title: "프롤로그: 시작된 비극", order: 1 },
-    { id: "2", title: "1화. 눈을 떠보니 악역이었다", order: 2 },
-    { id: "3", title: "2화. 살아남기 위한 거래", order: 3 },
-    { id: "4", title: "3화. 그림자 기사단의 비밀", order: 4 },
-  ];
+export default function App() {
+  // View State
+  const [view, setView] = useState<ViewState>('template');
+  const [activeChapterId, setActiveChapterId] = useState("2");
+  
+  // Modal States
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
+  // Split View State
+  const [isSplitView, setIsSplitView] = useState(false);
+  const [researchTab, setResearchTab] = useState('character');
 
-  const handleSelectChapter = (id: string) => {
+  // Context Panel State (Right Sidebar)
+  const [contextTab, setContextTab] = useState<ContextTab>('synopsis');
+  
+  // Content State
+  const [content, setContent] = useState(INITIAL_CONTENT);
+
+  // Event Handlers
+  const handleSelectChapter = useCallback((id: string) => {
     setActiveChapterId(id);
-    // In a real app, we would load new content here
-  };
+  }, []);
 
-  const activeChapterTitle = mockChapters.find(c => c.id === activeChapterId)?.title || "";
+  const handleSelectResearchItem = useCallback((type: 'character' | 'world' | 'scrap') => {
+    setIsSplitView(true);
+    
+    // Map sidebar type to research tab
+    const tabMap = {
+      'character': 'character',
+      'world': 'world',
+      'scrap': 'scrap'
+    };
+    setResearchTab(tabMap[type]);
+  }, []);
 
+  const handleSave = useCallback((title: string, newContent: string) => {
+    console.log(`Auto-saving: ${title}`);
+    setContent(newContent);
+  }, []);
+
+  const activeChapterTitle = MOCK_CHAPTERS.find(c => c.id === activeChapterId)?.title || "";
+
+  // Template Screen View
+  if (view === 'template') {
+    return <ProjectTemplateSelector onSelectProject={() => setView('editor')} />;
+  }
+
+  // Editor View
   return (
-    <MainLayout
-      sidebar={
-        <Sidebar 
-          chapters={mockChapters} 
-          activeChapterId={activeChapterId}
-          onSelectChapter={handleSelectChapter}
-          onAddChapter={() => console.log("Add Chapter")}
-        />
-      }
-      contextPanel={
-        <ContextPanel />
-      }
-    >
-      <Editor 
-        initialTitle={activeChapterTitle}
-        initialContent={content}
-        onSave={(t, c) => {
-          console.log(`Auto-saving: ${t}`);
-          setContent(c);
-        }}
-      />
-    </MainLayout>
+    <>
+      <MainLayout
+        sidebar={
+          <Sidebar 
+            chapters={MOCK_CHAPTERS} 
+            activeChapterId={activeChapterId}
+            onSelectChapter={handleSelectChapter}
+            onAddChapter={() => console.log("Add Chapter")}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onSelectResearchItem={handleSelectResearchItem}
+          />
+        }
+        contextPanel={
+          <ContextPanel activeTab={contextTab} onTabChange={setContextTab} />
+        }
+      >
+        <div className={styles.splitContainer}>
+          {/* Main Editor Pane */}
+          <div className={styles.editorPane}>
+            <Editor 
+              initialTitle={activeChapterTitle}
+              initialContent={content}
+              onSave={handleSave}
+            />
+          </div>
+
+          {/* Research Split Pane */}
+          {isSplitView && (
+            <div className={styles.researchPane}>
+              <ResearchPanel 
+                activeTab={researchTab}
+                onClose={() => setIsSplitView(false)}
+              />
+            </div>
+          )}
+        </div>
+      </MainLayout>
+
+      {/* Settings Modal Overlay */}
+      {isSettingsOpen && (
+        <SettingsModal onClose={() => setIsSettingsOpen(false)} />
+      )}
+    </>
   );
 }

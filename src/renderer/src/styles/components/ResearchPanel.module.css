@@ -1,0 +1,112 @@
+.panelContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background-color: var(--bg-sidebar); /* Slightly distinct bg */
+  border-left: 1px solid var(--border-default);
+  overflow: hidden;
+}
+
+.header {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-default);
+  background-color: var(--bg-primary);
+  flex-shrink: 0;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.tabBar {
+  display: flex;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-default);
+  background-color: var(--bg-primary);
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.tab {
+  padding: 12px 0;
+  cursor: pointer;
+  position: relative;
+}
+.tab:hover { color: var(--text-secondary); }
+.tab.active {
+  color: var(--text-accent);
+  font-weight: 500;
+}
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--text-accent);
+}
+
+/* Character Sheet Specifics */
+.sheetForm {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.input {
+  padding: 10px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  background-color: var(--bg-active);
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+}
+.input:focus { border-color: var(--text-accent); }
+
+.textarea {
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.closeButton {
+  padding: 4px;
+  border-radius: 4px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+.closeButton:hover { 
+  background-color: var(--bg-active); 
+  color: var(--text-primary);
+}

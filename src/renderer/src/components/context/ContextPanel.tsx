@@ -35,8 +35,21 @@ const mockTerms: InfoItem[] = [
 
 type Tab = 'synopsis' | 'characters' | 'terms';
 
-export default function ContextPanel() {
-  const [activeTab, setActiveTab] = useState<Tab>('synopsis');
+interface ContextPanelProps {
+  activeTab?: Tab;
+  onTabChange?: (tab: Tab) => void;
+}
+
+export default function ContextPanel({ activeTab = 'synopsis', onTabChange }: ContextPanelProps) {
+  const [internalTab, setInternalTab] = useState<Tab>('synopsis');
+  
+  // Use prop if available, otherwise internal state
+  const currentTab = onTabChange ? activeTab : internalTab;
+  const handleTabChange = (tab: Tab) => {
+    if (onTabChange) onTabChange(tab);
+    else setInternalTab(tab);
+  };
+
   const [searchText, setSearchText] = useState('');
   const [selectedItem, setSelectedItem] = useState<InfoItem | null>(null);
 
@@ -110,27 +123,27 @@ export default function ContextPanel() {
       {/* TABS */}
       <div className={styles.tabs}>
         <div 
-          className={activeTab === 'synopsis' ? styles.tabActive : styles.tab}
-          onClick={() => { setActiveTab('synopsis'); setSelectedItem(null); }}
+          className={currentTab === 'synopsis' ? styles.tabActive : styles.tab}
+          onClick={() => { handleTabChange('synopsis'); setSelectedItem(null); }}
         >
           시놉시스
         </div>
         <div 
-          className={activeTab === 'characters' ? styles.tabActive : styles.tab}
-          onClick={() => { setActiveTab('characters'); setSelectedItem(null); }}
+          className={currentTab === 'characters' ? styles.tabActive : styles.tab}
+          onClick={() => { handleTabChange('characters'); setSelectedItem(null); }}
         >
           캐릭터
         </div>
         <div 
-          className={activeTab === 'terms' ? styles.tabActive : styles.tab}
-          onClick={() => { setActiveTab('terms'); setSelectedItem(null); }}
+          className={currentTab === 'terms' ? styles.tabActive : styles.tab}
+          onClick={() => { handleTabChange('terms'); setSelectedItem(null); }}
         >
           고유명사
         </div>
       </div>
 
       <div className={styles.content}>
-        {activeTab === 'synopsis' && (
+        {currentTab === 'synopsis' && (
           <>
             <div style={{marginBottom: 16}}>
               <div style={{fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4}}>
@@ -145,7 +158,7 @@ export default function ContextPanel() {
           </>
         )}
 
-        {activeTab === 'characters' && (
+        {currentTab === 'characters' && (
           <>
              {filterList(mockCharacters).map(item => (
               <div key={item.id} className={styles.card} onClick={() => handleItemClick(item)}>
@@ -165,7 +178,7 @@ export default function ContextPanel() {
           </>
         )}
 
-        {activeTab === 'terms' && (
+        {currentTab === 'terms' && (
           <>
              {filterList(mockTerms).map(item => (
               <div key={item.id} className={styles.card} onClick={() => handleItemClick(item)}>

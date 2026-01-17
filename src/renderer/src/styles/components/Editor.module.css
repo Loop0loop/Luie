@@ -1,55 +1,94 @@
+/* Main Container */
 .container {
-  flex: 1;
   display: flex;
   flex-direction: column;
   height: 100%;
-  max-width: 800px; /* Optimal reading width */
-  margin: 0 auto;
   width: 100%;
-  padding: 40px 60px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  position: relative;
 }
 
+/* Toolbar Area specifically for editor */
+.toolbarArea {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-default);
+  z-index: 10;
+}
+
+/* Edit Area Wrapper - handles scrolling and centering */
+.editorWrapper {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  padding: 32px;
+  background-color: var(--bg-canvas, var(--bg-primary)); /* Allow different canvas bg */
+}
+
+/* The actual typing surface */
+.mobileFrame {
+  width: 100%;
+  max-width: 100%; /* Default to full width */
+  height: min-content;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  background-color: var(--bg-primary);
+}
+
+/* Mobile Mode Modifier */
+.mobileFrame[data-mobile="true"] {
+  max-width: 420px; /* Realistic large phone width */
+  min-height: 800px; /* Minimum phone height */
+  box-shadow: 0 0 0 1px var(--border-default), 0 20px 40px rgba(0,0,0,0.1);
+  border-radius: 2px; /* Slight radius */
+  margin-bottom: 32px;
+  padding: 0; /* Let internal padding handle it */
+  background-color: var(--bg-paper, var(--bg-primary));
+}
+
+/* Inputs */
 .titleInput {
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--text-primary);
+  width: 100%;
   border: none;
   background: transparent;
+  padding: 40px 40px 20px 40px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
   outline: none;
-  margin-bottom: 32px;
-  font-family: var(--font-sans);
-  width: 100%;
 }
-
 .titleInput::placeholder {
-  color: var(--text-secondary);
-  opacity: 0.5;
+  color: var(--text-tertiary);
 }
 
 .editorArea {
-  flex: 1;
   width: 100%;
+  flex: 1;
   border: none;
   resize: none;
-  outline: none;
-  font-family: var(--font-serif);
-  font-size: 18px;
-  line-height: 1.8;
-  color: var(--text-primary);
   background: transparent;
+  padding: 0 40px 40px 40px;
+  outline: none;
+  color: var(--text-primary);
+  line-height: 1.6;
 }
-
 .editorArea::placeholder {
-  color: var(--text-placeholder);
+  color: var(--text-tertiary);
 }
 
 .statusBar {
-  margin-top: 20px;
-  padding-top: 20px;
+  height: 32px;
   border-top: 1px solid var(--border-default);
   display: flex;
-  justify-content: space-between;
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-family: var(--font-sans);
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 0 16px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  background-color: var(--bg-primary);
+  flex-shrink: 0;
 }

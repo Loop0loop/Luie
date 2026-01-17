@@ -1,29 +1,35 @@
-/* Main Container */
+/* Toolbar Container */
 .toolbar {
-  height: 48px;
-  min-height: 48px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--border-default);
+  flex-direction: column;
   background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-default);
   user-select: none;
-}
-
-/* Left Group: Formatting */
-.group {
-  display: flex;
-  align-items: center;
+  padding: 4px 8px;
   gap: 4px;
 }
 
-.button {
+/* Row Layout */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 36px;
+}
+
+.tgroup {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Buttons */
+.iconBtn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: none;
   background: transparent;
   border-radius: 4px;
@@ -32,90 +38,73 @@
   transition: all 0.2s;
 }
 
-.button:hover {
+.iconBtn:hover {
   background-color: var(--bg-element-hover);
   color: var(--text-primary);
 }
 
-.buttonActive {
+.iconBtn.active {
   background-color: var(--bg-active);
-  color: var(--text-primary);
+  color: var(--text-accent);
 }
 
 .separator {
   width: 1px;
-  height: 20px;
+  height: 16px;
   background-color: var(--border-default);
-  margin: 0 8px;
+  margin: 0 6px;
 }
 
-/* Right Group: Targets & Focus */
-.rightGroup {
+/* Dropdowns (Buttons with text) */
+.selectBtn {
   display: flex;
   align-items: center;
-  gap: 16px;
-}
-
-.targetWidget {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  color: var(--text-tertiary);
+  gap: 4px;
+  padding: 0 8px;
+  height: 28px;
+  border-radius: 4px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
   cursor: pointer;
+  border: none;
+}
+.selectBtn:hover {
+  background-color: var(--bg-element-hover);
+  color: var(--text-primary);
 }
 
-.targetLabel {
-  font-weight: 500;
+/* Inputs */
+.numberInput {
+  width: 40px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+.numberInput:hover {
+  background-color: var(--bg-element-hover);
+  border-radius: 4px;
 }
 
-.progressBarTrack {
-  width: 80px;
-  height: 4px;
-  background-color: var(--bg-element);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.progressBarFill {
-  height: 100%;
-  background-color: var(--text-accent); /* Greenish or brand color */
-  border-radius: 2px;
-  transition: width 0.5s ease;
-}
-
-.focusToggle {
+/* Mobile Toggle */
+.mobileToggle {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
-  border-radius: 12px;
+  padding: 4px 10px;
+  border-radius: 14px;
   background-color: var(--bg-element);
   font-size: 11px;
   color: var(--text-secondary);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.2s;
 }
-
-.focusToggle:hover {
-  color: var(--text-primary);
-  border-color: var(--border-default);
-}
-
-.focusToggleActive {
-  /* Manual compose */
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 11px;
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: all 0.2s;
-  
+.mobileToggle[data-active="true"] {
   background-color: var(--bg-active);
   color: var(--text-accent);
   font-weight: 600;
+  border-color: var(--border-active);
 }

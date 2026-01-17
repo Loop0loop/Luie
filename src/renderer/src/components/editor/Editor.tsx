@@ -61,32 +61,43 @@ export default function Editor({ initialTitle = "", initialContent = "", onSave 
     }
   };
 
+  const [isMobileView, setIsMobileView] = useState(false);
+
   return (
     <div className={styles.container} data-theme={theme}>
-      <EditorToolbar />
+      <div className={styles.toolbarArea}>
+        <EditorToolbar 
+          isMobileView={isMobileView} 
+          onToggleMobileView={() => setIsMobileView(!isMobileView)} 
+        />
+      </div>
 
-      <input 
-        type="text" 
-        className={styles.titleInput} 
-        placeholder="회차 제목 없음"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        style={{ fontFamily: getFontFamily() }}
-      />
-      
-      <textarea
-        className={styles.editorArea}
-        placeholder="이곳에 글을 작성하세요..."
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        onKeyDown={handleKeyDown}
-        spellCheck={false}
-        style={{
-          fontFamily: getFontFamily(),
-          fontSize: `${fontSize}px`,
-          lineHeight: lineHeight,
-        }}
-      />
+      <div className={styles.editorWrapper}>
+        <div className={styles.mobileFrame} data-mobile={isMobileView}>
+          <input 
+            type="text" 
+            className={styles.titleInput} 
+            placeholder="회차 제목 없음"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            style={{ fontFamily: getFontFamily() }}
+          />
+          
+          <textarea
+            className={styles.editorArea}
+            placeholder="이곳에 글을 작성하세요..."
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onKeyDown={handleKeyDown}
+            spellCheck={false}
+            style={{
+              fontFamily: getFontFamily(),
+              fontSize: `${fontSize}px`,
+              lineHeight: lineHeight,
+            }}
+          />
+        </div>
+      </div>
 
       <div className={styles.statusBar}>
         <span>공백 포함 {content.length}자 (공백 제외 {content.replace(/\s/g, '').length}자)</span>
