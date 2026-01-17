@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+:root {
+  /* 
+    DESIGN TOKENS - ZINC SCALE (Neutral, Professional)
+    Using specific hex values to ensure consistency across themes
+  */
+
+  /* === LIGHT THEME (Default) === */
+  /* Backgrounds */
+  --bg-app: #ffffff;          /* Main Canvas */
+  --bg-sidebar: #f4f4f5;      /* Zinc-100 - Distinct from main content */
+  --bg-panel: #ffffff;        /* Panel matches app or slightly off */
+  --bg-element: #ffffff;      /* Cards, Inputs */
+  --bg-element-hover: #f4f4f5; 
+  --bg-active: #e4e4e7;       /* Zinc-200 */
+
+  /* Text */
+  --text-primary: #18181b;    /* Zinc-900 - Sharp, readable black */
+  --text-secondary: #71717a;  /* Zinc-500 - Clear secondary info */
+  --text-tertiary: #a1a1aa;   /* Zinc-400 - Placeholders */
+  --text-accent: #2563eb;     /* Blue-600 - Standard interaction blue */
+  --text-on-accent: #ffffff;
+
+  /* Borders */
+  --border-default: #e4e4e7;  /* Zinc-200 */
+  --border-active: #d4d4d8;   /* Zinc-300 */
+  --border-focus: #18181b;    /* Zinc-900 */
+
+  /* Editor Specific (Can differ from UI) */
+  --editor-bg: #ffffff;
+  --editor-text: #18181b;
+  --editor-selection: #bfdbfe; /* Blue-200 */
+
+  /* Dimensions */
+  --header-height: 48px;
+  --sidebar-width: 260px;
+  --panel-width: 320px;
+  --collapsed-width: 0px; /* For animations */
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Merriweather", "Noto Serif KR", serif;
+
+  /* Elevations */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* === DARK THEME === */
+[data-theme="dark"] {
+  /* Backgrounds */
+  --bg-app: #18181b;          /* Zinc-900 */
+  --bg-sidebar: #09090b;      /* Zinc-950 */
+  --bg-panel: #18181b;
+  --bg-element: #27272a;      /* Zinc-800 */
+  --bg-element-hover: #3f3f46;
+  --bg-active: #3f3f46;       /* Zinc-700 */
+
+  /* Text */
+  --text-primary: #f4f4f5;    /* Zinc-100 */
+  --text-secondary: #a1a1aa;  /* Zinc-400 */
+  --text-tertiary: #52525b;   /* Zinc-600 */
+  --text-accent: #60a5fa;     /* Blue-400 */
+
+  /* Borders */
+  --border-default: #27272a;  /* Zinc-800 */
+  --border-active: #3f3f46;
+  --border-focus: #e4e4e7;
+
+  /* Editor */
+  --editor-bg: #18181b;
+  --editor-text: #f4f4f5;
+  --editor-selection: #1e3a8a;
+}
+
+/* === SEPIA THEME (Writer Focused) === */
+[data-theme="sepia"] {
+  /* Backgrounds */
+  --bg-app: #fbf0d9;          /* Warm Paper */
+  --bg-sidebar: #f3e5c9;      /* Slightly darker paper */
+  --bg-panel: #fbf0d9;
+  --bg-element: #fffefb;
+  --bg-element-hover: #efe4cb;
+  --bg-active: #e6dac6;
+
+  /* Text */
+  --text-primary: #5f4b32;    /* Dark brown */
+  --text-secondary: #8c7b66;
+  --text-tertiary: #b8aa9c;
+  --text-accent: #cc7832;     /* Warm Orange/Brown */
+  
+  /* Borders */
+  --border-default: #e6dac6;
+  --border-active: #dcc8ae;
+  --border-focus: #5f4b32;
+
+  /* Editor */
+  --editor-bg: #fbf0d9;
+  --editor-text: #433422;
+  --editor-selection: #e6dcc6;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s, color 0.2s;
+  overflow: hidden; /* App-like behavior */
+}
+
+/* Reset buttons */
+button {
+  font-family: inherit;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-active);
+  border-radius: 3px;
+}

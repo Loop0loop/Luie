@@ -1,0 +1,63 @@
+/**
+ * Error codes for Luie application
+ * 모든 에러는 명확한 코드로 식별됩니다
+ */
+
+export const ErrorCode = {
+  // Database Errors (1xxx)
+  DB_CONNECTION_FAILED: 'DB_1001',
+  DB_QUERY_FAILED: 'DB_1002',
+  DB_MIGRATION_FAILED: 'DB_1003',
+  DB_TRANSACTION_FAILED: 'DB_1004',
+
+  // File System Errors (2xxx)
+  FS_READ_FAILED: 'FS_2001',
+  FS_WRITE_FAILED: 'FS_2002',
+  FS_DELETE_FAILED: 'FS_2003',
+  FS_PERMISSION_DENIED: 'FS_2004',
+
+  // Validation Errors (3xxx)
+  VALIDATION_FAILED: 'VAL_3001',
+  INVALID_INPUT: 'VAL_3002',
+  REQUIRED_FIELD_MISSING: 'VAL_3003',
+
+  // IPC Errors (4xxx)
+  IPC_CHANNEL_NOT_FOUND: 'IPC_4001',
+  IPC_HANDLER_ERROR: 'IPC_4002',
+  IPC_TIMEOUT: 'IPC_4003',
+
+  // Project Errors (5xxx)
+  PROJECT_NOT_FOUND: 'PRJ_5001',
+  PROJECT_CREATE_FAILED: 'PRJ_5002',
+  PROJECT_DELETE_FAILED: 'PRJ_5003',
+  PROJECT_UPDATE_FAILED: 'PRJ_5004',
+
+  // Chapter Errors (6xxx)
+  CHAPTER_NOT_FOUND: 'CHP_6001',
+  CHAPTER_CREATE_FAILED: 'CHP_6002',
+  CHAPTER_DELETE_FAILED: 'CHP_6003',
+  CHAPTER_UPDATE_FAILED: 'CHP_6004',
+
+  // Character Errors (7xxx)
+  CHARACTER_NOT_FOUND: 'CHR_7001',
+  CHARACTER_CREATE_FAILED: 'CHR_7002',
+  CHARACTER_DELETE_FAILED: 'CHR_7003',
+  CHARACTER_UPDATE_FAILED: 'CHR_7004',
+
+  // Term/Dictionary Errors (8xxx)
+  TERM_NOT_FOUND: 'TRM_8001',
+  TERM_CREATE_FAILED: 'TRM_8002',
+  TERM_DELETE_FAILED: 'TRM_8003',
+  TERM_UPDATE_FAILED: 'TRM_8004',
+
+  // Snapshot Errors (9xxx)
+  SNAPSHOT_CREATE_FAILED: 'SNP_9001',
+  SNAPSHOT_RESTORE_FAILED: 'SNP_9002',
+  SNAPSHOT_DELETE_FAILED: 'SNP_9003',
+
+  // Unknown/General Errors
+  UNKNOWN_ERROR: 'ERR_0000',
+  NOT_IMPLEMENTED: 'ERR_0001',
+} as const
+
+export type ErrorCodeType = typeof ErrorCode[keyof typeof ErrorCode]
