@@ -1,13 +1,4 @@
-.panelContainer {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
-  background-color: var(--bg-sidebar); /* Slightly distinct bg */
-  border-left: 1px solid var(--border-default);
-  overflow: hidden;
-}
-
+/* Panel Header */
 .header {
   height: 48px;
   display: flex;
@@ -28,76 +19,99 @@
   gap: 8px;
 }
 
+/* Character List (Master View) */
+.characterListContainer {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+.characterCard {
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background-color: var(--bg-primary);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.characterCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-color: var(--text-accent);
+}
+
+.characterImagePlaceholder {
+  height: 100px;
+  background-color: var(--bg-element);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+}
+
+.characterInfo {
+  padding: 12px;
+}
+.characterName {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.characterRole {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.addCharacterCard {
+  border: 1px dashed var(--border-default);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  gap: 8px;
+}
+.addCharacterCard:hover {
+  background-color: var(--bg-element-hover);
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+/* Character Detail Header */
+.detailHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-default);
+}
+.backButton {
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+.backButton:hover { background-color: var(--bg-element-hover); }
+
+/* Reuse existing styles below... */
+.panelContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background-color: var(--bg-sidebar);
+  border-left: 1px solid var(--border-default);
+  overflow: hidden;
+}
+
 .content {
   flex: 1;
   overflow-y: auto;
   padding: 24px;
-}
-
-.tabBar {
-  display: flex;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--border-default);
-  background-color: var(--bg-primary);
-  gap: 16px;
-  font-size: 13px;
-  color: var(--text-tertiary);
-}
-
-.tab {
-  padding: 12px 0;
-  cursor: pointer;
-  position: relative;
-}
-.tab:hover { color: var(--text-secondary); }
-.tab.active {
-  color: var(--text-accent);
-  font-weight: 500;
-}
-.tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background-color: var(--text-accent);
-}
-
-/* Character Sheet Specifics */
-.sheetForm {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.formGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.input {
-  padding: 10px 12px;
-  border: 1px solid var(--border-default);
-  border-radius: 4px;
-  background-color: var(--bg-active);
-  color: var(--text-primary);
-  font-size: 14px;
-  outline: none;
-}
-.input:focus { border-color: var(--text-accent); }
-
-.textarea {
-  min-height: 120px;
-  resize: vertical;
-  line-height: 1.6;
 }
 
 .closeButton {
@@ -105,8 +119,119 @@
   border-radius: 4px;
   color: var(--text-tertiary);
   cursor: pointer;
+  border: none;
+  background: transparent;
 }
 .closeButton:hover { 
   background-color: var(--bg-active); 
   color: var(--text-primary);
+}
+
+/* Sub-Nav for World */
+.subNavBar {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-default);
+}
+.subTab {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  cursor: pointer;
+  background-color: var(--bg-element);
+  color: var(--text-secondary);
+}
+.subTab.active {
+  background-color: var(--text-accent);
+  color: white;
+}
+
+/* Plot Board Styles */
+.plotBoard {
+  display: flex;
+  gap: 16px;
+  height: 500px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+.plotColumn {
+  flex: 0 0 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background-color: var(--bg-element);
+  border-radius: 6px;
+  padding: 12px;
+}
+.columnHeader {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.plotCard {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  padding: 12px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* Character Sheet Tables */
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background-color: var(--bg-element);
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  margin-top: 24px;
+}
+.sectionTitle:first-child { margin-top: 0; }
+
+.tableGrid {
+  display: grid;
+  grid-template-columns: 100px 1fr 100px 1fr;
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+  font-size: 13px;
+}
+.cellLabel {
+  background-color: var(--bg-sidebar);
+  color: var(--text-secondary);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  border-right: 1px solid var(--border-default);
+  border-bottom: 1px solid var(--border-default);
+}
+.cellValue {
+  padding: 0;
+  border-bottom: 1px solid var(--border-default);
+}
+.cellValueInput {
+  width: 100%;
+  height: 100%;
+  border: none;
+  padding: 8px 12px;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.placeholderArea {
+  border: 2px dashed var(--border-default);
+  border-radius: 8px;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  flex-direction: column;
+  gap: 12px;
 }
