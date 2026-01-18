@@ -13,6 +13,7 @@ interface EditorSettings {
 
 interface EditorStore extends EditorSettings {
   updateSettings: (settings: Partial<EditorSettings>) => void;
+  setFontSize: (size: number) => void;
   resetSettings: () => void;
 }
 
@@ -27,5 +28,6 @@ const DEFAULT_SETTINGS: EditorSettings = {
 export const useEditorStore = create<EditorStore>((set) => ({
   ...DEFAULT_SETTINGS,
   updateSettings: (newSettings) => set((state) => ({ ...state, ...newSettings })),
+  setFontSize: (size: number) => set({ fontSize: size }),
   resetSettings: () => set(DEFAULT_SETTINGS),
 }));

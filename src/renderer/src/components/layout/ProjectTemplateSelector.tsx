@@ -1,7 +1,7 @@
 import { useState } from "react";
 import styles from "../../styles/components/ProjectTemplateSelector.module.css";
 import WindowBar from "./WindowBar";
-import { Plus, Book, FileText, FileType } from "lucide-react";
+import { Plus, Book, FileText, FileType, MoreVertical } from "lucide-react";
 import type { Project } from "@prisma/client";
 
 interface ProjectTemplateSelectorProps {
@@ -102,56 +102,32 @@ export default function ProjectTemplateSelector({
 
         <div className={styles.content}>
           {projects.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  letterSpacing: 0.4,
-                  textTransform: "uppercase",
-                  color: "#71717a",
-                  marginBottom: 8,
-                }}
-              >
-                Recent Projects
+            <div className={styles.recentSection}>
+              <div className={styles.recentHeader}>
+                <div className={styles.recentTitle}>Recent Projects</div>
               </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-                  gap: 10,
-                }}
-              >
+              <div className={styles.recentGrid}>
                 {projects.slice(0, 6).map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => onOpenProject?.(p)}
-                    style={{
-                      textAlign: "left",
-                      padding: "12px 14px",
-                      borderRadius: 10,
-                      border: "1px solid rgba(0,0,0,0.08)",
-                      background: "rgba(255,255,255,0.7)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>{p.title}</div>
-                    <div
-                      style={{
-                        marginTop: 4,
-                        fontSize: 12,
-                        color: "#71717a",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                      title={p.projectPath ?? ""}
-                    >
-                      {p.projectPath ?? "(저장 위치 미설정)"}
+                  <div key={p.id} className={styles.recentCard} onClick={() => onOpenProject?.(p)}>
+                    <div className={styles.recentCardContent}>
+                      <div className={styles.recentProjectTitle}>{p.title}</div>
+                      <div className={styles.recentProjectPath} title={p.projectPath ?? ""}>
+                        {p.projectPath ?? "(No path)"}
+                      </div>
                     </div>
-                  </button>
+                    
+                    <button 
+                      className={styles.recentCardMenuBtn}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // TODO: Open context menu for project
+                        console.log("Context menu for project", p.id);
+                      }}
+                    >
+                      <MoreVertical size={16} />
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>

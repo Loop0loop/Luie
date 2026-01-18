@@ -11,7 +11,7 @@ interface MainLayoutProps {
 
 export default function MainLayout({ children, sidebar, contextPanel }: MainLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isContextOpen, setIsContextOpen] = useState(true);
+  const [isContextOpen, setIsContextOpen] = useState(false); // Default to closed for max space
 
   return (
     <div className={styles.layoutContainer}>

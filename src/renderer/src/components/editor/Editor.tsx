@@ -51,12 +51,80 @@ export default function Editor({
 
   const [isMobileView, setIsMobileView] = useState(false);
 
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setContent(e.target.value);
+  };
+
+  // Basic Markdown insertion handler
+  const handleFormat = (type: string) => {
+    const textarea = document.querySelector(`.${styles.editorArea}`) as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    if (type === 'undo') {
+      document.execCommand('undo');
+      return;
+    }
+    if (type === 'redo') {
+      document.execCommand('redo');
+      return;
+    }
+    if (type === 'size-up') {
+      useEditorStore.getState().setFontSize(fontSize + 1);
+      return;
+    }
+    if (type === 'size-down') {
+      useEditorStore.getState().setFontSize(Math.max(10, fontSize - 1));
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+    let newText = content;
+    let newCursorPos = end;
+
+    switch (type) {
+      case 'bold':
+        newText = content.substring(0, start) + `**${selectedText}**` + content.substring(end);
+        newCursorPos = end + 4;
+        break;
+      case 'italic':
+        newText = content.substring(0, start) + `*${selectedText}*` + content.substring(end);
+        newCursorPos = end + 2;
+        break;
+      case 'underline':
+        newText = content.substring(0, start) + `<u>${selectedText}</u>` + content.substring(end);
+        newCursorPos = end + 7;
+        break;
+      case 'strikethrough':
+        newText = content.substring(0, start) + `~~${selectedText}~~` + content.substring(end);
+        newCursorPos = end + 4;
+        break;
+      case 'align-center':
+        newText = content.substring(0, start) + `<div align="center">\n${selectedText}\n</div>` + content.substring(end);
+        newCursorPos = end + 22;
+        break;
+      case 'align-right':
+        newText = content.substring(0, start) + `<div align="right">\n${selectedText}\n</div>` + content.substring(end);
+        newCursorPos = end + 21;
+        break;
+    }
+
+    handleContentChange({ target: { value: newText } } as any);
+    
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  };
+
   return (
     <div className={styles.container} data-theme={theme}>
       <div className={styles.toolbarArea}>
         <EditorToolbar
           isMobileView={isMobileView}
           onToggleMobileView={() => setIsMobileView(!isMobileView)}
+          onFormat={handleFormat}
         />
       </div>
 
@@ -65,7 +133,7 @@ export default function Editor({
           <input
             type="text"
             className={styles.titleInput}
-            placeholder=""
+            placeholder="제목 없음"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             style={{ fontFamily: getFontFamily() }}
@@ -73,9 +141,9 @@ export default function Editor({
 
           <textarea
             className={styles.editorArea}
-            placeholder=""
+            placeholder="내용을 입력하세요..."
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={handleContentChange}
             style={{
               fontFamily: getFontFamily(),
               fontSize: `${fontSize}px`,

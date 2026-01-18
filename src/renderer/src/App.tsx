@@ -232,7 +232,7 @@ export default function App() {
         }
       >
         <div className={styles.splitContainer}>
-          <div className={styles.editorPane} style={{ flex: splitRatio }}>
+          <div className={styles.editorPane} style={{ flex: isSplitView ? splitRatio : 1 }}>
             <Editor
               initialTitle={activeChapterTitle}
               initialContent={content}
