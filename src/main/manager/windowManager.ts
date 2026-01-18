@@ -34,7 +34,7 @@ class WindowManager {
     // Load the renderer
     if (process.env.NODE_ENV === 'development') {
       this.mainWindow.loadURL('http://localhost:5173')
-      this.mainWindow.webContents.openDevTools()
+      this.mainWindow.webContents.openDevTools({ mode: 'detach' })
     } else {
       this.mainWindow.loadFile(join(__dirname, '../../renderer/index.html'))
     }

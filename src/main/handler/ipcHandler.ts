@@ -517,5 +517,19 @@ export function registerIPCHandlers(): void {
     },
   );
 
+  // Window Control Handlers
+  ipcMain.handle("window:maximize", () => {
+    const { windowManager } = require("../manager/index.js");
+    const win = windowManager.getMainWindow();
+    if (win) {
+      if (process.platform === 'darwin') {
+          win.setFullScreen(true);
+      } else {
+          win.maximize();
+      }
+    }
+    return createSuccessResponse(true);
+  });
+
   logger.info("IPC handlers registered successfully");
 }

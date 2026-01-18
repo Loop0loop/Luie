@@ -1,22 +1,34 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import ReactFlow, { 
+  Controls, 
+  Background, 
+  applyNodeChanges, 
+  applyEdgeChanges, 
+  addEdge,
+  Node,
+  Edge,
+  Connection,
+  NodeChange,
+  EdgeChange
+} from 'reactflow';
+import 'reactflow/dist/style.css'; // Import ReactFlow styles
 import styles from '../../styles/components/ResearchPanel.module.css';
-import { User, Globe, StickyNote, X, PenTool, Layout, Image, GitBranch, Plus, ArrowLeft } from 'lucide-react';
+import { User, Globe, StickyNote, X, PenTool, Layout, Image, GitBranch, Plus, ArrowLeft, Save, Eraser } from 'lucide-react';
 
 interface ResearchPanelProps {
   activeTab: string; // 'character' | 'world' | 'scrap'
   onClose: () => void;
 }
 
-type WorldTab = 'synopsis' | 'mindmap' | 'images' | 'plot';
+type WorldTab = 'synopsis' | 'mindmap' | 'drawing' | 'plot';
 
 export default function ResearchPanel({ activeTab, onClose }: ResearchPanelProps) {
   
-  // Header Title Logic
   const getTitle = () => {
     switch(activeTab) {
       case 'character': return 'Character Management';
       case 'world': return 'World Construction';
-      case 'scrap': return 'Material Scrap';
+      case 'scrap': return 'Research & Scrap';
       default: return 'Research';
     }
   };
@@ -42,7 +54,6 @@ export default function ResearchPanel({ activeTab, onClose }: ResearchPanelProps
         </button>
       </div>
 
-      {/* NO Top Level Tabs - Direct Content Based on Sidebar Selection */}
       <div className={styles.content}>
         {activeTab === 'character' && <CharacterManager />}
         {activeTab === 'world' && <WorldSection />}
@@ -55,11 +66,9 @@ export default function ResearchPanel({ activeTab, onClose }: ResearchPanelProps
 /* -------------------------------------------------------------------------- */
 /*                            CHARACTER SECTION                               */
 /* -------------------------------------------------------------------------- */
-
+// (Keeping Character Manager Logic same as before for stability)
 function CharacterManager() {
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
-
-  // Mock List
   const characters = [
     { id: '1', name: '카이란 알렉산더', role: '주인공 (남)', color: '#FF5555' },
     { id: '2', name: '엘리제 드 클로로', role: '주인공 (여)', color: '#55AAFF' },
@@ -73,7 +82,7 @@ function CharacterManager() {
             <ArrowLeft size={16}/>
           </div>
           <span style={{fontWeight: 600}}>
-            {characters.find(c => c.id === selectedCharacterId)?.name || 'New Character'}
+            {selectedCharacterId === 'new' ? 'New Character' : characters.find(c => c.id === selectedCharacterId)?.name}
           </span>
         </div>
         <CharacterProfile />
@@ -94,8 +103,6 @@ function CharacterManager() {
           </div>
         </div>
       ))}
-      
-      {/* ADD BUTTON */}
       <div className={styles.addCharacterCard} onClick={() => setSelectedCharacterId('new')}>
         <Plus size={24} />
         <span>Add Character</span>
@@ -109,57 +116,15 @@ function CharacterProfile() {
     <div>
       <div className={styles.sectionTitle}>기본 프로필 (Basic Profile)</div>
       <div className={styles.tableGrid}>
-        {/* Row 1 */}
-        <div className={styles.cellLabel}>이름</div>
-        <div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="카이란 알렉산더" /></div>
-        <div className={styles.cellLabel}>성별</div>
-        <div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="남성" /></div>
-        
-        {/* Row 2 */}
-        <div className={styles.cellLabel}>나이</div>
-        <div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="24세" /></div>
-        <div className={styles.cellLabel}>직업</div>
-        <div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="황태자, 마검사" /></div>
-
-         {/* Row 3 */}
-        <div className={styles.cellLabel}>출신</div>
-        <div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="아스테라 제국" /></div>
-        <div className={styles.cellLabel}>거주지</div>
-        <div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="황궁 별관" /></div>
+        <div className={styles.cellLabel}>이름</div><div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="카이란 알렉산더" /></div>
+        <div className={styles.cellLabel}>성별</div><div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="남성" /></div>
+        <div className={styles.cellLabel}>나이</div><div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="24세" /></div>
+        <div className={styles.cellLabel}>직업</div><div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="황태자" /></div>
       </div>
-      
-      <div className={styles.sectionTitle}>특징 (Traits)</div>
+      <div className={styles.sectionTitle}>상세 설정</div>
       <div className={styles.tableGrid} style={{gridTemplateColumns: '100px 1fr'}}>
-        <div className={styles.cellLabel}>성격 (장점)</div>
-        <div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="냉철함, 결단력, 뛰어난 지략" /></div>
-        <div className={styles.cellLabel}>성격 (단점)</div>
-        <div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="타인에 대한 불신, 감정 표현 서툶" /></div>
-        <div className={styles.cellLabel}>좋아하는 것</div>
-        <div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="고요한 밤, 검술 수련, 홍차" /></div>
-        <div className={styles.cellLabel}>싫어하는 것</div>
-        <div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="소란스러운 연회, 아첨하는 귀족들" /></div>
-      </div>
-
-      <div className={styles.sectionTitle}>서사 (Narrative)</div>
-      <div className={styles.tableGrid} style={{gridTemplateColumns: '100px 1fr'}}>
-         <div className={styles.cellLabel}>과거 배경</div>
-         <div className={styles.cellValue}><textarea className={styles.cellValueInput} style={{minHeight: 60}} defaultValue="어머니를 일찍 여의고 계모 황후의 견제 속에서 자람. 살아남기 위해 검을 잡았다." /></div>
-         <div className={styles.cellLabel}>목표 (야심)</div>
-         <div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="황제에게 복수하고 진정한 황제가 되는 것" /></div>
-         <div className={styles.cellLabel}>트라우마</div>
-         <div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="어린 시절 갇혀 지냈던 별궁의 어둠" /></div>
-      </div>
-      
-       <div className={styles.sectionTitle}>외형 (Appearance)</div>
-       <div className={styles.tableGrid} style={{gridTemplateColumns: '100px 1fr 100px 1fr'}}>
-        <div className={styles.cellLabel}>신장</div>
-        <div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="188cm" /></div>
-        <div className={styles.cellLabel}>체형</div>
-        <div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="당당하고 근육질" /></div>
-        <div className={styles.cellLabel}>헤어</div>
-        <div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="흑발, 약간 헝크러짐" /></div>
-        <div className={styles.cellLabel}>눈</div>
-        <div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="적안 (황족의 상징)" /></div>
+        <div className={styles.cellLabel}>성격</div><div className={styles.cellValue}><input className={styles.cellValueInput} defaultValue="냉철함" /></div>
+        <div className={styles.cellLabel}>서사</div><div className={styles.cellValue}><textarea className={styles.cellValueInput} defaultValue="황위 계승 전쟁..." /></div>
       </div>
     </div>
   );
@@ -173,64 +138,161 @@ function WorldSection() {
   const [subTab, setSubTab] = useState<WorldTab>('synopsis');
 
   return (
-    <div>
+    <div style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
       <div className={styles.subNavBar}>
         <div className={`${styles.subTab} ${subTab === 'synopsis' ? styles.active : ''}`} onClick={() => setSubTab('synopsis')}>Synopsis</div>
         <div className={`${styles.subTab} ${subTab === 'mindmap' ? styles.active : ''}`} onClick={() => setSubTab('mindmap')}>Mindmap</div>
-        <div className={`${styles.subTab} ${subTab === 'images' ? styles.active : ''}`} onClick={() => setSubTab('images')}>Images</div>
+        <div className={`${styles.subTab} ${subTab === 'drawing' ? styles.active : ''}`} onClick={() => setSubTab('drawing')}>Map Drawing</div>
         <div className={`${styles.subTab} ${subTab === 'plot' ? styles.active : ''}`} onClick={() => setSubTab('plot')}>Plot Board</div>
       </div>
 
-      {subTab === 'synopsis' && (
-        <>
-          <div className={styles.sectionTitle}>Logline (로그라인)</div>
-           <textarea className={styles.cellValueInput} style={{border: '1px solid var(--border-default)', padding: 12, borderRadius:4, width:'100%', marginBottom:16}} defaultValue="폭군 황태자를 길들이기 위해 3번의 회귀를 거친 엘리제. 이번 생은 다를 수 있을까?" />
-          
-          <div className={styles.sectionTitle}>Synopsis (줄거리)</div>
-          <textarea className={styles.cellValueInput} style={{border: '1px solid var(--border-default)', padding: 12, borderRadius:4, width:'100%', height: 200}} placeholder="기승전결 구조로 작성해보세요." />
-        </>
-      )}
+      <div style={{flex: 1, overflow: 'hidden'}}>
+        {subTab === 'synopsis' && <SynopsisEditor />}
+        {subTab === 'mindmap' && <MindMapBoard />}
+        {subTab === 'drawing' && <DrawingCanvas />}
+        {subTab === 'plot' && <PlotBoard />}
+      </div>
+    </div>
+  );
+}
 
-      {subTab === 'mindmap' && (
-        <div className={styles.placeholderArea}>
-          <GitBranch size={48} />
-          <span>Mindmap Canvas Area</span>
-          <span style={{fontSize: 12}}>Drag to connect Characters, Locations, and Events</span>
-        </div>
-      )}
+function SynopsisEditor() {
+  return (
+    <div style={{height: '100%', overflowY: 'auto', paddingRight: 8}}>
+      <div className={styles.sectionTitle}>Core Premise (로그라인)</div>
+      <textarea className={styles.cellValueInput} style={{border: '1px solid var(--border-default)', padding: 12, borderRadius:4, width:'100%', marginBottom:16}} 
+        placeholder="단 한 줄로 이 소설을 설명한다면?" 
+        defaultValue="폭군 황태자를 길들이기 위해 3번의 회귀를 거친 엘리제. 이번 생은 다를 수 있을까?" />
+      
+      <div className={styles.sectionTitle}>Synopsis (기획의도 & 줄거리)</div>
+      <textarea className={styles.cellValueInput} style={{border: '1px solid var(--border-default)', padding: 12, borderRadius:4, width:'100%', minHeight: 400}} 
+        placeholder="# 기획의도&#13;&#10;...&#13;&#10;&#13;&#10;# 전체 줄거리&#13;&#10;1. 기 (소개)&#13;&#10;2. 승 (전개)&#13;&#10;3. 전 (위기/절정)&#13;&#10;4. 결 (결말)" />
+    </div>
+  );
+}
 
-      {subTab === 'images' && (
-        <div className={styles.placeholderArea}>
-           <Image size={48} />
-           <span>Reference Image Gallery</span>
-        </div>
-      )}
+// ReactFlow MindMap
+const initialNodes: Node[] = [
+  { id: '1', position: { x: 250, y: 5 }, data: { label: '주인공 (Main)' }, type: 'input' },
+  { id: '2', position: { x: 100, y: 100 }, data: { label: '조력자 A' } },
+  { id: '3', position: { x: 400, y: 100 }, data: { label: '적대자 B' } },
+];
+const initialEdges: Edge[] = [
+  { id: 'e1-2', source: '1', target: '2', animated: true, label: '신뢰' },
+  { id: 'e1-3', source: '1', target: '3', label: '대립' },
+];
 
-      {subTab === 'plot' && <PlotBoard />}
+function MindMapBoard() {
+  const [nodes, setNodes, onNodesChange] = (function useNodesState(initial: Node[]) {
+    const [nds, setNds] = useState(initial);
+    const onNdsChange = useCallback((changes: NodeChange[]) => setNds((nds) => applyNodeChanges(changes, nds)), []);
+    return [nds, setNds, onNdsChange] as const;
+  })(initialNodes);
+  
+  const [edges, setEdges, onEdgesChange] = (function useEdgesState(initial: Edge[]) {
+     const [eds, setEds] = useState(initial);
+     const onEdsChange = useCallback((changes: EdgeChange[]) => setEds((eds) => applyEdgeChanges(changes, eds)), []);
+     return [eds, setEds, onEdsChange] as const;
+  })(initialEdges);
+
+  const onConnect = useCallback((params: Connection) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
+
+  return (
+    <div style={{height: '100%', border: '1px solid var(--border-default)', borderRadius: 8}}>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        fitView
+      >
+        <Background />
+        <Controls />
+      </ReactFlow>
+    </div>
+  );
+}
+
+// Simple Drawing Canvas
+function DrawingCanvas() {
+  const canvasRef = useRef<SVGSVGElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [paths, setPaths] = useState<string[]>([]);
+  const [currentPath, setCurrentPath] = useState('');
+
+  const getCoords = (e: React.MouseEvent) => {
+    if (!canvasRef.current) return { x: 0, y: 0 };
+    const rect = canvasRef.current.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
+
+  const startDrawing = (e: React.MouseEvent) => {
+    setIsDrawing(true);
+    const { x, y } = getCoords(e);
+    setCurrentPath(`M ${x} ${y}`);
+  };
+
+  const draw = (e: React.MouseEvent) => {
+    if (!isDrawing) return;
+    const { x, y } = getCoords(e);
+    setCurrentPath(prev => `${prev} L ${x} ${y}`);
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+    if (currentPath) {
+      setPaths([...paths, currentPath]);
+      setCurrentPath('');
+    }
+  };
+
+  const clearCanvas = () => setPaths([]);
+
+  return (
+    <div style={{height: '100%', display: 'flex', flexDirection: 'column', gap: 8}}>
+      <div style={{display: 'flex', gap: 8, padding: 4, backgroundColor: 'var(--bg-element)', borderRadius: 4}}>
+        <button className={styles.subTab} onClick={clearCanvas}><Eraser size={14}/> Clear</button>
+        <span style={{fontSize: 12, color: 'var(--text-tertiary)', alignSelf: 'center'}}>Draw your world map here...</span>
+      </div>
+      <div style={{flex: 1, border: '1px solid var(--border-default)', borderRadius: 8, background: '#fff', overflow: 'hidden'}}>
+        <svg 
+          ref={canvasRef}
+          style={{width: '100%', height: '100%', cursor: 'crosshair'}}
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+        >
+          {paths.map((d, i) => (
+             <path key={i} d={d} stroke="black" strokeWidth="2" fill="none" />
+          ))}
+          {currentPath && <path d={currentPath} stroke="black" strokeWidth="2" fill="none" />}
+        </svg>
+      </div>
     </div>
   );
 }
 
 function PlotBoard() {
-   const columns = [
-    { title: 'Idea (발상)', cards: ['결말 반전 아이디어', '서브 남주 등장 시점?'] },
-    { title: 'Structuring (구조화)', cards: ['1막: 회귀와 자각', '2막: 갈등의 시작', '3막: 절정'] },
-    { title: 'Plotting (플롯)', cards: ['1화: 프롤로그', '2화: 만남', '3화: 계약'] },
-    { title: 'Visualization (시각화)', cards: ['주인공 의상 컨셉', '황궁 지도 스케치'] }
-  ];
-
-  return (
-    <div className={styles.plotBoard}>
-      {columns.map((col, idx) => (
-        <div key={idx} className={styles.plotColumn}>
-          <div className={styles.columnHeader}>{col.title}</div>
-          {col.cards.map((card, cIdx) => (
-             <div key={cIdx} className={styles.plotCard}>{card}</div>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
+  const columns = [
+   { title: 'Idea (발상)', cards: ['결말 반전 아이디어', '서브 남주 등장 시점?'] },
+   { title: 'Structuring (구조화)', cards: ['1막: 회귀와 자각', '2막: 갈등의 시작', '3막: 절정'] },
+   { title: 'Plotting (플롯)', cards: ['1화: 프롤로그', '2화: 만남', '3화: 계약'] },
+   { title: 'Visualization (시각화)', cards: ['주인공 의상 컨셉', '황궁 지도 스케치'] }
+ ];
+ return (
+   <div className={styles.plotBoard}>
+     {columns.map((col, idx) => (
+       <div key={idx} className={styles.plotColumn}>
+         <div className={styles.columnHeader}>{col.title}</div>
+         {col.cards.map((card, cIdx) => (
+            <div key={cIdx} className={styles.plotCard}>{card}</div>
+         ))}
+       </div>
+     ))}
+   </div>
+ );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -238,18 +300,61 @@ function PlotBoard() {
 /* -------------------------------------------------------------------------- */
 
 function ScrapSection() {
+  const [notes, setNotes] = useState([
+    { id: '1', title: '참고자료: 중세 복식', content: '링크: https://wiki...\n\n중세 귀족들의 의상은 생각보다 화려했다...' },
+    { id: '2', title: '아이디어 파편', content: '- 주인공이 사실은 악역이었다면?\n- 회귀 전의 기억이 왜곡된 것이라면?' }
+  ]);
+  const [activeNoteId, setActiveNoteId] = useState('1');
+  const activeNote = notes.find(n => n.id === activeNoteId);
+
+  const handleAddNote = () => {
+    const newId = String(notes.length + 1);
+    const newNote = { id: newId, title: 'Untitled Note', content: '' };
+    setNotes([...notes, newNote]);
+    setActiveNoteId(newId);
+  };
+
   return (
-    <div>
-      <div className={styles.sectionTitle}>Material Scrap</div>
-      <div style={{display:'flex', gap: 12, marginBottom: 16}}>
-        <input className={styles.cellValueInput} style={{border: '1px solid var(--border-default)', borderRadius: 4, flex: 1}} placeholder="Title of your note..." />
-        <button style={{padding: '0 16px', backgroundColor: 'var(--text-accent)', color: 'white', borderRadius: 4, border: 'none', cursor:'pointer'}}>Add</button>
+    <div className={styles.scrapContainer}>
+      <div className={styles.noteList}>
+        <div className={styles.noteListHeader}>
+          <span>MY NOTES</span>
+          <Plus size={14} style={{cursor:'pointer'}} onClick={handleAddNote}/>
+        </div>
+        {notes.map(note => (
+          <div 
+            key={note.id} 
+            className={`${styles.noteItem} ${activeNoteId === note.id ? styles.active : ''}`}
+            onClick={() => setActiveNoteId(note.id)}
+          >
+            <div style={{fontWeight: 500, marginBottom: 2}}>{note.title || 'Untitled'}</div>
+            <div style={{fontSize: 10, color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
+              {note.content.substring(0, 20)}
+            </div>
+          </div>
+        ))}
       </div>
-      <textarea 
-        className={styles.cellValueInput} 
-        style={{height: 400, border: '1px solid var(--border-default)', padding: 12, borderRadius: 4}} 
-        placeholder="Paste links, snippets, research notes, or ideas here..." 
-      />
+
+      {activeNote ? (
+        <div className={styles.noteContent}>
+          <input 
+            className={styles.noteTitleInput} 
+            value={activeNote.title} 
+            onChange={(e) => setNotes(notes.map(n => n.id === activeNoteId ? {...n, title: e.target.value} : n))} 
+            placeholder="Title"
+          />
+          <textarea 
+            className={styles.noteBodyInput}
+            value={activeNote.content}
+            onChange={(e) => setNotes(notes.map(n => n.id === activeNoteId ? {...n, content: e.target.value} : n))} 
+            placeholder="Start typing your research..."
+          />
+        </div>
+      ) : (
+        <div style={{flex:1, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-tertiary)'}}>
+          Select a note to view
+        </div>
+      )}
     </div>
   );
 }
