@@ -8,6 +8,17 @@ import ProjectTemplateSelector from "./components/layout/ProjectTemplateSelector
 import ResearchPanel from "./components/research/ResearchPanel";
 import styles from "./styles/App.module.css";
 
+// Fix for window.electron type
+declare global {
+  interface Window {
+    electron: {
+      ipcRenderer: {
+        invoke(channel: string, ...args: any[]): Promise<any>;
+      };
+    };
+  }
+}
+
 type ViewState = 'template' | 'editor';
 type ContextTab = 'synopsis' | 'characters' | 'terms';
 
@@ -81,7 +92,17 @@ export default function App() {
 
   // Template Screen View
   if (view === 'template') {
-    return <ProjectTemplateSelector onSelectProject={() => setView('editor')} />;
+    return <ProjectTemplateSelector onSelectProject={() => {
+      console.log('Project selected');
+      setView('editor');
+      try {
+        if (window.electron && window.electron.ipcRenderer) {
+          window.electron.ipcRenderer.invoke('window:maximize');
+        }
+      } catch (e) {
+        console.error('Failed to maximize window:', e);
+      }
+    }} />;
   }
 
   // Editor View
