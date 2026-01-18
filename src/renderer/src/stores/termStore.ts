@@ -3,45 +3,123 @@ import type { Term } from "@prisma/client";
 
 interface TermStore {
   terms: Term[];
-  selectedTerm: Term | null;
+  currentTerm: Term | null;
   isLoading: boolean;
 
-  setTerms: (terms: Term[]) => void;
-  setSelectedTerm: (term: Term | null) => void;
-  setIsLoading: (loading: boolean) => void;
-  addTerm: (term: Term) => void;
-  updateTerm: (id: string, term: Partial<Term>) => void;
-  removeTerm: (id: string) => void;
+  loadTerms: (projectId: string) => Promise<void>;
+  loadTerm: (id: string) => Promise<void>;
+  createTerm: (
+    projectId: string,
+    term: string,
+    definition?: string,
+    category?: string,
+  ) => Promise<void>;
+  updateTerm: (
+    id: string,
+    term?: string,
+    definition?: string,
+    category?: string,
+  ) => Promise<void>;
+  deleteTerm: (id: string) => Promise<void>;
+  setCurrentTerm: (term: Term | null) => void;
 }
 
 export const useTermStore = create<TermStore>((set) => ({
   terms: [],
-  selectedTerm: null,
+  currentTerm: null,
   isLoading: false,
 
-  setTerms: (terms) => set({ terms }),
-  setSelectedTerm: (term) => set({ selectedTerm: term }),
-  setIsLoading: (loading) => set({ isLoading: loading }),
+  loadTerms: async (projectId: string) => {
+    set({ isLoading: true });
+    try {
+      const response = await window.api.term.getAll(projectId);
+      if (response.success && response.data) {
+        set({ terms: response.data });
+      }
+    } catch (error) {
+      console.error("Failed to load terms:", error);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
 
-  addTerm: (term) =>
-    set((state) => ({
-      terms: [...state.terms, term],
-    })),
+  loadTerm: async (id: string) => {
+    set({ isLoading: true });
+    try {
+      const response = await window.api.term.get(id);
+      if (response.success && response.data) {
+        set({ currentTerm: response.data });
+      }
+    } catch (error) {
+      console.error("Failed to load term:", error);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
 
-  updateTerm: (id, updatedTerm) =>
-    set((state) => ({
-      terms: state.terms.map((t) =>
-        t.id === id ? { ...t, ...updatedTerm } : t,
-      ),
-      selectedTerm:
-        state.selectedTerm?.id === id
-          ? { ...state.selectedTerm, ...updatedTerm }
-          : state.selectedTerm,
-    })),
+  createTerm: async (
+    projectId: string,
+    term: string,
+    definition?: string,
+    category?: string,
+  ) => {
+    try {
+      const response = await window.api.term.create({
+        projectId,
+        term,
+        definition,
+        category,
+      });
+      if (response.success && response.data) {
+        set((state) => ({
+          terms: [...state.terms, response.data],
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to create term:", error);
+    }
+  },
 
-  removeTerm: (id) =>
-    set((state) => ({
-      terms: state.terms.filter((t) => t.id !== id),
-      selectedTerm: state.selectedTerm?.id === id ? null : state.selectedTerm,
-    })),
+  updateTerm: async (
+    id: string,
+    term?: string,
+    definition?: string,
+    category?: string,
+  ) => {
+    try {
+      const response = await window.api.term.update({
+        id,
+        term,
+        definition,
+        category,
+      });
+      if (response.success && response.data) {
+        set((state) => ({
+          terms: state.terms.map((t) => (t.id === id ? response.data : t)),
+          currentTerm:
+            state.currentTerm?.id === id ? response.data : state.currentTerm,
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to update term:", error);
+    }
+  },
+
+  deleteTerm: async (id: string) => {
+    try {
+      const response = await window.api.term.delete(id);
+      if (response.success) {
+        set((state) => ({
+          terms: state.terms.filter((t) => t.id !== id),
+          currentTerm: state.currentTerm?.id === id ? null : state.currentTerm,
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to delete term:", error);
+    }
+  },
+
+  setCurrentTerm: (term: Term | null) => {
+    set({ currentTerm: term });
+  },
 }));

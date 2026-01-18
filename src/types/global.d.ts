@@ -1,52 +1,109 @@
+import type {
+  Project,
+  Chapter,
+  Character,
+  Term,
+  Snapshot,
+} from "@prisma/client";
+import type { SearchResult } from "../shared/types/index.js";
 import type { IPCResponse } from "../shared/ipc/index.js";
 
 declare global {
   interface Window {
     api: {
       project: {
-        create: (input: unknown) => Promise<IPCResponse>;
-        get: (id: string) => Promise<IPCResponse>;
-        getAll: () => Promise<IPCResponse>;
-        update: (input: unknown) => Promise<IPCResponse>;
-        delete: (id: string) => Promise<IPCResponse>;
+        create: (input: {
+          title: string;
+          description?: string;
+        }) => Promise<IPCResponse<Project>>;
+        get: (id: string) => Promise<IPCResponse<Project>>;
+        getAll: () => Promise<IPCResponse<Project[]>>;
+        update: (input: {
+          id: string;
+          title?: string;
+          description?: string;
+        }) => Promise<IPCResponse<Project>>;
+        delete: (id: string) => Promise<IPCResponse<unknown>>;
       };
       chapter: {
-        create: (input: unknown) => Promise<IPCResponse>;
-        get: (id: string) => Promise<IPCResponse>;
-        getAll: (projectId: string) => Promise<IPCResponse>;
-        update: (input: unknown) => Promise<IPCResponse>;
-        delete: (id: string) => Promise<IPCResponse>;
+        create: (input: {
+          projectId: string;
+          title: string;
+          synopsis?: string;
+        }) => Promise<IPCResponse<Chapter>>;
+        get: (id: string) => Promise<IPCResponse<Chapter>>;
+        getAll: (projectId: string) => Promise<IPCResponse<Chapter[]>>;
+        update: (input: {
+          id: string;
+          title?: string;
+          content?: string;
+          synopsis?: string;
+        }) => Promise<IPCResponse<Chapter>>;
+        delete: (id: string) => Promise<IPCResponse<unknown>>;
         reorder: (
           projectId: string,
           chapterIds: string[],
-        ) => Promise<IPCResponse>;
+        ) => Promise<IPCResponse<unknown>>;
       };
       character: {
-        create: (input: unknown) => Promise<IPCResponse>;
-        get: (id: string) => Promise<IPCResponse>;
-        getAll: (projectId: string) => Promise<IPCResponse>;
-        update: (input: unknown) => Promise<IPCResponse>;
-        delete: (id: string) => Promise<IPCResponse>;
+        create: (input: {
+          projectId: string;
+          name: string;
+          description?: string;
+          firstAppearance?: string;
+          attributes?: Record<string, unknown>;
+        }) => Promise<IPCResponse<Character>>;
+        get: (id: string) => Promise<IPCResponse<Character>>;
+        getAll: (projectId: string) => Promise<IPCResponse<Character[]>>;
+        update: (input: {
+          id: string;
+          name?: string;
+          description?: string;
+          firstAppearance?: string;
+          attributes?: Record<string, unknown>;
+        }) => Promise<IPCResponse<Character>>;
+        delete: (id: string) => Promise<IPCResponse<unknown>>;
       };
       term: {
-        create: (input: unknown) => Promise<IPCResponse>;
-        get: (id: string) => Promise<IPCResponse>;
-        getAll: (projectId: string) => Promise<IPCResponse>;
-        update: (input: unknown) => Promise<IPCResponse>;
-        delete: (id: string) => Promise<IPCResponse>;
+        create: (input: {
+          projectId: string;
+          term: string;
+          definition?: string;
+          category?: string;
+          firstAppearance?: string;
+        }) => Promise<IPCResponse<Term>>;
+        get: (id: string) => Promise<IPCResponse<Term>>;
+        getAll: (projectId: string) => Promise<IPCResponse<Term[]>>;
+        update: (input: {
+          id: string;
+          term?: string;
+          definition?: string;
+          category?: string;
+          firstAppearance?: string;
+        }) => Promise<IPCResponse<Term>>;
+        delete: (id: string) => Promise<IPCResponse<unknown>>;
       };
       snapshot: {
-        create: (input: unknown) => Promise<IPCResponse>;
-        getAll: (projectId: string) => Promise<IPCResponse>;
-        restore: (id: string) => Promise<IPCResponse>;
-        delete: (id: string) => Promise<IPCResponse>;
+        create: (input: {
+          projectId: string;
+          chapterId?: string;
+          content: string;
+          description?: string;
+        }) => Promise<IPCResponse<Snapshot>>;
+        getAll: (projectId: string) => Promise<IPCResponse<Snapshot[]>>;
+        restore: (id: string) => Promise<IPCResponse<unknown>>;
+        delete: (id: string) => Promise<IPCResponse<unknown>>;
       };
-      search: (query: unknown) => Promise<IPCResponse>;
+      search: (query: {
+        projectId: string;
+        query: string;
+        type?: "all" | "character" | "term";
+      }) => Promise<IPCResponse<SearchResult[]>>;
       autoSave: (
         chapterId: string,
         content: string,
         projectId: string,
-      ) => Promise<IPCResponse>;
+      ) => Promise<IPCResponse<unknown>>;
     };
   }
 }

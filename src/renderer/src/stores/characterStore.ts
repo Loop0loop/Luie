@@ -3,46 +3,128 @@ import type { Character } from "@prisma/client";
 
 interface CharacterStore {
   characters: Character[];
-  selectedCharacter: Character | null;
+  currentCharacter: Character | null;
   isLoading: boolean;
 
-  setCharacters: (characters: Character[]) => void;
-  setSelectedCharacter: (character: Character | null) => void;
-  setIsLoading: (loading: boolean) => void;
-  addCharacter: (character: Character) => void;
-  updateCharacter: (id: string, character: Partial<Character>) => void;
-  removeCharacter: (id: string) => void;
+  loadCharacters: (projectId: string) => Promise<void>;
+  loadCharacter: (id: string) => Promise<void>;
+  createCharacter: (
+    projectId: string,
+    name: string,
+    description?: string,
+    attributes?: Record<string, unknown>,
+  ) => Promise<void>;
+  updateCharacter: (
+    id: string,
+    name?: string,
+    description?: string,
+    attributes?: Record<string, unknown>,
+  ) => Promise<void>;
+  deleteCharacter: (id: string) => Promise<void>;
+  setCurrentCharacter: (character: Character | null) => void;
 }
 
 export const useCharacterStore = create<CharacterStore>((set) => ({
   characters: [],
-  selectedCharacter: null,
+  currentCharacter: null,
   isLoading: false,
 
-  setCharacters: (characters) => set({ characters }),
-  setSelectedCharacter: (character) => set({ selectedCharacter: character }),
-  setIsLoading: (loading) => set({ isLoading: loading }),
+  loadCharacters: async (projectId: string) => {
+    set({ isLoading: true });
+    try {
+      const response = await window.api.character.getAll(projectId);
+      if (response.success && response.data) {
+        set({ characters: response.data });
+      }
+    } catch (error) {
+      console.error("Failed to load characters:", error);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
 
-  addCharacter: (character) =>
-    set((state) => ({
-      characters: [...state.characters, character],
-    })),
+  loadCharacter: async (id: string) => {
+    set({ isLoading: true });
+    try {
+      const response = await window.api.character.get(id);
+      if (response.success && response.data) {
+        set({ currentCharacter: response.data });
+      }
+    } catch (error) {
+      console.error("Failed to load character:", error);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
 
-  updateCharacter: (id, updatedCharacter) =>
-    set((state) => ({
-      characters: state.characters.map((ch) =>
-        ch.id === id ? { ...ch, ...updatedCharacter } : ch,
-      ),
-      selectedCharacter:
-        state.selectedCharacter?.id === id
-          ? { ...state.selectedCharacter, ...updatedCharacter }
-          : state.selectedCharacter,
-    })),
+  createCharacter: async (
+    projectId: string,
+    name: string,
+    description?: string,
+    attributes?: Record<string, unknown>,
+  ) => {
+    try {
+      const response = await window.api.character.create({
+        projectId,
+        name,
+        description,
+        attributes,
+      });
+      if (response.success && response.data) {
+        set((state) => ({
+          characters: [...state.characters, response.data],
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to create character:", error);
+    }
+  },
 
-  removeCharacter: (id) =>
-    set((state) => ({
-      characters: state.characters.filter((ch) => ch.id !== id),
-      selectedCharacter:
-        state.selectedCharacter?.id === id ? null : state.selectedCharacter,
-    })),
+  updateCharacter: async (
+    id: string,
+    name?: string,
+    description?: string,
+    attributes?: Record<string, unknown>,
+  ) => {
+    try {
+      const response = await window.api.character.update({
+        id,
+        name,
+        description,
+        attributes,
+      });
+      if (response.success && response.data) {
+        set((state) => ({
+          characters: state.characters.map((ch) =>
+            ch.id === id ? response.data : ch,
+          ),
+          currentCharacter:
+            state.currentCharacter?.id === id
+              ? response.data
+              : state.currentCharacter,
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to update character:", error);
+    }
+  },
+
+  deleteCharacter: async (id: string) => {
+    try {
+      const response = await window.api.character.delete(id);
+      if (response.success) {
+        set((state) => ({
+          characters: state.characters.filter((ch) => ch.id !== id),
+          currentCharacter:
+            state.currentCharacter?.id === id ? null : state.currentCharacter,
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to delete character:", error);
+    }
+  },
+
+  setCurrentCharacter: (character: Character | null) => {
+    set({ currentCharacter: character });
+  },
 }));
