@@ -1,4 +1,4 @@
-import { useEffect, useState, forwardRef } from 'react';
+import { useEffect, useState } from 'react';
 import styles from '../../styles/components/SlashMenu.module.css';
 import { 
   Heading1, Heading2, Heading3, 

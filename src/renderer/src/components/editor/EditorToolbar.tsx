@@ -1,27 +1,49 @@
 import { 
   Undo2, Redo2, 
   Bold, Italic, Underline, Strikethrough, 
-  AlignLeft, AlignCenter, AlignRight, AlignJustify,
+  AlignLeft, AlignCenter, AlignRight,
   Highlighter, Type, MoreVertical,
   Smartphone, Monitor, ChevronDown
 } from 'lucide-react';
 import styles from '../../styles/components/EditorToolbar.module.css';
+import { Editor } from '@tiptap/react';
+import { useEditorStore } from '../../stores/editorStore';
 
 interface EditorToolbarProps {
+  editor: Editor | null;
   isMobileView?: boolean;
   onToggleMobileView?: () => void;
-  onFormat?: (type: string) => void;
 }
 
-export default function EditorToolbar({ isMobileView, onToggleMobileView, onFormat }: EditorToolbarProps) {
+export default function EditorToolbar({ editor, isMobileView, onToggleMobileView }: EditorToolbarProps) {
+  const { fontSize, setFontSize } = useEditorStore();
+
+  if (!editor) {
+    return null;
+  }
+
   return (
     <div className={styles.toolbar}>
       {/* Row 1: Common Formatting */}
       <div className={styles.row}>
         {/* Left: History & Font */}
         <div className={styles.tgroup}>
-          <button className={styles.iconBtn} title="Undo" onClick={() => onFormat?.('undo')}><Undo2 size={16}/></button>
-          <button className={styles.iconBtn} title="Redo" onClick={() => onFormat?.('redo')}><Redo2 size={16}/></button>
+          <button 
+            className={styles.iconBtn} 
+            title="Undo" 
+            onClick={() => editor.chain().focus().undo().run()}
+            disabled={!editor.can().undo()}
+          >
+            <Undo2 size={16}/>
+          </button>
+          <button 
+            className={styles.iconBtn} 
+            title="Redo" 
+            onClick={() => editor.chain().focus().redo().run()}
+            disabled={!editor.can().redo()}
+          >
+            <Redo2 size={16}/>
+          </button>
           
           <div className={styles.separator} />
           
@@ -33,30 +55,61 @@ export default function EditorToolbar({ isMobileView, onToggleMobileView, onForm
           
           <div className={styles.separator} />
           
-          {/* Size Picker Fake */}
-          <button className={styles.iconBtn} onClick={() => onFormat?.('size-down')}><span style={{fontSize:14}}>-</span></button>
-          <input className={styles.numberInput} defaultValue={16} readOnly />
-          <button className={styles.iconBtn} onClick={() => onFormat?.('size-up')}><span style={{fontSize:14}}>+</span></button>
+          {/* Size Picker */}
+          <button className={styles.iconBtn} onClick={() => setFontSize(Math.max(10, fontSize - 1))}><span style={{fontSize:14}}>-</span></button>
+          <input className={styles.numberInput} value={fontSize} readOnly />
+          <button className={styles.iconBtn} onClick={() => setFontSize(fontSize + 1)}><span style={{fontSize:14}}>+</span></button>
           
           <div className={styles.separator} />
 
-          <button className={styles.iconBtn} title="Bold" onClick={() => onFormat?.('bold')}><Bold size={16}/></button>
-          <button className={styles.iconBtn} title="Italic" onClick={() => onFormat?.('italic')}><Italic size={16}/></button>
-          <button className={styles.iconBtn} title="Underline" onClick={() => onFormat?.('underline')}><Underline size={16}/></button>
-          <button className={styles.iconBtn} title="Strikethrough" onClick={() => onFormat?.('strikethrough')}><Strikethrough size={16}/></button>
+          <button 
+            className={`${styles.iconBtn} ${editor.isActive('bold') ? styles.active : ''}`}
+            title="Bold" 
+            onClick={() => editor.chain().focus().toggleBold().run()}
+          >
+            <Bold size={16}/>
+          </button>
+          <button 
+            className={`${styles.iconBtn} ${editor.isActive('italic') ? styles.active : ''}`}
+            title="Italic" 
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+          >
+            <Italic size={16}/>
+          </button>
+          <button 
+            className={`${styles.iconBtn} ${editor.isActive('underline') ? styles.active : ''}`}
+            title="Underline" 
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+          >
+            <Underline size={16}/>
+          </button>
+          <button 
+            className={`${styles.iconBtn} ${editor.isActive('strike') ? styles.active : ''}`}
+            title="Strikethrough" 
+            onClick={() => editor.chain().focus().toggleStrike().run()}
+          >
+            <Strikethrough size={16}/>
+          </button>
           
           <div className={styles.separator} />
           
-          <button className={styles.iconBtn} style={{color:'var(--text-primary)'}} title="Text Color" onClick={() => onFormat?.('color')}><Type size={16}/></button>
-          <button className={styles.iconBtn} title="Highlight" onClick={() => onFormat?.('highlight')}><Highlighter size={16}/></button>
+          <button className={styles.iconBtn} style={{color:'var(--text-primary)'}} title="Text Color"><Type size={16}/></button>
+          <button 
+            className={`${styles.iconBtn} ${editor.isActive('highlight') ? styles.active : ''}`}
+            title="Highlight" 
+            onClick={() => editor.chain().focus().toggleHighlight().run()}
+          >
+            <Highlighter size={16}/>
+          </button>
         </div>
 
         {/* Right: Align & Mobile Toggle */}
         <div className={styles.tgroup}>
-          <button className={styles.iconBtn} title="Align Left" onClick={() => onFormat?.('align-left')}><AlignLeft size={16}/></button>
-          <button className={styles.iconBtn} title="Align Center" onClick={() => onFormat?.('align-center')}><AlignCenter size={16}/></button>
-          <button className={styles.iconBtn} title="Align Right" onClick={() => onFormat?.('align-right')}><AlignRight size={16}/></button>
-          <button className={styles.iconBtn} title="Justify" onClick={() => onFormat?.('align-justify')}><AlignJustify size={16}/></button>
+          {/* Alignment is not in StarterKit default, so leaving as placeholders or implementing textAlign extension if requested later.
+              For now focusing on text styling. */}
+          <button className={styles.iconBtn} title="Align Left"><AlignLeft size={16}/></button>
+          <button className={styles.iconBtn} title="Align Center"><AlignCenter size={16}/></button>
+          <button className={styles.iconBtn} title="Align Right"><AlignRight size={16}/></button>
           
           <div className={styles.separator} />
           
@@ -64,7 +117,7 @@ export default function EditorToolbar({ isMobileView, onToggleMobileView, onForm
             className={styles.mobileToggle} 
             data-active={isMobileView}
             onClick={onToggleMobileView}
-            title="Toggle Mobile Typesetting View"
+            title="모바일 뷰 전환"
           >
             {isMobileView ? <Smartphone size={14} /> : <Monitor size={14} />}
             <span>{isMobileView ? 'Mobile' : 'PC'}</span>
