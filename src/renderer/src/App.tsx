@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect, lazy, Suspense } from "react";
-import ResizableSplitPane from "./components/layout/ResizableSplitPane";
 import MainLayout from "./components/layout/MainLayout";
 import Sidebar from "./components/sidebar/Sidebar";
 import Editor from "./components/editor/Editor";
@@ -26,11 +25,15 @@ export default function App() {
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSplitView, setIsSplitView] = useState(false);
-  const [researchTab, setResearchTab] = useState<
-    "character" | "world" | "scrap"
-  >("character");
+  const [rightPanelContent, setRightPanelContent] = useState<{
+    type: "research" | "editor";
+    id?: string; // chapterId
+    tab?: "character" | "world" | "scrap";
+  }>({ type: "research", tab: "character" });
+  
   const [contextTab, setContextTab] = useState<ContextTab>("synopsis");
   const [content, setContent] = useState("");
+  const [splitRatio, setSplitRatio] = useState(0.62);
 
   const {
     projects,
@@ -140,11 +143,46 @@ export default function App() {
         world: "world",
         scrap: "scrap",
       };
-      setResearchTab(tabMap[type]);
+      setRightPanelContent({ type: "research", tab: tabMap[type] });
     },
     [],
   );
 
+  const handleSplitView = useCallback((type: 'vertical' | 'horizontal', contentId: string) => {
+    // Currently only supporting vertical split (side-by-side)
+    if (type === 'vertical') {
+      setIsSplitView(true);
+      // Check if contentId is a chapter or research
+      // For now, assuming generic chapters are passed for "Open Right"
+      setRightPanelContent({ type: "editor", id: contentId });
+    }
+  }, []);
+
+  const startResizeSplit = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+
+      const startX = e.clientX;
+      const startRatio = splitRatio;
+      const container = document.querySelector(`.${styles.splitContainer}`);
+      const containerWidth =
+        container instanceof HTMLElement ? container.getBoundingClientRect().width : window.innerWidth;
+
+      const onMove = (ev: MouseEvent) => {
+        const delta = ev.clientX - startX;
+        const next = Math.min(0.8, Math.max(0.2, startRatio + delta / containerWidth));
+        setSplitRatio(next);
+      };
+      const onUp = () => {
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      };
+
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    },
+    [splitRatio],
+  );
 
   const handleSave = useCallback(
     async (title: string, newContent: string) => {
@@ -191,91 +229,118 @@ export default function App() {
             onAddChapter={handleAddChapter}
             onOpenSettings={() => setIsSettingsOpen(true)}
             onSelectResearchItem={handleSelectResearchItem}
+            onSplitView={handleSplitView}
           />
         }
         contextPanel={
           <ContextPanel activeTab={contextTab} onTabChange={setContextTab} />
         }
       >
-        <ResizableSplitPane
-          isRightVisible={isSplitView}
-          onCloseRight={() => setIsSplitView(false)}
-          left={
-            <div className={styles.editorPane}>
-              {editorViewMode === "corkboard" ? (
-                <div>
-                  <button
-                    onClick={() => setEditorViewMode("editor")}
-                    style={{
-                      marginBottom: "8px",
-                      padding: "4px 12px",
-                      fontSize: "12px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    에디터 뷰로 전환
-                  </button>
-                  <CorkboardView
-                    chapters={chapters}
-                    activeChapterId={activeChapterId ?? undefined}
-                    onSelectChapter={handleSelectChapter}
-                    onAddChapter={handleAddChapter}
-                  />
-                </div>
-              ) : editorViewMode === "outliner" ? (
-                <div>
-                  <button
-                    onClick={() => setEditorViewMode("editor")}
-                    style={{
-                      marginBottom: "8px",
-                      padding: "4px 12px",
-                      fontSize: "12px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    에디터 뷰로 전환
-                  </button>
-                  <OutlinerView
-                    chapters={chapters}
-                    activeChapterId={activeChapterId ?? undefined}
-                    onSelectChapter={handleSelectChapter}
-                    onAddChapter={handleAddChapter}
-                  />
-                </div>
+        <div className={styles.splitContainer}>
+          <div className={styles.editorPane} style={{ flex: splitRatio }}>
+            {editorViewMode === "corkboard" ? (
+              <div>
+                <button
+                  onClick={() => setEditorViewMode("editor")}
+                  style={{
+                    marginBottom: "8px",
+                    padding: "4px 12px",
+                    fontSize: "12px",
+                    cursor: "pointer",
+                  }}
+                >
+                  에디터 뷰로 전환
+                </button>
+                <CorkboardView
+                  chapters={chapters}
+                  activeChapterId={activeChapterId ?? undefined}
+                  onSelectChapter={handleSelectChapter}
+                  onAddChapter={handleAddChapter}
+                />
+              </div>
+            ) : editorViewMode === "outliner" ? (
+              <div>
+                <button
+                  onClick={() => setEditorViewMode("editor")}
+                  style={{
+                    marginBottom: "8px",
+                    padding: "4px 12px",
+                    fontSize: "12px",
+                    cursor: "pointer",
+                  }}
+                >
+                  에디터 뷰로 전환
+                </button>
+                <OutlinerView
+                  chapters={chapters}
+                  activeChapterId={activeChapterId ?? undefined}
+                  onSelectChapter={handleSelectChapter}
+                  onAddChapter={handleAddChapter}
+                />
+              </div>
+            ) : (
+              <div>
+                <button
+                  onClick={() => setEditorViewMode("corkboard")}
+                  style={{
+                    marginBottom: "8px",
+                    padding: "4px 12px",
+                    fontSize: "12px",
+                    cursor: "pointer",
+                  }}
+                >
+                  코르크보드 뷰로 전환
+                </button>
+                <button
+                  onClick={() => setEditorViewMode("outliner")}
+                  style={{
+                    marginBottom: "8px",
+                    padding: "4px 12px",
+                    fontSize: "12px",
+                    cursor: "pointer",
+                  }}
+                >
+                  아웃라이너 뷰로 전환
+                </button>
+                <Editor
+                  initialTitle={activeChapterTitle}
+                  initialContent={content}
+                  onSave={handleSave}
+                />
+              </div>
+            )}
+          </div>
+
+          {isSplitView && (
+            <>
+              <div
+                className={styles.splitDivider}
+                onMouseDown={startResizeSplit}
+                role="separator"
+                aria-orientation="vertical"
+              />
+              <div className={styles.researchPane} style={{ flex: 1 - splitRatio }}>
+            <Suspense fallback={<div style={{padding: 20}}>Loading...</div>}>
+              {rightPanelContent.type === 'research' ? (
+                <ResearchPanel
+                  activeTab={rightPanelContent.tab || "character"}
+                  onClose={() => setIsSplitView(false)}
+                />
               ) : (
-                <div>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                    <button
-                      onClick={() => setEditorViewMode("corkboard")}
-                      style={{ padding: "4px 12px", fontSize: "12px", cursor: "pointer" }}
-                    >
-                      코르크보드
-                    </button>
-                    <button
-                      onClick={() => setEditorViewMode("outliner")}
-                      style={{ padding: "4px 12px", fontSize: "12px", cursor: "pointer" }}
-                    >
-                      아웃라이너
-                    </button>
-                  </div>
-                  <Editor
-                    initialTitle={activeChapterTitle}
-                    initialContent={content}
-                    onSave={handleSave}
-                  />
+                <div style={{height: '100%', overflow: 'hidden', background: 'var(--bg-primary)'}}>
+                   {/* Re-using Editor for read-only or secondary edit */}
+                   <Editor
+                     initialTitle={chapters.find(c => c.id === rightPanelContent.id)?.title}
+                     initialContent="" // We'd need to fetch content. For now placeholder.
+                     // In real app, Editor should fetch by ID or we pass content
+                   />
                 </div>
               )}
-            </div>
-          }
-          right={
-            <Suspense fallback={<div style={{padding: 20}}>Loading...</div>}>
-              <ResearchPanel
-                activeTab={researchTab}
-                onClose={() => setIsSplitView(false)}
-              />
             </Suspense>
-          }
-        />
+          </div>
+            </>
+          )}
+        </div>
       </MainLayout>
 
       {isSettingsOpen && (

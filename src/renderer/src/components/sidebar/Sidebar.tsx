@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import styles from '../../styles/components/Sidebar.module.css';
 import { 
   Settings, Plus, ChevronDown, ChevronRight, 
-  FileText, BookOpen, Trash2, FolderOpen, MoreVertical, Edit2
+  FileText, BookOpen, Trash2, FolderOpen, MoreVertical, Edit2,
+  ArrowRightFromLine, ArrowDownFromLine, Copy
 } from 'lucide-react';
 
 interface Chapter {
@@ -18,6 +19,7 @@ interface SidebarProps {
   onAddChapter: () => void;
   onOpenSettings: () => void;
   onSelectResearchItem: (type: 'character' | 'world' | 'scrap') => void;
+  onSplitView?: (type: 'vertical' | 'horizontal', contentId: string) => void;
 }
 
 export default function Sidebar({ 
@@ -26,7 +28,8 @@ export default function Sidebar({
   onSelectChapter,
   onAddChapter,
   onOpenSettings,
-  onSelectResearchItem
+  onSelectResearchItem,
+  onSplitView
 }: SidebarProps) {
   // Section collapse states
   const [isManuscriptOpen, setManuscriptOpen] = useState(true);
@@ -36,6 +39,7 @@ export default function Sidebar({
   // Context Menu State
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
   
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -53,14 +57,18 @@ export default function Sidebar({
   const handleMenuClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setMenuPosition({ x: rect.right + 4, y: rect.top });
+    // Position menu to the right of the button
+    setMenuPosition({ x: rect.right + 8, y: rect.top });
     setMenuOpenId(id === menuOpenId ? null : id);
   };
 
-  const handleAction = (action: 'edit' | 'delete', id: string) => {
+  const handleAction = (action: string, id: string) => {
     console.log(`Action: ${action} on ${id}`);
     setMenuOpenId(null);
-    // Placeholder: Real implementation would verify store actions
+    if (action === 'open_right' && onSplitView) {
+      onSplitView('vertical', id);
+    }
+    // Placeholder actions
   };
 
   return (
@@ -72,15 +80,24 @@ export default function Sidebar({
           className={styles.contextMenu}
           style={{ top: menuPosition.y, left: menuPosition.x }}
         >
-          <div className={styles.contextMenuItem} onClick={() => handleAction('edit', menuOpenId)}>
-            <Edit2 size={14} /> 이름 변경
+          <div className={styles.contextMenuItem} onClick={() => handleAction('open_below', menuOpenId)}>
+            <ArrowDownFromLine size={14} /> 아래에 열기
+          </div>
+          <div className={styles.contextMenuItem} onClick={() => handleAction('open_right', menuOpenId)}>
+            <ArrowRightFromLine size={14} /> 오른쪽에 열기
+          </div>
+          <div className={styles.divider} />
+          <div className={styles.contextMenuItem} onClick={() => handleAction('rename', menuOpenId)}>
+            <Edit2 size={14} /> 이름 수정하기
+          </div>
+          <div className={styles.contextMenuItem} onClick={() => handleAction('duplicate', menuOpenId)}>
+            <Copy size={14} /> 복제하기
           </div>
           <div className={styles.contextMenuItem} onClick={() => handleAction('delete', menuOpenId)} style={{color: '#ef4444'}}>
-            <Trash2 size={14} /> 삭제
+            <Trash2 size={14} /> 삭제하기
           </div>
         </div>
       )}
-
       <div className={styles.header}>
         <h2 className={styles.projectName}>폭군을 길들이는 법</h2>
         <div className={styles.metaInfo}>PROJECT BINDER</div>
@@ -103,20 +120,24 @@ export default function Sidebar({
                 key={chapter.id}
                 className={activeChapterId === chapter.id ? styles.itemActive : styles.item}
                 onClick={() => onSelectChapter(chapter.id)}
+                onMouseEnter={() => setHoveredItemId(chapter.id)}
+                onMouseLeave={() => setHoveredItemId(null)}
               >
                 <FileText size={14} className={styles.itemIcon} />
                 <span className={styles.itemTitle}>{chapter.order}. {chapter.title}</span>
                 
-                {/* More Action Button */}
-                <div 
-                  className={styles.moreButton}
-                  onClick={(e) => handleMenuClick(e, chapter.id)}
-                >
-                  <MoreVertical size={14} />
-                </div>
+                {/* More Action Button - Visible on hover or when menu is open */}
+                {(hoveredItemId === chapter.id || menuOpenId === chapter.id) && (
+                  <div 
+                    className={styles.moreButton}
+                    onClick={(e) => handleMenuClick(e, chapter.id)}
+                  >
+                    <MoreVertical size={14} />
+                  </div>
+                )}
               </div>
             ))}
-            {/* Inline Add Button */}
+            {/* Inline Add Button for Manuscript */}
             <div className={styles.item} onClick={onAddChapter} style={{ color: 'var(--text-tertiary)' }}>
               <Plus size={14} className={styles.itemIcon} />
               <span>새 회차 추가...</span>
@@ -135,17 +156,44 @@ export default function Sidebar({
 
         {isResearchOpen && (
           <div className={styles.sectionContent}>
-            <div className={styles.item} onClick={() => onSelectResearchItem('character')}>
+            <div className={styles.item} 
+              onClick={() => onSelectResearchItem('character')}
+              onMouseEnter={() => setHoveredItemId('res-char')}
+              onMouseLeave={() => setHoveredItemId(null)}
+            >
               <FolderOpen size={14} className={styles.itemIcon} />
               <span>등장인물 (Characters)</span>
+              {(hoveredItemId === 'res-char' || menuOpenId === 'res-char') && (
+                <div className={styles.moreButton} onClick={(e) => handleMenuClick(e, 'res-char')}>
+                   <MoreVertical size={14} />
+                </div>
+              )}
             </div>
-            <div className={styles.item} onClick={() => onSelectResearchItem('world')}>
+            <div className={styles.item} 
+              onClick={() => onSelectResearchItem('world')}
+              onMouseEnter={() => setHoveredItemId('res-world')}
+              onMouseLeave={() => setHoveredItemId(null)}
+            >
               <FolderOpen size={14} className={styles.itemIcon} />
               <span>세계관 (World)</span>
+              {(hoveredItemId === 'res-world' || menuOpenId === 'res-world') && (
+                <div className={styles.moreButton} onClick={(e) => handleMenuClick(e, 'res-world')}>
+                   <MoreVertical size={14} />
+                </div>
+              )}
             </div>
-            <div className={styles.item} onClick={() => onSelectResearchItem('scrap')}>
+            <div className={styles.item} 
+              onClick={() => onSelectResearchItem('scrap')}
+              onMouseEnter={() => setHoveredItemId('res-scrap')}
+              onMouseLeave={() => setHoveredItemId(null)}
+            >
               <BookOpen size={14} className={styles.itemIcon} />
               <span>자료 스크랩</span>
+              {(hoveredItemId === 'res-scrap' || menuOpenId === 'res-scrap') && (
+                <div className={styles.moreButton} onClick={(e) => handleMenuClick(e, 'res-scrap')}>
+                   <MoreVertical size={14} />
+                </div>
+              )}
             </div>
           </div>
         )}

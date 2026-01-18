@@ -127,11 +127,9 @@ export default function Editor({
       </div>
 
       <div className={styles.statusBar}>
-        <span>
-          공백 포함 {content.length}자 (공백 제외{" "}
-          {content.replace(/\s/g, "").length}자)
+        <span className={styles.statusText}>
+          글자 {content.length} · 단어 {wordCount}
         </span>
-        <span>{wordCount} 단어</span>
         <button
           onClick={() => setIsPreviewMode(!isPreviewMode)}
           style={{

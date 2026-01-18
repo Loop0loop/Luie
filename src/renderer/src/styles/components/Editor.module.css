@@ -7,6 +7,8 @@
   background-color: var(--bg-primary);
   color: var(--text-primary);
   position: relative;
+  box-sizing: border-box;
+  overflow: hidden; /* Prevent container text overflow */
 }
 
 /* Toolbar Area specifically for editor */

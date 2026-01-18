@@ -17,7 +17,7 @@ export default function ResizableSplitPane({
   minRightWidth = 300,
   maxRightWidth = 800,
   isRightVisible,
-  onCloseRight
+  // onCloseRight // Not used yet
 }: ResizableSplitPaneProps) {
   const [rightWidth, setRightWidth] = useState(initialRightWidth);
   const [isDragging, setIsDragging] = useState(false);
@@ -34,13 +34,16 @@ export default function ResizableSplitPane({
   const resize = useCallback(
     (mouseMoveEvent: MouseEvent) => {
       if (isDragging && containerRef.current) {
-        const containerRect = containerRef.current.getBoundingClientRect();
-        // Calculate width from the right edge
-        const newWidth = containerRect.right - mouseMoveEvent.clientX;
-        
-        if (newWidth >= minRightWidth && newWidth <= maxRightWidth) {
-          setRightWidth(newWidth);
-        }
+        requestAnimationFrame(() => {
+          if (!containerRef.current) return;
+          const containerRect = containerRef.current.getBoundingClientRect();
+          // Calculate width from the right edge
+          const newWidth = containerRect.right - mouseMoveEvent.clientX;
+          
+          if (newWidth >= minRightWidth && newWidth <= maxRightWidth) {
+            setRightWidth(newWidth);
+          }
+        });
       }
     },
     [isDragging, minRightWidth, maxRightWidth]
