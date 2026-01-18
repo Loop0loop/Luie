@@ -37,6 +37,24 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.mobileFrame[data-mobile="true"] {
+  width: 375px; /* iPhone Std */
+  max-width: 375px;
+  margin: 0 auto;
+  border-left: 1px solid var(--border-default);
+  border-right: 1px solid var(--border-default);
+  background: white; /* Simulate paper */
+  box-shadow: 0 0 50px rgba(0,0,0,0.1);
+}
+
+/* Adjust padding in mobile view if needed */
+.mobileFrame[data-mobile="true"] .editorArea,
+.mobileFrame[data-mobile="true"] .titleInput {
+  padding-left: 16px;
+  padding-right: 16px;
 }
 
 /* Title Input */
