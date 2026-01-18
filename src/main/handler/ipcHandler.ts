@@ -549,24 +549,26 @@ export function registerIPCHandlers(): void {
         title?: string;
       },
     ) => {
-    try {
-      const result = await dialog.showSaveDialog({
-        title: options?.title,
-        defaultPath: options?.defaultPath,
-        filters: options?.filters ?? [{ name: "Luie Project", extensions: ["luie"] }],
-      });
-      if (result.canceled || !result.filePath) {
-        return createSuccessResponse(null);
+      try {
+        const result = await dialog.showSaveDialog({
+          title: options?.title,
+          defaultPath: options?.defaultPath,
+          filters: options?.filters ?? [
+            { name: "Luie Project", extensions: ["luie"] },
+          ],
+        });
+        if (result.canceled || !result.filePath) {
+          return createSuccessResponse(null);
+        }
+        return createSuccessResponse(result.filePath);
+      } catch (error) {
+        logger.error("FS_SELECT_SAVE_LOCATION failed", error);
+        return createErrorResponse(
+          (error as Error).message,
+          "Failed to select save location",
+        );
       }
-      return createSuccessResponse(result.filePath);
-    } catch (error) {
-      logger.error("FS_SELECT_SAVE_LOCATION failed", error);
-      return createErrorResponse(
-        (error as Error).message,
-        "Failed to select save location",
-      );
-    }
-  },
+    },
   );
 
   ipcMain.handle(

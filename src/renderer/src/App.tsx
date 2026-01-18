@@ -2,8 +2,6 @@ import { useState, useCallback, useEffect, lazy, Suspense } from "react";
 import MainLayout from "./components/layout/MainLayout";
 import Sidebar from "./components/sidebar/Sidebar";
 import Editor from "./components/editor/Editor";
-import CorkboardView from "./components/view/CorkboardView";
-import OutlinerView from "./components/view/OutlinerView";
 import ContextPanel from "./components/context/ContextPanel";
 import ProjectTemplateSelector from "./components/layout/ProjectTemplateSelector";
 import styles from "./styles/App.module.css";
@@ -18,9 +16,6 @@ type ContextTab = "synopsis" | "characters" | "terms";
 
 export default function App() {
   const [view, setView] = useState<ViewState>("template");
-  const [editorViewMode, setEditorViewMode] = useState<
-    "editor" | "corkboard" | "outliner"
-  >("editor");
   const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -238,77 +233,11 @@ export default function App() {
       >
         <div className={styles.splitContainer}>
           <div className={styles.editorPane} style={{ flex: splitRatio }}>
-            {editorViewMode === "corkboard" ? (
-              <div>
-                <button
-                  onClick={() => setEditorViewMode("editor")}
-                  style={{
-                    marginBottom: "8px",
-                    padding: "4px 12px",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                  }}
-                >
-                  에디터 뷰로 전환
-                </button>
-                <CorkboardView
-                  chapters={chapters}
-                  activeChapterId={activeChapterId ?? undefined}
-                  onSelectChapter={handleSelectChapter}
-                  onAddChapter={handleAddChapter}
-                />
-              </div>
-            ) : editorViewMode === "outliner" ? (
-              <div>
-                <button
-                  onClick={() => setEditorViewMode("editor")}
-                  style={{
-                    marginBottom: "8px",
-                    padding: "4px 12px",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                  }}
-                >
-                  에디터 뷰로 전환
-                </button>
-                <OutlinerView
-                  chapters={chapters}
-                  activeChapterId={activeChapterId ?? undefined}
-                  onSelectChapter={handleSelectChapter}
-                  onAddChapter={handleAddChapter}
-                />
-              </div>
-            ) : (
-              <div>
-                <button
-                  onClick={() => setEditorViewMode("corkboard")}
-                  style={{
-                    marginBottom: "8px",
-                    padding: "4px 12px",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                  }}
-                >
-                  코르크보드 뷰로 전환
-                </button>
-                <button
-                  onClick={() => setEditorViewMode("outliner")}
-                  style={{
-                    marginBottom: "8px",
-                    padding: "4px 12px",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                  }}
-                >
-                  아웃라이너 뷰로 전환
-                </button>
-                <Editor
-                  initialTitle={activeChapterTitle}
-                  initialContent={content}
-                  onSave={handleSave}
-                />
-              </div>
-            )}
+            <Editor
+              initialTitle={activeChapterTitle}
+              initialContent={content}
+              onSave={handleSave}
+            />
           </div>
 
           {isSplitView && (

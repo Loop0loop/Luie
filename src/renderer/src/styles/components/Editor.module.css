@@ -18,66 +18,34 @@
   z-index: 10;
 }
 
-/* Edit Area Wrapper - handles scrolling and centering */
+/* Edit Area Wrapper */
 .editorWrapper {
   flex: 1;
   overflow-y: auto;
   display: flex;
   justify-content: center;
-  padding: 32px;
-  background-color: var(
-    --bg-canvas,
-    var(--bg-primary)
-  ); /* Allow different canvas bg */
+  padding: 0;
+  background-color: var(--bg-canvas, var(--bg-primary));
 }
 
-/* The actual typing surface */
-.mobileFrame {
-  width: 100%;
-  max-width: 100%; /* Default to full width */
-  height: min-content;
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  transition: all 0.3s ease;
-  background-color: var(--bg-primary);
-}
-
-/* Mobile Mode Modifier */
-.mobileFrame[data-mobile="true"] {
-  max-width: 420px; /* Realistic large phone width */
-  min-height: 800px; /* Minimum phone height */
-  box-shadow:
-    0 0 0 1px var(--border-default),
-    0 20px 40px rgba(0, 0, 0, 0.1);
-  border-radius: 2px; /* Slight radius */
-  margin-bottom: 32px;
-  padding: 0; /* Let internal padding handle it */
-  background-color: var(--bg-paper, var(--bg-primary));
-}
-
-/* Inputs */
+/* Internal typing surface padding */
 .titleInput {
   width: 100%;
   border: none;
   background: transparent;
-  padding: 40px 40px 20px 40px;
-  font-size: 24px;
-  font-weight: 700;
+  padding: 16px 16px 8px 16px;
+  font-size: 20px;
+  font-weight: 600;
   color: var(--text-primary);
   outline: none;
 }
-.titleInput::placeholder {
-  color: var(--text-tertiary);
-}
-
 .editorArea {
   width: 100%;
   flex: 1;
   border: none;
   resize: none;
   background: transparent;
-  padding: 0 40px 40px 40px;
+  padding: 0 20px 40px 20px; /* Reduced from 40px */
   outline: none;
   color: var(--text-primary);
   line-height: 1.6;
@@ -90,7 +58,7 @@
   width: 100%;
   flex: 1;
   border: none;
-  padding: 0 40px 40px 40px;
+  padding: 0 20px 20px 20px;
   outline: none;
   color: var(--text-primary);
   line-height: 1.6;
@@ -160,15 +128,20 @@
 }
 
 .statusBar {
-  height: 32px;
+  height: 18px;
   border-top: 1px solid var(--border-default);
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 16px;
-  padding: 0 16px;
-  font-size: 11px;
+  gap: 8px;
+  padding: 0 12px;
+  font-size: 9px;
   color: var(--text-tertiary);
   background-color: var(--bg-primary);
   flex-shrink: 0;
+  user-select: none;
+}
+
+.statusText {
+  margin-right: auto;
 }

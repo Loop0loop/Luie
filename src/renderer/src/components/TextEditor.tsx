@@ -50,7 +50,7 @@ export default function TextEditor({
       setContent(newValue);
 
       setTimeout(() => {
-        textarea.selectionStart = textarea.selectionEnd = start + 2;
+
       }, 0);
     }
   };
