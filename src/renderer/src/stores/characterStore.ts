@@ -35,9 +35,12 @@ export const useCharacterStore = create<CharacterStore>((set) => ({
       const response = await window.api.character.getAll(projectId);
       if (response.success && response.data) {
         set({ characters: response.data });
+      } else {
+        set({ characters: [] });
       }
     } catch (error) {
       console.error("Failed to load characters:", error);
+      set({ characters: [] });
     } finally {
       set({ isLoading: false });
     }
@@ -49,9 +52,12 @@ export const useCharacterStore = create<CharacterStore>((set) => ({
       const response = await window.api.character.get(id);
       if (response.success && response.data) {
         set({ currentCharacter: response.data });
+      } else {
+        set({ currentCharacter: null });
       }
     } catch (error) {
       console.error("Failed to load character:", error);
+      set({ currentCharacter: null });
     } finally {
       set({ isLoading: false });
     }
@@ -71,8 +77,9 @@ export const useCharacterStore = create<CharacterStore>((set) => ({
         attributes,
       });
       if (response.success && response.data) {
+        const newCharacter: Character = response.data;
         set((state) => ({
-          characters: [...state.characters, response.data],
+          characters: [...state.characters, newCharacter],
         }));
       }
     } catch (error) {
@@ -94,13 +101,14 @@ export const useCharacterStore = create<CharacterStore>((set) => ({
         attributes,
       });
       if (response.success && response.data) {
+        const updatedCharacter: Character = response.data;
         set((state) => ({
           characters: state.characters.map((ch) =>
-            ch.id === id ? response.data : ch,
+            ch.id === id ? updatedCharacter : ch,
           ),
           currentCharacter:
             state.currentCharacter?.id === id
-              ? response.data
+              ? updatedCharacter
               : state.currentCharacter,
         }));
       }

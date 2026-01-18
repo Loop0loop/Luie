@@ -9,8 +9,14 @@ interface ProjectDetailProps {
 
 export default function ProjectDetail({ projectId }: ProjectDetailProps) {
   const { currentProject, setCurrentProject } = useProjectStore();
-  const { chapters, setChapters, currentChapter, setCurrentChapter } =
-    useChapterStore();
+  const {
+    chapters,
+    loadChapters,
+    createChapter,
+    deleteChapter,
+    currentChapter,
+    setCurrentChapter,
+  } = useChapterStore();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -25,10 +31,7 @@ export default function ProjectDetail({ projectId }: ProjectDetailProps) {
         setCurrentProject(projectResponse.data as any);
       }
 
-      const chaptersResponse = await window.api.chapter.getAll(projectId);
-      if (chaptersResponse.success && chaptersResponse.data) {
-        setChapters(chaptersResponse.data as any);
-      }
+      await loadChapters(projectId);
     } catch (error) {
       console.error("Failed to load project data:", error);
     } finally {
@@ -37,19 +40,7 @@ export default function ProjectDetail({ projectId }: ProjectDetailProps) {
   };
 
   const handleCreateChapter = async () => {
-    try {
-      const response = await window.api.chapter.create({
-        projectId,
-        title: "새 챕터",
-      });
-      if (response.success && response.data) {
-        const newChapter = response.data as any;
-        setChapters([...chapters, newChapter]);
-        setCurrentChapter(newChapter);
-      }
-    } catch (error) {
-      console.error("Failed to create chapter:", error);
-    }
+    await createChapter(projectId, "새 챕터");
   };
 
   const handleSelectChapter = (chapterId: string) => {
@@ -70,17 +61,7 @@ export default function ProjectDetail({ projectId }: ProjectDetailProps) {
       return;
     }
 
-    try {
-      const response = await window.api.chapter.delete(chapterId);
-      if (response.success) {
-        setChapters(chapters.filter((ch) => ch.id !== chapterId));
-        if (currentChapter?.id === chapterId) {
-          setCurrentChapter(null);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to delete chapter:", error);
-    }
+    await deleteChapter(chapterId);
   };
 
   const totalWords = chapters.reduce((sum, ch) => sum + (ch.wordCount || 0), 0);

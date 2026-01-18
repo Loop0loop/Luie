@@ -6,12 +6,14 @@
 export interface ProjectCreateInput {
   title: string;
   description?: string;
+  projectPath?: string;
 }
 
 export interface ProjectUpdateInput {
   id: string;
   title?: string;
   description?: string;
+  projectPath?: string;
 }
 
 // Chapter Types

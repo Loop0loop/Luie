@@ -1,0 +1,93 @@
+import { useState, useCallback, useEffect, useRef } from 'react';
+
+interface ResizableSplitPaneProps {
+  left: React.ReactNode;
+  right: React.ReactNode;
+  initialRightWidth?: number;
+  minRightWidth?: number;
+  maxRightWidth?: number;
+  isRightVisible: boolean;
+  onCloseRight: () => void;
+}
+
+export default function ResizableSplitPane({
+  left,
+  right,
+  initialRightWidth = 400,
+  minRightWidth = 300,
+  maxRightWidth = 800,
+  isRightVisible,
+  onCloseRight
+}: ResizableSplitPaneProps) {
+  const [rightWidth, setRightWidth] = useState(initialRightWidth);
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const startResizing = useCallback(() => {
+    setIsDragging(true);
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const resize = useCallback(
+    (mouseMoveEvent: MouseEvent) => {
+      if (isDragging && containerRef.current) {
+        const containerRect = containerRef.current.getBoundingClientRect();
+        // Calculate width from the right edge
+        const newWidth = containerRect.right - mouseMoveEvent.clientX;
+        
+        if (newWidth >= minRightWidth && newWidth <= maxRightWidth) {
+          setRightWidth(newWidth);
+        }
+      }
+    },
+    [isDragging, minRightWidth, maxRightWidth]
+  );
+
+  useEffect(() => {
+    window.addEventListener("mousemove", resize);
+    window.addEventListener("mouseup", stopResizing);
+    return () => {
+      window.removeEventListener("mousemove", resize);
+      window.removeEventListener("mouseup", stopResizing);
+    };
+  }, [resize, stopResizing]);
+
+  return (
+    <div 
+      ref={containerRef} 
+      style={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}
+    >
+      {/* LEFT PANE (Flexible) */}
+      <div style={{ flex: 1, height: '100%', overflow: 'hidden', minWidth: 0 }}>
+        {left}
+      </div>
+
+      {/* RIGHT PANE (Fixed width / Resizable) */}
+      {isRightVisible && (
+        <>
+          {/* DRAG HANDLE */}
+          <div
+            onMouseDown={startResizing}
+            style={{
+              width: '4px',
+              cursor: 'col-resize',
+              background: isDragging ? '#10B981' : 'transparent',
+              borderLeft: '1px solid #E5E5E5',
+              transition: 'background 0.2s',
+              zIndex: 10,
+              flexShrink: 0,
+            }}
+            className="group hover:bg-emerald-500/20"
+          />
+          
+          <div style={{ width: rightWidth, height: '100%', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
+             {right}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

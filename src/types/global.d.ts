@@ -1,10 +1,4 @@
-import type {
-  Project,
-  Chapter,
-  Character,
-  Term,
-  Snapshot,
-} from "@prisma/client";
+import type { Project, Chapter, Character, Term, Snapshot } from "@prisma/client";
 import type { SearchResult } from "../shared/types/index.js";
 import type { IPCResponse } from "../shared/ipc/index.js";
 
@@ -15,6 +9,7 @@ declare global {
         create: (input: {
           title: string;
           description?: string;
+          projectPath?: string;
         }) => Promise<IPCResponse<Project>>;
         get: (id: string) => Promise<IPCResponse<Project>>;
         getAll: () => Promise<IPCResponse<Project[]>>;
@@ -22,6 +17,7 @@ declare global {
           id: string;
           title?: string;
           description?: string;
+          projectPath?: string;
         }) => Promise<IPCResponse<Project>>;
         delete: (id: string) => Promise<IPCResponse<unknown>>;
       };
@@ -94,6 +90,20 @@ declare global {
         restore: (id: string) => Promise<IPCResponse<unknown>>;
         delete: (id: string) => Promise<IPCResponse<unknown>>;
       };
+      fs: {
+        saveProject: (
+          projectName: string,
+          projectPath: string,
+          content: string,
+        ) => Promise<IPCResponse<unknown>>;
+        selectDirectory: () => Promise<IPCResponse<string>>;
+        selectSaveLocation: (options?: {
+          filters?: { name: string; extensions: string[] }[];
+          defaultPath?: string;
+          title?: string;
+        }) => Promise<IPCResponse<string>>;
+        writeFile: (filePath: string, content: string) => Promise<IPCResponse<unknown>>;
+      };
       search: (query: {
         projectId: string;
         query: string;
@@ -104,6 +114,11 @@ declare global {
         content: string,
         projectId: string,
       ) => Promise<IPCResponse<unknown>>;
+
+      window: {
+        maximize: () => Promise<IPCResponse<unknown>>;
+        toggleFullscreen: () => Promise<IPCResponse<unknown>>;
+      };
     };
   }
 }

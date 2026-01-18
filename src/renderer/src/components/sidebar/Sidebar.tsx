@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import styles from '../../styles/components/Sidebar.module.css';
 import { 
   Settings, Plus, ChevronDown, ChevronRight, 
-  FileText, BookOpen, Trash2, FolderOpen 
+  FileText, BookOpen, Trash2, FolderOpen, MoreVertical, Edit2
 } from 'lucide-react';
 
 interface Chapter {
@@ -33,8 +33,54 @@ export default function Sidebar({
   const [isResearchOpen, setResearchOpen] = useState(true);
   const [isTrashOpen, setTrashOpen] = useState(false);
 
+  // Context Menu State
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpenId(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleMenuClick = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setMenuPosition({ x: rect.right + 4, y: rect.top });
+    setMenuOpenId(id === menuOpenId ? null : id);
+  };
+
+  const handleAction = (action: 'edit' | 'delete', id: string) => {
+    console.log(`Action: ${action} on ${id}`);
+    setMenuOpenId(null);
+    // Placeholder: Real implementation would verify store actions
+  };
+
   return (
     <div className={styles.container}>
+      {/* Context Menu Popup */}
+      {menuOpenId && (
+        <div 
+          ref={menuRef}
+          className={styles.contextMenu}
+          style={{ top: menuPosition.y, left: menuPosition.x }}
+        >
+          <div className={styles.contextMenuItem} onClick={() => handleAction('edit', menuOpenId)}>
+            <Edit2 size={14} /> 이름 변경
+          </div>
+          <div className={styles.contextMenuItem} onClick={() => handleAction('delete', menuOpenId)} style={{color: '#ef4444'}}>
+            <Trash2 size={14} /> 삭제
+          </div>
+        </div>
+      )}
+
       <div className={styles.header}>
         <h2 className={styles.projectName}>폭군을 길들이는 법</h2>
         <div className={styles.metaInfo}>PROJECT BINDER</div>
@@ -60,9 +106,17 @@ export default function Sidebar({
               >
                 <FileText size={14} className={styles.itemIcon} />
                 <span className={styles.itemTitle}>{chapter.order}. {chapter.title}</span>
+                
+                {/* More Action Button */}
+                <div 
+                  className={styles.moreButton}
+                  onClick={(e) => handleMenuClick(e, chapter.id)}
+                >
+                  <MoreVertical size={14} />
+                </div>
               </div>
             ))}
-            {/* Inline Add Button for Manuscript */}
+            {/* Inline Add Button */}
             <div className={styles.item} onClick={onAddChapter} style={{ color: 'var(--text-tertiary)' }}>
               <Plus size={14} className={styles.itemIcon} />
               <span>새 회차 추가...</span>

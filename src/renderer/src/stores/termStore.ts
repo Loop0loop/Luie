@@ -35,9 +35,12 @@ export const useTermStore = create<TermStore>((set) => ({
       const response = await window.api.term.getAll(projectId);
       if (response.success && response.data) {
         set({ terms: response.data });
+      } else {
+        set({ terms: [] });
       }
     } catch (error) {
       console.error("Failed to load terms:", error);
+      set({ terms: [] });
     } finally {
       set({ isLoading: false });
     }
@@ -49,9 +52,12 @@ export const useTermStore = create<TermStore>((set) => ({
       const response = await window.api.term.get(id);
       if (response.success && response.data) {
         set({ currentTerm: response.data });
+      } else {
+        set({ currentTerm: null });
       }
     } catch (error) {
       console.error("Failed to load term:", error);
+      set({ currentTerm: null });
     } finally {
       set({ isLoading: false });
     }
@@ -71,8 +77,9 @@ export const useTermStore = create<TermStore>((set) => ({
         category,
       });
       if (response.success && response.data) {
+        const newTerm: Term = response.data;
         set((state) => ({
-          terms: [...state.terms, response.data],
+          terms: [...state.terms, newTerm],
         }));
       }
     } catch (error) {
@@ -94,10 +101,11 @@ export const useTermStore = create<TermStore>((set) => ({
         category,
       });
       if (response.success && response.data) {
+        const updatedTerm: Term = response.data;
         set((state) => ({
-          terms: state.terms.map((t) => (t.id === id ? response.data : t)),
+          terms: state.terms.map((t) => (t.id === id ? updatedTerm : t)),
           currentTerm:
-            state.currentTerm?.id === id ? response.data : state.currentTerm,
+            state.currentTerm?.id === id ? updatedTerm : state.currentTerm,
         }));
       }
     } catch (error) {

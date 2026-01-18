@@ -76,6 +76,26 @@ contextBridge.exposeInMainWorld("api", {
       ipcRenderer.invoke("snapshot:delete", id),
   },
 
+  // File System API
+  fs: {
+    saveProject: (
+      projectName: string,
+      projectPath: string,
+      content: string,
+    ): Promise<IPCResponse> =>
+      ipcRenderer.invoke("fs:save-project", projectName, projectPath, content),
+    selectDirectory: (): Promise<IPCResponse<string>> =>
+      ipcRenderer.invoke("fs:select-directory"),
+    selectSaveLocation: (options?: {
+      filters?: { name: string; extensions: string[] }[];
+      defaultPath?: string;
+      title?: string;
+    }): Promise<IPCResponse<string>> =>
+      ipcRenderer.invoke("fs:select-save-location", options),
+    writeFile: (filePath: string, content: string): Promise<IPCResponse> =>
+      ipcRenderer.invoke("fs:write-file", filePath, content),
+  },
+
   // Search API
   search: (query: unknown): Promise<IPCResponse> =>
     ipcRenderer.invoke("search", query),
@@ -87,4 +107,11 @@ contextBridge.exposeInMainWorld("api", {
     projectId: string,
   ): Promise<IPCResponse> =>
     ipcRenderer.invoke("auto-save", chapterId, content, projectId),
+
+  // Window API
+  window: {
+    maximize: (): Promise<IPCResponse> => ipcRenderer.invoke("window:maximize"),
+    toggleFullscreen: (): Promise<IPCResponse> =>
+      ipcRenderer.invoke("window:toggle-fullscreen"),
+  },
 });

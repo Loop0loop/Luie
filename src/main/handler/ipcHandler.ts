@@ -2,8 +2,11 @@
  * IPC Handlers - Main process IPC 핸들러 등록
  */
 
-import { ipcMain } from "electron";
+import { ipcMain, dialog } from "electron";
+import * as fs from "fs/promises";
+import * as path from "path";
 import { createLogger } from "../../shared/logger/index.js";
+import { windowManager } from "../manager/index.js";
 import {
   IPC_CHANNELS,
   createSuccessResponse,
@@ -517,17 +520,119 @@ export function registerIPCHandlers(): void {
     },
   );
 
-  // Window Control Handlers
-  ipcMain.handle("window:maximize", () => {
-    const { windowManager } = require("../manager/index.js");
-    const win = windowManager.getMainWindow();
-    if (win) {
-      if (process.platform === 'darwin') {
-          win.setFullScreen(true);
-      } else {
-          win.maximize();
+  // File System Handlers
+  ipcMain.handle(IPC_CHANNELS.FS_SELECT_DIRECTORY, async () => {
+    try {
+      const result = await dialog.showOpenDialog({
+        properties: ["openDirectory", "createDirectory"],
+      });
+      if (result.canceled || result.filePaths.length === 0) {
+        return createSuccessResponse(null);
       }
+      return createSuccessResponse(result.filePaths[0]);
+    } catch (error) {
+      logger.error("FS_SELECT_DIRECTORY failed", error);
+      return createErrorResponse(
+        (error as Error).message,
+        "Failed to select directory",
+      );
     }
+  });
+
+  ipcMain.handle(
+    IPC_CHANNELS.FS_SELECT_SAVE_LOCATION,
+    async (
+      _,
+      options?: {
+        filters?: { name: string; extensions: string[] }[];
+        defaultPath?: string;
+        title?: string;
+      },
+    ) => {
+    try {
+      const result = await dialog.showSaveDialog({
+        title: options?.title,
+        defaultPath: options?.defaultPath,
+        filters: options?.filters ?? [{ name: "Luie Project", extensions: ["luie"] }],
+      });
+      if (result.canceled || !result.filePath) {
+        return createSuccessResponse(null);
+      }
+      return createSuccessResponse(result.filePath);
+    } catch (error) {
+      logger.error("FS_SELECT_SAVE_LOCATION failed", error);
+      return createErrorResponse(
+        (error as Error).message,
+        "Failed to select save location",
+      );
+    }
+  },
+  );
+
+  ipcMain.handle(
+    IPC_CHANNELS.FS_SAVE_PROJECT,
+    async (_, projectName: string, projectPath: string, content: string) => {
+      try {
+        // projectPath는 '부모 폴더'로 취급하고, 내부에 프로젝트 폴더를 생성
+        const safeName = projectName
+          .replace(/[\\/:*?"<>|]/g, "-")
+          .replace(/\s+/g, " ")
+          .trim();
+
+        const projectDir = path.join(projectPath, safeName || "New Project");
+        await fs.mkdir(projectDir, { recursive: true });
+
+        const fullPath = path.join(projectDir, `${safeName || "project"}.luie`);
+        await fs.writeFile(fullPath, content, "utf-8");
+        return createSuccessResponse({ path: fullPath, projectDir });
+      } catch (error) {
+        logger.error("FS_SAVE_PROJECT failed", error);
+        return createErrorResponse(
+          (error as Error).message,
+          "Failed to save project",
+        );
+      }
+    },
+  );
+
+  ipcMain.handle(
+    IPC_CHANNELS.FS_WRITE_FILE,
+    async (_, filePath: string, content: string) => {
+      try {
+        const dir = path.dirname(filePath);
+        await fs.mkdir(dir, { recursive: true });
+        await fs.writeFile(filePath, content, "utf-8");
+        return createSuccessResponse({ path: filePath });
+      } catch (error) {
+        logger.error("FS_WRITE_FILE failed", error);
+        return createErrorResponse(
+          (error as Error).message,
+          "Failed to write file",
+        );
+      }
+    },
+  );
+
+  // Window Control Handlers
+  ipcMain.handle("window:maximize", async () => {
+    const win = windowManager.getMainWindow();
+    if (!win) return createSuccessResponse(false);
+
+    // macOS에서도 maximize는 같은 Space에서 창을 키우는 동작으로 유지
+    if (!win.isMaximized()) {
+      win.maximize();
+    }
+    win.focus();
+    return createSuccessResponse(true);
+  });
+
+  ipcMain.handle("window:toggle-fullscreen", async () => {
+    const win = windowManager.getMainWindow();
+    if (!win) return createSuccessResponse(false);
+
+    // macOS 네이티브 fullscreen (별도 Space)
+    win.setFullScreen(!win.isFullScreen());
+    win.focus();
     return createSuccessResponse(true);
   });
 

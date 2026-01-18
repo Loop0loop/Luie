@@ -23,7 +23,10 @@
   display: flex;
   justify-content: center;
   padding: 32px;
-  background-color: var(--bg-canvas, var(--bg-primary)); /* Allow different canvas bg */
+  background-color: var(
+    --bg-canvas,
+    var(--bg-primary)
+  ); /* Allow different canvas bg */
 }
 
 /* The actual typing surface */
@@ -42,7 +45,9 @@
 .mobileFrame[data-mobile="true"] {
   max-width: 420px; /* Realistic large phone width */
   min-height: 800px; /* Minimum phone height */
-  box-shadow: 0 0 0 1px var(--border-default), 0 20px 40px rgba(0,0,0,0.1);
+  box-shadow:
+    0 0 0 1px var(--border-default),
+    0 20px 40px rgba(0, 0, 0, 0.1);
   border-radius: 2px; /* Slight radius */
   margin-bottom: 32px;
   padding: 0; /* Let internal padding handle it */
@@ -77,6 +82,79 @@
 }
 .editorArea::placeholder {
   color: var(--text-tertiary);
+}
+
+.previewArea {
+  width: 100%;
+  flex: 1;
+  border: none;
+  padding: 0 40px 40px 40px;
+  outline: none;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.previewArea p {
+  margin-bottom: 1em;
+}
+
+.previewArea h1,
+.previewArea h2,
+.previewArea h3,
+.previewArea h4,
+.previewArea h5,
+.previewArea h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 700;
+}
+
+.previewArea h1 {
+  font-size: 2em;
+  border-bottom: 1px solid var(--border-default);
+  padding-bottom: 0.3em;
+}
+
+.previewArea h2 {
+  font-size: 1.5em;
+}
+
+.previewArea h3 {
+  font-size: 1.25em;
+}
+
+.previewArea ul,
+.previewArea ol {
+  padding-left: 2em;
+  margin-bottom: 1em;
+}
+
+.previewArea blockquote {
+  border-left: 4px solid var(--border-default);
+  padding-left: 1em;
+  margin: 1em 0;
+  color: var(--text-secondary);
+}
+
+.previewArea code {
+  background-color: var(--bg-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+.previewArea pre {
+  background-color: var(--bg-secondary);
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.previewArea pre code {
+  background-color: transparent;
+  padding: 0;
 }
 
 .statusBar {

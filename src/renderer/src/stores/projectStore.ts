@@ -8,17 +8,22 @@ interface ProjectStore {
 
   loadProjects: () => Promise<void>;
   loadProject: (id: string) => Promise<void>;
-  createProject: (title: string, description?: string) => Promise<void>;
+  createProject: (
+    title: string,
+    description?: string,
+    projectPath?: string,
+  ) => Promise<Project | null>;
   updateProject: (
     id: string,
     title?: string,
     description?: string,
+    projectPath?: string,
   ) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
   setCurrentProject: (project: Project | null) => void;
 }
 
-export const useProjectStore = create<ProjectStore>((set, get) => ({
+export const useProjectStore = create<ProjectStore>((set) => ({
   projects: [],
   currentProject: null,
   isLoading: false,
@@ -29,9 +34,12 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       const response = await window.api.project.getAll();
       if (response.success && response.data) {
         set({ projects: response.data });
+      } else {
+        set({ projects: [] });
       }
     } catch (error) {
       console.error("Failed to load projects:", error);
+      set({ projects: [] });
     } finally {
       set({ isLoading: false });
     }
@@ -43,42 +51,55 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       const response = await window.api.project.get(id);
       if (response.success && response.data) {
         set({ currentProject: response.data });
+      } else {
+        set({ currentProject: null });
       }
     } catch (error) {
       console.error("Failed to load project:", error);
+      set({ currentProject: null });
     } finally {
       set({ isLoading: false });
     }
   },
 
-  createProject: async (title: string, description?: string) => {
+  createProject: async (
+    title: string,
+    description?: string,
+    projectPath?: string,
+  ) => {
     try {
-      const response = await window.api.project.create({ title, description });
+      const response = await window.api.project.create({ title, description, projectPath });
       if (response.success && response.data) {
+        const newProject: Project = response.data;
         set((state) => ({
-          projects: [response.data, ...state.projects],
+          projects: [newProject, ...state.projects],
         }));
+        return newProject;
       }
     } catch (error) {
       console.error("Failed to create project:", error);
     }
+
+    return null;
   },
 
-  updateProject: async (id: string, title?: string, description?: string) => {
+  updateProject: async (id: string, title?: string, description?: string, projectPath?: string) => {
     try {
       const response = await window.api.project.update({
         id,
         title,
         description,
+        projectPath,
       });
       if (response.success && response.data) {
+        const updatedProject: Project = response.data;
         set((state) => ({
           projects: state.projects.map((p) =>
-            p.id === id ? response.data : p,
+            p.id === id ? updatedProject : p,
           ),
           currentProject:
             state.currentProject?.id === id
-              ? response.data
+              ? updatedProject
               : state.currentProject,
         }));
       }

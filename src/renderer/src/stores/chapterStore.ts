@@ -35,9 +35,12 @@ export const useChapterStore = create<ChapterStore>((set, get) => ({
       const response = await window.api.chapter.getAll(projectId);
       if (response.success && response.data) {
         set({ chapters: response.data });
+      } else {
+        set({ chapters: [] });
       }
     } catch (error) {
       console.error("Failed to load chapters:", error);
+      set({ chapters: [] });
     } finally {
       set({ isLoading: false });
     }
@@ -49,9 +52,12 @@ export const useChapterStore = create<ChapterStore>((set, get) => ({
       const response = await window.api.chapter.get(id);
       if (response.success && response.data) {
         set({ currentChapter: response.data });
+      } else {
+        set({ currentChapter: null });
       }
     } catch (error) {
       console.error("Failed to load chapter:", error);
+      set({ currentChapter: null });
     } finally {
       set({ isLoading: false });
     }
@@ -69,8 +75,9 @@ export const useChapterStore = create<ChapterStore>((set, get) => ({
         synopsis,
       });
       if (response.success && response.data) {
+        const newChapter = response.data;
         set((state) => ({
-          chapters: [...state.chapters, response.data],
+          chapters: [...state.chapters, newChapter],
         }));
       }
     } catch (error) {
@@ -92,13 +99,14 @@ export const useChapterStore = create<ChapterStore>((set, get) => ({
         synopsis,
       });
       if (response.success && response.data) {
+        const updatedChapter = response.data;
         set((state) => ({
           chapters: state.chapters.map((ch) =>
-            ch.id === id ? response.data : ch,
+            ch.id === id ? updatedChapter : ch,
           ),
           currentChapter:
             state.currentChapter?.id === id
-              ? response.data
+              ? updatedChapter
               : state.currentChapter,
         }));
       }

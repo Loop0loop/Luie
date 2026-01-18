@@ -18,6 +18,7 @@ export class ProjectService {
         data: {
           title: input.title,
           description: input.description,
+          projectPath: input.projectPath,
           settings: {
             create: {
               autoSave: true,
@@ -93,6 +94,7 @@ export class ProjectService {
         data: {
           title: input.title,
           description: input.description,
+          projectPath: input.projectPath,
         },
       })
 
