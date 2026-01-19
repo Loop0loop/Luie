@@ -1,11 +1,18 @@
-import { useEffect, useImperativeHandle, useRef, useState, forwardRef } from 'react';
-import type { ReactElement } from 'react';
-import styles from '../../styles/components/SlashMenu.module.css';
-import { 
-  Heading1, Heading2, Heading3, 
-  List, CheckSquare, ListOrdered, 
-  ChevronRight, Quote, Minus, MessageSquare
-} from 'lucide-react';
+import { useEffect, useImperativeHandle, useRef, useState } from "react";
+import type { ReactElement } from "react";
+import styles from "../../styles/components/SlashMenu.module.css";
+import {
+  Heading1,
+  Heading2,
+  Heading3,
+  List,
+  CheckSquare,
+  ListOrdered,
+  ChevronRight,
+  Quote,
+  Minus,
+  MessageSquare,
+} from "lucide-react";
 
 interface SlashMenuItem {
   id: string;
@@ -19,78 +26,86 @@ interface SlashMenuProps {
 }
 
 const ICONS: Record<string, ReactElement> = {
-  'h1': <Heading1 size={18} />,
-  'h2': <Heading2 size={18} />,
-  'h3': <Heading3 size={18} />,
-  'bullet': <List size={18} />,
-  'number': <ListOrdered size={18} />,
-  'check': <CheckSquare size={18} />,
-  'toggle': <ChevronRight size={18} />,
-  'quote': <Quote size={18} />,
-  'callout': <MessageSquare size={18} />,
-  'divider': <Minus size={18} />,
+  h1: <Heading1 size={18} />,
+  h2: <Heading2 size={18} />,
+  h3: <Heading3 size={18} />,
+  bullet: <List size={18} />,
+  number: <ListOrdered size={18} />,
+  check: <CheckSquare size={18} />,
+  toggle: <ChevronRight size={18} />,
+  quote: <Quote size={18} />,
+  callout: <MessageSquare size={18} />,
+  divider: <Minus size={18} />,
 };
 
 const DESCRIPTIONS: Record<string, string> = {
-  'h1': '장(章) 또는 큰 섹션',
-  'h2': '중간 섹션',
-  'h3': '세부 섹션',
-  'bullet': '단순 목록 만들기',
-  'number': '순서가 있는 목록',
-  'check': '체크박스로 진행 관리',
-  'toggle': '접고 펼칠 수 있는 섹션',
-  'quote': '대사/인용문 강조',
-  'callout': '주석/메모 박스',
-  'divider': '장면 전환 구분',
+  h1: "장(章) 또는 큰 섹션",
+  h2: "중간 섹션",
+  h3: "세부 섹션",
+  bullet: "단순 목록 만들기",
+  number: "순서가 있는 목록",
+  check: "체크박스로 진행 관리",
+  toggle: "접고 펼칠 수 있는 섹션",
+  quote: "대사/인용문 강조",
+  callout: "주석/메모 박스",
+  divider: "장면 전환 구분",
 };
 
-const SlashMenu = forwardRef<any, SlashMenuProps>((props, ref) => {
+const SlashMenu = ({
+  items,
+  command,
+  ref,
+}: SlashMenuProps & { ref?: React.Ref<any> }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [prevItems, setPrevItems] = useState(items);
   const itemRefs = useRef<Array<HTMLDivElement | null>>([]);
 
+  if (items !== prevItems) {
+    setPrevItems(items);
+    setSelectedIndex(0);
+  }
+
   const selectItem = (index: number) => {
-    const item = props.items[index];
+    const item = items[index];
     if (item) {
-      props.command(item);
+      command(item);
     }
   };
 
   const upHandler = () => {
-    setSelectedIndex((prev) => (prev - 1 + props.items.length) % props.items.length);
+    setSelectedIndex((prev) => (prev - 1 + items.length) % items.length);
   };
 
   const downHandler = () => {
-    setSelectedIndex((prev) => (prev + 1) % props.items.length);
+    setSelectedIndex((prev) => (prev + 1) % items.length);
   };
 
   const enterHandler = () => {
     selectItem(selectedIndex);
   };
 
-  useEffect(() => setSelectedIndex(0), [props.items]);
-
   useEffect(() => {
     const el = itemRefs.current[selectedIndex];
     if (el) {
-      el.scrollIntoView({ block: 'nearest' });
+      el.scrollIntoView({ block: "nearest" });
     }
   }, [selectedIndex]);
 
   useImperativeHandle(ref, () => ({
     onKeyDown: ({ event }: { event: KeyboardEvent }) => {
-      if (event.key === 'ArrowUp') {
+      if (event.key === "ArrowUp") {
         event.preventDefault();
         event.stopPropagation();
         upHandler();
         return true;
       }
-      if (event.key === 'ArrowDown') {
+      if (event.key === "ArrowDown") {
         event.preventDefault();
         event.stopPropagation();
         downHandler();
         return true;
       }
-      if (event.key === 'Enter') {
+      if (event.key === "Enter") {
         event.preventDefault();
         event.stopPropagation();
         enterHandler();
@@ -100,7 +115,7 @@ const SlashMenu = forwardRef<any, SlashMenuProps>((props, ref) => {
     },
   }));
 
-  if (!props.items.length) {
+  if (!items.length) {
     return null;
   }
 
@@ -114,30 +129,28 @@ const SlashMenu = forwardRef<any, SlashMenuProps>((props, ref) => {
     >
       <div className={styles.header}>기본 블록</div>
       <div className={styles.list}>
-        {props.items.map((item, index) => (
+        {items.map((item, index) => (
           <div
             key={item.id}
-            className={`${styles.item} ${index === selectedIndex ? styles.selected : ''}`}
+            className={`${styles.item} ${index === selectedIndex ? styles.selected : ""}`}
             onClick={() => selectItem(index)}
             onMouseEnter={() => setSelectedIndex(index)}
             ref={(node) => {
               itemRefs.current[index] = node;
             }}
           >
-            <div className={styles.iconWrapper}>
-              {ICONS[item.id]}
-            </div>
+            <div className={styles.iconWrapper}>{ICONS[item.id]}</div>
             <div className={styles.content}>
               <div className={styles.label}>{item.label}</div>
-              <div className={styles.desc}>{DESCRIPTIONS[item.id] || ''}</div>
+              <div className={styles.desc}>{DESCRIPTIONS[item.id] || ""}</div>
             </div>
           </div>
         ))}
       </div>
     </div>
   );
-});
+};
 
-SlashMenu.displayName = 'SlashMenu';
+SlashMenu.displayName = "SlashMenu";
 
 export default SlashMenu;

@@ -18,7 +18,9 @@
   width: var(--sidebar-width);
   background-color: var(--bg-sidebar);
   border-right: 1px solid var(--border-default);
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
+  transition:
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.2s;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -35,7 +37,9 @@
   width: var(--panel-width);
   background-color: var(--bg-panel);
   border-left: 1px solid var(--border-default);
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
+  transition:
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.2s;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -44,7 +48,7 @@
 }
 
 .contextWrapper[data-open="false"] {
-  width: 0 !important;
+  width: 0;
   min-width: 0;
   border-left: none;
   opacity: 0;

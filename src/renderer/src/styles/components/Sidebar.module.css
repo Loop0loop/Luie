@@ -5,6 +5,13 @@
   user-select: none;
 }
 
+.menuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: transparent;
+}
+
 .header {
   padding: 16px;
   border-bottom: 1px solid var(--border-default);

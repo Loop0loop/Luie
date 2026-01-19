@@ -103,6 +103,19 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
         ? packagePath
         : `${packagePath}.luie`;
 
+      // If legacy single-file .luie exists, migrate it out of the way.
+      try {
+        const stat = await fs.stat(targetPath);
+        if (stat.isFile()) {
+          const backupPath = `${targetPath}.legacy-${Date.now()}`;
+          await fs.rename(targetPath, backupPath);
+        }
+      } catch (e) {
+        // ignore ENOENT
+        const err = e as NodeJS.ErrnoException;
+        if (err?.code !== "ENOENT") throw e;
+      }
+
       // Ensure directory exists
       await fs.mkdir(targetPath, { recursive: true });
 
@@ -148,6 +161,78 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       const normalized = path.normalize(relativePath).replace(/^([/\\])+/, "");
       if (!normalized || normalized.startsWith("..") || path.isAbsolute(normalized)) {
         throw new Error("INVALID_RELATIVE_PATH");
+      }
+
+      // Ensure projectRoot is a directory. If a legacy single-file .luie exists, migrate it.
+      try {
+        const stat = await fs.stat(projectRoot);
+        if (stat.isFile()) {
+          if (!projectRoot.toLowerCase().endsWith(".luie")) {
+            throw new Error("PROJECT_ROOT_NOT_DIRECTORY");
+          }
+
+          const backupPath = `${projectRoot}.legacy-${Date.now()}`;
+          await fs.rename(projectRoot, backupPath);
+          await fs.mkdir(projectRoot, { recursive: true });
+
+          // Best-effort: write a minimal meta.json so the package is self-describing.
+          const metaPath = path.join(projectRoot, "meta.json");
+          try {
+            await fs.access(metaPath);
+          } catch {
+            await fs.writeFile(
+              metaPath,
+              JSON.stringify(
+                {
+                  format: "luie",
+                  container: "directory",
+                  version: 1,
+                  migratedAt: new Date().toISOString(),
+                  legacyBackupPath: backupPath,
+                },
+                null,
+                2,
+              ),
+              "utf-8",
+            );
+          }
+
+          // Create standard sub-structure (best-effort)
+          await Promise.all([
+            fs.mkdir(path.join(projectRoot, "manuscript"), { recursive: true }),
+            fs.mkdir(path.join(projectRoot, "world"), { recursive: true }),
+            fs.mkdir(path.join(projectRoot, "snapshots"), { recursive: true }),
+            fs.mkdir(path.join(projectRoot, "assets"), { recursive: true }),
+          ]);
+
+          const worldCharactersPath = path.join(projectRoot, "world", "characters.json");
+          const worldTermsPath = path.join(projectRoot, "world", "terms.json");
+          try {
+            await fs.access(worldCharactersPath);
+          } catch {
+            await fs.writeFile(
+              worldCharactersPath,
+              JSON.stringify({ characters: [] }, null, 2),
+              "utf-8",
+            );
+          }
+          try {
+            await fs.access(worldTermsPath);
+          } catch {
+            await fs.writeFile(
+              worldTermsPath,
+              JSON.stringify({ terms: [] }, null, 2),
+              "utf-8",
+            );
+          }
+        }
+      } catch (e) {
+        const err = e as NodeJS.ErrnoException;
+        if (err?.code === "ENOENT") {
+          await fs.mkdir(projectRoot, { recursive: true });
+        } else {
+          throw e;
+        }
       }
 
       const fullPath = path.join(projectRoot, normalized);

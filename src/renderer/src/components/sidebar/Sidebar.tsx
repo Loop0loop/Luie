@@ -60,20 +60,28 @@ function Sidebar({
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
 
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLElement | null>(null);
 
   // Close menu on outside click
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+    function handlePointerDown(event: PointerEvent) {
+      if (!menuOpenId) return;
+
+      const target = event.target as Node;
+      const clickedMenu = !!menuRef.current?.contains(target);
+      const clickedButton = !!menuButtonRef.current?.contains(target);
+
+      if (!clickedMenu && !clickedButton) {
         setMenuOpenId(null);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () => document.removeEventListener("pointerdown", handlePointerDown, true);
+  }, [menuOpenId]);
 
   const handleMenuClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    menuButtonRef.current = e.currentTarget as HTMLElement;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     // Position menu to the right of the button
     setMenuPosition({ x: rect.right + 8, y: rect.top });
@@ -103,6 +111,12 @@ function Sidebar({
 
   return (
     <div className={styles.container}>
+      {menuOpenId && (
+        <div
+          className={styles.menuBackdrop}
+          onPointerDown={() => setMenuOpenId(null)}
+        />
+      )}
       {/* Context Menu Popup */}
       {menuOpenId && (
         <div

@@ -24,16 +24,24 @@ export default function ProjectTemplateSelector({
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+    function handlePointerDown(event: PointerEvent) {
+      if (!menuOpenId) return;
+
+      const target = event.target as Node;
+      const clickedMenu = !!menuRef.current?.contains(target);
+      const clickedButton = !!menuButtonRef.current?.contains(target);
+
+      if (!clickedMenu && !clickedButton) {
         setMenuOpenId(null);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () =>
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+  }, [menuOpenId]);
 
   const categories = [
     { id: "all", label: "All Templates", icon: <Book size={16} /> },
@@ -99,6 +107,76 @@ export default function ProjectTemplateSelector({
     <div className={styles.container}>
       <WindowBar />
 
+      {menuOpenId && (
+        <div
+          className={styles.menuBackdrop}
+          onPointerDown={() => setMenuOpenId(null)}
+        />
+      )}
+
+      {/* Context Menu rendered at root level to avoid transform/z-index issues */}
+      {menuOpenId &&
+        (() => {
+          const p = projects.find((proj) => proj.id === menuOpenId);
+          if (!p) return null;
+
+          return (
+            <div
+              ref={menuRef}
+              className={styles.recentContextMenu}
+              style={{ top: menuPosition.y, left: menuPosition.x }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                className={styles.recentContextMenuItem}
+                onClick={() => {
+                  setMenuOpenId(null);
+                  onOpenProject?.(p);
+                }}
+              >
+                열기
+              </div>
+              <div
+                className={styles.recentContextMenuItem}
+                onClick={async () => {
+                  setMenuOpenId(null);
+                  const nextTitle = window
+                    .prompt("프로젝트 이름 수정", p.title)
+                    ?.trim();
+                  if (!nextTitle || nextTitle === p.title) return;
+
+                  try {
+                    await updateProject(p.id, nextTitle);
+                  } catch (error) {
+                    window.api.logger.error("Failed to update project", error);
+                  }
+                }}
+              >
+                이름 수정
+              </div>
+              <div className={styles.recentContextMenuDivider} />
+              <div
+                className={`${styles.recentContextMenuItem} ${styles.recentContextMenuDanger}`}
+                onClick={async () => {
+                  setMenuOpenId(null);
+                  const ok = window.confirm(
+                    `정말로 "${p.title}" 프로젝트를 삭제할까요?`,
+                  );
+                  if (!ok) return;
+
+                  try {
+                    await deleteProject(p.id);
+                  } catch (error) {
+                    window.api.logger.error("Failed to delete project", error);
+                  }
+                }}
+              >
+                삭제
+              </div>
+            </div>
+          );
+        })()}
+
       <div className={styles.body}>
         <div className={styles.sidebar}>
           <div className={styles.sidebarTitle}>Start New Project</div>
@@ -134,85 +212,32 @@ export default function ProjectTemplateSelector({
                   >
                     <div className={styles.recentCardContent}>
                       <div className={styles.recentProjectTitle}>{p.title}</div>
-                      <div className={styles.recentProjectPath} title={p.projectPath ?? ""}>
+                      <div
+                        className={styles.recentProjectPath}
+                        title={p.projectPath ?? ""}
+                      >
                         {p.projectPath ?? "(No path)"}
                       </div>
                     </div>
-                    
-                    <button 
+
+                    <button
                       className={styles.recentCardMenuBtn}
                       onClick={(e) => {
                         e.stopPropagation();
-                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        e.preventDefault();
+                        menuButtonRef.current = e.currentTarget;
+                        const rect = (
+                          e.currentTarget as HTMLElement
+                        ).getBoundingClientRect();
                         setMenuPosition({ x: rect.right + 8, y: rect.top });
                         setMenuOpenId((prev) => (prev === p.id ? null : p.id));
-                        window.api.logger.info("Project context menu", { id: p.id });
+                        window.api.logger.info("Project context menu", {
+                          id: p.id,
+                        });
                       }}
                     >
                       <MoreVertical size={16} />
                     </button>
-
-                    {menuOpenId === p.id && (
-                      <div
-                        ref={menuRef}
-                        className={styles.recentContextMenu}
-                        style={{ top: menuPosition.y, left: menuPosition.x }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div
-                          className={styles.recentContextMenuItem}
-                          onClick={() => {
-                            setMenuOpenId(null);
-                            onOpenProject?.(p);
-                          }}
-                        >
-                          열기
-                        </div>
-                        <div
-                          className={styles.recentContextMenuItem}
-                          onClick={async () => {
-                            setMenuOpenId(null);
-                            const nextTitle = window
-                              .prompt("프로젝트 이름 수정", p.title)
-                              ?.trim();
-                            if (!nextTitle || nextTitle === p.title) return;
-
-                            try {
-                              await updateProject(p.id, nextTitle);
-                            } catch (error) {
-                              window.api.logger.error(
-                                "Failed to update project",
-                                error,
-                              );
-                            }
-                          }}
-                        >
-                          이름 수정
-                        </div>
-                        <div className={styles.recentContextMenuDivider} />
-                        <div
-                          className={`${styles.recentContextMenuItem} ${styles.recentContextMenuDanger}`}
-                          onClick={async () => {
-                            setMenuOpenId(null);
-                            const ok = window.confirm(
-                              `정말로 "${p.title}" 프로젝트를 삭제할까요?`,
-                            );
-                            if (!ok) return;
-
-                            try {
-                              await deleteProject(p.id);
-                            } catch (error) {
-                              window.api.logger.error(
-                                "Failed to delete project",
-                                error,
-                              );
-                            }
-                          }}
-                        >
-                          삭제
-                        </div>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>

@@ -47,7 +47,7 @@
   border-left: 1px solid var(--border-default);
   border-right: 1px solid var(--border-default);
   background: white; /* Simulate paper */
-  box-shadow: 0 0 50px rgba(0,0,0,0.1);
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.1);
 }
 
 /* Adjust padding in mobile view if needed */
@@ -211,23 +211,22 @@
 .tiptapEditor :global(.ProseMirror) ul {
   padding-left: 1.5em;
   margin: 1em 0;
-  list-style-type: disc !important;
+  list-style-type: disc;
 }
 
 .tiptapEditor :global(.ProseMirror) ol {
   padding-left: 1.5em;
   margin: 1em 0;
-  list-style-type: decimal !important;
+  list-style-type: decimal;
 }
 
 .tiptapEditor :global(.ProseMirror) li {
   margin: 0.2em 0;
 }
 
-
 /* Task List (Checkboxes) */
 .tiptapEditor :global(.ProseMirror) ul[data-type="taskList"] {
-  list-style: none !important;
+  list-style: none;
   padding-left: 0;
 }
 
@@ -251,7 +250,10 @@
   justify-content: center;
 }
 
-.tiptapEditor :global(.ProseMirror) li[data-type="taskItem"] input[type="checkbox"] {
+.tiptapEditor
+  :global(.ProseMirror)
+  li[data-type="taskItem"]
+  input[type="checkbox"] {
   appearance: auto;
   width: 16px;
   height: 16px;
@@ -268,10 +270,13 @@
 }
 
 .tiptapEditor :global(.ProseMirror) li[data-type="taskItem"] p {
-  margin: 0 !important;
+  margin: 0;
 }
 
-.tiptapEditor :global(.ProseMirror) li[data-type="taskItem"][data-checked="true"] div {
+.tiptapEditor
+  :global(.ProseMirror)
+  li[data-type="taskItem"][data-checked="true"]
+  div {
   color: var(--text-tertiary);
   text-decoration: line-through;
 }
@@ -347,7 +352,6 @@
 .tiptapEditor :global(.ProseMirror) .callout p:last-child {
   margin-bottom: 0;
 }
-
 
 /* Details / Toggle */
 .tiptapEditor :global(.ProseMirror) details {

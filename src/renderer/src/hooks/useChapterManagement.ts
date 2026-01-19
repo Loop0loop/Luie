@@ -19,11 +19,19 @@ export function useChapterManagement() {
     setCurrent: setCurrentChapter,
   } = useChapterStore();
 
-  // 프로젝트가 바뀌면 선택/컨텐츠를 리셋해서 다른 프로젝트의 id로 업데이트/삭제가
-  // 발생하는 것을 방지합니다.
-  useEffect(() => {
+  const [prevProjectId, setPrevProjectId] = useState<string | undefined>(
+    currentProject?.id,
+  );
+
+  // 프로젝트가 바뀌면 선택/컨텐츠를 리셋 (Render-time update for local state)
+  if (currentProject?.id !== prevProjectId) {
+    setPrevProjectId(currentProject?.id);
     setActiveChapterId(null);
     setContent("");
+  }
+
+  // 외부 스토어 상태 동기화
+  useEffect(() => {
     setCurrentChapter(null);
   }, [currentProject?.id, setCurrentChapter]);
 

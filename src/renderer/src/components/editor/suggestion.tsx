@@ -1,6 +1,10 @@
-import { ReactRenderer } from '@tiptap/react';
-import type { SuggestionKeyDownProps, SuggestionOptions, SuggestionProps } from '@tiptap/suggestion';
-import SlashMenu from './SlashMenu';
+import { ReactRenderer } from "@tiptap/react";
+import type {
+  SuggestionKeyDownProps,
+  SuggestionOptions,
+  SuggestionProps,
+} from "@tiptap/suggestion";
+import SlashMenu from "./SlashMenu";
 
 function replaceCurrentTextblock(editor: any, content: any) {
   const { state } = editor;
@@ -22,118 +26,131 @@ function replaceCurrentTextblock(editor: any, content: any) {
   editor.commands.insertContentAt({ from, to }, content);
 }
 
-export const slashSuggestion: Omit<SuggestionOptions, 'editor'> = {
-  char: '/',
+export const slashSuggestion: Omit<SuggestionOptions, "editor"> = {
+  char: "/",
 
   command: ({ editor, range, props }: any) => {
     // items()에서 만든 각 아이템의 action을 실행
     props?.action?.({ editor, range });
   },
-  
+
   items: ({ query }) => {
     const items = [
       {
-        id: 'h1',
-        label: '제목 1',
+        id: "h1",
+        label: "제목 1",
         action: ({ editor, range }: any) => {
-          editor.chain().focus().deleteRange(range).toggleHeading({ level: 1 }).run();
+          editor
+            .chain()
+            .focus()
+            .deleteRange(range)
+            .toggleHeading({ level: 1 })
+            .run();
         },
       },
       {
-        id: 'h2',
-        label: '제목 2',
+        id: "h2",
+        label: "제목 2",
         action: ({ editor, range }: any) => {
-          editor.chain().focus().deleteRange(range).toggleHeading({ level: 2 }).run();
+          editor
+            .chain()
+            .focus()
+            .deleteRange(range)
+            .toggleHeading({ level: 2 })
+            .run();
         },
       },
       {
-        id: 'h3',
-        label: '제목 3',
+        id: "h3",
+        label: "제목 3",
         action: ({ editor, range }: any) => {
-          editor.chain().focus().deleteRange(range).toggleHeading({ level: 3 }).run();
+          editor
+            .chain()
+            .focus()
+            .deleteRange(range)
+            .toggleHeading({ level: 3 })
+            .run();
         },
       },
       {
-        id: 'bullet',
-        label: '글머리 기호 목록',
+        id: "bullet",
+        label: "글머리 기호 목록",
         action: ({ editor, range }: any) => {
           editor.chain().focus().deleteRange(range).toggleBulletList().run();
         },
       },
       {
-        id: 'number',
-        label: '번호 매기기 목록',
+        id: "number",
+        label: "번호 매기기 목록",
         action: ({ editor, range }: any) => {
           editor.chain().focus().deleteRange(range).toggleOrderedList().run();
         },
       },
       {
-        id: 'check',
-        label: '할 일 목록',
+        id: "check",
+        label: "할 일 목록",
         action: ({ editor, range }: any) => {
           editor.chain().focus().deleteRange(range).toggleTaskList().run();
         },
       },
       {
-        id: 'toggle',
-        label: '토글 섹션',
+        id: "toggle",
+        label: "토글 섹션",
         action: ({ editor, range }: any) => {
           editor.chain().focus().deleteRange(range).run();
 
           replaceCurrentTextblock(editor, {
-            type: 'details',
+            type: "details",
             content: [
               {
-                type: 'detailsSummary',
-                content: [{ type: 'text', text: '토글 제목' }],
+                type: "detailsSummary",
+                content: [{ type: "text", text: "토글 제목" }],
               },
               {
-                type: 'detailsContent',
-                content: [{ type: 'paragraph' }],
+                type: "detailsContent",
+                content: [{ type: "paragraph" }],
               },
             ],
           });
         },
       },
       {
-        id: 'quote',
-        label: '인용',
+        id: "quote",
+        label: "인용",
         action: ({ editor, range }: any) => {
           editor.chain().focus().deleteRange(range).toggleBlockquote().run();
         },
       },
       {
-        id: 'callout',
-        label: '메모(콜아웃)',
+        id: "callout",
+        label: "메모(콜아웃)",
         action: ({ editor, range }: any) => {
           editor.chain().focus().deleteRange(range).run();
 
           replaceCurrentTextblock(editor, {
-            type: 'callout',
+            type: "callout",
             content: [
               {
-                type: 'paragraph',
-                content: [{ type: 'text', text: '메모 내용' }],
+                type: "paragraph",
+                content: [{ type: "text", text: "메모 내용" }],
               },
             ],
           });
         },
       },
       {
-        id: 'divider',
-        label: '장면 구분선',
+        id: "divider",
+        label: "장면 구분선",
         action: ({ editor, range }: any) => {
           editor.chain().focus().deleteRange(range).run();
           // HR도 textblock 내부에서 삽입 시 보정될 수 있어, 현재 문단을 HR로 교체
-          replaceCurrentTextblock(editor, { type: 'horizontalRule' });
+          replaceCurrentTextblock(editor, { type: "horizontalRule" });
         },
       },
     ];
 
     return items
-      .filter((item) =>
-        item.label.toLowerCase().includes(query.toLowerCase())
-      )
+      .filter((item) => item.label.toLowerCase().includes(query.toLowerCase()))
       .slice(0, 10);
   },
 
@@ -156,9 +173,9 @@ export const slashSuggestion: Omit<SuggestionOptions, 'editor'> = {
         }
 
         popup = component.element as HTMLElement;
-        popup.style.position = 'absolute';
-        popup.style.zIndex = '1000';
-        
+        popup.style.position = "absolute";
+        popup.style.zIndex = "1000";
+
         document.body.appendChild(popup);
 
         const rect = props.clientRect();
@@ -186,13 +203,13 @@ export const slashSuggestion: Omit<SuggestionOptions, 'editor'> = {
       },
 
       onKeyDown(props: SuggestionKeyDownProps) {
-        if (props.event.key === 'Escape') {
+        if (props.event.key === "Escape") {
           component?.destroy();
           popup?.remove();
           return true;
         }
 
-        // @ts-ignore - ref is set by forwardRef
+        // @ts-expect-error - ref is set by forwardRef
         return component?.ref?.onKeyDown?.(props) ?? false;
       },
 
