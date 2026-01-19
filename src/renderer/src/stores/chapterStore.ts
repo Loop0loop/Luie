@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Chapter } from "@prisma/client";
+import type { Chapter } from "../../../shared/types";
 import { createCRUDSlice, CRUDStore } from "./createCRUDStore";
 import { ChapterCreateInput, ChapterUpdateInput } from "../../../shared/types";
 

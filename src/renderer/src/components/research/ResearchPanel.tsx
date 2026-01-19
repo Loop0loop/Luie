@@ -232,7 +232,7 @@ function SynopsisEditor() {
         }}
         placeholder="Project description..."
         value={currentProject.description || ""}
-        onChange={(e) => updateProject({ id: currentProject.id, description: e.target.value })}
+        onChange={(e) => updateProject(currentProject.id, undefined, e.target.value)}
       />
     </div>
   );
@@ -433,85 +433,6 @@ function CharacterProfile({ character }: { character: any }) {
           />
         </div>
       </div>
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*                                WORLD TAB                                   */
-/* -------------------------------------------------------------------------- */
-
-function WorldSection() {
-  const [subTab, setSubTab] = useState<WorldTab>("synopsis");
-
-  return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div className={styles.subNavBar}>
-        <div
-          className={`${styles.subTab} ${subTab === "synopsis" ? styles.active : ""}`}
-          onClick={() => setSubTab("synopsis")}
-        >
-          Synopsis
-        </div>
-        <div
-          className={`${styles.subTab} ${subTab === "mindmap" ? styles.active : ""}`}
-          onClick={() => setSubTab("mindmap")}
-        >
-          Mindmap
-        </div>
-        <div
-          className={`${styles.subTab} ${subTab === "drawing" ? styles.active : ""}`}
-          onClick={() => setSubTab("drawing")}
-        >
-          Map Drawing
-        </div>
-        <div
-          className={`${styles.subTab} ${subTab === "plot" ? styles.active : ""}`}
-          onClick={() => setSubTab("plot")}
-        >
-          Plot Board
-        </div>
-      </div>
-
-      <div style={{ flex: 1, overflow: "hidden" }}>
-        {subTab === "synopsis" && <SynopsisEditor />}
-        {subTab === "mindmap" && <MindMapBoard />}
-        {subTab === "drawing" && <DrawingCanvas />}
-        {subTab === "plot" && <PlotBoard />}
-      </div>
-    </div>
-  );
-}
-
-function SynopsisEditor() {
-  return (
-    <div style={{ height: "100%", overflowY: "auto", paddingRight: 8 }}>
-      <div className={styles.sectionTitle}>Core Premise (로그라인)</div>
-      <textarea
-        className={styles.cellValueInput}
-        style={{
-          border: "1px solid var(--border-default)",
-          padding: 12,
-          borderRadius: 4,
-          width: "100%",
-          marginBottom: 16,
-        }}
-        placeholder="단 한 줄로 이 소설을 설명한다면?"
-        defaultValue="폭군 황태자를 길들이기 위해 3번의 회귀를 거친 엘리제. 이번 생은 다를 수 있을까?"
-      />
-
-      <div className={styles.sectionTitle}>Synopsis (기획의도 & 줄거리)</div>
-      <textarea
-        className={styles.cellValueInput}
-        style={{
-          border: "1px solid var(--border-default)",
-          padding: 12,
-          borderRadius: 4,
-          width: "100%",
-          minHeight: 400,
-        }}
-        placeholder="# 기획의도&#13;&#10;...&#13;&#10;&#13;&#10;# 전체 줄거리&#13;&#10;1. 기 (소개)&#13;&#10;2. 승 (전개)&#13;&#10;3. 전 (위기/절정)&#13;&#10;4. 결 (결말)"
-      />
     </div>
   );
 }

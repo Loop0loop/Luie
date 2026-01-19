@@ -49,6 +49,7 @@ export const IPC_CHANNELS = {
   FS_SELECT_DIRECTORY: "fs:select-directory",
   FS_SELECT_SAVE_LOCATION: "fs:select-save-location",
   FS_SAVE_PROJECT: "fs:save-project",
+  FS_READ_FILE: "fs:read-file",
   FS_WRITE_FILE: "fs:write-file",
 
   // Settings

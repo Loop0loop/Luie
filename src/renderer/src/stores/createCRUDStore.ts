@@ -31,7 +31,7 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
   apiClient: APIClient<T, CreateInput, UpdateInput>,
   name: string,
 ): StateCreator<CRUDStore<T, CreateInput, UpdateInput>> {
-  return (set, get) => ({
+  return (set) => ({
     items: [],
     currentItem: null,
     isLoading: false,

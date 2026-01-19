@@ -132,8 +132,8 @@ export class ChapterService {
         select: { id: true, term: true },
       });
 
-      const characterNames = characters.map((c) => c.name);
-      const termNames = terms.map((t) => t.term);
+      const characterNames = characters.map((c: { name: string }) => c.name);
+      const termNames = terms.map((t: { term: string }) => t.term);
 
       keywordExtractor.setKnownCharacters(characterNames);
       keywordExtractor.setKnownTerms(termNames);
@@ -141,7 +141,9 @@ export class ChapterService {
       const keywords = keywordExtractor.extractFromText(content);
 
       for (const keyword of keywords.filter((k) => k.type === "character")) {
-        const character = characters.find((c) => c.name === keyword.text);
+        const character = characters.find(
+          (c: { name: string }) => c.name === keyword.text,
+        );
         if (character) {
           await characterService.recordAppearance({
             characterId: character.id,
@@ -155,7 +157,9 @@ export class ChapterService {
       }
 
       for (const keyword of keywords.filter((k) => k.type === "term")) {
-        const term = terms.find((t) => t.term === keyword.text);
+        const term = terms.find(
+          (t: { term: string }) => t.term === keyword.text,
+        );
         if (term) {
           await termService.recordAppearance({
             termId: term.id,

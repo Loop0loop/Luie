@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Project } from "@prisma/client";
+import type { Project } from "../../../shared/types";
 import { createCRUDSlice, CRUDStore } from "./createCRUDStore";
 import { ProjectCreateInput, ProjectUpdateInput } from "../../../shared/types";
 

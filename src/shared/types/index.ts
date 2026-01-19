@@ -2,6 +2,59 @@
  * Shared type definitions
  */
 
+// Model Types (Renderer-safe)
+export interface Project {
+  id: string;
+  title: string;
+  description?: string | null;
+  projectPath?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+export interface Chapter {
+  id: string;
+  projectId: string;
+  title: string;
+  content: string;
+  synopsis?: string | null;
+  order: number;
+  wordCount?: number | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+export interface Character {
+  id: string;
+  projectId: string;
+  name: string;
+  description?: string | null;
+  firstAppearance?: string | null;
+  attributes?: Record<string, unknown> | string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+export interface Term {
+  id: string;
+  projectId: string;
+  term: string;
+  definition?: string | null;
+  category?: string | null;
+  firstAppearance?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+export interface Snapshot {
+  id: string;
+  projectId: string;
+  chapterId?: string | null;
+  content: string;
+  description?: string | null;
+  createdAt: string | Date;
+}
+
 // Project Types
 export interface ProjectCreateInput {
   title: string;
@@ -79,13 +132,6 @@ export interface TermAppearanceInput {
   context?: string;
 }
 
-export interface TermUpdateInput {
-  id: string;
-  term?: string;
-  definition?: string;
-  category?: string;
-}
-
 // Snapshot Types
 export interface SnapshotCreateInput {
   projectId: string;
@@ -99,6 +145,14 @@ export interface SearchQuery {
   projectId: string;
   query: string;
   type?: "all" | "character" | "term";
+}
+
+export interface SearchResult {
+  type: "character" | "term" | "chapter";
+  id: string;
+  title: string;
+  description?: string;
+  metadata?: Record<string, unknown>;
 }
 
 // Settings Types

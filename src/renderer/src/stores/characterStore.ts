@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Character } from "@prisma/client";
+import type { Character } from "../../../shared/types";
 import { createCRUDSlice, CRUDStore } from "./createCRUDStore";
 import {
   CharacterCreateInput,

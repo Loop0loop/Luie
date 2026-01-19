@@ -107,9 +107,27 @@ export default function EditorToolbar({ editor, isMobileView, onToggleMobileView
         <div className={styles.tgroup}>
           {/* Alignment is not in StarterKit default, so leaving as placeholders or implementing textAlign extension if requested later.
               For now focusing on text styling. */}
-          <button className={styles.iconBtn} title="Align Left"><AlignLeft size={16}/></button>
-          <button className={styles.iconBtn} title="Align Center"><AlignCenter size={16}/></button>
-          <button className={styles.iconBtn} title="Align Right"><AlignRight size={16}/></button>
+          <button
+            className={`${styles.iconBtn} ${editor.isActive({ textAlign: 'left' }) ? styles.active : ''}`}
+            title="Align Left"
+            onClick={() => editor.chain().focus().setTextAlign('left').run()}
+          >
+            <AlignLeft size={16}/>
+          </button>
+          <button
+            className={`${styles.iconBtn} ${editor.isActive({ textAlign: 'center' }) ? styles.active : ''}`}
+            title="Align Center"
+            onClick={() => editor.chain().focus().setTextAlign('center').run()}
+          >
+            <AlignCenter size={16}/>
+          </button>
+          <button
+            className={`${styles.iconBtn} ${editor.isActive({ textAlign: 'right' }) ? styles.active : ''}`}
+            title="Align Right"
+            onClick={() => editor.chain().focus().setTextAlign('right').run()}
+          >
+            <AlignRight size={16}/>
+          </button>
           
           <div className={styles.separator} />
           

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Term } from "@prisma/client";
+import type { Term } from "../../../shared/types";
 import { createCRUDSlice, CRUDStore } from "./createCRUDStore";
 import { TermCreateInput, TermUpdateInput } from "../../../shared/types";
 

@@ -4,8 +4,10 @@ import type {
   Character,
   Term,
   Snapshot,
-} from "@prisma/client";
-import type { SearchResult } from "../shared/types/index.js";
+  EditorSettings,
+  AppSettings,
+  SearchResult,
+} from "../shared/types/index.js";
 import type { IPCResponse } from "../shared/ipc/index.js";
 
 declare global {
@@ -108,6 +110,7 @@ declare global {
           defaultPath?: string;
           title?: string;
         }) => Promise<IPCResponse<string>>;
+        readFile: (filePath: string) => Promise<IPCResponse<string>>;
         writeFile: (
           filePath: string,
           content: string,
@@ -126,19 +129,26 @@ declare global {
 
       // Settings API
       settings: {
-        getAll: () => Promise<IPCResponse<unknown>>;
-        getEditor: () => Promise<IPCResponse<unknown>>;
-        setEditor: (settings: unknown) => Promise<IPCResponse<unknown>>;
-        getAutoSave: () => Promise<IPCResponse<unknown>>;
-        setAutoSave: (settings: unknown) => Promise<IPCResponse<unknown>>;
-        getWindowBounds: () => Promise<IPCResponse<unknown>>;
-        setWindowBounds: (bounds: unknown) => Promise<IPCResponse<unknown>>;
-        reset: () => Promise<IPCResponse<unknown>>;
+        getAll: () => Promise<IPCResponse<AppSettings>>;
+        getEditor: () => Promise<IPCResponse<EditorSettings>>;
+        setEditor: (settings: EditorSettings) => Promise<IPCResponse<EditorSettings>>;
+        getAutoSave: () => Promise<IPCResponse<{ enabled: boolean; interval: number }>>;
+        setAutoSave: (settings: { enabled?: boolean; interval?: number }) => Promise<IPCResponse<{ enabled: boolean; interval: number }>>;
+        getWindowBounds: () => Promise<IPCResponse<{ width: number; height: number; x: number; y: number } | undefined>>;
+        setWindowBounds: (bounds: { width: number; height: number; x: number; y: number }) => Promise<IPCResponse<{ width: number; height: number; x: number; y: number }>>;
+        reset: () => Promise<IPCResponse<AppSettings>>;
       };
 
       window: {
         maximize: () => Promise<IPCResponse<unknown>>;
         toggleFullscreen: () => Promise<IPCResponse<unknown>>;
+      };
+
+      logger: {
+        debug: (message: string, data?: unknown) => Promise<IPCResponse<unknown>>;
+        info: (message: string, data?: unknown) => Promise<IPCResponse<unknown>>;
+        warn: (message: string, data?: unknown) => Promise<IPCResponse<unknown>>;
+        error: (message: string, data?: unknown) => Promise<IPCResponse<unknown>>;
       };
     };
   }

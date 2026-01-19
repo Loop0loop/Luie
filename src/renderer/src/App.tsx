@@ -7,12 +7,29 @@ import ProjectTemplateSelector from "./components/layout/ProjectTemplateSelector
 import styles from "./styles/App.module.css";
 import { useProjectStore } from "./stores/projectStore";
 import { useChapterStore } from "./stores/chapterStore";
+import { useEditorStore } from "./stores/editorStore";
+import { z } from "zod";
 
 const SettingsModal = lazy(() => import("./components/settings/SettingsModal"));
 const ResearchPanel = lazy(() => import("./components/research/ResearchPanel"));
 
 type ViewState = "template" | "editor" | "corkboard" | "outliner";
 type ContextTab = "synopsis" | "characters" | "terms";
+
+const LuieFileSchema = z.object({
+  format: z.literal("luie"),
+  version: z.number(),
+  chapters: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        title: z.string().optional(),
+        order: z.number().optional(),
+        content: z.string().optional(),
+      }),
+    )
+    .optional(),
+}).passthrough();
 
 export default function App() {
   const [view, setView] = useState<ViewState>("template");
@@ -42,17 +59,103 @@ export default function App() {
     loadAll: loadChapters,
     update: updateChapter,
     create: createChapter,
+    delete: deleteChapter,
   } = useChapterStore();
+
+  const { loadSettings } = useEditorStore();
+
+  const [importedProjectId, setImportedProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     loadProjects();
-  }, [loadProjects]);
+    loadSettings();
+  }, [loadProjects, loadSettings]);
 
   useEffect(() => {
     if (currentProject) {
       loadChapters(currentProject.id);
     }
   }, [currentProject, loadChapters]);
+
+  useEffect(() => {
+    if (!currentProject || !currentProject.projectPath) {
+      return;
+    }
+
+    if (importedProjectId === currentProject.id) {
+      return;
+    }
+
+    if (chapters.length > 0) {
+      setImportedProjectId(currentProject.id);
+      return;
+    }
+
+    const path = currentProject.projectPath;
+    if (!path.endsWith(".luie")) {
+      setImportedProjectId(currentProject.id);
+      return;
+    }
+
+    (async () => {
+      const file = await window.api.fs.readFile(path);
+      if (!file.success || !file.data) {
+        window.api.logger.warn("Failed to read project file", { path });
+        setImportedProjectId(currentProject.id);
+        return;
+      }
+
+      try {
+        const parsed = LuieFileSchema.safeParse(JSON.parse(file.data as string));
+        if (!parsed.success) {
+          window.api.logger.warn("Invalid project file format", {
+            path,
+            issues: parsed.error.issues,
+          });
+          setImportedProjectId(currentProject.id);
+          return;
+        }
+
+        const fileChapters = parsed.data.chapters ?? [];
+
+        if (fileChapters.length === 0) {
+          setImportedProjectId(currentProject.id);
+          return;
+        }
+
+        for (const ch of fileChapters) {
+          const created = await createChapter({
+            projectId: currentProject.id,
+            title: ch.title ?? "Untitled",
+          });
+          if (created?.id && typeof ch.content === "string") {
+            await updateChapter({ id: created.id, content: ch.content });
+          }
+        }
+
+        setImportedProjectId(currentProject.id);
+      } catch (error) {
+        window.api.logger.error("Failed to parse project file", { path, error });
+        setImportedProjectId(currentProject.id);
+      }
+    })();
+  }, [currentProject, chapters.length, createChapter, updateChapter, importedProjectId]);
+
+  useEffect(() => {
+    if (!activeChapterId && chapters.length > 0) {
+      setActiveChapterId(chapters[0].id);
+      return;
+    }
+
+    if (!activeChapterId) {
+      return;
+    }
+
+    const chapter = chapters.find((c) => c.id === activeChapterId);
+    if (chapter) {
+      setContent(chapter.content || "");
+    }
+  }, [activeChapterId, chapters]);
 
   const handleSelectProject = useCallback(
     async (templateId: string, projectPath: string) => {
@@ -113,6 +216,13 @@ export default function App() {
         }
 
         setCurrentProject(newProject);
+        const firstChapter = await createChapter({
+          projectId: newProject.id,
+          title: "Chapter 1",
+        });
+        if (firstChapter?.id) {
+          setActiveChapterId(firstChapter.id);
+        }
         setView("editor");
 
         try {
@@ -123,7 +233,7 @@ export default function App() {
         }
       }
     },
-    [createProject, setCurrentProject],
+    [createProject, setCurrentProject, createChapter],
   );
 
   const handleOpenExistingProject = useCallback(
@@ -197,7 +307,7 @@ export default function App() {
 
   const handleSave = useCallback(
     async (title: string, newContent: string) => {
-      (window.api as any).logger.info(`Saving: ${title}`);
+      window.api.logger.info(`Saving: ${title}`);
       setContent(newContent);
 
       if (activeChapterId && currentProject) {
@@ -206,9 +316,30 @@ export default function App() {
           title,
           content: newContent,
         });
+
+        if (currentProject.projectPath?.endsWith(".luie")) {
+          const payload = {
+            format: "luie",
+            version: 1,
+            projectId: currentProject.id,
+            title: currentProject.title,
+            updatedAt: new Date().toISOString(),
+            chapters: chapters.map((c) => ({
+              id: c.id,
+              title: c.title,
+              order: c.order,
+              content: c.id === activeChapterId ? newContent : c.content,
+            })),
+          };
+
+          await window.api.fs.writeFile(
+            currentProject.projectPath,
+            JSON.stringify(payload, null, 2),
+          );
+        }
       }
     },
-    [activeChapterId, updateChapter, currentProject],
+    [activeChapterId, updateChapter, currentProject, chapters],
   );
 
   const handleAddChapter = useCallback(async () => {
@@ -222,6 +353,48 @@ export default function App() {
       title: `Chapter ${chapters.length + 1}`,
     });
   }, [currentProject, createChapter, chapters.length]);
+
+  const handleRenameChapter = useCallback(
+    async (id: string, title: string) => {
+      await updateChapter({ id, title });
+    },
+    [updateChapter],
+  );
+
+  const handleDuplicateChapter = useCallback(
+    async (id: string) => {
+      if (!currentProject) {
+        window.api.logger.error("No project selected");
+        return;
+      }
+
+      const source = chapters.find((c) => c.id === id);
+      if (!source) {
+        return;
+      }
+
+      const created = await createChapter({
+        projectId: currentProject.id,
+        title: `${source.title} Copy`,
+      });
+
+      if (created?.id && source.content) {
+        await updateChapter({ id: created.id, content: source.content });
+      }
+    },
+    [chapters, currentProject, createChapter, updateChapter],
+  );
+
+  const handleDeleteChapter = useCallback(
+    async (id: string) => {
+      await deleteChapter(id);
+      if (activeChapterId === id) {
+        const remaining = chapters.filter((c) => c.id !== id);
+        setActiveChapterId(remaining[0]?.id ?? null);
+      }
+    },
+    [deleteChapter, activeChapterId, chapters],
+  );
 
   const activeChapterTitle =
     chapters.find((c) => c.id === activeChapterId)?.title || "";
@@ -243,8 +416,12 @@ export default function App() {
           <Sidebar
             chapters={chapters}
             activeChapterId={activeChapterId ?? undefined}
+            currentProjectTitle={currentProject?.title}
             onSelectChapter={handleSelectChapter}
             onAddChapter={handleAddChapter}
+            onRenameChapter={handleRenameChapter}
+            onDuplicateChapter={handleDuplicateChapter}
+            onDeleteChapter={handleDeleteChapter}
             onOpenSettings={() => setIsSettingsOpen(true)}
             onSelectResearchItem={handleSelectResearchItem}
             onSplitView={handleSplitView}

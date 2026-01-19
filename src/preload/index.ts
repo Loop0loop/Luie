@@ -92,6 +92,10 @@ contextBridge.exposeInMainWorld("api", {
       title?: string;
     }): Promise<IPCResponse<string>> =>
       ipcRenderer.invoke("fs:select-save-location", options),
+    readFile: (filePath: string): Promise<IPCResponse<string>> =>
+      ipcRenderer.invoke("fs:read-file", filePath),
+    writeFile: (filePath: string, content: string): Promise<IPCResponse> =>
+      ipcRenderer.invoke("fs:write-file", filePath, content),
   },
 
   // Search API

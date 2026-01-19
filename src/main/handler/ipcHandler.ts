@@ -6,7 +6,7 @@ import { ipcMain, dialog } from "electron";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { createLogger } from "../../shared/logger/index.js";
-import { windowManager, settingsManager } from "../manager/index.js";
+import { windowManager } from "../manager/index.js";
 import {
   projectService,
   chapterService,
@@ -621,6 +621,22 @@ export function registerIPCHandlers(): void {
         return createErrorResponse(
           (error as Error).message,
           "Failed to save project",
+        );
+      }
+    },
+  );
+
+  ipcMain.handle(
+    IPC_CHANNELS.FS_READ_FILE,
+    async (_, filePath: string) => {
+      try {
+        const content = await fs.readFile(filePath, "utf-8");
+        return createSuccessResponse(content);
+      } catch (error) {
+        logger.error("FS_READ_FILE failed", error);
+        return createErrorResponse(
+          (error as Error).message,
+          "Failed to read file",
         );
       }
     },

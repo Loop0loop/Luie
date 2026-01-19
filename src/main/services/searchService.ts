@@ -33,7 +33,7 @@ export class SearchService {
           take: 10,
         });
 
-        characters.forEach((char) => {
+        characters.forEach((char: { id: string; name: string; description?: string | null }) => {
           results.push({
             type: "character",
             id: char.id,
@@ -58,7 +58,7 @@ export class SearchService {
           take: 10,
         });
 
-        terms.forEach((term) => {
+        terms.forEach((term: { id: string; term: string; definition?: string | null; category?: string | null }) => {
           results.push({
             type: "term",
             id: term.id,
@@ -84,7 +84,7 @@ export class SearchService {
           take: 5,
         });
 
-        chapters.forEach((chapter) => {
+        chapters.forEach((chapter: { id: string; title: string; synopsis?: string | null; wordCount?: number | null; order: number }) => {
           results.push({
             type: "chapter",
             id: chapter.id,
@@ -147,13 +147,13 @@ export class SearchService {
       });
 
       const results: SearchResult[] = [
-        ...recentTerms.map((term) => ({
+        ...recentTerms.map((term: { id: string; term: string; definition?: string | null }) => ({
           type: "term" as const,
           id: term.id,
           title: term.term,
           description: term.definition ?? undefined,
         })),
-        ...recentCharacters.map((char) => ({
+        ...recentCharacters.map((char: { id: string; name: string; description?: string | null }) => ({
           type: "character" as const,
           id: char.id,
           title: char.name,

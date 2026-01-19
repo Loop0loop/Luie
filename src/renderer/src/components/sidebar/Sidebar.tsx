@@ -25,8 +25,12 @@ interface Chapter {
 interface SidebarProps {
   chapters: Chapter[];
   activeChapterId?: string;
+  currentProjectTitle?: string;
   onSelectChapter: (id: string) => void;
   onAddChapter: () => void;
+  onRenameChapter?: (id: string, title: string) => void;
+  onDuplicateChapter?: (id: string) => void;
+  onDeleteChapter?: (id: string) => void;
   onOpenSettings: () => void;
   onSelectResearchItem: (type: "character" | "world" | "scrap") => void;
   onSplitView?: (type: "vertical" | "horizontal", contentId: string) => void;
@@ -35,8 +39,12 @@ interface SidebarProps {
 export default function Sidebar({
   chapters,
   activeChapterId,
+  currentProjectTitle,
   onSelectChapter,
   onAddChapter,
+  onRenameChapter,
+  onDuplicateChapter,
+  onDeleteChapter,
   onOpenSettings,
   onSelectResearchItem,
   onSplitView,
@@ -73,12 +81,24 @@ export default function Sidebar({
   };
 
   const handleAction = (action: string, id: string) => {
-    console.log(`Action: ${action} on ${id}`);
+    window.api.logger.info("Sidebar action", { action, id });
     setMenuOpenId(null);
     if (action === "open_right" && onSplitView) {
       onSplitView("vertical", id);
     }
-    // Placeholder actions
+    if (action === "rename" && onRenameChapter) {
+      const current = chapters.find((c) => c.id === id);
+      const nextTitle = window.prompt("새 제목", current?.title ?? "")?.trim();
+      if (nextTitle) {
+        onRenameChapter(id, nextTitle);
+      }
+    }
+    if (action === "duplicate" && onDuplicateChapter) {
+      onDuplicateChapter(id);
+    }
+    if (action === "delete" && onDeleteChapter) {
+      onDeleteChapter(id);
+    }
   };
 
   return (
@@ -126,7 +146,7 @@ export default function Sidebar({
       )}
       <div className={styles.header}>
         <h2 className={styles.projectName}>
-          {currentProject?.title || "프로젝트"}
+          {currentProjectTitle || "프로젝트"}
         </h2>
         <div className={styles.metaInfo}>PROJECT BINDER</div>
       </div>

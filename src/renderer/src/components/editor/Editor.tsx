@@ -7,6 +7,8 @@ import TaskItem from "@tiptap/extension-task-item";
 import Placeholder from "@tiptap/extension-placeholder";
 import Highlight from "@tiptap/extension-highlight";
 import { TextStyle } from "@tiptap/extension-text-style";
+import Underline from "@tiptap/extension-underline";
+import TextAlign from "@tiptap/extension-text-align";
 import {
   Details,
   DetailsSummary,
@@ -82,9 +84,15 @@ export default function Editor({
   // TipTap Editor Setup
   const extensions = useMemo(
     () => [
-      StarterKit,
+      StarterKit.configure({
+        underline: false,
+      }),
       Highlight,
       TextStyle,
+      Underline,
+      TextAlign.configure({
+        types: ["heading", "paragraph"],
+      }),
       TaskList,
       TaskItem.configure({
         nested: true,

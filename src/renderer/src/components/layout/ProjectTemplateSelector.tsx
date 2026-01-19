@@ -2,7 +2,7 @@ import { useState } from "react";
 import styles from "../../styles/components/ProjectTemplateSelector.module.css";
 import WindowBar from "./WindowBar";
 import { Plus, Book, FileText, FileType, MoreVertical } from "lucide-react";
-import type { Project } from "@prisma/client";
+import type { Project } from "../../../../shared/types";
 
 interface ProjectTemplateSelectorProps {
   onSelectProject: (templateId: string, projectPath: string) => void;
@@ -73,7 +73,7 @@ export default function ProjectTemplateSelector({
         onSelectProject(templateId, response.data);
       }
     } catch (error) {
-      console.error("Failed to select directory:", error);
+      window.api.logger.error("Failed to select directory", error);
     }
   };
 

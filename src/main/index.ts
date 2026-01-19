@@ -7,7 +7,6 @@ import { createLogger } from "../shared/logger/index.js";
 import { windowManager } from "./manager/index.js";
 import { registerIPCHandlers } from "./handler/index.js";
 import { db } from "./database/index.js";
-import { settingsManager } from "./manager/settingsManager.js";
 
 const logger = createLogger("Main");
 

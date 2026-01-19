@@ -141,7 +141,7 @@ export class SnapshotService {
       }
 
       const toDelete = allSnapshots.slice(keepCount);
-      const deletePromises = toDelete.map((snapshot) =>
+      const deletePromises = toDelete.map((snapshot: { id: string }) =>
         db.getClient().snapshot.delete({
           where: { id: snapshot.id },
         }),
