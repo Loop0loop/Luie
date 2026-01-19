@@ -36,6 +36,57 @@ const Callout = Node.create({
   },
 });
 
+// Toggle (Details) Extension
+const ToggleSummary = Node.create({
+  name: 'toggleSummary',
+  content: 'inline*',
+  defining: true,
+
+  parseHTML() {
+    return [{ tag: 'summary' }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['summary', mergeAttributes(HTMLAttributes), 0];
+  },
+});
+
+const Toggle = Node.create({
+  name: 'toggle',
+  group: 'block',
+  content: 'toggleSummary block*',
+  defining: true,
+
+  parseHTML() {
+    return [{ tag: 'details[data-type="toggle"]' }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['details', mergeAttributes(HTMLAttributes, { 'data-type': 'toggle', class: 'toggle' }), 0];
+  },
+
+  addCommands() {
+    return {
+      insertToggle:
+        () =>
+        ({ commands }: any) =>
+          commands.insertContent({
+            type: this.name,
+            content: [
+              {
+                type: 'toggleSummary',
+                content: [{ type: 'text', text: '토글' }],
+              },
+              {
+                type: 'paragraph',
+                content: [{ type: 'text', text: '' }],
+              },
+            ],
+          }),
+    };
+  },
+});
+
 interface EditorProps {
   initialTitle?: string;
   initialContent?: string;
@@ -93,7 +144,11 @@ export default function Editor({
         editor.chain().focus().toggleTaskList().run(); 
         break;
       case 'toggle':
+        editor.chain().focus().insertToggle().run();
+        break;
       case 'callout':
+        editor.chain().focus().toggleCallout().run();
+        break;
       case 'quote': 
         editor.chain().focus().toggleBlockquote().run(); 
         break;
@@ -120,6 +175,9 @@ export default function Editor({
       TaskItem.configure({
         nested: true,
       }),
+      Callout,
+      ToggleSummary,
+      Toggle,
       Placeholder.configure({
         placeholder: "내용을 입력하세요... ('/'를 입력하여 명령어 확인)",
       }),
