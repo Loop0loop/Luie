@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Clock, Plus, Search, Tag } from "lucide-react";
 import styles from "../../styles/components/ResearchPanel.module.css";
+import { useProjectStore } from "../../stores/projectStore";
 
 type Note = {
   id: string;
@@ -10,27 +11,82 @@ type Note = {
   updatedAt: string;
 };
 
+const DEFAULT_NOTES: Note[] = [
+  {
+    id: "1",
+    title: "참고자료: 중세 복식",
+    content:
+      "링크: https://wiki...\n\n중세 귀족들의 의상은 생각보다 화려했다...",
+    tags: ["자료", "의상"],
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "2",
+    title: "아이디어 파편",
+    content:
+      "- 주인공이 사실은 악역이었다면?\n- 회귀 전의 기억이 왜곡된 것이라면?",
+    tags: ["아이디어", "플롯"],
+    updatedAt: new Date().toISOString(),
+  },
+];
+
 export default function MemoSection() {
-  const [notes, setNotes] = useState<Note[]>([
-    {
-      id: "1",
-      title: "참고자료: 중세 복식",
-      content:
-        "링크: https://wiki...\n\n중세 귀족들의 의상은 생각보다 화려했다...",
-      tags: ["자료", "의상"],
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "2",
-      title: "아이디어 파편",
-      content:
-        "- 주인공이 사실은 악역이었다면?\n- 회귀 전의 기억이 왜곡된 것이라면?",
-      tags: ["아이디어", "플롯"],
-      updatedAt: new Date().toISOString(),
-    },
-  ]);
+  const { currentItem: currentProject } = useProjectStore();
+
+  const storageKey = useMemo(() => {
+    if (!currentProject?.id) return null;
+    return `luie:memos:${currentProject.id}`;
+  }, [currentProject?.id]);
+
+  const [notes, setNotes] = useState<Note[]>(DEFAULT_NOTES);
   const [activeNoteId, setActiveNoteId] = useState("1");
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Load notes when project changes
+  useEffect(() => {
+    if (!storageKey) {
+      setNotes(DEFAULT_NOTES);
+      setActiveNoteId(DEFAULT_NOTES[0]?.id ?? "1");
+      return;
+    }
+
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) {
+        setNotes(DEFAULT_NOTES);
+        setActiveNoteId(DEFAULT_NOTES[0]?.id ?? "1");
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as { notes?: Note[] };
+      const loaded = Array.isArray(parsed.notes) ? parsed.notes : [];
+      setNotes(loaded.length > 0 ? loaded : DEFAULT_NOTES);
+      setActiveNoteId((loaded[0]?.id ?? DEFAULT_NOTES[0]?.id ?? "1") as string);
+    } catch (e) {
+      window.api.logger.warn("Failed to load memos", e);
+      setNotes(DEFAULT_NOTES);
+      setActiveNoteId(DEFAULT_NOTES[0]?.id ?? "1");
+    }
+  }, [storageKey]);
+
+  // Save notes (debounced)
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!storageKey) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+
+    saveTimerRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify({ notes }));
+      } catch (e) {
+        window.api.logger.warn("Failed to save memos", e);
+      }
+    }, 500);
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [notes, storageKey]);
 
   const activeNote = notes.find((n) => n.id === activeNoteId);
   const filteredNotes = notes.filter(
@@ -40,7 +96,7 @@ export default function MemoSection() {
   );
 
   const handleAddNote = () => {
-    const newId = String(notes.length + 1);
+    const newId = String(Date.now());
     const newNote: Note = {
       id: newId,
       title: "새로운 메모",

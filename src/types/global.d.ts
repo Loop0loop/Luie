@@ -115,6 +115,17 @@ declare global {
           filePath: string,
           content: string,
         ) => Promise<IPCResponse<unknown>>;
+
+        // .luie package directory helpers
+        createLuiePackage: (
+          packagePath: string,
+          meta: unknown,
+        ) => Promise<IPCResponse<{ path: string }>>;
+        writeProjectFile: (
+          projectRoot: string,
+          relativePath: string,
+          content: string,
+        ) => Promise<IPCResponse<{ path: string }>>;
       };
       search: (query: {
         projectId: string;

@@ -74,6 +74,40 @@
   gap: 32px;
 }
 
+.recentContextMenu {
+  position: fixed;
+  z-index: 2000;
+  min-width: 140px;
+  background: #0b0b0e;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+.recentContextMenuItem {
+  padding: 10px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #e4e4e7;
+  cursor: pointer;
+  user-select: none;
+}
+
+.recentContextMenuItem:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.recentContextMenuDivider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 6px 4px;
+}
+
+.recentContextMenuDanger {
+  color: #fca5a5;
+}
+
 .card {
   display: flex;
   flex-direction: column;
@@ -397,14 +431,18 @@
 }
 
 .recentCardMenuBtn {
-  opacity: 0;
+  opacity: 0.85;
   padding: 4px;
   border-radius: 4px;
   color: #a1a1aa;
   border: none;
   background: transparent;
   cursor: pointer;
-  margin-left: 8px;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  pointer-events: auto;
   transition: all 0.2s;
 }
 

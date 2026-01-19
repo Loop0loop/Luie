@@ -115,10 +115,11 @@ export function useChapterManagement() {
           content: newContent,
         });
 
-        // .luie 파일 동기화
-        if (currentProject.projectPath?.endsWith(".luie")) {
-          const payload = {
+        // .luie 패키지 디렉토리 동기화
+        if (currentProject.projectPath?.toLowerCase().endsWith(".luie")) {
+          const meta = {
             format: "luie",
+            container: "directory",
             version: 1,
             projectId: currentProject.id,
             title: currentProject.title,
@@ -127,13 +128,20 @@ export function useChapterManagement() {
               id: c.id,
               title: c.title,
               order: c.order,
-              content: c.id === activeChapterId ? newContent : c.content,
+              updatedAt: c.updatedAt,
             })),
           };
 
-          await window.api.fs.writeFile(
+          await window.api.fs.writeProjectFile(
             currentProject.projectPath,
-            JSON.stringify(payload, null, 2),
+            "meta.json",
+            JSON.stringify(meta, null, 2),
+          );
+
+          await window.api.fs.writeProjectFile(
+            currentProject.projectPath,
+            `manuscript/${activeChapterId}.md`,
+            newContent,
           );
         }
       }

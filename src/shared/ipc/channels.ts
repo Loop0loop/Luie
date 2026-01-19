@@ -52,6 +52,10 @@ export const IPC_CHANNELS = {
   FS_READ_FILE: "fs:read-file",
   FS_WRITE_FILE: "fs:write-file",
 
+  // Luie package directory (.luie)
+  FS_CREATE_LUIE_PACKAGE: "fs:create-luie-package",
+  FS_WRITE_PROJECT_FILE: "fs:write-project-file",
+
   // Settings
   SETTINGS_GET_ALL: "settings:get-all",
   SETTINGS_GET_EDITOR: "settings:get-editor",

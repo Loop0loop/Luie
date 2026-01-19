@@ -92,4 +92,69 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       return { path: filePath };
     },
   });
+
+  registerIpcHandler({
+    logger,
+    channel: IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE,
+    logTag: "FS_CREATE_LUIE_PACKAGE",
+    failMessage: "Failed to create Luie package",
+    handler: async (packagePath: string, meta: unknown) => {
+      const targetPath = packagePath.toLowerCase().endsWith(".luie")
+        ? packagePath
+        : `${packagePath}.luie`;
+
+      // Ensure directory exists
+      await fs.mkdir(targetPath, { recursive: true });
+
+      // Create standard sub-structure
+      await Promise.all([
+        fs.mkdir(path.join(targetPath, "manuscript"), { recursive: true }),
+        fs.mkdir(path.join(targetPath, "world"), { recursive: true }),
+        fs.mkdir(path.join(targetPath, "snapshots"), { recursive: true }),
+        fs.mkdir(path.join(targetPath, "assets"), { recursive: true }),
+      ]);
+
+      // Write meta.json (best-effort)
+      await fs.writeFile(
+        path.join(targetPath, "meta.json"),
+        JSON.stringify(meta ?? {}, null, 2),
+        "utf-8",
+      );
+
+      // Initialize world defaults if missing
+      const worldCharactersPath = path.join(targetPath, "world", "characters.json");
+      const worldTermsPath = path.join(targetPath, "world", "terms.json");
+      try {
+        await fs.access(worldCharactersPath);
+      } catch {
+        await fs.writeFile(worldCharactersPath, JSON.stringify({ characters: [] }, null, 2), "utf-8");
+      }
+      try {
+        await fs.access(worldTermsPath);
+      } catch {
+        await fs.writeFile(worldTermsPath, JSON.stringify({ terms: [] }, null, 2), "utf-8");
+      }
+
+      return { path: targetPath };
+    },
+  });
+
+  registerIpcHandler({
+    logger,
+    channel: IPC_CHANNELS.FS_WRITE_PROJECT_FILE,
+    logTag: "FS_WRITE_PROJECT_FILE",
+    failMessage: "Failed to write project file",
+    handler: async (projectRoot: string, relativePath: string, content: string) => {
+      const normalized = path.normalize(relativePath).replace(/^([/\\])+/, "");
+      if (!normalized || normalized.startsWith("..") || path.isAbsolute(normalized)) {
+        throw new Error("INVALID_RELATIVE_PATH");
+      }
+
+      const fullPath = path.join(projectRoot, normalized);
+      const dir = path.dirname(fullPath);
+      await fs.mkdir(dir, { recursive: true });
+      await fs.writeFile(fullPath, content, "utf-8");
+      return { path: fullPath };
+    },
+  });
 }

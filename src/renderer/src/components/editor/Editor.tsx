@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, memo } from "react";
+import { useState, useEffect, useMemo, useRef, memo } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import { Extension, Node, mergeAttributes } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
@@ -59,7 +59,7 @@ const SlashCommand = Extension.create({
 interface EditorProps {
   initialTitle?: string;
   initialContent?: string;
-  onSave?: (title: string, content: string) => void;
+  onSave?: (title: string, content: string) => void | Promise<void>;
 }
 
 function Editor({
@@ -70,6 +70,10 @@ function Editor({
   const [title, setTitle] = useState(initialTitle);
   const [contentHtml, setContentHtml] = useState(initialContent);
   const [wordCount, setWordCount] = useState(0);
+
+  const lastSavedRef = useRef<{ title: string; content: string } | null>(null);
+
+  const SAVE_DEBOUNCE_MS = 4000;
 
   const { fontFamily, fontSize, lineHeight, theme } = useEditorStore();
   const [isMobileView, setIsMobileView] = useState(false);
@@ -146,9 +150,22 @@ function Editor({
 
   // Auto-save
   useEffect(() => {
+    if (!onSave) {
+      return;
+    }
+
     const timer = setTimeout(() => {
-      onSave?.(title, contentHtml);
-    }, 1000);
+      const last = lastSavedRef.current;
+      if (last && last.title === title && last.content === contentHtml) {
+        return;
+      }
+
+      lastSavedRef.current = { title, content: contentHtml };
+      void Promise.resolve(onSave(title, contentHtml)).catch(() => {
+        // best-effort autosave; errors are surfaced via IPC response/logger
+      });
+    }, SAVE_DEBOUNCE_MS);
+
     return () => clearTimeout(timer);
   }, [title, contentHtml, onSave]);
 

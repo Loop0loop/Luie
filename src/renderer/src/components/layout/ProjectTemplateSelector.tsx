@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "../../styles/components/ProjectTemplateSelector.module.css";
 import WindowBar from "./WindowBar";
 import { Plus, Book, FileText, FileType, MoreVertical } from "lucide-react";
 import type { Project } from "../../../../shared/types";
+import { useProjectStore } from "../../stores/projectStore";
 
 interface ProjectTemplateSelectorProps {
   onSelectProject: (templateId: string, projectPath: string) => void;
@@ -16,6 +17,23 @@ export default function ProjectTemplateSelector({
   onOpenProject,
 }: ProjectTemplateSelectorProps) {
   const [activeCategory, setActiveCategory] = useState("all");
+
+  const { deleteProject } = useProjectStore();
+  const { updateProject } = useProjectStore();
+
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpenId(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const categories = [
     { id: "all", label: "All Templates", icon: <Book size={16} /> },
@@ -109,7 +127,11 @@ export default function ProjectTemplateSelector({
 
               <div className={styles.recentGrid}>
                 {projects.slice(0, 6).map((p) => (
-                  <div key={p.id} className={styles.recentCard} onClick={() => onOpenProject?.(p)}>
+                  <div
+                    key={p.id}
+                    className={styles.recentCard}
+                    onClick={() => onOpenProject?.(p)}
+                  >
                     <div className={styles.recentCardContent}>
                       <div className={styles.recentProjectTitle}>{p.title}</div>
                       <div className={styles.recentProjectPath} title={p.projectPath ?? ""}>
@@ -121,12 +143,76 @@ export default function ProjectTemplateSelector({
                       className={styles.recentCardMenuBtn}
                       onClick={(e) => {
                         e.stopPropagation();
-                        // TODO: Open context menu for project
+                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        setMenuPosition({ x: rect.right + 8, y: rect.top });
+                        setMenuOpenId((prev) => (prev === p.id ? null : p.id));
                         window.api.logger.info("Project context menu", { id: p.id });
                       }}
                     >
                       <MoreVertical size={16} />
                     </button>
+
+                    {menuOpenId === p.id && (
+                      <div
+                        ref={menuRef}
+                        className={styles.recentContextMenu}
+                        style={{ top: menuPosition.y, left: menuPosition.x }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div
+                          className={styles.recentContextMenuItem}
+                          onClick={() => {
+                            setMenuOpenId(null);
+                            onOpenProject?.(p);
+                          }}
+                        >
+                          열기
+                        </div>
+                        <div
+                          className={styles.recentContextMenuItem}
+                          onClick={async () => {
+                            setMenuOpenId(null);
+                            const nextTitle = window
+                              .prompt("프로젝트 이름 수정", p.title)
+                              ?.trim();
+                            if (!nextTitle || nextTitle === p.title) return;
+
+                            try {
+                              await updateProject(p.id, nextTitle);
+                            } catch (error) {
+                              window.api.logger.error(
+                                "Failed to update project",
+                                error,
+                              );
+                            }
+                          }}
+                        >
+                          이름 수정
+                        </div>
+                        <div className={styles.recentContextMenuDivider} />
+                        <div
+                          className={`${styles.recentContextMenuItem} ${styles.recentContextMenuDanger}`}
+                          onClick={async () => {
+                            setMenuOpenId(null);
+                            const ok = window.confirm(
+                              `정말로 "${p.title}" 프로젝트를 삭제할까요?`,
+                            );
+                            if (!ok) return;
+
+                            try {
+                              await deleteProject(p.id);
+                            } catch (error) {
+                              window.api.logger.error(
+                                "Failed to delete project",
+                                error,
+                              );
+                            }
+                          }}
+                        >
+                          삭제
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

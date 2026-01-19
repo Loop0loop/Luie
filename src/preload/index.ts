@@ -155,6 +155,16 @@ contextBridge.exposeInMainWorld("api", {
       safeInvoke("fs:read-file", filePath),
     writeFile: (filePath: string, content: string): Promise<IPCResponse> =>
       safeInvoke("fs:write-file", filePath, content),
+
+    // .luie package directory helpers
+    createLuiePackage: (packagePath: string, meta: unknown): Promise<IPCResponse<{ path: string }>> =>
+      safeInvoke("fs:create-luie-package", packagePath, meta),
+    writeProjectFile: (
+      projectRoot: string,
+      relativePath: string,
+      content: string,
+    ): Promise<IPCResponse<{ path: string }>> =>
+      safeInvoke("fs:write-project-file", projectRoot, relativePath, content),
   },
 
   // Search API
