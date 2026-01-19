@@ -5,6 +5,7 @@ import { keywordExtractor } from "../core/keywordExtractor.js";
 import { characterService } from "./characterService.js";
 import { termService } from "./termService.js";
 import { z } from "zod";
+import { GoogleGenAI, Type } from "@google/genai";
 
 const logger = createLogger("AutoExtractService");
 
@@ -60,6 +61,35 @@ const FEW_SHOT_EXAMPLES = `
   "reasoning": "조직의 목적과 성격이 명확히 드러남"
 }
 `.trim();
+
+const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
+
+const GEMINI_RESPONSE_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    name: { type: Type.STRING },
+    entityType: {
+      type: Type.STRING,
+      enum: ["character", "location", "organization", "item", "concept"],
+    },
+    importance: {
+      type: Type.STRING,
+      enum: ["main", "supporting", "minor", "unknown"],
+    },
+    summary: { type: Type.STRING },
+    confidence: { type: Type.NUMBER },
+    reasoning: { type: Type.STRING },
+  },
+  required: ["name", "entityType", "importance", "summary", "confidence"],
+  propertyOrdering: [
+    "name",
+    "entityType",
+    "importance",
+    "summary",
+    "confidence",
+    "reasoning",
+  ],
+} as const;
 
 class AutoExtractService {
   private timers = new Map<string, NodeJS.Timeout>();
@@ -244,58 +274,26 @@ JSON 형식으로만 답하세요:
 2. summary는 문맥 기반으로만 작성하세요
 3. confidence는 문맥의 명확성에 따라 조정하세요`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent?key=${apiKey}`;
-    
-    const requestBody = {
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: GEMINI_MODEL,
       contents: [
         {
           role: "user",
           parts: [{ text: prompt }],
         },
       ],
-      generationConfig: {
-        temperature: 0.1, // 더 결정론적인 응답
+      config: {
+        temperature: 0.1,
         topK: 1,
         topP: 0.95,
         maxOutputTokens: 512,
-        response_mime_type: "application/json",
+        responseMimeType: "application/json",
+        responseSchema: GEMINI_RESPONSE_SCHEMA,
       },
-      safetySettings: [
-        {
-          category: "HARM_CATEGORY_HARASSMENT",
-          threshold: "BLOCK_NONE",
-        },
-        {
-          category: "HARM_CATEGORY_HATE_SPEECH",
-          threshold: "BLOCK_NONE",
-        },
-        {
-          category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-          threshold: "BLOCK_NONE",
-        },
-        {
-          category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-          threshold: "BLOCK_NONE",
-        },
-      ],
-    };
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(requestBody),
     });
 
-    if (!response.ok) {
-      logger.warn("Gemini response error", {
-        status: response.status,
-        statusText: response.statusText,
-      });
-      return null;
-    }
-
-    const json = await response.json();
-    const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = response.text;
     if (!text) {
       logger.warn("Gemini empty response", { name });
       return null;
