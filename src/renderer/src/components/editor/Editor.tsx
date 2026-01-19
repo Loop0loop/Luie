@@ -1,24 +1,28 @@
-import { useState, useEffect } from "react";
-import { useEditor, EditorContent } from '@tiptap/react';
-import { Node, mergeAttributes } from '@tiptap/core';
-import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
-import TaskList from '@tiptap/extension-task-list';
-import TaskItem from '@tiptap/extension-task-item';
-import Placeholder from '@tiptap/extension-placeholder';
-import Highlight from '@tiptap/extension-highlight';
-import { TextStyle } from '@tiptap/extension-text-style';
-import { Details, DetailsSummary, DetailsContent } from '@tiptap/extension-details';
+import { useState, useEffect, useMemo } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import { Extension, Node, mergeAttributes } from "@tiptap/core";
+import StarterKit from "@tiptap/starter-kit";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
+import Placeholder from "@tiptap/extension-placeholder";
+import Highlight from "@tiptap/extension-highlight";
+import { TextStyle } from "@tiptap/extension-text-style";
+import {
+  Details,
+  DetailsSummary,
+  DetailsContent,
+} from "@tiptap/extension-details";
+import Suggestion from "@tiptap/suggestion";
 import styles from "../../styles/components/Editor.module.css";
 import EditorToolbar from "./EditorToolbar";
-import SlashMenu from "./SlashMenu";
 import { useEditorStore } from "../../stores/editorStore";
+import { slashSuggestion } from "./suggestion";
 
 // Simple Callout Extension (inline to avoid dependencies)
 const Callout = Node.create({
-  name: 'callout',
-  group: 'block',
-  content: 'block+',
+  name: "callout",
+  group: "block",
+  content: "block+",
   defining: true,
 
   parseHTML() {
@@ -26,10 +30,28 @@ const Callout = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['div', mergeAttributes(HTMLAttributes, { 'data-type': 'callout', class: 'callout' }), 0];
+    return [
+      "div",
+      mergeAttributes(HTMLAttributes, {
+        "data-type": "callout",
+        class: "callout",
+      }),
+      0,
+    ];
   },
 });
 
+const SlashCommand = Extension.create({
+  name: "slashCommand",
+  addProseMirrorPlugins() {
+    return [
+      Suggestion({
+        editor: this.editor,
+        ...slashSuggestion,
+      }),
+    ];
+  },
+});
 
 interface EditorProps {
   initialTitle?: string;
@@ -44,91 +66,23 @@ export default function Editor({
 }: EditorProps) {
   const [title, setTitle] = useState(initialTitle);
   const [contentHtml, setContentHtml] = useState(initialContent);
-  const [showSlashMenu, setShowSlashMenu] = useState(false);
-  const [slashMenuPos, setSlashMenuPos] = useState({ top: 0, left: 0 });
   const [wordCount, setWordCount] = useState(0);
 
   const { fontFamily, fontSize, lineHeight, theme } = useEditorStore();
   const [isMobileView, setIsMobileView] = useState(false);
 
-  // Handle Slash Menu Global Click to close
-  useEffect(() => {
-    const handleClick = () => setShowSlashMenu(false);
-    document.addEventListener('click', handleClick);
-    return () => document.removeEventListener('click', handleClick);
-  }, []);
-
-  const handleSlashSelect = (id: string) => {
-    if (!editor) return;
-
-    // Delete the slash character that triggered the menu
-    editor.chain().focus().deleteRange({ 
-      from: editor.state.selection.from - 1, 
-      to: editor.state.selection.from 
-    }).run();
-
-    // Apply the selected formatting
-    switch (id) {
-      case 'h1': 
-        editor.chain().focus().toggleHeading({ level: 1 }).run(); 
-        break;
-      case 'h2': 
-        editor.chain().focus().toggleHeading({ level: 2 }).run(); 
-        break;
-      case 'h3': 
-        editor.chain().focus().toggleHeading({ level: 3 }).run(); 
-        break;
-      case 'bullet': 
-        editor.chain().focus().toggleBulletList().run(); 
-        break;
-      case 'number': 
-        editor.chain().focus().toggleOrderedList().run(); 
-        break;
-      case 'check': 
-        editor.chain().focus().toggleTaskList().run(); 
-        break;
-      case 'toggle':
-        if (editor.isActive('details')) {
-          editor.chain().focus().unsetDetails().run();
-        } else {
-          editor.chain().focus().setDetails().run();
-        }
-        break;
-      case 'callout':
-        editor
-          .chain()
-          .focus()
-          .insertContent({
-            type: 'callout',
-            content: [
-              {
-                type: 'paragraph',
-                content: [{ type: 'text', text: '메모…' }],
-              },
-            ],
-          })
-          .run();
-        break;
-      case 'quote': 
-        editor.chain().focus().toggleBlockquote().run(); 
-        break;
-      case 'divider': 
-        editor.chain().focus().setHorizontalRule().run(); 
-        break;
-    }
-    
-    setShowSlashMenu(false);
-  };
-
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
+  useEffect(() => {
+    setTitle(initialTitle);
+  }, [initialTitle]);
+
   // TipTap Editor Setup
-  const editor = useEditor({
-    extensions: [
+  const extensions = useMemo(
+    () => [
       StarterKit,
-      Underline,
       Highlight,
       TextStyle,
       TaskList,
@@ -139,7 +93,7 @@ export default function Editor({
       Details.configure({
         persist: true,
         HTMLAttributes: {
-          class: 'toggle',
+          class: "toggle",
         },
       }),
       DetailsSummary,
@@ -147,50 +101,36 @@ export default function Editor({
       Placeholder.configure({
         placeholder: "내용을 입력하세요... ('/'를 입력하여 명령어 확인)",
       }),
+      SlashCommand,
     ],
-    content: initialContent,
-    onUpdate: ({ editor }) => {
-      const html = editor.getHTML();
-      const text = editor.getText();
-      setContentHtml(html);
-      setWordCount(text.trim().split(/\s+/).filter(Boolean).length);
-    },
-    editorProps: {
-      attributes: {
-        class: styles.editorContent, // We will map this class in CSS
-      },
-      handleKeyDown: (view, event) => {
-        // Handle slash menu navigation when menu is open
-        if (showSlashMenu) {
-          if (['ArrowUp', 'ArrowDown', 'Enter'].includes(event.key)) {
-            return true; // Let SlashMenu component handle navigation
-          }
-          if (event.key === 'Escape') {
-            setShowSlashMenu(false);
-            return true;
-          }
-        }
+    [],
+  );
 
-        // Detect slash key to show menu
-        if (event.key === '/') {
-          setTimeout(() => {
-            const { from } = view.state.selection;
-            const coords = view.coordsAtPos(from);
-            const container = view.dom.closest(`.${styles.container}`) || document.body;
-            const containerRect = container.getBoundingClientRect();
-            
-            setSlashMenuPos({
-              top: coords.top - containerRect.top + 30,
-              left: coords.left - containerRect.left
-            });
-            setShowSlashMenu(true);
-          }, 0);
-        }
-        
-        return false;
-      }
+  const editor = useEditor(
+    {
+      extensions,
+      content: initialContent,
+      onUpdate: ({ editor }) => {
+        const html = editor.getHTML();
+        const text = editor.getText();
+        setContentHtml(html);
+        setWordCount(text.trim().split(/\s+/).filter(Boolean).length);
+      },
+      editorProps: {
+        attributes: {
+          class: styles.editorContent,
+          style: `font-family: ${
+            fontFamily === "serif"
+              ? '"Merriweather", serif'
+              : fontFamily === "sans"
+                ? '"Inter", sans-serif'
+                : '"JetBrains Mono", monospace'
+          }; font-size: ${fontSize}px; line-height: ${lineHeight};`,
+        },
+      },
     },
-  });
+    [extensions],
+  );
 
   // Auto-save
   useEffect(() => {
@@ -202,10 +142,14 @@ export default function Editor({
 
   const getFontFamily = () => {
     switch (fontFamily) {
-      case "serif": return "var(--font-serif)";
-      case "sans": return "var(--font-sans)";
-      case "mono": return "var(--font-mono)";
-      default: return "var(--font-serif)";
+      case "serif":
+        return "var(--font-serif)";
+      case "sans":
+        return "var(--font-sans)";
+      case "mono":
+        return "var(--font-mono)";
+      default:
+        return "var(--font-serif)";
     }
   };
 
@@ -234,26 +178,19 @@ export default function Editor({
             style={{ fontFamily: getFontFamily() }}
           />
 
-          <div 
+          <div
             className={styles.editorContainer}
             style={{
               fontFamily: getFontFamily(),
               fontSize: `${fontSize}px`,
               lineHeight: lineHeight,
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              position: 'relative' // Ensure absolute positioning of menu works relative to this
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              position: "relative", // Ensure absolute positioning of menu works relative to this
             }}
           >
-             <EditorContent editor={editor} className={styles.tiptapEditor} />
-             {showSlashMenu && (
-                <SlashMenu 
-                  position={slashMenuPos} 
-                  onSelect={handleSlashSelect}
-                  onClose={() => setShowSlashMenu(false)}
-                />
-             )}
+            <EditorContent editor={editor} className={styles.tiptapEditor} />
           </div>
         </div>
       </div>

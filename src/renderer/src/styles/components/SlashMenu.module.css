@@ -43,7 +43,7 @@
 }
 
 .item:hover {
-  background-color: transparent;
+  background-color: var(--bg-element-hover);
 }
 
 .iconWrapper {

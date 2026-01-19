@@ -112,4 +112,34 @@ contextBridge.exposeInMainWorld("api", {
     toggleFullscreen: (): Promise<IPCResponse> =>
       ipcRenderer.invoke("window:toggle-fullscreen"),
   },
+
+  // Logger API
+  logger: {
+    debug: (message: string, data?: unknown): Promise<IPCResponse> =>
+      ipcRenderer.invoke("logger:log", { level: "debug", message, data }),
+    info: (message: string, data?: unknown): Promise<IPCResponse> =>
+      ipcRenderer.invoke("logger:log", { level: "info", message, data }),
+    warn: (message: string, data?: unknown): Promise<IPCResponse> =>
+      ipcRenderer.invoke("logger:log", { level: "warn", message, data }),
+    error: (message: string, data?: unknown): Promise<IPCResponse> =>
+      ipcRenderer.invoke("logger:log", { level: "error", message, data }),
+  },
+
+  // Settings API
+  settings: {
+    getAll: (): Promise<IPCResponse> => ipcRenderer.invoke("settings:get-all"),
+    getEditor: (): Promise<IPCResponse> =>
+      ipcRenderer.invoke("settings:get-editor"),
+    setEditor: (settings: unknown): Promise<IPCResponse> =>
+      ipcRenderer.invoke("settings:set-editor", settings),
+    getAutoSave: (): Promise<IPCResponse> =>
+      ipcRenderer.invoke("settings:get-auto-save"),
+    setAutoSave: (settings: unknown): Promise<IPCResponse> =>
+      ipcRenderer.invoke("settings:set-auto-save", settings),
+    getWindowBounds: (): Promise<IPCResponse> =>
+      ipcRenderer.invoke("settings:get-window-bounds"),
+    setWindowBounds: (bounds: unknown): Promise<IPCResponse> =>
+      ipcRenderer.invoke("settings:set-window-bounds", bounds),
+    reset: (): Promise<IPCResponse> => ipcRenderer.invoke("settings:reset"),
+  },
 });

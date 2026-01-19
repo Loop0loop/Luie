@@ -50,6 +50,16 @@ export const IPC_CHANNELS = {
   FS_SELECT_SAVE_LOCATION: "fs:select-save-location",
   FS_SAVE_PROJECT: "fs:save-project",
   FS_WRITE_FILE: "fs:write-file",
+
+  // Settings
+  SETTINGS_GET_ALL: "settings:get-all",
+  SETTINGS_GET_EDITOR: "settings:get-editor",
+  SETTINGS_SET_EDITOR: "settings:set-editor",
+  SETTINGS_GET_AUTO_SAVE: "settings:get-auto-save",
+  SETTINGS_SET_AUTO_SAVE: "settings:set-auto-save",
+  SETTINGS_SET_WINDOW_BOUNDS: "settings:set-window-bounds",
+  SETTINGS_GET_WINDOW_BOUNDS: "settings:get-window-bounds",
+  SETTINGS_RESET: "settings:reset",
 } as const;
 
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

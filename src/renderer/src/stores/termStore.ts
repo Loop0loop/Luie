@@ -1,133 +1,54 @@
 import { create } from "zustand";
-import type { Term } from "@prisma/client";
+import { Term } from "@prisma/client";
+import { createCRUDSlice, CRUDStore } from "./createCRUDStore";
+import { TermCreateInput, TermUpdateInput } from "../../../shared/types";
 
-interface TermStore {
-  terms: Term[];
-  currentTerm: Term | null;
-  isLoading: boolean;
+type BaseTermStore = CRUDStore<Term, TermCreateInput, TermUpdateInput>;
 
+interface TermStore extends BaseTermStore {
+  // 별칭 메서드들
   loadTerms: (projectId: string) => Promise<void>;
   loadTerm: (id: string) => Promise<void>;
-  createTerm: (
-    projectId: string,
-    term: string,
-    definition?: string,
-    category?: string,
-  ) => Promise<void>;
-  updateTerm: (
-    id: string,
-    term?: string,
-    definition?: string,
-    category?: string,
-  ) => Promise<void>;
+  createTerm: (input: TermCreateInput) => Promise<void>;
+  updateTerm: (input: TermUpdateInput) => Promise<void>;
   deleteTerm: (id: string) => Promise<void>;
   setCurrentTerm: (term: Term | null) => void;
+
+  // 호환성 필드
+  terms: Term[];
+  currentTerm: Term | null;
 }
 
-export const useTermStore = create<TermStore>((set) => ({
-  terms: [],
-  currentTerm: null,
-  isLoading: false,
+export const useTermStore = create<TermStore>((set, get) => {
+  const apiClient = {
+    ...window.api.term,
+    getAll: (parentId?: string) => window.api.term.getAll(parentId || ""),
+  };
 
-  loadTerms: async (projectId: string) => {
-    set({ isLoading: true });
-    try {
-      const response = await window.api.term.getAll(projectId);
-      if (response.success && response.data) {
-        set({ terms: response.data });
-      } else {
-        set({ terms: [] });
-      }
-    } catch (error) {
-      console.error("Failed to load terms:", error);
-      set({ terms: [] });
-    } finally {
-      set({ isLoading: false });
-    }
-  },
+  const crudSlice = createCRUDSlice<Term, TermCreateInput, TermUpdateInput>(
+    apiClient,
+    "Term",
+  )(set, get, {
+    getState: get,
+    setState: set,
+    subscribe: () => () => {},
+  } as any);
 
-  loadTerm: async (id: string) => {
-    set({ isLoading: true });
-    try {
-      const response = await window.api.term.get(id);
-      if (response.success && response.data) {
-        set({ currentTerm: response.data });
-      } else {
-        set({ currentTerm: null });
-      }
-    } catch (error) {
-      console.error("Failed to load term:", error);
-      set({ currentTerm: null });
-    } finally {
-      set({ isLoading: false });
-    }
-  },
+  return {
+    ...crudSlice,
+    loadTerms: (projectId: string) => crudSlice.loadAll(projectId),
+    loadTerm: (id: string) => crudSlice.loadOne(id),
+    createTerm: async (input: TermCreateInput) => {
+      await crudSlice.create(input);
+    },
+    updateTerm: async (input: TermUpdateInput) => {
+      await crudSlice.update(input);
+    },
+    deleteTerm: (id: string) => crudSlice.delete(id),
+    setCurrentTerm: (term: Term | null) => crudSlice.setCurrent(term),
 
-  createTerm: async (
-    projectId: string,
-    term: string,
-    definition?: string,
-    category?: string,
-  ) => {
-    try {
-      const response = await window.api.term.create({
-        projectId,
-        term,
-        definition,
-        category,
-      });
-      if (response.success && response.data) {
-        const newTerm: Term = response.data;
-        set((state) => ({
-          terms: [...state.terms, newTerm],
-        }));
-      }
-    } catch (error) {
-      console.error("Failed to create term:", error);
-    }
-  },
-
-  updateTerm: async (
-    id: string,
-    term?: string,
-    definition?: string,
-    category?: string,
-  ) => {
-    try {
-      const response = await window.api.term.update({
-        id,
-        term,
-        definition,
-        category,
-      });
-      if (response.success && response.data) {
-        const updatedTerm: Term = response.data;
-        set((state) => ({
-          terms: state.terms.map((t) => (t.id === id ? updatedTerm : t)),
-          currentTerm:
-            state.currentTerm?.id === id ? updatedTerm : state.currentTerm,
-        }));
-      }
-    } catch (error) {
-      console.error("Failed to update term:", error);
-    }
-  },
-
-  deleteTerm: async (id: string) => {
-    try {
-      const response = await window.api.term.delete(id);
-      if (response.success) {
-        set((state) => ({
-          terms: state.terms.filter((t) => t.id !== id),
-          currentTerm: state.currentTerm?.id === id ? null : state.currentTerm,
-        }));
-      }
-    } catch (error) {
-      console.error("Failed to delete term:", error);
-    }
-  },
-
-  setCurrentTerm: (term: Term | null) => {
-    set({ currentTerm: term });
-  },
-}));
+    // 호환성을 위한 속성 매핑 (초기값)
+    terms: crudSlice.items,
+    currentTerm: crudSlice.currentItem,
+  };
+});

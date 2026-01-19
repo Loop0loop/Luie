@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import ReactFlow, {
   Controls,
   Background,
@@ -11,7 +11,7 @@ import ReactFlow, {
   NodeChange,
   EdgeChange,
 } from "reactflow";
-import "reactflow/dist/style.css"; // Import ReactFlow styles
+import "reactflow/dist/style.css";
 import styles from "../../styles/components/ResearchPanel.module.css";
 import {
   User,
@@ -22,13 +22,16 @@ import {
   ArrowLeft,
   Eraser,
 } from "lucide-react";
+import { useCharacterStore } from "../../stores/characterStore";
+import { useProjectStore } from "../../stores/projectStore";
+import { useTermStore } from "../../stores/termStore";
 
 interface ResearchPanelProps {
   activeTab: string; // 'character' | 'world' | 'scrap'
   onClose: () => void;
 }
 
-type WorldTab = "synopsis" | "mindmap" | "drawing" | "plot";
+type WorldTab = "synopsis" | "terms" | "mindmap" | "drawing" | "plot";
 
 export default function ResearchPanel({
   activeTab,
@@ -37,15 +40,203 @@ export default function ResearchPanel({
   const getTitle = () => {
     switch (activeTab) {
       case "character":
-        return "Character Management";
+        return "Characters";
       case "world":
-        return "World Construction";
+        return "World";
       case "scrap":
-        return "Memo & Notes";
+        return "Scrap";
       default:
         return "Research";
     }
   };
+
+/* -------------------------------------------------------------------------- */
+/*                                WORLD TAB                                   */
+/* -------------------------------------------------------------------------- */
+
+function WorldSection() {
+  const [subTab, setSubTab] = useState<WorldTab>("terms");
+
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <div className={styles.subNavBar}>
+        <div
+          className={`${styles.subTab} ${subTab === "terms" ? styles.active : ""}`}
+          onClick={() => setSubTab("terms")}
+        >
+          Terms (용어)
+        </div>
+        <div
+          className={`${styles.subTab} ${subTab === "synopsis" ? styles.active : ""}`}
+          onClick={() => setSubTab("synopsis")}
+        >
+          Synopsis
+        </div>
+        <div
+          className={`${styles.subTab} ${subTab === "mindmap" ? styles.active : ""}`}
+          onClick={() => setSubTab("mindmap")}
+        >
+          Mindmap
+        </div>
+        <div
+          className={`${styles.subTab} ${subTab === "drawing" ? styles.active : ""}`}
+          onClick={() => setSubTab("drawing")}
+        >
+          Map Drawing
+        </div>
+        <div
+          className={`${styles.subTab} ${subTab === "plot" ? styles.active : ""}`}
+          onClick={() => setSubTab("plot")}
+        >
+          Plot Board
+        </div>
+      </div>
+
+      <div style={{ flex: 1, overflow: "hidden" }}>
+        {subTab === "terms" && <TermManager />}
+        {subTab === "synopsis" && <SynopsisEditor />}
+        {subTab === "mindmap" && <MindMapBoard />}
+        {subTab === "drawing" && <DrawingCanvas />}
+        {subTab === "plot" && <PlotBoard />}
+      </div>
+    </div>
+  );
+}
+
+function TermManager() {
+  const { currentItem: currentProject } = useProjectStore();
+  const {
+    terms,
+    loadTerms,
+    createTerm,
+    updateTerm,
+    deleteTerm
+  } = useTermStore();
+  const [selectedTermId, setSelectedTermId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (currentProject) {
+      loadTerms(currentProject.id);
+    }
+  }, [currentProject, loadTerms]);
+
+  const handleAddTerm = async () => {
+    if (currentProject) {
+      await createTerm({
+        projectId: currentProject.id,
+        term: "New Term",
+        definition: "",
+        category: "general",
+      });
+    }
+  };
+
+  if (selectedTermId) {
+    const term = terms.find(t => t.id === selectedTermId);
+    if (!term) return <div>Term not found</div>;
+
+    return (
+      <div>
+        <div className={styles.detailHeader}>
+          <div
+            className={styles.backButton}
+            onClick={() => setSelectedTermId(null)}
+          >
+            <ArrowLeft size={16} />
+          </div>
+          <span style={{ fontWeight: 600 }}>{term.term}</span>
+        </div>
+        
+        <div className={styles.tableGrid}>
+          <div className={styles.cellLabel}>용어</div>
+          <div className={styles.cellValue}>
+            <input
+              className={styles.cellValueInput}
+              value={term.term}
+              onChange={(e) => updateTerm({ id: term.id, term: e.target.value })}
+            />
+          </div>
+          <div className={styles.cellLabel}>정의</div>
+          <div className={styles.cellValue}>
+            <textarea
+              className={styles.cellValueInput}
+              value={term.definition || ""}
+              onChange={(e) => updateTerm({ id: term.id, definition: e.target.value })}
+              style={{ minHeight: "100px" }}
+            />
+          </div>
+          <div className={styles.cellLabel}>카테고리</div>
+          <div className={styles.cellValue}>
+            <input
+              className={styles.cellValueInput}
+              value={term.category || ""}
+              onChange={(e) => updateTerm({ id: term.id, category: e.target.value })}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.characterListContainer}>
+      {terms.map((term) => (
+        <div
+          key={term.id}
+          className={styles.characterCard}
+          onClick={() => setSelectedTermId(term.id)}
+          style={{ height: 'auto', minHeight: '80px' }}
+        >
+          <div className={styles.characterInfo} style={{ marginLeft: 0 }}>
+            <div className={styles.characterName}>{term.term}</div>
+            <div className={styles.characterRole} style={{ fontSize: '0.8em', color: '#666' }}>
+              {term.category ? `[${term.category}] ` : ''}{term.definition || "No definition"}
+            </div>
+          </div>
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              deleteTerm(term.id);
+            }}
+            style={{ position: 'absolute', top: 8, right: 8, border: 'none', background: 'transparent', cursor: 'pointer', opacity: 0.5 }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      ))}
+      <div className={styles.addCharacterCard} onClick={handleAddTerm} style={{ height: '80px' }}>
+        <Plus size={24} />
+        <span>Add Term</span>
+      </div>
+    </div>
+  );
+}
+
+function SynopsisEditor() {
+  const { currentItem: currentProject, updateProject } = useProjectStore();
+  
+  if (!currentProject) return null;
+
+  return (
+    <div style={{ height: "100%", overflowY: "auto", paddingRight: 8 }}>
+      <div className={styles.sectionTitle}>Project Description</div>
+      <textarea
+        className={styles.cellValueInput}
+        style={{
+          border: "1px solid var(--border-default)",
+          padding: 12,
+          borderRadius: 4,
+          width: "100%",
+          marginBottom: 16,
+          minHeight: 200,
+        }}
+        placeholder="Project description..."
+        value={currentProject.description || ""}
+        onChange={(e) => updateProject({ id: currentProject.id, description: e.target.value })}
+      />
+    </div>
+  );
+  }
 
   const getIcon = () => {
     switch (activeTab) {
@@ -88,22 +279,35 @@ export default function ResearchPanel({
 /* -------------------------------------------------------------------------- */
 /*                            CHARACTER SECTION                               */
 /* -------------------------------------------------------------------------- */
-// (Keeping Character Manager Logic same as before for stability)
 function CharacterManager() {
+  const { currentItem: currentProject } = useProjectStore();
+  const {
+    items: characters,
+    loadAll: loadCharacters,
+    create: createCharacter,
+  } = useCharacterStore();
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(
     null,
   );
-  const characters = [
-    { id: "1", name: "카이란 알렉산더", role: "주인공 (남)", color: "#FF5555" },
-    {
-      id: "2",
-      name: "엘리제 드 클로로",
-      role: "주인공 (여)",
-      color: "#55AAFF",
-    },
-  ];
+
+  useEffect(() => {
+    if (currentProject) {
+      loadCharacters(currentProject.id);
+    }
+  }, [currentProject, loadCharacters]);
+
+  const handleAddCharacter = async () => {
+    if (currentProject) {
+      await createCharacter({
+        projectId: currentProject.id,
+        name: "New Character",
+        description: "",
+      });
+    }
+  };
 
   if (selectedCharacterId) {
+    const selectedChar = characters.find((c) => c.id === selectedCharacterId);
     return (
       <div>
         <div className={styles.detailHeader}>
@@ -114,12 +318,10 @@ function CharacterManager() {
             <ArrowLeft size={16} />
           </div>
           <span style={{ fontWeight: 600 }}>
-            {selectedCharacterId === "new"
-              ? "New Character"
-              : characters.find((c) => c.id === selectedCharacterId)?.name}
+            {selectedChar?.name || "Character"}
           </span>
         </div>
-        <CharacterProfile />
+        {selectedChar && <CharacterProfile character={selectedChar} />}
       </div>
     );
   }
@@ -134,20 +336,21 @@ function CharacterManager() {
         >
           <div
             className={styles.characterImagePlaceholder}
-            style={{ borderBottom: `4px solid ${char.color}` }}
+            style={{
+              borderBottom: `4px solid ${char.attributes ? JSON.parse(char.attributes as string).color || "#ccc" : "#ccc"}`,
+            }}
           >
             <User size={32} opacity={0.5} />
           </div>
           <div className={styles.characterInfo}>
             <div className={styles.characterName}>{char.name}</div>
-            <div className={styles.characterRole}>{char.role}</div>
+            <div className={styles.characterRole}>
+              {char.description || "No description"}
+            </div>
           </div>
         </div>
       ))}
-      <div
-        className={styles.addCharacterCard}
-        onClick={() => setSelectedCharacterId("new")}
-      >
+      <div className={styles.addCharacterCard} onClick={handleAddCharacter}>
         <Plus size={24} />
         <span>Add Character</span>
       </div>
@@ -155,7 +358,27 @@ function CharacterManager() {
   );
 }
 
-function CharacterProfile() {
+function CharacterProfile({ character }: { character: any }) {
+  const { update: updateCharacter } = useCharacterStore();
+  const attributes = character.attributes
+    ? JSON.parse(character.attributes)
+    : {};
+
+  const handleUpdate = (field: string, value: string) => {
+    updateCharacter({
+      id: character.id,
+      [field]: value,
+    });
+  };
+
+  const handleAttributeUpdate = (key: string, value: string) => {
+    const newAttributes = { ...attributes, [key]: value };
+    updateCharacter({
+      id: character.id,
+      attributes: newAttributes,
+    });
+  };
+
   return (
     <div>
       <div className={styles.sectionTitle}>기본 프로필 (Basic Profile)</div>
@@ -164,20 +387,33 @@ function CharacterProfile() {
         <div className={styles.cellValue}>
           <input
             className={styles.cellValueInput}
-            defaultValue="카이란 알렉산더"
+            value={character.name}
+            onChange={(e) => handleUpdate("name", e.target.value)}
+          />
+        </div>
+        <div className={styles.cellLabel}>설명</div>
+        <div className={styles.cellValue}>
+          <input
+            className={styles.cellValueInput}
+            value={character.description || ""}
+            onChange={(e) => handleUpdate("description", e.target.value)}
           />
         </div>
         <div className={styles.cellLabel}>성별</div>
         <div className={styles.cellValue}>
-          <input className={styles.cellValueInput} defaultValue="남성" />
+          <input
+            className={styles.cellValueInput}
+            value={attributes.gender || ""}
+            onChange={(e) => handleAttributeUpdate("gender", e.target.value)}
+          />
         </div>
         <div className={styles.cellLabel}>나이</div>
         <div className={styles.cellValue}>
-          <input className={styles.cellValueInput} defaultValue="24세" />
-        </div>
-        <div className={styles.cellLabel}>직업</div>
-        <div className={styles.cellValue}>
-          <input className={styles.cellValueInput} defaultValue="황태자" />
+          <input
+            className={styles.cellValueInput}
+            value={attributes.age || ""}
+            onChange={(e) => handleAttributeUpdate("age", e.target.value)}
+          />
         </div>
       </div>
       <div className={styles.sectionTitle}>상세 설정</div>

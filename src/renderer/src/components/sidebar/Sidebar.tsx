@@ -1,10 +1,20 @@
-import { useState, useRef, useEffect } from 'react';
-import styles from '../../styles/components/Sidebar.module.css';
-import { 
-  Settings, Plus, ChevronDown, ChevronRight, 
-  FileText, BookOpen, Trash2, FolderOpen, MoreVertical, Edit2,
-  ArrowRightFromLine, ArrowDownFromLine, Copy
-} from 'lucide-react';
+import { useState, useRef, useEffect } from "react";
+import styles from "../../styles/components/Sidebar.module.css";
+import {
+  Settings,
+  Plus,
+  ChevronDown,
+  ChevronRight,
+  FileText,
+  BookOpen,
+  Trash2,
+  FolderOpen,
+  MoreVertical,
+  Edit2,
+  ArrowRightFromLine,
+  ArrowDownFromLine,
+  Copy,
+} from "lucide-react";
 
 interface Chapter {
   id: string;
@@ -18,18 +28,18 @@ interface SidebarProps {
   onSelectChapter: (id: string) => void;
   onAddChapter: () => void;
   onOpenSettings: () => void;
-  onSelectResearchItem: (type: 'character' | 'world' | 'scrap') => void;
-  onSplitView?: (type: 'vertical' | 'horizontal', contentId: string) => void;
+  onSelectResearchItem: (type: "character" | "world" | "scrap") => void;
+  onSplitView?: (type: "vertical" | "horizontal", contentId: string) => void;
 }
 
-export default function Sidebar({ 
-  chapters, 
-  activeChapterId, 
+export default function Sidebar({
+  chapters,
+  activeChapterId,
   onSelectChapter,
   onAddChapter,
   onOpenSettings,
   onSelectResearchItem,
-  onSplitView
+  onSplitView,
 }: SidebarProps) {
   // Section collapse states
   const [isManuscriptOpen, setManuscriptOpen] = useState(true);
@@ -40,7 +50,7 @@ export default function Sidebar({
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
-  
+
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close menu on outside click
@@ -65,8 +75,8 @@ export default function Sidebar({
   const handleAction = (action: string, id: string) => {
     console.log(`Action: ${action} on ${id}`);
     setMenuOpenId(null);
-    if (action === 'open_right' && onSplitView) {
-      onSplitView('vertical', id);
+    if (action === "open_right" && onSplitView) {
+      onSplitView("vertical", id);
     }
     // Placeholder actions
   };
@@ -75,60 +85,89 @@ export default function Sidebar({
     <div className={styles.container}>
       {/* Context Menu Popup */}
       {menuOpenId && (
-        <div 
+        <div
           ref={menuRef}
           className={styles.contextMenu}
           style={{ top: menuPosition.y, left: menuPosition.x }}
         >
-          <div className={styles.contextMenuItem} onClick={() => handleAction('open_below', menuOpenId)}>
+          <div
+            className={styles.contextMenuItem}
+            onClick={() => handleAction("open_below", menuOpenId)}
+          >
             <ArrowDownFromLine size={14} /> 아래에 열기
           </div>
-          <div className={styles.contextMenuItem} onClick={() => handleAction('open_right', menuOpenId)}>
+          <div
+            className={styles.contextMenuItem}
+            onClick={() => handleAction("open_right", menuOpenId)}
+          >
             <ArrowRightFromLine size={14} /> 오른쪽에 열기
           </div>
           <div className={styles.divider} />
-          <div className={styles.contextMenuItem} onClick={() => handleAction('rename', menuOpenId)}>
+          <div
+            className={styles.contextMenuItem}
+            onClick={() => handleAction("rename", menuOpenId)}
+          >
             <Edit2 size={14} /> 이름 수정하기
           </div>
-          <div className={styles.contextMenuItem} onClick={() => handleAction('duplicate', menuOpenId)}>
+          <div
+            className={styles.contextMenuItem}
+            onClick={() => handleAction("duplicate", menuOpenId)}
+          >
             <Copy size={14} /> 복제하기
           </div>
-          <div className={styles.contextMenuItem} onClick={() => handleAction('delete', menuOpenId)} style={{color: '#ef4444'}}>
+          <div
+            className={styles.contextMenuItem}
+            onClick={() => handleAction("delete", menuOpenId)}
+            style={{ color: "#ef4444" }}
+          >
             <Trash2 size={14} /> 삭제하기
           </div>
         </div>
       )}
       <div className={styles.header}>
-        <h2 className={styles.projectName}>폭군을 길들이는 법</h2>
+        <h2 className={styles.projectName}>
+          {currentProject?.title || "프로젝트"}
+        </h2>
         <div className={styles.metaInfo}>PROJECT BINDER</div>
       </div>
-      
+
       <div className={styles.binderArea}>
         {/* MANUSCRIPT SECTION */}
-        <div 
+        <div
           className={styles.sectionHeader}
           onClick={() => setManuscriptOpen(!isManuscriptOpen)}
         >
-          {isManuscriptOpen ? <ChevronDown size={12} className={styles.sectionIcon} /> : <ChevronRight size={12} className={styles.sectionIcon} />}
+          {isManuscriptOpen ? (
+            <ChevronDown size={12} className={styles.sectionIcon} />
+          ) : (
+            <ChevronRight size={12} className={styles.sectionIcon} />
+          )}
           <span>원고 (Manuscript)</span>
         </div>
-        
+
         {isManuscriptOpen && (
           <div className={styles.sectionContent}>
             {chapters.map((chapter) => (
-              <div 
+              <div
                 key={chapter.id}
-                className={activeChapterId === chapter.id ? styles.itemActive : styles.item}
+                className={
+                  activeChapterId === chapter.id
+                    ? styles.itemActive
+                    : styles.item
+                }
                 onClick={() => onSelectChapter(chapter.id)}
                 onMouseEnter={() => setHoveredItemId(chapter.id)}
                 onMouseLeave={() => setHoveredItemId(null)}
               >
                 <FileText size={14} className={styles.itemIcon} />
-                <span className={styles.itemTitle}>{chapter.order}. {chapter.title}</span>
-                
+                <span className={styles.itemTitle}>
+                  {chapter.order}. {chapter.title}
+                </span>
+
                 {/* More Action Button - Visible on hover or when menu is open */}
-                {(hoveredItemId === chapter.id || menuOpenId === chapter.id) && (
-                  <div 
+                {(hoveredItemId === chapter.id ||
+                  menuOpenId === chapter.id) && (
+                  <div
                     className={styles.moreButton}
                     onClick={(e) => handleMenuClick(e, chapter.id)}
                   >
@@ -138,7 +177,11 @@ export default function Sidebar({
               </div>
             ))}
             {/* Inline Add Button for Manuscript */}
-            <div className={styles.item} onClick={onAddChapter} style={{ color: 'var(--text-tertiary)' }}>
+            <div
+              className={styles.item}
+              onClick={onAddChapter}
+              style={{ color: "var(--text-tertiary)" }}
+            >
               <Plus size={14} className={styles.itemIcon} />
               <span>새 회차 추가...</span>
             </div>
@@ -146,52 +189,70 @@ export default function Sidebar({
         )}
 
         {/* RESEARCH SECTION */}
-        <div 
+        <div
           className={styles.sectionHeader}
           onClick={() => setResearchOpen(!isResearchOpen)}
         >
-          {isResearchOpen ? <ChevronDown size={12} className={styles.sectionIcon} /> : <ChevronRight size={12} className={styles.sectionIcon} />}
+          {isResearchOpen ? (
+            <ChevronDown size={12} className={styles.sectionIcon} />
+          ) : (
+            <ChevronRight size={12} className={styles.sectionIcon} />
+          )}
           <span>연구 (Research)</span>
         </div>
 
         {isResearchOpen && (
           <div className={styles.sectionContent}>
-            <div className={styles.item} 
-              onClick={() => onSelectResearchItem('character')}
-              onMouseEnter={() => setHoveredItemId('res-char')}
+            <div
+              className={styles.item}
+              onClick={() => onSelectResearchItem("character")}
+              onMouseEnter={() => setHoveredItemId("res-char")}
               onMouseLeave={() => setHoveredItemId(null)}
             >
               <FolderOpen size={14} className={styles.itemIcon} />
               <span>등장인물 (Characters)</span>
-              {(hoveredItemId === 'res-char' || menuOpenId === 'res-char') && (
-                <div className={styles.moreButton} onClick={(e) => handleMenuClick(e, 'res-char')}>
-                   <MoreVertical size={14} />
+              {(hoveredItemId === "res-char" || menuOpenId === "res-char") && (
+                <div
+                  className={styles.moreButton}
+                  onClick={(e) => handleMenuClick(e, "res-char")}
+                >
+                  <MoreVertical size={14} />
                 </div>
               )}
             </div>
-            <div className={styles.item} 
-              onClick={() => onSelectResearchItem('world')}
-              onMouseEnter={() => setHoveredItemId('res-world')}
+            <div
+              className={styles.item}
+              onClick={() => onSelectResearchItem("world")}
+              onMouseEnter={() => setHoveredItemId("res-world")}
               onMouseLeave={() => setHoveredItemId(null)}
             >
               <FolderOpen size={14} className={styles.itemIcon} />
               <span>세계관 (World)</span>
-              {(hoveredItemId === 'res-world' || menuOpenId === 'res-world') && (
-                <div className={styles.moreButton} onClick={(e) => handleMenuClick(e, 'res-world')}>
-                   <MoreVertical size={14} />
+              {(hoveredItemId === "res-world" ||
+                menuOpenId === "res-world") && (
+                <div
+                  className={styles.moreButton}
+                  onClick={(e) => handleMenuClick(e, "res-world")}
+                >
+                  <MoreVertical size={14} />
                 </div>
               )}
             </div>
-            <div className={styles.item} 
-              onClick={() => onSelectResearchItem('scrap')}
-              onMouseEnter={() => setHoveredItemId('res-scrap')}
+            <div
+              className={styles.item}
+              onClick={() => onSelectResearchItem("scrap")}
+              onMouseEnter={() => setHoveredItemId("res-scrap")}
               onMouseLeave={() => setHoveredItemId(null)}
             >
               <BookOpen size={14} className={styles.itemIcon} />
               <span>자료 스크랩</span>
-              {(hoveredItemId === 'res-scrap' || menuOpenId === 'res-scrap') && (
-                <div className={styles.moreButton} onClick={(e) => handleMenuClick(e, 'res-scrap')}>
-                   <MoreVertical size={14} />
+              {(hoveredItemId === "res-scrap" ||
+                menuOpenId === "res-scrap") && (
+                <div
+                  className={styles.moreButton}
+                  onClick={(e) => handleMenuClick(e, "res-scrap")}
+                >
+                  <MoreVertical size={14} />
                 </div>
               )}
             </div>
@@ -199,21 +260,28 @@ export default function Sidebar({
         )}
 
         {/* TRASH SECTION */}
-        <div 
+        <div
           className={styles.sectionHeader}
           onClick={() => setTrashOpen(!isTrashOpen)}
         >
-          {isTrashOpen ? <ChevronDown size={12} className={styles.sectionIcon} /> : <ChevronRight size={12} className={styles.sectionIcon} />}
+          {isTrashOpen ? (
+            <ChevronDown size={12} className={styles.sectionIcon} />
+          ) : (
+            <ChevronRight size={12} className={styles.sectionIcon} />
+          )}
           <span>휴지통 (Trash)</span>
         </div>
 
         {isTrashOpen && (
-           <div className={styles.sectionContent}>
-             <div className={styles.item} style={{ fontStyle: 'italic', color: 'var(--text-tertiary)' }}>
-                <Trash2 size={14} className={styles.itemIcon} />
-                <span>비어 있음</span>
-             </div>
-           </div>
+          <div className={styles.sectionContent}>
+            <div
+              className={styles.item}
+              style={{ fontStyle: "italic", color: "var(--text-tertiary)" }}
+            >
+              <Trash2 size={14} className={styles.itemIcon} />
+              <span>비어 있음</span>
+            </div>
+          </div>
         )}
       </div>
 

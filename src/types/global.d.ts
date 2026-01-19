@@ -1,4 +1,10 @@
-import type { Project, Chapter, Character, Term, Snapshot } from "@prisma/client";
+import type {
+  Project,
+  Chapter,
+  Character,
+  Term,
+  Snapshot,
+} from "@prisma/client";
 import type { SearchResult } from "../shared/types/index.js";
 import type { IPCResponse } from "../shared/ipc/index.js";
 
@@ -102,7 +108,10 @@ declare global {
           defaultPath?: string;
           title?: string;
         }) => Promise<IPCResponse<string>>;
-        writeFile: (filePath: string, content: string) => Promise<IPCResponse<unknown>>;
+        writeFile: (
+          filePath: string,
+          content: string,
+        ) => Promise<IPCResponse<unknown>>;
       };
       search: (query: {
         projectId: string;
@@ -114,6 +123,18 @@ declare global {
         content: string,
         projectId: string,
       ) => Promise<IPCResponse<unknown>>;
+
+      // Settings API
+      settings: {
+        getAll: () => Promise<IPCResponse<unknown>>;
+        getEditor: () => Promise<IPCResponse<unknown>>;
+        setEditor: (settings: unknown) => Promise<IPCResponse<unknown>>;
+        getAutoSave: () => Promise<IPCResponse<unknown>>;
+        setAutoSave: (settings: unknown) => Promise<IPCResponse<unknown>>;
+        getWindowBounds: () => Promise<IPCResponse<unknown>>;
+        setWindowBounds: (bounds: unknown) => Promise<IPCResponse<unknown>>;
+        reset: () => Promise<IPCResponse<unknown>>;
+      };
 
       window: {
         maximize: () => Promise<IPCResponse<unknown>>;

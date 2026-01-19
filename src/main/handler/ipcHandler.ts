@@ -6,12 +6,7 @@ import { ipcMain, dialog } from "electron";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { createLogger } from "../../shared/logger/index.js";
-import { windowManager } from "../manager/index.js";
-import {
-  IPC_CHANNELS,
-  createSuccessResponse,
-  createErrorResponse,
-} from "../../shared/ipc/index.js";
+import { windowManager, settingsManager } from "../manager/index.js";
 import {
   projectService,
   chapterService,
@@ -20,7 +15,12 @@ import {
   snapshotService,
   searchService,
 } from "../services/index.js";
-import type {
+import {
+  IPC_CHANNELS,
+  createSuccessResponse,
+  createErrorResponse,
+} from "../../shared/ipc/index.js";
+import {
   ProjectCreateInput,
   ProjectUpdateInput,
   ChapterCreateInput,
@@ -33,6 +33,7 @@ import type {
   TermAppearanceInput,
   SnapshotCreateInput,
   SearchQuery,
+  EditorSettings,
 } from "../../shared/types/index.js";
 
 const logger = createLogger("IPCHandler");
@@ -514,11 +515,39 @@ export function registerIPCHandlers(): void {
         logger.error("AUTO_SAVE failed", error);
         return createErrorResponse(
           (error as Error).message,
-          "Failed to trigger auto save",
+          "Failed to auto save",
         );
       }
     },
   );
+
+  // Logger Handlers
+  ipcMain.handle("logger:log", async (_, { level, message, data }) => {
+    try {
+      const { createLogger } = await import("../../shared/logger/index.js");
+      const logger = createLogger("IPCLogger");
+      switch (level) {
+        case "debug":
+          logger.debug(message, data || undefined);
+          break;
+        case "info":
+          logger.info(message, data || undefined);
+          break;
+        case "warn":
+          logger.warn(message, data || undefined);
+          break;
+        case "error":
+          logger.error(message, data || undefined);
+          break;
+        default:
+          logger.info(message, data || undefined);
+      }
+      return createSuccessResponse({ success: true });
+    } catch (error) {
+      logger.error("LOGGER_LOG failed", error);
+      return createErrorResponse((error as Error).message, "Failed to log");
+    }
+  });
 
   // File System Handlers
   ipcMain.handle(IPC_CHANNELS.FS_SELECT_DIRECTORY, async () => {
@@ -636,6 +665,144 @@ export function registerIPCHandlers(): void {
     win.setFullScreen(!win.isFullScreen());
     win.focus();
     return createSuccessResponse(true);
+  });
+
+  // Settings Handlers
+  ipcMain.handle(IPC_CHANNELS.SETTINGS_GET_ALL, async () => {
+    try {
+      const { settingsManager } = await import("../manager/settingsManager.js");
+      const settings = settingsManager.getAll();
+      return createSuccessResponse(settings);
+    } catch (error) {
+      logger.error("SETTINGS_GET_ALL failed", error);
+      return createErrorResponse(
+        (error as Error).message,
+        "Failed to get settings",
+      );
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SETTINGS_GET_EDITOR, async () => {
+    try {
+      const { settingsManager } = await import("../manager/settingsManager.js");
+      const settings = settingsManager.getEditorSettings();
+      return createSuccessResponse(settings);
+    } catch (error) {
+      logger.error("SETTINGS_GET_EDITOR failed", error);
+      return createErrorResponse(
+        (error as Error).message,
+        "Failed to get editor settings",
+      );
+    }
+  });
+
+  ipcMain.handle(
+    IPC_CHANNELS.SETTINGS_SET_EDITOR,
+    async (_, settings: EditorSettings) => {
+      try {
+        const { settingsManager } =
+          await import("../manager/settingsManager.js");
+        settingsManager.setEditorSettings(settings);
+        return createSuccessResponse(settingsManager.getEditorSettings());
+      } catch (error) {
+        logger.error("SETTINGS_SET_EDITOR failed", error);
+        return createErrorResponse(
+          (error as Error).message,
+          "Failed to set editor settings",
+        );
+      }
+    },
+  );
+
+  ipcMain.handle(IPC_CHANNELS.SETTINGS_GET_AUTO_SAVE, async () => {
+    try {
+      const { settingsManager } = await import("../manager/settingsManager.js");
+      const settings = {
+        enabled: settingsManager.getAutoSaveEnabled(),
+        interval: settingsManager.getAutoSaveInterval(),
+      };
+      return createSuccessResponse(settings);
+    } catch (error) {
+      logger.error("SETTINGS_GET_AUTO_SAVE failed", error);
+      return createErrorResponse(
+        (error as Error).message,
+        "Failed to get auto save settings",
+      );
+    }
+  });
+
+  ipcMain.handle(
+    IPC_CHANNELS.SETTINGS_SET_AUTO_SAVE,
+    async (_, settings: { enabled?: boolean; interval?: number }) => {
+      try {
+        const { settingsManager } =
+          await import("../manager/settingsManager.js");
+        if (settings.enabled !== undefined) {
+          settingsManager.setAutoSaveEnabled(settings.enabled);
+        }
+        if (settings.interval !== undefined) {
+          settingsManager.setAutoSaveInterval(settings.interval);
+        }
+        return createSuccessResponse({
+          enabled: settingsManager.getAutoSaveEnabled(),
+          interval: settingsManager.getAutoSaveInterval(),
+        });
+      } catch (error) {
+        logger.error("SETTINGS_SET_AUTO_SAVE failed", error);
+        return createErrorResponse(
+          (error as Error).message,
+          "Failed to set auto save settings",
+        );
+      }
+    },
+  );
+
+  ipcMain.handle(
+    IPC_CHANNELS.SETTINGS_SET_WINDOW_BOUNDS,
+    async (
+      _,
+      bounds: { width: number; height: number; x: number; y: number },
+    ) => {
+      try {
+        const { settingsManager } =
+          await import("../manager/settingsManager.js");
+        settingsManager.setWindowBounds(bounds);
+        return createSuccessResponse(bounds);
+      } catch (error) {
+        logger.error("SETTINGS_SET_WINDOW_BOUNDS failed", error);
+        return createErrorResponse(
+          (error as Error).message,
+          "Failed to set window bounds",
+        );
+      }
+    },
+  );
+
+  ipcMain.handle(IPC_CHANNELS.SETTINGS_GET_WINDOW_BOUNDS, async () => {
+    try {
+      const { settingsManager } = await import("../manager/settingsManager.js");
+      return createSuccessResponse(settingsManager.getWindowBounds());
+    } catch (error) {
+      logger.error("SETTINGS_GET_WINDOW_BOUNDS failed", error);
+      return createErrorResponse(
+        (error as Error).message,
+        "Failed to get window bounds",
+      );
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SETTINGS_RESET, async () => {
+    try {
+      const { settingsManager } = await import("../manager/settingsManager.js");
+      settingsManager.resetToDefaults();
+      return createSuccessResponse(settingsManager.getAll());
+    } catch (error) {
+      logger.error("SETTINGS_RESET failed", error);
+      return createErrorResponse(
+        (error as Error).message,
+        "Failed to reset settings",
+      );
+    }
   });
 
   logger.info("IPC handlers registered successfully");

@@ -100,3 +100,26 @@ export interface SearchQuery {
   query: string;
   type?: "all" | "character" | "term";
 }
+
+// Settings Types
+export interface EditorSettings {
+  fontFamily: "serif" | "sans" | "mono";
+  fontSize: number;
+  lineHeight: number;
+  maxWidth: number;
+  theme: "light" | "dark" | "sepia";
+}
+
+export interface AppSettings {
+  editor: EditorSettings;
+  lastProjectPath?: string;
+  autoSaveEnabled: boolean;
+  autoSaveInterval: number;
+  windowBounds?: {
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+  };
+  lastWindowState?: "maximized" | "normal";
+}

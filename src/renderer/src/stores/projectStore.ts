@@ -1,11 +1,17 @@
 import { create } from "zustand";
-import type { Project } from "@prisma/client";
+import { Project } from "@prisma/client";
+import { createCRUDSlice, CRUDStore } from "./createCRUDStore";
+import { ProjectCreateInput, ProjectUpdateInput } from "../../../shared/types";
 
-interface ProjectStore {
-  projects: Project[];
-  currentProject: Project | null;
-  isLoading: boolean;
+type BaseProjectStore = CRUDStore<
+  Project,
+  ProjectCreateInput,
+  ProjectUpdateInput
+>;
 
+// ProjectStore는 추가 기능 없이 기본 CRUD만 사용하지만 인터페이스는 유지
+interface ProjectStore extends BaseProjectStore {
+  // 별칭 메서드들 (기존 코드 호환성 유지)
   loadProjects: () => Promise<void>;
   loadProject: (id: string) => Promise<void>;
   createProject: (
@@ -21,109 +27,44 @@ interface ProjectStore {
   ) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
   setCurrentProject: (project: Project | null) => void;
+
+  // 호환성 필드
+  projects: Project[];
+  currentProject: Project | null;
 }
 
-export const useProjectStore = create<ProjectStore>((set) => ({
-  projects: [],
-  currentProject: null,
-  isLoading: false,
+export const useProjectStore = create<ProjectStore>((set, get) => {
+  const crudSlice = createCRUDSlice<
+    Project,
+    ProjectCreateInput,
+    ProjectUpdateInput
+  >(window.api.project, "Project")(set, get, {
+    getState: get,
+    setState: set,
+    subscribe: () => () => {},
+  } as any);
 
-  loadProjects: async () => {
-    set({ isLoading: true });
-    try {
-      const response = await window.api.project.getAll();
-      if (response.success && response.data) {
-        set({ projects: response.data });
-      } else {
-        set({ projects: [] });
-      }
-    } catch (error) {
-      console.error("Failed to load projects:", error);
-      set({ projects: [] });
-    } finally {
-      set({ isLoading: false });
-    }
-  },
+  return {
+    ...crudSlice,
+    loadProjects: () => crudSlice.loadAll(),
+    loadProject: (id: string) => crudSlice.loadOne(id),
+    createProject: (
+      title: string,
+      description?: string,
+      projectPath?: string,
+    ) => crudSlice.create({ title, description, projectPath }),
+    updateProject: (
+      id: string,
+      title?: string,
+      description?: string,
+      projectPath?: string,
+    ) => crudSlice.update({ id, title, description, projectPath }),
+    deleteProject: (id: string) => crudSlice.delete(id),
+    setCurrentProject: (project: Project | null) =>
+      crudSlice.setCurrent(project),
 
-  loadProject: async (id: string) => {
-    set({ isLoading: true });
-    try {
-      const response = await window.api.project.get(id);
-      if (response.success && response.data) {
-        set({ currentProject: response.data });
-      } else {
-        set({ currentProject: null });
-      }
-    } catch (error) {
-      console.error("Failed to load project:", error);
-      set({ currentProject: null });
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-  createProject: async (
-    title: string,
-    description?: string,
-    projectPath?: string,
-  ) => {
-    try {
-      const response = await window.api.project.create({ title, description, projectPath });
-      if (response.success && response.data) {
-        const newProject: Project = response.data;
-        set((state) => ({
-          projects: [newProject, ...state.projects],
-        }));
-        return newProject;
-      }
-    } catch (error) {
-      console.error("Failed to create project:", error);
-    }
-
-    return null;
-  },
-
-  updateProject: async (id: string, title?: string, description?: string, projectPath?: string) => {
-    try {
-      const response = await window.api.project.update({
-        id,
-        title,
-        description,
-        projectPath,
-      });
-      if (response.success && response.data) {
-        const updatedProject: Project = response.data;
-        set((state) => ({
-          projects: state.projects.map((p) =>
-            p.id === id ? updatedProject : p,
-          ),
-          currentProject:
-            state.currentProject?.id === id
-              ? updatedProject
-              : state.currentProject,
-        }));
-      }
-    } catch (error) {
-      console.error("Failed to update project:", error);
-    }
-  },
-
-  deleteProject: async (id: string) => {
-    try {
-      const response = await window.api.project.delete(id);
-      if (response.success) {
-        set((state) => ({
-          projects: state.projects.filter((p) => p.id !== id),
-          currentProject:
-            state.currentProject?.id === id ? null : state.currentProject,
-        }));
-      }
-    } catch (error) {
-      console.error("Failed to delete project:", error);
-    }
-  },
-
-  setCurrentProject: (project: Project | null) => {
-    set({ currentProject: project });
-  },
-}));
+    // 호환성 필드
+    projects: crudSlice.items,
+    currentProject: crudSlice.currentItem,
+  };
+});

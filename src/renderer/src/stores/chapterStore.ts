@@ -1,159 +1,71 @@
 import { create } from "zustand";
-import type { Chapter } from "@prisma/client";
+import { Chapter } from "@prisma/client";
+import { createCRUDSlice, CRUDStore } from "./createCRUDStore";
+import { ChapterCreateInput, ChapterUpdateInput } from "../../../shared/types";
 
-interface ChapterStore {
+// Base CRUD Store 타입 정의
+type BaseChapterStore = CRUDStore<
+  Chapter,
+  ChapterCreateInput,
+  ChapterUpdateInput
+>;
+
+// 확장된 Store 타입 정의
+interface ChapterStore extends BaseChapterStore {
+  reorderChapters: (chapterIds: string[]) => Promise<void>;
+
+  // 호환성 필드
   chapters: Chapter[];
   currentChapter: Chapter | null;
-  isLoading: boolean;
-
-  loadChapters: (projectId: string) => Promise<void>;
-  loadChapter: (id: string) => Promise<void>;
-  createChapter: (
-    projectId: string,
-    title: string,
-    synopsis?: string,
-  ) => Promise<void>;
-  updateChapter: (
-    id: string,
-    title?: string,
-    content?: string,
-    synopsis?: string,
-  ) => Promise<void>;
-  deleteChapter: (id: string) => Promise<void>;
-  reorderChapters: (chapterIds: string[]) => Promise<void>;
-  setCurrentChapter: (chapter: Chapter | null) => void;
 }
 
-export const useChapterStore = create<ChapterStore>((set, get) => ({
-  chapters: [],
-  currentChapter: null,
-  isLoading: false,
+export const useChapterStore = create<ChapterStore>((set, get) => {
+  // Base CRUD Slice 생성
+  const apiClient = {
+    ...window.api.chapter,
+    getAll: (parentId?: string) => window.api.chapter.getAll(parentId || ""),
+  };
 
-  loadChapters: async (projectId: string) => {
-    set({ isLoading: true });
-    try {
-      const response = await window.api.chapter.getAll(projectId);
-      if (response.success && response.data) {
-        set({ chapters: response.data });
-      } else {
-        set({ chapters: [] });
+  const crudSlice = createCRUDSlice<
+    Chapter,
+    ChapterCreateInput,
+    ChapterUpdateInput
+  >(apiClient, "Chapter")(set, get, {
+    getState: get,
+    setState: set,
+    subscribe: () => () => {},
+  } as any);
+
+  return {
+    ...crudSlice,
+    reorderChapters: async (chapterIds: string[]) => {
+      const { items } = get();
+      const projectId = items[0]?.projectId;
+
+      if (!projectId) {
+        return;
       }
-    } catch (error) {
-      console.error("Failed to load chapters:", error);
-      set({ chapters: [] });
-    } finally {
-      set({ isLoading: false });
-    }
-  },
 
-  loadChapter: async (id: string) => {
-    set({ isLoading: true });
-    try {
-      const response = await window.api.chapter.get(id);
-      if (response.success && response.data) {
-        set({ currentChapter: response.data });
-      } else {
-        set({ currentChapter: null });
+      try {
+        const response = await window.api.chapter.reorder(
+          projectId,
+          chapterIds,
+        );
+        if (response.success) {
+          set((state) => ({
+            items: chapterIds
+              .map((id) => state.items.find((ch) => ch.id === id))
+              .filter((ch): ch is Chapter => ch !== undefined)
+              .map((ch, index) => ({ ...ch, order: index + 1 })),
+          }));
+        }
+      } catch (error) {
+        (window.api as any).logger.error("Failed to reorder chapters:", error);
       }
-    } catch (error) {
-      console.error("Failed to load chapter:", error);
-      set({ currentChapter: null });
-    } finally {
-      set({ isLoading: false });
-    }
-  },
+    },
 
-  createChapter: async (
-    projectId: string,
-    title: string,
-    synopsis?: string,
-  ) => {
-    try {
-      const response = await window.api.chapter.create({
-        projectId,
-        title,
-        synopsis,
-      });
-      if (response.success && response.data) {
-        const newChapter = response.data;
-        set((state) => ({
-          chapters: [...state.chapters, newChapter],
-        }));
-      }
-    } catch (error) {
-      console.error("Failed to create chapter:", error);
-    }
-  },
-
-  updateChapter: async (
-    id: string,
-    title?: string,
-    content?: string,
-    synopsis?: string,
-  ) => {
-    try {
-      const response = await window.api.chapter.update({
-        id,
-        title,
-        content,
-        synopsis,
-      });
-      if (response.success && response.data) {
-        const updatedChapter = response.data;
-        set((state) => ({
-          chapters: state.chapters.map((ch) =>
-            ch.id === id ? updatedChapter : ch,
-          ),
-          currentChapter:
-            state.currentChapter?.id === id
-              ? updatedChapter
-              : state.currentChapter,
-        }));
-      }
-    } catch (error) {
-      console.error("Failed to update chapter:", error);
-    }
-  },
-
-  deleteChapter: async (id: string) => {
-    try {
-      const response = await window.api.chapter.delete(id);
-      if (response.success) {
-        set((state) => ({
-          chapters: state.chapters.filter((ch) => ch.id !== id),
-          currentChapter:
-            state.currentChapter?.id === id ? null : state.currentChapter,
-        }));
-      }
-    } catch (error) {
-      console.error("Failed to delete chapter:", error);
-    }
-  },
-
-  reorderChapters: async (chapterIds: string[]) => {
-    const { chapters } = get();
-    const projectId = chapters[0]?.projectId;
-
-    if (!projectId) {
-      return;
-    }
-
-    try {
-      const response = await window.api.chapter.reorder(projectId, chapterIds);
-      if (response.success) {
-        set((state) => ({
-          chapters: chapterIds
-            .map((id) => state.chapters.find((ch) => ch.id === id))
-            .filter((ch): ch is Chapter => ch !== undefined)
-            .map((ch, index) => ({ ...ch, order: index + 1 })),
-        }));
-      }
-    } catch (error) {
-      console.error("Failed to reorder chapters:", error);
-    }
-  },
-
-  setCurrentChapter: (chapter: Chapter | null) => {
-    set({ currentChapter: chapter });
-  },
-}));
+    // 호환성 필드
+    chapters: crudSlice.items,
+    currentChapter: crudSlice.currentItem,
+  };
+});

@@ -1,138 +1,63 @@
 import { create } from "zustand";
-import type { Character } from "@prisma/client";
+import { Character } from "@prisma/client";
+import { createCRUDSlice, CRUDStore } from "./createCRUDStore";
+import {
+  CharacterCreateInput,
+  CharacterUpdateInput,
+} from "../../../shared/types";
 
-interface CharacterStore {
-  characters: Character[];
-  currentCharacter: Character | null;
-  isLoading: boolean;
+type BaseCharacterStore = CRUDStore<
+  Character,
+  CharacterCreateInput,
+  CharacterUpdateInput
+>;
 
+interface CharacterStore extends BaseCharacterStore {
+  // 별칭 메서드들
   loadCharacters: (projectId: string) => Promise<void>;
   loadCharacter: (id: string) => Promise<void>;
-  createCharacter: (
-    projectId: string,
-    name: string,
-    description?: string,
-    attributes?: Record<string, unknown>,
-  ) => Promise<void>;
-  updateCharacter: (
-    id: string,
-    name?: string,
-    description?: string,
-    attributes?: Record<string, unknown>,
-  ) => Promise<void>;
+  createCharacter: (input: CharacterCreateInput) => Promise<void>;
+  updateCharacter: (input: CharacterUpdateInput) => Promise<void>;
   deleteCharacter: (id: string) => Promise<void>;
   setCurrentCharacter: (character: Character | null) => void;
+
+  // 호환성 필드
+  characters: Character[];
+  currentCharacter: Character | null;
 }
 
-export const useCharacterStore = create<CharacterStore>((set) => ({
-  characters: [],
-  currentCharacter: null,
-  isLoading: false,
+export const useCharacterStore = create<CharacterStore>((set, get) => {
+  const apiClient = {
+    ...window.api.character,
+    getAll: (parentId?: string) => window.api.character.getAll(parentId || ""),
+  };
 
-  loadCharacters: async (projectId: string) => {
-    set({ isLoading: true });
-    try {
-      const response = await window.api.character.getAll(projectId);
-      if (response.success && response.data) {
-        set({ characters: response.data });
-      } else {
-        set({ characters: [] });
-      }
-    } catch (error) {
-      console.error("Failed to load characters:", error);
-      set({ characters: [] });
-    } finally {
-      set({ isLoading: false });
-    }
-  },
+  const crudSlice = createCRUDSlice<
+    Character,
+    CharacterCreateInput,
+    CharacterUpdateInput
+  >(apiClient, "Character")(set, get, {
+    getState: get,
+    setState: set,
+    subscribe: () => () => {},
+  } as any);
 
-  loadCharacter: async (id: string) => {
-    set({ isLoading: true });
-    try {
-      const response = await window.api.character.get(id);
-      if (response.success && response.data) {
-        set({ currentCharacter: response.data });
-      } else {
-        set({ currentCharacter: null });
-      }
-    } catch (error) {
-      console.error("Failed to load character:", error);
-      set({ currentCharacter: null });
-    } finally {
-      set({ isLoading: false });
-    }
-  },
+  return {
+    ...crudSlice,
+    loadCharacters: (projectId: string) => crudSlice.loadAll(projectId),
+    loadCharacter: (id: string) => crudSlice.loadOne(id),
+    createCharacter: async (input: CharacterCreateInput) => {
+      await crudSlice.create(input);
+    },
+    updateCharacter: async (input: CharacterUpdateInput) => {
+      await crudSlice.update(input);
+    },
+    deleteCharacter: (id: string) => crudSlice.delete(id),
+    setCurrentCharacter: (character: Character | null) =>
+      crudSlice.setCurrent(character),
 
-  createCharacter: async (
-    projectId: string,
-    name: string,
-    description?: string,
-    attributes?: Record<string, unknown>,
-  ) => {
-    try {
-      const response = await window.api.character.create({
-        projectId,
-        name,
-        description,
-        attributes,
-      });
-      if (response.success && response.data) {
-        const newCharacter: Character = response.data;
-        set((state) => ({
-          characters: [...state.characters, newCharacter],
-        }));
-      }
-    } catch (error) {
-      console.error("Failed to create character:", error);
-    }
-  },
-
-  updateCharacter: async (
-    id: string,
-    name?: string,
-    description?: string,
-    attributes?: Record<string, unknown>,
-  ) => {
-    try {
-      const response = await window.api.character.update({
-        id,
-        name,
-        description,
-        attributes,
-      });
-      if (response.success && response.data) {
-        const updatedCharacter: Character = response.data;
-        set((state) => ({
-          characters: state.characters.map((ch) =>
-            ch.id === id ? updatedCharacter : ch,
-          ),
-          currentCharacter:
-            state.currentCharacter?.id === id
-              ? updatedCharacter
-              : state.currentCharacter,
-        }));
-      }
-    } catch (error) {
-      console.error("Failed to update character:", error);
-    }
-  },
-
-  deleteCharacter: async (id: string) => {
-    try {
-      const response = await window.api.character.delete(id);
-      if (response.success) {
-        set((state) => ({
-          characters: state.characters.filter((ch) => ch.id !== id),
-          currentCharacter:
-            state.currentCharacter?.id === id ? null : state.currentCharacter,
-        }));
-      }
-    } catch (error) {
-      console.error("Failed to delete character:", error);
-    }
-  },
-
-  setCurrentCharacter: (character: Character | null) => {
-    set({ currentCharacter: character });
-  },
-}));
+    // 호환성을 위한 속성 매핑 (초기값)
+    characters: crudSlice.items,
+    currentCharacter: crudSlice.currentItem,
+  };
+});

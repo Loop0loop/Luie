@@ -25,20 +25,24 @@ export default function App() {
     id?: string; // chapterId
     tab?: "character" | "world" | "scrap";
   }>({ type: "research", tab: "character" });
-  
+
   const [contextTab, setContextTab] = useState<ContextTab>("synopsis");
   const [content, setContent] = useState("");
   const [splitRatio, setSplitRatio] = useState(0.62);
 
   const {
-    projects,
-    currentProject,
+    items: projects,
+    currentItem: currentProject,
     loadProjects,
     createProject,
     setCurrentProject,
   } = useProjectStore();
-  const { chapters, loadChapters, updateChapter, createChapter } =
-    useChapterStore();
+  const {
+    items: chapters,
+    loadAll: loadChapters,
+    update: updateChapter,
+    create: createChapter,
+  } = useChapterStore();
 
   useEffect(() => {
     loadProjects();
@@ -72,7 +76,11 @@ export default function App() {
       // 프로젝트 경로와 설명 추가
       const description = `Created with ${templateId} template`;
 
-      const newProject = await createProject(projectTitle, description, projectPath);
+      const newProject = await createProject(
+        projectTitle,
+        description,
+        projectPath,
+      );
 
       if (newProject) {
         // 실제 파일 저장 (.luie/.md/.txt)
@@ -101,7 +109,7 @@ export default function App() {
 
           await window.api.fs.writeFile(projectPath, content);
         } catch (e) {
-          console.error("Failed to save project file:", e);
+          (window.api as any).logger.error("Failed to save project file:", e);
         }
 
         setCurrentProject(newProject);
@@ -111,7 +119,7 @@ export default function App() {
           // macOS에서 원하는 'Space로 넘어가는' 네이티브 fullscreen
           await window.api.window.toggleFullscreen();
         } catch (e) {
-          console.error("Failed to maximize window:", e);
+          (window.api as any).logger.error("Failed to maximize window:", e);
         }
       }
     },
@@ -143,15 +151,18 @@ export default function App() {
     [],
   );
 
-  const handleSplitView = useCallback((type: 'vertical' | 'horizontal', contentId: string) => {
-    // Currently only supporting vertical split (side-by-side)
-    if (type === 'vertical') {
-      setIsSplitView(true);
-      // Check if contentId is a chapter or research
-      // For now, assuming generic chapters are passed for "Open Right"
-      setRightPanelContent({ type: "editor", id: contentId });
-    }
-  }, []);
+  const handleSplitView = useCallback(
+    (type: "vertical" | "horizontal", contentId: string) => {
+      // Currently only supporting vertical split (side-by-side)
+      if (type === "vertical") {
+        setIsSplitView(true);
+        // Check if contentId is a chapter or research
+        // For now, assuming generic chapters are passed for "Open Right"
+        setRightPanelContent({ type: "editor", id: contentId });
+      }
+    },
+    [],
+  );
 
   const startResizeSplit = useCallback(
     (e: React.MouseEvent) => {
@@ -161,11 +172,16 @@ export default function App() {
       const startRatio = splitRatio;
       const container = document.querySelector(`.${styles.splitContainer}`);
       const containerWidth =
-        container instanceof HTMLElement ? container.getBoundingClientRect().width : window.innerWidth;
+        container instanceof HTMLElement
+          ? container.getBoundingClientRect().width
+          : window.innerWidth;
 
       const onMove = (ev: MouseEvent) => {
         const delta = ev.clientX - startX;
-        const next = Math.min(0.8, Math.max(0.2, startRatio + delta / containerWidth));
+        const next = Math.min(
+          0.8,
+          Math.max(0.2, startRatio + delta / containerWidth),
+        );
         setSplitRatio(next);
       };
       const onUp = () => {
@@ -181,11 +197,15 @@ export default function App() {
 
   const handleSave = useCallback(
     async (title: string, newContent: string) => {
-      console.log(`Saving: ${title}`);
+      (window.api as any).logger.info(`Saving: ${title}`);
       setContent(newContent);
 
       if (activeChapterId && currentProject) {
-        await updateChapter(activeChapterId, title, newContent);
+        await updateChapter({
+          id: activeChapterId,
+          title,
+          content: newContent,
+        });
       }
     },
     [activeChapterId, updateChapter, currentProject],
@@ -193,11 +213,14 @@ export default function App() {
 
   const handleAddChapter = useCallback(async () => {
     if (!currentProject) {
-      console.error("No project selected");
+      window.api.logger.error("No project selected");
       return;
     }
 
-    await createChapter(currentProject.id, `Chapter ${chapters.length + 1}`);
+    await createChapter({
+      projectId: currentProject.id,
+      title: `Chapter ${chapters.length + 1}`,
+    });
   }, [currentProject, createChapter, chapters.length]);
 
   const activeChapterTitle =
@@ -232,8 +255,12 @@ export default function App() {
         }
       >
         <div className={styles.splitContainer}>
-          <div className={styles.editorPane} style={{ flex: isSplitView ? splitRatio : 1 }}>
+          <div
+            className={styles.editorPane}
+            style={{ flex: isSplitView ? splitRatio : 1 }}
+          >
             <Editor
+              key={activeChapterId ?? "main-editor"}
               initialTitle={activeChapterTitle}
               initialContent={content}
               onSave={handleSave}
@@ -248,25 +275,39 @@ export default function App() {
                 role="separator"
                 aria-orientation="vertical"
               />
-              <div className={styles.researchPane} style={{ flex: 1 - splitRatio }}>
-            <Suspense fallback={<div style={{padding: 20}}>Loading...</div>}>
-              {rightPanelContent.type === 'research' ? (
-                <ResearchPanel
-                  activeTab={rightPanelContent.tab || "character"}
-                  onClose={() => setIsSplitView(false)}
-                />
-              ) : (
-                <div style={{height: '100%', overflow: 'hidden', background: 'var(--bg-primary)'}}>
-                   {/* Re-using Editor for read-only or secondary edit */}
-                   <Editor
-                     initialTitle={chapters.find(c => c.id === rightPanelContent.id)?.title}
-                     initialContent="" // We'd need to fetch content. For now placeholder.
-                     // In real app, Editor should fetch by ID or we pass content
-                   />
-                </div>
-              )}
-            </Suspense>
-          </div>
+              <div
+                className={styles.researchPane}
+                style={{ flex: 1 - splitRatio }}
+              >
+                <Suspense
+                  fallback={<div style={{ padding: 20 }}>Loading...</div>}
+                >
+                  {rightPanelContent.type === "research" ? (
+                    <ResearchPanel
+                      activeTab={rightPanelContent.tab || "character"}
+                      onClose={() => setIsSplitView(false)}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        height: "100%",
+                        overflow: "hidden",
+                        background: "var(--bg-primary)",
+                      }}
+                    >
+                      {/* Re-using Editor for read-only or secondary edit */}
+                      <Editor
+                        initialTitle={
+                          chapters.find((c) => c.id === rightPanelContent.id)
+                            ?.title
+                        }
+                        initialContent="" // We'd need to fetch content. For now placeholder.
+                        // In real app, Editor should fetch by ID or we pass content
+                      />
+                    </div>
+                  )}
+                </Suspense>
+              </div>
             </>
           )}
         </div>
