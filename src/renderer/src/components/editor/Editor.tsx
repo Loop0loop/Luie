@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import { Extension, Node, mergeAttributes } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
@@ -9,6 +9,7 @@ import Highlight from "@tiptap/extension-highlight";
 import { TextStyle } from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
+import Color from "@tiptap/extension-color";
 import {
   Details,
   DetailsSummary,
@@ -61,7 +62,7 @@ interface EditorProps {
   onSave?: (title: string, content: string) => void;
 }
 
-export default function Editor({
+function Editor({
   initialTitle = "",
   initialContent = "",
   onSave,
@@ -89,6 +90,9 @@ export default function Editor({
       }),
       Highlight,
       TextStyle,
+      Color.configure({
+        types: ["textStyle"],
+      }),
       Underline,
       TextAlign.configure({
         types: ["heading", "paragraph"],
@@ -211,3 +215,5 @@ export default function Editor({
     </div>
   );
 }
+
+export default memo(Editor);

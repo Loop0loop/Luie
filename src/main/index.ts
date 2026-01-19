@@ -2,6 +2,9 @@
  * Main process entry point
  */
 
+// Load environment variables FIRST before any other imports
+import "dotenv/config";
+
 import { app, BrowserWindow } from "electron";
 import { createLogger } from "../shared/logger/index.js";
 import { windowManager } from "./manager/index.js";

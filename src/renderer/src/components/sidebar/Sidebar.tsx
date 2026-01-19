@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, memo } from "react";
 import styles from "../../styles/components/Sidebar.module.css";
 import {
   Settings,
@@ -36,7 +36,7 @@ interface SidebarProps {
   onSplitView?: (type: "vertical" | "horizontal", contentId: string) => void;
 }
 
-export default function Sidebar({
+function Sidebar({
   chapters,
   activeChapterId,
   currentProjectTitle,
@@ -314,3 +314,5 @@ export default function Sidebar({
     </div>
   );
 }
+
+export default memo(Sidebar);

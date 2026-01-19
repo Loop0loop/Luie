@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, lazy, Suspense } from "react";
+import { useState, lazy, Suspense, useCallback } from "react";
 import MainLayout from "./components/layout/MainLayout";
 import Sidebar from "./components/sidebar/Sidebar";
 import Editor from "./components/editor/Editor";
@@ -6,398 +6,66 @@ import ContextPanel from "./components/context/ContextPanel";
 import ProjectTemplateSelector from "./components/layout/ProjectTemplateSelector";
 import styles from "./styles/App.module.css";
 import { useProjectStore } from "./stores/projectStore";
-import { useChapterStore } from "./stores/chapterStore";
-import { useEditorStore } from "./stores/editorStore";
-import { z } from "zod";
+import { useUIStore } from "./stores/uiStore";
+import { useProjectInit } from "./hooks/useProjectInit";
+import { useFileImport } from "./hooks/useFileImport";
+import { useChapterManagement } from "./hooks/useChapterManagement";
+import { useSplitView } from "./hooks/useSplitView";
+import { useProjectTemplate } from "./hooks/useProjectTemplate";
 
 const SettingsModal = lazy(() => import("./components/settings/SettingsModal"));
 const ResearchPanel = lazy(() => import("./components/research/ResearchPanel"));
 
-type ViewState = "template" | "editor" | "corkboard" | "outliner";
-type ContextTab = "synopsis" | "characters" | "terms";
-
-const LuieFileSchema = z.object({
-  format: z.literal("luie"),
-  version: z.number(),
-  chapters: z
-    .array(
-      z.object({
-        id: z.string().optional(),
-        title: z.string().optional(),
-        order: z.number().optional(),
-        content: z.string().optional(),
-      }),
-    )
-    .optional(),
-}).passthrough();
-
 export default function App() {
-  const [view, setView] = useState<ViewState>("template");
-  const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
-
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isSplitView, setIsSplitView] = useState(false);
-  const [rightPanelContent, setRightPanelContent] = useState<{
-    type: "research" | "editor";
-    id?: string; // chapterId
-    tab?: "character" | "world" | "scrap";
-  }>({ type: "research", tab: "character" });
 
-  const [contextTab, setContextTab] = useState<ContextTab>("synopsis");
-  const [content, setContent] = useState("");
-  const [splitRatio, setSplitRatio] = useState(0.62);
+  const { view } = useUIStore();
+  const { items: projects } = useProjectStore();
+
+  // 커스텀 훅으로 로직 분리
+  const { currentProject } = useProjectInit();
+  
+  const {
+    chapters,
+    activeChapterId,
+    content,
+    activeChapterTitle,
+    handleSelectChapter,
+    handleAddChapter,
+    handleRenameChapter,
+    handleDuplicateChapter,
+    handleDeleteChapter,
+    handleSave,
+  } = useChapterManagement();
 
   const {
-    items: projects,
-    currentItem: currentProject,
-    loadProjects,
-    createProject,
-    setCurrentProject,
-  } = useProjectStore();
-  const {
-    items: chapters,
-    loadAll: loadChapters,
-    update: updateChapter,
-    create: createChapter,
-    delete: deleteChapter,
-  } = useChapterStore();
+    isSplitView,
+    splitRatio,
+    rightPanelContent,
+    contextTab,
+    setContextTab,
+    setSplitView,
+    handleSelectResearchItem,
+    handleSplitView,
+    startResizeSplit,
+  } = useSplitView();
 
-  const { loadSettings } = useEditorStore();
-
-  const [importedProjectId, setImportedProjectId] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadProjects();
-    loadSettings();
-  }, [loadProjects, loadSettings]);
-
-  useEffect(() => {
-    if (currentProject) {
-      loadChapters(currentProject.id);
-    }
-  }, [currentProject, loadChapters]);
-
-  useEffect(() => {
-    if (!currentProject || !currentProject.projectPath) {
-      return;
-    }
-
-    if (importedProjectId === currentProject.id) {
-      return;
-    }
-
-    if (chapters.length > 0) {
-      setImportedProjectId(currentProject.id);
-      return;
-    }
-
-    const path = currentProject.projectPath;
-    if (!path.endsWith(".luie")) {
-      setImportedProjectId(currentProject.id);
-      return;
-    }
-
-    (async () => {
-      const file = await window.api.fs.readFile(path);
-      if (!file.success || !file.data) {
-        window.api.logger.warn("Failed to read project file", { path });
-        setImportedProjectId(currentProject.id);
-        return;
-      }
-
-      try {
-        const parsed = LuieFileSchema.safeParse(JSON.parse(file.data as string));
-        if (!parsed.success) {
-          window.api.logger.warn("Invalid project file format", {
-            path,
-            issues: parsed.error.issues,
-          });
-          setImportedProjectId(currentProject.id);
-          return;
-        }
-
-        const fileChapters = parsed.data.chapters ?? [];
-
-        if (fileChapters.length === 0) {
-          setImportedProjectId(currentProject.id);
-          return;
-        }
-
-        for (const ch of fileChapters) {
-          const created = await createChapter({
-            projectId: currentProject.id,
-            title: ch.title ?? "Untitled",
-          });
-          if (created?.id && typeof ch.content === "string") {
-            await updateChapter({ id: created.id, content: ch.content });
-          }
-        }
-
-        setImportedProjectId(currentProject.id);
-      } catch (error) {
-        window.api.logger.error("Failed to parse project file", { path, error });
-        setImportedProjectId(currentProject.id);
-      }
-    })();
-  }, [currentProject, chapters.length, createChapter, updateChapter, importedProjectId]);
-
-  useEffect(() => {
-    if (!activeChapterId && chapters.length > 0) {
-      setActiveChapterId(chapters[0].id);
-      return;
-    }
-
-    if (!activeChapterId) {
-      return;
-    }
-
-    const chapter = chapters.find((c) => c.id === activeChapterId);
-    if (chapter) {
-      setContent(chapter.content || "");
-    }
-  }, [activeChapterId, chapters]);
-
-  const handleSelectProject = useCallback(
-    async (templateId: string, projectPath: string) => {
-      let projectTitle = "Untitled Project";
-
-      switch (templateId) {
-        case "blank":
-          projectTitle = "New Project";
-          break;
-        case "novel_basic":
-          projectTitle = "Web Novel";
-          break;
-        case "script_basic":
-          projectTitle = "Screenplay";
-          break;
-        case "essay":
-          projectTitle = "Essay";
-          break;
-      }
-
-      // 프로젝트 경로와 설명 추가
-      const description = `Created with ${templateId} template`;
-
-      const newProject = await createProject(
-        projectTitle,
-        description,
-        projectPath,
-      );
-
-      if (newProject) {
-        // 실제 파일 저장 (.luie/.md/.txt)
-        try {
-          const lower = projectPath.toLowerCase();
-          const isMarkdown = lower.endsWith(".md");
-          const isText = lower.endsWith(".txt");
-
-          const content = isMarkdown
-            ? `# ${newProject.title}\n\n## Chapter 1\n\n`
-            : isText
-              ? `${newProject.title}\n\n`
-              : JSON.stringify(
-                  {
-                    format: "luie",
-                    version: 1,
-                    projectId: newProject.id,
-                    title: newProject.title,
-                    templateId,
-                    createdAt: newProject.createdAt,
-                    updatedAt: newProject.updatedAt,
-                  },
-                  null,
-                  2,
-                );
-
-          await window.api.fs.writeFile(projectPath, content);
-        } catch (e) {
-          (window.api as any).logger.error("Failed to save project file:", e);
-        }
-
-        setCurrentProject(newProject);
-        const firstChapter = await createChapter({
-          projectId: newProject.id,
-          title: "Chapter 1",
-        });
-        if (firstChapter?.id) {
-          setActiveChapterId(firstChapter.id);
-        }
-        setView("editor");
-
-        try {
-          // macOS에서 원하는 'Space로 넘어가는' 네이티브 fullscreen
-          await window.api.window.toggleFullscreen();
-        } catch (e) {
-          (window.api as any).logger.error("Failed to maximize window:", e);
-        }
-      }
-    },
-    [createProject, setCurrentProject, createChapter],
+  const { handleSelectProject } = useProjectTemplate(
+    (id: string) => handleSelectChapter(id)
   );
+
+  useFileImport(currentProject);
+
+  const { setCurrentProject } = useProjectStore();
+  const { setView } = useUIStore();
 
   const handleOpenExistingProject = useCallback(
     (project: (typeof projects)[number]) => {
       setCurrentProject(project);
       setView("editor");
     },
-    [setCurrentProject],
+    [setCurrentProject, setView],
   );
-
-  const handleSelectChapter = useCallback((id: string) => {
-    setActiveChapterId(id);
-  }, []);
-
-  const handleSelectResearchItem = useCallback(
-    (type: "character" | "world" | "scrap") => {
-      setIsSplitView(true);
-      const tabMap: Record<string, "character" | "world" | "scrap"> = {
-        character: "character",
-        world: "world",
-        scrap: "scrap",
-      };
-      setRightPanelContent({ type: "research", tab: tabMap[type] });
-    },
-    [],
-  );
-
-  const handleSplitView = useCallback(
-    (type: "vertical" | "horizontal", contentId: string) => {
-      // Currently only supporting vertical split (side-by-side)
-      if (type === "vertical") {
-        setIsSplitView(true);
-        // Check if contentId is a chapter or research
-        // For now, assuming generic chapters are passed for "Open Right"
-        setRightPanelContent({ type: "editor", id: contentId });
-      }
-    },
-    [],
-  );
-
-  const startResizeSplit = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-
-      const startX = e.clientX;
-      const startRatio = splitRatio;
-      const container = document.querySelector(`.${styles.splitContainer}`);
-      const containerWidth =
-        container instanceof HTMLElement
-          ? container.getBoundingClientRect().width
-          : window.innerWidth;
-
-      const onMove = (ev: MouseEvent) => {
-        const delta = ev.clientX - startX;
-        const next = Math.min(
-          0.8,
-          Math.max(0.2, startRatio + delta / containerWidth),
-        );
-        setSplitRatio(next);
-      };
-      const onUp = () => {
-        window.removeEventListener("mousemove", onMove);
-        window.removeEventListener("mouseup", onUp);
-      };
-
-      window.addEventListener("mousemove", onMove);
-      window.addEventListener("mouseup", onUp);
-    },
-    [splitRatio],
-  );
-
-  const handleSave = useCallback(
-    async (title: string, newContent: string) => {
-      window.api.logger.info(`Saving: ${title}`);
-      setContent(newContent);
-
-      if (activeChapterId && currentProject) {
-        await updateChapter({
-          id: activeChapterId,
-          title,
-          content: newContent,
-        });
-
-        if (currentProject.projectPath?.endsWith(".luie")) {
-          const payload = {
-            format: "luie",
-            version: 1,
-            projectId: currentProject.id,
-            title: currentProject.title,
-            updatedAt: new Date().toISOString(),
-            chapters: chapters.map((c) => ({
-              id: c.id,
-              title: c.title,
-              order: c.order,
-              content: c.id === activeChapterId ? newContent : c.content,
-            })),
-          };
-
-          await window.api.fs.writeFile(
-            currentProject.projectPath,
-            JSON.stringify(payload, null, 2),
-          );
-        }
-      }
-    },
-    [activeChapterId, updateChapter, currentProject, chapters],
-  );
-
-  const handleAddChapter = useCallback(async () => {
-    if (!currentProject) {
-      window.api.logger.error("No project selected");
-      return;
-    }
-
-    await createChapter({
-      projectId: currentProject.id,
-      title: `Chapter ${chapters.length + 1}`,
-    });
-  }, [currentProject, createChapter, chapters.length]);
-
-  const handleRenameChapter = useCallback(
-    async (id: string, title: string) => {
-      await updateChapter({ id, title });
-    },
-    [updateChapter],
-  );
-
-  const handleDuplicateChapter = useCallback(
-    async (id: string) => {
-      if (!currentProject) {
-        window.api.logger.error("No project selected");
-        return;
-      }
-
-      const source = chapters.find((c) => c.id === id);
-      if (!source) {
-        return;
-      }
-
-      const created = await createChapter({
-        projectId: currentProject.id,
-        title: `${source.title} Copy`,
-      });
-
-      if (created?.id && source.content) {
-        await updateChapter({ id: created.id, content: source.content });
-      }
-    },
-    [chapters, currentProject, createChapter, updateChapter],
-  );
-
-  const handleDeleteChapter = useCallback(
-    async (id: string) => {
-      await deleteChapter(id);
-      if (activeChapterId === id) {
-        const remaining = chapters.filter((c) => c.id !== id);
-        setActiveChapterId(remaining[0]?.id ?? null);
-      }
-    },
-    [deleteChapter, activeChapterId, chapters],
-  );
-
-  const activeChapterTitle =
-    chapters.find((c) => c.id === activeChapterId)?.title || "";
 
   if (view === "template") {
     return (
@@ -461,8 +129,8 @@ export default function App() {
                 >
                   {rightPanelContent.type === "research" ? (
                     <ResearchPanel
-                      activeTab={rightPanelContent.tab || "character"}
-                      onClose={() => setIsSplitView(false)}
+                                  activeTab={rightPanelContent.tab || "character"}
+                                  onClose={() => setSplitView(false)}
                     />
                   ) : (
                     <div

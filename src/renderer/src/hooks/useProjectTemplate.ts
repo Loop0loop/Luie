@@ -1,0 +1,93 @@
+/**
+ * 프로젝트 템플릿 선택 및 생성
+ */
+
+import { useCallback } from "react";
+import { useProjectStore } from "../stores/projectStore";
+import { useChapterStore } from "../stores/chapterStore";
+import { useUIStore } from "../stores/uiStore";
+
+export function useProjectTemplate(setActiveChapterId: (id: string) => void) {
+  const { createProject, setCurrentProject } = useProjectStore();
+  const { create: createChapter } = useChapterStore();
+  const { setView } = useUIStore();
+
+  const handleSelectProject = useCallback(
+    async (templateId: string, projectPath: string) => {
+      let projectTitle = "Untitled Project";
+
+      switch (templateId) {
+        case "blank":
+          projectTitle = "New Project";
+          break;
+        case "novel_basic":
+          projectTitle = "Web Novel";
+          break;
+        case "script_basic":
+          projectTitle = "Screenplay";
+          break;
+        case "essay":
+          projectTitle = "Essay";
+          break;
+      }
+
+      const description = `Created with ${templateId} template`;
+
+      const newProject = await createProject(
+        projectTitle,
+        description,
+        projectPath,
+      );
+
+      if (newProject) {
+        // 파일 저장
+        try {
+          const lower = projectPath.toLowerCase();
+          const isMarkdown = lower.endsWith(".md");
+          const isText = lower.endsWith(".txt");
+
+          const content = isMarkdown
+            ? `# ${newProject.title}\n\n## Chapter 1\n\n`
+            : isText
+              ? `${newProject.title}\n\n`
+              : JSON.stringify(
+                  {
+                    format: "luie",
+                    version: 1,
+                    projectId: newProject.id,
+                    title: newProject.title,
+                    templateId,
+                    createdAt: newProject.createdAt,
+                    updatedAt: newProject.updatedAt,
+                  },
+                  null,
+                  2,
+                );
+
+          await window.api.fs.writeFile(projectPath, content);
+        } catch (e) {
+          window.api.logger.error("Failed to save project file", e);
+        }
+
+        setCurrentProject(newProject);
+        const firstChapter = await createChapter({
+          projectId: newProject.id,
+          title: "Chapter 1",
+        });
+        if (firstChapter?.id) {
+          setActiveChapterId(firstChapter.id);
+        }
+        setView("editor");
+
+        try {
+          await window.api.window.toggleFullscreen();
+        } catch (e) {
+          window.api.logger.error("Failed to maximize window", e);
+        }
+      }
+    },
+    [createProject, setCurrentProject, createChapter, setView, setActiveChapterId],
+  );
+
+  return { handleSelectProject };
+}

@@ -122,7 +122,7 @@ export default function ProjectTemplateSelector({
                       onClick={(e) => {
                         e.stopPropagation();
                         // TODO: Open context menu for project
-                        console.log("Context menu for project", p.id);
+                        window.api.logger.info("Project context menu", { id: p.id });
                       }}
                     >
                       <MoreVertical size={16} />

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import styles from "../../styles/components/ContextPanel.module.css";
 import { Search, ArrowLeft } from "lucide-react";
 import { useCharacterStore } from "../../stores/characterStore";
@@ -12,7 +12,7 @@ interface ContextPanelProps {
   onTabChange?: (tab: Tab) => void;
 }
 
-export default function ContextPanel({
+function ContextPanel({
   activeTab = "synopsis",
   onTabChange,
 }: ContextPanelProps) {
@@ -221,3 +221,5 @@ export default function ContextPanel({
     </div>
   );
 }
+
+export default memo(ContextPanel);

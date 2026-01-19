@@ -12,6 +12,7 @@ import type {
 import { keywordExtractor } from "../core/keywordExtractor.js";
 import { characterService } from "./characterService.js";
 import { termService } from "./termService.js";
+import { autoExtractService } from "./autoExtractService.js";
 
 const logger = createLogger("ChapterService");
 
@@ -96,6 +97,12 @@ export class ChapterService {
             input.id,
             input.content,
             chapter.projectId,
+          );
+
+          autoExtractService.scheduleAnalysis(
+            input.id,
+            chapter.projectId,
+            input.content,
           );
         }
       }

@@ -25,6 +25,10 @@ class DatabaseService {
         path.join(process.cwd(), "prisma/luie.db");
     }
 
+    if (!process.env.DATABASE_URL) {
+      process.env.DATABASE_URL = `file:${dbPath}`;
+    }
+
     logger.info(`Initializing database at: ${dbPath}`);
 
     const sqlite = new Database(dbPath);

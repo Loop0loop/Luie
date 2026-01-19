@@ -93,7 +93,21 @@ export default function EditorToolbar({ editor, isMobileView, onToggleMobileView
           
           <div className={styles.separator} />
           
-          <button className={styles.iconBtn} style={{color:'var(--text-primary)'}} title="Text Color"><Type size={16}/></button>
+          <button
+            className={styles.iconBtn}
+            style={{ color: "var(--text-primary)" }}
+            title="Text Color"
+            onClick={() => {
+              const color = window.prompt("텍스트 색상 HEX", "#000000")?.trim();
+              if (!color) {
+                editor.chain().focus().unsetColor().run();
+                return;
+              }
+              editor.chain().focus().setColor(color).run();
+            }}
+          >
+            <Type size={16} />
+          </button>
           <button 
             className={`${styles.iconBtn} ${editor.isActive('highlight') ? styles.active : ''}`}
             title="Highlight" 
@@ -141,7 +155,12 @@ export default function EditorToolbar({ editor, isMobileView, onToggleMobileView
             <span>{isMobileView ? 'Mobile' : 'PC'}</span>
           </button>
 
-          <button className={styles.iconBtn}><MoreVertical size={16}/></button>
+          <button
+            className={styles.iconBtn}
+            onClick={() => window.api.logger.info("Editor toolbar menu opened")}
+          >
+            <MoreVertical size={16} />
+          </button>
         </div>
       </div>
     </div>

@@ -27,7 +27,7 @@ export const useAutoSaveStore = create<AutoSaveStore>((set, get) => ({
         }
       }, 2000);
     } catch (error) {
-      console.error("Auto save failed:", error);
+      window.api.logger.error("Auto save failed", error);
       set({ saveStatus: "error" });
     }
   },
