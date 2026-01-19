@@ -2,11 +2,17 @@ import { useState, useEffect } from "react";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
+import Details from '@tiptap/extension-details';
+// Summary extension seems not separate or part of Details package in some versions, 
+// but if installation failed we skip it and see if Details works standalone or if we need to remove Toggle.
 import Placeholder from '@tiptap/extension-placeholder';
 import Highlight from '@tiptap/extension-highlight';
 import { TextStyle } from '@tiptap/extension-text-style';
 import styles from "../../styles/components/Editor.module.css";
 import EditorToolbar from "./EditorToolbar";
+import SlashMenu from "./SlashMenu";
 import { useEditorStore } from "../../stores/editorStore";
 
 interface EditorProps {
@@ -25,10 +31,61 @@ export default function Editor({
   // but TipTap manages its own state. 
   // We'll sync local state for the save timer.
   const [contentHtml, setContentHtml] = useState(initialContent);
+  // Slash Menu State
+  const [showSlashMenu, setShowSlashMenu] = useState(false);
+  const [slashMenuPos, setSlashMenuPos] = useState({ top: 0, left: 0 });
   const [wordCount, setWordCount] = useState(0);
 
   const { fontFamily, fontSize, lineHeight, theme } = useEditorStore();
   const [isMobileView, setIsMobileView] = useState(false);
+
+  // Handle Slash Menu Global Click to close
+  useEffect(() => {
+    const handleClick = () => setShowSlashMenu(false);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
+
+  const handleSlashSelect = (id: string) => {
+    if (!editor) return;
+
+    // Delete the slash character that triggered the menu
+    editor.chain().focus().deleteRange({ 
+      from: editor.state.selection.from - 1, 
+      to: editor.state.selection.from 
+    }).run();
+
+    // Apply the selected formatting
+    switch (id) {
+      case 'h1': 
+        editor.chain().focus().toggleHeading({ level: 1 }).run(); 
+        break;
+      case 'h2': 
+        editor.chain().focus().toggleHeading({ level: 2 }).run(); 
+        break;
+      case 'h3': 
+        editor.chain().focus().toggleHeading({ level: 3 }).run(); 
+        break;
+      case 'bullet': 
+        editor.chain().focus().toggleBulletList().run(); 
+        break;
+      case 'number': 
+        editor.chain().focus().toggleOrderedList().run(); 
+        break;
+      case 'check': 
+        editor.chain().focus().toggleBulletList().run(); 
+        break;
+      case 'toggle':
+      case 'quote': 
+        editor.chain().focus().toggleBlockquote().run(); 
+        break;
+      case 'divider': 
+        editor.chain().focus().setHorizontalRule().run(); 
+        break;
+    }
+    
+    setShowSlashMenu(false);
+  };
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -56,16 +113,38 @@ export default function Editor({
       attributes: {
         class: styles.editorContent, // We will map this class in CSS
       },
+      handleKeyDown: (view, event) => {
+        // Handle slash menu navigation when menu is open
+        if (showSlashMenu) {
+          if (['ArrowUp', 'ArrowDown', 'Enter'].includes(event.key)) {
+            return true; // Let SlashMenu component handle navigation
+          }
+          if (event.key === 'Escape') {
+            setShowSlashMenu(false);
+            return true;
+          }
+        }
+
+        // Detect slash key to show menu
+        if (event.key === '/') {
+          setTimeout(() => {
+            const { from } = view.state.selection;
+            const coords = view.coordsAtPos(from);
+            const container = view.dom.closest(`.${styles.container}`) || document.body;
+            const containerRect = container.getBoundingClientRect();
+            
+            setSlashMenuPos({
+              top: coords.top - containerRect.top + 30,
+              left: coords.left - containerRect.left
+            });
+            setShowSlashMenu(true);
+          }, 0);
+        }
+        
+        return false;
+      }
     },
   });
-
-  // Sync font settings to editor container
-  useEffect(() => {
-    // TipTap doesn't natively handle font-size as a mark easily without extension-text-style
-    // But we can apply it to the container or use a global style.
-    // The previous implementation utilized inline styles on the textarea.
-    // We will apply these styles to the editorContent class or wrapper.
-  }, [fontSize, lineHeight, fontFamily]);
 
   // Auto-save
   useEffect(() => {
@@ -117,10 +196,18 @@ export default function Editor({
               lineHeight: lineHeight,
               height: '100%',
               display: 'flex',
-              flexDirection: 'column'
+              flexDirection: 'column',
+              position: 'relative' // Ensure absolute positioning of menu works relative to this
             }}
           >
              <EditorContent editor={editor} className={styles.tiptapEditor} />
+             {showSlashMenu && (
+                <SlashMenu 
+                  position={slashMenuPos} 
+                  onSelect={handleSlashSelect}
+                  onClose={() => setShowSlashMenu(false)}
+                />
+             )}
           </div>
         </div>
       </div>
