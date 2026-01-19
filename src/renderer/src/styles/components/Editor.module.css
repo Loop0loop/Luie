@@ -224,19 +224,145 @@
   margin: 0.2em 0;
 }
 
-.tiptapEditor :global(.ProseMirror) blockquote {
-  border-left: 3px solid var(--border-default);
-  padding-left: 1em;
-  margin-left: 0;
-  color: var(--text-secondary);
+
+/* Task List (Checkboxes) */
+.tiptapEditor :global(.ProseMirror) ul[data-type="taskList"] {
+  list-style: none !important;
+  padding-left: 0;
 }
 
+.tiptapEditor :global(.ProseMirror) li[data-type="taskItem"] {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  margin: 0.2rem 0;
+  gap: 0.5rem;
+}
+
+.tiptapEditor :global(.ProseMirror) li[data-type="taskItem"] label {
+  margin-top: 2px; /* Align checkbox with text line height */
+  user-select: none;
+  cursor: pointer;
+  display: flex;
+}
+
+.tiptapEditor :global(.ProseMirror) li[data-type="taskItem"] input[type="checkbox"] {
+  appearance: auto;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.tiptapEditor :global(.ProseMirror) li[data-type="taskItem"] div {
+  flex: 1;
+  /* Ensure paragraph inside task item doesn't add extra margin */
+  margin: 0;
+}
+
+.tiptapEditor :global(.ProseMirror) li[data-type="taskItem"] p {
+  margin: 0 !important;
+}
+
+/* Blockquote (Quote/Callout) */
+.tiptapEditor :global(.ProseMirror) blockquote {
+  border-left: 4px solid var(--border-default);
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  margin: 1em 0;
+  background-color: var(--bg-hover);
+  border-radius: 4px;
+  color: var(--text-primary);
+}
+
+.tiptapEditor :global(.ProseMirror) blockquote p {
+  margin: 0.5em 0;
+}
+
+.tiptapEditor :global(.ProseMirror) blockquote p:first-child {
+  margin-top: 0;
+}
+
+.tiptapEditor :global(.ProseMirror) blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* Inline Code */
 .tiptapEditor :global(.ProseMirror) code {
   background-color: var(--bg-secondary);
   padding: 0.2em 0.4em;
   border-radius: 4px;
   font-family: var(--font-mono);
   font-size: 0.9em;
+  color: var(--text-primary);
+}
+
+/* Code Block */
+.tiptapEditor :global(.ProseMirror) pre {
+  background-color: var(--bg-secondary);
+  border-radius: 6px;
+  padding: 1em;
+  margin: 1em 0;
+  overflow-x: auto;
+}
+
+.tiptapEditor :global(.ProseMirror) pre code {
+  background-color: transparent;
+  padding: 0;
+  font-size: 0.9em;
+}
+
+/* Callout - More distinctive than blockquote */
+.tiptapEditor :global(.ProseMirror) .callout {
+  padding: 1rem 1rem 1rem 3rem;
+  background-color: rgba(255, 212, 96, 0.15); /* Warm yellow tint */
+  border-radius: 6px;
+  border-left: 4px solid #ffd460;
+  margin: 1em 0;
+  position: relative;
+}
+
+.tiptapEditor :global(.ProseMirror) .callout::before {
+  content: '💡';
+  position: absolute;
+  left: 0.8rem;
+  top: 1rem;
+  font-size: 1.2em;
+}
+
+.tiptapEditor :global(.ProseMirror) .callout p {
+  margin: 0.5em 0;
+}
+
+.tiptapEditor :global(.ProseMirror) .callout p:first-child {
+  margin-top: 0;
+}
+
+.tiptapEditor :global(.ProseMirror) .callout p:last-child {
+  margin-bottom: 0;
+}
+
+
+/* Details / Toggle */
+.tiptapEditor :global(.ProseMirror) details {
+  border: none; /* Notion toggles are just text usually, but lets keep border optional or minimal */
+  padding: 0;
+  margin: 0.2em 0;
+  background: transparent;
+}
+
+.tiptapEditor :global(.ProseMirror) summary {
+  cursor: pointer;
+  list-style: none; /* We custom style or let default arrow show? Notion uses a triangle */
+  font-weight: 500;
+  display: flex; /* Helps align marker */
+  align-items: center;
+}
+/* Hide default marker in some browsers if we want custom */
+.tiptapEditor :global(.ProseMirror) summary::-webkit-details-marker {
+  display: list-item; /* Or none if we add custom icon */
 }
 
 /* Status Bar - MAKE IT VISIBLE */

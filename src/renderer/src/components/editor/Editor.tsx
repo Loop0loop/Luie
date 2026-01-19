@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import { useEditor, EditorContent } from '@tiptap/react';
+import { Node, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
-import Details from '@tiptap/extension-details';
-// Summary extension seems not separate or part of Details package in some versions, 
-// but if installation failed we skip it and see if Details works standalone or if we need to remove Toggle.
 import Placeholder from '@tiptap/extension-placeholder';
 import Highlight from '@tiptap/extension-highlight';
 import { TextStyle } from '@tiptap/extension-text-style';
@@ -14,6 +12,29 @@ import styles from "../../styles/components/Editor.module.css";
 import EditorToolbar from "./EditorToolbar";
 import SlashMenu from "./SlashMenu";
 import { useEditorStore } from "../../stores/editorStore";
+
+// Simple Callout Extension (inline to avoid dependencies)
+const Callout = Node.create({
+  name: 'callout',
+  group: 'block',
+  content: 'block+',
+  defining: true,
+
+  parseHTML() {
+    return [{ tag: 'div[data-type="callout"]' }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['div', mergeAttributes(HTMLAttributes, { 'data-type': 'callout', class: 'callout' }), 0];
+  },
+
+  addCommands() {
+    return {
+      setCallout: () => ({ commands }: any) => commands.wrapIn(this.name),
+      toggleCallout: () => ({ commands }: any) => commands.toggleWrap(this.name),
+    };
+  },
+});
 
 interface EditorProps {
   initialTitle?: string;
@@ -27,11 +48,7 @@ export default function Editor({
   onSave,
 }: EditorProps) {
   const [title, setTitle] = useState(initialTitle);
-  // We use content state only for save trigger tracking if needed, 
-  // but TipTap manages its own state. 
-  // We'll sync local state for the save timer.
   const [contentHtml, setContentHtml] = useState(initialContent);
-  // Slash Menu State
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const [slashMenuPos, setSlashMenuPos] = useState({ top: 0, left: 0 });
   const [wordCount, setWordCount] = useState(0);
@@ -73,9 +90,10 @@ export default function Editor({
         editor.chain().focus().toggleOrderedList().run(); 
         break;
       case 'check': 
-        editor.chain().focus().toggleBulletList().run(); 
+        editor.chain().focus().toggleTaskList().run(); 
         break;
       case 'toggle':
+      case 'callout':
       case 'quote': 
         editor.chain().focus().toggleBlockquote().run(); 
         break;
@@ -98,6 +116,10 @@ export default function Editor({
       Underline,
       Highlight,
       TextStyle,
+      TaskList,
+      TaskItem.configure({
+        nested: true,
+      }),
       Placeholder.configure({
         placeholder: "내용을 입력하세요... ('/'를 입력하여 명령어 확인)",
       }),
