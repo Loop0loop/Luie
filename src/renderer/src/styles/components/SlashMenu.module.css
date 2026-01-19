@@ -38,9 +38,12 @@
   gap: 10px;
 }
 
-.item.selected,
+.item.selected {
+  background-color: var(--bg-active); /* keyboard/hover selection */
+}
+
 .item:hover {
-  background-color: var(--bg-active); /* or #f3f4f6 */
+  background-color: transparent;
 }
 
 .iconWrapper {

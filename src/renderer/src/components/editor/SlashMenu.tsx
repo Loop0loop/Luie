@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from '../../styles/components/SlashMenu.module.css';
 import { 
   Heading1, Heading2, Heading3, 
@@ -27,6 +27,7 @@ const MENU_ITEMS = [
 
 export default function SlashMenu({ position, onSelect, onClose }: SlashMenuProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const itemRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -50,6 +51,12 @@ export default function SlashMenu({ position, onSelect, onClose }: SlashMenuProp
     return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [selectedIndex, onSelect, onClose]);
 
+  useEffect(() => {
+    const el = itemRefs.current[selectedIndex];
+    if (!el) return;
+    el.scrollIntoView({ block: 'nearest' });
+  }, [selectedIndex]);
+
   return (
     <div 
       className={styles.menu} 
@@ -63,6 +70,9 @@ export default function SlashMenu({ position, onSelect, onClose }: SlashMenuProp
             className={`${styles.item} ${index === selectedIndex ? styles.selected : ''}`}
             onClick={() => onSelect(item.id)}
             onMouseEnter={() => setSelectedIndex(index)}
+            ref={(node) => {
+              itemRefs.current[index] = node;
+            }}
           >
             <div className={styles.iconWrapper}>
               {item.icon}

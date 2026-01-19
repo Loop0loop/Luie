@@ -237,6 +237,7 @@
   align-items: flex-start;
   margin: 0.2rem 0;
   gap: 0.5rem;
+  padding: 0.15rem 0;
 }
 
 .tiptapEditor :global(.ProseMirror) li[data-type="taskItem"] label {
@@ -244,6 +245,10 @@
   user-select: none;
   cursor: pointer;
   display: flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
 }
 
 .tiptapEditor :global(.ProseMirror) li[data-type="taskItem"] input[type="checkbox"] {
@@ -259,6 +264,7 @@
   flex: 1;
   /* Ensure paragraph inside task item doesn't add extra margin */
   margin: 0;
+  padding-top: 1px;
 }
 
 .tiptapEditor :global(.ProseMirror) li[data-type="taskItem"] p {

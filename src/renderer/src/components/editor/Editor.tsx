@@ -8,6 +8,7 @@ import TaskItem from '@tiptap/extension-task-item';
 import Placeholder from '@tiptap/extension-placeholder';
 import Highlight from '@tiptap/extension-highlight';
 import { TextStyle } from '@tiptap/extension-text-style';
+import { Details, DetailsSummary, DetailsContent } from '@tiptap/extension-details';
 import styles from "../../styles/components/Editor.module.css";
 import EditorToolbar from "./EditorToolbar";
 import SlashMenu from "./SlashMenu";
@@ -27,65 +28,8 @@ const Callout = Node.create({
   renderHTML({ HTMLAttributes }) {
     return ['div', mergeAttributes(HTMLAttributes, { 'data-type': 'callout', class: 'callout' }), 0];
   },
-
-  addCommands() {
-    return {
-      setCallout: () => ({ commands }: any) => commands.wrapIn(this.name),
-      toggleCallout: () => ({ commands }: any) => commands.toggleWrap(this.name),
-    };
-  },
 });
 
-// Toggle (Details) Extension
-const ToggleSummary = Node.create({
-  name: 'toggleSummary',
-  content: 'inline*',
-  defining: true,
-
-  parseHTML() {
-    return [{ tag: 'summary' }];
-  },
-
-  renderHTML({ HTMLAttributes }) {
-    return ['summary', mergeAttributes(HTMLAttributes), 0];
-  },
-});
-
-const Toggle = Node.create({
-  name: 'toggle',
-  group: 'block',
-  content: 'toggleSummary block*',
-  defining: true,
-
-  parseHTML() {
-    return [{ tag: 'details[data-type="toggle"]' }];
-  },
-
-  renderHTML({ HTMLAttributes }) {
-    return ['details', mergeAttributes(HTMLAttributes, { 'data-type': 'toggle', class: 'toggle' }), 0];
-  },
-
-  addCommands() {
-    return {
-      insertToggle:
-        () =>
-        ({ commands }: any) =>
-          commands.insertContent({
-            type: this.name,
-            content: [
-              {
-                type: 'toggleSummary',
-                content: [{ type: 'text', text: '토글' }],
-              },
-              {
-                type: 'paragraph',
-                content: [{ type: 'text', text: '' }],
-              },
-            ],
-          }),
-    };
-  },
-});
 
 interface EditorProps {
   initialTitle?: string;
@@ -144,10 +88,26 @@ export default function Editor({
         editor.chain().focus().toggleTaskList().run(); 
         break;
       case 'toggle':
-        editor.chain().focus().insertToggle().run();
+        if (editor.isActive('details')) {
+          editor.chain().focus().unsetDetails().run();
+        } else {
+          editor.chain().focus().setDetails().run();
+        }
         break;
       case 'callout':
-        editor.chain().focus().toggleCallout().run();
+        editor
+          .chain()
+          .focus()
+          .insertContent({
+            type: 'callout',
+            content: [
+              {
+                type: 'paragraph',
+                content: [{ type: 'text', text: '메모…' }],
+              },
+            ],
+          })
+          .run();
         break;
       case 'quote': 
         editor.chain().focus().toggleBlockquote().run(); 
@@ -176,8 +136,14 @@ export default function Editor({
         nested: true,
       }),
       Callout,
-      ToggleSummary,
-      Toggle,
+      Details.configure({
+        persist: true,
+        HTMLAttributes: {
+          class: 'toggle',
+        },
+      }),
+      DetailsSummary,
+      DetailsContent,
       Placeholder.configure({
         placeholder: "내용을 입력하세요... ('/'를 입력하여 명령어 확인)",
       }),
