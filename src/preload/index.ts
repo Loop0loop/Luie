@@ -5,75 +5,134 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { IPCResponse } from "../shared/ipc/index.js";
 
+function sanitizeForIpc(value: unknown, seen = new WeakSet<object>()): unknown {
+  if (value === null) return null;
+
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return value;
+  }
+  if (typeof value === "bigint") return value.toString();
+  if (typeof value === "undefined") return undefined;
+  if (typeof value === "function") return "[Function]";
+  if (typeof value === "symbol") return value.toString();
+
+  if (value instanceof Date) return value.toISOString();
+
+  if (value instanceof Error) {
+    return {
+      name: value.name,
+      message: value.message,
+      stack: value.stack,
+    };
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((v) => sanitizeForIpc(v, seen));
+  }
+
+  if (typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    if (seen.has(obj)) return "[Circular]";
+    seen.add(obj);
+
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(obj)) {
+      const sanitized = sanitizeForIpc(v, seen);
+      if (sanitized !== undefined) out[k] = sanitized;
+    }
+    return out;
+  }
+
+  return String(value);
+}
+
+async function safeInvoke<T = unknown>(channel: string, ...args: unknown[]): Promise<IPCResponse<T>> {
+  return ipcRenderer
+    .invoke(channel, ...args)
+    .catch((error) =>
+      ({
+        success: false,
+        error: {
+          code: "IPC_INVOKE_FAILED",
+          message: error instanceof Error ? error.message : String(error),
+        },
+      }) as IPCResponse<T>,
+    );
+}
+
 // Expose API to renderer process
 contextBridge.exposeInMainWorld("api", {
   // Project API
   project: {
     create: (input: unknown): Promise<IPCResponse> =>
-      ipcRenderer.invoke("project:create", input),
+      safeInvoke("project:create", input),
     get: (id: string): Promise<IPCResponse> =>
-      ipcRenderer.invoke("project:get", id),
-    getAll: (): Promise<IPCResponse> => ipcRenderer.invoke("project:get-all"),
+      safeInvoke("project:get", id),
+    getAll: (): Promise<IPCResponse> => safeInvoke("project:get-all"),
     update: (input: unknown): Promise<IPCResponse> =>
-      ipcRenderer.invoke("project:update", input),
+      safeInvoke("project:update", input),
     delete: (id: string): Promise<IPCResponse> =>
-      ipcRenderer.invoke("project:delete", id),
+      safeInvoke("project:delete", id),
   },
 
   // Chapter API
   chapter: {
     create: (input: unknown): Promise<IPCResponse> =>
-      ipcRenderer.invoke("chapter:create", input),
+      safeInvoke("chapter:create", input),
     get: (id: string): Promise<IPCResponse> =>
-      ipcRenderer.invoke("chapter:get", id),
+      safeInvoke("chapter:get", id),
     getAll: (projectId: string): Promise<IPCResponse> =>
-      ipcRenderer.invoke("chapter:get-all", projectId),
+      safeInvoke("chapter:get-all", projectId),
     update: (input: unknown): Promise<IPCResponse> =>
-      ipcRenderer.invoke("chapter:update", input),
+      safeInvoke("chapter:update", input),
     delete: (id: string): Promise<IPCResponse> =>
-      ipcRenderer.invoke("chapter:delete", id),
+      safeInvoke("chapter:delete", id),
     reorder: (projectId: string, chapterIds: string[]): Promise<IPCResponse> =>
-      ipcRenderer.invoke("chapter:reorder", projectId, chapterIds),
+      safeInvoke("chapter:reorder", projectId, chapterIds),
   },
 
   // Character API
   character: {
     create: (input: unknown): Promise<IPCResponse> =>
-      ipcRenderer.invoke("character:create", input),
+      safeInvoke("character:create", input),
     get: (id: string): Promise<IPCResponse> =>
-      ipcRenderer.invoke("character:get", id),
+      safeInvoke("character:get", id),
     getAll: (projectId: string): Promise<IPCResponse> =>
-      ipcRenderer.invoke("character:get-all", projectId),
+      safeInvoke("character:get-all", projectId),
     update: (input: unknown): Promise<IPCResponse> =>
-      ipcRenderer.invoke("character:update", input),
+      safeInvoke("character:update", input),
     delete: (id: string): Promise<IPCResponse> =>
-      ipcRenderer.invoke("character:delete", id),
+      safeInvoke("character:delete", id),
   },
 
   // Term API
   term: {
     create: (input: unknown): Promise<IPCResponse> =>
-      ipcRenderer.invoke("term:create", input),
+      safeInvoke("term:create", input),
     get: (id: string): Promise<IPCResponse> =>
-      ipcRenderer.invoke("term:get", id),
+      safeInvoke("term:get", id),
     getAll: (projectId: string): Promise<IPCResponse> =>
-      ipcRenderer.invoke("term:get-all", projectId),
+      safeInvoke("term:get-all", projectId),
     update: (input: unknown): Promise<IPCResponse> =>
-      ipcRenderer.invoke("term:update", input),
+      safeInvoke("term:update", input),
     delete: (id: string): Promise<IPCResponse> =>
-      ipcRenderer.invoke("term:delete", id),
+      safeInvoke("term:delete", id),
   },
 
   // Snapshot API
   snapshot: {
     create: (input: unknown): Promise<IPCResponse> =>
-      ipcRenderer.invoke("snapshot:create", input),
+      safeInvoke("snapshot:create", input),
     getAll: (projectId: string): Promise<IPCResponse> =>
-      ipcRenderer.invoke("snapshot:get-all", projectId),
+      safeInvoke("snapshot:get-all", projectId),
     restore: (id: string): Promise<IPCResponse> =>
-      ipcRenderer.invoke("snapshot:restore", id),
+      safeInvoke("snapshot:restore", id),
     delete: (id: string): Promise<IPCResponse> =>
-      ipcRenderer.invoke("snapshot:delete", id),
+      safeInvoke("snapshot:delete", id),
   },
 
   // File System API
@@ -83,24 +142,24 @@ contextBridge.exposeInMainWorld("api", {
       projectPath: string,
       content: string,
     ): Promise<IPCResponse> =>
-      ipcRenderer.invoke("fs:save-project", projectName, projectPath, content),
+      safeInvoke("fs:save-project", projectName, projectPath, content),
     selectDirectory: (): Promise<IPCResponse<string>> =>
-      ipcRenderer.invoke("fs:select-directory"),
+      safeInvoke("fs:select-directory"),
     selectSaveLocation: (options?: {
       filters?: { name: string; extensions: string[] }[];
       defaultPath?: string;
       title?: string;
     }): Promise<IPCResponse<string>> =>
-      ipcRenderer.invoke("fs:select-save-location", options),
+      safeInvoke("fs:select-save-location", options),
     readFile: (filePath: string): Promise<IPCResponse<string>> =>
-      ipcRenderer.invoke("fs:read-file", filePath),
+      safeInvoke("fs:read-file", filePath),
     writeFile: (filePath: string, content: string): Promise<IPCResponse> =>
-      ipcRenderer.invoke("fs:write-file", filePath, content),
+      safeInvoke("fs:write-file", filePath, content),
   },
 
   // Search API
   search: (query: unknown): Promise<IPCResponse> =>
-    ipcRenderer.invoke("search", query),
+    safeInvoke("search", query),
 
   // Auto Save API
   autoSave: (
@@ -108,42 +167,58 @@ contextBridge.exposeInMainWorld("api", {
     content: string,
     projectId: string,
   ): Promise<IPCResponse> =>
-    ipcRenderer.invoke("auto-save", chapterId, content, projectId),
+    safeInvoke("auto-save", chapterId, content, projectId),
 
   // Window API
   window: {
-    maximize: (): Promise<IPCResponse> => ipcRenderer.invoke("window:maximize"),
+    maximize: (): Promise<IPCResponse> => safeInvoke("window:maximize"),
     toggleFullscreen: (): Promise<IPCResponse> =>
-      ipcRenderer.invoke("window:toggle-fullscreen"),
+      safeInvoke("window:toggle-fullscreen"),
   },
 
   // Logger API
   logger: {
     debug: (message: string, data?: unknown): Promise<IPCResponse> =>
-      ipcRenderer.invoke("logger:log", { level: "debug", message, data }),
+      safeInvoke("logger:log", {
+        level: "debug",
+        message,
+        data: sanitizeForIpc(data),
+      }),
     info: (message: string, data?: unknown): Promise<IPCResponse> =>
-      ipcRenderer.invoke("logger:log", { level: "info", message, data }),
+      safeInvoke("logger:log", {
+        level: "info",
+        message,
+        data: sanitizeForIpc(data),
+      }),
     warn: (message: string, data?: unknown): Promise<IPCResponse> =>
-      ipcRenderer.invoke("logger:log", { level: "warn", message, data }),
+      safeInvoke("logger:log", {
+        level: "warn",
+        message,
+        data: sanitizeForIpc(data),
+      }),
     error: (message: string, data?: unknown): Promise<IPCResponse> =>
-      ipcRenderer.invoke("logger:log", { level: "error", message, data }),
+      safeInvoke("logger:log", {
+        level: "error",
+        message,
+        data: sanitizeForIpc(data),
+      }),
   },
 
   // Settings API
   settings: {
-    getAll: (): Promise<IPCResponse> => ipcRenderer.invoke("settings:get-all"),
+    getAll: (): Promise<IPCResponse> => safeInvoke("settings:get-all"),
     getEditor: (): Promise<IPCResponse> =>
-      ipcRenderer.invoke("settings:get-editor"),
+      safeInvoke("settings:get-editor"),
     setEditor: (settings: unknown): Promise<IPCResponse> =>
-      ipcRenderer.invoke("settings:set-editor", settings),
+      safeInvoke("settings:set-editor", settings),
     getAutoSave: (): Promise<IPCResponse> =>
-      ipcRenderer.invoke("settings:get-auto-save"),
+      safeInvoke("settings:get-auto-save"),
     setAutoSave: (settings: unknown): Promise<IPCResponse> =>
-      ipcRenderer.invoke("settings:set-auto-save", settings),
+      safeInvoke("settings:set-auto-save", settings),
     getWindowBounds: (): Promise<IPCResponse> =>
-      ipcRenderer.invoke("settings:get-window-bounds"),
+      safeInvoke("settings:get-window-bounds"),
     setWindowBounds: (bounds: unknown): Promise<IPCResponse> =>
-      ipcRenderer.invoke("settings:set-window-bounds", bounds),
-    reset: (): Promise<IPCResponse> => ipcRenderer.invoke("settings:reset"),
+      safeInvoke("settings:set-window-bounds", bounds),
+    reset: (): Promise<IPCResponse> => safeInvoke("settings:reset"),
   },
 });

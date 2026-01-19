@@ -13,6 +13,15 @@ import type {
 
 const logger = createLogger("CharacterService");
 
+function isPrismaNotFoundError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "P2025"
+  );
+}
+
 export class CharacterService {
   async createCharacter(input: CharacterCreateInput) {
     try {
@@ -107,15 +116,16 @@ export class CharacterService {
       return character;
     } catch (error) {
       logger.error("Failed to update character", error);
+      if (isPrismaNotFoundError(error)) {
+        throw new Error(ErrorCode.CHARACTER_NOT_FOUND);
+      }
       throw new Error(ErrorCode.CHARACTER_UPDATE_FAILED);
     }
   }
 
   async deleteCharacter(id: string) {
     try {
-      await db.getClient().character.delete({
-        where: { id },
-      });
+      await db.getClient().character.deleteMany({ where: { id } });
 
       logger.info("Character deleted successfully", { characterId: id });
       return { success: true };

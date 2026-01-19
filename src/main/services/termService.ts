@@ -13,6 +13,15 @@ import type {
 
 const logger = createLogger("TermService");
 
+function isPrismaNotFoundError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "P2025"
+  );
+}
+
 export class TermService {
   async createTerm(input: TermCreateInput) {
     try {
@@ -99,15 +108,16 @@ export class TermService {
       return term;
     } catch (error) {
       logger.error("Failed to update term", error);
+      if (isPrismaNotFoundError(error)) {
+        throw new Error(ErrorCode.TERM_NOT_FOUND);
+      }
       throw new Error(ErrorCode.TERM_UPDATE_FAILED);
     }
   }
 
   async deleteTerm(id: string) {
     try {
-      await db.getClient().term.delete({
-        where: { id },
-      });
+      await db.getClient().term.deleteMany({ where: { id } });
 
       logger.info("Term deleted successfully", { termId: id });
       return { success: true };

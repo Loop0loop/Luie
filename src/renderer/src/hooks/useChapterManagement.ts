@@ -16,23 +16,33 @@ export function useChapterManagement() {
     create: createChapter,
     update: updateChapter,
     delete: deleteChapter,
+    setCurrent: setCurrentChapter,
   } = useChapterStore();
+
+  // 프로젝트가 바뀌면 선택/컨텐츠를 리셋해서 다른 프로젝트의 id로 업데이트/삭제가
+  // 발생하는 것을 방지합니다.
+  useEffect(() => {
+    setActiveChapterId(null);
+    setContent("");
+    setCurrentChapter(null);
+  }, [currentProject?.id, setCurrentChapter]);
 
   // 활성 챕터 자동 선택 & 컨텐츠 로드
   useEffect(() => {
-    if (!activeChapterId && chapters.length > 0) {
+    if (chapters.length === 0) {
+      setCurrentChapter(null);
+      return;
+    }
+
+    // 현재 선택된 id가 목록에 없으면(프로젝트 전환/삭제 등) 첫 챕터로 보정
+    if (!activeChapterId || !chapters.some((c) => c.id === activeChapterId)) {
       setActiveChapterId(chapters[0].id);
       return;
     }
 
-    if (!activeChapterId) {
-      return;
-    }
-
     const chapter = chapters.find((c) => c.id === activeChapterId);
-    if (chapter) {
-      setContent(chapter.content || "");
-    }
+    setCurrentChapter(chapter ?? null);
+    if (chapter) setContent(chapter.content || "");
   }, [activeChapterId, chapters]);
 
   const handleSelectChapter = useCallback((id: string) => {

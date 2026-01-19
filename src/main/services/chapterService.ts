@@ -16,6 +16,15 @@ import { autoExtractService } from "./autoExtractService.js";
 
 const logger = createLogger("ChapterService");
 
+function isPrismaNotFoundError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "P2025"
+  );
+}
+
 export class ChapterService {
   async createChapter(input: ChapterCreateInput) {
     try {
@@ -119,6 +128,9 @@ export class ChapterService {
       return updatedChapter;
     } catch (error) {
       logger.error("Failed to update chapter", error);
+      if (isPrismaNotFoundError(error)) {
+        throw new Error(ErrorCode.CHAPTER_NOT_FOUND);
+      }
       throw new Error(ErrorCode.CHAPTER_UPDATE_FAILED);
     }
   }
@@ -201,9 +213,7 @@ export class ChapterService {
 
   async deleteChapter(id: string) {
     try {
-      await db.getClient().chapter.delete({
-        where: { id },
-      });
+      await db.getClient().chapter.deleteMany({ where: { id } });
 
       logger.info("Chapter deleted successfully", { chapterId: id });
       return { success: true };

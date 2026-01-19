@@ -67,7 +67,7 @@ export default function App() {
     [setCurrentProject, setView],
   );
 
-  if (view === "template") {
+  if (view === "template" || !currentProject) {
     return (
       <ProjectTemplateSelector
         onSelectProject={handleSelectProject}
