@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
+import { Virtuoso } from "react-virtuoso";
 import { Clock, Plus, Search, Tag } from "lucide-react";
 import styles from "../../styles/components/ResearchPanel.module.css";
 import { useProjectStore } from "../../stores/projectStore";
@@ -165,51 +166,56 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
           </div>
         </div>
 
-        {filteredNotes.map((note) => (
-          <div
-            key={note.id}
-            className={`${styles.noteItem} ${activeNoteId === note.id ? styles.active : ""}`}
-            onClick={() => setActiveNoteId(note.id)}
-          >
-            <div style={{ fontWeight: 500, marginBottom: 4 }}>
-              {note.title || "Untitled"}
-            </div>
-            <div
-              style={{
-                display: "flex",
-                gap: 4,
-                flexWrap: "wrap",
-                marginBottom: 4,
-              }}
-            >
-              {note.tags.map((t) => (
-                <span
-                  key={t}
+        <div className={styles.noteListBody}>
+          <Virtuoso
+            data={filteredNotes}
+            style={{ height: "100%" }}
+            itemContent={(_index, note) => (
+              <div
+                className={`${styles.noteItem} ${activeNoteId === note.id ? styles.active : ""}`}
+                onClick={() => setActiveNoteId(note.id)}
+              >
+                <div style={{ fontWeight: 500, marginBottom: 4 }}>
+                  {note.title || "Untitled"}
+                </div>
+                <div
                   style={{
-                    fontSize: 9,
-                    padding: "2px 4px",
-                    background: "var(--bg-element-hover)",
-                    borderRadius: 2,
+                    display: "flex",
+                    gap: 4,
+                    flexWrap: "wrap",
+                    marginBottom: 4,
                   }}
                 >
-                  {t}
-                </span>
-              ))}
-            </div>
-            <div
-              style={{
-                fontSize: 10,
-                color: "var(--text-tertiary)",
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-              }}
-            >
-              <Clock size={8} />
-              {new Date(note.updatedAt).toLocaleDateString()}
-            </div>
-          </div>
-        ))}
+                  {note.tags.map((t) => (
+                    <span
+                      key={t}
+                      style={{
+                        fontSize: 9,
+                        padding: "2px 4px",
+                        background: "var(--bg-element-hover)",
+                        borderRadius: 2,
+                      }}
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: "var(--text-tertiary)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                >
+                  <Clock size={8} />
+                  {new Date(note.updatedAt).toLocaleDateString()}
+                </div>
+              </div>
+            )}
+          />
+        </div>
       </div>
 
       {activeNote ? (
