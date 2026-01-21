@@ -35,6 +35,8 @@
   flex: 1;
   overflow-y: auto;
   padding: 12px 0;
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 600px;
 }
 
 /* SECTION HEADERS */
@@ -62,6 +64,8 @@
 
 .sectionContent {
   padding-bottom: 12px;
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 400px;
 }
 
 /* LIST ITEMS */

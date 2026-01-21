@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, memo } from "react";
+import { useState, useMemo, useRef, memo, useCallback, useTransition } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import { Extension, Node, mergeAttributes } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
@@ -68,10 +68,15 @@ function Editor({
   onSave,
 }: EditorProps) {
   const [title, setTitle] = useState(initialTitle);
-  const [contentHtml, setContentHtml] = useState(initialContent);
   const [wordCount, setWordCount] = useState(0);
+  const [charCount, setCharCount] = useState(0);
+  const [, startTransition] = useTransition();
 
   const lastSavedRef = useRef<{ title: string; content: string } | null>(null);
+  const contentHtmlRef = useRef(initialContent);
+  const titleRef = useRef(initialTitle);
+  const statsTimerRef = useRef<number | null>(null);
+  const autosaveTimerRef = useRef<number | null>(null);
 
   const SAVE_DEBOUNCE_MS = 4000;
 
@@ -97,9 +102,59 @@ function Editor({
 
   const fontFamilyCss = fontPresetMap[fontPreset ?? "default"];
 
-  useEffect(() => {
-    setTitle(initialTitle);
-  }, [initialTitle]);
+  const countWords = useCallback((text: string) => {
+    let count = 0;
+    let inWord = false;
+    for (let i = 0; i < text.length; i += 1) {
+      const isWhitespace = text[i] <= " ";
+      if (!isWhitespace && !inWord) {
+        count += 1;
+        inWord = true;
+      } else if (isWhitespace) {
+        inWord = false;
+      }
+    }
+    return count;
+  }, []);
+
+  const scheduleStatsUpdate = useCallback(
+    (text: string) => {
+      if (statsTimerRef.current) {
+        window.clearTimeout(statsTimerRef.current);
+      }
+      statsTimerRef.current = window.setTimeout(() => {
+        const nextWordCount = countWords(text);
+        const nextCharCount = text.length;
+        startTransition(() => {
+          setWordCount(nextWordCount);
+          setCharCount(nextCharCount);
+        });
+      }, 300);
+    },
+    [countWords, startTransition],
+  );
+
+  const scheduleAutosave = useCallback(() => {
+    if (!onSave) return;
+    if (autosaveTimerRef.current) {
+      window.clearTimeout(autosaveTimerRef.current);
+    }
+
+    autosaveTimerRef.current = window.setTimeout(() => {
+      const last = lastSavedRef.current;
+      const currentTitle = titleRef.current;
+      const currentContent = contentHtmlRef.current;
+      if (last && last.title === currentTitle && last.content === currentContent) {
+        return;
+      }
+
+      lastSavedRef.current = { title: currentTitle, content: currentContent };
+      void Promise.resolve(onSave(currentTitle, currentContent)).catch(() => {
+        // best-effort autosave; errors are surfaced via IPC response/logger
+      });
+    }, SAVE_DEBOUNCE_MS);
+  }, [onSave]);
+
 
   // TipTap Editor Setup
   const extensions = useMemo(
@@ -144,8 +199,9 @@ function Editor({
       onUpdate: ({ editor }) => {
         const html = editor.getHTML();
         const text = editor.getText();
-        setContentHtml(html);
-        setWordCount(text.trim().split(/\s+/).filter(Boolean).length);
+        contentHtmlRef.current = html;
+        scheduleStatsUpdate(text);
+        scheduleAutosave();
       },
       editorProps: {
         attributes: {
@@ -156,27 +212,6 @@ function Editor({
     },
     [extensions],
   );
-
-  // Auto-save
-  useEffect(() => {
-    if (!onSave) {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      const last = lastSavedRef.current;
-      if (last && last.title === title && last.content === contentHtml) {
-        return;
-      }
-
-      lastSavedRef.current = { title, content: contentHtml };
-      void Promise.resolve(onSave(title, contentHtml)).catch(() => {
-        // best-effort autosave; errors are surfaced via IPC response/logger
-      });
-    }, SAVE_DEBOUNCE_MS);
-
-    return () => clearTimeout(timer);
-  }, [title, contentHtml, onSave]);
 
   const getFontFamily = () => fontFamilyCss;
 
@@ -201,7 +236,12 @@ function Editor({
             className={styles.titleInput}
             placeholder="제목 없음"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              const nextTitle = e.target.value;
+              setTitle(nextTitle);
+              titleRef.current = nextTitle;
+              scheduleAutosave();
+            }}
             style={{ fontFamily: getFontFamily() }}
           />
 
@@ -224,7 +264,7 @@ function Editor({
 
       <div className={styles.statusBar}>
         <span className={styles.statusText}>
-          글자 {editor.getText().length} · 단어 {wordCount}
+          글자 {charCount} · 단어 {wordCount}
         </span>
       </div>
     </div>

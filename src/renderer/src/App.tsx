@@ -66,6 +66,10 @@ export default function App() {
   const { setCurrentProject } = useProjectStore();
   const { setView } = useUIStore();
 
+  const prefetchSettings = useCallback(() => {
+    void import("./components/settings/SettingsModal");
+  }, []);
+
   const handleOpenExistingProject = useCallback(
     (project: (typeof projects)[number]) => {
       setCurrentProject(project);
@@ -98,6 +102,7 @@ export default function App() {
             onDuplicateChapter={handleDuplicateChapter}
             onDeleteChapter={handleDeleteChapter}
             onOpenSettings={() => setIsSettingsOpen(true)}
+            onPrefetchSettings={prefetchSettings}
             onSelectResearchItem={handleSelectResearchItem}
             onSplitView={handleSplitView}
           />

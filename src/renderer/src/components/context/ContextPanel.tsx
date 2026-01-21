@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect, useMemo, useDeferredValue, memo } from "react";
 import styles from "../../styles/components/ContextPanel.module.css";
 import { Search, ArrowLeft } from "lucide-react";
 import { useCharacterStore } from "../../stores/characterStore";
@@ -41,6 +41,7 @@ function ContextPanel({
 
   const [searchText, setSearchText] = useState("");
   const [selectedItem, setSelectedItem] = useState<ContextItem | null>(null);
+  const deferredSearchText = useDeferredValue(searchText);
 
   useEffect(() => {
     if (currentProject?.id) {
@@ -49,24 +50,21 @@ function ContextPanel({
     }
   }, [currentProject?.id]);
 
-  const filterList = <T extends ContextItem>(list: T[], isCharacter: boolean): T[] => {
-    if (!searchText) return list;
-    return list.filter((item) => {
-      if (isCharacter) {
-        const character = item as Character;
-        return (
-          character.name.includes(searchText) ||
-          (character.description || "").includes(searchText)
-        );
-      } else {
-        const term = item as Term;
-        return (
-          term.term.includes(searchText) ||
-          (term.definition || "").includes(searchText)
-        );
-      }
-    });
-  };
+  const filteredCharacters = useMemo(() => {
+    if (!deferredSearchText) return characters;
+    return characters.filter((character) =>
+      character.name.includes(deferredSearchText) ||
+      (character.description || "").includes(deferredSearchText),
+    );
+  }, [characters, deferredSearchText]);
+
+  const filteredTerms = useMemo(() => {
+    if (!deferredSearchText) return terms;
+    return terms.filter((term) =>
+      term.term.includes(deferredSearchText) ||
+      (term.definition || "").includes(deferredSearchText),
+    );
+  }, [terms, deferredSearchText]);
 
   const handleItemClick = (item: ContextItem) => {
     setSelectedItem(item);
@@ -176,7 +174,7 @@ function ContextPanel({
 
         {currentTab === "characters" && (
           <>
-            {filterList(characters, true).map((item) => (
+            {filteredCharacters.map((item) => (
               <div
                 key={item.id}
                 className={styles.card}
@@ -203,7 +201,7 @@ function ContextPanel({
 
         {currentTab === "terms" && (
           <>
-            {filterList(terms, false).map((item) => (
+            {filteredTerms.map((item) => (
               <div
                 key={item.id}
                 className={styles.card}

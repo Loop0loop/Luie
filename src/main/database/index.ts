@@ -12,9 +12,22 @@ const logger = createLogger("DatabaseService");
 
 class DatabaseService {
   private static instance: DatabaseService;
-  private prisma: PrismaClient;
+  private prisma: PrismaClient | null = null;
+  private datasourceUrl: string | null = null;
 
   private constructor() {
+  }
+
+  static getInstance(): DatabaseService {
+    if (!DatabaseService.instance) {
+      DatabaseService.instance = new DatabaseService();
+    }
+    return DatabaseService.instance;
+  }
+
+  private ensureInitialized(): void {
+    if (this.prisma) return;
+
     let dbPath: string;
     if (app.isPackaged) {
       dbPath = path.join(app.getPath("userData"), "luie.db");
@@ -24,13 +37,13 @@ class DatabaseService {
         path.join(process.cwd(), "prisma/luie.db");
     }
 
-    const datasourceUrl = process.env.DATABASE_URL ?? `file:${dbPath}`;
-    process.env.DATABASE_URL = datasourceUrl;
+    this.datasourceUrl = process.env.DATABASE_URL ?? `file:${dbPath}`;
+    process.env.DATABASE_URL = this.datasourceUrl;
 
     logger.info(`Initializing database at: ${dbPath}`);
 
     const adapter = new PrismaBetterSqlite3({
-      url: datasourceUrl,
+      url: this.datasourceUrl,
     });
 
     this.prisma = new PrismaClient({
@@ -41,19 +54,15 @@ class DatabaseService {
     logger.info("Database service initialized");
   }
 
-  static getInstance(): DatabaseService {
-    if (!DatabaseService.instance) {
-      DatabaseService.instance = new DatabaseService();
-    }
-    return DatabaseService.instance;
-  }
-
   getClient(): PrismaClient {
-    return this.prisma;
+    this.ensureInitialized();
+    return this.prisma as PrismaClient;
   }
 
   async disconnect(): Promise<void> {
+    if (!this.prisma) return;
     await this.prisma.$disconnect();
+    this.prisma = null;
     logger.info("Database disconnected");
   }
 }

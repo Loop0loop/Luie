@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
 import { Clock, Plus, Search, Tag } from "lucide-react";
 import styles from "../../styles/components/ResearchPanel.module.css";
 import { useProjectStore } from "../../stores/projectStore";
@@ -79,6 +79,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
   const [notes, setNotes] = useState<Note[]>(() => initial.notes);
   const [activeNoteId, setActiveNoteId] = useState(() => initial.activeNoteId);
   const [searchTerm, setSearchTerm] = useState("");
+  const deferredSearchTerm = useDeferredValue(searchTerm);
 
   // Save notes (debounced)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -100,11 +101,15 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
   }, [notes, storageKey]);
 
   const activeNote = notes.find((n) => n.id === activeNoteId);
-  const filteredNotes = notes.filter(
-    (n) =>
-      n.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      n.content.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const filteredNotes = useMemo(() => {
+    if (!deferredSearchTerm) return notes;
+    const query = deferredSearchTerm.toLowerCase();
+    return notes.filter(
+      (n) =>
+        n.title.toLowerCase().includes(query) ||
+        n.content.toLowerCase().includes(query),
+    );
+  }, [notes, deferredSearchTerm]);
 
   const handleAddNote = () => {
     const newId = String(Date.now());

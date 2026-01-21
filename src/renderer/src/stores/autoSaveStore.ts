@@ -10,25 +10,49 @@ interface AutoSaveStore {
   ) => Promise<void>;
 }
 
-export const useAutoSaveStore = create<AutoSaveStore>((set, get) => ({
-  saveStatus: "idle",
+export const useAutoSaveStore = create<AutoSaveStore>((set, get) => {
+  const lastSavedContentByChapter = new Map<string, string>();
+  const lastRequestedContentByChapter = new Map<string, string>();
 
-  setSaveStatus: (status) => set({ saveStatus: status }),
+  return {
+    saveStatus: "idle",
 
-  triggerSave: async (chapterId, content, projectId) => {
-    set({ saveStatus: "saving" });
-    try {
-      await window.api.autoSave(chapterId, content, projectId);
-      set({ saveStatus: "saved" });
+    setSaveStatus: (status) => set({ saveStatus: status }),
 
-      setTimeout(() => {
-        if (get().saveStatus === "saved") {
+    triggerSave: async (chapterId, content, projectId) => {
+      const lastSaved = lastSavedContentByChapter.get(chapterId);
+      const lastRequested = lastRequestedContentByChapter.get(chapterId);
+
+      if (lastSaved === content) {
+        if (get().saveStatus !== "idle") {
           set({ saveStatus: "idle" });
         }
-      }, 2000);
-    } catch (error) {
-      window.api.logger.error("Auto save failed", error);
-      set({ saveStatus: "error" });
-    }
-  },
-}));
+        return;
+      }
+
+      if (lastRequested === content) {
+        return;
+      }
+
+      lastRequestedContentByChapter.set(chapterId, content);
+      set({ saveStatus: "saving" });
+
+      try {
+        await window.api.autoSave(chapterId, content, projectId);
+        lastSavedContentByChapter.set(chapterId, content);
+        lastRequestedContentByChapter.delete(chapterId);
+        set({ saveStatus: "saved" });
+
+        setTimeout(() => {
+          if (get().saveStatus === "saved") {
+            set({ saveStatus: "idle" });
+          }
+        }, 2000);
+      } catch (error) {
+        lastRequestedContentByChapter.delete(chapterId);
+        window.api.logger.error("Auto save failed", error);
+        set({ saveStatus: "error" });
+      }
+    },
+  };
+});

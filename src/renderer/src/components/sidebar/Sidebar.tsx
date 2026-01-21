@@ -32,6 +32,7 @@ interface SidebarProps {
   onDuplicateChapter?: (id: string) => void;
   onDeleteChapter?: (id: string) => void;
   onOpenSettings: () => void;
+  onPrefetchSettings?: () => void;
   onSelectResearchItem: (type: "character" | "world" | "scrap") => void;
   onSplitView?: (type: "vertical" | "horizontal", contentId: string) => void;
 }
@@ -46,6 +47,7 @@ function Sidebar({
   onDuplicateChapter,
   onDeleteChapter,
   onOpenSettings,
+  onPrefetchSettings,
   onSelectResearchItem,
   onSplitView,
 }: SidebarProps) {
@@ -320,7 +322,11 @@ function Sidebar({
       </div>
 
       <div className={styles.footer}>
-        <button className={styles.settingsButton} onClick={onOpenSettings}>
+        <button
+          className={styles.settingsButton}
+          onClick={onOpenSettings}
+          onPointerEnter={onPrefetchSettings}
+        >
           <Settings size={16} />
           <span>설정 (Settings)</span>
         </button>

@@ -65,6 +65,8 @@
   gap: 16px;
   overflow-y: auto;
   height: 100%;
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 600px;
 }
 
 .characterCard {
@@ -402,6 +404,8 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 600px;
 }
 
 .plotCard {
@@ -489,6 +493,8 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 600px;
 }
 
 .noteListHeader {
