@@ -92,6 +92,12 @@
 .fontPreview { font-size: 28px; color: var(--text-primary); line-height: 1; }
 .fontName { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
 
+.helperText {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+}
+
 /* Themes */
 .themeGrid {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;

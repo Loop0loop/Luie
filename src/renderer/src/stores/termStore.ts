@@ -21,6 +21,21 @@ interface TermStore extends BaseTermStore {
 }
 
 export const useTermStore = create<TermStore>((set, _get, store) => {
+  const setWithAlias: typeof set = (partial) =>
+    set((state) => {
+      const next = typeof partial === "function" ? partial(state) : partial;
+      const nextItems =
+        (next as Partial<TermStore>).items ?? state.items;
+      const nextCurrent =
+        (next as Partial<TermStore>).currentItem ?? state.currentItem;
+
+      return {
+        ...next,
+        terms: nextItems,
+        currentTerm: nextCurrent as Term | null,
+      } as Partial<TermStore>;
+    });
+
   const apiClient = {
     ...window.api.term,
     getAll: (parentId?: string) => window.api.term.getAll(parentId || ""),
@@ -29,7 +44,7 @@ export const useTermStore = create<TermStore>((set, _get, store) => {
   const crudSlice = createCRUDSlice<Term, TermCreateInput, TermUpdateInput>(
     apiClient,
     "Term",
-  )(set, _get, store);
+  )(setWithAlias, _get, store);
 
   return {
     ...crudSlice,

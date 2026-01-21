@@ -78,6 +78,13 @@ function Editor({
   const { fontFamily, fontSize, lineHeight } = useEditorStore();
   const [isMobileView, setIsMobileView] = useState(false);
 
+  const fontFamilyCss =
+    fontFamily === "serif"
+      ? "var(--font-serif)"
+      : fontFamily === "sans"
+        ? "var(--font-sans)"
+        : "var(--font-mono)";
+
   useEffect(() => {
     setTitle(initialTitle);
   }, [initialTitle]);
@@ -131,13 +138,7 @@ function Editor({
       editorProps: {
         attributes: {
           class: styles.editorContent,
-          style: `font-family: ${
-            fontFamily === "serif"
-              ? '"Merriweather", serif'
-              : fontFamily === "sans"
-                ? '"Inter", sans-serif'
-                : '"JetBrains Mono", monospace'
-          }; font-size: ${fontSize}px; line-height: ${lineHeight};`,
+          style: `font-family: ${fontFamilyCss}; font-size: ${fontSize}px; line-height: ${lineHeight};`,
         },
       },
     },
@@ -165,18 +166,7 @@ function Editor({
     return () => clearTimeout(timer);
   }, [title, contentHtml, onSave]);
 
-  const getFontFamily = () => {
-    switch (fontFamily) {
-      case "serif":
-        return "var(--font-serif)";
-      case "sans":
-        return "var(--font-sans)";
-      case "mono":
-        return "var(--font-mono)";
-      default:
-        return "var(--font-serif)";
-    }
-  };
+  const getFontFamily = () => fontFamilyCss;
 
   if (!editor) {
     return null;

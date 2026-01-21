@@ -28,6 +28,21 @@ interface CharacterStore extends BaseCharacterStore {
 }
 
 export const useCharacterStore = create<CharacterStore>((set, _get, store) => {
+  const setWithAlias: typeof set = (partial) =>
+    set((state) => {
+      const next = typeof partial === "function" ? partial(state) : partial;
+      const nextItems =
+        (next as Partial<CharacterStore>).items ?? state.items;
+      const nextCurrent =
+        (next as Partial<CharacterStore>).currentItem ?? state.currentItem;
+
+      return {
+        ...next,
+        characters: nextItems,
+        currentCharacter: nextCurrent as Character | null,
+      } as Partial<CharacterStore>;
+    });
+
   const apiClient = {
     ...window.api.character,
     getAll: (parentId?: string) => window.api.character.getAll(parentId || ""),
@@ -37,7 +52,7 @@ export const useCharacterStore = create<CharacterStore>((set, _get, store) => {
     Character,
     CharacterCreateInput,
     CharacterUpdateInput
-  >(apiClient, "Character")(set, _get, store);
+  >(apiClient, "Character")(setWithAlias, _get, store);
 
   return {
     ...crudSlice,

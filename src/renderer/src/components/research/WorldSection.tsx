@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
-import type {
-  Edge,
-  Node,
-  Connection} from "reactflow";
+import type { Edge, Node, Connection, NodeProps, ReactFlowInstance } from "reactflow";
 import ReactFlow, {
   Background,
   Controls,
@@ -12,6 +9,8 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   MarkerType,
+  MiniMap,
+  useReactFlow,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { ArrowLeft, Eraser, Plus, X, Type, PenTool } from "lucide-react";
@@ -22,24 +21,55 @@ import { BufferedInput, BufferedTextArea } from "../common/BufferedInput";
 
 type WorldTab = "synopsis" | "terms" | "mindmap" | "drawing" | "plot";
 
+type MindMapNodeData = { label: string };
+
 // Custom Node for MindMap
-const CharacterNode = ({ data }: { data: { label: string } }) => {
+const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
+  const { setNodes } = useReactFlow();
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState<string | null>(null);
+
+  const commit = () => {
+    const nextLabel = (draft ?? data.label).trim() || "New Topic";
+    setNodes((nds: Node<MindMapNodeData>[]) =>
+      nds.map((node: Node<MindMapNodeData>) =>
+        node.id === id
+          ? { ...node, data: { ...node.data, label: nextLabel } }
+          : node,
+      ),
+    );
+    setDraft(null);
+    setIsEditing(false);
+  };
+
   return (
     <div
-      style={{
-        padding: "10px 20px",
-        borderRadius: "50px", // Pill shape
-        background: "white",
-        border: "2px solid #2c2c2e",
-        minWidth: "120px",
-        textAlign: "center",
-        fontWeight: "bold",
-        boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-        fontSize: "14px",
+      className={styles.mindMapNode}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        setDraft(data.label);
+        setIsEditing(true);
       }}
     >
       <Handle type="target" position={Position.Top} />
-      {data.label}
+      {isEditing ? (
+        <input
+          className={`${styles.mindMapNodeInput} nodrag`}
+          value={draft ?? data.label}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") {
+              setDraft(null);
+              setIsEditing(false);
+            }
+          }}
+          autoFocus
+        />
+      ) : (
+        <div className={styles.mindMapNodeLabel}>{data.label}</div>
+      )}
       <Handle type="source" position={Position.Bottom} />
     </div>
   );
@@ -183,7 +213,7 @@ function TermManager() {
             <div className={styles.characterName}>{term.term}</div>
             <div
               className={styles.characterRole}
-              style={{ fontSize: "0.8em", color: "#666" }}
+              style={{ fontSize: "0.8em", color: "var(--text-secondary)" }}
             >
               {term.category ? `[${term.category}] ` : ""}
               {term.definition || "No definition"}
@@ -305,6 +335,7 @@ function SynopsisEditor() {
 
 function MindMapBoard() {
   const nodeTypes = useMemo(() => ({ character: CharacterNode }), []);
+  const flowRef = useRef<ReactFlowInstance | null>(null);
 
   // XMind-style interaction:
   // Enter -> Add Sibling
@@ -320,6 +351,7 @@ function MindMapBoard() {
   ]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
 
   const onConnect = useCallback(
     (params: Connection) =>
@@ -339,6 +371,31 @@ function MindMapBoard() {
   const onNodeClick = (_: React.MouseEvent, node: Node) => {
     setSelectedNodeId(node.id);
   };
+
+  const onPaneDoubleClick = useCallback(
+    (event: React.MouseEvent) => {
+      const bounds = (event.currentTarget as HTMLDivElement).getBoundingClientRect();
+      const instance = flowRef.current;
+      if (!instance) return;
+
+      const position = instance.project({
+        x: event.clientX - bounds.left,
+        y: event.clientY - bounds.top,
+      });
+
+      const newNodeId = Date.now().toString();
+      const newNode: Node<MindMapNodeData> = {
+        id: newNodeId,
+        type: "character",
+        position,
+        data: { label: "New Topic" },
+      };
+
+      setNodes((nds) => nds.concat(newNode));
+      setSelectedNodeId(newNodeId);
+    },
+    [setNodes],
+  );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -413,23 +470,14 @@ function MindMapBoard() {
       className={styles.mindMapContainer}
       tabIndex={0}
       onKeyDown={handleKeyDown}
+      onDoubleClick={onPaneDoubleClick}
       style={{ outline: "none" }} // Focusable div for keyboard events
     >
       <div
-        style={{
-          position: "absolute",
-          top: 16,
-          right: 16,
-          zIndex: 10,
-          background: "rgba(255,255,255,0.8)",
-          padding: 8,
-          borderRadius: 4,
-          fontSize: 11,
-          color: "#666",
-        }}
+        className={styles.mindMapHint}
       >
         Click Node to Select • <b>Enter</b>: Sibling • <b>Tab</b>: Child •{" "}
-        <b>Del</b>: Delete
+        <b>Del</b>: Delete • <b>Double Click</b>: Edit/Insert
       </div>
 
       <ReactFlow
@@ -442,8 +490,15 @@ function MindMapBoard() {
         onPaneClick={() => setSelectedNodeId(null)}
         nodeTypes={nodeTypes}
         fitView
+        onInit={(instance) => {
+          flowRef.current = instance;
+        }}
       >
-        <Background color="#ccc" gap={20} />
+        <Background color="var(--grid-line)" gap={20} />
+        <MiniMap
+          nodeColor={() => "var(--bg-element)"}
+          nodeStrokeColor={() => "var(--border-active)"}
+        />
         <Controls />
       </ReactFlow>
     </div>

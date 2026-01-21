@@ -35,11 +35,26 @@ interface ProjectStore extends BaseProjectStore {
 }
 
 export const useProjectStore = create<ProjectStore>((set, _get, store) => {
+  const setWithAlias: typeof set = (partial) =>
+    set((state) => {
+      const next = typeof partial === "function" ? partial(state) : partial;
+      const nextItems =
+        (next as Partial<ProjectStore>).items ?? state.items;
+      const nextCurrent =
+        (next as Partial<ProjectStore>).currentItem ?? state.currentItem;
+
+      return {
+        ...next,
+        projects: nextItems,
+        currentProject: nextCurrent as Project | null,
+      } as Partial<ProjectStore>;
+    });
+
   const crudSlice = createCRUDSlice<
     Project,
     ProjectCreateInput,
     ProjectUpdateInput
-  >(window.api.project, "Project")(set, _get, store);
+  >(window.api.project, "Project")(setWithAlias, _get, store);
 
   return {
     ...crudSlice,

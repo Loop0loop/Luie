@@ -27,6 +27,15 @@
   --accent-bg-hover: #1d4ed8; /* Blue-700 */
   --accent-fg: #ffffff;
   --success-fg: #16a34a;      /* Green-600 */
+  --danger-fg: #ef4444;       /* Red-500 */
+
+  /* Aliases (legacy UI tokens) */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-hover: #f4f4f5;
+  --bg-canvas: #ffffff;
+  --accent-primary: #2563eb;
+  --grid-line: #e5e7eb;
   --danger-fg: #dc2626;       /* Red-600 */
 
   /* Borders */
@@ -46,8 +55,9 @@
   --collapsed-width: 0px; /* For animations */
 
   /* Typography */
-  --font-sans: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Inter Variable", "Inter", "Noto Sans KR Variable", "Noto Sans JP Variable", -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, sans-serif;
   --font-serif: "Merriweather", "Noto Serif KR", serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   /* Backwards-compatible aliases */
@@ -82,6 +92,15 @@
   --accent-bg-hover: #2563eb; /* Blue-600 */
   --accent-fg: #0b1020;
   --success-fg: #22c55e;      /* Green-500 */
+  --danger-fg: #f87171;       /* Red-400 */
+
+  /* Aliases (legacy UI tokens) */
+  --bg-primary: #18181b;
+  --bg-secondary: #27272a;
+  --bg-hover: #3f3f46;
+  --bg-canvas: #18181b;
+  --accent-primary: #3b82f6;
+  --grid-line: #27272a;
   --danger-fg: #fca5a5;       /* Red-300 */
 
   /* Borders */
@@ -121,6 +140,15 @@
   --accent-bg-hover: #b96725;
   --accent-fg: #fffefb;
   --success-fg: #2e7d32;
+  --danger-fg: #b91c1c;
+
+  /* Aliases (legacy UI tokens) */
+  --bg-primary: #fbf0d9;
+  --bg-secondary: #efe4cb;
+  --bg-hover: #efe4cb;
+  --bg-canvas: #fbf0d9;
+  --accent-primary: #cc7832;
+  --grid-line: #e6dcc6;
   --danger-fg: #b91c1c;
 
   /* Editor */

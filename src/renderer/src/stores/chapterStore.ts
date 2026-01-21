@@ -21,6 +21,21 @@ interface ChapterStore extends BaseChapterStore {
 }
 
 export const useChapterStore = create<ChapterStore>((set, get, store) => {
+  const setWithAlias: typeof set = (partial) =>
+    set((state) => {
+      const next = typeof partial === "function" ? partial(state) : partial;
+      const nextItems =
+        (next as Partial<ChapterStore>).items ?? state.items;
+      const nextCurrent =
+        (next as Partial<ChapterStore>).currentItem ?? state.currentItem;
+
+      return {
+        ...next,
+        chapters: nextItems,
+        currentChapter: nextCurrent as Chapter | null,
+      } as Partial<ChapterStore>;
+    });
+
   // Base CRUD Slice 생성
   const apiClient = {
     ...window.api.chapter,
@@ -31,7 +46,7 @@ export const useChapterStore = create<ChapterStore>((set, get, store) => {
     Chapter,
     ChapterCreateInput,
     ChapterUpdateInput
-  >(apiClient, "Chapter")(set, get, store);
+  >(apiClient, "Chapter")(setWithAlias, get, store);
 
   return {
     ...crudSlice,

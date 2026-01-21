@@ -43,10 +43,10 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     style={{
                       fontFamily:
                         f === "serif"
-                          ? "Merriweather, serif"
+                          ? "var(--font-serif)"
                           : f === "sans"
-                            ? "Inter, sans-serif"
-                            : "JetBrains Mono, monospace",
+                            ? "var(--font-sans)"
+                            : "var(--font-mono)",
                     }}
                   >
                     Ag
@@ -55,11 +55,17 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     {f === "serif"
                       ? "명조체"
                       : f === "sans"
-                        ? "고딕체"
+                        ? "고딕체 (Inter + Noto Sans KR/JP)"
                         : "모노"}
                   </div>
                 </button>
               ))}
+            </div>
+            <div className={styles.helperText}>
+              기본 내장: Inter Variable + Noto Sans KR/JP (다국어 기본 폴백)
+            </div>
+            <div className={styles.helperText}>
+              추가 폰트는 설정에서 선택 시 설치하도록 설계할 예정입니다.
             </div>
           </div>
 
