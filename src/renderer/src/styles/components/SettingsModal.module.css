@@ -98,6 +98,97 @@
   line-height: 1.4;
 }
 
+.optionalFontList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.optionalFontRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  background: var(--bg-element);
+}
+
+.optionalFontInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.optionalFontPreview {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  border: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--text-primary);
+  background: var(--bg-element-hover);
+}
+
+.optionalFontMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.optionalFontName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.optionalFontFamily {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.optionalFontActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.installButton,
+.applyButton {
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-element);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.installButton:hover,
+.applyButton:hover {
+  border-color: var(--border-active);
+  background: var(--bg-element-hover);
+}
+
+.installButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.activeBadge {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--accent-fg);
+  background: var(--accent-bg);
+}
+
 /* Themes */
 .themeGrid {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;

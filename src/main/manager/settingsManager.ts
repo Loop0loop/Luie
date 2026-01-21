@@ -11,6 +11,14 @@ const logger = createLogger("SettingsManager");
 
 interface EditorSettings {
   fontFamily: "serif" | "sans" | "mono";
+  fontPreset?:
+    | "default"
+    | "lora"
+    | "bitter"
+    | "source-serif"
+    | "montserrat"
+    | "nunito-sans"
+    | "victor-mono";
   fontSize: number;
   lineHeight: number;
   maxWidth: number;
@@ -34,6 +42,7 @@ interface AppSettings {
 const DEFAULT_SETTINGS: AppSettings = {
   editor: {
     fontFamily: "serif",
+    fontPreset: "default",
     fontSize: 18,
     lineHeight: 1.8,
     maxWidth: 800,

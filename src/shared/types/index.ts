@@ -158,6 +158,14 @@ export interface SearchResult {
 // Settings Types
 export interface EditorSettings {
   fontFamily: "serif" | "sans" | "mono";
+  fontPreset?:
+    | "default"
+    | "lora"
+    | "bitter"
+    | "source-serif"
+    | "montserrat"
+    | "nunito-sans"
+    | "victor-mono";
   fontSize: number;
   lineHeight: number;
   maxWidth: number;

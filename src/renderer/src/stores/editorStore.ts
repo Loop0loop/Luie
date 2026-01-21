@@ -1,10 +1,19 @@
 import { create } from "zustand";
 
 export type FontFamily = "serif" | "sans" | "mono";
+export type FontPreset =
+  | "default"
+  | "lora"
+  | "bitter"
+  | "source-serif"
+  | "montserrat"
+  | "nunito-sans"
+  | "victor-mono";
 export type EditorTheme = "light" | "dark" | "sepia";
 
 interface EditorSettings {
   fontFamily: FontFamily;
+  fontPreset?: FontPreset;
   fontSize: number;
   lineHeight: number;
   maxWidth: number;
@@ -22,6 +31,7 @@ interface EditorStore extends EditorSettings {
 
 const DEFAULT_SETTINGS: EditorSettings = {
   fontFamily: "serif",
+  fontPreset: "default",
   fontSize: 18,
   lineHeight: 1.8,
   maxWidth: 800,
@@ -42,6 +52,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
     const current = get();
     const updated: EditorSettings = {
       fontFamily: current.fontFamily,
+      fontPreset: current.fontPreset,
       fontSize: current.fontSize,
       lineHeight: current.lineHeight,
       maxWidth: current.maxWidth,

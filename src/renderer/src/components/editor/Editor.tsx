@@ -75,15 +75,27 @@ function Editor({
 
   const SAVE_DEBOUNCE_MS = 4000;
 
-  const { fontFamily, fontSize, lineHeight } = useEditorStore();
+  const { fontFamily, fontPreset, fontSize, lineHeight } = useEditorStore();
   const [isMobileView, setIsMobileView] = useState(false);
 
-  const fontFamilyCss =
-    fontFamily === "serif"
-      ? "var(--font-serif)"
-      : fontFamily === "sans"
-        ? "var(--font-sans)"
-        : "var(--font-mono)";
+  const fontPresetMap: Record<string, string> = {
+    default:
+      fontFamily === "serif"
+        ? "var(--font-serif)"
+        : fontFamily === "sans"
+          ? "var(--font-sans)"
+          : "var(--font-mono)",
+    lora: '"Lora Variable", "Lora", var(--font-serif)',
+    bitter: '"Bitter Variable", "Bitter", var(--font-serif)',
+    "source-serif":
+      '"Source Serif 4 Variable", "Source Serif 4", var(--font-serif)',
+    montserrat: '"Montserrat Variable", "Montserrat", var(--font-sans)',
+    "nunito-sans": '"Nunito Sans Variable", "Nunito Sans", var(--font-sans)',
+    "victor-mono":
+      '"Victor Mono Variable", "Victor Mono", var(--font-mono)',
+  };
+
+  const fontFamilyCss = fontPresetMap[fontPreset ?? "default"];
 
   useEffect(() => {
     setTitle(initialTitle);
