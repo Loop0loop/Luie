@@ -75,12 +75,8 @@ function Editor({
 
   const SAVE_DEBOUNCE_MS = 4000;
 
-  const { fontFamily, fontSize, lineHeight, theme } = useEditorStore();
+  const { fontFamily, fontSize, lineHeight } = useEditorStore();
   const [isMobileView, setIsMobileView] = useState(false);
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
 
   useEffect(() => {
     setTitle(initialTitle);
@@ -187,7 +183,7 @@ function Editor({
   }
 
   return (
-    <div className={styles.container} data-theme={theme}>
+    <div className={styles.container}>
       <div className={styles.toolbarArea}>
         <EditorToolbar
           editor={editor}

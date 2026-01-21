@@ -19,8 +19,7 @@ export default function ProjectTemplateSelector({
 }: ProjectTemplateSelectorProps) {
   const [activeCategory, setActiveCategory] = useState("all");
 
-  const { deleteProject } = useProjectStore();
-  const { updateProject } = useProjectStore();
+  const { deleteProject, updateProject } = useProjectStore();
 
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });

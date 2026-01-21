@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense, useCallback } from "react";
+import { useState, lazy, Suspense, useCallback, useEffect } from "react";
 import MainLayout from "./components/layout/MainLayout";
 import Sidebar from "./components/sidebar/Sidebar";
 import Editor from "./components/editor/Editor";
@@ -7,6 +7,7 @@ import ProjectTemplateSelector from "./components/layout/ProjectTemplateSelector
 import styles from "./styles/App.module.css";
 import { useProjectStore } from "./stores/projectStore";
 import { useUIStore } from "./stores/uiStore";
+import { useEditorStore } from "./stores/editorStore";
 import { useProjectInit } from "./hooks/useProjectInit";
 import { useFileImport } from "./hooks/useFileImport";
 import { useChapterManagement } from "./hooks/useChapterManagement";
@@ -21,9 +22,15 @@ export default function App() {
 
   const { view } = useUIStore();
   const { items: projects } = useProjectStore();
+  const { theme } = useEditorStore();
 
   // 커스텀 훅으로 로직 분리
   const { currentProject } = useProjectInit();
+
+  // 전역 테마 적용 (템플릿/에디터 등 모든 뷰에서 동작)
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
   
   const {
     chapters,

@@ -24,6 +24,7 @@ export function Modal({
   useEffect(() => {
     if (isOpen) {
       setAnimate(true);
+      return;
     } else {
       const timer = setTimeout(() => setAnimate(false), 200);
       return () => clearTimeout(timer);
