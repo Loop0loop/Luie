@@ -208,7 +208,7 @@ function Editor({
             style={{
               fontFamily: getFontFamily(),
               fontSize: `${fontSize}px`,
-              lineHeight: lineHeight,
+              lineHeight,
               height: "100%",
               display: "flex",
               flexDirection: "column",

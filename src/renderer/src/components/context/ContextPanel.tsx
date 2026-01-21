@@ -10,6 +10,14 @@ type Tab = "synopsis" | "characters" | "terms";
 
 type ContextItem = Character | Term;
 
+function isCharacter(item: ContextItem): item is Character {
+  return "name" in item;
+}
+
+function isTerm(item: ContextItem): item is Term {
+  return "term" in item;
+}
+
 interface ContextPanelProps {
   activeTab?: Tab;
   onTabChange?: (tab: Tab) => void;
@@ -77,18 +85,20 @@ function ContextPanel({
               <ArrowLeft size={16} />
             </button>
             <div className={styles.detailTitle}>
-              {selectedItem.name || selectedItem.term}
+              {isCharacter(selectedItem) ? selectedItem.name : selectedItem.term}
             </div>
           </div>
           <div className={styles.detailContent}>
             <div className={styles.detailSection}>
               <div className={styles.detailLabel}>Description</div>
               <div className={styles.detailText}>
-                {selectedItem.description || selectedItem.definition || ""}
+                {isCharacter(selectedItem)
+                  ? (selectedItem.description ?? "")
+                  : (selectedItem.definition ?? "")}
               </div>
             </div>
 
-            {selectedItem.category && (
+            {isTerm(selectedItem) && selectedItem.category && (
               <div className={styles.detailSection}>
                 <div className={styles.detailLabel}>Category</div>
                 <div className={styles.detailText}>{selectedItem.category}</div>

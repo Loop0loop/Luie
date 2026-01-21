@@ -20,7 +20,7 @@ interface TermStore extends BaseTermStore {
   currentTerm: Term | null;
 }
 
-export const useTermStore = create<TermStore>((set) => {
+export const useTermStore = create<TermStore>((set, _get, store) => {
   const apiClient = {
     ...window.api.term,
     getAll: (parentId?: string) => window.api.term.getAll(parentId || ""),
@@ -29,7 +29,7 @@ export const useTermStore = create<TermStore>((set) => {
   const crudSlice = createCRUDSlice<Term, TermCreateInput, TermUpdateInput>(
     apiClient,
     "Term",
-  )(set);
+  )(set, _get, store);
 
   return {
     ...crudSlice,

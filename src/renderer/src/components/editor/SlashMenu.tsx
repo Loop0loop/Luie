@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { ReactElement } from "react";
+import type { Editor, Range } from "@tiptap/core";
 import styles from "../../styles/components/SlashMenu.module.css";
 import {
   Heading1,
@@ -14,10 +15,15 @@ import {
   MessageSquare,
 } from "lucide-react";
 
+export interface SlashMenuActionProps {
+  editor: Editor;
+  range: Range;
+}
+
 export interface SlashMenuItem {
   id: string;
   label: string;
-  action: (props: unknown) => void;
+  action: (props: SlashMenuActionProps) => void;
 }
 
 export interface SlashMenuHandle {

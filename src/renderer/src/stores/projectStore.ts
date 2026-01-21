@@ -34,12 +34,12 @@ interface ProjectStore extends BaseProjectStore {
   currentProject: Project | null;
 }
 
-export const useProjectStore = create<ProjectStore>((set) => {
+export const useProjectStore = create<ProjectStore>((set, _get, store) => {
   const crudSlice = createCRUDSlice<
     Project,
     ProjectCreateInput,
     ProjectUpdateInput
-  >(window.api.project, "Project")(set);
+  >(window.api.project, "Project")(set, _get, store);
 
   return {
     ...crudSlice,

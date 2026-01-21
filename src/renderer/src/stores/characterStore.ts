@@ -27,7 +27,7 @@ interface CharacterStore extends BaseCharacterStore {
   currentCharacter: Character | null;
 }
 
-export const useCharacterStore = create<CharacterStore>((set) => {
+export const useCharacterStore = create<CharacterStore>((set, _get, store) => {
   const apiClient = {
     ...window.api.character,
     getAll: (parentId?: string) => window.api.character.getAll(parentId || ""),
@@ -37,7 +37,7 @@ export const useCharacterStore = create<CharacterStore>((set) => {
     Character,
     CharacterCreateInput,
     CharacterUpdateInput
-  >(apiClient, "Character")(set);
+  >(apiClient, "Character")(set, _get, store);
 
   return {
     ...crudSlice,

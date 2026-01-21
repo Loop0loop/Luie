@@ -6,10 +6,7 @@ import type {
   SuggestionProps,
 } from "@tiptap/suggestion";
 import SlashMenu from "./SlashMenu";
-import type { SlashMenuItem } from "./SlashMenu";
-
-type TextRange = { from: number; to: number };
-type SlashMenuActionProps = { editor: Editor; range: TextRange };
+import type { SlashMenuActionProps, SlashMenuItem } from "./SlashMenu";
 
 function replaceCurrentTextblock(editor: Editor, content: Content) {
   const { state } = editor;
@@ -31,15 +28,12 @@ function replaceCurrentTextblock(editor: Editor, content: Content) {
   editor.commands.insertContentAt({ from, to }, content);
 }
 
-export const slashSuggestion: Omit<SuggestionOptions, "editor"> = {
+export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuItem>, "editor"> = {
   char: "/",
 
-  command: ({ editor, range, props }: SuggestionProps) => {
+  command: ({ editor, range, props }: { editor: Editor; range: SlashMenuActionProps["range"]; props: SlashMenuItem }) => {
     // items()에서 만든 각 아이템의 action을 실행
-    (props as { action?: (args: SlashMenuActionProps) => void } | undefined)?.action?.({
-      editor,
-      range: range as unknown as TextRange,
-    });
+    props.action({ editor, range });
   },
 
   items: ({ query }: { query: string }): SlashMenuItem[] => {

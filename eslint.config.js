@@ -23,6 +23,15 @@ export default tseslint.config(
         "warn",
         { allowConstantExport: true },
       ],
+      // Practical runtime-safety & consistency
+      eqeqeq: ["error", "always"],
+      "no-debugger": "error",
+      "no-var": "error",
+      "prefer-const": "error",
+      "object-shorthand": ["error", "always"],
+      // Allow console inside the shared logger, but discourage elsewhere
+      "no-console": "warn",
+
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/consistent-type-imports": [
         "error",
@@ -32,6 +41,12 @@ export default tseslint.config(
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
+    },
+  },
+  {
+    files: ["src/shared/logger/index.ts"],
+    rules: {
+      "no-console": "off",
     },
   },
 );

@@ -20,7 +20,7 @@ interface ChapterStore extends BaseChapterStore {
   currentChapter: Chapter | null;
 }
 
-export const useChapterStore = create<ChapterStore>((set, get) => {
+export const useChapterStore = create<ChapterStore>((set, get, store) => {
   // Base CRUD Slice 생성
   const apiClient = {
     ...window.api.chapter,
@@ -31,7 +31,7 @@ export const useChapterStore = create<ChapterStore>((set, get) => {
     Chapter,
     ChapterCreateInput,
     ChapterUpdateInput
-  >(apiClient, "Chapter")(set);
+  >(apiClient, "Chapter")(set, get, store);
 
   return {
     ...crudSlice,
