@@ -1,23 +1,48 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import ReactFlow, {
   Background,
-  Connection,
   Controls,
   Edge,
-  EdgeChange,
   Node,
-  NodeChange,
   addEdge,
-  applyEdgeChanges,
-  applyNodeChanges,
+  Handle,
+  Position,
+  useNodesState,
+  useEdgesState,
+  Connection,
+  MarkerType,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { ArrowLeft, Eraser, Plus, X } from "lucide-react";
+import { ArrowLeft, Eraser, Plus, X, Type, PenTool } from "lucide-react";
 import styles from "../../styles/components/ResearchPanel.module.css";
 import { useProjectStore } from "../../stores/projectStore";
 import { useTermStore } from "../../stores/termStore";
+import { BufferedInput, BufferedTextArea } from "../common/BufferedInput";
 
 type WorldTab = "synopsis" | "terms" | "mindmap" | "drawing" | "plot";
+
+// Custom Node for MindMap
+const CharacterNode = ({ data }: { data: { label: string } }) => {
+  return (
+    <div
+      style={{
+        padding: "10px 20px",
+        borderRadius: "50px", // Pill shape
+        background: "white",
+        border: "2px solid #2c2c2e",
+        minWidth: "120px",
+        textAlign: "center",
+        fontWeight: "bold",
+        boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+        fontSize: "14px",
+      }}
+    >
+      <Handle type="target" position={Position.Top} />
+      {data.label}
+      <Handle type="source" position={Position.Bottom} />
+    </div>
+  );
+};
 
 export default function WorldSection() {
   const [subTab, setSubTab] = useState<WorldTab>("terms");
@@ -70,7 +95,8 @@ export default function WorldSection() {
 
 function TermManager() {
   const { currentItem: currentProject } = useProjectStore();
-  const { terms, loadTerms, createTerm, updateTerm, deleteTerm } = useTermStore();
+  const { terms, loadTerms, createTerm, updateTerm, deleteTerm } =
+    useTermStore();
   const [selectedTermId, setSelectedTermId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -87,6 +113,12 @@ function TermManager() {
         definition: "",
         category: "general",
       });
+
+      // Reload terms to reflect the new addition
+      await loadTerms(currentProject.id);
+
+      // Auto-selection is tricky without the ID returned.
+      // We'll skip auto-selection or implement a store update later.
     }
   };
 
@@ -109,31 +141,27 @@ function TermManager() {
         <div className={styles.tableGrid}>
           <div className={styles.cellLabel}>용어</div>
           <div className={styles.cellValue}>
-            <input
+            <BufferedInput
               className={styles.cellValueInput}
               value={term.term}
-              onChange={(e) => updateTerm({ id: term.id, term: e.target.value })}
+              onSave={(val) => updateTerm({ id: term.id, term: val })}
             />
           </div>
           <div className={styles.cellLabel}>정의</div>
           <div className={styles.cellValue}>
-            <textarea
+            <BufferedTextArea
               className={styles.cellValueInput}
               value={term.definition || ""}
-              onChange={(e) =>
-                updateTerm({ id: term.id, definition: e.target.value })
-              }
+              onSave={(val) => updateTerm({ id: term.id, definition: val })}
               style={{ minHeight: "100px" }}
             />
           </div>
           <div className={styles.cellLabel}>카테고리</div>
           <div className={styles.cellValue}>
-            <input
+            <BufferedInput
               className={styles.cellValueInput}
               value={term.category || ""}
-              onChange={(e) =>
-                updateTerm({ id: term.id, category: e.target.value })
-              }
+              onSave={(val) => updateTerm({ id: term.id, category: val })}
             />
           </div>
         </div>
@@ -193,123 +221,302 @@ function TermManager() {
 
 function SynopsisEditor() {
   const { currentItem: currentProject, updateProject } = useProjectStore();
+  const [status, setStatus] = useState<"draft" | "working" | "locked">("draft");
 
   if (!currentProject) return null;
 
   return (
     <div style={{ height: "100%", overflowY: "auto", paddingRight: 8 }}>
-      <div className={styles.sectionTitle}>Project Description</div>
-      <textarea
+      <div
+        className={styles.sectionTitle}
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <span>Project Synopsis</span>
+        <div style={{ display: "flex", gap: 4 }}>
+          {/* Status Toggles */}
+          {(["draft", "working", "locked"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatus(s)}
+              style={{
+                fontSize: 11,
+                padding: "2px 8px",
+                borderRadius: 12,
+                border:
+                  "1px solid " +
+                  (status === s
+                    ? "var(--accent-primary)"
+                    : "var(--border-default)"),
+                background:
+                  status === s ? "var(--accent-primary)" : "transparent",
+                color: status === s ? "white" : "var(--text-tertiary)",
+                cursor: "pointer",
+                textTransform: "uppercase",
+              }}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <BufferedTextArea
         className={styles.cellValueInput}
         style={{
           border: "1px solid var(--border-default)",
-          padding: 12,
+          padding: 16,
           borderRadius: 4,
           width: "100%",
           marginBottom: 16,
-          minHeight: 200,
+          minHeight: 400,
+          lineHeight: 1.6,
+          fontSize: 14,
+          backgroundColor:
+            status === "locked" ? "var(--bg-secondary)" : "transparent",
+          color:
+            status === "locked"
+              ? "var(--text-secondary)"
+              : "var(--text-primary)",
         }}
-        placeholder="Project description..."
+        placeholder="이야기의 핵심 로그라인, 기획의도, 줄거리를 자유롭게 작성하세요."
         value={currentProject.description || ""}
-        onChange={(e) =>
-          updateProject(currentProject.id, undefined, e.target.value)
-        }
+        readOnly={status === "locked"}
+        onSave={(val) => updateProject(currentProject.id, undefined, val)}
       />
+
+      <div
+        style={{
+          fontSize: 12,
+          color: "var(--text-tertiary)",
+          padding: "0 4px",
+        }}
+      >
+        * 시놉시스는 언제든 변할 수 있습니다. 'Locked' 상태로 설정하면 수정을
+        방지합니다.
+      </div>
     </div>
   );
 }
 
-const initialNodes: Node[] = [
-  {
-    id: "1",
-    position: { x: 250, y: 5 },
-    data: { label: "주인공 (Main)" },
-    type: "input",
-  },
-  { id: "2", position: { x: 100, y: 100 }, data: { label: "조력자 A" } },
-  { id: "3", position: { x: 400, y: 100 }, data: { label: "적대자 B" } },
-];
-
-const initialEdges: Edge[] = [
-  { id: "e1-2", source: "1", target: "2", animated: true, label: "신뢰" },
-  { id: "e1-3", source: "1", target: "3", label: "대립" },
-];
-
 function MindMapBoard() {
-  const [nodes, , onNodesChange] = (function useNodesState(initial: Node[]) {
-    const [nds, setNds] = useState(initial);
-    const onNdsChange = useCallback(
-      (changes: NodeChange[]) => setNds((prev) => applyNodeChanges(changes, prev)),
-      [],
-    );
-    return [nds, setNds, onNdsChange] as const;
-  })(initialNodes);
+  const nodeTypes = useMemo(() => ({ character: CharacterNode }), []);
 
-  const [edges, setEdges, onEdgesChange] = (function useEdgesState(initial: Edge[]) {
-    const [eds, setEds] = useState(initial);
-    const onEdsChange = useCallback(
-      (changes: EdgeChange[]) => setEds((prev) => applyEdgeChanges(changes, prev)),
-      [],
-    );
-    return [eds, setEds, onEdsChange] as const;
-  })(initialEdges);
+  // XMind-style interaction:
+  // Enter -> Add Sibling
+  // Tab -> Add Child
+
+  const [nodes, setNodes, onNodesChange] = useNodesState([
+    {
+      id: "root",
+      type: "character",
+      position: { x: 300, y: 300 },
+      data: { label: "중심 사건/인물" },
+    },
+  ]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+    (params: Connection) =>
+      setEdges((eds) =>
+        addEdge(
+          {
+            ...params,
+            type: "smoothstep",
+            markerEnd: { type: MarkerType.ArrowClosed },
+          },
+          eds,
+        ),
+      ),
     [setEdges],
+  );
+
+  const onNodeClick = (_: React.MouseEvent, node: Node) => {
+    setSelectedNodeId(node.id);
+  };
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!selectedNodeId) return;
+
+      if (e.key === "Enter") {
+        // Add Sibling (Same parent? Hard to know without tree structure. For now, add generic node nearby)
+        e.preventDefault();
+        const selectedNode = nodes.find((n) => n.id === selectedNodeId);
+        if (!selectedNode) return;
+
+        const newNodeId = Date.now().toString();
+        const newNode: Node = {
+          id: newNodeId,
+          type: "character",
+          position: {
+            x: selectedNode.position.x + 150,
+            y: selectedNode.position.y,
+          },
+          data: { label: "New Topic" },
+        };
+        setNodes((nds) => nds.concat(newNode));
+        setSelectedNodeId(newNodeId); // Auto select new node
+      }
+
+      if (e.key === "Tab") {
+        // Add Child
+        e.preventDefault();
+        const selectedNode = nodes.find((n) => n.id === selectedNodeId);
+        if (!selectedNode) return;
+
+        const newNodeId = Date.now().toString();
+        const newNode: Node = {
+          id: newNodeId,
+          type: "character",
+          position: {
+            x: selectedNode.position.x + 100,
+            y: selectedNode.position.y + 100,
+          },
+          data: { label: "Sub Topic" },
+        };
+
+        const newEdge: Edge = {
+          id: `e${selectedNodeId}-${newNodeId}`,
+          source: selectedNodeId,
+          target: newNodeId,
+          type: "smoothstep",
+          markerEnd: { type: MarkerType.ArrowClosed },
+        };
+
+        setNodes((nds) => nds.concat(newNode));
+        setEdges((eds) => eds.concat(newEdge));
+        setSelectedNodeId(newNodeId);
+      }
+
+      if (e.key === "Delete" || e.key === "Backspace") {
+        if (selectedNodeId === "root") return; // Protect root
+        setNodes((nds) => nds.filter((n) => n.id !== selectedNodeId));
+        setEdges((eds) =>
+          eds.filter(
+            (e) => e.source !== selectedNodeId && e.target !== selectedNodeId,
+          ),
+        );
+        setSelectedNodeId(null);
+      }
+    },
+    [selectedNodeId, nodes, setNodes, setEdges],
   );
 
   return (
     <div
-      style={{
-        height: "100%",
-        border: "1px solid var(--border-default)",
-        borderRadius: 8,
-      }}
+      className={styles.mindMapContainer}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      style={{ outline: "none" }} // Focusable div for keyboard events
     >
+      <div
+        style={{
+          position: "absolute",
+          top: 16,
+          right: 16,
+          zIndex: 10,
+          background: "rgba(255,255,255,0.8)",
+          padding: 8,
+          borderRadius: 4,
+          fontSize: 11,
+          color: "#666",
+        }}
+      >
+        Click Node to Select • <b>Enter</b>: Sibling • <b>Tab</b>: Child •{" "}
+        <b>Del</b>: Delete
+      </div>
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodeClick={onNodeClick}
+        onPaneClick={() => setSelectedNodeId(null)}
+        nodeTypes={nodeTypes}
         fitView
       >
-        <Background />
+        <Background color="#ccc" gap={20} />
         <Controls />
       </ReactFlow>
     </div>
   );
 }
 
-function DrawingCanvas() {
-  const canvasRef = useRef<SVGSVGElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [paths, setPaths] = useState<string[]>([]);
-  const [currentPath, setCurrentPath] = useState("");
+// --- Drawing Canvas ---
+interface MapPath {
+  d?: string;
+  type: "path" | "text";
+  color: string;
+  width?: number;
+  x?: number;
+  y?: number;
+  text?: string;
+}
 
-  const getCoords = (e: React.MouseEvent) => {
+function DrawingCanvas() {
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const [tool, setTool] = useState<"pen" | "text" | "eraser">("pen");
+  const [color, setColor] = useState("#000000");
+  const [lineWidth, setLineWidth] = useState(2);
+  const [paths, setPaths] = useState<MapPath[]>([]);
+  const [currentPath, setCurrentPath] = useState("");
+  const [isDrawing, setIsDrawing] = useState(false);
+
+  const colors = [
+    "#000000",
+    "#ef4444",
+    "#3b82f6",
+    "#22c55e",
+    "#eab308",
+    "#a855f7",
+  ];
+  const widths = [2, 4, 8, 16];
+
+  const getCoords = (e: React.PointerEvent) => {
     if (!canvasRef.current) return { x: 0, y: 0 };
     const rect = canvasRef.current.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   };
 
-  const startDrawing = (e: React.MouseEvent) => {
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (tool === "text") {
+      const { x, y } = getCoords(e);
+      const text = window.prompt("지명 입력:");
+      if (text) {
+        setPaths((prev) => [...prev, { type: "text", x, y, text, color }]);
+      }
+      return;
+    }
+
+    e.currentTarget.setPointerCapture(e.pointerId);
     setIsDrawing(true);
     const { x, y } = getCoords(e);
     setCurrentPath(`M ${x} ${y}`);
   };
 
-  const draw = (e: React.MouseEvent) => {
+  const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDrawing) return;
     const { x, y } = getCoords(e);
     setCurrentPath((prev) => `${prev} L ${x} ${y}`);
   };
 
-  const stopDrawing = () => {
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDrawing) return;
     setIsDrawing(false);
+    e.currentTarget.releasePointerCapture(e.pointerId);
+
     if (currentPath) {
-      setPaths((prev) => [...prev, currentPath]);
+      setPaths((prev) => [
+        ...prev,
+        { type: "path", d: currentPath, color, width: lineWidth },
+      ]);
       setCurrentPath("");
     }
   };
@@ -317,58 +524,137 @@ function DrawingCanvas() {
   const clearCanvas = () => setPaths([]);
 
   return (
-    <div
-      style={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          gap: 8,
-          padding: 4,
-          backgroundColor: "var(--bg-element)",
-          borderRadius: 4,
-        }}
-      >
-        <button className={styles.subTab} onClick={clearCanvas}>
-          <Eraser size={14} /> Clear
-        </button>
-        <span
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      {/* Drawing Toolbar */}
+      <div className={styles.drawingToolbar}>
+        <div
           style={{
-            fontSize: 12,
-            color: "var(--text-tertiary)",
-            alignSelf: "center",
+            display: "flex",
+            gap: 4,
+            paddingRight: 12,
+            borderRight: "1px solid var(--border-default)",
           }}
         >
-          Draw your world map here...
-        </span>
-      </div>
-      <div
-        style={{
-          flex: 1,
-          border: "1px solid var(--border-default)",
-          borderRadius: 8,
-          background: "#fff",
-          overflow: "hidden",
-        }}
-      >
-        <svg
-          ref={canvasRef}
-          style={{ width: "100%", height: "100%", cursor: "crosshair" }}
-          onMouseDown={startDrawing}
-          onMouseMove={draw}
-          onMouseUp={stopDrawing}
-          onMouseLeave={stopDrawing}
+          <button
+            className={`${styles.toolButton} ${tool === "pen" ? styles.active : ""}`}
+            onClick={() => setTool("pen")}
+            title="펜"
+          >
+            <PenTool size={16} />
+          </button>
+          <button
+            className={`${styles.toolButton} ${tool === "text" ? styles.active : ""}`}
+            onClick={() => setTool("text")}
+            title="지명 (텍스트)"
+          >
+            <Type size={16} />
+          </button>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "center",
+            paddingRight: 12,
+            borderRight: "1px solid var(--border-default)",
+          }}
         >
-          {paths.map((d, i) => (
-            <path key={i} d={d} stroke="black" strokeWidth="2" fill="none" />
+          {colors.map((c) => (
+            <div
+              key={c}
+              className={`${styles.colorSwatch} ${color === c ? styles.active : ""}`}
+              style={{ backgroundColor: c }}
+              onClick={() => setColor(c)}
+            />
           ))}
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: 4,
+            alignItems: "center",
+            paddingRight: 12,
+            borderRight: "1px solid var(--border-default)",
+          }}
+        >
+          {widths.map((w) => (
+            <div
+              key={w}
+              onClick={() => setLineWidth(w)}
+              style={{
+                width: 24,
+                height: 24,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                opacity: lineWidth === w ? 1 : 0.4,
+              }}
+            >
+              <div
+                style={{
+                  width: w,
+                  height: w,
+                  borderRadius: "50%",
+                  background: "var(--text-primary)",
+                }}
+              />
+            </div>
+          ))}
+        </div>
+
+        <button className={styles.subTab} onClick={clearCanvas}>
+          <Eraser size={14} /> Clear All
+        </button>
+      </div>
+
+      {/* Canvas */}
+      <div className={styles.canvasArea} ref={canvasRef}>
+        <svg
+          style={{ width: "100%", height: "100%", touchAction: "none" }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+        >
+          {paths.map((p, i) => {
+            if (p.type === "text") {
+              return (
+                <text
+                  key={i}
+                  x={p.x}
+                  y={p.y}
+                  fill={p.color}
+                  fontSize="14"
+                  fontWeight="bold"
+                  style={{ userSelect: "none", pointerEvents: "none" }}
+                >
+                  {p.text}
+                </text>
+              );
+            }
+            return (
+              <path
+                key={i}
+                d={p.d}
+                stroke={p.color}
+                strokeWidth={p.width}
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            );
+          })}
           {currentPath && (
-            <path d={currentPath} stroke="black" strokeWidth="2" fill="none" />
+            <path
+              d={currentPath}
+              stroke={color}
+              strokeWidth={lineWidth}
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           )}
         </svg>
       </div>
@@ -377,26 +663,103 @@ function DrawingCanvas() {
 }
 
 function PlotBoard() {
-  const columns = [
-    { title: "Idea (발상)", cards: ["결말 반전 아이디어", "서브 남주 등장 시점?"] },
+  const [columns, setColumns] = useState([
     {
-      title: "Structuring (구조화)",
-      cards: ["1막: 회귀와 자각", "2막: 갈등의 시작", "3막: 절정"],
+      id: "act1",
+      title: "1막: 발단 (Setup)",
+      cards: [
+        { id: "c1", content: "주인공의 일상" },
+        { id: "c2", content: "사건의 시작" },
+      ],
     },
-    { title: "Plotting (플롯)", cards: ["1화: 프롤로그", "2화: 만남", "3화: 계약"] },
-    { title: "Visualization (시각화)", cards: ["주인공 의상 컨셉", "황궁 지도 스케치"] },
-  ];
+    {
+      id: "act2",
+      title: "2막: 전개 (Confrontation)",
+      cards: [{ id: "c3", content: "첫 번째 시련" }],
+    },
+    {
+      id: "act3",
+      title: "3막: 결말 (Resolution)",
+      cards: [{ id: "c4", content: "최후의 대결" }],
+    },
+  ]);
+
+  const addCard = (colId: string) => {
+    setColumns((cols) =>
+      cols.map((col) => {
+        if (col.id === colId) {
+          return {
+            ...col,
+            cards: [
+              ...col.cards,
+              { id: Date.now().toString(), content: "New Beat" },
+            ],
+          };
+        }
+        return col;
+      }),
+    );
+  };
+
+  const updateCard = (colId: string, cardId: string, content: string) => {
+    setColumns((cols) =>
+      cols.map((col) => {
+        if (col.id === colId) {
+          return {
+            ...col,
+            cards: col.cards.map((c) =>
+              c.id === cardId ? { ...c, content } : c,
+            ),
+          };
+        }
+        return col;
+      }),
+    );
+  };
+
+  const deleteCard = (colId: string, cardId: string) => {
+    setColumns((cols) =>
+      cols.map((col) => {
+        if (col.id === colId) {
+          return {
+            ...col,
+            cards: col.cards.filter((c) => c.id !== cardId),
+          };
+        }
+        return col;
+      }),
+    );
+  };
 
   return (
     <div className={styles.plotBoard}>
-      {columns.map((col, idx) => (
-        <div key={idx} className={styles.plotColumn}>
-          <div className={styles.columnHeader}>{col.title}</div>
-          {col.cards.map((card, cIdx) => (
-            <div key={cIdx} className={styles.plotCard}>
-              {card}
-            </div>
-          ))}
+      {columns.map((col) => (
+        <div key={col.id} className={styles.plotColumn}>
+          <div className={styles.columnHeader}>
+            {col.title}
+            <span className={styles.cardCount}>{col.cards.length}</span>
+          </div>
+          <div className={styles.cardList}>
+            {col.cards.map((card) => (
+              <div key={card.id} className={styles.plotCard}>
+                <BufferedTextArea
+                  className={styles.cardInput}
+                  value={card.content}
+                  onSave={(val) => updateCard(col.id, card.id, val)}
+                  rows={2}
+                />
+                <button
+                  className={styles.cardDeleteBtn}
+                  onClick={() => deleteCard(col.id, card.id)}
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button className={styles.addCardBtn} onClick={() => addCard(col.id)}>
+            <Plus size={14} /> Add Beat
+          </button>
         </div>
       ))}
     </div>

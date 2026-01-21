@@ -4,6 +4,7 @@ import WindowBar from "./WindowBar";
 import { Plus, Book, FileText, FileType, MoreVertical } from "lucide-react";
 import type { Project } from "../../../../shared/types";
 import { useProjectStore } from "../../stores/projectStore";
+import { ConfirmDialog, PromptDialog } from "../common/Modal";
 
 interface ProjectTemplateSelectorProps {
   onSelectProject: (templateId: string, projectPath: string) => void;
@@ -25,6 +26,26 @@ export default function ProjectTemplateSelector({
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  // Dialog States
+  const [renameDialog, setRenameDialog] = useState<{
+    isOpen: boolean;
+    projectId: string;
+    currentTitle: string;
+  }>({
+    isOpen: false,
+    projectId: "",
+    currentTitle: "",
+  });
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    projectId: string;
+    projectTitle: string;
+  }>({
+    isOpen: false,
+    projectId: "",
+    projectTitle: "",
+  });
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
@@ -138,18 +159,13 @@ export default function ProjectTemplateSelector({
               </div>
               <div
                 className={styles.recentContextMenuItem}
-                onClick={async () => {
+                onClick={() => {
                   setMenuOpenId(null);
-                  const nextTitle = window
-                    .prompt("프로젝트 이름 수정", p.title)
-                    ?.trim();
-                  if (!nextTitle || nextTitle === p.title) return;
-
-                  try {
-                    await updateProject(p.id, nextTitle);
-                  } catch (error) {
-                    window.api.logger.error("Failed to update project", error);
-                  }
+                  setRenameDialog({
+                    isOpen: true,
+                    projectId: p.id,
+                    currentTitle: p.title,
+                  });
                 }}
               >
                 이름 수정
@@ -157,18 +173,13 @@ export default function ProjectTemplateSelector({
               <div className={styles.recentContextMenuDivider} />
               <div
                 className={`${styles.recentContextMenuItem} ${styles.recentContextMenuDanger}`}
-                onClick={async () => {
+                onClick={() => {
                   setMenuOpenId(null);
-                  const ok = window.confirm(
-                    `정말로 "${p.title}" 프로젝트를 삭제할까요?`,
-                  );
-                  if (!ok) return;
-
-                  try {
-                    await deleteProject(p.id);
-                  } catch (error) {
-                    window.api.logger.error("Failed to delete project", error);
-                  }
+                  setDeleteDialog({
+                    isOpen: true,
+                    projectId: p.id,
+                    projectTitle: p.title,
+                  });
                 }}
               >
                 삭제
@@ -176,6 +187,42 @@ export default function ProjectTemplateSelector({
             </div>
           );
         })()}
+
+      {/* Custom Dialogs */}
+      <PromptDialog
+        isOpen={renameDialog.isOpen}
+        title="프로젝트 이름 수정"
+        defaultValue={renameDialog.currentTitle}
+        onConfirm={async (value) => {
+          const nextTitle = value.trim();
+          if (nextTitle && nextTitle !== renameDialog.currentTitle) {
+            try {
+              await updateProject(renameDialog.projectId, nextTitle);
+            } catch (error) {
+              window.api.logger.error("Failed to update project", error);
+            }
+          }
+          setRenameDialog((prev) => ({ ...prev, isOpen: false }));
+        }}
+        onCancel={() => setRenameDialog((prev) => ({ ...prev, isOpen: false }))}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        title="프로젝트 삭제"
+        message={`정말로 "${deleteDialog.projectTitle}" 프로젝트를 삭제할까요? 이 작업은 되돌릴 수 없습니다.`}
+        confirmLabel="삭제"
+        isDestructive
+        onConfirm={async () => {
+          try {
+            await deleteProject(deleteDialog.projectId);
+          } catch (error) {
+            window.api.logger.error("Failed to delete project", error);
+          }
+          setDeleteDialog((prev) => ({ ...prev, isOpen: false }));
+        }}
+        onCancel={() => setDeleteDialog((prev) => ({ ...prev, isOpen: false }))}
+      />
 
       <div className={styles.body}>
         <div className={styles.sidebar}>

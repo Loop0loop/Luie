@@ -73,8 +73,11 @@ export default function CharacterManager() {
             style={{
               borderBottom: `4px solid ${
                 typeof char.attributes === "string"
-                  ? (JSON.parse(char.attributes as string) as { color?: string })
-                      .color || "#ccc"
+                  ? (
+                      JSON.parse(char.attributes as string) as {
+                        color?: string;
+                      }
+                    ).color || "#ccc"
                   : "#ccc"
               }`,
             }}
@@ -97,10 +100,18 @@ export default function CharacterManager() {
   );
 }
 
+import { BufferedInput, BufferedTextArea } from "../common/BufferedInput";
+
 function CharacterProfile({ character }: { character: CharacterLike }) {
   const { update: updateCharacter } = useCharacterStore();
+  const [activeTab, setActiveTab] = useState<
+    "basic" | "appearance" | "personality" | "relation"
+  >("basic");
+
   const attributes =
-    typeof character.attributes === "string" ? JSON.parse(character.attributes) : {};
+    typeof character.attributes === "string"
+      ? JSON.parse(character.attributes)
+      : {};
 
   const handleUpdate = (field: string, value: string) => {
     updateCharacter({
@@ -118,58 +129,198 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
   };
 
   return (
-    <div>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        overflow: "hidden",
+      }}
+    >
       <div className={styles.sectionTitle}>기본 프로필 (Basic Profile)</div>
+
+      {/* Quick Access Fields */}
       <div className={styles.tableGrid}>
         <div className={styles.cellLabel}>이름</div>
         <div className={styles.cellValue}>
-          <input
+          <BufferedInput
             className={styles.cellValueInput}
             value={character.name}
-            onChange={(e) => handleUpdate("name", e.target.value)}
+            onSave={(val) => handleUpdate("name", val)}
           />
         </div>
-        <div className={styles.cellLabel}>설명</div>
+        <div className={styles.cellLabel}>역할</div>
         <div className={styles.cellValue}>
-          <input
+          <BufferedInput
             className={styles.cellValueInput}
             value={character.description || ""}
-            onChange={(e) => handleUpdate("description", e.target.value)}
-          />
-        </div>
-        <div className={styles.cellLabel}>성별</div>
-        <div className={styles.cellValue}>
-          <input
-            className={styles.cellValueInput}
-            value={(attributes as { gender?: string }).gender || ""}
-            onChange={(e) => handleAttributeUpdate("gender", e.target.value)}
-          />
-        </div>
-        <div className={styles.cellLabel}>나이</div>
-        <div className={styles.cellValue}>
-          <input
-            className={styles.cellValueInput}
-            value={(attributes as { age?: string }).age || ""}
-            onChange={(e) => handleAttributeUpdate("age", e.target.value)}
+            placeholder="주인공, 조력자, 빌런..."
+            onSave={(val) => handleUpdate("description", val)}
           />
         </div>
       </div>
-      <div className={styles.sectionTitle}>상세 설정</div>
+
+      {/* Tabs for Deeper Design */}
       <div
-        className={styles.tableGrid}
-        style={{ gridTemplateColumns: "100px 1fr" }}
+        className={styles.subNavBar}
+        style={{ marginBottom: 0, paddingBottom: 0, borderBottom: "none" }}
       >
-        <div className={styles.cellLabel}>성격</div>
-        <div className={styles.cellValue}>
-          <input className={styles.cellValueInput} defaultValue="냉철함" />
+        <div
+          className={`${styles.subTab} ${activeTab === "basic" ? styles.active : ""}`}
+          onClick={() => setActiveTab("basic")}
+        >
+          기본 정보
         </div>
-        <div className={styles.cellLabel}>서사</div>
-        <div className={styles.cellValue}>
-          <textarea
-            className={styles.cellValueInput}
-            defaultValue="황위 계승 전쟁..."
-          />
+        <div
+          className={`${styles.subTab} ${activeTab === "appearance" ? styles.active : ""}`}
+          onClick={() => setActiveTab("appearance")}
+        >
+          외모
         </div>
+        <div
+          className={`${styles.subTab} ${activeTab === "personality" ? styles.active : ""}`}
+          onClick={() => setActiveTab("personality")}
+        >
+          성격/내면
+        </div>
+        <div
+          className={`${styles.subTab} ${activeTab === "relation" ? styles.active : ""}`}
+          onClick={() => setActiveTab("relation")}
+        >
+          관계
+        </div>
+      </div>
+
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "16px",
+          borderTop: "1px solid var(--border-default)",
+        }}
+      >
+        {activeTab === "basic" && (
+          <div className={styles.tableGrid}>
+            <div className={styles.cellLabel}>성별</div>
+            <div className={styles.cellValue}>
+              <BufferedInput
+                className={styles.cellValueInput}
+                value={attributes.gender || ""}
+                onSave={(val) => handleAttributeUpdate("gender", val)}
+              />
+            </div>
+            <div className={styles.cellLabel}>나이</div>
+            <div className={styles.cellValue}>
+              <BufferedInput
+                className={styles.cellValueInput}
+                value={attributes.age || ""}
+                onSave={(val) => handleAttributeUpdate("age", val)}
+              />
+            </div>
+            <div className={styles.cellLabel}>직업/신분</div>
+            <div className={styles.cellValue}>
+              <BufferedInput
+                className={styles.cellValueInput}
+                value={attributes.job || ""}
+                onSave={(val) => handleAttributeUpdate("job", val)}
+              />
+            </div>
+            <div className={styles.cellLabel}>한 줄 요약</div>
+            <div className={styles.cellValue} style={{ gridColumn: "span 3" }}>
+              <BufferedInput
+                className={styles.cellValueInput}
+                value={attributes.oneLiner || ""}
+                placeholder="이 캐릭터를 한 문장으로 정의한다면?"
+                onSave={(val) => handleAttributeUpdate("oneLiner", val)}
+              />
+            </div>
+          </div>
+        )}
+
+        {activeTab === "appearance" && (
+          <>
+            <div className={styles.sectionTitle}>외모 묘사 (Appearance)</div>
+            <BufferedTextArea
+              className={styles.cellValueInput}
+              style={{
+                minHeight: "150px",
+                border: "1px solid var(--border-default)",
+                borderRadius: "4px",
+              }}
+              value={attributes.appearance || ""}
+              placeholder="눈동자 색, 머리카락, 체격, 흉터, 옷차림 등..."
+              onSave={(val) => handleAttributeUpdate("appearance", val)}
+            />
+          </>
+        )}
+
+        {activeTab === "personality" && (
+          <div
+            className={styles.tableGrid}
+            style={{ gridTemplateColumns: "100px 1fr" }}
+          >
+            <div className={styles.cellLabel}>MBTI/성향</div>
+            <div className={styles.cellValue}>
+              <BufferedInput
+                className={styles.cellValueInput}
+                value={attributes.mbti || ""}
+                onSave={(val) => handleAttributeUpdate("mbti", val)}
+              />
+            </div>
+            <div className={styles.cellLabel}>장점</div>
+            <div className={styles.cellValue}>
+              <BufferedInput
+                className={styles.cellValueInput}
+                value={attributes.strength || ""}
+                onSave={(val) => handleAttributeUpdate("strength", val)}
+              />
+            </div>
+            <div className={styles.cellLabel}>단점/결핍</div>
+            <div className={styles.cellValue}>
+              <BufferedInput
+                className={styles.cellValueInput}
+                value={attributes.weakness || ""}
+                onSave={(val) => handleAttributeUpdate("weakness", val)}
+              />
+            </div>
+            <div className={styles.cellLabel}>서사/과거</div>
+            <div className={styles.cellValue}>
+              <BufferedTextArea
+                className={styles.cellValueInput}
+                value={attributes.backstory || ""}
+                style={{ minHeight: "100px" }}
+                onSave={(val) => handleAttributeUpdate("backstory", val)}
+              />
+            </div>
+          </div>
+        )}
+
+        {activeTab === "relation" && (
+          <div>
+            <div className={styles.sectionTitle}>주요 인물과의 관계</div>
+            <p
+              style={{
+                fontSize: 12,
+                color: "var(--text-tertiary)",
+                marginBottom: 8,
+              }}
+            >
+              * 마인드맵 탭에서 시각적으로 편집할 수 있습니다. 여기서는 텍스트로
+              정리하세요.
+            </p>
+            <BufferedTextArea
+              className={styles.cellValueInput}
+              style={{
+                minHeight: "200px",
+                border: "1px solid var(--border-default)",
+                borderRadius: "4px",
+              }}
+              value={attributes.relationships || ""}
+              placeholder="A와는 적대 관계, B와는 과거의 연인..."
+              onSave={(val) => handleAttributeUpdate("relationships", val)}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
