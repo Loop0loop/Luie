@@ -64,6 +64,82 @@ async function safeInvoke<T = unknown>(channel: string, ...args: unknown[]): Pro
     );
 }
 
+type LogPayload = {
+  level: "debug" | "info" | "warn" | "error" | string;
+  message: string;
+  data?: unknown;
+};
+
+const logQueue: LogPayload[] = [];
+let logFlushTimer: number | null = null;
+const LOG_BATCH_SIZE = 20;
+const LOG_FLUSH_MS = 500;
+
+function scheduleLogFlush() {
+  if (logFlushTimer !== null) return;
+  logFlushTimer = window.setTimeout(() => {
+    logFlushTimer = null;
+    flushLogs();
+  }, LOG_FLUSH_MS);
+}
+
+async function flushLogs() {
+  if (logQueue.length === 0) return;
+  const batch = logQueue.splice(0, LOG_BATCH_SIZE);
+  const response = await safeInvoke("logger:log-batch", batch);
+  if (!response.success) {
+    // fallback to individual logs if batch fails
+    await Promise.all(
+      batch.map((entry) =>
+        safeInvoke("logger:log", {
+          level: entry.level,
+          message: entry.message,
+          data: entry.data,
+        }),
+      ),
+    );
+  }
+  if (logQueue.length > 0) {
+    scheduleLogFlush();
+  }
+}
+
+type AutoSavePayload = {
+  chapterId: string;
+  content: string;
+  projectId: string;
+};
+
+type AutoSavePending = {
+  payload: AutoSavePayload;
+  resolvers: Array<(value: IPCResponse) => void>;
+};
+
+const autoSaveQueue = new Map<string, AutoSavePending>();
+let autoSaveFlushTimer: number | null = null;
+const AUTO_SAVE_FLUSH_MS = 300;
+
+function scheduleAutoSaveFlush() {
+  if (autoSaveFlushTimer !== null) return;
+  autoSaveFlushTimer = window.setTimeout(() => {
+    autoSaveFlushTimer = null;
+    void flushAutoSaves();
+  }, AUTO_SAVE_FLUSH_MS);
+}
+
+async function flushAutoSaves() {
+  if (autoSaveQueue.size === 0) return;
+  const entries = Array.from(autoSaveQueue.entries());
+  autoSaveQueue.clear();
+
+  await Promise.all(
+    entries.map(async ([_key, pending]) => {
+      const response = await safeInvoke("auto-save", pending.payload.chapterId, pending.payload.content, pending.payload.projectId);
+      pending.resolvers.forEach((resolve) => resolve(response));
+    }),
+  );
+}
+
 // Expose API to renderer process
 contextBridge.exposeInMainWorld("api", {
   // Project API
@@ -177,7 +253,20 @@ contextBridge.exposeInMainWorld("api", {
     content: string,
     projectId: string,
   ): Promise<IPCResponse> =>
-    safeInvoke("auto-save", chapterId, content, projectId),
+    new Promise<IPCResponse>((resolve) => {
+      const key = `${projectId}:${chapterId}`;
+      const existing = autoSaveQueue.get(key);
+      const payload = { chapterId, content, projectId };
+
+      if (existing) {
+        existing.payload = payload;
+        existing.resolvers.push(resolve);
+      } else {
+        autoSaveQueue.set(key, { payload, resolvers: [resolve] });
+      }
+
+      scheduleAutoSaveFlush();
+    }),
 
   // Window API
   window: {
@@ -188,30 +277,40 @@ contextBridge.exposeInMainWorld("api", {
 
   // Logger API
   logger: {
-    debug: (message: string, data?: unknown): Promise<IPCResponse> =>
-      safeInvoke("logger:log", {
-        level: "debug",
-        message,
-        data: sanitizeForIpc(data),
-      }),
-    info: (message: string, data?: unknown): Promise<IPCResponse> =>
-      safeInvoke("logger:log", {
-        level: "info",
-        message,
-        data: sanitizeForIpc(data),
-      }),
-    warn: (message: string, data?: unknown): Promise<IPCResponse> =>
-      safeInvoke("logger:log", {
-        level: "warn",
-        message,
-        data: sanitizeForIpc(data),
-      }),
-    error: (message: string, data?: unknown): Promise<IPCResponse> =>
-      safeInvoke("logger:log", {
-        level: "error",
-        message,
-        data: sanitizeForIpc(data),
-      }),
+    debug: (message: string, data?: unknown): Promise<IPCResponse> => {
+      logQueue.push({ level: "debug", message, data: sanitizeForIpc(data) });
+      if (logQueue.length >= LOG_BATCH_SIZE) {
+        void flushLogs();
+      } else {
+        scheduleLogFlush();
+      }
+      return Promise.resolve({ success: true } as IPCResponse);
+    },
+    info: (message: string, data?: unknown): Promise<IPCResponse> => {
+      logQueue.push({ level: "info", message, data: sanitizeForIpc(data) });
+      if (logQueue.length >= LOG_BATCH_SIZE) {
+        void flushLogs();
+      } else {
+        scheduleLogFlush();
+      }
+      return Promise.resolve({ success: true } as IPCResponse);
+    },
+    warn: (message: string, data?: unknown): Promise<IPCResponse> => {
+      logQueue.push({ level: "warn", message, data: sanitizeForIpc(data) });
+      if (logQueue.length >= LOG_BATCH_SIZE) {
+        void flushLogs();
+      } else {
+        scheduleLogFlush();
+      }
+      return Promise.resolve({ success: true } as IPCResponse);
+    },
+    error: (message: string, data?: unknown): Promise<IPCResponse> => {
+      // errors are flushed immediately
+      const payload = { level: "error", message, data: sanitizeForIpc(data) };
+      logQueue.push(payload);
+      void flushLogs();
+      return Promise.resolve({ success: true } as IPCResponse);
+    },
   },
 
   // Settings API

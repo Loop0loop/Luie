@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
-import type { Edge, Node, Connection, NodeProps, ReactFlowInstance } from "reactflow";
+import type { Edge, Node, Connection, NodeProps, ReactFlowInstance, NodeChange, EdgeChange } from "reactflow";
 import ReactFlow, {
   Background,
   Controls,
@@ -11,6 +11,8 @@ import ReactFlow, {
   MarkerType,
   MiniMap,
   useReactFlow,
+  applyNodeChanges,
+  applyEdgeChanges,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { ArrowLeft, Eraser, Plus, X, Type, PenTool } from "lucide-react";
@@ -341,7 +343,7 @@ function MindMapBoard() {
   // Enter -> Add Sibling
   // Tab -> Add Child
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([
+  const [nodes, setNodes] = useNodesState([
     {
       id: "root",
       type: "character",
@@ -349,8 +351,49 @@ function MindMapBoard() {
       data: { label: "중심 사건/인물" },
     },
   ]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [edges, setEdges] = useEdgesState([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+  const pendingNodeChangesRef = useRef<NodeChange[]>([]);
+  const pendingEdgeChangesRef = useRef<EdgeChange[]>([]);
+  const rafNodesRef = useRef<number | null>(null);
+  const rafEdgesRef = useRef<number | null>(null);
+
+  const flushNodeChanges = useCallback(() => {
+    rafNodesRef.current = null;
+    if (pendingNodeChangesRef.current.length === 0) return;
+    const changes = pendingNodeChangesRef.current;
+    pendingNodeChangesRef.current = [];
+    setNodes((nds) => applyNodeChanges(changes, nds));
+  }, [setNodes]);
+
+  const flushEdgeChanges = useCallback(() => {
+    rafEdgesRef.current = null;
+    if (pendingEdgeChangesRef.current.length === 0) return;
+    const changes = pendingEdgeChangesRef.current;
+    pendingEdgeChangesRef.current = [];
+    setEdges((eds) => applyEdgeChanges(changes, eds));
+  }, [setEdges]);
+
+  const onNodesChangeBatched = useCallback(
+    (changes: NodeChange[]) => {
+      pendingNodeChangesRef.current.push(...changes);
+      if (rafNodesRef.current === null) {
+        rafNodesRef.current = window.requestAnimationFrame(flushNodeChanges);
+      }
+    },
+    [flushNodeChanges],
+  );
+
+  const onEdgesChangeBatched = useCallback(
+    (changes: EdgeChange[]) => {
+      pendingEdgeChangesRef.current.push(...changes);
+      if (rafEdgesRef.current === null) {
+        rafEdgesRef.current = window.requestAnimationFrame(flushEdgeChanges);
+      }
+    },
+    [flushEdgeChanges],
+  );
 
 
   const onConnect = useCallback(
@@ -483,8 +526,8 @@ function MindMapBoard() {
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
+        onNodesChange={onNodesChangeBatched}
+        onEdgesChange={onEdgesChangeBatched}
         onConnect={onConnect}
         onNodeClick={onNodeClick}
         onPaneClick={() => setSelectedNodeId(null)}
