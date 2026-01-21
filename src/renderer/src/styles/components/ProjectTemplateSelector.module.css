@@ -64,7 +64,7 @@
   background-color: var(--accent-bg);
   color: var(--accent-fg);
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 /* Main Content Area */
@@ -112,7 +112,7 @@
 }
 
 .recentContextMenuDanger {
-  color: #fca5a5;
+  color: var(--danger-fg);
 }
 
 .card {
@@ -128,21 +128,21 @@
 .cardPreview {
   width: 200px;
   height: 300px; /* Portrait Ratio */
-  background-color: #27272a;
+  background-color: var(--bg-element);
   border-radius: 4px; /* Sharper corners for book feel */
   position: relative;
   transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  border: 1px solid #3f3f46;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-default);
   display: flex;
   flex-direction: column;
 }
 
 .card:hover .cardPreview {
   transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-  border-color: #52525b;
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-active);
 }
 
 /* Card Graphics */
@@ -221,7 +221,7 @@
 .cardTitle {
   font-size: 14px;
   font-weight: 500;
-  color: #e4e4e7;
+  color: var(--text-primary);
   letter-spacing: 0.3px;
 }
 
@@ -240,9 +240,9 @@
 
 .locationDialog .dialogContent {
   width: 500px;
-  background-color: #ffffff;
+  background-color: var(--bg-element);
   border-radius: 8px;
-  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -253,13 +253,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid #e4e4e7;
+  border-bottom: 1px solid var(--border-default);
 }
 
 .locationDialog .dialogTitle {
   font-size: 16px;
   font-weight: 600;
-  color: #18181b;
+  color: var(--text-primary);
 }
 
 .locationDialog .dialogClose {
@@ -267,15 +267,15 @@
   border: none;
   font-size: 20px;
   cursor: pointer;
-  color: #71717a;
+  color: var(--text-secondary);
   padding: 4px;
   border-radius: 4px;
   transition: all 0.2s;
 }
 
 .locationDialog .dialogClose:hover {
-  background-color: #f3f4f6;
-  color: #ffffff;
+  background-color: var(--bg-active);
+  color: var(--text-primary);
 }
 
 .locationDialog .dialogBody {
@@ -288,29 +288,29 @@
 }
 
 .locationDialog .locationIcon {
-  color: #71717a;
+  color: var(--text-secondary);
 }
 
 .locationDialog .locationInput {
   flex: 1;
   padding: 10px 12px;
-  border: 1px solid #e4e4e7;
+  border: 1px solid var(--border-default);
   border-radius: 4px;
   font-size: 14px;
-  color: #18181b;
-  background-color: #f9fafb;
+  color: var(--text-primary);
+  background-color: var(--bg-element-hover);
   cursor: pointer;
 }
 
 .locationDialog .locationInput:hover {
-  background-color: #f3f4f6;
-  border-color: #3b82f6;
+  background-color: var(--bg-active);
+  border-color: var(--accent-bg);
 }
 
 .locationDialog .browseButton {
   padding: 10px 16px;
-  background-color: #27272a;
-  color: #ffffff;
+  background-color: var(--accent-bg);
+  color: var(--accent-fg);
   border: none;
   border-radius: 4px;
   font-size: 13px;
@@ -320,36 +320,36 @@
 }
 
 .locationDialog .browseButton:hover {
-  background-color: #1e293b;
+  background-color: var(--accent-bg-hover);
 }
 
 .locationDialog .dialogFooter {
   display: flex;
   gap: 8px;
   padding: 16px 24px;
-  border-top: 1px solid #e4e4e7;
+  border-top: 1px solid var(--border-default);
   justify-content: flex-end;
 }
 
 .locationDialog .dialogButtonSecondary {
   padding: 10px 20px;
   background: none;
-  border: 1px solid #e4e4e7;
+  border: 1px solid var(--border-default);
   border-radius: 4px;
-  color: #71717a;
+  color: var(--text-secondary);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .locationDialog .dialogButtonSecondary:hover {
-  background-color: #f9fafb;
+  background-color: var(--bg-element-hover);
 }
 
 .locationDialog .dialogButtonPrimary {
   padding: 10px 20px;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: #ffffff;
+  background: var(--accent-bg);
+  color: var(--accent-fg);
   border: none;
   border-radius: 4px;
   font-size: 13px;
@@ -360,7 +360,8 @@
 
 .locationDialog .dialogButtonPrimary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  background: var(--accent-bg-hover);
+  box-shadow: var(--shadow-md);
 }
 
 .locationDialog .dialogButtonPrimary:disabled {
@@ -385,7 +386,7 @@
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  color: #a1a1aa;
+  color: var(--text-tertiary);
   text-transform: uppercase;
 }
 
@@ -396,8 +397,8 @@
 }
 
 .recentCard {
-  background-color: #27272a;
-  border: 1px solid #3f3f46;
+  background-color: var(--bg-element);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   padding: 16px;
   width: 100%;
@@ -411,10 +412,10 @@
 }
 
 .recentCard:hover {
-  background-color: #3f3f46;
-  border-color: #52525b;
+  background-color: var(--bg-element-hover);
+  border-color: var(--border-active);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  box-shadow: var(--shadow-md);
 }
 
 .recentCardContent {
@@ -425,13 +426,13 @@
 .recentProjectTitle {
   font-size: 15px;
   font-weight: 600;
-  color: #f4f4f5;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .recentProjectPath {
   font-size: 12px;
-  color: #71717a;
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -441,7 +442,7 @@
   opacity: 0.85;
   padding: 4px;
   border-radius: 4px;
-  color: #a1a1aa;
+  color: var(--text-tertiary);
   border: none;
   background: transparent;
   cursor: pointer;
@@ -458,6 +459,6 @@
 }
 
 .recentCardMenuBtn:hover {
-  background-color: rgba(255,255,255,0.1);
-  color: #fff;
+  background-color: var(--bg-active);
+  color: var(--text-primary);
 }
