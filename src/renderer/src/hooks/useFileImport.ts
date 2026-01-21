@@ -2,7 +2,7 @@
  * .luie 파일 임포트 로직
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { z } from "zod";
 import { useChapterStore } from "../stores/chapterStore";
 import type { Project } from "../../../shared/types";
@@ -26,7 +26,7 @@ export function useFileImport(
   currentProject: Project | null,
 ) {
   const { items: chapters, create: createChapter, update: updateChapter } = useChapterStore();
-  const [importedProjectId, setImportedProjectId] = useState<string | null>(null);
+  const importedProjectIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!currentProject || !currentProject.projectPath) {
@@ -34,19 +34,19 @@ export function useFileImport(
     }
 
     // 이미 임포트한 프로젝트면 스킵
-    if (importedProjectId === currentProject.id) {
+    if (importedProjectIdRef.current === currentProject.id) {
       return;
     }
 
     // 이미 챕터가 있으면 임포트 안 함
     if (chapters.length > 0) {
-      setImportedProjectId(currentProject.id);
+      importedProjectIdRef.current = currentProject.id;
       return;
     }
 
     const path = currentProject.projectPath;
     if (!path.endsWith(".luie")) {
-      setImportedProjectId(currentProject.id);
+      importedProjectIdRef.current = currentProject.id;
       return;
     }
 
@@ -54,7 +54,7 @@ export function useFileImport(
       const file = await window.api.fs.readFile(path);
       if (!file.success || !file.data) {
         window.api.logger.warn("Failed to read project file", { path });
-        setImportedProjectId(currentProject.id);
+        importedProjectIdRef.current = currentProject.id;
         return;
       }
 
@@ -65,14 +65,14 @@ export function useFileImport(
             path,
             issues: parsed.error.issues,
           });
-          setImportedProjectId(currentProject.id);
+          importedProjectIdRef.current = currentProject.id;
           return;
         }
 
         const fileChapters = parsed.data.chapters ?? [];
 
         if (fileChapters.length === 0) {
-          setImportedProjectId(currentProject.id);
+          importedProjectIdRef.current = currentProject.id;
           return;
         }
 
@@ -86,11 +86,11 @@ export function useFileImport(
           }
         }
 
-        setImportedProjectId(currentProject.id);
+        importedProjectIdRef.current = currentProject.id;
       } catch (error) {
         window.api.logger.error("Failed to parse project file", { path, error });
-        setImportedProjectId(currentProject.id);
+        importedProjectIdRef.current = currentProject.id;
       }
     })();
-  }, [currentProject, chapters.length, createChapter, updateChapter, importedProjectId]);
+  }, [currentProject, chapters.length, createChapter, updateChapter]);
 }

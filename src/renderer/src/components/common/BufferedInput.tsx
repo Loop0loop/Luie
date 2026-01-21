@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 
 interface BufferedInputProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
@@ -17,17 +17,28 @@ export function BufferedInput({
 }: BufferedInputProps) {
   const [localValue, setLocalValue] = useState(externalValue);
   const isComposing = useRef(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const debounceTimer = useRef<number | null>(null);
 
-  useEffect(() => {
-    // Only sync from external if we are NOT currently typing/composing
-    // and if the values are truly different
-    if (!isComposing.current && externalValue !== localValue) {
-      setLocalValue(externalValue);
+  const displayedValue = useMemo(() => {
+    return isEditing ? localValue : externalValue;
+  }, [externalValue, isEditing, localValue]);
+
+  const scheduleSave = (value: string) => {
+    if (debounceTimer.current) {
+      window.clearTimeout(debounceTimer.current);
     }
-  }, [externalValue]);
+    debounceTimer.current = window.setTimeout(() => {
+      onSave(value);
+    }, debounceTime);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalValue(e.target.value);
+    const next = e.target.value;
+    setLocalValue(next);
+    if (!isComposing.current) {
+      scheduleSave(next);
+    }
   };
 
   const handleCompositionStart = () => {
@@ -38,13 +49,19 @@ export function BufferedInput({
     e: React.CompositionEvent<HTMLInputElement>,
   ) => {
     isComposing.current = false;
-    // Trigger save immediately after composition ends if you want "live-ish" updates
-    // or wait for blur. Here we update local value.
-    setLocalValue(e.currentTarget.value);
-    onSave(e.currentTarget.value);
+    const next = e.currentTarget.value;
+    setLocalValue(next);
+    scheduleSave(next);
+  };
+
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    setIsEditing(true);
+    setLocalValue(externalValue);
+    props.onFocus?.(e);
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    setIsEditing(false);
     onSave(e.target.value);
     props.onBlur?.(e);
   };
@@ -60,8 +77,9 @@ export function BufferedInput({
   return (
     <input
       {...props}
-      value={localValue}
+      value={displayedValue}
       onChange={handleChange}
+      onFocus={handleFocus}
       onCompositionStart={handleCompositionStart}
       onCompositionEnd={handleCompositionEnd}
       onBlur={handleBlur}
@@ -85,12 +103,11 @@ export function BufferedTextArea({
 }: BufferedTextAreaProps) {
   const [localValue, setLocalValue] = useState(externalValue);
   const isComposing = useRef(false);
+  const [isEditing, setIsEditing] = useState(false);
 
-  useEffect(() => {
-    if (!isComposing.current && externalValue !== localValue) {
-      setLocalValue(externalValue);
-    }
-  }, [externalValue]);
+  const displayedValue = useMemo(() => {
+    return isEditing ? localValue : externalValue;
+  }, [externalValue, isEditing, localValue]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setLocalValue(e.target.value);
@@ -108,7 +125,14 @@ export function BufferedTextArea({
     onSave(e.currentTarget.value);
   };
 
+  const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+    setIsEditing(true);
+    setLocalValue(externalValue);
+    props.onFocus?.(e);
+  };
+
   const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+    setIsEditing(false);
     onSave(e.target.value);
     props.onBlur?.(e);
   };
@@ -116,8 +140,9 @@ export function BufferedTextArea({
   return (
     <textarea
       {...props}
-      value={localValue}
+      value={displayedValue}
       onChange={handleChange}
+      onFocus={handleFocus}
       onCompositionStart={handleCompositionStart}
       onCompositionEnd={handleCompositionEnd}
       onBlur={handleBlur}

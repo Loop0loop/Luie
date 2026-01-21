@@ -116,7 +116,7 @@ export class AutoSaveManager extends EventEmitter {
     const timer = setInterval(async () => {
       const pendingSaves = Array.from(this.pendingSaves.entries());
 
-      for (const [chapterId, _] of pendingSaves) {
+      for (const [chapterId] of pendingSaves) {
         await this.performSave(chapterId);
       }
     }, config.interval);

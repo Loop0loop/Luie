@@ -2,13 +2,12 @@
  * 챕터 관리 (생성, 수정, 삭제, 선택)
  */
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useChapterStore } from "../stores/chapterStore";
 import { useProjectStore } from "../stores/projectStore";
 
 export function useChapterManagement() {
-  const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
-  const [content, setContent] = useState("");
+  const [requestedChapterId, setRequestedChapterId] = useState<string | null>(null);
 
   const { currentItem: currentProject } = useProjectStore();
   const {
@@ -16,45 +15,21 @@ export function useChapterManagement() {
     create: createChapter,
     update: updateChapter,
     delete: deleteChapter,
-    setCurrent: setCurrentChapter,
   } = useChapterStore();
 
-  const [prevProjectId, setPrevProjectId] = useState<string | undefined>(
-    currentProject?.id,
-  );
+  const activeChapterId =
+    requestedChapterId && chapters.some((c) => c.id === requestedChapterId)
+      ? requestedChapterId
+      : (chapters[0]?.id ?? null);
 
-  // 프로젝트가 바뀌면 선택/컨텐츠를 리셋 (Render-time update for local state)
-  if (currentProject?.id !== prevProjectId) {
-    setPrevProjectId(currentProject?.id);
-    setActiveChapterId(null);
-    setContent("");
-  }
+  const activeChapter = activeChapterId
+    ? chapters.find((c) => c.id === activeChapterId)
+    : undefined;
 
-  // 외부 스토어 상태 동기화
-  useEffect(() => {
-    setCurrentChapter(null);
-  }, [currentProject?.id, setCurrentChapter]);
-
-  // 활성 챕터 자동 선택 & 컨텐츠 로드
-  useEffect(() => {
-    if (chapters.length === 0) {
-      setCurrentChapter(null);
-      return;
-    }
-
-    // 현재 선택된 id가 목록에 없으면(프로젝트 전환/삭제 등) 첫 챕터로 보정
-    if (!activeChapterId || !chapters.some((c) => c.id === activeChapterId)) {
-      setActiveChapterId(chapters[0].id);
-      return;
-    }
-
-    const chapter = chapters.find((c) => c.id === activeChapterId);
-    setCurrentChapter(chapter ?? null);
-    if (chapter) setContent(chapter.content || "");
-  }, [activeChapterId, chapters]);
+  const content = activeChapter?.content ?? "";
 
   const handleSelectChapter = useCallback((id: string) => {
-    setActiveChapterId(id);
+    setRequestedChapterId(id);
   }, []);
 
   const handleAddChapter = useCallback(async () => {
@@ -105,7 +80,7 @@ export function useChapterManagement() {
       await deleteChapter(id);
       if (activeChapterId === id) {
         const remaining = chapters.filter((c) => c.id !== id);
-        setActiveChapterId(remaining[0]?.id ?? null);
+        setRequestedChapterId(remaining[0]?.id ?? null);
       }
     },
     [deleteChapter, activeChapterId, chapters],
@@ -114,8 +89,6 @@ export function useChapterManagement() {
   const handleSave = useCallback(
     async (title: string, newContent: string) => {
       window.api.logger.info(`Saving: ${title}`);
-      setContent(newContent);
-
       if (activeChapterId && currentProject) {
         await updateChapter({
           id: activeChapterId,
@@ -157,8 +130,7 @@ export function useChapterManagement() {
     [activeChapterId, updateChapter, currentProject, chapters],
   );
 
-  const activeChapterTitle =
-    chapters.find((c) => c.id === activeChapterId)?.title || "";
+  const activeChapterTitle = activeChapter?.title || "";
 
   return {
     chapters,

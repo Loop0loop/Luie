@@ -5,6 +5,7 @@
 import Store from "electron-store";
 import { app } from "electron";
 import { createLogger } from "../../shared/logger/index.js";
+import { existsSync } from "node:fs";
 
 const logger = createLogger("SettingsManager");
 
@@ -52,17 +53,41 @@ export class SettingsManager {
   private constructor() {
     const settingsPath = app.getPath("userData");
 
+    // 기존(레거시) 경로: userData/luie/settings/settings.json
+    // app.getPath('userData')가 이미 '.../luie'인 경우 이중으로 들어가 혼동을 유발했음
+    const legacyCwd = `${settingsPath}/luie/settings`;
+    const legacyFile = `${legacyCwd}/settings.json`;
+
     this.store = new Store<AppSettings>({
       name: "settings",
       defaults: DEFAULT_SETTINGS,
-      // path/luie/settings/settings.json 형태
-      cwd: `${settingsPath}/luie/settings`,
+      // 저장 위치: userData/settings.json
+      cwd: settingsPath,
       encryptionKey: undefined, // 필요하다면 암호화 키 추가
       fileExtension: "json",
     });
 
+    // 레거시 파일이 있고 새 파일이 아직 없으면 마이그레이션
+    if (existsSync(legacyFile) && !existsSync(this.store.path)) {
+      try {
+        const legacyStore = new Store<AppSettings>({
+          name: "settings",
+          defaults: DEFAULT_SETTINGS,
+          cwd: legacyCwd,
+          fileExtension: "json",
+        });
+        this.store.set(legacyStore.store);
+        logger.info("Settings migrated from legacy path", {
+          from: legacyStore.path,
+          to: this.store.path,
+        });
+      } catch (error) {
+        logger.error("Failed to migrate legacy settings", error);
+      }
+    }
+
     logger.info("Settings manager initialized", {
-      path: `${settingsPath}/luie/settings/settings.json`,
+      path: this.store.path,
     });
   }
 

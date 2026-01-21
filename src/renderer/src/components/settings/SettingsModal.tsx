@@ -1,9 +1,10 @@
 import styles from "../../styles/components/SettingsModal.module.css";
 import { X, Check } from "lucide-react";
-import {
-  useEditorStore,
+import type {
   EditorTheme,
-  FontFamily,
+  FontFamily} from "../../stores/editorStore";
+import {
+  useEditorStore
 } from "../../stores/editorStore";
 
 interface SettingsModalProps {

@@ -1,5 +1,6 @@
-import { z } from "zod";
-import { createErrorResponse, IPCResponse } from "../../shared/ipc";
+import type { z } from "zod";
+import type { IPCResponse } from "../../shared/ipc";
+import { createErrorResponse } from "../../shared/ipc";
 import { createLogger } from "../../shared/logger/index.js";
 
 const logger = createLogger("Validation");

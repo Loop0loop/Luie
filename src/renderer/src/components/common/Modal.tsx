@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
+import { useId } from "react";
 import { X } from "lucide-react";
 import styles from "../../styles/components/Modal.module.css";
 
@@ -6,8 +7,8 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  children: React.ReactNode;
-  footer?: React.ReactNode;
+  children: ReactNode;
+  footer?: ReactNode;
   width?: string;
 }
 
@@ -17,29 +18,14 @@ export function Modal({
   title,
   children,
   footer,
-  width = "400px",
+  width,
 }: ModalProps) {
-  const [animate, setAnimate] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      setAnimate(true);
-      return;
-    } else {
-      const timer = setTimeout(() => setAnimate(false), 200);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen]);
-
-  if (!isOpen && !animate) return null;
+  if (!isOpen) return null;
 
   return (
-    <div
-      className={`${styles.overlay} ${isOpen ? styles.open : ""}`}
-      onMouseDown={onClose}
-    >
+    <div className={`${styles.overlay} ${styles.open}`} onMouseDown={onClose}>
       <div
-        className={`${styles.dialog} ${isOpen ? styles.open : ""}`}
+        className={`${styles.dialog} ${styles.open}`}
         style={{ width }}
         onMouseDown={(e) => e.stopPropagation()}
       >
@@ -78,19 +64,25 @@ export function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   return (
-    <Modal isOpen={isOpen} onClose={onCancel} title={title}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onCancel}
+      title={title}
+      footer={
+        <div className={styles.footerButtons}>
+          <button className={styles.buttonSecondary} onClick={onCancel}>
+            {cancelLabel}
+          </button>
+          <button
+            className={isDestructive ? styles.buttonDanger : styles.buttonPrimary}
+            onClick={onConfirm}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      }
+    >
       <div className={styles.confirmMessage}>{message}</div>
-      <div className={styles.footerButtons}>
-        <button className={styles.buttonSecondary} onClick={onCancel}>
-          {cancelLabel}
-        </button>
-        <button
-          className={`${styles.buttonPrimary} ${isDestructive ? styles.destructive : ""}`}
-          onClick={onConfirm}
-        >
-          {confirmLabel}
-        </button>
-      </div>
     </Modal>
   );
 }
@@ -102,6 +94,7 @@ interface PromptDialogProps {
   defaultValue?: string;
   placeholder?: string;
   confirmLabel?: string;
+  cancelLabel?: string;
   onConfirm: (value: string) => void;
   onCancel: () => void;
 }
@@ -113,40 +106,46 @@ export function PromptDialog({
   defaultValue = "",
   placeholder = "",
   confirmLabel = "확인",
+  cancelLabel = "취소",
   onConfirm,
   onCancel,
 }: PromptDialogProps) {
-  const [value, setValue] = useState(defaultValue);
-
-  useEffect(() => {
-    if (isOpen) setValue(defaultValue);
-  }, [isOpen, defaultValue]);
+  const inputId = useId();
 
   const handleSubmit = () => {
-    onConfirm(value);
+    const el = document.getElementById(inputId) as HTMLInputElement | null;
+    onConfirm((el?.value ?? defaultValue).trim());
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onCancel} title={title}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onCancel}
+      title={title}
+      footer={
+        <div className={styles.footerButtons}>
+          <button className={styles.buttonSecondary} onClick={onCancel}>
+            {cancelLabel}
+          </button>
+          <button className={styles.buttonPrimary} onClick={handleSubmit}>
+            {confirmLabel}
+          </button>
+        </div>
+      }
+    >
       {message && <div className={styles.promptMessage}>{message}</div>}
       <input
+        key={`${isOpen}-${defaultValue}`}
+        id={inputId}
         className={styles.input}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
+        defaultValue={defaultValue}
         placeholder={placeholder}
+        autoFocus
         onKeyDown={(e) => {
           if (e.key === "Enter") handleSubmit();
+          if (e.key === "Escape") onCancel();
         }}
-        autoFocus
       />
-      <div className={styles.footerButtons}>
-        <button className={styles.buttonSecondary} onClick={onCancel}>
-          취소
-        </button>
-        <button className={styles.buttonPrimary} onClick={handleSubmit}>
-          {confirmLabel}
-        </button>
-      </div>
     </Modal>
   );
 }

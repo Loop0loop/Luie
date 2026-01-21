@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import type {
+  Edge,
+  Node,
+  Connection} from "reactflow";
 import ReactFlow, {
   Background,
   Controls,
-  Edge,
-  Node,
   addEdge,
   Handle,
   Position,
   useNodesState,
   useEdgesState,
-  Connection,
   MarkerType,
 } from "reactflow";
 import "reactflow/dist/style.css";

@@ -39,8 +39,15 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   },
 
   updateSettings: async (newSettings: Partial<EditorSettings>) => {
-    const currentState = get();
-    const updated: EditorSettings = { ...currentState, ...newSettings };
+    const current = get();
+    const updated: EditorSettings = {
+      fontFamily: current.fontFamily,
+      fontSize: current.fontSize,
+      lineHeight: current.lineHeight,
+      maxWidth: current.maxWidth,
+      theme: current.theme,
+      ...newSettings,
+    };
     const response = await window.api.settings.setEditor(updated);
     if (response.success && response.data) {
       set(response.data);

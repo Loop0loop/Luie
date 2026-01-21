@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import type { Chapter } from "../../../shared/types";
-import { createCRUDSlice, CRUDStore } from "./createCRUDStore";
-import { ChapterCreateInput, ChapterUpdateInput } from "../../../shared/types";
+import { createCRUDSlice } from "./createCRUDStore";
+import type { CRUDStore } from "./createCRUDStore";
+import type { ChapterCreateInput, ChapterUpdateInput } from "../../../shared/types";
 
 // Base CRUD Store 타입 정의
 type BaseChapterStore = CRUDStore<
@@ -30,11 +31,7 @@ export const useChapterStore = create<ChapterStore>((set, get) => {
     Chapter,
     ChapterCreateInput,
     ChapterUpdateInput
-  >(apiClient, "Chapter")(set, get, {
-    getState: get,
-    setState: set,
-    subscribe: () => () => {},
-  } as any);
+  >(apiClient, "Chapter")(set);
 
   return {
     ...crudSlice,
@@ -60,7 +57,7 @@ export const useChapterStore = create<ChapterStore>((set, get) => {
           }));
         }
       } catch (error) {
-        (window.api as any).logger.error("Failed to reorder chapters:", error);
+        window.api.logger.error("Failed to reorder chapters:", error);
       }
     },
 

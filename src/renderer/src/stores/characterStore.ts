@@ -1,9 +1,10 @@
 import { create } from "zustand";
 import type { Character } from "../../../shared/types";
-import { createCRUDSlice, CRUDStore } from "./createCRUDStore";
+import { createCRUDSlice } from "./createCRUDStore";
+import type { CRUDStore } from "./createCRUDStore";
 import {
-  CharacterCreateInput,
-  CharacterUpdateInput,
+  type CharacterCreateInput,
+  type CharacterUpdateInput,
 } from "../../../shared/types";
 
 type BaseCharacterStore = CRUDStore<
@@ -26,7 +27,7 @@ interface CharacterStore extends BaseCharacterStore {
   currentCharacter: Character | null;
 }
 
-export const useCharacterStore = create<CharacterStore>((set, get) => {
+export const useCharacterStore = create<CharacterStore>((set) => {
   const apiClient = {
     ...window.api.character,
     getAll: (parentId?: string) => window.api.character.getAll(parentId || ""),
@@ -36,11 +37,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => {
     Character,
     CharacterCreateInput,
     CharacterUpdateInput
-  >(apiClient, "Character")(set, get, {
-    getState: get,
-    setState: set,
-    subscribe: () => () => {},
-  } as any);
+  >(apiClient, "Character")(set);
 
   return {
     ...crudSlice,

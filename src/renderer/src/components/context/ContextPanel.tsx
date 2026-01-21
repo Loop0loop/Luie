@@ -4,8 +4,11 @@ import { Search, ArrowLeft } from "lucide-react";
 import { useCharacterStore } from "../../stores/characterStore";
 import { useTermStore } from "../../stores/termStore";
 import { useProjectStore } from "../../stores/projectStore";
+import type { Character, Term } from "../../../../shared/types";
 
 type Tab = "synopsis" | "characters" | "terms";
+
+type ContextItem = Character | Term;
 
 interface ContextPanelProps {
   activeTab?: Tab;
@@ -29,7 +32,7 @@ function ContextPanel({
   const { terms } = useTermStore();
 
   const [searchText, setSearchText] = useState("");
-  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedItem, setSelectedItem] = useState<ContextItem | null>(null);
 
   useEffect(() => {
     if (currentProject?.id) {
@@ -38,24 +41,26 @@ function ContextPanel({
     }
   }, [currentProject?.id]);
 
-  const filterList = (list: any[], isCharacter: boolean) => {
+  const filterList = <T extends ContextItem>(list: T[], isCharacter: boolean): T[] => {
     if (!searchText) return list;
     return list.filter((item) => {
       if (isCharacter) {
+        const character = item as Character;
         return (
-          item.name.includes(searchText) ||
-          (item.description || "").includes(searchText)
+          character.name.includes(searchText) ||
+          (character.description || "").includes(searchText)
         );
       } else {
+        const term = item as Term;
         return (
-          item.term.includes(searchText) ||
-          (item.definition || "").includes(searchText)
+          term.term.includes(searchText) ||
+          (term.definition || "").includes(searchText)
         );
       }
     });
   };
 
-  const handleItemClick = (item: any) => {
+  const handleItemClick = (item: ContextItem) => {
     setSelectedItem(item);
   };
 
@@ -161,7 +166,7 @@ function ContextPanel({
 
         {currentTab === "characters" && (
           <>
-            {filterList(characters, true).map((item: any) => (
+            {filterList(characters, true).map((item) => (
               <div
                 key={item.id}
                 className={styles.card}
@@ -188,7 +193,7 @@ function ContextPanel({
 
         {currentTab === "terms" && (
           <>
-            {filterList(terms, false).map((item: any) => (
+            {filterList(terms, false).map((item) => (
               <div
                 key={item.id}
                 className={styles.card}

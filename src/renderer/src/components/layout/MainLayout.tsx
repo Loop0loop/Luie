@@ -1,4 +1,5 @@
-import { ReactNode, useState } from 'react';
+import type { ReactNode} from 'react';
+import { useState } from 'react';
 import WindowBar from './WindowBar';
 import styles from '../../styles/layout/MainLayout.module.css';
 import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from 'lucide-react';

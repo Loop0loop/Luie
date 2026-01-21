@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import type { Term } from "../../../shared/types";
-import { createCRUDSlice, CRUDStore } from "./createCRUDStore";
-import { TermCreateInput, TermUpdateInput } from "../../../shared/types";
+import { createCRUDSlice } from "./createCRUDStore";
+import type { CRUDStore } from "./createCRUDStore";
+import type { TermCreateInput, TermUpdateInput } from "../../../shared/types";
 
 type BaseTermStore = CRUDStore<Term, TermCreateInput, TermUpdateInput>;
 
@@ -19,7 +20,7 @@ interface TermStore extends BaseTermStore {
   currentTerm: Term | null;
 }
 
-export const useTermStore = create<TermStore>((set, get) => {
+export const useTermStore = create<TermStore>((set) => {
   const apiClient = {
     ...window.api.term,
     getAll: (parentId?: string) => window.api.term.getAll(parentId || ""),
@@ -28,11 +29,7 @@ export const useTermStore = create<TermStore>((set, get) => {
   const crudSlice = createCRUDSlice<Term, TermCreateInput, TermUpdateInput>(
     apiClient,
     "Term",
-  )(set, get, {
-    getState: get,
-    setState: set,
-    subscribe: () => () => {},
-  } as any);
+  )(set);
 
   return {
     ...crudSlice,

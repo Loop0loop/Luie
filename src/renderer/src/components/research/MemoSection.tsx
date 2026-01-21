@@ -38,36 +38,47 @@ export default function MemoSection() {
     return `luie:memos:${currentProject.id}`;
   }, [currentProject?.id]);
 
-  const [notes, setNotes] = useState<Note[]>(DEFAULT_NOTES);
-  const [activeNoteId, setActiveNoteId] = useState("1");
+  return (
+    <MemoSectionInner
+      key={storageKey ?? "luie:memos:none"}
+      storageKey={storageKey}
+    />
+  );
+}
+
+function loadInitialNotes(storageKey: string | null): {
+  notes: Note[];
+  activeNoteId: string;
+} {
+  if (!storageKey) {
+    return { notes: DEFAULT_NOTES, activeNoteId: DEFAULT_NOTES[0]?.id ?? "1" };
+  }
+
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) {
+      return { notes: DEFAULT_NOTES, activeNoteId: DEFAULT_NOTES[0]?.id ?? "1" };
+    }
+
+    const parsed = JSON.parse(raw) as { notes?: Note[] };
+    const loaded = Array.isArray(parsed.notes) ? parsed.notes : [];
+    const effectiveNotes = loaded.length > 0 ? loaded : DEFAULT_NOTES;
+    return {
+      notes: effectiveNotes,
+      activeNoteId: effectiveNotes[0]?.id ?? DEFAULT_NOTES[0]?.id ?? "1",
+    };
+  } catch (e) {
+    window.api.logger.warn("Failed to load memos", e);
+    return { notes: DEFAULT_NOTES, activeNoteId: DEFAULT_NOTES[0]?.id ?? "1" };
+  }
+}
+
+function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
+  const initial = loadInitialNotes(storageKey);
+
+  const [notes, setNotes] = useState<Note[]>(() => initial.notes);
+  const [activeNoteId, setActiveNoteId] = useState(() => initial.activeNoteId);
   const [searchTerm, setSearchTerm] = useState("");
-
-  // Load notes when project changes
-  useEffect(() => {
-    if (!storageKey) {
-      setNotes(DEFAULT_NOTES);
-      setActiveNoteId(DEFAULT_NOTES[0]?.id ?? "1");
-      return;
-    }
-
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (!raw) {
-        setNotes(DEFAULT_NOTES);
-        setActiveNoteId(DEFAULT_NOTES[0]?.id ?? "1");
-        return;
-      }
-
-      const parsed = JSON.parse(raw) as { notes?: Note[] };
-      const loaded = Array.isArray(parsed.notes) ? parsed.notes : [];
-      setNotes(loaded.length > 0 ? loaded : DEFAULT_NOTES);
-      setActiveNoteId((loaded[0]?.id ?? DEFAULT_NOTES[0]?.id ?? "1") as string);
-    } catch (e) {
-      window.api.logger.warn("Failed to load memos", e);
-      setNotes(DEFAULT_NOTES);
-      setActiveNoteId(DEFAULT_NOTES[0]?.id ?? "1");
-    }
-  }, [storageKey]);
 
   // Save notes (debounced)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

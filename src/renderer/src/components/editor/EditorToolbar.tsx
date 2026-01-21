@@ -16,7 +16,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import styles from "../../styles/components/EditorToolbar.module.css";
-import { Editor } from "@tiptap/react";
+import type { Editor } from "@tiptap/react";
 import { useEditorStore } from "../../stores/editorStore";
 
 interface EditorToolbarProps {

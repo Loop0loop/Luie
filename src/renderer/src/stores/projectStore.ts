@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import type { Project } from "../../../shared/types";
-import { createCRUDSlice, CRUDStore } from "./createCRUDStore";
-import { ProjectCreateInput, ProjectUpdateInput } from "../../../shared/types";
+import { createCRUDSlice } from "./createCRUDStore";
+import type { CRUDStore } from "./createCRUDStore";
+import type { ProjectCreateInput, ProjectUpdateInput } from "../../../shared/types";
 
 type BaseProjectStore = CRUDStore<
   Project,
@@ -33,16 +34,12 @@ interface ProjectStore extends BaseProjectStore {
   currentProject: Project | null;
 }
 
-export const useProjectStore = create<ProjectStore>((set, get) => {
+export const useProjectStore = create<ProjectStore>((set) => {
   const crudSlice = createCRUDSlice<
     Project,
     ProjectCreateInput,
     ProjectUpdateInput
-  >(window.api.project, "Project")(set, get, {
-    getState: get,
-    setState: set,
-    subscribe: () => () => {},
-  } as any);
+  >(window.api.project, "Project")(set);
 
   return {
     ...crudSlice,

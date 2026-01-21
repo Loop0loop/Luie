@@ -1,12 +1,17 @@
 import { ReactRenderer } from "@tiptap/react";
+import type { Content, Editor } from "@tiptap/core";
 import type {
   SuggestionKeyDownProps,
   SuggestionOptions,
   SuggestionProps,
 } from "@tiptap/suggestion";
 import SlashMenu from "./SlashMenu";
+import type { SlashMenuItem } from "./SlashMenu";
 
-function replaceCurrentTextblock(editor: any, content: any) {
+type TextRange = { from: number; to: number };
+type SlashMenuActionProps = { editor: Editor; range: TextRange };
+
+function replaceCurrentTextblock(editor: Editor, content: Content) {
   const { state } = editor;
   const { $from } = state.selection;
 
@@ -29,17 +34,20 @@ function replaceCurrentTextblock(editor: any, content: any) {
 export const slashSuggestion: Omit<SuggestionOptions, "editor"> = {
   char: "/",
 
-  command: ({ editor, range, props }: any) => {
+  command: ({ editor, range, props }: SuggestionProps) => {
     // items()에서 만든 각 아이템의 action을 실행
-    props?.action?.({ editor, range });
+    (props as { action?: (args: SlashMenuActionProps) => void } | undefined)?.action?.({
+      editor,
+      range: range as unknown as TextRange,
+    });
   },
 
-  items: ({ query }) => {
-    const items = [
+  items: ({ query }: { query: string }): SlashMenuItem[] => {
+    const items: SlashMenuItem[] = [
       {
         id: "h1",
         label: "제목 1",
-        action: ({ editor, range }: any) => {
+        action: ({ editor, range }: SlashMenuActionProps) => {
           editor
             .chain()
             .focus()
@@ -51,7 +59,7 @@ export const slashSuggestion: Omit<SuggestionOptions, "editor"> = {
       {
         id: "h2",
         label: "제목 2",
-        action: ({ editor, range }: any) => {
+        action: ({ editor, range }: SlashMenuActionProps) => {
           editor
             .chain()
             .focus()
@@ -63,7 +71,7 @@ export const slashSuggestion: Omit<SuggestionOptions, "editor"> = {
       {
         id: "h3",
         label: "제목 3",
-        action: ({ editor, range }: any) => {
+        action: ({ editor, range }: SlashMenuActionProps) => {
           editor
             .chain()
             .focus()
@@ -75,28 +83,28 @@ export const slashSuggestion: Omit<SuggestionOptions, "editor"> = {
       {
         id: "bullet",
         label: "글머리 기호 목록",
-        action: ({ editor, range }: any) => {
+        action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).toggleBulletList().run();
         },
       },
       {
         id: "number",
         label: "번호 매기기 목록",
-        action: ({ editor, range }: any) => {
+        action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).toggleOrderedList().run();
         },
       },
       {
         id: "check",
         label: "할 일 목록",
-        action: ({ editor, range }: any) => {
+        action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).toggleTaskList().run();
         },
       },
       {
         id: "toggle",
         label: "토글 섹션",
-        action: ({ editor, range }: any) => {
+        action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).run();
 
           replaceCurrentTextblock(editor, {
@@ -117,14 +125,14 @@ export const slashSuggestion: Omit<SuggestionOptions, "editor"> = {
       {
         id: "quote",
         label: "인용",
-        action: ({ editor, range }: any) => {
+        action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).toggleBlockquote().run();
         },
       },
       {
         id: "callout",
         label: "메모(콜아웃)",
-        action: ({ editor, range }: any) => {
+        action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).run();
 
           replaceCurrentTextblock(editor, {
@@ -141,7 +149,7 @@ export const slashSuggestion: Omit<SuggestionOptions, "editor"> = {
       {
         id: "divider",
         label: "장면 구분선",
-        action: ({ editor, range }: any) => {
+        action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).run();
           // HR도 textblock 내부에서 삽입 시 보정될 수 있어, 현재 문단을 HR로 교체
           replaceCurrentTextblock(editor, { type: "horizontalRule" });

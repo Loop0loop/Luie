@@ -1,5 +1,5 @@
-import { StateCreator } from "zustand";
-import { IPCResponse } from "../../../shared/ipc";
+import type { StateCreator } from "zustand";
+import type { IPCResponse } from "../../../shared/ipc";
 
 interface BaseItem {
   id: string;
@@ -47,7 +47,7 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
           set({ items: [], error: response.error?.message });
         }
       } catch (error) {
-        (window.api as any).logger.error(`Failed to load ${name}s:`, error);
+        window.api.logger.error(`Failed to load ${name}s:`, error);
         set({ items: [], error: (error as Error).message });
       } finally {
         set({ isLoading: false });
@@ -64,7 +64,7 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
           set({ currentItem: null, error: response.error?.message });
         }
       } catch (error) {
-        (window.api as any).logger.error(`Failed to load ${name}:`, error);
+        window.api.logger.error(`Failed to load ${name}:`, error);
         set({ currentItem: null, error: (error as Error).message });
       } finally {
         set({ isLoading: false });
@@ -84,7 +84,7 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
           return null;
         }
       } catch (error) {
-        (window.api as any).logger.error(`Failed to create ${name}:`, error);
+        window.api.logger.error(`Failed to create ${name}:`, error);
         set({ error: (error as Error).message });
         return null;
       } finally {
@@ -111,7 +111,7 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
           set({ error: response.error?.message });
         }
       } catch (error) {
-        (window.api as any).logger.error(`Failed to update ${name}:`, error);
+        window.api.logger.error(`Failed to update ${name}:`, error);
         set({ error: (error as Error).message });
       } finally {
         set({ isLoading: false });
@@ -132,7 +132,7 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
           set({ error: response.error?.message });
         }
       } catch (error) {
-        (window.api as any).logger.error(`Failed to delete ${name}:`, error);
+        window.api.logger.error(`Failed to delete ${name}:`, error);
         set({ error: (error as Error).message });
       } finally {
         set({ isLoading: false });

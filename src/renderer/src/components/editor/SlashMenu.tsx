@@ -1,4 +1,4 @@
-import { useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import styles from "../../styles/components/SlashMenu.module.css";
 import {
@@ -14,10 +14,14 @@ import {
   MessageSquare,
 } from "lucide-react";
 
-interface SlashMenuItem {
+export interface SlashMenuItem {
   id: string;
   label: string;
-  action: (props: any) => void;
+  action: (props: unknown) => void;
+}
+
+export interface SlashMenuHandle {
+  onKeyDown: (args: { event: KeyboardEvent }) => boolean;
 }
 
 interface SlashMenuProps {
@@ -51,19 +55,15 @@ const DESCRIPTIONS: Record<string, string> = {
   divider: "장면 전환 구분",
 };
 
-const SlashMenu = ({
-  items,
-  command,
+const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function SlashMenu(
+  { items, command }: SlashMenuProps,
   ref,
-}: SlashMenuProps & { ref?: React.Ref<any> }) => {
+) {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [prevItems, setPrevItems] = useState(items);
   const itemRefs = useRef<Array<HTMLDivElement | null>>([]);
 
-  if (items !== prevItems) {
-    setPrevItems(items);
-    setSelectedIndex(0);
-  }
+  const effectiveSelectedIndex =
+    selectedIndex >= 0 && selectedIndex < items.length ? selectedIndex : 0;
 
   const selectItem = (index: number) => {
     const item = items[index];
@@ -81,15 +81,15 @@ const SlashMenu = ({
   };
 
   const enterHandler = () => {
-    selectItem(selectedIndex);
+    selectItem(effectiveSelectedIndex);
   };
 
   useEffect(() => {
-    const el = itemRefs.current[selectedIndex];
+    const el = itemRefs.current[effectiveSelectedIndex];
     if (el) {
       el.scrollIntoView({ block: "nearest" });
     }
-  }, [selectedIndex]);
+  }, [effectiveSelectedIndex]);
 
   useImperativeHandle(ref, () => ({
     onKeyDown: ({ event }: { event: KeyboardEvent }) => {
@@ -132,7 +132,7 @@ const SlashMenu = ({
         {items.map((item, index) => (
           <div
             key={item.id}
-            className={`${styles.item} ${index === selectedIndex ? styles.selected : ""}`}
+            className={`${styles.item} ${index === effectiveSelectedIndex ? styles.selected : ""}`}
             onClick={() => selectItem(index)}
             onMouseEnter={() => setSelectedIndex(index)}
             ref={(node) => {
@@ -149,7 +149,7 @@ const SlashMenu = ({
       </div>
     </div>
   );
-};
+});
 
 SlashMenu.displayName = "SlashMenu";
 
