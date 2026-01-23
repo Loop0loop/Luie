@@ -33,6 +33,11 @@
   border-right: 1px solid var(--border-default);
 }
 
+.iconMd {
+  width: 16px;
+  height: 16px;
+}
+
 .sidebarTitle {
   font-size: 11px;
   font-weight: 700;
@@ -73,6 +78,7 @@
   padding: 48px;
   overflow-y: auto;
   background: var(--bg-app);
+  min-width: 0;
 }
 
 .grid {
@@ -215,6 +221,57 @@
   justify-content: center;
   flex-direction: column;
   gap: 12px;
+}
+
+.coverPlusIcon {
+  width: 32px;
+  height: 32px;
+  color: #a1a1aa;
+}
+
+.newProjectLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #a1a1aa;
+}
+
+.coverSymbol {
+  font-size: 32px;
+  opacity: 0.2;
+  margin-top: 16px;
+}
+
+.lineShort {
+  width: 60%;
+}
+
+.coverIntro {
+  margin-top: auto;
+  font-size: 10px;
+  color: #64748b;
+}
+
+.coverDoc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.coverDocInner {
+  text-align: center;
+}
+
+.coverDocTitle {
+  font-size: 24px;
+  font-family: serif;
+  color: #333;
+}
+
+.coverDocDivider {
+  width: 40px;
+  height: 1px;
+  background: #333;
+  margin: 8px auto;
 }
 
 /* Labels */
@@ -392,8 +449,8 @@
 
 .recentGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+  grid-template-columns: 1fr;
+  gap: 12px;
 }
 
 .recentCard {

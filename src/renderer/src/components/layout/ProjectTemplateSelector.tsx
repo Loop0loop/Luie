@@ -11,14 +11,8 @@ import {
   LUIE_PACKAGE_FILTER_NAME,
   MARKDOWN_EXTENSION_NO_DOT,
   TEXT_EXTENSION_NO_DOT,
-  TEMPLATE_CARD_BADGE_FONT_SIZE,
-  TEMPLATE_CARD_BADGE_FONT_WEIGHT,
-  TEMPLATE_COVER_FOOTER_FONT_SIZE,
-  TEMPLATE_COVER_ICON_FONT_SIZE,
-  TEMPLATE_DOC_TITLE_FONT_SIZE,
   TEMPLATE_NEW_PROJECT_LABEL,
   TEMPLATE_SIDEBAR_TITLE,
-  ICON_SIZE_MD,
   DIALOG_TITLE_DELETE_PROJECT,
   DIALOG_TITLE_RENAME_PROJECT,
   PROJECT_TEMPLATE_CATEGORY_ALL,
@@ -105,10 +99,10 @@ export default function ProjectTemplateSelector({
   }, [menuOpenId]);
 
   const categories = [
-    { id: "all", label: PROJECT_TEMPLATE_CATEGORY_ALL, icon: <Book size={ICON_SIZE_MD} /> },
-    { id: "novel", label: PROJECT_TEMPLATE_CATEGORY_NOVEL, icon: <Book size={ICON_SIZE_MD} /> },
-    { id: "script", label: PROJECT_TEMPLATE_CATEGORY_SCRIPT, icon: <FileText size={ICON_SIZE_MD} /> },
-    { id: "misc", label: PROJECT_TEMPLATE_CATEGORY_GENERAL, icon: <FileType size={ICON_SIZE_MD} /> },
+    { id: "all", label: PROJECT_TEMPLATE_CATEGORY_ALL, icon: <Book className={styles.iconMd} /> },
+    { id: "novel", label: PROJECT_TEMPLATE_CATEGORY_NOVEL, icon: <Book className={styles.iconMd} /> },
+    { id: "script", label: PROJECT_TEMPLATE_CATEGORY_SCRIPT, icon: <FileText className={styles.iconMd} /> },
+    { id: "misc", label: PROJECT_TEMPLATE_CATEGORY_GENERAL, icon: <FileType className={styles.iconMd} /> },
   ];
 
   const templates = [
@@ -285,47 +279,51 @@ export default function ProjectTemplateSelector({
             </div>
           ))}
 
-          <div className={styles.recentHeader}>
-            <div className={styles.recentTitle}>{PROJECT_TEMPLATE_RECENT_TITLE}</div>
-          </div>
+          <div className={styles.recentSection}>
+            <div className={styles.recentHeader}>
+              <div className={styles.recentTitle}>{PROJECT_TEMPLATE_RECENT_TITLE}</div>
+            </div>
 
-          <div className={styles.recentGrid}>
-            {projects.slice(0, 6).map((p) => (
-              <div
-                key={p.id}
-                className={styles.recentCard}
-                onClick={() => onOpenProject?.(p)}
-              >
-                <div className={styles.recentCardContent}>
-                  <div className={styles.recentProjectTitle}>{p.title}</div>
-                  <div
-                    className={styles.recentProjectPath}
-                    title={p.projectPath ?? ""}
-                  >
-                    {p.projectPath ?? PROJECT_TEMPLATE_EMPTY_PATH}
-                  </div>
-                </div>
-
-                <button
-                  className={styles.recentCardMenuBtn}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    menuButtonRef.current = e.currentTarget;
-                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                    setMenuPosition({ x: rect.right + 8, y: rect.top });
-                    setMenuOpenId((prev) => (prev === p.id ? null : p.id));
-                    window.api.logger.info("Project context menu", {
-                      id: p.id,
-                    });
-                  }}
+            <div className={styles.recentGrid}>
+              {projects.slice(0, 6).map((p) => (
+                <div
+                  key={p.id}
+                  className={styles.recentCard}
+                  onClick={() => onOpenProject?.(p)}
                 >
-                  <MoreVertical size={ICON_SIZE_MD} />
-                </button>
-              </div>
-            ))}
-          </div>
+                  <div className={styles.recentCardContent}>
+                    <div className={styles.recentProjectTitle}>{p.title}</div>
+                    <div
+                      className={styles.recentProjectPath}
+                      title={p.projectPath ?? ""}
+                    >
+                      {p.projectPath ?? PROJECT_TEMPLATE_EMPTY_PATH}
+                    </div>
+                  </div>
 
+                  <button
+                    className={styles.recentCardMenuBtn}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      menuButtonRef.current = e.currentTarget;
+                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                      setMenuPosition({ x: rect.right + 8, y: rect.top });
+                      setMenuOpenId((prev) => (prev === p.id ? null : p.id));
+                      window.api.logger.info("Project context menu", {
+                        id: p.id,
+                      });
+                    }}
+                  >
+                    <MoreVertical className={styles.iconMd} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.content}>
           <div className={styles.grid}>
             {filteredTemplates.map((template) => (
               <div
@@ -337,14 +335,8 @@ export default function ProjectTemplateSelector({
                   {template.type === "blank" && (
                     <div className={styles.coverBlank}>
                       <div className={styles.dashed}>
-                        <Plus size={TEMPLATE_COVER_ICON_FONT_SIZE} color="#a1a1aa" />
-                        <span
-                          style={{
-                            fontSize: TEMPLATE_CARD_BADGE_FONT_SIZE,
-                            fontWeight: TEMPLATE_CARD_BADGE_FONT_WEIGHT,
-                            color: "#a1a1aa",
-                          }}
-                        >
+                        <Plus className={styles.coverPlusIcon} />
+                        <span className={styles.newProjectLabel}>
                           {TEMPLATE_NEW_PROJECT_LABEL}
                         </span>
                       </div>
@@ -357,15 +349,7 @@ export default function ProjectTemplateSelector({
                     >
                       <div className={styles.subtitle}>{PROJECT_TEMPLATE_COVER_STANDARD}</div>
                       <div className={styles.title}>{PROJECT_TEMPLATE_COVER_NOVEL}</div>
-                      <div
-                        style={{
-                          fontSize: TEMPLATE_COVER_ICON_FONT_SIZE,
-                          opacity: 0.2,
-                          marginTop: 16,
-                        }}
-                      >
-                        ❦
-                      </div>
+                      <div className={styles.coverSymbol}>❦</div>
                     </div>
                   )}
 
@@ -379,46 +363,20 @@ export default function ProjectTemplateSelector({
                         {PROJECT_TEMPLATE_COVER_PLAY}
                       </div>
                       <div className={styles.line} />
-                      <div className={styles.line} style={{ width: "60%" }} />
-                      <div
-                        style={{
-                          marginTop: "auto",
-                          fontSize: TEMPLATE_COVER_FOOTER_FONT_SIZE,
-                          color: "#64748b",
-                        }}
-                      >
+                      <div className={`${styles.line} ${styles.lineShort}`} />
+                      <div className={styles.coverIntro}>
                         {PROJECT_TEMPLATE_COVER_INTRO}
                       </div>
                     </div>
                   )}
 
                   {template.type === "doc" && (
-                    <div
-                      className={styles.coverBlank}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <div style={{ textAlign: "center" }}>
-                        <div
-                          style={{
-                            fontSize: TEMPLATE_DOC_TITLE_FONT_SIZE,
-                            fontFamily: "serif",
-                            color: "#333",
-                          }}
-                        >
+                    <div className={`${styles.coverBlank} ${styles.coverDoc}`}>
+                      <div className={styles.coverDocInner}>
+                        <div className={styles.coverDocTitle}>
                           {PROJECT_TEMPLATE_COVER_ESSAY}
                         </div>
-                        <div
-                          style={{
-                            width: 40,
-                            height: 1,
-                            background: "#333",
-                            margin: "8px auto",
-                          }}
-                        />
+                        <div className={styles.coverDocDivider} />
                       </div>
                     </div>
                   )}
