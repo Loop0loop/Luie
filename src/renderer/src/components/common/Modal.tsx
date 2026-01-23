@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useId } from "react";
 import { X } from "lucide-react";
 import styles from "../../styles/components/Modal.module.css";
-import { ICON_SIZE_LG } from "../../../shared/constants";
+import { ICON_SIZE_LG, MODAL_CANCEL_LABEL, MODAL_CONFIRM_LABEL } from "../../../../shared/constants";
 
 interface ModalProps {
   isOpen: boolean;
@@ -58,8 +58,8 @@ export function ConfirmDialog({
   isOpen,
   title,
   message,
-  confirmLabel = "확인",
-  cancelLabel = "취소",
+  confirmLabel = MODAL_CONFIRM_LABEL,
+  cancelLabel = MODAL_CANCEL_LABEL,
   isDestructive = false,
   onConfirm,
   onCancel,
@@ -106,8 +106,8 @@ export function PromptDialog({
   message,
   defaultValue = "",
   placeholder = "",
-  confirmLabel = "확인",
-  cancelLabel = "취소",
+  confirmLabel = MODAL_CONFIRM_LABEL,
+  cancelLabel = MODAL_CANCEL_LABEL,
   onConfirm,
   onCancel,
 }: PromptDialogProps) {

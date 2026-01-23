@@ -3,7 +3,13 @@ import { useState } from 'react';
 import WindowBar from './WindowBar';
 import styles from '../../styles/layout/MainLayout.module.css';
 import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from 'lucide-react';
-import { ICON_SIZE_XL } from '../../../shared/constants';
+import {
+  ICON_SIZE_XL,
+  TOOLTIP_SIDEBAR_COLLAPSE,
+  TOOLTIP_SIDEBAR_EXPAND,
+  TOOLTIP_CONTEXT_PANEL_COLLAPSE,
+  TOOLTIP_CONTEXT_PANEL_EXPAND,
+} from '../../../shared/constants';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -40,7 +46,7 @@ export default function MainLayout({ children, sidebar, contextPanel }: MainLayo
              <button 
                className={styles.toggleButton}
                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-               title={isSidebarOpen ? "사이드바 접기" : "사이드바 펼치기"}
+               title={isSidebarOpen ? TOOLTIP_SIDEBAR_COLLAPSE : TOOLTIP_SIDEBAR_EXPAND}
              >
                {isSidebarOpen ? (
                  <PanelLeftClose size={ICON_SIZE_XL} />
@@ -54,7 +60,7 @@ export default function MainLayout({ children, sidebar, contextPanel }: MainLayo
              <button 
                className={styles.toggleButton}
                onClick={() => setIsContextOpen(!isContextOpen)}
-               title={isContextOpen ? "패널 접기" : "패널 펼치기"}
+               title={isContextOpen ? TOOLTIP_CONTEXT_PANEL_COLLAPSE : TOOLTIP_CONTEXT_PANEL_EXPAND}
              >
                {isContextOpen ? (
                  <PanelRightClose size={ICON_SIZE_XL} />

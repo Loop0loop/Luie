@@ -23,7 +23,11 @@ import { slashSuggestion } from "./suggestion";
 import {
   EDITOR_AUTOSAVE_DEBOUNCE_MS,
   EDITOR_STYLE_APPLY_DEBOUNCE_MS,
+  PLACEHOLDER_EDITOR_BODY,
   PLACEHOLDER_EDITOR_TITLE,
+  TEXT_EDITOR_STATUS_CHAR_LABEL,
+  TEXT_EDITOR_STATUS_WORD_LABEL,
+  TEXT_EDITOR_STATUS_SEPARATOR,
 } from "../../../../shared/constants";
 
 // Simple Callout Extension (inline to avoid dependencies)
@@ -158,7 +162,7 @@ function Editor({
         // best-effort autosave; errors are surfaced via IPC response/logger
       });
     }, SAVE_DEBOUNCE_MS);
-  }, [onSave]);
+  }, [onSave, SAVE_DEBOUNCE_MS]);
 
 
   // TipTap Editor Setup
@@ -190,7 +194,7 @@ function Editor({
       DetailsSummary,
       DetailsContent,
       Placeholder.configure({
-        placeholder: "내용을 입력하세요... ('/'를 입력하여 명령어 확인)",
+        placeholder: PLACEHOLDER_EDITOR_BODY,
       }),
       SlashCommand,
     ],
@@ -269,7 +273,9 @@ function Editor({
 
       <div className={styles.statusBar}>
         <span className={styles.statusText}>
-          글자 {charCount} · 단어 {wordCount}
+          {TEXT_EDITOR_STATUS_CHAR_LABEL} {charCount}
+          {TEXT_EDITOR_STATUS_SEPARATOR}
+          {TEXT_EDITOR_STATUS_WORD_LABEL} {wordCount}
         </span>
       </div>
     </div>

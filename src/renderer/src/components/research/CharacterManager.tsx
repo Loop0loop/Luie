@@ -17,6 +17,28 @@ import {
   DEFAULT_CHARACTER_NAME,
   DEFAULT_CHARACTER_ADD_LABEL,
   FONT_WEIGHT_SEMIBOLD,
+  LABEL_CHARACTER_SECTION_PROFILE,
+  LABEL_CHARACTER_SECTION_APPEARANCE,
+  LABEL_CHARACTER_SECTION_RELATION,
+  LABEL_CHARACTER_TAB_BASIC,
+  LABEL_CHARACTER_TAB_APPEARANCE,
+  LABEL_CHARACTER_TAB_PERSONALITY,
+  LABEL_CHARACTER_TAB_RELATION,
+  LABEL_CHARACTER_NAME,
+  LABEL_CHARACTER_ROLE,
+  LABEL_CHARACTER_GENDER,
+  LABEL_CHARACTER_AGE,
+  LABEL_CHARACTER_JOB,
+  LABEL_CHARACTER_ONE_LINER,
+  LABEL_CHARACTER_MBti,
+  LABEL_CHARACTER_STRENGTH,
+  LABEL_CHARACTER_WEAKNESS,
+  LABEL_CHARACTER_BACKSTORY,
+  LABEL_CHARACTER_RELATION_HINT,
+  PLACEHOLDER_CHARACTER_ROLE,
+  PLACEHOLDER_CHARACTER_ONE_LINER,
+  PLACEHOLDER_CHARACTER_APPEARANCE,
+  PLACEHOLDER_CHARACTER_RELATION,
 } from "../../../../shared/constants";
 
 type CharacterLike = {
@@ -149,11 +171,11 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
         overflow: "hidden",
       }}
     >
-      <div className={styles.sectionTitle}>기본 프로필 (Basic Profile)</div>
+      <div className={styles.sectionTitle}>{LABEL_CHARACTER_SECTION_PROFILE}</div>
 
       {/* Quick Access Fields */}
       <div className={styles.tableGrid}>
-        <div className={styles.cellLabel}>이름</div>
+        <div className={styles.cellLabel}>{LABEL_CHARACTER_NAME}</div>
         <div className={styles.cellValue}>
           <BufferedInput
             className={styles.cellValueInput}
@@ -161,12 +183,12 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
             onSave={(val) => handleUpdate("name", val)}
           />
         </div>
-        <div className={styles.cellLabel}>역할</div>
+        <div className={styles.cellLabel}>{LABEL_CHARACTER_ROLE}</div>
         <div className={styles.cellValue}>
           <BufferedInput
             className={styles.cellValueInput}
             value={character.description || ""}
-            placeholder="주인공, 조력자, 빌런..."
+            placeholder={PLACEHOLDER_CHARACTER_ROLE}
             onSave={(val) => handleUpdate("description", val)}
           />
         </div>
@@ -181,25 +203,25 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
           className={`${styles.subTab} ${activeTab === "basic" ? styles.active : ""}`}
           onClick={() => setActiveTab("basic")}
         >
-          기본 정보
+          {LABEL_CHARACTER_TAB_BASIC}
         </div>
         <div
           className={`${styles.subTab} ${activeTab === "appearance" ? styles.active : ""}`}
           onClick={() => setActiveTab("appearance")}
         >
-          외모
+          {LABEL_CHARACTER_TAB_APPEARANCE}
         </div>
         <div
           className={`${styles.subTab} ${activeTab === "personality" ? styles.active : ""}`}
           onClick={() => setActiveTab("personality")}
         >
-          성격/내면
+          {LABEL_CHARACTER_TAB_PERSONALITY}
         </div>
         <div
           className={`${styles.subTab} ${activeTab === "relation" ? styles.active : ""}`}
           onClick={() => setActiveTab("relation")}
         >
-          관계
+          {LABEL_CHARACTER_TAB_RELATION}
         </div>
       </div>
 
@@ -213,7 +235,7 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
       >
         {activeTab === "basic" && (
           <div className={styles.tableGrid}>
-            <div className={styles.cellLabel}>성별</div>
+            <div className={styles.cellLabel}>{LABEL_CHARACTER_GENDER}</div>
             <div className={styles.cellValue}>
               <BufferedInput
                 className={styles.cellValueInput}
@@ -221,7 +243,7 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
                 onSave={(val) => handleAttributeUpdate("gender", val)}
               />
             </div>
-            <div className={styles.cellLabel}>나이</div>
+            <div className={styles.cellLabel}>{LABEL_CHARACTER_AGE}</div>
             <div className={styles.cellValue}>
               <BufferedInput
                 className={styles.cellValueInput}
@@ -229,7 +251,7 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
                 onSave={(val) => handleAttributeUpdate("age", val)}
               />
             </div>
-            <div className={styles.cellLabel}>직업/신분</div>
+            <div className={styles.cellLabel}>{LABEL_CHARACTER_JOB}</div>
             <div className={styles.cellValue}>
               <BufferedInput
                 className={styles.cellValueInput}
@@ -237,12 +259,12 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
                 onSave={(val) => handleAttributeUpdate("job", val)}
               />
             </div>
-            <div className={styles.cellLabel}>한 줄 요약</div>
+            <div className={styles.cellLabel}>{LABEL_CHARACTER_ONE_LINER}</div>
             <div className={styles.cellValue} style={{ gridColumn: "span 3" }}>
               <BufferedInput
                 className={styles.cellValueInput}
                 value={attributes.oneLiner || ""}
-                placeholder="이 캐릭터를 한 문장으로 정의한다면?"
+                placeholder={PLACEHOLDER_CHARACTER_ONE_LINER}
                 onSave={(val) => handleAttributeUpdate("oneLiner", val)}
               />
             </div>
@@ -251,7 +273,7 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
 
         {activeTab === "appearance" && (
           <>
-            <div className={styles.sectionTitle}>외모 묘사 (Appearance)</div>
+            <div className={styles.sectionTitle}>{LABEL_CHARACTER_SECTION_APPEARANCE}</div>
             <BufferedTextArea
               className={styles.cellValueInput}
               style={{
@@ -260,7 +282,7 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
                 borderRadius: "4px",
               }}
               value={attributes.appearance || ""}
-              placeholder="눈동자 색, 머리카락, 체격, 흉터, 옷차림 등..."
+              placeholder={PLACEHOLDER_CHARACTER_APPEARANCE}
               onSave={(val) => handleAttributeUpdate("appearance", val)}
             />
           </>
@@ -271,7 +293,7 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
             className={styles.tableGrid}
             style={{ gridTemplateColumns: "100px 1fr" }}
           >
-            <div className={styles.cellLabel}>MBTI/성향</div>
+            <div className={styles.cellLabel}>{LABEL_CHARACTER_MBti}</div>
             <div className={styles.cellValue}>
               <BufferedInput
                 className={styles.cellValueInput}
@@ -279,7 +301,7 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
                 onSave={(val) => handleAttributeUpdate("mbti", val)}
               />
             </div>
-            <div className={styles.cellLabel}>장점</div>
+            <div className={styles.cellLabel}>{LABEL_CHARACTER_STRENGTH}</div>
             <div className={styles.cellValue}>
               <BufferedInput
                 className={styles.cellValueInput}
@@ -287,7 +309,7 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
                 onSave={(val) => handleAttributeUpdate("strength", val)}
               />
             </div>
-            <div className={styles.cellLabel}>단점/결핍</div>
+            <div className={styles.cellLabel}>{LABEL_CHARACTER_WEAKNESS}</div>
             <div className={styles.cellValue}>
               <BufferedInput
                 className={styles.cellValueInput}
@@ -295,7 +317,7 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
                 onSave={(val) => handleAttributeUpdate("weakness", val)}
               />
             </div>
-            <div className={styles.cellLabel}>서사/과거</div>
+            <div className={styles.cellLabel}>{LABEL_CHARACTER_BACKSTORY}</div>
             <div className={styles.cellValue}>
               <BufferedTextArea
                 className={styles.cellValueInput}
@@ -309,7 +331,7 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
 
         {activeTab === "relation" && (
           <div>
-            <div className={styles.sectionTitle}>주요 인물과의 관계</div>
+            <div className={styles.sectionTitle}>{LABEL_CHARACTER_SECTION_RELATION}</div>
             <p
               style={{
                 fontSize: CHARACTER_RELATION_FONT_SIZE,
@@ -317,8 +339,7 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
                 marginBottom: CHARACTER_RELATION_MARGIN_BOTTOM,
               }}
             >
-              * 마인드맵 탭에서 시각적으로 편집할 수 있습니다. 여기서는 텍스트로
-              정리하세요.
+              {LABEL_CHARACTER_RELATION_HINT}
             </p>
             <BufferedTextArea
               className={styles.cellValueInput}
@@ -328,7 +349,7 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
                 borderRadius: "4px",
               }}
               value={attributes.relationships || ""}
-              placeholder="A와는 적대 관계, B와는 과거의 연인..."
+              placeholder={PLACEHOLDER_CHARACTER_RELATION}
               onSave={(val) => handleAttributeUpdate("relationships", val)}
             />
           </div>

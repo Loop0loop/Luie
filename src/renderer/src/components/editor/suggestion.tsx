@@ -1,5 +1,20 @@
 import { ReactRenderer } from "@tiptap/react";
-import { SUGGESTION_MAX_ITEMS, SUGGESTION_POPUP_Z_INDEX } from "../../../../shared/constants";
+import {
+  SUGGESTION_MAX_ITEMS,
+  SUGGESTION_POPUP_Z_INDEX,
+  SLASH_MENU_LABEL_H1,
+  SLASH_MENU_LABEL_H2,
+  SLASH_MENU_LABEL_H3,
+  SLASH_MENU_LABEL_BULLET,
+  SLASH_MENU_LABEL_NUMBER,
+  SLASH_MENU_LABEL_CHECK,
+  SLASH_MENU_LABEL_TOGGLE,
+  SLASH_MENU_LABEL_QUOTE,
+  SLASH_MENU_LABEL_CALLOUT,
+  SLASH_MENU_LABEL_DIVIDER,
+  SLASH_MENU_TOGGLE_TITLE,
+  SLASH_MENU_CALLOUT_CONTENT,
+} from "../../../../shared/constants";
 import type { Content, Editor } from "@tiptap/core";
 import type {
   SuggestionKeyDownProps,
@@ -41,7 +56,7 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
     const items: SlashMenuItem[] = [
       {
         id: "h1",
-        label: "제목 1",
+        label: SLASH_MENU_LABEL_H1,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor
             .chain()
@@ -53,7 +68,7 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
       },
       {
         id: "h2",
-        label: "제목 2",
+        label: SLASH_MENU_LABEL_H2,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor
             .chain()
@@ -65,7 +80,7 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
       },
       {
         id: "h3",
-        label: "제목 3",
+        label: SLASH_MENU_LABEL_H3,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor
             .chain()
@@ -77,28 +92,28 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
       },
       {
         id: "bullet",
-        label: "글머리 기호 목록",
+        label: SLASH_MENU_LABEL_BULLET,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).toggleBulletList().run();
         },
       },
       {
         id: "number",
-        label: "번호 매기기 목록",
+        label: SLASH_MENU_LABEL_NUMBER,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).toggleOrderedList().run();
         },
       },
       {
         id: "check",
-        label: "할 일 목록",
+        label: SLASH_MENU_LABEL_CHECK,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).toggleTaskList().run();
         },
       },
       {
         id: "toggle",
-        label: "토글 섹션",
+        label: SLASH_MENU_LABEL_TOGGLE,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).run();
 
@@ -107,7 +122,7 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
             content: [
               {
                 type: "detailsSummary",
-                content: [{ type: "text", text: "토글 제목" }],
+                content: [{ type: "text", text: SLASH_MENU_TOGGLE_TITLE }],
               },
               {
                 type: "detailsContent",
@@ -119,14 +134,14 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
       },
       {
         id: "quote",
-        label: "인용",
+        label: SLASH_MENU_LABEL_QUOTE,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).toggleBlockquote().run();
         },
       },
       {
         id: "callout",
-        label: "메모(콜아웃)",
+        label: SLASH_MENU_LABEL_CALLOUT,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).run();
 
@@ -135,7 +150,7 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
             content: [
               {
                 type: "paragraph",
-                content: [{ type: "text", text: "메모 내용" }],
+                content: [{ type: "text", text: SLASH_MENU_CALLOUT_CONTENT }],
               },
             ],
           });
@@ -143,7 +158,7 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
       },
       {
         id: "divider",
-        label: "장면 구분선",
+        label: SLASH_MENU_LABEL_DIVIDER,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).run();
           // HR도 textblock 내부에서 삽입 시 보정될 수 있어, 현재 문단을 HR로 교체

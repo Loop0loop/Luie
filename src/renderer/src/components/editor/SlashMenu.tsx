@@ -14,7 +14,20 @@ import {
   Minus,
   MessageSquare,
 } from "lucide-react";
-import { ICON_SIZE_LG } from "../../../../shared/constants";
+import {
+  ICON_SIZE_LG,
+  SLASH_MENU_HEADER_BASIC,
+  SLASH_MENU_DESC_H1,
+  SLASH_MENU_DESC_H2,
+  SLASH_MENU_DESC_H3,
+  SLASH_MENU_DESC_BULLET,
+  SLASH_MENU_DESC_NUMBER,
+  SLASH_MENU_DESC_CHECK,
+  SLASH_MENU_DESC_TOGGLE,
+  SLASH_MENU_DESC_QUOTE,
+  SLASH_MENU_DESC_CALLOUT,
+  SLASH_MENU_DESC_DIVIDER,
+} from "../../../../shared/constants";
 
 export interface SlashMenuActionProps {
   editor: Editor;
@@ -50,16 +63,16 @@ const ICONS: Record<string, ReactElement> = {
 };
 
 const DESCRIPTIONS: Record<string, string> = {
-  h1: "장(章) 또는 큰 섹션",
-  h2: "중간 섹션",
-  h3: "세부 섹션",
-  bullet: "단순 목록 만들기",
-  number: "순서가 있는 목록",
-  check: "체크박스로 진행 관리",
-  toggle: "접고 펼칠 수 있는 섹션",
-  quote: "대사/인용문 강조",
-  callout: "주석/메모 박스",
-  divider: "장면 전환 구분",
+  h1: SLASH_MENU_DESC_H1,
+  h2: SLASH_MENU_DESC_H2,
+  h3: SLASH_MENU_DESC_H3,
+  bullet: SLASH_MENU_DESC_BULLET,
+  number: SLASH_MENU_DESC_NUMBER,
+  check: SLASH_MENU_DESC_CHECK,
+  toggle: SLASH_MENU_DESC_TOGGLE,
+  quote: SLASH_MENU_DESC_QUOTE,
+  callout: SLASH_MENU_DESC_CALLOUT,
+  divider: SLASH_MENU_DESC_DIVIDER,
 };
 
 const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function SlashMenu(
@@ -134,7 +147,7 @@ const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function SlashMenu
         e.preventDefault();
       }}
     >
-      <div className={styles.header}>기본 블록</div>
+      <div className={styles.header}>{SLASH_MENU_HEADER_BASIC}</div>
       <div className={styles.list}>
         {items.map((item, index) => (
           <div

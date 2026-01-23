@@ -13,6 +13,8 @@ import {
   MEMO_TITLE_FONT_WEIGHT,
   ICON_SIZE_SM,
   LABEL_MEMO_EMPTY,
+  LABEL_MEMO_SECTION_TITLE,
+  MEMO_DEFAULT_NOTES,
   PLACEHOLDER_MEMO_BODY,
   PLACEHOLDER_MEMO_SEARCH,
   PLACEHOLDER_MEMO_TAGS,
@@ -33,24 +35,12 @@ type Note = {
   updatedAt: string;
 };
 
-const DEFAULT_NOTES: Note[] = [
-  {
-    id: "1",
-    title: "참고자료: 중세 복식",
-    content:
-      "링크: https://wiki...\n\n중세 귀족들의 의상은 생각보다 화려했다...",
-    tags: ["자료", "의상"],
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    title: "아이디어 파편",
-    content:
-      "- 주인공이 사실은 악역이었다면?\n- 회귀 전의 기억이 왜곡된 것이라면?",
-    tags: ["아이디어", "플롯"],
-    updatedAt: new Date().toISOString(),
-  },
-];
+const defaultUpdatedAt = new Date().toISOString();
+const DEFAULT_NOTES: Note[] = MEMO_DEFAULT_NOTES.map((note) => ({
+  ...note,
+  tags: [...note.tags],
+  updatedAt: defaultUpdatedAt,
+}));
 
 export default function MemoSection() {
   const { currentItem: currentProject } = useProjectStore();
@@ -150,7 +140,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
     <div className={styles.scrapContainer}>
       <div className={styles.noteList}>
         <div className={styles.noteListHeader}>
-          <span>MEMOS</span>
+          <span>{LABEL_MEMO_SECTION_TITLE}</span>
           <Plus size={ICON_SIZE_SM} style={{ cursor: "pointer" }} onClick={handleAddNote} />
         </div>
 

@@ -14,6 +14,12 @@ import {
   FONT_WEIGHT_SEMIBOLD,
   ICON_SIZE_MD,
   ICON_SIZE_SM,
+  LABEL_CONTEXT_DETAIL_DESCRIPTION,
+  LABEL_CONTEXT_DETAIL_CATEGORY,
+  LABEL_CONTEXT_SYNOPSIS_HEADER,
+  LABEL_CONTEXT_TAB_CHARACTERS,
+  LABEL_CONTEXT_TAB_SYNOPSIS,
+  LABEL_CONTEXT_TAB_TERMS,
   PLACEHOLDER_CONTEXT_SEARCH,
   PLACEHOLDER_CONTEXT_SYNOPSIS,
 } from "../../../../shared/constants";
@@ -100,7 +106,7 @@ function ContextPanel({
           </div>
           <div className={styles.detailContent}>
             <div className={styles.detailSection}>
-              <div className={styles.detailLabel}>Description</div>
+                            <div className={styles.detailLabel}>{LABEL_CONTEXT_DETAIL_DESCRIPTION}</div>
               <div className={styles.detailText}>
                 {isCharacter(selectedItem)
                   ? (selectedItem.description ?? "")
@@ -111,7 +117,7 @@ function ContextPanel({
             {isTerm(selectedItem) && selectedItem.category && (
               <div className={styles.detailSection}>
                 <div className={styles.detailLabel}>Category</div>
-                <div className={styles.detailText}>{selectedItem.category}</div>
+                <div className={styles.detailLabel}>{LABEL_CONTEXT_DETAIL_CATEGORY}</div>
               </div>
             )}
           </div>
@@ -138,18 +144,16 @@ function ContextPanel({
             setSelectedItem(null);
           }}
         >
-          시놉시스
+          {LABEL_CONTEXT_TAB_SYNOPSIS}
         </div>
         <div
-          className={
-            currentTab === "characters" ? styles.tabActive : styles.tab
-          }
+          className={currentTab === "characters" ? styles.tabActive : styles.tab}
           onClick={() => {
             handleTabChange("characters");
             setSelectedItem(null);
           }}
         >
-          캐릭터
+          {LABEL_CONTEXT_TAB_CHARACTERS}
         </div>
         <div
           className={currentTab === "terms" ? styles.tabActive : styles.tab}
@@ -158,7 +162,7 @@ function ContextPanel({
             setSelectedItem(null);
           }}
         >
-          고유명사
+          {LABEL_CONTEXT_TAB_TERMS}
         </div>
       </div>
 
@@ -173,7 +177,7 @@ function ContextPanel({
                 marginBottom: CONTEXT_PANEL_SECTION_MARGIN_BOTTOM,
               }}
             >
-              작품 개요 (Synopsis)
+              {LABEL_CONTEXT_SYNOPSIS_HEADER}
             </div>
             <textarea
               className={styles.synopsisArea}

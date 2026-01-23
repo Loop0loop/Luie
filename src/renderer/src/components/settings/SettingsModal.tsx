@@ -8,6 +8,32 @@ import {
   ICON_SIZE_SM,
   ICON_SIZE_XL,
   ICON_SIZE_XS,
+  SETTINGS_ACTION_APPLY,
+  SETTINGS_ACTION_INSTALL,
+  SETTINGS_ACTION_INSTALLING,
+  SETTINGS_BADGE_ACTIVE,
+  SETTINGS_FONT_HELPER_PRIMARY,
+  SETTINGS_FONT_HELPER_SECONDARY,
+  SETTINGS_FONT_MONO_LABEL,
+  SETTINGS_FONT_SANS_LABEL,
+  SETTINGS_FONT_SERIF_LABEL,
+  SETTINGS_OPTIONAL_FONT_LABEL_BITTER,
+  SETTINGS_OPTIONAL_FONT_LABEL_LORA,
+  SETTINGS_OPTIONAL_FONT_LABEL_MONTSERRAT,
+  SETTINGS_OPTIONAL_FONT_LABEL_NUNITO_SANS,
+  SETTINGS_OPTIONAL_FONT_LABEL_SOURCE_SERIF,
+  SETTINGS_OPTIONAL_FONT_LABEL_VICTOR_MONO,
+  SETTINGS_OPTIONAL_HELPER,
+  SETTINGS_SAMPLE_TEXT,
+  SETTINGS_SECTION_FONT,
+  SETTINGS_SECTION_FONT_SIZE,
+  SETTINGS_SECTION_LINE_HEIGHT,
+  SETTINGS_SECTION_OPTIONAL_FONTS,
+  SETTINGS_SECTION_THEME,
+  SETTINGS_THEME_DARK,
+  SETTINGS_THEME_LIGHT,
+  SETTINGS_THEME_SEPIA,
+  SETTINGS_TITLE_DISPLAY,
   STORAGE_KEY_FONTS_INSTALLED,
 } from "../../../../shared/constants";
 
@@ -29,42 +55,42 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     () => [
       {
         id: "lora",
-        label: "Lora (Serif)",
+        label: SETTINGS_OPTIONAL_FONT_LABEL_LORA,
         family: "Lora Variable",
         stack: '"Lora Variable", "Lora", var(--font-serif)',
         pkg: "lora",
       },
       {
         id: "bitter",
-        label: "Bitter (Serif)",
+        label: SETTINGS_OPTIONAL_FONT_LABEL_BITTER,
         family: "Bitter Variable",
         stack: '"Bitter Variable", "Bitter", var(--font-serif)',
         pkg: "bitter",
       },
       {
         id: "source-serif",
-        label: "Source Serif 4",
+        label: SETTINGS_OPTIONAL_FONT_LABEL_SOURCE_SERIF,
         family: "Source Serif 4 Variable",
         stack: '"Source Serif 4 Variable", "Source Serif 4", var(--font-serif)',
         pkg: "source-serif-4",
       },
       {
         id: "montserrat",
-        label: "Montserrat (Sans)",
+        label: SETTINGS_OPTIONAL_FONT_LABEL_MONTSERRAT,
         family: "Montserrat Variable",
         stack: '"Montserrat Variable", "Montserrat", var(--font-sans)',
         pkg: "montserrat",
       },
       {
         id: "nunito-sans",
-        label: "Nunito Sans",
+        label: SETTINGS_OPTIONAL_FONT_LABEL_NUNITO_SANS,
         family: "Nunito Sans Variable",
         stack: '"Nunito Sans Variable", "Nunito Sans", var(--font-sans)',
         pkg: "nunito-sans",
       },
       {
         id: "victor-mono",
-        label: "Victor Mono",
+        label: SETTINGS_OPTIONAL_FONT_LABEL_VICTOR_MONO,
         family: "Victor Mono Variable",
         stack: '"Victor Mono Variable", "Victor Mono", var(--font-mono)',
         pkg: "victor-mono",
@@ -117,7 +143,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* HEADER */}
         <div className={styles.header}>
-          <div className={styles.title}>화면 설정</div>
+          <div className={styles.title}>{SETTINGS_TITLE_DISPLAY}</div>
           <button className={styles.closeButton} onClick={onClose}>
             <X size={ICON_SIZE_XL} />
           </button>
@@ -127,7 +153,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
         <div className={styles.content}>
           {/* FONT FAMILY */}
           <div className={styles.section}>
-            <div className={styles.sectionLabel}>글꼴 (Font)</div>
+            <div className={styles.sectionLabel}>{SETTINGS_SECTION_FONT}</div>
             <div className={styles.fontGrid}>
               {EDITOR_FONT_FAMILIES.map((f) => (
                 <button
@@ -146,30 +172,30 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                             : "var(--font-mono)",
                     }}
                   >
-                    Ag
+                    {SETTINGS_SAMPLE_TEXT}
                   </div>
                   <div className={styles.fontName}>
                     {f === "serif"
-                      ? "명조체"
+                      ? SETTINGS_FONT_SERIF_LABEL
                       : f === "sans"
-                        ? "고딕체 (Inter + Noto Sans KR/JP)"
-                        : "모노"}
+                        ? SETTINGS_FONT_SANS_LABEL
+                        : SETTINGS_FONT_MONO_LABEL}
                   </div>
                 </button>
               ))}
             </div>
             <div className={styles.helperText}>
-              기본 내장: Inter Variable + Noto Sans KR/JP (다국어 기본 폴백)
+              {SETTINGS_FONT_HELPER_PRIMARY}
             </div>
             <div className={styles.helperText}>
-              추가 폰트는 설정에서 선택 시 설치하도록 설계할 예정입니다.
+              {SETTINGS_FONT_HELPER_SECONDARY}
             </div>
           </div>
 
           <div className={styles.divider} />
 
           <div className={styles.section}>
-            <div className={styles.sectionLabel}>옵션 폰트 (선택 설치)</div>
+            <div className={styles.sectionLabel}>{SETTINGS_SECTION_OPTIONAL_FONTS}</div>
             <div className={styles.optionalFontList}>
               {OPTIONAL_FONTS.map((font) => {
                 const isInstalled = installed[font.id];
@@ -183,7 +209,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                         className={styles.optionalFontPreview}
                         style={{ fontFamily: font.stack }}
                       >
-                        Ag
+                        {SETTINGS_SAMPLE_TEXT}
                       </div>
                       <div className={styles.optionalFontMeta}>
                         <div className={styles.optionalFontName}>{font.label}</div>
@@ -198,16 +224,16 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                           disabled={isInstalling}
                         >
                           <Download size={ICON_SIZE_SM} />
-                          {isInstalling ? "설치 중" : "설치"}
+                          {isInstalling ? SETTINGS_ACTION_INSTALLING : SETTINGS_ACTION_INSTALL}
                         </button>
                       ) : isActive ? (
-                        <div className={styles.activeBadge}>사용 중</div>
+                        <div className={styles.activeBadge}>{SETTINGS_BADGE_ACTIVE}</div>
                       ) : (
                         <button
                           className={styles.applyButton}
                           onClick={() => updateSettings({ fontPreset: font.id })}
                         >
-                          적용
+                          {SETTINGS_ACTION_APPLY}
                         </button>
                       )}
                     </div>
@@ -216,7 +242,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
               })}
             </div>
             <div className={styles.helperText}>
-              설치된 폰트만 적용됩니다. 설치하지 않으면 기본 폰트로 자동 폴백됩니다.
+              {SETTINGS_OPTIONAL_HELPER}
             </div>
           </div>
 
@@ -226,7 +252,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
           <div className={styles.section}>
             <div className={styles.row}>
               <div className={styles.labelGroup}>
-                <div className={styles.sectionLabel}>글자 크기</div>
+                <div className={styles.sectionLabel}>{SETTINGS_SECTION_FONT_SIZE}</div>
                 <div className={styles.valueDisplay}>{fontSize}px</div>
               </div>
               <input
@@ -246,7 +272,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
             <div className={styles.row}>
               <div className={styles.labelGroup}>
-                <div className={styles.sectionLabel}>줄 간격</div>
+                <div className={styles.sectionLabel}>{SETTINGS_SECTION_LINE_HEIGHT}</div>
                 <div className={styles.valueDisplay}>{lineHeight}</div>
               </div>
               <input
@@ -267,7 +293,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
           {/* THEME */}
           <div className={styles.section}>
-            <div className={styles.sectionLabel}>테마 (Theme)</div>
+            <div className={styles.sectionLabel}>{SETTINGS_SECTION_THEME}</div>
             <div className={styles.themeGrid}>
               {(["light", "sepia", "dark"] as EditorTheme[]).map((t) => (
                 <button
@@ -281,7 +307,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     </div>
                   )}
                   <div className={styles.themeName}>
-                    {t === "light" ? "Light" : t === "sepia" ? "Sepia" : "Dark"}
+                    {t === "light"
+                      ? SETTINGS_THEME_LIGHT
+                      : t === "sepia"
+                        ? SETTINGS_THEME_SEPIA
+                        : SETTINGS_THEME_DARK}
                   </div>
                 </button>
               ))}

@@ -22,6 +22,30 @@ import {
   ICON_SIZE_MD,
   DIALOG_TITLE_DELETE_PROJECT,
   DIALOG_TITLE_RENAME_PROJECT,
+  PROJECT_TEMPLATE_CATEGORY_ALL,
+  PROJECT_TEMPLATE_CATEGORY_GENERAL,
+  PROJECT_TEMPLATE_CATEGORY_NOVEL,
+  PROJECT_TEMPLATE_CATEGORY_SCRIPT,
+  PROJECT_TEMPLATE_TITLE_BLANK,
+  PROJECT_TEMPLATE_TITLE_WEB_NOVEL,
+  PROJECT_TEMPLATE_TITLE_SCREENPLAY,
+  PROJECT_TEMPLATE_TITLE_ESSAY,
+  PROJECT_TEMPLATE_DIALOG_SELECT_PATH,
+  PROJECT_TEMPLATE_FILTER_MARKDOWN,
+  PROJECT_TEMPLATE_FILTER_TEXT,
+  PROJECT_TEMPLATE_CONTEXT_OPEN,
+  PROJECT_TEMPLATE_CONTEXT_RENAME,
+  PROJECT_TEMPLATE_CONTEXT_DELETE,
+  PROJECT_TEMPLATE_DELETE_CONFIRM,
+  PROJECT_TEMPLATE_DELETE_CONFIRM_LABEL,
+  PROJECT_TEMPLATE_RECENT_TITLE,
+  PROJECT_TEMPLATE_EMPTY_PATH,
+  PROJECT_TEMPLATE_COVER_STANDARD,
+  PROJECT_TEMPLATE_COVER_NOVEL,
+  PROJECT_TEMPLATE_COVER_SCREEN,
+  PROJECT_TEMPLATE_COVER_PLAY,
+  PROJECT_TEMPLATE_COVER_INTRO,
+  PROJECT_TEMPLATE_COVER_ESSAY,
 } from "../../../shared/constants";
 
 interface ProjectTemplateSelectorProps {
@@ -82,34 +106,34 @@ export default function ProjectTemplateSelector({
   }, [menuOpenId]);
 
   const categories = [
-    { id: "all", label: "All Templates", icon: <Book size={ICON_SIZE_MD} /> },
-    { id: "novel", label: "Novel (소설)", icon: <Book size={ICON_SIZE_MD} /> },
-    { id: "script", label: "Script (대본)", icon: <FileText size={ICON_SIZE_MD} /> },
-    { id: "misc", label: "General", icon: <FileType size={ICON_SIZE_MD} /> },
+    { id: "all", label: PROJECT_TEMPLATE_CATEGORY_ALL, icon: <Book size={ICON_SIZE_MD} /> },
+    { id: "novel", label: PROJECT_TEMPLATE_CATEGORY_NOVEL, icon: <Book size={ICON_SIZE_MD} /> },
+    { id: "script", label: PROJECT_TEMPLATE_CATEGORY_SCRIPT, icon: <FileText size={ICON_SIZE_MD} /> },
+    { id: "misc", label: PROJECT_TEMPLATE_CATEGORY_GENERAL, icon: <FileType size={ICON_SIZE_MD} /> },
   ];
 
   const templates = [
     {
       id: "blank",
-      title: "빈 프로젝트 (Blank)",
+      title: PROJECT_TEMPLATE_TITLE_BLANK,
       category: "all",
       type: "blank",
     },
     {
       id: "novel_basic",
-      title: "웹소설 표준 (Web Novel)",
+      title: PROJECT_TEMPLATE_TITLE_WEB_NOVEL,
       category: "novel",
       type: "novel",
     },
     {
       id: "script_basic",
-      title: "드라마 대본 (Screenplay)",
+      title: PROJECT_TEMPLATE_TITLE_SCREENPLAY,
       category: "script",
       type: "script",
     },
     {
       id: "essay",
-      title: "에세이/수필 (Essay)",
+      title: PROJECT_TEMPLATE_TITLE_ESSAY,
       category: "misc",
       type: "doc",
     },
@@ -125,12 +149,12 @@ export default function ProjectTemplateSelector({
   const handleSelectTemplate = async (templateId: string) => {
     try {
       const response = await window.api.fs.selectSaveLocation({
-        title: "프로젝트 저장 위치 선택",
+        title: PROJECT_TEMPLATE_DIALOG_SELECT_PATH,
         defaultPath: DEFAULT_PROJECT_FILENAME,
         filters: [
           { name: LUIE_PACKAGE_FILTER_NAME, extensions: [LUIE_PACKAGE_EXTENSION_NO_DOT] },
-          { name: "Markdown", extensions: [MARKDOWN_EXTENSION_NO_DOT] },
-          { name: "Text", extensions: [TEXT_EXTENSION_NO_DOT] },
+          { name: PROJECT_TEMPLATE_FILTER_MARKDOWN, extensions: [MARKDOWN_EXTENSION_NO_DOT] },
+          { name: PROJECT_TEMPLATE_FILTER_TEXT, extensions: [TEXT_EXTENSION_NO_DOT] },
         ],
       });
       if (response.success && response.data) {
@@ -172,7 +196,7 @@ export default function ProjectTemplateSelector({
                   onOpenProject?.(p);
                 }}
               >
-                열기
+                {PROJECT_TEMPLATE_CONTEXT_OPEN}
               </div>
               <div
                 className={styles.recentContextMenuItem}
@@ -185,7 +209,7 @@ export default function ProjectTemplateSelector({
                   });
                 }}
               >
-                이름 수정
+                {PROJECT_TEMPLATE_CONTEXT_RENAME}
               </div>
               <div className={styles.recentContextMenuDivider} />
               <div
@@ -199,7 +223,7 @@ export default function ProjectTemplateSelector({
                   });
                 }}
               >
-                삭제
+                {PROJECT_TEMPLATE_CONTEXT_DELETE}
               </div>
             </div>
           );
@@ -227,8 +251,11 @@ export default function ProjectTemplateSelector({
       <ConfirmDialog
         isOpen={deleteDialog.isOpen}
         title={DIALOG_TITLE_DELETE_PROJECT}
-        message={`정말로 "${deleteDialog.projectTitle}" 프로젝트를 삭제할까요? 이 작업은 되돌릴 수 없습니다.`}
-        confirmLabel="삭제"
+        message={PROJECT_TEMPLATE_DELETE_CONFIRM.replace(
+          "{title}",
+          deleteDialog.projectTitle,
+        )}
+        confirmLabel={PROJECT_TEMPLATE_DELETE_CONFIRM_LABEL}
         isDestructive
         onConfirm={async () => {
           try {
@@ -264,7 +291,7 @@ export default function ProjectTemplateSelector({
                             }}
                           >
               <div className={styles.recentHeader}>
-                <div className={styles.recentTitle}>Recent Projects</div>
+                <div className={styles.recentTitle}>{PROJECT_TEMPLATE_RECENT_TITLE}</div>
               </div>
 
               <div className={styles.recentGrid}>
@@ -280,7 +307,7 @@ export default function ProjectTemplateSelector({
                         className={styles.recentProjectPath}
                         title={p.projectPath ?? ""}
                       >
-                        {p.projectPath ?? "(No path)"}
+                        {p.projectPath ?? PROJECT_TEMPLATE_EMPTY_PATH}
                       </div>
                     </div>
 
@@ -337,8 +364,8 @@ export default function ProjectTemplateSelector({
                     <div
                       className={`${styles.coverNovel} ${styles.coverContent}`}
                     >
-                      <div className={styles.subtitle}>THE STANDARD</div>
-                      <div className={styles.title}>NOVEL</div>
+                      <div className={styles.subtitle}>{PROJECT_TEMPLATE_COVER_STANDARD}</div>
+                      <div className={styles.title}>{PROJECT_TEMPLATE_COVER_NOVEL}</div>
                       <div
                         style={{
                           fontSize: TEMPLATE_COVER_ICON_FONT_SIZE,
@@ -356,9 +383,9 @@ export default function ProjectTemplateSelector({
                       className={`${styles.coverScript} ${styles.coverContent}`}
                     >
                       <div className={styles.title}>
-                        SCREEN
+                        {PROJECT_TEMPLATE_COVER_SCREEN}
                         <br />
-                        PLAY
+                        {PROJECT_TEMPLATE_COVER_PLAY}
                       </div>
                       <div className={styles.line} />
                       <div className={styles.line} style={{ width: "60%" }} />
@@ -369,7 +396,7 @@ export default function ProjectTemplateSelector({
                           color: "#64748b",
                         }}
                       >
-                        INT. COFFEE SHOP - DAY
+                        {PROJECT_TEMPLATE_COVER_INTRO}
                       </div>
                     </div>
                   )}
@@ -391,7 +418,7 @@ export default function ProjectTemplateSelector({
                             color: "#333",
                           }}
                         >
-                          Essay
+                          {PROJECT_TEMPLATE_COVER_ESSAY}
                         </div>
                         <div
                           style={{

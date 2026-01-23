@@ -30,6 +30,7 @@ import {
   SIDEBAR_MENU_OPEN_BELOW,
   SIDEBAR_MENU_OPEN_RIGHT,
   SIDEBAR_MENU_RENAME,
+  SIDEBAR_PROMPT_RENAME_TITLE,
   SIDEBAR_SECTION_MANUSCRIPT,
   SIDEBAR_SECTION_RESEARCH,
   SIDEBAR_SECTION_TRASH,
@@ -119,7 +120,7 @@ function Sidebar({
     }
     if (action === "rename" && onRenameChapter) {
       const current = chapters.find((c) => c.id === id);
-      const nextTitle = window.prompt("새 제목", current?.title ?? "")?.trim();
+      const nextTitle = window.prompt(SIDEBAR_PROMPT_RENAME_TITLE, current?.title ?? "")?.trim();
       if (nextTitle) {
         onRenameChapter(id, nextTitle);
       }

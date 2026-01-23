@@ -44,6 +44,27 @@ import {
   WORLD_PLOT_ADD_BEAT_LABEL,
   WORLD_PLOT_NEW_BEAT_LABEL,
   PLACEHOLDER_WORLD_SYNOPSIS,
+  WORLD_TAB_TERMS,
+  WORLD_TAB_SYNOPSIS,
+  WORLD_TAB_MINDMAP,
+  WORLD_TAB_DRAWING,
+  WORLD_TAB_PLOT,
+  WORLD_TERM_DEFAULT_NAME,
+  WORLD_TERM_DEFAULT_CATEGORY,
+  WORLD_TERM_NOT_FOUND,
+  WORLD_TERM_LABEL,
+  WORLD_TERM_DEFINITION_LABEL,
+  WORLD_TERM_CATEGORY_LABEL,
+  WORLD_SYNOPSIS_HINT,
+  WORLD_DRAW_PLACE_PROMPT,
+  WORLD_PLOT_ACT1_TITLE,
+  WORLD_PLOT_ACT2_TITLE,
+  WORLD_PLOT_ACT3_TITLE,
+  WORLD_PLOT_CARD_ACT1_1,
+  WORLD_PLOT_CARD_ACT1_2,
+  WORLD_PLOT_CARD_ACT2_1,
+  WORLD_PLOT_CARD_ACT3_1,
+  WORLD_MINDMAP_NEW_TOPIC,
 } from "../../../../shared/constants";
 
 type WorldTab = "synopsis" | "terms" | "mindmap" | "drawing" | "plot";
@@ -57,7 +78,7 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
   const [draft, setDraft] = useState<string | null>(null);
 
   const commit = () => {
-    const nextLabel = (draft ?? data.label).trim() || "New Topic";
+    const nextLabel = (draft ?? data.label).trim() || WORLD_MINDMAP_NEW_TOPIC;
     setNodes((nds: Node<MindMapNodeData>[]) =>
       nds.map((node: Node<MindMapNodeData>) =>
         node.id === id
@@ -112,31 +133,31 @@ export default function WorldSection() {
           className={`${styles.subTab} ${subTab === "terms" ? styles.active : ""}`}
           onClick={() => setSubTab("terms")}
         >
-          Terms (용어)
+          {WORLD_TAB_TERMS}
         </div>
         <div
           className={`${styles.subTab} ${subTab === "synopsis" ? styles.active : ""}`}
           onClick={() => setSubTab("synopsis")}
         >
-          Synopsis
+          {WORLD_TAB_SYNOPSIS}
         </div>
         <div
           className={`${styles.subTab} ${subTab === "mindmap" ? styles.active : ""}`}
           onClick={() => setSubTab("mindmap")}
         >
-          Mindmap
+          {WORLD_TAB_MINDMAP}
         </div>
         <div
           className={`${styles.subTab} ${subTab === "drawing" ? styles.active : ""}`}
           onClick={() => setSubTab("drawing")}
         >
-          Map Drawing
+          {WORLD_TAB_DRAWING}
         </div>
         <div
           className={`${styles.subTab} ${subTab === "plot" ? styles.active : ""}`}
           onClick={() => setSubTab("plot")}
         >
-          Plot Board
+          {WORLD_TAB_PLOT}
         </div>
       </div>
 
@@ -167,9 +188,9 @@ function TermManager() {
     if (currentProject) {
       await createTerm({
         projectId: currentProject.id,
-        term: "New Term",
+        term: WORLD_TERM_DEFAULT_NAME,
         definition: "",
-        category: "general",
+        category: WORLD_TERM_DEFAULT_CATEGORY,
       });
 
       // Reload terms to reflect the new addition
@@ -182,7 +203,7 @@ function TermManager() {
 
   if (selectedTermId) {
     const term = terms.find((t) => t.id === selectedTermId);
-    if (!term) return <div>Term not found</div>;
+    if (!term) return <div>{WORLD_TERM_NOT_FOUND}</div>;
 
     return (
       <div>
@@ -197,7 +218,7 @@ function TermManager() {
         </div>
 
         <div className={styles.tableGrid}>
-          <div className={styles.cellLabel}>용어</div>
+          <div className={styles.cellLabel}>{WORLD_TERM_LABEL}</div>
           <div className={styles.cellValue}>
             <BufferedInput
               className={styles.cellValueInput}
@@ -205,7 +226,7 @@ function TermManager() {
               onSave={(val) => updateTerm({ id: term.id, term: val })}
             />
           </div>
-          <div className={styles.cellLabel}>정의</div>
+          <div className={styles.cellLabel}>{WORLD_TERM_DEFINITION_LABEL}</div>
           <div className={styles.cellValue}>
             <BufferedTextArea
               className={styles.cellValueInput}
@@ -214,7 +235,7 @@ function TermManager() {
               style={{ minHeight: "100px" }}
             />
           </div>
-          <div className={styles.cellLabel}>카테고리</div>
+          <div className={styles.cellLabel}>{WORLD_TERM_CATEGORY_LABEL}</div>
           <div className={styles.cellValue}>
             <BufferedInput
               className={styles.cellValueInput}
@@ -353,8 +374,7 @@ function SynopsisEditor() {
           padding: "0 4px",
         }}
       >
-        * 시놉시스는 언제든 변할 수 있습니다. 'Locked' 상태로 설정하면 수정을
-        방지합니다.
+        {WORLD_SYNOPSIS_HINT}
       </div>
     </div>
   );
@@ -612,7 +632,7 @@ function DrawingCanvas() {
   const handlePointerDown = (e: React.PointerEvent) => {
     if (tool === "text") {
       const { x, y } = getCoords(e);
-      const text = window.prompt("지명 입력:");
+      const text = window.prompt(WORLD_DRAW_PLACE_PROMPT);
       if (text) {
         setPaths((prev) => [...prev, { type: "text", x, y, text, color }]);
       }
@@ -790,21 +810,21 @@ function PlotBoard() {
   const [columns, setColumns] = useState([
     {
       id: "act1",
-      title: "1막: 발단 (Setup)",
+      title: WORLD_PLOT_ACT1_TITLE,
       cards: [
-        { id: "c1", content: "주인공의 일상" },
-        { id: "c2", content: "사건의 시작" },
+        { id: "c1", content: WORLD_PLOT_CARD_ACT1_1 },
+        { id: "c2", content: WORLD_PLOT_CARD_ACT1_2 },
       ],
     },
     {
       id: "act2",
-      title: "2막: 전개 (Confrontation)",
-      cards: [{ id: "c3", content: "첫 번째 시련" }],
+      title: WORLD_PLOT_ACT2_TITLE,
+      cards: [{ id: "c3", content: WORLD_PLOT_CARD_ACT2_1 }],
     },
     {
       id: "act3",
-      title: "3막: 결말 (Resolution)",
-      cards: [{ id: "c4", content: "최후의 대결" }],
+      title: WORLD_PLOT_ACT3_TITLE,
+      cards: [{ id: "c4", content: WORLD_PLOT_CARD_ACT3_1 }],
     },
   ]);
 
