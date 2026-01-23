@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
+import { DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS } from "../../../../shared/constants";
 import { Virtuoso } from "react-virtuoso";
 import { Clock, Plus, Search, Tag } from "lucide-react";
 import styles from "../../styles/components/ResearchPanel.module.css";
@@ -94,7 +95,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
       } catch (e) {
         window.api.logger.warn("Failed to save memos", e);
       }
-    }, 500);
+    }, DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS);
 
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);

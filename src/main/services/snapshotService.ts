@@ -4,7 +4,7 @@
 
 import { db } from "../database/index.js";
 import { createLogger } from "../../shared/logger/index.js";
-import { ErrorCode } from "../../shared/constants/index.js";
+import { ErrorCode, DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT } from "../../shared/constants/index.js";
 import type { SnapshotCreateInput } from "../../shared/types/index.js";
 
 const logger = createLogger("SnapshotService");
@@ -129,7 +129,10 @@ export class SnapshotService {
     }
   }
 
-  async deleteOldSnapshots(projectId: string, keepCount: number = 20) {
+  async deleteOldSnapshots(
+    projectId: string,
+    keepCount: number = DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT,
+  ) {
     try {
       const allSnapshots = await db.getClient().snapshot.findMany({
         where: { projectId },

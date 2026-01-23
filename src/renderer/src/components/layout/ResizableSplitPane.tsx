@@ -1,4 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import {
+  RESIZABLE_PANE_DEFAULT_RIGHT_WIDTH,
+  RESIZABLE_PANE_MAX_RIGHT_WIDTH,
+  RESIZABLE_PANE_MIN_RIGHT_WIDTH,
+} from "../../../shared/constants";
 
 interface ResizableSplitPaneProps {
   left: React.ReactNode;
@@ -13,9 +18,9 @@ interface ResizableSplitPaneProps {
 export default function ResizableSplitPane({
   left,
   right,
-  initialRightWidth = 400,
-  minRightWidth = 300,
-  maxRightWidth = 800,
+  initialRightWidth = RESIZABLE_PANE_DEFAULT_RIGHT_WIDTH,
+  minRightWidth = RESIZABLE_PANE_MIN_RIGHT_WIDTH,
+  maxRightWidth = RESIZABLE_PANE_MAX_RIGHT_WIDTH,
   isRightVisible,
   // onCloseRight // Not used yet
 }: ResizableSplitPaneProps) {

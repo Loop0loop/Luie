@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS } from "../../../shared/constants";
 
 interface BufferedInputProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
@@ -12,7 +13,7 @@ interface BufferedInputProps extends Omit<
 export function BufferedInput({
   value: externalValue,
   onSave,
-  debounceTime = 500,
+  debounceTime = DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS,
   ...props
 }: BufferedInputProps) {
   const [localValue, setLocalValue] = useState(externalValue);

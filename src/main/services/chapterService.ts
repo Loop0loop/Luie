@@ -4,7 +4,7 @@
 
 import { db } from "../database/index.js";
 import { createLogger } from "../../shared/logger/index.js";
-import { ErrorCode } from "../../shared/constants/index.js";
+import { ErrorCode, SEARCH_CONTEXT_RADIUS } from "../../shared/constants/index.js";
 import type {
   ChapterCreateInput,
   ChapterUpdateInput,
@@ -168,7 +168,7 @@ export class ChapterService {
             characterId: character.id,
             chapterId,
             position: keyword.position,
-            context: this.extractContext(content, keyword.position, 50),
+            context: this.extractContext(content, keyword.position, SEARCH_CONTEXT_RADIUS),
           });
 
           await characterService.updateFirstAppearance(character.id, chapterId);
@@ -184,7 +184,7 @@ export class ChapterService {
             termId: term.id,
             chapterId,
             position: keyword.position,
-            context: this.extractContext(content, keyword.position, 50),
+            context: this.extractContext(content, keyword.position, SEARCH_CONTEXT_RADIUS),
           });
 
           await termService.updateFirstAppearance(term.id, chapterId);

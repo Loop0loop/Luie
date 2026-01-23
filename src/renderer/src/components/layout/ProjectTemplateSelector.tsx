@@ -5,6 +5,7 @@ import { Plus, Book, FileText, FileType, MoreVertical } from "lucide-react";
 import type { Project } from "../../../../shared/types";
 import { useProjectStore } from "../../stores/projectStore";
 import { ConfirmDialog, PromptDialog } from "../common/Modal";
+import { DEFAULT_EDITOR_FONT_FAMILY } from "../../../shared/constants";
 
 interface ProjectTemplateSelectorProps {
   onSelectProject: (templateId: string, projectPath: string) => void;

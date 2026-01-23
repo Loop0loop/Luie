@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { AUTO_SAVE_STATUS_RESET_MS } from "../../../shared/constants";
 
 interface AutoSaveStore {
   saveStatus: "idle" | "saving" | "saved" | "error";
@@ -47,7 +48,7 @@ export const useAutoSaveStore = create<AutoSaveStore>((set, get) => {
           if (get().saveStatus === "saved") {
             set({ saveStatus: "idle" });
           }
-        }, 2000);
+        }, AUTO_SAVE_STATUS_RESET_MS);
       } catch (error) {
         lastRequestedContentByChapter.delete(chapterId);
         window.api.logger.error("Auto save failed", error);

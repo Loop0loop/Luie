@@ -1,3 +1,4 @@
+import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { registerIpcHandler } from "../core/ipcHandler.js";
 
 type LoggerLike = {
@@ -7,7 +8,7 @@ type LoggerLike = {
 export function registerLoggerIPCHandlers(logger: LoggerLike): void {
   registerIpcHandler({
     logger,
-    channel: "logger:log",
+    channel: IPC_CHANNELS.LOGGER_LOG,
     logTag: "LOGGER_LOG",
     failMessage: "Failed to log",
     handler: async ({ level, message, data }: { level: string; message: string; data?: unknown }) => {
@@ -35,7 +36,7 @@ export function registerLoggerIPCHandlers(logger: LoggerLike): void {
 
   registerIpcHandler({
     logger,
-    channel: "logger:log-batch",
+    channel: IPC_CHANNELS.LOGGER_LOG_BATCH,
     logTag: "LOGGER_LOG_BATCH",
     failMessage: "Failed to log batch",
     handler: async (entries: { level: string; message: string; data?: unknown }[]) => {

@@ -65,6 +65,22 @@ export const IPC_CHANNELS = {
   SETTINGS_SET_WINDOW_BOUNDS: "settings:set-window-bounds",
   SETTINGS_GET_WINDOW_BOUNDS: "settings:get-window-bounds",
   SETTINGS_RESET: "settings:reset",
+
+  // Window
+  WINDOW_MINIMIZE: "window:minimize",
+  WINDOW_MAXIMIZE: "window:maximize",
+  WINDOW_UNMAXIMIZE: "window:unmaximize",
+  WINDOW_CLOSE: "window:close",
+  WINDOW_TOGGLE_DEV_TOOLS: "window:toggle-dev-tools",
+  WINDOW_TOGGLE_FULLSCREEN: "window:toggle-fullscreen",
+
+  // App
+  APP_GET_VERSION: "app:get-version",
+  APP_CHECK_UPDATE: "app:check-update",
+
+  // Logger
+  LOGGER_LOG: "logger:log",
+  LOGGER_LOG_BATCH: "logger:log-batch",
 } as const;
 
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

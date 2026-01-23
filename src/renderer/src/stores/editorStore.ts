@@ -1,24 +1,18 @@
 import { create } from "zustand";
-
-export type FontFamily = "serif" | "sans" | "mono";
-export type FontPreset =
-  | "default"
-  | "lora"
-  | "bitter"
-  | "source-serif"
-  | "montserrat"
-  | "nunito-sans"
-  | "victor-mono";
-export type EditorTheme = "light" | "dark" | "sepia";
-
-interface EditorSettings {
-  fontFamily: FontFamily;
-  fontPreset?: FontPreset;
-  fontSize: number;
-  lineHeight: number;
-  maxWidth: number;
-  theme: EditorTheme;
-}
+import type {
+  EditorSettings,
+  EditorTheme,
+  FontFamily,
+} from "../../../shared/types";
+export type { EditorSettings, EditorTheme, FontFamily, FontPreset } from "../../../shared/types";
+import {
+  DEFAULT_EDITOR_FONT_FAMILY,
+  DEFAULT_EDITOR_FONT_PRESET,
+  DEFAULT_EDITOR_FONT_SIZE,
+  DEFAULT_EDITOR_LINE_HEIGHT,
+  DEFAULT_EDITOR_MAX_WIDTH,
+  DEFAULT_EDITOR_THEME,
+} from "../../../shared/constants";
 
 interface EditorStore extends EditorSettings {
   loadSettings: () => Promise<void>;
@@ -30,12 +24,12 @@ interface EditorStore extends EditorSettings {
 }
 
 const DEFAULT_SETTINGS: EditorSettings = {
-  fontFamily: "serif",
-  fontPreset: "default",
-  fontSize: 18,
-  lineHeight: 1.8,
-  maxWidth: 800,
-  theme: "light",
+  fontFamily: DEFAULT_EDITOR_FONT_FAMILY,
+  fontPreset: DEFAULT_EDITOR_FONT_PRESET,
+  fontSize: DEFAULT_EDITOR_FONT_SIZE,
+  lineHeight: DEFAULT_EDITOR_LINE_HEIGHT,
+  maxWidth: DEFAULT_EDITOR_MAX_WIDTH,
+  theme: DEFAULT_EDITOR_THEME,
 };
 
 export const useEditorStore = create<EditorStore>((set, get) => ({

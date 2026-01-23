@@ -4,7 +4,8 @@
 
 import { contextBridge, ipcRenderer } from "electron";
 import type { IPCResponse } from "../shared/ipc/index.js";
-import { AUTO_SAVE_FLUSH_MS } from "../shared/constants/index.js";
+import { IPC_CHANNELS } from "../shared/ipc/channels.js";
+import { AUTO_SAVE_FLUSH_MS, LOG_BATCH_SIZE, LOG_FLUSH_MS } from "../shared/constants/index.js";
 
 function sanitizeForIpc(value: unknown, seen = new WeakSet<object>()): unknown {
   if (value === null) return null;
@@ -73,8 +74,6 @@ type LogPayload = {
 
 const logQueue: LogPayload[] = [];
 let logFlushTimer: number | null = null;
-const LOG_BATCH_SIZE = 20;
-const LOG_FLUSH_MS = 500;
 
 function scheduleLogFlush() {
   if (logFlushTimer !== null) return;
@@ -87,12 +86,12 @@ function scheduleLogFlush() {
 async function flushLogs() {
   if (logQueue.length === 0) return;
   const batch = logQueue.splice(0, LOG_BATCH_SIZE);
-  const response = await safeInvoke("logger:log-batch", batch);
+  const response = await safeInvoke(IPC_CHANNELS.LOGGER_LOG_BATCH, batch);
   if (!response.success) {
     // fallback to individual logs if batch fails
     await Promise.all(
       batch.map((entry) =>
-        safeInvoke("logger:log", {
+        safeInvoke(IPC_CHANNELS.LOGGER_LOG, {
           level: entry.level,
           message: entry.message,
           data: entry.data,
@@ -134,7 +133,12 @@ async function flushAutoSaves() {
 
   await Promise.all(
     entries.map(async ([_key, pending]) => {
-      const response = await safeInvoke("auto-save", pending.payload.chapterId, pending.payload.content, pending.payload.projectId);
+      const response = await safeInvoke(
+        IPC_CHANNELS.AUTO_SAVE,
+        pending.payload.chapterId,
+        pending.payload.content,
+        pending.payload.projectId,
+      );
       pending.resolvers.forEach((resolve) => resolve(response));
     }),
   );
@@ -145,70 +149,70 @@ contextBridge.exposeInMainWorld("api", {
   // Project API
   project: {
     create: (input: unknown): Promise<IPCResponse> =>
-      safeInvoke("project:create", input),
+      safeInvoke(IPC_CHANNELS.PROJECT_CREATE, input),
     get: (id: string): Promise<IPCResponse> =>
-      safeInvoke("project:get", id),
-    getAll: (): Promise<IPCResponse> => safeInvoke("project:get-all"),
+      safeInvoke(IPC_CHANNELS.PROJECT_GET, id),
+    getAll: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.PROJECT_GET_ALL),
     update: (input: unknown): Promise<IPCResponse> =>
-      safeInvoke("project:update", input),
+      safeInvoke(IPC_CHANNELS.PROJECT_UPDATE, input),
     delete: (id: string): Promise<IPCResponse> =>
-      safeInvoke("project:delete", id),
+      safeInvoke(IPC_CHANNELS.PROJECT_DELETE, id),
   },
 
   // Chapter API
   chapter: {
     create: (input: unknown): Promise<IPCResponse> =>
-      safeInvoke("chapter:create", input),
+      safeInvoke(IPC_CHANNELS.CHAPTER_CREATE, input),
     get: (id: string): Promise<IPCResponse> =>
-      safeInvoke("chapter:get", id),
+      safeInvoke(IPC_CHANNELS.CHAPTER_GET, id),
     getAll: (projectId: string): Promise<IPCResponse> =>
-      safeInvoke("chapter:get-all", projectId),
+      safeInvoke(IPC_CHANNELS.CHAPTER_GET_ALL, projectId),
     update: (input: unknown): Promise<IPCResponse> =>
-      safeInvoke("chapter:update", input),
+      safeInvoke(IPC_CHANNELS.CHAPTER_UPDATE, input),
     delete: (id: string): Promise<IPCResponse> =>
-      safeInvoke("chapter:delete", id),
+      safeInvoke(IPC_CHANNELS.CHAPTER_DELETE, id),
     reorder: (projectId: string, chapterIds: string[]): Promise<IPCResponse> =>
-      safeInvoke("chapter:reorder", projectId, chapterIds),
+      safeInvoke(IPC_CHANNELS.CHAPTER_REORDER, projectId, chapterIds),
   },
 
   // Character API
   character: {
     create: (input: unknown): Promise<IPCResponse> =>
-      safeInvoke("character:create", input),
+      safeInvoke(IPC_CHANNELS.CHARACTER_CREATE, input),
     get: (id: string): Promise<IPCResponse> =>
-      safeInvoke("character:get", id),
+      safeInvoke(IPC_CHANNELS.CHARACTER_GET, id),
     getAll: (projectId: string): Promise<IPCResponse> =>
-      safeInvoke("character:get-all", projectId),
+      safeInvoke(IPC_CHANNELS.CHARACTER_GET_ALL, projectId),
     update: (input: unknown): Promise<IPCResponse> =>
-      safeInvoke("character:update", input),
+      safeInvoke(IPC_CHANNELS.CHARACTER_UPDATE, input),
     delete: (id: string): Promise<IPCResponse> =>
-      safeInvoke("character:delete", id),
+      safeInvoke(IPC_CHANNELS.CHARACTER_DELETE, id),
   },
 
   // Term API
   term: {
     create: (input: unknown): Promise<IPCResponse> =>
-      safeInvoke("term:create", input),
+      safeInvoke(IPC_CHANNELS.TERM_CREATE, input),
     get: (id: string): Promise<IPCResponse> =>
-      safeInvoke("term:get", id),
+      safeInvoke(IPC_CHANNELS.TERM_GET, id),
     getAll: (projectId: string): Promise<IPCResponse> =>
-      safeInvoke("term:get-all", projectId),
+      safeInvoke(IPC_CHANNELS.TERM_GET_ALL, projectId),
     update: (input: unknown): Promise<IPCResponse> =>
-      safeInvoke("term:update", input),
+      safeInvoke(IPC_CHANNELS.TERM_UPDATE, input),
     delete: (id: string): Promise<IPCResponse> =>
-      safeInvoke("term:delete", id),
+      safeInvoke(IPC_CHANNELS.TERM_DELETE, id),
   },
 
   // Snapshot API
   snapshot: {
     create: (input: unknown): Promise<IPCResponse> =>
-      safeInvoke("snapshot:create", input),
+      safeInvoke(IPC_CHANNELS.SNAPSHOT_CREATE, input),
     getAll: (projectId: string): Promise<IPCResponse> =>
-      safeInvoke("snapshot:get-all", projectId),
+      safeInvoke(IPC_CHANNELS.SNAPSHOT_GET_ALL, projectId),
     restore: (id: string): Promise<IPCResponse> =>
-      safeInvoke("snapshot:restore", id),
+      safeInvoke(IPC_CHANNELS.SNAPSHOT_RESTORE, id),
     delete: (id: string): Promise<IPCResponse> =>
-      safeInvoke("snapshot:delete", id),
+      safeInvoke(IPC_CHANNELS.SNAPSHOT_DELETE, id),
   },
 
   // File System API
@@ -218,23 +222,23 @@ contextBridge.exposeInMainWorld("api", {
       projectPath: string,
       content: string,
     ): Promise<IPCResponse> =>
-      safeInvoke("fs:save-project", projectName, projectPath, content),
+      safeInvoke(IPC_CHANNELS.FS_SAVE_PROJECT, projectName, projectPath, content),
     selectDirectory: (): Promise<IPCResponse<string>> =>
-      safeInvoke("fs:select-directory"),
+      safeInvoke(IPC_CHANNELS.FS_SELECT_DIRECTORY),
     selectSaveLocation: (options?: {
-      filters?: { name: string; extensions: string[] }[];
+      safeInvoke(IPC_CHANNELS.FS_SELECT_SAVE_LOCATION, options),
       defaultPath?: string;
-      title?: string;
+      safeInvoke(IPC_CHANNELS.FS_READ_FILE, filePath),
     }): Promise<IPCResponse<string>> =>
-      safeInvoke("fs:select-save-location", options),
+      safeInvoke(IPC_CHANNELS.FS_WRITE_FILE, filePath, content),
     readFile: (filePath: string): Promise<IPCResponse<string>> =>
-      safeInvoke("fs:read-file", filePath),
+      safeInvoke(IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE, packagePath, meta),
     writeFile: (filePath: string, content: string): Promise<IPCResponse> =>
       safeInvoke("fs:write-file", filePath, content),
 
     // .luie package directory helpers
     createLuiePackage: (packagePath: string, meta: unknown): Promise<IPCResponse<{ path: string }>> =>
-      safeInvoke("fs:create-luie-package", packagePath, meta),
+      safeInvoke(IPC_CHANNELS.FS_WRITE_PROJECT_FILE, projectRoot, relativePath, content),
     writeProjectFile: (
       projectRoot: string,
       relativePath: string,
@@ -245,7 +249,7 @@ contextBridge.exposeInMainWorld("api", {
 
   // Search API
   search: (query: unknown): Promise<IPCResponse> =>
-    safeInvoke("search", query),
+    safeInvoke(IPC_CHANNELS.SEARCH, query),
 
   // Auto Save API
   autoSave: (
@@ -270,9 +274,9 @@ contextBridge.exposeInMainWorld("api", {
 
   // Window API
   window: {
-    maximize: (): Promise<IPCResponse> => safeInvoke("window:maximize"),
+    maximize: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.WINDOW_MAXIMIZE),
     toggleFullscreen: (): Promise<IPCResponse> =>
-      safeInvoke("window:toggle-fullscreen"),
+      safeInvoke(IPC_CHANNELS.WINDOW_TOGGLE_FULLSCREEN),
   },
 
   // Logger API
@@ -315,19 +319,20 @@ contextBridge.exposeInMainWorld("api", {
 
   // Settings API
   settings: {
-    getAll: (): Promise<IPCResponse> => safeInvoke("settings:get-all"),
+    getAll: (): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.SETTINGS_GET_ALL),
     getEditor: (): Promise<IPCResponse> =>
-      safeInvoke("settings:get-editor"),
+      safeInvoke(IPC_CHANNELS.SETTINGS_GET_EDITOR),
     setEditor: (settings: unknown): Promise<IPCResponse> =>
-      safeInvoke("settings:set-editor", settings),
+      safeInvoke(IPC_CHANNELS.SETTINGS_SET_EDITOR, settings),
     getAutoSave: (): Promise<IPCResponse> =>
-      safeInvoke("settings:get-auto-save"),
+      safeInvoke(IPC_CHANNELS.SETTINGS_GET_AUTO_SAVE),
     setAutoSave: (settings: unknown): Promise<IPCResponse> =>
-      safeInvoke("settings:set-auto-save", settings),
+      safeInvoke(IPC_CHANNELS.SETTINGS_SET_AUTO_SAVE, settings),
     getWindowBounds: (): Promise<IPCResponse> =>
-      safeInvoke("settings:get-window-bounds"),
+      safeInvoke(IPC_CHANNELS.SETTINGS_GET_WINDOW_BOUNDS),
     setWindowBounds: (bounds: unknown): Promise<IPCResponse> =>
-      safeInvoke("settings:set-window-bounds", bounds),
-    reset: (): Promise<IPCResponse> => safeInvoke("settings:reset"),
+      safeInvoke(IPC_CHANNELS.SETTINGS_SET_WINDOW_BOUNDS, bounds),
+    reset: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.SETTINGS_RESET),
   },
 });

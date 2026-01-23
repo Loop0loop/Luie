@@ -5,6 +5,14 @@
 import { BrowserWindow } from 'electron'
 import { join } from 'path'
 import { createLogger } from '../../shared/logger/index.js'
+import {
+  WINDOW_DEFAULT_HEIGHT,
+  WINDOW_DEFAULT_WIDTH,
+  WINDOW_MIN_HEIGHT,
+  WINDOW_MIN_WIDTH,
+  WINDOW_TRAFFIC_LIGHT_X,
+  WINDOW_TRAFFIC_LIGHT_Y,
+} from '../../shared/constants/index.js'
 
 const logger = createLogger('WindowManager')
 
@@ -17,12 +25,12 @@ class WindowManager {
     }
 
     this.mainWindow = new BrowserWindow({
-      width: 1400,
-      height: 900,
-      minWidth: 1000,
-      minHeight: 600,
+      width: WINDOW_DEFAULT_WIDTH,
+      height: WINDOW_DEFAULT_HEIGHT,
+      minWidth: WINDOW_MIN_WIDTH,
+      minHeight: WINDOW_MIN_HEIGHT,
       titleBarStyle: 'hiddenInset',
-      trafficLightPosition: { x: 16, y: 16 },
+      trafficLightPosition: { x: WINDOW_TRAFFIC_LIGHT_X, y: WINDOW_TRAFFIC_LIGHT_Y },
       webPreferences: {
         preload: join(__dirname, '../preload/index.mjs'),
         contextIsolation: true,

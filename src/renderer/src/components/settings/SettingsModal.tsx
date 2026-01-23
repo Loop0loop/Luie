@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import styles from "../../styles/components/SettingsModal.module.css";
 import { X, Check, Download } from "lucide-react";
-import type { EditorTheme, FontFamily, FontPreset } from "../../stores/editorStore";
+import type { EditorTheme, FontPreset } from "../../stores/editorStore";
 import { useEditorStore } from "../../stores/editorStore";
+import { EDITOR_FONT_FAMILIES } from "../../../../shared/constants";
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -122,7 +123,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
           <div className={styles.section}>
             <div className={styles.sectionLabel}>글꼴 (Font)</div>
             <div className={styles.fontGrid}>
-              {(["serif", "sans", "mono"] as FontFamily[]).map((f) => (
+              {EDITOR_FONT_FAMILIES.map((f) => (
                 <button
                   key={f}
                   className={`${styles.fontCard} ${fontFamily === f ? styles.active : ""}`}

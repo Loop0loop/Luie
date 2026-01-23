@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { createLogger } from "../../shared/logger/index.js";
+import { AUTO_EXTRACT_DEBOUNCE_MS } from "../../shared/constants/index.js";
 import { db } from "../database/index.js";
 import { keywordExtractor } from "../core/keywordExtractor.js";
 import { characterService } from "./characterService.js";
@@ -106,7 +107,7 @@ class AutoExtractService {
       this.analyzeChapter(chapterId, projectId, content).catch((error) => {
         logger.error("Auto extraction failed", { chapterId, projectId, error });
       });
-    }, 1500);
+    }, AUTO_EXTRACT_DEBOUNCE_MS);
 
     this.timers.set(key, timer);
   }

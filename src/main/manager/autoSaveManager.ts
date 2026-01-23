@@ -12,6 +12,8 @@ import { createLogger } from "../../shared/logger/index.js";
 import {
   DEFAULT_AUTO_SAVE_DEBOUNCE_MS,
   DEFAULT_AUTO_SAVE_INTERVAL_MS,
+  AUTO_SAVE_CLEANUP_INTERVAL_MS,
+  AUTO_SAVE_STALE_THRESHOLD_MS,
   DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT,
   SNAPSHOT_FILE_KEEP_COUNT,
   SNAPSHOT_INTERVAL_MS,
@@ -276,12 +278,12 @@ export class AutoSaveManager extends EventEmitter {
   private startCleanupInterval() {
     setInterval(() => {
       this.cleanupOldEntries();
-    }, 60000);
+    }, AUTO_SAVE_CLEANUP_INTERVAL_MS);
   }
 
   private cleanupOldEntries() {
     const now = Date.now();
-    const staleThreshold = 5 * 60 * 1000;
+    const staleThreshold = AUTO_SAVE_STALE_THRESHOLD_MS;
 
     for (const [chapterId, timestamp] of Array.from(
       this.saveTimers.entries(),

@@ -1,4 +1,5 @@
 import { windowManager } from "../../manager/index.js";
+import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { registerIpcHandler } from "../core/ipcHandler.js";
 
 type LoggerLike = {
@@ -8,7 +9,7 @@ type LoggerLike = {
 export function registerWindowIPCHandlers(logger: LoggerLike): void {
   registerIpcHandler({
     logger,
-    channel: "window:maximize",
+    channel: IPC_CHANNELS.WINDOW_MAXIMIZE,
     logTag: "WINDOW_MAXIMIZE",
     failMessage: "Failed to maximize window",
     handler: () => {
@@ -24,7 +25,7 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
 
   registerIpcHandler({
     logger,
-    channel: "window:toggle-fullscreen",
+    channel: IPC_CHANNELS.WINDOW_TOGGLE_FULLSCREEN,
     logTag: "WINDOW_TOGGLE_FULLSCREEN",
     failMessage: "Failed to toggle fullscreen",
     handler: () => {

@@ -6,10 +6,17 @@
 import "dotenv/config";
 
 import { app, BrowserWindow } from "electron";
-import { createLogger } from "../shared/logger/index.js";
+import path from "node:path";
+import { createLogger, configureLogger, LogLevel } from "../shared/logger/index.js";
 import { windowManager } from "./manager/index.js";
 import { registerIPCHandlers } from "./handler/index.js";
 import { db } from "./database/index.js";
+
+configureLogger({
+  logToFile: true,
+  logFilePath: path.join(app.getPath("userData"), "logs", "luie.log"),
+  minLevel: LogLevel.INFO,
+});
 
 const logger = createLogger("Main");
 

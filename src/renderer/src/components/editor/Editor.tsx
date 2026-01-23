@@ -20,6 +20,10 @@ import styles from "../../styles/components/Editor.module.css";
 import EditorToolbar from "./EditorToolbar";
 import { useEditorStore } from "../../stores/editorStore";
 import { slashSuggestion } from "./suggestion";
+import {
+  EDITOR_AUTOSAVE_DEBOUNCE_MS,
+  EDITOR_STYLE_APPLY_DEBOUNCE_MS,
+} from "../../../shared/constants";
 
 // Simple Callout Extension (inline to avoid dependencies)
 const Callout = Node.create({
@@ -78,7 +82,7 @@ function Editor({
   const statsTimerRef = useRef<number | null>(null);
   const autosaveTimerRef = useRef<number | null>(null);
 
-  const SAVE_DEBOUNCE_MS = 4000;
+  const SAVE_DEBOUNCE_MS = EDITOR_AUTOSAVE_DEBOUNCE_MS;
 
   const { fontFamily, fontPreset, fontSize, lineHeight } = useEditorStore();
   const [isMobileView, setIsMobileView] = useState(false);
@@ -129,7 +133,7 @@ function Editor({
           setWordCount(nextWordCount);
           setCharCount(nextCharCount);
         });
-      }, 300);
+      }, EDITOR_STYLE_APPLY_DEBOUNCE_MS);
     },
     [countWords, startTransition],
   );
