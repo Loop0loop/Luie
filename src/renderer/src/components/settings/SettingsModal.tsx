@@ -142,6 +142,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     { id: "shortcuts", label: "단축키 (Shortcuts)" },
     { id: "recovery", label: "파일 복원 (File Recovery)" },
     { id: "sync", label: "동기화 (Sync)" },
+    { id: "language", label: "언어 (Language)" }
   ];
 
   // Local state for performance (avoid re-rendering entire app on every slider move)

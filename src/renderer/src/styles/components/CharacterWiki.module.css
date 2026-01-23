@@ -1,0 +1,402 @@
+/* Namuwiki Style Layout */
+
+/* VARIABLES */
+.container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-app);
+}
+
+/* LEFT SIDEBAR (List) */
+.sidebar {
+  width: 260px;
+  background-color: var(--bg-sidebar);
+  border-right: 1px solid var(--border-default);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.sidebarHeader {
+  padding: 12px 16px;
+  background-color: var(--namu-blue); /* Theme-aware variable */
+  color: var(--namu-header-text);
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.addButton {
+  color: var(--namu-header-text);
+  cursor: pointer;
+  opacity: 0.8;
+}
+.addButton:hover { opacity: 1; }
+
+.groupHeader {
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background-color: var(--bg-element);
+  border-bottom: 1px solid var(--border-default);
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+}
+
+.characterItem {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-default-subtle);
+  cursor: pointer;
+  font-size: 14px;
+}
+.characterItem:hover { background-color: var(--bg-active); }
+.characterItem.active {
+  background-color: var(--namu-hover-bg);
+  border-left: 3px solid var(--namu-blue);
+  font-weight: 600;
+  color: var(--namu-blue);
+}
+
+/* RIGHT MAIN CONTENT (The Wiki Page) */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background-color: var(--bg-panel); /* Changed from white to panel/app bg */
+  color: var(--text-primary);        /* Changed from #333 */
+}
+
+/* NAMUWIKI TITLE HEADER (Authentic) */
+.titleSection {
+  border-bottom: 2px solid var(--namu-border);
+  padding-bottom: 12px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wikiTitle {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.wikiSubtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  background-color: var(--bg-element);
+  border: 1px solid var(--border-default);
+  padding: 4px 12px;
+  border-radius: 4px;
+  align-self: flex-start;
+  display: flex; align-items: center; gap: 8px;
+}
+
+/* Page Layout: Content Left, Infobox Right */
+.pageBody {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.contentArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* AUTHENTIC NAMUWIKI INFOBOX */
+.infobox {
+  width: 300px;
+  border: 1px solid var(--namu-blue);
+  background: white;
+  flex-shrink: 0;
+  font-size: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.infoboxHeader {
+  background-color: var(--namu-blue);
+  color: white;
+  text-align: center;
+  padding: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  border-bottom: 1px solid var(--namu-blue);
+}
+
+.infoboxImage {
+  width: 100%;
+  background-color: #ffffff;
+  display: flex; align-items: center; justify-content: center;
+  border-bottom: 1px solid var(--namu-border);
+  padding: 10px;
+}
+.infoboxImage img { max-width: 100%; border: 1px solid #eee; }
+
+.infoboxRow {
+  display: flex;
+  border-bottom: 1px solid var(--namu-border);
+}
+.infoboxRow:last-child { border-bottom: none; }
+
+.infoboxLabel {
+  width: 90px;
+  background-color: var(--namu-table-bg);
+  padding: 6px 10px;
+  font-weight: 700;
+  color: var(--namu-table-label);
+  border-right: 1px solid var(--namu-border);
+  display: flex; align-items: center; justify-content: center;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.infoboxValue {
+  flex: 1;
+  padding: 6px 10px;
+  display: flex; align-items: center;
+  background-color: white;
+  color: #333;
+  line-height: 1.4;
+}
+
+/* TOC (Table of Contents) - Inline Style */
+.toc {
+  background-color: var(--namu-table-bg);
+  border: 1px solid var(--namu-border);
+  padding: 12px 18px;
+  display: table;
+  margin-bottom: 24px;
+  min-width: unset;
+}
+.tocHeader {
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+.tocItem {
+  color: var(--namu-link);
+  text-decoration: none;
+  cursor: pointer;
+  display: block;
+  margin-bottom: 4px;
+}
+.tocItem:hover { text-decoration: underline; }
+
+/* Tag Links */
+.tagLink {
+  color: var(--namu-link);
+  cursor: pointer;
+  font-weight: 600;
+}
+.tagLink:hover { text-decoration: underline; }
+.tocHeader {
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+.tocList {
+  display: flex; flex-direction: column; gap: 4px; font-size: 14px;
+}
+.tocItem {
+  color: var(--namu-link);
+  text-decoration: none;
+  cursor: pointer;
+}
+.tocItem:hover { text-decoration: underline; }
+
+.sectionHeader {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--namu-border);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.editLink {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  margin-left: auto;
+}
+
+/* Inputs within stylized containers */
+.cleanInput {
+  border: none;
+  background: transparent;
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+}
+.cleanInput:focus { outline: none; background: var(--bg-active); }
+
+/* GALLERY VIEW (Default) */
+.galleryContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  background-color: var(--bg-app);
+}
+
+.galleryGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.galleryHeader {
+  background-color: var(--namu-blue);
+  color: var(--namu-header-text);
+  padding: 8px 16px;
+  font-weight: 700;
+  font-size: 16px;
+  border-radius: 4px 4px 0 0;
+  text-align: center;
+}
+.gallerySubHeader {
+  background-color: var(--namu-blue);
+  opacity: 0.8;
+  color: var(--namu-header-text);
+  padding: 4px 16px;
+  font-weight: 600;
+  font-size: 13px;
+  text-align: center;
+}
+
+.galleryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 16px;
+  background-color: var(--bg-element);
+  border: 1px solid var(--namu-border);
+  border-top: none;
+}
+
+.galleryItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+  background: var(--bg-element-hover);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  border: 1px solid var(--border-default);
+}
+.galleryItem:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--namu-blue);
+}
+
+.galleryPortrait {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: var(--bg-element);
+  margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--namu-border);
+}
+
+.galleryName {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.galleryRole {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* TEMPLATE MODAL */
+.templateModalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(2px);
+}
+
+.templateModal {
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  width: 480px;
+  max-width: 90%;
+  padding: 24px;
+  box-shadow: var(--shadow-lg);
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+.templateModalTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.templateGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.templateCard {
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  padding: 16px;
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  transition: all 0.2s;
+  background-color: var(--bg-element);
+}
+.templateCard:hover {
+  border-color: var(--namu-blue);
+  background-color: var(--namu-hover-bg);
+  transform: translateY(-2px);
+}
+
+.templateIcon {
+  color: var(--namu-blue);
+  opacity: 0.8;
+}
+
+.templateName {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+/* Home Button */
+.homeButton {
+  background-color: rgba(255,255,255,0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+.homeButton:hover {
+  background-color: rgba(255,255,255,0.2);
+}
+

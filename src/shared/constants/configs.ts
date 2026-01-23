@@ -76,3 +76,12 @@ export const EDITOR_FONT_PRESETS = [
 	'victor-mono',
 ] as const
 export const EDITOR_THEMES = ['light', 'dark', 'sepia'] as const
+
+// Character Group Colors (Obsiwiki style)
+export const CHARACTER_GROUP_COLORS: Record<string, string> = {
+  Main: "#F59E0B", // Gold
+  Support: "#8B5CF6", // Purple
+  Villain: "#EF4444", // Red
+  Extra: "#6B7280", // Gray
+  Uncategorized: "#10B981", // Green
+}

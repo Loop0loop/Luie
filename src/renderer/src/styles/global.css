@@ -101,6 +101,15 @@
   --character-relation-font-size: 12px;
   --character-relation-margin-bottom: 8px;
 
+  /* Namuwiki Theme Tokens (Light) */
+  --namu-blue: #00A2E8;
+  --namu-border: #cccccc;
+  --namu-table-bg: #f5f5f5;
+  --namu-table-label: #00A2E8;
+  --namu-hover-bg: #eef9fe;
+  --namu-header-text: #ffffff;
+  --namu-link: #0275d8;
+
   --editor-toolbar-icon-size: 16px;
   --editor-toolbar-dropdown-icon-size: 12px;
   --editor-toolbar-plus-minus-font-size: 14px;
@@ -164,6 +173,15 @@
   --editor-bg: #18181b;
   --editor-text: #f4f4f5;
   --editor-selection: #1e3a8a;
+
+  /* Namuwiki Theme Tokens (Dark) */
+  --namu-blue: #0ea5e9;       /* Sky-500, slightly lighter for dark mode */
+  --namu-border: #3f3f46;     /* Zinc-700 */
+  --namu-table-bg: #27272a;   /* Zinc-800 */
+  --namu-table-label: #38bdf8;/* Sky-400 */
+  --namu-hover-bg: #18181b;   /* Zinc-900 */
+  --namu-header-text: #ffffff;
+  --namu-link: #60a5fa;
 }
 
 /* === SEPIA THEME (Writer Focused) === */
@@ -207,6 +225,15 @@
   --editor-bg: #fbf0d9;
   --editor-text: #433422;
   --editor-selection: #e6dcc6;
+
+  /* Namuwiki Theme Tokens (Sepia) */
+  --namu-blue: #cc7832;       /* Earthy Orange/Brown to match Sepia */
+  --namu-border: #dcc8ae;
+  --namu-table-bg: #efe4cb;
+  --namu-table-label: #5f4b32;
+  --namu-hover-bg: #e6dac6;
+  --namu-header-text: #fffefb;
+  --namu-link: #b96725;
 }
 
 body {
