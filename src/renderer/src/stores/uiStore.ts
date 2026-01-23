@@ -1,5 +1,14 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import {
+  DEFAULT_UI_CONTEXT_TAB,
+  DEFAULT_UI_RESEARCH_TAB,
+  DEFAULT_UI_RIGHT_PANEL_TYPE,
+  DEFAULT_UI_SPLIT_RATIO,
+  DEFAULT_UI_SPLIT_VIEW_ENABLED,
+  DEFAULT_UI_VIEW,
+  STORAGE_KEY_UI,
+} from "../../../shared/constants";
 
 export type ContextTab = "synopsis" | "characters" | "terms";
 export type ResearchTab = "character" | "world" | "scrap";
@@ -27,11 +36,14 @@ interface UIStore {
 export const useUIStore = create<UIStore>()(
   persist(
     (set) => ({
-      view: "template",
-      contextTab: "synopsis",
-      isSplitView: false,
-      splitRatio: 0.62,
-      rightPanelContent: { type: "research", tab: "character" },
+      view: DEFAULT_UI_VIEW as UIStore["view"],
+      contextTab: DEFAULT_UI_CONTEXT_TAB as ContextTab,
+      isSplitView: DEFAULT_UI_SPLIT_VIEW_ENABLED,
+      splitRatio: DEFAULT_UI_SPLIT_RATIO,
+      rightPanelContent: {
+        type: DEFAULT_UI_RIGHT_PANEL_TYPE as RightPanelContent["type"],
+        tab: DEFAULT_UI_RESEARCH_TAB as ResearchTab,
+      },
 
       setView: (view) => set({ view }),
       setContextTab: (contextTab) => set({ contextTab }),
@@ -40,7 +52,7 @@ export const useUIStore = create<UIStore>()(
       setRightPanelContent: (rightPanelContent) => set({ rightPanelContent }),
     }),
     {
-      name: "luie-ui",
+      name: STORAGE_KEY_UI,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         view: state.view,

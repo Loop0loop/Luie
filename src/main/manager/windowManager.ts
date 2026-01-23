@@ -6,6 +6,7 @@ import { BrowserWindow } from 'electron'
 import { join } from 'path'
 import { createLogger } from '../../shared/logger/index.js'
 import {
+  DEV_SERVER_URL,
   WINDOW_DEFAULT_HEIGHT,
   WINDOW_DEFAULT_WIDTH,
   WINDOW_MIN_HEIGHT,
@@ -41,7 +42,7 @@ class WindowManager {
 
     // Load the renderer
     if (process.env.NODE_ENV === 'development') {
-      this.mainWindow.loadURL('http://localhost:5173')
+      this.mainWindow.loadURL(DEV_SERVER_URL)
       this.mainWindow.webContents.openDevTools({ mode: 'detach' })
     } else {
       this.mainWindow.loadFile(join(__dirname, '../../renderer/index.html'))

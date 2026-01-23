@@ -7,6 +7,7 @@ import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { app } from "electron";
 import * as path from "path";
 import { createLogger } from "../../shared/logger/index.js";
+import { DB_NAME } from "../../shared/constants/index.js";
 
 const logger = createLogger("DatabaseService");
 
@@ -30,11 +31,11 @@ class DatabaseService {
 
     let dbPath: string;
     if (app.isPackaged) {
-      dbPath = path.join(app.getPath("userData"), "luie.db");
+      dbPath = path.join(app.getPath("userData"), DB_NAME);
     } else {
       dbPath =
         process.env.DATABASE_URL?.replace("file:", "") ??
-        path.join(process.cwd(), "prisma/luie.db");
+        path.join(process.cwd(), "prisma", DB_NAME);
     }
 
     this.datasourceUrl = process.env.DATABASE_URL ?? `file:${dbPath}`;

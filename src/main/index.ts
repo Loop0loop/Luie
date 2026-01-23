@@ -8,13 +8,14 @@ import "dotenv/config";
 import { app, BrowserWindow } from "electron";
 import path from "node:path";
 import { createLogger, configureLogger, LogLevel } from "../shared/logger/index.js";
+import { LOG_DIR_NAME, LOG_FILE_NAME } from "../shared/constants/index.js";
 import { windowManager } from "./manager/index.js";
 import { registerIPCHandlers } from "./handler/index.js";
 import { db } from "./database/index.js";
 
 configureLogger({
   logToFile: true,
-  logFilePath: path.join(app.getPath("userData"), "logs", "luie.log"),
+  logFilePath: path.join(app.getPath("userData"), LOG_DIR_NAME, LOG_FILE_NAME),
   minLevel: LogLevel.INFO,
 });
 

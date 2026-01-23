@@ -6,9 +6,10 @@ import { useEffect, useRef } from "react";
 import { z } from "zod";
 import { useChapterStore } from "../stores/chapterStore";
 import type { Project } from "../../../shared/types";
+import { LUIE_PACKAGE_EXTENSION, LUIE_PACKAGE_FORMAT } from "../../../shared/constants";
 
 const LuieFileSchema = z.object({
-  format: z.literal("luie"),
+  format: z.literal(LUIE_PACKAGE_FORMAT),
   version: z.number(),
   chapters: z
     .array(
@@ -45,7 +46,7 @@ export function useFileImport(
     }
 
     const path = currentProject.projectPath;
-    if (!path.endsWith(".luie")) {
+    if (!path.endsWith(LUIE_PACKAGE_EXTENSION)) {
       importedProjectIdRef.current = currentProject.id;
       return;
     }

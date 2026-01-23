@@ -3,7 +3,7 @@ import styles from "../../styles/components/SettingsModal.module.css";
 import { X, Check, Download } from "lucide-react";
 import type { EditorTheme, FontPreset } from "../../stores/editorStore";
 import { useEditorStore } from "../../stores/editorStore";
-import { EDITOR_FONT_FAMILIES } from "../../../../shared/constants";
+import { EDITOR_FONT_FAMILIES, STORAGE_KEY_FONTS_INSTALLED } from "../../../../shared/constants";
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -70,7 +70,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const [installing, setInstalling] = useState<Record<string, boolean>>({});
   const [installed, setInstalled] = useState<Record<string, boolean>>(() => {
     try {
-      const raw = localStorage.getItem("luie:fonts:installed");
+      const raw = localStorage.getItem(STORAGE_KEY_FONTS_INSTALLED);
       return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
     } catch {
       return {};
@@ -80,7 +80,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const persistInstalled = (next: Record<string, boolean>) => {
     setInstalled(next);
     try {
-      localStorage.setItem("luie:fonts:installed", JSON.stringify(next));
+      localStorage.setItem(STORAGE_KEY_FONTS_INSTALLED, JSON.stringify(next));
     } catch {
       // best-effort
     }

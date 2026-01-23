@@ -5,7 +5,12 @@ import { Plus, Book, FileText, FileType, MoreVertical } from "lucide-react";
 import type { Project } from "../../../../shared/types";
 import { useProjectStore } from "../../stores/projectStore";
 import { ConfirmDialog, PromptDialog } from "../common/Modal";
-import { DEFAULT_EDITOR_FONT_FAMILY } from "../../../shared/constants";
+import {
+  DEFAULT_EDITOR_FONT_FAMILY,
+  DEFAULT_PROJECT_FILENAME,
+  LUIE_PACKAGE_EXTENSION_NO_DOT,
+  LUIE_PACKAGE_FILTER_NAME,
+} from "../../../shared/constants";
 
 interface ProjectTemplateSelectorProps {
   onSelectProject: (templateId: string, projectPath: string) => void;
@@ -109,9 +114,9 @@ export default function ProjectTemplateSelector({
     try {
       const response = await window.api.fs.selectSaveLocation({
         title: "프로젝트 저장 위치 선택",
-        defaultPath: "New Project.luie",
+        defaultPath: DEFAULT_PROJECT_FILENAME,
         filters: [
-          { name: "Luie Project", extensions: ["luie"] },
+          { name: LUIE_PACKAGE_FILTER_NAME, extensions: [LUIE_PACKAGE_EXTENSION_NO_DOT] },
           { name: "Markdown", extensions: ["md"] },
           { name: "Text", extensions: ["txt"] },
         ],

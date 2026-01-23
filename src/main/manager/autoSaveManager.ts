@@ -15,6 +15,7 @@ import {
   AUTO_SAVE_CLEANUP_INTERVAL_MS,
   AUTO_SAVE_STALE_THRESHOLD_MS,
   DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT,
+  SNAPSHOT_MIRROR_DIR,
   SNAPSHOT_FILE_KEEP_COUNT,
   SNAPSHOT_INTERVAL_MS,
   SNAPSHOT_KEEP_COUNT,
@@ -174,7 +175,12 @@ export class AutoSaveManager extends EventEmitter {
 
   private async writeSnapshotMirror(projectId: string, chapterId: string, content: string) {
     try {
-      const baseDir = path.join(app.getPath("userData"), "snapshot-mirror", projectId, chapterId);
+      const baseDir = path.join(
+        app.getPath("userData"),
+        SNAPSHOT_MIRROR_DIR,
+        projectId,
+        chapterId,
+      );
       await fs.mkdir(baseDir, { recursive: true });
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
       const filePath = path.join(baseDir, `${timestamp}.json`);

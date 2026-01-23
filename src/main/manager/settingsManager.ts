@@ -16,6 +16,9 @@ import {
   DEFAULT_EDITOR_LINE_HEIGHT,
   DEFAULT_EDITOR_MAX_WIDTH,
   DEFAULT_EDITOR_THEME,
+  APP_DIR_NAME,
+  SETTINGS_FILE_NAME,
+  SETTINGS_STORE_NAME,
 } from "../../shared/constants/index.js";
 
 const logger = createLogger("SettingsManager");
@@ -45,11 +48,11 @@ export class SettingsManager {
 
     // 기존(레거시) 경로: userData/luie/settings/settings.json
     // app.getPath('userData')가 이미 '.../luie'인 경우 이중으로 들어가 혼동을 유발했음
-    const legacyCwd = `${settingsPath}/luie/settings`;
-    const legacyFile = `${legacyCwd}/settings.json`;
+    const legacyCwd = `${settingsPath}/${APP_DIR_NAME}/${SETTINGS_STORE_NAME}`;
+    const legacyFile = `${legacyCwd}/${SETTINGS_FILE_NAME}`;
 
     this.store = new Store<AppSettings>({
-      name: "settings",
+      name: SETTINGS_STORE_NAME,
       defaults: DEFAULT_SETTINGS,
       // 저장 위치: userData/settings.json
       cwd: settingsPath,
@@ -61,7 +64,7 @@ export class SettingsManager {
     if (existsSync(legacyFile) && !existsSync(this.store.path)) {
       try {
         const legacyStore = new Store<AppSettings>({
-          name: "settings",
+          name: SETTINGS_STORE_NAME,
           defaults: DEFAULT_SETTINGS,
           cwd: legacyCwd,
           fileExtension: "json",

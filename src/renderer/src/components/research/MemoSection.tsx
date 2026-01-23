@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
-import { DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS } from "../../../../shared/constants";
+import {
+  DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS,
+  STORAGE_KEY_MEMOS_NONE,
+  STORAGE_KEY_MEMOS_PREFIX,
+} from "../../../../shared/constants";
 import { Virtuoso } from "react-virtuoso";
 import { Clock, Plus, Search, Tag } from "lucide-react";
 import styles from "../../styles/components/ResearchPanel.module.css";
@@ -37,12 +41,12 @@ export default function MemoSection() {
 
   const storageKey = useMemo(() => {
     if (!currentProject?.id) return null;
-    return `luie:memos:${currentProject.id}`;
+    return `${STORAGE_KEY_MEMOS_PREFIX}${currentProject.id}`;
   }, [currentProject?.id]);
 
   return (
     <MemoSectionInner
-      key={storageKey ?? "luie:memos:none"}
+      key={storageKey ?? STORAGE_KEY_MEMOS_NONE}
       storageKey={storageKey}
     />
   );

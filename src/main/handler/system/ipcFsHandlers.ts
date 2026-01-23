@@ -2,6 +2,13 @@ import { dialog } from "electron";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
+import {
+  DEFAULT_PROJECT_DIR_NAME,
+  DEFAULT_PROJECT_FILE_BASENAME,
+  LUIE_PACKAGE_EXTENSION,
+  LUIE_PACKAGE_EXTENSION_NO_DOT,
+  LUIE_PACKAGE_FILTER_NAME,
+} from "../../../shared/constants/index.js";
 import { registerIpcHandler } from "../core/ipcHandler.js";
 
 type LoggerLike = {
@@ -40,7 +47,9 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       const result = await dialog.showSaveDialog({
         title: options?.title,
         defaultPath: options?.defaultPath,
-        filters: options?.filters ?? [{ name: "Luie Project", extensions: ["luie"] }],
+        filters: options?.filters ?? [
+          { name: LUIE_PACKAGE_FILTER_NAME, extensions: [LUIE_PACKAGE_EXTENSION_NO_DOT] },
+        ],
       });
       if (result.canceled || !result.filePath) {
         return null;
@@ -60,10 +69,13 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
         .replace(/\s+/g, " ")
         .trim();
 
-      const projectDir = path.join(projectPath, safeName || "New Project");
+      const projectDir = path.join(projectPath, safeName || DEFAULT_PROJECT_DIR_NAME);
       await fs.mkdir(projectDir, { recursive: true });
 
-      const fullPath = path.join(projectDir, `${safeName || "project"}.luie`);
+      const fullPath = path.join(
+        projectDir,
+        `${safeName || DEFAULT_PROJECT_FILE_BASENAME}${LUIE_PACKAGE_EXTENSION}`,
+      );
       await fs.writeFile(fullPath, content, "utf-8");
       return { path: fullPath, projectDir };
     },
@@ -99,9 +111,9 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
     logTag: "FS_CREATE_LUIE_PACKAGE",
     failMessage: "Failed to create Luie package",
     handler: async (packagePath: string, meta: unknown) => {
-      const targetPath = packagePath.toLowerCase().endsWith(".luie")
+      const targetPath = packagePath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)
         ? packagePath
-        : `${packagePath}.luie`;
+        : `${packagePath}${LUIE_PACKAGE_EXTENSION}`;
 
       // If legacy single-file .luie exists, migrate it out of the way.
       try {
@@ -167,7 +179,7 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       try {
         const stat = await fs.stat(projectRoot);
         if (stat.isFile()) {
-          if (!projectRoot.toLowerCase().endsWith(".luie")) {
+          if (!projectRoot.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
             throw new Error("PROJECT_ROOT_NOT_DIRECTORY");
           }
 

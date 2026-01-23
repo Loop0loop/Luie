@@ -43,6 +43,39 @@ export const WINDOW_MIN_HEIGHT = 600
 export const WINDOW_TRAFFIC_LIGHT_X = 16
 export const WINDOW_TRAFFIC_LIGHT_Y = 16
 
+export const STORAGE_KEY_MEMOS_PREFIX = 'luie:memos:'
+export const STORAGE_KEY_MEMOS_NONE = 'luie:memos:none'
+export const STORAGE_KEY_FONTS_INSTALLED = 'luie:fonts:installed'
+export const STORAGE_KEY_UI = 'luie-ui'
+
+export const DEV_SERVER_URL = 'http://localhost:5173'
+export const LOG_DIR_NAME = 'logs'
+export const LOG_FILE_NAME = 'luie.log'
+export const SNAPSHOT_MIRROR_DIR = 'snapshot-mirror'
+export const SETTINGS_STORE_NAME = 'settings'
+export const SETTINGS_FILE_NAME = 'settings.json'
+export const APP_DIR_NAME = 'luie'
+
+export const LUIE_PACKAGE_EXTENSION = '.luie'
+export const LUIE_PACKAGE_EXTENSION_NO_DOT = 'luie'
+export const LUIE_PACKAGE_FORMAT = 'luie'
+export const LUIE_PACKAGE_FILTER_NAME = 'Luie Project'
+export const DEFAULT_PROJECT_DIR_NAME = 'New Project'
+export const DEFAULT_PROJECT_FILE_BASENAME = 'project'
+export const DEFAULT_PROJECT_FILENAME = `New Project${LUIE_PACKAGE_EXTENSION}`
+export const LUIE_PACKAGE_CONTAINER_DIR = 'directory'
+export const LUIE_PACKAGE_VERSION = 1
+export const LUIE_PACKAGE_META_FILENAME = 'meta.json'
+export const LUIE_MANUSCRIPT_DIR = 'manuscript'
+export const LUIE_MANUSCRIPT_README = `${LUIE_MANUSCRIPT_DIR}/README.md`
+
+export const DEFAULT_UI_VIEW = 'template'
+export const DEFAULT_UI_CONTEXT_TAB = 'synopsis'
+export const DEFAULT_UI_RESEARCH_TAB = 'character'
+export const DEFAULT_UI_RIGHT_PANEL_TYPE = 'research'
+export const DEFAULT_UI_SPLIT_RATIO = 0.62
+export const DEFAULT_UI_SPLIT_VIEW_ENABLED = false
+
 export const DEFAULT_EDITOR_FONT_FAMILY = 'serif'
 export const DEFAULT_EDITOR_FONT_PRESET = 'default'
 export const DEFAULT_EDITOR_FONT_SIZE = 18

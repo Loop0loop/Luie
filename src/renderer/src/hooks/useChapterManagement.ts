@@ -5,6 +5,13 @@
 import { useState, useCallback } from "react";
 import { useChapterStore } from "../stores/chapterStore";
 import { useProjectStore } from "../stores/projectStore";
+import {
+  LUIE_PACKAGE_CONTAINER_DIR,
+  LUIE_PACKAGE_EXTENSION,
+  LUIE_PACKAGE_FORMAT,
+  LUIE_PACKAGE_META_FILENAME,
+  LUIE_PACKAGE_VERSION,
+} from "../../../shared/constants";
 
 export function useChapterManagement() {
   const [requestedChapterId, setRequestedChapterId] = useState<string | null>(null);
@@ -97,11 +104,11 @@ export function useChapterManagement() {
         });
 
         // .luie 패키지 디렉토리 동기화
-        if (currentProject.projectPath?.toLowerCase().endsWith(".luie")) {
+        if (currentProject.projectPath?.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
           const meta = {
-            format: "luie",
-            container: "directory",
-            version: 1,
+            format: LUIE_PACKAGE_FORMAT,
+            container: LUIE_PACKAGE_CONTAINER_DIR,
+            version: LUIE_PACKAGE_VERSION,
             projectId: currentProject.id,
             title: currentProject.title,
             updatedAt: new Date().toISOString(),
@@ -115,7 +122,7 @@ export function useChapterManagement() {
 
           await window.api.fs.writeProjectFile(
             currentProject.projectPath,
-            "meta.json",
+            LUIE_PACKAGE_META_FILENAME,
             JSON.stringify(meta, null, 2),
           );
 
