@@ -6,7 +6,6 @@ import type { Project } from "../../../../shared/types";
 import { useProjectStore } from "../../stores/projectStore";
 import { ConfirmDialog, PromptDialog } from "../common/Modal";
 import {
-  DEFAULT_EDITOR_FONT_FAMILY,
   DEFAULT_PROJECT_FILENAME,
   LUIE_PACKAGE_EXTENSION_NO_DOT,
   LUIE_PACKAGE_FILTER_NAME,
@@ -46,7 +45,7 @@ import {
   PROJECT_TEMPLATE_COVER_PLAY,
   PROJECT_TEMPLATE_COVER_INTRO,
   PROJECT_TEMPLATE_COVER_ESSAY,
-} from "../../../shared/constants";
+} from "../../../../shared/constants";
 
 interface ProjectTemplateSelectorProps {
   onSelectProject: (templateId: string, projectPath: string) => void;
@@ -283,57 +282,49 @@ export default function ProjectTemplateSelector({
             >
               {cat.icon}
               {cat.label}
-                          <div
-                            style={{
-                              fontSize: TEMPLATE_CARD_BADGE_FONT_SIZE,
-                              fontWeight: TEMPLATE_CARD_BADGE_FONT_WEIGHT,
-                              color: "#a1a1aa",
-                            }}
-                          >
-              <div className={styles.recentHeader}>
-                <div className={styles.recentTitle}>{PROJECT_TEMPLATE_RECENT_TITLE}</div>
-              </div>
-
-              <div className={styles.recentGrid}>
-                {projects.slice(0, 6).map((p) => (
-                  <div
-                    key={p.id}
-                    className={styles.recentCard}
-                    onClick={() => onOpenProject?.(p)}
-                  >
-                    <div className={styles.recentCardContent}>
-                      <div className={styles.recentProjectTitle}>{p.title}</div>
-                      <div
-                        className={styles.recentProjectPath}
-                        title={p.projectPath ?? ""}
-                      >
-                        {p.projectPath ?? PROJECT_TEMPLATE_EMPTY_PATH}
-                      </div>
-                    </div>
-
-                    <button
-                      className={styles.recentCardMenuBtn}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        menuButtonRef.current = e.currentTarget;
-                        const rect = (
-                          e.currentTarget as HTMLElement
-                        ).getBoundingClientRect();
-                        setMenuPosition({ x: rect.right + 8, y: rect.top });
-                        setMenuOpenId((prev) => (prev === p.id ? null : p.id));
-                        window.api.logger.info("Project context menu", {
-                          id: p.id,
-                        });
-                      }}
-                    >
-                      <MoreVertical size={ICON_SIZE_MD} />
-                    </button>
-                  </div>
-                ))}
-              </div>
             </div>
-          )}
+          ))}
+
+          <div className={styles.recentHeader}>
+            <div className={styles.recentTitle}>{PROJECT_TEMPLATE_RECENT_TITLE}</div>
+          </div>
+
+          <div className={styles.recentGrid}>
+            {projects.slice(0, 6).map((p) => (
+              <div
+                key={p.id}
+                className={styles.recentCard}
+                onClick={() => onOpenProject?.(p)}
+              >
+                <div className={styles.recentCardContent}>
+                  <div className={styles.recentProjectTitle}>{p.title}</div>
+                  <div
+                    className={styles.recentProjectPath}
+                    title={p.projectPath ?? ""}
+                  >
+                    {p.projectPath ?? PROJECT_TEMPLATE_EMPTY_PATH}
+                  </div>
+                </div>
+
+                <button
+                  className={styles.recentCardMenuBtn}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    menuButtonRef.current = e.currentTarget;
+                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    setMenuPosition({ x: rect.right + 8, y: rect.top });
+                    setMenuOpenId((prev) => (prev === p.id ? null : p.id));
+                    window.api.logger.info("Project context menu", {
+                      id: p.id,
+                    });
+                  }}
+                >
+                  <MoreVertical size={ICON_SIZE_MD} />
+                </button>
+              </div>
+            ))}
+          </div>
 
           <div className={styles.grid}>
             {filteredTemplates.map((template) => (

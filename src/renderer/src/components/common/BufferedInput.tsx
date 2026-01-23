@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS } from "../../../shared/constants";
+import { DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS } from "../../../../shared/constants";
 
 interface BufferedInputProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,

@@ -226,25 +226,28 @@ contextBridge.exposeInMainWorld("api", {
     selectDirectory: (): Promise<IPCResponse<string>> =>
       safeInvoke(IPC_CHANNELS.FS_SELECT_DIRECTORY),
     selectSaveLocation: (options?: {
-      safeInvoke(IPC_CHANNELS.FS_SELECT_SAVE_LOCATION, options),
+      title?: string;
       defaultPath?: string;
-      safeInvoke(IPC_CHANNELS.FS_READ_FILE, filePath),
+      filters?: Array<{ name: string; extensions: string[] }>;
     }): Promise<IPCResponse<string>> =>
-      safeInvoke(IPC_CHANNELS.FS_WRITE_FILE, filePath, content),
+      safeInvoke(IPC_CHANNELS.FS_SELECT_SAVE_LOCATION, options),
     readFile: (filePath: string): Promise<IPCResponse<string>> =>
-      safeInvoke(IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE, packagePath, meta),
+      safeInvoke(IPC_CHANNELS.FS_READ_FILE, filePath),
     writeFile: (filePath: string, content: string): Promise<IPCResponse> =>
-      safeInvoke("fs:write-file", filePath, content),
+      safeInvoke(IPC_CHANNELS.FS_WRITE_FILE, filePath, content),
 
     // .luie package directory helpers
-    createLuiePackage: (packagePath: string, meta: unknown): Promise<IPCResponse<{ path: string }>> =>
-      safeInvoke(IPC_CHANNELS.FS_WRITE_PROJECT_FILE, projectRoot, relativePath, content),
+    createLuiePackage: (
+      packagePath: string,
+      meta: unknown,
+    ): Promise<IPCResponse<{ path: string }>> =>
+      safeInvoke(IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE, packagePath, meta),
     writeProjectFile: (
       projectRoot: string,
       relativePath: string,
       content: string,
     ): Promise<IPCResponse<{ path: string }>> =>
-      safeInvoke("fs:write-project-file", projectRoot, relativePath, content),
+      safeInvoke(IPC_CHANNELS.FS_WRITE_PROJECT_FILE, projectRoot, relativePath, content),
   },
 
   // Search API

@@ -1,5 +1,5 @@
 import styles from '../../styles/layout/WindowBar.module.css';
-import { APP_NAME } from "../../../shared/constants";
+import { APP_NAME } from "../../../../shared/constants";
 
 interface WindowBarProps {
   title?: string;

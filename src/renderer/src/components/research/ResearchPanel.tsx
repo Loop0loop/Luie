@@ -6,7 +6,7 @@ import {
   LABEL_RESEARCH_SCRAP,
   LABEL_RESEARCH_WORLD,
   TOOLTIP_CLOSE_PANEL,
-} from "../../../shared/constants";
+} from "../../../../shared/constants";
 import { Globe, StickyNote, User, X } from "lucide-react";
 import CharacterManager from "./CharacterManager";
 import MemoSection from "./MemoSection";

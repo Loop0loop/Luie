@@ -3,7 +3,7 @@ import {
   RESIZABLE_PANE_DEFAULT_RIGHT_WIDTH,
   RESIZABLE_PANE_MAX_RIGHT_WIDTH,
   RESIZABLE_PANE_MIN_RIGHT_WIDTH,
-} from "../../../shared/constants";
+} from "../../../../shared/constants";
 
 interface ResizableSplitPaneProps {
   left: React.ReactNode;

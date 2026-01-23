@@ -9,7 +9,7 @@ import {
   TOOLTIP_SIDEBAR_EXPAND,
   TOOLTIP_CONTEXT_PANEL_COLLAPSE,
   TOOLTIP_CONTEXT_PANEL_EXPAND,
-} from '../../../shared/constants';
+} from '../../../../shared/constants';
 
 interface MainLayoutProps {
   children: ReactNode;
