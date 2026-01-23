@@ -225,15 +225,27 @@
   border-bottom: 1px solid var(--namu-border);
   padding-bottom: 8px;
   margin-bottom: 12px;
-  display: flex; align-items: center; gap: 8px;
+.sectionHeader {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--namu-border);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: space-between;
 }
+
+.sectionControls {
+  display: flex; gap: 8px;
+}
+
 .editLink {
   font-size: 12px;
   font-weight: 400;
   color: var(--text-tertiary);
   cursor: pointer;
-  margin-left: auto;
 }
+.editLink:hover { text-decoration: underline; color: var(--namu-link); }
 
 /* Inputs within stylized containers */
 .cleanInput {
@@ -396,7 +408,6 @@
   border-radius: 4px;
   transition: background-color 0.2s;
 }
-.homeButton:hover {
   background-color: rgba(255,255,255,0.2);
 }
 

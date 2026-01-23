@@ -242,6 +242,20 @@ function CharacterGroup({
   );
 }
 
+// Types for Dynamic Customization
+type WikiSection = {
+  id: string;
+  label: string;
+};
+
+type CustomField = {
+  key: string;
+  label: string;
+  type: "text" | "textarea" | "select";
+  options?: string[];
+  placeholder?: string;
+};
+
 // Sub-component: Main Wiki View - Authentic Namuwiki Style
 function WikiDetailView({ 
   character, 
@@ -263,22 +277,79 @@ function WikiDetailView({
     return CHARACTER_TEMPLATES.find(t => t.id === templateId) || CHARACTER_TEMPLATES[0];
   }, [attributes.templateId]);
   
+  // Dynamic Sections & Fields (Derived directly from attributes with defaults)
+  const sections: WikiSection[] = useMemo(() => {
+    return attributes.sections || [
+      { id: "overview", label: "1. 개요" },
+      { id: "appearance", label: "2. 외관" },
+      { id: "personality", label: "3. 성격" },
+      { id: "background", label: "4. 배경/과거" },
+      { id: "relations", label: "5. 인간관계" },
+      { id: "notes", label: "6. 작가의 말" },
+    ];
+  }, [attributes.sections]);
+
+  const customFields: CustomField[] = useMemo(() => {
+    return attributes.customFields || [];
+  }, [attributes.customFields]);
+
   const handleUpdate = (field: string, value: string) => {
     updateCharacter({ id: character.id, [field]: value });
   };
 
-  const handleAttrUpdate = (key: string, value: string) => {
+  const handleAttrUpdate = (key: string, value: unknown) => {
     const newAttrs = { ...attributes, [key]: value };
     updateCharacter({ id: character.id, attributes: newAttrs });
   };
 
-  const sections = [
-    { id: "overview", label: "1. 개요" },
-    { id: "appearance", label: "2. 외관" },
-    { id: "personality", label: "3. 성격" },
-    { id: "background", label: "4. 배경/과거" },
-    { id: "relations", label: "5. 인간관계" },
-    { id: "notes", label: "6. 작가의 말" },
+  // Section Management
+
+  const addSection = () => {
+    const newId = `section_${Date.now()}`;
+    const newSections = [...sections, { id: newId, label: `${sections.length + 1}. 새로운 섹션` }];
+    handleAttrUpdate("sections", newSections);
+  };
+  
+  const renameSection = (id: string, newLabel: string) => {
+    const newSections = sections.map(s => s.id === id ? { ...s, label: newLabel } : s);
+    handleAttrUpdate("sections", newSections);
+  };
+
+  const deleteSection = (id: string) => {
+    if (confirm("정말 이 섹션을 삭제하시겠습니까? (내용은 보존됩니다)")) {
+       const newSections = sections.filter(s => s.id !== id);
+       handleAttrUpdate("sections", newSections);
+    }
+  };
+
+  // Custom Field Management
+  const addCustomField = () => {
+    const newKey = `custom_${Date.now()}`;
+    const newField: CustomField = {
+      key: newKey,
+      label: "새 항목",
+      type: "text"
+    };
+    const newFields = [...customFields, newField];
+    handleAttrUpdate("customFields", newFields);
+  };
+
+  const updateCustomFieldLabel = (key: string, newLabel: string) => {
+    const newFields = customFields.map(f => f.key === key ? { ...f, label: newLabel } : f);
+    handleAttrUpdate("customFields", newFields);
+  };
+
+  const deleteCustomField = (key: string) => {
+    if (confirm("정말 이 항목을 삭제하시겠습니까?")) {
+      const newFields = customFields.filter(f => f.key !== key);
+      handleAttrUpdate("customFields", newFields);
+    }
+  };
+
+  // Merge Base Fields + Custom Fields
+  const allInfoboxFields = [
+    ...currentTemplate.fields,
+    ...customFields
   ];
 
   return (
@@ -326,18 +397,43 @@ function WikiDetailView({
           {sections.map(sec => (
             <div key={sec.id} id={sec.id} className={styles.section}>
               <div className={styles.sectionHeader}>
-                {sec.label}
-                <span className={styles.editLink}>[편집]</span>
+                <BufferedInput 
+                   value={sec.label}
+                   className={styles.cleanInput}
+                   style={{ fontWeight: 700, fontSize: '22px', width: 'auto' }}
+                   onSave={(val) => renameSection(sec.id, val)}
+                />
+                <div className={styles.sectionControls}>
+                   <span className={styles.editLink} onClick={() => deleteSection(sec.id)}>[삭제]</span>
+                   <span className={styles.editLink}>[편집]</span>
+                </div>
               </div>
               <BufferedTextArea 
                 className={styles.textArea}
                 style={{ width: '100%', minHeight: '100px', lineHeight: '1.6' }}
                 value={attributes[sec.id] || ""}
-                placeholder={`${sec.label.split('.')[1].trim()}...`}
+                placeholder="내용을 입력하세요..."
                 onSave={(val) => handleAttrUpdate(sec.id, val)}
               />
             </div>
           ))}
+
+          {/* Add Section Button */}
+          <div 
+             onClick={addSection}
+             style={{ 
+               padding: '12px', 
+               border: '2px dashed #ddd', 
+               borderRadius: '8px', 
+               textAlign: 'center', 
+               color: '#999', 
+               cursor: 'pointer',
+               marginTop: '16px'
+             }}
+          >
+             + 섹션 추가 (Add Section)
+          </div>
+
         </div>
 
         {/* RIGHT: Authentic Infobox */}
@@ -349,18 +445,40 @@ function WikiDetailView({
              <User size={80} color="#ccc" />
           </div>
           
-          {/* Dynamic Template Fields (All) */}
-          {currentTemplate.fields.map(field => (
-             <InfoboxRow 
-               key={field.key} 
-               label={field.label} 
-               value={attributes[field.key]} 
-               placeholder={field.placeholder}
-               onSave={(v) => handleAttrUpdate(field.key, v)} 
-               type={field.type}
-               options={field.options}
-             />
-          ))}
+          {/* All Fields (Template + Custom) */}
+          {allInfoboxFields.map(field => {
+             const isCustom = customFields.some(cf => cf.key === field.key);
+             return (
+               <InfoboxRow 
+                 key={field.key} 
+                 label={field.label} 
+                 value={attributes[field.key]} 
+                 placeholder={field.placeholder}
+                 onSave={(v) => handleAttrUpdate(field.key, v)} 
+                 onLabelSave={isCustom ? (val) => updateCustomFieldLabel(field.key, val) : undefined}
+                 type={field.type}
+                 options={field.options}
+                 isCustom={isCustom}
+                 onDelete={isCustom ? () => deleteCustomField(field.key) : undefined}
+               />
+             );
+          })}
+
+          {/* Add Field Button */}
+          <div 
+             onClick={addCustomField}
+             style={{ 
+               padding: '8px', 
+               textAlign: 'center', 
+               fontSize: '12px', 
+               color: '#666', 
+               cursor: 'pointer', 
+               borderTop: '1px solid var(--namu-border)',
+               background: 'var(--namu-table-bg)'
+             }}
+          >
+             + 필드 추가
+          </div>
           
         </div>
       </div>
@@ -372,20 +490,43 @@ function InfoboxRow({
   label, 
   value, 
   onSave, 
+  onLabelSave,
   placeholder,
   type = "text",
-  options = []
+  options = [],
+  isCustom = false,
+  onDelete
 }: { 
   label: string; 
   value?: string; 
   onSave?: (v: string) => void;
+  onLabelSave?: (v: string) => void;
   placeholder?: string;
   type?: "text" | "textarea" | "select";
   options?: string[];
+  isCustom?: boolean;
+  onDelete?: () => void;
 }) {
   return (
     <div className={styles.infoboxRow}>
-      <div className={styles.infoboxLabel}>{label}</div>
+      <div className={styles.infoboxLabel} style={{ position: 'relative' }}>
+         {isCustom ? (
+           <BufferedInput 
+             className={styles.cleanInput}
+             style={{ textAlign: 'center', fontWeight: 700 }}
+             value={label}
+             onSave={onLabelSave || (() => {})}
+           />
+         ) : label}
+         {isCustom && onDelete && (
+            <div 
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              style={{ position: 'absolute', left: '2px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#ccc', fontSize: '10px' }}
+            >
+              x
+            </div>
+         )}
+      </div>
       <div className={styles.infoboxValue}>
         {type === "select" ? (
            <select 
