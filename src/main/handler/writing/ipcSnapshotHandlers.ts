@@ -28,7 +28,7 @@ export function registerSnapshotIPCHandlers(
 
   registerIpcHandler({
     logger,
-    channel: "snapshot:get-by-project",
+    channel: IPC_CHANNELS.SNAPSHOT_GET_BY_PROJECT,
     logTag: "SNAPSHOT_GET_BY_PROJECT",
     failMessage: "Failed to get snapshots by project",
     handler: (projectId: string) => snapshotService.getSnapshotsByProject(projectId),
@@ -36,7 +36,7 @@ export function registerSnapshotIPCHandlers(
 
   registerIpcHandler({
     logger,
-    channel: "snapshot:get-by-chapter",
+    channel: IPC_CHANNELS.SNAPSHOT_GET_BY_CHAPTER,
     logTag: "SNAPSHOT_GET_BY_CHAPTER",
     failMessage: "Failed to get snapshots by chapter",
     handler: (chapterId: string) => snapshotService.getSnapshotsByChapter(chapterId),

@@ -1,4 +1,5 @@
 import { ReactRenderer } from "@tiptap/react";
+import { SUGGESTION_MAX_ITEMS, SUGGESTION_POPUP_Z_INDEX } from "../../../../shared/constants";
 import type { Content, Editor } from "@tiptap/core";
 import type {
   SuggestionKeyDownProps,
@@ -153,7 +154,7 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
 
     return items
       .filter((item) => item.label.toLowerCase().includes(query.toLowerCase()))
-      .slice(0, 10);
+      .slice(0, SUGGESTION_MAX_ITEMS);
   },
 
   render: () => {
@@ -176,7 +177,7 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
 
         popup = component.element as HTMLElement;
         popup.style.position = "absolute";
-        popup.style.zIndex = "1000";
+        popup.style.zIndex = String(SUGGESTION_POPUP_Z_INDEX);
 
         document.body.appendChild(popup);
 

@@ -36,6 +36,8 @@ export const IPC_CHANNELS = {
   // Snapshot Channels
   SNAPSHOT_CREATE: "snapshot:create",
   SNAPSHOT_GET_ALL: "snapshot:get-all",
+  SNAPSHOT_GET_BY_PROJECT: "snapshot:get-by-project",
+  SNAPSHOT_GET_BY_CHAPTER: "snapshot:get-by-chapter",
   SNAPSHOT_RESTORE: "snapshot:restore",
   SNAPSHOT_DELETE: "snapshot:delete",
 

@@ -8,6 +8,16 @@ import {
   LUIE_PACKAGE_EXTENSION,
   LUIE_PACKAGE_EXTENSION_NO_DOT,
   LUIE_PACKAGE_FILTER_NAME,
+  LUIE_PACKAGE_FORMAT,
+  LUIE_PACKAGE_CONTAINER_DIR,
+  LUIE_PACKAGE_VERSION,
+  LUIE_PACKAGE_META_FILENAME,
+  LUIE_MANUSCRIPT_DIR,
+  LUIE_WORLD_DIR,
+  LUIE_SNAPSHOTS_DIR,
+  LUIE_ASSETS_DIR,
+  LUIE_WORLD_CHARACTERS_FILE,
+  LUIE_WORLD_TERMS_FILE,
 } from "../../../shared/constants/index.js";
 import { registerIpcHandler } from "../core/ipcHandler.js";
 
@@ -133,22 +143,30 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
 
       // Create standard sub-structure
       await Promise.all([
-        fs.mkdir(path.join(targetPath, "manuscript"), { recursive: true }),
-        fs.mkdir(path.join(targetPath, "world"), { recursive: true }),
-        fs.mkdir(path.join(targetPath, "snapshots"), { recursive: true }),
-        fs.mkdir(path.join(targetPath, "assets"), { recursive: true }),
+        fs.mkdir(path.join(targetPath, LUIE_MANUSCRIPT_DIR), { recursive: true }),
+        fs.mkdir(path.join(targetPath, LUIE_WORLD_DIR), { recursive: true }),
+        fs.mkdir(path.join(targetPath, LUIE_SNAPSHOTS_DIR), { recursive: true }),
+        fs.mkdir(path.join(targetPath, LUIE_ASSETS_DIR), { recursive: true }),
       ]);
 
       // Write meta.json (best-effort)
       await fs.writeFile(
-        path.join(targetPath, "meta.json"),
+        path.join(targetPath, LUIE_PACKAGE_META_FILENAME),
         JSON.stringify(meta ?? {}, null, 2),
         "utf-8",
       );
 
       // Initialize world defaults if missing
-      const worldCharactersPath = path.join(targetPath, "world", "characters.json");
-      const worldTermsPath = path.join(targetPath, "world", "terms.json");
+      const worldCharactersPath = path.join(
+        targetPath,
+        LUIE_WORLD_DIR,
+        LUIE_WORLD_CHARACTERS_FILE,
+      );
+      const worldTermsPath = path.join(
+        targetPath,
+        LUIE_WORLD_DIR,
+        LUIE_WORLD_TERMS_FILE,
+      );
       try {
         await fs.access(worldCharactersPath);
       } catch {
@@ -188,7 +206,7 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
           await fs.mkdir(projectRoot, { recursive: true });
 
           // Best-effort: write a minimal meta.json so the package is self-describing.
-          const metaPath = path.join(projectRoot, "meta.json");
+          const metaPath = path.join(projectRoot, LUIE_PACKAGE_META_FILENAME);
           try {
             await fs.access(metaPath);
           } catch {
@@ -196,9 +214,9 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
               metaPath,
               JSON.stringify(
                 {
-                  format: "luie",
-                  container: "directory",
-                  version: 1,
+                  format: LUIE_PACKAGE_FORMAT,
+                  container: LUIE_PACKAGE_CONTAINER_DIR,
+                  version: LUIE_PACKAGE_VERSION,
                   migratedAt: new Date().toISOString(),
                   legacyBackupPath: backupPath,
                 },
@@ -211,14 +229,22 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
 
           // Create standard sub-structure (best-effort)
           await Promise.all([
-            fs.mkdir(path.join(projectRoot, "manuscript"), { recursive: true }),
-            fs.mkdir(path.join(projectRoot, "world"), { recursive: true }),
-            fs.mkdir(path.join(projectRoot, "snapshots"), { recursive: true }),
-            fs.mkdir(path.join(projectRoot, "assets"), { recursive: true }),
+            fs.mkdir(path.join(projectRoot, LUIE_MANUSCRIPT_DIR), { recursive: true }),
+            fs.mkdir(path.join(projectRoot, LUIE_WORLD_DIR), { recursive: true }),
+            fs.mkdir(path.join(projectRoot, LUIE_SNAPSHOTS_DIR), { recursive: true }),
+            fs.mkdir(path.join(projectRoot, LUIE_ASSETS_DIR), { recursive: true }),
           ]);
 
-          const worldCharactersPath = path.join(projectRoot, "world", "characters.json");
-          const worldTermsPath = path.join(projectRoot, "world", "terms.json");
+          const worldCharactersPath = path.join(
+            projectRoot,
+            LUIE_WORLD_DIR,
+            LUIE_WORLD_CHARACTERS_FILE,
+          );
+          const worldTermsPath = path.join(
+            projectRoot,
+            LUIE_WORLD_DIR,
+            LUIE_WORLD_TERMS_FILE,
+          );
           try {
             await fs.access(worldCharactersPath);
           } catch {

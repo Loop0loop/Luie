@@ -20,6 +20,14 @@ import styles from "../../styles/components/ResearchPanel.module.css";
 import { useProjectStore } from "../../stores/projectStore";
 import { useTermStore } from "../../stores/termStore";
 import { BufferedInput, BufferedTextArea } from "../common/BufferedInput";
+import {
+  WORLD_MINDMAP_ROOT_LABEL,
+  WORLD_MINDMAP_ROOT_X,
+  WORLD_MINDMAP_ROOT_Y,
+  WORLD_OVERVIEW_FONT_SIZE,
+  WORLD_OVERVIEW_LINE_HEIGHT,
+  WORLD_OVERVIEW_MIN_HEIGHT,
+} from "../../../../shared/constants";
 
 type WorldTab = "synopsis" | "terms" | "mindmap" | "drawing" | "plot";
 
@@ -305,9 +313,9 @@ function SynopsisEditor() {
           borderRadius: 4,
           width: "100%",
           marginBottom: 16,
-          minHeight: 400,
-          lineHeight: 1.6,
-          fontSize: 14,
+          minHeight: WORLD_OVERVIEW_MIN_HEIGHT,
+          lineHeight: WORLD_OVERVIEW_LINE_HEIGHT,
+          fontSize: WORLD_OVERVIEW_FONT_SIZE,
           backgroundColor:
             status === "locked" ? "var(--bg-secondary)" : "transparent",
           color:
@@ -347,8 +355,8 @@ function MindMapBoard() {
     {
       id: "root",
       type: "character",
-      position: { x: 300, y: 300 },
-      data: { label: "중심 사건/인물" },
+      position: { x: WORLD_MINDMAP_ROOT_X, y: WORLD_MINDMAP_ROOT_Y },
+      data: { label: WORLD_MINDMAP_ROOT_LABEL },
     },
   ]);
   const [edges, setEdges] = useEdgesState([]);

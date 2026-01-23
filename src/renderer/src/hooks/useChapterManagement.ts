@@ -11,6 +11,8 @@ import {
   LUIE_PACKAGE_FORMAT,
   LUIE_PACKAGE_META_FILENAME,
   LUIE_PACKAGE_VERSION,
+  LUIE_MANUSCRIPT_DIR,
+  MARKDOWN_EXTENSION,
 } from "../../../shared/constants";
 
 export function useChapterManagement() {
@@ -128,7 +130,7 @@ export function useChapterManagement() {
 
           await window.api.fs.writeProjectFile(
             currentProject.projectPath,
-            `manuscript/${activeChapterId}.md`,
+            `${LUIE_MANUSCRIPT_DIR}/${activeChapterId}${MARKDOWN_EXTENSION}`,
             newContent,
           );
         }

@@ -68,6 +68,15 @@ export const LUIE_PACKAGE_VERSION = 1
 export const LUIE_PACKAGE_META_FILENAME = 'meta.json'
 export const LUIE_MANUSCRIPT_DIR = 'manuscript'
 export const LUIE_MANUSCRIPT_README = `${LUIE_MANUSCRIPT_DIR}/README.md`
+export const LUIE_WORLD_DIR = 'world'
+export const LUIE_SNAPSHOTS_DIR = 'snapshots'
+export const LUIE_ASSETS_DIR = 'assets'
+export const LUIE_WORLD_CHARACTERS_FILE = 'characters.json'
+export const LUIE_WORLD_TERMS_FILE = 'terms.json'
+export const MARKDOWN_EXTENSION = '.md'
+export const MARKDOWN_EXTENSION_NO_DOT = 'md'
+export const TEXT_EXTENSION = '.txt'
+export const TEXT_EXTENSION_NO_DOT = 'txt'
 
 export const DEFAULT_UI_VIEW = 'template'
 export const DEFAULT_UI_CONTEXT_TAB = 'synopsis'
@@ -75,6 +84,36 @@ export const DEFAULT_UI_RESEARCH_TAB = 'character'
 export const DEFAULT_UI_RIGHT_PANEL_TYPE = 'research'
 export const DEFAULT_UI_SPLIT_RATIO = 0.62
 export const DEFAULT_UI_SPLIT_VIEW_ENABLED = false
+
+export const SUGGESTION_MAX_ITEMS = 10
+export const SUGGESTION_POPUP_Z_INDEX = 1000
+
+export const DEFAULT_PROJECT_TITLE = 'Untitled Project'
+export const DEFAULT_NEW_PROJECT_TITLE = 'New Project'
+export const DEFAULT_CHAPTER_TITLE = 'Chapter 1'
+export const DEFAULT_UNTITLED_LABEL = 'Untitled'
+export const DEFAULT_NOTE_TITLE = '새로운 메모'
+
+export const WORLD_OVERVIEW_MIN_HEIGHT = 400
+export const WORLD_OVERVIEW_LINE_HEIGHT = 1.6
+export const WORLD_OVERVIEW_FONT_SIZE = 14
+export const WORLD_MINDMAP_ROOT_X = 300
+export const WORLD_MINDMAP_ROOT_Y = 300
+export const WORLD_MINDMAP_ROOT_LABEL = '중심 사건/인물'
+
+export const MEMO_SEARCH_ICON_SIZE = 12
+export const MEMO_SEARCH_FONT_SIZE = 12
+export const MEMO_TAG_FONT_SIZE = 9
+export const MEMO_DATE_FONT_SIZE = 10
+export const MEMO_DATE_ICON_SIZE = 8
+export const MEMO_TAG_ICON_SIZE = 14
+export const MEMO_TAG_INPUT_FONT_SIZE = 12
+
+export const CONTEXT_PANEL_SECTION_PADDING = 16
+export const CONTEXT_PANEL_HEADER_FONT_SIZE = 12
+export const CONTEXT_PANEL_BODY_FONT_SIZE = 13
+export const CONTEXT_PANEL_TAG_FONT_SIZE = 10
+export const CONTEXT_PANEL_SECTION_MARGIN_BOTTOM = 8
 
 export const DEFAULT_EDITOR_FONT_FAMILY = 'serif'
 export const DEFAULT_EDITOR_FONT_PRESET = 'default'

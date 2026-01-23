@@ -6,7 +6,11 @@ import { useEffect, useRef } from "react";
 import { z } from "zod";
 import { useChapterStore } from "../stores/chapterStore";
 import type { Project } from "../../../shared/types";
-import { LUIE_PACKAGE_EXTENSION, LUIE_PACKAGE_FORMAT } from "../../../shared/constants";
+import {
+  DEFAULT_UNTITLED_LABEL,
+  LUIE_PACKAGE_EXTENSION,
+  LUIE_PACKAGE_FORMAT,
+} from "../../../shared/constants";
 
 const LuieFileSchema = z.object({
   format: z.literal(LUIE_PACKAGE_FORMAT),
@@ -80,7 +84,7 @@ export function useFileImport(
         for (const ch of fileChapters) {
           const created = await createChapter({
             projectId: currentProject.id,
-            title: ch.title ?? "Untitled",
+            title: ch.title ?? DEFAULT_UNTITLED_LABEL,
           });
           if (created?.id && typeof ch.content === "string") {
             await updateChapter({ id: created.id, content: ch.content });

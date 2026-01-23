@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
 import {
   DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS,
+  DEFAULT_NOTE_TITLE,
+  DEFAULT_UNTITLED_LABEL,
+  MEMO_DATE_FONT_SIZE,
+  MEMO_DATE_ICON_SIZE,
+  MEMO_SEARCH_FONT_SIZE,
+  MEMO_SEARCH_ICON_SIZE,
+  MEMO_TAG_FONT_SIZE,
+  MEMO_TAG_ICON_SIZE,
+  MEMO_TAG_INPUT_FONT_SIZE,
   STORAGE_KEY_MEMOS_NONE,
   STORAGE_KEY_MEMOS_PREFIX,
 } from "../../../../shared/constants";
@@ -121,7 +130,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
     const newId = String(Date.now());
     const newNote: Note = {
       id: newId,
-      title: "새로운 메모",
+      title: DEFAULT_NOTE_TITLE,
       content: "",
       tags: [],
       updatedAt: new Date().toISOString(),
@@ -154,13 +163,13 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
               borderRadius: 4,
             }}
           >
-            <Search size={12} color="var(--text-tertiary)" />
+            <Search size={MEMO_SEARCH_ICON_SIZE} color="var(--text-tertiary)" />
             <input
               style={{
                 border: "none",
                 background: "transparent",
                 outline: "none",
-                fontSize: 12,
+                fontSize: MEMO_SEARCH_FONT_SIZE,
                 width: "100%",
                 color: "var(--text-primary)",
               }}
@@ -181,7 +190,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
                 onClick={() => setActiveNoteId(note.id)}
               >
                 <div style={{ fontWeight: 500, marginBottom: 4 }}>
-                  {note.title || "Untitled"}
+                  {note.title || DEFAULT_UNTITLED_LABEL}
                 </div>
                 <div
                   style={{
@@ -195,7 +204,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
                     <span
                       key={t}
                       style={{
-                        fontSize: 9,
+                        fontSize: MEMO_TAG_FONT_SIZE,
                         padding: "2px 4px",
                         background: "var(--bg-element-hover)",
                         borderRadius: 2,
@@ -207,14 +216,14 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
                 </div>
                 <div
                   style={{
-                    fontSize: 10,
+                    fontSize: MEMO_DATE_FONT_SIZE,
                     color: "var(--text-tertiary)",
                     display: "flex",
                     alignItems: "center",
                     gap: 4,
                   }}
                 >
-                  <Clock size={8} />
+                  <Clock size={MEMO_DATE_ICON_SIZE} />
                   {new Date(note.updatedAt).toLocaleDateString()}
                 </div>
               </div>
@@ -233,13 +242,13 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
               alignItems: "center",
             }}
           >
-            <Tag size={14} color="var(--text-tertiary)" />
+            <Tag size={MEMO_TAG_ICON_SIZE} color="var(--text-tertiary)" />
             <input
               style={{
                 border: "none",
                 background: "transparent",
                 outline: "none",
-                fontSize: 12,
+                fontSize: MEMO_TAG_INPUT_FONT_SIZE,
                 color: "var(--text-secondary)",
                 width: "100%",
               }}

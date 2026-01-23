@@ -10,6 +10,8 @@ import {
   DEFAULT_PROJECT_FILENAME,
   LUIE_PACKAGE_EXTENSION_NO_DOT,
   LUIE_PACKAGE_FILTER_NAME,
+  MARKDOWN_EXTENSION_NO_DOT,
+  TEXT_EXTENSION_NO_DOT,
 } from "../../../shared/constants";
 
 interface ProjectTemplateSelectorProps {
@@ -117,8 +119,8 @@ export default function ProjectTemplateSelector({
         defaultPath: DEFAULT_PROJECT_FILENAME,
         filters: [
           { name: LUIE_PACKAGE_FILTER_NAME, extensions: [LUIE_PACKAGE_EXTENSION_NO_DOT] },
-          { name: "Markdown", extensions: ["md"] },
-          { name: "Text", extensions: ["txt"] },
+          { name: "Markdown", extensions: [MARKDOWN_EXTENSION_NO_DOT] },
+          { name: "Text", extensions: [TEXT_EXTENSION_NO_DOT] },
         ],
       });
       if (response.success && response.data) {

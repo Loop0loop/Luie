@@ -5,6 +5,13 @@ import { useCharacterStore } from "../../stores/characterStore";
 import { useTermStore } from "../../stores/termStore";
 import { useProjectStore } from "../../stores/projectStore";
 import type { Character, Term } from "../../../../shared/types";
+import {
+  CONTEXT_PANEL_BODY_FONT_SIZE,
+  CONTEXT_PANEL_HEADER_FONT_SIZE,
+  CONTEXT_PANEL_SECTION_MARGIN_BOTTOM,
+  CONTEXT_PANEL_SECTION_PADDING,
+  CONTEXT_PANEL_TAG_FONT_SIZE,
+} from "../../../../shared/constants";
 
 type Tab = "synopsis" | "characters" | "terms";
 
@@ -152,13 +159,13 @@ function ContextPanel({
 
       <div className={styles.content}>
         {currentTab === "synopsis" && (
-          <div style={{ padding: 16 }}>
+          <div style={{ padding: CONTEXT_PANEL_SECTION_PADDING }}>
             <div
               style={{
-                fontSize: 12,
+                fontSize: CONTEXT_PANEL_HEADER_FONT_SIZE,
                 fontWeight: 600,
                 color: "var(--text-secondary)",
-                marginBottom: 8,
+                marginBottom: CONTEXT_PANEL_SECTION_MARGIN_BOTTOM,
               }}
             >
               작품 개요 (Synopsis)
@@ -186,9 +193,9 @@ function ContextPanel({
                 {item.description && (
                   <div
                     style={{
-                      fontSize: 13,
+                      fontSize: CONTEXT_PANEL_BODY_FONT_SIZE,
                       color: "var(--text-secondary)",
-                      marginBottom: 8,
+                      marginBottom: CONTEXT_PANEL_SECTION_MARGIN_BOTTOM,
                     }}
                   >
                     {item.description}
@@ -213,16 +220,21 @@ function ContextPanel({
                 {item.definition && (
                   <div
                     style={{
-                      fontSize: 13,
+                      fontSize: CONTEXT_PANEL_BODY_FONT_SIZE,
                       color: "var(--text-secondary)",
-                      marginBottom: 8,
+                      marginBottom: CONTEXT_PANEL_SECTION_MARGIN_BOTTOM,
                     }}
                   >
                     {item.definition}
                   </div>
                 )}
                 {item.category && (
-                  <div style={{ fontSize: 10, color: "var(--text-tertiary)" }}>
+                  <div
+                    style={{
+                      fontSize: CONTEXT_PANEL_TAG_FONT_SIZE,
+                      color: "var(--text-tertiary)",
+                    }}
+                  >
                     #{item.category}
                   </div>
                 )}
