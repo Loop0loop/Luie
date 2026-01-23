@@ -1,0 +1,62 @@
+/**
+ * UI size and layout tokens
+ */
+
+export const WORLD_OVERVIEW_MIN_HEIGHT = 400
+export const WORLD_OVERVIEW_LINE_HEIGHT = 1.6
+export const WORLD_OVERVIEW_FONT_SIZE = 14
+export const WORLD_MINDMAP_ROOT_X = 300
+export const WORLD_MINDMAP_ROOT_Y = 300
+export const WORLD_STATUS_FONT_SIZE = 11
+export const WORLD_HINT_FONT_SIZE = 12
+export const WORLD_ADD_TERM_ICON_SIZE = 24
+
+export const TEMPLATE_CARD_BADGE_FONT_SIZE = 12
+export const TEMPLATE_CARD_BADGE_FONT_WEIGHT = 500
+export const TEMPLATE_COVER_ICON_FONT_SIZE = 32
+export const TEMPLATE_COVER_FOOTER_FONT_SIZE = 10
+export const TEMPLATE_DOC_TITLE_FONT_SIZE = 24
+
+export const MEMO_SEARCH_ICON_SIZE = 12
+export const MEMO_SEARCH_FONT_SIZE = 12
+export const MEMO_TAG_FONT_SIZE = 9
+export const MEMO_DATE_FONT_SIZE = 10
+export const MEMO_DATE_ICON_SIZE = 8
+export const MEMO_TAG_ICON_SIZE = 14
+export const MEMO_TAG_INPUT_FONT_SIZE = 12
+export const MEMO_TITLE_FONT_WEIGHT = 500
+export const FONT_WEIGHT_SEMIBOLD = 600
+
+export const ICON_SIZE_XS = 12
+export const ICON_SIZE_SM = 14
+export const ICON_SIZE_MD = 16
+export const ICON_SIZE_LG = 18
+export const ICON_SIZE_XL = 20
+export const ICON_SIZE_XXL = 24
+export const ICON_SIZE_XXXL = 32
+
+export const TEXT_EDITOR_MIN_HEIGHT = 400
+export const WORLD_DRAW_TEXT_FONT_SIZE = 14
+export const WORLD_DRAW_TEXT_FONT_WEIGHT = 'bold'
+
+export const CONTEXT_PANEL_SECTION_PADDING = 16
+export const CONTEXT_PANEL_HEADER_FONT_SIZE = 12
+export const CONTEXT_PANEL_BODY_FONT_SIZE = 13
+export const CONTEXT_PANEL_TAG_FONT_SIZE = 10
+export const CONTEXT_PANEL_SECTION_MARGIN_BOTTOM = 8
+
+export const CHARACTER_COLOR_FALLBACK = '#ccc'
+export const CHARACTER_ICON_BACK_SIZE = 16
+export const CHARACTER_AVATAR_ICON_SIZE = 32
+export const CHARACTER_ADD_ICON_SIZE = 24
+export const CHARACTER_BACKSTORY_MIN_HEIGHT = 100
+export const CHARACTER_RELATION_MIN_HEIGHT = 200
+export const CHARACTER_RELATION_FONT_SIZE = 12
+export const CHARACTER_RELATION_MARGIN_BOTTOM = 8
+
+export const EDITOR_TOOLBAR_ICON_SIZE = 16
+export const EDITOR_TOOLBAR_DROPDOWN_ICON_SIZE = 12
+export const EDITOR_TOOLBAR_FONT_STEP = 1
+export const EDITOR_TOOLBAR_FONT_MIN = 10
+export const EDITOR_TOOLBAR_PLUS_MINUS_FONT_SIZE = 14
+export const EDITOR_TOOLBAR_MOBILE_ICON_SIZE = 14
