@@ -6,14 +6,6 @@ import { useTermStore } from "../../stores/termStore";
 import { useProjectStore } from "../../stores/projectStore";
 import type { Character, Term } from "../../../../shared/types";
 import {
-  CONTEXT_PANEL_BODY_FONT_SIZE,
-  CONTEXT_PANEL_HEADER_FONT_SIZE,
-  CONTEXT_PANEL_SECTION_MARGIN_BOTTOM,
-  CONTEXT_PANEL_SECTION_PADDING,
-  CONTEXT_PANEL_TAG_FONT_SIZE,
-  FONT_WEIGHT_SEMIBOLD,
-  ICON_SIZE_MD,
-  ICON_SIZE_SM,
   LABEL_CONTEXT_DETAIL_DESCRIPTION,
   LABEL_CONTEXT_DETAIL_CATEGORY,
   LABEL_CONTEXT_SYNOPSIS_HEADER,
@@ -98,7 +90,7 @@ function ContextPanel({
         <div className={styles.detailView}>
           <div className={styles.detailHeader}>
             <button className={styles.backButton} onClick={handleBack}>
-              <ArrowLeft size={ICON_SIZE_MD} />
+              <ArrowLeft className="icon-md" />
             </button>
             <div className={styles.detailTitle}>
               {isCharacter(selectedItem) ? selectedItem.name : selectedItem.term}
@@ -126,7 +118,7 @@ function ContextPanel({
 
       <div className={styles.toolbar}>
         <div className={styles.searchBarWrapper}>
-          <Search size={ICON_SIZE_SM} className={styles.searchIcon} />
+          <Search className={`${styles.searchIcon} icon-sm`} />
           <input
             className={styles.searchBar}
             placeholder={PLACEHOLDER_CONTEXT_SEARCH}
@@ -168,13 +160,13 @@ function ContextPanel({
 
       <div className={styles.content}>
         {currentTab === "synopsis" && (
-          <div style={{ padding: CONTEXT_PANEL_SECTION_PADDING }}>
+          <div style={{ padding: "var(--context-panel-section-padding)" }}>
             <div
               style={{
-                fontSize: CONTEXT_PANEL_HEADER_FONT_SIZE,
-                fontWeight: FONT_WEIGHT_SEMIBOLD,
+                fontSize: "var(--context-panel-header-font-size)",
+                fontWeight: "var(--font-weight-semibold)",
                 color: "var(--text-secondary)",
-                marginBottom: CONTEXT_PANEL_SECTION_MARGIN_BOTTOM,
+                marginBottom: "var(--context-panel-section-margin-bottom)",
               }}
             >
               {LABEL_CONTEXT_SYNOPSIS_HEADER}
@@ -202,9 +194,9 @@ function ContextPanel({
                 {item.description && (
                   <div
                     style={{
-                      fontSize: CONTEXT_PANEL_BODY_FONT_SIZE,
+                      fontSize: "var(--context-panel-body-font-size)",
                       color: "var(--text-secondary)",
-                      marginBottom: CONTEXT_PANEL_SECTION_MARGIN_BOTTOM,
+                      marginBottom: "var(--context-panel-section-margin-bottom)",
                     }}
                   >
                     {item.description}
@@ -229,9 +221,9 @@ function ContextPanel({
                 {item.definition && (
                   <div
                     style={{
-                      fontSize: CONTEXT_PANEL_BODY_FONT_SIZE,
+                      fontSize: "var(--context-panel-body-font-size)",
                       color: "var(--text-secondary)",
-                      marginBottom: CONTEXT_PANEL_SECTION_MARGIN_BOTTOM,
+                      marginBottom: "var(--context-panel-section-margin-bottom)",
                     }}
                   >
                     {item.definition}
@@ -240,7 +232,7 @@ function ContextPanel({
                 {item.category && (
                   <div
                     style={{
-                      fontSize: CONTEXT_PANEL_TAG_FONT_SIZE,
+                      fontSize: "var(--context-panel-tag-font-size)",
                       color: "var(--text-tertiary)",
                     }}
                   >

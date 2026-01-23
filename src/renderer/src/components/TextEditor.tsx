@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useTransition } from "react";
 import { useAutoSaveStore } from "../stores/autoSaveStore";
 import {
   PLACEHOLDER_TEXT_EDITOR,
-  TEXT_EDITOR_MIN_HEIGHT,
   TEXT_EDITOR_SAVE_BUTTON,
   TEXT_EDITOR_SAVE_DONE,
   TEXT_EDITOR_SAVE_SAVING,
@@ -81,7 +80,7 @@ export default function TextEditor({
           placeholder={PLACEHOLDER_TEXT_EDITOR}
           spellCheck={false}
           style={{
-            minHeight: `${TEXT_EDITOR_MIN_HEIGHT}px`,
+            minHeight: "var(--text-editor-min-height)",
           }}
         />
       </div>

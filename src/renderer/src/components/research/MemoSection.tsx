@@ -3,15 +3,6 @@ import {
   DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS,
   DEFAULT_NOTE_TITLE,
   DEFAULT_UNTITLED_LABEL,
-  MEMO_DATE_FONT_SIZE,
-  MEMO_DATE_ICON_SIZE,
-  MEMO_SEARCH_FONT_SIZE,
-  MEMO_SEARCH_ICON_SIZE,
-  MEMO_TAG_FONT_SIZE,
-  MEMO_TAG_ICON_SIZE,
-  MEMO_TAG_INPUT_FONT_SIZE,
-  MEMO_TITLE_FONT_WEIGHT,
-  ICON_SIZE_SM,
   LABEL_MEMO_EMPTY,
   LABEL_MEMO_SECTION_TITLE,
   MEMO_DEFAULT_NOTES,
@@ -141,7 +132,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
       <div className={styles.noteList}>
         <div className={styles.noteListHeader}>
           <span>{LABEL_MEMO_SECTION_TITLE}</span>
-          <Plus size={ICON_SIZE_SM} style={{ cursor: "pointer" }} onClick={handleAddNote} />
+          <Plus className="icon-sm" style={{ cursor: "pointer" }} onClick={handleAddNote} />
         </div>
 
         <div
@@ -160,13 +151,16 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
               borderRadius: 4,
             }}
           >
-            <Search size={MEMO_SEARCH_ICON_SIZE} color="var(--text-tertiary)" />
+            <Search
+              style={{ width: "var(--memo-search-icon-size)", height: "var(--memo-search-icon-size)" }}
+              color="var(--text-tertiary)"
+            />
             <input
               style={{
                 border: "none",
                 background: "transparent",
                 outline: "none",
-                fontSize: MEMO_SEARCH_FONT_SIZE,
+                fontSize: "var(--memo-search-font-size)",
                 width: "100%",
                 color: "var(--text-primary)",
               }}
@@ -186,7 +180,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
                 className={`${styles.noteItem} ${activeNoteId === note.id ? styles.active : ""}`}
                 onClick={() => setActiveNoteId(note.id)}
               >
-                <div style={{ fontWeight: MEMO_TITLE_FONT_WEIGHT, marginBottom: 4 }}>
+                <div style={{ fontWeight: "var(--memo-title-font-weight)", marginBottom: 4 }}>
                   {note.title || DEFAULT_UNTITLED_LABEL}
                 </div>
                 <div
@@ -201,7 +195,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
                     <span
                       key={t}
                       style={{
-                        fontSize: MEMO_TAG_FONT_SIZE,
+                        fontSize: "var(--memo-tag-font-size)",
                         padding: "2px 4px",
                         background: "var(--bg-element-hover)",
                         borderRadius: 2,
@@ -213,14 +207,19 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
                 </div>
                 <div
                   style={{
-                    fontSize: MEMO_DATE_FONT_SIZE,
+                    fontSize: "var(--memo-date-font-size)",
                     color: "var(--text-tertiary)",
                     display: "flex",
                     alignItems: "center",
                     gap: 4,
                   }}
                 >
-                  <Clock size={MEMO_DATE_ICON_SIZE} />
+                  <Clock
+                    style={{
+                      width: "var(--memo-date-icon-size)",
+                      height: "var(--memo-date-icon-size)",
+                    }}
+                  />
                   {new Date(note.updatedAt).toLocaleDateString()}
                 </div>
               </div>
@@ -239,13 +238,13 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
               alignItems: "center",
             }}
           >
-            <Tag size={MEMO_TAG_ICON_SIZE} color="var(--text-tertiary)" />
+            <Tag className="icon-sm" color="var(--text-tertiary)" />
             <input
               style={{
                 border: "none",
                 background: "transparent",
                 outline: "none",
-                fontSize: MEMO_TAG_INPUT_FONT_SIZE,
+                fontSize: "var(--memo-tag-input-font-size)",
                 color: "var(--text-secondary)",
                 width: "100%",
               }}

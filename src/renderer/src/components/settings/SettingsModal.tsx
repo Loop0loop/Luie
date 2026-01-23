@@ -5,9 +5,6 @@ import type { EditorTheme, FontPreset } from "../../stores/editorStore";
 import { useEditorStore } from "../../stores/editorStore";
 import {
   EDITOR_FONT_FAMILIES,
-  ICON_SIZE_SM,
-  ICON_SIZE_XL,
-  ICON_SIZE_XS,
   SETTINGS_ACTION_APPLY,
   SETTINGS_ACTION_INSTALL,
   SETTINGS_ACTION_INSTALLING,
@@ -145,7 +142,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
         <div className={styles.header}>
           <div className={styles.title}>{SETTINGS_TITLE_DISPLAY}</div>
           <button className={styles.closeButton} onClick={onClose}>
-            <X size={ICON_SIZE_XL} />
+            <X className="icon-xl" />
           </button>
         </div>
 
@@ -223,7 +220,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                           onClick={() => handleInstall(font.id, font.pkg)}
                           disabled={isInstalling}
                         >
-                          <Download size={ICON_SIZE_SM} />
+                          <Download className="icon-sm" />
                           {isInstalling ? SETTINGS_ACTION_INSTALLING : SETTINGS_ACTION_INSTALL}
                         </button>
                       ) : isActive ? (
@@ -303,7 +300,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 >
                   {theme === t && (
                     <div className={styles.checkBadge}>
-                      <Check size={ICON_SIZE_XS} />
+                      <Check className="icon-xs" />
                     </div>
                   )}
                   <div className={styles.themeName}>

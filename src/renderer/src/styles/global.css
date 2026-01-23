@@ -54,6 +54,58 @@
   --panel-width: 320px;
   --collapsed-width: 0px; /* For animations */
 
+  /* UI sizing tokens */
+  --icon-size-xs: 12px;
+  --icon-size-sm: 14px;
+  --icon-size-md: 16px;
+  --icon-size-lg: 18px;
+  --icon-size-xl: 20px;
+  --icon-size-xxl: 24px;
+  --icon-size-xxxl: 32px;
+
+  --font-weight-semibold: 600;
+
+  --context-panel-section-padding: 16px;
+  --context-panel-header-font-size: 12px;
+  --context-panel-body-font-size: 13px;
+  --context-panel-tag-font-size: 10px;
+  --context-panel-section-margin-bottom: 8px;
+
+  --memo-search-icon-size: 12px;
+  --memo-search-font-size: 12px;
+  --memo-tag-font-size: 9px;
+  --memo-date-font-size: 10px;
+  --memo-date-icon-size: 8px;
+  --memo-tag-icon-size: 14px;
+  --memo-tag-input-font-size: 12px;
+  --memo-title-font-weight: 500;
+
+  --text-editor-min-height: 400px;
+
+  --world-overview-min-height: 400px;
+  --world-overview-line-height: 1.6;
+  --world-overview-font-size: 14px;
+  --world-mindmap-root-x: 300px;
+  --world-mindmap-root-y: 300px;
+  --world-status-font-size: 11px;
+  --world-hint-font-size: 12px;
+  --world-draw-text-font-size: 14px;
+  --world-draw-text-font-weight: 700;
+
+  --character-color-fallback: #ccc;
+  --character-icon-back-size: 16px;
+  --character-avatar-icon-size: 32px;
+  --character-add-icon-size: 24px;
+  --character-backstory-min-height: 100px;
+  --character-relation-min-height: 200px;
+  --character-relation-font-size: 12px;
+  --character-relation-margin-bottom: 8px;
+
+  --editor-toolbar-icon-size: 16px;
+  --editor-toolbar-dropdown-icon-size: 12px;
+  --editor-toolbar-plus-minus-font-size: 14px;
+  --editor-toolbar-mobile-icon-size: 14px;
+
   /* Typography */
   --font-sans: "Inter Variable", "Inter", "Noto Sans KR Variable", "Noto Sans JP Variable", -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, sans-serif;
   --font-serif: "Merriweather", "Noto Serif KR", serif;
@@ -164,6 +216,42 @@ body {
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.2s, color 0.2s;
   overflow: hidden; /* App-like behavior */
+}
+
+/* Icon size utilities */
+.icon-xs {
+  width: var(--icon-size-xs);
+  height: var(--icon-size-xs);
+}
+
+.icon-sm {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+}
+
+.icon-md {
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
+}
+
+.icon-lg {
+  width: var(--icon-size-lg);
+  height: var(--icon-size-lg);
+}
+
+.icon-xl {
+  width: var(--icon-size-xl);
+  height: var(--icon-size-xl);
+}
+
+.icon-xxl {
+  width: var(--icon-size-xxl);
+  height: var(--icon-size-xxl);
+}
+
+.icon-xxxl {
+  width: var(--icon-size-xxxl);
+  height: var(--icon-size-xxxl);
 }
 
 /* Reset buttons */

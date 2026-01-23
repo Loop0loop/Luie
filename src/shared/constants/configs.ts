@@ -62,6 +62,9 @@ export const DEFAULT_EDITOR_LINE_HEIGHT = 1.8
 export const DEFAULT_EDITOR_MAX_WIDTH = 800
 export const DEFAULT_EDITOR_THEME = 'light'
 
+export const EDITOR_TOOLBAR_FONT_STEP = 1
+export const EDITOR_TOOLBAR_FONT_MIN = 10
+
 export const EDITOR_FONT_FAMILIES = ['serif', 'sans', 'mono'] as const
 export const EDITOR_FONT_PRESETS = [
 	'default',

@@ -1,6 +1,5 @@
 import styles from "../../styles/components/ResearchPanel.module.css";
 import {
-  ICON_SIZE_LG,
   LABEL_RESEARCH_CHARACTERS,
   LABEL_RESEARCH_DEFAULT,
   LABEL_RESEARCH_SCRAP,
@@ -37,13 +36,13 @@ export default function ResearchPanel({
   const getIcon = () => {
     switch (activeTab) {
       case "character":
-        return <User size={ICON_SIZE_LG} />;
+        return <User className="icon-lg" />;
       case "world":
-        return <Globe size={ICON_SIZE_LG} />;
+        return <Globe className="icon-lg" />;
       case "scrap":
-        return <StickyNote size={ICON_SIZE_LG} />;
+        return <StickyNote className="icon-lg" />;
       default:
-        return <User size={ICON_SIZE_LG} />;
+        return <User className="icon-lg" />;
     }
   };
 
@@ -59,7 +58,7 @@ export default function ResearchPanel({
           onClick={onClose}
           title={TOOLTIP_CLOSE_PANEL}
         >
-          <X size={ICON_SIZE_LG} />
+          <X className="icon-lg" />
         </button>
       </div>
 

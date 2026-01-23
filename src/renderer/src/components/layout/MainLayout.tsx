@@ -4,7 +4,6 @@ import WindowBar from './WindowBar';
 import styles from '../../styles/layout/MainLayout.module.css';
 import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import {
-  ICON_SIZE_XL,
   TOOLTIP_SIDEBAR_COLLAPSE,
   TOOLTIP_SIDEBAR_EXPAND,
   TOOLTIP_CONTEXT_PANEL_COLLAPSE,
@@ -49,9 +48,9 @@ export default function MainLayout({ children, sidebar, contextPanel }: MainLayo
                title={isSidebarOpen ? TOOLTIP_SIDEBAR_COLLAPSE : TOOLTIP_SIDEBAR_EXPAND}
              >
                {isSidebarOpen ? (
-                 <PanelLeftClose size={ICON_SIZE_XL} />
+                 <PanelLeftClose className="icon-xl" />
                ) : (
-                 <PanelLeftOpen size={ICON_SIZE_XL} />
+                 <PanelLeftOpen className="icon-xl" />
                )}
              </button>
              
@@ -63,9 +62,9 @@ export default function MainLayout({ children, sidebar, contextPanel }: MainLayo
                title={isContextOpen ? TOOLTIP_CONTEXT_PANEL_COLLAPSE : TOOLTIP_CONTEXT_PANEL_EXPAND}
              >
                {isContextOpen ? (
-                 <PanelRightClose size={ICON_SIZE_XL} />
+                 <PanelRightClose className="icon-xl" />
                ) : (
-                 <PanelRightOpen size={ICON_SIZE_XL} />
+                 <PanelRightOpen className="icon-xl" />
                )}
              </button>
           </div>

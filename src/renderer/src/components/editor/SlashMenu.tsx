@@ -15,7 +15,6 @@ import {
   MessageSquare,
 } from "lucide-react";
 import {
-  ICON_SIZE_LG,
   SLASH_MENU_HEADER_BASIC,
   SLASH_MENU_DESC_H1,
   SLASH_MENU_DESC_H2,
@@ -50,16 +49,16 @@ interface SlashMenuProps {
 }
 
 const ICONS: Record<string, ReactElement> = {
-  h1: <Heading1 size={ICON_SIZE_LG} />,
-  h2: <Heading2 size={ICON_SIZE_LG} />,
-  h3: <Heading3 size={ICON_SIZE_LG} />,
-  bullet: <List size={ICON_SIZE_LG} />,
-  number: <ListOrdered size={ICON_SIZE_LG} />,
-  check: <CheckSquare size={ICON_SIZE_LG} />,
-  toggle: <ChevronRight size={ICON_SIZE_LG} />,
-  quote: <Quote size={ICON_SIZE_LG} />,
-  callout: <MessageSquare size={ICON_SIZE_LG} />,
-  divider: <Minus size={ICON_SIZE_LG} />,
+  h1: <Heading1 className="icon-lg" />,
+  h2: <Heading2 className="icon-lg" />,
+  h3: <Heading3 className="icon-lg" />,
+  bullet: <List className="icon-lg" />,
+  number: <ListOrdered className="icon-lg" />,
+  check: <CheckSquare className="icon-lg" />,
+  toggle: <ChevronRight className="icon-lg" />,
+  quote: <Quote className="icon-lg" />,
+  callout: <MessageSquare className="icon-lg" />,
+  divider: <Minus className="icon-lg" />,
 };
 
 const DESCRIPTIONS: Record<string, string> = {

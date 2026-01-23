@@ -97,6 +97,10 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
     logTag: "FS_READ_FILE",
     failMessage: "Failed to read file",
     handler: async (filePath: string) => {
+      const stat = await fs.stat(filePath);
+      if (stat.isDirectory()) {
+        return null;
+      }
       const content = await fs.readFile(filePath, "utf-8");
       return content;
     },

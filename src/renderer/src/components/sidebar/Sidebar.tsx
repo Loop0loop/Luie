@@ -16,9 +16,6 @@ import {
   Copy,
 } from "lucide-react";
 import {
-  ICON_SIZE_MD,
-  ICON_SIZE_SM,
-  ICON_SIZE_XS,
   SIDEBAR_ADD_CHAPTER,
   SIDEBAR_BINDER_TITLE,
   SIDEBAR_DEFAULT_PROJECT_TITLE,
@@ -152,33 +149,33 @@ function Sidebar({
             className={styles.contextMenuItem}
             onClick={() => handleAction("open_below", menuOpenId)}
           >
-            <ArrowDownFromLine size={ICON_SIZE_SM} /> {SIDEBAR_MENU_OPEN_BELOW}
+            <ArrowDownFromLine className="icon-sm" /> {SIDEBAR_MENU_OPEN_BELOW}
           </div>
           <div
             className={styles.contextMenuItem}
             onClick={() => handleAction("open_right", menuOpenId)}
           >
-            <ArrowRightFromLine size={ICON_SIZE_SM} /> {SIDEBAR_MENU_OPEN_RIGHT}
+            <ArrowRightFromLine className="icon-sm" /> {SIDEBAR_MENU_OPEN_RIGHT}
           </div>
           <div className={styles.divider} />
           <div
             className={styles.contextMenuItem}
             onClick={() => handleAction("rename", menuOpenId)}
           >
-            <Edit2 size={ICON_SIZE_SM} /> {SIDEBAR_MENU_RENAME}
+            <Edit2 className="icon-sm" /> {SIDEBAR_MENU_RENAME}
           </div>
           <div
             className={styles.contextMenuItem}
             onClick={() => handleAction("duplicate", menuOpenId)}
           >
-            <Copy size={ICON_SIZE_SM} /> {SIDEBAR_MENU_DUPLICATE}
+            <Copy className="icon-sm" /> {SIDEBAR_MENU_DUPLICATE}
           </div>
           <div
             className={styles.contextMenuItem}
             onClick={() => handleAction("delete", menuOpenId)}
             style={{ color: "#ef4444" }}
           >
-            <Trash2 size={ICON_SIZE_SM} /> {SIDEBAR_MENU_DELETE}
+            <Trash2 className="icon-sm" /> {SIDEBAR_MENU_DELETE}
           </div>
         </div>
       )}
@@ -196,9 +193,9 @@ function Sidebar({
           onClick={() => setManuscriptOpen(!isManuscriptOpen)}
         >
           {isManuscriptOpen ? (
-            <ChevronDown size={ICON_SIZE_XS} className={styles.sectionIcon} />
+            <ChevronDown className={`${styles.sectionIcon} icon-xs`} />
           ) : (
-            <ChevronRight size={ICON_SIZE_XS} className={styles.sectionIcon} />
+            <ChevronRight className={`${styles.sectionIcon} icon-xs`} />
           )}
           <span>{SIDEBAR_SECTION_MANUSCRIPT}</span>
         </div>
@@ -217,7 +214,7 @@ function Sidebar({
                 onMouseEnter={() => setHoveredItemId(chapter.id)}
                 onMouseLeave={() => setHoveredItemId(null)}
               >
-                <FileText size={ICON_SIZE_SM} className={styles.itemIcon} />
+                <FileText className={`${styles.itemIcon} icon-sm`} />
                 <span className={styles.itemTitle}>
                   {chapter.order}. {chapter.title}
                 </span>
@@ -229,7 +226,7 @@ function Sidebar({
                     className={styles.moreButton}
                     onClick={(e) => handleMenuClick(e, chapter.id)}
                   >
-                    <MoreVertical size={ICON_SIZE_SM} />
+                    <MoreVertical className="icon-sm" />
                   </div>
                 )}
               </div>
@@ -240,7 +237,7 @@ function Sidebar({
               onClick={onAddChapter}
               style={{ color: "var(--text-tertiary)" }}
             >
-              <Plus size={ICON_SIZE_SM} className={styles.itemIcon} />
+              <Plus className={`${styles.itemIcon} icon-sm`} />
               <span>{SIDEBAR_ADD_CHAPTER}</span>
             </div>
           </div>
@@ -252,9 +249,9 @@ function Sidebar({
           onClick={() => setResearchOpen(!isResearchOpen)}
         >
           {isResearchOpen ? (
-            <ChevronDown size={ICON_SIZE_XS} className={styles.sectionIcon} />
+            <ChevronDown className={`${styles.sectionIcon} icon-xs`} />
           ) : (
-            <ChevronRight size={ICON_SIZE_XS} className={styles.sectionIcon} />
+            <ChevronRight className={`${styles.sectionIcon} icon-xs`} />
           )}
           <span>{SIDEBAR_SECTION_RESEARCH}</span>
         </div>
@@ -267,14 +264,14 @@ function Sidebar({
               onMouseEnter={() => setHoveredItemId("res-char")}
               onMouseLeave={() => setHoveredItemId(null)}
             >
-              <FolderOpen size={ICON_SIZE_SM} className={styles.itemIcon} />
+              <FolderOpen className={`${styles.itemIcon} icon-sm`} />
               <span>{SIDEBAR_ITEM_CHARACTERS}</span>
               {(hoveredItemId === "res-char" || menuOpenId === "res-char") && (
                 <div
                   className={styles.moreButton}
                   onClick={(e) => handleMenuClick(e, "res-char")}
                 >
-                  <MoreVertical size={ICON_SIZE_SM} />
+                  <MoreVertical className="icon-sm" />
                 </div>
               )}
             </div>
@@ -284,7 +281,7 @@ function Sidebar({
               onMouseEnter={() => setHoveredItemId("res-world")}
               onMouseLeave={() => setHoveredItemId(null)}
             >
-              <FolderOpen size={ICON_SIZE_SM} className={styles.itemIcon} />
+              <FolderOpen className={`${styles.itemIcon} icon-sm`} />
               <span>{SIDEBAR_ITEM_WORLD}</span>
               {(hoveredItemId === "res-world" ||
                 menuOpenId === "res-world") && (
@@ -292,7 +289,7 @@ function Sidebar({
                   className={styles.moreButton}
                   onClick={(e) => handleMenuClick(e, "res-world")}
                 >
-                  <MoreVertical size={ICON_SIZE_SM} />
+                  <MoreVertical className="icon-sm" />
                 </div>
               )}
             </div>
@@ -302,7 +299,7 @@ function Sidebar({
               onMouseEnter={() => setHoveredItemId("res-scrap")}
               onMouseLeave={() => setHoveredItemId(null)}
             >
-              <BookOpen size={ICON_SIZE_SM} className={styles.itemIcon} />
+              <BookOpen className={`${styles.itemIcon} icon-sm`} />
               <span>{SIDEBAR_ITEM_SCRAP}</span>
               {(hoveredItemId === "res-scrap" ||
                 menuOpenId === "res-scrap") && (
@@ -310,7 +307,7 @@ function Sidebar({
                   className={styles.moreButton}
                   onClick={(e) => handleMenuClick(e, "res-scrap")}
                 >
-                  <MoreVertical size={ICON_SIZE_SM} />
+                  <MoreVertical className="icon-sm" />
                 </div>
               )}
             </div>
@@ -323,9 +320,9 @@ function Sidebar({
           onClick={() => setTrashOpen(!isTrashOpen)}
         >
           {isTrashOpen ? (
-            <ChevronDown size={ICON_SIZE_XS} className={styles.sectionIcon} />
+            <ChevronDown className={`${styles.sectionIcon} icon-xs`} />
           ) : (
-            <ChevronRight size={ICON_SIZE_XS} className={styles.sectionIcon} />
+            <ChevronRight className={`${styles.sectionIcon} icon-xs`} />
           )}
           <span>{SIDEBAR_SECTION_TRASH}</span>
         </div>
@@ -336,7 +333,7 @@ function Sidebar({
               className={styles.item}
               style={{ fontStyle: "italic", color: "var(--text-tertiary)" }}
             >
-              <Trash2 size={ICON_SIZE_SM} className={styles.itemIcon} />
+              <Trash2 className={`${styles.itemIcon} icon-sm`} />
               <span>{SIDEBAR_TRASH_EMPTY}</span>
             </div>
           </div>
@@ -349,7 +346,7 @@ function Sidebar({
           onClick={onOpenSettings}
           onPointerEnter={onPrefetchSettings}
         >
-          <Settings size={ICON_SIZE_MD} />
+          <Settings className="icon-md" />
           <span>{SIDEBAR_SETTINGS_LABEL}</span>
         </button>
       </div>

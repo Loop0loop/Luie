@@ -22,24 +22,11 @@ import { useTermStore } from "../../stores/termStore";
 import { BufferedInput, BufferedTextArea } from "../common/BufferedInput";
 import {
   WORLD_MINDMAP_ROOT_LABEL,
-  WORLD_MINDMAP_ROOT_X,
-  WORLD_MINDMAP_ROOT_Y,
-  WORLD_OVERVIEW_FONT_SIZE,
-  WORLD_OVERVIEW_LINE_HEIGHT,
-  WORLD_OVERVIEW_MIN_HEIGHT,
-  WORLD_STATUS_FONT_SIZE,
-  WORLD_HINT_FONT_SIZE,
-  FONT_WEIGHT_SEMIBOLD,
   DEFAULT_TERM_ADD_LABEL,
   WORLD_PROJECT_SYNOPSIS_TITLE,
-  ICON_SIZE_MD,
-  ICON_SIZE_SM,
-  ICON_SIZE_XS,
   WORLD_DRAW_TOOL_PEN_TITLE,
   WORLD_DRAW_TOOL_TEXT_TITLE,
   WORLD_DRAW_CLEAR_LABEL,
-  WORLD_DRAW_TEXT_FONT_SIZE,
-  WORLD_DRAW_TEXT_FONT_WEIGHT,
   WORLD_PLOT_ADD_BEAT_LABEL,
   WORLD_PLOT_NEW_BEAT_LABEL,
   PLACEHOLDER_WORLD_SYNOPSIS,
@@ -69,6 +56,15 @@ import {
 type WorldTab = "synopsis" | "terms" | "mindmap" | "drawing" | "plot";
 
 type MindMapNodeData = { label: string };
+
+const getCssNumber = (name: string, fallback: number) => {
+  if (typeof window === "undefined") return fallback;
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim();
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
 
 // Custom Node for MindMap
 const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
@@ -211,9 +207,9 @@ function TermManager() {
             className={styles.backButton}
             onClick={() => setSelectedTermId(null)}
           >
-            <ArrowLeft size={ICON_SIZE_MD} />
+            <ArrowLeft className="icon-md" />
           </div>
-          <span style={{ fontWeight: FONT_WEIGHT_SEMIBOLD }}>{term.term}</span>
+          <span style={{ fontWeight: "var(--font-weight-semibold)" }}>{term.term}</span>
         </div>
 
         <div className={styles.tableGrid}>
@@ -281,7 +277,7 @@ function TermManager() {
               opacity: 0.5,
             }}
           >
-            <X size={ICON_SIZE_SM} />
+            <X className="icon-sm" />
           </button>
         </div>
       ))}
@@ -290,7 +286,7 @@ function TermManager() {
         onClick={handleAddTerm}
         style={{ height: "80px" }}
       >
-        <Plus size={WORLD_ADD_TERM_ICON_SIZE} />
+        <Plus className="icon-xxl" />
         <span>{DEFAULT_TERM_ADD_LABEL}</span>
       </div>
     </div>
@@ -321,7 +317,7 @@ function SynopsisEditor() {
               key={s}
               onClick={() => setStatus(s)}
               style={{
-                fontSize: WORLD_STATUS_FONT_SIZE,
+                fontSize: "var(--world-status-font-size)",
                 padding: "2px 8px",
                 borderRadius: 12,
                 border:
@@ -350,9 +346,9 @@ function SynopsisEditor() {
           borderRadius: 4,
           width: "100%",
           marginBottom: 16,
-          minHeight: WORLD_OVERVIEW_MIN_HEIGHT,
-          lineHeight: WORLD_OVERVIEW_LINE_HEIGHT,
-          fontSize: WORLD_OVERVIEW_FONT_SIZE,
+          minHeight: "var(--world-overview-min-height)",
+          lineHeight: "var(--world-overview-line-height)",
+          fontSize: "var(--world-overview-font-size)",
           backgroundColor:
             status === "locked" ? "var(--bg-secondary)" : "transparent",
           color:
@@ -368,7 +364,7 @@ function SynopsisEditor() {
 
       <div
         style={{
-          fontSize: WORLD_HINT_FONT_SIZE,
+          fontSize: "var(--world-hint-font-size)",
           color: "var(--text-tertiary)",
           padding: "0 4px",
         }}
@@ -382,6 +378,8 @@ function SynopsisEditor() {
 function MindMapBoard() {
   const nodeTypes = useMemo(() => ({ character: CharacterNode }), []);
   const flowRef = useRef<ReactFlowInstance | null>(null);
+  const rootX = getCssNumber("--world-mindmap-root-x", 300);
+  const rootY = getCssNumber("--world-mindmap-root-y", 300);
 
   // XMind-style interaction:
   // Enter -> Add Sibling
@@ -391,7 +389,7 @@ function MindMapBoard() {
     {
       id: "root",
       type: "character",
-      position: { x: WORLD_MINDMAP_ROOT_X, y: WORLD_MINDMAP_ROOT_Y },
+      position: { x: rootX, y: rootY },
       data: { label: WORLD_MINDMAP_ROOT_LABEL },
     },
   ]);
@@ -683,14 +681,14 @@ function DrawingCanvas() {
             onClick={() => setTool("pen")}
             title={WORLD_DRAW_TOOL_PEN_TITLE}
           >
-            <PenTool size={ICON_SIZE_MD} />
+            <PenTool className="icon-md" />
           </button>
           <button
             className={`${styles.toolButton} ${tool === "text" ? styles.active : ""}`}
             onClick={() => setTool("text")}
             title={WORLD_DRAW_TOOL_TEXT_TITLE}
           >
-            <Type size={ICON_SIZE_MD} />
+            <Type className="icon-md" />
           </button>
         </div>
 
@@ -749,7 +747,7 @@ function DrawingCanvas() {
         </div>
 
         <button className={styles.subTab} onClick={clearCanvas}>
-          <Eraser size={ICON_SIZE_SM} /> {WORLD_DRAW_CLEAR_LABEL}
+          <Eraser className="icon-sm" /> {WORLD_DRAW_CLEAR_LABEL}
         </button>
       </div>
 
@@ -769,9 +767,12 @@ function DrawingCanvas() {
                   x={p.x}
                   y={p.y}
                   fill={p.color}
-                  fontSize={String(WORLD_DRAW_TEXT_FONT_SIZE)}
-                  fontWeight={WORLD_DRAW_TEXT_FONT_WEIGHT}
-                  style={{ userSelect: "none", pointerEvents: "none" }}
+                  style={{
+                    userSelect: "none",
+                    pointerEvents: "none",
+                    fontSize: "var(--world-draw-text-font-size)",
+                    fontWeight: "var(--world-draw-text-font-weight)",
+                  }}
                 >
                   {p.text}
                 </text>
@@ -895,13 +896,13 @@ function PlotBoard() {
                   className={styles.cardDeleteBtn}
                   onClick={() => deleteCard(col.id, card.id)}
                 >
-                  <X size={ICON_SIZE_XS} />
+                  <X className="icon-xs" />
                 </button>
               </div>
             ))}
           </div>
           <button className={styles.addCardBtn} onClick={() => addCard(col.id)}>
-            <Plus size={ICON_SIZE_SM} /> {WORLD_PLOT_ADD_BEAT_LABEL}
+            <Plus className="icon-sm" /> {WORLD_PLOT_ADD_BEAT_LABEL}
           </button>
         </div>
       ))}

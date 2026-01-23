@@ -4,19 +4,10 @@ import styles from "../../styles/components/ResearchPanel.module.css";
 import { useCharacterStore } from "../../stores/characterStore";
 import { useProjectStore } from "../../stores/projectStore";
 import {
-  CHARACTER_BACKSTORY_MIN_HEIGHT,
-  CHARACTER_COLOR_FALLBACK,
-  CHARACTER_ADD_ICON_SIZE,
-  CHARACTER_AVATAR_ICON_SIZE,
-  CHARACTER_ICON_BACK_SIZE,
-  CHARACTER_RELATION_FONT_SIZE,
-  CHARACTER_RELATION_MARGIN_BOTTOM,
-  CHARACTER_RELATION_MIN_HEIGHT,
   DEFAULT_CHARACTER_FALLBACK_NAME,
   DEFAULT_CHARACTER_DESCRIPTION_LABEL,
   DEFAULT_CHARACTER_NAME,
   DEFAULT_CHARACTER_ADD_LABEL,
-  FONT_WEIGHT_SEMIBOLD,
   LABEL_CHARACTER_SECTION_PROFILE,
   LABEL_CHARACTER_SECTION_APPEARANCE,
   LABEL_CHARACTER_SECTION_RELATION,
@@ -86,9 +77,14 @@ export default function CharacterManager() {
             className={styles.backButton}
             onClick={() => setSelectedCharacterId(null)}
           >
-            <ArrowLeft size={CHARACTER_ICON_BACK_SIZE} />
+            <ArrowLeft
+              style={{
+                width: "var(--character-icon-back-size)",
+                height: "var(--character-icon-back-size)",
+              }}
+            />
           </div>
-          <span style={{ fontWeight: FONT_WEIGHT_SEMIBOLD }}>
+          <span style={{ fontWeight: "var(--font-weight-semibold)" }}>
             {selectedChar?.name || DEFAULT_CHARACTER_FALLBACK_NAME}
           </span>
         </div>
@@ -111,12 +107,12 @@ export default function CharacterManager() {
               borderBottom: `4px solid ${
                 typeof char.attributes === "string"
                   ? (JSON.parse(char.attributes as string) as { color?: string })
-                      .color || CHARACTER_COLOR_FALLBACK
-                  : CHARACTER_COLOR_FALLBACK
+                      .color || "var(--character-color-fallback)"
+                  : "var(--character-color-fallback)"
               }`,
             }}
           >
-            <User size={CHARACTER_AVATAR_ICON_SIZE} opacity={0.5} />
+            <User className="icon-xxxl" opacity={0.5} />
           </div>
           <div className={styles.characterInfo}>
             <div className={styles.characterName}>{char.name}</div>
@@ -127,7 +123,7 @@ export default function CharacterManager() {
         </div>
       ))}
       <div className={styles.addCharacterCard} onClick={handleAddCharacter}>
-        <Plus size={CHARACTER_ADD_ICON_SIZE} />
+        <Plus className="icon-xxl" />
         <span>{DEFAULT_CHARACTER_ADD_LABEL}</span>
       </div>
     </div>
@@ -322,7 +318,7 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
               <BufferedTextArea
                 className={styles.cellValueInput}
                 value={attributes.backstory || ""}
-                style={{ minHeight: `${CHARACTER_BACKSTORY_MIN_HEIGHT}px` }}
+                style={{ minHeight: "var(--character-backstory-min-height)" }}
                 onSave={(val) => handleAttributeUpdate("backstory", val)}
               />
             </div>
@@ -334,9 +330,9 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
             <div className={styles.sectionTitle}>{LABEL_CHARACTER_SECTION_RELATION}</div>
             <p
               style={{
-                fontSize: CHARACTER_RELATION_FONT_SIZE,
+                fontSize: "var(--character-relation-font-size)",
                 color: "var(--text-tertiary)",
-                marginBottom: CHARACTER_RELATION_MARGIN_BOTTOM,
+                marginBottom: "var(--character-relation-margin-bottom)",
               }}
             >
               {LABEL_CHARACTER_RELATION_HINT}
@@ -344,7 +340,7 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
             <BufferedTextArea
               className={styles.cellValueInput}
               style={{
-                minHeight: `${CHARACTER_RELATION_MIN_HEIGHT}px`,
+                minHeight: "var(--character-relation-min-height)",
                 border: "1px solid var(--border-default)",
                 borderRadius: "4px",
               }}
