@@ -23,7 +23,8 @@ import { slashSuggestion } from "./suggestion";
 import {
   EDITOR_AUTOSAVE_DEBOUNCE_MS,
   EDITOR_STYLE_APPLY_DEBOUNCE_MS,
-} from "../../../shared/constants";
+  PLACEHOLDER_EDITOR_TITLE,
+} from "../../../../shared/constants";
 
 // Simple Callout Extension (inline to avoid dependencies)
 const Callout = Node.create({
@@ -238,7 +239,7 @@ function Editor({
           <input
             type="text"
             className={styles.titleInput}
-            placeholder="제목 없음"
+            placeholder={PLACEHOLDER_EDITOR_TITLE}
             value={title}
             onChange={(e) => {
               const nextTitle = e.target.value;

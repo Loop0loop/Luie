@@ -18,21 +18,35 @@ import {
 import styles from "../../styles/components/EditorToolbar.module.css";
 import type { Editor } from "@tiptap/react";
 import { useEditorStore } from "../../stores/editorStore";
+import {
+  EDITOR_TOOLBAR_DEFAULT_FONT_LABEL,
+  EDITOR_TOOLBAR_DROPDOWN_ICON_SIZE,
+  EDITOR_TOOLBAR_FONT_MIN,
+  EDITOR_TOOLBAR_FONT_STEP,
+  EDITOR_TOOLBAR_ICON_SIZE,
+  EDITOR_TOOLBAR_MOBILE_ICON_SIZE,
+  EDITOR_TOOLBAR_PLUS_MINUS_FONT_SIZE,
+  TOOLTIP_ALIGN_CENTER,
+  TOOLTIP_ALIGN_LEFT,
+  TOOLTIP_ALIGN_RIGHT,
+  TOOLTIP_BOLD,
+  TOOLTIP_HIGHLIGHT,
+  TOOLTIP_ITALIC,
+  TOOLTIP_REDO,
+  TOOLTIP_STRIKETHROUGH,
+  TOOLTIP_TEXT_COLOR,
+  TOOLTIP_TOGGLE_MOBILE_VIEW,
+  TOOLTIP_UNDERLINE,
+  TOOLTIP_UNDO,
+  LABEL_VIEW_MOBILE,
+  LABEL_VIEW_PC,
+} from "../../../../shared/constants";
 
 interface EditorToolbarProps {
   editor: Editor | null;
   isMobileView?: boolean;
   onToggleMobileView?: () => void;
 }
-  import {
-    EDITOR_TOOLBAR_DEFAULT_FONT_LABEL,
-    EDITOR_TOOLBAR_DROPDOWN_ICON_SIZE,
-    EDITOR_TOOLBAR_FONT_MIN,
-    EDITOR_TOOLBAR_FONT_STEP,
-    EDITOR_TOOLBAR_ICON_SIZE,
-    EDITOR_TOOLBAR_MOBILE_ICON_SIZE,
-    EDITOR_TOOLBAR_PLUS_MINUS_FONT_SIZE,
-  } from "../../../../shared/constants";
 
 export default function EditorToolbar({
   editor,
@@ -53,7 +67,7 @@ export default function EditorToolbar({
         <div className={styles.tgroup}>
           <button
             className={styles.iconBtn}
-            title="Undo"
+            title={TOOLTIP_UNDO}
             onClick={() => editor.chain().focus().undo().run()}
             disabled={!editor.can().undo()}
           >
@@ -61,7 +75,7 @@ export default function EditorToolbar({
           </button>
           <button
             className={styles.iconBtn}
-            title="Redo"
+            title={TOOLTIP_REDO}
             onClick={() => editor.chain().focus().redo().run()}
             disabled={!editor.can().redo()}
           >
@@ -101,28 +115,28 @@ export default function EditorToolbar({
 
           <button
             className={`${styles.iconBtn} ${editor.isActive("bold") ? styles.active : ""}`}
-            title="Bold"
+            title={TOOLTIP_BOLD}
             onClick={() => editor.chain().focus().toggleBold().run()}
           >
               <Bold size={EDITOR_TOOLBAR_ICON_SIZE} />
           </button>
           <button
             className={`${styles.iconBtn} ${editor.isActive("italic") ? styles.active : ""}`}
-            title="Italic"
+            title={TOOLTIP_ITALIC}
             onClick={() => editor.chain().focus().toggleItalic().run()}
           >
               <Italic size={EDITOR_TOOLBAR_ICON_SIZE} />
           </button>
           <button
             className={`${styles.iconBtn} ${editor.isActive("underline") ? styles.active : ""}`}
-            title="Underline"
+            title={TOOLTIP_UNDERLINE}
             onClick={() => editor.chain().focus().toggleUnderline().run()}
           >
               <Underline size={EDITOR_TOOLBAR_ICON_SIZE} />
           </button>
           <button
             className={`${styles.iconBtn} ${editor.isActive("strike") ? styles.active : ""}`}
-            title="Strikethrough"
+            title={TOOLTIP_STRIKETHROUGH}
             onClick={() => editor.chain().focus().toggleStrike().run()}
           >
               <Strikethrough size={EDITOR_TOOLBAR_ICON_SIZE} />
@@ -131,7 +145,7 @@ export default function EditorToolbar({
           <div className={styles.separator} />
 
           {/* Color Picker */}
-          <div className={styles.colorPickerWrapper} title="Text Color">
+          <div className={styles.colorPickerWrapper} title={TOOLTIP_TEXT_COLOR}>
             <input
               type="color"
               className={styles.colorInput}
@@ -153,7 +167,7 @@ export default function EditorToolbar({
 
           <button
             className={`${styles.iconBtn} ${editor.isActive("highlight") ? styles.active : ""}`}
-            title="Highlight"
+            title={TOOLTIP_HIGHLIGHT}
             onClick={() => editor.chain().focus().toggleHighlight().run()}
           >
             <Highlighter size={EDITOR_TOOLBAR_ICON_SIZE} />
@@ -166,21 +180,21 @@ export default function EditorToolbar({
               For now focusing on text styling. */}
           <button
             className={`${styles.iconBtn} ${editor.isActive({ textAlign: "left" }) ? styles.active : ""}`}
-            title="Align Left"
+            title={TOOLTIP_ALIGN_LEFT}
             onClick={() => editor.chain().focus().setTextAlign("left").run()}
           >
             <AlignLeft size={EDITOR_TOOLBAR_ICON_SIZE} />
           </button>
           <button
             className={`${styles.iconBtn} ${editor.isActive({ textAlign: "center" }) ? styles.active : ""}`}
-            title="Align Center"
+            title={TOOLTIP_ALIGN_CENTER}
             onClick={() => editor.chain().focus().setTextAlign("center").run()}
           >
             <AlignCenter size={EDITOR_TOOLBAR_ICON_SIZE} />
           </button>
           <button
             className={`${styles.iconBtn} ${editor.isActive({ textAlign: "right" }) ? styles.active : ""}`}
-            title="Align Right"
+            title={TOOLTIP_ALIGN_RIGHT}
             onClick={() => editor.chain().focus().setTextAlign("right").run()}
           >
             <AlignRight size={EDITOR_TOOLBAR_ICON_SIZE} />
@@ -192,14 +206,14 @@ export default function EditorToolbar({
             className={styles.mobileToggle}
             data-active={isMobileView}
             onClick={onToggleMobileView}
-            title="모바일 뷰 전환"
+            title={TOOLTIP_TOGGLE_MOBILE_VIEW}
           >
             {isMobileView ? (
               <Smartphone size={EDITOR_TOOLBAR_MOBILE_ICON_SIZE} />
             ) : (
               <Monitor size={EDITOR_TOOLBAR_MOBILE_ICON_SIZE} />
             )}
-            <span>{isMobileView ? "Mobile" : "PC"}</span>
+            <span>{isMobileView ? LABEL_VIEW_MOBILE : LABEL_VIEW_PC}</span>
           </button>
 
           <button

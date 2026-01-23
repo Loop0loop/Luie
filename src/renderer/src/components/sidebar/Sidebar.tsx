@@ -15,7 +15,27 @@ import {
   ArrowDownFromLine,
   Copy,
 } from "lucide-react";
-import { ICON_SIZE_MD, ICON_SIZE_SM, ICON_SIZE_XS } from "../../../../shared/constants";
+import {
+  ICON_SIZE_MD,
+  ICON_SIZE_SM,
+  ICON_SIZE_XS,
+  SIDEBAR_ADD_CHAPTER,
+  SIDEBAR_BINDER_TITLE,
+  SIDEBAR_DEFAULT_PROJECT_TITLE,
+  SIDEBAR_ITEM_CHARACTERS,
+  SIDEBAR_ITEM_SCRAP,
+  SIDEBAR_ITEM_WORLD,
+  SIDEBAR_MENU_DELETE,
+  SIDEBAR_MENU_DUPLICATE,
+  SIDEBAR_MENU_OPEN_BELOW,
+  SIDEBAR_MENU_OPEN_RIGHT,
+  SIDEBAR_MENU_RENAME,
+  SIDEBAR_SECTION_MANUSCRIPT,
+  SIDEBAR_SECTION_RESEARCH,
+  SIDEBAR_SECTION_TRASH,
+  SIDEBAR_SETTINGS_LABEL,
+  SIDEBAR_TRASH_EMPTY,
+} from "../../../../shared/constants";
 
 interface Chapter {
   id: string;
@@ -131,41 +151,41 @@ function Sidebar({
             className={styles.contextMenuItem}
             onClick={() => handleAction("open_below", menuOpenId)}
           >
-            <ArrowDownFromLine size={ICON_SIZE_SM} /> 아래에 열기
+            <ArrowDownFromLine size={ICON_SIZE_SM} /> {SIDEBAR_MENU_OPEN_BELOW}
           </div>
           <div
             className={styles.contextMenuItem}
             onClick={() => handleAction("open_right", menuOpenId)}
           >
-            <ArrowRightFromLine size={ICON_SIZE_SM} /> 오른쪽에 열기
+            <ArrowRightFromLine size={ICON_SIZE_SM} /> {SIDEBAR_MENU_OPEN_RIGHT}
           </div>
           <div className={styles.divider} />
           <div
             className={styles.contextMenuItem}
             onClick={() => handleAction("rename", menuOpenId)}
           >
-            <Edit2 size={ICON_SIZE_SM} /> 이름 수정하기
+            <Edit2 size={ICON_SIZE_SM} /> {SIDEBAR_MENU_RENAME}
           </div>
           <div
             className={styles.contextMenuItem}
             onClick={() => handleAction("duplicate", menuOpenId)}
           >
-            <Copy size={ICON_SIZE_SM} /> 복제하기
+            <Copy size={ICON_SIZE_SM} /> {SIDEBAR_MENU_DUPLICATE}
           </div>
           <div
             className={styles.contextMenuItem}
             onClick={() => handleAction("delete", menuOpenId)}
             style={{ color: "#ef4444" }}
           >
-            <Trash2 size={ICON_SIZE_SM} /> 삭제하기
+            <Trash2 size={ICON_SIZE_SM} /> {SIDEBAR_MENU_DELETE}
           </div>
         </div>
       )}
       <div className={styles.header}>
         <h2 className={styles.projectName}>
-          {currentProjectTitle || "프로젝트"}
+          {currentProjectTitle || SIDEBAR_DEFAULT_PROJECT_TITLE}
         </h2>
-        <div className={styles.metaInfo}>PROJECT BINDER</div>
+        <div className={styles.metaInfo}>{SIDEBAR_BINDER_TITLE}</div>
       </div>
 
       <div className={styles.binderArea}>
@@ -179,7 +199,7 @@ function Sidebar({
           ) : (
             <ChevronRight size={ICON_SIZE_XS} className={styles.sectionIcon} />
           )}
-          <span>원고 (Manuscript)</span>
+          <span>{SIDEBAR_SECTION_MANUSCRIPT}</span>
         </div>
 
         {isManuscriptOpen && (
@@ -220,7 +240,7 @@ function Sidebar({
               style={{ color: "var(--text-tertiary)" }}
             >
               <Plus size={ICON_SIZE_SM} className={styles.itemIcon} />
-              <span>새 회차 추가...</span>
+              <span>{SIDEBAR_ADD_CHAPTER}</span>
             </div>
           </div>
         )}
@@ -235,7 +255,7 @@ function Sidebar({
           ) : (
             <ChevronRight size={ICON_SIZE_XS} className={styles.sectionIcon} />
           )}
-          <span>연구 (Research)</span>
+          <span>{SIDEBAR_SECTION_RESEARCH}</span>
         </div>
 
         {isResearchOpen && (
@@ -247,7 +267,7 @@ function Sidebar({
               onMouseLeave={() => setHoveredItemId(null)}
             >
               <FolderOpen size={ICON_SIZE_SM} className={styles.itemIcon} />
-              <span>등장인물 (Characters)</span>
+              <span>{SIDEBAR_ITEM_CHARACTERS}</span>
               {(hoveredItemId === "res-char" || menuOpenId === "res-char") && (
                 <div
                   className={styles.moreButton}
@@ -264,7 +284,7 @@ function Sidebar({
               onMouseLeave={() => setHoveredItemId(null)}
             >
               <FolderOpen size={ICON_SIZE_SM} className={styles.itemIcon} />
-              <span>세계관 (World)</span>
+              <span>{SIDEBAR_ITEM_WORLD}</span>
               {(hoveredItemId === "res-world" ||
                 menuOpenId === "res-world") && (
                 <div
@@ -282,7 +302,7 @@ function Sidebar({
               onMouseLeave={() => setHoveredItemId(null)}
             >
               <BookOpen size={ICON_SIZE_SM} className={styles.itemIcon} />
-              <span>자료 스크랩</span>
+              <span>{SIDEBAR_ITEM_SCRAP}</span>
               {(hoveredItemId === "res-scrap" ||
                 menuOpenId === "res-scrap") && (
                 <div
@@ -306,7 +326,7 @@ function Sidebar({
           ) : (
             <ChevronRight size={ICON_SIZE_XS} className={styles.sectionIcon} />
           )}
-          <span>휴지통 (Trash)</span>
+          <span>{SIDEBAR_SECTION_TRASH}</span>
         </div>
 
         {isTrashOpen && (
@@ -316,7 +336,7 @@ function Sidebar({
               style={{ fontStyle: "italic", color: "var(--text-tertiary)" }}
             >
               <Trash2 size={ICON_SIZE_SM} className={styles.itemIcon} />
-              <span>비어 있음</span>
+              <span>{SIDEBAR_TRASH_EMPTY}</span>
             </div>
           </div>
         )}
@@ -329,7 +349,7 @@ function Sidebar({
           onPointerEnter={onPrefetchSettings}
         >
           <Settings size={ICON_SIZE_MD} />
-          <span>설정 (Settings)</span>
+          <span>{SIDEBAR_SETTINGS_LABEL}</span>
         </button>
       </div>
     </div>

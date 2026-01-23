@@ -36,6 +36,14 @@ import {
   ICON_SIZE_MD,
   ICON_SIZE_SM,
   ICON_SIZE_XS,
+  WORLD_DRAW_TOOL_PEN_TITLE,
+  WORLD_DRAW_TOOL_TEXT_TITLE,
+  WORLD_DRAW_CLEAR_LABEL,
+  WORLD_DRAW_TEXT_FONT_SIZE,
+  WORLD_DRAW_TEXT_FONT_WEIGHT,
+  WORLD_PLOT_ADD_BEAT_LABEL,
+  WORLD_PLOT_NEW_BEAT_LABEL,
+  PLACEHOLDER_WORLD_SYNOPSIS,
 } from "../../../../shared/constants";
 
 type WorldTab = "synopsis" | "terms" | "mindmap" | "drawing" | "plot";
@@ -332,7 +340,7 @@ function SynopsisEditor() {
               ? "var(--text-secondary)"
               : "var(--text-primary)",
         }}
-        placeholder="이야기의 핵심 로그라인, 기획의도, 줄거리를 자유롭게 작성하세요."
+        placeholder={PLACEHOLDER_WORLD_SYNOPSIS}
         value={currentProject.description || ""}
         readOnly={status === "locked"}
         onSave={(val) => updateProject(currentProject.id, undefined, val)}
@@ -654,14 +662,14 @@ function DrawingCanvas() {
           <button
             className={`${styles.toolButton} ${tool === "pen" ? styles.active : ""}`}
             onClick={() => setTool("pen")}
-            title="펜"
+            title={WORLD_DRAW_TOOL_PEN_TITLE}
           >
             <PenTool size={ICON_SIZE_MD} />
           </button>
           <button
             className={`${styles.toolButton} ${tool === "text" ? styles.active : ""}`}
             onClick={() => setTool("text")}
-            title="지명 (텍스트)"
+            title={WORLD_DRAW_TOOL_TEXT_TITLE}
           >
             <Type size={ICON_SIZE_MD} />
           </button>
@@ -722,7 +730,7 @@ function DrawingCanvas() {
         </div>
 
         <button className={styles.subTab} onClick={clearCanvas}>
-          <Eraser size={ICON_SIZE_SM} /> Clear All
+          <Eraser size={ICON_SIZE_SM} /> {WORLD_DRAW_CLEAR_LABEL}
         </button>
       </div>
 
@@ -742,8 +750,8 @@ function DrawingCanvas() {
                   x={p.x}
                   y={p.y}
                   fill={p.color}
-                  fontSize="14"
-                  fontWeight="bold"
+                  fontSize={String(WORLD_DRAW_TEXT_FONT_SIZE)}
+                  fontWeight={WORLD_DRAW_TEXT_FONT_WEIGHT}
                   style={{ userSelect: "none", pointerEvents: "none" }}
                 >
                   {p.text}
@@ -808,7 +816,7 @@ function PlotBoard() {
             ...col,
             cards: [
               ...col.cards,
-              { id: Date.now().toString(), content: "New Beat" },
+              { id: Date.now().toString(), content: WORLD_PLOT_NEW_BEAT_LABEL },
             ],
           };
         }
@@ -874,7 +882,7 @@ function PlotBoard() {
             ))}
           </div>
           <button className={styles.addCardBtn} onClick={() => addCard(col.id)}>
-            <Plus size={ICON_SIZE_SM} /> Add Beat
+            <Plus size={ICON_SIZE_SM} /> {WORLD_PLOT_ADD_BEAT_LABEL}
           </button>
         </div>
       ))}

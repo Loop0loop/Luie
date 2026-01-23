@@ -1,5 +1,12 @@
 import styles from "../../styles/components/ResearchPanel.module.css";
-import { ICON_SIZE_LG } from "../../../shared/constants";
+import {
+  ICON_SIZE_LG,
+  LABEL_RESEARCH_CHARACTERS,
+  LABEL_RESEARCH_DEFAULT,
+  LABEL_RESEARCH_SCRAP,
+  LABEL_RESEARCH_WORLD,
+  TOOLTIP_CLOSE_PANEL,
+} from "../../../shared/constants";
 import { Globe, StickyNote, User, X } from "lucide-react";
 import CharacterManager from "./CharacterManager";
 import MemoSection from "./MemoSection";
@@ -17,13 +24,13 @@ export default function ResearchPanel({
   const getTitle = () => {
     switch (activeTab) {
       case "character":
-        return "Characters";
+        return LABEL_RESEARCH_CHARACTERS;
       case "world":
-        return "World";
+        return LABEL_RESEARCH_WORLD;
       case "scrap":
-        return "Scrap";
+        return LABEL_RESEARCH_SCRAP;
       default:
-        return "Research";
+        return LABEL_RESEARCH_DEFAULT;
     }
   };
 
@@ -50,7 +57,7 @@ export default function ResearchPanel({
         <button
           className={styles.closeButton}
           onClick={onClose}
-          title="Close Panel"
+          title={TOOLTIP_CLOSE_PANEL}
         >
           <X size={ICON_SIZE_LG} />
         </button>

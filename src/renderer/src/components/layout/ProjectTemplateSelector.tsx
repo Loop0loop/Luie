@@ -20,6 +20,8 @@ import {
   TEMPLATE_NEW_PROJECT_LABEL,
   TEMPLATE_SIDEBAR_TITLE,
   ICON_SIZE_MD,
+  DIALOG_TITLE_DELETE_PROJECT,
+  DIALOG_TITLE_RENAME_PROJECT,
 } from "../../../shared/constants";
 
 interface ProjectTemplateSelectorProps {
@@ -206,7 +208,7 @@ export default function ProjectTemplateSelector({
       {/* Custom Dialogs */}
       <PromptDialog
         isOpen={renameDialog.isOpen}
-        title="프로젝트 이름 수정"
+        title={DIALOG_TITLE_RENAME_PROJECT}
         defaultValue={renameDialog.currentTitle}
         onConfirm={async (value) => {
           const nextTitle = value.trim();
@@ -224,7 +226,7 @@ export default function ProjectTemplateSelector({
 
       <ConfirmDialog
         isOpen={deleteDialog.isOpen}
-        title="프로젝트 삭제"
+        title={DIALOG_TITLE_DELETE_PROJECT}
         message={`정말로 "${deleteDialog.projectTitle}" 프로젝트를 삭제할까요? 이 작업은 되돌릴 수 없습니다.`}
         confirmLabel="삭제"
         isDestructive

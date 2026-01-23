@@ -131,6 +131,74 @@ export const ICON_SIZE_XL = 20
 export const ICON_SIZE_XXL = 24
 export const ICON_SIZE_XXXL = 32
 
+export const PLACEHOLDER_CONTEXT_SEARCH = '통합 검색...'
+export const PLACEHOLDER_CONTEXT_SYNOPSIS = '여기에 시놉시스를 작성하세요...'
+export const PLACEHOLDER_TEXT_EDITOR = '글을 쓰세요...'
+export const PLACEHOLDER_EDITOR_TITLE = '제목 없음'
+export const PLACEHOLDER_MEMO_SEARCH = 'Search...'
+export const PLACEHOLDER_MEMO_TAGS = 'Add tags (comma separated)...'
+export const PLACEHOLDER_MEMO_TITLE = 'Title'
+export const PLACEHOLDER_MEMO_BODY = 'Start typing your memo...'
+export const PLACEHOLDER_WORLD_SYNOPSIS = '이야기의 핵심 로그라인, 기획의도, 줄거리를 자유롭게 작성하세요.'
+
+export const LABEL_MEMO_EMPTY = 'Select a note to view'
+export const LABEL_RESEARCH_CHARACTERS = 'Characters'
+export const LABEL_RESEARCH_WORLD = 'World'
+export const LABEL_RESEARCH_SCRAP = 'Scrap'
+export const LABEL_RESEARCH_DEFAULT = 'Research'
+
+export const DIALOG_TITLE_RENAME_PROJECT = '프로젝트 이름 수정'
+export const DIALOG_TITLE_DELETE_PROJECT = '프로젝트 삭제'
+
+export const SIDEBAR_MENU_OPEN_BELOW = '아래에 열기'
+export const SIDEBAR_MENU_OPEN_RIGHT = '오른쪽에 열기'
+export const SIDEBAR_MENU_RENAME = '이름 수정하기'
+export const SIDEBAR_MENU_DUPLICATE = '복제하기'
+export const SIDEBAR_MENU_DELETE = '삭제하기'
+export const SIDEBAR_DEFAULT_PROJECT_TITLE = '프로젝트'
+export const SIDEBAR_BINDER_TITLE = 'PROJECT BINDER'
+export const SIDEBAR_SECTION_MANUSCRIPT = '원고 (Manuscript)'
+export const SIDEBAR_ADD_CHAPTER = '새 회차 추가...'
+export const SIDEBAR_SECTION_RESEARCH = '연구 (Research)'
+export const SIDEBAR_ITEM_CHARACTERS = '등장인물 (Characters)'
+export const SIDEBAR_ITEM_WORLD = '세계관 (World)'
+export const SIDEBAR_ITEM_SCRAP = '자료 스크랩'
+export const SIDEBAR_SECTION_TRASH = '휴지통 (Trash)'
+export const SIDEBAR_TRASH_EMPTY = '비어 있음'
+export const SIDEBAR_SETTINGS_LABEL = '설정 (Settings)'
+
+export const TEXT_EDITOR_SAVE_SAVING = '저장 중...'
+export const TEXT_EDITOR_SAVE_DONE = '저장 완료'
+export const TEXT_EDITOR_SAVE_BUTTON = '저장'
+export const TEXT_EDITOR_CHAR_SUFFIX = '자'
+export const TEXT_EDITOR_WORD_SUFFIX = '단어'
+
+export const LABEL_VIEW_MOBILE = 'Mobile'
+export const LABEL_VIEW_PC = 'PC'
+
+export const TOOLTIP_CLOSE_PANEL = 'Close Panel'
+export const TOOLTIP_UNDO = 'Undo'
+export const TOOLTIP_REDO = 'Redo'
+export const TOOLTIP_BOLD = 'Bold'
+export const TOOLTIP_ITALIC = 'Italic'
+export const TOOLTIP_UNDERLINE = 'Underline'
+export const TOOLTIP_STRIKETHROUGH = 'Strikethrough'
+export const TOOLTIP_TEXT_COLOR = 'Text Color'
+export const TOOLTIP_HIGHLIGHT = 'Highlight'
+export const TOOLTIP_ALIGN_LEFT = 'Align Left'
+export const TOOLTIP_ALIGN_CENTER = 'Align Center'
+export const TOOLTIP_ALIGN_RIGHT = 'Align Right'
+export const TOOLTIP_TOGGLE_MOBILE_VIEW = '모바일 뷰 전환'
+
+export const TEXT_EDITOR_MIN_HEIGHT = 400
+export const WORLD_DRAW_TOOL_PEN_TITLE = '펜'
+export const WORLD_DRAW_TOOL_TEXT_TITLE = '지명 (텍스트)'
+export const WORLD_DRAW_CLEAR_LABEL = 'Clear All'
+export const WORLD_DRAW_TEXT_FONT_SIZE = 14
+export const WORLD_DRAW_TEXT_FONT_WEIGHT = 'bold'
+export const WORLD_PLOT_ADD_BEAT_LABEL = 'Add Beat'
+export const WORLD_PLOT_NEW_BEAT_LABEL = 'New Beat'
+
 export const CONTEXT_PANEL_SECTION_PADDING = 16
 export const CONTEXT_PANEL_HEADER_FONT_SIZE = 12
 export const CONTEXT_PANEL_BODY_FONT_SIZE = 13

@@ -1,5 +1,14 @@
 import { useState, useRef, useEffect, useTransition } from "react";
 import { useAutoSaveStore } from "../stores/autoSaveStore";
+import {
+  PLACEHOLDER_TEXT_EDITOR,
+  TEXT_EDITOR_MIN_HEIGHT,
+  TEXT_EDITOR_SAVE_BUTTON,
+  TEXT_EDITOR_SAVE_DONE,
+  TEXT_EDITOR_SAVE_SAVING,
+  TEXT_EDITOR_CHAR_SUFFIX,
+  TEXT_EDITOR_WORD_SUFFIX,
+} from "../../../shared/constants";
 
 interface TextEditorProps {
   chapterId: string;
@@ -69,34 +78,40 @@ export default function TextEditor({
           onChange={(e) => handleChange(e.target.value)}
           onKeyDown={handleKeyDown}
           className="flex-1 w-full p-6 text-base leading-relaxed text-fg bg-surface border-none resize-none focus:outline-none"
-          placeholder="글을 쓰세요..."
+          placeholder={PLACEHOLDER_TEXT_EDITOR}
           spellCheck={false}
           style={{
-            minHeight: "400px",
+            minHeight: `${TEXT_EDITOR_MIN_HEIGHT}px`,
           }}
         />
       </div>
 
       <div className="flex items-center justify-between px-6 py-3 bg-surface-hover border-t border-border">
         <div className="flex items-center gap-4 text-sm text-muted">
-          <span>{charCount}자</span>
+          <span>
+            {charCount}
+            {TEXT_EDITOR_CHAR_SUFFIX}
+          </span>
           <span>•</span>
-          <span>{wordCount}단어</span>
+          <span>
+            {wordCount}
+            {TEXT_EDITOR_WORD_SUFFIX}
+          </span>
         </div>
 
         <div className="flex items-center gap-3">
           {saveStatus === "saving" && (
-            <span className="text-sm text-accent">저장 중...</span>
+            <span className="text-sm text-accent">{TEXT_EDITOR_SAVE_SAVING}</span>
           )}
           {saveStatus === "saved" && (
-            <span className="text-sm text-success">저장 완료</span>
+            <span className="text-sm text-success">{TEXT_EDITOR_SAVE_DONE}</span>
           )}
           <button
             onClick={handleSave}
             disabled={isPending}
             className="px-4 py-2 text-sm font-medium text-accent-fg bg-accent rounded hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            저장
+            {TEXT_EDITOR_SAVE_BUTTON}
           </button>
         </div>
       </div>

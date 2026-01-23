@@ -14,6 +14,8 @@ import {
   FONT_WEIGHT_SEMIBOLD,
   ICON_SIZE_MD,
   ICON_SIZE_SM,
+  PLACEHOLDER_CONTEXT_SEARCH,
+  PLACEHOLDER_CONTEXT_SYNOPSIS,
 } from "../../../../shared/constants";
 
 type Tab = "synopsis" | "characters" | "terms";
@@ -121,7 +123,7 @@ function ContextPanel({
           <Search size={ICON_SIZE_SM} className={styles.searchIcon} />
           <input
             className={styles.searchBar}
-            placeholder="통합 검색..."
+            placeholder={PLACEHOLDER_CONTEXT_SEARCH}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
           />
@@ -175,7 +177,7 @@ function ContextPanel({
             </div>
             <textarea
               className={styles.synopsisArea}
-              placeholder="여기에 시놉시스를 작성하세요..."
+              placeholder={PLACEHOLDER_CONTEXT_SYNOPSIS}
               value={currentProject?.description || ""}
               readOnly
             />

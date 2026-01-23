@@ -12,6 +12,11 @@ import {
   MEMO_TAG_INPUT_FONT_SIZE,
   MEMO_TITLE_FONT_WEIGHT,
   ICON_SIZE_SM,
+  LABEL_MEMO_EMPTY,
+  PLACEHOLDER_MEMO_BODY,
+  PLACEHOLDER_MEMO_SEARCH,
+  PLACEHOLDER_MEMO_TAGS,
+  PLACEHOLDER_MEMO_TITLE,
   STORAGE_KEY_MEMOS_NONE,
   STORAGE_KEY_MEMOS_PREFIX,
 } from "../../../../shared/constants";
@@ -175,7 +180,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
                 width: "100%",
                 color: "var(--text-primary)",
               }}
-              placeholder="Search..."
+              placeholder={PLACEHOLDER_MEMO_SEARCH}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -254,7 +259,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
                 color: "var(--text-secondary)",
                 width: "100%",
               }}
-              placeholder="Add tags (comma separated)..."
+              placeholder={PLACEHOLDER_MEMO_TAGS}
               value={activeNote.tags.join(", ")}
               onChange={(e) => {
                 const tags = e.target.value.split(",").map((t) => t.trim());
@@ -275,7 +280,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
                 ),
               )
             }
-            placeholder="Title"
+            placeholder={PLACEHOLDER_MEMO_TITLE}
           />
           <textarea
             className={styles.noteBodyInput}
@@ -293,7 +298,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
                 ),
               )
             }
-            placeholder="Start typing your memo..."
+            placeholder={PLACEHOLDER_MEMO_BODY}
           />
         </div>
       ) : (
@@ -306,7 +311,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
             color: "var(--text-tertiary)",
           }}
         >
-          Select a note to view
+          {LABEL_MEMO_EMPTY}
         </div>
       )}
     </div>
