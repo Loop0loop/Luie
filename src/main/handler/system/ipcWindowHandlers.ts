@@ -36,4 +36,27 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       return true;
     },
   });
+
+  registerIpcHandler({
+    logger,
+    channel: IPC_CHANNELS.WINDOW_SET_FULLSCREEN,
+    logTag: "WINDOW_SET_FULLSCREEN",
+    failMessage: "Failed to set fullscreen",
+    handler: (_, flag: boolean) => {
+      const win = windowManager.getMainWindow();
+      if (!win) return false;
+      if (typeof flag === "boolean") {
+        if (process.platform === "darwin") {
+          // macOS: Use simpleFullScreen for "borderless" feel without new space
+          win.setSimpleFullScreen(flag);
+        } else {
+          // Windows/Linux: Standard fullscreen
+          win.setFullScreen(flag);
+        }
+        win.focus();
+        return true;
+      }
+      return false;
+    },
+  });
 }

@@ -15,16 +15,19 @@
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* Minimalist Modal - Single Column */
+/* Minimalist Modal - Split Layout */
 .modal {
-  width: 440px; /* Small, focused size */
+  width: 960px; /* Larger size */
+  height: 640px; /* Larger size */
   background-color: var(--bg-element);
-  border-radius: 16px;
+  border-radius: 12px;
   box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0,0,0,0.05);
   display: flex;
-  flex-direction: column;
   overflow: hidden;
-  max-height: 85vh;
+  max-height: 95vh;
   animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative; /* For absolute positioning context if needed */
+  will-change: transform, opacity;
 }
 
 @keyframes slideUp {
@@ -32,34 +35,110 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
-/* Header */
-.header {
-  padding: 20px 24px;
+.container {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border-default);
+  width: 100%;
+  height: 100%;
 }
-.title {
-  font-size: 16px;
+
+/* Sidebar */
+.sidebar {
+  width: 260px;
+  background-color: var(--bg-sidebar);
+  border-right: 1px solid var(--border-default);
+  display: flex;
+  flex-direction: column;
+  padding-top: 12px; /* Visual balance */
+}
+
+.sidebarHeader {
+  padding: 24px 24px 16px 24px;
+}
+
+.sidebarTitle {
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
 }
-.closeButton {
-  background: transparent; border: none; cursor: pointer;
-  color: var(--text-tertiary); padding: 4px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.2s;
-}
-.closeButton:hover { background-color: var(--bg-element-hover); color: var(--text-primary); }
 
-/* Content */
-.content {
-  padding: 24px;
+.sidebarList {
+  flex: 1;
+  padding: 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.sidebarItem {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.sidebarItem:hover {
+  background-color: var(--bg-active);
+  color: var(--text-primary);
+}
+
+.sidebarItem.active {
+  background-color: var(--bg-active);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Main Content */
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-element);
+  position: relative;
+  overflow: hidden;
+}
+
+.absoluteCloseButton {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  padding: 8px;
+  border-radius: 50%;
+  z-index: 10;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.absoluteCloseButton:hover {
+  background-color: var(--bg-active);
+  color: var(--text-primary);
+}
+
+.scrollableContent {
+  flex: 1;
+  padding: 48px 60px; /* More padding for cleaner look */
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 32px;
+}
+
+.placeholderContent {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 14px;
 }
 
 .section {

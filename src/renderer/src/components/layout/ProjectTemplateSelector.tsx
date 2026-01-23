@@ -279,13 +279,17 @@ export default function ProjectTemplateSelector({
             </div>
           ))}
 
+
+        </div>
+
+        <div className={styles.content}>
           <div className={styles.recentSection}>
             <div className={styles.recentHeader}>
               <div className={styles.recentTitle}>{PROJECT_TEMPLATE_RECENT_TITLE}</div>
             </div>
 
             <div className={styles.recentGrid}>
-              {projects.slice(0, 6).map((p) => (
+              {projects.slice(0, 4).map((p) => (
                 <div
                   key={p.id}
                   className={styles.recentCard}
@@ -321,9 +325,19 @@ export default function ProjectTemplateSelector({
               ))}
             </div>
           </div>
-        </div>
 
-        <div className={styles.content}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: "var(--text-secondary)",
+              marginBottom: 16,
+              textTransform: "uppercase",
+              letterSpacing: 1,
+            }}
+          >
+            START NEW PROJECT
+          </div>
           <div className={styles.grid}>
             {filteredTemplates.map((template) => (
               <div

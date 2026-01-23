@@ -449,15 +449,15 @@
 
 .recentGrid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
 }
 
 .recentCard {
   background-color: var(--bg-element);
   border: 1px solid var(--border-default);
   border-radius: 8px;
-  padding: 16px;
+  padding: 20px;
   width: 100%;
   text-align: left;
   cursor: pointer;

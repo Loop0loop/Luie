@@ -153,6 +153,7 @@ declare global {
       window: {
         maximize: () => Promise<IPCResponse<unknown>>;
         toggleFullscreen: () => Promise<IPCResponse<unknown>>;
+        setFullscreen: (flag: boolean) => Promise<IPCResponse<unknown>>;
       };
 
       logger: {

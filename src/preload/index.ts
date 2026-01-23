@@ -280,6 +280,8 @@ contextBridge.exposeInMainWorld("api", {
     maximize: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.WINDOW_MAXIMIZE),
     toggleFullscreen: (): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.WINDOW_TOGGLE_FULLSCREEN),
+    setFullscreen: (flag: boolean): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.WINDOW_SET_FULLSCREEN, flag),
   },
 
   // Logger API

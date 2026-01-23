@@ -58,7 +58,13 @@ export default function App() {
   } = useSplitView();
 
   const { handleSelectProject } = useProjectTemplate(
-    (id: string) => handleSelectChapter(id)
+    (id: string) => {
+      handleSelectChapter(id);
+      // Force fullscreen on new project
+      window.api.window.setFullscreen(true).catch((err) => {
+        console.error("Failed to set fullscreen:", err);
+      });
+    }
   );
 
   useFileImport(currentProject);
@@ -74,6 +80,10 @@ export default function App() {
     (project: (typeof projects)[number]) => {
       setCurrentProject(project);
       setView("editor");
+      // Force fullscreen on project open
+      window.api.window.setFullscreen(true).catch((err) => {
+        console.error("Failed to set fullscreen:", err);
+      });
     },
     [setCurrentProject, setView],
   );

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import styles from "../../styles/components/SettingsModal.module.css";
 import { X, Check, Download } from "lucide-react";
 import type { EditorTheme, FontPreset } from "../../stores/editorStore";
@@ -10,7 +10,6 @@ import {
   SETTINGS_ACTION_INSTALLING,
   SETTINGS_BADGE_ACTIVE,
   SETTINGS_FONT_HELPER_PRIMARY,
-  SETTINGS_FONT_HELPER_SECONDARY,
   SETTINGS_FONT_MONO_LABEL,
   SETTINGS_FONT_SANS_LABEL,
   SETTINGS_FONT_SERIF_LABEL,
@@ -20,7 +19,6 @@ import {
   SETTINGS_OPTIONAL_FONT_LABEL_NUNITO_SANS,
   SETTINGS_OPTIONAL_FONT_LABEL_SOURCE_SERIF,
   SETTINGS_OPTIONAL_FONT_LABEL_VICTOR_MONO,
-  SETTINGS_OPTIONAL_HELPER,
   SETTINGS_SAMPLE_TEXT,
   SETTINGS_SECTION_FONT,
   SETTINGS_SECTION_FONT_SIZE,
@@ -135,184 +133,231 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     }
   };
 
+  const [activeTab, setActiveTab] = useState("editor");
+
+  const sidebarItems = [
+    { id: "editor", label: "글꼴 (Editor)" },
+    { id: "appearance", label: "테마 (Appearance)" },
+    { id: "features", label: "기능 (Features)" },
+    { id: "shortcuts", label: "단축키 (Shortcuts)" },
+    { id: "recovery", label: "파일 복원 (File Recovery)" },
+    { id: "sync", label: "동기화 (Sync)" },
+  ];
+
+  // Local state for performance (avoid re-rendering entire app on every slider move)
+  const [localFontSize, setLocalFontSize] = useState(fontSize);
+  const [localLineHeight, setLocalLineHeight] = useState(lineHeight);
+
+  // Sync local state if global changes (e.g. reset)
+  useEffect(() => {
+    setLocalFontSize(fontSize);
+  }, [fontSize]);
+
+  useEffect(() => {
+    setLocalLineHeight(lineHeight);
+  }, [lineHeight]);
+
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        {/* HEADER */}
-        <div className={styles.header}>
-          <div className={styles.title}>{SETTINGS_TITLE_DISPLAY}</div>
-          <button className={styles.closeButton} onClick={onClose}>
-            <X className="icon-xl" />
-          </button>
-        </div>
-
-        {/* CONTENT - Single Column, Scrollable */}
-        <div className={styles.content}>
-          {/* FONT FAMILY */}
-          <div className={styles.section}>
-            <div className={styles.sectionLabel}>{SETTINGS_SECTION_FONT}</div>
-            <div className={styles.fontGrid}>
-              {EDITOR_FONT_FAMILIES.map((f) => (
-                <button
-                  key={f}
-                  className={`${styles.fontCard} ${fontFamily === f ? styles.active : ""}`}
-                  onClick={() => updateSettings({ fontFamily: f })}
+        {/* HEADER is removed, using sidebar layout instead */}
+        <div className={styles.container}>
+          {/* SIDEBAR */}
+          <div className={styles.sidebar}>
+            <div className={styles.sidebarHeader}>
+              <div className={styles.sidebarTitle}>{SETTINGS_TITLE_DISPLAY}</div>
+            </div>
+            <div className={styles.sidebarList}>
+              {sidebarItems.map((item) => (
+                <div
+                  key={item.id}
+                  className={`${styles.sidebarItem} ${activeTab === item.id ? styles.active : ""}`}
+                  onClick={() => setActiveTab(item.id)}
                 >
-                  <div
-                    className={styles.fontPreview}
-                    style={{
-                      fontFamily:
-                        f === "serif"
-                          ? "var(--font-serif)"
-                          : f === "sans"
-                            ? "var(--font-sans)"
-                            : "var(--font-mono)",
-                    }}
-                  >
-                    {SETTINGS_SAMPLE_TEXT}
-                  </div>
-                  <div className={styles.fontName}>
-                    {f === "serif"
-                      ? SETTINGS_FONT_SERIF_LABEL
-                      : f === "sans"
-                        ? SETTINGS_FONT_SANS_LABEL
-                        : SETTINGS_FONT_MONO_LABEL}
-                  </div>
-                </button>
+                  {item.label}
+                </div>
               ))}
-            </div>
-            <div className={styles.helperText}>
-              {SETTINGS_FONT_HELPER_PRIMARY}
-            </div>
-            <div className={styles.helperText}>
-              {SETTINGS_FONT_HELPER_SECONDARY}
             </div>
           </div>
 
-          <div className={styles.divider} />
-
-          <div className={styles.section}>
-            <div className={styles.sectionLabel}>{SETTINGS_SECTION_OPTIONAL_FONTS}</div>
-            <div className={styles.optionalFontList}>
-              {OPTIONAL_FONTS.map((font) => {
-                const isInstalled = installed[font.id];
-                const isInstalling = installing[font.id];
-                const isActive = fontPreset === font.id;
-
-                return (
-                  <div key={font.id} className={styles.optionalFontRow}>
-                    <div className={styles.optionalFontInfo}>
-                      <div
-                        className={styles.optionalFontPreview}
-                        style={{ fontFamily: font.stack }}
+          {/* MAIN CONTENT */}
+          <div className={styles.mainContent}>
+            <button className={styles.absoluteCloseButton} onClick={onClose}>
+              <X className="icon-lg" />
+            </button>
+            
+            {activeTab === "editor" && (
+              <div className={styles.scrollableContent}>
+                {/* FONT FAMILY */}
+                <div className={styles.section}>
+                  <div className={styles.sectionLabel}>{SETTINGS_SECTION_FONT}</div>
+                  <div className={styles.fontGrid}>
+                    {EDITOR_FONT_FAMILIES.map((f) => (
+                      <button
+                        key={f}
+                        className={`${styles.fontCard} ${fontFamily === f ? styles.active : ""}`}
+                        onClick={() => updateSettings({ fontFamily: f })}
                       >
-                        {SETTINGS_SAMPLE_TEXT}
-                      </div>
-                      <div className={styles.optionalFontMeta}>
-                        <div className={styles.optionalFontName}>{font.label}</div>
-                        <div className={styles.optionalFontFamily}>{font.family}</div>
-                      </div>
-                    </div>
-                    <div className={styles.optionalFontActions}>
-                      {!isInstalled ? (
-                        <button
-                          className={styles.installButton}
-                          onClick={() => handleInstall(font.id, font.pkg)}
-                          disabled={isInstalling}
+                        <div
+                          className={styles.fontPreview}
+                          style={{
+                            fontFamily:
+                              f === "serif"
+                                ? "var(--font-serif)"
+                                : f === "sans"
+                                  ? "var(--font-sans)"
+                                  : "var(--font-mono)",
+                          }}
                         >
-                          <Download className="icon-sm" />
-                          {isInstalling ? SETTINGS_ACTION_INSTALLING : SETTINGS_ACTION_INSTALL}
-                        </button>
-                      ) : isActive ? (
-                        <div className={styles.activeBadge}>{SETTINGS_BADGE_ACTIVE}</div>
-                      ) : (
-                        <button
-                          className={styles.applyButton}
-                          onClick={() => updateSettings({ fontPreset: font.id })}
-                        >
-                          {SETTINGS_ACTION_APPLY}
-                        </button>
-                      )}
-                    </div>
+                          {SETTINGS_SAMPLE_TEXT}
+                        </div>
+                        <div className={styles.fontName}>
+                          {f === "serif"
+                            ? SETTINGS_FONT_SERIF_LABEL
+                            : f === "sans"
+                              ? SETTINGS_FONT_SANS_LABEL
+                              : SETTINGS_FONT_MONO_LABEL}
+                        </div>
+                      </button>
+                    ))}
                   </div>
-                );
-              })}
-            </div>
-            <div className={styles.helperText}>
-              {SETTINGS_OPTIONAL_HELPER}
-            </div>
-          </div>
-
-          <div className={styles.divider} />
-
-          {/* FONT SIZE & LINE HEIGHT */}
-          <div className={styles.section}>
-            <div className={styles.row}>
-              <div className={styles.labelGroup}>
-                <div className={styles.sectionLabel}>{SETTINGS_SECTION_FONT_SIZE}</div>
-                <div className={styles.valueDisplay}>{fontSize}px</div>
-              </div>
-              <input
-                type="range"
-                min="14"
-                max="32"
-                step="1"
-                value={fontSize}
-                className={styles.slider}
-                onChange={(e) =>
-                  updateSettings({ fontSize: Number(e.target.value) })
-                }
-              />
-            </div>
-
-            <div style={{ height: 24 }} />
-
-            <div className={styles.row}>
-              <div className={styles.labelGroup}>
-                <div className={styles.sectionLabel}>{SETTINGS_SECTION_LINE_HEIGHT}</div>
-                <div className={styles.valueDisplay}>{lineHeight}</div>
-              </div>
-              <input
-                type="range"
-                min="1.4"
-                max="2.4"
-                step="0.1"
-                value={lineHeight}
-                className={styles.slider}
-                onChange={(e) =>
-                  updateSettings({ lineHeight: Number(e.target.value) })
-                }
-              />
-            </div>
-          </div>
-
-          <div className={styles.divider} />
-
-          {/* THEME */}
-          <div className={styles.section}>
-            <div className={styles.sectionLabel}>{SETTINGS_SECTION_THEME}</div>
-            <div className={styles.themeGrid}>
-              {(["light", "sepia", "dark"] as EditorTheme[]).map((t) => (
-                <button
-                  key={t}
-                  className={`${styles.themeCard} ${t} ${theme === t ? styles.active : ""}`}
-                  onClick={() => updateSettings({ theme: t })}
-                >
-                  {theme === t && (
-                    <div className={styles.checkBadge}>
-                      <Check className="icon-xs" />
-                    </div>
-                  )}
-                  <div className={styles.themeName}>
-                    {t === "light"
-                      ? SETTINGS_THEME_LIGHT
-                      : t === "sepia"
-                        ? SETTINGS_THEME_SEPIA
-                        : SETTINGS_THEME_DARK}
+                  <div className={styles.helperText}>
+                    {SETTINGS_FONT_HELPER_PRIMARY}
                   </div>
-                </button>
-              ))}
-            </div>
+                </div>
+
+                <div className={styles.divider} />
+
+                {/* OPTIONAL FONTS */}
+                <div className={styles.section}>
+                  <div className={styles.sectionLabel}>{SETTINGS_SECTION_OPTIONAL_FONTS}</div>
+                  <div className={styles.optionalFontList}>
+                    {OPTIONAL_FONTS.map((font) => {
+                      const isInstalled = installed[font.id];
+                      const isInstalling = installing[font.id];
+                      const isActive = fontPreset === font.id;
+
+                      return (
+                        <div key={font.id} className={styles.optionalFontRow}>
+                          <div className={styles.optionalFontInfo}>
+                            <div
+                              className={styles.optionalFontPreview}
+                              style={{ fontFamily: font.stack }}
+                            >
+                              {SETTINGS_SAMPLE_TEXT}
+                            </div>
+                            <div className={styles.optionalFontMeta}>
+                              <div className={styles.optionalFontName}>{font.label}</div>
+                              <div className={styles.optionalFontFamily}>{font.family}</div>
+                            </div>
+                          </div>
+                          <div className={styles.optionalFontActions}>
+                            {!isInstalled ? (
+                              <button
+                                className={styles.installButton}
+                                onClick={() => handleInstall(font.id, font.pkg)}
+                                disabled={isInstalling}
+                              >
+                                <Download className="icon-sm" />
+                                {isInstalling ? SETTINGS_ACTION_INSTALLING : SETTINGS_ACTION_INSTALL}
+                              </button>
+                            ) : isActive ? (
+                              <div className={styles.activeBadge}>{SETTINGS_BADGE_ACTIVE}</div>
+                            ) : (
+                              <button
+                                className={styles.applyButton}
+                                onClick={() => updateSettings({ fontPreset: font.id })}
+                              >
+                                {SETTINGS_ACTION_APPLY}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className={styles.divider} />
+
+                {/* FONT SIZE & LINE HEIGHT */}
+                <div className={styles.section}>
+                  <div className={styles.row}>
+                    <div className={styles.labelGroup}>
+                      <div className={styles.sectionLabel}>{SETTINGS_SECTION_FONT_SIZE}</div>
+                      <div className={styles.valueDisplay}>{localFontSize}px</div>
+                    </div>
+                    <input
+                      type="range"
+                      min="14"
+                      max="32"
+                      step="1"
+                      value={localFontSize}
+                      className={styles.slider}
+                      onChange={(e) => setLocalFontSize(Number(e.target.value))}
+                      onMouseUp={() => updateSettings({ fontSize: localFontSize })}
+                      onTouchEnd={() => updateSettings({ fontSize: localFontSize })}
+                    />
+                  </div>
+
+                  <div style={{ height: 24 }} />
+
+                  <div className={styles.row}>
+                    <div className={styles.labelGroup}>
+                      <div className={styles.sectionLabel}>{SETTINGS_SECTION_LINE_HEIGHT}</div>
+                      <div className={styles.valueDisplay}>{localLineHeight}</div>
+                    </div>
+                    <input
+                      type="range"
+                      min="1.4"
+                      max="2.4"
+                      step="0.1"
+                      value={localLineHeight}
+                      className={styles.slider}
+                      onChange={(e) => setLocalLineHeight(Number(e.target.value))}
+                      onMouseUp={() => updateSettings({ lineHeight: localLineHeight })}
+                      onTouchEnd={() => updateSettings({ lineHeight: localLineHeight })}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "appearance" && (
+              <div className={styles.scrollableContent}>
+                <div className={styles.section}>
+                  <div className={styles.sectionLabel}>{SETTINGS_SECTION_THEME}</div>
+                  <div className={styles.themeGrid}>
+                    {(["light", "sepia", "dark"] as EditorTheme[]).map((t) => (
+                      <button
+                        key={t}
+                        className={`${styles.themeCard} ${t} ${theme === t ? styles.active : ""}`}
+                        onClick={() => updateSettings({ theme: t })}
+                      >
+                        {theme === t && (
+                          <div className={styles.checkBadge}>
+                            <Check className="icon-xs" />
+                          </div>
+                        )}
+                        <div className={styles.themeName}>
+                          {t === "light"
+                            ? SETTINGS_THEME_LIGHT
+                            : t === "sepia"
+                              ? SETTINGS_THEME_SEPIA
+                              : SETTINGS_THEME_DARK}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab !== "editor" && activeTab !== "appearance" && (
+              <div className={styles.placeholderContent}>
+                <div className={styles.placeholderText}>준비 중인 기능입니다.</div>
+              </div>
+            )}
           </div>
         </div>
       </div>
