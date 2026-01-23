@@ -3,6 +3,21 @@ import { ArrowLeft, Plus, User } from "lucide-react";
 import styles from "../../styles/components/ResearchPanel.module.css";
 import { useCharacterStore } from "../../stores/characterStore";
 import { useProjectStore } from "../../stores/projectStore";
+import {
+  CHARACTER_BACKSTORY_MIN_HEIGHT,
+  CHARACTER_COLOR_FALLBACK,
+  CHARACTER_ADD_ICON_SIZE,
+  CHARACTER_AVATAR_ICON_SIZE,
+  CHARACTER_ICON_BACK_SIZE,
+  CHARACTER_RELATION_FONT_SIZE,
+  CHARACTER_RELATION_MARGIN_BOTTOM,
+  CHARACTER_RELATION_MIN_HEIGHT,
+  DEFAULT_CHARACTER_FALLBACK_NAME,
+  DEFAULT_CHARACTER_DESCRIPTION_LABEL,
+  DEFAULT_CHARACTER_NAME,
+  DEFAULT_CHARACTER_ADD_LABEL,
+  FONT_WEIGHT_SEMIBOLD,
+} from "../../../../shared/constants";
 
 type CharacterLike = {
   id: string;
@@ -32,7 +47,7 @@ export default function CharacterManager() {
     if (currentProject) {
       await createCharacter({
         projectId: currentProject.id,
-        name: "New Character",
+        name: DEFAULT_CHARACTER_NAME,
         description: "",
       });
     }
@@ -49,10 +64,10 @@ export default function CharacterManager() {
             className={styles.backButton}
             onClick={() => setSelectedCharacterId(null)}
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={CHARACTER_ICON_BACK_SIZE} />
           </div>
-          <span style={{ fontWeight: 600 }}>
-            {selectedChar?.name || "Character"}
+          <span style={{ fontWeight: FONT_WEIGHT_SEMIBOLD }}>
+            {selectedChar?.name || DEFAULT_CHARACTER_FALLBACK_NAME}
           </span>
         </div>
         {selectedChar && <CharacterProfile character={selectedChar} />}
@@ -73,28 +88,25 @@ export default function CharacterManager() {
             style={{
               borderBottom: `4px solid ${
                 typeof char.attributes === "string"
-                  ? (
-                      JSON.parse(char.attributes as string) as {
-                        color?: string;
-                      }
-                    ).color || "#ccc"
-                  : "#ccc"
+                  ? (JSON.parse(char.attributes as string) as { color?: string })
+                      .color || CHARACTER_COLOR_FALLBACK
+                  : CHARACTER_COLOR_FALLBACK
               }`,
             }}
           >
-            <User size={32} opacity={0.5} />
+            <User size={CHARACTER_AVATAR_ICON_SIZE} opacity={0.5} />
           </div>
           <div className={styles.characterInfo}>
             <div className={styles.characterName}>{char.name}</div>
             <div className={styles.characterRole}>
-              {char.description || "No description"}
+              {char.description || DEFAULT_CHARACTER_DESCRIPTION_LABEL}
             </div>
           </div>
         </div>
       ))}
       <div className={styles.addCharacterCard} onClick={handleAddCharacter}>
-        <Plus size={24} />
-        <span>Add Character</span>
+        <Plus size={CHARACTER_ADD_ICON_SIZE} />
+        <span>{DEFAULT_CHARACTER_ADD_LABEL}</span>
       </div>
     </div>
   );
@@ -288,7 +300,7 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
               <BufferedTextArea
                 className={styles.cellValueInput}
                 value={attributes.backstory || ""}
-                style={{ minHeight: "100px" }}
+                style={{ minHeight: `${CHARACTER_BACKSTORY_MIN_HEIGHT}px` }}
                 onSave={(val) => handleAttributeUpdate("backstory", val)}
               />
             </div>
@@ -300,9 +312,9 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
             <div className={styles.sectionTitle}>주요 인물과의 관계</div>
             <p
               style={{
-                fontSize: 12,
+                fontSize: CHARACTER_RELATION_FONT_SIZE,
                 color: "var(--text-tertiary)",
-                marginBottom: 8,
+                marginBottom: CHARACTER_RELATION_MARGIN_BOTTOM,
               }}
             >
               * 마인드맵 탭에서 시각적으로 편집할 수 있습니다. 여기서는 텍스트로
@@ -311,7 +323,7 @@ function CharacterProfile({ character }: { character: CharacterLike }) {
             <BufferedTextArea
               className={styles.cellValueInput}
               style={{
-                minHeight: "200px",
+                minHeight: `${CHARACTER_RELATION_MIN_HEIGHT}px`,
                 border: "1px solid var(--border-default)",
                 borderRadius: "4px",
               }}

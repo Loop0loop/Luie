@@ -27,6 +27,15 @@ import {
   WORLD_OVERVIEW_FONT_SIZE,
   WORLD_OVERVIEW_LINE_HEIGHT,
   WORLD_OVERVIEW_MIN_HEIGHT,
+  WORLD_STATUS_FONT_SIZE,
+  WORLD_HINT_FONT_SIZE,
+  FONT_WEIGHT_SEMIBOLD,
+  DEFAULT_TERM_ADD_LABEL,
+  WORLD_PROJECT_SYNOPSIS_TITLE,
+  WORLD_ADD_TERM_ICON_SIZE,
+  ICON_SIZE_MD,
+  ICON_SIZE_SM,
+  ICON_SIZE_XS,
 } from "../../../../shared/constants";
 
 type WorldTab = "synopsis" | "terms" | "mindmap" | "drawing" | "plot";
@@ -174,9 +183,9 @@ function TermManager() {
             className={styles.backButton}
             onClick={() => setSelectedTermId(null)}
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={ICON_SIZE_MD} />
           </div>
-          <span style={{ fontWeight: 600 }}>{term.term}</span>
+          <span style={{ fontWeight: FONT_WEIGHT_SEMIBOLD }}>{term.term}</span>
         </div>
 
         <div className={styles.tableGrid}>
@@ -244,7 +253,7 @@ function TermManager() {
               opacity: 0.5,
             }}
           >
-            <X size={14} />
+            <X size={ICON_SIZE_SM} />
           </button>
         </div>
       ))}
@@ -253,8 +262,8 @@ function TermManager() {
         onClick={handleAddTerm}
         style={{ height: "80px" }}
       >
-        <Plus size={24} />
-        <span>Add Term</span>
+        <Plus size={WORLD_ADD_TERM_ICON_SIZE} />
+        <span>{DEFAULT_TERM_ADD_LABEL}</span>
       </div>
     </div>
   );
@@ -276,7 +285,7 @@ function SynopsisEditor() {
           alignItems: "center",
         }}
       >
-        <span>Project Synopsis</span>
+        <span>{WORLD_PROJECT_SYNOPSIS_TITLE}</span>
         <div style={{ display: "flex", gap: 4 }}>
           {/* Status Toggles */}
           {(["draft", "working", "locked"] as const).map((s) => (
@@ -284,7 +293,7 @@ function SynopsisEditor() {
               key={s}
               onClick={() => setStatus(s)}
               style={{
-                fontSize: 11,
+                fontSize: WORLD_STATUS_FONT_SIZE,
                 padding: "2px 8px",
                 borderRadius: 12,
                 border:
@@ -331,7 +340,7 @@ function SynopsisEditor() {
 
       <div
         style={{
-          fontSize: 12,
+          fontSize: WORLD_HINT_FONT_SIZE,
           color: "var(--text-tertiary)",
           padding: "0 4px",
         }}
@@ -647,14 +656,14 @@ function DrawingCanvas() {
             onClick={() => setTool("pen")}
             title="펜"
           >
-            <PenTool size={16} />
+            <PenTool size={ICON_SIZE_MD} />
           </button>
           <button
             className={`${styles.toolButton} ${tool === "text" ? styles.active : ""}`}
             onClick={() => setTool("text")}
             title="지명 (텍스트)"
           >
-            <Type size={16} />
+            <Type size={ICON_SIZE_MD} />
           </button>
         </div>
 
@@ -713,7 +722,7 @@ function DrawingCanvas() {
         </div>
 
         <button className={styles.subTab} onClick={clearCanvas}>
-          <Eraser size={14} /> Clear All
+          <Eraser size={ICON_SIZE_SM} /> Clear All
         </button>
       </div>
 
@@ -859,13 +868,13 @@ function PlotBoard() {
                   className={styles.cardDeleteBtn}
                   onClick={() => deleteCard(col.id, card.id)}
                 >
-                  <X size={12} />
+                  <X size={ICON_SIZE_XS} />
                 </button>
               </div>
             ))}
           </div>
           <button className={styles.addCardBtn} onClick={() => addCard(col.id)}>
-            <Plus size={14} /> Add Beat
+            <Plus size={ICON_SIZE_SM} /> Add Beat
           </button>
         </div>
       ))}

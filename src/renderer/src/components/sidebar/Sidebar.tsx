@@ -15,6 +15,7 @@ import {
   ArrowDownFromLine,
   Copy,
 } from "lucide-react";
+import { ICON_SIZE_MD, ICON_SIZE_SM, ICON_SIZE_XS } from "../../../../shared/constants";
 
 interface Chapter {
   id: string;
@@ -130,33 +131,33 @@ function Sidebar({
             className={styles.contextMenuItem}
             onClick={() => handleAction("open_below", menuOpenId)}
           >
-            <ArrowDownFromLine size={14} /> 아래에 열기
+            <ArrowDownFromLine size={ICON_SIZE_SM} /> 아래에 열기
           </div>
           <div
             className={styles.contextMenuItem}
             onClick={() => handleAction("open_right", menuOpenId)}
           >
-            <ArrowRightFromLine size={14} /> 오른쪽에 열기
+            <ArrowRightFromLine size={ICON_SIZE_SM} /> 오른쪽에 열기
           </div>
           <div className={styles.divider} />
           <div
             className={styles.contextMenuItem}
             onClick={() => handleAction("rename", menuOpenId)}
           >
-            <Edit2 size={14} /> 이름 수정하기
+            <Edit2 size={ICON_SIZE_SM} /> 이름 수정하기
           </div>
           <div
             className={styles.contextMenuItem}
             onClick={() => handleAction("duplicate", menuOpenId)}
           >
-            <Copy size={14} /> 복제하기
+            <Copy size={ICON_SIZE_SM} /> 복제하기
           </div>
           <div
             className={styles.contextMenuItem}
             onClick={() => handleAction("delete", menuOpenId)}
             style={{ color: "#ef4444" }}
           >
-            <Trash2 size={14} /> 삭제하기
+            <Trash2 size={ICON_SIZE_SM} /> 삭제하기
           </div>
         </div>
       )}
@@ -174,9 +175,9 @@ function Sidebar({
           onClick={() => setManuscriptOpen(!isManuscriptOpen)}
         >
           {isManuscriptOpen ? (
-            <ChevronDown size={12} className={styles.sectionIcon} />
+            <ChevronDown size={ICON_SIZE_XS} className={styles.sectionIcon} />
           ) : (
-            <ChevronRight size={12} className={styles.sectionIcon} />
+            <ChevronRight size={ICON_SIZE_XS} className={styles.sectionIcon} />
           )}
           <span>원고 (Manuscript)</span>
         </div>
@@ -195,7 +196,7 @@ function Sidebar({
                 onMouseEnter={() => setHoveredItemId(chapter.id)}
                 onMouseLeave={() => setHoveredItemId(null)}
               >
-                <FileText size={14} className={styles.itemIcon} />
+                <FileText size={ICON_SIZE_SM} className={styles.itemIcon} />
                 <span className={styles.itemTitle}>
                   {chapter.order}. {chapter.title}
                 </span>
@@ -207,7 +208,7 @@ function Sidebar({
                     className={styles.moreButton}
                     onClick={(e) => handleMenuClick(e, chapter.id)}
                   >
-                    <MoreVertical size={14} />
+                    <MoreVertical size={ICON_SIZE_SM} />
                   </div>
                 )}
               </div>
@@ -218,7 +219,7 @@ function Sidebar({
               onClick={onAddChapter}
               style={{ color: "var(--text-tertiary)" }}
             >
-              <Plus size={14} className={styles.itemIcon} />
+              <Plus size={ICON_SIZE_SM} className={styles.itemIcon} />
               <span>새 회차 추가...</span>
             </div>
           </div>
@@ -230,9 +231,9 @@ function Sidebar({
           onClick={() => setResearchOpen(!isResearchOpen)}
         >
           {isResearchOpen ? (
-            <ChevronDown size={12} className={styles.sectionIcon} />
+            <ChevronDown size={ICON_SIZE_XS} className={styles.sectionIcon} />
           ) : (
-            <ChevronRight size={12} className={styles.sectionIcon} />
+            <ChevronRight size={ICON_SIZE_XS} className={styles.sectionIcon} />
           )}
           <span>연구 (Research)</span>
         </div>
@@ -245,14 +246,14 @@ function Sidebar({
               onMouseEnter={() => setHoveredItemId("res-char")}
               onMouseLeave={() => setHoveredItemId(null)}
             >
-              <FolderOpen size={14} className={styles.itemIcon} />
+              <FolderOpen size={ICON_SIZE_SM} className={styles.itemIcon} />
               <span>등장인물 (Characters)</span>
               {(hoveredItemId === "res-char" || menuOpenId === "res-char") && (
                 <div
                   className={styles.moreButton}
                   onClick={(e) => handleMenuClick(e, "res-char")}
                 >
-                  <MoreVertical size={14} />
+                  <MoreVertical size={ICON_SIZE_SM} />
                 </div>
               )}
             </div>
@@ -262,7 +263,7 @@ function Sidebar({
               onMouseEnter={() => setHoveredItemId("res-world")}
               onMouseLeave={() => setHoveredItemId(null)}
             >
-              <FolderOpen size={14} className={styles.itemIcon} />
+              <FolderOpen size={ICON_SIZE_SM} className={styles.itemIcon} />
               <span>세계관 (World)</span>
               {(hoveredItemId === "res-world" ||
                 menuOpenId === "res-world") && (
@@ -270,7 +271,7 @@ function Sidebar({
                   className={styles.moreButton}
                   onClick={(e) => handleMenuClick(e, "res-world")}
                 >
-                  <MoreVertical size={14} />
+                  <MoreVertical size={ICON_SIZE_SM} />
                 </div>
               )}
             </div>
@@ -280,7 +281,7 @@ function Sidebar({
               onMouseEnter={() => setHoveredItemId("res-scrap")}
               onMouseLeave={() => setHoveredItemId(null)}
             >
-              <BookOpen size={14} className={styles.itemIcon} />
+              <BookOpen size={ICON_SIZE_SM} className={styles.itemIcon} />
               <span>자료 스크랩</span>
               {(hoveredItemId === "res-scrap" ||
                 menuOpenId === "res-scrap") && (
@@ -288,7 +289,7 @@ function Sidebar({
                   className={styles.moreButton}
                   onClick={(e) => handleMenuClick(e, "res-scrap")}
                 >
-                  <MoreVertical size={14} />
+                  <MoreVertical size={ICON_SIZE_SM} />
                 </div>
               )}
             </div>
@@ -301,9 +302,9 @@ function Sidebar({
           onClick={() => setTrashOpen(!isTrashOpen)}
         >
           {isTrashOpen ? (
-            <ChevronDown size={12} className={styles.sectionIcon} />
+            <ChevronDown size={ICON_SIZE_XS} className={styles.sectionIcon} />
           ) : (
-            <ChevronRight size={12} className={styles.sectionIcon} />
+            <ChevronRight size={ICON_SIZE_XS} className={styles.sectionIcon} />
           )}
           <span>휴지통 (Trash)</span>
         </div>
@@ -314,7 +315,7 @@ function Sidebar({
               className={styles.item}
               style={{ fontStyle: "italic", color: "var(--text-tertiary)" }}
             >
-              <Trash2 size={14} className={styles.itemIcon} />
+              <Trash2 size={ICON_SIZE_SM} className={styles.itemIcon} />
               <span>비어 있음</span>
             </div>
           </div>
@@ -327,7 +328,7 @@ function Sidebar({
           onClick={onOpenSettings}
           onPointerEnter={onPrefetchSettings}
         >
-          <Settings size={16} />
+          <Settings size={ICON_SIZE_MD} />
           <span>설정 (Settings)</span>
         </button>
       </div>

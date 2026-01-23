@@ -12,6 +12,14 @@ import {
   LUIE_PACKAGE_FILTER_NAME,
   MARKDOWN_EXTENSION_NO_DOT,
   TEXT_EXTENSION_NO_DOT,
+  TEMPLATE_CARD_BADGE_FONT_SIZE,
+  TEMPLATE_CARD_BADGE_FONT_WEIGHT,
+  TEMPLATE_COVER_FOOTER_FONT_SIZE,
+  TEMPLATE_COVER_ICON_FONT_SIZE,
+  TEMPLATE_DOC_TITLE_FONT_SIZE,
+  TEMPLATE_NEW_PROJECT_LABEL,
+  TEMPLATE_SIDEBAR_TITLE,
+  ICON_SIZE_MD,
 } from "../../../shared/constants";
 
 interface ProjectTemplateSelectorProps {
@@ -72,10 +80,10 @@ export default function ProjectTemplateSelector({
   }, [menuOpenId]);
 
   const categories = [
-    { id: "all", label: "All Templates", icon: <Book size={16} /> },
-    { id: "novel", label: "Novel (소설)", icon: <Book size={16} /> },
-    { id: "script", label: "Script (대본)", icon: <FileText size={16} /> },
-    { id: "misc", label: "General", icon: <FileType size={16} /> },
+    { id: "all", label: "All Templates", icon: <Book size={ICON_SIZE_MD} /> },
+    { id: "novel", label: "Novel (소설)", icon: <Book size={ICON_SIZE_MD} /> },
+    { id: "script", label: "Script (대본)", icon: <FileText size={ICON_SIZE_MD} /> },
+    { id: "misc", label: "General", icon: <FileType size={ICON_SIZE_MD} /> },
   ];
 
   const templates = [
@@ -233,7 +241,7 @@ export default function ProjectTemplateSelector({
 
       <div className={styles.body}>
         <div className={styles.sidebar}>
-          <div className={styles.sidebarTitle}>Start New Project</div>
+          <div className={styles.sidebarTitle}>{TEMPLATE_SIDEBAR_TITLE}</div>
           {categories.map((cat) => (
             <div
               key={cat.id}
@@ -246,13 +254,13 @@ export default function ProjectTemplateSelector({
             >
               {cat.icon}
               {cat.label}
-            </div>
-          ))}
-        </div>
-
-        <div className={styles.content}>
-          {projects.length > 0 && (
-            <div className={styles.recentSection}>
+                          <div
+                            style={{
+                              fontSize: TEMPLATE_CARD_BADGE_FONT_SIZE,
+                              fontWeight: TEMPLATE_CARD_BADGE_FONT_WEIGHT,
+                              color: "#a1a1aa",
+                            }}
+                          >
               <div className={styles.recentHeader}>
                 <div className={styles.recentTitle}>Recent Projects</div>
               </div>
@@ -290,7 +298,7 @@ export default function ProjectTemplateSelector({
                         });
                       }}
                     >
-                      <MoreVertical size={16} />
+                      <MoreVertical size={ICON_SIZE_MD} />
                     </button>
                   </div>
                 ))}
@@ -309,15 +317,15 @@ export default function ProjectTemplateSelector({
                   {template.type === "blank" && (
                     <div className={styles.coverBlank}>
                       <div className={styles.dashed}>
-                        <Plus size={32} color="#a1a1aa" />
+                        <Plus size={TEMPLATE_COVER_ICON_FONT_SIZE} color="#a1a1aa" />
                         <span
                           style={{
-                            fontSize: 12,
-                            fontWeight: 500,
+                            fontSize: TEMPLATE_CARD_BADGE_FONT_SIZE,
+                            fontWeight: TEMPLATE_CARD_BADGE_FONT_WEIGHT,
                             color: "#a1a1aa",
                           }}
                         >
-                          NEW PROJECT
+                          {TEMPLATE_NEW_PROJECT_LABEL}
                         </span>
                       </div>
                     </div>
@@ -330,7 +338,11 @@ export default function ProjectTemplateSelector({
                       <div className={styles.subtitle}>THE STANDARD</div>
                       <div className={styles.title}>NOVEL</div>
                       <div
-                        style={{ fontSize: 32, opacity: 0.2, marginTop: 16 }}
+                        style={{
+                          fontSize: TEMPLATE_COVER_ICON_FONT_SIZE,
+                          opacity: 0.2,
+                          marginTop: 16,
+                        }}
                       >
                         ❦
                       </div>
@@ -351,7 +363,7 @@ export default function ProjectTemplateSelector({
                       <div
                         style={{
                           marginTop: "auto",
-                          fontSize: 10,
+                          fontSize: TEMPLATE_COVER_FOOTER_FONT_SIZE,
                           color: "#64748b",
                         }}
                       >
@@ -372,7 +384,7 @@ export default function ProjectTemplateSelector({
                       <div style={{ textAlign: "center" }}>
                         <div
                           style={{
-                            fontSize: 24,
+                            fontSize: TEMPLATE_DOC_TITLE_FONT_SIZE,
                             fontFamily: "serif",
                             color: "#333",
                           }}

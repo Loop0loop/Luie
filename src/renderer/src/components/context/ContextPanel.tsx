@@ -11,6 +11,9 @@ import {
   CONTEXT_PANEL_SECTION_MARGIN_BOTTOM,
   CONTEXT_PANEL_SECTION_PADDING,
   CONTEXT_PANEL_TAG_FONT_SIZE,
+  FONT_WEIGHT_SEMIBOLD,
+  ICON_SIZE_MD,
+  ICON_SIZE_SM,
 } from "../../../../shared/constants";
 
 type Tab = "synopsis" | "characters" | "terms";
@@ -87,7 +90,7 @@ function ContextPanel({
         <div className={styles.detailView}>
           <div className={styles.detailHeader}>
             <button className={styles.backButton} onClick={handleBack}>
-              <ArrowLeft size={16} />
+              <ArrowLeft size={ICON_SIZE_MD} />
             </button>
             <div className={styles.detailTitle}>
               {isCharacter(selectedItem) ? selectedItem.name : selectedItem.term}
@@ -115,7 +118,7 @@ function ContextPanel({
 
       <div className={styles.toolbar}>
         <div className={styles.searchBarWrapper}>
-          <Search size={14} className={styles.searchIcon} />
+          <Search size={ICON_SIZE_SM} className={styles.searchIcon} />
           <input
             className={styles.searchBar}
             placeholder="통합 검색..."
@@ -163,7 +166,7 @@ function ContextPanel({
             <div
               style={{
                 fontSize: CONTEXT_PANEL_HEADER_FONT_SIZE,
-                fontWeight: 600,
+                fontWeight: FONT_WEIGHT_SEMIBOLD,
                 color: "var(--text-secondary)",
                 marginBottom: CONTEXT_PANEL_SECTION_MARGIN_BOTTOM,
               }}

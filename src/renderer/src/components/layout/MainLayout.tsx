@@ -3,6 +3,7 @@ import { useState } from 'react';
 import WindowBar from './WindowBar';
 import styles from '../../styles/layout/MainLayout.module.css';
 import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { ICON_SIZE_XL } from '../../../shared/constants';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -41,7 +42,11 @@ export default function MainLayout({ children, sidebar, contextPanel }: MainLayo
                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                title={isSidebarOpen ? "사이드바 접기" : "사이드바 펼치기"}
              >
-               {isSidebarOpen ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
+               {isSidebarOpen ? (
+                 <PanelLeftClose size={ICON_SIZE_XL} />
+               ) : (
+                 <PanelLeftOpen size={ICON_SIZE_XL} />
+               )}
              </button>
              
              <div className={styles.spacer} />
@@ -51,7 +56,11 @@ export default function MainLayout({ children, sidebar, contextPanel }: MainLayo
                onClick={() => setIsContextOpen(!isContextOpen)}
                title={isContextOpen ? "패널 접기" : "패널 펼치기"}
              >
-               {isContextOpen ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
+               {isContextOpen ? (
+                 <PanelRightClose size={ICON_SIZE_XL} />
+               ) : (
+                 <PanelRightOpen size={ICON_SIZE_XL} />
+               )}
              </button>
           </div>
           

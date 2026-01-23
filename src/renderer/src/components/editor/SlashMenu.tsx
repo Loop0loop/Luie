@@ -14,6 +14,7 @@ import {
   Minus,
   MessageSquare,
 } from "lucide-react";
+import { ICON_SIZE_LG } from "../../../../shared/constants";
 
 export interface SlashMenuActionProps {
   editor: Editor;
@@ -36,16 +37,16 @@ interface SlashMenuProps {
 }
 
 const ICONS: Record<string, ReactElement> = {
-  h1: <Heading1 size={18} />,
-  h2: <Heading2 size={18} />,
-  h3: <Heading3 size={18} />,
-  bullet: <List size={18} />,
-  number: <ListOrdered size={18} />,
-  check: <CheckSquare size={18} />,
-  toggle: <ChevronRight size={18} />,
-  quote: <Quote size={18} />,
-  callout: <MessageSquare size={18} />,
-  divider: <Minus size={18} />,
+  h1: <Heading1 size={ICON_SIZE_LG} />,
+  h2: <Heading2 size={ICON_SIZE_LG} />,
+  h3: <Heading3 size={ICON_SIZE_LG} />,
+  bullet: <List size={ICON_SIZE_LG} />,
+  number: <ListOrdered size={ICON_SIZE_LG} />,
+  check: <CheckSquare size={ICON_SIZE_LG} />,
+  toggle: <ChevronRight size={ICON_SIZE_LG} />,
+  quote: <Quote size={ICON_SIZE_LG} />,
+  callout: <MessageSquare size={ICON_SIZE_LG} />,
+  divider: <Minus size={ICON_SIZE_LG} />,
 };
 
 const DESCRIPTIONS: Record<string, string> = {

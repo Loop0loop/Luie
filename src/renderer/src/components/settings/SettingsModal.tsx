@@ -3,7 +3,13 @@ import styles from "../../styles/components/SettingsModal.module.css";
 import { X, Check, Download } from "lucide-react";
 import type { EditorTheme, FontPreset } from "../../stores/editorStore";
 import { useEditorStore } from "../../stores/editorStore";
-import { EDITOR_FONT_FAMILIES, STORAGE_KEY_FONTS_INSTALLED } from "../../../../shared/constants";
+import {
+  EDITOR_FONT_FAMILIES,
+  ICON_SIZE_SM,
+  ICON_SIZE_XL,
+  ICON_SIZE_XS,
+  STORAGE_KEY_FONTS_INSTALLED,
+} from "../../../../shared/constants";
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -113,7 +119,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
         <div className={styles.header}>
           <div className={styles.title}>화면 설정</div>
           <button className={styles.closeButton} onClick={onClose}>
-            <X size={20} />
+            <X size={ICON_SIZE_XL} />
           </button>
         </div>
 
@@ -191,7 +197,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                           onClick={() => handleInstall(font.id, font.pkg)}
                           disabled={isInstalling}
                         >
-                          <Download size={14} />
+                          <Download size={ICON_SIZE_SM} />
                           {isInstalling ? "설치 중" : "설치"}
                         </button>
                       ) : isActive ? (
@@ -271,7 +277,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 >
                   {theme === t && (
                     <div className={styles.checkBadge}>
-                      <Check size={12} />
+                      <Check size={ICON_SIZE_XS} />
                     </div>
                   )}
                   <div className={styles.themeName}>

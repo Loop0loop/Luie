@@ -24,6 +24,15 @@ interface EditorToolbarProps {
   isMobileView?: boolean;
   onToggleMobileView?: () => void;
 }
+  import {
+    EDITOR_TOOLBAR_DEFAULT_FONT_LABEL,
+    EDITOR_TOOLBAR_DROPDOWN_ICON_SIZE,
+    EDITOR_TOOLBAR_FONT_MIN,
+    EDITOR_TOOLBAR_FONT_STEP,
+    EDITOR_TOOLBAR_ICON_SIZE,
+    EDITOR_TOOLBAR_MOBILE_ICON_SIZE,
+    EDITOR_TOOLBAR_PLUS_MINUS_FONT_SIZE,
+  } from "../../../../shared/constants";
 
 export default function EditorToolbar({
   editor,
@@ -48,7 +57,7 @@ export default function EditorToolbar({
             onClick={() => editor.chain().focus().undo().run()}
             disabled={!editor.can().undo()}
           >
-            <Undo2 size={16} />
+              <Undo2 size={EDITOR_TOOLBAR_ICON_SIZE} />
           </button>
           <button
             className={styles.iconBtn}
@@ -56,15 +65,15 @@ export default function EditorToolbar({
             onClick={() => editor.chain().focus().redo().run()}
             disabled={!editor.can().redo()}
           >
-            <Redo2 size={16} />
+              <Redo2 size={EDITOR_TOOLBAR_ICON_SIZE} />
           </button>
 
           <div className={styles.separator} />
 
           {/* Font Picker Fake */}
           <button className={styles.selectBtn}>
-            <span>나눔고딕</span>
-            <ChevronDown size={12} />
+              <span>{EDITOR_TOOLBAR_DEFAULT_FONT_LABEL}</span>
+              <ChevronDown size={EDITOR_TOOLBAR_DROPDOWN_ICON_SIZE} />
           </button>
 
           <div className={styles.separator} />
@@ -72,16 +81,20 @@ export default function EditorToolbar({
           {/* Size Picker */}
           <button
             className={styles.iconBtn}
-            onClick={() => setFontSize(Math.max(10, fontSize - 1))}
+            onClick={() =>
+              setFontSize(
+                Math.max(EDITOR_TOOLBAR_FONT_MIN, fontSize - EDITOR_TOOLBAR_FONT_STEP),
+              )
+            }
           >
-            <span style={{ fontSize: 14 }}>-</span>
+            <span style={{ fontSize: EDITOR_TOOLBAR_PLUS_MINUS_FONT_SIZE }}>-</span>
           </button>
           <input className={styles.numberInput} value={fontSize} readOnly />
           <button
             className={styles.iconBtn}
-            onClick={() => setFontSize(fontSize + 1)}
+            onClick={() => setFontSize(fontSize + EDITOR_TOOLBAR_FONT_STEP)}
           >
-            <span style={{ fontSize: 14 }}>+</span>
+            <span style={{ fontSize: EDITOR_TOOLBAR_PLUS_MINUS_FONT_SIZE }}>+</span>
           </button>
 
           <div className={styles.separator} />
@@ -91,28 +104,28 @@ export default function EditorToolbar({
             title="Bold"
             onClick={() => editor.chain().focus().toggleBold().run()}
           >
-            <Bold size={16} />
+              <Bold size={EDITOR_TOOLBAR_ICON_SIZE} />
           </button>
           <button
             className={`${styles.iconBtn} ${editor.isActive("italic") ? styles.active : ""}`}
             title="Italic"
             onClick={() => editor.chain().focus().toggleItalic().run()}
           >
-            <Italic size={16} />
+              <Italic size={EDITOR_TOOLBAR_ICON_SIZE} />
           </button>
           <button
             className={`${styles.iconBtn} ${editor.isActive("underline") ? styles.active : ""}`}
             title="Underline"
             onClick={() => editor.chain().focus().toggleUnderline().run()}
           >
-            <Underline size={16} />
+              <Underline size={EDITOR_TOOLBAR_ICON_SIZE} />
           </button>
           <button
             className={`${styles.iconBtn} ${editor.isActive("strike") ? styles.active : ""}`}
             title="Strikethrough"
             onClick={() => editor.chain().focus().toggleStrike().run()}
           >
-            <Strikethrough size={16} />
+              <Strikethrough size={EDITOR_TOOLBAR_ICON_SIZE} />
           </button>
 
           <div className={styles.separator} />
@@ -129,7 +142,7 @@ export default function EditorToolbar({
             />
             <button className={styles.iconBtn}>
               <Type
-                size={16}
+                size={EDITOR_TOOLBAR_ICON_SIZE}
                 style={{
                   color:
                     editor.getAttributes("textStyle").color || "currentColor",
@@ -143,7 +156,7 @@ export default function EditorToolbar({
             title="Highlight"
             onClick={() => editor.chain().focus().toggleHighlight().run()}
           >
-            <Highlighter size={16} />
+            <Highlighter size={EDITOR_TOOLBAR_ICON_SIZE} />
           </button>
         </div>
 
@@ -156,21 +169,21 @@ export default function EditorToolbar({
             title="Align Left"
             onClick={() => editor.chain().focus().setTextAlign("left").run()}
           >
-            <AlignLeft size={16} />
+            <AlignLeft size={EDITOR_TOOLBAR_ICON_SIZE} />
           </button>
           <button
             className={`${styles.iconBtn} ${editor.isActive({ textAlign: "center" }) ? styles.active : ""}`}
             title="Align Center"
             onClick={() => editor.chain().focus().setTextAlign("center").run()}
           >
-            <AlignCenter size={16} />
+            <AlignCenter size={EDITOR_TOOLBAR_ICON_SIZE} />
           </button>
           <button
             className={`${styles.iconBtn} ${editor.isActive({ textAlign: "right" }) ? styles.active : ""}`}
             title="Align Right"
             onClick={() => editor.chain().focus().setTextAlign("right").run()}
           >
-            <AlignRight size={16} />
+            <AlignRight size={EDITOR_TOOLBAR_ICON_SIZE} />
           </button>
 
           <div className={styles.separator} />
@@ -181,7 +194,11 @@ export default function EditorToolbar({
             onClick={onToggleMobileView}
             title="모바일 뷰 전환"
           >
-            {isMobileView ? <Smartphone size={14} /> : <Monitor size={14} />}
+            {isMobileView ? (
+              <Smartphone size={EDITOR_TOOLBAR_MOBILE_ICON_SIZE} />
+            ) : (
+              <Monitor size={EDITOR_TOOLBAR_MOBILE_ICON_SIZE} />
+            )}
             <span>{isMobileView ? "Mobile" : "PC"}</span>
           </button>
 
@@ -189,7 +206,7 @@ export default function EditorToolbar({
             className={styles.iconBtn}
             onClick={() => window.api.logger.info("Editor toolbar menu opened")}
           >
-            <MoreVertical size={16} />
+            <MoreVertical size={EDITOR_TOOLBAR_ICON_SIZE} />
           </button>
         </div>
       </div>

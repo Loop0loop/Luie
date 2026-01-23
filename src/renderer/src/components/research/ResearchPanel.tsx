@@ -1,4 +1,5 @@
 import styles from "../../styles/components/ResearchPanel.module.css";
+import { ICON_SIZE_LG } from "../../../shared/constants";
 import { Globe, StickyNote, User, X } from "lucide-react";
 import CharacterManager from "./CharacterManager";
 import MemoSection from "./MemoSection";
@@ -29,13 +30,13 @@ export default function ResearchPanel({
   const getIcon = () => {
     switch (activeTab) {
       case "character":
-        return <User size={18} />;
+        return <User size={ICON_SIZE_LG} />;
       case "world":
-        return <Globe size={18} />;
+        return <Globe size={ICON_SIZE_LG} />;
       case "scrap":
-        return <StickyNote size={18} />;
+        return <StickyNote size={ICON_SIZE_LG} />;
       default:
-        return <User size={18} />;
+        return <User size={ICON_SIZE_LG} />;
     }
   };
 
@@ -51,7 +52,7 @@ export default function ResearchPanel({
           onClick={onClose}
           title="Close Panel"
         >
-          <X size={18} />
+          <X size={ICON_SIZE_LG} />
         </button>
       </div>
 

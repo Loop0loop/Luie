@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useId } from "react";
 import { X } from "lucide-react";
 import styles from "../../styles/components/Modal.module.css";
+import { ICON_SIZE_LG } from "../../../shared/constants";
 
 interface ModalProps {
   isOpen: boolean;
@@ -32,7 +33,7 @@ export function Modal({
         <div className={styles.header}>
           <div className={styles.title}>{title}</div>
           <button className={styles.closeButton} onClick={onClose}>
-            <X size={18} />
+            <X size={ICON_SIZE_LG} />
           </button>
         </div>
         <div className={styles.body}>{children}</div>

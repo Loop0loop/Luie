@@ -10,6 +10,8 @@ import {
   MEMO_TAG_FONT_SIZE,
   MEMO_TAG_ICON_SIZE,
   MEMO_TAG_INPUT_FONT_SIZE,
+  MEMO_TITLE_FONT_WEIGHT,
+  ICON_SIZE_SM,
   STORAGE_KEY_MEMOS_NONE,
   STORAGE_KEY_MEMOS_PREFIX,
 } from "../../../../shared/constants";
@@ -144,7 +146,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
       <div className={styles.noteList}>
         <div className={styles.noteListHeader}>
           <span>MEMOS</span>
-          <Plus size={14} style={{ cursor: "pointer" }} onClick={handleAddNote} />
+          <Plus size={ICON_SIZE_SM} style={{ cursor: "pointer" }} onClick={handleAddNote} />
         </div>
 
         <div
@@ -189,7 +191,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
                 className={`${styles.noteItem} ${activeNoteId === note.id ? styles.active : ""}`}
                 onClick={() => setActiveNoteId(note.id)}
               >
-                <div style={{ fontWeight: 500, marginBottom: 4 }}>
+                <div style={{ fontWeight: MEMO_TITLE_FONT_WEIGHT, marginBottom: 4 }}>
                   {note.title || DEFAULT_UNTITLED_LABEL}
                 </div>
                 <div
