@@ -4,6 +4,7 @@
 
 import { contextBridge, ipcRenderer } from "electron";
 import type { IPCResponse } from "../shared/ipc/index.js";
+import { AUTO_SAVE_FLUSH_MS } from "../shared/constants/index.js";
 
 function sanitizeForIpc(value: unknown, seen = new WeakSet<object>()): unknown {
   if (value === null) return null;
@@ -117,7 +118,6 @@ type AutoSavePending = {
 
 const autoSaveQueue = new Map<string, AutoSavePending>();
 let autoSaveFlushTimer: number | null = null;
-const AUTO_SAVE_FLUSH_MS = 300;
 
 function scheduleAutoSaveFlush() {
   if (autoSaveFlushTimer !== null) return;

@@ -156,20 +156,35 @@ export interface SearchResult {
 }
 
 // Settings Types
+export type FontFamily = "serif" | "sans" | "mono";
+
+export type FontPreset =
+  | "default"
+  | "lora"
+  | "bitter"
+  | "source-serif"
+  | "montserrat"
+  | "nunito-sans"
+  | "victor-mono";
+
+export type EditorTheme = "light" | "dark" | "sepia";
+
+export interface WindowBounds {
+  width: number;
+  height: number;
+  x: number;
+  y: number;
+}
+
+export type WindowState = "maximized" | "normal";
+
 export interface EditorSettings {
-  fontFamily: "serif" | "sans" | "mono";
-  fontPreset?:
-    | "default"
-    | "lora"
-    | "bitter"
-    | "source-serif"
-    | "montserrat"
-    | "nunito-sans"
-    | "victor-mono";
+  fontFamily: FontFamily;
+  fontPreset?: FontPreset;
   fontSize: number;
   lineHeight: number;
   maxWidth: number;
-  theme: "light" | "dark" | "sepia";
+  theme: EditorTheme;
 }
 
 export interface AppSettings {
@@ -177,11 +192,6 @@ export interface AppSettings {
   lastProjectPath?: string;
   autoSaveEnabled: boolean;
   autoSaveInterval: number;
-  windowBounds?: {
-    width: number;
-    height: number;
-    x: number;
-    y: number;
-  };
-  lastWindowState?: "maximized" | "normal";
+  windowBounds?: WindowBounds;
+  lastWindowState?: WindowState;
 }

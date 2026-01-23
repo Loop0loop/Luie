@@ -10,6 +10,12 @@ export enum LogLevel {
   ERROR = 'ERROR',
 }
 
+export interface LoggerOptions {
+  minLevel?: LogLevel
+  logToFile?: boolean
+  logFilePath?: string
+}
+
 export interface LogEntry {
   level: LogLevel
   message: string
@@ -26,6 +32,8 @@ class Logger {
   }
 
   private log(level: LogLevel, message: string, data?: unknown): void {
+    if (!shouldLog(level)) return
+
     const entry: LogEntry = {
       level,
       message,
@@ -51,7 +59,9 @@ class Logger {
         break
     }
 
-    // TODO: 추후 파일 로깅 시스템 추가
+    if (globalLoggerOptions.logToFile && globalLoggerOptions.logFilePath) {
+      void writeLogToFile(entry)
+    }
   }
 
   debug(message: string, data?: unknown): void {
@@ -68,6 +78,71 @@ class Logger {
 
   error(message: string, data?: unknown): void {
     this.log(LogLevel.ERROR, message, data)
+  }
+}
+
+const isNodeRuntime =
+  typeof process !== 'undefined' &&
+  typeof process.versions !== 'undefined' &&
+  Boolean(process.versions.node)
+
+const levelOrder: Record<LogLevel, number> = {
+  [LogLevel.DEBUG]: 10,
+  [LogLevel.INFO]: 20,
+  [LogLevel.WARN]: 30,
+  [LogLevel.ERROR]: 40,
+}
+
+let globalLoggerOptions: Required<LoggerOptions> = {
+  minLevel: LogLevel.DEBUG,
+  logToFile: false,
+  logFilePath: '',
+}
+
+let ensureLogFileReadyPromise: Promise<void> | null = null
+
+function shouldLog(level: LogLevel): boolean {
+  return levelOrder[level] >= levelOrder[globalLoggerOptions.minLevel]
+}
+
+async function ensureLogFileReady(): Promise<void> {
+  if (!isNodeRuntime || !globalLoggerOptions.logFilePath) return
+  if (!ensureLogFileReadyPromise) {
+    ensureLogFileReadyPromise = (async () => {
+      const path = await import('node:path')
+      const fs = await import('node:fs/promises')
+      await fs.mkdir(path.dirname(globalLoggerOptions.logFilePath), {
+        recursive: true,
+      })
+    })()
+  }
+  await ensureLogFileReadyPromise
+}
+
+function safeStringify(data: unknown): string {
+  try {
+    return JSON.stringify(data)
+  } catch {
+    return '"[unserializable]"'
+  }
+}
+
+async function writeLogToFile(entry: LogEntry): Promise<void> {
+  if (!isNodeRuntime || !globalLoggerOptions.logFilePath) return
+  try {
+    await ensureLogFileReady()
+    const fs = await import('node:fs/promises')
+    const line = safeStringify(entry)
+    await fs.appendFile(globalLoggerOptions.logFilePath, `${line}\n`, 'utf8')
+  } catch {
+    // ignore file logging errors to avoid crashing the app
+  }
+}
+
+export function configureLogger(options: LoggerOptions): void {
+  globalLoggerOptions = {
+    ...globalLoggerOptions,
+    ...options,
   }
 }
 

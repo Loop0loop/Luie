@@ -34,9 +34,25 @@ export const characterCreateSchema = z.object({
   attributes: z.record(z.string(), z.unknown()).optional(),
 });
 
+export const characterUpdateSchema = z.object({
+  id: z.string().uuid("Invalid character ID"),
+  name: z.string().min(1, "Name is required").optional(),
+  description: z.string().optional(),
+  firstAppearance: z.string().optional(),
+  attributes: z.record(z.string(), z.unknown()).optional(),
+});
+
 export const termCreateSchema = z.object({
   projectId: z.string().uuid("Invalid project ID"),
   term: z.string().min(1, "Term is required"),
+  definition: z.string().optional(),
+  category: z.string().optional(),
+  firstAppearance: z.string().optional(),
+});
+
+export const termUpdateSchema = z.object({
+  id: z.string().uuid("Invalid term ID"),
+  term: z.string().min(1, "Term is required").optional(),
   definition: z.string().optional(),
   category: z.string().optional(),
   firstAppearance: z.string().optional(),

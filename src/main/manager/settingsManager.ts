@@ -6,51 +6,32 @@ import Store from "electron-store";
 import { app } from "electron";
 import { createLogger } from "../../shared/logger/index.js";
 import { existsSync } from "node:fs";
+import type { AppSettings, EditorSettings, WindowBounds, WindowState } from "../../shared/types/index.js";
+import {
+  DEFAULT_AUTO_SAVE_ENABLED,
+  DEFAULT_AUTO_SAVE_INTERVAL_MS,
+  DEFAULT_EDITOR_FONT_FAMILY,
+  DEFAULT_EDITOR_FONT_PRESET,
+  DEFAULT_EDITOR_FONT_SIZE,
+  DEFAULT_EDITOR_LINE_HEIGHT,
+  DEFAULT_EDITOR_MAX_WIDTH,
+  DEFAULT_EDITOR_THEME,
+} from "../../shared/constants/index.js";
 
 const logger = createLogger("SettingsManager");
 
-interface EditorSettings {
-  fontFamily: "serif" | "sans" | "mono";
-  fontPreset?:
-    | "default"
-    | "lora"
-    | "bitter"
-    | "source-serif"
-    | "montserrat"
-    | "nunito-sans"
-    | "victor-mono";
-  fontSize: number;
-  lineHeight: number;
-  maxWidth: number;
-  theme: "light" | "dark" | "sepia";
-}
-
-interface AppSettings {
-  editor: EditorSettings;
-  lastProjectPath?: string;
-  autoSaveEnabled: boolean;
-  autoSaveInterval: number;
-  windowBounds?: {
-    width: number;
-    height: number;
-    x: number;
-    y: number;
-  };
-  lastWindowState?: "maximized" | "normal";
-}
-
 const DEFAULT_SETTINGS: AppSettings = {
   editor: {
-    fontFamily: "serif",
-    fontPreset: "default",
-    fontSize: 18,
-    lineHeight: 1.8,
-    maxWidth: 800,
-    theme: "light",
+    fontFamily: DEFAULT_EDITOR_FONT_FAMILY,
+    fontPreset: DEFAULT_EDITOR_FONT_PRESET,
+    fontSize: DEFAULT_EDITOR_FONT_SIZE,
+    lineHeight: DEFAULT_EDITOR_LINE_HEIGHT,
+    maxWidth: DEFAULT_EDITOR_MAX_WIDTH,
+    theme: DEFAULT_EDITOR_THEME,
   },
   lastProjectPath: undefined,
-  autoSaveEnabled: true,
-  autoSaveInterval: 30000,
+  autoSaveEnabled: DEFAULT_AUTO_SAVE_ENABLED,
+  autoSaveInterval: DEFAULT_AUTO_SAVE_INTERVAL_MS,
   windowBounds: undefined,
   lastWindowState: undefined,
 };
@@ -185,12 +166,7 @@ export class SettingsManager {
     return this.store.get("windowBounds");
   }
 
-  setWindowBounds(bounds: {
-    width: number;
-    height: number;
-    x: number;
-    y: number;
-  }): void {
+  setWindowBounds(bounds: WindowBounds): void {
     this.store.set("windowBounds", bounds);
   }
 
@@ -198,7 +174,7 @@ export class SettingsManager {
     return this.store.get("lastWindowState");
   }
 
-  setLastWindowState(state: "maximized" | "normal"): void {
+  setLastWindowState(state: WindowState): void {
     this.store.set("lastWindowState", state);
   }
 

@@ -4,7 +4,7 @@
 
 import { db } from '../database/index.js'
 import { createLogger } from '../../shared/logger/index.js'
-import { ErrorCode } from '../../shared/constants/index.js'
+import { ErrorCode, DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS } from '../../shared/constants/index.js'
 import type { ProjectCreateInput, ProjectUpdateInput } from '../../shared/types/index.js'
 
 const logger = createLogger('ProjectService')
@@ -22,7 +22,7 @@ export class ProjectService {
           settings: {
             create: {
               autoSave: true,
-              autoSaveInterval: 30,
+              autoSaveInterval: DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
             },
           },
         },
