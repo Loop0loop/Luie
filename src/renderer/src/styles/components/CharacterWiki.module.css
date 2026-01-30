@@ -86,22 +86,10 @@
   gap: 24px;
   background-color: var(--bg-panel);
   color: var(--text-primary);
-  min-width: 0; /* Important for flex child to shrink */
-}
-
-/* RESPONSIVE LAYOUT */
-/* When screen is small, stack infobox below content */
-@media (max-width: 1024px) {
-    .pageBody {
-        flex-direction: column-reverse;
-    }
-    .infobox {
-        width: 100% !important;
-        max-width: none !important;
-    }
-    .main {
-        padding: 24px;
-    }
+  /* Establishment of container context for responsive children */
+  container-type: inline-size;
+  container-name: wiki-main;
+  min-width: 0;
 }
 
 /* NAMUWIKI HEADER */
@@ -141,7 +129,7 @@
   display: flex;
   gap: 32px;
   align-items: flex-start;
-  min-height: 0; /* For scroll */
+  min-height: 0; /* Important for scroll containers */
 }
 
 .contentArea {
@@ -149,14 +137,14 @@
   display: flex;
   flex-direction: column;
   gap: 32px;
-  min-width: 0; /* Prevent overflow */
+  min-width: 0; /* Prevent flex overflow */
 }
 
 /* INFOBOX - AUTHENTIC DARK MODE READY */
 .infobox {
   width: 320px;
   border: 2px solid var(--namu-blue);
-  background: var(--bg-element); /* Dynamic bg */
+  background: var(--bg-element);
   flex-shrink: 0;
   font-size: 13px;
   box-shadow: var(--shadow-md);
@@ -196,10 +184,10 @@
 
 .infoboxLabel {
   width: 100px;
-  background-color: var(--namu-table-bg); /* Use theme variable */
+  background-color: var(--namu-table-bg);
   padding: 8px 10px;
   font-weight: 700;
-  color: var(--namu-table-label); /* Use theme variable */
+  color: var(--namu-table-label);
   border-right: 1px solid var(--namu-border);
   display: flex; align-items: center; justify-content: center;
   text-align: center;
@@ -237,7 +225,7 @@
   flex: 1;
   padding: 4px 8px;
   display: flex; align-items: center;
-  background-color: var(--bg-element); /* Match element bg */
+  background-color: var(--bg-element);
   color: var(--text-primary);
   line-height: 1.5;
 }
@@ -376,11 +364,8 @@
 }
 .tocItem:hover { text-decoration: underline; }
 
-/* MODAL OVERRIDES (For consistency with app modal styles) */
-/* .. No specific overrides needed if using shared Modal component .. */
 
-
-/* GALLERY STYLES */
+/* GALLERY CONTENT */
 .galleryContainer {
     padding: 32px;
     flex: 1;
@@ -398,4 +383,39 @@
     margin-bottom: 16px;
     padding-bottom: 8px;
     border-bottom: 2px solid var(--border-default);
+}
+
+/* 
+  RESPONSIVE LAYOUT (Container Queries) 
+  Using increased specificity to override default styles without !important
+*/
+@container wiki-main (max-width: 900px) {
+    .pageBody {
+        flex-direction: column-reverse;
+        align-items: stretch; /* Ensuring full width alignment */
+    }
+    
+    /* Targeting with parent selector to boost specificity (0,0,2,0) vs (0,0,1,0) */
+    .pageBody .infobox {
+        width: 100%; 
+        max-width: none;
+        margin-bottom: 24px;
+        order: 1; /* Visual ordering assurance */
+    }
+
+    .pageBody .contentArea {
+        width: 100%;
+        order: 2; /* Visual ordering assurance */
+    }
+
+    .main {
+        padding: 24px;
+    }
+}
+
+/* Fallback for very small screens (Global Media Query) */
+@media (max-width: 768px) {
+    .main {
+        padding: 16px;
+    }
 }
