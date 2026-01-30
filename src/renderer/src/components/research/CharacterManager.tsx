@@ -3,7 +3,10 @@ import { Plus, User, ChevronDown, ChevronRight, Home, LayoutTemplate } from "luc
 import styles from "../../styles/components/CharacterWiki.module.css";
 import { useCharacterStore } from "../../stores/characterStore";
 import { useProjectStore } from "../../stores/projectStore";
-import { BufferedInput, BufferedTextArea } from "../common/BufferedInput";
+import { BufferedInput } from "../common/BufferedInput";
+import { Modal } from "../common/Modal"; // Shared Modal
+import { Infobox } from "./wiki/Infobox"; // New Component
+import { WikiSection } from "./wiki/WikiSection"; // New Component
 import {
   DEFAULT_CHARACTER_NAME,
   CHARACTER_GROUP_COLORS,
@@ -37,14 +40,12 @@ export default function CharacterManager() {
 
   const handleAddCharacter = async (templateId: string = "basic") => {
     if (currentProject) {
-      // Find template
       const template = CHARACTER_TEMPLATES.find((t) => t.id === templateId) || CHARACTER_TEMPLATES[0];
       
       const newChar = await createCharacter({
         projectId: currentProject.id,
         name: DEFAULT_CHARACTER_NAME,
         description: "Uncategorized", 
-        // We might want to store templateId in attributes for persistence
         attributes: { templateId: template.id } as Record<string, unknown> 
       });
       if (newChar) {
@@ -79,49 +80,45 @@ export default function CharacterManager() {
       {/* LEFT SIDEBAR - Character List */}
       <div className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
-           {/* Home / Gallery Button */}
-           <div 
+           <button 
              className={styles.homeButton} 
              onClick={() => setSelectedCharacterId(null)}
              title="전체 보기 (Gallery View)"
-             style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
            >
              <Home size={18} />
-             <span>등장인물</span>
-           </div>
+             <span style={{ marginLeft: 8, fontSize: 13, fontWeight: 700 }}>등장인물</span>
+           </button>
            
-           <div 
+           <button 
              className={styles.addButton} 
              onClick={() => setIsTemplateModalOpen(true)}
              title="캐릭터 추가"
            >
              <Plus size={18} />
-           </div>
+           </button>
         </div>
         
-        {/* Template Selection Modal (Simple Overlay) */}
-        {isTemplateModalOpen && (
-          <div className={styles.templateModalOverlay} onClick={() => setIsTemplateModalOpen(false)}>
-            <div className={styles.templateModal} onClick={(e) => e.stopPropagation()}>
-              <div className={styles.templateModalTitle}>템플릿 선택</div>
-              <div className={styles.templateGrid}>
+        <Modal
+            isOpen={isTemplateModalOpen}
+            onClose={() => setIsTemplateModalOpen(false)}
+            title="템플릿 선택"
+            width="500px"
+        >
+            <div className={styles.templateGrid}>
                 {CHARACTER_TEMPLATES.map((t) => (
-                  <div 
+                    <div 
                     key={t.id} 
                     className={styles.templateCard}
                     onClick={() => handleAddCharacter(t.id)}
-                  >
+                    >
                     <div className={styles.templateIcon}>
-                      <LayoutTemplate size={24} /> 
-                      {/* Ideally dynamic icon but using default for now */}
+                        <LayoutTemplate size={24} /> 
                     </div>
                     <div className={styles.templateName}>{t.name}</div>
-                  </div>
+                    </div>
                 ))}
-              </div>
             </div>
-          </div>
-        )}
+        </Modal>
 
         {/* Iterate Groups */}
         <div className={styles.sidebarList}>
@@ -139,24 +136,23 @@ export default function CharacterManager() {
       </div>
 
       {/* RIGHT MAIN - Wiki View */}
-      <div className={styles.main} style={{ padding: selectedChar ? undefined : 0, overflow: 'hidden' }}>
-        {selectedChar ? (
-          <WikiDetailView 
-            character={selectedChar} 
-            updateCharacter={updateCharacter}
-          />
-        ) : (
-          <CharacterGallery 
-            groupedCharacters={groupedCharacters} 
-            onSelect={setSelectedCharacterId} 
-          />
-        )}
-      </div>
+      {selectedChar ? (
+        <WikiDetailView 
+          key={selectedChar.id} // Force re-mount when switching char to avoid stale state
+          character={selectedChar} 
+          updateCharacter={updateCharacter}
+        />
+      ) : (
+        <CharacterGallery 
+          groupedCharacters={groupedCharacters} 
+          onSelect={setSelectedCharacterId} 
+        />
+      )}
     </div>
   );
 }
 
-// Sub-component: Gallery View (Default)
+// Sub-component: Gallery View
 function CharacterGallery({ 
   groupedCharacters, 
   onSelect 
@@ -166,15 +162,17 @@ function CharacterGallery({
 }) {
   return (
     <div className={styles.galleryContainer}>
-       <div style={{fontSize: '24px', fontWeight: 700, marginBottom: '16px', color: 'var(--text-primary)'}}>
-         등장인물 (Characters)
+       <div className={styles.titleSection}>
+         <div className={styles.wikiTitleInput} style={{ fontSize: '24px' }}>
+            등장인물 (Characters)
+         </div>
        </div>
        
        {Object.entries(groupedCharacters).map(([group, chars]) => {
          const themeColor = CHARACTER_GROUP_COLORS[group] || CHARACTER_GROUP_COLORS["Uncategorized"];
          return (
           <div key={group} className={styles.galleryGroup}>
-            <div className={styles.galleryHeader} style={{ backgroundColor: themeColor }}>
+            <div className={styles.galleryGroupTitle} style={{ borderColor: themeColor, color: themeColor }}>
               {group}
             </div>
             
@@ -243,7 +241,7 @@ function CharacterGroup({
 }
 
 // Types for Dynamic Customization
-type WikiSection = {
+type WikiSectionData = {
   id: string;
   label: string;
 };
@@ -256,7 +254,7 @@ type CustomField = {
   placeholder?: string;
 };
 
-// Sub-component: Main Wiki View - Authentic Namuwiki Style
+// Sub-component: Main Wiki View
 function WikiDetailView({ 
   character, 
   updateCharacter 
@@ -271,14 +269,12 @@ function WikiDetailView({
       : (character.attributes || {}),
   [character.attributes]);
   
-  // Resolve Template
   const currentTemplate = useMemo(() => {
     const templateId = attributes.templateId || "basic";
     return CHARACTER_TEMPLATES.find(t => t.id === templateId) || CHARACTER_TEMPLATES[0];
   }, [attributes.templateId]);
   
-  // Dynamic Sections & Fields (Derived directly from attributes with defaults)
-  const sections: WikiSection[] = useMemo(() => {
+  const sections: WikiSectionData[] = useMemo(() => {
     return attributes.sections || [
       { id: "overview", label: "1. 개요" },
       { id: "appearance", label: "2. 외관" },
@@ -303,7 +299,6 @@ function WikiDetailView({
   };
 
   // Section Management
-
   const addSection = () => {
     const newId = `section_${Date.now()}`;
     const newSections = [...sections, { id: newId, label: `${sections.length + 1}. 새로운 섹션` }];
@@ -357,15 +352,14 @@ function WikiDetailView({
       {/* 1. AUTHENTIC NAMUWIKI HEADER */}
       <div className={styles.titleSection}>
         <BufferedInput 
-          className={styles.cleanInput}
-          style={{ fontSize: '32px', fontWeight: 800, borderBottom: 'none' }} 
+          className={styles.wikiTitleInput}
           value={character.name} 
           onSave={(val) => handleUpdate("name", val)}
         />
         <div className={styles.wikiSubtitle}>
-          <span>분류:</span>
+          <span style={{fontWeight: 700}}>분류:</span>
           <span className={styles.tagLink}>{currentTemplate.name}</span>
-           <span style={{color: '#ccc'}}>|</span>
+           <span style={{color: 'var(--border-default)'}}>|</span>
           <BufferedInput 
               className={styles.cleanInput} 
               style={{display: 'inline', width: 'auto', fontWeight: 600, color: 'var(--namu-link)' }}
@@ -395,157 +389,58 @@ function WikiDetailView({
 
           {/* Sections */}
           {sections.map(sec => (
-            <div key={sec.id} id={sec.id} className={styles.section}>
-              <div className={styles.sectionHeader}>
-                <BufferedInput 
-                   value={sec.label}
-                   className={styles.cleanInput}
-                   style={{ fontWeight: 700, fontSize: '22px', width: 'auto' }}
-                   onSave={(val) => renameSection(sec.id, val)}
-                />
-                <div className={styles.sectionControls}>
-                   <span className={styles.editLink} onClick={() => deleteSection(sec.id)}>[삭제]</span>
-                   <span className={styles.editLink}>[편집]</span>
-                </div>
-              </div>
-              <BufferedTextArea 
-                className={styles.textArea}
-                style={{ width: '100%', minHeight: '100px', lineHeight: '1.6' }}
-                value={attributes[sec.id] || ""}
-                placeholder="내용을 입력하세요..."
-                onSave={(val) => handleAttrUpdate(sec.id, val)}
-              />
-            </div>
+            <WikiSection 
+                key={sec.id}
+                id={sec.id}
+                label={sec.label}
+                content={attributes[sec.id]}
+                onRename={(val) => renameSection(sec.id, val)}
+                onUpdateContent={(val) => handleAttrUpdate(sec.id, val)}
+                onDelete={() => deleteSection(sec.id)}
+            />
           ))}
 
           {/* Add Section Button */}
-          <div 
+          <button 
+             type="button"
              onClick={addSection}
              style={{ 
                padding: '12px', 
-               border: '2px dashed #ddd', 
+               border: '2px dashed var(--border-default)', 
                borderRadius: '8px', 
                textAlign: 'center', 
-               color: '#999', 
+               color: 'var(--text-tertiary)', 
                cursor: 'pointer',
-               marginTop: '16px'
+               marginTop: '16px',
+               width: '100%',
+               background: 'transparent'
              }}
           >
              + 섹션 추가 (Add Section)
-          </div>
+          </button>
 
         </div>
 
         {/* RIGHT: Authentic Infobox */}
-        <div className={styles.infobox}>
-          <div className={styles.infoboxHeader}>
-            {character.name}
-          </div>
-          <div className={styles.infoboxImage}>
-             <User size={80} color="#ccc" />
-          </div>
-          
-          {/* All Fields (Template + Custom) */}
-          {allInfoboxFields.map(field => {
-             const isCustom = customFields.some(cf => cf.key === field.key);
-             return (
-               <InfoboxRow 
-                 key={field.key} 
-                 label={field.label} 
-                 value={attributes[field.key]} 
-                 placeholder={field.placeholder}
-                 onSave={(v) => handleAttrUpdate(field.key, v)} 
-                 onLabelSave={isCustom ? (val) => updateCustomFieldLabel(field.key, val) : undefined}
-                 type={field.type}
-                 options={field.options}
-                 isCustom={isCustom}
-                 onDelete={isCustom ? () => deleteCustomField(field.key) : undefined}
-               />
-             );
-          })}
-
-          {/* Add Field Button */}
-          <div 
-             onClick={addCustomField}
-             style={{ 
-               padding: '8px', 
-               textAlign: 'center', 
-               fontSize: '12px', 
-               color: '#666', 
-               cursor: 'pointer', 
-               borderTop: '1px solid var(--namu-border)',
-               background: 'var(--namu-table-bg)'
-             }}
-          >
-             + 필드 추가
-          </div>
-          
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function InfoboxRow({ 
-  label, 
-  value, 
-  onSave, 
-  onLabelSave,
-  placeholder,
-  type = "text",
-  options = [],
-  isCustom = false,
-  onDelete
-}: { 
-  label: string; 
-  value?: string; 
-  onSave?: (v: string) => void;
-  onLabelSave?: (v: string) => void;
-  placeholder?: string;
-  type?: "text" | "textarea" | "select";
-  options?: string[];
-  isCustom?: boolean;
-  onDelete?: () => void;
-}) {
-  return (
-    <div className={styles.infoboxRow}>
-      <div className={styles.infoboxLabel} style={{ position: 'relative' }}>
-         {isCustom ? (
-           <BufferedInput 
-             className={styles.cleanInput}
-             style={{ textAlign: 'center', fontWeight: 700 }}
-             value={label}
-             onSave={onLabelSave || (() => {})}
-           />
-         ) : label}
-         {isCustom && onDelete && (
-            <div 
-              onClick={(e) => { e.stopPropagation(); onDelete(); }}
-              style={{ position: 'absolute', left: '2px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#ccc', fontSize: '10px' }}
-            >
-              x
-            </div>
-         )}
-      </div>
-      <div className={styles.infoboxValue}>
-        {type === "select" ? (
-           <select 
-             className={styles.cleanInput} 
-             value={value || ""}
-             onChange={(e) => onSave?.(e.target.value)}
-             style={{ cursor: 'pointer' }}
-           >
-             <option value="">- 선택 -</option>
-             {options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-           </select>
-        ) : (
-          <BufferedInput 
-            className={styles.cleanInput} 
-            value={value || ""} 
-            placeholder={placeholder || "-"}
-            onSave={onSave || (() => {})}
-          />
-        )}
+        <Infobox 
+            title={character.name}
+            image={<User size={80} color="var(--border-active)" />}
+            rows={allInfoboxFields.map(field => {
+                const isCustom = customFields.some(cf => cf.key === field.key);
+                return {
+                    label: field.label,
+                    value: attributes[field.key],
+                    placeholder: field.placeholder,
+                    type: field.type,
+                    options: field.options,
+                    isCustom,
+                    onSave: (v) => handleAttrUpdate(field.key, v),
+                    onLabelSave: isCustom ? (v) => updateCustomFieldLabel(field.key, v) : undefined,
+                    onDelete: isCustom ? () => deleteCustomField(field.key) : undefined
+                };
+            })}
+            onAddField={addCustomField}
+        />
       </div>
     </div>
   );
