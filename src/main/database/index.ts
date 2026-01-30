@@ -11,9 +11,30 @@ import { DB_NAME } from "../../shared/constants/index.js";
 
 const logger = createLogger("DatabaseService");
 const require = createRequire(import.meta.url);
+
+type PrismaDelegate<T extends Record<string, unknown>> = {
+  create: (args: unknown) => Promise<T>;
+  findUnique: (args: unknown) => Promise<T | null>;
+  findMany: (args: unknown) => Promise<T[]>;
+  update: (args: unknown) => Promise<T>;
+  delete: (args: unknown) => Promise<T>;
+  deleteMany: (args: unknown) => Promise<{ count: number }>;
+  findFirst: (args: unknown) => Promise<T | null>;
+};
+
+type PrismaRecord = Record<string, unknown>;
+
 type PrismaClient = {
   $disconnect: () => Promise<void>;
-} & Record<string, any>;
+  $transaction: (args: unknown) => Promise<unknown>;
+  project: PrismaDelegate<PrismaRecord>;
+  chapter: PrismaDelegate<PrismaRecord>;
+  character: PrismaDelegate<PrismaRecord>;
+  term: PrismaDelegate<PrismaRecord>;
+  snapshot: PrismaDelegate<PrismaRecord>;
+  characterAppearance: PrismaDelegate<PrismaRecord>;
+  termAppearance: PrismaDelegate<PrismaRecord>;
+};
 
 const { PrismaClient } = require("@prisma/client") as {
   PrismaClient: new (options?: unknown) => PrismaClient;

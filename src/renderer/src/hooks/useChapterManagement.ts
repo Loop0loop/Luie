@@ -105,7 +105,7 @@ export function useChapterManagement() {
         }
       }
     },
-    [activeChapterId, updateChapter, currentProject, chapters],
+    [activeChapterId, updateChapter, currentProject],
   );
 
   const activeChapterTitle = activeChapter?.title || "";

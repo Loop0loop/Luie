@@ -107,7 +107,7 @@ export class TermService {
       });
 
       logger.info("Term updated successfully", { termId: term.id });
-      projectService.schedulePackageExport(term.projectId, "term:update");
+      projectService.schedulePackageExport(String(term.projectId), "term:update");
       return term;
     } catch (error) {
       logger.error("Failed to update term", error);
@@ -129,7 +129,7 @@ export class TermService {
 
       logger.info("Term deleted successfully", { termId: id });
       if (term?.projectId) {
-        projectService.schedulePackageExport(term.projectId, "term:delete");
+        projectService.schedulePackageExport(String(term.projectId), "term:delete");
       }
       return { success: true };
     } catch (error) {

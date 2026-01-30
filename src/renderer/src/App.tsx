@@ -62,7 +62,7 @@ export default function App() {
       handleSelectChapter(id);
       // Force fullscreen on new project
       window.api.window.setFullscreen(true).catch((err) => {
-        console.error("Failed to set fullscreen:", err);
+        window.api.logger.error("Failed to set fullscreen", err);
       });
     }
   );
@@ -82,7 +82,7 @@ export default function App() {
       setView("editor");
       // Force fullscreen on project open
       window.api.window.setFullscreen(true).catch((err) => {
-        console.error("Failed to set fullscreen:", err);
+        window.api.logger.error("Failed to set fullscreen", err);
       });
     },
     [setCurrentProject, setView],

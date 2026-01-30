@@ -18,6 +18,56 @@ import {
 import type { ProjectCreateInput, ProjectUpdateInput } from '../../shared/types/index.js'
 import { writeLuiePackage } from '../handler/system/ipcFsHandlers.js'
 
+type ChapterRecord = {
+  id: string
+  title: string
+  order: number
+  updatedAt: Date
+  content: string
+}
+
+type CharacterRecord = {
+  id: string
+  name: string
+  description?: string | null
+  firstAppearance?: string | null
+  attributes?: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+type TermRecord = {
+  id: string
+  term: string
+  definition?: string | null
+  category?: string | null
+  firstAppearance?: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+type SnapshotRecord = {
+  id: string
+  projectId: string
+  chapterId?: string | null
+  content: string
+  description?: string | null
+  createdAt: Date
+}
+
+type ProjectExportRecord = {
+  id: string
+  title: string
+  description?: string | null
+  createdAt: Date
+  updatedAt: Date
+  projectPath?: string | null
+  chapters: ChapterRecord[]
+  characters: CharacterRecord[]
+  terms: TermRecord[]
+  snapshots: SnapshotRecord[]
+}
+
 const logger = createLogger('ProjectService')
 
 export class ProjectService {
@@ -44,8 +94,9 @@ export class ProjectService {
         },
       })
 
-      logger.info('Project created successfully', { projectId: project.id })
-      this.schedulePackageExport(project.id, 'project:create')
+      const projectId = String(project.id)
+      logger.info('Project created successfully', { projectId })
+      this.schedulePackageExport(projectId, 'project:create')
       return project
     } catch (error) {
       logger.error('Failed to create project', error)
@@ -112,8 +163,9 @@ export class ProjectService {
         },
       })
 
-      logger.info('Project updated successfully', { projectId: project.id })
-      this.schedulePackageExport(project.id, 'project:update')
+      const projectId = String(project.id)
+      logger.info('Project updated successfully', { projectId })
+      this.schedulePackageExport(projectId, 'project:update')
       return project
     } catch (error) {
       logger.error('Failed to update project', error)
@@ -154,7 +206,7 @@ export class ProjectService {
   }
 
   async exportProjectPackage(projectId: string) {
-    const project = await db.getClient().project.findUnique({
+    const project = (await db.getClient().project.findUnique({
       where: { id: projectId },
       include: {
         chapters: { orderBy: { order: 'asc' } },
@@ -162,7 +214,7 @@ export class ProjectService {
         terms: true,
         snapshots: true,
       },
-    })
+    })) as ProjectExportRecord | null
 
     if (!project?.projectPath) {
       return
@@ -172,7 +224,7 @@ export class ProjectService {
       return
     }
 
-    const chapters = project.chapters.map((chapter: any) => ({
+    const chapters = project.chapters.map((chapter: ChapterRecord) => ({
       id: chapter.id,
       title: chapter.title,
       order: chapter.order,
@@ -181,7 +233,7 @@ export class ProjectService {
       file: `${LUIE_MANUSCRIPT_DIR}/${chapter.id}${MARKDOWN_EXTENSION}`,
     }))
 
-    const characters = project.characters.map((character: any) => {
+    const characters = project.characters.map((character: CharacterRecord) => {
       let attributes: unknown = undefined
       if (character.attributes) {
         try {
@@ -201,7 +253,7 @@ export class ProjectService {
       }
     })
 
-    const terms = project.terms.map((term: any) => ({
+    const terms = project.terms.map((term: TermRecord) => ({
       id: term.id,
       term: term.term,
       definition: term.definition,
@@ -211,7 +263,7 @@ export class ProjectService {
       updatedAt: term.updatedAt,
     }))
 
-    const snapshots = project.snapshots.map((snapshot: any) => ({
+    const snapshots = project.snapshots.map((snapshot: SnapshotRecord) => ({
       id: snapshot.id,
       projectId: snapshot.projectId,
       chapterId: snapshot.chapterId,
@@ -229,7 +281,7 @@ export class ProjectService {
       description: project.description,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
-      chapters: chapters.map((chapter: any) => ({
+      chapters: chapters.map((chapter) => ({
         id: chapter.id,
         title: chapter.title,
         order: chapter.order,
