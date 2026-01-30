@@ -4,7 +4,6 @@ import Sidebar from "./components/sidebar/Sidebar";
 import Editor from "./components/editor/Editor";
 import ContextPanel from "./components/context/ContextPanel";
 import ProjectTemplateSelector from "./components/layout/ProjectTemplateSelector";
-import styles from "./styles/App.module.css";
 import { useProjectStore } from "./stores/projectStore";
 import { useUIStore } from "./stores/uiStore";
 import { useEditorStore } from "./stores/editorStore";
@@ -121,9 +120,9 @@ export default function App() {
           <ContextPanel activeTab={contextTab} onTabChange={setContextTab} />
         }
       >
-        <div className={styles.splitContainer}>
+        <div className="flex w-full h-full flex-1 overflow-hidden relative">
           <div
-            className={styles.editorPane}
+            className="h-full overflow-hidden relative min-w-0 bg-bg-primary"
             style={{ flex: isSplitView ? splitRatio : 1 }}
           >
             <Editor
@@ -137,13 +136,15 @@ export default function App() {
           {isSplitView && (
             <>
               <div
-                className={styles.splitDivider}
+                className="w-3 cursor-col-resize bg-transparent relative flex-none flex items-center justify-center z-[100] -mx-[5px] group"
                 onMouseDown={startResizeSplit}
                 role="separator"
                 aria-orientation="vertical"
-              />
+              >
+                <div className="absolute top-0 bottom-0 left-1/2 w-px bg-border transition-all group-hover:bg-accent group-hover:w-0.5" />
+              </div>
               <div
-                className={styles.researchPane}
+                className="h-full border-l border-border overflow-hidden relative min-w-0 bg-bg-secondary"
                 style={{ flex: 1 - splitRatio }}
               >
                 <Suspense

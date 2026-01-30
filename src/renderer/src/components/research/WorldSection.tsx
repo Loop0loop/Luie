@@ -15,8 +15,8 @@ import ReactFlow, {
   applyEdgeChanges,
 } from "reactflow";
 import "reactflow/dist/style.css";
+import { cn } from "../../../../shared/types/utils";
 import { ArrowLeft, Eraser, Plus, X, Type, PenTool } from "lucide-react";
-import styles from "../../styles/components/ResearchPanel.module.css";
 import { useProjectStore } from "../../stores/projectStore";
 import { useTermStore } from "../../stores/termStore";
 import { BufferedInput, BufferedTextArea } from "../common/BufferedInput";
@@ -87,7 +87,7 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
 
   return (
     <div
-      className={styles.mindMapNode}
+      className="p-2 min-w-[100px] bg-panel border-2 border-active rounded-lg shadow-sm text-center flex flex-col justify-center items-center relative transition-transform hover:shadow-md"
       onDoubleClick={(e) => {
         e.stopPropagation();
         setDraft(data.label);
@@ -97,7 +97,7 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
       <Handle type="target" position={Position.Top} />
       {isEditing ? (
         <input
-          className={`${styles.mindMapNodeInput} nodrag`}
+          className="w-full text-center border-none bg-transparent outline-none font-medium text-sm text-fg"
           value={draft ?? data.label}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={commit}
@@ -111,7 +111,7 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
           autoFocus
         />
       ) : (
-        <div className={styles.mindMapNodeLabel}>{data.label}</div>
+        <div className="font-medium text-sm text-fg break-normal whitespace-pre-wrap">{data.label}</div>
       )}
       <Handle type="source" position={Position.Bottom} />
     </div>
@@ -123,33 +123,33 @@ export default function WorldSection() {
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div className={styles.subNavBar}>
+      <div className="flex w-full bg-sidebar border-b border-border shrink-0 text-muted select-none">
         <div
-          className={`${styles.subTab} ${subTab === "terms" ? styles.active : ""}`}
+          className={cn("flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans", subTab === "terms" && "text-accent font-semibold border-b-2 border-accent")}
           onClick={() => setSubTab("terms")}
         >
           {WORLD_TAB_TERMS}
         </div>
         <div
-          className={`${styles.subTab} ${subTab === "synopsis" ? styles.active : ""}`}
+          className={cn("flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans", subTab === "synopsis" && "text-accent font-semibold border-b-2 border-accent")}
           onClick={() => setSubTab("synopsis")}
         >
           {WORLD_TAB_SYNOPSIS}
         </div>
         <div
-          className={`${styles.subTab} ${subTab === "mindmap" ? styles.active : ""}`}
+          className={cn("flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans", subTab === "mindmap" && "text-accent font-semibold border-b-2 border-accent")}
           onClick={() => setSubTab("mindmap")}
         >
           {WORLD_TAB_MINDMAP}
         </div>
         <div
-          className={`${styles.subTab} ${subTab === "drawing" ? styles.active : ""}`}
+          className={cn("flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans", subTab === "drawing" && "text-accent font-semibold border-b-2 border-accent")}
           onClick={() => setSubTab("drawing")}
         >
           {WORLD_TAB_DRAWING}
         </div>
         <div
-          className={`${styles.subTab} ${subTab === "plot" ? styles.active : ""}`}
+          className={cn("flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans", subTab === "plot" && "text-accent font-semibold border-b-2 border-accent")}
           onClick={() => setSubTab("plot")}
         >
           {WORLD_TAB_PLOT}
@@ -201,10 +201,10 @@ function TermManager() {
     if (!term) return <div>{WORLD_TERM_NOT_FOUND}</div>;
 
     return (
-      <div>
-        <div className={styles.detailHeader}>
+      <div className="p-4">
+        <div className="flex items-center gap-3 pb-3 mb-4 border-b border-border">
           <div
-            className={styles.backButton}
+            className="flex items-center justify-center p-1 rounded hover:bg-hover text-muted hover:text-fg transition-colors cursor-pointer"
             onClick={() => setSelectedTermId(null)}
           >
             <ArrowLeft className="icon-md" />
@@ -212,28 +212,28 @@ function TermManager() {
           <span style={{ fontWeight: "var(--font-weight-semibold)" }}>{term.term}</span>
         </div>
 
-        <div className={styles.tableGrid}>
-          <div className={styles.cellLabel}>{WORLD_TERM_LABEL}</div>
-          <div className={styles.cellValue}>
+        <div className="grid grid-cols-[100px_1fr] gap-4 items-start pb-8">
+          <div className="text-right text-xs font-bold text-muted pt-2 uppercase tracking-wide">{WORLD_TERM_LABEL}</div>
+          <div className="min-w-0">
             <BufferedInput
-              className={styles.cellValueInput}
+              className="w-full p-2 bg-element border border-border rounded text-sm text-fg outline-none focus:border-active focus:ring-1 focus:ring-active transition-all"
               value={term.term}
               onSave={(val) => updateTerm({ id: term.id, term: val })}
             />
           </div>
-          <div className={styles.cellLabel}>{WORLD_TERM_DEFINITION_LABEL}</div>
-          <div className={styles.cellValue}>
+          <div className="text-right text-xs font-bold text-muted pt-2 uppercase tracking-wide">{WORLD_TERM_DEFINITION_LABEL}</div>
+          <div className="min-w-0">
             <BufferedTextArea
-              className={styles.cellValueInput}
+              className="w-full p-2 bg-element border border-border rounded text-sm text-fg outline-none focus:border-active focus:ring-1 focus:ring-active transition-all font-sans leading-relaxed"
               value={term.definition || ""}
               onSave={(val) => updateTerm({ id: term.id, definition: val })}
               style={{ minHeight: "100px" }}
             />
           </div>
-          <div className={styles.cellLabel}>{WORLD_TERM_CATEGORY_LABEL}</div>
-          <div className={styles.cellValue}>
+          <div className="text-right text-xs font-bold text-muted pt-2 uppercase tracking-wide">{WORLD_TERM_CATEGORY_LABEL}</div>
+          <div className="min-w-0">
             <BufferedInput
-              className={styles.cellValueInput}
+              className="w-full p-2 bg-element border border-border rounded text-sm text-fg outline-none focus:border-active focus:ring-1 focus:ring-active transition-all"
               value={term.category || ""}
               onSave={(val) => updateTerm({ id: term.id, category: val })}
             />
@@ -244,18 +244,18 @@ function TermManager() {
   }
 
   return (
-    <div className={styles.characterListContainer}>
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 p-4">
       {terms.map((term) => (
         <div
           key={term.id}
-          className={styles.characterCard}
+          className="h-[100px] p-3 bg-element border border-border rounded-lg cursor-pointer relative shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-active overflow-hidden flex flex-col"
           onClick={() => setSelectedTermId(term.id)}
           style={{ height: "auto", minHeight: "80px" }}
         >
-          <div className={styles.characterInfo} style={{ marginLeft: 0 }}>
-            <div className={styles.characterName}>{term.term}</div>
+          <div className="ml-0">
+            <div className="font-bold text-sm text-fg mb-1">{term.term}</div>
             <div
-              className={styles.characterRole}
+              className="text-xs text-secondary line-clamp-2"
               style={{ fontSize: "0.8em", color: "var(--text-secondary)" }}
             >
               {term.category ? `[${term.category}] ` : ""}
@@ -282,7 +282,7 @@ function TermManager() {
         </div>
       ))}
       <div
-        className={styles.addCharacterCard}
+        className="h-[80px] flex flex-col items-center justify-center gap-2 border border-dashed border-border rounded-lg cursor-pointer text-muted hover:text-accent hover:border-accent hover:bg-element-hover transition-colors"
         onClick={handleAddTerm}
         style={{ height: "80px" }}
       >
@@ -302,7 +302,7 @@ function SynopsisEditor() {
   return (
     <div style={{ height: "100%", overflowY: "auto", paddingRight: 8 }}>
       <div
-        className={styles.sectionTitle}
+        className="text-lg font-bold text-fg"
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -339,7 +339,7 @@ function SynopsisEditor() {
       </div>
 
       <BufferedTextArea
-        className={styles.cellValueInput}
+        className="w-full p-2 bg-element border border-border rounded text-sm text-fg outline-none focus:border-active focus:ring-1 focus:ring-active transition-all font-sans leading-relaxed"
         style={{
           border: "1px solid var(--border-default)",
           padding: 16,
@@ -552,14 +552,14 @@ function MindMapBoard() {
 
   return (
     <div
-      className={styles.mindMapContainer}
+      className="w-full h-full bg-app overflow-hidden outline-none relative"
       tabIndex={0}
       onKeyDown={handleKeyDown}
       onDoubleClick={onPaneDoubleClick}
       style={{ outline: "none" }} // Focusable div for keyboard events
     >
       <div
-        className={styles.mindMapHint}
+        className="absolute top-4 left-1/2 -translate-x-1/2 bg-panel/80 px-4 py-1.5 rounded-full text-xs text-secondary shadow-sm pointer-events-none z-10 backdrop-blur-sm border border-border"
       >
         Click Node to Select • <b>Enter</b>: Sibling • <b>Tab</b>: Child •{" "}
         <b>Del</b>: Delete • <b>Double Click</b>: Edit/Insert
@@ -667,7 +667,7 @@ function DrawingCanvas() {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {/* Drawing Toolbar */}
-      <div className={styles.drawingToolbar}>
+      <div className="h-9 flex items-center px-4 gap-4 bg-panel border-b border-border shrink-0">
         <div
           style={{
             display: "flex",
@@ -677,14 +677,14 @@ function DrawingCanvas() {
           }}
         >
           <button
-            className={`${styles.toolButton} ${tool === "pen" ? styles.active : ""}`}
+            className={cn("w-7 h-7 flex items-center justify-center rounded text-muted hover:bg-hover hover:text-fg transition-colors", tool === "pen" && "bg-active text-accent")}
             onClick={() => setTool("pen")}
             title={WORLD_DRAW_TOOL_PEN_TITLE}
           >
             <PenTool className="icon-md" />
           </button>
           <button
-            className={`${styles.toolButton} ${tool === "text" ? styles.active : ""}`}
+            className={cn("w-7 h-7 flex items-center justify-center rounded text-muted hover:bg-hover hover:text-fg transition-colors", tool === "text" && "bg-active text-accent")}
             onClick={() => setTool("text")}
             title={WORLD_DRAW_TOOL_TEXT_TITLE}
           >
@@ -704,7 +704,7 @@ function DrawingCanvas() {
           {colors.map((c) => (
             <div
               key={c}
-              className={`${styles.colorSwatch} ${color === c ? styles.active : ""}`}
+              className={cn("w-5 h-5 rounded-full border border-border cursor-pointer hover:scale-110 transition-transform", color === c && "ring-2 ring-active ring-offset-2 ring-offset-panel")}
               style={{ backgroundColor: c }}
               onClick={() => setColor(c)}
             />
@@ -746,13 +746,13 @@ function DrawingCanvas() {
           ))}
         </div>
 
-        <button className={styles.subTab} onClick={clearCanvas}>
+        <button className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-hover text-xs cursor-pointer text-muted hover:text-fg transition-colors" onClick={clearCanvas}>
           <Eraser className="icon-sm" /> {WORLD_DRAW_CLEAR_LABEL}
         </button>
       </div>
 
       {/* Canvas */}
-      <div className={styles.canvasArea} ref={canvasRef}>
+      <div className="flex-1 bg-app cursor-crosshair overflow-hidden" ref={canvasRef}>
         <svg
           style={{ width: "100%", height: "100%", touchAction: "none" }}
           onPointerDown={handlePointerDown}
@@ -876,24 +876,24 @@ function PlotBoard() {
   };
 
   return (
-    <div className={styles.plotBoard}>
+    <div className="h-full flex overflow-x-auto p-4 gap-4 bg-app">
       {columns.map((col) => (
-        <div key={col.id} className={styles.plotColumn}>
-          <div className={styles.columnHeader}>
+        <div key={col.id} className="w-[280px] shrink-0 flex flex-col bg-sidebar border border-border rounded-lg max-h-full">
+          <div className="p-3 font-bold text-sm text-fg uppercase flex justify-between items-center border-b border-border bg-panel/50">
             {col.title}
-            <span className={styles.cardCount}>{col.cards.length}</span>
+            <span className="bg-element/80 px-1.5 py-0.5 rounded text-[10px] text-muted">{col.cards.length}</span>
           </div>
-          <div className={styles.cardList}>
+          <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-2">
             {col.cards.map((card) => (
-              <div key={card.id} className={styles.plotCard}>
+              <div key={card.id} className="bg-panel border border-border rounded p-2 shadow-sm relative group hover:border-active transition-colors">
                 <BufferedTextArea
-                  className={styles.cardInput}
+                  className="w-full bg-transparent border-none resize-none text-sm text-fg leading-relaxed outline-none mb-1"
                   value={card.content}
                   onSave={(val) => updateCard(col.id, card.id, val)}
                   rows={2}
                 />
                 <button
-                  className={styles.cardDeleteBtn}
+                  className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-hover text-muted hover:text-error transition-all"
                   onClick={() => deleteCard(col.id, card.id)}
                 >
                   <X className="icon-xs" />
@@ -901,7 +901,7 @@ function PlotBoard() {
               </div>
             ))}
           </div>
-          <button className={styles.addCardBtn} onClick={() => addCard(col.id)}>
+          <button className="m-2 p-2 flex items-center justify-center gap-1.5 rounded border border-dashed border-border text-xs text-muted hover:text-accent hover:border-accent hover:bg-element-hover transition-all" onClick={() => addCard(col.id)}>
             <Plus className="icon-sm" /> {WORLD_PLOT_ADD_BEAT_LABEL}
           </button>
         </div>

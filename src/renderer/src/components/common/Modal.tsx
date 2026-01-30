@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useId } from "react";
 import { X } from "lucide-react";
-import styles from "../../styles/components/Modal.module.css";
+import { cn } from "../../../../shared/types/utils";
 import { MODAL_CANCEL_LABEL, MODAL_CONFIRM_LABEL } from "../../../../shared/constants";
 
 interface ModalProps {
@@ -24,20 +24,20 @@ export function Modal({
   if (!isOpen) return null;
 
   return (
-    <div className={`${styles.overlay} ${styles.open}`} onMouseDown={onClose}>
+    <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-[4px] flex items-center justify-center animate-in fade-in duration-200" onMouseDown={onClose}>
       <div
-        className={`${styles.dialog} ${styles.open}`}
+        className="bg-panel border border-border rounded-xl shadow-2xl w-full max-w-[90vw] flex flex-col overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-2 duration-200"
         style={{ width }}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className={styles.header}>
-          <div className={styles.title}>{title}</div>
-          <button className={styles.closeButton} onClick={onClose}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-secondary">
+          <div className="text-[15px] font-semibold text-fg">{title}</div>
+          <button className="bg-transparent border-none text-muted cursor-pointer p-1 rounded flex hover:bg-hover hover:text-fg transition-colors" onClick={onClose}>
             <X className="icon-lg" />
           </button>
         </div>
-        <div className={styles.body}>{children}</div>
-        {footer && <div className={styles.footer}>{footer}</div>}
+        <div className="p-5 text-sm leading-relaxed text-muted">{children}</div>
+        {footer && <div className="px-5 py-4 border-t border-border bg-secondary">{footer}</div>}
       </div>
     </div>
   );
@@ -70,12 +70,15 @@ export function ConfirmDialog({
       onClose={onCancel}
       title={title}
       footer={
-        <div className={styles.footerButtons}>
-          <button className={styles.buttonSecondary} onClick={onCancel}>
+        <div className="flex justify-end gap-3 w-full">
+          <button className="px-4 py-2 bg-transparent border border-border rounded-md text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg" onClick={onCancel}>
             {cancelLabel}
           </button>
           <button
-            className={isDestructive ? styles.buttonDanger : styles.buttonPrimary}
+            className={cn(
+              "px-4 py-2 border-none rounded-md text-white text-[13px] font-medium cursor-pointer transition-all hover:brightness-110",
+              isDestructive ? "bg-red-500 hover:bg-red-600" : "bg-accent"
+            )}
             onClick={onConfirm}
           >
             {confirmLabel}
@@ -83,7 +86,7 @@ export function ConfirmDialog({
         </div>
       }
     >
-      <div className={styles.confirmMessage}>{message}</div>
+      <div className="mb-2">{message}</div>
     </Modal>
   );
 }
@@ -124,21 +127,21 @@ export function PromptDialog({
       onClose={onCancel}
       title={title}
       footer={
-        <div className={styles.footerButtons}>
-          <button className={styles.buttonSecondary} onClick={onCancel}>
+        <div className="flex justify-end gap-3 w-full">
+          <button className="px-4 py-2 bg-transparent border border-border rounded-md text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg" onClick={onCancel}>
             {cancelLabel}
           </button>
-          <button className={styles.buttonPrimary} onClick={handleSubmit}>
+          <button className="px-4 py-2 bg-accent border-none rounded-md text-white text-[13px] font-medium cursor-pointer transition-all hover:brightness-110" onClick={handleSubmit}>
             {confirmLabel}
           </button>
         </div>
       }
     >
-      {message && <div className={styles.promptMessage}>{message}</div>}
+      {message && <div className="mb-3 text-muted">{message}</div>}
       <input
         key={`${isOpen}-${defaultValue}`}
         id={inputId}
-        className={styles.input}
+        className="w-full p-2.5 bg-input border border-border rounded-md text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
         defaultValue={defaultValue}
         placeholder={placeholder}
         autoFocus

@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import type { Editor, Range } from "@tiptap/core";
-import styles from "../../styles/components/SlashMenu.module.css";
+import { cn } from "../../../../shared/types/utils";
 import {
   Heading1,
   Heading2,
@@ -140,28 +140,35 @@ const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function SlashMenu
 
   return (
     <div
-      className={styles.menu}
+      className="absolute w-[300px] max-h-[320px] bg-panel border border-border rounded-md shadow-xl z-50 overflow-y-auto flex flex-col font-sans"
       onMouseDown={(e) => {
         // 클릭/드래그가 에디터 focus를 빼앗아 Suggestion이 닫히는 걸 방지
         e.preventDefault();
       }}
     >
-      <div className={styles.header}>{SLASH_MENU_HEADER_BASIC}</div>
-      <div className={styles.list}>
+      <div className="px-3 py-2 text-[11px] font-semibold text-muted uppercase tracking-wider bg-bg-secondary border-b border-border">
+        {SLASH_MENU_HEADER_BASIC}
+      </div>
+      <div className="p-1">
         {items.map((item, index) => (
           <div
             key={item.id}
-            className={`${styles.item} ${index === effectiveSelectedIndex ? styles.selected : ""}`}
+            className={cn(
+              "flex items-center px-2 py-1.5 rounded cursor-pointer transition-colors gap-2.5",
+              index === effectiveSelectedIndex ? "bg-active" : "hover:bg-hover"
+            )}
             onClick={() => selectItem(index)}
             onMouseEnter={() => setSelectedIndex(index)}
             ref={(node) => {
               itemRefs.current[index] = node;
             }}
           >
-            <div className={styles.iconWrapper}>{ICONS[item.id]}</div>
-            <div className={styles.content}>
-              <div className={styles.label}>{item.label}</div>
-              <div className={styles.desc}>{DESCRIPTIONS[item.id] || ""}</div>
+            <div className="flex items-center justify-center w-11 h-11 border border-border rounded bg-panel text-fg shrink-0">
+              {ICONS[item.id]}
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <div className="text-sm font-medium text-fg mb-0.5">{item.label}</div>
+              <div className="text-[11px] text-muted truncate">{DESCRIPTIONS[item.id] || ""}</div>
             </div>
           </div>
         ))}

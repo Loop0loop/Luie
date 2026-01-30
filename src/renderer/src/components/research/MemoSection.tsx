@@ -15,7 +15,7 @@ import {
 } from "../../../../shared/constants";
 import { Virtuoso } from "react-virtuoso";
 import { Clock, Plus, Search, Tag } from "lucide-react";
-import styles from "../../styles/components/ResearchPanel.module.css";
+import { cn } from "../../../../shared/types/utils";
 import { useProjectStore } from "../../stores/projectStore";
 
 type Note = {
@@ -128,29 +128,15 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
   };
 
   return (
-    <div className={styles.scrapContainer}>
-      <div className={styles.noteList}>
-        <div className={styles.noteListHeader}>
+    <div className="flex h-full w-full bg-bg-primary overflow-hidden">
+      <div className="w-[220px] bg-sidebar border-r border-border flex flex-col shrink-0 content-visibility-auto contain-intrinsic-size-[1px_600px]">
+        <div className="px-4 py-3 text-xs font-bold text-muted flex justify-between items-center border-b border-border uppercase tracking-wider">
           <span>{LABEL_MEMO_SECTION_TITLE}</span>
-          <Plus className="icon-sm" style={{ cursor: "pointer" }} onClick={handleAddNote} />
+          <Plus className="icon-sm cursor-pointer hover:text-fg transition-colors" onClick={handleAddNote} />
         </div>
 
-        <div
-          style={{
-            padding: "8px 12px",
-            borderBottom: "1px solid var(--border-default)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              backgroundColor: "var(--bg-element)",
-              padding: "6px 8px",
-              borderRadius: 4,
-            }}
-          >
+        <div className="px-3 py-2 border-b border-border">
+          <div className="flex items-center gap-2 bg-element px-2 py-1.5 rounded">
             <Search
               style={{ width: "var(--memo-search-icon-size)", height: "var(--memo-search-icon-size)" }}
               color="var(--text-tertiary)"
@@ -171,26 +157,22 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
           </div>
         </div>
 
-        <div className={styles.noteListBody}>
+        <div className="flex-1 min-h-0">
           <Virtuoso
             data={filteredNotes}
             style={{ height: "100%" }}
             itemContent={(_index, note) => (
               <div
-                className={`${styles.noteItem} ${activeNoteId === note.id ? styles.active : ""}`}
+                className={cn(
+                  "px-4 py-3 border-b border-border cursor-pointer transition-colors hover:bg-element-hover",
+                  activeNoteId === note.id && "bg-active border-l-[3px] border-l-accent pl-[13px]" // Adjust padding to compensate border
+                )}
                 onClick={() => setActiveNoteId(note.id)}
               >
                 <div style={{ fontWeight: "var(--memo-title-font-weight)", marginBottom: 4 }}>
                   {note.title || DEFAULT_UNTITLED_LABEL}
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 4,
-                    flexWrap: "wrap",
-                    marginBottom: 4,
-                  }}
-                >
+                <div className="flex gap-1 flex-wrap mb-1">
                   {note.tags.map((t) => (
                     <span
                       key={t}
@@ -229,15 +211,8 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
       </div>
 
       {activeNote ? (
-        <div className={styles.noteContent}>
-          <div
-            style={{
-              padding: "12px 24px 0 24px",
-              display: "flex",
-              gap: 8,
-              alignItems: "center",
-            }}
-          >
+        <div className="flex-1 flex flex-col bg-panel overflow-hidden">
+          <div className="px-6 pt-3 flex items-center gap-2">
             <Tag className="icon-sm" color="var(--text-tertiary)" />
             <input
               style={{
@@ -258,7 +233,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
           </div>
 
           <input
-            className={styles.noteTitleInput}
+            className="px-6 pt-5 pb-3 text-xl font-bold border-none bg-transparent outline-none text-fg placeholder:text-muted"
             value={activeNote.title}
             onChange={(e) =>
               setNotes(
@@ -272,7 +247,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
             placeholder={PLACEHOLDER_MEMO_TITLE}
           />
           <textarea
-            className={styles.noteBodyInput}
+            className="flex-1 px-6 pb-6 border-none bg-transparent resize-none outline-none leading-relaxed text-[15px] text-secondary placeholder:text-muted"
             value={activeNote.content}
             onChange={(e) =>
               setNotes(
@@ -291,15 +266,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
           />
         </div>
       ) : (
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "var(--text-tertiary)",
-          }}
-        >
+        <div className="flex-1 flex items-center justify-center text-tertiary">
           {LABEL_MEMO_EMPTY}
         </div>
       )}

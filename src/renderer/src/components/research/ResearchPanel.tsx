@@ -1,4 +1,5 @@
-import styles from "../../styles/components/ResearchPanel.module.css";
+// Monolithic CSS is still used by children (WorldSection, MemoSection), so we cannot remove the file yet.
+// But this component no longer needs it.
 import {
   LABEL_RESEARCH_CHARACTERS,
   LABEL_RESEARCH_DEFAULT,
@@ -47,14 +48,14 @@ export default function ResearchPanel({
   };
 
   return (
-    <div className={styles.panelContainer}>
-      <div className={styles.header}>
-        <div className={styles.title}>
+    <div className="flex flex-col h-full w-full bg-sidebar border-l border-border overflow-hidden">
+      <div className="h-12 flex items-center justify-between px-4 border-b border-border bg-bg-primary shrink-0">
+        <div className="font-semibold text-sm text-fg flex items-center gap-2">
           {getIcon()}
           <span>{getTitle()}</span>
         </div>
         <button
-          className={styles.closeButton}
+          className="p-1 rounded text-muted cursor-pointer border-none bg-transparent flex items-center justify-center hover:bg-hover hover:text-fg"
           onClick={onClose}
           title={TOOLTIP_CLOSE_PANEL}
         >
@@ -62,7 +63,7 @@ export default function ResearchPanel({
         </button>
       </div>
 
-      <div className={styles.content}>
+      <div className="flex-1 flex flex-col overflow-hidden bg-bg-primary relative">
         {activeTab === "character" && <CharacterManager />}
         {activeTab === "world" && <WorldSection />}
         {activeTab === "scrap" && <MemoSection />}

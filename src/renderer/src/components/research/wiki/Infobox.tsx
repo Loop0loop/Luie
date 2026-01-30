@@ -25,8 +25,8 @@ export function InfoboxRow({
   onDelete,
 }: InfoboxRowProps) {
   return (
-    <div className="flex border-b border-[var(--namu-border)] min-h-[40px] last:border-b-0">
-      <div className="w-[100px] bg-[var(--namu-table-bg)] p-2 font-bold text-[var(--namu-table-label)] border-r border-[var(--namu-border)] flex items-center justify-center text-center leading-tight shrink-0 relative text-[13px]">
+    <div className="flex border-b border-(--namu-border) min-h-[40px] last:border-b-0">
+      <div className="w-[100px] bg-(--namu-table-bg) p-2 font-bold text-(--namu-table-label) border-r border-(--namu-border) flex items-center justify-center text-center leading-tight shrink-0 relative text-[13px]">
         {isCustom ? (
           <div className="flex items-center relative w-full justify-center">
              <BufferedInput
@@ -88,9 +88,9 @@ export function Infobox({
   onAddField: () => void;
 }) {
   return (
-    <div className="w-full lg:w-[320px] border-2 border-[var(--namu-blue)] bg-surface shadow-md rounded overflow-hidden shrink-0 text-[13px]">
-      <div className="bg-[var(--namu-blue)] text-white text-center p-2.5 font-bold text-[15px] border-b border-[var(--namu-blue)]">{title}</div>
-      {image && <div className="w-full bg-surface flex items-center justify-center border-b border-[var(--namu-border)] p-5">{image}</div>}
+    <div className="w-full lg:w-[320px] border-2 border-(--namu-blue) bg-surface shadow-md rounded overflow-hidden shrink-0 text-[13px]">
+      <div className="bg-(--namu-blue) text-white text-center p-2.5 font-bold text-[15px] border-b border-(--namu-blue)">{title}</div>
+      {image && <div className="w-full bg-surface flex items-center justify-center border-b border-(--namu-border) p-5">{image}</div>}
 
       <div className="flex flex-col">
         {rows.map((row) => (
@@ -98,7 +98,7 @@ export function Infobox({
         ))}
       </div>
 
-       <button type="button" className="w-full p-2.5 bg-surface-hover border-none border-t border-[var(--namu-border)] text-muted text-xs cursor-pointer flex items-center justify-center gap-1.5 transition-colors hover:bg-active hover:text-fg" onClick={onAddField}>
+       <button type="button" className="w-full p-2.5 bg-surface-hover border-none border-t border-(--namu-border) text-muted text-xs cursor-pointer flex items-center justify-center gap-1.5 transition-colors hover:bg-active hover:text-fg" onClick={onAddField}>
         <Plus size={12} />
         <span>필드 추가</span>
       </button>

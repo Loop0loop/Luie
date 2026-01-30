@@ -1,8 +1,7 @@
-import type { ReactNode} from 'react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import WindowBar from './WindowBar';
-import styles from '../../styles/layout/MainLayout.module.css';
 import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { cn } from '../../../../shared/types/utils';
 import {
   TOOLTIP_SIDEBAR_COLLAPSE,
   TOOLTIP_SIDEBAR_EXPAND,
@@ -21,29 +20,25 @@ export default function MainLayout({ children, sidebar, contextPanel }: MainLayo
   const [isContextOpen, setIsContextOpen] = useState(false); // Default to closed for max space
 
   return (
-    <div className={styles.layoutContainer}>
+    <div className="flex flex-col h-screen bg-app text-fg">
       <WindowBar />
       
-      {/* Toggles - Positioned absolute or relative to content? 
-          Let's put them in the main area top corners for visibility 
-          or integrated into the panels. 
-          For "Monkey Proof", let's put them on the main content edges.
-      */}
-      
-      <div className={styles.mainArea}>
+      <div className="flex flex-1 overflow-hidden relative">
         {/* Sidebar */}
         <div 
-          className={styles.sidebarWrapper} 
-          data-open={isSidebarOpen}
+          className={cn(
+            "w-[var(--sidebar-width)] bg-sidebar border-r border-border overflow-hidden flex flex-col transition-[width,opacity] duration-300 ease-in-out",
+            !isSidebarOpen && "w-0 border-r-0 opacity-0"
+          )}
         >
           {sidebar}
         </div>
 
         {/* Main Content */}
-        <main className={styles.content}>
-          <div className={styles.topControls}>
+        <main className="flex-1 flex flex-col bg-app relative min-w-0">
+          <div className="flex items-center px-4 py-2 h-12">
              <button 
-               className={styles.toggleButton}
+               className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-all hover:bg-active hover:text-fg"
                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                title={isSidebarOpen ? TOOLTIP_SIDEBAR_COLLAPSE : TOOLTIP_SIDEBAR_EXPAND}
              >
@@ -54,10 +49,10 @@ export default function MainLayout({ children, sidebar, contextPanel }: MainLayo
                )}
              </button>
              
-             <div className={styles.spacer} />
+             <div className="flex-1" />
 
              <button 
-               className={styles.toggleButton}
+               className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-all hover:bg-active hover:text-fg"
                onClick={() => setIsContextOpen(!isContextOpen)}
                title={isContextOpen ? TOOLTIP_CONTEXT_PANEL_COLLAPSE : TOOLTIP_CONTEXT_PANEL_EXPAND}
              >
@@ -69,15 +64,17 @@ export default function MainLayout({ children, sidebar, contextPanel }: MainLayo
              </button>
           </div>
           
-          <div className={styles.editorContainer}>
+          <div className="flex-1 overflow-y-auto flex flex-col">
             {children}
           </div>
         </main>
 
         {/* Context Panel */}
         <div 
-          className={styles.contextWrapper}
-          data-open={isContextOpen}
+          className={cn(
+            "w-[var(--panel-width)] bg-panel border-l border-border overflow-hidden flex flex-col shrink-0 min-w-0 transition-[width,opacity] duration-300 ease-in-out",
+            !isContextOpen && "w-0 border-l-0 opacity-0 pointer-events-none"
+          )}
         >
            {contextPanel}
         </div>

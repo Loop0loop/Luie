@@ -1,0 +1,216 @@
+/* Editor Content Styles */
+
+/* Base ProseMirror */
+.tiptap .ProseMirror {
+    outline: none;
+    flex: 1;
+    height: 100%;
+}
+  
+.tiptap .ProseMirror p.is-editor-empty:first-child::before {
+    color: var(--text-tertiary);
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+}
+  
+.tiptap .ProseMirror h1 {
+    font-size: 2em;
+    font-weight: 700;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+}
+  
+.tiptap .ProseMirror h2 {
+    font-size: 1.5em;
+    font-weight: 700;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+}
+  
+.tiptap .ProseMirror h3 {
+    font-size: 1.25em;
+    font-weight: 600;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+}
+  
+.tiptap .ProseMirror ul {
+    padding-left: 1.5em;
+    margin: 1em 0;
+    list-style-type: disc;
+}
+  
+.tiptap .ProseMirror ol {
+    padding-left: 1.5em;
+    margin: 1em 0;
+    list-style-type: decimal;
+}
+  
+.tiptap .ProseMirror li {
+    margin: 0.2em 0;
+}
+  
+/* Task List (Checkboxes) */
+.tiptap .ProseMirror ul[data-type="taskList"] {
+    list-style: none;
+    padding-left: 0;
+}
+  
+.tiptap .ProseMirror li[data-type="taskItem"] {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    margin: 0.2rem 0;
+    gap: 0.5rem;
+    padding: 0.15rem 0;
+}
+  
+.tiptap .ProseMirror li[data-type="taskItem"] label {
+    margin-top: 2px; /* Align checkbox with text line height */
+    user-select: none;
+    cursor: pointer;
+    display: flex;
+    width: 18px;
+    height: 18px;
+    align-items: center;
+    justify-content: center;
+}
+  
+.tiptap .ProseMirror li[data-type="taskItem"] input[type="checkbox"] {
+    appearance: auto;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    margin: 0;
+    accent-color: var(--accent-primary, #7b7efc);
+}
+  
+.tiptap .ProseMirror li[data-type="taskItem"] div {
+    flex: 1;
+    /* Ensure paragraph inside task item doesn't add extra margin */
+    margin: 0;
+    padding-top: 1px;
+}
+  
+.tiptap .ProseMirror li[data-type="taskItem"] p {
+    margin: 0;
+}
+  
+.tiptap .ProseMirror li[data-type="taskItem"][data-checked="true"] div {
+    color: var(--text-tertiary);
+    text-decoration: line-through;
+}
+  
+/* Blockquote (Quote/Callout) */
+.tiptap .ProseMirror blockquote {
+    border-left: 4px solid var(--border-default);
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    margin: 1em 0;
+    background-color: var(--bg-hover);
+    border-radius: 4px;
+    color: var(--text-primary);
+}
+  
+.tiptap .ProseMirror blockquote p {
+    margin: 0.5em 0;
+}
+  
+.tiptap .ProseMirror blockquote p:first-child {
+    margin-top: 0;
+}
+  
+.tiptap .ProseMirror blockquote p:last-child {
+    margin-bottom: 0;
+}
+  
+/* Inline Code */
+.tiptap .ProseMirror code {
+    background-color: var(--bg-secondary);
+    padding: 0.2em 0.4em;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    color: var(--text-primary);
+}
+  
+/* Code Block */
+.tiptap .ProseMirror pre {
+    background-color: var(--bg-secondary);
+    border-radius: 6px;
+    padding: 1em;
+    margin: 1em 0;
+    overflow-x: auto;
+}
+  
+.tiptap .ProseMirror pre code {
+    background-color: transparent;
+    padding: 0;
+    font-size: 0.9em;
+}
+  
+/* Callout - Simple Bordered Box */
+.tiptap .ProseMirror .callout {
+    padding: 1rem;
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--border-default);
+    border-left: 4px solid var(--accent-primary, #7b7efc);
+    margin: 1em 0;
+}
+  
+.tiptap .ProseMirror .callout p {
+    margin: 0.5em 0;
+}
+  
+.tiptap .ProseMirror .callout p:first-child {
+    margin-top: 0;
+}
+  
+.tiptap .ProseMirror .callout p:last-child {
+    margin-bottom: 0;
+}
+  
+/* Details / Toggle */
+.tiptap .ProseMirror details {
+    border: none;
+    padding: 0;
+    margin: 0.2em 0;
+    background: transparent;
+}
+  
+.tiptap .ProseMirror summary {
+    cursor: pointer;
+    list-style: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+/* Hide default marker in some browsers if we want custom */
+.tiptap .ProseMirror summary::-webkit-details-marker {
+    display: none;
+}
+  
+.tiptap .ProseMirror details.toggle {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+    margin: 0.6rem 0;
+}
+  
+.tiptap .ProseMirror details.toggle summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 0.5rem;
+    transform-origin: center;
+    transition: transform 0.15s ease;
+}
+  
+.tiptap .ProseMirror details.toggle[open] summary::before {
+    transform: rotate(90deg);
+}

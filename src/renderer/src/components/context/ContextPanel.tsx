@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useDeferredValue, memo } from "react";
-import styles from "../../styles/components/ContextPanel.module.css";
+import { cn } from "../../../../shared/types/utils";
 import { Search, ArrowLeft } from "lucide-react";
 import { useCharacterStore } from "../../stores/characterStore";
 import { useTermStore } from "../../stores/termStore";
@@ -85,21 +85,21 @@ function ContextPanel({
   };
 
   return (
-    <div className={styles.container}>
+    <div className="h-full flex flex-col relative overflow-hidden">
       {selectedItem && (
-        <div className={styles.detailView}>
-          <div className={styles.detailHeader}>
-            <button className={styles.backButton} onClick={handleBack}>
+        <div className="absolute inset-0 bg-panel z-10 flex flex-col animate-in slide-in-from-right-5 duration-200">
+          <div className="flex items-center gap-3 p-4 border-b border-border">
+            <button className="flex items-center justify-center p-1 rounded hover:bg-hover text-muted hover:text-fg transition-colors" onClick={handleBack}>
               <ArrowLeft className="icon-md" />
             </button>
-            <div className={styles.detailTitle}>
+            <div className="text-base font-bold text-fg">
               {isCharacter(selectedItem) ? selectedItem.name : selectedItem.term}
             </div>
           </div>
-          <div className={styles.detailContent}>
-            <div className={styles.detailSection}>
-                            <div className={styles.detailLabel}>{LABEL_CONTEXT_DETAIL_DESCRIPTION}</div>
-              <div className={styles.detailText}>
+          <div className="flex-1 p-6 overflow-y-auto">
+            <div className="mb-6">
+                            <div className="text-[11px] font-semibold text-muted uppercase mb-2">{LABEL_CONTEXT_DETAIL_DESCRIPTION}</div>
+              <div className="text-sm leading-relaxed text-fg whitespace-pre-wrap">
                 {isCharacter(selectedItem)
                   ? (selectedItem.description ?? "")
                   : (selectedItem.definition ?? "")}
@@ -107,20 +107,20 @@ function ContextPanel({
             </div>
 
             {isTerm(selectedItem) && selectedItem.category && (
-              <div className={styles.detailSection}>
-                <div className={styles.detailLabel}>Category</div>
-                <div className={styles.detailLabel}>{LABEL_CONTEXT_DETAIL_CATEGORY}</div>
+              <div className="mb-6">
+                <div className="text-[11px] font-semibold text-muted uppercase mb-2">Category</div>
+                <div className="text-[11px] font-semibold text-muted uppercase mb-2">{LABEL_CONTEXT_DETAIL_CATEGORY}</div>
               </div>
             )}
           </div>
         </div>
       )}
 
-      <div className={styles.toolbar}>
-        <div className={styles.searchBarWrapper}>
-          <Search className={`${styles.searchIcon} icon-sm`} />
+      <div className="flex flex-col gap-3 px-4 pt-3">
+        <div className="relative w-full">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none icon-sm" />
           <input
-            className={styles.searchBar}
+            className="w-full bg-element border border-border rounded-md py-2 px-3 pl-8 text-[13px] text-fg outline-none transition-all focus:border-active focus:ring-1 focus:ring-active"
             placeholder={PLACEHOLDER_CONTEXT_SEARCH}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
@@ -128,9 +128,12 @@ function ContextPanel({
         </div>
       </div>
 
-      <div className={styles.tabs}>
+      <div className="flex px-4 border-b border-border mt-3">
         <div
-          className={currentTab === "synopsis" ? styles.tabActive : styles.tab}
+          className={cn(
+            "flex-1 py-3 text-[13px] font-medium cursor-pointer border-b-2 border-transparent transition-all text-center",
+            currentTab === "synopsis" ? "text-accent border-accent font-semibold" : "text-muted hover:text-fg"
+          )}
           onClick={() => {
             handleTabChange("synopsis");
             setSelectedItem(null);
@@ -139,7 +142,10 @@ function ContextPanel({
           {LABEL_CONTEXT_TAB_SYNOPSIS}
         </div>
         <div
-          className={currentTab === "characters" ? styles.tabActive : styles.tab}
+          className={cn(
+            "flex-1 py-3 text-[13px] font-medium cursor-pointer border-b-2 border-transparent transition-all text-center",
+            currentTab === "characters" ? "text-accent border-accent font-semibold" : "text-muted hover:text-fg"
+          )}
           onClick={() => {
             handleTabChange("characters");
             setSelectedItem(null);
@@ -148,7 +154,10 @@ function ContextPanel({
           {LABEL_CONTEXT_TAB_CHARACTERS}
         </div>
         <div
-          className={currentTab === "terms" ? styles.tabActive : styles.tab}
+          className={cn(
+            "flex-1 py-3 text-[13px] font-medium cursor-pointer border-b-2 border-transparent transition-all text-center",
+            currentTab === "terms" ? "text-accent border-accent font-semibold" : "text-muted hover:text-fg"
+          )}
           onClick={() => {
             handleTabChange("terms");
             setSelectedItem(null);
@@ -158,7 +167,7 @@ function ContextPanel({
         </div>
       </div>
 
-      <div className={styles.content}>
+      <div className="flex-1 overflow-y-auto p-4">
         {currentTab === "synopsis" && (
           <div style={{ padding: "var(--context-panel-section-padding)" }}>
             <div
@@ -172,7 +181,7 @@ function ContextPanel({
               {LABEL_CONTEXT_SYNOPSIS_HEADER}
             </div>
             <textarea
-              className={styles.synopsisArea}
+              className="w-full border border-border rounded-lg p-3 text-sm text-fg bg-element resize-none font-sans leading-relaxed min-h-[200px]"
               placeholder={PLACEHOLDER_CONTEXT_SYNOPSIS}
               value={currentProject?.description || ""}
               readOnly
@@ -185,11 +194,11 @@ function ContextPanel({
             {filteredCharacters.map((item) => (
               <div
                 key={item.id}
-                className={styles.card}
+                className="bg-element border border-border rounded-lg p-3 mb-2 cursor-pointer transition-all hover:border-active hover:bg-element-hover"
                 onClick={() => handleItemClick(item)}
               >
-                <div className={styles.cardHeader}>
-                  <div className={styles.cardTitle}>{item.name}</div>
+                <div className="flex justify-between items-start mb-1">
+                  <div className="text-sm font-semibold text-fg">{item.name}</div>
                 </div>
                 {item.description && (
                   <div
@@ -212,11 +221,11 @@ function ContextPanel({
             {filteredTerms.map((item) => (
               <div
                 key={item.id}
-                className={styles.card}
+                className="bg-element border border-border rounded-lg p-3 mb-2 cursor-pointer transition-all hover:border-active hover:bg-element-hover"
                 onClick={() => handleItemClick(item)}
               >
-                <div className={styles.cardHeader}>
-                  <div className={styles.cardTitle}>{item.term}</div>
+                <div className="flex justify-between items-start mb-1">
+                  <div className="text-sm font-semibold text-fg">{item.term}</div>
                 </div>
                 {item.definition && (
                   <div

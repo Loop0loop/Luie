@@ -16,7 +16,9 @@ import {
   DetailsContent,
 } from "@tiptap/extension-details";
 import Suggestion from "@tiptap/suggestion";
-import styles from "../../styles/components/Editor.module.css";
+// import styles from "../../styles/components/Editor.module.css"; // Removed
+import "../../styles/components/editor.css";
+import { cn } from "../../../../shared/types/utils";
 import EditorToolbar from "./EditorToolbar";
 import { useEditorStore } from "../../stores/editorStore";
 import { slashSuggestion } from "./suggestion";
@@ -214,7 +216,7 @@ function Editor({
       },
       editorProps: {
         attributes: {
-          class: styles.editorContent,
+          class: "tiptap flex-1 flex flex-col outline-none h-full",
           style: `font-family: ${fontFamilyCss}; font-size: ${fontSize}px; line-height: ${lineHeight};`,
         },
       },
@@ -229,8 +231,8 @@ function Editor({
   }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.toolbarArea}>
+    <div className="flex flex-col h-full w-full bg-app text-fg relative box-border overflow-hidden">
+      <div className="shrink-0 border-b border-border z-10">
         <EditorToolbar
           editor={editor}
           isMobileView={isMobileView}
@@ -238,11 +240,25 @@ function Editor({
         />
       </div>
 
-      <div className={styles.editorWrapper}>
-        <div className={styles.mobileFrame} data-mobile={isMobileView}>
+      <div className="flex-1 overflow-y-auto flex flex-col px-10 py-5 bg-app min-h-0">
+        <div 
+          className={cn(
+            "w-full h-full flex flex-col flex-1 min-h-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] bg-transparent border-none shadow-none m-0",
+            isMobileView && "w-[430px] max-w-[430px] h-[95%] mx-auto my-5 border-[8px] border-[#2c2c2e] rounded-[48px] bg-editor-bg shadow-[0_0_0_2px_rgba(69,69,69,0.9),0_25px_50px_-12px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.05)] overflow-hidden relative"
+          )}
+          data-mobile={isMobileView}
+        >
+          {/* Mobile Notch Simulation */}
+          {isMobileView && (
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120px] h-8 bg-[#2c2c2e] rounded-b-2xl z-[100] pointer-events-none" />
+          )}
+
           <input
             type="text"
-            className={styles.titleInput}
+            className={cn(
+              "w-full border-none bg-transparent pb-4 text-2xl font-bold text-fg outline-none shrink-0 placeholder:text-muted",
+              isMobileView && "px-6"
+            )}
             placeholder={PLACEHOLDER_EDITOR_TITLE}
             value={title}
             onChange={(e) => {
@@ -255,24 +271,25 @@ function Editor({
           />
 
           <div
-            className={styles.editorContainer}
+            className={cn(
+              "flex flex-col relative", 
+              isMobileView && "pt-8 h-full overflow-hidden px-6"
+            )}
             style={{
               fontFamily: getFontFamily(),
               fontSize: `${fontSize}px`,
               lineHeight,
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              position: "relative", // Ensure absolute positioning of menu works relative to this
+              height: isMobileView ? "100%" : undefined, // Height handled differently in mobile
+              minHeight: !isMobileView ? "var(--text-editor-min-height)" : undefined,
             }}
           >
-            <EditorContent editor={editor} className={styles.tiptapEditor} />
+            <EditorContent editor={editor} className="tiptap flex-1 flex flex-col outline-none h-full" />
           </div>
         </div>
       </div>
 
-      <div className={styles.statusBar}>
-        <span className={styles.statusText}>
+      <div className="h-7 border-t border-border flex items-center justify-end gap-4 px-5 text-xs text-muted bg-bg-primary shrink-0 select-none">
+        <span className="mr-auto font-medium">
           {TEXT_EDITOR_STATUS_CHAR_LABEL} {charCount}
           {TEXT_EDITOR_STATUS_SEPARATOR}
           {TEXT_EDITOR_STATUS_WORD_LABEL} {wordCount}
