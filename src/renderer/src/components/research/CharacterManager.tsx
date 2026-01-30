@@ -1,12 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
 import { Plus, User, ChevronDown, ChevronRight, Home, LayoutTemplate } from "lucide-react";
-import styles from "../../styles/components/CharacterWiki.module.css";
 import { useCharacterStore } from "../../stores/characterStore";
 import { useProjectStore } from "../../stores/projectStore";
 import { BufferedInput } from "../common/BufferedInput";
-import { Modal } from "../common/Modal"; // Shared Modal
-import { Infobox } from "./wiki/Infobox"; // New Component
-import { WikiSection } from "./wiki/WikiSection"; // New Component
+import { Modal } from "../common/Modal"; 
+import { Infobox } from "./wiki/Infobox"; 
+import { WikiSection } from "./wiki/WikiSection"; 
+import { cn } from "../../../../shared/utils";
 import {
   DEFAULT_CHARACTER_NAME,
   CHARACTER_GROUP_COLORS,
@@ -76,12 +76,12 @@ export default function CharacterManager() {
   );
 
   return (
-    <div className={styles.container}>
+    <div className="flex w-full h-full bg-canvas overflow-hidden">
       {/* LEFT SIDEBAR - Character List */}
-      <div className={styles.sidebar}>
-        <div className={styles.sidebarHeader}>
+      <div className="w-[260px] bg-sidebar border-r border-border flex flex-col overflow-y-auto shrink-0">
+        <div className="px-4 py-3 bg-[var(--namu-blue)] text-white font-bold flex justify-between items-center">
            <button 
-             className={styles.homeButton} 
+             className="flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity bg-transparent border-none p-1 text-white cursor-pointer" 
              onClick={() => setSelectedCharacterId(null)}
              title="전체 보기 (Gallery View)"
            >
@@ -90,7 +90,7 @@ export default function CharacterManager() {
            </button>
            
            <button 
-             className={styles.addButton} 
+             className="flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity bg-transparent border-none p-1 text-white cursor-pointer" 
              onClick={() => setIsTemplateModalOpen(true)}
              title="캐릭터 추가"
            >
@@ -104,24 +104,24 @@ export default function CharacterManager() {
             title="템플릿 선택"
             width="500px"
         >
-            <div className={styles.templateGrid}>
+            <div className="grid grid-cols-2 gap-4 p-4">
                 {CHARACTER_TEMPLATES.map((t) => (
                     <div 
                     key={t.id} 
-                    className={styles.templateCard}
+                    className="flex flex-col items-center justify-center p-4 border border-border rounded-lg cursor-pointer hover:bg-surface-hover transition-colors gap-2"
                     onClick={() => handleAddCharacter(t.id)}
                     >
-                    <div className={styles.templateIcon}>
+                    <div className="p-3 bg-surface rounded-full shadow-sm">
                         <LayoutTemplate size={24} /> 
                     </div>
-                    <div className={styles.templateName}>{t.name}</div>
+                    <div className="font-semibold text-sm">{t.name}</div>
                     </div>
                 ))}
             </div>
         </Modal>
 
         {/* Iterate Groups */}
-        <div className={styles.sidebarList}>
+        <div className="flex flex-col w-full">
           {Object.entries(groupedCharacters).map(([group, chars]) => (
             <CharacterGroup 
               key={group} 
@@ -161,9 +161,9 @@ function CharacterGallery({
   onSelect: (id: string) => void;
 }) {
   return (
-    <div className={styles.galleryContainer}>
-       <div className={styles.titleSection}>
-         <div className={styles.wikiTitleInput} style={{ fontSize: '24px' }}>
+    <div className="flex-1 overflow-y-auto p-8">
+       <div className="border-b-2 border-border mb-6 pb-4">
+         <div className="text-2xl font-extrabold text-fg leading-tight">
             등장인물 (Characters)
          </div>
        </div>
@@ -171,19 +171,23 @@ function CharacterGallery({
        {Object.entries(groupedCharacters).map(([group, chars]) => {
          const themeColor = CHARACTER_GROUP_COLORS[group] || CHARACTER_GROUP_COLORS["Uncategorized"];
          return (
-          <div key={group} className={styles.galleryGroup}>
-            <div className={styles.galleryGroupTitle} style={{ borderColor: themeColor, color: themeColor }}>
+          <div key={group} className="mb-8">
+            <div className="text-lg font-bold mb-4 pb-2 border-b-2 border-border" style={{ borderColor: themeColor, color: themeColor }}>
               {group}
             </div>
             
-            <div className={styles.galleryGrid}>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-6">
               {chars.map(char => (
-                 <div key={char.id} className={styles.galleryItem} onClick={() => onSelect(char.id)}>
-                    <div className={styles.galleryPortrait} style={{ borderColor: themeColor }}>
+                 <div 
+                    key={char.id} 
+                    className="flex flex-col cursor-pointer hover:bg-surface-hover p-2 rounded transition-colors"
+                    onClick={() => onSelect(char.id)}
+                 >
+                    <div className="w-full h-32 bg-surface flex items-center justify-center border-b border-border mb-2 rounded" style={{ borderColor: themeColor }}>
                        <User size={40} color={themeColor} />
                     </div>
-                    <div className={styles.galleryName}>{char.name}</div>
-                    <div className={styles.galleryRole}>{char.description || "No Role"}</div>
+                    <div className="font-semibold text-sm mb-0.5">{char.name}</div>
+                    <div className="text-xs text-subtle">{char.description || "No Role"}</div>
                  </div>
               ))}
             </div>
@@ -213,7 +217,7 @@ function CharacterGroup({
   return (
     <div>
       <div 
-        className={styles.groupHeader} 
+        className="px-4 py-2 text-xs font-bold text-muted bg-surface border-b border-border cursor-pointer flex items-center gap-2 select-none" 
         onClick={() => setIsOpen(!isOpen)}
         style={{ borderLeft: `4px solid ${color}` }}
       >
@@ -222,16 +226,19 @@ function CharacterGroup({
       </div>
       
       {isOpen && (
-        <div>
+        <div className="flex flex-col">
           {characters.map(char => (
             <div 
               key={char.id}
-              className={`${styles.characterItem} ${selectedId === char.id ? styles.active : ""}`}
+              className={cn(
+                  "px-4 py-2.5 border-b border-border cursor-pointer text-sm text-fg flex flex-col transition-colors hover:bg-surface-hover",
+                  selectedId === char.id && "bg-[var(--namu-hover-bg)] border-l-[3px] text-[var(--namu-blue)]"
+              )}
               onClick={() => onSelect(char.id)}
               style={selectedId === char.id ? { borderLeftColor: color } : {}}
             >
-              <span className={styles.charName}>{char.name}</span>
-              <span className={styles.charRole}>{char.description || "No Role"}</span>
+              <span className="font-semibold mb-0.5">{char.name}</span>
+              <span className="text-[11px] text-subtle">{char.description || "No Role"}</span>
             </div>
           ))}
         </div>
@@ -348,21 +355,20 @@ function WikiDetailView({
   ];
 
   return (
-    <div className={styles.main}>
+    <div className="flex-1 overflow-auto p-8 sm:p-6 flex flex-col gap-6 bg-panel text-fg min-w-0">
       {/* 1. AUTHENTIC NAMUWIKI HEADER */}
-      <div className={styles.titleSection}>
+      <div className="border-b-2 border-[var(--namu-border)] pb-4 mb-6 flex flex-col gap-3">
         <BufferedInput 
-          className={styles.wikiTitleInput}
+          className="text-3xl font-extrabold text-fg leading-tight border-none bg-transparent w-full focus:outline-none"
           value={character.name} 
           onSave={(val) => handleUpdate("name", val)}
         />
-        <div className={styles.wikiSubtitle}>
-          <span style={{fontWeight: 700}}>분류:</span>
-          <span className={styles.tagLink}>{currentTemplate.name}</span>
-           <span style={{color: 'var(--border-default)'}}>|</span>
+        <div className="text-[13px] text-muted bg-surface border border-border px-3 py-1.5 rounded self-start flex items-center gap-2">
+          <span className="font-bold">분류:</span>
+          <span className="text-[var(--namu-link)] cursor-pointer hover:underline">{currentTemplate.name}</span>
+           <span className="text-border">|</span>
           <BufferedInput 
-              className={styles.cleanInput} 
-              style={{display: 'inline', width: 'auto', fontWeight: 600, color: 'var(--namu-link)' }}
+              className="inline w-auto font-semibold text-[var(--namu-link)] bg-transparent border-none p-1 focus:outline-none focus:bg-active rounded-sm" 
               value={character.description || ""}
               placeholder="미분류"
               onSave={(val) => handleUpdate("description", val)} 
@@ -371,16 +377,16 @@ function WikiDetailView({
       </div>
 
       {/* 2. BODY CONTENT (Wiki Layout) */}
-      <div className={styles.pageBody}>
+      <div className="flex flex-col lg:flex-row gap-8 items-start min-h-0">
         {/* LEFT: Content & TOC */}
-        <div className={styles.contentArea}>
+        <div className="flex-1 flex flex-col gap-8 min-w-0 w-full lg:order-1 order-2">
           
           {/* TOC (Inline) */}
-          <div className={styles.toc}>
-            <div className={styles.tocHeader}>목차</div>
-            <div className={styles.tocList}>
+          <div className="bg-[var(--namu-table-bg)] border border-[var(--namu-border)] p-4 inline-block min-w-[200px] rounded">
+            <div className="font-bold text-center mb-3 text-fg text-sm">목차</div>
+            <div className="flex flex-col gap-1.5 text-sm">
                {sections.map(sec => (
-                 <a key={sec.id} className={styles.tocItem} href={`#${sec.id}`}>
+                 <a key={sec.id} className="text-[var(--namu-link)] no-underline cursor-pointer hover:underline" href={`#${sec.id}`}>
                    {sec.label}
                  </a>
                ))}
@@ -404,17 +410,7 @@ function WikiDetailView({
           <button 
              type="button"
              onClick={addSection}
-             style={{ 
-               padding: '12px', 
-               border: '2px dashed var(--border-default)', 
-               borderRadius: '8px', 
-               textAlign: 'center', 
-               color: 'var(--text-tertiary)', 
-               cursor: 'pointer',
-               marginTop: '16px',
-               width: '100%',
-               background: 'transparent'
-             }}
+             className="p-3 border-2 border-dashed border-border rounded-lg text-center text-subtle cursor-pointer mt-4 w-full bg-transparent hover:text-fg hover:border-fg transition-colors"
           >
              + 섹션 추가 (Add Section)
           </button>
@@ -422,25 +418,28 @@ function WikiDetailView({
         </div>
 
         {/* RIGHT: Authentic Infobox */}
-        <Infobox 
-            title={character.name}
-            image={<User size={80} color="var(--border-active)" />}
-            rows={allInfoboxFields.map(field => {
-                const isCustom = customFields.some(cf => cf.key === field.key);
-                return {
-                    label: field.label,
-                    value: attributes[field.key],
-                    placeholder: field.placeholder,
-                    type: field.type,
-                    options: field.options,
-                    isCustom,
-                    onSave: (v) => handleAttrUpdate(field.key, v),
-                    onLabelSave: isCustom ? (v) => updateCustomFieldLabel(field.key, v) : undefined,
-                    onDelete: isCustom ? () => deleteCustomField(field.key) : undefined
-                };
-            })}
-            onAddField={addCustomField}
-        />
+        {/* Use order-first on mobile (default) to put it on top, order-last on Desktop to put it on right */}
+        <div className="w-full lg:w-[320px] shrink-0 lg:order-2 order-1">
+            <Infobox 
+                title={character.name}
+                image={<User size={80} color="var(--border-active)" />}
+                rows={allInfoboxFields.map(field => {
+                    const isCustom = customFields.some(cf => cf.key === field.key);
+                    return {
+                        label: field.label,
+                        value: attributes[field.key],
+                        placeholder: field.placeholder,
+                        type: field.type,
+                        options: field.options,
+                        isCustom,
+                        onSave: (v) => handleAttrUpdate(field.key, v),
+                        onLabelSave: isCustom ? (v) => updateCustomFieldLabel(field.key, v) : undefined,
+                        onDelete: isCustom ? () => deleteCustomField(field.key) : undefined
+                    };
+                })}
+                onAddField={addCustomField}
+            />
+        </div>
       </div>
     </div>
   );
