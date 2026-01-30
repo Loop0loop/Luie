@@ -150,7 +150,7 @@ class AutoExtractService {
       return;
     }
 
-    const [characters, terms] = await Promise.all([
+    const [characters, terms] = (await Promise.all([
       db.getClient().character.findMany({
         where: { projectId },
         select: { id: true, name: true, description: true },
@@ -159,14 +159,13 @@ class AutoExtractService {
         where: { projectId },
         select: { id: true, term: true, definition: true, category: true },
       }),
-    ]);
+    ])) as [
+      Array<{ id: string; name: string; description?: string | null }>,
+      Array<{ id: string; term: string; definition?: string | null; category?: string | null }>,
+    ];
 
-    keywordExtractor.setKnownCharacters(
-      characters.map((c: { name: string }) => c.name),
-    );
-    keywordExtractor.setKnownTerms(
-      terms.map((t: { term: string }) => t.term),
-    );
+    keywordExtractor.setKnownCharacters(characters.map((c) => c.name));
+    keywordExtractor.setKnownTerms(terms.map((t) => t.term));
 
     const candidates = dirtyParagraphs.flatMap((p) =>
       keywordExtractor.extractNouns(p),
@@ -174,10 +173,8 @@ class AutoExtractService {
 
     const filtered = keywordExtractor
       .filterByFrequency(candidates, 2)
-      .filter((word) =>
-        !characters.some((c: { name: string }) => c.name === word),
-      )
-      .filter((word) => !terms.some((t: { term: string }) => t.term === word));
+      .filter((word) => !characters.some((c) => c.name === word))
+      .filter((word) => !terms.some((t) => t.term === word));
 
     const uniqueCandidates = Array.from(new Set(filtered)).slice(0, 10);
     if (uniqueCandidates.length === 0) {

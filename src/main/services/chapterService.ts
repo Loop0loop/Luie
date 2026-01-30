@@ -37,7 +37,11 @@ export class ChapterService {
         select: { order: true },
       });
 
-      const nextOrder = input.order ?? (maxOrder?.order ?? 0) + 1;
+      const maxOrderValue =
+        typeof (maxOrder as { order?: unknown })?.order === "number"
+          ? (maxOrder as { order: number }).order
+          : 0;
+      const nextOrder = input.order ?? maxOrderValue + 1;
 
       const chapter = await db.getClient().chapter.create({
         data: {
@@ -107,12 +111,12 @@ export class ChapterService {
           await this.trackKeywordAppearances(
             input.id,
             input.content,
-            chapter.projectId,
+            String((chapter as { projectId: unknown }).projectId),
           );
 
           autoExtractService.scheduleAnalysis(
             input.id,
-            chapter.projectId,
+            String((chapter as { projectId: unknown }).projectId),
             input.content,
           );
         }
@@ -127,7 +131,10 @@ export class ChapterService {
       logger.info("Chapter updated successfully", {
         chapterId: updatedChapter.id,
       });
-      projectService.schedulePackageExport(updatedChapter.projectId, "chapter:update");
+      projectService.schedulePackageExport(
+        String((updatedChapter as { projectId: unknown }).projectId),
+        "chapter:update",
+      );
       return updatedChapter;
     } catch (error) {
       logger.error("Failed to update chapter", error);
@@ -144,15 +151,15 @@ export class ChapterService {
     projectId: string,
   ) {
     try {
-      const characters = await db.getClient().character.findMany({
+      const characters = (await db.getClient().character.findMany({
         where: { projectId },
         select: { id: true, name: true },
-      });
+      })) as Array<{ id: string; name: string }>;
 
-      const terms = await db.getClient().term.findMany({
+      const terms = (await db.getClient().term.findMany({
         where: { projectId },
         select: { id: true, term: true },
-      });
+      })) as Array<{ id: string; term: string }>;
 
       const characterNames = characters.map((c: { name: string }) => c.name);
       const termNames = terms.map((t: { term: string }) => t.term);
@@ -163,34 +170,30 @@ export class ChapterService {
       const keywords = keywordExtractor.extractFromText(content);
 
       for (const keyword of keywords.filter((k) => k.type === "character")) {
-        const character = characters.find(
-          (c: { name: string }) => c.name === keyword.text,
-        );
+        const character = characters.find((c) => c.name === keyword.text);
         if (character) {
           await characterService.recordAppearance({
-            characterId: character.id,
+            characterId: String(character.id),
             chapterId,
             position: keyword.position,
             context: this.extractContext(content, keyword.position, SEARCH_CONTEXT_RADIUS),
           });
 
-          await characterService.updateFirstAppearance(character.id, chapterId);
+          await characterService.updateFirstAppearance(String(character.id), chapterId);
         }
       }
 
       for (const keyword of keywords.filter((k) => k.type === "term")) {
-        const term = terms.find(
-          (t: { term: string }) => t.term === keyword.text,
-        );
+        const term = terms.find((t) => t.term === keyword.text);
         if (term) {
           await termService.recordAppearance({
-            termId: term.id,
+            termId: String(term.id),
             chapterId,
             position: keyword.position,
             context: this.extractContext(content, keyword.position, SEARCH_CONTEXT_RADIUS),
           });
 
-          await termService.updateFirstAppearance(term.id, chapterId);
+          await termService.updateFirstAppearance(String(term.id), chapterId);
         }
       }
 
@@ -224,8 +227,11 @@ export class ChapterService {
       await db.getClient().chapter.deleteMany({ where: { id } });
 
       logger.info("Chapter deleted successfully", { chapterId: id });
-      if (chapter?.projectId) {
-        projectService.schedulePackageExport(chapter.projectId, "chapter:delete");
+      if ((chapter as { projectId?: unknown })?.projectId) {
+        projectService.schedulePackageExport(
+          String((chapter as { projectId: unknown }).projectId),
+          "chapter:delete",
+        );
       }
       return { success: true };
     } catch (error) {

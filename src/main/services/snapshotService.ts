@@ -93,8 +93,11 @@ export class SnapshotService {
       });
 
       logger.info("Snapshot deleted successfully", { snapshotId: id });
-      if (snapshot?.projectId) {
-        projectService.schedulePackageExport(snapshot.projectId, "snapshot:delete");
+      if ((snapshot as { projectId?: unknown })?.projectId) {
+        projectService.schedulePackageExport(
+          String((snapshot as { projectId: unknown }).projectId),
+          "snapshot:delete",
+        );
       }
       return { success: true };
     } catch (error) {
@@ -153,8 +156,8 @@ export class SnapshotService {
         return { success: true, deletedCount: 0 };
       }
 
-      const toDelete = allSnapshots.slice(keepCount);
-      const deletePromises = toDelete.map((snapshot: { id: string }) =>
+      const toDelete = allSnapshots.slice(keepCount) as Array<{ id: string }>;
+      const deletePromises = toDelete.map((snapshot) =>
         db.getClient().snapshot.delete({
           where: { id: snapshot.id },
         }),

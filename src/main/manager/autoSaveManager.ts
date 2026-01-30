@@ -250,11 +250,12 @@ export class AutoSaveManager extends EventEmitter {
     try {
       if (chapterId) {
         const chapter = await chapterService.getChapter(chapterId);
+        const chapterData = chapter as { id?: unknown; content?: unknown };
 
         await snapshotService.createSnapshot({
           projectId,
-          chapterId: chapter.id,
-          content: chapter.content,
+          chapterId: String(chapterData.id ?? chapterId),
+          content: String(chapterData.content ?? ""),
           description: `Auto-snapshot at ${new Date().toLocaleString()}`,
         });
       } else {

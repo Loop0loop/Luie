@@ -115,7 +115,7 @@ export class CharacterService {
       logger.info("Character updated successfully", {
         characterId: character.id,
       });
-      projectService.schedulePackageExport(character.projectId, "character:update");
+      projectService.schedulePackageExport(String(character.projectId), "character:update");
       return character;
     } catch (error) {
       logger.error("Failed to update character", error);
@@ -136,8 +136,11 @@ export class CharacterService {
       await db.getClient().character.deleteMany({ where: { id } });
 
       logger.info("Character deleted successfully", { characterId: id });
-      if (character?.projectId) {
-        projectService.schedulePackageExport(character.projectId, "character:delete");
+      if ((character as { projectId?: unknown })?.projectId) {
+        projectService.schedulePackageExport(
+          String((character as { projectId: unknown }).projectId),
+          "character:delete",
+        );
       }
       return { success: true };
     } catch (error) {

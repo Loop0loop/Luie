@@ -22,7 +22,7 @@ export class SearchService {
       const results: SearchResult[] = [];
 
       if (input.type === "all" || input.type === "character") {
-        const characters = await db.getClient().character.findMany({
+        const characters = (await db.getClient().character.findMany({
           where: {
             projectId: input.projectId,
             OR: [
@@ -31,9 +31,9 @@ export class SearchService {
             ],
           },
           take: 10,
-        });
+        })) as Array<{ id: string; name: string; description?: string | null }>;
 
-        characters.forEach((char: { id: string; name: string; description?: string | null }) => {
+        characters.forEach((char) => {
           results.push({
             type: "character",
             id: char.id,
@@ -47,7 +47,7 @@ export class SearchService {
       }
 
       if (input.type === "all" || input.type === "term") {
-        const terms = await db.getClient().term.findMany({
+        const terms = (await db.getClient().term.findMany({
           where: {
             projectId: input.projectId,
             OR: [
@@ -56,9 +56,14 @@ export class SearchService {
             ],
           },
           take: 10,
-        });
+        })) as Array<{
+          id: string;
+          term: string;
+          definition?: string | null;
+          category?: string | null;
+        }>;
 
-        terms.forEach((term: { id: string; term: string; definition?: string | null; category?: string | null }) => {
+        terms.forEach((term) => {
           results.push({
             type: "term",
             id: term.id,
@@ -72,7 +77,7 @@ export class SearchService {
       }
 
       if (input.type === "all") {
-        const chapters = await db.getClient().chapter.findMany({
+        const chapters = (await db.getClient().chapter.findMany({
           where: {
             projectId: input.projectId,
             OR: [
@@ -82,9 +87,15 @@ export class SearchService {
             ],
           },
           take: 5,
-        });
+        })) as Array<{
+          id: string;
+          title: string;
+          synopsis?: string | null;
+          wordCount?: number | null;
+          order: number;
+        }>;
 
-        chapters.forEach((chapter: { id: string; title: string; synopsis?: string | null; wordCount?: number | null; order: number }) => {
+        chapters.forEach((chapter) => {
           results.push({
             type: "chapter",
             id: chapter.id,
@@ -134,26 +145,26 @@ export class SearchService {
 
   async getQuickAccess(projectId: string) {
     try {
-      const recentTerms = await db.getClient().term.findMany({
+      const recentTerms = (await db.getClient().term.findMany({
         where: { projectId },
         orderBy: { createdAt: "desc" },
         take: 5,
-      });
+      })) as Array<{ id: string; term: string; definition?: string | null }>;
 
-      const recentCharacters = await db.getClient().character.findMany({
+      const recentCharacters = (await db.getClient().character.findMany({
         where: { projectId },
         orderBy: { createdAt: "desc" },
         take: 5,
-      });
+      })) as Array<{ id: string; name: string; description?: string | null }>;
 
       const results: SearchResult[] = [
-        ...recentTerms.map((term: { id: string; term: string; definition?: string | null }) => ({
+        ...recentTerms.map((term) => ({
           type: "term" as const,
           id: term.id,
           title: term.term,
           description: term.definition ?? undefined,
         })),
-        ...recentCharacters.map((char: { id: string; name: string; description?: string | null }) => ({
+        ...recentCharacters.map((char) => ({
           type: "character" as const,
           id: char.id,
           title: char.name,

@@ -1,5 +1,4 @@
 import { Trash2 } from "lucide-react";
-import styles from "../../../styles/components/CharacterWiki.module.css";
 import { BufferedInput, BufferedTextArea } from "../../common/BufferedInput";
 
 type WikiSectionProps = {
