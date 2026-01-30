@@ -346,6 +346,12 @@ function WikiDetailView({
     }
   };
 
+  // Theme Color Management
+  const themeColor = attributes.themeColor || "#00a495";
+  const handleThemeChange = (color: string) => {
+    handleAttrUpdate("themeColor", color);
+  };
+
   // Merge Base Fields + Custom Fields
   const allInfoboxFields = [
     ...currentTemplate.fields,
@@ -353,9 +359,31 @@ function WikiDetailView({
   ];
 
   return (
-    <div className={styles.main}>
+    <div className={styles.main} style={{
+
+      "--namu-blue": themeColor,
+      "--namu-border": themeColor,
+      "--namu-link": themeColor,
+    } as React.CSSProperties}>
       {/* 1. AUTHENTIC NAMUWIKI HEADER */}
       <div className={styles.titleSection}>
+        <div style={{ marginRight: '12px', display: 'flex', alignItems: 'center' }} title="Change Theme Color">
+           <input 
+             type="color" 
+             value={themeColor}
+             onChange={(e) => handleThemeChange(e.target.value)}
+             style={{ 
+               width: '26px', 
+               height: '26px', 
+               padding: 0, 
+               border: '2px solid rgba(0,0,0,0.1)', 
+               borderRadius: '50%', 
+               overflow: 'hidden', 
+               cursor: 'pointer',
+               background: 'none'
+             }}
+           />
+        </div>
         <BufferedInput 
           className={styles.cleanInput}
           style={{ fontSize: '32px', fontWeight: 800, borderBottom: 'none' }} 
