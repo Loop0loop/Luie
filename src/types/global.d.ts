@@ -111,6 +111,10 @@ declare global {
           title?: string;
         }) => Promise<IPCResponse<string>>;
         readFile: (filePath: string) => Promise<IPCResponse<string>>;
+        readLuieEntry: (
+          packagePath: string,
+          entryPath: string,
+        ) => Promise<IPCResponse<string | null>>;
         writeFile: (
           filePath: string,
           content: string,

@@ -10,6 +10,7 @@ import type {
   TermUpdateInput,
   TermAppearanceInput,
 } from "../../shared/types/index.js";
+import { projectService } from "./projectService.js";
 
 const logger = createLogger("TermService");
 
@@ -38,6 +39,7 @@ export class TermService {
       });
 
       logger.info("Term created successfully", { termId: term.id });
+      projectService.schedulePackageExport(input.projectId, "term:create");
       return term;
     } catch (error) {
       logger.error("Failed to create term", error);
@@ -105,6 +107,7 @@ export class TermService {
       });
 
       logger.info("Term updated successfully", { termId: term.id });
+      projectService.schedulePackageExport(term.projectId, "term:update");
       return term;
     } catch (error) {
       logger.error("Failed to update term", error);
@@ -117,9 +120,17 @@ export class TermService {
 
   async deleteTerm(id: string) {
     try {
+      const term = await db.getClient().term.findUnique({
+        where: { id },
+        select: { projectId: true },
+      });
+
       await db.getClient().term.deleteMany({ where: { id } });
 
       logger.info("Term deleted successfully", { termId: id });
+      if (term?.projectId) {
+        projectService.schedulePackageExport(term.projectId, "term:delete");
+      }
       return { success: true };
     } catch (error) {
       logger.error("Failed to delete term", error);

@@ -6,6 +6,7 @@ import { db } from "../database/index.js";
 import { createLogger } from "../../shared/logger/index.js";
 import { ErrorCode, DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT } from "../../shared/constants/index.js";
 import type { SnapshotCreateInput } from "../../shared/types/index.js";
+import { projectService } from "./projectService.js";
 
 const logger = createLogger("SnapshotService");
 
@@ -27,6 +28,7 @@ export class SnapshotService {
       });
 
       logger.info("Snapshot created successfully", { snapshotId: snapshot.id });
+      projectService.schedulePackageExport(input.projectId, "snapshot:create");
       return snapshot;
     } catch (error) {
       logger.error("Failed to create snapshot", error);
@@ -81,11 +83,19 @@ export class SnapshotService {
 
   async deleteSnapshot(id: string) {
     try {
+      const snapshot = await db.getClient().snapshot.findUnique({
+        where: { id },
+        select: { projectId: true },
+      });
+
       await db.getClient().snapshot.delete({
         where: { id },
       });
 
       logger.info("Snapshot deleted successfully", { snapshotId: id });
+      if (snapshot?.projectId) {
+        projectService.schedulePackageExport(snapshot.projectId, "snapshot:delete");
+      }
       return { success: true };
     } catch (error) {
       logger.error("Failed to delete snapshot", error);

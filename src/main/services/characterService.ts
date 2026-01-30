@@ -10,6 +10,7 @@ import type {
   CharacterUpdateInput,
   CharacterAppearanceInput,
 } from "../../shared/types/index.js";
+import { projectService } from "./projectService.js";
 
 const logger = createLogger("CharacterService");
 
@@ -42,6 +43,7 @@ export class CharacterService {
       logger.info("Character created successfully", {
         characterId: character.id,
       });
+      projectService.schedulePackageExport(input.projectId, "character:create");
       return character;
     } catch (error) {
       logger.error("Failed to create character", error);
@@ -113,6 +115,7 @@ export class CharacterService {
       logger.info("Character updated successfully", {
         characterId: character.id,
       });
+      projectService.schedulePackageExport(character.projectId, "character:update");
       return character;
     } catch (error) {
       logger.error("Failed to update character", error);
@@ -125,9 +128,17 @@ export class CharacterService {
 
   async deleteCharacter(id: string) {
     try {
+      const character = await db.getClient().character.findUnique({
+        where: { id },
+        select: { projectId: true },
+      });
+
       await db.getClient().character.deleteMany({ where: { id } });
 
       logger.info("Character deleted successfully", { characterId: id });
+      if (character?.projectId) {
+        projectService.schedulePackageExport(character.projectId, "character:delete");
+      }
       return { success: true };
     } catch (error) {
       logger.error("Failed to delete character", error);

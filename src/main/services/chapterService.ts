@@ -13,6 +13,7 @@ import { keywordExtractor } from "../core/keywordExtractor.js";
 import { characterService } from "./characterService.js";
 import { termService } from "./termService.js";
 import { autoExtractService } from "./autoExtractService.js";
+import { projectService } from "./projectService.js";
 
 const logger = createLogger("ChapterService");
 
@@ -49,6 +50,7 @@ export class ChapterService {
       });
 
       logger.info("Chapter created successfully", { chapterId: chapter.id });
+      projectService.schedulePackageExport(input.projectId, "chapter:create");
       return chapter;
     } catch (error) {
       logger.error("Failed to create chapter", error);
@@ -125,6 +127,7 @@ export class ChapterService {
       logger.info("Chapter updated successfully", {
         chapterId: updatedChapter.id,
       });
+      projectService.schedulePackageExport(updatedChapter.projectId, "chapter:update");
       return updatedChapter;
     } catch (error) {
       logger.error("Failed to update chapter", error);
@@ -213,9 +216,17 @@ export class ChapterService {
 
   async deleteChapter(id: string) {
     try {
+      const chapter = await db.getClient().chapter.findUnique({
+        where: { id },
+        select: { projectId: true },
+      });
+
       await db.getClient().chapter.deleteMany({ where: { id } });
 
       logger.info("Chapter deleted successfully", { chapterId: id });
+      if (chapter?.projectId) {
+        projectService.schedulePackageExport(chapter.projectId, "chapter:delete");
+      }
       return { success: true };
     } catch (error) {
       logger.error("Failed to delete chapter", error);
@@ -235,6 +246,7 @@ export class ChapterService {
       );
 
       logger.info("Chapters reordered successfully", { projectId });
+      projectService.schedulePackageExport(projectId, "chapter:reorder");
       return { success: true };
     } catch (error) {
       logger.error("Failed to reorder chapters", error);

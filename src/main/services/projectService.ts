@@ -4,12 +4,25 @@
 
 import { db } from '../database/index.js'
 import { createLogger } from '../../shared/logger/index.js'
-import { ErrorCode, DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS } from '../../shared/constants/index.js'
+import {
+  ErrorCode,
+  DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
+  LUIE_PACKAGE_EXTENSION,
+  LUIE_PACKAGE_FORMAT,
+  LUIE_PACKAGE_CONTAINER_DIR,
+  LUIE_PACKAGE_VERSION,
+  PACKAGE_EXPORT_DEBOUNCE_MS,
+  LUIE_MANUSCRIPT_DIR,
+  MARKDOWN_EXTENSION,
+} from '../../shared/constants/index.js'
 import type { ProjectCreateInput, ProjectUpdateInput } from '../../shared/types/index.js'
+import { writeLuiePackage } from '../handler/system/ipcFsHandlers.js'
 
 const logger = createLogger('ProjectService')
 
 export class ProjectService {
+  private exportTimers = new Map<string, NodeJS.Timeout>()
+
   async createProject(input: ProjectCreateInput) {
     try {
       logger.info('Creating project', input)
@@ -32,6 +45,7 @@ export class ProjectService {
       })
 
       logger.info('Project created successfully', { projectId: project.id })
+      this.schedulePackageExport(project.id, 'project:create')
       return project
     } catch (error) {
       logger.error('Failed to create project', error)
@@ -99,6 +113,7 @@ export class ProjectService {
       })
 
       logger.info('Project updated successfully', { projectId: project.id })
+      this.schedulePackageExport(project.id, 'project:update')
       return project
     } catch (error) {
       logger.error('Failed to update project', error)
@@ -118,6 +133,127 @@ export class ProjectService {
       logger.error('Failed to delete project', error)
       throw new Error(ErrorCode.PROJECT_DELETE_FAILED)
     }
+  }
+
+  schedulePackageExport(projectId: string, reason?: string) {
+    const existing = this.exportTimers.get(projectId)
+    if (existing) {
+      clearTimeout(existing)
+    }
+
+    const timer = setTimeout(async () => {
+      this.exportTimers.delete(projectId)
+      try {
+        await this.exportProjectPackage(projectId)
+      } catch (error) {
+        logger.error('Failed to export project package', { projectId, reason, error })
+      }
+    }, PACKAGE_EXPORT_DEBOUNCE_MS)
+
+    this.exportTimers.set(projectId, timer)
+  }
+
+  async exportProjectPackage(projectId: string) {
+    const project = await db.getClient().project.findUnique({
+      where: { id: projectId },
+      include: {
+        chapters: { orderBy: { order: 'asc' } },
+        characters: true,
+        terms: true,
+        snapshots: true,
+      },
+    })
+
+    if (!project?.projectPath) {
+      return
+    }
+
+    if (!project.projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
+      return
+    }
+
+    const chapters = project.chapters.map((chapter: any) => ({
+      id: chapter.id,
+      title: chapter.title,
+      order: chapter.order,
+      updatedAt: chapter.updatedAt,
+      content: chapter.content,
+      file: `${LUIE_MANUSCRIPT_DIR}/${chapter.id}${MARKDOWN_EXTENSION}`,
+    }))
+
+    const characters = project.characters.map((character: any) => {
+      let attributes: unknown = undefined
+      if (character.attributes) {
+        try {
+          attributes = JSON.parse(character.attributes)
+        } catch {
+          attributes = character.attributes
+        }
+      }
+      return {
+        id: character.id,
+        name: character.name,
+        description: character.description,
+        firstAppearance: character.firstAppearance,
+        attributes,
+        createdAt: character.createdAt,
+        updatedAt: character.updatedAt,
+      }
+    })
+
+    const terms = project.terms.map((term: any) => ({
+      id: term.id,
+      term: term.term,
+      definition: term.definition,
+      category: term.category,
+      firstAppearance: term.firstAppearance,
+      createdAt: term.createdAt,
+      updatedAt: term.updatedAt,
+    }))
+
+    const snapshots = project.snapshots.map((snapshot: any) => ({
+      id: snapshot.id,
+      projectId: snapshot.projectId,
+      chapterId: snapshot.chapterId,
+      content: snapshot.content,
+      description: snapshot.description,
+      createdAt: snapshot.createdAt?.toISOString?.() ?? String(snapshot.createdAt),
+    }))
+
+    const meta = {
+      format: LUIE_PACKAGE_FORMAT,
+      container: LUIE_PACKAGE_CONTAINER_DIR,
+      version: LUIE_PACKAGE_VERSION,
+      projectId: project.id,
+      title: project.title,
+      description: project.description,
+      createdAt: project.createdAt,
+      updatedAt: project.updatedAt,
+      chapters: chapters.map((chapter: any) => ({
+        id: chapter.id,
+        title: chapter.title,
+        order: chapter.order,
+        updatedAt: chapter.updatedAt,
+        file: chapter.file,
+      })),
+    }
+
+    await writeLuiePackage(
+      project.projectPath,
+      {
+        meta,
+        chapters,
+        characters,
+        terms,
+        snapshots,
+      },
+      logger,
+    )
+
+    logger.info('Project package exported', {
+      projectId: project.id,
+      path: project.projectPath,
+    })
   }
 }
 

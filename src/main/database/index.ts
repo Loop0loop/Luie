@@ -2,7 +2,7 @@
  * Database service using Prisma Client
  */
 
-import { PrismaClient } from "@prisma/client";
+import { createRequire } from "node:module";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { app } from "electron";
 import * as path from "path";
@@ -10,6 +10,14 @@ import { createLogger } from "../../shared/logger/index.js";
 import { DB_NAME } from "../../shared/constants/index.js";
 
 const logger = createLogger("DatabaseService");
+const require = createRequire(import.meta.url);
+type PrismaClient = {
+  $disconnect: () => Promise<void>;
+} & Record<string, any>;
+
+const { PrismaClient } = require("@prisma/client") as {
+  PrismaClient: new (options?: unknown) => PrismaClient;
+};
 
 class DatabaseService {
   private static instance: DatabaseService;

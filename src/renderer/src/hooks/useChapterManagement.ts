@@ -5,15 +5,7 @@
 import { useState, useCallback } from "react";
 import { useChapterStore } from "../stores/chapterStore";
 import { useProjectStore } from "../stores/projectStore";
-import {
-  LUIE_PACKAGE_CONTAINER_DIR,
-  LUIE_PACKAGE_EXTENSION,
-  LUIE_PACKAGE_FORMAT,
-  LUIE_PACKAGE_META_FILENAME,
-  LUIE_PACKAGE_VERSION,
-  LUIE_MANUSCRIPT_DIR,
-  MARKDOWN_EXTENSION,
-} from "../../../shared/constants";
+import { LUIE_PACKAGE_EXTENSION } from "../../../shared/constants";
 
 export function useChapterManagement() {
   const [requestedChapterId, setRequestedChapterId] = useState<string | null>(null);
@@ -105,34 +97,11 @@ export function useChapterManagement() {
           content: newContent,
         });
 
-        // .luie 패키지 디렉토리 동기화
         if (currentProject.projectPath?.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
-          const meta = {
-            format: LUIE_PACKAGE_FORMAT,
-            container: LUIE_PACKAGE_CONTAINER_DIR,
-            version: LUIE_PACKAGE_VERSION,
+          // Package export is handled in main process (debounced)
+          window.api.logger.info("Luie package export scheduled", {
             projectId: currentProject.id,
-            title: currentProject.title,
-            updatedAt: new Date().toISOString(),
-            chapters: chapters.map((c) => ({
-              id: c.id,
-              title: c.title,
-              order: c.order,
-              updatedAt: c.updatedAt,
-            })),
-          };
-
-          await window.api.fs.writeProjectFile(
-            currentProject.projectPath,
-            LUIE_PACKAGE_META_FILENAME,
-            JSON.stringify(meta, null, 2),
-          );
-
-          await window.api.fs.writeProjectFile(
-            currentProject.projectPath,
-            `${LUIE_MANUSCRIPT_DIR}/${activeChapterId}${MARKDOWN_EXTENSION}`,
-            newContent,
-          );
+          });
         }
       }
     },

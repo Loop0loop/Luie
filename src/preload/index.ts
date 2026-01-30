@@ -233,6 +233,11 @@ contextBridge.exposeInMainWorld("api", {
       safeInvoke(IPC_CHANNELS.FS_SELECT_SAVE_LOCATION, options),
     readFile: (filePath: string): Promise<IPCResponse<string>> =>
       safeInvoke(IPC_CHANNELS.FS_READ_FILE, filePath),
+    readLuieEntry: (
+      packagePath: string,
+      entryPath: string,
+    ): Promise<IPCResponse<string | null>> =>
+      safeInvoke(IPC_CHANNELS.FS_READ_LUIE_ENTRY, packagePath, entryPath),
     writeFile: (filePath: string, content: string): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.FS_WRITE_FILE, filePath, content),
 
