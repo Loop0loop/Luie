@@ -47,34 +47,61 @@ const WorldTermsSchema = z.object({
 export function useFileImport(
   currentProject: Project | null,
 ) {
-  const { items: chapters, create: createChapter, update: updateChapter } = useChapterStore();
-  const { characters, createCharacter } = useCharacterStore();
-  const { terms, createTerm } = useTermStore();
+  const {
+    items: chapters,
+    isLoading: chaptersLoading,
+    loadAll: loadChapters,
+    create: createChapter,
+    update: updateChapter,
+  } = useChapterStore();
+  const {
+    characters,
+    isLoading: charactersLoading,
+    loadCharacters,
+    createCharacter,
+  } = useCharacterStore();
+  const { terms, isLoading: termsLoading, loadTerms, createTerm } = useTermStore();
   const importedProjectIdRef = useRef<string | null>(null);
+  const requestedLoadRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!currentProject || !currentProject.projectPath) {
-      return;
-    }
+    void (async () => {
+      if (!currentProject || !currentProject.projectPath) {
+        return;
+      }
 
-    // 이미 임포트한 프로젝트면 스킵
-    if (importedProjectIdRef.current === currentProject.id) {
-      return;
-    }
+      // 이미 임포트한 프로젝트면 스킵
+      if (importedProjectIdRef.current === currentProject.id) {
+        return;
+      }
 
-    // 이미 챕터가 있으면 임포트 안 함
-    if (chapters.length > 0) {
-      importedProjectIdRef.current = currentProject.id;
-      return;
-    }
+      if (requestedLoadRef.current !== currentProject.id) {
+        requestedLoadRef.current = currentProject.id;
+        // Ensure DB is loaded before deciding to import
+        await Promise.all([
+          loadChapters(currentProject.id),
+          loadCharacters(currentProject.id),
+          loadTerms(currentProject.id),
+        ]);
+        return;
+      }
 
-    const path = currentProject.projectPath;
-    if (!path.endsWith(LUIE_PACKAGE_EXTENSION)) {
-      importedProjectIdRef.current = currentProject.id;
-      return;
-    }
+      if (chaptersLoading || charactersLoading || termsLoading) {
+        return;
+      }
 
-    (async () => {
+      // 이미 데이터가 있으면 임포트 안 함
+      if (chapters.length > 0 || characters.length > 0 || terms.length > 0) {
+        importedProjectIdRef.current = currentProject.id;
+        return;
+      }
+
+      const path = currentProject.projectPath;
+      if (!path.endsWith(LUIE_PACKAGE_EXTENSION)) {
+        importedProjectIdRef.current = currentProject.id;
+        return;
+      }
+
       try {
         const metaResult = await window.api.fs.readLuieEntry(
           path,
@@ -200,6 +227,12 @@ export function useFileImport(
     chapters.length,
     characters.length,
     terms.length,
+    chaptersLoading,
+    charactersLoading,
+    termsLoading,
+    loadChapters,
+    loadCharacters,
+    loadTerms,
     createChapter,
     updateChapter,
     createCharacter,
