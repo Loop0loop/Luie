@@ -6,7 +6,7 @@ import { BufferedInput } from "../common/BufferedInput";
 import { Modal } from "../common/Modal"; 
 import { Infobox } from "./wiki/Infobox"; 
 import { WikiSection } from "./wiki/WikiSection"; 
-import { cn } from "../../../../shared/utils";
+import { cn } from "../../../../shared/types/utils";
 import {
   DEFAULT_CHARACTER_NAME,
   CHARACTER_GROUP_COLORS,
