@@ -55,6 +55,57 @@ export interface Snapshot {
   createdAt: string | Date;
 }
 
+// Export/Package Types
+export type ChapterExportRecord = {
+  id: string;
+  title: string;
+  order: number;
+  updatedAt: Date;
+  content: string;
+};
+
+export type CharacterExportRecord = {
+  id: string;
+  name: string;
+  description?: string | null;
+  firstAppearance?: string | null;
+  attributes?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type TermExportRecord = {
+  id: string;
+  term: string;
+  definition?: string | null;
+  category?: string | null;
+  firstAppearance?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type SnapshotExportRecord = {
+  id: string;
+  projectId: string;
+  chapterId?: string | null;
+  content: string;
+  description?: string | null;
+  createdAt: Date;
+};
+
+export type ProjectExportRecord = {
+  id: string;
+  title: string;
+  description?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  projectPath?: string | null;
+  chapters: ChapterExportRecord[];
+  characters: CharacterExportRecord[];
+  terms: TermExportRecord[];
+  snapshots: SnapshotExportRecord[];
+};
+
 // Project Types
 export interface ProjectCreateInput {
   title: string;

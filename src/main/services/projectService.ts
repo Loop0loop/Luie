@@ -15,58 +15,16 @@ import {
   LUIE_MANUSCRIPT_DIR,
   MARKDOWN_EXTENSION,
 } from '../../shared/constants/index.js'
-import type { ProjectCreateInput, ProjectUpdateInput } from '../../shared/types/index.js'
+import type {
+  ProjectCreateInput,
+  ProjectUpdateInput,
+  ProjectExportRecord,
+  ChapterExportRecord,
+  CharacterExportRecord,
+  TermExportRecord,
+  SnapshotExportRecord,
+} from '../../shared/types/index.js'
 import { writeLuiePackage } from '../handler/system/ipcFsHandlers.js'
-
-type ChapterRecord = {
-  id: string
-  title: string
-  order: number
-  updatedAt: Date
-  content: string
-}
-
-type CharacterRecord = {
-  id: string
-  name: string
-  description?: string | null
-  firstAppearance?: string | null
-  attributes?: string | null
-  createdAt: Date
-  updatedAt: Date
-}
-
-type TermRecord = {
-  id: string
-  term: string
-  definition?: string | null
-  category?: string | null
-  firstAppearance?: string | null
-  createdAt: Date
-  updatedAt: Date
-}
-
-type SnapshotRecord = {
-  id: string
-  projectId: string
-  chapterId?: string | null
-  content: string
-  description?: string | null
-  createdAt: Date
-}
-
-type ProjectExportRecord = {
-  id: string
-  title: string
-  description?: string | null
-  createdAt: Date
-  updatedAt: Date
-  projectPath?: string | null
-  chapters: ChapterRecord[]
-  characters: CharacterRecord[]
-  terms: TermRecord[]
-  snapshots: SnapshotRecord[]
-}
 
 const logger = createLogger('ProjectService')
 
@@ -224,7 +182,7 @@ export class ProjectService {
       return
     }
 
-    const chapters = project.chapters.map((chapter: ChapterRecord) => ({
+    const chapters = project.chapters.map((chapter: ChapterExportRecord) => ({
       id: chapter.id,
       title: chapter.title,
       order: chapter.order,
@@ -233,7 +191,7 @@ export class ProjectService {
       file: `${LUIE_MANUSCRIPT_DIR}/${chapter.id}${MARKDOWN_EXTENSION}`,
     }))
 
-    const characters = project.characters.map((character: CharacterRecord) => {
+    const characters = project.characters.map((character: CharacterExportRecord) => {
       let attributes: unknown = undefined
       if (character.attributes) {
         try {
@@ -253,7 +211,7 @@ export class ProjectService {
       }
     })
 
-    const terms = project.terms.map((term: TermRecord) => ({
+    const terms = project.terms.map((term: TermExportRecord) => ({
       id: term.id,
       term: term.term,
       definition: term.definition,
@@ -263,7 +221,7 @@ export class ProjectService {
       updatedAt: term.updatedAt,
     }))
 
-    const snapshots = project.snapshots.map((snapshot: SnapshotRecord) => ({
+    const snapshots = project.snapshots.map((snapshot: SnapshotExportRecord) => ({
       id: snapshot.id,
       projectId: snapshot.projectId,
       chapterId: snapshot.chapterId,
