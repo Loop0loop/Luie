@@ -120,7 +120,7 @@ export default function App() {
           <ContextPanel activeTab={contextTab} onTabChange={setContextTab} />
         }
       >
-        <div className="flex w-full h-full flex-1 overflow-hidden relative">
+        <div id="split-container" className="flex w-full h-full flex-1 overflow-hidden relative">
           <div
             className="h-full overflow-hidden relative min-w-0 bg-bg-primary"
             style={{ flex: isSplitView ? splitRatio : 1 }}

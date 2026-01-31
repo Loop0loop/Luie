@@ -17,7 +17,6 @@ import {
 } from "@tiptap/extension-details";
 import Suggestion from "@tiptap/suggestion";
 // import styles from "../../styles/components/Editor.module.css"; // Removed
-import "../../styles/components/editor.css";
 import { cn } from "../../../../shared/types/utils";
 import EditorToolbar from "./EditorToolbar";
 import { useEditorStore } from "../../stores/editorStore";
