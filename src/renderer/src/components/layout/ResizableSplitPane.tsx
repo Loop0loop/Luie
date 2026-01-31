@@ -4,6 +4,7 @@ import {
   RESIZABLE_PANE_MAX_RIGHT_WIDTH,
   RESIZABLE_PANE_MIN_RIGHT_WIDTH,
 } from "../../../../shared/constants";
+import { cn } from "../../../../shared/types/utils";
 
 interface ResizableSplitPaneProps {
   left: React.ReactNode;
@@ -66,10 +67,10 @@ export default function ResizableSplitPane({
   return (
     <div 
       ref={containerRef} 
-      style={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}
+      className="flex w-full h-full overflow-hidden relative"
     >
       {/* LEFT PANE (Flexible) */}
-      <div style={{ flex: 1, height: '100%', overflow: 'hidden', minWidth: 0 }}>
+      <div className="flex-1 h-full overflow-hidden min-w-0">
         {left}
       </div>
 
@@ -79,19 +80,17 @@ export default function ResizableSplitPane({
           {/* DRAG HANDLE */}
           <div
             onMouseDown={startResizing}
-            style={{
-              width: '4px',
-              cursor: 'col-resize',
-              background: isDragging ? '#10B981' : 'transparent',
-              borderLeft: '1px solid #E5E5E5',
-              transition: 'background 0.2s',
-              zIndex: 10,
-              flexShrink: 0,
-            }}
-            className="group hover:bg-emerald-500/20"
+            className={cn(
+              "w-1 cursor-col-resize z-10 shrink-0 transition-colors border-l border-border",
+              "hover:bg-accent/20",
+              isDragging ? "bg-accent" : "bg-transparent"
+            )}
           />
           
-          <div style={{ width: rightWidth, height: '100%', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
+          <div 
+            style={{ width: rightWidth }}
+            className="h-full overflow-hidden shrink-0 relative"
+          >
              {right}
           </div>
         </>

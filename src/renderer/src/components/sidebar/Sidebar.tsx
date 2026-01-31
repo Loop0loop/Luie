@@ -171,9 +171,8 @@ function Sidebar({
             <Copy className="icon-sm" /> {SIDEBAR_MENU_DUPLICATE}
           </div>
           <div
-            className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
+            className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-danger cursor-pointer rounded-md transition-all hover:bg-active hover:text-danger"
             onClick={() => handleAction("delete", menuOpenId)}
-            style={{ color: "#ef4444" }}
           >
             <Trash2 className="icon-sm" /> {SIDEBAR_MENU_DELETE}
           </div>
@@ -234,9 +233,8 @@ function Sidebar({
             ))}
             {/* Inline Add Button for Manuscript */}
             <div
-              className="flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg transition-all"
+              className="flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] text-subtle border-l-2 border-transparent hover:bg-surface-hover hover:text-fg transition-all"
               onClick={onAddChapter}
-              style={{ color: "var(--text-tertiary)" }}
             >
               <Plus className="mr-2 text-muted icon-sm" />
               <span>{SIDEBAR_ADD_CHAPTER}</span>
@@ -331,8 +329,7 @@ function Sidebar({
         {isTrashOpen && (
           <div className="pb-3 [content-visibility:auto]">
             <div
-              className="flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg transition-all"
-              style={{ fontStyle: "italic", color: "var(--text-tertiary)" }}
+              className="flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] italic text-subtle border-l-2 border-transparent hover:bg-surface-hover hover:text-fg transition-all"
             >
               <Trash2 className="mr-2 text-muted icon-sm" />
               <span>{SIDEBAR_TRASH_EMPTY}</span>

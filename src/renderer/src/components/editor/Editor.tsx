@@ -243,7 +243,10 @@ function Editor({
         <div 
           className={cn(
             "w-full h-full flex flex-col flex-1 min-h-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] bg-transparent border-none shadow-none m-0",
-            isMobileView && "w-[430px] max-w-[430px] h-[95%] mx-auto my-5 border-[8px] border-[#2c2c2e] rounded-[48px] bg-editor-bg shadow-[0_0_0_2px_rgba(69,69,69,0.9),0_25px_50px_-12px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.05)] overflow-hidden relative"
+            "data-[mobile=true]:w-[430px] data-[mobile=true]:max-w-[430px] data-[mobile=true]:h-[95%] data-[mobile=true]:mx-auto data-[mobile=true]:my-5",
+            "data-[mobile=true]:border-[8px] data-[mobile=true]:border-[#2c2c2e] data-[mobile=true]:rounded-[48px]",
+            "data-[mobile=true]:bg-editor-bg data-[mobile=true]:shadow-[0_0_0_2px_rgba(69,69,69,0.9),0_25px_50px_-12px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.05)]",
+            "data-[mobile=true]:overflow-hidden data-[mobile=true]:relative"
           )}
           data-mobile={isMobileView}
         >
@@ -256,8 +259,9 @@ function Editor({
             type="text"
             className={cn(
               "w-full border-none bg-transparent pb-4 text-2xl font-bold text-fg outline-none shrink-0 placeholder:text-muted",
-              isMobileView && "px-6"
+              "data-[mobile=true]:px-6"
             )}
+            data-mobile={isMobileView}
             placeholder={PLACEHOLDER_EDITOR_TITLE}
             value={title}
             onChange={(e) => {
@@ -272,14 +276,14 @@ function Editor({
           <div
             className={cn(
               "flex flex-col relative", 
-              isMobileView && "pt-8 h-full overflow-hidden px-6"
+              "data-[mobile=true]:pt-8 data-[mobile=true]:h-full data-[mobile=true]:overflow-hidden data-[mobile=true]:px-6",
+              "data-[mobile=false]:min-h-[var(--text-editor-min-height)]"
             )}
+            data-mobile={isMobileView}
             style={{
               fontFamily: getFontFamily(),
               fontSize: `${fontSize}px`,
               lineHeight,
-              height: isMobileView ? "100%" : undefined, // Height handled differently in mobile
-              minHeight: !isMobileView ? "var(--text-editor-min-height)" : undefined,
             }}
           >
             <EditorContent editor={editor} className="tiptap flex-1 flex flex-col outline-none h-full" />

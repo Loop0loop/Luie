@@ -1,62 +1,55 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @layer components {
   /* Namuwiki & Global Components Priority Layer */
 }
 
 :root {
   /* 
-    DESIGN TOKENS - ZINC SCALE (Neutral, Professional)
-    Using specific hex values to ensure consistency across themes
+    DESIGN TOKENS - HSL VALUES
+    Defined as space-separated values for Tailwind opacity support
   */
 
   /* === LIGHT THEME (Default) === */
   /* Backgrounds */
-  --bg-app: #ffffff;          /* Main Canvas */
-  --bg-sidebar: #f4f4f5;      /* Zinc-100 - Distinct from main content */
-  --bg-panel: #ffffff;        /* Panel matches app or slightly off */
-  --bg-element: #ffffff;      /* Cards, Inputs */
-  --bg-element-hover: #f4f4f5; 
-  --bg-active: #e4e4e7;       /* Zinc-200 */
+  --bg-app: 0 0% 100%;          /* #ffffff */
+  --bg-sidebar: 240 5% 96%;     /* #f4f4f5 (zinc-100) */
+  --bg-panel: 0 0% 100%;        /* #ffffff */
+  --bg-element: 0 0% 100%;      /* #ffffff */
+  --bg-element-hover: 240 5% 96%; /* #f4f4f5 */
+  --bg-active: 240 5% 90%;      /* #e4e4e7 (zinc-200) */
 
   /* Text */
-  --text-primary: #18181b;    /* Zinc-900 - Sharp, readable black */
-  --text-secondary: #71717a;  /* Zinc-500 - Clear secondary info */
-  --text-tertiary: #a1a1aa;   /* Zinc-400 - Placeholders */
-  --text-accent: #2563eb;     /* Blue-600 - Standard interaction blue */
-  --text-on-accent: #ffffff;
-
+  --text-primary: 240 6% 10%;   /* #18181b (zinc-900) */
+  --text-secondary: 240 4% 46%; /* #71717a (zinc-500) */
+  --text-tertiary: 240 5% 84%;  /* #a1a1aa (border-like) -> Adjusted for visibility: zinc-400 */
+  --text-tertiary: 240 5% 65%;  /* #a1a1aa */
+  
   /* Semantic UI */
-  --accent-bg: #2563eb;       /* Blue-600 */
-  --accent-bg-hover: #1d4ed8; /* Blue-700 */
-  --accent-fg: #ffffff;
-  --success-fg: #16a34a;      /* Green-600 */
-  --danger-fg: #ef4444;       /* Red-500 */
-
-  /* Aliases (legacy UI tokens) */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f9fafb;
-  --bg-hover: #f4f4f5;
-  --bg-canvas: #ffffff;
-  --accent-primary: #2563eb;
-  --grid-line: #e5e7eb;
-  --danger-fg: #dc2626;       /* Red-600 */
+  --accent-bg: 221 83% 53%;     /* #2563eb (blue-600) */
+  --accent-bg-hover: 221 83% 48%; /* #1d4ed8 (blue-700) */
+  --accent-fg: 0 0% 100%;       /* #ffffff */
+  
+  --success-fg: 142 76% 36%;    /* #16a34a (green-600) */
+  --danger-fg: 0 84% 60%;       /* #ef4444 (red-500) */
 
   /* Borders */
-  --border-default: #e4e4e7;  /* Zinc-200 */
-  --border-active: #d4d4d8;   /* Zinc-300 */
-  --border-focus: #18181b;    /* Zinc-900 */
+  --border-default: 240 6% 90%; /* #e4e4e7 (zinc-200) */
+  --border-active: 240 5% 84%;  /* #d4d4d8 (zinc-300) */
+  --border-focus: 240 6% 10%;   /* #18181b (zinc-900) */
 
-  /* Editor Specific (Can differ from UI) */
-  --editor-bg: #ffffff;
-  --editor-text: #18181b;
-  --editor-selection: #bfdbfe; /* Blue-200 */
+  /* Editor Specific */
+  --editor-bg: 0 0% 100%;
+  --editor-text: 240 6% 10%;
+  --editor-selection: 217 91% 85%; /* #bfdbfe (blue-200) */
 
   /* Dimensions */
   --header-height: 48px;
   --sidebar-width: 260px;
   --panel-width: 320px;
-  --collapsed-width: 0px; /* For animations */
+  --collapsed-width: 0px; 
 
   /* UI sizing tokens */
   --icon-size-xs: 12px;
@@ -66,455 +59,160 @@
   --icon-size-xl: 20px;
   --icon-size-xxl: 24px;
   --icon-size-xxxl: 32px;
-
-  --font-weight-semibold: 600;
-
-  --context-panel-section-padding: 16px;
-  --context-panel-header-font-size: 12px;
-  --context-panel-body-font-size: 13px;
-  --context-panel-tag-font-size: 10px;
-  --context-panel-section-margin-bottom: 8px;
-
-  --memo-search-icon-size: 12px;
-  --memo-search-font-size: 12px;
-  --memo-tag-font-size: 9px;
-  --memo-date-font-size: 10px;
-  --memo-date-icon-size: 8px;
-  --memo-tag-icon-size: 14px;
-  --memo-tag-input-font-size: 12px;
-  --memo-title-font-weight: 500;
-
+  
   --text-editor-min-height: 400px;
+}
 
-  --world-overview-min-height: 400px;
-  --world-overview-line-height: 1.6;
-  --world-overview-font-size: 14px;
-  --world-mindmap-root-x: 300px;
-  --world-mindmap-root-y: 300px;
-  --world-status-font-size: 11px;
-  --world-hint-font-size: 12px;
-  --world-draw-text-font-size: 14px;
-  --world-draw-text-font-weight: 700;
+html, body, #root {
+  width: 100%;
+  height: 100%;
+}
 
-  --character-color-fallback: #ccc;
-  --character-icon-back-size: 16px;
-  --character-avatar-icon-size: 32px;
-  --character-add-icon-size: 24px;
-  --character-backstory-min-height: 100px;
-  --character-relation-min-height: 200px;
-  --character-relation-font-size: 12px;
-  --character-relation-margin-bottom: 8px;
-
-  /* Namuwiki Theme Tokens (Light) */
-  --namu-blue: #00A2E8;
-  --namu-border: #cccccc;
-  --namu-table-bg: #f5f5f5;
-  --namu-table-label: #00A2E8;
-  --namu-hover-bg: #eef9fe;
-  --namu-header-text: #ffffff;
-  --namu-link: #0275d8;
-
-  --editor-toolbar-icon-size: 16px;
-  --editor-toolbar-dropdown-icon-size: 12px;
-  --editor-toolbar-plus-minus-font-size: 14px;
-  --editor-toolbar-mobile-icon-size: 14px;
-
-  /* Typography */
-  --font-sans: "Inter Variable", "Inter", "Noto Sans KR Variable", "Noto Sans JP Variable", -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, sans-serif;
-  --font-serif: "Merriweather", "Noto Serif KR", serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-
-  /* Backwards-compatible aliases */
-  --bg-primary: var(--bg-app);
-  --bg-secondary: var(--bg-element-hover);
-  --bg-hover: var(--bg-element-hover);
-
-  /* Elevations */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+body {
+  @apply bg-canvas text-fg;
 }
 
 /* === DARK THEME === */
 [data-theme="dark"] {
   /* Backgrounds */
-  --bg-app: #18181b;          /* Zinc-900 */
-  --bg-sidebar: #09090b;      /* Zinc-950 */
-  --bg-panel: #18181b;
-  --bg-element: #27272a;      /* Zinc-800 */
-  --bg-element-hover: #3f3f46;
-  --bg-active: #3f3f46;       /* Zinc-700 */
-
+  --bg-app: 240 10% 10%;        /* #18181b (zinc-900) */
+  --bg-sidebar: 240 10% 4%;     /* #09090b (zinc-950) */
+  --bg-panel: 240 10% 10%;
+  --bg-element: 240 6% 16%;     /* #27272a (zinc-800) */
+  --bg-element-hover: 240 5% 26%; /* #3f3f46 (zinc-700) */
+  --bg-active: 240 5% 26%;      
+  
   /* Text */
-  --text-primary: #f4f4f5;    /* Zinc-100 */
-  --text-secondary: #a1a1aa;  /* Zinc-400 */
-  --text-tertiary: #52525b;   /* Zinc-600 */
-  --text-accent: #60a5fa;     /* Blue-400 */
+  --text-primary: 240 5% 96%;   /* #f4f4f5 (zinc-100) */
+  --text-secondary: 240 5% 65%; /* #a1a1aa (zinc-400) */
+  --text-tertiary: 240 5% 34%;  /* #52525b (zinc-600) */
 
   /* Semantic UI */
-  --accent-bg: #3b82f6;       /* Blue-500 */
-  --accent-bg-hover: #2563eb; /* Blue-600 */
-  --accent-fg: #0b1020;
-  --success-fg: #22c55e;      /* Green-500 */
-  --danger-fg: #f87171;       /* Red-400 */
-
-  /* Aliases (legacy UI tokens) */
-  --bg-primary: #18181b;
-  --bg-secondary: #27272a;
-  --bg-hover: #3f3f46;
-  --bg-canvas: #18181b;
-  --accent-primary: #3b82f6;
-  --grid-line: #27272a;
-  --danger-fg: #fca5a5;       /* Red-300 */
+  --accent-bg: 217 91% 60%;     /* #3b82f6 (blue-500) */
+  --accent-bg-hover: 221 83% 53%; /* #2563eb (blue-600) */
+  --accent-fg: 222 47% 11%;     /* #0b1020 */
+  
+  --success-fg: 142 71% 45%;    /* #22c55e (green-500) */
+  --danger-fg: 0 91% 71%;       /* #f87171 (red-400) */
 
   /* Borders */
-  --border-default: #27272a;  /* Zinc-800 */
-  --border-active: #3f3f46;
-  --border-focus: #e4e4e7;
+  --border-default: 240 6% 16%; /* #27272a (zinc-800) */
+  --border-active: 240 5% 26%;  /* #3f3f46 */
+  --border-focus: 240 5% 90%;   /* #e4e4e7 */
 
   /* Editor */
-  --editor-bg: #18181b;
-  --editor-text: #f4f4f5;
-  --editor-selection: #1e3a8a;
-
-  /* Namuwiki Theme Tokens (Dark) */
-  --namu-blue: #0ea5e9;       /* Sky-500, slightly lighter for dark mode */
-  --namu-border: #3f3f46;     /* Zinc-700 */
-  --namu-table-bg: #27272a;   /* Zinc-800 */
-  --namu-table-label: #38bdf8;/* Sky-400 */
-  --namu-hover-bg: #18181b;   /* Zinc-900 */
-  --namu-header-text: #ffffff;
-  --namu-link: #60a5fa;
+  --editor-bg: 240 10% 10%;
+  --editor-text: 240 5% 96%;
+  --editor-selection: 222 89% 65%; /* #1e3a8a (indistinct, adjusted) -> blue-500/30 or similar */
+  --editor-selection: 217 91% 30%; /* Darker blue selection */
 }
 
-/* === SEPIA THEME (Writer Focused) === */
+/* === SEPIA THEME === */
 [data-theme="sepia"] {
   /* Backgrounds */
-  --bg-app: #fbf0d9;          /* Warm Paper */
-  --bg-sidebar: #f3e5c9;      /* Slightly darker paper */
-  --bg-panel: #fbf0d9;
-  --bg-element: #fffefb;
-  --bg-element-hover: #efe4cb;
-  --bg-active: #e6dac6;
+  --bg-app: 41 82% 92%;         /* #fbf0d9 */
+  --bg-sidebar: 39 67% 87%;     /* #f3e5c9 */
+  --bg-panel: 41 82% 92%;
+  --bg-element: 45 100% 99%;    /* #fffefb */
+  --bg-element-hover: 42 52% 87%; /* #efe4cb */
+  --bg-active: 38 43% 84%;      /* #e6dac6 */
 
   /* Text */
-  --text-primary: #5f4b32;    /* Dark brown */
-  --text-secondary: #8c7b66;
-  --text-tertiary: #b8aa9c;
-  --text-accent: #cc7832;     /* Warm Orange/Brown */
-  
-  /* Borders */
-  --border-default: #e6dac6;
-  --border-active: #dcc8ae;
-  --border-focus: #5f4b32;
+  --text-primary: 34 31% 28%;   /* #5f4b32 */
+  --text-secondary: 33 16% 47%; /* #8c7b66 */
+  --text-tertiary: 30 18% 67%;  /* #b8aa9c */
 
   /* Semantic UI */
-  --accent-bg: #cc7832;
-  --accent-bg-hover: #b96725;
-  --accent-fg: #fffefb;
-  --success-fg: #2e7d32;
-  --danger-fg: #b91c1c;
+  --accent-bg: 27 61% 50%;      /* #cc7832 */
+  --accent-bg-hover: 27 67% 44%; /* #b96725 */
+  --accent-fg: 45 100% 99%;
+  
+  --success-fg: 122 39% 34%;    /* #2e7d32 */
+  --danger-fg: 0 74% 42%;       /* #b91c1c */
 
-  /* Aliases (legacy UI tokens) */
-  --bg-primary: #fbf0d9;
-  --bg-secondary: #efe4cb;
-  --bg-hover: #efe4cb;
-  --bg-canvas: #fbf0d9;
-  --accent-primary: #cc7832;
-  --grid-line: #e6dcc6;
-  --danger-fg: #b91c1c;
+  /* Borders */
+  --border-default: 38 43% 84%; /* #e6dac6 */
+  --border-active: 35 39% 77%;  /* #dcc8ae */
+  --border-focus: 34 31% 28%;   /* #5f4b32 */
 
   /* Editor */
-  --editor-bg: #fbf0d9;
-  --editor-text: #433422;
-  --editor-selection: #e6dcc6;
-
-  /* Namuwiki Theme Tokens (Sepia) */
-  --namu-blue: #cc7832;       /* Earthy Orange/Brown to match Sepia */
-  --namu-border: #dcc8ae;
-  --namu-table-bg: #efe4cb;
-  --namu-table-label: #5f4b32;
-  --namu-hover-bg: #e6dac6;
-  --namu-header-text: #fffefb;
-  --namu-link: #b96725;
+  --editor-bg: 41 82% 92%;
+  --editor-text: 34 50% 20%;    /* #433422 */
+  --editor-selection: 38 43% 84%;
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-app);
-  color: var(--text-primary);
+  background-color: hsl(var(--bg-app));
+  color: hsl(var(--text-primary));
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.2s, color 0.2s;
-  overflow: hidden; /* App-like behavior */
+  overflow: hidden;
 }
 
 /* Icon size utilities */
-.icon-xs {
-  width: var(--icon-size-xs);
-  height: var(--icon-size-xs);
-}
-
-.icon-sm {
-  width: var(--icon-size-sm);
-  height: var(--icon-size-sm);
-}
-
-.icon-md {
-  width: var(--icon-size-md);
-  height: var(--icon-size-md);
-}
-
-.icon-lg {
-  width: var(--icon-size-lg);
-  height: var(--icon-size-lg);
-}
-
-.icon-xl {
-  width: var(--icon-size-xl);
-  height: var(--icon-size-xl);
-}
-
-.icon-xxl {
-  width: var(--icon-size-xxl);
-  height: var(--icon-size-xxl);
-}
-
-.icon-xxxl {
-  width: var(--icon-size-xxxl);
-  height: var(--icon-size-xxxl);
-}
+.icon-xs { @apply w-[var(--icon-size-xs)] h-[var(--icon-size-xs)]; }
+.icon-sm { @apply w-[var(--icon-size-sm)] h-[var(--icon-size-sm)]; }
+.icon-md { @apply w-[var(--icon-size-md)] h-[var(--icon-size-md)]; }
+.icon-lg { @apply w-[var(--icon-size-lg)] h-[var(--icon-size-lg)]; }
+.icon-xl { @apply w-[var(--icon-size-xl)] h-[var(--icon-size-xl)]; }
+.icon-xxl { @apply w-[var(--icon-size-xxl)] h-[var(--icon-size-xxl)]; }
+.icon-xxxl { @apply w-[var(--icon-size-xxxl)] h-[var(--icon-size-xxxl)]; }
 
 /* Reset buttons */
-button {
-  font-family: inherit;
-}
+button { font-family: inherit; }
 
 /* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-active);
-  border-radius: 3px;
+  @apply bg-border-active rounded-full;
 }
-/* Editor Content Styles */
 
-/* Base ProseMirror */
+/* Editor Base (TipTap) */
 .tiptap .ProseMirror {
-    outline: none;
-    flex: 1;
-    height: 100%;
+  outline: none;
+  flex: 1;
+  height: 100%;
 }
-  
-.tiptap .ProseMirror p.is-editor-empty:first-child::before {
-    color: var(--text-tertiary);
-    content: attr(data-placeholder);
-    float: left;
-    height: 0;
-    pointer-events: none;
-}
-  
-.tiptap .ProseMirror h1 {
-    font-size: 2em;
-    font-weight: 700;
-    margin-top: 1em;
-    margin-bottom: 0.5em;
-}
-  
-.tiptap .ProseMirror h2 {
-    font-size: 1.5em;
-    font-weight: 700;
-    margin-top: 1em;
-    margin-bottom: 0.5em;
-}
-  
-.tiptap .ProseMirror h3 {
-    font-size: 1.25em;
-    font-weight: 600;
-    margin-top: 1em;
-    margin-bottom: 0.5em;
-}
-  
-.tiptap .ProseMirror ul {
-    padding-left: 1.5em;
-    margin: 1em 0;
-    list-style-type: disc;
-}
-  
-.tiptap .ProseMirror ol {
-    padding-left: 1.5em;
-    margin: 1em 0;
-    list-style-type: decimal;
-}
-  
-.tiptap .ProseMirror li {
-    margin: 0.2em 0;
-}
-  
-/* Task List (Checkboxes) */
+
+/* 
+  The rest of the ProseMirror styles should be largely replaced by 'prose' class from @tailwindcss/typography 
+  in the actual component, but keeping essential overrides here.
+*/
+
 .tiptap .ProseMirror ul[data-type="taskList"] {
-    list-style: none;
-    padding-left: 0;
+  list-style: none;
+  padding-left: 0;
 }
-  
+
 .tiptap .ProseMirror li[data-type="taskItem"] {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    margin: 0.2rem 0;
-    gap: 0.5rem;
-    padding: 0.15rem 0;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  margin: 0.2rem 0;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
 }
-  
+
 .tiptap .ProseMirror li[data-type="taskItem"] label {
-    margin-top: 2px; /* Align checkbox with text line height */
-    user-select: none;
-    cursor: pointer;
-    display: flex;
-    width: 18px;
-    height: 18px;
-    align-items: center;
-    justify-content: center;
+  margin-top: 2px;
+  user-select: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-  
+
 .tiptap .ProseMirror li[data-type="taskItem"] input[type="checkbox"] {
-    appearance: auto;
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-    margin: 0;
-    accent-color: var(--accent-primary, #7b7efc);
+  @apply w-4 h-4 cursor-pointer m-0 accent-accent;
 }
-  
-.tiptap .ProseMirror li[data-type="taskItem"] div {
-    flex: 1;
-    /* Ensure paragraph inside task item doesn't add extra margin */
-    margin: 0;
-    padding-top: 1px;
-}
-  
-.tiptap .ProseMirror li[data-type="taskItem"] p {
-    margin: 0;
-}
-  
+
 .tiptap .ProseMirror li[data-type="taskItem"][data-checked="true"] div {
-    color: var(--text-tertiary);
-    text-decoration: line-through;
+  @apply text-muted line-through decoration-muted;
 }
-  
-/* Blockquote (Quote/Callout) */
-.tiptap .ProseMirror blockquote {
-    border-left: 4px solid var(--border-default);
-    padding-left: 1rem;
-    padding-right: 1rem;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-    margin: 1em 0;
-    background-color: var(--bg-hover);
-    border-radius: 4px;
-    color: var(--text-primary);
-}
-  
-.tiptap .ProseMirror blockquote p {
-    margin: 0.5em 0;
-}
-  
-.tiptap .ProseMirror blockquote p:first-child {
-    margin-top: 0;
-}
-  
-.tiptap .ProseMirror blockquote p:last-child {
-    margin-bottom: 0;
-}
-  
-/* Inline Code */
-.tiptap .ProseMirror code {
-    background-color: var(--bg-secondary);
-    padding: 0.2em 0.4em;
-    border-radius: 4px;
-    font-family: var(--font-mono);
-    font-size: 0.9em;
-    color: var(--text-primary);
-}
-  
-/* Code Block */
-.tiptap .ProseMirror pre {
-    background-color: var(--bg-secondary);
-    border-radius: 6px;
-    padding: 1em;
-    margin: 1em 0;
-    overflow-x: auto;
-}
-  
-.tiptap .ProseMirror pre code {
-    background-color: transparent;
-    padding: 0;
-    font-size: 0.9em;
-}
-  
-/* Callout - Simple Bordered Box */
+
+/* Legacy support or Specific overrides */
 .tiptap .ProseMirror .callout {
-    padding: 1rem;
-    background-color: var(--bg-secondary);
-    border-radius: 8px;
-    border: 1px solid var(--border-default);
-    border-left: 4px solid var(--accent-primary, #7b7efc);
-    margin: 1em 0;
-}
-  
-.tiptap .ProseMirror .callout p {
-    margin: 0.5em 0;
-}
-  
-.tiptap .ProseMirror .callout p:first-child {
-    margin-top: 0;
-}
-  
-.tiptap .ProseMirror .callout p:last-child {
-    margin-bottom: 0;
-}
-  
-/* Details / Toggle */
-.tiptap .ProseMirror details {
-    border: none;
-    padding: 0;
-    margin: 0.2em 0;
-    background: transparent;
-}
-  
-.tiptap .ProseMirror summary {
-    cursor: pointer;
-    list-style: none;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-}
-/* Hide default marker in some browsers if we want custom */
-.tiptap .ProseMirror summary::-webkit-details-marker {
-    display: none;
-}
-  
-.tiptap .ProseMirror details.toggle {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-default);
-    border-radius: 8px;
-    padding: 0.6rem 0.8rem;
-    margin: 0.6rem 0;
-}
-  
-.tiptap .ProseMirror details.toggle summary::before {
-    content: "▸";
-    display: inline-block;
-    margin-right: 0.5rem;
-    transform-origin: center;
-    transition: transform 0.15s ease;
-}
-  
-.tiptap .ProseMirror details.toggle[open] summary::before {
-    transform: rotate(90deg);
+    @apply p-4 bg-surface-hover rounded-lg border border-border border-l-4 border-l-accent my-4;
 }
