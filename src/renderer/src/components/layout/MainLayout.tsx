@@ -20,7 +20,7 @@ export default function MainLayout({ children, sidebar, contextPanel }: MainLayo
   const [isContextOpen, setIsContextOpen] = useState(false); // Default to closed for max space
 
   return (
-    <div className="flex flex-col h-screen bg-app text-fg">
+    <div className="flex flex-col h-screen bg-canvas text-fg">
       <WindowBar />
       
       <div className="flex flex-1 overflow-hidden relative">
@@ -35,7 +35,7 @@ export default function MainLayout({ children, sidebar, contextPanel }: MainLayo
         </div>
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col bg-app relative min-w-0">
+        <main className="flex-1 flex flex-col bg-canvas relative min-w-0">
           <div className="flex items-center px-4 py-2 h-12">
              <button 
                className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-all hover:bg-active hover:text-fg"

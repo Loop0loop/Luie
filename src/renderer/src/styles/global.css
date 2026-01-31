@@ -1,41 +1,7 @@
-/* 1. 지운 config 참조 제거 & tailwindcss import */
-@import "tailwindcss";
-
-/* 2. [핵심] 여기가 빠져서 안 됐던 겁니다! (변수 -> 클래스 매핑) */
-@theme {
-  /* 좌측(--color-이름)이 클래스명이 됩니다. 
-     예: --color-canvas -> bg-canvas, text-canvas 
-  */
-  
-  /* Backgrounds */
-  --color-canvas: var(--bg-app);        /* bg-canvas */
-  --color-sidebar: var(--bg-sidebar);   /* bg-sidebar */
-  --color-panel: var(--bg-panel);       /* bg-panel */
-  --color-element: var(--bg-element);   /* bg-element */
-  --color-active: var(--bg-active);     /* bg-active */
-
-  /* Text */
-  --color-fg: var(--text-primary);      /* text-fg */
-  --color-sub: var(--text-secondary);   /* text-sub */
-  --color-muted: var(--text-tertiary);  /* text-muted */
-
-  /* Semantic */
-  --color-accent: var(--accent-bg);     /* bg-accent */
-  --color-accent-fg: var(--accent-fg);  /* text-accent-fg */
-  --color-success: var(--success-fg);
-  --color-danger: var(--danger-fg);
-
-  /* Borders */
-  --color-border: var(--border-default); /* border-border */
-  --color-border-active: var(--border-active);
-
-  /* Editor */
-  --color-editor: var(--editor-bg);
-  
-  /* Custom Dimensions */
-  --spacing-header: var(--header-height);
-  --spacing-sidebar: var(--sidebar-width);
-}
+@config "../../../../tailwind.config.ts";
+@import "tailwindcss" source("../");
+@source "../**";
+@source "../../index.html";
 
 /* 3. CSS 변수 정의 (값 설정) */
 :root {
@@ -146,13 +112,15 @@
 }
 
 /* 4. Utilities Layer */
-@utility icon-xs { width: var(--icon-size-xs); height: var(--icon-size-xs); }
-@utility icon-sm { width: var(--icon-size-sm); height: var(--icon-size-sm); }
-@utility icon-md { width: var(--icon-size-md); height: var(--icon-size-md); }
-@utility icon-lg { width: var(--icon-size-lg); height: var(--icon-size-lg); }
-@utility icon-xl { width: var(--icon-size-xl); height: var(--icon-size-xl); }
-@utility icon-xxl { width: var(--icon-size-xxl); height: var(--icon-size-xxl); }
-@utility icon-xxxl { width: var(--icon-size-xxxl); height: var(--icon-size-xxxl); }
+@layer utilities {
+  .icon-xs { width: var(--icon-size-xs); height: var(--icon-size-xs); }
+  .icon-sm { width: var(--icon-size-sm); height: var(--icon-size-sm); }
+  .icon-md { width: var(--icon-size-md); height: var(--icon-size-md); }
+  .icon-lg { width: var(--icon-size-lg); height: var(--icon-size-lg); }
+  .icon-xl { width: var(--icon-size-xl); height: var(--icon-size-xl); }
+  .icon-xxl { width: var(--icon-size-xxl); height: var(--icon-size-xxl); }
+  .icon-xxxl { width: var(--icon-size-xxxl); height: var(--icon-size-xxxl); }
+}
 
 /* 5. Base Layer */
 @layer base {

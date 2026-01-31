@@ -200,7 +200,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                       <button
                         key={f}
                         className={cn(
-                          "border border-border rounded-xl bg-bg-element p-4 px-2 cursor-pointer transition-all flex flex-col items-center gap-2 hover:border-active hover:-translate-y-px",
+                          "border border-border rounded-xl bg-element p-4 px-2 cursor-pointer transition-all flex flex-col items-center gap-2 hover:border-active hover:-translate-y-px",
                           fontFamily === f && "border-active bg-element-hover shadow-sm"
                         )}
                         onClick={() => updateSettings({ fontFamily: f })}
@@ -245,7 +245,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                       const isActive = fontPreset === font.id;
 
                       return (
-                        <div key={font.id} className="flex items-center justify-between p-2.5 px-3 border border-border rounded-lg bg-bg-element">
+                        <div key={font.id} className="flex items-center justify-between p-2.5 px-3 border border-border rounded-lg bg-element">
                           <div className="flex items-center gap-3">
                             <div
                               className="w-[42px] h-[42px] rounded-lg border border-border flex items-center justify-center text-lg text-fg bg-element-hover"
@@ -261,7 +261,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                           <div className="flex items-center gap-2">
                             {!isInstalled ? (
                               <button
-                                className="rounded-lg px-2.5 py-1.5 text-xs border border-border bg-bg-element text-fg cursor-pointer inline-flex items-center gap-1.5 hover:border-active hover:bg-element-hover disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="rounded-lg px-2.5 py-1.5 text-xs border border-border bg-element text-fg cursor-pointer inline-flex items-center gap-1.5 hover:border-active hover:bg-element-hover disabled:opacity-60 disabled:cursor-not-allowed"
                                 onClick={() => handleInstall(font.id, font.pkg)}
                                 disabled={isInstalling}
                               >
@@ -269,10 +269,10 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                 {isInstalling ? SETTINGS_ACTION_INSTALLING : SETTINGS_ACTION_INSTALL}
                               </button>
                             ) : isActive ? (
-                              <div className="text-xs px-2 py-1 rounded-full text-accent-fg bg-accent-bg">{SETTINGS_BADGE_ACTIVE}</div>
+                              <div className="text-xs px-2 py-1 rounded-full text-accent-fg bg-accent">{SETTINGS_BADGE_ACTIVE}</div>
                             ) : (
                               <button
-                                className="rounded-lg px-2.5 py-1.5 text-xs border border-border bg-bg-element text-fg cursor-pointer inline-flex items-center gap-1.5 hover:border-active hover:bg-element-hover"
+                                className="rounded-lg px-2.5 py-1.5 text-xs border border-border bg-element text-fg cursor-pointer inline-flex items-center gap-1.5 hover:border-active hover:bg-element-hover"
                                 onClick={() => updateSettings({ fontPreset: font.id })}
                               >
                                 {SETTINGS_ACTION_APPLY}

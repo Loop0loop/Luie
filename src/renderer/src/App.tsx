@@ -121,8 +121,10 @@ export default function App() {
         }
       >
         <div id="split-container" className="flex w-full h-full flex-1 overflow-hidden relative">
+          {/* 메인 에디터 영역 */}
           <div
-            className="h-full overflow-hidden relative min-w-0 bg-bg-primary"
+            // 수정됨: bg-bg-primary -> bg-canvas
+            className="h-full overflow-hidden relative min-w-0 bg-canvas"
             style={{ flex: isSplitView ? splitRatio : 1 }}
           >
             <Editor
@@ -135,16 +137,21 @@ export default function App() {
 
           {isSplitView && (
             <>
+              {/* 구분선 (Separator) */}
               <div
                 className="w-3 cursor-col-resize bg-transparent relative flex-none flex items-center justify-center z-[100] -mx-[5px] group"
                 onMouseDown={startResizeSplit}
                 role="separator"
                 aria-orientation="vertical"
               >
+                {/* 구분선 색상은 border-border 사용 */}
                 <div className="absolute top-0 bottom-0 left-1/2 w-px bg-border transition-all group-hover:bg-accent group-hover:w-0.5" />
               </div>
+
+              {/* 우측 패널 (Split View) */}
               <div
-                className="h-full border-l border-border overflow-hidden relative min-w-0 bg-bg-secondary"
+                // 수정됨: bg-bg-secondary -> bg-sidebar (또는 bg-active 등 약간 구분되는 색상)
+                className="h-full border-l border-border overflow-hidden relative min-w-0 bg-sidebar"
                 style={{ flex: 1 - splitRatio }}
               >
                 <Suspense
@@ -152,25 +159,20 @@ export default function App() {
                 >
                   {rightPanelContent.type === "research" ? (
                     <ResearchPanel
-                                  activeTab={rightPanelContent.tab || "character"}
-                                  onClose={() => setSplitView(false)}
+                      activeTab={rightPanelContent.tab || "character"}
+                      onClose={() => setSplitView(false)}
                     />
                   ) : (
-                    <div
-                      style={{
-                        height: "100%",
-                        overflow: "hidden",
-                        background: "var(--bg-primary)",
-                      }}
-                    >
+                    // 수정됨: 인라인 스타일 background 제거 및 className 사용
+                    <div className="h-full overflow-hidden bg-canvas">
                       {/* Re-using Editor for read-only or secondary edit */}
                       <Editor
                         initialTitle={
                           chapters.find((c) => c.id === rightPanelContent.id)
                             ?.title
                         }
-                        initialContent="" // We'd need to fetch content. For now placeholder.
-                        // In real app, Editor should fetch by ID or we pass content
+                        initialContent="" 
+                        // We'd need to fetch content. For now placeholder.
                       />
                     </div>
                   )}

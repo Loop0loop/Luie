@@ -223,7 +223,7 @@ function Sidebar({
                 {(hoveredItemId === chapter.id ||
                   menuOpenId === chapter.id) && (
                   <div
-                    className="ml-auto p-0.5 rounded hover:bg-bg-active text-muted hover:text-fg"
+                    className="ml-auto p-0.5 rounded hover:bg-active text-muted hover:text-fg"
                     onClick={(e) => handleMenuClick(e, chapter.id)}
                   >
                     <MoreVertical className="icon-sm" />
@@ -267,7 +267,7 @@ function Sidebar({
               <span>{SIDEBAR_ITEM_CHARACTERS}</span>
               {(hoveredItemId === "res-char" || menuOpenId === "res-char") && (
                 <div
-                  className="ml-auto p-0.5 rounded hover:bg-bg-active text-muted hover:text-fg"
+                  className="ml-auto p-0.5 rounded hover:bg-active text-muted hover:text-fg"
                   onClick={(e) => handleMenuClick(e, "res-char")}
                 >
                   <MoreVertical className="icon-sm" />
@@ -285,7 +285,7 @@ function Sidebar({
               {(hoveredItemId === "res-world" ||
                 menuOpenId === "res-world") && (
                 <div
-                  className="ml-auto p-0.5 rounded hover:bg-bg-active text-muted hover:text-fg"
+                  className="ml-auto p-0.5 rounded hover:bg-active text-muted hover:text-fg"
                   onClick={(e) => handleMenuClick(e, "res-world")}
                 >
                   <MoreVertical className="icon-sm" />
@@ -303,7 +303,7 @@ function Sidebar({
               {(hoveredItemId === "res-scrap" ||
                 menuOpenId === "res-scrap") && (
                 <div
-                  className="ml-auto p-0.5 rounded hover:bg-bg-active text-muted hover:text-fg"
+                  className="ml-auto p-0.5 rounded hover:bg-active text-muted hover:text-fg"
                   onClick={(e) => handleMenuClick(e, "res-scrap")}
                 >
                   <MoreVertical className="icon-sm" />

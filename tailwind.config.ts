@@ -4,6 +4,8 @@ import animate from 'tailwindcss-animate';
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
     "./src/renderer/index.html",
     "./src/renderer/src/**/*.{js,ts,jsx,tsx}",
   ],
@@ -19,15 +21,23 @@ export default {
       colors: {
         // Semantic tokens (CSS variables)
         canvas: "var(--bg-app)",
+        app: "var(--bg-app)",
         sidebar: "var(--bg-sidebar)",
         panel: "var(--bg-panel)",
         surface: "var(--bg-element)",
         "surface-hover": "var(--bg-element-hover)",
+        element: "var(--bg-element)",
+        "element-hover": "var(--bg-element-hover)",
         active: "var(--bg-active)",
+        hover: "var(--bg-element-hover)",
+        input: "var(--bg-element)",
 
         fg: "var(--text-primary)",
         muted: "var(--text-secondary)",
         subtle: "var(--text-tertiary)",
+        primary: "var(--text-primary)",
+        secondary: "var(--text-secondary)",
+        tertiary: "var(--text-tertiary)",
 
         accent: "var(--accent-bg)",
         "accent-hover": "var(--accent-bg-hover)",
@@ -35,6 +45,7 @@ export default {
 
         success: "var(--success-fg)",
         danger: "var(--danger-fg)",
+        error: "var(--danger-fg)",
 
         border: "var(--border-default)",
         "border-active": "var(--border-active)",

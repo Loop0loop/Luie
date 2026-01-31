@@ -30,14 +30,14 @@ export function Modal({
         style={{ width }}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-secondary">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-surface">
           <div className="text-[15px] font-semibold text-fg">{title}</div>
           <button className="bg-transparent border-none text-muted cursor-pointer p-1 rounded flex hover:bg-hover hover:text-fg transition-colors" onClick={onClose}>
             <X className="icon-lg" />
           </button>
         </div>
         <div className="p-5 text-sm leading-relaxed text-muted">{children}</div>
-        {footer && <div className="px-5 py-4 border-t border-border bg-secondary">{footer}</div>}
+        {footer && <div className="px-5 py-4 border-t border-border bg-surface">{footer}</div>}
       </div>
     </div>
   );

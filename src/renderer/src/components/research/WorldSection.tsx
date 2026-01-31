@@ -350,7 +350,7 @@ function SynopsisEditor() {
           lineHeight: "var(--world-overview-line-height)",
           fontSize: "var(--world-overview-font-size)",
           backgroundColor:
-            status === "locked" ? "var(--bg-secondary)" : "transparent",
+            status === "locked" ? "var(--bg-element)" : "transparent",
           color:
             status === "locked"
               ? "var(--text-secondary)"
@@ -552,7 +552,7 @@ function MindMapBoard() {
 
   return (
     <div
-      className="w-full h-full bg-app overflow-hidden outline-none relative"
+      className="w-full h-full bg-canvas overflow-hidden outline-none relative"
       tabIndex={0}
       onKeyDown={handleKeyDown}
       onDoubleClick={onPaneDoubleClick}
@@ -752,7 +752,7 @@ function DrawingCanvas() {
       </div>
 
       {/* Canvas */}
-      <div className="flex-1 bg-app cursor-crosshair overflow-hidden" ref={canvasRef}>
+      <div className="flex-1 bg-canvas cursor-crosshair overflow-hidden" ref={canvasRef}>
         <svg
           style={{ width: "100%", height: "100%", touchAction: "none" }}
           onPointerDown={handlePointerDown}
@@ -876,7 +876,7 @@ function PlotBoard() {
   };
 
   return (
-    <div className="h-full flex overflow-x-auto p-4 gap-4 bg-app">
+    <div className="h-full flex overflow-x-auto p-4 gap-4 bg-canvas">
       {columns.map((col) => (
         <div key={col.id} className="w-[280px] shrink-0 flex flex-col bg-sidebar border border-border rounded-lg max-h-full">
           <div className="p-3 font-bold text-sm text-fg uppercase flex justify-between items-center border-b border-border bg-panel/50">
