@@ -2,56 +2,44 @@
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-@layer components {
-  /* Namuwiki & Global Components Priority Layer */
+@layer base {
+  /* Reset & Base Styles */
+  html, body, #root {
+    width: 100%;
+    height: 100%;
+  }
+
+  body {
+    @apply bg-canvas text-fg;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.2s, color 0.2s;
+    overflow: hidden;
+  }
 }
 
+@layer utilities {
+  /* Icon size utilities */
+  .icon-xs { @apply w-[var(--icon-size-xs)] h-[var(--icon-size-xs)]; }
+  .icon-sm { @apply w-[var(--icon-size-sm)] h-[var(--icon-size-sm)]; }
+  .icon-md { @apply w-[var(--icon-size-md)] h-[var(--icon-size-md)]; }
+  .icon-lg { @apply w-[var(--icon-size-lg)] h-[var(--icon-size-lg)]; }
+  .icon-xl { @apply w-[var(--icon-size-xl)] h-[var(--icon-size-xl)]; }
+  .icon-xxl { @apply w-[var(--icon-size-xxl)] h-[var(--icon-size-xxl)]; }
+  .icon-xxxl { @apply w-[var(--icon-size-xxxl)] h-[var(--icon-size-xxxl)]; }
+}
+
+/* 
+  DESIGN TOKENS
+  Defined as full colors for Tailwind v4 compatibility.
+*/
 :root {
-  /* 
-    DESIGN TOKENS - HSL VALUES
-    Defined as space-separated values for Tailwind opacity support
-  */
-
-  /* === LIGHT THEME (Default) === */
-  /* Backgrounds */
-  --bg-app: 0 0% 100%;          /* #ffffff */
-  --bg-sidebar: 240 5% 96%;     /* #f4f4f5 (zinc-100) */
-  --bg-panel: 0 0% 100%;        /* #ffffff */
-  --bg-element: 0 0% 100%;      /* #ffffff */
-  --bg-element-hover: 240 5% 96%; /* #f4f4f5 */
-  --bg-active: 240 5% 90%;      /* #e4e4e7 (zinc-200) */
-
-  /* Text */
-  --text-primary: 240 6% 10%;   /* #18181b (zinc-900) */
-  --text-secondary: 240 4% 46%; /* #71717a (zinc-500) */
-  --text-tertiary: 240 5% 84%;  /* #a1a1aa (border-like) -> Adjusted for visibility: zinc-400 */
-  --text-tertiary: 240 5% 65%;  /* #a1a1aa */
-  
-  /* Semantic UI */
-  --accent-bg: 221 83% 53%;     /* #2563eb (blue-600) */
-  --accent-bg-hover: 221 83% 48%; /* #1d4ed8 (blue-700) */
-  --accent-fg: 0 0% 100%;       /* #ffffff */
-  
-  --success-fg: 142 76% 36%;    /* #16a34a (green-600) */
-  --danger-fg: 0 84% 60%;       /* #ef4444 (red-500) */
-
-  /* Borders */
-  --border-default: 240 6% 90%; /* #e4e4e7 (zinc-200) */
-  --border-active: 240 5% 84%;  /* #d4d4d8 (zinc-300) */
-  --border-focus: 240 6% 10%;   /* #18181b (zinc-900) */
-
-  /* Editor Specific */
-  --editor-bg: 0 0% 100%;
-  --editor-text: 240 6% 10%;
-  --editor-selection: 217 91% 85%; /* #bfdbfe (blue-200) */
-
-  /* Dimensions */
+  /* Dimensions & Sizes */
   --header-height: 48px;
   --sidebar-width: 260px;
   --panel-width: 320px;
   --collapsed-width: 0px; 
 
-  /* UI sizing tokens */
   --icon-size-xs: 12px;
   --icon-size-sm: 14px;
   --icon-size-md: 16px;
@@ -61,103 +49,111 @@
   --icon-size-xxxl: 32px;
   
   --text-editor-min-height: 400px;
-}
+  
+  /* Fonts */
+  --font-sans: "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-html, body, #root {
-  width: 100%;
-  height: 100%;
-}
+  /* === LIGHT THEME (Default) === */
+  /* Backgrounds */
+  --bg-app: hsl(0 0% 100%);          /* #ffffff */
+  --bg-sidebar: hsl(240 5% 96%);     /* #f4f4f5 */
+  --bg-panel: hsl(0 0% 100%);
+  --bg-element: hsl(0 0% 100%);
+  --bg-element-hover: hsl(240 5% 96%);
+  --bg-active: hsl(240 5% 90%);      /* #e4e4e7 */
 
-body {
-  @apply bg-canvas text-fg;
+  /* Text */
+  --text-primary: hsl(240 6% 10%);   /* #18181b */
+  --text-secondary: hsl(240 4% 46%); /* #71717a */
+  --text-tertiary: hsl(240 5% 65%);  /* #a1a1aa */
+  
+  /* Semantic UI */
+  --accent-bg: hsl(221 83% 53%);     /* #2563eb */
+  --accent-bg-hover: hsl(221 83% 48%);
+  --accent-fg: hsl(0 0% 100%);
+  
+  --success-fg: hsl(142 76% 36%);
+  --danger-fg: hsl(0 84% 60%);
+
+  /* Borders */
+  --border-default: hsl(240 6% 90%);
+  --border-active: hsl(240 5% 84%);
+  --border-focus: hsl(240 6% 10%);
+
+  /* Editor Specific */
+  --editor-bg: hsl(0 0% 100%);
+  --editor-text: hsl(240 6% 10%);
+  --editor-selection: hsl(217 91% 85%);
 }
 
 /* === DARK THEME === */
 [data-theme="dark"] {
   /* Backgrounds */
-  --bg-app: 240 10% 10%;        /* #18181b (zinc-900) */
-  --bg-sidebar: 240 10% 4%;     /* #09090b (zinc-950) */
-  --bg-panel: 240 10% 10%;
-  --bg-element: 240 6% 16%;     /* #27272a (zinc-800) */
-  --bg-element-hover: 240 5% 26%; /* #3f3f46 (zinc-700) */
-  --bg-active: 240 5% 26%;      
+  --bg-app: hsl(240 10% 10%);        /* #18181b */
+  --bg-sidebar: hsl(240 10% 4%);
+  --bg-panel: hsl(240 10% 10%);
+  --bg-element: hsl(240 6% 16%);
+  --bg-element-hover: hsl(240 5% 26%);
+  --bg-active: hsl(240 5% 26%);      
   
   /* Text */
-  --text-primary: 240 5% 96%;   /* #f4f4f5 (zinc-100) */
-  --text-secondary: 240 5% 65%; /* #a1a1aa (zinc-400) */
-  --text-tertiary: 240 5% 34%;  /* #52525b (zinc-600) */
+  --text-primary: hsl(240 5% 96%);
+  --text-secondary: hsl(240 5% 65%);
+  --text-tertiary: hsl(240 5% 34%);
 
   /* Semantic UI */
-  --accent-bg: 217 91% 60%;     /* #3b82f6 (blue-500) */
-  --accent-bg-hover: 221 83% 53%; /* #2563eb (blue-600) */
-  --accent-fg: 222 47% 11%;     /* #0b1020 */
+  --accent-bg: hsl(217 91% 60%);
+  --accent-bg-hover: hsl(221 83% 53%);
+  --accent-fg: hsl(222 47% 11%);
   
-  --success-fg: 142 71% 45%;    /* #22c55e (green-500) */
-  --danger-fg: 0 91% 71%;       /* #f87171 (red-400) */
+  --success-fg: hsl(142 71% 45%);
+  --danger-fg: hsl(0 91% 71%);
 
   /* Borders */
-  --border-default: 240 6% 16%; /* #27272a (zinc-800) */
-  --border-active: 240 5% 26%;  /* #3f3f46 */
-  --border-focus: 240 5% 90%;   /* #e4e4e7 */
+  --border-default: hsl(240 6% 16%);
+  --border-active: hsl(240 5% 26%);
+  --border-focus: hsl(240 5% 90%);
 
   /* Editor */
-  --editor-bg: 240 10% 10%;
-  --editor-text: 240 5% 96%;
-  --editor-selection: 222 89% 65%; /* #1e3a8a (indistinct, adjusted) -> blue-500/30 or similar */
-  --editor-selection: 217 91% 30%; /* Darker blue selection */
+  --editor-bg: hsl(240 10% 10%);
+  --editor-text: hsl(240 5% 96%);
+  --editor-selection: hsl(217 91% 30%);
 }
 
 /* === SEPIA THEME === */
 [data-theme="sepia"] {
   /* Backgrounds */
-  --bg-app: 41 82% 92%;         /* #fbf0d9 */
-  --bg-sidebar: 39 67% 87%;     /* #f3e5c9 */
-  --bg-panel: 41 82% 92%;
-  --bg-element: 45 100% 99%;    /* #fffefb */
-  --bg-element-hover: 42 52% 87%; /* #efe4cb */
-  --bg-active: 38 43% 84%;      /* #e6dac6 */
+  --bg-app: hsl(41 82% 92%);
+  --bg-sidebar: hsl(39 67% 87%);
+  --bg-panel: hsl(41 82% 92%);
+  --bg-element: hsl(45 100% 99%);
+  --bg-element-hover: hsl(42 52% 87%);
+  --bg-active: hsl(38 43% 84%);
 
   /* Text */
-  --text-primary: 34 31% 28%;   /* #5f4b32 */
-  --text-secondary: 33 16% 47%; /* #8c7b66 */
-  --text-tertiary: 30 18% 67%;  /* #b8aa9c */
+  --text-primary: hsl(34 31% 28%);
+  --text-secondary: hsl(33 16% 47%);
+  --text-tertiary: hsl(30 18% 67%);
 
   /* Semantic UI */
-  --accent-bg: 27 61% 50%;      /* #cc7832 */
-  --accent-bg-hover: 27 67% 44%; /* #b96725 */
-  --accent-fg: 45 100% 99%;
+  --accent-bg: hsl(27 61% 50%);
+  --accent-bg-hover: hsl(27 67% 44%);
+  --accent-fg: hsl(45 100% 99%);
   
-  --success-fg: 122 39% 34%;    /* #2e7d32 */
-  --danger-fg: 0 74% 42%;       /* #b91c1c */
+  --success-fg: hsl(122 39% 34%);
+  --danger-fg: hsl(0 74% 42%);
 
   /* Borders */
-  --border-default: 38 43% 84%; /* #e6dac6 */
-  --border-active: 35 39% 77%;  /* #dcc8ae */
-  --border-focus: 34 31% 28%;   /* #5f4b32 */
+  --border-default: hsl(38 43% 84%);
+  --border-active: hsl(35 39% 77%);
+  --border-focus: hsl(34 31% 28%);
 
   /* Editor */
-  --editor-bg: 41 82% 92%;
-  --editor-text: 34 50% 20%;    /* #433422 */
-  --editor-selection: 38 43% 84%;
+  --editor-bg: hsl(41 82% 92%);
+  --editor-text: hsl(34 50% 20%);
+  --editor-selection: hsl(38 43% 84%);
 }
-
-body {
-  font-family: var(--font-sans);
-  background-color: hsl(var(--bg-app));
-  color: hsl(var(--text-primary));
-  -webkit-font-smoothing: antialiased;
-  transition: background-color 0.2s, color 0.2s;
-  overflow: hidden;
-}
-
-/* Icon size utilities */
-.icon-xs { @apply w-[var(--icon-size-xs)] h-[var(--icon-size-xs)]; }
-.icon-sm { @apply w-[var(--icon-size-sm)] h-[var(--icon-size-sm)]; }
-.icon-md { @apply w-[var(--icon-size-md)] h-[var(--icon-size-md)]; }
-.icon-lg { @apply w-[var(--icon-size-lg)] h-[var(--icon-size-lg)]; }
-.icon-xl { @apply w-[var(--icon-size-xl)] h-[var(--icon-size-xl)]; }
-.icon-xxl { @apply w-[var(--icon-size-xxl)] h-[var(--icon-size-xxl)]; }
-.icon-xxxl { @apply w-[var(--icon-size-xxxl)] h-[var(--icon-size-xxxl)]; }
 
 /* Reset buttons */
 button { font-family: inherit; }
@@ -171,48 +167,27 @@ button { font-family: inherit; }
 
 /* Editor Base (TipTap) */
 .tiptap .ProseMirror {
-  outline: none;
-  flex: 1;
-  height: 100%;
+    outline: none;
+    flex: 1;
+    height: 100%;
 }
-
-/* 
-  The rest of the ProseMirror styles should be largely replaced by 'prose' class from @tailwindcss/typography 
-  in the actual component, but keeping essential overrides here.
-*/
-
-.tiptap .ProseMirror ul[data-type="taskList"] {
-  list-style: none;
-  padding-left: 0;
-}
-
-.tiptap .ProseMirror li[data-type="taskItem"] {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  margin: 0.2rem 0;
-  gap: 0.5rem;
-  padding: 0.15rem 0;
-}
-
-.tiptap .ProseMirror li[data-type="taskItem"] label {
-  margin-top: 2px;
-  user-select: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.tiptap .ProseMirror li[data-type="taskItem"] input[type="checkbox"] {
-  @apply w-4 h-4 cursor-pointer m-0 accent-accent;
-}
-
-.tiptap .ProseMirror li[data-type="taskItem"][data-checked="true"] div {
-  @apply text-muted line-through decoration-muted;
+  
+.tiptap .ProseMirror p.is-editor-empty:first-child::before {
+    @apply text-subtle float-left h-0 pointer-events-none;
+    content: attr(data-placeholder);
 }
 
 /* Legacy support or Specific overrides */
 .tiptap .ProseMirror .callout {
     @apply p-4 bg-surface-hover rounded-lg border border-border border-l-4 border-l-accent my-4;
+}
+
+.tiptap .ProseMirror li[data-type="taskItem"] input[type="checkbox"] {
+    @apply w-4 h-4 cursor-pointer m-0 accent-accent;
+}
+
+/* Fix for Tailwind v4: Ensure #root has height */
+#root {
+    width: 100%;
+    height: 100%;
 }
