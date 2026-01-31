@@ -1,16 +1,126 @@
-@import "tailwindcss";
 @config "../../../../tailwind.config.ts";
+@import "tailwindcss";
+
+/* 3. CSS 변수 정의 (기존 코드 유지하되 문법 정리) */
+:root {
+  /* Dimensions */
+  --header-height: 48px;
+  --sidebar-width: 260px;
+  --panel-width: 320px;
+  --collapsed-width: 0px; 
+  
+  --text-editor-min-height: 400px;
+  
+  /* Fonts */
+  --font-sans: "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* === LIGHT THEME (Default) === */
+  --bg-app: hsl(0 0% 100%);
+  --bg-sidebar: hsl(240 5% 96%);
+  --bg-panel: hsl(0 0% 100%);
+  --bg-element: hsl(0 0% 100%);
+  --bg-element-hover: hsl(240 5% 96%);
+  --bg-active: hsl(240 5% 90%);
+
+  --text-primary: hsl(240 6% 10%);
+  --text-secondary: hsl(240 4% 46%);
+  --text-tertiary: hsl(240 5% 65%);
+  
+  --accent-bg: hsl(221 83% 53%);
+  --accent-bg-hover: hsl(221 83% 48%);
+  --accent-fg: hsl(0 0% 100%);
+  
+  --success-fg: hsl(142 76% 36%);
+  --danger-fg: hsl(0 84% 60%);
+
+  --border-default: hsl(240 6% 90%);
+  --border-active: hsl(240 5% 84%);
+  --border-focus: hsl(240 6% 10%);
+
+  --editor-bg: hsl(0 0% 100%);
+  --editor-text: hsl(240 6% 10%);
+  --editor-selection: hsl(217 91% 85%);
+
+  /* Icon Sizes (유틸리티 클래스로 사용하기 위해) */
+  --icon-size-xs: 12px;
+  --icon-size-sm: 14px;
+  --icon-size-md: 16px;
+  --icon-size-lg: 18px;
+  --icon-size-xl: 20px;
+  --icon-size-xxl: 24px;
+  --icon-size-xxxl: 32px;
+}
+
+/* === DARK THEME === */
+:root[data-theme="dark"] {
+  --bg-app: hsl(240 10% 10%);
+  --bg-sidebar: hsl(240 10% 4%);
+  --bg-panel: hsl(240 10% 10%);
+  --bg-element: hsl(240 6% 16%);
+  --bg-element-hover: hsl(240 5% 26%);
+  --bg-active: hsl(240 5% 26%);
+  
+  --text-primary: hsl(240 5% 96%);
+  --text-secondary: hsl(240 5% 65%);
+  --text-tertiary: hsl(240 5% 34%);
+
+  --accent-bg: hsl(217 91% 60%);
+  --accent-bg-hover: hsl(221 83% 53%);
+  --accent-fg: hsl(222 47% 11%);
+  
+  --success-fg: hsl(142 71% 45%);
+  --danger-fg: hsl(0 91% 71%);
+
+  --border-default: hsl(240 6% 16%);
+  --border-active: hsl(240 5% 26%);
+  --border-focus: hsl(240 5% 90%);
+
+  --editor-bg: hsl(240 10% 10%);
+  --editor-text: hsl(240 5% 96%);
+  --editor-selection: hsl(217 91% 30%);
+}
+
+/* === SEPIA THEME === */
+:root[data-theme="sepia"] {
+  --bg-app: hsl(41 82% 92%);
+  --bg-sidebar: hsl(39 67% 87%);
+  --bg-panel: hsl(41 82% 92%);
+  --bg-element: hsl(45 100% 99%);
+  --bg-element-hover: hsl(42 52% 87%);
+  --bg-active: hsl(38 43% 84%);
+
+  --text-primary: hsl(34 31% 28%);
+  --text-secondary: hsl(33 16% 47%);
+  --text-tertiary: hsl(30 18% 67%);
+
+  --accent-bg: hsl(27 61% 50%);
+  --accent-bg-hover: hsl(27 67% 44%);
+  --accent-fg: hsl(45 100% 99%);
+  
+  --success-fg: hsl(122 39% 34%);
+  --danger-fg: hsl(0 74% 42%);
+
+  --border-default: hsl(38 43% 84%);
+  --border-active: hsl(35 39% 77%);
+  --border-focus: hsl(34 31% 28%);
+
+  --editor-bg: hsl(41 82% 92%);
+  --editor-text: hsl(34 50% 20%);
+  --editor-selection: hsl(38 43% 84%);
+}
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
+/* 4. Base Styles */
 @layer base {
-  /* Reset & Base Styles */
   html, body, #root {
     width: 100%;
     height: 100%;
   }
 
   body {
+    /* 여기서 @theme에 등록한 --color-bg-app이 bg-bg-app 클래스로 동작합니다 */
     @apply bg-canvas text-fg;
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -20,175 +130,28 @@
 }
 
 @layer utilities {
-  /* Icon size utilities */
-  .icon-xs { @apply w-[var(--icon-size-xs)] h-[var(--icon-size-xs)]; }
-  .icon-sm { @apply w-[var(--icon-size-sm)] h-[var(--icon-size-sm)]; }
-  .icon-md { @apply w-[var(--icon-size-md)] h-[var(--icon-size-md)]; }
-  .icon-lg { @apply w-[var(--icon-size-lg)] h-[var(--icon-size-lg)]; }
-  .icon-xl { @apply w-[var(--icon-size-xl)] h-[var(--icon-size-xl)]; }
-  .icon-xxl { @apply w-[var(--icon-size-xxl)] h-[var(--icon-size-xxl)]; }
-  .icon-xxxl { @apply w-[var(--icon-size-xxxl)] h-[var(--icon-size-xxxl)]; }
-}
-
-/* 
-  DESIGN TOKENS
-  Defined as full colors for Tailwind v4 compatibility.
-*/
-:root {
-  /* Dimensions & Sizes */
-  --header-height: 48px;
-  --sidebar-width: 260px;
-  --panel-width: 320px;
-  --collapsed-width: 0px; 
-
-  --icon-size-xs: 12px;
-  --icon-size-sm: 14px;
-  --icon-size-md: 16px;
-  --icon-size-lg: 18px;
-  --icon-size-xl: 20px;
-  --icon-size-xxl: 24px;
-  --icon-size-xxxl: 32px;
-  
-  --text-editor-min-height: 400px;
-  
-  /* Fonts */
-  --font-sans: "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-
-  /* === LIGHT THEME (Default) === */
-  /* Backgrounds */
-  --bg-app: hsl(0 0% 100%);          /* #ffffff */
-  --bg-sidebar: hsl(240 5% 96%);     /* #f4f4f5 */
-  --bg-panel: hsl(0 0% 100%);
-  --bg-element: hsl(0 0% 100%);
-  --bg-element-hover: hsl(240 5% 96%);
-  --bg-active: hsl(240 5% 90%);      /* #e4e4e7 */
-
-  /* Text */
-  --text-primary: hsl(240 6% 10%);   /* #18181b */
-  --text-secondary: hsl(240 4% 46%); /* #71717a */
-  --text-tertiary: hsl(240 5% 65%);  /* #a1a1aa */
-  
-  /* Semantic UI */
-  --accent-bg: hsl(221 83% 53%);     /* #2563eb */
-  --accent-bg-hover: hsl(221 83% 48%);
-  --accent-fg: hsl(0 0% 100%);
-  
-  --success-fg: hsl(142 76% 36%);
-  --danger-fg: hsl(0 84% 60%);
-
-  /* Borders */
-  --border-default: hsl(240 6% 90%);
-  --border-active: hsl(240 5% 84%);
-  --border-focus: hsl(240 6% 10%);
-
-  /* Editor Specific */
-  --editor-bg: hsl(0 0% 100%);
-  --editor-text: hsl(240 6% 10%);
-  --editor-selection: hsl(217 91% 85%);
-}
-
-/* === DARK THEME === */
-[data-theme="dark"] {
-  /* Backgrounds */
-  --bg-app: hsl(240 10% 10%);        /* #18181b */
-  --bg-sidebar: hsl(240 10% 4%);
-  --bg-panel: hsl(240 10% 10%);
-  --bg-element: hsl(240 6% 16%);
-  --bg-element-hover: hsl(240 5% 26%);
-  --bg-active: hsl(240 5% 26%);      
-  
-  /* Text */
-  --text-primary: hsl(240 5% 96%);
-  --text-secondary: hsl(240 5% 65%);
-  --text-tertiary: hsl(240 5% 34%);
-
-  /* Semantic UI */
-  --accent-bg: hsl(217 91% 60%);
-  --accent-bg-hover: hsl(221 83% 53%);
-  --accent-fg: hsl(222 47% 11%);
-  
-  --success-fg: hsl(142 71% 45%);
-  --danger-fg: hsl(0 91% 71%);
-
-  /* Borders */
-  --border-default: hsl(240 6% 16%);
-  --border-active: hsl(240 5% 26%);
-  --border-focus: hsl(240 5% 90%);
-
-  /* Editor */
-  --editor-bg: hsl(240 10% 10%);
-  --editor-text: hsl(240 5% 96%);
-  --editor-selection: hsl(217 91% 30%);
-}
-
-/* === SEPIA THEME === */
-[data-theme="sepia"] {
-  /* Backgrounds */
-  --bg-app: hsl(41 82% 92%);
-  --bg-sidebar: hsl(39 67% 87%);
-  --bg-panel: hsl(41 82% 92%);
-  --bg-element: hsl(45 100% 99%);
-  --bg-element-hover: hsl(42 52% 87%);
-  --bg-active: hsl(38 43% 84%);
-
-  /* Text */
-  --text-primary: hsl(34 31% 28%);
-  --text-secondary: hsl(33 16% 47%);
-  --text-tertiary: hsl(30 18% 67%);
-
-  /* Semantic UI */
-  --accent-bg: hsl(27 61% 50%);
-  --accent-bg-hover: hsl(27 67% 44%);
-  --accent-fg: hsl(45 100% 99%);
-  
-  --success-fg: hsl(122 39% 34%);
-  --danger-fg: hsl(0 74% 42%);
-
-  /* Borders */
-  --border-default: hsl(38 43% 84%);
-  --border-active: hsl(35 39% 77%);
-  --border-focus: hsl(34 31% 28%);
-
-  /* Editor */
-  --editor-bg: hsl(41 82% 92%);
-  --editor-text: hsl(34 50% 20%);
-  --editor-selection: hsl(38 43% 84%);
+  .icon-xs { width: var(--icon-size-xs); height: var(--icon-size-xs); }
+  .icon-sm { width: var(--icon-size-sm); height: var(--icon-size-sm); }
+  .icon-md { width: var(--icon-size-md); height: var(--icon-size-md); }
+  .icon-lg { width: var(--icon-size-lg); height: var(--icon-size-lg); }
+  .icon-xl { width: var(--icon-size-xl); height: var(--icon-size-xl); }
+  .icon-xxl { width: var(--icon-size-xxl); height: var(--icon-size-xxl); }
+  .icon-xxxl { width: var(--icon-size-xxxl); height: var(--icon-size-xxxl); }
 }
 
 /* Reset buttons */
 button { font-family: inherit; }
 
-/* Scrollbar styling */
+/* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   @apply bg-border-active rounded-full;
 }
 
-/* Editor Base (TipTap) */
+/* Editor Specifics */
 .tiptap .ProseMirror {
     outline: none;
     flex: 1;
-    height: 100%;
-}
-  
-.tiptap .ProseMirror p.is-editor-empty:first-child::before {
-    @apply text-subtle float-left h-0 pointer-events-none;
-    content: attr(data-placeholder);
-}
-
-/* Legacy support or Specific overrides */
-.tiptap .ProseMirror .callout {
-    @apply p-4 bg-surface-hover rounded-lg border border-border border-l-4 border-l-accent my-4;
-}
-
-.tiptap .ProseMirror li[data-type="taskItem"] input[type="checkbox"] {
-    @apply w-4 h-4 cursor-pointer m-0 accent-accent;
-}
-
-/* Fix for Tailwind v4: Ensure #root has height */
-#root {
-    width: 100%;
     height: 100%;
 }
