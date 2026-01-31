@@ -4,7 +4,8 @@ import animate from 'tailwindcss-animate';
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    "./src/renderer/**/*.{js,ts,jsx,tsx}",
+    "./src/renderer/index.html",
+    "./src/renderer/src/**/*.{js,ts,jsx,tsx}",
   ],
   darkMode: ['class', '[data-theme="dark"]'],
   theme: {

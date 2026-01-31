@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { cn, cva, type VariantProps } from "../../../../shared/types/utils";
+import { cn, cva } from "../../../../shared/types/utils";
 import WindowBar from "./WindowBar";
 import { Plus, Book, FileText, FileType, MoreVertical } from "lucide-react";
 import type { Project } from "../../../../shared/types";

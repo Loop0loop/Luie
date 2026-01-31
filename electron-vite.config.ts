@@ -24,7 +24,10 @@ export default defineConfig({
   },
   renderer: {
     // 👇 여기에 tailwindcss() 추가! 순서 중요하지 않으나 react 뒤에 두는 게 국룰
-    plugins: [react(), tailwindcss()], 
+    plugins: [
+      react(),
+      tailwindcss(),
+    ],
     resolve: {
       alias: {
         "@renderer": resolve("src/renderer/src"),
