@@ -20,7 +20,7 @@ export function WikiSection({
 }: WikiSectionProps) {
   return (
     <div id={id} className="mb-8">
-      <div className="border-b border-[var(--namu-border)] pb-2 mb-3 flex items-center justify-between">
+      <div className="border-b border-(--namu-border) pb-2 mb-3 flex items-center justify-between">
         <div className="flex-1">
             <BufferedInput
             value={label}
@@ -40,7 +40,7 @@ export function WikiSection({
         </div>
       </div>
       <BufferedTextArea
-        className="w-full min-h-[120px] leading-relaxed p-3 border border-border rounded bg-surface text-fg resize-y focus:outline-2 focus:outline-[var(--namu-blue)] focus:border-transparent font-sans"
+        className="w-full min-h-[120px] leading-relaxed p-3 border border-border rounded bg-surface text-fg resize-y focus:outline-2 focus:outline-(--namu-blue) focus:border-transparent font-sans"
         value={content || ""}
         placeholder="내용을 입력하세요..."
         onSave={onUpdateContent}

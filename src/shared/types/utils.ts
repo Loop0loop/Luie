@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { cva, type VariantProps } from "class-variance-authority";
 
 /**
  * Merges Tailwind classes and clsx intelligently.
@@ -8,3 +9,6 @@ import { twMerge } from "tailwind-merge";
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+export { cva };
+export type { VariantProps };

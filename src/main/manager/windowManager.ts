@@ -41,7 +41,12 @@ class WindowManager {
     })
 
     // Load the renderer
-    if (process.env.NODE_ENV === 'development') {
+    const devServerUrl = process.env.VITE_DEV_SERVER_URL || process.env.ELECTRON_RENDERER_URL
+
+    if (devServerUrl) {
+      this.mainWindow.loadURL(devServerUrl)
+      this.mainWindow.webContents.openDevTools({ mode: 'detach' })
+    } else if (process.env.NODE_ENV === 'development') {
       this.mainWindow.loadURL(DEV_SERVER_URL)
       this.mainWindow.webContents.openDevTools({ mode: 'detach' })
     } else {

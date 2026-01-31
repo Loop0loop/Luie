@@ -79,7 +79,7 @@ export default function CharacterManager() {
     <div className="flex w-full h-full bg-canvas overflow-hidden">
       {/* LEFT SIDEBAR - Character List */}
       <div className="w-[260px] bg-sidebar border-r border-border flex flex-col overflow-y-auto shrink-0">
-        <div className="px-4 py-3 bg-[var(--namu-blue)] text-white font-bold flex justify-between items-center">
+        <div className="px-4 py-3 bg-(--namu-blue) text-white font-bold flex justify-between items-center">
            <button 
              className="flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity bg-transparent border-none p-1 text-white cursor-pointer" 
              onClick={() => setSelectedCharacterId(null)}
@@ -232,7 +232,7 @@ function CharacterGroup({
               key={char.id}
               className={cn(
                   "px-4 py-2.5 border-b border-border cursor-pointer text-sm text-fg flex flex-col transition-colors hover:bg-surface-hover",
-                  selectedId === char.id && "bg-[var(--namu-hover-bg)] border-l-[3px] text-[var(--namu-blue)]"
+                  selectedId === char.id && "bg-(--namu-hover-bg) border-l-[3px] text-(--namu-blue)"
               )}
               onClick={() => onSelect(char.id)}
               style={selectedId === char.id ? { borderLeftColor: color } : {}}
@@ -357,7 +357,7 @@ function WikiDetailView({
   return (
     <div className="flex-1 overflow-auto p-8 sm:p-6 flex flex-col gap-6 bg-panel text-fg min-w-0">
       {/* 1. AUTHENTIC NAMUWIKI HEADER */}
-      <div className="border-b-2 border-[var(--namu-border)] pb-4 mb-6 flex flex-col gap-3">
+      <div className="border-b-2 border-(--namu-border) pb-4 mb-6 flex flex-col gap-3">
         <BufferedInput 
           className="text-3xl font-extrabold text-fg leading-tight border-none bg-transparent w-full focus:outline-none"
           value={character.name} 
@@ -365,10 +365,10 @@ function WikiDetailView({
         />
         <div className="text-[13px] text-muted bg-surface border border-border px-3 py-1.5 rounded self-start flex items-center gap-2">
           <span className="font-bold">분류:</span>
-          <span className="text-[var(--namu-link)] cursor-pointer hover:underline">{currentTemplate.name}</span>
+          <span className="text-(--namu-link) cursor-pointer hover:underline">{currentTemplate.name}</span>
            <span className="text-border">|</span>
           <BufferedInput 
-              className="inline w-auto font-semibold text-[var(--namu-link)] bg-transparent border-none p-1 focus:outline-none focus:bg-active rounded-sm" 
+              className="inline w-auto font-semibold text-(--namu-link) bg-transparent border-none p-1 focus:outline-none focus:bg-active rounded-sm" 
               value={character.description || ""}
               placeholder="미분류"
               onSave={(val) => handleUpdate("description", val)} 
@@ -382,7 +382,7 @@ function WikiDetailView({
         <div className="flex-1 flex flex-col gap-8 min-w-0 w-full lg:order-1 order-2">
           
           {/* TOC (Inline) */}
-          <div className="bg-[var(--namu-table-bg)] border border-[var(--namu-border)] p-4 inline-block min-w-[200px] rounded">
+          <div className="bg-(--namu-table-bg) border border-(--namu-border) p-4 inline-block min-w-[200px] rounded">
             <div className="font-bold text-center mb-3 text-fg text-sm">목차</div>
             <div className="flex flex-col gap-1.5 text-sm">
                {sections.map(sec => (
