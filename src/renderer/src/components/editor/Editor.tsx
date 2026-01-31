@@ -230,7 +230,7 @@ function Editor({
   }
 
   return (
-    <div className="flex flex-col h-full w-full bg-app text-fg relative box-border overflow-hidden">
+    <div className="flex flex-col h-full w-full bg-canvas text-fg relative box-border overflow-hidden">
       <div className="shrink-0 border-b border-border z-10">
         <EditorToolbar
           editor={editor}
@@ -239,7 +239,7 @@ function Editor({
         />
       </div>
 
-      <div className="flex-1 overflow-y-auto flex flex-col px-10 py-5 bg-app min-h-0">
+      <div className="flex-1 overflow-y-auto flex flex-col px-10 py-5 bg-canvas min-h-0">
         <div 
           className={cn(
             "w-full h-full flex flex-col flex-1 min-h-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] bg-transparent border-none shadow-none m-0",
@@ -287,7 +287,7 @@ function Editor({
         </div>
       </div>
 
-      <div className="h-7 border-t border-border flex items-center justify-end gap-4 px-5 text-xs text-muted bg-bg-primary shrink-0 select-none">
+      <div className="h-7 border-t border-border flex items-center justify-end gap-4 px-5 text-xs text-muted bg-canvas shrink-0 select-none">
         <span className="mr-auto font-medium">
           {TEXT_EDITOR_STATUS_CHAR_LABEL} {charCount}
           {TEXT_EDITOR_STATUS_SEPARATOR}

@@ -140,13 +140,13 @@ const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function SlashMenu
 
   return (
     <div
-      className="absolute w-[300px] max-h-[320px] bg-panel border border-border rounded-md shadow-xl z-50 overflow-y-auto flex flex-col font-sans"
+      className="absolute w-[300px] max-h-[320px] bg-panel border border-border/40 rounded-md shadow-xl z-50 overflow-y-auto flex flex-col font-sans"
       onMouseDown={(e) => {
         // 클릭/드래그가 에디터 focus를 빼앗아 Suggestion이 닫히는 걸 방지
         e.preventDefault();
       }}
     >
-      <div className="px-3 py-2 text-[11px] font-semibold text-muted uppercase tracking-wider bg-bg-secondary border-b border-border">
+      <div className="px-3 py-2 text-[11px] font-semibold text-muted uppercase tracking-wider bg-surface-hover border-b border-border/40">
         {SLASH_MENU_HEADER_BASIC}
       </div>
       <div className="p-1">

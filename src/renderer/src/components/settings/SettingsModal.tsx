@@ -160,7 +160,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-1000 flex items-center justify-center animate-in fade-in duration-150" onClick={onClose}>
-      <div className="w-[960px] h-[640px] bg-bg-element rounded-xl shadow-lg border border-black/5 flex overflow-hidden max-h-[95vh] relative animate-in slide-in-from-bottom-5 duration-200" onClick={(e) => e.stopPropagation()}>
+      <div className="w-[960px] h-[640px] bg-surface rounded-xl shadow-lg border border-black/5 flex overflow-hidden max-h-[95vh] relative animate-in slide-in-from-bottom-5 duration-200" onClick={(e) => e.stopPropagation()}>
         {/* HEADER is removed, using sidebar layout instead */}
         <div className="flex w-full h-full">
           {/* SIDEBAR */}
@@ -185,7 +185,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
           </div>
 
           {/* MAIN CONTENT */}
-          <div className="flex-1 flex flex-col bg-bg-element relative overflow-hidden">
+          <div className="flex-1 flex flex-col bg-surface relative overflow-hidden">
             <button className="absolute top-5 right-5 bg-transparent border-none cursor-pointer text-muted p-2 rounded-full z-10 transition-all flex items-center justify-center hover:bg-active hover:text-fg" onClick={onClose}>
               <X className="icon-lg" />
             </button>

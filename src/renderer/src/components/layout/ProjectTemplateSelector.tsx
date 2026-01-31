@@ -159,12 +159,12 @@ export default function ProjectTemplateSelector({
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-bg-element selection:bg-active selection:text-white">
+    <div className="flex h-screen w-screen overflow-hidden bg-white dark:bg-zinc-900 selection:bg-active selection:text-white">
       <WindowBar />
 
       {menuOpenId && (
         <div
-          className="fixed inset-0 z-999"
+          className="fixed inset-0 z-[999]"
           onPointerDown={() => setMenuOpenId(null)}
         />
       )}
@@ -177,7 +177,7 @@ export default function ProjectTemplateSelector({
           return (
             <div
               ref={menuRef}
-              className="fixed z-[1000] min-w-[180px] bg-popover rounded-lg border border-border shadow-lg p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col gap-0.5"
+              className="fixed z-[1000] min-w-[180px] bg-white dark:bg-zinc-800 rounded-lg border border-border/40 shadow-lg p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col gap-0.5"
               style={{ top: menuPosition.y, left: menuPosition.x }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -260,8 +260,8 @@ export default function ProjectTemplateSelector({
         onCancel={() => setDeleteDialog((prev) => ({ ...prev, isOpen: false }))}
       />
 
-      <div className="flex flex-1 overflow-hidden pt-[calc(var(--window-bar-height))]">
-        <div className="w-[240px] bg-sidebar border-r border-border flex flex-col py-6 gap-6 px-4">
+      <div className="flex flex-1 overflow-hidden pt-[calc(var(--window-bar-height,0px))]">
+        <div className="w-[240px] bg-sidebar border-r border-border/40 flex flex-col py-6 gap-6 px-4">
           <div className="text-xs font-bold text-muted uppercase tracking-wider px-2">{TEMPLATE_SIDEBAR_TITLE}</div>
           <div className="flex flex-col gap-1">
             {categories.map((cat) => (
@@ -290,7 +290,7 @@ export default function ProjectTemplateSelector({
               {projects.slice(0, 4).map((p) => (
                 <div
                   key={p.id}
-                  className="group relative bg-surface border border-border rounded-lg p-4 cursor-pointer transition-all hover:border-active hover:shadow-sm"
+                  className="group relative bg-white dark:bg-zinc-800 border border-border/40 rounded-lg p-4 cursor-pointer transition-all hover:border-active hover:shadow-sm"
                   onClick={() => onOpenProject?.(p)}
                 >
                   <div className="flex flex-col gap-1">
@@ -343,7 +343,7 @@ export default function ProjectTemplateSelector({
                 className="group flex flex-col gap-3 cursor-pointer"
                 onClick={() => handleSelectTemplate(template.id)}
               >
-                <div className="aspect-3/4 relative rounded-lg border border-border bg-white shadow-sm overflow-hidden transition-all group-hover:-translate-y-1 group-hover:shadow-md group-hover:border-active/50">
+                <div className="aspect-3/4 relative rounded-lg border border-border/40 bg-white shadow-sm overflow-hidden transition-all group-hover:-translate-y-1 group-hover:shadow-md group-hover:border-active/50">
                   {template.type === "blank" && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-border bg-bg-primary/50">
                       <div className="w-full h-full border-2 border-dashed border-border/50 rounded-lg flex flex-col items-center justify-center gap-2 m-2">

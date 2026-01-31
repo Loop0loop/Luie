@@ -48,8 +48,8 @@ export default function ResearchPanel({
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-sidebar border-l border-border overflow-hidden">
-      <div className="h-12 flex items-center justify-between px-4 border-b border-border bg-bg-primary shrink-0">
+    <div className="flex flex-col h-full w-full bg-sidebar border-l border-border/40 overflow-hidden">
+      <div className="h-12 flex items-center justify-between px-4 border-b border-border/40 bg-canvas shrink-0">
         <div className="font-semibold text-sm text-fg flex items-center gap-2">
           {getIcon()}
           <span>{getTitle()}</span>
@@ -63,7 +63,7 @@ export default function ResearchPanel({
         </button>
       </div>
 
-      <div className="flex-1 flex flex-col overflow-hidden bg-bg-primary relative">
+      <div className="flex-1 flex flex-col overflow-hidden bg-canvas relative">
         {activeTab === "character" && <CharacterManager />}
         {activeTab === "world" && <WorldSection />}
         {activeTab === "scrap" && <MemoSection />}

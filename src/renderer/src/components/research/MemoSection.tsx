@@ -128,14 +128,14 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
   };
 
   return (
-    <div className="flex h-full w-full bg-bg-primary overflow-hidden">
-      <div className="w-[220px] bg-sidebar border-r border-border flex flex-col shrink-0 content-visibility-auto contain-intrinsic-size-[1px_600px]">
-        <div className="px-4 py-3 text-xs font-bold text-muted flex justify-between items-center border-b border-border uppercase tracking-wider">
+    <div className="flex h-full w-full bg-canvas overflow-hidden">
+      <div className="w-[220px] bg-sidebar border-r border-border/40 flex flex-col shrink-0 content-visibility-auto contain-intrinsic-size-[1px_600px]">
+        <div className="px-4 py-3 text-xs font-bold text-muted flex justify-between items-center border-b border-border/40 uppercase tracking-wider">
           <span>{LABEL_MEMO_SECTION_TITLE}</span>
           <Plus className="icon-sm cursor-pointer hover:text-fg transition-colors" onClick={handleAddNote} />
         </div>
 
-        <div className="px-3 py-2 border-b border-border">
+        <div className="px-3 py-2 border-b border-border/40">
           <div className="flex items-center gap-2 bg-element px-2 py-1.5 rounded">
             <Search
               style={{ width: "var(--memo-search-icon-size)", height: "var(--memo-search-icon-size)" }}
@@ -164,7 +164,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
             itemContent={(_index, note) => (
               <div
                 className={cn(
-                  "px-4 py-3 border-b border-border cursor-pointer transition-colors hover:bg-element-hover",
+                  "px-4 py-3 border-b border-border/40 cursor-pointer transition-colors hover:bg-element-hover",
                   activeNoteId === note.id && "bg-active border-l-[3px] border-l-accent pl-[13px]" // Adjust padding to compensate border
                 )}
                 onClick={() => setActiveNoteId(note.id)}
