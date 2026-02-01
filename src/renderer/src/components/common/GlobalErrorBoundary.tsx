@@ -1,4 +1,5 @@
-import { Component, ErrorInfo, ReactNode } from "react";
+import { Component } from "react";
+import type { ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { api } from "../../services/api";
 
@@ -22,9 +23,10 @@ export class GlobalErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Uncaught error:", error, errorInfo);
-    // In a real app, log to Sentry/LogRocket here
-    api?.logger?.error("GlobalErrorBoundary caught an error", error);
+    api?.logger?.error("GlobalErrorBoundary caught an error", {
+      error,
+      errorInfo,
+    });
   }
 
   private handleReload = () => {

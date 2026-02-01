@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useToast } from "../components/common/Toast";
+import { useToast } from "../components/common/ToastContext";
+import { api } from "../services/api";
 import { EDITOR_AUTOSAVE_DEBOUNCE_MS } from "../../../shared/constants";
 
 interface UseEditorAutosaveProps {
@@ -17,6 +18,7 @@ export function useEditorAutosave({ onSave, title, content }: UseEditorAutosaveP
   const lastSavedRef = useRef({ title, content });
   const retryCount = useRef(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const performSaveRef = useRef<((currentTitle: string, currentContent: string) => void) | null>(null);
 
   const performSave = useCallback(async (currentTitle: string, currentContent: string) => {
     if (!onSave) return;
@@ -31,19 +33,25 @@ export function useEditorAutosave({ onSave, title, content }: UseEditorAutosaveP
       // Reset to idle after a delay for UI
       setTimeout(() => setSaveStatus("idle"), 2000);
     } catch (error) {
-      console.error("Autosave failed", error);
+      api.logger.error("Autosave failed", error);
       setSaveStatus("error");
 
       if (retryCount.current < RETRY_DELAYS.length) {
         const delay = RETRY_DELAYS[retryCount.current];
         retryCount.current++;
         showToast(`Save failed. Retrying in ${delay / 1000}s...`, "info", 2000);
-        setTimeout(() => performSave(currentTitle, currentContent), delay);
+        setTimeout(() => {
+          performSaveRef.current?.(currentTitle, currentContent);
+        }, delay);
       } else {
         showToast("Autosave failed. Check connection.", "error");
       }
     }
   }, [onSave, showToast]);
+
+  useEffect(() => {
+    performSaveRef.current = performSave;
+  }, [performSave]);
 
   // Debounced save trigger
   useEffect(() => {

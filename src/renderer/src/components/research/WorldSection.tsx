@@ -65,7 +65,25 @@ const getCssNumber = (name: string, fallback: number) => {
     .trim();
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+// Custom Node for MindMap
+const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
+  const { setNodes } = useReactFlow();
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState<string | null>(null);
+
+  const commit = () => {
+    const nextLabel = (draft ?? data.label).trim() || WORLD_MINDMAP_NEW_TOPIC;
+    setNodes((nds: Node<MindMapNodeData>[]) =>
+      nds.map((node: Node<MindMapNodeData>) =>
+        node.id === id
+          ? { ...node, data: { ...node.data, label: nextLabel } }
+          : node,
+      ),
     );
+    setDraft(null);
+    setIsEditing(false);
   };
 
   return (

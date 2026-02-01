@@ -17,10 +17,8 @@ export function useBufferedInput(
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const latestValueRef = useRef(initialValue);
 
-  // Sync with external initial value changes if not dirty
   useEffect(() => {
     if (!isDirty) {
-      setValue(initialValue);
       latestValueRef.current = initialValue;
     }
   }, [initialValue, isDirty]);
@@ -69,7 +67,7 @@ export function useBufferedInput(
   }, [isDirty]);
 
   return {
-    value,
+    value: isDirty ? value : initialValue,
     onChange: handleChange,
     isDirty,
     flush: () => {
