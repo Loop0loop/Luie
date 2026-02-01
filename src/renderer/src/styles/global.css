@@ -47,10 +47,10 @@
   --bg-sidebar: #f4f4f5;      /* Zinc-100 - Distinct from main content */
   --bg-panel: #ffffff;        /* Panel matches app or slightly off */
   --bg-surface: #ffffff;      /* Added for consistency */
-  --bg-surface-hover: #f4f4f5; 
+  --bg-surface-hover: rgba(0, 0, 0, 0.05); 
   --bg-element: #ffffff;      /* Cards, Inputs */
-  --bg-element-hover: #f4f4f5; 
-  --bg-active: #e4e4e7;       /* Zinc-200 */
+  --bg-element-hover: rgba(0, 0, 0, 0.05); 
+  --bg-active: rgba(0, 0, 0, 0.08);       /* Zinc-200 */
 
   /* Text */
   --text-primary: #18181b;    /* Zinc-900 - Sharp, readable black */
@@ -69,7 +69,7 @@
   /* Aliases (legacy UI tokens) */
   --bg-primary: #ffffff;
   --bg-secondary: #f9fafb;
-  --bg-hover: #f4f4f5;
+  --bg-hover: var(--bg-element-hover);
   --bg-canvas: #ffffff;
   --accent-primary: #2563eb;
   --grid-line: #e5e7eb;
@@ -174,8 +174,8 @@
   --bg-surface: #18181b;      /* Added missing token for Modals/Cards */
   --bg-panel-header: #18181b; 
   --bg-element: #27272a;      /* Zinc-800 */
-  --bg-element-hover: #3f3f46;
-  --bg-active: #3f3f46;
+  --bg-element-hover: rgba(255, 255, 255, 0.08);
+  --bg-active: rgba(255, 255, 255, 0.12);
   
   /* Text */
   --text-primary: #ededed;    /* High contrast white-ish */
@@ -228,10 +228,10 @@
   --bg-sidebar: #f3e5c9;      /* Slightly darker paper */
   --bg-panel: #fbf0d9;
   --bg-surface: #fbf0d9;      /* Added for consistency */
-  --bg-surface-hover: #efe4cb;
+  --bg-surface-hover: rgba(95, 75, 50, 0.08);
   --bg-element: #fffefb;
-  --bg-element-hover: #efe4cb;
-  --bg-active: #e6dac6;
+  --bg-element-hover: rgba(95, 75, 50, 0.08);
+  --bg-active: rgba(95, 75, 50, 0.12);
 
   /* Text */
   --text-primary: #5f4b32;    /* Dark brown */
