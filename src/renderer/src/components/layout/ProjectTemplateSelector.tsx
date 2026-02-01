@@ -11,10 +11,10 @@ import {
   LUIE_PACKAGE_FILTER_NAME,
   MARKDOWN_EXTENSION_NO_DOT,
   TEXT_EXTENSION_NO_DOT,
-  TEMPLATE_NEW_PROJECT_LABEL,
   TEMPLATE_SIDEBAR_TITLE,
   DIALOG_TITLE_DELETE_PROJECT,
   DIALOG_TITLE_RENAME_PROJECT,
+  TEMPLATE_NEW_PROJECT_LABEL,
   PROJECT_TEMPLATE_CATEGORY_ALL,
   PROJECT_TEMPLATE_CATEGORY_GENERAL,
   PROJECT_TEMPLATE_CATEGORY_NOVEL,
@@ -325,75 +325,115 @@ export default function ProjectTemplateSelector({
             </div>
           </div>
 
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: "var(--text-secondary)",
-              marginBottom: 16,
-              textTransform: "uppercase",
-              letterSpacing: 1,
-            }}
-          >
-            START NEW PROJECT
-          </div>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-8">
-            {filteredTemplates.map((template) => (
-              <div
-                key={template.id}
-                className="flex flex-col items-center gap-4 cursor-pointer group"
-                onClick={() => handleSelectTemplate(template.id)}
-              >
-                <div className="w-[200px] h-[300px] bg-surface rounded shadow-lg border border-border relative transition-all duration-300 overflow-hidden flex flex-col group-hover:-translate-y-2 group-hover:shadow-lg group-hover:border-border-active">
-                  {template.type === "blank" && (
-                    <div className="bg-white border text-zinc-700 flex-1 flex flex-col justify-center items-center p-6 text-center h-full w-full">
-                      <div className="w-full h-full border-2 dashed border-zinc-300 rounded flex flex-col items-center justify-center gap-3">
-                        <Plus className="w-8 h-8 text-zinc-400" />
-                        <span className="text-xs font-medium text-zinc-400">
-                          {TEMPLATE_NEW_PROJECT_LABEL}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {template.type === "novel" && (
-                    <div className="flex-1 flex flex-col justify-center items-center p-6 text-center bg-linear-to-br from-slate-800 to-slate-900 text-slate-400 font-serif">
-                      <div className="text-[10px] uppercase tracking-[2px]">{PROJECT_TEMPLATE_COVER_STANDARD}</div>
-                      <div className="text-2xl font-bold text-slate-100 mb-2 border-b border-slate-600 pb-2">{PROJECT_TEMPLATE_COVER_NOVEL}</div>
-                      <div className="text-[32px] opacity-20 mt-4">❦</div>
-                    </div>
-                  )}
-
-                  {template.type === "script" && (
-                    <div className="flex-1 flex flex-col justify-center p-6 bg-slate-100 text-slate-700 font-mono items-start text-left border-l-12 border-slate-300">
-                      <div className="text-lg font-bold uppercase mt-10 mb-3">
-                        {PROJECT_TEMPLATE_COVER_SCREEN}
-                        <br />
-                        {PROJECT_TEMPLATE_COVER_PLAY}
-                      </div>
-                      <div className="w-4/5 h-0.5 bg-slate-300 mb-1.5" />
-                      <div className="w-3/5 h-0.5 bg-slate-300 mb-1.5" />
-                      <div className="mt-auto text-[10px] text-slate-500">
-                        {PROJECT_TEMPLATE_COVER_INTRO}
-                      </div>
-                    </div>
-                  )}
-
-                  {template.type === "doc" && (
-                    <div className="bg-white border border-zinc-200 text-zinc-700 flex-1 flex flex-col justify-center items-center p-6 text-center">
-                      <div className="text-center">
-                        <div className="text-2xl font-serif text-zinc-800">
-                          {PROJECT_TEMPLATE_COVER_ESSAY}
+          <div className="flex-1 overflow-y-auto p-8 relative z-0">
+          <div className="max-w-[1400px] mx-auto">
+             <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-x-6 gap-y-10">
+              {filteredTemplates.map((template) => (
+                <div
+                  key={template.id}
+                  className="group flex flex-col gap-3 cursor-pointer"
+                  onClick={() => handleSelectTemplate(template.id)}
+                >
+                  {/* Card Container */}
+                  <div className="
+                    relative aspect-3/4 w-full
+                    bg-surface/40 
+                    border border-white/5 
+                    rounded-md 
+                    overflow-hidden 
+                    transition-all duration-300 
+                    shadow-sm
+                    group-hover:-translate-y-1.5 
+                    group-hover:shadow-2xl 
+                    group-hover:border-white/10
+                    group-hover:bg-surface
+                  ">
+                    
+                    {/* === BLANK TEMPLATE === */}
+                    {template.type === "blank" && (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-6">
+                        <div className="w-full h-full border-2 dashed border-white/10 rounded-sm flex flex-col items-center justify-center gap-3 group-hover:border-accent/40 transition-colors">
+                          <Plus className="w-8 h-8 text-neutral-500 group-hover:text-accent transition-colors" />
                         </div>
-                        <div className="w-10 h-px bg-zinc-800 mx-auto my-2" />
                       </div>
-                    </div>
-                  )}
+                    )}
+
+                    {/* === NOVEL TEMPLATE (Serif, Book-like) === */}
+                    {template.type === "novel" && (
+                      <div className="w-full h-full bg-zinc-900 p-5 flex flex-col">
+                        <div className="h-full bg-white/5 mx-auto w-full flex flex-col p-3 shadow-inner">
+                            <div className="text-[8px] tracking-[2px] text-zinc-500 text-center uppercase mb-3 font-serif">Standard Format</div>
+                            <div className="font-serif text-lg text-zinc-200 text-center font-bold pb-2 border-b border-white/10 mb-4">
+                              Chapter 1
+                            </div>
+                            <div className="space-y-1.5 opacity-40">
+                              <div className="h-1 w-full bg-zinc-600 rounded-full" />
+                              <div className="h-1 w-11/12 bg-zinc-600 rounded-full" />
+                              <div className="h-1 w-full bg-zinc-600 rounded-full" />
+                              <div className="h-1 w-4/5 bg-zinc-600 rounded-full" />
+                            </div>
+                           <div className="mt-auto flex justify-center text-zinc-600 text-2xl font-serif">❦</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* === SCRIPT TEMPLATE (Mono, Screenplay) === */}
+                    {template.type === "script" && (
+                      <div className="w-full h-full bg-[#18181b] p-5 font-mono text-[9px] text-zinc-400 flex flex-col items-start leading-relaxed border-l-[6px] border-[#27272a] group-hover:border-accent transition-colors">
+                        <div className="flex w-full justify-between opacity-50 mb-4 tracking-widest uppercase">
+                          <span>INT.</span>
+                          <span>DAY</span>
+                        </div>
+                        
+                        <div className="w-full text-center text-zinc-300 font-bold mb-1 tracking-wider uppercase">CHARACTER</div>
+                        <div className="w-full text-center mb-3">
+                          (pointing)<br/>
+                          This is the dialogue.
+                        </div>
+
+                        <div className="w-full text-center text-zinc-300 font-bold mb-1 tracking-wider uppercase">ANOTHER</div>
+                         <div className="w-full text-center">
+                          Looks visible enough.
+                        </div>
+                      </div>
+                    )}
+
+                    {/* === DOC TEMPLATE (Academic/General) === */}
+                    {template.type === "doc" && (
+                      <div className="w-full h-full bg-surface p-5 flex flex-col items-center">
+                        <div className="text-center w-full pb-4 border-b border-white/5 mb-4">
+                           <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mx-auto mb-2">
+                             <FileType className="w-5 h-5 text-blue-400" />
+                           </div>
+                           <div className="h-2 w-16 bg-zinc-700 mx-auto rounded-sm"/>
+                        </div>
+                        <div className="w-full space-y-2 opacity-30">
+                           <div className="flex gap-2">
+                              <div className="h-1.5 w-1/3 bg-zinc-500"/>
+                              <div className="h-1.5 w-2/3 bg-zinc-600"/>
+                           </div>
+                           <div className="h-1.5 w-full bg-zinc-600"/>
+                           <div className="h-1.5 w-4/5 bg-zinc-600"/>
+                           <div className="h-1.5 w-full bg-zinc-600"/>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Overlay Highlight for unified feel */}
+                    <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                  </div>
+                  
+                  {/* Label */}
+                  <div className="text-center group-hover:transform group-hover:translate-y-[-2px] transition-transform duration-300">
+                    <span className="font-medium text-[13px] text-zinc-400 group-hover:text-white transition-colors tracking-wide">
+                      {template.title}
+                    </span>
+                  </div>
                 </div>
-                <span className="text-sm font-medium text-fg tracking-[0.3px]">{template.title}</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

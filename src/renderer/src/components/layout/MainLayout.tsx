@@ -27,7 +27,7 @@ export default function MainLayout({ children, sidebar, contextPanel }: MainLayo
         {/* Sidebar */}
         <div 
           className={cn(
-            "w-[var(--sidebar-width)] bg-sidebar border-r border-border overflow-hidden flex flex-col transition-[width,opacity] duration-300 ease-in-out",
+            "w-[var(--sidebar-width)] bg-sidebar border-r border-white/5 overflow-hidden flex flex-col transition-[width,opacity] duration-300 ease-in-out z-10",
             !isSidebarOpen && "w-0 border-r-0 opacity-0"
           )}
         >
@@ -35,8 +35,8 @@ export default function MainLayout({ children, sidebar, contextPanel }: MainLayo
         </div>
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col bg-app relative min-w-0">
-          <div className="flex items-center px-4 py-2 h-12">
+        <main className="flex-1 flex flex-col bg-app relative min-w-0 z-0">
+          <div className="flex items-center px-4 py-2 h-12 shrink-0 border-b border-white/5">
              <button 
                className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-all hover:bg-active hover:text-fg"
                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -72,7 +72,7 @@ export default function MainLayout({ children, sidebar, contextPanel }: MainLayo
         {/* Context Panel */}
         <div 
           className={cn(
-            "w-[var(--panel-width)] bg-panel border-l border-border overflow-hidden flex flex-col shrink-0 min-w-0 transition-[width,opacity] duration-300 ease-in-out",
+            "w-[var(--panel-width)] bg-panel border-l border-white/5 overflow-hidden flex flex-col shrink-0 min-w-0 transition-[width,opacity] duration-300 ease-in-out z-10",
             !isContextOpen && "w-0 border-l-0 opacity-0 pointer-events-none"
           )}
         >

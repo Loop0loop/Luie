@@ -136,54 +136,57 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
-/* === DARK THEME === */
+/* === DARK THEME (Linear/Vercel Inspired) === */
 [data-theme="dark"] {
   /* Backgrounds */
-  --bg-app: #18181b;          /* Zinc-900 */
-  --bg-sidebar: #09090b;      /* Zinc-950 */
-  --bg-panel: #18181b;
-  --bg-element: #27272a;      /* Zinc-800 */
-  --bg-element-hover: #3f3f46;
-  --bg-active: #3f3f46;       /* Zinc-700 */
-
+  --bg-app: #09090b;          /* Deepest Zinc (Main Canvas) */
+  --bg-sidebar: #09090b;      /* Same as app for clean look, separated by subtle border */
+  --bg-panel: #09090b;
+  --bg-panel-header: #09090b; /* Header blends in */
+  --bg-element: #18181b;      /* Zinc-900 (Cards, Inputs) */
+  --bg-element-hover: #27272a;/* Zinc-800 */
+  --bg-active: #27272a;
+  
   /* Text */
-  --text-primary: #f4f4f5;    /* Zinc-100 */
+  --text-primary: #ededed;    /* High contrast white-ish */
   --text-secondary: #a1a1aa;  /* Zinc-400 */
   --text-tertiary: #52525b;   /* Zinc-600 */
   --text-accent: #60a5fa;     /* Blue-400 */
+  --text-on-accent: #ffffff;
 
   /* Semantic UI */
-  --accent-bg: #3b82f6;       /* Blue-500 */
-  --accent-bg-hover: #2563eb; /* Blue-600 */
-  --accent-fg: #0b1020;
-  --success-fg: #22c55e;      /* Green-500 */
-  --danger-fg: #f87171;       /* Red-400 */
+  --accent-bg: #2563eb;       /* Blue-600 (Slightly deeper for better contrast on dark) */
+  --accent-bg-hover: #3b82f6; /* Blue-500 */
+  --accent-fg: #ffffff;
+  --success-fg: #22c55e;
+  --danger-fg: #ef4444;
 
-  /* Aliases (legacy UI tokens) */
-  --bg-primary: #18181b;
-  --bg-secondary: #27272a;
-  --bg-hover: #3f3f46;
-  --bg-canvas: #18181b;
-  --accent-primary: #3b82f6;
-  --grid-line: #27272a;
-  --danger-fg: #fca5a5;       /* Red-300 */
+  /* Aliases */
+  --bg-primary: var(--bg-app);
+  --bg-secondary: var(--bg-element);
+  --bg-hover: var(--bg-element-hover);
+  --bg-canvas: var(--bg-app);
+  --accent-primary: var(--accent-bg);
 
-  /* Borders */
-  --border-default: #27272a;  /* Zinc-800 */
-  --border-active: #3f3f46;
-  --border-focus: #e4e4e7;
+  /* Borders - The Key to "Clean" UI */
+  /* 8% opacity white for subtle separation, enough for definition but not "grid prison" */
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-active: rgba(255, 255, 255, 0.16);
+  --border-focus: #52525b;
+
+  --grid-line: var(--border-default);
 
   /* Editor */
-  --editor-bg: #18181b;
-  --editor-text: #f4f4f5;
+  --editor-bg: #09090b;
+  --editor-text: #ededed;
   --editor-selection: #1e3a8a;
 
   /* Namuwiki Theme Tokens (Dark) */
-  --namu-blue: #0ea5e9;       /* Sky-500, slightly lighter for dark mode */
-  --namu-border: #3f3f46;     /* Zinc-700 */
-  --namu-table-bg: #27272a;   /* Zinc-800 */
-  --namu-table-label: #38bdf8;/* Sky-400 */
-  --namu-hover-bg: #18181b;   /* Zinc-900 */
+  --namu-blue: #38bdf8;
+  --namu-border: var(--border-default);
+  --namu-table-bg: #18181b;
+  --namu-table-label: #0ea5e9;
+  --namu-hover-bg: #27272a;
   --namu-header-text: #ffffff;
   --namu-link: #60a5fa;
 }

@@ -122,7 +122,7 @@ export default function App() {
       >
         <div id="split-view-container" className="flex w-full h-full flex-1 overflow-hidden relative">
           <div
-            className="h-full overflow-hidden relative min-w-0 bg-bg-primary"
+            className="h-full overflow-hidden relative min-w-0 bg-canvas"
             style={{ flex: isSplitView ? splitRatio : 1 }}
           >
             <Editor
@@ -135,16 +135,16 @@ export default function App() {
 
           {isSplitView && (
             <>
+              {/* Splitter */}
               <div
-                className="w-3 cursor-col-resize bg-transparent relative flex-none flex items-center justify-center z-100 -mx-[5px] group"
+                className="w-px bg-white/5 cursor-col-resize relative flex-none flex items-center justify-center z-50 hover:bg-accent/50 hover:w-1 transition-all"
                 onMouseDown={startResizeSplit}
                 role="separator"
                 aria-orientation="vertical"
-              >
-                <div className="absolute top-0 bottom-0 left-1/2 w-px bg-border transition-all group-hover:bg-accent group-hover:w-0.5" />
-              </div>
+              />
+              
               <div
-                className="h-full border-l border-border overflow-hidden relative min-w-0 bg-bg-secondary"
+                className="h-full overflow-hidden relative min-w-0 bg-panel"
                 style={{ flex: 1 - splitRatio }}
               >
                 <Suspense

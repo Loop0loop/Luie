@@ -159,11 +159,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
   return (
     <div 
-      className="fixed inset-0 w-screen h-screen bg-black/20 flex items-center justify-center z-1000 backdrop-blur-[2px] animate-in fade-in duration-150" 
+      className="fixed inset-0 w-screen h-screen bg-black/60 flex items-center justify-center z-1000 backdrop-blur-sm animate-in fade-in duration-200" 
       onClick={onClose}
     >
       <div 
-        className="w-[960px] h-[640px] bg-element rounded-xl shadow-lg ring-1 ring-black/5 flex overflow-hidden max-h-[95vh] animate-in slide-in-from-bottom-5 duration-200 relative will-change-[transform,opacity]" 
+        className="w-[960px] h-[640px] bg-surface border border-white/10 rounded-xl shadow-2xl flex overflow-hidden max-h-[95vh] animate-in slide-in-from-bottom-5 duration-200 relative will-change-[transform,opacity]" 
         onClick={(e) => e.stopPropagation()}
       >
         {/* HEADER is removed, using sidebar layout instead */}
@@ -190,7 +190,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
           </div>
 
           {/* MAIN CONTENT */}
-          <div className="flex-1 flex flex-col bg-element relative overflow-hidden">
+          <div className="flex-1 flex flex-col bg-surface relative overflow-hidden">
             <button 
               className="absolute top-5 right-5 bg-transparent border-none cursor-pointer text-subtle p-2 rounded-full z-10 transition-all flex items-center justify-center hover:bg-active hover:text-fg" 
               onClick={onClose}
@@ -208,10 +208,10 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                       <button
                         key={f}
                         className={`
-                          border rounded-xl bg-element px-2 py-4 cursor-pointer transition-all flex flex-col items-center gap-2
+                          border rounded-xl bg-surface px-2 py-4 cursor-pointer transition-all flex flex-col items-center gap-2
                           ${fontFamily === f 
-                            ? "border-border-focus bg-element-hover shadow-sm" 
-                            : "border-border hover:border-border-active hover:-translate-y-px"}
+                            ? "border-accent bg-surface-hover shadow-sm" 
+                            : "border-border hover:border-active hover:-translate-y-px"}
                         `}
                         onClick={() => updateSettings({ fontFamily: f })}
                       >
@@ -255,10 +255,10 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                       const isActive = fontPreset === font.id;
 
                       return (
-                        <div key={font.id} className="flex items-center justify-between px-3 py-2.5 border border-border rounded-[10px] bg-element">
+                        <div key={font.id} className="flex items-center justify-between px-3 py-2.5 border border-border rounded-[10px] bg-surface">
                           <div className="flex items-center gap-3">
                             <div
-                              className="w-[42px] h-[42px] rounded-lg border border-border flex items-center justify-center text-lg text-fg bg-element-hover"
+                              className="w-[42px] h-[42px] rounded-lg border border-border flex items-center justify-center text-lg text-fg bg-surface-hover"
                               style={{ fontFamily: font.stack }}
                             >
                               {SETTINGS_SAMPLE_TEXT}
@@ -271,7 +271,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                           <div className="flex items-center gap-2">
                             {!isInstalled ? (
                               <button
-                                className="rounded-lg px-2.5 py-1.5 text-xs border border-border bg-element text-fg cursor-pointer inline-flex items-center gap-1.5 hover:border-border-active hover:bg-element-hover disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="rounded-lg px-2.5 py-1.5 text-xs border border-border bg-surface text-fg cursor-pointer inline-flex items-center gap-1.5 hover:border-active hover:bg-surface-hover disabled:opacity-60 disabled:cursor-not-allowed"
                                 onClick={() => handleInstall(font.id, font.pkg)}
                                 disabled={isInstalling}
                               >
@@ -282,7 +282,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                               <div className="text-xs px-2 py-1 rounded-full text-accent-fg bg-accent">{SETTINGS_BADGE_ACTIVE}</div>
                             ) : (
                               <button
-                                className="rounded-lg px-2.5 py-1.5 text-xs border border-border bg-element text-fg cursor-pointer inline-flex items-center gap-1.5 hover:border-border-active hover:bg-element-hover"
+                                className="rounded-lg px-2.5 py-1.5 text-xs border border-border bg-surface text-fg cursor-pointer inline-flex items-center gap-1.5 hover:border-active hover:bg-surface-hover"
                                 onClick={() => updateSettings({ fontPreset: font.id })}
                               >
                                 {SETTINGS_ACTION_APPLY}
@@ -302,7 +302,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                   <div className="flex flex-col gap-3">
                     <div className="flex justify-between items-center">
                       <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{SETTINGS_SECTION_FONT_SIZE}</div>
-                      <div className="text-sm font-semibold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded">{localFontSize}px</div>
+                      <div className="text-sm font-semibold text-accent bg-accent/10 px-2 py-0.5 rounded">{localFontSize}px</div>
                     </div>
                     <input
                       type="range"
@@ -310,7 +310,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                       max="32"
                       step="1"
                       value={localFontSize}
-                      className="w-full h-1 bg-border rounded-sm appearance-none outline-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-emerald-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb:hover]:scale-110"
+                      className="w-full h-1 bg-border rounded-sm appearance-none outline-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-accent [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb:hover]:scale-110"
                       onChange={(e) => setLocalFontSize(Number(e.target.value))}
                       onMouseUp={() => updateSettings({ fontSize: localFontSize })}
                       onTouchEnd={() => updateSettings({ fontSize: localFontSize })}
@@ -322,7 +322,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                   <div className="flex flex-col gap-3">
                     <div className="flex justify-between items-center">
                       <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{SETTINGS_SECTION_LINE_HEIGHT}</div>
-                      <div className="text-sm font-semibold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded">{localLineHeight}</div>
+                      <div className="text-sm font-semibold text-accent bg-accent/10 px-2 py-0.5 rounded">{localLineHeight}</div>
                     </div>
                     <input
                       type="range"
@@ -330,7 +330,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                       max="2.4"
                       step="0.1"
                       value={localLineHeight}
-                      className="w-full h-1 bg-border rounded-sm appearance-none outline-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-emerald-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb:hover]:scale-110"
+                      className="w-full h-1 bg-border rounded-sm appearance-none outline-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-accent [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb:hover]:scale-110"
                       onChange={(e) => setLocalLineHeight(Number(e.target.value))}
                       onMouseUp={() => updateSettings({ lineHeight: localLineHeight })}
                       onTouchEnd={() => updateSettings({ lineHeight: localLineHeight })}
@@ -353,12 +353,12 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                           ${t === "light" ? "bg-white border-zinc-200 text-zinc-800" : ""}
                           ${t === "sepia" ? "bg-[#fbf0d9] border-[#f0e6d2] text-[#5f4b32]" : ""}
                           ${t === "dark" ? "bg-[#222] border-[#333] text-[#eee]" : ""}
-                          ${theme === t ? "border-emerald-500!" : ""}
+                          ${theme === t ? "border-accent!" : ""}
                         `}
                         onClick={() => updateSettings({ theme: t })}
                       >
                         {theme === t && (
-                          <div className="absolute top-1.5 right-1.5 bg-emerald-500 text-white w-[18px] h-[18px] rounded-full flex items-center justify-center">
+                          <div className="absolute top-1.5 right-1.5 bg-accent text-accent-fg w-[18px] h-[18px] rounded-full flex items-center justify-center">
                             <Check className="w-3 h-3" />
                           </div>
                         )}
