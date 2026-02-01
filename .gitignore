@@ -48,3 +48,4 @@ coverage/
 *.tsbuildinfo
 .cache/
 .agent
+.gemini
