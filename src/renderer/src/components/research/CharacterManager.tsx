@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Plus, User, ChevronDown, ChevronRight, Home, LayoutTemplate } from "lucide-react";
 import { useCharacterStore } from "../../stores/characterStore";
 import { useProjectStore } from "../../stores/projectStore";
@@ -32,11 +32,47 @@ export default function CharacterManager() {
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
+  const [sidebarWidth, setSidebarWidth] = useState(260);
+  const [isResizing, setIsResizing] = useState(false);
+
   useEffect(() => {
     if (currentProject) {
       loadCharacters(currentProject.id);
     }
   }, [currentProject, loadCharacters]);
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      setSidebarWidth((prev) => {
+        const newWidth = prev + e.movementX;
+        if (newWidth < 150) return 150;
+        if (newWidth > 500) return 500;
+        return newWidth;
+      });
+    };
+
+    const stopResizing = () => {
+      setIsResizing(false);
+    };
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", stopResizing);
+
+    return () => {
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", stopResizing);
+    };
+  }, [isResizing]);
+
+  const startResizing = useCallback(() => {
+    setIsResizing(true);
+  }, []);
 
   const handleAddCharacter = async (templateId: string = "basic") => {
     if (currentProject) {
@@ -78,7 +114,10 @@ export default function CharacterManager() {
   return (
     <div className="flex w-full h-full bg-canvas overflow-hidden">
       {/* LEFT SIDEBAR - Character List */}
-      <div className="w-[260px] bg-sidebar border-r border-border flex flex-col overflow-y-auto shrink-0">
+      <div 
+        className="bg-sidebar border-r border-border flex flex-col overflow-y-auto shrink-0 transition-[width] duration-0 ease-linear will-change-[width]"
+        style={{ width: sidebarWidth }}
+      >
         <div className="px-4 py-3 bg-(--namu-blue) text-white font-bold flex justify-between items-center">
            <button 
              className="flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity bg-transparent border-none p-1 text-white cursor-pointer" 
@@ -133,6 +172,14 @@ export default function CharacterManager() {
             />
           ))}
         </div>
+      </div>
+
+      {/* Resizer Handle */}
+      <div
+        className="w-[4px] -ml-[2px] cursor-col-resize hover:bg-primary/50 active:bg-primary z-50 transition-colors flex items-center justify-center group"
+        onMouseDown={startResizing}
+      >
+        <div className="w-[2px] h-full bg-transparent group-hover:bg-primary/20" />
       </div>
 
       {/* RIGHT MAIN - Wiki View */}
@@ -377,16 +424,17 @@ function WikiDetailView({
       </div>
 
       {/* 2. BODY CONTENT (Wiki Layout) */}
-      <div className="flex flex-col lg:flex-row gap-8 items-start min-h-0">
-        {/* LEFT: Content & TOC */}
-        <div className="flex-1 flex flex-col gap-8 min-w-0 w-full lg:order-1 order-2">
+      <div className="@container">
+        <div className="flex flex-col @min-[700px]:flex-row gap-8 items-start min-h-0">
+          {/* LEFT: Content & TOC */}
+          <div className="flex-1 flex flex-col gap-8 min-w-[300px] w-full @min-[700px]:order-1 order-2">
           
           {/* TOC (Inline) */}
           <div className="bg-(--namu-table-bg) border border-(--namu-border) p-4 inline-block min-w-[200px] rounded">
             <div className="font-bold text-center mb-3 text-fg text-sm">목차</div>
             <div className="flex flex-col gap-1.5 text-sm">
                {sections.map(sec => (
-                 <a key={sec.id} className="text-[var(--namu-link)] no-underline cursor-pointer hover:underline" href={`#${sec.id}`}>
+                 <a key={sec.id} className="text-(--namu-link) no-underline cursor-pointer hover:underline" href={`#${sec.id}`}>
                    {sec.label}
                  </a>
                ))}
@@ -417,9 +465,10 @@ function WikiDetailView({
 
         </div>
 
+
         {/* RIGHT: Authentic Infobox */}
         {/* Use order-first on mobile (default) to put it on top, order-last on Desktop to put it on right */}
-        <div className="w-full lg:w-[320px] shrink-0 lg:order-2 order-1">
+        <div className="w-full @min-[700px]:w-[320px] shrink-0 @min-[700px]:order-2 order-1">
             <Infobox 
                 title={character.name}
                 image={<User size={80} color="var(--border-active)" />}
@@ -441,6 +490,9 @@ function WikiDetailView({
             />
         </div>
       </div>
+    </div>
+
+
     </div>
   );
 }

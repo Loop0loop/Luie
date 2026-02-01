@@ -88,7 +88,7 @@ export function Infobox({
   onAddField: () => void;
 }) {
   return (
-    <div className="w-full lg:w-[320px] border-2 border-(--namu-blue) bg-surface shadow-md rounded overflow-hidden shrink-0 text-[13px]">
+    <div className="w-full border-2 border-(--namu-blue) bg-surface shadow-md rounded overflow-hidden shrink-0 text-[13px]">
       <div className="bg-(--namu-blue) text-white text-center p-2.5 font-bold text-[15px] border-b border-(--namu-blue)">{title}</div>
       {image && <div className="w-full bg-surface flex items-center justify-center border-b border-(--namu-border) p-5">{image}</div>}
 
