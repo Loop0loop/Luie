@@ -3,6 +3,7 @@ import type { Project } from "../../../shared/types";
 import { createCRUDSlice } from "./createCRUDStore";
 import type { CRUDStore } from "./createCRUDStore";
 import type { ProjectCreateInput, ProjectUpdateInput } from "../../../shared/types";
+import { api } from "../services/api";
 
 type BaseProjectStore = CRUDStore<
   Project,
@@ -54,7 +55,7 @@ export const useProjectStore = create<ProjectStore>((set, _get, store) => {
     Project,
     ProjectCreateInput,
     ProjectUpdateInput
-  >(window.api.project, "Project")(setWithAlias, _get, store);
+  >(api.project, "Project")(setWithAlias, _get, store);
 
   return {
     ...crudSlice,

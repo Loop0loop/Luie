@@ -17,6 +17,7 @@ import { Virtuoso } from "react-virtuoso";
 import { Clock, Plus, Search, Tag } from "lucide-react";
 import { cn } from "../../../../shared/types/utils";
 import { useProjectStore } from "../../stores/projectStore";
+import { api } from "../../services/api";
 
 type Note = {
   id: string;
@@ -71,7 +72,7 @@ function loadInitialNotes(storageKey: string | null): {
       activeNoteId: effectiveNotes[0]?.id ?? DEFAULT_NOTES[0]?.id ?? "1",
     };
   } catch (e) {
-    window.api.logger.warn("Failed to load memos", e);
+    api.logger.warn("Failed to load memos", e);
     return { notes: DEFAULT_NOTES, activeNoteId: DEFAULT_NOTES[0]?.id ?? "1" };
   }
 }
@@ -94,7 +95,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
       try {
         localStorage.setItem(storageKey, JSON.stringify({ notes }));
       } catch (e) {
-        window.api.logger.warn("Failed to save memos", e);
+        api.logger.warn("Failed to save memos", e);
       }
     }, DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS);
 

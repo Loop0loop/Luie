@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import type { Editor } from "@tiptap/react";
 import { cn } from "../../../../shared/types/utils";
+import { api } from "../../services/api";
 import { useEditorStore } from "../../stores/editorStore";
 import {
   EDITOR_TOOLBAR_DEFAULT_FONT_LABEL,
@@ -219,7 +220,7 @@ export default function EditorToolbar({
 
           <button
             className="flex items-center justify-center w-7 h-7 rounded text-muted hover:bg-hover hover:text-fg transition-colors"
-            onClick={() => window.api.logger.info("Editor toolbar menu opened")}
+            onClick={() => api.logger.info("Editor toolbar menu opened")}
           >
             <MoreVertical className="icon-md" />
           </button>

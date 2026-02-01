@@ -6,6 +6,7 @@ import {
   type CharacterCreateInput,
   type CharacterUpdateInput,
 } from "../../../shared/types";
+import { api } from "../services/api";
 
 type BaseCharacterStore = CRUDStore<
   Character,
@@ -44,8 +45,8 @@ export const useCharacterStore = create<CharacterStore>((set, _get, store) => {
     });
 
   const apiClient = {
-    ...window.api.character,
-    getAll: (parentId?: string) => window.api.character.getAll(parentId || ""),
+    ...api.character,
+    getAll: (parentId?: string) => api.character.getAll(parentId || ""),
   };
 
   const crudSlice = createCRUDSlice<

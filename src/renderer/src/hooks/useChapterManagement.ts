@@ -6,6 +6,7 @@ import { useState, useCallback } from "react";
 import { useChapterStore } from "../stores/chapterStore";
 import { useProjectStore } from "../stores/projectStore";
 import { LUIE_PACKAGE_EXTENSION } from "../../../shared/constants";
+import { api } from "../services/api";
 
 export function useChapterManagement() {
   const [requestedChapterId, setRequestedChapterId] = useState<string | null>(null);
@@ -35,7 +36,7 @@ export function useChapterManagement() {
 
   const handleAddChapter = useCallback(async () => {
     if (!currentProject) {
-      window.api.logger.error("No project selected");
+      api.logger.error("No project selected");
       return;
     }
 
@@ -55,7 +56,7 @@ export function useChapterManagement() {
   const handleDuplicateChapter = useCallback(
     async (id: string) => {
       if (!currentProject) {
-        window.api.logger.error("No project selected");
+        api.logger.error("No project selected");
         return;
       }
 
@@ -89,7 +90,7 @@ export function useChapterManagement() {
 
   const handleSave = useCallback(
     async (title: string, newContent: string) => {
-      window.api.logger.info(`Saving: ${title}`);
+      api.logger.info(`Saving: ${title}`);
       if (activeChapterId && currentProject) {
         await updateChapter({
           id: activeChapterId,
@@ -99,7 +100,7 @@ export function useChapterManagement() {
 
         if (currentProject.projectPath?.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
           // Package export is handled in main process (debounced)
-          window.api.logger.info("Luie package export scheduled", {
+          api.logger.info("Luie package export scheduled", {
             projectId: currentProject.id,
           });
         }

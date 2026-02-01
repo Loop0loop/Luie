@@ -12,6 +12,7 @@ import { useFileImport } from "./hooks/useFileImport";
 import { useChapterManagement } from "./hooks/useChapterManagement";
 import { useSplitView } from "./hooks/useSplitView";
 import { useProjectTemplate } from "./hooks/useProjectTemplate";
+import { api } from "./services/api";
 
 const SettingsModal = lazy(() => import("./components/settings/SettingsModal"));
 const ResearchPanel = lazy(() => import("./components/research/ResearchPanel"));
@@ -60,8 +61,8 @@ export default function App() {
     (id: string) => {
       handleSelectChapter(id);
       // Force fullscreen on new project
-      window.api.window.setFullscreen(true).catch((err) => {
-        window.api.logger.error("Failed to set fullscreen", err);
+      api.window.setFullscreen(true).catch((err) => {
+        api.logger.error("Failed to set fullscreen", err);
       });
     }
   );
@@ -80,8 +81,8 @@ export default function App() {
       setCurrentProject(project);
       setView("editor");
       // Force fullscreen on project open
-      window.api.window.setFullscreen(true).catch((err) => {
-        window.api.logger.error("Failed to set fullscreen", err);
+      api.window.setFullscreen(true).catch((err) => {
+        api.logger.error("Failed to set fullscreen", err);
       });
     },
     [setCurrentProject, setView],

@@ -5,6 +5,7 @@ import { Plus, Book, FileText, FileType, MoreVertical } from "lucide-react";
 import type { Project } from "../../../../shared/types";
 import { useProjectStore } from "../../stores/projectStore";
 import { ConfirmDialog, PromptDialog } from "../common/Modal";
+import { api } from "../../services/api";
 import {
   DEFAULT_PROJECT_FILENAME,
   LUIE_PACKAGE_EXTENSION_NO_DOT,
@@ -135,7 +136,7 @@ export default function ProjectTemplateSelector({
 
   const handleSelectTemplate = async (templateId: string) => {
     try {
-      const response = await window.api.fs.selectSaveLocation({
+      const response = await api.fs.selectSaveLocation({
         title: PROJECT_TEMPLATE_DIALOG_SELECT_PATH,
         defaultPath: DEFAULT_PROJECT_FILENAME,
         filters: [
@@ -148,7 +149,7 @@ export default function ProjectTemplateSelector({
         onSelectProject(templateId, response.data);
       }
     } catch (error) {
-      window.api.logger.error("Failed to select directory", error);
+      api.logger.error("Failed to select directory", error);
     }
   };
 
@@ -227,7 +228,7 @@ export default function ProjectTemplateSelector({
             try {
               await updateProject(renameDialog.projectId, nextTitle);
             } catch (error) {
-              window.api.logger.error("Failed to update project", error);
+              api.logger.error("Failed to update project", error);
             }
           }
           setRenameDialog((prev) => ({ ...prev, isOpen: false }));
@@ -248,7 +249,7 @@ export default function ProjectTemplateSelector({
           try {
             await deleteProject(deleteDialog.projectId);
           } catch (error) {
-            window.api.logger.error("Failed to delete project", error);
+            api.logger.error("Failed to delete project", error);
           }
           setDeleteDialog((prev) => ({ ...prev, isOpen: false }));
         }}
@@ -307,7 +308,7 @@ export default function ProjectTemplateSelector({
                       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                       setMenuPosition({ x: rect.right + 8, y: rect.top });
                       setMenuOpenId((prev) => (prev === p.id ? null : p.id));
-                      window.api.logger.info("Project context menu", {
+                      api.logger.info("Project context menu", {
                         id: p.id,
                       });
                     }}

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, memo } from "react";
 import { cn } from "../../../../shared/types/utils";
+import { api } from "../../services/api";
 import {
   Settings,
   Plus,
@@ -110,7 +111,7 @@ function Sidebar({
   };
 
   const handleAction = (action: string, id: string) => {
-    window.api.logger.info("Sidebar action", { action, id });
+    api.logger.info("Sidebar action", { action, id });
     setMenuOpenId(null);
     if (action === "open_right" && onSplitView) {
       onSplitView("vertical", id);

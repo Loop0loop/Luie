@@ -2,6 +2,7 @@ import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import type { EditorSettings } from "../../../shared/types/index.js";
 import { registerIpcHandler } from "../core/ipcHandler.js";
 import {
+  editorSettingsSchema,
   settingsAutoSaveSchema,
   windowBoundsSchema,
 } from "../../../shared/schemas/index.js";
@@ -39,6 +40,7 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
     channel: IPC_CHANNELS.SETTINGS_SET_EDITOR,
     logTag: "SETTINGS_SET_EDITOR",
     failMessage: "Failed to set editor settings",
+    argsSchema: z.tuple([editorSettingsSchema]),
     handler: async (settings: EditorSettings) => {
       const { settingsManager } = await import("../../manager/settingsManager.js");
       settingsManager.setEditorSettings(settings);
