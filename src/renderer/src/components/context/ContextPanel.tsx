@@ -52,6 +52,7 @@ function ContextPanel({
   const [searchText, setSearchText] = useState("");
   const [selectedItem, setSelectedItem] = useState<ContextItem | null>(null);
   const deferredSearchText = useDeferredValue(searchText);
+  const isStale = searchText !== deferredSearchText;
 
   useEffect(() => {
     if (currentProject?.id) {
@@ -167,7 +168,10 @@ function ContextPanel({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div
+        className="flex-1 overflow-y-auto p-4 transition-opacity"
+        style={{ opacity: isStale ? 0.6 : 1 }}
+      >
         {currentTab === "synopsis" && (
           <div style={{ padding: "var(--context-panel-section-padding)" }}>
             <div

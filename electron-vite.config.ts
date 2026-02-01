@@ -34,6 +34,39 @@ export default defineConfig({
       sourcemap: false,
       emptyOutDir: true,
       minify: "esbuild",
+      rollupOptions: {
+        output: {
+          manualChunks: (id) => {
+            if (!id.includes("node_modules")) return;
+
+            if (
+              id.includes("react") ||
+              id.includes("react-dom") ||
+              id.includes("scheduler")
+            ) {
+              return "react-vendor";
+            }
+
+            if (id.includes("@tiptap") || id.includes("prosemirror")) {
+              return "editor-vendor";
+            }
+
+            if (
+              id.includes("lucide-react") ||
+              id.includes("clsx") ||
+              id.includes("tailwind-merge")
+            ) {
+              return "ui-vendor";
+            }
+
+            if (id.includes("reactflow")) {
+              return "graph-vendor";
+            }
+
+            return "vendor";
+          },
+        },
+      },
     },
   },
 });
