@@ -130,12 +130,12 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
   return (
     <div className="flex h-full w-full bg-bg-primary overflow-hidden">
       <div className="w-[220px] bg-sidebar border-r border-border flex flex-col shrink-0 content-visibility-auto contain-intrinsic-size-[1px_600px]">
-        <div className="px-4 py-3 text-xs font-bold text-muted flex justify-between items-center border-b border-border uppercase tracking-wider">
+        <div className="px-4 py-3 text-xs font-bold text-muted flex justify-between items-center uppercase tracking-wider">
           <span>{LABEL_MEMO_SECTION_TITLE}</span>
           <Plus className="icon-sm cursor-pointer hover:text-fg transition-colors" onClick={handleAddNote} />
         </div>
 
-        <div className="px-3 py-2 border-b border-border">
+        <div className="px-3 py-2">
           <div className="flex items-center gap-2 bg-element px-2 py-1.5 rounded">
             <Search
               style={{ width: "var(--memo-search-icon-size)", height: "var(--memo-search-icon-size)" }}

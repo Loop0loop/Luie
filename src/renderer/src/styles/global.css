@@ -140,12 +140,13 @@
 [data-theme="dark"] {
   /* Backgrounds */
   --bg-app: #09090b;          /* Deepest Zinc (Main Canvas) */
-  --bg-sidebar: #09090b;      /* Same as app for clean look, separated by subtle border */
-  --bg-panel: #09090b;
-  --bg-panel-header: #09090b; /* Header blends in */
-  --bg-element: #18181b;      /* Zinc-900 (Cards, Inputs) */
-  --bg-element-hover: #27272a;/* Zinc-800 */
-  --bg-active: #27272a;
+  --bg-sidebar: #09090b;      /* Same as app for clean look */
+  --bg-panel: #18181b;        /* Surface Color (Opaque) */
+  --bg-surface: #18181b;      /* Added missing token for Modals/Cards */
+  --bg-panel-header: #18181b; 
+  --bg-element: #27272a;      /* Zinc-800 */
+  --bg-element-hover: #3f3f46;
+  --bg-active: #3f3f46;
   
   /* Text */
   --text-primary: #ededed;    /* High contrast white-ish */

@@ -88,7 +88,7 @@ function ContextPanel({
     <div className="h-full flex flex-col relative overflow-hidden">
       {selectedItem && (
         <div className="absolute inset-0 bg-panel z-10 flex flex-col animate-in slide-in-from-right-5 duration-200">
-          <div className="flex items-center gap-3 p-4 border-b border-border">
+          <div className="flex items-center gap-3 p-4">
             <button className="flex items-center justify-center p-1 rounded hover:bg-hover text-muted hover:text-fg transition-colors" onClick={handleBack}>
               <ArrowLeft className="icon-md" />
             </button>
@@ -108,8 +108,8 @@ function ContextPanel({
 
             {isTerm(selectedItem) && selectedItem.category && (
               <div className="mb-6">
-                <div className="text-[11px] font-semibold text-muted uppercase mb-2">Category</div>
                 <div className="text-[11px] font-semibold text-muted uppercase mb-2">{LABEL_CONTEXT_DETAIL_CATEGORY}</div>
+                <div className="text-sm text-fg">{selectedItem.category}</div>
               </div>
             )}
           </div>
@@ -128,7 +128,7 @@ function ContextPanel({
         </div>
       </div>
 
-      <div className="flex px-4 border-b border-border mt-3">
+      <div className="flex px-4 mt-3">
         <div
           className={cn(
             "flex-1 py-3 text-[13px] font-medium cursor-pointer border-b-2 border-transparent transition-all text-center",

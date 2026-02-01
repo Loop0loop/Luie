@@ -134,7 +134,7 @@ function Sidebar({
     <div className="h-full flex flex-col select-none">
       {menuOpenId && (
         <div
-          className="fixed inset-0 z-[9999] bg-transparent"
+          className="fixed inset-0 z-9999 bg-transparent"
           onPointerDown={() => setMenuOpenId(null)}
         />
       )}
@@ -142,7 +142,7 @@ function Sidebar({
       {menuOpenId && (
         <div
           ref={menuRef}
-          className="fixed z-[10000] bg-panel border border-border rounded-lg shadow-lg min-w-[170px] p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col"
+          className="fixed z-10000 bg-panel border border-border rounded-lg shadow-lg min-w-[170px] p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col"
           style={{ top: menuPosition.y, left: menuPosition.x }}
         >
           <div
@@ -179,7 +179,7 @@ function Sidebar({
           </div>
         </div>
       )}
-      <div className="p-4 border-b border-border">
+      <div className="p-4">
         <h2 className="text-sm font-bold text-fg mb-1">
           {currentProjectTitle || SIDEBAR_DEFAULT_PROJECT_TITLE}
         </h2>
@@ -341,7 +341,7 @@ function Sidebar({
         )}
       </div>
 
-      <div className="p-3 border-t border-border">
+      <div className="p-3">
         <button
           className="flex items-center gap-2 w-full p-2 bg-transparent border-none rounded-md text-muted text-[13px] cursor-pointer hover:bg-surface-hover hover:text-fg transition-colors"
           onClick={onOpenSettings}

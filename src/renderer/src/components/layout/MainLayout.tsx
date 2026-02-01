@@ -36,7 +36,7 @@ export default function MainLayout({ children, sidebar, contextPanel }: MainLayo
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col bg-app relative min-w-0 z-0">
-          <div className="flex items-center px-4 py-2 h-12 shrink-0 border-b border-white/5">
+          <div className="flex items-center px-4 py-2 h-12 shrink-0">
              <button 
                className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-all hover:bg-active hover:text-fg"
                onClick={() => setIsSidebarOpen(!isSidebarOpen)}

@@ -56,7 +56,7 @@ export default function EditorToolbar({
   }
 
   return (
-    <div className="flex flex-col bg-bg-primary border-b border-border select-none px-2 py-1 gap-1">
+    <div className="flex flex-col bg-bg-primary select-none px-2 py-1 gap-1">
       {/* Row 1: Common Formatting */}
       <div className="flex items-center justify-between h-9">
         {/* Left: History & Font */}
