@@ -15,6 +15,7 @@ import ReactFlow, {
   applyEdgeChanges,
 } from "reactflow";
 import "reactflow/dist/style.css";
+import { VirtuosoGrid } from "react-virtuoso";
 import { cn } from "../../../../shared/types/utils";
 import { ArrowLeft, Eraser, Plus, X, Type, PenTool } from "lucide-react";
 import { useProjectStore } from "../../stores/projectStore";
@@ -64,25 +65,7 @@ const getCssNumber = (name: string, fallback: number) => {
     .trim();
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) ? parsed : fallback;
-};
-
-// Custom Node for MindMap
-const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
-  const { setNodes } = useReactFlow();
-  const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState<string | null>(null);
-
-  const commit = () => {
-    const nextLabel = (draft ?? data.label).trim() || WORLD_MINDMAP_NEW_TOPIC;
-    setNodes((nds: Node<MindMapNodeData>[]) =>
-      nds.map((node: Node<MindMapNodeData>) =>
-        node.id === id
-          ? { ...node, data: { ...node.data, label: nextLabel } }
-          : node,
-      ),
     );
-    setDraft(null);
-    setIsEditing(false);
   };
 
   return (
@@ -179,6 +162,14 @@ function TermManager() {
     }
   }, [currentProject, loadTerms]);
 
+  const termGridItems = useMemo(
+    () => [
+      ...terms.map((term) => ({ type: "term" as const, term })),
+      { type: "add" as const },
+    ],
+    [terms],
+  );
+
   const handleAddTerm = async () => {
     if (currentProject) {
       await createTerm({
@@ -244,51 +235,67 @@ function TermManager() {
   }
 
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 p-4">
-      {terms.map((term) => (
-        <div
-          key={term.id}
-          className="h-[100px] p-3 bg-element border border-border rounded-lg cursor-pointer relative shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-active overflow-hidden flex flex-col"
-          onClick={() => setSelectedTermId(term.id)}
-          style={{ height: "auto", minHeight: "80px" }}
-        >
-          <div className="ml-0">
-            <div className="font-bold text-sm text-fg mb-1">{term.term}</div>
+    <div className="h-full w-full">
+      <VirtuosoGrid
+        data={termGridItems}
+        style={{ height: "100%" }}
+        computeItemKey={(_index, item) =>
+          item.type === "term" ? item.term.id : "add"
+        }
+        listClassName="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 p-4"
+        itemContent={(_index, item) => {
+          if (item.type === "add") {
+            return (
+              <div
+                className="h-[80px] flex flex-col items-center justify-center gap-2 border border-dashed border-border rounded-lg cursor-pointer text-muted hover:text-accent hover:border-accent hover:bg-element-hover transition-colors"
+                onClick={handleAddTerm}
+                style={{ height: "80px" }}
+              >
+                <Plus className="icon-xxl" />
+                <span>{DEFAULT_TERM_ADD_LABEL}</span>
+              </div>
+            );
+          }
+
+          return (
             <div
-              className="text-xs text-secondary line-clamp-2"
-              style={{ fontSize: "0.8em", color: "var(--text-secondary)" }}
+              className="h-[100px] p-3 bg-element border border-border rounded-lg cursor-pointer relative shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-active overflow-hidden flex flex-col"
+              onClick={() => setSelectedTermId(item.term.id)}
+              style={{ height: "auto", minHeight: "80px" }}
             >
-              {term.category ? `[${term.category}] ` : ""}
-              {term.definition || "No definition"}
+              <div className="ml-0">
+                <div className="font-bold text-sm text-fg mb-1">
+                  {item.term.term}
+                </div>
+                <div
+                  className="text-xs text-secondary line-clamp-2"
+                  style={{ fontSize: "0.8em", color: "var(--text-secondary)" }}
+                >
+                  {item.term.category ? `[${item.term.category}] ` : ""}
+                  {item.term.definition || "No definition"}
+                </div>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteTerm(item.term.id);
+                }}
+                style={{
+                  position: "absolute",
+                  top: 8,
+                  right: 8,
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  opacity: 0.5,
+                }}
+              >
+                <X className="icon-sm" />
+              </button>
             </div>
-          </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              deleteTerm(term.id);
-            }}
-            style={{
-              position: "absolute",
-              top: 8,
-              right: 8,
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              opacity: 0.5,
-            }}
-          >
-            <X className="icon-sm" />
-          </button>
-        </div>
-      ))}
-      <div
-        className="h-[80px] flex flex-col items-center justify-center gap-2 border border-dashed border-border rounded-lg cursor-pointer text-muted hover:text-accent hover:border-accent hover:bg-element-hover transition-colors"
-        onClick={handleAddTerm}
-        style={{ height: "80px" }}
-      >
-        <Plus className="icon-xxl" />
-        <span>{DEFAULT_TERM_ADD_LABEL}</span>
-      </div>
+          );
+        }}
+      />
     </div>
   );
 }

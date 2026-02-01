@@ -337,3 +337,8 @@ button {
   background: var(--border-active);
   border-radius: 3px;
 }
+
+.virtuoso-scroller {
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
