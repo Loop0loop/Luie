@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState, useOptimistic } from "react";
+import { useEffect, useRef, useState, useOptimistic, useActionState, useId } from "react";
 
 import WindowBar from "./WindowBar";
 import { Plus, Book, FileText, FileType, MoreVertical } from "lucide-react";
 import type { Project } from "../../../../shared/types";
 import { useProjectStore } from "../../stores/projectStore";
-import { ConfirmDialog, PromptDialog } from "../common/Modal";
+import { ConfirmDialog, Modal } from "../common/Modal";
 import { api } from "../../services/api";
 import {
   DEFAULT_PROJECT_FILENAME,
@@ -90,6 +90,42 @@ export default function ProjectTemplateSelector({
     projectId: "",
     projectTitle: "",
   });
+
+  const renameFormId = useId();
+  const [renameState, renameAction, renamePending] = useActionState(
+    async (_prev: { error?: string } | null, formData: FormData) => {
+      const projectId = String(formData.get("projectId") ?? "").trim();
+      const nextTitle = String(formData.get("title") ?? "").trim();
+
+      if (!projectId) {
+        return { error: "프로젝트를 찾을 수 없습니다." };
+      }
+      if (!nextTitle) {
+        return { error: "프로젝트 이름을 입력해주세요." };
+      }
+      if (nextTitle === renameDialog.currentTitle) {
+        setRenameDialog((prev) => ({ ...prev, isOpen: false }));
+        return null;
+      }
+
+      addOptimisticProject({
+        type: "rename",
+        id: projectId,
+        title: nextTitle,
+      });
+
+      try {
+        await updateProject(projectId, nextTitle);
+        setRenameDialog((prev) => ({ ...prev, isOpen: false }));
+        return null;
+      } catch (error) {
+        addOptimisticProject({ type: "reset", projects });
+        api.logger.error("Failed to update project", error);
+        return { error: "프로젝트 이름 변경에 실패했습니다." };
+      }
+    },
+    null,
+  );
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
@@ -233,29 +269,45 @@ export default function ProjectTemplateSelector({
         })()}
 
       {/* Custom Dialogs */}
-      <PromptDialog
+      <Modal
         isOpen={renameDialog.isOpen}
+        onClose={() => setRenameDialog((prev) => ({ ...prev, isOpen: false }))}
         title={DIALOG_TITLE_RENAME_PROJECT}
-        defaultValue={renameDialog.currentTitle}
-        onConfirm={async (value) => {
-          const nextTitle = value.trim();
-          if (nextTitle && nextTitle !== renameDialog.currentTitle) {
-            addOptimisticProject({
-              type: "rename",
-              id: renameDialog.projectId,
-              title: nextTitle,
-            });
-            try {
-              await updateProject(renameDialog.projectId, nextTitle);
-            } catch (error) {
-              addOptimisticProject({ type: "reset", projects });
-              api.logger.error("Failed to update project", error);
-            }
-          }
-          setRenameDialog((prev) => ({ ...prev, isOpen: false }));
-        }}
-        onCancel={() => setRenameDialog((prev) => ({ ...prev, isOpen: false }))}
-      />
+        footer={
+          <div className="flex justify-end gap-3 w-full">
+            <button
+              className="px-4 py-2 bg-transparent border border-border rounded-md text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg"
+              onClick={() => setRenameDialog((prev) => ({ ...prev, isOpen: false }))}
+              disabled={renamePending}
+            >
+              취소
+            </button>
+            <button
+              className="px-4 py-2 bg-accent border-none rounded-md text-white text-[13px] font-medium cursor-pointer transition-all hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
+              type="submit"
+              form={renameFormId}
+              disabled={renamePending}
+            >
+              {renamePending ? "저장 중..." : "저장"}
+            </button>
+          </div>
+        }
+      >
+        <form id={renameFormId} action={renameAction} className="flex flex-col gap-3">
+          {renameState?.error && (
+            <div className="text-xs text-danger-fg">{renameState.error}</div>
+          )}
+          <input type="hidden" name="projectId" value={renameDialog.projectId} />
+          <input
+            key={`${renameDialog.isOpen}-${renameDialog.currentTitle}`}
+            name="title"
+            defaultValue={renameDialog.currentTitle}
+            className="w-full p-2.5 bg-input border border-border rounded-md text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+            autoFocus
+            disabled={renamePending}
+          />
+        </form>
+      </Modal>
 
       <ConfirmDialog
         isOpen={deleteDialog.isOpen}
