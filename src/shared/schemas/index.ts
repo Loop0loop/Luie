@@ -57,3 +57,54 @@ export const termUpdateSchema = z.object({
   category: z.string().optional(),
   firstAppearance: z.string().optional(),
 });
+
+export const projectIdSchema = z.string().uuid("Invalid project ID");
+export const chapterIdSchema = z.string().uuid("Invalid chapter ID");
+export const characterIdSchema = z.string().uuid("Invalid character ID");
+export const termIdSchema = z.string().uuid("Invalid term ID");
+export const snapshotIdSchema = z.string().uuid("Invalid snapshot ID");
+
+export const autoSaveArgsSchema = z.tuple([
+  chapterIdSchema,
+  z.string(),
+  projectIdSchema,
+]);
+
+export const characterAppearanceSchema = z.object({
+  characterId: characterIdSchema,
+  chapterId: chapterIdSchema,
+  position: z.number().int().nonnegative(),
+  context: z.string().optional(),
+});
+
+export const termAppearanceSchema = z.object({
+  termId: termIdSchema,
+  chapterId: chapterIdSchema,
+  position: z.number().int().nonnegative(),
+  context: z.string().optional(),
+});
+
+export const snapshotCreateSchema = z.object({
+  projectId: projectIdSchema,
+  chapterId: chapterIdSchema.optional(),
+  content: z.string(),
+  description: z.string().optional(),
+});
+
+export const searchQuerySchema = z.object({
+  projectId: projectIdSchema,
+  query: z.string().min(1, "Query is required"),
+  type: z.enum(["all", "character", "term"]).optional(),
+});
+
+export const settingsAutoSaveSchema = z.object({
+  enabled: z.boolean().optional(),
+  interval: z.number().int().positive().optional(),
+});
+
+export const windowBoundsSchema = z.object({
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  x: z.number().int(),
+  y: z.number().int(),
+});

@@ -1,6 +1,13 @@
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import type { SnapshotCreateInput } from "../../../shared/types/index.js";
 import { registerIpcHandler } from "../core/ipcHandler.js";
+import {
+  snapshotCreateSchema,
+  snapshotIdSchema,
+  projectIdSchema,
+  chapterIdSchema,
+} from "../../../shared/schemas/index.js";
+import { z } from "zod";
 
 type LoggerLike = {
   error: (message: string, data?: unknown) => void;
@@ -23,6 +30,7 @@ export function registerSnapshotIPCHandlers(
     channel: IPC_CHANNELS.SNAPSHOT_CREATE,
     logTag: "SNAPSHOT_CREATE",
     failMessage: "Failed to create snapshot",
+    argsSchema: z.tuple([snapshotCreateSchema]),
     handler: (input: SnapshotCreateInput) => snapshotService.createSnapshot(input),
   });
 
@@ -31,6 +39,7 @@ export function registerSnapshotIPCHandlers(
     channel: IPC_CHANNELS.SNAPSHOT_GET_BY_PROJECT,
     logTag: "SNAPSHOT_GET_BY_PROJECT",
     failMessage: "Failed to get snapshots by project",
+    argsSchema: z.tuple([projectIdSchema]),
     handler: (projectId: string) => snapshotService.getSnapshotsByProject(projectId),
   });
 
@@ -39,6 +48,7 @@ export function registerSnapshotIPCHandlers(
     channel: IPC_CHANNELS.SNAPSHOT_GET_BY_CHAPTER,
     logTag: "SNAPSHOT_GET_BY_CHAPTER",
     failMessage: "Failed to get snapshots by chapter",
+    argsSchema: z.tuple([chapterIdSchema]),
     handler: (chapterId: string) => snapshotService.getSnapshotsByChapter(chapterId),
   });
 
@@ -47,6 +57,7 @@ export function registerSnapshotIPCHandlers(
     channel: IPC_CHANNELS.SNAPSHOT_DELETE,
     logTag: "SNAPSHOT_DELETE",
     failMessage: "Failed to delete snapshot",
+    argsSchema: z.tuple([snapshotIdSchema]),
     handler: (id: string) => snapshotService.deleteSnapshot(id),
   });
 
@@ -55,6 +66,7 @@ export function registerSnapshotIPCHandlers(
     channel: IPC_CHANNELS.SNAPSHOT_RESTORE,
     logTag: "SNAPSHOT_RESTORE",
     failMessage: "Failed to restore snapshot",
+    argsSchema: z.tuple([snapshotIdSchema]),
     handler: (id: string) => snapshotService.restoreSnapshot(id),
   });
 }

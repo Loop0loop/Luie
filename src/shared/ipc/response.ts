@@ -17,6 +17,7 @@ export interface IPCResponse<T = unknown> {
     timestamp: string;
     duration?: number;
     version?: string;
+    requestId?: string;
   };
 }
 

@@ -7,6 +7,7 @@ import { createLogger } from "../../shared/logger/index.js";
 import { ErrorCode, DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT } from "../../shared/constants/index.js";
 import type { SnapshotCreateInput } from "../../shared/types/index.js";
 import { projectService } from "./projectService.js";
+import { ServiceError } from "../utils/serviceError.js";
 
 const logger = createLogger("SnapshotService");
 
@@ -32,7 +33,12 @@ export class SnapshotService {
       return snapshot;
     } catch (error) {
       logger.error("Failed to create snapshot", error);
-      throw new Error(ErrorCode.SNAPSHOT_CREATE_FAILED);
+      throw new ServiceError(
+        ErrorCode.SNAPSHOT_CREATE_FAILED,
+        "Failed to create snapshot",
+        { input },
+        error,
+      );
     }
   }
 
@@ -43,13 +49,22 @@ export class SnapshotService {
       });
 
       if (!snapshot) {
-        throw new Error("Snapshot not found");
+        throw new ServiceError(
+          ErrorCode.SNAPSHOT_RESTORE_FAILED,
+          "Snapshot not found",
+          { id },
+        );
       }
 
       return snapshot;
     } catch (error) {
       logger.error("Failed to get snapshot", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.DB_QUERY_FAILED,
+        "Failed to get snapshot",
+        { id },
+        error,
+      );
     }
   }
 
@@ -63,7 +78,12 @@ export class SnapshotService {
       return snapshots;
     } catch (error) {
       logger.error("Failed to get snapshots by project", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.DB_QUERY_FAILED,
+        "Failed to get snapshots by project",
+        { projectId },
+        error,
+      );
     }
   }
 
@@ -77,7 +97,12 @@ export class SnapshotService {
       return snapshots;
     } catch (error) {
       logger.error("Failed to get snapshots by chapter", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.DB_QUERY_FAILED,
+        "Failed to get snapshots by chapter",
+        { chapterId },
+        error,
+      );
     }
   }
 
@@ -102,7 +127,12 @@ export class SnapshotService {
       return { success: true };
     } catch (error) {
       logger.error("Failed to delete snapshot", error);
-      throw new Error(ErrorCode.SNAPSHOT_DELETE_FAILED);
+      throw new ServiceError(
+        ErrorCode.SNAPSHOT_DELETE_FAILED,
+        "Failed to delete snapshot",
+        { id },
+        error,
+      );
     }
   }
 
@@ -113,11 +143,19 @@ export class SnapshotService {
       });
 
       if (!snapshot) {
-        throw new Error("Snapshot not found");
+        throw new ServiceError(
+          ErrorCode.SNAPSHOT_RESTORE_FAILED,
+          "Snapshot not found",
+          { snapshotId },
+        );
       }
 
       if (!snapshot.chapterId) {
-        throw new Error("Cannot restore project-level snapshot");
+        throw new ServiceError(
+          ErrorCode.SNAPSHOT_RESTORE_FAILED,
+          "Cannot restore project-level snapshot",
+          { snapshotId },
+        );
       }
 
       await db.getClient().chapter.update({
@@ -138,7 +176,15 @@ export class SnapshotService {
       };
     } catch (error) {
       logger.error("Failed to restore snapshot", error);
-      throw new Error(ErrorCode.SNAPSHOT_RESTORE_FAILED);
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      throw new ServiceError(
+        ErrorCode.SNAPSHOT_RESTORE_FAILED,
+        "Failed to restore snapshot",
+        { snapshotId },
+        error,
+      );
     }
   }
 
@@ -173,7 +219,12 @@ export class SnapshotService {
       return { success: true, deletedCount: toDelete.length };
     } catch (error) {
       logger.error("Failed to delete old snapshots", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.DB_QUERY_FAILED,
+        "Failed to delete old snapshots",
+        { projectId, keepCount },
+        error,
+      );
     }
   }
 
@@ -187,7 +238,12 @@ export class SnapshotService {
       return snapshot;
     } catch (error) {
       logger.error("Failed to get latest snapshot", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.DB_QUERY_FAILED,
+        "Failed to get latest snapshot",
+        { chapterId },
+        error,
+      );
     }
   }
 }

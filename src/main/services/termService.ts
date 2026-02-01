@@ -11,6 +11,7 @@ import type {
   TermAppearanceInput,
 } from "../../shared/types/index.js";
 import { projectService } from "./projectService.js";
+import { ServiceError } from "../utils/serviceError.js";
 
 const logger = createLogger("TermService");
 
@@ -43,7 +44,12 @@ export class TermService {
       return term;
     } catch (error) {
       logger.error("Failed to create term", error);
-      throw new Error(ErrorCode.TERM_CREATE_FAILED);
+      throw new ServiceError(
+        ErrorCode.TERM_CREATE_FAILED,
+        "Failed to create term",
+        { input },
+        error,
+      );
     }
   }
 
@@ -59,7 +65,11 @@ export class TermService {
       });
 
       if (!term) {
-        throw new Error(ErrorCode.TERM_NOT_FOUND);
+        throw new ServiceError(
+          ErrorCode.TERM_NOT_FOUND,
+          "Term not found",
+          { id },
+        );
       }
 
       return term;
@@ -86,7 +96,12 @@ export class TermService {
       return terms;
     } catch (error) {
       logger.error("Failed to get all terms", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.DB_QUERY_FAILED,
+        "Failed to get all terms",
+        { projectId },
+        error,
+      );
     }
   }
 
@@ -112,9 +127,19 @@ export class TermService {
     } catch (error) {
       logger.error("Failed to update term", error);
       if (isPrismaNotFoundError(error)) {
-        throw new Error(ErrorCode.TERM_NOT_FOUND);
+        throw new ServiceError(
+          ErrorCode.TERM_NOT_FOUND,
+          "Term not found",
+          { id: input.id },
+          error,
+        );
       }
-      throw new Error(ErrorCode.TERM_UPDATE_FAILED);
+      throw new ServiceError(
+        ErrorCode.TERM_UPDATE_FAILED,
+        "Failed to update term",
+        { input },
+        error,
+      );
     }
   }
 
@@ -134,7 +159,12 @@ export class TermService {
       return { success: true };
     } catch (error) {
       logger.error("Failed to delete term", error);
-      throw new Error(ErrorCode.TERM_DELETE_FAILED);
+      throw new ServiceError(
+        ErrorCode.TERM_DELETE_FAILED,
+        "Failed to delete term",
+        { id },
+        error,
+      );
     }
   }
 
@@ -157,7 +187,12 @@ export class TermService {
       return appearance;
     } catch (error) {
       logger.error("Failed to record term appearance", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.DB_QUERY_FAILED,
+        "Failed to record term appearance",
+        { input },
+        error,
+      );
     }
   }
 
@@ -174,7 +209,12 @@ export class TermService {
       return appearances;
     } catch (error) {
       logger.error("Failed to get appearances by chapter", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.DB_QUERY_FAILED,
+        "Failed to get term appearances",
+        { chapterId },
+        error,
+      );
     }
   }
 
@@ -185,7 +225,11 @@ export class TermService {
       });
 
       if (!term) {
-        throw new Error(ErrorCode.TERM_NOT_FOUND);
+        throw new ServiceError(
+          ErrorCode.TERM_NOT_FOUND,
+          "Term not found",
+          { termId },
+        );
       }
 
       if (!term.firstAppearance) {
@@ -198,7 +242,12 @@ export class TermService {
       }
     } catch (error) {
       logger.error("Failed to update first appearance", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.TERM_UPDATE_FAILED,
+        "Failed to update first appearance",
+        { termId, chapterId },
+        error,
+      );
     }
   }
 
@@ -218,7 +267,12 @@ export class TermService {
       return terms;
     } catch (error) {
       logger.error("Failed to search terms", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.SEARCH_QUERY_FAILED,
+        "Failed to search terms",
+        { projectId, query },
+        error,
+      );
     }
   }
 
@@ -235,7 +289,12 @@ export class TermService {
       return terms;
     } catch (error) {
       logger.error("Failed to get terms by category", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.DB_QUERY_FAILED,
+        "Failed to get terms by category",
+        { projectId, category },
+        error,
+      );
     }
   }
 }

@@ -11,6 +11,7 @@ import type {
   CharacterAppearanceInput,
 } from "../../shared/types/index.js";
 import { projectService } from "./projectService.js";
+import { ServiceError } from "../utils/serviceError.js";
 
 const logger = createLogger("CharacterService");
 
@@ -47,7 +48,12 @@ export class CharacterService {
       return character;
     } catch (error) {
       logger.error("Failed to create character", error);
-      throw new Error(ErrorCode.CHARACTER_CREATE_FAILED);
+      throw new ServiceError(
+        ErrorCode.CHARACTER_CREATE_FAILED,
+        "Failed to create character",
+        { input },
+        error,
+      );
     }
   }
 
@@ -63,7 +69,11 @@ export class CharacterService {
       });
 
       if (!character) {
-        throw new Error(ErrorCode.CHARACTER_NOT_FOUND);
+        throw new ServiceError(
+          ErrorCode.CHARACTER_NOT_FOUND,
+          "Character not found",
+          { id },
+        );
       }
 
       return character;
@@ -90,7 +100,12 @@ export class CharacterService {
       return characters;
     } catch (error) {
       logger.error("Failed to get all characters", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.DB_QUERY_FAILED,
+        "Failed to get all characters",
+        { projectId },
+        error,
+      );
     }
   }
 
@@ -120,9 +135,19 @@ export class CharacterService {
     } catch (error) {
       logger.error("Failed to update character", error);
       if (isPrismaNotFoundError(error)) {
-        throw new Error(ErrorCode.CHARACTER_NOT_FOUND);
+        throw new ServiceError(
+          ErrorCode.CHARACTER_NOT_FOUND,
+          "Character not found",
+          { id: input.id },
+          error,
+        );
       }
-      throw new Error(ErrorCode.CHARACTER_UPDATE_FAILED);
+      throw new ServiceError(
+        ErrorCode.CHARACTER_UPDATE_FAILED,
+        "Failed to update character",
+        { input },
+        error,
+      );
     }
   }
 
@@ -145,7 +170,12 @@ export class CharacterService {
       return { success: true };
     } catch (error) {
       logger.error("Failed to delete character", error);
-      throw new Error(ErrorCode.CHARACTER_DELETE_FAILED);
+      throw new ServiceError(
+        ErrorCode.CHARACTER_DELETE_FAILED,
+        "Failed to delete character",
+        { id },
+        error,
+      );
     }
   }
 
@@ -168,7 +198,12 @@ export class CharacterService {
       return appearance;
     } catch (error) {
       logger.error("Failed to record character appearance", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.DB_QUERY_FAILED,
+        "Failed to record character appearance",
+        { input },
+        error,
+      );
     }
   }
 
@@ -185,7 +220,12 @@ export class CharacterService {
       return appearances;
     } catch (error) {
       logger.error("Failed to get appearances by chapter", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.DB_QUERY_FAILED,
+        "Failed to get character appearances",
+        { chapterId },
+        error,
+      );
     }
   }
 
@@ -196,7 +236,11 @@ export class CharacterService {
       });
 
       if (!character) {
-        throw new Error(ErrorCode.CHARACTER_NOT_FOUND);
+        throw new ServiceError(
+          ErrorCode.CHARACTER_NOT_FOUND,
+          "Character not found",
+          { characterId },
+        );
       }
 
       if (!character.firstAppearance) {
@@ -209,7 +253,12 @@ export class CharacterService {
       }
     } catch (error) {
       logger.error("Failed to update first appearance", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.CHARACTER_UPDATE_FAILED,
+        "Failed to update first appearance",
+        { characterId, chapterId },
+        error,
+      );
     }
   }
 
@@ -229,7 +278,12 @@ export class CharacterService {
       return characters;
     } catch (error) {
       logger.error("Failed to search characters", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.SEARCH_QUERY_FAILED,
+        "Failed to search characters",
+        { projectId, query },
+        error,
+      );
     }
   }
 }

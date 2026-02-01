@@ -4,6 +4,12 @@ import type {
   ProjectUpdateInput,
 } from "../../../shared/types/index.js";
 import { registerIpcHandler } from "../core/ipcHandler.js";
+import {
+  projectCreateSchema,
+  projectUpdateSchema,
+  projectIdSchema,
+} from "../../../shared/schemas/index.js";
+import { z } from "zod";
 
 type LoggerLike = {
   error: (message: string, data?: unknown) => void;
@@ -26,6 +32,7 @@ export function registerProjectIPCHandlers(
     channel: IPC_CHANNELS.PROJECT_CREATE,
     logTag: "PROJECT_CREATE",
     failMessage: "Failed to create project",
+    argsSchema: z.tuple([projectCreateSchema]),
     handler: (input: ProjectCreateInput) => projectService.createProject(input),
   });
 
@@ -34,6 +41,7 @@ export function registerProjectIPCHandlers(
     channel: IPC_CHANNELS.PROJECT_GET,
     logTag: "PROJECT_GET",
     failMessage: "Failed to get project",
+    argsSchema: z.tuple([projectIdSchema]),
     handler: (id: string) => projectService.getProject(id),
   });
 
@@ -50,6 +58,7 @@ export function registerProjectIPCHandlers(
     channel: IPC_CHANNELS.PROJECT_UPDATE,
     logTag: "PROJECT_UPDATE",
     failMessage: "Failed to update project",
+    argsSchema: z.tuple([projectUpdateSchema]),
     handler: (input: ProjectUpdateInput) => projectService.updateProject(input),
   });
 
@@ -58,6 +67,7 @@ export function registerProjectIPCHandlers(
     channel: IPC_CHANNELS.PROJECT_DELETE,
     logTag: "PROJECT_DELETE",
     failMessage: "Failed to delete project",
+    argsSchema: z.tuple([projectIdSchema]),
     handler: (id: string) => projectService.deleteProject(id),
   });
 }

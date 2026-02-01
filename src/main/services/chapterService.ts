@@ -14,6 +14,7 @@ import { characterService } from "./characterService.js";
 import { termService } from "./termService.js";
 import { autoExtractService } from "./autoExtractService.js";
 import { projectService } from "./projectService.js";
+import { ServiceError } from "../utils/serviceError.js";
 
 const logger = createLogger("ChapterService");
 
@@ -58,7 +59,12 @@ export class ChapterService {
       return chapter;
     } catch (error) {
       logger.error("Failed to create chapter", error);
-      throw new Error(ErrorCode.CHAPTER_CREATE_FAILED);
+      throw new ServiceError(
+        ErrorCode.CHAPTER_CREATE_FAILED,
+        "Failed to create chapter",
+        { input },
+        error,
+      );
     }
   }
 
@@ -69,7 +75,11 @@ export class ChapterService {
       });
 
       if (!chapter) {
-        throw new Error(ErrorCode.CHAPTER_NOT_FOUND);
+        throw new ServiceError(
+          ErrorCode.CHAPTER_NOT_FOUND,
+          "Chapter not found",
+          { id },
+        );
       }
 
       return chapter;
@@ -89,7 +99,12 @@ export class ChapterService {
       return chapters;
     } catch (error) {
       logger.error("Failed to get all chapters", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.DB_QUERY_FAILED,
+        "Failed to get all chapters",
+        { projectId },
+        error,
+      );
     }
   }
 
@@ -139,9 +154,19 @@ export class ChapterService {
     } catch (error) {
       logger.error("Failed to update chapter", error);
       if (isPrismaNotFoundError(error)) {
-        throw new Error(ErrorCode.CHAPTER_NOT_FOUND);
+        throw new ServiceError(
+          ErrorCode.CHAPTER_NOT_FOUND,
+          "Chapter not found",
+          { id: input.id },
+          error,
+        );
       }
-      throw new Error(ErrorCode.CHAPTER_UPDATE_FAILED);
+      throw new ServiceError(
+        ErrorCode.CHAPTER_UPDATE_FAILED,
+        "Failed to update chapter",
+        { input },
+        error,
+      );
     }
   }
 
@@ -236,7 +261,12 @@ export class ChapterService {
       return { success: true };
     } catch (error) {
       logger.error("Failed to delete chapter", error);
-      throw new Error(ErrorCode.CHAPTER_DELETE_FAILED);
+      throw new ServiceError(
+        ErrorCode.CHAPTER_DELETE_FAILED,
+        "Failed to delete chapter",
+        { id },
+        error,
+      );
     }
   }
 
@@ -256,7 +286,12 @@ export class ChapterService {
       return { success: true };
     } catch (error) {
       logger.error("Failed to reorder chapters", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.DB_TRANSACTION_FAILED,
+        "Failed to reorder chapters",
+        { projectId },
+        error,
+      );
     }
   }
 }

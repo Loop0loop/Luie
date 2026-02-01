@@ -25,6 +25,7 @@ import type {
   SnapshotExportRecord,
 } from '../../shared/types/index.js'
 import { writeLuiePackage } from '../handler/system/ipcFsHandlers.js'
+import { ServiceError } from '../utils/serviceError.js'
 
 const logger = createLogger('ProjectService')
 
@@ -58,7 +59,12 @@ export class ProjectService {
       return project
     } catch (error) {
       logger.error('Failed to create project', error)
-      throw new Error(ErrorCode.PROJECT_CREATE_FAILED)
+      throw new ServiceError(
+        ErrorCode.PROJECT_CREATE_FAILED,
+        'Failed to create project',
+        { input },
+        error,
+      )
     }
   }
 
@@ -77,7 +83,11 @@ export class ProjectService {
       })
 
       if (!project) {
-        throw new Error(ErrorCode.PROJECT_NOT_FOUND)
+        throw new ServiceError(
+          ErrorCode.PROJECT_NOT_FOUND,
+          'Project not found',
+          { id },
+        )
       }
 
       return project
@@ -106,7 +116,12 @@ export class ProjectService {
       return projects
     } catch (error) {
       logger.error('Failed to get all projects', error)
-      throw error
+      throw new ServiceError(
+        ErrorCode.DB_QUERY_FAILED,
+        'Failed to get all projects',
+        undefined,
+        error,
+      )
     }
   }
 
@@ -127,7 +142,12 @@ export class ProjectService {
       return project
     } catch (error) {
       logger.error('Failed to update project', error)
-      throw new Error(ErrorCode.PROJECT_UPDATE_FAILED)
+      throw new ServiceError(
+        ErrorCode.PROJECT_UPDATE_FAILED,
+        'Failed to update project',
+        { input },
+        error,
+      )
     }
   }
 
@@ -141,7 +161,12 @@ export class ProjectService {
       return { success: true }
     } catch (error) {
       logger.error('Failed to delete project', error)
-      throw new Error(ErrorCode.PROJECT_DELETE_FAILED)
+      throw new ServiceError(
+        ErrorCode.PROJECT_DELETE_FAILED,
+        'Failed to delete project',
+        { id },
+        error,
+      )
     }
   }
 

@@ -5,6 +5,15 @@ import type {
   CharacterUpdateInput,
 } from "../../../shared/types/index.js";
 import { registerIpcHandler } from "../core/ipcHandler.js";
+import {
+  characterCreateSchema,
+  characterUpdateSchema,
+  characterIdSchema,
+  projectIdSchema,
+  chapterIdSchema,
+  characterAppearanceSchema,
+} from "../../../shared/schemas/index.js";
+import { z } from "zod";
 
 type LoggerLike = {
   error: (message: string, data?: unknown) => void;
@@ -29,6 +38,7 @@ export function registerCharacterIPCHandlers(
     channel: IPC_CHANNELS.CHARACTER_CREATE,
     logTag: "CHARACTER_CREATE",
     failMessage: "Failed to create character",
+    argsSchema: z.tuple([characterCreateSchema]),
     handler: (input: CharacterCreateInput) =>
       characterService.createCharacter(input),
   });
@@ -38,6 +48,7 @@ export function registerCharacterIPCHandlers(
     channel: IPC_CHANNELS.CHARACTER_GET,
     logTag: "CHARACTER_GET",
     failMessage: "Failed to get character",
+    argsSchema: z.tuple([characterIdSchema]),
     handler: (id: string) => characterService.getCharacter(id),
   });
 
@@ -46,6 +57,7 @@ export function registerCharacterIPCHandlers(
     channel: IPC_CHANNELS.CHARACTER_GET_ALL,
     logTag: "CHARACTER_GET_ALL",
     failMessage: "Failed to get all characters",
+    argsSchema: z.tuple([projectIdSchema]),
     handler: (projectId: string) => characterService.getAllCharacters(projectId),
   });
 
@@ -54,6 +66,7 @@ export function registerCharacterIPCHandlers(
     channel: IPC_CHANNELS.CHARACTER_UPDATE,
     logTag: "CHARACTER_UPDATE",
     failMessage: "Failed to update character",
+    argsSchema: z.tuple([characterUpdateSchema]),
     handler: (input: CharacterUpdateInput) =>
       characterService.updateCharacter(input),
   });
@@ -63,6 +76,7 @@ export function registerCharacterIPCHandlers(
     channel: IPC_CHANNELS.CHARACTER_DELETE,
     logTag: "CHARACTER_DELETE",
     failMessage: "Failed to delete character",
+    argsSchema: z.tuple([characterIdSchema]),
     handler: (id: string) => characterService.deleteCharacter(id),
   });
 
@@ -71,6 +85,7 @@ export function registerCharacterIPCHandlers(
     channel: "character:record-appearance",
     logTag: "CHARACTER_RECORD_APPEARANCE",
     failMessage: "Failed to record character appearance",
+    argsSchema: z.tuple([characterAppearanceSchema]),
     handler: (input: CharacterAppearanceInput) =>
       characterService.recordAppearance(input),
   });
@@ -80,6 +95,7 @@ export function registerCharacterIPCHandlers(
     channel: "character:get-appearances",
     logTag: "CHARACTER_GET_APPEARANCES",
     failMessage: "Failed to get character appearances",
+    argsSchema: z.tuple([chapterIdSchema]),
     handler: (chapterId: string) =>
       characterService.getAppearancesByChapter(chapterId),
   });

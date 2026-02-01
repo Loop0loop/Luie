@@ -4,7 +4,9 @@
 
 import { db } from "../database/index.js";
 import { createLogger } from "../../shared/logger/index.js";
+import { ErrorCode } from "../../shared/constants/index.js";
 import type { SearchQuery } from "../../shared/types/index.js";
+import { ServiceError } from "../utils/serviceError.js";
 
 const logger = createLogger("SearchService");
 
@@ -127,7 +129,12 @@ export class SearchService {
       return results;
     } catch (error) {
       logger.error("Search failed", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.SEARCH_QUERY_FAILED,
+        "Search failed",
+        { input },
+        error,
+      );
     }
   }
 
@@ -181,7 +188,12 @@ export class SearchService {
       return results;
     } catch (error) {
       logger.error("Failed to get quick access", error);
-      throw error;
+      throw new ServiceError(
+        ErrorCode.SEARCH_QUERY_FAILED,
+        "Failed to get quick access",
+        { projectId },
+        error,
+      );
     }
   }
 }

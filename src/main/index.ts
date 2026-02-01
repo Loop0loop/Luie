@@ -12,6 +12,7 @@ import { LOG_DIR_NAME, LOG_FILE_NAME } from "../shared/constants/index.js";
 import { windowManager } from "./manager/index.js";
 import { registerIPCHandlers } from "./handler/index.js";
 import { db } from "./database/index.js";
+import { autoSaveManager } from "./manager/autoSaveManager.js";
 
 configureLogger({
   logToFile: true,
@@ -64,9 +65,23 @@ if (!gotTheLock) {
   });
 
   // Before quit - cleanup
-  app.on("before-quit", async () => {
-    logger.info("App is quitting");
-    await db.disconnect();
+  let isQuitting = false;
+  app.on("before-quit", (event) => {
+    if (isQuitting) return;
+    isQuitting = true;
+    event.preventDefault();
+
+    void (async () => {
+      logger.info("App is quitting");
+      try {
+        await autoSaveManager.flushAll();
+      } catch (error) {
+        logger.error("Failed to flush auto-save", error);
+      } finally {
+        await db.disconnect();
+        app.quit();
+      }
+    })();
   });
 
   // Handle uncaught exceptions
