@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useTransition } from "react";
 import { X, Check, Download } from "lucide-react";
 import type { EditorTheme, FontPreset } from "../../stores/editorStore";
 import { useEditorStore } from "../../stores/editorStore";
@@ -38,6 +38,13 @@ interface SettingsModalProps {
 export default function SettingsModal({ onClose }: SettingsModalProps) {
   const { theme, fontFamily, fontPreset, fontSize, lineHeight, updateSettings } =
     useEditorStore();
+
+  const [isPending, startTransition] = useTransition();
+  const applySettings = (next: Partial<{ theme: EditorTheme; fontFamily: "serif" | "sans" | "mono"; fontPreset?: FontPreset; fontSize: number; lineHeight: number }>) => {
+    startTransition(() => {
+      updateSettings(next);
+    });
+  };
 
   const OPTIONAL_FONTS: Array<{
     id: FontPreset;
@@ -181,7 +188,9 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     px-4 py-3 text-sm rounded-md cursor-pointer transition-all font-medium
                     ${activeTab === item.id ? "bg-active text-fg font-semibold" : "text-muted hover:bg-active hover:text-fg"}
                   `}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => {
+                    startTransition(() => setActiveTab(item.id));
+                  }}
                 >
                   {item.label}
                 </div>
@@ -190,7 +199,10 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
           </div>
 
           {/* MAIN CONTENT */}
-          <div className="flex-1 flex flex-col bg-surface relative overflow-hidden">
+          <div
+            className="flex-1 flex flex-col bg-surface relative overflow-hidden"
+            aria-busy={isPending}
+          >
             <button 
               className="absolute top-5 right-5 bg-transparent border-none cursor-pointer text-subtle p-2 rounded-full z-10 transition-all flex items-center justify-center hover:bg-active hover:text-fg" 
               onClick={onClose}
@@ -213,7 +225,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                             ? "border-accent bg-surface-hover shadow-sm" 
                             : "border-border hover:border-active hover:-translate-y-px"}
                         `}
-                        onClick={() => updateSettings({ fontFamily: f })}
+                        onClick={() => applySettings({ fontFamily: f })}
                       >
                         <div
                           className="text-[28px] text-fg leading-none"
@@ -283,7 +295,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                             ) : (
                               <button
                                 className="rounded-lg px-2.5 py-1.5 text-xs border border-border bg-surface text-fg cursor-pointer inline-flex items-center gap-1.5 hover:border-active hover:bg-surface-hover"
-                                onClick={() => updateSettings({ fontPreset: font.id })}
+                                onClick={() => applySettings({ fontPreset: font.id })}
                               >
                                 {SETTINGS_ACTION_APPLY}
                               </button>
@@ -312,8 +324,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                       value={localFontSize}
                       className="w-full h-1 bg-border rounded-sm appearance-none outline-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-accent [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb:hover]:scale-110"
                       onChange={(e) => setLocalFontSize(Number(e.target.value))}
-                      onMouseUp={() => updateSettings({ fontSize: localFontSize })}
-                      onTouchEnd={() => updateSettings({ fontSize: localFontSize })}
+                      onMouseUp={() => applySettings({ fontSize: localFontSize })}
+                      onTouchEnd={() => applySettings({ fontSize: localFontSize })}
                     />
                   </div>
 
@@ -332,8 +344,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                       value={localLineHeight}
                       className="w-full h-1 bg-border rounded-sm appearance-none outline-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-accent [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb:hover]:scale-110"
                       onChange={(e) => setLocalLineHeight(Number(e.target.value))}
-                      onMouseUp={() => updateSettings({ lineHeight: localLineHeight })}
-                      onTouchEnd={() => updateSettings({ lineHeight: localLineHeight })}
+                      onMouseUp={() => applySettings({ lineHeight: localLineHeight })}
+                      onTouchEnd={() => applySettings({ lineHeight: localLineHeight })}
                     />
                   </div>
                 </div>
@@ -355,7 +367,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                           ${t === "dark" ? "bg-[#222] border-[#333] text-[#eee]" : ""}
                           ${theme === t ? "border-accent!" : ""}
                         `}
-                        onClick={() => updateSettings({ theme: t })}
+                        onClick={() => applySettings({ theme: t })}
                       >
                         {theme === t && (
                           <div className="absolute top-1.5 right-1.5 bg-accent text-accent-fg w-[18px] h-[18px] rounded-full flex items-center justify-center">

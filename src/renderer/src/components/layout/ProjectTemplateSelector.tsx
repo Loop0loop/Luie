@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useOptimistic } from "react";
 
 import WindowBar from "./WindowBar";
 import { Plus, Book, FileText, FileType, MoreVertical } from "lucide-react";
@@ -50,6 +50,21 @@ export default function ProjectTemplateSelector({
   const [activeCategory, setActiveCategory] = useState("all");
 
   const { deleteProject, updateProject } = useProjectStore();
+
+  const [optimisticProjects, addOptimisticProject] = useOptimistic(
+    projects,
+    (state, action: { type: "rename"; id: string; title: string } | { type: "delete"; id: string } | { type: "reset"; projects: Project[] }) => {
+      if (action.type === "rename") {
+        return state.map((project) =>
+          project.id === action.id ? { ...project, title: action.title } : project,
+        );
+      }
+      if (action.type === "delete") {
+        return state.filter((project) => project.id !== action.id);
+      }
+      return action.projects;
+    },
+  );
 
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -167,7 +182,7 @@ export default function ProjectTemplateSelector({
       {/* Context Menu rendered at root level to avoid transform/z-index issues */}
       {menuOpenId &&
         (() => {
-          const p = projects.find((proj) => proj.id === menuOpenId);
+          const p = optimisticProjects.find((proj) => proj.id === menuOpenId);
           if (!p) return null;
 
           return (
@@ -225,9 +240,15 @@ export default function ProjectTemplateSelector({
         onConfirm={async (value) => {
           const nextTitle = value.trim();
           if (nextTitle && nextTitle !== renameDialog.currentTitle) {
+            addOptimisticProject({
+              type: "rename",
+              id: renameDialog.projectId,
+              title: nextTitle,
+            });
             try {
               await updateProject(renameDialog.projectId, nextTitle);
             } catch (error) {
+              addOptimisticProject({ type: "reset", projects });
               api.logger.error("Failed to update project", error);
             }
           }
@@ -246,9 +267,11 @@ export default function ProjectTemplateSelector({
         confirmLabel={PROJECT_TEMPLATE_DELETE_CONFIRM_LABEL}
         isDestructive
         onConfirm={async () => {
+          addOptimisticProject({ type: "delete", id: deleteDialog.projectId });
           try {
             await deleteProject(deleteDialog.projectId);
           } catch (error) {
+            addOptimisticProject({ type: "reset", projects });
             api.logger.error("Failed to delete project", error);
           }
           setDeleteDialog((prev) => ({ ...prev, isOpen: false }));
@@ -283,7 +306,7 @@ export default function ProjectTemplateSelector({
             </div>
 
             <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-              {projects.slice(0, 4).map((p) => (
+              {optimisticProjects.slice(0, 4).map((p) => (
                 <div
                   key={p.id}
                   className="bg-surface border border-border rounded-lg p-5 w-full text-left cursor-pointer transition-all duration-200 relative flex justify-between items-start hover:bg-surface-hover hover:border-border-active hover:-translate-y-0.5 hover:shadow-md group"

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useDeferredValue, memo } from "react";
+import { useState, useEffect, useMemo, useDeferredValue, useTransition, memo } from "react";
 import { cn } from "../../../../shared/types/utils";
 import { Search, ArrowLeft } from "lucide-react";
 import { useCharacterStore } from "../../stores/characterStore";
@@ -42,7 +42,11 @@ function ContextPanel({
   const currentTab = onTabChange ? activeTab : internalTab;
   const handleTabChange = (tab: Tab) => {
     if (onTabChange) onTabChange(tab);
-    else setInternalTab(tab);
+    else {
+      startTransition(() => {
+        setInternalTab(tab);
+      });
+    }
   };
 
   const { currentProject } = useProjectStore();
@@ -51,6 +55,7 @@ function ContextPanel({
 
   const [searchText, setSearchText] = useState("");
   const [selectedItem, setSelectedItem] = useState<ContextItem | null>(null);
+  const [isPending, startTransition] = useTransition();
   const deferredSearchText = useDeferredValue(searchText);
   const isStale = searchText !== deferredSearchText;
 
@@ -78,11 +83,15 @@ function ContextPanel({
   }, [terms, deferredSearchText]);
 
   const handleItemClick = (item: ContextItem) => {
-    setSelectedItem(item);
+    startTransition(() => {
+      setSelectedItem(item);
+    });
   };
 
   const handleBack = () => {
-    setSelectedItem(null);
+    startTransition(() => {
+      setSelectedItem(null);
+    });
   };
 
   return (
@@ -170,7 +179,7 @@ function ContextPanel({
 
       <div
         className="flex-1 overflow-y-auto p-4 transition-opacity"
-        style={{ opacity: isStale ? 0.6 : 1 }}
+        style={{ opacity: isStale || isPending ? 0.6 : 1 }}
       >
         {currentTab === "synopsis" && (
           <div style={{ padding: "var(--context-panel-section-padding)" }}>
