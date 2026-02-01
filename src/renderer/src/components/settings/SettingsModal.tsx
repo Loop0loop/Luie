@@ -1,5 +1,4 @@
 import { useMemo, useState, useEffect } from "react";
-import styles from "../../styles/components/SettingsModal.module.css";
 import { X, Check, Download } from "lucide-react";
 import type { EditorTheme, FontPreset } from "../../stores/editorStore";
 import { useEditorStore } from "../../stores/editorStore";
@@ -159,20 +158,29 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   }, [lineHeight]);
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div 
+      className="fixed inset-0 w-screen h-screen bg-black/20 flex items-center justify-center z-1000 backdrop-blur-[2px] animate-in fade-in duration-150" 
+      onClick={onClose}
+    >
+      <div 
+        className="w-[960px] h-[640px] bg-element rounded-xl shadow-lg ring-1 ring-black/5 flex overflow-hidden max-h-[95vh] animate-in slide-in-from-bottom-5 duration-200 relative will-change-[transform,opacity]" 
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* HEADER is removed, using sidebar layout instead */}
-        <div className={styles.container}>
+        <div className="flex w-full h-full">
           {/* SIDEBAR */}
-          <div className={styles.sidebar}>
-            <div className={styles.sidebarHeader}>
-              <div className={styles.sidebarTitle}>{SETTINGS_TITLE_DISPLAY}</div>
+          <div className="w-[260px] bg-sidebar border-r border-border flex flex-col pt-3">
+            <div className="p-6 pb-4">
+              <div className="text-lg font-bold text-fg">{SETTINGS_TITLE_DISPLAY}</div>
             </div>
-            <div className={styles.sidebarList}>
+            <div className="flex-1 px-3 flex flex-col gap-1 overflow-y-auto">
               {sidebarItems.map((item) => (
                 <div
                   key={item.id}
-                  className={`${styles.sidebarItem} ${activeTab === item.id ? styles.active : ""}`}
+                  className={`
+                    px-4 py-3 text-sm rounded-md cursor-pointer transition-all font-medium
+                    ${activeTab === item.id ? "bg-active text-fg font-semibold" : "text-muted hover:bg-active hover:text-fg"}
+                  `}
                   onClick={() => setActiveTab(item.id)}
                 >
                   {item.label}
@@ -182,25 +190,33 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
           </div>
 
           {/* MAIN CONTENT */}
-          <div className={styles.mainContent}>
-            <button className={styles.absoluteCloseButton} onClick={onClose}>
-              <X className="icon-lg" />
+          <div className="flex-1 flex flex-col bg-element relative overflow-hidden">
+            <button 
+              className="absolute top-5 right-5 bg-transparent border-none cursor-pointer text-subtle p-2 rounded-full z-10 transition-all flex items-center justify-center hover:bg-active hover:text-fg" 
+              onClick={onClose}
+            >
+              <X className="w-5 h-5" />
             </button>
             
             {activeTab === "editor" && (
-              <div className={styles.scrollableContent}>
+              <div className="flex-1 px-[60px] py-[48px] overflow-y-auto flex flex-col gap-8">
                 {/* FONT FAMILY */}
-                <div className={styles.section}>
-                  <div className={styles.sectionLabel}>{SETTINGS_SECTION_FONT}</div>
-                  <div className={styles.fontGrid}>
+                <div className="flex flex-col gap-3">
+                  <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{SETTINGS_SECTION_FONT}</div>
+                  <div className="grid grid-cols-3 gap-3">
                     {EDITOR_FONT_FAMILIES.map((f) => (
                       <button
                         key={f}
-                        className={`${styles.fontCard} ${fontFamily === f ? styles.active : ""}`}
+                        className={`
+                          border rounded-xl bg-element px-2 py-4 cursor-pointer transition-all flex flex-col items-center gap-2
+                          ${fontFamily === f 
+                            ? "border-border-focus bg-element-hover shadow-sm" 
+                            : "border-border hover:border-border-active hover:-translate-y-px"}
+                        `}
                         onClick={() => updateSettings({ fontFamily: f })}
                       >
                         <div
-                          className={styles.fontPreview}
+                          className="text-[28px] text-fg leading-none"
                           style={{
                             fontFamily:
                               f === "serif"
@@ -212,7 +228,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                         >
                           {SETTINGS_SAMPLE_TEXT}
                         </div>
-                        <div className={styles.fontName}>
+                        <div className="text-xs text-muted font-medium">
                           {f === "serif"
                             ? SETTINGS_FONT_SERIF_LABEL
                             : f === "sans"
@@ -222,51 +238,51 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                       </button>
                     ))}
                   </div>
-                  <div className={styles.helperText}>
+                  <div className="text-xs text-subtle leading-[1.4]">
                     {SETTINGS_FONT_HELPER_PRIMARY}
                   </div>
                 </div>
 
-                <div className={styles.divider} />
+                <div className="h-px bg-border w-full" />
 
                 {/* OPTIONAL FONTS */}
-                <div className={styles.section}>
-                  <div className={styles.sectionLabel}>{SETTINGS_SECTION_OPTIONAL_FONTS}</div>
-                  <div className={styles.optionalFontList}>
+                <div className="flex flex-col gap-3">
+                  <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{SETTINGS_SECTION_OPTIONAL_FONTS}</div>
+                  <div className="flex flex-col gap-2.5">
                     {OPTIONAL_FONTS.map((font) => {
                       const isInstalled = installed[font.id];
                       const isInstalling = installing[font.id];
                       const isActive = fontPreset === font.id;
 
                       return (
-                        <div key={font.id} className={styles.optionalFontRow}>
-                          <div className={styles.optionalFontInfo}>
+                        <div key={font.id} className="flex items-center justify-between px-3 py-2.5 border border-border rounded-[10px] bg-element">
+                          <div className="flex items-center gap-3">
                             <div
-                              className={styles.optionalFontPreview}
+                              className="w-[42px] h-[42px] rounded-lg border border-border flex items-center justify-center text-lg text-fg bg-element-hover"
                               style={{ fontFamily: font.stack }}
                             >
                               {SETTINGS_SAMPLE_TEXT}
                             </div>
-                            <div className={styles.optionalFontMeta}>
-                              <div className={styles.optionalFontName}>{font.label}</div>
-                              <div className={styles.optionalFontFamily}>{font.family}</div>
+                            <div className="flex flex-col gap-0.5">
+                              <div className="text-[13px] font-semibold text-fg">{font.label}</div>
+                              <div className="text-[11px] text-subtle">{font.family}</div>
                             </div>
                           </div>
-                          <div className={styles.optionalFontActions}>
+                          <div className="flex items-center gap-2">
                             {!isInstalled ? (
                               <button
-                                className={styles.installButton}
+                                className="rounded-lg px-2.5 py-1.5 text-xs border border-border bg-element text-fg cursor-pointer inline-flex items-center gap-1.5 hover:border-border-active hover:bg-element-hover disabled:opacity-60 disabled:cursor-not-allowed"
                                 onClick={() => handleInstall(font.id, font.pkg)}
                                 disabled={isInstalling}
                               >
-                                <Download className="icon-sm" />
+                                <Download className="w-3.5 h-3.5" />
                                 {isInstalling ? SETTINGS_ACTION_INSTALLING : SETTINGS_ACTION_INSTALL}
                               </button>
                             ) : isActive ? (
-                              <div className={styles.activeBadge}>{SETTINGS_BADGE_ACTIVE}</div>
+                              <div className="text-xs px-2 py-1 rounded-full text-accent-fg bg-accent">{SETTINGS_BADGE_ACTIVE}</div>
                             ) : (
                               <button
-                                className={styles.applyButton}
+                                className="rounded-lg px-2.5 py-1.5 text-xs border border-border bg-element text-fg cursor-pointer inline-flex items-center gap-1.5 hover:border-border-active hover:bg-element-hover"
                                 onClick={() => updateSettings({ fontPreset: font.id })}
                               >
                                 {SETTINGS_ACTION_APPLY}
@@ -279,14 +295,14 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                   </div>
                 </div>
 
-                <div className={styles.divider} />
+                <div className="h-px bg-border w-full" />
 
                 {/* FONT SIZE & LINE HEIGHT */}
-                <div className={styles.section}>
-                  <div className={styles.row}>
-                    <div className={styles.labelGroup}>
-                      <div className={styles.sectionLabel}>{SETTINGS_SECTION_FONT_SIZE}</div>
-                      <div className={styles.valueDisplay}>{localFontSize}px</div>
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex justify-between items-center">
+                      <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{SETTINGS_SECTION_FONT_SIZE}</div>
+                      <div className="text-sm font-semibold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded">{localFontSize}px</div>
                     </div>
                     <input
                       type="range"
@@ -294,7 +310,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                       max="32"
                       step="1"
                       value={localFontSize}
-                      className={styles.slider}
+                      className="w-full h-1 bg-border rounded-sm appearance-none outline-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-emerald-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb:hover]:scale-110"
                       onChange={(e) => setLocalFontSize(Number(e.target.value))}
                       onMouseUp={() => updateSettings({ fontSize: localFontSize })}
                       onTouchEnd={() => updateSettings({ fontSize: localFontSize })}
@@ -303,10 +319,10 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
                   <div style={{ height: 24 }} />
 
-                  <div className={styles.row}>
-                    <div className={styles.labelGroup}>
-                      <div className={styles.sectionLabel}>{SETTINGS_SECTION_LINE_HEIGHT}</div>
-                      <div className={styles.valueDisplay}>{localLineHeight}</div>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex justify-between items-center">
+                      <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{SETTINGS_SECTION_LINE_HEIGHT}</div>
+                      <div className="text-sm font-semibold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded">{localLineHeight}</div>
                     </div>
                     <input
                       type="range"
@@ -314,7 +330,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                       max="2.4"
                       step="0.1"
                       value={localLineHeight}
-                      className={styles.slider}
+                      className="w-full h-1 bg-border rounded-sm appearance-none outline-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-emerald-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb:hover]:scale-110"
                       onChange={(e) => setLocalLineHeight(Number(e.target.value))}
                       onMouseUp={() => updateSettings({ lineHeight: localLineHeight })}
                       onTouchEnd={() => updateSettings({ lineHeight: localLineHeight })}
@@ -325,22 +341,28 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             )}
 
             {activeTab === "appearance" && (
-              <div className={styles.scrollableContent}>
-                <div className={styles.section}>
-                  <div className={styles.sectionLabel}>{SETTINGS_SECTION_THEME}</div>
-                  <div className={styles.themeGrid}>
+              <div className="flex-1 px-[60px] py-[48px] overflow-y-auto flex flex-col gap-8">
+                <div className="flex flex-col gap-3">
+                  <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{SETTINGS_SECTION_THEME}</div>
+                  <div className="grid grid-cols-3 gap-3">
                     {(["light", "sepia", "dark"] as EditorTheme[]).map((t) => (
                       <button
                         key={t}
-                        className={`${styles.themeCard} ${t} ${theme === t ? styles.active : ""}`}
+                        className={`
+                          h-20 rounded-xl border-2 cursor-pointer relative flex items-center justify-center text-sm font-semibold transition-all hover:scale-[1.02]
+                          ${t === "light" ? "bg-white border-zinc-200 text-zinc-800" : ""}
+                          ${t === "sepia" ? "bg-[#fbf0d9] border-[#f0e6d2] text-[#5f4b32]" : ""}
+                          ${t === "dark" ? "bg-[#222] border-[#333] text-[#eee]" : ""}
+                          ${theme === t ? "border-emerald-500!" : ""}
+                        `}
                         onClick={() => updateSettings({ theme: t })}
                       >
                         {theme === t && (
-                          <div className={styles.checkBadge}>
-                            <Check className="icon-xs" />
+                          <div className="absolute top-1.5 right-1.5 bg-emerald-500 text-white w-[18px] h-[18px] rounded-full flex items-center justify-center">
+                            <Check className="w-3 h-3" />
                           </div>
                         )}
-                        <div className={styles.themeName}>
+                        <div className="themeName">
                           {t === "light"
                             ? SETTINGS_THEME_LIGHT
                             : t === "sepia"
@@ -355,8 +377,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             )}
 
             {activeTab !== "editor" && activeTab !== "appearance" && (
-              <div className={styles.placeholderContent}>
-                <div className={styles.placeholderText}>준비 중인 기능입니다.</div>
+              <div className="flex-1 flex items-center justify-center text-subtle text-sm">
+                <div className="placeholderText">준비 중인 기능입니다.</div>
               </div>
             )}
           </div>

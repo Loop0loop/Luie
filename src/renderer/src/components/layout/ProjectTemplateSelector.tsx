@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import styles from "../../styles/components/ProjectTemplateSelector.module.css";
+
 import WindowBar from "./WindowBar";
 import { Plus, Book, FileText, FileType, MoreVertical } from "lucide-react";
 import type { Project } from "../../../../shared/types";
@@ -99,10 +99,10 @@ export default function ProjectTemplateSelector({
   }, [menuOpenId]);
 
   const categories = [
-    { id: "all", label: PROJECT_TEMPLATE_CATEGORY_ALL, icon: <Book className={styles.iconMd} /> },
-    { id: "novel", label: PROJECT_TEMPLATE_CATEGORY_NOVEL, icon: <Book className={styles.iconMd} /> },
-    { id: "script", label: PROJECT_TEMPLATE_CATEGORY_SCRIPT, icon: <FileText className={styles.iconMd} /> },
-    { id: "misc", label: PROJECT_TEMPLATE_CATEGORY_GENERAL, icon: <FileType className={styles.iconMd} /> },
+    { id: "all", label: PROJECT_TEMPLATE_CATEGORY_ALL, icon: <Book className="w-4 h-4" /> },
+    { id: "novel", label: PROJECT_TEMPLATE_CATEGORY_NOVEL, icon: <Book className="w-4 h-4" /> },
+    { id: "script", label: PROJECT_TEMPLATE_CATEGORY_SCRIPT, icon: <FileText className="w-4 h-4" /> },
+    { id: "misc", label: PROJECT_TEMPLATE_CATEGORY_GENERAL, icon: <FileType className="w-4 h-4" /> },
   ];
 
   const templates = [
@@ -159,12 +159,12 @@ export default function ProjectTemplateSelector({
   };
 
   return (
-    <div className={styles.container}>
+    <div className="flex flex-col w-screen h-screen bg-app text-fg font-sans overflow-hidden">
       <WindowBar />
 
       {menuOpenId && (
         <div
-          className={styles.menuBackdrop}
+          className="fixed inset-0 z-1999 bg-transparent"
           onPointerDown={() => setMenuOpenId(null)}
         />
       )}
@@ -178,12 +178,12 @@ export default function ProjectTemplateSelector({
           return (
             <div
               ref={menuRef}
-              className={styles.recentContextMenu}
+              className="fixed z-2000 min-w-[140px] bg-surface border border-border rounded-[10px] p-1.5 shadow-lg"
               style={{ top: menuPosition.y, left: menuPosition.x }}
               onClick={(e) => e.stopPropagation()}
             >
               <div
-                className={styles.recentContextMenuItem}
+                className="px-2.5 py-2.5 rounded-lg text-[13px] text-fg cursor-pointer select-none hover:bg-active"
                 onClick={() => {
                   setMenuOpenId(null);
                   onOpenProject?.(p);
@@ -192,7 +192,7 @@ export default function ProjectTemplateSelector({
                 {PROJECT_TEMPLATE_CONTEXT_OPEN}
               </div>
               <div
-                className={styles.recentContextMenuItem}
+                className="px-2.5 py-2.5 rounded-lg text-[13px] text-fg cursor-pointer select-none hover:bg-active"
                 onClick={() => {
                   setMenuOpenId(null);
                   setRenameDialog({
@@ -204,9 +204,9 @@ export default function ProjectTemplateSelector({
               >
                 {PROJECT_TEMPLATE_CONTEXT_RENAME}
               </div>
-              <div className={styles.recentContextMenuDivider} />
+              <div className="h-px bg-border my-1.5 mx-1" />
               <div
-                className={`${styles.recentContextMenuItem} ${styles.recentContextMenuDanger}`}
+                className="px-2.5 py-2.5 rounded-lg text-[13px] text-danger-fg cursor-pointer select-none hover:bg-active"
                 onClick={() => {
                   setMenuOpenId(null);
                   setDeleteDialog({
@@ -261,44 +261,43 @@ export default function ProjectTemplateSelector({
         onCancel={() => setDeleteDialog((prev) => ({ ...prev, isOpen: false }))}
       />
 
-      <div className={styles.body}>
-        <div className={styles.sidebar}>
-          <div className={styles.sidebarTitle}>{TEMPLATE_SIDEBAR_TITLE}</div>
+      <div className="flex-1 flex h-[calc(100vh-32px)]">
+        <div className="w-[240px] bg-sidebar py-8 px-4 flex flex-col gap-2 border-r border-border">
+          <div className="text-[11px] font-bold text-muted mb-4 pl-3 uppercase tracking-widest">{TEMPLATE_SIDEBAR_TITLE}</div>
           {categories.map((cat) => (
             <div
               key={cat.id}
-              className={
-                activeCategory === cat.id
-                  ? `${styles.menuItem} ${styles.menuItemActive}`
-                  : styles.menuItem
-              }
+              className={`
+                px-4 py-3 rounded-lg text-sm transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] flex items-center gap-2.5
+                ${activeCategory === cat.id 
+                  ? "bg-accent text-accent-fg font-semibold shadow-md" 
+                  : "text-muted hover:bg-active hover:text-fg cursor-pointer"}
+              `}
               onClick={() => setActiveCategory(cat.id)}
             >
               {cat.icon}
               {cat.label}
             </div>
           ))}
-
-
         </div>
 
-        <div className={styles.content}>
-          <div className={styles.recentSection}>
-            <div className={styles.recentHeader}>
-              <div className={styles.recentTitle}>{PROJECT_TEMPLATE_RECENT_TITLE}</div>
+        <div className="flex-1 p-12 overflow-y-auto bg-app min-w-0">
+          <div className="mb-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-sm font-bold tracking-[0.5px] text-subtle uppercase">{PROJECT_TEMPLATE_RECENT_TITLE}</div>
             </div>
 
-            <div className={styles.recentGrid}>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
               {projects.slice(0, 4).map((p) => (
                 <div
                   key={p.id}
-                  className={styles.recentCard}
+                  className="bg-surface border border-border rounded-lg p-5 w-full text-left cursor-pointer transition-all duration-200 relative flex justify-between items-start hover:bg-surface-hover hover:border-border-active hover:-translate-y-0.5 hover:shadow-md group"
                   onClick={() => onOpenProject?.(p)}
                 >
-                  <div className={styles.recentCardContent}>
-                    <div className={styles.recentProjectTitle}>{p.title}</div>
+                  <div className="flex-1 overflow-hidden">
+                    <div className="text-[15px] font-semibold text-fg mb-1">{p.title}</div>
                     <div
-                      className={styles.recentProjectPath}
+                      className="text-xs text-muted whitespace-nowrap overflow-hidden text-ellipsis"
                       title={p.projectPath ?? ""}
                     >
                       {p.projectPath ?? PROJECT_TEMPLATE_EMPTY_PATH}
@@ -306,7 +305,7 @@ export default function ProjectTemplateSelector({
                   </div>
 
                   <button
-                    className={styles.recentCardMenuBtn}
+                    className="opacity-85 p-1 rounded text-subtle border-none bg-transparent cursor-pointer absolute top-2.5 right-2.5 z-10 transition-all hover:opacity-100 hover:bg-active hover:text-fg group-hover:opacity-100"
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
@@ -319,7 +318,7 @@ export default function ProjectTemplateSelector({
                       });
                     }}
                   >
-                    <MoreVertical className={styles.iconMd} />
+                    <MoreVertical className="w-4 h-4" />
                   </button>
                 </div>
               ))}
@@ -338,19 +337,19 @@ export default function ProjectTemplateSelector({
           >
             START NEW PROJECT
           </div>
-          <div className={styles.grid}>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-8">
             {filteredTemplates.map((template) => (
               <div
                 key={template.id}
-                className={styles.card}
+                className="flex flex-col items-center gap-4 cursor-pointer group"
                 onClick={() => handleSelectTemplate(template.id)}
               >
-                <div className={styles.cardPreview}>
+                <div className="w-[200px] h-[300px] bg-surface rounded shadow-lg border border-border relative transition-all duration-300 overflow-hidden flex flex-col group-hover:-translate-y-2 group-hover:shadow-lg group-hover:border-border-active">
                   {template.type === "blank" && (
-                    <div className={styles.coverBlank}>
-                      <div className={styles.dashed}>
-                        <Plus className={styles.coverPlusIcon} />
-                        <span className={styles.newProjectLabel}>
+                    <div className="bg-white border text-zinc-700 flex-1 flex flex-col justify-center items-center p-6 text-center h-full w-full">
+                      <div className="w-full h-full border-2 dashed border-zinc-300 rounded flex flex-col items-center justify-center gap-3">
+                        <Plus className="w-8 h-8 text-zinc-400" />
+                        <span className="text-xs font-medium text-zinc-400">
                           {TEMPLATE_NEW_PROJECT_LABEL}
                         </span>
                       </div>
@@ -358,44 +357,40 @@ export default function ProjectTemplateSelector({
                   )}
 
                   {template.type === "novel" && (
-                    <div
-                      className={`${styles.coverNovel} ${styles.coverContent}`}
-                    >
-                      <div className={styles.subtitle}>{PROJECT_TEMPLATE_COVER_STANDARD}</div>
-                      <div className={styles.title}>{PROJECT_TEMPLATE_COVER_NOVEL}</div>
-                      <div className={styles.coverSymbol}>❦</div>
+                    <div className="flex-1 flex flex-col justify-center items-center p-6 text-center bg-linear-to-br from-slate-800 to-slate-900 text-slate-400 font-serif">
+                      <div className="text-[10px] uppercase tracking-[2px]">{PROJECT_TEMPLATE_COVER_STANDARD}</div>
+                      <div className="text-2xl font-bold text-slate-100 mb-2 border-b border-slate-600 pb-2">{PROJECT_TEMPLATE_COVER_NOVEL}</div>
+                      <div className="text-[32px] opacity-20 mt-4">❦</div>
                     </div>
                   )}
 
                   {template.type === "script" && (
-                    <div
-                      className={`${styles.coverScript} ${styles.coverContent}`}
-                    >
-                      <div className={styles.title}>
+                    <div className="flex-1 flex flex-col justify-center p-6 bg-slate-100 text-slate-700 font-mono items-start text-left border-l-12 border-slate-300">
+                      <div className="text-lg font-bold uppercase mt-10 mb-3">
                         {PROJECT_TEMPLATE_COVER_SCREEN}
                         <br />
                         {PROJECT_TEMPLATE_COVER_PLAY}
                       </div>
-                      <div className={styles.line} />
-                      <div className={`${styles.line} ${styles.lineShort}`} />
-                      <div className={styles.coverIntro}>
+                      <div className="w-4/5 h-0.5 bg-slate-300 mb-1.5" />
+                      <div className="w-3/5 h-0.5 bg-slate-300 mb-1.5" />
+                      <div className="mt-auto text-[10px] text-slate-500">
                         {PROJECT_TEMPLATE_COVER_INTRO}
                       </div>
                     </div>
                   )}
 
                   {template.type === "doc" && (
-                    <div className={`${styles.coverBlank} ${styles.coverDoc}`}>
-                      <div className={styles.coverDocInner}>
-                        <div className={styles.coverDocTitle}>
+                    <div className="bg-white border border-zinc-200 text-zinc-700 flex-1 flex flex-col justify-center items-center p-6 text-center">
+                      <div className="text-center">
+                        <div className="text-2xl font-serif text-zinc-800">
                           {PROJECT_TEMPLATE_COVER_ESSAY}
                         </div>
-                        <div className={styles.coverDocDivider} />
+                        <div className="w-10 h-px bg-zinc-800 mx-auto my-2" />
                       </div>
                     </div>
                   )}
                 </div>
-                <span className={styles.cardTitle}>{template.title}</span>
+                <span className="text-sm font-medium text-fg tracking-[0.3px]">{template.title}</span>
               </div>
             ))}
           </div>

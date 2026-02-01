@@ -4,7 +4,6 @@
 
 import { useCallback } from "react";
 import { useUIStore, type ResearchTab, type ContextTab } from "../stores/uiStore";
-import styles from "../styles/App.module.css";
 
 export function useSplitView() {
   const {
@@ -49,7 +48,7 @@ export function useSplitView() {
 
       const startX = e.clientX;
       const startRatio = splitRatio;
-      const container = document.querySelector(`.${styles.splitContainer}`);
+      const container = document.getElementById("split-view-container");
       const containerWidth =
         container instanceof HTMLElement
           ? container.getBoundingClientRect().width
