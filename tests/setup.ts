@@ -2,6 +2,7 @@ import { beforeAll, afterAll, beforeEach, vi } from "vitest";
 import { execSync } from "node:child_process";
 import * as path from "node:path";
 import * as fs from "node:fs";
+import type { db as DbService } from "../src/main/database/index.js";
 
 const testDbDir = path.join(process.cwd(), "tests", ".tmp", String(process.pid));
 const testDbPath = path.join(testDbDir, "test.db");
@@ -15,7 +16,13 @@ vi.mock("electron", () => ({
   },
 }));
 
-let dbService: typeof import("../src/main/database/index.js").db;
+type PrismaClient = ReturnType<(typeof DbService)["getClient"]> & {
+  projectSettings?: {
+    deleteMany: (args: unknown) => Promise<{ count: number }>;
+  };
+};
+
+let dbService: typeof DbService | null = null;
 
 beforeAll(async () => {
   fs.mkdirSync(testDbDir, { recursive: true });
@@ -28,7 +35,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   if (!dbService) return;
-  const client = dbService.getClient() as any;
+  const client: PrismaClient = dbService.getClient();
   await client.snapshot.deleteMany({});
   await client.termAppearance.deleteMany({});
   await client.characterAppearance.deleteMany({});

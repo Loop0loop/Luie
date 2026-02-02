@@ -13,3 +13,4 @@ pnpm test
 - ChapterService: 5만자 업데이트 후 `wordCount` 확인, 100챕터+5만자 스트레스
 - SnapshotService: 스냅샷 생성/복원 검증
 - ProjectService: CRUD 및 Prisma Client 재사용 확인
+- SearchService: 챕터 콘텐츠 문장 검색 검증

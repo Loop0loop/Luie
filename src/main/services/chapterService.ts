@@ -30,6 +30,13 @@ function isPrismaNotFoundError(error: unknown): boolean {
 export class ChapterService {
   async createChapter(input: ChapterCreateInput) {
     try {
+      if (!input.title || input.title.trim().length === 0) {
+        throw new ServiceError(
+          ErrorCode.REQUIRED_FIELD_MISSING,
+          "Chapter title is required",
+          { input },
+        );
+      }
       logger.info("Creating chapter", input);
 
       const maxOrder = await db.getClient().chapter.findFirst({
@@ -59,6 +66,9 @@ export class ChapterService {
       return chapter;
     } catch (error) {
       logger.error("Failed to create chapter", error);
+      if (error instanceof ServiceError) {
+        throw error;
+      }
       throw new ServiceError(
         ErrorCode.CHAPTER_CREATE_FAILED,
         "Failed to create chapter",
