@@ -175,7 +175,10 @@ function Editor({
   }
 
   return (
-    <div className="flex flex-col h-full w-full bg-app text-fg relative box-border overflow-hidden">
+    <div
+      className="flex flex-col h-full w-full bg-app text-fg relative box-border overflow-hidden"
+      data-testid="editor"
+    >
       <div className="shrink-0 border-b border-border z-10">
         <EditorToolbar
           editor={editor}
@@ -207,6 +210,7 @@ function Editor({
             value={title}
             onChange={(e) => handleTitleChange(e.target.value)}
             style={{ fontFamily: getFontFamily() }}
+            data-testid="editor-title"
           />
 
           <div
@@ -221,6 +225,7 @@ function Editor({
               height: isMobileView ? "100%" : undefined, // Height handled differently in mobile
               minHeight: !isMobileView ? "var(--text-editor-min-height)" : undefined,
             }}
+            data-testid="editor-content"
           >
             <EditorContent editor={editor} className="tiptap flex-1 flex flex-col outline-none h-full" />
           </div>

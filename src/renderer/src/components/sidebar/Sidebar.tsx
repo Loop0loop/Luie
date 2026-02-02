@@ -165,7 +165,7 @@ function Sidebar({
   }, [chapters, isManuscriptOpen, isResearchOpen, isTrashOpen]);
 
   return (
-    <div className="h-full flex flex-col select-none">
+    <div className="h-full flex flex-col select-none" data-testid="sidebar">
       {menuOpenId && (
         <div
           className="fixed inset-0 z-9999 bg-transparent"

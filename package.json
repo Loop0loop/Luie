@@ -11,14 +11,18 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate; electron-rebuild",
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
     "studio": "prisma studio",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx,json}\"",
-    "test": "vitest"
+    "test": "vitest",
+    "test:e2e": "playwright test --project=e2e",
+    "test:stress": "playwright test --project=stress",
+    "test:vr": "pnpm build && playwright test --project=visual",
+    "test:smoke": "pnpm build && playwright test --project=smoke"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
@@ -60,6 +64,7 @@
   "devDependencies": {
     "@electron/rebuild": "^4.0.3",
     "@eslint/js": "^9.39.2",
+    "@playwright/test": "^1.58.1",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.1.0",

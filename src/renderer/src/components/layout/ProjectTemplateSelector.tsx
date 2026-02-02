@@ -205,7 +205,10 @@ export default function ProjectTemplateSelector({
   };
 
   return (
-    <div className="flex flex-col w-screen h-screen bg-app text-fg font-sans overflow-hidden">
+    <div
+      className="flex flex-col w-screen h-screen bg-app text-fg font-sans overflow-hidden"
+      data-testid="template-selector"
+    >
       <WindowBar />
 
       {menuOpenId && (
