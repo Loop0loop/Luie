@@ -3,7 +3,7 @@ import { execSync } from "node:child_process";
 import * as path from "node:path";
 import * as fs from "node:fs";
 
-const testDbDir = path.join(process.cwd(), "tests", ".tmp");
+const testDbDir = path.join(process.cwd(), "tests", ".tmp", String(process.pid));
 const testDbPath = path.join(testDbDir, "test.db");
 
 process.env.DATABASE_URL = `file:${testDbPath}`;
@@ -19,7 +19,7 @@ let dbService: typeof import("../src/main/database/index.js").db;
 
 beforeAll(async () => {
   fs.mkdirSync(testDbDir, { recursive: true });
-  execSync("pnpm prisma db push --accept-data-loss --skip-generate", {
+  execSync("pnpm prisma db push --accept-data-loss --force-reset", {
     stdio: "inherit",
   });
   const mod = await import("../src/main/database/index.js");
