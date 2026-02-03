@@ -22,7 +22,6 @@ declare global {
         get: (id: string) => Promise<IPCResponse<Project>>;
         getAll: () => Promise<IPCResponse<Project[]>>;
         importFromFile: (filePath: string) => Promise<IPCResponse<Project>>;
-        importFromFile: (filePath: string) => Promise<IPCResponse<Project>>;
         update: (input: {
           id: string;
           title?: string;
@@ -32,19 +31,7 @@ declare global {
         delete: (id: string) => Promise<IPCResponse<unknown>>;
       };
       chapter: {
-        selectFile: (options?: {
-          title?: string;
-          defaultPath?: string;
-          filters?: Array<{ name: string; extensions: string[] }>;
-        }) => Promise<IPCResponse<string>>;
-        selectSnapshotBackup: () => Promise<IPCResponse<string>>;
         create: (input: {
-        selectFile: (options?: {
-          title?: string;
-          defaultPath?: string;
-          filters?: Array<{ name: string; extensions: string[] }>;
-        }) => Promise<IPCResponse<string>>;
-        selectSnapshotBackup: () => Promise<IPCResponse<string>>;
           projectId: string;
           title: string;
           synopsis?: string;
@@ -109,6 +96,7 @@ declare global {
           description?: string;
         }) => Promise<IPCResponse<Snapshot>>;
         getAll: (projectId: string) => Promise<IPCResponse<Snapshot[]>>;
+        importFromFile: (filePath: string) => Promise<IPCResponse<Project>>;
         restore: (id: string) => Promise<IPCResponse<unknown>>;
         delete: (id: string) => Promise<IPCResponse<unknown>>;
       };
@@ -119,6 +107,12 @@ declare global {
           content: string,
         ) => Promise<IPCResponse<unknown>>;
         selectDirectory: () => Promise<IPCResponse<string>>;
+        selectFile: (options?: {
+          title?: string;
+          defaultPath?: string;
+          filters?: Array<{ name: string; extensions: string[] }>;
+        }) => Promise<IPCResponse<string>>;
+        selectSnapshotBackup: () => Promise<IPCResponse<string>>;
         selectSaveLocation: (options?: {
           filters?: { name: string; extensions: string[] }[];
           defaultPath?: string;

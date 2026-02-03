@@ -16,6 +16,7 @@ const require = createRequire(import.meta.url);
 
 type PrismaDelegate<T extends Record<string, unknown>> = {
   create: (args: unknown) => Promise<T>;
+  createMany: (args: unknown) => Promise<{ count: number }>;
   findUnique: (args: unknown) => Promise<T | null>;
   findMany: (args: unknown) => Promise<T[]>;
   update: (args: unknown) => Promise<T>;
