@@ -45,6 +45,15 @@ export function registerSnapshotIPCHandlers(
 
   registerIpcHandler({
     logger,
+    channel: IPC_CHANNELS.SNAPSHOT_GET_ALL,
+    logTag: "SNAPSHOT_GET_ALL",
+    failMessage: "Failed to get snapshots",
+    argsSchema: z.tuple([projectIdSchema]),
+    handler: (projectId: string) => snapshotService.getSnapshotsByProject(projectId),
+  });
+
+  registerIpcHandler({
+    logger,
     channel: IPC_CHANNELS.SNAPSHOT_GET_BY_CHAPTER,
     logTag: "SNAPSHOT_GET_BY_CHAPTER",
     failMessage: "Failed to get snapshots by chapter",

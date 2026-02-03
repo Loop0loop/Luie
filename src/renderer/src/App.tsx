@@ -106,6 +106,7 @@ export default function App() {
             chapters={chapters}
             activeChapterId={activeChapterId ?? undefined}
             currentProjectTitle={currentProject?.title}
+            currentProjectId={currentProject?.id}
             onSelectChapter={handleSelectChapter}
             onAddChapter={handleAddChapter}
             onRenameChapter={handleRenameChapter}

@@ -245,6 +245,10 @@ export const writeLuiePackage = async (
       name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`,
       content: JSON.stringify({ terms: payload.terms ?? [] }, null, 2),
     },
+    {
+      name: `${LUIE_SNAPSHOTS_DIR}/index.json`,
+      content: JSON.stringify({ snapshots: payload.snapshots ?? [] }, null, 2),
+    },
   ];
 
   for (const chapter of payload.chapters ?? []) {
@@ -256,11 +260,6 @@ export const writeLuiePackage = async (
   }
 
   if (payload.snapshots && payload.snapshots.length > 0) {
-    entries.push({
-      name: `${LUIE_SNAPSHOTS_DIR}/index.json`,
-      content: JSON.stringify({ snapshots: payload.snapshots }, null, 2),
-    });
-
     for (const snapshot of payload.snapshots) {
       if (!snapshot.id) continue;
       entries.push({

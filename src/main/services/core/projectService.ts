@@ -200,10 +200,15 @@ export class ProjectService {
     })) as ProjectExportRecord | null;
 
     if (!project?.projectPath) {
+      logger.info("Skipping package export (missing projectPath)", { projectId });
       return;
     }
 
     if (!project.projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
+      logger.info("Skipping package export (not .luie)", {
+        projectId,
+        projectPath: project.projectPath,
+      });
       return;
     }
 
@@ -265,6 +270,15 @@ export class ProjectService {
       createdAt: project.createdAt?.toISOString?.() ?? String(project.createdAt),
       updatedAt: project.updatedAt?.toISOString?.() ?? String(project.updatedAt),
     };
+
+    logger.info("Exporting .luie package", {
+      projectId,
+      projectPath: project.projectPath,
+      chapterCount: chapters.length,
+      characterCount: characters.length,
+      termCount: terms.length,
+      snapshotCount: snapshots.length,
+    });
 
     await writeLuiePackage(
       project.projectPath,

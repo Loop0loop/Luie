@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect, useMemo, memo } from "react";
+import { useState, useRef, useEffect, useMemo, memo, useCallback } from "react";
 import { cn } from "../../../../shared/types/utils";
 import { api } from "../../services/api";
+import { useChapterStore } from "../../stores/chapterStore";
 import { Virtuoso } from "react-virtuoso";
 import {
   Settings,
@@ -16,6 +17,7 @@ import {
   ArrowRightFromLine,
   ArrowDownFromLine,
   Copy,
+  RotateCcw,
 } from "lucide-react";
 import {
   SIDEBAR_ADD_CHAPTER,
@@ -36,6 +38,7 @@ import {
   SIDEBAR_SETTINGS_LABEL,
   SIDEBAR_TRASH_EMPTY,
 } from "../../../../shared/constants";
+import type { Snapshot } from "../../../../shared/types";
 
 interface Chapter {
   id: string;
@@ -47,6 +50,7 @@ interface SidebarProps {
   chapters: Chapter[];
   activeChapterId?: string;
   currentProjectTitle?: string;
+  currentProjectId?: string;
   onSelectChapter: (id: string) => void;
   onAddChapter: () => void;
   onRenameChapter?: (id: string, title: string) => void;
@@ -65,12 +69,15 @@ type SidebarItem =
   | { type: "research-header" }
   | { type: "research-item"; id: "character" | "world" | "scrap" }
   | { type: "trash-header" }
-  | { type: "trash-empty" };
+  | { type: "trash-loading" }
+  | { type: "trash-empty" }
+  | { type: "snapshot"; snapshot: Snapshot };
 
 function Sidebar({
   chapters,
   activeChapterId,
   currentProjectTitle,
+  currentProjectId,
   onSelectChapter,
   onAddChapter,
   onRenameChapter,
@@ -86,6 +93,10 @@ function Sidebar({
   const [isResearchOpen, setResearchOpen] = useState(true);
   const [isTrashOpen, setTrashOpen] = useState(false);
 
+  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
+  const [isSnapshotsLoading, setSnapshotsLoading] = useState(false);
+  const [snapshotError, setSnapshotError] = useState<string | null>(null);
+
   // Context Menu State
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -93,6 +104,8 @@ function Sidebar({
 
   const menuRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLElement | null>(null);
+
+  const { loadAll: reloadChapters } = useChapterStore();
 
   // Close menu on outside click
   useEffect(() => {
@@ -141,6 +154,64 @@ function Sidebar({
     }
   };
 
+  const formatSnapshotLabel = (snapshot: Snapshot) => {
+    const label = snapshot.description?.trim();
+    if (label) return label;
+    const created = snapshot.createdAt ? new Date(snapshot.createdAt) : null;
+    if (created && !Number.isNaN(created.getTime())) {
+      return created.toLocaleString();
+    }
+    return `Snapshot ${snapshot.id.slice(0, 6)}`;
+  };
+
+  const loadSnapshots = useCallback(async () => {
+    if (!currentProjectId) return;
+    setSnapshotsLoading(true);
+    setSnapshotError(null);
+    try {
+      const response = await api.snapshot.getAll(currentProjectId);
+      if (response.success && response.data) {
+        setSnapshots(response.data);
+      } else {
+        setSnapshots([]);
+        setSnapshotError(response.error?.message ?? "Failed to load snapshots");
+      }
+    } catch (error) {
+      api.logger.error("Failed to load snapshots", error);
+      setSnapshots([]);
+      setSnapshotError((error as Error).message);
+    } finally {
+      setSnapshotsLoading(false);
+    }
+  }, [currentProjectId]);
+
+  useEffect(() => {
+    if (isTrashOpen && currentProjectId) {
+      void loadSnapshots();
+    }
+  }, [isTrashOpen, currentProjectId, loadSnapshots]);
+
+  const handleRestoreSnapshot = useCallback(
+    async (snapshot: Snapshot) => {
+      try {
+        const response = await api.snapshot.restore(snapshot.id);
+        if (response.success) {
+          if (snapshot.chapterId) {
+            onSelectChapter(snapshot.chapterId);
+          }
+          if (currentProjectId) {
+            await reloadChapters(currentProjectId);
+          }
+        } else {
+          api.logger.error("Snapshot restore failed", response.error);
+        }
+      } catch (error) {
+        api.logger.error("Snapshot restore failed", error);
+      }
+    },
+    [currentProjectId, onSelectChapter, reloadChapters],
+  );
+
   const sidebarItems = useMemo<SidebarItem[]>(() => {
     const items: SidebarItem[] = [{ type: "manuscript-header" }];
 
@@ -158,11 +229,17 @@ function Sidebar({
 
     items.push({ type: "trash-header" });
     if (isTrashOpen) {
-      items.push({ type: "trash-empty" });
+      if (isSnapshotsLoading) {
+        items.push({ type: "trash-loading" });
+      } else if (snapshots.length === 0) {
+        items.push({ type: "trash-empty" });
+      } else {
+        snapshots.forEach((snapshot) => items.push({ type: "snapshot", snapshot }));
+      }
     }
 
     return items;
-  }, [chapters, isManuscriptOpen, isResearchOpen, isTrashOpen]);
+  }, [chapters, isManuscriptOpen, isResearchOpen, isTrashOpen, snapshots, isSnapshotsLoading]);
 
   return (
     <div className="h-full flex flex-col select-none" data-testid="sidebar">
@@ -227,6 +304,7 @@ function Sidebar({
           computeItemKey={(index, item) => {
             if (item.type === "chapter") return item.chapter.id;
             if (item.type === "research-item") return `research-${item.id}`;
+            if (item.type === "snapshot") return `snapshot-${item.snapshot.id}`;
             return `${item.type}-${index}`;
           }}
           itemContent={(_index, item) => {
@@ -368,13 +446,36 @@ function Sidebar({
               );
             }
 
+            if (item.type === "trash-loading") {
+              return (
+                <div className="px-4 py-2 text-[12px] text-muted">Loading...</div>
+              );
+            }
+
+            if (item.type === "snapshot") {
+              const label = formatSnapshotLabel(item.snapshot);
+              return (
+                <div className="flex items-center px-4 py-1.5 text-[12px] text-muted hover:text-fg hover:bg-surface-hover transition-all gap-2">
+                  <FileText className="icon-xs" />
+                  <span className="truncate flex-1" title={label}>{label}</span>
+                  <button
+                    className="p-1 rounded hover:bg-active text-muted hover:text-fg"
+                    onClick={() => handleRestoreSnapshot(item.snapshot)}
+                    title="Restore"
+                  >
+                    <RotateCcw className="icon-xs" />
+                  </button>
+                </div>
+              );
+            }
+
             return (
               <div
                 className="flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg transition-all"
                 style={{ fontStyle: "italic", color: "var(--text-tertiary)" }}
               >
                 <Trash2 className="mr-2 text-muted icon-sm" />
-                <span>{SIDEBAR_TRASH_EMPTY}</span>
+                <span>{snapshotError ?? SIDEBAR_TRASH_EMPTY}</span>
               </div>
             );
           }}
