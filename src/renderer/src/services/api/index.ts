@@ -35,6 +35,7 @@ export type RendererApi = {
     }) => Promise<IPCResponse<Chapter>>;
     get: (id: string) => Promise<IPCResponse<Chapter>>;
     getAll: (projectId: string) => Promise<IPCResponse<Chapter[]>>;
+    getDeleted: (projectId: string) => Promise<IPCResponse<Chapter[]>>;
     update: (input: {
       id: string;
       title?: string;
@@ -42,6 +43,8 @@ export type RendererApi = {
       synopsis?: string;
     }) => Promise<IPCResponse<Chapter>>;
     delete: (id: string) => Promise<IPCResponse<unknown>>;
+    restore: (id: string) => Promise<IPCResponse<Chapter>>;
+    purge: (id: string) => Promise<IPCResponse<unknown>>;
     reorder: (projectId: string, chapterIds: string[]) => Promise<IPCResponse<unknown>>;
   };
   character: {

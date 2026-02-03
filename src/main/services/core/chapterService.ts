@@ -39,7 +39,7 @@ export class ChapterService {
       logger.info("Creating chapter", input);
 
       const maxOrder = await db.getClient().chapter.findFirst({
-        where: { projectId: input.projectId },
+        where: { projectId: input.projectId, deletedAt: null },
         orderBy: { order: "desc" },
         select: { order: true },
       });
@@ -79,8 +79,8 @@ export class ChapterService {
 
   async getChapter(id: string) {
     try {
-      const chapter = await db.getClient().chapter.findUnique({
-        where: { id },
+      const chapter = await db.getClient().chapter.findFirst({
+        where: { id, deletedAt: null },
       });
 
       if (!chapter) {
@@ -101,7 +101,7 @@ export class ChapterService {
   async getAllChapters(projectId: string) {
     try {
       const chapters = await db.getClient().chapter.findMany({
-        where: { projectId },
+        where: { projectId, deletedAt: null },
         orderBy: { order: "asc" },
       });
 
@@ -229,21 +229,125 @@ export class ChapterService {
         select: { projectId: true },
       });
 
-      await db.getClient().chapter.deleteMany({ where: { id } });
+      const deleted = await db.getClient().chapter.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
 
-      logger.info("Chapter deleted successfully", { chapterId: id });
+      logger.info("Chapter soft-deleted successfully", { chapterId: id });
       if ((chapter as { projectId?: unknown })?.projectId) {
         projectService.schedulePackageExport(
           String((chapter as { projectId: unknown }).projectId),
           "chapter:delete",
         );
       }
-      return { success: true };
+      return deleted;
     } catch (error) {
       logger.error("Failed to delete chapter", error);
       throw new ServiceError(
         ErrorCode.CHAPTER_DELETE_FAILED,
         "Failed to delete chapter",
+        { id },
+        error,
+      );
+    }
+  }
+
+  async getDeletedChapters(projectId: string) {
+    try {
+      return await db.getClient().chapter.findMany({
+        where: { projectId, deletedAt: { not: null } },
+        orderBy: { deletedAt: "desc" },
+      });
+    } catch (error) {
+      logger.error("Failed to get deleted chapters", error);
+      throw new ServiceError(
+        ErrorCode.DB_QUERY_FAILED,
+        "Failed to get deleted chapters",
+        { projectId },
+        error,
+      );
+    }
+  }
+
+  async restoreChapter(id: string) {
+    try {
+      const current = await db.getClient().chapter.findUnique({
+        where: { id },
+        select: { projectId: true },
+      });
+
+      if (!current?.projectId) {
+        throw new ServiceError(
+          ErrorCode.CHAPTER_NOT_FOUND,
+          "Chapter not found",
+          { id },
+        );
+      }
+
+      const maxOrder = await db.getClient().chapter.findFirst({
+        where: { projectId: String(current.projectId), deletedAt: null },
+        orderBy: { order: "desc" },
+        select: { order: true },
+      });
+
+      const maxOrderValue =
+        typeof (maxOrder as { order?: unknown })?.order === "number"
+          ? (maxOrder as { order: number }).order
+          : 0;
+
+      const restored = await db.getClient().chapter.update({
+        where: { id },
+        data: {
+          deletedAt: null,
+          order: maxOrderValue + 1,
+        },
+      });
+
+      logger.info("Chapter restored successfully", { chapterId: id });
+      projectService.schedulePackageExport(String(current.projectId), "chapter:restore");
+      return restored;
+    } catch (error) {
+      logger.error("Failed to restore chapter", error);
+      if (isPrismaNotFoundError(error)) {
+        throw new ServiceError(
+          ErrorCode.CHAPTER_NOT_FOUND,
+          "Chapter not found",
+          { id },
+          error,
+        );
+      }
+      throw new ServiceError(
+        ErrorCode.CHAPTER_UPDATE_FAILED,
+        "Failed to restore chapter",
+        { id },
+        error,
+      );
+    }
+  }
+
+  async purgeChapter(id: string) {
+    try {
+      const chapter = await db.getClient().chapter.findUnique({
+        where: { id },
+        select: { projectId: true },
+      });
+
+      await db.getClient().chapter.delete({ where: { id } });
+
+      logger.info("Chapter purged successfully", { chapterId: id });
+      if ((chapter as { projectId?: unknown })?.projectId) {
+        projectService.schedulePackageExport(
+          String((chapter as { projectId: unknown }).projectId),
+          "chapter:purge",
+        );
+      }
+      return { success: true };
+    } catch (error) {
+      logger.error("Failed to purge chapter", error);
+      throw new ServiceError(
+        ErrorCode.CHAPTER_DELETE_FAILED,
+        "Failed to purge chapter",
         { id },
         error,
       );

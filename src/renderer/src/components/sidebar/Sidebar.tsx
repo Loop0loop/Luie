@@ -1,7 +1,6 @@
-import { useState, useRef, useEffect, useMemo, memo, useCallback } from "react";
+import { useState, useRef, useEffect, useMemo, memo } from "react";
 import { cn } from "../../../../shared/types/utils";
 import { api } from "../../services/api";
-import { useChapterStore } from "../../stores/chapterStore";
 import { Virtuoso } from "react-virtuoso";
 import {
   Settings,
@@ -21,6 +20,7 @@ import {
   History,
 } from "lucide-react";
 import { SnapshotList } from "../snapshot/SnapshotList";
+import { TrashList } from "../trash/TrashList";
 import {
   SIDEBAR_ADD_CHAPTER,
   SIDEBAR_BINDER_TITLE,
@@ -40,7 +40,6 @@ import {
   SIDEBAR_SETTINGS_LABEL,
   SIDEBAR_TRASH_EMPTY,
 } from "../../../../shared/constants";
-import type { Snapshot } from "../../../../shared/types";
 
 interface Chapter {
   id: string;
@@ -74,9 +73,8 @@ type SidebarItem =
   | { type: "snapshot-list"; chapterId: string }
   | { type: "snapshot-empty-msg" }
   | { type: "trash-header" }
-  | { type: "trash-loading" }
-  | { type: "trash-empty" }
-  | { type: "snapshot"; snapshot: Snapshot };
+  | { type: "trash-list"; projectId: string; refreshKey: number }
+  | { type: "trash-empty" };
 
 function Sidebar({
   chapters,
@@ -98,11 +96,7 @@ function Sidebar({
   const [isResearchOpen, setResearchOpen] = useState(true);
   const [isSnapshotOpen, setSnapshotOpen] = useState(false);
   const [isTrashOpen, setTrashOpen] = useState(false);
-
-  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
-  const [isSnapshotsLoading, setSnapshotsLoading] = useState(false);
-  const [snapshotError, setSnapshotError] = useState<string | null>(null);
-  const [restoringSnapshotId, setRestoringSnapshotId] = useState<string | null>(null);
+  const [trashRefreshKey, setTrashRefreshKey] = useState(0);
 
   // Context Menu State
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
@@ -111,8 +105,6 @@ function Sidebar({
 
   const menuRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLElement | null>(null);
-
-  const { loadAll: reloadChapters } = useChapterStore();
 
   // Close menu on outside click
   useEffect(() => {
@@ -161,82 +153,6 @@ function Sidebar({
     }
   };
 
-  const chapterTitleById = useMemo(() => {
-    return new Map(chapters.map((chapter) => [chapter.id, chapter.title]));
-  }, [chapters]);
-
-  const formatSnapshotLabel = (snapshot: Snapshot) => {
-    const label = snapshot.description?.trim();
-    if (label) return label;
-    return `Snapshot ${snapshot.id.slice(0, 6)}`;
-  };
-
-  const formatSnapshotTime = (snapshot: Snapshot) => {
-    const created = snapshot.createdAt ? new Date(snapshot.createdAt) : null;
-    if (created && !Number.isNaN(created.getTime())) {
-      return created.toLocaleString();
-    }
-    return "";
-  };
-
-  const loadSnapshots = useCallback(async () => {
-    if (!currentProjectId) return;
-    setSnapshotsLoading(true);
-    setSnapshotError(null);
-    try {
-      const response = await api.snapshot.getAll(currentProjectId);
-      if (response.success && response.data) {
-        setSnapshots(response.data);
-      } else {
-        setSnapshots([]);
-        setSnapshotError(response.error?.message ?? "Failed to load snapshots");
-      }
-    } catch (error) {
-      api.logger.error("Failed to load snapshots", error);
-      setSnapshots([]);
-      setSnapshotError((error as Error).message);
-    } finally {
-      setSnapshotsLoading(false);
-    }
-  }, [currentProjectId]);
-
-  useEffect(() => {
-    if (isTrashOpen && currentProjectId) {
-      void loadSnapshots();
-    }
-  }, [isTrashOpen, currentProjectId, loadSnapshots]);
-
-  const handleRestoreSnapshot = useCallback(
-    async (snapshot: Snapshot, event?: React.MouseEvent) => {
-      if (event && !event.isTrusted) return;
-      if (restoringSnapshotId) return;
-
-      const confirmed = window.confirm("이 스냅샷으로 복구할까요? 현재 내용이 덮어써집니다.");
-      if (!confirmed) return;
-
-      setRestoringSnapshotId(snapshot.id);
-      try {
-        const response = await api.snapshot.restore(snapshot.id);
-        if (response.success) {
-          if (snapshot.chapterId) {
-            onSelectChapter(snapshot.chapterId);
-          }
-          if (currentProjectId) {
-            await reloadChapters(currentProjectId);
-            await loadSnapshots();
-          }
-        } else {
-          api.logger.error("Snapshot restore failed", response.error);
-        }
-      } catch (error) {
-        api.logger.error("Snapshot restore failed", error);
-      } finally {
-        setRestoringSnapshotId(null);
-      }
-    },
-    [currentProjectId, onSelectChapter, reloadChapters, restoringSnapshotId, loadSnapshots],
-  );
-
   const sidebarItems = useMemo<SidebarItem[]>(() => {
     const items: SidebarItem[] = [{ type: "manuscript-header" }];
 
@@ -263,24 +179,21 @@ function Sidebar({
 
     items.push({ type: "trash-header" });
     if (isTrashOpen) {
-      if (isSnapshotsLoading) {
-        items.push({ type: "trash-loading" });
-      } else if (snapshots.length === 0) {
-        items.push({ type: "trash-empty" });
+      if (currentProjectId) {
+        items.push({ type: "trash-list", projectId: currentProjectId, refreshKey: trashRefreshKey });
       } else {
-        snapshots.forEach((snapshot) => items.push({ type: "snapshot", snapshot }));
+        items.push({ type: "trash-empty" });
       }
     }
 
-    return items;
     return items;
   }, [
     chapters,
     isManuscriptOpen,
     isResearchOpen,
     isTrashOpen,
-    snapshots,
-    isSnapshotsLoading,
+    currentProjectId,
+    trashRefreshKey,
     activeChapterId,
     isSnapshotOpen,
   ]);
@@ -348,7 +261,7 @@ function Sidebar({
           computeItemKey={(index, item) => {
             if (item.type === "chapter") return item.chapter.id;
             if (item.type === "research-item") return `research-${item.id}`;
-            if (item.type === "snapshot") return `snapshot-${item.snapshot.id}`;
+            if (item.type === "trash-list") return `trash-${item.projectId}-${item.refreshKey}`;
             return `${item.type}-${index}`;
           }}
           itemContent={(_index, item) => {
@@ -526,7 +439,7 @@ function Sidebar({
                     <button
                       type="button"
                       className="ml-auto p-1 rounded hover:bg-active text-muted hover:text-fg"
-                      onClick={() => void loadSnapshots()}
+                      onClick={() => setTrashRefreshKey((prev) => prev + 1)}
                       title="새로고침"
                     >
                       <RotateCcw className="icon-xs" />
@@ -536,40 +449,10 @@ function Sidebar({
               );
             }
 
-            if (item.type === "trash-loading") {
+            if (item.type === "trash-list") {
               return (
-                <div className="px-4 py-2 text-[12px] text-muted">Loading...</div>
-              );
-            }
-
-            if (item.type === "snapshot") {
-              const label = formatSnapshotLabel(item.snapshot);
-              const time = formatSnapshotTime(item.snapshot);
-              const chapterTitle = item.snapshot.chapterId
-                ? chapterTitleById.get(item.snapshot.chapterId)
-                : null;
-              return (
-                <div className="flex flex-col px-4 py-2 text-[12px] text-muted hover:text-fg hover:bg-surface-hover transition-all gap-1">
-                  <div className="flex items-center gap-2">
-                    <FileText className="icon-xs" />
-                    <span className="truncate flex-1" title={label}>{label}</span>
-                    <button
-                      className="p-1 rounded hover:bg-active text-muted hover:text-fg"
-                      onClick={(event) => handleRestoreSnapshot(item.snapshot, event)}
-                      title="Restore"
-                      disabled={restoringSnapshotId === item.snapshot.id}
-                    >
-                      <RotateCcw className="icon-xs" />
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2 text-[11px] text-muted">
-                    {chapterTitle ? (
-                      <span className="truncate">챕터: {chapterTitle}</span>
-                    ) : (
-                      <span>프로젝트 스냅샷</span>
-                    )}
-                    {time && <span className="ml-auto">{time}</span>}
-                  </div>
+                <div className="h-60 border-b border-border">
+                  <TrashList projectId={item.projectId} refreshKey={item.refreshKey} />
                 </div>
               );
             }
@@ -580,7 +463,7 @@ function Sidebar({
                 style={{ fontStyle: "italic", color: "var(--text-tertiary)" }}
               >
                 <Trash2 className="mr-2 text-muted icon-sm" />
-                <span>{snapshotError ?? SIDEBAR_TRASH_EMPTY}</span>
+                <span>{SIDEBAR_TRASH_EMPTY}</span>
               </div>
             );
           }}

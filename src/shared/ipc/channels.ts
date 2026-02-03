@@ -15,8 +15,11 @@ export const IPC_CHANNELS = {
   CHAPTER_CREATE: "chapter:create",
   CHAPTER_GET: "chapter:get",
   CHAPTER_GET_ALL: "chapter:get-all",
+  CHAPTER_GET_DELETED: "chapter:get-deleted",
   CHAPTER_UPDATE: "chapter:update",
   CHAPTER_DELETE: "chapter:delete",
+  CHAPTER_RESTORE: "chapter:restore",
+  CHAPTER_PURGE: "chapter:purge",
   CHAPTER_REORDER: "chapter:reorder",
 
   // Character Channels

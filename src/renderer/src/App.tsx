@@ -236,6 +236,10 @@ export default function App() {
                       <SnapshotViewer 
                         snapshot={rightPanelContent.snapshot} 
                         currentContent={chapters.find(c => c.projectId === currentProject?.id && c.id === rightPanelContent.snapshot?.chapterId)?.content || ""}
+                          onApplySnapshotText={async (nextContent) => {
+                            if (!activeChapterId) return;
+                            await handleSave(activeChapterTitle, nextContent);
+                          }}
                       />
                     ) : (
                       <div

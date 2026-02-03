@@ -75,6 +75,7 @@ export class ProjectService {
         include: {
           settings: true,
           chapters: {
+            where: { deletedAt: null },
             orderBy: { order: "asc" },
           },
           characters: true,
@@ -192,7 +193,7 @@ export class ProjectService {
     const project = (await db.getClient().project.findUnique({
       where: { id: projectId },
       include: {
-        chapters: { orderBy: { order: "asc" } },
+        chapters: { where: { deletedAt: null }, orderBy: { order: "asc" } },
         characters: true,
         terms: true,
         snapshots: true,

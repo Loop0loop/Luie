@@ -167,10 +167,16 @@ contextBridge.exposeInMainWorld("api", {
       safeInvoke(IPC_CHANNELS.CHAPTER_GET, id),
     getAll: (projectId: string): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.CHAPTER_GET_ALL, projectId),
+    getDeleted: (projectId: string): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.CHAPTER_GET_DELETED, projectId),
     update: (input: unknown): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.CHAPTER_UPDATE, input),
     delete: (id: string): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.CHAPTER_DELETE, id),
+    restore: (id: string): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.CHAPTER_RESTORE, id),
+    purge: (id: string): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.CHAPTER_PURGE, id),
     reorder: (projectId: string, chapterIds: string[]): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.CHAPTER_REORDER, projectId, chapterIds),
   },
