@@ -209,6 +209,8 @@ contextBridge.exposeInMainWorld("api", {
       safeInvoke(IPC_CHANNELS.SNAPSHOT_CREATE, input),
     getAll: (projectId: string): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.SNAPSHOT_GET_ALL, projectId),
+    getByChapter: (chapterId: string): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.SNAPSHOT_GET_BY_CHAPTER, chapterId),
     importFromFile: (filePath: string): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.SNAPSHOT_IMPORT_FILE, filePath),
     restore: (id: string): Promise<IPCResponse> =>

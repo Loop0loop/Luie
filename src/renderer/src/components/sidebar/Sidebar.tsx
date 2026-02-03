@@ -18,7 +18,9 @@ import {
   ArrowDownFromLine,
   Copy,
   RotateCcw,
+  History,
 } from "lucide-react";
+import { SnapshotList } from "../snapshot/SnapshotList";
 import {
   SIDEBAR_ADD_CHAPTER,
   SIDEBAR_BINDER_TITLE,
@@ -68,6 +70,9 @@ type SidebarItem =
   | { type: "add-chapter" }
   | { type: "research-header" }
   | { type: "research-item"; id: "character" | "world" | "scrap" }
+  | { type: "snapshot-header" }
+  | { type: "snapshot-list"; chapterId: string }
+  | { type: "snapshot-empty-msg" }
   | { type: "trash-header" }
   | { type: "trash-loading" }
   | { type: "trash-empty" }
@@ -91,6 +96,7 @@ function Sidebar({
   // Section collapse states
   const [isManuscriptOpen, setManuscriptOpen] = useState(true);
   const [isResearchOpen, setResearchOpen] = useState(true);
+  const [isSnapshotOpen, setSnapshotOpen] = useState(false);
   const [isTrashOpen, setTrashOpen] = useState(false);
 
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
@@ -246,6 +252,15 @@ function Sidebar({
       items.push({ type: "research-item", id: "scrap" });
     }
 
+    items.push({ type: "snapshot-header" });
+    if (isSnapshotOpen) {
+      if (activeChapterId) {
+        items.push({ type: "snapshot-list", chapterId: activeChapterId });
+      } else {
+        items.push({ type: "snapshot-empty-msg" });
+      }
+    }
+
     items.push({ type: "trash-header" });
     if (isTrashOpen) {
       if (isSnapshotsLoading) {
@@ -258,7 +273,17 @@ function Sidebar({
     }
 
     return items;
-  }, [chapters, isManuscriptOpen, isResearchOpen, isTrashOpen, snapshots, isSnapshotsLoading]);
+    return items;
+  }, [
+    chapters,
+    isManuscriptOpen,
+    isResearchOpen,
+    isTrashOpen,
+    snapshots,
+    isSnapshotsLoading,
+    activeChapterId,
+    isSnapshotOpen,
+  ]);
 
   return (
     <div className="h-full flex flex-col select-none" data-testid="sidebar">
@@ -447,6 +472,39 @@ function Sidebar({
                   )}
                 </div>
               );
+            }
+
+            if (item.type === "snapshot-header") {
+              return (
+                <div
+                  className="flex items-center px-4 py-1.5 text-[11px] font-semibold text-muted uppercase tracking-wider cursor-pointer hover:text-fg transition-colors"
+                  onClick={() => setSnapshotOpen(!isSnapshotOpen)}
+                >
+                  {isSnapshotOpen ? (
+                    <ChevronDown className="mr-1.5 opacity-70 icon-xs" />
+                  ) : (
+                    <ChevronRight className="mr-1.5 opacity-70 icon-xs" />
+                  )}
+                  <History className="mr-2 text-muted icon-sm" />
+                  <span>스냅샷 (History)</span>
+                </div>
+              );
+            }
+
+            if (item.type === "snapshot-list") {
+                return (
+                    <div className="h-60 border-b border-border">
+                        <SnapshotList chapterId={item.chapterId} />
+                    </div>
+                );
+            }
+
+            if (item.type === "snapshot-empty-msg") {
+                return (
+                    <div className="px-4 py-2 text-xs text-muted italic">
+                        챕터를 선택해주세요.
+                    </div>
+                );
             }
 
             if (item.type === "trash-header") {
