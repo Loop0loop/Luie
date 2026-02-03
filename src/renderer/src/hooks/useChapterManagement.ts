@@ -98,6 +98,12 @@ export function useChapterManagement() {
           content: newContent,
         });
 
+        try {
+          await api.autoSave(activeChapterId, newContent, currentProject.id);
+        } catch (error) {
+          api.logger.warn("Auto snapshot failed", error);
+        }
+
         if (currentProject.projectPath?.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
           // Package export is handled in main process (debounced)
           api.logger.info("Luie package export scheduled", {

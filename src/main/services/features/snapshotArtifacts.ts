@@ -118,11 +118,15 @@ type ProjectSnapshotRecord = {
   }>;
 };
 
-function resolveLocalSnapshotDir(projectPath: string, projectId: string) {
+function resolveProjectBaseDir(projectPath: string) {
   const normalized = projectPath.trim();
-  const baseDir = normalized.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)
+  return normalized.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)
     ? path.dirname(normalized)
     : normalized;
+}
+
+function resolveLocalSnapshotDir(projectPath: string, projectId: string) {
+  const baseDir = resolveProjectBaseDir(projectPath);
   return path.join(baseDir, ".luie", LUIE_SNAPSHOTS_DIR, projectId);
 }
 
@@ -153,15 +157,10 @@ export async function writeFullSnapshotArtifact(
   }
 
   if (!project.projectPath) {
-    logger.error("Project path missing for snapshot", {
+    logger.warn("Project path missing for snapshot; skipping local package snapshot", {
       snapshotId,
       projectId: input.projectId,
     });
-    throw new ServiceError(
-      ErrorCode.REQUIRED_FIELD_MISSING,
-      "Project path is required for full snapshot",
-      { projectId: input.projectId },
-    );
   }
 
   const snapshotData: FullSnapshotData = {
@@ -221,10 +220,15 @@ export async function writeFullSnapshotArtifact(
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
   const fileName = `${timestamp}-${snapshotId}.snap`;
 
-  const localDir = resolveLocalSnapshotDir(project.projectPath, project.id);
-  await fs.mkdir(localDir, { recursive: true });
-  const localPath = path.join(localDir, fileName);
-  await fs.writeFile(localPath, buffer);
+  let localPath: string | undefined;
+  let projectBackupPath: string | undefined;
+
+  if (project.projectPath) {
+    const localDir = resolveLocalSnapshotDir(project.projectPath, project.id);
+    await fs.mkdir(localDir, { recursive: true });
+    localPath = path.join(localDir, fileName);
+    await fs.writeFile(localPath, buffer);
+  }
 
   const safeProjectName = sanitizeName(project.title ?? "", String(project.id));
   const backupDir = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR, safeProjectName);
@@ -232,11 +236,20 @@ export async function writeFullSnapshotArtifact(
   const backupPath = path.join(backupDir, fileName);
   await fs.writeFile(backupPath, buffer);
 
+  if (project.projectPath) {
+    const projectBaseDir = resolveProjectBaseDir(project.projectPath);
+    const projectBackupDir = path.join(projectBaseDir, `backup${safeProjectName}`);
+    await fs.mkdir(projectBackupDir, { recursive: true });
+    projectBackupPath = path.join(projectBackupDir, "nice.snap");
+    await fs.writeFile(projectBackupPath, buffer);
+  }
+
   logger.info("Full snapshot saved", {
     snapshotId,
     projectId: project.id,
     projectPath: project.projectPath,
     localPath,
     backupPath,
+    projectBackupPath,
   });
 }
