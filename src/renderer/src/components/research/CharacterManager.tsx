@@ -26,6 +26,7 @@ export default function CharacterManager() {
   const { currentItem: currentProject } = useProjectStore();
   const {
     items: characters,
+    currentItem: currentCharacterFromStore,
     loadAll: loadCharacters,
     create: createCharacter,
     update: updateCharacter
@@ -33,6 +34,14 @@ export default function CharacterManager() {
   
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+
+  // Sync with global store selection (e.g. from SmartLinkService)
+  useEffect(() => {
+    if (currentCharacterFromStore?.id && currentCharacterFromStore.id !== selectedCharacterId) {
+        // eslint-disable-next-line
+        setSelectedCharacterId(currentCharacterFromStore.id);
+    }
+  }, [currentCharacterFromStore, selectedCharacterId]);
 
   const handleLayoutChange = (layout: Layout) => {
     localStorage.setItem("character-sidebar-layout-v2", JSON.stringify(layout));

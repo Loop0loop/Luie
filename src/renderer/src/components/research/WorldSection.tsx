@@ -170,9 +170,17 @@ export default function WorldSection() {
 
 function TermManager() {
   const { currentItem: currentProject } = useProjectStore();
-  const { terms, loadTerms, createTerm, updateTerm, deleteTerm } =
+  const { terms, currentTerm, loadTerms, createTerm, updateTerm, deleteTerm } =
     useTermStore();
   const [selectedTermId, setSelectedTermId] = useState<string | null>(null);
+
+  // Sync with global store selection
+  useEffect(() => {
+    if (currentTerm?.id && currentTerm.id !== selectedTermId) {
+        // eslint-disable-next-line
+        setSelectedTermId(currentTerm.id);
+    }
+  }, [currentTerm, selectedTermId]);
 
   useEffect(() => {
     if (currentProject) {
