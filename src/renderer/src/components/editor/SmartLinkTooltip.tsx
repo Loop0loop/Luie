@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useCharacterStore } from "../../stores/characterStore";
 import { useTermStore } from "../../stores/termStore";
 import type { Character, Term } from "../../../../shared/types";
+import { smartLinkService } from "../../../../main/services/core/SmartLinkService";
 
 type TooltipState = {
   visible: boolean;
@@ -25,11 +26,12 @@ export function SmartLinkTooltip() {
   const { items: terms } = useTermStore();
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleMouseOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target.matches(".smart-link")) {
+      if (target.matches(".smart-link-highlight")) {
         const type = target.getAttribute("data-type") as "character" | "term";
         const id = target.getAttribute("data-id");
 
@@ -40,7 +42,7 @@ export function SmartLinkTooltip() {
           setState({
             visible: true,
             x: rect.left + window.scrollX,
-            y: rect.bottom + window.scrollY + 5, // 5px offset
+            y: rect.bottom + window.scrollY + 5,
             type,
             id,
           });
@@ -50,22 +52,46 @@ export function SmartLinkTooltip() {
 
     const handleMouseOut = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target.matches(".smart-link")) {
-        // Small delay to allow moving to tooltip if needed (though we aren't handling hovering tooltip yet)
+      if (target.matches(".smart-link-highlight")) {
+        // Delay hiding to allow moving to tooltip
         timeoutRef.current = setTimeout(() => {
             setState((prev) => ({ ...prev, visible: false }));
         }, 300);
       }
     };
 
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.matches(".smart-link-highlight")) {
+        const type = target.getAttribute("data-type") as "character" | "term";
+        const id = target.getAttribute("data-id");
+        if (type && id) {
+           smartLinkService.openItem(id, type);
+        }
+      }
+    };
+
     document.addEventListener("mouseover", handleMouseOver);
     document.addEventListener("mouseout", handleMouseOut);
+    document.addEventListener("click", handleClick);
 
     return () => {
       document.removeEventListener("mouseover", handleMouseOver);
       document.removeEventListener("mouseout", handleMouseOut);
+      document.removeEventListener("click", handleClick);
     };
   }, []);
+
+  // Keep tooltip open when hovering the tooltip itself
+  const handleTooltipEnter = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+  };
+
+  const handleTooltipLeave = () => {
+    timeoutRef.current = setTimeout(() => {
+        setState((prev) => ({ ...prev, visible: false }));
+    }, 300);
+  };
 
   if (!state.visible) return null;
 
@@ -95,10 +121,12 @@ export function SmartLinkTooltip() {
 
   if (!content) return null;
 
-  // Render Portal at root
   return createPortal(
     <div
-      className="fixed z-50 pointer-events-none bg-popover text-popover-foreground rounded-md shadow-md border border-border p-3 w-[250px] animate-in fade-in zoom-in-95 duration-200"
+      ref={tooltipRef}
+      onMouseEnter={handleTooltipEnter}
+      onMouseLeave={handleTooltipLeave}
+      className="fixed z-9999 bg-popover text-popover-foreground rounded-md shadow-md border border-border p-3 w-[250px] animate-in fade-in zoom-in-95 duration-200 pointer-events-auto cursor-default"
       style={{
         left: state.x,
         top: state.y,

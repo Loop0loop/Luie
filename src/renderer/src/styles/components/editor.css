@@ -214,3 +214,17 @@
 .tiptap .ProseMirror details.toggle[open] summary::before {
     transform: rotate(90deg);
 }
+
+/* Smart Link Highlight */
+.tiptap .ProseMirror .smart-link-highlight {
+    cursor: pointer;
+    border-bottom: 2px solid rgba(123, 126, 252, 0.4); /* Subtle underline */
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+}
+
+.tiptap .ProseMirror .smart-link-highlight:hover {
+    background-color: rgba(123, 126, 252, 0.1);
+    border-bottom-color: rgba(123, 126, 252, 1);
+}
