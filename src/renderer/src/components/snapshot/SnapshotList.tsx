@@ -3,6 +3,7 @@ import { Clock, RotateCcw, GitCompare } from "lucide-react";
 import { api } from "../../services/api";
 import type { Snapshot } from "../../../../shared/types";
 import { useSplitView } from "../../hooks/useSplitView";
+import { useChapterStore } from "../../stores/chapterStore";
 
 interface SnapshotListProps {
   chapterId: string;
@@ -13,6 +14,7 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
   const [loading, setLoading] = useState(false);
   
   const { handleOpenSnapshot } = useSplitView();
+  const { loadAll: reloadChapters } = useChapterStore();
 
   useEffect(() => {
     async function loadSnapshots() {
@@ -40,7 +42,10 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
       if (!window.confirm("이 스냅샷으로 복구하시겠습니까? 현재 변경사항이 덮어씌워집니다.")) return;
       
       try {
-          await api.snapshot.restore(snapshot.id);
+          const response = await api.snapshot.restore(snapshot.id);
+          if (response.success && snapshot.projectId) {
+            await reloadChapters(snapshot.projectId);
+          }
           alert("복구되었습니다.");
           // Trigger reload if needed
       } catch (error) {

@@ -75,7 +75,8 @@ type FullSnapshotData = {
 
 export async function readFullSnapshotArtifact(filePath: string): Promise<FullSnapshotData> {
   const buffer = await fs.readFile(filePath);
-  const jsonBuffer = await gunzip(buffer);
+  const isGzip = buffer.length >= 2 && buffer[0] === 0x1f && buffer[1] === 0x8b;
+  const jsonBuffer = isGzip ? await gunzip(buffer) : buffer;
   const payload = JSON.parse(jsonBuffer.toString("utf8"));
   return payload as FullSnapshotData;
 }
@@ -120,14 +121,27 @@ type ProjectSnapshotRecord = {
 
 function resolveProjectBaseDir(projectPath: string) {
   const normalized = projectPath.trim();
-  return normalized.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)
-    ? path.dirname(normalized)
-    : normalized;
+  const normalizedLower = normalized.toLowerCase();
+  const extLower = LUIE_PACKAGE_EXTENSION.toLowerCase();
+  return normalizedLower.endsWith(extLower) ? path.dirname(normalized) : normalized;
 }
 
 function resolveLocalSnapshotDir(projectPath: string, projectId: string) {
   const baseDir = resolveProjectBaseDir(projectPath);
   return path.join(baseDir, ".luie", LUIE_SNAPSHOTS_DIR, projectId);
+}
+
+async function writeFileAtomic(targetPath: string, buffer: Buffer) {
+  const dir = path.dirname(targetPath);
+  const tempPath = path.join(dir, `${path.basename(targetPath)}.tmp-${Date.now()}`);
+  await fs.writeFile(tempPath, buffer);
+  const handle = await fs.open(tempPath, "r+");
+  try {
+    await handle.sync();
+  } finally {
+    await handle.close();
+  }
+  await fs.rename(tempPath, targetPath);
 }
 
 export async function writeFullSnapshotArtifact(
@@ -227,21 +241,21 @@ export async function writeFullSnapshotArtifact(
     const localDir = resolveLocalSnapshotDir(project.projectPath, project.id);
     await fs.mkdir(localDir, { recursive: true });
     localPath = path.join(localDir, fileName);
-    await fs.writeFile(localPath, buffer);
+    await writeFileAtomic(localPath, buffer);
   }
 
   const safeProjectName = sanitizeName(project.title ?? "", String(project.id));
   const backupDir = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR, safeProjectName);
   await fs.mkdir(backupDir, { recursive: true });
   const backupPath = path.join(backupDir, fileName);
-  await fs.writeFile(backupPath, buffer);
+  await writeFileAtomic(backupPath, buffer);
 
   if (project.projectPath) {
     const projectBaseDir = resolveProjectBaseDir(project.projectPath);
     const projectBackupDir = path.join(projectBaseDir, `backup${safeProjectName}`);
     await fs.mkdir(projectBackupDir, { recursive: true });
-    projectBackupPath = path.join(projectBackupDir, "nice.snap");
-    await fs.writeFile(projectBackupPath, buffer);
+    projectBackupPath = path.join(projectBackupDir, fileName);
+    await writeFileAtomic(projectBackupPath, buffer);
   }
 
   logger.info("Full snapshot saved", {

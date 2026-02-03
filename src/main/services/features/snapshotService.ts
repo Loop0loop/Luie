@@ -164,9 +164,16 @@ export class SnapshotService {
 
   async restoreSnapshot(snapshotId: string) {
     try {
-      const snapshot = await db.getClient().snapshot.findUnique({
+      const snapshot = (await db.getClient().snapshot.findUnique({
         where: { id: snapshotId },
-      });
+      })) as
+        | {
+            id: string;
+            projectId: string;
+            chapterId?: string | null;
+            content?: string | null;
+          }
+        | null;
 
       if (!snapshot) {
         throw new ServiceError(
@@ -184,10 +191,13 @@ export class SnapshotService {
         );
       }
 
+      const nextContent = typeof snapshot.content === "string" ? snapshot.content : "";
+
       await db.getClient().chapter.update({
         where: { id: snapshot.chapterId },
         data: {
-          content: snapshot.content,
+          content: nextContent,
+          wordCount: nextContent.length,
         },
       });
 
@@ -195,6 +205,8 @@ export class SnapshotService {
         snapshotId,
         chapterId: snapshot.chapterId,
       });
+
+      projectService.schedulePackageExport(String(snapshot.projectId), "snapshot:restore");
 
       return {
         success: true,

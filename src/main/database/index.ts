@@ -30,6 +30,7 @@ type PrismaRecord = Record<string, unknown>;
 type PrismaClient = {
   $disconnect: () => Promise<void>;
   $transaction: (args: unknown) => Promise<unknown>;
+  $executeRawUnsafe?: (query: string) => Promise<unknown>;
   project: PrismaDelegate<PrismaRecord>;
   chapter: PrismaDelegate<PrismaRecord>;
   character: PrismaDelegate<PrismaRecord>;
@@ -139,6 +140,21 @@ class DatabaseService {
       adapter,
       log: ["error", "warn"],
     });
+
+    if (this.prisma.$executeRawUnsafe) {
+      const pragmaCalls = [
+        this.prisma.$executeRawUnsafe("PRAGMA journal_mode=WAL;"),
+        this.prisma.$executeRawUnsafe("PRAGMA synchronous=FULL;"),
+        this.prisma.$executeRawUnsafe("PRAGMA wal_autocheckpoint=1000;"),
+      ];
+      Promise.all(pragmaCalls)
+        .then(() => {
+          logger.info("SQLite WAL mode enabled");
+        })
+        .catch((error) => {
+          logger.warn("Failed to enable WAL mode", { error });
+        });
+    }
 
     logger.info("Database service initialized");
   }

@@ -3,6 +3,7 @@ import { RotateCcw, Calendar } from "lucide-react";
 import * as Diff from "diff";
 import { api } from "../../services/api";
 import { useChapterStore } from "../../stores/chapterStore";
+import { useUIStore } from "../../stores/uiStore";
 import type { Snapshot } from "../../../../shared/types";
 import Editor from "../editor/Editor";
 
@@ -21,7 +22,9 @@ function htmlToText(html: string): string {
 
 function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: SnapshotViewerProps) {
   const { loadAll: reloadChapters } = useChapterStore();
+  const { setSplitView, setRightPanelContent } = useUIStore();
   const [selectedAdditions, setSelectedAdditions] = useState<Set<number>>(new Set());
+  const diffEnabled = (currentContent?.length ?? 0) + (snapshot.content?.length ?? 0) <= 50000;
 
   const handleRestore = async () => {
     const confirmed = window.confirm("Restore this snapshot? Current content will be overwritten.");
@@ -32,7 +35,8 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
       if (response.success) {
         if (snapshot.projectId) {
           await reloadChapters(snapshot.projectId);
-          window.location.reload(); 
+          setRightPanelContent({ type: "research", tab: "character" });
+          setSplitView(false);
         }
       } else {
         api.logger.error("Snapshot restore failed", response.error);
@@ -50,8 +54,9 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
   const snapshotHtml = useMemo(() => snapshot.content ?? "", [snapshot.content]);
 
   const diffParts = useMemo(() => {
+    if (!diffEnabled) return [] as Diff.Change[];
     return Diff.diffWordsWithSpace(currentHtml, snapshotHtml);
-  }, [currentHtml, snapshotHtml]);
+  }, [currentHtml, snapshotHtml, diffEnabled]);
 
   const additions = useMemo(() => {
     let index = 0;
@@ -144,7 +149,11 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
             선택 적용
           </button>
         </div>
-        {additions.length === 0 ? (
+        {!diffEnabled ? (
+          <div className="px-4 pb-3 text-xs text-muted">
+            내용이 길어 변경 비교를 생략했습니다.
+          </div>
+        ) : additions.length === 0 ? (
           <div className="px-4 pb-3 text-xs text-muted">추가된 내용이 없습니다.</div>
         ) : (
           <div className="max-h-40 overflow-y-auto px-4 pb-3 flex flex-col gap-2">
@@ -189,8 +198,8 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
           initialTitle={snapshot.description || ""}
           initialContent={snapshot.content}
           readOnly={true}
-          comparisonContent={currentContent}
-          diffMode="snapshot"
+          comparisonContent={diffEnabled ? currentContent : undefined}
+          diffMode={diffEnabled ? "snapshot" : undefined}
         />
       </div>
     </div>

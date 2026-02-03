@@ -222,6 +222,13 @@ export class ProjectService {
       file: `${LUIE_MANUSCRIPT_DIR}/${chapter.id}${MARKDOWN_EXTENSION}`,
     }));
 
+    const chapterMeta = chapters.map((chapter) => ({
+      id: chapter.id,
+      title: chapter.title,
+      order: chapter.order,
+      file: chapter.file,
+    }));
+
     const characters = project.characters.map((character: CharacterExportRecord) => {
       let attributes: unknown = undefined;
       if (character.attributes) {
@@ -270,6 +277,7 @@ export class ProjectService {
       description: project.description,
       createdAt: project.createdAt?.toISOString?.() ?? String(project.createdAt),
       updatedAt: project.updatedAt?.toISOString?.() ?? String(project.updatedAt),
+      chapters: chapterMeta,
     };
 
     logger.info("Exporting .luie package", {

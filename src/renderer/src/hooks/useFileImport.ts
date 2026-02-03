@@ -135,6 +135,7 @@ export function useFileImport(
           const created = await createChapter({
             projectId: currentProject.id,
             title: ch.title ?? DEFAULT_UNTITLED_LABEL,
+            order: typeof ch.order === "number" ? ch.order : undefined,
           });
           if (created?.id) {
             let chapterContent = typeof ch.content === "string" ? ch.content : null;
