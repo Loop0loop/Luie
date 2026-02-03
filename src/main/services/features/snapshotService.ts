@@ -4,6 +4,7 @@
 
 import * as fs from "fs";
 import path from "path";
+import { randomUUID } from "node:crypto";
 import { app } from "electron";
 import { db } from "../../database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
@@ -270,69 +271,103 @@ export class SnapshotService {
 
         const projectId = created.id;
 
-        if (snapshot.data.chapters.length > 0) {
+        const chapterIdMap = new Map<string, string>();
+        const characterIdMap = new Map<string, string>();
+        const termIdMap = new Map<string, string>();
+
+        const chaptersForCreate = snapshot.data.chapters.map((chapter, index) => {
+          const nextId = randomUUID();
+          chapterIdMap.set(chapter.id, nextId);
+          return {
+            id: nextId,
+            projectId,
+            title: chapter.title,
+            content: chapter.content ?? "",
+            synopsis: chapter.synopsis ?? null,
+            order: typeof chapter.order === "number" ? chapter.order : index,
+            wordCount: chapter.wordCount ?? 0,
+          };
+        });
+
+        const charactersForCreate = snapshot.data.characters.map((character) => {
+          const nextId = randomUUID();
+          characterIdMap.set(character.id, nextId);
+          return {
+            id: nextId,
+            projectId,
+            name: character.name,
+            description: character.description ?? null,
+            firstAppearance: character.firstAppearance ?? null,
+            attributes:
+              typeof character.attributes === "string"
+                ? character.attributes
+                : character.attributes
+                  ? JSON.stringify(character.attributes)
+                  : null,
+          };
+        });
+
+        const termsForCreate = snapshot.data.terms.map((term) => {
+          const nextId = randomUUID();
+          termIdMap.set(term.id, nextId);
+          return {
+            id: nextId,
+            projectId,
+            term: term.term,
+            definition: term.definition ?? null,
+            category: term.category ?? null,
+            firstAppearance: term.firstAppearance ?? null,
+          };
+        });
+
+        if (chaptersForCreate.length > 0) {
           await tx.chapter.createMany({
-            data: snapshot.data.chapters.map((chapter, index) => ({
-              id: chapter.id,
-              projectId,
-              title: chapter.title,
-              content: chapter.content ?? "",
-              synopsis: chapter.synopsis ?? null,
-              order: typeof chapter.order === "number" ? chapter.order : index,
-              wordCount: chapter.wordCount ?? 0,
-            })),
+            data: chaptersForCreate,
           });
         }
 
-        if (snapshot.data.characters.length > 0) {
+        if (charactersForCreate.length > 0) {
           await tx.character.createMany({
-            data: snapshot.data.characters.map((character) => ({
-              id: character.id,
-              projectId,
-              name: character.name,
-              description: character.description ?? null,
-              firstAppearance: character.firstAppearance ?? null,
-              attributes:
-                typeof character.attributes === "string"
-                  ? character.attributes
-                  : character.attributes
-                    ? JSON.stringify(character.attributes)
-                    : null,
-            })),
+            data: charactersForCreate,
           });
         }
 
-        if (snapshot.data.terms.length > 0) {
+        if (termsForCreate.length > 0) {
           await tx.term.createMany({
-            data: snapshot.data.terms.map((term) => ({
-              id: term.id,
-              projectId,
-              term: term.term,
-              definition: term.definition ?? null,
-              category: term.category ?? null,
-              firstAppearance: term.firstAppearance ?? null,
-            })),
+            data: termsForCreate,
           });
         }
 
-        return created;
+        return {
+          created,
+          chapterIdMap,
+          characterIdMap,
+          termIdMap,
+        };
       })) as {
-        id: string;
-        title: string;
-        description?: string | null;
-        createdAt: Date;
-        updatedAt: Date;
+        created: {
+          id: string;
+          title: string;
+          description?: string | null;
+          createdAt: Date;
+          updatedAt: Date;
+        };
+        chapterIdMap: Map<string, string>;
+        characterIdMap: Map<string, string>;
+        termIdMap: Map<string, string>;
       };
+
+      const { created, chapterIdMap, characterIdMap, termIdMap } = project;
 
       const meta = {
         format: LUIE_PACKAGE_FORMAT,
         container: LUIE_PACKAGE_CONTAINER_DIR,
         version: LUIE_PACKAGE_VERSION,
-        projectId: project.id,
-        title: project.title,
-        description: project.description ?? undefined,
-        createdAt: project.createdAt?.toISOString?.() ?? String(project.createdAt),
-        updatedAt: project.updatedAt?.toISOString?.() ?? String(project.updatedAt),
+        projectId: created.id,
+        title: created.title,
+        description: created.description ?? undefined,
+        createdAt: created.createdAt?.toISOString?.() ?? String(created.createdAt),
+        updatedAt: created.updatedAt?.toISOString?.() ?? String(created.updatedAt),
       };
 
       try {
@@ -341,11 +376,11 @@ export class SnapshotService {
           {
             meta,
             chapters: snapshot.data.chapters.map((chapter) => ({
-              id: chapter.id,
+              id: chapterIdMap.get(chapter.id) ?? chapter.id,
               content: chapter.content ?? "",
             })),
             characters: snapshot.data.characters.map((character) => ({
-              id: character.id,
+              id: characterIdMap.get(character.id) ?? character.id,
               name: character.name,
               description: character.description ?? null,
               firstAppearance: character.firstAppearance ?? null,
@@ -359,7 +394,7 @@ export class SnapshotService {
               updatedAt: new Date(character.updatedAt),
             })),
             terms: snapshot.data.terms.map((term) => ({
-              id: term.id,
+              id: termIdMap.get(term.id) ?? term.id,
               term: term.term,
               definition: term.definition ?? null,
               category: term.category ?? null,
@@ -372,16 +407,16 @@ export class SnapshotService {
           logger,
         );
       } catch (error) {
-        await db.getClient().project.delete({ where: { id: project.id } }).catch(() => undefined);
+        await db.getClient().project.delete({ where: { id: created.id } }).catch(() => undefined);
         throw error;
       }
 
       logger.info("Snapshot imported successfully", {
-        projectId: project.id,
+        projectId: created.id,
         filePath,
       });
 
-      return project;
+      return created;
     } catch (error) {
       logger.error("Failed to import snapshot file", error);
       throw new ServiceError(
