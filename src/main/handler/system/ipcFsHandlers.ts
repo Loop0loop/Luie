@@ -289,7 +289,7 @@ export const writeLuiePackage = async (
     for (const snapshot of payload.snapshots) {
       if (!snapshot.id) continue;
       entries.push({
-        name: `${LUIE_SNAPSHOTS_DIR}/${snapshot.id}.json`,
+        name: `${LUIE_SNAPSHOTS_DIR}/${snapshot.id}.snap`,
         content: JSON.stringify(snapshot, null, 2),
       });
     }

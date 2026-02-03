@@ -96,6 +96,7 @@ function Sidebar({
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [isSnapshotsLoading, setSnapshotsLoading] = useState(false);
   const [snapshotError, setSnapshotError] = useState<string | null>(null);
+  const [restoringSnapshotId, setRestoringSnapshotId] = useState<string | null>(null);
 
   // Context Menu State
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
@@ -154,14 +155,22 @@ function Sidebar({
     }
   };
 
+  const chapterTitleById = useMemo(() => {
+    return new Map(chapters.map((chapter) => [chapter.id, chapter.title]));
+  }, [chapters]);
+
   const formatSnapshotLabel = (snapshot: Snapshot) => {
     const label = snapshot.description?.trim();
     if (label) return label;
+    return `Snapshot ${snapshot.id.slice(0, 6)}`;
+  };
+
+  const formatSnapshotTime = (snapshot: Snapshot) => {
     const created = snapshot.createdAt ? new Date(snapshot.createdAt) : null;
     if (created && !Number.isNaN(created.getTime())) {
       return created.toLocaleString();
     }
-    return `Snapshot ${snapshot.id.slice(0, 6)}`;
+    return "";
   };
 
   const loadSnapshots = useCallback(async () => {
@@ -192,7 +201,14 @@ function Sidebar({
   }, [isTrashOpen, currentProjectId, loadSnapshots]);
 
   const handleRestoreSnapshot = useCallback(
-    async (snapshot: Snapshot) => {
+    async (snapshot: Snapshot, event?: React.MouseEvent) => {
+      if (event && !event.isTrusted) return;
+      if (restoringSnapshotId) return;
+
+      const confirmed = window.confirm("이 스냅샷으로 복구할까요? 현재 내용이 덮어써집니다.");
+      if (!confirmed) return;
+
+      setRestoringSnapshotId(snapshot.id);
       try {
         const response = await api.snapshot.restore(snapshot.id);
         if (response.success) {
@@ -201,15 +217,18 @@ function Sidebar({
           }
           if (currentProjectId) {
             await reloadChapters(currentProjectId);
+            await loadSnapshots();
           }
         } else {
           api.logger.error("Snapshot restore failed", response.error);
         }
       } catch (error) {
         api.logger.error("Snapshot restore failed", error);
+      } finally {
+        setRestoringSnapshotId(null);
       }
     },
-    [currentProjectId, onSelectChapter, reloadChapters],
+    [currentProjectId, onSelectChapter, reloadChapters, restoringSnapshotId, loadSnapshots],
   );
 
   const sidebarItems = useMemo<SidebarItem[]>(() => {
@@ -432,16 +451,29 @@ function Sidebar({
 
             if (item.type === "trash-header") {
               return (
-                <div
-                  className="flex items-center px-4 py-1.5 text-[11px] font-semibold text-muted uppercase tracking-wider cursor-pointer hover:text-fg transition-colors"
-                  onClick={() => setTrashOpen(!isTrashOpen)}
-                >
-                  {isTrashOpen ? (
-                    <ChevronDown className="mr-1.5 opacity-70 icon-xs" />
-                  ) : (
-                    <ChevronRight className="mr-1.5 opacity-70 icon-xs" />
+                <div className="flex items-center px-4 py-1.5 text-[11px] font-semibold text-muted uppercase tracking-wider">
+                  <button
+                    type="button"
+                    className="flex items-center cursor-pointer hover:text-fg transition-colors"
+                    onClick={() => setTrashOpen(!isTrashOpen)}
+                  >
+                    {isTrashOpen ? (
+                      <ChevronDown className="mr-1.5 opacity-70 icon-xs" />
+                    ) : (
+                      <ChevronRight className="mr-1.5 opacity-70 icon-xs" />
+                    )}
+                    <span>{SIDEBAR_SECTION_TRASH}</span>
+                  </button>
+                  {isTrashOpen && (
+                    <button
+                      type="button"
+                      className="ml-auto p-1 rounded hover:bg-active text-muted hover:text-fg"
+                      onClick={() => void loadSnapshots()}
+                      title="새로고침"
+                    >
+                      <RotateCcw className="icon-xs" />
+                    </button>
                   )}
-                  <span>{SIDEBAR_SECTION_TRASH}</span>
                 </div>
               );
             }
@@ -454,17 +486,32 @@ function Sidebar({
 
             if (item.type === "snapshot") {
               const label = formatSnapshotLabel(item.snapshot);
+              const time = formatSnapshotTime(item.snapshot);
+              const chapterTitle = item.snapshot.chapterId
+                ? chapterTitleById.get(item.snapshot.chapterId)
+                : null;
               return (
-                <div className="flex items-center px-4 py-1.5 text-[12px] text-muted hover:text-fg hover:bg-surface-hover transition-all gap-2">
-                  <FileText className="icon-xs" />
-                  <span className="truncate flex-1" title={label}>{label}</span>
-                  <button
-                    className="p-1 rounded hover:bg-active text-muted hover:text-fg"
-                    onClick={() => handleRestoreSnapshot(item.snapshot)}
-                    title="Restore"
-                  >
-                    <RotateCcw className="icon-xs" />
-                  </button>
+                <div className="flex flex-col px-4 py-2 text-[12px] text-muted hover:text-fg hover:bg-surface-hover transition-all gap-1">
+                  <div className="flex items-center gap-2">
+                    <FileText className="icon-xs" />
+                    <span className="truncate flex-1" title={label}>{label}</span>
+                    <button
+                      className="p-1 rounded hover:bg-active text-muted hover:text-fg"
+                      onClick={(event) => handleRestoreSnapshot(item.snapshot, event)}
+                      title="Restore"
+                      disabled={restoringSnapshotId === item.snapshot.id}
+                    >
+                      <RotateCcw className="icon-xs" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] text-muted">
+                    {chapterTitle ? (
+                      <span className="truncate">챕터: {chapterTitle}</span>
+                    ) : (
+                      <span>프로젝트 스냅샷</span>
+                    )}
+                    {time && <span className="ml-auto">{time}</span>}
+                  </div>
                 </div>
               );
             }
