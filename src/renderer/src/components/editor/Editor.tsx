@@ -194,13 +194,13 @@ function Editor({
         <div 
           className={cn(
             "w-full h-full flex flex-col flex-1 min-h-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] bg-transparent border-none shadow-none m-0",
-            isMobileView && "w-[430px] max-w-[430px] h-[95%] mx-auto my-5 border-[8px] border-[#2c2c2e] rounded-[48px] bg-editor-bg shadow-[0_0_0_2px_rgba(69,69,69,0.9),0_25px_50px_-12px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.05)] overflow-hidden relative"
+            isMobileView && "w-107.5 max-w-107.5 h-[95%] mx-auto my-5 border-8 border-[#2c2c2e] rounded-[48px] bg-editor-bg shadow-[0_0_0_2px_rgba(69,69,69,0.9),0_25px_50px_-12px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.05)] overflow-hidden relative"
           )}
           data-mobile={isMobileView}
         >
           {/* Mobile Notch Simulation */}
           {isMobileView && (
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120px] h-8 bg-[#2c2c2e] rounded-b-2xl z-[100] pointer-events-none" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-30 h-8 bg-[#2c2c2e] rounded-b-2xl z-100 pointer-events-none" />
           )}
 
           <input
@@ -237,7 +237,7 @@ function Editor({
 
       <div className="h-7 border-t border-border flex items-center justify-end gap-4 px-5 text-xs text-muted bg-bg-primary shrink-0 select-none">
         {/* Save Status Indicator */}
-        <span className="flex items-center gap-1.5 min-w-[60px]">
+        <span className="flex items-center gap-1.5 min-w-15">
           {saveStatus === "saving" && (
             <>
               <Loader2 className="w-3 h-3 animate-spin" />

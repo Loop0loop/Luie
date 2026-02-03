@@ -39,7 +39,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <div
               key={toast.id}
               className={cn(
-                "pointer-events-auto min-w-[300px] max-w-sm rounded-lg shadow-lg border p-4 flex items-start gap-3 animate-in slide-in-from-right-full duration-300",
+                "pointer-events-auto min-w-75 max-w-sm rounded-lg shadow-lg border p-4 flex items-start gap-3 animate-in slide-in-from-right-full duration-300",
                 "bg-panel border-border text-fg", // Base styles using theme tokens
               )}
             >

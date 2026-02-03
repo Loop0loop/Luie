@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeAll } from "vitest";
-import { SnapshotService } from "../../../src/main/services/snapshotService.js";
-import { ChapterService } from "../../../src/main/services/chapterService.js";
-import { ProjectService } from "../../../src/main/services/projectService.js";
-import { autoExtractService } from "../../../src/main/services/autoExtractService.js";
-import { projectService } from "../../../src/main/services/projectService.js";
+import { SnapshotService } from "../../../src/main/services/features/snapshotService.js";
+import { ChapterService } from "../../../src/main/services/core/chapterService.js";
+import { ProjectService } from "../../../src/main/services/core/projectService.js";
+import { autoExtractService } from "../../../src/main/services/features/autoExtractService.js";
+import { projectService } from "../../../src/main/services/core/projectService.js";
 import { generateText } from "../../helpers/generateText";
 
 const snapshotService = new SnapshotService();

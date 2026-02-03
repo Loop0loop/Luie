@@ -130,7 +130,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
 
   return (
     <div className="flex h-full w-full bg-bg-primary overflow-hidden">
-      <div className="w-[220px] bg-sidebar border-r border-border flex flex-col shrink-0 content-visibility-auto contain-intrinsic-size-[1px_600px]">
+      <div className="w-55 bg-sidebar border-r border-border flex flex-col shrink-0 content-visibility-auto contain-intrinsic-size-[1px_600px]">
         <div className="px-4 py-3 text-xs font-bold text-muted flex justify-between items-center uppercase tracking-wider">
           <span>{LABEL_MEMO_SECTION_TITLE}</span>
           <Plus className="icon-sm cursor-pointer hover:text-fg transition-colors" onClick={handleAddNote} />
@@ -166,7 +166,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
               <div
                 className={cn(
                   "px-4 py-3 border-b border-border cursor-pointer transition-colors hover:bg-element-hover",
-                  activeNoteId === note.id && "bg-active border-l-[3px] border-l-accent pl-[13px]" // Adjust padding to compensate border
+                  activeNoteId === note.id && "bg-active border-l-[3px] border-l-accent pl-3.25" // Adjust padding to compensate border
                 )}
                 onClick={() => setActiveNoteId(note.id)}
               >

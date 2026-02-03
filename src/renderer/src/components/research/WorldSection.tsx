@@ -88,7 +88,7 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
 
   return (
     <div
-      className="p-2 min-w-[100px] bg-panel border-2 border-active rounded-lg shadow-sm text-center flex flex-col justify-center items-center relative transition-transform hover:shadow-md"
+      className="p-2 min-w-25 bg-panel border-2 border-active rounded-lg shadow-sm text-center flex flex-col justify-center items-center relative transition-transform hover:shadow-md"
       onDoubleClick={(e) => {
         e.stopPropagation();
         setDraft(data.label);
@@ -265,7 +265,7 @@ function TermManager() {
           if (item.type === "add") {
             return (
               <div
-                className="h-[80px] flex flex-col items-center justify-center gap-2 border border-dashed border-border rounded-lg cursor-pointer text-muted hover:text-accent hover:border-accent hover:bg-element-hover transition-colors"
+                className="h-20 flex flex-col items-center justify-center gap-2 border border-dashed border-border rounded-lg cursor-pointer text-muted hover:text-accent hover:border-accent hover:bg-element-hover transition-colors"
                 onClick={handleAddTerm}
                 style={{ height: "80px" }}
               >
@@ -277,7 +277,7 @@ function TermManager() {
 
           return (
             <div
-              className="h-[100px] p-3 bg-element border border-border rounded-lg cursor-pointer relative shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-active overflow-hidden flex flex-col"
+              className="h-25 p-3 bg-element border border-border rounded-lg cursor-pointer relative shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-active overflow-hidden flex flex-col"
               onClick={() => setSelectedTermId(item.term.id)}
               style={{ height: "auto", minHeight: "80px" }}
             >
@@ -903,7 +903,7 @@ function PlotBoard() {
   return (
     <div className="h-full flex overflow-x-auto p-4 gap-4 bg-app">
       {columns.map((col) => (
-        <div key={col.id} className="w-[280px] shrink-0 flex flex-col bg-sidebar border border-border rounded-lg max-h-full">
+        <div key={col.id} className="w-70 shrink-0 flex flex-col bg-sidebar border border-border rounded-lg max-h-full">
           <div className="p-3 font-bold text-sm text-fg uppercase flex justify-between items-center border-b border-border bg-panel/50">
             {col.title}
             <span className="bg-element/80 px-1.5 py-0.5 rounded text-[10px] text-muted">{col.cards.length}</span>

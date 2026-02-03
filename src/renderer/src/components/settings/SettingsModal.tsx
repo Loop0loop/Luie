@@ -170,13 +170,13 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
       onClick={onClose}
     >
       <div 
-        className="w-[960px] h-[640px] bg-surface border border-white/10 rounded-xl shadow-2xl flex overflow-hidden max-h-[95vh] animate-in slide-in-from-bottom-5 duration-200 relative will-change-[transform,opacity]" 
+        className="w-240 h-160 bg-surface border border-white/10 rounded-xl shadow-2xl flex overflow-hidden max-h-[95vh] animate-in slide-in-from-bottom-5 duration-200 relative will-change-[transform,opacity]" 
         onClick={(e) => e.stopPropagation()}
       >
         {/* HEADER is removed, using sidebar layout instead */}
         <div className="flex w-full h-full">
           {/* SIDEBAR */}
-          <div className="w-[260px] bg-sidebar border-r border-border flex flex-col pt-3">
+          <div className="w-65 bg-sidebar border-r border-border flex flex-col pt-3">
             <div className="p-6 pb-4">
               <div className="text-lg font-bold text-fg">{SETTINGS_TITLE_DISPLAY}</div>
             </div>
@@ -211,7 +211,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             </button>
             
             {activeTab === "editor" && (
-              <div className="flex-1 px-[60px] py-[48px] overflow-y-auto flex flex-col gap-8">
+              <div className="flex-1 px-15 py-12 overflow-y-auto flex flex-col gap-8">
                 {/* FONT FAMILY */}
                 <div className="flex flex-col gap-3">
                   <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{SETTINGS_SECTION_FONT}</div>
@@ -270,7 +270,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                         <div key={font.id} className="flex items-center justify-between px-3 py-2.5 border border-border rounded-[10px] bg-surface">
                           <div className="flex items-center gap-3">
                             <div
-                              className="w-[42px] h-[42px] rounded-lg border border-border flex items-center justify-center text-lg text-fg bg-surface-hover"
+                              className="w-10.5 h-10.5 rounded-lg border border-border flex items-center justify-center text-lg text-fg bg-surface-hover"
                               style={{ fontFamily: font.stack }}
                             >
                               {SETTINGS_SAMPLE_TEXT}
@@ -353,7 +353,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             )}
 
             {activeTab === "appearance" && (
-              <div className="flex-1 px-[60px] py-[48px] overflow-y-auto flex flex-col gap-8">
+              <div className="flex-1 px-15 py-12 overflow-y-auto flex flex-col gap-8">
                 <div className="flex flex-col gap-3">
                   <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{SETTINGS_SECTION_THEME}</div>
                   <div className="grid grid-cols-3 gap-3">
@@ -370,7 +370,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                         onClick={() => applySettings({ theme: t })}
                       >
                         {theme === t && (
-                          <div className="absolute top-1.5 right-1.5 bg-accent text-accent-fg w-[18px] h-[18px] rounded-full flex items-center justify-center">
+                          <div className="absolute top-1.5 right-1.5 bg-accent text-accent-fg w-4.5 h-4.5 rounded-full flex items-center justify-center">
                             <Check className="w-3 h-3" />
                           </div>
                         )}

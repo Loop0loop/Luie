@@ -227,7 +227,7 @@ export default function ProjectTemplateSelector({
           return (
             <div
               ref={menuRef}
-              className="fixed z-2000 min-w-[140px] bg-surface border border-border rounded-[10px] p-1.5 shadow-lg"
+              className="fixed z-2000 min-w-35 bg-surface border border-border rounded-[10px] p-1.5 shadow-lg"
               style={{ top: menuPosition.y, left: menuPosition.x }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -335,7 +335,7 @@ export default function ProjectTemplateSelector({
       />
 
       <div className="flex-1 flex h-[calc(100vh-32px)]">
-        <div className="w-[240px] bg-sidebar py-8 px-4 flex flex-col gap-2 border-r border-border">
+        <div className="w-60 bg-sidebar py-8 px-4 flex flex-col gap-2 border-r border-border">
           <div className="text-[11px] font-bold text-muted mb-4 pl-3 uppercase tracking-widest">{TEMPLATE_SIDEBAR_TITLE}</div>
           {categories.map((cat) => (
             <div
@@ -399,7 +399,7 @@ export default function ProjectTemplateSelector({
           </div>
 
           <div className="flex-1 overflow-y-auto p-8 relative z-0">
-          <div className="max-w-[1400px] mx-auto">
+          <div className="max-w-350 mx-auto">
              <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-x-6 gap-y-10">
               {filteredTemplates.map((template) => (
                 <div
@@ -497,7 +497,7 @@ export default function ProjectTemplateSelector({
                   </div>
                   
                   {/* Label */}
-                  <div className="text-center group-hover:transform group-hover:translate-y-[-2px] transition-transform duration-300">
+                  <div className="text-center group-hover:transform group-hover:-translate-y-0.5 transition-transform duration-300">
                     <span className="font-medium text-[13px] text-zinc-400 group-hover:text-white transition-colors tracking-wide">
                       {template.title}
                     </span>

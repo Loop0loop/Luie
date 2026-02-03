@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll } from "vitest";
-import { ProjectService, projectService } from "../../../src/main/services/projectService.js";
+import { ProjectService, projectService } from "../../../src/main/services/core/projectService.js";
 import { db } from "../../../src/main/database/index.js";
 
 const localProjectService = new ProjectService();

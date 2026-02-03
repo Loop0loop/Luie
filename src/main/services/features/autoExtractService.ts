@@ -180,7 +180,7 @@ JSON 형식으로만 답하세요:`;
       const response = await ai.models.generateContent({
         model: GEMINI_MODEL,
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
+        config: {
           responseMimeType: "application/json",
           responseSchema: GEMINI_RESPONSE_SCHEMA,
         },

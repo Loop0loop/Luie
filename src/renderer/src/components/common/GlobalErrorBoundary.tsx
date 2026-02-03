@@ -47,7 +47,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
           </p>
 
           <div className="bg-panel border border-border rounded-lg p-4 mb-8 w-full max-w-lg text-left overflow-auto max-h-48">
-            <code className="text-xs font-mono text-danger-fg block break-words">
+            <code className="text-xs font-mono text-danger-fg block wrap-break-word">
               {this.state.error?.toString()}
             </code>
           </div>

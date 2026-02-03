@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeAll } from "vitest";
-import { SearchService } from "../../../src/main/services/searchService.js";
-import { ChapterService } from "../../../src/main/services/chapterService.js";
-import { ProjectService } from "../../../src/main/services/projectService.js";
-import { autoExtractService } from "../../../src/main/services/autoExtractService.js";
-import { projectService } from "../../../src/main/services/projectService.js";
+import { SearchService } from "../../../src/main/services/features/searchService.js";
+import { ChapterService } from "../../../src/main/services/core/chapterService.js";
+import { ProjectService } from "../../../src/main/services/core/projectService.js";
+import { autoExtractService } from "../../../src/main/services/features/autoExtractService.js";
+import { projectService } from "../../../src/main/services/core/projectService.js";
 
 const searchService = new SearchService();
 const chapterService = new ChapterService();

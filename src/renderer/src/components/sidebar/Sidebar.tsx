@@ -176,7 +176,7 @@ function Sidebar({
       {menuOpenId && (
         <div
           ref={menuRef}
-          className="fixed z-10000 bg-panel border border-border rounded-lg shadow-lg min-w-[170px] p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col"
+          className="fixed z-10000 bg-panel border border-border rounded-lg shadow-lg min-w-42.5 p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col"
           style={{ top: menuPosition.y, left: menuPosition.x }}
         >
           <div

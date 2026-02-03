@@ -194,7 +194,7 @@ function ContextPanel({
               {LABEL_CONTEXT_SYNOPSIS_HEADER}
             </div>
             <textarea
-              className="w-full border border-border rounded-lg p-3 text-sm text-fg bg-element resize-none font-sans leading-relaxed min-h-[200px]"
+              className="w-full border border-border rounded-lg p-3 text-sm text-fg bg-element resize-none font-sans leading-relaxed min-h-50"
               placeholder={PLACEHOLDER_CONTEXT_SYNOPSIS}
               value={currentProject?.description || ""}
               readOnly
