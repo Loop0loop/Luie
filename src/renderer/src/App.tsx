@@ -21,6 +21,7 @@ import { api } from "./services/api";
 
 const SettingsModal = lazy(() => import("./components/settings/SettingsModal"));
 const ResearchPanel = lazy(() => import("./components/research/ResearchPanel"));
+const SnapshotViewer = lazy(() => import("./components/snapshot/SnapshotViewer"));
 
 export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -219,30 +220,33 @@ export default function App() {
                 <Suspense
                   fallback={<div style={{ padding: 20 }}>Loading...</div>}
                 >
-                  {rightPanelContent.type === "research" ? (
-                    <ResearchPanel
-                                  activeTab={rightPanelContent.tab || "character"}
-                                  onClose={() => setSplitView(false)}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        height: "100%",
-                        overflow: "hidden",
-                        background: "var(--bg-primary)",
-                      }}
-                    >
-                      {/* Re-using Editor for read-only or secondary edit */}
-                      <Editor
-                        initialTitle={
-                          chapters.find((c) => c.id === rightPanelContent.id)
-                            ?.title
-                        }
-                        initialContent="" // We'd need to fetch content. For now placeholder.
-                        // In real app, Editor should fetch by ID or we pass content
+                    {rightPanelContent.type === "research" ? (
+                      <ResearchPanel
+                        activeTab={rightPanelContent.tab || "character"}
+                        onClose={() => setSplitView(false)}
                       />
-                    </div>
-                  )}
+                    ) : rightPanelContent.type === "snapshot" &&
+                      rightPanelContent.snapshot ? (
+                      <SnapshotViewer snapshot={rightPanelContent.snapshot} />
+                    ) : (
+                      <div
+                        style={{
+                          height: "100%",
+                          overflow: "hidden",
+                          background: "var(--bg-primary)",
+                        }}
+                      >
+                        {/* Re-using Editor for read-only or secondary edit */}
+                        <Editor
+                          initialTitle={
+                            chapters.find((c) => c.id === rightPanelContent.id)
+                              ?.title
+                          }
+                          initialContent="" // We'd need to fetch content. For now placeholder.
+                          // In real app, Editor should fetch by ID or we pass content
+                        />
+                      </div>
+                    )}
                 </Suspense>
               </div>
             </>

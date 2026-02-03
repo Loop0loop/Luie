@@ -1,9 +1,8 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Clock, RotateCcw, GitCompare } from "lucide-react";
 import { api } from "../../services/api";
-import { useChapterStore } from "../../stores/chapterStore";
 import type { Snapshot } from "../../../../shared/types";
-import { SnapshotDiffModal } from "./SnapshotDiffModal";
+import { useSplitView } from "../../hooks/useSplitView";
 
 interface SnapshotListProps {
   chapterId: string;
@@ -12,11 +11,8 @@ interface SnapshotListProps {
 export function SnapshotList({ chapterId }: SnapshotListProps) {
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedSnapshot, setSelectedSnapshot] = useState<Snapshot | null>(null);
-  const [isDiffOpen, setIsDiffOpen] = useState(false);
-
-  const { items: chapters } = useChapterStore();
-  const currentChapter = useMemo(() => chapters.find(c => c.id === chapterId), [chapters, chapterId]);
+  
+  const { handleOpenSnapshot } = useSplitView();
 
   useEffect(() => {
     async function loadSnapshots() {
@@ -27,8 +23,8 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
         if (res.success && res.data) {
           setSnapshots(res.data);
         }
-      } catch (e) {
-        api.logger.error("Failed to load snapshots", e);
+      } catch (error) {
+        api.logger.error("Failed to load snapshots", error);
       } finally {
         setLoading(false);
       }
@@ -37,22 +33,18 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
   }, [chapterId]);
 
   const handleCompare = (snapshot: Snapshot) => {
-    setSelectedSnapshot(snapshot);
-    setIsDiffOpen(true);
+    handleOpenSnapshot(snapshot);
   };
 
   const handleRestore = async (snapshot: Snapshot) => {
-      // Restore logic can be handled here or delegated.
-      // Sidebar has logic for global restore.
-      // For now, I'll focus on Compare. 
-      // User might expect Restore button here too.
       if (!window.confirm("이 스냅샷으로 복구하시겠습니까? 현재 변경사항이 덮어씌워집니다.")) return;
       
       try {
           await api.snapshot.restore(snapshot.id);
           alert("복구되었습니다.");
           // Trigger reload if needed
-      } catch (e) {
+      } catch (error) {
+          api.logger.error("Snapshot restore failed", error);
           alert("복구 실패");
       }
   };
@@ -104,15 +96,7 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
         </div>
       ))}
 
-      {selectedSnapshot && currentChapter && (
-        <SnapshotDiffModal
-          isOpen={isDiffOpen}
-          onClose={() => setIsDiffOpen(false)}
-          originalContent={currentChapter.content || ""}
-          snapshotContent={selectedSnapshot.content || ""}
-          snapshotDate={new Date(selectedSnapshot.createdAt)}
-        />
-      )}
+
     </div>
   );
 }

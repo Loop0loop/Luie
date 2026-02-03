@@ -75,12 +75,14 @@ interface EditorProps {
   initialTitle?: string;
   initialContent?: string;
   onSave?: (title: string, content: string) => void | Promise<void>;
+  readOnly?: boolean;
 }
 
 function Editor({
   initialTitle = "",
   initialContent = "",
   onSave,
+  readOnly = false,
 }: EditorProps) {
   const { fontFamilyCss, fontSize, lineHeight, getFontFamily } = useEditorConfig();
   const { wordCount, charCount, updateStats } = useEditorStats();
@@ -100,7 +102,7 @@ function Editor({
   }, [initialContent]);
 
   const { saveStatus } = useEditorAutosave({
-    onSave,
+    onSave: readOnly ? undefined : onSave,
     title,
     content,
   });
@@ -145,6 +147,7 @@ function Editor({
   const editor = useEditor(
     {
       extensions,
+      editable: !readOnly,
       content: initialContent,
       onUpdate: ({ editor }) => {
         const html = editor.getHTML();
@@ -165,6 +168,7 @@ function Editor({
     [extensions, fontFamilyCss, fontSize, lineHeight, updateStats],
   );
 
+
   useEffect(() => {
     if (!editor) return;
     const current = editor.getHTML();
@@ -183,11 +187,13 @@ function Editor({
       data-testid="editor"
     >
       <div className="shrink-0 border-b border-border z-10">
-        <EditorToolbar
-          editor={editor}
-          isMobileView={isMobileView}
-          onToggleMobileView={() => setIsMobileView(!isMobileView)}
-        />
+        {!readOnly && (
+          <EditorToolbar
+            editor={editor}
+            isMobileView={isMobileView}
+            onToggleMobileView={() => setIsMobileView(!isMobileView)}
+          />
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto flex flex-col px-10 py-5 bg-app min-h-0">
@@ -207,11 +213,13 @@ function Editor({
             type="text"
             className={cn(
               "w-full border-none bg-transparent pb-4 text-2xl font-bold text-fg outline-none shrink-0 placeholder:text-muted",
-              isMobileView && "px-6"
+              isMobileView && "px-6",
+              readOnly && "pointer-events-none opacity-80"
             )}
             placeholder={PLACEHOLDER_EDITOR_TITLE}
             value={title}
-            onChange={(e) => handleTitleChange(e.target.value)}
+            onChange={(e) => !readOnly && handleTitleChange(e.target.value)}
+            readOnly={readOnly}
             style={{ fontFamily: getFontFamily() }}
             data-testid="editor-title"
           />
