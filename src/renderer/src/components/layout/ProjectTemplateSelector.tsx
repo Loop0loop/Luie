@@ -375,7 +375,7 @@ export default function ProjectTemplateSelector({
                   className="px-3 py-1.5 text-xs rounded-md bg-surface border border-border text-fg hover:bg-surface-hover"
                   onClick={() => onOpenSnapshotBackup?.()}
                 >
-                  스냅샷 백업 열기
+                  스냅샷 복원하기
                 </button>
               </div>
             </div>

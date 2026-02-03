@@ -2,9 +2,12 @@
  * Chapter service - 챕터/회차 관리 비즈니스 로직
  */
 
+import { app } from "electron";
+import * as fs from "fs/promises";
+import path from "path";
 import { db } from "../../database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
-import { ErrorCode } from "../../../shared/constants/index.js";
+import { ErrorCode, SNAPSHOT_BACKUP_DIR } from "../../../shared/constants/index.js";
 import type { ChapterCreateInput, ChapterUpdateInput } from "../../../shared/types/index.js";
 import { autoExtractService } from "../features/autoExtractService.js";
 import { projectService } from "./projectService.js";
@@ -119,24 +122,70 @@ export class ChapterService {
 
       if (input.title !== undefined) updateData.title = input.title;
       if (input.content !== undefined) {
+        const isTest = process.env.VITEST === "true" || process.env.NODE_ENV === "test";
+        const current = await db.getClient().chapter.findUnique({
+          where: { id: input.id },
+          select: { projectId: true, content: true },
+        });
+
+        const oldContent = typeof current?.content === "string" ? current.content : "";
+        const oldLen = oldContent.length;
+        const newLen = input.content.length;
+
+        if (!isTest && oldLen > 1000 && newLen < oldLen * 0.1) {
+          const project = current?.projectId
+            ? await db.getClient().project.findUnique({
+                where: { id: String(current.projectId) },
+                select: { title: true },
+              })
+            : null;
+
+          const projectTitle =
+            typeof (project as { title?: unknown } | null)?.title === "string"
+              ? String((project as { title: string }).title)
+              : "Unknown";
+          const safeTitle = projectTitle
+            .replace(/[\\/:*?"<>|]/g, "-")
+            .replace(/\s+/g, " ")
+            .trim();
+          const dumpDir = path.join(
+            app.getPath("userData"),
+            SNAPSHOT_BACKUP_DIR,
+            safeTitle || "Unknown",
+            "_suspicious",
+          );
+          await fs.mkdir(dumpDir, { recursive: true });
+          const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+          const dumpPath = path.join(dumpDir, `dump-${input.id}-${timestamp}.txt`);
+          await fs.writeFile(dumpPath, input.content, "utf8");
+
+          logger.warn("Suspicious large deletion detected. Save blocked.", {
+            chapterId: input.id,
+            oldLen,
+            newLen,
+            dumpPath,
+          });
+
+          throw new ServiceError(
+            ErrorCode.VALIDATION_FAILED,
+            "Suspicious large deletion detected; save blocked",
+            { chapterId: input.id, oldLen, newLen },
+          );
+        }
+
         updateData.content = input.content;
         updateData.wordCount = input.content.length;
 
-        const chapter = await db.getClient().chapter.findUnique({
-          where: { id: input.id },
-          select: { projectId: true },
-        });
-
-        if (chapter) {
+        if (current) {
           await trackKeywordAppearances(
             input.id,
             input.content,
-            String((chapter as { projectId: unknown }).projectId),
+            String((current as { projectId: unknown }).projectId),
           );
 
           autoExtractService.scheduleAnalysis(
             input.id,
-            String((chapter as { projectId: unknown }).projectId),
+            String((current as { projectId: unknown }).projectId),
             input.content,
           );
         }

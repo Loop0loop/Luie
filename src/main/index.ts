@@ -75,14 +75,27 @@ if (!gotTheLock) {
     void (async () => {
       logger.info("App is quitting");
       try {
-        await autoSaveManager.flushAll();
+        await Promise.race([
+          autoSaveManager.flushAll(),
+          new Promise((resolve) => setTimeout(resolve, 3000)),
+        ]);
       } catch (error) {
         logger.error("Failed to flush auto-save", error);
       } finally {
         await db.disconnect();
-        app.quit();
+        app.exit(0);
       }
     })();
+  });
+
+  process.on("SIGINT", () => {
+    logger.info("Received SIGINT");
+    app.quit();
+  });
+
+  process.on("SIGTERM", () => {
+    logger.info("Received SIGTERM");
+    app.quit();
   });
 
   // Handle uncaught exceptions

@@ -455,7 +455,7 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
     handler: async () => {
       const backupDir = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR);
       const result = await dialog.showOpenDialog({
-        title: "스냅샷 백업 선택",
+        title: "스냅샷 복원하기",
         defaultPath: backupDir,
         filters: [{ name: "Snapshot", extensions: ["snap"] }],
         properties: ["openFile"],

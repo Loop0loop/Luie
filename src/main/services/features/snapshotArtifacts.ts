@@ -19,6 +19,12 @@ const logger = createLogger("SnapshotArtifacts");
 const gzip = promisify(gzipCallback);
 const gunzip = promisify(gunzipCallback);
 
+function sanitizeDirName(input: string, fallback: string) {
+  const trimmed = input.trim();
+  if (!trimmed) return fallback;
+  return trimmed.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim();
+}
+
 type FullSnapshotData = {
   meta: {
     version: string;
@@ -224,7 +230,8 @@ export async function writeFullSnapshotArtifact(
   const localPath = path.join(localDir, fileName);
   await fs.writeFile(localPath, buffer);
 
-  const backupDir = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR, project.id);
+  const safeProjectName = sanitizeDirName(project.title ?? "", String(project.id));
+  const backupDir = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR, safeProjectName);
   await fs.mkdir(backupDir, { recursive: true });
   const backupPath = path.join(backupDir, fileName);
   await fs.writeFile(backupPath, buffer);

@@ -23,10 +23,13 @@ export const MIN_CHAPTER_TITLE_LENGTH = 1
 export const MAX_CHAPTER_TITLE_LENGTH = 200
 
 export const SNAPSHOT_MAX_COUNT = 50 // Maximum number of snapshots per project
-export const SNAPSHOT_INTERVAL_MS = 2 * 60 * 1000
+export const SNAPSHOT_INTERVAL_MS = 10 * 60 * 1000
 export const SNAPSHOT_KEEP_COUNT = 50
 export const SNAPSHOT_FILE_KEEP_COUNT = 30
 export const DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT = 20
+export const SNAPSHOT_MIN_CONTENT_LENGTH = 500
+export const SNAPSHOT_MIN_CHANGE_RATIO = 0.2
+export const SNAPSHOT_MIN_CHANGE_ABSOLUTE = 2000
 export const SEARCH_CONTEXT_RADIUS = 50
 export const AUTO_EXTRACT_DEBOUNCE_MS = 1500
 export const PACKAGE_EXPORT_DEBOUNCE_MS = 5000

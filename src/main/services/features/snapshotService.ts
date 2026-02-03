@@ -3,12 +3,18 @@
  */
 
 import * as fs from "fs";
+import path from "path";
+import { app } from "electron";
 import { db } from "../../database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import {
   ErrorCode,
   DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT,
   DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
+  LUIE_PACKAGE_EXTENSION,
+  LUIE_PACKAGE_FORMAT,
+  LUIE_PACKAGE_CONTAINER_DIR,
+  LUIE_PACKAGE_VERSION,
 } from "../../../shared/constants/index.js";
 import type { SnapshotCreateInput } from "../../../shared/types/index.js";
 import { projectService } from "../core/projectService.js";
@@ -17,6 +23,7 @@ import {
   writeFullSnapshotArtifact,
   readFullSnapshotArtifact,
 } from "./snapshotArtifacts.js";
+import { writeLuiePackage } from "../../handler/system/ipcFsHandlers.js";
 
 const logger = createLogger("SnapshotService");
 
@@ -215,12 +222,25 @@ export class SnapshotService {
         | { autoSave?: boolean; autoSaveInterval?: number }
         | undefined;
 
-      const projectPath =
-        typeof projectData.projectPath === "string" &&
-        projectData.projectPath.length > 0 &&
-        fs.existsSync(projectData.projectPath)
-          ? projectData.projectPath
-          : undefined;
+      const safeTitle = (projectData.title || "Recovered Snapshot")
+        .replace(/[\\/:*?"<>|]/g, "-")
+        .replace(/\s+/g, " ")
+        .trim();
+      const documentsDir = app.getPath("documents");
+      let basePath = path.join(
+        documentsDir,
+        `${safeTitle || "Recovered Snapshot"}${LUIE_PACKAGE_EXTENSION}`,
+      );
+
+      if (fs.existsSync(basePath)) {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        basePath = path.join(
+          documentsDir,
+          `${safeTitle || "Recovered Snapshot"}-${timestamp}${LUIE_PACKAGE_EXTENSION}`,
+        );
+      }
+
+      const projectPath = basePath;
 
       const autoSave =
         typeof settings?.autoSave === "boolean" ? settings.autoSave : true;
@@ -229,7 +249,8 @@ export class SnapshotService {
           ? settings.autoSaveInterval
           : DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS;
 
-      const project = (await db.getClient().$transaction(async (tx) => {
+      const project = (await db.getClient().$transaction(
+        async (tx: ReturnType<(typeof db)["getClient"]>) => {
         const created = await tx.project.create({
           data: {
             title: projectData.title || "Recovered Snapshot",
@@ -295,7 +316,65 @@ export class SnapshotService {
         }
 
         return created;
-      })) as { id: string };
+      })) as {
+        id: string;
+        title: string;
+        description?: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+      };
+
+      const meta = {
+        format: LUIE_PACKAGE_FORMAT,
+        container: LUIE_PACKAGE_CONTAINER_DIR,
+        version: LUIE_PACKAGE_VERSION,
+        projectId: project.id,
+        title: project.title,
+        description: project.description ?? undefined,
+        createdAt: project.createdAt?.toISOString?.() ?? String(project.createdAt),
+        updatedAt: project.updatedAt?.toISOString?.() ?? String(project.updatedAt),
+      };
+
+      try {
+        await writeLuiePackage(
+          projectPath,
+          {
+            meta,
+            chapters: snapshot.data.chapters.map((chapter) => ({
+              id: chapter.id,
+              content: chapter.content ?? "",
+            })),
+            characters: snapshot.data.characters.map((character) => ({
+              id: character.id,
+              name: character.name,
+              description: character.description ?? null,
+              firstAppearance: character.firstAppearance ?? null,
+              attributes:
+                typeof character.attributes === "string"
+                  ? character.attributes
+                  : character.attributes
+                    ? JSON.stringify(character.attributes)
+                    : null,
+              createdAt: new Date(character.createdAt),
+              updatedAt: new Date(character.updatedAt),
+            })),
+            terms: snapshot.data.terms.map((term) => ({
+              id: term.id,
+              term: term.term,
+              definition: term.definition ?? null,
+              category: term.category ?? null,
+              firstAppearance: term.firstAppearance ?? null,
+              createdAt: new Date(term.createdAt),
+              updatedAt: new Date(term.updatedAt),
+            })),
+            snapshots: [],
+          },
+          logger,
+        );
+      } catch (error) {
+        await db.getClient().project.delete({ where: { id: project.id } }).catch(() => undefined);
+        throw error;
+      }
 
       logger.info("Snapshot imported successfully", {
         projectId: project.id,

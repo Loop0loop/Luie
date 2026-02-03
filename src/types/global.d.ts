@@ -22,6 +22,7 @@ declare global {
         get: (id: string) => Promise<IPCResponse<Project>>;
         getAll: () => Promise<IPCResponse<Project[]>>;
         importFromFile: (filePath: string) => Promise<IPCResponse<Project>>;
+        importFromFile: (filePath: string) => Promise<IPCResponse<Project>>;
         update: (input: {
           id: string;
           title?: string;
@@ -31,6 +32,12 @@ declare global {
         delete: (id: string) => Promise<IPCResponse<unknown>>;
       };
       chapter: {
+        selectFile: (options?: {
+          title?: string;
+          defaultPath?: string;
+          filters?: Array<{ name: string; extensions: string[] }>;
+        }) => Promise<IPCResponse<string>>;
+        selectSnapshotBackup: () => Promise<IPCResponse<string>>;
         create: (input: {
         selectFile: (options?: {
           title?: string;

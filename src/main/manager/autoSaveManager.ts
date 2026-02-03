@@ -19,6 +19,9 @@ import {
   SNAPSHOT_FILE_KEEP_COUNT,
   SNAPSHOT_INTERVAL_MS,
   SNAPSHOT_KEEP_COUNT,
+  SNAPSHOT_MIN_CONTENT_LENGTH,
+  SNAPSHOT_MIN_CHANGE_RATIO,
+  SNAPSHOT_MIN_CHANGE_ABSOLUTE,
 } from "../../shared/constants/index.js";
 
 const logger = createLogger("AutoSaveManager");
@@ -38,6 +41,7 @@ export class AutoSaveManager extends EventEmitter {
     new Map();
   private lastSnapshotAt: Map<string, number> = new Map();
   private lastSnapshotHash: Map<string, number> = new Map();
+  private lastSnapshotLength: Map<string, number> = new Map();
   private snapshotQueue: Array<{ projectId: string; chapterId: string; content: string }> = [];
   private snapshotProcessing = false;
 
@@ -132,12 +136,22 @@ export class AutoSaveManager extends EventEmitter {
 
     if (now - lastAt < AutoSaveManager.SNAPSHOT_INTERVAL_MS) return;
 
+    if (content.length < SNAPSHOT_MIN_CONTENT_LENGTH) return;
+
     const hash = this.hashContent(content);
     const lastHash = this.lastSnapshotHash.get(key);
     if (lastHash === hash) return;
 
+    const lastLength = this.lastSnapshotLength.get(key) ?? 0;
+    if (lastLength > 0) {
+      const diff = Math.abs(content.length - lastLength);
+      const ratio = diff / lastLength;
+      if (ratio < SNAPSHOT_MIN_CHANGE_RATIO && diff < SNAPSHOT_MIN_CHANGE_ABSOLUTE) return;
+    }
+
     this.lastSnapshotAt.set(key, now);
     this.lastSnapshotHash.set(key, hash);
+    this.lastSnapshotLength.set(key, content.length);
 
     this.snapshotQueue.push({ projectId, chapterId, content });
     if (!this.snapshotProcessing) {
