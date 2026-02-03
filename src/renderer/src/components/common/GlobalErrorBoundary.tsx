@@ -41,9 +41,9 @@ export class GlobalErrorBoundary extends Component<Props, State> {
             <AlertTriangle className="w-8 h-8" />
           </div>
           
-          <h1 className="text-2xl font-bold mb-2">Something went wrong</h1>
+          <h1 className="text-2xl font-bold mb-2">앱 구동에 실패하였습니다.</h1>
           <p className="text-muted mb-8 max-w-md">
-            The application encountered an unexpected error. We apologize for the inconvenience.
+            앱을 재실행 해주세요.
           </p>
 
           <div className="bg-panel border border-border rounded-lg p-4 mb-8 w-full max-w-lg text-left overflow-auto max-h-48">

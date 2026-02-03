@@ -1,5 +1,6 @@
 // Monolithic CSS is still used by children (WorldSection, MemoSection), so we cannot remove the file yet.
 // But this component no longer needs it.
+import React from "react";
 import {
   LABEL_RESEARCH_CHARACTERS,
   LABEL_RESEARCH_DEFAULT,
@@ -23,7 +24,7 @@ export default function ResearchPanel({
 }: ResearchPanelProps) {
   const tabConfig: Record<
     string,
-    { title: string; icon: JSX.Element }
+    { title: string; icon: React.JSX.Element }
   > = {
     character: { title: LABEL_RESEARCH_CHARACTERS, icon: <User className="icon-lg" /> },
     world: { title: LABEL_RESEARCH_WORLD, icon: <Globe className="icon-lg" /> },

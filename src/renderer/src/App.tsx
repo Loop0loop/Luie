@@ -200,6 +200,12 @@ export default function App() {
               initialTitle={activeChapterTitle}
               initialContent={content}
               onSave={handleSave}
+              comparisonContent={
+                rightPanelContent.type === "snapshot" 
+                  ? rightPanelContent.snapshot?.content 
+                  : undefined
+              }
+              diffMode={rightPanelContent.type === "snapshot" ? "current" : undefined}
             />
           </div>
 
@@ -227,7 +233,10 @@ export default function App() {
                       />
                     ) : rightPanelContent.type === "snapshot" &&
                       rightPanelContent.snapshot ? (
-                      <SnapshotViewer snapshot={rightPanelContent.snapshot} />
+                      <SnapshotViewer 
+                        snapshot={rightPanelContent.snapshot} 
+                        currentContent={chapters.find(c => c.projectId === currentProject?.id && c.id === rightPanelContent.snapshot?.chapterId)?.content || ""}
+                      />
                     ) : (
                       <div
                         style={{

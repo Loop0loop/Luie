@@ -26,6 +26,7 @@ import { useEditorAutosave } from "../../hooks/useEditorAutosave";
 import { useEditorStats } from "../../hooks/useEditorStats";
 import { useEditorConfig } from "../../hooks/useEditorConfig";
 import { SmartLink } from "./extensions/SmartLink";
+import { DiffHighlight } from "./extensions/DiffExtension";
 import { SmartLinkTooltip } from "./SmartLinkTooltip";
 import { Loader2, Check } from "lucide-react";
 import {
@@ -76,6 +77,8 @@ interface EditorProps {
   initialContent?: string;
   onSave?: (title: string, content: string) => void | Promise<void>;
   readOnly?: boolean;
+  comparisonContent?: string;
+  diffMode?: "current" | "snapshot";
 }
 
 function Editor({
@@ -83,6 +86,8 @@ function Editor({
   initialContent = "",
   onSave,
   readOnly = false,
+  comparisonContent,
+  diffMode,
 }: EditorProps) {
   const { fontFamilyCss, fontSize, lineHeight, getFontFamily } = useEditorConfig();
   const { wordCount, charCount, updateStats } = useEditorStats();
@@ -140,6 +145,10 @@ function Editor({
       }),
       SlashCommand,
       SmartLink, 
+      DiffHighlight.configure({
+        comparisonContent,
+        mode: diffMode,
+      }),
     ],
     [],
   );
@@ -168,6 +177,20 @@ function Editor({
     [extensions, fontFamilyCss, fontSize, lineHeight, updateStats],
   );
 
+
+  useEffect(() => {
+    if (!editor) return;
+    
+    // Update diff state commands if props change
+    // Since we configured it initially with memo [], we need to update it via command if it changes
+    // But check if command exists first
+    if (editor.commands.setDiff) {
+       editor.commands.setDiff({
+         comparisonContent,
+         mode: diffMode
+       });
+    }
+  }, [editor, comparisonContent, diffMode]);
 
   useEffect(() => {
     if (!editor) return;

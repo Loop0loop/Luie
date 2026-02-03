@@ -7,9 +7,10 @@ import Editor from "../editor/Editor";
 
 interface SnapshotViewerProps {
   snapshot: Snapshot;
+  currentContent?: string;
 }
 
-function SnapshotViewer({ snapshot }: SnapshotViewerProps) {
+function SnapshotViewer({ snapshot, currentContent }: SnapshotViewerProps) {
   const { loadAll: reloadChapters } = useChapterStore();
 
   const handleRestore = async () => {
@@ -21,9 +22,7 @@ function SnapshotViewer({ snapshot }: SnapshotViewerProps) {
       if (response.success) {
         if (snapshot.projectId) {
           await reloadChapters(snapshot.projectId);
-          // Force reload of main editor? The store update should trigger re-render if connected.
-          // Changing key of Editor in App.tsx might be needed if content doesn't update.
-          window.location.reload(); // Brute force simple reload for safety for now, or use better state management
+          window.location.reload(); 
         }
       } else {
         api.logger.error("Snapshot restore failed", response.error);
@@ -62,6 +61,8 @@ function SnapshotViewer({ snapshot }: SnapshotViewerProps) {
           initialTitle={snapshot.description || ""}
           initialContent={snapshot.content}
           readOnly={true}
+          comparisonContent={currentContent}
+          diffMode="snapshot"
         />
       </div>
     </div>

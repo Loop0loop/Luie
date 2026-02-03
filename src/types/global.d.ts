@@ -96,6 +96,7 @@ declare global {
           description?: string;
         }) => Promise<IPCResponse<Snapshot>>;
         getAll: (projectId: string) => Promise<IPCResponse<Snapshot[]>>;
+        getByChapter: (chapterId: string) => Promise<IPCResponse<Snapshot[]>>;
         importFromFile: (filePath: string) => Promise<IPCResponse<Project>>;
         restore: (id: string) => Promise<IPCResponse<unknown>>;
         delete: (id: string) => Promise<IPCResponse<unknown>>;
