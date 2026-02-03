@@ -1,11 +1,9 @@
-import type { createLogger } from "../../../shared/logger/index.js";
 import { registerAutoSaveIPCHandlers } from "./ipcAutoSaveHandlers.js";
 import { registerSnapshotIPCHandlers } from "./ipcSnapshotHandlers.js";
-
-type LoggerLike = ReturnType<typeof createLogger>;
+import type { AppLogger } from "../core/types.js";
 
 export function registerWritingHandlers(options: {
-  logger: LoggerLike;
+  logger: AppLogger;
   autoSaveManager: Parameters<typeof registerAutoSaveIPCHandlers>[1];
   snapshotService: Parameters<typeof registerSnapshotIPCHandlers>[1];
 }): void {

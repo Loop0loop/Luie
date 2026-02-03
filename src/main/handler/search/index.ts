@@ -1,10 +1,8 @@
-import type { createLogger } from "../../../shared/logger/index.js";
 import { registerSearchIPCHandlers } from "./ipcSearchHandlers.js";
-
-type LoggerLike = ReturnType<typeof createLogger>;
+import type { AppLogger } from "../core/types.js";
 
 export function registerSearchHandlers(options: {
-  logger: LoggerLike;
+  logger: AppLogger;
   searchService: Parameters<typeof registerSearchIPCHandlers>[1];
 }): void {
   registerSearchIPCHandlers(options.logger, options.searchService);

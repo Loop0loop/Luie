@@ -7,10 +7,7 @@ import {
 } from "../../../shared/ipc/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import { isServiceError } from "../../utils/serviceError.js";
-
-type LoggerLike = {
-  error: (message: string, data?: unknown) => void;
-};
+import type { LoggerLike } from "./types.js";
 
 type MaybePromise<T> = T | Promise<T>;
 

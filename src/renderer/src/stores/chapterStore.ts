@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import type { Chapter } from "../../../shared/types";
-import { createCRUDSlice } from "./createCRUDStore";
+import {
+  createAliasSetter,
+  createCRUDSlice,
+  withProjectScopedGetAll,
+} from "./createCRUDStore";
 import type { CRUDStore } from "./createCRUDStore";
 import type { ChapterCreateInput, ChapterUpdateInput } from "../../../shared/types";
 import { api } from "../services/api";
@@ -22,26 +26,14 @@ interface ChapterStore extends BaseChapterStore {
 }
 
 export const useChapterStore = create<ChapterStore>((set, get, store) => {
-  const setWithAlias: typeof set = (partial) =>
-    set((state) => {
-      const next = typeof partial === "function" ? partial(state) : partial;
-      const nextItems =
-        (next as Partial<ChapterStore>).items ?? state.items;
-      const nextCurrent =
-        (next as Partial<ChapterStore>).currentItem ?? state.currentItem;
-
-      return {
-        ...next,
-        chapters: nextItems,
-        currentChapter: nextCurrent as Chapter | null,
-      } as Partial<ChapterStore>;
-    });
+  const setWithAlias = createAliasSetter<ChapterStore, Chapter>(
+    set,
+    "chapters",
+    "currentChapter",
+  );
 
   // Base CRUD Slice 생성
-  const apiClient = {
-    ...api.chapter,
-    getAll: (parentId?: string) => api.chapter.getAll(parentId || ""),
-  };
+  const apiClient = withProjectScopedGetAll(api.chapter);
 
   const crudSlice = createCRUDSlice<
     Chapter,

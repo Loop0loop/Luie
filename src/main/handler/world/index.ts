@@ -1,11 +1,9 @@
-import type { createLogger } from "../../../shared/logger/index.js";
 import { registerCharacterIPCHandlers } from "./ipcCharacterHandlers.js";
 import { registerTermIPCHandlers } from "./ipcTermHandlers.js";
-
-type LoggerLike = ReturnType<typeof createLogger>;
+import type { AppLogger } from "../core/types.js";
 
 export function registerWorldHandlers(options: {
-  logger: LoggerLike;
+  logger: AppLogger;
   characterService: Parameters<typeof registerCharacterIPCHandlers>[1];
   termService: Parameters<typeof registerTermIPCHandlers>[1];
 }): void {

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Project } from "../../../shared/types";
-import { createCRUDSlice } from "./createCRUDStore";
+import { createAliasSetter, createCRUDSlice } from "./createCRUDStore";
 import type { CRUDStore } from "./createCRUDStore";
 import type { ProjectCreateInput, ProjectUpdateInput } from "../../../shared/types";
 import { api } from "../services/api";
@@ -36,20 +36,11 @@ interface ProjectStore extends BaseProjectStore {
 }
 
 export const useProjectStore = create<ProjectStore>((set, _get, store) => {
-  const setWithAlias: typeof set = (partial) =>
-    set((state) => {
-      const next = typeof partial === "function" ? partial(state) : partial;
-      const nextItems =
-        (next as Partial<ProjectStore>).items ?? state.items;
-      const nextCurrent =
-        (next as Partial<ProjectStore>).currentItem ?? state.currentItem;
-
-      return {
-        ...next,
-        projects: nextItems,
-        currentProject: nextCurrent as Project | null,
-      } as Partial<ProjectStore>;
-    });
+  const setWithAlias = createAliasSetter<ProjectStore, Project>(
+    set,
+    "projects",
+    "currentProject",
+  );
 
   const crudSlice = createCRUDSlice<
     Project,

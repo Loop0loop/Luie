@@ -28,6 +28,37 @@ export type APIClient<T, CreateInput, UpdateInput> = {
   delete: (id: string) => Promise<IPCResponse<unknown>>;
 };
 
+export function withProjectScopedGetAll<T, CreateInput, UpdateInput>(
+  apiClient: APIClient<T, CreateInput, UpdateInput>,
+) {
+  return {
+    ...apiClient,
+    getAll: (parentId?: string) => apiClient.getAll(parentId || ""),
+  };
+}
+
+export function createAliasSetter<
+  TStore extends { items: TItem[]; currentItem: TItem | null },
+  TItem,
+>(
+  set: (partial: Partial<TStore> | ((state: TStore) => Partial<TStore>)) => void,
+  aliasItemsKey: keyof TStore,
+  aliasCurrentKey: keyof TStore,
+) {
+  return (partial: Partial<TStore> | ((state: TStore) => Partial<TStore>)) =>
+    set((state: TStore) => {
+      const next = typeof partial === "function" ? partial(state) : partial;
+      const nextItems = next.items ?? state.items;
+      const nextCurrent = next.currentItem ?? state.currentItem;
+
+      return {
+        ...next,
+        [aliasItemsKey]: nextItems,
+        [aliasCurrentKey]: nextCurrent,
+      } as Partial<TStore>;
+    });
+}
+
 export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
   apiClient: APIClient<T, CreateInput, UpdateInput>,
   name: string,

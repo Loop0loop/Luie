@@ -12,6 +12,7 @@ import {
   LUIE_SNAPSHOTS_DIR,
   SNAPSHOT_BACKUP_DIR,
 } from "../../../shared/constants/index.js";
+import { sanitizeName } from "../../../shared/utils/sanitize.js";
 import type { SnapshotCreateInput } from "../../../shared/types/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
 
@@ -19,11 +20,6 @@ const logger = createLogger("SnapshotArtifacts");
 const gzip = promisify(gzipCallback);
 const gunzip = promisify(gunzipCallback);
 
-function sanitizeDirName(input: string, fallback: string) {
-  const trimmed = input.trim();
-  if (!trimmed) return fallback;
-  return trimmed.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim();
-}
 
 type FullSnapshotData = {
   meta: {
@@ -230,7 +226,7 @@ export async function writeFullSnapshotArtifact(
   const localPath = path.join(localDir, fileName);
   await fs.writeFile(localPath, buffer);
 
-  const safeProjectName = sanitizeDirName(project.title ?? "", String(project.id));
+  const safeProjectName = sanitizeName(project.title ?? "", String(project.id));
   const backupDir = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR, safeProjectName);
   await fs.mkdir(backupDir, { recursive: true });
   const backupPath = path.join(backupDir, fileName);

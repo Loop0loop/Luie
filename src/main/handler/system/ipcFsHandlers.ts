@@ -1,4 +1,5 @@
 import { app, dialog } from "electron";
+import type { OpenDialogReturnValue, SaveDialogReturnValue } from "electron";
 import * as fs from "fs";
 import * as fsp from "fs/promises";
 import * as path from "path";
@@ -24,11 +25,9 @@ import {
   LUIE_WORLD_TERMS_FILE,
 } from "../../../shared/constants/index.js";
 import { SNAPSHOT_BACKUP_DIR } from "../../../shared/constants/paths.js";
-import { registerIpcHandler } from "../core/ipcHandler.js";
-
-type LoggerLike = {
-  error: (message: string, data?: unknown) => void;
-};
+import { registerIpcHandlers } from "../core/ipcRegistrar.js";
+import type { LoggerLike } from "../core/types.js";
+import { sanitizeName } from "../../../shared/utils/sanitize.js";
 
 export type LuiePackageExportData = {
   meta: Record<string, unknown>;
@@ -126,6 +125,32 @@ const atomicReplace = async (tempPath: string, targetPath: string, logger: Logge
     }
     throw error;
   }
+};
+
+const baseLuieDirectoryEntries = () => [
+  { name: `${LUIE_MANUSCRIPT_DIR}/`, isDirectory: true },
+  { name: `${LUIE_WORLD_DIR}/`, isDirectory: true },
+  { name: `${LUIE_SNAPSHOTS_DIR}/`, isDirectory: true },
+  { name: `${LUIE_ASSETS_DIR}/`, isDirectory: true },
+];
+
+const metaEntry = (meta: unknown) => ({
+  name: LUIE_PACKAGE_META_FILENAME,
+  content: JSON.stringify(meta ?? {}, null, 2),
+});
+
+const resolveOpenDialogPath = (result: OpenDialogReturnValue) => {
+  if (result.canceled || result.filePaths.length === 0) {
+    return null;
+  }
+  return result.filePaths[0];
+};
+
+const resolveSaveDialogPath = (result: SaveDialogReturnValue) => {
+  if (result.canceled || !result.filePath) {
+    return null;
+  }
+  return result.filePath;
 };
 
 const addEntriesToZip = async (zip: yazl.ZipFile, entries: ZipEntryPayload[]) => {
@@ -380,293 +405,245 @@ const rebuildZipWithReplacement = async (
 };
 
 export function registerFsIPCHandlers(logger: LoggerLike): void {
-  registerIpcHandler({
-    logger,
-    channel: IPC_CHANNELS.FS_SELECT_DIRECTORY,
-    logTag: "FS_SELECT_DIRECTORY",
-    failMessage: "Failed to select directory",
-    handler: async () => {
-      const result = await dialog.showOpenDialog({
-        properties: ["openDirectory", "createDirectory"],
-      });
-      if (result.canceled || result.filePaths.length === 0) {
-        return null;
-      }
-      return result.filePaths[0];
-    },
-  });
-
-  registerIpcHandler({
-    logger,
-    channel: IPC_CHANNELS.FS_SELECT_SAVE_LOCATION,
-    logTag: "FS_SELECT_SAVE_LOCATION",
-    failMessage: "Failed to select save location",
-    handler: async (
-      options?: {
-        filters?: { name: string; extensions: string[] }[];
-        defaultPath?: string;
-        title?: string;
+  registerIpcHandlers(logger, [
+    {
+      channel: IPC_CHANNELS.FS_SELECT_DIRECTORY,
+      logTag: "FS_SELECT_DIRECTORY",
+      failMessage: "Failed to select directory",
+      handler: async () => {
+        const result = await dialog.showOpenDialog({
+          properties: ["openDirectory", "createDirectory"],
+        });
+        return resolveOpenDialogPath(result);
       },
-    ) => {
-      const result = await dialog.showSaveDialog({
-        title: options?.title,
-        defaultPath: options?.defaultPath,
-        filters: options?.filters ?? [
-          { name: LUIE_PACKAGE_FILTER_NAME, extensions: [LUIE_PACKAGE_EXTENSION_NO_DOT] },
-        ],
-      });
-      if (result.canceled || !result.filePath) {
-        return null;
-      }
-      return result.filePath;
     },
-  });
-
-  registerIpcHandler({
-    logger,
-    channel: IPC_CHANNELS.FS_SELECT_FILE,
-    logTag: "FS_SELECT_FILE",
-    failMessage: "Failed to select file",
-    handler: async (
-      options?: {
-        filters?: { name: string; extensions: string[] }[];
-        defaultPath?: string;
-        title?: string;
+    {
+      channel: IPC_CHANNELS.FS_SELECT_SAVE_LOCATION,
+      logTag: "FS_SELECT_SAVE_LOCATION",
+      failMessage: "Failed to select save location",
+      handler: async (
+        options?: {
+          filters?: { name: string; extensions: string[] }[];
+          defaultPath?: string;
+          title?: string;
+        },
+      ) => {
+        const result = await dialog.showSaveDialog({
+          title: options?.title,
+          defaultPath: options?.defaultPath,
+          filters: options?.filters ?? [
+            { name: LUIE_PACKAGE_FILTER_NAME, extensions: [LUIE_PACKAGE_EXTENSION_NO_DOT] },
+          ],
+        });
+        return resolveSaveDialogPath(result);
       },
-    ) => {
-      const result = await dialog.showOpenDialog({
-        title: options?.title,
-        defaultPath: options?.defaultPath,
-        filters: options?.filters,
-        properties: ["openFile"],
-      });
-      if (result.canceled || result.filePaths.length === 0) {
-        return null;
-      }
-      return result.filePaths[0];
     },
-  });
-
-  registerIpcHandler({
-    logger,
-    channel: IPC_CHANNELS.FS_SELECT_SNAPSHOT_BACKUP,
-    logTag: "FS_SELECT_SNAPSHOT_BACKUP",
-    failMessage: "Failed to select snapshot backup",
-    handler: async () => {
-      const backupDir = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR);
-      const result = await dialog.showOpenDialog({
-        title: "스냅샷 복원하기",
-        defaultPath: backupDir,
-        filters: [{ name: "Snapshot", extensions: ["snap"] }],
-        properties: ["openFile"],
-      });
-      if (result.canceled || result.filePaths.length === 0) {
-        return null;
-      }
-      return result.filePaths[0];
+    {
+      channel: IPC_CHANNELS.FS_SELECT_FILE,
+      logTag: "FS_SELECT_FILE",
+      failMessage: "Failed to select file",
+      handler: async (
+        options?: {
+          filters?: { name: string; extensions: string[] }[];
+          defaultPath?: string;
+          title?: string;
+        },
+      ) => {
+        const result = await dialog.showOpenDialog({
+          title: options?.title,
+          defaultPath: options?.defaultPath,
+          filters: options?.filters,
+          properties: ["openFile"],
+        });
+        return resolveOpenDialogPath(result);
+      },
     },
-  });
-
-  registerIpcHandler({
-    logger,
-    channel: IPC_CHANNELS.FS_SAVE_PROJECT,
-    logTag: "FS_SAVE_PROJECT",
-    failMessage: "Failed to save project",
-    handler: async (projectName: string, projectPath: string, content: string) => {
-      const safeName = projectName
-        .replace(/[\\/:*?"<>|]/g, "-")
-        .replace(/\s+/g, " ")
-        .trim();
-
-      const projectDir = path.join(projectPath, safeName || DEFAULT_PROJECT_DIR_NAME);
-      await fsp.mkdir(projectDir, { recursive: true });
-
-      const fullPath = path.join(
-        projectDir,
-        `${safeName || DEFAULT_PROJECT_FILE_BASENAME}${LUIE_PACKAGE_EXTENSION}`,
-      );
-      await fsp.writeFile(fullPath, content, "utf-8");
-      return { path: fullPath, projectDir };
+    {
+      channel: IPC_CHANNELS.FS_SELECT_SNAPSHOT_BACKUP,
+      logTag: "FS_SELECT_SNAPSHOT_BACKUP",
+      failMessage: "Failed to select snapshot backup",
+      handler: async () => {
+        const backupDir = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR);
+        const result = await dialog.showOpenDialog({
+          title: "스냅샷 복원하기",
+          defaultPath: backupDir,
+          filters: [{ name: "Snapshot", extensions: ["snap"] }],
+          properties: ["openFile"],
+        });
+        return resolveOpenDialogPath(result);
+      },
     },
-  });
+    {
+      channel: IPC_CHANNELS.FS_SAVE_PROJECT,
+      logTag: "FS_SAVE_PROJECT",
+      failMessage: "Failed to save project",
+      handler: async (projectName: string, projectPath: string, content: string) => {
+        const safeName = sanitizeName(projectName);
 
-  registerIpcHandler({
-    logger,
-    channel: IPC_CHANNELS.FS_READ_FILE,
-    logTag: "FS_READ_FILE",
-    failMessage: "Failed to read file",
-    handler: async (filePath: string) => {
-      const stat = await fsp.stat(filePath);
-      if (stat.isDirectory()) {
-        return null;
-      }
-      const content = await fsp.readFile(filePath, "utf-8");
-      return content;
+        const projectDir = path.join(projectPath, safeName || DEFAULT_PROJECT_DIR_NAME);
+        await fsp.mkdir(projectDir, { recursive: true });
+
+        const fullPath = path.join(
+          projectDir,
+          `${safeName || DEFAULT_PROJECT_FILE_BASENAME}${LUIE_PACKAGE_EXTENSION}`,
+        );
+        await fsp.writeFile(fullPath, content, "utf-8");
+        return { path: fullPath, projectDir };
+      },
     },
-  });
-
-  registerIpcHandler({
-    logger,
-    channel: IPC_CHANNELS.FS_READ_LUIE_ENTRY,
-    logTag: "FS_READ_LUIE_ENTRY",
-    failMessage: "Failed to read Luie package entry",
-    handler: async (packagePath: string, entryPath: string) => {
-      const targetPath = ensureLuieExtension(packagePath);
-      const normalized = normalizeZipPath(entryPath);
-      if (!normalized || !isSafeZipPath(normalized)) {
-        throw new Error("INVALID_RELATIVE_PATH");
-      }
-
-      try {
-        const stat = await fsp.stat(targetPath);
+    {
+      channel: IPC_CHANNELS.FS_READ_FILE,
+      logTag: "FS_READ_FILE",
+      failMessage: "Failed to read file",
+      handler: async (filePath: string) => {
+        const stat = await fsp.stat(filePath);
         if (stat.isDirectory()) {
-          const fullPath = path.join(targetPath, normalized);
-          const resolved = path.resolve(fullPath);
-          const base = path.resolve(targetPath);
-          if (!resolved.startsWith(base)) {
-            throw new Error("INVALID_RELATIVE_PATH");
+          return null;
+        }
+        const content = await fsp.readFile(filePath, "utf-8");
+        return content;
+      },
+    },
+    {
+      channel: IPC_CHANNELS.FS_READ_LUIE_ENTRY,
+      logTag: "FS_READ_LUIE_ENTRY",
+      failMessage: "Failed to read Luie package entry",
+      handler: async (packagePath: string, entryPath: string) => {
+        const targetPath = ensureLuieExtension(packagePath);
+        const normalized = normalizeZipPath(entryPath);
+        if (!normalized || !isSafeZipPath(normalized)) {
+          throw new Error("INVALID_RELATIVE_PATH");
+        }
+
+        try {
+          const stat = await fsp.stat(targetPath);
+          if (stat.isDirectory()) {
+            const fullPath = path.join(targetPath, normalized);
+            const resolved = path.resolve(fullPath);
+            const base = path.resolve(targetPath);
+            if (!resolved.startsWith(base)) {
+              throw new Error("INVALID_RELATIVE_PATH");
+            }
+            try {
+              return await fsp.readFile(fullPath, "utf-8");
+            } catch (error) {
+              const err = error as NodeJS.ErrnoException;
+              if (err?.code === "ENOENT") return null;
+              throw error;
+            }
           }
-          try {
-            return await fsp.readFile(fullPath, "utf-8");
-          } catch (error) {
-            const err = error as NodeJS.ErrnoException;
-            if (err?.code === "ENOENT") return null;
-            throw error;
+
+          if (stat.isFile()) {
+            return await readZipEntryContent(targetPath, normalized, logger);
+          }
+        } catch (error) {
+          const err = error as NodeJS.ErrnoException;
+          if (err?.code === "ENOENT") return null;
+          throw error;
+        }
+
+        return null;
+      },
+    },
+    {
+      channel: IPC_CHANNELS.FS_WRITE_FILE,
+      logTag: "FS_WRITE_FILE",
+      failMessage: "Failed to write file",
+      handler: async (filePath: string, content: string) => {
+        const dir = path.dirname(filePath);
+        await fsp.mkdir(dir, { recursive: true });
+        await fsp.writeFile(filePath, content, "utf-8");
+        return { path: filePath };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE,
+      logTag: "FS_CREATE_LUIE_PACKAGE",
+      failMessage: "Failed to create Luie package",
+      handler: async (packagePath: string, meta: unknown) => {
+        const targetPath = ensureLuieExtension(packagePath);
+
+        await ensureParentDir(targetPath);
+
+        try {
+          const existing = await fsp.stat(targetPath);
+          if (existing.isDirectory()) {
+            await migrateDirectoryPackageToZip(targetPath, targetPath, logger);
+          } else if (existing.isFile()) {
+            const backupPath = `${targetPath}.legacy-${Date.now()}`;
+            await fsp.rename(targetPath, backupPath);
+          }
+        } catch (e) {
+          const err = e as NodeJS.ErrnoException;
+          if (err?.code !== "ENOENT") throw e;
+        }
+
+        const tempZip = `${targetPath}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
+
+        await buildZipFile(tempZip, (zip) =>
+          addEntriesToZip(zip, [
+            ...baseLuieDirectoryEntries(),
+            metaEntry(meta),
+            {
+              name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`,
+              content: JSON.stringify({ characters: [] }, null, 2),
+            },
+            {
+              name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`,
+              content: JSON.stringify({ terms: [] }, null, 2),
+            },
+          ]),
+        );
+
+        await atomicReplace(tempZip, targetPath, logger);
+        return { path: targetPath };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.FS_WRITE_PROJECT_FILE,
+      logTag: "FS_WRITE_PROJECT_FILE",
+      failMessage: "Failed to write project file",
+      handler: async (projectRoot: string, relativePath: string, content: string) => {
+        const normalized = normalizeZipPath(relativePath);
+        if (!normalized || !isSafeZipPath(normalized)) {
+          throw new Error("INVALID_RELATIVE_PATH");
+        }
+        if (!projectRoot.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
+          throw new Error("PROJECT_ROOT_NOT_LUIE_PACKAGE");
+        }
+
+        try {
+          const stat = await fsp.stat(projectRoot);
+          if (stat.isDirectory()) {
+            await migrateDirectoryPackageToZip(projectRoot, projectRoot, logger);
+          }
+        } catch (e) {
+          const err = e as NodeJS.ErrnoException;
+          if (err?.code === "ENOENT") {
+            await ensureParentDir(projectRoot);
+            const tempZip = `${projectRoot}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
+            await buildZipFile(tempZip, (zip) =>
+              addEntriesToZip(zip, [
+                ...baseLuieDirectoryEntries(),
+                metaEntry({
+                  format: LUIE_PACKAGE_FORMAT,
+                  container: LUIE_PACKAGE_CONTAINER_DIR,
+                  version: LUIE_PACKAGE_VERSION,
+                  createdAt: new Date().toISOString(),
+                }),
+              ]),
+            );
+            await atomicReplace(tempZip, projectRoot, logger);
+          } else {
+            throw e;
           }
         }
 
-        if (stat.isFile()) {
-          return await readZipEntryContent(targetPath, normalized, logger);
-        }
-      } catch (error) {
-        const err = error as NodeJS.ErrnoException;
-        if (err?.code === "ENOENT") return null;
-        throw error;
-      }
-
-      return null;
+        const tempZip = `${projectRoot}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
+        await rebuildZipWithReplacement(projectRoot, tempZip, normalized, content, logger);
+        await atomicReplace(tempZip, projectRoot, logger);
+        return { path: `${projectRoot}:${normalized}` };
+      },
     },
-  });
-
-  registerIpcHandler({
-    logger,
-    channel: IPC_CHANNELS.FS_WRITE_FILE,
-    logTag: "FS_WRITE_FILE",
-    failMessage: "Failed to write file",
-    handler: async (filePath: string, content: string) => {
-      const dir = path.dirname(filePath);
-      await fsp.mkdir(dir, { recursive: true });
-      await fsp.writeFile(filePath, content, "utf-8");
-      return { path: filePath };
-    },
-  });
-
-  registerIpcHandler({
-    logger,
-    channel: IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE,
-    logTag: "FS_CREATE_LUIE_PACKAGE",
-    failMessage: "Failed to create Luie package",
-    handler: async (packagePath: string, meta: unknown) => {
-      const targetPath = ensureLuieExtension(packagePath);
-
-      await ensureParentDir(targetPath);
-
-      try {
-        const existing = await fsp.stat(targetPath);
-        if (existing.isDirectory()) {
-          await migrateDirectoryPackageToZip(targetPath, targetPath, logger);
-        } else if (existing.isFile()) {
-          const backupPath = `${targetPath}.legacy-${Date.now()}`;
-          await fsp.rename(targetPath, backupPath);
-        }
-      } catch (e) {
-        const err = e as NodeJS.ErrnoException;
-        if (err?.code !== "ENOENT") throw e;
-      }
-
-      const tempZip = `${targetPath}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
-
-      await buildZipFile(tempZip, (zip) =>
-        addEntriesToZip(zip, [
-          { name: `${LUIE_MANUSCRIPT_DIR}/`, isDirectory: true },
-          { name: `${LUIE_WORLD_DIR}/`, isDirectory: true },
-          { name: `${LUIE_SNAPSHOTS_DIR}/`, isDirectory: true },
-          { name: `${LUIE_ASSETS_DIR}/`, isDirectory: true },
-          {
-            name: LUIE_PACKAGE_META_FILENAME,
-            content: JSON.stringify(meta ?? {}, null, 2),
-          },
-          {
-            name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`,
-            content: JSON.stringify({ characters: [] }, null, 2),
-          },
-          {
-            name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`,
-            content: JSON.stringify({ terms: [] }, null, 2),
-          },
-        ]),
-      );
-
-      await atomicReplace(tempZip, targetPath, logger);
-      return { path: targetPath };
-    },
-  });
-
-  registerIpcHandler({
-    logger,
-    channel: IPC_CHANNELS.FS_WRITE_PROJECT_FILE,
-    logTag: "FS_WRITE_PROJECT_FILE",
-    failMessage: "Failed to write project file",
-    handler: async (projectRoot: string, relativePath: string, content: string) => {
-      const normalized = normalizeZipPath(relativePath);
-      if (!normalized || !isSafeZipPath(normalized)) {
-        throw new Error("INVALID_RELATIVE_PATH");
-      }
-      if (!projectRoot.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
-        throw new Error("PROJECT_ROOT_NOT_LUIE_PACKAGE");
-      }
-
-      try {
-        const stat = await fsp.stat(projectRoot);
-        if (stat.isDirectory()) {
-          await migrateDirectoryPackageToZip(projectRoot, projectRoot, logger);
-        }
-      } catch (e) {
-        const err = e as NodeJS.ErrnoException;
-        if (err?.code === "ENOENT") {
-          await ensureParentDir(projectRoot);
-          const tempZip = `${projectRoot}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
-          await buildZipFile(tempZip, (zip) =>
-            addEntriesToZip(zip, [
-              { name: `${LUIE_MANUSCRIPT_DIR}/`, isDirectory: true },
-              { name: `${LUIE_WORLD_DIR}/`, isDirectory: true },
-              { name: `${LUIE_SNAPSHOTS_DIR}/`, isDirectory: true },
-              { name: `${LUIE_ASSETS_DIR}/`, isDirectory: true },
-              {
-                name: LUIE_PACKAGE_META_FILENAME,
-                content: JSON.stringify(
-                  {
-                    format: LUIE_PACKAGE_FORMAT,
-                    container: LUIE_PACKAGE_CONTAINER_DIR,
-                    version: LUIE_PACKAGE_VERSION,
-                    createdAt: new Date().toISOString(),
-                  },
-                  null,
-                  2,
-                ),
-              },
-            ]),
-          );
-          await atomicReplace(tempZip, projectRoot, logger);
-        } else {
-          throw e;
-        }
-      }
-
-      const tempZip = `${projectRoot}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
-      await rebuildZipWithReplacement(projectRoot, tempZip, normalized, content, logger);
-      await atomicReplace(tempZip, projectRoot, logger);
-      return { path: `${projectRoot}:${normalized}` };
-    },
-  });
+  ]);
 }

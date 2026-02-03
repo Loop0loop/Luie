@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import type { Term } from "../../../shared/types";
-import { createCRUDSlice } from "./createCRUDStore";
+import {
+  createAliasSetter,
+  createCRUDSlice,
+  withProjectScopedGetAll,
+} from "./createCRUDStore";
 import type { CRUDStore } from "./createCRUDStore";
 import type { TermCreateInput, TermUpdateInput } from "../../../shared/types";
 import { api } from "../services/api";
@@ -22,25 +26,13 @@ interface TermStore extends BaseTermStore {
 }
 
 export const useTermStore = create<TermStore>((set, _get, store) => {
-  const setWithAlias: typeof set = (partial) =>
-    set((state) => {
-      const next = typeof partial === "function" ? partial(state) : partial;
-      const nextItems =
-        (next as Partial<TermStore>).items ?? state.items;
-      const nextCurrent =
-        (next as Partial<TermStore>).currentItem ?? state.currentItem;
+  const setWithAlias = createAliasSetter<TermStore, Term>(
+    set,
+    "terms",
+    "currentTerm",
+  );
 
-      return {
-        ...next,
-        terms: nextItems,
-        currentTerm: nextCurrent as Term | null,
-      } as Partial<TermStore>;
-    });
-
-  const apiClient = {
-    ...api.term,
-    getAll: (parentId?: string) => api.term.getAll(parentId || ""),
-  };
+  const apiClient = withProjectScopedGetAll(api.term);
 
   const crudSlice = createCRUDSlice<Term, TermCreateInput, TermUpdateInput>(
     apiClient,

@@ -13,6 +13,7 @@ import { autoExtractService } from "../features/autoExtractService.js";
 import { projectService } from "./projectService.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import { trackKeywordAppearances } from "./chapterKeywords.js";
+import { sanitizeName } from "../../../shared/utils/sanitize.js";
 
 const logger = createLogger("ChapterService");
 
@@ -144,10 +145,7 @@ export class ChapterService {
             typeof (project as { title?: unknown } | null)?.title === "string"
               ? String((project as { title: string }).title)
               : "Unknown";
-          const safeTitle = projectTitle
-            .replace(/[\\/:*?"<>|]/g, "-")
-            .replace(/\s+/g, " ")
-            .trim();
+          const safeTitle = sanitizeName(projectTitle, "Unknown");
           const dumpDir = path.join(
             app.getPath("userData"),
             SNAPSHOT_BACKUP_DIR,

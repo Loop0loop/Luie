@@ -25,6 +25,7 @@ import {
   readFullSnapshotArtifact,
 } from "./snapshotArtifacts.js";
 import { writeLuiePackage } from "../../handler/system/ipcFsHandlers.js";
+import { sanitizeName } from "../../../shared/utils/sanitize.js";
 
 const logger = createLogger("SnapshotService");
 
@@ -223,10 +224,10 @@ export class SnapshotService {
         | { autoSave?: boolean; autoSaveInterval?: number }
         | undefined;
 
-      const safeTitle = (projectData.title || "Recovered Snapshot")
-        .replace(/[\\/:*?"<>|]/g, "-")
-        .replace(/\s+/g, " ")
-        .trim();
+      const safeTitle = sanitizeName(
+        projectData.title || "Recovered Snapshot",
+        "Recovered Snapshot",
+      );
       const documentsDir = app.getPath("documents");
       let basePath = path.join(
         documentsDir,
