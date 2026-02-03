@@ -9,7 +9,10 @@ export type LaunchedApp = {
   testDbDir: string;
 };
 
-export async function launchApp(): Promise<LaunchedApp> {
+export async function launchApp(
+  options: { waitForRender?: boolean; waitForApi?: boolean } = {},
+): Promise<LaunchedApp> {
+  const { waitForRender = false, waitForApi = true } = options;
   const testDbDir = path.join(
     process.cwd(),
     "tests",
@@ -33,6 +36,7 @@ export async function launchApp(): Promise<LaunchedApp> {
     env: {
       ...process.env,
       NODE_ENV: "production",
+      E2E_DISABLE_SINGLE_INSTANCE: "1",
       DATABASE_URL: databaseUrl,
     },
   });
@@ -40,6 +44,19 @@ export async function launchApp(): Promise<LaunchedApp> {
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");
   await page.setViewportSize({ width: 1280, height: 720 });
+  if (waitForApi) {
+    await page.waitForFunction(
+      () => typeof (window as unknown as { api?: unknown }).api !== "undefined",
+      undefined,
+      { timeout: 10_000 },
+    );
+  }
+  if (waitForRender) {
+    await page.waitForFunction(() => {
+      const root = document.getElementById("root");
+      return !!root && root.children.length > 0;
+    });
+  }
 
   return { app, page, testDbDir };
 }

@@ -29,6 +29,9 @@ export default defineConfig({
     {
       name: "visual",
       grep: /@visual/,
+      use: {
+        browserName: "chromium",
+      },
     },
   ],
 });

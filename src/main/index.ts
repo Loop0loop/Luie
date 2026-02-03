@@ -26,7 +26,8 @@ const logger = createLogger("Main");
 app.disableHardwareAcceleration();
 
 // Single instance lock
-const gotTheLock = app.requestSingleInstanceLock();
+const skipSingleInstance = process.env.E2E_DISABLE_SINGLE_INSTANCE === "1";
+const gotTheLock = skipSingleInstance ? true : app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
   logger.warn("Another instance is already running");
