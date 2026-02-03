@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useDeferredValue, useTransition, memo } from "react";
-import { cn } from "../../../../shared/types/utils";
 import { ArrowLeft } from "lucide-react";
 import { useCharacterStore } from "../../stores/characterStore";
 import { useTermStore } from "../../stores/termStore";

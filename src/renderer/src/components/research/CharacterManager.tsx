@@ -177,8 +177,8 @@ export default function CharacterManager() {
         </Panel>
 
         {/* Resizer Handle */}
-        <PanelResizeHandle className="w-[4px] -ml-[2px] bg-transparent hover:bg-primary/50 active:bg-primary z-50 transition-colors flex items-center justify-center group cursor-col-resize focus:outline-none relative">
-           <div className="w-[2px] h-full bg-transparent group-hover:bg-primary/20" />
+          <PanelResizeHandle className="w-1 -ml-0.5 bg-transparent hover:bg-primary/50 active:bg-primary z-50 transition-colors flex items-center justify-center group cursor-col-resize focus:outline-none relative">
+            <div className="w-0.5 h-full bg-transparent group-hover:bg-primary/20" />
         </PanelResizeHandle>
 
         {/* RIGHT MAIN - Wiki View */}
@@ -431,10 +431,10 @@ function WikiDetailView({
       <div className="@container">
         <div className="flex flex-col @min-[700px]:flex-row gap-8 items-start min-h-0">
           {/* LEFT: Content & TOC */}
-          <div className="flex-1 flex flex-col gap-8 min-w-[300px] w-full @min-[700px]:order-1 order-2">
+          <div className="flex-1 flex flex-col gap-8 min-w-75 w-full @min-[700px]:order-1 order-2">
           
           {/* TOC (Inline) */}
-          <div className="bg-(--namu-table-bg) border border-(--namu-border) p-4 inline-block min-w-[200px] rounded">
+          <div className="bg-(--namu-table-bg) border border-(--namu-border) p-4 inline-block min-w-50 rounded">
             <div className="font-bold text-center mb-3 text-fg text-sm">목차</div>
             <div className="flex flex-col gap-1.5 text-sm">
                {sections.map(sec => (

@@ -28,9 +28,24 @@ export type APIClient<T, CreateInput, UpdateInput> = {
   delete: (id: string) => Promise<IPCResponse<unknown>>;
 };
 
+export type APIClientWithRequiredGetAll<T, CreateInput, UpdateInput> = Omit<
+  APIClient<T, CreateInput, UpdateInput>,
+  "getAll"
+> & {
+  getAll: (parentId: string) => Promise<IPCResponse<T[]>>;
+};
+
 export function withProjectScopedGetAll<T, CreateInput, UpdateInput>(
   apiClient: APIClient<T, CreateInput, UpdateInput>,
-) {
+): APIClient<T, CreateInput, UpdateInput>;
+export function withProjectScopedGetAll<T, CreateInput, UpdateInput>(
+  apiClient: APIClientWithRequiredGetAll<T, CreateInput, UpdateInput>,
+): APIClient<T, CreateInput, UpdateInput>;
+export function withProjectScopedGetAll<T, CreateInput, UpdateInput>(
+  apiClient:
+    | APIClient<T, CreateInput, UpdateInput>
+    | APIClientWithRequiredGetAll<T, CreateInput, UpdateInput>,
+): APIClient<T, CreateInput, UpdateInput> {
   return {
     ...apiClient,
     getAll: (parentId?: string) => apiClient.getAll(parentId || ""),
