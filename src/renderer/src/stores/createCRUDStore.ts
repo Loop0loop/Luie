@@ -63,6 +63,7 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
   apiClient: APIClient<T, CreateInput, UpdateInput>,
   name: string,
 ): StateCreator<CRUDStore<T, CreateInput, UpdateInput>> {
+  // Keep core CRUD minimal; extend/override per-store with spread syntax as needed.
   return (set) => ({
     items: [],
     currentItem: null,

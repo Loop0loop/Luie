@@ -14,10 +14,11 @@ import {
   STORAGE_KEY_MEMOS_PREFIX,
 } from "../../../../shared/constants";
 import { Virtuoso } from "react-virtuoso";
-import { Clock, Plus, Search, Tag } from "lucide-react";
+import { Clock, Plus, Tag } from "lucide-react";
 import { cn } from "../../../../shared/types/utils";
 import { useProjectStore } from "../../stores/projectStore";
 import { api } from "../../services/api";
+import SearchInput from "../common/SearchInput";
 
 type Note = {
   id: string;
@@ -137,25 +138,12 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
         </div>
 
         <div className="px-3 py-2">
-          <div className="flex items-center gap-2 bg-element px-2 py-1.5 rounded">
-            <Search
-              style={{ width: "var(--memo-search-icon-size)", height: "var(--memo-search-icon-size)" }}
-              color="var(--text-tertiary)"
-            />
-            <input
-              style={{
-                border: "none",
-                background: "transparent",
-                outline: "none",
-                fontSize: "var(--memo-search-font-size)",
-                width: "100%",
-                color: "var(--text-primary)",
-              }}
-              placeholder={PLACEHOLDER_MEMO_SEARCH}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+          <SearchInput
+            variant="memo"
+            placeholder={PLACEHOLDER_MEMO_SEARCH}
+            value={searchTerm}
+            onChange={setSearchTerm}
+          />
         </div>
 
         <div className="flex-1 min-h-0">

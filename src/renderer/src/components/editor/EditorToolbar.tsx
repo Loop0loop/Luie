@@ -51,6 +51,11 @@ export default function EditorToolbar({
   onToggleMobileView,
 }: EditorToolbarProps) {
   const { fontSize, setFontSize } = useEditorStore();
+  const toggleButtonClass = (active: boolean) =>
+    cn(
+      "flex items-center justify-center w-7 h-7 rounded text-muted hover:bg-hover hover:text-fg transition-colors",
+      active && "bg-active text-accent",
+    );
 
   if (!editor) {
     return null;
@@ -115,28 +120,28 @@ export default function EditorToolbar({
           <div className="w-px h-4 bg-border mx-1.5" />
 
           <button
-            className={cn("flex items-center justify-center w-7 h-7 rounded text-muted hover:bg-hover hover:text-fg transition-colors", editor.isActive("bold") && "bg-active text-accent")}
+            className={toggleButtonClass(editor.isActive("bold"))}
             title={TOOLTIP_BOLD}
             onClick={() => editor.chain().focus().toggleBold().run()}
           >
               <Bold className="icon-md" />
           </button>
           <button
-            className={cn("flex items-center justify-center w-7 h-7 rounded text-muted hover:bg-hover hover:text-fg transition-colors", editor.isActive("italic") && "bg-active text-accent")}
+            className={toggleButtonClass(editor.isActive("italic"))}
             title={TOOLTIP_ITALIC}
             onClick={() => editor.chain().focus().toggleItalic().run()}
           >
               <Italic className="icon-md" />
           </button>
           <button
-            className={cn("flex items-center justify-center w-7 h-7 rounded text-muted hover:bg-hover hover:text-fg transition-colors", editor.isActive("underline") && "bg-active text-accent")}
+            className={toggleButtonClass(editor.isActive("underline"))}
             title={TOOLTIP_UNDERLINE}
             onClick={() => editor.chain().focus().toggleUnderline().run()}
           >
               <Underline className="icon-md" />
           </button>
           <button
-            className={cn("flex items-center justify-center w-7 h-7 rounded text-muted hover:bg-hover hover:text-fg transition-colors", editor.isActive("strike") && "bg-active text-accent")}
+            className={toggleButtonClass(editor.isActive("strike"))}
             title={TOOLTIP_STRIKETHROUGH}
             onClick={() => editor.chain().focus().toggleStrike().run()}
           >
@@ -167,7 +172,7 @@ export default function EditorToolbar({
           </div>
 
           <button
-            className={cn("flex items-center justify-center w-7 h-7 rounded text-muted hover:bg-hover hover:text-fg transition-colors", editor.isActive("highlight") && "bg-active text-accent")}
+            className={toggleButtonClass(editor.isActive("highlight"))}
             title={TOOLTIP_HIGHLIGHT}
             onClick={() => editor.chain().focus().toggleHighlight().run()}
           >
@@ -179,21 +184,21 @@ export default function EditorToolbar({
         <div className="flex items-center gap-0.5">
           {/* Alignment */}
           <button
-            className={cn("flex items-center justify-center w-7 h-7 rounded text-muted hover:bg-hover hover:text-fg transition-colors", editor.isActive({ textAlign: "left" }) && "bg-active text-accent")}
+            className={toggleButtonClass(editor.isActive({ textAlign: "left" }))}
             title={TOOLTIP_ALIGN_LEFT}
             onClick={() => editor.chain().focus().setTextAlign("left").run()}
           >
             <AlignLeft className="icon-md" />
           </button>
           <button
-            className={cn("flex items-center justify-center w-7 h-7 rounded text-muted hover:bg-hover hover:text-fg transition-colors", editor.isActive({ textAlign: "center" }) && "bg-active text-accent")}
+            className={toggleButtonClass(editor.isActive({ textAlign: "center" }))}
             title={TOOLTIP_ALIGN_CENTER}
             onClick={() => editor.chain().focus().setTextAlign("center").run()}
           >
             <AlignCenter className="icon-md" />
           </button>
           <button
-            className={cn("flex items-center justify-center w-7 h-7 rounded text-muted hover:bg-hover hover:text-fg transition-colors", editor.isActive({ textAlign: "right" }) && "bg-active text-accent")}
+            className={toggleButtonClass(editor.isActive({ textAlign: "right" }))}
             title={TOOLTIP_ALIGN_RIGHT}
             onClick={() => editor.chain().focus().setTextAlign("right").run()}
           >

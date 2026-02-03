@@ -21,6 +21,7 @@ import { ArrowLeft, Eraser, Plus, X, Type, PenTool } from "lucide-react";
 import { useProjectStore } from "../../stores/projectStore";
 import { useTermStore } from "../../stores/termStore";
 import { BufferedInput, BufferedTextArea } from "../common/BufferedInput";
+import TabButton from "../common/TabButton";
 import {
   WORLD_MINDMAP_ROOT_LABEL,
   DEFAULT_TERM_ADD_LABEL,
@@ -125,36 +126,41 @@ export default function WorldSection() {
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div className="flex w-full bg-sidebar border-b border-border shrink-0 text-muted select-none">
-        <div
-          className={cn("flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans", subTab === "terms" && "text-accent font-semibold border-b-2 border-accent")}
+        <TabButton
+          label={WORLD_TAB_TERMS}
+          active={subTab === "terms"}
           onClick={() => setSubTab("terms")}
-        >
-          {WORLD_TAB_TERMS}
-        </div>
-        <div
-          className={cn("flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans", subTab === "synopsis" && "text-accent font-semibold border-b-2 border-accent")}
+          className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
+          activeClassName="text-accent font-semibold border-b-2 border-accent"
+        />
+        <TabButton
+          label={WORLD_TAB_SYNOPSIS}
+          active={subTab === "synopsis"}
           onClick={() => setSubTab("synopsis")}
-        >
-          {WORLD_TAB_SYNOPSIS}
-        </div>
-        <div
-          className={cn("flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans", subTab === "mindmap" && "text-accent font-semibold border-b-2 border-accent")}
+          className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
+          activeClassName="text-accent font-semibold border-b-2 border-accent"
+        />
+        <TabButton
+          label={WORLD_TAB_MINDMAP}
+          active={subTab === "mindmap"}
           onClick={() => setSubTab("mindmap")}
-        >
-          {WORLD_TAB_MINDMAP}
-        </div>
-        <div
-          className={cn("flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans", subTab === "drawing" && "text-accent font-semibold border-b-2 border-accent")}
+          className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
+          activeClassName="text-accent font-semibold border-b-2 border-accent"
+        />
+        <TabButton
+          label={WORLD_TAB_DRAWING}
+          active={subTab === "drawing"}
           onClick={() => setSubTab("drawing")}
-        >
-          {WORLD_TAB_DRAWING}
-        </div>
-        <div
-          className={cn("flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans", subTab === "plot" && "text-accent font-semibold border-b-2 border-accent")}
+          className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
+          activeClassName="text-accent font-semibold border-b-2 border-accent"
+        />
+        <TabButton
+          label={WORLD_TAB_PLOT}
+          active={subTab === "plot"}
           onClick={() => setSubTab("plot")}
-        >
-          {WORLD_TAB_PLOT}
-        </div>
+          className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
+          activeClassName="text-accent font-semibold border-b-2 border-accent"
+        />
       </div>
 
       <div style={{ flex: 1, overflow: "hidden" }}>
