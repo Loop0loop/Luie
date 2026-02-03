@@ -1,0 +1,119 @@
+import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
+import { useCharacterStore } from "../../stores/characterStore";
+import { useTermStore } from "../../stores/termStore";
+import type { Character, Term } from "../../../../shared/types";
+
+type TooltipState = {
+  visible: boolean;
+  x: number;
+  y: number;
+  type: "character" | "term";
+  id: string;
+};
+
+export function SmartLinkTooltip() {
+  const [state, setState] = useState<TooltipState>({
+    visible: false,
+    x: 0,
+    y: 0,
+    type: "character",
+    id: "",
+  });
+
+  const { items: characters } = useCharacterStore();
+  const { items: terms } = useTermStore();
+
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const handleMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.matches(".smart-link")) {
+        const type = target.getAttribute("data-type") as "character" | "term";
+        const id = target.getAttribute("data-id");
+
+        if (type && id) {
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+          
+          const rect = target.getBoundingClientRect();
+          setState({
+            visible: true,
+            x: rect.left + window.scrollX,
+            y: rect.bottom + window.scrollY + 5, // 5px offset
+            type,
+            id,
+          });
+        }
+      }
+    };
+
+    const handleMouseOut = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.matches(".smart-link")) {
+        // Small delay to allow moving to tooltip if needed (though we aren't handling hovering tooltip yet)
+        timeoutRef.current = setTimeout(() => {
+            setState((prev) => ({ ...prev, visible: false }));
+        }, 300);
+      }
+    };
+
+    document.addEventListener("mouseover", handleMouseOver);
+    document.addEventListener("mouseout", handleMouseOut);
+
+    return () => {
+      document.removeEventListener("mouseover", handleMouseOver);
+      document.removeEventListener("mouseout", handleMouseOut);
+    };
+  }, []);
+
+  if (!state.visible) return null;
+
+  let content: { title: string; desc?: string | null; meta?: string } | null = null;
+  const chars = characters as Character[];
+  const termList = terms as Term[];
+
+  if (state.type === "character") {
+    const char = chars.find((c) => c.id === state.id);
+    if (char) {
+      content = {
+        title: char.name,
+        desc: char.description || "No description",
+        meta: "Character",
+      };
+    }
+  } else if (state.type === "term") {
+    const term = termList.find((t) => t.id === state.id);
+    if (term) {
+      content = {
+        title: term.term,
+        desc: term.definition || "No definition",
+        meta: "Term",
+      };
+    }
+  }
+
+  if (!content) return null;
+
+  // Render Portal at root
+  return createPortal(
+    <div
+      className="fixed z-50 pointer-events-none bg-popover text-popover-foreground rounded-md shadow-md border border-border p-3 w-[250px] animate-in fade-in zoom-in-95 duration-200"
+      style={{
+        left: state.x,
+        top: state.y,
+      }}
+    >
+      <div className="flex items-center justify-between mb-1">
+          <span className="font-bold text-sm">{content.title}</span>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-sm">
+            {content.meta}
+          </span>
+      </div>
+      <div className="text-xs text-muted-foreground line-clamp-3">
+        {content.desc}
+      </div>
+    </div>,
+    document.body
+  );
+}

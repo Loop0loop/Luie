@@ -1,4 +1,6 @@
 import { test, expect } from "@playwright/test";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { launchApp, closeApp } from "./_helpers/electronApp";
 
 test("creates project and chapter via IPC @e2e", async () => {
@@ -55,14 +57,17 @@ test("full IPC workflow @e2e", async () => {
     const invalidProject = await api.project.create({ title: "" });
     data.invalidProject = invalidProject;
 
+    const projectPath = `/tmp/workflow-${suffix}.luie`;
     const projectRes = record(
       "project.create",
       await api.project.create({
         title: `Workflow Project ${suffix}`,
         description: "workflow",
-        projectPath: `/tmp/workflow-${suffix}.luie`,
+        projectPath,
       }),
     );
+
+    data.projectPath = projectPath;
 
     if (!projectRes.success) {
       return { steps, data, ids };
@@ -243,6 +248,25 @@ test("full IPC workflow @e2e", async () => {
   expect(result.data.snapshotRestoredContent).toBe("Snapshot content");
   expect(result.data.autoSaveSuccess).toBe(true);
   expect(result.data.projectDeleteSuccess).toBe(true);
+
+  const projectPath = String(result.data.projectPath ?? "");
+  const localSnapshotsDir = path.join(
+    path.dirname(projectPath),
+    ".luie",
+    "snapshots",
+    result.ids.projectId,
+  );
+  const localSnapshots = fs.existsSync(localSnapshotsDir)
+    ? fs.readdirSync(localSnapshotsDir).filter((name) => name.endsWith(".snap"))
+    : [];
+  expect(localSnapshots.length).toBeGreaterThan(0);
+
+  const userDataPath = await app.evaluate(({ app }) => app.getPath("userData"));
+  const backupDir = path.join(userDataPath, "Backups", result.ids.projectId);
+  const backupSnapshots = fs.existsSync(backupDir)
+    ? fs.readdirSync(backupDir).filter((name) => name.endsWith(".snap"))
+    : [];
+  expect(backupSnapshots.length).toBeGreaterThan(0);
 
   await closeApp(app, testDbDir);
 });

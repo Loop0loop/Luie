@@ -25,6 +25,8 @@ import { useBufferedInput } from "../../hooks/useBufferedInput";
 import { useEditorAutosave } from "../../hooks/useEditorAutosave";
 import { useEditorStats } from "../../hooks/useEditorStats";
 import { useEditorConfig } from "../../hooks/useEditorConfig";
+import { SmartLink } from "./extensions/SmartLink";
+import { SmartLinkTooltip } from "./SmartLinkTooltip";
 import { Loader2, Check } from "lucide-react";
 import {
   PLACEHOLDER_EDITOR_BODY,
@@ -135,6 +137,7 @@ function Editor({
         placeholder: PLACEHOLDER_EDITOR_BODY,
       }),
       SlashCommand,
+      SmartLink, 
     ],
     [],
   );
@@ -258,6 +261,8 @@ function Editor({
           {TEXT_EDITOR_STATUS_WORD_LABEL} {wordCount}
         </span>
       </div>
+
+      <SmartLinkTooltip />
     </div>
   );
 }
