@@ -1,19 +1,17 @@
-export * from "./world/characterService.js";
-/*
 /**
  * Character service - 캐릭터 관리 비즈니스 로직
  */
 
-import { db } from "../database/index.js";
-import { createLogger } from "../../shared/logger/index.js";
-import { ErrorCode } from "../../shared/constants/index.js";
+import { db } from "../../database/index.js";
+import { createLogger } from "../../../shared/logger/index.js";
+import { ErrorCode } from "../../../shared/constants/index.js";
 import type {
   CharacterCreateInput,
   CharacterUpdateInput,
   CharacterAppearanceInput,
-} from "../../shared/types/index.js";
-import { projectService } from "./projectService.js";
-import { ServiceError } from "../utils/serviceError.js";
+} from "../../../shared/types/index.js";
+import { projectService } from "../core/projectService.js";
+import { ServiceError } from "../../utils/serviceError.js";
 
 const logger = createLogger("CharacterService");
 
@@ -37,9 +35,7 @@ export class CharacterService {
           name: input.name,
           description: input.description,
           firstAppearance: input.firstAppearance,
-          attributes: input.attributes
-            ? JSON.stringify(input.attributes)
-            : null,
+          attributes: input.attributes ? JSON.stringify(input.attributes) : null,
         },
       });
 
@@ -116,8 +112,7 @@ export class CharacterService {
       const updateData: Record<string, unknown> = {};
 
       if (input.name !== undefined) updateData.name = input.name;
-      if (input.description !== undefined)
-        updateData.description = input.description;
+      if (input.description !== undefined) updateData.description = input.description;
       if (input.firstAppearance !== undefined)
         updateData.firstAppearance = input.firstAppearance;
       if (input.attributes !== undefined) {
@@ -269,10 +264,7 @@ export class CharacterService {
       const characters = await db.getClient().character.findMany({
         where: {
           projectId,
-          OR: [
-            { name: { contains: query } },
-            { description: { contains: query } },
-          ],
+          OR: [{ name: { contains: query } }, { description: { contains: query } }],
         },
         orderBy: { name: "asc" },
       });
@@ -291,4 +283,3 @@ export class CharacterService {
 }
 
 export const characterService = new CharacterService();
-*/

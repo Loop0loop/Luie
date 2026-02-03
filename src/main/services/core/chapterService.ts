@@ -1,22 +1,15 @@
-export * from "./core/chapterService.js";
-/*
 /**
  * Chapter service - 챕터/회차 관리 비즈니스 로직
  */
 
-import { db } from "../database/index.js";
-import { createLogger } from "../../shared/logger/index.js";
-import { ErrorCode, SEARCH_CONTEXT_RADIUS } from "../../shared/constants/index.js";
-import type {
-  ChapterCreateInput,
-  ChapterUpdateInput,
-} from "../../shared/types/index.js";
-import { keywordExtractor } from "../core/keywordExtractor.js";
-import { characterService } from "./characterService.js";
-import { termService } from "./termService.js";
-import { autoExtractService } from "./autoExtractService.js";
+import { db } from "../../database/index.js";
+import { createLogger } from "../../../shared/logger/index.js";
+import { ErrorCode } from "../../../shared/constants/index.js";
+import type { ChapterCreateInput, ChapterUpdateInput } from "../../../shared/types/index.js";
+import { autoExtractService } from "../features/autoExtractService.js";
 import { projectService } from "./projectService.js";
-import { ServiceError } from "../utils/serviceError.js";
+import { ServiceError } from "../../utils/serviceError.js";
+import { trackKeywordAppearances } from "./chapterKeywords.js";
 
 const logger = createLogger("ChapterService");
 
@@ -135,7 +128,7 @@ export class ChapterService {
         });
 
         if (chapter) {
-          await this.trackKeywordAppearances(
+          await trackKeywordAppearances(
             input.id,
             input.content,
             String((chapter as { projectId: unknown }).projectId),
@@ -180,78 +173,6 @@ export class ChapterService {
         error,
       );
     }
-  }
-
-  private async trackKeywordAppearances(
-    chapterId: string,
-    content: string,
-    projectId: string,
-  ) {
-    try {
-      const characters = (await db.getClient().character.findMany({
-        where: { projectId },
-        select: { id: true, name: true },
-      })) as Array<{ id: string; name: string }>;
-
-      const terms = (await db.getClient().term.findMany({
-        where: { projectId },
-        select: { id: true, term: true },
-      })) as Array<{ id: string; term: string }>;
-
-      const characterNames = characters.map((c: { name: string }) => c.name);
-      const termNames = terms.map((t: { term: string }) => t.term);
-
-      keywordExtractor.setKnownCharacters(characterNames);
-      keywordExtractor.setKnownTerms(termNames);
-
-      const keywords = keywordExtractor.extractFromText(content);
-
-      for (const keyword of keywords.filter((k) => k.type === "character")) {
-        const character = characters.find((c) => c.name === keyword.text);
-        if (character) {
-          await characterService.recordAppearance({
-            characterId: String(character.id),
-            chapterId,
-            position: keyword.position,
-            context: this.extractContext(content, keyword.position, SEARCH_CONTEXT_RADIUS),
-          });
-
-          await characterService.updateFirstAppearance(String(character.id), chapterId);
-        }
-      }
-
-      for (const keyword of keywords.filter((k) => k.type === "term")) {
-        const term = terms.find((t) => t.term === keyword.text);
-        if (term) {
-          await termService.recordAppearance({
-            termId: String(term.id),
-            chapterId,
-            position: keyword.position,
-            context: this.extractContext(content, keyword.position, SEARCH_CONTEXT_RADIUS),
-          });
-
-          await termService.updateFirstAppearance(String(term.id), chapterId);
-        }
-      }
-
-      logger.info("Keyword tracking completed", {
-        chapterId,
-        characterCount: keywords.filter((k) => k.type === "character").length,
-        termCount: keywords.filter((k) => k.type === "term").length,
-      });
-    } catch (error) {
-      logger.error("Failed to track keyword appearances", error);
-    }
-  }
-
-  private extractContext(
-    text: string,
-    position: number,
-    length: number,
-  ): string {
-    const start = Math.max(0, position - length);
-    const end = Math.min(text.length, position + length);
-    return text.substring(start, end);
   }
 
   async deleteChapter(id: string) {
@@ -309,4 +230,3 @@ export class ChapterService {
 }
 
 export const chapterService = new ChapterService();
-*/

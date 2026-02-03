@@ -6,8 +6,8 @@ import { EventEmitter } from "events";
 import { app } from "electron";
 import { promises as fs } from "fs";
 import path from "path";
-import { chapterService } from "../services/chapterService.js";
-import { snapshotService } from "../services/snapshotService.js";
+import { chapterService } from "../services/core/chapterService.js";
+import { snapshotService } from "../services/features/snapshotService.js";
 import { createLogger } from "../../shared/logger/index.js";
 import {
   DEFAULT_AUTO_SAVE_DEBOUNCE_MS,

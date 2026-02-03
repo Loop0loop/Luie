@@ -1,3 +1,5 @@
+export * from "./features/snapshotService.js";
+/*
 /**
  * Snapshot service - 버전 관리 스냅샷 비즈니스 로직
  */
@@ -464,3 +466,4 @@ export class SnapshotService {
 }
 
 export const snapshotService = new SnapshotService();
+*/

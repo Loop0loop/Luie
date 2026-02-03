@@ -1,14 +1,12 @@
-export * from "./features/searchService.js";
-/*
 /**
  * Search service - 통합 검색 (고유명사 우선)
  */
 
-import { db } from "../database/index.js";
-import { createLogger } from "../../shared/logger/index.js";
-import { ErrorCode } from "../../shared/constants/index.js";
-import type { SearchQuery } from "../../shared/types/index.js";
-import { ServiceError } from "../utils/serviceError.js";
+import { db } from "../../database/index.js";
+import { createLogger } from "../../../shared/logger/index.js";
+import { ErrorCode } from "../../../shared/constants/index.js";
+import type { SearchQuery } from "../../../shared/types/index.js";
+import { ServiceError } from "../../utils/serviceError.js";
 
 const logger = createLogger("SearchService");
 
@@ -201,4 +199,3 @@ export class SearchService {
 }
 
 export const searchService = new SearchService();
-*/

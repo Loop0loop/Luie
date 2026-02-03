@@ -1,98 +1,20 @@
-export * from "./features/autoExtractService.js";
-/*
 import "dotenv/config";
-import { createLogger } from "../../shared/logger/index.js";
-import { AUTO_EXTRACT_DEBOUNCE_MS } from "../../shared/constants/index.js";
-import { db } from "../database/index.js";
-import { keywordExtractor } from "../core/keywordExtractor.js";
-import { characterService } from "./characterService.js";
-import { termService } from "./termService.js";
-import { z } from "zod";
-import { GoogleGenAI, Type } from "@google/genai";
+import { createLogger } from "../../../shared/logger/index.js";
+import { AUTO_EXTRACT_DEBOUNCE_MS } from "../../../shared/constants/index.js";
+import { db } from "../../database/index.js";
+import { keywordExtractor } from "../../core/keywordExtractor.js";
+import { characterService } from "../world/characterService.js";
+import { termService } from "../world/termService.js";
+import { GoogleGenAI } from "@google/genai";
+import {
+  FEW_SHOT_EXAMPLES,
+  GEMINI_RESPONSE_SCHEMA,
+  GeminiResultSchema,
+  type GeminiResult,
+} from "./autoExtract/autoExtractPrompt.js";
 
 const logger = createLogger("AutoExtractService");
-
-const GeminiResultSchema = z.object({
-  name: z.string(),
-  entityType: z.enum([
-    "character",
-    "location",
-    "organization",
-    "item",
-    "concept",
-  ]),
-  importance: z.enum(["main", "supporting", "minor", "unknown"]).default("unknown"),
-  summary: z.string(),
-  confidence: z.number().min(0).max(1).default(0.5),
-  reasoning: z.string().optional(), // 분류 근거
-});
-
-type GeminiResult = z.infer<typeof GeminiResultSchema>;
-
-// Few-shot examples for better classification
-const FEW_SHOT_EXAMPLES = `
-예시 1:
-입력: "이준혁은 서울대학교 의과대학을 졸업한 뒤 강남세브란스병원에서 근무하고 있다."
-출력: {
-  "name": "이준혁",
-  "entityType": "character",
-  "importance": "main",
-  "summary": "서울대 의대 출신으로 강남세브란스병원에 근무하는 의사",
-  "confidence": 0.95,
-  "reasoning": "인물의 학력과 직장이 구체적으로 서술됨"
-}
-
-예시 2:
-입력: "그녀는 엘프의 숲 깊은 곳에 위치한 실버문 탑으로 향했다."
-출력: {
-  "name": "실버문 탑",
-  "entityType": "location",
-  "importance": "supporting",
-  "summary": "엘프의 숲 깊은 곳에 위치한 장소",
-  "confidence": 0.85,
-  "reasoning": "구체적인 위치 정보가 제공됨"
-}
-
-예시 3:
-입력: "검은달 조직은 음지에서 세계를 조종하는 비밀결사다."
-출력: {
-  "name": "검은달",
-  "entityType": "organization",
-  "importance": "main",
-  "summary": "세계를 음지에서 조종하는 비밀결사 조직",
-  "confidence": 0.9,
-  "reasoning": "조직의 목적과 성격이 명확히 드러남"
-}
-`.trim();
-
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
-
-const GEMINI_RESPONSE_SCHEMA = {
-  type: Type.OBJECT,
-  properties: {
-    name: { type: Type.STRING },
-    entityType: {
-      type: Type.STRING,
-      enum: ["character", "location", "organization", "item", "concept"],
-    },
-    importance: {
-      type: Type.STRING,
-      enum: ["main", "supporting", "minor", "unknown"],
-    },
-    summary: { type: Type.STRING },
-    confidence: { type: Type.NUMBER },
-    reasoning: { type: Type.STRING },
-  },
-  required: ["name", "entityType", "importance", "summary", "confidence"],
-  propertyOrdering: [
-    "name",
-    "entityType",
-    "importance",
-    "summary",
-    "confidence",
-    "reasoning",
-  ],
-} as const;
 
 class AutoExtractService {
   private timers = new Map<string, NodeJS.Timeout>();
@@ -142,11 +64,7 @@ class AutoExtractService {
     return dirty;
   }
 
-  private async analyzeChapter(
-    chapterId: string,
-    projectId: string,
-    content: string,
-  ) {
+  private async analyzeChapter(chapterId: string, projectId: string, content: string) {
     const dirtyParagraphs = this.getDirtyParagraphs(chapterId, content);
     if (dirtyParagraphs.length === 0) {
       return;
@@ -169,9 +87,7 @@ class AutoExtractService {
     keywordExtractor.setKnownCharacters(characters.map((c) => c.name));
     keywordExtractor.setKnownTerms(terms.map((t) => t.term));
 
-    const candidates = dirtyParagraphs.flatMap((p) =>
-      keywordExtractor.extractNouns(p),
-    );
+    const candidates = dirtyParagraphs.flatMap((p) => keywordExtractor.extractNouns(p));
 
     const filtered = keywordExtractor
       .filterByFrequency(candidates, 2)
@@ -190,9 +106,7 @@ class AutoExtractService {
     }
 
     for (const name of uniqueCandidates) {
-      const contexts = dirtyParagraphs
-        .filter((p) => p.includes(name))
-        .slice(0, 3);
+      const contexts = dirtyParagraphs.filter((p) => p.includes(name)).slice(0, 3);
 
       const result = await this.classifyWithGemini(name, contexts, apiKey);
       if (!result) {
@@ -233,7 +147,7 @@ class AutoExtractService {
     apiKey: string,
   ): Promise<GeminiResult | null> {
     const contextText = contexts.map((c, i) => `문맥 ${i + 1}: ${c}`).join("\n");
-    
+
     const prompt = `당신은 웹소설/판타지 소설 전문 편집자입니다. 주어진 문맥에서 고유명사의 유형을 정확히 분류하고 요약하세요.
 
 ## 분류 기준
@@ -259,62 +173,32 @@ ${contextText}
 
 [고유명사]: ${name}
 
-JSON 형식으로만 답하세요:
-{
-  "name": "${name}",
-  "entityType": "character|location|organization|item|concept",
-  "importance": "main|supporting|minor|unknown",
-  "summary": "구체적이고 간결한 1-2문장 요약",
-  "confidence": 0~1,
-  "reasoning": "분류 근거를 간단히 설명"
-}
-
-주의사항:
-1. 문맥에서 확인할 수 없는 정보는 추측하지 마세요
-2. summary는 문맥 기반으로만 작성하세요
-3. confidence는 문맥의 명확성에 따라 조정하세요`;
-
-    const ai = new GoogleGenAI({ apiKey });
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: prompt }],
-        },
-      ],
-      config: {
-        temperature: 0.1,
-        topK: 1,
-        topP: 0.95,
-        maxOutputTokens: 512,
-        responseMimeType: "application/json",
-        responseSchema: GEMINI_RESPONSE_SCHEMA,
-      },
-    });
-
-    const text = response.text;
-    if (!text) {
-      logger.warn("Gemini empty response", { name });
-      return null;
-    }
+JSON 형식으로만 답하세요:`;
 
     try {
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: GEMINI_RESPONSE_SCHEMA,
+        },
+      });
+
+      const text = response.text ?? "";
       const parsed = GeminiResultSchema.safeParse(JSON.parse(text));
       if (!parsed.success) {
-        logger.warn("Gemini response schema mismatch", {
-          name,
-          issues: parsed.error.issues,
-        });
+        logger.warn("Gemini response parse failed", parsed.error);
         return null;
       }
+
       return parsed.data;
     } catch (error) {
-      logger.warn("Gemini JSON parse failed", { name, error });
+      logger.error("Gemini classification failed", error);
       return null;
     }
   }
 }
 
 export const autoExtractService = new AutoExtractService();
-*/
