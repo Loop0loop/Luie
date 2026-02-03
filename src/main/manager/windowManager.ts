@@ -45,7 +45,7 @@ class WindowManager {
       this.mainWindow.loadURL(DEV_SERVER_URL)
       this.mainWindow.webContents.openDevTools({ mode: 'detach' })
     } else {
-      this.mainWindow.loadFile(join(__dirname, '../../renderer/index.html'))
+      this.mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
     }
 
     this.mainWindow.on('closed', () => {

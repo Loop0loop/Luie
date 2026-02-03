@@ -21,38 +21,26 @@ export default function ResearchPanel({
   activeTab,
   onClose,
 }: ResearchPanelProps) {
-  const getTitle = () => {
-    switch (activeTab) {
-      case "character":
-        return LABEL_RESEARCH_CHARACTERS;
-      case "world":
-        return LABEL_RESEARCH_WORLD;
-      case "scrap":
-        return LABEL_RESEARCH_SCRAP;
-      default:
-        return LABEL_RESEARCH_DEFAULT;
-    }
+  const tabConfig: Record<
+    string,
+    { title: string; icon: JSX.Element }
+  > = {
+    character: { title: LABEL_RESEARCH_CHARACTERS, icon: <User className="icon-lg" /> },
+    world: { title: LABEL_RESEARCH_WORLD, icon: <Globe className="icon-lg" /> },
+    scrap: { title: LABEL_RESEARCH_SCRAP, icon: <StickyNote className="icon-lg" /> },
   };
 
-  const getIcon = () => {
-    switch (activeTab) {
-      case "character":
-        return <User className="icon-lg" />;
-      case "world":
-        return <Globe className="icon-lg" />;
-      case "scrap":
-        return <StickyNote className="icon-lg" />;
-      default:
-        return <User className="icon-lg" />;
-    }
+  const { title, icon } = tabConfig[activeTab] ?? {
+    title: LABEL_RESEARCH_DEFAULT,
+    icon: <User className="icon-lg" />,
   };
 
   return (
     <div className="flex flex-col h-full w-full bg-sidebar border-l border-border overflow-hidden">
       <div className="h-12 flex items-center justify-between px-4 border-b border-border bg-bg-primary shrink-0">
         <div className="font-semibold text-sm text-fg flex items-center gap-2">
-          {getIcon()}
-          <span>{getTitle()}</span>
+          {icon}
+          <span>{title}</span>
         </div>
         <button
           className="p-1 rounded text-muted cursor-pointer border-none bg-transparent flex items-center justify-center hover:bg-hover hover:text-fg"

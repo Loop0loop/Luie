@@ -14,9 +14,11 @@ import {
   STORAGE_KEY_MEMOS_PREFIX,
 } from "../../../../shared/constants";
 import { Virtuoso } from "react-virtuoso";
-import { Clock, Plus, Search, Tag } from "lucide-react";
+import { Clock, Plus, Tag } from "lucide-react";
 import { cn } from "../../../../shared/types/utils";
 import { useProjectStore } from "../../stores/projectStore";
+import { api } from "../../services/api";
+import SearchInput from "../common/SearchInput";
 
 type Note = {
   id: string;
@@ -71,7 +73,7 @@ function loadInitialNotes(storageKey: string | null): {
       activeNoteId: effectiveNotes[0]?.id ?? DEFAULT_NOTES[0]?.id ?? "1",
     };
   } catch (e) {
-    window.api.logger.warn("Failed to load memos", e);
+    api.logger.warn("Failed to load memos", e);
     return { notes: DEFAULT_NOTES, activeNoteId: DEFAULT_NOTES[0]?.id ?? "1" };
   }
 }
@@ -94,7 +96,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
       try {
         localStorage.setItem(storageKey, JSON.stringify({ notes }));
       } catch (e) {
-        window.api.logger.warn("Failed to save memos", e);
+        api.logger.warn("Failed to save memos", e);
       }
     }, DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS);
 
@@ -129,32 +131,19 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
 
   return (
     <div className="flex h-full w-full bg-bg-primary overflow-hidden">
-      <div className="w-[220px] bg-sidebar border-r border-border flex flex-col shrink-0 content-visibility-auto contain-intrinsic-size-[1px_600px]">
+      <div className="w-55 bg-sidebar border-r border-border flex flex-col shrink-0 content-visibility-auto contain-intrinsic-size-[1px_600px]">
         <div className="px-4 py-3 text-xs font-bold text-muted flex justify-between items-center uppercase tracking-wider">
           <span>{LABEL_MEMO_SECTION_TITLE}</span>
           <Plus className="icon-sm cursor-pointer hover:text-fg transition-colors" onClick={handleAddNote} />
         </div>
 
         <div className="px-3 py-2">
-          <div className="flex items-center gap-2 bg-element px-2 py-1.5 rounded">
-            <Search
-              style={{ width: "var(--memo-search-icon-size)", height: "var(--memo-search-icon-size)" }}
-              color="var(--text-tertiary)"
-            />
-            <input
-              style={{
-                border: "none",
-                background: "transparent",
-                outline: "none",
-                fontSize: "var(--memo-search-font-size)",
-                width: "100%",
-                color: "var(--text-primary)",
-              }}
-              placeholder={PLACEHOLDER_MEMO_SEARCH}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+          <SearchInput
+            variant="memo"
+            placeholder={PLACEHOLDER_MEMO_SEARCH}
+            value={searchTerm}
+            onChange={setSearchTerm}
+          />
         </div>
 
         <div className="flex-1 min-h-0">
@@ -165,7 +154,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
               <div
                 className={cn(
                   "px-4 py-3 border-b border-border cursor-pointer transition-colors hover:bg-element-hover",
-                  activeNoteId === note.id && "bg-active border-l-[3px] border-l-accent pl-[13px]" // Adjust padding to compensate border
+                  activeNoteId === note.id && "bg-active border-l-[3px] border-l-accent pl-3.25" // Adjust padding to compensate border
                 )}
                 onClick={() => setActiveNoteId(note.id)}
               >

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { AUTO_SAVE_STATUS_RESET_MS } from "../../../shared/constants";
+import { api } from "../services/api";
 
 interface AutoSaveStore {
   saveStatus: "idle" | "saving" | "saved" | "error";
@@ -39,7 +40,7 @@ export const useAutoSaveStore = create<AutoSaveStore>((set, get) => {
       set({ saveStatus: "saving" });
 
       try {
-        await window.api.autoSave(chapterId, content, projectId);
+        await api.autoSave(chapterId, content, projectId);
         lastSavedContentByChapter.set(chapterId, content);
         lastRequestedContentByChapter.delete(chapterId);
         set({ saveStatus: "saved" });
@@ -51,7 +52,7 @@ export const useAutoSaveStore = create<AutoSaveStore>((set, get) => {
         }, AUTO_SAVE_STATUS_RESET_MS);
       } catch (error) {
         lastRequestedContentByChapter.delete(chapterId);
-        window.api.logger.error("Auto save failed", error);
+        api.logger.error("Auto save failed", error);
         set({ saveStatus: "error" });
       }
     },

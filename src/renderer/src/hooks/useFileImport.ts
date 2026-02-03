@@ -8,6 +8,7 @@ import { useChapterStore } from "../stores/chapterStore";
 import { useCharacterStore } from "../stores/characterStore";
 import { useTermStore } from "../stores/termStore";
 import type { Project } from "../../../shared/types";
+import { api } from "../services/api";
 import {
   DEFAULT_UNTITLED_LABEL,
   LUIE_PACKAGE_EXTENSION,
@@ -103,19 +104,19 @@ export function useFileImport(
       }
 
       try {
-        const metaResult = await window.api.fs.readLuieEntry(
+        const metaResult = await api.fs.readLuieEntry(
           path,
           LUIE_PACKAGE_META_FILENAME,
         );
         if (!metaResult.success || !metaResult.data) {
-          window.api.logger.warn("Failed to read meta.json", { path });
+          api.logger.warn("Failed to read meta.json", { path });
           importedProjectIdRef.current = currentProject.id;
           return;
         }
 
         const parsed = LuieMetaSchema.safeParse(JSON.parse(metaResult.data));
         if (!parsed.success) {
-          window.api.logger.warn("Invalid project meta format", {
+          api.logger.warn("Invalid project meta format", {
             path,
             issues: parsed.error.issues,
           });
@@ -141,7 +142,7 @@ export function useFileImport(
               (ch.id ? `${LUIE_MANUSCRIPT_DIR}/${ch.id}${MARKDOWN_EXTENSION}` : null);
 
             if (!chapterContent && entryPath) {
-              const contentResult = await window.api.fs.readLuieEntry(path, entryPath);
+              const contentResult = await api.fs.readLuieEntry(path, entryPath);
               if (contentResult.success && typeof contentResult.data === "string") {
                 chapterContent = contentResult.data;
               }
@@ -154,7 +155,7 @@ export function useFileImport(
         }
 
         if (characters.length === 0) {
-          const charactersResult = await window.api.fs.readLuieEntry(
+          const charactersResult = await api.fs.readLuieEntry(
             path,
             `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`,
           );
@@ -188,7 +189,7 @@ export function useFileImport(
         }
 
         if (terms.length === 0) {
-          const termsResult = await window.api.fs.readLuieEntry(
+          const termsResult = await api.fs.readLuieEntry(
             path,
             `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`,
           );
@@ -218,7 +219,7 @@ export function useFileImport(
 
         importedProjectIdRef.current = currentProject.id;
       } catch (error) {
-        window.api.logger.error("Failed to parse project file", { path, error });
+        api.logger.error("Failed to parse project file", { path, error });
         importedProjectIdRef.current = currentProject.id;
       }
     })();

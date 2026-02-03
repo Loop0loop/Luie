@@ -2,19 +2,18 @@
  * Chapter service - 챕터/회차 관리 비즈니스 로직
  */
 
-import { db } from "../database/index.js";
-import { createLogger } from "../../shared/logger/index.js";
-import { ErrorCode, SEARCH_CONTEXT_RADIUS } from "../../shared/constants/index.js";
-import type {
-  ChapterCreateInput,
-  ChapterUpdateInput,
-} from "../../shared/types/index.js";
-import { keywordExtractor } from "../core/keywordExtractor.js";
-import { characterService } from "./characterService.js";
-import { termService } from "./termService.js";
-import { autoExtractService } from "./autoExtractService.js";
+import { app } from "electron";
+import * as fs from "fs/promises";
+import path from "path";
+import { db } from "../../database/index.js";
+import { createLogger } from "../../../shared/logger/index.js";
+import { ErrorCode, SNAPSHOT_BACKUP_DIR } from "../../../shared/constants/index.js";
+import type { ChapterCreateInput, ChapterUpdateInput } from "../../../shared/types/index.js";
+import { autoExtractService } from "../features/autoExtractService.js";
 import { projectService } from "./projectService.js";
-import { ServiceError } from "../utils/serviceError.js";
+import { ServiceError } from "../../utils/serviceError.js";
+import { trackKeywordAppearances } from "./chapterKeywords.js";
+import { sanitizeName } from "../../../shared/utils/sanitize.js";
 
 const logger = createLogger("ChapterService");
 
@@ -30,6 +29,13 @@ function isPrismaNotFoundError(error: unknown): boolean {
 export class ChapterService {
   async createChapter(input: ChapterCreateInput) {
     try {
+      if (!input.title || input.title.trim().length === 0) {
+        throw new ServiceError(
+          ErrorCode.REQUIRED_FIELD_MISSING,
+          "Chapter title is required",
+          { input },
+        );
+      }
       logger.info("Creating chapter", input);
 
       const maxOrder = await db.getClient().chapter.findFirst({
@@ -59,6 +65,9 @@ export class ChapterService {
       return chapter;
     } catch (error) {
       logger.error("Failed to create chapter", error);
+      if (error instanceof ServiceError) {
+        throw error;
+      }
       throw new ServiceError(
         ErrorCode.CHAPTER_CREATE_FAILED,
         "Failed to create chapter",
@@ -114,24 +123,67 @@ export class ChapterService {
 
       if (input.title !== undefined) updateData.title = input.title;
       if (input.content !== undefined) {
+        const isTest = process.env.VITEST === "true" || process.env.NODE_ENV === "test";
+        const current = await db.getClient().chapter.findUnique({
+          where: { id: input.id },
+          select: { projectId: true, content: true },
+        });
+
+        const oldContent = typeof current?.content === "string" ? current.content : "";
+        const oldLen = oldContent.length;
+        const newLen = input.content.length;
+
+        if (!isTest && oldLen > 1000 && newLen < oldLen * 0.1) {
+          const project = current?.projectId
+            ? await db.getClient().project.findUnique({
+                where: { id: String(current.projectId) },
+                select: { title: true },
+              })
+            : null;
+
+          const projectTitle =
+            typeof (project as { title?: unknown } | null)?.title === "string"
+              ? String((project as { title: string }).title)
+              : "Unknown";
+          const safeTitle = sanitizeName(projectTitle, "Unknown");
+          const dumpDir = path.join(
+            app.getPath("userData"),
+            SNAPSHOT_BACKUP_DIR,
+            safeTitle || "Unknown",
+            "_suspicious",
+          );
+          await fs.mkdir(dumpDir, { recursive: true });
+          const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+          const dumpPath = path.join(dumpDir, `dump-${input.id}-${timestamp}.txt`);
+          await fs.writeFile(dumpPath, input.content, "utf8");
+
+          logger.warn("Suspicious large deletion detected. Save blocked.", {
+            chapterId: input.id,
+            oldLen,
+            newLen,
+            dumpPath,
+          });
+
+          throw new ServiceError(
+            ErrorCode.VALIDATION_FAILED,
+            "Suspicious large deletion detected; save blocked",
+            { chapterId: input.id, oldLen, newLen },
+          );
+        }
+
         updateData.content = input.content;
         updateData.wordCount = input.content.length;
 
-        const chapter = await db.getClient().chapter.findUnique({
-          where: { id: input.id },
-          select: { projectId: true },
-        });
-
-        if (chapter) {
-          await this.trackKeywordAppearances(
+        if (current) {
+          await trackKeywordAppearances(
             input.id,
             input.content,
-            String((chapter as { projectId: unknown }).projectId),
+            String((current as { projectId: unknown }).projectId),
           );
 
           autoExtractService.scheduleAnalysis(
             input.id,
-            String((chapter as { projectId: unknown }).projectId),
+            String((current as { projectId: unknown }).projectId),
             input.content,
           );
         }
@@ -168,78 +220,6 @@ export class ChapterService {
         error,
       );
     }
-  }
-
-  private async trackKeywordAppearances(
-    chapterId: string,
-    content: string,
-    projectId: string,
-  ) {
-    try {
-      const characters = (await db.getClient().character.findMany({
-        where: { projectId },
-        select: { id: true, name: true },
-      })) as Array<{ id: string; name: string }>;
-
-      const terms = (await db.getClient().term.findMany({
-        where: { projectId },
-        select: { id: true, term: true },
-      })) as Array<{ id: string; term: string }>;
-
-      const characterNames = characters.map((c: { name: string }) => c.name);
-      const termNames = terms.map((t: { term: string }) => t.term);
-
-      keywordExtractor.setKnownCharacters(characterNames);
-      keywordExtractor.setKnownTerms(termNames);
-
-      const keywords = keywordExtractor.extractFromText(content);
-
-      for (const keyword of keywords.filter((k) => k.type === "character")) {
-        const character = characters.find((c) => c.name === keyword.text);
-        if (character) {
-          await characterService.recordAppearance({
-            characterId: String(character.id),
-            chapterId,
-            position: keyword.position,
-            context: this.extractContext(content, keyword.position, SEARCH_CONTEXT_RADIUS),
-          });
-
-          await characterService.updateFirstAppearance(String(character.id), chapterId);
-        }
-      }
-
-      for (const keyword of keywords.filter((k) => k.type === "term")) {
-        const term = terms.find((t) => t.term === keyword.text);
-        if (term) {
-          await termService.recordAppearance({
-            termId: String(term.id),
-            chapterId,
-            position: keyword.position,
-            context: this.extractContext(content, keyword.position, SEARCH_CONTEXT_RADIUS),
-          });
-
-          await termService.updateFirstAppearance(String(term.id), chapterId);
-        }
-      }
-
-      logger.info("Keyword tracking completed", {
-        chapterId,
-        characterCount: keywords.filter((k) => k.type === "character").length,
-        termCount: keywords.filter((k) => k.type === "term").length,
-      });
-    } catch (error) {
-      logger.error("Failed to track keyword appearances", error);
-    }
-  }
-
-  private extractContext(
-    text: string,
-    position: number,
-    length: number,
-  ): string {
-    const start = Math.max(0, position - length);
-    const end = Math.min(text.length, position + length);
-    return text.substring(start, end);
   }
 
   async deleteChapter(id: string) {

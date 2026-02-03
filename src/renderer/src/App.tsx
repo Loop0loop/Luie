@@ -12,6 +12,12 @@ import { useFileImport } from "./hooks/useFileImport";
 import { useChapterManagement } from "./hooks/useChapterManagement";
 import { useSplitView } from "./hooks/useSplitView";
 import { useProjectTemplate } from "./hooks/useProjectTemplate";
+import {
+  LUIE_PACKAGE_EXTENSION_NO_DOT,
+  LUIE_PACKAGE_FILTER_NAME,
+  LUIE_PACKAGE_META_FILENAME,
+} from "../../shared/constants";
+import { api } from "./services/api";
 
 const SettingsModal = lazy(() => import("./components/settings/SettingsModal"));
 const ResearchPanel = lazy(() => import("./components/research/ResearchPanel"));
@@ -20,7 +26,7 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const { view } = useUIStore();
-  const { items: projects } = useProjectStore();
+  const { items: projects, createProject, setCurrentProject, loadProjects } = useProjectStore();
   const { theme } = useEditorStore();
 
   // 커스텀 훅으로 로직 분리
@@ -60,15 +66,14 @@ export default function App() {
     (id: string) => {
       handleSelectChapter(id);
       // Force fullscreen on new project
-      window.api.window.setFullscreen(true).catch((err) => {
-        window.api.logger.error("Failed to set fullscreen", err);
+      api.window.setFullscreen(true).catch((err) => {
+        api.logger.error("Failed to set fullscreen", err);
       });
     }
   );
 
   useFileImport(currentProject);
 
-  const { setCurrentProject } = useProjectStore();
   const { setView } = useUIStore();
 
   const prefetchSettings = useCallback(() => {
@@ -80,12 +85,73 @@ export default function App() {
       setCurrentProject(project);
       setView("editor");
       // Force fullscreen on project open
-      window.api.window.setFullscreen(true).catch((err) => {
-        window.api.logger.error("Failed to set fullscreen", err);
+      api.window.setFullscreen(true).catch((err) => {
+        api.logger.error("Failed to set fullscreen", err);
       });
     },
     [setCurrentProject, setView],
   );
+
+  const handleOpenLuieFile = useCallback(async () => {
+    try {
+      const response = await api.fs.selectFile({
+        title: "Luie 파일 열기",
+        filters: [{ name: LUIE_PACKAGE_FILTER_NAME, extensions: [LUIE_PACKAGE_EXTENSION_NO_DOT] }],
+      });
+
+      if (!response.success || !response.data) {
+        return;
+      }
+
+      const selectedPath = response.data;
+      const fileName = selectedPath.split(/[/\\]/).pop() ?? "Untitled";
+      let projectTitle = fileName.replace(/\.luie$/i, "");
+
+      const metaResult = await api.fs.readLuieEntry(selectedPath, LUIE_PACKAGE_META_FILENAME);
+      if (metaResult.success && metaResult.data) {
+        try {
+          const parsed = JSON.parse(metaResult.data) as { title?: string };
+          if (typeof parsed.title === "string" && parsed.title.trim().length > 0) {
+            projectTitle = parsed.title.trim();
+          }
+        } catch (error) {
+          api.logger.warn("Failed to parse luie meta", error);
+        }
+      }
+
+      const created = await createProject(projectTitle, undefined, selectedPath);
+      if (created) {
+        setCurrentProject(created);
+        setView("editor");
+        api.window.setFullscreen(true).catch((err) => {
+          api.logger.error("Failed to set fullscreen", err);
+        });
+      }
+    } catch (error) {
+      api.logger.error("Failed to open luie file", error);
+    }
+  }, [createProject, setCurrentProject, setView]);
+
+  const handleOpenSnapshotBackup = useCallback(async () => {
+    try {
+      const response = await api.fs.selectSnapshotBackup();
+      if (!response.success || !response.data) {
+        return;
+      }
+
+      const importResult = await api.snapshot.importFromFile(response.data);
+      if (importResult.success && importResult.data) {
+        await loadProjects();
+        setCurrentProject(importResult.data);
+        setView("editor");
+        api.window.setFullscreen(true).catch((err) => {
+          api.logger.error("Failed to set fullscreen", err);
+        });
+      }
+    } catch (error) {
+      api.logger.error("Failed to import snapshot backup", error);
+    }
+  }, [loadProjects, setCurrentProject, setView]);
 
   if (view === "template" || !currentProject) {
     return (
@@ -93,6 +159,8 @@ export default function App() {
         onSelectProject={handleSelectProject}
         projects={projects}
         onOpenProject={handleOpenExistingProject}
+        onOpenLuieFile={handleOpenLuieFile}
+        onOpenSnapshotBackup={handleOpenSnapshotBackup}
       />
     );
   }
@@ -105,6 +173,7 @@ export default function App() {
             chapters={chapters}
             activeChapterId={activeChapterId ?? undefined}
             currentProjectTitle={currentProject?.title}
+            currentProjectId={currentProject?.id}
             onSelectChapter={handleSelectChapter}
             onAddChapter={handleAddChapter}
             onRenameChapter={handleRenameChapter}

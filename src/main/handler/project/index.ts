@@ -1,11 +1,9 @@
-import type { createLogger } from "../../../shared/logger/index.js";
 import { registerChapterIPCHandlers } from "./ipcChapterHandlers.js";
 import { registerProjectIPCHandlers } from "./ipcProjectHandlers.js";
-
-type LoggerLike = ReturnType<typeof createLogger>;
+import type { AppLogger } from "../core/types.js";
 
 export function registerProjectHandlers(options: {
-  logger: LoggerLike;
+  logger: AppLogger;
   projectService: Parameters<typeof registerProjectIPCHandlers>[1];
   chapterService: Parameters<typeof registerChapterIPCHandlers>[1];
 }): void {

@@ -13,6 +13,7 @@ import {
   DEFAULT_EDITOR_MAX_WIDTH,
   DEFAULT_EDITOR_THEME,
 } from "../../../shared/constants";
+import { api } from "../services/api";
 
 interface EditorStore extends EditorSettings {
   loadSettings: () => Promise<void>;
@@ -36,7 +37,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   ...DEFAULT_SETTINGS,
 
   loadSettings: async () => {
-    const response = await window.api.settings.getEditor();
+    const response = await api.settings.getEditor();
     if (response.success && response.data) {
       set(response.data);
     }
@@ -53,7 +54,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       theme: current.theme,
       ...newSettings,
     };
-    const response = await window.api.settings.setEditor(updated);
+    const response = await api.settings.setEditor(updated);
     if (response.success && response.data) {
       set(response.data);
     }
@@ -72,7 +73,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   },
 
   resetSettings: async () => {
-    const response = await window.api.settings.reset();
+    const response = await api.settings.reset();
     if (response.success && response.data) {
       const editorSettings = response.data.editor;
       set(editorSettings);

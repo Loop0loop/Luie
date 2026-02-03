@@ -1,4 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
+import type { Layout } from "react-resizable-panels";
 import { Plus, User, ChevronDown, ChevronRight, Home, LayoutTemplate } from "lucide-react";
 import { useCharacterStore } from "../../stores/characterStore";
 import { useProjectStore } from "../../stores/projectStore";
@@ -24,6 +26,7 @@ export default function CharacterManager() {
   const { currentItem: currentProject } = useProjectStore();
   const {
     items: characters,
+    currentItem: currentCharacterFromStore,
     loadAll: loadCharacters,
     create: createCharacter,
     update: updateCharacter
@@ -31,6 +34,30 @@ export default function CharacterManager() {
   
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+
+  // Sync with global store selection (e.g. from SmartLinkService)
+  useEffect(() => {
+    if (currentCharacterFromStore?.id && currentCharacterFromStore.id !== selectedCharacterId) {
+        // eslint-disable-next-line
+        setSelectedCharacterId(currentCharacterFromStore.id);
+    }
+  }, [currentCharacterFromStore, selectedCharacterId]);
+
+  const handleLayoutChange = (layout: Layout) => {
+    localStorage.setItem("character-sidebar-layout-v2", JSON.stringify(layout));
+  };
+  
+  const initialLayout = useMemo(() => {
+     const saved = localStorage.getItem("character-sidebar-layout-v2");
+     if (saved) {
+        try {
+            return JSON.parse(saved);
+        } catch {
+            // ignore
+        }
+     }
+     return undefined;
+  }, []);
 
   useEffect(() => {
     if (currentProject) {
@@ -77,77 +104,101 @@ export default function CharacterManager() {
 
   return (
     <div className="flex w-full h-full bg-canvas overflow-hidden">
-      {/* LEFT SIDEBAR - Character List */}
-      <div className="w-[260px] bg-sidebar border-r border-border flex flex-col overflow-y-auto shrink-0">
-        <div className="px-4 py-3 bg-(--namu-blue) text-white font-bold flex justify-between items-center">
-           <button 
-             className="flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity bg-transparent border-none p-1 text-white cursor-pointer" 
-             onClick={() => setSelectedCharacterId(null)}
-             title="전체 보기 (Gallery View)"
-           >
-             <Home size={18} />
-             <span style={{ marginLeft: 8, fontSize: 13, fontWeight: 700 }}>등장인물</span>
-           </button>
-           
-           <button 
-             className="flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity bg-transparent border-none p-1 text-white cursor-pointer" 
-             onClick={() => setIsTemplateModalOpen(true)}
-             title="캐릭터 추가"
-           >
-             <Plus size={18} />
-           </button>
-        </div>
-        
-        <Modal
-            isOpen={isTemplateModalOpen}
-            onClose={() => setIsTemplateModalOpen(false)}
-            title="템플릿 선택"
-            width="500px"
+      <PanelGroup 
+        orientation="horizontal" 
+        onLayoutChanged={handleLayoutChange} 
+        defaultLayout={initialLayout} 
+        className="h-full! w-full!"
+      >
+        {/* LEFT SIDEBAR - Character List */}
+        <Panel 
+           id="sidebar"
+           defaultSize={240} 
+           minSize={150}     
+           maxSize={500}     
+           className="bg-sidebar border-r border-border flex flex-col overflow-y-auto"
         >
-            <div className="grid grid-cols-2 gap-4 p-4">
-                {CHARACTER_TEMPLATES.map((t) => (
-                    <div 
-                    key={t.id} 
-                    className="flex flex-col items-center justify-center p-4 border border-border rounded-lg cursor-pointer hover:bg-surface-hover transition-colors gap-2"
-                    onClick={() => handleAddCharacter(t.id)}
-                    >
-                    <div className="p-3 bg-surface rounded-full shadow-sm">
-                        <LayoutTemplate size={24} /> 
-                    </div>
-                    <div className="font-semibold text-sm">{t.name}</div>
-                    </div>
-                ))}
+          <div className="flex flex-col h-full"> {/* Inner container for flex-col flow */}
+            <div className="px-4 py-3 bg-(--namu-blue) text-white font-bold flex justify-between items-center shrink-0">
+              <button 
+                className="flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity bg-transparent border-none p-1 text-white cursor-pointer" 
+                onClick={() => setSelectedCharacterId(null)}
+                title="전체 보기 (Gallery View)"
+              >
+                <Home size={18} />
+                <span style={{ marginLeft: 8, fontSize: 13, fontWeight: 700 }}>등장인물</span>
+              </button>
+              
+              <button 
+                className="flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity bg-transparent border-none p-1 text-white cursor-pointer" 
+                onClick={() => setIsTemplateModalOpen(true)}
+                title="캐릭터 추가"
+              >
+                <Plus size={18} />
+              </button>
             </div>
-        </Modal>
+            
+            <Modal
+                isOpen={isTemplateModalOpen}
+                onClose={() => setIsTemplateModalOpen(false)}
+                title="템플릿 선택"
+                width="500px"
+            >
+                <div className="grid grid-cols-2 gap-4 p-4">
+                    {CHARACTER_TEMPLATES.map((t) => (
+                        <div 
+                        key={t.id} 
+                        className="flex flex-col items-center justify-center p-4 border border-border rounded-lg cursor-pointer hover:bg-surface-hover transition-colors gap-2"
+                        onClick={() => handleAddCharacter(t.id)}
+                        >
+                        <div className="p-3 bg-surface rounded-full shadow-sm">
+                            <LayoutTemplate size={24} /> 
+                        </div>
+                        <div className="font-semibold text-sm">{t.name}</div>
+                        </div>
+                    ))}
+                </div>
+            </Modal>
 
-        {/* Iterate Groups */}
-        <div className="flex flex-col w-full">
-          {Object.entries(groupedCharacters).map(([group, chars]) => (
-            <CharacterGroup 
-              key={group} 
-              title={group} 
-              color={CHARACTER_GROUP_COLORS[group] || CHARACTER_GROUP_COLORS["Uncategorized"]}
-              characters={chars}
-              selectedId={selectedCharacterId}
-              onSelect={setSelectedCharacterId}
-            />
-          ))}
-        </div>
-      </div>
+            {/* Iterate Groups */}
+            <div className="flex flex-col w-full overflow-y-auto">
+              {Object.entries(groupedCharacters).map(([group, chars]) => (
+                <CharacterGroup 
+                  key={group} 
+                  title={group} 
+                  color={CHARACTER_GROUP_COLORS[group] || CHARACTER_GROUP_COLORS["Uncategorized"]}
+                  characters={chars}
+                  selectedId={selectedCharacterId}
+                  onSelect={setSelectedCharacterId}
+                />
+              ))}
+            </div>
+          </div>
+        </Panel>
 
-      {/* RIGHT MAIN - Wiki View */}
-      {selectedChar ? (
-        <WikiDetailView 
-          key={selectedChar.id} // Force re-mount when switching char to avoid stale state
-          character={selectedChar} 
-          updateCharacter={updateCharacter}
-        />
-      ) : (
-        <CharacterGallery 
-          groupedCharacters={groupedCharacters} 
-          onSelect={setSelectedCharacterId} 
-        />
-      )}
+        {/* Resizer Handle */}
+          <PanelResizeHandle className="w-1 -ml-0.5 bg-transparent hover:bg-primary/50 active:bg-primary z-50 transition-colors flex items-center justify-center group cursor-col-resize focus:outline-none relative">
+            <div className="w-0.5 h-full bg-transparent group-hover:bg-primary/20" />
+        </PanelResizeHandle>
+
+        {/* RIGHT MAIN - Wiki View */}
+        <Panel id="main" minSize={300}>
+           <div className="h-full w-full overflow-hidden flex flex-col">
+            {selectedChar ? (
+              <WikiDetailView 
+                key={selectedChar.id} // Force re-mount when switching char to avoid stale state
+                character={selectedChar} 
+                updateCharacter={updateCharacter}
+              />
+            ) : (
+              <CharacterGallery 
+                groupedCharacters={groupedCharacters} 
+                onSelect={setSelectedCharacterId} 
+              />
+            )}
+          </div>
+        </Panel>
+      </PanelGroup>
     </div>
   );
 }
@@ -377,16 +428,17 @@ function WikiDetailView({
       </div>
 
       {/* 2. BODY CONTENT (Wiki Layout) */}
-      <div className="flex flex-col lg:flex-row gap-8 items-start min-h-0">
-        {/* LEFT: Content & TOC */}
-        <div className="flex-1 flex flex-col gap-8 min-w-0 w-full lg:order-1 order-2">
+      <div className="@container">
+        <div className="flex flex-col @min-[700px]:flex-row gap-8 items-start min-h-0">
+          {/* LEFT: Content & TOC */}
+          <div className="flex-1 flex flex-col gap-8 min-w-75 w-full @min-[700px]:order-1 order-2">
           
           {/* TOC (Inline) */}
-          <div className="bg-(--namu-table-bg) border border-(--namu-border) p-4 inline-block min-w-[200px] rounded">
+          <div className="bg-(--namu-table-bg) border border-(--namu-border) p-4 inline-block min-w-50 rounded">
             <div className="font-bold text-center mb-3 text-fg text-sm">목차</div>
             <div className="flex flex-col gap-1.5 text-sm">
                {sections.map(sec => (
-                 <a key={sec.id} className="text-[var(--namu-link)] no-underline cursor-pointer hover:underline" href={`#${sec.id}`}>
+                 <a key={sec.id} className="text-(--namu-link) no-underline cursor-pointer hover:underline" href={`#${sec.id}`}>
                    {sec.label}
                  </a>
                ))}
@@ -417,9 +469,10 @@ function WikiDetailView({
 
         </div>
 
+
         {/* RIGHT: Authentic Infobox */}
         {/* Use order-first on mobile (default) to put it on top, order-last on Desktop to put it on right */}
-        <div className="w-full lg:w-[320px] shrink-0 lg:order-2 order-1">
+        <div className="w-full @min-[700px]:w-[320px] shrink-0 @min-[700px]:order-2 order-1">
             <Infobox 
                 title={character.name}
                 image={<User size={80} color="var(--border-active)" />}
@@ -441,6 +494,9 @@ function WikiDetailView({
             />
         </div>
       </div>
+    </div>
+
+
     </div>
   );
 }
