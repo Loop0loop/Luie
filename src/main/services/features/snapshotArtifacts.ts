@@ -120,6 +120,12 @@ export async function writeFullSnapshotArtifact(
   snapshotId: string,
   input: SnapshotCreateInput,
 ) {
+  logger.info("Preparing snapshot artifact", {
+    snapshotId,
+    projectId: input.projectId,
+    chapterId: input.chapterId,
+  });
+
   const project = (await db.getClient().project.findUnique({
     where: { id: input.projectId },
     include: {
@@ -137,6 +143,10 @@ export async function writeFullSnapshotArtifact(
   }
 
   if (!project.projectPath) {
+    logger.error("Project path missing for snapshot", {
+      snapshotId,
+      projectId: input.projectId,
+    });
     throw new ServiceError(
       ErrorCode.REQUIRED_FIELD_MISSING,
       "Project path is required for full snapshot",
@@ -211,5 +221,11 @@ export async function writeFullSnapshotArtifact(
   const backupPath = path.join(backupDir, fileName);
   await fs.writeFile(backupPath, buffer);
 
-  logger.info("Full snapshot saved", { snapshotId, localPath, backupPath });
+  logger.info("Full snapshot saved", {
+    snapshotId,
+    projectId: project.id,
+    projectPath: project.projectPath,
+    localPath,
+    backupPath,
+  });
 }

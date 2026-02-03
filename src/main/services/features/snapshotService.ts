@@ -18,6 +18,8 @@ export class SnapshotService {
       logger.info("Creating snapshot", {
         projectId: input.projectId,
         chapterId: input.chapterId,
+        hasContent: Boolean(input.content),
+        descriptionLength: input.description?.length ?? 0,
       });
 
       const snapshot = await db.getClient().snapshot.create({
@@ -35,7 +37,11 @@ export class SnapshotService {
       projectService.schedulePackageExport(input.projectId, "snapshot:create");
       return snapshot;
     } catch (error) {
-      logger.error("Failed to create snapshot", error);
+      logger.error("Failed to create snapshot", {
+        error,
+        projectId: input.projectId,
+        chapterId: input.chapterId,
+      });
       throw new ServiceError(
         ErrorCode.SNAPSHOT_CREATE_FAILED,
         "Failed to create snapshot",

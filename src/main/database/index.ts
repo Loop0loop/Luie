@@ -58,19 +58,28 @@ class DatabaseService {
   private ensureInitialized(): void {
     if (this.prisma) return;
 
+    const isPackaged = app.isPackaged;
+    const userDataPath = app.getPath("userData");
     let dbPath: string;
-    if (app.isPackaged) {
-      dbPath = path.join(app.getPath("userData"), DB_NAME);
+
+    if (isPackaged) {
+      dbPath = path.join(userDataPath, DB_NAME);
+      this.datasourceUrl = `file:${dbPath}`;
+      process.env.DATABASE_URL = this.datasourceUrl;
     } else {
       dbPath =
         process.env.DATABASE_URL?.replace("file:", "") ??
         path.join(process.cwd(), "prisma", DB_NAME);
+      this.datasourceUrl = process.env.DATABASE_URL ?? `file:${dbPath}`;
+      process.env.DATABASE_URL = this.datasourceUrl;
     }
 
-    this.datasourceUrl = process.env.DATABASE_URL ?? `file:${dbPath}`;
-    process.env.DATABASE_URL = this.datasourceUrl;
-
-    logger.info(`Initializing database at: ${dbPath}`);
+    logger.info("Initializing database", {
+      isPackaged,
+      userDataPath,
+      dbPath,
+      datasourceUrl: this.datasourceUrl,
+    });
 
     const adapter = new PrismaBetterSqlite3({
       url: this.datasourceUrl,

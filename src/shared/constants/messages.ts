@@ -240,7 +240,7 @@ export const MEMO_DEFAULT_NOTES = [
   },
 ] as const
 
-export const DEFAULT_CHARACTER_NAME = 'New Character'
+export const DEFAULT_CHARACTER_NAME = '여기를 클릭하여 이름을 입력하세요'
 export const DEFAULT_CHARACTER_FALLBACK_NAME = 'Character'
 export const DEFAULT_CHARACTER_DESCRIPTION_LABEL = 'No description'
 export const DEFAULT_CHARACTER_ADD_LABEL = 'Add Character'
