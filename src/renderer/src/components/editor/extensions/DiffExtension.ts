@@ -81,12 +81,12 @@ export const DiffHighlight = Extension.create<DiffOptions>({
             const { text: currentText, mapping } = getDocTextMap(doc);
             const comparisonText = htmlToText(comparisonContent);
 
-            let diffs;
-            if (mode === "current") {
-               diffs = Diff.diffWords(comparisonText, currentText);
-            } else {
-               diffs = Diff.diffWords(comparisonText, currentText); 
+            const totalLength = currentText.length + comparisonText.length;
+            if (totalLength > 50000) {
+              return DecorationSet.empty;
             }
+
+            const diffs = Diff.diffWordsWithSpace(comparisonText, currentText);
 
             const decorations: Decoration[] = [];
             let currentTextPos = 0; 

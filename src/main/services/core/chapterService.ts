@@ -285,22 +285,10 @@ export class ChapterService {
         );
       }
 
-      const maxOrder = await db.getClient().chapter.findFirst({
-        where: { projectId: String(current.projectId), deletedAt: null },
-        orderBy: { order: "desc" },
-        select: { order: true },
-      });
-
-      const maxOrderValue =
-        typeof (maxOrder as { order?: unknown })?.order === "number"
-          ? (maxOrder as { order: number }).order
-          : 0;
-
       const restored = await db.getClient().chapter.update({
         where: { id },
         data: {
           deletedAt: null,
-          order: maxOrderValue + 1,
         },
       });
 

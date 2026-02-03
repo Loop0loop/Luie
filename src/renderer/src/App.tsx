@@ -200,12 +200,6 @@ export default function App() {
               initialTitle={activeChapterTitle}
               initialContent={content}
               onSave={handleSave}
-              comparisonContent={
-                rightPanelContent.type === "snapshot" 
-                  ? rightPanelContent.snapshot?.content 
-                  : undefined
-              }
-              diffMode={rightPanelContent.type === "snapshot" ? "current" : undefined}
             />
           </div>
 

@@ -19,20 +19,6 @@ function htmlToText(html: string): string {
   return div.innerText || div.textContent || "";
 }
 
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-function textToHtml(text: string): string {
-  const lines = text.split(/\n/);
-  return lines
-    .map((line) => (line.length > 0 ? `<p>${escapeHtml(line)}</p>` : "<p><br></p>"))
-    .join("");
-}
-
 function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: SnapshotViewerProps) {
   const { loadAll: reloadChapters } = useChapterStore();
   const [selectedAdditions, setSelectedAdditions] = useState<Set<number>>(new Set());
@@ -60,18 +46,22 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
     ? new Date(snapshot.createdAt).toLocaleString() 
     : "Unknown Date";
 
-  const currentText = useMemo(() => htmlToText(currentContent ?? ""), [currentContent]);
-  const snapshotText = useMemo(() => htmlToText(snapshot.content ?? ""), [snapshot.content]);
+  const currentHtml = useMemo(() => currentContent ?? "", [currentContent]);
+  const snapshotHtml = useMemo(() => snapshot.content ?? "", [snapshot.content]);
 
   const diffParts = useMemo(() => {
-    return Diff.diffWordsWithSpace(currentText, snapshotText);
-  }, [currentText, snapshotText]);
+    return Diff.diffWordsWithSpace(currentHtml, snapshotHtml);
+  }, [currentHtml, snapshotHtml]);
 
   const additions = useMemo(() => {
     let index = 0;
     return diffParts
       .filter((part) => part.added)
-      .map((part) => ({ id: index++, value: part.value }));
+      .map((part) => ({
+        id: index++,
+        value: part.value,
+        text: htmlToText(part.value).trim(),
+      }));
   }, [diffParts]);
 
   const toggleAddition = useCallback((id: number) => {
@@ -86,7 +76,7 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
     });
   }, []);
 
-  const buildMergedText = useCallback(
+  const buildMergedHtml = useCallback(
     (selectedIds: Set<number>) => {
       let result = "";
       let addIndex = 0;
@@ -119,12 +109,11 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
       const confirmed = window.confirm("선택한 변경 내용을 현재 원고에 적용할까요?");
       if (!confirmed) return;
 
-      const mergedText = buildMergedText(selectedIds);
-      const mergedHtml = textToHtml(mergedText);
+      const mergedHtml = buildMergedHtml(selectedIds);
       await onApplySnapshotText(mergedHtml);
       setSelectedAdditions(new Set());
     },
-    [buildMergedText, onApplySnapshotText],
+    [buildMergedHtml, onApplySnapshotText],
   );
 
   return (
@@ -175,7 +164,7 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
                     {isSelected ? "▣" : "▢"}
                   </button>
                   <div className="flex-1 text-[11px] text-fg line-clamp-2 whitespace-pre-wrap">
-                    {addition.value}
+                    {addition.text || "(형식 변경)"}
                   </div>
                   <button
                     type="button"
