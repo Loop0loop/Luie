@@ -209,6 +209,8 @@ contextBridge.exposeInMainWorld("api", {
       safeInvoke(IPC_CHANNELS.SNAPSHOT_CREATE, input),
     getAll: (projectId: string): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.SNAPSHOT_GET_ALL, projectId),
+    importFromFile: (filePath: string): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.SNAPSHOT_IMPORT_FILE, filePath),
     restore: (id: string): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.SNAPSHOT_RESTORE, id),
     delete: (id: string): Promise<IPCResponse> =>
@@ -225,6 +227,14 @@ contextBridge.exposeInMainWorld("api", {
       safeInvoke(IPC_CHANNELS.FS_SAVE_PROJECT, projectName, projectPath, content),
     selectDirectory: (): Promise<IPCResponse<string>> =>
       safeInvoke(IPC_CHANNELS.FS_SELECT_DIRECTORY),
+    selectFile: (options?: {
+      title?: string;
+      defaultPath?: string;
+      filters?: Array<{ name: string; extensions: string[] }>;
+    }): Promise<IPCResponse<string>> =>
+      safeInvoke(IPC_CHANNELS.FS_SELECT_FILE, options),
+    selectSnapshotBackup: (): Promise<IPCResponse<string>> =>
+      safeInvoke(IPC_CHANNELS.FS_SELECT_SNAPSHOT_BACKUP),
     selectSaveLocation: (options?: {
       title?: string;
       defaultPath?: string;

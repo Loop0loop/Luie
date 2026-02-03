@@ -1,4 +1,4 @@
-import { dialog } from "electron";
+import { app, dialog } from "electron";
 import * as fs from "fs";
 import * as fsp from "fs/promises";
 import * as path from "path";
@@ -23,6 +23,7 @@ import {
   LUIE_WORLD_CHARACTERS_FILE,
   LUIE_WORLD_TERMS_FILE,
 } from "../../../shared/constants/index.js";
+import { SNAPSHOT_BACKUP_DIR } from "../../../shared/constants/paths.js";
 import { registerIpcHandler } from "../core/ipcHandler.js";
 
 type LoggerLike = {
@@ -418,6 +419,51 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
         return null;
       }
       return result.filePath;
+    },
+  });
+
+  registerIpcHandler({
+    logger,
+    channel: IPC_CHANNELS.FS_SELECT_FILE,
+    logTag: "FS_SELECT_FILE",
+    failMessage: "Failed to select file",
+    handler: async (
+      options?: {
+        filters?: { name: string; extensions: string[] }[];
+        defaultPath?: string;
+        title?: string;
+      },
+    ) => {
+      const result = await dialog.showOpenDialog({
+        title: options?.title,
+        defaultPath: options?.defaultPath,
+        filters: options?.filters,
+        properties: ["openFile"],
+      });
+      if (result.canceled || result.filePaths.length === 0) {
+        return null;
+      }
+      return result.filePaths[0];
+    },
+  });
+
+  registerIpcHandler({
+    logger,
+    channel: IPC_CHANNELS.FS_SELECT_SNAPSHOT_BACKUP,
+    logTag: "FS_SELECT_SNAPSHOT_BACKUP",
+    failMessage: "Failed to select snapshot backup",
+    handler: async () => {
+      const backupDir = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR);
+      const result = await dialog.showOpenDialog({
+        title: "스냅샷 백업 선택",
+        defaultPath: backupDir,
+        filters: [{ name: "Snapshot", extensions: ["snap"] }],
+        properties: ["openFile"],
+      });
+      if (result.canceled || result.filePaths.length === 0) {
+        return null;
+      }
+      return result.filePaths[0];
     },
   });
 

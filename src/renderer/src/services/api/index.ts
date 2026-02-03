@@ -90,12 +90,19 @@ export type RendererApi = {
       description?: string;
     }) => Promise<IPCResponse<Snapshot>>;
     getAll: (projectId: string) => Promise<IPCResponse<Snapshot[]>>;
+    importFromFile: (filePath: string) => Promise<IPCResponse<Project>>;
     restore: (id: string) => Promise<IPCResponse<unknown>>;
     delete: (id: string) => Promise<IPCResponse<unknown>>;
   };
   fs: {
     saveProject: (projectName: string, projectPath: string, content: string) => Promise<IPCResponse<unknown>>;
     selectDirectory: () => Promise<IPCResponse<string>>;
+    selectFile: (options?: {
+      filters?: { name: string; extensions: string[] }[];
+      defaultPath?: string;
+      title?: string;
+    }) => Promise<IPCResponse<string>>;
+    selectSnapshotBackup: () => Promise<IPCResponse<string>>;
     selectSaveLocation: (options?: {
       filters?: { name: string; extensions: string[] }[];
       defaultPath?: string;

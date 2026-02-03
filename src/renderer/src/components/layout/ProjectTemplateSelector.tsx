@@ -40,12 +40,16 @@ interface ProjectTemplateSelectorProps {
   onSelectProject: (templateId: string, projectPath: string) => void;
   projects?: Project[];
   onOpenProject?: (project: Project) => void;
+  onOpenLuieFile?: () => void;
+  onOpenSnapshotBackup?: () => void;
 }
 
 export default function ProjectTemplateSelector({
   onSelectProject,
   projects = [],
   onOpenProject,
+  onOpenLuieFile,
+  onOpenSnapshotBackup,
 }: ProjectTemplateSelectorProps) {
   const [activeCategory, setActiveCategory] = useState("all");
 
@@ -358,6 +362,22 @@ export default function ProjectTemplateSelector({
           <div className="mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="text-sm font-bold tracking-[0.5px] text-subtle uppercase">{PROJECT_TEMPLATE_RECENT_TITLE}</div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="px-3 py-1.5 text-xs rounded-md bg-surface border border-border text-fg hover:bg-surface-hover"
+                  onClick={() => onOpenLuieFile?.()}
+                >
+                  .luie 열기
+                </button>
+                <button
+                  type="button"
+                  className="px-3 py-1.5 text-xs rounded-md bg-surface border border-border text-fg hover:bg-surface-hover"
+                  onClick={() => onOpenSnapshotBackup?.()}
+                >
+                  스냅샷 백업 열기
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">

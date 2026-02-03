@@ -19,6 +19,7 @@ type SnapshotServiceLike = {
   getSnapshotsByChapter: (chapterId: string) => Promise<unknown>;
   deleteSnapshot: (id: string) => Promise<unknown>;
   restoreSnapshot: (id: string) => Promise<unknown>;
+  importSnapshotFile: (filePath: string) => Promise<unknown>;
 };
 
 export function registerSnapshotIPCHandlers(
@@ -77,5 +78,14 @@ export function registerSnapshotIPCHandlers(
     failMessage: "Failed to restore snapshot",
     argsSchema: z.tuple([snapshotIdSchema]),
     handler: (id: string) => snapshotService.restoreSnapshot(id),
+  });
+
+  registerIpcHandler({
+    logger,
+    channel: IPC_CHANNELS.SNAPSHOT_IMPORT_FILE,
+    logTag: "SNAPSHOT_IMPORT_FILE",
+    failMessage: "Failed to import snapshot file",
+    argsSchema: z.tuple([z.string()]),
+    handler: (filePath: string) => snapshotService.importSnapshotFile(filePath),
   });
 }

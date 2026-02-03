@@ -2,7 +2,7 @@ import { app } from "electron";
 import { promises as fs } from "fs";
 import path from "path";
 import { promisify } from "node:util";
-import { gzip as gzipCallback } from "node:zlib";
+import { gzip as gzipCallback, gunzip as gunzipCallback } from "node:zlib";
 import { db } from "../../database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import {
@@ -17,6 +17,7 @@ import { ServiceError } from "../../utils/serviceError.js";
 
 const logger = createLogger("SnapshotArtifacts");
 const gzip = promisify(gzipCallback);
+const gunzip = promisify(gunzipCallback);
 
 type FullSnapshotData = {
   meta: {
@@ -69,6 +70,13 @@ type FullSnapshotData = {
     };
   };
 };
+
+export async function readFullSnapshotArtifact(filePath: string): Promise<FullSnapshotData> {
+  const buffer = await fs.readFile(filePath);
+  const jsonBuffer = await gunzip(buffer);
+  const payload = JSON.parse(jsonBuffer.toString("utf8"));
+  return payload as FullSnapshotData;
+}
 
 type ProjectSnapshotRecord = {
   id: string;

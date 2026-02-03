@@ -2,13 +2,21 @@
  * Snapshot service - 버전 관리 스냅샷 비즈니스 로직
  */
 
+import * as fs from "fs";
 import { db } from "../../database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
-import { ErrorCode, DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT } from "../../../shared/constants/index.js";
+import {
+  ErrorCode,
+  DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT,
+  DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
+} from "../../../shared/constants/index.js";
 import type { SnapshotCreateInput } from "../../../shared/types/index.js";
 import { projectService } from "../core/projectService.js";
 import { ServiceError } from "../../utils/serviceError.js";
-import { writeFullSnapshotArtifact } from "./snapshotArtifacts.js";
+import {
+  writeFullSnapshotArtifact,
+  readFullSnapshotArtifact,
+} from "./snapshotArtifacts.js";
 
 const logger = createLogger("SnapshotService");
 
@@ -192,6 +200,115 @@ export class SnapshotService {
         ErrorCode.SNAPSHOT_RESTORE_FAILED,
         "Failed to restore snapshot",
         { snapshotId },
+        error,
+      );
+    }
+  }
+
+  async importSnapshotFile(filePath: string) {
+    try {
+      logger.info("Importing snapshot file", { filePath });
+
+      const snapshot = await readFullSnapshotArtifact(filePath);
+      const projectData = snapshot.data.project;
+      const settings = snapshot.data.settings as
+        | { autoSave?: boolean; autoSaveInterval?: number }
+        | undefined;
+
+      const projectPath =
+        typeof projectData.projectPath === "string" &&
+        projectData.projectPath.length > 0 &&
+        fs.existsSync(projectData.projectPath)
+          ? projectData.projectPath
+          : undefined;
+
+      const autoSave =
+        typeof settings?.autoSave === "boolean" ? settings.autoSave : true;
+      const autoSaveInterval =
+        typeof settings?.autoSaveInterval === "number"
+          ? settings.autoSaveInterval
+          : DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS;
+
+      const project = (await db.getClient().$transaction(async (tx) => {
+        const created = await tx.project.create({
+          data: {
+            title: projectData.title || "Recovered Snapshot",
+            description: projectData.description ?? undefined,
+            projectPath,
+            settings: {
+              create: {
+                autoSave,
+                autoSaveInterval,
+              },
+            },
+          },
+          include: {
+            settings: true,
+          },
+        });
+
+        const projectId = created.id;
+
+        if (snapshot.data.chapters.length > 0) {
+          await tx.chapter.createMany({
+            data: snapshot.data.chapters.map((chapter, index) => ({
+              id: chapter.id,
+              projectId,
+              title: chapter.title,
+              content: chapter.content ?? "",
+              synopsis: chapter.synopsis ?? null,
+              order: typeof chapter.order === "number" ? chapter.order : index,
+              wordCount: chapter.wordCount ?? 0,
+            })),
+          });
+        }
+
+        if (snapshot.data.characters.length > 0) {
+          await tx.character.createMany({
+            data: snapshot.data.characters.map((character) => ({
+              id: character.id,
+              projectId,
+              name: character.name,
+              description: character.description ?? null,
+              firstAppearance: character.firstAppearance ?? null,
+              attributes:
+                typeof character.attributes === "string"
+                  ? character.attributes
+                  : character.attributes
+                    ? JSON.stringify(character.attributes)
+                    : null,
+            })),
+          });
+        }
+
+        if (snapshot.data.terms.length > 0) {
+          await tx.term.createMany({
+            data: snapshot.data.terms.map((term) => ({
+              id: term.id,
+              projectId,
+              term: term.term,
+              definition: term.definition ?? null,
+              category: term.category ?? null,
+              firstAppearance: term.firstAppearance ?? null,
+            })),
+          });
+        }
+
+        return created;
+      })) as { id: string };
+
+      logger.info("Snapshot imported successfully", {
+        projectId: project.id,
+        filePath,
+      });
+
+      return project;
+    } catch (error) {
+      logger.error("Failed to import snapshot file", error);
+      throw new ServiceError(
+        ErrorCode.SNAPSHOT_RESTORE_FAILED,
+        "Failed to import snapshot file",
+        { filePath },
         error,
       );
     }
