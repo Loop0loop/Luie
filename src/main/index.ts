@@ -10,9 +10,7 @@ import path from "node:path";
 import { createLogger, configureLogger, LogLevel } from "../shared/logger/index.js";
 import { LOG_DIR_NAME, LOG_FILE_NAME } from "../shared/constants/index.js";
 import { windowManager } from "./manager/index.js";
-import { registerIPCHandlers } from "./handler/index.js";
-import { db } from "./database/index.js";
-import { autoSaveManager } from "./manager/autoSaveManager.js";
+import { initDatabaseEnv } from "./prismaEnv.js";
 
 configureLogger({
   logToFile: true,
@@ -21,6 +19,8 @@ configureLogger({
 });
 
 const logger = createLogger("Main");
+
+initDatabaseEnv();
 
 // Disable GPU acceleration for better stability
 app.disableHardwareAcceleration();
@@ -42,10 +42,11 @@ if (!gotTheLock) {
   });
 
   // App ready
-  app.whenReady().then(() => {
+  app.whenReady().then(async () => {
     logger.info("App is ready");
 
-    // Register IPC handlers
+    // Register IPC handlers (after DB env is set)
+    const { registerIPCHandlers } = await import("./handler/index.js");
     registerIPCHandlers();
 
     // Create main window
@@ -75,6 +76,7 @@ if (!gotTheLock) {
     void (async () => {
       logger.info("App is quitting");
       try {
+        const { autoSaveManager } = await import("./manager/autoSaveManager.js");
         await Promise.race([
           autoSaveManager.flushAll(),
           new Promise((resolve) => setTimeout(resolve, 3000)),
@@ -82,6 +84,7 @@ if (!gotTheLock) {
       } catch (error) {
         logger.error("Failed to flush auto-save", error);
       } finally {
+        const { db } = await import("./database/index.js");
         await db.disconnect();
         app.exit(0);
       }

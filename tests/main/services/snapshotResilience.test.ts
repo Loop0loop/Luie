@@ -13,16 +13,17 @@ import {
   SNAPSHOT_BACKUP_DIR,
   LUIE_SNAPSHOTS_DIR,
 } from "../../../src/shared/constants/index.js";
+import type { Project, Chapter } from "../../../src/shared/types/index.js";
 
 const makeContent = (length: number) => "가".repeat(length);
 
 const createProject = async (title = "Test Project") => {
   const projectPath = path.join(app.getPath("userData"), `${title}.luie`);
-  const project = await projectService.createProject({
+  const project = (await projectService.createProject({
     title,
     description: "",
     projectPath,
-  });
+  })) as unknown as Project;
   return { project, projectPath };
 };
 
@@ -36,10 +37,10 @@ describe("Snapshot resilience", () => {
 
     const chapters = [] as Array<{ id: string; len: number }>;
     for (const len of [200, 400, 600, 800, 1000]) {
-      const chapter = await chapterService.createChapter({
+      const chapter = (await chapterService.createChapter({
         projectId: project.id,
         title: `Chapter ${len}`,
-      });
+      })) as unknown as Chapter;
       chapters.push({ id: chapter.id, len });
     }
 
@@ -114,10 +115,10 @@ describe("Snapshot resilience", () => {
 
   it("handles snapshot writes while chapter updates are racing", async () => {
     const { project } = await createProject("Race Project");
-    const chapter = await chapterService.createChapter({
+    const chapter = (await chapterService.createChapter({
       projectId: project.id,
       title: "Race Chapter",
-    });
+    })) as unknown as Chapter;
 
     const updatePromises = Array.from({ length: 10 }).map((_, idx) =>
       chapterService.updateChapter({
@@ -147,10 +148,10 @@ describe("Snapshot resilience", () => {
 
   it("recreates snapshot folders after deletion", async () => {
     const { project, projectPath } = await createProject("Sabotage Project");
-    const chapter = await chapterService.createChapter({
+    const chapter = (await chapterService.createChapter({
       projectId: project.id,
       title: "Sabotage Chapter",
-    });
+    })) as unknown as Chapter;
 
     const baseDir = path.dirname(projectPath);
     const snapshotsDir = path.join(baseDir, ".luie", LUIE_SNAPSHOTS_DIR);
@@ -169,10 +170,10 @@ describe("Snapshot resilience", () => {
 
   it("rejects corrupted snapshot restore", async () => {
     const { project } = await createProject("Corrupt Project");
-    const chapter = await chapterService.createChapter({
+    const chapter = (await chapterService.createChapter({
       projectId: project.id,
       title: "Corrupt Chapter",
-    });
+    })) as unknown as Chapter;
 
     await snapshotService.createSnapshot({
       projectId: project.id,
@@ -194,10 +195,10 @@ describe("Snapshot resilience", () => {
 
   it("survives disk-full/permission errors during snapshot write", async () => {
     const { project } = await createProject("Disk Project");
-    const chapter = await chapterService.createChapter({
+    const chapter = (await chapterService.createChapter({
       projectId: project.id,
       title: "Disk Chapter",
-    });
+    })) as unknown as Chapter;
 
     const writeSpy = vi
       .spyOn(fs, "writeFile")
@@ -217,10 +218,10 @@ describe("Snapshot resilience", () => {
 
   it("handles double instance snapshot writes", async () => {
     const { project } = await createProject("Double Project");
-    const chapter = await chapterService.createChapter({
+    const chapter = (await chapterService.createChapter({
       projectId: project.id,
       title: "Double Chapter",
-    });
+    })) as unknown as Chapter;
 
     await Promise.all([
       snapshotService.createSnapshot({

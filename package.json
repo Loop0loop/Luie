@@ -7,6 +7,10 @@
   "author": "Luie Team",
   "license": "MIT",
   "private": true,
+  "engines": {
+    "node": "22.11.0",
+    "pnpm": "10.23.0"
+  },
   "scripts": {
     "dev": "pnpm i;electron-vite",
     "build": "electron-vite build",
@@ -14,10 +18,12 @@
     "postinstall": "prisma generate; pnpm exec electron-rebuild -f -w better-sqlite3",
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
+    "push" : "npx prisma db push",
     "studio": "prisma studio",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx,json}\"",
+    "pretest": "node -e \"const v=process.versions.node; if(v!=='22.11.0'){console.error('Use Node 22.11.0, current: '+v); process.exit(1)}\"",
     "test": "vitest",
     "test:prepare": "electron-rebuild --force",
     "test:e2e": "pnpm test:prepare && pnpm build && playwright test --project=e2e",

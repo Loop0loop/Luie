@@ -3,11 +3,14 @@
  */
 
 import { db } from "../../database/index.js";
+import { promises as fs } from "fs";
+import path from "path";
 import { createLogger } from "../../../shared/logger/index.js";
 import {
   ErrorCode,
   DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
   LUIE_PACKAGE_EXTENSION,
+  LUIE_SNAPSHOTS_DIR,
   LUIE_PACKAGE_FORMAT,
   LUIE_PACKAGE_CONTAINER_DIR,
   LUIE_PACKAGE_VERSION,
@@ -15,6 +18,7 @@ import {
   LUIE_MANUSCRIPT_DIR,
   MARKDOWN_EXTENSION,
 } from "../../../shared/constants/index.js";
+import { sanitizeName } from "../../../shared/utils/sanitize.js";
 import type {
   ProjectCreateInput,
   ProjectUpdateInput,
@@ -128,6 +132,11 @@ export class ProjectService {
 
   async updateProject(input: ProjectUpdateInput) {
     try {
+      const current = await db.getClient().project.findUnique({
+        where: { id: input.id },
+        select: { title: true, projectPath: true },
+      });
+
       const project = await db.getClient().project.update({
         where: { id: input.id },
         data: {
@@ -136,6 +145,36 @@ export class ProjectService {
           projectPath: input.projectPath,
         },
       });
+
+      const prevTitle = typeof current?.title === "string" ? current.title : "";
+      const nextTitle = typeof project.title === "string" ? project.title : "";
+      const projectPath = typeof project.projectPath === "string" ? project.projectPath : null;
+
+      if (
+        projectPath &&
+        projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION) &&
+        prevTitle &&
+        nextTitle &&
+        prevTitle !== nextTitle
+      ) {
+        const baseDir = path.dirname(projectPath);
+        const snapshotsBase = path.join(baseDir, ".luie", LUIE_SNAPSHOTS_DIR);
+        const prevName = sanitizeName(prevTitle, "");
+        const nextName = sanitizeName(nextTitle, "");
+        if (prevName && nextName && prevName !== nextName) {
+          const prevDir = path.join(snapshotsBase, prevName);
+          const nextDir = path.join(snapshotsBase, nextName);
+          try {
+            const stat = await fs.stat(prevDir);
+            if (stat.isDirectory()) {
+              await fs.mkdir(snapshotsBase, { recursive: true });
+              await fs.rename(prevDir, nextDir);
+            }
+          } catch {
+            // ignore if missing or rename fails
+          }
+        }
+      }
 
       const projectId = String(project.id);
       logger.info("Project updated successfully", { projectId });

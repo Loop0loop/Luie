@@ -65,19 +65,20 @@ class DatabaseService {
     const isPackaged = app.isPackaged;
     const userDataPath = app.getPath("userData");
     const isTest = process.env.VITEST === "true" || process.env.NODE_ENV === "test";
-    const hasEnvDb = Boolean(process.env.DATABASE_URL);
+    const envDb = process.env.DATABASE_URL;
+    const hasEnvDb = Boolean(envDb);
     let dbPath: string;
 
-    if (isPackaged) {
+    if (hasEnvDb) {
+      dbPath = envDb?.replace("file:", "") ?? path.join(userDataPath, DB_NAME);
+      this.datasourceUrl = envDb ?? `file:${dbPath}`;
+      process.env.DATABASE_URL = this.datasourceUrl;
+    } else if (isPackaged) {
       dbPath = path.join(userDataPath, DB_NAME);
       this.datasourceUrl = `file:${dbPath}`;
       process.env.DATABASE_URL = this.datasourceUrl;
-    } else if (isTest && hasEnvDb) {
-      dbPath = process.env.DATABASE_URL?.replace("file:", "") ?? path.join(userDataPath, DB_NAME);
-      this.datasourceUrl = process.env.DATABASE_URL ?? `file:${dbPath}`;
-      process.env.DATABASE_URL = this.datasourceUrl;
     } else {
-      dbPath = path.join(userDataPath, DB_NAME);
+      dbPath = path.join(process.cwd(), "prisma", "dev.db");
       this.datasourceUrl = `file:${dbPath}`;
       process.env.DATABASE_URL = this.datasourceUrl;
     }
@@ -104,7 +105,7 @@ class DatabaseService {
         .readdirSync(migrationsDir, { withFileTypes: true })
         .some((entry) => entry.isDirectory());
 
-    if (!isTest) {
+    if (!isTest && !isPackaged) {
       try {
         const prismaPath = path.join(process.cwd(), "node_modules/.bin/prisma");
         const schemaPath = path.join(process.cwd(), "prisma/schema.prisma");

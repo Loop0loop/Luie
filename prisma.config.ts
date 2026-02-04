@@ -4,17 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 
 const resolveDefaultDbPath = (): string => {
-  if (process.platform === 'darwin') {
-    return path.join(os.homedir(), 'Library/Application Support/luie/luie.db')
-  }
-
-  if (process.platform === 'win32') {
-    const appData = process.env.APPDATA ?? path.join(os.homedir(), 'AppData/Roaming')
-    return path.join(appData, 'luie', 'luie.db')
-  }
-
-  const xdgConfig = process.env.XDG_CONFIG_HOME ?? path.join(os.homedir(), '.config')
-  return path.join(xdgConfig, 'luie', 'luie.db')
+  return path.join(process.cwd(), 'prisma', 'dev.db')
 }
 
 const datasourceUrl = process.env.DATABASE_URL ?? `file:${resolveDefaultDbPath()}`
