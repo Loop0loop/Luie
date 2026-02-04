@@ -126,9 +126,9 @@ function resolveProjectBaseDir(projectPath: string) {
   return normalizedLower.endsWith(extLower) ? path.dirname(normalized) : normalized;
 }
 
-function resolveLocalSnapshotDir(projectPath: string, projectId: string) {
+function resolveLocalSnapshotDir(projectPath: string, projectName: string) {
   const baseDir = resolveProjectBaseDir(projectPath);
-  return path.join(baseDir, ".luie", LUIE_SNAPSHOTS_DIR, projectId);
+  return path.join(baseDir, ".luie", LUIE_SNAPSHOTS_DIR, projectName);
 }
 
 async function writeFileAtomic(targetPath: string, buffer: Buffer) {
@@ -237,14 +237,15 @@ export async function writeFullSnapshotArtifact(
   let localPath: string | undefined;
   let projectBackupPath: string | undefined;
 
+  const safeProjectName = sanitizeName(project.title ?? "", String(project.id));
+
   if (project.projectPath) {
-    const localDir = resolveLocalSnapshotDir(project.projectPath, project.id);
+    const localDir = resolveLocalSnapshotDir(project.projectPath, safeProjectName);
     await fs.mkdir(localDir, { recursive: true });
     localPath = path.join(localDir, fileName);
     await writeFileAtomic(localPath, buffer);
   }
 
-  const safeProjectName = sanitizeName(project.title ?? "", String(project.id));
   const backupDir = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR, safeProjectName);
   await fs.mkdir(backupDir, { recursive: true });
   const backupPath = path.join(backupDir, fileName);

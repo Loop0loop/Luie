@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { SnapshotList } from "../snapshot/SnapshotList";
 import { TrashList } from "../trash/TrashList";
+import { useProjectStore } from "../../stores/projectStore";
 import {
   SIDEBAR_ADD_CHAPTER,
   SIDEBAR_BINDER_TITLE,
@@ -91,6 +92,7 @@ function Sidebar({
   onSelectResearchItem,
   onSplitView,
 }: SidebarProps) {
+  const { updateProject } = useProjectStore();
   // Section collapse states
   const [isManuscriptOpen, setManuscriptOpen] = useState(true);
   const [isResearchOpen, setResearchOpen] = useState(true);
@@ -130,6 +132,15 @@ function Sidebar({
     // Position menu to the right of the button
     setMenuPosition({ x: rect.right + 8, y: rect.top });
     setMenuOpenId(id === menuOpenId ? null : id);
+  };
+
+  const handleRenameProject = async () => {
+    if (!currentProjectId) return;
+    const nextTitle = window
+      .prompt("프로젝트 이름을 입력해주세요.", currentProjectTitle ?? "")
+      ?.trim();
+    if (!nextTitle || nextTitle === currentProjectTitle) return;
+    await updateProject(currentProjectId, nextTitle);
   };
 
   const handleAction = (action: string, id: string) => {
@@ -248,9 +259,20 @@ function Sidebar({
         </div>
       )}
       <div className="p-4">
-        <h2 className="text-sm font-bold text-fg mb-1">
-          {currentProjectTitle || SIDEBAR_DEFAULT_PROJECT_TITLE}
-        </h2>
+        <div className="flex items-center gap-2 mb-1">
+          <h2 className="text-sm font-bold text-fg">
+            {currentProjectTitle || SIDEBAR_DEFAULT_PROJECT_TITLE}
+          </h2>
+          <button
+            type="button"
+            className="p-1 rounded hover:bg-active text-muted hover:text-fg"
+            onClick={handleRenameProject}
+            title="프로젝트 이름 수정"
+            disabled={!currentProjectId}
+          >
+            <Edit2 className="icon-xs" />
+          </button>
+        </div>
         <div className="text-[11px] text-muted uppercase tracking-wider">{SIDEBAR_BINDER_TITLE}</div>
       </div>
 
