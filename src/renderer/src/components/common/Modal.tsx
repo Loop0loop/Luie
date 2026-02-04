@@ -24,7 +24,7 @@ export function Modal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-[4px] flex items-center justify-center animate-in fade-in duration-200" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-9999 bg-black/60 backdrop-blur-xs flex items-center justify-center animate-in fade-in duration-200" onMouseDown={onClose}>
       <div
         className="bg-panel border border-border rounded-xl shadow-2xl w-full max-w-[90vw] flex flex-col overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-2 duration-200"
         style={{ width }}

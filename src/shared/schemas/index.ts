@@ -97,6 +97,25 @@ export const searchQuerySchema = z.object({
   type: z.enum(["all", "character", "term"]).optional(),
 });
 
+export const editorSettingsSchema = z.object({
+  fontFamily: z.enum(["serif", "sans", "mono"]),
+  fontPreset: z
+    .enum([
+      "default",
+      "lora",
+      "bitter",
+      "source-serif",
+      "montserrat",
+      "nunito-sans",
+      "victor-mono",
+    ])
+    .optional(),
+  fontSize: z.number().int().positive(),
+  lineHeight: z.number().positive(),
+  maxWidth: z.number().int().positive(),
+  theme: z.enum(["light", "dark", "sepia"]),
+});
+
 export const settingsAutoSaveSchema = z.object({
   enabled: z.boolean().optional(),
   interval: z.number().int().positive().optional(),

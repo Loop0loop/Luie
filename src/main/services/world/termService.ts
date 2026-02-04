@@ -2,16 +2,16 @@
  * Term service - 고유명사 사전 관리 비즈니스 로직
  */
 
-import { db } from "../database/index.js";
-import { createLogger } from "../../shared/logger/index.js";
-import { ErrorCode } from "../../shared/constants/index.js";
+import { db } from "../../database/index.js";
+import { createLogger } from "../../../shared/logger/index.js";
+import { ErrorCode } from "../../../shared/constants/index.js";
 import type {
   TermCreateInput,
   TermUpdateInput,
   TermAppearanceInput,
-} from "../../shared/types/index.js";
-import { projectService } from "./projectService.js";
-import { ServiceError } from "../utils/serviceError.js";
+} from "../../../shared/types/index.js";
+import { projectService } from "../core/projectService.js";
+import { ServiceError } from "../../utils/serviceError.js";
 
 const logger = createLogger("TermService");
 
@@ -65,11 +65,7 @@ export class TermService {
       });
 
       if (!term) {
-        throw new ServiceError(
-          ErrorCode.TERM_NOT_FOUND,
-          "Term not found",
-          { id },
-        );
+        throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", { id });
       }
 
       return term;
@@ -110,8 +106,7 @@ export class TermService {
       const updateData: Record<string, unknown> = {};
 
       if (input.term !== undefined) updateData.term = input.term;
-      if (input.definition !== undefined)
-        updateData.definition = input.definition;
+      if (input.definition !== undefined) updateData.definition = input.definition;
       if (input.category !== undefined) updateData.category = input.category;
       if (input.firstAppearance !== undefined)
         updateData.firstAppearance = input.firstAppearance;
@@ -225,11 +220,7 @@ export class TermService {
       });
 
       if (!term) {
-        throw new ServiceError(
-          ErrorCode.TERM_NOT_FOUND,
-          "Term not found",
-          { termId },
-        );
+        throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", { termId });
       }
 
       if (!term.firstAppearance) {
@@ -256,10 +247,7 @@ export class TermService {
       const terms = await db.getClient().term.findMany({
         where: {
           projectId,
-          OR: [
-            { term: { contains: query } },
-            { definition: { contains: query } },
-          ],
+          OR: [{ term: { contains: query } }, { definition: { contains: query } }],
         },
         orderBy: { term: "asc" },
       });

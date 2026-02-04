@@ -15,11 +15,13 @@ import ReactFlow, {
   applyEdgeChanges,
 } from "reactflow";
 import "reactflow/dist/style.css";
+import { VirtuosoGrid } from "react-virtuoso";
 import { cn } from "../../../../shared/types/utils";
 import { ArrowLeft, Eraser, Plus, X, Type, PenTool } from "lucide-react";
 import { useProjectStore } from "../../stores/projectStore";
 import { useTermStore } from "../../stores/termStore";
 import { BufferedInput, BufferedTextArea } from "../common/BufferedInput";
+import TabButton from "../common/TabButton";
 import {
   WORLD_MINDMAP_ROOT_LABEL,
   DEFAULT_TERM_ADD_LABEL,
@@ -87,7 +89,7 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
 
   return (
     <div
-      className="p-2 min-w-[100px] bg-panel border-2 border-active rounded-lg shadow-sm text-center flex flex-col justify-center items-center relative transition-transform hover:shadow-md"
+      className="p-2 min-w-25 bg-panel border-2 border-active rounded-lg shadow-sm text-center flex flex-col justify-center items-center relative transition-transform hover:shadow-md"
       onDoubleClick={(e) => {
         e.stopPropagation();
         setDraft(data.label);
@@ -124,36 +126,41 @@ export default function WorldSection() {
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div className="flex w-full bg-sidebar border-b border-border shrink-0 text-muted select-none">
-        <div
-          className={cn("flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans", subTab === "terms" && "text-accent font-semibold border-b-2 border-accent")}
+        <TabButton
+          label={WORLD_TAB_TERMS}
+          active={subTab === "terms"}
           onClick={() => setSubTab("terms")}
-        >
-          {WORLD_TAB_TERMS}
-        </div>
-        <div
-          className={cn("flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans", subTab === "synopsis" && "text-accent font-semibold border-b-2 border-accent")}
+          className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
+          activeClassName="text-accent font-semibold border-b-2 border-accent"
+        />
+        <TabButton
+          label={WORLD_TAB_SYNOPSIS}
+          active={subTab === "synopsis"}
           onClick={() => setSubTab("synopsis")}
-        >
-          {WORLD_TAB_SYNOPSIS}
-        </div>
-        <div
-          className={cn("flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans", subTab === "mindmap" && "text-accent font-semibold border-b-2 border-accent")}
+          className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
+          activeClassName="text-accent font-semibold border-b-2 border-accent"
+        />
+        <TabButton
+          label={WORLD_TAB_MINDMAP}
+          active={subTab === "mindmap"}
           onClick={() => setSubTab("mindmap")}
-        >
-          {WORLD_TAB_MINDMAP}
-        </div>
-        <div
-          className={cn("flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans", subTab === "drawing" && "text-accent font-semibold border-b-2 border-accent")}
+          className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
+          activeClassName="text-accent font-semibold border-b-2 border-accent"
+        />
+        <TabButton
+          label={WORLD_TAB_DRAWING}
+          active={subTab === "drawing"}
           onClick={() => setSubTab("drawing")}
-        >
-          {WORLD_TAB_DRAWING}
-        </div>
-        <div
-          className={cn("flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans", subTab === "plot" && "text-accent font-semibold border-b-2 border-accent")}
+          className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
+          activeClassName="text-accent font-semibold border-b-2 border-accent"
+        />
+        <TabButton
+          label={WORLD_TAB_PLOT}
+          active={subTab === "plot"}
           onClick={() => setSubTab("plot")}
-        >
-          {WORLD_TAB_PLOT}
-        </div>
+          className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
+          activeClassName="text-accent font-semibold border-b-2 border-accent"
+        />
       </div>
 
       <div style={{ flex: 1, overflow: "hidden" }}>
@@ -169,15 +176,31 @@ export default function WorldSection() {
 
 function TermManager() {
   const { currentItem: currentProject } = useProjectStore();
-  const { terms, loadTerms, createTerm, updateTerm, deleteTerm } =
+  const { terms, currentTerm, loadTerms, createTerm, updateTerm, deleteTerm } =
     useTermStore();
   const [selectedTermId, setSelectedTermId] = useState<string | null>(null);
+
+  // Sync with global store selection
+  useEffect(() => {
+    if (currentTerm?.id && currentTerm.id !== selectedTermId) {
+        // eslint-disable-next-line
+        setSelectedTermId(currentTerm.id);
+    }
+  }, [currentTerm, selectedTermId]);
 
   useEffect(() => {
     if (currentProject) {
       loadTerms(currentProject.id);
     }
   }, [currentProject, loadTerms]);
+
+  const termGridItems = useMemo(
+    () => [
+      ...terms.map((term) => ({ type: "term" as const, term })),
+      { type: "add" as const },
+    ],
+    [terms],
+  );
 
   const handleAddTerm = async () => {
     if (currentProject) {
@@ -244,51 +267,67 @@ function TermManager() {
   }
 
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 p-4">
-      {terms.map((term) => (
-        <div
-          key={term.id}
-          className="h-[100px] p-3 bg-element border border-border rounded-lg cursor-pointer relative shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-active overflow-hidden flex flex-col"
-          onClick={() => setSelectedTermId(term.id)}
-          style={{ height: "auto", minHeight: "80px" }}
-        >
-          <div className="ml-0">
-            <div className="font-bold text-sm text-fg mb-1">{term.term}</div>
+    <div className="h-full w-full">
+      <VirtuosoGrid
+        data={termGridItems}
+        style={{ height: "100%" }}
+        computeItemKey={(_index, item) =>
+          item.type === "term" ? item.term.id : "add"
+        }
+        listClassName="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 p-4"
+        itemContent={(_index, item) => {
+          if (item.type === "add") {
+            return (
+              <div
+                className="h-20 flex flex-col items-center justify-center gap-2 border border-dashed border-border rounded-lg cursor-pointer text-muted hover:text-accent hover:border-accent hover:bg-element-hover transition-colors"
+                onClick={handleAddTerm}
+                style={{ height: "80px" }}
+              >
+                <Plus className="icon-xxl" />
+                <span>{DEFAULT_TERM_ADD_LABEL}</span>
+              </div>
+            );
+          }
+
+          return (
             <div
-              className="text-xs text-secondary line-clamp-2"
-              style={{ fontSize: "0.8em", color: "var(--text-secondary)" }}
+              className="h-25 p-3 bg-element border border-border rounded-lg cursor-pointer relative shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-active overflow-hidden flex flex-col"
+              onClick={() => setSelectedTermId(item.term.id)}
+              style={{ height: "auto", minHeight: "80px" }}
             >
-              {term.category ? `[${term.category}] ` : ""}
-              {term.definition || "No definition"}
+              <div className="ml-0">
+                <div className="font-bold text-sm text-fg mb-1">
+                  {item.term.term}
+                </div>
+                <div
+                  className="text-xs text-secondary line-clamp-2"
+                  style={{ fontSize: "0.8em", color: "var(--text-secondary)" }}
+                >
+                  {item.term.category ? `[${item.term.category}] ` : ""}
+                  {item.term.definition || "No definition"}
+                </div>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteTerm(item.term.id);
+                }}
+                style={{
+                  position: "absolute",
+                  top: 8,
+                  right: 8,
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  opacity: 0.5,
+                }}
+              >
+                <X className="icon-sm" />
+              </button>
             </div>
-          </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              deleteTerm(term.id);
-            }}
-            style={{
-              position: "absolute",
-              top: 8,
-              right: 8,
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              opacity: 0.5,
-            }}
-          >
-            <X className="icon-sm" />
-          </button>
-        </div>
-      ))}
-      <div
-        className="h-[80px] flex flex-col items-center justify-center gap-2 border border-dashed border-border rounded-lg cursor-pointer text-muted hover:text-accent hover:border-accent hover:bg-element-hover transition-colors"
-        onClick={handleAddTerm}
-        style={{ height: "80px" }}
-      >
-        <Plus className="icon-xxl" />
-        <span>{DEFAULT_TERM_ADD_LABEL}</span>
-      </div>
+          );
+        }}
+      />
     </div>
   );
 }
@@ -878,7 +917,7 @@ function PlotBoard() {
   return (
     <div className="h-full flex overflow-x-auto p-4 gap-4 bg-app">
       {columns.map((col) => (
-        <div key={col.id} className="w-[280px] shrink-0 flex flex-col bg-sidebar border border-border rounded-lg max-h-full">
+        <div key={col.id} className="w-70 shrink-0 flex flex-col bg-sidebar border border-border rounded-lg max-h-full">
           <div className="p-3 font-bold text-sm text-fg uppercase flex justify-between items-center border-b border-border bg-panel/50">
             {col.title}
             <span className="bg-element/80 px-1.5 py-0.5 rounded text-[10px] text-muted">{col.cards.length}</span>

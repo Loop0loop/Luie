@@ -1,5 +1,6 @@
 import type { StateCreator } from "zustand";
 import type { IPCResponse } from "../../../shared/ipc";
+import { api } from "../services/api";
 
 interface BaseItem {
   id: string;
@@ -27,10 +28,57 @@ export type APIClient<T, CreateInput, UpdateInput> = {
   delete: (id: string) => Promise<IPCResponse<unknown>>;
 };
 
+export type APIClientWithRequiredGetAll<T, CreateInput, UpdateInput> = Omit<
+  APIClient<T, CreateInput, UpdateInput>,
+  "getAll"
+> & {
+  getAll: (parentId: string) => Promise<IPCResponse<T[]>>;
+};
+
+export function withProjectScopedGetAll<T, CreateInput, UpdateInput>(
+  apiClient: APIClient<T, CreateInput, UpdateInput>,
+): APIClient<T, CreateInput, UpdateInput>;
+export function withProjectScopedGetAll<T, CreateInput, UpdateInput>(
+  apiClient: APIClientWithRequiredGetAll<T, CreateInput, UpdateInput>,
+): APIClient<T, CreateInput, UpdateInput>;
+export function withProjectScopedGetAll<T, CreateInput, UpdateInput>(
+  apiClient:
+    | APIClient<T, CreateInput, UpdateInput>
+    | APIClientWithRequiredGetAll<T, CreateInput, UpdateInput>,
+): APIClient<T, CreateInput, UpdateInput> {
+  return {
+    ...apiClient,
+    getAll: (parentId?: string) => apiClient.getAll(parentId || ""),
+  };
+}
+
+export function createAliasSetter<
+  TStore extends { items: TItem[]; currentItem: TItem | null },
+  TItem,
+>(
+  set: (partial: Partial<TStore> | ((state: TStore) => Partial<TStore>)) => void,
+  aliasItemsKey: keyof TStore,
+  aliasCurrentKey: keyof TStore,
+) {
+  return (partial: Partial<TStore> | ((state: TStore) => Partial<TStore>)) =>
+    set((state: TStore) => {
+      const next = typeof partial === "function" ? partial(state) : partial;
+      const nextItems = next.items ?? state.items;
+      const nextCurrent = next.currentItem ?? state.currentItem;
+
+      return {
+        ...next,
+        [aliasItemsKey]: nextItems,
+        [aliasCurrentKey]: nextCurrent,
+      } as Partial<TStore>;
+    });
+}
+
 export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
   apiClient: APIClient<T, CreateInput, UpdateInput>,
   name: string,
 ): StateCreator<CRUDStore<T, CreateInput, UpdateInput>> {
+  // Keep core CRUD minimal; extend/override per-store with spread syntax as needed.
   return (set) => ({
     items: [],
     currentItem: null,
@@ -47,7 +95,7 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
           set({ items: [], error: response.error?.message });
         }
       } catch (error) {
-        window.api.logger.error(`Failed to load ${name}s:`, error);
+        api.logger.error(`Failed to load ${name}s:`, error);
         set({ items: [], error: (error as Error).message });
       } finally {
         set({ isLoading: false });
@@ -64,7 +112,7 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
           set({ currentItem: null, error: response.error?.message });
         }
       } catch (error) {
-        window.api.logger.error(`Failed to load ${name}:`, error);
+        api.logger.error(`Failed to load ${name}:`, error);
         set({ currentItem: null, error: (error as Error).message });
       } finally {
         set({ isLoading: false });
@@ -84,7 +132,7 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
           return null;
         }
       } catch (error) {
-        window.api.logger.error(`Failed to create ${name}:`, error);
+        api.logger.error(`Failed to create ${name}:`, error);
         set({ error: (error as Error).message });
         return null;
       } finally {
@@ -111,7 +159,7 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
           set({ error: response.error?.message });
         }
       } catch (error) {
-        window.api.logger.error(`Failed to update ${name}:`, error);
+        api.logger.error(`Failed to update ${name}:`, error);
         set({ error: (error as Error).message });
       } finally {
         set({ isLoading: false });
@@ -132,7 +180,7 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
           set({ error: response.error?.message });
         }
       } catch (error) {
-        window.api.logger.error(`Failed to delete ${name}:`, error);
+        api.logger.error(`Failed to delete ${name}:`, error);
         set({ error: (error as Error).message });
       } finally {
         set({ isLoading: false });

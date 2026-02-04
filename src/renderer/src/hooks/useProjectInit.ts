@@ -6,11 +6,15 @@ import { useEffect } from "react";
 import { useProjectStore } from "../stores/projectStore";
 import { useChapterStore } from "../stores/chapterStore";
 import { useEditorStore } from "../stores/editorStore";
+import { useCharacterStore } from "../stores/characterStore";
+import { useTermStore } from "../stores/termStore";
 
 export function useProjectInit() {
   const { currentItem: currentProject, loadProjects } = useProjectStore();
   const { loadAll: loadChapters } = useChapterStore();
   const { loadSettings } = useEditorStore();
+  const { loadCharacters } = useCharacterStore();
+  const { loadTerms } = useTermStore();
 
   // 앱 시작 시 프로젝트 & 설정 로드
   useEffect(() => {
@@ -22,8 +26,10 @@ export function useProjectInit() {
   useEffect(() => {
     if (currentProject) {
       loadChapters(currentProject.id);
+      loadCharacters(currentProject.id);
+      loadTerms(currentProject.id);
     }
-  }, [currentProject, loadChapters]);
+  }, [currentProject, loadChapters, loadCharacters, loadTerms]);
 
   return { currentProject };
 }

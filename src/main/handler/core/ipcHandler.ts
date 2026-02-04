@@ -1,16 +1,13 @@
 import { ipcMain } from "electron";
 import { randomUUID } from "node:crypto";
-import { z } from "zod";
+import type { ZodType } from "zod";
 import {
   createErrorResponse,
   createSuccessResponse,
 } from "../../../shared/ipc/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import { isServiceError } from "../../utils/serviceError.js";
-
-type LoggerLike = {
-  error: (message: string, data?: unknown) => void;
-};
+import type { LoggerLike } from "./types.js";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -19,7 +16,7 @@ export function registerIpcHandler<TArgs extends unknown[], TResult>(options: {
   channel: string;
   logTag?: string;
   failMessage: string;
-  argsSchema?: z.ZodType<TArgs>;
+  argsSchema?: ZodType<TArgs>;
   handler: (...args: TArgs) => MaybePromise<TResult>;
 }): void {
   ipcMain.handle(options.channel, async (_event, ...args: unknown[]) => {

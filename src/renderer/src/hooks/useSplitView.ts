@@ -4,6 +4,7 @@
 
 import { useCallback } from "react";
 import { useUIStore, type ResearchTab, type ContextTab } from "../stores/uiStore";
+import type { Snapshot } from "../../../shared/types";
 
 export function useSplitView() {
   const {
@@ -38,6 +39,14 @@ export function useSplitView() {
         setSplitView(true);
         setRightPanelContent({ type: "editor", id: contentId });
       }
+    },
+    [setSplitView, setRightPanelContent],
+  );
+
+  const handleOpenSnapshot = useCallback(
+    (snapshot: Snapshot) => {
+      setSplitView(true);
+      setRightPanelContent({ type: "snapshot", snapshot });
     },
     [setSplitView, setRightPanelContent],
   );
@@ -82,6 +91,7 @@ export function useSplitView() {
     setSplitView,
     handleSelectResearchItem,
     handleSplitView,
+    handleOpenSnapshot,
     startResizeSplit,
   };
 }

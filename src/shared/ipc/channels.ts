@@ -15,8 +15,11 @@ export const IPC_CHANNELS = {
   CHAPTER_CREATE: "chapter:create",
   CHAPTER_GET: "chapter:get",
   CHAPTER_GET_ALL: "chapter:get-all",
+  CHAPTER_GET_DELETED: "chapter:get-deleted",
   CHAPTER_UPDATE: "chapter:update",
   CHAPTER_DELETE: "chapter:delete",
+  CHAPTER_RESTORE: "chapter:restore",
+  CHAPTER_PURGE: "chapter:purge",
   CHAPTER_REORDER: "chapter:reorder",
 
   // Character Channels
@@ -40,6 +43,7 @@ export const IPC_CHANNELS = {
   SNAPSHOT_GET_BY_CHAPTER: "snapshot:get-by-chapter",
   SNAPSHOT_RESTORE: "snapshot:restore",
   SNAPSHOT_DELETE: "snapshot:delete",
+  SNAPSHOT_IMPORT_FILE: "snapshot:import-file",
 
   // Auto Save
   AUTO_SAVE: "auto-save",
@@ -50,6 +54,8 @@ export const IPC_CHANNELS = {
   // File System
   FS_SELECT_DIRECTORY: "fs:select-directory",
   FS_SELECT_SAVE_LOCATION: "fs:select-save-location",
+  FS_SELECT_FILE: "fs:select-file",
+  FS_SELECT_SNAPSHOT_BACKUP: "fs:select-snapshot-backup",
   FS_SAVE_PROJECT: "fs:save-project",
   FS_READ_FILE: "fs:read-file",
   FS_WRITE_FILE: "fs:write-file",

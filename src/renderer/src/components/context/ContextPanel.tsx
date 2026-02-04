@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo, useDeferredValue, memo } from "react";
-import { cn } from "../../../../shared/types/utils";
-import { Search, ArrowLeft } from "lucide-react";
+import { useState, useEffect, useMemo, useDeferredValue, useTransition, memo } from "react";
+import { ArrowLeft } from "lucide-react";
 import { useCharacterStore } from "../../stores/characterStore";
 import { useTermStore } from "../../stores/termStore";
 import { useProjectStore } from "../../stores/projectStore";
+import TabButton from "../common/TabButton";
+import SearchInput from "../common/SearchInput";
 import type { Character, Term } from "../../../../shared/types";
 import {
   LABEL_CONTEXT_DETAIL_DESCRIPTION,
@@ -42,7 +43,11 @@ function ContextPanel({
   const currentTab = onTabChange ? activeTab : internalTab;
   const handleTabChange = (tab: Tab) => {
     if (onTabChange) onTabChange(tab);
-    else setInternalTab(tab);
+    else {
+      startTransition(() => {
+        setInternalTab(tab);
+      });
+    }
   };
 
   const { currentProject } = useProjectStore();
@@ -51,7 +56,9 @@ function ContextPanel({
 
   const [searchText, setSearchText] = useState("");
   const [selectedItem, setSelectedItem] = useState<ContextItem | null>(null);
+  const [isPending, startTransition] = useTransition();
   const deferredSearchText = useDeferredValue(searchText);
+  const isStale = searchText !== deferredSearchText;
 
   useEffect(() => {
     if (currentProject?.id) {
@@ -77,11 +84,15 @@ function ContextPanel({
   }, [terms, deferredSearchText]);
 
   const handleItemClick = (item: ContextItem) => {
-    setSelectedItem(item);
+    startTransition(() => {
+      setSelectedItem(item);
+    });
   };
 
   const handleBack = () => {
-    setSelectedItem(null);
+    startTransition(() => {
+      setSelectedItem(null);
+    });
   };
 
   return (
@@ -117,57 +128,54 @@ function ContextPanel({
       )}
 
       <div className="flex flex-col gap-3 px-4 pt-3">
-        <div className="relative w-full">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none icon-sm" />
-          <input
-            className="w-full bg-element border border-border rounded-md py-2 px-3 pl-8 text-[13px] text-fg outline-none transition-all focus:border-active focus:ring-1 focus:ring-active"
-            placeholder={PLACEHOLDER_CONTEXT_SEARCH}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-          />
-        </div>
+        <SearchInput
+          variant="context"
+          placeholder={PLACEHOLDER_CONTEXT_SEARCH}
+          value={searchText}
+          onChange={setSearchText}
+        />
       </div>
 
       <div className="flex px-4 mt-3">
-        <div
-          className={cn(
-            "flex-1 py-3 text-[13px] font-medium cursor-pointer border-b-2 border-transparent transition-all text-center",
-            currentTab === "synopsis" ? "text-accent border-accent font-semibold" : "text-muted hover:text-fg"
-          )}
+        <TabButton
+          label={LABEL_CONTEXT_TAB_SYNOPSIS}
+          active={currentTab === "synopsis"}
           onClick={() => {
             handleTabChange("synopsis");
             setSelectedItem(null);
           }}
-        >
-          {LABEL_CONTEXT_TAB_SYNOPSIS}
-        </div>
-        <div
-          className={cn(
-            "flex-1 py-3 text-[13px] font-medium cursor-pointer border-b-2 border-transparent transition-all text-center",
-            currentTab === "characters" ? "text-accent border-accent font-semibold" : "text-muted hover:text-fg"
-          )}
+          className="flex-1 py-3 text-[13px] font-medium cursor-pointer border-b-2 border-transparent transition-all text-center"
+          activeClassName="text-accent border-accent font-semibold"
+          inactiveClassName="text-muted hover:text-fg"
+        />
+        <TabButton
+          label={LABEL_CONTEXT_TAB_CHARACTERS}
+          active={currentTab === "characters"}
           onClick={() => {
             handleTabChange("characters");
             setSelectedItem(null);
           }}
-        >
-          {LABEL_CONTEXT_TAB_CHARACTERS}
-        </div>
-        <div
-          className={cn(
-            "flex-1 py-3 text-[13px] font-medium cursor-pointer border-b-2 border-transparent transition-all text-center",
-            currentTab === "terms" ? "text-accent border-accent font-semibold" : "text-muted hover:text-fg"
-          )}
+          className="flex-1 py-3 text-[13px] font-medium cursor-pointer border-b-2 border-transparent transition-all text-center"
+          activeClassName="text-accent border-accent font-semibold"
+          inactiveClassName="text-muted hover:text-fg"
+        />
+        <TabButton
+          label={LABEL_CONTEXT_TAB_TERMS}
+          active={currentTab === "terms"}
           onClick={() => {
             handleTabChange("terms");
             setSelectedItem(null);
           }}
-        >
-          {LABEL_CONTEXT_TAB_TERMS}
-        </div>
+          className="flex-1 py-3 text-[13px] font-medium cursor-pointer border-b-2 border-transparent transition-all text-center"
+          activeClassName="text-accent border-accent font-semibold"
+          inactiveClassName="text-muted hover:text-fg"
+        />
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div
+        className="flex-1 overflow-y-auto p-4 transition-opacity"
+        style={{ opacity: isStale || isPending ? 0.6 : 1 }}
+      >
         {currentTab === "synopsis" && (
           <div style={{ padding: "var(--context-panel-section-padding)" }}>
             <div
@@ -181,7 +189,7 @@ function ContextPanel({
               {LABEL_CONTEXT_SYNOPSIS_HEADER}
             </div>
             <textarea
-              className="w-full border border-border rounded-lg p-3 text-sm text-fg bg-element resize-none font-sans leading-relaxed min-h-[200px]"
+              className="w-full border border-border rounded-lg p-3 text-sm text-fg bg-element resize-none font-sans leading-relaxed min-h-50"
               placeholder={PLACEHOLDER_CONTEXT_SYNOPSIS}
               value={currentProject?.description || ""}
               readOnly

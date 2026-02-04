@@ -1,11 +1,16 @@
 import { create } from "zustand";
 import type { Character } from "../../../shared/types";
-import { createCRUDSlice } from "./createCRUDStore";
+import {
+  createAliasSetter,
+  createCRUDSlice,
+  withProjectScopedGetAll,
+} from "./createCRUDStore";
 import type { CRUDStore } from "./createCRUDStore";
 import {
   type CharacterCreateInput,
   type CharacterUpdateInput,
 } from "../../../shared/types";
+import { api } from "../services/api";
 
 type BaseCharacterStore = CRUDStore<
   Character,
@@ -28,25 +33,13 @@ interface CharacterStore extends BaseCharacterStore {
 }
 
 export const useCharacterStore = create<CharacterStore>((set, _get, store) => {
-  const setWithAlias: typeof set = (partial) =>
-    set((state) => {
-      const next = typeof partial === "function" ? partial(state) : partial;
-      const nextItems =
-        (next as Partial<CharacterStore>).items ?? state.items;
-      const nextCurrent =
-        (next as Partial<CharacterStore>).currentItem ?? state.currentItem;
+  const setWithAlias = createAliasSetter<CharacterStore, Character>(
+    set,
+    "characters",
+    "currentCharacter",
+  );
 
-      return {
-        ...next,
-        characters: nextItems,
-        currentCharacter: nextCurrent as Character | null,
-      } as Partial<CharacterStore>;
-    });
-
-  const apiClient = {
-    ...window.api.character,
-    getAll: (parentId?: string) => window.api.character.getAll(parentId || ""),
-  };
+  const apiClient = withProjectScopedGetAll(api.character);
 
   const crudSlice = createCRUDSlice<
     Character,

@@ -10,9 +10,7 @@ import path from "node:path";
 import { createLogger, configureLogger, LogLevel } from "../shared/logger/index.js";
 import { LOG_DIR_NAME, LOG_FILE_NAME } from "../shared/constants/index.js";
 import { windowManager } from "./manager/index.js";
-import { registerIPCHandlers } from "./handler/index.js";
-import { db } from "./database/index.js";
-import { autoSaveManager } from "./manager/autoSaveManager.js";
+import { initDatabaseEnv } from "./prismaEnv.js";
 
 configureLogger({
   logToFile: true,
@@ -22,11 +20,14 @@ configureLogger({
 
 const logger = createLogger("Main");
 
+initDatabaseEnv();
+
 // Disable GPU acceleration for better stability
 app.disableHardwareAcceleration();
 
 // Single instance lock
-const gotTheLock = app.requestSingleInstanceLock();
+const skipSingleInstance = process.env.E2E_DISABLE_SINGLE_INSTANCE === "1";
+const gotTheLock = skipSingleInstance ? true : app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
   logger.warn("Another instance is already running");
@@ -41,10 +42,11 @@ if (!gotTheLock) {
   });
 
   // App ready
-  app.whenReady().then(() => {
+  app.whenReady().then(async () => {
     logger.info("App is ready");
 
-    // Register IPC handlers
+    // Register IPC handlers (after DB env is set)
+    const { registerIPCHandlers } = await import("./handler/index.js");
     registerIPCHandlers();
 
     // Create main window
@@ -74,14 +76,29 @@ if (!gotTheLock) {
     void (async () => {
       logger.info("App is quitting");
       try {
-        await autoSaveManager.flushAll();
+        const { autoSaveManager } = await import("./manager/autoSaveManager.js");
+        await Promise.race([
+          autoSaveManager.flushAll(),
+          new Promise((resolve) => setTimeout(resolve, 3000)),
+        ]);
       } catch (error) {
         logger.error("Failed to flush auto-save", error);
       } finally {
+        const { db } = await import("./database/index.js");
         await db.disconnect();
-        app.quit();
+        app.exit(0);
       }
     })();
+  });
+
+  process.on("SIGINT", () => {
+    logger.info("Received SIGINT");
+    app.quit();
+  });
+
+  process.on("SIGTERM", () => {
+    logger.info("Received SIGTERM");
+    app.quit();
   });
 
   // Handle uncaught exceptions
