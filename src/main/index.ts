@@ -146,6 +146,14 @@ if (!gotTheLock) {
     // Create main window
     windowManager.createMainWindow();
 
+    // Background pruning (Time Machine-style)
+    try {
+      const { snapshotService } = await import("./services/features/snapshotService.js");
+      void snapshotService.pruneSnapshotsAllProjects();
+    } catch (error) {
+      logger.warn("Snapshot pruning skipped", error);
+    }
+
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) {
         windowManager.createMainWindow();
@@ -176,6 +184,25 @@ if (!gotTheLock) {
           autoSaveManager.flushAll(),
           new Promise((resolve) => setTimeout(resolve, 10000)),
         ]);
+
+        const { snapshotService } = await import("./services/features/snapshotService.js");
+        const { db } = await import("./database/index.js");
+        const projects = await db.getClient().project.findMany({
+          select: { id: true },
+        });
+
+        await Promise.all(
+          projects.map((project) =>
+            snapshotService.createSnapshot({
+              projectId: String(project.id),
+              content: JSON.stringify({ timestamp: Date.now(), reason: "session-end" }),
+              description: "Session end snapshot",
+              type: "AUTO",
+            }),
+          ),
+        );
+
+        await snapshotService.pruneSnapshotsAllProjects();
       } catch (error) {
         logger.error("Failed to flush auto-save", error);
       } finally {

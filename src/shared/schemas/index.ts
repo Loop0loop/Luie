@@ -89,6 +89,7 @@ export const snapshotCreateSchema = z.object({
   chapterId: chapterIdSchema.optional(),
   content: z.string(),
   description: z.string().optional(),
+  type: z.enum(["AUTO", "MANUAL"]).optional(),
 });
 
 export const searchQuerySchema = z.object({

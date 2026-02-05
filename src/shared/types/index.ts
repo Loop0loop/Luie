@@ -52,6 +52,8 @@ export interface Snapshot {
   projectId: string;
   chapterId?: string | null;
   content: string;
+  contentLength?: number;
+  type?: "AUTO" | "MANUAL";
   description?: string | null;
   createdAt: string | Date;
 }
@@ -190,6 +192,7 @@ export interface SnapshotCreateInput {
   chapterId?: string;
   content: string;
   description?: string;
+  type?: "AUTO" | "MANUAL";
 }
 
 // Search Types

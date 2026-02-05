@@ -122,11 +122,18 @@ model TermAppearance {
 }
 
 // 스냅샷 (버전 관리)
+enum SnapshotType {
+  AUTO
+  MANUAL
+}
+
 model Snapshot {
   id          String   @id @default(uuid())
   projectId   String
   chapterId   String?
   content     String
+  contentLength Int     @default(0)
+  type        SnapshotType @default(AUTO)
   description String?
   createdAt   DateTime @default(now())
 

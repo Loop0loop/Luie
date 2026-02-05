@@ -14,7 +14,8 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
   const [loading, setLoading] = useState(false);
   
   const { handleOpenSnapshot } = useSplitView();
-  const { loadAll: reloadChapters } = useChapterStore();
+  const { loadAll: reloadChapters, items: chapters } = useChapterStore();
+  const currentChapter = chapters.find((chapter) => chapter.id === chapterId);
 
   useEffect(() => {
     async function loadSnapshots() {
@@ -54,6 +55,35 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
       }
   };
 
+  const handleManualSnapshot = async () => {
+    if (!currentChapter) {
+      alert("챕터를 찾을 수 없습니다.");
+      return;
+    }
+
+    const memo = window.prompt("스냅샷 메모를 입력하세요", "") ?? "";
+
+    try {
+      const response = await api.snapshot.create({
+        projectId: currentChapter.projectId,
+        chapterId: currentChapter.id,
+        content: currentChapter.content ?? "",
+        description: memo || "Manual Snapshot",
+        type: "MANUAL",
+      });
+
+      if (response.success) {
+        const res = await api.snapshot.getByChapter(chapterId);
+        if (res.success && res.data) {
+          setSnapshots(res.data);
+        }
+      }
+    } catch (error) {
+      api.logger.error("Failed to create manual snapshot", error);
+      alert("수동 스냅샷 생성 실패");
+    }
+  };
+
   if (loading) {
     return <div className="p-4 text-xs text-muted">Loading snapshots...</div>;
   }
@@ -69,6 +99,14 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
+      <div className="p-3 border-b border-border bg-surface/60">
+        <button
+          onClick={handleManualSnapshot}
+          className="text-xs px-2 py-1 rounded bg-accent/20 text-accent hover:bg-accent/30 transition-colors"
+        >
+          수동 스냅샷 만들기
+        </button>
+      </div>
       {snapshots.map((snap) => (
         <div
           key={snap.id}
@@ -78,6 +116,11 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
             <span className="text-xs font-semibold text-fg">
               {new Date(snap.createdAt).toLocaleString()}
             </span>
+            {snap.type === "MANUAL" && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/15 text-primary">
+                Manual
+              </span>
+            )}
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button 
                   onClick={() => handleCompare(snap)}

@@ -3,6 +3,7 @@
  */
 
 import * as fs from "fs";
+import { promises as fsPromises } from "fs";
 import path from "path";
 import { randomUUID } from "node:crypto";
 import { app } from "electron";
@@ -12,6 +13,7 @@ import {
   ErrorCode,
   DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT,
   DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
+  SNAPSHOT_MIRROR_DIR,
   LUIE_PACKAGE_EXTENSION,
   LUIE_PACKAGE_FORMAT,
   LUIE_PACKAGE_CONTAINER_DIR,
@@ -29,14 +31,76 @@ import { sanitizeName } from "../../../shared/utils/sanitize.js";
 
 const logger = createLogger("SnapshotService");
 
+async function writeEmergencySnapshotFile(
+  input: SnapshotCreateInput,
+  error?: unknown,
+) {
+  try {
+    const emergencyDir = path.join(
+      app.getPath("userData"),
+      SNAPSHOT_MIRROR_DIR,
+      "_emergency",
+    );
+    await fsPromises.mkdir(emergencyDir, { recursive: true });
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const filePath = path.join(
+      emergencyDir,
+      `emergency-${input.projectId}-${input.chapterId ?? "project"}-${timestamp}.json`,
+    );
+
+    const payload = JSON.stringify(
+      {
+        projectId: input.projectId,
+        chapterId: input.chapterId ?? null,
+        content: input.content,
+        description: input.description ?? null,
+        type: input.type ?? "AUTO",
+        createdAt: new Date().toISOString(),
+        error: error instanceof Error ? { message: error.message, name: error.name } : undefined,
+      },
+      null,
+      2,
+    );
+
+    const tempPath = `${filePath}.tmp`;
+    await fsPromises.writeFile(tempPath, payload, "utf8");
+    const handle = await fsPromises.open(tempPath, "r+");
+    try {
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
+    await fsPromises.rename(tempPath, filePath);
+
+    try {
+      const dirHandle = await fsPromises.open(emergencyDir, "r");
+      try {
+        await dirHandle.sync();
+      } finally {
+        await dirHandle.close();
+      }
+    } catch (syncError) {
+      logger.warn("Failed to fsync emergency snapshot directory", syncError);
+    }
+
+    logger.warn("Emergency snapshot file written", { filePath });
+  } catch (writeError) {
+    logger.error("Failed to write emergency snapshot file", writeError);
+  }
+}
+
 export class SnapshotService {
   async createSnapshot(input: SnapshotCreateInput) {
     try {
+      const snapshotType = input.type ?? "AUTO";
+      const contentLength = input.content.length;
       logger.info("Creating snapshot", {
         projectId: input.projectId,
         chapterId: input.chapterId,
         hasContent: Boolean(input.content),
         descriptionLength: input.description?.length ?? 0,
+        type: snapshotType,
       });
 
       const snapshot = await db.getClient().snapshot.create({
@@ -44,6 +108,8 @@ export class SnapshotService {
           projectId: input.projectId,
           chapterId: input.chapterId,
           content: input.content,
+          contentLength,
+          type: snapshotType,
           description: input.description,
         },
       });
@@ -54,6 +120,7 @@ export class SnapshotService {
       projectService.schedulePackageExport(input.projectId, "snapshot:create");
       return snapshot;
     } catch (error) {
+      await writeEmergencySnapshotFile(input, error);
       logger.error("Failed to create snapshot", {
         error,
         projectId: input.projectId,
@@ -479,6 +546,97 @@ export class SnapshotService {
         error,
       );
     }
+  }
+
+  async pruneSnapshots(projectId: string) {
+    const now = Date.now();
+    const ONE_HOUR = 60 * 60 * 1000;
+    const ONE_DAY = 24 * ONE_HOUR;
+    const SEVEN_DAYS = 7 * ONE_DAY;
+
+    try {
+      const snapshots = (await db.getClient().snapshot.findMany({
+        where: { projectId, type: "AUTO" },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, createdAt: true },
+      })) as Array<{ id: string; createdAt: Date }>;
+
+      if (snapshots.length === 0) {
+        return { success: true, deletedCount: 0 };
+      }
+
+      const toDelete: string[] = [];
+      const hourBuckets = new Set<string>();
+      const dayBuckets = new Set<string>();
+
+      for (const snap of snapshots) {
+        const createdAt = snap.createdAt instanceof Date
+          ? snap.createdAt
+          : new Date(String(snap.createdAt));
+        const age = now - createdAt.getTime();
+
+        if (age < ONE_DAY) {
+          continue;
+        }
+
+        if (age < SEVEN_DAYS) {
+          const hourKey = createdAt.toISOString().slice(0, 13);
+          if (hourBuckets.has(hourKey)) {
+            toDelete.push(snap.id);
+          } else {
+            hourBuckets.add(hourKey);
+          }
+          continue;
+        }
+
+        const dayKey = createdAt.toISOString().slice(0, 10);
+        if (dayBuckets.has(dayKey)) {
+          toDelete.push(snap.id);
+        } else {
+          dayBuckets.add(dayKey);
+        }
+      }
+
+      if (toDelete.length === 0) {
+        return { success: true, deletedCount: 0 };
+      }
+
+      await db.getClient().snapshot.deleteMany({
+        where: { id: { in: toDelete } },
+      });
+
+      logger.info("Snapshots pruned", {
+        projectId,
+        deletedCount: toDelete.length,
+      });
+
+      return { success: true, deletedCount: toDelete.length };
+    } catch (error) {
+      logger.error("Failed to prune snapshots", error);
+      throw new ServiceError(
+        ErrorCode.DB_QUERY_FAILED,
+        "Failed to prune snapshots",
+        { projectId },
+        error,
+      );
+    }
+  }
+
+  async pruneSnapshotsAllProjects() {
+    const projects = await db.getClient().project.findMany({
+      select: { id: true },
+    });
+
+    const results = await Promise.all(
+      projects.map((project) => this.pruneSnapshots(String(project.id))),
+    );
+
+    const deletedCount = results.reduce(
+      (sum, result) => sum + (result.deletedCount ?? 0),
+      0,
+    );
+
+    return { success: true, deletedCount };
   }
 
   async getLatestSnapshot(chapterId: string) {

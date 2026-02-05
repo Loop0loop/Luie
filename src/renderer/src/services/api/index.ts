@@ -91,6 +91,7 @@ export type RendererApi = {
       chapterId?: string;
       content: string;
       description?: string;
+      type?: "AUTO" | "MANUAL";
     }) => Promise<IPCResponse<Snapshot>>;
     getAll: (projectId: string) => Promise<IPCResponse<Snapshot[]>>;
     getByChapter: (chapterId: string) => Promise<IPCResponse<Snapshot[]>>;
