@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useTransition } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAutoSaveStore } from "../stores/autoSaveStore";
 import {
   PLACEHOLDER_TEXT_EDITOR,
@@ -23,7 +23,6 @@ export default function TextEditor({
   onSave,
 }: TextEditorProps) {
   const [content, setContent] = useState(initialContent);
-  const [isPending, startTransition] = useTransition();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { triggerSave, saveStatus } = useAutoSaveStore();
 
@@ -40,10 +39,7 @@ export default function TextEditor({
 
   const handleChange = (value: string) => {
     setContent(value);
-
-    startTransition(() => {
-      triggerSave(chapterId, value, projectId);
-    });
+    void triggerSave(chapterId, value, projectId);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -107,7 +103,7 @@ export default function TextEditor({
           )}
           <button
             onClick={handleSave}
-            disabled={isPending}
+            disabled={saveStatus === "saving"}
             className="px-4 py-2 text-sm font-medium text-accent-fg bg-accent rounded hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {TEXT_EDITOR_SAVE_BUTTON}

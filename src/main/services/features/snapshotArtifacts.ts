@@ -142,6 +142,16 @@ async function writeFileAtomic(targetPath: string, buffer: Buffer) {
     await handle.close();
   }
   await fs.rename(tempPath, targetPath);
+  try {
+    const dirHandle = await fs.open(dir, "r");
+    try {
+      await dirHandle.sync();
+    } finally {
+      await dirHandle.close();
+    }
+  } catch (error) {
+    logger.warn("Failed to fsync snapshot directory", { dir, error });
+  }
 }
 
 export async function writeFullSnapshotArtifact(

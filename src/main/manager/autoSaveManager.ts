@@ -49,6 +49,7 @@ export class AutoSaveManager extends EventEmitter {
   private lastSnapshotAt: Map<string, number> = new Map();
   private lastSnapshotHash: Map<string, number> = new Map();
   private lastSnapshotLength: Map<string, number> = new Map();
+  private lastEmergencySnapshotAt: Map<string, number> = new Map();
   private snapshotQueue: Array<{ projectId: string; chapterId: string; content: string }> = [];
   private snapshotProcessing = false;
 
@@ -103,6 +104,7 @@ export class AutoSaveManager extends EventEmitter {
     this.lastSaveAt.set(chapterId, Date.now());
 
     await this.writeLatestMirror(projectId, chapterId, content);
+    void this.maybeCreateEmergencySnapshot(projectId, chapterId, content);
 
     const existingTimer = this.saveTimers.get(chapterId);
     if (existingTimer) {
@@ -204,6 +206,36 @@ export class AutoSaveManager extends EventEmitter {
     }
   }
 
+  private async maybeCreateEmergencySnapshot(
+    projectId: string,
+    chapterId: string,
+    content: string,
+  ) {
+    const MAX_EMERGENCY_LENGTH = 200;
+    const EMERGENCY_INTERVAL_MS = 5000;
+
+    if (content.length > MAX_EMERGENCY_LENGTH) return;
+
+    const key = `${projectId}:${chapterId}`;
+    const now = Date.now();
+    const lastAt = this.lastEmergencySnapshotAt.get(key) ?? 0;
+    if (now - lastAt < EMERGENCY_INTERVAL_MS) return;
+
+    this.lastEmergencySnapshotAt.set(key, now);
+
+    try {
+      await snapshotService.createSnapshot({
+        projectId,
+        chapterId,
+        content,
+        description: `Emergency micro snapshot ${new Date().toLocaleString()}`,
+      });
+      await this.writeSnapshotMirror(projectId, chapterId, content);
+    } catch (error) {
+      logger.warn("Failed to create emergency micro snapshot", { error, chapterId });
+    }
+  }
+
   private async processSnapshotQueue() {
     while (this.snapshotQueue.length > 0) {
       const job = this.snapshotQueue.shift();
@@ -295,6 +327,16 @@ export class AutoSaveManager extends EventEmitter {
       await handle.close();
     }
     await fs.rename(tempPath, targetPath);
+    try {
+      const dirHandle = await fs.open(dir, "r");
+      try {
+        await dirHandle.sync();
+      } finally {
+        await dirHandle.close();
+      }
+    } catch (error) {
+      logger.warn("Failed to fsync snapshot directory", { dir, error });
+    }
   }
 
   private hashContent(content: string) {
