@@ -187,15 +187,17 @@ if (!gotTheLock) {
 
         const { snapshotService } = await import("./services/features/snapshotService.js");
         const { db } = await import("./database/index.js");
-        const projects = await db.getClient().project.findMany({
-          select: { id: true },
+        const chapters = await db.getClient().chapter.findMany({
+          where: { deletedAt: null },
+          select: { id: true, projectId: true, content: true },
         });
 
         await Promise.all(
-          projects.map((project) =>
+          chapters.map((chapter) =>
             snapshotService.createSnapshot({
-              projectId: String(project.id),
-              content: JSON.stringify({ timestamp: Date.now(), reason: "session-end" }),
+              projectId: String((chapter as { projectId: unknown }).projectId),
+              chapterId: String((chapter as { id: unknown }).id),
+              content: String((chapter as { content: unknown }).content ?? ""),
               description: "Session end snapshot",
               type: "AUTO",
             }),
