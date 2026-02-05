@@ -105,30 +105,83 @@ class DatabaseService {
         .readdirSync(migrationsDir, { withFileTypes: true })
         .some((entry) => entry.isDirectory());
 
-    if (!isTest && !isPackaged) {
+    // Environment-specific migration strategy
+    if (isPackaged) {
+      // PRODUCTION: migrate deploy only
+      if (hasMigrations) {
+        try {
+          const prismaPath = path.join(process.resourcesPath, "node_modules/.bin/prisma");
+          const schemaPath = path.join(process.resourcesPath, "prisma/schema.prisma");
+
+          logger.info("Running production migrations", {
+            dbPath,
+            dbExists,
+            command: "migrate deploy",
+          });
+
+          execSync(
+            `"${prismaPath}" migrate deploy --schema="${schemaPath}"`,
+            {
+              env: { ...process.env, DATABASE_URL: this.datasourceUrl },
+              stdio: "pipe",
+            }
+          );
+
+          logger.info("Production migrations applied successfully");
+        } catch (error) {
+          logger.error("Failed to apply production migrations", error);
+          throw error;
+        }
+      }
+    } else if (isTest) {
+      // TEST: db push (no migration history needed)
       try {
         const prismaPath = path.join(process.cwd(), "node_modules/.bin/prisma");
         const schemaPath = path.join(process.cwd(), "prisma/schema.prisma");
-        const command = hasMigrations ? "migrate deploy" : "db push";
 
-        logger.info("Running database migrations", {
+        logger.info("Running test database push", {
           dbPath,
           dbExists,
-          hasMigrations,
-          command,
+          command: "db push",
         });
 
         execSync(
-          `"${prismaPath}" ${command} --schema="${schemaPath}"`,
+          `"${prismaPath}" db push --skip-generate --accept-data-loss --schema="${schemaPath}"`,
           {
             env: { ...process.env, DATABASE_URL: this.datasourceUrl },
             stdio: "pipe",
           }
         );
 
-        logger.info("Database migrations applied successfully");
+        logger.info("Test database push completed successfully");
       } catch (error) {
-        logger.error("Failed to apply migrations", error);
+        logger.error("Failed to push test database", error);
+        throw error;
+      }
+    } else {
+      // DEVELOPMENT: migrate dev
+      try {
+        const prismaPath = path.join(process.cwd(), "node_modules/.bin/prisma");
+        const schemaPath = path.join(process.cwd(), "prisma/schema.prisma");
+
+        logger.info("Running development migrations", {
+          dbPath,
+          dbExists,
+          hasMigrations,
+          command: "migrate dev",
+        });
+
+        execSync(
+          `"${prismaPath}" migrate dev --schema="${schemaPath}"`,
+          {
+            env: { ...process.env, DATABASE_URL: this.datasourceUrl },
+            stdio: "pipe",
+          }
+        );
+
+        logger.info("Development migrations applied successfully");
+      } catch (error) {
+        logger.error("Failed to apply development migrations", error);
         throw error;
       }
     }

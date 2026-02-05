@@ -8,10 +8,10 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "dev": "pnpm i;electron-vite",
+    "dev": "electron-vite",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "postinstall": "prisma generate; pnpm exec electron-rebuild -f -w better-sqlite3",
+    "postinstall": "prisma generate;",
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
     "push" : "npx prisma db push",

@@ -2,7 +2,7 @@
  * Window Manager - BrowserWindow 관리
  */
 
-import { BrowserWindow } from 'electron'
+import { BrowserWindow, app } from 'electron'
 import { join } from 'path'
 import { createLogger } from '../../shared/logger/index.js'
 import {
@@ -40,12 +40,19 @@ class WindowManager {
       },
     })
 
-    // Load the renderer
-    if (process.env.NODE_ENV === 'development') {
-      this.mainWindow.loadURL(DEV_SERVER_URL)
+    // Load the renderer based on environment
+    const isPackaged = app.isPackaged
+    const isDev = !isPackaged
+
+    if (isDev) {
+      const devServerUrl = process.env.VITE_DEV_SERVER_URL || DEV_SERVER_URL
+      logger.info('Loading development server', { url: devServerUrl, isPackaged })
+      this.mainWindow.loadURL(devServerUrl)
       this.mainWindow.webContents.openDevTools({ mode: 'detach' })
     } else {
-      this.mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+      const indexPath = join(__dirname, '../renderer/index.html')
+      logger.info('Loading production renderer', { path: indexPath, isPackaged })
+      this.mainWindow.loadFile(indexPath)
     }
 
     this.mainWindow.on('closed', () => {
@@ -53,7 +60,7 @@ class WindowManager {
       logger.info('Main window closed')
     })
 
-    logger.info('Main window created')
+    logger.info('Main window created', { isPackaged, isDev })
     return this.mainWindow
   }
 

@@ -97,6 +97,8 @@ export class AutoSaveManager extends EventEmitter {
     this.pendingSaves.set(chapterId, { chapterId, content, projectId });
     this.lastSaveAt.set(chapterId, Date.now());
 
+    await this.writeLatestMirror(projectId, chapterId, content);
+
     const existingTimer = this.saveTimers.get(chapterId);
     if (existingTimer) {
       clearTimeout(existingTimer);
@@ -317,6 +319,8 @@ export class AutoSaveManager extends EventEmitter {
     if (existing) {
       clearInterval(existing);
     }
+
+    void this.createSnapshot(projectId);
 
     const timer = setInterval(() => {
       void this.createSnapshot(projectId);
