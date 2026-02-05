@@ -134,29 +134,32 @@ export class ChapterService {
         const oldLen = oldContent.length;
         const newLen = input.content.length;
 
-        if (!isTest && oldLen > 0 && newLen === 0) {
-          const project = current?.projectId
-            ? await db.getClient().project.findUnique({
-                where: { id: String(current.projectId) },
-                select: { title: true },
-              })
-            : null;
+        if (oldLen > 0 && newLen === 0) {
+          let dumpPath: string | undefined;
+          if (!isTest) {
+            const project = current?.projectId
+              ? await db.getClient().project.findUnique({
+                  where: { id: String(current.projectId) },
+                  select: { title: true },
+                })
+              : null;
 
-          const projectTitle =
-            typeof (project as { title?: unknown } | null)?.title === "string"
-              ? String((project as { title: string }).title)
-              : "Unknown";
-          const safeTitle = sanitizeName(projectTitle, "Unknown");
-          const dumpDir = path.join(
-            app.getPath("userData"),
-            SNAPSHOT_BACKUP_DIR,
-            safeTitle || "Unknown",
-            "_suspicious",
-          );
-          await fs.mkdir(dumpDir, { recursive: true });
-          const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-          const dumpPath = path.join(dumpDir, `dump-empty-${input.id}-${timestamp}.txt`);
-          await fs.writeFile(dumpPath, oldContent, "utf8");
+            const projectTitle =
+              typeof (project as { title?: unknown } | null)?.title === "string"
+                ? String((project as { title: string }).title)
+                : "Unknown";
+            const safeTitle = sanitizeName(projectTitle, "Unknown");
+            const dumpDir = path.join(
+              app.getPath("userData"),
+              SNAPSHOT_BACKUP_DIR,
+              safeTitle || "Unknown",
+              "_suspicious",
+            );
+            await fs.mkdir(dumpDir, { recursive: true });
+            const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+            dumpPath = path.join(dumpDir, `dump-empty-${input.id}-${timestamp}.txt`);
+            await fs.writeFile(dumpPath, oldContent, "utf8");
+          }
 
           logger.warn("Empty content save blocked.", {
             chapterId: input.id,

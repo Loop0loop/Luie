@@ -149,7 +149,7 @@ class DatabaseService {
         });
 
         execSync(
-          `"${prismaPath}" db push --skip-generate --accept-data-loss --schema="${schemaPath}"`,
+          `"${prismaPath}" db push --accept-data-loss --schema="${schemaPath}"`,
           {
             env: { ...process.env, DATABASE_URL: this.datasourceUrl },
             stdio: "pipe",
