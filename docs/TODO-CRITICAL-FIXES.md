@@ -611,11 +611,11 @@ const allowedOrigins = ['https://api.yourservice.com'];
 
 ### Day 1 (오늘)
 - [x] ~~Prisma `--skip-seed` 제거~~ (완료)
-- [ ] `pnpm preview:prod` 스크립트 추가
-- [ ] CSP 기본 설정 추가
+- [x] `pnpm preview:prod` 스크립트 추가
+- [x] CSP 기본 설정 추가
 
 ### Day 2
-- [ ] `electron-builder` 설정 및 로컬 빌드 테스트
+- [x] `electron-builder` 설정 및 로컬 빌드 테스트
 - [ ] 환경 구분 유틸리티 함수 생성 (`isTest`, `isDev`, `isProd`)
 - [ ] CORS 설정 추가
 

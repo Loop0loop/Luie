@@ -12,10 +12,13 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "preview:prod": "pnpm build && electron .",
+    "build:mac": "pnpm build && electron-builder --mac --config",
+    "build:win": "pnpm build && electron-builder --win --config",
+    "build:linux": "pnpm build && electron-builder --linux --config",
     "postinstall": "prisma generate;",
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
-    "push" : "npx prisma db push",
+    "push": "npx prisma db push",
     "studio": "prisma studio",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
@@ -31,23 +34,23 @@
     "@fontsource-variable/inter": "^5.2.8",
     "@fontsource-variable/noto-sans-jp": "^5.2.10",
     "@fontsource-variable/noto-sans-kr": "^5.2.10",
-    "@google/genai": "^1.39.0",
+    "@google/genai": "^1.40.0",
     "@prisma/adapter-better-sqlite3": "^7.3.0",
     "@prisma/client": "7.3.0",
-    "@tiptap/core": "^3.18.0",
-    "@tiptap/extension-color": "^3.18.0",
-    "@tiptap/extension-details": "^3.18.0",
-    "@tiptap/extension-highlight": "^3.18.0",
-    "@tiptap/extension-placeholder": "^3.18.0",
-    "@tiptap/extension-task-item": "^3.18.0",
-    "@tiptap/extension-task-list": "^3.18.0",
-    "@tiptap/extension-text-align": "^3.18.0",
-    "@tiptap/extension-text-style": "^3.18.0",
-    "@tiptap/extension-underline": "^3.18.0",
-    "@tiptap/pm": "^3.18.0",
-    "@tiptap/react": "^3.18.0",
-    "@tiptap/starter-kit": "^3.18.0",
-    "@tiptap/suggestion": "^3.18.0",
+    "@tiptap/core": "^3.19.0",
+    "@tiptap/extension-color": "^3.19.0",
+    "@tiptap/extension-details": "^3.19.0",
+    "@tiptap/extension-highlight": "^3.19.0",
+    "@tiptap/extension-placeholder": "^3.19.0",
+    "@tiptap/extension-task-item": "^3.19.0",
+    "@tiptap/extension-task-list": "^3.19.0",
+    "@tiptap/extension-text-align": "^3.19.0",
+    "@tiptap/extension-text-style": "^3.19.0",
+    "@tiptap/extension-underline": "^3.19.0",
+    "@tiptap/pm": "^3.19.0",
+    "@tiptap/react": "^3.19.0",
+    "@tiptap/starter-kit": "^3.19.0",
+    "@tiptap/suggestion": "^3.19.0",
     "@types/diff": "^8.0.0",
     "better-sqlite3": "^12.6.2",
     "clsx": "^2.1.1",
@@ -60,7 +63,7 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-markdown": "^10.1.0",
-    "react-resizable-panels": "^4.5.9",
+    "react-resizable-panels": "^4.6.0",
     "react-virtuoso": "^4.18.1",
     "reactflow": "^11.11.4",
     "remark-gfm": "^4.0.1",
@@ -70,6 +73,36 @@
     "zod": "^4.3.6",
     "zustand": "^5.0.11"
   },
+  "build": {
+    "appId": "com.luie.app",
+    "productName": "Luie",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    }
+  },
   "devDependencies": {
     "@electron/rebuild": "^4.0.3",
     "@eslint/js": "^9.39.2",
@@ -77,7 +110,7 @@
     "@tailwindcss/postcss": "^4.1.18",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.2.0",
-    "@types/react": "^19.2.10",
+    "@types/react": "^19.2.13",
     "@types/react-dom": "^19.2.3",
     "@types/yauzl": "^2.10.3",
     "@types/yazl": "^3.3.0",
@@ -87,6 +120,7 @@
     "autoprefixer": "^10.4.24",
     "dotenv": "^17.2.3",
     "electron": "^40.1.0",
+    "electron-builder": "^25.1.8",
     "electron-rebuild": "^3.2.9",
     "electron-vite": "^5.0.0",
     "eslint": "^9.39.2",

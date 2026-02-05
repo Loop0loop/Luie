@@ -5,7 +5,7 @@
 // Load environment variables FIRST before any other imports
 import "dotenv/config";
 
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, session } from "electron";
 import path from "node:path";
 import { createLogger, configureLogger, LogLevel } from "../shared/logger/index.js";
 import { LOG_DIR_NAME, LOG_FILE_NAME } from "../shared/constants/index.js";
@@ -44,6 +44,34 @@ if (!gotTheLock) {
   // App ready
   app.whenReady().then(async () => {
     logger.info("App is ready");
+
+    const isDev = !app.isPackaged;
+    const cspPolicy = isDev
+      ? [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-eval'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data: https:",
+        "font-src 'self' data:",
+        "connect-src 'self' ws://localhost:5173 http://localhost:5173",
+      ].join("; ")
+      : [
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data: https:",
+        "font-src 'self' data:",
+        "connect-src 'self'",
+      ].join("; ");
+
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          "Content-Security-Policy": [cspPolicy],
+        },
+      });
+    });
 
     // Register IPC handlers (after DB env is set)
     const { registerIPCHandlers } = await import("./handler/index.js");
