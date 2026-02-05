@@ -54,12 +54,14 @@ class WindowManager {
     // Load the renderer based on environment
     const isPackaged = app.isPackaged
     
-    // Dev mode: VITE_DEV_SERVER_URL is set by electron-vite dev command
-    // Production preview: use static files from out/renderer
-    const devServerUrl = process.env.VITE_DEV_SERVER_URL
-    const isDev = devServerUrl !== undefined
+    // electron-vite dev command sets VITE_DEV_SERVER_URL
+    // If not packaged and no VITE_DEV_SERVER_URL, check if dev server is available
+    const devServerUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173'
+    
+    // Use dev server if not packaged (unless explicitly building for production preview)
+    const useDevServer = !isPackaged && process.env.NODE_ENV !== 'production'
 
-    if (isDev) {
+    if (useDevServer) {
       logger.info('Loading development server', { url: devServerUrl, isPackaged })
       this.mainWindow.loadURL(devServerUrl)
       this.mainWindow.webContents.openDevTools({ mode: 'detach' })
@@ -74,7 +76,7 @@ class WindowManager {
       logger.info('Main window closed')
     })
 
-    logger.info('Main window created', { isPackaged, isDev })
+    logger.info('Main window created', { isPackaged, useDevServer })
     return this.mainWindow
   }
 

@@ -14,6 +14,7 @@ import { projectService } from "./projectService.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import { trackKeywordAppearances } from "./chapterKeywords.js";
 import { sanitizeName } from "../../../shared/utils/sanitize.js";
+import { isTestEnv } from "../../utils/environment.js";
 
 const logger = createLogger("ChapterService");
 
@@ -123,7 +124,7 @@ export class ChapterService {
 
       if (input.title !== undefined) updateData.title = input.title;
       if (input.content !== undefined) {
-        const isTest = process.env.VITEST === "true" || process.env.NODE_ENV === "test";
+        const isTest = isTestEnv();
         const current = await db.getClient().chapter.findUnique({
           where: { id: input.id },
           select: { projectId: true, content: true },

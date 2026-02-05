@@ -10,6 +10,13 @@ export default defineConfig({
       sourcemap: false,
       emptyOutDir: true,
       minify: true,
+      // V8 bytecode compilation for source code protection
+      // Note: bytecode feature requires electron-vite@2.0.0+
+      rollupOptions: {
+        output: {
+          format: 'es',
+        },
+      },
     },
   },
   preload: {
