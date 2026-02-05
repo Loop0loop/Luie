@@ -18,6 +18,7 @@
     "postinstall": "prisma generate;",
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
+    "db:seed": "node prisma/seed.js",
     "push": "npx prisma db push",
     "studio": "prisma studio",
     "typecheck": "tsc --noEmit",

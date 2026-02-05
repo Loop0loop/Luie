@@ -10,6 +10,8 @@ import * as fs from "fs";
 import { execSync } from "child_process";
 import { createLogger } from "../../shared/logger/index.js";
 import { DB_NAME } from "../../shared/constants/index.js";
+import { isProdEnv, isTestEnv } from "../utils/environment.js";
+import { seedIfEmpty } from "./seedDefaults.js";
 
 const logger = createLogger("DatabaseService");
 const require = createRequire(import.meta.url);
@@ -23,6 +25,7 @@ type PrismaDelegate<T extends Record<string, unknown>> = {
   delete: (args: unknown) => Promise<T>;
   deleteMany: (args: unknown) => Promise<{ count: number }>;
   findFirst: (args: unknown) => Promise<T | null>;
+  count: (args?: unknown) => Promise<number>;
 };
 
 type PrismaRecord = Record<string, unknown>;
@@ -62,9 +65,9 @@ class DatabaseService {
   private ensureInitialized(): void {
     if (this.prisma) return;
 
-    const isPackaged = app.isPackaged;
+    const isPackaged = isProdEnv();
     const userDataPath = app.getPath("userData");
-    const isTest = process.env.VITEST === "true" || process.env.NODE_ENV === "test";
+    const isTest = isTestEnv();
     const envDb = process.env.DATABASE_URL;
     const hasEnvDb = Boolean(envDb);
     let dbPath: string;
@@ -194,6 +197,10 @@ class DatabaseService {
       adapter,
       log: ["error", "warn"],
     });
+
+    if (isPackaged) {
+      void seedIfEmpty(this.prisma);
+    }
 
     if (this.prisma.$executeRawUnsafe) {
       const pragmaCalls = [

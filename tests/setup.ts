@@ -29,6 +29,9 @@ beforeAll(async () => {
   execSync("pnpm prisma db push --accept-data-loss --force-reset", {
     stdio: "inherit",
   });
+  execSync("pnpm db:seed", {
+    stdio: "inherit",
+  });
   const mod = await import("../src/main/database/index.js");
   dbService = mod.db;
 });

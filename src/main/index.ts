@@ -11,6 +11,7 @@ import { createLogger, configureLogger, LogLevel } from "../shared/logger/index.
 import { LOG_DIR_NAME, LOG_FILE_NAME } from "../shared/constants/index.js";
 import { windowManager } from "./manager/index.js";
 import { initDatabaseEnv } from "./prismaEnv.js";
+import { isDevEnv } from "./utils/environment.js";
 
 configureLogger({
   logToFile: true,
@@ -45,7 +46,7 @@ if (!gotTheLock) {
   app.whenReady().then(async () => {
     logger.info("App is ready");
 
-    const isDev = !app.isPackaged;
+    const isDev = isDevEnv();
     const cspPolicy = isDev
       ? [
         "default-src 'self'",
@@ -64,13 +65,30 @@ if (!gotTheLock) {
         "connect-src 'self'",
       ].join("; ");
 
-    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-      callback({
-        responseHeaders: {
-          ...details.responseHeaders,
-          "Content-Security-Policy": [cspPolicy],
-        },
+    if (isDev) {
+      session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
+        callback({
+          requestHeaders: {
+            ...details.requestHeaders,
+            Origin: "http://localhost:5173",
+          },
+        });
       });
+    }
+
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+      const responseHeaders = {
+        ...details.responseHeaders,
+        "Content-Security-Policy": [cspPolicy],
+      } as Record<string, string[]>;
+
+      if (isDev) {
+        responseHeaders["Access-Control-Allow-Origin"] = ["*"];
+        responseHeaders["Access-Control-Allow-Headers"] = ["*"];
+        responseHeaders["Access-Control-Allow-Methods"] = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"];
+      }
+
+      callback({ responseHeaders });
     });
 
     // Register IPC handlers (after DB env is set)

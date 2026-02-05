@@ -1,6 +1,5 @@
 import 'dotenv/config'
 import { defineConfig } from 'prisma/config'
-import os from 'node:os'
 import path from 'node:path'
 
 const resolveDefaultDbPath = (): string => {
@@ -14,6 +13,7 @@ export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
     path: 'prisma/migrations',
+    seed: 'node prisma/seed.js',
   },
   datasource: {
     url: datasourceUrl,
