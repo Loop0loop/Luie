@@ -11,7 +11,7 @@ import { createLogger, configureLogger, LogLevel } from "../shared/logger/index.
 import { LOG_DIR_NAME, LOG_FILE_NAME } from "../shared/constants/index.js";
 import { windowManager } from "./manager/index.js";
 import { initDatabaseEnv } from "./prismaEnv.js";
-import { isDevEnv } from "./utils/environment.js";
+import { isRendererDevEnv } from "./utils/environment.js";
 
 configureLogger({
   logToFile: true,
@@ -46,7 +46,7 @@ if (!gotTheLock) {
   app.whenReady().then(async () => {
     logger.info("App is ready");
 
-    const isDev = isDevEnv();
+    const isDev = isRendererDevEnv();
     const cspPolicy = isDev
       ? [
         "default-src 'self'",
@@ -123,9 +123,10 @@ if (!gotTheLock) {
       logger.info("App is quitting");
       try {
         const { autoSaveManager } = await import("./manager/autoSaveManager.js");
+        await autoSaveManager.flushCritical();
         await Promise.race([
           autoSaveManager.flushAll(),
-          new Promise((resolve) => setTimeout(resolve, 3000)),
+          new Promise((resolve) => setTimeout(resolve, 10000)),
         ]);
       } catch (error) {
         logger.error("Failed to flush auto-save", error);

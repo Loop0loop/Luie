@@ -253,8 +253,8 @@ await createEmergencySnapshot();
 ```
 
 **Action Items**:
-- [ ] `flushCritical()` 메서드 구현
-- [ ] Emergency snapshot 로직 추가
+- [x] `flushCritical()` 메서드 구현
+- [x] Emergency snapshot 로직 추가
 - [ ] Quit 진행 상황 UI 표시 (optional)
 
 ---
@@ -392,9 +392,9 @@ export default defineConfig({
 ```
 
 **Action Items**:
-- [ ] `package.json`에 `preview:prod` 스크립트 추가
-- [ ] Production 빌드 경로 검증
-- [ ] `app.loadFile()` 경로 확인
+- [x] `package.json`에 `preview:prod` 스크립트 추가
+- [x] Production 빌드 경로 검증
+- [x] `app.loadFile()` 경로 확인
 
 ---
 
@@ -436,8 +436,8 @@ export default defineConfig({
 ```
 
 **Action Items**:
-- [ ] `electron-builder` 설치 및 설정
-- [ ] 로컬 빌드 테스트 (서명 없이)
+- [x] `electron-builder` 설치 및 설정
+- [x] 로컬 빌드 테스트 (서명 없이)
 - [ ] Resources 경로 검증 (`process.resourcesPath`)
 
 ---
@@ -551,8 +551,8 @@ const cspPolicy = isDev
 ```
 
 **Action Items**:
-- [ ] CSP 정책 정의 (dev/prod 분리)
-- [ ] `session.webRequest.onHeadersReceived` 구현
+- [x] CSP 정책 정의 (dev/prod 분리)
+- [x] `session.webRequest.onHeadersReceived` 구현
 - [ ] 테스트: 외부 스크립트 차단 확인
 
 ---
@@ -621,12 +621,12 @@ const allowedOrigins = ['https://api.yourservice.com'];
 
 ### Day 3-5
 - [x] Seed 전략 구현 (dev/test/prod)
-- [ ] Quit 시 save 보장 로직 강화
-- [ ] 전체 환경 변수 정리 (`.env.*` 파일들)
+- [x] Quit 시 save 보장 로직 강화
+- [x] 전체 환경 변수 정리 (`.env.*` 파일들)
 
 ### Day 6-7
-- [ ] Crash recovery 구현
-- [ ] Window state 복원
+- [x] Crash recovery 구현
+- [x] Window state 복원
 - [ ] 통합 테스트 (dev/preview/packaged)
 
 ---

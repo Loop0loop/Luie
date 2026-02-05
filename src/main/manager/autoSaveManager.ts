@@ -369,6 +369,42 @@ export class AutoSaveManager extends EventEmitter {
     }
   }
 
+  async flushCritical() {
+    const pending = Array.from(this.pendingSaves.values());
+    if (pending.length === 0) {
+      return { mirrored: 0, snapshots: 0 };
+    }
+
+    let mirrored = 0;
+    let snapshots = 0;
+
+    for (const entry of pending) {
+      try {
+        await this.writeLatestMirror(entry.projectId, entry.chapterId, entry.content);
+        mirrored += 1;
+      } catch (error) {
+        logger.error("Emergency mirror write failed", error);
+      }
+    }
+
+    for (const entry of pending) {
+      try {
+        await snapshotService.createSnapshot({
+          projectId: entry.projectId,
+          chapterId: entry.chapterId,
+          content: entry.content,
+          description: `Emergency snapshot at ${new Date().toLocaleString()}`,
+        });
+        snapshots += 1;
+      } catch (error) {
+        logger.error("Emergency snapshot failed", error);
+      }
+    }
+
+    logger.info("Emergency flush completed", { mirrored, snapshots });
+    return { mirrored, snapshots };
+  }
+
   private startCleanupInterval() {
     setInterval(() => {
       this.cleanupOldEntries();

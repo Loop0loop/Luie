@@ -39,6 +39,10 @@ prisma/migrations/
 .env
 .env.local
 .env.*.local
+.env.production
+.env.development
+
+
 
 # Testing
 coverage/
