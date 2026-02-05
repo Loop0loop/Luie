@@ -9,10 +9,9 @@
   "private": true,
   "scripts": {
     "dev": "electron-vite",
-    "prebuild": "node scripts/syncPrismaClient.cjs",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "preview:prod": "pnpm build && LUIE_RENDERER_PROD=1 electron .",
+    "preview:prod": "pnpm build && NODE_ENV=production electron .",
     "build:mac": "pnpm build && electron-builder --mac --config",
     "build:win": "pnpm build && electron-builder --win --config",
     "build:linux": "pnpm build && electron-builder --linux --config",
@@ -20,7 +19,6 @@
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
     "db:seed": "node prisma/seed.js",
-    "prisma:sync": "node scripts/syncPrismaClient.cjs",
     "push": "npx prisma db push",
     "studio": "prisma studio",
     "typecheck": "tsc --noEmit",
@@ -85,22 +83,7 @@
     },
     "files": [
       "out/**/*",
-      "package.json",
-      "node_modules/@prisma/client/**",
-      "node_modules/.prisma/**"
-    ],
-    "asarUnpack": [
-      "**/.prisma/**"
-    ],
-    "extraResources": [
-      {
-        "from": "vendor/prisma/node_modules/.prisma",
-        "to": "node_modules/.prisma"
-      },
-      {
-        "from": "vendor/prisma/node_modules/@prisma",
-        "to": "node_modules/@prisma"
-      }
+      "package.json"
     ],
     "mac": {
       "category": "public.app-category.productivity",

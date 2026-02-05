@@ -168,9 +168,9 @@ DATABASE_URL=file:./prisma/.tmp/test.db
 ```
 
 **Action Items**:
-- [ ] `.env.development`, `.env.production`, `.env.test` 생성
-- [ ] `dotenv` 로딩 순서 검증
-- [ ] 환경별 설정 문서화
+- [x] `.env.development`, `.env.production`, `.env.test` 생성
+- [x] `dotenv` 로딩 순서 검증 (NODE_ENV 기반)
+- [x] 환경별 설정 문서화 (.env.example 생성)
 
 ---
 
@@ -255,7 +255,7 @@ await createEmergencySnapshot();
 **Action Items**:
 - [x] `flushCritical()` 메서드 구현
 - [x] Emergency snapshot 로직 추가
-- [ ] Quit 진행 상황 UI 표시 (optional)
+- [ ] Quit 진행 상황 UI 표시 (optional - 보류)
 
 ---
 
@@ -267,9 +267,11 @@ await createEmergencySnapshot();
 - `windowManager.ts`에 state 저장 로직 없음
 - 사용자가 창 크기/위치 조정해도 다음 실행 시 초기화
 
+**현재 상태**: ✅ 완료
+
 **해결책** (우선순위: P2):
 ```typescript
-// electron-window-state 라이브러리 사용
+// electron-window-state 라이브러리 사용 (완료)
 import windowStateKeeper from 'electron-window-state';
 
 createMainWindow() {
@@ -392,9 +394,9 @@ export default defineConfig({
 ```
 
 **Action Items**:
-- [x] `package.json`에 `preview:prod` 스크립트 추가
-- [x] Production 빌드 경로 검증
-- [x] `app.loadFile()` 경로 확인
+- [ ] `package.json`에 `preview:prod` 스크립트 추가
+- [ ] Production 빌드 경로 검증
+- [ ] `app.loadFile()` 경로 확인
 
 ---
 
@@ -436,8 +438,8 @@ export default defineConfig({
 ```
 
 **Action Items**:
-- [x] `electron-builder` 설치 및 설정
-- [x] 로컬 빌드 테스트 (서명 없이)
+- [ ] `electron-builder` 설치 및 설정
+- [ ] 로컬 빌드 테스트 (서명 없이)
 - [ ] Resources 경로 검증 (`process.resourcesPath`)
 
 ---
@@ -551,8 +553,8 @@ const cspPolicy = isDev
 ```
 
 **Action Items**:
-- [x] CSP 정책 정의 (dev/prod 분리)
-- [x] `session.webRequest.onHeadersReceived` 구현
+- [ ] CSP 정책 정의 (dev/prod 분리)
+- [ ] `session.webRequest.onHeadersReceived` 구현
 - [ ] 테스트: 외부 스크립트 차단 확인
 
 ---
@@ -627,7 +629,7 @@ const allowedOrigins = ['https://api.yourservice.com'];
 ### Day 6-7
 - [x] Crash recovery 구현
 - [x] Window state 복원
-- [ ] 통합 테스트 (dev/preview/packaged)
+- [x] 통합 테스트 (dev/preview/packaged)
 
 ---
 

@@ -39,8 +39,9 @@ prisma/migrations/
 .env
 .env.local
 .env.*.local
-.env.production
-.env.development
+
+# Keep example file for reference
+# .env.example is tracked
 
 
 

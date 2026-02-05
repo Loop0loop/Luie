@@ -3,13 +3,10 @@
  */
 
 import { BrowserWindow, app } from 'electron'
-import type { Event, RenderProcessGoneDetails } from 'electron'
-import windowStateKeeper from 'electron-window-state'
 import { join } from 'path'
+import windowStateKeeper from 'electron-window-state'
 import { createLogger } from '../../shared/logger/index.js'
-import { isRendererDevEnv } from '../utils/environment.js'
 import {
-  DEV_SERVER_URL,
   WINDOW_DEFAULT_HEIGHT,
   WINDOW_DEFAULT_WIDTH,
   WINDOW_MIN_HEIGHT,
@@ -28,6 +25,7 @@ class WindowManager {
       return this.mainWindow
     }
 
+    // Load window state (position, size, maximized)
     const windowState = windowStateKeeper({
       defaultWidth: WINDOW_DEFAULT_WIDTH,
       defaultHeight: WINDOW_DEFAULT_HEIGHT,
@@ -50,14 +48,18 @@ class WindowManager {
       },
     })
 
+    // Track window state changes
     windowState.manage(this.mainWindow)
 
     // Load the renderer based on environment
     const isPackaged = app.isPackaged
-    const isDev = isRendererDevEnv()
+    
+    // Dev mode: VITE_DEV_SERVER_URL is set by electron-vite dev command
+    // Production preview: use static files from out/renderer
+    const devServerUrl = process.env.VITE_DEV_SERVER_URL
+    const isDev = devServerUrl !== undefined
 
     if (isDev) {
-      const devServerUrl = process.env.VITE_DEV_SERVER_URL || DEV_SERVER_URL
       logger.info('Loading development server', { url: devServerUrl, isPackaged })
       this.mainWindow.loadURL(devServerUrl)
       this.mainWindow.webContents.openDevTools({ mode: 'detach' })
@@ -66,14 +68,6 @@ class WindowManager {
       logger.info('Loading production renderer', { path: indexPath, isPackaged })
       this.mainWindow.loadFile(indexPath)
     }
-
-    this.mainWindow.webContents.on(
-      'render-process-gone',
-      (_event: Event, details: RenderProcessGoneDetails) => {
-        logger.error('Renderer process gone', details)
-        this.restartRenderer()
-      },
-    )
 
     this.mainWindow.on('closed', () => {
       this.mainWindow = null
@@ -92,17 +86,6 @@ class WindowManager {
     if (this.mainWindow) {
       this.mainWindow.close()
     }
-  }
-
-  restartRenderer(): BrowserWindow {
-    if (this.mainWindow) {
-      this.mainWindow.removeAllListeners()
-      this.mainWindow.destroy()
-      this.mainWindow = null
-    }
-
-    logger.warn('Restarting renderer')
-    return this.createMainWindow()
   }
 }
 

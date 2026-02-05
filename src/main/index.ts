@@ -3,7 +3,10 @@
  */
 
 // Load environment variables FIRST before any other imports
-import "dotenv/config";
+// Only load .env in development mode (when VITE_DEV_SERVER_URL is expected)
+if (process.env.NODE_ENV !== 'production') {
+  await import("dotenv/config");
+}
 
 import { app, BrowserWindow, session } from "electron";
 import path from "node:path";
@@ -11,7 +14,7 @@ import { createLogger, configureLogger, LogLevel } from "../shared/logger/index.
 import { LOG_DIR_NAME, LOG_FILE_NAME } from "../shared/constants/index.js";
 import { windowManager } from "./manager/index.js";
 import { initDatabaseEnv } from "./prismaEnv.js";
-import { isRendererDevEnv } from "./utils/environment.js";
+import { isDevEnv } from "./utils/environment.js";
 
 configureLogger({
   logToFile: true,
@@ -46,7 +49,7 @@ if (!gotTheLock) {
   app.whenReady().then(async () => {
     logger.info("App is ready");
 
-    const isDev = isRendererDevEnv();
+    const isDev = isDevEnv();
     const cspPolicy = isDev
       ? [
         "default-src 'self'",
@@ -89,6 +92,51 @@ if (!gotTheLock) {
       }
 
       callback({ responseHeaders });
+    });
+
+    // Renderer process crash handler (using webContents)
+    const handleRendererCrash = async (webContents: Electron.WebContents, killed: boolean) => {
+      logger.error("Renderer process crashed", { killed, webContentsId: webContents.id });
+      
+      // Emergency save
+      try {
+        const { autoSaveManager } = await import("./manager/autoSaveManager.js");
+        await autoSaveManager.flushCritical();
+        logger.info("Emergency save completed after crash");
+      } catch (error) {
+        logger.error("Failed to save during crash recovery", error);
+      }
+
+      // Show recovery dialog
+      const { dialog } = await import("electron");
+      const mainWindow = windowManager.getMainWindow();
+      
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        const response = await dialog.showMessageBox(mainWindow, {
+          type: "error",
+          title: "앱이 예기치 않게 종료되었습니다",
+          message: "렌더러 프로세스가 충돌했습니다. 앱을 다시 시작하시겠습니까?",
+          buttons: ["다시 시작", "종료"],
+          defaultId: 0,
+          cancelId: 1,
+        });
+
+        if (response.response === 0) {
+          // Restart renderer
+          windowManager.closeMainWindow();
+          setTimeout(() => {
+            windowManager.createMainWindow();
+          }, 500);
+        } else {
+          app.quit();
+        }
+      }
+    };
+
+    app.on("web-contents-created", (_, webContents) => {
+      webContents.on("render-process-gone", (_, details) => {
+        void handleRendererCrash(webContents, details.reason === "killed");
+      });
     });
 
     // Register IPC handlers (after DB env is set)
