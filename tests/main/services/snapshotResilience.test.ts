@@ -74,6 +74,39 @@ describe("Snapshot resilience", () => {
     ).rejects.toBeTruthy();
   });
 
+  it("flushCritical writes mirrors and snapshots on forced quit", async () => {
+    const { project } = await createProject("Forced Quit Project");
+    const chapter = (await chapterService.createChapter({
+      projectId: project.id,
+      title: "Crash Chapter",
+    })) as unknown as Chapter;
+
+    autoSaveManager.setConfig(project.id, {
+      enabled: true,
+      interval: 1000,
+      debounceMs: 1000,
+    });
+
+    await autoSaveManager.triggerSave(chapter.id, makeContent(800), project.id);
+
+    const result = await autoSaveManager.flushCritical();
+    expect(result.mirrored).toBeGreaterThan(0);
+    expect(result.snapshots).toBeGreaterThan(0);
+
+    const latestPath = path.join(
+      app.getPath("userData"),
+      SNAPSHOT_MIRROR_DIR,
+      project.id,
+      chapter.id,
+      "latest.snap",
+    );
+    const stat = await fs.stat(latestPath);
+    expect(stat.isFile()).toBe(true);
+
+    const snapshots = await snapshotService.getSnapshotsByProject(project.id);
+    expect(snapshots.length).toBeGreaterThan(0);
+  });
+
   it("enables WAL mode", async () => {
     const client = db.getClient() as {
       $queryRawUnsafe?: (query: string) => Promise<Array<{ journal_mode?: string }>>;

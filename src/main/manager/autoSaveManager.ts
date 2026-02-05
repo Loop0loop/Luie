@@ -11,6 +11,8 @@ import path from "path";
 import { chapterService } from "../services/core/chapterService.js";
 import { snapshotService } from "../services/features/snapshotService.js";
 import { createLogger } from "../../shared/logger/index.js";
+import { ErrorCode } from "../../shared/constants/index.js";
+import { isServiceError } from "../utils/serviceError.js";
 import {
   DEFAULT_AUTO_SAVE_DEBOUNCE_MS,
   DEFAULT_AUTO_SAVE_INTERVAL_MS,
@@ -56,6 +58,9 @@ export class AutoSaveManager extends EventEmitter {
 
   private constructor() {
     super();
+    this.on("error", (payload) => {
+      logger.warn("Auto-save error event", payload);
+    });
     this.startCleanupInterval();
   }
 
@@ -135,8 +140,36 @@ export class AutoSaveManager extends EventEmitter {
 
       logger.info("Auto-save completed", { chapterId });
     } catch (error) {
+      if (isServiceError(error) && error.code === ErrorCode.VALIDATION_FAILED && pending) {
+        logger.warn("Auto-save blocked by validation; writing safety snapshot", {
+          chapterId,
+          error,
+        });
+
+        try {
+          await this.writeLatestMirror(pending.projectId, pending.chapterId, pending.content);
+          await this.writeSnapshotMirror(pending.projectId, pending.chapterId, pending.content);
+          await snapshotService.createSnapshot({
+            projectId: pending.projectId,
+            chapterId: pending.chapterId,
+            content: pending.content,
+            description: `Auto-save safety snapshot (blocked save) ${new Date().toLocaleString()}`,
+          });
+        } catch (mirrorError) {
+          logger.error("Failed to write safety snapshot after validation block", mirrorError);
+        }
+
+        this.pendingSaves.delete(chapterId);
+        this.saveTimers.delete(chapterId);
+        this.lastSaveAt.delete(chapterId);
+        this.emit("save-blocked", { chapterId, error });
+        return;
+      }
+
       logger.error("Auto-save failed", error);
-      this.emit("error", { chapterId, error });
+      if (this.listenerCount("error") > 0) {
+        this.emit("error", { chapterId, error });
+      }
     }
   }
 

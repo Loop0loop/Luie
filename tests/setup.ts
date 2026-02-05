@@ -4,8 +4,9 @@ import * as path from "node:path";
 import * as fs from "node:fs";
 import type { db as DbService } from "../src/main/database/index.js";
 
-const testDbDir = path.join(process.cwd(), "prisma", ".tmp");
-const testDbPath = path.join(testDbDir, `vitest-${process.pid}.db`);
+const testWorkerId = process.env.VITEST_POOL_ID ?? process.env.VITEST_WORKER_ID ?? String(process.pid);
+const testDbDir = path.join(process.cwd(), "prisma", ".tmp", `vitest-${testWorkerId}`);
+const testDbPath = path.join(testDbDir, "db.sqlite");
 
 process.env.DATABASE_URL = `file:${testDbPath}`;
 
