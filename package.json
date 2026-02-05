@@ -11,6 +11,7 @@
     "dev": "electron-vite",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
+    "preview:prod": "pnpm build && electron .",
     "postinstall": "prisma generate;",
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
