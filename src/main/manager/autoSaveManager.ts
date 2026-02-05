@@ -5,9 +5,11 @@
 import { EventEmitter } from "events";
 import { app } from "electron";
 import { promises as fs } from "fs";
+import { promisify } from "node:util";
+import { gzip as gzipCallback } from "node:zlib";
 import path from "path";
-import { chapterService } from "../services/chapterService.js";
-import { snapshotService } from "../services/snapshotService.js";
+import { chapterService } from "../services/core/chapterService.js";
+import { snapshotService } from "../services/features/snapshotService.js";
 import { createLogger } from "../../shared/logger/index.js";
 import {
   DEFAULT_AUTO_SAVE_DEBOUNCE_MS,
@@ -19,9 +21,13 @@ import {
   SNAPSHOT_FILE_KEEP_COUNT,
   SNAPSHOT_INTERVAL_MS,
   SNAPSHOT_KEEP_COUNT,
+  SNAPSHOT_MIN_CONTENT_LENGTH,
+  SNAPSHOT_MIN_CHANGE_RATIO,
+  SNAPSHOT_MIN_CHANGE_ABSOLUTE,
 } from "../../shared/constants/index.js";
 
 const logger = createLogger("AutoSaveManager");
+const gzip = promisify(gzipCallback);
 
 interface AutoSaveConfig {
   enabled: boolean;
@@ -36,8 +42,11 @@ export class AutoSaveManager extends EventEmitter {
   private configs: Map<string, AutoSaveConfig> = new Map();
   private pendingSaves: Map<string, { chapterId: string; content: string; projectId: string }> =
     new Map();
+  private lastSaveAt: Map<string, number> = new Map();
+  private snapshotTimers: Map<string, NodeJS.Timeout> = new Map();
   private lastSnapshotAt: Map<string, number> = new Map();
   private lastSnapshotHash: Map<string, number> = new Map();
+  private lastSnapshotLength: Map<string, number> = new Map();
   private snapshotQueue: Array<{ projectId: string; chapterId: string; content: string }> = [];
   private snapshotProcessing = false;
 
@@ -64,6 +73,7 @@ export class AutoSaveManager extends EventEmitter {
       this.stopAutoSave(projectId);
     } else {
       this.startAutoSave(projectId);
+      this.startSnapshotSchedule(projectId);
     }
   }
 
@@ -85,6 +95,9 @@ export class AutoSaveManager extends EventEmitter {
     }
 
     this.pendingSaves.set(chapterId, { chapterId, content, projectId });
+    this.lastSaveAt.set(chapterId, Date.now());
+
+    await this.writeLatestMirror(projectId, chapterId, content);
 
     const existingTimer = this.saveTimers.get(chapterId);
     if (existingTimer) {
@@ -113,9 +126,11 @@ export class AutoSaveManager extends EventEmitter {
 
       this.pendingSaves.delete(chapterId);
       this.saveTimers.delete(chapterId);
+      this.lastSaveAt.delete(chapterId);
 
       this.emit("saved", { chapterId });
 
+      await this.writeLatestMirror(pending.projectId, pending.chapterId, pending.content);
       this.maybeEnqueueSnapshot(pending.projectId, pending.chapterId, pending.content);
 
       logger.info("Auto-save completed", { chapterId });
@@ -132,12 +147,22 @@ export class AutoSaveManager extends EventEmitter {
 
     if (now - lastAt < AutoSaveManager.SNAPSHOT_INTERVAL_MS) return;
 
+    if (content.length < SNAPSHOT_MIN_CONTENT_LENGTH) return;
+
     const hash = this.hashContent(content);
     const lastHash = this.lastSnapshotHash.get(key);
     if (lastHash === hash) return;
 
+    const lastLength = this.lastSnapshotLength.get(key) ?? 0;
+    if (lastLength > 0) {
+      const diff = Math.abs(content.length - lastLength);
+      const ratio = diff / lastLength;
+      if (ratio < SNAPSHOT_MIN_CHANGE_RATIO && diff < SNAPSHOT_MIN_CHANGE_ABSOLUTE) return;
+    }
+
     this.lastSnapshotAt.set(key, now);
     this.lastSnapshotHash.set(key, hash);
+    this.lastSnapshotLength.set(key, content.length);
 
     this.snapshotQueue.push({ projectId, chapterId, content });
     if (!this.snapshotProcessing) {
@@ -183,14 +208,15 @@ export class AutoSaveManager extends EventEmitter {
       );
       await fs.mkdir(baseDir, { recursive: true });
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const filePath = path.join(baseDir, `${timestamp}.json`);
-      await fs.writeFile(
-        filePath,
-        JSON.stringify({ projectId, chapterId, content, createdAt: new Date().toISOString() }),
-        "utf8",
+      const filePath = path.join(baseDir, `${timestamp}.snap`);
+      const payload = JSON.stringify(
+        { projectId, chapterId, content, createdAt: new Date().toISOString() },
+        null,
+        2,
       );
+      await this.writeSnapAtomic(filePath, payload);
 
-      const files = (await fs.readdir(baseDir)).filter((name) => name.endsWith(".json"));
+      const files = (await fs.readdir(baseDir)).filter((name) => name.endsWith(".snap"));
       if (files.length > AutoSaveManager.SNAPSHOT_FILE_KEEP_COUNT) {
         const sorted = files.sort();
         const toDelete = sorted.slice(0, files.length - AutoSaveManager.SNAPSHOT_FILE_KEEP_COUNT);
@@ -201,6 +227,41 @@ export class AutoSaveManager extends EventEmitter {
     } catch (error) {
       logger.error("Failed to write snapshot mirror", error);
     }
+  }
+
+  private async writeLatestMirror(projectId: string, chapterId: string, content: string) {
+    try {
+      const baseDir = path.join(
+        app.getPath("userData"),
+        SNAPSHOT_MIRROR_DIR,
+        projectId,
+        chapterId,
+      );
+      await fs.mkdir(baseDir, { recursive: true });
+      const targetPath = path.join(baseDir, "latest.snap");
+      const payload = JSON.stringify(
+        { projectId, chapterId, content, updatedAt: new Date().toISOString() },
+        null,
+        2,
+      );
+      await this.writeSnapAtomic(targetPath, payload);
+    } catch (error) {
+      logger.error("Failed to write latest mirror", error);
+    }
+  }
+
+  private async writeSnapAtomic(targetPath: string, payload: string) {
+    const dir = path.dirname(targetPath);
+    const tempPath = path.join(dir, `${path.basename(targetPath)}.tmp-${Date.now()}`);
+    const buffer = await gzip(Buffer.from(payload, "utf8"));
+    await fs.writeFile(tempPath, buffer);
+    const handle = await fs.open(tempPath, "r+");
+    try {
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
+    await fs.rename(tempPath, targetPath);
   }
 
   private hashContent(content: string) {
@@ -244,6 +305,32 @@ export class AutoSaveManager extends EventEmitter {
       this.intervalTimers.delete(projectId);
       logger.info("Auto-save stopped", { projectId });
     }
+
+    const snapshotTimer = this.snapshotTimers.get(projectId);
+    if (snapshotTimer) {
+      clearInterval(snapshotTimer);
+      this.snapshotTimers.delete(projectId);
+      logger.info("Snapshot schedule stopped", { projectId });
+    }
+  }
+
+  private startSnapshotSchedule(projectId: string) {
+    const existing = this.snapshotTimers.get(projectId);
+    if (existing) {
+      clearInterval(existing);
+    }
+
+    void this.createSnapshot(projectId);
+
+    const timer = setInterval(() => {
+      void this.createSnapshot(projectId);
+    }, AutoSaveManager.SNAPSHOT_INTERVAL_MS);
+
+    this.snapshotTimers.set(projectId, timer);
+    logger.info("Snapshot schedule started", {
+      projectId,
+      interval: AutoSaveManager.SNAPSHOT_INTERVAL_MS,
+    });
   }
 
   async createSnapshot(projectId: string, chapterId?: string) {
@@ -292,12 +379,15 @@ export class AutoSaveManager extends EventEmitter {
     const now = Date.now();
     const staleThreshold = AUTO_SAVE_STALE_THRESHOLD_MS;
 
-    for (const [chapterId, timestamp] of Array.from(
-      this.saveTimers.entries(),
-    )) {
-      if (typeof timestamp === "number" && now - timestamp > staleThreshold) {
+    for (const [chapterId, timestamp] of Array.from(this.lastSaveAt.entries())) {
+      if (now - timestamp > staleThreshold) {
+        const timer = this.saveTimers.get(chapterId);
+        if (timer) {
+          clearTimeout(timer);
+        }
         this.saveTimers.delete(chapterId);
         this.pendingSaves.delete(chapterId);
+        this.lastSaveAt.delete(chapterId);
       }
     }
   }

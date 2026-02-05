@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useOptimistic, useActionState, useId } from "react";
 
 import WindowBar from "./WindowBar";
 import { Plus, Book, FileText, FileType, MoreVertical } from "lucide-react";
 import type { Project } from "../../../../shared/types";
 import { useProjectStore } from "../../stores/projectStore";
-import { ConfirmDialog, PromptDialog } from "../common/Modal";
+import { ConfirmDialog, Modal } from "../common/Modal";
+import { api } from "../../services/api";
 import {
   DEFAULT_PROJECT_FILENAME,
   LUIE_PACKAGE_EXTENSION_NO_DOT,
@@ -39,16 +40,35 @@ interface ProjectTemplateSelectorProps {
   onSelectProject: (templateId: string, projectPath: string) => void;
   projects?: Project[];
   onOpenProject?: (project: Project) => void;
+  onOpenLuieFile?: () => void;
+  onOpenSnapshotBackup?: () => void;
 }
 
 export default function ProjectTemplateSelector({
   onSelectProject,
   projects = [],
   onOpenProject,
+  onOpenLuieFile,
+  onOpenSnapshotBackup,
 }: ProjectTemplateSelectorProps) {
   const [activeCategory, setActiveCategory] = useState("all");
 
   const { deleteProject, updateProject } = useProjectStore();
+
+  const [optimisticProjects, addOptimisticProject] = useOptimistic(
+    projects,
+    (state, action: { type: "rename"; id: string; title: string } | { type: "delete"; id: string } | { type: "reset"; projects: Project[] }) => {
+      if (action.type === "rename") {
+        return state.map((project) =>
+          project.id === action.id ? { ...project, title: action.title } : project,
+        );
+      }
+      if (action.type === "delete") {
+        return state.filter((project) => project.id !== action.id);
+      }
+      return action.projects;
+    },
+  );
 
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -74,6 +94,42 @@ export default function ProjectTemplateSelector({
     projectId: "",
     projectTitle: "",
   });
+
+  const renameFormId = useId();
+  const [renameState, renameAction, renamePending] = useActionState(
+    async (_prev: { error?: string } | null, formData: FormData) => {
+      const projectId = String(formData.get("projectId") ?? "").trim();
+      const nextTitle = String(formData.get("title") ?? "").trim();
+
+      if (!projectId) {
+        return { error: "프로젝트를 찾을 수 없습니다." };
+      }
+      if (!nextTitle) {
+        return { error: "프로젝트 이름을 입력해주세요." };
+      }
+      if (nextTitle === renameDialog.currentTitle) {
+        setRenameDialog((prev) => ({ ...prev, isOpen: false }));
+        return null;
+      }
+
+      addOptimisticProject({
+        type: "rename",
+        id: projectId,
+        title: nextTitle,
+      });
+
+      try {
+        await updateProject(projectId, nextTitle);
+        setRenameDialog((prev) => ({ ...prev, isOpen: false }));
+        return null;
+      } catch (error) {
+        addOptimisticProject({ type: "reset", projects });
+        api.logger.error("Failed to update project", error);
+        return { error: "프로젝트 이름 변경에 실패했습니다." };
+      }
+    },
+    null,
+  );
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
@@ -135,7 +191,7 @@ export default function ProjectTemplateSelector({
 
   const handleSelectTemplate = async (templateId: string) => {
     try {
-      const response = await window.api.fs.selectSaveLocation({
+      const response = await api.fs.selectSaveLocation({
         title: PROJECT_TEMPLATE_DIALOG_SELECT_PATH,
         defaultPath: DEFAULT_PROJECT_FILENAME,
         filters: [
@@ -148,12 +204,15 @@ export default function ProjectTemplateSelector({
         onSelectProject(templateId, response.data);
       }
     } catch (error) {
-      window.api.logger.error("Failed to select directory", error);
+      api.logger.error("Failed to select directory", error);
     }
   };
 
   return (
-    <div className="flex flex-col w-screen h-screen bg-app text-fg font-sans overflow-hidden">
+    <div
+      className="flex flex-col w-screen h-screen bg-app text-fg font-sans overflow-hidden"
+      data-testid="template-selector"
+    >
       <WindowBar />
 
       {menuOpenId && (
@@ -166,13 +225,13 @@ export default function ProjectTemplateSelector({
       {/* Context Menu rendered at root level to avoid transform/z-index issues */}
       {menuOpenId &&
         (() => {
-          const p = projects.find((proj) => proj.id === menuOpenId);
+          const p = optimisticProjects.find((proj) => proj.id === menuOpenId);
           if (!p) return null;
 
           return (
             <div
               ref={menuRef}
-              className="fixed z-2000 min-w-[140px] bg-surface border border-border rounded-[10px] p-1.5 shadow-lg"
+              className="fixed z-2000 min-w-35 bg-surface border border-border rounded-[10px] p-1.5 shadow-lg"
               style={{ top: menuPosition.y, left: menuPosition.x }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -217,23 +276,45 @@ export default function ProjectTemplateSelector({
         })()}
 
       {/* Custom Dialogs */}
-      <PromptDialog
+      <Modal
         isOpen={renameDialog.isOpen}
+        onClose={() => setRenameDialog((prev) => ({ ...prev, isOpen: false }))}
         title={DIALOG_TITLE_RENAME_PROJECT}
-        defaultValue={renameDialog.currentTitle}
-        onConfirm={async (value) => {
-          const nextTitle = value.trim();
-          if (nextTitle && nextTitle !== renameDialog.currentTitle) {
-            try {
-              await updateProject(renameDialog.projectId, nextTitle);
-            } catch (error) {
-              window.api.logger.error("Failed to update project", error);
-            }
-          }
-          setRenameDialog((prev) => ({ ...prev, isOpen: false }));
-        }}
-        onCancel={() => setRenameDialog((prev) => ({ ...prev, isOpen: false }))}
-      />
+        footer={
+          <div className="flex justify-end gap-3 w-full">
+            <button
+              className="px-4 py-2 bg-transparent border border-border rounded-md text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg"
+              onClick={() => setRenameDialog((prev) => ({ ...prev, isOpen: false }))}
+              disabled={renamePending}
+            >
+              취소
+            </button>
+            <button
+              className="px-4 py-2 bg-accent border-none rounded-md text-white text-[13px] font-medium cursor-pointer transition-all hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
+              type="submit"
+              form={renameFormId}
+              disabled={renamePending}
+            >
+              {renamePending ? "저장 중..." : "저장"}
+            </button>
+          </div>
+        }
+      >
+        <form id={renameFormId} action={renameAction} className="flex flex-col gap-3">
+          {renameState?.error && (
+            <div className="text-xs text-danger-fg">{renameState.error}</div>
+          )}
+          <input type="hidden" name="projectId" value={renameDialog.projectId} />
+          <input
+            key={`${renameDialog.isOpen}-${renameDialog.currentTitle}`}
+            name="title"
+            defaultValue={renameDialog.currentTitle}
+            className="w-full p-2.5 bg-input border border-border rounded-md text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+            autoFocus
+            disabled={renamePending}
+          />
+        </form>
+      </Modal>
 
       <ConfirmDialog
         isOpen={deleteDialog.isOpen}
@@ -245,10 +326,12 @@ export default function ProjectTemplateSelector({
         confirmLabel={PROJECT_TEMPLATE_DELETE_CONFIRM_LABEL}
         isDestructive
         onConfirm={async () => {
+          addOptimisticProject({ type: "delete", id: deleteDialog.projectId });
           try {
             await deleteProject(deleteDialog.projectId);
           } catch (error) {
-            window.api.logger.error("Failed to delete project", error);
+            addOptimisticProject({ type: "reset", projects });
+            api.logger.error("Failed to delete project", error);
           }
           setDeleteDialog((prev) => ({ ...prev, isOpen: false }));
         }}
@@ -256,7 +339,7 @@ export default function ProjectTemplateSelector({
       />
 
       <div className="flex-1 flex h-[calc(100vh-32px)]">
-        <div className="w-[240px] bg-sidebar py-8 px-4 flex flex-col gap-2 border-r border-border">
+        <div className="w-60 bg-sidebar py-8 px-4 flex flex-col gap-2 border-r border-border">
           <div className="text-[11px] font-bold text-muted mb-4 pl-3 uppercase tracking-widest">{TEMPLATE_SIDEBAR_TITLE}</div>
           {categories.map((cat) => (
             <div
@@ -279,10 +362,26 @@ export default function ProjectTemplateSelector({
           <div className="mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="text-sm font-bold tracking-[0.5px] text-subtle uppercase">{PROJECT_TEMPLATE_RECENT_TITLE}</div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="px-3 py-1.5 text-xs rounded-md bg-surface border border-border text-fg hover:bg-surface-hover"
+                  onClick={() => onOpenLuieFile?.()}
+                >
+                  .luie 열기
+                </button>
+                <button
+                  type="button"
+                  className="px-3 py-1.5 text-xs rounded-md bg-surface border border-border text-fg hover:bg-surface-hover"
+                  onClick={() => onOpenSnapshotBackup?.()}
+                >
+                  스냅샷 복원하기
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-              {projects.slice(0, 4).map((p) => (
+              {optimisticProjects.slice(0, 4).map((p) => (
                 <div
                   key={p.id}
                   className="bg-surface border border-border rounded-lg p-5 w-full text-left cursor-pointer transition-all duration-200 relative flex justify-between items-start hover:bg-surface-hover hover:border-border-active hover:-translate-y-0.5 hover:shadow-md group"
@@ -307,7 +406,7 @@ export default function ProjectTemplateSelector({
                       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                       setMenuPosition({ x: rect.right + 8, y: rect.top });
                       setMenuOpenId((prev) => (prev === p.id ? null : p.id));
-                      window.api.logger.info("Project context menu", {
+                      api.logger.info("Project context menu", {
                         id: p.id,
                       });
                     }}
@@ -320,7 +419,7 @@ export default function ProjectTemplateSelector({
           </div>
 
           <div className="flex-1 overflow-y-auto p-8 relative z-0">
-          <div className="max-w-[1400px] mx-auto">
+          <div className="max-w-350 mx-auto">
              <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-x-6 gap-y-10">
               {filteredTemplates.map((template) => (
                 <div
@@ -418,7 +517,7 @@ export default function ProjectTemplateSelector({
                   </div>
                   
                   {/* Label */}
-                  <div className="text-center group-hover:transform group-hover:translate-y-[-2px] transition-transform duration-300">
+                  <div className="text-center group-hover:transform group-hover:-translate-y-0.5 transition-transform duration-300">
                     <span className="font-medium text-[13px] text-zinc-400 group-hover:text-white transition-colors tracking-wide">
                       {template.title}
                     </span>

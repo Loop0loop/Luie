@@ -22,6 +22,7 @@ export interface Chapter {
   wordCount?: number | null;
   createdAt: string | Date;
   updatedAt: string | Date;
+  deletedAt?: string | Date | null;
 }
 
 export interface Character {

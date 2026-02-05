@@ -3,7 +3,8 @@ import type {
   ChapterCreateInput,
   ChapterUpdateInput,
 } from "../../../shared/types/index.js";
-import { registerIpcHandler } from "../core/ipcHandler.js";
+import { registerIpcHandlers } from "../core/ipcRegistrar.js";
+import type { LoggerLike } from "../core/types.js";
 import {
   chapterCreateSchema,
   chapterUpdateSchema,
@@ -12,16 +13,15 @@ import {
 } from "../../../shared/schemas/index.js";
 import { z } from "zod";
 
-type LoggerLike = {
-  error: (message: string, data?: unknown) => void;
-};
-
 type ChapterServiceLike = {
   createChapter: (input: ChapterCreateInput) => Promise<unknown>;
   getChapter: (id: string) => Promise<unknown>;
   getAllChapters: (projectId: string) => Promise<unknown>;
+  getDeletedChapters: (projectId: string) => Promise<unknown>;
   updateChapter: (input: ChapterUpdateInput) => Promise<unknown>;
   deleteChapter: (id: string) => Promise<unknown>;
+  restoreChapter: (id: string) => Promise<unknown>;
+  purgeChapter: (id: string) => Promise<unknown>;
   reorderChapters: (projectId: string, chapterIds: string[]) => Promise<unknown>;
 };
 
@@ -29,58 +29,70 @@ export function registerChapterIPCHandlers(
   logger: LoggerLike,
   chapterService: ChapterServiceLike,
 ): void {
-  registerIpcHandler({
-    logger,
-    channel: IPC_CHANNELS.CHAPTER_CREATE,
-    logTag: "CHAPTER_CREATE",
-    failMessage: "Failed to create chapter",
-    argsSchema: z.tuple([chapterCreateSchema]),
-    handler: (input: ChapterCreateInput) => chapterService.createChapter(input),
-  });
-
-  registerIpcHandler({
-    logger,
-    channel: IPC_CHANNELS.CHAPTER_GET,
-    logTag: "CHAPTER_GET",
-    failMessage: "Failed to get chapter",
-    argsSchema: z.tuple([chapterIdSchema]),
-    handler: (id: string) => chapterService.getChapter(id),
-  });
-
-  registerIpcHandler({
-    logger,
-    channel: IPC_CHANNELS.CHAPTER_GET_ALL,
-    logTag: "CHAPTER_GET_ALL",
-    failMessage: "Failed to get all chapters",
-    argsSchema: z.tuple([projectIdSchema]),
-    handler: (projectId: string) => chapterService.getAllChapters(projectId),
-  });
-
-  registerIpcHandler({
-    logger,
-    channel: IPC_CHANNELS.CHAPTER_UPDATE,
-    logTag: "CHAPTER_UPDATE",
-    failMessage: "Failed to update chapter",
-    argsSchema: z.tuple([chapterUpdateSchema]),
-    handler: (input: ChapterUpdateInput) => chapterService.updateChapter(input),
-  });
-
-  registerIpcHandler({
-    logger,
-    channel: IPC_CHANNELS.CHAPTER_DELETE,
-    logTag: "CHAPTER_DELETE",
-    failMessage: "Failed to delete chapter",
-    argsSchema: z.tuple([chapterIdSchema]),
-    handler: (id: string) => chapterService.deleteChapter(id),
-  });
-
-  registerIpcHandler({
-    logger,
-    channel: IPC_CHANNELS.CHAPTER_REORDER,
-    logTag: "CHAPTER_REORDER",
-    failMessage: "Failed to reorder chapters",
-    argsSchema: z.tuple([projectIdSchema, z.array(chapterIdSchema)]),
-    handler: (projectId: string, chapterIds: string[]) =>
-      chapterService.reorderChapters(projectId, chapterIds),
-  });
+  registerIpcHandlers(logger, [
+    {
+      channel: IPC_CHANNELS.CHAPTER_CREATE,
+      logTag: "CHAPTER_CREATE",
+      failMessage: "Failed to create chapter",
+      argsSchema: z.tuple([chapterCreateSchema]),
+      handler: (input: ChapterCreateInput) => chapterService.createChapter(input),
+    },
+    {
+      channel: IPC_CHANNELS.CHAPTER_GET,
+      logTag: "CHAPTER_GET",
+      failMessage: "Failed to get chapter",
+      argsSchema: z.tuple([chapterIdSchema]),
+      handler: (id: string) => chapterService.getChapter(id),
+    },
+    {
+      channel: IPC_CHANNELS.CHAPTER_GET_ALL,
+      logTag: "CHAPTER_GET_ALL",
+      failMessage: "Failed to get all chapters",
+      argsSchema: z.tuple([projectIdSchema]),
+      handler: (projectId: string) => chapterService.getAllChapters(projectId),
+    },
+    {
+      channel: IPC_CHANNELS.CHAPTER_GET_DELETED,
+      logTag: "CHAPTER_GET_DELETED",
+      failMessage: "Failed to get deleted chapters",
+      argsSchema: z.tuple([projectIdSchema]),
+      handler: (projectId: string) => chapterService.getDeletedChapters(projectId),
+    },
+    {
+      channel: IPC_CHANNELS.CHAPTER_UPDATE,
+      logTag: "CHAPTER_UPDATE",
+      failMessage: "Failed to update chapter",
+      argsSchema: z.tuple([chapterUpdateSchema]),
+      handler: (input: ChapterUpdateInput) => chapterService.updateChapter(input),
+    },
+    {
+      channel: IPC_CHANNELS.CHAPTER_DELETE,
+      logTag: "CHAPTER_DELETE",
+      failMessage: "Failed to delete chapter",
+      argsSchema: z.tuple([chapterIdSchema]),
+      handler: (id: string) => chapterService.deleteChapter(id),
+    },
+    {
+      channel: IPC_CHANNELS.CHAPTER_RESTORE,
+      logTag: "CHAPTER_RESTORE",
+      failMessage: "Failed to restore chapter",
+      argsSchema: z.tuple([chapterIdSchema]),
+      handler: (id: string) => chapterService.restoreChapter(id),
+    },
+    {
+      channel: IPC_CHANNELS.CHAPTER_PURGE,
+      logTag: "CHAPTER_PURGE",
+      failMessage: "Failed to purge chapter",
+      argsSchema: z.tuple([chapterIdSchema]),
+      handler: (id: string) => chapterService.purgeChapter(id),
+    },
+    {
+      channel: IPC_CHANNELS.CHAPTER_REORDER,
+      logTag: "CHAPTER_REORDER",
+      failMessage: "Failed to reorder chapters",
+      argsSchema: z.tuple([projectIdSchema, z.array(chapterIdSchema)]),
+      handler: (projectId: string, chapterIds: string[]) =>
+        chapterService.reorderChapters(projectId, chapterIds),
+    },
+  ]);
 }

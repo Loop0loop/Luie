@@ -9,14 +9,16 @@ import {
   DEFAULT_UI_VIEW,
   STORAGE_KEY_UI,
 } from "../../../shared/constants";
+import type { Snapshot } from "../../../shared/types";
 
 export type ContextTab = "synopsis" | "characters" | "terms";
 export type ResearchTab = "character" | "world" | "scrap";
 
 interface RightPanelContent {
-  type: "research" | "editor";
+  type: "research" | "editor" | "snapshot";
   id?: string;
   tab?: ResearchTab;
+  snapshot?: Snapshot;
 }
 
 interface UIStore {
@@ -59,7 +61,13 @@ export const useUIStore = create<UIStore>()(
         contextTab: state.contextTab,
         splitRatio: state.splitRatio,
         isSplitView: state.isSplitView,
-        rightPanelContent: state.rightPanelContent,
+        rightPanelContent:
+          state.rightPanelContent.type === "snapshot"
+            ? {
+                type: DEFAULT_UI_RIGHT_PANEL_TYPE as RightPanelContent["type"],
+                tab: DEFAULT_UI_RESEARCH_TAB as ResearchTab,
+              }
+            : state.rightPanelContent,
       }),
     },
   ),
