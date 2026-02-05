@@ -162,29 +162,36 @@ class DatabaseService {
         throw error;
       }
     } else {
-      // DEVELOPMENT: migrate dev
+      // DEVELOPMENT: use non-interactive migration strategy
       try {
         const prismaPath = path.join(process.cwd(), "node_modules/.bin/prisma");
         const schemaPath = path.join(process.cwd(), "prisma/schema.prisma");
 
-        logger.info("Running development migrations", {
+        logger.info("Running development database push", {
           dbPath,
           dbExists,
           hasMigrations,
-          command: "migrate dev",
+          command: "db push",
         });
 
         execSync(
-          `"${prismaPath}" migrate dev --schema="${schemaPath}"`,
+          `"${prismaPath}" db push --accept-data-loss --schema="${schemaPath}"`,
           {
             env: { ...process.env, DATABASE_URL: this.datasourceUrl },
             stdio: "pipe",
           }
         );
 
-        logger.info("Development migrations applied successfully");
+        logger.info("Development database ready");
       } catch (error) {
-        logger.error("Failed to apply development migrations", error);
+        const err = error as { stdout?: Buffer; stderr?: Buffer };
+        const stdout = err.stdout ? err.stdout.toString("utf8") : undefined;
+        const stderr = err.stderr ? err.stderr.toString("utf8") : undefined;
+        logger.error("Failed to prepare development database", {
+          error,
+          stdout,
+          stderr,
+        });
         throw error;
       }
     }
