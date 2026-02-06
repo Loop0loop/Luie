@@ -92,6 +92,10 @@ export const IPC_CHANNELS = {
   // Logger
   LOGGER_LOG: "logger:log",
   LOGGER_LOG_BATCH: "logger:log-batch",
+
+  // App lifecycle (main ↔ renderer quit coordination)
+  APP_BEFORE_QUIT: "app:before-quit",
+  APP_FLUSH_COMPLETE: "app:flush-complete",
 } as const;
 
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

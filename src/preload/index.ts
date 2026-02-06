@@ -364,3 +364,30 @@ contextBridge.exposeInMainWorld("api", {
     reset: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.SETTINGS_RESET),
   },
 });
+
+// ─── Graceful Quit Support ─────────────────────────────────────────────────
+// When the main process signals that the app is about to quit,
+// immediately flush the autoSave queue and log queue so that
+// all dirty content reaches the main process before shutdown.
+
+ipcRenderer.on(IPC_CHANNELS.APP_BEFORE_QUIT, async () => {
+  try {
+    // Force-flush any queued auto-saves so IPC arrives at main
+    await flushAutoSaves();
+    // Flush logs too
+    await flushLogs();
+  } catch {
+    // Best effort – even if this fails, mirrors may still have content
+  } finally {
+    ipcRenderer.send(IPC_CHANNELS.APP_FLUSH_COMPLETE);
+  }
+});
+
+// Also flush on beforeunload as a secondary safety net.
+// This fires when the BrowserWindow navigates away or closes.
+window.addEventListener("beforeunload", () => {
+  // Fire-and-forget: start the flush; it may or may not complete
+  // before the window is torn down, but it gives us one more chance.
+  void flushAutoSaves();
+  void flushLogs();
+});

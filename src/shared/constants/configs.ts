@@ -16,6 +16,12 @@ export const AUTO_SAVE_STALE_THRESHOLD_MS = 5 * 60 * 1000
 export const AUTO_SAVE_CLEANUP_INTERVAL_MS = 60 * 1000
 export const AUTO_SAVE_STATUS_RESET_MS = 2000
 
+// Emergency / quit-time snapshot constants
+export const EMERGENCY_SNAPSHOT_MAX_LENGTH = 200
+export const EMERGENCY_SNAPSHOT_INTERVAL_MS = 5_000
+export const QUIT_RENDERER_FLUSH_TIMEOUT_MS = 3_000
+export const QUIT_SAVE_TIMEOUT_MS = 10_000
+
 export const LOG_BATCH_SIZE = 20
 export const LOG_FLUSH_MS = 500
 

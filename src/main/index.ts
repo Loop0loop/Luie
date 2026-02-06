@@ -8,13 +8,14 @@ if (process.env.NODE_ENV !== 'production') {
   await import("dotenv/config");
 }
 
-import { app, BrowserWindow, session } from "electron";
+import { app, BrowserWindow, session, ipcMain, dialog } from "electron";
 import path from "node:path";
 import { createLogger, configureLogger, LogLevel } from "../shared/logger/index.js";
-import { LOG_DIR_NAME, LOG_FILE_NAME } from "../shared/constants/index.js";
+import { LOG_DIR_NAME, LOG_FILE_NAME, QUIT_RENDERER_FLUSH_TIMEOUT_MS, QUIT_SAVE_TIMEOUT_MS } from "../shared/constants/index.js";
 import { windowManager } from "./manager/index.js";
 import { initDatabaseEnv } from "./prismaEnv.js";
 import { isDevEnv } from "./utils/environment.js";
+import { IPC_CHANNELS } from "../shared/ipc/channels.js";
 
 configureLogger({
   logToFile: true,
@@ -146,12 +147,14 @@ if (!gotTheLock) {
     // Create main window
     windowManager.createMainWindow();
 
-    // Background pruning (Time Machine-style)
+    // Background recovery + pruning (Time Machine-style)
     try {
+      const { autoSaveManager } = await import("./manager/autoSaveManager.js");
+      await autoSaveManager.flushMirrorsToSnapshots("startup-recovery");
       const { snapshotService } = await import("./services/features/snapshotService.js");
       void snapshotService.pruneSnapshotsAllProjects();
     } catch (error) {
-      logger.warn("Snapshot pruning skipped", error);
+      logger.warn("Snapshot recovery/pruning skipped", error);
     }
 
     app.on("activate", () => {
@@ -168,7 +171,14 @@ if (!gotTheLock) {
     }
   });
 
-  // Before quit - cleanup
+  // Before quit - graceful shutdown with safety dialog
+  //
+  // Flow:
+  //   1. Request renderer to flush its IPC autoSave queue
+  //   2. Wait for flush response (or timeout)
+  //   3. Main-side: flushCritical (mirrors) → flushAll (DB) → flushMirrors → prune
+  //   4. If save failed, show confirmation dialog before quitting
+  //   5. Disconnect DB and exit
   let isQuitting = false;
   app.on("before-quit", (event) => {
     if (isQuitting) return;
@@ -177,41 +187,86 @@ if (!gotTheLock) {
 
     void (async () => {
       logger.info("App is quitting");
+
+      // ── Phase 1: Request renderer to flush its pending IPC queue ──
+      const mainWindow = windowManager.getMainWindow();
+      if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
+        try {
+          const rendererFlushed = await new Promise<boolean>((resolve) => {
+            const timeout = setTimeout(() => resolve(false), QUIT_RENDERER_FLUSH_TIMEOUT_MS);
+            ipcMain.once(IPC_CHANNELS.APP_FLUSH_COMPLETE, () => {
+              clearTimeout(timeout);
+              resolve(true);
+            });
+            mainWindow.webContents.send(IPC_CHANNELS.APP_BEFORE_QUIT);
+          });
+          logger.info("Renderer flush completed", { rendererFlushed });
+        } catch (error) {
+          logger.warn("Renderer flush request failed", error);
+        }
+      }
+
+      // ── Phase 2: Main-side saves ──
+      let saveFailed = false;
+      let pendingCount = 0;
       try {
         const { autoSaveManager } = await import("./manager/autoSaveManager.js");
+        pendingCount = autoSaveManager.getPendingSaveCount();
+
+        // Write mirrors for all pending content (fast, most critical)
         await autoSaveManager.flushCritical();
+
+        // Attempt DB saves (with timeout to prevent hanging)
         await Promise.race([
           autoSaveManager.flushAll(),
-          new Promise((resolve) => setTimeout(resolve, 10000)),
+          new Promise((resolve) => setTimeout(resolve, QUIT_SAVE_TIMEOUT_MS)),
         ]);
 
+        // Convert any remaining mirrors to DB snapshots
+        await autoSaveManager.flushMirrorsToSnapshots("session-end");
+
+        // Prune old snapshots (Time Machine style)
         const { snapshotService } = await import("./services/features/snapshotService.js");
-        const { db } = await import("./database/index.js");
-        const chapters = await db.getClient().chapter.findMany({
-          where: { deletedAt: null },
-          select: { id: true, projectId: true, content: true },
-        });
-
-        await Promise.all(
-          chapters.map((chapter) =>
-            snapshotService.createSnapshot({
-              projectId: String((chapter as { projectId: unknown }).projectId),
-              chapterId: String((chapter as { id: unknown }).id),
-              content: String((chapter as { content: unknown }).content ?? ""),
-              description: "Session end snapshot",
-              type: "AUTO",
-            }),
-          ),
-        );
-
         await snapshotService.pruneSnapshotsAllProjects();
       } catch (error) {
-        logger.error("Failed to flush auto-save", error);
-      } finally {
+        logger.error("Failed to flush auto-save during quit", error);
+        saveFailed = true;
+      }
+
+      // ── Phase 3: Safety dialog if save failed ──
+      if (saveFailed && mainWindow && !mainWindow.isDestroyed()) {
+        try {
+          const response = await dialog.showMessageBox(mainWindow, {
+            type: "warning",
+            title: "저장 실패",
+            message: `${pendingCount}개의 변경사항을 저장하지 못했습니다.`,
+            detail:
+              "미러 파일에 백업이 저장되었을 수 있습니다.\n" +
+              "다음 앱 실행 시 자동 복구를 시도합니다.\n\n" +
+              "그래도 종료하시겠습니까?",
+            buttons: ["종료", "취소"],
+            defaultId: 1,
+            cancelId: 1,
+          });
+
+          if (response.response === 1) {
+            // User chose to cancel quit
+            isQuitting = false;
+            return;
+          }
+        } catch (dialogError) {
+          logger.warn("Failed to show quit confirmation dialog", dialogError);
+        }
+      }
+
+      // ── Phase 4: Disconnect and exit ──
+      try {
         const { db } = await import("./database/index.js");
         await db.disconnect();
-        app.exit(0);
+      } catch (error) {
+        logger.warn("DB disconnect failed during quit", error);
       }
+      app.exit(0);
     })();
   });
 

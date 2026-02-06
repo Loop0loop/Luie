@@ -1,18 +1,30 @@
 /**
  * Auto save manager - 자동 저장 관리 (디바운싱 포함)
+ *
+ * 책임:
+ *   1. 디바운스 기반 자동 저장 (chapter → DB)
+ *   2. 스냅샷 미러 파일 관리 (latest.snap + 타임스탬프.snap)
+ *   3. 스냅샷 큐 처리 (Time Machine 스타일)
+ *   4. 종료/크래시 시 긴급 스냅샷
+ *   5. 미러 → DB 스냅샷 변환 (startup/shutdown recovery)
+ *
+ * 크래시 안전 보장:
+ *   - 모든 파일 I/O는 atomicWrite 유틸을 사용 (temp → fsync → rename → dir fsync)
+ *   - 매 triggerSave마다 latest.snap 미러를 즉시 기록
+ *   - 앱 시작 시 미러를 DB 스냅샷으로 복구
  */
 
 import { EventEmitter } from "events";
 import { app } from "electron";
 import { promises as fs } from "fs";
-import { promisify } from "node:util";
-import { gzip as gzipCallback } from "node:zlib";
 import path from "path";
 import { chapterService } from "../services/core/chapterService.js";
 import { snapshotService } from "../services/features/snapshotService.js";
 import { createLogger } from "../../shared/logger/index.js";
 import { ErrorCode } from "../../shared/constants/index.js";
 import { isServiceError } from "../utils/serviceError.js";
+import { db } from "../database/index.js";
+import { writeGzipAtomic, readMaybeGzip } from "../utils/atomicWrite.js";
 import {
   DEFAULT_AUTO_SAVE_DEBOUNCE_MS,
   DEFAULT_AUTO_SAVE_INTERVAL_MS,
@@ -26,10 +38,13 @@ import {
   SNAPSHOT_MIN_CONTENT_LENGTH,
   SNAPSHOT_MIN_CHANGE_RATIO,
   SNAPSHOT_MIN_CHANGE_ABSOLUTE,
+  EMERGENCY_SNAPSHOT_MAX_LENGTH,
+  EMERGENCY_SNAPSHOT_INTERVAL_MS,
 } from "../../shared/constants/index.js";
 
 const logger = createLogger("AutoSaveManager");
-const gzip = promisify(gzipCallback);
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface AutoSaveConfig {
   enabled: boolean;
@@ -37,25 +52,45 @@ interface AutoSaveConfig {
   debounceMs: number;
 }
 
+interface PendingSave {
+  chapterId: string;
+  content: string;
+  projectId: string;
+}
+
+interface SnapshotJob {
+  projectId: string;
+  chapterId: string;
+  content: string;
+}
+
+interface MirrorPayload {
+  projectId: string;
+  chapterId: string;
+  content: string;
+  updatedAt: string | null;
+}
+
+// ─── AutoSaveManager ────────────────────────────────────────────────────────
+
 export class AutoSaveManager extends EventEmitter {
   private static instance: AutoSaveManager;
-  private saveTimers: Map<string, NodeJS.Timeout> = new Map();
-  private intervalTimers: Map<string, NodeJS.Timeout> = new Map();
-  private configs: Map<string, AutoSaveConfig> = new Map();
-  private pendingSaves: Map<string, { chapterId: string; content: string; projectId: string }> =
-    new Map();
-  private lastSaveAt: Map<string, number> = new Map();
-  private snapshotTimers: Map<string, NodeJS.Timeout> = new Map();
-  private lastSnapshotAt: Map<string, number> = new Map();
-  private lastSnapshotHash: Map<string, number> = new Map();
-  private lastSnapshotLength: Map<string, number> = new Map();
-  private lastEmergencySnapshotAt: Map<string, number> = new Map();
-  private snapshotQueue: Array<{ projectId: string; chapterId: string; content: string }> = [];
-  private snapshotProcessing = false;
 
-  private static SNAPSHOT_INTERVAL_MS = SNAPSHOT_INTERVAL_MS;
-  private static SNAPSHOT_KEEP_COUNT = SNAPSHOT_KEEP_COUNT;
-  private static SNAPSHOT_FILE_KEEP_COUNT = SNAPSHOT_FILE_KEEP_COUNT;
+  // Save state
+  private saveTimers = new Map<string, NodeJS.Timeout>();
+  private intervalTimers = new Map<string, NodeJS.Timeout>();
+  private configs = new Map<string, AutoSaveConfig>();
+  private pendingSaves = new Map<string, PendingSave>();
+  private lastSaveAt = new Map<string, number>();
+
+  // Snapshot state
+  private snapshotTimers = new Map<string, NodeJS.Timeout>();
+  private lastSnapshotAt = new Map<string, number>();
+  private lastSnapshotHash = new Map<string, number>();
+  private lastSnapshotLength = new Map<string, number>();
+  private lastEmergencySnapshotAt = new Map<string, number>();
+  private snapshotQueue: SnapshotJob[] = [];
+  private snapshotProcessing = false;
 
   private constructor() {
     super();
@@ -70,6 +105,23 @@ export class AutoSaveManager extends EventEmitter {
       AutoSaveManager.instance = new AutoSaveManager();
     }
     return AutoSaveManager.instance;
+  }
+
+  // ─── Public API ──────────────────────────────────────────────────────────
+
+  /** Check if there are unsaved changes pending IPC or DB write. */
+  hasPendingSaves(): boolean {
+    return this.pendingSaves.size > 0;
+  }
+
+  /** Get count of pending saves - used for quit dialog. */
+  getPendingSaveCount(): number {
+    return this.pendingSaves.size;
+  }
+
+  /** Get list of pending chapter IDs for diagnostics. */
+  getPendingChapterIds(): string[] {
+    return Array.from(this.pendingSaves.keys());
   }
 
   setConfig(projectId: string, config: AutoSaveConfig) {
@@ -93,6 +145,8 @@ export class AutoSaveManager extends EventEmitter {
     );
   }
 
+  // ─── Trigger Save (entry point from IPC) ─────────────────────────────────
+
   async triggerSave(chapterId: string, content: string, projectId: string) {
     const config = this.getConfig(projectId);
 
@@ -100,12 +154,17 @@ export class AutoSaveManager extends EventEmitter {
       return;
     }
 
+    // Track pending content
     this.pendingSaves.set(chapterId, { chapterId, content, projectId });
     this.lastSaveAt.set(chapterId, Date.now());
 
+    // Immediately write mirror (crash safety net)
     await this.writeLatestMirror(projectId, chapterId, content);
+
+    // Emergency micro snapshot for very short content
     void this.maybeCreateEmergencySnapshot(projectId, chapterId, content);
 
+    // Debounce the actual DB save
     const existingTimer = this.saveTimers.get(chapterId);
     if (existingTimer) {
       clearTimeout(existingTimer);
@@ -118,12 +177,11 @@ export class AutoSaveManager extends EventEmitter {
     this.saveTimers.set(chapterId, timer);
   }
 
+  // ─── Core Save Logic ─────────────────────────────────────────────────────
+
   private async performSave(chapterId: string) {
     const pending = this.pendingSaves.get(chapterId);
-
-    if (!pending) {
-      return;
-    }
+    if (!pending) return;
 
     try {
       await chapterService.updateChapter({
@@ -134,15 +192,16 @@ export class AutoSaveManager extends EventEmitter {
       this.pendingSaves.delete(chapterId);
       this.saveTimers.delete(chapterId);
       this.lastSaveAt.delete(chapterId);
-
       this.emit("saved", { chapterId });
 
+      // Post-save: update mirror and maybe enqueue snapshot
       await this.writeLatestMirror(pending.projectId, pending.chapterId, pending.content);
       this.maybeEnqueueSnapshot(pending.projectId, pending.chapterId, pending.content);
 
       logger.info("Auto-save completed", { chapterId });
     } catch (error) {
-      if (isServiceError(error) && error.code === ErrorCode.VALIDATION_FAILED && pending) {
+      // Validation-blocked save: still create safety snapshot
+      if (isServiceError(error) && error.code === ErrorCode.VALIDATION_FAILED) {
         logger.warn("Auto-save blocked by validation; writing safety snapshot", {
           chapterId,
           error,
@@ -150,12 +209,12 @@ export class AutoSaveManager extends EventEmitter {
 
         try {
           await this.writeLatestMirror(pending.projectId, pending.chapterId, pending.content);
-          await this.writeSnapshotMirror(pending.projectId, pending.chapterId, pending.content);
+          await this.writeTimestampedMirror(pending.projectId, pending.chapterId, pending.content);
           await snapshotService.createSnapshot({
             projectId: pending.projectId,
             chapterId: pending.chapterId,
             content: pending.content,
-            description: `Auto-save safety snapshot (blocked save) ${new Date().toLocaleString()}`,
+            description: `Safety snapshot (블로킹된 저장) ${new Date().toLocaleString()}`,
           });
         } catch (mirrorError) {
           logger.error("Failed to write safety snapshot after validation block", mirrorError);
@@ -175,19 +234,25 @@ export class AutoSaveManager extends EventEmitter {
     }
   }
 
+  // ─── Snapshot Scheduling (Time Machine style) ────────────────────────────
+
   private maybeEnqueueSnapshot(projectId: string, chapterId: string, content: string) {
     const key = `${projectId}:${chapterId}`;
     const now = Date.now();
     const lastAt = this.lastSnapshotAt.get(key) ?? 0;
 
-    if (now - lastAt < AutoSaveManager.SNAPSHOT_INTERVAL_MS) return;
+    // Time-based gating
+    if (now - lastAt < SNAPSHOT_INTERVAL_MS) return;
 
+    // Content length minimum
     if (content.length < SNAPSHOT_MIN_CONTENT_LENGTH) return;
 
+    // Content hash dedup
     const hash = this.hashContent(content);
     const lastHash = this.lastSnapshotHash.get(key);
     if (lastHash === hash) return;
 
+    // Change threshold check
     const lastLength = this.lastSnapshotLength.get(key) ?? 0;
     if (lastLength > 0) {
       const diff = Math.abs(content.length - lastLength);
@@ -195,6 +260,7 @@ export class AutoSaveManager extends EventEmitter {
       if (ratio < SNAPSHOT_MIN_CHANGE_RATIO && diff < SNAPSHOT_MIN_CHANGE_ABSOLUTE) return;
     }
 
+    // Accept snapshot
     this.lastSnapshotAt.set(key, now);
     this.lastSnapshotHash.set(key, hash);
     this.lastSnapshotLength.set(key, content.length);
@@ -206,20 +272,22 @@ export class AutoSaveManager extends EventEmitter {
     }
   }
 
+  /**
+   * Emergency micro snapshot for very short content (≤ EMERGENCY_SNAPSHOT_MAX_LENGTH chars).
+   * Runs on a shorter interval than normal snapshots to ensure even tiny
+   * amounts of text are captured.
+   */
   private async maybeCreateEmergencySnapshot(
     projectId: string,
     chapterId: string,
     content: string,
   ) {
-    const MAX_EMERGENCY_LENGTH = 200;
-    const EMERGENCY_INTERVAL_MS = 5000;
-
-    if (content.length > MAX_EMERGENCY_LENGTH) return;
+    if (content.length > EMERGENCY_SNAPSHOT_MAX_LENGTH) return;
 
     const key = `${projectId}:${chapterId}`;
     const now = Date.now();
     const lastAt = this.lastEmergencySnapshotAt.get(key) ?? 0;
-    if (now - lastAt < EMERGENCY_INTERVAL_MS) return;
+    if (now - lastAt < EMERGENCY_SNAPSHOT_INTERVAL_MS) return;
 
     this.lastEmergencySnapshotAt.set(key, now);
 
@@ -228,9 +296,9 @@ export class AutoSaveManager extends EventEmitter {
         projectId,
         chapterId,
         content,
-        description: `Emergency micro snapshot ${new Date().toLocaleString()}`,
+        description: `긴급 마이크로 스냅샷 ${new Date().toLocaleString()}`,
       });
-      await this.writeSnapshotMirror(projectId, chapterId, content);
+      await this.writeTimestampedMirror(projectId, chapterId, content);
     } catch (error) {
       logger.warn("Failed to create emergency micro snapshot", { error, chapterId });
     }
@@ -246,15 +314,11 @@ export class AutoSaveManager extends EventEmitter {
           projectId: job.projectId,
           chapterId: job.chapterId,
           content: job.content,
-          description: `Auto snapshot ${new Date().toLocaleString()}`,
+          description: `자동 스냅샷 ${new Date().toLocaleString()}`,
         });
 
-        await snapshotService.deleteOldSnapshots(
-          job.projectId,
-          AutoSaveManager.SNAPSHOT_KEEP_COUNT,
-        );
-
-        await this.writeSnapshotMirror(job.projectId, job.chapterId, job.content);
+        await snapshotService.deleteOldSnapshots(job.projectId, SNAPSHOT_KEEP_COUNT);
+        await this.writeTimestampedMirror(job.projectId, job.chapterId, job.content);
       } catch (error) {
         logger.error("Failed to create snapshot", error);
       }
@@ -263,14 +327,44 @@ export class AutoSaveManager extends EventEmitter {
     this.snapshotProcessing = false;
   }
 
-  private async writeSnapshotMirror(projectId: string, chapterId: string, content: string) {
+  // ─── Mirror File I/O ─────────────────────────────────────────────────────
+
+  private getMirrorBaseDir(projectId: string, chapterId: string): string {
+    return path.join(
+      app.getPath("userData"),
+      SNAPSHOT_MIRROR_DIR,
+      projectId,
+      chapterId,
+    );
+  }
+
+  /**
+   * Write `latest.snap` – always reflects the most recent content.
+   * This is the primary crash-safety mirror read at startup.
+   */
+  private async writeLatestMirror(projectId: string, chapterId: string, content: string) {
     try {
-      const baseDir = path.join(
-        app.getPath("userData"),
-        SNAPSHOT_MIRROR_DIR,
-        projectId,
-        chapterId,
+      const baseDir = this.getMirrorBaseDir(projectId, chapterId);
+      await fs.mkdir(baseDir, { recursive: true });
+      const targetPath = path.join(baseDir, "latest.snap");
+      const payload = JSON.stringify(
+        { projectId, chapterId, content, updatedAt: new Date().toISOString() },
+        null,
+        2,
       );
+      await writeGzipAtomic(targetPath, payload);
+    } catch (error) {
+      logger.error("Failed to write latest mirror", error);
+    }
+  }
+
+  /**
+   * Write timestamped `.snap` file for point-in-time recovery.
+   * Old files are pruned to SNAPSHOT_FILE_KEEP_COUNT.
+   */
+  private async writeTimestampedMirror(projectId: string, chapterId: string, content: string) {
+    try {
+      const baseDir = this.getMirrorBaseDir(projectId, chapterId);
       await fs.mkdir(baseDir, { recursive: true });
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
       const filePath = path.join(baseDir, `${timestamp}.snap`);
@@ -279,80 +373,170 @@ export class AutoSaveManager extends EventEmitter {
         null,
         2,
       );
-      await this.writeSnapAtomic(filePath, payload);
+      await writeGzipAtomic(filePath, payload);
 
-      const files = (await fs.readdir(baseDir)).filter((name) => name.endsWith(".snap"));
-      if (files.length > AutoSaveManager.SNAPSHOT_FILE_KEEP_COUNT) {
+      // Prune old timestamped mirrors
+      const files = (await fs.readdir(baseDir)).filter(
+        (name) => name.endsWith(".snap") && name !== "latest.snap",
+      );
+      if (files.length > SNAPSHOT_FILE_KEEP_COUNT) {
         const sorted = files.sort();
-        const toDelete = sorted.slice(0, files.length - AutoSaveManager.SNAPSHOT_FILE_KEEP_COUNT);
+        const toDelete = sorted.slice(0, files.length - SNAPSHOT_FILE_KEEP_COUNT);
         await Promise.all(
           toDelete.map((name) => fs.unlink(path.join(baseDir, name)).catch(() => undefined)),
         );
       }
     } catch (error) {
-      logger.error("Failed to write snapshot mirror", error);
+      logger.error("Failed to write timestamped mirror", error);
     }
   }
 
-  private async writeLatestMirror(projectId: string, chapterId: string, content: string) {
-    try {
-      const baseDir = path.join(
-        app.getPath("userData"),
-        SNAPSHOT_MIRROR_DIR,
-        projectId,
-        chapterId,
-      );
-      await fs.mkdir(baseDir, { recursive: true });
-      const targetPath = path.join(baseDir, "latest.snap");
-      const payload = JSON.stringify(
-        { projectId, chapterId, content, updatedAt: new Date().toISOString() },
-        null,
-        2,
-      );
-      await this.writeSnapAtomic(targetPath, payload);
-    } catch (error) {
-      logger.error("Failed to write latest mirror", error);
-    }
-  }
+  // ─── Mirror Recovery (startup / shutdown) ─────────────────────────────────
 
-  private async writeSnapAtomic(targetPath: string, payload: string) {
-    const dir = path.dirname(targetPath);
-    const tempPath = path.join(dir, `${path.basename(targetPath)}.tmp-${Date.now()}`);
-    const buffer = await gzip(Buffer.from(payload, "utf8"));
-    await fs.writeFile(tempPath, buffer);
-    const handle = await fs.open(tempPath, "r+");
+  private async listLatestMirrorFiles(): Promise<string[]> {
+    const baseDir = path.join(app.getPath("userData"), SNAPSHOT_MIRROR_DIR);
+    const results: string[] = [];
+
     try {
-      await handle.sync();
-    } finally {
-      await handle.close();
-    }
-    await fs.rename(tempPath, targetPath);
-    try {
-      const dirHandle = await fs.open(dir, "r");
-      try {
-        await dirHandle.sync();
-      } finally {
-        await dirHandle.close();
+      const projectDirs = await fs.readdir(baseDir, { withFileTypes: true });
+      for (const projectDir of projectDirs) {
+        if (!projectDir.isDirectory() || projectDir.name === "_emergency") continue;
+
+        const projectPath = path.join(baseDir, projectDir.name);
+        const chapterDirs = await fs.readdir(projectPath, { withFileTypes: true });
+        for (const chapterDir of chapterDirs) {
+          if (!chapterDir.isDirectory()) continue;
+          const latestPath = path.join(projectPath, chapterDir.name, "latest.snap");
+          try {
+            await fs.stat(latestPath);
+            results.push(latestPath);
+          } catch {
+            // No latest.snap in this chapter dir
+          }
+        }
       }
     } catch (error) {
-      logger.warn("Failed to fsync snapshot directory", { dir, error });
+      logger.warn("Failed to list mirror files", error);
+    }
+
+    return results;
+  }
+
+  private async readMirrorPayload(filePath: string): Promise<MirrorPayload | null> {
+    try {
+      const raw = await readMaybeGzip(filePath);
+      const payload = JSON.parse(raw) as Record<string, unknown>;
+
+      if (typeof payload.projectId !== "string" || typeof payload.chapterId !== "string") {
+        return null;
+      }
+
+      return {
+        projectId: payload.projectId,
+        chapterId: payload.chapterId,
+        content: typeof payload.content === "string" ? payload.content : "",
+        updatedAt: typeof payload.updatedAt === "string" ? payload.updatedAt : null,
+      };
+    } catch (error) {
+      logger.warn("Failed to read mirror payload", { filePath, error });
+      return null;
     }
   }
 
-  private hashContent(content: string) {
-    let hash = 0;
-    for (let i = 0; i < content.length; i += 1) {
-      hash = (hash * 31 + content.charCodeAt(i)) >>> 0;
+  /**
+   * Convert on-disk mirror files to DB snapshots.
+   *
+   * - Validates that the chapter still exists in DB (FK safety).
+   * - Skips mirrors older than the latest DB snapshot.
+   * - Deletes stale mirror files for missing chapters (disk cleanup).
+   */
+  async flushMirrorsToSnapshots(reason: string) {
+    const mirrorFiles = await this.listLatestMirrorFiles();
+    let created = 0;
+    let cleaned = 0;
+
+    for (const filePath of mirrorFiles) {
+      try {
+        const payload = await this.readMirrorPayload(filePath);
+        if (!payload) continue;
+
+        // FK safety: verify chapter exists
+        const chapter = await db.getClient().chapter.findUnique({
+          where: { id: payload.chapterId },
+          select: { id: true, projectId: true },
+        });
+
+        if (!chapter) {
+          logger.warn("Mirror snapshot skipped (missing chapter), cleaning up stale mirror", {
+            chapterId: payload.chapterId,
+            filePath,
+          });
+          await this.cleanStaleMirrorDir(filePath);
+          cleaned += 1;
+          continue;
+        }
+
+        if (String((chapter as { projectId: unknown }).projectId) !== payload.projectId) {
+          logger.warn("Mirror snapshot skipped (project mismatch), cleaning up", {
+            chapterId: payload.chapterId,
+            projectId: payload.projectId,
+            filePath,
+          });
+          await this.cleanStaleMirrorDir(filePath);
+          cleaned += 1;
+          continue;
+        }
+
+        // Time check: skip if mirror is older than latest DB snapshot
+        const latest = await snapshotService.getLatestSnapshot(payload.chapterId);
+        const latestAt = latest?.createdAt
+          ? new Date(String(latest.createdAt)).getTime()
+          : 0;
+        const mirrorAt = payload.updatedAt ? new Date(payload.updatedAt).getTime() : 0;
+
+        if (mirrorAt && mirrorAt <= latestAt) {
+          continue;
+        }
+
+        await snapshotService.createSnapshot({
+          projectId: payload.projectId,
+          chapterId: payload.chapterId,
+          content: payload.content,
+          description: `미러 복구 스냅샷 (${reason}) ${new Date().toLocaleString()}`,
+          type: "AUTO",
+        });
+        created += 1;
+      } catch (error) {
+        logger.warn("Failed to flush mirror snapshot", { error, filePath });
+      }
     }
-    return hash;
+
+    logger.info("Mirror snapshot flush completed", { created, cleaned, reason });
+    return { created, cleaned };
   }
+
+  /**
+   * Remove stale mirror directory (for deleted chapters).
+   * Deletes all .snap files and the directory itself.
+   */
+  private async cleanStaleMirrorDir(mirrorFilePath: string) {
+    try {
+      const dir = path.dirname(mirrorFilePath);
+      const files = await fs.readdir(dir);
+      await Promise.all(
+        files.map((name) => fs.unlink(path.join(dir, name)).catch(() => undefined)),
+      );
+      await fs.rmdir(dir).catch(() => undefined);
+    } catch (error) {
+      logger.warn("Failed to clean stale mirror directory", { mirrorFilePath, error });
+    }
+  }
+
+  // ─── Auto Save Scheduling ────────────────────────────────────────────────
 
   startAutoSave(projectId: string) {
     const config = this.getConfig(projectId);
-
-    if (!config.enabled) {
-      return;
-    }
+    if (!config.enabled) return;
 
     const existingTimer = this.intervalTimers.get(projectId);
     if (existingTimer) {
@@ -361,20 +545,17 @@ export class AutoSaveManager extends EventEmitter {
 
     const timer = setInterval(async () => {
       const pendingSaves = Array.from(this.pendingSaves.entries());
-
       for (const [chapterId] of pendingSaves) {
         await this.performSave(chapterId);
       }
     }, config.interval);
 
     this.intervalTimers.set(projectId, timer);
-
     logger.info("Auto-save started", { projectId, interval: config.interval });
   }
 
   stopAutoSave(projectId: string) {
     const timer = this.intervalTimers.get(projectId);
-
     if (timer) {
       clearInterval(timer);
       this.intervalTimers.delete(projectId);
@@ -399,12 +580,12 @@ export class AutoSaveManager extends EventEmitter {
 
     const timer = setInterval(() => {
       void this.createSnapshot(projectId);
-    }, AutoSaveManager.SNAPSHOT_INTERVAL_MS);
+    }, SNAPSHOT_INTERVAL_MS);
 
     this.snapshotTimers.set(projectId, timer);
     logger.info("Snapshot schedule started", {
       projectId,
-      interval: AutoSaveManager.SNAPSHOT_INTERVAL_MS,
+      interval: SNAPSHOT_INTERVAL_MS,
     });
   }
 
@@ -418,33 +599,41 @@ export class AutoSaveManager extends EventEmitter {
           projectId,
           chapterId: String(chapterData.id ?? chapterId),
           content: String(chapterData.content ?? ""),
-          description: `Auto-snapshot at ${new Date().toLocaleString()}`,
+          description: `자동 스냅샷 ${new Date().toLocaleString()}`,
         });
       } else {
         await snapshotService.createSnapshot({
           projectId,
           content: JSON.stringify({ timestamp: Date.now() }),
-          description: `Project snapshot at ${new Date().toLocaleString()}`,
+          description: `프로젝트 스냅샷 ${new Date().toLocaleString()}`,
         });
       }
 
       await snapshotService.deleteOldSnapshots(projectId, DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT);
-
       logger.info("Snapshot created", { projectId, chapterId });
     } catch (error) {
       logger.error("Failed to create snapshot", error);
     }
   }
 
+  // ─── Flush (quit / critical) ──────────────────────────────────────────────
+
+  /**
+   * Flush ALL pending saves to DB. Used during normal quit.
+   */
   async flushAll() {
     const pendingSaves = Array.from(this.pendingSaves.keys());
-
     for (const chapterId of pendingSaves) {
       await this.performSave(chapterId);
     }
   }
 
-  async flushCritical() {
+  /**
+   * Emergency flush: write mirrors + snapshots for all pending content.
+   * Called when time is critical (app crashing, OS killing process).
+   * Returns counts for diagnostics.
+   */
+  async flushCritical(): Promise<{ mirrored: number; snapshots: number }> {
     const pending = Array.from(this.pendingSaves.values());
     if (pending.length === 0) {
       return { mirrored: 0, snapshots: 0 };
@@ -453,6 +642,7 @@ export class AutoSaveManager extends EventEmitter {
     let mirrored = 0;
     let snapshots = 0;
 
+    // Phase 1: write mirrors (fastest, most important)
     for (const entry of pending) {
       try {
         await this.writeLatestMirror(entry.projectId, entry.chapterId, entry.content);
@@ -462,13 +652,14 @@ export class AutoSaveManager extends EventEmitter {
       }
     }
 
+    // Phase 2: create DB snapshots (slower but more accessible)
     for (const entry of pending) {
       try {
         await snapshotService.createSnapshot({
           projectId: entry.projectId,
           chapterId: entry.chapterId,
           content: entry.content,
-          description: `Emergency snapshot at ${new Date().toLocaleString()}`,
+          description: `긴급 스냅샷 ${new Date().toLocaleString()}`,
         });
         snapshots += 1;
       } catch (error) {
@@ -480,6 +671,16 @@ export class AutoSaveManager extends EventEmitter {
     return { mirrored, snapshots };
   }
 
+  // ─── Utilities ────────────────────────────────────────────────────────────
+
+  private hashContent(content: string): number {
+    let hash = 0;
+    for (let i = 0; i < content.length; i += 1) {
+      hash = (hash * 31 + content.charCodeAt(i)) >>> 0;
+    }
+    return hash;
+  }
+
   private startCleanupInterval() {
     setInterval(() => {
       this.cleanupOldEntries();
@@ -488,10 +689,8 @@ export class AutoSaveManager extends EventEmitter {
 
   private cleanupOldEntries() {
     const now = Date.now();
-    const staleThreshold = AUTO_SAVE_STALE_THRESHOLD_MS;
-
     for (const [chapterId, timestamp] of Array.from(this.lastSaveAt.entries())) {
-      if (now - timestamp > staleThreshold) {
+      if (now - timestamp > AUTO_SAVE_STALE_THRESHOLD_MS) {
         const timer = this.saveTimers.get(chapterId);
         if (timer) {
           clearTimeout(timer);

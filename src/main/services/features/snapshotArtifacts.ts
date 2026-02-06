@@ -1,8 +1,6 @@
 import { app } from "electron";
 import { promises as fs } from "fs";
 import path from "path";
-import { promisify } from "node:util";
-import { gzip as gzipCallback, gunzip as gunzipCallback } from "node:zlib";
 import { db } from "../../database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import {
@@ -15,10 +13,12 @@ import {
 import { sanitizeName } from "../../../shared/utils/sanitize.js";
 import type { SnapshotCreateInput } from "../../../shared/types/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
+import { writeFileAtomic, readMaybeGzip } from "../../utils/atomicWrite.js";
+import { promisify } from "node:util";
+import { gzip as gzipCallback } from "node:zlib";
 
 const logger = createLogger("SnapshotArtifacts");
 const gzip = promisify(gzipCallback);
-const gunzip = promisify(gunzipCallback);
 
 
 type FullSnapshotData = {
@@ -74,10 +74,8 @@ type FullSnapshotData = {
 };
 
 export async function readFullSnapshotArtifact(filePath: string): Promise<FullSnapshotData> {
-  const buffer = await fs.readFile(filePath);
-  const isGzip = buffer.length >= 2 && buffer[0] === 0x1f && buffer[1] === 0x8b;
-  const jsonBuffer = isGzip ? await gunzip(buffer) : buffer;
-  const payload = JSON.parse(jsonBuffer.toString("utf8"));
+  const raw = await readMaybeGzip(filePath);
+  const payload = JSON.parse(raw);
   return payload as FullSnapshotData;
 }
 
@@ -129,29 +127,6 @@ function resolveProjectBaseDir(projectPath: string) {
 function resolveLocalSnapshotDir(projectPath: string, projectName: string) {
   const baseDir = resolveProjectBaseDir(projectPath);
   return path.join(baseDir, ".luie", LUIE_SNAPSHOTS_DIR, projectName);
-}
-
-async function writeFileAtomic(targetPath: string, buffer: Buffer) {
-  const dir = path.dirname(targetPath);
-  const tempPath = path.join(dir, `${path.basename(targetPath)}.tmp-${Date.now()}`);
-  await fs.writeFile(tempPath, buffer);
-  const handle = await fs.open(tempPath, "r+");
-  try {
-    await handle.sync();
-  } finally {
-    await handle.close();
-  }
-  await fs.rename(tempPath, targetPath);
-  try {
-    const dirHandle = await fs.open(dir, "r");
-    try {
-      await dirHandle.sync();
-    } finally {
-      await dirHandle.close();
-    }
-  } catch (error) {
-    logger.warn("Failed to fsync snapshot directory", { dir, error });
-  }
 }
 
 export async function writeFullSnapshotArtifact(

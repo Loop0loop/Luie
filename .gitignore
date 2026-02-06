@@ -23,6 +23,10 @@ lerna-debug.log*
 *.db
 *.db-journal
 prisma/migrations/
+prisma/dev.db-wal
+prisma/dev.db-shm
+
+
 
 # Editor
 .vscode/*
