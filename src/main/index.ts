@@ -171,14 +171,16 @@ if (!gotTheLock) {
     }
   });
 
-  // Before quit - graceful shutdown with safety dialog
+  // Before quit - VS Code–style graceful shutdown
   //
   // Flow:
-  //   1. Request renderer to flush its IPC autoSave queue
-  //   2. Wait for flush response (or timeout)
-  //   3. Main-side: flushCritical (mirrors) → flushAll (DB) → flushMirrors → prune
-  //   4. If save failed, show confirmation dialog before quitting
-  //   5. Disconnect DB and exit
+  //   1. Request renderer to flush its preload autoSave queue → main.triggerSave
+  //   2. Write mirrors IMMEDIATELY (crash safety BEFORE dialog)
+  //   3. If unsaved changes exist → show 3-button dialog:
+  //        [저장 후 종료] | [저장하지 않고 종료] | [취소]
+  //   4. Save / Don't Save / Cancel
+  //   5. If dialog crashes → mirrors are already on disk → recovered at next startup
+  //   6. Disconnect DB and exit
   let isQuitting = false;
   app.on("before-quit", (event) => {
     if (isQuitting) return;
@@ -188,8 +190,13 @@ if (!gotTheLock) {
     void (async () => {
       logger.info("App is quitting");
 
-      // ── Phase 1: Request renderer to flush its pending IPC queue ──
+      const { autoSaveManager } = await import("./manager/autoSaveManager.js");
+      const { snapshotService } = await import("./services/features/snapshotService.js");
       const mainWindow = windowManager.getMainWindow();
+
+      // ── Phase 1: Request renderer to flush its pending IPC queue ──────
+      // The renderer's preload has a 300ms debounce queue for autoSave IPC.
+      // We need that queue to flush so our main-side pendingSaves is complete.
       if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
         try {
           const rendererFlushed = await new Promise<boolean>((resolve) => {
@@ -200,66 +207,90 @@ if (!gotTheLock) {
             });
             mainWindow.webContents.send(IPC_CHANNELS.APP_BEFORE_QUIT);
           });
-          logger.info("Renderer flush completed", { rendererFlushed });
+          logger.info("Renderer flush phase completed", { rendererFlushed });
         } catch (error) {
           logger.warn("Renderer flush request failed", error);
         }
       }
 
-      // ── Phase 2: Main-side saves ──
-      let saveFailed = false;
-      let pendingCount = 0;
+      // ── Phase 2: Write mirrors IMMEDIATELY (crash safety net) ─────────
+      // Even if the dialog below crashes or the app is killed, mirrors
+      // on disk ensure recovery at next startup via flushMirrorsToSnapshots.
       try {
-        const { autoSaveManager } = await import("./manager/autoSaveManager.js");
-        pendingCount = autoSaveManager.getPendingSaveCount();
-
-        // Write mirrors for all pending content (fast, most critical)
-        await autoSaveManager.flushCritical();
-
-        // Attempt DB saves (with timeout to prevent hanging)
-        await Promise.race([
-          autoSaveManager.flushAll(),
-          new Promise((resolve) => setTimeout(resolve, QUIT_SAVE_TIMEOUT_MS)),
-        ]);
-
-        // Convert any remaining mirrors to DB snapshots
-        await autoSaveManager.flushMirrorsToSnapshots("session-end");
-
-        // Prune old snapshots (Time Machine style)
-        const { snapshotService } = await import("./services/features/snapshotService.js");
-        await snapshotService.pruneSnapshotsAllProjects();
+        const { mirrored } = await autoSaveManager.flushCritical();
+        logger.info("Pre-dialog mirror flush completed", { mirrored });
       } catch (error) {
-        logger.error("Failed to flush auto-save during quit", error);
-        saveFailed = true;
+        logger.error("Pre-dialog mirror flush failed", error);
       }
 
-      // ── Phase 3: Safety dialog if save failed ──
-      if (saveFailed && mainWindow && !mainWindow.isDestroyed()) {
+      // ── Phase 3: VS Code–style confirmation dialog ────────────────────
+      const pendingCount = autoSaveManager.getPendingSaveCount();
+
+      if (pendingCount > 0 && mainWindow && !mainWindow.isDestroyed()) {
         try {
+          // 0 = 저장 후 종료, 1 = 저장하지 않고 종료, 2 = 취소
           const response = await dialog.showMessageBox(mainWindow, {
-            type: "warning",
-            title: "저장 실패",
-            message: `${pendingCount}개의 변경사항을 저장하지 못했습니다.`,
-            detail:
-              "미러 파일에 백업이 저장되었을 수 있습니다.\n" +
-              "다음 앱 실행 시 자동 복구를 시도합니다.\n\n" +
-              "그래도 종료하시겠습니까?",
-            buttons: ["종료", "취소"],
-            defaultId: 1,
-            cancelId: 1,
+            type: "question",
+            title: "저장되지 않은 변경사항",
+            message: `${pendingCount}개의 변경사항이 저장되지 않았습니다.`,
+            detail: "저장하지 않으면 변경사항이 손실될 수 있습니다.",
+            buttons: ["저장 후 종료", "저장하지 않고 종료", "취소"],
+            defaultId: 0,
+            cancelId: 2,
+            noLink: true,
           });
 
-          if (response.response === 1) {
-            // User chose to cancel quit
+          if (response.response === 2) {
+            // ─ Cancel: user wants to keep editing
+            logger.info("Quit cancelled by user");
             isQuitting = false;
             return;
           }
+
+          if (response.response === 0) {
+            // ─ Save & Quit: flush all pending to DB + create snapshots
+            logger.info("User chose: save and quit");
+            try {
+              await Promise.race([
+                autoSaveManager.flushAll(),
+                new Promise((resolve) => setTimeout(resolve, QUIT_SAVE_TIMEOUT_MS)),
+              ]);
+              await autoSaveManager.flushMirrorsToSnapshots("session-end");
+            } catch (error) {
+              logger.error("Save during quit failed", error);
+              // Mirrors were already written in Phase 2, so content is safe
+            }
+          } else {
+            // ─ Don't Save: still convert mirrors to snapshot as safety net
+            logger.info("User chose: quit without saving (mirrors already on disk)");
+            try {
+              await autoSaveManager.flushMirrorsToSnapshots("session-end-no-save");
+            } catch (error) {
+              logger.warn("Mirror-to-snapshot conversion failed", error);
+            }
+          }
         } catch (dialogError) {
-          logger.warn("Failed to show quit confirmation dialog", dialogError);
+          // Dialog crashed or couldn't show → mirrors are already saved.
+          // Fall through to exit. Mirrors will be recovered at next startup.
+          logger.error("Quit dialog failed; exiting with mirrors on disk", dialogError);
+        }
+      } else {
+        // No pending saves → clean exit, just do housekeeping
+        try {
+          await autoSaveManager.flushMirrorsToSnapshots("session-end");
+        } catch (error) {
+          logger.warn("Session-end mirror flush failed", error);
         }
       }
 
-      // ── Phase 4: Disconnect and exit ──
+      // ── Phase 4: Prune old snapshots (Time Machine housekeeper) ───────
+      try {
+        await snapshotService.pruneSnapshotsAllProjects();
+      } catch (error) {
+        logger.warn("Snapshot pruning failed during quit", error);
+      }
+
+      // ── Phase 5: Disconnect and exit ──────────────────────────────────
       try {
         const { db } = await import("./database/index.js");
         await db.disconnect();
