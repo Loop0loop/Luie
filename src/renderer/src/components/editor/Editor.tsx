@@ -29,6 +29,7 @@ import { SmartLink } from "./extensions/SmartLink";
 import { DiffHighlight } from "./extensions/DiffExtension";
 import { SmartLinkTooltip } from "./SmartLinkTooltip";
 import { Loader2, Check } from "lucide-react";
+import { api } from "../../services/api";
 import {
   PLACEHOLDER_EDITOR_BODY,
   PLACEHOLDER_EDITOR_TITLE,
@@ -164,6 +165,9 @@ function Editor({
         
         // Update local content state for autosave hook to pick up
         setContent(html); 
+        if (!readOnly) {
+          api.lifecycle?.setDirty?.(true);
+        }
         
         updateStats(text);
       },

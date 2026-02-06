@@ -117,6 +117,7 @@ type AutoSavePending = {
 
 const autoSaveQueue = new Map<string, AutoSavePending>();
 let autoSaveFlushTimer: number | null = null;
+let rendererDirty = false;
 
 function scheduleAutoSaveFlush() {
   if (autoSaveFlushTimer !== null) return;
@@ -298,6 +299,13 @@ contextBridge.exposeInMainWorld("api", {
       scheduleAutoSaveFlush();
     }),
 
+  // Lifecycle API
+  lifecycle: {
+    setDirty: (dirty: boolean): void => {
+      rendererDirty = Boolean(dirty);
+    },
+  },
+
   // Window API
   window: {
     maximize: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.WINDOW_MAXIMIZE),
@@ -371,6 +379,7 @@ contextBridge.exposeInMainWorld("api", {
 // all dirty content reaches the main process before shutdown.
 
 ipcRenderer.on(IPC_CHANNELS.APP_BEFORE_QUIT, async () => {
+  const hadQueuedAutoSaves = autoSaveQueue.size > 0;
   try {
     // Force-flush any queued auto-saves so IPC arrives at main
     await flushAutoSaves();
@@ -379,7 +388,10 @@ ipcRenderer.on(IPC_CHANNELS.APP_BEFORE_QUIT, async () => {
   } catch {
     // Best effort – even if this fails, mirrors may still have content
   } finally {
-    ipcRenderer.send(IPC_CHANNELS.APP_FLUSH_COMPLETE);
+    ipcRenderer.send(IPC_CHANNELS.APP_FLUSH_COMPLETE, {
+      hadQueuedAutoSaves,
+      rendererDirty,
+    });
   }
 });
 

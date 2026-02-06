@@ -125,6 +125,9 @@ export type RendererApi = {
     type?: "all" | "character" | "term";
   }) => Promise<IPCResponse<SearchResult[]>>;
   autoSave: (chapterId: string, content: string, projectId: string) => Promise<IPCResponse<unknown>>;
+  lifecycle: {
+    setDirty: (dirty: boolean) => void;
+  };
   settings: {
     getAll: () => Promise<IPCResponse<AppSettings>>;
     getEditor: () => Promise<IPCResponse<EditorSettings>>;

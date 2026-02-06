@@ -197,17 +197,31 @@ if (!gotTheLock) {
       // ── Phase 1: Request renderer to flush its pending IPC queue ──────
       // The renderer's preload has a 300ms debounce queue for autoSave IPC.
       // We need that queue to flush so our main-side pendingSaves is complete.
+      let rendererFlushed = false;
+      let rendererHadQueued = false;
+      let rendererDirty = false;
+
       if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
         try {
-          const rendererFlushed = await new Promise<boolean>((resolve) => {
+          rendererFlushed = await new Promise<boolean>((resolve) => {
             const timeout = setTimeout(() => resolve(false), QUIT_RENDERER_FLUSH_TIMEOUT_MS);
-            ipcMain.once(IPC_CHANNELS.APP_FLUSH_COMPLETE, () => {
+            ipcMain.once(IPC_CHANNELS.APP_FLUSH_COMPLETE, (_event, payload) => {
+              rendererHadQueued = Boolean(
+                (payload as { hadQueuedAutoSaves?: unknown } | undefined)?.hadQueuedAutoSaves,
+              );
+              rendererDirty = Boolean(
+                (payload as { rendererDirty?: unknown } | undefined)?.rendererDirty,
+              );
               clearTimeout(timeout);
               resolve(true);
             });
             mainWindow.webContents.send(IPC_CHANNELS.APP_BEFORE_QUIT);
           });
-          logger.info("Renderer flush phase completed", { rendererFlushed });
+          logger.info("Renderer flush phase completed", {
+            rendererFlushed,
+            rendererHadQueued,
+            rendererDirty,
+          });
         } catch (error) {
           logger.warn("Renderer flush request failed", error);
         }
@@ -226,19 +240,42 @@ if (!gotTheLock) {
       // ── Phase 3: VS Code–style confirmation dialog ────────────────────
       const pendingCount = autoSaveManager.getPendingSaveCount();
 
-      if (pendingCount > 0 && mainWindow && !mainWindow.isDestroyed()) {
+      const shouldPrompt =
+        pendingCount > 0 ||
+        rendererHadQueued ||
+        rendererDirty ||
+        !rendererFlushed;
+
+      if (shouldPrompt) {
         try {
           // 0 = 저장 후 종료, 1 = 저장하지 않고 종료, 2 = 취소
-          const response = await dialog.showMessageBox(mainWindow, {
+          const message = pendingCount > 0
+            ? `${pendingCount}개의 변경사항이 저장되지 않았습니다.`
+            : "저장되지 않은 변경사항이 있을 수 있습니다.";
+          const dialogTarget = mainWindow && !mainWindow.isDestroyed()
+            ? mainWindow
+            : undefined;
+          const response = dialogTarget
+            ? await dialog.showMessageBox(dialogTarget, {
+              type: "question",
+              title: "저장되지 않은 변경사항",
+              message,
+              detail: "저장하지 않으면 변경사항이 손실될 수 있습니다.",
+              buttons: ["저장 후 종료", "저장하지 않고 종료", "취소"],
+              defaultId: 0,
+              cancelId: 2,
+              noLink: true,
+            })
+            : await dialog.showMessageBox({
             type: "question",
             title: "저장되지 않은 변경사항",
-            message: `${pendingCount}개의 변경사항이 저장되지 않았습니다.`,
+            message,
             detail: "저장하지 않으면 변경사항이 손실될 수 있습니다.",
             buttons: ["저장 후 종료", "저장하지 않고 종료", "취소"],
             defaultId: 0,
             cancelId: 2,
             noLink: true,
-          });
+            });
 
           if (response.response === 2) {
             // ─ Cancel: user wants to keep editing

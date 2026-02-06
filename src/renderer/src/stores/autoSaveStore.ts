@@ -29,6 +29,7 @@ export const useAutoSaveStore = create<AutoSaveStore>((set, get) => {
         if (get().saveStatus !== "idle") {
           set({ saveStatus: "idle" });
         }
+        api.lifecycle?.setDirty?.(false);
         return;
       }
 
@@ -37,6 +38,7 @@ export const useAutoSaveStore = create<AutoSaveStore>((set, get) => {
       }
 
       lastRequestedContentByChapter.set(chapterId, content);
+      api.lifecycle?.setDirty?.(true);
       set({ saveStatus: "saving" });
 
       try {
@@ -44,6 +46,7 @@ export const useAutoSaveStore = create<AutoSaveStore>((set, get) => {
         lastSavedContentByChapter.set(chapterId, content);
         lastRequestedContentByChapter.delete(chapterId);
         set({ saveStatus: "saved" });
+        api.lifecycle?.setDirty?.(false);
 
         setTimeout(() => {
           if (get().saveStatus === "saved") {

@@ -154,6 +154,10 @@ declare global {
         projectId: string,
       ) => Promise<IPCResponse<unknown>>;
 
+      lifecycle: {
+        setDirty: (dirty: boolean) => void;
+      };
+
       // Settings API
       settings: {
         getAll: () => Promise<IPCResponse<AppSettings>>;

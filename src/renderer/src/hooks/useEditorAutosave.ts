@@ -29,6 +29,7 @@ export function useEditorAutosave({ onSave, title, content }: UseEditorAutosaveP
       lastSavedRef.current = { title: currentTitle, content: currentContent };
       setSaveStatus("saved");
       retryCount.current = 0;
+      api.lifecycle?.setDirty?.(false);
       
       // Reset to idle after a delay for UI
       setTimeout(() => setSaveStatus("idle"), 2000);
@@ -59,11 +60,14 @@ export function useEditorAutosave({ onSave, title, content }: UseEditorAutosaveP
     
     // Don't save if nothing changed from LAST SUCCESSFUL save
     if (
-      title === lastSavedRef.current.title && 
+      title === lastSavedRef.current.title &&
       content === lastSavedRef.current.content
     ) {
+      api.lifecycle?.setDirty?.(false);
       return;
     }
+
+    api.lifecycle?.setDirty?.(true);
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
