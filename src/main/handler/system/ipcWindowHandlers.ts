@@ -52,5 +52,14 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
         return false;
       },
     },
+    {
+      channel: IPC_CHANNELS.WINDOW_OPEN_EXPORT,
+      logTag: "WINDOW_OPEN_EXPORT",
+      failMessage: "Failed to open export window",
+      handler: (_, chapterId: string) => {
+        windowManager.createExportWindow(chapterId);
+        return true;
+      },
+    },
   ]);
 }

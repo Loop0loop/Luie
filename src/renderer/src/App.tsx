@@ -22,9 +22,20 @@ import { api } from "./services/api";
 const SettingsModal = lazy(() => import("./components/settings/SettingsModal"));
 const ResearchPanel = lazy(() => import("./components/research/ResearchPanel"));
 const SnapshotViewer = lazy(() => import("./components/snapshot/SnapshotViewer"));
+const ExportPreviewPanel = lazy(() => import("./components/export/ExportPreviewPanel"));
+const ExportWindow = lazy(() => import("./components/export/ExportWindow"));
 
 export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isExportWindow, setIsExportWindow] = useState(window.location.hash === "#export");
+
+  useEffect(() => {
+    const checkHash = () => {
+      setIsExportWindow(window.location.hash === "#export");
+    };
+    window.addEventListener("hashchange", checkHash);
+    return () => window.removeEventListener("hashchange", checkHash);
+  }, []);
 
   const { view } = useUIStore();
   const { items: projects, createProject, setCurrentProject, loadProjects } = useProjectStore();
@@ -154,6 +165,16 @@ export default function App() {
     }
   }, [loadProjects, setCurrentProject, setView]);
 
+
+
+  if (isExportWindow) {
+    return (
+      <Suspense fallback={<div className="flex items-center justify-center h-screen bg-[#333] text-white">Loading...</div>}>
+         <ExportWindow />
+      </Suspense>
+    );
+  }
+
   if (view === "template" || !currentProject) {
     return (
       <ProjectTemplateSelector
@@ -197,6 +218,7 @@ export default function App() {
           >
             <Editor
               key={activeChapterId ?? "main-editor"}
+              chapterId={activeChapterId ?? undefined}
               initialTitle={activeChapterTitle}
               initialContent={content}
               onSave={handleSave}
@@ -235,6 +257,8 @@ export default function App() {
                             await handleSave(activeChapterTitle, nextContent);
                           }}
                       />
+                    ) : rightPanelContent.type === "export" ? (
+                      <ExportPreviewPanel title={activeChapterTitle} />
                     ) : (
                       <div
                         style={{

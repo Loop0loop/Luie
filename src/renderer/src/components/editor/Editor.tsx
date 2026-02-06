@@ -28,7 +28,7 @@ import { useEditorConfig } from "../../hooks/useEditorConfig";
 import { SmartLink } from "./extensions/SmartLink";
 import { DiffHighlight } from "./extensions/DiffExtension";
 import { SmartLinkTooltip } from "./SmartLinkTooltip";
-import { Loader2, Check } from "lucide-react";
+import { Loader2, Check, Share } from "lucide-react";
 import { api } from "../../services/api";
 import {
   PLACEHOLDER_EDITOR_BODY,
@@ -37,6 +37,7 @@ import {
   TEXT_EDITOR_STATUS_WORD_LABEL,
   TEXT_EDITOR_STATUS_SEPARATOR,
 } from "../../../../shared/constants";
+
 
 // Simple Callout Extension (inline to avoid dependencies)
 const Callout = Node.create({
@@ -80,6 +81,7 @@ interface EditorProps {
   readOnly?: boolean;
   comparisonContent?: string;
   diffMode?: "current" | "snapshot";
+  chapterId?: string;
 }
 
 function Editor({
@@ -89,6 +91,7 @@ function Editor({
   readOnly = false,
   comparisonContent,
   diffMode,
+  chapterId,
 }: EditorProps) {
   const { fontFamilyCss, fontSize, lineHeight, getFontFamily } = useEditorConfig();
   const { wordCount, charCount, updateStats } = useEditorStats();
@@ -151,7 +154,7 @@ function Editor({
         mode: diffMode,
       }),
     ],
-    [],
+    [comparisonContent, diffMode],
   );
 
   const editor = useEditor(
@@ -207,6 +210,14 @@ function Editor({
   if (!editor) {
     return null;
   }
+
+  const handleOpenExport = async () => {
+    if (chapterId) {
+      await api.window.openExport(chapterId);
+    } else {
+      api.logger.warn("No chapterId available for export");
+    }
+  };
 
   return (
     <div
@@ -270,7 +281,7 @@ function Editor({
         </div>
       </div>
 
-      <div className="h-7 border-t border-border flex items-center justify-end gap-4 px-5 text-xs text-muted bg-bg-primary shrink-0 select-none">
+      <div className="h-10 border-t border-border flex items-center justify-end gap-4 px-5 text-xs text-muted bg-bg-primary shrink-0 select-none">
         {/* Save Status Indicator */}
         <span className="flex items-center gap-1.5 min-w-15">
           {saveStatus === "saving" && (
@@ -295,6 +306,15 @@ function Editor({
           {TEXT_EDITOR_STATUS_SEPARATOR}
           {TEXT_EDITOR_STATUS_WORD_LABEL} {wordCount}
         </span>
+
+        <button 
+          className="flex items-center gap-1.5 px-2 py-1 -mr-2 rounded hover:bg-hover hover:text-fg transition-colors"
+          onClick={handleOpenExport}
+          title="빠른 내보내기"
+        >
+          <Share className="w-3.5 h-3.5" />
+          <span className="font-medium">빠른 내보내기</span>
+        </button>
       </div>
 
       <SmartLinkTooltip />

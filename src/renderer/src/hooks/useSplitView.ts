@@ -51,6 +51,11 @@ export function useSplitView() {
     [setSplitView, setRightPanelContent],
   );
 
+  const handleOpenExport = useCallback(() => {
+    setSplitView(true);
+    setRightPanelContent({ type: "export" });
+  }, [setSplitView, setRightPanelContent]);
+
   const startResizeSplit = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -92,6 +97,7 @@ export function useSplitView() {
     handleSelectResearchItem,
     handleSplitView,
     handleOpenSnapshot,
+    handleOpenExport,
     startResizeSplit,
   };
 }

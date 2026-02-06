@@ -142,6 +142,7 @@ export type RendererApi = {
     maximize: () => Promise<IPCResponse<unknown>>;
     toggleFullscreen: () => Promise<IPCResponse<unknown>>;
     setFullscreen: (flag: boolean) => Promise<IPCResponse<unknown>>;
+    openExport: (chapterId: string) => Promise<IPCResponse<unknown>>;
   };
   logger: {
     debug: (message: string, data?: unknown) => Promise<IPCResponse<unknown>>;

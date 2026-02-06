@@ -15,7 +15,7 @@ export type ContextTab = "synopsis" | "characters" | "terms";
 export type ResearchTab = "character" | "world" | "scrap";
 
 interface RightPanelContent {
-  type: "research" | "editor" | "snapshot";
+  type: "research" | "editor" | "snapshot" | "export";
   id?: string;
   tab?: ResearchTab;
   snapshot?: Snapshot;

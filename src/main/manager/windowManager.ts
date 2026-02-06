@@ -89,6 +89,65 @@ class WindowManager {
       this.mainWindow.close()
     }
   }
+
+  // ─── Export Window ────────────────────────────────────────────────────────
+  private exportWindow: BrowserWindow | null = null
+
+  createExportWindow(chapterId: string): BrowserWindow {
+    if (this.exportWindow) {
+      this.exportWindow.focus()
+      return this.exportWindow
+    }
+
+    // Default size for export preview (large enough for split view)
+    const width = 1200
+    const height = 900
+
+    this.exportWindow = new BrowserWindow({
+      width,
+      height,
+      minWidth: 1000,
+      minHeight: 700,
+      title: "내보내기 및 인쇄 미리보기",
+      titleBarStyle: 'hiddenInset',
+      trafficLightPosition: { x: WINDOW_TRAFFIC_LIGHT_X, y: WINDOW_TRAFFIC_LIGHT_Y },
+      webPreferences: {
+        preload: join(__dirname, '../preload/index.mjs'),
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: false,
+      },
+    })
+
+    // Load URL with hash routing
+    const isPackaged = app.isPackaged
+    const devServerUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173'
+    const useDevServer = !isPackaged && process.env.NODE_ENV !== 'production'
+    const query = `?chapterId=${chapterId}`
+    const hash = '#export'
+
+    if (useDevServer) {
+      const url = `${devServerUrl}/${query}${hash}`
+      logger.info('Loading export window (dev)', { url })
+      this.exportWindow.loadURL(url)
+    } else {
+      const indexPath = join(__dirname, '../renderer/index.html')
+      logger.info('Loading export window (prod)', { path: indexPath })
+      this.exportWindow.loadFile(indexPath, { hash: 'export', search: query })
+    }
+
+    this.exportWindow.on('closed', () => {
+      this.exportWindow = null
+      logger.info('Export window closed')
+    })
+    
+    // Open DevTools in dev mode
+    if (useDevServer) {
+      this.exportWindow.webContents.openDevTools({ mode: 'detach' })
+    }
+
+    return this.exportWindow
+  }
 }
 
 export const windowManager = new WindowManager()
