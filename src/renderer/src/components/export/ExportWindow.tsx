@@ -1,30 +1,42 @@
 import { useState, useEffect } from "react";
-import { 
-  ChevronDown, 
-  ChevronRight, 
-  Settings, 
-  FileText, 
-  Type, 
-  Layout, 
-  Download 
+import {
+  Download,
+  FileText,
+  Layout,
+  Type,
+  AlignJustify,
+  Info,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
+import WindowBar from "../layout/WindowBar";
 import { cn } from "../../../../shared/types/utils";
 
 /**
- * Export Window - Independent Window for document export
- * PRD: "Left Control, Right View" architecture
+ * Helper Component for Accordion Headers
  */
-
-const SectionHeader = ({ id, title, icon: Icon, expanded, onToggle }: { id: string; title: string; icon: React.ElementType; expanded: boolean; onToggle: (id: string) => void }) => (
-  <button 
-    className="flex items-center justify-between w-full p-4 hover:bg-white/5 transition-colors text-left border-b border-white/5"
+const SectionHeader = ({
+  id,
+  title,
+  icon: Icon,
+  expanded,
+  onToggle
+}: {
+  id: string;
+  title: string;
+  icon: React.ElementType;
+  expanded: boolean;
+  onToggle: (id: string) => void
+}) => (
+  <button
+    className="flex items-center justify-between w-full p-4 hover:bg-surface-hover transition-colors text-left border-b border-border"
     onClick={() => onToggle(id)}
   >
     <div className="flex items-center gap-3">
-      <Icon className="w-4 h-4 text-zinc-400" />
-      <span className="font-medium text-sm text-zinc-200">{title}</span>
+      <Icon className="w-4 h-4 text-muted" />
+      <span className="font-medium text-sm text-fg">{title}</span>
     </div>
-    {expanded ? <ChevronDown className="w-4 h-4 text-zinc-500" /> : <ChevronRight className="w-4 h-4 text-zinc-500" />}
+    {expanded ? <ChevronDown className="w-4 h-4 text-subtle" /> : <ChevronRight className="w-4 h-4 text-subtle" />}
   </button>
 );
 
@@ -38,15 +50,19 @@ export default function ExportWindow() {
     // Set dark theme for window wrapper to ensure modal looks good
     document.documentElement.setAttribute("data-theme", "dark");
   }, [chapterId]);
-  
+
   // Settings State
-  const [format, setFormat] = useState<"word" | "hwp">("word");
+  const [format, setFormat] = useState<"word" | "hwp">("hwp"); // Default to HWP
   const [paperSize, setPaperSize] = useState("A4");
   const [marginTop, setMarginTop] = useState(20);
   const [marginBottom, setMarginBottom] = useState(15);
   const [marginLeft, setMarginLeft] = useState(20); // also used for right
   const [lineHeight, setLineHeight] = useState("160%");
   const [fontFamily, setFontFamily] = useState("Batang");
+
+  // Page Number State
+  const [showPageNumbers, setShowPageNumbers] = useState(true);
+  const [startPageNumber, setStartPageNumber] = useState(1);
 
   // Expanded Sections
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -64,234 +80,331 @@ export default function ExportWindow() {
   };
 
   return (
-    <div className="flex w-screen h-screen bg-[#333] text-white overflow-hidden select-none">
-      {/* ─── LEFT PANEL: CONTROL (320px) ───────────────────────────── */}
-      <div className="w-[320px] flex flex-col bg-[#1e1e1e] border-r border-[#333] shrink-0 z-10 shadow-xl">
-        {/* Header */}
-        <div className="h-12 flex items-center px-4 border-b border-white/10 shrink-0">
-          <Settings className="w-4 h-4 mr-2 text-zinc-400" />
-          <span className="font-semibold text-sm">내보내기 설정</span>
-        </div>
-
-        {/* Settings List (Accordion) */}
-        <div className="flex-1 overflow-y-auto">
-          {/* A. Format Selector */}
-          <SectionHeader id="format" title="포맷 선택" icon={FileText} expanded={expandedSections["format"]} onToggle={toggleSection} />
-          {expandedSections["format"] && (
-            <div className="p-4 bg-black/20 border-b border-white/5 space-y-3">
-              <div className="flex flex-col gap-2">
-                <label className="flex items-center p-3 rounded-lg border border-blue-500/50 bg-blue-500/10 cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="format" 
-                    checked={format === "word"}
-                    onChange={() => setFormat("word")} 
-                    className="mr-3 text-blue-500 focus:ring-blue-500" 
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">MS Word (.docx)</span>
-                    <span className="text-xs text-zinc-400">가장 호환성이 좋습니다.</span>
-                  </div>
-                </label>
-                <label className="flex items-center p-3 rounded-lg border border-white/10 hover:bg-white/5 cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="format" 
-                    checked={format === "hwp"}
-                    onChange={() => setFormat("hwp")} 
-                    className="mr-3 text-zinc-500"
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">한글 문서 (.hwpx)</span>
-                    <span className="text-xs text-orange-400/80">Beta 기능입니다.</span>
-                  </div>
-                </label>
-              </div>
-            </div>
-          )}
-
-          {/* B. Page Setup */}
-          <SectionHeader id="page" title="용지 및 여백" icon={Layout} expanded={expandedSections["page"]} onToggle={toggleSection} />
-          {expandedSections["page"] && (
-            <div className="p-4 bg-black/20 border-b border-white/5 space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs text-zinc-400">용지 크기</label>
-                <select 
-                  value={paperSize}
-                  onChange={(e) => setPaperSize(e.target.value)}
-                  className="w-full bg-[#333] border border-white/10 rounded px-2 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-blue-500"
-                >
-                  <option value="A4">A4 (국배판) - 210 x 297mm</option>
-                  <option value="B6">B6 (4x6판) - 128 x 188mm</option>
-                </select>
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-xs text-zinc-400 block mb-1">여백 (mm)</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-zinc-500">위쪽 (Top)</label>
-                    <input 
-                      type="number" 
-                      value={marginTop} 
-                      onChange={(e) => setMarginTop(Number(e.target.value))}
-                      className="w-full bg-[#333] border border-white/10 rounded px-2 py-1 text-sm text-center"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-zinc-500">아래쪽 (Bottom)</label>
-                    <input 
-                      type="number" 
-                      value={marginBottom} 
-                      onChange={(e) => setMarginBottom(Number(e.target.value))}
-                      className="w-full bg-[#333] border border-white/10 rounded px-2 py-1 text-sm text-center"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-zinc-500">왼쪽 (Left)</label>
-                    <input 
-                      type="number" 
-                      value={marginLeft} 
-                      onChange={(e) => setMarginLeft(Number(e.target.value))}
-                      className="w-full bg-[#333] border border-white/10 rounded px-2 py-1 text-sm text-center"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-zinc-500">오른쪽 (Right)</label>
-                    <input 
-                      type="number" 
-                      value={marginLeft} 
-                      onChange={(e) => setMarginLeft(Number(e.target.value))}
-                      className="w-full bg-[#333] border border-white/10 rounded px-2 py-1 text-sm text-center"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* C. Typography */}
-          <SectionHeader id="typography" title="글자 및 문단" icon={Type} expanded={expandedSections["typography"]} onToggle={toggleSection} />
-          {expandedSections["typography"] && (
-            <div className="p-4 bg-black/20 border-b border-white/5 space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs text-zinc-400">글꼴 (Font)</label>
-                <select 
-                  value={fontFamily}
-                  onChange={(e) => setFontFamily(e.target.value)}
-                  className="w-full bg-[#333] border border-white/10 rounded px-2 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-blue-500"
-                >
-                  <option value="Batang">바탕체 (Batang)</option>
-                  <option value="Myeongjo">명조체 (Myeongjo)</option>
-                  <option value="Gulim">굴림체 (Gulim)</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs text-zinc-400">줄 간격 (Line Height)</label>
-                <div className="flex bg-[#333] rounded p-0.5 border border-white/10">
-                  <button 
-                    onClick={() => setLineHeight("160%")}
-                    className={cn(
-                      "flex-1 py-1 text-xs rounded transition-all",
-                      lineHeight === "160%" ? "bg-blue-600 text-white" : "text-zinc-400 hover:text-white"
-                    )}
-                  >
-                    160% (한글)
-                  </button>
-                  <button 
-                    onClick={() => setLineHeight("1.5")}
-                    className={cn(
-                      "flex-1 py-1 text-xs rounded transition-all",
-                      lineHeight === "1.5" ? "bg-blue-600 text-white" : "text-zinc-400 hover:text-white"
-                    )}
-                  >
-                    1.5배 (워드)
-                  </button>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <input type="checkbox" defaultChecked className="rounded bg-[#333] border-white/20" />
-                <span className="text-xs text-zinc-300">문단 첫 줄 들여쓰기 (10pt)</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer Action */}
-        <div className="p-4 border-t border-white/10 bg-[#1e1e1e]">
-          <button className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white h-10 rounded-md font-medium transition-colors shadow-lg active:transform active:scale-[0.98]">
-            <Download className="w-4 h-4" />
-            내보내기 (.docx)
-          </button>
-        </div>
+    <div className="flex flex-col w-screen h-screen bg-canvas text-fg overflow-hidden select-none font-sans">
+      {/* 1. Window Bar */}
+      <div className="shrink-0 bg-panel border-b border-border">
+        <WindowBar title="내보내기 미리보기" />
       </div>
 
-      {/* ─── RIGHT PANEL: PREVIEW (Auto) ──────────────────────────── */}
-      <div className="flex-1 bg-[#2e2e2e] relative overflow-hidden flex flex-col items-center">
-        {/* Toolbar */}
-        <div className="w-full h-12 flex items-center justify-between px-6 shrink-0 z-10">
-          <div className="text-sm text-zinc-400 font-medium tracking-wide">
-            PREVIEW MODE
+      <div className="flex flex-1 overflow-hidden">
+        {/* 2. Left Panel: Control */}
+        <div className="w-[320px] bg-panel border-r border-border flex flex-col h-full overflow-y-auto custom-scrollbar">
+
+          {/* Header */}
+          <div className="p-5 border-b border-border bg-panel sticky top-0 z-10">
+            <h1 className="text-xl font-bold text-fg flex items-center gap-2">
+              <Download className="w-5 h-5 text-accent" />
+              내보내기 설정
+            </h1>
+            <p className="text-xs text-muted mt-1">
+              문서 형식을 선택하고 스타일을 조정하세요.
+            </p>
           </div>
-          <div className="flex items-center gap-2 bg-black/40 rounded-lg p-1 border border-white/5">
-             <button className="w-8 h-8 flex items-center justify-center text-zinc-300 hover:bg-white/10 rounded transition-colors">-</button>
-             <span className="text-xs w-12 text-center text-white font-mono">100%</span>
-             <button className="w-8 h-8 flex items-center justify-center text-zinc-300 hover:bg-white/10 rounded transition-colors">+</button>
+
+          {/* Settings Content */}
+          <div className="p-2 space-y-1">
+
+            {/* Format Selection */}
+            <div className="bg-idk rounded overflow-hidden">
+              <SectionHeader
+                id="format"
+                title="파일 형식"
+                icon={FileText}
+                expanded={expandedSections.format}
+                onToggle={toggleSection}
+              />
+              {expandedSections.format && (
+                <div className="p-3 gap-2 grid grid-cols-2">
+                  <button
+                    onClick={() => setFormat("hwp")}
+                    className={cn(
+                      "flex flex-col items-center justify-center p-3 rounded border transition-all",
+                      format === "hwp"
+                        ? "bg-accent/10 border-accent text-accent"
+                        : "bg-surface border-transparent hover:bg-surface-hover text-muted"
+                    )}
+                  >
+                    <span className="font-bold text-lg mb-1">HWP</span>
+                    <span className="text-[10px] opacity-80">한글 문서</span>
+                  </button>
+                  <button
+                    onClick={() => setFormat("word")}
+                    className={cn(
+                      "flex flex-col items-center justify-center p-3 rounded border transition-all",
+                      format === "word"
+                        ? "bg-accent/10 border-accent text-accent"
+                        : "bg-surface border-transparent hover:bg-surface-hover text-muted"
+                    )}
+                  >
+                    <span className="font-bold text-lg mb-1">Word</span>
+                    <span className="text-[10px] opacity-80">MS Word</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Page Setup */}
+            <div className="bg-idk rounded overflow-hidden">
+              <SectionHeader
+                id="page"
+                title="용지 설정"
+                icon={Layout}
+                expanded={expandedSections.page}
+                onToggle={toggleSection}
+              />
+              {expandedSections.page && (
+                <div className="p-4 space-y-4">
+                  {/* Paper Size */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-muted uppercase tracking-wider">용지 크기</label>
+                    <select
+                      value={paperSize}
+                      onChange={(e) => setPaperSize(e.target.value)}
+                      className="w-full h-9 bg-surface border border-border rounded px-3 text-sm text-fg focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                    >
+                      <option value="A4">A4 (210 x 297 mm)</option>
+                      <option value="Letter">Letter (216 x 279 mm)</option>
+                      <option value="B5">B5 (176 x 250 mm)</option>
+                    </select>
+                  </div>
+
+                  {/* Margins */}
+                  <div className="space-y-3">
+                    <label className="text-xs font-semibold text-muted uppercase tracking-wider flex items-center justify-between">
+                      여백 (mm)
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-subtle pl-1">위쪽</label>
+                        <input
+                          type="number"
+                          value={marginTop}
+                          onChange={(e) => setMarginTop(Number(e.target.value))}
+                          className="w-full h-8 bg-surface border border-border rounded px-2 text-sm text-center text-fg focus:border-accent focus:outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-subtle pl-1">아래쪽</label>
+                        <input
+                          type="number"
+                          value={marginBottom}
+                          onChange={(e) => setMarginBottom(Number(e.target.value))}
+                          className="w-full h-8 bg-surface border border-border rounded px-2 text-sm text-center text-fg focus:border-accent focus:outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-subtle pl-1">왼쪽</label>
+                        <input
+                          type="number"
+                          value={marginLeft}
+                          onChange={(e) => setMarginLeft(Number(e.target.value))}
+                          className="w-full h-8 bg-surface border border-border rounded px-2 text-sm text-center text-fg focus:border-accent focus:outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-subtle pl-1">오른쪽</label>
+                        <input
+                          type="number"
+                          value={marginLeft}
+                          onChange={(e) => setMarginLeft(Number(e.target.value))}
+                          className="w-full h-8 bg-surface border border-border rounded px-2 text-sm text-center text-fg focus:border-accent focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Typography */}
+            <div className="bg-idk rounded overflow-hidden">
+              <SectionHeader
+                id="typography"
+                title="글꼴 및 줄 간격"
+                icon={Type}
+                expanded={expandedSections.typography}
+                onToggle={toggleSection}
+              />
+              {expandedSections.typography && (
+                <div className="p-4 space-y-4">
+                  {/* Font Family */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-muted uppercase tracking-wider">글꼴</label>
+                    <div className="space-y-1">
+                      <select
+                        value={fontFamily}
+                        onChange={(e) => setFontFamily(e.target.value)}
+                        className="w-full h-9 bg-surface border border-border rounded px-3 text-sm text-fg focus:border-accent focus:outline-none"
+                      >
+                        <option value="Batang">바탕 (Batang)</option>
+                        <option value="Malgun Gothic">맑은 고딕</option>
+                        <option value="Nanum Myeongjo">나눔명조</option>
+                      </select>
+                      <div className="flex items-start gap-1.5 px-1 py-1.5 bg-surface/50 rounded text-[11px] text-muted leading-tight">
+                        <Info className="w-3 h-3 mt-0.5 shrink-0" />
+                        <span>OS에 해당 폰트가 없을 경우, 가장 유사한 명조/고딕체로 대체됩니다.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Line Height */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-muted uppercase tracking-wider">줄 간격</label>
+                    <div className="flex bg-surface rounded p-1 border border-border">
+                      {["100%", "160%", "180%", "200%"].map((lh) => (
+                        <button
+                          key={lh}
+                          onClick={() => setLineHeight(lh)}
+                          className={cn(
+                            "flex-1 py-1.5 text-xs rounded transition-colors",
+                            lineHeight === lh
+                              ? "bg-accent text-white font-medium"
+                              : "text-muted hover:text-fg"
+                          )}
+                        >
+                          {lh}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Header/Footer (Page Numbers) */}
+            <div className="bg-idk rounded overflow-hidden">
+              <SectionHeader
+                id="header"
+                title="머리말 / 꼬리말"
+                icon={AlignJustify}
+                expanded={expandedSections.header}
+                onToggle={toggleSection}
+              />
+              {expandedSections.header && (
+                <div className="p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm text-fg">쪽 번호 표시</label>
+                    <input
+                      type="checkbox"
+                      checked={showPageNumbers}
+                      onChange={(e) => setShowPageNumbers(e.target.checked)}
+                      className="w-4 h-4 rounded border-border bg-surface text-accent focus:ring-accent"
+                    />
+                  </div>
+                  {showPageNumbers && (
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm text-muted">시작 번호</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={startPageNumber}
+                        onChange={(e) => setStartPageNumber(Number(e.target.value))}
+                        className="w-16 h-7 bg-surface border border-border rounded px-2 text-sm text-center text-fg focus:border-accent focus:outline-none"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+          </div>
+
+          {/* Export Button */}
+          <div className="p-4 mt-auto border-t border-border bg-panel">
+            <button className="w-full h-11 bg-accent hover:bg-accent-hover text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-accent/20">
+              <Download className="w-5 h-5" />
+              내보내기 ({format.toUpperCase()})
+            </button>
           </div>
         </div>
 
-        {/* Paper Canvas */}
-        <div className="flex-1 w-full overflow-auto p-8 flex justify-center items-start">
-          <div 
-            className="bg-white text-black shadow-2xl transition-all duration-300 ease-out origin-top"
-            style={{
-              width: "210mm",
-              minHeight: "297mm",
-              paddingTop: `${marginTop}mm`,
-              paddingBottom: `${marginBottom}mm`,
-              paddingLeft: `${marginLeft}mm`,
-              paddingRight: `${marginLeft}mm`,
-              // fontFamily: fontFamily === 'Batang' ? '"Noto Serif KR", serif' : 'sans-serif', // Simulation
-            }}
-          >
-             {/* Content Simulation */}
-             <div className="w-full h-full flex flex-col">
-                <div className="space-y-4" style={{
-                  lineHeight: lineHeight === '160%' ? 1.6 : 1.5,
-                  fontSize: '10pt',
-                  fontFamily: '"Noto Serif KR", serif' 
-                }}>
-                  <p className="font-bold text-xl text-center mb-8">
-                     [제목이 들어가는 자리]
-                  </p>
-                  
-                  {Array.from({ length: 12 }).map((_, i) => (
-                    <p key={i} className="text-justify indent-[10pt]">
-                      동해물과 백두산이 마르고 닳도록 하느님이 보우하사 우리나라 만세. 
-                      무궁화 삼천리 화려강산 대한사람 대한으로 길이 보전하세.
-                      이것은 미리보기 텍스트입니다. 실제 내보내기 결과물과 매우 유사하게 보일 것입니다.
-                      여백과 줄 간격 설정을 변경하면 즉시 반영됩니다.
-                      작가는 오직 글쓰기에만 집중하세요. 나머지는 Luie가 알아서 합니다.
-                    </p>
-                  ))}
-                  
-                  {/* Page Break Indicator (Visual only) */}
-                  <div className="border-b border-dashed border-gray-300 my-8 relative">
-                     <span className="absolute right-0 bottom-1 text-[8px] text-gray-400">PAGE BREAK PREVIEW</span>
-                  </div>
+        {/* 3. Right Panel: Preview Area */}
+        <div className="flex-1 bg-canvas relative flex flex-col min-w-0">
+          {/* Toolbar */}
+          <div className="h-10 border-b border-border bg-panel flex items-center justify-between px-4 shrink-0">
+            <div className="flex items-center gap-2 text-xs text-muted">
+              <span className="bg-surface px-2 py-0.5 rounded text-fg border border-border">100%</span>
+              <span>미리보기</span>
+            </div>
+          </div>
 
-                  <p className="text-justify indent-[10pt]">
-                     다음 페이지 내용이 이어집니다. 워드프로세서와 동일한 환경을 경험하세요.
+          {/* Canvas Scroll Area */}
+          <div className="flex-1 overflow-y-auto p-8 flex flex-col items-center gap-8 custom-scrollbar bg-canvas">
+            {/* Page Rendering */}
+            <div
+              className="bg-white shadow-[0_0_20px_rgba(0,0,0,0.5)] transition-all duration-300 relative shrink-0"
+              style={{
+                width: paperSize === "A4" ? "210mm" : paperSize === "Letter" ? "216mm" : "176mm",
+                minHeight: paperSize === "A4" ? "297mm" : paperSize === "Letter" ? "279mm" : "250mm",
+                paddingTop: `${marginTop}mm`,
+                paddingBottom: `${marginBottom}mm`,
+                paddingLeft: `${marginLeft}mm`,
+                paddingRight: `${marginLeft}mm`,
+                marginTop: "10px",
+                marginBottom: "40px"
+              }}
+            >
+              {/* Content Preview */}
+              <div
+                className="w-full h-full text-black whitespace-pre-wrap outline-none"
+                style={{
+                  fontFamily: fontFamily.includes("Batang") ? "Batang, serif" : fontFamily,
+                  fontSize: "10.5pt",
+                  lineHeight: lineHeight,
+                }}
+              >
+                <h1 className="text-2xl font-bold text-center mb-10">제 1 장. 새로운 시작</h1>
+                <p>
+                  이곳은 미리보기 화면입니다. 실제 내보내기 결과물과 매우 유사하게 표시됩니다.
+                  설정 패널에서 여백, 글꼴, 줄 간격 등을 조절하면 실시간으로 반영됩니다.
+                </p>
+                <p className="mt-4">
+                  Luie 에디터는 작가를 위한 최고의 집필 도구입니다.
+                  이제 당신의 이야기를 세상에 내놓을 준비를 하세요.
+                  새로운 창에서 더욱 쾌적하게 작업할 수 있습니다.
+                </p>
+                {/* Mock content to show text body */}
+                {Array.from({ length: 15 }).map((_, i) => (
+                  <p key={i} className="mt-4">
+                    임시 텍스트 줄입니다. 문단 간격과 줄 간격을 확인하기 위한 더미 텍스트입니다.
+                    글이 길어지면 페이지가 어떻게 보이는지 확인할 수 있습니다.
+                    입력하신 {format.toUpperCase()} 형식으로 깔끔하게 변환될 것입니다.
                   </p>
-                </div>
+                ))}
+              </div>
 
-                {/* Footer Simulation */}
-                <div className="mt-auto pt-4 text-center text-[9pt] text-gray-500">
-                   - 1 -
+              {/* Page Number Footer */}
+              {showPageNumbers && (
+                <div
+                  className="absolute bottom-0 left-0 w-full flex items-center justify-center text-[10pt] text-black pointer-events-none"
+                  style={{
+                    height: `${marginBottom}mm`,
+                    fontFamily: fontFamily.includes("Batang") ? "Batang, serif" : fontFamily,
+                  }}
+                >
+                  - {startPageNumber} -
                 </div>
-             </div>
+              )}
+            </div>
+
+            {/* Second Page Ghost (Visual Cue) */}
+            <div
+              className="bg-white/80 shadow-[0_0_20px_rgba(0,0,0,0.5)] relative shrink-0 opacity-50 pointer-events-none"
+              style={{
+                width: paperSize === "A4" ? "210mm" : paperSize === "Letter" ? "216mm" : "176mm",
+                height: "100mm", // Just a partial view
+                background: "linear-gradient(to bottom, #ffffff 0%, #e0e0e0 100%)"
+              }}
+            >
+              {showPageNumbers && (
+                <div
+                  className="absolute bottom-4 left-0 w-full flex items-center justify-center text-[10pt] text-black"
+                >
+                  - {startPageNumber + 1} -
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       </div>
