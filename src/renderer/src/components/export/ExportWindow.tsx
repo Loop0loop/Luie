@@ -46,9 +46,26 @@ export default function ExportWindow() {
     return searchParams.get("chapterId");
   });
 
+  // Chapter data
+  const [chapter, setChapter] = useState<{ title: string; content: string; projectId: string } | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+
   useEffect(() => {
     // Set dark theme for window wrapper to ensure modal looks good
     document.documentElement.setAttribute("data-theme", "dark");
+    
+    // Load chapter data
+    if (chapterId) {
+      window.api.chapter.get(chapterId).then(response => {
+        if (response.success && response.data) {
+          setChapter({
+            title: response.data.title,
+            content: response.data.content || "",
+            projectId: response.data.projectId,
+          });
+        }
+      });
+    }
   }, [chapterId]);
 
   // Settings State
@@ -77,6 +94,46 @@ export default function ExportWindow() {
       ...prev,
       [section]: !prev[section]
     }));
+  };
+
+  const handleExport = async () => {
+    if (!chapter || !chapterId) {
+      alert("챕터 정보를 불러올 수 없습니다.");
+      return;
+    }
+
+    setIsExporting(true);
+
+    try {
+      const response = await window.api.export.create({
+        projectId: chapter.projectId,
+        chapterId: chapterId,
+        title: chapter.title,
+        content: chapter.content,
+        format: format === "hwp" ? "HWPX" : "DOCX",
+        paperSize: paperSize as "A4" | "Letter" | "B5",
+        marginTop,
+        marginBottom,
+        marginLeft,
+        marginRight: marginLeft, // Use same as left
+        fontFamily,
+        fontSize: 10, // Fixed for now
+        lineHeight,
+        showPageNumbers,
+        startPageNumber,
+      });
+
+      if (response.success && response.data?.success) {
+        alert(`내보내기가 완료되었습니다!\n저장 위치: ${response.data.filePath}`);
+      } else {
+        alert(`내보내기에 실패했습니다.\n${response.data?.error || response.error?.message || "Unknown error"}`);
+      }
+    } catch (error) {
+      console.error("Export error:", error);
+      alert(`내보내기 중 오류가 발생했습니다.\n${error instanceof Error ? error.message : "Unknown error"}`);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -311,9 +368,13 @@ export default function ExportWindow() {
 
           {/* Export Button */}
           <div className="p-4 mt-auto border-t border-border bg-panel">
-            <button className="w-full h-11 bg-accent hover:bg-accent-hover text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-accent/20">
+            <button 
+              onClick={handleExport}
+              disabled={isExporting || !chapter}
+              className="w-full h-11 bg-accent hover:bg-accent-hover text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <Download className="w-5 h-5" />
-              내보내기 ({format.toUpperCase()})
+              {isExporting ? "내보내는 중..." : `내보내기 (${format.toUpperCase()})`}
             </button>
           </div>
         </div>

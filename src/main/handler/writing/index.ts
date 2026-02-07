@@ -1,5 +1,6 @@
 import { registerAutoSaveIPCHandlers } from "./ipcAutoSaveHandlers.js";
 import { registerSnapshotIPCHandlers } from "./ipcSnapshotHandlers.js";
+import { registerExportHandlers } from "./ipcExportHandlers.js";
 import type { AppLogger } from "../core/types.js";
 
 export function registerWritingHandlers(options: {
@@ -9,4 +10,5 @@ export function registerWritingHandlers(options: {
 }): void {
   registerAutoSaveIPCHandlers(options.logger, options.autoSaveManager);
   registerSnapshotIPCHandlers(options.logger, options.snapshotService);
+  registerExportHandlers();
 }

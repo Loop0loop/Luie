@@ -226,6 +226,12 @@ contextBridge.exposeInMainWorld("api", {
       safeInvoke(IPC_CHANNELS.SNAPSHOT_DELETE, id),
   },
 
+  // Export API
+  export: {
+    create: (request: unknown): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.EXPORT_CREATE, request),
+  },
+
   // File System API
   fs: {
     saveProject: (

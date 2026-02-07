@@ -90,6 +90,9 @@ export const IPC_CHANNELS = {
   APP_GET_VERSION: "app:get-version",
   APP_CHECK_UPDATE: "app:check-update",
 
+  // Export
+  EXPORT_CREATE: "export:create",
+
   // Logger
   LOGGER_LOG: "logger:log",
   LOGGER_LOG_BATCH: "logger:log-batch",
