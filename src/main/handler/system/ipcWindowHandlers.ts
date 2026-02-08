@@ -2,6 +2,8 @@ import { windowManager } from "../../manager/index.js";
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
+import { ServiceError } from "../../utils/serviceError.js";
+import { ErrorCode } from "../../../shared/constants/errorCode.js";
 
 export function registerWindowIPCHandlers(logger: LoggerLike): void {
   registerIpcHandlers(logger, [
@@ -35,7 +37,7 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       channel: IPC_CHANNELS.WINDOW_SET_FULLSCREEN,
       logTag: "WINDOW_SET_FULLSCREEN",
       failMessage: "Failed to set fullscreen",
-      handler: (_, flag: boolean) => {
+      handler: (flag: boolean) => {
         const win = windowManager.getMainWindow();
         if (!win) return false;
         if (typeof flag === "boolean") {
@@ -56,8 +58,27 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       channel: IPC_CHANNELS.WINDOW_OPEN_EXPORT,
       logTag: "WINDOW_OPEN_EXPORT",
       failMessage: "Failed to open export window",
-      handler: (_, chapterId: string) => {
+      handler: (chapterId: string) => {
+        logger.info("WINDOW_OPEN_EXPORT received", { 
+          chapterId, 
+          type: typeof chapterId,
+          isUndefined: chapterId === undefined,
+          isNull: chapterId === null,
+          isString: typeof chapterId === "string",
+        });
+        
+        if (!chapterId || chapterId === "undefined" || chapterId === "null") {
+          logger.error("Invalid chapterId for export", { chapterId, type: typeof chapterId });
+          throw new ServiceError(
+            ErrorCode.REQUIRED_FIELD_MISSING,
+            "Chapter ID is required to open export window",
+            { chapterId, receivedType: typeof chapterId },
+          );
+        }
+        
+        logger.info("Creating export window", { chapterId });
         windowManager.createExportWindow(chapterId);
+        logger.info("Export window created successfully", { chapterId });
         return true;
       },
     },

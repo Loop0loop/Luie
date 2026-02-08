@@ -43,11 +43,17 @@ const SectionHeader = ({
 export default function ExportWindow() {
   const [chapterId] = useState<string | null>(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    return searchParams.get("chapterId");
+    const id = searchParams.get("chapterId");
+    // "undefined" 문자열이거나 빈 값이면 null 반환
+    if (!id || id === "undefined" || id === "null") {
+      return null;
+    }
+    return id;
   });
 
   // Chapter data
   const [chapter, setChapter] = useState<{ title: string; content: string; projectId: string } | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
@@ -55,17 +61,24 @@ export default function ExportWindow() {
     document.documentElement.setAttribute("data-theme", "dark");
     
     // Load chapter data
-    if (chapterId) {
-      window.api.chapter.get(chapterId).then(response => {
-        if (response.success && response.data) {
-          setChapter({
-            title: response.data.title,
-            content: response.data.content || "",
-            projectId: response.data.projectId,
-          });
-        }
-      });
+    if (!chapterId) {
+      setLoadError("챕터 ID가 제공되지 않았습니다.");
+      return;
     }
+
+    window.api.chapter.get(chapterId).then(response => {
+      if (response.success && response.data) {
+        setChapter({
+          title: response.data.title,
+          content: response.data.content || "",
+          projectId: response.data.projectId,
+        });
+      } else {
+        setLoadError(response.error?.message || "챕터를 불러오는데 실패했습니다.");
+      }
+    }).catch((error) => {
+      setLoadError(error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.");
+    });
   }, [chapterId]);
 
   // Settings State
@@ -414,7 +427,12 @@ export default function ExportWindow() {
                   lineHeight: lineHeight,
                 }}
               >
-                {chapter ? (
+                {loadError ? (
+                  <div className="text-center mt-20">
+                    <div className="text-red-600 font-bold mb-2">오류</div>
+                    <div className="text-gray-600">{loadError}</div>
+                  </div>
+                ) : chapter ? (
                   <>
                     <h1 className="text-2xl font-bold text-center mb-10">{chapter.title}</h1>
                     <div 

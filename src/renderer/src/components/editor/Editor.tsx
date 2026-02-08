@@ -212,10 +212,24 @@ function Editor({
   }
 
   const handleOpenExport = async () => {
-    if (chapterId) {
-      await api.window.openExport(chapterId);
-    } else {
-      api.logger.warn("No chapterId available for export");
+    // Strict validation
+    if (!chapterId || chapterId === "undefined" || chapterId === "null") {
+      api.logger.warn("No valid chapterId available for export", { chapterId });
+      alert("챕터를 선택한 뒤 내보내기를 실행하세요.");
+      return;
+    }
+
+    api.logger.info("Opening export window", { chapterId });
+    const response = await api.window.openExport(chapterId);
+    
+    if (!response.success || response.data !== true) {
+      const message = response.error?.message || "내보내기 창을 열 수 없습니다.";
+      api.logger.error("Failed to open export window", { 
+        chapterId, 
+        error: response.error,
+        data: response.data 
+      });
+      alert(message);
     }
   };
 
