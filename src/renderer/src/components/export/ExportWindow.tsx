@@ -414,24 +414,19 @@ export default function ExportWindow() {
                   lineHeight: lineHeight,
                 }}
               >
-                <h1 className="text-2xl font-bold text-center mb-10">제 1 장. 새로운 시작</h1>
-                <p>
-                  이곳은 미리보기 화면입니다. 실제 내보내기 결과물과 매우 유사하게 표시됩니다.
-                  설정 패널에서 여백, 글꼴, 줄 간격 등을 조절하면 실시간으로 반영됩니다.
-                </p>
-                <p className="mt-4">
-                  Luie 에디터는 작가를 위한 최고의 집필 도구입니다.
-                  이제 당신의 이야기를 세상에 내놓을 준비를 하세요.
-                  새로운 창에서 더욱 쾌적하게 작업할 수 있습니다.
-                </p>
-                {/* Mock content to show text body */}
-                {Array.from({ length: 15 }).map((_, i) => (
-                  <p key={i} className="mt-4">
-                    임시 텍스트 줄입니다. 문단 간격과 줄 간격을 확인하기 위한 더미 텍스트입니다.
-                    글이 길어지면 페이지가 어떻게 보이는지 확인할 수 있습니다.
-                    입력하신 {format.toUpperCase()} 형식으로 깔끔하게 변환될 것입니다.
-                  </p>
-                ))}
+                {chapter ? (
+                  <>
+                    <h1 className="text-2xl font-bold text-center mb-10">{chapter.title}</h1>
+                    <div 
+                      dangerouslySetInnerHTML={{ __html: chapter.content }} 
+                      className="prose prose-sm max-w-none"
+                    />
+                  </>
+                ) : (
+                  <div className="text-center text-gray-400 mt-20">
+                    챕터를 불러오는 중...
+                  </div>
+                )}
               </div>
 
               {/* Page Number Footer */}

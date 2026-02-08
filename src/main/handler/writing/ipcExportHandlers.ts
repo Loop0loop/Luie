@@ -36,15 +36,10 @@ export interface ExportRequest {
  * Export 창에서 내보내기 실행
  */
 async function handleExportCreate(
-  event: Electron.IpcMainInvokeEvent,
+  _event: Electron.IpcMainInvokeEvent,
   request: ExportRequest
 ): Promise<IPCResponse<ExportResult>> {
   try {
-    console.log("[ExportHandler] Export request:", {
-      title: request.title,
-      format: request.format,
-      contentLength: request.content.length,
-    });
     
     // Show save dialog
     const extension = request.format === "DOCX" ? "docx" : "hwpx";
@@ -101,18 +96,11 @@ async function handleExportCreate(
     // Execute export
     const exportResult = await exportService.export(exportOptions);
     
-    if (exportResult.success) {
-      console.log("[ExportHandler] Export successful:", exportResult.filePath);
-    } else {
-      console.error("[ExportHandler] Export failed:", exportResult.error);
-    }
-    
     return {
       success: true,
       data: exportResult,
     };
   } catch (error) {
-    console.error("[ExportHandler] Export error:", error);
     return {
       success: false,
       error: {
@@ -128,6 +116,4 @@ async function handleExportCreate(
  */
 export function registerExportHandlers() {
   ipcMain.handle(IPC_CHANNELS.EXPORT_CREATE, handleExportCreate);
-  
-  console.log("[ExportHandler] Export handlers registered");
 }
