@@ -16,7 +16,7 @@ import type { Chapter, Character, Term } from "../../../shared/types/index.js";
 import type { BrowserWindow } from "electron";
 
 const logger = createLogger("ManuscriptAnalysisService");
-const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3-flash-preview";
 
 /**
  * 원고 분석 서비스
@@ -202,11 +202,30 @@ ${formatAnalysisContext(context)}`;
     } catch (error) {
       logger.error("Gemini streaming failed", { error });
       
+      // 에러 타입 감지
+      let errorCode: "API_KEY_MISSING" | "NETWORK_ERROR" | "QUOTA_EXCEEDED" | "INVALID_REQUEST" | "UNKNOWN" = "UNKNOWN";
+      let errorMessage = "분석 중 오류가 발생했습니다.";
+      
+      if (error && typeof error === "object" && "status" in error) {
+        const apiError = error as { status: number; message?: string };
+        
+        if (apiError.status === 429) {
+          errorCode = "QUOTA_EXCEEDED";
+          errorMessage = "Gemini API 할당량을 초과했습니다. 잠시 후 다시 시도해주세요.";
+        } else if (apiError.status >= 500) {
+          errorCode = "NETWORK_ERROR";
+          errorMessage = "Gemini API 서버 오류가 발생했습니다.";
+        } else if (apiError.status === 400) {
+          errorCode = "INVALID_REQUEST";
+          errorMessage = "잘못된 요청입니다. 원고 내용을 확인해주세요.";
+        }
+      }
+      
       // 에러 이벤트 전송
       if (this.currentWindow && !this.currentWindow.isDestroyed()) {
         this.currentWindow.webContents.send("analysis:error", {
-          code: "UNKNOWN",
-          message: "분석 중 오류가 발생했습니다.",
+          code: errorCode,
+          message: errorMessage,
           details: error instanceof Error ? error.message : String(error),
         });
       }
