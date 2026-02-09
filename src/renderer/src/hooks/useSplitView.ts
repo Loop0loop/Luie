@@ -27,6 +27,7 @@ export function useSplitView() {
         character: "characters",
         world: "terms",
         scrap: "synopsis",
+        analysis: "synopsis",
       };
       setContextTab(contextMap[type]);
     },

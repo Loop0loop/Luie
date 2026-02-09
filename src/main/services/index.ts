@@ -5,3 +5,4 @@ export * from "./world/termService.js";
 export * from "./features/snapshotService.js";
 export * from "./features/searchService.js";
 export * from "./features/autoExtractService.js";
+export * from "./features/manuscriptAnalysisService.js";

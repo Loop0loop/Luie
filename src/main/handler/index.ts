@@ -7,12 +7,14 @@ import {
 	searchService,
 	snapshotService,
 	termService,
+	manuscriptAnalysisService,
 } from "../services/index.js";
 import { registerProjectHandlers } from "./project/index.js";
 import { registerSearchHandlers } from "./search/index.js";
 import { registerSystemHandlers } from "./system/index.js";
 import { registerWorldHandlers } from "./world/index.js";
 import { registerWritingHandlers } from "./writing/index.js";
+import { registerAnalysisHandlers } from "./analysis/index.js";
 
 const logger = createLogger("IPCHandler");
 
@@ -41,6 +43,11 @@ export function registerAllIPCHandlers(): void {
 	});
 
 	registerSystemHandlers({ logger });
+
+	registerAnalysisHandlers({
+		logger,
+		manuscriptAnalysisService,
+	});
 
 	logger.info("IPC handlers registered successfully");
 }

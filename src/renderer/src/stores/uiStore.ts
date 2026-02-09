@@ -12,7 +12,7 @@ import {
 import type { Snapshot } from "../../../shared/types";
 
 export type ContextTab = "synopsis" | "characters" | "terms";
-export type ResearchTab = "character" | "world" | "scrap";
+export type ResearchTab = "character" | "world" | "scrap" | "analysis";
 
 interface RightPanelContent {
   type: "research" | "editor" | "snapshot" | "export";

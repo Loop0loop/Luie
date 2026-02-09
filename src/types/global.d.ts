@@ -202,6 +202,15 @@ declare global {
         warn: (message: string, data?: unknown) => Promise<IPCResponse<unknown>>;
         error: (message: string, data?: unknown) => Promise<IPCResponse<unknown>>;
       };
+
+      // Analysis API
+      analysis: {
+        start: (chapterId: string, projectId: string) => Promise<IPCResponse<unknown>>;
+        stop: () => Promise<IPCResponse<unknown>>;
+        clear: () => Promise<IPCResponse<unknown>>;
+        onStream: (callback: (data: unknown) => void) => () => void;
+        onError: (callback: (error: unknown) => void) => () => void;
+      };
     };
   }
 }

@@ -379,6 +379,30 @@ contextBridge.exposeInMainWorld("api", {
       safeInvoke(IPC_CHANNELS.SETTINGS_SET_WINDOW_BOUNDS, bounds),
     reset: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.SETTINGS_RESET),
   },
+
+  // Analysis API
+  analysis: {
+    start: (chapterId: string, projectId: string): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.ANALYSIS_START, { chapterId, projectId }),
+    stop: (): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.ANALYSIS_STOP),
+    clear: (): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.ANALYSIS_CLEAR),
+    onStream: (callback: (data: unknown) => void): (() => void) => {
+      const listener = (_event: unknown, data: unknown) => callback(data);
+      ipcRenderer.on(IPC_CHANNELS.ANALYSIS_STREAM, listener);
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.ANALYSIS_STREAM, listener);
+      };
+    },
+    onError: (callback: (error: unknown) => void): (() => void) => {
+      const listener = (_event: unknown, error: unknown) => callback(error);
+      ipcRenderer.on("analysis:error", listener);
+      return () => {
+        ipcRenderer.removeListener("analysis:error", listener);
+      };
+    },
+  },
 });
 
 // ─── Graceful Quit Support ─────────────────────────────────────────────────

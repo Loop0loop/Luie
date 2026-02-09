@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useChapterStore } from "../../stores/chapterStore";
+import { useAnalysisStore } from "../../stores/analysisStore";
+import { useProjectStore } from "../../stores/projectStore";
+import type { AnalysisItem } from "../../../../shared/types/analysis";
 import { PenTool, Sparkles, ArrowRight, Quote, MessageSquare } from "lucide-react";
 import {
   LABEL_ANALYSIS_TITLE,
@@ -17,101 +20,83 @@ import {
 import { useToast } from "../../components/common/ToastContext";
 import { Modal } from "../../components/common/Modal";
 
-// MOCK DATA: Deep, editorial content
-interface AnalysisItem {
-  id: string;
-  type: "reaction" | "suggestion" | "intro" | "outro";
-  content: string;
-  contextId?: string; // For linking to text
-  quote?: string; // The specific text being referenced
-}
-
-const MOCK_STREAM: AnalysisItem[] = [
-  {
-    id: "intro",
-    type: "intro",
-    content: "작가님, 이번 챕터는 정말 흥미로웠습니다.\n특히 인물의 내면 묘사가 이전보다 훨씬 깊어졌다는 인상을 받았습니다.\n독자의 입장에서 몇 가지 눈에 띄는 지점들을 짚어보았습니다."
-  },
-  {
-    id: "1",
-    type: "reaction",
-    content: "이 구간의 긴장감이 상당합니다. 주인공이 진실을 마주하는 순간의 호흡이 짧게 끊어지면서, 읽는 사람도 같이 숨을 참게 만드네요.",
-    quote: "그는 천천히 고개를 들었고, 거울 속의 자신과 눈이 마주쳤다.",
-    contextId: "ctx-1"
-  },
-  {
-    id: "2",
-    type: "suggestion",
-    content: "3챕터에서 언급된 '절대 방패' 설정과 이 장면의 충돌이 조금 신경 쓰입니다. 독자들이 '어? 아까는 안 부서진다며?'라고 생각할 수도 있을 것 같아요.",
-    quote: "창끝이 닿자마자 방패에는 금이 가기 시작했다.",
-    contextId: "ctx-2"
-  },
-  {
-    id: "outro",
-    type: "outro",
-    content: "전반적으로 훌륭한 전개였습니다.\n다음 이야기가 어떻게 풀릴지 기대하며 기다리겠습니다.\n\n- 루이 드림"
-  }
-];
-
 export default function AnalysisSection() {
   const { items: chapters } = useChapterStore();
+  const { currentProject } = useProjectStore();
+  const { 
+    items: analysisItems, 
+    isAnalyzing, 
+    error,
+    startAnalysis, 
+    stopAnalysis,
+    clearAnalysis,
+    addStreamItem,
+    setError
+  } = useAnalysisStore();
+  
   const [selectedChapterId, setSelectedChapterId] = useState<string>("");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [displayedItems, setDisplayedItems] = useState<AnalysisItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { showToast } = useToast();
   
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Auto-select first chapter if available
-  useEffect(() => {
-    if (!selectedChapterId && chapters.length > 0) {
-      setSelectedChapterId(chapters[0].id);
-    }
-  }, [chapters, selectedChapterId]);
+  // Set initial chapter when chapters load (without useEffect)
+  const effectiveChapterId = selectedChapterId || (chapters.length > 0 ? chapters[0].id : "");
 
-  // Clean up interval on unmount
+  // Register streaming listeners
+  useEffect(() => {
+    const unsubscribeStream = window.api.analysis.onStream((data: unknown) => {
+      addStreamItem(data as { item: AnalysisItem; done: boolean });
+    });
+
+    const unsubscribeError = window.api.analysis.onError((errorData: unknown) => {
+      const err = errorData as { message: string };
+      setError(err.message ?? "분석 중 오류가 발생했습니다.");
+      showToast(err.message ?? "분석 중 오류가 발생했습니다.", "error");
+    });
+
+    return () => {
+      unsubscribeStream();
+      unsubscribeError();
+    };
+  }, [addStreamItem, setError, showToast]);
+
+  // Cleanup on unmount or tab switch
   useEffect(() => {
     return () => {
-        if (intervalRef.current) clearInterval(intervalRef.current);
+      if (isAnalyzing) {
+        void stopAnalysis();
+      }
+      void clearAnalysis();
     };
-  }, []);
+  }, [isAnalyzing, stopAnalysis, clearAnalysis]);
+
+  // Show error toast
+  useEffect(() => {
+    if (error) {
+      showToast(error, "error");
+    }
+  }, [error, showToast]);
 
   // Scroll to bottom as items appear
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [displayedItems]);
+  }, [analysisItems]);
 
-  const handleAnalyze = () => {
-    if (!selectedChapterId || isAnalyzing) return;
+  const handleAnalyze = async () => {
+    if (!effectiveChapterId || !currentProject || isAnalyzing) return;
 
-    setIsAnalyzing(true);
-    setDisplayedItems([]); 
-
-    // Simulation simulation
-    setTimeout(() => {
-      startStream(MOCK_STREAM);
-    }, 1500);
-  };
-
-  const startStream = (items: AnalysisItem[]) => {
-    let index = 0;
-    if (intervalRef.current) clearInterval(intervalRef.current);
-
-    intervalRef.current = setInterval(() => {
-      if (index >= items.length) {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        setIsAnalyzing(false);
-        return;
-      }
-      setDisplayedItems(prev => [...prev, items[index]]);
-      index++;
-    }, 1000); // Rhythmic reading pace
+    try {
+      await startAnalysis(effectiveChapterId, currentProject.id);
+      showToast("분석을 시작합니다...", "info");
+    } catch {
+      // Error is already set in the store and logged in main process
+      // No need to log again here
+    }
   };
 
   const handleNavigate = (contextId: string) => {
-    showToast(`원고의 해당 위치로 이동합니다. (Mock: ${contextId})`, 'info');
+    showToast(`원고의 해당 위치로 이동합니다. (context: ${contextId})`, 'info');
   };
 
   return (
@@ -125,7 +110,7 @@ export default function AnalysisSection() {
         </div>
         
         {/* Chapter Selector (Inline style) */}
-        {!isAnalyzing && displayedItems.length === 0 && (
+        {!isAnalyzing && analysisItems.length === 0 && (
             <div className="flex items-center gap-3 animate-in fade-in duration-500">
                 <span className="text-sm text-text-secondary hidden sm:inline">{LABEL_ANALYSIS_SELECT_CHAPTER}</span>
                 <select 
@@ -144,15 +129,15 @@ export default function AnalysisSection() {
         <div className="max-w-3xl mx-auto flex flex-col gap-12 min-h-[50vh]">
             
             {/* Empty / Start State */}
-            {displayedItems.length === 0 && !isAnalyzing && (
+            {analysisItems.length === 0 && !isAnalyzing && (
                 <div className="flex flex-col items-center justify-center py-20 opacity-60 hover:opacity-100 transition-opacity">
                     <p className="text-xl md:text-2xl text-center leading-relaxed whitespace-pre-wrap text-text-secondary mb-8 font-light">
                         {LABEL_ANALYSIS_EMPTY_STATE}
                     </p>
                     <button
                         onClick={handleAnalyze}
-                        disabled={!selectedChapterId}
-                        className="group flex items-center gap-3 px-8 py-4 rounded-full bg-surface hover:bg-surface-hover border border-border shadow-sm hover:shadow-md transition-all duration-300"
+                        disabled={!effectiveChapterId || !currentProject}
+                        className="group flex items-center gap-3 px-8 py-4 rounded-full bg-surface hover:bg-surface-hover border border-border shadow-sm hover:shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Sparkles className="w-5 h-5 text-accent animate-pulse" />
                         <span className="text-lg font-medium">{LABEL_ANALYSIS_START_BUTTON}</span>
@@ -175,14 +160,14 @@ export default function AnalysisSection() {
             )}
 
             {/* Loading State */}
-            {isAnalyzing && displayedItems.length === 0 && (
+            {isAnalyzing && analysisItems.length === 0 && (
                 <div className="flex items-center justify-center py-20 animate-pulse">
                     <span className="text-lg text-text-tertiary italic">{LABEL_ANALYSIS_ANALYZING}</span>
                 </div>
             )}
 
             {/* Stream Content */}
-            {displayedItems.map((item) => {
+            {analysisItems.map((item) => {
                 if (!item) return null; // Safety check
                 return (
                 <div 

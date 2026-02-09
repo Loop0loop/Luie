@@ -51,6 +51,12 @@ export const IPC_CHANNELS = {
   // Search
   SEARCH: "search",
 
+  // Analysis (원고 분석)
+  ANALYSIS_START: "analysis:start",
+  ANALYSIS_STREAM: "analysis:stream",
+  ANALYSIS_STOP: "analysis:stop",
+  ANALYSIS_CLEAR: "analysis:clear",
+
   // File System
   FS_SELECT_DIRECTORY: "fs:select-directory",
   FS_SELECT_SAVE_LOCATION: "fs:select-save-location",
