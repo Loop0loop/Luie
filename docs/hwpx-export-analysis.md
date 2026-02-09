@@ -483,8 +483,8 @@ private generateContentHpf(options: Required<ExportOptions>): string {
 ### ✅ Phase 4: Contents/section0.xml 구조 개선
 
 #### 4.1. 첫 문단에 secPr 내포 (한컴 방식)
-- [ ] **현재:** `<hs:sec>` 바로 아래 `<hs:secPr>` 배치
-- [ ] **목표:** 첫 `<hp:p>` 내 `<hp:run>` 안에 `<hp:secPr>` 배치
+- [x] **현재:** `<hs:sec>` 바로 아래 `<hs:secPr>` 배치
+- [x] **목표:** 첫 `<hp:p>` 내 `<hp:run>` 안에 `<hp:secPr>` 배치
 
 ```typescript
 <hs:sec>
@@ -521,12 +521,12 @@ private generateContentHpf(options: Required<ExportOptions>): string {
 ```
 
 #### 4.2. linesegarray 추가
-- [ ] **현재:** 없음
-- [ ] **목표:** 모든 `<hp:p>`에 `<hp:linesegarray>` 추가 (레이아웃 정보)
+- [x] **현재:** 없음
+- [x] **목표:** 모든 `<hp:p>`에 `<hp:linesegarray>` 추가 (레이아웃 정보)
 
 #### 4.3. 문단 ID 자동 생성
-- [ ] **현재:** `id="0"` 고정
-- [ ] **목표:** 각 문단마다 고유 ID 부여
+- [x] **현재:** `id="0"` 고정
+- [x] **목표:** 각 문단마다 고유 ID 부여
 
 ### ✅ Phase 5: version.xml 및 기타 수정
 

@@ -318,10 +318,7 @@ export class HwpxExportService {
     return this.compressXml(xml);
   }
 
-  private generateHeader(options: Required<ExportOptions>): string {
-    const title = this.escapeXml(options.title);
-    const date = new Date().toISOString();
-
+  private generateHeader(_options: Required<ExportOptions>): string {
     const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <hh:head xmlns:ha="http://www.hancom.co.kr/hwpml/2011/app" 
          xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph" 
@@ -647,34 +644,35 @@ export class HwpxExportService {
     const marginRight = Math.round(options.marginRight * MM_TO_HWPUNIT);
     const marginTop = Math.round(options.marginTop * MM_TO_HWPUNIT);
     const marginBottom = Math.round(options.marginBottom * MM_TO_HWPUNIT);
-    const paragraphs = this.convertHtmlToParagraphs(options.content, options.title);
+    
+    const secPrXml = `<hp:secPr id="" textDirection="HORIZONTAL" textVerticalWidthHead="0" spaceColumns="283" tabStop="4252">
+      <hp:grid lineGrid="0" charGrid="0" wonggojiFormat="0"/>
+      <hp:startNum pageStartsOn="BOTH" page="0" pic="0" tbl="0" equation="0"/>
+      <hp:visibility hideFirstHeader="0" hideFirstFooter="0" hideFirstMasterPage="0" border="0" fill="0" hideFirstPageNum="0" hideFirstEmptyLine="0" showLineNumber="0"/>
+      <hp:lineNumberShape restartType="0" countBy="0" distance="0"/>
+      <hp:pagePr landscape="NARROWLY" width="${paperSize.width}" height="${paperSize.height}" gutterType="LEFT_ONLY">
+        <hp:margin header="4252" footer="4252" gutter="0" left="${marginLeft}" right="${marginRight}" top="${marginTop}" bottom="${marginBottom}"/>
+      </hp:pagePr>
+      <hp:footNotePr>< hp:autoNumFormat type="DIGIT"/><hp:newNum type="CONTINUOUS"/></hp:footNotePr>
+      <hp:endNotePr><hp:autoNumFormat type="DIGIT"/><hp:newNum type="CONTINUOUS"/></hp:endNotePr>
+      <hp:pageBorderFill type="BOTH" borderFillIDRef="1" textBorder="0" headerInside="0" footerInside="0">
+        <hp:offset left="1417" right="1417" top="1417" bottom="1417"/>
+      </hp:pageBorderFill>
+    </hp:secPr>`;
+    
+    const paragraphs = this.convertHtmlToParagraphs(options.content, options.title, secPrXml);
 
     const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <hs:sec xmlns:hs="http://www.hancom.co.kr/hwpml/2011/section" 
         xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph" 
         xmlns:hc="http://www.hancom.co.kr/hwpml/2011/core" 
         id="0" textDirection="HORIZONTAL" textVerticalWidthHead="0" spaceColumns="283" tabStop="4252">
-  <hs:secPr>
-    <hc:pgSz>
-      <hc:width>${paperSize.width}</hc:width>
-      <hc:height>${paperSize.height}</hc:height>
-    </hc:pgSz>
-    <hc:pageMargin left="${marginLeft}" right="${marginRight}" top="${marginTop}" bottom="${marginBottom}" header="4252" footer="4252" gutter="0"/>
-    <hc:pgNumFmt type="DIGIT"/>
-    <hc:pgBorder offsetType="INSIDE_BORDER">
-      <hc:left type="NONE" width="0.12 mm" color="#000000"/>
-      <hc:right type="NONE" width="0.12 mm" color="#000000"/>
-      <hc:top type="NONE" width="0.12 mm" color="#000000"/>
-      <hc:bottom type="NONE" width="0.12 mm" color="#000000"/>
-    </hc:pgBorder>
-  </hs:secPr>
 ${paragraphs}
 </hs:sec>`;
     return this.compressXml(xml);
   }
 
-  private generateContentHpf(options: Required<ExportOptions>): string {
-    const title = this.escapeXml(options.title);
+  private generateContentHpf(_options: Required<ExportOptions>): string {
     const date = new Date().toISOString();
 
     const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -726,21 +724,46 @@ ${paragraphs}
   /**
    * HTML을 HWPX paragraph XML로 변환
    */
-  private convertHtmlToParagraphs(html: string, title: string): string {
+  private convertHtmlToParagraphs(html: string, title: string, secPrXml?: string): string {
     const paragraphs: string[] = [];
+    let paraId = Math.floor(Math.random() * 4000000000); // 고유 ID 시작점
     
-    // 제목 추가
-    paragraphs.push(`  <hp:p paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">
+    // 첫 문단 (제목 + secPr 포함)
+    const firstParaId = paraId++;
+    if (secPrXml) {
+      paragraphs.push(`  <hp:p id="${firstParaId}" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">
+    <hp:run charPrIDRef="0">
+      ${secPrXml}
+      <hp:ctrl>
+        <hp:colPr id="" type="NEWSPAPER" layout="LEFT" colCount="1" sameSz="1" sameGap="0"/>
+      </hp:ctrl>
+    </hp:run>
     <hp:run charPrIDRef="0">
       <hp:t>${this.escapeXml(title)}</hp:t>
     </hp:run>
+    <hp:linesegarray>
+      <hp:lineseg textpos="0" vertpos="0" vertsize="1600" textheight="1000" baseline="1280" spacing="0" horzpos="0" horzsize="42520" flags="0"/>
+    </hp:linesegarray>
   </hp:p>`);
+    } else {
+      paragraphs.push(`  <hp:p id="${firstParaId}" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">
+    <hp:run charPrIDRef="0">
+      <hp:t>${this.escapeXml(title)}</hp:t>
+    </hp:run>
+    <hp:linesegarray>
+      <hp:lineseg textpos="0" vertpos="0" vertsize="1600" textheight="1000" baseline="1280" spacing="0" horzpos="0" horzsize="42520" flags="0"/>
+    </hp:linesegarray>
+  </hp:p>`);
+    }
     
     // 빈 줄 추가
-    paragraphs.push(`  <hp:p paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">
+    paragraphs.push(`  <hp:p id="${paraId++}" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">
     <hp:run charPrIDRef="0">
       <hp:t></hp:t>
     </hp:run>
+    <hp:linesegarray>
+      <hp:lineseg textpos="0" vertpos="0" vertsize="1600" textheight="1000" baseline="1280" spacing="0" horzpos="0" horzsize="42520" flags="0"/>
+    </hp:linesegarray>
   </hp:p>`);
     
     // HTML 파싱 (간단한 구현)
@@ -750,10 +773,13 @@ ${paragraphs}
     for (const line of lines) {
       if (!line.trim()) continue;
       
-      paragraphs.push(`  <hp:p paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">
+      paragraphs.push(`  <hp:p id="${paraId++}" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">
     <hp:run charPrIDRef="0">
       <hp:t>${this.escapeXml(line)}</hp:t>
     </hp:run>
+    <hp:linesegarray>
+      <hp:lineseg textpos="0" vertpos="0" vertsize="1600" textheight="1000" baseline="1280" spacing="0" horzpos="0" horzsize="42520" flags="0"/>
+    </hp:linesegarray>
   </hp:p>`);
     }
     
