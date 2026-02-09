@@ -26,7 +26,7 @@ describe("ExportService", () => {
         await fs.unlink(path.join(testOutputDir, file));
       }
       await fs.rmdir(testOutputDir);
-    } catch (error) {
+    } catch {
       // Ignore cleanup errors
     }
   });
@@ -255,7 +255,7 @@ describe("ExportService", () => {
         chapterId: "test-chapter-id",
         title: "Test Invalid",
         content: "<p>Test</p>",
-        format: "INVALID" as any,
+        format: "INVALID" as unknown as "DOCX" | "HWPX",
         outputPath: path.join(testOutputDir, "test-invalid.txt"),
       };
       

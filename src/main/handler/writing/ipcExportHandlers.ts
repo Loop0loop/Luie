@@ -96,6 +96,11 @@ async function handleExportCreate(
     // Execute export
     const exportResult = await exportService.export(exportOptions);
     
+    // Show message if provided (e.g., HWPX conversion instructions)
+    if (exportResult.success && exportResult.message) {
+      // This will be shown to the user via IPC response
+    }
+    
     return {
       success: true,
       data: exportResult,

@@ -136,10 +136,19 @@ export default function ExportWindow() {
         startPageNumber,
       });
 
-      if (response.success && response.data?.success) {
-        alert(`내보내기가 완료되었습니다!\n저장 위치: ${response.data.filePath}`);
+      if (response.success && response.data) {
+        const result = response.data as { success: boolean; filePath?: string; error?: string; message?: string };
+        if (result.success) {
+          // Show message if provided (e.g., HWPX conversion instructions)
+          const message = result.message 
+            ? result.message
+            : `내보내기가 완료되었습니다!\n저장 위치: ${result.filePath}`;
+          alert(message);
+        } else {
+          alert(`내보내기에 실패했습니다.\n${result.error || "Unknown error"}`);
+        }
       } else {
-        alert(`내보내기에 실패했습니다.\n${response.data?.error || response.error?.message || "Unknown error"}`);
+        alert(`내보내기에 실패했습니다.\n${response.error?.message || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Export error:", error);
@@ -188,7 +197,7 @@ export default function ExportWindow() {
                   <button
                     onClick={() => setFormat("hwp")}
                     className={cn(
-                      "flex flex-col items-center justify-center p-3 rounded border transition-all",
+                      "flex flex-col items-center justify-center p-3 rounded border transition-all relative",
                       format === "hwp"
                         ? "bg-accent/10 border-accent text-accent"
                         : "bg-surface border-transparent hover:bg-surface-hover text-muted"
@@ -196,6 +205,7 @@ export default function ExportWindow() {
                   >
                     <span className="font-bold text-lg mb-1">HWP</span>
                     <span className="text-[10px] opacity-80">한글 문서</span>
+                    <span className="absolute top-1 right-1 text-[9px] px-1.5 py-0.5 bg-accent text-white rounded font-bold">BETA</span>
                   </button>
                   <button
                     onClick={() => setFormat("word")}
