@@ -18,6 +18,7 @@ import {
   Copy,
   RotateCcw,
   History,
+  Sparkles,
 } from "lucide-react";
 import { SnapshotList } from "../snapshot/SnapshotList";
 import { TrashList } from "../trash/TrashList";
@@ -40,6 +41,7 @@ import {
   SIDEBAR_SECTION_TRASH,
   SIDEBAR_SETTINGS_LABEL,
   SIDEBAR_TRASH_EMPTY,
+  LABEL_RESEARCH_ANALYSIS,
 } from "../../../../shared/constants";
 
 interface Chapter {
@@ -60,7 +62,7 @@ interface SidebarProps {
   onDeleteChapter?: (id: string) => void;
   onOpenSettings: () => void;
   onPrefetchSettings?: () => void;
-  onSelectResearchItem: (type: "character" | "world" | "scrap") => void;
+  onSelectResearchItem: (type: "character" | "world" | "scrap" | "analysis") => void;
   onSplitView?: (type: "vertical" | "horizontal", contentId: string) => void;
 }
 
@@ -69,7 +71,7 @@ type SidebarItem =
   | { type: "chapter"; chapter: Chapter }
   | { type: "add-chapter" }
   | { type: "research-header" }
-  | { type: "research-item"; id: "character" | "world" | "scrap" }
+  | { type: "research-item"; id: "character" | "world" | "scrap" | "analysis" }
   | { type: "snapshot-header" }
   | { type: "snapshot-list"; chapterId: string }
   | { type: "snapshot-empty-msg" }
@@ -177,6 +179,7 @@ function Sidebar({
       items.push({ type: "research-item", id: "character" });
       items.push({ type: "research-item", id: "world" });
       items.push({ type: "research-item", id: "scrap" });
+      items.push({ type: "research-item", id: "analysis" });
     }
 
     items.push({ type: "snapshot-header" });
@@ -385,6 +388,11 @@ function Sidebar({
                   label: SIDEBAR_ITEM_SCRAP,
                   icon: <BookOpen className="mr-2 text-muted icon-sm" />,
                   hoverId: "res-scrap",
+                },
+                analysis: {
+                  label: LABEL_RESEARCH_ANALYSIS,
+                  icon: <Sparkles className="mr-2 text-muted icon-sm" />,
+                  hoverId: "res-analysis",
                 },
               }[item.id];
 

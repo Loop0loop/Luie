@@ -6,12 +6,14 @@ import {
   LABEL_RESEARCH_DEFAULT,
   LABEL_RESEARCH_SCRAP,
   LABEL_RESEARCH_WORLD,
+  LABEL_RESEARCH_ANALYSIS,
   TOOLTIP_CLOSE_PANEL,
 } from "../../../../shared/constants";
-import { Globe, StickyNote, User, X } from "lucide-react";
+import { Globe, StickyNote, User, X, Sparkles } from "lucide-react";
 import CharacterManager from "./CharacterManager";
 import MemoSection from "./MemoSection";
 import WorldSection from "./WorldSection";
+import AnalysisSection from "./AnalysisSection";
 
 interface ResearchPanelProps {
   activeTab: string; // 'character' | 'world' | 'scrap'
@@ -29,6 +31,7 @@ export default function ResearchPanel({
     character: { title: LABEL_RESEARCH_CHARACTERS, icon: <User className="icon-lg" /> },
     world: { title: LABEL_RESEARCH_WORLD, icon: <Globe className="icon-lg" /> },
     scrap: { title: LABEL_RESEARCH_SCRAP, icon: <StickyNote className="icon-lg" /> },
+    analysis: { title: LABEL_RESEARCH_ANALYSIS, icon: <Sparkles className="icon-lg" /> },
   };
 
   const { title, icon } = tabConfig[activeTab] ?? {
@@ -56,6 +59,7 @@ export default function ResearchPanel({
         {activeTab === "character" && <CharacterManager />}
         {activeTab === "world" && <WorldSection />}
         {activeTab === "scrap" && <MemoSection />}
+        {activeTab === "analysis" && <AnalysisSection />}
       </div>
     </div>
   );
