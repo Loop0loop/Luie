@@ -119,6 +119,21 @@ export const LABEL_ANALYSIS_SELECT_CHAPTER = '검토할 원고'
 export const LABEL_ANALYSIS_START_BUTTON = '피드백 받아보기'
 export const LABEL_ANALYSIS_ANALYZING = '원고를 읽고 있습니다...'
 export const LABEL_ANALYSIS_EMPTY_STATE = '작가님, 안녕하세요.\n검토가 필요한 챕터를 책상 위에 올려주세요.\n천천히 읽어보고 제 생각을 말씀드릴게요.'
+export const LABEL_ANALYSIS_DISCLAIMER = '작가님의 원고, 캐릭터, 고유명사 등을 소재로 분석하며,\n분석 내용은 저장되지 않고 종료 즉시 폐기됩니다.'
+export const LABEL_ANALYSIS_DISCLAIMER_LINK = '자세히 알아보기'
+export const LABEL_ANALYSIS_DISCLAIMER_DETAIL_TITLE = '데이터 처리 방침 안내'
+export const LABEL_ANALYSIS_DISCLAIMER_DETAIL_BODY = `1. 데이터의 사용 목적
+- 제공해주신 원고 데이터는 오직 AI 분석 기능을 수행하기 위해서만 사용됩니다.
+- 분석 결과 도출 외의 목적으로는 사용되지 않습니다.
+
+2. 데이터의 저장 및 폐기
+- 분석을 위해 전송된 데이터는 서버에 영구 저장되지 않습니다.
+- 휘발성 메모리에서 처리되며, 분석 세션이 종료되는 즉시 파기됩니다.
+
+3. 제3자 제공 금지
+- 사용자 동의 없이 데이터를 제3자에게 제공하거나 AI 학습용으로 무단 사용하지 않습니다.
+
+안심하고 창작에만 집중하세요.`
 export const LABEL_ANALYSIS_RESULT_REACTION = '독자 노트'
 export const LABEL_ANALYSIS_RESULT_CONTRADICTION = '검토 메모'
 export const LABEL_ANALYSIS_RESULT_EMPTY = '피드백이 없습니다.'
