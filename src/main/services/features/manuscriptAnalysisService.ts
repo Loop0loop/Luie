@@ -1,5 +1,8 @@
 import "dotenv/config";
 import { GoogleGenAI } from "@google/genai";
+import * as fsp from "fs/promises";
+import * as path from "path";
+import yauzl from "yauzl";
 import { createLogger } from "../../../shared/logger/index.js";
 import { db } from "../../database/index.js";
 import { manuscriptAnalyzer } from "../../core/manuscriptAnalyzer.js";
@@ -14,9 +17,143 @@ import {
 import type { AnalysisItem, AnalysisContext } from "../../../shared/types/analysis.js";
 import type { Chapter, Character, Term } from "../../../shared/types/index.js";
 import type { BrowserWindow } from "electron";
+import {
+  LUIE_PACKAGE_EXTENSION,
+  LUIE_PACKAGE_META_FILENAME,
+  LUIE_MANUSCRIPT_DIR,
+  LUIE_WORLD_DIR,
+  LUIE_WORLD_CHARACTERS_FILE,
+  LUIE_WORLD_TERMS_FILE,
+  MARKDOWN_EXTENSION,
+} from "../../../shared/constants/index.js";
 
 const logger = createLogger("ManuscriptAnalysisService");
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3-flash-preview";
+
+type LuieMeta = {
+  chapters?: Array<{ id: string; title?: string; order?: number }>;
+};
+
+type LuieCharactersFile = {
+  characters?: Array<{ name?: string; description?: string }>;
+};
+
+type LuieTermsFile = {
+  terms?: Array<{ term?: string; definition?: string; category?: string }>;
+};
+
+const normalizeZipPath = (inputPath: string) =>
+  path.posix
+    .normalize(inputPath.replace(/\\/g, "/"))
+    .replace(/^\.(\/|\\)/, "")
+    .replace(/^\//, "");
+
+const isSafeZipPath = (inputPath: string) => {
+  const normalized = normalizeZipPath(inputPath);
+  if (!normalized) return false;
+  if (normalized.startsWith("../") || normalized.startsWith("..\\")) return false;
+  if (normalized.includes("../") || normalized.includes("..\\")) return false;
+  return !path.isAbsolute(normalized);
+};
+
+const readZipEntryContent = async (zipPath: string, entryPath: string): Promise<string | null> => {
+  const normalized = normalizeZipPath(entryPath);
+  if (!normalized || !isSafeZipPath(normalized)) {
+    throw new Error("INVALID_RELATIVE_PATH");
+  }
+
+  let found = false;
+  let result: string | null = null;
+
+  await new Promise<void>((resolve, reject) => {
+    yauzl.open(zipPath, { lazyEntries: true }, (openErr: Error | null, zipfile?: yauzl.ZipFile) => {
+      if (openErr || !zipfile) {
+        reject(openErr ?? new Error("FAILED_TO_OPEN_ZIP"));
+        return;
+      }
+
+      zipfile.on("entry", (entry: yauzl.Entry) => {
+        const entryName = normalizeZipPath(entry.fileName);
+        if (!entryName || !isSafeZipPath(entryName)) {
+          zipfile.readEntry();
+          return;
+        }
+
+        if (entryName !== normalized) {
+          zipfile.readEntry();
+          return;
+        }
+
+        found = true;
+
+        zipfile.openReadStream(entry, (streamErr, stream) => {
+          if (streamErr || !stream) {
+            reject(streamErr ?? new Error("FAILED_TO_READ_ZIP_ENTRY"));
+            return;
+          }
+
+          const chunks: Buffer[] = [];
+          stream.on("data", (chunk) => chunks.push(chunk));
+          stream.on("error", reject);
+          stream.on("end", () => {
+            result = Buffer.concat(chunks).toString("utf-8");
+            resolve();
+          });
+        });
+      });
+
+      zipfile.on("end", () => {
+        if (!found) {
+          resolve();
+        }
+      });
+
+      zipfile.on("error", reject);
+      zipfile.readEntry();
+    });
+  });
+
+  return result;
+};
+
+const readLuieEntry = async (packagePath: string, entryPath: string): Promise<string | null> => {
+  const normalized = normalizeZipPath(entryPath);
+  if (!normalized || !isSafeZipPath(normalized)) {
+    throw new Error("INVALID_RELATIVE_PATH");
+  }
+
+  let stat: Awaited<ReturnType<typeof fsp.stat>> | null = null;
+  try {
+    stat = await fsp.stat(packagePath);
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    if (err?.code === "ENOENT") return null;
+    throw error;
+  }
+
+  if (stat.isDirectory()) {
+    const fullPath = path.join(packagePath, normalized);
+    const resolved = path.resolve(fullPath);
+    const base = path.resolve(packagePath);
+    if (!resolved.startsWith(base)) {
+      throw new Error("INVALID_RELATIVE_PATH");
+    }
+
+    try {
+      return await fsp.readFile(fullPath, "utf-8");
+    } catch (error) {
+      const err = error as NodeJS.ErrnoException;
+      if (err?.code === "ENOENT") return null;
+      throw error;
+    }
+  }
+
+  if (stat.isFile()) {
+    return await readZipEntryContent(packagePath, normalized);
+  }
+
+  return null;
+};
 
 /**
  * 원고 분석 서비스
@@ -56,33 +193,78 @@ class ManuscriptAnalysisService {
     });
 
     try {
-      // 1. DB에서 데이터 조회
-      const [chapter, characters, terms] = await Promise.all([
-        db.getClient().chapter.findUnique({
-          where: { id: chapterId },
-        }),
-        db.getClient().character.findMany({
-          where: { projectId },
-          select: { name: true, description: true },
-        }),
-        db.getClient().term.findMany({
-          where: { projectId },
-          select: { term: true, definition: true, category: true },
-        }),
-      ]);
+      // 1. .luie 경로 조회
+      const project = await db.getClient().project.findUnique({
+        where: { id: projectId },
+        select: { projectPath: true },
+      });
 
-      if (!chapter) {
-        throw new Error(`Chapter not found: ${chapterId}`);
+      const projectPath = typeof project?.projectPath === "string" ? project.projectPath : "";
+      if (!projectPath || !projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
+        throw new Error("Project .luie path not found");
       }
 
-      // 2. 분석 컨텍스트 구성
+      // 2. .luie 내부 데이터 로드
+      const [metaRaw, chapterContent, charactersRaw, termsRaw] = await Promise.all([
+        readLuieEntry(projectPath, LUIE_PACKAGE_META_FILENAME),
+        readLuieEntry(
+          projectPath,
+          `${LUIE_MANUSCRIPT_DIR}/${chapterId}${MARKDOWN_EXTENSION}`
+        ),
+        readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`),
+        readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`),
+      ]);
+
+      if (!chapterContent) {
+        throw new Error(`Chapter content not found in .luie: ${chapterId}`);
+      }
+
+      const meta = metaRaw ? (JSON.parse(metaRaw) as LuieMeta) : undefined;
+      const chapterMeta = meta?.chapters?.find((entry) => entry.id === chapterId);
+      const chapterTitle = chapterMeta?.title ?? "Untitled";
+
+      const charactersFile = charactersRaw
+        ? (JSON.parse(charactersRaw) as LuieCharactersFile)
+        : { characters: [] };
+      const termsFile = termsRaw ? (JSON.parse(termsRaw) as LuieTermsFile) : { terms: [] };
+
+      const characters = (charactersFile.characters ?? [])
+        .filter((char) => Boolean(char?.name))
+        .map((char) => ({
+          name: char?.name ?? "",
+          description: char?.description ?? "",
+        }));
+
+      const terms = (termsFile.terms ?? [])
+        .filter((term) => Boolean(term?.term))
+        .map((term) => ({
+          term: term?.term ?? "",
+          definition: term?.definition ?? "",
+          category: term?.category ?? "기타",
+        }));
+
+      const chapter: Chapter = {
+        id: chapterId,
+        title: chapterTitle,
+        content: chapterContent,
+      } as Chapter;
+
+      logger.info("Loaded .luie analysis data", {
+        chapterId,
+        chapterTitle,
+        characterCount: characters.length,
+        termCount: terms.length,
+        contentLength: chapterContent.length,
+      });
+
+      // 3. 분석 컨텍스트 구성
       const context = manuscriptAnalyzer.buildAnalysisContext(
-        chapter as unknown as Chapter,
+        chapter,
         characters as unknown as Character[],
         terms as unknown as Term[]
       );
 
-      // 3. Gemini 스트리밍 분석
+      // 4. Gemini 스트리밍 분석
       await this.streamAnalysisWithGemini(context, chapterId, apiKey);
 
       logger.info("Analysis completed", { chapterId, projectId });
@@ -222,11 +404,21 @@ ${formatAnalysisContext(context)}`;
       
       try {
         const parsed = JSON.parse(responseText);
-        parsedItems = Array.isArray(parsed) ? parsed : [parsed];
+        if (Array.isArray(parsed)) {
+          parsedItems = parsed;
+        } else {
+          logger.warn("Gemini returned non-array response; wrapping into array");
+          parsedItems = [parsed];
+        }
         logger.info("Parsed items count", { count: parsedItems.length });
       } catch (parseError) {
         logger.error("Failed to parse Gemini response", { error: parseError, responseText });
         throw new Error("Invalid JSON response from Gemini");
+      }
+
+      const suggestionCount = parsedItems.filter((item) => item?.type === "suggestion").length;
+      if (suggestionCount < 2) {
+        logger.warn("Gemini response has insufficient suggestions", { suggestionCount });
       }
 
       // 각 아이템 검증 및 전송

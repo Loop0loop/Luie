@@ -18,18 +18,22 @@ export type AnalysisItemResult = z.infer<typeof AnalysisItemSchema>;
  * Gemini API Response Schema
  */
 export const GEMINI_ANALYSIS_RESPONSE_SCHEMA = {
-  type: Type.OBJECT,
-  properties: {
-    type: {
-      type: Type.STRING,
-      enum: ["reaction", "suggestion", "intro", "outro"],
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      type: {
+        type: Type.STRING,
+        enum: ["reaction", "suggestion", "intro", "outro"],
+      },
+      content: { type: Type.STRING },
+      quote: { type: Type.STRING },
+      contextId: { type: Type.STRING },
     },
-    content: { type: Type.STRING },
-    quote: { type: Type.STRING },
-    contextId: { type: Type.STRING },
+    required: ["type", "content"],
+    propertyOrdering: ["type", "content", "quote", "contextId"],
   },
-  required: ["type", "content"],
-  propertyOrdering: ["type", "content", "quote", "contextId"],
+  minItems: 4,
 } as const;
 
 /**
@@ -86,13 +90,15 @@ export const ANALYSIS_SYSTEM_INSTRUCTION = `
 2. 구체적인 텍스트 인용 필수 (quote 필드 활용)
 3. 예의 바르고 존중하는 어조 유지
 4. 문제점만이 아닌 잘된 점도 언급
-5. JSON 형식으로만 응답
+5. JSON 배열 형식으로만 응답 (객체 단일 출력 금지)
 
 ## 출력 형식
-- type: "reaction" (독자 반응), "suggestion" (개선 제안), "intro" (시작 인사), "outro" (마무리 멘트)
-- content: 분석 내용 (한글, 자연스러운 문장)
-- quote: 인용 텍스트 (해당하는 경우)
-- contextId: 원고 내 위치 식별자 (필요시)
+- JSON 배열만 허용: [{...}, {...}, ...]
+- 각 요소는 다음 필드를 포함
+  - type: "reaction" (독자 반응), "suggestion" (개선 제안), "intro" (시작 인사), "outro" (마무리 멘트)
+  - content: 분석 내용 (한글, 자연스러운 문장)
+  - quote: 인용 텍스트 (reaction/suggestion에서 필수)
+  - contextId: 원고 내 위치 식별자 (필요시)
 
 ## 중요
 - 작가의 창작 의도를 존중하되, 독자가 혼란스러울 부분은 명확히 지적
@@ -145,9 +151,12 @@ export function formatAnalysisContext(context: AnalysisContext): string {
   prompt += `- 설정 모순, 캐릭터 일관성 문제\n`;
   prompt += `- 플롯 구멍, 개연성 문제\n`;
   prompt += `- 개선 제안\n\n`;
-  prompt += `먼저 "intro" 타입으로 인사를 시작하고,\n`;
-  prompt += `각 지점마다 "reaction" 또는 "suggestion" 타입으로 분석하며,\n`;
-  prompt += `마지막에 "outro" 타입으로 마무리해주세요.\n`;
+  prompt += `JSON 배열로만 응답하세요.\n`;
+  prompt += `반드시 다음 구성으로 포함하세요:\n`;
+  prompt += `- intro 1개\n`;
+  prompt += `- reaction 최소 1개 (quote 포함)\n`;
+  prompt += `- suggestion 최소 2개 (quote 포함)\n`;
+  prompt += `- outro 1개\n`;
 
   return prompt;
 }
