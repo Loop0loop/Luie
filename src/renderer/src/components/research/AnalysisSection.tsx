@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useChapterStore } from "../../stores/chapterStore";
 import { useAnalysisStore } from "../../stores/analysisStore";
 import { useProjectStore } from "../../stores/projectStore";
@@ -21,57 +21,42 @@ import { useToast } from "../../components/common/ToastContext";
 import { Modal } from "../../components/common/Modal";
 
 export default function AnalysisSection() {
-  const { items: chapters } = useChapterStore();
+  const { items: chapters, currentChapter, setCurrent } = useChapterStore();
   const { currentProject } = useProjectStore();
   const { 
     items: analysisItems, 
     isAnalyzing, 
     error,
-    startAnalysis, 
-    stopAnalysis,
+    startAnalysis,
     clearAnalysis,
     addStreamItem,
     setError
   } = useAnalysisStore();
   
-  const [selectedChapterId, setSelectedChapterId] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [analyzedChapterId, setAnalyzedChapterId] = useState<string>("");
   const { showToast } = useToast();
   
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Set initial chapter when chapters load (without useEffect)
-  const effectiveChapterId = selectedChapterId || (chapters.length > 0 ? chapters[0].id : "");
-
-  // Debug: log component state
-  useEffect(() => {
-    console.log("[RENDERER] AnalysisSection state", {
-      chapters: chapters.length,
-      currentProject: currentProject?.id,
-      effectiveChapterId,
-      selectedChapterId,
-      isAnalyzing,
-      analysisItemsCount: analysisItems.length,
-    });
-  }, [chapters, currentProject, effectiveChapterId, selectedChapterId, isAnalyzing, analysisItems]);
+  // Active chapter for analysis - always use currentChapter from editor
+  const activeChapterId =
+    currentChapter?.id
+    || (chapters.length > 0 ? chapters[0].id : "");
 
   // Register streaming listeners
   useEffect(() => {
-    console.log("[RENDERER] Registering analysis stream listeners");
     const unsubscribeStream = window.api.analysis.onStream((data: unknown) => {
-      console.log("[RENDERER] Received stream data:", data);
       addStreamItem(data as { item: AnalysisItem; done: boolean });
     });
 
     const unsubscribeError = window.api.analysis.onError((errorData: unknown) => {
-      console.log("[RENDERER] Received error:", errorData);
       const err = errorData as { message: string };
       setError(err.message ?? "분석 중 오류가 발생했습니다.");
       showToast(err.message ?? "분석 중 오류가 발생했습니다.", "error");
     });
 
     return () => {
-      console.log("[RENDERER] Unregistering analysis listeners");
       unsubscribeStream();
       unsubscribeError();
     };
@@ -83,13 +68,13 @@ export default function AnalysisSection() {
       const cleanup = async () => {
         const currentlyAnalyzing = useAnalysisStore.getState().isAnalyzing;
         if (currentlyAnalyzing) {
-          await stopAnalysis();
+          await useAnalysisStore.getState().stopAnalysis();
         }
-        await clearAnalysis();
+        // Don't clear analysis data on every cleanup - only on intentional user action
       };
       void cleanup();
     };
-  }, []); // Empty deps - only run on mount/unmount
+  }, []);
 
   // Show error toast
   useEffect(() => {
@@ -103,20 +88,8 @@ export default function AnalysisSection() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [analysisItems]);
 
-  const handleAnalyze = async () => {
-    console.log("[RENDERER] handleAnalyze called", {
-      effectiveChapterId,
-      currentProject: currentProject?.id,
-      isAnalyzing,
-      chapters: chapters.length,
-    });
-
-    if (!effectiveChapterId || !currentProject || isAnalyzing) {
-      console.log("[RENDERER] Analysis blocked", {
-        hasChapterId: !!effectiveChapterId,
-        hasProject: !!currentProject,
-        isAnalyzing,
-      });
+  const handleAnalyze = useCallback(async () => {
+    if (!activeChapterId || !currentProject || isAnalyzing) {
       return;
     }
 
@@ -124,19 +97,35 @@ export default function AnalysisSection() {
       if (analysisItems.length > 0) {
         await clearAnalysis();
       }
-      console.log("[RENDERER] Starting analysis", { chapterId: effectiveChapterId, projectId: currentProject.id });
-      await startAnalysis(effectiveChapterId, currentProject.id);
+      setAnalyzedChapterId(activeChapterId); // Remember which chapter was analyzed
+      await startAnalysis(activeChapterId, currentProject.id);
       showToast("분석을 시작합니다...", "info");
-    } catch (error) {
-      console.error("[RENDERER] Analysis start failed", error);
+    } catch {
       // Error is already set in the store and logged in main process
       // No need to log again here
     }
-  };
+  }, [
+    activeChapterId,
+    currentProject,
+    isAnalyzing,
+    analysisItems.length,
+    clearAnalysis,
+    startAnalysis,
+    showToast,
+  ]);
 
-  const handleNavigate = (contextId: string) => {
-    showToast(`원고의 해당 위치로 이동합니다. (context: ${contextId})`, 'info');
-  };
+  const handleNavigate = useCallback((contextId: string) => {
+    // Navigate to the chapter that was analyzed
+    const targetChapterId = analyzedChapterId || activeChapterId;
+    const targetChapter = chapters.find(c => c.id === targetChapterId);
+    
+    if (targetChapter) {
+      setCurrent(targetChapter);
+      showToast(`"${targetChapter.title}" 원고로 이동합니다.`, 'info');
+    } else {
+      showToast(`원고의 해당 위치로 이동합니다. (context: ${contextId})`, 'info');
+    }
+  }, [analyzedChapterId, activeChapterId, chapters, setCurrent, showToast]);
 
   return (
     <div className="flex flex-col h-full w-full bg-bg-panel text-text-primary font-serif selection:bg-accent-bg/20">
@@ -155,8 +144,13 @@ export default function AnalysisSection() {
               <span className="text-sm text-text-secondary hidden sm:inline">{LABEL_ANALYSIS_SELECT_CHAPTER}</span>
               <select 
                 className="bg-transparent text-sm font-bold border-b border-border hover:border-text-primary cursor-pointer focus:outline-none transition-colors py-1"
-                value={selectedChapterId}
-                onChange={(e) => setSelectedChapterId(e.target.value)}
+                value={activeChapterId}
+                onChange={(e) => {
+                  const selected = chapters.find(c => c.id === e.target.value);
+                  if (selected) {
+                    setCurrent(selected);
+                  }
+                }}
               >
                 {chapters.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
               </select>
@@ -165,7 +159,7 @@ export default function AnalysisSection() {
             <div className="flex items-center gap-2">
               {analysisItems.length > 0 && (
                 <button
-                  onClick={() => void clearAnalysis()}
+                  onClick={() => void useAnalysisStore.getState().clearAnalysis()}
                   className="text-xs font-semibold tracking-wide px-3 py-1 rounded-full border border-border text-text-secondary hover:text-text-primary hover:border-text-primary transition-colors"
                 >
                   초기화
@@ -173,7 +167,7 @@ export default function AnalysisSection() {
               )}
               <button
                 onClick={() => void handleAnalyze()}
-                disabled={!effectiveChapterId || !currentProject}
+                disabled={!activeChapterId || !currentProject}
                 className="text-xs font-semibold tracking-wide px-3 py-1 rounded-full border border-border text-text-secondary hover:text-text-primary hover:border-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 다시 분석
@@ -194,11 +188,8 @@ export default function AnalysisSection() {
                         {LABEL_ANALYSIS_EMPTY_STATE}
                     </p>
                     <button
-                        onClick={() => {
-                          console.log("[RENDERER] Button clicked", { effectiveChapterId, currentProjectId: currentProject?.id });
-                          void handleAnalyze();
-                        }}
-                        disabled={!effectiveChapterId || !currentProject}
+                        onClick={() => void handleAnalyze()}
+                        disabled={!activeChapterId || !currentProject}
                         className="group flex items-center gap-3 px-8 py-4 rounded-full bg-surface hover:bg-surface-hover border border-border shadow-sm hover:shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Sparkles className="w-5 h-5 text-accent animate-pulse" />

@@ -15,25 +15,13 @@ class AnalysisSecurity {
 
   /**
    * 보안 리스너 등록
-   * 윈도우 blur/close 시 분석 데이터 자동 삭제
+   * 윈도우 close 시 분석 데이터 자동 삭제
    */
   registerSecurityListeners(window: BrowserWindow): void {
     if (this.isListenerRegistered) {
       logger.warn("Security listeners already registered");
       return;
     }
-
-    // 윈도우 blur (포커스 잃음) 이벤트
-    window.on("blur", () => {
-      // 분석 중에는 blur 이벤트 무시 (사용자가 다른 창을 봐야 할 수 있음)
-      if (manuscriptAnalysisService.isAnalysisInProgress()) {
-        logger.info("Window blur detected during analysis, ignoring clear");
-        return;
-      }
-      
-      logger.info("Window blur detected, clearing analysis data");
-      manuscriptAnalysisService.clearAnalysisData();
-    });
 
     // 윈도우 close 이벤트
     window.on("close", () => {

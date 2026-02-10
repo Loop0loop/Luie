@@ -287,7 +287,7 @@ class ManuscriptAnalysisService {
     }
 
     this.isAnalyzing = false;
-    this.currentWindow = null;
+    // Don't null the window here - let streaming complete first
     logger.info("Analysis stopped by user");
   }
 
@@ -428,50 +428,110 @@ ${runId}
           if (!chunkText) continue;
 
           buffer += chunkText;
-          const lines = buffer.split(/\r?\n/);
-          buffer = lines.pop() ?? "";
 
-          for (const rawLine of lines) {
-            const line = rawLine.trim();
-            if (!line) continue;
-            if (line.startsWith("```")) continue;
+          // Try to extract complete JSON objects from buffer
+          while (buffer.length > 0) {
+            const trimmed = buffer.trimStart();
+            if (!trimmed) {
+              buffer = "";
+              break;
+            }
 
-            if (line.startsWith("{")) {
-              try {
-                const parsed = JSON.parse(line) as AnalysisItemResult;
-                emitItem(parsed);
-              } catch (error) {
-                logger.warn("Failed to parse JSONL line", { error, line, phase });
-              }
+            // Skip code fences
+            if (trimmed.startsWith("```")) {
+              const endFence = trimmed.indexOf("\n");
+              if (endFence === -1) break;
+              buffer = trimmed.slice(endFence + 1);
               continue;
             }
 
-            if (line.startsWith("[")) {
-              try {
-                const parsed = JSON.parse(line);
-                if (Array.isArray(parsed)) {
-                  parsed.forEach((item) => emitItem(item));
-                }
-              } catch (error) {
-                logger.warn("Failed to parse JSON array line", { error, line, phase });
+            if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+              // Skip non-JSON content
+              const nextJson = Math.min(
+                trimmed.indexOf("{") === -1 ? Infinity : trimmed.indexOf("{"),
+                trimmed.indexOf("[") === -1 ? Infinity : trimmed.indexOf("[")
+              );
+              if (nextJson === Infinity) {
+                buffer = "";
+                break;
               }
+              buffer = trimmed.slice(nextJson);
+              continue;
+            }
+
+            // Find complete JSON object/array
+            let braceCount = 0;
+            let inString = false;
+            let escape = false;
+            let jsonEnd = -1;
+            const isArray = trimmed[0] === "[";
+            const openChar = isArray ? "[" : "{";
+            const closeChar = isArray ? "]" : "}";
+
+            for (let i = 0; i < trimmed.length; i++) {
+              const char = trimmed[i];
+
+              if (escape) {
+                escape = false;
+                continue;
+              }
+
+              if (char === "\\") {
+                escape = true;
+                continue;
+              }
+
+              if (char === '"') {
+                inString = !inString;
+                continue;
+              }
+
+              if (inString) continue;
+
+              if (char === openChar) {
+                braceCount++;
+              } else if (char === closeChar) {
+                braceCount--;
+                if (braceCount === 0) {
+                  jsonEnd = i + 1;
+                  break;
+                }
+              }
+            }
+
+            if (jsonEnd === -1) {
+              // Incomplete JSON, wait for more data
+              break;
+            }
+
+            const jsonStr = trimmed.slice(0, jsonEnd);
+            buffer = trimmed.slice(jsonEnd);
+
+            try {
+              const parsed = JSON.parse(jsonStr);
+              if (Array.isArray(parsed)) {
+                parsed.forEach((item) => emitItem(item));
+              } else {
+                emitItem(parsed);
+              }
+            } catch (error) {
+              logger.warn("Failed to parse JSON", { error, jsonStr: jsonStr.slice(0, 200), phase });
             }
           }
         }
 
+        // Process remaining buffer
         if (buffer.trim()) {
           const trimmed = buffer.trim();
           try {
-            if (trimmed.startsWith("{")) {
-              emitItem(JSON.parse(trimmed));
-            } else if (trimmed.startsWith("[")) {
-              const parsed = JSON.parse(trimmed);
-              if (Array.isArray(parsed)) {
-                parsed.forEach((item) => emitItem(item));
-              }
+            const parsed = JSON.parse(trimmed);
+            if (Array.isArray(parsed)) {
+              parsed.forEach((item) => emitItem(item));
+            } else {
+              emitItem(parsed);
             }
           } catch (error) {
-            logger.warn("Failed to parse trailing buffer", { error, buffer: trimmed, phase });
+            logger.warn("Failed to parse remaining buffer", { error, buffer: trimmed.slice(0, 200), phase });
           }
         }
       };
