@@ -2,9 +2,9 @@ import { promises as fs } from "fs";
 import path from "path";
 import { app } from "electron";
 import Database from "better-sqlite3";
-import { createLogger } from "../../shared/logger/index.js";
-import { SNAPSHOT_BACKUP_DIR } from "../../shared/constants/paths.js";
-import { db } from "../database/index.js";
+import { createLogger } from "../../../shared/logger/index.js";
+import { SNAPSHOT_BACKUP_DIR } from "../../../shared/constants/paths.js";
+import { db } from "../../database/index.js";
 
 const logger = createLogger("DbRecoveryService");
 
@@ -19,11 +19,12 @@ export type DbRecoveryResult = {
 export class DbRecoveryService {
   async recoverFromWal(options?: { dryRun?: boolean }): Promise<DbRecoveryResult> {
     let backupDir: string | undefined;
-    let dbPath: string | undefined;
+    let dbPath: string | null = null;
     try {
-      dbPath = db.getDatabasePath();
-      const walPath = `${dbPath}-wal`;
-      const shmPath = `${dbPath}-shm`;
+      const resolvedPath = db.getDatabasePath();
+      dbPath = resolvedPath;
+      const walPath = `${resolvedPath}-wal`;
+      const shmPath = `${resolvedPath}-shm`;
 
       const walExists = await this.exists(walPath);
       if (!walExists) {
@@ -33,7 +34,7 @@ export class DbRecoveryService {
         };
       }
 
-      backupDir = await this.createBackup(dbPath, walPath, shmPath);
+      backupDir = await this.createBackup(resolvedPath, walPath, shmPath);
 
       if (options?.dryRun) {
         return {
@@ -45,7 +46,7 @@ export class DbRecoveryService {
 
       await db.disconnect();
 
-      const sqlite = new Database(dbPath, { fileMustExist: true });
+      const sqlite = new Database(resolvedPath, { fileMustExist: true });
       const checkpoint = sqlite.pragma("wal_checkpoint(FULL)");
       const integrity = sqlite.pragma("integrity_check");
       sqlite.close();

@@ -42,6 +42,32 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     await setShortcuts(shortcutDrafts as ShortcutMap);
   };
 
+  const runRecovery = async (dryRun: boolean) => {
+    setIsRecovering(true);
+    setRecoveryMessage(null);
+    setRecoveryDetails(null);
+    try {
+      const response = await window.api.recovery.runDb({ dryRun });
+      if (response.success && response.data) {
+        const result = response.data as {
+          success: boolean;
+          message: string;
+          backupDir?: string;
+        };
+        setRecoveryMessage(result.message);
+        if (result.backupDir) {
+          setRecoveryDetails(`Backup: ${result.backupDir}`);
+        }
+      } else {
+        setRecoveryMessage(response.error?.message ?? "Recovery failed");
+      }
+    } catch (error) {
+      setRecoveryMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setIsRecovering(false);
+    }
+  };
+
   const OPTIONAL_FONTS: Array<{
     id: FontPreset;
     label: string;
@@ -457,6 +483,39 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
               </div>
             )}
 
+            {activeTab === "recovery" && (
+              <div className="flex-1 px-15 py-12 overflow-y-auto flex flex-col gap-6">
+                <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px]">{t("settings.recovery.title")}</div>
+                <div className="text-sm text-subtle leading-[1.6]">
+                  {t("settings.recovery.description")}
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    className="text-xs font-semibold tracking-wide px-3 py-1 rounded-full border border-border text-text-secondary hover:text-text-primary hover:border-text-primary transition-colors disabled:opacity-50"
+                    onClick={() => void runRecovery(true)}
+                    disabled={isRecovering}
+                  >
+                    {t("settings.recovery.dryRun")}
+                  </button>
+                  <button
+                    className="text-xs font-semibold tracking-wide px-3 py-1 rounded-full border border-border text-text-secondary hover:text-text-primary hover:border-text-primary transition-colors disabled:opacity-50"
+                    onClick={() => void runRecovery(false)}
+                    disabled={isRecovering}
+                  >
+                    {isRecovering ? t("settings.recovery.running") : t("settings.recovery.run")}
+                  </button>
+                </div>
+                {recoveryMessage && (
+                  <div className="text-sm text-fg">
+                    {recoveryMessage}
+                    {recoveryDetails && (
+                      <div className="text-xs text-subtle mt-2">{recoveryDetails}</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {activeTab === "language" && (
               <div className="flex-1 px-15 py-12 overflow-y-auto flex flex-col gap-6">
                 <div className="flex flex-col gap-3">
@@ -479,7 +538,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
               </div>
             )}
 
-            {activeTab !== "editor" && activeTab !== "appearance" && activeTab !== "language" && activeTab !== "shortcuts" && (
+            {activeTab !== "editor" && activeTab !== "appearance" && activeTab !== "language" && activeTab !== "shortcuts" && activeTab !== "recovery" && (
               <div className="flex-1 flex items-center justify-center text-subtle text-sm">
                 <div className="placeholderText">{t("settings.placeholder")}</div>
               </div>
