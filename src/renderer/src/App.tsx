@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense, useCallback, useEffect } from "react";
+import { useState, lazy, Suspense, useCallback, useEffect, useMemo } from "react";
 import MainLayout from "./components/layout/MainLayout";
 import Sidebar from "./components/sidebar/Sidebar";
 import Editor from "./components/editor/Editor";
@@ -12,6 +12,8 @@ import { useFileImport } from "./hooks/useFileImport";
 import { useChapterManagement } from "./hooks/useChapterManagement";
 import { useSplitView } from "./hooks/useSplitView";
 import { useProjectTemplate } from "./hooks/useProjectTemplate";
+import { useShortcuts } from "./hooks/useShortcuts";
+import { useShortcutStore } from "./stores/shortcutStore";
 import {
   LUIE_PACKAGE_EXTENSION_NO_DOT,
   LUIE_PACKAGE_FILTER_NAME,
@@ -37,7 +39,8 @@ export default function App() {
     return () => window.removeEventListener("hashchange", checkHash);
   }, []);
 
-  const { view } = useUIStore();
+  const { view, isSidebarOpen, isContextOpen, setSidebarOpen, setContextOpen } = useUIStore();
+  const { loadShortcuts } = useShortcutStore();
   const { items: projects, createProject, setCurrentProject, loadProjects } = useProjectStore();
   const { theme } = useEditorStore();
 
@@ -48,6 +51,10 @@ export default function App() {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    void loadShortcuts();
+  }, [loadShortcuts]);
   
   const {
     chapters,
@@ -61,6 +68,28 @@ export default function App() {
     handleDeleteChapter,
     handleSave,
   } = useChapterManagement();
+
+  const shortcutHandlers = useMemo(
+    () => ({
+      "app.openSettings": () => setIsSettingsOpen(true),
+      "chapter.new": () => void handleAddChapter(),
+      "chapter.save": () => void handleSave(activeChapterTitle, content),
+      "view.toggleSidebar": () => setSidebarOpen(!isSidebarOpen),
+      "view.toggleContextPanel": () => setContextOpen(!isContextOpen),
+    }),
+    [
+      activeChapterTitle,
+      content,
+      handleAddChapter,
+      handleSave,
+      isContextOpen,
+      isSidebarOpen,
+      setContextOpen,
+      setSidebarOpen,
+    ],
+  );
+
+  useShortcuts(shortcutHandlers);
 
   const {
     isSplitView,

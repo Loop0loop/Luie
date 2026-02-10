@@ -122,6 +122,14 @@ export const settingsAutoSaveSchema = z.object({
   interval: z.number().int().positive().optional(),
 });
 
+export const settingsLanguageSchema = z.object({
+  language: z.enum(["ko", "en", "ja"]),
+});
+
+export const settingsShortcutsSchema = z.object({
+  shortcuts: z.record(z.string(), z.string()),
+});
+
 export const windowBoundsSchema = z.object({
   width: z.number().int().positive(),
   height: z.number().int().positive(),

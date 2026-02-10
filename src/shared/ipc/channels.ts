@@ -78,9 +78,16 @@ export const IPC_CHANNELS = {
   SETTINGS_SET_EDITOR: "settings:set-editor",
   SETTINGS_GET_AUTO_SAVE: "settings:get-auto-save",
   SETTINGS_SET_AUTO_SAVE: "settings:set-auto-save",
+  SETTINGS_GET_LANGUAGE: "settings:get-language",
+  SETTINGS_SET_LANGUAGE: "settings:set-language",
+  SETTINGS_GET_SHORTCUTS: "settings:get-shortcuts",
+  SETTINGS_SET_SHORTCUTS: "settings:set-shortcuts",
   SETTINGS_SET_WINDOW_BOUNDS: "settings:set-window-bounds",
   SETTINGS_GET_WINDOW_BOUNDS: "settings:get-window-bounds",
   SETTINGS_RESET: "settings:reset",
+
+  // Recovery
+  RECOVERY_DB_RUN: "recovery:db-run",
 
   // Window
   WINDOW_MINIMIZE: "window:minimize",

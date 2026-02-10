@@ -7,6 +7,8 @@ import {
   DEFAULT_UI_SPLIT_RATIO,
   DEFAULT_UI_SPLIT_VIEW_ENABLED,
   DEFAULT_UI_VIEW,
+  DEFAULT_UI_SIDEBAR_OPEN,
+  DEFAULT_UI_CONTEXT_OPEN,
   STORAGE_KEY_UI,
 } from "../../../shared/constants";
 import type { Snapshot } from "../../../shared/types";
@@ -27,12 +29,16 @@ interface UIStore {
   isSplitView: boolean;
   splitRatio: number;
   rightPanelContent: RightPanelContent;
+  isSidebarOpen: boolean;
+  isContextOpen: boolean;
 
   setView: (view: UIStore["view"]) => void;
   setContextTab: (tab: ContextTab) => void;
   setSplitView: (isSplit: boolean) => void;
   setSplitRatio: (ratio: number) => void;
   setRightPanelContent: (content: RightPanelContent) => void;
+  setSidebarOpen: (isOpen: boolean) => void;
+  setContextOpen: (isOpen: boolean) => void;
 }
 
 export const useUIStore = create<UIStore>()(
@@ -46,12 +52,16 @@ export const useUIStore = create<UIStore>()(
         type: DEFAULT_UI_RIGHT_PANEL_TYPE as RightPanelContent["type"],
         tab: DEFAULT_UI_RESEARCH_TAB as ResearchTab,
       },
+      isSidebarOpen: DEFAULT_UI_SIDEBAR_OPEN,
+      isContextOpen: DEFAULT_UI_CONTEXT_OPEN,
 
       setView: (view) => set({ view }),
       setContextTab: (contextTab) => set({ contextTab }),
       setSplitView: (isSplitView) => set({ isSplitView }),
       setSplitRatio: (splitRatio) => set({ splitRatio }),
       setRightPanelContent: (rightPanelContent) => set({ rightPanelContent }),
+      setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
+      setContextOpen: (isContextOpen) => set({ isContextOpen }),
     }),
     {
       name: STORAGE_KEY_UI,
@@ -61,6 +71,8 @@ export const useUIStore = create<UIStore>()(
         contextTab: state.contextTab,
         splitRatio: state.splitRatio,
         isSplitView: state.isSplitView,
+        isSidebarOpen: state.isSidebarOpen,
+        isContextOpen: state.isContextOpen,
         rightPanelContent:
           state.rightPanelContent.type === "snapshot"
             ? {

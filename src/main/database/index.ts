@@ -51,6 +51,7 @@ class DatabaseService {
   private static instance: DatabaseService;
   private prisma: PrismaClient | null = null;
   private datasourceUrl: string | null = null;
+  private dbPath: string | null = null;
 
   private constructor() {
   }
@@ -85,6 +86,8 @@ class DatabaseService {
       this.datasourceUrl = `file:${dbPath}`;
       process.env.DATABASE_URL = this.datasourceUrl;
     }
+
+    this.dbPath = dbPath;
 
     logger.info("Initializing database", {
       isPackaged,
@@ -230,6 +233,14 @@ class DatabaseService {
   getClient(): PrismaClient {
     this.ensureInitialized();
     return this.prisma as PrismaClient;
+  }
+
+  getDatabasePath(): string {
+    this.ensureInitialized();
+    if (!this.dbPath) {
+      throw new Error("Database path not initialized");
+    }
+    return this.dbPath;
   }
 
   async disconnect(): Promise<void> {

@@ -244,12 +244,23 @@ export interface EditorSettings {
 
 export interface AppSettings {
   editor: EditorSettings;
+  language?: "ko" | "en" | "ja";
+  shortcuts?: ShortcutMap;
   lastProjectPath?: string;
   autoSaveEnabled: boolean;
   autoSaveInterval: number;
   windowBounds?: WindowBounds;
   lastWindowState?: WindowState;
 }
+
+export type ShortcutAction =
+  | "app.openSettings"
+  | "chapter.new"
+  | "chapter.save"
+  | "view.toggleSidebar"
+  | "view.toggleContextPanel";
+
+export type ShortcutMap = Record<ShortcutAction, string>;
 
 // Analysis Types
 export type {

@@ -3,17 +3,22 @@ import type { EditorSettings } from "../../../shared/types/index.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import {
   editorSettingsSchema,
+  settingsLanguageSchema,
+  settingsShortcutsSchema,
   settingsAutoSaveSchema,
   windowBoundsSchema,
 } from "../../../shared/schemas/index.js";
 import { z } from "zod";
+import type { SettingsManager } from "../../manager/settingsManager.js";
 import type { LoggerLike } from "../core/types.js";
 
 const loadSettingsManager = (() => {
-  let cached: Promise<typeof import("../../manager/settingsManager.js")> | null = null;
+  let cached: Promise<{ settingsManager: SettingsManager }> | null = null;
   return async () => {
     if (!cached) {
-      cached = import("../../manager/settingsManager.js");
+      cached = import("../../manager/settingsManager.js") as Promise<{
+        settingsManager: SettingsManager;
+      }>;
     }
     const module = await cached;
     return module.settingsManager;
@@ -61,6 +66,47 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
           enabled: settingsManager.getAutoSaveEnabled(),
           interval: settingsManager.getAutoSaveInterval(),
         };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_GET_LANGUAGE,
+      logTag: "SETTINGS_GET_LANGUAGE",
+      failMessage: "Failed to get language setting",
+      handler: async () => {
+        const settingsManager = await loadSettingsManager();
+        return { language: settingsManager.getLanguage() ?? "ko" };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_SET_LANGUAGE,
+      logTag: "SETTINGS_SET_LANGUAGE",
+      failMessage: "Failed to set language setting",
+      argsSchema: z.tuple([settingsLanguageSchema]),
+      handler: async (settings: { language: "ko" | "en" | "ja" }) => {
+        const settingsManager = await loadSettingsManager();
+        settingsManager.setLanguage(settings.language);
+        return { language: settingsManager.getLanguage() ?? "ko" };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_GET_SHORTCUTS,
+      logTag: "SETTINGS_GET_SHORTCUTS",
+      failMessage: "Failed to get shortcuts",
+      handler: async () => {
+        const settingsManager = await loadSettingsManager();
+        return settingsManager.getShortcuts();
+      },
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_SET_SHORTCUTS,
+      logTag: "SETTINGS_SET_SHORTCUTS",
+      failMessage: "Failed to set shortcuts",
+      argsSchema: z.tuple([settingsShortcutsSchema]),
+      handler: async (settings: { shortcuts: Record<string, string> }) => {
+        const settingsManager = await loadSettingsManager();
+        const shortcuts = settingsManager.setShortcuts(settings.shortcuts);
+        const defaults = settingsManager.getShortcuts().defaults;
+        return { shortcuts, defaults };
       },
     },
     {

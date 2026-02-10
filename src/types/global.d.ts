@@ -184,9 +184,17 @@ declare global {
         setEditor: (settings: EditorSettings) => Promise<IPCResponse<EditorSettings>>;
         getAutoSave: () => Promise<IPCResponse<{ enabled: boolean; interval: number }>>;
         setAutoSave: (settings: { enabled?: boolean; interval?: number }) => Promise<IPCResponse<{ enabled: boolean; interval: number }>>;
+        getLanguage: () => Promise<IPCResponse<{ language: "ko" | "en" | "ja" }>>;
+        setLanguage: (settings: { language: "ko" | "en" | "ja" }) => Promise<IPCResponse<{ language: "ko" | "en" | "ja" }>>;
+        getShortcuts: () => Promise<IPCResponse<{ shortcuts: Record<string, string>; defaults: Record<string, string> }>>;
+        setShortcuts: (settings: { shortcuts: Record<string, string> }) => Promise<IPCResponse<{ shortcuts: Record<string, string>; defaults: Record<string, string> }>>;
         getWindowBounds: () => Promise<IPCResponse<{ width: number; height: number; x: number; y: number } | undefined>>;
         setWindowBounds: (bounds: { width: number; height: number; x: number; y: number }) => Promise<IPCResponse<{ width: number; height: number; x: number; y: number }>>;
         reset: () => Promise<IPCResponse<AppSettings>>;
+      };
+
+      recovery: {
+        runDb: (options?: { dryRun?: boolean }) => Promise<IPCResponse<unknown>>;
       };
 
       window: {

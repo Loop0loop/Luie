@@ -373,11 +373,25 @@ contextBridge.exposeInMainWorld("api", {
       safeInvoke(IPC_CHANNELS.SETTINGS_GET_AUTO_SAVE),
     setAutoSave: (settings: unknown): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_SET_AUTO_SAVE, settings),
+    getLanguage: (): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.SETTINGS_GET_LANGUAGE),
+    setLanguage: (settings: unknown): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.SETTINGS_SET_LANGUAGE, settings),
+    getShortcuts: (): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.SETTINGS_GET_SHORTCUTS),
+    setShortcuts: (settings: unknown): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.SETTINGS_SET_SHORTCUTS, settings),
     getWindowBounds: (): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_GET_WINDOW_BOUNDS),
     setWindowBounds: (bounds: unknown): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_SET_WINDOW_BOUNDS, bounds),
     reset: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.SETTINGS_RESET),
+  },
+
+  // Recovery API
+  recovery: {
+    runDb: (options?: { dryRun?: boolean }): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.RECOVERY_DB_RUN, options),
   },
 
   // Analysis API
@@ -389,21 +403,16 @@ contextBridge.exposeInMainWorld("api", {
     clear: (): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.ANALYSIS_CLEAR),
     onStream: (callback: (data: unknown) => void): (() => void) => {
-      console.log("[PRELOAD] Registering onStream listener for:", IPC_CHANNELS.ANALYSIS_STREAM);
       const listener = (_event: unknown, data: unknown) => {
-        console.log("[PRELOAD] Received stream data:", data);
         callback(data);
       };
       ipcRenderer.on(IPC_CHANNELS.ANALYSIS_STREAM, listener);
       return () => {
-        console.log("[PRELOAD] Removing onStream listener");
         ipcRenderer.removeListener(IPC_CHANNELS.ANALYSIS_STREAM, listener);
       };
     },
     onError: (callback: (error: unknown) => void): (() => void) => {
-      console.log("[PRELOAD] Registering onError listener");
       const listener = (_event: unknown, error: unknown) => {
-        console.log("[PRELOAD] Received error:", error);
         callback(error);
       };
       ipcRenderer.on("analysis:error", listener);

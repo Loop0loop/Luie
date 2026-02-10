@@ -6,7 +6,7 @@ import Store from "electron-store";
 import { app } from "electron";
 import { createLogger } from "../../shared/logger/index.js";
 import { existsSync } from "node:fs";
-import type { AppSettings, EditorSettings, WindowBounds, WindowState } from "../../shared/types/index.js";
+import type { AppSettings, EditorSettings, ShortcutMap, WindowBounds, WindowState } from "../../shared/types/index.js";
 import {
   DEFAULT_AUTO_SAVE_ENABLED,
   DEFAULT_AUTO_SAVE_INTERVAL_MS,
@@ -23,6 +23,28 @@ import {
 
 const logger = createLogger("SettingsManager");
 
+const getDefaultShortcuts = (platform: NodeJS.Platform): ShortcutMap => {
+  if (platform === "darwin") {
+    return {
+      "app.openSettings": "Cmd+,",
+      "chapter.new": "Cmd+N",
+      "chapter.save": "Cmd+S",
+      "view.toggleSidebar": "Cmd+B",
+      "view.toggleContextPanel": "Cmd+Shift+B",
+    };
+  }
+
+  return {
+    "app.openSettings": "Ctrl+,",
+    "chapter.new": "Ctrl+N",
+    "chapter.save": "Ctrl+S",
+    "view.toggleSidebar": "Ctrl+B",
+    "view.toggleContextPanel": "Ctrl+Shift+B",
+  };
+};
+
+const DEFAULT_SHORTCUTS = getDefaultShortcuts(process.platform);
+
 const DEFAULT_SETTINGS: AppSettings = {
   editor: {
     fontFamily: DEFAULT_EDITOR_FONT_FAMILY,
@@ -32,6 +54,8 @@ const DEFAULT_SETTINGS: AppSettings = {
     maxWidth: DEFAULT_EDITOR_MAX_WIDTH,
     theme: DEFAULT_EDITOR_THEME,
   },
+  language: "ko",
+  shortcuts: DEFAULT_SHORTCUTS,
   lastProjectPath: undefined,
   autoSaveEnabled: DEFAULT_AUTO_SAVE_ENABLED,
   autoSaveInterval: DEFAULT_AUTO_SAVE_INTERVAL_MS,
@@ -101,6 +125,8 @@ export class SettingsManager {
     const current = this.store.store;
     const merged: AppSettings = {
       editor: { ...current.editor, ...(settings.editor || {}) },
+      language: settings.language ?? current.language,
+      shortcuts: settings.shortcuts ?? current.shortcuts,
       lastProjectPath: settings.lastProjectPath ?? current.lastProjectPath,
       autoSaveEnabled: settings.autoSaveEnabled ?? current.autoSaveEnabled,
       autoSaveInterval: settings.autoSaveInterval ?? current.autoSaveInterval,
@@ -136,6 +162,28 @@ export class SettingsManager {
 
   setEditorFontFamily(fontFamily: EditorSettings["fontFamily"]): void {
     this.setEditorSettings({ fontFamily });
+  }
+
+  // 언어 설정
+  getLanguage(): AppSettings["language"] {
+    return this.store.get("language");
+  }
+
+  setLanguage(language: NonNullable<AppSettings["language"]>): void {
+    this.store.set("language", language);
+  }
+
+  // 단축키 설정
+  getShortcuts(): { shortcuts: ShortcutMap; defaults: ShortcutMap } {
+    const stored = this.store.get("shortcuts") ?? {};
+    const shortcuts = { ...DEFAULT_SHORTCUTS, ...(stored as Partial<ShortcutMap>) };
+    return { shortcuts, defaults: DEFAULT_SHORTCUTS };
+  }
+
+  setShortcuts(shortcuts: Partial<ShortcutMap>): ShortcutMap {
+    const merged = { ...DEFAULT_SHORTCUTS, ...shortcuts };
+    this.store.set("shortcuts", merged);
+    return merged;
   }
 
   // 프로젝트 경로

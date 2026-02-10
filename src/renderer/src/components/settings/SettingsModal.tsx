@@ -1,35 +1,16 @@
 import { useMemo, useState, useEffect, useTransition } from "react";
 import { X, Check, Download } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { EditorTheme, FontPreset } from "../../stores/editorStore";
 import { useEditorStore } from "../../stores/editorStore";
+import { useShortcutStore } from "../../stores/shortcutStore";
+import type { ShortcutMap } from "../../../../shared/types";
 import {
   EDITOR_FONT_FAMILIES,
-  SETTINGS_ACTION_APPLY,
-  SETTINGS_ACTION_INSTALL,
-  SETTINGS_ACTION_INSTALLING,
-  SETTINGS_BADGE_ACTIVE,
-  SETTINGS_FONT_HELPER_PRIMARY,
-  SETTINGS_FONT_MONO_LABEL,
-  SETTINGS_FONT_SANS_LABEL,
-  SETTINGS_FONT_SERIF_LABEL,
-  SETTINGS_OPTIONAL_FONT_LABEL_BITTER,
-  SETTINGS_OPTIONAL_FONT_LABEL_LORA,
-  SETTINGS_OPTIONAL_FONT_LABEL_MONTSERRAT,
-  SETTINGS_OPTIONAL_FONT_LABEL_NUNITO_SANS,
-  SETTINGS_OPTIONAL_FONT_LABEL_SOURCE_SERIF,
-  SETTINGS_OPTIONAL_FONT_LABEL_VICTOR_MONO,
-  SETTINGS_SAMPLE_TEXT,
-  SETTINGS_SECTION_FONT,
-  SETTINGS_SECTION_FONT_SIZE,
-  SETTINGS_SECTION_LINE_HEIGHT,
-  SETTINGS_SECTION_OPTIONAL_FONTS,
-  SETTINGS_SECTION_THEME,
-  SETTINGS_THEME_DARK,
-  SETTINGS_THEME_LIGHT,
-  SETTINGS_THEME_SEPIA,
-  SETTINGS_TITLE_DISPLAY,
+  SHORTCUT_ACTIONS,
   STORAGE_KEY_FONTS_INSTALLED,
 } from "../../../../shared/constants";
+import { setLanguage, type SupportedLanguage } from "../../i18n";
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -38,12 +19,27 @@ interface SettingsModalProps {
 export default function SettingsModal({ onClose }: SettingsModalProps) {
   const { theme, fontFamily, fontPreset, fontSize, lineHeight, updateSettings } =
     useEditorStore();
+  const { t, i18n } = useTranslation();
 
   const [isPending, startTransition] = useTransition();
   const applySettings = (next: Partial<{ theme: EditorTheme; fontFamily: "serif" | "sans" | "mono"; fontPreset?: FontPreset; fontSize: number; lineHeight: number }>) => {
     startTransition(() => {
       updateSettings(next);
     });
+  };
+
+  const handleLanguageChange = async (next: SupportedLanguage) => {
+    setLanguageState(next);
+    await setLanguage(next);
+  };
+
+  const handleShortcutChange = (actionId: string, value: string) => {
+    setShortcutDrafts((prev) => ({ ...prev, [actionId]: value }));
+  };
+
+  const commitShortcuts = async () => {
+    if (Object.keys(shortcutDrafts).length === 0) return;
+    await setShortcuts(shortcutDrafts as ShortcutMap);
   };
 
   const OPTIONAL_FONTS: Array<{
@@ -56,51 +52,66 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     () => [
       {
         id: "lora",
-        label: SETTINGS_OPTIONAL_FONT_LABEL_LORA,
+        label: t("settings.optionalFonts.lora"),
         family: "Lora Variable",
         stack: '"Lora Variable", "Lora", var(--font-serif)',
         pkg: "lora",
       },
       {
         id: "bitter",
-        label: SETTINGS_OPTIONAL_FONT_LABEL_BITTER,
+        label: t("settings.optionalFonts.bitter"),
         family: "Bitter Variable",
         stack: '"Bitter Variable", "Bitter", var(--font-serif)',
         pkg: "bitter",
       },
       {
         id: "source-serif",
-        label: SETTINGS_OPTIONAL_FONT_LABEL_SOURCE_SERIF,
+        label: t("settings.optionalFonts.sourceSerif"),
         family: "Source Serif 4 Variable",
         stack: '"Source Serif 4 Variable", "Source Serif 4", var(--font-serif)',
         pkg: "source-serif-4",
       },
       {
         id: "montserrat",
-        label: SETTINGS_OPTIONAL_FONT_LABEL_MONTSERRAT,
+        label: t("settings.optionalFonts.montserrat"),
         family: "Montserrat Variable",
         stack: '"Montserrat Variable", "Montserrat", var(--font-sans)',
         pkg: "montserrat",
       },
       {
         id: "nunito-sans",
-        label: SETTINGS_OPTIONAL_FONT_LABEL_NUNITO_SANS,
+        label: t("settings.optionalFonts.nunitoSans"),
         family: "Nunito Sans Variable",
         stack: '"Nunito Sans Variable", "Nunito Sans", var(--font-sans)',
         pkg: "nunito-sans",
       },
       {
         id: "victor-mono",
-        label: SETTINGS_OPTIONAL_FONT_LABEL_VICTOR_MONO,
+        label: t("settings.optionalFonts.victorMono"),
         family: "Victor Mono Variable",
         stack: '"Victor Mono Variable", "Victor Mono", var(--font-mono)',
         pkg: "victor-mono",
       },
     ],
-    [],
+    [t],
   );
 
   const [installing, setInstalling] = useState<Record<string, boolean>>({});
+  const [language, setLanguageState] = useState<SupportedLanguage>(
+    (i18n.language as SupportedLanguage) || "ko",
+  );
+  const {
+    shortcuts,
+    defaults: shortcutDefaults,
+    isLoading: shortcutsLoading,
+    loadShortcuts,
+    setShortcuts,
+    resetToDefaults,
+  } = useShortcutStore();
+  const [shortcutDrafts, setShortcutDrafts] = useState<Record<string, string>>({});
+  const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
+  const [recoveryDetails, setRecoveryDetails] = useState<string | null>(null);
+  const [isRecovering, setIsRecovering] = useState(false);
   const [installed, setInstalled] = useState<Record<string, boolean>>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY_FONTS_INSTALLED);
@@ -118,6 +129,19 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
       // best-effort
     }
   };
+
+  useEffect(() => {
+    const nextLanguage = (i18n.language as SupportedLanguage) || "ko";
+    setLanguageState(nextLanguage);
+  }, [i18n.language]);
+
+  useEffect(() => {
+    void loadShortcuts();
+  }, [loadShortcuts]);
+
+  useEffect(() => {
+    setShortcutDrafts(shortcuts as Record<string, string>);
+  }, [shortcuts]);
 
   const ensureFontLoaded = async (pkg: string) => {
     const id = `fontsource-variable-${pkg}`;
@@ -142,13 +166,13 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState("editor");
 
   const sidebarItems = [
-    { id: "editor", label: "글꼴 (Editor)" },
-    { id: "appearance", label: "테마 (Appearance)" },
-    { id: "features", label: "기능 (Features)" },
-    { id: "shortcuts", label: "단축키 (Shortcuts)" },
-    { id: "recovery", label: "파일 복원 (File Recovery)" },
-    { id: "sync", label: "동기화 (Sync)" },
-    { id: "language", label: "언어 (Language)" }
+    { id: "editor", label: t("settings.sidebar.editor") },
+    { id: "appearance", label: t("settings.sidebar.appearance") },
+    { id: "features", label: t("settings.sidebar.features") },
+    { id: "shortcuts", label: t("settings.sidebar.shortcuts") },
+    { id: "recovery", label: t("settings.sidebar.recovery") },
+    { id: "sync", label: t("settings.sidebar.sync") },
+    { id: "language", label: t("settings.sidebar.language") },
   ];
 
   // Local state for performance (avoid re-rendering entire app on every slider move)
@@ -178,7 +202,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
           {/* SIDEBAR */}
           <div className="w-65 bg-sidebar border-r border-border flex flex-col pt-3">
             <div className="p-6 pb-4">
-              <div className="text-lg font-bold text-fg">{SETTINGS_TITLE_DISPLAY}</div>
+              <div className="text-lg font-bold text-fg">{t("settings.title")}</div>
             </div>
             <div className="flex-1 px-3 flex flex-col gap-1 overflow-y-auto">
               {sidebarItems.map((item) => (
@@ -214,7 +238,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
               <div className="flex-1 px-15 py-12 overflow-y-auto flex flex-col gap-8">
                 {/* FONT FAMILY */}
                 <div className="flex flex-col gap-3">
-                  <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{SETTINGS_SECTION_FONT}</div>
+                  <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{t("settings.section.font")}</div>
                   <div className="grid grid-cols-3 gap-3">
                     {EDITOR_FONT_FAMILIES.map((f) => (
                       <button
@@ -238,20 +262,20 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                   : "var(--font-mono)",
                           }}
                         >
-                          {SETTINGS_SAMPLE_TEXT}
+                          {t("settings.sampleText")}
                         </div>
                         <div className="text-xs text-muted font-medium">
                           {f === "serif"
-                            ? SETTINGS_FONT_SERIF_LABEL
+                            ? t("settings.font.serif")
                             : f === "sans"
-                              ? SETTINGS_FONT_SANS_LABEL
-                              : SETTINGS_FONT_MONO_LABEL}
+                              ? t("settings.font.sans")
+                              : t("settings.font.mono")}
                         </div>
                       </button>
                     ))}
                   </div>
                   <div className="text-xs text-subtle leading-[1.4]">
-                    {SETTINGS_FONT_HELPER_PRIMARY}
+                    {t("settings.font.helper.primary")}
                   </div>
                 </div>
 
@@ -259,7 +283,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
                 {/* OPTIONAL FONTS */}
                 <div className="flex flex-col gap-3">
-                  <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{SETTINGS_SECTION_OPTIONAL_FONTS}</div>
+                  <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{t("settings.section.optionalFonts")}</div>
                   <div className="flex flex-col gap-2.5">
                     {OPTIONAL_FONTS.map((font) => {
                       const isInstalled = installed[font.id];
@@ -273,7 +297,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                               className="w-10.5 h-10.5 rounded-lg border border-border flex items-center justify-center text-lg text-fg bg-surface-hover"
                               style={{ fontFamily: font.stack }}
                             >
-                              {SETTINGS_SAMPLE_TEXT}
+                              {t("settings.sampleText")}
                             </div>
                             <div className="flex flex-col gap-0.5">
                               <div className="text-[13px] font-semibold text-fg">{font.label}</div>
@@ -288,16 +312,18 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                 disabled={isInstalling}
                               >
                                 <Download className="w-3.5 h-3.5" />
-                                {isInstalling ? SETTINGS_ACTION_INSTALLING : SETTINGS_ACTION_INSTALL}
+                                {isInstalling
+                                  ? t("settings.optionalFonts.action.installing")
+                                  : t("settings.optionalFonts.action.install")}
                               </button>
                             ) : isActive ? (
-                              <div className="text-xs px-2 py-1 rounded-full text-accent-fg bg-accent">{SETTINGS_BADGE_ACTIVE}</div>
+                              <div className="text-xs px-2 py-1 rounded-full text-accent-fg bg-accent">{t("settings.optionalFonts.action.active")}</div>
                             ) : (
                               <button
                                 className="rounded-lg px-2.5 py-1.5 text-xs border border-border bg-surface text-fg cursor-pointer inline-flex items-center gap-1.5 hover:border-active hover:bg-surface-hover"
                                 onClick={() => applySettings({ fontPreset: font.id })}
                               >
-                                {SETTINGS_ACTION_APPLY}
+                                {t("settings.optionalFonts.action.apply")}
                               </button>
                             )}
                           </div>
@@ -313,7 +339,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 <div className="flex flex-col gap-3">
                   <div className="flex flex-col gap-3">
                     <div className="flex justify-between items-center">
-                      <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{SETTINGS_SECTION_FONT_SIZE}</div>
+                      <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{t("settings.section.fontSize")}</div>
                       <div className="text-sm font-semibold text-accent bg-accent/10 px-2 py-0.5 rounded">{localFontSize}px</div>
                     </div>
                     <input
@@ -333,7 +359,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
                   <div className="flex flex-col gap-3">
                     <div className="flex justify-between items-center">
-                      <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{SETTINGS_SECTION_LINE_HEIGHT}</div>
+                      <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{t("settings.section.lineHeight")}</div>
                       <div className="text-sm font-semibold text-accent bg-accent/10 px-2 py-0.5 rounded">{localLineHeight}</div>
                     </div>
                     <input
@@ -355,31 +381,31 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             {activeTab === "appearance" && (
               <div className="flex-1 px-15 py-12 overflow-y-auto flex flex-col gap-8">
                 <div className="flex flex-col gap-3">
-                  <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{SETTINGS_SECTION_THEME}</div>
+                  <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{t("settings.section.theme")}</div>
                   <div className="grid grid-cols-3 gap-3">
-                    {(["light", "sepia", "dark"] as EditorTheme[]).map((t) => (
+                    {(["light", "sepia", "dark"] as EditorTheme[]).map((themeOption) => (
                       <button
-                        key={t}
+                        key={themeOption}
                         className={`
                           h-20 rounded-xl border-2 cursor-pointer relative flex items-center justify-center text-sm font-semibold transition-all hover:scale-[1.02]
-                          ${t === "light" ? "bg-white border-zinc-200 text-zinc-800" : ""}
-                          ${t === "sepia" ? "bg-[#fbf0d9] border-[#f0e6d2] text-[#5f4b32]" : ""}
-                          ${t === "dark" ? "bg-[#222] border-[#333] text-[#eee]" : ""}
-                          ${theme === t ? "border-accent!" : ""}
+                          ${themeOption === "light" ? "bg-white border-zinc-200 text-zinc-800" : ""}
+                          ${themeOption === "sepia" ? "bg-[#fbf0d9] border-[#f0e6d2] text-[#5f4b32]" : ""}
+                          ${themeOption === "dark" ? "bg-[#222] border-[#333] text-[#eee]" : ""}
+                          ${theme === themeOption ? "border-accent!" : ""}
                         `}
-                        onClick={() => applySettings({ theme: t })}
+                        onClick={() => applySettings({ theme: themeOption })}
                       >
-                        {theme === t && (
+                        {theme === themeOption && (
                           <div className="absolute top-1.5 right-1.5 bg-accent text-accent-fg w-4.5 h-4.5 rounded-full flex items-center justify-center">
                             <Check className="w-3 h-3" />
                           </div>
                         )}
                         <div className="themeName">
-                          {t === "light"
-                            ? SETTINGS_THEME_LIGHT
-                            : t === "sepia"
-                              ? SETTINGS_THEME_SEPIA
-                              : SETTINGS_THEME_DARK}
+                          {themeOption === "light"
+                            ? t("settings.theme.light")
+                            : themeOption === "sepia"
+                              ? t("settings.theme.sepia")
+                              : t("settings.theme.dark")}
                         </div>
                       </button>
                     ))}
@@ -388,9 +414,74 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
               </div>
             )}
 
-            {activeTab !== "editor" && activeTab !== "appearance" && (
+            {activeTab === "shortcuts" && (
+              <div className="flex-1 px-15 py-12 overflow-y-auto flex flex-col gap-6">
+                <div className="flex items-center justify-between">
+                  <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px]">{t("settings.shortcuts.title")}</div>
+                  <button
+                    className="text-xs font-semibold tracking-wide px-3 py-1 rounded-full border border-border text-text-secondary hover:text-text-primary hover:border-text-primary transition-colors disabled:opacity-50"
+                    onClick={() => void resetToDefaults()}
+                    disabled={shortcutsLoading}
+                  >
+                    {t("settings.shortcuts.reset")}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-[1fr,220px] gap-3 text-xs text-muted uppercase tracking-[0.5px]">
+                  <div>{t("settings.shortcuts.action")}</div>
+                  <div>{t("settings.shortcuts.key")}</div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  {SHORTCUT_ACTIONS.map((action) => (
+                    <div
+                      key={action.id}
+                      className="grid grid-cols-[1fr,220px] gap-3 items-center border border-border rounded-[10px] bg-surface px-3 py-2"
+                    >
+                      <div className="text-sm text-fg font-medium">{t(action.labelKey)}</div>
+                      <input
+                        className="bg-transparent text-sm font-semibold border-b border-border hover:border-text-primary focus:outline-none transition-colors py-1"
+                        value={shortcutDrafts[action.id] ?? shortcutDefaults[action.id] ?? ""}
+                        placeholder={shortcutDefaults[action.id] ?? ""}
+                        onChange={(e) => handleShortcutChange(action.id, e.target.value)}
+                        onBlur={() => void commitShortcuts()}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            (e.target as HTMLInputElement).blur();
+                          }
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === "language" && (
+              <div className="flex-1 px-15 py-12 overflow-y-auto flex flex-col gap-6">
+                <div className="flex flex-col gap-3">
+                  <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{t("settings.section.language")}</div>
+                  <div className="flex items-center gap-3">
+                    <select
+                      className="bg-transparent text-sm font-semibold border-b border-border hover:border-text-primary cursor-pointer focus:outline-none transition-colors py-1"
+                      value={language}
+                      onChange={(e) => void handleLanguageChange(e.target.value as SupportedLanguage)}
+                    >
+                      <option value="ko">{t("settings.language.options.ko")}</option>
+                      <option value="en">{t("settings.language.options.en")}</option>
+                      <option value="ja">{t("settings.language.options.ja")}</option>
+                    </select>
+                  </div>
+                  <div className="text-xs text-subtle leading-[1.4]">
+                    {t("settings.language.helper")}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab !== "editor" && activeTab !== "appearance" && activeTab !== "language" && activeTab !== "shortcuts" && (
               <div className="flex-1 flex items-center justify-center text-subtle text-sm">
-                <div className="placeholderText">준비 중인 기능입니다.</div>
+                <div className="placeholderText">{t("settings.placeholder")}</div>
               </div>
             )}
           </div>

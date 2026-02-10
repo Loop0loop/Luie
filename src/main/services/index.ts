@@ -6,3 +6,4 @@ export * from "./features/snapshotService.js";
 export * from "./features/searchService.js";
 export * from "./features/autoExtractService.js";
 export * from "./features/manuscriptAnalysisService.js";
+export * from "./features/dbRecoveryService.js";

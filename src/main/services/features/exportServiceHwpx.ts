@@ -653,7 +653,7 @@ export class HwpxExportService {
       <hp:pagePr landscape="NARROWLY" width="${paperSize.width}" height="${paperSize.height}" gutterType="LEFT_ONLY">
         <hp:margin header="4252" footer="4252" gutter="0" left="${marginLeft}" right="${marginRight}" top="${marginTop}" bottom="${marginBottom}"/>
       </hp:pagePr>
-      <hp:footNotePr>< hp:autoNumFormat type="DIGIT"/><hp:newNum type="CONTINUOUS"/></hp:footNotePr>
+      <hp:footNotePr><hp:autoNumFormat type="DIGIT"/><hp:newNum type="CONTINUOUS"/></hp:footNotePr>
       <hp:endNotePr><hp:autoNumFormat type="DIGIT"/><hp:newNum type="CONTINUOUS"/></hp:endNotePr>
       <hp:pageBorderFill type="BOTH" borderFillIDRef="1" textBorder="0" headerInside="0" footerInside="0">
         <hp:offset left="1417" right="1417" top="1417" bottom="1417"/>

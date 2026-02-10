@@ -120,7 +120,7 @@ export default function ExportWindow() {
     try {
       const response = await window.api.export.create({
         projectId: chapter.projectId,
-        chapterId: chapterId,
+        chapterId,
         title: chapter.title,
         content: chapter.content,
         format: format === "hwp" ? "HWPX" : "DOCX",
@@ -151,7 +151,9 @@ export default function ExportWindow() {
         alert(`내보내기에 실패했습니다.\n${response.error?.message || "Unknown error"}`);
       }
     } catch (error) {
-      console.error("Export error:", error);
+      void window.api.logger.error("Export error", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       alert(`내보내기 중 오류가 발생했습니다.\n${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setIsExporting(false);
@@ -203,7 +205,7 @@ export default function ExportWindow() {
                         : "bg-surface border-transparent hover:bg-surface-hover text-muted"
                     )}
                   >
-                    <span className="font-bold text-lg mb-1">HWP</span>
+                    <span className="font-bold text-lg mb-1">HWPX</span>
                     <span className="text-[10px] opacity-80">한글 문서</span>
                     <span className="absolute top-1 right-1 text-[9px] px-1.5 py-0.5 bg-accent text-white rounded font-bold">BETA</span>
                   </button>
@@ -434,7 +436,7 @@ export default function ExportWindow() {
                 style={{
                   fontFamily: fontFamily.includes("Batang") ? "Batang, serif" : fontFamily,
                   fontSize: "10.5pt",
-                  lineHeight: lineHeight,
+                  lineHeight,
                 }}
               >
                 {loadError ? (

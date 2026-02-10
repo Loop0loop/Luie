@@ -4,10 +4,14 @@ import type { LoggerLike } from "../core/types.js";
 
 type LogEntry = { level: string; message: string; data?: unknown };
 
-const logEntry = (
-  ipcLogger: { debug: Function; info: Function; warn: Function; error: Function },
-  entry: LogEntry,
-) => {
+type LoggerMethods = {
+  debug: (message: string, data?: unknown) => void;
+  info: (message: string, data?: unknown) => void;
+  warn: (message: string, data?: unknown) => void;
+  error: (message: string, data?: unknown) => void;
+};
+
+const logEntry = (ipcLogger: LoggerMethods, entry: LogEntry) => {
   switch (entry.level) {
     case "debug":
       ipcLogger.debug(entry.message, entry.data || undefined);

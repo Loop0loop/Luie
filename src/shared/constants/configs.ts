@@ -61,6 +61,8 @@ export const DEFAULT_UI_RESEARCH_TAB = 'character'
 export const DEFAULT_UI_RIGHT_PANEL_TYPE = 'research'
 export const DEFAULT_UI_SPLIT_RATIO = 0.62
 export const DEFAULT_UI_SPLIT_VIEW_ENABLED = false
+export const DEFAULT_UI_SIDEBAR_OPEN = true
+export const DEFAULT_UI_CONTEXT_OPEN = false
 
 export const SUGGESTION_MAX_ITEMS = 10
 export const SUGGESTION_POPUP_Z_INDEX = 1000

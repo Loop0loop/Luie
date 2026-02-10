@@ -83,16 +83,12 @@ export const useAnalysisStore = create<AnalysisStore>((set, _get) => ({
    * 스트리밍 아이템 추가
    */
   addStreamItem: (chunk: AnalysisStreamChunk) => {
-    console.log("[STORE] addStreamItem called", chunk);
-    
     if (chunk.done) {
-      console.log("[STORE] Analysis complete");
       set({ isAnalyzing: false });
       return;
     }
 
     if (chunk.item) {
-      console.log("[STORE] Adding item to store", chunk.item);
       set((state) => ({
         items: [...state.items, chunk.item],
       }));
