@@ -121,6 +121,9 @@ export default function AnalysisSection() {
     }
 
     try {
+      if (analysisItems.length > 0) {
+        await clearAnalysis();
+      }
       console.log("[RENDERER] Starting analysis", { chapterId: effectiveChapterId, projectId: currentProject.id });
       await startAnalysis(effectiveChapterId, currentProject.id);
       showToast("분석을 시작합니다...", "info");
@@ -146,17 +149,37 @@ export default function AnalysisSection() {
         </div>
         
         {/* Chapter Selector (Inline style) */}
-        {!isAnalyzing && analysisItems.length === 0 && (
-            <div className="flex items-center gap-3 animate-in fade-in duration-500">
-                <span className="text-sm text-text-secondary hidden sm:inline">{LABEL_ANALYSIS_SELECT_CHAPTER}</span>
-                <select 
-                    className="bg-transparent text-sm font-bold border-b border-border hover:border-text-primary cursor-pointer focus:outline-none transition-colors py-1"
-                    value={selectedChapterId}
-                    onChange={(e) => setSelectedChapterId(e.target.value)}
-                >
-                    {chapters.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-                </select>
+        {!isAnalyzing && (
+          <div className="flex items-center gap-4 animate-in fade-in duration-500">
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-text-secondary hidden sm:inline">{LABEL_ANALYSIS_SELECT_CHAPTER}</span>
+              <select 
+                className="bg-transparent text-sm font-bold border-b border-border hover:border-text-primary cursor-pointer focus:outline-none transition-colors py-1"
+                value={selectedChapterId}
+                onChange={(e) => setSelectedChapterId(e.target.value)}
+              >
+                {chapters.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+              </select>
             </div>
+
+            <div className="flex items-center gap-2">
+              {analysisItems.length > 0 && (
+                <button
+                  onClick={() => void clearAnalysis()}
+                  className="text-xs font-semibold tracking-wide px-3 py-1 rounded-full border border-border text-text-secondary hover:text-text-primary hover:border-text-primary transition-colors"
+                >
+                  초기화
+                </button>
+              )}
+              <button
+                onClick={() => void handleAnalyze()}
+                disabled={!effectiveChapterId || !currentProject}
+                className="text-xs font-semibold tracking-wide px-3 py-1 rounded-full border border-border text-text-secondary hover:text-text-primary hover:border-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                다시 분석
+              </button>
+            </div>
+          </div>
         )}
       </div>
 

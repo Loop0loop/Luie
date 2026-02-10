@@ -9,7 +9,6 @@ import { manuscriptAnalyzer } from "../../core/manuscriptAnalyzer.js";
 import {
   ANALYSIS_SYSTEM_INSTRUCTION,
   ANALYSIS_FEW_SHOT_EXAMPLES,
-  GEMINI_ANALYSIS_RESPONSE_SCHEMA,
   formatAnalysisContext,
   AnalysisItemSchema,
   type AnalysisItemResult,
@@ -265,7 +264,8 @@ class ManuscriptAnalysisService {
       );
 
       // 4. Gemini 스트리밍 분석
-      await this.streamAnalysisWithGemini(context, chapterId, apiKey);
+      const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      await this.streamAnalysisWithGemini(context, chapterId, apiKey, runId);
 
       logger.info("Analysis completed", { chapterId, projectId });
     } catch (error) {
@@ -313,7 +313,8 @@ class ManuscriptAnalysisService {
   private async streamAnalysisWithGemini(
     context: AnalysisContext,
     chapterId: string,
-    apiKey: string
+    apiKey: string,
+    runId: string
   ): Promise<void> {
     const genAI = new GoogleGenAI({ apiKey });
 
@@ -323,7 +324,13 @@ ${ANALYSIS_FEW_SHOT_EXAMPLES}
 
 ---
 
-${formatAnalysisContext(context)}`;
+${formatAnalysisContext(context)}
+
+# RunId
+${runId}
+
+# Style
+같은 요청이어도 표현을 바꿔서 답변하세요. 이전 응답과 동일 문장을 반복하지 마세요.`;
 
     const items: AnalysisItem[] = [];
     let itemCounter = 0;
@@ -341,23 +348,139 @@ ${formatAnalysisContext(context)}`;
     });
 
     try {
-      let result: Awaited<ReturnType<typeof genAI.models.generateContent>> | null = null;
       let usedModel = "";
+      const parsedItems: AnalysisItemResult[] = [];
 
-      // 모델 fallback 시도
+      const extractChunkText = (chunk: unknown): string => {
+        if (!chunk) return "";
+        const maybeTextFn = (chunk as { text?: unknown }).text;
+        if (typeof maybeTextFn === "function") {
+          return (chunk as { text: () => string }).text();
+        }
+        if (typeof maybeTextFn === "string") {
+          return maybeTextFn;
+        }
+        const partText = (chunk as {
+          candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+        })?.candidates?.[0]?.content?.parts?.[0]?.text;
+        return typeof partText === "string" ? partText : "";
+      };
+
+      const emitItem = (itemData: AnalysisItemResult) => {
+        try {
+          const validated = AnalysisItemSchema.parse(itemData);
+
+          const item: AnalysisItem = {
+            id: `analysis-${++itemCounter}`,
+            type: validated.type,
+            content: validated.content,
+            quote: validated.quote,
+            contextId: validated.contextId,
+          };
+
+          items.push(item);
+          parsedItems.push(itemData);
+
+          logger.info("Attempting to send stream item", {
+            itemId: item.id,
+            type: item.type,
+            hasCurrentWindow: !!this.currentWindow,
+            isDestroyed: this.currentWindow?.isDestroyed(),
+            windowId: this.currentWindow?.id,
+          });
+
+          if (this.currentWindow && !this.currentWindow.isDestroyed()) {
+            this.currentWindow.webContents.send("analysis:stream", {
+              item,
+              done: false,
+            });
+          } else {
+            logger.error("Window not available for streaming - CRITICAL", {
+              hasWindow: !!this.currentWindow,
+              isDestroyed: this.currentWindow?.isDestroyed(),
+              windowId: this.currentWindow?.id,
+              itemId: item.id,
+            });
+          }
+        } catch (validationError) {
+          logger.warn("Invalid analysis item", { error: validationError, itemData });
+        }
+      };
+
+      const streamJsonlFromModel = async (model: string, promptText: string, phase: string) => {
+        const phaseResult = await genAI.models.generateContentStream({
+          model,
+          contents: [{ role: "user", parts: [{ text: promptText }] }],
+          config: {
+            responseMimeType: "text/plain",
+            temperature: 0.8,
+            topP: 0.9,
+            topK: 40,
+          },
+        });
+
+        const stream = (phaseResult as { stream?: AsyncIterable<unknown> }).stream
+          ?? (phaseResult as unknown as AsyncIterable<unknown>);
+        let buffer = "";
+
+        for await (const chunk of stream) {
+          const chunkText = extractChunkText(chunk);
+          if (!chunkText) continue;
+
+          buffer += chunkText;
+          const lines = buffer.split(/\r?\n/);
+          buffer = lines.pop() ?? "";
+
+          for (const rawLine of lines) {
+            const line = rawLine.trim();
+            if (!line) continue;
+            if (line.startsWith("```")) continue;
+
+            if (line.startsWith("{")) {
+              try {
+                const parsed = JSON.parse(line) as AnalysisItemResult;
+                emitItem(parsed);
+              } catch (error) {
+                logger.warn("Failed to parse JSONL line", { error, line, phase });
+              }
+              continue;
+            }
+
+            if (line.startsWith("[")) {
+              try {
+                const parsed = JSON.parse(line);
+                if (Array.isArray(parsed)) {
+                  parsed.forEach((item) => emitItem(item));
+                }
+              } catch (error) {
+                logger.warn("Failed to parse JSON array line", { error, line, phase });
+              }
+            }
+          }
+        }
+
+        if (buffer.trim()) {
+          const trimmed = buffer.trim();
+          try {
+            if (trimmed.startsWith("{")) {
+              emitItem(JSON.parse(trimmed));
+            } else if (trimmed.startsWith("[")) {
+              const parsed = JSON.parse(trimmed);
+              if (Array.isArray(parsed)) {
+                parsed.forEach((item) => emitItem(item));
+              }
+            }
+          } catch (error) {
+            logger.warn("Failed to parse trailing buffer", { error, buffer: trimmed, phase });
+          }
+        }
+      };
+
+      // 모델 fallback 시도 (스트리밍 실행 포함)
       for (const model of modelCandidates) {
         try {
           logger.info("Trying Gemini model", { model });
-          
-          result = await genAI.models.generateContent({
-            model,
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            config: {
-              responseMimeType: "application/json",
-              responseSchema: GEMINI_ANALYSIS_RESPONSE_SCHEMA,
-            },
-          });
-          
+          await streamJsonlFromModel(model, prompt, "primary");
           usedModel = model;
           logger.info("Gemini model responded successfully", { model });
           break;
@@ -385,84 +508,28 @@ ${formatAnalysisContext(context)}`;
         }
       }
 
-      if (!result) {
+      if (!usedModel) {
         throw new Error("No available Gemini model responded");
       }
 
       logger.info("Gemini response received", { usedModel });
 
-      // 응답 파싱 및 검증
-      const responseText = result.text ?? "";
-      
-      logger.info("Parsing Gemini response", {
-        responseLength: responseText.length,
-        preview: responseText.slice(0, 200),
-      });
-      
-      // JSON 배열 또는 단일 객체 처리
-      let parsedItems: AnalysisItemResult[] = [];
-      
-      try {
-        const parsed = JSON.parse(responseText);
-        if (Array.isArray(parsed)) {
-          parsedItems = parsed;
-        } else {
-          logger.warn("Gemini returned non-array response; wrapping into array");
-          parsedItems = [parsed];
-        }
-        logger.info("Parsed items count", { count: parsedItems.length });
-      } catch (parseError) {
-        logger.error("Failed to parse Gemini response", { error: parseError, responseText });
-        throw new Error("Invalid JSON response from Gemini");
-      }
-
       const suggestionCount = parsedItems.filter((item) => item?.type === "suggestion").length;
-      if (suggestionCount < 2) {
-        logger.warn("Gemini response has insufficient suggestions", { suggestionCount });
-      }
+      const reactionCount = parsedItems.filter((item) => item?.type === "reaction").length;
+      const hasIntro = parsedItems.some((item) => item?.type === "intro");
+      const hasOutro = parsedItems.some((item) => item?.type === "outro");
 
-      // 각 아이템 검증 및 전송
-      for (const itemData of parsedItems) {
-        try {
-          const validated = AnalysisItemSchema.parse(itemData);
-          
-          const item: AnalysisItem = {
-            id: `analysis-${++itemCounter}`,
-            type: validated.type,
-            content: validated.content,
-            quote: validated.quote,
-            contextId: validated.contextId,
-          };
+      if (suggestionCount < 2 || reactionCount < 1 || !hasIntro || !hasOutro) {
+        logger.warn("Gemini response missing required items", {
+          suggestionCount,
+          reactionCount,
+          hasIntro,
+          hasOutro,
+        });
 
-          items.push(item);
+        const followupPrompt = `${ANALYSIS_SYSTEM_INSTRUCTION}\n\n${formatAnalysisContext(context)}\n\n# 추가 요청\n부족한 항목만 JSONL로 추가 출력하세요.\n- intro: ${hasIntro ? "이미 출력됨" : "필수"}\n- reaction: ${reactionCount >= 1 ? "이미 출력됨" : "최소 1개 (quote 포함)"}\n- suggestion: ${suggestionCount >= 2 ? "이미 출력됨" : "최소 2개 (quote 포함)"}\n- outro: ${hasOutro ? "이미 출력됨" : "필수"}\n동일 문장 반복 금지. 코드블록 금지.`;
 
-          // 스트리밍 이벤트 전송
-          logger.info("Attempting to send stream item", {
-            itemId: item.id,
-            type: item.type,
-            hasCurrentWindow: !!this.currentWindow,
-            isDestroyed: this.currentWindow?.isDestroyed(),
-            windowId: this.currentWindow?.id,
-          });
-          
-          if (this.currentWindow && !this.currentWindow.isDestroyed()) {
-            logger.info("Sending stream item to window", { itemId: item.id });
-            this.currentWindow.webContents.send("analysis:stream", {
-              item,
-              done: false,
-            });
-            logger.info("Stream item sent successfully", { itemId: item.id });
-          } else {
-            logger.error("Window not available for streaming - CRITICAL", {
-              hasWindow: !!this.currentWindow,
-              isDestroyed: this.currentWindow?.isDestroyed(),
-              windowId: this.currentWindow?.id,
-              itemId: item.id,
-            });
-          }
-        } catch (validationError) {
-          logger.warn("Invalid analysis item, skipping", { error: validationError, itemData });
-        }
+        await streamJsonlFromModel(usedModel, followupPrompt, "followup");
       }
 
       // 완료 이벤트 전송

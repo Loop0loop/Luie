@@ -90,11 +90,11 @@ export const ANALYSIS_SYSTEM_INSTRUCTION = `
 2. 구체적인 텍스트 인용 필수 (quote 필드 활용)
 3. 예의 바르고 존중하는 어조 유지
 4. 문제점만이 아닌 잘된 점도 언급
-5. JSON 배열 형식으로만 응답 (객체 단일 출력 금지)
+5. JSONL 형식으로만 응답 (각 줄마다 JSON 객체 1개, 코드블록 금지)
 
 ## 출력 형식
-- JSON 배열만 허용: [{...}, {...}, ...]
-- 각 요소는 다음 필드를 포함
+- JSONL만 허용: 각 줄마다 JSON 객체 1개
+- 각 객체는 다음 필드를 포함
   - type: "reaction" (독자 반응), "suggestion" (개선 제안), "intro" (시작 인사), "outro" (마무리 멘트)
   - content: 분석 내용 (한글, 자연스러운 문장)
   - quote: 인용 텍스트 (reaction/suggestion에서 필수)
@@ -151,12 +151,13 @@ export function formatAnalysisContext(context: AnalysisContext): string {
   prompt += `- 설정 모순, 캐릭터 일관성 문제\n`;
   prompt += `- 플롯 구멍, 개연성 문제\n`;
   prompt += `- 개선 제안\n\n`;
-  prompt += `JSON 배열로만 응답하세요.\n`;
-  prompt += `반드시 다음 구성으로 포함하세요:\n`;
+  prompt += `JSONL 형식으로만 응답하세요.\n`;
+  prompt += `반드시 다음 구성으로 포함하세요 (각 줄 1개 JSON):\n`;
   prompt += `- intro 1개\n`;
   prompt += `- reaction 최소 1개 (quote 포함)\n`;
   prompt += `- suggestion 최소 2개 (quote 포함)\n`;
   prompt += `- outro 1개\n`;
+  prompt += `코드블록(\`\`\`)과 배열 형식 출력 금지.\n`;
 
   return prompt;
 }
