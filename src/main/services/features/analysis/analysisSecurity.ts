@@ -25,6 +25,12 @@ class AnalysisSecurity {
 
     // 윈도우 blur (포커스 잃음) 이벤트
     window.on("blur", () => {
+      // 분석 중에는 blur 이벤트 무시 (사용자가 다른 창을 봐야 할 수 있음)
+      if (manuscriptAnalysisService.isAnalysisInProgress()) {
+        logger.info("Window blur detected during analysis, ignoring clear");
+        return;
+      }
+      
       logger.info("Window blur detected, clearing analysis data");
       manuscriptAnalysisService.clearAnalysisData();
     });

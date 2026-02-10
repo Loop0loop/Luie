@@ -389,14 +389,23 @@ contextBridge.exposeInMainWorld("api", {
     clear: (): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.ANALYSIS_CLEAR),
     onStream: (callback: (data: unknown) => void): (() => void) => {
-      const listener = (_event: unknown, data: unknown) => callback(data);
+      console.log("[PRELOAD] Registering onStream listener for:", IPC_CHANNELS.ANALYSIS_STREAM);
+      const listener = (_event: unknown, data: unknown) => {
+        console.log("[PRELOAD] Received stream data:", data);
+        callback(data);
+      };
       ipcRenderer.on(IPC_CHANNELS.ANALYSIS_STREAM, listener);
       return () => {
+        console.log("[PRELOAD] Removing onStream listener");
         ipcRenderer.removeListener(IPC_CHANNELS.ANALYSIS_STREAM, listener);
       };
     },
     onError: (callback: (error: unknown) => void): (() => void) => {
-      const listener = (_event: unknown, error: unknown) => callback(error);
+      console.log("[PRELOAD] Registering onError listener");
+      const listener = (_event: unknown, error: unknown) => {
+        console.log("[PRELOAD] Received error:", error);
+        callback(error);
+      };
       ipcRenderer.on("analysis:error", listener);
       return () => {
         ipcRenderer.removeListener("analysis:error", listener);
@@ -405,7 +414,7 @@ contextBridge.exposeInMainWorld("api", {
   },
 });
 
-// ─── Graceful Quit Support ─────────────────────────────────────────────────
+// ─── Graceful Quit Support ──────
 // When the main process signals that the app is about to quit,
 // immediately flush the autoSave queue and log queue so that
 // all dirty content reaches the main process before shutdown.

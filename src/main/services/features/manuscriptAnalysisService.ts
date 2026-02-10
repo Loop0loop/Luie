@@ -49,6 +49,12 @@ class ManuscriptAnalysisService {
     this.isAnalyzing = true;
     this.currentWindow = window;
 
+    logger.info("Window assigned for analysis", {
+      hasWindow: !!this.currentWindow,
+      isDestroyed: this.currentWindow?.isDestroyed(),
+      windowId: this.currentWindow?.id,
+    });
+
     try {
       // 1. DB에서 데이터 조회
       const [chapter, characters, terms] = await Promise.all([
@@ -107,6 +113,13 @@ class ManuscriptAnalysisService {
    * 분석 데이터 삭제 (보안)
    */
   clearAnalysisData(): void {
+    logger.info("clearAnalysisData called", {
+      hadWindow: !!this.currentWindow,
+      windowId: this.currentWindow?.id,
+      isAnalyzing: this.isAnalyzing,
+      stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n'),
+    });
+    
     this.analysisCache.clear();
     this.currentWindow = null;
     logger.info("Analysis data cleared");
@@ -133,18 +146,76 @@ ${formatAnalysisContext(context)}`;
     const items: AnalysisItem[] = [];
     let itemCounter = 0;
 
+    // 사용 가능한 모델 목록 (fallback)
+    const modelCandidates = [
+      GEMINI_MODEL,
+      process.env.ALTERNATIVE_GEMINI_MODEL,
+    ].filter((model): model is string => Boolean(model));
+
+    logger.info("Starting Gemini analysis", {
+      chapterId,
+      models: modelCandidates,
+      promptLength: prompt.length,
+    });
+
     try {
-      const result = await genAI.models.generateContent({
-        model: GEMINI_MODEL,
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: GEMINI_ANALYSIS_RESPONSE_SCHEMA,
-        },
-      });
+      let result: Awaited<ReturnType<typeof genAI.models.generateContent>> | null = null;
+      let usedModel = "";
+
+      // 모델 fallback 시도
+      for (const model of modelCandidates) {
+        try {
+          logger.info("Trying Gemini model", { model });
+          
+          result = await genAI.models.generateContent({
+            model,
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            config: {
+              responseMimeType: "application/json",
+              responseSchema: GEMINI_ANALYSIS_RESPONSE_SCHEMA,
+            },
+          });
+          
+          usedModel = model;
+          logger.info("Gemini model responded successfully", { model });
+          break;
+        } catch (modelError) {
+          const status = modelError && typeof modelError === "object" && "status" in modelError
+            ? (modelError as { status: number }).status
+            : undefined;
+
+          const isRetryable = status === 404 || status === 429 || status === 503;
+          const hasNext = model !== modelCandidates[modelCandidates.length - 1];
+
+          logger.warn("Gemini model failed", {
+            model,
+            status,
+            isRetryable,
+            hasNext,
+            error: modelError instanceof Error ? modelError.message : String(modelError),
+          });
+
+          if (isRetryable && hasNext) {
+            continue;
+          }
+
+          throw modelError;
+        }
+      }
+
+      if (!result) {
+        throw new Error("No available Gemini model responded");
+      }
+
+      logger.info("Gemini response received", { usedModel });
 
       // 응답 파싱 및 검증
       const responseText = result.text ?? "";
+      
+      logger.info("Parsing Gemini response", {
+        responseLength: responseText.length,
+        preview: responseText.slice(0, 200),
+      });
       
       // JSON 배열 또는 단일 객체 처리
       let parsedItems: AnalysisItemResult[] = [];
@@ -152,6 +223,7 @@ ${formatAnalysisContext(context)}`;
       try {
         const parsed = JSON.parse(responseText);
         parsedItems = Array.isArray(parsed) ? parsed : [parsed];
+        logger.info("Parsed items count", { count: parsedItems.length });
       } catch (parseError) {
         logger.error("Failed to parse Gemini response", { error: parseError, responseText });
         throw new Error("Invalid JSON response from Gemini");
@@ -173,10 +245,27 @@ ${formatAnalysisContext(context)}`;
           items.push(item);
 
           // 스트리밍 이벤트 전송
+          logger.info("Attempting to send stream item", {
+            itemId: item.id,
+            type: item.type,
+            hasCurrentWindow: !!this.currentWindow,
+            isDestroyed: this.currentWindow?.isDestroyed(),
+            windowId: this.currentWindow?.id,
+          });
+          
           if (this.currentWindow && !this.currentWindow.isDestroyed()) {
+            logger.info("Sending stream item to window", { itemId: item.id });
             this.currentWindow.webContents.send("analysis:stream", {
               item,
               done: false,
+            });
+            logger.info("Stream item sent successfully", { itemId: item.id });
+          } else {
+            logger.error("Window not available for streaming - CRITICAL", {
+              hasWindow: !!this.currentWindow,
+              isDestroyed: this.currentWindow?.isDestroyed(),
+              windowId: this.currentWindow?.id,
+              itemId: item.id,
             });
           }
         } catch (validationError) {
@@ -185,10 +274,24 @@ ${formatAnalysisContext(context)}`;
       }
 
       // 완료 이벤트 전송
+      logger.info("Attempting to send completion event", {
+        hasCurrentWindow: !!this.currentWindow,
+        isDestroyed: this.currentWindow?.isDestroyed(),
+        windowId: this.currentWindow?.id,
+      });
+      
       if (this.currentWindow && !this.currentWindow.isDestroyed()) {
+        logger.info("Sending completion event to window");
         this.currentWindow.webContents.send("analysis:stream", {
           item: null,
           done: true,
+        });
+        logger.info("Completion event sent successfully");
+      } else {
+        logger.error("Window not available for completion event - CRITICAL", {
+          hasWindow: !!this.currentWindow,
+          isDestroyed: this.currentWindow?.isDestroyed(),
+          windowId: this.currentWindow?.id,
         });
       }
 

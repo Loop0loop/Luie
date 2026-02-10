@@ -43,6 +43,7 @@ prisma/dev.db-shm
 .env
 .env.local
 .env.*.local
+.env.example
 
 # Keep example file for reference
 # .env.example is tracked

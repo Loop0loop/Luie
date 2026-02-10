@@ -43,19 +43,35 @@ export default function AnalysisSection() {
   // Set initial chapter when chapters load (without useEffect)
   const effectiveChapterId = selectedChapterId || (chapters.length > 0 ? chapters[0].id : "");
 
+  // Debug: log component state
+  useEffect(() => {
+    console.log("[RENDERER] AnalysisSection state", {
+      chapters: chapters.length,
+      currentProject: currentProject?.id,
+      effectiveChapterId,
+      selectedChapterId,
+      isAnalyzing,
+      analysisItemsCount: analysisItems.length,
+    });
+  }, [chapters, currentProject, effectiveChapterId, selectedChapterId, isAnalyzing, analysisItems]);
+
   // Register streaming listeners
   useEffect(() => {
+    console.log("[RENDERER] Registering analysis stream listeners");
     const unsubscribeStream = window.api.analysis.onStream((data: unknown) => {
+      console.log("[RENDERER] Received stream data:", data);
       addStreamItem(data as { item: AnalysisItem; done: boolean });
     });
 
     const unsubscribeError = window.api.analysis.onError((errorData: unknown) => {
+      console.log("[RENDERER] Received error:", errorData);
       const err = errorData as { message: string };
       setError(err.message ?? "분석 중 오류가 발생했습니다.");
       showToast(err.message ?? "분석 중 오류가 발생했습니다.", "error");
     });
 
     return () => {
+      console.log("[RENDERER] Unregistering analysis listeners");
       unsubscribeStream();
       unsubscribeError();
     };
@@ -64,12 +80,16 @@ export default function AnalysisSection() {
   // Cleanup on unmount or tab switch
   useEffect(() => {
     return () => {
-      if (isAnalyzing) {
-        void stopAnalysis();
-      }
-      void clearAnalysis();
+      const cleanup = async () => {
+        const currentlyAnalyzing = useAnalysisStore.getState().isAnalyzing;
+        if (currentlyAnalyzing) {
+          await stopAnalysis();
+        }
+        await clearAnalysis();
+      };
+      void cleanup();
     };
-  }, [isAnalyzing, stopAnalysis, clearAnalysis]);
+  }, []); // Empty deps - only run on mount/unmount
 
   // Show error toast
   useEffect(() => {
@@ -84,12 +104,28 @@ export default function AnalysisSection() {
   }, [analysisItems]);
 
   const handleAnalyze = async () => {
-    if (!effectiveChapterId || !currentProject || isAnalyzing) return;
+    console.log("[RENDERER] handleAnalyze called", {
+      effectiveChapterId,
+      currentProject: currentProject?.id,
+      isAnalyzing,
+      chapters: chapters.length,
+    });
+
+    if (!effectiveChapterId || !currentProject || isAnalyzing) {
+      console.log("[RENDERER] Analysis blocked", {
+        hasChapterId: !!effectiveChapterId,
+        hasProject: !!currentProject,
+        isAnalyzing,
+      });
+      return;
+    }
 
     try {
+      console.log("[RENDERER] Starting analysis", { chapterId: effectiveChapterId, projectId: currentProject.id });
       await startAnalysis(effectiveChapterId, currentProject.id);
       showToast("분석을 시작합니다...", "info");
-    } catch {
+    } catch (error) {
+      console.error("[RENDERER] Analysis start failed", error);
       // Error is already set in the store and logged in main process
       // No need to log again here
     }
@@ -135,7 +171,10 @@ export default function AnalysisSection() {
                         {LABEL_ANALYSIS_EMPTY_STATE}
                     </p>
                     <button
-                        onClick={handleAnalyze}
+                        onClick={() => {
+                          console.log("[RENDERER] Button clicked", { effectiveChapterId, currentProjectId: currentProject?.id });
+                          void handleAnalyze();
+                        }}
                         disabled={!effectiveChapterId || !currentProject}
                         className="group flex items-center gap-3 px-8 py-4 rounded-full bg-surface hover:bg-surface-hover border border-border shadow-sm hover:shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
