@@ -231,6 +231,8 @@ export type FontPreset =
 export type EditorTheme = "light" | "dark" | "sepia";
 export type ThemeTemperature = "neutral" | "warm" | "cool";
 export type ThemeContrast = "soft" | "high";
+export type ThemeAccent = "blue" | "violet" | "green" | "amber" | "rose" | "slate";
+export type ThemeTexture = boolean;
 
 export interface WindowBounds {
   width: number;
@@ -250,6 +252,8 @@ export interface EditorSettings {
   theme: EditorTheme;
   themeTemp: "neutral" | "warm" | "cool";
   themeContrast: "soft" | "high";
+  themeAccent: ThemeAccent;
+  themeTexture: ThemeTexture;
 }
 
 export interface AppSettings {

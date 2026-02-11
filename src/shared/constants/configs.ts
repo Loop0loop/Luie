@@ -78,6 +78,8 @@ export const DEFAULT_EDITOR_MAX_WIDTH = 800;
 export const DEFAULT_EDITOR_THEME = "light";
 export const DEFAULT_EDITOR_THEME_TEMP = "neutral";
 export const DEFAULT_EDITOR_THEME_CONTRAST = "soft";
+export const DEFAULT_EDITOR_THEME_ACCENT = "blue";
+export const DEFAULT_EDITOR_THEME_TEXTURE = true;
 
 export const EDITOR_TOOLBAR_FONT_STEP = 1
 export const EDITOR_TOOLBAR_FONT_MIN = 10

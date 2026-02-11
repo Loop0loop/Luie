@@ -1,7 +1,6 @@
 import { memo, useMemo, useState, useEffect, useTransition } from "react";
-import { X, Check, Download } from "lucide-react";
+import { X, Check, Download, Command, Type, Layout, BookOpen, FileText, Monitor, Keyboard, RotateCcw, Globe } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Virtuoso } from "react-virtuoso";
 import type { FontPreset, EditorSettings } from "../../stores/editorStore";
 import { useEditorStore } from "../../stores/editorStore";
 import { useShortcutStore } from "../../stores/shortcutStore";
@@ -34,20 +33,22 @@ const ShortcutRow = memo(function ShortcutRow({
   onBlur: () => void;
 }) {
   return (
-    <div className="grid grid-cols-[1fr,220px] gap-3 items-center border border-border rounded-[10px] bg-surface px-3 py-2">
-      <div className="text-sm text-fg font-medium">{label}</div>
-      <input
-        className="bg-transparent text-sm font-semibold border-b border-border hover:border-text-primary focus:outline-none transition-colors py-1"
-        value={value}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={onBlur}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            (e.target as HTMLInputElement).blur();
-          }
-        }}
-      />
+    <div className="flex items-center justify-between py-2 group">
+      <div className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">{label}</div>
+      <div className="relative w-40">
+        <input
+            className="w-full bg-bg-surface border border-border rounded-md px-3 py-1.5 text-sm font-mono text-text-primary focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all text-center"
+            value={value}
+            placeholder={placeholder}
+            onChange={(e) => onChange(e.target.value)}
+            onBlur={onBlur}
+            onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                    (e.target as HTMLInputElement).blur();
+                }
+            }}
+        />
+      </div>
     </div>
   );
 });
@@ -58,6 +59,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const theme = useEditorStore((state) => state.theme);
   const themeTemp = useEditorStore((state) => state.themeTemp);
   const themeContrast = useEditorStore((state) => state.themeContrast);
+  const themeAccent = useEditorStore((state) => state.themeAccent);
+  const themeTexture = useEditorStore((state) => state.themeTexture);
   const fontSize = useEditorStore((state) => state.fontSize);
   const lineHeight = useEditorStore((state) => state.lineHeight);
   const fontFamily = useEditorStore((state) => state.fontFamily);
@@ -109,16 +112,51 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     await setShortcuts(shortcutDrafts as ShortcutMap);
   };
 
-  const shortcutItems = useMemo(
-    () =>
-      SHORTCUT_ACTIONS.map((action) => ({
-        id: action.id,
-        label: t(action.labelKey),
-        value: shortcutDrafts[action.id] ?? shortcutDefaults[action.id] ?? "",
-        placeholder: shortcutDefaults[action.id] ?? "",
-      })),
-    [shortcutDefaults, shortcutDrafts, t],
-  );
+  // Group Shortcuts
+  const shortcutGroups = useMemo(() => {
+      const groups: Record<string, typeof SHORTCUT_ACTIONS> = {
+          app: [],
+          chapter: [],
+          view: [],
+          research: [],
+          editor: [],
+          other: []
+      };
+
+      SHORTCUT_ACTIONS.forEach(action => {
+          if (action.id.startsWith("app.")) groups.app.push(action);
+          else if (action.id.startsWith("chapter.") || action.id.startsWith("project.")) groups.chapter.push(action);
+          else if (action.id.startsWith("view.") || action.id.startsWith("sidebar.") || action.id.startsWith("window.")) groups.view.push(action);
+          else if (action.id.startsWith("research.") || action.id.startsWith("character.") || action.id.startsWith("world.") || action.id.startsWith("scrap.")) groups.research.push(action);
+          else if (action.id.startsWith("editor.") || action.id.startsWith("split.")) groups.editor.push(action);
+          else groups.other.push(action);
+      });
+
+      return groups;
+  }, []);
+
+  const getGroupLabel = (key: string) => {
+      switch(key) {
+          case 'app': return t("settings.shortcuts.group.app");
+          case 'chapter': return t("settings.shortcuts.group.file");
+          case 'view': return t("settings.shortcuts.group.view");
+          case 'research': return t("settings.shortcuts.group.research");
+          case 'editor': return t("settings.shortcuts.group.editor");
+          default: return t("settings.shortcuts.group.other");
+      }
+  };
+
+  const getGroupIcon = (key: string) => {
+      switch(key) {
+          case 'app': return Command;
+          case 'chapter': return FileText;
+          case 'view': return Layout;
+          case 'research': return BookOpen;
+          case 'editor': return Type;
+          default: return Keyboard;
+      }
+  };
+
 
   // Recovery Logic
   const [isRecovering, setIsRecovering] = useState(false);
@@ -136,6 +174,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
       }
   };
 
+  // ... (Optional Fonts Logic items) ...
+  
   // Optional Fonts Logic
   const OPTIONAL_FONTS: Array<{
     id: FontPreset;
@@ -230,18 +270,17 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     }
   };
 
-
   const tabs = [
-    { id: "editor", label: t("settings.sidebar.editor") },
-    { id: "appearance", label: t("settings.sidebar.appearance") },
-    { id: "shortcuts", label: t("settings.sidebar.shortcuts") },
-    { id: "recovery", label: t("settings.sidebar.recovery") },
-    { id: "language", label: t("settings.sidebar.language") },
+    { id: "editor", label: t("settings.sidebar.editor"), icon: Type },
+    { id: "appearance", label: t("settings.sidebar.appearance"), icon: Monitor },
+    { id: "shortcuts", label: t("settings.sidebar.shortcuts"), icon: Keyboard },
+    { id: "recovery", label: t("settings.sidebar.recovery"), icon: RotateCcw },
+    { id: "language", label: t("settings.sidebar.language"), icon: Globe },
   ];
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div 
@@ -260,12 +299,13 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                         onClick={() => {
                             startTransition(() => setActiveTab(tab.id));
                         }}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                             activeTab === tab.id 
-                            ? "bg-bg-active text-text-primary font-semibold" 
+                            ? "bg-bg-active text-text-primary shadow-sm" 
                             : "text-text-secondary hover:bg-bg-surface-hover hover:text-text-primary"
                         }`}
                     >
+                        <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-accent' : 'text-text-tertiary'}`} />
                         {tab.label}
                     </button>
                 ))}
@@ -281,7 +321,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 <X className="w-5 h-5" />
              </button>
 
-             <div className="flex-1 overflow-y-auto p-10">
+             <div className="flex-1 overflow-y-auto p-10 scrollbar-hide">
                 {activeTab === "appearance" && (
                     <div className="space-y-10 max-w-2xl">
                         {/* 1. Base Theme */}
@@ -291,19 +331,19 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                 <p className="text-sm text-text-secondary mt-1">기본적인 밝기를 선택합니다.</p>
                             </div>
                             <div className="grid grid-cols-3 gap-3">
-                                {(["light", "sepia", "dark"] as const).map((mode) => (
+                                {(['light', 'sepia', 'dark'] as const).map((mode) => (
                                     <button
                                         key={mode}
                                         onClick={() => applySettings({ theme: mode })}
-                                        className={`flex items-center justify-center px-4 py-3 rounded-lg border text-sm font-medium transition-all ${
+                                        className={`flex items-center justify-center px-4 py-3 rounded-xl border text-sm font-medium transition-all duration-200 ${
                                             theme === mode 
-                                            ? "border-accent text-accent bg-accent/5 ring-1 ring-accent"
+                                            ? "border-accent text-accent bg-accent/5 ring-1 ring-accent shadow-sm"
                                             : "border-border text-text-secondary hover:border-text-tertiary hover:bg-bg-surface-hover"
                                         }`}
                                     >
-                                        {mode === "light" && "Light (라이트)"}
-                                        {mode === "sepia" && "Sepia (세피아)"}
-                                        {mode === "dark" && "Dark (다크)"}
+                                        {mode === "light" && "Light"}
+                                        {mode === "sepia" && "Sepia"}
+                                        {mode === "dark" && "Dark"}
                                         {theme === mode && <Check className="w-4 h-4 ml-2" />}
                                     </button>
                                 ))}
@@ -312,7 +352,91 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
                         <div className="h-px bg-border my-6" />
 
-                        {/* 2. Atmosphere (Temperature) */}
+                        {/* 2. Accent Color */}
+                        <section className="space-y-4">
+                            <div>
+                                <h3 className="text-base font-semibold text-text-primary">강조 색상 (Accent Color)</h3>
+                                <p className="text-sm text-text-secondary mt-1">버튼과 강조 요소의 색상을 선택하세요.</p>
+                            </div>
+                            <div className="flex gap-4">
+                                {(['blue', 'violet', 'green', 'amber', 'rose', 'slate'] as const).map((accent) => (
+                                    <button
+                                        key={accent}
+                                        onClick={() => applySettings({ themeAccent: accent })}
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
+                                            themeAccent === accent ? "ring-2 ring-offset-2 ring-text-primary scale-110" : "hover:scale-110"
+                                        }`}
+                                        style={{ backgroundColor: `var(--color-bg-${accent}, ${
+                                            accent === 'blue' ? '#3b82f6' :
+                                            accent === 'violet' ? '#8b5cf6' :
+                                            accent === 'green' ? '#10b981' :
+                                            accent === 'amber' ? '#f59e0b' :
+                                            accent === 'rose' ? '#f43f5e' : '#64748b'
+                                        })` }}
+                                        title={accent}
+                                    >
+                                        {themeAccent === accent && <Check className="w-5 h-5 text-white" />}
+                                    </button>
+                                ))}
+                            </div>
+                        </section>
+
+                        <div className="h-px bg-border my-6" />
+
+                        {/* 3. Texture & Atmosphere */}
+                        <div className="grid grid-cols-2 gap-8">
+                             {/* Texture */}
+                             <section className="space-y-4">
+                                <div>
+                                    <h3 className="text-base font-semibold text-text-primary">종이 질감 (Texture)</h3>
+                                    <p className="text-sm text-text-secondary mt-1">화면에 미세한 노이즈를 추가하여 종이 질감을 냅니다.</p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={() => applySettings({ themeTexture: !themeTexture })}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
+                                            themeTexture ? 'bg-accent' : 'bg-border'
+                                        }`}
+                                    >
+                                        <span
+                                            className={`${
+                                                themeTexture ? 'translate-x-6' : 'translate-x-1'
+                                            } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                                        />
+                                    </button>
+                                    <span className="text-sm font-medium text-text-primary">
+                                        {themeTexture ? "켜짐 (On)" : "꺼짐 (Off)"}
+                                    </span>
+                                </div>
+                             </section>
+
+                             {/* Contrast */}
+                             <section className="space-y-4">
+                                <div>
+                                    <h3 className="text-base font-semibold text-text-primary">대비 (Contrast)</h3>
+                                    <p className="text-sm text-text-secondary mt-1">화면의 선명도를 조절합니다.</p>
+                                </div>
+                                 <div className="flex gap-2">
+                                    {(['soft', 'high'] as const).map((c) => (
+                                        <button
+                                            key={c}
+                                            onClick={() => applySettings({ themeContrast: c })}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                                                themeContrast === c
+                                                ? "bg-text-primary text-bg-app border-transparent"
+                                                : "border-border text-text-secondary hover:text-text-primary"
+                                            }`}
+                                        >
+                                            {c === 'soft' ? 'Soft' : 'High'}
+                                        </button>
+                                    ))}
+                                 </div>
+                             </section>
+                        </div>
+                        
+                        <div className="h-px bg-border my-6" />
+
+                        {/* 4. Atmosphere (Temperature) */}
                         <section className="space-y-4">
                             <div>
                                 <h3 className="text-base font-semibold text-text-primary">분위기 (Atmosphere)</h3>
@@ -321,7 +445,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                             <div className="grid grid-cols-3 gap-3">
                                 <button
                                     onClick={() => applySettings({ themeTemp: "cool" })}
-                                    className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-all ${
+                                    className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-all duration-200 ${
                                         themeTemp === "cool" 
                                         ? "border-blue-500 bg-blue-500/5 ring-1 ring-blue-500" 
                                         : "border-border hover:bg-bg-surface-hover"
@@ -333,7 +457,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
                                 <button
                                     onClick={() => applySettings({ themeTemp: "neutral" })}
-                                    className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-all ${
+                                    className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-all duration-200 ${
                                         themeTemp === "neutral" 
                                         ? "border-text-secondary bg-text-secondary/5 ring-1 ring-text-secondary" 
                                         : "border-border hover:bg-bg-surface-hover"
@@ -345,7 +469,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
                                 <button
                                     onClick={() => applySettings({ themeTemp: "warm" })}
-                                    className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-all ${
+                                    className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-all duration-200 ${
                                         themeTemp === "warm" 
                                         ? "border-orange-500 bg-orange-500/5 ring-1 ring-orange-500" 
                                         : "border-border hover:bg-bg-surface-hover"
@@ -355,38 +479,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                     <span className="text-xs text-text-secondary">서사 / 감정 / 편안함</span>
                                 </button>
                             </div>
-                        </section>
-
-                        <div className="h-px bg-border my-6" />
-
-                        {/* 3. Contrast */}
-                        <section className="space-y-4">
-                            <div>
-                                <h3 className="text-base font-semibold text-text-primary">대비 (Contrast)</h3>
-                                <p className="text-sm text-text-secondary mt-1">화면의 선명도를 조절합니다.</p>
-                            </div>
-                             <div className="flex gap-3">
-                                <button
-                                     onClick={() => applySettings({ themeContrast: "soft" })}
-                                     className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                                         themeContrast === "soft"
-                                         ? "bg-text-primary text-bg-app border-transparent"
-                                         : "border-border text-text-secondary hover:text-text-primary"
-                                     }`}
-                                >
-                                    부드럽게 (Soft)
-                                </button>
-                                <button
-                                     onClick={() => applySettings({ themeContrast: "high" })}
-                                     className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                                         themeContrast === "high"
-                                         ? "bg-text-primary text-bg-app border-transparent"
-                                         : "border-border text-text-secondary hover:text-text-primary"
-                                     }`}
-                                >
-                                    선명하게 (High)
-                                </button>
-                             </div>
                         </section>
                     </div>
                 )}
@@ -400,7 +492,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                     <button
                                         key={f}
                                         onClick={() => applySettings({ fontFamily: f })}
-                                        className={`p-4 rounded-xl border text-left transition-all ${
+                                        className={`p-4 rounded-xl border text-left transition-all duration-200 ${
                                             fontFamily === f ? "border-accent ring-1 ring-accent bg-accent/5" : "border-border hover:bg-bg-surface-hover"
                                         }`}
                                     >
@@ -423,7 +515,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                               const isActive = fontPreset === font.id;
         
                               return (
-                                <div key={font.id} className="flex items-center justify-between px-3 py-2.5 border border-border rounded-[10px] bg-surface">
+                                <div key={font.id} className="flex items-center justify-between px-3 py-2.5 border border-border rounded-[10px] bg-surface hover:border-text-tertiary transition-colors duration-200">
                                   <div className="flex items-center gap-3">
                                     <div
                                       className="w-10.5 h-10.5 rounded-lg border border-border flex items-center justify-center text-lg text-fg bg-surface-hover"
@@ -449,7 +541,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                           : t("settings.optionalFonts.action.install")}
                                       </button>
                                     ) : isActive ? (
-                                      <div className="text-xs px-2 py-1 rounded-full text-accent-fg bg-accent">{t("settings.optionalFonts.action.active")}</div>
+                                      <div className="text-xs px-2 py-1 rounded-full text-accent-fg bg-accent font-medium shadow-sm">{t("settings.optionalFonts.action.active")}</div>
                                     ) : (
                                       <button
                                         className="rounded-lg px-2.5 py-1.5 text-xs border border-border bg-surface text-fg cursor-pointer inline-flex items-center gap-1.5 hover:border-active hover:bg-surface-hover"
@@ -477,7 +569,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                 value={localFontSize} 
                                 onChange={(e) => setLocalFontSize(Number(e.target.value))}
                                 onMouseUp={() => applySettings({ fontSize: localFontSize })}
-                                className="w-full"
+                                className="w-full accent-accent"
                              />
                         </section>
                          <section className="space-y-4">
@@ -490,35 +582,45 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                 value={localLineHeight} 
                                 onChange={(e) => setLocalLineHeight(Number(e.target.value))}
                                 onMouseUp={() => applySettings({ lineHeight: localLineHeight })}
-                                className="w-full"
+                                className="w-full accent-accent"
                              />
                         </section>
                      </div>
                 )}
                 
                 {activeTab === "shortcuts" && (
-                    <div className="max-w-2xl">
-                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-base font-semibold text-text-primary">{t("settings.shortcuts.title")}</h3>
-                            <button onClick={() => void resetToDefaults()} className="text-xs text-text-tertiary hover:text-text-primary underline">
-                                {t("settings.shortcuts.reset")}
-                            </button>
-                         </div>
-                         <div className="h-[400px]">
-                            <Virtuoso
-                                data={shortcutItems}
-                                itemContent={(_, item) => (
-                                    <ShortcutRow 
-                                        label={item.label} 
-                                        value={item.value} 
-                                        placeholder={item.placeholder}
-                                        onChange={(v) => handleShortcutChange(item.id, v)}
-                                        onBlur={() => void commitShortcuts()}
-                                    />
-                                )}
-                            />
-                         </div>
-                    </div>
+                     <div className="max-w-2xl space-y-8 pb-20">
+                          <div className="flex justify-between items-center">
+                             <h3 className="text-lg font-bold text-text-primary">{t("settings.shortcuts.title")}</h3>
+                             <button onClick={() => void resetToDefaults()} className="text-xs text-text-tertiary hover:text-text-primary underline">
+                                 {t("settings.shortcuts.reset")}
+                             </button>
+                          </div>
+                          
+                          {Object.entries(shortcutGroups).map(([groupKey, actions]) => {
+                                const Icon = getGroupIcon(groupKey);
+                                return actions.length > 0 && (
+                                    <div key={groupKey} className="space-y-3">
+                                        <div className="flex items-center gap-2 text-text-secondary pb-1 border-b border-border/50">
+                                            <Icon className="w-4 h-4" />
+                                            <h4 className="text-sm font-semibold uppercase tracking-wider">{getGroupLabel(groupKey)}</h4>
+                                        </div>
+                                        <div className="space-y-1">
+                                            {actions.map(action => (
+                                                <ShortcutRow 
+                                                    key={action.id}
+                                                    label={t(action.labelKey)} 
+                                                    value={shortcutDrafts[action.id] ?? shortcutDefaults[action.id] ?? ""} 
+                                                    placeholder={shortcutDefaults[action.id] ?? ""}
+                                                    onChange={(v) => handleShortcutChange(action.id, v)}
+                                                    onBlur={() => void commitShortcuts()}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                )
+                          })}
+                     </div>
                 )}
 
                  {activeTab === "recovery" && (
@@ -558,19 +660,19 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                              <div className="flex gap-3">
                                 <button 
                                     onClick={() => setLanguage("ko")} 
-                                    className={`px-4 py-2 rounded-lg border text-sm transition-all ${i18n.language === 'ko' ? 'border-accent text-accent bg-accent/5' : 'border-border text-text-secondary hover:text-text-primary'}`}
+                                    className={`px-4 py-2 rounded-lg border text-sm transition-all duration-200 ${i18n.language === 'ko' ? 'border-accent text-accent bg-accent/5 ring-1 ring-accent' : 'border-border text-text-secondary hover:text-text-primary'}`}
                                 >
                                     한국어
                                 </button>
                                 <button 
                                     onClick={() => setLanguage("en")} 
-                                    className={`px-4 py-2 rounded-lg border text-sm transition-all ${i18n.language === 'en' ? 'border-accent text-accent bg-accent/5' : 'border-border text-text-secondary hover:text-text-primary'}`}
+                                    className={`px-4 py-2 rounded-lg border text-sm transition-all duration-200 ${i18n.language === 'en' ? 'border-accent text-accent bg-accent/5 ring-1 ring-accent' : 'border-border text-text-secondary hover:text-text-primary'}`}
                                 >
                                     English
                                 </button>
                                 <button 
                                     onClick={() => setLanguage("ja")} 
-                                    className={`px-4 py-2 rounded-lg border text-sm transition-all ${i18n.language === 'ja' ? 'border-accent text-accent bg-accent/5' : 'border-border text-text-secondary hover:text-text-primary'}`}
+                                    className={`px-4 py-2 rounded-lg border text-sm transition-all duration-200 ${i18n.language === 'ja' ? 'border-accent text-accent bg-accent/5 ring-1 ring-accent' : 'border-border text-text-secondary hover:text-text-primary'}`}
                                 >
                                     日本語
                                 </button>

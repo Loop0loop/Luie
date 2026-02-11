@@ -67,6 +67,8 @@ export default function App() {
   const theme = useEditorStore((state) => state.theme);
   const themeTemp = useEditorStore((state) => state.themeTemp);
   const themeContrast = useEditorStore((state) => state.themeContrast);
+  const themeAccent = useEditorStore((state) => state.themeAccent);
+  const themeTexture = useEditorStore((state) => state.themeTexture);
   const fontSize = useEditorStore((state) => state.fontSize);
   const setFontSize = useEditorStore((state) => state.setFontSize);
 
@@ -78,7 +80,9 @@ export default function App() {
     document.documentElement.setAttribute("data-theme", theme);
     if (themeTemp) document.documentElement.setAttribute("data-temp", themeTemp);
     if (themeContrast) document.documentElement.setAttribute("data-contrast", themeContrast);
-  }, [theme, themeTemp, themeContrast]);
+    if (themeAccent) document.documentElement.setAttribute("data-accent", themeAccent);
+    document.documentElement.setAttribute("data-texture", String(themeTexture));
+  }, [theme, themeTemp, themeContrast, themeAccent, themeTexture]);
 
   useEffect(() => {
     void loadShortcuts();

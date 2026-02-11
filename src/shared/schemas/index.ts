@@ -117,6 +117,11 @@ export const editorSettingsSchema = z.object({
   theme: z.enum(["light", "dark", "sepia"]),
   themeTemp: z.enum(["neutral", "warm", "cool"]).optional().default("neutral"),
   themeContrast: z.enum(["soft", "high"]).optional().default("soft"),
+  themeAccent: z
+    .enum(["blue", "violet", "green", "amber", "rose", "slate"])
+    .optional()
+    .default("blue"),
+  themeTexture: z.boolean().optional().default(true),
 });
 
 export const settingsAutoSaveSchema = z.object({
