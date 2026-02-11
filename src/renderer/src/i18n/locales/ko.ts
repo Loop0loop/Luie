@@ -112,6 +112,14 @@ export const ko = {
         editorFontIncrease: "에디터 글자 크기 늘리기",
         editorFontDecrease: "에디터 글자 크기 줄이기",
         toggleFullscreen: "전체화면 토글",
+        group: {
+          app: "앱 (App)",
+          file: "원고 (Manuscript)",
+          view: "보기 (View)",
+          research: "연구 (Research)",
+          editor: "에디터 (Editor)",
+          other: "기타 (Other)",
+        },
       },
       recovery: {
         title: "파일 복원",

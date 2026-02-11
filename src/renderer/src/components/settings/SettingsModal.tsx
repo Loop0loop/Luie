@@ -284,7 +284,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
       onClick={onClose}
     >
       <div 
-        className="w-[900px] h-[650px] bg-bg-panel border border-border shadow-2xl rounded-xl flex overflow-hidden animate-in zoom-in-95 duration-200"
+        className="w-[900px] h-[650px] bg-bg-panel/95 backdrop-blur-md border border-border shadow-2xl rounded-xl flex overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Sidebar */}

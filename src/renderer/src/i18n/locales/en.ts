@@ -112,6 +112,14 @@ export const en = {
         editorFontIncrease: "Increase editor font size",
         editorFontDecrease: "Decrease editor font size",
         toggleFullscreen: "Toggle fullscreen",
+        group: {
+          app: "App",
+          file: "File",
+          view: "View",
+          research: "Research",
+          editor: "Editor",
+          other: "Other",
+        },
       },
       recovery: {
         title: "File Recovery",
