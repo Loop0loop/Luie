@@ -44,13 +44,13 @@
   /* === LIGHT THEME (Default) === */
   /* Backgrounds */
   --bg-app: #ffffff;          /* Main Canvas */
-  --bg-sidebar: #f4f4f5;      /* Zinc-100 - Distinct from main content */
-  --bg-panel: #ffffff;        /* Panel matches app or slightly off */
-  --bg-surface: #ffffff;      /* Added for consistency */
-  --bg-surface-hover: rgba(0, 0, 0, 0.05); 
-  --bg-element: #ffffff;      /* Cards, Inputs */
-  --bg-element-hover: rgba(0, 0, 0, 0.05); 
-  --bg-active: rgba(0, 0, 0, 0.08);       /* Zinc-200 */
+  --bg-sidebar: #f4f4f5;      /* Zinc-100 */
+  --bg-panel: #ffffff;        /* Panel matches app */
+  --bg-surface: #ffffff;      
+  --bg-surface-hover: rgba(0, 0, 0, 0.04); /* Vercel-style alpha hover */
+  --bg-element: #ffffff;      
+  --bg-element-hover: rgba(0, 0, 0, 0.04); 
+  --bg-active: rgba(0, 0, 0, 0.08);       /* Zinc-200 equivalent alpha */
 
   /* Text */
   --text-primary: #18181b;    /* Zinc-900 - Sharp, readable black */
@@ -225,13 +225,13 @@
 [data-theme="sepia"] {
   /* Backgrounds */
   --bg-app: #fbf0d9;          /* Warm Paper */
-  --bg-sidebar: #f3e5c9;      /* Slightly darker paper */
-  --bg-panel: #fbf0d9;
-  --bg-surface: #fbf0d9;      /* Added for consistency */
-  --bg-surface-hover: rgba(95, 75, 50, 0.08);
+  --bg-sidebar: #f5e6cc;      /* Slightly darker paper */
+  --bg-panel: #fbf0d9;        /* Panel matches app */
+  --bg-surface: #fffefb;      /* Card/Input background */
+  --bg-surface-hover: rgba(95, 75, 50, 0.05); /* Sepia alpha hover */
   --bg-element: #fffefb;
-  --bg-element-hover: rgba(95, 75, 50, 0.08);
-  --bg-active: rgba(95, 75, 50, 0.12);
+  --bg-element-hover: rgba(95, 75, 50, 0.05);
+  --bg-active: rgba(95, 75, 50, 0.1);
 
   /* Text */
   --text-primary: #5f4b32;    /* Dark brown */
@@ -383,12 +383,12 @@
   height: 100%;
   pointer-events: none;
   z-index: 9999;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.015; /* Reduced from 0.03 for subtlety */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
 
 [data-theme="dark"][data-texture="true"]::before {
-  opacity: 0.05;
+  opacity: 0.04; /* Slightly reduced */
 }
 
 body {

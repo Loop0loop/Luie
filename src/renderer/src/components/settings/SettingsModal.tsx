@@ -1,5 +1,5 @@
 import { memo, useMemo, useState, useEffect, useTransition } from "react";
-import { X, Check, Download, Command, Type, Layout, BookOpen, FileText, Monitor, Keyboard, RotateCcw, Globe } from "lucide-react";
+import { X, Check, Download, Command, Type, Layout, BookOpen, FileText, Monitor, Keyboard, RotateCcw, Globe, Minus, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { FontPreset, EditorSettings } from "../../stores/editorStore";
 import { useEditorStore } from "../../stores/editorStore";
@@ -34,10 +34,10 @@ const ShortcutRow = memo(function ShortcutRow({
 }) {
   return (
     <div className="flex items-center justify-between py-2 group">
-      <div className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">{label}</div>
+      <div className="text-sm text-muted group-hover:text-fg transition-colors">{label}</div>
       <div className="relative w-40">
         <input
-            className="w-full bg-bg-surface border border-border rounded-md px-3 py-1.5 text-sm font-mono text-text-primary focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all text-center"
+            className="w-full bg-surface border border-border rounded-md px-3 py-1.5 text-sm font-mono text-fg focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all text-center"
             value={value}
             placeholder={placeholder}
             onChange={(e) => onChange(e.target.value)}
@@ -284,13 +284,13 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
       onClick={onClose}
     >
       <div 
-        className="w-[900px] h-[650px] bg-bg-panel/95 backdrop-blur-md border border-border shadow-2xl rounded-xl flex overflow-hidden animate-in zoom-in-95 duration-200"
+        className="w-[1000px] h-[80vh] max-h-[850px] bg-panel/95 backdrop-blur-sm border border-border shadow-2xl rounded-xl flex overflow-hidden animate-in zoom-in-95 duration-200 will-change-transform"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Sidebar */}
-        <div className="w-64 bg-bg-sidebar border-r border-border flex flex-col pt-3">
+        <div className="w-64 bg-sidebar border-r border-border flex flex-col pt-3">
             <div className="p-6 pb-4">
-                <h2 className="text-lg font-bold text-text-primary px-2">{t("settings.title")}</h2>
+                <h2 className="text-lg font-bold text-fg px-2">{t("settings.title")}</h2>
             </div>
             <nav className="flex-1 px-4 space-y-1">
                 {tabs.map(tab => (
@@ -301,11 +301,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                         }}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                             activeTab === tab.id 
-                            ? "bg-bg-active text-text-primary shadow-sm" 
-                            : "text-text-secondary hover:bg-bg-surface-hover hover:text-text-primary"
+                            ? "bg-fg text-app shadow-md" 
+                            : "text-muted hover:bg-surface-hover hover:text-fg"
                         }`}
                     >
-                        <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-accent' : 'text-text-tertiary'}`} />
+                        <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-app' : 'text-subtle'}`} />
                         {tab.label}
                     </button>
                 ))}
@@ -313,10 +313,10 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 bg-bg-panel flex flex-col relative min-w-0" aria-busy={isPending}>
+        <div className="flex-1 bg-panel flex flex-col relative min-w-0" aria-busy={isPending}>
              <button 
                 onClick={onClose}
-                className="absolute top-4 right-4 p-2 text-text-tertiary hover:text-text-primary hover:bg-bg-active rounded-lg transition-colors z-10"
+                className="absolute top-4 right-4 p-2 text-subtle hover:text-fg hover:bg-active rounded-lg transition-colors z-10"
              >
                 <X className="w-5 h-5" />
              </button>
@@ -327,8 +327,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                         {/* 1. Base Theme */}
                         <section className="space-y-4">
                             <div>
-                                <h3 className="text-base font-semibold text-text-primary">테마 모드 (Base Theme)</h3>
-                                <p className="text-sm text-text-secondary mt-1">기본적인 밝기를 선택합니다.</p>
+                                <h3 className="text-base font-semibold text-fg">테마 모드 (Base Theme)</h3>
+                                <p className="text-sm text-muted mt-1">기본적인 밝기를 선택합니다.</p>
                             </div>
                             <div className="grid grid-cols-3 gap-3">
                                 {(['light', 'sepia', 'dark'] as const).map((mode) => (
@@ -338,7 +338,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                         className={`flex items-center justify-center px-4 py-3 rounded-xl border text-sm font-medium transition-all duration-200 ${
                                             theme === mode 
                                             ? "border-accent text-accent bg-accent/5 ring-1 ring-accent shadow-sm"
-                                            : "border-border text-text-secondary hover:border-text-tertiary hover:bg-bg-surface-hover"
+                                            : "border-border text-muted hover:border-text-tertiary hover:bg-surface-hover"
                                         }`}
                                     >
                                         {mode === "light" && "Light"}
@@ -355,8 +355,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                         {/* 2. Accent Color */}
                         <section className="space-y-4">
                             <div>
-                                <h3 className="text-base font-semibold text-text-primary">강조 색상 (Accent Color)</h3>
-                                <p className="text-sm text-text-secondary mt-1">버튼과 강조 요소의 색상을 선택하세요.</p>
+                                <h3 className="text-base font-semibold text-fg">강조 색상 (Accent Color)</h3>
+                                <p className="text-sm text-muted mt-1">버튼과 강조 요소의 색상을 선택하세요.</p>
                             </div>
                             <div className="flex gap-4">
                                 {(['blue', 'violet', 'green', 'amber', 'rose', 'slate'] as const).map((accent) => (
@@ -388,8 +388,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                              {/* Texture */}
                              <section className="space-y-4">
                                 <div>
-                                    <h3 className="text-base font-semibold text-text-primary">종이 질감 (Texture)</h3>
-                                    <p className="text-sm text-text-secondary mt-1">화면에 미세한 노이즈를 추가하여 종이 질감을 냅니다.</p>
+                                    <h3 className="text-base font-semibold text-fg">종이 질감 (Texture)</h3>
+                                    <p className="text-sm text-muted mt-1">화면에 미세한 노이즈를 추가하여 종이 질감을 냅니다.</p>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <button
@@ -401,10 +401,10 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                         <span
                                             className={`${
                                                 themeTexture ? 'translate-x-6' : 'translate-x-1'
-                                            } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                                            } inline-block h-4 w-4 transform rounded-full bg-surface shadow-sm transition-transform`}
                                         />
                                     </button>
-                                    <span className="text-sm font-medium text-text-primary">
+                                    <span className="text-sm font-medium text-fg">
                                         {themeTexture ? "켜짐 (On)" : "꺼짐 (Off)"}
                                     </span>
                                 </div>
@@ -413,8 +413,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                              {/* Contrast */}
                              <section className="space-y-4">
                                 <div>
-                                    <h3 className="text-base font-semibold text-text-primary">대비 (Contrast)</h3>
-                                    <p className="text-sm text-text-secondary mt-1">화면의 선명도를 조절합니다.</p>
+                                    <h3 className="text-base font-semibold text-fg">대비 (Contrast)</h3>
+                                    <p className="text-sm text-muted mt-1">화면의 선명도를 조절합니다.</p>
                                 </div>
                                  <div className="flex gap-2">
                                     {(['soft', 'high'] as const).map((c) => (
@@ -424,7 +424,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                             className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                                                 themeContrast === c
                                                 ? "bg-text-primary text-bg-app border-transparent"
-                                                : "border-border text-text-secondary hover:text-text-primary"
+                                                : "border-border text-muted hover:text-fg"
                                             }`}
                                         >
                                             {c === 'soft' ? 'Soft' : 'High'}
@@ -439,8 +439,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                         {/* 4. Atmosphere (Temperature) */}
                         <section className="space-y-4">
                             <div>
-                                <h3 className="text-base font-semibold text-text-primary">분위기 (Atmosphere)</h3>
-                                <p className="text-sm text-text-secondary mt-1">작업 목적에 맞는 색온도를 선택하세요.</p>
+                                <h3 className="text-base font-semibold text-fg">분위기 (Atmosphere)</h3>
+                                <p className="text-sm text-muted mt-1">작업 목적에 맞는 색온도를 선택하세요.</p>
                             </div>
                             <div className="grid grid-cols-3 gap-3">
                                 <button
@@ -448,11 +448,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                     className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-all duration-200 ${
                                         themeTemp === "cool" 
                                         ? "border-blue-500 bg-blue-500/5 ring-1 ring-blue-500" 
-                                        : "border-border hover:bg-bg-surface-hover"
+                                        : "border-border hover:bg-surface-hover"
                                     }`}
                                 >
-                                    <span className="text-sm font-semibold text-text-primary mb-1">차가움 (Cool)</span>
-                                    <span className="text-xs text-text-secondary">집중 / 분석 / 이성적</span>
+                                    <span className="text-sm font-semibold text-fg mb-1">차가움 (Cool)</span>
+                                    <span className="text-xs text-muted">집중 / 분석 / 이성적</span>
                                 </button>
 
                                 <button
@@ -460,11 +460,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                     className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-all duration-200 ${
                                         themeTemp === "neutral" 
                                         ? "border-text-secondary bg-text-secondary/5 ring-1 ring-text-secondary" 
-                                        : "border-border hover:bg-bg-surface-hover"
+                                        : "border-border hover:bg-surface-hover"
                                     }`}
                                 >
-                                    <span className="text-sm font-semibold text-text-primary mb-1">중립 (Neutral)</span>
-                                    <span className="text-xs text-text-secondary">기본 / 깔끔함</span>
+                                    <span className="text-sm font-semibold text-fg mb-1">중립 (Neutral)</span>
+                                    <span className="text-xs text-muted">기본 / 깔끔함</span>
                                 </button>
 
                                 <button
@@ -472,11 +472,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                     className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-all duration-200 ${
                                         themeTemp === "warm" 
                                         ? "border-orange-500 bg-orange-500/5 ring-1 ring-orange-500" 
-                                        : "border-border hover:bg-bg-surface-hover"
+                                        : "border-border hover:bg-surface-hover"
                                     }`}
                                 >
-                                    <span className="text-sm font-semibold text-text-primary mb-1">따뜻함 (Warm)</span>
-                                    <span className="text-xs text-text-secondary">서사 / 감정 / 편안함</span>
+                                    <span className="text-sm font-semibold text-fg mb-1">따뜻함 (Warm)</span>
+                                    <span className="text-xs text-muted">서사 / 감정 / 편안함</span>
                                 </button>
                             </div>
                         </section>
@@ -486,18 +486,18 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 {activeTab === "editor" && (
                      <div className="space-y-8 max-w-2xl">
                         <section className="space-y-4">
-                            <h3 className="text-base font-semibold text-text-primary">{t("settings.section.font")}</h3>
+                            <h3 className="text-base font-semibold text-fg">{t("settings.section.font")}</h3>
                              <div className="grid grid-cols-3 gap-3">
                                 {EDITOR_FONT_FAMILIES.map((f) => (
                                     <button
                                         key={f}
                                         onClick={() => applySettings({ fontFamily: f })}
                                         className={`p-4 rounded-xl border text-left transition-all duration-200 ${
-                                            fontFamily === f ? "border-accent ring-1 ring-accent bg-accent/5" : "border-border hover:bg-bg-surface-hover"
+                                            fontFamily === f ? "border-accent ring-1 ring-accent bg-accent/5" : "border-border hover:bg-surface-hover"
                                         }`}
                                     >
                                         <span className="text-2xl block mb-2" style={{ fontFamily: f === 'serif' ? 'serif' : f === 'mono' ? 'monospace' : 'sans-serif' }}>Aa</span>
-                                        <span className="text-sm font-medium text-text-primary capitalize">{f}</span>
+                                        <span className="text-sm font-medium text-fg capitalize">{f}</span>
                                     </button>
                                 ))}
                              </div>
@@ -508,7 +508,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                         {/* OPTIONAL FONTS */}
                         <div className="flex flex-col gap-3">
                           <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{t("settings.section.optionalFonts")}</div>
-                          <div className="flex flex-col gap-2.5">
+                          <div className="grid grid-cols-2 gap-3">
                             {OPTIONAL_FONTS.map((font) => {
                               const isInstalled = installed[font.id];
                               const isInstalling = installing[font.id];
@@ -560,30 +560,60 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                         <div className="h-px bg-border my-6" />
 
                         <section className="space-y-4">
-                             <div className="flex justify-between">
-                                  <h3 className="text-base font-semibold text-text-primary">{t("settings.section.fontSize")}</h3>
-                                  <span className="text-sm font-medium text-accent bg-accent/10 px-2 py-0.5 rounded">{localFontSize}px</span>
+                             <div className="flex justify-between items-center">
+                                  <h3 className="text-base font-semibold text-fg">{t("settings.section.fontSize")}</h3>
+                                  <div className="flex items-center gap-3 bg-surface border border-border rounded-lg p-1">
+                                       <button
+                                          onClick={() => {
+                                              const next = Math.max(12, localFontSize - 1);
+                                              setLocalFontSize(next);
+                                              applySettings({ fontSize: next });
+                                          }}
+                                          className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+                                       >
+                                          <Minus className="w-4 h-4" />
+                                       </button>
+                                       <span className="text-sm font-medium text-fg w-12 text-center">{localFontSize}px</span>
+                                       <button
+                                          onClick={() => {
+                                               const next = Math.min(32, localFontSize + 1);
+                                               setLocalFontSize(next);
+                                               applySettings({ fontSize: next });
+                                          }}
+                                          className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+                                       >
+                                          <Plus className="w-4 h-4" />
+                                       </button>
+                                  </div>
                              </div>
-                             <input 
-                                type="range" min="12" max="32" step="1" 
-                                value={localFontSize} 
-                                onChange={(e) => setLocalFontSize(Number(e.target.value))}
-                                onMouseUp={() => applySettings({ fontSize: localFontSize })}
-                                className="w-full accent-accent"
-                             />
                         </section>
                          <section className="space-y-4">
-                             <div className="flex justify-between">
-                                  <h3 className="text-base font-semibold text-text-primary">{t("settings.section.lineHeight")}</h3>
-                                  <span className="text-sm font-medium text-accent bg-accent/10 px-2 py-0.5 rounded">{localLineHeight}</span>
+                             <div className="flex justify-between items-center">
+                                  <h3 className="text-base font-semibold text-fg">{t("settings.section.lineHeight")}</h3>
+                                  <div className="flex items-center gap-3 bg-surface border border-border rounded-lg p-1">
+                                       <button
+                                          onClick={() => {
+                                              const next = Math.max(1.2, Number((localLineHeight - 0.1).toFixed(1)));
+                                              setLocalLineHeight(next);
+                                              applySettings({ lineHeight: next });
+                                          }}
+                                          className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+                                       >
+                                          <Minus className="w-4 h-4" />
+                                       </button>
+                                       <span className="text-sm font-medium text-fg w-12 text-center">{localLineHeight}</span>
+                                       <button
+                                          onClick={() => {
+                                               const next = Math.min(2.4, Number((localLineHeight + 0.1).toFixed(1)));
+                                               setLocalLineHeight(next);
+                                               applySettings({ lineHeight: next });
+                                          }}
+                                          className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+                                       >
+                                          <Plus className="w-4 h-4" />
+                                       </button>
+                                  </div>
                              </div>
-                             <input 
-                                type="range" min="1.2" max="2.4" step="0.1" 
-                                value={localLineHeight} 
-                                onChange={(e) => setLocalLineHeight(Number(e.target.value))}
-                                onMouseUp={() => applySettings({ lineHeight: localLineHeight })}
-                                className="w-full accent-accent"
-                             />
                         </section>
                      </div>
                 )}
@@ -591,8 +621,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 {activeTab === "shortcuts" && (
                      <div className="max-w-2xl space-y-8 pb-20">
                           <div className="flex justify-between items-center">
-                             <h3 className="text-lg font-bold text-text-primary">{t("settings.shortcuts.title")}</h3>
-                             <button onClick={() => void resetToDefaults()} className="text-xs text-text-tertiary hover:text-text-primary underline">
+                             <h3 className="text-lg font-bold text-fg">{t("settings.shortcuts.title")}</h3>
+                             <button onClick={() => void resetToDefaults()} className="text-xs text-subtle hover:text-fg underline">
                                  {t("settings.shortcuts.reset")}
                              </button>
                           </div>
@@ -601,7 +631,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                 const Icon = getGroupIcon(groupKey);
                                 return actions.length > 0 && (
                                     <div key={groupKey} className="space-y-3">
-                                        <div className="flex items-center gap-2 text-text-secondary pb-1 border-b border-border/50">
+                                        <div className="flex items-center gap-2 text-muted pb-1 border-b border-border/50">
                                             <Icon className="w-4 h-4" />
                                             <h4 className="text-sm font-semibold uppercase tracking-wider">{getGroupLabel(groupKey)}</h4>
                                         </div>
@@ -625,14 +655,14 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
                  {activeTab === "recovery" && (
                     <div className="space-y-6 max-w-2xl">
-                        <section className="p-4 bg-bg-surface rounded-xl border border-border">
-                            <h3 className="text-base font-semibold text-text-primary mb-2">{t("settings.recovery.title")}</h3>
-                            <p className="text-sm text-text-secondary mb-4">{t("settings.recovery.description")}</p>
+                        <section className="p-4 bg-surface rounded-xl border border-border">
+                            <h3 className="text-base font-semibold text-fg mb-2">{t("settings.recovery.title")}</h3>
+                            <p className="text-sm text-muted mb-4">{t("settings.recovery.description")}</p>
                             <div className="flex gap-3">
                                  <button 
                                     onClick={() => void runRecovery(true)}
                                     disabled={isRecovering}
-                                    className="px-4 py-2 bg-bg-element hover:bg-bg-element-hover border border-border rounded-lg text-sm font-medium text-text-primary transition-colors disabled:opacity-50"
+                                    className="px-4 py-2 bg-element hover:bg-element-hover border border-border rounded-lg text-sm font-medium text-fg transition-colors disabled:opacity-50"
                                 >
                                     {t("settings.recovery.dryRun")}
                                 </button>
@@ -645,7 +675,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                 </button>
                             </div>
                              {recoveryMessage && (
-                                <div className="mt-4 p-3 bg-bg-app rounded-md border border-border text-sm text-text-primary">
+                                <div className="mt-4 p-3 bg-app rounded-md border border-border text-sm text-fg">
                                     {recoveryMessage}
                                 </div>
                             )}
@@ -656,23 +686,23 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 {activeTab === "language" && (
                      <div className="space-y-6 max-w-2xl">
                         <section>
-                             <h3 className="text-base font-semibold text-text-primary mb-2">{t("settings.section.language")}</h3>
+                             <h3 className="text-base font-semibold text-fg mb-2">{t("settings.section.language")}</h3>
                              <div className="flex gap-3">
                                 <button 
                                     onClick={() => setLanguage("ko")} 
-                                    className={`px-4 py-2 rounded-lg border text-sm transition-all duration-200 ${i18n.language === 'ko' ? 'border-accent text-accent bg-accent/5 ring-1 ring-accent' : 'border-border text-text-secondary hover:text-text-primary'}`}
+                                    className={`px-4 py-2 rounded-lg border text-sm transition-all duration-200 ${i18n.language === 'ko' ? 'border-accent text-accent bg-accent/5 ring-1 ring-accent' : 'border-border text-muted hover:text-fg'}`}
                                 >
                                     한국어
                                 </button>
                                 <button 
                                     onClick={() => setLanguage("en")} 
-                                    className={`px-4 py-2 rounded-lg border text-sm transition-all duration-200 ${i18n.language === 'en' ? 'border-accent text-accent bg-accent/5 ring-1 ring-accent' : 'border-border text-text-secondary hover:text-text-primary'}`}
+                                    className={`px-4 py-2 rounded-lg border text-sm transition-all duration-200 ${i18n.language === 'en' ? 'border-accent text-accent bg-accent/5 ring-1 ring-accent' : 'border-border text-muted hover:text-fg'}`}
                                 >
                                     English
                                 </button>
                                 <button 
                                     onClick={() => setLanguage("ja")} 
-                                    className={`px-4 py-2 rounded-lg border text-sm transition-all duration-200 ${i18n.language === 'ja' ? 'border-accent text-accent bg-accent/5 ring-1 ring-accent' : 'border-border text-text-secondary hover:text-text-primary'}`}
+                                    className={`px-4 py-2 rounded-lg border text-sm transition-all duration-200 ${i18n.language === 'ja' ? 'border-accent text-accent bg-accent/5 ring-1 ring-accent' : 'border-border text-muted hover:text-fg'}`}
                                 >
                                     日本語
                                 </button>
