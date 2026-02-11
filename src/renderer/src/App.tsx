@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense, useCallback, useEffect, useMemo } from "react";
+import { useState, lazy, Suspense, useCallback, useEffect, useMemo, useRef } from "react";
 import MainLayout from "./components/layout/MainLayout";
 import Sidebar from "./components/sidebar/Sidebar";
 import Editor from "./components/editor/Editor";
@@ -32,6 +32,9 @@ const ExportWindow = lazy(() => import("./components/export/ExportWindow"));
 
 export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const chapterChordRef = useRef<{ digits: string; timerId?: number }>({
+    digits: "",
+  });
   const [isExportWindow, setIsExportWindow] = useState(window.location.hash === "#export");
 
   useEffect(() => {
@@ -99,6 +102,58 @@ export default function App() {
     if (!confirmed) return;
     void handleDeleteChapter(activeChapterId);
   }, [activeChapterId, handleDeleteChapter]);
+
+  const {
+    isSplitView,
+    splitRatio,
+    rightPanelContent,
+    contextTab,
+    setContextTab,
+    setSplitView,
+    handleSelectResearchItem,
+    handleSplitView,
+    handleOpenExport,
+    startResizeSplit,
+  } = useSplitView();
+
+  const openResearchTab = useCallback(
+    (tab: "character" | "world" | "scrap" | "analysis", side: "left" | "right") => {
+      setSplitSide(side);
+      handleSelectResearchItem(tab);
+    },
+    [handleSelectResearchItem, setSplitSide],
+  );
+
+  const openExportPreview = useCallback(
+    (side: "left" | "right") => {
+      setSplitSide(side);
+      handleOpenExport();
+    },
+    [handleOpenExport, setSplitSide],
+  );
+
+  const openEditorInSplit = useCallback(
+    (side: "left" | "right") => {
+      if (!activeChapterId) return;
+      setSplitSide(side);
+      handleSplitView("vertical", activeChapterId);
+    },
+    [activeChapterId, handleSplitView, setSplitSide],
+  );
+
+  const handleQuickExport = useCallback(() => {
+    if (!activeChapterId) return;
+    void api.window.openExport(activeChapterId);
+  }, [activeChapterId]);
+
+  const handleRenameProject = useCallback(async () => {
+    if (!currentProject?.id) return;
+    const nextTitle = window
+      .prompt("프로젝트 이름을 입력해주세요.", currentProject.title ?? "")
+      ?.trim();
+    if (!nextTitle || nextTitle === currentProject.title) return;
+    await updateProject(currentProject.id, nextTitle);
+  }, [currentProject, updateProject]);
 
   const shortcutHandlers = useMemo(
     () => ({
@@ -180,63 +235,44 @@ export default function App() {
       fontSize,
       setContextOpen,
       setSidebarOpen,
-      setSplitSide,
     ],
   );
 
   useShortcuts(shortcutHandlers);
 
-  const {
-    isSplitView,
-    splitRatio,
-    rightPanelContent,
-    contextTab,
-    setContextTab,
-    setSplitView,
-    handleSelectResearchItem,
-    handleSplitView,
-    handleOpenExport,
-    startResizeSplit,
-  } = useSplitView();
+  useEffect(() => {
+    const CHAPTER_CHORD_TIMEOUT_MS = 700;
 
-  const openResearchTab = useCallback(
-    (tab: "character" | "world" | "scrap" | "analysis", side: "left" | "right") => {
-      setSplitSide(side);
-      handleSelectResearchItem(tab);
-    },
-    [handleSelectResearchItem, setSplitSide],
-  );
+    const handleChapterChord = (event: KeyboardEvent) => {
+      const isModifierPressed = event.metaKey || event.ctrlKey;
+      if (!isModifierPressed) return;
 
-  const openExportPreview = useCallback(
-    (side: "left" | "right") => {
-      setSplitSide(side);
-      handleOpenExport();
-    },
-    [handleOpenExport, setSplitSide],
-  );
+      if (!/^[0-9]$/.test(event.key)) return;
 
-  const openEditorInSplit = useCallback(
-    (side: "left" | "right") => {
-      if (!activeChapterId) return;
-      setSplitSide(side);
-      handleSplitView("vertical", activeChapterId);
-    },
-    [activeChapterId, handleSplitView, setSplitSide],
-  );
+      event.preventDefault();
+      event.stopImmediatePropagation();
 
-  const handleQuickExport = useCallback(() => {
-    if (!activeChapterId) return;
-    void api.window.openExport(activeChapterId);
-  }, [activeChapterId]);
+      chapterChordRef.current.digits += event.key;
 
-  const handleRenameProject = useCallback(async () => {
-    if (!currentProject?.id) return;
-    const nextTitle = window
-      .prompt("프로젝트 이름을 입력해주세요.", currentProject.title ?? "")
-      ?.trim();
-    if (!nextTitle || nextTitle === currentProject.title) return;
-    await updateProject(currentProject.id, nextTitle);
-  }, [currentProject, updateProject]);
+      if (chapterChordRef.current.timerId) {
+        window.clearTimeout(chapterChordRef.current.timerId);
+      }
+
+      chapterChordRef.current.timerId = window.setTimeout(() => {
+        const digits = chapterChordRef.current.digits;
+        chapterChordRef.current.digits = "";
+        chapterChordRef.current.timerId = undefined;
+
+        const chapterNumber = digits === "0" ? 10 : Number.parseInt(digits, 10);
+        if (!Number.isFinite(chapterNumber) || chapterNumber <= 0) return;
+
+        openChapterByIndex(chapterNumber - 1);
+      }, CHAPTER_CHORD_TIMEOUT_MS);
+    };
+
+    window.addEventListener("keydown", handleChapterChord, true);
+    return () => window.removeEventListener("keydown", handleChapterChord, true);
+  }, [openChapterByIndex]);
 
   const { handleSelectProject } = useProjectTemplate(
     (id: string) => {

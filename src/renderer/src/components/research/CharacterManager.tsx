@@ -528,8 +528,18 @@ function WikiDetailView({
                     const isCustom = customFields.some(cf => cf.key === field.key);
                   const isTemplateField = "labelKey" in field;
                   const label = isTemplateField ? t(field.labelKey) : field.label;
-                  const placeholder = isTemplateField && field.placeholderKey ? t(field.placeholderKey) : field.placeholder;
-                  const options = isTemplateField && field.optionKeys ? field.optionKeys.map((key) => t(key)) : field.options;
+                  const placeholder =
+                    isTemplateField && field.placeholderKey
+                      ? t(field.placeholderKey)
+                      : "placeholder" in field
+                        ? field.placeholder
+                        : undefined;
+                  const options =
+                    isTemplateField && field.optionKeys
+                      ? field.optionKeys.map((key) => t(key))
+                      : "options" in field
+                        ? field.options
+                        : undefined;
                     return {
                     label,
                         value: attributes[field.key],

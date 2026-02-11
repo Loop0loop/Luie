@@ -125,18 +125,18 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
             <div className="bg-[#f0f0f0] border-b border-gray-300 p-1 flex items-center gap-1 shrink-0 overflow-x-auto whitespace-nowrap">
                <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-sm px-1 py-0.5">
                   <div className="w-3 h-3 bg-gray-400 rounded-sm opacity-50" />
-                <span className="text-[11px] font-medium text-gray-800 px-1 min-w-[50px]">{t("exportPreview.hwp.toolbar.baseStyle")}</span>
+                <span className="text-[11px] font-medium text-gray-800 px-1 min-w-12.5">{t("exportPreview.hwp.toolbar.baseStyle")}</span>
                   <ChevronDown className="w-3 h-3 text-gray-500" />
                </div>
                <div className="w-px h-4 bg-gray-300 mx-1" />
                
                <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-sm px-1 py-0.5">
-                 <span className="text-[11px] font-medium text-gray-800 px-1 min-w-[70px]">{t("exportPreview.hwp.toolbar.fontName")}</span>
+                 <span className="text-[11px] font-medium text-gray-800 px-1 min-w-17.5">{t("exportPreview.hwp.toolbar.fontName")}</span>
                  <ChevronDown className="w-3 h-3 text-gray-500" />
                </div>
                
                <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-sm px-1 py-0.5 ml-1">
-                 <span className="text-[11px] font-medium text-gray-800 px-1 min-w-[24px]">{t("exportPreview.hwp.toolbar.fontSize")}</span>
+                 <span className="text-[11px] font-medium text-gray-800 px-1 min-w-6">{t("exportPreview.hwp.toolbar.fontSize")}</span>
                  <div className="flex flex-col -gap-1">
                    <ChevronDown className="w-2 h-2 text-gray-500 rotate-180" />
                    <ChevronDown className="w-2 h-2 text-gray-500" />

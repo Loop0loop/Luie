@@ -27,8 +27,8 @@ export function InfoboxRow({
 }: InfoboxRowProps) {
   const { t } = useTranslation();
   return (
-    <div className="flex border-b border-(--namu-border) min-h-[40px] last:border-b-0">
-      <div className="w-[100px] bg-(--namu-table-bg) p-2 font-bold text-(--namu-table-label) border-r border-(--namu-border) flex items-center justify-center text-center leading-tight shrink-0 relative text-[13px]">
+    <div className="flex border-b border-(--namu-border) min-h-10 last:border-b-0">
+      <div className="w-25 bg-(--namu-table-bg) p-2 font-bold text-(--namu-table-label) border-r border-(--namu-border) flex items-center justify-center text-center leading-tight shrink-0 relative text-[13px]">
         {isCustom ? (
           <div className="flex items-center relative w-full justify-center">
              <BufferedInput
@@ -39,7 +39,7 @@ export function InfoboxRow({
             {onDelete && (
                 <button 
                     type="button"
-                    className="absolute left-[-4px] top-1/2 -translate-y-1/2 bg-none border-none text-subtle cursor-pointer p-1 opacity-50 hover:text-danger hover:opacity-100" 
+                    className="absolute -left-1 top-1/2 -translate-y-1/2 bg-none border-none text-subtle cursor-pointer p-1 opacity-50 hover:text-danger hover:opacity-100" 
                     onClick={(e) => { e.stopPropagation(); onDelete(); }}
                   title={t("character.wiki.fieldDeleteTitle")}
                 >
