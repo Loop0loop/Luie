@@ -25,6 +25,12 @@ import {
   LUIE_WORLD_TERMS_FILE,
 } from "../../../shared/constants/index.js";
 import { SNAPSHOT_BACKUP_DIR } from "../../../shared/constants/paths.js";
+import {
+  ensureLuieExtension,
+  isSafeZipPath,
+  normalizeZipPath,
+  readLuieEntry,
+} from "../../utils/luiePackage.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
 import { sanitizeName } from "../../../shared/utils/sanitize.js";
@@ -51,25 +57,6 @@ type ZipEntryPayload = {
 };
 
 const ZIP_TEMP_SUFFIX = ".tmp";
-
-const normalizeZipPath = (inputPath: string) =>
-  path.posix
-    .normalize(inputPath.replace(/\\/g, "/"))
-    .replace(/^\.(\/|\\)/, "")
-    .replace(/^\//, "");
-
-const isSafeZipPath = (inputPath: string) => {
-  const normalized = normalizeZipPath(inputPath);
-  if (!normalized) return false;
-  if (normalized.startsWith("../") || normalized.startsWith("..\\")) return false;
-  if (normalized.includes("../") || normalized.includes("..\\")) return false;
-  return !path.isAbsolute(normalized);
-};
-
-const ensureLuieExtension = (targetPath: string) =>
-  targetPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)
-    ? targetPath
-    : `${targetPath}${LUIE_PACKAGE_EXTENSION}`;
 
 const ensureParentDir = async (targetPath: string) => {
   const dir = path.dirname(targetPath);
@@ -175,75 +162,6 @@ const addEntriesToZip = async (zip: yazl.ZipFile, entries: ZipEntryPayload[]) =>
   }
 };
 
-const readZipEntryContent = async (
-  zipPath: string,
-  entryPath: string,
-  logger: LoggerLike,
-): Promise<string | null> => {
-  const normalized = normalizeZipPath(entryPath);
-  if (!normalized || !isSafeZipPath(normalized)) {
-    throw new Error("INVALID_RELATIVE_PATH");
-  }
-
-  let found = false;
-  let result: string | null = null;
-
-  await new Promise<void>((resolve, reject) => {
-    yauzl.open(zipPath, { lazyEntries: true }, (openErr: Error | null, zipfile?: yauzl.ZipFile) => {
-      if (openErr || !zipfile) {
-        reject(openErr ?? new Error("FAILED_TO_OPEN_ZIP"));
-        return;
-      }
-
-      zipfile.on("entry", (entry: yauzl.Entry) => {
-        const entryName = normalizeZipPath(entry.fileName);
-        if (!entryName || !isSafeZipPath(entryName)) {
-          logger.error("Unsafe zip entry skipped", { entry: entry.fileName, zipPath });
-          zipfile.readEntry();
-          return;
-        }
-
-        if (entryName !== normalized) {
-          zipfile.readEntry();
-          return;
-        }
-
-        if (entry.fileName.endsWith("/")) {
-          found = true;
-          result = null;
-          zipfile.close();
-          resolve();
-          return;
-        }
-
-        zipfile.openReadStream(entry, (streamErr: Error | null, stream?: NodeJS.ReadableStream) => {
-          if (streamErr || !stream) {
-            reject(streamErr ?? new Error("FAILED_TO_READ_ZIP_ENTRY"));
-            return;
-          }
-
-          found = true;
-          const chunks: Buffer[] = [];
-          stream.on("data", (chunk: Buffer) => chunks.push(chunk));
-          stream.on("end", () => {
-            result = Buffer.concat(chunks).toString("utf-8");
-            zipfile.close();
-            resolve();
-          });
-          stream.on("error", reject);
-        });
-      });
-
-      zipfile.on("end", () => {
-        if (!found) resolve();
-      });
-      zipfile.on("error", reject);
-      zipfile.readEntry();
-    });
-  });
-
-  return result;
-};
 
 export const writeLuiePackage = async (
   targetPath: string,
@@ -304,7 +222,7 @@ const collectDirectoryEntries = async (sourceDir: string, baseDir = sourceDir) =
   const items = await fsp.readdir(sourceDir, { withFileTypes: true });
 
   for (const item of items) {
-    const fullPath = path.join(sourceDir, item.name);
+    const fullPath = `${sourceDir}${path.sep}${item.name}`;
     const relative = normalizeZipPath(path.relative(baseDir, fullPath));
     if (!relative || !isSafeZipPath(relative)) {
       continue;
@@ -480,13 +398,10 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       handler: async (projectName: string, projectPath: string, content: string) => {
         const safeName = sanitizeName(projectName);
 
-        const projectDir = path.join(projectPath, safeName || DEFAULT_PROJECT_DIR_NAME);
+        const projectDir = `${projectPath}${path.sep}${safeName || DEFAULT_PROJECT_DIR_NAME}`;
         await fsp.mkdir(projectDir, { recursive: true });
 
-        const fullPath = path.join(
-          projectDir,
-          `${safeName || DEFAULT_PROJECT_FILE_BASENAME}${LUIE_PACKAGE_EXTENSION}`,
-        );
+        const fullPath = `${projectDir}${path.sep}${safeName || DEFAULT_PROJECT_FILE_BASENAME}${LUIE_PACKAGE_EXTENSION}`;
         await fsp.writeFile(fullPath, content, "utf-8");
         return { path: fullPath, projectDir };
       },
@@ -508,42 +423,8 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       channel: IPC_CHANNELS.FS_READ_LUIE_ENTRY,
       logTag: "FS_READ_LUIE_ENTRY",
       failMessage: "Failed to read Luie package entry",
-      handler: async (packagePath: string, entryPath: string) => {
-        const targetPath = ensureLuieExtension(packagePath);
-        const normalized = normalizeZipPath(entryPath);
-        if (!normalized || !isSafeZipPath(normalized)) {
-          throw new Error("INVALID_RELATIVE_PATH");
-        }
-
-        try {
-          const stat = await fsp.stat(targetPath);
-          if (stat.isDirectory()) {
-            const fullPath = path.join(targetPath, normalized);
-            const resolved = path.resolve(fullPath);
-            const base = path.resolve(targetPath);
-            if (!resolved.startsWith(base)) {
-              throw new Error("INVALID_RELATIVE_PATH");
-            }
-            try {
-              return await fsp.readFile(fullPath, "utf-8");
-            } catch (error) {
-              const err = error as NodeJS.ErrnoException;
-              if (err?.code === "ENOENT") return null;
-              throw error;
-            }
-          }
-
-          if (stat.isFile()) {
-            return await readZipEntryContent(targetPath, normalized, logger);
-          }
-        } catch (error) {
-          const err = error as NodeJS.ErrnoException;
-          if (err?.code === "ENOENT") return null;
-          throw error;
-        }
-
-        return null;
-      },
+      handler: async (packagePath: string, entryPath: string) =>
+        readLuieEntry(packagePath, entryPath, logger),
     },
     {
       channel: IPC_CHANNELS.FS_WRITE_FILE,

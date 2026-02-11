@@ -20,7 +20,6 @@ import {
   EDITOR_TOOLBAR_FONT_STEP,
   LUIE_PACKAGE_EXTENSION_NO_DOT,
   LUIE_PACKAGE_FILTER_NAME,
-  LUIE_PACKAGE_META_FILENAME,
 } from "../../shared/constants";
 import { api } from "./services/api";
 
@@ -57,7 +56,7 @@ export default function App() {
     setWorldTab,
   } = useUIStore();
   const { loadShortcuts } = useShortcutStore();
-  const { items: projects, createProject, setCurrentProject, loadProjects, updateProject } = useProjectStore();
+  const { items: projects, setCurrentProject, loadProjects, updateProject } = useProjectStore();
   const { theme, fontSize, setFontSize } = useEditorStore();
 
   // 커스텀 훅으로 로직 분리
@@ -316,24 +315,9 @@ export default function App() {
       }
 
       const selectedPath = response.data;
-      const fileName = selectedPath.split(/[/\\]/).pop() ?? "Untitled";
-      let projectTitle = fileName.replace(/\.luie$/i, "");
-
-      const metaResult = await api.fs.readLuieEntry(selectedPath, LUIE_PACKAGE_META_FILENAME);
-      if (metaResult.success && metaResult.data) {
-        try {
-          const parsed = JSON.parse(metaResult.data) as { title?: string };
-          if (typeof parsed.title === "string" && parsed.title.trim().length > 0) {
-            projectTitle = parsed.title.trim();
-          }
-        } catch (error) {
-          api.logger.warn("Failed to parse luie meta", error);
-        }
-      }
-
-      const created = await createProject(projectTitle, undefined, selectedPath);
-      if (created) {
-        setCurrentProject(created);
+      const imported = await api.project.openLuie(selectedPath);
+      if (imported.success && imported.data) {
+        setCurrentProject(imported.data);
         setView("editor");
         api.window.setFullscreen(true).catch((err) => {
           api.logger.error("Failed to set fullscreen", err);
@@ -342,7 +326,7 @@ export default function App() {
     } catch (error) {
       api.logger.error("Failed to open luie file", error);
     }
-  }, [createProject, setCurrentProject, setView]);
+  }, [setCurrentProject, setView]);
 
   const handleOpenSnapshotBackup = useCallback(async () => {
     try {

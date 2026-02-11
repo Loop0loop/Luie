@@ -1,69 +1,93 @@
-# DoD: Settings Upgrade (i18n + Shortcuts + Recovery)
 
-## Scope
-- Add full-app i18n with `react-i18next` (ko/ja/en).
-- Convert all `.tsx` UI strings to i18n (`t()` calls).
-- Translate shared constants (`messages`, `characterTemplates`).
-- Implement cross-platform shortcuts (mac/win/linux) with defaults and customization.
-- Add file recovery using `.db` + `.db-wal` under OS userData path.
-- Fix lint/type issues introduced by new work.
+# LUIE Roadmap (Phase-based)
 
----
+**Priority order**
+1) Phase 1 (Data spine) → most important
+2) Phase 0 (Urgent UX/dev fixes)
+3) Phase 4 (Logging/Error)
+4) Phase 2 (Performance)
+5) Phase 3 (Optimization)
+6) Phase 5 (Main modularization)
+7) Phase 6 (Prisma schema)
+8) Phase 7 (Dependency cleanup)
 
-## Phase 0 - Discovery
-- [ ] Confirm current SettingsModal tabs and existing constants usage.
-- [ ] Identify all user-facing strings and map to translation keys.
-- [ ] Locate DB path, WAL usage, and current recovery mechanisms.
+## Phase 0 - Baseline + Quick Fixes
+- [ ] Fix `Cmd+N` for new chapter (no menu conflict, renderer receives shortcut)
+- [ ] Fix current type/lint errors (tsc + eslint clean)
+- [ ] Add basic loading UI for snapshot list/preview
 
-## Phase 1 - i18n Infrastructure
-- [ ] Add `react-i18next` + `i18next` + language detector.
-- [ ] Create i18n bootstrap (init, default language, fallback).
-- [ ] Add translation resources for `ko`, `ja`, `en`.
-- [ ] Replace shared constants text with translation keys.
-- [ ] Convert all `.tsx` UI strings to `t()`.
-- [ ] Translate `shared/constants/messages.ts` + `shared/constants/characterTemplates.ts`.
-- [ ] Persist selected language in settings store.
+**Definition of Done (DoD)**
+- `Cmd+N` triggers `chapter.new` reliably on macOS
+- `pnpm tsc --noEmit` passes
+- Snapshot UI shows loading/empty/error states without blocking UI thread
 
-### DoD
-- [ ] Language changes in Settings immediately update UI.
-- [ ] No missing translation keys at runtime.
-- [ ] Fallback language works if key is missing.
-- [ ] App restarts keep last selected language.
-- [ ] All `.tsx` UI strings come from i18n.
-- [ ] Shared constants text mapped to translation keys.
+## Phase 1 - Snapshot/Cache Source of Truth
+- [x] Define `.luie` as master and `.db` as cache (doc + code rule)
+- [x] Hydration: rebuild `.db` from `.luie` when db missing
+- [x] Recovery: if `.luie` corrupted and db exists, export db back to `.luie`
+- [x] Conflict policy: choose latest by updatedAt (default to `.luie` on open)
+- [x] Snapshot export policy (full vs recent N, configurable)
 
-## Phase 2 - Shortcuts System
-- [ ] Define default shortcuts per OS (mac/win/linux).
-- [ ] Add settings schema + persistence for shortcuts.
-- [ ] Implement runtime registration + conflict validation.
-- [ ] Build UI in SettingsModal to view/edit shortcuts.
+**DoD**
+- App opens with only `.luie` present and rebuilds db automatically
+- Corrupted `.luie` + db present triggers recovery + user notice
+- Snapshot data survives `.db` deletion
 
-### DoD
-- [ ] OS-specific defaults applied on first run.
-- [ ] User edits persist and re-register without restart.
-- [ ] Conflicts are detected and shown to user.
+## Phase 2 - Snapshot Loading + UX
+- [ ] Move snapshot load to background task/worker
+- [ ] Paginate or virtualize snapshot list
+- [ ] Add progress indicator and non-blocking UI
 
-## Phase 3 - File Recovery (.db + .wal)
-- [ ] Add recovery service to inspect `luie.db` + `luie.db-wal`.
-- [ ] Implement repair flow: backup current DB, apply WAL recovery, validate.
-- [ ] Add SettingsModal "파일 복원" UI with status + logs.
-- [ ] Provide safe dry-run and confirm dialog.
+**DoD**
+- Snapshot list scroll is smooth with large datasets
+- No renderer freeze during snapshot load
+- Clear loading/progress UI is visible
 
-### DoD
-- [ ] Recovery runs using userData path per OS.
-- [ ] Backups created before any recovery.
-- [ ] Clear success/failure message shown to user.
-- [ ] No data loss on failure (rollback to backup).
+## Phase 3 - Renderer Performance Audit
+- [ ] Profile SettingsModal open and scroll
+- [ ] Reduce re-renders (memoization, selectors, derived state)
+- [ ] Audit hooks/stores count and remove redundant state
+- [ ] Check worker usage (stats.worker) and offload heavy tasks
+- [ ] Verify zod/zustand schema guarantees and runtime validation
+- [ ] Fix font rendering (contrast, font smoothing, weight)
 
-## Phase 4 - QA & Cleanup
-- [ ] TypeScript and ESLint pass.
-- [ ] Manual smoke test: language switch, shortcut change, recovery action.
-- [ ] Update README or docs only if user requests.
+**DoD**
+- Settings modal opens fast and scrolls smoothly
+- No unnecessary re-renders in profiler hot paths
+- Renderer frame time stable under heavy projects
 
----
+## Phase 4 - IPC + Error System Hardening
+- [ ] Strengthen IPC contracts (typed request/response, timeout, retry)
+- [ ] Add error taxonomy in `errorCode` (categories, severity)
+- [ ] Expand logger `SYM` usage with structured context
 
-## Acceptance
-- [ ] i18n fully functional across the app.
-- [ ] Shortcuts configurable and OS-aware.
-- [ ] Recovery available and safe.
-- [ ] No lint/type errors.
+**DoD**
+- IPC calls have consistent result envelopes + trace IDs
+- Errors are categorized and easy to search in logs
+
+## Phase 5 - Main Process Modularization
+- [ ] Split `src/main/index.ts` into lifecycle modules
+- [ ] Keep index as orchestrator only
+- [ ] Add DoD docs per module
+
+**DoD**
+- `index.ts` only wires modules
+- Modules are testable and single-purpose
+
+## Phase 6 - Prisma Schema Optimization
+- [ ] Optimize snapshot/cache tables (indexes, pruning policy)
+- [ ] Separate transient cache models from durable models
+- [ ] Document lifecycle of cache vs master data
+
+**DoD**
+- Snapshot queries are indexed and fast
+- Cache tables can be dropped and rebuilt safely
+
+## Phase 7 - Dependency Cleanup
+- [ ] Audit unused packages
+- [ ] Remove overlaps and simplify tooling
+
+**DoD**
+- `package.json` only contains used dependencies
+- Build/test still passes after cleanup
+

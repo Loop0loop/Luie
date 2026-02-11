@@ -100,6 +100,13 @@ pnpm build
 4. **Local First**: 네트워크 없이 완전 동작
 5. **Data Safety**: 데이터 손실 방지 최우선
 
+## 🧠 Data Ownership (Source of Truth)
+
+- **`.luie` is the master**: all durable data lives in the package (chapters, characters, terms, snapshots, settings).
+- **`.db` is disposable**: SQLite is a cache for speed and recovery, and can be rebuilt from `.luie`.
+- **Recovery rule**: if `.luie` is corrupted but `.db` survives, we reconstruct `.luie` from `.db`.
+- **Conflict rule**: if `.db` is newer than `.luie`, we export `.db` back into `.luie`.
+
 ## 📝 타입 안정성
 
 - 모든 IPC 통신은 타입 안전

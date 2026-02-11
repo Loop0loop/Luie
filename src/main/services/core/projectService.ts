@@ -5,6 +5,8 @@
 import { db } from "../../database/index.js";
 import { promises as fs } from "fs";
 import path from "path";
+import { randomUUID } from "node:crypto";
+import { z } from "zod";
 import { createLogger } from "../../../shared/logger/index.js";
 import {
   ErrorCode,
@@ -17,6 +19,11 @@ import {
   PACKAGE_EXPORT_DEBOUNCE_MS,
   LUIE_MANUSCRIPT_DIR,
   MARKDOWN_EXTENSION,
+  SNAPSHOT_FILE_KEEP_COUNT,
+  LUIE_PACKAGE_META_FILENAME,
+  LUIE_WORLD_DIR,
+  LUIE_WORLD_CHARACTERS_FILE,
+  LUIE_WORLD_TERMS_FILE,
 } from "../../../shared/constants/index.js";
 import { sanitizeName } from "../../../shared/utils/sanitize.js";
 import type {
@@ -30,8 +37,63 @@ import type {
 } from "../../../shared/types/index.js";
 import { writeLuiePackage } from "../../handler/system/ipcFsHandlers.js";
 import { ServiceError } from "../../utils/serviceError.js";
+import { ensureLuieExtension, readLuieEntry } from "../../utils/luiePackage.js";
+import { settingsManager } from "../../manager/settingsManager.js";
 
 const logger = createLogger("ProjectService");
+
+const LuieMetaSchema = z
+  .object({
+    format: z.string().optional(),
+    version: z.number().optional(),
+    projectId: z.string().optional(),
+    title: z.string().optional(),
+    description: z.string().optional().nullable(),
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
+    chapters: z
+      .array(
+        z.object({
+          id: z.string().optional(),
+          title: z.string().optional(),
+          order: z.number().optional(),
+          file: z.string().optional(),
+          content: z.string().optional(),
+          updatedAt: z.string().optional(),
+        }),
+      )
+      .optional(),
+  })
+  .passthrough();
+
+const LuieCharactersSchema = z
+  .object({
+    characters: z.array(z.record(z.string(), z.unknown())).optional(),
+  })
+  .passthrough();
+
+const LuieTermsSchema = z
+  .object({
+    terms: z.array(z.record(z.string(), z.unknown())).optional(),
+  })
+  .passthrough();
+
+const LuieSnapshotSchema = z
+  .object({
+    id: z.string(),
+    projectId: z.string().optional(),
+    chapterId: z.string().optional().nullable(),
+    content: z.string().optional(),
+    description: z.string().optional().nullable(),
+    createdAt: z.string().optional(),
+  })
+  .passthrough();
+
+const LuieSnapshotsSchema = z
+  .object({
+    snapshots: z.array(LuieSnapshotSchema).optional(),
+  })
+  .passthrough();
 
 export class ProjectService {
   private exportTimers = new Map<string, NodeJS.Timeout>();
@@ -67,6 +129,274 @@ export class ProjectService {
         ErrorCode.PROJECT_CREATE_FAILED,
         "Failed to create project",
         { input },
+        error,
+      );
+    }
+  }
+
+  async openLuieProject(packagePath: string) {
+    try {
+      const resolvedPath = ensureLuieExtension(packagePath);
+      let metaRaw: string | null = null;
+      let meta: z.infer<typeof LuieMetaSchema> | null = null;
+      let luieCorrupted = false;
+
+      try {
+        metaRaw = await readLuieEntry(resolvedPath, LUIE_PACKAGE_META_FILENAME, logger);
+        if (!metaRaw) {
+          throw new Error("MISSING_META");
+        }
+        const parsedMeta = LuieMetaSchema.safeParse(JSON.parse(metaRaw));
+        if (!parsedMeta.success) {
+          throw new Error("INVALID_META");
+        }
+        meta = parsedMeta.data;
+      } catch (error) {
+        luieCorrupted = true;
+        logger.warn("Failed to read .luie meta; treating as corrupted", {
+          packagePath: resolvedPath,
+          error,
+        });
+      }
+
+      const existingByPath = (await db.getClient().project.findFirst({
+        where: { projectPath: resolvedPath },
+        select: { id: true, updatedAt: true },
+      })) as { id: string; updatedAt: Date } | null;
+
+      if (luieCorrupted) {
+        if (!existingByPath) {
+          throw new ServiceError(
+            ErrorCode.FS_READ_FAILED,
+            "Failed to read .luie meta",
+            { packagePath: resolvedPath },
+          );
+        }
+
+        await this.exportProjectPackage(existingByPath.id);
+        return await this.getProject(existingByPath.id);
+      }
+
+      if (!meta) {
+        throw new ServiceError(
+          ErrorCode.VALIDATION_FAILED,
+          "Invalid .luie meta format",
+          { packagePath: resolvedPath },
+        );
+      }
+
+      const metaProjectId = typeof meta.projectId === "string" ? meta.projectId : undefined;
+
+      const resolvedProjectId = metaProjectId ?? existingByPath?.id ?? randomUUID();
+      const legacyProjectId =
+        existingByPath && existingByPath.id !== resolvedProjectId
+          ? existingByPath.id
+          : null;
+
+      const existing = (await db.getClient().project.findUnique({
+        where: { id: resolvedProjectId },
+        select: { id: true, updatedAt: true },
+      })) as { id: string; updatedAt: Date } | null;
+
+      const metaUpdatedAt = meta?.updatedAt ? new Date(meta.updatedAt) : null;
+      if (existing && metaUpdatedAt && existing.updatedAt > metaUpdatedAt) {
+        logger.info("DB newer than .luie package; exporting", {
+          projectId: resolvedProjectId,
+          packagePath,
+        });
+        await this.exportProjectPackage(resolvedProjectId);
+        return await this.getProject(resolvedProjectId);
+      }
+
+      const chaptersMeta = meta?.chapters ?? [];
+
+      const [charactersRaw, termsRaw, snapshotsRaw] = await Promise.all([
+        readLuieEntry(resolvedPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`, logger),
+        readLuieEntry(resolvedPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`, logger),
+        readLuieEntry(resolvedPath, `${LUIE_SNAPSHOTS_DIR}/index.json`, logger),
+      ]);
+
+      const parsedCharacters = charactersRaw
+        ? LuieCharactersSchema.safeParse(JSON.parse(charactersRaw))
+        : null;
+      const parsedTerms = termsRaw
+        ? LuieTermsSchema.safeParse(JSON.parse(termsRaw))
+        : null;
+      const parsedSnapshots = snapshotsRaw
+        ? LuieSnapshotsSchema.safeParse(JSON.parse(snapshotsRaw))
+        : null;
+
+      const characters = parsedCharacters?.success
+        ? parsedCharacters.data.characters ?? []
+        : [];
+      const terms = parsedTerms?.success ? parsedTerms.data.terms ?? [] : [];
+      const snapshots = parsedSnapshots?.success
+        ? parsedSnapshots.data.snapshots ?? []
+        : [];
+
+      const chaptersForCreate = [] as Array<{
+        id: string;
+        projectId: string;
+        title: string;
+        content: string;
+        synopsis?: string | null;
+        order: number;
+        wordCount: number;
+      }>;
+
+      for (let index = 0; index < chaptersMeta.length; index += 1) {
+        const chapter = chaptersMeta[index];
+        const chapterId = chapter.id ?? randomUUID();
+        const entryPath =
+          chapter.file ?? `${LUIE_MANUSCRIPT_DIR}/${chapterId}${MARKDOWN_EXTENSION}`;
+
+        const contentRaw =
+          typeof chapter.content === "string"
+            ? chapter.content
+            : await readLuieEntry(resolvedPath, entryPath, logger);
+        const content = contentRaw ?? "";
+
+        chaptersForCreate.push({
+          id: chapterId,
+          projectId: resolvedProjectId,
+          title: chapter.title ?? `Chapter ${index + 1}`,
+          content,
+          synopsis: null,
+          order: typeof chapter.order === "number" ? chapter.order : index,
+          wordCount: content.length,
+        });
+      }
+
+      const charactersForCreate = characters.map((character, index) => {
+        const name =
+          typeof character.name === "string" && character.name.trim().length > 0
+            ? character.name
+            : `Character ${index + 1}`;
+        const attributes =
+          typeof character.attributes === "string"
+            ? character.attributes
+            : character.attributes
+              ? JSON.stringify(character.attributes)
+              : null;
+        return {
+          id: typeof character.id === "string" ? character.id : randomUUID(),
+          projectId: resolvedProjectId,
+          name,
+          description:
+            typeof character.description === "string" ? character.description : null,
+          firstAppearance:
+            typeof character.firstAppearance === "string" ? character.firstAppearance : null,
+          attributes,
+        };
+      });
+
+      const termsForCreate = terms.map((term, index) => {
+        const termLabel =
+          typeof term.term === "string" && term.term.trim().length > 0
+            ? term.term
+            : `Term ${index + 1}`;
+        return {
+          id: typeof term.id === "string" ? term.id : randomUUID(),
+          projectId: resolvedProjectId,
+          term: termLabel,
+          definition: typeof term.definition === "string" ? term.definition : null,
+          category: typeof term.category === "string" ? term.category : null,
+          firstAppearance:
+            typeof term.firstAppearance === "string" ? term.firstAppearance : null,
+        };
+      });
+
+      const snapshotsForCreate = snapshots
+        .filter((snapshot) => typeof snapshot.id === "string")
+        .map((snapshot) => {
+          const content = snapshot.content ?? "";
+          return {
+            id: snapshot.id,
+            projectId: snapshot.projectId ?? resolvedProjectId,
+            chapterId:
+              typeof snapshot.chapterId === "string" ? snapshot.chapterId : null,
+            content,
+            contentLength: content.length,
+            description:
+              typeof snapshot.description === "string" ? snapshot.description : null,
+            createdAt: snapshot.createdAt ? new Date(snapshot.createdAt) : new Date(),
+          };
+        });
+
+      const created = (await db.getClient().$transaction(async (
+        tx: ReturnType<(typeof db)["getClient"]>,
+      ) => {
+        if (legacyProjectId) {
+          await tx.project.delete({ where: { id: legacyProjectId } });
+        }
+
+        if (existing) {
+          await tx.project.delete({ where: { id: resolvedProjectId } });
+        }
+
+        const project = await tx.project.create({
+          data: {
+            id: resolvedProjectId,
+            title: meta.title ?? "Recovered Project",
+            description: meta.description ?? undefined,
+            projectPath: resolvedPath,
+            createdAt: meta.createdAt ? new Date(meta.createdAt) : undefined,
+            updatedAt: meta.updatedAt ? new Date(meta.updatedAt) : undefined,
+            settings: {
+              create: {
+                autoSave: true,
+                autoSaveInterval: DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
+              },
+            },
+          },
+          include: { settings: true },
+        });
+
+        if (chaptersForCreate.length > 0) {
+          await tx.chapter.createMany({ data: chaptersForCreate });
+        }
+
+        if (charactersForCreate.length > 0) {
+          await tx.character.createMany({ data: charactersForCreate });
+        }
+
+        if (termsForCreate.length > 0) {
+          await tx.term.createMany({ data: termsForCreate });
+        }
+
+        if (snapshotsForCreate.length > 0) {
+          await tx.snapshot.createMany({ data: snapshotsForCreate });
+        }
+
+        return project;
+      })) as {
+        id: string;
+        title: string;
+        description?: string | null;
+        projectPath?: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        settings?: unknown;
+      };
+
+      logger.info(".luie package hydrated", {
+        projectId: created.id,
+        chapterCount: chaptersForCreate.length,
+        characterCount: charactersForCreate.length,
+        termCount: termsForCreate.length,
+        snapshotCount: snapshotsForCreate.length,
+      });
+
+      return created;
+    } catch (error) {
+      logger.error("Failed to open .luie package", { packagePath, error });
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      throw new ServiceError(
+        ErrorCode.PROJECT_CREATE_FAILED,
+        "Failed to open .luie package",
+        { packagePath },
         error,
       );
     }
@@ -157,13 +487,14 @@ export class ProjectService {
         nextTitle &&
         prevTitle !== nextTitle
       ) {
-        const baseDir = path.dirname(projectPath);
-        const snapshotsBase = path.join(baseDir, ".luie", LUIE_SNAPSHOTS_DIR);
+        const sepIndex = Math.max(projectPath.lastIndexOf("/"), projectPath.lastIndexOf("\\"));
+        const baseDir = sepIndex >= 0 ? projectPath.slice(0, sepIndex) : projectPath;
+        const snapshotsBase = `${baseDir}${path.sep}.luie${path.sep}${LUIE_SNAPSHOTS_DIR}`;
         const prevName = sanitizeName(prevTitle, "");
         const nextName = sanitizeName(nextTitle, "");
         if (prevName && nextName && prevName !== nextName) {
-          const prevDir = path.join(snapshotsBase, prevName);
-          const nextDir = path.join(snapshotsBase, nextName);
+          const prevDir = `${snapshotsBase}${path.sep}${prevName}`;
+          const nextDir = `${snapshotsBase}${path.sep}${nextName}`;
           try {
             const stat = await fs.stat(prevDir);
             if (stat.isDirectory()) {
@@ -235,7 +566,7 @@ export class ProjectService {
         chapters: { where: { deletedAt: null }, orderBy: { order: "asc" } },
         characters: true,
         terms: true,
-        snapshots: true,
+        snapshots: { orderBy: { createdAt: "desc" } },
       },
     })) as ProjectExportRecord | null;
 
@@ -298,7 +629,7 @@ export class ProjectService {
       updatedAt: term.updatedAt,
     }));
 
-    const snapshots = project.snapshots.map((snapshot: SnapshotExportRecord) => ({
+    const rawSnapshots = project.snapshots.map((snapshot: SnapshotExportRecord) => ({
       id: snapshot.id,
       projectId: snapshot.projectId,
       chapterId: snapshot.chapterId,
@@ -306,6 +637,12 @@ export class ProjectService {
       description: snapshot.description,
       createdAt: snapshot.createdAt?.toISOString?.() ?? String(snapshot.createdAt),
     }));
+
+    const snapshotExportLimit = settingsManager.getAll().snapshotExportLimit ?? SNAPSHOT_FILE_KEEP_COUNT;
+    const snapshots =
+      snapshotExportLimit > 0
+        ? rawSnapshots.slice(0, snapshotExportLimit)
+        : rawSnapshots;
 
     const meta = {
       format: LUIE_PACKAGE_FORMAT,

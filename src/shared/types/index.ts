@@ -249,6 +249,7 @@ export interface AppSettings {
   lastProjectPath?: string;
   autoSaveEnabled: boolean;
   autoSaveInterval: number;
+  snapshotExportLimit?: number;
   windowBounds?: WindowBounds;
   lastWindowState?: WindowState;
 }

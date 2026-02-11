@@ -17,6 +17,7 @@ export type RendererApi = {
       description?: string;
       projectPath?: string;
     }) => Promise<IPCResponse<Project>>;
+    openLuie: (packagePath: string) => Promise<IPCResponse<Project>>;
     get: (id: string) => Promise<IPCResponse<Project>>;
     getAll: () => Promise<IPCResponse<Project[]>>;
     update: (input: {

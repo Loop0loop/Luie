@@ -16,6 +16,7 @@ import {
   DEFAULT_EDITOR_LINE_HEIGHT,
   DEFAULT_EDITOR_MAX_WIDTH,
   DEFAULT_EDITOR_THEME,
+  SNAPSHOT_FILE_KEEP_COUNT,
   APP_DIR_NAME,
   SETTINGS_FILE_NAME,
   SETTINGS_STORE_NAME,
@@ -96,6 +97,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   lastProjectPath: undefined,
   autoSaveEnabled: DEFAULT_AUTO_SAVE_ENABLED,
   autoSaveInterval: DEFAULT_AUTO_SAVE_INTERVAL_MS,
+  snapshotExportLimit: SNAPSHOT_FILE_KEEP_COUNT,
   windowBounds: undefined,
   lastWindowState: undefined,
 };
@@ -167,6 +169,7 @@ export class SettingsManager {
       lastProjectPath: settings.lastProjectPath ?? current.lastProjectPath,
       autoSaveEnabled: settings.autoSaveEnabled ?? current.autoSaveEnabled,
       autoSaveInterval: settings.autoSaveInterval ?? current.autoSaveInterval,
+      snapshotExportLimit: settings.snapshotExportLimit ?? current.snapshotExportLimit,
       windowBounds: settings.windowBounds ?? current.windowBounds,
       lastWindowState: settings.lastWindowState ?? current.lastWindowState,
     };

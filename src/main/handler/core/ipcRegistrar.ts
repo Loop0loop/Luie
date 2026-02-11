@@ -12,7 +12,7 @@ export type IpcHandlerConfig<TArgs extends unknown[] = unknown[], TResult = unkn
   handler: (...args: TArgs) => MaybePromise<TResult>;
 };
 
-type AnyIpcHandlerConfig = IpcHandlerConfig<unknown[], unknown>;
+type AnyIpcHandlerConfig = IpcHandlerConfig<any[], unknown>;
 
 export function registerIpcHandlers(
   logger: LoggerLike,
