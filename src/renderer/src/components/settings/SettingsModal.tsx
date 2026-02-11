@@ -1,6 +1,7 @@
-import { useMemo, useState, useEffect, useTransition } from "react";
+import { memo, useMemo, useState, useEffect, useTransition } from "react";
 import { X, Check, Download } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Virtuoso } from "react-virtuoso";
 import type { EditorTheme, FontPreset } from "../../stores/editorStore";
 import { useEditorStore } from "../../stores/editorStore";
 import { useShortcutStore } from "../../stores/shortcutStore";
@@ -16,9 +17,45 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
+const ShortcutRow = memo(function ShortcutRow({
+  label,
+  value,
+  placeholder,
+  onChange,
+  onBlur,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  onChange: (value: string) => void;
+  onBlur: () => void;
+}) {
+  return (
+    <div className="grid grid-cols-[1fr,220px] gap-3 items-center border border-border rounded-[10px] bg-surface px-3 py-2">
+      <div className="text-sm text-fg font-medium">{label}</div>
+      <input
+        className="bg-transparent text-sm font-semibold border-b border-border hover:border-text-primary focus:outline-none transition-colors py-1"
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+      />
+    </div>
+  );
+});
+
 export default function SettingsModal({ onClose }: SettingsModalProps) {
-  const { theme, fontFamily, fontPreset, fontSize, lineHeight, updateSettings } =
-    useEditorStore();
+  const theme = useEditorStore((state) => state.theme);
+  const fontFamily = useEditorStore((state) => state.fontFamily);
+  const fontPreset = useEditorStore((state) => state.fontPreset);
+  const fontSize = useEditorStore((state) => state.fontSize);
+  const lineHeight = useEditorStore((state) => state.lineHeight);
+  const updateSettings = useEditorStore((state) => state.updateSettings);
   const { t, i18n } = useTranslation();
 
   const [isPending, startTransition] = useTransition();
@@ -126,14 +163,12 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const [language, setLanguageState] = useState<SupportedLanguage>(
     (i18n.language as SupportedLanguage) || "ko",
   );
-  const {
-    shortcuts,
-    defaults: shortcutDefaults,
-    isLoading: shortcutsLoading,
-    loadShortcuts,
-    setShortcuts,
-    resetToDefaults,
-  } = useShortcutStore();
+  const shortcuts = useShortcutStore((state) => state.shortcuts);
+  const shortcutDefaults = useShortcutStore((state) => state.defaults);
+  const shortcutsLoading = useShortcutStore((state) => state.isLoading);
+  const loadShortcuts = useShortcutStore((state) => state.loadShortcuts);
+  const setShortcuts = useShortcutStore((state) => state.setShortcuts);
+  const resetToDefaults = useShortcutStore((state) => state.resetToDefaults);
   const [shortcutDrafts, setShortcutDrafts] = useState<Record<string, string>>({});
   const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
   const [recoveryDetails, setRecoveryDetails] = useState<string | null>(null);
@@ -162,8 +197,13 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   }, [i18n.language]);
 
   useEffect(() => {
-    void loadShortcuts();
-  }, [loadShortcuts]);
+    if (activeTab !== "shortcuts") return;
+    const hasShortcuts = Object.keys(shortcuts ?? {}).length > 0;
+    const hasDefaults = Object.keys(shortcutDefaults ?? {}).length > 0;
+    if (!hasShortcuts || !hasDefaults) {
+      void loadShortcuts();
+    }
+  }, [activeTab, loadShortcuts, shortcutDefaults, shortcuts]);
 
   useEffect(() => {
     setShortcutDrafts(shortcuts as Record<string, string>);
@@ -191,15 +231,29 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
   const [activeTab, setActiveTab] = useState("editor");
 
-  const sidebarItems = [
-    { id: "editor", label: t("settings.sidebar.editor") },
-    { id: "appearance", label: t("settings.sidebar.appearance") },
-    { id: "features", label: t("settings.sidebar.features") },
-    { id: "shortcuts", label: t("settings.sidebar.shortcuts") },
-    { id: "recovery", label: t("settings.sidebar.recovery") },
-    { id: "sync", label: t("settings.sidebar.sync") },
-    { id: "language", label: t("settings.sidebar.language") },
-  ];
+  const sidebarItems = useMemo(
+    () => [
+      { id: "editor", label: t("settings.sidebar.editor") },
+      { id: "appearance", label: t("settings.sidebar.appearance") },
+      { id: "features", label: t("settings.sidebar.features") },
+      { id: "shortcuts", label: t("settings.sidebar.shortcuts") },
+      { id: "recovery", label: t("settings.sidebar.recovery") },
+      { id: "sync", label: t("settings.sidebar.sync") },
+      { id: "language", label: t("settings.sidebar.language") },
+    ],
+    [t],
+  );
+
+  const shortcutItems = useMemo(
+    () =>
+      SHORTCUT_ACTIONS.map((action) => ({
+        id: action.id,
+        label: t(action.labelKey),
+        value: shortcutDrafts[action.id] ?? shortcutDefaults[action.id] ?? "",
+        placeholder: shortcutDefaults[action.id] ?? "",
+      })),
+    [shortcutDefaults, shortcutDrafts, t],
+  );
 
   // Local state for performance (avoid re-rendering entire app on every slider move)
   const [localFontSize, setLocalFontSize] = useState(fontSize);
@@ -458,27 +512,20 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                   <div>{t("settings.shortcuts.key")}</div>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  {SHORTCUT_ACTIONS.map((action) => (
-                    <div
-                      key={action.id}
-                      className="grid grid-cols-[1fr,220px] gap-3 items-center border border-border rounded-[10px] bg-surface px-3 py-2"
-                    >
-                      <div className="text-sm text-fg font-medium">{t(action.labelKey)}</div>
-                      <input
-                        className="bg-transparent text-sm font-semibold border-b border-border hover:border-text-primary focus:outline-none transition-colors py-1"
-                        value={shortcutDrafts[action.id] ?? shortcutDefaults[action.id] ?? ""}
-                        placeholder={shortcutDefaults[action.id] ?? ""}
-                        onChange={(e) => handleShortcutChange(action.id, e.target.value)}
+                <div className="flex-1 min-h-0">
+                  <Virtuoso
+                    className="h-full"
+                    data={shortcutItems}
+                    itemContent={(_index, item) => (
+                      <ShortcutRow
+                        label={item.label}
+                        value={item.value}
+                        placeholder={item.placeholder}
+                        onChange={(value) => handleShortcutChange(item.id, value)}
                         onBlur={() => void commitShortcuts()}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            (e.target as HTMLInputElement).blur();
-                          }
-                        }}
                       />
-                    </div>
-                  ))}
+                    )}
+                  />
                 </div>
               </div>
             )}

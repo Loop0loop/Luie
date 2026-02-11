@@ -350,6 +350,12 @@ export const ko = {
         contextExpand: "패널 펼치기",
       },
     },
+    project: {
+      toast: {
+        recoveredFromDb: "파일이 손상되어 로컬 캐시에서 복구했습니다.",
+        dbNewerSynced: "로컬 캐시가 최신이라 프로젝트 파일을 갱신했습니다.",
+      },
+    },
     analysis: {
       title: "편집자의 책상",
       selectChapter: "검토할 원고",
@@ -708,6 +714,8 @@ export const ko = {
     snapshot: {
       list: {
         loading: "스냅샷 로딩 중...",
+        loadFailed: "스냅샷을 불러오지 못했습니다.",
+        retry: "다시 시도",
         empty: "스냅샷이 없습니다.",
         manualButton: "수동 스냅샷 만들기",
         confirmRestore: "이 스냅샷으로 복구하시겠습니까? 현재 변경사항이 덮어씌워집니다.",

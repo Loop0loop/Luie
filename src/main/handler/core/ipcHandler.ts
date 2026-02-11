@@ -6,6 +6,7 @@ import {
   createSuccessResponse,
 } from "../../../shared/ipc/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
+import { withLogContext } from "../../../shared/logger/index.js";
 import { isServiceError } from "../../utils/serviceError.js";
 import type { LoggerLike } from "./types.js";
 
@@ -38,6 +39,7 @@ export function registerIpcHandler<TArgs extends unknown[], TResult>(options: {
             timestamp: new Date().toISOString(),
             duration: Date.now() - start,
             requestId,
+            channel: options.channel,
           },
         );
       }
@@ -49,10 +51,14 @@ export function registerIpcHandler<TArgs extends unknown[], TResult>(options: {
         timestamp: new Date().toISOString(),
         duration: Date.now() - start,
         requestId,
+        channel: options.channel,
       });
     } catch (error) {
       const tag = options.logTag ?? options.channel;
-      options.logger.error(`${tag} failed`, error);
+      options.logger.error(
+        `${tag} failed`,
+        withLogContext({ error }, { requestId, channel: options.channel }),
+      );
       const err = error as Error;
       if (isServiceError(err)) {
         return createErrorResponse(
@@ -63,6 +69,7 @@ export function registerIpcHandler<TArgs extends unknown[], TResult>(options: {
             timestamp: new Date().toISOString(),
             duration: Date.now() - start,
             requestId,
+            channel: options.channel,
           },
         );
       }
@@ -78,6 +85,7 @@ export function registerIpcHandler<TArgs extends unknown[], TResult>(options: {
           timestamp: new Date().toISOString(),
           duration: Date.now() - start,
           requestId,
+          channel: options.channel,
         },
       );
     }

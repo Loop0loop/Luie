@@ -24,6 +24,27 @@ export interface LogEntry {
   data?: unknown
 }
 
+export const LOG_CONTEXT = Symbol.for('luie.logger.context')
+
+type LogContext = Record<string, unknown>
+
+function normalizeLogData(data: unknown): unknown {
+  if (!data || typeof data !== 'object') return data
+  const ctx = (data as Record<symbol, unknown>)[LOG_CONTEXT]
+  if (!ctx || typeof ctx !== 'object') return data
+  if (Array.isArray(data)) {
+    return { items: data, _ctx: ctx }
+  }
+  return { ...(data as Record<string, unknown>), _ctx: ctx as LogContext }
+}
+
+export function withLogContext<T = unknown>(data: T, context: LogContext) {
+  if (data && typeof data === 'object') {
+    return { ...(data as Record<string, unknown>), [LOG_CONTEXT]: context } as T
+  }
+  return { value: data, [LOG_CONTEXT]: context }
+}
+
 class Logger {
   private context: string
 
@@ -34,28 +55,29 @@ class Logger {
   private log(level: LogLevel, message: string, data?: unknown): void {
     if (!shouldLog(level)) return
 
+    const normalizedData = normalizeLogData(data)
     const entry: LogEntry = {
       level,
       message,
       timestamp: new Date().toISOString(),
       context: this.context,
-      data,
+      data: normalizedData,
     }
 
     const formattedMessage = `[${entry.timestamp}] [${entry.level}] [${entry.context}] ${entry.message}`
 
     switch (level) {
       case LogLevel.DEBUG:
-        console.debug(formattedMessage, data || '')
+        console.debug(formattedMessage, normalizedData || '')
         break
       case LogLevel.INFO:
-        console.info(formattedMessage, data || '')
+        console.info(formattedMessage, normalizedData || '')
         break
       case LogLevel.WARN:
-        console.warn(formattedMessage, data || '')
+        console.warn(formattedMessage, normalizedData || '')
         break
       case LogLevel.ERROR:
-        console.error(formattedMessage, data || '')
+        console.error(formattedMessage, normalizedData || '')
         break
     }
 

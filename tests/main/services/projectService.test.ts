@@ -1,4 +1,7 @@
 import { describe, it, expect, vi, beforeAll } from "vitest";
+import path from "node:path";
+import { promises as fs } from "node:fs";
+import { app } from "electron";
 import { ProjectService, projectService } from "../../../src/main/services/core/projectService.js";
 import { db } from "../../../src/main/database/index.js";
 
@@ -34,5 +37,20 @@ describe("ProjectService", () => {
     const clientA = db.getClient();
     const clientB = db.getClient();
     expect(clientA).toBe(clientB);
+  });
+
+  it("recovers .luie from db when package is corrupted", async () => {
+    const projectPath = path.join(app.getPath("userData"), "Recovery Project.luie");
+    const created = await localProjectService.createProject({
+      title: "Recovery Project",
+      description: "test",
+      projectPath,
+    });
+
+    await fs.writeFile(projectPath, "not-a-zip", "utf-8");
+
+    const result = await localProjectService.openLuieProject(projectPath);
+    expect(result.recovery).toBe(true);
+    expect(result.project.id).toBe(created.id);
   });
 });

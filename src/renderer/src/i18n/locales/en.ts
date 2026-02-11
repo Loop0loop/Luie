@@ -350,6 +350,12 @@ export const en = {
         contextExpand: "Expand panel",
       },
     },
+    project: {
+      toast: {
+        recoveredFromDb: "The file was corrupted, so we restored it from local cache.",
+        dbNewerSynced: "Local cache was newer, so the project file was updated.",
+      },
+    },
     analysis: {
       title: "Editor's Desk",
       selectChapter: "Chapter to review",
@@ -708,6 +714,8 @@ export const en = {
     snapshot: {
       list: {
         loading: "Loading snapshots...",
+        loadFailed: "Failed to load snapshots.",
+        retry: "Retry",
         empty: "No snapshots found.",
         manualButton: "Create manual snapshot",
         confirmRestore: "Restore this snapshot? Current changes will be overwritten.",

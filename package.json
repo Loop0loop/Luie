@@ -73,11 +73,9 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-i18next": "^15.7.4",
-    "react-markdown": "^10.1.0",
     "react-resizable-panels": "^4.6.2",
     "react-virtuoso": "^4.18.1",
     "reactflow": "^11.11.4",
-    "remark-gfm": "^4.0.1",
     "sanitize-filename": "^1.6.3",
     "tailwind-merge": "^3.4.0",
     "yauzl": "^3.2.0",
@@ -116,7 +114,6 @@
     }
   },
   "devDependencies": {
-    "@electron/rebuild": "^4.0.3",
     "@eslint/js": "^9.39.2",
     "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4.1.18",

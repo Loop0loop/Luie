@@ -19,7 +19,7 @@ declare global {
           description?: string;
           projectPath?: string;
         }) => Promise<IPCResponse<Project>>;
-        openLuie: (packagePath: string) => Promise<IPCResponse<Project>>;
+        openLuie: (packagePath: string) => Promise<IPCResponse<ProjectOpenResult>>;
         get: (id: string) => Promise<IPCResponse<Project>>;
         getAll: () => Promise<IPCResponse<Project[]>>;
         importFromFile: (filePath: string) => Promise<IPCResponse<Project>>;

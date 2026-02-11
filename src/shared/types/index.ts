@@ -12,6 +12,12 @@ export interface Project {
   updatedAt: string | Date;
 }
 
+export interface ProjectOpenResult {
+  project: Project;
+  recovery?: boolean;
+  conflict?: "db-newer" | "luie-newer";
+}
+
 export interface Chapter {
   id: string;
   projectId: string;

@@ -25,6 +25,9 @@ export const QUIT_SAVE_TIMEOUT_MS = 10_000
 export const LOG_BATCH_SIZE = 20
 export const LOG_FLUSH_MS = 500
 
+export const IPC_DEFAULT_TIMEOUT_MS = 15000
+export const IPC_LONG_TIMEOUT_MS = 60000
+
 export const MIN_CHAPTER_TITLE_LENGTH = 1
 export const MAX_CHAPTER_TITLE_LENGTH = 200
 

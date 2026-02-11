@@ -3,9 +3,16 @@
  */
 
 import { contextBridge, ipcRenderer } from "electron";
-import type { IPCResponse } from "../shared/ipc/index.js";
+import { createErrorResponse, type IPCResponse } from "../shared/ipc/index.js";
 import { IPC_CHANNELS } from "../shared/ipc/channels.js";
-import { AUTO_SAVE_FLUSH_MS, LOG_BATCH_SIZE, LOG_FLUSH_MS } from "../shared/constants/index.js";
+import {
+  AUTO_SAVE_FLUSH_MS,
+  IPC_DEFAULT_TIMEOUT_MS,
+  IPC_LONG_TIMEOUT_MS,
+  LOG_BATCH_SIZE,
+  LOG_FLUSH_MS,
+  ErrorCode,
+} from "../shared/constants/index.js";
 
 function sanitizeForIpc(value: unknown, seen = new WeakSet<object>()): unknown {
   if (value === null) return null;
@@ -52,18 +59,130 @@ function sanitizeForIpc(value: unknown, seen = new WeakSet<object>()): unknown {
   return String(value);
 }
 
-async function safeInvoke<T = unknown>(channel: string, ...args: unknown[]): Promise<IPCResponse<T>> {
-  return ipcRenderer
+const LONG_TIMEOUT_CHANNELS = new Set<string>([
+  IPC_CHANNELS.SNAPSHOT_IMPORT_FILE,
+  IPC_CHANNELS.EXPORT_CREATE,
+  IPC_CHANNELS.PROJECT_OPEN_LUIE,
+]);
+
+const RETRYABLE_CHANNELS = new Set<string>([
+  IPC_CHANNELS.PROJECT_GET,
+  IPC_CHANNELS.PROJECT_GET_ALL,
+  IPC_CHANNELS.CHAPTER_GET,
+  IPC_CHANNELS.CHAPTER_GET_ALL,
+  IPC_CHANNELS.CHAPTER_GET_DELETED,
+  IPC_CHANNELS.CHARACTER_GET,
+  IPC_CHANNELS.CHARACTER_GET_ALL,
+  IPC_CHANNELS.TERM_GET,
+  IPC_CHANNELS.TERM_GET_ALL,
+  IPC_CHANNELS.SNAPSHOT_GET_ALL,
+  IPC_CHANNELS.SNAPSHOT_GET_BY_CHAPTER,
+  IPC_CHANNELS.SEARCH,
+  IPC_CHANNELS.SETTINGS_GET_ALL,
+  IPC_CHANNELS.SETTINGS_GET_EDITOR,
+  IPC_CHANNELS.SETTINGS_GET_AUTO_SAVE,
+  IPC_CHANNELS.SETTINGS_GET_LANGUAGE,
+  IPC_CHANNELS.SETTINGS_GET_SHORTCUTS,
+  IPC_CHANNELS.SETTINGS_GET_WINDOW_BOUNDS,
+]);
+
+const getTimeoutMs = (channel: string) =>
+  LONG_TIMEOUT_CHANNELS.has(channel) ? IPC_LONG_TIMEOUT_MS : IPC_DEFAULT_TIMEOUT_MS;
+
+const getRequestId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `req-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
+async function invokeWithTimeout<T>(
+  channel: string,
+  args: unknown[],
+  timeoutMs: number,
+): Promise<IPCResponse<T>> {
+  const requestId = getRequestId();
+  let timeoutId: number | null = null;
+
+  const timeoutPromise = new Promise<IPCResponse<T>>((resolve) => {
+    timeoutId = window.setTimeout(() => {
+      resolve(
+        createErrorResponse(
+          ErrorCode.IPC_TIMEOUT,
+          "IPC request timed out",
+          { channel, timeoutMs },
+          {
+            timestamp: new Date().toISOString(),
+            duration: timeoutMs,
+            requestId,
+            channel,
+          },
+        ) as IPCResponse<T>,
+      );
+    }, timeoutMs);
+  });
+
+  const invokePromise = ipcRenderer
     .invoke(channel, ...args)
+    .then((response) => response as IPCResponse<T>)
     .catch((error) =>
-      ({
-        success: false,
-        error: {
-          code: "IPC_INVOKE_FAILED",
-          message: error instanceof Error ? error.message : String(error),
+      createErrorResponse(
+        ErrorCode.IPC_INVOKE_FAILED,
+        error instanceof Error ? error.message : String(error),
+        { channel },
+        {
+          timestamp: new Date().toISOString(),
+          requestId,
+          channel,
         },
-      }) as IPCResponse<T>,
+      ) as IPCResponse<T>,
     );
+
+  const result = await Promise.race([invokePromise, timeoutPromise]);
+  if (timeoutId !== null) {
+    clearTimeout(timeoutId);
+  }
+  return result;
+}
+
+async function safeInvoke<T = unknown>(channel: string, ...args: unknown[]): Promise<IPCResponse<T>> {
+  const timeoutMs = getTimeoutMs(channel);
+  const maxRetries = RETRYABLE_CHANNELS.has(channel) ? 1 : 0;
+  let attempt = 0;
+
+  while (attempt <= maxRetries) {
+    attempt += 1;
+    const response = await invokeWithTimeout<T>(channel, args, timeoutMs);
+    if (response.success) return response;
+
+    const code = response.error?.code;
+    const shouldRetry =
+      RETRYABLE_CHANNELS.has(channel) &&
+      (code === ErrorCode.IPC_TIMEOUT || code === ErrorCode.IPC_INVOKE_FAILED) &&
+      attempt <= maxRetries;
+
+    if (!shouldRetry) {
+      if (RETRYABLE_CHANNELS.has(channel) && attempt > maxRetries) {
+        return createErrorResponse(
+          ErrorCode.IPC_RETRY_EXHAUSTED,
+          "IPC retry limit reached",
+          { channel },
+          response.meta,
+        ) as IPCResponse<T>;
+      }
+      return response;
+    }
+  }
+
+  return createErrorResponse(
+    ErrorCode.IPC_RETRY_EXHAUSTED,
+    "IPC retry limit reached",
+    { channel },
+    {
+      timestamp: new Date().toISOString(),
+      channel,
+    },
+  ) as IPCResponse<T>;
 }
 
 type LogPayload = {

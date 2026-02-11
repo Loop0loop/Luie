@@ -174,7 +174,8 @@ export class ProjectService {
         }
 
         await this.exportProjectPackage(existingByPath.id);
-        return await this.getProject(existingByPath.id);
+        const project = await this.getProject(existingByPath.id);
+        return { project, recovery: true };
       }
 
       if (!meta) {
@@ -205,7 +206,8 @@ export class ProjectService {
           packagePath,
         });
         await this.exportProjectPackage(resolvedProjectId);
-        return await this.getProject(resolvedProjectId);
+        const project = await this.getProject(resolvedProjectId);
+        return { project, conflict: "db-newer" };
       }
 
       const chaptersMeta = meta?.chapters ?? [];
@@ -387,7 +389,7 @@ export class ProjectService {
         snapshotCount: snapshotsForCreate.length,
       });
 
-      return created;
+      return { project: created, conflict: "luie-newer" };
     } catch (error) {
       logger.error("Failed to open .luie package", { packagePath, error });
       if (error instanceof ServiceError) {

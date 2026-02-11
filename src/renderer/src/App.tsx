@@ -1,4 +1,5 @@
 import { useState, lazy, Suspense, useCallback, useEffect, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import MainLayout from "./components/layout/MainLayout";
 import Sidebar from "./components/sidebar/Sidebar";
 import Editor from "./components/editor/Editor";
@@ -15,6 +16,7 @@ import { useProjectTemplate } from "./hooks/useProjectTemplate";
 import { useShortcuts } from "./hooks/useShortcuts";
 import { emitShortcutCommand } from "./hooks/useShortcutCommand";
 import { useShortcutStore } from "./stores/shortcutStore";
+import { useToast } from "./components/common/ToastContext";
 import {
   EDITOR_TOOLBAR_FONT_MIN,
   EDITOR_TOOLBAR_FONT_STEP,
@@ -30,6 +32,8 @@ const ExportPreviewPanel = lazy(() => import("./components/export/ExportPreviewP
 const ExportWindow = lazy(() => import("./components/export/ExportWindow"));
 
 export default function App() {
+  const { t } = useTranslation();
+  const { showToast } = useToast();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const chapterChordRef = useRef<{ digits: string; timerId?: number }>({
     digits: "",
@@ -317,8 +321,14 @@ export default function App() {
       const selectedPath = response.data;
       const imported = await api.project.openLuie(selectedPath);
       if (imported.success && imported.data) {
-        setCurrentProject(imported.data);
+        setCurrentProject(imported.data.project);
         setView("editor");
+        if (imported.data.recovery) {
+          showToast(t("project.toast.recoveredFromDb"), "info");
+        }
+        if (imported.data.conflict === "db-newer") {
+          showToast(t("project.toast.dbNewerSynced"), "info");
+        }
         api.window.setFullscreen(true).catch((err) => {
           api.logger.error("Failed to set fullscreen", err);
         });
@@ -326,7 +336,7 @@ export default function App() {
     } catch (error) {
       api.logger.error("Failed to open luie file", error);
     }
-  }, [setCurrentProject, setView]);
+  }, [setCurrentProject, setView, showToast, t]);
 
   const handleOpenSnapshotBackup = useCallback(async () => {
     try {

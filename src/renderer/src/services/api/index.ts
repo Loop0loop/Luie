@@ -5,6 +5,7 @@ import type {
   Character,
   EditorSettings,
   Project,
+  ProjectOpenResult,
   SearchResult,
   Snapshot,
   Term,
@@ -17,7 +18,7 @@ export type RendererApi = {
       description?: string;
       projectPath?: string;
     }) => Promise<IPCResponse<Project>>;
-    openLuie: (packagePath: string) => Promise<IPCResponse<Project>>;
+    openLuie: (packagePath: string) => Promise<IPCResponse<ProjectOpenResult>>;
     get: (id: string) => Promise<IPCResponse<Project>>;
     getAll: () => Promise<IPCResponse<Project[]>>;
     update: (input: {

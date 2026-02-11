@@ -18,6 +18,16 @@ export interface IPCResponse<T = unknown> {
     duration?: number;
     version?: string;
     requestId?: string;
+    channel?: string;
+  };
+}
+
+function buildMeta(meta?: IPCResponse<unknown>["meta"]): IPCResponse<unknown>["meta"] {
+  const timestamp = meta?.timestamp ?? new Date().toISOString();
+  return {
+    ...meta,
+    timestamp,
+    version: meta?.version ?? APP_VERSION,
   };
 }
 
@@ -28,10 +38,7 @@ export function createSuccessResponse<T>(
   return {
     success: true,
     data,
-    meta: meta ?? {
-      timestamp: new Date().toISOString(),
-      version: APP_VERSION,
-    },
+    meta: buildMeta(meta),
   };
 }
 
@@ -49,9 +56,6 @@ export function createErrorResponse(
       details,
       timestamp: new Date().toISOString(),
     },
-    meta: meta ?? {
-      timestamp: new Date().toISOString(),
-      version: APP_VERSION,
-    },
+    meta: buildMeta(meta),
   };
 }

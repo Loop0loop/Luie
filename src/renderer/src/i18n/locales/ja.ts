@@ -350,6 +350,12 @@ export const ja = {
         contextExpand: "パネルを展開",
       },
     },
+    project: {
+      toast: {
+        recoveredFromDb: "ファイルが破損していたため、ローカルキャッシュから復元しました。",
+        dbNewerSynced: "ローカルキャッシュが新しいため、プロジェクトファイルを更新しました。",
+      },
+    },
     analysis: {
       title: "編集者のデスク",
       selectChapter: "レビューする原稿",
@@ -708,6 +714,8 @@ export const ja = {
     snapshot: {
       list: {
         loading: "スナップショットを読み込み中...",
+        loadFailed: "スナップショットの読み込みに失敗しました。",
+        retry: "再試行",
         empty: "スナップショットがありません。",
         manualButton: "手動スナップショットを作成",
         confirmRestore: "このスナップショットで復元しますか？現在の変更は上書きされます。",

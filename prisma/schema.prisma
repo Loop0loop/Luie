@@ -141,4 +141,6 @@ model Snapshot {
   chapter     Chapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   
   @@index([projectId, createdAt])
+  @@index([projectId, chapterId, createdAt])
+  @@index([projectId, type, createdAt])
 }
