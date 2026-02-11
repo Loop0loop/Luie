@@ -8,7 +8,7 @@ if (process.env.NODE_ENV !== 'production') {
   await import("dotenv/config");
 }
 
-import { app, BrowserWindow, session, ipcMain, dialog } from "electron";
+import { app, BrowserWindow, session, ipcMain, dialog, Menu } from "electron";
 import path from "node:path";
 import { createLogger, configureLogger, LogLevel } from "../shared/logger/index.js";
 import { LOG_DIR_NAME, LOG_FILE_NAME, QUIT_RENDERER_FLUSH_TIMEOUT_MS, QUIT_SAVE_TIMEOUT_MS } from "../shared/constants/index.js";
@@ -146,6 +146,24 @@ if (!gotTheLock) {
 
     // Create main window
     windowManager.createMainWindow();
+
+    const menuTemplate: Electron.MenuItemConstructorOptions[] =
+      process.platform === "darwin"
+        ? [
+            { role: "appMenu" },
+            { role: "fileMenu" },
+            { role: "editMenu" },
+            { role: "viewMenu" },
+            { role: "windowMenu" },
+          ]
+        : [
+            { role: "fileMenu" },
+            { role: "editMenu" },
+            { role: "viewMenu" },
+            { role: "windowMenu" },
+            { role: "helpMenu" },
+          ];
+    Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
 
     // Background recovery + pruning (Time Machine-style)
     try {

@@ -315,12 +315,17 @@ contextBridge.exposeInMainWorld("api", {
   // Window API
   window: {
     maximize: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.WINDOW_MAXIMIZE),
+    close: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.WINDOW_CLOSE),
     toggleFullscreen: (): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.WINDOW_TOGGLE_FULLSCREEN),
     setFullscreen: (flag: boolean): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.WINDOW_SET_FULLSCREEN, flag),
     openExport: (chapterId: string): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.WINDOW_OPEN_EXPORT, chapterId),
+  },
+
+  app: {
+    quit: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.APP_QUIT),
   },
 
   // Logger API

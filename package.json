@@ -21,6 +21,7 @@
     "rebuild:electron": "electron-rebuild --force --module-dir . -w better-sqlite3",
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
+    "migreate:reset": "prisma migrate reset",
     "db:seed": "node prisma/seed.js",
     "push": "npx prisma db push",
     "studio": "prisma studio",

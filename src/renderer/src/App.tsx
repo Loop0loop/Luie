@@ -13,8 +13,11 @@ import { useChapterManagement } from "./hooks/useChapterManagement";
 import { useSplitView } from "./hooks/useSplitView";
 import { useProjectTemplate } from "./hooks/useProjectTemplate";
 import { useShortcuts } from "./hooks/useShortcuts";
+import { emitShortcutCommand } from "./hooks/useShortcutCommand";
 import { useShortcutStore } from "./stores/shortcutStore";
 import {
+  EDITOR_TOOLBAR_FONT_MIN,
+  EDITOR_TOOLBAR_FONT_STEP,
   LUIE_PACKAGE_EXTENSION_NO_DOT,
   LUIE_PACKAGE_FILTER_NAME,
   LUIE_PACKAGE_META_FILENAME,
@@ -39,10 +42,20 @@ export default function App() {
     return () => window.removeEventListener("hashchange", checkHash);
   }, []);
 
-  const { view, isSidebarOpen, isContextOpen, setSidebarOpen, setContextOpen } = useUIStore();
+  const {
+    view,
+    isSidebarOpen,
+    isContextOpen,
+    setSidebarOpen,
+    setContextOpen,
+    setSplitSide,
+    toggleSplitSide,
+    splitSide,
+    setWorldTab,
+  } = useUIStore();
   const { loadShortcuts } = useShortcutStore();
-  const { items: projects, createProject, setCurrentProject, loadProjects } = useProjectStore();
-  const { theme } = useEditorStore();
+  const { items: projects, createProject, setCurrentProject, loadProjects, updateProject } = useProjectStore();
+  const { theme, fontSize, setFontSize } = useEditorStore();
 
   // 커스텀 훅으로 로직 분리
   const { currentProject } = useProjectInit();
@@ -69,23 +82,105 @@ export default function App() {
     handleSave,
   } = useChapterManagement();
 
+  const openChapterByIndex = useCallback(
+    (index: number) => {
+      if (index < 0 || index >= chapters.length) return;
+      const target = chapters[index];
+      if (target?.id) {
+        handleSelectChapter(target.id);
+      }
+    },
+    [chapters, handleSelectChapter],
+  );
+
+  const handleDeleteActiveChapter = useCallback(() => {
+    if (!activeChapterId) return;
+    const confirmed = window.confirm("이 원고를 삭제할까요?");
+    if (!confirmed) return;
+    void handleDeleteChapter(activeChapterId);
+  }, [activeChapterId, handleDeleteChapter]);
+
   const shortcutHandlers = useMemo(
     () => ({
       "app.openSettings": () => setIsSettingsOpen(true),
+      "app.closeWindow": () => void api.window.close(),
+      "app.quit": () => void api.app.quit(),
       "chapter.new": () => void handleAddChapter(),
       "chapter.save": () => void handleSave(activeChapterTitle, content),
+      "chapter.delete": () => handleDeleteActiveChapter(),
+      "chapter.open.1": () => openChapterByIndex(0),
+      "chapter.open.2": () => openChapterByIndex(1),
+      "chapter.open.3": () => openChapterByIndex(2),
+      "chapter.open.4": () => openChapterByIndex(3),
+      "chapter.open.5": () => openChapterByIndex(4),
+      "chapter.open.6": () => openChapterByIndex(5),
+      "chapter.open.7": () => openChapterByIndex(6),
+      "chapter.open.8": () => openChapterByIndex(7),
+      "chapter.open.9": () => openChapterByIndex(8),
+      "chapter.open.0": () => openChapterByIndex(9),
       "view.toggleSidebar": () => setSidebarOpen(!isSidebarOpen),
+      "view.sidebar.open": () => setSidebarOpen(true),
+      "view.sidebar.close": () => setSidebarOpen(false),
       "view.toggleContextPanel": () => setContextOpen(!isContextOpen),
+      "view.context.open": () => setContextOpen(true),
+      "view.context.close": () => setContextOpen(false),
+      "sidebar.section.manuscript.toggle": () =>
+        emitShortcutCommand({ type: "sidebar.section.toggle", section: "manuscript" }),
+      "sidebar.section.snapshot.open": () =>
+        emitShortcutCommand({ type: "sidebar.section.open", section: "snapshot" }),
+      "sidebar.section.trash.open": () =>
+        emitShortcutCommand({ type: "sidebar.section.open", section: "trash" }),
+      "project.rename": () => void handleRenameProject(),
+      "research.open.character": () => openResearchTab("character", "right"),
+      "research.open.world": () => openResearchTab("world", "right"),
+      "research.open.scrap": () => openResearchTab("scrap", "right"),
+      "research.open.analysis": () => openResearchTab("analysis", "right"),
+      "research.open.character.left": () => openResearchTab("character", "left"),
+      "research.open.world.left": () => openResearchTab("world", "left"),
+      "research.open.scrap.left": () => openResearchTab("scrap", "left"),
+      "research.open.analysis.left": () => openResearchTab("analysis", "left"),
+      "character.openTemplate": () => emitShortcutCommand({ type: "character.openTemplate" }),
+      "world.tab.synopsis": () => setWorldTab("synopsis"),
+      "world.tab.terms": () => setWorldTab("terms"),
+      "world.tab.mindmap": () => setWorldTab("mindmap"),
+      "world.tab.drawing": () => setWorldTab("drawing"),
+      "world.tab.plot": () => setWorldTab("plot"),
+      "world.addTerm": () => emitShortcutCommand({ type: "world.addTerm" }),
+      "scrap.addMemo": () => emitShortcutCommand({ type: "scrap.addMemo" }),
+      "export.openPreview": () => openExportPreview("right"),
+      "export.openWindow": () => handleQuickExport(),
+      "editor.openRight": () => openEditorInSplit("right"),
+      "editor.openLeft": () => openEditorInSplit("left"),
+      "split.swapSides": () => toggleSplitSide(),
+      "editor.fontSize.increase": () =>
+        void setFontSize(fontSize + EDITOR_TOOLBAR_FONT_STEP),
+      "editor.fontSize.decrease": () =>
+        void setFontSize(
+          Math.max(EDITOR_TOOLBAR_FONT_MIN, fontSize - EDITOR_TOOLBAR_FONT_STEP),
+        ),
+      "window.toggleFullscreen": () => void api.window.toggleFullscreen(),
     }),
     [
       activeChapterTitle,
       content,
       handleAddChapter,
       handleSave,
+      handleDeleteActiveChapter,
       isContextOpen,
       isSidebarOpen,
+      openChapterByIndex,
+      handleRenameProject,
+      openResearchTab,
+      openExportPreview,
+      handleQuickExport,
+      openEditorInSplit,
+      toggleSplitSide,
+      setWorldTab,
+      setFontSize,
+      fontSize,
       setContextOpen,
       setSidebarOpen,
+      setSplitSide,
     ],
   );
 
@@ -100,8 +195,48 @@ export default function App() {
     setSplitView,
     handleSelectResearchItem,
     handleSplitView,
+    handleOpenExport,
     startResizeSplit,
   } = useSplitView();
+
+  const openResearchTab = useCallback(
+    (tab: "character" | "world" | "scrap" | "analysis", side: "left" | "right") => {
+      setSplitSide(side);
+      handleSelectResearchItem(tab);
+    },
+    [handleSelectResearchItem, setSplitSide],
+  );
+
+  const openExportPreview = useCallback(
+    (side: "left" | "right") => {
+      setSplitSide(side);
+      handleOpenExport();
+    },
+    [handleOpenExport, setSplitSide],
+  );
+
+  const openEditorInSplit = useCallback(
+    (side: "left" | "right") => {
+      if (!activeChapterId) return;
+      setSplitSide(side);
+      handleSplitView("vertical", activeChapterId);
+    },
+    [activeChapterId, handleSplitView, setSplitSide],
+  );
+
+  const handleQuickExport = useCallback(() => {
+    if (!activeChapterId) return;
+    void api.window.openExport(activeChapterId);
+  }, [activeChapterId]);
+
+  const handleRenameProject = useCallback(async () => {
+    if (!currentProject?.id) return;
+    const nextTitle = window
+      .prompt("프로젝트 이름을 입력해주세요.", currentProject.title ?? "")
+      ?.trim();
+    if (!nextTitle || nextTitle === currentProject.title) return;
+    await updateProject(currentProject.id, nextTitle);
+  }, [currentProject, updateProject]);
 
   const { handleSelectProject } = useProjectTemplate(
     (id: string) => {
@@ -241,76 +376,100 @@ export default function App() {
         }
       >
         <div id="split-view-container" className="flex w-full h-full flex-1 overflow-hidden relative">
-          <div
-            className="h-full overflow-hidden relative min-w-0 bg-canvas"
-            style={{ flex: isSplitView ? splitRatio : 1 }}
-          >
-            <Editor
-              key={activeChapterId ?? "main-editor"}
-              chapterId={activeChapterId ?? undefined}
-              initialTitle={activeChapterTitle}
-              initialContent={content}
-              onSave={handleSave}
-            />
-          </div>
+          {(() => {
+            const mainPane = (
+              <div
+                className="h-full overflow-hidden relative min-w-0 bg-canvas"
+                style={{ flex: isSplitView ? splitRatio : 1 }}
+              >
+                <Editor
+                  key={activeChapterId ?? "main-editor"}
+                  chapterId={activeChapterId ?? undefined}
+                  initialTitle={activeChapterTitle}
+                  initialContent={content}
+                  onSave={handleSave}
+                />
+              </div>
+            );
 
-          {isSplitView && (
-            <>
-              {/* Splitter */}
+            const secondaryPane = (
+              <div
+                className="h-full overflow-hidden relative min-w-0 bg-panel"
+                style={{ flex: 1 - splitRatio }}
+              >
+                <Suspense fallback={<div style={{ padding: 20 }}>Loading...</div>}>
+                  {rightPanelContent.type === "research" ? (
+                    <ResearchPanel
+                      activeTab={rightPanelContent.tab || "character"}
+                      onClose={() => setSplitView(false)}
+                    />
+                  ) : rightPanelContent.type === "snapshot" &&
+                    rightPanelContent.snapshot ? (
+                    <SnapshotViewer
+                      snapshot={rightPanelContent.snapshot}
+                      currentContent={
+                        chapters.find(
+                          (c) =>
+                            c.projectId === currentProject?.id &&
+                            c.id === rightPanelContent.snapshot?.chapterId,
+                        )?.content || ""
+                      }
+                      onApplySnapshotText={async (nextContent) => {
+                        if (!activeChapterId) return;
+                        await handleSave(activeChapterTitle, nextContent);
+                      }}
+                    />
+                  ) : rightPanelContent.type === "export" ? (
+                    <ExportPreviewPanel title={activeChapterTitle} />
+                  ) : (
+                    <div
+                      style={{
+                        height: "100%",
+                        overflow: "hidden",
+                        background: "var(--bg-primary)",
+                      }}
+                    >
+                      {/* Re-using Editor for read-only or secondary edit */}
+                      <Editor
+                        initialTitle={
+                          chapters.find((c) => c.id === rightPanelContent.id)
+                            ?.title
+                        }
+                        initialContent=""
+                      />
+                    </div>
+                  )}
+                </Suspense>
+              </div>
+            );
+
+            if (!isSplitView) {
+              return mainPane;
+            }
+
+            const splitter = (
               <div
                 className="w-px bg-white/5 cursor-col-resize relative flex-none flex items-center justify-center z-50 hover:bg-accent/50 hover:w-1 transition-all"
                 onMouseDown={startResizeSplit}
                 role="separator"
                 aria-orientation="vertical"
               />
-              
-              <div
-                className="h-full overflow-hidden relative min-w-0 bg-panel"
-                style={{ flex: 1 - splitRatio }}
-              >
-                <Suspense
-                  fallback={<div style={{ padding: 20 }}>Loading...</div>}
-                >
-                    {rightPanelContent.type === "research" ? (
-                      <ResearchPanel
-                        activeTab={rightPanelContent.tab || "character"}
-                        onClose={() => setSplitView(false)}
-                      />
-                    ) : rightPanelContent.type === "snapshot" &&
-                      rightPanelContent.snapshot ? (
-                      <SnapshotViewer 
-                        snapshot={rightPanelContent.snapshot} 
-                        currentContent={chapters.find(c => c.projectId === currentProject?.id && c.id === rightPanelContent.snapshot?.chapterId)?.content || ""}
-                          onApplySnapshotText={async (nextContent) => {
-                            if (!activeChapterId) return;
-                            await handleSave(activeChapterTitle, nextContent);
-                          }}
-                      />
-                    ) : rightPanelContent.type === "export" ? (
-                      <ExportPreviewPanel title={activeChapterTitle} />
-                    ) : (
-                      <div
-                        style={{
-                          height: "100%",
-                          overflow: "hidden",
-                          background: "var(--bg-primary)",
-                        }}
-                      >
-                        {/* Re-using Editor for read-only or secondary edit */}
-                        <Editor
-                          initialTitle={
-                            chapters.find((c) => c.id === rightPanelContent.id)
-                              ?.title
-                          }
-                          initialContent="" // We'd need to fetch content. For now placeholder.
-                          // In real app, Editor should fetch by ID or we pass content
-                        />
-                      </div>
-                    )}
-                </Suspense>
-              </div>
-            </>
-          )}
+            );
+
+            return splitSide === "right" ? (
+              <>
+                {mainPane}
+                {splitter}
+                {secondaryPane}
+              </>
+            ) : (
+              <>
+                {secondaryPane}
+                {splitter}
+                {mainPane}
+              </>
+            );
+          })()}
         </div>
       </MainLayout>
 

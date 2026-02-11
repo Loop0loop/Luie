@@ -20,11 +20,11 @@ import { cn } from "../../../../shared/types/utils";
 import { ArrowLeft, Eraser, Plus, X, Type, PenTool } from "lucide-react";
 import { useProjectStore } from "../../stores/projectStore";
 import { useTermStore } from "../../stores/termStore";
+import { useUIStore } from "../../stores/uiStore";
 import { BufferedInput, BufferedTextArea } from "../common/BufferedInput";
 import TabButton from "../common/TabButton";
 import { useTranslation } from "react-i18next";
-
-type WorldTab = "synopsis" | "terms" | "mindmap" | "drawing" | "plot";
+import { useShortcutCommand } from "../../hooks/useShortcutCommand";
 
 type MindMapNodeData = { label: string };
 
@@ -92,54 +92,54 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
 
 export default function WorldSection() {
   const { t } = useTranslation();
-  const [subTab, setSubTab] = useState<WorldTab>("terms");
+  const { worldTab, setWorldTab } = useUIStore();
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div className="flex w-full bg-sidebar border-b border-border shrink-0 text-muted select-none">
         <TabButton
           label={t("world.tab.terms")}
-          active={subTab === "terms"}
-          onClick={() => setSubTab("terms")}
+          active={worldTab === "terms"}
+          onClick={() => setWorldTab("terms")}
           className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
           activeClassName="text-accent font-semibold border-b-2 border-accent"
         />
         <TabButton
           label={t("world.tab.synopsis")}
-          active={subTab === "synopsis"}
-          onClick={() => setSubTab("synopsis")}
+          active={worldTab === "synopsis"}
+          onClick={() => setWorldTab("synopsis")}
           className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
           activeClassName="text-accent font-semibold border-b-2 border-accent"
         />
         <TabButton
           label={t("world.tab.mindmap")}
-          active={subTab === "mindmap"}
-          onClick={() => setSubTab("mindmap")}
+          active={worldTab === "mindmap"}
+          onClick={() => setWorldTab("mindmap")}
           className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
           activeClassName="text-accent font-semibold border-b-2 border-accent"
         />
         <TabButton
           label={t("world.tab.drawing")}
-          active={subTab === "drawing"}
-          onClick={() => setSubTab("drawing")}
+          active={worldTab === "drawing"}
+          onClick={() => setWorldTab("drawing")}
           className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
           activeClassName="text-accent font-semibold border-b-2 border-accent"
         />
         <TabButton
           label={t("world.tab.plot")}
-          active={subTab === "plot"}
-          onClick={() => setSubTab("plot")}
+          active={worldTab === "plot"}
+          onClick={() => setWorldTab("plot")}
           className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
           activeClassName="text-accent font-semibold border-b-2 border-accent"
         />
       </div>
 
       <div style={{ flex: 1, overflow: "hidden" }}>
-        {subTab === "terms" && <TermManager />}
-        {subTab === "synopsis" && <SynopsisEditor />}
-        {subTab === "mindmap" && <MindMapBoard />}
-        {subTab === "drawing" && <DrawingCanvas />}
-        {subTab === "plot" && <PlotBoard />}
+        {worldTab === "terms" && <TermManager />}
+        {worldTab === "synopsis" && <SynopsisEditor />}
+        {worldTab === "mindmap" && <MindMapBoard />}
+        {worldTab === "drawing" && <DrawingCanvas />}
+        {worldTab === "plot" && <PlotBoard />}
       </div>
     </div>
   );
@@ -174,7 +174,7 @@ function TermManager() {
     [terms],
   );
 
-  const handleAddTerm = async () => {
+  const handleAddTerm = useCallback(async () => {
     if (currentProject) {
       await createTerm({
         projectId: currentProject.id,
@@ -189,7 +189,13 @@ function TermManager() {
       // Auto-selection is tricky without the ID returned.
       // We'll skip auto-selection or implement a store update later.
     }
-  };
+  }, [currentProject, createTerm, loadTerms, t]);
+
+  useShortcutCommand((command) => {
+    if (command.type === "world.addTerm") {
+      void handleAddTerm();
+    }
+  });
 
   if (selectedTermId) {
     const term = terms.find((t) => t.id === selectedTermId);

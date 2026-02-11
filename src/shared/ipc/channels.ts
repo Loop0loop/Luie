@@ -102,6 +102,7 @@ export const IPC_CHANNELS = {
   // App
   APP_GET_VERSION: "app:get-version",
   APP_CHECK_UPDATE: "app:check-update",
+  APP_QUIT: "app:quit",
 
   // Export
   EXPORT_CREATE: "export:create",

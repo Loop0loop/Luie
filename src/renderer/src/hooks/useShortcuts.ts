@@ -59,7 +59,49 @@ const isEditableTarget = (event: KeyboardEvent): boolean => {
   return Boolean(target.isContentEditable);
 };
 
-const ALLOW_IN_EDITORS = new Set<ShortcutAction>(["chapter.save"]);
+const ALLOW_IN_EDITORS = new Set<ShortcutAction>([
+  "app.openSettings",
+  "app.closeWindow",
+  "app.quit",
+  "chapter.new",
+  "chapter.save",
+  "chapter.delete",
+  "chapter.open.1",
+  "chapter.open.2",
+  "chapter.open.3",
+  "chapter.open.4",
+  "chapter.open.5",
+  "chapter.open.6",
+  "chapter.open.7",
+  "chapter.open.8",
+  "chapter.open.9",
+  "chapter.open.0",
+  "export.openPreview",
+  "export.openWindow",
+  "research.open.character",
+  "research.open.world",
+  "research.open.scrap",
+  "research.open.analysis",
+  "research.open.character.left",
+  "research.open.world.left",
+  "research.open.scrap.left",
+  "research.open.analysis.left",
+  "character.openTemplate",
+  "world.tab.synopsis",
+  "world.tab.terms",
+  "world.tab.mindmap",
+  "world.tab.drawing",
+  "world.tab.plot",
+  "world.addTerm",
+  "scrap.addMemo",
+  "project.rename",
+  "editor.openRight",
+  "editor.openLeft",
+  "split.swapSides",
+  "editor.fontSize.increase",
+  "editor.fontSize.decrease",
+  "window.toggleFullscreen",
+]);
 
 export function useShortcuts(handlers: ShortcutHandlers, enabled: boolean = true): void {
   const shortcuts = useShortcutStore((state) => state.shortcuts) as ShortcutMap;

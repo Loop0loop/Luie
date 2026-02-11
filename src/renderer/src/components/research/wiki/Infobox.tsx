@@ -1,5 +1,6 @@
 import { Plus, X } from "lucide-react";
 import { BufferedInput } from "../../common/BufferedInput";
+import { useTranslation } from "react-i18next";
 
 type InfoboxRowProps = {
   label: string;
@@ -24,6 +25,7 @@ export function InfoboxRow({
   isCustom = false,
   onDelete,
 }: InfoboxRowProps) {
+  const { t } = useTranslation();
   return (
     <div className="flex border-b border-(--namu-border) min-h-[40px] last:border-b-0">
       <div className="w-[100px] bg-(--namu-table-bg) p-2 font-bold text-(--namu-table-label) border-r border-(--namu-border) flex items-center justify-center text-center leading-tight shrink-0 relative text-[13px]">
@@ -39,7 +41,7 @@ export function InfoboxRow({
                     type="button"
                     className="absolute left-[-4px] top-1/2 -translate-y-1/2 bg-none border-none text-subtle cursor-pointer p-1 opacity-50 hover:text-danger hover:opacity-100" 
                     onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                    title="항목 삭제"
+                  title={t("character.wiki.fieldDeleteTitle")}
                 >
                     <X size={10} />
                 </button>
@@ -56,7 +58,7 @@ export function InfoboxRow({
             value={value || ""}
             onChange={(e) => onSave?.(e.target.value)}
           >
-            <option value="">- 선택 -</option>
+            <option value="">{t("character.wiki.selectPlaceholder")}</option>
             {options?.map((opt) => (
               <option key={opt} value={opt}>
                 {opt}
@@ -67,7 +69,7 @@ export function InfoboxRow({
           <BufferedInput
             className="border-none bg-transparent w-full color-inherit font-inherit p-1 focus:outline-none focus:bg-active focus:rounded-sm"
             value={value || ""}
-            placeholder={placeholder || "-"}
+            placeholder={placeholder || t("character.wiki.valuePlaceholder")}
             onSave={onSave || (() => {})}
           />
         )}
@@ -87,6 +89,7 @@ export function Infobox({
   rows: InfoboxRowProps[];
   onAddField: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="w-full border-2 border-(--namu-blue) bg-surface shadow-md rounded overflow-hidden shrink-0 text-[13px]">
       <div className="bg-(--namu-blue) text-white text-center p-2.5 font-bold text-[15px] border-b border-(--namu-blue)">{title}</div>
@@ -100,7 +103,7 @@ export function Infobox({
 
        <button type="button" className="w-full p-2.5 bg-surface-hover border-none border-t border-(--namu-border) text-muted text-xs cursor-pointer flex items-center justify-center gap-1.5 transition-colors hover:bg-active hover:text-fg" onClick={onAddField}>
         <Plus size={12} />
-        <span>필드 추가</span>
+        <span>{t("character.wiki.addField")}</span>
       </button>
     </div>
   );

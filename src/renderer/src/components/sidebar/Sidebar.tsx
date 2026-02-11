@@ -24,6 +24,8 @@ import { SnapshotList } from "../snapshot/SnapshotList";
 import { TrashList } from "../trash/TrashList";
 import { useProjectStore } from "../../stores/projectStore";
 import { useTranslation } from "react-i18next";
+import { useShortcutCommand } from "../../hooks/useShortcutCommand";
+import { useUIStore } from "../../stores/uiStore";
 
 interface Chapter {
   id: string;
@@ -77,6 +79,7 @@ function Sidebar({
 }: SidebarProps) {
   const { t } = useTranslation();
   const { updateProject } = useProjectStore();
+  const { setSidebarOpen } = useUIStore();
   // Section collapse states
   const [isManuscriptOpen, setManuscriptOpen] = useState(true);
   const [isResearchOpen, setResearchOpen] = useState(true);
@@ -108,6 +111,33 @@ function Sidebar({
     document.addEventListener("pointerdown", handlePointerDown, true);
     return () => document.removeEventListener("pointerdown", handlePointerDown, true);
   }, [menuOpenId]);
+
+  useShortcutCommand((command) => {
+    if (command.type === "sidebar.section.toggle") {
+      setSidebarOpen(true);
+      if (command.section === "manuscript") setManuscriptOpen((prev) => !prev);
+      if (command.section === "research") setResearchOpen((prev) => !prev);
+      if (command.section === "snapshot") setSnapshotOpen((prev) => !prev);
+      if (command.section === "trash") setTrashOpen((prev) => !prev);
+      return;
+    }
+
+    if (command.type === "sidebar.section.open") {
+      setSidebarOpen(true);
+      if (command.section === "manuscript") setManuscriptOpen(true);
+      if (command.section === "research") setResearchOpen(true);
+      if (command.section === "snapshot") setSnapshotOpen(true);
+      if (command.section === "trash") setTrashOpen(true);
+      return;
+    }
+
+    if (command.type === "sidebar.section.close") {
+      if (command.section === "manuscript") setManuscriptOpen(false);
+      if (command.section === "research") setResearchOpen(false);
+      if (command.section === "snapshot") setSnapshotOpen(false);
+      if (command.section === "trash") setTrashOpen(false);
+    }
+  });
 
   const handleMenuClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();

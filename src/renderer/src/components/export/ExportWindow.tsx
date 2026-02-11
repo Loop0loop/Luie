@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Download,
   FileText,
@@ -41,6 +42,7 @@ const SectionHeader = ({
 );
 
 export default function ExportWindow() {
+  const { t } = useTranslation();
   const [chapterId] = useState<string | null>(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const id = searchParams.get("chapterId");
@@ -62,7 +64,7 @@ export default function ExportWindow() {
     
     // Load chapter data
     if (!chapterId) {
-      setLoadError("챕터 ID가 제공되지 않았습니다.");
+      setLoadError(t("exportWindow.error.missingChapterId"));
       return;
     }
 
@@ -74,12 +76,12 @@ export default function ExportWindow() {
           projectId: response.data.projectId,
         });
       } else {
-        setLoadError(response.error?.message || "챕터를 불러오는데 실패했습니다.");
+        setLoadError(response.error?.message || t("exportWindow.error.loadFailed"));
       }
     }).catch((error) => {
-      setLoadError(error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.");
+      setLoadError(error instanceof Error ? error.message : t("exportWindow.error.unknown"));
     });
-  }, [chapterId]);
+  }, [chapterId, t]);
 
   // Settings State
   const [format, setFormat] = useState<"word" | "hwp">("hwp"); // Default to HWP
@@ -111,7 +113,7 @@ export default function ExportWindow() {
 
   const handleExport = async () => {
     if (!chapter || !chapterId) {
-      alert("챕터 정보를 불러올 수 없습니다.");
+      alert(t("exportWindow.error.noChapter"));
       return;
     }
 
@@ -142,19 +144,19 @@ export default function ExportWindow() {
           // Show message if provided (e.g., HWPX conversion instructions)
           const message = result.message 
             ? result.message
-            : `내보내기가 완료되었습니다!\n저장 위치: ${result.filePath}`;
+            : t("exportWindow.alert.success", { path: result.filePath ?? "" });
           alert(message);
         } else {
-          alert(`내보내기에 실패했습니다.\n${result.error || "Unknown error"}`);
+          alert(t("exportWindow.alert.failed", { reason: result.error || "Unknown error" }));
         }
       } else {
-        alert(`내보내기에 실패했습니다.\n${response.error?.message || "Unknown error"}`);
+        alert(t("exportWindow.alert.failed", { reason: response.error?.message || "Unknown error" }));
       }
     } catch (error) {
       void window.api.logger.error("Export error", {
         error: error instanceof Error ? error.message : String(error),
       });
-      alert(`내보내기 중 오류가 발생했습니다.\n${error instanceof Error ? error.message : "Unknown error"}`);
+      alert(t("exportWindow.alert.exception", { reason: error instanceof Error ? error.message : "Unknown error" }));
     } finally {
       setIsExporting(false);
     }
@@ -164,7 +166,7 @@ export default function ExportWindow() {
     <div className="flex flex-col w-screen h-screen bg-canvas text-fg overflow-hidden select-none font-sans">
       {/* 1. Window Bar */}
       <div className="shrink-0 bg-panel border-b border-border">
-        <WindowBar title="내보내기 미리보기" />
+        <WindowBar title={t("exportWindow.title")}/>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
@@ -175,10 +177,10 @@ export default function ExportWindow() {
           <div className="p-5 border-b border-border bg-panel sticky top-0 z-10">
             <h1 className="text-xl font-bold text-fg flex items-center gap-2">
               <Download className="w-5 h-5 text-accent" />
-              내보내기 설정
+              {t("exportWindow.header.title")}
             </h1>
             <p className="text-xs text-muted mt-1">
-              문서 형식을 선택하고 스타일을 조정하세요.
+              {t("exportWindow.header.subtitle")}
             </p>
           </div>
 
@@ -189,7 +191,7 @@ export default function ExportWindow() {
             <div className="bg-idk rounded overflow-hidden">
               <SectionHeader
                 id="format"
-                title="파일 형식"
+                title={t("exportWindow.sections.format")}
                 icon={FileText}
                 expanded={expandedSections.format}
                 onToggle={toggleSection}
@@ -206,8 +208,8 @@ export default function ExportWindow() {
                     )}
                   >
                     <span className="font-bold text-lg mb-1">HWPX</span>
-                    <span className="text-[10px] opacity-80">한글 문서</span>
-                    <span className="absolute top-1 right-1 text-[9px] px-1.5 py-0.5 bg-accent text-white rounded font-bold">BETA</span>
+                    <span className="text-[10px] opacity-80">{t("exportWindow.format.hwp")}</span>
+                    <span className="absolute top-1 right-1 text-[9px] px-1.5 py-0.5 bg-accent text-white rounded font-bold">{t("exportWindow.format.beta")}</span>
                   </button>
                   <button
                     onClick={() => setFormat("word")}
@@ -219,7 +221,7 @@ export default function ExportWindow() {
                     )}
                   >
                     <span className="font-bold text-lg mb-1">Word</span>
-                    <span className="text-[10px] opacity-80">MS Word</span>
+                    <span className="text-[10px] opacity-80">{t("exportWindow.format.word")}</span>
                   </button>
                 </div>
               )}
@@ -229,7 +231,7 @@ export default function ExportWindow() {
             <div className="bg-idk rounded overflow-hidden">
               <SectionHeader
                 id="page"
-                title="용지 설정"
+                title={t("exportWindow.sections.page")}
                 icon={Layout}
                 expanded={expandedSections.page}
                 onToggle={toggleSection}
@@ -238,26 +240,26 @@ export default function ExportWindow() {
                 <div className="p-4 space-y-4">
                   {/* Paper Size */}
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-muted uppercase tracking-wider">용지 크기</label>
+                    <label className="text-xs font-semibold text-muted uppercase tracking-wider">{t("exportWindow.page.paperSize")}</label>
                     <select
                       value={paperSize}
                       onChange={(e) => setPaperSize(e.target.value)}
                       className="w-full h-9 bg-surface border border-border rounded px-3 text-sm text-fg focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                     >
-                      <option value="A4">A4 (210 x 297 mm)</option>
-                      <option value="Letter">Letter (216 x 279 mm)</option>
-                      <option value="B5">B5 (176 x 250 mm)</option>
+                      <option value="A4">{t("exportWindow.page.paperOptions.a4")}</option>
+                      <option value="Letter">{t("exportWindow.page.paperOptions.letter")}</option>
+                      <option value="B5">{t("exportWindow.page.paperOptions.b5")}</option>
                     </select>
                   </div>
 
                   {/* Margins */}
                   <div className="space-y-3">
                     <label className="text-xs font-semibold text-muted uppercase tracking-wider flex items-center justify-between">
-                      여백 (mm)
+                      {t("exportWindow.page.margins")}
                     </label>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <label className="text-[10px] text-subtle pl-1">위쪽</label>
+                        <label className="text-[10px] text-subtle pl-1">{t("exportWindow.page.marginTop")}</label>
                         <input
                           type="number"
                           value={marginTop}
@@ -266,7 +268,7 @@ export default function ExportWindow() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] text-subtle pl-1">아래쪽</label>
+                        <label className="text-[10px] text-subtle pl-1">{t("exportWindow.page.marginBottom")}</label>
                         <input
                           type="number"
                           value={marginBottom}
@@ -275,7 +277,7 @@ export default function ExportWindow() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] text-subtle pl-1">왼쪽</label>
+                        <label className="text-[10px] text-subtle pl-1">{t("exportWindow.page.marginLeft")}</label>
                         <input
                           type="number"
                           value={marginLeft}
@@ -284,7 +286,7 @@ export default function ExportWindow() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] text-subtle pl-1">오른쪽</label>
+                        <label className="text-[10px] text-subtle pl-1">{t("exportWindow.page.marginRight")}</label>
                         <input
                           type="number"
                           value={marginLeft}
@@ -302,7 +304,7 @@ export default function ExportWindow() {
             <div className="bg-idk rounded overflow-hidden">
               <SectionHeader
                 id="typography"
-                title="글꼴 및 줄 간격"
+                title={t("exportWindow.sections.typography")}
                 icon={Type}
                 expanded={expandedSections.typography}
                 onToggle={toggleSection}
@@ -311,27 +313,27 @@ export default function ExportWindow() {
                 <div className="p-4 space-y-4">
                   {/* Font Family */}
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-muted uppercase tracking-wider">글꼴</label>
+                    <label className="text-xs font-semibold text-muted uppercase tracking-wider">{t("exportWindow.typography.font")}</label>
                     <div className="space-y-1">
                       <select
                         value={fontFamily}
                         onChange={(e) => setFontFamily(e.target.value)}
                         className="w-full h-9 bg-surface border border-border rounded px-3 text-sm text-fg focus:border-accent focus:outline-none"
                       >
-                        <option value="Batang">바탕 (Batang)</option>
-                        <option value="Malgun Gothic">맑은 고딕</option>
-                        <option value="Nanum Myeongjo">나눔명조</option>
+                        <option value="Batang">{t("exportWindow.typography.fontOptions.batang")}</option>
+                        <option value="Malgun Gothic">{t("exportWindow.typography.fontOptions.malgun")}</option>
+                        <option value="Nanum Myeongjo">{t("exportWindow.typography.fontOptions.nanum")}</option>
                       </select>
                       <div className="flex items-start gap-1.5 px-1 py-1.5 bg-surface/50 rounded text-[11px] text-muted leading-tight">
                         <Info className="w-3 h-3 mt-0.5 shrink-0" />
-                        <span>OS에 해당 폰트가 없을 경우, 가장 유사한 명조/고딕체로 대체됩니다.</span>
+                        <span>{t("exportWindow.typography.fontHint")}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Line Height */}
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-muted uppercase tracking-wider">줄 간격</label>
+                    <label className="text-xs font-semibold text-muted uppercase tracking-wider">{t("exportWindow.typography.lineHeight")}</label>
                     <div className="flex bg-surface rounded p-1 border border-border">
                       {["100%", "160%", "180%", "200%"].map((lh) => (
                         <button
@@ -357,7 +359,7 @@ export default function ExportWindow() {
             <div className="bg-idk rounded overflow-hidden">
               <SectionHeader
                 id="header"
-                title="머리말 / 꼬리말"
+                title={t("exportWindow.sections.header")}
                 icon={AlignJustify}
                 expanded={expandedSections.header}
                 onToggle={toggleSection}
@@ -365,7 +367,7 @@ export default function ExportWindow() {
               {expandedSections.header && (
                 <div className="p-4 space-y-4">
                   <div className="flex items-center justify-between">
-                    <label className="text-sm text-fg">쪽 번호 표시</label>
+                    <label className="text-sm text-fg">{t("exportWindow.headerSettings.showPageNumbers")}</label>
                     <input
                       type="checkbox"
                       checked={showPageNumbers}
@@ -375,7 +377,7 @@ export default function ExportWindow() {
                   </div>
                   {showPageNumbers && (
                     <div className="flex items-center justify-between">
-                      <label className="text-sm text-muted">시작 번호</label>
+                      <label className="text-sm text-muted">{t("exportWindow.headerSettings.startPage")}</label>
                       <input
                         type="number"
                         min="1"
@@ -399,7 +401,7 @@ export default function ExportWindow() {
               className="w-full h-11 bg-accent hover:bg-accent-hover text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Download className="w-5 h-5" />
-              {isExporting ? "내보내는 중..." : `내보내기 (${format.toUpperCase()})`}
+              {isExporting ? t("exportWindow.button.exporting") : t("exportWindow.button.export", { format: format.toUpperCase() })}
             </button>
           </div>
         </div>
@@ -410,7 +412,7 @@ export default function ExportWindow() {
           <div className="h-10 border-b border-border bg-panel flex items-center justify-between px-4 shrink-0">
             <div className="flex items-center gap-2 text-xs text-muted">
               <span className="bg-surface px-2 py-0.5 rounded text-fg border border-border">100%</span>
-              <span>미리보기</span>
+              <span>{t("exportWindow.preview.label")}</span>
             </div>
           </div>
 
@@ -441,7 +443,7 @@ export default function ExportWindow() {
               >
                 {loadError ? (
                   <div className="text-center mt-20">
-                    <div className="text-red-600 font-bold mb-2">오류</div>
+                    <div className="text-red-600 font-bold mb-2">{t("exportWindow.preview.errorTitle")}</div>
                     <div className="text-gray-600">{loadError}</div>
                   </div>
                 ) : chapter ? (
@@ -454,7 +456,7 @@ export default function ExportWindow() {
                   </>
                 ) : (
                   <div className="text-center text-gray-400 mt-20">
-                    챕터를 불러오는 중...
+                    {t("exportWindow.preview.loading")}
                   </div>
                 )}
               </div>

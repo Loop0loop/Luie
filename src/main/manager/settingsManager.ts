@@ -24,22 +24,59 @@ import {
 const logger = createLogger("SettingsManager");
 
 const getDefaultShortcuts = (platform: NodeJS.Platform): ShortcutMap => {
-  if (platform === "darwin") {
-    return {
-      "app.openSettings": "Cmd+,",
-      "chapter.new": "Cmd+N",
-      "chapter.save": "Cmd+S",
-      "view.toggleSidebar": "Cmd+B",
-      "view.toggleContextPanel": "Cmd+Shift+B",
-    };
-  }
+  const mod = platform === "darwin" ? "Cmd" : "Ctrl";
 
   return {
-    "app.openSettings": "Ctrl+,",
-    "chapter.new": "Ctrl+N",
-    "chapter.save": "Ctrl+S",
-    "view.toggleSidebar": "Ctrl+B",
-    "view.toggleContextPanel": "Ctrl+Shift+B",
+    "app.openSettings": `${mod}+,`,
+    "app.closeWindow": `${mod}+W`,
+    "app.quit": `${mod}+Q`,
+    "chapter.new": `${mod}+N`,
+    "chapter.save": `${mod}+S`,
+    "chapter.delete": `${mod}+Backspace`,
+    "chapter.open.1": `${mod}+1`,
+    "chapter.open.2": `${mod}+2`,
+    "chapter.open.3": `${mod}+3`,
+    "chapter.open.4": `${mod}+4`,
+    "chapter.open.5": `${mod}+5`,
+    "chapter.open.6": `${mod}+6`,
+    "chapter.open.7": `${mod}+7`,
+    "chapter.open.8": `${mod}+8`,
+    "chapter.open.9": `${mod}+9`,
+    "chapter.open.0": `${mod}+0`,
+    "view.toggleSidebar": `${mod}+B`,
+    "view.sidebar.open": "",
+    "view.sidebar.close": "",
+    "view.toggleContextPanel": `${mod}+Shift+B`,
+    "view.context.open": "",
+    "view.context.close": "",
+    "sidebar.section.manuscript.toggle": "",
+    "sidebar.section.snapshot.open": "",
+    "sidebar.section.trash.open": "",
+    "project.rename": "",
+    "research.open.character": `${mod}+T`,
+    "research.open.world": "",
+    "research.open.scrap": "",
+    "research.open.analysis": "",
+    "research.open.character.left": "",
+    "research.open.world.left": "",
+    "research.open.scrap.left": "",
+    "research.open.analysis.left": "",
+    "character.openTemplate": "",
+    "world.tab.synopsis": "",
+    "world.tab.terms": "",
+    "world.tab.mindmap": "",
+    "world.tab.drawing": "",
+    "world.tab.plot": "",
+    "world.addTerm": "",
+    "scrap.addMemo": "",
+    "export.openPreview": "",
+    "export.openWindow": "",
+    "editor.openRight": "",
+    "editor.openLeft": "",
+    "split.swapSides": "",
+    "editor.fontSize.increase": "",
+    "editor.fontSize.decrease": "",
+    "window.toggleFullscreen": "",
   };
 };
 

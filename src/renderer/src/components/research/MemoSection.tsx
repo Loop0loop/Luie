@@ -12,6 +12,7 @@ import { api } from "../../services/api";
 import SearchInput from "../common/SearchInput";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
+import { useShortcutCommand } from "../../hooks/useShortcutCommand";
 
 type Note = {
   id: string;
@@ -140,6 +141,12 @@ function MemoSectionInner({
     setNotes([...notes, newNote]);
     setActiveNoteId(newId);
   };
+
+  useShortcutCommand((command) => {
+    if (command.type === "scrap.addMemo") {
+      handleAddNote();
+    }
+  });
 
   return (
     <div className="flex h-full w-full bg-bg-primary overflow-hidden">

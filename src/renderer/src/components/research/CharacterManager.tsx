@@ -10,6 +10,8 @@ import { Infobox } from "./wiki/Infobox";
 import { WikiSection } from "./wiki/WikiSection"; 
 import { cn } from "../../../../shared/types/utils";
 import { useTranslation } from "react-i18next";
+import { useShortcutCommand } from "../../hooks/useShortcutCommand";
+import { i18n, SUPPORTED_LANGUAGES } from "../../i18n";
 import {
   CHARACTER_GROUP_COLORS,
   CHARACTER_TEMPLATES,
@@ -65,6 +67,12 @@ export default function CharacterManager() {
       loadCharacters(currentProject.id);
     }
   }, [currentProject, loadCharacters]);
+
+  useShortcutCommand((command) => {
+    if (command.type === "character.openTemplate") {
+      setIsTemplateModalOpen(true);
+    }
+  });
 
   const handleAddCharacter = async (templateId: string = "basic") => {
     if (currentProject) {
@@ -334,21 +342,51 @@ function WikiDetailView({
     const templateId = attributes.templateId || "basic";
     return CHARACTER_TEMPLATES.find(t => t.id === templateId) || CHARACTER_TEMPLATES[0];
   }, [attributes.templateId]);
+
+  const defaultSectionLabels = useMemo(() => {
+    return t("character.defaultSections", { returnObjects: true }) as string[];
+  }, [t]);
+
+  const defaultLabelById = useMemo(() => {
+    return {
+      overview: defaultSectionLabels[0],
+      appearance: defaultSectionLabels[1],
+      personality: defaultSectionLabels[2],
+      background: defaultSectionLabels[3],
+      relations: defaultSectionLabels[4],
+      notes: defaultSectionLabels[5],
+    } as Record<string, string | undefined>;
+  }, [defaultSectionLabels]);
+
+  const defaultLabelSet = useMemo(() => {
+    const labels = new Set<string>();
+    SUPPORTED_LANGUAGES.forEach((lang) => {
+      const bundle = i18n.getResourceBundle(lang, "common") as {
+        character?: { defaultSections?: string[] };
+      } | undefined;
+      bundle?.character?.defaultSections?.forEach((label) => labels.add(label));
+    });
+    return labels;
+  }, []);
   
   const sections: WikiSectionData[] = useMemo(() => {
     if (attributes.sections) {
-      return attributes.sections;
+      return (attributes.sections as WikiSectionData[]).map((section) => {
+        const defaultLabel = defaultLabelById[section.id];
+        if (!defaultLabel) return section;
+        if (!defaultLabelSet.has(section.label)) return section;
+        return { ...section, label: defaultLabel };
+      });
     }
-    const defaultSections = t("character.defaultSections", { returnObjects: true }) as string[];
     return [
-      { id: "overview", label: defaultSections[0] ?? "1" },
-      { id: "appearance", label: defaultSections[1] ?? "2" },
-      { id: "personality", label: defaultSections[2] ?? "3" },
-      { id: "background", label: defaultSections[3] ?? "4" },
-      { id: "relations", label: defaultSections[4] ?? "5" },
-      { id: "notes", label: defaultSections[5] ?? "6" },
+      { id: "overview", label: defaultSectionLabels[0] ?? "1" },
+      { id: "appearance", label: defaultSectionLabels[1] ?? "2" },
+      { id: "personality", label: defaultSectionLabels[2] ?? "3" },
+      { id: "background", label: defaultSectionLabels[3] ?? "4" },
+      { id: "relations", label: defaultSectionLabels[4] ?? "5" },
+      { id: "notes", label: defaultSectionLabels[5] ?? "6" },
     ];
-  }, [attributes.sections, t]);
+  }, [attributes.sections, defaultLabelById, defaultLabelSet, defaultSectionLabels]);
 
   const customFields: CustomField[] = useMemo(() => {
     return attributes.customFields || [];

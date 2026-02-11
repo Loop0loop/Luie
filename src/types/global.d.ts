@@ -197,8 +197,13 @@ declare global {
         runDb: (options?: { dryRun?: boolean }) => Promise<IPCResponse<unknown>>;
       };
 
+      app: {
+        quit: () => Promise<IPCResponse<unknown>>;
+      };
+
       window: {
         maximize: () => Promise<IPCResponse<unknown>>;
+        close: () => Promise<IPCResponse<unknown>>;
         toggleFullscreen: () => Promise<IPCResponse<unknown>>;
         setFullscreen: (flag: boolean) => Promise<IPCResponse<unknown>>;
         openExport: (chapterId: string) => Promise<IPCResponse<unknown>>;

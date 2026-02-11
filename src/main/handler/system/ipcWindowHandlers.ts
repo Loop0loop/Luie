@@ -1,3 +1,4 @@
+import { app } from "electron";
 import { windowManager } from "../../manager/index.js";
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
@@ -7,6 +8,26 @@ import { ErrorCode } from "../../../shared/constants/errorCode.js";
 
 export function registerWindowIPCHandlers(logger: LoggerLike): void {
   registerIpcHandlers(logger, [
+    {
+      channel: IPC_CHANNELS.WINDOW_CLOSE,
+      logTag: "WINDOW_CLOSE",
+      failMessage: "Failed to close window",
+      handler: () => {
+        const win = windowManager.getMainWindow();
+        if (!win) return false;
+        win.close();
+        return true;
+      },
+    },
+    {
+      channel: IPC_CHANNELS.APP_QUIT,
+      logTag: "APP_QUIT",
+      failMessage: "Failed to quit app",
+      handler: () => {
+        app.quit();
+        return true;
+      },
+    },
     {
       channel: IPC_CHANNELS.WINDOW_MAXIMIZE,
       logTag: "WINDOW_MAXIMIZE",

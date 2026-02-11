@@ -1,5 +1,6 @@
 import { Trash2 } from "lucide-react";
 import { BufferedInput, BufferedTextArea } from "../../common/BufferedInput";
+import { useTranslation } from "react-i18next";
 
 type WikiSectionProps = {
   id: string;
@@ -18,6 +19,7 @@ export function WikiSection({
   onUpdateContent,
   onDelete,
 }: WikiSectionProps) {
+  const { t } = useTranslation();
   return (
     <div id={id} className="mb-8">
       <div className="border-b border-(--namu-border) pb-2 mb-3 flex items-center justify-between">
@@ -33,7 +35,7 @@ export function WikiSection({
             type="button"
             className="bg-none border-none text-subtle cursor-pointer p-1 rounded transition-all hover:bg-surface-hover hover:text-danger" 
             onClick={onDelete}
-            title="섹션 삭제"
+            title={t("character.wiki.sectionDeleteTitle")}
           >
             <Trash2 size={16} />
           </button>
@@ -42,7 +44,7 @@ export function WikiSection({
       <BufferedTextArea
         className="w-full min-h-30 leading-relaxed p-3 border border-border rounded bg-surface text-fg resize-y focus:outline-2 focus:outline-(--namu-blue) focus:border-transparent font-sans"
         value={content || ""}
-        placeholder="내용을 입력하세요..."
+        placeholder={t("character.wiki.sectionPlaceholder")}
         onSave={onUpdateContent}
       />
     </div>
