@@ -82,10 +82,10 @@ export default function ProjectTemplateSelector({
       const nextTitle = String(formData.get("title") ?? "").trim();
 
       if (!projectId) {
-        return { error: t("projectTemplate.error.notFound") };
+        return { error: t("settings.projectTemplate.error.notFound") };
       }
       if (!nextTitle) {
-        return { error: t("projectTemplate.error.nameRequired") };
+        return { error: t("settings.projectTemplate.error.nameRequired") };
       }
       if (nextTitle === renameDialog.currentTitle) {
         setRenameDialog((prev) => ({ ...prev, isOpen: false }));
@@ -105,7 +105,7 @@ export default function ProjectTemplateSelector({
       } catch (error) {
         addOptimisticProject({ type: "reset", projects });
         api.logger.error("Failed to update project", error);
-        return { error: t("projectTemplate.error.renameFailed") };
+        return { error: t("settings.projectTemplate.error.renameFailed") };
       }
     },
     null,
@@ -129,34 +129,34 @@ export default function ProjectTemplateSelector({
   }, [menuOpenId]);
 
   const categories = [
-    { id: "all", label: t("projectTemplate.category.all"), icon: <Book className="w-4 h-4" /> },
-    { id: "novel", label: t("projectTemplate.category.novel"), icon: <Book className="w-4 h-4" /> },
-    { id: "script", label: t("projectTemplate.category.script"), icon: <FileText className="w-4 h-4" /> },
-    { id: "misc", label: t("projectTemplate.category.general"), icon: <FileType className="w-4 h-4" /> },
+    { id: "all", label: t("settings.projectTemplate.category.all"), icon: <Book className="w-4 h-4" /> },
+    { id: "novel", label: t("settings.projectTemplate.category.novel"), icon: <Book className="w-4 h-4" /> },
+    { id: "script", label: t("settings.projectTemplate.category.script"), icon: <FileText className="w-4 h-4" /> },
+    { id: "misc", label: t("settings.projectTemplate.category.general"), icon: <FileType className="w-4 h-4" /> },
   ];
 
   const templates = [
     {
       id: "blank",
-      title: t("projectTemplate.title.blank"),
+      title: t("settings.projectTemplate.title.blank"),
       category: "all",
       type: "blank",
     },
     {
       id: "novel_basic",
-      title: t("projectTemplate.title.webNovel"),
+      title: t("settings.projectTemplate.title.webNovel"),
       category: "novel",
       type: "novel",
     },
     {
       id: "script_basic",
-      title: t("projectTemplate.title.screenplay"),
+      title: t("settings.projectTemplate.title.screenplay"),
       category: "script",
       type: "script",
     },
     {
       id: "essay",
-      title: t("projectTemplate.title.essay"),
+      title: t("settings.projectTemplate.title.essay"),
       category: "misc",
       type: "doc",
     },
@@ -172,12 +172,12 @@ export default function ProjectTemplateSelector({
   const handleSelectTemplate = async (templateId: string) => {
     try {
       const response = await api.fs.selectSaveLocation({
-        title: t("projectTemplate.dialog.selectPath"),
+        title: t("settings.projectTemplate.dialog.selectPath"),
         defaultPath: DEFAULT_PROJECT_FILENAME,
         filters: [
           { name: LUIE_PACKAGE_FILTER_NAME, extensions: [LUIE_PACKAGE_EXTENSION_NO_DOT] },
-          { name: t("projectTemplate.filter.markdown"), extensions: [MARKDOWN_EXTENSION_NO_DOT] },
-          { name: t("projectTemplate.filter.text"), extensions: [TEXT_EXTENSION_NO_DOT] },
+          { name: t("settings.projectTemplate.filter.markdown"), extensions: [MARKDOWN_EXTENSION_NO_DOT] },
+          { name: t("settings.projectTemplate.filter.text"), extensions: [TEXT_EXTENSION_NO_DOT] },
         ],
       });
       if (response.success && response.data) {
@@ -222,7 +222,7 @@ export default function ProjectTemplateSelector({
                   onOpenProject?.(p);
                 }}
               >
-                {t("projectTemplate.context.open")}
+                {t("settings.projectTemplate.context.open")}
               </div>
               <div
                 className="px-2.5 py-2.5 rounded-lg text-[13px] text-fg cursor-pointer select-none hover:bg-active"
@@ -235,7 +235,7 @@ export default function ProjectTemplateSelector({
                   });
                 }}
               >
-                {t("projectTemplate.context.rename")}
+                {t("settings.projectTemplate.context.rename")}
               </div>
               <div className="h-px bg-border my-1.5 mx-1" />
               <div
@@ -249,7 +249,7 @@ export default function ProjectTemplateSelector({
                   });
                 }}
               >
-                {t("projectTemplate.context.delete")}
+                {t("settings.projectTemplate.context.delete")}
               </div>
             </div>
           );
@@ -259,7 +259,7 @@ export default function ProjectTemplateSelector({
       <Modal
         isOpen={renameDialog.isOpen}
         onClose={() => setRenameDialog((prev) => ({ ...prev, isOpen: false }))}
-        title={t("projectTemplate.dialog.renameTitle")}
+        title={t("settings.projectTemplate.dialog.renameTitle")}
         footer={
           <div className="flex justify-end gap-3 w-full">
             <button
@@ -267,7 +267,7 @@ export default function ProjectTemplateSelector({
               onClick={() => setRenameDialog((prev) => ({ ...prev, isOpen: false }))}
               disabled={renamePending}
             >
-              {t("projectTemplate.actions.cancel")}
+              {t("settings.projectTemplate.actions.cancel")}
             </button>
             <button
               className="px-4 py-2 bg-accent border-none rounded-md text-white text-[13px] font-medium cursor-pointer transition-all hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
@@ -275,7 +275,7 @@ export default function ProjectTemplateSelector({
               form={renameFormId}
               disabled={renamePending}
             >
-              {renamePending ? t("projectTemplate.actions.saving") : t("projectTemplate.actions.save")}
+              {renamePending ? t("settings.projectTemplate.actions.saving") : t("settings.projectTemplate.actions.save")}
             </button>
           </div>
         }
@@ -298,9 +298,9 @@ export default function ProjectTemplateSelector({
 
       <ConfirmDialog
         isOpen={deleteDialog.isOpen}
-        title={t("projectTemplate.dialog.deleteTitle")}
-        message={t("projectTemplate.deleteConfirm", { title: deleteDialog.projectTitle })}
-        confirmLabel={t("projectTemplate.deleteConfirmLabel")}
+        title={t("settings.projectTemplate.dialog.deleteTitle")}
+        message={t("settings.projectTemplate.deleteConfirm", { title: deleteDialog.projectTitle })}
+        confirmLabel={t("settings.projectTemplate.deleteConfirmLabel")}
         isDestructive
         onConfirm={async () => {
           addOptimisticProject({ type: "delete", id: deleteDialog.projectId });
@@ -317,7 +317,7 @@ export default function ProjectTemplateSelector({
 
       <div className="flex-1 flex h-[calc(100vh-32px)]">
         <div className="w-60 bg-sidebar py-8 px-4 flex flex-col gap-2 border-r border-border">
-          <div className="text-[11px] font-bold text-muted mb-4 pl-3 uppercase tracking-widest">{t("projectTemplate.sidebarTitle")}</div>
+          <div className="text-[11px] font-bold text-muted mb-4 pl-3 uppercase tracking-widest">{t("settings.projectTemplate.sidebarTitle")}</div>
           {categories.map((cat) => (
             <div
               key={cat.id}
@@ -338,21 +338,21 @@ export default function ProjectTemplateSelector({
         <div className="flex-1 p-12 overflow-y-auto bg-app min-w-0">
           <div className="mb-10">
             <div className="flex items-center justify-between mb-4">
-              <div className="text-sm font-bold tracking-[0.5px] text-subtle uppercase">{t("projectTemplate.recentTitle")}</div>
+              <div className="text-sm font-bold tracking-[0.5px] text-subtle uppercase">{t("settings.projectTemplate.recentTitle")}</div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   className="px-3 py-1.5 text-xs rounded-md bg-surface border border-border text-fg hover:bg-surface-hover"
                   onClick={() => onOpenLuieFile?.()}
                 >
-                  {t("projectTemplate.actions.openLuie")}
+                  {t("settings.projectTemplate.actions.openLuie")}
                 </button>
                 <button
                   type="button"
                   className="px-3 py-1.5 text-xs rounded-md bg-surface border border-border text-fg hover:bg-surface-hover"
                   onClick={() => onOpenSnapshotBackup?.()}
                 >
-                  {t("projectTemplate.actions.restoreSnapshot")}
+                  {t("settings.projectTemplate.actions.restoreSnapshot")}
                 </button>
               </div>
             </div>
@@ -370,7 +370,7 @@ export default function ProjectTemplateSelector({
                       className="text-xs text-muted whitespace-nowrap overflow-hidden text-ellipsis"
                       title={p.projectPath ?? ""}
                     >
-                      {p.projectPath ?? t("projectTemplate.emptyPath")}
+                      {p.projectPath ?? t("settings.projectTemplate.emptyPath")}
                     </div>
                   </div>
 
@@ -432,9 +432,9 @@ export default function ProjectTemplateSelector({
                     {template.type === "novel" && (
                       <div className="w-full h-full bg-zinc-900 p-5 flex flex-col">
                         <div className="h-full bg-white/5 mx-auto w-full flex flex-col p-3 shadow-inner">
-                            <div className="text-[8px] tracking-[2px] text-zinc-500 text-center uppercase mb-3 font-serif">{t("projectTemplate.preview.standardFormat")}</div>
+                            <div className="text-[8px] tracking-[2px] text-zinc-500 text-center uppercase mb-3 font-serif">{t("settings.projectTemplate.preview.standardFormat")}</div>
                             <div className="font-serif text-lg text-zinc-200 text-center font-bold pb-2 border-b border-white/10 mb-4">
-                              {t("projectTemplate.preview.chapterOne")}
+                              {t("settings.projectTemplate.preview.chapterOne")}
                             </div>
                             <div className="space-y-1.5 opacity-40">
                               <div className="h-1 w-full bg-zinc-600 rounded-full" />
@@ -451,19 +451,19 @@ export default function ProjectTemplateSelector({
                     {template.type === "script" && (
                       <div className="w-full h-full bg-[#18181b] p-5 font-mono text-[9px] text-zinc-400 flex flex-col items-start leading-relaxed border-l-[6px] border-[#27272a] group-hover:border-accent transition-colors">
                         <div className="flex w-full justify-between opacity-50 mb-4 tracking-widest uppercase">
-                          <span>{t("projectTemplate.preview.script.int")}</span>
-                          <span>{t("projectTemplate.preview.script.day")}</span>
+                          <span>{t("settings.projectTemplate.preview.script.int")}</span>
+                          <span>{t("settings.projectTemplate.preview.script.day")}</span>
                         </div>
                         
-                        <div className="w-full text-center text-zinc-300 font-bold mb-1 tracking-wider uppercase">{t("projectTemplate.preview.script.character")}</div>
+                        <div className="w-full text-center text-zinc-300 font-bold mb-1 tracking-wider uppercase">{t("settings.projectTemplate.preview.script.character")}</div>
                         <div className="w-full text-center mb-3">
-                          {t("projectTemplate.preview.script.direction")}<br/>
-                          {t("projectTemplate.preview.script.dialogue")}
+                          {t("settings.projectTemplate.preview.script.direction")}<br/>
+                          {t("settings.projectTemplate.preview.script.dialogue")}
                         </div>
 
-                        <div className="w-full text-center text-zinc-300 font-bold mb-1 tracking-wider uppercase">{t("projectTemplate.preview.script.another")}</div>
+                        <div className="w-full text-center text-zinc-300 font-bold mb-1 tracking-wider uppercase">{t("settings.projectTemplate.preview.script.another")}</div>
                          <div className="w-full text-center">
-                          {t("projectTemplate.preview.script.anotherLine")}
+                          {t("settings.projectTemplate.preview.script.anotherLine")}
                         </div>
                       </div>
                     )}

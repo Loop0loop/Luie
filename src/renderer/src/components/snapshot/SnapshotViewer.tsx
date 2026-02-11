@@ -1,4 +1,5 @@
 import { memo, useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { RotateCcw, Calendar } from "lucide-react";
 import * as Diff from "diff";
 import { api } from "../../services/api";
@@ -24,10 +25,11 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
   const { loadAll: reloadChapters } = useChapterStore();
   const { setSplitView, setRightPanelContent } = useUIStore();
   const [selectedAdditions, setSelectedAdditions] = useState<Set<number>>(new Set());
+  const { t } = useTranslation();
   const diffEnabled = (currentContent?.length ?? 0) + (snapshot.content?.length ?? 0) <= 50000;
 
   const handleRestore = async () => {
-    const confirmed = window.confirm("Restore this snapshot? Current content will be overwritten.");
+    const confirmed = window.confirm(t("snapshot.viewer.restoreConfirm"));
     if (!confirmed) return;
 
     try {
@@ -48,7 +50,7 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
 
   const formattedDate = snapshot.createdAt 
     ? new Date(snapshot.createdAt).toLocaleString() 
-    : "Unknown Date";
+    : t("snapshot.viewer.unknownDate");
 
   const currentHtml = useMemo(() => currentContent ?? "", [currentContent]);
   const snapshotHtml = useMemo(() => snapshot.content ?? "", [snapshot.content]);
@@ -111,14 +113,14 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
   const handleApplySelected = useCallback(
     async (selectedIds: Set<number>) => {
       if (!onApplySnapshotText || selectedIds.size === 0) return;
-      const confirmed = window.confirm("선택한 변경 내용을 현재 원고에 적용할까요?");
+      const confirmed = window.confirm(t("snapshot.viewer.applyConfirm"));
       if (!confirmed) return;
 
       const mergedHtml = buildMergedHtml(selectedIds);
       await onApplySnapshotText(mergedHtml);
       setSelectedAdditions(new Set());
     },
-    [buildMergedHtml, onApplySnapshotText],
+    [buildMergedHtml, onApplySnapshotText, t],
   );
 
   return (
@@ -127,34 +129,34 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-surface text-sm">
         <div className="flex items-center gap-2 text-muted-fg">
           <Calendar className="w-4 h-4" />
-          <span className="font-medium">Snapshot: {formattedDate}</span>
+          <span className="font-medium">{t("snapshot.viewer.header", { date: formattedDate })}</span>
         </div>
         <button
           onClick={handleRestore}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-medium"
         >
           <RotateCcw className="w-3.5 h-3.5" />
-          Restore
+          {t("snapshot.viewer.restoreButton")}
         </button>
       </div>
 
       <div className="border-b border-border bg-panel">
         <div className="flex items-center justify-between px-4 py-2 text-xs text-muted-fg">
-          <span>변경된 내용 (스냅샷에만 존재)</span>
+          <span>{t("snapshot.viewer.changesHeader")}</span>
           <button
             onClick={() => void handleApplySelected(new Set(selectedAdditions))}
             className="px-2 py-1 rounded bg-accent/20 text-accent hover:bg-accent/30 transition-colors disabled:opacity-50"
             disabled={!onApplySnapshotText || selectedAdditions.size === 0}
           >
-            선택 적용
+            {t("snapshot.viewer.applySelected")}
           </button>
         </div>
         {!diffEnabled ? (
           <div className="px-4 pb-3 text-xs text-muted">
-            내용이 길어 변경 비교를 생략했습니다.
+            {t("snapshot.viewer.diffSkipped")}
           </div>
         ) : additions.length === 0 ? (
-          <div className="px-4 pb-3 text-xs text-muted">추가된 내용이 없습니다.</div>
+          <div className="px-4 pb-3 text-xs text-muted">{t("snapshot.viewer.noAdditions")}</div>
         ) : (
           <div className="max-h-40 overflow-y-auto px-4 pb-3 flex flex-col gap-2">
             {additions.map((addition) => {
@@ -168,12 +170,12 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
                     type="button"
                     className="mt-0.5 text-muted hover:text-fg"
                     onClick={() => toggleAddition(addition.id)}
-                    title="선택"
+                    title={t("snapshot.viewer.selectTitle")}
                   >
                     {isSelected ? "▣" : "▢"}
                   </button>
                   <div className="flex-1 text-[11px] text-fg line-clamp-2 whitespace-pre-wrap">
-                    {addition.text || "(형식 변경)"}
+                    {addition.text || t("snapshot.viewer.formatOnly")}
                   </div>
                   <button
                     type="button"
@@ -181,7 +183,7 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
                     onClick={() => void handleApplySelected(new Set([addition.id]))}
                     disabled={!onApplySnapshotText}
                   >
-                    적용
+                    {t("snapshot.viewer.applySingle")}
                   </button>
                 </div>
               );

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { 
   FileText, 
   Download, 
@@ -25,13 +26,40 @@ interface ExportPreviewPanelProps {
 
 type ExportFormat = "hwp" | "word";
 
-export default function ExportPreviewPanel({ title = "Untitled" }: ExportPreviewPanelProps) {
+export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
+  const { t } = useTranslation();
+  const resolvedTitle = title ?? t("exportPreview.defaultTitle");
   const [format, setFormat] = useState<ExportFormat>("hwp");
 
   const handleExport = () => {
     // Placeholder for actual export logic
-    alert(`Exporting as .${format === "hwp" ? "hwp" : "docx"} (Coming Soon)`);
+    const ext = format === "hwp" ? "hwp" : "docx";
+    alert(t("exportPreview.alertExport", { ext }));
   };
+
+  const hwpMenuItems = [
+    t("exportPreview.hwp.menu.file"),
+    t("exportPreview.hwp.menu.edit"),
+    t("exportPreview.hwp.menu.view"),
+    t("exportPreview.hwp.menu.input"),
+    t("exportPreview.hwp.menu.format"),
+    t("exportPreview.hwp.menu.page"),
+    t("exportPreview.hwp.menu.security"),
+    t("exportPreview.hwp.menu.review"),
+    t("exportPreview.hwp.menu.tools"),
+  ];
+
+  const wordTabs = [
+    t("exportPreview.word.tabs.file"),
+    t("exportPreview.word.tabs.home"),
+    t("exportPreview.word.tabs.insert"),
+    t("exportPreview.word.tabs.draw"),
+    t("exportPreview.word.tabs.layout"),
+    t("exportPreview.word.tabs.references"),
+    t("exportPreview.word.tabs.review"),
+    t("exportPreview.word.tabs.view"),
+    t("exportPreview.word.tabs.help"),
+  ];
 
   return (
     <div className="flex flex-col h-full bg-white text-black overflow-hidden relative border-l border-border">
@@ -45,7 +73,7 @@ export default function ExportPreviewPanel({ title = "Untitled" }: ExportPreview
             )}
             onClick={() => setFormat("hwp")}
           >
-            <span className="font-bold">한</span> 한글
+            <span className="font-bold">{t("exportPreview.format.hwpShort")}</span> {t("exportPreview.format.hwp")}
           </button>
           <button
             className={cn(
@@ -54,7 +82,7 @@ export default function ExportPreviewPanel({ title = "Untitled" }: ExportPreview
             )}
             onClick={() => setFormat("word")}
           >
-             <FileText className="w-3.5 h-3.5" /> Word
+             <FileText className="w-3.5 h-3.5" /> {t("exportPreview.format.word")}
           </button>
         </div>
 
@@ -63,7 +91,7 @@ export default function ExportPreviewPanel({ title = "Untitled" }: ExportPreview
           onClick={handleExport}
         >
           <Download className="w-3.5 h-3.5" />
-          내보내기
+          {t("exportPreview.action.export")}
         </button>
       </div>
 
@@ -75,9 +103,9 @@ export default function ExportPreviewPanel({ title = "Untitled" }: ExportPreview
             {/* Title Bar Equivalent */}
             <div className="bg-[#3e81f6] text-white px-2 py-1 text-[10px] flex items-center justify-between">
                <div className="flex items-center gap-2">
-                 <span className="font-bold">한글 2024</span>
+                 <span className="font-bold">{t("exportPreview.hwp.appTitle")}</span>
                  <span className="opacity-80 mx-1">|</span>
-                 <span>{title}.hwp</span>
+                 <span>{resolvedTitle}.hwp</span>
                </div>
                <div className="flex gap-1.5">
                  <Undo className="w-3 h-3 opacity-80" />
@@ -88,7 +116,7 @@ export default function ExportPreviewPanel({ title = "Untitled" }: ExportPreview
             
             {/* Menu Bar */}
             <div className="bg-white border-b border-gray-300 flex text-[11px] text-gray-700">
-               {["파일", "편집", "보기", "입력", "서식", "쪽", "보안", "검토", "도구"].map(menu => (
+               {hwpMenuItems.map((menu) => (
                  <div key={menu} className="px-3 py-1.5 hover:bg-gray-100 cursor-default">{menu}</div>
                ))}
             </div>
@@ -97,18 +125,18 @@ export default function ExportPreviewPanel({ title = "Untitled" }: ExportPreview
             <div className="bg-[#f0f0f0] border-b border-gray-300 p-1 flex items-center gap-1 shrink-0 overflow-x-auto whitespace-nowrap">
                <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-sm px-1 py-0.5">
                   <div className="w-3 h-3 bg-gray-400 rounded-sm opacity-50" />
-                  <span className="text-[11px] font-medium text-gray-800 px-1 min-w-[50px]">바탕글</span>
+                <span className="text-[11px] font-medium text-gray-800 px-1 min-w-[50px]">{t("exportPreview.hwp.toolbar.baseStyle")}</span>
                   <ChevronDown className="w-3 h-3 text-gray-500" />
                </div>
                <div className="w-px h-4 bg-gray-300 mx-1" />
                
                <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-sm px-1 py-0.5">
-                 <span className="text-[11px] font-medium text-gray-800 px-1 min-w-[70px]">함초롬바탕</span>
+                 <span className="text-[11px] font-medium text-gray-800 px-1 min-w-[70px]">{t("exportPreview.hwp.toolbar.fontName")}</span>
                  <ChevronDown className="w-3 h-3 text-gray-500" />
                </div>
                
                <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-sm px-1 py-0.5 ml-1">
-                 <span className="text-[11px] font-medium text-gray-800 px-1 min-w-[24px]">10</span>
+                 <span className="text-[11px] font-medium text-gray-800 px-1 min-w-[24px]">{t("exportPreview.hwp.toolbar.fontSize")}</span>
                  <div className="flex flex-col -gap-1">
                    <ChevronDown className="w-2 h-2 text-gray-500 rotate-180" />
                    <ChevronDown className="w-2 h-2 text-gray-500" />
@@ -150,13 +178,12 @@ export default function ExportPreviewPanel({ title = "Untitled" }: ExportPreview
                   <div className="absolute bottom-8 left-8 w-4 h-4 border-b border-l border-gray-300" />
                   <div className="absolute bottom-8 right-8 w-4 h-4 border-b border-r border-gray-300" />
 
-                  <h1 className="text-xl font-bold mb-6 text-center">{title}</h1>
+                  <h1 className="text-xl font-bold mb-6 text-center">{resolvedTitle}</h1>
                   <p className="mb-2">
-                    이 문서는 한글(HWP) 스타일 미리보기입니다.
+                    {t("exportPreview.hwp.previewNotice")}
                   </p>
                   <p>
-                    동해물과 백두산이 마르고 닳도록 하느님이 보우하사 우리나라 만세.
-                    무궁화 삼천리 화려강산 대한사람 대한으로 길이 보전하세.
+                    {t("exportPreview.hwp.sampleText")}
                   </p>
                </div>
             </div>
@@ -164,14 +191,14 @@ export default function ExportPreviewPanel({ title = "Untitled" }: ExportPreview
             {/* Status Bar */}
             <div className="bg-[#f0f0f0] border-t border-gray-300 h-6 flex items-center px-2 text-[10px] text-gray-600 justify-between shrink-0">
                <div className="flex gap-3">
-                 <span>1/1 쪽</span>
-                 <span>1단</span>
-                 <span>배치: 글자</span>
+                 <span>{t("exportPreview.hwp.status.pageCount")}</span>
+                 <span>{t("exportPreview.hwp.status.column")}</span>
+                 <span>{t("exportPreview.hwp.status.layout")}</span>
                </div>
                <div className="flex gap-3">
-                 <span>삽입</span>
-                 <span>변경 내용 추적</span>
-                 <span>100%</span>
+                 <span>{t("exportPreview.hwp.status.insert")}</span>
+                 <span>{t("exportPreview.hwp.status.trackChanges")}</span>
+                 <span>{t("exportPreview.hwp.status.zoom")}</span>
                </div>
             </div>
           </div>
@@ -186,27 +213,27 @@ export default function ExportPreviewPanel({ title = "Untitled" }: ExportPreview
                       <div key={i} className="bg-white rounded-[1px]" />
                     ))}
                  </div>
-                 <span className="font-semibold text-sm">Word</span>
-                 <span className="text-xs opacity-80">{title}</span>
+                  <span className="font-semibold text-sm">{t("exportPreview.word.title")}</span>
+                 <span className="text-xs opacity-80">{resolvedTitle}</span>
                </div>
                <div className="w-1/3 bg-white/20 rounded px-2 py-0.5 flex items-center gap-2 text-xs">
                   <Search className="w-3 h-3" />
-                  <span className="opacity-70">검색</span>
+                  <span className="opacity-70">{t("exportPreview.word.searchPlaceholder")}</span>
                </div>
                <div className="flex items-center gap-3">
-                  <span className="bg-orange-500 text-white text-[10px] font-bold px-1 rounded">PREMIUM</span>
+                  <span className="bg-orange-500 text-white text-[10px] font-bold px-1 rounded">{t("exportPreview.word.premium")}</span>
                   <div className="w-6 h-6 rounded-full bg-blue-300 flex items-center justify-center text-xs font-bold text-blue-900">U</div>
                </div>
             </div>
 
             {/* Ribbon Tabs */}
             <div className="bg-white border-b border-gray-200 px-2 flex text-[12px] text-gray-600">
-               {["파일", "홈", "삽입", "그리기", "레이아웃", "참조", "검토", "보기", "도움말"].map(menu => (
+               {wordTabs.map((menu) => (
                  <div 
                    key={menu} 
                    className={cn(
                      "px-3 py-2 cursor-pointer border-b-2 border-transparent hover:text-blue-700 hover:bg-gray-50",
-                     menu === "홈" && "text-blue-700 border-blue-700 font-medium"
+                     menu === t("exportPreview.word.tabs.home") && "text-blue-700 border-blue-700 font-medium"
                    )}
                  >
                    {menu}
@@ -222,7 +249,7 @@ export default function ExportPreviewPanel({ title = "Untitled" }: ExportPreview
                     <Undo className="w-4 h-4 text-gray-600" />
                     <Redo className="w-4 h-4 text-gray-600 opacity-50" />
                   </div>
-                  <span className="text-[10px] text-gray-500 mt-1">실행 취소</span>
+                  <span className="text-[10px] text-gray-500 mt-1">{t("exportPreview.word.undo")}</span>
                </div>
 
                {/* Font Group */}
@@ -261,15 +288,15 @@ export default function ExportPreviewPanel({ title = "Untitled" }: ExportPreview
                <div className="flex items-center gap-1 px-2">
                   <div className="flex flex-col items-center bg-white border border-gray-300 rounded p-1 w-12 h-14 justify-center">
                      <span className="text-[16px] font-light">AaBbCc</span>
-                     <span className="text-[10px] text-blue-600">표준</span>
+                    <span className="text-[10px] text-blue-600">{t("exportPreview.word.styles.standard")}</span>
                   </div>
                   <div className="flex flex-col items-center hover:bg-white hover:border border-transparent border rounded p-1 w-12 h-14 justify-center">
                      <span className="text-[16px] font-light">AaBbCc</span>
-                     <span className="text-[10px] text-gray-600">간격 없음</span>
+                    <span className="text-[10px] text-gray-600">{t("exportPreview.word.styles.noSpacing")}</span>
                   </div>
                   <div className="flex flex-col items-center hover:bg-white hover:border border-transparent border rounded p-1 w-12 h-14 justify-center">
                      <span className="text-[16px] font-light text-blue-600">AaBbCc</span>
-                     <span className="text-[10px] text-gray-600">제목 1</span>
+                    <span className="text-[10px] text-gray-600">{t("exportPreview.word.styles.heading1")}</span>
                   </div>
                </div>
             </div>
@@ -286,14 +313,12 @@ export default function ExportPreviewPanel({ title = "Untitled" }: ExportPreview
                    transformOrigin: "top center"
                  }}
                >
-                  <h1 className="text-2xl font-bold mb-4 text-blue-900">{title}</h1>
+                  <h1 className="text-2xl font-bold mb-4 text-blue-900">{resolvedTitle}</h1>
                   <p className="mb-2">
-                    This is a preview of the Microsoft Word style export.
+                    {t("exportPreview.word.previewNotice")}
                   </p>
                   <p>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod 
-                    terms incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
-                    quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                    {t("exportPreview.word.sampleText")}
                   </p>
                </div>
             </div>
@@ -301,18 +326,18 @@ export default function ExportPreviewPanel({ title = "Untitled" }: ExportPreview
             {/* Word Status Bar */}
             <div className="bg-[#185abd] text-white h-6 flex items-center px-4 text-[10px] justify-between shrink-0">
                <div className="flex gap-4">
-                 <span>1페이지(전체 1)</span>
-                 <span>45 단어</span>
-                 <span className="flex items-center gap-1"><Globe className="w-3 h-3" /> 한국어</span>
+                <span>{t("exportPreview.word.status.pageInfo")}</span>
+                <span>{t("exportPreview.word.status.wordCount")}</span>
+                <span className="flex items-center gap-1"><Globe className="w-3 h-3" /> {t("exportPreview.word.status.language")}</span>
                </div>
                <div className="flex gap-4 items-center">
-                 <span>접근성: 검토 필요</span>
+                <span>{t("exportPreview.word.status.accessibility")}</span>
                  <div className="flex gap-2">
-                    <span className="hover:bg-white/20 p-0.5 rounded cursor-pointer">읽기 모드</span>
-                    <span className="bg-white/20 p-0.5 rounded cursor-pointer">인쇄 모양</span>
-                    <span className="hover:bg-white/20 p-0.5 rounded cursor-pointer">웹 모양</span>
+                  <span className="hover:bg-white/20 p-0.5 rounded cursor-pointer">{t("exportPreview.word.status.view.read")}</span>
+                  <span className="bg-white/20 p-0.5 rounded cursor-pointer">{t("exportPreview.word.status.view.print")}</span>
+                  <span className="hover:bg-white/20 p-0.5 rounded cursor-pointer">{t("exportPreview.word.status.view.web")}</span>
                  </div>
-                 <span>100%</span>
+                <span>{t("exportPreview.word.status.zoom")}</span>
                </div>
             </div>
           </div>

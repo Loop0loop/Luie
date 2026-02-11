@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import * as Diff from "diff";
 import { ArrowRight } from "lucide-react";
 import { Modal } from "./../common/Modal";
@@ -19,6 +20,7 @@ export function SnapshotDiffModal({
   snapshotContent,
   snapshotDate,
 }: SnapshotDiffModalProps) {
+  const { t } = useTranslation();
   const diffs = useMemo(() => {
     return Diff.diffChars(snapshotContent, originalContent);
   }, [originalContent, snapshotContent]);
@@ -27,32 +29,32 @@ export function SnapshotDiffModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="스냅샷 비교"
+      title={t("snapshot.diff.title")}
       width="800px" 
     >
       <div className="flex flex-col h-[70vh]">
         <div className="flex items-center justify-between px-4 py-2 bg-panel border-b border-border shrink-0">
           <div className="flex items-center gap-4 text-sm">
             <div className="flex flex-col">
-              <span className="text-muted font-semibold">스냅샷 (과거)</span>
+              <span className="text-muted font-semibold">{t("snapshot.diff.snapshotPast")}</span>
               <span className="text-xs text-muted/70">
                 {snapshotDate.toLocaleString()}
               </span>
             </div>
             <ArrowRight className="text-muted icon-sm" />
             <div className="flex flex-col">
-              <span className="text-fg font-semibold">현재 버전</span>
-              <span className="text-xs text-muted/70">Editing Now</span>
+              <span className="text-fg font-semibold">{t("snapshot.diff.currentVersion")}</span>
+              <span className="text-xs text-muted/70">{t("snapshot.diff.editingNow")}</span>
             </div>
           </div>
           <div className="flex items-center gap-3 text-xs">
             <span className="flex items-center gap-1">
               <span className="w-3 h-3 bg-red-500/20 border border-red-500/50 rounded-sm"></span>
-              삭제됨
+              {t("snapshot.diff.deleted")}
             </span>
             <span className="flex items-center gap-1">
               <span className="w-3 h-3 bg-green-500/20 border border-green-500/50 rounded-sm"></span>
-              추가됨
+              {t("snapshot.diff.added")}
             </span>
           </div>
         </div>
@@ -78,7 +80,7 @@ export function SnapshotDiffModal({
                 onClick={onClose}
                 className="px-4 py-2 rounded bg-element hover:bg-element-hover border border-border text-fg transition-colors"
             >
-                닫기
+              {t("snapshot.diff.close")}
             </button>
         </div>
       </div>
