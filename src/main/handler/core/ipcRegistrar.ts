@@ -9,7 +9,7 @@ export type IpcHandlerConfig<TArgs extends unknown[] = unknown[], TResult = unkn
   logTag?: string;
   failMessage: string;
   argsSchema?: ZodType<TArgs>;
-  handler: (...args: TArgs) => MaybePromise<TResult>;
+  handler(...args: TArgs): MaybePromise<TResult>;
 };
 
 type AnyIpcHandlerConfig = IpcHandlerConfig<unknown[], unknown>;
