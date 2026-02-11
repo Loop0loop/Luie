@@ -50,7 +50,6 @@ export default function AnalysisSection() {
       unsubscribeStream();
       unsubscribeError();
     };
-  }, [addStreamItem, setError, showToast]);
   }, [addStreamItem, setError, showToast, t]);
 
   // Cleanup on unmount or tab switch
