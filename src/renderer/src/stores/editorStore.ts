@@ -3,8 +3,11 @@ import type {
   EditorSettings,
   EditorTheme,
   FontFamily,
+  FontPreset,
+  ThemeTemperature,
+  ThemeContrast,
 } from "../../../shared/types";
-export type { EditorSettings, EditorTheme, FontFamily, FontPreset } from "../../../shared/types";
+export type { EditorSettings, EditorTheme, FontFamily, FontPreset };
 import {
   DEFAULT_EDITOR_FONT_FAMILY,
   DEFAULT_EDITOR_FONT_PRESET,
@@ -12,7 +15,9 @@ import {
   DEFAULT_EDITOR_LINE_HEIGHT,
   DEFAULT_EDITOR_MAX_WIDTH,
   DEFAULT_EDITOR_THEME,
-} from "../../../shared/constants";
+  DEFAULT_EDITOR_THEME_CONTRAST,
+  DEFAULT_EDITOR_THEME_TEMP,
+} from "../../../shared/constants/configs";
 import { editorSettingsSchema } from "../../../shared/schemas";
 import { api } from "../services/api";
 
@@ -32,6 +37,8 @@ const DEFAULT_SETTINGS: EditorSettings = {
   lineHeight: DEFAULT_EDITOR_LINE_HEIGHT,
   maxWidth: DEFAULT_EDITOR_MAX_WIDTH,
   theme: DEFAULT_EDITOR_THEME,
+  themeTemp: DEFAULT_EDITOR_THEME_TEMP as ThemeTemperature,
+  themeContrast: DEFAULT_EDITOR_THEME_CONTRAST as ThemeContrast,
 };
 
 export const useEditorStore = create<EditorStore>((set, get) => ({
@@ -58,6 +65,8 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       lineHeight: current.lineHeight,
       maxWidth: current.maxWidth,
       theme: current.theme,
+      themeTemp: current.themeTemp ?? DEFAULT_EDITOR_THEME_TEMP,
+      themeContrast: current.themeContrast ?? DEFAULT_EDITOR_THEME_CONTRAST,
       ...newSettings,
     };
     const response = await api.settings.setEditor(updated);

@@ -102,7 +102,7 @@ export const editorSettingsSchema = z.object({
   fontFamily: z.enum(["serif", "sans", "mono"]),
   fontPreset: z
     .enum([
-      "default",
+      "inter",
       "lora",
       "bitter",
       "source-serif",
@@ -115,6 +115,8 @@ export const editorSettingsSchema = z.object({
   lineHeight: z.number().positive(),
   maxWidth: z.number().int().positive(),
   theme: z.enum(["light", "dark", "sepia"]),
+  themeTemp: z.enum(["neutral", "warm", "cool"]).optional().default("neutral"),
+  themeContrast: z.enum(["soft", "high"]).optional().default("soft"),
 });
 
 export const settingsAutoSaveSchema = z.object({

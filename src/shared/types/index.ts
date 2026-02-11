@@ -220,7 +220,7 @@ export interface SearchResult {
 export type FontFamily = "serif" | "sans" | "mono";
 
 export type FontPreset =
-  | "default"
+  | "inter"
   | "lora"
   | "bitter"
   | "source-serif"
@@ -229,6 +229,8 @@ export type FontPreset =
   | "victor-mono";
 
 export type EditorTheme = "light" | "dark" | "sepia";
+export type ThemeTemperature = "neutral" | "warm" | "cool";
+export type ThemeContrast = "soft" | "high";
 
 export interface WindowBounds {
   width: number;
@@ -246,6 +248,8 @@ export interface EditorSettings {
   lineHeight: number;
   maxWidth: number;
   theme: EditorTheme;
+  themeTemp: "neutral" | "warm" | "cool";
+  themeContrast: "soft" | "high";
 }
 
 export interface AppSettings {

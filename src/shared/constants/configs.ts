@@ -70,12 +70,14 @@ export const DEFAULT_UI_CONTEXT_OPEN = false
 export const SUGGESTION_MAX_ITEMS = 10
 export const SUGGESTION_POPUP_Z_INDEX = 1000
 
-export const DEFAULT_EDITOR_FONT_FAMILY = 'serif'
-export const DEFAULT_EDITOR_FONT_PRESET = 'default'
-export const DEFAULT_EDITOR_FONT_SIZE = 18
-export const DEFAULT_EDITOR_LINE_HEIGHT = 1.8
-export const DEFAULT_EDITOR_MAX_WIDTH = 800
-export const DEFAULT_EDITOR_THEME = 'light'
+export const DEFAULT_EDITOR_FONT_FAMILY = "sans";
+export const DEFAULT_EDITOR_FONT_PRESET = "inter";
+export const DEFAULT_EDITOR_FONT_SIZE = 16;
+export const DEFAULT_EDITOR_LINE_HEIGHT = 1.6;
+export const DEFAULT_EDITOR_MAX_WIDTH = 800;
+export const DEFAULT_EDITOR_THEME = "light";
+export const DEFAULT_EDITOR_THEME_TEMP = "neutral";
+export const DEFAULT_EDITOR_THEME_CONTRAST = "soft";
 
 export const EDITOR_TOOLBAR_FONT_STEP = 1
 export const EDITOR_TOOLBAR_FONT_MIN = 10

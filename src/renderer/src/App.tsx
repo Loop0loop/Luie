@@ -20,9 +20,11 @@ import { useToast } from "./components/common/ToastContext";
 import {
   EDITOR_TOOLBAR_FONT_MIN,
   EDITOR_TOOLBAR_FONT_STEP,
+} from "../../shared/constants/configs";
+import {
   LUIE_PACKAGE_EXTENSION_NO_DOT,
   LUIE_PACKAGE_FILTER_NAME,
-} from "../../shared/constants";
+} from "../../shared/constants/paths";
 import { api } from "./services/api";
 
 const SettingsModal = lazy(() => import("./components/settings/SettingsModal"));
@@ -63,6 +65,8 @@ export default function App() {
   const loadProjects = useProjectStore((state) => state.loadProjects);
   const updateProject = useProjectStore((state) => state.updateProject);
   const theme = useEditorStore((state) => state.theme);
+  const themeTemp = useEditorStore((state) => state.themeTemp);
+  const themeContrast = useEditorStore((state) => state.themeContrast);
   const fontSize = useEditorStore((state) => state.fontSize);
   const setFontSize = useEditorStore((state) => state.setFontSize);
 
@@ -72,7 +76,9 @@ export default function App() {
   // 전역 테마 적용 (템플릿/에디터 등 모든 뷰에서 동작)
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
+    if (themeTemp) document.documentElement.setAttribute("data-temp", themeTemp);
+    if (themeContrast) document.documentElement.setAttribute("data-contrast", themeContrast);
+  }, [theme, themeTemp, themeContrast]);
 
   useEffect(() => {
     void loadShortcuts();

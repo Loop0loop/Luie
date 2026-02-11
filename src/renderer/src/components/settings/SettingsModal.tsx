@@ -2,16 +2,19 @@ import { memo, useMemo, useState, useEffect, useTransition } from "react";
 import { X, Check, Download } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Virtuoso } from "react-virtuoso";
-import type { EditorTheme, FontPreset } from "../../stores/editorStore";
+import type { FontPreset, EditorSettings } from "../../stores/editorStore";
 import { useEditorStore } from "../../stores/editorStore";
 import { useShortcutStore } from "../../stores/shortcutStore";
 import type { ShortcutMap } from "../../../../shared/types";
 import {
   EDITOR_FONT_FAMILIES,
-  SHORTCUT_ACTIONS,
-  STORAGE_KEY_FONTS_INSTALLED,
-} from "../../../../shared/constants";
-import { setLanguage, type SupportedLanguage } from "../../i18n";
+} from "../../../../shared/constants/configs";
+import {
+  SHORTCUT_ACTIONS
+} from "../../../../shared/constants/shortcuts";
+import { setLanguage } from "../../i18n";
+
+const STORAGE_KEY_FONTS_INSTALLED = "luie:fonts-installed";
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -50,25 +53,52 @@ const ShortcutRow = memo(function ShortcutRow({
 });
 
 export default function SettingsModal({ onClose }: SettingsModalProps) {
-  const theme = useEditorStore((state) => state.theme);
-  const fontFamily = useEditorStore((state) => state.fontFamily);
-  const fontPreset = useEditorStore((state) => state.fontPreset);
-  const fontSize = useEditorStore((state) => state.fontSize);
-  const lineHeight = useEditorStore((state) => state.lineHeight);
-  const updateSettings = useEditorStore((state) => state.updateSettings);
   const { t, i18n } = useTranslation();
 
+  const theme = useEditorStore((state) => state.theme);
+  const themeTemp = useEditorStore((state) => state.themeTemp);
+  const themeContrast = useEditorStore((state) => state.themeContrast);
+  const fontSize = useEditorStore((state) => state.fontSize);
+  const lineHeight = useEditorStore((state) => state.lineHeight);
+  const fontFamily = useEditorStore((state) => state.fontFamily);
+  const fontPreset = useEditorStore((state) => state.fontPreset);
+  const updateSettings = useEditorStore((state) => state.updateSettings);
+
+  const [activeTab, setActiveTab] = useState("appearance");
+  const [localFontSize, setLocalFontSize] = useState(fontSize);
+  const [localLineHeight, setLocalLineHeight] = useState(lineHeight);
   const [isPending, startTransition] = useTransition();
-  const applySettings = (next: Partial<{ theme: EditorTheme; fontFamily: "serif" | "sans" | "mono"; fontPreset?: FontPreset; fontSize: number; lineHeight: number }>) => {
-    startTransition(() => {
-      updateSettings(next);
-    });
+
+  // Sync local state if global changes
+  useEffect(() => {
+    setLocalFontSize(fontSize);
+  }, [fontSize]);
+
+  useEffect(() => {
+    setLocalLineHeight(lineHeight);
+  }, [lineHeight]);
+
+  const applySettings = (next: Partial<EditorSettings>) => {
+     updateSettings(next);
   };
 
-  const handleLanguageChange = async (next: SupportedLanguage) => {
-    setLanguageState(next);
-    await setLanguage(next);
-  };
+  // Shortcuts logic
+  const shortcuts = useShortcutStore((state) => state.shortcuts);
+  const shortcutDefaults = useShortcutStore((state) => state.defaults);
+  const loadShortcuts = useShortcutStore((state) => state.loadShortcuts);
+  const setShortcuts = useShortcutStore((state) => state.setShortcuts);
+  const resetToDefaults = useShortcutStore((state) => state.resetToDefaults);
+  const [shortcutDrafts, setShortcutDrafts] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (activeTab === "shortcuts") {
+        void loadShortcuts();
+    }
+  }, [activeTab, loadShortcuts]);
+
+  useEffect(() => {
+    setShortcutDrafts(shortcuts as Record<string, string>);
+  }, [shortcuts]);
 
   const handleShortcutChange = (actionId: string, value: string) => {
     setShortcutDrafts((prev) => ({ ...prev, [actionId]: value }));
@@ -79,32 +109,34 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     await setShortcuts(shortcutDrafts as ShortcutMap);
   };
 
+  const shortcutItems = useMemo(
+    () =>
+      SHORTCUT_ACTIONS.map((action) => ({
+        id: action.id,
+        label: t(action.labelKey),
+        value: shortcutDrafts[action.id] ?? shortcutDefaults[action.id] ?? "",
+        placeholder: shortcutDefaults[action.id] ?? "",
+      })),
+    [shortcutDefaults, shortcutDrafts, t],
+  );
+
+  // Recovery Logic
+  const [isRecovering, setIsRecovering] = useState(false);
+  const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
   const runRecovery = async (dryRun: boolean) => {
-    setIsRecovering(true);
-    setRecoveryMessage(null);
-    setRecoveryDetails(null);
-    try {
-      const response = await window.api.recovery.runDb({ dryRun });
-      if (response.success && response.data) {
-        const result = response.data as {
-          success: boolean;
-          message: string;
-          backupDir?: string;
-        };
-        setRecoveryMessage(result.message);
-        if (result.backupDir) {
-          setRecoveryDetails(`Backup: ${result.backupDir}`);
-        }
-      } else {
-        setRecoveryMessage(response.error?.message ?? "Recovery failed");
+      setIsRecovering(true);
+      setRecoveryMessage(null);
+      try {
+        const response = await window.api.recovery.runDb({ dryRun });
+        setRecoveryMessage(response.success ? (response.data as { message?: string })?.message ?? "Success" : "Failed");
+      } catch {
+          setRecoveryMessage("Error during recovery");
+      } finally {
+          setIsRecovering(false);
       }
-    } catch (error) {
-      setRecoveryMessage(error instanceof Error ? error.message : String(error));
-    } finally {
-      setIsRecovering(false);
-    }
   };
 
+  // Optional Fonts Logic
   const OPTIONAL_FONTS: Array<{
     id: FontPreset;
     label: string;
@@ -160,19 +192,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   );
 
   const [installing, setInstalling] = useState<Record<string, boolean>>({});
-  const [language, setLanguageState] = useState<SupportedLanguage>(
-    (i18n.language as SupportedLanguage) || "ko",
-  );
-  const shortcuts = useShortcutStore((state) => state.shortcuts);
-  const shortcutDefaults = useShortcutStore((state) => state.defaults);
-  const shortcutsLoading = useShortcutStore((state) => state.isLoading);
-  const loadShortcuts = useShortcutStore((state) => state.loadShortcuts);
-  const setShortcuts = useShortcutStore((state) => state.setShortcuts);
-  const resetToDefaults = useShortcutStore((state) => state.resetToDefaults);
-  const [shortcutDrafts, setShortcutDrafts] = useState<Record<string, string>>({});
-  const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
-  const [recoveryDetails, setRecoveryDetails] = useState<string | null>(null);
-  const [isRecovering, setIsRecovering] = useState(false);
   const [installed, setInstalled] = useState<Record<string, boolean>>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY_FONTS_INSTALLED);
@@ -190,26 +209,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
       // best-effort
     }
   };
-
-  useEffect(() => {
-    const nextLanguage = (i18n.language as SupportedLanguage) || "ko";
-    setLanguageState(nextLanguage);
-  }, [i18n.language]);
-
-  const [activeTab, setActiveTab] = useState("editor");
-
-  useEffect(() => {
-    if (activeTab !== "shortcuts") return;
-    const hasShortcuts = Object.keys(shortcuts ?? {}).length > 0;
-    const hasDefaults = Object.keys(shortcutDefaults ?? {}).length > 0;
-    if (!hasShortcuts || !hasDefaults) {
-      void loadShortcuts();
-    }
-  }, [activeTab, loadShortcuts, shortcutDefaults, shortcuts]);
-
-  useEffect(() => {
-    setShortcutDrafts(shortcuts as Record<string, string>);
-  }, [shortcuts]);
 
   const ensureFontLoaded = async (pkg: string) => {
     const id = `fontsource-variable-${pkg}`;
@@ -231,366 +230,355 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     }
   };
 
-  const sidebarItems = useMemo(
-    () => [
-      { id: "editor", label: t("settings.sidebar.editor") },
-      { id: "appearance", label: t("settings.sidebar.appearance") },
-      { id: "features", label: t("settings.sidebar.features") },
-      { id: "shortcuts", label: t("settings.sidebar.shortcuts") },
-      { id: "recovery", label: t("settings.sidebar.recovery") },
-      { id: "sync", label: t("settings.sidebar.sync") },
-      { id: "language", label: t("settings.sidebar.language") },
-    ],
-    [t],
-  );
 
-  const shortcutItems = useMemo(
-    () =>
-      SHORTCUT_ACTIONS.map((action) => ({
-        id: action.id,
-        label: t(action.labelKey),
-        value: shortcutDrafts[action.id] ?? shortcutDefaults[action.id] ?? "",
-        placeholder: shortcutDefaults[action.id] ?? "",
-      })),
-    [shortcutDefaults, shortcutDrafts, t],
-  );
-
-  // Local state for performance (avoid re-rendering entire app on every slider move)
-  const [localFontSize, setLocalFontSize] = useState(fontSize);
-  const [localLineHeight, setLocalLineHeight] = useState(lineHeight);
-
-  // Sync local state if global changes (e.g. reset)
-  useEffect(() => {
-    setLocalFontSize(fontSize);
-  }, [fontSize]);
-
-  useEffect(() => {
-    setLocalLineHeight(lineHeight);
-  }, [lineHeight]);
+  const tabs = [
+    { id: "editor", label: t("settings.sidebar.editor") },
+    { id: "appearance", label: t("settings.sidebar.appearance") },
+    { id: "shortcuts", label: t("settings.sidebar.shortcuts") },
+    { id: "recovery", label: t("settings.sidebar.recovery") },
+    { id: "language", label: t("settings.sidebar.language") },
+  ];
 
   return (
     <div 
-      className="fixed inset-0 w-screen h-screen bg-black/60 flex items-center justify-center z-1000 backdrop-blur-sm animate-in fade-in duration-200" 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div 
-        className="w-240 h-160 bg-surface border border-white/10 rounded-xl shadow-2xl flex overflow-hidden max-h-[95vh] animate-in slide-in-from-bottom-5 duration-200 relative will-change-[transform,opacity]" 
+        className="w-[900px] h-[650px] bg-bg-panel border border-border shadow-2xl rounded-xl flex overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* HEADER is removed, using sidebar layout instead */}
-        <div className="flex w-full h-full">
-          {/* SIDEBAR */}
-          <div className="w-65 bg-sidebar border-r border-border flex flex-col pt-3">
+        {/* Sidebar */}
+        <div className="w-64 bg-bg-sidebar border-r border-border flex flex-col pt-3">
             <div className="p-6 pb-4">
-              <div className="text-lg font-bold text-fg">{t("settings.title")}</div>
+                <h2 className="text-lg font-bold text-text-primary px-2">{t("settings.title")}</h2>
             </div>
-            <div className="flex-1 px-3 flex flex-col gap-1 overflow-y-auto">
-              {sidebarItems.map((item) => (
-                <div
-                  key={item.id}
-                  className={`
-                    px-4 py-3 text-sm rounded-md cursor-pointer transition-all font-medium
-                    ${activeTab === item.id ? "bg-active text-fg font-semibold" : "text-muted hover:bg-active hover:text-fg"}
-                  `}
-                  onClick={() => {
-                    startTransition(() => setActiveTab(item.id));
-                  }}
-                >
-                  {item.label}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* MAIN CONTENT */}
-          <div
-            className="flex-1 flex flex-col bg-surface relative overflow-hidden"
-            aria-busy={isPending}
-          >
-            <button 
-              className="absolute top-5 right-5 bg-transparent border-none cursor-pointer text-subtle p-2 rounded-full z-10 transition-all flex items-center justify-center hover:bg-active hover:text-fg" 
-              onClick={onClose}
-            >
-              <X className="w-5 h-5" />
-            </button>
-            
-            {activeTab === "editor" && (
-              <div className="flex-1 px-15 py-12 overflow-y-auto flex flex-col gap-8">
-                {/* FONT FAMILY */}
-                <div className="flex flex-col gap-3">
-                  <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{t("settings.section.font")}</div>
-                  <div className="grid grid-cols-3 gap-3">
-                    {EDITOR_FONT_FAMILIES.map((f) => (
-                      <button
-                        key={f}
-                        className={`
-                          border rounded-xl bg-surface px-2 py-4 cursor-pointer transition-all flex flex-col items-center gap-2
-                          ${fontFamily === f 
-                            ? "border-accent bg-surface-hover shadow-sm" 
-                            : "border-border hover:border-active hover:-translate-y-px"}
-                        `}
-                        onClick={() => applySettings({ fontFamily: f })}
-                      >
-                        <div
-                          className="text-[28px] text-fg leading-none"
-                          style={{
-                            fontFamily:
-                              f === "serif"
-                                ? "var(--font-serif)"
-                                : f === "sans"
-                                  ? "var(--font-sans)"
-                                  : "var(--font-mono)",
-                          }}
-                        >
-                          {t("settings.sampleText")}
-                        </div>
-                        <div className="text-xs text-muted font-medium">
-                          {f === "serif"
-                            ? t("settings.font.serif")
-                            : f === "sans"
-                              ? t("settings.font.sans")
-                              : t("settings.font.mono")}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                  <div className="text-xs text-subtle leading-[1.4]">
-                    {t("settings.font.helper.primary")}
-                  </div>
-                </div>
-
-                <div className="h-px bg-border w-full" />
-
-                {/* OPTIONAL FONTS */}
-                <div className="flex flex-col gap-3">
-                  <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{t("settings.section.optionalFonts")}</div>
-                  <div className="flex flex-col gap-2.5">
-                    {OPTIONAL_FONTS.map((font) => {
-                      const isInstalled = installed[font.id];
-                      const isInstalling = installing[font.id];
-                      const isActive = fontPreset === font.id;
-
-                      return (
-                        <div key={font.id} className="flex items-center justify-between px-3 py-2.5 border border-border rounded-[10px] bg-surface">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className="w-10.5 h-10.5 rounded-lg border border-border flex items-center justify-center text-lg text-fg bg-surface-hover"
-                              style={{ fontFamily: font.stack }}
-                            >
-                              {t("settings.sampleText")}
-                            </div>
-                            <div className="flex flex-col gap-0.5">
-                              <div className="text-[13px] font-semibold text-fg">{font.label}</div>
-                              <div className="text-[11px] text-subtle">{font.family}</div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {!isInstalled ? (
-                              <button
-                                className="rounded-lg px-2.5 py-1.5 text-xs border border-border bg-surface text-fg cursor-pointer inline-flex items-center gap-1.5 hover:border-active hover:bg-surface-hover disabled:opacity-60 disabled:cursor-not-allowed"
-                                onClick={() => handleInstall(font.id, font.pkg)}
-                                disabled={isInstalling}
-                              >
-                                <Download className="w-3.5 h-3.5" />
-                                {isInstalling
-                                  ? t("settings.optionalFonts.action.installing")
-                                  : t("settings.optionalFonts.action.install")}
-                              </button>
-                            ) : isActive ? (
-                              <div className="text-xs px-2 py-1 rounded-full text-accent-fg bg-accent">{t("settings.optionalFonts.action.active")}</div>
-                            ) : (
-                              <button
-                                className="rounded-lg px-2.5 py-1.5 text-xs border border-border bg-surface text-fg cursor-pointer inline-flex items-center gap-1.5 hover:border-active hover:bg-surface-hover"
-                                onClick={() => applySettings({ fontPreset: font.id })}
-                              >
-                                {t("settings.optionalFonts.action.apply")}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="h-px bg-border w-full" />
-
-                {/* FONT SIZE & LINE HEIGHT */}
-                <div className="flex flex-col gap-3">
-                  <div className="flex flex-col gap-3">
-                    <div className="flex justify-between items-center">
-                      <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{t("settings.section.fontSize")}</div>
-                      <div className="text-sm font-semibold text-accent bg-accent/10 px-2 py-0.5 rounded">{localFontSize}px</div>
-                    </div>
-                    <input
-                      type="range"
-                      min="14"
-                      max="32"
-                      step="1"
-                      value={localFontSize}
-                      className="w-full h-1 bg-border rounded-sm appearance-none outline-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-accent [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb:hover]:scale-110"
-                      onChange={(e) => setLocalFontSize(Number(e.target.value))}
-                      onMouseUp={() => applySettings({ fontSize: localFontSize })}
-                      onTouchEnd={() => applySettings({ fontSize: localFontSize })}
-                    />
-                  </div>
-
-                  <div style={{ height: 24 }} />
-
-                  <div className="flex flex-col gap-3">
-                    <div className="flex justify-between items-center">
-                      <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{t("settings.section.lineHeight")}</div>
-                      <div className="text-sm font-semibold text-accent bg-accent/10 px-2 py-0.5 rounded">{localLineHeight}</div>
-                    </div>
-                    <input
-                      type="range"
-                      min="1.4"
-                      max="2.4"
-                      step="0.1"
-                      value={localLineHeight}
-                      className="w-full h-1 bg-border rounded-sm appearance-none outline-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-accent [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb:hover]:scale-110"
-                      onChange={(e) => setLocalLineHeight(Number(e.target.value))}
-                      onMouseUp={() => applySettings({ lineHeight: localLineHeight })}
-                      onTouchEnd={() => applySettings({ lineHeight: localLineHeight })}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === "appearance" && (
-              <div className="flex-1 px-15 py-12 overflow-y-auto flex flex-col gap-8">
-                <div className="flex flex-col gap-3">
-                  <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{t("settings.section.theme")}</div>
-                  <div className="grid grid-cols-3 gap-3">
-                    {(["light", "sepia", "dark"] as EditorTheme[]).map((themeOption) => (
-                      <button
-                        key={themeOption}
-                        className={`
-                          h-20 rounded-xl border-2 cursor-pointer relative flex items-center justify-center text-sm font-semibold transition-all hover:scale-[1.02]
-                          ${themeOption === "light" ? "bg-white border-zinc-200 text-zinc-800" : ""}
-                          ${themeOption === "sepia" ? "bg-[#fbf0d9] border-[#f0e6d2] text-[#5f4b32]" : ""}
-                          ${themeOption === "dark" ? "bg-[#222] border-[#333] text-[#eee]" : ""}
-                          ${theme === themeOption ? "border-accent!" : ""}
-                        `}
-                        onClick={() => applySettings({ theme: themeOption })}
-                      >
-                        {theme === themeOption && (
-                          <div className="absolute top-1.5 right-1.5 bg-accent text-accent-fg w-4.5 h-4.5 rounded-full flex items-center justify-center">
-                            <Check className="w-3 h-3" />
-                          </div>
-                        )}
-                        <div className="themeName">
-                          {themeOption === "light"
-                            ? t("settings.theme.light")
-                            : themeOption === "sepia"
-                              ? t("settings.theme.sepia")
-                              : t("settings.theme.dark")}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === "shortcuts" && (
-              <div className="flex-1 px-15 py-12 overflow-y-auto flex flex-col gap-6">
-                <div className="flex items-center justify-between">
-                  <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px]">{t("settings.shortcuts.title")}</div>
-                  <button
-                    className="text-xs font-semibold tracking-wide px-3 py-1 rounded-full border border-border text-text-secondary hover:text-text-primary hover:border-text-primary transition-colors disabled:opacity-50"
-                    onClick={() => void resetToDefaults()}
-                    disabled={shortcutsLoading}
-                  >
-                    {t("settings.shortcuts.reset")}
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-[1fr,220px] gap-3 text-xs text-muted uppercase tracking-[0.5px]">
-                  <div>{t("settings.shortcuts.action")}</div>
-                  <div>{t("settings.shortcuts.key")}</div>
-                </div>
-
-                <div className="flex-1 min-h-0">
-                  <Virtuoso
-                    className="h-full"
-                    data={shortcutItems}
-                    itemContent={(_index, item) => (
-                      <ShortcutRow
-                        label={item.label}
-                        value={item.value}
-                        placeholder={item.placeholder}
-                        onChange={(value) => handleShortcutChange(item.id, value)}
-                        onBlur={() => void commitShortcuts()}
-                      />
-                    )}
-                  />
-                </div>
-              </div>
-            )}
-
-            {activeTab === "recovery" && (
-              <div className="flex-1 px-15 py-12 overflow-y-auto flex flex-col gap-6">
-                <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px]">{t("settings.recovery.title")}</div>
-                <div className="text-sm text-subtle leading-[1.6]">
-                  {t("settings.recovery.description")}
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    className="text-xs font-semibold tracking-wide px-3 py-1 rounded-full border border-border text-text-secondary hover:text-text-primary hover:border-text-primary transition-colors disabled:opacity-50"
-                    onClick={() => void runRecovery(true)}
-                    disabled={isRecovering}
-                  >
-                    {t("settings.recovery.dryRun")}
-                  </button>
-                  <button
-                    className="text-xs font-semibold tracking-wide px-3 py-1 rounded-full border border-border text-text-secondary hover:text-text-primary hover:border-text-primary transition-colors disabled:opacity-50"
-                    onClick={() => void runRecovery(false)}
-                    disabled={isRecovering}
-                  >
-                    {isRecovering ? t("settings.recovery.running") : t("settings.recovery.run")}
-                  </button>
-                </div>
-                {recoveryMessage && (
-                  <div className="text-sm text-fg">
-                    {recoveryMessage}
-                    {recoveryDetails && (
-                      <div className="text-xs text-subtle mt-2">{recoveryDetails}</div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {activeTab === "language" && (
-              <div className="flex-1 px-15 py-12 overflow-y-auto flex flex-col gap-6">
-                <div className="flex flex-col gap-3">
-                  <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{t("settings.section.language")}</div>
-                  <div className="flex items-center gap-3">
-                    <select
-                      className="bg-transparent text-sm font-semibold border-b border-border hover:border-text-primary cursor-pointer focus:outline-none transition-colors py-1"
-                      value={language}
-                      onChange={(e) => void handleLanguageChange(e.target.value as SupportedLanguage)}
+            <nav className="flex-1 px-4 space-y-1">
+                {tabs.map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => {
+                            startTransition(() => setActiveTab(tab.id));
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            activeTab === tab.id 
+                            ? "bg-bg-active text-text-primary font-semibold" 
+                            : "text-text-secondary hover:bg-bg-surface-hover hover:text-text-primary"
+                        }`}
                     >
-                      <option value="ko">{t("settings.language.options.ko")}</option>
-                      <option value="en">{t("settings.language.options.en")}</option>
-                      <option value="ja">{t("settings.language.options.ja")}</option>
-                    </select>
-                  </div>
-                  <div className="text-xs text-subtle leading-[1.4]">
-                    {t("settings.language.helper")}
-                  </div>
-                </div>
-              </div>
-            )}
+                        {tab.label}
+                    </button>
+                ))}
+            </nav>
+        </div>
 
-            {activeTab !== "editor" && activeTab !== "appearance" && activeTab !== "language" && activeTab !== "shortcuts" && activeTab !== "recovery" && (
-              <div className="flex-1 flex items-center justify-center text-subtle text-sm">
-                <div className="placeholderText">{t("settings.placeholder")}</div>
-              </div>
-            )}
-          </div>
+        {/* Content */}
+        <div className="flex-1 bg-bg-panel flex flex-col relative min-w-0" aria-busy={isPending}>
+             <button 
+                onClick={onClose}
+                className="absolute top-4 right-4 p-2 text-text-tertiary hover:text-text-primary hover:bg-bg-active rounded-lg transition-colors z-10"
+             >
+                <X className="w-5 h-5" />
+             </button>
+
+             <div className="flex-1 overflow-y-auto p-10">
+                {activeTab === "appearance" && (
+                    <div className="space-y-10 max-w-2xl">
+                        {/* 1. Base Theme */}
+                        <section className="space-y-4">
+                            <div>
+                                <h3 className="text-base font-semibold text-text-primary">테마 모드 (Base Theme)</h3>
+                                <p className="text-sm text-text-secondary mt-1">기본적인 밝기를 선택합니다.</p>
+                            </div>
+                            <div className="grid grid-cols-3 gap-3">
+                                {(["light", "sepia", "dark"] as const).map((mode) => (
+                                    <button
+                                        key={mode}
+                                        onClick={() => applySettings({ theme: mode })}
+                                        className={`flex items-center justify-center px-4 py-3 rounded-lg border text-sm font-medium transition-all ${
+                                            theme === mode 
+                                            ? "border-accent text-accent bg-accent/5 ring-1 ring-accent"
+                                            : "border-border text-text-secondary hover:border-text-tertiary hover:bg-bg-surface-hover"
+                                        }`}
+                                    >
+                                        {mode === "light" && "Light (라이트)"}
+                                        {mode === "sepia" && "Sepia (세피아)"}
+                                        {mode === "dark" && "Dark (다크)"}
+                                        {theme === mode && <Check className="w-4 h-4 ml-2" />}
+                                    </button>
+                                ))}
+                            </div>
+                        </section>
+
+                        <div className="h-px bg-border my-6" />
+
+                        {/* 2. Atmosphere (Temperature) */}
+                        <section className="space-y-4">
+                            <div>
+                                <h3 className="text-base font-semibold text-text-primary">분위기 (Atmosphere)</h3>
+                                <p className="text-sm text-text-secondary mt-1">작업 목적에 맞는 색온도를 선택하세요.</p>
+                            </div>
+                            <div className="grid grid-cols-3 gap-3">
+                                <button
+                                    onClick={() => applySettings({ themeTemp: "cool" })}
+                                    className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-all ${
+                                        themeTemp === "cool" 
+                                        ? "border-blue-500 bg-blue-500/5 ring-1 ring-blue-500" 
+                                        : "border-border hover:bg-bg-surface-hover"
+                                    }`}
+                                >
+                                    <span className="text-sm font-semibold text-text-primary mb-1">차가움 (Cool)</span>
+                                    <span className="text-xs text-text-secondary">집중 / 분석 / 이성적</span>
+                                </button>
+
+                                <button
+                                    onClick={() => applySettings({ themeTemp: "neutral" })}
+                                    className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-all ${
+                                        themeTemp === "neutral" 
+                                        ? "border-text-secondary bg-text-secondary/5 ring-1 ring-text-secondary" 
+                                        : "border-border hover:bg-bg-surface-hover"
+                                    }`}
+                                >
+                                    <span className="text-sm font-semibold text-text-primary mb-1">중립 (Neutral)</span>
+                                    <span className="text-xs text-text-secondary">기본 / 깔끔함</span>
+                                </button>
+
+                                <button
+                                    onClick={() => applySettings({ themeTemp: "warm" })}
+                                    className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-all ${
+                                        themeTemp === "warm" 
+                                        ? "border-orange-500 bg-orange-500/5 ring-1 ring-orange-500" 
+                                        : "border-border hover:bg-bg-surface-hover"
+                                    }`}
+                                >
+                                    <span className="text-sm font-semibold text-text-primary mb-1">따뜻함 (Warm)</span>
+                                    <span className="text-xs text-text-secondary">서사 / 감정 / 편안함</span>
+                                </button>
+                            </div>
+                        </section>
+
+                        <div className="h-px bg-border my-6" />
+
+                        {/* 3. Contrast */}
+                        <section className="space-y-4">
+                            <div>
+                                <h3 className="text-base font-semibold text-text-primary">대비 (Contrast)</h3>
+                                <p className="text-sm text-text-secondary mt-1">화면의 선명도를 조절합니다.</p>
+                            </div>
+                             <div className="flex gap-3">
+                                <button
+                                     onClick={() => applySettings({ themeContrast: "soft" })}
+                                     className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                                         themeContrast === "soft"
+                                         ? "bg-text-primary text-bg-app border-transparent"
+                                         : "border-border text-text-secondary hover:text-text-primary"
+                                     }`}
+                                >
+                                    부드럽게 (Soft)
+                                </button>
+                                <button
+                                     onClick={() => applySettings({ themeContrast: "high" })}
+                                     className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                                         themeContrast === "high"
+                                         ? "bg-text-primary text-bg-app border-transparent"
+                                         : "border-border text-text-secondary hover:text-text-primary"
+                                     }`}
+                                >
+                                    선명하게 (High)
+                                </button>
+                             </div>
+                        </section>
+                    </div>
+                )}
+
+                {activeTab === "editor" && (
+                     <div className="space-y-8 max-w-2xl">
+                        <section className="space-y-4">
+                            <h3 className="text-base font-semibold text-text-primary">{t("settings.section.font")}</h3>
+                             <div className="grid grid-cols-3 gap-3">
+                                {EDITOR_FONT_FAMILIES.map((f) => (
+                                    <button
+                                        key={f}
+                                        onClick={() => applySettings({ fontFamily: f })}
+                                        className={`p-4 rounded-xl border text-left transition-all ${
+                                            fontFamily === f ? "border-accent ring-1 ring-accent bg-accent/5" : "border-border hover:bg-bg-surface-hover"
+                                        }`}
+                                    >
+                                        <span className="text-2xl block mb-2" style={{ fontFamily: f === 'serif' ? 'serif' : f === 'mono' ? 'monospace' : 'sans-serif' }}>Aa</span>
+                                        <span className="text-sm font-medium text-text-primary capitalize">{f}</span>
+                                    </button>
+                                ))}
+                             </div>
+                        </section>
+                        
+                        <div className="h-px bg-border my-6" />
+
+                        {/* OPTIONAL FONTS */}
+                        <div className="flex flex-col gap-3">
+                          <div className="text-[13px] font-semibold text-muted uppercase tracking-[0.5px] mb-1">{t("settings.section.optionalFonts")}</div>
+                          <div className="flex flex-col gap-2.5">
+                            {OPTIONAL_FONTS.map((font) => {
+                              const isInstalled = installed[font.id];
+                              const isInstalling = installing[font.id];
+                              const isActive = fontPreset === font.id;
+        
+                              return (
+                                <div key={font.id} className="flex items-center justify-between px-3 py-2.5 border border-border rounded-[10px] bg-surface">
+                                  <div className="flex items-center gap-3">
+                                    <div
+                                      className="w-10.5 h-10.5 rounded-lg border border-border flex items-center justify-center text-lg text-fg bg-surface-hover"
+                                      style={{ fontFamily: font.stack }}
+                                    >
+                                      {t("settings.sampleText")}
+                                    </div>
+                                    <div className="flex flex-col gap-0.5">
+                                      <div className="text-[13px] font-semibold text-fg">{font.label}</div>
+                                      <div className="text-[11px] text-subtle">{font.family}</div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {!isInstalled ? (
+                                      <button
+                                        className="rounded-lg px-2.5 py-1.5 text-xs border border-border bg-surface text-fg cursor-pointer inline-flex items-center gap-1.5 hover:border-active hover:bg-surface-hover disabled:opacity-60 disabled:cursor-not-allowed"
+                                        onClick={() => handleInstall(font.id, font.pkg)}
+                                        disabled={isInstalling}
+                                      >
+                                        <Download className="w-3.5 h-3.5" />
+                                        {isInstalling
+                                          ? t("settings.optionalFonts.action.installing")
+                                          : t("settings.optionalFonts.action.install")}
+                                      </button>
+                                    ) : isActive ? (
+                                      <div className="text-xs px-2 py-1 rounded-full text-accent-fg bg-accent">{t("settings.optionalFonts.action.active")}</div>
+                                    ) : (
+                                      <button
+                                        className="rounded-lg px-2.5 py-1.5 text-xs border border-border bg-surface text-fg cursor-pointer inline-flex items-center gap-1.5 hover:border-active hover:bg-surface-hover"
+                                        onClick={() => applySettings({ fontPreset: font.id })}
+                                      >
+                                        {t("settings.optionalFonts.action.apply")}
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="h-px bg-border my-6" />
+
+                        <section className="space-y-4">
+                             <div className="flex justify-between">
+                                  <h3 className="text-base font-semibold text-text-primary">{t("settings.section.fontSize")}</h3>
+                                  <span className="text-sm font-medium text-accent bg-accent/10 px-2 py-0.5 rounded">{localFontSize}px</span>
+                             </div>
+                             <input 
+                                type="range" min="12" max="32" step="1" 
+                                value={localFontSize} 
+                                onChange={(e) => setLocalFontSize(Number(e.target.value))}
+                                onMouseUp={() => applySettings({ fontSize: localFontSize })}
+                                className="w-full"
+                             />
+                        </section>
+                         <section className="space-y-4">
+                             <div className="flex justify-between">
+                                  <h3 className="text-base font-semibold text-text-primary">{t("settings.section.lineHeight")}</h3>
+                                  <span className="text-sm font-medium text-accent bg-accent/10 px-2 py-0.5 rounded">{localLineHeight}</span>
+                             </div>
+                             <input 
+                                type="range" min="1.2" max="2.4" step="0.1" 
+                                value={localLineHeight} 
+                                onChange={(e) => setLocalLineHeight(Number(e.target.value))}
+                                onMouseUp={() => applySettings({ lineHeight: localLineHeight })}
+                                className="w-full"
+                             />
+                        </section>
+                     </div>
+                )}
+                
+                {activeTab === "shortcuts" && (
+                    <div className="max-w-2xl">
+                         <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-base font-semibold text-text-primary">{t("settings.shortcuts.title")}</h3>
+                            <button onClick={() => void resetToDefaults()} className="text-xs text-text-tertiary hover:text-text-primary underline">
+                                {t("settings.shortcuts.reset")}
+                            </button>
+                         </div>
+                         <div className="h-[400px]">
+                            <Virtuoso
+                                data={shortcutItems}
+                                itemContent={(_, item) => (
+                                    <ShortcutRow 
+                                        label={item.label} 
+                                        value={item.value} 
+                                        placeholder={item.placeholder}
+                                        onChange={(v) => handleShortcutChange(item.id, v)}
+                                        onBlur={() => void commitShortcuts()}
+                                    />
+                                )}
+                            />
+                         </div>
+                    </div>
+                )}
+
+                 {activeTab === "recovery" && (
+                    <div className="space-y-6 max-w-2xl">
+                        <section className="p-4 bg-bg-surface rounded-xl border border-border">
+                            <h3 className="text-base font-semibold text-text-primary mb-2">{t("settings.recovery.title")}</h3>
+                            <p className="text-sm text-text-secondary mb-4">{t("settings.recovery.description")}</p>
+                            <div className="flex gap-3">
+                                 <button 
+                                    onClick={() => void runRecovery(true)}
+                                    disabled={isRecovering}
+                                    className="px-4 py-2 bg-bg-element hover:bg-bg-element-hover border border-border rounded-lg text-sm font-medium text-text-primary transition-colors disabled:opacity-50"
+                                >
+                                    {t("settings.recovery.dryRun")}
+                                </button>
+                                <button 
+                                    onClick={() => void runRecovery(false)}
+                                    disabled={isRecovering}
+                                    className="px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50"
+                                >
+                                    {isRecovering ? "Running..." : t("settings.recovery.run")}
+                                </button>
+                            </div>
+                             {recoveryMessage && (
+                                <div className="mt-4 p-3 bg-bg-app rounded-md border border-border text-sm text-text-primary">
+                                    {recoveryMessage}
+                                </div>
+                            )}
+                        </section>
+                    </div>
+                )}
+
+                {activeTab === "language" && (
+                     <div className="space-y-6 max-w-2xl">
+                        <section>
+                             <h3 className="text-base font-semibold text-text-primary mb-2">{t("settings.section.language")}</h3>
+                             <div className="flex gap-3">
+                                <button 
+                                    onClick={() => setLanguage("ko")} 
+                                    className={`px-4 py-2 rounded-lg border text-sm transition-all ${i18n.language === 'ko' ? 'border-accent text-accent bg-accent/5' : 'border-border text-text-secondary hover:text-text-primary'}`}
+                                >
+                                    한국어
+                                </button>
+                                <button 
+                                    onClick={() => setLanguage("en")} 
+                                    className={`px-4 py-2 rounded-lg border text-sm transition-all ${i18n.language === 'en' ? 'border-accent text-accent bg-accent/5' : 'border-border text-text-secondary hover:text-text-primary'}`}
+                                >
+                                    English
+                                </button>
+                                <button 
+                                    onClick={() => setLanguage("ja")} 
+                                    className={`px-4 py-2 rounded-lg border text-sm transition-all ${i18n.language === 'ja' ? 'border-accent text-accent bg-accent/5' : 'border-border text-text-secondary hover:text-text-primary'}`}
+                                >
+                                    日本語
+                                </button>
+                             </div>
+                        </section>
+                     </div>
+                )}
+             </div>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useEditorStore } from "../stores/editorStore";
 
 const FONT_PRESET_MAP: Record<string, string> = {
-  default: "var(--font-sans)",
+  inter: "var(--font-sans)",
   lora: '"Lora Variable", "Lora", var(--font-serif)',
   bitter: '"Bitter Variable", "Bitter", var(--font-serif)',
   "source-serif": '"Source Serif 4 Variable", "Source Serif 4", var(--font-serif)',
@@ -18,7 +18,7 @@ export function useEditorConfig() {
   const lineHeight = useEditorStore((state) => state.lineHeight);
 
   const fontFamilyCss = useMemo(() => {
-    if (fontPreset && fontPreset !== "default") {
+    if (fontPreset) {
       return FONT_PRESET_MAP[fontPreset] ?? "var(--font-sans)";
     }
     return fontFamily === "serif"

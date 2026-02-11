@@ -275,6 +275,58 @@
   --namu-link: #b96725;
 }
 
+/* === ATMOSPHERE MODIFIERS (Temperature) === */
+
+/* Warm (Emotion / Story) */
+[data-temp="warm"] {
+  --bg-app: #fffbf5; /* Warm white */
+}
+[data-theme="dark"][data-temp="warm"] {
+  --bg-app: #1c1917; /* Warm black (Stone-900) */
+  --bg-sidebar: #1c1917;
+  --bg-panel: #292524;
+  --bg-surface: #292524;
+  --text-primary: #f5f5f4;
+  --text-secondary: #a8a29e;
+}
+[data-theme="sepia"][data-temp="warm"] {
+  /* Sepia is already warm, just deepen it slightly */
+  --bg-app: #f5ebd6; 
+}
+
+/* Cool (Analysis / Focus) */
+[data-temp="cool"] {
+  --bg-app: #f8fafc; /* Cool white (Slate-50) */
+  --bg-sidebar: #f1f5f9;
+}
+[data-theme="dark"][data-temp="cool"] {
+  --bg-app: #0f172a; /* Cool black (Slate-900) */
+  --bg-sidebar: #0f172a;
+  --bg-panel: #1e293b;
+  --bg-surface: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-default: rgba(148, 163, 184, 0.1);
+}
+[data-theme="sepia"][data-temp="cool"] {
+  /* Desaturate Sepia slightly for a cooler paper look */
+  --bg-app: #f0ebe4;
+  --bg-sidebar: #e8e2d9;
+  --text-primary: #5c554a;
+}
+
+/* === CONTRAST MODIFIERS === */
+[data-contrast="high"] {
+  --text-primary: #000000;
+  --text-secondary: #333333;
+  --border-default: #d4d4d8; /* Stronger border */
+}
+[data-theme="dark"][data-contrast="high"] {
+  --text-primary: #ffffff;
+  --text-secondary: #e4e4e7;
+  --border-default: rgba(255, 255, 255, 0.2);
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--bg-app);
