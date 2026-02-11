@@ -2,6 +2,8 @@
 
 ## Scope
 - Add full-app i18n with `react-i18next` (ko/ja/en).
+- Convert all `.tsx` UI strings to i18n (`t()` calls).
+- Translate shared constants (`messages`, `characterTemplates`).
 - Implement cross-platform shortcuts (mac/win/linux) with defaults and customization.
 - Add file recovery using `.db` + `.db-wal` under OS userData path.
 - Fix lint/type issues introduced by new work.
@@ -18,6 +20,8 @@
 - [ ] Create i18n bootstrap (init, default language, fallback).
 - [ ] Add translation resources for `ko`, `ja`, `en`.
 - [ ] Replace shared constants text with translation keys.
+- [ ] Convert all `.tsx` UI strings to `t()`.
+- [ ] Translate `shared/constants/messages.ts` + `shared/constants/characterTemplates.ts`.
 - [ ] Persist selected language in settings store.
 
 ### DoD
@@ -25,6 +29,8 @@
 - [ ] No missing translation keys at runtime.
 - [ ] Fallback language works if key is missing.
 - [ ] App restarts keep last selected language.
+- [ ] All `.tsx` UI strings come from i18n.
+- [ ] Shared constants text mapped to translation keys.
 
 ## Phase 2 - Shortcuts System
 - [ ] Define default shortcuts per OS (mac/win/linux).

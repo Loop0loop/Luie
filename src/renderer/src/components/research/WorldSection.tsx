@@ -22,38 +22,7 @@ import { useProjectStore } from "../../stores/projectStore";
 import { useTermStore } from "../../stores/termStore";
 import { BufferedInput, BufferedTextArea } from "../common/BufferedInput";
 import TabButton from "../common/TabButton";
-import {
-  WORLD_MINDMAP_ROOT_LABEL,
-  DEFAULT_TERM_ADD_LABEL,
-  WORLD_PROJECT_SYNOPSIS_TITLE,
-  WORLD_DRAW_TOOL_PEN_TITLE,
-  WORLD_DRAW_TOOL_TEXT_TITLE,
-  WORLD_DRAW_CLEAR_LABEL,
-  WORLD_PLOT_ADD_BEAT_LABEL,
-  WORLD_PLOT_NEW_BEAT_LABEL,
-  PLACEHOLDER_WORLD_SYNOPSIS,
-  WORLD_TAB_TERMS,
-  WORLD_TAB_SYNOPSIS,
-  WORLD_TAB_MINDMAP,
-  WORLD_TAB_DRAWING,
-  WORLD_TAB_PLOT,
-  WORLD_TERM_DEFAULT_NAME,
-  WORLD_TERM_DEFAULT_CATEGORY,
-  WORLD_TERM_NOT_FOUND,
-  WORLD_TERM_LABEL,
-  WORLD_TERM_DEFINITION_LABEL,
-  WORLD_TERM_CATEGORY_LABEL,
-  WORLD_SYNOPSIS_HINT,
-  WORLD_DRAW_PLACE_PROMPT,
-  WORLD_PLOT_ACT1_TITLE,
-  WORLD_PLOT_ACT2_TITLE,
-  WORLD_PLOT_ACT3_TITLE,
-  WORLD_PLOT_CARD_ACT1_1,
-  WORLD_PLOT_CARD_ACT1_2,
-  WORLD_PLOT_CARD_ACT2_1,
-  WORLD_PLOT_CARD_ACT3_1,
-  WORLD_MINDMAP_NEW_TOPIC,
-} from "../../../../shared/constants";
+import { useTranslation } from "react-i18next";
 
 type WorldTab = "synopsis" | "terms" | "mindmap" | "drawing" | "plot";
 
@@ -70,12 +39,13 @@ const getCssNumber = (name: string, fallback: number) => {
 
 // Custom Node for MindMap
 const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
+  const { t } = useTranslation();
   const { setNodes } = useReactFlow();
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
 
   const commit = () => {
-    const nextLabel = (draft ?? data.label).trim() || WORLD_MINDMAP_NEW_TOPIC;
+    const nextLabel = (draft ?? data.label).trim() || t("world.mindmap.newTopic");
     setNodes((nds: Node<MindMapNodeData>[]) =>
       nds.map((node: Node<MindMapNodeData>) =>
         node.id === id
@@ -121,41 +91,42 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
 };
 
 export default function WorldSection() {
+  const { t } = useTranslation();
   const [subTab, setSubTab] = useState<WorldTab>("terms");
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div className="flex w-full bg-sidebar border-b border-border shrink-0 text-muted select-none">
         <TabButton
-          label={WORLD_TAB_TERMS}
+          label={t("world.tab.terms")}
           active={subTab === "terms"}
           onClick={() => setSubTab("terms")}
           className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
           activeClassName="text-accent font-semibold border-b-2 border-accent"
         />
         <TabButton
-          label={WORLD_TAB_SYNOPSIS}
+          label={t("world.tab.synopsis")}
           active={subTab === "synopsis"}
           onClick={() => setSubTab("synopsis")}
           className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
           activeClassName="text-accent font-semibold border-b-2 border-accent"
         />
         <TabButton
-          label={WORLD_TAB_MINDMAP}
+          label={t("world.tab.mindmap")}
           active={subTab === "mindmap"}
           onClick={() => setSubTab("mindmap")}
           className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
           activeClassName="text-accent font-semibold border-b-2 border-accent"
         />
         <TabButton
-          label={WORLD_TAB_DRAWING}
+          label={t("world.tab.drawing")}
           active={subTab === "drawing"}
           onClick={() => setSubTab("drawing")}
           className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
           activeClassName="text-accent font-semibold border-b-2 border-accent"
         />
         <TabButton
-          label={WORLD_TAB_PLOT}
+          label={t("world.tab.plot")}
           active={subTab === "plot"}
           onClick={() => setSubTab("plot")}
           className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
@@ -175,6 +146,7 @@ export default function WorldSection() {
 }
 
 function TermManager() {
+  const { t } = useTranslation();
   const { currentItem: currentProject } = useProjectStore();
   const { terms, currentTerm, loadTerms, createTerm, updateTerm, deleteTerm } =
     useTermStore();
@@ -206,9 +178,9 @@ function TermManager() {
     if (currentProject) {
       await createTerm({
         projectId: currentProject.id,
-        term: WORLD_TERM_DEFAULT_NAME,
+        term: t("world.term.defaultName"),
         definition: "",
-        category: WORLD_TERM_DEFAULT_CATEGORY,
+        category: t("world.term.defaultCategory"),
       });
 
       // Reload terms to reflect the new addition
@@ -221,7 +193,7 @@ function TermManager() {
 
   if (selectedTermId) {
     const term = terms.find((t) => t.id === selectedTermId);
-    if (!term) return <div>{WORLD_TERM_NOT_FOUND}</div>;
+  if (!term) return <div>{t("world.term.notFound")}</div>;
 
     return (
       <div className="p-4">
@@ -236,7 +208,7 @@ function TermManager() {
         </div>
 
         <div className="grid grid-cols-[100px_1fr] gap-4 items-start pb-8">
-          <div className="text-right text-xs font-bold text-muted pt-2 uppercase tracking-wide">{WORLD_TERM_LABEL}</div>
+          <div className="text-right text-xs font-bold text-muted pt-2 uppercase tracking-wide">{t("world.term.label")}</div>
           <div className="min-w-0">
             <BufferedInput
               className="w-full p-2 bg-element border border-border rounded text-sm text-fg outline-none focus:border-active focus:ring-1 focus:ring-active transition-all"
@@ -244,7 +216,7 @@ function TermManager() {
               onSave={(val) => updateTerm({ id: term.id, term: val })}
             />
           </div>
-          <div className="text-right text-xs font-bold text-muted pt-2 uppercase tracking-wide">{WORLD_TERM_DEFINITION_LABEL}</div>
+          <div className="text-right text-xs font-bold text-muted pt-2 uppercase tracking-wide">{t("world.term.definitionLabel")}</div>
           <div className="min-w-0">
             <BufferedTextArea
               className="w-full p-2 bg-element border border-border rounded text-sm text-fg outline-none focus:border-active focus:ring-1 focus:ring-active transition-all font-sans leading-relaxed"
@@ -253,7 +225,7 @@ function TermManager() {
               style={{ minHeight: "100px" }}
             />
           </div>
-          <div className="text-right text-xs font-bold text-muted pt-2 uppercase tracking-wide">{WORLD_TERM_CATEGORY_LABEL}</div>
+          <div className="text-right text-xs font-bold text-muted pt-2 uppercase tracking-wide">{t("world.term.categoryLabel")}</div>
           <div className="min-w-0">
             <BufferedInput
               className="w-full p-2 bg-element border border-border rounded text-sm text-fg outline-none focus:border-active focus:ring-1 focus:ring-active transition-all"
@@ -284,7 +256,7 @@ function TermManager() {
                 style={{ height: "80px" }}
               >
                 <Plus className="icon-xxl" />
-                <span>{DEFAULT_TERM_ADD_LABEL}</span>
+                <span>{t("world.term.addLabel")}</span>
               </div>
             );
           }
@@ -304,7 +276,7 @@ function TermManager() {
                   style={{ fontSize: "0.8em", color: "var(--text-secondary)" }}
                 >
                   {item.term.category ? `[${item.term.category}] ` : ""}
-                  {item.term.definition || "No definition"}
+                  {item.term.definition || t("world.term.noDefinition")}
                 </div>
               </div>
               <button
@@ -333,6 +305,7 @@ function TermManager() {
 }
 
 function SynopsisEditor() {
+  const { t } = useTranslation();
   const { currentItem: currentProject, updateProject } = useProjectStore();
   const [status, setStatus] = useState<"draft" | "working" | "locked">("draft");
 
@@ -348,7 +321,7 @@ function SynopsisEditor() {
           alignItems: "center",
         }}
       >
-        <span>{WORLD_PROJECT_SYNOPSIS_TITLE}</span>
+        <span>{t("world.synopsis.title")}</span>
         <div style={{ display: "flex", gap: 4 }}>
           {/* Status Toggles */}
           {(["draft", "working", "locked"] as const).map((s) => (
@@ -371,7 +344,7 @@ function SynopsisEditor() {
                 textTransform: "uppercase",
               }}
             >
-              {s}
+              {t(`world.synopsis.status.${s}`)}
             </button>
           ))}
         </div>
@@ -395,7 +368,7 @@ function SynopsisEditor() {
               ? "var(--text-secondary)"
               : "var(--text-primary)",
         }}
-        placeholder={PLACEHOLDER_WORLD_SYNOPSIS}
+        placeholder={t("world.synopsis.placeholder")}
         value={currentProject.description || ""}
         readOnly={status === "locked"}
         onSave={(val) => updateProject(currentProject.id, undefined, val)}
@@ -408,13 +381,14 @@ function SynopsisEditor() {
           padding: "0 4px",
         }}
       >
-        {WORLD_SYNOPSIS_HINT}
+        {t("world.synopsis.hint")}
       </div>
     </div>
   );
 }
 
 function MindMapBoard() {
+  const { t } = useTranslation();
   const nodeTypes = useMemo(() => ({ character: CharacterNode }), []);
   const flowRef = useRef<ReactFlowInstance | null>(null);
   const rootX = getCssNumber("--world-mindmap-root-x", 300);
@@ -429,7 +403,7 @@ function MindMapBoard() {
       id: "root",
       type: "character",
       position: { x: rootX, y: rootY },
-      data: { label: WORLD_MINDMAP_ROOT_LABEL },
+      data: { label: t("world.mindmap.rootLabel") },
     },
   ]);
   const [edges, setEdges] = useEdgesState([]);
@@ -641,6 +615,7 @@ interface MapPath {
 }
 
 function DrawingCanvas() {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<"pen" | "text" | "eraser">("pen");
   const [color, setColor] = useState("#000000");
@@ -668,7 +643,7 @@ function DrawingCanvas() {
   const handlePointerDown = (e: React.PointerEvent) => {
     if (tool === "text") {
       const { x, y } = getCoords(e);
-      const text = window.prompt(WORLD_DRAW_PLACE_PROMPT);
+      const text = window.prompt(t("world.drawing.placePrompt"));
       if (text) {
         setPaths((prev) => [...prev, { type: "text", x, y, text, color }]);
       }
@@ -718,14 +693,14 @@ function DrawingCanvas() {
           <button
             className={cn("w-7 h-7 flex items-center justify-center rounded text-muted hover:bg-hover hover:text-fg transition-colors", tool === "pen" && "bg-active text-accent")}
             onClick={() => setTool("pen")}
-            title={WORLD_DRAW_TOOL_PEN_TITLE}
+            title={t("world.drawing.toolPen")}
           >
             <PenTool className="icon-md" />
           </button>
           <button
             className={cn("w-7 h-7 flex items-center justify-center rounded text-muted hover:bg-hover hover:text-fg transition-colors", tool === "text" && "bg-active text-accent")}
             onClick={() => setTool("text")}
-            title={WORLD_DRAW_TOOL_TEXT_TITLE}
+            title={t("world.drawing.toolText")}
           >
             <Type className="icon-md" />
           </button>
@@ -786,7 +761,7 @@ function DrawingCanvas() {
         </div>
 
         <button className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-hover text-xs cursor-pointer text-muted hover:text-fg transition-colors" onClick={clearCanvas}>
-          <Eraser className="icon-sm" /> {WORLD_DRAW_CLEAR_LABEL}
+          <Eraser className="icon-sm" /> {t("world.drawing.clear")}
         </button>
       </div>
 
@@ -846,24 +821,25 @@ function DrawingCanvas() {
 }
 
 function PlotBoard() {
-  const [columns, setColumns] = useState([
+  const { t } = useTranslation();
+  const [columns, setColumns] = useState(() => [
     {
       id: "act1",
-      title: WORLD_PLOT_ACT1_TITLE,
+      title: t("world.plot.act1Title"),
       cards: [
-        { id: "c1", content: WORLD_PLOT_CARD_ACT1_1 },
-        { id: "c2", content: WORLD_PLOT_CARD_ACT1_2 },
+        { id: "c1", content: t("world.plot.card.act1_1") },
+        { id: "c2", content: t("world.plot.card.act1_2") },
       ],
     },
     {
       id: "act2",
-      title: WORLD_PLOT_ACT2_TITLE,
-      cards: [{ id: "c3", content: WORLD_PLOT_CARD_ACT2_1 }],
+      title: t("world.plot.act2Title"),
+      cards: [{ id: "c3", content: t("world.plot.card.act2_1") }],
     },
     {
       id: "act3",
-      title: WORLD_PLOT_ACT3_TITLE,
-      cards: [{ id: "c4", content: WORLD_PLOT_CARD_ACT3_1 }],
+      title: t("world.plot.act3Title"),
+      cards: [{ id: "c4", content: t("world.plot.card.act3_1") }],
     },
   ]);
 
@@ -875,7 +851,7 @@ function PlotBoard() {
             ...col,
             cards: [
               ...col.cards,
-              { id: Date.now().toString(), content: WORLD_PLOT_NEW_BEAT_LABEL },
+              { id: Date.now().toString(), content: t("world.plot.newBeat") },
             ],
           };
         }
@@ -941,7 +917,7 @@ function PlotBoard() {
             ))}
           </div>
           <button className="m-2 p-2 flex items-center justify-center gap-1.5 rounded border border-dashed border-border text-xs text-muted hover:text-accent hover:border-accent hover:bg-element-hover transition-all" onClick={() => addCard(col.id)}>
-            <Plus className="icon-sm" /> {WORLD_PLOT_ADD_BEAT_LABEL}
+            <Plus className="icon-sm" /> {t("world.plot.addBeat")}
           </button>
         </div>
       ))}

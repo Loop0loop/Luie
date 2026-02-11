@@ -1,15 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
 import {
   DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS,
-  DEFAULT_NOTE_TITLE,
-  DEFAULT_UNTITLED_LABEL,
-  LABEL_MEMO_EMPTY,
-  LABEL_MEMO_SECTION_TITLE,
-  MEMO_DEFAULT_NOTES,
-  PLACEHOLDER_MEMO_BODY,
-  PLACEHOLDER_MEMO_SEARCH,
-  PLACEHOLDER_MEMO_TAGS,
-  PLACEHOLDER_MEMO_TITLE,
   STORAGE_KEY_MEMOS_NONE,
   STORAGE_KEY_MEMOS_PREFIX,
 } from "../../../../shared/constants";
@@ -19,6 +10,8 @@ import { cn } from "../../../../shared/types/utils";
 import { useProjectStore } from "../../stores/projectStore";
 import { api } from "../../services/api";
 import SearchInput from "../common/SearchInput";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 
 type Note = {
   id: string;
@@ -29,14 +22,22 @@ type Note = {
 };
 
 const defaultUpdatedAt = new Date().toISOString();
-const DEFAULT_NOTES: Note[] = MEMO_DEFAULT_NOTES.map((note) => ({
-  ...note,
-  tags: [...note.tags],
-  updatedAt: defaultUpdatedAt,
-}));
+
+function buildDefaultNotes(t: TFunction): Note[] {
+  const rawNotes = t("memo.defaultNotes", { returnObjects: true }) as Array<
+    Omit<Note, "updatedAt">
+  >;
+  return rawNotes.map((note) => ({
+    ...note,
+    tags: [...note.tags],
+    updatedAt: defaultUpdatedAt,
+  }));
+}
 
 export default function MemoSection() {
+  const { t } = useTranslation();
   const { currentItem: currentProject } = useProjectStore();
+  const defaultNotes = useMemo(() => buildDefaultNotes(t), [t]);
 
   const storageKey = useMemo(() => {
     if (!currentProject?.id) return null;
@@ -47,39 +48,50 @@ export default function MemoSection() {
     <MemoSectionInner
       key={storageKey ?? STORAGE_KEY_MEMOS_NONE}
       storageKey={storageKey}
+      defaultNotes={defaultNotes}
     />
   );
 }
 
-function loadInitialNotes(storageKey: string | null): {
+function loadInitialNotesWithDefaults(
+  storageKey: string | null,
+  defaultNotes: Note[],
+): {
   notes: Note[];
   activeNoteId: string;
 } {
   if (!storageKey) {
-    return { notes: DEFAULT_NOTES, activeNoteId: DEFAULT_NOTES[0]?.id ?? "1" };
+    return { notes: defaultNotes, activeNoteId: defaultNotes[0]?.id ?? "1" };
   }
 
   try {
     const raw = localStorage.getItem(storageKey);
     if (!raw) {
-      return { notes: DEFAULT_NOTES, activeNoteId: DEFAULT_NOTES[0]?.id ?? "1" };
+      return { notes: defaultNotes, activeNoteId: defaultNotes[0]?.id ?? "1" };
     }
 
     const parsed = JSON.parse(raw) as { notes?: Note[] };
     const loaded = Array.isArray(parsed.notes) ? parsed.notes : [];
-    const effectiveNotes = loaded.length > 0 ? loaded : DEFAULT_NOTES;
+    const effectiveNotes = loaded.length > 0 ? loaded : defaultNotes;
     return {
       notes: effectiveNotes,
-      activeNoteId: effectiveNotes[0]?.id ?? DEFAULT_NOTES[0]?.id ?? "1",
+      activeNoteId: effectiveNotes[0]?.id ?? defaultNotes[0]?.id ?? "1",
     };
   } catch (e) {
     api.logger.warn("Failed to load memos", e);
-    return { notes: DEFAULT_NOTES, activeNoteId: DEFAULT_NOTES[0]?.id ?? "1" };
+    return { notes: defaultNotes, activeNoteId: defaultNotes[0]?.id ?? "1" };
   }
 }
 
-function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
-  const initial = loadInitialNotes(storageKey);
+function MemoSectionInner({
+  storageKey,
+  defaultNotes,
+}: {
+  storageKey: string | null;
+  defaultNotes: Note[];
+}) {
+  const { t } = useTranslation();
+  const initial = loadInitialNotesWithDefaults(storageKey, defaultNotes);
 
   const [notes, setNotes] = useState<Note[]>(() => initial.notes);
   const [activeNoteId, setActiveNoteId] = useState(() => initial.activeNoteId);
@@ -120,7 +132,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
     const newId = String(Date.now());
     const newNote: Note = {
       id: newId,
-      title: DEFAULT_NOTE_TITLE,
+      title: t("project.defaults.noteTitle"),
       content: "",
       tags: [],
       updatedAt: new Date().toISOString(),
@@ -133,14 +145,14 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
     <div className="flex h-full w-full bg-bg-primary overflow-hidden">
       <div className="w-55 bg-sidebar border-r border-border flex flex-col shrink-0 content-visibility-auto contain-intrinsic-size-[1px_600px]">
         <div className="px-4 py-3 text-xs font-bold text-muted flex justify-between items-center uppercase tracking-wider">
-          <span>{LABEL_MEMO_SECTION_TITLE}</span>
+          <span>{t("memo.sectionTitle")}</span>
           <Plus className="icon-sm cursor-pointer hover:text-fg transition-colors" onClick={handleAddNote} />
         </div>
 
         <div className="px-3 py-2">
           <SearchInput
             variant="memo"
-            placeholder={PLACEHOLDER_MEMO_SEARCH}
+            placeholder={t("memo.placeholder.search")}
             value={searchTerm}
             onChange={setSearchTerm}
           />
@@ -159,7 +171,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
                 onClick={() => setActiveNoteId(note.id)}
               >
                 <div style={{ fontWeight: "var(--memo-title-font-weight)", marginBottom: 4 }}>
-                  {note.title || DEFAULT_UNTITLED_LABEL}
+                  {note.title || t("project.defaults.untitled")}
                 </div>
                 <div className="flex gap-1 flex-wrap mb-1">
                   {note.tags.map((t) => (
@@ -212,7 +224,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
                 color: "var(--text-secondary)",
                 width: "100%",
               }}
-              placeholder={PLACEHOLDER_MEMO_TAGS}
+              placeholder={t("memo.placeholder.tags")}
               value={activeNote.tags.join(", ")}
               onChange={(e) => {
                 const tags = e.target.value.split(",").map((t) => t.trim());
@@ -233,7 +245,7 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
                 ),
               )
             }
-            placeholder={PLACEHOLDER_MEMO_TITLE}
+            placeholder={t("memo.placeholder.title")}
           />
           <textarea
             className="flex-1 px-6 pb-6 border-none bg-transparent resize-none outline-none leading-relaxed text-[15px] text-secondary placeholder:text-muted"
@@ -251,12 +263,12 @@ function MemoSectionInner({ storageKey }: { storageKey: string | null }) {
                 ),
               )
             }
-            placeholder={PLACEHOLDER_MEMO_BODY}
+            placeholder={t("memo.placeholder.body")}
           />
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center text-tertiary">
-          {LABEL_MEMO_EMPTY}
+          {t("memo.empty")}
         </div>
       )}
     </div>

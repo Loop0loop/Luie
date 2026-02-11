@@ -1,13 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useAutoSaveStore } from "../stores/autoSaveStore";
-import {
-  PLACEHOLDER_TEXT_EDITOR,
-  TEXT_EDITOR_SAVE_BUTTON,
-  TEXT_EDITOR_SAVE_DONE,
-  TEXT_EDITOR_SAVE_SAVING,
-  TEXT_EDITOR_CHAR_SUFFIX,
-  TEXT_EDITOR_WORD_SUFFIX,
-} from "../../../shared/constants";
+import { useTranslation } from "react-i18next";
 
 interface TextEditorProps {
   chapterId: string;
@@ -22,6 +15,7 @@ export default function TextEditor({
   initialContent,
   onSave,
 }: TextEditorProps) {
+  const { t } = useTranslation();
   const [content, setContent] = useState(initialContent);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { triggerSave, saveStatus } = useAutoSaveStore();
@@ -73,7 +67,7 @@ export default function TextEditor({
           onChange={(e) => handleChange(e.target.value)}
           onKeyDown={handleKeyDown}
           className="flex-1 w-full p-6 text-base leading-relaxed text-fg bg-surface border-none resize-none focus:outline-none"
-          placeholder={PLACEHOLDER_TEXT_EDITOR}
+          placeholder={t("textEditor.placeholder.body")}
           spellCheck={false}
           style={{
             minHeight: "var(--text-editor-min-height)",
@@ -85,28 +79,28 @@ export default function TextEditor({
         <div className="flex items-center gap-4 text-sm text-muted">
           <span>
             {charCount}
-            {TEXT_EDITOR_CHAR_SUFFIX}
+            {t("textEditor.suffix.char")}
           </span>
           <span>•</span>
           <span>
             {wordCount}
-            {TEXT_EDITOR_WORD_SUFFIX}
+            {t("textEditor.suffix.word")}
           </span>
         </div>
 
         <div className="flex items-center gap-3">
           {saveStatus === "saving" && (
-            <span className="text-sm text-accent">{TEXT_EDITOR_SAVE_SAVING}</span>
+            <span className="text-sm text-accent">{t("textEditor.status.saving")}</span>
           )}
           {saveStatus === "saved" && (
-            <span className="text-sm text-success">{TEXT_EDITOR_SAVE_DONE}</span>
+            <span className="text-sm text-success">{t("textEditor.status.saved")}</span>
           )}
           <button
             onClick={handleSave}
             disabled={saveStatus === "saving"}
             className="px-4 py-2 text-sm font-medium text-accent-fg bg-accent rounded hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {TEXT_EDITOR_SAVE_BUTTON}
+            {t("textEditor.actions.save")}
           </button>
         </div>
       </div>

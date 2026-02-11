@@ -9,8 +9,8 @@ import { Modal } from "../common/Modal";
 import { Infobox } from "./wiki/Infobox"; 
 import { WikiSection } from "./wiki/WikiSection"; 
 import { cn } from "../../../../shared/types/utils";
+import { useTranslation } from "react-i18next";
 import {
-  DEFAULT_CHARACTER_NAME,
   CHARACTER_GROUP_COLORS,
   CHARACTER_TEMPLATES,
 } from "../../../../shared/constants";
@@ -23,6 +23,7 @@ type CharacterLike = {
 };
 
 export default function CharacterManager() {
+  const { t } = useTranslation();
   const { currentItem: currentProject } = useProjectStore();
   const {
     items: characters,
@@ -71,8 +72,8 @@ export default function CharacterManager() {
       
       const newChar = await createCharacter({
         projectId: currentProject.id,
-        name: DEFAULT_CHARACTER_NAME,
-        description: "Uncategorized", 
+        name: t("character.defaults.name"),
+        description: t("character.uncategorized"),
         attributes: { templateId: template.id } as Record<string, unknown> 
       });
       if (newChar) {
@@ -88,13 +89,13 @@ export default function CharacterManager() {
     const list = characters as CharacterLike[];
     
     list.forEach(char => {
-      const group = char.description?.trim() || "Uncategorized";
+      const group = char.description?.trim() || t("character.uncategorized");
       if (!groups[group]) groups[group] = [];
       groups[group].push(char);
     });
 
     return groups;
-  }, [characters]);
+  }, [characters, t]);
 
   // Selected Character Data
   const selectedChar = useMemo(() => 
@@ -123,16 +124,16 @@ export default function CharacterManager() {
               <button 
                 className="flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity bg-transparent border-none p-1 text-white cursor-pointer" 
                 onClick={() => setSelectedCharacterId(null)}
-                title="전체 보기 (Gallery View)"
+                title={t("character.viewAllTitle")}
               >
                 <Home size={18} />
-                <span style={{ marginLeft: 8, fontSize: 13, fontWeight: 700 }}>등장인물</span>
+                <span style={{ marginLeft: 8, fontSize: 13, fontWeight: 700 }}>{t("character.sectionTitle")}</span>
               </button>
               
               <button 
                 className="flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity bg-transparent border-none p-1 text-white cursor-pointer" 
                 onClick={() => setIsTemplateModalOpen(true)}
-                title="캐릭터 추가"
+                title={t("character.addTitle")}
               >
                 <Plus size={18} />
               </button>
@@ -141,20 +142,20 @@ export default function CharacterManager() {
             <Modal
                 isOpen={isTemplateModalOpen}
                 onClose={() => setIsTemplateModalOpen(false)}
-                title="템플릿 선택"
+              title={t("character.templateTitle")}
                 width="500px"
             >
                 <div className="grid grid-cols-2 gap-4 p-4">
-                    {CHARACTER_TEMPLATES.map((t) => (
+                    {CHARACTER_TEMPLATES.map((template) => (
                         <div 
-                        key={t.id} 
+                      key={template.id} 
                         className="flex flex-col items-center justify-center p-4 border border-border rounded-lg cursor-pointer hover:bg-surface-hover transition-colors gap-2"
-                        onClick={() => handleAddCharacter(t.id)}
+                      onClick={() => handleAddCharacter(template.id)}
                         >
                         <div className="p-3 bg-surface rounded-full shadow-sm">
                             <LayoutTemplate size={24} /> 
                         </div>
-                        <div className="font-semibold text-sm">{t.name}</div>
+                      <div className="font-semibold text-sm">{t(template.nameKey)}</div>
                         </div>
                     ))}
                 </div>
@@ -211,11 +212,12 @@ function CharacterGallery({
   groupedCharacters: Record<string, CharacterLike[]>;
   onSelect: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex-1 overflow-y-auto p-8">
        <div className="border-b-2 border-border mb-6 pb-4">
          <div className="text-2xl font-extrabold text-fg leading-tight">
-            등장인물 (Characters)
+            {t("character.galleryTitle")}
          </div>
        </div>
        
@@ -238,7 +240,7 @@ function CharacterGallery({
                        <User size={40} color={themeColor} />
                     </div>
                     <div className="font-semibold text-sm mb-0.5">{char.name}</div>
-                    <div className="text-xs text-subtle">{char.description || "No Role"}</div>
+                      <div className="text-xs text-subtle">{char.description || t("character.noRole")}</div>
                  </div>
               ))}
             </div>
@@ -263,6 +265,7 @@ function CharacterGroup({
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
 
   return (
@@ -289,7 +292,7 @@ function CharacterGroup({
               style={selectedId === char.id ? { borderLeftColor: color } : {}}
             >
               <span className="font-semibold mb-0.5">{char.name}</span>
-              <span className="text-[11px] text-subtle">{char.description || "No Role"}</span>
+              <span className="text-[11px] text-subtle">{char.description || t("character.noRole")}</span>
             </div>
           ))}
         </div>
@@ -320,7 +323,7 @@ function WikiDetailView({
   character: CharacterLike; 
   updateCharacter: (input: { id: string; [key: string]: unknown }) => void; 
 }) {
-  
+  const { t } = useTranslation();
   const attributes = useMemo(() => 
     typeof character.attributes === "string" 
       ? JSON.parse(character.attributes) 
@@ -333,15 +336,19 @@ function WikiDetailView({
   }, [attributes.templateId]);
   
   const sections: WikiSectionData[] = useMemo(() => {
-    return attributes.sections || [
-      { id: "overview", label: "1. 개요" },
-      { id: "appearance", label: "2. 외관" },
-      { id: "personality", label: "3. 성격" },
-      { id: "background", label: "4. 배경/과거" },
-      { id: "relations", label: "5. 인간관계" },
-      { id: "notes", label: "6. 작가의 말" },
+    if (attributes.sections) {
+      return attributes.sections;
+    }
+    const defaultSections = t("character.defaultSections", { returnObjects: true }) as string[];
+    return [
+      { id: "overview", label: defaultSections[0] ?? "1" },
+      { id: "appearance", label: defaultSections[1] ?? "2" },
+      { id: "personality", label: defaultSections[2] ?? "3" },
+      { id: "background", label: defaultSections[3] ?? "4" },
+      { id: "relations", label: defaultSections[4] ?? "5" },
+      { id: "notes", label: defaultSections[5] ?? "6" },
     ];
-  }, [attributes.sections]);
+  }, [attributes.sections, t]);
 
   const customFields: CustomField[] = useMemo(() => {
     return attributes.customFields || [];
@@ -359,7 +366,10 @@ function WikiDetailView({
   // Section Management
   const addSection = () => {
     const newId = `section_${Date.now()}`;
-    const newSections = [...sections, { id: newId, label: `${sections.length + 1}. 새로운 섹션` }];
+    const newSections = [
+      ...sections,
+      { id: newId, label: `${sections.length + 1}. ${t("character.newSection")}` },
+    ];
     handleAttrUpdate("sections", newSections);
   };
   
@@ -369,7 +379,7 @@ function WikiDetailView({
   };
 
   const deleteSection = (id: string) => {
-    if (confirm("정말 이 섹션을 삭제하시겠습니까? (내용은 보존됩니다)")) {
+    if (confirm(t("character.deleteSectionConfirm"))) {
        const newSections = sections.filter(s => s.id !== id);
        handleAttrUpdate("sections", newSections);
     }
@@ -380,7 +390,7 @@ function WikiDetailView({
     const newKey = `custom_${Date.now()}`;
     const newField: CustomField = {
       key: newKey,
-      label: "새 항목",
+      label: t("character.newFieldLabel"),
       type: "text"
     };
     const newFields = [...customFields, newField];
@@ -393,7 +403,7 @@ function WikiDetailView({
   };
 
   const deleteCustomField = (key: string) => {
-    if (confirm("정말 이 항목을 삭제하시겠습니까?")) {
+    if (confirm(t("character.deleteFieldConfirm"))) {
       const newFields = customFields.filter(f => f.key !== key);
       handleAttrUpdate("customFields", newFields);
     }
@@ -415,13 +425,13 @@ function WikiDetailView({
           onSave={(val) => handleUpdate("name", val)}
         />
         <div className="text-[13px] text-muted bg-surface border border-border px-3 py-1.5 rounded self-start flex items-center gap-2">
-          <span className="font-bold">분류:</span>
-          <span className="text-(--namu-link) cursor-pointer hover:underline">{currentTemplate.name}</span>
+          <span className="font-bold">{t("character.classificationLabel")}</span>
+          <span className="text-(--namu-link) cursor-pointer hover:underline">{t(currentTemplate.nameKey)}</span>
            <span className="text-border">|</span>
           <BufferedInput 
               className="inline w-auto font-semibold text-(--namu-link) bg-transparent border-none p-1 focus:outline-none focus:bg-active rounded-sm" 
               value={character.description || ""}
-              placeholder="미분류"
+              placeholder={t("character.uncategorized")}
               onSave={(val) => handleUpdate("description", val)} 
            />
         </div>
@@ -435,7 +445,7 @@ function WikiDetailView({
           
           {/* TOC (Inline) */}
           <div className="bg-(--namu-table-bg) border border-(--namu-border) p-4 inline-block min-w-50 rounded">
-            <div className="font-bold text-center mb-3 text-fg text-sm">목차</div>
+            <div className="font-bold text-center mb-3 text-fg text-sm">{t("character.tocLabel")}</div>
             <div className="flex flex-col gap-1.5 text-sm">
                {sections.map(sec => (
                  <a key={sec.id} className="text-(--namu-link) no-underline cursor-pointer hover:underline" href={`#${sec.id}`}>
@@ -464,7 +474,7 @@ function WikiDetailView({
              onClick={addSection}
              className="p-3 border-2 border-dashed border-border rounded-lg text-center text-subtle cursor-pointer mt-4 w-full bg-transparent hover:text-fg hover:border-fg transition-colors"
           >
-             + 섹션 추가 (Add Section)
+             {t("character.addSection")}
           </button>
 
         </div>
@@ -478,12 +488,16 @@ function WikiDetailView({
                 image={<User size={80} color="var(--border-active)" />}
                 rows={allInfoboxFields.map(field => {
                     const isCustom = customFields.some(cf => cf.key === field.key);
+                  const isTemplateField = "labelKey" in field;
+                  const label = isTemplateField ? t(field.labelKey) : field.label;
+                  const placeholder = isTemplateField && field.placeholderKey ? t(field.placeholderKey) : field.placeholder;
+                  const options = isTemplateField && field.optionKeys ? field.optionKeys.map((key) => t(key)) : field.options;
                     return {
-                        label: field.label,
+                    label,
                         value: attributes[field.key],
-                        placeholder: field.placeholder,
+                    placeholder,
                         type: field.type,
-                        options: field.options,
+                    options,
                         isCustom,
                         onSave: (v) => handleAttrUpdate(field.key, v),
                         onLabelSave: isCustom ? (v) => updateCustomFieldLabel(field.key, v) : undefined,

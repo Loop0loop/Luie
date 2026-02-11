@@ -9,8 +9,8 @@ import { useCharacterStore } from "../stores/characterStore";
 import { useTermStore } from "../stores/termStore";
 import type { Project } from "../../../shared/types";
 import { api } from "../services/api";
+import { i18n } from "../i18n";
 import {
-  DEFAULT_UNTITLED_LABEL,
   LUIE_PACKAGE_EXTENSION,
   LUIE_PACKAGE_FORMAT,
   LUIE_PACKAGE_META_FILENAME,
@@ -134,7 +134,7 @@ export function useFileImport(
         for (const ch of fileChapters) {
           const created = await createChapter({
             projectId: currentProject.id,
-            title: ch.title ?? DEFAULT_UNTITLED_LABEL,
+            title: ch.title ?? i18n.t("project.defaults.untitled"),
             order: typeof ch.order === "number" ? ch.order : undefined,
           });
           if (created?.id) {
@@ -167,7 +167,7 @@ export function useFileImport(
             if (parsedCharacters.success) {
               const list = parsedCharacters.data.characters ?? [];
               for (const character of list) {
-                const name = typeof character.name === "string" ? character.name : DEFAULT_UNTITLED_LABEL;
+                const name = typeof character.name === "string" ? character.name : i18n.t("project.defaults.untitled");
                 await createCharacter({
                   projectId: currentProject.id,
                   name,
@@ -201,7 +201,7 @@ export function useFileImport(
             if (parsedTerms.success) {
               const list = parsedTerms.data.terms ?? [];
               for (const term of list) {
-                const termText = typeof term.term === "string" ? term.term : DEFAULT_UNTITLED_LABEL;
+                const termText = typeof term.term === "string" ? term.term : i18n.t("project.defaults.untitled");
                 await createTerm({
                   projectId: currentProject.id,
                   term: termText,

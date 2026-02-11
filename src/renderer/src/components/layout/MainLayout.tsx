@@ -3,12 +3,7 @@ import WindowBar from './WindowBar';
 import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { cn } from '../../../../shared/types/utils';
 import { useUIStore } from '../../stores/uiStore';
-import {
-  TOOLTIP_SIDEBAR_COLLAPSE,
-  TOOLTIP_SIDEBAR_EXPAND,
-  TOOLTIP_CONTEXT_PANEL_COLLAPSE,
-  TOOLTIP_CONTEXT_PANEL_EXPAND,
-} from '../../../../shared/constants';
+import { useTranslation } from "react-i18next";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -17,6 +12,7 @@ interface MainLayoutProps {
 }
 
 export default function MainLayout({ children, sidebar, contextPanel }: MainLayoutProps) {
+  const { t } = useTranslation();
   const { isSidebarOpen, isContextOpen, setSidebarOpen, setContextOpen } = useUIStore();
 
   return (
@@ -40,7 +36,7 @@ export default function MainLayout({ children, sidebar, contextPanel }: MainLayo
              <button 
                className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-all hover:bg-active hover:text-fg"
                onClick={() => setSidebarOpen(!isSidebarOpen)}
-               title={isSidebarOpen ? TOOLTIP_SIDEBAR_COLLAPSE : TOOLTIP_SIDEBAR_EXPAND}
+               title={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
              >
                {isSidebarOpen ? (
                  <PanelLeftClose className="icon-xl" />
@@ -54,7 +50,7 @@ export default function MainLayout({ children, sidebar, contextPanel }: MainLayo
              <button 
                className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-all hover:bg-active hover:text-fg"
                onClick={() => setContextOpen(!isContextOpen)}
-               title={isContextOpen ? TOOLTIP_CONTEXT_PANEL_COLLAPSE : TOOLTIP_CONTEXT_PANEL_EXPAND}
+               title={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
              >
                {isContextOpen ? (
                  <PanelRightClose className="icon-xl" />

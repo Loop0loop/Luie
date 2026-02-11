@@ -3,6 +3,7 @@ import { RotateCcw, Trash2, Clock } from "lucide-react";
 import { api } from "../../services/api";
 import { useChapterStore } from "../../stores/chapterStore";
 import type { Chapter } from "../../../../shared/types";
+import { useTranslation } from "react-i18next";
 
 interface TrashListProps {
   projectId: string;
@@ -13,6 +14,7 @@ interface TrashListProps {
 type TrashItem = Chapter & { deletedAt?: string | Date | null };
 
 export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashListProps) {
+  const { t } = useTranslation();
   const [items, setItems] = useState<TrashItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashList
   const handleRestore = useCallback(
     async (id: string) => {
       if (restoringId || purgingId) return;
-      const confirmed = window.confirm("휴지통에서 복구할까요?");
+      const confirmed = window.confirm(t("trash.confirmRestore"));
       if (!confirmed) return;
 
       setRestoringId(id);
@@ -68,7 +70,7 @@ export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashList
   const handlePurge = useCallback(
     async (id: string) => {
       if (restoringId || purgingId) return;
-      const confirmed = window.confirm("영구 삭제할까요? 이 작업은 되돌릴 수 없습니다.");
+      const confirmed = window.confirm(t("trash.confirmPurge"));
       if (!confirmed) return;
 
       setPurgingId(id);
@@ -90,13 +92,13 @@ export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashList
     return (
       <div className="p-4 text-xs text-muted flex flex-col items-center justify-center h-full opacity-60">
         <Clock className="mb-2 w-8 h-8 opacity-20" />
-        휴지통이 비어 있습니다.
+        {t("trash.empty")}
       </div>
     );
-  }, []);
+  }, [t]);
 
   if (loading) {
-    return <div className="p-4 text-xs text-muted">Loading...</div>;
+    return <div className="p-4 text-xs text-muted">{t("trash.loading")}</div>;
   }
 
   if (items.length === 0) {
@@ -124,7 +126,7 @@ export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashList
                 <button
                   onClick={() => handleRestore(item.id)}
                   className="p-1 hover:bg-active rounded text-muted hover:text-fg"
-                  title="복구"
+                  title={t("trash.restore")}
                   disabled={restoringId === item.id || purgingId === item.id}
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
@@ -132,7 +134,7 @@ export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashList
                 <button
                   onClick={() => handlePurge(item.id)}
                   className="p-1 hover:bg-active rounded text-red-400 hover:text-red-300"
-                  title="영구 삭제"
+                  title={t("trash.purge")}
                   disabled={restoringId === item.id || purgingId === item.id}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -140,7 +142,7 @@ export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashList
               </div>
             </div>
             <div className="text-[11px] text-muted">
-              {deletedLabel || "삭제됨"}
+              {deletedLabel || t("trash.deleted")}
             </div>
           </div>
         );

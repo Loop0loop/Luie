@@ -4,23 +4,12 @@ import { useAnalysisStore } from "../../stores/analysisStore";
 import { useProjectStore } from "../../stores/projectStore";
 import type { AnalysisItem } from "../../../../shared/types/analysis";
 import { PenTool, Sparkles, ArrowRight, Quote, MessageSquare } from "lucide-react";
-import {
-  LABEL_ANALYSIS_TITLE,
-  LABEL_ANALYSIS_SELECT_CHAPTER,
-  LABEL_ANALYSIS_START_BUTTON,
-  LABEL_ANALYSIS_ANALYZING,
-  LABEL_ANALYSIS_EMPTY_STATE,
-  LABEL_ANALYSIS_RESULT_REACTION,
-  LABEL_ANALYSIS_RESULT_CONTRADICTION,
-  LABEL_ANALYSIS_DISCLAIMER,
-  LABEL_ANALYSIS_DISCLAIMER_LINK,
-  LABEL_ANALYSIS_DISCLAIMER_DETAIL_TITLE,
-  LABEL_ANALYSIS_DISCLAIMER_DETAIL_BODY
-} from "../../../../shared/constants";
 import { useToast } from "../../components/common/ToastContext";
 import { Modal } from "../../components/common/Modal";
+import { useTranslation } from "react-i18next";
 
 export default function AnalysisSection() {
+  const { t } = useTranslation();
   const { items: chapters, currentChapter, setCurrent } = useChapterStore();
   const { currentProject } = useProjectStore();
   const { 
@@ -52,8 +41,9 @@ export default function AnalysisSection() {
 
     const unsubscribeError = window.api.analysis.onError((errorData: unknown) => {
       const err = errorData as { message: string };
-      setError(err.message ?? "분석 중 오류가 발생했습니다.");
-      showToast(err.message ?? "분석 중 오류가 발생했습니다.", "error");
+      const fallbackMessage = t("analysis.toast.error");
+      setError(err.message ?? fallbackMessage);
+      showToast(err.message ?? fallbackMessage, "error");
     });
 
     return () => {
@@ -61,6 +51,7 @@ export default function AnalysisSection() {
       unsubscribeError();
     };
   }, [addStreamItem, setError, showToast]);
+  }, [addStreamItem, setError, showToast, t]);
 
   // Cleanup on unmount or tab switch
   useEffect(() => {
@@ -99,7 +90,7 @@ export default function AnalysisSection() {
       }
       setAnalyzedChapterId(activeChapterId); // Remember which chapter was analyzed
       await startAnalysis(activeChapterId, currentProject.id);
-      showToast("분석을 시작합니다...", "info");
+      showToast(t("analysis.toast.start"), "info");
     } catch {
       // Error is already set in the store and logged in main process
       // No need to log again here
@@ -112,6 +103,7 @@ export default function AnalysisSection() {
     clearAnalysis,
     startAnalysis,
     showToast,
+    t,
   ]);
 
   const handleNavigate = useCallback((contextId: string) => {
@@ -121,11 +113,11 @@ export default function AnalysisSection() {
     
     if (targetChapter) {
       setCurrent(targetChapter);
-      showToast(`"${targetChapter.title}" 원고로 이동합니다.`, 'info');
+      showToast(t("analysis.toast.navigateChapter", { title: targetChapter.title }), "info");
     } else {
-      showToast(`원고의 해당 위치로 이동합니다. (context: ${contextId})`, 'info');
+      showToast(t("analysis.toast.navigateFallback", { contextId }), "info");
     }
-  }, [analyzedChapterId, activeChapterId, chapters, setCurrent, showToast]);
+  }, [analyzedChapterId, activeChapterId, chapters, setCurrent, showToast, t]);
 
   return (
     <div className="flex flex-col h-full w-full bg-bg-panel text-text-primary font-serif selection:bg-accent-bg/20">
@@ -134,14 +126,14 @@ export default function AnalysisSection() {
       <div className="flex-none px-8 py-6 flex items-center justify-between border-b border-border/40 bg-bg-panel/50 backdrop-blur-sm sticky top-0 z-20">
         <div className="flex items-center gap-2 opacity-60">
             <PenTool className="w-4 h-4" />
-            <span className="text-sm font-medium tracking-widest uppercase">{LABEL_ANALYSIS_TITLE}</span>
+            <span className="text-sm font-medium tracking-widest uppercase">{t("analysis.title")}</span>
         </div>
         
         {/* Chapter Selector (Inline style) */}
         {!isAnalyzing && (
           <div className="flex items-center gap-4 animate-in fade-in duration-500">
             <div className="flex items-center gap-3">
-              <span className="text-sm text-text-secondary hidden sm:inline">{LABEL_ANALYSIS_SELECT_CHAPTER}</span>
+              <span className="text-sm text-text-secondary hidden sm:inline">{t("analysis.selectChapter")}</span>
               <select 
                 className="bg-transparent text-sm font-bold border-b border-border hover:border-text-primary cursor-pointer focus:outline-none transition-colors py-1"
                 value={activeChapterId}
@@ -162,7 +154,7 @@ export default function AnalysisSection() {
                   onClick={() => void useAnalysisStore.getState().clearAnalysis()}
                   className="text-xs font-semibold tracking-wide px-3 py-1 rounded-full border border-border text-text-secondary hover:text-text-primary hover:border-text-primary transition-colors"
                 >
-                  초기화
+                  {t("analysis.actions.reset")}
                 </button>
               )}
               <button
@@ -170,7 +162,7 @@ export default function AnalysisSection() {
                 disabled={!activeChapterId || !currentProject}
                 className="text-xs font-semibold tracking-wide px-3 py-1 rounded-full border border-border text-text-secondary hover:text-text-primary hover:border-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                다시 분석
+                {t("analysis.actions.reanalyze")}
               </button>
             </div>
           </div>
@@ -185,7 +177,7 @@ export default function AnalysisSection() {
             {analysisItems.length === 0 && !isAnalyzing && (
                 <div className="flex flex-col items-center justify-center py-20 opacity-60 hover:opacity-100 transition-opacity">
                     <p className="text-xl md:text-2xl text-center leading-relaxed whitespace-pre-wrap text-text-secondary mb-8 font-light">
-                        {LABEL_ANALYSIS_EMPTY_STATE}
+                      {t("analysis.emptyState")}
                     </p>
                     <button
                         onClick={() => void handleAnalyze()}
@@ -193,20 +185,20 @@ export default function AnalysisSection() {
                         className="group flex items-center gap-3 px-8 py-4 rounded-full bg-surface hover:bg-surface-hover border border-border shadow-sm hover:shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Sparkles className="w-5 h-5 text-accent animate-pulse" />
-                        <span className="text-lg font-medium">{LABEL_ANALYSIS_START_BUTTON}</span>
+                        <span className="text-lg font-medium">{t("analysis.startButton")}</span>
                         <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                     </button>
 
                     {/* Privacy Disclaimer */}
                     <div className="mt-8 text-center animate-in fade-in slide-in-from-bottom-2 delay-300 duration-700">
                         <p className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
-                            {LABEL_ANALYSIS_DISCLAIMER}
+                          {t("analysis.disclaimer")}
                         </p>
                         <button 
                             onClick={() => setIsModalOpen(true)}
                             className="mt-3 text-xs text-text-tertiary underline hover:text-text-primary transition-colors cursor-pointer"
                         >
-                            {LABEL_ANALYSIS_DISCLAIMER_LINK}
+                            {t("analysis.disclaimerLink")}
                         </button>
                     </div>
                 </div>
@@ -215,7 +207,7 @@ export default function AnalysisSection() {
             {/* Loading State */}
             {isAnalyzing && analysisItems.length === 0 && (
                 <div className="flex items-center justify-center py-20 animate-pulse">
-                    <span className="text-lg text-text-tertiary italic">{LABEL_ANALYSIS_ANALYZING}</span>
+                <span className="text-lg text-text-tertiary italic">{t("analysis.analyzing")}</span>
                 </div>
             )}
 
@@ -247,7 +239,9 @@ export default function AnalysisSection() {
                     {/* Meta Label */}
                     {(item.type === 'reaction' || item.type === 'suggestion') && (
                         <div className="text-xs font-bold tracking-widest text-text-tertiary mb-2 uppercase opacity-50 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-                             {item.type === 'reaction' ? LABEL_ANALYSIS_RESULT_REACTION : LABEL_ANALYSIS_RESULT_CONTRADICTION}
+                              {item.type === 'reaction'
+                             ? t("analysis.result.reaction")
+                             : t("analysis.result.contradiction")}
                              {item.quote && <span className="w-1 h-1 rounded-full bg-text-tertiary"></span>}
                         </div>
                     )}
@@ -268,7 +262,7 @@ export default function AnalysisSection() {
                     {item.contextId && (
                         <div className="h-0 overflow-hidden group-hover:h-auto group-hover:mt-3 transition-all duration-300 ease-out opacity-0 group-hover:opacity-100">
                              <div className="flex items-center gap-2 text-xs text-accent font-sans font-medium">
-                                 <span>문맥으로 이동하기</span>
+                             <span>{t("analysis.actions.moveToContext")}</span>
                                  <ArrowRight className="w-3 h-3" />
                              </div>
                         </div>
@@ -284,11 +278,11 @@ export default function AnalysisSection() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={LABEL_ANALYSIS_DISCLAIMER_DETAIL_TITLE}
+        title={t("analysis.disclaimerDetailTitle")}
         width="500px"
       >
         <div className="space-y-4 whitespace-pre-wrap text-text-secondary leading-relaxed">
-            {LABEL_ANALYSIS_DISCLAIMER_DETAIL_BODY}
+            {t("analysis.disclaimerDetailBody")}
         </div>
       </Modal>
     </div>

@@ -7,6 +7,7 @@ import { useProjectStore } from "../stores/projectStore";
 import { useChapterStore } from "../stores/chapterStore";
 import { useUIStore } from "../stores/uiStore";
 import { api } from "../services/api";
+import { i18n } from "../i18n";
 import {
   LUIE_MANUSCRIPT_DIR,
   LUIE_MANUSCRIPT_README,
@@ -16,9 +17,6 @@ import {
   LUIE_PACKAGE_VERSION,
   MARKDOWN_EXTENSION,
   TEXT_EXTENSION,
-  DEFAULT_PROJECT_TITLE,
-  DEFAULT_NEW_PROJECT_TITLE,
-  DEFAULT_CHAPTER_TITLE,
   APP_NAME,
 } from "../../../shared/constants";
 
@@ -29,24 +27,24 @@ export function useProjectTemplate(setActiveChapterId: (id: string) => void) {
 
   const handleSelectProject = useCallback(
     async (templateId: string, projectPath: string) => {
-      let projectTitle = DEFAULT_PROJECT_TITLE;
+      let projectTitle = i18n.t("project.defaults.projectTitle");
 
       switch (templateId) {
         case "blank":
-          projectTitle = DEFAULT_NEW_PROJECT_TITLE;
+          projectTitle = i18n.t("project.defaults.newProjectTitle");
           break;
         case "novel_basic":
-          projectTitle = "Web Novel";
+          projectTitle = i18n.t("settings.projectTemplate.title.webNovel");
           break;
         case "script_basic":
-          projectTitle = "Screenplay";
+          projectTitle = i18n.t("settings.projectTemplate.title.screenplay");
           break;
         case "essay":
-          projectTitle = "Essay";   
+          projectTitle = i18n.t("settings.projectTemplate.title.essay");
           break;
       }
 
-      const description = `Created with ${templateId} template`;
+      const description = i18n.t("project.templateDescription", { templateId });
 
       const newProject = await createProject(
         projectTitle,
@@ -63,7 +61,7 @@ export function useProjectTemplate(setActiveChapterId: (id: string) => void) {
           const isLuiePackage = lower.endsWith(LUIE_PACKAGE_EXTENSION);
 
           const content = isMarkdown
-            ? `# ${newProject.title}\n\n## ${DEFAULT_CHAPTER_TITLE}\n\n`
+            ? `# ${newProject.title}\n\n## ${i18n.t("project.defaults.chapterTitle")}\n\n`
             : isText
               ? `${newProject.title}\n\n`
               : JSON.stringify(
@@ -110,7 +108,7 @@ export function useProjectTemplate(setActiveChapterId: (id: string) => void) {
         setCurrentProject(newProject);
         const firstChapter = await createChapter({
           projectId: newProject.id,
-          title: DEFAULT_CHAPTER_TITLE,
+          title: i18n.t("project.defaults.chapterTitle"),
         });
 
         // If this is a .luie package, also persist chapter content into the package

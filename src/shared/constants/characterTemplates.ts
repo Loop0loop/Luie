@@ -1,14 +1,14 @@
 export type TemplateField = {
   key: string;
-  label: string;
+  labelKey: string;
   type: "text" | "textarea" | "select";
-  options?: string[]; // For select type
-  placeholder?: string;
+  optionKeys?: string[]; // For select type
+  placeholderKey?: string;
 };
 
 export type CharacterTemplate = {
   id: string;
-  name: string;
+  nameKey: string;
   icon: string; // Lucide icon name or emoji
   fields: TemplateField[];
 };
@@ -16,69 +16,89 @@ export type CharacterTemplate = {
 export const CHARACTER_TEMPLATES: CharacterTemplate[] = [
   {
     id: "basic",
-    name: "기본 (Basic)",
+    nameKey: "character.templates.basic",
     icon: "User",
     fields: [
-      { key: "age", label: "나이", type: "text", placeholder: "예: 24세" },
-      { key: "gender", label: "성별", type: "select", options: ["남성", "여성", "기타", "불명"] },
-      { key: "job", label: "직업", type: "text", placeholder: "예: 학생" },
-      { key: "affiliation", label: "소속", type: "text", placeholder: "-" },
-      { key: "mbti", label: "MBTI", type: "text", placeholder: "ENTP" },
+      { key: "age", labelKey: "character.fields.age", type: "text", placeholderKey: "character.placeholders.age.basic" },
+      {
+        key: "gender",
+        labelKey: "character.fields.gender",
+        type: "select",
+        optionKeys: [
+          "character.options.gender.male",
+          "character.options.gender.female",
+          "character.options.gender.other",
+          "character.options.gender.unknown",
+        ],
+      },
+      { key: "job", labelKey: "character.fields.job", type: "text", placeholderKey: "character.placeholders.job.basic" },
+      { key: "affiliation", labelKey: "character.fields.affiliation", type: "text", placeholderKey: "character.placeholders.affiliation" },
+      { key: "mbti", labelKey: "character.fields.mbti", type: "text", placeholderKey: "character.placeholders.mbti" },
     ],
   },
   {
     id: "fantasy",
-    name: "판타지 (Fantasy)",
+    nameKey: "character.templates.fantasy",
     icon: "Sword",
     fields: [
-      { key: "age", label: "나이", type: "text", placeholder: "예: 150세 (엘프)" },
-      { key: "gender", label: "성별", type: "select", options: ["남성", "여성", "기타", "불명"] },
-      { key: "race", label: "종족", type: "text", placeholder: "예: 인간, 엘프, 드워프" },
-      { key: "class", label: "클래스", type: "text", placeholder: "예: 마법사, 기사" },
-      { key: "rank", label: "등급/랭크", type: "text", placeholder: "예: A급, 7서클" },
-      { key: "element", label: "속성", type: "text", placeholder: "예: 화염, 신성" },
-      { key: "affiliation", label: "소속 길드/국가", type: "text" },
-      { key: "ability", label: "특수 능력", type: "textarea", placeholder: "보유 스킬이나 능력" },
+      { key: "age", labelKey: "character.fields.age", type: "text", placeholderKey: "character.placeholders.age.fantasy" },
+      {
+        key: "gender",
+        labelKey: "character.fields.gender",
+        type: "select",
+        optionKeys: [
+          "character.options.gender.male",
+          "character.options.gender.female",
+          "character.options.gender.other",
+          "character.options.gender.unknown",
+        ],
+      },
+      { key: "race", labelKey: "character.fields.race", type: "text", placeholderKey: "character.placeholders.race" },
+      { key: "class", labelKey: "character.fields.class", type: "text", placeholderKey: "character.placeholders.class" },
+      { key: "rank", labelKey: "character.fields.rank", type: "text", placeholderKey: "character.placeholders.rank" },
+      { key: "element", labelKey: "character.fields.element", type: "text", placeholderKey: "character.placeholders.element" },
+      { key: "affiliation", labelKey: "character.fields.affiliationGuild", type: "text" },
+      { key: "ability", labelKey: "character.fields.ability", type: "textarea", placeholderKey: "character.placeholders.ability" },
     ],
   },
   {
     id: "romance",
-    name: "로맨스 (Romance)",
+    nameKey: "character.templates.romance",
     icon: "Heart",
     fields: [
-      { key: "age", label: "나이", type: "text" },
-      { key: "job", label: "직업/직위", type: "text", placeholder: "예: 본부장, 황태자" },
-      { key: "status", label: "사회적 지위", type: "text", placeholder: "예: 재벌 3세, 평민" },
-      { key: "style", label: "외모 스타일", type: "text", placeholder: "청순, 냉미남" },
-      { key: "ideal", label: "이상형", type: "text" },
-      { key: "rival", label: "라이벌/연적", type: "text" },
-      { key: "family", label: "가족 관계", type: "textarea" },
+      { key: "age", labelKey: "character.fields.age", type: "text" },
+      { key: "job", labelKey: "character.fields.jobTitle", type: "text", placeholderKey: "character.placeholders.job.romance" },
+      { key: "status", labelKey: "character.fields.status", type: "text", placeholderKey: "character.placeholders.status" },
+      { key: "style", labelKey: "character.fields.style", type: "text", placeholderKey: "character.placeholders.style" },
+      { key: "ideal", labelKey: "character.fields.ideal", type: "text" },
+      { key: "rival", labelKey: "character.fields.rival", type: "text" },
+      { key: "family", labelKey: "character.fields.family", type: "textarea" },
     ],
   },
   {
     id: "murim",
-    name: "무협 (Murim)",
+    nameKey: "character.templates.murim",
     icon: "Scroll",
     fields: [
-      { key: "age", label: "나이", type: "text" },
-      { key: "sect", label: "소속 문파", type: "text", placeholder: "예: 화산파, 마교" },
-      { key: "realm", label: "경지(무공)", type: "text", placeholder: "예: 화경, 절정" },
-      { key: "title", label: "별호", type: "text", placeholder: "예: 검성, 매화검존" },
-      { key: "martial_arts", label: "주요 무공", type: "textarea" },
-      { key: "weapon", label: "사용 무기", type: "text" },
+      { key: "age", labelKey: "character.fields.age", type: "text" },
+      { key: "sect", labelKey: "character.fields.sect", type: "text", placeholderKey: "character.placeholders.sect" },
+      { key: "realm", labelKey: "character.fields.realm", type: "text", placeholderKey: "character.placeholders.realm" },
+      { key: "title", labelKey: "character.fields.title", type: "text", placeholderKey: "character.placeholders.title" },
+      { key: "martial_arts", labelKey: "character.fields.martialArts", type: "textarea" },
+      { key: "weapon", labelKey: "character.fields.weapon", type: "text" },
     ],
   },
   {
     id: "modern",
-    name: "현대물 (Modern)",
+    nameKey: "character.templates.modern",
     icon: "Briefcase",
     fields: [
-      { key: "age", label: "나이", type: "text" },
-      { key: "job", label: "직업", type: "text" },
-      { key: "education", label: "학력", type: "text" },
-      { key: "wealth", label: "경제력", type: "text", placeholder: "예: 상, 중, 하" },
-      { key: "hobby", label: "취미", type: "text" },
-      { key: "vehicle", label: "보유 차량", type: "text" },
+      { key: "age", labelKey: "character.fields.age", type: "text" },
+      { key: "job", labelKey: "character.fields.job", type: "text" },
+      { key: "education", labelKey: "character.fields.education", type: "text" },
+      { key: "wealth", labelKey: "character.fields.wealth", type: "text", placeholderKey: "character.placeholders.wealth" },
+      { key: "hobby", labelKey: "character.fields.hobby", type: "text" },
+      { key: "vehicle", labelKey: "character.fields.vehicle", type: "text" },
     ],
   },
 ];

@@ -19,24 +19,10 @@ import type { Editor } from "@tiptap/react";
 import { cn } from "../../../../shared/types/utils";
 import { api } from "../../services/api";
 import { useEditorStore } from "../../stores/editorStore";
+import { useTranslation } from "react-i18next";
 import {
-  EDITOR_TOOLBAR_DEFAULT_FONT_LABEL,
   EDITOR_TOOLBAR_FONT_MIN,
   EDITOR_TOOLBAR_FONT_STEP,
-  TOOLTIP_ALIGN_CENTER,
-  TOOLTIP_ALIGN_LEFT,
-  TOOLTIP_ALIGN_RIGHT,
-  TOOLTIP_BOLD,
-  TOOLTIP_HIGHLIGHT,
-  TOOLTIP_ITALIC,
-  TOOLTIP_REDO,
-  TOOLTIP_STRIKETHROUGH,
-  TOOLTIP_TEXT_COLOR,
-  TOOLTIP_TOGGLE_MOBILE_VIEW,
-  TOOLTIP_UNDERLINE,
-  TOOLTIP_UNDO,
-  LABEL_VIEW_MOBILE,
-  LABEL_VIEW_PC,
 } from "../../../../shared/constants";
 
 interface EditorToolbarProps {
@@ -50,6 +36,7 @@ export default function EditorToolbar({
   isMobileView,
   onToggleMobileView,
 }: EditorToolbarProps) {
+  const { t } = useTranslation();
   const { fontSize, setFontSize } = useEditorStore();
   const toggleButtonClass = (active: boolean) =>
     cn(
@@ -69,7 +56,7 @@ export default function EditorToolbar({
         <div className="flex items-center gap-0.5">
           <button
             className="flex items-center justify-center w-7 h-7 rounded text-muted hover:bg-hover hover:text-fg transition-colors disabled:opacity-50 disabled:pointer-events-none"
-            title={TOOLTIP_UNDO}
+            title={t("toolbar.tooltip.undo")}
             onClick={() => editor.chain().focus().undo().run()}
             disabled={!editor.can().undo()}
           >
@@ -77,7 +64,7 @@ export default function EditorToolbar({
           </button>
           <button
             className="flex items-center justify-center w-7 h-7 rounded text-muted hover:bg-hover hover:text-fg transition-colors disabled:opacity-50 disabled:pointer-events-none"
-            title={TOOLTIP_REDO}
+            title={t("toolbar.tooltip.redo")}
             onClick={() => editor.chain().focus().redo().run()}
             disabled={!editor.can().redo()}
           >
@@ -88,7 +75,7 @@ export default function EditorToolbar({
 
           {/* Font Picker Fake */}
           <button className="flex items-center gap-1 px-2 h-7 rounded bg-transparent text-muted text-xs cursor-pointer hover:bg-hover hover:text-fg">
-              <span>{EDITOR_TOOLBAR_DEFAULT_FONT_LABEL}</span>
+              <span>{t("toolbar.font.defaultLabel")}</span>
               <ChevronDown className="icon-xs" />
           </button>
 
@@ -121,28 +108,28 @@ export default function EditorToolbar({
 
           <button
             className={toggleButtonClass(editor.isActive("bold"))}
-            title={TOOLTIP_BOLD}
+            title={t("toolbar.tooltip.bold")}
             onClick={() => editor.chain().focus().toggleBold().run()}
           >
               <Bold className="icon-md" />
           </button>
           <button
             className={toggleButtonClass(editor.isActive("italic"))}
-            title={TOOLTIP_ITALIC}
+            title={t("toolbar.tooltip.italic")}
             onClick={() => editor.chain().focus().toggleItalic().run()}
           >
               <Italic className="icon-md" />
           </button>
           <button
             className={toggleButtonClass(editor.isActive("underline"))}
-            title={TOOLTIP_UNDERLINE}
+            title={t("toolbar.tooltip.underline")}
             onClick={() => editor.chain().focus().toggleUnderline().run()}
           >
               <Underline className="icon-md" />
           </button>
           <button
             className={toggleButtonClass(editor.isActive("strike"))}
-            title={TOOLTIP_STRIKETHROUGH}
+            title={t("toolbar.tooltip.strikethrough")}
             onClick={() => editor.chain().focus().toggleStrike().run()}
           >
               <Strikethrough className="icon-md" />
@@ -151,7 +138,7 @@ export default function EditorToolbar({
           <div className="w-px h-4 bg-border mx-1.5" />
 
           {/* Color Picker */}
-          <div className="relative w-7 h-7 flex items-center justify-center" title={TOOLTIP_TEXT_COLOR}>
+          <div className="relative w-7 h-7 flex items-center justify-center" title={t("toolbar.tooltip.textColor")}>
             <input
               type="color"
               className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
@@ -173,7 +160,7 @@ export default function EditorToolbar({
 
           <button
             className={toggleButtonClass(editor.isActive("highlight"))}
-            title={TOOLTIP_HIGHLIGHT}
+            title={t("toolbar.tooltip.highlight")}
             onClick={() => editor.chain().focus().toggleHighlight().run()}
           >
             <Highlighter className="icon-md" />
@@ -185,21 +172,21 @@ export default function EditorToolbar({
           {/* Alignment */}
           <button
             className={toggleButtonClass(editor.isActive({ textAlign: "left" }))}
-            title={TOOLTIP_ALIGN_LEFT}
+            title={t("toolbar.tooltip.alignLeft")}
             onClick={() => editor.chain().focus().setTextAlign("left").run()}
           >
             <AlignLeft className="icon-md" />
           </button>
           <button
             className={toggleButtonClass(editor.isActive({ textAlign: "center" }))}
-            title={TOOLTIP_ALIGN_CENTER}
+            title={t("toolbar.tooltip.alignCenter")}
             onClick={() => editor.chain().focus().setTextAlign("center").run()}
           >
             <AlignCenter className="icon-md" />
           </button>
           <button
             className={toggleButtonClass(editor.isActive({ textAlign: "right" }))}
-            title={TOOLTIP_ALIGN_RIGHT}
+            title={t("toolbar.tooltip.alignRight")}
             onClick={() => editor.chain().focus().setTextAlign("right").run()}
           >
             <AlignRight className="icon-md" />
@@ -213,14 +200,16 @@ export default function EditorToolbar({
                 isMobileView && "bg-active text-accent font-semibold border-active"
             )}
             onClick={onToggleMobileView}
-            title={TOOLTIP_TOGGLE_MOBILE_VIEW}
+            title={t("toolbar.tooltip.toggleMobileView")}
           >
             {isMobileView ? (
               <Smartphone className="icon-sm" />
             ) : (
               <Monitor className="icon-sm" />
             )}
-            <span>{isMobileView ? LABEL_VIEW_MOBILE : LABEL_VIEW_PC}</span>
+            <span>
+              {isMobileView ? t("toolbar.view.mobile") : t("toolbar.view.desktop")}
+            </span>
           </button>
 
           <button

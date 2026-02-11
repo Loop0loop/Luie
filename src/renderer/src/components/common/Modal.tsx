@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useId } from "react";
 import { X } from "lucide-react";
 import { cn } from "../../../../shared/types/utils";
-import { MODAL_CANCEL_LABEL, MODAL_CONFIRM_LABEL } from "../../../../shared/constants";
+import { useTranslation } from "react-i18next";
 
 interface ModalProps {
   isOpen: boolean;
@@ -58,12 +58,15 @@ export function ConfirmDialog({
   isOpen,
   title,
   message,
-  confirmLabel = MODAL_CONFIRM_LABEL,
-  cancelLabel = MODAL_CANCEL_LABEL,
+  confirmLabel,
+  cancelLabel,
   isDestructive = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const { t } = useTranslation();
+  const effectiveConfirmLabel = confirmLabel ?? t("ui.modal.confirm");
+  const effectiveCancelLabel = cancelLabel ?? t("ui.modal.cancel");
   return (
     <Modal
       isOpen={isOpen}
@@ -72,7 +75,7 @@ export function ConfirmDialog({
       footer={
         <div className="flex justify-end gap-3 w-full">
           <button className="px-4 py-2 bg-transparent border border-border rounded-md text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg" onClick={onCancel}>
-            {cancelLabel}
+            {effectiveCancelLabel}
           </button>
           <button
             className={cn(
@@ -81,7 +84,7 @@ export function ConfirmDialog({
             )}
             onClick={onConfirm}
           >
-            {confirmLabel}
+            {effectiveConfirmLabel}
           </button>
         </div>
       }
@@ -109,11 +112,14 @@ export function PromptDialog({
   message,
   defaultValue = "",
   placeholder = "",
-  confirmLabel = MODAL_CONFIRM_LABEL,
-  cancelLabel = MODAL_CANCEL_LABEL,
+  confirmLabel,
+  cancelLabel,
   onConfirm,
   onCancel,
 }: PromptDialogProps) {
+  const { t } = useTranslation();
+  const effectiveConfirmLabel = confirmLabel ?? t("ui.modal.confirm");
+  const effectiveCancelLabel = cancelLabel ?? t("ui.modal.cancel");
   const inputId = useId();
 
   const handleSubmit = () => {
@@ -129,10 +135,10 @@ export function PromptDialog({
       footer={
         <div className="flex justify-end gap-3 w-full">
           <button className="px-4 py-2 bg-transparent border border-border rounded-md text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg" onClick={onCancel}>
-            {cancelLabel}
+            {effectiveCancelLabel}
           </button>
           <button className="px-4 py-2 bg-accent border-none rounded-md text-white text-[13px] font-medium cursor-pointer transition-all hover:brightness-110" onClick={handleSubmit}>
-            {confirmLabel}
+            {effectiveConfirmLabel}
           </button>
         </div>
       }

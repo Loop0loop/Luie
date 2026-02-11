@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import type { Editor, Range } from "@tiptap/core";
 import { cn } from "../../../../shared/types/utils";
@@ -14,19 +14,7 @@ import {
   Minus,
   MessageSquare,
 } from "lucide-react";
-import {
-  SLASH_MENU_HEADER_BASIC,
-  SLASH_MENU_DESC_H1,
-  SLASH_MENU_DESC_H2,
-  SLASH_MENU_DESC_H3,
-  SLASH_MENU_DESC_BULLET,
-  SLASH_MENU_DESC_NUMBER,
-  SLASH_MENU_DESC_CHECK,
-  SLASH_MENU_DESC_TOGGLE,
-  SLASH_MENU_DESC_QUOTE,
-  SLASH_MENU_DESC_CALLOUT,
-  SLASH_MENU_DESC_DIVIDER,
-} from "../../../../shared/constants";
+import { useTranslation } from "react-i18next";
 
 export interface SlashMenuActionProps {
   editor: Editor;
@@ -61,25 +49,28 @@ const ICONS: Record<string, ReactElement> = {
   divider: <Minus className="icon-lg" />,
 };
 
-const DESCRIPTIONS: Record<string, string> = {
-  h1: SLASH_MENU_DESC_H1,
-  h2: SLASH_MENU_DESC_H2,
-  h3: SLASH_MENU_DESC_H3,
-  bullet: SLASH_MENU_DESC_BULLET,
-  number: SLASH_MENU_DESC_NUMBER,
-  check: SLASH_MENU_DESC_CHECK,
-  toggle: SLASH_MENU_DESC_TOGGLE,
-  quote: SLASH_MENU_DESC_QUOTE,
-  callout: SLASH_MENU_DESC_CALLOUT,
-  divider: SLASH_MENU_DESC_DIVIDER,
-};
-
 const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function SlashMenu(
   { items, command }: SlashMenuProps,
   ref,
 ) {
+  const { t } = useTranslation();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const itemRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const descriptions = useMemo(
+    () => ({
+      h1: t("slashMenu.description.h1"),
+      h2: t("slashMenu.description.h2"),
+      h3: t("slashMenu.description.h3"),
+      bullet: t("slashMenu.description.bullet"),
+      number: t("slashMenu.description.number"),
+      check: t("slashMenu.description.check"),
+      toggle: t("slashMenu.description.toggle"),
+      quote: t("slashMenu.description.quote"),
+      callout: t("slashMenu.description.callout"),
+      divider: t("slashMenu.description.divider"),
+    }),
+    [t],
+  );
 
   const effectiveSelectedIndex =
     selectedIndex >= 0 && selectedIndex < items.length ? selectedIndex : 0;
@@ -147,7 +138,7 @@ const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function SlashMenu
       }}
     >
       <div className="px-3 py-2 text-[11px] font-semibold text-muted uppercase tracking-wider bg-bg-secondary border-b border-border">
-        {SLASH_MENU_HEADER_BASIC}
+        {t("slashMenu.header")}
       </div>
       <div className="p-1">
         {items.map((item, index) => (
@@ -168,7 +159,7 @@ const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function SlashMenu
             </div>
             <div className="flex-1 overflow-hidden">
               <div className="text-sm font-medium text-fg mb-0.5">{item.label}</div>
-              <div className="text-[11px] text-muted truncate">{DESCRIPTIONS[item.id] || ""}</div>
+              <div className="text-[11px] text-muted truncate">{descriptions[item.id] || ""}</div>
             </div>
           </div>
         ))}

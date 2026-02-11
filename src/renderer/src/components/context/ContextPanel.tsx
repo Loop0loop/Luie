@@ -6,16 +6,7 @@ import { useProjectStore } from "../../stores/projectStore";
 import TabButton from "../common/TabButton";
 import SearchInput from "../common/SearchInput";
 import type { Character, Term } from "../../../../shared/types";
-import {
-  LABEL_CONTEXT_DETAIL_DESCRIPTION,
-  LABEL_CONTEXT_DETAIL_CATEGORY,
-  LABEL_CONTEXT_SYNOPSIS_HEADER,
-  LABEL_CONTEXT_TAB_CHARACTERS,
-  LABEL_CONTEXT_TAB_SYNOPSIS,
-  LABEL_CONTEXT_TAB_TERMS,
-  PLACEHOLDER_CONTEXT_SEARCH,
-  PLACEHOLDER_CONTEXT_SYNOPSIS,
-} from "../../../../shared/constants";
+import { useTranslation } from "react-i18next";
 
 type Tab = "synopsis" | "characters" | "terms";
 
@@ -38,6 +29,7 @@ function ContextPanel({
   activeTab = "synopsis",
   onTabChange,
 }: ContextPanelProps) {
+  const { t } = useTranslation();
   const [internalTab, setInternalTab] = useState<Tab>("synopsis");
 
   const currentTab = onTabChange ? activeTab : internalTab;
@@ -109,7 +101,7 @@ function ContextPanel({
           </div>
           <div className="flex-1 p-6 overflow-y-auto">
             <div className="mb-6">
-                            <div className="text-[11px] font-semibold text-muted uppercase mb-2">{LABEL_CONTEXT_DETAIL_DESCRIPTION}</div>
+                            <div className="text-[11px] font-semibold text-muted uppercase mb-2">{t("context.detail.description")}</div>
               <div className="text-sm leading-relaxed text-fg whitespace-pre-wrap">
                 {isCharacter(selectedItem)
                   ? (selectedItem.description ?? "")
@@ -119,7 +111,7 @@ function ContextPanel({
 
             {isTerm(selectedItem) && selectedItem.category && (
               <div className="mb-6">
-                <div className="text-[11px] font-semibold text-muted uppercase mb-2">{LABEL_CONTEXT_DETAIL_CATEGORY}</div>
+                <div className="text-[11px] font-semibold text-muted uppercase mb-2">{t("context.detail.category")}</div>
                 <div className="text-sm text-fg">{selectedItem.category}</div>
               </div>
             )}
@@ -130,7 +122,7 @@ function ContextPanel({
       <div className="flex flex-col gap-3 px-4 pt-3">
         <SearchInput
           variant="context"
-          placeholder={PLACEHOLDER_CONTEXT_SEARCH}
+          placeholder={t("context.placeholder.search")}
           value={searchText}
           onChange={setSearchText}
         />
@@ -138,7 +130,7 @@ function ContextPanel({
 
       <div className="flex px-4 mt-3">
         <TabButton
-          label={LABEL_CONTEXT_TAB_SYNOPSIS}
+          label={t("context.tab.synopsis")}
           active={currentTab === "synopsis"}
           onClick={() => {
             handleTabChange("synopsis");
@@ -149,7 +141,7 @@ function ContextPanel({
           inactiveClassName="text-muted hover:text-fg"
         />
         <TabButton
-          label={LABEL_CONTEXT_TAB_CHARACTERS}
+          label={t("context.tab.characters")}
           active={currentTab === "characters"}
           onClick={() => {
             handleTabChange("characters");
@@ -160,7 +152,7 @@ function ContextPanel({
           inactiveClassName="text-muted hover:text-fg"
         />
         <TabButton
-          label={LABEL_CONTEXT_TAB_TERMS}
+          label={t("context.tab.terms")}
           active={currentTab === "terms"}
           onClick={() => {
             handleTabChange("terms");
@@ -186,11 +178,11 @@ function ContextPanel({
                 marginBottom: "var(--context-panel-section-margin-bottom)",
               }}
             >
-              {LABEL_CONTEXT_SYNOPSIS_HEADER}
+              {t("context.synopsisHeader")}
             </div>
             <textarea
               className="w-full border border-border rounded-lg p-3 text-sm text-fg bg-element resize-none font-sans leading-relaxed min-h-50"
-              placeholder={PLACEHOLDER_CONTEXT_SYNOPSIS}
+              placeholder={t("context.placeholder.synopsis")}
               value={currentProject?.description || ""}
               readOnly
             />

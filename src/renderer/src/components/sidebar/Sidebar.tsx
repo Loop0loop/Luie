@@ -23,26 +23,7 @@ import {
 import { SnapshotList } from "../snapshot/SnapshotList";
 import { TrashList } from "../trash/TrashList";
 import { useProjectStore } from "../../stores/projectStore";
-import {
-  SIDEBAR_ADD_CHAPTER,
-  SIDEBAR_BINDER_TITLE,
-  SIDEBAR_DEFAULT_PROJECT_TITLE,
-  SIDEBAR_ITEM_CHARACTERS,
-  SIDEBAR_ITEM_SCRAP,
-  SIDEBAR_ITEM_WORLD,
-  SIDEBAR_MENU_DELETE,
-  SIDEBAR_MENU_DUPLICATE,
-  SIDEBAR_MENU_OPEN_BELOW,
-  SIDEBAR_MENU_OPEN_RIGHT,
-  SIDEBAR_MENU_RENAME,
-  SIDEBAR_PROMPT_RENAME_TITLE,
-  SIDEBAR_SECTION_MANUSCRIPT,
-  SIDEBAR_SECTION_RESEARCH,
-  SIDEBAR_SECTION_TRASH,
-  SIDEBAR_SETTINGS_LABEL,
-  SIDEBAR_TRASH_EMPTY,
-  LABEL_RESEARCH_ANALYSIS,
-} from "../../../../shared/constants";
+import { useTranslation } from "react-i18next";
 
 interface Chapter {
   id: string;
@@ -94,6 +75,7 @@ function Sidebar({
   onSelectResearchItem,
   onSplitView,
 }: SidebarProps) {
+  const { t } = useTranslation();
   const { updateProject } = useProjectStore();
   // Section collapse states
   const [isManuscriptOpen, setManuscriptOpen] = useState(true);
@@ -139,7 +121,7 @@ function Sidebar({
   const handleRenameProject = async () => {
     if (!currentProjectId) return;
     const nextTitle = window
-      .prompt("프로젝트 이름을 입력해주세요.", currentProjectTitle ?? "")
+      .prompt(t("sidebar.prompt.renameProject"), currentProjectTitle ?? "")
       ?.trim();
     if (!nextTitle || nextTitle === currentProjectTitle) return;
     await updateProject(currentProjectId, nextTitle);
@@ -153,7 +135,7 @@ function Sidebar({
     }
     if (action === "rename" && onRenameChapter) {
       const current = chapters.find((c) => c.id === id);
-      const nextTitle = window.prompt(SIDEBAR_PROMPT_RENAME_TITLE, current?.title ?? "")?.trim();
+      const nextTitle = window.prompt(t("sidebar.prompt.renameTitle"), current?.title ?? "")?.trim();
       if (nextTitle) {
         onRenameChapter(id, nextTitle);
       }
@@ -231,52 +213,52 @@ function Sidebar({
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
             onClick={() => handleAction("open_below", menuOpenId)}
           >
-            <ArrowDownFromLine className="icon-sm" /> {SIDEBAR_MENU_OPEN_BELOW}
+            <ArrowDownFromLine className="icon-sm" /> {t("sidebar.menu.openBelow")}
           </div>
           <div
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
             onClick={() => handleAction("open_right", menuOpenId)}
           >
-            <ArrowRightFromLine className="icon-sm" /> {SIDEBAR_MENU_OPEN_RIGHT}
+            <ArrowRightFromLine className="icon-sm" /> {t("sidebar.menu.openRight")}
           </div>
           <div className="h-px bg-border my-1" />
           <div
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
             onClick={() => handleAction("rename", menuOpenId)}
           >
-            <Edit2 className="icon-sm" /> {SIDEBAR_MENU_RENAME}
+            <Edit2 className="icon-sm" /> {t("sidebar.menu.rename")}
           </div>
           <div
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
             onClick={() => handleAction("duplicate", menuOpenId)}
           >
-            <Copy className="icon-sm" /> {SIDEBAR_MENU_DUPLICATE}
+            <Copy className="icon-sm" /> {t("sidebar.menu.duplicate")}
           </div>
           <div
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
             onClick={() => handleAction("delete", menuOpenId)}
             style={{ color: "#ef4444" }}
           >
-            <Trash2 className="icon-sm" /> {SIDEBAR_MENU_DELETE}
+            <Trash2 className="icon-sm" /> {t("sidebar.menu.delete")}
           </div>
         </div>
       )}
       <div className="p-4">
         <div className="flex items-center gap-2 mb-1">
           <h2 className="text-sm font-bold text-fg">
-            {currentProjectTitle || SIDEBAR_DEFAULT_PROJECT_TITLE}
+            {currentProjectTitle || t("sidebar.defaultProjectTitle")}
           </h2>
           <button
             type="button"
             className="p-1 rounded hover:bg-active text-muted hover:text-fg"
             onClick={handleRenameProject}
-            title="프로젝트 이름 수정"
+            title={t("sidebar.tooltip.renameProject")}
             disabled={!currentProjectId}
           >
             <Edit2 className="icon-xs" />
           </button>
         </div>
-        <div className="text-[11px] text-muted uppercase tracking-wider">{SIDEBAR_BINDER_TITLE}</div>
+        <div className="text-[11px] text-muted uppercase tracking-wider">{t("sidebar.binderTitle")}</div>
       </div>
 
       <div className="flex-1 min-h-0 py-3 [content-visibility:auto]">
@@ -301,7 +283,7 @@ function Sidebar({
                   ) : (
                     <ChevronRight className="mr-1.5 opacity-70 icon-xs" />
                   )}
-                  <span>{SIDEBAR_SECTION_MANUSCRIPT}</span>
+                  <span>{t("sidebar.section.manuscript")}</span>
                 </div>
               );
             }
@@ -351,7 +333,7 @@ function Sidebar({
                   style={{ color: "var(--text-tertiary)" }}
                 >
                   <Plus className="mr-2 text-muted icon-sm" />
-                  <span>{SIDEBAR_ADD_CHAPTER}</span>
+                  <span>{t("sidebar.addChapter")}</span>
                 </div>
               );
             }
@@ -367,7 +349,7 @@ function Sidebar({
                   ) : (
                     <ChevronRight className="mr-1.5 opacity-70 icon-xs" />
                   )}
-                  <span>{SIDEBAR_SECTION_RESEARCH}</span>
+                  <span>{t("sidebar.section.research")}</span>
                 </div>
               );
             }
@@ -375,22 +357,22 @@ function Sidebar({
             if (item.type === "research-item") {
               const meta = {
                 character: {
-                  label: SIDEBAR_ITEM_CHARACTERS,
+                  label: t("sidebar.item.characters"),
                   icon: <FolderOpen className="mr-2 text-muted icon-sm" />,
                   hoverId: "res-char",
                 },
                 world: {
-                  label: SIDEBAR_ITEM_WORLD,
+                  label: t("sidebar.item.world"),
                   icon: <FolderOpen className="mr-2 text-muted icon-sm" />,
                   hoverId: "res-world",
                 },
                 scrap: {
-                  label: SIDEBAR_ITEM_SCRAP,
+                  label: t("sidebar.item.scrap"),
                   icon: <BookOpen className="mr-2 text-muted icon-sm" />,
                   hoverId: "res-scrap",
                 },
                 analysis: {
-                  label: LABEL_RESEARCH_ANALYSIS,
+                  label: t("research.title.analysis"),
                   icon: <Sparkles className="mr-2 text-muted icon-sm" />,
                   hoverId: "res-analysis",
                 },
@@ -429,7 +411,7 @@ function Sidebar({
                     <ChevronRight className="mr-1.5 opacity-70 icon-xs" />
                   )}
                   <History className="mr-2 text-muted icon-sm" />
-                  <span>스냅샷 (History)</span>
+                  <span>{t("sidebar.section.snapshot")}</span>
                 </div>
               );
             }
@@ -445,7 +427,7 @@ function Sidebar({
             if (item.type === "snapshot-empty-msg") {
                 return (
                     <div className="px-4 py-2 text-xs text-muted italic">
-                        챕터를 선택해주세요.
+                        {t("sidebar.snapshotEmpty")}
                     </div>
                 );
             }
@@ -463,14 +445,14 @@ function Sidebar({
                     ) : (
                       <ChevronRight className="mr-1.5 opacity-70 icon-xs" />
                     )}
-                    <span>{SIDEBAR_SECTION_TRASH}</span>
+                    <span>{t("sidebar.section.trash")}</span>
                   </button>
                   {isTrashOpen && (
                     <button
                       type="button"
                       className="ml-auto p-1 rounded hover:bg-active text-muted hover:text-fg"
                       onClick={() => setTrashRefreshKey((prev) => prev + 1)}
-                      title="새로고침"
+                      title={t("sidebar.tooltip.refresh")}
                     >
                       <RotateCcw className="icon-xs" />
                     </button>
@@ -493,7 +475,7 @@ function Sidebar({
                 style={{ fontStyle: "italic", color: "var(--text-tertiary)" }}
               >
                 <Trash2 className="mr-2 text-muted icon-sm" />
-                <span>{SIDEBAR_TRASH_EMPTY}</span>
+                <span>{t("sidebar.trashEmpty")}</span>
               </div>
             );
           }}
@@ -507,7 +489,7 @@ function Sidebar({
           onPointerEnter={onPrefetchSettings}
         >
           <Settings className="icon-md" />
-          <span>{SIDEBAR_SETTINGS_LABEL}</span>
+          <span>{t("sidebar.settingsLabel")}</span>
         </button>
       </div>
     </div>

@@ -2,18 +2,6 @@ import { ReactRenderer } from "@tiptap/react";
 import {
   SUGGESTION_MAX_ITEMS,
   SUGGESTION_POPUP_Z_INDEX,
-  SLASH_MENU_LABEL_H1,
-  SLASH_MENU_LABEL_H2,
-  SLASH_MENU_LABEL_H3,
-  SLASH_MENU_LABEL_BULLET,
-  SLASH_MENU_LABEL_NUMBER,
-  SLASH_MENU_LABEL_CHECK,
-  SLASH_MENU_LABEL_TOGGLE,
-  SLASH_MENU_LABEL_QUOTE,
-  SLASH_MENU_LABEL_CALLOUT,
-  SLASH_MENU_LABEL_DIVIDER,
-  SLASH_MENU_TOGGLE_TITLE,
-  SLASH_MENU_CALLOUT_CONTENT,
 } from "../../../../shared/constants";
 import type { Content, Editor } from "@tiptap/core";
 import type {
@@ -23,6 +11,7 @@ import type {
 } from "@tiptap/suggestion";
 import SlashMenu from "./SlashMenu";
 import type { SlashMenuActionProps, SlashMenuItem } from "./SlashMenu";
+import { i18n } from "../../i18n";
 
 function replaceCurrentTextblock(editor: Editor, content: Content) {
   const { state } = editor;
@@ -53,10 +42,24 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
   },
 
   items: ({ query }: { query: string }): SlashMenuItem[] => {
+    const label = {
+      h1: i18n.t("slashMenu.label.h1"),
+      h2: i18n.t("slashMenu.label.h2"),
+      h3: i18n.t("slashMenu.label.h3"),
+      bullet: i18n.t("slashMenu.label.bullet"),
+      number: i18n.t("slashMenu.label.number"),
+      check: i18n.t("slashMenu.label.check"),
+      toggle: i18n.t("slashMenu.label.toggle"),
+      quote: i18n.t("slashMenu.label.quote"),
+      callout: i18n.t("slashMenu.label.callout"),
+      divider: i18n.t("slashMenu.label.divider"),
+    };
+    const toggleTitle = i18n.t("slashMenu.toggleTitle");
+    const calloutContent = i18n.t("slashMenu.calloutContent");
     const items: SlashMenuItem[] = [
       {
         id: "h1",
-        label: SLASH_MENU_LABEL_H1,
+        label: label.h1,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor
             .chain()
@@ -68,7 +71,7 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
       },
       {
         id: "h2",
-        label: SLASH_MENU_LABEL_H2,
+        label: label.h2,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor
             .chain()
@@ -80,7 +83,7 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
       },
       {
         id: "h3",
-        label: SLASH_MENU_LABEL_H3,
+        label: label.h3,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor
             .chain()
@@ -92,28 +95,28 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
       },
       {
         id: "bullet",
-        label: SLASH_MENU_LABEL_BULLET,
+        label: label.bullet,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).toggleBulletList().run();
         },
       },
       {
         id: "number",
-        label: SLASH_MENU_LABEL_NUMBER,
+        label: label.number,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).toggleOrderedList().run();
         },
       },
       {
         id: "check",
-        label: SLASH_MENU_LABEL_CHECK,
+        label: label.check,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).toggleTaskList().run();
         },
       },
       {
         id: "toggle",
-        label: SLASH_MENU_LABEL_TOGGLE,
+        label: label.toggle,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).run();
 
@@ -122,7 +125,7 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
             content: [
               {
                 type: "detailsSummary",
-                content: [{ type: "text", text: SLASH_MENU_TOGGLE_TITLE }],
+                content: [{ type: "text", text: toggleTitle }],
               },
               {
                 type: "detailsContent",
@@ -134,14 +137,14 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
       },
       {
         id: "quote",
-        label: SLASH_MENU_LABEL_QUOTE,
+        label: label.quote,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).toggleBlockquote().run();
         },
       },
       {
         id: "callout",
-        label: SLASH_MENU_LABEL_CALLOUT,
+        label: label.callout,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).run();
 
@@ -150,7 +153,7 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
             content: [
               {
                 type: "paragraph",
-                content: [{ type: "text", text: SLASH_MENU_CALLOUT_CONTENT }],
+                content: [{ type: "text", text: calloutContent }],
               },
             ],
           });
@@ -158,7 +161,7 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
       },
       {
         id: "divider",
-        label: SLASH_MENU_LABEL_DIVIDER,
+        label: label.divider,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).run();
           // HR도 textblock 내부에서 삽입 시 보정될 수 있어, 현재 문단을 HR로 교체

@@ -30,13 +30,7 @@ import { DiffHighlight } from "./extensions/DiffExtension";
 import { SmartLinkTooltip } from "./SmartLinkTooltip";
 import { Loader2, Check, Share } from "lucide-react";
 import { api } from "../../services/api";
-import {
-  PLACEHOLDER_EDITOR_BODY,
-  PLACEHOLDER_EDITOR_TITLE,
-  TEXT_EDITOR_STATUS_CHAR_LABEL,
-  TEXT_EDITOR_STATUS_WORD_LABEL,
-  TEXT_EDITOR_STATUS_SEPARATOR,
-} from "../../../../shared/constants";
+import { useTranslation } from "react-i18next";
 
 
 // Simple Callout Extension (inline to avoid dependencies)
@@ -93,6 +87,7 @@ function Editor({
   diffMode,
   chapterId,
 }: EditorProps) {
+  const { t } = useTranslation();
   const { fontFamilyCss, fontSize, lineHeight, getFontFamily } = useEditorConfig();
   const { wordCount, charCount, updateStats } = useEditorStats();
   const [isMobileView, setIsMobileView] = useState(false);
@@ -145,7 +140,7 @@ function Editor({
       DetailsSummary,
       DetailsContent,
       Placeholder.configure({
-        placeholder: PLACEHOLDER_EDITOR_BODY,
+        placeholder: t("editor.placeholder.body"),
       }),
       SlashCommand,
       SmartLink, 
@@ -154,7 +149,7 @@ function Editor({
         mode: diffMode,
       }),
     ],
-    [comparisonContent, diffMode],
+    [comparisonContent, diffMode, t],
   );
 
   const editor = useEditor(
@@ -215,7 +210,7 @@ function Editor({
     // Strict validation
     if (!chapterId || chapterId === "undefined" || chapterId === "null") {
       api.logger.warn("No valid chapterId available for export", { chapterId });
-      alert("챕터를 선택한 뒤 내보내기를 실행하세요.");
+      alert(t("editor.errors.exportNoChapter"));
       return;
     }
 
@@ -223,7 +218,7 @@ function Editor({
     const response = await api.window.openExport(chapterId);
     
     if (!response.success || response.data !== true) {
-      const message = response.error?.message || "내보내기 창을 열 수 없습니다.";
+      const message = response.error?.message || t("editor.errors.exportOpenFailed");
       api.logger.error("Failed to open export window", { 
         chapterId, 
         error: response.error,
@@ -268,7 +263,7 @@ function Editor({
               isMobileView && "px-6",
               readOnly && "pointer-events-none opacity-80"
             )}
-            placeholder={PLACEHOLDER_EDITOR_TITLE}
+              placeholder={t("editor.placeholder.title")}
             value={title}
             onChange={(e) => !readOnly && handleTitleChange(e.target.value)}
             readOnly={readOnly}
@@ -301,33 +296,33 @@ function Editor({
           {saveStatus === "saving" && (
             <>
               <Loader2 className="w-3 h-3 animate-spin" />
-              <span>Saving...</span>
+              <span>{t("editor.status.saving")}</span>
             </>
           )}
           {saveStatus === "saved" && (
             <>
               <Check className="w-3 h-3 text-success-fg" />
-              <span>Saved</span>
+              <span>{t("editor.status.saved")}</span>
             </>
           )}
           {saveStatus === "error" && (
-            <span className="text-danger-fg">Not Saved</span>
+            <span className="text-danger-fg">{t("editor.status.error")}</span>
           )}
         </span>
 
         <span className="mr-auto font-medium">
-          {TEXT_EDITOR_STATUS_CHAR_LABEL} {charCount}
-          {TEXT_EDITOR_STATUS_SEPARATOR}
-          {TEXT_EDITOR_STATUS_WORD_LABEL} {wordCount}
+          {t("editor.status.charLabel")} {charCount}
+          {t("editor.status.separator")}
+          {t("editor.status.wordLabel")} {wordCount}
         </span>
 
         <button 
           className="flex items-center gap-1.5 px-2 py-1 -mr-2 rounded hover:bg-hover hover:text-fg transition-colors"
           onClick={handleOpenExport}
-          title="빠른 내보내기"
+          title={t("editor.actions.quickExportTitle")}
         >
           <Share className="w-3.5 h-3.5" />
-          <span className="font-medium">빠른 내보내기</span>
+          <span className="font-medium">{t("editor.actions.quickExport")}</span>
         </button>
       </div>
 

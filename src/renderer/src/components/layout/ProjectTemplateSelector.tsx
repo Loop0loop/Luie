@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useOptimistic, useActionState, useId } from "react";
+import { useTranslation } from "react-i18next";
 
 import WindowBar from "./WindowBar";
 import { Plus, Book, FileText, FileType, MoreVertical } from "lucide-react";
@@ -12,28 +13,6 @@ import {
   LUIE_PACKAGE_FILTER_NAME,
   MARKDOWN_EXTENSION_NO_DOT,
   TEXT_EXTENSION_NO_DOT,
-  TEMPLATE_SIDEBAR_TITLE,
-  DIALOG_TITLE_DELETE_PROJECT,
-  DIALOG_TITLE_RENAME_PROJECT,
-  PROJECT_TEMPLATE_CATEGORY_ALL,
-  PROJECT_TEMPLATE_CATEGORY_GENERAL,
-  PROJECT_TEMPLATE_CATEGORY_NOVEL,
-  PROJECT_TEMPLATE_CATEGORY_SCRIPT,
-  PROJECT_TEMPLATE_TITLE_BLANK,
-  PROJECT_TEMPLATE_TITLE_WEB_NOVEL,
-  PROJECT_TEMPLATE_TITLE_SCREENPLAY,
-  PROJECT_TEMPLATE_TITLE_ESSAY,
-  PROJECT_TEMPLATE_DIALOG_SELECT_PATH,
-  PROJECT_TEMPLATE_FILTER_MARKDOWN,
-  PROJECT_TEMPLATE_FILTER_TEXT,
-  PROJECT_TEMPLATE_CONTEXT_OPEN,
-  PROJECT_TEMPLATE_CONTEXT_RENAME,
-  PROJECT_TEMPLATE_CONTEXT_DELETE,
-  PROJECT_TEMPLATE_DELETE_CONFIRM,
-  PROJECT_TEMPLATE_DELETE_CONFIRM_LABEL,
-  PROJECT_TEMPLATE_RECENT_TITLE,
-  PROJECT_TEMPLATE_EMPTY_PATH,
-
 } from "../../../../shared/constants";
 
 interface ProjectTemplateSelectorProps {
@@ -51,6 +30,7 @@ export default function ProjectTemplateSelector({
   onOpenLuieFile,
   onOpenSnapshotBackup,
 }: ProjectTemplateSelectorProps) {
+  const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState("all");
 
   const { deleteProject, updateProject } = useProjectStore();
@@ -102,10 +82,10 @@ export default function ProjectTemplateSelector({
       const nextTitle = String(formData.get("title") ?? "").trim();
 
       if (!projectId) {
-        return { error: "프로젝트를 찾을 수 없습니다." };
+        return { error: t("projectTemplate.error.notFound") };
       }
       if (!nextTitle) {
-        return { error: "프로젝트 이름을 입력해주세요." };
+        return { error: t("projectTemplate.error.nameRequired") };
       }
       if (nextTitle === renameDialog.currentTitle) {
         setRenameDialog((prev) => ({ ...prev, isOpen: false }));
@@ -125,7 +105,7 @@ export default function ProjectTemplateSelector({
       } catch (error) {
         addOptimisticProject({ type: "reset", projects });
         api.logger.error("Failed to update project", error);
-        return { error: "프로젝트 이름 변경에 실패했습니다." };
+        return { error: t("projectTemplate.error.renameFailed") };
       }
     },
     null,
@@ -149,34 +129,34 @@ export default function ProjectTemplateSelector({
   }, [menuOpenId]);
 
   const categories = [
-    { id: "all", label: PROJECT_TEMPLATE_CATEGORY_ALL, icon: <Book className="w-4 h-4" /> },
-    { id: "novel", label: PROJECT_TEMPLATE_CATEGORY_NOVEL, icon: <Book className="w-4 h-4" /> },
-    { id: "script", label: PROJECT_TEMPLATE_CATEGORY_SCRIPT, icon: <FileText className="w-4 h-4" /> },
-    { id: "misc", label: PROJECT_TEMPLATE_CATEGORY_GENERAL, icon: <FileType className="w-4 h-4" /> },
+    { id: "all", label: t("projectTemplate.category.all"), icon: <Book className="w-4 h-4" /> },
+    { id: "novel", label: t("projectTemplate.category.novel"), icon: <Book className="w-4 h-4" /> },
+    { id: "script", label: t("projectTemplate.category.script"), icon: <FileText className="w-4 h-4" /> },
+    { id: "misc", label: t("projectTemplate.category.general"), icon: <FileType className="w-4 h-4" /> },
   ];
 
   const templates = [
     {
       id: "blank",
-      title: PROJECT_TEMPLATE_TITLE_BLANK,
+      title: t("projectTemplate.title.blank"),
       category: "all",
       type: "blank",
     },
     {
       id: "novel_basic",
-      title: PROJECT_TEMPLATE_TITLE_WEB_NOVEL,
+      title: t("projectTemplate.title.webNovel"),
       category: "novel",
       type: "novel",
     },
     {
       id: "script_basic",
-      title: PROJECT_TEMPLATE_TITLE_SCREENPLAY,
+      title: t("projectTemplate.title.screenplay"),
       category: "script",
       type: "script",
     },
     {
       id: "essay",
-      title: PROJECT_TEMPLATE_TITLE_ESSAY,
+      title: t("projectTemplate.title.essay"),
       category: "misc",
       type: "doc",
     },
@@ -192,12 +172,12 @@ export default function ProjectTemplateSelector({
   const handleSelectTemplate = async (templateId: string) => {
     try {
       const response = await api.fs.selectSaveLocation({
-        title: PROJECT_TEMPLATE_DIALOG_SELECT_PATH,
+        title: t("projectTemplate.dialog.selectPath"),
         defaultPath: DEFAULT_PROJECT_FILENAME,
         filters: [
           { name: LUIE_PACKAGE_FILTER_NAME, extensions: [LUIE_PACKAGE_EXTENSION_NO_DOT] },
-          { name: PROJECT_TEMPLATE_FILTER_MARKDOWN, extensions: [MARKDOWN_EXTENSION_NO_DOT] },
-          { name: PROJECT_TEMPLATE_FILTER_TEXT, extensions: [TEXT_EXTENSION_NO_DOT] },
+          { name: t("projectTemplate.filter.markdown"), extensions: [MARKDOWN_EXTENSION_NO_DOT] },
+          { name: t("projectTemplate.filter.text"), extensions: [TEXT_EXTENSION_NO_DOT] },
         ],
       });
       if (response.success && response.data) {
@@ -242,7 +222,7 @@ export default function ProjectTemplateSelector({
                   onOpenProject?.(p);
                 }}
               >
-                {PROJECT_TEMPLATE_CONTEXT_OPEN}
+                {t("projectTemplate.context.open")}
               </div>
               <div
                 className="px-2.5 py-2.5 rounded-lg text-[13px] text-fg cursor-pointer select-none hover:bg-active"
@@ -255,7 +235,7 @@ export default function ProjectTemplateSelector({
                   });
                 }}
               >
-                {PROJECT_TEMPLATE_CONTEXT_RENAME}
+                {t("projectTemplate.context.rename")}
               </div>
               <div className="h-px bg-border my-1.5 mx-1" />
               <div
@@ -269,7 +249,7 @@ export default function ProjectTemplateSelector({
                   });
                 }}
               >
-                {PROJECT_TEMPLATE_CONTEXT_DELETE}
+                {t("projectTemplate.context.delete")}
               </div>
             </div>
           );
@@ -279,7 +259,7 @@ export default function ProjectTemplateSelector({
       <Modal
         isOpen={renameDialog.isOpen}
         onClose={() => setRenameDialog((prev) => ({ ...prev, isOpen: false }))}
-        title={DIALOG_TITLE_RENAME_PROJECT}
+        title={t("projectTemplate.dialog.renameTitle")}
         footer={
           <div className="flex justify-end gap-3 w-full">
             <button
@@ -287,7 +267,7 @@ export default function ProjectTemplateSelector({
               onClick={() => setRenameDialog((prev) => ({ ...prev, isOpen: false }))}
               disabled={renamePending}
             >
-              취소
+              {t("projectTemplate.actions.cancel")}
             </button>
             <button
               className="px-4 py-2 bg-accent border-none rounded-md text-white text-[13px] font-medium cursor-pointer transition-all hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
@@ -295,7 +275,7 @@ export default function ProjectTemplateSelector({
               form={renameFormId}
               disabled={renamePending}
             >
-              {renamePending ? "저장 중..." : "저장"}
+              {renamePending ? t("projectTemplate.actions.saving") : t("projectTemplate.actions.save")}
             </button>
           </div>
         }
@@ -318,12 +298,9 @@ export default function ProjectTemplateSelector({
 
       <ConfirmDialog
         isOpen={deleteDialog.isOpen}
-        title={DIALOG_TITLE_DELETE_PROJECT}
-        message={PROJECT_TEMPLATE_DELETE_CONFIRM.replace(
-          "{title}",
-          deleteDialog.projectTitle,
-        )}
-        confirmLabel={PROJECT_TEMPLATE_DELETE_CONFIRM_LABEL}
+        title={t("projectTemplate.dialog.deleteTitle")}
+        message={t("projectTemplate.deleteConfirm", { title: deleteDialog.projectTitle })}
+        confirmLabel={t("projectTemplate.deleteConfirmLabel")}
         isDestructive
         onConfirm={async () => {
           addOptimisticProject({ type: "delete", id: deleteDialog.projectId });
@@ -340,7 +317,7 @@ export default function ProjectTemplateSelector({
 
       <div className="flex-1 flex h-[calc(100vh-32px)]">
         <div className="w-60 bg-sidebar py-8 px-4 flex flex-col gap-2 border-r border-border">
-          <div className="text-[11px] font-bold text-muted mb-4 pl-3 uppercase tracking-widest">{TEMPLATE_SIDEBAR_TITLE}</div>
+          <div className="text-[11px] font-bold text-muted mb-4 pl-3 uppercase tracking-widest">{t("projectTemplate.sidebarTitle")}</div>
           {categories.map((cat) => (
             <div
               key={cat.id}
@@ -361,21 +338,21 @@ export default function ProjectTemplateSelector({
         <div className="flex-1 p-12 overflow-y-auto bg-app min-w-0">
           <div className="mb-10">
             <div className="flex items-center justify-between mb-4">
-              <div className="text-sm font-bold tracking-[0.5px] text-subtle uppercase">{PROJECT_TEMPLATE_RECENT_TITLE}</div>
+              <div className="text-sm font-bold tracking-[0.5px] text-subtle uppercase">{t("projectTemplate.recentTitle")}</div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   className="px-3 py-1.5 text-xs rounded-md bg-surface border border-border text-fg hover:bg-surface-hover"
                   onClick={() => onOpenLuieFile?.()}
                 >
-                  .luie 열기
+                  {t("projectTemplate.actions.openLuie")}
                 </button>
                 <button
                   type="button"
                   className="px-3 py-1.5 text-xs rounded-md bg-surface border border-border text-fg hover:bg-surface-hover"
                   onClick={() => onOpenSnapshotBackup?.()}
                 >
-                  스냅샷 복원하기
+                  {t("projectTemplate.actions.restoreSnapshot")}
                 </button>
               </div>
             </div>
@@ -393,7 +370,7 @@ export default function ProjectTemplateSelector({
                       className="text-xs text-muted whitespace-nowrap overflow-hidden text-ellipsis"
                       title={p.projectPath ?? ""}
                     >
-                      {p.projectPath ?? PROJECT_TEMPLATE_EMPTY_PATH}
+                      {p.projectPath ?? t("projectTemplate.emptyPath")}
                     </div>
                   </div>
 
@@ -455,9 +432,9 @@ export default function ProjectTemplateSelector({
                     {template.type === "novel" && (
                       <div className="w-full h-full bg-zinc-900 p-5 flex flex-col">
                         <div className="h-full bg-white/5 mx-auto w-full flex flex-col p-3 shadow-inner">
-                            <div className="text-[8px] tracking-[2px] text-zinc-500 text-center uppercase mb-3 font-serif">Standard Format</div>
+                            <div className="text-[8px] tracking-[2px] text-zinc-500 text-center uppercase mb-3 font-serif">{t("projectTemplate.preview.standardFormat")}</div>
                             <div className="font-serif text-lg text-zinc-200 text-center font-bold pb-2 border-b border-white/10 mb-4">
-                              Chapter 1
+                              {t("projectTemplate.preview.chapterOne")}
                             </div>
                             <div className="space-y-1.5 opacity-40">
                               <div className="h-1 w-full bg-zinc-600 rounded-full" />
@@ -474,19 +451,19 @@ export default function ProjectTemplateSelector({
                     {template.type === "script" && (
                       <div className="w-full h-full bg-[#18181b] p-5 font-mono text-[9px] text-zinc-400 flex flex-col items-start leading-relaxed border-l-[6px] border-[#27272a] group-hover:border-accent transition-colors">
                         <div className="flex w-full justify-between opacity-50 mb-4 tracking-widest uppercase">
-                          <span>INT.</span>
-                          <span>DAY</span>
+                          <span>{t("projectTemplate.preview.script.int")}</span>
+                          <span>{t("projectTemplate.preview.script.day")}</span>
                         </div>
                         
-                        <div className="w-full text-center text-zinc-300 font-bold mb-1 tracking-wider uppercase">CHARACTER</div>
+                        <div className="w-full text-center text-zinc-300 font-bold mb-1 tracking-wider uppercase">{t("projectTemplate.preview.script.character")}</div>
                         <div className="w-full text-center mb-3">
-                          (pointing)<br/>
-                          This is the dialogue.
+                          {t("projectTemplate.preview.script.direction")}<br/>
+                          {t("projectTemplate.preview.script.dialogue")}
                         </div>
 
-                        <div className="w-full text-center text-zinc-300 font-bold mb-1 tracking-wider uppercase">ANOTHER</div>
+                        <div className="w-full text-center text-zinc-300 font-bold mb-1 tracking-wider uppercase">{t("projectTemplate.preview.script.another")}</div>
                          <div className="w-full text-center">
-                          Looks visible enough.
+                          {t("projectTemplate.preview.script.anotherLine")}
                         </div>
                       </div>
                     )}
