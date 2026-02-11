@@ -48,20 +48,23 @@ export default function App() {
     return () => window.removeEventListener("hashchange", checkHash);
   }, []);
 
-  const {
-    view,
-    isSidebarOpen,
-    isContextOpen,
-    setSidebarOpen,
-    setContextOpen,
-    setSplitSide,
-    toggleSplitSide,
-    splitSide,
-    setWorldTab,
-  } = useUIStore();
-  const { loadShortcuts } = useShortcutStore();
-  const { items: projects, setCurrentProject, loadProjects, updateProject } = useProjectStore();
-  const { theme, fontSize, setFontSize } = useEditorStore();
+  const view = useUIStore((state) => state.view);
+  const isSidebarOpen = useUIStore((state) => state.isSidebarOpen);
+  const isContextOpen = useUIStore((state) => state.isContextOpen);
+  const setSidebarOpen = useUIStore((state) => state.setSidebarOpen);
+  const setContextOpen = useUIStore((state) => state.setContextOpen);
+  const setSplitSide = useUIStore((state) => state.setSplitSide);
+  const toggleSplitSide = useUIStore((state) => state.toggleSplitSide);
+  const splitSide = useUIStore((state) => state.splitSide);
+  const setWorldTab = useUIStore((state) => state.setWorldTab);
+  const loadShortcuts = useShortcutStore((state) => state.loadShortcuts);
+  const projects = useProjectStore((state) => state.items);
+  const setCurrentProject = useProjectStore((state) => state.setCurrentProject);
+  const loadProjects = useProjectStore((state) => state.loadProjects);
+  const updateProject = useProjectStore((state) => state.updateProject);
+  const theme = useEditorStore((state) => state.theme);
+  const fontSize = useEditorStore((state) => state.fontSize);
+  const setFontSize = useEditorStore((state) => state.setFontSize);
 
   // 커스텀 훅으로 로직 분리
   const { currentProject } = useProjectInit();

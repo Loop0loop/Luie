@@ -64,7 +64,7 @@ export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashList
         setRestoringId(null);
       }
     },
-    [loadTrash, onRestoreChapter, projectId, purgingId, restoringId, reloadChapters],
+    [loadTrash, onRestoreChapter, projectId, purgingId, restoringId, reloadChapters, t],
   );
 
   const handlePurge = useCallback(
@@ -85,7 +85,7 @@ export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashList
         setPurgingId(null);
       }
     },
-    [loadTrash, purgingId, restoringId],
+    [loadTrash, purgingId, restoringId, t],
   );
 
   const emptyState = useMemo(() => {

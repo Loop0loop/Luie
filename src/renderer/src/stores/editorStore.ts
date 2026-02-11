@@ -13,6 +13,7 @@ import {
   DEFAULT_EDITOR_MAX_WIDTH,
   DEFAULT_EDITOR_THEME,
 } from "../../../shared/constants";
+import { editorSettingsSchema } from "../../../shared/schemas";
 import { api } from "../services/api";
 
 interface EditorStore extends EditorSettings {
@@ -39,7 +40,12 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   loadSettings: async () => {
     const response = await api.settings.getEditor();
     if (response.success && response.data) {
-      set(response.data);
+      const parsed = editorSettingsSchema.safeParse(response.data);
+      if (parsed.success) {
+        set(parsed.data);
+      } else {
+        await api.logger.warn("Invalid editor settings payload", parsed.error);
+      }
     }
   },
 
@@ -56,7 +62,12 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
     };
     const response = await api.settings.setEditor(updated);
     if (response.success && response.data) {
-      set(response.data);
+      const parsed = editorSettingsSchema.safeParse(response.data);
+      if (parsed.success) {
+        set(parsed.data);
+      } else {
+        await api.logger.warn("Invalid editor settings payload", parsed.error);
+      }
     }
   },
 

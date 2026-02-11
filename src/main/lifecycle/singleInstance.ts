@@ -1,6 +1,6 @@
 import { app } from "electron";
 import { windowManager } from "../manager/index.js";
-import { createLogger } from "../../shared/logger/index.js";
+import type { createLogger } from "../../shared/logger/index.js";
 
 type Logger = ReturnType<typeof createLogger>;
 

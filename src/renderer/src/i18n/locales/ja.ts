@@ -193,6 +193,10 @@ export const ja = {
         untitled: "無題",
         noteTitle: "新しいメモ",
       },
+      toast: {
+        recoveredFromDb: "ファイルが破損していたため、ローカルキャッシュから復元しました。",
+        dbNewerSynced: "ローカルキャッシュが新しいため、プロジェクトファイルを更新しました。",
+      },
       templateDescription: "{templateId} テンプレートで作成",
     },
     sidebar: {
@@ -348,12 +352,6 @@ export const ja = {
         sidebarExpand: "サイドバーを展開",
         contextCollapse: "パネルを折りたたむ",
         contextExpand: "パネルを展開",
-      },
-    },
-    project: {
-      toast: {
-        recoveredFromDb: "ファイルが破損していたため、ローカルキャッシュから復元しました。",
-        dbNewerSynced: "ローカルキャッシュが新しいため、プロジェクトファイルを更新しました。",
       },
     },
     analysis: {

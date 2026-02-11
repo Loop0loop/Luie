@@ -10,11 +10,12 @@ import { useCharacterStore } from "../stores/characterStore";
 import { useTermStore } from "../stores/termStore";
 
 export function useProjectInit() {
-  const { currentItem: currentProject, loadProjects } = useProjectStore();
-  const { loadAll: loadChapters } = useChapterStore();
-  const { loadSettings } = useEditorStore();
-  const { loadCharacters } = useCharacterStore();
-  const { loadTerms } = useTermStore();
+  const currentProject = useProjectStore((state) => state.currentItem);
+  const loadProjects = useProjectStore((state) => state.loadProjects);
+  const loadChapters = useChapterStore((state) => state.loadAll);
+  const loadSettings = useEditorStore((state) => state.loadSettings);
+  const loadCharacters = useCharacterStore((state) => state.loadCharacters);
+  const loadTerms = useTermStore((state) => state.loadTerms);
 
   // 앱 시작 시 프로젝트 & 설정 로드
   useEffect(() => {

@@ -39,11 +39,12 @@ export default function MemoSection() {
   const { t } = useTranslation();
   const { currentItem: currentProject } = useProjectStore();
   const defaultNotes = useMemo(() => buildDefaultNotes(t), [t]);
+  const currentProjectId = currentProject?.id ?? null;
 
   const storageKey = useMemo(() => {
-    if (!currentProject?.id) return null;
-    return `${STORAGE_KEY_MEMOS_PREFIX}${currentProject.id}`;
-  }, [currentProject?.id]);
+    if (!currentProjectId) return null;
+    return `${STORAGE_KEY_MEMOS_PREFIX}${currentProjectId}`;
+  }, [currentProjectId]);
 
   return (
     <MemoSectionInner

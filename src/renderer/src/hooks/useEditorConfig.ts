@@ -12,7 +12,10 @@ const FONT_PRESET_MAP: Record<string, string> = {
 };
 
 export function useEditorConfig() {
-  const { fontFamily, fontPreset, fontSize, lineHeight } = useEditorStore();
+  const fontFamily = useEditorStore((state) => state.fontFamily);
+  const fontPreset = useEditorStore((state) => state.fontPreset);
+  const fontSize = useEditorStore((state) => state.fontSize);
+  const lineHeight = useEditorStore((state) => state.lineHeight);
 
   const fontFamilyCss = useMemo(() => {
     if (fontPreset && fontPreset !== "default") {

@@ -2,8 +2,7 @@ import { app, BrowserWindow, Menu, session, dialog } from "electron";
 import type { WebContents } from "electron";
 import { windowManager } from "../manager/index.js";
 import { isDevEnv } from "../utils/environment.js";
-import { IPC_CHANNELS } from "../../shared/ipc/channels.js";
-import { createLogger } from "../../shared/logger/index.js";
+import type { createLogger } from "../../shared/logger/index.js";
 
 type Logger = ReturnType<typeof createLogger>;
 

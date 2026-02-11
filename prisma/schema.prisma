@@ -10,6 +10,7 @@ datasource db {
   provider = "sqlite"
 }
 
+// Durable models (master data)
 // 프로젝트 - 최상위 단위
 model Project {
   id          String   @id @default(uuid())
@@ -75,6 +76,7 @@ model Character {
   @@index([projectId, name])
 }
 
+// Cache models (rebuildable, non-canonical)
 // 캐릭터 등장 추적
 model CharacterAppearance {
   id          String   @id @default(uuid())
@@ -121,7 +123,7 @@ model TermAppearance {
   @@index([termId, chapterId])
 }
 
-// 스냅샷 (버전 관리)
+// 스냅샷 (버전 관리, cache)
 enum SnapshotType {
   AUTO
   MANUAL

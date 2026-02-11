@@ -37,7 +37,8 @@ export default function EditorToolbar({
   onToggleMobileView,
 }: EditorToolbarProps) {
   const { t } = useTranslation();
-  const { fontSize, setFontSize } = useEditorStore();
+  const fontSize = useEditorStore((state) => state.fontSize);
+  const setFontSize = useEditorStore((state) => state.setFontSize);
   const toggleButtonClass = (active: boolean) =>
     cn(
       "flex items-center justify-center w-7 h-7 rounded text-muted hover:bg-hover hover:text-fg transition-colors",

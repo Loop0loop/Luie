@@ -56,7 +56,7 @@ const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function SlashMenu
   const { t } = useTranslation();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const itemRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const descriptions = useMemo(
+  const descriptions = useMemo<Record<string, string>>(
     () => ({
       h1: t("slashMenu.description.h1"),
       h2: t("slashMenu.description.h2"),

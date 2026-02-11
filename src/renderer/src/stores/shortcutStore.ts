@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { ShortcutMap } from "../../../shared/types";
+import { settingsShortcutsSchema } from "../../../shared/schemas";
 import { api } from "../services/api";
 
 const emptyShortcuts = {} as ShortcutMap;
@@ -26,9 +27,24 @@ export const useShortcutStore = create<ShortcutStore>((set, get) => ({
     try {
       const response = await api.settings.getShortcuts();
       if (response.success && response.data) {
+        const shortcutsParsed = settingsShortcutsSchema.safeParse({
+          shortcuts: response.data.shortcuts,
+        });
+        const defaultsParsed = settingsShortcutsSchema.safeParse({
+          shortcuts: response.data.defaults,
+        });
+
+        if (!shortcutsParsed.success || !defaultsParsed.success) {
+          await api.logger.warn("Invalid shortcuts payload", {
+            shortcuts: shortcutsParsed.success ? undefined : shortcutsParsed.error,
+            defaults: defaultsParsed.success ? undefined : defaultsParsed.error,
+          });
+          set({ error: "Invalid shortcuts payload" });
+          return;
+        }
         set({
-          shortcuts: response.data.shortcuts as ShortcutMap,
-          defaults: response.data.defaults as ShortcutMap,
+          shortcuts: shortcutsParsed.data.shortcuts as ShortcutMap,
+          defaults: defaultsParsed.data.shortcuts as ShortcutMap,
         });
       } else {
         set({ error: response.error?.message ?? "Failed to load shortcuts" });
@@ -45,9 +61,24 @@ export const useShortcutStore = create<ShortcutStore>((set, get) => ({
     try {
       const response = await api.settings.setShortcuts({ shortcuts: next });
       if (response.success && response.data) {
+        const shortcutsParsed = settingsShortcutsSchema.safeParse({
+          shortcuts: response.data.shortcuts,
+        });
+        const defaultsParsed = settingsShortcutsSchema.safeParse({
+          shortcuts: response.data.defaults,
+        });
+
+        if (!shortcutsParsed.success || !defaultsParsed.success) {
+          await api.logger.warn("Invalid shortcuts payload", {
+            shortcuts: shortcutsParsed.success ? undefined : shortcutsParsed.error,
+            defaults: defaultsParsed.success ? undefined : defaultsParsed.error,
+          });
+          set({ error: "Invalid shortcuts payload" });
+          return;
+        }
         set({
-          shortcuts: response.data.shortcuts as ShortcutMap,
-          defaults: response.data.defaults as ShortcutMap,
+          shortcuts: shortcutsParsed.data.shortcuts as ShortcutMap,
+          defaults: defaultsParsed.data.shortcuts as ShortcutMap,
         });
       } else {
         set({ error: response.error?.message ?? "Failed to save shortcuts" });

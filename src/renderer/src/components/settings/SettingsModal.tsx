@@ -196,6 +196,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     setLanguageState(nextLanguage);
   }, [i18n.language]);
 
+  const [activeTab, setActiveTab] = useState("editor");
+
   useEffect(() => {
     if (activeTab !== "shortcuts") return;
     const hasShortcuts = Object.keys(shortcuts ?? {}).length > 0;
@@ -228,8 +230,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
       setInstalling((prev) => ({ ...prev, [preset]: false }));
     }
   };
-
-  const [activeTab, setActiveTab] = useState("editor");
 
   const sidebarItems = useMemo(
     () => [

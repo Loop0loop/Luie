@@ -5,7 +5,7 @@ import {
   QUIT_RENDERER_FLUSH_TIMEOUT_MS,
   QUIT_SAVE_TIMEOUT_MS,
 } from "../../shared/constants/index.js";
-import { createLogger } from "../../shared/logger/index.js";
+import type { createLogger } from "../../shared/logger/index.js";
 
 type Logger = ReturnType<typeof createLogger>;
 

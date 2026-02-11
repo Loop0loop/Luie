@@ -46,9 +46,9 @@
 ## Phase 3 - Renderer Performance Audit
 - [x] Profile SettingsModal open and scroll
 - [x] Reduce re-renders (memoization, selectors, derived state)
-- [ ] Audit hooks/stores count and remove redundant state
+- [x] Audit hooks/stores count and remove redundant state
 - [x] Check worker usage (stats.worker) and offload heavy tasks
-- [ ] Verify zod/zustand schema guarantees and runtime validation
+- [x] Verify zod/zustand schema guarantees and runtime validation
 - [x] Fix font rendering (contrast, font smoothing, weight)
 
 **DoD**
@@ -76,7 +76,7 @@
 
 ## Phase 6 - Prisma Schema Optimization
 - [x] Optimize snapshot/cache tables (indexes, pruning policy)
-- [ ] Separate transient cache models from durable models
+- [x] Separate transient cache models from durable models
 - [x] Document lifecycle of cache vs master data
 
 **DoD**

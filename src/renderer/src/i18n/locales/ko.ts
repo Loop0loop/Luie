@@ -193,6 +193,10 @@ export const ko = {
         untitled: "제목 없음",
         noteTitle: "새로운 메모",
       },
+      toast: {
+        recoveredFromDb: "파일이 손상되어 로컬 캐시에서 복구했습니다.",
+        dbNewerSynced: "로컬 캐시가 최신이라 프로젝트 파일을 갱신했습니다.",
+      },
       templateDescription: "{templateId} 템플릿으로 생성됨",
     },
     sidebar: {
@@ -348,12 +352,6 @@ export const ko = {
         sidebarExpand: "사이드바 펼치기",
         contextCollapse: "패널 접기",
         contextExpand: "패널 펼치기",
-      },
-    },
-    project: {
-      toast: {
-        recoveredFromDb: "파일이 손상되어 로컬 캐시에서 복구했습니다.",
-        dbNewerSynced: "로컬 캐시가 최신이라 프로젝트 파일을 갱신했습니다.",
       },
     },
     analysis: {

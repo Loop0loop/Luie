@@ -193,6 +193,10 @@ export const en = {
         untitled: "Untitled",
         noteTitle: "New memo",
       },
+      toast: {
+        recoveredFromDb: "The file was corrupted, so we restored it from local cache.",
+        dbNewerSynced: "Local cache was newer, so the project file was updated.",
+      },
       templateDescription: "Created with {templateId} template",
     },
     sidebar: {
@@ -348,12 +352,6 @@ export const en = {
         sidebarExpand: "Expand sidebar",
         contextCollapse: "Collapse panel",
         contextExpand: "Expand panel",
-      },
-    },
-    project: {
-      toast: {
-        recoveredFromDb: "The file was corrupted, so we restored it from local cache.",
-        dbNewerSynced: "Local cache was newer, so the project file was updated.",
       },
     },
     analysis: {
