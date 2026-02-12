@@ -15,7 +15,7 @@ import ReactFlow, {
   applyEdgeChanges,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { VirtuosoGrid } from "react-virtuoso";
+// import { VirtuosoGrid } from "react-virtuoso"; // Replaced by standard grid for DnD
 import { cn } from "../../../../shared/types/utils";
 import { ArrowLeft, Eraser, Plus, X, Type, PenTool } from "lucide-react";
 import { useProjectStore } from "../../stores/projectStore";
@@ -25,6 +25,27 @@ import { BufferedInput, BufferedTextArea } from "../common/BufferedInput";
 import TabButton from "../common/TabButton";
 import { useTranslation } from "react-i18next";
 import { useShortcutCommand } from "../../hooks/useShortcutCommand";
+import {
+  DndContext, 
+  DragOverlay,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS as dndCSS } from '@dnd-kit/utilities';
+import type { Term } from "../../../../shared/types";
+import type { TFunction } from "i18next";
 
 type MindMapNodeData = { label: string };
 
@@ -145,20 +166,117 @@ export default function WorldSection() {
   );
 }
 
+const TermCard = ({
+  item,
+  isOverlay = false,
+  onSelect,
+  onDelete,
+  t,
+}: {
+  item: Term;
+  isOverlay?: boolean;
+  onSelect?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  t: TFunction;
+}) => {
+  return (
+    <div
+      className={cn(
+        "group flex flex-col justify-between p-4 bg-element border border-border rounded-xl relative shadow-sm transition-all overflow-hidden h-full",
+        isOverlay ? "cursor-grabbing shadow-xl border-accent scale-105 z-50 bg-element-hover" : "hover:bg-element-hover hover:border-accent/40 hover:-translate-y-1 hover:shadow-md cursor-grab"
+      )}
+      onClick={onSelect ? () => onSelect(item.id) : undefined}
+    >
+      <div className="flex flex-col gap-2">
+        <div className="flex items-start justify-between">
+          <span className="font-bold text-base text-fg leading-tight line-clamp-2 pr-6">
+            {item.term}
+          </span>
+        </div>
+
+        {item.category && (
+          <span className="inline-flex self-start items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-active/10 text-active">
+            {item.category}
+          </span>
+        )}
+
+        <div className="text-xs text-muted-foreground line-clamp-3 leading-relaxed opacity-80">
+          {item.definition || t("world.term.noDefinition")}
+        </div>
+      </div>
+
+      {onDelete && !isOverlay && (
+        <button
+          className="absolute top-3 right-3 p-1.5 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive text-muted transition-all cursor-pointer"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(item.id);
+          }}
+          title={t("common.delete")}
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  );
+};
+
+const SortableTermItem = ({
+  item,
+  onSelect,
+  onDelete,
+  t,
+}: {
+  item: Term;
+  onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
+  t: TFunction;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: dndCSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.3 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="h-full">
+      <TermCard item={item} onSelect={onSelect} onDelete={onDelete} t={t} />
+    </div>
+  );
+};
+
+
+
+// ... (imports remain same, just ensure DragStartEvent is there)
+
+// ... imports
+
 function TermManager() {
   const { t } = useTranslation();
   const { currentItem: currentProject } = useProjectStore();
-  const { terms, currentTerm, loadTerms, createTerm, updateTerm, deleteTerm } =
-    useTermStore();
-  const [selectedTermId, setSelectedTermId] = useState<string | null>(null);
+  const { terms, currentTerm, setCurrentTerm, loadTerms, createTerm, updateTerm, deleteTerm } = useTermStore();
+  const [activeId, setActiveId] = useState<string | null>(null);
+  
+  // Local state for DnD to prevent optimistic UI glitch
+  const [temporaryOrder, setTemporaryOrder] = useState<Term[] | null>(null);
 
-  // Sync with global store selection
-  useEffect(() => {
-    if (currentTerm?.id && currentTerm.id !== selectedTermId) {
-        // eslint-disable-next-line
-        setSelectedTermId(currentTerm.id);
-    }
-  }, [currentTerm, selectedTermId]);
+  // Memoize the sorted list from props
+  const sortedTermsFromStore = useMemo(() => {
+    return [...terms].sort((a, b) => (a.order || 0) - (b.order || 0));
+  }, [terms]);
+
+  // Use temporary order during drag/operations, otherwise store order
+  const orderedTerms = temporaryOrder ?? sortedTermsFromStore;
 
   useEffect(() => {
     if (currentProject) {
@@ -166,30 +284,18 @@ function TermManager() {
     }
   }, [currentProject, loadTerms]);
 
-  const termGridItems = useMemo(
-    () => [
-      ...terms.map((term) => ({ type: "term" as const, term })),
-      { type: "add" as const },
-    ],
-    [terms],
-  );
-
   const handleAddTerm = useCallback(async () => {
     if (currentProject) {
+      const maxOrder = Math.max(...terms.map(t => t.order || 0), 0);
       await createTerm({
         projectId: currentProject.id,
         term: t("world.term.defaultName"),
         definition: "",
         category: t("world.term.defaultCategory"),
+        order: maxOrder + 1,
       });
-
-      // Reload terms to reflect the new addition
-      await loadTerms(currentProject.id);
-
-      // Auto-selection is tricky without the ID returned.
-      // We'll skip auto-selection or implement a store update later.
     }
-  }, [currentProject, createTerm, loadTerms, t]);
+  }, [currentProject, createTerm, t, terms]);
 
   useShortcutCommand((command) => {
     if (command.type === "world.addTerm") {
@@ -197,20 +303,81 @@ function TermManager() {
     }
   });
 
-  if (selectedTermId) {
-    const term = terms.find((t) => t.id === selectedTermId);
-  if (!term) return <div>{t("world.term.notFound")}</div>;
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+        activationConstraint: {
+            distance: 8,
+        }
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(String(event.active.id));
+    setTemporaryOrder(sortedTermsFromStore);
+  }, [sortedTermsFromStore]);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (over && active.id !== over.id) {
+        // Calculate new order based on current dragged state (which matches UI)
+        // We use function update to ensure we have latest temporaryOrder if needed,
+        // but here we just need to calculate the new list one last time to update backend.
+        // Since we are inside callback, we should use the state updater if we were setting state,
+        // but here we want to compute the final array to send updates.
+        
+        // We can't access temporaryOrder state directly if it's stale in closure?
+        // But active.id and over.id are enough to reorder `orderedTerms`.
+        // We need to know which list we are operating on.
+        // Since drag started, `temporaryOrder` should be set.
+        
+        setTemporaryOrder((currentItems) => {
+            const items = currentItems || sortedTermsFromStore;
+            const oldIndex = items.findIndex((item) => item.id === active.id);
+            const newIndex = items.findIndex((item) => item.id === over.id);
+            
+            if (oldIndex === -1 || newIndex === -1) return null; // Reset to store
+
+            const newItems = arrayMove(items, oldIndex, newIndex);
+            
+            // Optimistic update to backend
+            // We update each item that changed index
+            newItems.forEach((item, index) => {
+                if (item.order !== index) {
+                    updateTerm({ id: item.id, order: index });
+                }
+            });
+
+            // We return null to switch back to store source, 
+            // assuming store updates will come in efficiently.
+            // If we want to avoid flicker, we might need a better optimistic store update strategy,
+            // but for now this is cleaner than sync effects.
+            return null; 
+        });
+    } else {
+        setTemporaryOrder(null);
+    }
+  }, [sortedTermsFromStore, updateTerm]);
+
+  const activeItem = useMemo(() => 
+    orderedTerms.find(item => item.id === activeId), 
+  [orderedTerms, activeId]);
+
+  if (currentTerm) {
     return (
-      <div className="p-4">
-        <div className="flex items-center gap-3 pb-3 mb-4 border-b border-border">
+      <div className="p-4 h-full overflow-y-auto">
+        <div className="flex items-center gap-3 pb-3 mb-4 border-b border-border sticky top-0 bg-app z-10 pt-2">
           <div
             className="flex items-center justify-center p-1 rounded hover:bg-hover text-muted hover:text-fg transition-colors cursor-pointer"
-            onClick={() => setSelectedTermId(null)}
+            onClick={() => setCurrentTerm(null)}
           >
             <ArrowLeft className="icon-md" />
           </div>
-          <span style={{ fontWeight: "var(--font-weight-semibold)" }}>{term.term}</span>
+          <span style={{ fontWeight: "var(--font-weight-semibold)" }}>{currentTerm.term}</span>
         </div>
 
         <div className="grid grid-cols-[100px_1fr] gap-4 items-start pb-8">
@@ -218,16 +385,16 @@ function TermManager() {
           <div className="min-w-0">
             <BufferedInput
               className="w-full p-2 bg-element border border-border rounded text-sm text-fg outline-none focus:border-active focus:ring-1 focus:ring-active transition-all"
-              value={term.term}
-              onSave={(val) => updateTerm({ id: term.id, term: val })}
+              value={currentTerm.term}
+              onSave={(val) => updateTerm({ id: currentTerm.id, term: val })}
             />
           </div>
           <div className="text-right text-xs font-bold text-muted pt-2 uppercase tracking-wide">{t("world.term.definitionLabel")}</div>
           <div className="min-w-0">
             <BufferedTextArea
               className="w-full p-2 bg-element border border-border rounded text-sm text-fg outline-none focus:border-active focus:ring-1 focus:ring-active transition-all font-sans leading-relaxed"
-              value={term.definition || ""}
-              onSave={(val) => updateTerm({ id: term.id, definition: val })}
+              value={currentTerm.definition || ""}
+              onSave={(val) => updateTerm({ id: currentTerm.id, definition: val })}
               style={{ minHeight: "100px" }}
             />
           </div>
@@ -235,8 +402,8 @@ function TermManager() {
           <div className="min-w-0">
             <BufferedInput
               className="w-full p-2 bg-element border border-border rounded text-sm text-fg outline-none focus:border-active focus:ring-1 focus:ring-active transition-all"
-              value={term.category || ""}
-              onSave={(val) => updateTerm({ id: term.id, category: val })}
+              value={currentTerm.category || ""}
+              onSave={(val) => updateTerm({ id: currentTerm.id, category: val })}
             />
           </div>
         </div>
@@ -245,67 +412,50 @@ function TermManager() {
   }
 
   return (
-    <div className="h-full w-full">
-      <VirtuosoGrid
-        data={termGridItems}
-        style={{ height: "100%" }}
-        computeItemKey={(_index, item) =>
-          item.type === "term" ? item.term.id : "add"
-        }
-        listClassName="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 p-4"
-        itemContent={(_index, item) => {
-          if (item.type === "add") {
-            return (
-              <div
-                className="h-20 flex flex-col items-center justify-center gap-2 border border-dashed border-border rounded-lg cursor-pointer text-muted hover:text-accent hover:border-accent hover:bg-element-hover transition-colors"
-                onClick={handleAddTerm}
-                style={{ height: "80px" }}
-              >
-                <Plus className="icon-xxl" />
-                <span>{t("world.term.addLabel")}</span>
-              </div>
-            );
-          }
-
-          return (
-            <div
-              className="h-25 p-3 bg-element border border-border rounded-lg cursor-pointer relative shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-active overflow-hidden flex flex-col"
-              onClick={() => setSelectedTermId(item.term.id)}
-              style={{ height: "auto", minHeight: "80px" }}
-            >
-              <div className="ml-0">
-                <div className="font-bold text-sm text-fg mb-1">
-                  {item.term.term}
-                </div>
+    <div className="h-full w-full overflow-y-auto p-6">
+      <DndContext 
+        sensors={sensors} 
+        collisionDetection={closestCenter} 
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext 
+            items={orderedTerms.map(t => t.id)} 
+            strategy={rectSortingStrategy}
+        >
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4 pb-10">
                 <div
-                  className="text-xs text-secondary line-clamp-2"
-                  style={{ fontSize: "0.8em", color: "var(--text-secondary)" }}
+                    className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border rounded-xl cursor-pointer text-muted hover:text-accent hover:border-accent hover:bg-accent/5 transition-all text-sm font-medium group"
+                    onClick={handleAddTerm}
+                    style={{ minHeight: "120px", height: "100%" }}
                 >
-                  {item.term.category ? `[${item.term.category}] ` : ""}
-                  {item.term.definition || t("world.term.noDefinition")}
+                    <div className="p-2 rounded-full bg-secondary/50 group-hover:bg-accent/10 transition-colors">
+                    <Plus className="icon-lg group-hover:scale-110 transition-transform" />
+                    </div>
+                    <span>{t("world.term.addLabel")}</span>
                 </div>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteTerm(item.term.id);
-                }}
-                style={{
-                  position: "absolute",
-                  top: 8,
-                  right: 8,
-                  border: "none",
-                  background: "transparent",
-                  cursor: "pointer",
-                  opacity: 0.5,
-                }}
-              >
-                <X className="icon-sm" />
-              </button>
+                
+                {orderedTerms.map((term) => (
+                    <SortableTermItem 
+                        key={term.id} 
+                        item={term} 
+                        onSelect={(id) => {
+                            const term = terms.find(t => t.id === id);
+                            setCurrentTerm(term || null);
+                        }}
+                        onDelete={deleteTerm}
+                        t={t}
+                    />
+                ))}
             </div>
-          );
-        }}
-      />
+        </SortableContext>
+        {/* Drag Overlay for better UX */}
+        <DragOverlay>
+            {activeItem ? (
+                <TermCard item={activeItem} isOverlay t={t} />
+            ) : null}
+        </DragOverlay>
+      </DndContext>
     </div>
   );
 }

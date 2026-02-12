@@ -31,14 +31,17 @@ export function SmartLinkTooltip() {
   useEffect(() => {
     const handleMouseOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target.matches(".smart-link-highlight")) {
-        const type = target.getAttribute("data-type") as "character" | "term";
-        const id = target.getAttribute("data-id");
+      // Use closest to find the link element even if hovering over bold/italic text inside
+      const link = target.closest(".smart-link-highlight");
+      
+      if (link) {
+        const type = link.getAttribute("data-type") as "character" | "term";
+        const id = link.getAttribute("data-id");
 
         if (type && id) {
           if (timeoutRef.current) clearTimeout(timeoutRef.current);
           
-          const rect = target.getBoundingClientRect();
+          const rect = link.getBoundingClientRect();
           setState({
             visible: true,
             x: rect.left + window.scrollX,
@@ -52,7 +55,21 @@ export function SmartLinkTooltip() {
 
     const handleMouseOut = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target.matches(".smart-link-highlight")) {
+      // Tricky part: standard mouseout fires when leaving ANY child element
+      // We want to hide ONLY if we are leaving the link wrapper entirely.
+      // But simpler logic: if we left *something* that was inside a link, we might still be inside the link?
+      // No, mouseout bubbles.
+      // Better approach: use mouseleave on the link itself? We can't easily add listeners to all links dynamically.
+      
+      // Alternative: checks relatedTarget to see if we moved TO something inside the link.
+      const link = target.closest(".smart-link-highlight");
+      if (link) {
+        const related = e.relatedTarget as HTMLElement;
+        if (related && link.contains(related)) {
+            // Moved to a child element inside the same link, ignore
+            return;
+        }
+
         // Delay hiding to allow moving to tooltip
         timeoutRef.current = setTimeout(() => {
             setState((prev) => ({ ...prev, visible: false }));
@@ -62,9 +79,10 @@ export function SmartLinkTooltip() {
 
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target.matches(".smart-link-highlight")) {
-        const type = target.getAttribute("data-type") as "character" | "term";
-        const id = target.getAttribute("data-id");
+      const link = target.closest(".smart-link-highlight");
+      if (link) {
+        const type = link.getAttribute("data-type") as "character" | "term";
+        const id = link.getAttribute("data-id");
         if (type && id) {
            smartLinkService.openItem(id, type);
         }
@@ -130,6 +148,10 @@ export function SmartLinkTooltip() {
       style={{
         left: state.x,
         top: state.y,
+        opacity: 1, // Force opacity
+        backgroundColor: "var(--bg-panel)", // Use defined theme variable
+        color: "var(--text-primary)", // Ensure text contrast
+        zIndex: 9999, // Force z-index
       }}
     >
       <div className="flex items-center justify-between mb-1">

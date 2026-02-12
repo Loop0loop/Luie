@@ -35,6 +35,7 @@ export class TermService {
           term: input.term,
           definition: input.definition,
           category: input.category,
+          order: input.order,
           firstAppearance: input.firstAppearance,
         },
       });
@@ -108,6 +109,7 @@ export class TermService {
       if (input.term !== undefined) updateData.term = input.term;
       if (input.definition !== undefined) updateData.definition = input.definition;
       if (input.category !== undefined) updateData.category = input.category;
+      if (input.order !== undefined) updateData.order = input.order;
       if (input.firstAppearance !== undefined)
         updateData.firstAppearance = input.firstAppearance;
 

@@ -98,6 +98,7 @@ model Term {
   term        String
   definition  String?
   category    String?  // e.g., "location", "item", "concept"
+  order       Int      @default(0)
   firstAppearance String? // Chapter ID
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

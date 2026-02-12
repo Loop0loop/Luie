@@ -48,6 +48,7 @@ export interface Term {
   term: string;
   definition?: string | null;
   category?: string | null;
+  order: number;
   firstAppearance?: string | null;
   createdAt: string | Date;
   updatedAt: string | Date;
@@ -174,6 +175,7 @@ export interface TermCreateInput {
   term: string;
   definition?: string;
   category?: string;
+  order?: number;
   firstAppearance?: string;
 }
 
@@ -182,6 +184,7 @@ export interface TermUpdateInput {
   term?: string;
   definition?: string;
   category?: string;
+  order?: number;
   firstAppearance?: string;
 }
 
