@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useOptimistic, useActionState, useId } from "react";
+import { useState, useOptimistic, useActionState, useId } from "react";
 import { useTranslation } from "react-i18next";
 
 import WindowBar from "./WindowBar";
@@ -7,6 +7,7 @@ import type { Project } from "../../../../shared/types";
 import { useProjectStore } from "../../stores/projectStore";
 import { ConfirmDialog, Modal } from "../common/Modal";
 import { api } from "../../services/api";
+import { useFloatingMenu } from "../../hooks/useFloatingMenu";
 import {
   DEFAULT_PROJECT_FILENAME,
   LUIE_PACKAGE_EXTENSION_NO_DOT,
@@ -50,10 +51,8 @@ export default function ProjectTemplateSelector({
     },
   );
 
-  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
-  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
-  const menuRef = useRef<HTMLDivElement>(null);
-  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const { menuOpenId, menuPosition, menuRef, closeMenu, toggleMenuByElement } =
+    useFloatingMenu<HTMLButtonElement>();
 
   // Dialog States
   const [renameDialog, setRenameDialog] = useState<{
@@ -110,23 +109,6 @@ export default function ProjectTemplateSelector({
     },
     null,
   );
-
-  useEffect(() => {
-    function handlePointerDown(event: PointerEvent) {
-      if (!menuOpenId) return;
-
-      const target = event.target as Node;
-      const clickedMenu = !!menuRef.current?.contains(target);
-      const clickedButton = !!menuButtonRef.current?.contains(target);
-
-      if (!clickedMenu && !clickedButton) {
-        setMenuOpenId(null);
-      }
-    }
-    document.addEventListener("pointerdown", handlePointerDown, true);
-    return () =>
-      document.removeEventListener("pointerdown", handlePointerDown, true);
-  }, [menuOpenId]);
 
   const categories = [
     { id: "all", label: t("settings.projectTemplate.category.all"), icon: <Book className="w-4 h-4" /> },
@@ -198,7 +180,7 @@ export default function ProjectTemplateSelector({
       {menuOpenId && (
         <div
           className="fixed inset-0 z-1999 bg-transparent"
-          onPointerDown={() => setMenuOpenId(null)}
+          onPointerDown={closeMenu}
         />
       )}
 
@@ -218,7 +200,7 @@ export default function ProjectTemplateSelector({
               <div
                 className="px-2.5 py-2.5 rounded-lg text-[13px] text-fg cursor-pointer select-none hover:bg-active"
                 onClick={() => {
-                  setMenuOpenId(null);
+                  closeMenu();
                   onOpenProject?.(p);
                 }}
               >
@@ -227,7 +209,7 @@ export default function ProjectTemplateSelector({
               <div
                 className="px-2.5 py-2.5 rounded-lg text-[13px] text-fg cursor-pointer select-none hover:bg-active"
                 onClick={() => {
-                  setMenuOpenId(null);
+                  closeMenu();
                   setRenameDialog({
                     isOpen: true,
                     projectId: p.id,
@@ -241,7 +223,7 @@ export default function ProjectTemplateSelector({
               <div
                 className="px-2.5 py-2.5 rounded-lg text-[13px] text-danger-fg cursor-pointer select-none hover:bg-active"
                 onClick={() => {
-                  setMenuOpenId(null);
+                  closeMenu();
                   setDeleteDialog({
                     isOpen: true,
                     projectId: p.id,
@@ -379,10 +361,7 @@ export default function ProjectTemplateSelector({
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
-                      menuButtonRef.current = e.currentTarget;
-                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                      setMenuPosition({ x: rect.right + 8, y: rect.top });
-                      setMenuOpenId((prev) => (prev === p.id ? null : p.id));
+                      toggleMenuByElement(p.id, e.currentTarget);
                       api.logger.info("Project context menu", {
                         id: p.id,
                       });

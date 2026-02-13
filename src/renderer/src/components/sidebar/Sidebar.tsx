@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, memo } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import { cn } from "../../../../shared/types/utils";
 import { api } from "../../services/api";
 import { Virtuoso } from "react-virtuoso";
@@ -26,6 +26,7 @@ import { useProjectStore } from "../../stores/projectStore";
 import { useTranslation } from "react-i18next";
 import { useShortcutCommand } from "../../hooks/useShortcutCommand";
 import { useUIStore } from "../../stores/uiStore";
+import { useFloatingMenu } from "../../hooks/useFloatingMenu";
 
 interface Chapter {
   id: string;
@@ -88,29 +89,9 @@ function Sidebar({
   const [trashRefreshKey, setTrashRefreshKey] = useState(0);
 
   // Context Menu State
-  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
-  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const { menuOpenId, menuPosition, menuRef, closeMenu, toggleMenuByElement } =
+    useFloatingMenu<HTMLElement>();
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
-
-  const menuRef = useRef<HTMLDivElement>(null);
-  const menuButtonRef = useRef<HTMLElement | null>(null);
-
-  // Close menu on outside click
-  useEffect(() => {
-    function handlePointerDown(event: PointerEvent) {
-      if (!menuOpenId) return;
-
-      const target = event.target as Node;
-      const clickedMenu = !!menuRef.current?.contains(target);
-      const clickedButton = !!menuButtonRef.current?.contains(target);
-
-      if (!clickedMenu && !clickedButton) {
-        setMenuOpenId(null);
-      }
-    }
-    document.addEventListener("pointerdown", handlePointerDown, true);
-    return () => document.removeEventListener("pointerdown", handlePointerDown, true);
-  }, [menuOpenId]);
 
   useEffect(() => {
     setManuscriptMenuOpen(Boolean(menuOpenId));
@@ -148,11 +129,7 @@ function Sidebar({
 
   const handleMenuClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    menuButtonRef.current = e.currentTarget as HTMLElement;
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    // Position menu to the right of the button
-    setMenuPosition({ x: rect.right + 8, y: rect.top });
-    setMenuOpenId(id === menuOpenId ? null : id);
+    toggleMenuByElement(id, e.currentTarget as HTMLElement);
   };
 
   const handleRenameProject = async () => {
@@ -166,7 +143,7 @@ function Sidebar({
 
   const handleAction = (action: string, id: string) => {
     api.logger.info("Sidebar action", { action, id });
-    setMenuOpenId(null);
+    closeMenu();
     if (action === "open_right" && onSplitView) {
       onSplitView("vertical", id);
     }
@@ -236,7 +213,7 @@ function Sidebar({
       {menuOpenId && (
         <div
           className="fixed inset-0 z-9999 bg-transparent"
-          onPointerDown={() => setMenuOpenId(null)}
+          onPointerDown={closeMenu}
         />
       )}
       {/* Context Menu Popup */}

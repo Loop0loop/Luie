@@ -385,43 +385,8 @@ export default function App() {
     );
   }
 
-  const LayoutComponent = uiMode === 'docs' ? GoogleDocsLayout : MainLayout;
-
-  return (
-    <>
-      <LayoutComponent
-        sidebar={
-          uiMode === 'docs' ? (
-            <DocsSidebar
-              chapters={chapters}
-              activeChapterId={activeChapterId ?? undefined}
-              onSelectChapter={handleSelectChapter}
-              onAddChapter={handleAddChapter}
-              onSelectResearchItem={handleSelectResearchItem}
-              currentProjectId={currentProject?.id}
-            />
-          ) : (
-            <Sidebar
-              chapters={chapters}
-              activeChapterId={activeChapterId ?? undefined}
-              currentProjectTitle={currentProject?.title}
-              currentProjectId={currentProject?.id}
-              onSelectChapter={handleSelectChapter}
-              onAddChapter={handleAddChapter}
-              onRenameChapter={handleRenameChapter}
-              onDuplicateChapter={handleDuplicateChapter}
-              onDeleteChapter={handleDeleteChapter}
-              onOpenSettings={() => setIsSettingsOpen(true)}
-              onPrefetchSettings={prefetchSettings}
-              onSelectResearchItem={handleSelectResearchItem}
-              onSplitView={handleSplitView}
-            />
-          )
-        }
-        contextPanel={
-          <ContextPanel activeTab={contextTab} onTabChange={setContextTab} />
-        }
-      >
+  // Editor Content (Split View)
+  const editorContent = (
         <div id="split-view-container" className="flex w-full h-full flex-1 overflow-hidden relative">
           {(() => {
             const mainPane = (
@@ -518,7 +483,55 @@ export default function App() {
             );
           })()}
         </div>
-      </LayoutComponent>
+  );
+
+  return (
+    <>
+      {uiMode === 'docs' ? (
+        <GoogleDocsLayout
+            sidebar={
+              <DocsSidebar
+                chapters={chapters}
+                activeChapterId={activeChapterId ?? undefined}
+                onSelectChapter={handleSelectChapter}
+                onAddChapter={handleAddChapter}
+              />
+            }
+            contextPanel={
+              <ContextPanel activeTab={contextTab} onTabChange={setContextTab} />
+            }
+            activeChapterId={activeChapterId ?? undefined}
+            currentProjectId={currentProject?.id}
+            onSelectResearchItem={handleSelectResearchItem}
+        >
+            {editorContent}
+        </GoogleDocsLayout>
+      ) : (
+        <MainLayout
+            sidebar={
+                <Sidebar
+                    chapters={chapters}
+                    activeChapterId={activeChapterId ?? undefined}
+                    currentProjectTitle={currentProject?.title}
+                    currentProjectId={currentProject?.id}
+                    onSelectChapter={handleSelectChapter}
+                    onAddChapter={handleAddChapter}
+                    onRenameChapter={handleRenameChapter}
+                    onDuplicateChapter={handleDuplicateChapter}
+                    onDeleteChapter={handleDeleteChapter}
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                    onPrefetchSettings={prefetchSettings}
+                    onSelectResearchItem={handleSelectResearchItem}
+                    onSplitView={handleSplitView}
+                />
+            }
+            contextPanel={
+                <ContextPanel activeTab={contextTab} onTabChange={setContextTab} />
+            }
+        >
+            {editorContent}
+        </MainLayout>
+      )}
 
       {isSettingsOpen && (
         <Suspense fallback={null}>

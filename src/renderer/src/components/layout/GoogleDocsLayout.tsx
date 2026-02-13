@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import WindowBar from './WindowBar';
 import { cn } from '../../../../shared/types/utils';
 import { useUIStore } from '../../stores/uiStore';
 import { useTranslation } from "react-i18next";
+import { SnapshotList } from "../snapshot/SnapshotList";
+import { TrashList } from "../trash/TrashList";
 import { 
   Menu, 
   ChevronLeft, 
@@ -10,17 +12,34 @@ import {
   Share, 
   Clock, 
   CloudCheck,
-  Star
+  Star,
+  BookOpen,
+  History,
+  Trash2,
+  Plus
 } from "lucide-react";
 
 interface GoogleDocsLayoutProps {
   children: ReactNode;
   sidebar?: ReactNode;
   contextPanel?: ReactNode;
+  activeChapterId?: string;
+  currentProjectId?: string;
+  onSelectResearchItem?: (type: "character" | "world" | "scrap" | "analysis") => void;
 }
 
-export default function GoogleDocsLayout({ children, sidebar, contextPanel }: GoogleDocsLayoutProps) {
+export default function GoogleDocsLayout({ 
+  children, 
+  sidebar, 
+  contextPanel,
+  activeChapterId,
+  currentProjectId,
+  onSelectResearchItem
+}: GoogleDocsLayoutProps) {
   const { t } = useTranslation();
+  const [activeTool, setActiveTool] = useState<"research" | "snapshot" | "trash" | null>(null);
+  const [trashRefreshKey, setTrashRefreshKey] = useState(0);
+
   const {
     isSidebarOpen,
     isContextOpen,
@@ -31,6 +50,33 @@ export default function GoogleDocsLayout({ children, sidebar, contextPanel }: Go
     setSidebarWidth,
     setContextWidth,
   } = useUIStore();
+  
+  // Open context panel when tool is selected
+  useEffect(() => {
+    if (activeTool && !isContextOpen) {
+      setContextOpen(true);
+    }
+  }, [activeTool, isContextOpen, setContextOpen]);
+
+  // Close tool if context panel is closed manually
+  useEffect(() => {
+    if (!isContextOpen) {
+      setTimeout(() => setActiveTool(null), 0);
+    }
+  }, [isContextOpen]);
+
+  const handleToolClick = (tool: "research" | "snapshot" | "trash") => {
+    if (activeTool === tool) {
+       // Toggle off if same tool clicked
+       setContextOpen(false);
+       setActiveTool(null);
+    } else {
+       setActiveTool(tool);
+       setContextOpen(true);
+       // Ensure width is sufficient
+       if (contextWidth < 300) setContextWidth(300);
+    }
+  };
   
   // Google Docs specific state
   
@@ -193,7 +239,7 @@ export default function GoogleDocsLayout({ children, sidebar, contextPanel }: Go
             />
          )}
 
-         {/* Right Sidebar (Context/Keep/Tasks) */}
+         {/* Right Sidebar (Context/Keep/Tasks/Tools) */}
          <div 
            className={cn(
              "bg-white dark:bg-[#1e1e1e] border-l border-[#c7c7c7] dark:border-[#444] overflow-hidden flex flex-col shrink-0 min-w-0 transition-[width,opacity] duration-300 ease-in-out",
@@ -201,23 +247,97 @@ export default function GoogleDocsLayout({ children, sidebar, contextPanel }: Go
            )}
            style={{ width: isContextOpen ? `${contextWidth}px` : "0px" }}
          >
-            {contextPanel}
+            {activeTool === "research" ? (
+                <div className="flex flex-col h-full">
+                    <div className="px-4 py-3 border-b border-border/50 text-xs font-semibold text-muted uppercase tracking-wider">
+                        {t("sidebar.section.research")}
+                    </div>
+                    {[
+                        { id: "character", label: t("sidebar.item.characters") },
+                        { id: "world", label: t("sidebar.item.world") },
+                        { id: "scrap", label: t("sidebar.item.scrap") },
+                        { id: "analysis", label: t("research.title.analysis") }
+                    ].map(item => (
+                        <div
+                            key={item.id}
+                            onClick={() => onSelectResearchItem?.(item.id as "character" | "world" | "scrap" | "analysis")}
+                            className="flex items-center px-4 py-3 cursor-pointer text-sm text-fg hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-b border-border/10"
+                        >
+                            <span className="truncate">{item.label}</span>
+                        </div>
+                    ))}
+                </div>
+            ) : activeTool === "snapshot" ? (
+                <div className="flex flex-col h-full">
+                    <div className="px-4 py-3 border-b border-border/50 text-xs font-semibold text-muted uppercase tracking-wider">
+                        {t("sidebar.section.snapshot")}
+                    </div>
+                    {activeChapterId ? (
+                        <SnapshotList chapterId={activeChapterId} />
+                    ) : (
+                        <div className="px-4 py-4 text-xs text-muted italic text-center">
+                            {t("sidebar.snapshotEmpty")}
+                        </div>
+                    )}
+                </div>
+            ) : activeTool === "trash" ? (
+                <div className="flex flex-col h-full">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+                        <span className="text-xs font-semibold text-muted uppercase tracking-wider">
+                            {t("sidebar.section.trash")}
+                        </span>
+                        <button 
+                            onClick={() => setTrashRefreshKey(k => k + 1)} 
+                            className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded"
+                            title={t("sidebar.tooltip.refresh")}
+                        >
+                            <History className="w-3 h-3 text-muted" />
+                        </button>
+                    </div>
+                    {currentProjectId ? (
+                        <TrashList projectId={currentProjectId} refreshKey={trashRefreshKey} />
+                    ) : (
+                        <div className="px-4 py-4 text-xs text-muted italic text-center">
+                            {t("sidebar.trashEmpty")}
+                        </div>
+                    )}
+                </div>
+            ) : (
+                contextPanel
+            )}
          </div>
          
-         {/* Right Side Icon Bar (Like Google Apps) */}
-         <div className="w-14 bg-white dark:bg-[#1e1e1e] border-l border-[#e1e3e1] dark:border-[#444] flex flex-col items-center py-4 gap-6 shrink-0 z-10 transition-colors duration-200">
-             <button onClick={() => setContextOpen(!isContextOpen)} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10" title="Calendar">
-                 <div className="w-5 h-5 rounded bg-blue-500 text-white text-[10px] flex items-center justify-center">31</div>
+         {/* Right Side Icon Bar (Tools) */}
+         <div className="w-14 bg-white dark:bg-[#1e1e1e] border-l border-[#e1e3e1] dark:border-[#444] flex flex-col items-center py-4 gap-4 shrink-0 z-10 transition-colors duration-200">
+             <button 
+                onClick={() => handleToolClick("research")} 
+                className={cn(
+                    "w-9 h-9 flex items-center justify-center rounded-full transition-colors",
+                    activeTool === "research" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : "hover:bg-black/5 dark:hover:bg-white/10 text-[#444746] dark:text-[#c4c7c5]"
+                )}
+                title={t("sidebar.section.research")}
+             >
+                 <BookOpen className="w-5 h-5" />
              </button>
-             <button onClick={() => setContextOpen(!isContextOpen)} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10" title="Keep">
-                 <div className="w-5 h-5 rounded bg-yellow-400 flex items-center justify-center relative shadow-sm">
-                     <div className="w-2 h-2 bg-white rounded-full opacity-60"/>
-                 </div>
+             <button 
+                onClick={() => handleToolClick("snapshot")} 
+                className={cn(
+                    "w-9 h-9 flex items-center justify-center rounded-full transition-colors",
+                    activeTool === "snapshot" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : "hover:bg-black/5 dark:hover:bg-white/10 text-[#444746] dark:text-[#c4c7c5]"
+                )}
+                title={t("sidebar.section.snapshot")}
+             >
+                 <History className="w-5 h-5" />
              </button>
-             <button onClick={() => setContextOpen(!isContextOpen)} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10" title="Tasks">
-                 <div className="w-5 h-5 rounded-full border-2 border-blue-600 flex items-center justify-center">
-                     <div className="w-2 h-1 bg-blue-600 rotate-45 mt-[-2px]"/>
-                 </div>
+             <button 
+                onClick={() => handleToolClick("trash")} 
+                className={cn(
+                    "w-9 h-9 flex items-center justify-center rounded-full transition-colors",
+                    activeTool === "trash" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : "hover:bg-black/5 dark:hover:bg-white/10 text-[#444746] dark:text-[#c4c7c5]"
+                )}
+                title={t("sidebar.section.trash")}
+             >
+                 <Trash2 className="w-5 h-5" />
              </button>
              <div className="w-5 h-px bg-[#e1e3e1] dark:bg-[#444]"/>
              <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10" title="Add-ons">
@@ -229,6 +349,4 @@ export default function GoogleDocsLayout({ children, sidebar, contextPanel }: Go
   );
 }
 
-function Plus({ className }: { className?: string }) {
-    return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
-}
+
