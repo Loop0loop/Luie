@@ -14,11 +14,30 @@ import {
   WINDOW_TRAFFIC_LIGHT_X,
   WINDOW_TRAFFIC_LIGHT_Y,
 } from '../../shared/constants/index.js'
+import { settingsManager } from './settingsManager.js'
 
 const logger = createLogger('WindowManager')
 
 class WindowManager {
   private mainWindow: BrowserWindow | null = null
+
+  private getTitleBarOptions() {
+    if (process.platform !== 'darwin') {
+      return {}
+    }
+
+    const mode = settingsManager.getTitleBarMode()
+    if (mode === 'visible') {
+      return {
+        titleBarStyle: 'default' as const,
+      }
+    }
+
+    return {
+      titleBarStyle: 'hiddenInset' as const,
+      trafficLightPosition: { x: WINDOW_TRAFFIC_LIGHT_X, y: WINDOW_TRAFFIC_LIGHT_Y },
+    }
+  }
 
   createMainWindow(): BrowserWindow {
     if (this.mainWindow) {
@@ -38,8 +57,7 @@ class WindowManager {
       height: windowState.height,
       minWidth: WINDOW_MIN_WIDTH,
       minHeight: WINDOW_MIN_HEIGHT,
-      titleBarStyle: 'hiddenInset',
-      trafficLightPosition: { x: WINDOW_TRAFFIC_LIGHT_X, y: WINDOW_TRAFFIC_LIGHT_Y },
+      ...this.getTitleBarOptions(),
       webPreferences: {
         preload: join(__dirname, '../preload/index.mjs'),
         contextIsolation: true,
@@ -109,8 +127,7 @@ class WindowManager {
       minWidth: 1000,
       minHeight: 700,
       title: "내보내기 및 인쇄 미리보기",
-      titleBarStyle: 'hiddenInset',
-      trafficLightPosition: { x: WINDOW_TRAFFIC_LIGHT_X, y: WINDOW_TRAFFIC_LIGHT_Y },
+      ...this.getTitleBarOptions(),
       webPreferences: {
         preload: join(__dirname, '../preload/index.mjs'),
         contextIsolation: true,

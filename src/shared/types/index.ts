@@ -65,6 +65,57 @@ export interface Snapshot {
   createdAt: string | Date;
 }
 
+export type WorldSynopsisStatus = "draft" | "working" | "locked";
+
+export interface WorldSynopsisData {
+  synopsis: string;
+  status: WorldSynopsisStatus;
+  genre?: string;
+  targetAudience?: string;
+  logline?: string;
+  updatedAt?: string;
+}
+
+export interface WorldPlotCard {
+  id: string;
+  content: string;
+}
+
+export interface WorldPlotColumn {
+  id: string;
+  title: string;
+  cards: WorldPlotCard[];
+}
+
+export interface WorldPlotData {
+  columns: WorldPlotColumn[];
+  updatedAt?: string;
+}
+
+export type WorldDrawingTool = "pen" | "text" | "eraser" | "icon";
+export type WorldDrawingIconType = "mountain" | "castle" | "village";
+
+export interface WorldDrawingPath {
+  id: string;
+  d?: string;
+  type: "path" | "text" | "icon";
+  color: string;
+  width?: number;
+  x?: number;
+  y?: number;
+  text?: string;
+  icon?: WorldDrawingIconType;
+}
+
+export interface WorldDrawingData {
+  paths: WorldDrawingPath[];
+  tool?: WorldDrawingTool;
+  iconType?: WorldDrawingIconType;
+  color?: string;
+  lineWidth?: number;
+  updatedAt?: string;
+}
+
 // Export/Package Types
 export type ChapterExportRecord = {
   id: string;
@@ -236,6 +287,7 @@ export type ThemeTemperature = "neutral" | "warm" | "cool";
 export type ThemeContrast = "soft" | "high";
 export type ThemeAccent = "blue" | "violet" | "green" | "amber" | "rose" | "slate";
 export type ThemeTexture = boolean;
+export type WindowTitleBarMode = "hidden" | "visible";
 
 export interface WindowBounds {
   width: number;
@@ -269,6 +321,7 @@ export interface AppSettings {
   snapshotExportLimit?: number;
   windowBounds?: WindowBounds;
   lastWindowState?: WindowState;
+  titleBarMode?: WindowTitleBarMode;
 }
 
 export type ShortcutAction =

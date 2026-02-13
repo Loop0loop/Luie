@@ -23,6 +23,9 @@ import {
   LUIE_ASSETS_DIR,
   LUIE_WORLD_CHARACTERS_FILE,
   LUIE_WORLD_TERMS_FILE,
+  LUIE_WORLD_SYNOPSIS_FILE,
+  LUIE_WORLD_PLOT_FILE,
+  LUIE_WORLD_DRAWING_FILE,
 } from "../../../shared/constants/index.js";
 import { SNAPSHOT_BACKUP_DIR } from "../../../shared/constants/paths.js";
 import {
@@ -50,6 +53,9 @@ export type LuiePackageExportData = {
   chapters: Array<{ id: string; content?: string | null }>;
   characters: unknown[];
   terms: unknown[];
+  synopsis?: unknown;
+  plot?: unknown;
+  drawing?: unknown;
   snapshots: Array<{
     id: string;
     chapterId?: string | null;
@@ -198,6 +204,18 @@ export const writeLuiePackage = async (
     {
       name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`,
       content: JSON.stringify({ terms: payload.terms ?? [] }, null, 2),
+    },
+    {
+      name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`,
+      content: JSON.stringify(payload.synopsis ?? { synopsis: "", status: "draft" }, null, 2),
+    },
+    {
+      name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_PLOT_FILE}`,
+      content: JSON.stringify(payload.plot ?? { columns: [] }, null, 2),
+    },
+    {
+      name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`,
+      content: JSON.stringify(payload.drawing ?? { paths: [] }, null, 2),
     },
     {
       name: `${LUIE_SNAPSHOTS_DIR}/index.json`,
@@ -502,6 +520,18 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
             {
               name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`,
               content: JSON.stringify({ terms: [] }, null, 2),
+            },
+            {
+              name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`,
+              content: JSON.stringify({ synopsis: "", status: "draft" }, null, 2),
+            },
+            {
+              name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_PLOT_FILE}`,
+              content: JSON.stringify({ columns: [] }, null, 2),
+            },
+            {
+              name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`,
+              content: JSON.stringify({ paths: [] }, null, 2),
             },
           ]),
         );

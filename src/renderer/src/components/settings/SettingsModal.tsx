@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { FontPreset, EditorSettings } from "../../stores/editorStore";
 import { useEditorStore } from "../../stores/editorStore";
 import { useShortcutStore } from "../../stores/shortcutStore";
-import type { ShortcutMap } from "../../../../shared/types";
+import type { ShortcutMap, WindowTitleBarMode } from "../../../../shared/types";
 import {
   EDITOR_FONT_FAMILIES,
 } from "../../../../shared/constants/configs";
@@ -71,6 +71,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const [localFontSize, setLocalFontSize] = useState(fontSize);
   const [localLineHeight, setLocalLineHeight] = useState(lineHeight);
   const [isPending, startTransition] = useTransition();
+  const [titleBarMode, setTitleBarMode] = useState<WindowTitleBarMode>("hidden");
+  const isMacOS = navigator.platform.toLowerCase().includes("mac");
 
   // Sync local state if global changes
   useEffect(() => {
@@ -83,6 +85,22 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
   const applySettings = (next: Partial<EditorSettings>) => {
      updateSettings(next);
+  };
+
+  useEffect(() => {
+    void (async () => {
+      const response = await window.api.settings.getTitleBarMode();
+      if (!response.success || !response.data) return;
+      const mode = (response.data as { mode?: WindowTitleBarMode }).mode;
+      if (mode === "hidden" || mode === "visible") {
+        setTitleBarMode(mode);
+      }
+    })();
+  }, []);
+
+  const handleTitleBarModeChange = async (mode: WindowTitleBarMode) => {
+    setTitleBarMode(mode);
+    await window.api.settings.setTitleBarMode({ mode });
   };
 
   // Shortcuts logic
@@ -437,9 +455,9 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                         <div className="h-px bg-border my-6" />
 
                         {/* 4. Atmosphere (Temperature) */}
-                        <section className="space-y-4">
-                            <div>
-                                <h3 className="text-base font-semibold text-fg">분위기 (Atmosphere)</h3>
+	                        <section className="space-y-4">
+	                            <div>
+	                                <h3 className="text-base font-semibold text-fg">분위기 (Atmosphere)</h3>
                                 <p className="text-sm text-muted mt-1">작업 목적에 맞는 색온도를 선택하세요.</p>
                             </div>
                             <div className="grid grid-cols-3 gap-3">
@@ -478,10 +496,45 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                     <span className="text-sm font-semibold text-fg mb-1">따뜻함 (Warm)</span>
                                     <span className="text-xs text-muted">서사 / 감정 / 편안함</span>
                                 </button>
-                            </div>
-                        </section>
-                    </div>
-                )}
+	                            </div>
+	                        </section>
+
+                        {isMacOS && (
+                          <>
+                            <div className="h-px bg-border my-6" />
+                            <section className="space-y-4">
+                              <div>
+                                <h3 className="text-base font-semibold text-fg">{t("settings.section.titleBar")}</h3>
+                                <p className="text-sm text-muted mt-1">{t("settings.titleBar.description")}</p>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                <button
+                                  onClick={() => void handleTitleBarModeChange("hidden")}
+                                  className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all duration-200 ${
+                                    titleBarMode === "hidden"
+                                      ? "border-accent text-accent bg-accent/5 ring-1 ring-accent"
+                                      : "border-border text-muted hover:border-text-tertiary hover:bg-surface-hover"
+                                  }`}
+                                >
+                                  {t("settings.titleBar.hide")}
+                                </button>
+                                <button
+                                  onClick={() => void handleTitleBarModeChange("visible")}
+                                  className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all duration-200 ${
+                                    titleBarMode === "visible"
+                                      ? "border-accent text-accent bg-accent/5 ring-1 ring-accent"
+                                      : "border-border text-muted hover:border-text-tertiary hover:bg-surface-hover"
+                                  }`}
+                                >
+                                  {t("settings.titleBar.show")}
+                                </button>
+                              </div>
+                              <p className="text-xs text-muted">{t("settings.titleBar.restartHint")}</p>
+                            </section>
+                          </>
+                        )}
+	                    </div>
+	                )}
 
                 {activeTab === "editor" && (
                      <div className="space-y-8 max-w-2xl">

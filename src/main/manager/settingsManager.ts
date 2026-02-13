@@ -6,7 +6,14 @@ import Store from "electron-store";
 import { app } from "electron";
 import { createLogger } from "../../shared/logger/index.js";
 import { existsSync } from "node:fs";
-import type { AppSettings, EditorSettings, ShortcutMap, WindowBounds, WindowState } from "../../shared/types/index.js";
+import type {
+  AppSettings,
+  EditorSettings,
+  ShortcutMap,
+  WindowBounds,
+  WindowState,
+  WindowTitleBarMode,
+} from "../../shared/types/index.js";
 import {
   DEFAULT_AUTO_SAVE_ENABLED,
   DEFAULT_AUTO_SAVE_INTERVAL_MS,
@@ -108,6 +115,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   snapshotExportLimit: SNAPSHOT_FILE_KEEP_COUNT,
   windowBounds: undefined,
   lastWindowState: undefined,
+  titleBarMode: "hidden",
 };
 
 export class SettingsManager {
@@ -180,6 +188,7 @@ export class SettingsManager {
       snapshotExportLimit: settings.snapshotExportLimit ?? current.snapshotExportLimit,
       windowBounds: settings.windowBounds ?? current.windowBounds,
       lastWindowState: settings.lastWindowState ?? current.lastWindowState,
+      titleBarMode: settings.titleBarMode ?? current.titleBarMode,
     };
     this.store.set(merged);
     logger.info("Settings updated", { settings: merged });
@@ -275,6 +284,14 @@ export class SettingsManager {
 
   setLastWindowState(state: WindowState): void {
     this.store.set("lastWindowState", state);
+  }
+
+  getTitleBarMode(): WindowTitleBarMode {
+    return this.store.get("titleBarMode") ?? "hidden";
+  }
+
+  setTitleBarMode(mode: WindowTitleBarMode): void {
+    this.store.set("titleBarMode", mode);
   }
 
   // 설정 초기화

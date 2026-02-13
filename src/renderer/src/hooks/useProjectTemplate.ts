@@ -128,12 +128,6 @@ export function useProjectTemplate(setActiveChapterId: (id: string) => void) {
           setActiveChapterId(firstChapter.id);
         }
         setView("editor");
-
-        try {
-          await api.window.toggleFullscreen();
-        } catch (e) {
-          api.logger.error("Failed to maximize window", e);
-        }
       }
     },
     [createProject, setCurrentProject, createChapter, setView, setActiveChapterId],

@@ -34,6 +34,9 @@ interface UIStore {
   rightPanelContent: RightPanelContent;
   isSidebarOpen: boolean;
   isContextOpen: boolean;
+  isManuscriptMenuOpen: boolean;
+  sidebarWidth: number;
+  contextWidth: number;
 
   setView: (view: UIStore["view"]) => void;
   setContextTab: (tab: ContextTab) => void;
@@ -45,6 +48,9 @@ interface UIStore {
   setRightPanelContent: (content: RightPanelContent) => void;
   setSidebarOpen: (isOpen: boolean) => void;
   setContextOpen: (isOpen: boolean) => void;
+  setManuscriptMenuOpen: (isOpen: boolean) => void;
+  setSidebarWidth: (width: number) => void;
+  setContextWidth: (width: number) => void;
 }
 
 export const useUIStore = create<UIStore>()(
@@ -62,6 +68,9 @@ export const useUIStore = create<UIStore>()(
       },
       isSidebarOpen: DEFAULT_UI_SIDEBAR_OPEN,
       isContextOpen: DEFAULT_UI_CONTEXT_OPEN,
+      isManuscriptMenuOpen: false,
+      sidebarWidth: 260,
+      contextWidth: 320,
 
       setView: (view) => set({ view }),
       setContextTab: (contextTab) => set({ contextTab }),
@@ -74,6 +83,9 @@ export const useUIStore = create<UIStore>()(
       setRightPanelContent: (rightPanelContent) => set({ rightPanelContent }),
       setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
       setContextOpen: (isContextOpen) => set({ isContextOpen }),
+      setManuscriptMenuOpen: (isManuscriptMenuOpen) => set({ isManuscriptMenuOpen }),
+      setSidebarWidth: (sidebarWidth) => set({ sidebarWidth }),
+      setContextWidth: (contextWidth) => set({ contextWidth }),
     }),
     {
       name: STORAGE_KEY_UI,
@@ -87,6 +99,9 @@ export const useUIStore = create<UIStore>()(
         splitSide: state.splitSide,
         isSidebarOpen: state.isSidebarOpen,
         isContextOpen: state.isContextOpen,
+        isManuscriptMenuOpen: state.isManuscriptMenuOpen,
+        sidebarWidth: state.sidebarWidth,
+        contextWidth: state.contextWidth,
         rightPanelContent:
           state.rightPanelContent.type === "snapshot"
             ? {

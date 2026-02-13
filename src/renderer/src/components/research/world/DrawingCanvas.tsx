@@ -1,31 +1,27 @@
-
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../../../shared/types/utils";
 import { Eraser, PenTool, Type, Map as MapIcon, Navigation, Mountain, Castle, Tent } from "lucide-react";
-
-interface MapPath {
-  id: string;
-  d?: string;
-  type: "path" | "text" | "icon";
-  color: string;
-  width?: number;
-  x?: number;
-  y?: number;
-  text?: string;
-  icon?: "mountain" | "castle" | "village";
-}
+import { useProjectStore } from "../../../stores/projectStore";
+import { DEFAULT_WORLD_DRAWING, worldPackageStorage } from "../../../services/worldPackageStorage";
+import type { WorldDrawingPath } from "../../../../../shared/types";
 
 export function DrawingCanvas() {
   const { t } = useTranslation();
+  const { currentItem: currentProject } = useProjectStore();
   const canvasRef = useRef<HTMLDivElement>(null);
-  const [tool, setTool] = useState<"pen" | "text" | "eraser" | "icon">("pen");
-  const [iconType, setIconType] = useState<"mountain" | "castle" | "village">("mountain");
-  const [color, setColor] = useState("#000000");
-  const [lineWidth, setLineWidth] = useState(2);
-  const [paths, setPaths] = useState<MapPath[]>([]);
+  const [tool, setTool] = useState<"pen" | "text" | "eraser" | "icon">(
+    DEFAULT_WORLD_DRAWING.tool ?? "pen",
+  );
+  const [iconType, setIconType] = useState<"mountain" | "castle" | "village">(
+    DEFAULT_WORLD_DRAWING.iconType ?? "mountain",
+  );
+  const [color, setColor] = useState(DEFAULT_WORLD_DRAWING.color ?? "#000000");
+  const [lineWidth, setLineWidth] = useState(DEFAULT_WORLD_DRAWING.lineWidth ?? 2);
+  const [paths, setPaths] = useState<WorldDrawingPath[]>([]);
   const [currentPath, setCurrentPath] = useState("");
   const [isDrawing, setIsDrawing] = useState(false);
+  const hydratedProjectIdRef = useRef<string | null>(null);
 
   // Fantasy Map Colors
   const colors = [
@@ -37,6 +33,58 @@ export function DrawingCanvas() {
     "#808080", // Stone/Mountains
   ];
   const widths = [2, 4, 8, 16];
+
+  useEffect(() => {
+    if (!currentProject?.id) {
+      hydratedProjectIdRef.current = null;
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      const loaded = await worldPackageStorage.loadDrawing(
+        currentProject.id,
+        currentProject.projectPath,
+      );
+      if (cancelled) return;
+      setPaths(loaded.paths);
+      setTool(loaded.tool ?? "pen");
+      setIconType(loaded.iconType ?? "mountain");
+      setColor(loaded.color ?? "#000000");
+      setLineWidth(loaded.lineWidth ?? 2);
+      hydratedProjectIdRef.current = currentProject.id;
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentProject?.id, currentProject?.projectPath]);
+
+  useEffect(() => {
+    if (!currentProject?.id) return;
+    if (hydratedProjectIdRef.current !== currentProject.id) return;
+    const timer = window.setTimeout(() => {
+      void worldPackageStorage.saveDrawing(currentProject.id, currentProject.projectPath, {
+        paths,
+        tool,
+        iconType,
+        color,
+        lineWidth,
+      });
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [
+    paths,
+    tool,
+    iconType,
+    color,
+    lineWidth,
+    currentProject?.id,
+    currentProject?.projectPath,
+  ]);
 
   const getCoords = (e: React.PointerEvent) => {
     if (!canvasRef.current) return { x: 0, y: 0 };
@@ -99,10 +147,21 @@ export function DrawingCanvas() {
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "z") {
+        e.preventDefault();
+        undo();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   return (
-    <div className="h-full flex flex-col bg-[#f4f1ea] relative overflow-hidden">
-      {/* Paper Texture Overlay */}
-      <div className="absolute inset-0 pointer-events-none opacity-50" 
+    <div className="h-full flex flex-col bg-[#f4f1ea] dark:bg-zinc-900 relative overflow-hidden transition-colors duration-500">
+      {/* Paper Texture Overlay - Light/Dark handling */}
+      <div className="absolute inset-0 pointer-events-none opacity-50 dark:opacity-20 dark:invert" 
            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.1'/%3E%3C/svg%3E")` }} 
       />
 

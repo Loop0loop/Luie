@@ -7,6 +7,7 @@ import type {
   EditorSettings,
   AppSettings,
   SearchResult,
+  WindowTitleBarMode,
 } from "../shared/types/index.js";
 import type { IPCResponse } from "../shared/ipc/index.js";
 
@@ -187,6 +188,8 @@ declare global {
         setAutoSave: (settings: { enabled?: boolean; interval?: number }) => Promise<IPCResponse<{ enabled: boolean; interval: number }>>;
         getLanguage: () => Promise<IPCResponse<{ language: "ko" | "en" | "ja" }>>;
         setLanguage: (settings: { language: "ko" | "en" | "ja" }) => Promise<IPCResponse<{ language: "ko" | "en" | "ja" }>>;
+        getTitleBarMode: () => Promise<IPCResponse<{ mode: WindowTitleBarMode }>>;
+        setTitleBarMode: (settings: { mode: WindowTitleBarMode }) => Promise<IPCResponse<{ mode: WindowTitleBarMode }>>;
         getShortcuts: () => Promise<IPCResponse<{ shortcuts: Record<string, string>; defaults: Record<string, string> }>>;
         setShortcuts: (settings: { shortcuts: Record<string, string> }) => Promise<IPCResponse<{ shortcuts: Record<string, string>; defaults: Record<string, string> }>>;
         getWindowBounds: () => Promise<IPCResponse<{ width: number; height: number; x: number; y: number } | undefined>>;

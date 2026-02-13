@@ -79,7 +79,7 @@ function Sidebar({
 }: SidebarProps) {
   const { t } = useTranslation();
   const { updateProject } = useProjectStore();
-  const { setSidebarOpen } = useUIStore();
+  const { setSidebarOpen, setManuscriptMenuOpen } = useUIStore();
   // Section collapse states
   const [isManuscriptOpen, setManuscriptOpen] = useState(true);
   const [isResearchOpen, setResearchOpen] = useState(true);
@@ -111,6 +111,13 @@ function Sidebar({
     document.addEventListener("pointerdown", handlePointerDown, true);
     return () => document.removeEventListener("pointerdown", handlePointerDown, true);
   }, [menuOpenId]);
+
+  useEffect(() => {
+    setManuscriptMenuOpen(Boolean(menuOpenId));
+    return () => {
+      setManuscriptMenuOpen(false);
+    };
+  }, [menuOpenId, setManuscriptMenuOpen]);
 
   useShortcutCommand((command) => {
     if (command.type === "sidebar.section.toggle") {

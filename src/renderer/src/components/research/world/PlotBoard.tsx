@@ -1,8 +1,9 @@
-
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, X, Trash2, GripVertical } from "lucide-react";
 import { BufferedTextArea, BufferedInput } from "../../common/BufferedInput";
+import { useProjectStore } from "../../../stores/projectStore";
+import { worldPackageStorage } from "../../../services/worldPackageStorage";
 
 interface PlotCard {
   id: string;
@@ -17,26 +18,64 @@ interface PlotColumn {
 
 export function PlotBoard() {
   const { t } = useTranslation();
-  const [columns, setColumns] = useState<PlotColumn[]>(() => [
-    {
-      id: "act1",
-      title: t("world.plot.act1Title"),
-      cards: [
-        { id: "c1", content: t("world.plot.card.act1_1") },
-        { id: "c2", content: t("world.plot.card.act1_2") },
-      ],
-    },
-    {
-      id: "act2",
-      title: t("world.plot.act2Title"),
-      cards: [{ id: "c3", content: t("world.plot.card.act2_1") }],
-    },
-    {
-      id: "act3",
-      title: t("world.plot.act3Title"),
-      cards: [{ id: "c4", content: t("world.plot.card.act3_1") }],
-    },
-  ]);
+  const { currentItem: currentProject } = useProjectStore();
+  const defaultColumns = useMemo<PlotColumn[]>(
+    () => [
+      {
+        id: "act1",
+        title: t("world.plot.act1Title"),
+        cards: [
+          { id: "c1", content: t("world.plot.card.act1_1") },
+          { id: "c2", content: t("world.plot.card.act1_2") },
+        ],
+      },
+      {
+        id: "act2",
+        title: t("world.plot.act2Title"),
+        cards: [{ id: "c3", content: t("world.plot.card.act2_1") }],
+      },
+      {
+        id: "act3",
+        title: t("world.plot.act3Title"),
+        cards: [{ id: "c4", content: t("world.plot.card.act3_1") }],
+      },
+    ],
+    [t],
+  );
+  const [columns, setColumns] = useState<PlotColumn[]>(defaultColumns);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    if (!currentProject?.id) {
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      const loaded = await worldPackageStorage.loadPlot(
+        currentProject.id,
+        currentProject.projectPath,
+      );
+      if (cancelled) return;
+      setColumns(loaded.columns.length > 0 ? loaded.columns : defaultColumns);
+      setIsHydrated(true);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentProject?.id, currentProject?.projectPath, defaultColumns]);
+
+  useEffect(() => {
+    if (!currentProject?.id || !isHydrated) return;
+    const timer = window.setTimeout(() => {
+      void worldPackageStorage.savePlot(currentProject.id, currentProject.projectPath, { columns });
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [columns, currentProject?.id, currentProject?.projectPath, isHydrated]);
 
   const addColumn = () => {
     const newId = `act-${Date.now()}`;
@@ -105,8 +144,20 @@ export function PlotBoard() {
   return (
     <div className="h-full flex flex-col bg-app overflow-hidden">
         {/* Horizontal Scroll Area */}
-        <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar">
-            <div className="h-full flex p-6 gap-6 w-max min-w-full">
+        <div 
+            className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar"
+            ref={(ref) => {
+                if (ref) {
+                    ref.addEventListener("wheel", (e) => {
+                        if (e.deltaY !== 0) {
+                            e.preventDefault();
+                            ref.scrollLeft += e.deltaY;
+                        }
+                    }, { passive: false });
+                }
+            }}
+        >
+            <div className="h-full flex p-6 gap-6 w-fit min-w-full">
                 {columns.map((col) => (
                     <div key={col.id} className="w-80 shrink-0 flex flex-col bg-sidebar border border-border rounded-xl shadow-sm max-h-full group/col">
                         {/* Column Header */}

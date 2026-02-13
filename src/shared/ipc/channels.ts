@@ -81,6 +81,8 @@ export const IPC_CHANNELS = {
   SETTINGS_SET_AUTO_SAVE: "settings:set-auto-save",
   SETTINGS_GET_LANGUAGE: "settings:get-language",
   SETTINGS_SET_LANGUAGE: "settings:set-language",
+  SETTINGS_GET_TITLE_BAR_MODE: "settings:get-title-bar-mode",
+  SETTINGS_SET_TITLE_BAR_MODE: "settings:set-title-bar-mode",
   SETTINGS_GET_SHORTCUTS: "settings:get-shortcuts",
   SETTINGS_SET_SHORTCUTS: "settings:set-shortcuts",
   SETTINGS_SET_WINDOW_BOUNDS: "settings:set-window-bounds",

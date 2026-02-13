@@ -4,6 +4,7 @@ import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import {
   editorSettingsSchema,
   settingsLanguageSchema,
+  settingsTitleBarModeSchema,
   settingsShortcutsSchema,
   settingsAutoSaveSchema,
   windowBoundsSchema,
@@ -86,6 +87,26 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
         const settingsManager = await loadSettingsManager();
         settingsManager.setLanguage(settings.language);
         return { language: settingsManager.getLanguage() ?? "ko" };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_GET_TITLE_BAR_MODE,
+      logTag: "SETTINGS_GET_TITLE_BAR_MODE",
+      failMessage: "Failed to get title bar mode",
+      handler: async () => {
+        const settingsManager = await loadSettingsManager();
+        return { mode: settingsManager.getTitleBarMode() };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_SET_TITLE_BAR_MODE,
+      logTag: "SETTINGS_SET_TITLE_BAR_MODE",
+      failMessage: "Failed to set title bar mode",
+      argsSchema: z.tuple([settingsTitleBarModeSchema]),
+      handler: async (settings: { mode: "hidden" | "visible" }) => {
+        const settingsManager = await loadSettingsManager();
+        settingsManager.setTitleBarMode(settings.mode);
+        return { mode: settingsManager.getTitleBarMode() };
       },
     },
     {

@@ -83,6 +83,7 @@ const RETRYABLE_CHANNELS = new Set<string>([
   IPC_CHANNELS.SETTINGS_GET_EDITOR,
   IPC_CHANNELS.SETTINGS_GET_AUTO_SAVE,
   IPC_CHANNELS.SETTINGS_GET_LANGUAGE,
+  IPC_CHANNELS.SETTINGS_GET_TITLE_BAR_MODE,
   IPC_CHANNELS.SETTINGS_GET_SHORTCUTS,
   IPC_CHANNELS.SETTINGS_GET_WINDOW_BOUNDS,
 ]);
@@ -508,6 +509,10 @@ contextBridge.exposeInMainWorld("api", {
       safeInvoke(IPC_CHANNELS.SETTINGS_GET_LANGUAGE),
     setLanguage: (settings: unknown): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_SET_LANGUAGE, settings),
+    getTitleBarMode: (): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.SETTINGS_GET_TITLE_BAR_MODE),
+    setTitleBarMode: (settings: unknown): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.SETTINGS_SET_TITLE_BAR_MODE, settings),
     getShortcuts: (): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_GET_SHORTCUTS),
     setShortcuts: (settings: unknown): Promise<IPCResponse> =>

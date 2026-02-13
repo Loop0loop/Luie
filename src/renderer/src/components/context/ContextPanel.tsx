@@ -12,12 +12,71 @@ type Tab = "synopsis" | "characters" | "terms";
 
 type ContextItem = Character | Term;
 
+type CharacterAttributes = Record<string, unknown>;
+
 function isCharacter(item: ContextItem): item is Character {
   return "name" in item;
 }
 
 function isTerm(item: ContextItem): item is Term {
   return "term" in item;
+}
+
+function parseCharacterAttributes(value: Character["attributes"]): CharacterAttributes {
+  if (!value) return {};
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (parsed && typeof parsed === "object") {
+        return parsed as CharacterAttributes;
+      }
+    } catch {
+      return {};
+    }
+    return {};
+  }
+
+  if (typeof value === "object") {
+    return value as CharacterAttributes;
+  }
+
+  return {};
+}
+
+function pickFirstText(attributes: CharacterAttributes, keys: string[]): string | null {
+  for (const key of keys) {
+    const value = attributes[key];
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed.length > 0) return trimmed;
+    }
+  }
+  return null;
+}
+
+function buildCharacterHeadline(character: Character): string | null {
+  const attributes = parseCharacterAttributes(character.attributes);
+  return pickFirstText(attributes, [
+    "jobTitle",
+    "job",
+    "rank",
+    "class",
+    "status",
+    "title",
+    "race",
+  ]);
+}
+
+function buildCharacterSummary(character: Character): string | null {
+  const attributes = parseCharacterAttributes(character.attributes);
+  const parts = [
+    pickFirstText(attributes, ["affiliation", "affiliationGuild", "family"]),
+    pickFirstText(attributes, ["ability", "element", "weapon"]),
+    typeof character.description === "string" ? character.description.trim() : "",
+  ].filter((part): part is string => Boolean(part && part.length > 0));
+
+  if (parts.length === 0) return null;
+  return parts.join(" · ");
 }
 
 interface ContextPanelProps {
@@ -191,28 +250,23 @@ function ContextPanel({
 
         {currentTab === "characters" && (
           <>
-            {filteredCharacters.map((item) => (
-              <div
-                key={item.id}
-                className="bg-element border border-border rounded-lg p-3 mb-2 cursor-pointer transition-all hover:border-active hover:bg-element-hover"
-                onClick={() => handleItemClick(item)}
-              >
-                <div className="flex justify-between items-start mb-1">
-                  <div className="text-sm font-semibold text-fg">{item.name}</div>
-                </div>
-                {item.description && (
-                  <div
-                    style={{
-                      fontSize: "var(--context-panel-body-font-size)",
-                      color: "var(--text-secondary)",
-                      marginBottom: "var(--context-panel-section-margin-bottom)",
-                    }}
-                  >
-                    {item.description}
+            {filteredCharacters.map((item) => {
+              const headline = buildCharacterHeadline(item);
+              const summary = buildCharacterSummary(item);
+              return (
+                <div
+                  key={item.id}
+                  className="bg-element border border-border rounded-lg p-3 mb-2 cursor-pointer transition-all hover:border-active hover:bg-element-hover"
+                  onClick={() => handleItemClick(item)}
+                >
+                  <div className="flex flex-col gap-1">
+                    <div className="text-sm font-semibold text-fg">{item.name}</div>
+                    {headline && <div className="text-xs font-medium text-accent">{headline}</div>}
                   </div>
-                )}
-              </div>
-            ))}
+                  {summary && <div className="text-[13px] text-muted mt-2 leading-relaxed">{summary}</div>}
+                </div>
+              );
+            })}
           </>
         )}
 

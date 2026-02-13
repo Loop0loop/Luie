@@ -59,6 +59,7 @@ export default function App() {
   const toggleSplitSide = useUIStore((state) => state.toggleSplitSide);
   const splitSide = useUIStore((state) => state.splitSide);
   const setWorldTab = useUIStore((state) => state.setWorldTab);
+  const isManuscriptMenuOpen = useUIStore((state) => state.isManuscriptMenuOpen);
   const loadShortcuts = useShortcutStore((state) => state.loadShortcuts);
   const projects = useProjectStore((state) => state.items);
   const setCurrentProject = useProjectStore((state) => state.setCurrentProject);
@@ -113,11 +114,12 @@ export default function App() {
   );
 
   const handleDeleteActiveChapter = useCallback(() => {
+    if (!isManuscriptMenuOpen) return;
     if (!activeChapterId) return;
     const confirmed = window.confirm("이 원고를 삭제할까요?");
     if (!confirmed) return;
     void handleDeleteChapter(activeChapterId);
-  }, [activeChapterId, handleDeleteChapter]);
+  }, [activeChapterId, handleDeleteChapter, isManuscriptMenuOpen]);
 
   const {
     isSplitView,
@@ -293,10 +295,6 @@ export default function App() {
   const { handleSelectProject } = useProjectTemplate(
     (id: string) => {
       handleSelectChapter(id);
-      // Force fullscreen on new project
-      api.window.setFullscreen(true).catch((err) => {
-        api.logger.error("Failed to set fullscreen", err);
-      });
     }
   );
 
@@ -312,10 +310,6 @@ export default function App() {
     (project: (typeof projects)[number]) => {
       setCurrentProject(project);
       setView("editor");
-      // Force fullscreen on project open
-      api.window.setFullscreen(true).catch((err) => {
-        api.logger.error("Failed to set fullscreen", err);
-      });
     },
     [setCurrentProject, setView],
   );
@@ -342,9 +336,6 @@ export default function App() {
         if (imported.data.conflict === "db-newer") {
           showToast(t("project.toast.dbNewerSynced"), "info");
         }
-        api.window.setFullscreen(true).catch((err) => {
-          api.logger.error("Failed to set fullscreen", err);
-        });
       }
     } catch (error) {
       api.logger.error("Failed to open luie file", error);
@@ -363,9 +354,6 @@ export default function App() {
         await loadProjects();
         setCurrentProject(importResult.data);
         setView("editor");
-        api.window.setFullscreen(true).catch((err) => {
-          api.logger.error("Failed to set fullscreen", err);
-        });
       }
     } catch (error) {
       api.logger.error("Failed to import snapshot backup", error);

@@ -206,6 +206,10 @@ export const settingsLanguageSchema = z.object({
   language: z.enum(["ko", "en", "ja"]),
 });
 
+export const settingsTitleBarModeSchema = z.object({
+  mode: z.enum(["hidden", "visible"]),
+});
+
 export const settingsShortcutsSchema = z.object({
   shortcuts: z.record(z.string(), z.string()),
 });

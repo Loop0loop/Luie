@@ -24,6 +24,9 @@ import {
   LUIE_WORLD_DIR,
   LUIE_WORLD_CHARACTERS_FILE,
   LUIE_WORLD_TERMS_FILE,
+  LUIE_WORLD_SYNOPSIS_FILE,
+  LUIE_WORLD_PLOT_FILE,
+  LUIE_WORLD_DRAWING_FILE,
 } from "../../../shared/constants/index.js";
 import { sanitizeName } from "../../../shared/utils/sanitize.js";
 import type {
@@ -34,6 +37,9 @@ import type {
   CharacterExportRecord,
   TermExportRecord,
   SnapshotExportRecord,
+  WorldDrawingData,
+  WorldPlotData,
+  WorldSynopsisData,
 } from "../../../shared/types/index.js";
 import { writeLuiePackage } from "../../handler/system/ipcFsHandlers.js";
 import { ServiceError } from "../../utils/serviceError.js";
@@ -78,6 +84,48 @@ const LuieTermsSchema = z
   })
   .passthrough();
 
+const LuieWorldSynopsisSchema = z
+  .object({
+    synopsis: z.string().optional(),
+    status: z.enum(["draft", "working", "locked"]).optional(),
+    genre: z.string().optional(),
+    targetAudience: z.string().optional(),
+    logline: z.string().optional(),
+    updatedAt: z.string().optional(),
+  })
+  .passthrough();
+
+const LuieWorldPlotSchema = z
+  .object({
+    columns: z
+      .array(
+        z.object({
+          id: z.string(),
+          title: z.string(),
+          cards: z.array(
+            z.object({
+              id: z.string(),
+              content: z.string(),
+            }),
+          ),
+        }),
+      )
+      .optional(),
+    updatedAt: z.string().optional(),
+  })
+  .passthrough();
+
+const LuieWorldDrawingSchema = z
+  .object({
+    paths: z.array(z.record(z.string(), z.unknown())).optional(),
+    tool: z.enum(["pen", "text", "eraser", "icon"]).optional(),
+    iconType: z.enum(["mountain", "castle", "village"]).optional(),
+    color: z.string().optional(),
+    lineWidth: z.number().optional(),
+    updatedAt: z.string().optional(),
+  })
+  .passthrough();
+
 const LuieSnapshotSchema = z
   .object({
     id: z.string(),
@@ -94,6 +142,15 @@ const LuieSnapshotsSchema = z
     snapshots: z.array(LuieSnapshotSchema).optional(),
   })
   .passthrough();
+
+const parseJsonSafely = (raw: string | null): unknown | null => {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    return null;
+  }
+};
 
 export class ProjectService {
   private exportTimers = new Map<string, NodeJS.Timeout>();
@@ -212,29 +269,31 @@ export class ProjectService {
 
       const chaptersMeta = meta?.chapters ?? [];
 
-      const [charactersRaw, termsRaw, snapshotsRaw] = await Promise.all([
+      const [charactersRaw, termsRaw, snapshotsRaw, worldSynopsisRaw] = await Promise.all([
         readLuieEntry(resolvedPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`, logger),
         readLuieEntry(resolvedPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`, logger),
         readLuieEntry(resolvedPath, `${LUIE_SNAPSHOTS_DIR}/index.json`, logger),
+        readLuieEntry(resolvedPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`, logger),
       ]);
 
-      const parsedCharacters = charactersRaw
-        ? LuieCharactersSchema.safeParse(JSON.parse(charactersRaw))
-        : null;
-      const parsedTerms = termsRaw
-        ? LuieTermsSchema.safeParse(JSON.parse(termsRaw))
-        : null;
-      const parsedSnapshots = snapshotsRaw
-        ? LuieSnapshotsSchema.safeParse(JSON.parse(snapshotsRaw))
-        : null;
+      const parsedCharacters = LuieCharactersSchema.safeParse(parseJsonSafely(charactersRaw));
+      const parsedTerms = LuieTermsSchema.safeParse(parseJsonSafely(termsRaw));
+      const parsedSnapshots = LuieSnapshotsSchema.safeParse(parseJsonSafely(snapshotsRaw));
+      const parsedWorldSynopsis = LuieWorldSynopsisSchema.safeParse(
+        parseJsonSafely(worldSynopsisRaw),
+      );
 
-      const characters = parsedCharacters?.success
+      const characters = parsedCharacters.success
         ? parsedCharacters.data.characters ?? []
         : [];
-      const terms = parsedTerms?.success ? parsedTerms.data.terms ?? [] : [];
-      const snapshots = parsedSnapshots?.success
+      const terms = parsedTerms.success ? parsedTerms.data.terms ?? [] : [];
+      const snapshots = parsedSnapshots.success
         ? parsedSnapshots.data.snapshots ?? []
         : [];
+      const worldSynopsis =
+        parsedWorldSynopsis.success && typeof parsedWorldSynopsis.data.synopsis === "string"
+          ? parsedWorldSynopsis.data.synopsis
+          : undefined;
 
       const chaptersForCreate = [] as Array<{
         id: string;
@@ -340,7 +399,10 @@ export class ProjectService {
           data: {
             id: resolvedProjectId,
             title: meta.title ?? "Recovered Project",
-            description: meta.description ?? undefined,
+            description:
+              (typeof meta.description === "string" ? meta.description : undefined) ??
+              worldSynopsis ??
+              undefined,
             projectPath: resolvedPath,
             createdAt: meta.createdAt ? new Date(meta.createdAt) : undefined,
             updatedAt: meta.updatedAt ? new Date(meta.updatedAt) : undefined,
@@ -646,6 +708,76 @@ export class ProjectService {
         ? rawSnapshots.slice(0, snapshotExportLimit)
         : rawSnapshots;
 
+    const [existingSynopsisRaw, existingPlotRaw, existingDrawingRaw] = await Promise.all([
+      readLuieEntry(project.projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`, logger),
+      readLuieEntry(project.projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_PLOT_FILE}`, logger),
+      readLuieEntry(project.projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`, logger),
+    ]);
+
+    const parsedSynopsis = LuieWorldSynopsisSchema.safeParse(parseJsonSafely(existingSynopsisRaw));
+    const parsedPlot = LuieWorldPlotSchema.safeParse(parseJsonSafely(existingPlotRaw));
+    const parsedDrawing = LuieWorldDrawingSchema.safeParse(parseJsonSafely(existingDrawingRaw));
+
+    const synopsis: WorldSynopsisData = {
+      synopsis:
+        project.description ??
+        (parsedSynopsis?.success && typeof parsedSynopsis.data.synopsis === "string"
+          ? parsedSynopsis.data.synopsis
+          : ""),
+      status:
+        parsedSynopsis?.success && parsedSynopsis.data.status
+          ? parsedSynopsis.data.status
+          : "draft",
+      genre:
+        parsedSynopsis?.success && typeof parsedSynopsis.data.genre === "string"
+          ? parsedSynopsis.data.genre
+          : undefined,
+      targetAudience:
+        parsedSynopsis?.success && typeof parsedSynopsis.data.targetAudience === "string"
+          ? parsedSynopsis.data.targetAudience
+          : undefined,
+      logline:
+        parsedSynopsis?.success && typeof parsedSynopsis.data.logline === "string"
+          ? parsedSynopsis.data.logline
+          : undefined,
+      updatedAt:
+        parsedSynopsis?.success && typeof parsedSynopsis.data.updatedAt === "string"
+          ? parsedSynopsis.data.updatedAt
+          : undefined,
+    };
+
+    const plot: WorldPlotData =
+      parsedPlot?.success && Array.isArray(parsedPlot.data.columns)
+        ? {
+            columns: parsedPlot.data.columns,
+            updatedAt:
+              typeof parsedPlot.data.updatedAt === "string"
+                ? parsedPlot.data.updatedAt
+                : undefined,
+          }
+        : { columns: [] };
+
+    const drawing: WorldDrawingData =
+      parsedDrawing?.success && Array.isArray(parsedDrawing.data.paths)
+        ? ({
+            paths: parsedDrawing.data.paths as unknown as WorldDrawingData["paths"],
+            tool: parsedDrawing.data.tool,
+            iconType: parsedDrawing.data.iconType,
+            color:
+              typeof parsedDrawing.data.color === "string"
+                ? parsedDrawing.data.color
+                : undefined,
+            lineWidth:
+              typeof parsedDrawing.data.lineWidth === "number"
+                ? parsedDrawing.data.lineWidth
+                : undefined,
+            updatedAt:
+              typeof parsedDrawing.data.updatedAt === "string"
+                ? parsedDrawing.data.updatedAt
+                : undefined,
+          } satisfies WorldDrawingData)
+        : { paths: [] };
+
     const meta = {
       format: LUIE_PACKAGE_FORMAT,
       container: LUIE_PACKAGE_CONTAINER_DIR,
@@ -674,6 +806,9 @@ export class ProjectService {
         chapters,
         characters,
         terms,
+        synopsis,
+        plot,
+        drawing,
         snapshots,
       },
       logger,
