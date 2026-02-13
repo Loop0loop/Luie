@@ -37,10 +37,11 @@ const getCssNumber = (name: string, fallback: number) => {
 const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
   const { t } = useTranslation();
   const { setNodes } = useReactFlow();
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditingImage, setIsEditingImage] = useState(false);
+  const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
 
-  const commit = () => {
+  const commitLabel = () => {
     const nextLabel = (draft ?? data.label).trim() || t("world.mindmap.newTopic");
     setNodes((nds: Node<MindMapNodeData>[]) =>
       nds.map((node: Node<MindMapNodeData>) =>
@@ -50,33 +51,29 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
       ),
     );
     setDraft(null);
-    setIsEditing(false);
+    setIsEditingLabel(false);
   };
 
-  const handleImageUpload = () => {
-      // Mock image upload for now -> In real app, open file dialog
-      const url = window.prompt(t("world.mindmap.imageUrlPrompt"));
-      if (url) {
-        setNodes((nds: Node<MindMapNodeData>[]) =>
-            nds.map((node: Node<MindMapNodeData>) =>
-                node.id === id
-                ? { ...node, data: { ...node.data, image: url } }
-                : node,
-            ),
-        );
-      }
+  const handleImageUpload = (url: string) => {
+    setNodes((nds: Node<MindMapNodeData>[]) =>
+        nds.map((node: Node<MindMapNodeData>) =>
+            node.id === id
+            ? { ...node, data: { ...node.data, image: url } }
+            : node,
+        ),
+    );
   };
 
   return (
     <div
       className="group bg-panel border-2 border-border hover:border-accent rounded-xl shadow-sm hover:shadow-lg transition-all overflow-hidden flex flex-col items-center min-w-[120px]"
       style={{
-          width: data.image ? 160 : "auto",
+          width: (data.image || isEditingImage) ? 160 : "auto",
       }}
       onDoubleClick={(e) => {
         e.stopPropagation();
         setDraft(data.label);
-        setIsEditing(true);
+        setIsEditingLabel(true);
       }}
     >
       <Handle type="target" position={Position.Top} className="bg-accent! w-3 h-3" />
@@ -84,9 +81,31 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
       {/* Image Area */}
       <div 
         className="w-full aspect-square bg-element flex items-center justify-center relative overflow-hidden"
-        style={{ display: data.image ? "flex" : "block", height: data.image ? "auto" : 40 }}
+        style={{ display: (data.image || isEditingImage) ? "flex" : "block", height: (data.image || isEditingImage) ? "auto" : 40 }}
       >
-          {data.image ? (
+          {isEditingImage ? (
+               <div className="w-full h-full flex flex-col items-center justify-center p-2 bg-panel">
+                   <input 
+                        className="w-full text-xs p-1 border border-border rounded mb-1 bg-element text-fg"
+                        placeholder="https://..."
+                        autoFocus
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                const val = (e.target as HTMLInputElement).value;
+                                if (val) handleImageUpload(val);
+                                setIsEditingImage(false);
+                            }
+                            if (e.key === 'Escape') setIsEditingImage(false);
+                        }}
+                        onBlur={(e) => {
+                            const val = e.target.value;
+                            if (val) handleImageUpload(val);
+                            setIsEditingImage(false);
+                        }}
+                   />
+                   <span className="text-[10px] text-muted">Enter URL</span>
+               </div>
+          ) : data.image ? (
               <img src={data.image} alt={data.label} className="w-full h-full object-cover" />
           ) : (
              <div className="w-full h-full flex items-center justify-center text-muted/30">
@@ -95,31 +114,33 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
           )}
           
           {/* Hover Image Edit Button */}
-          <button 
-            className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/70 rounded text-white opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={(e) => {
-                e.stopPropagation();
-                handleImageUpload();
-            }}
-            title={t("world.mindmap.uploadImage")}
-          >
-              <ImageIcon className="w-3 h-3" />
-          </button>
+          {!isEditingImage && (
+            <button 
+                className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/70 rounded text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setIsEditingImage(true);
+                }}
+                title={t("world.mindmap.uploadImage")}
+            >
+                <ImageIcon className="w-3 h-3" />
+            </button>
+          )}
       </div>
 
       {/* Label Area */}
       <div className="p-2 w-full bg-panel border-t border-border/50">
-        {isEditing ? (
+        {isEditingLabel ? (
             <input
             className="w-full text-center border-none bg-transparent outline-none font-bold text-sm text-fg p-0"
             value={draft ?? data.label}
             onChange={(e) => setDraft(e.target.value)}
-            onBlur={commit}
+            onBlur={commitLabel}
             onKeyDown={(e) => {
-                if (e.key === "Enter") commit();
+                if (e.key === "Enter") commitLabel();
                 if (e.key === "Escape") {
                 setDraft(null);
-                setIsEditing(false);
+                setIsEditingLabel(false);
                 }
             }}
             autoFocus

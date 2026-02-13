@@ -1,5 +1,30 @@
 import { z } from "zod";
 
+const PATH_MAX_LENGTH = 4096;
+const TITLE_MAX_LENGTH = 255;
+const LARGE_TEXT_MAX_LENGTH = 10_000_000;
+
+const basePathSchema = z
+  .string()
+  .min(1, "Path is required")
+  .max(PATH_MAX_LENGTH, "Path is too long")
+  .refine((value) => !value.includes("\0"), "Path must not contain null bytes");
+
+const baseContentSchema = z
+  .string()
+  .max(LARGE_TEXT_MAX_LENGTH, "Content is too large");
+
+const dialogFilterSchema = z.object({
+  name: z.string().min(1).max(100),
+  extensions: z.array(z.string().min(1).max(20)).max(20),
+});
+
+const dialogOptionsSchema = z.object({
+  filters: z.array(dialogFilterSchema).max(20).optional(),
+  defaultPath: basePathSchema.optional(),
+  title: z.string().min(1).max(200).optional(),
+});
+
 export const projectCreateSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
@@ -97,6 +122,48 @@ export const searchQuerySchema = z.object({
   query: z.string().min(1, "Query is required"),
   type: z.enum(["all", "character", "term"]).optional(),
 });
+
+export const exportRequestSchema = z.object({
+  projectId: projectIdSchema,
+  chapterId: chapterIdSchema,
+  title: z.string().min(1).max(TITLE_MAX_LENGTH),
+  content: baseContentSchema.min(1),
+  format: z.enum(["DOCX", "HWPX"]),
+  paperSize: z.enum(["A4", "Letter", "B5"]).optional(),
+  marginTop: z.number().nonnegative().max(100).optional(),
+  marginBottom: z.number().nonnegative().max(100).optional(),
+  marginLeft: z.number().nonnegative().max(100).optional(),
+  marginRight: z.number().nonnegative().max(100).optional(),
+  fontFamily: z.string().min(1).max(100).optional(),
+  fontSize: z.number().positive().max(96).optional(),
+  lineHeight: z.string().min(1).max(20).optional(),
+  showPageNumbers: z.boolean().optional(),
+  startPageNumber: z.number().int().min(1).max(100_000).optional(),
+});
+
+export const exportCreateArgsSchema = z.tuple([exportRequestSchema]);
+
+export const fsSelectDialogArgsSchema = z.tuple([dialogOptionsSchema.optional()]);
+export const fsSaveProjectArgsSchema = z.tuple([
+  z.string().min(1).max(TITLE_MAX_LENGTH),
+  basePathSchema,
+  baseContentSchema,
+]);
+export const fsReadFileArgsSchema = z.tuple([basePathSchema]);
+export const fsReadLuieEntryArgsSchema = z.tuple([
+  basePathSchema,
+  z.string().min(1).max(PATH_MAX_LENGTH),
+]);
+export const fsWriteFileArgsSchema = z.tuple([basePathSchema, baseContentSchema]);
+export const fsCreateLuiePackageArgsSchema = z.tuple([basePathSchema, z.unknown()]);
+export const fsWriteProjectFileArgsSchema = z.tuple([
+  basePathSchema,
+  z.string().min(1).max(PATH_MAX_LENGTH),
+  baseContentSchema,
+]);
+
+export const windowSetFullscreenArgsSchema = z.tuple([z.boolean()]);
+export const windowOpenExportArgsSchema = z.tuple([chapterIdSchema]);
 
 export const editorSettingsSchema = z.object({
   fontFamily: z.enum(["serif", "sans", "mono"]),

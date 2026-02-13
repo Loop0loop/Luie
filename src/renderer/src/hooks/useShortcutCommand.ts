@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export type ShortcutCommand =
   | { type: "character.openTemplate" }
@@ -19,13 +19,19 @@ export function emitShortcutCommand(command: ShortcutCommand): void {
 export function useShortcutCommand(
   handler: (command: ShortcutCommand) => void,
 ): void {
+  const handlerRef = useRef(handler);
+
+  useEffect(() => {
+    handlerRef.current = handler;
+  });
+
   useEffect(() => {
     const listener = (event: Event) => {
-      handler((event as CustomEvent<ShortcutCommand>).detail);
+      handlerRef.current((event as CustomEvent<ShortcutCommand>).detail);
     };
     shortcutCommandTarget.addEventListener("shortcut-command", listener);
     return () => {
       shortcutCommandTarget.removeEventListener("shortcut-command", listener);
     };
-  }, [handler]);
+  }, []);
 }

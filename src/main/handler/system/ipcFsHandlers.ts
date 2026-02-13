@@ -34,6 +34,16 @@ import {
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
 import { sanitizeName } from "../../../shared/utils/sanitize.js";
+import {
+  fsCreateLuiePackageArgsSchema,
+  fsReadFileArgsSchema,
+  fsReadLuieEntryArgsSchema,
+  fsSaveProjectArgsSchema,
+  fsSelectDialogArgsSchema,
+  fsWriteFileArgsSchema,
+  fsWriteProjectFileArgsSchema,
+} from "../../../shared/schemas/index.js";
+import { ensureSafeAbsolutePath } from "../../utils/pathValidation.js";
 
 export type LuiePackageExportData = {
   meta: Record<string, unknown>;
@@ -339,6 +349,7 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       channel: IPC_CHANNELS.FS_SELECT_SAVE_LOCATION,
       logTag: "FS_SELECT_SAVE_LOCATION",
       failMessage: "Failed to select save location",
+      argsSchema: fsSelectDialogArgsSchema,
       handler: async (
         options?: {
           filters?: { name: string; extensions: string[] }[];
@@ -360,6 +371,7 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       channel: IPC_CHANNELS.FS_SELECT_FILE,
       logTag: "FS_SELECT_FILE",
       failMessage: "Failed to select file",
+      argsSchema: fsSelectDialogArgsSchema,
       handler: async (
         options?: {
           filters?: { name: string; extensions: string[] }[];
@@ -395,13 +407,20 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       channel: IPC_CHANNELS.FS_SAVE_PROJECT,
       logTag: "FS_SAVE_PROJECT",
       failMessage: "Failed to save project",
+      argsSchema: fsSaveProjectArgsSchema,
       handler: async (projectName: string, projectPath: string, content: string) => {
         const safeName = sanitizeName(projectName);
-
-        const projectDir = `${projectPath}${path.sep}${safeName || DEFAULT_PROJECT_DIR_NAME}`;
+        const safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
+        const projectDir = path.join(
+          safeProjectPath,
+          safeName || DEFAULT_PROJECT_DIR_NAME,
+        );
         await fsp.mkdir(projectDir, { recursive: true });
 
-        const fullPath = `${projectDir}${path.sep}${safeName || DEFAULT_PROJECT_FILE_BASENAME}${LUIE_PACKAGE_EXTENSION}`;
+        const fullPath = path.join(
+          projectDir,
+          `${safeName || DEFAULT_PROJECT_FILE_BASENAME}${LUIE_PACKAGE_EXTENSION}`,
+        );
         await fsp.writeFile(fullPath, content, "utf-8");
         return { path: fullPath, projectDir };
       },
@@ -410,12 +429,14 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       channel: IPC_CHANNELS.FS_READ_FILE,
       logTag: "FS_READ_FILE",
       failMessage: "Failed to read file",
+      argsSchema: fsReadFileArgsSchema,
       handler: async (filePath: string) => {
-        const stat = await fsp.stat(filePath);
+        const safeFilePath = ensureSafeAbsolutePath(filePath, "filePath");
+        const stat = await fsp.stat(safeFilePath);
         if (stat.isDirectory()) {
           return null;
         }
-        const content = await fsp.readFile(filePath, "utf-8");
+        const content = await fsp.readFile(safeFilePath, "utf-8");
         return content;
       },
     },
@@ -423,26 +444,35 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       channel: IPC_CHANNELS.FS_READ_LUIE_ENTRY,
       logTag: "FS_READ_LUIE_ENTRY",
       failMessage: "Failed to read Luie package entry",
+      argsSchema: fsReadLuieEntryArgsSchema,
       handler: async (packagePath: string, entryPath: string) =>
-        readLuieEntry(packagePath, entryPath, logger),
+        readLuieEntry(
+          ensureSafeAbsolutePath(packagePath, "packagePath"),
+          entryPath,
+          logger,
+        ),
     },
     {
       channel: IPC_CHANNELS.FS_WRITE_FILE,
       logTag: "FS_WRITE_FILE",
       failMessage: "Failed to write file",
+      argsSchema: fsWriteFileArgsSchema,
       handler: async (filePath: string, content: string) => {
-        const dir = path.dirname(filePath);
+        const safeFilePath = ensureSafeAbsolutePath(filePath, "filePath");
+        const dir = path.dirname(safeFilePath);
         await fsp.mkdir(dir, { recursive: true });
-        await fsp.writeFile(filePath, content, "utf-8");
-        return { path: filePath };
+        await fsp.writeFile(safeFilePath, content, "utf-8");
+        return { path: safeFilePath };
       },
     },
     {
       channel: IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE,
       logTag: "FS_CREATE_LUIE_PACKAGE",
       failMessage: "Failed to create Luie package",
+      argsSchema: fsCreateLuiePackageArgsSchema,
       handler: async (packagePath: string, meta: unknown) => {
-        const targetPath = ensureLuieExtension(packagePath);
+        const safePackagePath = ensureSafeAbsolutePath(packagePath, "packagePath");
+        const targetPath = ensureLuieExtension(safePackagePath);
 
         await ensureParentDir(targetPath);
 
@@ -484,25 +514,32 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       channel: IPC_CHANNELS.FS_WRITE_PROJECT_FILE,
       logTag: "FS_WRITE_PROJECT_FILE",
       failMessage: "Failed to write project file",
+      argsSchema: fsWriteProjectFileArgsSchema,
       handler: async (projectRoot: string, relativePath: string, content: string) => {
         const normalized = normalizeZipPath(relativePath);
         if (!normalized || !isSafeZipPath(normalized)) {
           throw new Error("INVALID_RELATIVE_PATH");
         }
-        if (!projectRoot.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
+        const safeProjectRoot = ensureSafeAbsolutePath(projectRoot, "projectRoot");
+
+        if (!safeProjectRoot.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
           throw new Error("PROJECT_ROOT_NOT_LUIE_PACKAGE");
         }
 
         try {
-          const stat = await fsp.stat(projectRoot);
+          const stat = await fsp.stat(safeProjectRoot);
           if (stat.isDirectory()) {
-            await migrateDirectoryPackageToZip(projectRoot, projectRoot, logger);
+            await migrateDirectoryPackageToZip(
+              safeProjectRoot,
+              safeProjectRoot,
+              logger,
+            );
           }
         } catch (e) {
           const err = e as NodeJS.ErrnoException;
           if (err?.code === "ENOENT") {
-            await ensureParentDir(projectRoot);
-            const tempZip = `${projectRoot}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
+            await ensureParentDir(safeProjectRoot);
+            const tempZip = `${safeProjectRoot}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
             await buildZipFile(tempZip, (zip) =>
               addEntriesToZip(zip, [
                 ...baseLuieDirectoryEntries(),
@@ -514,16 +551,22 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
                 }),
               ]),
             );
-            await atomicReplace(tempZip, projectRoot, logger);
+            await atomicReplace(tempZip, safeProjectRoot, logger);
           } else {
             throw e;
           }
         }
 
-        const tempZip = `${projectRoot}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
-        await rebuildZipWithReplacement(projectRoot, tempZip, normalized, content, logger);
-        await atomicReplace(tempZip, projectRoot, logger);
-        return { path: `${projectRoot}:${normalized}` };
+        const tempZip = `${safeProjectRoot}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
+        await rebuildZipWithReplacement(
+          safeProjectRoot,
+          tempZip,
+          normalized,
+          content,
+          logger,
+        );
+        await atomicReplace(tempZip, safeProjectRoot, logger);
+        return { path: `${safeProjectRoot}:${normalized}` };
       },
     },
   ]);
