@@ -17,8 +17,12 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { useTranslation } from "react-i18next";
+import { User, Image as ImageIcon } from "lucide-react";
 
-type MindMapNodeData = { label: string };
+type MindMapNodeData = { 
+    label: string;
+    image?: string; // Optional image URL
+};
 
 const getCssNumber = (name: string, fallback: number) => {
   if (typeof window === "undefined") return fallback;
@@ -29,7 +33,7 @@ const getCssNumber = (name: string, fallback: number) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-// Custom Node for MindMap
+// Custom Node for MindMap - Character Card Style
 const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
   const { t } = useTranslation();
   const { setNodes } = useReactFlow();
@@ -49,35 +53,83 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
     setIsEditing(false);
   };
 
+  const handleImageUpload = () => {
+      // Mock image upload for now -> In real app, open file dialog
+      const url = window.prompt(t("world.mindmap.imageUrlPrompt"));
+      if (url) {
+        setNodes((nds: Node<MindMapNodeData>[]) =>
+            nds.map((node: Node<MindMapNodeData>) =>
+                node.id === id
+                ? { ...node, data: { ...node.data, image: url } }
+                : node,
+            ),
+        );
+      }
+  };
+
   return (
     <div
-      className="p-2 min-w-25 bg-panel border-2 border-active rounded-lg shadow-sm text-center flex flex-col justify-center items-center relative transition-transform hover:shadow-md"
+      className="group bg-panel border-2 border-border hover:border-accent rounded-xl shadow-sm hover:shadow-lg transition-all overflow-hidden flex flex-col items-center min-w-[120px]"
+      style={{
+          width: data.image ? 160 : "auto",
+      }}
       onDoubleClick={(e) => {
         e.stopPropagation();
         setDraft(data.label);
         setIsEditing(true);
       }}
     >
-      <Handle type="target" position={Position.Top} />
-      {isEditing ? (
-        <input
-          className="w-full text-center border-none bg-transparent outline-none font-medium text-sm text-fg"
-          value={draft ?? data.label}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") commit();
-            if (e.key === "Escape") {
-              setDraft(null);
-              setIsEditing(false);
-            }
-          }}
-          autoFocus
-        />
-      ) : (
-        <div className="font-medium text-sm text-fg break-normal whitespace-pre-wrap">{data.label}</div>
-      )}
-      <Handle type="source" position={Position.Bottom} />
+      <Handle type="target" position={Position.Top} className="bg-accent! w-3 h-3" />
+      
+      {/* Image Area */}
+      <div 
+        className="w-full aspect-square bg-element flex items-center justify-center relative overflow-hidden"
+        style={{ display: data.image ? "flex" : "block", height: data.image ? "auto" : 40 }}
+      >
+          {data.image ? (
+              <img src={data.image} alt={data.label} className="w-full h-full object-cover" />
+          ) : (
+             <div className="w-full h-full flex items-center justify-center text-muted/30">
+                 <User className="w-6 h-6" />
+             </div>
+          )}
+          
+          {/* Hover Image Edit Button */}
+          <button 
+            className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/70 rounded text-white opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+                e.stopPropagation();
+                handleImageUpload();
+            }}
+            title={t("world.mindmap.uploadImage")}
+          >
+              <ImageIcon className="w-3 h-3" />
+          </button>
+      </div>
+
+      {/* Label Area */}
+      <div className="p-2 w-full bg-panel border-t border-border/50">
+        {isEditing ? (
+            <input
+            className="w-full text-center border-none bg-transparent outline-none font-bold text-sm text-fg p-0"
+            value={draft ?? data.label}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+                if (e.key === "Enter") commit();
+                if (e.key === "Escape") {
+                setDraft(null);
+                setIsEditing(false);
+                }
+            }}
+            autoFocus
+            />
+        ) : (
+            <div className="font-bold text-sm text-fg text-center wrap-break-word leading-tight">{data.label}</div>
+        )}
+      </div>
+
+      <Handle type="source" position={Position.Bottom} className="bg-accent! w-3 h-3" />
     </div>
   );
 };
@@ -150,6 +202,7 @@ export function MindMapBoard() {
             ...params,
             type: "smoothstep",
             markerEnd: { type: MarkerType.ArrowClosed },
+            style: { stroke: 'var(--accent-primary)', strokeWidth: 2 },
           },
           eds,
         ),
@@ -177,13 +230,13 @@ export function MindMapBoard() {
         id: newNodeId,
         type: "character",
         position,
-        data: { label: "New Topic" },
+        data: { label: t("world.mindmap.newTopic") },
       };
 
       setNodes((nds) => nds.concat(newNode));
       setSelectedNodeId(newNodeId);
     },
-    [setNodes],
+    [setNodes, t],
   );
 
   const handleKeyDown = useCallback(
@@ -200,13 +253,13 @@ export function MindMapBoard() {
           id: newNodeId,
           type: "character",
           position: {
-            x: selectedNode.position.x + 150,
+            x: selectedNode.position.x + 200,
             y: selectedNode.position.y,
           },
-          data: { label: "New Topic" },
+          data: { label: t("world.mindmap.newTopic") },
         };
         setNodes((nds) => nds.concat(newNode));
-        setSelectedNodeId(newNodeId); // Auto select new node
+        setSelectedNodeId(newNodeId); 
       }
 
       if (e.key === "Tab") {
@@ -219,10 +272,10 @@ export function MindMapBoard() {
           id: newNodeId,
           type: "character",
           position: {
-            x: selectedNode.position.x + 100,
-            y: selectedNode.position.y + 100,
+            x: selectedNode.position.x + 150,
+            y: selectedNode.position.y + 150,
           },
-          data: { label: "Sub Topic" },
+          data: { label: t("world.mindmap.subTopic") },
         };
 
         const newEdge: Edge = {
@@ -231,6 +284,7 @@ export function MindMapBoard() {
           target: newNodeId,
           type: "smoothstep",
           markerEnd: { type: MarkerType.ArrowClosed },
+          style: { stroke: 'var(--accent-primary)', strokeWidth: 2 },
         };
 
         setNodes((nds) => nds.concat(newNode));
@@ -239,7 +293,7 @@ export function MindMapBoard() {
       }
 
       if (e.key === "Delete" || e.key === "Backspace") {
-        if (selectedNodeId === "root") return; // Protect root
+        if (selectedNodeId === "root") return; 
         setNodes((nds) => nds.filter((n) => n.id !== selectedNodeId));
         setEdges((eds) =>
           eds.filter(
@@ -249,7 +303,7 @@ export function MindMapBoard() {
         setSelectedNodeId(null);
       }
     },
-    [selectedNodeId, nodes, setNodes, setEdges],
+    [selectedNodeId, nodes, setNodes, setEdges, t],
   );
 
   return (
@@ -258,13 +312,18 @@ export function MindMapBoard() {
       tabIndex={0}
       onKeyDown={handleKeyDown}
       onDoubleClick={onPaneDoubleClick}
-      style={{ outline: "none" }} // Focusable div for keyboard events
+      style={{ outline: "none" }} 
     >
       <div
-        className="absolute top-4 left-1/2 -translate-x-1/2 bg-panel/80 px-4 py-1.5 rounded-full text-xs text-secondary shadow-sm pointer-events-none z-10 backdrop-blur-sm border border-border"
+        className="absolute top-4 left-1/2 -translate-x-1/2 bg-panel/90 px-6 py-2 rounded-full text-xs font-medium text-fg shadow-lg pointer-events-none z-10 backdrop-blur-md border border-border flex items-center gap-4"
       >
-        Click Node to Select • <b>Enter</b>: Sibling • <b>Tab</b>: Child •{" "}
-        <b>Del</b>: Delete • <b>Double Click</b>: Edit/Insert
+        <div className="flex items-center gap-1.5"><span className="p-1 bg-border rounded">Click</span> Select</div>
+        <div className="w-px h-3 bg-border"></div>
+        <div className="flex items-center gap-1.5"><span className="p-1 bg-border rounded">Enter</span> Sibling</div>
+        <div className="w-px h-3 bg-border"></div>
+        <div className="flex items-center gap-1.5"><span className="p-1 bg-border rounded">Tab</span> Child</div>
+        <div className="w-px h-3 bg-border"></div>
+        <div className="flex items-center gap-1.5"><span className="p-1 bg-border rounded">Del</span> Delete</div>
       </div>
 
       <ReactFlow
@@ -280,13 +339,15 @@ export function MindMapBoard() {
         onInit={(instance) => {
           flowRef.current = instance;
         }}
+        proOptions={{ hideAttribution: true }}
       >
-        <Background color="var(--grid-line)" gap={20} />
+        <Background color="var(--grid-line)" gap={24} size={1} />
         <MiniMap
-          nodeColor={() => "var(--bg-element)"}
-          nodeStrokeColor={() => "var(--border-active)"}
+          nodeColor="var(--bg-element)"
+          nodeStrokeColor="var(--border-active)"
+          className="bg-panel/50! border! border-border! rounded-lg overflow-hidden"
         />
-        <Controls />
+        <Controls className="bg-panel! border! border-border! text-fg! [&>button]:border-b-border! [&>button:hover]:bg-element-hover!" />
       </ReactFlow>
     </div>
   );
