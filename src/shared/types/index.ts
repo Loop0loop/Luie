@@ -287,7 +287,7 @@ export type ThemeTemperature = "neutral" | "warm" | "cool";
 export type ThemeContrast = "soft" | "high";
 export type ThemeAccent = "blue" | "violet" | "green" | "amber" | "rose" | "slate";
 export type ThemeTexture = boolean;
-export type WindowTitleBarMode = "hidden" | "visible";
+export type WindowMenuBarMode = "hidden" | "visible";
 
 export interface WindowBounds {
   width: number;
@@ -321,7 +321,7 @@ export interface AppSettings {
   snapshotExportLimit?: number;
   windowBounds?: WindowBounds;
   lastWindowState?: WindowState;
-  titleBarMode?: WindowTitleBarMode;
+  menuBarMode?: WindowMenuBarMode;
 }
 
 export type ShortcutAction =

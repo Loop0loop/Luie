@@ -9,7 +9,7 @@ import type {
   SearchResult,
   Snapshot,
   Term,
-  WindowTitleBarMode,
+  WindowMenuBarMode,
 } from "../../../../shared/types/index.js";
 
 export type RendererApi = {
@@ -139,8 +139,8 @@ export type RendererApi = {
     setAutoSave: (settings: { enabled?: boolean; interval?: number }) => Promise<IPCResponse<{ enabled: boolean; interval: number }>>;
     getLanguage: () => Promise<IPCResponse<{ language: "ko" | "en" | "ja" }>>;
     setLanguage: (settings: { language: "ko" | "en" | "ja" }) => Promise<IPCResponse<{ language: "ko" | "en" | "ja" }>>;
-    getTitleBarMode: () => Promise<IPCResponse<{ mode: WindowTitleBarMode }>>;
-    setTitleBarMode: (settings: { mode: WindowTitleBarMode }) => Promise<IPCResponse<{ mode: WindowTitleBarMode }>>;
+    getMenuBarMode: () => Promise<IPCResponse<{ mode: WindowMenuBarMode }>>;
+    setMenuBarMode: (settings: { mode: WindowMenuBarMode }) => Promise<IPCResponse<{ mode: WindowMenuBarMode }>>;
     getShortcuts: () => Promise<IPCResponse<{ shortcuts: Record<string, string>; defaults: Record<string, string> }>>;
     setShortcuts: (settings: { shortcuts: Record<string, string> }) => Promise<IPCResponse<{ shortcuts: Record<string, string>; defaults: Record<string, string> }>>;
     getWindowBounds: () => Promise<IPCResponse<{ width: number; height: number; x: number; y: number } | undefined>>;

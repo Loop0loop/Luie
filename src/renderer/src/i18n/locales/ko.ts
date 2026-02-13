@@ -18,13 +18,13 @@ export const ko = {
         lineHeight: "줄 간격",
         theme: "테마 (Theme)",
         language: "언어",
-        titleBar: "타이틀바",
+        menuBar: "메뉴바",
       },
-      titleBar: {
-        description: "macOS 창 상단 타이틀바 표시 방식을 설정합니다.",
-        hide: "타이틀바 가리기",
-        show: "타이틀바 보이기",
-        restartHint: "변경 사항은 앱을 다시 열면 적용됩니다.",
+      menuBar: {
+        description: "macOS 메뉴바 표시 방식을 설정합니다.",
+        hide: "메뉴바 가리기",
+        show: "메뉴바 보이기",
+        applyHint: "변경 사항은 즉시 적용됩니다.",
       },
       font: {
         serif: "명조체",

@@ -18,13 +18,13 @@ export const ja = {
         lineHeight: "行間",
         theme: "テーマ (Theme)",
         language: "言語",
-        titleBar: "タイトルバー",
+        menuBar: "メニューバー",
       },
-      titleBar: {
-        description: "macOS のウィンドウ上部タイトルバー表示を設定します。",
-        hide: "タイトルバーを隠す",
-        show: "タイトルバーを表示",
-        restartHint: "変更はアプリを再起動すると反映されます。",
+      menuBar: {
+        description: "macOS のメニューバー表示を設定します。",
+        hide: "メニューバーを隠す",
+        show: "メニューバーを表示",
+        applyHint: "変更はすぐに適用されます。",
       },
       font: {
         serif: "明朝体",

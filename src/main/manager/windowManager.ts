@@ -26,17 +26,22 @@ class WindowManager {
       return {}
     }
 
-    const mode = settingsManager.getTitleBarMode()
-    if (mode === 'visible') {
-      return {
-        titleBarStyle: 'default' as const,
-      }
-    }
-
     return {
       titleBarStyle: 'hiddenInset' as const,
       trafficLightPosition: { x: WINDOW_TRAFFIC_LIGHT_X, y: WINDOW_TRAFFIC_LIGHT_Y },
     }
+  }
+
+  private getMenuBarMode() {
+    return settingsManager.getMenuBarMode()
+  }
+
+  private applyMenuBarMode(win: BrowserWindow) {
+    const mode = this.getMenuBarMode()
+    const shouldShowMenuBar = mode === 'visible'
+
+    win.setAutoHideMenuBar(!shouldShowMenuBar)
+    win.setMenuBarVisibility(shouldShowMenuBar)
   }
 
   createMainWindow(): BrowserWindow {
@@ -58,6 +63,7 @@ class WindowManager {
       minWidth: WINDOW_MIN_WIDTH,
       minHeight: WINDOW_MIN_HEIGHT,
       ...this.getTitleBarOptions(),
+      autoHideMenuBar: this.getMenuBarMode() === 'hidden',
       webPreferences: {
         preload: join(__dirname, '../preload/index.mjs'),
         contextIsolation: true,
@@ -65,6 +71,8 @@ class WindowManager {
         sandbox: false,
       },
     })
+
+    this.applyMenuBarMode(this.mainWindow)
 
     // Track window state changes
     windowState.manage(this.mainWindow)
@@ -128,6 +136,7 @@ class WindowManager {
       minHeight: 700,
       title: "내보내기 및 인쇄 미리보기",
       ...this.getTitleBarOptions(),
+      autoHideMenuBar: this.getMenuBarMode() === 'hidden',
       webPreferences: {
         preload: join(__dirname, '../preload/index.mjs'),
         contextIsolation: true,
@@ -135,6 +144,8 @@ class WindowManager {
         sandbox: false,
       },
     })
+
+    this.applyMenuBarMode(this.exportWindow)
 
     // Load URL with hash routing
     const isPackaged = app.isPackaged
@@ -164,6 +175,15 @@ class WindowManager {
     }
 
     return this.exportWindow
+  }
+
+  applyMenuBarModeToAllWindows(): void {
+    const windows = BrowserWindow.getAllWindows()
+    for (const win of windows) {
+      if (!win.isDestroyed()) {
+        this.applyMenuBarMode(win)
+      }
+    }
   }
 }
 

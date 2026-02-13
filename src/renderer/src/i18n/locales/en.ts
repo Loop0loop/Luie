@@ -18,13 +18,13 @@ export const en = {
         lineHeight: "Line Height",
         theme: "Theme",
         language: "Language",
-        titleBar: "Title Bar",
+        menuBar: "Menu Bar",
       },
-      titleBar: {
-        description: "Choose how the macOS window title bar should be displayed.",
-        hide: "Hide title bar",
-        show: "Show title bar",
-        restartHint: "Changes apply after reopening the app.",
+      menuBar: {
+        description: "Choose how the macOS app menu bar should be displayed.",
+        hide: "Hide menu bar",
+        show: "Show menu bar",
+        applyHint: "Changes apply immediately.",
       },
       font: {
         serif: "Serif",

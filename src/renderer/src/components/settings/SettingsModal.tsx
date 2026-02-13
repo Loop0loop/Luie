@@ -1,10 +1,10 @@
-import { memo, useMemo, useState, useEffect, useTransition } from "react";
+import { memo, useMemo, useState, useEffect } from "react";
 import { X, Check, Download, Command, Type, Layout, BookOpen, FileText, Monitor, Keyboard, RotateCcw, Globe, Minus, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { FontPreset, EditorSettings } from "../../stores/editorStore";
 import { useEditorStore } from "../../stores/editorStore";
 import { useShortcutStore } from "../../stores/shortcutStore";
-import type { ShortcutMap, WindowTitleBarMode } from "../../../../shared/types";
+import type { ShortcutMap, WindowMenuBarMode } from "../../../../shared/types";
 import {
   EDITOR_FONT_FAMILIES,
 } from "../../../../shared/constants/configs";
@@ -14,6 +14,14 @@ import {
 import { setLanguage } from "../../i18n";
 
 const STORAGE_KEY_FONTS_INSTALLED = "luie:fonts-installed";
+const EMPTY_SHORTCUT_GROUPS: Record<string, typeof SHORTCUT_ACTIONS> = {
+  app: [],
+  chapter: [],
+  view: [],
+  research: [],
+  editor: [],
+  other: [],
+};
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -37,7 +45,7 @@ const ShortcutRow = memo(function ShortcutRow({
       <div className="text-sm text-muted group-hover:text-fg transition-colors">{label}</div>
       <div className="relative w-40">
         <input
-            className="w-full bg-surface border border-border rounded-md px-3 py-1.5 text-sm font-mono text-fg focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all text-center"
+            className="w-full bg-surface border border-border rounded-md px-3 py-1.5 text-sm font-mono text-fg focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-colors text-center"
             value={value}
             placeholder={placeholder}
             onChange={(e) => onChange(e.target.value)}
@@ -70,8 +78,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState("appearance");
   const [localFontSize, setLocalFontSize] = useState(fontSize);
   const [localLineHeight, setLocalLineHeight] = useState(lineHeight);
-  const [isPending, startTransition] = useTransition();
-  const [titleBarMode, setTitleBarMode] = useState<WindowTitleBarMode>("hidden");
+  const [menuBarMode, setMenuBarMode] = useState<WindowMenuBarMode>("visible");
   const isMacOS = navigator.platform.toLowerCase().includes("mac");
 
   // Sync local state if global changes
@@ -89,18 +96,18 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
   useEffect(() => {
     void (async () => {
-      const response = await window.api.settings.getTitleBarMode();
+      const response = await window.api.settings.getMenuBarMode();
       if (!response.success || !response.data) return;
-      const mode = (response.data as { mode?: WindowTitleBarMode }).mode;
+      const mode = (response.data as { mode?: WindowMenuBarMode }).mode;
       if (mode === "hidden" || mode === "visible") {
-        setTitleBarMode(mode);
+        setMenuBarMode(mode);
       }
     })();
   }, []);
 
-  const handleTitleBarModeChange = async (mode: WindowTitleBarMode) => {
-    setTitleBarMode(mode);
-    await window.api.settings.setTitleBarMode({ mode });
+  const handleMenuBarModeChange = async (mode: WindowMenuBarMode) => {
+    setMenuBarMode(mode);
+    await window.api.settings.setMenuBarMode({ mode });
   };
 
   // Shortcuts logic
@@ -118,8 +125,9 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   }, [activeTab, loadShortcuts]);
 
   useEffect(() => {
+    if (activeTab !== "shortcuts") return;
     setShortcutDrafts(shortcuts as Record<string, string>);
-  }, [shortcuts]);
+  }, [activeTab, shortcuts]);
 
   const handleShortcutChange = (actionId: string, value: string) => {
     setShortcutDrafts((prev) => ({ ...prev, [actionId]: value }));
@@ -132,6 +140,10 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
   // Group Shortcuts
   const shortcutGroups = useMemo(() => {
+      if (activeTab !== "shortcuts") {
+        return EMPTY_SHORTCUT_GROUPS;
+      }
+
       const groups: Record<string, typeof SHORTCUT_ACTIONS> = {
           app: [],
           chapter: [],
@@ -151,7 +163,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
       });
 
       return groups;
-  }, []);
+  }, [activeTab]);
 
   const getGroupLabel = (key: string) => {
       switch(key) {
@@ -298,11 +310,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 animate-in fade-in duration-150"
       onClick={onClose}
     >
       <div 
-        className="w-[1000px] h-[80vh] max-h-[850px] bg-panel/95 backdrop-blur-sm border border-border shadow-2xl rounded-xl flex overflow-hidden animate-in zoom-in-95 duration-200 will-change-transform"
+        className="w-[1000px] h-[80vh] max-h-[850px] bg-panel border border-border shadow-xl rounded-xl flex overflow-hidden animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Sidebar */}
@@ -314,10 +326,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 {tabs.map(tab => (
                     <button
                         key={tab.id}
-                        onClick={() => {
-                            startTransition(() => setActiveTab(tab.id));
-                        }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                             activeTab === tab.id 
                             ? "bg-fg text-app shadow-md" 
                             : "text-muted hover:bg-surface-hover hover:text-fg"
@@ -331,7 +341,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 bg-panel flex flex-col relative min-w-0" aria-busy={isPending}>
+        <div className="flex-1 bg-panel flex flex-col relative min-w-0">
              <button 
                 onClick={onClose}
                 className="absolute top-4 right-4 p-2 text-subtle hover:text-fg hover:bg-active rounded-lg transition-colors z-10"
@@ -339,9 +349,9 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 <X className="w-5 h-5" />
              </button>
 
-             <div className="flex-1 overflow-y-auto p-10 scrollbar-hide">
+             <div className="flex-1 overflow-y-auto p-10 scrollbar-hide content-visibility-auto contain-intrinsic-size-[1px_1200px]">
                 {activeTab === "appearance" && (
-                    <div className="space-y-10 max-w-2xl">
+                    <div className="space-y-10 max-w-2xl content-visibility-auto contain-intrinsic-size-[1px_1000px]">
                         {/* 1. Base Theme */}
                         <section className="space-y-4">
                             <div>
@@ -353,7 +363,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                     <button
                                         key={mode}
                                         onClick={() => applySettings({ theme: mode })}
-                                        className={`flex items-center justify-center px-4 py-3 rounded-xl border text-sm font-medium transition-all duration-200 ${
+                                        className={`flex items-center justify-center px-4 py-3 rounded-xl border text-sm font-medium transition-colors duration-150 ${
                                             theme === mode 
                                             ? "border-accent text-accent bg-accent/5 ring-1 ring-accent shadow-sm"
                                             : "border-border text-muted hover:border-text-tertiary hover:bg-surface-hover"
@@ -463,7 +473,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                             <div className="grid grid-cols-3 gap-3">
                                 <button
                                     onClick={() => applySettings({ themeTemp: "cool" })}
-                                    className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-all duration-200 ${
+                                    className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-colors duration-150 ${
                                         themeTemp === "cool" 
                                         ? "border-blue-500 bg-blue-500/5 ring-1 ring-blue-500" 
                                         : "border-border hover:bg-surface-hover"
@@ -475,7 +485,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
                                 <button
                                     onClick={() => applySettings({ themeTemp: "neutral" })}
-                                    className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-all duration-200 ${
+                                    className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-colors duration-150 ${
                                         themeTemp === "neutral" 
                                         ? "border-text-secondary bg-text-secondary/5 ring-1 ring-text-secondary" 
                                         : "border-border hover:bg-surface-hover"
@@ -487,7 +497,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
                                 <button
                                     onClick={() => applySettings({ themeTemp: "warm" })}
-                                    className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-all duration-200 ${
+                                    className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-colors duration-150 ${
                                         themeTemp === "warm" 
                                         ? "border-orange-500 bg-orange-500/5 ring-1 ring-orange-500" 
                                         : "border-border hover:bg-surface-hover"
@@ -504,32 +514,32 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                             <div className="h-px bg-border my-6" />
                             <section className="space-y-4">
                               <div>
-                                <h3 className="text-base font-semibold text-fg">{t("settings.section.titleBar")}</h3>
-                                <p className="text-sm text-muted mt-1">{t("settings.titleBar.description")}</p>
+                                <h3 className="text-base font-semibold text-fg">{t("settings.section.menuBar")}</h3>
+                                <p className="text-sm text-muted mt-1">{t("settings.menuBar.description")}</p>
                               </div>
                               <div className="grid grid-cols-2 gap-3">
                                 <button
-                                  onClick={() => void handleTitleBarModeChange("hidden")}
-                                  className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all duration-200 ${
-                                    titleBarMode === "hidden"
+                                  onClick={() => void handleMenuBarModeChange("hidden")}
+                                  className={`px-4 py-3 rounded-xl border text-sm font-medium transition-colors duration-150 ${
+                                    menuBarMode === "hidden"
                                       ? "border-accent text-accent bg-accent/5 ring-1 ring-accent"
                                       : "border-border text-muted hover:border-text-tertiary hover:bg-surface-hover"
                                   }`}
                                 >
-                                  {t("settings.titleBar.hide")}
+                                  {t("settings.menuBar.hide")}
                                 </button>
                                 <button
-                                  onClick={() => void handleTitleBarModeChange("visible")}
-                                  className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all duration-200 ${
-                                    titleBarMode === "visible"
+                                  onClick={() => void handleMenuBarModeChange("visible")}
+                                  className={`px-4 py-3 rounded-xl border text-sm font-medium transition-colors duration-150 ${
+                                    menuBarMode === "visible"
                                       ? "border-accent text-accent bg-accent/5 ring-1 ring-accent"
                                       : "border-border text-muted hover:border-text-tertiary hover:bg-surface-hover"
                                   }`}
                                 >
-                                  {t("settings.titleBar.show")}
+                                  {t("settings.menuBar.show")}
                                 </button>
                               </div>
-                              <p className="text-xs text-muted">{t("settings.titleBar.restartHint")}</p>
+                              <p className="text-xs text-muted">{t("settings.menuBar.applyHint")}</p>
                             </section>
                           </>
                         )}
@@ -537,7 +547,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 	                )}
 
                 {activeTab === "editor" && (
-                     <div className="space-y-8 max-w-2xl">
+                     <div className="space-y-8 max-w-2xl content-visibility-auto contain-intrinsic-size-[1px_1200px]">
                         <section className="space-y-4">
                             <h3 className="text-base font-semibold text-fg">{t("settings.section.font")}</h3>
                              <div className="grid grid-cols-3 gap-3">
@@ -545,7 +555,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                     <button
                                         key={f}
                                         onClick={() => applySettings({ fontFamily: f })}
-                                        className={`p-4 rounded-xl border text-left transition-all duration-200 ${
+                                        className={`p-4 rounded-xl border text-left transition-colors duration-150 ${
                                             fontFamily === f ? "border-accent ring-1 ring-accent bg-accent/5" : "border-border hover:bg-surface-hover"
                                         }`}
                                     >
@@ -672,7 +682,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 )}
                 
                 {activeTab === "shortcuts" && (
-                     <div className="max-w-2xl space-y-8 pb-20">
+                     <div className="max-w-2xl space-y-8 pb-20 content-visibility-auto contain-intrinsic-size-[1px_1400px]">
                           <div className="flex justify-between items-center">
                              <h3 className="text-lg font-bold text-fg">{t("settings.shortcuts.title")}</h3>
                              <button onClick={() => void resetToDefaults()} className="text-xs text-subtle hover:text-fg underline">
@@ -707,7 +717,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 )}
 
                  {activeTab === "recovery" && (
-                    <div className="space-y-6 max-w-2xl">
+                    <div className="space-y-6 max-w-2xl content-visibility-auto contain-intrinsic-size-[1px_400px]">
                         <section className="p-4 bg-surface rounded-xl border border-border">
                             <h3 className="text-base font-semibold text-fg mb-2">{t("settings.recovery.title")}</h3>
                             <p className="text-sm text-muted mb-4">{t("settings.recovery.description")}</p>
@@ -737,25 +747,25 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 )}
 
                 {activeTab === "language" && (
-                     <div className="space-y-6 max-w-2xl">
+                     <div className="space-y-6 max-w-2xl content-visibility-auto contain-intrinsic-size-[1px_400px]">
                         <section>
                              <h3 className="text-base font-semibold text-fg mb-2">{t("settings.section.language")}</h3>
                              <div className="flex gap-3">
                                 <button 
                                     onClick={() => setLanguage("ko")} 
-                                    className={`px-4 py-2 rounded-lg border text-sm transition-all duration-200 ${i18n.language === 'ko' ? 'border-accent text-accent bg-accent/5 ring-1 ring-accent' : 'border-border text-muted hover:text-fg'}`}
+                                    className={`px-4 py-2 rounded-lg border text-sm transition-colors duration-150 ${i18n.language === 'ko' ? 'border-accent text-accent bg-accent/5 ring-1 ring-accent' : 'border-border text-muted hover:text-fg'}`}
                                 >
                                     한국어
                                 </button>
                                 <button 
                                     onClick={() => setLanguage("en")} 
-                                    className={`px-4 py-2 rounded-lg border text-sm transition-all duration-200 ${i18n.language === 'en' ? 'border-accent text-accent bg-accent/5 ring-1 ring-accent' : 'border-border text-muted hover:text-fg'}`}
+                                    className={`px-4 py-2 rounded-lg border text-sm transition-colors duration-150 ${i18n.language === 'en' ? 'border-accent text-accent bg-accent/5 ring-1 ring-accent' : 'border-border text-muted hover:text-fg'}`}
                                 >
                                     English
                                 </button>
                                 <button 
                                     onClick={() => setLanguage("ja")} 
-                                    className={`px-4 py-2 rounded-lg border text-sm transition-all duration-200 ${i18n.language === 'ja' ? 'border-accent text-accent bg-accent/5 ring-1 ring-accent' : 'border-border text-muted hover:text-fg'}`}
+                                    className={`px-4 py-2 rounded-lg border text-sm transition-colors duration-150 ${i18n.language === 'ja' ? 'border-accent text-accent bg-accent/5 ring-1 ring-accent' : 'border-border text-muted hover:text-fg'}`}
                                 >
                                     日本語
                                 </button>

@@ -4,7 +4,7 @@ import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import {
   editorSettingsSchema,
   settingsLanguageSchema,
-  settingsTitleBarModeSchema,
+  settingsMenuBarModeSchema,
   settingsShortcutsSchema,
   settingsAutoSaveSchema,
   windowBoundsSchema,
@@ -90,23 +90,28 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       },
     },
     {
-      channel: IPC_CHANNELS.SETTINGS_GET_TITLE_BAR_MODE,
-      logTag: "SETTINGS_GET_TITLE_BAR_MODE",
-      failMessage: "Failed to get title bar mode",
+      channel: IPC_CHANNELS.SETTINGS_GET_MENU_BAR_MODE,
+      logTag: "SETTINGS_GET_MENU_BAR_MODE",
+      failMessage: "Failed to get menu bar mode",
       handler: async () => {
         const settingsManager = await loadSettingsManager();
-        return { mode: settingsManager.getTitleBarMode() };
+        return { mode: settingsManager.getMenuBarMode() };
       },
     },
     {
-      channel: IPC_CHANNELS.SETTINGS_SET_TITLE_BAR_MODE,
-      logTag: "SETTINGS_SET_TITLE_BAR_MODE",
-      failMessage: "Failed to set title bar mode",
-      argsSchema: z.tuple([settingsTitleBarModeSchema]),
+      channel: IPC_CHANNELS.SETTINGS_SET_MENU_BAR_MODE,
+      logTag: "SETTINGS_SET_MENU_BAR_MODE",
+      failMessage: "Failed to set menu bar mode",
+      argsSchema: z.tuple([settingsMenuBarModeSchema]),
       handler: async (settings: { mode: "hidden" | "visible" }) => {
-        const settingsManager = await loadSettingsManager();
-        settingsManager.setTitleBarMode(settings.mode);
-        return { mode: settingsManager.getTitleBarMode() };
+        const [settingsManagerModule, windowManagerModule] = await Promise.all([
+          import("../../manager/settingsManager.js"),
+          import("../../manager/windowManager.js"),
+        ]);
+
+        settingsManagerModule.settingsManager.setMenuBarMode(settings.mode);
+        windowManagerModule.windowManager.applyMenuBarModeToAllWindows();
+        return { mode: settingsManagerModule.settingsManager.getMenuBarMode() };
       },
     },
     {

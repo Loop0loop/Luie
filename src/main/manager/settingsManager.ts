@@ -11,8 +11,8 @@ import type {
   EditorSettings,
   ShortcutMap,
   WindowBounds,
+  WindowMenuBarMode,
   WindowState,
-  WindowTitleBarMode,
 } from "../../shared/types/index.js";
 import {
   DEFAULT_AUTO_SAVE_ENABLED,
@@ -115,7 +115,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   snapshotExportLimit: SNAPSHOT_FILE_KEEP_COUNT,
   windowBounds: undefined,
   lastWindowState: undefined,
-  titleBarMode: "hidden",
+  menuBarMode: "visible",
 };
 
 export class SettingsManager {
@@ -158,9 +158,25 @@ export class SettingsManager {
       }
     }
 
+    this.migrateLegacyWindowSettings();
+
     logger.info("Settings manager initialized", {
       path: this.store.path,
     });
+  }
+
+  private migrateLegacyWindowSettings(): void {
+    const current = this.store.store as AppSettings & {
+      titleBarMode?: "hidden" | "visible";
+    };
+
+    if (!current.menuBarMode) {
+      this.store.set("menuBarMode", current.titleBarMode ?? "visible");
+    }
+
+    if ("titleBarMode" in current) {
+      this.store.delete("titleBarMode" as unknown as keyof AppSettings);
+    }
   }
 
   static getInstance(): SettingsManager {
@@ -188,7 +204,7 @@ export class SettingsManager {
       snapshotExportLimit: settings.snapshotExportLimit ?? current.snapshotExportLimit,
       windowBounds: settings.windowBounds ?? current.windowBounds,
       lastWindowState: settings.lastWindowState ?? current.lastWindowState,
-      titleBarMode: settings.titleBarMode ?? current.titleBarMode,
+      menuBarMode: settings.menuBarMode ?? current.menuBarMode,
     };
     this.store.set(merged);
     logger.info("Settings updated", { settings: merged });
@@ -286,12 +302,12 @@ export class SettingsManager {
     this.store.set("lastWindowState", state);
   }
 
-  getTitleBarMode(): WindowTitleBarMode {
-    return this.store.get("titleBarMode") ?? "hidden";
+  getMenuBarMode(): WindowMenuBarMode {
+    return this.store.get("menuBarMode") ?? "visible";
   }
 
-  setTitleBarMode(mode: WindowTitleBarMode): void {
-    this.store.set("titleBarMode", mode);
+  setMenuBarMode(mode: WindowMenuBarMode): void {
+    this.store.set("menuBarMode", mode);
   }
 
   // 설정 초기화

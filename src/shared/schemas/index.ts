@@ -206,7 +206,7 @@ export const settingsLanguageSchema = z.object({
   language: z.enum(["ko", "en", "ja"]),
 });
 
-export const settingsTitleBarModeSchema = z.object({
+export const settingsMenuBarModeSchema = z.object({
   mode: z.enum(["hidden", "visible"]),
 });
 

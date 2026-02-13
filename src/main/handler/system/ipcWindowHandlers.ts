@@ -53,7 +53,11 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       handler: () => {
         const win = windowManager.getMainWindow();
         if (!win) return false;
-        win.setFullScreen(!win.isFullScreen());
+        if (process.platform === "darwin") {
+          win.setSimpleFullScreen(!win.isSimpleFullScreen());
+        } else {
+          win.setFullScreen(!win.isFullScreen());
+        }
         win.focus();
         return true;
       },

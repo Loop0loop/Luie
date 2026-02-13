@@ -26,6 +26,35 @@ type Note = {
 
 const defaultUpdatedAt = new Date().toISOString();
 const MEMO_SIDEBAR_LAYOUT_STORAGE_KEY = "memo-sidebar-layout-v1";
+const MEMO_SIDEBAR_PANEL_ID = "memo-sidebar";
+const MEMO_CONTENT_PANEL_ID = "memo-content";
+const MEMO_SIDEBAR_DEFAULT_SIZE = 34;
+const MEMO_SIDEBAR_MIN_SIZE = 24;
+const MEMO_SIDEBAR_MAX_SIZE = 48;
+const MEMO_CONTENT_MIN_SIZE = 40;
+
+const normalizeMemoLayout = (layout: Layout): Layout | undefined => {
+  const rawSidebar = layout[MEMO_SIDEBAR_PANEL_ID];
+  const rawContent = layout[MEMO_CONTENT_PANEL_ID];
+  if (!Number.isFinite(rawSidebar) || !Number.isFinite(rawContent)) return undefined;
+
+  const sum = rawSidebar + rawContent;
+  if (sum <= 0) return undefined;
+
+  const sidebarRatio = (rawSidebar / sum) * 100;
+  const clampedSidebar = Math.min(
+    MEMO_SIDEBAR_MAX_SIZE,
+    Math.max(MEMO_SIDEBAR_MIN_SIZE, sidebarRatio),
+  );
+  const contentSize = 100 - clampedSidebar;
+  const normalizedContent = Math.max(MEMO_CONTENT_MIN_SIZE, contentSize);
+  const normalizedSidebar = 100 - normalizedContent;
+
+  return {
+    [MEMO_SIDEBAR_PANEL_ID]: normalizedSidebar,
+    [MEMO_CONTENT_PANEL_ID]: normalizedContent,
+  };
+};
 
 function buildDefaultNotes(t: TFunction): Note[] {
   const rawNotes = t("memo.defaultNotes", { returnObjects: true }) as Array<
@@ -106,15 +135,18 @@ function MemoSectionInner({
     try {
       const raw = localStorage.getItem(MEMO_SIDEBAR_LAYOUT_STORAGE_KEY);
       if (!raw) return undefined;
-      return JSON.parse(raw) as Layout;
+      const parsed = JSON.parse(raw) as Layout;
+      return normalizeMemoLayout(parsed);
     } catch {
       return undefined;
     }
   }, []);
 
   const handleLayoutChange = (layout: Layout) => {
+    const normalized = normalizeMemoLayout(layout);
+    if (!normalized) return;
     try {
-      localStorage.setItem(MEMO_SIDEBAR_LAYOUT_STORAGE_KEY, JSON.stringify(layout));
+      localStorage.setItem(MEMO_SIDEBAR_LAYOUT_STORAGE_KEY, JSON.stringify(normalized));
     } catch {
       // best effort
     }
@@ -174,10 +206,21 @@ function MemoSectionInner({
       <PanelGroup
         orientation="horizontal"
         onLayoutChanged={handleLayoutChange}
-        defaultLayout={initialLayout}
+        defaultLayout={
+          initialLayout ?? {
+            [MEMO_SIDEBAR_PANEL_ID]: MEMO_SIDEBAR_DEFAULT_SIZE,
+            [MEMO_CONTENT_PANEL_ID]: 100 - MEMO_SIDEBAR_DEFAULT_SIZE,
+          }
+        }
         className="h-full! w-full!"
       >
-        <Panel id="memo-sidebar" defaultSize={26} minSize={14} maxSize={40} className="min-w-0">
+        <Panel
+          id={MEMO_SIDEBAR_PANEL_ID}
+          defaultSize={MEMO_SIDEBAR_DEFAULT_SIZE}
+          minSize={MEMO_SIDEBAR_MIN_SIZE}
+          maxSize={MEMO_SIDEBAR_MAX_SIZE}
+          className="min-w-0"
+        >
           <div className="h-full bg-sidebar border-r border-border flex flex-col content-visibility-auto contain-intrinsic-size-[1px_600px]">
             <div className="px-4 py-3 text-xs font-bold text-muted flex justify-between items-center uppercase tracking-wider">
               <span>{t("memo.sectionTitle")}</span>
@@ -251,7 +294,7 @@ function MemoSectionInner({
           <div className="w-0.5 h-full bg-transparent group-hover:bg-primary/20" />
         </PanelResizeHandle>
 
-        <Panel id="memo-content" minSize={40} className="min-w-0">
+        <Panel id={MEMO_CONTENT_PANEL_ID} minSize={MEMO_CONTENT_MIN_SIZE} className="min-w-0">
           {activeNote ? (
             <div className="h-full flex flex-col bg-panel overflow-hidden">
               <div className="px-6 pt-3 flex items-center gap-2">
