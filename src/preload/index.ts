@@ -453,6 +453,7 @@ contextBridge.exposeInMainWorld("api", {
 
   app: {
     quit: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.APP_QUIT),
+    restart: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.APP_RESTART),
   },
 
   // Logger API

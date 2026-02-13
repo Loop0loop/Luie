@@ -8,6 +8,7 @@ import type {
   ThemeContrast,
   ThemeAccent,
   ThemeTexture,
+  EditorUiMode,
 } from "../../../shared/types";
 export type { EditorSettings, EditorTheme, FontFamily, FontPreset };
 import {
@@ -31,6 +32,7 @@ interface EditorStore extends EditorSettings {
   setFontSize: (size: number) => Promise<void>;
   setTheme: (theme: EditorTheme) => Promise<void>;
   setFontFamily: (fontFamily: FontFamily) => Promise<void>;
+  setUiMode: (mode: EditorUiMode) => Promise<void>;
   resetSettings: () => Promise<void>;
 }
 
@@ -45,6 +47,7 @@ const DEFAULT_SETTINGS: EditorSettings = {
   themeContrast: DEFAULT_EDITOR_THEME_CONTRAST as ThemeContrast,
   themeAccent: DEFAULT_EDITOR_THEME_ACCENT as ThemeAccent,
   themeTexture: DEFAULT_EDITOR_THEME_TEXTURE as ThemeTexture,
+  uiMode: "default",
 };
 
 export const useEditorStore = create<EditorStore>((set, get) => ({
@@ -75,6 +78,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       themeContrast: current.themeContrast ?? DEFAULT_EDITOR_THEME_CONTRAST,
       themeAccent: current.themeAccent ?? DEFAULT_EDITOR_THEME_ACCENT,
       themeTexture: current.themeTexture ?? DEFAULT_EDITOR_THEME_TEXTURE,
+      uiMode: current.uiMode ?? "default",
       ...newSettings,
     };
     const response = await api.settings.setEditor(updated);
@@ -98,6 +102,10 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 
   setFontFamily: async (fontFamily: FontFamily) => {
     await get().updateSettings({ fontFamily });
+  },
+
+  setUiMode: async (mode: EditorUiMode) => {
+    await get().updateSettings({ uiMode: mode });
   },
 
   resetSettings: async () => {

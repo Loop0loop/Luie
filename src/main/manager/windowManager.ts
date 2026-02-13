@@ -40,6 +40,25 @@ class WindowManager {
     const mode = this.getMenuBarMode()
     const shouldShowMenuBar = mode === 'visible'
 
+    if (process.platform === 'darwin') {
+      if (shouldShowMenuBar) {
+        if (win.isSimpleFullScreen()) {
+          win.setSimpleFullScreen(false)
+        }
+        if (win.isFullScreen()) {
+          win.setFullScreen(false)
+        }
+        win.setMenuBarVisibility(true)
+        return
+      }
+
+      win.setMenuBarVisibility(false)
+      if (!win.isSimpleFullScreen()) {
+        win.setSimpleFullScreen(true)
+      }
+      return
+    }
+
     win.setAutoHideMenuBar(!shouldShowMenuBar)
     win.setMenuBarVisibility(shouldShowMenuBar)
   }
@@ -63,7 +82,9 @@ class WindowManager {
       minWidth: WINDOW_MIN_WIDTH,
       minHeight: WINDOW_MIN_HEIGHT,
       ...this.getTitleBarOptions(),
-      autoHideMenuBar: this.getMenuBarMode() === 'hidden',
+      ...(process.platform !== 'darwin'
+        ? { autoHideMenuBar: this.getMenuBarMode() === 'hidden' }
+        : {}),
       webPreferences: {
         preload: join(__dirname, '../preload/index.mjs'),
         contextIsolation: true,
@@ -136,7 +157,9 @@ class WindowManager {
       minHeight: 700,
       title: "내보내기 및 인쇄 미리보기",
       ...this.getTitleBarOptions(),
-      autoHideMenuBar: this.getMenuBarMode() === 'hidden',
+      ...(process.platform !== 'darwin'
+        ? { autoHideMenuBar: this.getMenuBarMode() === 'hidden' }
+        : {}),
       webPreferences: {
         preload: join(__dirname, '../preload/index.mjs'),
         contextIsolation: true,

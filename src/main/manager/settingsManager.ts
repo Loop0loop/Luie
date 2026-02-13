@@ -106,6 +106,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     themeContrast: DEFAULT_EDITOR_THEME_CONTRAST,
     themeAccent: DEFAULT_EDITOR_THEME_ACCENT,
     themeTexture: DEFAULT_EDITOR_THEME_TEXTURE,
+    uiMode: "default",
   },
   language: "ko",
   shortcuts: DEFAULT_SHORTCUTS,
@@ -171,7 +172,7 @@ export class SettingsManager {
     };
 
     if (!current.menuBarMode) {
-      this.store.set("menuBarMode", current.titleBarMode ?? "visible");
+      this.store.set("menuBarMode", "visible");
     }
 
     if ("titleBarMode" in current) {

@@ -33,6 +33,16 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       },
     },
     {
+      channel: IPC_CHANNELS.APP_RESTART,
+      logTag: "APP_RESTART",
+      failMessage: "Failed to restart app",
+      handler: () => {
+        app.relaunch();
+        app.quit();
+        return true;
+      },
+    },
+    {
       channel: IPC_CHANNELS.WINDOW_MAXIMIZE,
       logTag: "WINDOW_MAXIMIZE",
       failMessage: "Failed to maximize window",

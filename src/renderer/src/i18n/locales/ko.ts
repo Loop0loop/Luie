@@ -1,8 +1,38 @@
 export const ko = {
   common: {
+    home: "홈",
+    share: "공유",
+    menu: {
+      file: "파일",
+      edit: "편집",
+      view: "보기",
+      insert: "삽입",
+      format: "서식",
+      tools: "도구",
+      extensions: "확장 프로그램",
+      help: "도움말",
+    },
     settings: {
       title: "화면 설정",
       sidebar: {
+        section: {
+          manuscript: "원고",
+          research: "연구",
+          snapshot: "스냅샷",
+          trash: "휴지통",
+        },
+        item: {
+          characters: "인물",
+          world: "세계관",
+          scrap: "스크랩",
+          analysis: "분석",
+        },
+        addChapter: "새 챕터 추가",
+        snapshotEmpty: "선택된 챕터가 없거나 스냅샷이 없습니다.",
+        trashEmpty: "휴지통이 비어있습니다.",
+        tooltip: {
+          refresh: "새로고침",
+        },
         editor: "글꼴 (Editor)",
         appearance: "테마 (Appearance)",
         features: "기능 (Features)",
@@ -17,14 +47,27 @@ export const ko = {
         fontSize: "글자 크기",
         lineHeight: "줄 간격",
         theme: "테마 (Theme)",
+        uiMode: "UI 모드 (Laboratory)",
         language: "언어",
         menuBar: "메뉴바",
       },
+      uiMode: {
+        description: "에디터의 도구 모음과 레이아웃을 익숙한 스타일로 변경합니다.",
+        default: "기본 (Default)",
+        docs: "Google Docs 스타일",
+        word: "MS Word 스타일",
+        scrivener: "Scrivener 스타일",
+      },
       menuBar: {
-        description: "macOS 메뉴바 표시 방식을 설정합니다.",
+        description: "macOS에서는 가리기를 선택하면 전체화면(immersive)으로 전환됩니다.",
         hide: "메뉴바 가리기",
         show: "메뉴바 보이기",
-        applyHint: "변경 사항은 즉시 적용됩니다.",
+        applyHint: "변경 사항은 즉시 적용됩니다. (가리기: 전체화면, 보이기: 일반창)",
+        restartConfirm: "설정 적용을 위해 앱을 재시작 하겠습니까?",
+      },
+      view: {
+        pc: "PC",
+        mobile: "모바일",
       },
       font: {
         serif: "명조체",
@@ -339,6 +382,10 @@ export const ko = {
         alignCenter: "Align Center",
         alignRight: "Align Right",
         toggleMobileView: "모바일 뷰 전환",
+        view: {
+          mobile: "Mobile View",
+          desktop: "PC View",
+        },
       },
       view: {
         mobile: "Mobile",

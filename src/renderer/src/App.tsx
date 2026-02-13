@@ -1,7 +1,9 @@
 import { useState, lazy, Suspense, useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import MainLayout from "./components/layout/MainLayout";
+import GoogleDocsLayout from "./components/layout/GoogleDocsLayout";
 import Sidebar from "./components/sidebar/Sidebar";
+import DocsSidebar from "./components/sidebar/DocsSidebar";
 import Editor from "./components/editor/Editor";
 import ContextPanel from "./components/context/ContextPanel";
 import ProjectTemplateSelector from "./components/layout/ProjectTemplateSelector";
@@ -72,6 +74,7 @@ export default function App() {
   const themeTexture = useEditorStore((state) => state.themeTexture);
   const fontSize = useEditorStore((state) => state.fontSize);
   const setFontSize = useEditorStore((state) => state.setFontSize);
+  const uiMode = useEditorStore((state) => state.uiMode);
 
   // 커스텀 훅으로 로직 분리
   const { currentProject } = useProjectInit();
@@ -382,25 +385,38 @@ export default function App() {
     );
   }
 
+  const LayoutComponent = uiMode === 'docs' ? GoogleDocsLayout : MainLayout;
+
   return (
     <>
-      <MainLayout
+      <LayoutComponent
         sidebar={
-          <Sidebar
-            chapters={chapters}
-            activeChapterId={activeChapterId ?? undefined}
-            currentProjectTitle={currentProject?.title}
-            currentProjectId={currentProject?.id}
-            onSelectChapter={handleSelectChapter}
-            onAddChapter={handleAddChapter}
-            onRenameChapter={handleRenameChapter}
-            onDuplicateChapter={handleDuplicateChapter}
-            onDeleteChapter={handleDeleteChapter}
-            onOpenSettings={() => setIsSettingsOpen(true)}
-            onPrefetchSettings={prefetchSettings}
-            onSelectResearchItem={handleSelectResearchItem}
-            onSplitView={handleSplitView}
-          />
+          uiMode === 'docs' ? (
+            <DocsSidebar
+              chapters={chapters}
+              activeChapterId={activeChapterId ?? undefined}
+              onSelectChapter={handleSelectChapter}
+              onAddChapter={handleAddChapter}
+              onSelectResearchItem={handleSelectResearchItem}
+              currentProjectId={currentProject?.id}
+            />
+          ) : (
+            <Sidebar
+              chapters={chapters}
+              activeChapterId={activeChapterId ?? undefined}
+              currentProjectTitle={currentProject?.title}
+              currentProjectId={currentProject?.id}
+              onSelectChapter={handleSelectChapter}
+              onAddChapter={handleAddChapter}
+              onRenameChapter={handleRenameChapter}
+              onDuplicateChapter={handleDuplicateChapter}
+              onDeleteChapter={handleDeleteChapter}
+              onOpenSettings={() => setIsSettingsOpen(true)}
+              onPrefetchSettings={prefetchSettings}
+              onSelectResearchItem={handleSelectResearchItem}
+              onSplitView={handleSplitView}
+            />
+          )
         }
         contextPanel={
           <ContextPanel activeTab={contextTab} onTabChange={setContextTab} />
@@ -502,7 +518,7 @@ export default function App() {
             );
           })()}
         </div>
-      </MainLayout>
+      </LayoutComponent>
 
       {isSettingsOpen && (
         <Suspense fallback={null}>

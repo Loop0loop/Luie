@@ -1,8 +1,9 @@
-import { app, BrowserWindow, Menu, session, dialog } from "electron";
+import { app, BrowserWindow, session, dialog } from "electron";
 import type { WebContents } from "electron";
-import { windowManager } from "../manager/index.js";
+import { settingsManager, windowManager } from "../manager/index.js";
 import { isDevEnv } from "../utils/environment.js";
 import type { createLogger } from "../../shared/logger/index.js";
+import { applyApplicationMenu } from "./menu.js";
 
 type Logger = ReturnType<typeof createLogger>;
 
@@ -65,36 +66,6 @@ const handleRendererCrash = async (
   }
 };
 
-const setupMenu = () => {
-  const fileMenu: Electron.MenuItemConstructorOptions = {
-    label: "File",
-    submenu:
-      process.platform === "darwin"
-        ? [{ role: "close" }]
-        : [{ role: "close" }, { role: "quit" }],
-  };
-
-  const menuTemplate = (
-    process.platform === "darwin"
-      ? [
-          { role: "appMenu" },
-          fileMenu,
-          { role: "editMenu" },
-          { role: "viewMenu" },
-          { role: "windowMenu" },
-        ]
-      : [
-          fileMenu,
-          { role: "editMenu" },
-          { role: "viewMenu" },
-          { role: "windowMenu" },
-          { role: "helpMenu" },
-        ]
-  ) as Electron.MenuItemConstructorOptions[];
-
-  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
-};
-
 export const registerAppReady = (logger: Logger): void => {
   app.whenReady().then(async () => {
     logger.info("App is ready");
@@ -145,7 +116,7 @@ export const registerAppReady = (logger: Logger): void => {
     registerIPCHandlers();
 
     windowManager.createMainWindow();
-    setupMenu();
+    applyApplicationMenu(settingsManager.getMenuBarMode());
 
     try {
       const { autoSaveManager } = await import("../manager/autoSaveManager.js");

@@ -73,6 +73,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const lineHeight = useEditorStore((state) => state.lineHeight);
   const fontFamily = useEditorStore((state) => state.fontFamily);
   const fontPreset = useEditorStore((state) => state.fontPreset);
+  const settings = useEditorStore((state) => state); // get full state for easier access
   const updateSettings = useEditorStore((state) => state.updateSettings);
 
   const [activeTab, setActiveTab] = useState("appearance");
@@ -107,7 +108,12 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
   const handleMenuBarModeChange = async (mode: WindowMenuBarMode) => {
     setMenuBarMode(mode);
-    await window.api.settings.setMenuBarMode({ mode });
+    const response = await window.api.settings.setMenuBarMode({ mode });
+    if (!response.success) return;
+
+    const shouldRestart = window.confirm(t("settings.menuBar.restartConfirm"));
+    if (!shouldRestart) return;
+    await window.api.app.restart();
   };
 
   // Shortcuts logic
@@ -461,6 +467,36 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                                  </div>
                              </section>
                         </div>
+                        
+                        <div className="h-px bg-border my-6" />
+
+                        {/* 4. UI Mode */}
+                        <section className="space-y-4">
+                            <div>
+                                <h3 className="text-base font-semibold text-fg">{t("settings.section.uiMode")}</h3>
+                                <p className="text-sm text-muted mt-1">{t("settings.uiMode.description")}</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                {(['default', 'docs', 'word', 'scrivener'] as const).map((mode) => (
+                                    <button
+                                        key={mode}
+                                        onClick={() => applySettings({ uiMode: mode })}
+                                        className={`px-4 py-3 rounded-xl border text-sm font-medium transition-colors duration-150 text-left ${
+                                            (settings.uiMode || 'default') === mode
+                                            ? "border-accent text-accent bg-accent/5 ring-1 ring-accent shadow-sm"
+                                            : "border-border text-muted hover:border-text-tertiary hover:bg-surface-hover"
+                                        }`}
+                                    >
+                                        <div className="font-semibold mb-0.5">
+                                          {mode === 'default' && t("settings.uiMode.default")}
+                                          {mode === 'docs' && t("settings.uiMode.docs")}
+                                          {mode === 'word' && t("settings.uiMode.word")}
+                                          {mode === 'scrivener' && t("settings.uiMode.scrivener")}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </section>
                         
                         <div className="h-px bg-border my-6" />
 

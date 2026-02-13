@@ -203,6 +203,7 @@ declare global {
 
       app: {
         quit: () => Promise<IPCResponse<unknown>>;
+        restart: () => Promise<IPCResponse<unknown>>;
       };
 
       window: {

@@ -25,13 +25,13 @@ type Note = {
 };
 
 const defaultUpdatedAt = new Date().toISOString();
-const MEMO_SIDEBAR_LAYOUT_STORAGE_KEY = "memo-sidebar-layout-v1";
+const MEMO_SIDEBAR_LAYOUT_STORAGE_KEY = "memo-sidebar-layout-v2";
 const MEMO_SIDEBAR_PANEL_ID = "memo-sidebar";
 const MEMO_CONTENT_PANEL_ID = "memo-content";
-const MEMO_SIDEBAR_DEFAULT_SIZE = 34;
-const MEMO_SIDEBAR_MIN_SIZE = 24;
-const MEMO_SIDEBAR_MAX_SIZE = 48;
-const MEMO_CONTENT_MIN_SIZE = 40;
+const MEMO_SIDEBAR_DEFAULT_SIZE = 56;
+const MEMO_SIDEBAR_MIN_SIZE = 40;
+const MEMO_SIDEBAR_MAX_SIZE = 72;
+const MEMO_CONTENT_MIN_SIZE = 22;
 
 const normalizeMemoLayout = (layout: Layout): Layout | undefined => {
   const rawSidebar = layout[MEMO_SIDEBAR_PANEL_ID];

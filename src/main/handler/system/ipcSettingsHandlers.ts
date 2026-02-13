@@ -12,6 +12,7 @@ import {
 import { z } from "zod";
 import type { SettingsManager } from "../../manager/settingsManager.js";
 import type { LoggerLike } from "../core/types.js";
+import { applyApplicationMenu } from "../../lifecycle/menu.js";
 
 const loadSettingsManager = (() => {
   let cached: Promise<{ settingsManager: SettingsManager }> | null = null;
@@ -104,14 +105,13 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       failMessage: "Failed to set menu bar mode",
       argsSchema: z.tuple([settingsMenuBarModeSchema]),
       handler: async (settings: { mode: "hidden" | "visible" }) => {
-        const [settingsManagerModule, windowManagerModule] = await Promise.all([
-          import("../../manager/settingsManager.js"),
-          import("../../manager/windowManager.js"),
-        ]);
+        const settingsManager = await loadSettingsManager();
+        settingsManager.setMenuBarMode(settings.mode);
+        applyApplicationMenu(settings.mode);
 
-        settingsManagerModule.settingsManager.setMenuBarMode(settings.mode);
-        windowManagerModule.windowManager.applyMenuBarModeToAllWindows();
-        return { mode: settingsManagerModule.settingsManager.getMenuBarMode() };
+        const { windowManager } = await import("../../manager/windowManager.js");
+        windowManager.applyMenuBarModeToAllWindows();
+        return { mode: settingsManager.getMenuBarMode() };
       },
     },
     {

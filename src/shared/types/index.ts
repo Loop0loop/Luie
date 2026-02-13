@@ -298,6 +298,8 @@ export interface WindowBounds {
 
 export type WindowState = "maximized" | "normal";
 
+export type EditorUiMode = "default" | "docs" | "word" | "scrivener";
+
 export interface EditorSettings {
   fontFamily: FontFamily;
   fontPreset?: FontPreset;
@@ -309,6 +311,7 @@ export interface EditorSettings {
   themeContrast: "soft" | "high";
   themeAccent: ThemeAccent;
   themeTexture: ThemeTexture;
+  uiMode: EditorUiMode;
 }
 
 export interface AppSettings {
