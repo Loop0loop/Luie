@@ -5,6 +5,10 @@ import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import { ErrorCode } from "../../../shared/constants/errorCode.js";
+import {
+  windowOpenExportArgsSchema,
+  windowSetFullscreenArgsSchema,
+} from "../../../shared/schemas/index.js";
 
 export function registerWindowIPCHandlers(logger: LoggerLike): void {
   registerIpcHandlers(logger, [
@@ -58,37 +62,30 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       channel: IPC_CHANNELS.WINDOW_SET_FULLSCREEN,
       logTag: "WINDOW_SET_FULLSCREEN",
       failMessage: "Failed to set fullscreen",
+      argsSchema: windowSetFullscreenArgsSchema,
       handler: (flag: boolean) => {
         const win = windowManager.getMainWindow();
         if (!win) return false;
-        if (typeof flag === "boolean") {
-          if (process.platform === "darwin") {
-            // macOS: Use simpleFullScreen for "borderless" feel without new space
-            win.setSimpleFullScreen(flag);
-          } else {
-            // Windows/Linux: Standard fullscreen
-            win.setFullScreen(flag);
-          }
-          win.focus();
-          return true;
+        if (process.platform === "darwin") {
+          // macOS: Use simpleFullScreen for "borderless" feel without new space
+          win.setSimpleFullScreen(flag);
+        } else {
+          // Windows/Linux: Standard fullscreen
+          win.setFullScreen(flag);
         }
-        return false;
+        win.focus();
+        return true;
       },
     },
     {
       channel: IPC_CHANNELS.WINDOW_OPEN_EXPORT,
       logTag: "WINDOW_OPEN_EXPORT",
       failMessage: "Failed to open export window",
+      argsSchema: windowOpenExportArgsSchema,
       handler: (chapterId: string) => {
-        logger.info("WINDOW_OPEN_EXPORT received", { 
-          chapterId, 
-          type: typeof chapterId,
-          isUndefined: chapterId === undefined,
-          isNull: chapterId === null,
-          isString: typeof chapterId === "string",
-        });
-        
-        if (!chapterId || chapterId === "undefined" || chapterId === "null") {
+        logger.info("WINDOW_OPEN_EXPORT received", { chapterId });
+
+        if (!chapterId) {
           logger.error("Invalid chapterId for export", { chapterId, type: typeof chapterId });
           throw new ServiceError(
             ErrorCode.REQUIRED_FIELD_MISSING,

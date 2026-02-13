@@ -28,6 +28,7 @@ import {
 
 const logger = createLogger("ManuscriptAnalysisService");
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3-flash-preview";
+const MAX_LUIE_ENTRY_SIZE_BYTES = 5 * 1024 * 1024;
 
 type LuieMeta = {
   chapters?: Array<{ id: string; title?: string; order?: number }>;
@@ -92,7 +93,19 @@ const readZipEntryContent = async (zipPath: string, entryPath: string): Promise<
           }
 
           const chunks: Buffer[] = [];
-          stream.on("data", (chunk) => chunks.push(chunk));
+          let totalSize = 0;
+          stream.on("data", (chunk) => {
+            totalSize += chunk.length;
+            if (totalSize > MAX_LUIE_ENTRY_SIZE_BYTES) {
+              stream.destroy(
+                new Error(
+                  `LUIE_ENTRY_TOO_LARGE:${entryName}:${MAX_LUIE_ENTRY_SIZE_BYTES}`,
+                ),
+              );
+              return;
+            }
+            chunks.push(chunk);
+          });
           stream.on("error", reject);
           stream.on("end", () => {
             result = Buffer.concat(chunks).toString("utf-8");
@@ -139,6 +152,12 @@ const readLuieEntry = async (packagePath: string, entryPath: string): Promise<st
     }
 
     try {
+      const fileStat = await fsp.stat(fullPath);
+      if (fileStat.size > MAX_LUIE_ENTRY_SIZE_BYTES) {
+        throw new Error(
+          `LUIE_ENTRY_TOO_LARGE:${normalized}:${MAX_LUIE_ENTRY_SIZE_BYTES}`,
+        );
+      }
       return await fsp.readFile(fullPath, "utf-8");
     } catch (error) {
       const err = error as NodeJS.ErrnoException;

@@ -105,8 +105,8 @@ export function PlotBoard() {
   return (
     <div className="h-full flex flex-col bg-app overflow-hidden">
         {/* Horizontal Scroll Area */}
-        <div className="flex-1 overflow-x-auto overflow-y-hidden">
-            <div className="h-full flex p-6 gap-6 min-w-max">
+        <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar">
+            <div className="h-full flex p-6 gap-6 w-max min-w-full">
                 {columns.map((col) => (
                     <div key={col.id} className="w-80 shrink-0 flex flex-col bg-sidebar border border-border rounded-xl shadow-sm max-h-full group/col">
                         {/* Column Header */}

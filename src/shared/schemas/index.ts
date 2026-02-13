@@ -164,6 +164,12 @@ export const fsWriteProjectFileArgsSchema = z.tuple([
 
 export const windowSetFullscreenArgsSchema = z.tuple([z.boolean()]);
 export const windowOpenExportArgsSchema = z.tuple([chapterIdSchema]);
+export const analysisStartArgsSchema = z.tuple([
+  z.object({
+    chapterId: chapterIdSchema,
+    projectId: projectIdSchema,
+  }),
+]);
 
 export const editorSettingsSchema = z.object({
   fontFamily: z.enum(["serif", "sans", "mono"]),

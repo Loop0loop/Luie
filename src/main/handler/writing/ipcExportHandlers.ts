@@ -3,122 +3,81 @@
  * 문서 내보내기 IPC 통신 처리
  */
 
-import { ipcMain, dialog } from "electron";
+import { dialog } from "electron";
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
-import type { IPCResponse } from "../../../shared/ipc/response.js";
 import { exportService, type ExportOptions, type ExportResult } from "../../services/features/exportService.js";
 import sanitize from "sanitize-filename";
+import { exportCreateArgsSchema } from "../../../shared/schemas/index.js";
+import { registerIpcHandlers } from "../core/ipcRegistrar.js";
+import type { LoggerLike } from "../core/types.js";
+import { ServiceError } from "../../utils/serviceError.js";
+import { ErrorCode } from "../../../shared/constants/errorCode.js";
 
 /**
  * Export request payload from renderer
  */
-export interface ExportRequest {
-  projectId: string;
-  chapterId: string;
-  title: string;
-  content: string; // HTML from TipTap
-  format: "DOCX" | "HWPX";
-  
-  // Optional settings (will use defaults if not provided)
-  paperSize?: "A4" | "Letter" | "B5";
-  marginTop?: number;
-  marginBottom?: number;
-  marginLeft?: number;
-  marginRight?: number;
-  fontFamily?: string;
-  fontSize?: number;
-  lineHeight?: string;
-  showPageNumbers?: boolean;
-  startPageNumber?: number;
-}
+export type ExportRequest = Omit<ExportOptions, "outputPath">;
 
-/**
- * Export 창에서 내보내기 실행
- */
-async function handleExportCreate(
-  _event: Electron.IpcMainInvokeEvent,
-  request: ExportRequest
-): Promise<IPCResponse<ExportResult>> {
-  try {
-    
-    // Show save dialog
-    const extension = request.format === "DOCX" ? "docx" : "hwpx";
-    const filters = [
-      {
-        name: request.format === "DOCX" ? "Word Document" : "Hangul Document",
-        extensions: [extension],
-      },
-      { name: "All Files", extensions: ["*"] },
-    ];
-    
-    const sanitizedTitle = sanitize(request.title || "Untitled");
-    const defaultPath = `${sanitizedTitle}.${extension}`;
-    
-    const result = await dialog.showSaveDialog({
-      title: "문서 내보내기",
-      defaultPath,
-      filters,
-      properties: ["createDirectory", "showOverwriteConfirmation"],
-    });
-    
-    if (result.canceled || !result.filePath) {
-      return {
-        success: false,
-        data: {
-          success: false,
-          error: "Export cancelled by user",
-        },
-      };
-    }
-    
-    // Build export options
-    const exportOptions: ExportOptions = {
-      projectId: request.projectId,
-      chapterId: request.chapterId,
-      title: request.title,
-      content: request.content,
-      format: request.format,
-      outputPath: result.filePath,
-      
-      // Optional settings
-      paperSize: request.paperSize,
-      marginTop: request.marginTop,
-      marginBottom: request.marginBottom,
-      marginLeft: request.marginLeft,
-      marginRight: request.marginRight,
-      fontFamily: request.fontFamily,
-      fontSize: request.fontSize,
-      lineHeight: request.lineHeight,
-      showPageNumbers: request.showPageNumbers,
-      startPageNumber: request.startPageNumber,
-    };
-    
-    // Execute export
-    const exportResult = await exportService.export(exportOptions);
-    
-    // Show message if provided (e.g., HWPX conversion instructions)
-    if (exportResult.success && exportResult.message) {
-      // This will be shown to the user via IPC response
-    }
-    
-    return {
-      success: true,
-      data: exportResult,
-    };
-  } catch (error) {
+const buildDefaultPath = (request: ExportRequest): string => {
+  const extension = request.format === "DOCX" ? "docx" : "hwpx";
+  const sanitizedTitle = sanitize(request.title || "Untitled");
+  return `${sanitizedTitle}.${extension}`;
+};
+
+const buildDialogFilters = (format: ExportRequest["format"]) => {
+  const extension = format === "DOCX" ? "docx" : "hwpx";
+  return [
+    {
+      name: format === "DOCX" ? "Word Document" : "Hangul Document",
+      extensions: [extension],
+    },
+    { name: "All Files", extensions: ["*"] },
+  ];
+};
+
+async function handleExportCreate(request: ExportRequest): Promise<ExportResult> {
+  const result = await dialog.showSaveDialog({
+    title: "문서 내보내기",
+    defaultPath: buildDefaultPath(request),
+    filters: buildDialogFilters(request.format),
+    properties: ["createDirectory", "showOverwriteConfirmation"],
+  });
+
+  if (result.canceled || !result.filePath) {
     return {
       success: false,
-      error: {
-        code: "EXPORT_FAILED",
-        message: error instanceof Error ? error.message : "Unknown export error",
-      },
+      error: "Export cancelled by user",
     };
   }
+
+  const exportOptions: ExportOptions = {
+    ...request,
+    outputPath: result.filePath,
+  };
+
+  const exportResult = await exportService.export(exportOptions);
+  if (!exportResult.success && exportResult.error) {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      exportResult.error,
+      { format: request.format, chapterId: request.chapterId },
+    );
+  }
+
+  return exportResult;
 }
 
 /**
  * Register export IPC handlers
  */
-export function registerExportHandlers() {
-  ipcMain.handle(IPC_CHANNELS.EXPORT_CREATE, handleExportCreate);
+export function registerExportHandlers(logger: LoggerLike): void {
+  registerIpcHandlers(logger, [
+    {
+      channel: IPC_CHANNELS.EXPORT_CREATE,
+      logTag: "EXPORT_CREATE",
+      failMessage: "Failed to export document",
+      argsSchema: exportCreateArgsSchema,
+      handler: (request: ExportRequest) => handleExportCreate(request),
+    },
+  ]);
 }

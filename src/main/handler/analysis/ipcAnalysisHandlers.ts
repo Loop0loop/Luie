@@ -1,6 +1,8 @@
 import { ipcMain, BrowserWindow } from "electron";
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import type { AnalysisRequest } from "../../../shared/types/analysis.js";
+import { analysisStartArgsSchema } from "../../../shared/schemas/index.js";
+import { ErrorCode } from "../../../shared/constants/errorCode.js";
 
 import { analysisSecurity } from "../../services/features/analysis/analysisSecurity.js";
 import type { LoggerLike } from "../core/types.js";
@@ -24,6 +26,19 @@ export function registerAnalysisIPCHandlers(
    */
   ipcMain.handle(IPC_CHANNELS.ANALYSIS_START, async (event, request: AnalysisRequest) => {
     try {
+      const parsedArgs = analysisStartArgsSchema.safeParse([request]);
+      if (!parsedArgs.success) {
+        return {
+          success: false,
+          error: {
+            code: ErrorCode.INVALID_INPUT,
+            message: "Invalid analysis request",
+            details: parsedArgs.error.issues,
+          },
+        };
+      }
+
+      const [validatedRequest] = parsedArgs.data;
       logger.info("ANALYSIS_START", { request });
 
       // API 키 검증
@@ -52,7 +67,11 @@ export function registerAnalysisIPCHandlers(
       // 보안 리스너 등록
       analysisSecurity.registerSecurityListeners(window);
 
-      await service.startAnalysis(request.chapterId, request.projectId, window);
+      await service.startAnalysis(
+        validatedRequest.chapterId,
+        validatedRequest.projectId,
+        window,
+      );
 
       return { success: true };
     } catch (error) {

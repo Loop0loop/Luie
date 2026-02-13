@@ -7,6 +7,8 @@ export type LuiePackageLogger = {
   error: (message: string, data?: unknown) => void;
 };
 
+const MAX_LUIE_ENTRY_SIZE_BYTES = 5 * 1024 * 1024;
+
 export const normalizeZipPath = (inputPath: string) =>
   path.posix
     .normalize(inputPath.replace(/\\/g, "/"))
@@ -75,13 +77,28 @@ export const readZipEntryContent = async (
 
           found = true;
           const chunks: Buffer[] = [];
-          stream.on("data", (chunk: Buffer) => chunks.push(chunk));
-          stream.on("end", () => {
+          const readable = stream as NodeJS.ReadableStream & {
+            destroy: (error?: Error) => void;
+          };
+          let totalSize = 0;
+          readable.on("data", (chunk: Buffer) => {
+            totalSize += chunk.length;
+            if (totalSize > MAX_LUIE_ENTRY_SIZE_BYTES) {
+              readable.destroy(
+                new Error(
+                  `LUIE_ENTRY_TOO_LARGE:${entryName}:${MAX_LUIE_ENTRY_SIZE_BYTES}`,
+                ),
+              );
+              return;
+            }
+            chunks.push(chunk);
+          });
+          readable.on("end", () => {
             result = Buffer.concat(chunks).toString("utf-8");
             zipfile.close();
             resolve();
           });
-          stream.on("error", reject);
+          readable.on("error", reject);
         });
       });
 
@@ -116,6 +133,12 @@ export const readLuieEntry = async (
         throw new Error("INVALID_RELATIVE_PATH");
       }
       try {
+        const fileStat = await fsp.stat(resolved);
+        if (fileStat.size > MAX_LUIE_ENTRY_SIZE_BYTES) {
+          throw new Error(
+            `LUIE_ENTRY_TOO_LARGE:${normalized}:${MAX_LUIE_ENTRY_SIZE_BYTES}`,
+          );
+        }
         return await fsp.readFile(resolved, "utf-8");
       } catch (error) {
         const err = error as NodeJS.ErrnoException;

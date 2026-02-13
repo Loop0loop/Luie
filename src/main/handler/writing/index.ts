@@ -10,5 +10,5 @@ export function registerWritingHandlers(options: {
 }): void {
   registerAutoSaveIPCHandlers(options.logger, options.autoSaveManager);
   registerSnapshotIPCHandlers(options.logger, options.snapshotService);
-  registerExportHandlers();
+  registerExportHandlers(options.logger);
 }

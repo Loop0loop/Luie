@@ -43,13 +43,14 @@ function assertBasePathInput(input: string, fieldName: string): string {
 
 export function ensureSafeAbsolutePath(input: string, fieldName = "path"): string {
   const normalized = assertBasePathInput(input, fieldName);
-  const resolved = path.resolve(normalized);
-  if (!path.isAbsolute(resolved)) {
+  if (!path.isAbsolute(normalized)) {
     throw new ServiceError(
       ErrorCode.INVALID_INPUT,
       `${fieldName} must be an absolute path`,
       { fieldName, input: normalized },
     );
   }
+
+  const resolved = path.resolve(normalized);
   return resolved;
 }

@@ -2,35 +2,39 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../../../shared/types/utils";
-import { Eraser, PenTool, Type } from "lucide-react";
+import { Eraser, PenTool, Type, Map as MapIcon, Navigation, Mountain, Castle, Tent } from "lucide-react";
 
 interface MapPath {
+  id: string;
   d?: string;
-  type: "path" | "text";
+  type: "path" | "text" | "icon";
   color: string;
   width?: number;
   x?: number;
   y?: number;
   text?: string;
+  icon?: "mountain" | "castle" | "village";
 }
 
 export function DrawingCanvas() {
   const { t } = useTranslation();
   const canvasRef = useRef<HTMLDivElement>(null);
-  const [tool, setTool] = useState<"pen" | "text" | "eraser">("pen");
+  const [tool, setTool] = useState<"pen" | "text" | "eraser" | "icon">("pen");
+  const [iconType, setIconType] = useState<"mountain" | "castle" | "village">("mountain");
   const [color, setColor] = useState("#000000");
   const [lineWidth, setLineWidth] = useState(2);
   const [paths, setPaths] = useState<MapPath[]>([]);
   const [currentPath, setCurrentPath] = useState("");
   const [isDrawing, setIsDrawing] = useState(false);
 
+  // Fantasy Map Colors
   const colors = [
-    "#000000",
-    "#ef4444",
-    "#3b82f6",
-    "#22c55e",
-    "#eab308",
-    "#a855f7",
+    "#000000", // Ink
+    "#8B4513", // Road/Earth
+    "#2E8B57", // Forest/Region
+    "#4682B4", // Water/River
+    "#A52A2A", // Border/danger
+    "#808080", // Stone/Mountains
   ];
   const widths = [2, 4, 8, 16];
 
@@ -41,18 +45,30 @@ export function DrawingCanvas() {
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const { x, y } = getCoords(e);
+
     if (tool === "text") {
-      const { x, y } = getCoords(e);
-      const text = window.prompt(t("world.drawing.placePrompt"));
+      const text = window.prompt(t("world.drawing.placePrompt", "Enter text labels"));
       if (text) {
-        setPaths((prev) => [...prev, { type: "text", x, y, text, color }]);
+        setPaths((prev) => [...prev, { id: Date.now().toString(), type: "text", x, y, text, color }]);
       }
       return;
     }
 
+    if (tool === "icon") {
+        setPaths((prev) => [...prev, { id: Date.now().toString(), type: "icon", x, y, icon: iconType, color }]);
+        return;
+    }
+
+    if (tool === "eraser") {
+        // Eraser logic would go here (simple clear for now in MVP or hit test)
+        // For MVP, just treating as "no-op" or we could implement clear
+        return; 
+    }
+
     e.currentTarget.setPointerCapture(e.pointerId);
     setIsDrawing(true);
-    const { x, y } = getCoords(e);
     setCurrentPath(`M ${x} ${y}`);
   };
 
@@ -70,134 +86,150 @@ export function DrawingCanvas() {
     if (currentPath) {
       setPaths((prev) => [
         ...prev,
-        { type: "path", d: currentPath, color, width: lineWidth },
+        { id: Date.now().toString(), type: "path", d: currentPath, color, width: lineWidth },
       ]);
       setCurrentPath("");
     }
   };
 
-  const clearCanvas = () => setPaths([]);
+  const undo = () => setPaths((prev) => prev.slice(0, -1));
+  const clearCanvas = () => {
+    if (window.confirm(t("world.drawing.confirmClear", "Clear entire map?"))) {
+        setPaths([]);
+    }
+  };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* Drawing Toolbar */}
-      <div className="h-9 flex items-center px-4 gap-4 bg-panel border-b border-border shrink-0">
-        <div
-          style={{
-            display: "flex",
-            gap: 4,
-            paddingRight: 12,
-            borderRight: "1px solid var(--border-default)",
-          }}
-        >
-          <button
-            className={cn("w-7 h-7 flex items-center justify-center rounded text-muted hover:bg-hover hover:text-fg transition-colors", tool === "pen" && "bg-active text-accent")}
-            onClick={() => setTool("pen")}
-            title={t("world.drawing.toolPen")}
-          >
-            <PenTool className="icon-md" />
-          </button>
-          <button
-            className={cn("w-7 h-7 flex items-center justify-center rounded text-muted hover:bg-hover hover:text-fg transition-colors", tool === "text" && "bg-active text-accent")}
-            onClick={() => setTool("text")}
-            title={t("world.drawing.toolText")}
-          >
-            <Type className="icon-md" />
-          </button>
-        </div>
+    <div className="h-full flex flex-col bg-[#f4f1ea] relative overflow-hidden">
+      {/* Paper Texture Overlay */}
+      <div className="absolute inset-0 pointer-events-none opacity-50" 
+           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.1'/%3E%3C/svg%3E")` }} 
+      />
 
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            alignItems: "center",
-            paddingRight: 12,
-            borderRight: "1px solid var(--border-default)",
-          }}
-        >
-          {colors.map((c) => (
-            <div
-              key={c}
-              className={cn("w-5 h-5 rounded-full border border-border cursor-pointer hover:scale-110 transition-transform", color === c && "ring-2 ring-active ring-offset-2 ring-offset-panel")}
-              style={{ backgroundColor: c }}
-              onClick={() => setColor(c)}
-            />
-          ))}
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            gap: 4,
-            alignItems: "center",
-            paddingRight: 12,
-            borderRight: "1px solid var(--border-default)",
-          }}
-        >
-          {widths.map((w) => (
-            <div
-              key={w}
-              onClick={() => setLineWidth(w)}
-              style={{
-                width: 24,
-                height: 24,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                opacity: lineWidth === w ? 1 : 0.4,
-              }}
+      {/* Floating Toolbar */}
+      <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 p-2 bg-panel/90 backdrop-blur-md border border-border rounded-xl shadow-lg">
+          <div className="flex flex-col gap-2 border-b border-border/50 pb-2">
+            <button
+                className={cn("w-10 h-10 flex items-center justify-center rounded-lg hover:bg-hover hover:text-fg transition-colors", tool === "pen" && "bg-accent text-accent-foreground")}
+                onClick={() => setTool("pen")}
+                title={t("world.drawing.toolPen")}
             >
-              <div
-                style={{
-                  width: w,
-                  height: w,
-                  borderRadius: "50%",
-                  background: "var(--text-primary)",
-                }}
-              />
-            </div>
-          ))}
-        </div>
+                <PenTool className="w-5 h-5" />
+            </button>
+            <button
+                className={cn("w-10 h-10 flex items-center justify-center rounded-lg hover:bg-hover hover:text-fg transition-colors", tool === "icon" && "bg-accent text-accent-foreground")}
+                onClick={() => setTool("icon")}
+                title={t("world.drawing.toolIcon")}
+            >
+                <MapIcon className="w-5 h-5" />
+            </button>
+            <button
+                className={cn("w-10 h-10 flex items-center justify-center rounded-lg hover:bg-hover hover:text-fg transition-colors", tool === "text" && "bg-accent text-accent-foreground")}
+                onClick={() => setTool("text")}
+                title={t("world.drawing.toolText")}
+            >
+                <Type className="w-5 h-5" />
+            </button>
+          </div>
 
-        <button className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-hover text-xs cursor-pointer text-muted hover:text-fg transition-colors" onClick={clearCanvas}>
-          <Eraser className="icon-sm" /> {t("world.drawing.clear")}
-        </button>
+          {/* Sub-tools for Icons */}
+          {tool === "icon" && (
+             <div className="flex flex-col gap-2 border-b border-border/50 pb-2 animate-in slide-in-from-left-2 fade-in">
+                 <button onClick={() => setIconType("mountain")} className={cn("w-10 h-10 flex items-center justify-center rounded-lg hover:bg-hover", iconType === "mountain" && "bg-active/20 text-active")}>
+                     <Mountain className="w-5 h-5" />
+                 </button>
+                 <button onClick={() => setIconType("castle")} className={cn("w-10 h-10 flex items-center justify-center rounded-lg hover:bg-hover", iconType === "castle" && "bg-active/20 text-active")}>
+                     <Castle className="w-5 h-5" />
+                 </button>
+                 <button onClick={() => setIconType("village")} className={cn("w-10 h-10 flex items-center justify-center rounded-lg hover:bg-hover", iconType === "village" && "bg-active/20 text-active")}>
+                     <Tent className="w-5 h-5" />
+                 </button>
+             </div>
+          )}
+
+          {/* Colors */}
+          <div className="grid grid-cols-2 gap-2 p-1">
+              {colors.map((c) => (
+                <div
+                key={c}
+                className={cn("w-4 h-4 rounded-full border border-border cursor-pointer hover:scale-110 transition-transform", color === c && "ring-2 ring-accent")}
+                style={{ backgroundColor: c }}
+                onClick={() => setColor(c)}
+                />
+             ))}
+          </div>
+
+           {/* Widths */}
+           <div className="flex flex-col gap-2 items-center py-2 border-t border-border/50 mt-1">
+              {widths.map((w) => (
+                <div
+                  key={w}
+                  onClick={() => setLineWidth(w)}
+                  className={cn("w-6 h-6 flex items-center justify-center rounded hover:bg-hover cursor-pointer", lineWidth === w && "bg-active/10")}
+                >
+                  <div style={{ width: w, height: w, borderRadius: "50%", backgroundColor: "currentColor" }} className="text-fg" />
+                </div>
+              ))}
+           </div>
+          
+           <div className="flex flex-col gap-2 pt-2 border-t border-border/50">
+             <button className="w-10 h-10 flex items-center justify-center rounded-lg text-muted hover:text-error hover:bg-error/10" onClick={undo} title={t("common.undo")}>
+                <Navigation className="w-5 h-5 -rotate-90" />
+             </button>
+             <button className="w-10 h-10 flex items-center justify-center rounded-lg text-muted hover:text-error hover:bg-error/10" onClick={clearCanvas} title={t("common.clear")}>
+                <Eraser className="w-5 h-5" />
+             </button>
+           </div>
       </div>
 
       {/* Canvas */}
-      <div className="flex-1 bg-app cursor-crosshair overflow-hidden" ref={canvasRef}>
+      <div className="flex-1 cursor-crosshair overflow-hidden touch-none" ref={canvasRef}>
         <svg
-          style={{ width: "100%", height: "100%", touchAction: "none" }}
+          style={{ width: "100%", height: "100%", display: "block" }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
         >
-          {paths.map((p, i) => {
+          {paths.map((p) => {
             if (p.type === "text") {
               return (
                 <text
-                  key={i}
+                  key={p.id}
                   x={p.x}
                   y={p.y}
                   fill={p.color}
                   style={{
                     userSelect: "none",
                     pointerEvents: "none",
-                    fontSize: "var(--world-draw-text-font-size)",
-                    fontWeight: "var(--world-draw-text-font-weight)",
+                    fontFamily: "serif",
+                    fontWeight: "bold",
+                    fontSize: "20px",
+                    textShadow: "0 1px 2px rgba(255,255,255,0.8)"
                   }}
                 >
                   {p.text}
                 </text>
               );
             }
+            if (p.type === "icon") {
+                 let IconComp = Mountain;
+                 if (p.icon === "castle") IconComp = Castle;
+                 if (p.icon === "village") IconComp = Tent;
+                 
+                 return (
+                     <g key={p.id} transform={`translate(${p.x! - 12}, ${p.y! - 12})`}>
+                         <IconComp className="w-6 h-6" color={p.color} />
+                     </g>
+                 )
+            }
             return (
               <path
-                key={i}
+                key={p.id}
                 d={p.d}
                 stroke={p.color}
                 strokeWidth={p.width}
+                strokeOpacity={0.8}
                 fill="none"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -209,12 +241,18 @@ export function DrawingCanvas() {
               d={currentPath}
               stroke={color}
               strokeWidth={lineWidth}
+              strokeOpacity={0.8}
               fill="none"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
           )}
         </svg>
+      </div>
+      
+      {/* Footer Info */}
+      <div className="absolute bottom-4 right-4 text-[10px] text-[#8B4513] opacity-50 font-serif select-none pointer-events-none">
+          {t("world.drawing.mapMakerMode")}
       </div>
     </div>
   );

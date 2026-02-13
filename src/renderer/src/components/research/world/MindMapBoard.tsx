@@ -3,15 +3,12 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import type { Edge, Node, Connection, NodeProps, ReactFlowInstance, NodeChange, EdgeChange } from "reactflow";
 import ReactFlow, {
   Background,
-  Controls,
   addEdge,
   Handle,
   Position,
   useNodesState,
   useEdgesState,
   MarkerType,
-  MiniMap,
-  useReactFlow,
   applyNodeChanges,
   applyEdgeChanges,
 } from "reactflow";
@@ -363,12 +360,13 @@ export function MindMapBoard() {
         proOptions={{ hideAttribution: true }}
       >
         <Background color="var(--grid-line)" gap={24} size={1} />
-        <MiniMap
-          nodeColor="var(--bg-element)"
-          nodeStrokeColor="var(--border-active)"
-          className="bg-panel/50! border! border-border! rounded-lg overflow-hidden"
-        />
-        <Controls className="bg-panel! border! border-border! text-fg! [&>button]:border-b-border! [&>button:hover]:bg-element-hover!" />
+        
+        {/* Custom Controls */}
+        <div className="absolute bottom-4 left-4 z-10 flex flex-col gap-2 bg-panel/90 backdrop-blur border border-border p-1.5 rounded-xl shadow-lg">
+            <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.zoomIn()} title="Zoom In">+</button>
+            <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.zoomOut()} title="Zoom Out">-</button>
+            <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.fitView()} title="Fit View">⛶</button>
+        </div>
       </ReactFlow>
     </div>
   );
