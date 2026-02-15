@@ -25,7 +25,9 @@ import {
   User, // Character
   Globe, // World
   StickyNote, // Scrap
-  Sparkles // Analysis
+  StickyNote, // Scrap
+  Sparkles, // Analysis
+  Settings
 } from "lucide-react";
 
 interface GoogleDocsLayoutProps {
@@ -34,6 +36,7 @@ interface GoogleDocsLayoutProps {
   activeChapterId?: string;
   currentProjectId?: string;
   editor?: TiptapEditor | null;
+  onOpenSettings: () => void;
 }
 
 export default function GoogleDocsLayout({ 
@@ -41,7 +44,8 @@ export default function GoogleDocsLayout({
   sidebar, 
   activeChapterId, 
   currentProjectId, 
-  editor
+  editor,
+  onOpenSettings
 }: GoogleDocsLayoutProps) {
   const { t } = useTranslation();
   const [activeRightTab, setActiveRightTab] = useState<"character" | "world" | "scrap" | "analysis" | "snapshot" | "trash" | null>(null);
@@ -88,7 +92,7 @@ export default function GoogleDocsLayout({
       }
 
       // Right resizer (Context Panel)
-      const next = Math.min(520, Math.max(240, rect.right - event.clientX - 56)); // 56 is Google Apps Bar width
+      const next = Math.min(800, Math.max(240, rect.right - event.clientX - 56)); // 56 is Google Apps Bar width, Max 800px
       setContextWidth(Math.round(next));
     };
 
@@ -125,7 +129,7 @@ export default function GoogleDocsLayout({
               </div>
           </div>
 
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-0.5 justify-center h-full">
               <div className="flex items-center gap-2">
                  <span className="text-[18px] text-[#1f1f1f] dark:text-[#e3e3e3] px-1 hover:border hover:border-black dark:hover:border-white rounded cursor-text truncate max-w-[300px]">
                      {t("project.defaults.untitled")}
@@ -134,14 +138,6 @@ export default function GoogleDocsLayout({
                  <div title={t("editor.status.saved")}>
                     <CloudCheck className="w-4 h-4 text-muted" />
                  </div>
-              </div>
-              
-              <div className="flex items-center gap-1 text-[14px] text-[#444746] dark:text-[#c4c7c5]">
-                   {['file', 'edit', 'view', 'insert', 'format', 'tools', 'extensions', 'help'].map(menu => (
-                       <span key={menu} className="px-2 py-0.5 rounded hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer">
-                           {t(`common.menu.${menu}`, { defaultValue: menu.charAt(0).toUpperCase() + menu.slice(1) })}
-                       </span>
-                   ))}
               </div>
           </div>
 
@@ -156,7 +152,13 @@ export default function GoogleDocsLayout({
                   <Share className="w-4 h-4" />
                   <span>{t("common.share")}</span>
               </button>
-               <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-sm font-medium">U</div>
+               <button 
+                onClick={onOpenSettings}
+                className="w-10 h-10 rounded-full hover:bg-black/5 dark:hover:bg-white/10 flex items-center justify-center transition-colors text-[#444746] dark:text-[#c4c7c5]"
+                title={t("sidebar.section.settings")}
+               >
+                  <Settings className="w-6 h-6" />
+               </button>
           </div>
       </header>
       

@@ -508,6 +508,7 @@ export default function App() {
                 activeChapterId={activeChapterId ?? undefined}
                 currentProjectId={currentProject?.id}
                 editor={docEditor}
+                onOpenSettings={() => setIsSettingsOpen(true)}
             >
                   <Editor
                     key={activeChapterId} // Force re-mount on chapter change to ensure clean state
