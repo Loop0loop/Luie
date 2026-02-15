@@ -1,4 +1,5 @@
 import { useState, lazy, Suspense, useCallback, useEffect, useMemo, useRef } from "react";
+import { type Editor as TiptapEditor } from "@tiptap/react"; // Added import
 import { useTranslation } from "react-i18next";
 import MainLayout from "./components/layout/MainLayout";
 import GoogleDocsLayout from "./components/layout/GoogleDocsLayout";
@@ -104,6 +105,13 @@ export default function App() {
     handleDeleteChapter,
     handleSave,
   } = useChapterManagement();
+
+  const activeChapter = useMemo(() => 
+    chapters.find((c) => c.id === activeChapterId), 
+    [chapters, activeChapterId]
+  );
+
+  const [docEditor, setDocEditor] = useState<TiptapEditor | null>(null);
 
   const openChapterByIndex = useCallback(
     (index: number) => {
@@ -488,24 +496,32 @@ export default function App() {
   return (
     <>
       {uiMode === 'docs' ? (
-        <GoogleDocsLayout
-            sidebar={
-              <DocsSidebar
-                chapters={chapters}
+            <GoogleDocsLayout
+                sidebar={
+                  <DocsSidebar
+                    chapters={chapters}
+                    activeChapterId={activeChapterId ?? undefined}
+                    onSelectChapter={handleSelectChapter}
+                    onAddChapter={handleAddChapter}
+                  />
+                }
                 activeChapterId={activeChapterId ?? undefined}
-                onSelectChapter={handleSelectChapter}
-                onAddChapter={handleAddChapter}
-              />
-            }
-            contextPanel={
-              <ContextPanel activeTab={contextTab} onTabChange={setContextTab} />
-            }
-            activeChapterId={activeChapterId ?? undefined}
-            currentProjectId={currentProject?.id}
-            onSelectResearchItem={handleSelectResearchItem}
-        >
-            {editorContent}
-        </GoogleDocsLayout>
+                currentProjectId={currentProject?.id}
+                editor={docEditor}
+            >
+                <div className="flex-1 h-full w-full">
+                  <Editor
+                    key={activeChapterId} // Force re-mount on chapter change to ensure clean state
+                    initialTitle={activeChapter ? activeChapter.title : ""}
+                    initialContent={activeChapter ? activeChapter.content : ""}
+                    onSave={handleSave}
+                    readOnly={!activeChapterId}
+                    chapterId={activeChapterId || undefined}
+                    hideToolbar={true}
+                    onEditorReady={setDocEditor}
+                  />
+                </div>
+            </GoogleDocsLayout>
       ) : (
         <MainLayout
             sidebar={

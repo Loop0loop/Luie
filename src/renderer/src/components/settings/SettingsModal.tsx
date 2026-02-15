@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useShallow } from "zustand/react/shallow";
 import type { FontPreset, EditorSettings } from "../../stores/editorStore";
 import { useEditorStore } from "../../stores/editorStore";
 import { useShortcutStore } from "../../stores/shortcutStore";
@@ -19,14 +20,6 @@ import {
 import { SETTINGS_TABS, SHORTCUT_GROUP_ICON_MAP } from "./SettingsModalConfig";
 
 const STORAGE_KEY_FONTS_INSTALLED = "luie:fonts-installed";
-const EMPTY_SHORTCUT_GROUPS: ShortcutGroupMap = {
-  app: [],
-  chapter: [],
-  view: [],
-  research: [],
-  editor: [],
-  other: [],
-};
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -35,29 +28,48 @@ interface SettingsModalProps {
 export default function SettingsModal({ onClose }: SettingsModalProps) {
   const { t, i18n } = useTranslation();
 
-  const theme = useEditorStore((state) => state.theme);
-  const themeTemp = useEditorStore((state) => state.themeTemp);
-  const themeContrast = useEditorStore((state) => state.themeContrast);
-  const themeAccent = useEditorStore((state) => state.themeAccent);
-  const themeTexture = useEditorStore((state) => state.themeTexture);
-  const fontSize = useEditorStore((state) => state.fontSize);
-  const lineHeight = useEditorStore((state) => state.lineHeight);
-  const fontFamily = useEditorStore((state) => state.fontFamily);
-  const fontPreset = useEditorStore((state) => state.fontPreset);
-  const uiMode = useEditorStore((state) => state.uiMode);
-  const updateSettings = useEditorStore((state) => state.updateSettings);
+  const {
+    theme,
+    themeTemp,
+    themeContrast,
+    themeAccent,
+    themeTexture,
+    fontSize,
+    lineHeight,
+    fontFamily,
+    fontPreset,
+    uiMode,
+    updateSettings,
+  } = useEditorStore(
+    useShallow((state) => ({
+      theme: state.theme,
+      themeTemp: state.themeTemp,
+      themeContrast: state.themeContrast,
+      themeAccent: state.themeAccent,
+      themeTexture: state.themeTexture,
+      fontSize: state.fontSize,
+      lineHeight: state.lineHeight,
+      fontFamily: state.fontFamily,
+      fontPreset: state.fontPreset,
+      uiMode: state.uiMode,
+      updateSettings: state.updateSettings,
+    })),
+  );
 
-  const shortcuts = useShortcutStore((state) => state.shortcuts);
-  const shortcutDefaults = useShortcutStore((state) => state.defaults);
-  const loadShortcuts = useShortcutStore((state) => state.loadShortcuts);
-  const setShortcuts = useShortcutStore((state) => state.setShortcuts);
-  const resetToDefaults = useShortcutStore((state) => state.resetToDefaults);
+  const { shortcuts, shortcutDefaults, loadShortcuts, setShortcuts, resetToDefaults } = useShortcutStore(
+    useShallow((state) => ({
+      shortcuts: state.shortcuts,
+      shortcutDefaults: state.defaults,
+      loadShortcuts: state.loadShortcuts,
+      setShortcuts: state.setShortcuts,
+      resetToDefaults: state.resetToDefaults,
+    })),
+  );
 
   const [activeTab, setActiveTab] = useState<SettingsTabId>("appearance");
   const [localFontSize, setLocalFontSize] = useState(fontSize);
   const [localLineHeight, setLocalLineHeight] = useState(lineHeight);
   const [menuBarMode, setMenuBarMode] = useState<WindowMenuBarMode>("visible");
-  const [shortcutDrafts, setShortcutDrafts] = useState<Record<string, string>>({});
   const [isRecovering, setIsRecovering] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
   const [installing, setInstalling] = useState<Record<string, boolean>>({});
@@ -122,25 +134,31 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     }
   }, [activeTab, loadShortcuts]);
 
-  useEffect(() => {
-    if (activeTab !== "shortcuts") return;
-    setShortcutDrafts(shortcuts as Record<string, string>);
-  }, [activeTab, shortcuts]);
+  const handleCommitShortcuts = useCallback(
+    (nextDrafts: Record<string, string>) => {
+      if (Object.keys(nextDrafts).length === 0) return;
 
-  const handleShortcutChange = useCallback((actionId: string, value: string) => {
-    setShortcutDrafts((prev) => ({ ...prev, [actionId]: value }));
-  }, []);
+      const current = shortcuts as Record<string, string>;
+      const hasChanges = Object.entries(nextDrafts).some(([actionId, value]) => (current[actionId] ?? "") !== value);
+      if (!hasChanges) return;
 
-  const commitShortcuts = useCallback(async () => {
-    if (Object.keys(shortcutDrafts).length === 0) return;
-    await setShortcuts(shortcutDrafts as ShortcutMap);
-  }, [setShortcuts, shortcutDrafts]);
+      void setShortcuts(nextDrafts as ShortcutMap);
+    },
+    [setShortcuts, shortcuts],
+  );
+
+  const handleResetShortcuts = useCallback(() => {
+    void resetToDefaults();
+  }, [resetToDefaults]);
+
+  const handleMenuBarMode = useCallback(
+    (mode: WindowMenuBarMode) => {
+      void handleMenuBarModeChange(mode);
+    },
+    [handleMenuBarModeChange],
+  );
 
   const shortcutGroups = useMemo<ShortcutGroupMap>(() => {
-    if (activeTab !== "shortcuts") {
-      return EMPTY_SHORTCUT_GROUPS;
-    }
-
     const groups: ShortcutGroupMap = {
       app: [],
       chapter: [],
@@ -171,7 +189,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     });
 
     return groups;
-  }, [activeTab]);
+  }, []);
 
   const getGroupLabel = useCallback(
     (key: string) => {
@@ -296,6 +314,20 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     [ensureFontLoaded, persistInstalled],
   );
 
+  const handleInstallFont = useCallback(
+    (preset: FontPreset, pkg: string) => {
+      void handleInstall(preset, pkg);
+    },
+    [handleInstall],
+  );
+
+  const handleRunRecovery = useCallback(
+    (dryRun: boolean) => {
+      void runRecovery(dryRun);
+    },
+    [runRecovery],
+  );
+
   const tabs = useMemo(
     () =>
       SETTINGS_TABS.map((tab) => ({
@@ -304,6 +336,12 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
       })),
     [t],
   );
+  const shortcutValuesKey = useMemo(() => {
+    if (activeTab !== "shortcuts") {
+      return "shortcuts-idle";
+    }
+    return JSON.stringify(shortcuts ?? {});
+  }, [activeTab, shortcuts]);
 
   return (
     <div
@@ -355,9 +393,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 isMacOS={isMacOS}
                 menuBarMode={menuBarMode}
                 onApplySettings={applySettings}
-                onMenuBarModeChange={(mode) => {
-                  void handleMenuBarModeChange(mode);
-                }}
+                onMenuBarModeChange={handleMenuBarMode}
               />
             )}
 
@@ -374,25 +410,19 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 onApplySettings={applySettings}
                 onSetLocalFontSize={setLocalFontSize}
                 onSetLocalLineHeight={setLocalLineHeight}
-                onInstallFont={(preset, pkg) => {
-                  void handleInstall(preset, pkg);
-                }}
+                onInstallFont={handleInstallFont}
               />
             )}
 
             {activeTab === "shortcuts" && (
               <ShortcutsTab
+                key={shortcutValuesKey}
                 t={t}
                 shortcutGroups={shortcutGroups}
-                shortcutDrafts={shortcutDrafts}
+                shortcutValues={shortcuts as Record<string, string>}
                 shortcutDefaults={shortcutDefaults as Record<string, string>}
-                onShortcutChange={handleShortcutChange}
-                onCommitShortcuts={() => {
-                  void commitShortcuts();
-                }}
-                onResetShortcuts={() => {
-                  void resetToDefaults();
-                }}
+                onCommitShortcuts={handleCommitShortcuts}
+                onResetShortcuts={handleResetShortcuts}
                 getShortcutGroupLabel={getGroupLabel}
                 getShortcutGroupIcon={getGroupIcon}
               />
@@ -403,9 +433,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 t={t}
                 isRecovering={isRecovering}
                 recoveryMessage={recoveryMessage}
-                onRunRecovery={(dryRun) => {
-                  void runRecovery(dryRun);
-                }}
+                onRunRecovery={handleRunRecovery}
               />
             )}
 

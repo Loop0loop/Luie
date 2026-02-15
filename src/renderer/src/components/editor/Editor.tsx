@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useState } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, type Editor as TiptapEditor } from "@tiptap/react";
 import { Extension, Node, mergeAttributes } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import TaskList from "@tiptap/extension-task-list";
@@ -76,6 +76,8 @@ interface EditorProps {
   comparisonContent?: string;
   diffMode?: "current" | "snapshot";
   chapterId?: string;
+  hideToolbar?: boolean;
+  onEditorReady?: (editor: TiptapEditor | null) => void;
 }
 
 function Editor({
@@ -86,6 +88,8 @@ function Editor({
   comparisonContent,
   diffMode,
   chapterId,
+  hideToolbar = false,
+  onEditorReady,
 }: EditorProps) {
   const { t } = useTranslation();
   const { fontFamilyCss, fontSize, lineHeight, getFontFamily } = useEditorConfig();
@@ -179,6 +183,11 @@ function Editor({
     [extensions, fontFamilyCss, fontSize, lineHeight, updateStats],
   );
 
+  useEffect(() => {
+    if (onEditorReady) {
+        onEditorReady(editor);
+    }
+  }, [editor, onEditorReady]);
 
   useEffect(() => {
     if (!editor) return;
@@ -233,6 +242,7 @@ function Editor({
       className="flex flex-col h-full w-full bg-app text-fg relative box-border overflow-hidden"
       data-testid="editor"
     >
+      {!hideToolbar && (
       <div className="shrink-0 border-b border-border z-10">
         {!readOnly && (
           <EditorToolbar
@@ -242,6 +252,7 @@ function Editor({
           />
         )}
       </div>
+      )}
 
       <div className="flex-1 overflow-y-auto flex flex-col px-10 py-5 bg-app min-h-0">
         <div 

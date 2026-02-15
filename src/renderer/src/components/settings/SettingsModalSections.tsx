@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import {
   Check,
   Download,
@@ -30,18 +30,20 @@ export type OptionalFontOption = {
 };
 
 interface ShortcutRowProps {
+  actionId: string;
   label: string;
   value: string;
   placeholder: string;
-  onChange: (value: string) => void;
+  onChangeAction: (actionId: string, value: string) => void;
   onBlur: () => void;
 }
 
 const ShortcutRow = memo(function ShortcutRow({
+  actionId,
   label,
   value,
   placeholder,
-  onChange,
+  onChangeAction,
   onBlur,
 }: ShortcutRowProps) {
   return (
@@ -52,7 +54,7 @@ const ShortcutRow = memo(function ShortcutRow({
           className="w-full bg-surface border border-border rounded-md px-3 py-1.5 text-sm font-mono text-fg focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-colors text-center"
           value={value}
           placeholder={placeholder}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChangeAction(actionId, e.target.value)}
           onBlur={onBlur}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -494,10 +496,9 @@ export const EditorTab = memo(function EditorTab({
 interface ShortcutsTabProps {
   t: TFunction;
   shortcutGroups: ShortcutGroupMap;
-  shortcutDrafts: Record<string, string>;
+  shortcutValues: Record<string, string>;
   shortcutDefaults: Record<string, string>;
-  onShortcutChange: (actionId: string, value: string) => void;
-  onCommitShortcuts: () => void;
+  onCommitShortcuts: (nextDrafts: Record<string, string>) => void;
   onResetShortcuts: () => void;
   getShortcutGroupLabel: (key: string) => string;
   getShortcutGroupIcon: (key: string) => LucideIcon;
@@ -506,14 +507,31 @@ interface ShortcutsTabProps {
 export const ShortcutsTab = memo(function ShortcutsTab({
   t,
   shortcutGroups,
-  shortcutDrafts,
+  shortcutValues,
   shortcutDefaults,
-  onShortcutChange,
   onCommitShortcuts,
   onResetShortcuts,
   getShortcutGroupLabel,
   getShortcutGroupIcon,
 }: ShortcutsTabProps) {
+  const [shortcutDrafts, setShortcutDrafts] = useState<Record<string, string>>(shortcutValues);
+  const shortcutDraftsRef = useRef<Record<string, string>>(shortcutValues);
+
+  const handleShortcutDraftChange = useCallback((actionId: string, value: string) => {
+    setShortcutDrafts((prev) => {
+      if (prev[actionId] === value) {
+        return prev;
+      }
+      const next = { ...prev, [actionId]: value };
+      shortcutDraftsRef.current = next;
+      return next;
+    });
+  }, []);
+
+  const handleCommitShortcuts = useCallback(() => {
+    onCommitShortcuts(shortcutDraftsRef.current);
+  }, [onCommitShortcuts]);
+
   return (
     <div className="max-w-2xl space-y-8 pb-20 content-visibility-auto contain-intrinsic-size-[1px_1400px]">
       <div className="flex justify-between items-center">
@@ -536,11 +554,12 @@ export const ShortcutsTab = memo(function ShortcutsTab({
                 {actions.map((action) => (
                   <ShortcutRow
                     key={action.id}
+                    actionId={action.id}
                     label={t(action.labelKey)}
                     value={shortcutDrafts[action.id] ?? shortcutDefaults[action.id] ?? ""}
                     placeholder={shortcutDefaults[action.id] ?? ""}
-                    onChange={(v) => onShortcutChange(action.id, v)}
-                    onBlur={onCommitShortcuts}
+                    onChangeAction={handleShortcutDraftChange}
+                    onBlur={handleCommitShortcuts}
                   />
                 ))}
               </div>
