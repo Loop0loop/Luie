@@ -31,24 +31,19 @@ export default function DocsSidebar({
             </div>
             
             {/* List */}
-            <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col gap-1 px-3">
                 {chapters.map((chapter) => (
                 <div
                     key={chapter.id}
                     onClick={() => onSelectChapter(chapter.id)}
                     className={cn(
-                    "relative group cursor-pointer text-[13px] py-1.5 pr-4 transition-colors select-none",
+                    "flex items-center px-4 py-1.5 cursor-pointer text-[13px] transition-colors select-none rounded-[100px] min-h-[32px]",
                     activeChapterId === chapter.id
-                        ? "text-[#1a73e8] dark:text-[#8ab4f8] font-semibold bg-blue-50/50 dark:bg-blue-900/20"
-                        : "text-[#5f6368] dark:text-[#c4c7c5] hover:bg-[#f1f3f4] dark:hover:bg-[#303134]"
+                        ? "bg-[#c2e7ff] text-[#001d35] font-semibold"
+                        : "text-[#444746] dark:text-[#c4c7c5] hover:bg-[#1f1f1f]/5 dark:hover:bg-white/10"
                     )}
                 >
-                    {/* Left Border Indicator for Active State */}
-                    {activeChapterId === chapter.id && (
-                        <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#1a73e8] dark:bg-[#8ab4f8] rounded-r" />
-                    )}
-                    
-                    <span className={cn("truncate block", activeChapterId === chapter.id ? "pl-3.5" : "pl-4")}>
+                    <span className="truncate">
                          {chapter.title || t("chapter.untitled")}
                     </span>
                 </div>

@@ -7,8 +7,7 @@ import { useTranslation } from "react-i18next";
 import { SnapshotList } from "../snapshot/SnapshotList";
 import { TrashList } from "../trash/TrashList";
 import EditorToolbar from '../editor/EditorToolbar';
-import ContextPanel from "../context/ContextPanel"; // Added
-import ResearchPanel from "../research/ResearchPanel"; // Added
+import ResearchPanel from "../research/ResearchPanel"; 
 import { 
   Menu, 
   ChevronLeft, 
@@ -20,11 +19,7 @@ import {
   BookOpen, // Used for Research
   History, // Used for Snapshot
   Trash2, // Used for Trash
-  Plus,
-  FileText, // Used for Synopsis
-  User, // Used for Character
-  Globe, // Used for World/Proper Nouns
-  Sparkles // Used for Research/Analysis
+  Plus
 } from "lucide-react";
 
 interface GoogleDocsLayoutProps {
@@ -38,7 +33,7 @@ interface GoogleDocsLayoutProps {
 export default function GoogleDocsLayout({ 
   children, 
   sidebar, 
-  activeChapterId,
+  activeChapterId, 
   currentProjectId,
   editor
 }: GoogleDocsLayoutProps) {
@@ -49,33 +44,15 @@ export default function GoogleDocsLayout({
 
   const {
     isSidebarOpen,
-    isContextOpen,
     sidebarWidth,
     contextWidth,
     setSidebarOpen,
-    setContextOpen,
     setSidebarWidth,
     setContextWidth,
   } = useUIStore();
   
   const handleRightTabClick = (tab: "research" | "snapshot" | "trash") => {
-    if (activeRightTab === tab && isContextOpen) {
-        setContextOpen(false);
-        setActiveRightTab(null);
-    } else {
-        setActiveRightTab(tab);
-        setContextOpen(true);
-    }
-  };
-
-  // Sync ContextPanel tabs (Reverse sync not strictly needed if we control it from here, but good safeguard)
-  const handleContextTabChange = (tab: "synopsis" | "characters" | "terms") => {
-      const map: Record<string, typeof researchSubTab> = {
-          "synopsis": "synopsis",
-          "characters": "character",
-          "terms": "world"
-      };
-      if (map[tab]) setResearchSubTab(map[tab]);
+    setActiveRightTab(prev => prev === tab ? null : tab);
   };
   
   // Resizing logic
@@ -243,10 +220,10 @@ export default function GoogleDocsLayout({
          </main>
           
           {/* Right Resizer */}
-          {isContextOpen && ( 
+          {activeRightTab && ( 
              <div
                  className="w-1 shrink-0 cursor-col-resize hover:bg-[#4285F4] transition-colors z-20 absolute top-0 bottom-0"
-                 style={{ right: isContextOpen ? `${contextWidth + 56}px` : "56px" }}
+                 style={{ right: activeRightTab ? `${contextWidth + 56}px` : "56px" }}
                  onPointerDown={(e) => startResize("right", e)}
              />
           )}
@@ -255,49 +232,18 @@ export default function GoogleDocsLayout({
           <div 
             className={cn(
               "bg-white dark:bg-[#1e1e1e] border-l border-[#c7c7c7] dark:border-[#444] overflow-hidden flex flex-col shrink-0 min-w-0 transition-[width,opacity] duration-300 ease-in-out",
-              (!isContextOpen) && "border-l-0 opacity-0 pointer-events-none"
+              (!activeRightTab) && "border-l-0 opacity-0 pointer-events-none"
             )}
-            style={{ width: isContextOpen ? `${contextWidth}px` : "0px" }}
+            style={{ width: activeRightTab ? `${contextWidth}px` : "0px" }}
           >
               <div className="h-full flex flex-col">
                   {activeRightTab === "research" && (
-                      <div className="flex flex-col h-full">
-                          {/* Research Tabs Header */}
-                          <div className="flex items-center border-b border-border bg-gray-50 dark:bg-[#252526] overflow-x-auto no-scrollbar shrink-0 h-10 px-1">
-                              {[
-                                  { id: 'synopsis', label: t("sidebar.item.synopsis"), icon: FileText },
-                                  { id: 'character', label: t("sidebar.item.characters"), icon: User },
-                                  { id: 'world', label: t("sidebar.item.world"), icon: Globe },
-                                  { id: 'scrap', label: t("sidebar.item.scrap"), icon: BookOpen },
-                                  { id: 'analysis', label: t("research.title.analysis"), icon: Sparkles }
-                              ].map(tab => {
-                                  const Icon = tab.icon;
-                                  return (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setResearchSubTab(tab.id as typeof researchSubTab)}
-                                        className={cn(
-                                            "flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium whitespace-nowrap border-b-2 transition-colors",
-                                            researchSubTab === tab.id 
-                                                ? "border-blue-600 text-blue-600 dark:text-blue-400" 
-                                                : "border-transparent text-muted hover:text-fg hover:bg-black/5 dark:hover:bg-white/5"
-                                        )}
-                                    >
-                                        <Icon className="w-3.5 h-3.5" />
-                                        {tab.label}
-                                    </button>
-                                  );
-                              })}
-                          </div>
-                          
-                          {/* Research Content */}
-                          <div className="flex-1 relative overflow-hidden">
-                              {researchSubTab === "synopsis" && <ContextPanel activeTab="synopsis" onTabChange={handleContextTabChange} />}
-                              {researchSubTab === "character" && <ContextPanel activeTab="characters" onTabChange={handleContextTabChange} />}
-                              {researchSubTab === "world" && <ContextPanel activeTab="terms" onTabChange={handleContextTabChange} />}
-                              {researchSubTab === "scrap" && <ResearchPanel activeTab="scrap" onClose={() => setContextOpen(false)} />}
-                              {researchSubTab === "analysis" && <ResearchPanel activeTab="analysis" onClose={() => setContextOpen(false)} />}
-                          </div>
+                      <div className="h-full">
+                          <ResearchPanel 
+                            activeTab={researchSubTab} 
+                            onTabChange={(tab: "character" | "world" | "scrap" | "analysis" | "synopsis") => setResearchSubTab(tab)}
+                            onClose={() => setActiveRightTab(null)}
+                          />
                       </div>
                   )}
 
