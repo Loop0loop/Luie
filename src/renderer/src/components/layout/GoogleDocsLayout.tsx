@@ -23,7 +23,8 @@ import {
   Plus,
   FileText, // Used for Synopsis
   User, // Used for Character
-  Globe // Used for World/Proper Nouns
+  Globe, // Used for World/Proper Nouns
+  Sparkles // Used for Research/Analysis
 } from "lucide-react";
 
 interface GoogleDocsLayoutProps {
@@ -42,7 +43,8 @@ export default function GoogleDocsLayout({
   editor
 }: GoogleDocsLayoutProps) {
   const { t } = useTranslation();
-  const [activeRightTab, setActiveRightTab] = useState<"research" | "snapshot" | "trash" | "synopsis" | "character" | "world" | null>(null);
+  const [activeRightTab, setActiveRightTab] = useState<"research" | "snapshot" | "trash" | null>(null);
+  const [researchSubTab, setResearchSubTab] = useState<"synopsis" | "character" | "world" | "scrap" | "analysis">("synopsis");
   const [trashRefreshKey, setTrashRefreshKey] = useState(0);
 
   const {
@@ -56,7 +58,7 @@ export default function GoogleDocsLayout({
     setContextWidth,
   } = useUIStore();
   
-  const handleRightTabClick = (tab: "research" | "snapshot" | "trash" | "synopsis" | "character" | "world") => {
+  const handleRightTabClick = (tab: "research" | "snapshot" | "trash") => {
     if (activeRightTab === tab && isContextOpen) {
         setContextOpen(false);
         setActiveRightTab(null);
@@ -64,6 +66,16 @@ export default function GoogleDocsLayout({
         setActiveRightTab(tab);
         setContextOpen(true);
     }
+  };
+
+  // Sync ContextPanel tabs (Reverse sync not strictly needed if we control it from here, but good safeguard)
+  const handleContextTabChange = (tab: "synopsis" | "characters" | "terms") => {
+      const map: Record<string, typeof researchSubTab> = {
+          "synopsis": "synopsis",
+          "characters": "character",
+          "terms": "world"
+      };
+      if (map[tab]) setResearchSubTab(map[tab]);
   };
   
   // Resizing logic
@@ -243,12 +255,52 @@ export default function GoogleDocsLayout({
           <div 
             className={cn(
               "bg-white dark:bg-[#1e1e1e] border-l border-[#c7c7c7] dark:border-[#444] overflow-hidden flex flex-col shrink-0 min-w-0 transition-[width,opacity] duration-300 ease-in-out",
-              !isContextOpen && "border-l-0 opacity-0 pointer-events-none"
+              (!isContextOpen) && "border-l-0 opacity-0 pointer-events-none"
             )}
             style={{ width: isContextOpen ? `${contextWidth}px` : "0px" }}
           >
               <div className="h-full flex flex-col">
-                  {activeRightTab === "research" && <div className="h-full"><ResearchPanel activeTab="scrap" onClose={() => setContextOpen(false)} /></div>}
+                  {activeRightTab === "research" && (
+                      <div className="flex flex-col h-full">
+                          {/* Research Tabs Header */}
+                          <div className="flex items-center border-b border-border bg-gray-50 dark:bg-[#252526] overflow-x-auto no-scrollbar shrink-0 h-10 px-1">
+                              {[
+                                  { id: 'synopsis', label: t("sidebar.item.synopsis"), icon: FileText },
+                                  { id: 'character', label: t("sidebar.item.characters"), icon: User },
+                                  { id: 'world', label: t("sidebar.item.world"), icon: Globe },
+                                  { id: 'scrap', label: t("sidebar.item.scrap"), icon: BookOpen },
+                                  { id: 'analysis', label: t("research.title.analysis"), icon: Sparkles }
+                              ].map(tab => {
+                                  const Icon = tab.icon;
+                                  return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setResearchSubTab(tab.id as typeof researchSubTab)}
+                                        className={cn(
+                                            "flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium whitespace-nowrap border-b-2 transition-colors",
+                                            researchSubTab === tab.id 
+                                                ? "border-blue-600 text-blue-600 dark:text-blue-400" 
+                                                : "border-transparent text-muted hover:text-fg hover:bg-black/5 dark:hover:bg-white/5"
+                                        )}
+                                    >
+                                        <Icon className="w-3.5 h-3.5" />
+                                        {tab.label}
+                                    </button>
+                                  );
+                              })}
+                          </div>
+                          
+                          {/* Research Content */}
+                          <div className="flex-1 relative overflow-hidden">
+                              {researchSubTab === "synopsis" && <ContextPanel activeTab="synopsis" onTabChange={handleContextTabChange} />}
+                              {researchSubTab === "character" && <ContextPanel activeTab="characters" onTabChange={handleContextTabChange} />}
+                              {researchSubTab === "world" && <ContextPanel activeTab="terms" onTabChange={handleContextTabChange} />}
+                              {researchSubTab === "scrap" && <ResearchPanel activeTab="scrap" onClose={() => setContextOpen(false)} />}
+                              {researchSubTab === "analysis" && <ResearchPanel activeTab="analysis" onClose={() => setContextOpen(false)} />}
+                          </div>
+                      </div>
+                  )}
+
                   {activeRightTab === "snapshot" && (
                     <div className="flex flex-col h-full">
                          <div className="px-4 py-3 border-b border-border/50 text-xs font-semibold text-muted uppercase tracking-wider bg-gray-50 dark:bg-[#252526]">
@@ -280,9 +332,6 @@ export default function GoogleDocsLayout({
                         )}
                     </div>
                   )}
-                  {activeRightTab === "synopsis" && <div className="h-full"><ContextPanel activeTab="synopsis" /></div>}
-                  {activeRightTab === "character" && <div className="h-full"><ContextPanel activeTab="characters" /></div>}
-                  {activeRightTab === "world" && <div className="h-full"><ContextPanel activeTab="terms" /></div>}
               </div>
           </div>
           
@@ -290,37 +339,41 @@ export default function GoogleDocsLayout({
           <div className="w-14 bg-white dark:bg-[#1e1e1e] border-l border-[#e1e3e1] dark:border-[#444] flex flex-col items-center py-4 gap-6 shrink-0 z-10 transition-colors duration-200">
               
               {/* Research */}
-              <button onClick={() => handleRightTabClick("research")} className={cn("w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors", activeRightTab === "research" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600")} title={t("sidebar.section.research")}>
+              <button 
+                onClick={() => handleRightTabClick("research")} 
+                className={cn(
+                    "w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors", 
+                    activeRightTab === "research" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+                )} 
+                title={t("sidebar.section.research")}
+              >
                   <BookOpen className="w-5 h-5" />
               </button>
               
               {/* Snapshot */}
-               <button onClick={() => handleRightTabClick("snapshot")} className={cn("w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors", activeRightTab === "snapshot" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600")} title={t("sidebar.section.snapshot")}>
+               <button 
+                onClick={() => handleRightTabClick("snapshot")} 
+                className={cn(
+                    "w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors", 
+                    activeRightTab === "snapshot" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+                )} 
+                title={t("sidebar.section.snapshot")}
+               >
                   <History className="w-5 h-5" />
               </button>
 
               {/* Trash */}
-               <button onClick={() => handleRightTabClick("trash")} className={cn("w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors", activeRightTab === "trash" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600")} title={t("sidebar.section.trash")}>
+               <button 
+                onClick={() => handleRightTabClick("trash")} 
+                className={cn(
+                    "w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors", 
+                    activeRightTab === "trash" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+                )} 
+                title={t("sidebar.section.trash")}
+               >
                   <Trash2 className="w-5 h-5" />
               </button>
               
-              <div className="w-5 h-px bg-[#e1e3e1] dark:bg-[#444]"/>
-
-              {/* Synopsis */}
-              <button onClick={() => handleRightTabClick("synopsis")} className={cn("w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors", activeRightTab === "synopsis" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600")} title={t("sidebar.item.synopsis")}>
-                  <FileText className="w-5 h-5" />
-              </button>
-              
-              {/* Character */}
-              <button onClick={() => handleRightTabClick("character")} className={cn("w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors", activeRightTab === "character" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600")} title={t("sidebar.item.characters")}>
-                  <User className="w-5 h-5" />
-              </button>
-              
-              {/* Proper Nouns (World) */}
-              <button onClick={() => handleRightTabClick("world")} className={cn("w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors", activeRightTab === "world" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600")} title={t("sidebar.item.world")}>
-                  <Globe className="w-5 h-5" />
-              </button>
-
               <div className="mt-auto">
                    <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10" title="Add-ons">
                       <Plus className="w-5 h-5 text-[#444746] dark:text-[#c4c7c5]" />
