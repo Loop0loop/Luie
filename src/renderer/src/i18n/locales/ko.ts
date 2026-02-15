@@ -366,6 +366,13 @@ export const ko = {
       },
     },
     toolbar: {
+      ribbon: {
+        home: "홈",
+        insert: "삽입",
+        draw: "그리기",
+        view: "보기",
+        paste: "붙여넣기",
+      },
       font: {
         defaultLabel: "나눔고딕",
       },

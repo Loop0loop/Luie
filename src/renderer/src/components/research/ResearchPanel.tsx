@@ -50,7 +50,7 @@ export default function ResearchPanel({
     <div className="flex flex-col h-full w-full bg-sidebar border-l border-border overflow-hidden">
       {onTabChange ? (
         /* Tab Navigation Header (Google Docs Mode) */
-        <div className="flex items-center border-b border-[#e1e3e1] dark:border-[#444] bg-white dark:bg-[#1e1e1e] overflow-x-auto no-scrollbar shrink-0 h-12 px-2 gap-2">
+        <div className="flex items-center border-b border-border bg-background overflow-x-auto no-scrollbar shrink-0 h-12 px-2 gap-2">
             {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;

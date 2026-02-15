@@ -332,6 +332,13 @@ export const en = {
       },
     },
     toolbar: {
+      ribbon: {
+        home: "Home",
+        insert: "Insert",
+        draw: "Draw",
+        view: "View",
+        paste: "Paste",
+      },
       font: {
         defaultLabel: "Nanum Gothic",
       },

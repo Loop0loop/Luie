@@ -178,7 +178,7 @@ export default function GoogleDocsLayout({
          {/* Left Sidebar (Manuscript Only) */}
          <div 
            className={cn(
-             "bg-white dark:bg-[#1e1e1e] border-r border-[#c7c7c7] dark:border-[#444] overflow-hidden flex flex-col shrink-0 min-w-0 transition-[width,opacity] duration-300 ease-in-out",
+             "bg-background border-r border-border overflow-hidden flex flex-col shrink-0 min-w-0 transition-[width,opacity] duration-300 ease-in-out",
              !isSidebarOpen && "border-r-0 opacity-0 pointer-events-none"
            )}
            style={{ width: isSidebarOpen ? `${sidebarWidth}px` : "0px" }}
@@ -251,7 +251,7 @@ export default function GoogleDocsLayout({
           {/* Right Sidebar (Tools Panel) */}
           <div 
             className={cn(
-              "bg-white dark:bg-[#1e1e1e] border-l border-[#c7c7c7] dark:border-[#444] overflow-hidden flex flex-col shrink-0 min-w-0 transition-[width,opacity] duration-300 ease-in-out",
+              "bg-background border-l border-border overflow-hidden flex flex-col shrink-0 min-w-0 transition-[width,opacity] duration-300 ease-in-out",
               (!activeRightTab) && "border-l-0 opacity-0 pointer-events-none"
             )}
             style={{ width: activeRightTab ? `${contextWidth}px` : "0px" }}
@@ -323,7 +323,7 @@ export default function GoogleDocsLayout({
           </div>
           
           {/* Right Icon Bar */}
-          <div className="w-14 bg-white dark:bg-[#1e1e1e] border-l border-[#e1e3e1] dark:border-[#444] flex flex-col items-center py-4 gap-4 shrink-0 z-10 transition-colors duration-200">
+          <div className="w-14 bg-background border-l border-border flex flex-col items-center py-4 gap-4 shrink-0 z-10 transition-colors duration-200">
               
               {/* Character */}
               <button 

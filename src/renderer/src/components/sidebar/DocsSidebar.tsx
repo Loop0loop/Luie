@@ -21,7 +21,7 @@ export default function DocsSidebar({
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-[#1e1e1e] text-fg">
+    <div className="flex flex-col h-full bg-background text-foreground">
       <div className="flex-1 overflow-y-auto pt-4 pb-2">
             {/* Outline Header (Optional, but good for context) */}
             <div className="px-4 mb-2">

@@ -12,7 +12,7 @@ export default function StatusFooter({ onOpenExport, hideExport }: StatusFooterP
   const { wordCount, charCount, saveStatus } = useEditorStatusStore();
 
   return (
-    <div className="h-8 border-t border-border flex items-center justify-end gap-4 px-4 text-xs text-muted bg-white dark:bg-[#1e1e1e] shrink-0 select-none z-20">
+    <div className="h-8 border-t border-border flex items-center justify-end gap-4 px-4 text-xs text-muted-foreground bg-background shrink-0 select-none z-20">
       {/* Save Status Indicator */}
       <span className="flex items-center gap-1.5 min-w-15">
         {saveStatus === "saving" && (

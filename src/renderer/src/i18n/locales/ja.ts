@@ -324,6 +324,13 @@ export const ja = {
       },
     },
     toolbar: {
+      ribbon: {
+        home: "ホーム",
+        insert: "挿入",
+        draw: "描画",
+        view: "表示",
+        paste: "貼り付け",
+      },
       font: {
         defaultLabel: "Nanum Gothic",
       },

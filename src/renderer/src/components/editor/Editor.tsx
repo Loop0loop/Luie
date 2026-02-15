@@ -243,7 +243,7 @@ function Editor({
 
   return (
     <div
-      className="flex flex-col h-full w-full bg-app text-fg relative box-border overflow-hidden"
+      className="flex flex-col h-full w-full bg-transparent text-foreground relative box-border overflow-hidden"
       data-testid="editor"
     >
       {!hideToolbar && (
@@ -258,51 +258,38 @@ function Editor({
       </div>
       )}
 
-      <div className="flex-1 overflow-y-auto flex flex-col px-10 py-5 bg-app min-h-0">
-        <div 
-          className={cn(
-            "w-full h-full flex flex-col flex-1 min-h-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] bg-transparent border-none shadow-none m-0",
-            isMobileView && "w-107.5 max-w-107.5 h-[95%] mx-auto my-5 border-8 border-[#2c2c2e] rounded-[48px] bg-editor-bg shadow-[0_0_0_2px_rgba(69,69,69,0.9),0_25px_50px_-12px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.05)] overflow-hidden relative"
-          )}
-          data-mobile={isMobileView}
-        >
-          {/* Mobile Notch Simulation */}
-          {isMobileView && (
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-30 h-8 bg-[#2c2c2e] rounded-b-2xl z-100 pointer-events-none" />
-          )}
+      {/* Title */}
+      <input
+        type="text"
+        className={cn(
+          "w-full border-none bg-transparent pb-4 text-2xl font-bold text-foreground outline-none shrink-0 placeholder:text-muted-foreground",
+          isMobileView && "px-6",
+          readOnly && "pointer-events-none opacity-80"
+        )}
+        placeholder={t("editor.placeholder.title")}
+        value={title}
+        onChange={(e) => !readOnly && handleTitleChange(e.target.value)}
+        readOnly={readOnly}
+        style={{ fontFamily: getFontFamily() }}
+        data-testid="editor-title"
+      />
 
-          <input
-            type="text"
-            className={cn(
-              "w-full border-none bg-transparent pb-4 text-2xl font-bold text-fg outline-none shrink-0 placeholder:text-muted",
-              isMobileView && "px-6",
-              readOnly && "pointer-events-none opacity-80"
-            )}
-              placeholder={t("editor.placeholder.title")}
-            value={title}
-            onChange={(e) => !readOnly && handleTitleChange(e.target.value)}
-            readOnly={readOnly}
-            style={{ fontFamily: getFontFamily() }}
-            data-testid="editor-title"
-          />
-
-          <div
-            className={cn(
-              "flex flex-col relative", 
-              isMobileView && "pt-8 h-full overflow-hidden px-6"
-            )}
-            style={{
-              fontFamily: getFontFamily(),
-              fontSize: `${fontSize}px`,
-              lineHeight,
-              height: isMobileView ? "100%" : undefined, // Height handled differently in mobile
-              minHeight: !isMobileView ? "var(--text-editor-min-height)" : undefined,
-            }}
-            data-testid="editor-content"
-          >
-            <EditorContent editor={editor} className="tiptap flex-1 flex flex-col outline-none h-full" />
-          </div>
-        </div>
+      {/* Content */}
+      <div
+        className={cn(
+          "flex flex-col relative flex-1", 
+          isMobileView && "pt-8 h-full overflow-hidden px-6"
+        )}
+        style={{
+          fontFamily: getFontFamily(),
+          fontSize: `${fontSize}px`,
+          lineHeight,
+          height: isMobileView ? "100%" : undefined,
+          minHeight: !isMobileView ? "var(--text-editor-min-height)" : undefined,
+        }}
+        data-testid="editor-content"
+      >
+        <EditorContent editor={editor} className="tiptap flex-1 flex flex-col outline-none h-full" />
       </div>
 
       {!hideFooter && (

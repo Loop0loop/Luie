@@ -245,7 +245,7 @@ const DocsToolbar = ({ editor }: EditorToolbarProps) => {
                  <FontSelector />
                  <div className="w-px h-5 bg-border mx-2" />
 
-                 <div className="flex items-center border border-border/50 rounded overflow-hidden h-7 bg-white dark:bg-black/20">
+                 <div className="flex items-center border border-border/50 rounded overflow-hidden h-7 bg-background">
                     <button onClick={() => setFontSize(Math.max(EDITOR_TOOLBAR_FONT_MIN, fontSize - EDITOR_TOOLBAR_FONT_STEP))} className="px-2 hover:bg-hover">-</button>
                     <input className="w-8 text-center text-xs bg-transparent outline-none" value={fontSize} readOnly />
                     <button onClick={() => setFontSize(fontSize + EDITOR_TOOLBAR_FONT_STEP)} className="px-2 hover:bg-hover">+</button>
@@ -282,28 +282,22 @@ const DocsToolbar = ({ editor }: EditorToolbarProps) => {
 }
 
 const WordToolbar = ({ editor }: EditorToolbarProps) => {
-    // Simplified Ribbon
-    useTranslation(); // Keep hook if needed for future, or just remove if we remove 't'. Lint says 't' unused.
-    // If I remove 't', I might as well remove useTranslation call if not used at all. 
-    // But wait, FontSelector inside might use it? No, FontSelector uses its own hook.
-    // I'll remove useTranslation call if I can, but I'll check if I need it.
-    // The previous code had `const { t } = useTranslation()`.
-    // I'll just remove the destructuring.
+    const { t } = useTranslation();
     
     return (
         <div className="flex flex-col w-full bg-[#f3f2f1] dark:bg-[#2b2b2b] border-b border-border">
              {/* Ribbon Tabs */}
              <div className="flex items-center gap-1 px-2 pt-1 border-b border-border">
-                <span className="px-4 py-1.5 text-xs bg-white dark:bg-[#333] border-t border-x border-border rounded-t font-semibold text-accent cursor-default">Home</span>
-                <span className="px-4 py-1.5 text-xs text-muted hover:bg-white/50 cursor-pointer rounded-t">Insert</span>
-                <span className="px-4 py-1.5 text-xs text-muted hover:bg-white/50 cursor-pointer rounded-t">Draw</span>
-                <span className="px-4 py-1.5 text-xs text-muted hover:bg-white/50 cursor-pointer rounded-t">View</span>
+                <span className="px-4 py-1.5 text-xs bg-background border-t border-x border-border rounded-t font-semibold text-accent cursor-default">{t("toolbar.ribbon.home")}</span>
+                <span className="px-4 py-1.5 text-xs text-muted-foreground hover:bg-muted/50 cursor-pointer rounded-t">{t("toolbar.ribbon.insert")}</span>
+                <span className="px-4 py-1.5 text-xs text-muted-foreground hover:bg-muted/50 cursor-pointer rounded-t">{t("toolbar.ribbon.draw")}</span>
+                <span className="px-4 py-1.5 text-xs text-muted-foreground hover:bg-muted/50 cursor-pointer rounded-t">{t("toolbar.ribbon.view")}</span>
              </div>
              {/* Ribbon Content (Home) */}
              <div className="flex items-center h-20 px-4 py-2 gap-4 bg-[#f3f2f1] dark:bg-[#2b2b2b]">
                  {/* Clipboard Group (Mock) */}
                  <div className="flex flex-col items-center justify-center gap-1 border-r border-border pr-2 opacity-50">
-                    <span className="text-[10px] text-muted">Paste</span>
+                    <span className="text-[10px] text-muted-foreground">{t("toolbar.ribbon.paste")}</span>
                  </div>
                  
                  {/* Font Group */}
@@ -311,7 +305,7 @@ const WordToolbar = ({ editor }: EditorToolbarProps) => {
                      <div className="flex gap-1">
                         <FontSelector />
                         {/* Size (Static for now in Word mode to keep simple, or use store) */}
-                        <div className="w-12 h-6 bg-white dark:bg-[#333] border border-border flex items-center justify-center text-xs">11</div>
+                        <div className="w-12 h-6 bg-background border border-border flex items-center justify-center text-xs">11</div>
                      </div>
                      <div className="flex gap-0.5">
                          <ToggleButton active={editor?.isActive("bold")} onClick={() => editor?.chain().focus().toggleBold().run()} className="w-6 h-6 hover:bg-hover"><Bold className="w-3.5 h-3.5" /></ToggleButton>
@@ -347,7 +341,7 @@ const ScrivenerToolbar = ({ editor }: EditorToolbarProps) => {
     return (
         <div className="flex items-center gap-2 p-1 bg-[#e3e3e3] dark:bg-[#333] border-b border-border shadow-inner px-3">
              <FontSelector />
-             <div className="flex items-center gap-1 bg-white dark:bg-black/20 border border-border rounded px-1">
+             <div className="flex items-center gap-1 bg-background border border-border rounded px-1">
                  <button onClick={() => setFontSize(Math.max(EDITOR_TOOLBAR_FONT_MIN, fontSize - EDITOR_TOOLBAR_FONT_STEP))} className="hover:text-accent">-</button>
                  <span className="text-xs w-6 text-center">{fontSize}</span>
                  <button onClick={() => setFontSize(fontSize + EDITOR_TOOLBAR_FONT_STEP)} className="hover:text-accent">+</button>
