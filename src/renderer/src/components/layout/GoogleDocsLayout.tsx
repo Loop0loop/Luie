@@ -116,35 +116,37 @@ export default function GoogleDocsLayout({
       </div>
 
       {/* 2. Header */}
-      <header className="h-[64px] flex items-center px-4 gap-4 shrink-0 select-none bg-background transition-colors duration-200">
-          {/* 사이드바 토글 버튼 */}
-          <button 
-              onClick={() => setSidebarOpen(!isSidebarOpen)}
-              className="w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground"
-              title={isSidebarOpen ? t("sidebar.toggle.close") : t("sidebar.toggle.open")}
-          >
-              {isSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+      <header className="h-[64px] flex items-center justify-between px-4 shrink-0 select-none bg-background transition-colors duration-200">
+          {/* Left Section: Toggle, Home, Title */}
+          <div className="flex items-center gap-3 min-w-0">
+              {/* Sidebar Toggle */}
+              <button 
+                  onClick={() => setSidebarOpen(!isSidebarOpen)}
+                  className="w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground shrink-0"
+                  title={isSidebarOpen ? t("sidebar.toggle.close") : t("sidebar.toggle.open")}
+              >
+                  {isSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
 
-          <div className="flex items-center justify-center w-12 h-12 rounded-full hover:bg-muted/50 cursor-pointer transition-colors" title={t("common.home")}>
-              <div className="w-6 h-8 bg-blue-500 rounded-[2px] relative flex items-center justify-center shadow-sm">
-                  <div className="w-4 h-0.5 bg-white mb-1 rounded-sm"/>
-                  <div className="w-4 h-0.5 bg-white mb-1 rounded-sm"/>
-                  <div className="w-2 h-0.5 bg-white rounded-sm mr-auto ml-1"/>
+              {/* Home Icon */}
+              <div className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-muted/50 cursor-pointer transition-colors shrink-0" title={t("common.home")}>
+                  <div className="w-6 h-8 bg-blue-500 rounded-[2px] relative flex items-center justify-center shadow-sm scale-90">
+                      <div className="w-4 h-0.5 bg-white mb-1 rounded-sm"/>
+                      <div className="w-4 h-0.5 bg-white mb-1 rounded-sm"/>
+                      <div className="w-2 h-0.5 bg-white rounded-sm mr-auto ml-1"/>
+                  </div>
               </div>
+
+              {/* Title Input */}
+              <input 
+                  type="text"
+                  defaultValue={t("project.defaults.untitled")}
+                  className="text-[18px] text-foreground bg-transparent px-2 py-0.5 rounded-[4px] hover:bg-muted/50 focus:bg-background focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200 border border-transparent truncate max-w-[400px] min-w-[150px]"
+              />
           </div>
 
-          <div className="flex flex-col justify-center h-full flex-1">
-              <div className="flex items-center gap-2">
-                 <input 
-                    type="text"
-                    defaultValue={t("project.defaults.untitled")}
-                    className="text-[18px] text-foreground bg-transparent px-2 py-0.5 rounded-[4px] hover:bg-muted/50 focus:bg-background focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200 border border-transparent truncate max-w-[400px]"
-                 />
-              </div>
-          </div>
-
-          <div className="ml-auto flex items-center gap-2">
+          {/* Right Section: Actions */}
+          <div className="flex items-center gap-2 shrink-0">
                <button className="w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground" title={t("common.history")}>
                    <Clock className="w-5 h-5" />
                </button>
@@ -156,7 +158,7 @@ export default function GoogleDocsLayout({
                 className="w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground"
                 title={t("sidebar.section.settings")}
                >
-                  <Settings className="w-6 h-6" />
+                   <Settings className="w-6 h-6" />
                </button>
           </div>
       </header>
@@ -205,7 +207,7 @@ export default function GoogleDocsLayout({
                             {Array.from({ length: 41 }).map((_, i) => (
                                 <div 
                                     key={i} 
-                                    className={cn("bg-foreground/20 w-[1px]", i % 5 === 0 ? "h-2" : "h-1")} 
+                                    className={cn("bg-foreground/20 w-px", i % 5 === 0 ? "h-2" : "h-1")} 
                                     style={{ left: `${i * 2.5}%` }} 
                                 />
                             ))}
@@ -221,7 +223,7 @@ export default function GoogleDocsLayout({
                  
                  {/* Page (A4: 210mm x 297mm @ 96DPI ~= 816px x 1056px) */}
                   <div 
-                    className="mb-8 bg-background shadow-lg min-h-[1056px] transition-all duration-200 ease-in-out relative flex flex-col"
+                    className="mb-8 bg-background shadow-lg border border-border min-h-[1056px] transition-all duration-200 ease-in-out relative flex flex-col"
                     style={{ 
                         width: '816px', 
                         maxWidth: 'calc(100% - 40px)', // Responsive fallback
@@ -231,11 +233,10 @@ export default function GoogleDocsLayout({
                      {children}
                 </div>
                 
-                {/* StatusFooter inside scrollable area */}
-                <div className="w-full max-w-[816px] mb-8">
-                    <StatusFooter onOpenExport={handleOpenExport} />
-                </div>
              </main>
+
+             {/* Footer Fixed at Bottom of Main Column */}
+             <StatusFooter onOpenExport={handleOpenExport} />
          </div>
           
           {/* Right Resizer */}
