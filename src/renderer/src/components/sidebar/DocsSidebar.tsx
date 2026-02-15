@@ -34,10 +34,10 @@ export default function DocsSidebar({
                 key={chapter.id}
                 onClick={() => onSelectChapter(chapter.id)}
                 className={cn(
-                  "flex items-center px-4 py-1.5 cursor-pointer text-sm transition-colors mx-2 rounded-lg mb-0.5",
+                  "flex items-center px-4 py-2 cursor-pointer text-sm transition-colors mx-2 rounded-full mb-1",
                   activeChapterId === chapter.id
-                    ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-medium"
-                    : "text-fg hover:bg-black/5 dark:hover:bg-white/5"
+                    ? "bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 font-medium"
+                    : "text-[#444746] dark:text-[#c4c7c5] hover:bg-black/5 dark:hover:bg-white/5"
                 )}
               >
                 <span className="truncate">

@@ -16,13 +16,14 @@ import {
   BookOpen,
   History,
   Trash2,
-  Plus
+  Plus,
+  FileText
 } from "lucide-react";
 
 interface GoogleDocsLayoutProps {
   children: ReactNode;
   sidebar?: ReactNode;
-  contextPanel?: ReactNode;
+  contextPanel?: ReactNode; // Added contextPanel to props
   activeChapterId?: string;
   currentProjectId?: string;
   onSelectResearchItem?: (type: "character" | "world" | "scrap" | "analysis") => void;
@@ -31,54 +32,33 @@ interface GoogleDocsLayoutProps {
 export default function GoogleDocsLayout({ 
   children, 
   sidebar, 
-  contextPanel,
+  contextPanel, // Destructured contextPanel
   activeChapterId,
   currentProjectId,
   onSelectResearchItem
 }: GoogleDocsLayoutProps) {
   const { t } = useTranslation();
-  const [activeTool, setActiveTool] = useState<"research" | "snapshot" | "trash" | null>(null);
+  const [activeBinder, setActiveBinder] = useState<"manuscript" | "research" | "snapshot" | "trash">("manuscript");
   const [trashRefreshKey, setTrashRefreshKey] = useState(0);
 
   const {
     isSidebarOpen,
-    isContextOpen,
+    isContextOpen, // Added
     sidebarWidth,
-    contextWidth,
+    contextWidth, // Added
     setSidebarOpen,
-    setContextOpen,
+    setContextOpen, // Added
     setSidebarWidth,
-    setContextWidth,
+    setContextWidth, // Added
   } = useUIStore();
   
-  // Open context panel when tool is selected
-  useEffect(() => {
-    if (activeTool && !isContextOpen) {
-      setContextOpen(true);
-    }
-  }, [activeTool, isContextOpen, setContextOpen]);
-
-  // Close tool if context panel is closed manually
-  useEffect(() => {
-    if (!isContextOpen) {
-      setTimeout(() => setActiveTool(null), 0);
-    }
-  }, [isContextOpen]);
-
-  const handleToolClick = (tool: "research" | "snapshot" | "trash") => {
-    if (activeTool === tool) {
-       // Toggle off if same tool clicked
-       setContextOpen(false);
-       setActiveTool(null);
-    } else {
-       setActiveTool(tool);
-       setContextOpen(true);
-       // Ensure width is sufficient
-       if (contextWidth < 300) setContextWidth(300);
+  // Ensure sidebar is open if we switch binder tabs
+  const handleBinderClick = (binder: "manuscript" | "research" | "snapshot" | "trash") => {
+    setActiveBinder(binder);
+    if (!isSidebarOpen) {
+        setSidebarOpen(true);
     }
   };
-  
-  // Google Docs specific state
   
   // Resizing logic (Reuse from MainLayout for now, but applied to specific panels)
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -97,12 +77,14 @@ export default function GoogleDocsLayout({
       const rect = containerRef.current.getBoundingClientRect();
 
       if (activeResizerRef.current === "left") {
-        const next = Math.max(200, Math.min(420, event.clientX - rect.left));
+        // Offset by Binder width (48px)
+        const next = Math.max(200, Math.min(420, event.clientX - rect.left - 48));
         setSidebarWidth(Math.round(next));
         return;
       }
 
-      const next = Math.min(520, Math.max(240, rect.right - event.clientX));
+      // Right resizer (Context Panel)
+      const next = Math.min(520, Math.max(240, rect.right - event.clientX - 56)); // 56 is Google Apps Bar width
       setContextWidth(Math.round(next));
     };
 
@@ -178,78 +160,66 @@ export default function GoogleDocsLayout({
           </div>
       </header>
 
-      {/* 3. Toolbar Container - Passed down children logic or rendered here? 
-          For now, EditorToolbar is rendered inside the Editor component, 
-          but in Docs mode we might want to lift it out or style it to look lifted.
-          Actually, `EditorToolbar` is part of `Editor.tsx`. 
-          GoogleDocsLayout wraps everything.
-          
-          We might need to rely on the EditorToolbar inside the content to look right, 
-          OR we hide that and render a global one here if we refactor `Editor`.
-          
-          Given the current architecture, `Editor` contains `EditorToolbar`.
-          The `EditorToolbar` already has a `DocsToolbar` variant.
-          So we just need the LAYOUT to frame it correctly.
-      */}
+      {/* 3. Main Container for panels and editor */}
+      <div ref={containerRef} className="flex-1 flex overflow-hidden relative">
+         
+         {/* Binder Bar (Left) */}
+        <div className="w-12 bg-[#f0f2f5] dark:bg-[#1e1e1e] border-r border-[#e1e1e1] dark:border-[#333] flex flex-col items-center py-4 gap-3 shrink-0 z-30">
+             <button 
+                onClick={() => handleBinderClick("manuscript")} 
+                className={cn(
+                    "w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200",
+                    activeBinder === "manuscript" ? "bg-white dark:bg-[#2d2d2d] text-blue-600 dark:text-blue-400 shadow-sm scale-105" : "text-muted hover:text-fg hover:bg-black/5 dark:hover:bg-white/5"
+                )}
+                title={t("sidebar.section.manuscript")}
+             >
+                 <FileText className="w-5 h-5" />
+             </button>
+             <button 
+                onClick={() => handleBinderClick("research")} 
+                className={cn(
+                    "w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200",
+                    activeBinder === "research" ? "bg-white dark:bg-[#2d2d2d] text-blue-600 dark:text-blue-400 shadow-sm scale-105" : "text-muted hover:text-fg hover:bg-black/5 dark:hover:bg-white/5"
+                )}
+                title={t("sidebar.section.research")}
+             >
+                 <BookOpen className="w-5 h-5" />
+             </button>
+             <button 
+                onClick={() => handleBinderClick("snapshot")} 
+                className={cn(
+                    "w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200",
+                    activeBinder === "snapshot" ? "bg-white dark:bg-[#2d2d2d] text-blue-600 dark:text-blue-400 shadow-sm scale-105" : "text-muted hover:text-fg hover:bg-black/5 dark:hover:bg-white/5"
+                )}
+                title={t("sidebar.section.snapshot")}
+             >
+                 <History className="w-5 h-5" />
+             </button>
+             <button 
+                onClick={() => handleBinderClick("trash")} 
+                className={cn(
+                    "w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200",
+                    activeBinder === "trash" ? "bg-white dark:bg-[#2d2d2d] text-blue-600 dark:text-blue-400 shadow-sm scale-105" : "text-muted hover:text-fg hover:bg-black/5 dark:hover:bg-white/5"
+                )}
+                title={t("sidebar.section.trash")}
+             >
+                 <Trash2 className="w-5 h-5" />
+             </button>
+        </div>
 
-      <div ref={containerRef} className="flex flex-1 overflow-hidden relative">
-         {/* Left Sidebar (Outline) */}
+         {/* Left Sidebar Panel */}
          <div 
            className={cn(
-             "bg-white dark:bg-[#1e1e1e] border-r border-[#c7c7c7] dark:border-[#444] overflow-hidden flex flex-col transition-[width,opacity] duration-300 ease-in-out shrink-0",
-             !isSidebarOpen && "border-r-0 opacity-0"
+             "bg-white dark:bg-[#1e1e1e] border-r border-[#c7c7c7] dark:border-[#444] overflow-hidden flex flex-col shrink-0 min-w-0 transition-[width,opacity] duration-300 ease-in-out",
+             !isSidebarOpen && "border-r-0 opacity-0 pointer-events-none"
            )}
            style={{ width: isSidebarOpen ? `${sidebarWidth}px` : "0px" }}
          >
-           {sidebar}
-         </div>
+            {activeBinder === "manuscript" && sidebar}
 
-         {isSidebarOpen && (
-           <div
-             className="w-1 shrink-0 cursor-col-resize hover:bg-[#4285F4] transition-colors z-20"
-             onPointerDown={(e) => startResize("left", e)}
-           />
-         )}
-
-         {/* Main Content Area (Gray background, centered paper) */}
-         <main className="flex-1 flex flex-col bg-[#f9fbfd] dark:bg-[#1b1b1b] relative min-w-0 z-0 overflow-y-auto items-center transition-colors duration-200">
-            {/* The Editor component creates the "Page" look. 
-                We just need to ensure the container allows it to be centered.
-            */}
-            <div className="w-full h-full flex flex-col">
-               {/* Toggle Sidebar Button (Floating or integrated) */}
-               <div className="absolute top-4 left-4 z-10 print:hidden">
-                    <button 
-                        onClick={() => setSidebarOpen(!isSidebarOpen)}
-                        className="p-1.5 rounded-full bg-[#edf2fa] dark:bg-[#333] hover:bg-[#dbe4f7] dark:hover:bg-[#444] text-[#444746] dark:text-[#e3e3e3] transition-colors shadow-sm"
-                        title={isSidebarOpen ? "Close Outline" : "Show Outline"}
-                    >
-                        {isSidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-                    </button>
-               </div>
-               
-               {children}
-            </div>
-         </main>
-         
-         {isContextOpen && ( 
-            <div
-                className="w-1 shrink-0 cursor-col-resize hover:bg-[#4285F4] transition-colors z-20"
-                 onPointerDown={(e) => startResize("right", e)}
-            />
-         )}
-
-         {/* Right Sidebar (Context/Keep/Tasks/Tools) */}
-         <div 
-           className={cn(
-             "bg-white dark:bg-[#1e1e1e] border-l border-[#c7c7c7] dark:border-[#444] overflow-hidden flex flex-col shrink-0 min-w-0 transition-[width,opacity] duration-300 ease-in-out",
-             !isContextOpen && "border-l-0 opacity-0 pointer-events-none"
-           )}
-           style={{ width: isContextOpen ? `${contextWidth}px` : "0px" }}
-         >
-            {activeTool === "research" ? (
+            {activeBinder === "research" && (
                 <div className="flex flex-col h-full">
-                    <div className="px-4 py-3 border-b border-border/50 text-xs font-semibold text-muted uppercase tracking-wider">
+                    <div className="px-4 py-3 border-b border-border/50 text-xs font-semibold text-muted uppercase tracking-wider bg-gray-50 dark:bg-[#252526]">
                         {t("sidebar.section.research")}
                     </div>
                     {[
@@ -267,9 +237,11 @@ export default function GoogleDocsLayout({
                         </div>
                     ))}
                 </div>
-            ) : activeTool === "snapshot" ? (
+            )}
+            
+            {activeBinder === "snapshot" && (
                 <div className="flex flex-col h-full">
-                    <div className="px-4 py-3 border-b border-border/50 text-xs font-semibold text-muted uppercase tracking-wider">
+                     <div className="px-4 py-3 border-b border-border/50 text-xs font-semibold text-muted uppercase tracking-wider bg-gray-50 dark:bg-[#252526]">
                         {t("sidebar.section.snapshot")}
                     </div>
                     {activeChapterId ? (
@@ -280,9 +252,11 @@ export default function GoogleDocsLayout({
                         </div>
                     )}
                 </div>
-            ) : activeTool === "trash" ? (
+            )}
+            
+            {activeBinder === "trash" && (
                 <div className="flex flex-col h-full">
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+                     <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-gray-50 dark:bg-[#252526]">
                         <span className="text-xs font-semibold text-muted uppercase tracking-wider">
                             {t("sidebar.section.trash")}
                         </span>
@@ -302,51 +276,100 @@ export default function GoogleDocsLayout({
                         </div>
                     )}
                 </div>
-            ) : (
-                contextPanel
             )}
          </div>
-         
-         {/* Right Side Icon Bar (Tools) */}
-         <div className="w-14 bg-white dark:bg-[#1e1e1e] border-l border-[#e1e3e1] dark:border-[#444] flex flex-col items-center py-4 gap-4 shrink-0 z-10 transition-colors duration-200">
-             <button 
-                onClick={() => handleToolClick("research")} 
-                className={cn(
-                    "w-9 h-9 flex items-center justify-center rounded-full transition-colors",
-                    activeTool === "research" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : "hover:bg-black/5 dark:hover:bg-white/10 text-[#444746] dark:text-[#c4c7c5]"
-                )}
-                title={t("sidebar.section.research")}
-             >
-                 <BookOpen className="w-5 h-5" />
-             </button>
-             <button 
-                onClick={() => handleToolClick("snapshot")} 
-                className={cn(
-                    "w-9 h-9 flex items-center justify-center rounded-full transition-colors",
-                    activeTool === "snapshot" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : "hover:bg-black/5 dark:hover:bg-white/10 text-[#444746] dark:text-[#c4c7c5]"
-                )}
-                title={t("sidebar.section.snapshot")}
-             >
-                 <History className="w-5 h-5" />
-             </button>
-             <button 
-                onClick={() => handleToolClick("trash")} 
-                className={cn(
-                    "w-9 h-9 flex items-center justify-center rounded-full transition-colors",
-                    activeTool === "trash" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : "hover:bg-black/5 dark:hover:bg-white/10 text-[#444746] dark:text-[#c4c7c5]"
-                )}
-                title={t("sidebar.section.trash")}
-             >
-                 <Trash2 className="w-5 h-5" />
-             </button>
-             <div className="w-5 h-px bg-[#e1e3e1] dark:bg-[#444]"/>
-             <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10" title="Add-ons">
-                 <Plus className="w-5 h-5 text-[#444746] dark:text-[#c4c7c5]" />
-             </button>
-         </div>
+
+         {/* Left Resizer */}
+         <div
+            className="w-1 cursor-col-resize hover:bg-blue-500/50 transition-colors z-20 absolute top-0 bottom-0"
+            style={{ left: isSidebarOpen ? `${sidebarWidth + 48}px` : "48px" }}
+            onPointerDown={(e) => startResize("left", e)}
+        />
+
+         {/* Main Content Area (Editor) */}
+         <main className="flex-1 flex flex-col bg-[#f9fbfd] dark:bg-[#1b1b1b] relative min-w-0 z-0 overflow-y-auto items-center transition-colors duration-200">
+             
+             {/* Ruler (Visual Mockup) */}
+              <div className="shrink-0 w-[816px] max-w-[calc(100%-40px)] h-6 bg-white dark:bg-[#1e1e1e] border-b border-black/10 dark:border-white/10 mt-4 flex px-[60px] relative select-none">
+                 {/* Ticks */}
+                 <div className="absolute top-0 left-[60px] right-[60px] h-full flex">
+                    {Array.from({length: 40}).map((_, i) => (
+                        <div key={i} className="flex-1 border-l border-black/10 dark:border-white/10 h-2 mt-auto" />
+                    ))}
+                 </div>
+                 {/* Numbers */}
+                 <div className="w-full h-full flex justify-between items-start pt-1 text-[9px] text-muted z-10 px-1">
+                    {['1', '2', '3', '4', '5', '6', '7'].map((n) => (
+                        <span key={n}>{n}</span>
+                    ))}
+                 </div>
+              </div>
+             
+             {/* Page */}
+              <div 
+                className="my-4 bg-white dark:bg-[#1e1e1e] shadow-lg border border-black/5 dark:border-white/5 min-h-[1056px] transition-all duration-200 ease-in-out relative flex flex-col"
+                style={{ 
+                    width: '816px', 
+                    maxWidth: 'calc(100% - 40px)',
+                    padding: '60px 72px'
+                }}
+              >
+                 {children}
+            </div>
+
+            {/* Toggle Sidebar Button (Floating) */}
+            <div className="absolute top-4 left-4 z-10 print:hidden">
+                <button 
+                    onClick={() => setSidebarOpen(!isSidebarOpen)}
+                    className="p-1.5 rounded-full bg-[#edf2fa] dark:bg-[#333] hover:bg-[#dbe4f7] dark:hover:bg-[#444] text-[#444746] dark:text-[#e3e3e3] transition-colors shadow-sm"
+                    title={isSidebarOpen ? t("common.close") : t("common.open")}
+                >
+                    {isSidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                </button>
+            </div>
+         </main>
+          
+          {/* Right Resizer */}
+          {isContextOpen && ( 
+             <div
+                 className="w-1 shrink-0 cursor-col-resize hover:bg-[#4285F4] transition-colors z-20 absolute top-0 bottom-0"
+                 style={{ right: isContextOpen ? `${contextWidth + 56}px` : "56px" }}
+                 onPointerDown={(e) => startResize("right", e)}
+             />
+          )}
+ 
+          {/* Right Sidebar (Context) */}
+          <div 
+            className={cn(
+              "bg-white dark:bg-[#1e1e1e] border-l border-[#c7c7c7] dark:border-[#444] overflow-hidden flex flex-col shrink-0 min-w-0 transition-[width,opacity] duration-300 ease-in-out",
+              !isContextOpen && "border-l-0 opacity-0 pointer-events-none"
+            )}
+            style={{ width: isContextOpen ? `${contextWidth}px` : "0px" }}
+          >
+             {contextPanel}
+          </div>
+          
+          {/* Right Side Icon Bar (Google Apps) */}
+          <div className="w-14 bg-white dark:bg-[#1e1e1e] border-l border-[#e1e3e1] dark:border-[#444] flex flex-col items-center py-4 gap-6 shrink-0 z-10 transition-colors duration-200">
+              <button onClick={() => setContextOpen(!isContextOpen)} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10" title="Calendar">
+                  <div className="w-5 h-5 rounded bg-blue-500 text-white text-[10px] flex items-center justify-center">31</div>
+              </button>
+              <button onClick={() => setContextOpen(!isContextOpen)} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10" title="Keep">
+                  <div className="w-5 h-5 rounded bg-yellow-400 flex items-center justify-center relative shadow-sm">
+                      <div className="w-2 h-2 bg-white rounded-full opacity-60"/>
+                  </div>
+              </button>
+              <button onClick={() => setContextOpen(!isContextOpen)} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10" title="Tasks">
+                  <div className="w-5 h-5 rounded-full border-2 border-blue-600 flex items-center justify-center">
+                      <div className="w-2 h-1 bg-blue-600 rotate-45 mt-[-2px]"/>
+                  </div>
+              </button>
+              <div className="w-5 h-px bg-[#e1e3e1] dark:bg-[#444]"/>
+              <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10" title="Add-ons">
+                  <Plus className="w-5 h-5 text-[#444746] dark:text-[#c4c7c5]" />
+              </button>
+          </div>
       </div>
     </div>
   );
 }
-
-
