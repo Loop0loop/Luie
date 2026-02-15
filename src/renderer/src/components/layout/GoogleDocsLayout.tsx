@@ -8,6 +8,7 @@ import { SnapshotList } from "../snapshot/SnapshotList";
 import { TrashList } from "../trash/TrashList";
 import EditorToolbar from '../editor/EditorToolbar';
 import ResearchPanel from "../research/ResearchPanel"; 
+import WorldPanel from "../research/WorldPanel";
 import { 
   Menu, 
   ChevronLeft, 
@@ -16,10 +17,13 @@ import {
   Clock, 
   CloudCheck,
   Star,
-  BookOpen, // Used for Research
   History, // Used for Snapshot
   Trash2, // Used for Trash
-  Plus
+  Plus,
+  User, // Character
+  Globe, // World
+  StickyNote, // Scrap
+  Sparkles // Analysis
 } from "lucide-react";
 
 interface GoogleDocsLayoutProps {
@@ -34,12 +38,11 @@ export default function GoogleDocsLayout({
   children, 
   sidebar, 
   activeChapterId, 
-  currentProjectId,
+  currentProjectId, 
   editor
 }: GoogleDocsLayoutProps) {
   const { t } = useTranslation();
-  const [activeRightTab, setActiveRightTab] = useState<"research" | "snapshot" | "trash" | null>(null);
-  const [researchSubTab, setResearchSubTab] = useState<"synopsis" | "character" | "world" | "scrap" | "analysis">("synopsis");
+  const [activeRightTab, setActiveRightTab] = useState<"character" | "world" | "scrap" | "analysis" | "snapshot" | "trash" | null>(null);
   const [trashRefreshKey, setTrashRefreshKey] = useState(0);
 
   const {
@@ -51,8 +54,8 @@ export default function GoogleDocsLayout({
     setContextWidth,
   } = useUIStore();
   
-  const handleRightTabClick = (tab: "research" | "snapshot" | "trash") => {
-    setActiveRightTab(prev => prev === tab ? null : tab);
+  const handleRightTabClick = (tab: "character" | "world" | "scrap" | "analysis" | "snapshot" | "trash") => {
+     setActiveRightTab(prev => prev === tab ? null : tab);
   };
   
   // Resizing logic
@@ -237,16 +240,35 @@ export default function GoogleDocsLayout({
             style={{ width: activeRightTab ? `${contextWidth}px` : "0px" }}
           >
               <div className="h-full flex flex-col">
-                  {activeRightTab === "research" && (
-                      <div className="h-full">
-                          <ResearchPanel 
-                            activeTab={researchSubTab} 
-                            onTabChange={(tab: "character" | "world" | "scrap" | "analysis" | "synopsis") => setResearchSubTab(tab)}
-                            onClose={() => setActiveRightTab(null)}
-                          />
-                      </div>
+                  {/* Character Panel */}
+                  {activeRightTab === "character" && (
+                    <div className="h-full">
+                        <ResearchPanel activeTab="character" onClose={() => setActiveRightTab(null)} />
+                    </div>
                   )}
 
+                  {/* World Panel (Multi-tab) */}
+                  {activeRightTab === "world" && (
+                    <div className="h-full">
+                        <WorldPanel onClose={() => setActiveRightTab(null)} />
+                    </div>
+                  )}
+
+                  {/* Scrap Panel */}
+                  {activeRightTab === "scrap" && (
+                    <div className="h-full">
+                        <ResearchPanel activeTab="scrap" onClose={() => setActiveRightTab(null)} />
+                    </div>
+                  )}
+
+                  {/* Analysis Panel */}
+                  {activeRightTab === "analysis" && (
+                    <div className="h-full">
+                        <ResearchPanel activeTab="analysis" onClose={() => setActiveRightTab(null)} />
+                    </div>
+                  )}
+
+                  {/* Snapshot Panel */}
                   {activeRightTab === "snapshot" && (
                     <div className="flex flex-col h-full">
                          <div className="px-4 py-3 border-b border-border/50 text-xs font-semibold text-muted uppercase tracking-wider bg-gray-50 dark:bg-[#252526]">
@@ -261,6 +283,8 @@ export default function GoogleDocsLayout({
                         )}
                     </div>
                   )}
+                  
+                  {/* Trash Panel */}
                   {activeRightTab === "trash" && (
                      <div className="flex flex-col h-full">
                          <div className="px-4 py-3 border-b border-border/50 text-xs font-semibold text-muted uppercase tracking-wider bg-gray-50 dark:bg-[#252526]">
@@ -281,21 +305,59 @@ export default function GoogleDocsLayout({
               </div>
           </div>
           
-          {/* Right Icon Bar (Binder Tab) */}
-          <div className="w-14 bg-white dark:bg-[#1e1e1e] border-l border-[#e1e3e1] dark:border-[#444] flex flex-col items-center py-4 gap-6 shrink-0 z-10 transition-colors duration-200">
+          {/* Right Icon Bar */}
+          <div className="w-14 bg-white dark:bg-[#1e1e1e] border-l border-[#e1e3e1] dark:border-[#444] flex flex-col items-center py-4 gap-4 shrink-0 z-10 transition-colors duration-200">
               
-              {/* Research */}
+              {/* Character */}
               <button 
-                onClick={() => handleRightTabClick("research")} 
+                onClick={() => handleRightTabClick("character")} 
                 className={cn(
                     "w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors", 
-                    activeRightTab === "research" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+                    activeRightTab === "character" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
                 )} 
-                title={t("sidebar.section.research")}
+                title={t("research.title.characters")}
               >
-                  <BookOpen className="w-5 h-5" />
+                  <User className="w-5 h-5" />
+              </button>
+
+              {/* World (Multi-tab) */}
+              <button 
+                onClick={() => handleRightTabClick("world")} 
+                className={cn(
+                    "w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors", 
+                    activeRightTab === "world" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+                )} 
+                title={t("research.title.world")}
+              >
+                  <Globe className="w-5 h-5" />
+              </button>
+
+              {/* Scrap */}
+              <button 
+                onClick={() => handleRightTabClick("scrap")} 
+                className={cn(
+                    "w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors", 
+                    activeRightTab === "scrap" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+                )} 
+                title={t("research.title.scrap")}
+              >
+                  <StickyNote className="w-5 h-5" />
+              </button>
+
+              {/* Analysis */}
+              <button 
+                onClick={() => handleRightTabClick("analysis")} 
+                className={cn(
+                    "w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors", 
+                    activeRightTab === "analysis" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+                )} 
+                title={t("research.title.analysis")}
+              >
+                  <Sparkles className="w-5 h-5" />
               </button>
               
+              <div className="w-6 border-b border-border my-1" />
+
               {/* Snapshot */}
                <button 
                 onClick={() => handleRightTabClick("snapshot")} 
