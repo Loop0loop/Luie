@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useEditorStatusStore } from "../stores/editorStatusStore";
 
 type Stats = {
   wordCount: number;
@@ -17,6 +18,7 @@ export function useEditorStats() {
 
     worker.onmessage = (event: MessageEvent<Stats>) => {
       setStats(event.data);
+      useEditorStatusStore.getState().setStats(event.data);
     };
 
     workerRef.current = worker;

@@ -28,10 +28,10 @@ import { useEditorConfig } from "../../hooks/useEditorConfig";
 import { SmartLink } from "./extensions/SmartLink";
 import { DiffHighlight } from "./extensions/DiffExtension";
 import { SmartLinkTooltip } from "./SmartLinkTooltip";
-import { Loader2, Check, Share } from "lucide-react";
 import { api } from "../../services/api";
 import { useTranslation } from "react-i18next";
 
+import StatusFooter from "../common/StatusFooter";
 
 // Simple Callout Extension (inline to avoid dependencies)
 const Callout = Node.create({
@@ -68,6 +68,8 @@ const SlashCommand = Extension.create({
   },
 });
 
+
+
 interface EditorProps {
   initialTitle?: string;
   initialContent?: string;
@@ -77,6 +79,7 @@ interface EditorProps {
   diffMode?: "current" | "snapshot";
   chapterId?: string;
   hideToolbar?: boolean;
+  hideFooter?: boolean;
   onEditorReady?: (editor: TiptapEditor | null) => void;
 }
 
@@ -89,11 +92,12 @@ function Editor({
   diffMode,
   chapterId,
   hideToolbar = false,
+  hideFooter = false,
   onEditorReady,
 }: EditorProps) {
   const { t } = useTranslation();
   const { fontFamilyCss, fontSize, lineHeight, getFontFamily } = useEditorConfig();
-  const { wordCount, charCount, updateStats } = useEditorStats();
+  const { updateStats } = useEditorStats();
   const [isMobileView, setIsMobileView] = useState(false);
 
   const { value: title, onChange: handleTitleChange } = useBufferedInput(
@@ -109,7 +113,7 @@ function Editor({
     setContent(initialContent);
   }, [initialContent]);
 
-  const { saveStatus } = useEditorAutosave({
+  useEditorAutosave({
     onSave: readOnly ? undefined : onSave,
     title,
     content,
@@ -301,41 +305,9 @@ function Editor({
         </div>
       </div>
 
-      <div className="h-10 border-t border-border flex items-center justify-end gap-4 px-5 text-xs text-muted bg-bg-primary shrink-0 select-none">
-        {/* Save Status Indicator */}
-        <span className="flex items-center gap-1.5 min-w-15">
-          {saveStatus === "saving" && (
-            <>
-              <Loader2 className="w-3 h-3 animate-spin" />
-              <span>{t("editor.status.saving")}</span>
-            </>
-          )}
-          {saveStatus === "saved" && (
-            <>
-              <Check className="w-3 h-3 text-success-fg" />
-              <span>{t("editor.status.saved")}</span>
-            </>
-          )}
-          {saveStatus === "error" && (
-            <span className="text-danger-fg">{t("editor.status.error")}</span>
-          )}
-        </span>
-
-        <span className="mr-auto font-medium">
-          {t("editor.status.charLabel")} {charCount}
-          {t("editor.status.separator")}
-          {t("editor.status.wordLabel")} {wordCount}
-        </span>
-
-        <button 
-          className="flex items-center gap-1.5 px-2 py-1 -mr-2 rounded hover:bg-hover hover:text-fg transition-colors"
-          onClick={handleOpenExport}
-          title={t("editor.actions.quickExportTitle")}
-        >
-          <Share className="w-3.5 h-3.5" />
-          <span className="font-medium">{t("editor.actions.quickExport")}</span>
-        </button>
-      </div>
+      {!hideFooter && (
+        <StatusFooter onOpenExport={handleOpenExport} />
+      )}
 
       <SmartLinkTooltip />
     </div>

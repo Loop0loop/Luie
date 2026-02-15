@@ -509,7 +509,6 @@ export default function App() {
                 currentProjectId={currentProject?.id}
                 editor={docEditor}
             >
-                <div className="flex-1 h-full w-full">
                   <Editor
                     key={activeChapterId} // Force re-mount on chapter change to ensure clean state
                     initialTitle={activeChapter ? activeChapter.title : ""}
@@ -518,9 +517,9 @@ export default function App() {
                     readOnly={!activeChapterId}
                     chapterId={activeChapterId || undefined}
                     hideToolbar={true}
+                    hideFooter={true}
                     onEditorReady={setDocEditor}
                   />
-                </div>
             </GoogleDocsLayout>
       ) : (
         <MainLayout

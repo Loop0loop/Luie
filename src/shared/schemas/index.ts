@@ -195,7 +195,7 @@ export const editorSettingsSchema = z.object({
     .optional()
     .default("blue"),
   themeTexture: z.boolean().optional().default(true),
-  uiMode: z.enum(["default", "docs", "word", "scrivener"]).optional().default("default"),
+  uiMode: z.enum(["default", "docs", "word", "scrivener"]).catch("default"),
 });
 
 export const settingsAutoSaveSchema = z.object({

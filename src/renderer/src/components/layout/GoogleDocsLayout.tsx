@@ -7,7 +7,9 @@ import { useTranslation } from "react-i18next";
 import { SnapshotList } from "../snapshot/SnapshotList";
 import { TrashList } from "../trash/TrashList";
 import EditorToolbar from '../editor/EditorToolbar';
-import ResearchPanel from "../research/ResearchPanel"; 
+import StatusFooter from "../common/StatusFooter";
+import { api } from "../../services/api";
+import ResearchPanel from "../research/ResearchPanel";  
 import WorldPanel from "../research/WorldPanel";
 import { 
   Menu, 
@@ -56,6 +58,11 @@ export default function GoogleDocsLayout({
   
   const handleRightTabClick = (tab: "character" | "world" | "scrap" | "analysis" | "snapshot" | "trash") => {
      setActiveRightTab(prev => prev === tab ? null : tab);
+  };
+
+  const handleOpenExport = async () => {
+    if (!activeChapterId) return;
+    await api.window.openExport(activeChapterId);
   };
   
   // Resizing logic
@@ -181,46 +188,53 @@ export default function GoogleDocsLayout({
             onPointerDown={(e) => startResize("left", e)}
         />
 
-         {/* Main Content Area (Editor) */}
-         <main className="flex-1 flex flex-col bg-[#f9fbfd] dark:bg-[#1b1b1b] relative min-w-0 z-0 overflow-y-auto items-center transition-colors duration-200">
+         {/* Main Content Column (Editor + Footer) */}
+         <div className="flex-1 flex flex-col min-w-0 bg-[#f9fbfd] dark:bg-[#1b1b1b] relative z-0 transition-colors duration-200">
              
-             {/* Ruler */}
-              <div className="shrink-0 w-[794px] h-6 bg-white dark:bg-[#1e1e1e] border-b border-black/10 dark:border-white/10 mt-4 flex px-[96px] relative select-none">
-                 <div className="absolute top-0 left-[96px] right-[96px] h-full flex">
-                    {Array.from({length: 40}).map((_, i) => (
-                        <div key={i} className="flex-1 border-l border-black/10 dark:border-white/10 h-2 mt-auto" />
-                    ))}
-                 </div>
-                 <div className="w-full h-full flex justify-between items-start pt-1 text-[9px] text-muted z-10 px-1">
-                    {['1', '2', '3', '4', '5', '6', '7'].map((n) => (
-                        <span key={n}>{n}</span>
-                    ))}
-                 </div>
-              </div>
-             
-             {/* Page (A4: 210mm x 297mm @ 96DPI ~= 794px x 1123px) */}
-              <div 
-                className="my-4 bg-white dark:bg-[#1e1e1e] shadow-lg border border-black/5 dark:border-white/5 min-h-[1123px] transition-all duration-200 ease-in-out relative flex flex-col"
-                style={{ 
-                    width: '794px', 
-                    maxWidth: 'calc(100% - 40px)', // Responsive fallback
-                    padding: '96px' // Standard 1 inch margins
-                }}
-              >
-                 {children}
-            </div>
+             {/* Scrollable Area for Editor */}
+             <main className="flex-1 overflow-y-auto flex flex-col items-center relative">
+                 
+                 {/* Ruler */}
+                  <div className="shrink-0 w-[794px] h-6 bg-white dark:bg-[#1e1e1e] border-b border-black/10 dark:border-white/10 mt-4 flex px-[96px] relative select-none">
+                     <div className="absolute top-0 left-[96px] right-[96px] h-full flex">
+                        {Array.from({length: 40}).map((_, i) => (
+                            <div key={i} className="flex-1 border-l border-black/10 dark:border-white/10 h-2 mt-auto" />
+                        ))}
+                     </div>
+                     <div className="w-full h-full flex justify-between items-start pt-1 text-[9px] text-muted z-10 px-1">
+                        {['1', '2', '3', '4', '5', '6', '7'].map((n) => (
+                            <span key={n}>{n}</span>
+                        ))}
+                     </div>
+                  </div>
+                 
+                 {/* Page (A4: 210mm x 297mm @ 96DPI ~= 794px x 1123px) */}
+                  <div 
+                    className="my-4 bg-white dark:bg-[#1e1e1e] shadow-lg border border-black/5 dark:border-white/5 min-h-[1123px] transition-all duration-200 ease-in-out relative flex flex-col"
+                    style={{ 
+                        width: '794px', 
+                        maxWidth: 'calc(100% - 40px)', // Responsive fallback
+                        padding: '96px' // Standard 1 inch margins
+                    }}
+                  >
+                     {children}
+                </div>
 
-            {/* Toggle Sidebar Button */}
-            <div className="absolute top-4 left-4 z-10 print:hidden">
-                <button 
-                    onClick={() => setSidebarOpen(!isSidebarOpen)}
-                    className="p-1.5 rounded-full bg-[#edf2fa] dark:bg-[#333] hover:bg-[#dbe4f7] dark:hover:bg-[#444] text-[#444746] dark:text-[#e3e3e3] transition-colors shadow-sm"
-                    title={isSidebarOpen ? t("common.close") : t("common.open")}
-                >
-                    {isSidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-                </button>
-            </div>
-         </main>
+                {/* Toggle Sidebar Button */}
+                <div className="absolute top-4 left-4 z-10 print:hidden">
+                    <button 
+                        onClick={() => setSidebarOpen(!isSidebarOpen)}
+                        className="p-1.5 rounded-full bg-[#edf2fa] dark:bg-[#333] hover:bg-[#dbe4f7] dark:hover:bg-[#444] text-[#444746] dark:text-[#e3e3e3] transition-colors shadow-sm"
+                        title={isSidebarOpen ? t("common.close") : t("common.open")}
+                    >
+                        {isSidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                    </button>
+                </div>
+             </main>
+
+             {/* Footer Fixed at Bottom of Main Column */}
+             <StatusFooter onOpenExport={handleOpenExport} />
+         </div>
           
           {/* Right Resizer */}
           {activeRightTab && ( 
@@ -389,6 +403,7 @@ export default function GoogleDocsLayout({
               </div>
           </div>
       </div>
+
     </div>
   );
 }
