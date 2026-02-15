@@ -15,16 +15,12 @@ import {
   Menu, 
   ChevronLeft, 
   MessageSquareText, 
-  Share, 
   Clock, 
-  CloudCheck,
-  Star,
   History, // Used for Snapshot
   Trash2, // Used for Trash
   Plus,
   User, // Character
   Globe, // World
-  StickyNote, // Scrap
   StickyNote, // Scrap
   Sparkles, // Analysis
   Settings
@@ -113,48 +109,51 @@ export default function GoogleDocsLayout({
   }, [setSidebarWidth, setContextWidth]);
 
   return (
-    <div className="flex flex-col h-screen bg-[#f9fbfd] dark:bg-[#1b1b1b] text-fg font-sans transition-colors duration-200">
+    <div className="flex flex-col h-screen bg-background text-foreground font-sans transition-colors duration-200">
       {/* 1. Window Bar */}
-      <div className="bg-[#f9fbfd] dark:bg-[#1b1b1b] transition-colors duration-200">
+      <div className="bg-background transition-colors duration-200">
            <WindowBar />
       </div>
 
       {/* 2. Header */}
-      <header className="flex items-center px-4 py-1 gap-4 bg-[#f9fbfd] dark:bg-[#1b1b1b] shrink-0 select-none transition-colors duration-200">
-          <div className="flex items-center justify-center w-10 h-10 rounded hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer" title={t("common.home")}>
-              <div className="w-6 h-8 bg-[#4285F4] rounded-[2px] relative flex items-center justify-center shadow-sm">
+      <header className="h-[64px] flex items-center px-4 gap-4 shrink-0 select-none bg-background transition-colors duration-200">
+          {/* 사이드바 토글 버튼 */}
+          <button 
+              onClick={() => setSidebarOpen(!isSidebarOpen)}
+              className="w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground"
+              title={isSidebarOpen ? t("sidebar.toggle.close") : t("sidebar.toggle.open")}
+          >
+              {isSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+
+          <div className="flex items-center justify-center w-12 h-12 rounded-full hover:bg-muted/50 cursor-pointer transition-colors" title={t("common.home")}>
+              <div className="w-6 h-8 bg-blue-500 rounded-[2px] relative flex items-center justify-center shadow-sm">
                   <div className="w-4 h-0.5 bg-white mb-1 rounded-sm"/>
                   <div className="w-4 h-0.5 bg-white mb-1 rounded-sm"/>
                   <div className="w-2 h-0.5 bg-white rounded-sm mr-auto ml-1"/>
               </div>
           </div>
 
-          <div className="flex flex-col gap-0.5 justify-center h-full">
+          <div className="flex flex-col justify-center h-full flex-1">
               <div className="flex items-center gap-2">
-                 <span className="text-[18px] text-[#1f1f1f] dark:text-[#e3e3e3] px-1 hover:border hover:border-black dark:hover:border-white rounded cursor-text truncate max-w-[300px]">
-                     {t("project.defaults.untitled")}
-                 </span>
-                 <Star className="w-4 h-4 text-muted hover:text-fg cursor-pointer" />
-                 <div title={t("editor.status.saved")}>
-                    <CloudCheck className="w-4 h-4 text-muted" />
-                 </div>
+                 <input 
+                    type="text"
+                    defaultValue={t("project.defaults.untitled")}
+                    className="text-[18px] text-foreground bg-transparent px-2 py-0.5 rounded-[4px] hover:bg-muted/50 focus:bg-background focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200 border border-transparent truncate max-w-[400px]"
+                 />
               </div>
           </div>
 
-          <div className="ml-auto flex items-center gap-4">
-              <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[#444746] dark:text-[#c4c7c5]" title="History">
-                  <Clock className="w-5 h-5" />
-              </button>
-              <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[#444746] dark:text-[#c4c7c5]" title="Comment">
-                  <MessageSquareText className="w-5 h-5" />
-              </button>
-               <button className="flex items-center gap-2 px-4 py-2 bg-[#c2e7ff] text-[#001d35] rounded-[24px] hover:shadow transition-shadow font-medium text-[14px]">
-                  <Share className="w-4 h-4" />
-                  <span>{t("common.share")}</span>
-              </button>
+          <div className="ml-auto flex items-center gap-2">
+               <button className="w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground" title={t("common.history")}>
+                   <Clock className="w-5 h-5" />
+               </button>
+               <button className="w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground" title={t("common.comment")}>
+                   <MessageSquareText className="w-5 h-5" />
+               </button>
                <button 
                 onClick={onOpenSettings}
-                className="w-10 h-10 rounded-full hover:bg-black/5 dark:hover:bg-white/10 flex items-center justify-center transition-colors text-[#444746] dark:text-[#c4c7c5]"
+                className="w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground"
                 title={t("sidebar.section.settings")}
                >
                   <Settings className="w-6 h-6" />
@@ -162,10 +161,12 @@ export default function GoogleDocsLayout({
           </div>
       </header>
       
-      {/* 3. Toolbar */}
+      {/* 3. Toolbar - MD3 Pill Style */}
       {editor && (
-          <div className="shrink-0 z-40 relative">
-              <EditorToolbar editor={editor} />
+          <div className="shrink-0 z-40 relative mx-4 mb-2">
+              <div className="bg-[#EDF2FA] dark:bg-[#2c2c2c] rounded-[24px] px-2 h-[48px] flex items-center shadow-sm">
+                  <EditorToolbar editor={editor} />
+              </div>
           </div>
       )}
 
@@ -191,51 +192,50 @@ export default function GoogleDocsLayout({
         />
 
          {/* Main Content Column (Editor + Footer) */}
-         <div className="flex-1 flex flex-col min-w-0 bg-[#f9fbfd] dark:bg-[#1b1b1b] relative z-0 transition-colors duration-200">
+         <div className="flex-1 flex flex-col min-w-0 bg-secondary/30 relative z-0 transition-colors duration-200">
              
              {/* Scrollable Area for Editor */}
-             <main className="flex-1 overflow-y-auto flex flex-col items-center relative">
+             <main className="flex-1 overflow-y-auto flex flex-col items-center relative custom-scrollbar">
                  
-                 {/* Ruler */}
-                  <div className="shrink-0 w-[794px] h-6 bg-white dark:bg-[#1e1e1e] border-b border-black/10 dark:border-white/10 mt-4 flex px-[96px] relative select-none">
-                     <div className="absolute top-0 left-[96px] right-[96px] h-full flex">
-                        {Array.from({length: 40}).map((_, i) => (
-                            <div key={i} className="flex-1 border-l border-black/10 dark:border-white/10 h-2 mt-auto" />
-                        ))}
-                     </div>
-                     <div className="w-full h-full flex justify-between items-start pt-1 text-[9px] text-muted z-10 px-1">
-                        {['1', '2', '3', '4', '5', '6', '7'].map((n) => (
-                            <span key={n}>{n}</span>
-                        ))}
-                     </div>
-                  </div>
+                 {/* Ruler - Sticky Top */}
+                  <div className="sticky top-0 z-30 mb-2 mt-4 shrink-0 select-none" style={{ width: '816px', maxWidth: 'calc(100% - 40px)' }}>
+                    <div className="h-[24px] bg-background border-b border-border flex relative">
+                        {/* Ruler Marks */}
+                        <div className="absolute inset-0 flex items-end">
+                            {Array.from({ length: 41 }).map((_, i) => (
+                                <div 
+                                    key={i} 
+                                    className={cn("bg-foreground/20 w-[1px]", i % 5 === 0 ? "h-2" : "h-1")} 
+                                    style={{ left: `${i * 2.5}%` }} 
+                                />
+                            ))}
+                        </div>
+                        {/* Numbers */}
+                        <div className="absolute inset-0 flex justify-around items-start pt-0.5 text-[8px] text-muted-foreground px-1">
+                            {['1', '', '2', '', '3', '', '4', '', '5', '', '6', '', '7'].map((n, idx) => (
+                                <span key={idx} className="flex-1 text-center">{n}</span>
+                            ))}
+                        </div>
+                    </div>
+                 </div>
                  
-                 {/* Page (A4: 210mm x 297mm @ 96DPI ~= 794px x 1123px) */}
+                 {/* Page (A4: 210mm x 297mm @ 96DPI ~= 816px x 1056px) */}
                   <div 
-                    className="my-4 bg-white dark:bg-[#1e1e1e] shadow-lg border border-black/5 dark:border-white/5 min-h-[1123px] transition-all duration-200 ease-in-out relative flex flex-col"
+                    className="mb-8 bg-background shadow-lg min-h-[1056px] transition-all duration-200 ease-in-out relative flex flex-col"
                     style={{ 
-                        width: '794px', 
+                        width: '816px', 
                         maxWidth: 'calc(100% - 40px)', // Responsive fallback
                         padding: '96px' // Standard 1 inch margins
                     }}
                   >
                      {children}
                 </div>
-
-                {/* Toggle Sidebar Button */}
-                <div className="absolute top-4 left-4 z-10 print:hidden">
-                    <button 
-                        onClick={() => setSidebarOpen(!isSidebarOpen)}
-                        className="p-1.5 rounded-full bg-[#edf2fa] dark:bg-[#333] hover:bg-[#dbe4f7] dark:hover:bg-[#444] text-[#444746] dark:text-[#e3e3e3] transition-colors shadow-sm"
-                        title={isSidebarOpen ? t("common.close") : t("common.open")}
-                    >
-                        {isSidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-                    </button>
+                
+                {/* StatusFooter inside scrollable area */}
+                <div className="w-full max-w-[816px] mb-8">
+                    <StatusFooter onOpenExport={handleOpenExport} />
                 </div>
              </main>
-
-             {/* Footer Fixed at Bottom of Main Column */}
-             <StatusFooter onOpenExport={handleOpenExport} />
          </div>
           
           {/* Right Resizer */}
