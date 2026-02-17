@@ -5,7 +5,6 @@ import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import { ErrorCode } from "../../../shared/constants/errorCode.js";
-import { markRestartRequested } from "../../lifecycle/restart.js";
 import {
   windowOpenExportArgsSchema,
   windowSetFullscreenArgsSchema,
@@ -38,11 +37,13 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       logTag: "APP_RESTART",
       failMessage: "Failed to restart app",
       handler: () => {
-        markRestartRequested();
-        app.relaunch({
-          args: process.argv.slice(1),
+        logger.info("APP_RESTART received, relaunching app", {
+          isPackaged: app.isPackaged,
+          argv: process.argv,
         });
-        app.quit();
+        // Electron official restart flow
+        app.relaunch();
+        app.exit(0);
         return true;
       },
     },

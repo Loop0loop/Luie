@@ -16,6 +16,7 @@ import type { Snapshot } from "../../../shared/types";
 export type ContextTab = "synopsis" | "characters" | "terms";
 export type ResearchTab = "character" | "world" | "scrap" | "analysis";
 export type WorldTab = "synopsis" | "terms" | "mindmap" | "drawing" | "plot";
+export type DocsRightTab = "character" | "world" | "scrap" | "analysis" | "snapshot" | "trash" | null;
 
 interface RightPanelContent {
   type: "research" | "editor" | "snapshot" | "export";
@@ -37,6 +38,8 @@ interface UIStore {
   isManuscriptMenuOpen: boolean;
   sidebarWidth: number;
   contextWidth: number;
+  docsRightTab: DocsRightTab;
+  isBinderBarOpen: boolean;
 
   setView: (view: UIStore["view"]) => void;
   setContextTab: (tab: ContextTab) => void;
@@ -51,6 +54,8 @@ interface UIStore {
   setManuscriptMenuOpen: (isOpen: boolean) => void;
   setSidebarWidth: (width: number) => void;
   setContextWidth: (width: number) => void;
+  setDocsRightTab: (tab: DocsRightTab) => void;
+  setBinderBarOpen: (isOpen: boolean) => void;
 }
 
 export const useUIStore = create<UIStore>()(
@@ -71,6 +76,8 @@ export const useUIStore = create<UIStore>()(
       isManuscriptMenuOpen: false,
       sidebarWidth: 260,
       contextWidth: 320,
+      docsRightTab: null,
+      isBinderBarOpen: true,
 
       setView: (view) => set({ view }),
       setContextTab: (contextTab) => set({ contextTab }),
@@ -86,6 +93,8 @@ export const useUIStore = create<UIStore>()(
       setManuscriptMenuOpen: (isManuscriptMenuOpen) => set({ isManuscriptMenuOpen }),
       setSidebarWidth: (sidebarWidth) => set({ sidebarWidth }),
       setContextWidth: (contextWidth) => set({ contextWidth }),
+      setDocsRightTab: (docsRightTab) => set({ docsRightTab }),
+      setBinderBarOpen: (isBinderBarOpen) => set({ isBinderBarOpen }),
     }),
     {
       name: STORAGE_KEY_UI,
@@ -102,6 +111,7 @@ export const useUIStore = create<UIStore>()(
         isManuscriptMenuOpen: state.isManuscriptMenuOpen,
         sidebarWidth: state.sidebarWidth,
         contextWidth: state.contextWidth,
+        isBinderBarOpen: state.isBinderBarOpen,
         rightPanelContent:
           state.rightPanelContent.type === "snapshot"
             ? {

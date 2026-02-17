@@ -24,6 +24,12 @@ configureLogger({
 });
 
 const logger = createLogger("Main");
+logger.info("Main process bootstrap", {
+  execPath: process.execPath,
+  argv: process.argv,
+  isPackaged: app.isPackaged,
+  defaultApp: process.defaultApp,
+});
 
 initDatabaseEnv();
 

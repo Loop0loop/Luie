@@ -6,7 +6,6 @@ import {
   QUIT_SAVE_TIMEOUT_MS,
 } from "../../shared/constants/index.js";
 import type { createLogger } from "../../shared/logger/index.js";
-import { consumeRestartRequest } from "./restart.js";
 
 type Logger = ReturnType<typeof createLogger>;
 
@@ -21,15 +20,6 @@ export const registerShutdownHandlers = (logger: Logger): void => {
 
   app.on("before-quit", (event) => {
     if (isQuitting) return;
-
-    if (consumeRestartRequest()) {
-      isQuitting = true;
-      event.preventDefault();
-      logger.info("App is restarting, skipping graceful quit flow");
-      app.exit(0);
-      return;
-    }
-
     isQuitting = true;
     event.preventDefault();
 

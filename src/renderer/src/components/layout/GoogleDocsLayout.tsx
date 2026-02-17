@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { SnapshotList } from "../snapshot/SnapshotList";
 import { TrashList } from "../trash/TrashList";
 import EditorToolbar from '../editor/EditorToolbar';
+import { EditorRuler } from "../editor/EditorRuler";
 import StatusFooter from "../common/StatusFooter";
 import { api } from "../../services/api";
 import ResearchPanel from "../research/ResearchPanel";  
@@ -23,7 +24,9 @@ import {
   Globe, // World
   StickyNote, // Scrap
   Sparkles, // Analysis
-  Settings
+  Settings,
+  PanelRightClose,
+  PanelRightOpen
 } from "lucide-react";
 
 interface GoogleDocsLayoutProps {
@@ -44,21 +47,25 @@ export default function GoogleDocsLayout({
   onOpenSettings
 }: GoogleDocsLayoutProps) {
   const { t } = useTranslation();
-  const [activeRightTab, setActiveRightTab] = useState<"character" | "world" | "scrap" | "analysis" | "snapshot" | "trash" | null>(null);
   const [trashRefreshKey, setTrashRefreshKey] = useState(0);
+  const [pageMargins, setPageMargins] = useState({ left: 96, right: 96, firstLineIndent: 0 });
 
   const {
     isSidebarOpen,
     sidebarWidth,
     contextWidth,
+    docsRightTab: activeRightTab,
+    isBinderBarOpen,
     setSidebarOpen,
     setSidebarWidth,
     setContextWidth,
+    setDocsRightTab: setActiveRightTab,
+    setBinderBarOpen,
   } = useUIStore();
   
-  const handleRightTabClick = (tab: "character" | "world" | "scrap" | "analysis" | "snapshot" | "trash") => {
-     setActiveRightTab(prev => prev === tab ? null : tab);
-  };
+  const handleRightTabClick = useCallback((tab: "character" | "world" | "scrap" | "analysis" | "snapshot" | "trash") => {
+     setActiveRightTab(activeRightTab === tab ? null : tab);
+  }, [activeRightTab, setActiveRightTab]);
 
   const handleOpenExport = async () => {
     if (!activeChapterId) return;
@@ -195,39 +202,26 @@ export default function GoogleDocsLayout({
          <div className="flex-1 flex flex-col min-w-0 bg-secondary/30 relative z-0 transition-colors duration-200">
              
              {/* Scrollable Area for Editor */}
-             <main className="flex-1 overflow-y-auto flex flex-col items-center relative custom-scrollbar">
-                 
-                 {/* Ruler - Sticky Top (Opaque Background Fixed) */}
-                  <div className="sticky top-0 z-30 pt-4 pb-2 shrink-0 select-none bg-background/95 backdrop-blur-sm" style={{ width: '816px', maxWidth: 'calc(100% - 40px)' }}>
-                    <div className="h-[24px] bg-background border-b border-border flex relative">
-                        {/* Ruler Marks */}
-                        <div className="absolute inset-0 flex items-end">
-                            {Array.from({ length: 41 }).map((_, i) => (
-                                <div 
-                                    key={i} 
-                                    className={cn("bg-foreground/20 w-px", i % 5 === 0 ? "h-2" : "h-1")} 
-                                    style={{ left: `${i * 2.5}%` }} 
-                                />
-                            ))}
-                        </div>
-                        {/* Numbers */}
-                        <div className="absolute inset-0 flex justify-around items-start pt-0.5 text-[8px] text-muted-foreground px-1">
-                            {['1', '', '2', '', '3', '', '4', '', '5', '', '6', '', '7'].map((n, idx) => (
-                                <span key={idx} className="flex-1 text-center">{n}</span>
-                            ))}
-                        </div>
+             <main className="flex-1 overflow-y-auto flex flex-col items-center relative custom-scrollbar bg-[#F9FBFD] dark:bg-[#121212]">
+                                  {/* Ruler - Sticky Top (Opaque Background Fixed) */}
+                   <div className="sticky top-0 z-30 pt-4 pb-2 shrink-0 select-none bg-[#F9FBFD]/95 dark:bg-[#121212]/95 backdrop-blur-sm flex justify-center w-full">
+                    <div className="bg-background border border-border shadow-sm">
+                        <EditorRuler onMarginsChange={setPageMargins} />
                     </div>
-                 </div>
+                  </div>
                  
-                 {/* Page (A4: 210mm x 297mm @ 96DPI ~= 816px x 1056px) */}
-                  <div 
-                    className="mb-8 bg-background shadow-lg border border-border min-h-[1056px] transition-all duration-200 ease-in-out relative flex flex-col"
+                  {/* Page (A4: 210mm x 297mm @ 96DPI ~= 794px x 1123px) */}
+                   <div 
+                    className="mb-8 bg-background min-h-[1123px] transition-all duration-200 ease-in-out relative flex flex-col box-content"
                     style={{ 
-                        width: '816px', 
-                        maxWidth: 'calc(100% - 40px)', // Responsive fallback
-                        padding: '96px' // Standard 1 inch margins
+                        width: '794px', 
+                        paddingTop: '96px',
+                        paddingBottom: '96px',
+                        paddingLeft: `${pageMargins.left}px`,
+                        paddingRight: `${pageMargins.right}px`,
+                        boxShadow: "0 1px 3px 0 rgba(60,64,67,0.15), 0 4px 8px 3px rgba(60,64,67,0.15)"
                     }}
-                  >
+                   >
                      {children}
                 </div>
                 
@@ -320,8 +314,20 @@ export default function GoogleDocsLayout({
               </div>
           </div>
           
-          {/* Right Icon Bar */}
-          <div className="w-14 bg-background border-l border-border flex flex-col items-center py-4 gap-4 shrink-0 z-10 transition-colors duration-200">
+          {/* Right Icon Bar (Binder Bar) */}
+          <div className={cn(
+            "bg-background border-l border-border flex flex-col items-center py-4 gap-4 shrink-0 z-10 transition-all duration-300 ease-in-out overflow-hidden",
+            isBinderBarOpen ? "w-14 opacity-100" : "w-0 opacity-0 border-l-0"
+          )}>
+              
+              {/* Collapse Toggle */}
+              <button
+                onClick={() => setBinderBarOpen(false)}
+                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors mb-1"
+                title={t("sidebar.toggle.close")}
+              >
+                <PanelRightClose className="w-4 h-4 text-[#444746] dark:text-[#c4c7c5]" />
+              </button>
               
               {/* Character */}
               <button 
@@ -403,6 +409,17 @@ export default function GoogleDocsLayout({
                   </button>
               </div>
           </div>
+
+          {/* Binder Bar Expand Button (shown when collapsed) */}
+          {!isBinderBarOpen && (
+            <button
+              onClick={() => setBinderBarOpen(true)}
+              className="w-6 bg-background border-l border-border flex items-center justify-center shrink-0 z-10 hover:bg-muted/50 transition-colors"
+              title={t("sidebar.toggle.open")}
+            >
+              <PanelRightOpen className="w-4 h-4 text-[#444746] dark:text-[#c4c7c5]" />
+            </button>
+          )}
       </div>
 
     </div>
