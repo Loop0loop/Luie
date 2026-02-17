@@ -152,7 +152,6 @@ export type RendererApi = {
   };
   app: {
     quit: () => Promise<IPCResponse<unknown>>;
-    restart: () => Promise<IPCResponse<unknown>>;
   };
   window: {
     maximize: () => Promise<IPCResponse<unknown>>;

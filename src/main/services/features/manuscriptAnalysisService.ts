@@ -25,6 +25,7 @@ import {
   LUIE_WORLD_TERMS_FILE,
   MARKDOWN_EXTENSION,
 } from "../../../shared/constants/index.js";
+import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 
 const logger = createLogger("ManuscriptAnalysisService");
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3-flash-preview";
@@ -409,7 +410,7 @@ ${runId}
           });
 
           if (this.currentWindow && !this.currentWindow.isDestroyed()) {
-            this.currentWindow.webContents.send("analysis:stream", {
+            this.currentWindow.webContents.send(IPC_CHANNELS.ANALYSIS_STREAM, {
               item,
               done: false,
             });
@@ -620,7 +621,7 @@ ${runId}
       
       if (this.currentWindow && !this.currentWindow.isDestroyed()) {
         logger.info("Sending completion event to window");
-        this.currentWindow.webContents.send("analysis:stream", {
+        this.currentWindow.webContents.send(IPC_CHANNELS.ANALYSIS_STREAM, {
           item: null,
           done: true,
         });
@@ -664,7 +665,7 @@ ${runId}
       
       // 에러 이벤트 전송
       if (this.currentWindow && !this.currentWindow.isDestroyed()) {
-        this.currentWindow.webContents.send("analysis:error", {
+        this.currentWindow.webContents.send(IPC_CHANNELS.ANALYSIS_ERROR, {
           code: errorCode,
           message: errorMessage,
           details: error instanceof Error ? error.message : String(error),

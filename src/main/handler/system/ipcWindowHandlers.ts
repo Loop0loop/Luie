@@ -33,21 +33,6 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       },
     },
     {
-      channel: IPC_CHANNELS.APP_RESTART,
-      logTag: "APP_RESTART",
-      failMessage: "Failed to restart app",
-      handler: () => {
-        logger.info("APP_RESTART received, relaunching app", {
-          isPackaged: app.isPackaged,
-          argv: process.argv,
-        });
-        // Electron official restart flow
-        app.relaunch();
-        app.exit(0);
-        return true;
-      },
-    },
-    {
       channel: IPC_CHANNELS.WINDOW_MAXIMIZE,
       logTag: "WINDOW_MAXIMIZE",
       failMessage: "Failed to maximize window",

@@ -63,7 +63,6 @@ export const ko = {
         hide: "메뉴바 가리기",
         show: "메뉴바 보이기",
         applyHint: "변경 사항은 즉시 적용됩니다. (가리기: 전체화면, 보이기: 일반창)",
-        restartConfirm: "설정 적용을 위해 앱을 재시작 하겠습니까?",
       },
       view: {
         pc: "PC",

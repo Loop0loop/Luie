@@ -170,6 +170,13 @@ export const analysisStartArgsSchema = z.tuple([
     projectId: projectIdSchema,
   }),
 ]);
+export const recoveryRunDbArgsSchema = z.tuple([
+  z
+    .object({
+      dryRun: z.boolean().optional(),
+    })
+    .optional(),
+]);
 
 export const editorSettingsSchema = z.object({
   fontFamily: z.enum(["serif", "sans", "mono"]),

@@ -125,13 +125,16 @@ export default function GoogleDocsLayout({
           {/* Left Section: Toggle, Home, Title */}
           <div className="flex items-center gap-3 min-w-0">
               {/* Sidebar Toggle */}
-              <button 
-                  onClick={() => setSidebarOpen(!isSidebarOpen)}
-                  className="w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground shrink-0"
-                  title={isSidebarOpen ? t("sidebar.toggle.close") : t("sidebar.toggle.open")}
-              >
-                  {isSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
+              {/* Sidebar Toggle (Only visible when open, otherwise use floating) */}
+              {isSidebarOpen && (
+                <button 
+                    onClick={() => setSidebarOpen(false)}
+                    className="w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground shrink-0"
+                    title={t("sidebar.toggle.close")}
+                >
+                    <ChevronLeft className="w-5 h-5" />
+                </button>
+              )}
 
               {/* Home Icon */}
               <div className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-muted/50 cursor-pointer transition-colors shrink-0" title={t("common.home")}>
@@ -178,6 +181,17 @@ export default function GoogleDocsLayout({
       {/* 4. Main Body */}
       <div ref={containerRef} className="flex-1 flex overflow-hidden relative">
          
+         {/* Floating Sidebar Toggle (Visible when closed) */}
+         {!isSidebarOpen && (
+            <button
+                onClick={() => setSidebarOpen(true)}
+                className="absolute left-4 top-4 z-50 w-10 h-10 bg-background border border-border/50 shadow-md rounded-full flex items-center justify-center hover:bg-muted/50 transition-all text-muted-foreground"
+                title={t("sidebar.toggle.open")}
+            >
+                <Menu className="w-5 h-5" />
+            </button>
+         )}
+         
          {/* Left Sidebar (Manuscript Only) */}
          <div 
            className={cn(
@@ -217,7 +231,8 @@ export default function GoogleDocsLayout({
                         paddingBottom: '96px',
                         paddingLeft: `${pageMargins.left}px`,
                         paddingRight: `${pageMargins.right}px`,
-                        boxShadow: "0 1px 3px 0 rgba(60,64,67,0.15), 0 4px 8px 3px rgba(60,64,67,0.15)"
+                        boxShadow: "0 1px 3px 0 rgba(60,64,67,0.15), 0 4px 8px 3px rgba(60,64,67,0.15)",
+                        color: 'var(--foreground)' // Enforce theme text color
                     }}
                    >
                      {children}
@@ -410,13 +425,14 @@ export default function GoogleDocsLayout({
 
           {/* Binder Bar Expand Button (shown when collapsed) */}
           {!isBinderBarOpen && (
-             <div className="h-full flex flex-col justify-center items-center py-4 shrink-0 z-10 w-6 bg-background border-l border-border hover:bg-muted/50 transition-colors cursor-pointer"
-                  onClick={() => setBinderBarOpen(true)}
-                  title={t("sidebar.toggle.open")}
-             >
-                <button className="p-1">
-                   <ChevronLeft className="w-4 h-4 text-muted-foreground" />
-                </button>
+             <div className="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
+                 <button
+                      onClick={() => setBinderBarOpen(true)}
+                      className="w-8 h-12 bg-background border border-r-0 border-border shadow-md rounded-l-lg flex items-center justify-center hover:bg-muted/50 transition-colors text-muted-foreground cursor-pointer"
+                      title={t("sidebar.toggle.open")}
+                 >
+                    <ChevronLeft className="w-5 h-5" />
+                 </button>
              </div>
           )}
       </div>

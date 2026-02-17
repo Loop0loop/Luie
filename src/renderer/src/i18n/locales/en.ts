@@ -33,7 +33,6 @@ export const en = {
         hide: "Hide menu bar",
         show: "Show menu bar",
         applyHint: "Changes apply immediately. (Hide: fullscreen, Show: windowed)",
-        restartConfirm: "Would you like to restart the app now to apply this setting?",
       },
       font: {
         serif: "Serif",

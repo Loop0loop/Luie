@@ -55,6 +55,7 @@ export const IPC_CHANNELS = {
   // Analysis (원고 분석)
   ANALYSIS_START: "analysis:start",
   ANALYSIS_STREAM: "analysis:stream",
+  ANALYSIS_ERROR: "analysis:error",
   ANALYSIS_STOP: "analysis:stop",
   ANALYSIS_CLEAR: "analysis:clear",
 
@@ -106,7 +107,6 @@ export const IPC_CHANNELS = {
   APP_GET_VERSION: "app:get-version",
   APP_CHECK_UPDATE: "app:check-update",
   APP_QUIT: "app:quit",
-  APP_RESTART: "app:restart",
 
   // Export
   EXPORT_CREATE: "export:create",

@@ -453,7 +453,6 @@ contextBridge.exposeInMainWorld("api", {
 
   app: {
     quit: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.APP_QUIT),
-    restart: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.APP_RESTART),
   },
 
   // Logger API
@@ -552,9 +551,9 @@ contextBridge.exposeInMainWorld("api", {
       const listener = (_event: unknown, error: unknown) => {
         callback(error);
       };
-      ipcRenderer.on("analysis:error", listener);
+      ipcRenderer.on(IPC_CHANNELS.ANALYSIS_ERROR, listener);
       return () => {
-        ipcRenderer.removeListener("analysis:error", listener);
+        ipcRenderer.removeListener(IPC_CHANNELS.ANALYSIS_ERROR, listener);
       };
     },
   },
