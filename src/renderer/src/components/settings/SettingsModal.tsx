@@ -117,15 +117,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
   const handleMenuBarModeChange = useCallback(
     async (mode: WindowMenuBarMode) => {
-      setMenuBarMode(mode);
       const response = await window.api.settings.setMenuBarMode({ mode });
       if (!response.success) return;
-
-      const shouldRestart = window.confirm(t("settings.menuBar.restartConfirm"));
-      if (!shouldRestart) return;
-      await window.api.app.restart();
+      setMenuBarMode(mode);
     },
-    [t],
+    [],
   );
 
   useEffect(() => {

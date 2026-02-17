@@ -24,9 +24,7 @@ import {
   Globe, // World
   StickyNote, // Scrap
   Sparkles, // Analysis
-  Settings,
-  PanelRightClose,
-  PanelRightOpen
+  Settings
 } from "lucide-react";
 
 interface GoogleDocsLayoutProps {
@@ -212,7 +210,7 @@ export default function GoogleDocsLayout({
                  
                   {/* Page (A4: 210mm x 297mm @ 96DPI ~= 794px x 1123px) */}
                    <div 
-                    className="mb-8 bg-background min-h-[1123px] transition-all duration-200 ease-in-out relative flex flex-col box-content"
+                    className="mb-8 bg-background min-h-[1123px] transition-all duration-200 ease-in-out relative flex flex-col box-border"
                     style={{ 
                         width: '794px', 
                         paddingTop: '96px',
@@ -323,10 +321,10 @@ export default function GoogleDocsLayout({
               {/* Collapse Toggle */}
               <button
                 onClick={() => setBinderBarOpen(false)}
-                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors mb-1"
+                className="w-full h-8 flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-colors mb-2 border-b border-border/50"
                 title={t("sidebar.toggle.close")}
               >
-                <PanelRightClose className="w-4 h-4 text-[#444746] dark:text-[#c4c7c5]" />
+                  <ChevronLeft className="w-4 h-4 text-muted-foreground rotate-180" />
               </button>
               
               {/* Character */}
@@ -412,13 +410,14 @@ export default function GoogleDocsLayout({
 
           {/* Binder Bar Expand Button (shown when collapsed) */}
           {!isBinderBarOpen && (
-            <button
-              onClick={() => setBinderBarOpen(true)}
-              className="w-6 bg-background border-l border-border flex items-center justify-center shrink-0 z-10 hover:bg-muted/50 transition-colors"
-              title={t("sidebar.toggle.open")}
-            >
-              <PanelRightOpen className="w-4 h-4 text-[#444746] dark:text-[#c4c7c5]" />
-            </button>
+             <div className="h-full flex flex-col justify-center items-center py-4 shrink-0 z-10 w-6 bg-background border-l border-border hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => setBinderBarOpen(true)}
+                  title={t("sidebar.toggle.open")}
+             >
+                <button className="p-1">
+                   <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+                </button>
+             </div>
           )}
       </div>
 

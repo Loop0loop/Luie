@@ -7,9 +7,9 @@ import TaskItem from "@tiptap/extension-task-item";
 import Placeholder from "@tiptap/extension-placeholder";
 import Highlight from "@tiptap/extension-highlight";
 import { TextStyle } from "@tiptap/extension-text-style";
+import { Color } from "@tiptap/extension-color";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
-import Color from "@tiptap/extension-color";
 import {
   Details,
   DetailsSummary,
@@ -30,8 +30,9 @@ import { DiffHighlight } from "./extensions/DiffExtension";
 import { SmartLinkTooltip } from "./SmartLinkTooltip";
 import { api } from "../../services/api";
 import { useTranslation } from "react-i18next";
-
-import StatusFooter from "../common/StatusFooter";
+import { useCharacterStore } from "../../stores/characterStore";
+import { useTermStore } from "../../stores/termStore";
+import { useUIStore } from "../../stores/uiStore";
 
 // Simple Callout Extension (inline to avoid dependencies)
 const Callout = Node.create({
@@ -68,7 +69,7 @@ const SlashCommand = Extension.create({
   },
 });
 
-
+import StatusFooter from "../common/StatusFooter";
 
 interface EditorProps {
   initialTitle?: string;
@@ -188,7 +189,54 @@ function Editor({
           class: "tiptap flex-1 flex flex-col outline-none h-full",
           style: `font-family: ${fontFamilyCss}; font-size: ${fontSize}px; line-height: ${lineHeight};`,
         },
-      },
+        handleClick: (view, pos, _event) => {
+             const { state } = view;
+             // Check if node has marks and specifically underline
+             // nodeAt(pos) might return the node *after* pos. Tiptap often works better with `state.selection`.
+             // But for click, let's check the range or node at pos.
+             
+             // Better strategy: Check if the clickable range has 'underline' mark
+             const $pos = state.doc.resolve(pos);
+             const marks = $pos.marks();
+             const hasUnderline = marks.some(m => m.type.name === 'underline');
+
+             if (hasUnderline) {
+                // Get the text of the word/node at this position
+                // This is a naive extraction; ideally we want the full marked range.
+                // For now, let's grab the text node's content or the word around it.
+                // Simple approach: Get the full text of the node at this position if it's a text node
+                const node = $pos.nodeAfter || $pos.nodeBefore; // Click might be at boundary
+                if (node && node.isText) {
+                    const text = node.text || "";
+                    // Attempt to find in stores
+                    const charStore = useCharacterStore.getState();
+                    const termStore = useTermStore.getState();
+                    const uiStore = useUIStore.getState();
+
+                    // Search Character
+                    const char = charStore.characters.find(c => c.name === text || c.name.includes(text) || text.includes(c.name));
+                    if (char) {
+                        charStore.setCurrentCharacter(char);
+                        uiStore.setDocsRightTab("character");
+                        uiStore.setBinderBarOpen(true);
+                        return true; // handled
+                    }
+
+                    // Search Term
+                    const term = termStore.terms.find(t => t.term === text || t.term.includes(text) || text.includes(t.term));
+                    if (term) {
+                        termStore.setCurrentTerm(term);
+                        uiStore.setDocsRightTab("world"); // Assuming terms are in world tab or separate?
+                        // uiStore has 'worldTab' -> 'terms'. Let's set that too if needed.
+                        uiStore.setWorldTab("terms");
+                        uiStore.setBinderBarOpen(true);
+                        return true;
+                    }
+                }
+             }
+             return false;
+          }
+        },
     },
     [extensions, fontFamilyCss, fontSize, lineHeight, updateStats],
   );
