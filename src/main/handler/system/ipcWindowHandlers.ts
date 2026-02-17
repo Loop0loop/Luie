@@ -38,7 +38,7 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       failMessage: "Failed to restart app",
       handler: () => {
         app.relaunch();
-        app.quit();
+        app.exit(0);
         return true;
       },
     },

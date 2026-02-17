@@ -102,7 +102,7 @@ const FontSelector = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-32 bg-popover border border-border shadow-md rounded-md z-50 py-1 max-h-48 overflow-y-auto">
+        <div className="absolute top-full left-0 mt-1 w-32 bg-background border border-border shadow-md rounded-md z-50 py-1 max-h-48 overflow-y-auto">
           {EDITOR_FONT_FAMILIES.map((font) => (
             <button
               key={font}

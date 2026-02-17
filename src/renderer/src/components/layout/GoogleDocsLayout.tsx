@@ -163,12 +163,10 @@ export default function GoogleDocsLayout({
           </div>
       </header>
       
-      {/* 3. Toolbar - MD3 Pill Style */}
+      {/* 3. Toolbar - Standard Full Width */}
       {editor && (
-          <div className="shrink-0 z-40 relative mx-4 mb-2 flex justify-center">
-              <div className="bg-[#EDF2FA] dark:bg-[#2c2c2c] rounded-[24px] px-2 h-[48px] flex items-center shadow-sm">
-                  <EditorToolbar editor={editor} />
-              </div>
+          <div className="shrink-0 z-40 relative w-full flex justify-center bg-background border-b border-border py-1">
+             <EditorToolbar editor={editor} />
           </div>
       )}
 
@@ -199,8 +197,8 @@ export default function GoogleDocsLayout({
              {/* Scrollable Area for Editor */}
              <main className="flex-1 overflow-y-auto flex flex-col items-center relative custom-scrollbar">
                  
-                 {/* Ruler - Sticky Top */}
-                  <div className="sticky top-0 z-30 mb-2 mt-4 shrink-0 select-none" style={{ width: '816px', maxWidth: 'calc(100% - 40px)' }}>
+                 {/* Ruler - Sticky Top (Opaque Background Fixed) */}
+                  <div className="sticky top-0 z-30 pt-4 pb-2 shrink-0 select-none bg-background/95 backdrop-blur-sm" style={{ width: '816px', maxWidth: 'calc(100% - 40px)' }}>
                     <div className="h-[24px] bg-background border-b border-border flex relative">
                         {/* Ruler Marks */}
                         <div className="absolute inset-0 flex items-end">
