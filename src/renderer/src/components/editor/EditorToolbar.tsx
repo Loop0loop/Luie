@@ -226,57 +226,54 @@ const DefaultToolbar = ({ editor, isMobileView, onToggleMobileView }: EditorTool
 }
 
 const DocsToolbar = ({ editor }: EditorToolbarProps) => {
+    const { t } = useTranslation();
     const fontSize = useEditorStore((state) => state.fontSize);
     const setFontSize = useEditorStore((state) => state.setFontSize);
 
     return (
-        <div className="flex flex-col w-full bg-[#f9fbfd] dark:bg-[#1e1e1e] border-b border-border/50 shadow-sm px-4 py-1 gap-2 justify-center">
+        <div className="flex flex-wrap items-center gap-1 justify-center w-full px-2">
+             <ToggleButton onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("common.toolbar.tooltip.undo")}>
+                <Undo2 className="w-4 h-4" />
+             </ToggleButton>
+             <ToggleButton onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("common.toolbar.tooltip.redo")}>
+                <Redo2 className="w-4 h-4" />
+             </ToggleButton>
+             <div className="w-px h-5 bg-border mx-2" />
              
-             {/* Main Toolbar (Floating Style) */}
-             <div className="flex items-center gap-1 p-1 bg-[#edf2fa] dark:bg-[#2d2d2d] rounded-[24px] px-4 w-fit shadow-inner mx-auto sm:mx-0">
-                 <ToggleButton onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo()} className="w-8 h-8 rounded-full hover:bg-black/5">
-                    <Undo2 className="w-4 h-4" />
-                 </ToggleButton>
-                 <ToggleButton onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo()} className="w-8 h-8 rounded-full hover:bg-black/5">
-                    <Redo2 className="w-4 h-4" />
-                 </ToggleButton>
-                 <div className="w-px h-5 bg-border mx-2" />
-                 
-                 <FontSelector />
-                 <div className="w-px h-5 bg-border mx-2" />
+             <FontSelector />
+             <div className="w-px h-5 bg-border mx-2" />
 
-                 <div className="flex items-center border border-border/50 rounded overflow-hidden h-7 bg-background">
-                    <button onClick={() => setFontSize(Math.max(EDITOR_TOOLBAR_FONT_MIN, fontSize - EDITOR_TOOLBAR_FONT_STEP))} className="px-2 hover:bg-hover">-</button>
-                    <input className="w-8 text-center text-xs bg-transparent outline-none" value={fontSize} readOnly />
-                    <button onClick={() => setFontSize(fontSize + EDITOR_TOOLBAR_FONT_STEP)} className="px-2 hover:bg-hover">+</button>
-                 </div>
-                 
-                 <div className="w-px h-5 bg-border mx-2" />
-                 
-                 <ToggleButton active={editor?.isActive("bold")} onClick={() => editor?.chain().focus().toggleBold().run()} className="w-8 h-8 rounded hover:bg-black/5">
-                    <Bold className="w-4 h-4" />
-                 </ToggleButton>
-                 <ToggleButton active={editor?.isActive("italic")} onClick={() => editor?.chain().focus().toggleItalic().run()} className="w-8 h-8 rounded hover:bg-black/5">
-                    <Italic className="w-4 h-4" />
-                 </ToggleButton>
-                 <ToggleButton active={editor?.isActive("underline")} onClick={() => editor?.chain().focus().toggleUnderline().run()} className="w-8 h-8 rounded hover:bg-black/5">
-                    <Underline className="w-4 h-4" />
-                 </ToggleButton>
-                  {/* Color Picker (Simplified) */}
-                 <div className="relative w-8 h-8 flex items-center justify-center hover:bg-black/5 rounded cursor-pointer">
-                    <Type className="w-4 h-4" style={{ color: editor?.getAttributes("textStyle").color || "currentColor" }} />
-                    <input type="color" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => editor?.chain().focus().setColor(e.target.value).run()} />
-                 </div>
-
-                 <div className="w-px h-5 bg-border mx-2" />
-
-                 <ToggleButton active={editor?.isActive({ textAlign: "left" })} onClick={() => editor?.chain().focus().setTextAlign("left").run()} className="w-8 h-8 rounded hover:bg-black/5">
-                    <AlignLeft className="w-4 h-4" />
-                 </ToggleButton>
-                 <ToggleButton active={editor?.isActive({ textAlign: "center" })} onClick={() => editor?.chain().focus().setTextAlign("center").run()} className="w-8 h-8 rounded hover:bg-black/5">
-                    <AlignCenter className="w-4 h-4" />
-                 </ToggleButton>
+             <div className="flex items-center border border-border/50 rounded overflow-hidden h-7 bg-background">
+                <button onClick={() => setFontSize(Math.max(EDITOR_TOOLBAR_FONT_MIN, fontSize - EDITOR_TOOLBAR_FONT_STEP))} className="px-2 hover:bg-hover">-</button>
+                <input className="w-8 text-center text-xs bg-transparent outline-none" value={fontSize} readOnly />
+                <button onClick={() => setFontSize(fontSize + EDITOR_TOOLBAR_FONT_STEP)} className="px-2 hover:bg-hover">+</button>
              </div>
+             
+             <div className="w-px h-5 bg-border mx-2" />
+             
+             <ToggleButton active={editor?.isActive("bold")} onClick={() => editor?.chain().focus().toggleBold().run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("common.toolbar.tooltip.bold")}>
+                <Bold className="w-4 h-4" />
+             </ToggleButton>
+             <ToggleButton active={editor?.isActive("italic")} onClick={() => editor?.chain().focus().toggleItalic().run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("common.toolbar.tooltip.italic")}>
+                <Italic className="w-4 h-4" />
+             </ToggleButton>
+             <ToggleButton active={editor?.isActive("underline")} onClick={() => editor?.chain().focus().toggleUnderline().run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("common.toolbar.tooltip.underline")}>
+                <Underline className="w-4 h-4" />
+             </ToggleButton>
+              {/* Color Picker (Simplified) */}
+             <div className="relative w-8 h-8 flex items-center justify-center hover:bg-black/5 rounded-full cursor-pointer" title={t("common.toolbar.tooltip.textColor")}>
+                <Type className="w-4 h-4" style={{ color: editor?.getAttributes("textStyle").color || "currentColor" }} />
+                <input type="color" className="absolute inset-0 opacity-0 cursor-pointer rounded-full" onChange={(e) => editor?.chain().focus().setColor(e.target.value).run()} />
+             </div>
+
+             <div className="w-px h-5 bg-border mx-2" />
+
+             <ToggleButton active={editor?.isActive({ textAlign: "left" })} onClick={() => editor?.chain().focus().setTextAlign("left").run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("common.toolbar.tooltip.alignLeft")}>
+                <AlignLeft className="w-4 h-4" />
+             </ToggleButton>
+             <ToggleButton active={editor?.isActive({ textAlign: "center" })} onClick={() => editor?.chain().focus().setTextAlign("center").run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("common.toolbar.tooltip.alignCenter")}>
+                <AlignCenter className="w-4 h-4" />
+             </ToggleButton>
         </div>
     )
 }
