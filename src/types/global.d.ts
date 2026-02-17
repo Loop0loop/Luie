@@ -1,11 +1,13 @@
 import type {
   Project,
+  ProjectOpenResult,
   Chapter,
   Character,
   Term,
   Snapshot,
   EditorSettings,
   AppSettings,
+  AppBootstrapStatus,
   SearchResult,
   WindowMenuBarMode,
 } from "../shared/types/index.js";
@@ -202,8 +204,9 @@ declare global {
       };
 
       app: {
+        getBootstrapStatus: () => Promise<IPCResponse<AppBootstrapStatus>>;
+        onBootstrapStatus: (callback: (status: AppBootstrapStatus) => void) => () => void;
         quit: () => Promise<IPCResponse<unknown>>;
-        restart: () => Promise<IPCResponse<unknown>>;
       };
 
       window: {

@@ -26,6 +26,13 @@ export default defineConfig({
       sourcemap: false,
       emptyOutDir: true,
       minify: true,
+      rollupOptions: {
+        output: {
+          format: "cjs",
+          entryFileNames: "[name].cjs",
+          chunkFileNames: "chunks/[name]-[hash].cjs",
+        },
+      },
     },
   },
   renderer: {

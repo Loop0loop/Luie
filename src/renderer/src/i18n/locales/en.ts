@@ -33,6 +33,7 @@ export const en = {
         hide: "Hide menu bar",
         show: "Show menu bar",
         applyHint: "Changes apply immediately. (Hide: fullscreen, Show: windowed)",
+        applyFailed: "Failed to apply the menu bar mode. Please try again.",
       },
       font: {
         serif: "Serif",

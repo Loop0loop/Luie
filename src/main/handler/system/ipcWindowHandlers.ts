@@ -6,6 +6,10 @@ import type { LoggerLike } from "../core/types.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import { ErrorCode } from "../../../shared/constants/errorCode.js";
 import {
+  ensureBootstrapReady,
+  getBootstrapStatus,
+} from "../../lifecycle/bootstrap.js";
+import {
   windowOpenExportArgsSchema,
   windowSetFullscreenArgsSchema,
 } from "../../../shared/schemas/index.js";
@@ -30,6 +34,15 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       handler: () => {
         app.quit();
         return true;
+      },
+    },
+    {
+      channel: IPC_CHANNELS.APP_GET_BOOTSTRAP_STATUS,
+      logTag: "APP_GET_BOOTSTRAP_STATUS",
+      failMessage: "Failed to get bootstrap status",
+      handler: () => {
+        void ensureBootstrapReady();
+        return getBootstrapStatus();
       },
     },
     {

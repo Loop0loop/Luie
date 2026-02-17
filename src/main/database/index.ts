@@ -2,14 +2,15 @@
  * Database service using Prisma Client
  */
 
+import { spawn } from "node:child_process";
+import { constants as fsConstants } from "node:fs";
+import * as fs from "node:fs/promises";
 import { createRequire } from "node:module";
+import * as path from "node:path";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { app } from "electron";
-import * as path from "path";
-import * as fs from "fs";
-import { execSync } from "child_process";
-import { createLogger } from "../../shared/logger/index.js";
 import { DB_NAME } from "../../shared/constants/index.js";
+import { createLogger } from "../../shared/logger/index.js";
 import { isProdEnv, isTestEnv } from "../utils/environment.js";
 import { seedIfEmpty } from "./seedDefaults.js";
 
@@ -43,15 +44,87 @@ type PrismaClient = {
   termAppearance: PrismaDelegate<PrismaRecord>;
 };
 
+type PreparedDatabaseContext = {
+  dbPath: string;
+  datasourceUrl: string;
+  isPackaged: boolean;
+  isTest: boolean;
+};
+
+type PrismaCommandResult = {
+  stdout: string;
+  stderr: string;
+};
+
 const { PrismaClient } = require("@prisma/client") as {
   PrismaClient: new (options?: unknown) => PrismaClient;
+};
+
+const pathExists = async (targetPath: string): Promise<boolean> => {
+  try {
+    await fs.access(targetPath, fsConstants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const getPrismaBinPath = (basePath: string): string => {
+  const executable = process.platform === "win32" ? "prisma.cmd" : "prisma";
+  return path.join(basePath, "node_modules", ".bin", executable);
+};
+
+const runPrismaCommand = async (
+  commandPath: string,
+  commandArgs: string[],
+  env: NodeJS.ProcessEnv,
+): Promise<PrismaCommandResult> => {
+  return await new Promise<PrismaCommandResult>((resolve, reject) => {
+    const child = spawn(commandPath, commandArgs, {
+      env,
+      shell: false,
+      windowsHide: true,
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout?.on("data", (chunk: Buffer | string) => {
+      stdout += chunk.toString();
+    });
+
+    child.stderr?.on("data", (chunk: Buffer | string) => {
+      stderr += chunk.toString();
+    });
+
+    child.on("error", (error) => {
+      reject(error);
+    });
+
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve({ stdout, stderr });
+        return;
+      }
+
+      const failure = new Error(`Prisma command failed with exit code ${code}`) as Error & {
+        code: number | null;
+        stdout: string;
+        stderr: string;
+      };
+      failure.code = code;
+      failure.stdout = stdout;
+      failure.stderr = stderr;
+      reject(failure);
+    });
+  });
 };
 
 class DatabaseService {
   private static instance: DatabaseService;
   private prisma: PrismaClient | null = null;
-  private datasourceUrl: string | null = null;
   private dbPath: string | null = null;
+  private initPromise: Promise<void> | null = null;
 
   private constructor() {
   }
@@ -63,144 +136,41 @@ class DatabaseService {
     return DatabaseService.instance;
   }
 
-  private ensureInitialized(): void {
-    if (this.prisma) return;
-
-    const isPackaged = isProdEnv();
-    const userDataPath = app.getPath("userData");
-    const isTest = isTestEnv();
-    const envDb = process.env.DATABASE_URL;
-    const hasEnvDb = Boolean(envDb);
-    let dbPath: string;
-
-    if (hasEnvDb) {
-      dbPath = envDb?.replace("file:", "") ?? path.join(userDataPath, DB_NAME);
-      this.datasourceUrl = envDb ?? `file:${dbPath}`;
-      process.env.DATABASE_URL = this.datasourceUrl;
-    } else if (isPackaged) {
-      dbPath = path.join(userDataPath, DB_NAME);
-      this.datasourceUrl = `file:${dbPath}`;
-      process.env.DATABASE_URL = this.datasourceUrl;
-    } else {
-      dbPath = path.join(process.cwd(), "prisma", "dev.db");
-      this.datasourceUrl = `file:${dbPath}`;
-      process.env.DATABASE_URL = this.datasourceUrl;
+  async initialize(): Promise<void> {
+    if (this.prisma) {
+      return;
+    }
+    if (this.initPromise) {
+      await this.initPromise;
+      return;
     }
 
-    this.dbPath = dbPath;
-
-    logger.info("Initializing database", {
-      isPackaged,
-      isTest,
-      hasEnvDb,
-      userDataPath,
-      dbPath,
-      datasourceUrl: this.datasourceUrl,
+    this.initPromise = this.initializeInternal().finally(() => {
+      if (!this.prisma) {
+        this.initPromise = null;
+      }
     });
 
-    // userData 디렉토리 확인 및 생성
-    if (!fs.existsSync(userDataPath)) {
-      fs.mkdirSync(userDataPath, { recursive: true });
-      logger.info("Created userData directory", { userDataPath });
-    }
+    await this.initPromise;
+  }
 
-    const dbExists = fs.existsSync(dbPath);
-    const migrationsDir = path.join(process.cwd(), "prisma/migrations");
-    const hasMigrations = fs.existsSync(migrationsDir)
-      && fs
-        .readdirSync(migrationsDir, { withFileTypes: true })
-        .some((entry) => entry.isDirectory());
+  private async initializeInternal(): Promise<void> {
+    const context = await this.prepareDatabaseContext();
+    this.dbPath = context.dbPath;
 
-    // Environment-specific migration strategy
-    if (isPackaged) {
-      // PRODUCTION: migrate deploy only
-      if (hasMigrations) {
-        try {
-          const prismaPath = path.join(process.resourcesPath, "node_modules/.bin/prisma");
-          const schemaPath = path.join(process.resourcesPath, "prisma/schema.prisma");
+    logger.info("Initializing database", {
+      isPackaged: context.isPackaged,
+      isTest: context.isTest,
+      hasEnvDb: Boolean(process.env.DATABASE_URL),
+      userDataPath: app.getPath("userData"),
+      dbPath: context.dbPath,
+      datasourceUrl: context.datasourceUrl,
+    });
 
-          logger.info("Running production migrations", {
-            dbPath,
-            dbExists,
-            command: "migrate deploy",
-          });
-
-          execSync(
-            `"${prismaPath}" migrate deploy --schema="${schemaPath}"`,
-            {
-              env: { ...process.env, DATABASE_URL: this.datasourceUrl },
-              stdio: "pipe",
-            }
-          );
-
-          logger.info("Production migrations applied successfully");
-        } catch (error) {
-          logger.error("Failed to apply production migrations", error);
-          throw error;
-        }
-      }
-    } else if (isTest) {
-      // TEST: db push (no migration history needed)
-      try {
-        const prismaPath = path.join(process.cwd(), "node_modules/.bin/prisma");
-        const schemaPath = path.join(process.cwd(), "prisma/schema.prisma");
-
-        logger.info("Running test database push", {
-          dbPath,
-          dbExists,
-          command: "db push",
-        });
-
-        execSync(
-          `"${prismaPath}" db push --accept-data-loss --schema="${schemaPath}"`,
-          {
-            env: { ...process.env, DATABASE_URL: this.datasourceUrl },
-            stdio: "pipe",
-          }
-        );
-
-        logger.info("Test database push completed successfully");
-      } catch (error) {
-        logger.error("Failed to push test database", error);
-        throw error;
-      }
-    } else {
-      // DEVELOPMENT: use non-interactive migration strategy
-      try {
-        const prismaPath = path.join(process.cwd(), "node_modules/.bin/prisma");
-        const schemaPath = path.join(process.cwd(), "prisma/schema.prisma");
-
-        logger.info("Running development database push", {
-          dbPath,
-          dbExists,
-          hasMigrations,
-          command: "db push",
-        });
-
-        execSync(
-          `"${prismaPath}" db push --accept-data-loss --schema="${schemaPath}"`,
-          {
-            env: { ...process.env, DATABASE_URL: this.datasourceUrl },
-            stdio: "pipe",
-          }
-        );
-
-        logger.info("Development database ready");
-      } catch (error) {
-        const err = error as { stdout?: Buffer; stderr?: Buffer };
-        const stdout = err.stdout ? err.stdout.toString("utf8") : undefined;
-        const stderr = err.stderr ? err.stderr.toString("utf8") : undefined;
-        logger.error("Failed to prepare development database", {
-          error,
-          stdout,
-          stderr,
-        });
-        throw error;
-      }
-    }
+    await this.applySchema(context);
 
     const adapter = new PrismaBetterSqlite3({
-      url: this.datasourceUrl,
+      url: context.datasourceUrl,
     });
 
     this.prisma = new PrismaClient({
@@ -208,7 +178,7 @@ class DatabaseService {
       log: ["error", "warn"],
     });
 
-    if (isPackaged) {
+    if (context.isPackaged) {
       void seedIfEmpty(this.prisma);
     }
 
@@ -230,13 +200,138 @@ class DatabaseService {
     logger.info("Database service initialized");
   }
 
+  private async prepareDatabaseContext(): Promise<PreparedDatabaseContext> {
+    const isPackaged = isProdEnv();
+    const userDataPath = app.getPath("userData");
+    const isTest = isTestEnv();
+    const envDb = process.env.DATABASE_URL;
+    const hasEnvDb = Boolean(envDb);
+
+    let dbPath: string;
+    let datasourceUrl: string;
+
+    if (hasEnvDb) {
+      dbPath = envDb?.replace("file:", "") ?? path.join(userDataPath, DB_NAME);
+      datasourceUrl = envDb ?? `file:${dbPath}`;
+    } else if (isPackaged) {
+      dbPath = path.join(userDataPath, DB_NAME);
+      datasourceUrl = `file:${dbPath}`;
+    } else {
+      dbPath = path.join(process.cwd(), "prisma", "dev.db");
+      datasourceUrl = `file:${dbPath}`;
+    }
+
+    process.env.DATABASE_URL = datasourceUrl;
+
+    await fs.mkdir(userDataPath, { recursive: true });
+
+    return {
+      dbPath,
+      datasourceUrl,
+      isPackaged,
+      isTest,
+    };
+  }
+
+  private async applySchema(context: PreparedDatabaseContext): Promise<void> {
+    const dbExists = await pathExists(context.dbPath);
+    const cwd = context.isPackaged ? process.resourcesPath : process.cwd();
+    const schemaPath = path.join(cwd, "prisma", "schema.prisma");
+    const prismaPath = getPrismaBinPath(cwd);
+    const migrationsDir = path.join(process.cwd(), "prisma", "migrations");
+    const hasMigrations =
+      (await pathExists(migrationsDir)) &&
+      (await fs
+        .readdir(migrationsDir, { withFileTypes: true })
+        .then((entries) => entries.some((entry) => entry.isDirectory())));
+
+    const commandEnv = { ...process.env, DATABASE_URL: context.datasourceUrl };
+
+    if (context.isPackaged) {
+      if (!hasMigrations) {
+        return;
+      }
+
+      logger.info("Running production migrations", {
+        dbPath: context.dbPath,
+        dbExists,
+        command: "migrate deploy",
+      });
+
+      try {
+        await runPrismaCommand(prismaPath, ["migrate", "deploy", `--schema=${schemaPath}`], commandEnv);
+        logger.info("Production migrations applied successfully");
+      } catch (error) {
+        const prismaError = error as { stdout?: string; stderr?: string };
+        logger.error("Failed to apply production migrations", {
+          error,
+          stdout: prismaError.stdout,
+          stderr: prismaError.stderr,
+        });
+        throw error;
+      }
+      return;
+    }
+
+    if (context.isTest) {
+      logger.info("Running test database push", {
+        dbPath: context.dbPath,
+        dbExists,
+        command: "db push",
+      });
+
+      try {
+        await runPrismaCommand(
+          prismaPath,
+          ["db", "push", "--accept-data-loss", `--schema=${schemaPath}`],
+          commandEnv,
+        );
+        logger.info("Test database push completed successfully");
+      } catch (error) {
+        const prismaError = error as { stdout?: string; stderr?: string };
+        logger.error("Failed to push test database", {
+          error,
+          stdout: prismaError.stdout,
+          stderr: prismaError.stderr,
+        });
+        throw error;
+      }
+      return;
+    }
+
+    logger.info("Running development database push", {
+      dbPath: context.dbPath,
+      dbExists,
+      hasMigrations,
+      command: "db push",
+    });
+
+    try {
+      await runPrismaCommand(
+        prismaPath,
+        ["db", "push", "--accept-data-loss", `--schema=${schemaPath}`],
+        commandEnv,
+      );
+      logger.info("Development database ready");
+    } catch (error) {
+      const prismaError = error as { stdout?: string; stderr?: string };
+      logger.error("Failed to prepare development database", {
+        error,
+        stdout: prismaError.stdout,
+        stderr: prismaError.stderr,
+      });
+      throw error;
+    }
+  }
+
   getClient(): PrismaClient {
-    this.ensureInitialized();
-    return this.prisma as PrismaClient;
+    if (!this.prisma) {
+      throw new Error("Database is not initialized. Call db.initialize() first.");
+    }
+    return this.prisma;
   }
 
   getDatabasePath(): string {
-    this.ensureInitialized();
     if (!this.dbPath) {
       throw new Error("Database path not initialized");
     }
@@ -244,7 +339,13 @@ class DatabaseService {
   }
 
   async disconnect(): Promise<void> {
-    if (!this.prisma) return;
+    if (this.initPromise && !this.prisma) {
+      await this.initPromise.catch(() => undefined);
+    }
+    if (!this.prisma) {
+      return;
+    }
+
     await this.prisma.$disconnect();
     this.prisma = null;
     logger.info("Database disconnected");

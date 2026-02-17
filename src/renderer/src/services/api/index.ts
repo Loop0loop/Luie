@@ -9,6 +9,7 @@ import type {
   SearchResult,
   Snapshot,
   Term,
+  AppBootstrapStatus,
   WindowMenuBarMode,
 } from "../../../../shared/types/index.js";
 
@@ -151,6 +152,8 @@ export type RendererApi = {
     runDb: (options?: { dryRun?: boolean }) => Promise<IPCResponse<unknown>>;
   };
   app: {
+    getBootstrapStatus: () => Promise<IPCResponse<AppBootstrapStatus>>;
+    onBootstrapStatus: (callback: (status: AppBootstrapStatus) => void) => () => void;
     quit: () => Promise<IPCResponse<unknown>>;
   };
   window: {

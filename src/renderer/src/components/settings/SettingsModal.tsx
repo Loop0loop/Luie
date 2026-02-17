@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import type { FontPreset, EditorSettings } from "../../stores/editorStore";
+import { useToast } from "../common/ToastContext";
 import { useEditorStore } from "../../stores/editorStore";
 import { useShortcutStore } from "../../stores/shortcutStore";
 import type { ShortcutMap, WindowMenuBarMode } from "../../../../shared/types";
@@ -17,7 +18,11 @@ import {
   type SettingsTabId,
   type ShortcutGroupMap,
 } from "./SettingsModalSections";
-import { SETTINGS_TABS, SHORTCUT_GROUP_ICON_MAP } from "./SettingsModalConfig";
+import {
+  OPTIONAL_FONT_OPTIONS,
+  SETTINGS_TABS,
+  SHORTCUT_GROUP_ICON_MAP,
+} from "./SettingsModalConfig";
 
 const STORAGE_KEY_FONTS_INSTALLED = "luie:fonts-installed";
 
@@ -27,6 +32,7 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ onClose }: SettingsModalProps) {
   const { t, i18n } = useTranslation();
+  const { showToast } = useToast();
 
   const {
     theme,
@@ -70,6 +76,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const [localFontSize, setLocalFontSize] = useState(fontSize);
   const [localLineHeight, setLocalLineHeight] = useState(lineHeight);
   const [menuBarMode, setMenuBarMode] = useState<WindowMenuBarMode>("visible");
+  const [isMenuBarUpdating, setIsMenuBarUpdating] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
   const [installing, setInstalling] = useState<Record<string, boolean>>({});
@@ -117,11 +124,23 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
   const handleMenuBarModeChange = useCallback(
     async (mode: WindowMenuBarMode) => {
-      const response = await window.api.settings.setMenuBarMode({ mode });
-      if (!response.success) return;
-      setMenuBarMode(mode);
+      if (isMenuBarUpdating || menuBarMode === mode) return;
+
+      setIsMenuBarUpdating(true);
+      try {
+        const response = await window.api.settings.setMenuBarMode({ mode });
+        if (!response.success) {
+          showToast(t("settings.menuBar.applyFailed"), "error");
+          return;
+        }
+        setMenuBarMode(mode);
+      } catch {
+        showToast(t("settings.menuBar.applyFailed"), "error");
+      } finally {
+        setIsMenuBarUpdating(false);
+      }
     },
-    [],
+    [isMenuBarUpdating, menuBarMode, showToast, t],
   );
 
   useEffect(() => {
@@ -225,50 +244,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   }, []);
 
   const optionalFonts = useMemo<OptionalFontOption[]>(
-    () => [
-      {
-        id: "lora",
-        label: t("settings.optionalFonts.lora"),
-        family: "Lora Variable",
-        stack: '"Lora Variable", "Lora", var(--font-serif)',
-        pkg: "lora",
-      },
-      {
-        id: "bitter",
-        label: t("settings.optionalFonts.bitter"),
-        family: "Bitter Variable",
-        stack: '"Bitter Variable", "Bitter", var(--font-serif)',
-        pkg: "bitter",
-      },
-      {
-        id: "source-serif",
-        label: t("settings.optionalFonts.sourceSerif"),
-        family: "Source Serif 4 Variable",
-        stack: '"Source Serif 4 Variable", "Source Serif 4", var(--font-serif)',
-        pkg: "source-serif-4",
-      },
-      {
-        id: "montserrat",
-        label: t("settings.optionalFonts.montserrat"),
-        family: "Montserrat Variable",
-        stack: '"Montserrat Variable", "Montserrat", var(--font-sans)',
-        pkg: "montserrat",
-      },
-      {
-        id: "nunito-sans",
-        label: t("settings.optionalFonts.nunitoSans"),
-        family: "Nunito Sans Variable",
-        stack: '"Nunito Sans Variable", "Nunito Sans", var(--font-sans)',
-        pkg: "nunito-sans",
-      },
-      {
-        id: "victor-mono",
-        label: t("settings.optionalFonts.victorMono"),
-        family: "Victor Mono Variable",
-        stack: '"Victor Mono Variable", "Victor Mono", var(--font-mono)',
-        pkg: "victor-mono",
-      },
-    ],
+    () =>
+      OPTIONAL_FONT_OPTIONS.map((font) => ({
+        ...font,
+        label: t(font.labelKey),
+      })),
     [t],
   );
 
@@ -332,12 +312,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
       })),
     [t],
   );
-  const shortcutValuesKey = useMemo(() => {
-    if (activeTab !== "shortcuts") {
-      return "shortcuts-idle";
-    }
-    return JSON.stringify(shortcuts ?? {});
-  }, [activeTab, shortcuts]);
 
   return (
     <div
@@ -390,6 +364,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 menuBarMode={menuBarMode}
                 onApplySettings={applySettings}
                 onMenuBarModeChange={handleMenuBarMode}
+                isMenuBarUpdating={isMenuBarUpdating}
               />
             )}
 
@@ -412,7 +387,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
             {activeTab === "shortcuts" && (
               <ShortcutsTab
-                key={shortcutValuesKey}
                 t={t}
                 shortcutGroups={shortcutGroups}
                 shortcutValues={shortcuts as Record<string, string>}

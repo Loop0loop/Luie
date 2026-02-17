@@ -288,6 +288,10 @@ export type ThemeContrast = "soft" | "high";
 export type ThemeAccent = "blue" | "violet" | "green" | "amber" | "rose" | "slate";
 export type ThemeTexture = boolean;
 export type WindowMenuBarMode = "hidden" | "visible";
+export type AppBootstrapStatus = {
+  isReady: boolean;
+  error?: string;
+};
 
 export interface WindowBounds {
   width: number;

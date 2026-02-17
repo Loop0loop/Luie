@@ -9,7 +9,7 @@ import { useEditorStore } from "../stores/editorStore";
 import { useCharacterStore } from "../stores/characterStore";
 import { useTermStore } from "../stores/termStore";
 
-export function useProjectInit() {
+export function useProjectInit(enabled = true) {
   const currentProject = useProjectStore((state) => state.currentItem);
   const loadProjects = useProjectStore((state) => state.loadProjects);
   const loadChapters = useChapterStore((state) => state.loadAll);
@@ -19,18 +19,18 @@ export function useProjectInit() {
 
   // 앱 시작 시 프로젝트 & 설정 로드
   useEffect(() => {
-    loadProjects();
-    loadSettings();
-  }, [loadProjects, loadSettings]);
+    if (!enabled) return;
+    void loadProjects();
+    void loadSettings();
+  }, [enabled, loadProjects, loadSettings]);
 
   // 현재 프로젝트 변경 시 챕터 로드
   useEffect(() => {
-    if (currentProject) {
-      loadChapters(currentProject.id);
-      loadCharacters(currentProject.id);
-      loadTerms(currentProject.id);
-    }
-  }, [currentProject, loadChapters, loadCharacters, loadTerms]);
+    if (!enabled || !currentProject) return;
+    void loadChapters(currentProject.id);
+    void loadCharacters(currentProject.id);
+    void loadTerms(currentProject.id);
+  }, [enabled, currentProject, loadChapters, loadCharacters, loadTerms]);
 
   return { currentProject };
 }

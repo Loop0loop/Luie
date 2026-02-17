@@ -214,9 +214,10 @@ export default function GoogleDocsLayout({
          <div className="flex-1 flex flex-col min-w-0 bg-secondary/30 relative z-0 transition-colors duration-200">
              
              {/* Scrollable Area for Editor */}
-             <main className="flex-1 overflow-y-auto flex flex-col items-center relative custom-scrollbar bg-[#F9FBFD] dark:bg-[#121212]">
+             {/* Scrollable Area for Editor */}
+             <main className="flex-1 overflow-y-auto flex flex-col items-center relative custom-scrollbar bg-sidebar">
                                   {/* Ruler - Sticky Top (Opaque Background Fixed) */}
-                   <div className="sticky top-0 z-30 pt-4 pb-2 shrink-0 select-none bg-[#F9FBFD]/95 dark:bg-[#121212]/95 backdrop-blur-sm flex justify-center w-full">
+                   <div className="sticky top-0 z-30 pt-4 pb-2 shrink-0 select-none bg-sidebar/95 backdrop-blur-sm flex justify-center w-full">
                     <div className="bg-background border border-border shadow-sm">
                         <EditorRuler onMarginsChange={setPageMargins} />
                     </div>
@@ -224,14 +225,13 @@ export default function GoogleDocsLayout({
                  
                   {/* Page (A4: 210mm x 297mm @ 96DPI ~= 794px x 1123px) */}
                    <div 
-                    className="mb-8 bg-background min-h-[1123px] transition-all duration-200 ease-in-out relative flex flex-col box-border"
+                    className="mb-8 bg-background min-h-[1123px] transition-all duration-200 ease-in-out relative flex flex-col box-border shadow-md border border-border"
                     style={{ 
                         width: '794px', 
                         paddingTop: '96px',
                         paddingBottom: '96px',
                         paddingLeft: `${pageMargins.left}px`,
                         paddingRight: `${pageMargins.right}px`,
-                        boxShadow: "0 1px 3px 0 rgba(60,64,67,0.15), 0 4px 8px 3px rgba(60,64,67,0.15)",
                         color: 'var(--foreground)' // Enforce theme text color
                     }}
                    >

@@ -4,6 +4,7 @@ import { settingsManager, windowManager } from "../manager/index.js";
 import { isDevEnv } from "../utils/environment.js";
 import type { createLogger } from "../../shared/logger/index.js";
 import { applyApplicationMenu } from "./menu.js";
+import { ensureBootstrapReady } from "./bootstrap.js";
 
 type Logger = ReturnType<typeof createLogger>;
 
@@ -118,20 +119,28 @@ export const registerAppReady = (logger: Logger): void => {
     windowManager.createMainWindow();
     applyApplicationMenu(settingsManager.getMenuBarMode());
 
-    try {
-      const { autoSaveManager } = await import("../manager/autoSaveManager.js");
-      await autoSaveManager.flushMirrorsToSnapshots("startup-recovery");
-      const { snapshotService } = await import(
-        "../services/features/snapshotService.js"
-      );
-      void snapshotService.pruneSnapshotsAllProjects();
-    } catch (error) {
-      logger.warn("Snapshot recovery/pruning skipped", error);
-    }
+    void ensureBootstrapReady().then(async (status) => {
+      if (!status.isReady) {
+        logger.error("App bootstrap did not complete", status);
+        return;
+      }
+
+      try {
+        const { autoSaveManager } = await import("../manager/autoSaveManager.js");
+        await autoSaveManager.flushMirrorsToSnapshots("startup-recovery");
+        const { snapshotService } = await import(
+          "../services/features/snapshotService.js"
+        );
+        void snapshotService.pruneSnapshotsAllProjects();
+      } catch (error) {
+        logger.warn("Snapshot recovery/pruning skipped", error);
+      }
+    });
 
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) {
         windowManager.createMainWindow();
+        void ensureBootstrapReady();
       }
     });
   });

@@ -1,5 +1,5 @@
 import { useState, lazy, Suspense, useCallback, useEffect, useMemo, useRef } from "react";
-import { type Editor as TiptapEditor } from "@tiptap/react"; // Added import
+import { type Editor as TiptapEditor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
 import MainLayout from "./components/layout/MainLayout";
 import GoogleDocsLayout from "./components/layout/GoogleDocsLayout";
@@ -28,6 +28,7 @@ import {
   LUIE_PACKAGE_EXTENSION_NO_DOT,
   LUIE_PACKAGE_FILTER_NAME,
 } from "../../shared/constants/paths";
+import type { AppBootstrapStatus } from "../../shared/types/index.js";
 import { api } from "./services/api";
 
 const SettingsModal = lazy(() => import("./components/settings/SettingsModal"));
@@ -36,10 +37,30 @@ const SnapshotViewer = lazy(() => import("./components/snapshot/SnapshotViewer")
 const ExportPreviewPanel = lazy(() => import("./components/export/ExportPreviewPanel"));
 const ExportWindow = lazy(() => import("./components/export/ExportWindow"));
 
+const parseBootstrapStatus = (value: unknown): AppBootstrapStatus | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const status = value as { isReady?: unknown; error?: unknown };
+  if (typeof status.isReady !== "boolean") {
+    return null;
+  }
+
+  return {
+    isReady: status.isReady,
+    error: typeof status.error === "string" ? status.error : undefined,
+  };
+};
+
 export default function App() {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [bootstrapStatus, setBootstrapStatus] = useState<AppBootstrapStatus>({
+    isReady: false,
+  });
+  const [isBootstrapLoading, setIsBootstrapLoading] = useState(true);
   const chapterChordRef = useRef<{ digits: string; timerId?: number }>({
     digits: "",
   });
@@ -77,8 +98,43 @@ export default function App() {
   const setFontSize = useEditorStore((state) => state.setFontSize);
   const uiMode = useEditorStore((state) => state.uiMode);
 
+  const refreshBootstrapStatus = useCallback(async () => {
+    setIsBootstrapLoading(true);
+    try {
+      const response = await api.app.getBootstrapStatus();
+      const parsed = parseBootstrapStatus(response.data);
+      if (response.success && parsed) {
+        setBootstrapStatus(parsed);
+        return;
+      }
+
+      setBootstrapStatus({
+        isReady: false,
+        error: "Failed to fetch bootstrap status.",
+      });
+    } catch {
+      setBootstrapStatus({
+        isReady: false,
+        error: "Failed to fetch bootstrap status.",
+      });
+    } finally {
+      setIsBootstrapLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshBootstrapStatus();
+    const unsubscribe = api.app.onBootstrapStatus((status) => {
+      const parsed = parseBootstrapStatus(status);
+      if (!parsed) return;
+      setBootstrapStatus(parsed);
+      setIsBootstrapLoading(false);
+    });
+    return unsubscribe;
+  }, [refreshBootstrapStatus]);
+
   // 커스텀 훅으로 로직 분리
-  const { currentProject } = useProjectInit();
+  const { currentProject } = useProjectInit(bootstrapStatus.isReady);
 
   // 전역 테마 적용 (템플릿/에디터 등 모든 뷰에서 동작)
   useEffect(() => {
@@ -90,8 +146,9 @@ export default function App() {
   }, [theme, themeTemp, themeContrast, themeAccent, themeTexture]);
 
   useEffect(() => {
+    if (!bootstrapStatus.isReady) return;
     void loadShortcuts();
-  }, [loadShortcuts]);
+  }, [bootstrapStatus.isReady, loadShortcuts]);
   
   const {
     chapters,
@@ -378,6 +435,55 @@ export default function App() {
       <Suspense fallback={<div className="flex items-center justify-center h-screen bg-[#333] text-white">Loading...</div>}>
          <ExportWindow />
       </Suspense>
+    );
+  }
+
+  if (!bootstrapStatus.isReady) {
+    const showError = Boolean(bootstrapStatus.error) && !isBootstrapLoading;
+
+    return (
+      <div className="min-h-screen bg-app text-fg flex items-center justify-center px-6">
+        <div className="w-full max-w-3xl rounded-2xl border border-border bg-panel p-8 shadow-lg">
+          <div className="space-y-4">
+            <div className="h-6 w-52 rounded-md bg-surface animate-pulse" />
+            <div className="h-4 w-full rounded-md bg-surface animate-pulse" />
+            <div className="h-4 w-[82%] rounded-md bg-surface animate-pulse" />
+            <div className="h-4 w-[68%] rounded-md bg-surface animate-pulse" />
+          </div>
+
+          {!showError && (
+            <p className="mt-6 text-sm text-muted">
+              Initializing workspace...
+            </p>
+          )}
+
+          {showError && (
+            <div className="mt-6 space-y-4">
+              <p className="text-sm text-danger-fg">
+                {bootstrapStatus.error}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    void refreshBootstrapStatus();
+                  }}
+                  className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 transition-colors"
+                >
+                  Retry
+                </button>
+                <button
+                  onClick={() => {
+                    void api.app.quit();
+                  }}
+                  className="px-4 py-2 rounded-lg border border-border text-sm font-medium text-fg hover:bg-surface-hover transition-colors"
+                >
+                  Quit
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     );
   }
 

@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
   Check,
   Download,
@@ -77,6 +77,7 @@ interface AppearanceTabProps {
   uiMode: EditorSettings["uiMode"];
   isMacOS: boolean;
   menuBarMode: WindowMenuBarMode;
+  isMenuBarUpdating: boolean;
   onApplySettings: (next: Partial<EditorSettings>) => void;
   onMenuBarModeChange: (mode: WindowMenuBarMode) => void;
 }
@@ -91,6 +92,7 @@ export const AppearanceTab = memo(function AppearanceTab({
   uiMode,
   isMacOS,
   menuBarMode,
+  isMenuBarUpdating,
   onApplySettings,
   onMenuBarModeChange,
 }: AppearanceTabProps) {
@@ -291,21 +293,23 @@ export const AppearanceTab = memo(function AppearanceTab({
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => onMenuBarModeChange("hidden")}
+                disabled={isMenuBarUpdating}
                 className={`px-4 py-3 rounded-xl border text-sm font-medium transition-colors duration-150 ${
                   menuBarMode === "hidden"
                     ? "border-accent text-accent bg-accent/5 ring-1 ring-accent"
                     : "border-border text-muted hover:border-text-tertiary hover:bg-surface-hover"
-                }`}
+                } ${isMenuBarUpdating ? "opacity-70 cursor-not-allowed" : ""}`}
               >
                 {t("settings.menuBar.hide")}
               </button>
               <button
                 onClick={() => onMenuBarModeChange("visible")}
+                disabled={isMenuBarUpdating}
                 className={`px-4 py-3 rounded-xl border text-sm font-medium transition-colors duration-150 ${
                   menuBarMode === "visible"
                     ? "border-accent text-accent bg-accent/5 ring-1 ring-accent"
                     : "border-border text-muted hover:border-text-tertiary hover:bg-surface-hover"
-                }`}
+                } ${isMenuBarUpdating ? "opacity-70 cursor-not-allowed" : ""}`}
               >
                 {t("settings.menuBar.show")}
               </button>
@@ -516,6 +520,12 @@ export const ShortcutsTab = memo(function ShortcutsTab({
 }: ShortcutsTabProps) {
   const [shortcutDrafts, setShortcutDrafts] = useState<Record<string, string>>(shortcutValues);
   const shortcutDraftsRef = useRef<Record<string, string>>(shortcutValues);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- keep drafts aligned with persisted shortcuts without remounting tab
+    setShortcutDrafts(shortcutValues);
+    shortcutDraftsRef.current = shortcutValues;
+  }, [shortcutValues]);
 
   const handleShortcutDraftChange = useCallback((actionId: string, value: string) => {
     setShortcutDrafts((prev) => {

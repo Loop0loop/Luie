@@ -106,6 +106,8 @@ export const IPC_CHANNELS = {
   // App
   APP_GET_VERSION: "app:get-version",
   APP_CHECK_UPDATE: "app:check-update",
+  APP_GET_BOOTSTRAP_STATUS: "app:get-bootstrap-status",
+  APP_BOOTSTRAP_STATUS_CHANGED: "app:bootstrap-status-changed",
   APP_QUIT: "app:quit",
 
   // Export

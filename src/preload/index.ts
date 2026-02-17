@@ -3,7 +3,6 @@
  */
 
 import { contextBridge, ipcRenderer } from "electron";
-import { randomBytes, randomUUID } from "node:crypto";
 import { createErrorResponse, type IPCResponse } from "../shared/ipc/index.js";
 import { IPC_CHANNELS } from "../shared/ipc/channels.js";
 import {
@@ -86,7 +85,21 @@ const RETRYABLE_CHANNELS = new Set<string>([
   IPC_CHANNELS.SETTINGS_GET_MENU_BAR_MODE,
   IPC_CHANNELS.SETTINGS_GET_SHORTCUTS,
   IPC_CHANNELS.SETTINGS_GET_WINDOW_BOUNDS,
+  IPC_CHANNELS.APP_GET_BOOTSTRAP_STATUS,
 ]);
+
+const randomByteArray = (size: number): Uint8Array => {
+  const bytes = new Uint8Array(size);
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    crypto.getRandomValues(bytes);
+    return bytes;
+  }
+
+  for (let i = 0; i < size; i += 1) {
+    bytes[i] = Math.floor(Math.random() * 256);
+  }
+  return bytes;
+};
 
 const getTimeoutMs = (channel: string) =>
   LONG_TIMEOUT_CHANNELS.has(channel) ? IPC_LONG_TIMEOUT_MS : IPC_DEFAULT_TIMEOUT_MS;
@@ -95,11 +108,19 @@ const getRequestId = () => {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
   }
-  try {
-    return randomUUID();
-  } catch {
-    return `req-${randomBytes(16).toString("hex")}`;
-  }
+
+  const bytes = randomByteArray(16);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (value) => value.toString(16).padStart(2, "0"));
+
+  return [
+    hex.slice(0, 4).join(""),
+    hex.slice(4, 6).join(""),
+    hex.slice(6, 8).join(""),
+    hex.slice(8, 10).join(""),
+    hex.slice(10, 16).join(""),
+  ].join("-");
 };
 
 async function invokeWithTimeout<T>(
@@ -452,6 +473,17 @@ contextBridge.exposeInMainWorld("api", {
   },
 
   app: {
+    getBootstrapStatus: (): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.APP_GET_BOOTSTRAP_STATUS),
+    onBootstrapStatus: (callback: (status: unknown) => void): (() => void) => {
+      const listener = (_event: unknown, status: unknown) => {
+        callback(status);
+      };
+      ipcRenderer.on(IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED, listener);
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED, listener);
+      };
+    },
     quit: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.APP_QUIT),
   },
 
