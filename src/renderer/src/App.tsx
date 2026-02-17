@@ -519,6 +519,8 @@ export default function App() {
                     chapterId={activeChapterId || undefined}
                     hideToolbar={true}
                     hideFooter={true}
+                    hideTitle={true}
+                    scrollable={false}
                     onEditorReady={setDocEditor}
                   />
             </GoogleDocsLayout>

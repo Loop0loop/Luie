@@ -80,6 +80,8 @@ interface EditorProps {
   chapterId?: string;
   hideToolbar?: boolean;
   hideFooter?: boolean;
+  hideTitle?: boolean; // New prop
+  scrollable?: boolean; // New prop
   onEditorReady?: (editor: TiptapEditor | null) => void;
 }
 
@@ -93,6 +95,8 @@ function Editor({
   chapterId,
   hideToolbar = false,
   hideFooter = false,
+  hideTitle = false, // Default false
+  scrollable = true, // Default true (for Default/Split layout)
   onEditorReady,
 }: EditorProps) {
   const { t } = useTranslation();
@@ -106,6 +110,8 @@ function Editor({
       // autosave hook tracks title state
     },
   );
+  
+  // ... (Hooks omitted for brevity, logic unchanged) ...
 
   const [content, setContent] = useState(initialContent);
 
@@ -119,12 +125,13 @@ function Editor({
     content,
   });
 
-  // TipTap Editor Setup
+  // ... (Tiptap setup omitted) ...
   const extensions = useMemo(
     () => [
       StarterKit.configure({
         underline: false,
       }),
+      // ... (extensions) ...
       Highlight,
       TextStyle,
       Color.configure({
@@ -169,7 +176,6 @@ function Editor({
         const html = editor.getHTML();
         const text = editor.getText();
         
-        // Update local content state for autosave hook to pick up
         setContent(html); 
         if (!readOnly) {
           api.lifecycle?.setDirty?.(true);
@@ -193,12 +199,9 @@ function Editor({
     }
   }, [editor, onEditorReady]);
 
+  // ... (Diff effect) ...
   useEffect(() => {
     if (!editor) return;
-    
-    // Update diff state commands if props change
-    // Since we configured it initially with memo [], we need to update it via command if it changes
-    // But check if command exists first
     if (editor.commands.setDiff) {
        editor.commands.setDiff({
          comparisonContent,
@@ -220,7 +223,7 @@ function Editor({
   }
 
   const handleOpenExport = async () => {
-    // Strict validation
+     // ... (export logic) ...
     if (!chapterId || chapterId === "undefined" || chapterId === "null") {
       api.logger.warn("No valid chapterId available for export", { chapterId });
       alert(t("editor.errors.exportNoChapter"));
@@ -258,38 +261,58 @@ function Editor({
       </div>
       )}
 
-      {/* Title */}
-      <input
-        type="text"
-        className={cn(
-          "w-full border-none bg-transparent pb-4 text-2xl font-bold text-foreground outline-none shrink-0 placeholder:text-muted-foreground",
-          isMobileView && "px-6",
-          readOnly && "pointer-events-none opacity-80"
-        )}
-        placeholder={t("editor.placeholder.title")}
-        value={title}
-        onChange={(e) => !readOnly && handleTitleChange(e.target.value)}
-        readOnly={readOnly}
-        style={{ fontFamily: getFontFamily() }}
-        data-testid="editor-title"
-      />
+      {/* Conditionally Scrollable Wrapper */}
+      <div className={cn("flex-1 flex flex-col min-h-0", scrollable ? "overflow-y-auto px-10 py-5" : "")}>
+          <div 
+            className={cn(
+                "w-full flex flex-col flex-1 min-h-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] bg-transparent border-none shadow-none m-0",
+                isMobileView && "w-107.5 max-w-107.5 h-[95%] mx-auto my-5 border-8 border-[#2c2c2e] rounded-[48px] bg-editor-bg shadow-[0_0_0_2px_rgba(69,69,69,0.9),0_25px_50px_-12px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.05)] overflow-hidden relative",
+                // If not scrollable (Docs mode), we don't want h-full constraining it, we want it to check mobile view or just flow
+                !scrollable && "h-auto" 
+            )}
+            data-mobile={isMobileView}
+          >
+            {/* Mobile Notch Simulation */}
+            {isMobileView && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-30 h-8 bg-[#2c2c2e] rounded-b-2xl z-100 pointer-events-none" />
+            )}
 
-      {/* Content */}
-      <div
-        className={cn(
-          "flex flex-col relative flex-1", 
-          isMobileView && "pt-8 h-full overflow-hidden px-6"
-        )}
-        style={{
-          fontFamily: getFontFamily(),
-          fontSize: `${fontSize}px`,
-          lineHeight,
-          height: isMobileView ? "100%" : undefined,
-          minHeight: !isMobileView ? "var(--text-editor-min-height)" : undefined,
-        }}
-        data-testid="editor-content"
-      >
-        <EditorContent editor={editor} className="tiptap flex-1 flex flex-col outline-none h-full" />
+            {/* Title - Conditionally Rendered */}
+            {!hideTitle && (
+                <input
+                    type="text"
+                    className={cn(
+                    "w-full border-none bg-transparent pb-4 text-2xl font-bold text-foreground outline-none shrink-0 placeholder:text-muted-foreground",
+                    isMobileView && "px-6",
+                    readOnly && "pointer-events-none opacity-80"
+                    )}
+                    placeholder={t("editor.placeholder.title")}
+                    value={title}
+                    onChange={(e) => !readOnly && handleTitleChange(e.target.value)}
+                    readOnly={readOnly}
+                    style={{ fontFamily: getFontFamily() }}
+                    data-testid="editor-title"
+                />
+            )}
+
+            {/* Content */}
+            <div
+                className={cn(
+                "flex flex-col relative flex-1", 
+                isMobileView && "pt-8 h-full overflow-hidden px-6"
+                )}
+                style={{
+                fontFamily: getFontFamily(),
+                fontSize: `${fontSize}px`,
+                lineHeight,
+                height: isMobileView ? "100%" : undefined,
+                minHeight: !isMobileView ? "var(--text-editor-min-height)" : undefined,
+                }}
+                data-testid="editor-content"
+            >
+                <EditorContent editor={editor} className="tiptap flex-1 flex flex-col outline-none h-full" />
+            </div>
+          </div>
       </div>
 
       {!hideFooter && (
@@ -300,6 +323,8 @@ function Editor({
     </div>
   );
 }
+
+
 
 
 export default memo(Editor);

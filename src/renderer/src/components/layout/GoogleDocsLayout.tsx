@@ -165,7 +165,7 @@ export default function GoogleDocsLayout({
       
       {/* 3. Toolbar - MD3 Pill Style */}
       {editor && (
-          <div className="shrink-0 z-40 relative mx-4 mb-2">
+          <div className="shrink-0 z-40 relative mx-4 mb-2 flex justify-center">
               <div className="bg-[#EDF2FA] dark:bg-[#2c2c2c] rounded-[24px] px-2 h-[48px] flex items-center shadow-sm">
                   <EditorToolbar editor={editor} />
               </div>
