@@ -33,7 +33,8 @@ export default function DocsSidebar({
   onRenameChapter,
   onDuplicateChapter,
   onDeleteChapter,
-}: DocsSidebarProps) {
+  hideHeader = false,
+}: DocsSidebarProps & { hideHeader?: boolean }) {
   const { t } = useTranslation();
   const dialog = useDialog();
   const { menuOpenId, menuPosition, menuRef, closeMenu, toggleMenuByElement } = useFloatingMenu<HTMLButtonElement>();
@@ -140,16 +141,18 @@ export default function DocsSidebar({
       )}
 
       {/* Header */}
-      <div className="p-4 flex items-center justify-between shrink-0">
-        <h2 className="font-semibold text-sm text-muted-foreground">{t("sidebar.title")}</h2>
-        <button 
-           onClick={onAddChapter}
-           className="w-6 h-6 rounded-md hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground"
-           title={t("sidebar.action.new")}
-        >
-           <Plus className="w-4 h-4" />
-        </button>
-      </div>
+      {!hideHeader && (
+        <div className="p-4 flex items-center justify-between shrink-0">
+            <h2 className="font-semibold text-sm text-muted-foreground">{t("sidebar.title")}</h2>
+            <button 
+            onClick={onAddChapter}
+            className="w-6 h-6 rounded-md hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground"
+            title={t("sidebar.action.new")}
+            >
+            <Plus className="w-4 h-4" />
+            </button>
+        </div>
+      )}
 
       {/* Chapter List */}
       <div className="flex-1 overflow-y-auto px-2 space-y-0.5 custom-scrollbar pb-4">

@@ -12,6 +12,7 @@ import { SmartLinkTooltip } from "./components/editor/SmartLinkTooltip";
 import ContextPanel from "./components/context/ContextPanel";
 import ProjectTemplateSelector from "./components/layout/ProjectTemplateSelector";
 import ScrivenerLayout from "./components/layout/ScrivenerLayout";
+import ScrivenerSidebar from "./components/sidebar/ScrivenerSidebar";
 
 import { useProjectStore } from "./stores/projectStore";
 import { useUIStore, type DocsRightTab } from "./stores/uiStore";
@@ -772,7 +773,7 @@ export default function App() {
       ) : uiMode === "scrivener" ? (
          <ScrivenerLayout
             sidebar={
-                <DocsSidebar
+                <ScrivenerSidebar
                     chapters={chapters}
                     activeChapterId={activeChapterId ?? undefined}
                     onSelectChapter={handleSelectChapter}
@@ -780,6 +781,7 @@ export default function App() {
                     onRenameChapter={handleRenameChapter}
                     onDuplicateChapter={handleDuplicateChapter}
                     onDeleteChapter={handleDeleteChapter}
+                    currentProjectId={currentProject?.id}
                 />
             }
             activeChapterId={activeChapterId ?? undefined}

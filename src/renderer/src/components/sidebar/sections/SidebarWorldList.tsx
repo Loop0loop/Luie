@@ -1,0 +1,105 @@
+import { useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { Plus } from "lucide-react";
+import { useProjectStore } from "../../../stores/projectStore";
+import { useTermStore } from "../../../stores/termStore";
+import {
+  DndContext, 
+  closestCenter,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { useTermDragDrop } from "../../research/world/hooks/useTermDragDrop";
+import type { Term } from "../../../../../shared/types";
+
+export default function SidebarWorldList() {
+  const { t } = useTranslation();
+  const { currentItem: currentProject } = useProjectStore();
+  const { terms, setCurrentTerm, loadTerms, createTerm } = useTermStore();
+
+  const {
+    sensors,
+    handleDragStart,
+    handleDragEnd,
+    orderedTerms,
+  } = useTermDragDrop({ terms });
+
+  useEffect(() => {
+    if (currentProject) {
+      loadTerms(currentProject.id);
+    }
+  }, [currentProject, loadTerms]);
+
+  const handleAddTerm = useCallback(async () => {
+    if (currentProject) {
+      const maxOrder = Math.max(...terms.map((t: Term) => t.order || 0), -1);
+      await createTerm({
+        projectId: currentProject.id,
+        term: t("world.term.defaultName"),
+        definition: "",
+        category: t("world.term.defaultCategory"),
+        order: maxOrder + 1,
+      });
+    }
+  }, [currentProject, createTerm, t, terms]);
+
+  return (
+    <div className="flex flex-col h-full bg-sidebar/50">
+       <div className="flex items-center justify-end px-2 py-1 gap-1 border-b border-border/20">
+             <button 
+                className="p-1 hover:bg-white/10 rounded text-muted-foreground hover:text-foreground transition-colors"
+                onClick={handleAddTerm}
+                title={t("world.term.addLabel")}
+            >
+                <Plus className="w-4 h-4" />
+            </button>
+        </div>
+
+      <div className="flex-1 overflow-y-auto p-2">
+        <DndContext 
+            sensors={sensors} 
+            collisionDetection={closestCenter} 
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+        >
+            <SortableContext 
+                items={orderedTerms.map(t => t.id)} 
+                strategy={rectSortingStrategy}
+            >
+                <div className="flex flex-col gap-2">
+                    {orderedTerms.length === 0 && (
+                        <div className="text-xs text-muted text-center italic py-4">
+                            {t("world.term.noTerms")}
+                        </div>
+                    )}
+                    {orderedTerms.map((term) => (
+                        <SidebarTermItem
+                            key={term.id}
+                            term={term}
+                            onSelect={(id) => {
+                                const term = terms.find(t => t.id === id);
+                                setCurrentTerm(term || null);
+                            }}
+                        />
+                    ))}
+                </div>
+            </SortableContext>
+        </DndContext>
+      </div>
+    </div>
+  );
+}
+
+function SidebarTermItem({ term, onSelect }: { term: Term; onSelect: (id: string) => void }) {
+    return (
+        <div 
+            className="px-3 py-2 bg-sidebar-surface border border-border/50 rounded cursor-pointer hover:border-accent/50 hover:bg-accent/5 transition-colors flex flex-col gap-0.5"
+            onClick={() => onSelect(term.id)}
+        >
+            <div className="font-medium text-sm truncate">{term.term}</div>
+            <div className="text-[10px] text-muted-foreground truncate">{term.category}</div>
+        </div>
+    );
+}

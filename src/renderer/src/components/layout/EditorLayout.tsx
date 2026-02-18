@@ -436,7 +436,7 @@ export default function EditorLayout({
               )}
 
               {/* 에디터 콘텐츠 */}
-              <div className="min-h-[500px] [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[400px] break-words">
+              <div className="min-h-[500px] [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[400px] wrap-break-word">
                 {children}
               </div>
             </div>

@@ -178,7 +178,7 @@ export default function ScrivenerLayout({
            style={{ width: isInspectorOpen ? inspectorWidth : 0 }}
         >
              <Suspense fallback={<div className="p-4 text-xs">Loading Inspector...</div>}>
-                <InspectorPanel activeChapterId={activeChapterId} />
+                <InspectorPanel key={activeChapterId} activeChapterId={activeChapterId} />
              </Suspense>
 
              {/* Resizer Handle */}

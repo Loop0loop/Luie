@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   FileText,
@@ -24,16 +24,7 @@ export default function InspectorPanel({ activeChapterId }: InspectorPanelProps)
 
   const activeChapter = chapters.find((c) => c.id === activeChapterId);
 
-  const [synopsis, setSynopsis] = useState("");
-
-  // Use key prop on parent to reset state, or effect with distinct check
-  useEffect(() => {
-    if (activeChapter) {
-        setSynopsis(activeChapter.synopsis || "");
-    } else {
-        setSynopsis("");
-    }
-  }, [activeChapterId, activeChapter, activeChapter?.synopsis]);
+  const [synopsis, setSynopsis] = useState(activeChapter?.synopsis || "");
 
   const handleSynopsisChange = (val: string) => {
     setSynopsis(val);

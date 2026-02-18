@@ -134,7 +134,7 @@ export function SmartLinkTooltip({ isSettingsOpen }: { isSettingsOpen?: boolean 
       ref={tooltipRef}
       onMouseEnter={handleTooltipEnter}
       onMouseLeave={handleTooltipLeave}
-      className="fixed z-[9000] bg-white dark:bg-[#1e1e1e] text-popover-foreground rounded-md shadow-xl border border-border p-3 w-[250px] animate-in fade-in zoom-in-95 duration-200 pointer-events-none"
+      className="fixed z-9000 bg-white dark:bg-[#1e1e1e] text-popover-foreground rounded-md shadow-xl border border-border p-3 w-[250px] animate-in fade-in zoom-in-95 duration-200 pointer-events-none"
       style={{
         left: state.x,
         top: state.y,
