@@ -24,6 +24,8 @@ import Ribbon from "../editor/Ribbon";
 import WindowBar from "./WindowBar";
 import { cn } from "../../../../shared/types/utils";
 import { useUIStore, type DocsRightTab } from "../../stores/uiStore";
+import { useSplitView } from "../../hooks/useSplitView";
+import { useChapterStore } from "../../stores/chapterStore";
 
 const ResearchPanel = lazy(() => import("../research/ResearchPanel"));
 const WorldPanel = lazy(() => import("../research/WorldPanel"));
@@ -33,6 +35,8 @@ const SnapshotList = lazy(() =>
 const TrashList = lazy(() =>
   import("../trash/TrashList").then((m) => ({ default: m.TrashList }))
 );
+const SnapshotViewer = lazy(() => import("../snapshot/SnapshotViewer"));
+const ExportPreviewPanel = lazy(() => import("../export/ExportPreviewPanel"));
 
 interface EditorLayoutProps {
   children?: ReactNode;
@@ -93,11 +97,14 @@ export default function EditorLayout({
   currentProjectId,
   editor,
   onOpenSettings,
+  onSaveChapter,
 }: EditorLayoutProps) {
   const { t } = useTranslation();
 
   // UIStore의 docsRightTab을 공유해서 SmartLink 연동
   const { docsRightTab, setDocsRightTab } = useUIStore();
+  const { isSplitView, splitRatio, rightPanelContent, startResizeSplit, setSplitView } = useSplitView();
+  const { items: chapters } = useChapterStore();
 
   // BinderTab만 허용 (editor/export 제외)
   const VALID_TABS: BinderTab[] = ["character", "world", "scrap", "analysis", "snapshot", "trash"];
@@ -338,31 +345,86 @@ export default function EditorLayout({
       {/* 3. Main Area (Horizontal Flex) */}
       <div className="flex-1 overflow-hidden relative flex flex-row">
         {/* LEFT: 원고 사이드바 (Overlay Hover) */}
-        {/* 왼쪽은 에디터 영역을 밀지 않고 덮음 (기존 유지) */}
         <FocusHoverSidebar side="left" topOffset={sidebarTopOffset}>
           <div className="h-full flex flex-col bg-panel border-r border-border min-w-[280px]">
             {sidebar}
           </div>
         </FocusHoverSidebar>
 
-        {/* CENTER: 메인 에디터 영역 */}
-        <div className="flex-1 h-full overflow-y-auto bg-[#f3f4f6] dark:bg-[#1a1a1a] flex flex-col items-center custom-scrollbar">
-          {/* A4 페이지 */}
-          <div className="w-[816px] min-h-[1056px] bg-white dark:bg-[#1e1e1e] shadow-2xl border border-black/5 dark:border-white/5 py-12 px-12 my-8 transition-all duration-200 ease-out">
-            {/* 챕터 제목 */}
-            {activeChapterTitle && (
-              <h1 className="text-3xl font-bold mb-8 pb-4 border-b border-border/50 text-fg break-all">
-                {activeChapterTitle}
-              </h1>
-            )}
+        {/* CENTER: 메인 에디터 영역 (SplitView 지원) */}
+        <div className="flex-1 h-full overflow-hidden flex flex-row relative">
+          {/* 1. Editor Pane */}
+          <div 
+            className="h-full overflow-y-auto bg-[#f3f4f6] dark:bg-[#1a1a1a] flex flex-col items-center custom-scrollbar shrink-0"
+            style={{ flex: isSplitView ? splitRatio : 1 }}
+          >
+            {/* A4 페이지 */}
+            <div className="w-[816px] min-h-[1056px] bg-white dark:bg-[#1e1e1e] shadow-2xl border border-black/5 dark:border-white/5 py-12 px-12 my-8 transition-all duration-200 ease-out shrink-0">
+              {/* 챕터 제목 */}
+              {activeChapterTitle && (
+                <h1 className="text-3xl font-bold mb-8 pb-4 border-b border-border/50 text-fg break-all">
+                  {activeChapterTitle}
+                </h1>
+              )}
 
-            {/* 에디터 콘텐츠 */}
-            <div className="min-h-[500px] [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[400px] break-words">
-              {children}
+              {/* 에디터 콘텐츠 */}
+              <div className="min-h-[500px] [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[400px] break-words">
+                {children}
+              </div>
             </div>
+
+            <div className="h-12 w-full shrink-0" />
           </div>
 
-          <div className="h-12 w-full shrink-0" />
+          {/* 2. Splitter & Secondary Pane */}
+          {isSplitView && (
+            <>
+              <div
+                className="w-1 bg-border cursor-col-resize hover:bg-accent/50 z-30 transition-colors flex-none"
+                onMouseDown={startResizeSplit}
+              />
+              <div
+                style={{ flex: 1 - splitRatio }}
+                className="h-full bg-panel overflow-hidden border-l border-border relative min-w-0"
+              >
+                 <Suspense fallback={<div className="p-4 text-sm text-muted">{t("common.loading")}</div>}>
+                  {rightPanelContent.type === "snapshot" && rightPanelContent.snapshot ? (
+                    <SnapshotViewer
+                      snapshot={rightPanelContent.snapshot}
+                      currentContent={
+                         chapters.find((c) => c.id === activeChapterId)?.content || ""
+                      }
+                      onApplySnapshotText={async (nextContent) => {
+                         if (onSaveChapter && activeChapterTitle) {
+                           await onSaveChapter(activeChapterTitle, nextContent);
+                         }
+                      }}
+                    />
+                  ) : rightPanelContent.type === "export" ? (
+                    <ExportPreviewPanel title={activeChapterTitle} />
+                  ) : rightPanelContent.type === "research" ? (
+                     <ResearchPanel
+                       activeTab={rightPanelContent.tab || "character"}
+                       onClose={() => setSplitView(false)}
+                     />
+                  ) : (
+                    <div className="p-4 text-sm text-muted">
+                      {t("common.noContent")}
+                    </div>
+                  )}
+                 </Suspense>
+                 
+                 {/* Close Split View Button */}
+                 <button 
+                   onClick={() => setSplitView(false)}
+                   className="absolute top-2 right-2 p-1.5 rounded-md bg-surface border border-border text-muted hover:text-fg hover:bg-surface-hover z-50 shadow-sm"
+                   title={t("common.close")}
+                 >
+                   <ChevronLeft className="w-3.5 h-3.5 rotate-180" />
+                 </button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* RIGHT: 바인더바 (Hybrid: Static or Hover) */}
@@ -373,7 +435,6 @@ export default function EditorLayout({
           </div>
         ) : (
           // 탭 비활성 시: Hover Sidebar (에디터 위에 뜸, 패널은 닫혀있고 아이콘바만 보임 -> Hover 시 전체 등장이지만 패널은 닫힌 상태)
-          // 주의: FocusHoverSidebar는 children width만큼 열림. 패널이 닫혀있으면(0px) 아이콘바(48px)만 보임.
           <FocusHoverSidebar side="right" topOffset={sidebarTopOffset}>
             {renderBinderContent()}
           </FocusHoverSidebar>
