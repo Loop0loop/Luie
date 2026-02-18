@@ -8,24 +8,15 @@ import { ensureBootstrapReady } from "./bootstrap.js";
 
 type Logger = ReturnType<typeof createLogger>;
 
-const buildCspPolicy = (isDev: boolean) =>
-  isDev
-    ? [
-        "default-src 'self'",
-        "script-src 'self' 'unsafe-eval'",
-        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-        "img-src 'self' data: https:",
-        "font-src 'self' data: https://cdn.jsdelivr.net",
-        "connect-src 'self' ws://localhost:5173 http://localhost:5173",
-      ].join("; ")
-    : [
-        "default-src 'self'",
-        "script-src 'self'",
-        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-        "img-src 'self' data: https:",
-        "font-src 'self' data: https://cdn.jsdelivr.net",
-        "connect-src 'self'",
-      ].join("; ");
+const buildProdCspPolicy = () =>
+  [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+    "img-src 'self' data: https:",
+    "font-src 'self' data: https://cdn.jsdelivr.net",
+    "connect-src 'self'",
+  ].join("; ");
 
 const handleRendererCrash = async (
   logger: Logger,
@@ -72,7 +63,7 @@ export const registerAppReady = (logger: Logger): void => {
     logger.info("App is ready");
 
     const isDev = isDevEnv();
-    const cspPolicy = buildCspPolicy(isDev);
+    const cspPolicy = buildProdCspPolicy();
 
     if (isDev) {
       session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
@@ -85,27 +76,33 @@ export const registerAppReady = (logger: Logger): void => {
       });
     }
 
-    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-      const responseHeaders = {
-        ...details.responseHeaders,
-        "Content-Security-Policy": [cspPolicy],
-      } as Record<string, string[]>;
-
-      if (isDev) {
-        responseHeaders["Access-Control-Allow-Origin"] = ["*"];
-        responseHeaders["Access-Control-Allow-Headers"] = ["*"];
-        responseHeaders["Access-Control-Allow-Methods"] = [
-          "GET",
-          "POST",
-          "PUT",
-          "PATCH",
-          "DELETE",
-          "OPTIONS",
-        ];
-      }
-
-      callback({ responseHeaders });
-    });
+    if (isDev) {
+      // DEV: Disable CSP injection to avoid blocking Vite HMR/react preamble inline script.
+      session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+        const responseHeaders = {
+          ...details.responseHeaders,
+          "Access-Control-Allow-Origin": ["*"],
+          "Access-Control-Allow-Headers": ["*"],
+          "Access-Control-Allow-Methods": [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+            "OPTIONS",
+          ],
+        } as Record<string, string[]>;
+        callback({ responseHeaders });
+      });
+    } else {
+      session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+        const responseHeaders = {
+          ...details.responseHeaders,
+          "Content-Security-Policy": [cspPolicy],
+        } as Record<string, string[]>;
+        callback({ responseHeaders });
+      });
+    }
 
     app.on("web-contents-created", (_event, webContents) => {
       webContents.on("render-process-gone", (_goneEvent, details) => {

@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
@@ -23,6 +23,7 @@ import {
   SETTINGS_TABS,
   SHORTCUT_GROUP_ICON_MAP,
 } from "./SettingsModalConfig";
+import { api } from "../../services/api";
 
 const STORAGE_KEY_FONTS_INSTALLED = "luie:fonts-installed";
 
@@ -77,6 +78,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const [localLineHeight, setLocalLineHeight] = useState(lineHeight);
   const [menuBarMode, setMenuBarMode] = useState<WindowMenuBarMode>("visible");
   const [isMenuBarUpdating, setIsMenuBarUpdating] = useState(false);
+  const menuBarModeRef = useRef<WindowMenuBarMode>("visible");
+  const menuBarUpdateLockRef = useRef(false);
   const [isRecovering, setIsRecovering] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
   const [installing, setInstalling] = useState<Record<string, boolean>>({});
@@ -99,6 +102,10 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     setLocalLineHeight(lineHeight);
   }, [lineHeight]);
 
+  useEffect(() => {
+    menuBarModeRef.current = menuBarMode;
+  }, [menuBarMode]);
+
   const applySettings = useCallback(
     (next: Partial<EditorSettings>) => {
       void updateSettings(next);
@@ -109,10 +116,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const response = await window.api.settings.getMenuBarMode();
+      const response = await api.settings.getMenuBarMode();
       if (!response.success || !response.data || cancelled) return;
       const mode = (response.data as { mode?: WindowMenuBarMode }).mode;
       if (mode === "hidden" || mode === "visible") {
+        menuBarModeRef.current = mode;
         setMenuBarMode(mode);
       }
     })();
@@ -124,23 +132,28 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
   const handleMenuBarModeChange = useCallback(
     async (mode: WindowMenuBarMode) => {
-      if (isMenuBarUpdating || menuBarMode === mode) return;
+      if (menuBarUpdateLockRef.current || menuBarModeRef.current === mode) return;
 
+      menuBarUpdateLockRef.current = true;
       setIsMenuBarUpdating(true);
       try {
-        const response = await window.api.settings.setMenuBarMode({ mode });
+        const response = await api.settings.setMenuBarMode({ mode });
         if (!response.success) {
           showToast(t("settings.menuBar.applyFailed"), "error");
           return;
         }
-        setMenuBarMode(mode);
+        const nextMode = response.data?.mode;
+        const resolvedMode = nextMode === "hidden" || nextMode === "visible" ? nextMode : mode;
+        menuBarModeRef.current = resolvedMode;
+        setMenuBarMode(resolvedMode);
       } catch {
         showToast(t("settings.menuBar.applyFailed"), "error");
       } finally {
+        menuBarUpdateLockRef.current = false;
         setIsMenuBarUpdating(false);
       }
     },
-    [isMenuBarUpdating, menuBarMode, showToast, t],
+    [showToast, t],
   );
 
   useEffect(() => {
@@ -234,7 +247,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     setIsRecovering(true);
     setRecoveryMessage(null);
     try {
-      const response = await window.api.recovery.runDb({ dryRun });
+      const response = await api.recovery.runDb({ dryRun });
       setRecoveryMessage(response.success ? (response.data as { message?: string })?.message ?? "Success" : "Failed");
     } catch {
       setRecoveryMessage("Error during recovery");

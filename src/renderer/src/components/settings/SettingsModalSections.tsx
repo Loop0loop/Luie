@@ -29,6 +29,29 @@ export type OptionalFontOption = {
   pkg: string;
 };
 
+const areShortcutMapsEqual = (
+  left: Record<string, string>,
+  right: Record<string, string>,
+): boolean => {
+  const leftKeys = Object.keys(left);
+  const rightKeys = Object.keys(right);
+
+  if (leftKeys.length !== rightKeys.length) {
+    return false;
+  }
+
+  for (const key of leftKeys) {
+    if (!Object.prototype.hasOwnProperty.call(right, key)) {
+      return false;
+    }
+    if (left[key] !== right[key]) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
 interface ShortcutRowProps {
   actionId: string;
   label: string;
@@ -522,6 +545,9 @@ export const ShortcutsTab = memo(function ShortcutsTab({
   const shortcutDraftsRef = useRef<Record<string, string>>(shortcutValues);
 
   useEffect(() => {
+    if (areShortcutMapsEqual(shortcutDraftsRef.current, shortcutValues)) {
+      return;
+    }
     // eslint-disable-next-line react-hooks/set-state-in-effect -- keep drafts aligned with persisted shortcuts without remounting tab
     setShortcutDrafts(shortcutValues);
     shortcutDraftsRef.current = shortcutValues;
