@@ -60,8 +60,13 @@ export default function GoogleDocsLayout({
   } = useUIStore();
   
   const handleRightTabClick = useCallback((tab: "character" | "world" | "scrap" | "analysis" | "snapshot" | "trash") => {
-     setActiveRightTab(activeRightTab === tab ? null : tab);
-  }, [activeRightTab, setActiveRightTab]);
+     const nextTab = activeRightTab === tab ? null : tab;
+     setActiveRightTab(nextTab);
+     // Ensure panel has width when opening
+     if (nextTab && contextWidth < 50) {
+         setContextWidth(320); // Default width
+     }
+  }, [activeRightTab, setActiveRightTab, contextWidth, setContextWidth]);
 
   const handleOpenExport = async () => {
     if (!activeChapterId) return;
@@ -155,14 +160,14 @@ export default function GoogleDocsLayout({
            <div className="flex items-center gap-2 shrink-0">
                 <button 
                   onClick={() => handleRightTabClick("snapshot")}
-                  className={cn("w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground", activeRightTab === "snapshot" && "bg-muted text-foreground")}
+                  className={cn("w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground", activeRightTab === "snapshot" && "bg-accent/10 text-accent")}
                   title={t("sidebar.section.snapshot")}
                 >
                     <History className="w-5 h-5" />
                 </button>
                 <button 
                   onClick={() => handleRightTabClick("trash")}
-                  className={cn("w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground", activeRightTab === "trash" && "bg-muted text-foreground")}
+                  className={cn("w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground", activeRightTab === "trash" && "bg-accent/10 text-accent")}
                   title={t("sidebar.section.trash")}
                 >
                     <Trash2 className="w-5 h-5" />
@@ -299,7 +304,7 @@ export default function GoogleDocsLayout({
                   {/* Snapshot Panel */}
                   {activeRightTab === "snapshot" && (
                     <div className="flex flex-col h-full">
-                         <div className="px-4 py-3 border-b border-border/50 text-xs font-semibold text-muted uppercase tracking-wider bg-gray-50 dark:bg-[#252526]">
+                         <div className="px-4 py-3 border-b border-border/50 text-xs font-semibold text-muted uppercase tracking-wider bg-sidebar">
                             {t("sidebar.section.snapshot")}
                         </div>
                         {activeChapterId ? (
@@ -315,9 +320,9 @@ export default function GoogleDocsLayout({
                   {/* Trash Panel */}
                   {activeRightTab === "trash" && (
                      <div className="flex flex-col h-full">
-                         <div className="px-4 py-3 border-b border-border/50 text-xs font-semibold text-muted uppercase tracking-wider bg-gray-50 dark:bg-[#252526]">
+                         <div className="px-4 py-3 border-b border-border/50 text-xs font-semibold text-muted uppercase tracking-wider bg-sidebar">
                             {t("sidebar.section.trash")}
-                            <button onClick={() => setTrashRefreshKey(k => k + 1)} className="ml-auto p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded">
+                            <button onClick={() => setTrashRefreshKey(k => k + 1)} className="ml-auto p-1 hover:bg-muted/50 rounded">
                                 <History className="w-3 h-3 text-muted" />
                             </button>
                         </div>

@@ -238,7 +238,7 @@ class DatabaseService {
     const cwd = context.isPackaged ? process.resourcesPath : process.cwd();
     const schemaPath = path.join(cwd, "prisma", "schema.prisma");
     const prismaPath = getPrismaBinPath(cwd);
-    const migrationsDir = path.join(process.cwd(), "prisma", "migrations");
+    const migrationsDir = path.join(cwd, "prisma", "migrations");
     const hasMigrations =
       (await pathExists(migrationsDir)) &&
       (await fs

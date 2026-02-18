@@ -11,27 +11,36 @@ const logger = createLogger("AnalysisSecurity");
  * - 메모리 정리
  */
 class AnalysisSecurity {
-  private isListenerRegistered = false;
+  private readonly registeredWindowIds = new Set<number>();
 
   /**
    * 보안 리스너 등록
    * 윈도우 close 시 분석 데이터 자동 삭제
    */
   registerSecurityListeners(window: BrowserWindow): void {
-    if (this.isListenerRegistered) {
-      logger.warn("Security listeners already registered");
+    if (window.isDestroyed()) {
+      logger.warn("Security listener registration skipped for destroyed window");
       return;
     }
 
+    if (this.registeredWindowIds.has(window.id)) {
+      return;
+    }
+    this.registeredWindowIds.add(window.id);
+
     // 윈도우 close 이벤트
-    window.on("close", () => {
+    window.once("close", () => {
       logger.info("Window close detected, clearing analysis data");
       manuscriptAnalysisService.stopAnalysis();
       manuscriptAnalysisService.clearAnalysisData();
+      this.registeredWindowIds.delete(window.id);
     });
 
-    this.isListenerRegistered = true;
-    logger.info("Security listeners registered");
+    window.once("closed", () => {
+      this.registeredWindowIds.delete(window.id);
+    });
+
+    logger.info("Security listeners registered", { windowId: window.id });
   }
 
   /**

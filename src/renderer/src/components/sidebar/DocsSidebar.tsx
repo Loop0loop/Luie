@@ -2,7 +2,8 @@ import { useTranslation } from "react-i18next";
 import { cn } from "../../../../shared/types/utils";
 import type { Chapter } from "../../../../shared/types";
 import { 
-  Plus
+  Plus,
+  MoreVertical,
 } from "lucide-react";
 
 interface DocsSidebarProps {
@@ -37,15 +38,26 @@ export default function DocsSidebar({
                     key={chapter.id}
                     onClick={() => onSelectChapter(chapter.id)}
                     className={cn(
-                     "flex items-center px-4 py-1.5 cursor-pointer text-[13px] transition-colors select-none rounded-[100px] min-h-[32px]",
+                     "flex items-center px-4 py-1.5 cursor-pointer text-[13px] transition-colors select-none rounded-[100px] min-h-[32px] group relative",
                     activeChapterId === chapter.id
                         ? "bg-accent text-accent-fg font-semibold"
                         : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     )}
                 >
-                    <span className="truncate">
+                    <span className="truncate flex-1">
                          {chapter.title || t("chapter.untitled")}
                     </span>
+
+                    {/* Hover Menu Trigger */}
+                    <button
+                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-all duration-200"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            // TODO: Add context menu logic here if needed, or trigger parent's onMenu
+                        }}
+                    >
+                        <MoreVertical className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
                 </div>
                 ))}
             </div>
