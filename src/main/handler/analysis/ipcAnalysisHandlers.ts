@@ -1,10 +1,13 @@
 import { BrowserWindow } from "electron";
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
+import { ErrorCode } from "../../../shared/constants/errorCode.js";
 import type { AnalysisRequest } from "../../../shared/types/analysis.js";
 import { analysisStartArgsSchema } from "../../../shared/schemas/index.js";
 import { analysisSecurity } from "../../services/features/analysis/analysisSecurity.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
+import { ServiceError } from "../../utils/serviceError.js";
+import { windowManager } from "../../manager/windowManager.js";
 
 type ManuscriptAnalysisServiceLike = {
   startAnalysis: (
@@ -21,6 +24,11 @@ export function registerAnalysisIPCHandlers(
   service: ManuscriptAnalysisServiceLike
 ): void {
   const resolveAnalysisWindow = (): BrowserWindow | null => {
+    const mainWindow = windowManager.getMainWindow();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      return mainWindow;
+    }
+
     const focused = BrowserWindow.getFocusedWindow();
     if (focused && !focused.isDestroyed()) {
       return focused;
@@ -32,35 +40,37 @@ export function registerAnalysisIPCHandlers(
   };
 
   const throwIpcError = (
-    code: string,
+    code: (typeof ErrorCode)[keyof typeof ErrorCode],
     message: string,
     details?: Record<string, unknown>,
   ): never => {
-    throw { code, message, details };
+    throw new ServiceError(code, message, details);
   };
 
   registerIpcHandlers(logger, [
     {
       channel: IPC_CHANNELS.ANALYSIS_START,
       logTag: "ANALYSIS_START",
-      failMessage: "Failed to start analysis",
+      failMessage: "분석을 시작하는 중 오류가 발생했습니다.",
       argsSchema: analysisStartArgsSchema,
       handler: async (request: AnalysisRequest) => {
         logger.info("ANALYSIS_START", { request });
 
         const apiKeyValidation = analysisSecurity.validateAPIKey();
         if (!apiKeyValidation.valid) {
-          throwIpcError("API_KEY_MISSING", apiKeyValidation.message);
+          throwIpcError(ErrorCode.ANALYSIS_API_KEY_MISSING, apiKeyValidation.message);
         }
 
         const targetWindow = resolveAnalysisWindow();
         if (!targetWindow) {
-          throwIpcError("INVALID_REQUEST", "윈도우를 찾을 수 없습니다.");
+          throwIpcError(
+            ErrorCode.ANALYSIS_INVALID_REQUEST,
+            "윈도우를 찾을 수 없습니다.",
+          );
         }
 
-        const activeWindow = targetWindow as BrowserWindow;
-        analysisSecurity.registerSecurityListeners(activeWindow);
-        await service.startAnalysis(request.chapterId, request.projectId, activeWindow);
+        analysisSecurity.registerSecurityListeners(targetWindow);
+        await service.startAnalysis(request.chapterId, request.projectId, targetWindow);
 
         return true;
       },
@@ -68,7 +78,7 @@ export function registerAnalysisIPCHandlers(
     {
       channel: IPC_CHANNELS.ANALYSIS_STOP,
       logTag: "ANALYSIS_STOP",
-      failMessage: "Failed to stop analysis",
+      failMessage: "분석 중단 중 오류가 발생했습니다.",
       handler: () => {
         logger.info("ANALYSIS_STOP");
         service.stopAnalysis();
@@ -78,7 +88,7 @@ export function registerAnalysisIPCHandlers(
     {
       channel: IPC_CHANNELS.ANALYSIS_CLEAR,
       logTag: "ANALYSIS_CLEAR",
-      failMessage: "Failed to clear analysis data",
+      failMessage: "분석 데이터 삭제 중 오류가 발생했습니다.",
       handler: () => {
         logger.info("ANALYSIS_CLEAR");
         service.clearAnalysisData();

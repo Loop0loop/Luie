@@ -1,6 +1,7 @@
 import { useCharacterStore } from "../../../renderer/src/stores/characterStore";
 import { useTermStore } from "../../../renderer/src/stores/termStore";
 import { useUIStore } from "../../../renderer/src/stores/uiStore";
+import { useEditorStore } from "../../../renderer/src/stores/editorStore";
 import type { Character, Term } from "../../../shared/types";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
@@ -91,22 +92,27 @@ class SmartLinkService {
 
   public openItem(id: string, type: "character" | "term") {
     const uiStore = useUIStore.getState();
+    const uiMode = useEditorStore.getState().uiMode;
 
-    // 1. Set Right Panel Content
-    uiStore.setRightPanelContent({
-      type: "research",
-      tab: type === "character" ? "character" : "world", // mapping 'term' to 'world' tab usually? or 'scrap'?
-      // Assuming 'term' goes to 'world' tab as per UIStore types (ResearchTab = character | world | scrap)
-      // Actually, looking at CharacterManager, it seems to handle characters.
-      // Terms usually go to World or Glossary. Let's assume 'world' for now based on context.
-    });
+    if (uiMode === "docs") {
+       // Google Docs Layout
+       uiStore.setDocsRightTab(type === "character" ? "character" : "world");
+       // We also need to ensure the panel opens. Docs layout handles this via docsRightTab.
+    } else {
+       // Main Layout
+       // 1. Set Right Panel Content
+       uiStore.setRightPanelContent({
+         type: "research",
+         tab: type === "character" ? "character" : "world", 
+       });
 
-    // 2. Open Split View if closed
-    if (!uiStore.isSplitView) {
-      uiStore.setSplitView(true);
+       // 2. Open Split View if closed
+       if (!uiStore.isSplitView) {
+         uiStore.setSplitView(true);
+       }
     }
 
-    // 3. Select the item in the respective store
+    // 3. Select the item in the respective store (Shared across layouts)
     if (type === "character") {
       useCharacterStore.getState().setCurrentCharacter(useCharacterStore.getState().items.find(c => c.id === id) || null);
     } else {

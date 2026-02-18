@@ -609,6 +609,9 @@ export default function App() {
                     activeChapterId={activeChapterId ?? undefined}
                     onSelectChapter={handleSelectChapter}
                     onAddChapter={handleAddChapter}
+                    onRenameChapter={handleRenameChapter}
+                    onDuplicateChapter={handleDuplicateChapter}
+                    onDeleteChapter={handleDeleteChapter}
                   />
                 }
                 activeChapterId={activeChapterId ?? undefined}
