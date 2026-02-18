@@ -7,6 +7,8 @@ import { useTranslation } from "react-i18next";
 import { SnapshotList } from "../snapshot/SnapshotList";
 import SnapshotViewer from "../snapshot/SnapshotViewer";
 import { TrashList } from "../trash/TrashList";
+import ExportPreviewPanel from "../export/ExportPreviewPanel";
+import Editor from "../editor/Editor";
 import EditorToolbar from '../editor/EditorToolbar';
 import { EditorRuler } from "../editor/EditorRuler";
 import StatusFooter from "../common/StatusFooter";
@@ -31,10 +33,12 @@ interface GoogleDocsLayoutProps {
   sidebar?: ReactNode;
   activeChapterId?: string;
   activeChapterTitle?: string;
+  activeChapterContent?: string;
   currentProjectId?: string;
   editor?: TiptapEditor | null;
   onOpenSettings: () => void;
   onRenameChapter?: (id: string, title: string) => void;
+  onSaveChapter?: (title: string, content: string) => void | Promise<void>;
 }
 
 export default function GoogleDocsLayout({ 
@@ -42,10 +46,12 @@ export default function GoogleDocsLayout({
   sidebar, 
   activeChapterId, 
   activeChapterTitle,
+  activeChapterContent,
   currentProjectId, 
   editor,
   onOpenSettings,
   onRenameChapter,
+  onSaveChapter,
 }: GoogleDocsLayoutProps) {
   const { t } = useTranslation();
   const [trashRefreshKey, setTrashRefreshKey] = useState(0);
@@ -73,7 +79,7 @@ export default function GoogleDocsLayout({
     }
   }, [activeRightTab, contextWidth, setContextWidth]);
 
-  const handleRightTabClick = useCallback((tab: "character" | "world" | "scrap" | "analysis" | "snapshot" | "trash") => {
+  const handleRightTabClick = useCallback((tab: "character" | "world" | "scrap" | "analysis" | "snapshot" | "trash" | "editor" | "export") => {
      const nextTab = activeRightTab === tab ? null : tab;
      setActiveRightTab(nextTab);
      // Force open if width is 0
@@ -320,6 +326,28 @@ export default function GoogleDocsLayout({
                   {activeRightTab === "analysis" && (
                     <div className="h-full">
                         <ResearchPanel activeTab="analysis" onClose={() => setActiveRightTab(null)} />
+                    </div>
+                  )}
+
+                  {activeRightTab === "editor" && (
+                    <div className="h-full">
+                      <Editor
+                        key={`docs-side-editor-${activeChapterId ?? "none"}`}
+                        chapterId={activeChapterId ?? undefined}
+                        initialTitle={activeChapterTitle ?? ""}
+                        initialContent={activeChapterContent ?? ""}
+                        onSave={onSaveChapter}
+                        hideFooter={true}
+                        hideToolbar={true}
+                        hideTitle={true}
+                        scrollable={true}
+                      />
+                    </div>
+                  )}
+
+                  {activeRightTab === "export" && (
+                    <div className="h-full">
+                      <ExportPreviewPanel title={activeChapterTitle} />
                     </div>
                   )}
 

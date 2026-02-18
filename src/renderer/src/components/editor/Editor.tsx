@@ -16,6 +16,7 @@ import {
   DetailsContent,
 } from "@tiptap/extension-details";
 import Suggestion from "@tiptap/suggestion";
+import Focus from "@tiptap/extension-focus";
 
 import "../../styles/components/editor.css";
 import { cn } from "../../../../shared/types/utils";
@@ -32,8 +33,8 @@ import { api } from "../../services/api";
 import { useTranslation } from "react-i18next";
 import { useCharacterStore } from "../../stores/characterStore";
 import { useTermStore } from "../../stores/termStore";
-import { useUIStore } from "../../stores/uiStore";
 import { useDialog } from "../common/DialogProvider";
+import { smartLinkService } from "../../../../main/services/core/SmartLinkService";
 
 // Simple Callout Extension (inline to avoid dependencies)
 const Callout = Node.create({
@@ -84,6 +85,7 @@ interface EditorProps {
   hideFooter?: boolean;
   hideTitle?: boolean; // New prop
   scrollable?: boolean; // New prop
+  focusMode?: boolean; // New prop for Focus Mode features
   onEditorReady?: (editor: TiptapEditor | null) => void;
 }
 
@@ -99,6 +101,7 @@ function Editor({
   hideFooter = false,
   hideTitle = false, // Default false
   scrollable = true, // Default true (for Default/Split layout)
+  focusMode = false,
   onEditorReady,
 }: EditorProps) {
   const { t } = useTranslation();
@@ -129,6 +132,9 @@ function Editor({
   });
 
   // ... (Tiptap setup omitted) ...
+
+  // ... (Tiptap setup omitted) ...
+
   const extensions = useMemo(
     () => [
       StarterKit.configure({
@@ -166,8 +172,14 @@ function Editor({
         comparisonContent,
         mode: diffMode,
       }),
+      ...(focusMode ? [
+        Focus.configure({
+          className: "has-focus",
+          mode: "shallowest",
+        }) 
+      ] : []),
     ],
-    [comparisonContent, diffMode, t],
+    [comparisonContent, diffMode, t, focusMode],
   );
 
   const editor = useEditor(
@@ -213,25 +225,18 @@ function Editor({
                     // Attempt to find in stores
                     const charStore = useCharacterStore.getState();
                     const termStore = useTermStore.getState();
-                    const uiStore = useUIStore.getState();
 
                     // Search Character
                     const char = charStore.characters.find(c => c.name === text || c.name.includes(text) || text.includes(c.name));
                     if (char) {
-                        charStore.setCurrentCharacter(char);
-                        uiStore.setDocsRightTab("character");
-                        uiStore.setBinderBarOpen(true);
+                        smartLinkService.openItem(char.id, "character");
                         return true; // handled
                     }
 
                     // Search Term
                     const term = termStore.terms.find(t => t.term === text || t.term.includes(text) || text.includes(t.term));
                     if (term) {
-                        termStore.setCurrentTerm(term);
-                        uiStore.setDocsRightTab("world"); // Assuming terms are in world tab or separate?
-                        // uiStore has 'worldTab' -> 'terms'. Let's set that too if needed.
-                        uiStore.setWorldTab("terms");
-                        uiStore.setBinderBarOpen(true);
+                        smartLinkService.openItem(term.id, "term");
                         return true;
                     }
                 }
@@ -242,6 +247,43 @@ function Editor({
     },
     [extensions, fontFamilyCss, fontSize, lineHeight, updateStats],
   );
+
+  // Typewriter Scrolling Logic
+  useEffect(() => {
+    if (!focusMode || !editor) return;
+
+    const handleSelectionUpdate = () => {
+      const { selection } = editor.state;
+      const { empty } = selection;
+      
+      // Only scroll on carets to avoid jumping during selection
+      if (!empty) return;
+
+      const dom = editor.view.dom;
+      if (document.activeElement !== dom) return;
+
+      const coords = editor.view.coordsAtPos(selection.from);
+      const viewportHeight = window.innerHeight; // FocusLayout uses full screen
+      
+      // Target: 40% from top
+      const targetTop = viewportHeight * 0.4; 
+      
+      // Current cursor top relative to viewport
+      const currentTop = coords.top;
+      
+      // Diff
+      const diff = currentTop - targetTop;
+      
+      if (Math.abs(diff) > 20) { // Threshold
+          window.scrollBy({ top: diff, behavior: "smooth" });
+      }
+    };
+
+    editor.on("selectionUpdate", handleSelectionUpdate);
+    return () => {
+      editor.off("selectionUpdate", handleSelectionUpdate);
+    };
+  }, [editor, focusMode]);
 
   useEffect(() => {
     if (onEditorReady) {

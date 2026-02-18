@@ -88,7 +88,8 @@ const getDefaultShortcuts = (platform: NodeJS.Platform): ShortcutMap => {
     "split.swapSides": "",
     "editor.fontSize.increase": "",
     "editor.fontSize.decrease": "",
-    "window.toggleFullscreen": "",
+    "window.toggleFullscreen": "F11",
+    "view.toggleFocusMode": "Shift+F11",
   };
 };
 

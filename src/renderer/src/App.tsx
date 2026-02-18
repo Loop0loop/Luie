@@ -3,14 +3,16 @@ import { type Editor as TiptapEditor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
 import MainLayout from "./components/layout/MainLayout";
 import GoogleDocsLayout from "./components/layout/GoogleDocsLayout";
+import FocusLayout from "./components/layout/FocusLayout";
 import Sidebar from "./components/sidebar/Sidebar";
 import DocsSidebar from "./components/sidebar/DocsSidebar";
 import Editor from "./components/editor/Editor";
 import ContextPanel from "./components/context/ContextPanel";
 import ProjectTemplateSelector from "./components/layout/ProjectTemplateSelector";
 import { useProjectStore } from "./stores/projectStore";
-import { useUIStore } from "./stores/uiStore";
+import { useUIStore, type DocsRightTab, type ResearchTab } from "./stores/uiStore";
 import { useEditorStore } from "./stores/editorStore";
+import { useEditorStatusStore } from "./stores/editorStatusStore";
 import { useProjectInit } from "./hooks/useProjectInit";
 import { useFileImport } from "./hooks/useFileImport";
 import { useChapterManagement } from "./hooks/useChapterManagement";
@@ -75,6 +77,12 @@ export default function App() {
   const toggleSplitSide = useUIStore((state) => state.toggleSplitSide);
   const splitSide = useUIStore((state) => state.splitSide);
   const setWorldTab = useUIStore((state) => state.setWorldTab);
+  const contextWidth = useUIStore((state) => state.contextWidth);
+  const setContextWidth = useUIStore((state) => state.setContextWidth);
+  const docsRightTab = useUIStore((state) => state.docsRightTab);
+  const setDocsRightTab = useUIStore((state) => state.setDocsRightTab);
+  const setBinderBarOpen = useUIStore((state) => state.setBinderBarOpen);
+  const setRightPanelContent = useUIStore((state) => state.setRightPanelContent);
   const isManuscriptMenuOpen = useUIStore((state) => state.isManuscriptMenuOpen);
   const loadShortcuts = useShortcutStore((state) => state.loadShortcuts);
   const projects = useProjectStore((state) => state.items);
@@ -89,6 +97,9 @@ export default function App() {
   const fontSize = useEditorStore((state) => state.fontSize);
   const setFontSize = useEditorStore((state) => state.setFontSize);
   const uiMode = useEditorStore((state) => state.uiMode);
+  const setUiMode = useEditorStore((state) => state.setUiMode);
+  const wordCount = useEditorStatusStore((state) => state.wordCount);
+  const isDocsMode = uiMode === "docs";
 
   const refreshBootstrapStatus = useCallback(async () => {
     setIsBootstrapLoading(true);
@@ -204,29 +215,131 @@ export default function App() {
     startResizeSplit,
   } = useSplitView();
 
+  const ensureDocsPanelVisible = useCallback(() => {
+    setBinderBarOpen(true);
+    if (contextWidth < 50) {
+      setContextWidth(320);
+    }
+  }, [contextWidth, setBinderBarOpen, setContextWidth]);
+
+  const openDocsRightTab = useCallback(
+    (tab: Exclude<DocsRightTab, null>) => {
+      setDocsRightTab(tab);
+      ensureDocsPanelVisible();
+    },
+    [ensureDocsPanelVisible, setDocsRightTab],
+  );
+
   const openResearchTab = useCallback(
-    (tab: "character" | "world" | "scrap" | "analysis", side: "left" | "right") => {
+    (tab: ResearchTab, side: "left" | "right") => {
+      if (isDocsMode) {
+        const docsTabMap: Record<ResearchTab, "character" | "world" | "scrap" | "analysis"> = {
+          character: "character",
+          world: "world",
+          scrap: "scrap",
+          analysis: "analysis",
+        };
+        openDocsRightTab(docsTabMap[tab]);
+        return;
+      }
       setSplitSide(side);
       handleSelectResearchItem(tab);
     },
-    [handleSelectResearchItem, setSplitSide],
+    [handleSelectResearchItem, isDocsMode, openDocsRightTab, setSplitSide],
   );
 
   const openExportPreview = useCallback(
     (side: "left" | "right") => {
+      if (isDocsMode) {
+        openDocsRightTab("export");
+        return;
+      }
       setSplitSide(side);
       handleOpenExport();
     },
-    [handleOpenExport, setSplitSide],
+    [handleOpenExport, isDocsMode, openDocsRightTab, setSplitSide],
   );
 
   const openEditorInSplit = useCallback(
     (side: "left" | "right") => {
+      if (isDocsMode) {
+        if (!activeChapterId) return;
+        setRightPanelContent({ type: "editor", id: activeChapterId });
+        openDocsRightTab("editor");
+        return;
+      }
       if (!activeChapterId) return;
       setSplitSide(side);
       handleSplitView("vertical", activeChapterId);
     },
-    [activeChapterId, handleSplitView, setSplitSide],
+    [
+      activeChapterId,
+      handleSplitView,
+      isDocsMode,
+      openDocsRightTab,
+      setRightPanelContent,
+      setSplitSide,
+    ],
+  );
+
+  const toggleContextPanel = useCallback(() => {
+    if (!isDocsMode) {
+      setContextOpen(!isContextOpen);
+      return;
+    }
+
+    if (docsRightTab) {
+      setDocsRightTab(null);
+      return;
+    }
+
+    openDocsRightTab("character");
+  }, [
+    docsRightTab,
+    isContextOpen,
+    isDocsMode,
+    openDocsRightTab,
+    setContextOpen,
+    setDocsRightTab,
+  ]);
+
+  const openContextPanel = useCallback(() => {
+    if (!isDocsMode) {
+      setContextOpen(true);
+      return;
+    }
+
+    openDocsRightTab(docsRightTab ?? "character");
+  }, [docsRightTab, isDocsMode, openDocsRightTab, setContextOpen]);
+
+  const closeContextPanel = useCallback(() => {
+    if (!isDocsMode) {
+      setContextOpen(false);
+      return;
+    }
+
+    setDocsRightTab(null);
+  }, [isDocsMode, setContextOpen, setDocsRightTab]);
+
+  const toggleManuscriptPanel = useCallback(() => {
+    if (isDocsMode) {
+      setSidebarOpen(!isSidebarOpen);
+      return;
+    }
+
+    emitShortcutCommand({ type: "sidebar.section.toggle", section: "manuscript" });
+  }, [isDocsMode, isSidebarOpen, setSidebarOpen]);
+
+  const openSidebarSection = useCallback(
+    (section: "snapshot" | "trash") => {
+      if (isDocsMode) {
+        openDocsRightTab(section);
+        return;
+      }
+
+      emitShortcutCommand({ type: "sidebar.section.open", section });
+    },
+    [isDocsMode, openDocsRightTab],
   );
 
   const handleQuickExport = useCallback(() => {
@@ -271,15 +384,12 @@ export default function App() {
       "view.toggleSidebar": () => setSidebarOpen(!isSidebarOpen),
       "view.sidebar.open": () => setSidebarOpen(true),
       "view.sidebar.close": () => setSidebarOpen(false),
-      "view.toggleContextPanel": () => setContextOpen(!isContextOpen),
-      "view.context.open": () => setContextOpen(true),
-      "view.context.close": () => setContextOpen(false),
-      "sidebar.section.manuscript.toggle": () =>
-        emitShortcutCommand({ type: "sidebar.section.toggle", section: "manuscript" }),
-      "sidebar.section.snapshot.open": () =>
-        emitShortcutCommand({ type: "sidebar.section.open", section: "snapshot" }),
-      "sidebar.section.trash.open": () =>
-        emitShortcutCommand({ type: "sidebar.section.open", section: "trash" }),
+      "view.toggleContextPanel": () => toggleContextPanel(),
+      "view.context.open": () => openContextPanel(),
+      "view.context.close": () => closeContextPanel(),
+      "sidebar.section.manuscript.toggle": () => toggleManuscriptPanel(),
+      "sidebar.section.snapshot.open": () => openSidebarSection("snapshot"),
+      "sidebar.section.trash.open": () => openSidebarSection("trash"),
       "project.rename": () => void handleRenameProject(),
       "research.open.character": () => openResearchTab("character", "right"),
       "research.open.world": () => openResearchTab("world", "right"),
@@ -309,6 +419,7 @@ export default function App() {
           Math.max(EDITOR_TOOLBAR_FONT_MIN, fontSize - EDITOR_TOOLBAR_FONT_STEP),
         ),
       "window.toggleFullscreen": () => void api.window.toggleFullscreen(),
+      "view.toggleFocusMode": () => void setUiMode(uiMode === "focus" ? "default" : "focus"),
     }),
     [
       activeChapterTitle,
@@ -316,7 +427,6 @@ export default function App() {
       handleAddChapter,
       handleSave,
       handleDeleteActiveChapter,
-      isContextOpen,
       isSidebarOpen,
       openChapterByIndex,
       handleRenameProject,
@@ -324,12 +434,18 @@ export default function App() {
       openExportPreview,
       handleQuickExport,
       openEditorInSplit,
+      toggleContextPanel,
+      openContextPanel,
+      closeContextPanel,
+      toggleManuscriptPanel,
+      openSidebarSection,
       toggleSplitSide,
       setWorldTab,
       setFontSize,
       fontSize,
-      setContextOpen,
       setSidebarOpen,
+      uiMode,
+      setUiMode,
     ],
   );
 
@@ -508,6 +624,28 @@ export default function App() {
     );
   }
 
+  if (uiMode === "focus") {
+    return (
+       <FocusLayout 
+          activeChapterTitle={activeChapterTitle}
+          wordCount={wordCount}
+       >
+          <Editor 
+             key={activeChapterId ?? "focus-editor"}
+             chapterId={activeChapterId ?? undefined}
+             initialTitle={activeChapterTitle}
+             initialContent={content}
+             onSave={handleSave}
+             focusMode={true}
+             hideToolbar={true}
+             hideFooter={true}
+             hideTitle={true}
+             scrollable={true} 
+          />
+       </FocusLayout>
+    );
+  }
+
   // Editor Content (Split View)
   const editorContent = (
         <div id="split-view-container" className="flex w-full h-full flex-1 overflow-hidden relative">
@@ -620,14 +758,17 @@ export default function App() {
                     onAddChapter={handleAddChapter}
                     onRenameChapter={handleRenameChapter}
                     onDuplicateChapter={handleDuplicateChapter}
-                    onDeleteChapter={handleDeleteActiveChapter}
+                    onDeleteChapter={handleDeleteChapter}
                   />
                 }
                 activeChapterId={activeChapterId ?? undefined}
                 activeChapterTitle={activeChapterTitle}
+                activeChapterContent={content}
+                currentProjectId={currentProject?.id}
                 editor={docEditor}
                 onOpenSettings={() => setIsSettingsOpen(true)}
                 onRenameChapter={handleRenameChapter}
+                onSaveChapter={handleSave}
             >
                   <Editor
                     key={activeChapterId} // Force re-mount on chapter change to ensure clean state

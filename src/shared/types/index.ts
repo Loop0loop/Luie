@@ -302,7 +302,7 @@ export interface WindowBounds {
 
 export type WindowState = "maximized" | "normal";
 
-export type EditorUiMode = "default" | "docs" | "word" | "scrivener";
+export type EditorUiMode = "default" | "docs" | "word" | "scrivener" | "focus";
 
 export interface EditorSettings {
   fontFamily: FontFamily;
@@ -381,7 +381,8 @@ export type ShortcutAction =
   | "split.swapSides"
   | "editor.fontSize.increase"
   | "editor.fontSize.decrease"
-  | "window.toggleFullscreen";
+  | "window.toggleFullscreen"
+  | "view.toggleFocusMode";
 
 export type ShortcutMap = Record<ShortcutAction, string>;
 

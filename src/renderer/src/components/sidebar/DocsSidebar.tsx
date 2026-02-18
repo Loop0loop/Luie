@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../../shared/types/utils";
 import type { Chapter } from "../../../../shared/types";
@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useFloatingMenu } from "../../hooks/useFloatingMenu";
 import { useDialog } from "../common/DialogProvider";
+import { useUIStore } from "../../stores/uiStore";
 
 interface DocsSidebarProps {
   chapters: Chapter[];
@@ -36,9 +37,19 @@ export default function DocsSidebar({
   const { t } = useTranslation();
   const dialog = useDialog();
   const { menuOpenId, menuPosition, menuRef, closeMenu, toggleMenuByElement } = useFloatingMenu<HTMLButtonElement>();
+  const setManuscriptMenuOpen = useUIStore(
+    (state) => state.setManuscriptMenuOpen,
+  );
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+
+  useEffect(() => {
+    setManuscriptMenuOpen(Boolean(menuOpenId));
+    return () => {
+      setManuscriptMenuOpen(false);
+    };
+  }, [menuOpenId, setManuscriptMenuOpen]);
 
   const handleAction = async (
     action: ChapterAction,
@@ -95,7 +106,7 @@ export default function DocsSidebar({
       {/* Menu Overlay */}
       {menuOpenId && (
         <div
-          className="fixed inset-0 z-[9999] bg-transparent"
+          className="fixed inset-0 z-9999 bg-transparent"
           onPointerDown={closeMenu}
         />
       )}
@@ -104,7 +115,7 @@ export default function DocsSidebar({
       {menuOpenId && (
         <div
           ref={menuRef}
-          className="fixed z-[10000] bg-panel border border-border rounded-lg shadow-lg min-w-[160px] p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col text-fg"
+          className="fixed z-10000 bg-panel border border-border rounded-lg shadow-lg min-w-[160px] p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col text-fg"
           style={{ top: menuPosition.y, left: menuPosition.x }}
         >
           <div

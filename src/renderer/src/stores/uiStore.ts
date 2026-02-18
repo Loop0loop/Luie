@@ -16,7 +16,16 @@ import type { Snapshot } from "../../../shared/types";
 export type ContextTab = "synopsis" | "characters" | "terms";
 export type ResearchTab = "character" | "world" | "scrap" | "analysis";
 export type WorldTab = "synopsis" | "terms" | "mindmap" | "drawing" | "plot";
-export type DocsRightTab = "character" | "world" | "scrap" | "analysis" | "snapshot" | "trash" | null;
+export type DocsRightTab =
+  | "character"
+  | "world"
+  | "scrap"
+  | "analysis"
+  | "snapshot"
+  | "trash"
+  | "editor"
+  | "export"
+  | null;
 
 interface RightPanelContent {
   type: "research" | "editor" | "snapshot" | "export";
