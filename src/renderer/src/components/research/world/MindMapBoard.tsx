@@ -1,5 +1,5 @@
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Edge, Node, Connection, NodeProps, ReactFlowInstance, NodeChange, EdgeChange } from "reactflow";
 import ReactFlow, {
   Background,
@@ -16,6 +16,8 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import { useTranslation } from "react-i18next";
 import { User, Image as ImageIcon } from "lucide-react";
+import { useProjectStore } from "../../../stores/projectStore";
+import { worldPackageStorage } from "../../../services/worldPackageStorage";
 
 type MindMapNodeData = { 
     label: string;
@@ -155,19 +157,26 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
 
 export function MindMapBoard() {
   const { t } = useTranslation();
+  const { currentItem: currentProject } = useProjectStore();
   const nodeTypes = useMemo(() => ({ character: CharacterNode }), []);
   const flowRef = useRef<ReactFlowInstance | null>(null);
   const rootX = getCssNumber("--world-mindmap-root-x", 300);
   const rootY = getCssNumber("--world-mindmap-root-y", 300);
+  const hydratedProjectIdRef = useRef<string | null>(null);
 
-  const [nodes, setNodes] = useNodesState([
-    {
-      id: "root",
-      type: "character",
-      position: { x: rootX, y: rootY },
-      data: { label: t("world.mindmap.rootLabel") },
-    },
-  ]);
+  const getDefaultNodes = useCallback(
+    () => [
+      {
+        id: "root",
+        type: "character",
+        position: { x: rootX, y: rootY },
+        data: { label: t("world.mindmap.rootLabel") },
+      },
+    ],
+    [rootX, rootY, t],
+  );
+
+  const [nodes, setNodes] = useNodesState(getDefaultNodes());
   const [edges, setEdges] = useEdgesState([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
@@ -211,6 +220,72 @@ export function MindMapBoard() {
     },
     [flushEdgeChanges],
   );
+
+  useEffect(() => {
+    if (!currentProject?.id) {
+      setNodes(getDefaultNodes());
+      setEdges([]);
+      hydratedProjectIdRef.current = null;
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      const loaded = await worldPackageStorage.loadMindmap(
+        currentProject.id,
+        currentProject.projectPath,
+      );
+      if (cancelled) return;
+      const loadedNodes = loaded.nodes as Node<MindMapNodeData>[];
+      const loadedEdges = loaded.edges as Edge[];
+      setNodes(loadedNodes.length > 0 ? loadedNodes : getDefaultNodes());
+      setEdges(loadedEdges);
+      hydratedProjectIdRef.current = currentProject.id;
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentProject?.id, currentProject?.projectPath, getDefaultNodes, setEdges, setNodes]);
+
+  useEffect(() => {
+    if (!currentProject?.id) return;
+    if (hydratedProjectIdRef.current !== currentProject.id) return;
+
+    const timer = window.setTimeout(() => {
+      const serializedNodes = nodes.map((node) => ({
+        id: node.id,
+        type: node.type,
+        position: node.position,
+        data: {
+          label:
+            typeof (node.data as Record<string, unknown> | undefined)?.label === "string"
+              ? ((node.data as Record<string, unknown>).label as string)
+              : "",
+          image:
+            typeof (node.data as Record<string, unknown> | undefined)?.image === "string"
+              ? ((node.data as Record<string, unknown>).image as string)
+              : undefined,
+        },
+      }));
+
+      const serializedEdges = edges.map((edge) => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        type: edge.type,
+      }));
+
+      void worldPackageStorage.saveMindmap(currentProject.id, currentProject.projectPath, {
+        nodes: serializedNodes,
+        edges: serializedEdges,
+      });
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [currentProject?.id, currentProject?.projectPath, edges, nodes]);
 
 
   const onConnect = useCallback(

@@ -40,7 +40,7 @@ interface UIStore {
   worldTab: WorldTab;
   isSplitView: boolean;
   splitRatio: number;
-  splitSide: "left" | "right";
+  splitSide: "left" | "right" | "bottom";
   rightPanelContent: RightPanelContent;
   isSidebarOpen: boolean;
   isContextOpen: boolean;

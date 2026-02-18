@@ -7,9 +7,8 @@ import {
   MouseSensor,
   TouchSensor,
   defaultDropAnimationSideEffects,
-  DragStartEvent,
-  DragEndEvent,
-  DragOverEvent,
+  type DragStartEvent,
+  type DragEndEvent,
 } from "@dnd-kit/core";
 import { createPortal } from "react-dom";
 import { useUIStore } from "../../stores/uiStore";
@@ -18,13 +17,13 @@ interface GlobalDragContextProps {
   children: React.ReactNode;
 }
 
-export type DragItemType = "character" | "chapter" | "world" | "memo";
+export type DragItemType = "character" | "chapter" | "world" | "memo" | "analysis" | "synopsis" | "mindmap" | "drawing" | "plot" | "trash";
 
 export interface DragData {
   type: DragItemType;
   id: string;
   title: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export function GlobalDragContext({ children }: GlobalDragContextProps) {
@@ -34,7 +33,7 @@ export function GlobalDragContext({ children }: GlobalDragContextProps) {
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 10, // Must drag 10px to start (prevents accidental clicks)
+        distance: 10,
       },
     }),
     useSensor(TouchSensor, {
@@ -64,47 +63,46 @@ export function GlobalDragContext({ children }: GlobalDragContextProps) {
 
     // Handle Drop Logic
     if (dropZone === "editor-drop-zone-center") {
-        // Open as Main View
         openItemAsMain(dragData);
     } else if (dropZone === "editor-drop-zone-right") {
-        // Open in Split View (Right)
         openItemInSplit(dragData, "right");
     } else if (dropZone === "editor-drop-zone-left") {
-        // Open in Split View (Left)
         openItemInSplit(dragData, "left");
+    } else if (dropZone === "editor-drop-zone-bottom") {
+        openItemInSplit(dragData, "bottom"); 
     }
   };
 
   const openItemAsMain = (data: DragData) => {
+      // Logic to open as main view
       switch (data.type) {
           case "character":
-              // For now, character view is 'character' type. 
-              // We might need to set a specific ID in the store if we support detailing a specific char in main view.
-              // Assuming 'character' main view shows the list or last selected.
-              // Actually, looking at WikiDetailView, it likely needs a way to know WHICH character.
-              // We'll update UI store to support ID if needed, or just switch view.
               setMainView({ type: "character", id: data.id });
               break;
           case "world":
-              setMainView({ type: "world", id: data.id }); // Assuming ID handles specific term/tab
+          case "mindmap":
+          case "plot":
+          case "drawing":
+          case "synopsis":
+              setMainView({ type: "world", id: data.id }); 
               break;
           case "memo":
               setMainView({ type: "memo", id: data.id });
               break;
+           case "analysis":
+              setMainView({ type: "analysis", id: data.id });
+              break;
           case "chapter":
-              setMainView({ type: "editor", id: data.id }); // Standard editor
+              setMainView({ type: "editor", id: data.id });
+              break;
+          case "trash":
+              setMainView({ type: "trash", id: data.id }); // Assuming trash view exists or handled
               break;
       }
   };
 
-  const openItemInSplit = (data: DragData, side: "left" | "right") => {
+  const openItemInSplit = (data: DragData, side: "left" | "right" | "bottom") => {
       setSplitView(true);
-      setSplitSide(side === "left" ? "right" : "left"); // existing split side logic is "which side is the SECONDARY panel"
-      // If we drop on RIGHT, we want secondary panel on RIGHT.
-      // If we drop on LEFT, we want secondary panel on LEFT.
-      
-      // Update: UI Store `splitSide` defines where the SECONDARY pane is.
-      // So if I drop on "right", `splitSide` should be "right".
       setSplitSide(side);
 
       switch (data.type) {
@@ -112,10 +110,18 @@ export function GlobalDragContext({ children }: GlobalDragContextProps) {
               setRightPanelContent({ type: "research", tab: "character", id: data.id });
               break;
           case "world":
+          case "mindmap":
+          case "plot":
+          case "drawing":
+          case "synopsis":
+               // Map specific world types to tabs if needed, or just world
               setRightPanelContent({ type: "research", tab: "world", id: data.id });
               break;
           case "memo":
-              setRightPanelContent({ type: "research", tab: "scrap", id: data.id }); // scrap = memo
+              setRightPanelContent({ type: "research", tab: "scrap", id: data.id }); 
+              break;
+          case "analysis":
+              setRightPanelContent({ type: "research", tab: "analysis", id: data.id });
               break;
            case "chapter":
               setRightPanelContent({ type: "editor", id: data.id });
@@ -133,7 +139,7 @@ export function GlobalDragContext({ children }: GlobalDragContextProps) {
       {createPortal(
         <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({}) }}>
           {activeDragItem ? (
-            <div className="bg-panel border border-accent/50 shadow-xl rounded-lg p-2 flex items-center gap-2 opacity-90 cursor-grabbing">
+            <div className="bg-panel border border-accent/50 shadow-xl rounded-lg p-2 flex items-center gap-2 opacity-90 cursor-grabbing z-9999">
                <span className="text-sm font-medium">{activeDragItem.title}</span>
             </div>
           ) : null}

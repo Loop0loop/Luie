@@ -10,6 +10,7 @@ import type {
   AppSettings,
   EditorSettings,
   ShortcutMap,
+  SyncSettings,
   WindowBounds,
   WindowMenuBarMode,
   WindowState,
@@ -118,6 +119,10 @@ const DEFAULT_SETTINGS: AppSettings = {
   windowBounds: undefined,
   lastWindowState: undefined,
   menuBarMode: "visible",
+  sync: {
+    connected: false,
+    autoSync: true,
+  } as SyncSettings,
 };
 
 export class SettingsManager {
@@ -227,6 +232,7 @@ export class SettingsManager {
       windowBounds: settings.windowBounds ?? current.windowBounds,
       lastWindowState: settings.lastWindowState ?? current.lastWindowState,
       menuBarMode: settings.menuBarMode ?? current.menuBarMode,
+      sync: settings.sync ?? current.sync,
     };
     this.store.set(merged);
     logger.info("Settings updated", { settings: merged });
@@ -330,6 +336,41 @@ export class SettingsManager {
 
   setMenuBarMode(mode: WindowMenuBarMode): void {
     this.store.set("menuBarMode", mode);
+  }
+
+  getSyncSettings(): SyncSettings {
+    const current = this.store.get("sync");
+    return {
+      connected: current?.connected ?? false,
+      provider: current?.provider,
+      email: current?.email,
+      userId: current?.userId,
+      expiresAt: current?.expiresAt,
+      autoSync: current?.autoSync ?? true,
+      lastSyncedAt: current?.lastSyncedAt,
+      lastError: current?.lastError,
+      accessTokenCipher: current?.accessTokenCipher,
+      refreshTokenCipher: current?.refreshTokenCipher,
+    };
+  }
+
+  setSyncSettings(settings: Partial<SyncSettings>): SyncSettings {
+    const current = this.getSyncSettings();
+    const next: SyncSettings = {
+      ...current,
+      ...settings,
+    };
+    this.store.set("sync", next as unknown as AppSettings["sync"]);
+    return next;
+  }
+
+  clearSyncSettings(): SyncSettings {
+    const next: SyncSettings = {
+      connected: false,
+      autoSync: true,
+    };
+    this.store.set("sync", next as unknown as AppSettings["sync"]);
+    return next;
   }
 
   // 설정 초기화

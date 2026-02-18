@@ -2,7 +2,7 @@ import type { EditorSettings, EditorUiMode } from "../../../shared/types/index.j
 import type { ContextTab, DocsRightTab, ResearchTab, WorldTab } from "../stores/uiStore";
 
 type RightPanelType = "research" | "editor" | "snapshot" | "export";
-type SplitSide = "left" | "right";
+type SplitSide = "left" | "right" | "bottom";
 
 export type UiModeIntegrityUiState = {
   view: "template" | "editor" | "corkboard" | "outliner";

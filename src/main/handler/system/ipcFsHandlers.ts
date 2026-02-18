@@ -26,6 +26,8 @@ import {
   LUIE_WORLD_SYNOPSIS_FILE,
   LUIE_WORLD_PLOT_FILE,
   LUIE_WORLD_DRAWING_FILE,
+  LUIE_WORLD_MINDMAP_FILE,
+  LUIE_WORLD_SCRAP_MEMOS_FILE,
 } from "../../../shared/constants/index.js";
 import { SNAPSHOT_BACKUP_DIR } from "../../../shared/constants/paths.js";
 import {
@@ -56,6 +58,8 @@ export type LuiePackageExportData = {
   synopsis?: unknown;
   plot?: unknown;
   drawing?: unknown;
+  mindmap?: unknown;
+  memos?: unknown;
   snapshots: Array<{
     id: string;
     chapterId?: string | null;
@@ -216,6 +220,14 @@ export const writeLuiePackage = async (
     {
       name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`,
       content: JSON.stringify(payload.drawing ?? { paths: [] }, null, 2),
+    },
+    {
+      name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_MINDMAP_FILE}`,
+      content: JSON.stringify(payload.mindmap ?? { nodes: [], edges: [] }, null, 2),
+    },
+    {
+      name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_SCRAP_MEMOS_FILE}`,
+      content: JSON.stringify(payload.memos ?? { memos: [] }, null, 2),
     },
     {
       name: `${LUIE_SNAPSHOTS_DIR}/index.json`,
@@ -532,6 +544,14 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
             {
               name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`,
               content: JSON.stringify({ paths: [] }, null, 2),
+            },
+            {
+              name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_MINDMAP_FILE}`,
+              content: JSON.stringify({ nodes: [], edges: [] }, null, 2),
+            },
+            {
+              name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_SCRAP_MEMOS_FILE}`,
+              content: JSON.stringify({ memos: [] }, null, 2),
             },
           ]),
         );

@@ -8,6 +8,7 @@ import { SnapshotList } from "../snapshot/SnapshotList";
 import SnapshotViewer from "../snapshot/SnapshotViewer";
 import { TrashList } from "../trash/TrashList";
 import ExportPreviewPanel from "../export/ExportPreviewPanel";
+import { EditorDropZones } from "../common/EditorDropZones";
 import Editor from "../editor/Editor";
 import EditorToolbar from '../editor/EditorToolbar';
 import { EditorRuler } from "../editor/EditorRuler";
@@ -260,6 +261,7 @@ export default function GoogleDocsLayout({
              {/* Scrollable Area for Editor */}
              {/* Scrollable Area for Editor */}
              <main className="flex-1 overflow-y-auto flex flex-col items-center relative custom-scrollbar bg-sidebar">
+                        <EditorDropZones />
                         {/* Ruler - Sticky Top (Opaque Background Fixed) */}
                         <div className="sticky top-0 z-30 pt-4 pb-2 shrink-0 select-none bg-sidebar/95 backdrop-blur-sm flex justify-center w-full">
                             <div className="bg-background border border-border shadow-sm">

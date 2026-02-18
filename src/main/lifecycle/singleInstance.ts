@@ -1,6 +1,7 @@
 import { app } from "electron";
 import { windowManager } from "../manager/index.js";
 import type { createLogger } from "../../shared/logger/index.js";
+import { extractAuthCallbackUrl, handleDeepLinkUrl } from "./deepLink.js";
 
 type Logger = ReturnType<typeof createLogger>;
 
@@ -16,7 +17,12 @@ export const registerSingleInstance = (logger: Logger): boolean => {
     return false;
   }
 
-  app.on("second-instance", () => {
+  app.on("second-instance", (_event, argv) => {
+    const callbackUrl = extractAuthCallbackUrl(argv);
+    if (callbackUrl) {
+      void handleDeepLinkUrl(callbackUrl);
+    }
+
     const mainWindow = windowManager.getMainWindow();
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RotateCcw, Trash2, Clock } from "lucide-react";
+import { DraggableItem } from "../common/DraggableItem";
 import { api } from "../../services/api";
 import { useChapterStore } from "../../stores/chapterStore";
 import type { Chapter } from "../../../../shared/types";
@@ -141,37 +142,42 @@ export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashList
           : "";
 
         return (
-          <div
+          <DraggableItem
             key={item.id}
-            className="p-3 border-b border-border hover:bg-surface-hover transition-colors group"
+            id={`trash-${item.id}`}
+            data={{ type: "trash", id: item.id, title: item.title }}
           >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-semibold text-fg truncate">
-                {item.title}
-              </span>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={() => handleRestore(item.id)}
-                  className="p-1 hover:bg-active rounded text-muted hover:text-fg"
-                  title={t("trash.restore")}
-                  disabled={restoringId === item.id || purgingId === item.id}
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => handlePurge(item.id)}
-                  className="p-1 hover:bg-active rounded text-red-400 hover:text-red-300"
-                  title={t("trash.purge")}
-                  disabled={restoringId === item.id || purgingId === item.id}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+            <div
+              className="p-3 border-b border-border hover:bg-surface-hover transition-colors group"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-semibold text-fg truncate">
+                  {item.title}
+                </span>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleRestore(item.id); }}
+                    className="p-1 hover:bg-active rounded text-muted hover:text-fg"
+                    title={t("trash.restore")}
+                    disabled={restoringId === item.id || purgingId === item.id}
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handlePurge(item.id); }}
+                    className="p-1 hover:bg-active rounded text-red-400 hover:text-red-300"
+                    title={t("trash.purge")}
+                    disabled={restoringId === item.id || purgingId === item.id}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              <div className="text-[11px] text-muted">
+                {deletedLabel || t("trash.deleted")}
               </div>
             </div>
-            <div className="text-[11px] text-muted">
-              {deletedLabel || t("trash.deleted")}
-            </div>
-          </div>
+          </DraggableItem>
         );
       })}
     </div>

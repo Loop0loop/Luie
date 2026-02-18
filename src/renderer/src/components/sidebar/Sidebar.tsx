@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, memo } from "react";
 import { cn } from "../../../../shared/types/utils";
+import { DraggableItem } from "../common/DraggableItem";
 import { api } from "../../services/api";
 import { Virtuoso } from "react-virtuoso";
 import {
@@ -28,6 +29,7 @@ import { useShortcutCommand } from "../../hooks/useShortcutCommand";
 import { useUIStore } from "../../stores/uiStore";
 import { useFloatingMenu } from "../../hooks/useFloatingMenu";
 import { useDialog } from "../common/DialogProvider";
+import type { DragData } from "../common/GlobalDragContext";
 
 interface Chapter {
   id: string;
@@ -389,6 +391,7 @@ function Sidebar({
             }
 
             if (item.type === "research-item") {
+              const dragType: DragData["type"] = item.id === "scrap" ? "memo" : item.id;
               const meta = {
                 character: {
                   label: t("sidebar.item.characters"),
@@ -413,23 +416,34 @@ function Sidebar({
               }[item.id];
 
               return (
-                <div
-                  className="flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg transition-all"
-                  onClick={() => onSelectResearchItem(item.id)}
-                  onMouseEnter={() => setHoveredItemId(meta.hoverId)}
-                  onMouseLeave={() => setHoveredItemId(null)}
+                <DraggableItem
+                    key={item.id}
+                    id={`research-${item.id}`}
+                    data={{ 
+                        type: dragType,
+                        id: item.id, 
+                        title: meta.label 
+                    }}
+                    className="flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg transition-all"
                 >
-                  {meta.icon}
-                  <span>{meta.label}</span>
-                  {(hoveredItemId === meta.hoverId || menuOpenId === meta.hoverId) && (
                     <div
-                      className="ml-auto p-0.5 rounded hover:bg-bg-active text-muted hover:text-fg"
-                      onClick={(e) => handleMenuClick(e, meta.hoverId)}
+                      className="flex items-center w-full"
+                      onClick={() => onSelectResearchItem(item.id)}
+                      onMouseEnter={() => setHoveredItemId(meta.hoverId)}
+                      onMouseLeave={() => setHoveredItemId(null)}
                     >
-                      <MoreVertical className="icon-sm" />
+                      {meta.icon}
+                      <span>{meta.label}</span>
+                      {(hoveredItemId === meta.hoverId || menuOpenId === meta.hoverId) && (
+                        <div
+                          className="ml-auto p-0.5 rounded hover:bg-bg-active text-muted hover:text-fg"
+                          onClick={(e) => handleMenuClick(e, meta.hoverId)}
+                        >
+                          <MoreVertical className="icon-sm" />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                </DraggableItem>
               );
             }
 

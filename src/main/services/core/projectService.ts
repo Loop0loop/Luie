@@ -27,6 +27,8 @@ import {
   LUIE_WORLD_SYNOPSIS_FILE,
   LUIE_WORLD_PLOT_FILE,
   LUIE_WORLD_DRAWING_FILE,
+  LUIE_WORLD_MINDMAP_FILE,
+  LUIE_WORLD_SCRAP_MEMOS_FILE,
 } from "../../../shared/constants/index.js";
 import { sanitizeName } from "../../../shared/utils/sanitize.js";
 import type {
@@ -38,7 +40,9 @@ import type {
   TermExportRecord,
   SnapshotExportRecord,
   WorldDrawingData,
+  WorldMindmapData,
   WorldPlotData,
+  WorldScrapMemosData,
   WorldSynopsisData,
 } from "../../../shared/types/index.js";
 import { writeLuiePackage } from "../../handler/system/ipcFsHandlers.js";
@@ -122,6 +126,21 @@ const LuieWorldDrawingSchema = z
     iconType: z.enum(["mountain", "castle", "village"]).optional(),
     color: z.string().optional(),
     lineWidth: z.number().optional(),
+    updatedAt: z.string().optional(),
+  })
+  .passthrough();
+
+const LuieWorldMindmapSchema = z
+  .object({
+    nodes: z.array(z.record(z.string(), z.unknown())).optional(),
+    edges: z.array(z.record(z.string(), z.unknown())).optional(),
+    updatedAt: z.string().optional(),
+  })
+  .passthrough();
+
+const LuieWorldScrapMemosSchema = z
+  .object({
+    memos: z.array(z.record(z.string(), z.unknown())).optional(),
     updatedAt: z.string().optional(),
   })
   .passthrough();
@@ -708,15 +727,19 @@ export class ProjectService {
         ? rawSnapshots.slice(0, snapshotExportLimit)
         : rawSnapshots;
 
-    const [existingSynopsisRaw, existingPlotRaw, existingDrawingRaw] = await Promise.all([
+    const [existingSynopsisRaw, existingPlotRaw, existingDrawingRaw, existingMindmapRaw, existingMemosRaw] = await Promise.all([
       readLuieEntry(project.projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`, logger),
       readLuieEntry(project.projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_PLOT_FILE}`, logger),
       readLuieEntry(project.projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`, logger),
+      readLuieEntry(project.projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_MINDMAP_FILE}`, logger),
+      readLuieEntry(project.projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SCRAP_MEMOS_FILE}`, logger),
     ]);
 
     const parsedSynopsis = LuieWorldSynopsisSchema.safeParse(parseJsonSafely(existingSynopsisRaw));
     const parsedPlot = LuieWorldPlotSchema.safeParse(parseJsonSafely(existingPlotRaw));
     const parsedDrawing = LuieWorldDrawingSchema.safeParse(parseJsonSafely(existingDrawingRaw));
+    const parsedMindmap = LuieWorldMindmapSchema.safeParse(parseJsonSafely(existingMindmapRaw));
+    const parsedMemos = LuieWorldScrapMemosSchema.safeParse(parseJsonSafely(existingMemosRaw));
 
     const synopsis: WorldSynopsisData = {
       synopsis:
@@ -778,6 +801,35 @@ export class ProjectService {
           } satisfies WorldDrawingData)
         : { paths: [] };
 
+    const mindmap: WorldMindmapData =
+      parsedMindmap?.success
+        ? {
+            nodes: Array.isArray(parsedMindmap.data.nodes)
+              ? (parsedMindmap.data.nodes as unknown as WorldMindmapData["nodes"])
+              : [],
+            edges: Array.isArray(parsedMindmap.data.edges)
+              ? (parsedMindmap.data.edges as unknown as WorldMindmapData["edges"])
+              : [],
+            updatedAt:
+              typeof parsedMindmap.data.updatedAt === "string"
+                ? parsedMindmap.data.updatedAt
+                : undefined,
+          }
+        : { nodes: [], edges: [] };
+
+    const memos: WorldScrapMemosData =
+      parsedMemos?.success
+        ? {
+            memos: Array.isArray(parsedMemos.data.memos)
+              ? (parsedMemos.data.memos as unknown as WorldScrapMemosData["memos"])
+              : [],
+            updatedAt:
+              typeof parsedMemos.data.updatedAt === "string"
+                ? parsedMemos.data.updatedAt
+                : undefined,
+          }
+        : { memos: [] };
+
     const meta = {
       format: LUIE_PACKAGE_FORMAT,
       container: LUIE_PACKAGE_CONTAINER_DIR,
@@ -809,6 +861,8 @@ export class ProjectService {
         synopsis,
         plot,
         drawing,
+        mindmap,
+        memos,
         snapshots,
       },
       logger,

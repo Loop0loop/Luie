@@ -672,28 +672,52 @@ export default function App() {
               return mainPane;
             }
 
+            const isHorizontalSplit = splitSide === "bottom";
+
             const splitter = (
               <div
-                className="w-px bg-white/5 cursor-col-resize relative flex-none flex items-center justify-center z-50 hover:bg-accent/50 hover:w-1 transition-all"
+                className={`bg-white/5 relative flex-none flex items-center justify-center z-50 hover:bg-accent/50 transition-all ${
+                  isHorizontalSplit
+                    ? "h-px w-full cursor-row-resize hover:h-1"
+                    : "w-px h-full cursor-col-resize hover:w-1"
+                }`}
                 onMouseDown={startResizeSplit}
                 role="separator"
-                aria-orientation="vertical"
+                aria-orientation={isHorizontalSplit ? "horizontal" : "vertical"}
               />
             );
+            
+            // Adjust flex direction based on split side
+            if (isHorizontalSplit) {
+                 // Bottom split: Main on Top, Secondary on Bottom
+                 const container = document.getElementById("split-view-container");
+                 if (container) container.style.flexDirection = "column";
 
-            return splitSide === "right" ? (
-              <>
-                {mainPane}
-                {splitter}
-                {secondaryPane}
-              </>
-            ) : (
-              <>
-                {secondaryPane}
-                {splitter}
-                {mainPane}
-              </>
-            );
+                 return (
+                    <>
+                        {mainPane}
+                        {splitter}
+                        {secondaryPane}
+                    </>
+                 );
+            } else {
+                 const container = document.getElementById("split-view-container");
+                 if (container) container.style.flexDirection = "row";
+                 
+                 return splitSide === "right" ? (
+                  <>
+                    {mainPane}
+                    {splitter}
+                    {secondaryPane}
+                  </>
+                ) : (
+                  <>
+                    {secondaryPane}
+                    {splitter}
+                    {mainPane}
+                  </>
+                );
+            }
           })()}
         </div>
   );

@@ -12,6 +12,33 @@ import type { LoggerLike } from "./types.js";
 
 type MaybePromise<T> = T | Promise<T>;
 
+const MUTATING_CHANNEL_SUFFIX = [
+  ":create",
+  ":update",
+  ":delete",
+  ":restore",
+  ":purge",
+  ":reorder",
+  ":set-",
+  ":run-now",
+  "fs:write-",
+  "fs:create-",
+  "auto-save",
+];
+
+const AUTO_SYNC_EXCLUDED_PREFIXES = [
+  "sync:",
+  "settings:",
+  "window:",
+  "logger:",
+  "app:",
+  "recovery:",
+];
+
+const shouldTriggerAutoSync = (channel: string): boolean =>
+  !AUTO_SYNC_EXCLUDED_PREFIXES.some((prefix) => channel.startsWith(prefix)) &&
+  MUTATING_CHANNEL_SUFFIX.some((suffix) => channel.includes(suffix));
+
 export function registerIpcHandler<TArgs extends unknown[], TResult>(options: {
   logger: LoggerLike;
   channel: string;
@@ -47,6 +74,13 @@ export function registerIpcHandler<TArgs extends unknown[], TResult>(options: {
     }
     try {
       const result = await options.handler(...parsedArgs);
+      if (shouldTriggerAutoSync(options.channel)) {
+        void import("../../services/features/syncService.js")
+          .then(({ syncService }) => {
+            syncService.onLocalMutation(options.channel);
+          })
+          .catch(() => undefined);
+      }
       return createSuccessResponse(result, {
         timestamp: new Date().toISOString(),
         duration: Date.now() - start,

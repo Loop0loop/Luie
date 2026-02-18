@@ -30,7 +30,7 @@ import {
   readLocalStorageJson,
   writeLocalStorageJson,
 } from "../../utils/localStorage";
-import { syncStatusSchema } from "../../../../shared/schemas/index.js";
+import { syncRunResultSchema, syncStatusSchema } from "../../../../shared/schemas/index.js";
 
 const LEGACY_STORAGE_KEY_FONTS_INSTALLED = "luie:fonts-installed";
 
@@ -102,9 +102,12 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const menuBarUpdateLockRef = useRef(false);
   const shortcutUpdateLockRef = useRef(false);
   const recoveryRunLockRef = useRef(false);
+  const syncActionLockRef = useRef(false);
   const [isShortcutsUpdating, setIsShortcutsUpdating] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(DEFAULT_SYNC_STATUS);
+  const [isSyncBusy, setIsSyncBusy] = useState(false);
   const [installing, setInstalling] = useState<Record<string, boolean>>({});
   const [installed, setInstalled] = useState<Record<string, boolean>>(() => {
     return (
@@ -183,6 +186,30 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
       void loadShortcuts();
     }
   }, [activeTab, loadShortcuts]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      const response = await api.sync.getStatus();
+      if (!response.success || !response.data || cancelled) return;
+      const parsed = syncStatusSchema.safeParse(response.data);
+      if (!parsed.success) return;
+      setSyncStatus(parsed.data);
+    })();
+
+    const unsubscribe = api.sync.onStatusChanged((status) => {
+      if (cancelled) return;
+      const parsed = syncStatusSchema.safeParse(status);
+      if (!parsed.success) return;
+      setSyncStatus(parsed.data);
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, []);
 
   const handleCommitShortcuts = useCallback(
     (nextDrafts: Record<string, string>) => {
@@ -374,6 +401,88 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     [runRecovery],
   );
 
+  const runSyncAction = useCallback(async (action: () => Promise<void>) => {
+    if (syncActionLockRef.current) return;
+    syncActionLockRef.current = true;
+    setIsSyncBusy(true);
+    try {
+      await action();
+    } finally {
+      syncActionLockRef.current = false;
+      setIsSyncBusy(false);
+    }
+  }, []);
+
+  const handleConnectGoogle = useCallback(() => {
+    void runSyncAction(async () => {
+      const response = await api.sync.connectGoogle();
+      if (!response.success || !response.data) {
+        showToast(t("settings.sync.toast.connectFailed"), "error");
+        return;
+      }
+      const parsed = syncStatusSchema.safeParse(response.data);
+      if (!parsed.success) {
+        showToast(t("settings.sync.toast.connectFailed"), "error");
+        return;
+      }
+      setSyncStatus(parsed.data);
+      showToast(t("settings.sync.toast.connectStarted"), "info");
+    });
+  }, [runSyncAction, showToast, t]);
+
+  const handleDisconnect = useCallback(() => {
+    void runSyncAction(async () => {
+      const response = await api.sync.disconnect();
+      if (!response.success || !response.data) {
+        showToast(t("settings.sync.toast.disconnectFailed"), "error");
+        return;
+      }
+      const parsed = syncStatusSchema.safeParse(response.data);
+      if (!parsed.success) {
+        showToast(t("settings.sync.toast.disconnectFailed"), "error");
+        return;
+      }
+      setSyncStatus(parsed.data);
+      showToast(t("settings.sync.toast.disconnected"), "info");
+    });
+  }, [runSyncAction, showToast, t]);
+
+  const handleSyncNow = useCallback(() => {
+    void runSyncAction(async () => {
+      const response = await api.sync.runNow();
+      const parsedResult = syncRunResultSchema.safeParse(response.data);
+      if (!response.success || !parsedResult.success || !parsedResult.data.success) {
+        showToast(t("settings.sync.toast.syncFailed"), "error");
+        return;
+      }
+      const nextStatus = await api.sync.getStatus();
+      const parsed = syncStatusSchema.safeParse(nextStatus.data);
+      if (parsed.success) {
+        setSyncStatus(parsed.data);
+      }
+      showToast(t("settings.sync.toast.synced"), "success");
+    });
+  }, [runSyncAction, showToast, t]);
+
+  const handleToggleAutoSync = useCallback(
+    (enabled: boolean) => {
+      void runSyncAction(async () => {
+        const response = await api.sync.setAutoSync({ enabled });
+        if (!response.success || !response.data) {
+          showToast(t("settings.sync.toast.autoSyncFailed"), "error");
+          return;
+        }
+        const parsed = syncStatusSchema.safeParse(response.data);
+        if (!parsed.success) {
+          showToast(t("settings.sync.toast.autoSyncFailed"), "error");
+          return;
+        }
+        setSyncStatus(parsed.data);
+      });
+    },
+    [runSyncAction, showToast, t],
+  );
+
   const tabs = useMemo(
     () =>
       SETTINGS_TABS.map((tab) => ({
@@ -475,6 +584,18 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 isRecovering={isRecovering}
                 recoveryMessage={recoveryMessage}
                 onRunRecovery={handleRunRecovery}
+              />
+            )}
+
+            {activeTab === "sync" && (
+              <SyncTab
+                t={t}
+                status={syncStatus}
+                isBusy={isSyncBusy}
+                onConnectGoogle={handleConnectGoogle}
+                onDisconnect={handleDisconnect}
+                onSyncNow={handleSyncNow}
+                onToggleAutoSync={handleToggleAutoSync}
               />
             )}
 

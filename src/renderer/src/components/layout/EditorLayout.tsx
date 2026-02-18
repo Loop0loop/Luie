@@ -28,6 +28,7 @@ import { useUIStore, type DocsRightTab } from "../../stores/uiStore";
 import { useSplitView } from "../../hooks/useSplitView";
 import { useChapterStore } from "../../stores/chapterStore";
 import { useEditorStore } from "../../stores/editorStore";
+import { EditorDropZones } from "../common/EditorDropZones";
 
 const ResearchPanel = lazy(() => import("../research/ResearchPanel"));
 const WorldPanel = lazy(() => import("../research/WorldPanel"));
@@ -422,7 +423,8 @@ export default function EditorLayout({
         {/* CENTER: 메인 에디터 영역 */}
         <div className="flex-1 h-full overflow-hidden flex flex-row relative">
           {/* Editor Pane */}
-          <div className="flex-1 h-full overflow-y-auto bg-[#f3f4f6] dark:bg-[#1a1a1a] flex flex-col items-center custom-scrollbar shrink-0">
+          <div className="flex-1 h-full overflow-y-auto bg-[#f3f4f6] dark:bg-[#1a1a1a] flex flex-col items-center custom-scrollbar shrink-0 relative">
+            <EditorDropZones />
             {/* A4 페이지 (max-width 적용) */}
             <div 
               className="min-h-[1056px] bg-white dark:bg-[#1e1e1e] shadow-2xl border border-black/5 dark:border-white/5 py-12 px-12 my-8 transition-all duration-200 ease-out shrink-0"

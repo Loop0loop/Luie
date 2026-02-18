@@ -4,8 +4,6 @@ import type { Layout } from "react-resizable-panels";
 import {
   DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS,
   STORAGE_KEY_MEMO_SIDEBAR_LAYOUT,
-  STORAGE_KEY_MEMOS_NONE,
-  STORAGE_KEY_MEMOS_PREFIX,
 } from "../../../../shared/constants";
 import { Virtuoso } from "react-virtuoso";
 import { Clock, Plus, Tag } from "lucide-react";
@@ -18,8 +16,9 @@ import type { TFunction } from "i18next";
 import { useShortcutCommand } from "../../hooks/useShortcutCommand";
 import {
   readLocalStorageJson,
-  writeLocalStorageJson,
+  writeLocalStorageJson
 } from "../../utils/localStorage";
+import { worldPackageStorage } from "../../services/worldPackageStorage";
 
 type Note = {
   id: string;
@@ -75,63 +74,31 @@ export default function MemoSection() {
   const { t } = useTranslation();
   const { currentItem: currentProject } = useProjectStore();
   const defaultNotes = useMemo(() => buildDefaultNotes(t), [t]);
-  const currentProjectId = currentProject?.id ?? null;
-
-  const storageKey = useMemo(() => {
-    if (!currentProjectId) return null;
-    return `${STORAGE_KEY_MEMOS_PREFIX}${currentProjectId}`;
-  }, [currentProjectId]);
+  const currentProjectId = currentProject?.id;
+  const currentProjectPath = currentProject?.projectPath ?? null;
 
   return (
     <MemoSectionInner
-      key={storageKey ?? STORAGE_KEY_MEMOS_NONE}
-      storageKey={storageKey}
+      key={currentProjectId ?? "memo-none"}
+      projectId={currentProjectId}
+      projectPath={currentProjectPath}
       defaultNotes={defaultNotes}
     />
   );
 }
 
-function loadInitialNotesWithDefaults(
-  storageKey: string | null,
-  defaultNotes: Note[],
-): {
-  notes: Note[];
-  activeNoteId: string;
-} {
-  if (!storageKey) {
-    return { notes: defaultNotes, activeNoteId: defaultNotes[0]?.id ?? "1" };
-  }
-
-  try {
-    const parsed = readLocalStorageJson<{ notes?: Note[] }>(storageKey);
-    if (!parsed) {
-      return { notes: defaultNotes, activeNoteId: defaultNotes[0]?.id ?? "1" };
-    }
-
-    const loaded = Array.isArray(parsed.notes) ? parsed.notes : [];
-    const effectiveNotes = loaded.length > 0 ? loaded : defaultNotes;
-    return {
-      notes: effectiveNotes,
-      activeNoteId: effectiveNotes[0]?.id ?? defaultNotes[0]?.id ?? "1",
-    };
-  } catch (e) {
-    api.logger.warn("Failed to load memos", e);
-    return { notes: defaultNotes, activeNoteId: defaultNotes[0]?.id ?? "1" };
-  }
-}
-
 function MemoSectionInner({
-  storageKey,
+  projectId,
+  projectPath,
   defaultNotes,
 }: {
-  storageKey: string | null;
+  projectId?: string;
+  projectPath?: string | null;
   defaultNotes: Note[];
 }) {
   const { t } = useTranslation();
-  const initial = loadInitialNotesWithDefaults(storageKey, defaultNotes);
-
-  const [notes, setNotes] = useState<Note[]>(() => initial.notes);
-  const [activeNoteId, setActiveNoteId] = useState(() => initial.activeNoteId);
+  const [notes, setNotes] = useState<Note[]>(defaultNotes);
+  const [activeNoteId, setActiveNoteId] = useState(defaultNotes[0]?.id ?? "1");
   const [searchTerm, setSearchTerm] = useState("");
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const initialLayout = useMemo(() => {
@@ -146,24 +113,45 @@ function MemoSectionInner({
     void writeLocalStorageJson(STORAGE_KEY_MEMO_SIDEBAR_LAYOUT, normalized);
   };
 
+  useEffect(() => {
+    if (!projectId) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const loaded = await worldPackageStorage.loadScrapMemos(projectId, projectPath);
+        if (cancelled) return;
+        const effective = loaded.memos.length > 0 ? loaded.memos : defaultNotes;
+        setNotes(effective);
+        setActiveNoteId(effective[0]?.id ?? defaultNotes[0]?.id ?? "1");
+      } catch (e) {
+        api.logger.warn("Failed to load memos", e);
+        if (!cancelled) {
+          setNotes(defaultNotes);
+          setActiveNoteId(defaultNotes[0]?.id ?? "1");
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [defaultNotes, projectId, projectPath]);
+
   // Save notes (debounced)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (!storageKey) return;
+    if (!projectId) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
 
     saveTimerRef.current = setTimeout(() => {
-      const success = writeLocalStorageJson(storageKey, { notes });
-      if (!success) {
-        const e = new Error("failed to persist memo notes");
-        api.logger.warn("Failed to save memos", e);
-      }
+      void worldPackageStorage.saveScrapMemos(projectId, projectPath, { memos: notes });
     }, DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS);
 
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
-  }, [notes, storageKey]);
+  }, [notes, projectId, projectPath]);
 
   const activeNote = notes.find((n) => n.id === activeNoteId);
   const filteredNotes = useMemo(() => {

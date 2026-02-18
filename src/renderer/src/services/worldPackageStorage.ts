@@ -2,17 +2,24 @@ import {
   LUIE_PACKAGE_EXTENSION,
   LUIE_WORLD_DIR,
   LUIE_WORLD_DRAWING_FILE,
+  LUIE_WORLD_MINDMAP_FILE,
   LUIE_WORLD_PLOT_FILE,
+  LUIE_WORLD_SCRAP_MEMOS_FILE,
   LUIE_WORLD_SYNOPSIS_FILE,
 } from "../../../shared/constants";
 import type {
+  ScrapMemo,
   WorldDrawingData,
   WorldDrawingIconType,
   WorldDrawingPath,
   WorldDrawingTool,
+  WorldMindmapData,
+  WorldMindmapEdge,
+  WorldMindmapNode,
   WorldPlotCard,
   WorldPlotColumn,
   WorldPlotData,
+  WorldScrapMemosData,
   WorldSynopsisData,
   WorldSynopsisStatus,
 } from "../../../shared/types";
@@ -39,6 +46,15 @@ export const DEFAULT_WORLD_DRAWING: WorldDrawingData = {
   iconType: "mountain",
   color: "#000000",
   lineWidth: 2,
+};
+
+export const DEFAULT_WORLD_MINDMAP: WorldMindmapData = {
+  nodes: [],
+  edges: [],
+};
+
+export const DEFAULT_WORLD_SCRAP_MEMOS: WorldScrapMemosData = {
+  memos: [],
 };
 
 const isLuieProjectPath = (projectPath?: string | null): projectPath is string =>
@@ -192,6 +208,101 @@ const normalizeDrawing = (input: unknown): WorldDrawingData => {
   };
 };
 
+const normalizeMindmapNode = (input: unknown, index: number): WorldMindmapNode | null => {
+  if (!input || typeof input !== "object") return null;
+  const source = input as Record<string, unknown>;
+  const position = source.position;
+  if (!position || typeof position !== "object") return null;
+  const pos = position as Record<string, unknown>;
+
+  return {
+    id: typeof source.id === "string" && source.id.length > 0 ? source.id : `node-${index}`,
+    type: typeof source.type === "string" ? source.type : undefined,
+    position: {
+      x: typeof pos.x === "number" ? pos.x : 0,
+      y: typeof pos.y === "number" ? pos.y : 0,
+    },
+    data: {
+      label:
+        typeof (source.data as Record<string, unknown> | undefined)?.label === "string"
+          ? ((source.data as Record<string, unknown>).label as string)
+          : "",
+      image:
+        typeof (source.data as Record<string, unknown> | undefined)?.image === "string"
+          ? ((source.data as Record<string, unknown>).image as string)
+          : undefined,
+    },
+  };
+};
+
+const normalizeMindmapEdge = (input: unknown, index: number): WorldMindmapEdge | null => {
+  if (!input || typeof input !== "object") return null;
+  const source = input as Record<string, unknown>;
+  const sourceId = typeof source.source === "string" ? source.source : "";
+  const targetId = typeof source.target === "string" ? source.target : "";
+  if (!sourceId || !targetId) return null;
+
+  return {
+    id: typeof source.id === "string" && source.id.length > 0 ? source.id : `edge-${index}`,
+    source: sourceId,
+    target: targetId,
+    type: typeof source.type === "string" ? source.type : undefined,
+  };
+};
+
+const normalizeMindmap = (input: unknown): WorldMindmapData => {
+  if (!input || typeof input !== "object") {
+    return { ...DEFAULT_WORLD_MINDMAP };
+  }
+
+  const source = input as Record<string, unknown>;
+  const rawNodes = Array.isArray(source.nodes) ? source.nodes : [];
+  const rawEdges = Array.isArray(source.edges) ? source.edges : [];
+
+  return {
+    nodes: rawNodes
+      .map((node, index) => normalizeMindmapNode(node, index))
+      .filter((node): node is WorldMindmapNode => node !== null),
+    edges: rawEdges
+      .map((edge, index) => normalizeMindmapEdge(edge, index))
+      .filter((edge): edge is WorldMindmapEdge => edge !== null),
+    updatedAt: typeof source.updatedAt === "string" ? source.updatedAt : undefined,
+  };
+};
+
+const normalizeScrapMemo = (input: unknown, index: number): ScrapMemo | null => {
+  if (!input || typeof input !== "object") return null;
+  const source = input as Record<string, unknown>;
+  return {
+    id: typeof source.id === "string" && source.id.length > 0 ? source.id : `memo-${index}`,
+    title: typeof source.title === "string" ? source.title : "",
+    content: typeof source.content === "string" ? source.content : "",
+    tags: Array.isArray(source.tags)
+      ? source.tags.filter((tag): tag is string => typeof tag === "string")
+      : [],
+    updatedAt:
+      typeof source.updatedAt === "string"
+        ? source.updatedAt
+        : new Date().toISOString(),
+  };
+};
+
+const normalizeScrapMemos = (input: unknown): WorldScrapMemosData => {
+  if (!input || typeof input !== "object") {
+    return { ...DEFAULT_WORLD_SCRAP_MEMOS };
+  }
+
+  const source = input as Record<string, unknown>;
+  const rawMemos = Array.isArray(source.memos) ? source.memos : [];
+
+  return {
+    memos: rawMemos
+      .map((memo, index) => normalizeScrapMemo(memo, index))
+      .filter((memo): memo is ScrapMemo => memo !== null),
+    updatedAt: typeof source.updatedAt === "string" ? source.updatedAt : undefined,
+  };
+};
+
 export const worldPackageStorage = {
   async loadSynopsis(
     projectId: string,
@@ -302,6 +413,83 @@ export const worldPackageStorage = {
         await writeLuieJson(projectPath, LUIE_WORLD_DRAWING_FILE, payload);
       } catch (error) {
         await api.logger.warn("Failed to save drawing world data", error);
+      }
+    }
+  },
+
+  async loadMindmap(projectId: string, projectPath?: string | null): Promise<WorldMindmapData> {
+    if (!projectId) {
+      return { ...DEFAULT_WORLD_MINDMAP };
+    }
+
+    if (isLuieProjectPath(projectPath)) {
+      const data = await readLuieJson(projectPath, LUIE_WORLD_MINDMAP_FILE);
+      const normalized = normalizeMindmap(data);
+      saveLocalStorageJson(projectId, "mindmap", normalized);
+      return normalized;
+    }
+
+    const local = loadLocalStorageJson<unknown>(projectId, "mindmap");
+    return normalizeMindmap(local);
+  },
+
+  async saveMindmap(
+    projectId: string,
+    projectPath: string | null | undefined,
+    data: WorldMindmapData,
+  ): Promise<void> {
+    if (!projectId) return;
+
+    const payload: WorldMindmapData = {
+      nodes: data.nodes,
+      edges: data.edges,
+      updatedAt: new Date().toISOString(),
+    };
+    saveLocalStorageJson(projectId, "mindmap", payload);
+
+    if (isLuieProjectPath(projectPath)) {
+      try {
+        await writeLuieJson(projectPath, LUIE_WORLD_MINDMAP_FILE, payload);
+      } catch (error) {
+        await api.logger.warn("Failed to save mindmap world data", error);
+      }
+    }
+  },
+
+  async loadScrapMemos(projectId: string, projectPath?: string | null): Promise<WorldScrapMemosData> {
+    if (!projectId) {
+      return { ...DEFAULT_WORLD_SCRAP_MEMOS };
+    }
+
+    if (isLuieProjectPath(projectPath)) {
+      const data = await readLuieJson(projectPath, LUIE_WORLD_SCRAP_MEMOS_FILE);
+      const normalized = normalizeScrapMemos(data);
+      saveLocalStorageJson(projectId, "scrap-memos", normalized);
+      return normalized;
+    }
+
+    const local = loadLocalStorageJson<unknown>(projectId, "scrap-memos");
+    return normalizeScrapMemos(local);
+  },
+
+  async saveScrapMemos(
+    projectId: string,
+    projectPath: string | null | undefined,
+    data: WorldScrapMemosData,
+  ): Promise<void> {
+    if (!projectId) return;
+
+    const payload: WorldScrapMemosData = {
+      memos: data.memos,
+      updatedAt: new Date().toISOString(),
+    };
+    saveLocalStorageJson(projectId, "scrap-memos", payload);
+
+    if (isLuieProjectPath(projectPath)) {
+      try {
+        await writeLuieJson(projectPath, LUIE_WORLD_SCRAP_MEMOS_FILE, payload);
+      } catch (error) {
+        await api.logger.warn("Failed to save scrap memos world data", error);
       }
     }
   },

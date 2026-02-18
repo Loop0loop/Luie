@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Clock, RotateCcw, GitCompare, Loader2 } from "lucide-react";
 import { Virtuoso } from "react-virtuoso";
 import { api } from "../../services/api";
+import { DraggableItem } from "../common/DraggableItem";
 import type { Snapshot } from "../../../../shared/types";
 import { useSplitView } from "../../hooks/useSplitView";
 import { useChapterStore } from "../../stores/chapterStore";
@@ -209,40 +210,45 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
           className="h-full"
           data={displayItems}
           itemContent={(_index, item) => (
-            <div
-              key={item.snapshot.id}
-              className="p-3 border-b border-border hover:bg-surface-hover transition-colors group relative"
+            <DraggableItem
+               key={item.snapshot.id}
+               id={`snapshot-${item.snapshot.id}`}
+               data={{ type: "chapter", id: item.snapshot.id, title: `Snapshot: ${item.formattedDate}`, isSnapshot: true, content: item.snapshot.content }}
             >
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-semibold text-fg">
-                  {item.formattedDate}
-                </span>
-                {item.snapshot.type === "MANUAL" && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/15 text-primary">
-                    {t("snapshot.list.manualBadge")}
-                  </span>
-                )}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => handleCompare(item.snapshot)}
-                    className="p-1 hover:bg-active rounded text-accent"
-                    title={t("snapshot.list.compareTitle")}
-                  >
-                    <GitCompare className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => handleRestore(item.snapshot)}
-                    className="p-1 hover:bg-active rounded text-muted hover:text-fg"
-                    title={t("snapshot.list.restoreTitle")}
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                  </button>
+                <div
+                  className="p-3 border-b border-border hover:bg-surface-hover transition-colors group relative"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold text-fg">
+                      {item.formattedDate}
+                    </span>
+                    {item.snapshot.type === "MANUAL" && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/15 text-primary">
+                        {t("snapshot.list.manualBadge")}
+                      </span>
+                    )}
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleCompare(item.snapshot); }}
+                        className="p-1 hover:bg-active rounded text-accent"
+                        title={t("snapshot.list.compareTitle")}
+                      >
+                        <GitCompare className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleRestore(item.snapshot); }}
+                        className="p-1 hover:bg-active rounded text-muted hover:text-fg"
+                        title={t("snapshot.list.restoreTitle")}
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="text-[11px] text-muted line-clamp-2">
+                    {item.snapshot.description || t("snapshot.list.autoDescription")}
+                  </div>
                 </div>
-              </div>
-              <div className="text-[11px] text-muted line-clamp-2">
-                {item.snapshot.description || t("snapshot.list.autoDescription")}
-              </div>
-            </div>
+            </DraggableItem>
           )}
         />
       </div>
