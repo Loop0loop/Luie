@@ -32,32 +32,20 @@ export default function DocsSidebar({
   const { t } = useTranslation();
   const { menuOpenId, menuPosition, menuRef, closeMenu, toggleMenuByElement } = useFloatingMenu<HTMLButtonElement>();
 
-  const handleAction = (action: string, id: string) => {
+  const handleAction = (action: string, id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     closeMenu();
-    if (action === "rename" && onRenameChapter) {
-        // Simple prompt for now, or hoist state? Sidebar uses window.prompt.
-        // We can do the same for consistency.
-        // Actually Sidebar.tsx logic:
-        /*
+      if (action === "rename" && onRenameChapter) {
         const current = chapters.find((c) => c.id === id);
-        const nextTitle = window.prompt(t("sidebar.prompt.renameTitle"), current?.title ?? "")?.trim();
+        // Use window.prompt for now to match Sidebar.tsx behavior
+        const nextTitle = window.prompt(t("sidebar.prompt.renameTitle") || "새로운 제목을 입력하세요", current?.title ?? "")?.trim();
         if (nextTitle) onRenameChapter(id, nextTitle);
-        */
-       // But here we accept onRenameChapter as (id, title) => void.
-       // So we should implement the prompt here or expect parent to handle it?
-       // SidebarProps definition: onRenameChapter?: (id: string, title: string) => void;
-       // Sidebar.tsx implements the prompt internally inside handleAction.
-       // So I should do the same.
-       const current = chapters.find((c) => c.id === id);
-       // We don't have t("sidebar.prompt.renameTitle")? We have t.
-       const nextTitle = window.prompt("새로운 제목을 입력하세요", current?.title ?? "")?.trim();
-       if (nextTitle) onRenameChapter(id, nextTitle);
-    }
+      }
     if (action === "duplicate" && onDuplicateChapter) {
         onDuplicateChapter(id);
     }
     if (action === "delete" && onDeleteChapter) {
-        if (window.confirm("정말로 삭제하시겠습니까?")) {
+        if (window.confirm(t("sidebar.prompt.deleteConfirm") || "정말로 삭제하시겠습니까?")) {
             onDeleteChapter(id);
         }
     }
@@ -80,19 +68,19 @@ export default function DocsSidebar({
         >
           <div
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-md transition-all hover:bg-surface-hover hover:text-fg"
-            onClick={() => handleAction("rename", menuOpenId)}
+            onClick={(e) => handleAction("rename", menuOpenId, e)}
           >
             <Edit2 className="w-3.5 h-3.5" /> {t("sidebar.menu.rename")}
           </div>
           <div
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-md transition-all hover:bg-surface-hover hover:text-fg"
-            onClick={() => handleAction("duplicate", menuOpenId)}
+            onClick={(e) => handleAction("duplicate", menuOpenId, e)}
           >
             <Copy className="w-3.5 h-3.5" /> {t("sidebar.menu.duplicate")}
           </div>
           <div
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-md transition-all hover:bg-surface-hover hover:text-red-600 text-red-500"
-            onClick={() => handleAction("delete", menuOpenId)}
+            onClick={(e) => handleAction("delete", menuOpenId, e)}
           >
             <Trash2 className="w-3.5 h-3.5" /> {t("sidebar.menu.delete")}
           </div>

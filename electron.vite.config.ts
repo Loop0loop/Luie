@@ -26,6 +26,14 @@ export default defineConfig({
       sourcemap: false,
       emptyOutDir: true,
       minify: true,
+      rollupOptions: {
+        input: resolve("src/preload/index.ts"),
+        output: {
+          format: "cjs",
+          entryFileNames: "[name].cjs",
+          chunkFileNames: "[name]-[hash].cjs",
+        },
+      },
     },
   },
   renderer: {

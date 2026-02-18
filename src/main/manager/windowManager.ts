@@ -86,10 +86,10 @@ class WindowManager {
         ? { autoHideMenuBar: this.getMenuBarMode() === 'hidden' }
         : {}),
       webPreferences: {
-        preload: join(__dirname, '../preload/index.mjs'),
+        preload: join(__dirname, '../preload/index.cjs'),
         contextIsolation: true,
         nodeIntegration: false,
-        sandbox: false,
+        sandbox: true,
       },
     })
 
@@ -161,10 +161,10 @@ class WindowManager {
         ? { autoHideMenuBar: this.getMenuBarMode() === 'hidden' }
         : {}),
       webPreferences: {
-        preload: join(__dirname, '../preload/index.mjs'),
+        preload: join(__dirname, '../preload/index.cjs'),
         contextIsolation: true,
         nodeIntegration: false,
-        sandbox: false,
+        sandbox: true,
       },
     })
 

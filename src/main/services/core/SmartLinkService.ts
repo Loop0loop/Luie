@@ -97,7 +97,10 @@ class SmartLinkService {
     if (uiMode === "docs") {
        // Google Docs Layout
        uiStore.setDocsRightTab(type === "character" ? "character" : "world");
-       // We also need to ensure the panel opens. Docs layout handles this via docsRightTab.
+       // Ensure World panel is on 'terms' tab if opening a term
+       if (type === "term") {
+          uiStore.setWorldTab("terms");
+       }
     } else {
        // Main Layout
        // 1. Set Right Panel Content
@@ -105,6 +108,10 @@ class SmartLinkService {
          type: "research",
          tab: type === "character" ? "character" : "world", 
        });
+
+       if (type === "term") {
+        uiStore.setWorldTab("terms");
+       }
 
        // 2. Open Split View if closed
        if (!uiStore.isSplitView) {

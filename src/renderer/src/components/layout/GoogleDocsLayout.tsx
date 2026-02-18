@@ -69,7 +69,11 @@ export default function GoogleDocsLayout({
   const handleRightTabClick = useCallback((tab: "character" | "world" | "scrap" | "analysis" | "snapshot" | "trash") => {
      const nextTab = activeRightTab === tab ? null : tab;
      setActiveRightTab(nextTab);
-  }, [activeRightTab, setActiveRightTab]);
+     // Force open if width is 0
+     if (nextTab && contextWidth < 50) {
+        setContextWidth(320);
+     }
+  }, [activeRightTab, setActiveRightTab, contextWidth, setContextWidth]);
 
   const handleOpenExport = async () => {
     if (!activeChapterId) return;
