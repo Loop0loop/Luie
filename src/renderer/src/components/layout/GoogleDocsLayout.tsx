@@ -15,8 +15,6 @@ import WorldPanel from "../research/WorldPanel";
 import { 
   Menu, 
   ChevronLeft, 
-  MessageSquareText, 
-  Clock, 
   History, // Used for Snapshot
   Trash2, // Used for Trash
   Plus,
@@ -88,13 +86,13 @@ export default function GoogleDocsLayout({
 
       if (activeResizerRef.current === "left") {
         const next = Math.max(200, Math.min(420, event.clientX - rect.left));
-        setSidebarWidth(Math.round(next));
+        requestAnimationFrame(() => setSidebarWidth(Math.round(next)));
         return;
       }
 
       // Right resizer (Context Panel)
       const next = Math.min(800, Math.max(240, rect.right - event.clientX - 56)); // 56 is Google Apps Bar width, Max 800px
-      setContextWidth(Math.round(next));
+      requestAnimationFrame(() => setContextWidth(Math.round(next)));
     };
 
     const stopResize = () => {
@@ -154,13 +152,21 @@ export default function GoogleDocsLayout({
           </div>
 
           {/* Right Section: Actions */}
-          <div className="flex items-center gap-2 shrink-0">
-               <button className="w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground" title={t("common.history")}>
-                   <Clock className="w-5 h-5" />
-               </button>
-               <button className="w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground" title={t("common.comment")}>
-                   <MessageSquareText className="w-5 h-5" />
-               </button>
+           <div className="flex items-center gap-2 shrink-0">
+                <button 
+                  onClick={() => handleRightTabClick("snapshot")}
+                  className={cn("w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground", activeRightTab === "snapshot" && "bg-muted text-foreground")}
+                  title={t("sidebar.section.snapshot")}
+                >
+                    <History className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={() => handleRightTabClick("trash")}
+                  className={cn("w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground", activeRightTab === "trash" && "bg-muted text-foreground")}
+                  title={t("sidebar.section.trash")}
+                >
+                    <Trash2 className="w-5 h-5" />
+                </button>
                <button 
                 onClick={onOpenSettings}
                 className="w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground"
@@ -389,36 +395,9 @@ export default function GoogleDocsLayout({
               >
                   <Sparkles className="w-5 h-5" />
               </button>
-              
-              <div className="w-6 border-b border-border my-1" />
-
-              {/* Snapshot */}
-               <button 
-                onClick={() => handleRightTabClick("snapshot")} 
-                className={cn(
-                    "w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors", 
-                    activeRightTab === "snapshot" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
-                )} 
-                title={t("sidebar.section.snapshot")}
-               >
-                  <History className="w-5 h-5" />
-              </button>
-
-              {/* Trash */}
-               <button 
-                onClick={() => handleRightTabClick("trash")} 
-                className={cn(
-                    "w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors", 
-                    activeRightTab === "trash" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
-                )} 
-                title={t("sidebar.section.trash")}
-               >
-                  <Trash2 className="w-5 h-5" />
-              </button>
-              
               <div className="mt-auto">
                    <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10" title="Add-ons">
-                      <Plus className="w-5 h-5 text-[#444746] dark:text-[#c4c7c5]" />
+                      <Plus className="w-5 h-5 text-muted-foreground" />
                   </button>
               </div>
           </div>
