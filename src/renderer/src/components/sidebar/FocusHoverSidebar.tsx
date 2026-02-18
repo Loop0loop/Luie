@@ -7,6 +7,8 @@ interface FocusHoverSidebarProps {
   side?: "left" | "right";
   /** 상단 오프셋 (px). WindowBar + Toolbar 높이를 합산해서 전달하세요. */
   topOffset?: number;
+  /** 리사이즈 중일 때 true로 설정하면 hover-hide 동작을 잠급니다. */
+  isResizing?: boolean;
 }
 
 export default function FocusHoverSidebar({
@@ -14,6 +16,7 @@ export default function FocusHoverSidebar({
   className,
   side = "left",
   topOffset = 40,
+  isResizing = false,
 }: FocusHoverSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -21,6 +24,12 @@ export default function FocusHoverSidebar({
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
+      // 리사이즈 중이면 닫지 않음
+      if (isResizing) {
+        setIsOpen(true);
+        return;
+      }
+
       // 트리거 영역: 왼쪽 20px 또는 오른쪽 20px
       const isTrigger =
         side === "left" ? e.clientX < 20 : e.clientX > window.innerWidth - 20;
@@ -37,7 +46,7 @@ export default function FocusHoverSidebar({
 
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [side]);
+  }, [side, isResizing]);
 
   const topStyle = `${topOffset}px`;
   const heightStyle = `calc(100vh - ${topOffset}px)`;

@@ -714,8 +714,8 @@ export default function App() {
                   onDeleteChapter={handleDeleteChapter}
                 />
               }
+              activeChapterId={activeChapterId ?? undefined}
               activeChapterTitle={activeChapterTitle}
-              activeChapterContent={content}
               currentProjectId={currentProject?.id}
               editor={docEditor}
               onOpenSettings={() => setIsSettingsOpen(true)}

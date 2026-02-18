@@ -100,7 +100,7 @@ class SmartLinkService {
     const uiStore = useUIStore.getState();
     const uiMode = useEditorStore.getState().uiMode;
 
-    if (uiMode === "docs") {
+    if (uiMode === "docs" || uiMode === "editor") {
       if (type === "character") {
         openDocsRightTab("character");
       } else {

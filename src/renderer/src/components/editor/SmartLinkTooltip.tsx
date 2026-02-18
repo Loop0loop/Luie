@@ -144,14 +144,10 @@ export function SmartLinkTooltip() {
       ref={tooltipRef}
       onMouseEnter={handleTooltipEnter}
       onMouseLeave={handleTooltipLeave}
-      className="fixed z-9999 bg-popover text-popover-foreground rounded-md shadow-md border border-border p-3 w-[250px] animate-in fade-in zoom-in-95 duration-200 pointer-events-auto cursor-default"
+      className="fixed z-40 bg-popover text-popover-foreground rounded-md shadow-md border border-border p-3 w-[250px] animate-in fade-in zoom-in-95 duration-200 pointer-events-auto cursor-default"
       style={{
         left: state.x,
         top: state.y,
-        opacity: 1, // Force opacity
-        backgroundColor: "var(--bg-panel)", // Use defined theme variable
-        color: "var(--text-primary)", // Ensure text contrast
-        zIndex: 9999, // Force z-index
       }}
     >
       <div className="flex items-center justify-between mb-1">
