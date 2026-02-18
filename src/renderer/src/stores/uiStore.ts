@@ -65,6 +65,10 @@ interface UIStore {
   setContextWidth: (width: number) => void;
   setDocsRightTab: (tab: DocsRightTab) => void;
   setBinderBarOpen: (isOpen: boolean) => void;
+
+  // Scrivener Mode Main View State
+  mainView: { type: "editor" | "character" | "world" | "memo" | "trash"; id?: string };
+  setMainView: (view: { type: "editor" | "character" | "world" | "memo" | "trash"; id?: string }) => void;
 }
 
 export const useUIStore = create<UIStore>()(
@@ -87,6 +91,8 @@ export const useUIStore = create<UIStore>()(
       contextWidth: 320,
       docsRightTab: null,
       isBinderBarOpen: true,
+      
+      mainView: { type: "editor" },
 
       setView: (view) => set({ view }),
       setContextTab: (contextTab) => set({ contextTab }),
@@ -104,6 +110,7 @@ export const useUIStore = create<UIStore>()(
       setContextWidth: (contextWidth) => set({ contextWidth }),
       setDocsRightTab: (docsRightTab) => set({ docsRightTab }),
       setBinderBarOpen: (isBinderBarOpen) => set({ isBinderBarOpen }),
+      setMainView: (mainView) => set({ mainView }),
     }),
     {
       name: STORAGE_KEY_UI,

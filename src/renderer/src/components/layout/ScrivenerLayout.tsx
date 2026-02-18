@@ -22,6 +22,11 @@ interface ScrivenerLayoutProps {
   onOpenSettings?: () => void;
 }
 
+import { useUIStore } from "../../stores/uiStore";
+import WikiDetailView from "../research/wiki/WikiDetailView";
+import WorldTermView from "../research/world/WorldTermView";
+import MemoMainView from "../research/memo/MemoMainView";
+
 const MIN_SIDEBAR_WIDTH = 200;
 const MAX_SIDEBAR_WIDTH = 400;
 const MIN_INSPECTOR_WIDTH = 240;
@@ -38,7 +43,7 @@ export default function ScrivenerLayout({
   onOpenSettings,
 }: ScrivenerLayoutProps) {
   const { t } = useTranslation();
-
+  const { mainView } = useUIStore();
 
   // Layout State
   const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
@@ -90,6 +95,20 @@ export default function ScrivenerLayout({
       window.removeEventListener("mouseup", handleMouseUp);
     };
   }, []);
+
+  const renderMainContent = () => {
+    switch (mainView.type) {
+      case "character":
+        return <WikiDetailView />;
+      case "world":
+        return <WorldTermView />;
+      case "memo":
+        return <MemoMainView />;
+      case "editor":
+      default:
+        return children;
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen w-screen bg-app text-fg overflow-hidden relative border-t border-transparent">
@@ -157,7 +176,7 @@ export default function ScrivenerLayout({
                   {/* Typically Scrivener editor is simple, full width/height of pane */}
                    <div className="h-full w-full overflow-y-auto custom-scrollbar p-8 bg-white dark:bg-[#1e1e1e]">
                        <div className="max-w-3xl mx-auto min-h-[500px]">
-                           {children}
+                           {renderMainContent()}
                        </div>
                    </div>
              </div>

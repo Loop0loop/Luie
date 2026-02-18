@@ -65,6 +65,16 @@ export interface Snapshot {
   createdAt: string | Date;
 }
 
+export interface Note {
+  id: string;
+  projectId: string;
+  title: string;
+  content: string;
+  tags: string[];
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
 export type WorldSynopsisStatus = "draft" | "working" | "locked";
 
 export interface WorldSynopsisData {

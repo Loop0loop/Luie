@@ -27,6 +27,8 @@ interface ScrivenerSidebarProps {
 
 type SectionId = "manuscript" | "characters" | "world" | "scrap" | "snapshots" | "trash";
 
+import { useUIStore } from "../../stores/uiStore";
+
 export default function ScrivenerSidebar({
   chapters,
   activeChapterId,
@@ -38,6 +40,13 @@ export default function ScrivenerSidebar({
   currentProjectId,
 }: ScrivenerSidebarProps) {
   const { t } = useTranslation();
+  const { setMainView } = useUIStore();
+
+  const handleSelectChapter = (id: string) => {
+    onSelectChapter(id);
+    setMainView({ type: "editor" });
+  };
+
   
   // Track expanded sections
   const [expanded, setExpanded] = useState<Record<SectionId, boolean>>({
@@ -80,7 +89,7 @@ export default function ScrivenerSidebar({
                 <DocsSidebar
                     chapters={chapters}
                     activeChapterId={activeChapterId}
-                    onSelectChapter={onSelectChapter}
+                    onSelectChapter={handleSelectChapter}
                     onAddChapter={onAddChapter}
                     onRenameChapter={onRenameChapter}
                     onDuplicateChapter={onDuplicateChapter}

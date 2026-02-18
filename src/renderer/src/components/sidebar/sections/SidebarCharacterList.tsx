@@ -47,7 +47,6 @@ export default function SidebarCharacterList({ onSelectCharacter }: SidebarChara
 
   const handleSelect = (id: string) => {
     setSelectedCharacterId(id);
-    // @ts-ignore - casting for now as CharacterStore items are full Character objects
     const char = characters.find((c) => c.id === id);
     if (char) setCurrentCharacter(char);
     onSelectCharacter?.(id);
@@ -57,7 +56,7 @@ export default function SidebarCharacterList({ onSelectCharacter }: SidebarChara
     if (currentProject) {
       const template = CHARACTER_TEMPLATES.find((t) => t.id === templateId) || CHARACTER_TEMPLATES[0];
       
-      const newChar = await createCharacter({
+      await createCharacter({
         projectId: currentProject.id,
         name: t("character.defaults.name"),
         description: t("character.uncategorized"),
