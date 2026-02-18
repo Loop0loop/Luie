@@ -2,6 +2,7 @@ export const ja = {
   common: {
     home: "ホーム",
     share: "共有",
+    loading: "読み込み中...",
     menu: {
       file: "ファイル",
       edit: "編集",
@@ -11,6 +12,8 @@ export const ja = {
       tools: "ツール",
       extensions: "拡張機能",
       help: "ヘルプ",
+      link: "リンク",
+      image: "画像",
     },
     settings: {
       title: "画面設定",
@@ -55,7 +58,7 @@ export const ja = {
         description: "エディタのツールバーとレイアウトを馴染みのあるスタイルに変更します。",
         default: "デフォルト",
         docs: "Google Docs スタイル",
-        word: "エディターモード",
+        editor: "エディターモード",
         scrivener: "Scrivener スタイル",
       },
       menuBar: {
@@ -400,6 +403,8 @@ export const ja = {
       ],
     },
     editor: {
+      layoutTitle: "Luie Editor",
+      selectTabPrompt: "← タブを選択してください",
       placeholder: {
         title: "無題",
         body: "書き始めてください... ('/' でコマンドを表示)",
@@ -428,9 +433,20 @@ export const ja = {
         draw: "描画",
         view: "表示",
         paste: "貼り付け",
+        style: {
+          normalText: "標準テキスト",
+          title: "タイトル",
+          heading1: "見出し 1",
+          heading2: "見出し 2",
+        },
       },
       font: {
         defaultLabel: "Nanum Gothic",
+        options: {
+          arial: "Arial",
+          inter: "Inter",
+          roboto: "Roboto",
+        },
       },
       tooltip: {
         undo: "元に戻す",
@@ -444,6 +460,7 @@ export const ja = {
         alignLeft: "左揃え",
         alignCenter: "中央揃え",
         alignRight: "右揃え",
+        addComment: "コメントを追加",
         toggleMobileView: "モバイル表示を切替",
         view: {
           mobile: "モバイル表示",
@@ -678,6 +695,23 @@ export const ja = {
         newTopic: "新しいトピック",
         subTopic: "サブトピック",
         uploadImage: "画像アップロード",
+        urlPlaceholder: "https://...",
+        enterUrl: "URLを入力",
+        shortcut: {
+          clickKey: "クリック",
+          select: "選択",
+          enterKey: "Enter",
+          sibling: "同階層トピック",
+          tabKey: "Tab",
+          child: "子トピック",
+          deleteKey: "Del",
+          delete: "削除",
+        },
+        controls: {
+          zoomIn: "拡大",
+          zoomOut: "縮小",
+          fitView: "画面に合わせる",
+        },
       },
       term: {
         addLabel: "用語を追加",

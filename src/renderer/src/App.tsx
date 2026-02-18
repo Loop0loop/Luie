@@ -12,7 +12,7 @@ import { SmartLinkTooltip } from "./components/editor/SmartLinkTooltip";
 import ContextPanel from "./components/context/ContextPanel";
 import ProjectTemplateSelector from "./components/layout/ProjectTemplateSelector";
 import { useProjectStore } from "./stores/projectStore";
-import { useUIStore, type DocsRightTab, type ResearchTab } from "./stores/uiStore";
+import { useUIStore, type DocsRightTab } from "./stores/uiStore";
 import { useEditorStore } from "./stores/editorStore";
 import { useEditorStatusStore } from "./stores/editorStatusStore";
 import { useProjectInit } from "./hooks/useProjectInit";
@@ -37,6 +37,7 @@ import { appBootstrapStatusSchema } from "../../shared/schemas/index.js";
 import type { AppBootstrapStatus } from "../../shared/types/index.js";
 import { api } from "./services/api";
 import { openDocsRightTab as openDocsPanelTab } from "./services/docsPanelService";
+import { createLayoutModeActions } from "./services/layoutModeActions";
 
 const SettingsModal = lazy(() => import("./components/settings/SettingsModal"));
 const ResearchPanel = lazy(() => import("./components/research/ResearchPanel"));
@@ -219,116 +220,47 @@ export default function App() {
     openDocsPanelTab(tab);
   }, []);
 
-  const openResearchTab = useCallback(
-    (tab: ResearchTab, side: "left" | "right") => {
-      if (isDocsMode) {
-        const docsTabMap: Record<ResearchTab, "character" | "world" | "scrap" | "analysis"> = {
-          character: "character",
-          world: "world",
-          scrap: "scrap",
-          analysis: "analysis",
-        };
-        openDocsRightTab(docsTabMap[tab]);
-        return;
-      }
-      setSplitSide(side);
-      handleSelectResearchItem(tab);
-    },
-    [handleSelectResearchItem, isDocsMode, openDocsRightTab, setSplitSide],
-  );
-
-  const openExportPreview = useCallback(
-    (side: "left" | "right") => {
-      if (isDocsMode) {
-        openDocsRightTab("export");
-        return;
-      }
-      setSplitSide(side);
-      handleOpenExport();
-    },
-    [handleOpenExport, isDocsMode, openDocsRightTab, setSplitSide],
-  );
-
-  const openEditorInSplit = useCallback(
-    (side: "left" | "right") => {
-      if (isDocsMode) {
-        if (!activeChapterId) return;
-        setRightPanelContent({ type: "editor", id: activeChapterId });
-        openDocsRightTab("editor");
-        return;
-      }
-      if (!activeChapterId) return;
-      setSplitSide(side);
-      handleSplitView("vertical", activeChapterId);
-    },
+  const layoutModeActions = useMemo(
+    () =>
+      createLayoutModeActions({
+        isDocsMode,
+        isContextOpen,
+        isSidebarOpen,
+        docsRightTab,
+        activeChapterId,
+        openDocsRightTab,
+        setDocsRightTab,
+        setContextOpen,
+        setSidebarOpen,
+        setSplitSide,
+        setRightPanelContent,
+        handleSelectResearchItem,
+        handleOpenExport,
+        handleSplitView,
+        onToggleManuscriptLegacy: () =>
+          emitShortcutCommand({
+            type: "sidebar.section.toggle",
+            section: "manuscript",
+          }),
+        onOpenSidebarSectionLegacy: (section) =>
+          emitShortcutCommand({ type: "sidebar.section.open", section }),
+      }),
     [
       activeChapterId,
+      docsRightTab,
+      handleOpenExport,
+      handleSelectResearchItem,
       handleSplitView,
+      isContextOpen,
       isDocsMode,
+      isSidebarOpen,
       openDocsRightTab,
+      setContextOpen,
+      setDocsRightTab,
       setRightPanelContent,
+      setSidebarOpen,
       setSplitSide,
     ],
-  );
-
-  const toggleContextPanel = useCallback(() => {
-    if (!isDocsMode) {
-      setContextOpen(!isContextOpen);
-      return;
-    }
-
-    if (docsRightTab) {
-      setDocsRightTab(null);
-      return;
-    }
-
-    openDocsRightTab("character");
-  }, [
-    docsRightTab,
-    isContextOpen,
-    isDocsMode,
-    openDocsRightTab,
-    setContextOpen,
-    setDocsRightTab,
-  ]);
-
-  const openContextPanel = useCallback(() => {
-    if (!isDocsMode) {
-      setContextOpen(true);
-      return;
-    }
-
-    openDocsRightTab(docsRightTab ?? "character");
-  }, [docsRightTab, isDocsMode, openDocsRightTab, setContextOpen]);
-
-  const closeContextPanel = useCallback(() => {
-    if (!isDocsMode) {
-      setContextOpen(false);
-      return;
-    }
-
-    setDocsRightTab(null);
-  }, [isDocsMode, setContextOpen, setDocsRightTab]);
-
-  const toggleManuscriptPanel = useCallback(() => {
-    if (isDocsMode) {
-      setSidebarOpen(!isSidebarOpen);
-      return;
-    }
-
-    emitShortcutCommand({ type: "sidebar.section.toggle", section: "manuscript" });
-  }, [isDocsMode, isSidebarOpen, setSidebarOpen]);
-
-  const openSidebarSection = useCallback(
-    (section: "snapshot" | "trash") => {
-      if (isDocsMode) {
-        openDocsRightTab(section);
-        return;
-      }
-
-      emitShortcutCommand({ type: "sidebar.section.open", section });
-    },
-    [isDocsMode, openDocsRightTab],
   );
 
   const handleQuickExport = useCallback(() => {
@@ -373,21 +305,21 @@ export default function App() {
       "view.toggleSidebar": () => setSidebarOpen(!isSidebarOpen),
       "view.sidebar.open": () => setSidebarOpen(true),
       "view.sidebar.close": () => setSidebarOpen(false),
-      "view.toggleContextPanel": () => toggleContextPanel(),
-      "view.context.open": () => openContextPanel(),
-      "view.context.close": () => closeContextPanel(),
-      "sidebar.section.manuscript.toggle": () => toggleManuscriptPanel(),
-      "sidebar.section.snapshot.open": () => openSidebarSection("snapshot"),
-      "sidebar.section.trash.open": () => openSidebarSection("trash"),
+      "view.toggleContextPanel": () => layoutModeActions.toggleContextPanel(),
+      "view.context.open": () => layoutModeActions.openContextPanel(),
+      "view.context.close": () => layoutModeActions.closeContextPanel(),
+      "sidebar.section.manuscript.toggle": () => layoutModeActions.toggleManuscriptPanel(),
+      "sidebar.section.snapshot.open": () => layoutModeActions.openSidebarSection("snapshot"),
+      "sidebar.section.trash.open": () => layoutModeActions.openSidebarSection("trash"),
       "project.rename": () => void handleRenameProject(),
-      "research.open.character": () => openResearchTab("character", "right"),
-      "research.open.world": () => openResearchTab("world", "right"),
-      "research.open.scrap": () => openResearchTab("scrap", "right"),
-      "research.open.analysis": () => openResearchTab("analysis", "right"),
-      "research.open.character.left": () => openResearchTab("character", "left"),
-      "research.open.world.left": () => openResearchTab("world", "left"),
-      "research.open.scrap.left": () => openResearchTab("scrap", "left"),
-      "research.open.analysis.left": () => openResearchTab("analysis", "left"),
+      "research.open.character": () => layoutModeActions.openResearchTab("character", "right"),
+      "research.open.world": () => layoutModeActions.openResearchTab("world", "right"),
+      "research.open.scrap": () => layoutModeActions.openResearchTab("scrap", "right"),
+      "research.open.analysis": () => layoutModeActions.openResearchTab("analysis", "right"),
+      "research.open.character.left": () => layoutModeActions.openResearchTab("character", "left"),
+      "research.open.world.left": () => layoutModeActions.openResearchTab("world", "left"),
+      "research.open.scrap.left": () => layoutModeActions.openResearchTab("scrap", "left"),
+      "research.open.analysis.left": () => layoutModeActions.openResearchTab("analysis", "left"),
       "character.openTemplate": () => emitShortcutCommand({ type: "character.openTemplate" }),
       "world.tab.synopsis": () => setWorldTab("synopsis"),
       "world.tab.terms": () => setWorldTab("terms"),
@@ -396,10 +328,10 @@ export default function App() {
       "world.tab.plot": () => setWorldTab("plot"),
       "world.addTerm": () => emitShortcutCommand({ type: "world.addTerm" }),
       "scrap.addMemo": () => emitShortcutCommand({ type: "scrap.addMemo" }),
-      "export.openPreview": () => openExportPreview("right"),
+      "export.openPreview": () => layoutModeActions.openExportPreview("right"),
       "export.openWindow": () => handleQuickExport(),
-      "editor.openRight": () => openEditorInSplit("right"),
-      "editor.openLeft": () => openEditorInSplit("left"),
+      "editor.openRight": () => layoutModeActions.openEditorInSplit("right"),
+      "editor.openLeft": () => layoutModeActions.openEditorInSplit("left"),
       "split.swapSides": () => toggleSplitSide(),
       "editor.fontSize.increase": () =>
         void setFontSize(fontSize + EDITOR_TOOLBAR_FONT_STEP),
@@ -419,15 +351,8 @@ export default function App() {
       isSidebarOpen,
       openChapterByIndex,
       handleRenameProject,
-      openResearchTab,
-      openExportPreview,
+      layoutModeActions,
       handleQuickExport,
-      openEditorInSplit,
-      toggleContextPanel,
-      openContextPanel,
-      closeContextPanel,
-      toggleManuscriptPanel,
-      openSidebarSection,
       toggleSplitSide,
       setWorldTab,
       setFontSize,
@@ -546,7 +471,7 @@ export default function App() {
 
   if (isExportWindow) {
     return (
-      <Suspense fallback={<div className="flex items-center justify-center h-screen bg-[#333] text-white">Loading...</div>}>
+      <Suspense fallback={<div className="flex items-center justify-center h-screen bg-[#333] text-white">{t("common.loading")}</div>}>
          <ExportWindow />
       </Suspense>
     );
@@ -662,7 +587,7 @@ export default function App() {
                 className="h-full overflow-hidden relative min-w-0 bg-panel"
                 style={{ flex: 1 - splitRatio }}
               >
-                <Suspense fallback={<div style={{ padding: 20 }}>Loading...</div>}>
+                <Suspense fallback={<div style={{ padding: 20 }}>{t("common.loading")}</div>}>
                   {rightPanelContent.type === "research" ? (
                     <ResearchPanel
                       activeTab={rightPanelContent.tab || "character"}
@@ -776,7 +701,7 @@ export default function App() {
                     onEditorReady={setDocEditor}
                   />
             </GoogleDocsLayout>
-      ) : uiMode === "word" ? (
+      ) : uiMode === "editor" ? (
          <EditorLayout
               sidebar={
                 <DocsSidebar

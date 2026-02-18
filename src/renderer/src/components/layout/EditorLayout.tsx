@@ -1,11 +1,26 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useState, useCallback, useRef, useEffect, lazy, Suspense } from "react";
 import { type Editor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
-import { Book, Search, Info } from "lucide-react";
+import {
+  User,
+  Globe,
+  StickyNote,
+  Sparkles,
+  History,
+  Trash2,
+  ChevronLeft,
+} from "lucide-react";
 import FocusHoverSidebar from "../sidebar/FocusHoverSidebar";
 import Ribbon from "../editor/Ribbon";
 import WindowBar from "./WindowBar";
 import { cn } from "../../../../shared/types/utils";
+
+const ResearchPanel = lazy(() => import("../research/ResearchPanel"));
+const WorldPanel = lazy(() => import("../research/WorldPanel"));
+const SnapshotList = lazy(() => import("../snapshot/SnapshotList").then(m => ({ default: m.SnapshotList })));
+const TrashList = lazy(() => import("../trash/TrashList").then(m => ({ default: m.TrashList })));
+
+type RightTab = "character" | "world" | "scrap" | "analysis" | "snapshot" | "trash" | null;
 
 interface EditorLayoutProps {
   children?: ReactNode;
@@ -19,174 +34,215 @@ interface EditorLayoutProps {
   onSaveChapter?: (title: string, content: string) => Promise<void>;
 }
 
+// WindowBar 높이: 40px (top-10)
+const WINDOW_BAR_HEIGHT = 40;
+
 export default function EditorLayout({
     children,
     sidebar,
     activeChapterTitle,
+    currentProjectId,
     editor
 }: EditorLayoutProps) {
   const { t } = useTranslation();
-  const [activeRightTab, setActiveRightTab] = useState<"binder" | "research" | "info">("binder");
+  const [activeRightTab, setActiveRightTab] = useState<RightTab>(null);
+  const ribbonRef = useRef<HTMLDivElement>(null);
+  const [ribbonHeight, setRibbonHeight] = useState(56); // Ribbon 기본 높이 추정값
+
+  // Ribbon 실제 높이 측정
+  useEffect(() => {
+    if (!ribbonRef.current) return;
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        setRibbonHeight(entry.contentRect.height);
+      }
+    });
+    observer.observe(ribbonRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // 사이드바 시작 위치 = WindowBar + Ribbon
+  const sidebarTopOffset = WINDOW_BAR_HEIGHT + ribbonHeight;
+
+  const handleRightTabClick = useCallback((tab: Exclude<RightTab, null>) => {
+    setActiveRightTab(prev => prev === tab ? null : tab);
+  }, []);
 
   return (
     <div className="flex flex-col h-screen w-screen bg-app text-fg overflow-hidden relative">
       
-      {/* 1. App Window Bar (Restored) */}
-      <WindowBar title={activeChapterTitle || "Luie Editor"} />
+      {/* 1. App Window Bar */}
+      <WindowBar title={activeChapterTitle || t("editor.layoutTitle")} />
 
-      {/* 2. Top Google Docs Style Toolbar */}
-      <Ribbon editor={editor} />
+      {/* 2. Toolbar (Google Docs style) */}
+      <div ref={ribbonRef}>
+        <Ribbon editor={editor} />
+      </div>
 
-      <div className="flex-1 flex overflow-hidden relative">
+      {/* 3. Main Area (에디터 + 숨겨진 사이드바들) */}
+      <div className="flex-1 overflow-hidden relative">
       
-          {/* LEFT: Auto-hide Navigation Sidebar */}
-          <FocusHoverSidebar side="left">
+          {/* LEFT: 원고 사이드바 (hover 시 표시) */}
+          <FocusHoverSidebar side="left" topOffset={sidebarTopOffset}>
             <div className="h-full flex flex-col bg-panel border-r border-border min-w-[280px]">
-               <div className="h-9 px-4 flex items-center bg-surface border-b border-border text-xs font-semibold text-muted font-sans tracking-wide">
-                  OUTLINE
-               </div>
-               <div className="flex-1 overflow-y-auto p-4 text-sm text-muted">
-                 {/* Placeholder for TOC */}
-                 <p className="italic opacity-50">Headings will appear here...</p>
-                 {/* Future: Implement EditorTOC with editor={editor} */}
-               </div>
+               {sidebar}
             </div>
           </FocusHoverSidebar>
 
-          {/* RIGHT: Auto-hide Binder/Research Sidebar (Tabbed) */}
-          <FocusHoverSidebar side="right">
+          {/* RIGHT: 바인더바 (Character/World/Scrap/Analysis/Snapshot/Trash) */}
+          <FocusHoverSidebar side="right" topOffset={sidebarTopOffset}>
              <div className="h-full flex flex-row bg-panel border-l border-border min-w-[320px]">
                 
-                {/* Sidebar Content Area */}
+                {/* 패널 콘텐츠 영역 */}
                 <div className="flex-1 flex flex-col overflow-hidden bg-panel">
-                    <div className="h-9 px-4 flex items-center bg-surface border-b border-border text-xs font-semibold text-muted font-sans tracking-wide justify-between">
-                       <span className="uppercase">{activeRightTab}</span>
-                    </div>
-                    
-                    <div className="flex-1 overflow-y-auto w-full">
-                        {activeRightTab === "binder" && (
-                            <div className="h-full">
-                                {/* Project Tree / Binder Content */}
-                                {sidebar}
+                    {activeRightTab ? (
+                        <div className="h-full flex flex-col">
+                            {/* 패널 헤더 */}
+                            <div className="h-9 px-3 flex items-center bg-surface border-b border-border text-xs font-semibold text-muted tracking-wide shrink-0 justify-between">
+                                <span className="uppercase">
+                                    {activeRightTab === "character" && t("research.title.characters")}
+                                    {activeRightTab === "world" && t("research.title.world")}
+                                    {activeRightTab === "scrap" && t("research.title.scrap")}
+                                    {activeRightTab === "analysis" && t("research.title.analysis")}
+                                    {activeRightTab === "snapshot" && t("sidebar.section.snapshot")}
+                                    {activeRightTab === "trash" && t("sidebar.section.trash")}
+                                </span>
+                                <button
+                                    onClick={() => setActiveRightTab(null)}
+                                    className="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 text-muted hover:text-fg transition-colors"
+                                    title={t("sidebar.toggle.close")}
+                                >
+                                    <ChevronLeft className="w-3.5 h-3.5 rotate-180" />
+                                </button>
                             </div>
-                        )}
-                        {activeRightTab === "research" && (
-                            <div className="p-4 space-y-4">
-                                <div className="relative">
-                                    <Search className="absolute left-2 top-2 w-4 h-4 text-muted" />
-                                    <input 
-                                        type="text" 
-                                        placeholder="Search..." 
-                                        className="w-full bg-surface border border-border rounded pl-8 pr-2 py-1.5 text-sm focus:ring-1 focus:ring-accent outline-none"
-                                    />
-                                </div>
-                                <div className="text-sm text-muted text-center pt-4">
-                                    No results found.
-                                </div>
+
+                            {/* 패널 본문 */}
+                            <div className="flex-1 overflow-hidden">
+                                <Suspense fallback={<div className="p-4 text-sm text-muted">{t("common.loading")}</div>}>
+                                    {activeRightTab === "character" && (
+                                        <ResearchPanel activeTab="character" onClose={() => setActiveRightTab(null)} />
+                                    )}
+                                    {activeRightTab === "world" && (
+                                        <WorldPanel onClose={() => setActiveRightTab(null)} />
+                                    )}
+                                    {activeRightTab === "scrap" && (
+                                        <ResearchPanel activeTab="scrap" onClose={() => setActiveRightTab(null)} />
+                                    )}
+                                    {activeRightTab === "analysis" && (
+                                        <ResearchPanel activeTab="analysis" onClose={() => setActiveRightTab(null)} />
+                                    )}
+                                    {activeRightTab === "snapshot" && (
+                                        activeChapterTitle ? (
+                                            <SnapshotList chapterId={activeChapterTitle} />
+                                        ) : (
+                                            <div className="p-4 text-xs text-muted italic text-center">
+                                                {t("snapshot.list.selectChapter")}
+                                            </div>
+                                        )
+                                    )}
+                                    {activeRightTab === "trash" && (
+                                        currentProjectId ? (
+                                            <TrashList projectId={currentProjectId} refreshKey={0} />
+                                        ) : (
+                                            <div className="p-4 text-xs text-muted italic text-center">
+                                                {t("sidebar.trashEmpty")}
+                                            </div>
+                                        )
+                                    )}
+                                </Suspense>
                             </div>
-                        )}
-                        {activeRightTab === "info" && (
-                            <div className="p-4 space-y-4 text-sm">
-                                <div className="bg-surface rounded p-3 border border-border">
-                                    <h3 className="font-semibold mb-2 text-fg">Document Statistics</h3>
-                                    <div className="flex justify-between py-1 border-b border-border/50">
-                                        <span className="text-muted">Words</span>
-                                        <span>{editor?.storage.characterCount.words() ?? 0}</span>
-                                    </div>
-                                    <div className="flex justify-between py-1 border-b border-border/50">
-                                        <span className="text-muted">Characters</span>
-                                        <span>{editor?.storage.characterCount.characters() ?? 0}</span>
-                                    </div>
-                                    <div className="flex justify-between py-1">
-                                        <span className="text-muted">Reading Time</span>
-                                        <span>{Math.ceil((editor?.storage.characterCount.words() ?? 0) / 200)} min</span>
-                                    </div>
-                                </div>
-                                
-                                <div className="bg-surface rounded p-3 border border-border">
-                                    <h3 className="font-semibold mb-2 text-fg">Metadata</h3>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-muted text-xs">Title</span>
-                                        <span className="truncate">{activeChapterTitle || "Untitled"}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                        </div>
+                    ) : (
+                        <div className="flex-1 flex items-center justify-center p-4 text-sm text-muted opacity-40 select-none">
+                            {t("editor.selectTabPrompt")}
+                        </div>
+                    )}
                 </div>
 
-                {/* Rightmost Vertical Tab Bar (Google Docs style side panel) */}
-                <div className="w-12 bg-surface border-l border-border flex flex-col items-center py-2 gap-2">
-                    <TabButton 
-                        icon={<Book className="w-5 h-5" />} 
-                        isActive={activeRightTab === "binder"} 
-                        onClick={() => setActiveRightTab("binder")} 
-                        title="Binder"
+                {/* 오른쪽 세로 아이콘 바 (Google Docs 스타일) */}
+                <div className="w-12 bg-surface border-l border-border flex flex-col items-center py-3 gap-2 shrink-0">
+                    <BinderTabButton 
+                        icon={<User className="w-5 h-5" />} 
+                        isActive={activeRightTab === "character"} 
+                        onClick={() => handleRightTabClick("character")} 
+                        title={t("research.title.characters")}
                     />
-                    <TabButton 
-                        icon={<Search className="w-5 h-5" />} 
-                        isActive={activeRightTab === "research"} 
-                        onClick={() => setActiveRightTab("research")} 
-                        title="Research"
+                    <BinderTabButton 
+                        icon={<Globe className="w-5 h-5" />} 
+                        isActive={activeRightTab === "world"} 
+                        onClick={() => handleRightTabClick("world")} 
+                        title={t("research.title.world")}
                     />
-                    <TabButton 
-                        icon={<Info className="w-5 h-5" />} 
-                        isActive={activeRightTab === "info"} 
-                        onClick={() => setActiveRightTab("info")} 
-                        title="Info"
+                    <BinderTabButton 
+                        icon={<StickyNote className="w-5 h-5" />} 
+                        isActive={activeRightTab === "scrap"} 
+                        onClick={() => handleRightTabClick("scrap")} 
+                        title={t("research.title.scrap")}
+                    />
+                    <BinderTabButton 
+                        icon={<Sparkles className="w-5 h-5" />} 
+                        isActive={activeRightTab === "analysis"} 
+                        onClick={() => handleRightTabClick("analysis")} 
+                        title={t("research.title.analysis")}
+                    />
+                    {/* 구분선 */}
+                    <div className="w-6 h-px bg-border/50 my-1" />
+                    <BinderTabButton 
+                        icon={<History className="w-5 h-5" />} 
+                        isActive={activeRightTab === "snapshot"} 
+                        onClick={() => handleRightTabClick("snapshot")} 
+                        title={t("sidebar.section.snapshot")}
+                    />
+                    <BinderTabButton 
+                        icon={<Trash2 className="w-5 h-5" />} 
+                        isActive={activeRightTab === "trash"} 
+                        onClick={() => handleRightTabClick("trash")} 
+                        title={t("sidebar.section.trash")}
                     />
                 </div>
 
              </div>
           </FocusHoverSidebar>
 
-          {/* Main Content Area */}
-          <div className="flex-1 overflow-hidden bg-[#f3f4f6] dark:bg-[#1a1a1a] relative flex flex-col items-center justify-center">
-                 
-             {/* Scrollable Page Container */}
-             <div className="flex-1 w-full overflow-y-auto p-8 custom-scrollbar scroll-smooth flex flex-col items-center">
-                 {/* The Page */}
-                 <div className="w-[816px] min-h-[1056px] bg-white dark:bg-[#1e1e1e] shadow-2xl border border-black/5 dark:border-white/5 py-12 px-12 transition-all duration-200 ease-out my-auto">
-                    {/* Title inside page */}
-                    {activeChapterTitle && (
-                        <h1 className="text-3xl font-bold mb-8 pb-4 border-b border-border/50 text-fg">
-                            {activeChapterTitle}
-                        </h1>
-                    )}
-                    
-                    {/* The Editor Content */}
-                    <div className="editor-content-wrapper min-h-[500px]">
-                        {children}
-                    </div>
-                 </div>
-
-                 {/* Bottom spacing */}
-                 <div className="h-12 w-full shrink-0" />
+          {/* 메인 에디터 영역 */}
+          <div className="h-full w-full overflow-y-auto bg-[#f3f4f6] dark:bg-[#1a1a1a] flex flex-col items-center custom-scrollbar">
+             
+             {/* 페이지 */}
+             <div className="w-[816px] min-h-[1056px] bg-white dark:bg-[#1e1e1e] shadow-2xl border border-black/5 dark:border-white/5 py-12 px-12 my-8 transition-all duration-200 ease-out">
+                {/* 챕터 제목 */}
+                {activeChapterTitle && (
+                    <h1 className="text-3xl font-bold mb-8 pb-4 border-b border-border/50 text-fg">
+                        {activeChapterTitle}
+                    </h1>
+                )}
+                
+                {/* 에디터 콘텐츠 */}
+                <div className="min-h-[500px]">
+                    {children}
+                </div>
              </div>
 
-             {/* Status Bar (Minimal, absolute bottom) */}
-             <div className="absolute bottom-4 right-8 px-3 py-1 bg-surface/80 backdrop-blur-md border border-border rounded-full text-[11px] text-muted select-none z-30 flex items-center gap-4 shadow-sm opacity-50 hover:opacity-100 transition-opacity">
-                 <span>Page 1 of 1</span>
-                 <span>0 words</span>
-                 <span className="cursor-pointer hover:text-fg">{t("common.language.options.ko")}</span>
-             </div>
+             {/* 하단 여백 */}
+             <div className="h-12 w-full shrink-0" />
           </div>
       </div>
     </div>
   );
 }
 
-function TabButton({ icon, isActive, onClick, title }: { icon: ReactNode; isActive: boolean; onClick: () => void; title: string }) {
+function BinderTabButton({ icon, isActive, onClick, title }: { icon: ReactNode; isActive: boolean; onClick: () => void; title: string }) {
     return (
         <button
             onClick={onClick}
             title={title}
             className={cn(
-                "p-2 rounded-full transition-colors flex items-center justify-center",
-                isActive ? "bg-accent/10 text-accent" : "text-muted hover:text-fg hover:bg-black/5 dark:hover:bg-white/5"
+                "w-9 h-9 flex items-center justify-center rounded-full transition-colors",
+                isActive
+                    ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+                    : "text-muted hover:text-fg hover:bg-black/5 dark:hover:bg-white/5"
             )}
         >
             {icon}
         </button>
-    )
+    );
 }

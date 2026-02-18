@@ -2,6 +2,7 @@ export const ko = {
   common: {
     home: "홈",
     share: "공유",
+    loading: "로딩 중...",
     menu: {
       file: "파일",
       edit: "편집",
@@ -11,6 +12,8 @@ export const ko = {
       tools: "도구",
       extensions: "확장 프로그램",
       help: "도움말",
+      link: "링크",
+      image: "이미지",
     },
     settings: {
       title: "화면 설정",
@@ -55,7 +58,7 @@ export const ko = {
         description: "에디터의 도구 모음과 레이아웃을 익숙한 스타일로 변경합니다.",
         default: "기본 (Default)",
         docs: "Google Docs 스타일",
-        word: "에디터 모드",
+        editor: "에디터 모드",
         scrivener: "Scrivener 스타일",
       },
       menuBar: {
@@ -400,6 +403,8 @@ export const ko = {
       ],
     },
     editor: {
+      layoutTitle: "Luie Editor",
+      selectTabPrompt: "← 탭을 선택하세요",
       placeholder: {
         title: "제목 없음",
         body: "내용을 입력하세요... ('/'를 입력하여 명령어 확인)",
@@ -428,9 +433,20 @@ export const ko = {
         draw: "그리기",
         view: "보기",
         paste: "붙여넣기",
+        style: {
+          normalText: "기본 텍스트",
+          title: "제목",
+          heading1: "제목 1",
+          heading2: "제목 2",
+        },
       },
       font: {
         defaultLabel: "나눔고딕",
+        options: {
+          arial: "Arial",
+          inter: "Inter",
+          roboto: "Roboto",
+        },
       },
       tooltip: {
         undo: "Undo",
@@ -444,6 +460,7 @@ export const ko = {
         alignLeft: "Align Left",
         alignCenter: "Align Center",
         alignRight: "Align Right",
+        addComment: "댓글 추가",
         toggleMobileView: "모바일 뷰 전환",
         view: {
           mobile: "Mobile View",
@@ -678,6 +695,23 @@ export const ko = {
         newTopic: "새 토픽",
         subTopic: "하위 토픽",
         uploadImage: "이미지 업로드",
+        urlPlaceholder: "https://...",
+        enterUrl: "URL 입력",
+        shortcut: {
+          clickKey: "클릭",
+          select: "선택",
+          enterKey: "Enter",
+          sibling: "형제 토픽",
+          tabKey: "Tab",
+          child: "하위 토픽",
+          deleteKey: "Del",
+          delete: "삭제",
+        },
+        controls: {
+          zoomIn: "확대",
+          zoomOut: "축소",
+          fitView: "화면 맞춤",
+        },
       },
       term: {
         addLabel: "용어 추가",

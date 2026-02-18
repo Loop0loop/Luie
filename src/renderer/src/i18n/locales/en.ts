@@ -2,6 +2,7 @@ export const en = {
   common: {
     home: "Home",
     share: "Share",
+    loading: "Loading...",
     menu: {
       file: "File",
       edit: "Edit",
@@ -11,6 +12,8 @@ export const en = {
       tools: "Tools",
       extensions: "Extensions",
       help: "Help",
+      link: "Link",
+      image: "Image",
     },
     settings: {
       title: "Display Settings",
@@ -55,7 +58,7 @@ export const en = {
         description: "Change the editor toolbar and layout to a familiar style.",
         default: "Default",
         docs: "Google Docs Style",
-        word: "Editor Mode",
+        editor: "Editor Mode",
         scrivener: "Scrivener Style",
       },
       menuBar: {
@@ -400,6 +403,8 @@ export const en = {
       ],
     },
     editor: {
+      layoutTitle: "Luie Editor",
+      selectTabPrompt: "← Select a tab",
       placeholder: {
         title: "Untitled",
         body: "Start writing... (type '/' to see commands)",
@@ -428,9 +433,20 @@ export const en = {
         draw: "Draw",
         view: "View",
         paste: "Paste",
+        style: {
+          normalText: "Normal text",
+          title: "Title",
+          heading1: "Heading 1",
+          heading2: "Heading 2",
+        },
       },
       font: {
         defaultLabel: "Nanum Gothic",
+        options: {
+          arial: "Arial",
+          inter: "Inter",
+          roboto: "Roboto",
+        },
       },
       tooltip: {
         undo: "Undo",
@@ -444,6 +460,7 @@ export const en = {
         alignLeft: "Align Left",
         alignCenter: "Align Center",
         alignRight: "Align Right",
+        addComment: "Add Comment",
         toggleMobileView: "Toggle mobile view",
         view: {
           mobile: "Mobile View",
@@ -678,6 +695,23 @@ export const en = {
         newTopic: "New Topic",
         subTopic: "Sub Topic",
         uploadImage: "Upload Image",
+        urlPlaceholder: "https://...",
+        enterUrl: "Enter URL",
+        shortcut: {
+          clickKey: "Click",
+          select: "Select",
+          enterKey: "Enter",
+          sibling: "Sibling",
+          tabKey: "Tab",
+          child: "Child",
+          deleteKey: "Del",
+          delete: "Delete",
+        },
+        controls: {
+          zoomIn: "Zoom In",
+          zoomOut: "Zoom Out",
+          fitView: "Fit View",
+        },
       },
       term: {
         addLabel: "Add Term",

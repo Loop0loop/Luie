@@ -373,7 +373,7 @@ export default function EditorToolbar({
   return (
     <div className="flex flex-col select-none transition-all duration-300">
         {uiMode === 'docs' && <DocsToolbar editor={editor} isMobileView={isMobileView} onToggleMobileView={onToggleMobileView} />}
-        {uiMode === 'word' && <WordToolbar editor={editor} isMobileView={isMobileView} onToggleMobileView={onToggleMobileView} />}
+        {uiMode === 'editor' && <WordToolbar editor={editor} isMobileView={isMobileView} onToggleMobileView={onToggleMobileView} />}
         {uiMode === 'scrivener' && <ScrivenerToolbar editor={editor} isMobileView={isMobileView} onToggleMobileView={onToggleMobileView} />}
         {(uiMode === 'default' || !uiMode) && <DefaultToolbar editor={editor} isMobileView={isMobileView} onToggleMobileView={onToggleMobileView} />}
         

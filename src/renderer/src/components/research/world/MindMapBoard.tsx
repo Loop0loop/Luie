@@ -85,7 +85,7 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
                <div className="w-full h-full flex flex-col items-center justify-center p-2 bg-panel">
                    <input 
                         className="w-full text-xs p-1 border border-border rounded mb-1 bg-element text-fg"
-                        placeholder="https://..."
+                        placeholder={t("world.mindmap.urlPlaceholder")}
                         autoFocus
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
@@ -101,7 +101,7 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
                             setIsEditingImage(false);
                         }}
                    />
-                   <span className="text-[10px] text-muted">Enter URL</span>
+                   <span className="text-[10px] text-muted">{t("world.mindmap.enterUrl")}</span>
                </div>
           ) : data.image ? (
               <img src={data.image} alt={data.label} className="w-full h-full object-cover" />
@@ -336,13 +336,25 @@ export function MindMapBoard() {
       <div
         className="absolute top-4 left-1/2 -translate-x-1/2 bg-panel/90 px-6 py-2 rounded-full text-xs font-medium text-fg shadow-lg pointer-events-none z-10 backdrop-blur-md border border-border flex items-center gap-4"
       >
-        <div className="flex items-center gap-1.5"><span className="p-1 bg-border rounded">Click</span> Select</div>
+        <div className="flex items-center gap-1.5">
+          <span className="p-1 bg-border rounded">{t("world.mindmap.shortcut.clickKey")}</span>
+          {t("world.mindmap.shortcut.select")}
+        </div>
         <div className="w-px h-3 bg-border"></div>
-        <div className="flex items-center gap-1.5"><span className="p-1 bg-border rounded">Enter</span> Sibling</div>
+        <div className="flex items-center gap-1.5">
+          <span className="p-1 bg-border rounded">{t("world.mindmap.shortcut.enterKey")}</span>
+          {t("world.mindmap.shortcut.sibling")}
+        </div>
         <div className="w-px h-3 bg-border"></div>
-        <div className="flex items-center gap-1.5"><span className="p-1 bg-border rounded">Tab</span> Child</div>
+        <div className="flex items-center gap-1.5">
+          <span className="p-1 bg-border rounded">{t("world.mindmap.shortcut.tabKey")}</span>
+          {t("world.mindmap.shortcut.child")}
+        </div>
         <div className="w-px h-3 bg-border"></div>
-        <div className="flex items-center gap-1.5"><span className="p-1 bg-border rounded">Del</span> Delete</div>
+        <div className="flex items-center gap-1.5">
+          <span className="p-1 bg-border rounded">{t("world.mindmap.shortcut.deleteKey")}</span>
+          {t("world.mindmap.shortcut.delete")}
+        </div>
       </div>
 
       <ReactFlow
@@ -364,9 +376,9 @@ export function MindMapBoard() {
         
         {/* Custom Controls */}
         <div className="absolute bottom-4 left-4 z-10 flex flex-col gap-2 bg-panel/90 backdrop-blur border border-border p-1.5 rounded-xl shadow-lg">
-            <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.zoomIn()} title="Zoom In">+</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.zoomOut()} title="Zoom Out">-</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.fitView()} title="Fit View">⛶</button>
+            <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.zoomIn()} title={t("world.mindmap.controls.zoomIn")}>+</button>
+            <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.zoomOut()} title={t("world.mindmap.controls.zoomOut")}>-</button>
+            <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.fitView()} title={t("world.mindmap.controls.fitView")}>⛶</button>
         </div>
       </ReactFlow>
     </div>

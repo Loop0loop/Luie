@@ -302,7 +302,7 @@ export interface WindowBounds {
 
 export type WindowState = "maximized" | "normal";
 
-export type EditorUiMode = "default" | "docs" | "word" | "scrivener" | "focus";
+export type EditorUiMode = "default" | "docs" | "editor" | "scrivener" | "focus";
 
 export interface EditorSettings {
   fontFamily: FontFamily;

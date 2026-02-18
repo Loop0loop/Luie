@@ -14,50 +14,7 @@ import WindowBar from "../layout/WindowBar";
 import { cn } from "../../../../shared/types/utils";
 import { useDialog } from "../common/DialogProvider";
 import { api } from "../../services/api";
-
-const sanitizePreviewHtml = (html: string): string => {
-  if (typeof document === "undefined") return html;
-
-  const template = document.createElement("template");
-  template.innerHTML = html;
-
-  const blockedTags = new Set([
-    "script",
-    "iframe",
-    "object",
-    "embed",
-    "link",
-    "meta",
-  ]);
-
-  const elements = Array.from(template.content.querySelectorAll("*"));
-  elements.forEach((element) => {
-    const tagName = element.tagName.toLowerCase();
-    if (blockedTags.has(tagName)) {
-      element.remove();
-      return;
-    }
-
-    Array.from(element.attributes).forEach((attribute) => {
-      const name = attribute.name.toLowerCase();
-      const value = attribute.value.trim().toLowerCase();
-
-      if (name.startsWith("on")) {
-        element.removeAttribute(attribute.name);
-        return;
-      }
-
-      if (
-        (name === "href" || name === "src" || name === "xlink:href") &&
-        value.startsWith("javascript:")
-      ) {
-        element.removeAttribute(attribute.name);
-      }
-    });
-  });
-
-  return template.innerHTML;
-};
+import { sanitizePreviewHtml } from "../../utils/sanitizeHtml";
 
 /**
  * Helper Component for Accordion Headers

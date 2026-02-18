@@ -481,7 +481,7 @@ export default function GoogleDocsLayout({
                   <Sparkles className="w-5 h-5" />
               </button>
               <div className="mt-auto">
-                   <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10" title="Add-ons">
+                   <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10" title={t("common.menu.extensions")}>
                       <Plus className="w-5 h-5 text-muted-foreground" />
                   </button>
               </div>

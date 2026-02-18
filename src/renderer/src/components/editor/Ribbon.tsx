@@ -43,6 +43,17 @@ type RibbonCommandChain = ReturnType<Editor["chain"]> & {
 
 export default function Ribbon({ editor }: RibbonProps) {
   const { t } = useTranslation();
+  const styleOptions = [
+    t("toolbar.ribbon.style.normalText"),
+    t("toolbar.ribbon.style.title"),
+    t("toolbar.ribbon.style.heading1"),
+    t("toolbar.ribbon.style.heading2"),
+  ];
+  const fontOptions = [
+    t("toolbar.font.options.arial"),
+    t("toolbar.font.options.inter"),
+    t("toolbar.font.options.roboto"),
+  ];
 
   const isActive = (nameOrAttrs: string | Record<string, unknown>, attributes?: Record<string, unknown>) => 
       editor?.isActive(nameOrAttrs as string, attributes) ?? false;
@@ -71,19 +82,18 @@ export default function Ribbon({ editor }: RibbonProps) {
            <button className="flex items-center gap-1 text-xs px-2 py-1 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
              100% <ZoomIn className="w-3 h-3" />
            </button>
-           <div className="h-4 w-px bg-border/20" />
-           <select className="h-7 text-xs bg-transparent border-none focus:ring-0 w-24 px-2 hover:bg-black/5 dark:hover:bg-white/10 rounded cursor-pointer">
-             <option>Normal text</option>
-             <option>Title</option>
-             <option>Heading 1</option>
-             <option>Heading 2</option>
-           </select>
-           <div className="h-4 w-px bg-border/20" />
-           <select className="h-7 text-xs bg-transparent border-none focus:ring-0 w-28 px-2 hover:bg-black/5 dark:hover:bg-white/10 rounded cursor-pointer">
-             <option>Arial</option>
-             <option>Inter</option>
-             <option>Roboto</option>
-           </select>
+	           <div className="h-4 w-px bg-border/20" />
+	           <select className="h-7 text-xs bg-transparent border-none focus:ring-0 w-24 px-2 hover:bg-black/5 dark:hover:bg-white/10 rounded cursor-pointer">
+	             {styleOptions.map((label) => (
+	               <option key={label}>{label}</option>
+	             ))}
+	           </select>
+	           <div className="h-4 w-px bg-border/20" />
+	           <select className="h-7 text-xs bg-transparent border-none focus:ring-0 w-28 px-2 hover:bg-black/5 dark:hover:bg-white/10 rounded cursor-pointer">
+	             {fontOptions.map((label) => (
+	               <option key={label}>{label}</option>
+	             ))}
+	           </select>
            <div className="h-4 w-px bg-border/20" />
            <div className="flex items-center">
              <button className="px-1 hover:bg-black/5 rounded">-</button>
@@ -121,12 +131,12 @@ export default function Ribbon({ editor }: RibbonProps) {
           />
         </div>
 
-        {/* Insert & Link */}
-        <div className="flex items-center gap-0.5 pr-2 border-r border-border/20">
-           <ToolbarButton icon={<Link className="w-4 h-4" />} onClick={() => {}} title={t("common.menu.link")} />
-           <ToolbarButton icon={<MessageSquare className="w-4 h-4" />} onClick={() => {}} title="Add Comment" />
-           <ToolbarButton icon={<ImageIcon className="w-4 h-4" />} onClick={() => {}} title={t("common.menu.image")} />
-        </div>
+	       {/* Insert & Link */}
+	        <div className="flex items-center gap-0.5 pr-2 border-r border-border/20">
+	           <ToolbarButton icon={<Link className="w-4 h-4" />} onClick={() => {}} title={t("common.menu.link")} />
+	           <ToolbarButton icon={<MessageSquare className="w-4 h-4" />} onClick={() => {}} title={t("toolbar.tooltip.addComment")} />
+	           <ToolbarButton icon={<ImageIcon className="w-4 h-4" />} onClick={() => {}} title={t("common.menu.image")} />
+	        </div>
 
         {/* Alignment & Lists */}
         <div className="flex items-center gap-0.5">
