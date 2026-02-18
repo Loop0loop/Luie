@@ -209,6 +209,13 @@ export const en = {
         cancel: "Cancel",
       },
     },
+    bootstrap: {
+      fetchFailed: "Failed to fetch app bootstrap status.",
+      initializing: "Initializing workspace...",
+      retry: "Retry",
+      quit: "Quit",
+      deleteManuscriptConfirm: "Delete this manuscript?",
+    },
     project: {
       defaults: {
         projectTitle: "Untitled Project",

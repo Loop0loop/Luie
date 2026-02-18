@@ -178,6 +178,11 @@ export const recoveryRunDbArgsSchema = z.tuple([
     .optional(),
 ]);
 
+export const appBootstrapStatusSchema = z.object({
+  isReady: z.boolean(),
+  error: z.string().optional(),
+});
+
 export const editorSettingsSchema = z.object({
   fontFamily: z.enum(["serif", "sans", "mono"]),
   fontPreset: z

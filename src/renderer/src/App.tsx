@@ -28,6 +28,7 @@ import {
   LUIE_PACKAGE_EXTENSION_NO_DOT,
   LUIE_PACKAGE_FILTER_NAME,
 } from "../../shared/constants/paths";
+import { appBootstrapStatusSchema } from "../../shared/schemas/index.js";
 import type { AppBootstrapStatus } from "../../shared/types/index.js";
 import { api } from "./services/api";
 
@@ -38,19 +39,8 @@ const ExportPreviewPanel = lazy(() => import("./components/export/ExportPreviewP
 const ExportWindow = lazy(() => import("./components/export/ExportWindow"));
 
 const parseBootstrapStatus = (value: unknown): AppBootstrapStatus | null => {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
-
-  const status = value as { isReady?: unknown; error?: unknown };
-  if (typeof status.isReady !== "boolean") {
-    return null;
-  }
-
-  return {
-    isReady: status.isReady,
-    error: typeof status.error === "string" ? status.error : undefined,
-  };
+  const parsed = appBootstrapStatusSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
 };
 
 export default function App() {
@@ -110,17 +100,17 @@ export default function App() {
 
       setBootstrapStatus({
         isReady: false,
-        error: "Failed to fetch bootstrap status.",
+        error: t("bootstrap.fetchFailed"),
       });
     } catch {
       setBootstrapStatus({
         isReady: false,
-        error: "Failed to fetch bootstrap status.",
+        error: t("bootstrap.fetchFailed"),
       });
     } finally {
       setIsBootstrapLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void refreshBootstrapStatus();
@@ -184,10 +174,10 @@ export default function App() {
   const handleDeleteActiveChapter = useCallback(() => {
     if (!isManuscriptMenuOpen) return;
     if (!activeChapterId) return;
-    const confirmed = window.confirm("이 원고를 삭제할까요?");
+    const confirmed = window.confirm(t("bootstrap.deleteManuscriptConfirm"));
     if (!confirmed) return;
     void handleDeleteChapter(activeChapterId);
-  }, [activeChapterId, handleDeleteChapter, isManuscriptMenuOpen]);
+  }, [activeChapterId, handleDeleteChapter, isManuscriptMenuOpen, t]);
 
   const {
     isSplitView,
@@ -453,7 +443,7 @@ export default function App() {
 
           {!showError && (
             <p className="mt-6 text-sm text-muted">
-              Initializing workspace...
+              {t("bootstrap.initializing")}
             </p>
           )}
 
@@ -469,7 +459,7 @@ export default function App() {
                   }}
                   className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 transition-colors"
                 >
-                  Retry
+                  {t("bootstrap.retry")}
                 </button>
                 <button
                   onClick={() => {
@@ -477,7 +467,7 @@ export default function App() {
                   }}
                   className="px-4 py-2 rounded-lg border border-border text-sm font-medium text-fg hover:bg-surface-hover transition-colors"
                 >
-                  Quit
+                  {t("bootstrap.quit")}
                 </button>
               </div>
             </div>

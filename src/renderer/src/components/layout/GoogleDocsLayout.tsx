@@ -59,14 +59,17 @@ export default function GoogleDocsLayout({
     setBinderBarOpen,
   } = useUIStore();
   
+  /* Force open panel width if it's too small when opening a tab */
+  useEffect(() => {
+    if (activeRightTab && contextWidth < 50) {
+      setContextWidth(320);
+    }
+  }, [activeRightTab, contextWidth, setContextWidth]);
+
   const handleRightTabClick = useCallback((tab: "character" | "world" | "scrap" | "analysis" | "snapshot" | "trash") => {
      const nextTab = activeRightTab === tab ? null : tab;
      setActiveRightTab(nextTab);
-     // Ensure panel has width when opening
-     if (nextTab && contextWidth < 50) {
-         setContextWidth(320); // Default width
-     }
-  }, [activeRightTab, setActiveRightTab, contextWidth, setContextWidth]);
+  }, [activeRightTab, setActiveRightTab]);
 
   const handleOpenExport = async () => {
     if (!activeChapterId) return;

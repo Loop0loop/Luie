@@ -75,23 +75,23 @@ export default function DocsSidebar({
       {menuOpenId && (
         <div
           ref={menuRef}
-          className="fixed z-[10000] bg-popover border border-border rounded-lg shadow-lg min-w-[160px] p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col text-popover-foreground"
+          className="fixed z-[10000] bg-panel border border-border rounded-lg shadow-lg min-w-[160px] p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col text-fg"
           style={{ top: menuPosition.y, left: menuPosition.x }}
         >
           <div
-            className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-md transition-all hover:bg-accent hover:text-accent-foreground"
+            className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-md transition-all hover:bg-surface-hover hover:text-fg"
             onClick={() => handleAction("rename", menuOpenId)}
           >
             <Edit2 className="w-3.5 h-3.5" /> {t("sidebar.menu.rename")}
           </div>
           <div
-            className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-md transition-all hover:bg-accent hover:text-accent-foreground"
+            className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-md transition-all hover:bg-surface-hover hover:text-fg"
             onClick={() => handleAction("duplicate", menuOpenId)}
           >
             <Copy className="w-3.5 h-3.5" /> {t("sidebar.menu.duplicate")}
           </div>
           <div
-            className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-md transition-all hover:bg-accent hover:text-accent-foreground text-red-500 hover:text-red-600"
+            className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-md transition-all hover:bg-surface-hover hover:text-red-600 text-red-500"
             onClick={() => handleAction("delete", menuOpenId)}
           >
             <Trash2 className="w-3.5 h-3.5" /> {t("sidebar.menu.delete")}

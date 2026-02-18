@@ -224,7 +224,7 @@
     text-decoration: none;
     color: inherit;
     position: relative; /* Ensure it catches events */
-    z-index: 10;
+    z-index: 99;
 }
 
 .tiptap .ProseMirror .smart-link-highlight:hover {

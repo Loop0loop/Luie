@@ -47,6 +47,17 @@ export function registerAnalysisIPCHandlers(
     throw new ServiceError(code, message, details);
   };
 
+  const requireAnalysisWindow = (): BrowserWindow => {
+    const targetWindow = resolveAnalysisWindow();
+    if (!targetWindow) {
+      throw new ServiceError(
+        ErrorCode.ANALYSIS_INVALID_REQUEST,
+        "윈도우를 찾을 수 없습니다.",
+      );
+    }
+    return targetWindow;
+  };
+
   registerIpcHandlers(logger, [
     {
       channel: IPC_CHANNELS.ANALYSIS_START,
@@ -61,13 +72,7 @@ export function registerAnalysisIPCHandlers(
           throwIpcError(ErrorCode.ANALYSIS_API_KEY_MISSING, apiKeyValidation.message);
         }
 
-        const targetWindow = resolveAnalysisWindow();
-        if (!targetWindow) {
-          throwIpcError(
-            ErrorCode.ANALYSIS_INVALID_REQUEST,
-            "윈도우를 찾을 수 없습니다.",
-          );
-        }
+        const targetWindow = requireAnalysisWindow();
 
         analysisSecurity.registerSecurityListeners(targetWindow);
         await service.startAnalysis(request.chapterId, request.projectId, targetWindow);
