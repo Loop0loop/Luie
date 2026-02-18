@@ -5,9 +5,11 @@ import { Eraser, PenTool, Type, Map as MapIcon, Navigation, Mountain, Castle, Te
 import { useProjectStore } from "../../../stores/projectStore";
 import { DEFAULT_WORLD_DRAWING, worldPackageStorage } from "../../../services/worldPackageStorage";
 import type { WorldDrawingPath } from "../../../../../shared/types";
+import { useDialog } from "../../common/DialogProvider";
 
 export function DrawingCanvas() {
   const { t } = useTranslation();
+  const dialog = useDialog();
   const { currentItem: currentProject } = useProjectStore();
   const canvasRef = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<"pen" | "text" | "eraser" | "icon">(
@@ -97,10 +99,19 @@ export function DrawingCanvas() {
     const { x, y } = getCoords(e);
 
     if (tool === "text") {
-      const text = window.prompt(t("world.drawing.placePrompt", "Enter text labels"));
-      if (text) {
-        setPaths((prev) => [...prev, { id: Date.now().toString(), type: "text", x, y, text, color }]);
-      }
+      void (async () => {
+        const text = await dialog.prompt({
+          title: t("world.drawing.toolText"),
+          message: t("world.drawing.placePrompt"),
+          defaultValue: "",
+          placeholder: t("world.drawing.placePrompt"),
+        });
+        if (!text?.trim()) return;
+        setPaths((prev) => [
+          ...prev,
+          { id: Date.now().toString(), type: "text", x, y, text: text.trim(), color },
+        ]);
+      })();
       return;
     }
 
@@ -142,9 +153,15 @@ export function DrawingCanvas() {
 
   const undo = () => setPaths((prev) => prev.slice(0, -1));
   const clearCanvas = () => {
-    if (window.confirm(t("world.drawing.confirmClear", "Clear entire map?"))) {
-        setPaths([]);
-    }
+    void (async () => {
+      const confirmed = await dialog.confirm({
+        title: t("world.drawing.clear"),
+        message: t("world.drawing.confirmClear"),
+        isDestructive: true,
+      });
+      if (!confirmed) return;
+      setPaths([]);
+    })();
   };
 
   useEffect(() => {

@@ -12,6 +12,7 @@ import { cn } from "../../../../shared/types/utils";
 import { useTranslation } from "react-i18next";
 import { useShortcutCommand } from "../../hooks/useShortcutCommand";
 import { i18n, SUPPORTED_LANGUAGES } from "../../i18n";
+import { useDialog } from "../common/DialogProvider";
 import {
   CHARACTER_GROUP_COLORS,
   CHARACTER_TEMPLATES,
@@ -332,6 +333,7 @@ function WikiDetailView({
   updateCharacter: (input: { id: string; [key: string]: unknown }) => void; 
 }) {
   const { t } = useTranslation();
+  const dialog = useDialog();
   const attributes = useMemo(() => 
     typeof character.attributes === "string" 
       ? JSON.parse(character.attributes) 
@@ -417,10 +419,16 @@ function WikiDetailView({
   };
 
   const deleteSection = (id: string) => {
-    if (confirm(t("character.deleteSectionConfirm"))) {
-       const newSections = sections.filter(s => s.id !== id);
-       handleAttrUpdate("sections", newSections);
-    }
+    void (async () => {
+      const confirmed = await dialog.confirm({
+        title: t("character.wiki.sectionDeleteTitle"),
+        message: t("character.deleteSectionConfirm"),
+        isDestructive: true,
+      });
+      if (!confirmed) return;
+      const newSections = sections.filter((section) => section.id !== id);
+      handleAttrUpdate("sections", newSections);
+    })();
   };
 
   // Custom Field Management
@@ -441,10 +449,16 @@ function WikiDetailView({
   };
 
   const deleteCustomField = (key: string) => {
-    if (confirm(t("character.deleteFieldConfirm"))) {
-      const newFields = customFields.filter(f => f.key !== key);
+    void (async () => {
+      const confirmed = await dialog.confirm({
+        title: t("character.wiki.fieldDeleteTitle"),
+        message: t("character.deleteFieldConfirm"),
+        isDestructive: true,
+      });
+      if (!confirmed) return;
+      const newFields = customFields.filter((field) => field.key !== key);
       handleAttrUpdate("customFields", newFields);
-    }
+    })();
   };
 
   // Merge Base Fields + Custom Fields

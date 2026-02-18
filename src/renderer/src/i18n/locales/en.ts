@@ -136,6 +136,8 @@ export const en = {
           editor: "Editor",
           other: "Other",
         },
+        saveFailed: "Failed to save shortcuts.",
+        resetFailed: "Failed to reset shortcuts.",
       },
       recovery: {
         title: "File Recovery",
@@ -143,6 +145,9 @@ export const en = {
         dryRun: "Create backup only",
         run: "Run recovery",
         running: "Recovering...",
+        success: "Recovery completed.",
+        failed: "Recovery failed.",
+        error: "Recovery encountered an error.",
       },
       projectTemplate: {
         sidebarTitle: "Start New Project",
@@ -258,6 +263,7 @@ export const en = {
       prompt: {
         renameTitle: "New title",
         renameProject: "Enter a project name.",
+        deleteConfirm: "Are you sure you want to delete this item?",
       },
       tooltip: {
         renameProject: "Rename project",
@@ -775,6 +781,7 @@ export const en = {
         memoPrompt: "Enter a snapshot memo",
         manualDescription: "Manual Snapshot",
         createFailed: "Failed to create manual snapshot.",
+        manualCreated: "Manual snapshot created.",
         manualBadge: "Manual",
         compareTitle: "Compare",
         restoreTitle: "Restore",
@@ -782,8 +789,12 @@ export const en = {
       },
       viewer: {
         restoreConfirm: "Restore this snapshot? Current content will be overwritten.",
+        restoreSuccess: "Snapshot restored.",
+        restoreFailed: "Failed to restore snapshot.",
         unknownDate: "Unknown date",
         applyConfirm: "Apply the selected changes to the current manuscript?",
+        applySuccess: "Selected changes applied.",
+        applyFailed: "Failed to apply selected changes.",
         header: "Snapshot: {date}",
         restoreButton: "Restore",
         changesHeader: "Changes only in snapshot",
@@ -807,6 +818,10 @@ export const en = {
     trash: {
       confirmRestore: "Restore from trash?",
       confirmPurge: "Delete permanently? This cannot be undone.",
+      restoreSuccess: "Restored from trash.",
+      restoreFailed: "Failed to restore from trash.",
+      purgeSuccess: "Deleted permanently.",
+      purgeFailed: "Failed to delete permanently.",
       empty: "Trash is empty.",
       loading: "Loading...",
       restore: "Restore",

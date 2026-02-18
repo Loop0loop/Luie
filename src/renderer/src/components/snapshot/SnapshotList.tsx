@@ -6,6 +6,7 @@ import { api } from "../../services/api";
 import type { Snapshot } from "../../../../shared/types";
 import { useSplitView } from "../../hooks/useSplitView";
 import { useChapterStore } from "../../stores/chapterStore";
+import { useDialog } from "../common/DialogProvider";
 
 interface SnapshotListProps {
   chapterId: string;
@@ -20,6 +21,7 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
     Array<{ snapshot: Snapshot; formattedDate: string }>
   >([]);
   const { t } = useTranslation();
+  const dialog = useDialog();
   const workerRef = useRef<Worker | null>(null);
   
   const { handleOpenSnapshot } = useSplitView();
@@ -96,44 +98,55 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
   };
 
   const handleRestore = async (snapshot: Snapshot) => {
-      if (!window.confirm(t("snapshot.list.confirmRestore"))) return;
-      
-      try {
-          const response = await api.snapshot.restore(snapshot.id);
-          if (response.success && snapshot.projectId) {
-            await reloadChapters(snapshot.projectId);
-          }
-        alert(t("snapshot.list.restoreSuccess"));
-          // Trigger reload if needed
-      } catch (error) {
-          api.logger.error("Snapshot restore failed", error);
-        alert(t("snapshot.list.restoreFailed"));
+    const confirmed = await dialog.confirm({
+      title: t("snapshot.list.restoreTitle"),
+      message: t("snapshot.list.confirmRestore"),
+      isDestructive: true,
+    });
+    if (!confirmed) return;
+
+    try {
+      const response = await api.snapshot.restore(snapshot.id);
+      if (response.success && snapshot.projectId) {
+        await reloadChapters(snapshot.projectId);
       }
+      dialog.toast(t("snapshot.list.restoreSuccess"), "success");
+    } catch (error) {
+      api.logger.error("Snapshot restore failed", error);
+      dialog.toast(t("snapshot.list.restoreFailed"), "error");
+    }
   };
 
   const handleManualSnapshot = async () => {
     if (!currentChapter) {
-      alert(t("snapshot.list.chapterNotFound"));
+      dialog.toast(t("snapshot.list.chapterNotFound"), "error");
       return;
     }
 
-    const memo = window.prompt(t("snapshot.list.memoPrompt"), "") ?? "";
+    const memo = await dialog.prompt({
+      title: t("snapshot.list.manualButton"),
+      message: t("snapshot.list.memoPrompt"),
+      defaultValue: "",
+      placeholder: t("snapshot.list.memoPrompt"),
+    });
+    if (memo === null) return;
 
     try {
       const response = await api.snapshot.create({
         projectId: currentChapter.projectId,
         chapterId: currentChapter.id,
         content: currentChapter.content ?? "",
-        description: memo || t("snapshot.list.manualDescription"),
+        description: memo.trim() || t("snapshot.list.manualDescription"),
         type: "MANUAL",
       });
 
       if (response.success) {
         await loadSnapshots();
+        dialog.toast(t("snapshot.list.manualCreated"), "success");
       }
     } catch (error) {
       api.logger.error("Failed to create manual snapshot", error);
-      alert(t("snapshot.list.createFailed"));
+      dialog.toast(t("snapshot.list.createFailed"), "error");
     }
   };
 

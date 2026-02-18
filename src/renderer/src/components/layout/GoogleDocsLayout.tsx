@@ -5,6 +5,7 @@ import { cn } from '../../../../shared/types/utils';
 import { useUIStore } from '../../stores/uiStore';
 import { useTranslation } from "react-i18next";
 import { SnapshotList } from "../snapshot/SnapshotList";
+import SnapshotViewer from "../snapshot/SnapshotViewer";
 import { TrashList } from "../trash/TrashList";
 import EditorToolbar from '../editor/EditorToolbar';
 import { EditorRuler } from "../editor/EditorRuler";
@@ -29,18 +30,22 @@ interface GoogleDocsLayoutProps {
   children: ReactNode;
   sidebar?: ReactNode;
   activeChapterId?: string;
+  activeChapterTitle?: string;
   currentProjectId?: string;
   editor?: TiptapEditor | null;
   onOpenSettings: () => void;
+  onRenameChapter?: (id: string, title: string) => void;
 }
 
 export default function GoogleDocsLayout({ 
   children, 
   sidebar, 
   activeChapterId, 
+  activeChapterTitle,
   currentProjectId, 
   editor,
-  onOpenSettings
+  onOpenSettings,
+  onRenameChapter,
 }: GoogleDocsLayoutProps) {
   const { t } = useTranslation();
   const [trashRefreshKey, setTrashRefreshKey] = useState(0);
@@ -57,6 +62,8 @@ export default function GoogleDocsLayout({
     setContextWidth,
     setDocsRightTab: setActiveRightTab,
     setBinderBarOpen,
+    rightPanelContent,
+    setRightPanelContent,
   } = useUIStore();
   
   /* Force open panel width if it's too small when opening a tab */
@@ -158,7 +165,14 @@ export default function GoogleDocsLayout({
               {/* Title Input */}
               <input 
                   type="text"
-                  defaultValue={t("project.defaults.untitled")}
+                  value={activeChapterTitle || ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (activeChapterId && onRenameChapter) {
+                        onRenameChapter(activeChapterId, val);
+                    }
+                  }}
+                  placeholder={t("project.defaults.untitled")}
                   className="text-[18px] text-foreground bg-transparent px-2 py-0.5 rounded-[4px] hover:bg-muted/50 focus:bg-background focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200 border border-transparent truncate max-w-[400px] min-w-[150px]"
               />
           </div>
@@ -234,28 +248,55 @@ export default function GoogleDocsLayout({
              {/* Scrollable Area for Editor */}
              {/* Scrollable Area for Editor */}
              <main className="flex-1 overflow-y-auto flex flex-col items-center relative custom-scrollbar bg-sidebar">
-                                  {/* Ruler - Sticky Top (Opaque Background Fixed) */}
-                   <div className="sticky top-0 z-30 pt-4 pb-2 shrink-0 select-none bg-sidebar/95 backdrop-blur-sm flex justify-center w-full">
-                    <div className="bg-background border border-border shadow-sm">
-                        <EditorRuler onMarginsChange={setPageMargins} />
-                    </div>
-                  </div>
-                 
-                  {/* Page (A4: 210mm x 297mm @ 96DPI ~= 794px x 1123px) */}
-                   <div 
-                    className="mb-8 bg-background min-h-[1123px] transition-all duration-200 ease-in-out relative flex flex-col box-border shadow-md border border-border"
-                    style={{ 
-                        width: '794px', 
-                        paddingTop: '96px',
-                        paddingBottom: '96px',
-                        paddingLeft: `${pageMargins.left}px`,
-                        paddingRight: `${pageMargins.right}px`,
-                        color: 'var(--foreground)' // Enforce theme text color
-                    }}
-                   >
-                     {children}
-                </div>
-                
+                  {rightPanelContent.type === "snapshot" && rightPanelContent.snapshot ? (
+                      <div className="flex flex-col w-full h-full bg-background relative z-50">
+                          <div className="flex items-center px-4 py-2 border-b border-border bg-sidebar shrink-0">
+                              <button 
+                                  onClick={() => setRightPanelContent({ type: "research", tab: "character" })}
+                                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                              >
+                                  <ChevronLeft className="w-4 h-4" />
+                                  {t("common.back")}
+                              </button>
+                              <div className="ml-4 font-medium text-sm">
+                                  Snapshot Viewer
+                              </div>
+                          </div>
+                          <div className="flex-1 overflow-hidden">
+                              <SnapshotViewer 
+                                  snapshot={rightPanelContent.snapshot}
+                                  currentContent={editor?.getHTML()}
+                                  onApplySnapshotText={(text: string) => {
+                                      editor?.commands.setContent(text);
+                                  }}
+                              />
+                          </div>
+                      </div>
+                  ) : (
+                    <>
+                        {/* Ruler - Sticky Top (Opaque Background Fixed) */}
+                        <div className="sticky top-0 z-30 pt-4 pb-2 shrink-0 select-none bg-sidebar/95 backdrop-blur-sm flex justify-center w-full">
+                            <div className="bg-background border border-border shadow-sm">
+                                <EditorRuler onMarginsChange={setPageMargins} />
+                            </div>
+                        </div>
+                        
+                        {/* Page (A4: 210mm x 297mm @ 96DPI ~= 794px x 1123px) */}
+                        <div 
+                            className="mb-8 bg-background min-h-[1123px] transition-all duration-200 ease-in-out relative flex flex-col box-border shadow-md border border-border"
+                            style={{ 
+                                width: '794px', 
+                                paddingTop: '96px',
+                                paddingBottom: '96px',
+                                paddingLeft: `${pageMargins.left}px`,
+                                paddingRight: `${pageMargins.right}px`,
+                                color: 'var(--foreground)' // Enforce theme text color
+                            }}
+                        >
+                            {children}
+                        </div>
+                    </>
+                  )}
              </main>
 
              {/* Footer Fixed at Bottom of Main Column */}

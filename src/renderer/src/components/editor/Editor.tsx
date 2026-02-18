@@ -33,6 +33,7 @@ import { useTranslation } from "react-i18next";
 import { useCharacterStore } from "../../stores/characterStore";
 import { useTermStore } from "../../stores/termStore";
 import { useUIStore } from "../../stores/uiStore";
+import { useDialog } from "../common/DialogProvider";
 
 // Simple Callout Extension (inline to avoid dependencies)
 const Callout = Node.create({
@@ -101,6 +102,7 @@ function Editor({
   onEditorReady,
 }: EditorProps) {
   const { t } = useTranslation();
+  const dialog = useDialog();
   const { fontFamilyCss, fontSize, lineHeight, getFontFamily } = useEditorConfig();
   const { updateStats } = useEditorStats();
   const [isMobileView, setIsMobileView] = useState(false);
@@ -274,7 +276,7 @@ function Editor({
      // ... (export logic) ...
     if (!chapterId || chapterId === "undefined" || chapterId === "null") {
       api.logger.warn("No valid chapterId available for export", { chapterId });
-      alert(t("editor.errors.exportNoChapter"));
+      dialog.toast(t("editor.errors.exportNoChapter"), "error");
       return;
     }
 
@@ -288,7 +290,7 @@ function Editor({
         error: response.error,
         data: response.data 
       });
-      alert(message);
+      dialog.toast(message, "error");
     }
   };
 

@@ -9,6 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useFloatingMenu } from "../../hooks/useFloatingMenu";
+import { useDialog } from "../common/DialogProvider";
 
 interface DocsSidebarProps {
   chapters: Chapter[];
@@ -20,6 +21,8 @@ interface DocsSidebarProps {
   onDeleteChapter?: (id: string) => void;
 }
 
+type ChapterAction = "rename" | "duplicate" | "delete";
+
 export default function DocsSidebar({
   chapters,
   activeChapterId,
@@ -30,24 +33,50 @@ export default function DocsSidebar({
   onDeleteChapter,
 }: DocsSidebarProps) {
   const { t } = useTranslation();
+  const dialog = useDialog();
   const { menuOpenId, menuPosition, menuRef, closeMenu, toggleMenuByElement } = useFloatingMenu<HTMLButtonElement>();
 
-  const handleAction = (action: string, id: string, e: React.MouseEvent) => {
+  const handleAction = async (
+    action: ChapterAction,
+    id: string,
+    e: React.MouseEvent,
+  ) => {
     e.stopPropagation();
     closeMenu();
-      if (action === "rename" && onRenameChapter) {
-        const current = chapters.find((c) => c.id === id);
-        // Use window.prompt for now to match Sidebar.tsx behavior
-        const nextTitle = window.prompt(t("sidebar.prompt.renameTitle") || "새로운 제목을 입력하세요", current?.title ?? "")?.trim();
-        if (nextTitle) onRenameChapter(id, nextTitle);
+
+    if (action === "rename") {
+      if (!onRenameChapter) return;
+      const current = chapters.find((chapter) => chapter.id === id);
+      const nextTitle = (
+        await dialog.prompt({
+          title: t("sidebar.menu.rename"),
+          message: t("sidebar.prompt.renameTitle"),
+          defaultValue: current?.title ?? "",
+          placeholder: t("sidebar.prompt.renameTitle"),
+        })
+      )?.trim();
+
+      if (nextTitle) {
+        onRenameChapter(id, nextTitle);
       }
-    if (action === "duplicate" && onDuplicateChapter) {
-        onDuplicateChapter(id);
+      return;
     }
-    if (action === "delete" && onDeleteChapter) {
-        if (window.confirm(t("sidebar.prompt.deleteConfirm") || "정말로 삭제하시겠습니까?")) {
-            onDeleteChapter(id);
-        }
+
+    if (action === "duplicate") {
+      if (!onDuplicateChapter) return;
+      onDuplicateChapter(id);
+      return;
+    }
+
+    if (!onDeleteChapter) return;
+    const confirmed = await dialog.confirm({
+      title: t("sidebar.menu.delete"),
+      message: t("sidebar.prompt.deleteConfirm"),
+      isDestructive: true,
+    });
+
+    if (confirmed) {
+      onDeleteChapter(id);
     }
   };
 
@@ -68,19 +97,19 @@ export default function DocsSidebar({
         >
           <div
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-md transition-all hover:bg-surface-hover hover:text-fg"
-            onClick={(e) => handleAction("rename", menuOpenId, e)}
+            onClick={(e) => void handleAction("rename", menuOpenId, e)}
           >
             <Edit2 className="w-3.5 h-3.5" /> {t("sidebar.menu.rename")}
           </div>
           <div
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-md transition-all hover:bg-surface-hover hover:text-fg"
-            onClick={(e) => handleAction("duplicate", menuOpenId, e)}
+            onClick={(e) => void handleAction("duplicate", menuOpenId, e)}
           >
             <Copy className="w-3.5 h-3.5" /> {t("sidebar.menu.duplicate")}
           </div>
           <div
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-md transition-all hover:bg-surface-hover hover:text-red-600 text-red-500"
-            onClick={(e) => handleAction("delete", menuOpenId, e)}
+            onClick={(e) => void handleAction("delete", menuOpenId, e)}
           >
             <Trash2 className="w-3.5 h-3.5" /> {t("sidebar.menu.delete")}
           </div>

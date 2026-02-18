@@ -27,6 +27,7 @@ import { useTranslation } from "react-i18next";
 import { useShortcutCommand } from "../../hooks/useShortcutCommand";
 import { useUIStore } from "../../stores/uiStore";
 import { useFloatingMenu } from "../../hooks/useFloatingMenu";
+import { useDialog } from "../common/DialogProvider";
 
 interface Chapter {
   id: string;
@@ -79,6 +80,7 @@ function Sidebar({
   onSplitView,
 }: SidebarProps) {
   const { t } = useTranslation();
+  const dialog = useDialog();
   const { updateProject } = useProjectStore();
   const { setSidebarOpen, setManuscriptMenuOpen } = useUIStore();
   // Section collapse states
@@ -134,14 +136,19 @@ function Sidebar({
 
   const handleRenameProject = async () => {
     if (!currentProjectId) return;
-    const nextTitle = window
-      .prompt(t("sidebar.prompt.renameProject"), currentProjectTitle ?? "")
-      ?.trim();
+    const nextTitle = (
+      await dialog.prompt({
+        title: t("sidebar.tooltip.renameProject"),
+        message: t("sidebar.prompt.renameProject"),
+        defaultValue: currentProjectTitle ?? "",
+        placeholder: t("sidebar.prompt.renameProject"),
+      })
+    )?.trim();
     if (!nextTitle || nextTitle === currentProjectTitle) return;
     await updateProject(currentProjectId, nextTitle);
   };
 
-  const handleAction = (action: string, id: string) => {
+  const handleAction = async (action: string, id: string) => {
     api.logger.info("Sidebar action", { action, id });
     closeMenu();
     if (action === "open_right" && onSplitView) {
@@ -149,7 +156,14 @@ function Sidebar({
     }
     if (action === "rename" && onRenameChapter) {
       const current = chapters.find((c) => c.id === id);
-      const nextTitle = window.prompt(t("sidebar.prompt.renameTitle"), current?.title ?? "")?.trim();
+      const nextTitle = (
+        await dialog.prompt({
+          title: t("sidebar.menu.rename"),
+          message: t("sidebar.prompt.renameTitle"),
+          defaultValue: current?.title ?? "",
+          placeholder: t("sidebar.prompt.renameTitle"),
+        })
+      )?.trim();
       if (nextTitle) {
         onRenameChapter(id, nextTitle);
       }
@@ -158,6 +172,12 @@ function Sidebar({
       onDuplicateChapter(id);
     }
     if (action === "delete" && onDeleteChapter) {
+      const confirmed = await dialog.confirm({
+        title: t("sidebar.menu.delete"),
+        message: t("sidebar.prompt.deleteConfirm"),
+        isDestructive: true,
+      });
+      if (!confirmed) return;
       onDeleteChapter(id);
     }
   };
@@ -225,32 +245,32 @@ function Sidebar({
         >
           <div
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
-            onClick={() => handleAction("open_below", menuOpenId)}
+            onClick={() => void handleAction("open_below", menuOpenId)}
           >
             <ArrowDownFromLine className="icon-sm" /> {t("sidebar.menu.openBelow")}
           </div>
           <div
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
-            onClick={() => handleAction("open_right", menuOpenId)}
+            onClick={() => void handleAction("open_right", menuOpenId)}
           >
             <ArrowRightFromLine className="icon-sm" /> {t("sidebar.menu.openRight")}
           </div>
           <div className="h-px bg-border my-1" />
           <div
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
-            onClick={() => handleAction("rename", menuOpenId)}
+            onClick={() => void handleAction("rename", menuOpenId)}
           >
             <Edit2 className="icon-sm" /> {t("sidebar.menu.rename")}
           </div>
           <div
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
-            onClick={() => handleAction("duplicate", menuOpenId)}
+            onClick={() => void handleAction("duplicate", menuOpenId)}
           >
             <Copy className="icon-sm" /> {t("sidebar.menu.duplicate")}
           </div>
           <div
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
-            onClick={() => handleAction("delete", menuOpenId)}
+            onClick={() => void handleAction("delete", menuOpenId)}
             style={{ color: "#ef4444" }}
           >
             <Trash2 className="icon-sm" /> {t("sidebar.menu.delete")}

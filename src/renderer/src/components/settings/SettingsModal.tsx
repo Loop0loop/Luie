@@ -80,6 +80,9 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const [isMenuBarUpdating, setIsMenuBarUpdating] = useState(false);
   const menuBarModeRef = useRef<WindowMenuBarMode>("visible");
   const menuBarUpdateLockRef = useRef(false);
+  const shortcutUpdateLockRef = useRef(false);
+  const recoveryRunLockRef = useRef(false);
+  const [isShortcutsUpdating, setIsShortcutsUpdating] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
   const [installing, setInstalling] = useState<Record<string, boolean>>({});
@@ -164,20 +167,47 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
   const handleCommitShortcuts = useCallback(
     (nextDrafts: Record<string, string>) => {
+      if (shortcutUpdateLockRef.current) return;
       if (Object.keys(nextDrafts).length === 0) return;
 
       const current = shortcuts as Record<string, string>;
       const hasChanges = Object.entries(nextDrafts).some(([actionId, value]) => (current[actionId] ?? "") !== value);
       if (!hasChanges) return;
 
-      void setShortcuts(nextDrafts as ShortcutMap);
+      shortcutUpdateLockRef.current = true;
+      setIsShortcutsUpdating(true);
+
+      void (async () => {
+        try {
+          await setShortcuts(nextDrafts as ShortcutMap);
+        } catch {
+          showToast(t("settings.shortcuts.saveFailed"), "error");
+        } finally {
+          shortcutUpdateLockRef.current = false;
+          setIsShortcutsUpdating(false);
+        }
+      })();
     },
-    [setShortcuts, shortcuts],
+    [setShortcuts, shortcuts, showToast, t],
   );
 
   const handleResetShortcuts = useCallback(() => {
-    void resetToDefaults();
-  }, [resetToDefaults]);
+    if (shortcutUpdateLockRef.current) return;
+
+    shortcutUpdateLockRef.current = true;
+    setIsShortcutsUpdating(true);
+
+    void (async () => {
+      try {
+        await resetToDefaults();
+      } catch {
+        showToast(t("settings.shortcuts.resetFailed"), "error");
+      } finally {
+        shortcutUpdateLockRef.current = false;
+        setIsShortcutsUpdating(false);
+      }
+    })();
+  }, [resetToDefaults, showToast, t]);
 
   const handleMenuBarMode = useCallback(
     (mode: WindowMenuBarMode) => {
@@ -244,17 +274,29 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   }, []);
 
   const runRecovery = useCallback(async (dryRun: boolean) => {
+    if (recoveryRunLockRef.current) return;
+    recoveryRunLockRef.current = true;
     setIsRecovering(true);
     setRecoveryMessage(null);
     try {
       const response = await api.recovery.runDb({ dryRun });
-      setRecoveryMessage(response.success ? (response.data as { message?: string })?.message ?? "Success" : "Failed");
+      if (response.success) {
+        setRecoveryMessage(
+          (response.data as { message?: string })?.message ??
+            t("settings.recovery.success"),
+        );
+      } else {
+        setRecoveryMessage(t("settings.recovery.failed"));
+        showToast(t("settings.recovery.failed"), "error");
+      }
     } catch {
-      setRecoveryMessage("Error during recovery");
+      setRecoveryMessage(t("settings.recovery.error"));
+      showToast(t("settings.recovery.error"), "error");
     } finally {
+      recoveryRunLockRef.current = false;
       setIsRecovering(false);
     }
-  }, []);
+  }, [showToast, t]);
 
   const optionalFonts = useMemo<OptionalFontOption[]>(
     () =>
@@ -404,6 +446,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 shortcutGroups={shortcutGroups}
                 shortcutValues={shortcuts as Record<string, string>}
                 shortcutDefaults={shortcutDefaults as Record<string, string>}
+                isSaving={isShortcutsUpdating}
                 onCommitShortcuts={handleCommitShortcuts}
                 onResetShortcuts={handleResetShortcuts}
                 getShortcutGroupLabel={getGroupLabel}

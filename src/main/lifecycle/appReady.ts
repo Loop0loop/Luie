@@ -18,6 +18,24 @@ const buildProdCspPolicy = () =>
     "connect-src 'self'",
   ].join("; ");
 
+const buildDevCspPolicy = () =>
+  [
+    "default-src 'self' http://localhost:5173 ws://localhost:5173",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:5173",
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net http://localhost:5173",
+    "img-src 'self' data: blob: https: http://localhost:5173",
+    "font-src 'self' data: https://cdn.jsdelivr.net",
+    "connect-src 'self' http://localhost:5173 ws://localhost:5173",
+    "worker-src 'self' blob:",
+  ].join("; ");
+
+const resolveCspPolicy = (isDev: boolean): string | null => {
+  if (!isDev) {
+    return buildProdCspPolicy();
+  }
+  return process.env.LUIE_DEV_CSP === "1" ? buildDevCspPolicy() : null;
+};
+
 const handleRendererCrash = async (
   logger: Logger,
   webContents: WebContents,
@@ -63,7 +81,7 @@ export const registerAppReady = (logger: Logger): void => {
     logger.info("App is ready");
 
     const isDev = isDevEnv();
-    const cspPolicy = buildProdCspPolicy();
+    const cspPolicy = resolveCspPolicy(isDev);
 
     if (isDev) {
       session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
@@ -76,33 +94,31 @@ export const registerAppReady = (logger: Logger): void => {
       });
     }
 
-    if (isDev) {
-      // DEV: Disable CSP injection to avoid blocking Vite HMR/react preamble inline script.
-      session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-        const responseHeaders = {
-          ...details.responseHeaders,
-          "Access-Control-Allow-Origin": ["*"],
-          "Access-Control-Allow-Headers": ["*"],
-          "Access-Control-Allow-Methods": [
-            "GET",
-            "POST",
-            "PUT",
-            "PATCH",
-            "DELETE",
-            "OPTIONS",
-          ],
-        } as Record<string, string[]>;
-        callback({ responseHeaders });
-      });
-    } else {
-      session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-        const responseHeaders = {
-          ...details.responseHeaders,
-          "Content-Security-Policy": [cspPolicy],
-        } as Record<string, string[]>;
-        callback({ responseHeaders });
-      });
-    }
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+      const responseHeaders = {
+        ...details.responseHeaders,
+      } as Record<string, string[]>;
+
+      if (isDev) {
+        // Dev default: CSP disabled for Vite preamble/HMR compatibility.
+        responseHeaders["Access-Control-Allow-Origin"] = ["*"];
+        responseHeaders["Access-Control-Allow-Headers"] = ["*"];
+        responseHeaders["Access-Control-Allow-Methods"] = [
+          "GET",
+          "POST",
+          "PUT",
+          "PATCH",
+          "DELETE",
+          "OPTIONS",
+        ];
+      }
+
+      if (cspPolicy) {
+        responseHeaders["Content-Security-Policy"] = [cspPolicy];
+      }
+
+      callback({ responseHeaders });
+    });
 
     app.on("web-contents-created", (_event, webContents) => {
       webContents.on("render-process-gone", (_goneEvent, details) => {

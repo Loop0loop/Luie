@@ -170,6 +170,8 @@ export const ko = {
           editor: "에디터 (Editor)",
           other: "기타 (Other)",
         },
+        saveFailed: "단축키 저장에 실패했습니다.",
+        resetFailed: "단축키 초기화에 실패했습니다.",
       },
       recovery: {
         title: "파일 복원",
@@ -177,6 +179,9 @@ export const ko = {
         dryRun: "백업만 만들기",
         run: "복원 실행",
         running: "복원 중...",
+        success: "복원이 완료되었습니다.",
+        failed: "복원 실행에 실패했습니다.",
+        error: "복원 중 오류가 발생했습니다.",
       },
       projectTemplate: {
         sidebarTitle: "Start New Project",
@@ -292,6 +297,7 @@ export const ko = {
       prompt: {
         renameTitle: "새 제목",
         renameProject: "프로젝트 이름을 입력해주세요.",
+        deleteConfirm: "정말로 삭제하시겠습니까?",
       },
       tooltip: {
         renameProject: "프로젝트 이름 수정",
@@ -813,6 +819,7 @@ export const ko = {
         memoPrompt: "스냅샷 메모를 입력하세요",
         manualDescription: "수동 스냅샷",
         createFailed: "수동 스냅샷 생성 실패",
+        manualCreated: "수동 스냅샷을 생성했습니다.",
         manualBadge: "수동",
         compareTitle: "비교",
         restoreTitle: "복구",
@@ -820,8 +827,12 @@ export const ko = {
       },
       viewer: {
         restoreConfirm: "이 스냅샷으로 복구할까요? 현재 원고가 덮어씌워집니다.",
+        restoreSuccess: "스냅샷으로 복구했습니다.",
+        restoreFailed: "스냅샷 복구에 실패했습니다.",
         unknownDate: "알 수 없는 날짜",
         applyConfirm: "선택한 변경 내용을 현재 원고에 적용할까요?",
+        applySuccess: "선택한 변경 내용을 적용했습니다.",
+        applyFailed: "변경 내용 적용에 실패했습니다.",
         header: "스냅샷: {date}",
         restoreButton: "복구",
         changesHeader: "변경된 내용 (스냅샷에만 존재)",
@@ -845,6 +856,10 @@ export const ko = {
     trash: {
       confirmRestore: "휴지통에서 복구할까요?",
       confirmPurge: "영구 삭제할까요? 이 작업은 되돌릴 수 없습니다.",
+      restoreSuccess: "복구했습니다.",
+      restoreFailed: "복구에 실패했습니다.",
+      purgeSuccess: "영구 삭제했습니다.",
+      purgeFailed: "영구 삭제에 실패했습니다.",
       empty: "휴지통이 비어 있습니다.",
       loading: "Loading...",
       restore: "복구",

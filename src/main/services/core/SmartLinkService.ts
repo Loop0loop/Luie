@@ -95,35 +95,42 @@ class SmartLinkService {
     const uiMode = useEditorStore.getState().uiMode;
 
     if (uiMode === "docs") {
-       // Google Docs Layout
-       uiStore.setDocsRightTab(type === "character" ? "character" : "world");
-       // Ensure World panel is on 'terms' tab if opening a term
-       if (type === "term") {
-          uiStore.setWorldTab("terms");
-       }
-    } else {
-       // Main Layout
-       // 1. Set Right Panel Content
-       uiStore.setRightPanelContent({
-         type: "research",
-         tab: type === "character" ? "character" : "world", 
-       });
-
-       if (type === "term") {
+      if (type === "character") {
+        uiStore.setDocsRightTab("character");
+      } else {
+        uiStore.setDocsRightTab("world");
         uiStore.setWorldTab("terms");
-       }
+      }
 
-       // 2. Open Split View if closed
-       if (!uiStore.isSplitView) {
-         uiStore.setSplitView(true);
-       }
+      // Keep docs panel open even when width was collapsed by previous state.
+      if (uiStore.contextWidth < 50) {
+        uiStore.setContextWidth(320);
+      }
+    } else {
+      uiStore.setRightPanelContent({
+        type: "research",
+        tab: type === "character" ? "character" : "world",
+      });
+
+      if (type === "term") {
+        uiStore.setWorldTab("terms");
+      }
+
+      if (!uiStore.isSplitView) {
+        uiStore.setSplitView(true);
+      }
     }
 
-    // 3. Select the item in the respective store (Shared across layouts)
     if (type === "character") {
-      useCharacterStore.getState().setCurrentCharacter(useCharacterStore.getState().items.find(c => c.id === id) || null);
+      const characterStore = useCharacterStore.getState();
+      characterStore.setCurrentCharacter(
+        characterStore.items.find((item) => item.id === id) ?? null,
+      );
     } else {
-       useTermStore.getState().setCurrentTerm(useTermStore.getState().items.find(t => t.id === id) || null);
+      const termStore = useTermStore.getState();
+      termStore.setCurrentTerm(
+        termStore.items.find((item) => item.id === id) ?? null,
+      );
     }
   }
 }

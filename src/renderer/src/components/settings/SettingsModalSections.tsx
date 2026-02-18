@@ -57,6 +57,7 @@ interface ShortcutRowProps {
   label: string;
   value: string;
   placeholder: string;
+  disabled?: boolean;
   onChangeAction: (actionId: string, value: string) => void;
   onBlur: () => void;
 }
@@ -66,6 +67,7 @@ const ShortcutRow = memo(function ShortcutRow({
   label,
   value,
   placeholder,
+  disabled = false,
   onChangeAction,
   onBlur,
 }: ShortcutRowProps) {
@@ -77,6 +79,7 @@ const ShortcutRow = memo(function ShortcutRow({
           className="w-full bg-surface border border-border rounded-md px-3 py-1.5 text-sm font-mono text-fg focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-colors text-center"
           value={value}
           placeholder={placeholder}
+          disabled={disabled}
           onChange={(e) => onChangeAction(actionId, e.target.value)}
           onBlur={onBlur}
           onKeyDown={(e) => {
@@ -525,6 +528,7 @@ interface ShortcutsTabProps {
   shortcutGroups: ShortcutGroupMap;
   shortcutValues: Record<string, string>;
   shortcutDefaults: Record<string, string>;
+  isSaving: boolean;
   onCommitShortcuts: (nextDrafts: Record<string, string>) => void;
   onResetShortcuts: () => void;
   getShortcutGroupLabel: (key: string) => string;
@@ -536,6 +540,7 @@ export const ShortcutsTab = memo(function ShortcutsTab({
   shortcutGroups,
   shortcutValues,
   shortcutDefaults,
+  isSaving,
   onCommitShortcuts,
   onResetShortcuts,
   getShortcutGroupLabel,
@@ -572,7 +577,11 @@ export const ShortcutsTab = memo(function ShortcutsTab({
     <div className="max-w-2xl space-y-8 pb-20 content-visibility-auto contain-intrinsic-size-[1px_1400px]">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-bold text-fg">{t("settings.shortcuts.title")}</h3>
-        <button onClick={onResetShortcuts} className="text-xs text-subtle hover:text-fg underline">
+        <button
+          onClick={onResetShortcuts}
+          disabled={isSaving}
+          className="text-xs text-subtle hover:text-fg underline disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           {t("settings.shortcuts.reset")}
         </button>
       </div>
@@ -594,6 +603,7 @@ export const ShortcutsTab = memo(function ShortcutsTab({
                     label={t(action.labelKey)}
                     value={shortcutDrafts[action.id] ?? shortcutDefaults[action.id] ?? ""}
                     placeholder={shortcutDefaults[action.id] ?? ""}
+                    disabled={isSaving}
                     onChangeAction={handleShortcutDraftChange}
                     onBlur={handleCommitShortcuts}
                   />
@@ -638,7 +648,7 @@ export const RecoveryTab = memo(function RecoveryTab({
             disabled={isRecovering}
             className="px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50"
           >
-            {isRecovering ? "Running..." : t("settings.recovery.run")}
+            {isRecovering ? t("settings.recovery.running") : t("settings.recovery.run")}
           </button>
         </div>
         {recoveryMessage && (

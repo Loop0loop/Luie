@@ -7,6 +7,7 @@ import { useChapterStore } from "../../stores/chapterStore";
 import { useUIStore } from "../../stores/uiStore";
 import type { Snapshot } from "../../../../shared/types";
 import Editor from "../editor/Editor";
+import { useDialog } from "../common/DialogProvider";
 
 interface SnapshotViewerProps {
   snapshot: Snapshot;
@@ -26,10 +27,15 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
   const { setSplitView, setRightPanelContent } = useUIStore();
   const [selectedAdditions, setSelectedAdditions] = useState<Set<number>>(new Set());
   const { t } = useTranslation();
+  const dialog = useDialog();
   const diffEnabled = (currentContent?.length ?? 0) + (snapshot.content?.length ?? 0) <= 50000;
 
   const handleRestore = async () => {
-    const confirmed = window.confirm(t("snapshot.viewer.restoreConfirm"));
+    const confirmed = await dialog.confirm({
+      title: t("snapshot.viewer.restoreButton"),
+      message: t("snapshot.viewer.restoreConfirm"),
+      isDestructive: true,
+    });
     if (!confirmed) return;
 
     try {
@@ -40,11 +46,14 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
           setRightPanelContent({ type: "research", tab: "character" });
           setSplitView(false);
         }
+        dialog.toast(t("snapshot.viewer.restoreSuccess"), "success");
       } else {
         api.logger.error("Snapshot restore failed", response.error);
+        dialog.toast(t("snapshot.viewer.restoreFailed"), "error");
       }
     } catch (error) {
       api.logger.error("Snapshot restore failed", error);
+      dialog.toast(t("snapshot.viewer.restoreFailed"), "error");
     }
   };
 
@@ -113,14 +122,23 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
   const handleApplySelected = useCallback(
     async (selectedIds: Set<number>) => {
       if (!onApplySnapshotText || selectedIds.size === 0) return;
-      const confirmed = window.confirm(t("snapshot.viewer.applyConfirm"));
+      const confirmed = await dialog.confirm({
+        title: t("snapshot.viewer.applySelected"),
+        message: t("snapshot.viewer.applyConfirm"),
+      });
       if (!confirmed) return;
 
-      const mergedHtml = buildMergedHtml(selectedIds);
-      await onApplySnapshotText(mergedHtml);
-      setSelectedAdditions(new Set());
+      try {
+        const mergedHtml = buildMergedHtml(selectedIds);
+        await onApplySnapshotText(mergedHtml);
+        setSelectedAdditions(new Set());
+        dialog.toast(t("snapshot.viewer.applySuccess"), "success");
+      } catch (error) {
+        api.logger.error("Failed to apply snapshot selection", error);
+        dialog.toast(t("snapshot.viewer.applyFailed"), "error");
+      }
     },
-    [buildMergedHtml, onApplySnapshotText, t],
+    [buildMergedHtml, dialog, onApplySnapshotText, t],
   );
 
   return (

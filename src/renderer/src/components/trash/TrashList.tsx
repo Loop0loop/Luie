@@ -4,6 +4,7 @@ import { api } from "../../services/api";
 import { useChapterStore } from "../../stores/chapterStore";
 import type { Chapter } from "../../../../shared/types";
 import { useTranslation } from "react-i18next";
+import { useDialog } from "../common/DialogProvider";
 
 interface TrashListProps {
   projectId: string;
@@ -15,6 +16,7 @@ type TrashItem = Chapter & { deletedAt?: string | Date | null };
 
 export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashListProps) {
   const { t } = useTranslation();
+  const dialog = useDialog();
   const [items, setItems] = useState<TrashItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
@@ -47,7 +49,11 @@ export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashList
   const handleRestore = useCallback(
     async (id: string) => {
       if (restoringId || purgingId) return;
-      const confirmed = window.confirm(t("trash.confirmRestore"));
+      const confirmed = await dialog.confirm({
+        title: t("trash.restore"),
+        message: t("trash.confirmRestore"),
+        isDestructive: true,
+      });
       if (!confirmed) return;
 
       setRestoringId(id);
@@ -57,20 +63,37 @@ export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashList
           await reloadChapters(projectId);
           onRestoreChapter?.(id);
           await loadTrash();
+          dialog.toast(t("trash.restoreSuccess"), "success");
+        } else {
+          dialog.toast(t("trash.restoreFailed"), "error");
         }
       } catch (error) {
         api.logger.error("Failed to restore chapter", error);
+        dialog.toast(t("trash.restoreFailed"), "error");
       } finally {
         setRestoringId(null);
       }
     },
-    [loadTrash, onRestoreChapter, projectId, purgingId, restoringId, reloadChapters, t],
+    [
+      dialog,
+      loadTrash,
+      onRestoreChapter,
+      projectId,
+      purgingId,
+      restoringId,
+      reloadChapters,
+      t,
+    ],
   );
 
   const handlePurge = useCallback(
     async (id: string) => {
       if (restoringId || purgingId) return;
-      const confirmed = window.confirm(t("trash.confirmPurge"));
+      const confirmed = await dialog.confirm({
+        title: t("trash.purge"),
+        message: t("trash.confirmPurge"),
+        isDestructive: true,
+      });
       if (!confirmed) return;
 
       setPurgingId(id);
@@ -78,14 +101,18 @@ export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashList
         const response = await api.chapter.purge(id);
         if (response.success) {
           await loadTrash();
+          dialog.toast(t("trash.purgeSuccess"), "success");
+        } else {
+          dialog.toast(t("trash.purgeFailed"), "error");
         }
       } catch (error) {
         api.logger.error("Failed to purge chapter", error);
+        dialog.toast(t("trash.purgeFailed"), "error");
       } finally {
         setPurgingId(null);
       }
     },
-    [loadTrash, purgingId, restoringId, t],
+    [dialog, loadTrash, purgingId, restoringId, t],
   );
 
   const emptyState = useMemo(() => {

@@ -8,6 +8,7 @@ import { setupRenderer } from "./setup";
 import App from "./App";
 import { GlobalErrorBoundary } from "./components/common/GlobalErrorBoundary";
 import { ToastProvider } from "./components/common/Toast";
+import { DialogProvider } from "./components/common/DialogProvider";
 import "./styles/global.css";
 
 const root = ReactDOM.createRoot(document.getElementById("root")!);
@@ -17,7 +18,9 @@ Promise.allSettled([setupRenderer(), initI18n()]).finally(() => {
     <React.StrictMode>
       <GlobalErrorBoundary>
         <ToastProvider>
-          <App />
+          <DialogProvider>
+            <App />
+          </DialogProvider>
         </ToastProvider>
       </GlobalErrorBoundary>
     </React.StrictMode>

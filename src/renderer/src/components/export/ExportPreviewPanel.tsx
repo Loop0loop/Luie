@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { 
+import {
   FileText, 
   Download, 
   AlignLeft, 
@@ -18,6 +18,7 @@ import {
   Globe
 } from "lucide-react";
 import { cn } from "../../../../shared/types/utils";
+import { useDialog } from "../common/DialogProvider";
 
 interface ExportPreviewPanelProps {
   title?: string;
@@ -28,13 +29,14 @@ type ExportFormat = "hwp" | "word";
 
 export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
   const { t } = useTranslation();
+  const dialog = useDialog();
   const resolvedTitle = title ?? t("exportPreview.defaultTitle");
   const [format, setFormat] = useState<ExportFormat>("hwp");
 
   const handleExport = () => {
     // Placeholder for actual export logic
     const ext = format === "hwp" ? "hwp" : "docx";
-    alert(t("exportPreview.alertExport", { ext }));
+    dialog.toast(t("exportPreview.alertExport", { ext }), "info");
   };
 
   const hwpMenuItems = [

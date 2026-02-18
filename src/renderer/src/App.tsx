@@ -20,6 +20,7 @@ import { useShortcuts } from "./hooks/useShortcuts";
 import { emitShortcutCommand } from "./hooks/useShortcutCommand";
 import { useShortcutStore } from "./stores/shortcutStore";
 import { useToast } from "./components/common/ToastContext";
+import { useDialog } from "./components/common/DialogProvider";
 import {
   EDITOR_TOOLBAR_FONT_MIN,
   EDITOR_TOOLBAR_FONT_STEP,
@@ -46,6 +47,7 @@ const parseBootstrapStatus = (value: unknown): AppBootstrapStatus | null => {
 export default function App() {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const dialog = useDialog();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [bootstrapStatus, setBootstrapStatus] = useState<AppBootstrapStatus>({
     isReady: false,
@@ -171,13 +173,23 @@ export default function App() {
     [chapters, handleSelectChapter],
   );
 
-  const handleDeleteActiveChapter = useCallback(() => {
+  const handleDeleteActiveChapter = useCallback(async () => {
     if (!isManuscriptMenuOpen) return;
     if (!activeChapterId) return;
-    const confirmed = window.confirm(t("bootstrap.deleteManuscriptConfirm"));
+    const confirmed = await dialog.confirm({
+      title: t("sidebar.menu.delete"),
+      message: t("bootstrap.deleteManuscriptConfirm"),
+      isDestructive: true,
+    });
     if (!confirmed) return;
-    void handleDeleteChapter(activeChapterId);
-  }, [activeChapterId, handleDeleteChapter, isManuscriptMenuOpen, t]);
+    await handleDeleteChapter(activeChapterId);
+  }, [
+    activeChapterId,
+    dialog,
+    handleDeleteChapter,
+    isManuscriptMenuOpen,
+    t,
+  ]);
 
   const {
     isSplitView,
@@ -224,12 +236,19 @@ export default function App() {
 
   const handleRenameProject = useCallback(async () => {
     if (!currentProject?.id) return;
-    const nextTitle = window
-      .prompt("프로젝트 이름을 입력해주세요.", currentProject.title ?? "")
-      ?.trim();
+
+    const nextTitle = (
+      await dialog.prompt({
+        title: t("sidebar.tooltip.renameProject"),
+        message: t("sidebar.prompt.renameProject"),
+        defaultValue: currentProject.title ?? "",
+        placeholder: t("sidebar.prompt.renameProject"),
+      })
+    )?.trim();
+
     if (!nextTitle || nextTitle === currentProject.title) return;
     await updateProject(currentProject.id, nextTitle);
-  }, [currentProject, updateProject]);
+  }, [currentProject, dialog, t, updateProject]);
 
   const shortcutHandlers = useMemo(
     () => ({
@@ -238,7 +257,7 @@ export default function App() {
       "app.quit": () => void api.app.quit(),
       "chapter.new": () => void handleAddChapter(),
       "chapter.save": () => void handleSave(activeChapterTitle, content),
-      "chapter.delete": () => handleDeleteActiveChapter(),
+      "chapter.delete": () => void handleDeleteActiveChapter(),
       "chapter.open.1": () => openChapterByIndex(0),
       "chapter.open.2": () => openChapterByIndex(1),
       "chapter.open.3": () => openChapterByIndex(2),
@@ -601,13 +620,14 @@ export default function App() {
                     onAddChapter={handleAddChapter}
                     onRenameChapter={handleRenameChapter}
                     onDuplicateChapter={handleDuplicateChapter}
-                    onDeleteChapter={handleDeleteChapter}
+                    onDeleteChapter={handleDeleteActiveChapter}
                   />
                 }
                 activeChapterId={activeChapterId ?? undefined}
-                currentProjectId={currentProject?.id}
+                activeChapterTitle={activeChapterTitle}
                 editor={docEditor}
                 onOpenSettings={() => setIsSettingsOpen(true)}
+                onRenameChapter={handleRenameChapter}
             >
                   <Editor
                     key={activeChapterId} // Force re-mount on chapter change to ensure clean state

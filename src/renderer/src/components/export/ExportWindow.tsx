@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import WindowBar from "../layout/WindowBar";
 import { cn } from "../../../../shared/types/utils";
+import { useDialog } from "../common/DialogProvider";
 
 /**
  * Helper Component for Accordion Headers
@@ -43,6 +44,7 @@ const SectionHeader = ({
 
 export default function ExportWindow() {
   const { t } = useTranslation();
+  const dialog = useDialog();
   const [chapterId] = useState<string | null>(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const id = searchParams.get("chapterId");
@@ -113,7 +115,7 @@ export default function ExportWindow() {
 
   const handleExport = async () => {
     if (!chapter || !chapterId) {
-      alert(t("exportWindow.error.noChapter"));
+      dialog.toast(t("exportWindow.error.noChapter"), "error");
       return;
     }
 
@@ -145,18 +147,34 @@ export default function ExportWindow() {
           const message = result.message 
             ? result.message
             : t("exportWindow.alert.success", { path: result.filePath ?? "" });
-          alert(message);
+          dialog.toast(message, "success", 5000);
         } else {
-          alert(t("exportWindow.alert.failed", { reason: result.error || "Unknown error" }));
+          dialog.toast(
+            t("exportWindow.alert.failed", { reason: result.error || "Unknown error" }),
+            "error",
+            5000,
+          );
         }
       } else {
-        alert(t("exportWindow.alert.failed", { reason: response.error?.message || "Unknown error" }));
+        dialog.toast(
+          t("exportWindow.alert.failed", {
+            reason: response.error?.message || "Unknown error",
+          }),
+          "error",
+          5000,
+        );
       }
     } catch (error) {
       void window.api.logger.error("Export error", {
         error: error instanceof Error ? error.message : String(error),
       });
-      alert(t("exportWindow.alert.exception", { reason: error instanceof Error ? error.message : "Unknown error" }));
+      dialog.toast(
+        t("exportWindow.alert.exception", {
+          reason: error instanceof Error ? error.message : "Unknown error",
+        }),
+        "error",
+        5000,
+      );
     } finally {
       setIsExporting(false);
     }

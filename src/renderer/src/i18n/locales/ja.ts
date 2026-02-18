@@ -128,6 +128,16 @@ export const ja = {
         editorFontIncrease: "文字サイズを大きく",
         editorFontDecrease: "文字サイズを小さく",
         toggleFullscreen: "全画面切替",
+        group: {
+          app: "アプリ",
+          file: "原稿",
+          view: "表示",
+          research: "リサーチ",
+          editor: "エディタ",
+          other: "その他",
+        },
+        saveFailed: "ショートカットの保存に失敗しました。",
+        resetFailed: "ショートカットの初期化に失敗しました。",
       },
       recovery: {
         title: "ファイル復元",
@@ -135,6 +145,9 @@ export const ja = {
         dryRun: "バックアップのみ作成",
         run: "復元を実行",
         running: "復元中...",
+        success: "復元が完了しました。",
+        failed: "復元の実行に失敗しました。",
+        error: "復元中にエラーが発生しました。",
       },
       projectTemplate: {
         sidebarTitle: "Start New Project",
@@ -250,6 +263,7 @@ export const ja = {
       prompt: {
         renameTitle: "新しいタイトル",
         renameProject: "プロジェクト名を入力してください。",
+        deleteConfirm: "本当に削除しますか？",
       },
       tooltip: {
         renameProject: "プロジェクト名を変更",
@@ -767,6 +781,7 @@ export const ja = {
         memoPrompt: "スナップショットメモを入力してください",
         manualDescription: "手動スナップショット",
         createFailed: "手動スナップショットの作成に失敗しました。",
+        manualCreated: "手動スナップショットを作成しました。",
         manualBadge: "手動",
         compareTitle: "比較",
         restoreTitle: "復元",
@@ -774,8 +789,12 @@ export const ja = {
       },
       viewer: {
         restoreConfirm: "このスナップショットで復元しますか？現在の内容は上書きされます。",
+        restoreSuccess: "スナップショットで復元しました。",
+        restoreFailed: "スナップショットの復元に失敗しました。",
         unknownDate: "不明な日付",
         applyConfirm: "選択した変更を現在の原稿に適用しますか？",
+        applySuccess: "選択した変更を適用しました。",
+        applyFailed: "変更の適用に失敗しました。",
         header: "スナップショット: {date}",
         restoreButton: "復元",
         changesHeader: "スナップショットにのみ存在する変更",
@@ -799,6 +818,10 @@ export const ja = {
     trash: {
       confirmRestore: "ゴミ箱から復元しますか？",
       confirmPurge: "完全に削除しますか？この操作は取り消せません。",
+      restoreSuccess: "復元しました。",
+      restoreFailed: "復元に失敗しました。",
+      purgeSuccess: "完全に削除しました。",
+      purgeFailed: "完全削除に失敗しました。",
       empty: "ゴミ箱は空です。",
       loading: "読み込み中...",
       restore: "復元",
