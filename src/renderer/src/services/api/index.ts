@@ -11,6 +11,8 @@ import type {
   Term,
   AppBootstrapStatus,
   WindowMenuBarMode,
+  SyncRunResult,
+  SyncStatus,
 } from "../../../../shared/types/index.js";
 
 export type RendererApi = {
@@ -177,6 +179,14 @@ export type RendererApi = {
   recovery: {
     runDb: (options?: { dryRun?: boolean }) => Promise<IPCResponse<unknown>>;
   };
+  sync: {
+    getStatus: () => Promise<IPCResponse<SyncStatus>>;
+    connectGoogle: () => Promise<IPCResponse<SyncStatus>>;
+    disconnect: () => Promise<IPCResponse<SyncStatus>>;
+    runNow: () => Promise<IPCResponse<SyncRunResult>>;
+    setAutoSync: (settings: { enabled: boolean }) => Promise<IPCResponse<SyncStatus>>;
+    onStatusChanged: (callback: (status: SyncStatus) => void) => () => void;
+  };
   app: {
     getBootstrapStatus: () => Promise<IPCResponse<AppBootstrapStatus>>;
     onBootstrapStatus: (callback: (status: AppBootstrapStatus) => void) => () => void;
@@ -207,7 +217,7 @@ export type RendererApi = {
 const PRELOAD_UNAVAILABLE_CODE = "PRELOAD_API_UNAVAILABLE";
 const PRELOAD_UNAVAILABLE_MESSAGE =
   "Preload API is unavailable. Restart the app and verify the preload build.";
-const EVENT_SUBSCRIPTION_METHODS = new Set(["onBootstrapStatus", "onStream", "onError"]);
+const EVENT_SUBSCRIPTION_METHODS = new Set(["onBootstrapStatus", "onStream", "onError", "onStatusChanged"]);
 const VOID_METHODS = new Set(["setDirty"]);
 
 let apiClient: RendererApi | null = null;

@@ -1,4 +1,4 @@
-import { Command, Type, Layout, BookOpen, FileText, Keyboard, Monitor, RotateCcw, Globe } from "lucide-react";
+import { Command, Type, Layout, BookOpen, FileText, Keyboard, Monitor, RotateCcw, Globe, Cloud } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { SettingsTabId } from "./SettingsModalSections";
 import type { FontPreset } from "../../../../shared/types";
@@ -8,6 +8,7 @@ export const SETTINGS_TABS: Array<{ id: SettingsTabId; labelKey: string; icon: L
   { id: "appearance", labelKey: "settings.sidebar.appearance", icon: Monitor },
   { id: "shortcuts", labelKey: "settings.sidebar.shortcuts", icon: Keyboard },
   { id: "recovery", labelKey: "settings.sidebar.recovery", icon: RotateCcw },
+  { id: "sync", labelKey: "settings.sidebar.sync", icon: Cloud },
   { id: "language", labelKey: "settings.sidebar.language", icon: Globe },
 ];
 

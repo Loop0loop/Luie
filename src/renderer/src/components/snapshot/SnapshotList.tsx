@@ -59,20 +59,30 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
   }, []);
 
   const loadSnapshots = useCallback(async () => {
-    if (!chapterId) return;
+    if (!chapterId) {
+        api.logger.info("SnapshotList: No chapterId provided");
+        return;
+    }
     setLoading(true);
     setError(null);
     try {
+      api.logger.info(`SnapshotList: Loading snapshots for chapter ${chapterId}`);
       const res = await api.snapshot.getByChapter(chapterId);
       if (res.success && res.data) {
         setSnapshots(res.data);
         setProcessing(true);
+        // Fallback to main thread if worker fails or for debugging
+        setSnapshotItems(buildSnapshotItems(res.data));
+        setProcessing(false);
+        
+        /* Worker temporarily disabled for debugging reliability
         if (workerRef.current) {
           workerRef.current.postMessage({ snapshots: res.data });
         } else {
           setSnapshotItems(buildSnapshotItems(res.data));
           setProcessing(false);
         }
+        */
         return;
       }
       setError(res.error?.message ?? t("snapshot.list.loadFailed"));
@@ -85,8 +95,9 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
   }, [chapterId, t, buildSnapshotItems]);
 
   useEffect(() => {
+    // console.log("SnapshotList mounted/updated", chapterId);
     void loadSnapshots();
-  }, [loadSnapshots]);
+  }, [loadSnapshots, chapterId]);
 
   const displayItems = useMemo(
     () => (snapshotItems.length > 0 ? snapshotItems : buildSnapshotItems(snapshots)),

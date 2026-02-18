@@ -27,6 +27,7 @@ import WikiDetailView from "../research/wiki/WikiDetailView";
 import WorldSection from "../research/WorldSection";
 import MemoMainView from "../research/memo/MemoMainView";
 import AnalysisSection from "../research/AnalysisSection";
+import { EditorDropZones } from "../common/EditorDropZones";
 
 const MIN_SIDEBAR_WIDTH = 200;
 const MAX_SIDEBAR_WIDTH = 400;
@@ -175,6 +176,7 @@ export default function ScrivenerLayout({
 
              {/* Editor Area */}
              <div className="flex-1 overflow-hidden relative">
+                   <EditorDropZones />
                    {/* Reuse Editor Component but strict layout */}
                    {/* World and Analysis views need full width/height without padding */}
                    {(mainView.type === "world" || mainView.type === "analysis") ? (

@@ -9,6 +9,8 @@ import type {
   AppSettings,
   AppBootstrapStatus,
   SearchResult,
+  SyncRunResult,
+  SyncStatus,
   WindowMenuBarMode,
 } from "../shared/types/index.js";
 import type { IPCResponse } from "../shared/ipc/index.js";
@@ -201,6 +203,15 @@ declare global {
 
       recovery: {
         runDb: (options?: { dryRun?: boolean }) => Promise<IPCResponse<unknown>>;
+      };
+
+      sync: {
+        getStatus: () => Promise<IPCResponse<SyncStatus>>;
+        connectGoogle: () => Promise<IPCResponse<SyncStatus>>;
+        disconnect: () => Promise<IPCResponse<SyncStatus>>;
+        runNow: () => Promise<IPCResponse<SyncRunResult>>;
+        setAutoSync: (settings: { enabled: boolean }) => Promise<IPCResponse<SyncStatus>>;
+        onStatusChanged: (callback: (status: SyncStatus) => void) => () => void;
       };
 
       app: {

@@ -120,6 +120,14 @@ export const IPC_CHANNELS = {
   // App lifecycle (main ↔ renderer quit coordination)
   APP_BEFORE_QUIT: "app:before-quit",
   APP_FLUSH_COMPLETE: "app:flush-complete",
+
+  // Sync
+  SYNC_GET_STATUS: "sync:get-status",
+  SYNC_CONNECT_GOOGLE: "sync:connect-google",
+  SYNC_DISCONNECT: "sync:disconnect",
+  SYNC_RUN_NOW: "sync:run-now",
+  SYNC_SET_AUTO: "sync:set-auto",
+  SYNC_STATUS_CHANGED: "sync:status-changed",
 } as const;
 
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

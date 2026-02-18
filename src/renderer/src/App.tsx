@@ -46,6 +46,7 @@ import {
   getUiModeIntegrityViolations,
   type UiModeIntegritySnapshot,
 } from "./services/uiModeIntegrity";
+import { GlobalDragContext } from "./components/common/GlobalDragContext";
 
 const SettingsModal = lazy(() => import("./components/settings/SettingsModal"));
 const ResearchPanel = lazy(() => import("./components/research/ResearchPanel"));
@@ -698,7 +699,7 @@ export default function App() {
   );
 
   return (
-    <>
+    <GlobalDragContext>
       {uiMode === 'docs' ? (
             <GoogleDocsLayout
                 sidebar={
@@ -836,6 +837,6 @@ export default function App() {
         </Suspense>
       )}
       <SmartLinkTooltip isSettingsOpen={isSettingsOpen} />
-    </>
+    </GlobalDragContext>
   );
 }

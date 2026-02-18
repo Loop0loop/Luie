@@ -183,6 +183,42 @@ export const appBootstrapStatusSchema = z.object({
   error: z.string().optional(),
 });
 
+export const syncConflictSummarySchema = z.object({
+  chapters: z.number().int().nonnegative(),
+  memos: z.number().int().nonnegative(),
+  total: z.number().int().nonnegative(),
+});
+
+export const syncStatusSchema = z.object({
+  connected: z.boolean(),
+  provider: z.enum(["google"]).optional(),
+  email: z.string().email().optional(),
+  userId: z.string().uuid().optional(),
+  expiresAt: z.string().optional(),
+  autoSync: z.boolean(),
+  lastSyncedAt: z.string().optional(),
+  lastError: z.string().optional(),
+  mode: z.enum(["idle", "connecting", "syncing", "error"]),
+  inFlight: z.boolean(),
+  queued: z.boolean(),
+  conflicts: syncConflictSummarySchema,
+});
+
+export const syncRunResultSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  pulled: z.number().int().nonnegative(),
+  pushed: z.number().int().nonnegative(),
+  conflicts: syncConflictSummarySchema,
+  syncedAt: z.string().optional(),
+});
+
+export const syncSetAutoSchema = z.object({
+  enabled: z.boolean(),
+});
+
+export const syncSetAutoArgsSchema = z.tuple([syncSetAutoSchema]);
+
 export const editorSettingsSchema = z.object({
   fontFamily: z.enum(["serif", "sans", "mono"]),
   fontPreset: z

@@ -6,7 +6,7 @@ import type { FontPreset, EditorSettings } from "../../stores/editorStore";
 import { useToast } from "../common/ToastContext";
 import { useEditorStore } from "../../stores/editorStore";
 import { useShortcutStore } from "../../stores/shortcutStore";
-import type { ShortcutMap, WindowMenuBarMode } from "../../../../shared/types";
+import type { ShortcutMap, SyncStatus, WindowMenuBarMode } from "../../../../shared/types";
 import { SHORTCUT_ACTIONS } from "../../../../shared/constants/shortcuts";
 import { STORAGE_KEY_FONTS_INSTALLED } from "../../../../shared/constants";
 import {
@@ -15,6 +15,7 @@ import {
   LanguageTab,
   RecoveryTab,
   ShortcutsTab,
+  SyncTab,
   type OptionalFontOption,
   type SettingsTabId,
   type ShortcutGroupMap,
@@ -29,8 +30,22 @@ import {
   readLocalStorageJson,
   writeLocalStorageJson,
 } from "../../utils/localStorage";
+import { syncStatusSchema } from "../../../../shared/schemas/index.js";
 
 const LEGACY_STORAGE_KEY_FONTS_INSTALLED = "luie:fonts-installed";
+
+const DEFAULT_SYNC_STATUS: SyncStatus = {
+  connected: false,
+  autoSync: true,
+  mode: "idle",
+  inFlight: false,
+  queued: false,
+  conflicts: {
+    chapters: 0,
+    memos: 0,
+    total: 0,
+  },
+};
 
 interface SettingsModalProps {
   onClose: () => void;

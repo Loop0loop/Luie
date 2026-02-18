@@ -7,6 +7,7 @@ import { useUIStore } from "../../../stores/uiStore";
 import { cn } from "../../../../../shared/types/utils";
 import { CHARACTER_GROUP_COLORS, CHARACTER_TEMPLATES } from "../../../../../shared/constants";
 import { Modal } from "../../common/Modal";
+import { DraggableItem } from "../../common/DraggableItem";
 
 interface SidebarCharacterListProps {
   onSelectCharacter?: (id: string) => void;
@@ -172,17 +173,22 @@ function CharacterGroup({
       {isOpen && (
         <div className="flex flex-col">
           {characters.map(char => (
-            <div 
-              key={char.id}
-              className={cn(
-                  "pl-8 pr-3 py-1.5 cursor-pointer text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors border-l-2 border-transparent",
-                  selectedId === char.id && "bg-accent/10 text-accent border-accent"
-              )}
-              onClick={() => onSelect(char.id)}
+            <DraggableItem
+               key={char.id}
+               id={`char-${char.id}`}
+               data={{ type: "character", id: char.id, title: char.name }}
             >
-              <User className="w-3.5 h-3.5 opacity-70" />
-              <span className="truncate">{char.name}</span>
-            </div>
+                <div 
+                  className={cn(
+                      "pl-8 pr-3 py-1.5 cursor-pointer text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors border-l-2 border-transparent",
+                      selectedId === char.id && "bg-accent/10 text-accent border-accent"
+                  )}
+                  onClick={() => onSelect(char.id)}
+                >
+                  <User className="w-3.5 h-3.5 opacity-70" />
+                  <span className="truncate">{char.name}</span>
+                </div>
+            </DraggableItem>
           ))}
         </div>
       )}

@@ -63,6 +63,7 @@ const LONG_TIMEOUT_CHANNELS = new Set<string>([
   IPC_CHANNELS.SNAPSHOT_IMPORT_FILE,
   IPC_CHANNELS.EXPORT_CREATE,
   IPC_CHANNELS.PROJECT_OPEN_LUIE,
+  IPC_CHANNELS.SYNC_RUN_NOW,
 ]);
 
 const RETRYABLE_CHANNELS = new Set<string>([
@@ -86,6 +87,7 @@ const RETRYABLE_CHANNELS = new Set<string>([
   IPC_CHANNELS.SETTINGS_GET_SHORTCUTS,
   IPC_CHANNELS.SETTINGS_GET_WINDOW_BOUNDS,
   IPC_CHANNELS.APP_GET_BOOTSTRAP_STATUS,
+  IPC_CHANNELS.SYNC_GET_STATUS,
 ]);
 
 const randomByteArray = (size: number): Uint8Array => {
@@ -560,6 +562,29 @@ contextBridge.exposeInMainWorld("api", {
   recovery: {
     runDb: (options?: { dryRun?: boolean }): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.RECOVERY_DB_RUN, options),
+  },
+
+  // Sync API
+  sync: {
+    getStatus: (): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.SYNC_GET_STATUS),
+    connectGoogle: (): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.SYNC_CONNECT_GOOGLE),
+    disconnect: (): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.SYNC_DISCONNECT),
+    runNow: (): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.SYNC_RUN_NOW),
+    setAutoSync: (settings: unknown): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.SYNC_SET_AUTO, settings),
+    onStatusChanged: (callback: (status: unknown) => void): (() => void) => {
+      const listener = (_event: unknown, status: unknown) => {
+        callback(status);
+      };
+      ipcRenderer.on(IPC_CHANNELS.SYNC_STATUS_CHANGED, listener);
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.SYNC_STATUS_CHANGED, listener);
+      };
+    },
   },
 
   // Analysis API

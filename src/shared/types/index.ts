@@ -126,6 +126,47 @@ export interface WorldDrawingData {
   updatedAt?: string;
 }
 
+export interface WorldMindmapNodeData {
+  label: string;
+  image?: string;
+}
+
+export interface WorldMindmapNode {
+  id: string;
+  type?: string;
+  position: {
+    x: number;
+    y: number;
+  };
+  data: WorldMindmapNodeData;
+}
+
+export interface WorldMindmapEdge {
+  id: string;
+  source: string;
+  target: string;
+  type?: string;
+}
+
+export interface WorldMindmapData {
+  nodes: WorldMindmapNode[];
+  edges: WorldMindmapEdge[];
+  updatedAt?: string;
+}
+
+export interface ScrapMemo {
+  id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  updatedAt: string;
+}
+
+export interface WorldScrapMemosData {
+  memos: ScrapMemo[];
+  updatedAt?: string;
+}
+
 // Export/Package Types
 export type ChapterExportRecord = {
   id: string;
@@ -303,6 +344,47 @@ export type AppBootstrapStatus = {
   error?: string;
 };
 
+export type SyncProvider = "google";
+export type SyncMode = "idle" | "connecting" | "syncing" | "error";
+
+export interface SyncConflictSummary {
+  chapters: number;
+  memos: number;
+  total: number;
+}
+
+export interface SyncConnection {
+  connected: boolean;
+  provider?: SyncProvider;
+  email?: string;
+  userId?: string;
+  expiresAt?: string;
+  autoSync: boolean;
+  lastSyncedAt?: string;
+  lastError?: string;
+}
+
+export interface SyncStatus extends SyncConnection {
+  mode: SyncMode;
+  inFlight: boolean;
+  queued: boolean;
+  conflicts: SyncConflictSummary;
+}
+
+export interface SyncRunResult {
+  success: boolean;
+  message: string;
+  pulled: number;
+  pushed: number;
+  conflicts: SyncConflictSummary;
+  syncedAt?: string;
+}
+
+export interface SyncSettings extends SyncConnection {
+  accessTokenCipher?: string;
+  refreshTokenCipher?: string;
+}
+
 export interface WindowBounds {
   width: number;
   height: number;
@@ -339,6 +421,7 @@ export interface AppSettings {
   windowBounds?: WindowBounds;
   lastWindowState?: WindowState;
   menuBarMode?: WindowMenuBarMode;
+  sync?: SyncSettings;
 }
 
 export type ShortcutAction =
