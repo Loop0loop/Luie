@@ -13,7 +13,7 @@ type TooltipState = {
   id: string;
 };
 
-export function SmartLinkTooltip() {
+export function SmartLinkTooltip({ isSettingsOpen }: { isSettingsOpen?: boolean }) {
   const [state, setState] = useState<TooltipState>({
     visible: false,
     x: 0,
@@ -31,7 +31,6 @@ export function SmartLinkTooltip() {
   useEffect(() => {
     const handleMouseOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      // Use closest to find the link element even if hovering over bold/italic text inside
       const link = target.closest(".smart-link-highlight");
       
       if (link) {
@@ -55,22 +54,13 @@ export function SmartLinkTooltip() {
 
     const handleMouseOut = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      // Tricky part: standard mouseout fires when leaving ANY child element
-      // We want to hide ONLY if we are leaving the link wrapper entirely.
-      // But simpler logic: if we left *something* that was inside a link, we might still be inside the link?
-      // No, mouseout bubbles.
-      // Better approach: use mouseleave on the link itself? We can't easily add listeners to all links dynamically.
-      
-      // Alternative: checks relatedTarget to see if we moved TO something inside the link.
       const link = target.closest(".smart-link-highlight");
       if (link) {
         const related = e.relatedTarget as HTMLElement;
         if (related && link.contains(related)) {
-            // Moved to a child element inside the same link, ignore
             return;
         }
 
-        // Delay hiding to allow moving to tooltip
         timeoutRef.current = setTimeout(() => {
             setState((prev) => ({ ...prev, visible: false }));
         }, 300);
@@ -100,7 +90,6 @@ export function SmartLinkTooltip() {
     };
   }, []);
 
-  // Keep tooltip open when hovering the tooltip itself
   const handleTooltipEnter = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
   };
@@ -111,6 +100,7 @@ export function SmartLinkTooltip() {
     }, 300);
   };
 
+  if (isSettingsOpen) return null;
   if (!state.visible) return null;
 
   let content: { title: string; desc?: string | null; meta?: string } | null = null;
@@ -144,7 +134,7 @@ export function SmartLinkTooltip() {
       ref={tooltipRef}
       onMouseEnter={handleTooltipEnter}
       onMouseLeave={handleTooltipLeave}
-      className="fixed z-40 bg-popover text-popover-foreground rounded-md shadow-md border border-border p-3 w-[250px] animate-in fade-in zoom-in-95 duration-200 pointer-events-auto cursor-default"
+      className="fixed z-40 bg-white dark:bg-[#1e1e1e] text-popover-foreground rounded-md shadow-xl border border-border p-3 w-[250px] animate-in fade-in zoom-in-95 duration-200 pointer-events-none"
       style={{
         left: state.x,
         top: state.y,

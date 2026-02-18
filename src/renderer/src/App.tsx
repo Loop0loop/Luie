@@ -768,7 +768,7 @@ export default function App() {
           <SettingsModal onClose={() => setIsSettingsOpen(false)} />
         </Suspense>
       )}
-      <SmartLinkTooltip />
+      <SmartLinkTooltip isSettingsOpen={isSettingsOpen} />
     </>
   );
 }
