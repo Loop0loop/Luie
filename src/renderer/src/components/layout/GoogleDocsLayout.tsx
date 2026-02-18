@@ -247,33 +247,9 @@ export default function GoogleDocsLayout({
              
              {/* Scrollable Area for Editor */}
              {/* Scrollable Area for Editor */}
+             {/* Scrollable Area for Editor */}
+             {/* Scrollable Area for Editor */}
              <main className="flex-1 overflow-y-auto flex flex-col items-center relative custom-scrollbar bg-sidebar">
-                  {rightPanelContent.type === "snapshot" && rightPanelContent.snapshot ? (
-                      <div className="flex flex-col w-full h-full bg-background relative z-50">
-                          <div className="flex items-center px-4 py-2 border-b border-border bg-sidebar shrink-0">
-                              <button 
-                                  onClick={() => setRightPanelContent({ type: "research", tab: "character" })}
-                                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                              >
-                                  <ChevronLeft className="w-4 h-4" />
-                                  {t("common.back")}
-                              </button>
-                              <div className="ml-4 font-medium text-sm">
-                                  Snapshot Viewer
-                              </div>
-                          </div>
-                          <div className="flex-1 overflow-hidden">
-                              <SnapshotViewer 
-                                  snapshot={rightPanelContent.snapshot}
-                                  currentContent={editor?.getHTML()}
-                                  onApplySnapshotText={(text: string) => {
-                                      editor?.commands.setContent(text);
-                                  }}
-                              />
-                          </div>
-                      </div>
-                  ) : (
-                    <>
                         {/* Ruler - Sticky Top (Opaque Background Fixed) */}
                         <div className="sticky top-0 z-30 pt-4 pb-2 shrink-0 select-none bg-sidebar/95 backdrop-blur-sm flex justify-center w-full">
                             <div className="bg-background border border-border shadow-sm">
@@ -295,8 +271,6 @@ export default function GoogleDocsLayout({
                         >
                             {children}
                         </div>
-                    </>
-                  )}
              </main>
 
              {/* Footer Fixed at Bottom of Main Column */}
@@ -351,18 +325,44 @@ export default function GoogleDocsLayout({
 
                   {/* Snapshot Panel */}
                   {activeRightTab === "snapshot" && (
-                    <div className="flex flex-col h-full">
-                         <div className="px-4 py-3 border-b border-border/50 text-xs font-semibold text-muted uppercase tracking-wider bg-sidebar">
-                            {t("sidebar.section.snapshot")}
-                        </div>
-                        {activeChapterId ? (
-                            <SnapshotList chapterId={activeChapterId} />
-                        ) : (
-                            <div className="px-4 py-4 text-xs text-muted italic text-center">
-                                {t("sidebar.snapshotEmpty")}
+                     rightPanelContent.type === "snapshot" && rightPanelContent.snapshot ? (
+                        <div className="flex flex-col h-full w-full bg-background relative z-50">
+                            <div className="flex items-center px-4 py-2 border-b border-border bg-sidebar shrink-0">
+                                <button 
+                                    onClick={() => setRightPanelContent({ type: "research", tab: "character" })} // This clears the snapshot view
+                                    className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                    <ChevronLeft className="w-3.5 h-3.5" />
+                                    {t("common.back")}
+                                </button>
+                                <div className="ml-2 font-medium text-xs truncate flex-1">
+                                    {rightPanelContent.snapshot.description || "Snapshot"}
+                                </div>
                             </div>
-                        )}
-                    </div>
+                            <div className="flex-1 overflow-hidden">
+                                <SnapshotViewer 
+                                    snapshot={rightPanelContent.snapshot}
+                                    currentContent={editor?.getHTML()}
+                                    onApplySnapshotText={(text: string) => {
+                                        editor?.commands.setContent(text);
+                                    }}
+                                />
+                            </div>
+                        </div>
+                     ) : (
+                        <div className="flex flex-col h-full">
+                            <div className="px-4 py-3 border-b border-border/50 text-xs font-semibold text-muted uppercase tracking-wider bg-sidebar">
+                                {t("sidebar.section.snapshot")}
+                            </div>
+                            {activeChapterId ? (
+                                <SnapshotList chapterId={activeChapterId} />
+                            ) : (
+                                <div className="px-4 py-4 text-xs text-muted italic text-center">
+                                    {t("snapshot.list.selectChapter")}
+                                </div>
+                            )}
+                        </div>
+                     )
                   )}
                   
                   {/* Trash Panel */}

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../../shared/types/utils";
 import type { Chapter } from "../../../../shared/types";
@@ -36,6 +37,9 @@ export default function DocsSidebar({
   const dialog = useDialog();
   const { menuOpenId, menuPosition, menuRef, closeMenu, toggleMenuByElement } = useFloatingMenu<HTMLButtonElement>();
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+
   const handleAction = async (
     action: ChapterAction,
     id: string,
@@ -45,19 +49,10 @@ export default function DocsSidebar({
     closeMenu();
 
     if (action === "rename") {
-      if (!onRenameChapter) return;
       const current = chapters.find((chapter) => chapter.id === id);
-      const nextTitle = (
-        await dialog.prompt({
-          title: t("sidebar.menu.rename"),
-          message: t("sidebar.prompt.renameTitle"),
-          defaultValue: current?.title ?? "",
-          placeholder: t("sidebar.prompt.renameTitle"),
-        })
-      )?.trim();
-
-      if (nextTitle) {
-        onRenameChapter(id, nextTitle);
+      if (current) {
+         setEditingId(id);
+         setEditValue(current.title || "");
       }
       return;
     }
@@ -80,14 +75,31 @@ export default function DocsSidebar({
     }
   };
 
+  const commitRename = () => {
+     if (editingId && onRenameChapter && editValue.trim()) {
+        onRenameChapter(editingId, editValue.trim());
+     }
+     setEditingId(null);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+          commitRename();
+      } else if (e.key === "Escape") {
+          setEditingId(null);
+      }
+  };
+
   return (
     <div className="flex flex-col h-full bg-background text-foreground relative">
+      {/* Menu Overlay */}
       {menuOpenId && (
         <div
           className="fixed inset-0 z-[9999] bg-transparent"
           onPointerDown={closeMenu}
         />
       )}
+      
       {/* Context Menu Popup */}
       {menuOpenId && (
         <div
@@ -115,55 +127,78 @@ export default function DocsSidebar({
           </div>
         </div>
       )}
-      <div className="flex-1 overflow-y-auto pt-4 pb-2">
-            {/* Outline Header (Optional, but good for context) */}
-            <div className="px-4 mb-2">
-                 <h2 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                    {t("sidebar.section.manuscript")}
-                 </h2>
-            </div>
-            
-            {/* List */}
-            <div className="flex flex-col gap-1 px-3">
-                {chapters.map((chapter) => (
-                <div
-                    key={chapter.id}
-                    onClick={() => onSelectChapter(chapter.id)}
-                    className={cn(
-                     "flex items-center px-4 py-1.5 cursor-pointer text-[13px] transition-colors select-none rounded-[100px] min-h-[32px] group relative",
-                    activeChapterId === chapter.id
-                        ? "bg-accent text-accent-fg font-semibold"
-                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                    )}
-                >
-                    <span className="truncate flex-1">
-                         {chapter.title || t("chapter.untitled")}
-                    </span>
 
-                    {/* Hover Menu Trigger */}
+      {/* Header */}
+      <div className="p-4 flex items-center justify-between shrink-0">
+        <h2 className="font-semibold text-sm text-muted-foreground">{t("sidebar.title")}</h2>
+        <button 
+           onClick={onAddChapter}
+           className="w-6 h-6 rounded-md hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground"
+           title={t("sidebar.action.new")}
+        >
+           <Plus className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Chapter List */}
+      <div className="flex-1 overflow-y-auto px-2 space-y-0.5 custom-scrollbar pb-4">
+          {chapters.map(chapter => {
+             const isActive = chapter.id === activeChapterId;
+             const isEditing = chapter.id === editingId;
+
+             return (
+               <div 
+                 key={chapter.id}
+                 className={cn(
+                    "group flex items-center justify-between px-3 py-2 rounded-md transition-colors cursor-pointer text-sm select-none min-h-[36px]",
+                    isActive ? "bg-accent/10 text-accent font-medium" : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
+                 )}
+                 onClick={() => onSelectChapter(chapter.id)}
+               >
+                 {isEditing ? (
+                     <input 
+                        autoFocus
+                        type="text"
+                        value={editValue}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onBlur={commitRename}
+                        onKeyDown={handleKeyDown}
+                        className="bg-background border border-accent/50 rounded px-1 py-0.5 w-full text-foreground outline-none text-sm h-6 leading-none"
+                     />
+                 ) : (
+                     <span className="truncate flex-1 leading-normal">{chapter.title || t("project.defaults.untitled")}</span>
+                 )}
+
+                 {/* Menu Button (Only show if not editing) */}
+                 {!isEditing && (
                     <button
-                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-all duration-200"
                         onClick={(e) => {
                             e.stopPropagation();
                             toggleMenuByElement(chapter.id, e.currentTarget);
                         }}
+                        className={cn(
+                            "opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-sm hover:bg-background/50",
+                            (menuOpenId === chapter.id) && "opacity-100"
+                        )}
                     >
-                        <MoreVertical className="w-3.5 h-3.5 text-muted-foreground" />
+                        <MoreVertical className="w-3.5 h-3.5" />
                     </button>
-                </div>
-                ))}
-            </div>
-            
-            {/* Add Button - Floating or subtle at bottom? Docs doesn't have "Add Chapter", but we need it. Keep it subtle. */}
-            <button
-                onClick={onAddChapter}
-                className="flex items-center mx-4 mt-4 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 rounded-full w-fit transition-colors"
-                title={t("sidebar.addChapter")}
-            >
-                <Plus className="w-3 h-3 mr-1.5" />
-                {t("sidebar.addChapter")}
-            </button>
+                 )}
+               </div>
+             );
+          })}
       </div>
+      
+      {/* Add Button - Floating or subtle at bottom? Docs doesn't have "Add Chapter", but we need it. Keep it subtle. */}
+      <button
+          onClick={onAddChapter}
+          className="flex items-center mx-4 mt-4 mb-4 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 rounded-full w-fit transition-colors shrink-0"
+          title={t("sidebar.addChapter")}
+      >
+          <Plus className="w-3 h-3 mr-1.5" />
+          {t("sidebar.addChapter")}
+      </button>
     </div>
   );
 }
