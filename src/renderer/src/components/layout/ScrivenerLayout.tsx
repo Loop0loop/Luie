@@ -24,8 +24,9 @@ interface ScrivenerLayoutProps {
 
 import { useUIStore } from "../../stores/uiStore";
 import WikiDetailView from "../research/wiki/WikiDetailView";
-import WorldTermView from "../research/world/WorldTermView";
+import WorldSection from "../research/WorldSection";
 import MemoMainView from "../research/memo/MemoMainView";
+import AnalysisSection from "../research/AnalysisSection";
 
 const MIN_SIDEBAR_WIDTH = 200;
 const MAX_SIDEBAR_WIDTH = 400;
@@ -101,9 +102,11 @@ export default function ScrivenerLayout({
       case "character":
         return <WikiDetailView />;
       case "world":
-        return <WorldTermView />;
+        return <WorldSection />;
       case "memo":
         return <MemoMainView />;
+      case "analysis":
+        return <AnalysisSection />;
       case "editor":
       default:
         return children;
@@ -172,13 +175,19 @@ export default function ScrivenerLayout({
 
              {/* Editor Area */}
              <div className="flex-1 overflow-hidden relative">
-                  {/* Reuse Editor Component but strict layout */}
-                  {/* Typically Scrivener editor is simple, full width/height of pane */}
-                   <div className="h-full w-full overflow-y-auto custom-scrollbar p-8 bg-white dark:bg-[#1e1e1e]">
-                       <div className="max-w-3xl mx-auto min-h-[500px]">
+                   {/* Reuse Editor Component but strict layout */}
+                   {/* World and Analysis views need full width/height without padding */}
+                   {(mainView.type === "world" || mainView.type === "analysis") ? (
+                       <div className="h-full w-full bg-white dark:bg-[#1e1e1e]">
                            {renderMainContent()}
                        </div>
-                   </div>
+                   ) : (
+                       <div className="h-full w-full overflow-y-auto custom-scrollbar p-8 bg-white dark:bg-[#1e1e1e]">
+                           <div className="max-w-3xl mx-auto min-h-[500px]">
+                               {renderMainContent()}
+                           </div>
+                       </div>
+                   )}
              </div>
              
              {/* Footer Info */}

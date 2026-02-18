@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { useProjectStore } from "../../../stores/projectStore";
@@ -9,10 +9,16 @@ import { cn } from "../../../../../shared/types/utils";
 export default function SidebarMemoList() {
   const { t } = useTranslation();
   const { currentItem: currentProject } = useProjectStore();
-  const { notes, activeNoteId, setActiveNoteId, addNote } = useMemoStore();
+  const { notes, activeNoteId, setActiveNoteId, addNote, loadNotes } = useMemoStore();
   const { setMainView } = useUIStore();
 
   const currentProjectId = currentProject?.id ?? null;
+
+  useEffect(() => {
+    if (currentProjectId) {
+        loadNotes(currentProjectId);
+    }
+  }, [currentProjectId, loadNotes]);
 
   // Filter notes by project if needed, or assume store is cleared/loaded per project.
   // For now, filtering is safer.

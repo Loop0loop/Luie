@@ -148,10 +148,10 @@ export default function InspectorPanel({ activeChapterId }: InspectorPanelProps)
             <div className="px-4 py-2 bg-surface/50 border-b border-border/50 text-xs font-medium text-muted">
                 {t("inspector.notes.document")}
             </div>
-            <textarea
-                className="flex-1 w-full p-4 bg-transparent border-none resize-none focus:ring-0 leading-relaxed text-sm"
-                placeholder={t("inspector.notes.placeholder")}
-            />
+            {/* TODO: Connect to actual chapter notes field if it exists, or create a new store for document notes */}
+             <div className="p-4 text-xs text-muted flex flex-col items-center justify-center h-full opacity-60">
+                 <p>{t("inspector.notes.comingSoon") || "Document notes coming soon..."}</p>
+             </div>
           </div>
         )}
 

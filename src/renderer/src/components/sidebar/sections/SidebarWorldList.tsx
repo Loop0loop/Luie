@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { useProjectStore } from "../../../stores/projectStore";
 import { useTermStore } from "../../../stores/termStore";
+import { useUIStore } from "../../../stores/uiStore";
 import {
   DndContext, 
   closestCenter,
@@ -47,15 +48,38 @@ export default function SidebarWorldList() {
 
   return (
     <div className="flex flex-col h-full bg-sidebar/50">
-       <div className="flex items-center justify-end px-2 py-1 gap-1 border-b border-border/20">
-             <button 
-                className="p-1 hover:bg-white/10 rounded text-muted-foreground hover:text-foreground transition-colors"
-                onClick={handleAddTerm}
-                title={t("world.term.addLabel")}
-            >
-                <Plus className="w-4 h-4" />
-            </button>
-        </div>
+       <div className="flex flex-col gap-1 border-b border-border/20 p-2">
+           <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("research.title.world")}</span>
+                <button 
+                    className="p-1 hover:bg-white/10 rounded text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={handleAddTerm}
+                    title={t("world.term.addLabel")}
+                >
+                    <Plus className="w-4 h-4" />
+                </button>
+           </div>
+           
+           {/* Navigation Buttons */}
+           <div className="grid grid-cols-2 gap-1 mt-1">
+               <button onClick={() => { useUIStore.getState().setMainView({ type: "world" }); useUIStore.getState().setWorldTab("synopsis"); }} className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors truncate">
+                   {t("sidebar.item.synopsis")}
+               </button>
+               <button onClick={() => { useUIStore.getState().setMainView({ type: "world" }); useUIStore.getState().setWorldTab("mindmap"); }} className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors truncate">
+                   {t("world.tab.mindmap")}
+               </button>
+               <button onClick={() => { useUIStore.getState().setMainView({ type: "world" }); useUIStore.getState().setWorldTab("drawing"); }} className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors truncate">
+                   {t("world.tab.drawing")}
+               </button>
+               <button onClick={() => { useUIStore.getState().setMainView({ type: "world" }); useUIStore.getState().setWorldTab("plot"); }} className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors truncate">
+                   {t("world.tab.plot")}
+               </button>
+           </div>
+       </div>
+
+       <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider bg-sidebar/30 mt-1">
+            {t("world.tab.terms")}
+       </div>
 
       <div className="flex-1 overflow-y-auto p-2">
         <DndContext 
@@ -81,6 +105,7 @@ export default function SidebarWorldList() {
                             onSelect={(id) => {
                                 const term = terms.find(t => t.id === id);
                                 setCurrentTerm(term || null);
+                                useUIStore.getState().setMainView({ type: "world" });
                             }}
                         />
                     ))}

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Plus, ChevronDown, ChevronRight, LayoutTemplate, User } from "lucide-react";
 import { useCharacterStore } from "../../../stores/characterStore";
 import { useProjectStore } from "../../../stores/projectStore";
+import { useUIStore } from "../../../stores/uiStore";
 import { cn } from "../../../../../shared/types/utils";
 import { CHARACTER_GROUP_COLORS, CHARACTER_TEMPLATES } from "../../../../../shared/constants";
 import { Modal } from "../../common/Modal";
@@ -49,6 +50,7 @@ export default function SidebarCharacterList({ onSelectCharacter }: SidebarChara
     setSelectedCharacterId(id);
     const char = characters.find((c) => c.id === id);
     if (char) setCurrentCharacter(char);
+    useUIStore.getState().setMainView({ type: "character", id });
     onSelectCharacter?.(id);
   };
 

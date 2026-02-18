@@ -25,7 +25,7 @@ interface ScrivenerSidebarProps {
   currentProjectId?: string;
 }
 
-type SectionId = "manuscript" | "characters" | "world" | "scrap" | "snapshots" | "trash";
+type SectionId = "manuscript" | "characters" | "world" | "scrap" | "snapshots" | "trash" | "analysis";
 
 import { useUIStore } from "../../stores/uiStore";
 
@@ -55,6 +55,7 @@ export default function ScrivenerSidebar({
     world: false,
     scrap: false,
     snapshots: false,
+    analysis: false,
     trash: false,
   });
 
@@ -125,7 +126,9 @@ export default function ScrivenerSidebar({
                 isOpen={expanded.scrap}
                 onToggle={() => toggleSection("scrap")}
             >
-                <SidebarMemoList />
+                <div className="h-64 border-b border-border/10">
+                    <SidebarMemoList />
+                </div>
             </CollapsibleSection>
 
             {/* SNAPSHOTS SECTION */}
@@ -135,11 +138,32 @@ export default function ScrivenerSidebar({
                 isOpen={expanded.snapshots}
                 onToggle={() => toggleSection("snapshots")}
             >
-                {activeChapterId ? (
-                    <SnapshotList chapterId={activeChapterId} />
-                ) : (
-                    <div className="p-4 text-xs text-muted text-center italic">{t("snapshot.noActiveChapter")}</div>
-                )}
+                <div className="h-64 border-b border-border/10">
+                    {activeChapterId ? (
+                        <SnapshotList chapterId={activeChapterId} />
+                    ) : (
+                        <div className="p-4 text-xs text-muted text-center italic">{t("snapshot.noActiveChapter")}</div>
+                    )}
+                </div>
+            </CollapsibleSection>
+
+            {/* ANALYSIS SECTION */}
+             <CollapsibleSection
+                id="analysis"
+                title={t("research.title.analysis")}
+                isOpen={expanded.analysis} // Need to add to state
+                onToggle={() => toggleSection("analysis")}
+            >
+                <div className="flex flex-col h-full bg-sidebar/50">
+                    <button 
+                        onClick={() => useUIStore.getState().setMainView({ type: "analysis" })}
+                        className="px-3 py-2 text-xs text-left hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+                    >
+                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500/50"></span>
+                        {t("research.title.analysis")}
+                    </button>
+                    {/* Could list recent analysis items here if store supports it */}
+                </div>
             </CollapsibleSection>
 
             {/* TRASH SECTION */}

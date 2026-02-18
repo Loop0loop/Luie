@@ -67,8 +67,8 @@ interface UIStore {
   setBinderBarOpen: (isOpen: boolean) => void;
 
   // Scrivener Mode Main View State
-  mainView: { type: "editor" | "character" | "world" | "memo" | "trash"; id?: string };
-  setMainView: (view: { type: "editor" | "character" | "world" | "memo" | "trash"; id?: string }) => void;
+  mainView: { type: "editor" | "character" | "world" | "memo" | "trash" | "analysis"; id?: string };
+  setMainView: (view: { type: "editor" | "character" | "world" | "memo" | "trash" | "analysis"; id?: string }) => void;
 }
 
 export const useUIStore = create<UIStore>()(
