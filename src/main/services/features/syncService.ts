@@ -113,7 +113,8 @@ class SyncService {
 
   async connectGoogle(): Promise<SyncStatus> {
     if (!syncAuthService.isConfigured()) {
-      const message = "SUPABASE_URL/SUPABASE_ANON_KEY is not configured";
+      const message =
+        "Supabase env is not configured (SUPABASE_URL/SUPABASE_ANON_KEY or SUPADATABASE_PRJ_ID/SUPADATABASE_API)";
       this.updateStatus({
         mode: "error",
         lastError: message,

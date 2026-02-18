@@ -11,13 +11,12 @@ import type {
   SyncWorldDocumentRecord,
 } from "./syncMapper.js";
 import { createEmptySyncBundle } from "./syncMapper.js";
+import {
+  getSupabaseConfig,
+  getSupabaseConfigOrThrow,
+} from "./supabaseEnv.js";
 
 const logger = createLogger("SyncRepository");
-
-type SupabaseConfig = {
-  url: string;
-  anonKey: string;
-};
 
 type DbRow = Record<string, unknown>;
 
@@ -71,18 +70,6 @@ const encodeStoragePath = (path: string): string =>
     .split("/")
     .map((segment) => encodeURIComponent(segment))
     .join("/");
-
-const getSupabaseConfig = (): SupabaseConfig | null => {
-  const url = process.env.SUPABASE_URL?.trim();
-  const anonKey = process.env.SUPABASE_ANON_KEY?.trim();
-  if (!url || !anonKey) {
-    return null;
-  }
-  return {
-    url: url.endsWith("/") ? url.slice(0, -1) : url,
-    anonKey,
-  };
-};
 
 const mapProjectRow = (row: DbRow): SyncProjectRecord | null => {
   const id = toNullableString(row.id);
@@ -468,10 +455,7 @@ class SyncRepository {
   ): Promise<void> {
     if (rows.length === 0) return;
 
-    const config = getSupabaseConfig();
-    if (!config) {
-      throw new Error("SUPABASE_NOT_CONFIGURED");
-    }
+    const config = getSupabaseConfigOrThrow();
 
     const response = await fetch(
       `${config.url}/rest/v1/${table}?on_conflict=${encodeURIComponent(onConflict)}`,
@@ -530,10 +514,7 @@ class SyncRepository {
     accessToken: string,
     contentPath: string,
   ): Promise<string | null> {
-    const config = getSupabaseConfig();
-    if (!config) {
-      throw new Error("SUPABASE_NOT_CONFIGURED");
-    }
+    const config = getSupabaseConfigOrThrow();
 
     const encodedPath = encodeStoragePath(contentPath);
     const response = await fetch(
@@ -564,10 +545,7 @@ class SyncRepository {
     accessToken: string,
     snapshots: SyncSnapshotRecord[],
   ): Promise<SyncSnapshotRecord[]> {
-    const config = getSupabaseConfig();
-    if (!config) {
-      throw new Error("SUPABASE_NOT_CONFIGURED");
-    }
+    const config = getSupabaseConfigOrThrow();
 
     const nextSnapshots: SyncSnapshotRecord[] = [];
     for (const snapshot of snapshots) {

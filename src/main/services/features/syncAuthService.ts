@@ -2,6 +2,10 @@ import { createHash, randomBytes } from "node:crypto";
 import { safeStorage, shell } from "electron";
 import { createLogger } from "../../../shared/logger/index.js";
 import type { SyncProvider, SyncSettings } from "../../../shared/types/index.js";
+import {
+  getSupabaseConfig,
+  getSupabaseConfigOrThrow,
+} from "./supabaseEnv.js";
 
 const logger = createLogger("SyncAuthService");
 
@@ -44,15 +48,6 @@ const createCodeVerifier = (): string => toBase64Url(randomBytes(48));
 const createCodeChallenge = (verifier: string): string =>
   toBase64Url(createHash("sha256").update(verifier).digest());
 
-const getSupabaseConfig = (): { url: string; anonKey: string } => {
-  const url = process.env.SUPABASE_URL?.trim();
-  const anonKey = process.env.SUPABASE_ANON_KEY?.trim();
-  if (!url || !anonKey) {
-    throw new Error("SUPABASE_NOT_CONFIGURED");
-  }
-  return { url, anonKey };
-};
-
 const encryptSecret = (plain: string): string => {
   if (safeStorage.isEncryptionAvailable()) {
     return safeStorage.encryptString(plain).toString("base64");
@@ -81,7 +76,7 @@ class SyncAuthService {
   }
 
   async startGoogleAuth(): Promise<void> {
-    const { url } = getSupabaseConfig();
+    const { url } = getSupabaseConfigOrThrow();
     const verifier = createCodeVerifier();
     const challenge = createCodeChallenge(verifier);
     const state = toBase64Url(randomBytes(24));
@@ -155,7 +150,7 @@ class SyncAuthService {
   }
 
   private async exchangeCodeForSession(code: string, verifier: string): Promise<SyncSession> {
-    const { url, anonKey } = getSupabaseConfig();
+    const { url, anonKey } = getSupabaseConfigOrThrow();
     const response = await fetch(`${url}/auth/v1/token?grant_type=pkce`, {
       method: "POST",
       headers: {
@@ -179,7 +174,7 @@ class SyncAuthService {
   }
 
   private async exchangeRefreshToken(refreshToken: string): Promise<SyncSession> {
-    const { url, anonKey } = getSupabaseConfig();
+    const { url, anonKey } = getSupabaseConfigOrThrow();
     const response = await fetch(`${url}/auth/v1/token?grant_type=refresh_token`, {
       method: "POST",
       headers: {
