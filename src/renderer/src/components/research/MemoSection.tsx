@@ -3,6 +3,7 @@ import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "reac
 import type { Layout } from "react-resizable-panels";
 import {
   DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS,
+  STORAGE_KEY_MEMO_SIDEBAR_LAYOUT,
   STORAGE_KEY_MEMOS_NONE,
   STORAGE_KEY_MEMOS_PREFIX,
 } from "../../../../shared/constants";
@@ -15,6 +16,10 @@ import SearchInput from "../common/SearchInput";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { useShortcutCommand } from "../../hooks/useShortcutCommand";
+import {
+  readLocalStorageJson,
+  writeLocalStorageJson,
+} from "../../utils/localStorage";
 
 type Note = {
   id: string;
@@ -25,7 +30,6 @@ type Note = {
 };
 
 const defaultUpdatedAt = new Date().toISOString();
-const MEMO_SIDEBAR_LAYOUT_STORAGE_KEY = "memo-sidebar-layout-v2";
 const MEMO_SIDEBAR_PANEL_ID = "memo-sidebar";
 const MEMO_CONTENT_PANEL_ID = "memo-content";
 const MEMO_SIDEBAR_DEFAULT_SIZE = 256;
@@ -99,12 +103,11 @@ function loadInitialNotesWithDefaults(
   }
 
   try {
-    const raw = localStorage.getItem(storageKey);
-    if (!raw) {
+    const parsed = readLocalStorageJson<{ notes?: Note[] }>(storageKey);
+    if (!parsed) {
       return { notes: defaultNotes, activeNoteId: defaultNotes[0]?.id ?? "1" };
     }
 
-    const parsed = JSON.parse(raw) as { notes?: Note[] };
     const loaded = Array.isArray(parsed.notes) ? parsed.notes : [];
     const effectiveNotes = loaded.length > 0 ? loaded : defaultNotes;
     return {
@@ -132,24 +135,15 @@ function MemoSectionInner({
   const [searchTerm, setSearchTerm] = useState("");
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const initialLayout = useMemo(() => {
-    try {
-      const raw = localStorage.getItem(MEMO_SIDEBAR_LAYOUT_STORAGE_KEY);
-      if (!raw) return undefined;
-      const parsed = JSON.parse(raw) as Layout;
-      return normalizeMemoLayout(parsed);
-    } catch {
-      return undefined;
-    }
+    const parsed = readLocalStorageJson<Layout>(STORAGE_KEY_MEMO_SIDEBAR_LAYOUT);
+    if (!parsed) return undefined;
+    return normalizeMemoLayout(parsed);
   }, []);
 
   const handleLayoutChange = (layout: Layout) => {
     const normalized = normalizeMemoLayout(layout);
     if (!normalized) return;
-    try {
-      localStorage.setItem(MEMO_SIDEBAR_LAYOUT_STORAGE_KEY, JSON.stringify(normalized));
-    } catch {
-      // best effort
-    }
+    void writeLocalStorageJson(STORAGE_KEY_MEMO_SIDEBAR_LAYOUT, normalized);
   };
 
   // Save notes (debounced)
@@ -159,9 +153,9 @@ function MemoSectionInner({
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
 
     saveTimerRef.current = setTimeout(() => {
-      try {
-        localStorage.setItem(storageKey, JSON.stringify({ notes }));
-      } catch (e) {
+      const success = writeLocalStorageJson(storageKey, { notes });
+      if (!success) {
+        const e = new Error("failed to persist memo notes");
         api.logger.warn("Failed to save memos", e);
       }
     }, DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS);

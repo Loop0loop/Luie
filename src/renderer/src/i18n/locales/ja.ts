@@ -1,8 +1,38 @@
 export const ja = {
   common: {
+    home: "ホーム",
+    share: "共有",
+    menu: {
+      file: "ファイル",
+      edit: "編集",
+      view: "表示",
+      insert: "挿入",
+      format: "書式",
+      tools: "ツール",
+      extensions: "拡張機能",
+      help: "ヘルプ",
+    },
     settings: {
       title: "画面設定",
       sidebar: {
+        section: {
+          manuscript: "原稿",
+          research: "リサーチ",
+          snapshot: "スナップショット",
+          trash: "ゴミ箱",
+        },
+        item: {
+          characters: "登場人物",
+          world: "世界観",
+          scrap: "資料スクラップ",
+          analysis: "分析",
+        },
+        addChapter: "新しい章を追加",
+        snapshotEmpty: "選択された章がないか、スナップショットがありません。",
+        trashEmpty: "ゴミ箱は空です。",
+        tooltip: {
+          refresh: "更新",
+        },
         editor: "フォント (Editor)",
         appearance: "テーマ (Appearance)",
         features: "機能 (Features)",
@@ -25,7 +55,7 @@ export const ja = {
         description: "エディタのツールバーとレイアウトを馴染みのあるスタイルに変更します。",
         default: "デフォルト",
         docs: "Google Docs スタイル",
-        word: "MS Word スタイル",
+        word: "エディターモード",
         scrivener: "Scrivener スタイル",
       },
       menuBar: {
@@ -34,6 +64,48 @@ export const ja = {
         show: "メニューバーを表示",
         applyHint: "変更は即時反映されます。（隠す: フルスクリーン / 表示: 通常ウィンドウ）",
         applyFailed: "メニューバー表示モードの適用に失敗しました。再試行してください。",
+      },
+      appearance: {
+        baseTheme: {
+          title: "ベーステーマ",
+          description: "画面全体の明るさと基調トーンを選択します。",
+        },
+        accent: {
+          title: "アクセントカラー",
+          description: "主要アクションや強調要素の色を選択します。",
+        },
+        texture: {
+          title: "紙の質感",
+          description: "背景に微細な紙ノイズを加えます。",
+          on: "オン",
+          off: "オフ",
+        },
+        contrast: {
+          title: "コントラスト",
+          description: "画面の視認性を調整します。",
+          soft: "ソフト",
+          high: "ハイ",
+        },
+        atmosphere: {
+          title: "雰囲気",
+          description: "執筆スタイルに合う色温度を選択します。",
+          cool: {
+            title: "クール",
+            description: "集中 / 分析 / 理性的",
+          },
+          neutral: {
+            title: "ニュートラル",
+            description: "標準 / クリーン",
+          },
+          warm: {
+            title: "ウォーム",
+            description: "物語 / 感情 / 快適",
+          },
+        },
+      },
+      view: {
+        pc: "PC",
+        mobile: "モバイル",
       },
       font: {
         serif: "明朝体",
@@ -221,6 +293,11 @@ export const ja = {
       quit: "終了",
       deleteManuscriptConfirm: "この原稿を削除しますか？",
     },
+    errorBoundary: {
+      title: "アプリの起動に失敗しました。",
+      description: "アプリを再起動してください。",
+      reload: "アプリを再読み込み",
+    },
     project: {
       defaults: {
         projectTitle: "無題のプロジェクト",
@@ -368,6 +445,10 @@ export const ja = {
         alignCenter: "中央揃え",
         alignRight: "右揃え",
         toggleMobileView: "モバイル表示を切替",
+        view: {
+          mobile: "モバイル表示",
+          desktop: "PC表示",
+        },
       },
       view: {
         mobile: "モバイル",
@@ -388,6 +469,11 @@ export const ja = {
       suffix: {
         char: "字",
         word: "語",
+      },
+      ruler: {
+        firstLineIndent: "1行目のインデント",
+        leftMargin: "左余白",
+        rightMargin: "右余白",
       },
     },
     mainLayout: {
@@ -421,6 +507,10 @@ export const ja = {
       toast: {
         start: "分析を開始します...",
         error: "分析中にエラーが発生しました。",
+        apiKeyMissing: "Gemini APIキーが設定されていません。環境変数を確認してください。",
+        quotaExceeded: "Gemini APIの利用上限を超えました。しばらくしてから再試行してください。",
+        networkError: "ネットワークエラーが発生しました。接続を確認してください。",
+        unknown: "不明なエラーが発生しました。",
         navigateChapter: "\"{title}\" に移動します。",
         navigateFallback: "参照された文脈へ移動します。(context: {contextId})",
       },

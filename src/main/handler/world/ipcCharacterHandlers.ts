@@ -1,4 +1,3 @@
-import type { CharacterAppearanceInput } from "../../../shared/types/index.js";
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import type {
   CharacterCreateInput,
@@ -10,10 +9,8 @@ import {
   characterUpdateSchema,
   characterIdSchema,
   projectIdSchema,
-  characterAppearanceSchema,
 } from "../../../shared/schemas/index.js";
 import { z } from "zod";
-import { registerAppearanceIPCHandlers } from "./ipcAppearanceHandlers.js";
 import type { LoggerLike } from "../core/types.js";
 
 type CharacterServiceLike = {
@@ -22,8 +19,6 @@ type CharacterServiceLike = {
   getAllCharacters: (projectId: string) => Promise<unknown>;
   updateCharacter: (input: CharacterUpdateInput) => Promise<unknown>;
   deleteCharacter: (id: string) => Promise<unknown>;
-  recordAppearance: (input: CharacterAppearanceInput) => Promise<unknown>;
-  getAppearancesByChapter: (chapterId: string) => Promise<unknown>;
 };
 
 export function registerCharacterIPCHandlers(
@@ -69,20 +64,4 @@ export function registerCharacterIPCHandlers(
       handler: (id: string) => characterService.deleteCharacter(id),
     },
   ]);
-
-  registerAppearanceIPCHandlers<CharacterAppearanceInput>({
-    logger,
-    service: characterService,
-    record: {
-      channel: "character:record-appearance",
-      logTag: "CHARACTER_RECORD_APPEARANCE",
-      failMessage: "Failed to record character appearance",
-      schema: characterAppearanceSchema,
-    },
-    get: {
-      channel: "character:get-appearances",
-      logTag: "CHARACTER_GET_APPEARANCES",
-      failMessage: "Failed to get character appearances",
-    },
-  });
 }

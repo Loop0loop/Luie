@@ -2,6 +2,7 @@ import { Component } from "react";
 import type { ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { api } from "../../services/api";
+import { i18n } from "../../i18n";
 
 interface Props {
   children: ReactNode;
@@ -34,6 +35,8 @@ export class GlobalErrorBoundary extends Component<Props, State> {
   };
 
   public render() {
+    const t = i18n.t.bind(i18n);
+
     if (this.state.hasError) {
       return (
         <div className="h-screen w-screen flex flex-col items-center justify-center bg-app text-fg p-8 text-center select-none">
@@ -41,9 +44,9 @@ export class GlobalErrorBoundary extends Component<Props, State> {
             <AlertTriangle className="w-8 h-8" />
           </div>
           
-          <h1 className="text-2xl font-bold mb-2">앱 구동에 실패하였습니다.</h1>
+          <h1 className="text-2xl font-bold mb-2">{t("errorBoundary.title")}</h1>
           <p className="text-muted mb-8 max-w-md">
-            앱을 재실행 해주세요.
+            {t("errorBoundary.description")}
           </p>
 
           <div className="bg-panel border border-border rounded-lg p-4 mb-8 w-full max-w-lg text-left overflow-auto max-h-48">
@@ -61,7 +64,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
             }}
           >
             <RefreshCw className="w-4 h-4" />
-            Reload Application
+            {t("errorBoundary.reload")}
           </button>
         </div>
       );

@@ -5,7 +5,7 @@
 import Store from "electron-store";
 import { app } from "electron";
 import { createLogger } from "../../shared/logger/index.js";
-import { existsSync } from "node:fs";
+import { access } from "node:fs/promises";
 import type {
   AppSettings,
   EditorSettings,
@@ -141,30 +141,50 @@ export class SettingsManager {
       fileExtension: "json",
     });
 
-    // 레거시 파일이 있고 새 파일이 아직 없으면 마이그레이션
-    if (existsSync(legacyFile) && !existsSync(this.store.path)) {
-      try {
-        const legacyStore = new Store<AppSettings>({
-          name: SETTINGS_STORE_NAME,
-          defaults: DEFAULT_SETTINGS,
-          cwd: legacyCwd,
-          fileExtension: "json",
-        });
-        this.store.set(legacyStore.store);
-        logger.info("Settings migrated from legacy path", {
-          from: legacyStore.path,
-          to: this.store.path,
-        });
-      } catch (error) {
-        logger.error("Failed to migrate legacy settings", error);
-      }
-    }
+    void this.migrateLegacySettingsIfNeeded(legacyCwd, legacyFile);
 
     this.migrateLegacyWindowSettings();
 
     logger.info("Settings manager initialized", {
       path: this.store.path,
     });
+  }
+
+  private async migrateLegacySettingsIfNeeded(
+    legacyCwd: string,
+    legacyFile: string,
+  ): Promise<void> {
+    const hasLegacy = await this.pathExists(legacyFile);
+    const hasCurrent = await this.pathExists(this.store.path);
+
+    if (!hasLegacy || hasCurrent) {
+      return;
+    }
+
+    try {
+      const legacyStore = new Store<AppSettings>({
+        name: SETTINGS_STORE_NAME,
+        defaults: DEFAULT_SETTINGS,
+        cwd: legacyCwd,
+        fileExtension: "json",
+      });
+      this.store.set(legacyStore.store);
+      logger.info("Settings migrated from legacy path", {
+        from: legacyStore.path,
+        to: this.store.path,
+      });
+    } catch (error) {
+      logger.error("Failed to migrate legacy settings", error);
+    }
+  }
+
+  private async pathExists(targetPath: string): Promise<boolean> {
+    try {
+      await access(targetPath);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private migrateLegacyWindowSettings(): void {

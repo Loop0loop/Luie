@@ -1,13 +1,12 @@
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import type { SearchQuery } from "../../../shared/types/index.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
-import { projectIdSchema, searchQuerySchema } from "../../../shared/schemas/index.js";
+import { searchQuerySchema } from "../../../shared/schemas/index.js";
 import { z } from "zod";
 import type { LoggerLike } from "../core/types.js";
 
 type SearchServiceLike = {
   search: (input: SearchQuery) => Promise<unknown>;
-  getQuickAccess: (projectId: string) => Promise<unknown>;
 };
 
 export function registerSearchIPCHandlers(
@@ -21,13 +20,6 @@ export function registerSearchIPCHandlers(
       failMessage: "Failed to search",
       argsSchema: z.tuple([searchQuerySchema]),
       handler: (input: SearchQuery) => searchService.search(input),
-    },
-    {
-      channel: "search:quick-access",
-      logTag: "SEARCH_QUICK_ACCESS",
-      failMessage: "Failed to get quick access",
-      argsSchema: z.tuple([projectIdSchema]),
-      handler: (projectId: string) => searchService.getQuickAccess(projectId),
     },
   ]);
 }

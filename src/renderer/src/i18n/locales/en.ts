@@ -1,8 +1,38 @@
 export const en = {
   common: {
+    home: "Home",
+    share: "Share",
+    menu: {
+      file: "File",
+      edit: "Edit",
+      view: "View",
+      insert: "Insert",
+      format: "Format",
+      tools: "Tools",
+      extensions: "Extensions",
+      help: "Help",
+    },
     settings: {
       title: "Display Settings",
       sidebar: {
+        section: {
+          manuscript: "Manuscript",
+          research: "Research",
+          snapshot: "Snapshots",
+          trash: "Trash",
+        },
+        item: {
+          characters: "Characters",
+          world: "World",
+          scrap: "Scrap",
+          analysis: "Analysis",
+        },
+        addChapter: "Add chapter",
+        snapshotEmpty: "No chapter selected or no snapshots found.",
+        trashEmpty: "Trash is empty.",
+        tooltip: {
+          refresh: "Refresh",
+        },
         editor: "Fonts (Editor)",
         appearance: "Theme (Appearance)",
         features: "Features",
@@ -25,7 +55,7 @@ export const en = {
         description: "Change the editor toolbar and layout to a familiar style.",
         default: "Default",
         docs: "Google Docs Style",
-        word: "MS Word Style",
+        word: "Editor Mode",
         scrivener: "Scrivener Style",
       },
       menuBar: {
@@ -34,6 +64,48 @@ export const en = {
         show: "Show menu bar",
         applyHint: "Changes apply immediately. (Hide: fullscreen, Show: windowed)",
         applyFailed: "Failed to apply the menu bar mode. Please try again.",
+      },
+      appearance: {
+        baseTheme: {
+          title: "Base Theme",
+          description: "Choose the baseline brightness and tone.",
+        },
+        accent: {
+          title: "Accent Color",
+          description: "Choose colors for key actions and highlights.",
+        },
+        texture: {
+          title: "Texture",
+          description: "Apply subtle paper-like grain in the background.",
+          on: "On",
+          off: "Off",
+        },
+        contrast: {
+          title: "Contrast",
+          description: "Adjust visual sharpness of the interface.",
+          soft: "Soft",
+          high: "High",
+        },
+        atmosphere: {
+          title: "Atmosphere",
+          description: "Pick a color temperature that matches your writing flow.",
+          cool: {
+            title: "Cool",
+            description: "Focus / analysis / rational tone",
+          },
+          neutral: {
+            title: "Neutral",
+            description: "Default / clean",
+          },
+          warm: {
+            title: "Warm",
+            description: "Narrative / emotion / comfort",
+          },
+        },
+      },
+      view: {
+        pc: "PC",
+        mobile: "Mobile",
       },
       font: {
         serif: "Serif",
@@ -221,6 +293,11 @@ export const en = {
       quit: "Quit",
       deleteManuscriptConfirm: "Delete this manuscript?",
     },
+    errorBoundary: {
+      title: "Failed to start the app.",
+      description: "Please restart the application.",
+      reload: "Reload Application",
+    },
     project: {
       defaults: {
         projectTitle: "Untitled Project",
@@ -368,6 +445,10 @@ export const en = {
         alignCenter: "Align Center",
         alignRight: "Align Right",
         toggleMobileView: "Toggle mobile view",
+        view: {
+          mobile: "Mobile View",
+          desktop: "PC View",
+        },
       },
       view: {
         mobile: "Mobile",
@@ -388,6 +469,11 @@ export const en = {
       suffix: {
         char: "chars",
         word: "words",
+      },
+      ruler: {
+        firstLineIndent: "First-line indent",
+        leftMargin: "Left margin",
+        rightMargin: "Right margin",
       },
     },
     mainLayout: {
@@ -421,6 +507,10 @@ export const en = {
       toast: {
         start: "Starting analysis...",
         error: "An error occurred during analysis.",
+        apiKeyMissing: "Gemini API key is missing. Please check your environment variables.",
+        quotaExceeded: "Gemini API quota exceeded. Please try again later.",
+        networkError: "A network error occurred. Please check your internet connection.",
+        unknown: "An unknown error occurred.",
         navigateChapter: "Moving to \"{title}\".",
         navigateFallback: "Moving to the referenced context. (context: {contextId})",
       },

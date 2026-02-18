@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import type { AnalysisItem, AnalysisStreamChunk } from "../../../shared/types/analysis.js";
+import { api } from "../services/api";
+import { i18n } from "../i18n";
 
 interface AnalysisStore {
   items: AnalysisItem[];
@@ -29,17 +31,17 @@ export const useAnalysisStore = create<AnalysisStore>((set, _get) => ({
     set({ isAnalyzing: true, error: null, items: [] });
 
     try {
-      const response = await window.api.analysis.start(chapterId, projectId);
+      const response = await api.analysis.start(chapterId, projectId);
 
       if (!response.success) {
-        let errorMessage = "분석 시작 중 오류가 발생했습니다.";
+        let errorMessage = i18n.t("analysis.toast.error");
         
         if (response.error?.code === "API_KEY_MISSING") {
-          errorMessage = "Gemini API 키가 설정되지 않았습니다. 환경 변수를 확인해주세요.";
+          errorMessage = i18n.t("analysis.toast.apiKeyMissing");
         } else if (response.error?.code === "QUOTA_EXCEEDED") {
-          errorMessage = "Gemini API 할당량을 초과했습니다. 잠시 후 다시 시도해주세요.";
+          errorMessage = i18n.t("analysis.toast.quotaExceeded");
         } else if (response.error?.code === "NETWORK_ERROR") {
-          errorMessage = "네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.";
+          errorMessage = i18n.t("analysis.toast.networkError");
         } else if (response.error?.message) {
           errorMessage = response.error.message;
         }
@@ -48,7 +50,8 @@ export const useAnalysisStore = create<AnalysisStore>((set, _get) => ({
         throw new Error(errorMessage);
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.";
+      const errorMessage =
+        error instanceof Error ? error.message : i18n.t("analysis.toast.unknown");
       set({ error: errorMessage, isAnalyzing: false });
       throw error;
     }
@@ -59,7 +62,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, _get) => ({
    */
   stopAnalysis: async () => {
     try {
-      await window.api.analysis.stop();
+      await api.analysis.stop();
       set({ isAnalyzing: false });
     } catch {
       // Error already logged in main process
@@ -72,7 +75,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, _get) => ({
    */
   clearAnalysis: async () => {
     try {
-      await window.api.analysis.clear();
+      await api.analysis.clear();
       set({ items: [], isAnalyzing: false, error: null });
     } catch {
       // Error already logged in main process

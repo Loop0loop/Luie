@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, X, Trash2, GripVertical } from "lucide-react";
 import { BufferedTextArea, BufferedInput } from "../../common/BufferedInput";
@@ -19,6 +19,7 @@ interface PlotColumn {
 export function PlotBoard() {
   const { t } = useTranslation();
   const { currentItem: currentProject } = useProjectStore();
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const defaultColumns = useMemo<PlotColumn[]>(
     () => [
       {
@@ -77,21 +78,44 @@ export function PlotBoard() {
     };
   }, [columns, currentProject?.id, currentProject?.projectPath, isHydrated]);
 
+  useEffect(() => {
+    const element = scrollContainerRef.current;
+    if (!element) return;
+
+    const handleWheel = (event: WheelEvent) => {
+      if (event.deltaY === 0) return;
+      event.preventDefault();
+      element.scrollLeft += event.deltaY;
+    };
+
+    element.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      element.removeEventListener("wheel", handleWheel);
+    };
+  }, []);
+
   const addColumn = () => {
     const newId = `act-${Date.now()}`;
-    setColumns([...columns, {
-      id: newId,
-      title: `${t("world.plot.newAct")} ${columns.length + 1}`,
-      cards: []
-    }]);
+    setColumns((prev) => [
+      ...prev,
+      {
+        id: newId,
+        title: `${t("world.plot.newAct")} ${prev.length + 1}`,
+        cards: [],
+      },
+    ]);
   };
 
   const removeColumn = (colId: string) => {
-      setColumns(columns.filter(c => c.id !== colId));
+    setColumns((prev) => prev.filter((column) => column.id !== colId));
   };
 
   const updateColumnTitle = (colId: string, newTitle: string) => {
-      setColumns(columns.map(c => c.id === colId ? { ...c, title: newTitle } : c));
+    setColumns((prev) =>
+      prev.map((column) =>
+        column.id === colId ? { ...column, title: newTitle } : column,
+      ),
+    );
   };
 
   const addCard = (colId: string) => {
@@ -146,16 +170,7 @@ export function PlotBoard() {
         {/* Horizontal Scroll Area */}
         <div 
             className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar"
-            ref={(ref) => {
-                if (ref) {
-                    ref.addEventListener("wheel", (e) => {
-                        if (e.deltaY !== 0) {
-                            e.preventDefault();
-                            ref.scrollLeft += e.deltaY;
-                        }
-                    }, { passive: false });
-                }
-            }}
+            ref={scrollContainerRef}
         >
             <div className="h-full flex p-6 gap-6 w-fit min-w-full">
                 {columns.map((col) => (

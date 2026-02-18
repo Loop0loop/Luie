@@ -2,7 +2,6 @@
  * Snapshot service - 버전 관리 스냅샷 비즈니스 로직
  */
 
-import * as fs from "fs";
 import { promises as fsPromises } from "fs";
 import path from "path";
 import { randomUUID } from "node:crypto";
@@ -313,12 +312,15 @@ export class SnapshotService {
         `${safeTitle || "Recovered Snapshot"}${LUIE_PACKAGE_EXTENSION}`,
       );
 
-      if (fs.existsSync(basePath)) {
+      try {
+        await fsPromises.access(basePath);
         const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
         basePath = path.join(
           documentsDir,
           `${safeTitle || "Recovered Snapshot"}-${timestamp}${LUIE_PACKAGE_EXTENSION}`,
         );
+      } catch {
+        // Path does not exist, keep basePath as-is.
       }
 
       const projectPath = basePath;

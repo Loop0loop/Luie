@@ -4,9 +4,11 @@ import { useTranslation } from "react-i18next";
 import MainLayout from "./components/layout/MainLayout";
 import GoogleDocsLayout from "./components/layout/GoogleDocsLayout";
 import FocusLayout from "./components/layout/FocusLayout";
+import EditorLayout from "./components/layout/EditorLayout";
 import Sidebar from "./components/sidebar/Sidebar";
 import DocsSidebar from "./components/sidebar/DocsSidebar";
 import Editor from "./components/editor/Editor";
+import { SmartLinkTooltip } from "./components/editor/SmartLinkTooltip";
 import ContextPanel from "./components/context/ContextPanel";
 import ProjectTemplateSelector from "./components/layout/ProjectTemplateSelector";
 import { useProjectStore } from "./stores/projectStore";
@@ -34,6 +36,7 @@ import {
 import { appBootstrapStatusSchema } from "../../shared/schemas/index.js";
 import type { AppBootstrapStatus } from "../../shared/types/index.js";
 import { api } from "./services/api";
+import { openDocsRightTab as openDocsPanelTab } from "./services/docsPanelService";
 
 const SettingsModal = lazy(() => import("./components/settings/SettingsModal"));
 const ResearchPanel = lazy(() => import("./components/research/ResearchPanel"));
@@ -77,11 +80,8 @@ export default function App() {
   const toggleSplitSide = useUIStore((state) => state.toggleSplitSide);
   const splitSide = useUIStore((state) => state.splitSide);
   const setWorldTab = useUIStore((state) => state.setWorldTab);
-  const contextWidth = useUIStore((state) => state.contextWidth);
-  const setContextWidth = useUIStore((state) => state.setContextWidth);
   const docsRightTab = useUIStore((state) => state.docsRightTab);
   const setDocsRightTab = useUIStore((state) => state.setDocsRightTab);
-  const setBinderBarOpen = useUIStore((state) => state.setBinderBarOpen);
   const setRightPanelContent = useUIStore((state) => state.setRightPanelContent);
   const isManuscriptMenuOpen = useUIStore((state) => state.isManuscriptMenuOpen);
   const loadShortcuts = useShortcutStore((state) => state.loadShortcuts);
@@ -215,20 +215,9 @@ export default function App() {
     startResizeSplit,
   } = useSplitView();
 
-  const ensureDocsPanelVisible = useCallback(() => {
-    setBinderBarOpen(true);
-    if (contextWidth < 50) {
-      setContextWidth(320);
-    }
-  }, [contextWidth, setBinderBarOpen, setContextWidth]);
-
-  const openDocsRightTab = useCallback(
-    (tab: Exclude<DocsRightTab, null>) => {
-      setDocsRightTab(tab);
-      ensureDocsPanelVisible();
-    },
-    [ensureDocsPanelVisible, setDocsRightTab],
-  );
+  const openDocsRightTab = useCallback((tab: Exclude<DocsRightTab, null>) => {
+    openDocsPanelTab(tab);
+  }, []);
 
   const openResearchTab = useCallback(
     (tab: ResearchTab, side: "left" | "right") => {
@@ -510,7 +499,7 @@ export default function App() {
   const handleOpenLuieFile = useCallback(async () => {
     try {
       const response = await api.fs.selectFile({
-        title: "Luie 파일 열기",
+        title: t("home.projectTemplate.actions.openLuie"),
         filters: [{ name: LUIE_PACKAGE_FILTER_NAME, extensions: [LUIE_PACKAGE_EXTENSION_NO_DOT] }],
       });
 
@@ -626,23 +615,26 @@ export default function App() {
 
   if (uiMode === "focus") {
     return (
-       <FocusLayout 
+      <>
+        <FocusLayout
           activeChapterTitle={activeChapterTitle}
           wordCount={wordCount}
-       >
-          <Editor 
-             key={activeChapterId ?? "focus-editor"}
-             chapterId={activeChapterId ?? undefined}
-             initialTitle={activeChapterTitle}
-             initialContent={content}
-             onSave={handleSave}
-             focusMode={true}
-             hideToolbar={true}
-             hideFooter={true}
-             hideTitle={true}
-             scrollable={true} 
+        >
+          <Editor
+            key={activeChapterId ?? "focus-editor"}
+            chapterId={activeChapterId ?? undefined}
+            initialTitle={activeChapterTitle}
+            initialContent={content}
+            onSave={handleSave}
+            focusMode={true}
+            hideToolbar={true}
+            hideFooter={true}
+            hideTitle={true}
+            scrollable={true}
           />
-       </FocusLayout>
+        </FocusLayout>
+        <SmartLinkTooltip />
+      </>
     );
   }
 
@@ -784,6 +776,41 @@ export default function App() {
                     onEditorReady={setDocEditor}
                   />
             </GoogleDocsLayout>
+      ) : uiMode === "word" ? (
+         <EditorLayout
+              sidebar={
+                <DocsSidebar
+                  chapters={chapters}
+                  activeChapterId={activeChapterId ?? undefined}
+                  onSelectChapter={handleSelectChapter}
+                  onAddChapter={handleAddChapter}
+                  onRenameChapter={handleRenameChapter}
+                  onDuplicateChapter={handleDuplicateChapter}
+                  onDeleteChapter={handleDeleteChapter}
+                />
+              }
+              activeChapterTitle={activeChapterTitle}
+              activeChapterContent={content}
+              currentProjectId={currentProject?.id}
+              editor={docEditor}
+              onOpenSettings={() => setIsSettingsOpen(true)}
+              onRenameChapter={handleRenameChapter}
+              onSaveChapter={handleSave}
+         >
+               <Editor
+                 key={activeChapterId}
+                 initialTitle={activeChapter ? activeChapter.title : ""}
+                 initialContent={activeChapter ? activeChapter.content : ""}
+                 onSave={handleSave}
+                 readOnly={!activeChapterId}
+                 chapterId={activeChapterId || undefined}
+                 hideToolbar={true} // Ribbon handles toolbars
+                 hideFooter={true}  // Layout handles footer
+                 hideTitle={true}   // Layout handles title
+                 scrollable={false} // Layout handles scrolling
+                 onEditorReady={setDocEditor}
+               />
+         </EditorLayout>
       ) : (
         <MainLayout
             sidebar={
@@ -816,6 +843,7 @@ export default function App() {
           <SettingsModal onClose={() => setIsSettingsOpen(false)} />
         </Suspense>
       )}
+      <SmartLinkTooltip />
     </>
   );
 }

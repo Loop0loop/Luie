@@ -65,6 +65,44 @@ export const ko = {
         applyHint: "변경 사항은 즉시 적용됩니다. (가리기: 전체화면, 보이기: 일반창)",
         applyFailed: "메뉴바 표시 방식을 적용하지 못했습니다. 다시 시도해주세요.",
       },
+      appearance: {
+        baseTheme: {
+          title: "테마 모드 (Base Theme)",
+          description: "기본적인 밝기를 선택합니다.",
+        },
+        accent: {
+          title: "강조 색상 (Accent Color)",
+          description: "버튼과 강조 요소의 색상을 선택하세요.",
+        },
+        texture: {
+          title: "종이 질감 (Texture)",
+          description: "화면에 미세한 노이즈를 추가하여 종이 질감을 냅니다.",
+          on: "켜짐 (On)",
+          off: "꺼짐 (Off)",
+        },
+        contrast: {
+          title: "대비 (Contrast)",
+          description: "화면의 선명도를 조절합니다.",
+          soft: "Soft",
+          high: "High",
+        },
+        atmosphere: {
+          title: "분위기 (Atmosphere)",
+          description: "작업 목적에 맞는 색온도를 선택하세요.",
+          cool: {
+            title: "차가움 (Cool)",
+            description: "집중 / 분석 / 이성적",
+          },
+          neutral: {
+            title: "중립 (Neutral)",
+            description: "기본 / 깔끔함",
+          },
+          warm: {
+            title: "따뜻함 (Warm)",
+            description: "서사 / 감정 / 편안함",
+          },
+        },
+      },
       view: {
         pc: "PC",
         mobile: "모바일",
@@ -255,6 +293,11 @@ export const ko = {
       quit: "종료",
       deleteManuscriptConfirm: "이 원고를 삭제할까요?",
     },
+    errorBoundary: {
+      title: "앱 구동에 실패하였습니다.",
+      description: "앱을 재실행 해주세요.",
+      reload: "애플리케이션 다시 불러오기",
+    },
     project: {
       defaults: {
         projectTitle: "제목 없는 프로젝트",
@@ -427,6 +470,11 @@ export const ko = {
         char: "자",
         word: "단어",
       },
+      ruler: {
+        firstLineIndent: "첫 줄 들여쓰기",
+        leftMargin: "왼쪽 여백",
+        rightMargin: "오른쪽 여백",
+      },
     },
     mainLayout: {
       tooltip: {
@@ -459,6 +507,10 @@ export const ko = {
       toast: {
         start: "분석을 시작합니다...",
         error: "분석 중 오류가 발생했습니다.",
+        apiKeyMissing: "Gemini API 키가 설정되지 않았습니다. 환경 변수를 확인해주세요.",
+        quotaExceeded: "Gemini API 할당량을 초과했습니다. 잠시 후 다시 시도해주세요.",
+        networkError: "네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.",
+        unknown: "알 수 없는 오류가 발생했습니다.",
         navigateChapter: "\"{title}\" 원고로 이동합니다.",
         navigateFallback: "원고의 해당 위치로 이동합니다. (context: {contextId})",
       },

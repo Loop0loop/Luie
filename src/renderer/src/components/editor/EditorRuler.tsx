@@ -1,4 +1,5 @@
 import React, { useCallback, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 // A4 @ 96 DPI
 const PAGE_WIDTH_PX = 794;
@@ -14,6 +15,7 @@ interface EditorRulerProps {
 }
 
 export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
+  const { t } = useTranslation();
   const [leftMargin, setLeftMargin] = useState(DEFAULT_MARGIN_LEFT);
   const [rightMargin, setRightMargin] = useState(DEFAULT_MARGIN_RIGHT);
   const [firstLineIndent, setFirstLineIndent] = useState(0);
@@ -179,7 +181,7 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
         className="absolute z-20 cursor-ew-resize group"
         style={{ left: leftMargin + firstLineIndent, top: 0 }}
         onPointerDown={(e) => handlePointerDown("firstLine", e)}
-        title="첫 줄 들여쓰기"
+        title={t("textEditor.ruler.firstLineIndent")}
       >
         <div className="absolute -left-[5px] top-0">
           <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
@@ -196,7 +198,7 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
         className="absolute z-10 cursor-ew-resize group"
         style={{ left: leftMargin, top: 0 }}
         onPointerDown={(e) => handlePointerDown("left", e)}
-        title="왼쪽 여백"
+        title={t("textEditor.ruler.leftMargin")}
       >
         <div className="absolute -left-[5px] top-[8px]">
           <svg width="10" height="16" viewBox="0 0 10 16" fill="none">
@@ -219,7 +221,7 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
         className="absolute z-10 cursor-ew-resize group"
         style={{ left: rightEdge, top: 0 }}
         onPointerDown={(e) => handlePointerDown("right", e)}
-        title="오른쪽 여백"
+        title={t("textEditor.ruler.rightMargin")}
       >
         <div className="absolute -left-[5px] top-[12px]">
           <svg width="10" height="12" viewBox="0 0 10 12" fill="none">

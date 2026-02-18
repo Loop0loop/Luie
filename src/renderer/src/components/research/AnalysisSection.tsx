@@ -7,6 +7,7 @@ import { PenTool, Sparkles, ArrowRight, Quote, MessageSquare } from "lucide-reac
 import { useToast } from "../../components/common/ToastContext";
 import { Modal } from "../../components/common/Modal";
 import { useTranslation } from "react-i18next";
+import { api } from "../../services/api";
 
 export default function AnalysisSection() {
   const { t } = useTranslation();
@@ -35,11 +36,11 @@ export default function AnalysisSection() {
 
   // Register streaming listeners
   useEffect(() => {
-    const unsubscribeStream = window.api.analysis.onStream((data: unknown) => {
+    const unsubscribeStream = api.analysis.onStream((data: unknown) => {
       addStreamItem(data as { item: AnalysisItem; done: boolean });
     });
 
-    const unsubscribeError = window.api.analysis.onError((errorData: unknown) => {
+    const unsubscribeError = api.analysis.onError((errorData: unknown) => {
       const err = errorData as { message: string };
       const fallbackMessage = t("analysis.toast.error");
       setError(err.message ?? fallbackMessage);

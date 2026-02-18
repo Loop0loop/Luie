@@ -3,6 +3,7 @@ import { Plugin, PluginKey } from "prosemirror-state";
 import { Decoration, DecorationSet } from "prosemirror-view";
 import type { Node } from "prosemirror-model";
 import * as Diff from "diff";
+import { htmlToPlainText } from "../../../utils/htmlText";
 
 export interface DiffOptions {
   comparisonContent?: string;
@@ -15,14 +16,6 @@ declare module "@tiptap/core" {
       setDiff: (options: DiffOptions) => ReturnType;
     };
   }
-}
-
-// Helper to convert HTML to Text (simplified)
-function htmlToText(html: string): string {
-  if (typeof document === 'undefined') return html; 
-  const div = document.createElement("div");
-  div.innerHTML = html;
-  return div.innerText || div.textContent || "";
 }
 
 // Build linear text with mapping to document positions
@@ -79,7 +72,7 @@ export const DiffHighlight = Extension.create<DiffOptions>({
             const { comparisonContent, mode } = pluginState;
             const doc = state.doc;
             const { text: currentText, mapping } = getDocTextMap(doc);
-            const comparisonText = htmlToText(comparisonContent);
+            const comparisonText = htmlToPlainText(comparisonContent);
 
             const totalLength = currentText.length + comparisonText.length;
             if (totalLength > 50000) {

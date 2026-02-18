@@ -15,6 +15,10 @@ import StatusFooter from "../common/StatusFooter";
 import { api } from "../../services/api";
 import ResearchPanel from "../research/ResearchPanel";  
 import WorldPanel from "../research/WorldPanel";
+import {
+  ensureDocsPanelVisible,
+  openDocsRightTab,
+} from "../../services/docsPanelService";
 import { 
   Menu, 
   ChevronLeft, 
@@ -72,21 +76,21 @@ export default function GoogleDocsLayout({
     setRightPanelContent,
   } = useUIStore();
   
-  /* Force open panel width if it's too small when opening a tab */
+  /* Keep docs side panel opening behavior centralized */
   useEffect(() => {
-    if (activeRightTab && contextWidth < 50) {
-      setContextWidth(320);
+    if (activeRightTab) {
+      ensureDocsPanelVisible();
     }
-  }, [activeRightTab, contextWidth, setContextWidth]);
+  }, [activeRightTab]);
 
   const handleRightTabClick = useCallback((tab: "character" | "world" | "scrap" | "analysis" | "snapshot" | "trash" | "editor" | "export") => {
      const nextTab = activeRightTab === tab ? null : tab;
-     setActiveRightTab(nextTab);
-     // Force open if width is 0
-     if (nextTab && contextWidth < 50) {
-        setContextWidth(320);
+     if (!nextTab) {
+       setActiveRightTab(null);
+       return;
      }
-  }, [activeRightTab, setActiveRightTab, contextWidth, setContextWidth]);
+     openDocsRightTab(nextTab);
+  }, [activeRightTab, setActiveRightTab]);
 
   const handleOpenExport = async () => {
     if (!activeChapterId) return;

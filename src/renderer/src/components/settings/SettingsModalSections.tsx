@@ -126,8 +126,8 @@ export const AppearanceTab = memo(function AppearanceTab({
     <div className="space-y-10 max-w-2xl content-visibility-auto contain-intrinsic-size-[1px_1000px]">
       <section className="space-y-4">
         <div>
-          <h3 className="text-base font-semibold text-fg">테마 모드 (Base Theme)</h3>
-          <p className="text-sm text-muted mt-1">기본적인 밝기를 선택합니다.</p>
+          <h3 className="text-base font-semibold text-fg">{t("settings.appearance.baseTheme.title")}</h3>
+          <p className="text-sm text-muted mt-1">{t("settings.appearance.baseTheme.description")}</p>
         </div>
         <div className="grid grid-cols-3 gap-3">
           {(["light", "sepia", "dark"] as const).map((mode) => (
@@ -140,9 +140,9 @@ export const AppearanceTab = memo(function AppearanceTab({
                   : "border-border text-muted hover:border-text-tertiary hover:bg-surface-hover"
               }`}
             >
-              {mode === "light" && "Light"}
-              {mode === "sepia" && "Sepia"}
-              {mode === "dark" && "Dark"}
+              {mode === "light" && t("settings.theme.light")}
+              {mode === "sepia" && t("settings.theme.sepia")}
+              {mode === "dark" && t("settings.theme.dark")}
               {theme === mode && <Check className="w-4 h-4 ml-2" />}
             </button>
           ))}
@@ -153,8 +153,8 @@ export const AppearanceTab = memo(function AppearanceTab({
 
       <section className="space-y-4">
         <div>
-          <h3 className="text-base font-semibold text-fg">강조 색상 (Accent Color)</h3>
-          <p className="text-sm text-muted mt-1">버튼과 강조 요소의 색상을 선택하세요.</p>
+          <h3 className="text-base font-semibold text-fg">{t("settings.appearance.accent.title")}</h3>
+          <p className="text-sm text-muted mt-1">{t("settings.appearance.accent.description")}</p>
         </div>
         <div className="flex gap-4">
           {(["blue", "violet", "green", "amber", "rose", "slate"] as const).map((accent) => (
@@ -192,8 +192,8 @@ export const AppearanceTab = memo(function AppearanceTab({
       <div className="grid grid-cols-2 gap-8">
         <section className="space-y-4">
           <div>
-            <h3 className="text-base font-semibold text-fg">종이 질감 (Texture)</h3>
-            <p className="text-sm text-muted mt-1">화면에 미세한 노이즈를 추가하여 종이 질감을 냅니다.</p>
+            <h3 className="text-base font-semibold text-fg">{t("settings.appearance.texture.title")}</h3>
+            <p className="text-sm text-muted mt-1">{t("settings.appearance.texture.description")}</p>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -208,14 +208,16 @@ export const AppearanceTab = memo(function AppearanceTab({
                 } inline-block h-4 w-4 transform rounded-full bg-surface shadow-sm transition-transform`}
               />
             </button>
-            <span className="text-sm font-medium text-fg">{themeTexture ? "켜짐 (On)" : "꺼짐 (Off)"}</span>
+            <span className="text-sm font-medium text-fg">
+              {themeTexture ? t("settings.appearance.texture.on") : t("settings.appearance.texture.off")}
+            </span>
           </div>
         </section>
 
         <section className="space-y-4">
           <div>
-            <h3 className="text-base font-semibold text-fg">대비 (Contrast)</h3>
-            <p className="text-sm text-muted mt-1">화면의 선명도를 조절합니다.</p>
+            <h3 className="text-base font-semibold text-fg">{t("settings.appearance.contrast.title")}</h3>
+            <p className="text-sm text-muted mt-1">{t("settings.appearance.contrast.description")}</p>
           </div>
           <div className="flex gap-2">
             {(["soft", "high"] as const).map((c) => (
@@ -228,7 +230,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                     : "border-border text-muted hover:text-fg"
                 }`}
               >
-                {c === "soft" ? "Soft" : "High"}
+                {c === "soft" ? t("settings.appearance.contrast.soft") : t("settings.appearance.contrast.high")}
               </button>
             ))}
           </div>
@@ -268,8 +270,8 @@ export const AppearanceTab = memo(function AppearanceTab({
 
       <section className="space-y-4">
         <div>
-          <h3 className="text-base font-semibold text-fg">분위기 (Atmosphere)</h3>
-          <p className="text-sm text-muted mt-1">작업 목적에 맞는 색온도를 선택하세요.</p>
+          <h3 className="text-base font-semibold text-fg">{t("settings.appearance.atmosphere.title")}</h3>
+          <p className="text-sm text-muted mt-1">{t("settings.appearance.atmosphere.description")}</p>
         </div>
         <div className="grid grid-cols-3 gap-3">
           <button
@@ -278,8 +280,8 @@ export const AppearanceTab = memo(function AppearanceTab({
               themeTemp === "cool" ? "border-blue-500 bg-blue-500/5 ring-1 ring-blue-500" : "border-border hover:bg-surface-hover"
             }`}
           >
-            <span className="text-sm font-semibold text-fg mb-1">차가움 (Cool)</span>
-            <span className="text-xs text-muted">집중 / 분석 / 이성적</span>
+            <span className="text-sm font-semibold text-fg mb-1">{t("settings.appearance.atmosphere.cool.title")}</span>
+            <span className="text-xs text-muted">{t("settings.appearance.atmosphere.cool.description")}</span>
           </button>
 
           <button
@@ -290,8 +292,8 @@ export const AppearanceTab = memo(function AppearanceTab({
                 : "border-border hover:bg-surface-hover"
             }`}
           >
-            <span className="text-sm font-semibold text-fg mb-1">중립 (Neutral)</span>
-            <span className="text-xs text-muted">기본 / 깔끔함</span>
+            <span className="text-sm font-semibold text-fg mb-1">{t("settings.appearance.atmosphere.neutral.title")}</span>
+            <span className="text-xs text-muted">{t("settings.appearance.atmosphere.neutral.description")}</span>
           </button>
 
           <button
@@ -302,8 +304,8 @@ export const AppearanceTab = memo(function AppearanceTab({
                 : "border-border hover:bg-surface-hover"
             }`}
           >
-            <span className="text-sm font-semibold text-fg mb-1">따뜻함 (Warm)</span>
-            <span className="text-xs text-muted">서사 / 감정 / 편안함</span>
+            <span className="text-sm font-semibold text-fg mb-1">{t("settings.appearance.atmosphere.warm.title")}</span>
+            <span className="text-xs text-muted">{t("settings.appearance.atmosphere.warm.description")}</span>
           </button>
         </div>
       </section>
@@ -676,7 +678,7 @@ export const LanguageTab = memo(function LanguageTab({ t, language }: LanguageTa
               language === "ko" ? "border-accent text-accent bg-accent/5 ring-1 ring-accent" : "border-border text-muted hover:text-fg"
             }`}
           >
-            한국어
+            {t("settings.language.options.ko")}
           </button>
           <button
             onClick={() => setLanguage("en")}
@@ -684,7 +686,7 @@ export const LanguageTab = memo(function LanguageTab({ t, language }: LanguageTa
               language === "en" ? "border-accent text-accent bg-accent/5 ring-1 ring-accent" : "border-border text-muted hover:text-fg"
             }`}
           >
-            English
+            {t("settings.language.options.en")}
           </button>
           <button
             onClick={() => setLanguage("ja")}
@@ -692,7 +694,7 @@ export const LanguageTab = memo(function LanguageTab({ t, language }: LanguageTa
               language === "ja" ? "border-accent text-accent bg-accent/5 ring-1 ring-accent" : "border-border text-muted hover:text-fg"
             }`}
           >
-            日本語
+            {t("settings.language.options.ja")}
           </button>
         </div>
       </section>

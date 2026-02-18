@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useCharacterStore } from "../../stores/characterStore";
 import { useTermStore } from "../../stores/termStore";
 import type { Character, Term } from "../../../../shared/types";
-import { smartLinkService } from "../../../../main/services/core/SmartLinkService";
+import { smartLinkService } from "../../services/smartLinkService";
 
 type TooltipState = {
   visible: boolean;

@@ -4,6 +4,7 @@ const mocked = vi.hoisted(() => {
   const uiState = {
     contextWidth: 320,
     isSplitView: false,
+    setBinderBarOpen: vi.fn(),
     setDocsRightTab: vi.fn(),
     setWorldTab: vi.fn(),
     setContextWidth: vi.fn(),
@@ -59,7 +60,7 @@ vi.mock("../../../src/renderer/src/stores/termStore", () => ({
   },
 }));
 
-import { smartLinkService } from "../../../src/main/services/core/SmartLinkService.js";
+import { smartLinkService } from "../../../src/renderer/src/services/smartLinkService.js";
 
 describe("smartLinkService.openItem", () => {
   beforeEach(() => {
@@ -79,6 +80,7 @@ describe("smartLinkService.openItem", () => {
 
     smartLinkService.openItem("char-1", "character");
 
+    expect(mocked.uiState.setBinderBarOpen).toHaveBeenCalledWith(true);
     expect(mocked.uiState.setDocsRightTab).toHaveBeenCalledWith("character");
     expect(mocked.uiState.setContextWidth).toHaveBeenCalledWith(320);
     expect(mocked.uiState.setWorldTab).not.toHaveBeenCalled();
@@ -95,6 +97,7 @@ describe("smartLinkService.openItem", () => {
 
     smartLinkService.openItem("term-1", "term");
 
+    expect(mocked.uiState.setBinderBarOpen).toHaveBeenCalledWith(true);
     expect(mocked.uiState.setDocsRightTab).toHaveBeenCalledWith("world");
     expect(mocked.uiState.setWorldTab).toHaveBeenCalledWith("terms");
     expect(mocked.uiState.setContextWidth).toHaveBeenCalledWith(320);
@@ -113,6 +116,7 @@ describe("smartLinkService.openItem", () => {
       type: "research",
       tab: "world",
     });
+    expect(mocked.uiState.setBinderBarOpen).not.toHaveBeenCalled();
     expect(mocked.uiState.setWorldTab).toHaveBeenCalledWith("terms");
     expect(mocked.uiState.setSplitView).toHaveBeenCalledWith(true);
     expect(mocked.termState.setCurrentTerm).toHaveBeenCalledWith(

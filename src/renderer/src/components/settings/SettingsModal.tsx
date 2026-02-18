@@ -8,6 +8,7 @@ import { useEditorStore } from "../../stores/editorStore";
 import { useShortcutStore } from "../../stores/shortcutStore";
 import type { ShortcutMap, WindowMenuBarMode } from "../../../../shared/types";
 import { SHORTCUT_ACTIONS } from "../../../../shared/constants/shortcuts";
+import { STORAGE_KEY_FONTS_INSTALLED } from "../../../../shared/constants";
 import {
   AppearanceTab,
   EditorTab,
@@ -24,8 +25,12 @@ import {
   SHORTCUT_GROUP_ICON_MAP,
 } from "./SettingsModalConfig";
 import { api } from "../../services/api";
+import {
+  readLocalStorageJson,
+  writeLocalStorageJson,
+} from "../../utils/localStorage";
 
-const STORAGE_KEY_FONTS_INSTALLED = "luie:fonts-installed";
+const LEGACY_STORAGE_KEY_FONTS_INSTALLED = "luie:fonts-installed";
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -87,12 +92,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
   const [installing, setInstalling] = useState<Record<string, boolean>>({});
   const [installed, setInstalled] = useState<Record<string, boolean>>(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY_FONTS_INSTALLED);
-      return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
-    } catch {
-      return {};
-    }
+    return (
+      readLocalStorageJson<Record<string, boolean>>(STORAGE_KEY_FONTS_INSTALLED) ??
+      readLocalStorageJson<Record<string, boolean>>(LEGACY_STORAGE_KEY_FONTS_INSTALLED) ??
+      {}
+    );
   });
 
   const isMacOS = navigator.platform.toLowerCase().includes("mac");
@@ -311,11 +315,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     (updater: (prev: Record<string, boolean>) => Record<string, boolean>) => {
       setInstalled((prev) => {
         const next = updater(prev);
-        try {
-          localStorage.setItem(STORAGE_KEY_FONTS_INSTALLED, JSON.stringify(next));
-        } catch {
-          // best-effort
-        }
+        void writeLocalStorageJson(STORAGE_KEY_FONTS_INSTALLED, next);
         return next;
       });
     },

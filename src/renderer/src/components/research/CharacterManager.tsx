@@ -15,8 +15,13 @@ import { i18n, SUPPORTED_LANGUAGES } from "../../i18n";
 import { useDialog } from "../common/DialogProvider";
 import {
   CHARACTER_GROUP_COLORS,
+  STORAGE_KEY_CHARACTER_SIDEBAR_LAYOUT,
   CHARACTER_TEMPLATES,
 } from "../../../../shared/constants";
+import {
+  readLocalStorageJson,
+  writeLocalStorageJson,
+} from "../../utils/localStorage";
 
 type CharacterLike = {
   id: string;
@@ -42,25 +47,17 @@ export default function CharacterManager() {
   // Sync with global store selection (e.g. from SmartLinkService)
   useEffect(() => {
     if (currentCharacterFromStore?.id && currentCharacterFromStore.id !== selectedCharacterId) {
-        // eslint-disable-next-line
-        setSelectedCharacterId(currentCharacterFromStore.id);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync local selection with external store updates (e.g. SmartLink navigation)
+      setSelectedCharacterId(currentCharacterFromStore.id);
     }
   }, [currentCharacterFromStore, selectedCharacterId]);
 
   const handleLayoutChange = (layout: Layout) => {
-    localStorage.setItem("character-sidebar-layout-v2", JSON.stringify(layout));
+    void writeLocalStorageJson(STORAGE_KEY_CHARACTER_SIDEBAR_LAYOUT, layout);
   };
   
   const initialLayout = useMemo(() => {
-     const saved = localStorage.getItem("character-sidebar-layout-v2");
-     if (saved) {
-        try {
-            return JSON.parse(saved);
-        } catch {
-            // ignore
-        }
-     }
-     return undefined;
+     return readLocalStorageJson<Layout>(STORAGE_KEY_CHARACTER_SIDEBAR_LAYOUT) ?? undefined;
   }, []);
 
   useEffect(() => {

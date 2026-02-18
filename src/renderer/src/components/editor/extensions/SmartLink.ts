@@ -4,7 +4,7 @@ import type { Transaction, EditorState } from "@tiptap/pm/state";
 import { DecorationSet } from "@tiptap/pm/view";
 import { useCharacterStore } from "../../../stores/characterStore";
 import { useTermStore } from "../../../stores/termStore";
-import { smartLinkService } from "../../../../../main/services/core/SmartLinkService";
+import { smartLinkService } from "../../../services/smartLinkService";
 
 export const SmartLink = Extension.create({
   name: "smartLink",

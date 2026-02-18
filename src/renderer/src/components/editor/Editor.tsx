@@ -28,13 +28,12 @@ import { useEditorStats } from "../../hooks/useEditorStats";
 import { useEditorConfig } from "../../hooks/useEditorConfig";
 import { SmartLink } from "./extensions/SmartLink";
 import { DiffHighlight } from "./extensions/DiffExtension";
-import { SmartLinkTooltip } from "./SmartLinkTooltip";
 import { api } from "../../services/api";
 import { useTranslation } from "react-i18next";
 import { useCharacterStore } from "../../stores/characterStore";
 import { useTermStore } from "../../stores/termStore";
 import { useDialog } from "../common/DialogProvider";
-import { smartLinkService } from "../../../../main/services/core/SmartLinkService";
+import { smartLinkService } from "../../services/smartLinkService";
 
 // Simple Callout Extension (inline to avoid dependencies)
 const Callout = Node.create({
@@ -410,8 +409,6 @@ function Editor({
       {!hideFooter && (
         <StatusFooter onOpenExport={handleOpenExport} />
       )}
-
-      <SmartLinkTooltip />
     </div>
   );
 }

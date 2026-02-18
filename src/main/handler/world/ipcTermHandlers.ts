@@ -1,6 +1,5 @@
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import type {
-  TermAppearanceInput,
   TermCreateInput,
   TermUpdateInput,
 } from "../../../shared/types/index.js";
@@ -10,10 +9,8 @@ import {
   termUpdateSchema,
   termIdSchema,
   projectIdSchema,
-  termAppearanceSchema,
 } from "../../../shared/schemas/index.js";
 import { z } from "zod";
-import { registerAppearanceIPCHandlers } from "./ipcAppearanceHandlers.js";
 import type { LoggerLike } from "../core/types.js";
 
 type TermServiceLike = {
@@ -22,8 +19,6 @@ type TermServiceLike = {
   getAllTerms: (projectId: string) => Promise<unknown>;
   updateTerm: (input: TermUpdateInput) => Promise<unknown>;
   deleteTerm: (id: string) => Promise<unknown>;
-  recordAppearance: (input: TermAppearanceInput) => Promise<unknown>;
-  getAppearancesByChapter: (chapterId: string) => Promise<unknown>;
 };
 
 export function registerTermIPCHandlers(
@@ -67,20 +62,4 @@ export function registerTermIPCHandlers(
       handler: (id: string) => termService.deleteTerm(id),
     },
   ]);
-
-  registerAppearanceIPCHandlers<TermAppearanceInput>({
-    logger,
-    service: termService,
-    record: {
-      channel: "term:record-appearance",
-      logTag: "TERM_RECORD_APPEARANCE",
-      failMessage: "Failed to record term appearance",
-      schema: termAppearanceSchema,
-    },
-    get: {
-      channel: "term:get-appearances",
-      logTag: "TERM_GET_APPEARANCES",
-      failMessage: "Failed to get term appearances",
-    },
-  });
 }

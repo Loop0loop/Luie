@@ -2,6 +2,7 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import { resources } from "./resources";
+import { api } from "../services/api";
 
 export const SUPPORTED_LANGUAGES = ["ko", "en", "ja"] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
@@ -29,7 +30,7 @@ export async function initI18n(): Promise<typeof i18n> {
     });
 
   try {
-    const response = await window.api.settings.getAll();
+    const response = await api.settings.getAll();
     const savedLanguage = response.success ? response.data?.language : undefined;
     if (savedLanguage && SUPPORTED_LANGUAGES.includes(savedLanguage)) {
       await i18n.changeLanguage(savedLanguage);
@@ -46,7 +47,7 @@ export async function setLanguage(language: SupportedLanguage): Promise<void> {
     await i18n.changeLanguage(language);
   }
   try {
-    await window.api.settings.setLanguage({ language });
+    await api.settings.setLanguage({ language });
   } catch {
     // Best effort; language still applied locally
   }

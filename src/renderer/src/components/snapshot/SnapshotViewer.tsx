@@ -8,18 +8,12 @@ import { useUIStore } from "../../stores/uiStore";
 import type { Snapshot } from "../../../../shared/types";
 import Editor from "../editor/Editor";
 import { useDialog } from "../common/DialogProvider";
+import { htmlToPlainText } from "../../utils/htmlText";
 
 interface SnapshotViewerProps {
   snapshot: Snapshot;
   currentContent?: string;
   onApplySnapshotText?: (content: string) => void | Promise<void>;
-}
-
-function htmlToText(html: string): string {
-  if (typeof document === "undefined") return html;
-  const div = document.createElement("div");
-  div.innerHTML = html;
-  return div.innerText || div.textContent || "";
 }
 
 function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: SnapshotViewerProps) {
@@ -76,7 +70,7 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
       .map((part) => ({
         id: index++,
         value: part.value,
-        text: htmlToText(part.value).trim(),
+        text: htmlToPlainText(part.value).trim(),
       }));
   }, [diffParts]);
 

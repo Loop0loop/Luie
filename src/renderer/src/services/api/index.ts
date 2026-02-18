@@ -103,6 +103,32 @@ export type RendererApi = {
     restore: (id: string) => Promise<IPCResponse<unknown>>;
     delete: (id: string) => Promise<IPCResponse<unknown>>;
   };
+  export: {
+    create: (request: {
+      projectId: string;
+      chapterId: string;
+      title: string;
+      content: string;
+      format: "DOCX" | "HWPX";
+      paperSize: "A4" | "Letter" | "B5";
+      marginTop: number;
+      marginBottom: number;
+      marginLeft: number;
+      marginRight: number;
+      fontFamily: string;
+      fontSize: number;
+      lineHeight: string;
+      showPageNumbers: boolean;
+      startPageNumber: number;
+    }) => Promise<
+      IPCResponse<{
+        success: boolean;
+        filePath?: string;
+        error?: string;
+        message?: string;
+      }>
+    >;
+  };
   fs: {
     saveProject: (projectName: string, projectPath: string, content: string) => Promise<IPCResponse<unknown>>;
     selectDirectory: () => Promise<IPCResponse<string>>;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Download,
@@ -13,6 +13,51 @@ import {
 import WindowBar from "../layout/WindowBar";
 import { cn } from "../../../../shared/types/utils";
 import { useDialog } from "../common/DialogProvider";
+import { api } from "../../services/api";
+
+const sanitizePreviewHtml = (html: string): string => {
+  if (typeof document === "undefined") return html;
+
+  const template = document.createElement("template");
+  template.innerHTML = html;
+
+  const blockedTags = new Set([
+    "script",
+    "iframe",
+    "object",
+    "embed",
+    "link",
+    "meta",
+  ]);
+
+  const elements = Array.from(template.content.querySelectorAll("*"));
+  elements.forEach((element) => {
+    const tagName = element.tagName.toLowerCase();
+    if (blockedTags.has(tagName)) {
+      element.remove();
+      return;
+    }
+
+    Array.from(element.attributes).forEach((attribute) => {
+      const name = attribute.name.toLowerCase();
+      const value = attribute.value.trim().toLowerCase();
+
+      if (name.startsWith("on")) {
+        element.removeAttribute(attribute.name);
+        return;
+      }
+
+      if (
+        (name === "href" || name === "src" || name === "xlink:href") &&
+        value.startsWith("javascript:")
+      ) {
+        element.removeAttribute(attribute.name);
+      }
+    });
+  });
+
+  return template.innerHTML;
+};
 
 /**
  * Helper Component for Accordion Headers
@@ -70,7 +115,7 @@ export default function ExportWindow() {
       return;
     }
 
-    window.api.chapter.get(chapterId).then(response => {
+    api.chapter.get(chapterId).then(response => {
       if (response.success && response.data) {
         setChapter({
           title: response.data.title,
@@ -97,6 +142,10 @@ export default function ExportWindow() {
   // Page Number State
   const [showPageNumbers, setShowPageNumbers] = useState(true);
   const [startPageNumber, setStartPageNumber] = useState(1);
+  const sanitizedPreviewContent = useMemo(
+    () => (chapter?.content ? sanitizePreviewHtml(chapter.content) : ""),
+    [chapter?.content],
+  );
 
   // Expanded Sections
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -122,7 +171,7 @@ export default function ExportWindow() {
     setIsExporting(true);
 
     try {
-      const response = await window.api.export.create({
+      const response = await api.export.create({
         projectId: chapter.projectId,
         chapterId,
         title: chapter.title,
@@ -165,7 +214,7 @@ export default function ExportWindow() {
         );
       }
     } catch (error) {
-      void window.api.logger.error("Export error", {
+      void api.logger.error("Export error", {
         error: error instanceof Error ? error.message : String(error),
       });
       dialog.toast(
@@ -468,7 +517,7 @@ export default function ExportWindow() {
                   <>
                     <h1 className="text-2xl font-bold text-center mb-10">{chapter.title}</h1>
                     <div 
-                      dangerouslySetInnerHTML={{ __html: chapter.content }} 
+                      dangerouslySetInnerHTML={{ __html: sanitizedPreviewContent }} 
                       className="prose prose-sm max-w-none"
                     />
                   </>
