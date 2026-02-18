@@ -11,6 +11,8 @@ import Editor from "./components/editor/Editor";
 import { SmartLinkTooltip } from "./components/editor/SmartLinkTooltip";
 import ContextPanel from "./components/context/ContextPanel";
 import ProjectTemplateSelector from "./components/layout/ProjectTemplateSelector";
+import ScrivenerLayout from "./components/layout/ScrivenerLayout";
+
 import { useProjectStore } from "./stores/projectStore";
 import { useUIStore, type DocsRightTab } from "./stores/uiStore";
 import { useEditorStore } from "./stores/editorStore";
@@ -38,6 +40,11 @@ import type { AppBootstrapStatus } from "../../shared/types/index.js";
 import { api } from "./services/api";
 import { openDocsRightTab as openDocsPanelTab } from "./services/docsPanelService";
 import { createLayoutModeActions } from "./services/layoutModeActions";
+import {
+  captureUiModeIntegritySnapshot,
+  getUiModeIntegrityViolations,
+  type UiModeIntegritySnapshot,
+} from "./services/uiModeIntegrity";
 
 const SettingsModal = lazy(() => import("./components/settings/SettingsModal"));
 const ResearchPanel = lazy(() => import("./components/research/ResearchPanel"));
@@ -62,6 +69,7 @@ export default function App() {
   const chapterChordRef = useRef<{ digits: string; timerId?: number }>({
     digits: "",
   });
+  const uiModeIntegrityRef = useRef<UiModeIntegritySnapshot | null>(null);
   const [isExportWindow, setIsExportWindow] = useState(window.location.hash === "#export");
 
   useEffect(() => {
@@ -171,6 +179,31 @@ export default function App() {
     chapters.find((c) => c.id === activeChapterId), 
     [chapters, activeChapterId]
   );
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+
+    const snapshot = captureUiModeIntegritySnapshot({
+      editor: useEditorStore.getState(),
+      ui: useUIStore.getState(),
+      activeProjectId: currentProject?.id ?? null,
+      activeChapterId: activeChapterId ?? null,
+    });
+
+    const previous = uiModeIntegrityRef.current;
+    if (previous) {
+      const violations = getUiModeIntegrityViolations(previous, snapshot);
+      if (violations.length > 0) {
+        void api.logger.warn("uiMode integrity violation detected", {
+          from: previous.uiMode,
+          to: snapshot.uiMode,
+          violations,
+        });
+      }
+    }
+
+    uiModeIntegrityRef.current = snapshot;
+  });
 
   const [docEditor, setDocEditor] = useState<TiptapEditor | null>(null);
 
@@ -736,6 +769,38 @@ export default function App() {
                  onEditorReady={setDocEditor}
                />
          </EditorLayout>
+      ) : uiMode === "scrivener" ? (
+         <ScrivenerLayout
+            sidebar={
+                <DocsSidebar
+                    chapters={chapters}
+                    activeChapterId={activeChapterId ?? undefined}
+                    onSelectChapter={handleSelectChapter}
+                    onAddChapter={handleAddChapter}
+                    onRenameChapter={handleRenameChapter}
+                    onDuplicateChapter={handleDuplicateChapter}
+                    onDeleteChapter={handleDeleteChapter}
+                />
+            }
+            activeChapterId={activeChapterId ?? undefined}
+            activeChapterTitle={activeChapterTitle}
+            editor={docEditor}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+         >
+             <Editor
+                 key={activeChapterId}
+                 initialTitle={activeChapter ? activeChapter.title : ""}
+                 initialContent={activeChapter ? activeChapter.content : ""}
+                 onSave={handleSave}
+                 readOnly={!activeChapterId}
+                 chapterId={activeChapterId || undefined}
+                 hideToolbar={true} // Ribbon handles toolbars
+                 hideFooter={true}  // Layout handles footer
+                 hideTitle={true}   // Layout handles title
+                 scrollable={true} 
+                 onEditorReady={setDocEditor}
+             />
+         </ScrivenerLayout>
       ) : (
         <MainLayout
             sidebar={

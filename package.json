@@ -31,6 +31,7 @@
     "lint": "pnpm run check:no-native-dialogs && pnpm run check:i18n-parity && eslint src --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx,json}\"",
     "test": "pnpm rebuild better-sqlite3 && vitest",
+    "test:ui-mode-integrity": "SKIP_DB_TEST_SETUP=1 vitest tests/renderer/services/uiModeIntegrity.test.ts tests/renderer/services/layoutModeActions.integrity.test.ts tests/renderer/stores/editorStore.uiModeIntegrity.test.ts",
     "test:prepare": "electron-rebuild --force",
     "test:e2e": "pnpm test:prepare && pnpm build && playwright test --project=e2e",
     "test:stress": "pnpm test:prepare && pnpm build && playwright test --project=stress",
