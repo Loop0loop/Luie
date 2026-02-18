@@ -14,8 +14,11 @@ import {
   Redo,
   Settings,
   FileOutput,
+  Monitor,
+  Smartphone,
 } from "lucide-react";
 import { cn } from "../../../../shared/types/utils";
+import { useEditorStore } from "../../stores/editorStore";
 import { api } from "../../services/api";
 
 interface RibbonProps {
@@ -40,12 +43,10 @@ type RibbonCommandChain = ReturnType<Editor["chain"]> & {
 
 export default function Ribbon({ editor, onOpenSettings, activeChapterId }: RibbonProps) {
   const { t } = useTranslation();
+  const maxWidth = useEditorStore((state) => state.maxWidth);
+  
+  if (!editor) return null;
 
-  const styleOptions = [
-    { label: t("toolbar.ribbon.style.normalText"), value: "paragraph" },
-    { label: t("toolbar.ribbon.style.heading1"), value: "heading1" },
-    { label: t("toolbar.ribbon.style.heading2"), value: "heading2" },
-  ];
 
   const fontOptions = [
     t("toolbar.font.options.arial"),
@@ -61,16 +62,7 @@ export default function Ribbon({ editor, onOpenSettings, activeChapterId }: Ribb
     action(editor.chain().focus() as unknown as RibbonCommandChain);
   };
 
-  const handleStyleChange = (value: string) => {
-    if (!editor) return;
-    if (value === "paragraph") {
-      editor.chain().focus().setParagraph().run();
-    } else if (value === "heading1") {
-      (editor.chain().focus() as unknown as RibbonCommandChain).toggleHeading({ level: 1 }).run();
-    } else if (value === "heading2") {
-      (editor.chain().focus() as unknown as RibbonCommandChain).toggleHeading({ level: 2 }).run();
-    }
-  };
+
 
   const handleExport = async () => {
     if (!activeChapterId) return;
@@ -99,17 +91,8 @@ export default function Ribbon({ editor, onOpenSettings, activeChapterId }: Ribb
 
         {/* Style & Font */}
         <div className="flex items-center gap-2 pr-2 border-r border-border/20">
-          <select
-            className="h-7 text-xs bg-transparent border-none focus:ring-0 w-28 px-2 hover:bg-black/5 dark:hover:bg-white/10 rounded cursor-pointer"
-            onChange={(e) => handleStyleChange(e.target.value)}
-            defaultValue="paragraph"
-          >
-            {styleOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          {/* Style Selector Removed as per request */}
+          <div className="hidden" />
           <div className="h-4 w-px bg-border/20" />
           <select className="h-7 text-xs bg-transparent border-none focus:ring-0 w-24 px-2 hover:bg-black/5 dark:hover:bg-white/10 rounded cursor-pointer">
             {fontOptions.map((label) => (
@@ -190,6 +173,24 @@ export default function Ribbon({ editor, onOpenSettings, activeChapterId }: Ribb
             onClick={() => withChain((c) => c.toggleOrderedList().run())}
             title={t("toolbar.tooltip.orderedList")}
           />
+        </div>
+
+        {/* Layout Toggle (PC / Mobile) */}
+        <div className="flex items-center gap-0.5 pr-2 border-r border-border/20">
+          <button
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-black/5 dark:bg-white/5 text-[11px] text-muted border border-transparent cursor-pointer transition-colors hover:bg-black/10 dark:hover:bg-white/10",
+              (maxWidth && maxWidth <= 500) && "bg-blue-100 dark:bg-blue-900/30 text-blue-600 border-blue-200 dark:border-blue-800"
+            )}
+            onClick={() => {
+              const isMobile = maxWidth && maxWidth <= 500;
+              useEditorStore.getState().updateSettings({ maxWidth: isMobile ? 816 : 450 });
+            }}
+            title={t("toolbar.layout.toggle")}
+          >
+            {(maxWidth && maxWidth <= 500) ? <Smartphone className="w-3.5 h-3.5" /> : <Monitor className="w-3.5 h-3.5" />}
+            <span>{(maxWidth && maxWidth <= 500) ? t("toolbar.layout.mobile") : t("toolbar.layout.pc")}</span>
+          </button>
         </div>
 
         {/* 오른쪽 끝: 내보내기 & 설정 */}

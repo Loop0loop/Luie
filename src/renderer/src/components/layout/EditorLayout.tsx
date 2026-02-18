@@ -18,6 +18,7 @@ import {
   History,
   Trash2,
   ChevronLeft,
+  X,
 } from "lucide-react";
 import FocusHoverSidebar from "../sidebar/FocusHoverSidebar";
 import Ribbon from "../editor/Ribbon";
@@ -26,6 +27,7 @@ import { cn } from "../../../../shared/types/utils";
 import { useUIStore, type DocsRightTab } from "../../stores/uiStore";
 import { useSplitView } from "../../hooks/useSplitView";
 import { useChapterStore } from "../../stores/chapterStore";
+import { useEditorStore } from "../../stores/editorStore";
 
 const ResearchPanel = lazy(() => import("../research/ResearchPanel"));
 const WorldPanel = lazy(() => import("../research/WorldPanel"));
@@ -36,7 +38,6 @@ const TrashList = lazy(() =>
   import("../trash/TrashList").then((m) => ({ default: m.TrashList }))
 );
 const SnapshotViewer = lazy(() => import("../snapshot/SnapshotViewer"));
-const ExportPreviewPanel = lazy(() => import("../export/ExportPreviewPanel"));
 
 interface EditorLayoutProps {
   children?: ReactNode;
@@ -102,8 +103,12 @@ export default function EditorLayout({
   const { t } = useTranslation();
 
   // UIStore의 docsRightTab을 공유해서 SmartLink 연동
-  const { docsRightTab, setDocsRightTab } = useUIStore();
-  const { isSplitView, splitRatio, rightPanelContent, startResizeSplit, setSplitView } = useSplitView();
+  const { docsRightTab, setDocsRightTab, setRightPanelContent } = useUIStore();
+  // EditorStore에서 maxWidth 가져오기 (PC/Mobile 조판)
+  const maxWidth = useEditorStore((state) => state.maxWidth);
+  
+  // useSplitView의 rightPanelContent를 사용하여 스냅샷 뷰어 제어
+  const { rightPanelContent } = useSplitView();
   const { items: chapters } = useChapterStore();
 
   // BinderTab만 허용 (editor/export 제외)
@@ -113,10 +118,38 @@ export default function EditorLayout({
       ? (docsRightTab as BinderTab)
       : null;
 
+  // 닫힘 애니메이션을 위한 상태
+  const [closingTab, setClosingTab] = useState<BinderTab | null>(null);
+  const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const binderRef = useRef<HTMLDivElement>(null);
+  
   const setActiveRightTab = useCallback(
-    (tab: BinderTab | null) => setDocsRightTab(tab),
-    [setDocsRightTab]
+    (tab: BinderTab | null) => {
+      if (!tab && activeRightTab) {
+        // 닫을 때: closingTab 설정 하여 애니메이션 시작
+        setClosingTab(activeRightTab);
+      }
+      setDocsRightTab(tab);
+    },
+    [activeRightTab, setDocsRightTab]
   );
+
+  const handleBinderMouseEnter = useCallback(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  const handleBinderMouseLeave = useCallback(() => {
+    // 포커스가 내부에 있으면 닫지 않음 (이름 수정 등)
+    if (document.activeElement && binderRef.current?.contains(document.activeElement)) {
+      return;
+    }
+    closeTimerRef.current = setTimeout(() => {
+      setActiveRightTab(null);
+    }, 600);
+  }, [setActiveRightTab]);
 
   const ribbonRef = useRef<HTMLDivElement>(null);
   const [ribbonHeight, setRibbonHeight] = useState(56);
@@ -125,10 +158,13 @@ export default function EditorLayout({
   const [tabWidths, setTabWidths] = useState<Record<string, number>>(loadTabWidths);
   const [isResizing, setIsResizing] = useState(false);
 
+  // 현재 보여줄 탭 (Active 없으면 Closing)
+  const visibleTab = activeRightTab || closingTab;
+
   // 현재 탭의 너비
   const currentWidth = useMemo(
-    () => (activeRightTab ? (tabWidths[activeRightTab] ?? BINDER_DEFAULT_WIDTH) : BINDER_DEFAULT_WIDTH),
-    [activeRightTab, tabWidths]
+    () => (visibleTab ? (tabWidths[visibleTab] ?? BINDER_DEFAULT_WIDTH) : BINDER_DEFAULT_WIDTH),
+    [visibleTab, tabWidths]
   );
 
   // Ribbon 실제 높이 측정
@@ -192,49 +228,68 @@ export default function EditorLayout({
     [activeRightTab, setActiveRightTab]
   );
 
+  // 스냅샷 뷰어에서 목록으로 돌아가기
+  const handleBackToSnapshotList = () => {
+    setRightPanelContent({ type: "snapshot", snapshot: undefined }); // Clear snapshot content to show list
+  };
+
   // 공통 BinderBar 콘텐츠 렌더링 함수
   const renderBinderContent = () => (
-    <div className="h-full flex flex-row bg-panel border-l border-border shadow-2xl">
+    <div 
+      ref={binderRef}
+      className="h-full flex flex-row bg-panel border-l border-border shadow-2xl"
+      onMouseEnter={handleBinderMouseEnter}
+      onMouseLeave={handleBinderMouseLeave}
+    >
       {/* 패널 콘텐츠 영역 */}
       <div
         className="flex flex-col overflow-hidden bg-panel shrink-0 relative transition-[width] duration-300 ease-in-out"
         style={{
+          // activeRightTab이 있으면 width, 없으면 0 (closingTab이 있어도 active가 없으면 0으로 줄어듦 -> 애니메이션)
           width: activeRightTab ? `${currentWidth}px` : "0px",
-          // 리사이즈 중일 때는 transition 끔 (부드러운 드래그)
           transition: isResizing ? "none" : undefined,
         }}
+        onTransitionEnd={() => {
+          // 닫힘 애니메이션이 끝나면 closingTab 제거하여 완전히 언마운트 준비
+          if (!activeRightTab) {
+            setClosingTab(null);
+          }
+        }}
       >
-        {activeRightTab && (
-          <div className="h-full flex flex-col w-full">
+        {/* visibleTab이 있으면 렌더링 (닫히는 중에도 내용 유지) */}
+        {visibleTab && (
+          <div className="h-full flex flex-col w-full min-w-[240px] relative">
             {/* 리사이즈 핸들 (왼쪽 가장자리) */}
             <div
-              className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-accent/40 active:bg-accent/60 transition-colors z-10 group"
+              className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-accent/40 active:bg-accent/60 transition-colors z-20 group"
               onMouseDown={startResize}
             >
               <div className="absolute inset-y-0 left-0 w-0.5 bg-border/50 group-hover:bg-accent/60 transition-colors" />
             </div>
 
-            {/* 패널 헤더 */}
-            <div className="h-9 px-3 flex items-center bg-surface border-b border-border text-xs font-semibold text-muted tracking-wide shrink-0 justify-between">
-              <span className="uppercase pl-1">
-                {activeRightTab === "character" && t("research.title.characters")}
-                {activeRightTab === "world" && t("research.title.world")}
-                {activeRightTab === "scrap" && t("research.title.scrap")}
-                {activeRightTab === "analysis" && t("research.title.analysis")}
-                {activeRightTab === "snapshot" && t("sidebar.section.snapshot")}
-                {activeRightTab === "trash" && t("sidebar.section.trash")}
-              </span>
-              <button
+            {/* Absolute Close Button (Header Removed) */}
+             <button
                 onClick={() => setActiveRightTab(null)}
-                className="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 text-muted hover:text-fg transition-colors"
+                className="absolute top-2 right-2 p-1.5 rounded-full bg-surface/80 backdrop-blur-sm border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-all opacity-0 group-hover:opacity-100 peer-hover:opacity-100 hover:opacity-100"
                 title={t("sidebar.toggle.close")}
               >
-                <ChevronLeft className="w-3.5 h-3.5 rotate-180" />
+                <X className="w-4 h-4" />
               </button>
-            </div>
+
+             {/* 스냅샷 뷰어일 때 뒤로가기 버튼 (Absolute) */}
+             {visibleTab === 'snapshot' && rightPanelContent.type === 'snapshot' && (
+                <button 
+                  onClick={handleBackToSnapshotList}
+                  className="absolute top-2 left-3 p-1.5 rounded-full bg-surface/80 backdrop-blur-sm border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-all"
+                  title={t("common.back")}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+             )}
+
 
             {/* 패널 본문 */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden pt-4"> {/* Header 공간 제거됨 */}
               <Suspense
                 fallback={
                   <div className="p-4 text-sm text-muted">
@@ -242,36 +297,49 @@ export default function EditorLayout({
                   </div>
                 }
               >
-                {activeRightTab === "character" && (
+                {visibleTab === "character" && (
                   <ResearchPanel
                     activeTab="character"
                     onClose={() => setActiveRightTab(null)}
                   />
                 )}
-                {activeRightTab === "world" && (
+                {visibleTab === "world" && (
                   <WorldPanel onClose={() => setActiveRightTab(null)} />
                 )}
-                {activeRightTab === "scrap" && (
+                {visibleTab === "scrap" && (
                   <ResearchPanel
                     activeTab="scrap"
                     onClose={() => setActiveRightTab(null)}
                   />
                 )}
-                {activeRightTab === "analysis" && (
+                {visibleTab === "analysis" && (
                   <ResearchPanel
                     activeTab="analysis"
                     onClose={() => setActiveRightTab(null)}
                   />
                 )}
-                {activeRightTab === "snapshot" &&
-                  (activeChapterId ? (
+                {visibleTab === "snapshot" &&
+                  // 스냅샷 뷰어 모드 vs 리스트 모드
+                  (rightPanelContent.type === "snapshot" && rightPanelContent.snapshot ? (
+                    <SnapshotViewer
+                      snapshot={rightPanelContent.snapshot}
+                      currentContent={
+                         chapters.find((c) => c.id === activeChapterId)?.content || ""
+                      }
+                      onApplySnapshotText={async (nextContent) => {
+                         if (onSaveChapter && activeChapterTitle) {
+                           await onSaveChapter(activeChapterTitle, nextContent);
+                         }
+                      }}
+                    />
+                  ) : activeChapterId ? (
                     <SnapshotList chapterId={activeChapterId} />
                   ) : (
                     <div className="p-4 text-xs text-muted italic text-center">
                       {t("snapshot.list.selectChapter")}
                     </div>
                   ))}
-                {activeRightTab === "trash" &&
+                {visibleTab === "trash" &&
                   (currentProjectId ? (
                     <TrashList projectId={currentProjectId} refreshKey={0} />
                   ) : (
@@ -351,15 +419,15 @@ export default function EditorLayout({
           </div>
         </FocusHoverSidebar>
 
-        {/* CENTER: 메인 에디터 영역 (SplitView 지원) */}
+        {/* CENTER: 메인 에디터 영역 */}
         <div className="flex-1 h-full overflow-hidden flex flex-row relative">
-          {/* 1. Editor Pane */}
-          <div 
-            className="h-full overflow-y-auto bg-[#f3f4f6] dark:bg-[#1a1a1a] flex flex-col items-center custom-scrollbar shrink-0"
-            style={{ flex: isSplitView ? splitRatio : 1 }}
-          >
-            {/* A4 페이지 */}
-            <div className="w-[816px] min-h-[1056px] bg-white dark:bg-[#1e1e1e] shadow-2xl border border-black/5 dark:border-white/5 py-12 px-12 my-8 transition-all duration-200 ease-out shrink-0">
+          {/* Editor Pane */}
+          <div className="flex-1 h-full overflow-y-auto bg-[#f3f4f6] dark:bg-[#1a1a1a] flex flex-col items-center custom-scrollbar shrink-0">
+            {/* A4 페이지 (max-width 적용) */}
+            <div 
+              className="min-h-[1056px] bg-white dark:bg-[#1e1e1e] shadow-2xl border border-black/5 dark:border-white/5 py-12 px-12 my-8 transition-all duration-200 ease-out shrink-0"
+              style={{ width: maxWidth ?? 816 }}
+            >
               {/* 챕터 제목 */}
               {activeChapterTitle && (
                 <h1 className="text-3xl font-bold mb-8 pb-4 border-b border-border/50 text-fg break-all">
@@ -375,66 +443,17 @@ export default function EditorLayout({
 
             <div className="h-12 w-full shrink-0" />
           </div>
-
-          {/* 2. Splitter & Secondary Pane */}
-          {isSplitView && (
-            <>
-              <div
-                className="w-1 bg-border cursor-col-resize hover:bg-accent/50 z-30 transition-colors flex-none"
-                onMouseDown={startResizeSplit}
-              />
-              <div
-                style={{ flex: 1 - splitRatio }}
-                className="h-full bg-panel overflow-hidden border-l border-border relative min-w-0"
-              >
-                 <Suspense fallback={<div className="p-4 text-sm text-muted">{t("common.loading")}</div>}>
-                  {rightPanelContent.type === "snapshot" && rightPanelContent.snapshot ? (
-                    <SnapshotViewer
-                      snapshot={rightPanelContent.snapshot}
-                      currentContent={
-                         chapters.find((c) => c.id === activeChapterId)?.content || ""
-                      }
-                      onApplySnapshotText={async (nextContent) => {
-                         if (onSaveChapter && activeChapterTitle) {
-                           await onSaveChapter(activeChapterTitle, nextContent);
-                         }
-                      }}
-                    />
-                  ) : rightPanelContent.type === "export" ? (
-                    <ExportPreviewPanel title={activeChapterTitle} />
-                  ) : rightPanelContent.type === "research" ? (
-                     <ResearchPanel
-                       activeTab={rightPanelContent.tab || "character"}
-                       onClose={() => setSplitView(false)}
-                     />
-                  ) : (
-                    <div className="p-4 text-sm text-muted">
-                      {t("common.noContent")}
-                    </div>
-                  )}
-                 </Suspense>
-                 
-                 {/* Close Split View Button */}
-                 <button 
-                   onClick={() => setSplitView(false)}
-                   className="absolute top-2 right-2 p-1.5 rounded-md bg-surface border border-border text-muted hover:text-fg hover:bg-surface-hover z-50 shadow-sm"
-                   title={t("common.close")}
-                 >
-                   <ChevronLeft className="w-3.5 h-3.5 rotate-180" />
-                 </button>
-              </div>
-            </>
-          )}
         </div>
 
         {/* RIGHT: 바인더바 (Hybrid: Static or Hover) */}
-        {activeRightTab ? (
+        {/* activeRightTab이 있거나 닫히는 중(closingTab)일 때 렌더링 */}
+        {activeRightTab || closingTab ? (
           // 탭 활성화 시: Static Panel (에디터 영역을 밈)
           <div className="h-full shrink-0 z-20">
             {renderBinderContent()}
           </div>
         ) : (
-          // 탭 비활성 시: Hover Sidebar (에디터 위에 뜸, 패널은 닫혀있고 아이콘바만 보임 -> Hover 시 전체 등장이지만 패널은 닫힌 상태)
+          // 탭 비활성 시: Hover Sidebar (에디터 위에 뜸, 패널은 닫혀있고 아이콘바만 보임)
           <FocusHoverSidebar side="right" topOffset={sidebarTopOffset}>
             {renderBinderContent()}
           </FocusHoverSidebar>
