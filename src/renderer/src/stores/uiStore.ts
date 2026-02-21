@@ -4,8 +4,6 @@ import {
   DEFAULT_UI_CONTEXT_TAB,
   DEFAULT_UI_RESEARCH_TAB,
   DEFAULT_UI_RIGHT_PANEL_TYPE,
-  DEFAULT_UI_SPLIT_RATIO,
-  DEFAULT_UI_SPLIT_VIEW_ENABLED,
   DEFAULT_UI_VIEW,
   DEFAULT_UI_SIDEBAR_OPEN,
   DEFAULT_UI_CONTEXT_OPEN,
@@ -34,14 +32,20 @@ interface RightPanelContent {
   snapshot?: Snapshot;
 }
 
+export interface ResizablePanelData {
+  id: string; // Unique ID for the panel
+  content: RightPanelContent;
+  size: number; // Percentage or flex size
+}
+
 interface UIStore {
   view: "template" | "editor" | "corkboard" | "outliner";
   contextTab: ContextTab;
   worldTab: WorldTab;
-  isSplitView: boolean;
-  splitRatio: number;
-  splitSide: "left" | "right" | "bottom";
-  rightPanelContent: RightPanelContent;
+  
+  // Resizable Panels State
+  panels: ResizablePanelData[];
+  
   isSidebarOpen: boolean;
   isContextOpen: boolean;
   isManuscriptMenuOpen: boolean;
@@ -53,11 +57,13 @@ interface UIStore {
   setView: (view: UIStore["view"]) => void;
   setContextTab: (tab: ContextTab) => void;
   setWorldTab: (tab: WorldTab) => void;
-  setSplitView: (isSplit: boolean) => void;
-  setSplitRatio: (ratio: number) => void;
-  setSplitSide: (side: UIStore["splitSide"]) => void;
-  toggleSplitSide: () => void;
-  setRightPanelContent: (content: RightPanelContent) => void;
+  
+  // Panel Layout Actions
+  addPanel: (content: RightPanelContent, insertAt?: number) => void;
+  removePanel: (id: string) => void;
+  updatePanelSize: (id: string, size: number) => void;
+  setPanels: (panels: ResizablePanelData[]) => void;
+  
   setSidebarOpen: (isOpen: boolean) => void;
   setContextOpen: (isOpen: boolean) => void;
   setManuscriptMenuOpen: (isOpen: boolean) => void;
@@ -77,13 +83,7 @@ export const useUIStore = create<UIStore>()(
       view: DEFAULT_UI_VIEW as UIStore["view"],
       contextTab: DEFAULT_UI_CONTEXT_TAB as ContextTab,
       worldTab: "terms",
-      isSplitView: DEFAULT_UI_SPLIT_VIEW_ENABLED,
-      splitRatio: DEFAULT_UI_SPLIT_RATIO,
-      splitSide: "right",
-      rightPanelContent: {
-        type: DEFAULT_UI_RIGHT_PANEL_TYPE as RightPanelContent["type"],
-        tab: DEFAULT_UI_RESEARCH_TAB as ResearchTab,
-      },
+      panels: [],
       isSidebarOpen: DEFAULT_UI_SIDEBAR_OPEN,
       isContextOpen: DEFAULT_UI_CONTEXT_OPEN,
       isManuscriptMenuOpen: false,
@@ -97,12 +97,37 @@ export const useUIStore = create<UIStore>()(
       setView: (view) => set({ view }),
       setContextTab: (contextTab) => set({ contextTab }),
       setWorldTab: (worldTab) => set({ worldTab }),
-      setSplitView: (isSplitView) => set({ isSplitView }),
-      setSplitRatio: (splitRatio) => set({ splitRatio }),
-      setSplitSide: (splitSide) => set({ splitSide }),
-      toggleSplitSide: () =>
-        set((state) => ({ splitSide: state.splitSide === "right" ? "left" : "right" })),
-      setRightPanelContent: (rightPanelContent) => set({ rightPanelContent }),
+      
+      addPanel: (content, insertAt) => set((state) => {
+        const newPanel: ResizablePanelData = {
+          id: `panel-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          content,
+          size: state.panels.length === 0 ? 100 : 50 // Default size logic can be improved
+        };
+        const newPanels = [...state.panels];
+        if (insertAt !== undefined && insertAt >= 0 && insertAt <= newPanels.length) {
+          newPanels.splice(insertAt, 0, newPanel);
+        } else {
+          newPanels.push(newPanel);
+        }
+        // Normalize sizes roughly
+        const sizePerPanel = 100 / newPanels.length;
+        newPanels.forEach(p => p.size = sizePerPanel);
+        return { panels: newPanels };
+      }),
+      removePanel: (id) => set((state) => {
+         const newPanels = state.panels.filter(p => p.id !== id);
+         if (newPanels.length > 0) {
+             const sizePerPanel = 100 / newPanels.length;
+             newPanels.forEach(p => p.size = sizePerPanel);
+         }
+         return { panels: newPanels };
+      }),
+      updatePanelSize: (id, size) => set((state) => ({
+        panels: state.panels.map(p => p.id === id ? { ...p, size } : p)
+      })),
+      setPanels: (panels) => set({ panels }),
+
       setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
       setContextOpen: (isContextOpen) => set({ isContextOpen }),
       setManuscriptMenuOpen: (isManuscriptMenuOpen) => set({ isManuscriptMenuOpen }),
@@ -119,22 +144,19 @@ export const useUIStore = create<UIStore>()(
         view: state.view,
         contextTab: state.contextTab,
         worldTab: state.worldTab,
-        splitRatio: state.splitRatio,
-        isSplitView: state.isSplitView,
-        splitSide: state.splitSide,
+        panels: state.panels.filter(p => p.content.type !== "snapshot").map(p => ({
+          ...p,
+          content: p.content.type === "snapshot" ? {
+              type: DEFAULT_UI_RIGHT_PANEL_TYPE as RightPanelContent["type"],
+              tab: DEFAULT_UI_RESEARCH_TAB as ResearchTab,
+          } : p.content
+        })),
         isSidebarOpen: state.isSidebarOpen,
         isContextOpen: state.isContextOpen,
         isManuscriptMenuOpen: state.isManuscriptMenuOpen,
         sidebarWidth: state.sidebarWidth,
         contextWidth: state.contextWidth,
         isBinderBarOpen: state.isBinderBarOpen,
-        rightPanelContent:
-          state.rightPanelContent.type === "snapshot"
-            ? {
-                type: DEFAULT_UI_RIGHT_PANEL_TYPE as RightPanelContent["type"],
-                tab: DEFAULT_UI_RESEARCH_TAB as ResearchTab,
-              }
-            : state.rightPanelContent,
       }),
     },
   ),

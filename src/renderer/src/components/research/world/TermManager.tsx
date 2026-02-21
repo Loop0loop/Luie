@@ -19,10 +19,20 @@ import {
 import { TermCard, SortableTermItem } from "./TermCard";
 import { useTermDragDrop } from "./hooks/useTermDragDrop";
 
-export function TermManager() {
+interface TermManagerProps {
+  termId?: string;
+}
+
+export function TermManager({ termId }: TermManagerProps) {
   const { t } = useTranslation();
   const { currentItem: currentProject } = useProjectStore();
-  const { terms, currentTerm, setCurrentTerm, loadTerms, createTerm, updateTerm, deleteTerm } = useTermStore();
+  const { terms, currentTerm, setCurrentTerm, loadTerms, loadTerm, createTerm, updateTerm, deleteTerm } = useTermStore();
+
+  useEffect(() => {
+    if (termId) {
+      void loadTerm(termId);
+    }
+  }, [termId, loadTerm]);
 
   const {
     sensors,

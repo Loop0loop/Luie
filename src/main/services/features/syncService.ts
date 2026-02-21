@@ -76,6 +76,15 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const sortByUpdatedAtDesc = <T extends { updatedAt: string }>(rows: T[]): T[] =>
   [...rows].sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt));
 
+const toSyncErrorMessage = (error: unknown): string => {
+  const raw = error instanceof Error ? error.message : String(error);
+  if (raw.startsWith("SUPABASE_SCHEMA_MISSING:")) {
+    const table = raw.split(":")[1] ?? "unknown";
+    return `SYNC_REMOTE_SCHEMA_MISSING:${table}: apply supabase/migrations/20260219000000_luie_sync.sql to this Supabase project`;
+  }
+  return raw;
+};
+
 const toSyncStatusFromSettings = (
   syncSettings: SyncSettings,
   baseStatus: SyncStatus,
@@ -291,7 +300,7 @@ class SyncService {
 
       return result;
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = toSyncErrorMessage(error);
       const nextSettings = settingsManager.setSyncSettings({
         lastError: message,
       });
@@ -591,8 +600,14 @@ class SyncService {
         select: { id: true },
       }) as { id?: string } | null;
 
+      if (character.deletedAt) {
+        if (existing?.id) {
+          await prisma.character.delete({ where: { id: character.id } });
+        }
+        continue;
+      }
+
       const data = {
-        projectId: character.projectId,
         name: character.name,
         description: character.description,
         firstAppearance: character.firstAppearance,
@@ -600,6 +615,9 @@ class SyncService {
           ? character.attributes
           : JSON.stringify(character.attributes ?? null),
         updatedAt: new Date(character.updatedAt),
+        project: {
+          connect: { id: character.projectId },
+        },
       };
 
       if (existing?.id) {
@@ -624,14 +642,23 @@ class SyncService {
         select: { id: true },
       }) as { id?: string } | null;
 
+      if (term.deletedAt) {
+        if (existing?.id) {
+          await prisma.term.delete({ where: { id: term.id } });
+        }
+        continue;
+      }
+
       const data = {
-        projectId: term.projectId,
         term: term.term,
         definition: term.definition,
         category: term.category,
         order: term.order,
         firstAppearance: term.firstAppearance,
         updatedAt: new Date(term.updatedAt),
+        project: {
+          connect: { id: term.projectId },
+        },
       };
 
       if (existing?.id) {
@@ -656,27 +683,45 @@ class SyncService {
         select: { id: true },
       }) as { id?: string } | null;
 
+      if (snapshot.deletedAt) {
+        if (existing?.id) {
+          await prisma.snapshot.delete({ where: { id: snapshot.id } });
+        }
+        continue;
+      }
+
       const data = {
-        projectId: snapshot.projectId,
-        chapterId: snapshot.chapterId,
         content: snapshot.contentInline ?? "",
         contentLength: snapshot.contentLength,
         description: snapshot.description,
         createdAt: new Date(snapshot.createdAt),
-        updatedAt: new Date(snapshot.updatedAt),
-        deletedAt: snapshot.deletedAt ? new Date(snapshot.deletedAt) : null,
+        project: {
+          connect: { id: snapshot.projectId },
+        },
       };
 
       if (existing?.id) {
         await prisma.snapshot.update({
           where: { id: snapshot.id },
-          data,
+          data: {
+            ...data,
+            chapter: snapshot.chapterId
+              ? { connect: { id: snapshot.chapterId } }
+              : { disconnect: true },
+          },
         });
       } else {
         await prisma.snapshot.create({
           data: {
             id: snapshot.id,
             ...data,
+            ...(snapshot.chapterId
+              ? {
+                  chapter: {
+                    connect: { id: snapshot.chapterId },
+                  },
+                }
+              : {}),
           },
         });
       }
@@ -833,7 +878,6 @@ class SyncService {
     }) as { id?: string } | null;
 
     const data = {
-      projectId: chapter.projectId,
       title: chapter.title,
       content: chapter.content,
       synopsis: chapter.synopsis,
@@ -841,6 +885,9 @@ class SyncService {
       wordCount: chapter.wordCount,
       updatedAt: new Date(chapter.updatedAt),
       deletedAt: chapter.deletedAt ? new Date(chapter.deletedAt) : null,
+      project: {
+        connect: { id: chapter.projectId },
+      },
     };
 
     if (existing?.id) {

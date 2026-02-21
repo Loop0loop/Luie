@@ -4,6 +4,7 @@ import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from '
 import { cn } from '../../../../shared/types/utils';
 import { useUIStore } from '../../stores/uiStore';
 import { useTranslation } from "react-i18next";
+import { EditorDropZones } from "../common/EditorDropZones";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -94,6 +95,7 @@ export default function MainLayout({ children, sidebar, contextPanel }: MainLayo
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col bg-app relative min-w-0 z-0">
+          <EditorDropZones />
           <div className="flex items-center px-4 py-2 h-12 shrink-0">
              <button 
                className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-all hover:bg-active hover:text-fg"

@@ -8,20 +8,17 @@ import type { Snapshot } from "../../../shared/types";
 
 export function useSplitView() {
   const {
-    isSplitView,
-    splitRatio,
-    rightPanelContent,
+    panels,
     contextTab,
-    setSplitView,
-    setSplitRatio,
-    setRightPanelContent,
+    addPanel,
+    removePanel,
+    setPanels,
     setContextTab,
   } = useUIStore();
 
   const handleSelectResearchItem = useCallback(
     (type: ResearchTab) => {
-      setSplitView(true);
-      setRightPanelContent({ type: "research", tab: type });
+      addPanel({ type: "research", tab: type });
 
       const contextMap: Record<ResearchTab, ContextTab> = {
         character: "characters",
@@ -31,70 +28,41 @@ export function useSplitView() {
       };
       setContextTab(contextMap[type]);
     },
-    [setSplitView, setRightPanelContent, setContextTab],
+    [addPanel, setContextTab],
   );
 
   const handleSplitView = useCallback(
-    (type: "vertical" | "horizontal", contentId: string) => {
-      if (type === "vertical") {
-        setSplitView(true);
-        setRightPanelContent({ type: "editor", id: contentId });
-      }
+    (_type: "vertical" | "horizontal", _contentId: string) => {
+        addPanel({ type: "editor", id: _contentId });
     },
-    [setSplitView, setRightPanelContent],
+    [addPanel],
   );
 
   const handleOpenSnapshot = useCallback(
     (snapshot: Snapshot) => {
-      setSplitView(true);
-      setRightPanelContent({ type: "snapshot", snapshot });
+      addPanel({ type: "snapshot", snapshot });
     },
-    [setSplitView, setRightPanelContent],
+    [addPanel],
   );
 
   const handleOpenExport = useCallback(() => {
-    setSplitView(true);
-    setRightPanelContent({ type: "export" });
-  }, [setSplitView, setRightPanelContent]);
+    addPanel({ type: "export" });
+  }, [addPanel]);
 
   const startResizeSplit = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-
-      const startX = e.clientX;
-      const startRatio = splitRatio;
-      const container = document.getElementById("split-view-container");
-      const containerWidth =
-        container instanceof HTMLElement
-          ? container.getBoundingClientRect().width
-          : window.innerWidth;
-
-      const onMove = (ev: MouseEvent) => {
-        const delta = ev.clientX - startX;
-        const next = Math.min(
-          0.8,
-          Math.max(0.2, startRatio + delta / containerWidth),
-        );
-        setSplitRatio(next);
-      };
-      const onUp = () => {
-        window.removeEventListener("mousemove", onMove);
-        window.removeEventListener("mouseup", onUp);
-      };
-
-      window.addEventListener("mousemove", onMove);
-      window.addEventListener("mouseup", onUp);
+    (_e: React.MouseEvent) => {
+       // Deprecated with react-resizable-panels
     },
-    [splitRatio, setSplitRatio],
+    [],
   );
 
   return {
-    isSplitView,
-    splitRatio,
-    rightPanelContent,
+    panels,
     contextTab,
     setContextTab,
-    setSplitView,
+    addPanel,
+    removePanel,
+    setPanels,
     handleSelectResearchItem,
     handleSplitView,
     handleOpenSnapshot,

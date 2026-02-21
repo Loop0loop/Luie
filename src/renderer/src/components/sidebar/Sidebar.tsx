@@ -327,8 +327,12 @@ function Sidebar({
             if (item.type === "chapter") {
               const { chapter } = item;
               return (
-                <div
+                <DraggableItem
                   key={chapter.id}
+                  id={`chapter-${chapter.id}`}
+                  data={{ type: "chapter", id: chapter.id, title: chapter.title || "Untitled" }}
+                >
+                <div
                   className={cn(
                     "flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] transition-all",
                     activeChapterId === chapter.id
@@ -358,6 +362,7 @@ function Sidebar({
                     </div>
                   )}
                 </div>
+                </DraggableItem>
               );
             }
 

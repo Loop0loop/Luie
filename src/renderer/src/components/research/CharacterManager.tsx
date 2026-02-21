@@ -55,7 +55,7 @@ export default function CharacterManager() {
   const handleLayoutChange = (layout: Layout) => {
     void writeLocalStorageJson(STORAGE_KEY_CHARACTER_SIDEBAR_LAYOUT, layout);
   };
-  
+
   const initialLayout = useMemo(() => {
      return readLocalStorageJson<Layout>(STORAGE_KEY_CHARACTER_SIDEBAR_LAYOUT) ?? undefined;
   }, []);
@@ -112,9 +112,9 @@ export default function CharacterManager() {
   return (
     <div className="flex w-full h-full bg-canvas overflow-hidden">
       <PanelGroup 
-        orientation="horizontal" 
+        orientation="horizontal"
         onLayoutChanged={handleLayoutChange} 
-        defaultLayout={initialLayout} 
+        defaultLayout={initialLayout}
         className="h-full! w-full!"
       >
         {/* LEFT SIDEBAR - Character List */}
@@ -184,8 +184,7 @@ export default function CharacterManager() {
         </Panel>
 
         {/* Resizer Handle */}
-          <PanelResizeHandle className="w-1 -ml-0.5 bg-transparent hover:bg-primary/50 active:bg-primary z-50 transition-colors flex items-center justify-center group cursor-col-resize focus:outline-none relative">
-            <div className="w-0.5 h-full bg-transparent group-hover:bg-primary/20" />
+          <PanelResizeHandle className="h-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-row-resize flex items-center justify-center -mx-4 z-10 relative">
         </PanelResizeHandle>
 
         {/* RIGHT MAIN - Wiki View */}

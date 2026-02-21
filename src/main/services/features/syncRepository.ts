@@ -71,6 +71,18 @@ const encodeStoragePath = (path: string): string =>
     .map((segment) => encodeURIComponent(segment))
     .join("/");
 
+const toResponseError = async (
+  kind: "FETCH" | "UPSERT",
+  table: string,
+  response: Response,
+): Promise<Error> => {
+  const body = await response.text();
+  if (response.status === 404 && body.includes("PGRST205")) {
+    return new Error(`SUPABASE_SCHEMA_MISSING:${table}`);
+  }
+  return new Error(`SUPABASE_${kind}_FAILED:${table}:${response.status}:${body}`);
+};
+
 const mapProjectRow = (row: DbRow): SyncProjectRecord | null => {
   const id = toNullableString(row.id);
   const userId = toNullableString(row.user_id);
@@ -434,13 +446,13 @@ class SyncRepository {
     });
 
     if (!response.ok) {
-      const body = await response.text();
+      const error = await toResponseError("FETCH", table, response);
       logger.warn("Failed to fetch sync table", {
         table,
         status: response.status,
-        body,
+        error: error.message,
       });
-      return [];
+      throw error;
     }
 
     const payload = (await response.json()) as unknown;
@@ -472,8 +484,7 @@ class SyncRepository {
     );
 
     if (!response.ok) {
-      const body = await response.text();
-      throw new Error(`SUPABASE_UPSERT_FAILED:${table}:${response.status}:${body}`);
+      throw await toResponseError("UPSERT", table, response);
     }
   }
 

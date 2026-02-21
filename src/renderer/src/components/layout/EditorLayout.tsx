@@ -25,10 +25,10 @@ import Ribbon from "../editor/Ribbon";
 import WindowBar from "./WindowBar";
 import { cn } from "../../../../shared/types/utils";
 import { useUIStore, type DocsRightTab } from "../../stores/uiStore";
-import { useSplitView } from "../../hooks/useSplitView";
-import { useChapterStore } from "../../stores/chapterStore";
 import { useEditorStore } from "../../stores/editorStore";
 import { EditorDropZones } from "../common/EditorDropZones";
+import { DraggableItem } from "../common/DraggableItem";
+import type { DragItemType } from "../common/GlobalDragContext";
 
 const ResearchPanel = lazy(() => import("../research/ResearchPanel"));
 const WorldPanel = lazy(() => import("../research/WorldPanel"));
@@ -38,7 +38,6 @@ const SnapshotList = lazy(() =>
 const TrashList = lazy(() =>
   import("../trash/TrashList").then((m) => ({ default: m.TrashList }))
 );
-const SnapshotViewer = lazy(() => import("../snapshot/SnapshotViewer"));
 
 interface EditorLayoutProps {
   children?: ReactNode;
@@ -99,18 +98,16 @@ export default function EditorLayout({
   currentProjectId,
   editor,
   onOpenSettings,
-  onSaveChapter,
 }: EditorLayoutProps) {
   const { t } = useTranslation();
 
   // UIStore의 docsRightTab을 공유해서 SmartLink 연동
-  const { docsRightTab, setDocsRightTab, setRightPanelContent } = useUIStore();
+  const { docsRightTab, setDocsRightTab } = useUIStore();
   // EditorStore에서 maxWidth 가져오기 (PC/Mobile 조판)
   const maxWidth = useEditorStore((state) => state.maxWidth);
   
   // useSplitView의 rightPanelContent를 사용하여 스냅샷 뷰어 제어
-  const { rightPanelContent } = useSplitView();
-  const { items: chapters } = useChapterStore();
+  // const { panels } = useUIStore(); // Removed as per instruction
 
   // BinderTab만 허용 (editor/export 제외)
   const VALID_TABS: BinderTab[] = ["character", "world", "scrap", "analysis", "snapshot", "trash"];
@@ -231,7 +228,8 @@ export default function EditorLayout({
 
   // 스냅샷 뷰어에서 목록으로 돌아가기
   const handleBackToSnapshotList = () => {
-    setRightPanelContent({ type: "snapshot", snapshot: undefined }); // Clear snapshot content to show list
+    // setRightPanelContent({ type: "snapshot", snapshot: undefined }); // Clear snapshot content to show list
+    // TODO: Need snapshot viewer state inside snapshot panel
   };
 
   // 공통 BinderBar 콘텐츠 렌더링 함수
@@ -278,7 +276,7 @@ export default function EditorLayout({
               </button>
 
              {/* 스냅샷 뷰어일 때 뒤로가기 버튼 (Absolute) */}
-             {visibleTab === 'snapshot' && rightPanelContent.type === 'snapshot' && (
+             {visibleTab === 'snapshot' && (
                 <button 
                   onClick={handleBackToSnapshotList}
                   className="absolute top-2 left-3 p-1.5 rounded-full bg-surface/80 backdrop-blur-sm border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-all"
@@ -320,20 +318,8 @@ export default function EditorLayout({
                   />
                 )}
                 {visibleTab === "snapshot" &&
-                  // 스냅샷 뷰어 모드 vs 리스트 모드
-                  (rightPanelContent.type === "snapshot" && rightPanelContent.snapshot ? (
-                    <SnapshotViewer
-                      snapshot={rightPanelContent.snapshot}
-                      currentContent={
-                         chapters.find((c) => c.id === activeChapterId)?.content || ""
-                      }
-                      onApplySnapshotText={async (nextContent) => {
-                         if (onSaveChapter && activeChapterTitle) {
-                           await onSaveChapter(activeChapterTitle, nextContent);
-                         }
-                      }}
-                    />
-                  ) : activeChapterId ? (
+                  // 스냅샷 뷰어 모드 vs 리스트 모드 (Temporary Fallback)
+                  (activeChapterId ? (
                     <SnapshotList chapterId={activeChapterId} />
                   ) : (
                     <div className="p-4 text-xs text-muted italic text-center">
@@ -361,24 +347,28 @@ export default function EditorLayout({
           isActive={activeRightTab === "character"}
           onClick={() => handleRightTabClick("character")}
           title={t("research.title.characters")}
+          type="character"
         />
         <BinderTabButton
           icon={<Globe className="w-5 h-5" />}
           isActive={activeRightTab === "world"}
           onClick={() => handleRightTabClick("world")}
           title={t("research.title.world")}
+          type="world"
         />
         <BinderTabButton
           icon={<StickyNote className="w-5 h-5" />}
           isActive={activeRightTab === "scrap"}
           onClick={() => handleRightTabClick("scrap")}
           title={t("research.title.scrap")}
+          type="memo"
         />
         <BinderTabButton
           icon={<Sparkles className="w-5 h-5" />}
           isActive={activeRightTab === "analysis"}
           onClick={() => handleRightTabClick("analysis")}
           title={t("research.title.analysis")}
+          type="analysis"
         />
         <div className="w-6 h-px bg-border/50 my-1" />
         <BinderTabButton
@@ -386,12 +376,14 @@ export default function EditorLayout({
           isActive={activeRightTab === "snapshot"}
           onClick={() => handleRightTabClick("snapshot")}
           title={t("sidebar.section.snapshot")}
+          type="snapshot"
         />
         <BinderTabButton
           icon={<Trash2 className="w-5 h-5" />}
           isActive={activeRightTab === "trash"}
           onClick={() => handleRightTabClick("trash")}
           title={t("sidebar.section.trash")}
+          type="trash"
         />
       </div>
     </div>
@@ -422,44 +414,49 @@ export default function EditorLayout({
 
         {/* CENTER: 메인 에디터 영역 */}
         <div className="flex-1 h-full overflow-hidden flex flex-row relative">
-          {/* Editor Pane */}
-          <div className="flex-1 h-full overflow-y-auto bg-[#f3f4f6] dark:bg-[#1a1a1a] flex flex-col items-center custom-scrollbar shrink-0 relative">
+          
+          {/* Editor Column Wrapper */}
+          <div className="flex-1 h-full overflow-hidden flex flex-col relative">
             <EditorDropZones />
-            {/* A4 페이지 (max-width 적용) */}
-            <div 
-              className="min-h-[1056px] bg-white dark:bg-[#1e1e1e] shadow-2xl border border-black/5 dark:border-white/5 py-12 px-12 my-8 transition-all duration-200 ease-out shrink-0"
-              style={{ width: maxWidth ?? 816 }}
-            >
-              {/* 챕터 제목 */}
-              {activeChapterTitle && (
-                <h1 className="text-3xl font-bold mb-8 pb-4 border-b border-border/50 text-fg break-all">
-                  {activeChapterTitle}
-                </h1>
-              )}
+            
+            {/* Scrollable Editor Area */}
+            <div className="flex-1 h-full overflow-y-auto bg-[#f3f4f6] dark:bg-[#1a1a1a] flex flex-col items-center custom-scrollbar shrink-0 relative">
+              {/* A4 페이지 (max-width 적용) */}
+              <div 
+                className="min-h-[1056px] bg-white dark:bg-[#1e1e1e] shadow-2xl border border-black/5 dark:border-white/5 py-12 px-12 my-8 transition-all duration-200 ease-out shrink-0"
+                style={{ width: maxWidth ?? 816 }}
+              >
+                {/* 챕터 제목 */}
+                {activeChapterTitle && (
+                  <h1 className="text-3xl font-bold mb-8 pb-4 border-b border-border/50 text-fg break-all">
+                    {activeChapterTitle}
+                  </h1>
+                )}
 
-              {/* 에디터 콘텐츠 */}
-              <div className="min-h-[500px] [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[400px] wrap-break-word">
-                {children}
+                {/* 에디터 콘텐츠 */}
+                <div className="min-h-[500px] [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[400px] wrap-break-word">
+                  {children}
+                </div>
               </div>
+
+              <div className="h-12 w-full shrink-0" />
             </div>
-
-            <div className="h-12 w-full shrink-0" />
           </div>
+
+          {/* RIGHT: 바인더바 (Hybrid: Static or Hover) */}
+          {/* activeRightTab이 있거나 닫히는 중(closingTab)일 때 렌더링 */}
+          {activeRightTab || closingTab ? (
+            // 탭 활성화 시: Static Panel (에디터 영역을 밈)
+            <div className="h-full shrink-0 z-20">
+              {renderBinderContent()}
+            </div>
+          ) : (
+            // 탭 비활성 시: Hover Sidebar (에디터 위에 뜸, 패널은 닫혀있고 아이콘바만 보임)
+            <FocusHoverSidebar side="right" topOffset={sidebarTopOffset}>
+              {renderBinderContent()}
+            </FocusHoverSidebar>
+          )}
         </div>
-
-        {/* RIGHT: 바인더바 (Hybrid: Static or Hover) */}
-        {/* activeRightTab이 있거나 닫히는 중(closingTab)일 때 렌더링 */}
-        {activeRightTab || closingTab ? (
-          // 탭 활성화 시: Static Panel (에디터 영역을 밈)
-          <div className="h-full shrink-0 z-20">
-            {renderBinderContent()}
-          </div>
-        ) : (
-          // 탭 비활성 시: Hover Sidebar (에디터 위에 뜸, 패널은 닫혀있고 아이콘바만 보임)
-          <FocusHoverSidebar side="right" topOffset={sidebarTopOffset}>
-            {renderBinderContent()}
-          </FocusHoverSidebar>
-        )}
       </div>
     </div>
   );
@@ -470,13 +467,15 @@ function BinderTabButton({
   isActive,
   onClick,
   title,
+  type,
 }: {
   icon: ReactNode;
   isActive: boolean;
   onClick: () => void;
   title: string;
+  type?: DragItemType;
 }) {
-  return (
+  const button = (
     <button
       onClick={onClick}
       title={title}
@@ -490,4 +489,18 @@ function BinderTabButton({
       {icon}
     </button>
   );
+
+  if (type) {
+    return (
+      <DraggableItem
+        id={`binder-icon-${type}`}
+        data={{ type, id: `binder-${type}`, title }}
+        className="flex items-center justify-center"
+      >
+        {button}
+      </DraggableItem>
+    );
+  }
+
+  return button;
 }

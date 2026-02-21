@@ -5,7 +5,6 @@ import { cn } from '../../../../shared/types/utils';
 import { useUIStore } from '../../stores/uiStore';
 import { useTranslation } from "react-i18next";
 import { SnapshotList } from "../snapshot/SnapshotList";
-import SnapshotViewer from "../snapshot/SnapshotViewer";
 import { TrashList } from "../trash/TrashList";
 import ExportPreviewPanel from "../export/ExportPreviewPanel";
 import { EditorDropZones } from "../common/EditorDropZones";
@@ -16,6 +15,7 @@ import StatusFooter from "../common/StatusFooter";
 import { api } from "../../services/api";
 import ResearchPanel from "../research/ResearchPanel";  
 import WorldPanel from "../research/WorldPanel";
+import { DraggableItem } from "../common/DraggableItem";
 import {
   ensureDocsPanelVisible,
   openDocsRightTab,
@@ -73,8 +73,6 @@ export default function GoogleDocsLayout({
     setContextWidth,
     setDocsRightTab: setActiveRightTab,
     setBinderBarOpen,
-    rightPanelContent,
-    setRightPanelContent,
   } = useUIStore();
   
   /* Keep docs side panel opening behavior centralized */
@@ -255,13 +253,11 @@ export default function GoogleDocsLayout({
 
          {/* Main Content Column (Editor + Footer) */}
          <div className="flex-1 flex flex-col min-w-0 bg-secondary/30 relative z-0 transition-colors duration-200">
-             
-             {/* Scrollable Area for Editor */}
-             {/* Scrollable Area for Editor */}
-             {/* Scrollable Area for Editor */}
-             {/* Scrollable Area for Editor */}
-             <main className="flex-1 overflow-y-auto flex flex-col items-center relative custom-scrollbar bg-sidebar">
-                        <EditorDropZones />
+            
+            {/* Scrollable Area for Editor */}
+            <div className="flex-1 relative flex flex-col overflow-hidden">
+                <EditorDropZones />
+                <main className="flex-1 overflow-y-auto flex flex-col items-center relative custom-scrollbar bg-sidebar">
                         {/* Ruler - Sticky Top (Opaque Background Fixed) */}
                         <div className="sticky top-0 z-30 pt-4 pb-2 shrink-0 select-none bg-sidebar/95 backdrop-blur-sm flex justify-center w-full">
                             <div className="bg-background border border-border shadow-sm">
@@ -283,7 +279,8 @@ export default function GoogleDocsLayout({
                         >
                             {children}
                         </div>
-             </main>
+                </main>
+            </div>
 
              {/* Footer Fixed at Bottom of Main Column */}
              <StatusFooter onOpenExport={handleOpenExport} />
@@ -359,31 +356,6 @@ export default function GoogleDocsLayout({
 
                   {/* Snapshot Panel */}
                   {activeRightTab === "snapshot" && (
-                     rightPanelContent.type === "snapshot" && rightPanelContent.snapshot ? (
-                        <div className="flex flex-col h-full w-full bg-background relative z-50">
-                            <div className="flex items-center px-4 py-2 border-b border-border bg-sidebar shrink-0">
-                                <button 
-                                    onClick={() => setRightPanelContent({ type: "research", tab: "character" })} // This clears the snapshot view
-                                    className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                                >
-                                    <ChevronLeft className="w-3.5 h-3.5" />
-                                    {t("common.back")}
-                                </button>
-                                <div className="ml-2 font-medium text-xs truncate flex-1">
-                                    {rightPanelContent.snapshot.description || "Snapshot"}
-                                </div>
-                            </div>
-                            <div className="flex-1 overflow-hidden">
-                                <SnapshotViewer 
-                                    snapshot={rightPanelContent.snapshot}
-                                    currentContent={editor?.getHTML()}
-                                    onApplySnapshotText={(text: string) => {
-                                        editor?.commands.setContent(text);
-                                    }}
-                                />
-                            </div>
-                        </div>
-                     ) : (
                         <div className="flex flex-col h-full">
                             <div className="px-4 py-3 border-b border-border/50 text-xs font-semibold text-muted uppercase tracking-wider bg-sidebar">
                                 {t("sidebar.section.snapshot")}
@@ -396,7 +368,6 @@ export default function GoogleDocsLayout({
                                 </div>
                             )}
                         </div>
-                     )
                   )}
                   
                   {/* Trash Panel */}
@@ -435,7 +406,9 @@ export default function GoogleDocsLayout({
                   <ChevronLeft className="w-4 h-4 text-muted-foreground rotate-180" />
               </button>
               
+
               {/* Character */}
+              <DraggableItem id="binder-icon-character" data={{ type: "character", id: "binder-character", title: t("research.title.characters") }}>
               <button 
                 onClick={() => handleRightTabClick("character")} 
                 className={cn(
@@ -446,8 +419,10 @@ export default function GoogleDocsLayout({
               >
                   <User className="w-5 h-5" />
               </button>
+              </DraggableItem>
 
               {/* World (Multi-tab) */}
+              <DraggableItem id="binder-icon-world" data={{ type: "world", id: "binder-world", title: t("research.title.world") }}>
               <button 
                 onClick={() => handleRightTabClick("world")} 
                 className={cn(
@@ -458,8 +433,10 @@ export default function GoogleDocsLayout({
               >
                   <Globe className="w-5 h-5" />
               </button>
+              </DraggableItem>
 
               {/* Scrap */}
+              <DraggableItem id="binder-icon-memo" data={{ type: "memo", id: "binder-memo", title: t("research.title.scrap") }}>
               <button 
                 onClick={() => handleRightTabClick("scrap")} 
                 className={cn(
@@ -470,8 +447,10 @@ export default function GoogleDocsLayout({
               >
                   <StickyNote className="w-5 h-5" />
               </button>
+              </DraggableItem>
 
               {/* Analysis */}
+              <DraggableItem id="binder-icon-analysis" data={{ type: "analysis", id: "binder-analysis", title: t("research.title.analysis") }}>
               <button 
                 onClick={() => handleRightTabClick("analysis")} 
                 className={cn(
@@ -482,6 +461,7 @@ export default function GoogleDocsLayout({
               >
                   <Sparkles className="w-5 h-5" />
               </button>
+              </DraggableItem>
               <div className="mt-auto">
                    <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10" title={t("common.menu.extensions")}>
                       <Plus className="w-5 h-5 text-muted-foreground" />

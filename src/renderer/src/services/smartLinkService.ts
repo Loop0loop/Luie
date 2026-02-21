@@ -108,15 +108,12 @@ class SmartLinkService {
         uiStore.setWorldTab("terms");
       }
     } else {
-      uiStore.setRightPanelContent({
+      uiStore.addPanel({
         type: "research",
         tab: type === "character" ? "character" : "world",
       });
       if (type === "term") {
         uiStore.setWorldTab("terms");
-      }
-      if (!uiStore.isSplitView) {
-        uiStore.setSplitView(true);
       }
     }
 

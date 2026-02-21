@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { User } from "lucide-react";
 import { useCharacterStore } from "../../../stores/characterStore";
@@ -24,10 +24,20 @@ type CustomField = {
   placeholder?: string;
 };
 
-export default function WikiDetailView() {
+interface WikiDetailViewProps {
+  characterId?: string;
+}
+
+export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
   const { t } = useTranslation();
   const dialog = useDialog();
-  const { currentItem: character, updateCharacter } = useCharacterStore();
+  const { currentItem: character, updateCharacter, loadCharacter } = useCharacterStore();
+
+  useEffect(() => {
+    if (characterId) {
+      void loadCharacter(characterId);
+    }
+  }, [characterId, loadCharacter]);
 
   const attributes = useMemo(() => {
     if (!character) return {};

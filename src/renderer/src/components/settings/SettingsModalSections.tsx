@@ -686,6 +686,7 @@ export const SyncTab = memo(function SyncTab({
   onToggleAutoSync,
 }: SyncTabProps) {
   const showConnected = status.connected;
+  const isConnecting = status.mode === "connecting";
   const modeLabel = status.mode === "syncing"
     ? t("settings.sync.status.syncing")
     : status.mode === "connecting"
@@ -729,7 +730,7 @@ export const SyncTab = memo(function SyncTab({
             <button
               className="px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50"
               onClick={onConnectGoogle}
-              disabled={isBusy}
+              disabled={isBusy || isConnecting}
             >
               {t("settings.sync.actions.connectGoogle")}
             </button>

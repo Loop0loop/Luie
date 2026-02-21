@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../../shared/types/utils";
 import type { Chapter } from "../../../../shared/types";
+import { DraggableItem } from "../common/DraggableItem";
 import { 
   Plus,
   MoreVertical,
@@ -161,8 +162,12 @@ export default function DocsSidebar({
              const isEditing = chapter.id === editingId;
 
              return (
-               <div 
+               <DraggableItem
                  key={chapter.id}
+                 id={`chapter-${chapter.id}`}
+                 data={{ type: "chapter", id: chapter.id, title: chapter.title || "Untitled" }}
+               >
+               <div 
                  className={cn(
                     "group flex items-center justify-between px-3 py-2 rounded-md transition-colors cursor-pointer text-sm select-none min-h-[36px]",
                     isActive ? "bg-accent/10 text-accent font-medium" : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
@@ -200,6 +205,7 @@ export default function DocsSidebar({
                     </button>
                  )}
                </div>
+               </DraggableItem>
              );
           })}
       </div>

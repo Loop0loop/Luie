@@ -1,7 +1,5 @@
 import type { EditorSettings, EditorUiMode } from "../../../shared/types/index.js";
-import type { ContextTab, DocsRightTab, ResearchTab, WorldTab } from "../stores/uiStore";
-
-type RightPanelType = "research" | "editor" | "snapshot" | "export";
+import type { ContextTab, DocsRightTab, WorldTab } from "../stores/uiStore";
 type SplitSide = "left" | "right" | "bottom";
 
 export type UiModeIntegrityUiState = {
@@ -11,12 +9,6 @@ export type UiModeIntegrityUiState = {
   isSplitView: boolean;
   splitRatio: number;
   splitSide: SplitSide;
-  rightPanelContent: {
-    type: RightPanelType;
-    id?: string;
-    tab?: ResearchTab;
-    snapshot?: { id: string } | null;
-  };
   isSidebarOpen: boolean;
   isContextOpen: boolean;
   isManuscriptMenuOpen: boolean;
@@ -34,10 +26,6 @@ export type UiModeIntegritySnapshot = {
   isSplitView: boolean;
   splitRatio: number;
   splitSide: SplitSide;
-  rightPanelType: RightPanelType;
-  rightPanelId: string | null;
-  rightPanelTab: ResearchTab | null;
-  rightPanelSnapshotId: string | null;
   isSidebarOpen: boolean;
   isContextOpen: boolean;
   isManuscriptMenuOpen: boolean;
@@ -73,10 +61,6 @@ export function captureUiModeIntegritySnapshot(input: {
     isSplitView: input.ui.isSplitView,
     splitRatio: input.ui.splitRatio,
     splitSide: input.ui.splitSide,
-    rightPanelType: input.ui.rightPanelContent.type,
-    rightPanelId: input.ui.rightPanelContent.id ?? null,
-    rightPanelTab: input.ui.rightPanelContent.tab ?? null,
-    rightPanelSnapshotId: input.ui.rightPanelContent.snapshot?.id ?? null,
     isSidebarOpen: input.ui.isSidebarOpen,
     isContextOpen: input.ui.isContextOpen,
     isManuscriptMenuOpen: input.ui.isManuscriptMenuOpen,
@@ -106,10 +90,7 @@ const NON_LAYOUT_KEYS: Array<keyof Omit<UiModeIntegritySnapshot, "uiMode">> = [
   "isSplitView",
   "splitRatio",
   "splitSide",
-  "rightPanelType",
-  "rightPanelId",
-  "rightPanelTab",
-  "rightPanelSnapshotId",
+  "splitSide",
   "isSidebarOpen",
   "isContextOpen",
   "isManuscriptMenuOpen",

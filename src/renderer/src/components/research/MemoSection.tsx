@@ -41,21 +41,17 @@ const normalizeMemoLayout = (layout: Layout): Layout | undefined => {
   const rawContent = layout[MEMO_CONTENT_PANEL_ID];
   if (!Number.isFinite(rawSidebar) || !Number.isFinite(rawContent)) return undefined;
 
-  const sum = rawSidebar + rawContent;
-  if (sum <= 0) return undefined;
-
-  const sidebarRatio = (rawSidebar / sum) * 100;
-  const clampedSidebar = Math.min(
-    MEMO_SIDEBAR_MAX_SIZE,
-    Math.max(MEMO_SIDEBAR_MIN_SIZE, sidebarRatio),
-  );
-  const contentSize = 100 - clampedSidebar;
-  const normalizedContent = Math.max(MEMO_CONTENT_MIN_SIZE, contentSize);
-  const normalizedSidebar = 100 - normalizedContent;
+  // Minimum required percentage based on total constraints
+  // e.g. SidePanel min width vs total width. Approximation is used since Panels handle hard pixels relative to percentage themselves.
+  let normalizedSidebar = Math.max(0, Math.min(100, Math.round(Number(rawSidebar))));
+  
+  // Enforce some basic min/max relative size constraints (20% to 80% range)
+  if (normalizedSidebar < 20) normalizedSidebar = 20;
+  if (normalizedSidebar > 80) normalizedSidebar = 80;
 
   return {
     [MEMO_SIDEBAR_PANEL_ID]: normalizedSidebar,
-    [MEMO_CONTENT_PANEL_ID]: normalizedContent,
+    [MEMO_CONTENT_PANEL_ID]: 100 - normalizedSidebar,
   };
 };
 
@@ -101,6 +97,8 @@ function MemoSectionInner({
   const [activeNoteId, setActiveNoteId] = useState(defaultNotes[0]?.id ?? "1");
   const [searchTerm, setSearchTerm] = useState("");
   const deferredSearchTerm = useDeferredValue(searchTerm);
+  const saveLayoutTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const initialLayout = useMemo(() => {
     const parsed = readLocalStorageJson<Layout>(STORAGE_KEY_MEMO_SIDEBAR_LAYOUT);
     if (!parsed) return undefined;
@@ -108,9 +106,14 @@ function MemoSectionInner({
   }, []);
 
   const handleLayoutChange = (layout: Layout) => {
-    const normalized = normalizeMemoLayout(layout);
-    if (!normalized) return;
-    void writeLocalStorageJson(STORAGE_KEY_MEMO_SIDEBAR_LAYOUT, normalized);
+    if (saveLayoutTimeoutRef.current) {
+      clearTimeout(saveLayoutTimeoutRef.current);
+    }
+    saveLayoutTimeoutRef.current = setTimeout(() => {
+      const normalized = normalizeMemoLayout(layout);
+      if (!normalized) return;
+      void writeLocalStorageJson(STORAGE_KEY_MEMO_SIDEBAR_LAYOUT, normalized);
+    }, 500); // Debounce layout saving
   };
 
   useEffect(() => {
@@ -184,7 +187,7 @@ function MemoSectionInner({
   });
 
   return (
-    <div className="h-full w-full bg-bg-primary overflow-hidden">
+    <div className="flex flex-col h-full bg-sidebar/30">
       <PanelGroup
         orientation="horizontal"
         onLayoutChanged={handleLayoutChange}
@@ -272,8 +275,7 @@ function MemoSectionInner({
           </div>
         </Panel>
 
-        <PanelResizeHandle className="w-1 -ml-0.5 bg-transparent hover:bg-primary/50 active:bg-primary z-20 transition-colors flex items-center justify-center group cursor-col-resize focus:outline-none relative">
-          <div className="w-0.5 h-full bg-transparent group-hover:bg-primary/20" />
+        <PanelResizeHandle className="h-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-row-resize flex items-center justify-center -mx-4 z-10 relative">
         </PanelResizeHandle>
 
         <Panel id={MEMO_CONTENT_PANEL_ID} minSize={MEMO_CONTENT_MIN_SIZE} className="min-w-0">

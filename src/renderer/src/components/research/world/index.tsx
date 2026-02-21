@@ -9,7 +9,11 @@ import { MindMapBoard } from "./MindMapBoard";
 import { DrawingCanvas } from "./DrawingCanvas";
 import { PlotBoard } from "./PlotBoard";
 
-export default function WorldSection() {
+interface WorldSectionProps {
+  worldId?: string;
+}
+
+export default function WorldSection({ worldId }: WorldSectionProps) {
   const { t } = useTranslation();
   const { worldTab, setWorldTab } = useUIStore();
 
@@ -54,7 +58,7 @@ export default function WorldSection() {
       </div>
 
       <div style={{ flex: 1, overflow: "hidden" }}>
-        {worldTab === "terms" && <TermManager />}
+        {worldTab === "terms" && <TermManager termId={worldId} />}
         {worldTab === "synopsis" && <SynopsisEditor />}
         {worldTab === "mindmap" && <MindMapBoard />}
         {worldTab === "drawing" && <DrawingCanvas />}

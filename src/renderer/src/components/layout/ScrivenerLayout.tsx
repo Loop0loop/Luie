@@ -101,9 +101,9 @@ export default function ScrivenerLayout({
   const renderMainContent = () => {
     switch (mainView.type) {
       case "character":
-        return <WikiDetailView />;
+        return <WikiDetailView characterId={mainView.id} />;
       case "world":
-        return <WorldSection />;
+        return <WorldSection worldId={mainView.id} />;
       case "memo":
         return <MemoMainView />;
       case "analysis":

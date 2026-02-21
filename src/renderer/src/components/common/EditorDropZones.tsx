@@ -14,7 +14,7 @@ export function EditorDropZones() {
   if (!isDragging) return null;
 
   return (
-    <div className="absolute inset-0 pointer-events-none z-40 flex flex-col">
+    <div className="absolute inset-0 pointer-events-none z-9999 flex flex-col">
       <div className="flex-1 flex relative">
           {/* Left Zone - 15% width */}
           <div className="w-[15%] h-full pointer-events-auto">

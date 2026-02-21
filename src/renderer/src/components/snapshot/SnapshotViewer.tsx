@@ -4,7 +4,6 @@ import { RotateCcw, Calendar } from "lucide-react";
 import * as Diff from "diff";
 import { api } from "../../services/api";
 import { useChapterStore } from "../../stores/chapterStore";
-import { useUIStore } from "../../stores/uiStore";
 import type { Snapshot } from "../../../../shared/types";
 import Editor from "../editor/Editor";
 import { useDialog } from "../common/DialogProvider";
@@ -15,10 +14,8 @@ interface SnapshotViewerProps {
   currentContent?: string;
   onApplySnapshotText?: (content: string) => void | Promise<void>;
 }
-
 function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: SnapshotViewerProps) {
   const { loadAll: reloadChapters } = useChapterStore();
-  const { setSplitView, setRightPanelContent } = useUIStore();
   const [selectedAdditions, setSelectedAdditions] = useState<Set<number>>(new Set());
   const { t } = useTranslation();
   const dialog = useDialog();
@@ -37,8 +34,7 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
       if (response.success) {
         if (snapshot.projectId) {
           await reloadChapters(snapshot.projectId);
-          setRightPanelContent({ type: "research", tab: "character" });
-          setSplitView(false);
+          // Assuming App.tsx handles the snapshot panel closing upon successful reload/nav
         }
         dialog.toast(t("snapshot.viewer.restoreSuccess"), "success");
       } else {

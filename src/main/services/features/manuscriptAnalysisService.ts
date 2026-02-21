@@ -135,7 +135,7 @@ const readLuieEntry = async (packagePath: string, entryPath: string): Promise<st
     throw new Error("INVALID_RELATIVE_PATH");
   }
 
-  let stat: Awaited<ReturnType<typeof fsp.stat>> | null = null;
+  let stat: Awaited<ReturnType<typeof fsp.stat>>;
   try {
     stat = await fsp.stat(packagePath);
   } catch (error) {
