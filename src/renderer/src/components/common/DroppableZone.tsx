@@ -7,9 +7,16 @@ interface DroppableZoneProps {
   children?: React.ReactNode;
   className?: string;
   highlightClass?: string;
+  disableOverlay?: boolean;
 }
 
-export function DroppableZone({ id, children, className, highlightClass = "bg-accent/10 border-accent" }: DroppableZoneProps) {
+export function DroppableZone({ 
+  id, 
+  children, 
+  className, 
+  highlightClass = "bg-accent/10 border-accent",
+  disableOverlay = false 
+}: DroppableZoneProps) {
   const { isOver, setNodeRef } = useDroppable({
     id,
   });
@@ -21,11 +28,11 @@ export function DroppableZone({ id, children, className, highlightClass = "bg-ac
         "transition-all duration-200", 
         className,
         isOver && highlightClass,
-        isOver && "relative z-50 ring-2 ring-accent ring-inset"
+        isOver && !disableOverlay && "relative z-50 ring-2 ring-accent ring-inset"
       )}
     >
       {/* Visual Overlay when hovering */}
-      {isOver && (
+      {isOver && !disableOverlay && (
            <div className="absolute inset-0 bg-accent/5 pointer-events-none flex items-center justify-center z-50">
                <span className="text-accent font-bold text-sm bg-panel/90 px-3 py-1 rounded-full shadow-sm backdrop-blur border border-accent/20">
                    Drop to Open

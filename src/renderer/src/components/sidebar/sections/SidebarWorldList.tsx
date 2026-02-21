@@ -4,28 +4,17 @@ import { Plus } from "lucide-react";
 import { useProjectStore } from "../../../stores/projectStore";
 import { useTermStore } from "../../../stores/termStore";
 import { useUIStore } from "../../../stores/uiStore";
-import {
-  DndContext, 
-  closestCenter,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  rectSortingStrategy,
-} from '@dnd-kit/sortable';
-import { useTermDragDrop } from "../../research/world/hooks/useTermDragDrop";
+
+
 import type { Term } from "../../../../../shared/types";
+import { DraggableItem } from "../../common/DraggableItem";
 
 export default function SidebarWorldList() {
   const { t } = useTranslation();
   const { currentItem: currentProject } = useProjectStore();
   const { terms, setCurrentTerm, loadTerms, createTerm } = useTermStore();
 
-  const {
-    sensors,
-    handleDragStart,
-    handleDragEnd,
-    orderedTerms,
-  } = useTermDragDrop({ terms });
+  const orderedTerms = terms.sort((a: Term, b: Term) => (a.order || 0) - (b.order || 0));
 
   useEffect(() => {
     if (currentProject) {
@@ -62,18 +51,26 @@ export default function SidebarWorldList() {
            
            {/* Navigation Buttons */}
            <div className="grid grid-cols-2 gap-1 mt-1">
-               <button onClick={() => { useUIStore.getState().setMainView({ type: "world" }); useUIStore.getState().setWorldTab("synopsis"); }} className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors truncate">
-                   {t("sidebar.item.synopsis")}
-               </button>
-               <button onClick={() => { useUIStore.getState().setMainView({ type: "world" }); useUIStore.getState().setWorldTab("mindmap"); }} className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors truncate">
-                   {t("world.tab.mindmap")}
-               </button>
-               <button onClick={() => { useUIStore.getState().setMainView({ type: "world" }); useUIStore.getState().setWorldTab("drawing"); }} className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors truncate">
-                   {t("world.tab.drawing")}
-               </button>
-               <button onClick={() => { useUIStore.getState().setMainView({ type: "world" }); useUIStore.getState().setWorldTab("plot"); }} className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors truncate">
-                   {t("world.tab.plot")}
-               </button>
+               <DraggableItem id="drag-synopsis" data={{ type: "synopsis", id: "synopsis", title: t("sidebar.item.synopsis") }}>
+                 <button onClick={() => { useUIStore.getState().setMainView({ type: "world" }); useUIStore.getState().setWorldTab("synopsis"); }} className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors truncate">
+                     {t("sidebar.item.synopsis")}
+                 </button>
+               </DraggableItem>
+               <DraggableItem id="drag-mindmap" data={{ type: "mindmap", id: "mindmap", title: t("world.tab.mindmap") }}>
+                 <button onClick={() => { useUIStore.getState().setMainView({ type: "world" }); useUIStore.getState().setWorldTab("mindmap"); }} className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors truncate">
+                     {t("world.tab.mindmap")}
+                 </button>
+               </DraggableItem>
+               <DraggableItem id="drag-drawing" data={{ type: "drawing", id: "drawing", title: t("world.tab.drawing") }}>
+                 <button onClick={() => { useUIStore.getState().setMainView({ type: "world" }); useUIStore.getState().setWorldTab("drawing"); }} className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors truncate">
+                     {t("world.tab.drawing")}
+                 </button>
+               </DraggableItem>
+               <DraggableItem id="drag-plot" data={{ type: "plot", id: "plot", title: t("world.tab.plot") }}>
+                 <button onClick={() => { useUIStore.getState().setMainView({ type: "world" }); useUIStore.getState().setWorldTab("plot"); }} className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors truncate">
+                     {t("world.tab.plot")}
+                 </button>
+               </DraggableItem>
            </div>
        </div>
 
@@ -82,36 +79,30 @@ export default function SidebarWorldList() {
        </div>
 
       <div className="flex-1 overflow-y-auto p-2">
-        <DndContext 
-            sensors={sensors} 
-            collisionDetection={closestCenter} 
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-        >
-            <SortableContext 
-                items={orderedTerms.map(t => t.id)} 
-                strategy={rectSortingStrategy}
-            >
-                <div className="flex flex-col gap-2">
-                    {orderedTerms.length === 0 && (
-                        <div className="text-xs text-muted text-center italic py-4">
-                            {t("world.term.noTerms")}
-                        </div>
-                    )}
-                    {orderedTerms.map((term) => (
-                        <SidebarTermItem
-                            key={term.id}
-                            term={term}
-                            onSelect={(id) => {
-                                const term = terms.find(t => t.id === id);
-                                setCurrentTerm(term || null);
-                                useUIStore.getState().setMainView({ type: "world" });
-                            }}
-                        />
-                    ))}
-                </div>
-            </SortableContext>
-        </DndContext>
+          <div className="flex flex-col gap-2">
+              {orderedTerms.length === 0 && (
+                  <div className="text-xs text-muted text-center italic py-4">
+                      {t("world.term.noTerms")}
+                  </div>
+              )}
+              {orderedTerms.map((term) => (
+                  <DraggableItem
+                      key={`drag-${term.id}`}
+                      id={`drag-term-${term.id}`}
+                      data={{ type: "world", id: term.id, title: term.term }}
+                  >
+                      <SidebarTermItem
+                          key={term.id}
+                          term={term}
+                          onSelect={(id) => {
+                              const term = terms.find(t => t.id === id);
+                              setCurrentTerm(term || null);
+                              useUIStore.getState().setMainView({ type: "world" });
+                          }}
+                      />
+                  </DraggableItem>
+              ))}
+          </div>
       </div>
     </div>
   );

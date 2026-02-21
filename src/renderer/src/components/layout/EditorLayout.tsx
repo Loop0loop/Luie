@@ -9,6 +9,7 @@ import {
   useMemo,
 } from "react";
 import { type Editor } from "@tiptap/react";
+import { Panel, Group as PanelGroup } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
 import {
   User,
@@ -49,6 +50,7 @@ interface EditorLayoutProps {
   onOpenSettings?: () => void;
   onRenameChapter?: (id: string, newTitle: string) => Promise<void>;
   onSaveChapter?: (title: string, content: string) => Promise<void>;
+  additionalPanels?: ReactNode;
 }
 
 // WindowBar 높이: 40px
@@ -98,6 +100,7 @@ export default function EditorLayout({
   currentProjectId,
   editor,
   onOpenSettings,
+  additionalPanels,
 }: EditorLayoutProps) {
   const { t } = useTranslation();
 
@@ -416,6 +419,8 @@ export default function EditorLayout({
         <div className="flex-1 h-full overflow-hidden flex flex-row relative">
           
           {/* Editor Column Wrapper */}
+          <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative">
+            <Panel defaultSize={50} minSize={20} className="min-w-0 bg-transparent relative flex flex-col">
           <div className="flex-1 h-full overflow-hidden flex flex-col relative">
             <EditorDropZones />
             
@@ -442,6 +447,9 @@ export default function EditorLayout({
               <div className="h-12 w-full shrink-0" />
             </div>
           </div>
+            </Panel>
+            {additionalPanels}
+          </PanelGroup>
 
           {/* RIGHT: 바인더바 (Hybrid: Static or Hover) */}
           {/* activeRightTab이 있거나 닫히는 중(closingTab)일 때 렌더링 */}

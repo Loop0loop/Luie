@@ -99,10 +99,23 @@ export const useUIStore = create<UIStore>()(
       setWorldTab: (worldTab) => set({ worldTab }),
       
       addPanel: (content, insertAt) => set((state) => {
+        // Prevent duplicates
+        const existing = state.panels.find(p => 
+          p.content.type === content.type && 
+          p.content.id === content.id && 
+          p.content.tab === content.tab
+        );
+        if (existing) return state;
+
+        // Limit overpopulation
+        if (state.panels.length >= 3) {
+          return state; // Do not add more than 3 side panels
+        }
+
         const newPanel: ResizablePanelData = {
           id: `panel-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           content,
-          size: state.panels.length === 0 ? 100 : 50 // Default size logic can be improved
+          size: state.panels.length === 0 ? 100 : 50 
         };
         const newPanels = [...state.panels];
         if (insertAt !== undefined && insertAt >= 0 && insertAt <= newPanels.length) {
@@ -113,7 +126,7 @@ export const useUIStore = create<UIStore>()(
         // Normalize sizes roughly
         const sizePerPanel = 100 / newPanels.length;
         newPanels.forEach(p => p.size = sizePerPanel);
-        return { panels: newPanels };
+        return { ...state, panels: newPanels };
       }),
       removePanel: (id) => set((state) => {
          const newPanels = state.panels.filter(p => p.id !== id);

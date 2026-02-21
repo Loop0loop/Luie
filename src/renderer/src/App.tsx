@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense, useCallback, useEffect, useMemo, useRef } from "react";
+import { useState, lazy, Suspense, useCallback, useEffect, useMemo, useRef, Fragment } from "react";
 import { type Editor as TiptapEditor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
 import MainLayout from "./components/layout/MainLayout";
@@ -47,7 +47,7 @@ import {
   type UiModeIntegritySnapshot,
 } from "./services/uiModeIntegrity";
 import { GlobalDragContext, type DragData } from "./components/common/GlobalDragContext";
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
+import { Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
 
 const SettingsModal = lazy(() => import("./components/settings/SettingsModal"));
 const ResearchPanel = lazy(() => import("./components/research/ResearchPanel"));
@@ -316,29 +316,29 @@ export default function App() {
     }
   }, [uiMode, handleSelectChapter, handleSelectResearchItem, setMainView, setWorldTab]);
 
-  const handleDropToSplit = useCallback((data: DragData) => {
-    // Note: React-Resizable-Panels will handle drag and drop inserts differently based on the group layout. 
-    // This is currently simplifying the logic to just add it to the end of the flex list.
-    // Insert index logic could be added using the side argument if required.
+  const handleDropToSplit = useCallback((data: DragData, side?: "left" | "right" | "bottom") => {
+    let insertAt: number | undefined;
+    if (side === "left") insertAt = 0;
+
     switch (data.type) {
       case "chapter":
-        addPanel({ type: "editor", id: data.id });
+        addPanel({ type: "editor", id: data.id }, insertAt);
         break;
       case "character":
-        addPanel({ type: "research", tab: "character", id: data.id });
+        addPanel({ type: "research", tab: "character", id: data.id }, insertAt);
         break;
       case "world":
       case "mindmap":
       case "plot":
       case "drawing":
       case "synopsis":
-        addPanel({ type: "research", tab: "world", id: data.id });
+        addPanel({ type: "research", tab: "world", id: data.id }, insertAt);
         break;
       case "memo":
-        addPanel({ type: "research", tab: "scrap", id: data.id });
+        addPanel({ type: "research", tab: "scrap", id: data.id }, insertAt);
         break;
       case "analysis":
-        addPanel({ type: "research", tab: "analysis", id: data.id });
+        addPanel({ type: "research", tab: "analysis", id: data.id }, insertAt);
         break;
     }
   }, [addPanel]);
@@ -682,79 +682,70 @@ export default function App() {
     );
   }
 
-  // Editor Content (Split View with react-resizable-panels)
   const editorContent = (
-    <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative">
-      {/* Main Editor Panel */}
-      <Panel defaultSize={panels.length > 0 ? 50 : 100} minSize={20} className="min-w-0 bg-canvas relative">
-        <Editor
-          key={activeChapterId ?? "main-editor"}
-          chapterId={activeChapterId ?? undefined}
-          initialTitle={activeChapterTitle}
-          initialContent={content}
-          onSave={handleSave}
-        />
-      </Panel>
-
-      {panels.map((panel) => (
-        <Suspense key={panel.id} fallback={<div style={{ padding: 20 }}>{t("common.loading")}</div>}>
-          <PanelResizeHandle className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-50 relative" />
-          <Panel defaultSize={panel.size} minSize={20} className="min-w-0 bg-panel relative flex flex-col">
-            <div className="flex justify-between items-center p-2 border-b border-border bg-surface text-xs font-semibold text-muted">
-               {/* 
-                 TODO: i18n label parsing. 
-                 Temporarily using raw text, we will let inside components handle full headers later or abstract this out 
-               */}
-               <span className="uppercase">{panel.content.type}</span>
-               <button onClick={() => removePanel(panel.id)} className="hover:bg-surface-hover rounded p-1">✕</button>
-            </div>
-            
-            <div className="flex-1 overflow-hidden relative">
-              {panel.content.type === "research" ? (
-                <ResearchPanel
-                  activeTab={panel.content.tab || "character"}
-                  onClose={() => removePanel(panel.id)}
-                />
-              ) : panel.content.type === "snapshot" && panel.content.snapshot ? (
-                <SnapshotViewer
-                  snapshot={panel.content.snapshot}
-                  currentContent={
-                    chapters.find(
-                      (c) =>
-                        c.projectId === currentProject?.id &&
-                        c.id === panel.content.snapshot?.chapterId,
-                    )?.content || ""
-                  }
-                  onApplySnapshotText={async (nextContent) => {
-                    if (!activeChapterId) return;
-                    await handleSave(activeChapterTitle, nextContent);
-                  }}
-                />
-              ) : panel.content.type === "export" ? (
-                <ExportPreviewPanel title={activeChapterTitle} />
-              ) : (
-                <div
-                  style={{
-                    height: "100%",
-                    overflow: "hidden",
-                    background: "var(--bg-primary)",
-                  }}
-                >
-                  <Editor
-                    initialTitle={
-                      chapters.find((c) => c.id === panel.content.id)?.title
-                    }
-                    initialContent=""
-                    readOnly={true}
-                  />
-                </div>
-              )}
-            </div>
-          </Panel>
-        </Suspense>
-      ))}
-    </PanelGroup>
+    <Editor
+      key={activeChapterId ?? "main-editor"}
+      chapterId={activeChapterId ?? undefined}
+      initialTitle={activeChapterTitle}
+      initialContent={content}
+      onSave={handleSave}
+    />
   );
+
+  const additionalPanels = panels.map((panel) => (
+    <Fragment key={panel.id}>
+      <PanelResizeHandle className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-50 relative" />
+      <Panel defaultSize={panel.size} minSize={20} className="min-w-0 bg-panel relative flex flex-col">
+        <div className="flex justify-between items-center p-2 border-b border-border bg-surface text-xs font-semibold text-muted">
+           <span className="uppercase">{panel.content.type}</span>
+           <button onClick={() => removePanel(panel.id)} className="hover:bg-surface-hover rounded p-1">✕</button>
+        </div>
+        
+        <div className="flex-1 overflow-hidden relative">
+          <Suspense fallback={<div style={{ padding: 20 }}>{t("common.loading")}</div>}>
+            {panel.content.type === "research" ? (
+              <ResearchPanel
+                activeTab={panel.content.tab || "character"}
+                onClose={() => removePanel(panel.id)}
+              />
+            ) : panel.content.type === "snapshot" && panel.content.snapshot ? (
+              <SnapshotViewer
+                snapshot={panel.content.snapshot}
+                currentContent={
+                  chapters.find(
+                    (c) =>
+                      c.projectId === currentProject?.id &&
+                      c.id === panel.content.snapshot?.chapterId,
+                  )?.content || ""}
+                onApplySnapshotText={async (nextContent) => {
+                  if (!activeChapterId) return;
+                  await handleSave(activeChapterTitle, nextContent);
+                }}
+              />
+            ) : panel.content.type === "export" ? (
+              <ExportPreviewPanel title={activeChapterTitle} />
+            ) : (
+              <div
+                style={{
+                  height: "100%",
+                  overflow: "hidden",
+                  background: "var(--bg-primary)",
+                }}
+              >
+                <Editor
+                  initialTitle={
+                    chapters.find((c) => c.id === panel.content.id)?.title
+                  }
+                  initialContent=""
+                  readOnly={true}
+                />
+              </div>
+            )}
+          </Suspense>
+        </div>
+      </Panel>
+    </Fragment>
+  ));
 
   return (
     <GlobalDragContext onDropToCenter={handleDropToCenter} onDropToSplit={handleDropToSplit}>
@@ -779,6 +770,7 @@ export default function App() {
                 onOpenSettings={() => setIsSettingsOpen(true)}
                 onRenameChapter={handleRenameChapter}
                 onSaveChapter={handleSave}
+                additionalPanels={additionalPanels}
             >
                   <Editor
                     key={activeChapterId} // Force re-mount on chapter change to ensure clean state
@@ -814,6 +806,7 @@ export default function App() {
               onOpenSettings={() => setIsSettingsOpen(true)}
               onRenameChapter={handleRenameChapter}
               onSaveChapter={handleSave}
+              additionalPanels={additionalPanels}
          >
                <Editor
                  key={activeChapterId}
@@ -847,6 +840,7 @@ export default function App() {
             activeChapterTitle={activeChapterTitle}
             editor={docEditor}
             onOpenSettings={() => setIsSettingsOpen(true)}
+            additionalPanels={additionalPanels}
          >
              <Editor
                  key={activeChapterId}
@@ -884,6 +878,7 @@ export default function App() {
             contextPanel={
                 <ContextPanel activeTab={contextTab} onTabChange={setContextTab} />
             }
+            additionalPanels={additionalPanels}
         >
             {editorContent}
         </MainLayout>

@@ -120,9 +120,9 @@ export default function CharacterManager() {
         {/* LEFT SIDEBAR - Character List */}
         <Panel 
            id="sidebar"
-           defaultSize={240} 
-           minSize={150}     
-           maxSize={500}     
+           defaultSize={30} 
+           minSize={15}     
+           maxSize={60}     
            className="bg-sidebar border-r border-border flex flex-col overflow-y-auto"
         >
           <div className="flex flex-col h-full"> {/* Inner container for flex-col flow */}
@@ -184,11 +184,11 @@ export default function CharacterManager() {
         </Panel>
 
         {/* Resizer Handle */}
-          <PanelResizeHandle className="h-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-row-resize flex items-center justify-center -mx-4 z-10 relative">
+        <PanelResizeHandle className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative">
         </PanelResizeHandle>
 
         {/* RIGHT MAIN - Wiki View */}
-        <Panel id="main" minSize={300}>
+        <Panel id="main" minSize={40}>
            <div className="h-full w-full overflow-hidden flex flex-col">
             {selectedChar ? (
               <WikiDetailView 

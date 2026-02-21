@@ -12,6 +12,7 @@ import Ribbon from "../editor/Ribbon";
 import { cn } from "../../../../shared/types/utils";
 import InspectorPanel from "../editor/InspectorPanel";
 import { Menu, ChevronLeft } from "lucide-react";
+import { Panel, Group as PanelGroup } from "react-resizable-panels";
 
 interface ScrivenerLayoutProps {
   children?: ReactNode;
@@ -20,6 +21,7 @@ interface ScrivenerLayoutProps {
   activeChapterTitle?: string;
   editor: Editor | null;
   onOpenSettings?: () => void;
+  additionalPanels?: ReactNode;
 }
 
 import { useUIStore } from "../../stores/uiStore";
@@ -43,6 +45,7 @@ export default function ScrivenerLayout({
   activeChapterTitle,
   editor,
   onOpenSettings,
+  additionalPanels,
 }: ScrivenerLayoutProps) {
   const { t } = useTranslation();
   const { mainView } = useUIStore();
@@ -163,7 +166,8 @@ export default function ScrivenerLayout({
         )}
 
         {/* Pane 2: Editor (Center) */}
-        <div className="flex-1 flex flex-col min-w-0 bg-canvas relative z-0">
+        <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative">
+          <Panel defaultSize={50} minSize={20} className="min-w-0 bg-canvas flex flex-col relative z-0">
              {/* Header / Title Bar of Editor Pane? (Like Scrivener Header) */}
              <div className="h-8 bg-surface border-b border-border flex items-center px-4 justify-between shrink-0">
                  <span className="font-semibold text-sm truncate opacity-80">
@@ -197,7 +201,9 @@ export default function ScrivenerLayout({
                  <span>{/* Word Count etc */}</span>
                  <span>Target: 2000 words</span>
              </div>
-        </div>
+          </Panel>
+          {additionalPanels}
+        </PanelGroup>
 
         {/* Pane 3: Inspector (Right) */}
         <div

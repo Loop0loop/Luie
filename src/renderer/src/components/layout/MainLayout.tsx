@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import WindowBar from './WindowBar';
-import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Panel, Group as PanelGroup } from "react-resizable-panels";
 import { cn } from '../../../../shared/types/utils';
 import { useUIStore } from '../../stores/uiStore';
 import { useTranslation } from "react-i18next";
@@ -10,9 +11,10 @@ interface MainLayoutProps {
   children: ReactNode;
   sidebar?: ReactNode;
   contextPanel?: ReactNode;
+  additionalPanels?: ReactNode;
 }
 
-export default function MainLayout({ children, sidebar, contextPanel }: MainLayoutProps) {
+export default function MainLayout({ children, sidebar, contextPanel, additionalPanels }: MainLayoutProps) {
   const { t } = useTranslation();
   const {
     isSidebarOpen,
@@ -125,7 +127,12 @@ export default function MainLayout({ children, sidebar, contextPanel }: MainLayo
           </div>
           
           <div className="flex-1 overflow-y-auto flex flex-col">
-            {children}
+            <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative">
+              <Panel defaultSize={50} minSize={20} className="min-w-0 bg-canvas relative flex flex-col">
+                {children}
+              </Panel>
+              {additionalPanels}
+            </PanelGroup>
           </div>
         </main>
 

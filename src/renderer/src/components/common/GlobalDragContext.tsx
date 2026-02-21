@@ -94,7 +94,7 @@ export function GlobalDragContext({ children, onDropToCenter, onDropToSplit }: G
       {createPortal(
         <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({}) }}>
           {activeDragItem ? (
-            <div className="bg-panel border border-accent/50 shadow-xl rounded-lg p-2 flex items-center gap-2 opacity-90 cursor-grabbing z-9999">
+            <div className="bg-panel border border-accent/50 shadow-xl rounded-lg p-2 flex items-center gap-2 opacity-90 cursor-grabbing z-9999 w-max pointer-events-none">
               <span className="text-sm font-medium">{activeDragItem.title}</span>
             </div>
           ) : null}

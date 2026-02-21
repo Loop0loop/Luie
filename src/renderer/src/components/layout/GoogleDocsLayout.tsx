@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { type Editor as TiptapEditor } from "@tiptap/react";
+import { Panel, Group as PanelGroup } from "react-resizable-panels";
 import WindowBar from './WindowBar';
 import { cn } from '../../../../shared/types/utils';
 import { useUIStore } from '../../stores/uiStore';
@@ -11,8 +12,7 @@ import { EditorDropZones } from "../common/EditorDropZones";
 import Editor from "../editor/Editor";
 import EditorToolbar from '../editor/EditorToolbar';
 import { EditorRuler } from "../editor/EditorRuler";
-import StatusFooter from "../common/StatusFooter";
-import { api } from "../../services/api";
+
 import ResearchPanel from "../research/ResearchPanel";  
 import WorldPanel from "../research/WorldPanel";
 import { DraggableItem } from "../common/DraggableItem";
@@ -44,6 +44,7 @@ interface GoogleDocsLayoutProps {
   onOpenSettings: () => void;
   onRenameChapter?: (id: string, title: string) => void;
   onSaveChapter?: (title: string, content: string) => void | Promise<void>;
+  additionalPanels?: ReactNode;
 }
 
 export default function GoogleDocsLayout({ 
@@ -57,6 +58,7 @@ export default function GoogleDocsLayout({
   onOpenSettings,
   onRenameChapter,
   onSaveChapter,
+  additionalPanels,
 }: GoogleDocsLayoutProps) {
   const { t } = useTranslation();
   const [trashRefreshKey, setTrashRefreshKey] = useState(0);
@@ -90,11 +92,6 @@ export default function GoogleDocsLayout({
      }
      openDocsRightTab(nextTab);
   }, [activeRightTab, setActiveRightTab]);
-
-  const handleOpenExport = async () => {
-    if (!activeChapterId) return;
-    await api.window.openExport(activeChapterId);
-  };
   
   // Resizing logic
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -256,34 +253,37 @@ export default function GoogleDocsLayout({
             
             {/* Scrollable Area for Editor */}
             <div className="flex-1 relative flex flex-col overflow-hidden">
-                <EditorDropZones />
-                <main className="flex-1 overflow-y-auto flex flex-col items-center relative custom-scrollbar bg-sidebar">
-                        {/* Ruler - Sticky Top (Opaque Background Fixed) */}
-                        <div className="sticky top-0 z-30 pt-4 pb-2 shrink-0 select-none bg-sidebar/95 backdrop-blur-sm flex justify-center w-full">
-                            <div className="bg-background border border-border shadow-sm">
-                                <EditorRuler onMarginsChange={setPageMargins} />
-                            </div>
-                        </div>
-                        
-                        {/* Page (A4: 210mm x 297mm @ 96DPI ~= 794px x 1123px) */}
-                        <div 
-                            className="mb-8 bg-background min-h-[1123px] transition-all duration-200 ease-in-out relative flex flex-col box-border shadow-md border border-border"
-                            style={{ 
-                                width: '794px', 
-                                paddingTop: '96px',
-                                paddingBottom: '96px',
-                                paddingLeft: `${pageMargins.left}px`,
-                                paddingRight: `${pageMargins.right}px`,
-                                color: 'var(--foreground)' // Enforce theme text color
-                            }}
-                        >
-                            {children}
-                        </div>
-                </main>
-            </div>
+                <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative">
+                  <Panel defaultSize={50} minSize={20} className="min-w-0 bg-transparent relative flex flex-col">
+                 <EditorDropZones />
+                 <main className="flex-1 overflow-y-auto flex flex-col items-center relative custom-scrollbar bg-sidebar">
+                         {/* Ruler - Sticky Top (Opaque Background Fixed) */}
+                         <div className="sticky top-0 z-30 pt-4 pb-2 shrink-0 select-none bg-sidebar/95 backdrop-blur-sm flex justify-center w-full">
+                             <div className="bg-background border border-border shadow-sm">
+                                 <EditorRuler onMarginsChange={setPageMargins} />
+                             </div>
+                         </div>
+                         
+                         {/* Page (A4: 210mm x 297mm @ 96DPI ~= 794px x 1123px) */}
+                         <div 
+                             className="mb-8 bg-background min-h-[1123px] transition-all duration-200 ease-in-out relative flex flex-col box-border shadow-md border border-border"
+                             style={{ 
+                                 width: '794px', 
+                                 paddingTop: '96px',
+                                 paddingBottom: '96px',
+                                 paddingLeft: `${pageMargins.left}px`,
+                                 paddingRight: `${pageMargins.right}px`,
+                                 color: 'var(--foreground)' // Enforce theme text color
+                             }}
+                         >
+                             {children}
+                         </div>
+                 </main>
+                  </Panel>
+                  {additionalPanels}
+                </PanelGroup>
+             </div>
 
-             {/* Footer Fixed at Bottom of Main Column */}
-             <StatusFooter onOpenExport={handleOpenExport} />
          </div>
           
           {/* Right Resizer */}
