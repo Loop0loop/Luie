@@ -45,14 +45,32 @@ if (process.platform === "darwin") {
   });
 }
 
-if (process.defaultApp) {
-  const appEntry = process.argv[1] ? path.resolve(process.argv[1]) : "";
-  if (appEntry) {
-    app.setAsDefaultProtocolClient("luie", process.execPath, [appEntry]);
+const registerLuieProtocol = (): void => {
+  let registered = false;
+  if (process.defaultApp) {
+    const appEntry = process.argv[1] ? path.resolve(process.argv[1]) : "";
+    if (appEntry) {
+      registered = app.setAsDefaultProtocolClient("luie", process.execPath, [appEntry]);
+    }
+  } else {
+    registered = app.setAsDefaultProtocolClient("luie");
   }
-} else {
-  app.setAsDefaultProtocolClient("luie");
-}
+
+  if (!registered) {
+    logger.warn("Failed to register custom protocol for OAuth callback", {
+      protocol: "luie",
+      defaultApp: process.defaultApp,
+    });
+    return;
+  }
+
+  logger.info("Custom protocol registered", {
+    protocol: "luie",
+    defaultApp: process.defaultApp,
+  });
+};
+
+registerLuieProtocol();
 
 if (!registerSingleInstance(logger)) {
   app.quit();

@@ -351,6 +351,9 @@ export class SettingsManager {
       lastError: current?.lastError,
       accessTokenCipher: current?.accessTokenCipher,
       refreshTokenCipher: current?.refreshTokenCipher,
+      pendingAuthState: current?.pendingAuthState,
+      pendingAuthVerifierCipher: current?.pendingAuthVerifierCipher,
+      pendingAuthCreatedAt: current?.pendingAuthCreatedAt,
     };
   }
 
@@ -362,6 +365,26 @@ export class SettingsManager {
     };
     this.store.set("sync", next as unknown as AppSettings["sync"]);
     return next;
+  }
+
+  setPendingSyncAuth(input: {
+    state: string;
+    verifierCipher: string;
+    createdAt: string;
+  }): SyncSettings {
+    return this.setSyncSettings({
+      pendingAuthState: input.state,
+      pendingAuthVerifierCipher: input.verifierCipher,
+      pendingAuthCreatedAt: input.createdAt,
+    });
+  }
+
+  clearPendingSyncAuth(): SyncSettings {
+    return this.setSyncSettings({
+      pendingAuthState: undefined,
+      pendingAuthVerifierCipher: undefined,
+      pendingAuthCreatedAt: undefined,
+    });
   }
 
   clearSyncSettings(): SyncSettings {

@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { safeStorage, shell } from "electron";
 import { createLogger } from "../../../shared/logger/index.js";
 import type { SyncProvider, SyncSettings } from "../../../shared/types/index.js";
+import { settingsManager } from "../../manager/settingsManager.js";
 import {
   getSupabaseConfig,
   getSupabaseConfigOrThrow,
@@ -10,8 +11,11 @@ import {
 const logger = createLogger("SyncAuthService");
 
 const OAUTH_REDIRECT_URI = "luie://auth/callback";
+const TOKEN_CODEC_SAFE_PREFIX = "v2:safe:";
+const TOKEN_CODEC_PLAIN_PREFIX = "v2:plain:";
 
 type PendingPkce = {
+  state: string;
   verifier: string;
   createdAt: number;
 };
@@ -35,6 +39,16 @@ type SyncSession = {
   refreshTokenCipher: string;
 };
 
+type AccessTokenResult = {
+  token: string | null;
+  migratedCipher?: string;
+};
+
+type DecodedSecret = {
+  plain: string;
+  migratedCipher?: string;
+};
+
 const toBase64Url = (value: Buffer): string =>
   value
     .toString("base64")
@@ -49,28 +63,135 @@ const createCodeChallenge = (verifier: string): string =>
 
 const encryptSecret = (plain: string): string => {
   if (safeStorage.isEncryptionAvailable()) {
-    return safeStorage.encryptString(plain).toString("base64");
+    const cipher = safeStorage.encryptString(plain).toString("base64");
+    return `${TOKEN_CODEC_SAFE_PREFIX}${cipher}`;
   }
-  return Buffer.from(plain, "utf-8").toString("base64");
+  const cipher = Buffer.from(plain, "utf-8").toString("base64");
+  return `${TOKEN_CODEC_PLAIN_PREFIX}${cipher}`;
 };
 
-const decryptSecret = (cipher: string): string => {
-  const payload = Buffer.from(cipher, "base64");
+const decodeLegacySecret = (legacyCipher: string): DecodedSecret => {
+  const payload = Buffer.from(legacyCipher, "base64");
   if (safeStorage.isEncryptionAvailable()) {
-    return safeStorage.decryptString(payload);
+    try {
+      const plain = safeStorage.decryptString(payload);
+      return {
+        plain,
+        migratedCipher: encryptSecret(plain),
+      };
+    } catch {
+      // Legacy fallback can be plain base64 text.
+    }
   }
-  return payload.toString("utf-8");
+  const plain = payload.toString("utf-8");
+  return {
+    plain,
+    migratedCipher: encryptSecret(plain),
+  };
+};
+
+const decodeSecret = (cipher: string): DecodedSecret => {
+  if (cipher.startsWith(TOKEN_CODEC_SAFE_PREFIX)) {
+    if (!safeStorage.isEncryptionAvailable()) {
+      throw new Error("SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE");
+    }
+    const raw = cipher.slice(TOKEN_CODEC_SAFE_PREFIX.length);
+    const payload = Buffer.from(raw, "base64");
+    try {
+      return {
+        plain: safeStorage.decryptString(payload),
+      };
+    } catch (error) {
+      throw new Error(
+        `SYNC_TOKEN_DECRYPT_FAILED:${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  if (cipher.startsWith(TOKEN_CODEC_PLAIN_PREFIX)) {
+    const raw = cipher.slice(TOKEN_CODEC_PLAIN_PREFIX.length);
+    const payload = Buffer.from(raw, "base64");
+    return {
+      plain: payload.toString("utf-8"),
+    };
+  }
+
+  return decodeLegacySecret(cipher);
 };
 
 class SyncAuthService {
   private pendingPkce: PendingPkce | null = null;
   private readonly pendingTtlMs = 10 * 60 * 1000;
 
+  private clearPendingPkce(): void {
+    this.pendingPkce = null;
+    settingsManager.clearPendingSyncAuth();
+  }
+
+  private storePendingPkce(pending: PendingPkce): void {
+    this.pendingPkce = pending;
+    settingsManager.setPendingSyncAuth({
+      state: pending.state,
+      verifierCipher: encryptSecret(pending.verifier),
+      createdAt: new Date(pending.createdAt).toISOString(),
+    });
+  }
+
+  private getPendingPkceFromSettings(): PendingPkce | null {
+    const syncSettings = settingsManager.getSyncSettings();
+    if (
+      !syncSettings.pendingAuthState ||
+      !syncSettings.pendingAuthVerifierCipher ||
+      !syncSettings.pendingAuthCreatedAt
+    ) {
+      return null;
+    }
+
+    const createdAt = Date.parse(syncSettings.pendingAuthCreatedAt);
+    if (!Number.isFinite(createdAt)) {
+      this.clearPendingPkce();
+      return null;
+    }
+
+    try {
+      const decoded = decodeSecret(syncSettings.pendingAuthVerifierCipher);
+      if (decoded.migratedCipher) {
+        settingsManager.setPendingSyncAuth({
+          state: syncSettings.pendingAuthState,
+          verifierCipher: decoded.migratedCipher,
+          createdAt: syncSettings.pendingAuthCreatedAt,
+        });
+      }
+      return {
+        state: syncSettings.pendingAuthState,
+        verifier: decoded.plain,
+        createdAt,
+      };
+    } catch (error) {
+      logger.warn("Failed to decode pending OAuth verifier", { error });
+      this.clearPendingPkce();
+      return null;
+    }
+  }
+
+  private getPendingPkce(): PendingPkce | null {
+    if (this.pendingPkce) {
+      return this.pendingPkce;
+    }
+    const restored = this.getPendingPkceFromSettings();
+    if (restored) {
+      this.pendingPkce = restored;
+      return restored;
+    }
+    return null;
+  }
+
   private hasActivePendingFlow(): boolean {
-    if (!this.pendingPkce) return false;
-    const isExpired = Date.now() - this.pendingPkce.createdAt > this.pendingTtlMs;
+    const pending = this.getPendingPkce();
+    if (!pending) return false;
+    const isExpired = Date.now() - pending.createdAt > this.pendingTtlMs;
     if (isExpired) {
-      this.pendingPkce = null;
+      this.clearPendingPkce();
       return false;
     }
     return true;
@@ -87,21 +208,23 @@ class SyncAuthService {
 
   async startGoogleAuth(): Promise<void> {
     if (this.hasActivePendingFlow()) {
-      logger.warn("OAuth flow already pending; ignoring duplicate connect request");
-      return;
+      logger.info("Replacing existing OAuth flow with a new request");
     }
 
     const { url } = getSupabaseConfigOrThrow();
     const verifier = createCodeVerifier();
     const challenge = createCodeChallenge(verifier);
-    this.pendingPkce = {
+    const state = toBase64Url(randomBytes(24));
+    this.storePendingPkce({
+      state,
       verifier,
       createdAt: Date.now(),
-    };
+    });
 
     const authorizeUrl = new URL(`${url}/auth/v1/authorize`);
     authorizeUrl.searchParams.set("provider", "google");
     authorizeUrl.searchParams.set("redirect_to", OAUTH_REDIRECT_URI);
+    authorizeUrl.searchParams.set("state", state);
     authorizeUrl.searchParams.set("code_challenge", challenge);
     authorizeUrl.searchParams.set("code_challenge_method", "s256");
 
@@ -109,31 +232,37 @@ class SyncAuthService {
   }
 
   async completeOAuthCallback(callbackUrl: string): Promise<SyncSession> {
-    const pending = this.pendingPkce;
+    const pending = this.getPendingPkce();
     if (!pending) {
       throw new Error("SYNC_AUTH_NO_PENDING_SESSION");
     }
     if (Date.now() - pending.createdAt > this.pendingTtlMs) {
-      this.pendingPkce = null;
+      this.clearPendingPkce();
       throw new Error("SYNC_AUTH_REQUEST_EXPIRED");
     }
 
     const parsed = new URL(callbackUrl);
+    const state = parsed.searchParams.get("state");
     const code = parsed.searchParams.get("code");
     const error = parsed.searchParams.get("error");
     const errorCode = parsed.searchParams.get("error_code");
     const errorDescription = parsed.searchParams.get("error_description");
 
     if (error) {
-      this.pendingPkce = null;
+      this.clearPendingPkce();
       throw new Error(errorDescription ?? errorCode ?? error);
     }
     if (!code) {
+      this.clearPendingPkce();
       throw new Error("SYNC_AUTH_CODE_MISSING");
+    }
+    if (!state || state !== pending.state) {
+      this.clearPendingPkce();
+      throw new Error("SYNC_AUTH_STATE_MISMATCH");
     }
 
     const token = await this.exchangeCodeForSession(code, pending.verifier);
-    this.pendingPkce = null;
+    this.clearPendingPkce();
     return token;
   }
 
@@ -141,20 +270,24 @@ class SyncAuthService {
     if (!syncSettings.refreshTokenCipher || !syncSettings.userId) {
       throw new Error("SYNC_AUTH_REFRESH_UNAVAILABLE");
     }
-    const refreshToken = decryptSecret(syncSettings.refreshTokenCipher);
+    const refreshToken = decodeSecret(syncSettings.refreshTokenCipher).plain;
     const token = await this.exchangeRefreshToken(refreshToken);
     return token;
   }
 
-  getAccessToken(syncSettings: SyncSettings): string | null {
+  getAccessToken(syncSettings: SyncSettings): AccessTokenResult {
     if (!syncSettings.accessTokenCipher) {
-      return null;
+      return { token: null };
     }
     try {
-      return decryptSecret(syncSettings.accessTokenCipher);
+      const decoded = decodeSecret(syncSettings.accessTokenCipher);
+      return {
+        token: decoded.plain,
+        migratedCipher: decoded.migratedCipher,
+      };
     } catch (error) {
       logger.warn("Failed to decrypt sync access token", { error });
-      return null;
+      return { token: null };
     }
   }
 

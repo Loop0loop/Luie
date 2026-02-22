@@ -383,6 +383,9 @@ export interface SyncRunResult {
 export interface SyncSettings extends SyncConnection {
   accessTokenCipher?: string;
   refreshTokenCipher?: string;
+  pendingAuthState?: string;
+  pendingAuthVerifierCipher?: string;
+  pendingAuthCreatedAt?: string;
 }
 
 export interface WindowBounds {

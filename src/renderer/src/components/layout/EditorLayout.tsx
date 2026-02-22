@@ -108,7 +108,7 @@ export default function EditorLayout({
   const { docsRightTab, setDocsRightTab } = useUIStore();
   // EditorStore에서 maxWidth 가져오기 (PC/Mobile 조판)
   const maxWidth = useEditorStore((state) => state.maxWidth);
-  
+
   // useSplitView의 rightPanelContent를 사용하여 스냅샷 뷰어 제어
   // const { panels } = useUIStore(); // Removed as per instruction
 
@@ -123,7 +123,7 @@ export default function EditorLayout({
   const [closingTab, setClosingTab] = useState<BinderTab | null>(null);
   const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
   const binderRef = useRef<HTMLDivElement>(null);
-  
+
   const setActiveRightTab = useCallback(
     (tab: BinderTab | null) => {
       if (!tab && activeRightTab) {
@@ -237,7 +237,7 @@ export default function EditorLayout({
 
   // 공통 BinderBar 콘텐츠 렌더링 함수
   const renderBinderContent = () => (
-    <div 
+    <div
       ref={binderRef}
       className="h-full flex flex-row bg-panel border-l border-border shadow-2xl"
       onMouseEnter={handleBinderMouseEnter}
@@ -270,24 +270,24 @@ export default function EditorLayout({
             </div>
 
             {/* Absolute Close Button (Header Removed) */}
-             <button
-                onClick={() => setActiveRightTab(null)}
-                className="absolute top-2 right-2 p-1.5 rounded-full bg-surface/80 backdrop-blur-sm border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-all opacity-0 group-hover:opacity-100 peer-hover:opacity-100 hover:opacity-100"
-                title={t("sidebar.toggle.close")}
-              >
-                <X className="w-4 h-4" />
-              </button>
+            <button
+              onClick={() => setActiveRightTab(null)}
+              className="absolute top-2 right-2 p-1.5 rounded-full bg-surface/80 backdrop-blur-sm border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-all opacity-0 group-hover:opacity-100 peer-hover:opacity-100 hover:opacity-100"
+              title={t("sidebar.toggle.close")}
+            >
+              <X className="w-4 h-4" />
+            </button>
 
-             {/* 스냅샷 뷰어일 때 뒤로가기 버튼 (Absolute) */}
-             {visibleTab === 'snapshot' && (
-                <button 
-                  onClick={handleBackToSnapshotList}
-                  className="absolute top-2 left-3 p-1.5 rounded-full bg-surface/80 backdrop-blur-sm border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-all"
-                  title={t("common.back")}
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-             )}
+            {/* 스냅샷 뷰어일 때 뒤로가기 버튼 (Absolute) */}
+            {visibleTab === 'snapshot' && (
+              <button
+                onClick={handleBackToSnapshotList}
+                className="absolute top-2 left-3 p-1.5 rounded-full bg-surface/80 backdrop-blur-sm border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-all"
+                title={t("common.back")}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            )}
 
 
             {/* 패널 본문 */}
@@ -417,36 +417,36 @@ export default function EditorLayout({
 
         {/* CENTER: 메인 에디터 영역 */}
         <div className="flex-1 h-full overflow-hidden flex flex-row relative">
-          
+
           {/* Editor Column Wrapper */}
           <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative">
-            <Panel defaultSize={50} minSize={20} className="min-w-0 bg-transparent relative flex flex-col">
-          <div className="flex-1 h-full overflow-hidden flex flex-col relative">
-            <EditorDropZones />
-            
-            {/* Scrollable Editor Area */}
-            <div className="flex-1 h-full overflow-y-auto bg-[#f3f4f6] dark:bg-[#1a1a1a] flex flex-col items-center custom-scrollbar shrink-0 relative">
-              {/* A4 페이지 (max-width 적용) */}
-              <div 
-                className="min-h-[1056px] bg-white dark:bg-[#1e1e1e] shadow-2xl border border-black/5 dark:border-white/5 py-12 px-12 my-8 transition-all duration-200 ease-out shrink-0"
-                style={{ width: maxWidth ?? 816 }}
-              >
-                {/* 챕터 제목 */}
-                {activeChapterTitle && (
-                  <h1 className="text-3xl font-bold mb-8 pb-4 border-b border-border/50 text-fg break-all">
-                    {activeChapterTitle}
-                  </h1>
-                )}
+            <Panel defaultSize={100} minSize={20} className="min-w-0 bg-transparent relative flex flex-col">
+              <div className="flex-1 h-full overflow-hidden flex flex-col relative">
+                <EditorDropZones />
 
-                {/* 에디터 콘텐츠 */}
-                <div className="min-h-[500px] [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[400px] wrap-break-word">
-                  {children}
+                {/* Scrollable Editor Area */}
+                <div className="flex-1 h-full overflow-y-auto bg-[#f3f4f6] dark:bg-[#1a1a1a] flex flex-col items-center custom-scrollbar shrink-0 relative">
+                  {/* A4 페이지 (max-width 적용) */}
+                  <div
+                    className="min-h-[1056px] bg-white dark:bg-[#1e1e1e] shadow-2xl border border-black/5 dark:border-white/5 py-12 px-12 my-8 transition-all duration-200 ease-out shrink-0"
+                    style={{ width: maxWidth ?? 816 }}
+                  >
+                    {/* 챕터 제목 */}
+                    {activeChapterTitle && (
+                      <h1 className="text-3xl font-bold mb-8 pb-4 border-b border-border/50 text-fg break-all">
+                        {activeChapterTitle}
+                      </h1>
+                    )}
+
+                    {/* 에디터 콘텐츠 */}
+                    <div className="min-h-[500px] [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[400px] wrap-break-word">
+                      {children}
+                    </div>
+                  </div>
+
+                  <div className="h-12 w-full shrink-0" />
                 </div>
               </div>
-
-              <div className="h-12 w-full shrink-0" />
-            </div>
-          </div>
             </Panel>
             {additionalPanels}
           </PanelGroup>

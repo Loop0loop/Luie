@@ -31,10 +31,10 @@ type Note = {
 const defaultUpdatedAt = new Date().toISOString();
 const MEMO_SIDEBAR_PANEL_ID = "memo-sidebar";
 const MEMO_CONTENT_PANEL_ID = "memo-content";
-const MEMO_SIDEBAR_DEFAULT_SIZE = 256;
-const MEMO_SIDEBAR_MIN_SIZE = 140;
-const MEMO_SIDEBAR_MAX_SIZE = 272;
-const MEMO_CONTENT_MIN_SIZE = 122;
+const MEMO_SIDEBAR_DEFAULT_SIZE = 230;
+const MEMO_SIDEBAR_MIN_SIZE = 145;
+const MEMO_SIDEBAR_MAX_SIZE = 360;
+const MEMO_CONTENT_MIN_SIZE = 30;
 
 const normalizeMemoLayout = (layout: Layout): Layout | undefined => {
   const rawSidebar = layout[MEMO_SIDEBAR_PANEL_ID];
@@ -44,14 +44,15 @@ const normalizeMemoLayout = (layout: Layout): Layout | undefined => {
   // Minimum required percentage based on total constraints
   // e.g. SidePanel min width vs total width. Approximation is used since Panels handle hard pixels relative to percentage themselves.
   let normalizedSidebar = Math.max(0, Math.min(100, Math.round(Number(rawSidebar))));
-  
-  // Enforce some basic min/max relative size constraints (20% to 80% range)
-  if (normalizedSidebar < 20) normalizedSidebar = 20;
-  if (normalizedSidebar > 80) normalizedSidebar = 80;
+
+  // Remove the clamped 20-80 percentage constraint because sizes like 230/360 are used
+  // and react-resizable-panels will proportionally calculate them if sum > 100.
+  if (normalizedSidebar < 0) normalizedSidebar = 0;
+  if (normalizedSidebar > 1000) normalizedSidebar = 1000;
 
   return {
     [MEMO_SIDEBAR_PANEL_ID]: normalizedSidebar,
-    [MEMO_CONTENT_PANEL_ID]: 100 - normalizedSidebar,
+    [MEMO_CONTENT_PANEL_ID]: 1000 - normalizedSidebar,
   };
 };
 
@@ -194,7 +195,7 @@ function MemoSectionInner({
         defaultLayout={
           initialLayout ?? {
             [MEMO_SIDEBAR_PANEL_ID]: MEMO_SIDEBAR_DEFAULT_SIZE,
-            [MEMO_CONTENT_PANEL_ID]: 100 - MEMO_SIDEBAR_DEFAULT_SIZE,
+            [MEMO_CONTENT_PANEL_ID]: 1000 - MEMO_SIDEBAR_DEFAULT_SIZE, // Use a larger base to accommodate 230 proportional layout
           }
         }
         className="h-full! w-full!"
@@ -228,12 +229,12 @@ function MemoSectionInner({
                 itemContent={(_index, note) => (
                   <div
                     className={cn(
-                      "px-4 py-3 border-b border-border cursor-pointer transition-colors hover:bg-element-hover",
+                      "px-4 py-3 border-b border-border cursor-pointer transition-colors hover:bg-element-hover overflow-hidden w-full",
                       activeNoteId === note.id && "bg-active border-l-[3px] border-l-accent pl-3.25",
                     )}
                     onClick={() => setActiveNoteId(note.id)}
                   >
-                    <div style={{ fontWeight: "var(--memo-title-font-weight)", marginBottom: 4 }}>
+                    <div className="truncate" style={{ fontWeight: "var(--memo-title-font-weight)", marginBottom: 4 }}>
                       {note.title || t("project.defaults.untitled")}
                     </div>
                     <div className="flex gap-1 flex-wrap mb-1">
@@ -323,10 +324,10 @@ function MemoSectionInner({
                     notes.map((n) =>
                       n.id === activeNoteId
                         ? {
-                            ...n,
-                            content: e.target.value,
-                            updatedAt: new Date().toISOString(),
-                          }
+                          ...n,
+                          content: e.target.value,
+                          updatedAt: new Date().toISOString(),
+                        }
                         : n,
                     ),
                   )

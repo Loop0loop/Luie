@@ -21,7 +21,6 @@ export type SyncProjectRecord = {
   userId: string;
   title: string;
   description?: string | null;
-  projectPath?: string | null;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;

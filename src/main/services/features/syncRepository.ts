@@ -5,7 +5,6 @@ import type {
   SyncCharacterRecord,
   SyncMemoRecord,
   SyncProjectRecord,
-  SyncSnapshotRecord,
   SyncTermRecord,
   SyncTombstoneRecord,
   SyncWorldDocumentRecord,
@@ -65,12 +64,6 @@ const normalizeToRow = (value: Record<string, unknown>): Record<string, unknown>
   return next;
 };
 
-const encodeStoragePath = (path: string): string =>
-  path
-    .split("/")
-    .map((segment) => encodeURIComponent(segment))
-    .join("/");
-
 const toResponseError = async (
   kind: "FETCH" | "UPSERT",
   table: string,
@@ -93,7 +86,6 @@ const mapProjectRow = (row: DbRow): SyncProjectRecord | null => {
     userId,
     title: toStringOrFallback(row.title, "Untitled"),
     description: toNullableString(row.description),
-    projectPath: toNullableString(row.project_path),
     createdAt: toIsoString(row.created_at),
     updatedAt: toIsoString(row.updated_at),
     deletedAt: toNullableString(row.deleted_at),
@@ -208,29 +200,6 @@ const mapMemoRow = (row: DbRow): SyncMemoRecord | null => {
   };
 };
 
-const mapSnapshotRow = (row: DbRow): SyncSnapshotRecord | null => {
-  const id = toNullableString(row.id);
-  const userId = toNullableString(row.user_id);
-  const projectId = toNullableString(row.project_id);
-  if (!id || !userId || !projectId) return null;
-
-  const contentInline = toNullableString(row.content_inline);
-
-  return {
-    id,
-    userId,
-    projectId,
-    chapterId: toNullableString(row.chapter_id),
-    description: toNullableString(row.description),
-    createdAt: toIsoString(row.created_at),
-    updatedAt: toIsoString(row.updated_at),
-    deletedAt: toNullableString(row.deleted_at),
-    contentLength: toNumber(row.content_length, contentInline?.length ?? 0),
-    contentPath: toNullableString(row.content_path),
-    contentInline,
-  };
-};
-
 const mapTombstoneRow = (row: DbRow): SyncTombstoneRecord | null => {
   const id = toNullableString(row.id);
   const userId = toNullableString(row.user_id);
@@ -265,7 +234,6 @@ class SyncRepository {
       termsRaw,
       worldDocsRaw,
       memosRaw,
-      snapshotsRaw,
       tombstonesRaw,
     ] = await Promise.all([
       this.fetchTableRaw("projects", accessToken, userId),
@@ -274,7 +242,6 @@ class SyncRepository {
       this.fetchTableRaw("terms", accessToken, userId),
       this.fetchTableRaw("world_documents", accessToken, userId),
       this.fetchTableRaw("memos", accessToken, userId),
-      this.fetchTableRaw("snapshots", accessToken, userId),
       this.fetchTableRaw("tombstones", accessToken, userId),
     ]);
 
@@ -290,11 +257,6 @@ class SyncRepository {
       .map(mapTombstoneRow)
       .filter((row): row is SyncTombstoneRecord => row !== null);
 
-    const mappedSnapshots = snapshotsRaw
-      .map(mapSnapshotRow)
-      .filter((row): row is SyncSnapshotRecord => row !== null);
-    bundle.snapshots = await this.hydrateSnapshotContents(accessToken, mappedSnapshots);
-
     return bundle;
   }
 
@@ -305,7 +267,6 @@ class SyncRepository {
         user_id: record.userId,
         title: record.title,
         description: record.description ?? null,
-        project_path: record.projectPath ?? null,
         created_at: record.createdAt,
         updated_at: record.updatedAt,
         deleted_at: record.deletedAt ?? null,
@@ -384,23 +345,6 @@ class SyncRepository {
       }),
     );
 
-    const snapshotRows = await this.uploadSnapshots(accessToken, bundle.snapshots);
-    const snapshotPayloadRows = snapshotRows.map((record) =>
-      normalizeToRow({
-        id: record.id,
-        user_id: record.userId,
-        project_id: record.projectId,
-        chapter_id: record.chapterId ?? null,
-        content_length: record.contentLength,
-        content_path: record.contentPath ?? null,
-        content_inline: record.contentInline ?? null,
-        description: record.description ?? null,
-        created_at: record.createdAt,
-        updated_at: record.updatedAt,
-        deleted_at: record.deletedAt ?? null,
-      }),
-    );
-
     const tombstoneRows = bundle.tombstones.map((record) =>
       normalizeToRow({
         id: record.id,
@@ -419,7 +363,6 @@ class SyncRepository {
     await this.upsertTable("terms", accessToken, termRows, "id,user_id");
     await this.upsertTable("world_documents", accessToken, worldDocumentRows, "id,user_id");
     await this.upsertTable("memos", accessToken, memoRows, "id,user_id");
-    await this.upsertTable("snapshots", accessToken, snapshotPayloadRows, "id,user_id");
     await this.upsertTable("tombstones", accessToken, tombstoneRows, "id,user_id");
   }
 
@@ -488,120 +431,6 @@ class SyncRepository {
     }
   }
 
-  private async hydrateSnapshotContents(
-    accessToken: string,
-    snapshots: SyncSnapshotRecord[],
-  ): Promise<SyncSnapshotRecord[]> {
-    const hydrated: SyncSnapshotRecord[] = [];
-
-    for (const snapshot of snapshots) {
-      if (snapshot.contentInline && snapshot.contentInline.length > 0) {
-        hydrated.push(snapshot);
-        continue;
-      }
-
-      if (!snapshot.contentPath) {
-        hydrated.push(snapshot);
-        continue;
-      }
-
-      const content = await this.downloadSnapshotContent(accessToken, snapshot.contentPath);
-      if (content === null) {
-        hydrated.push(snapshot);
-        continue;
-      }
-
-      hydrated.push({
-        ...snapshot,
-        contentInline: content,
-        contentLength: snapshot.contentLength || content.length,
-      });
-    }
-
-    return hydrated;
-  }
-
-  private async downloadSnapshotContent(
-    accessToken: string,
-    contentPath: string,
-  ): Promise<string | null> {
-    const config = getSupabaseConfigOrThrow();
-
-    const encodedPath = encodeStoragePath(contentPath);
-    const response = await fetch(
-      `${config.url}/storage/v1/object/luie-snapshots/${encodedPath}`,
-      {
-        method: "GET",
-        headers: {
-          apikey: config.anonKey,
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
-    );
-
-    if (!response.ok) {
-      const body = await response.text();
-      logger.warn("Snapshot blob download failed", {
-        contentPath,
-        status: response.status,
-        body,
-      });
-      return null;
-    }
-
-    return response.text();
-  }
-
-  private async uploadSnapshots(
-    accessToken: string,
-    snapshots: SyncSnapshotRecord[],
-  ): Promise<SyncSnapshotRecord[]> {
-    const config = getSupabaseConfigOrThrow();
-
-    const nextSnapshots: SyncSnapshotRecord[] = [];
-    for (const snapshot of snapshots) {
-      if (!snapshot.contentInline || snapshot.contentInline.length === 0) {
-        nextSnapshots.push(snapshot);
-        continue;
-      }
-
-      const objectPath = `${snapshot.userId}/${snapshot.projectId}/${snapshot.id}.snap`;
-      const encodedPath = encodeStoragePath(objectPath);
-
-      const response = await fetch(
-        `${config.url}/storage/v1/object/luie-snapshots/${encodedPath}`,
-        {
-          method: "POST",
-          headers: {
-            apikey: config.anonKey,
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "text/plain; charset=utf-8",
-            "x-upsert": "true",
-          },
-          body: snapshot.contentInline,
-        },
-      );
-
-      if (!response.ok) {
-        const body = await response.text();
-        logger.warn("Snapshot blob upload failed, keeping inline payload", {
-          snapshotId: snapshot.id,
-          status: response.status,
-          body,
-        });
-        nextSnapshots.push(snapshot);
-        continue;
-      }
-
-      nextSnapshots.push({
-        ...snapshot,
-        contentPath: objectPath,
-        contentInline: undefined,
-      });
-    }
-
-    return nextSnapshots;
-  }
 }
 
 export const syncRepository = new SyncRepository();

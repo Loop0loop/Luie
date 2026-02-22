@@ -85,6 +85,18 @@ const toSyncErrorMessage = (error: unknown): string => {
   return raw;
 };
 
+const AUTH_FATAL_ERROR_PATTERNS = [
+  "SYNC_ACCESS_TOKEN_UNAVAILABLE",
+  "SYNC_AUTH_REFRESH_UNAVAILABLE",
+  "SYNC_AUTH_REFRESH_FAILED",
+  "SYNC_AUTH_INVALID_SESSION",
+  "SYNC_TOKEN_DECRYPT_FAILED",
+  "SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE",
+];
+
+const isAuthFatalMessage = (message: string): boolean =>
+  AUTH_FATAL_ERROR_PATTERNS.some((pattern) => message.includes(pattern));
+
 const toSyncStatusFromSettings = (
   syncSettings: SyncSettings,
   baseStatus: SyncStatus,
@@ -100,15 +112,44 @@ const toSyncStatusFromSettings = (
   lastError: syncSettings.lastError,
 });
 
-class SyncService {
+export class SyncService {
   private status: SyncStatus = INITIAL_STATUS;
   private inFlightPromise: Promise<SyncRunResult> | null = null;
   private queuedRun = false;
   private autoSyncTimer: NodeJS.Timeout | null = null;
 
+  private applyAuthFailureState(message: string): void {
+    const cleared = settingsManager.clearSyncSettings();
+    const next = settingsManager.setSyncSettings({
+      ...cleared,
+      lastError: message,
+    });
+    this.updateStatus({
+      ...toSyncStatusFromSettings(next, INITIAL_STATUS),
+      mode: "error",
+      inFlight: false,
+      queued: false,
+      conflicts: INITIAL_STATUS.conflicts,
+    });
+  }
+
   initialize(): void {
     const syncSettings = settingsManager.getSyncSettings();
     this.status = toSyncStatusFromSettings(syncSettings, this.status);
+
+    if (syncSettings.connected) {
+      const tokenResult = syncAuthService.getAccessToken(syncSettings);
+      if (tokenResult.migratedCipher) {
+        settingsManager.setSyncSettings({ accessTokenCipher: tokenResult.migratedCipher });
+      }
+
+      const hasRecoverableTokenPath =
+        Boolean(tokenResult.token) || Boolean(syncSettings.refreshTokenCipher);
+      if (!hasRecoverableTokenPath) {
+        this.applyAuthFailureState("SYNC_ACCESS_TOKEN_UNAVAILABLE");
+      }
+    }
+
     this.broadcastStatus();
 
     if (this.status.connected && this.status.autoSync) {
@@ -301,15 +342,19 @@ class SyncService {
       return result;
     } catch (error) {
       const message = toSyncErrorMessage(error);
-      const nextSettings = settingsManager.setSyncSettings({
-        lastError: message,
-      });
-      this.updateStatus({
-        ...toSyncStatusFromSettings(nextSettings, this.status),
-        mode: "error",
-        inFlight: false,
-        queued: false,
-      });
+      if (isAuthFatalMessage(message)) {
+        this.applyAuthFailureState(message);
+      } else {
+        const nextSettings = settingsManager.setSyncSettings({
+          lastError: message,
+        });
+        this.updateStatus({
+          ...toSyncStatusFromSettings(nextSettings, this.status),
+          mode: "error",
+          inFlight: false,
+          queued: false,
+        });
+      }
       this.queuedRun = false;
 
       logger.error("Sync run failed", { error, reason });
@@ -324,13 +369,23 @@ class SyncService {
   }
 
   private async ensureAccessToken(syncSettings: SyncSettings): Promise<string> {
+    const maybePersistMigratedToken = (migratedCipher?: string) => {
+      if (!migratedCipher) return;
+      settingsManager.setSyncSettings({
+        accessTokenCipher: migratedCipher,
+      });
+    };
+
     const expiresSoon = syncSettings.expiresAt
       ? Date.parse(syncSettings.expiresAt) <= Date.now() + 60_000
       : true;
+    const accessTokenResult = syncAuthService.getAccessToken(syncSettings);
+    maybePersistMigratedToken(accessTokenResult.migratedCipher);
+    let token = accessTokenResult.token;
 
-    if (expiresSoon) {
+    if (expiresSoon || !token) {
       const refreshed = await syncAuthService.refreshSession(syncSettings);
-      settingsManager.setSyncSettings({
+      const nextSettings = settingsManager.setSyncSettings({
         provider: refreshed.provider,
         userId: refreshed.userId,
         email: refreshed.email,
@@ -338,10 +393,11 @@ class SyncService {
         accessTokenCipher: refreshed.accessTokenCipher,
         refreshTokenCipher: refreshed.refreshTokenCipher,
       });
+      const refreshedToken = syncAuthService.getAccessToken(nextSettings);
+      maybePersistMigratedToken(refreshedToken.migratedCipher);
+      token = refreshedToken.token;
     }
 
-    const latestSettings = settingsManager.getSyncSettings();
-    const token = syncAuthService.getAccessToken(latestSettings);
     if (!token) {
       throw new Error("SYNC_ACCESS_TOKEN_UNAVAILABLE");
     }
@@ -356,7 +412,6 @@ class SyncService {
         chapters: true,
         characters: true,
         terms: true,
-        snapshots: true,
       },
     })) as Array<Record<string, unknown>>;
 
@@ -371,7 +426,6 @@ class SyncService {
         userId,
         title: toNullableString(projectRow.title) ?? "Untitled",
         description: toNullableString(projectRow.description),
-        projectPath,
         createdAt: toIsoString(projectRow.createdAt),
         updatedAt: projectUpdatedAt,
       });
@@ -446,27 +500,6 @@ class SyncService {
           firstAppearance: toNullableString(row.firstAppearance),
           createdAt: toIsoString(row.createdAt),
           updatedAt: toIsoString(row.updatedAt),
-        });
-      }
-
-      const snapshots = Array.isArray(projectRow.snapshots)
-        ? (projectRow.snapshots as Array<Record<string, unknown>>)
-        : [];
-      for (const row of snapshots) {
-        const snapshotId = toNullableString(row.id);
-        if (!snapshotId) continue;
-        const content = toNullableString(row.content) ?? "";
-        bundle.snapshots.push({
-          id: snapshotId,
-          userId,
-          projectId,
-          chapterId: toNullableString(row.chapterId),
-          description: toNullableString(row.description),
-          createdAt: toIsoString(row.createdAt),
-          updatedAt: toIsoString(row.updatedAt),
-          contentLength: toNumber(row.contentLength, content.length),
-          contentInline: content,
-          deletedAt: toNullableString(row.deletedAt),
         });
       }
 
@@ -566,7 +599,6 @@ class SyncService {
           data: {
             title: project.title,
             description: project.description,
-            projectPath: project.projectPath,
             updatedAt: new Date(project.updatedAt),
           },
         });
@@ -576,7 +608,6 @@ class SyncService {
             id: project.id,
             title: project.title,
             description: project.description,
-            projectPath: project.projectPath,
             createdAt: new Date(project.createdAt),
             updatedAt: new Date(project.updatedAt),
             settings: {
@@ -677,56 +708,6 @@ class SyncService {
       }
     }
 
-    for (const snapshot of bundle.snapshots) {
-      const existing = await prisma.snapshot.findUnique({
-        where: { id: snapshot.id },
-        select: { id: true },
-      }) as { id?: string } | null;
-
-      if (snapshot.deletedAt) {
-        if (existing?.id) {
-          await prisma.snapshot.delete({ where: { id: snapshot.id } });
-        }
-        continue;
-      }
-
-      const data = {
-        content: snapshot.contentInline ?? "",
-        contentLength: snapshot.contentLength,
-        description: snapshot.description,
-        createdAt: new Date(snapshot.createdAt),
-        project: {
-          connect: { id: snapshot.projectId },
-        },
-      };
-
-      if (existing?.id) {
-        await prisma.snapshot.update({
-          where: { id: snapshot.id },
-          data: {
-            ...data,
-            chapter: snapshot.chapterId
-              ? { connect: { id: snapshot.chapterId } }
-              : { disconnect: true },
-          },
-        });
-      } else {
-        await prisma.snapshot.create({
-          data: {
-            id: snapshot.id,
-            ...data,
-            ...(snapshot.chapterId
-              ? {
-                  chapter: {
-                    connect: { id: snapshot.chapterId },
-                  },
-                }
-              : {}),
-          },
-        });
-      }
-    }
-
     for (const tombstone of bundle.tombstones) {
       if (tombstone.entityType !== "chapter") continue;
       const existing = await prisma.chapter.findUnique({
@@ -749,10 +730,16 @@ class SyncService {
   private buildProjectPackagePayload(
     bundle: SyncBundle,
     projectId: string,
+    localSnapshots: Array<{
+      id: string;
+      chapterId: string | null;
+      content: string;
+      description: string | null;
+      createdAt: Date;
+    }>,
   ): LuiePackageExportData | null {
     const project = bundle.projects.find((item) => item.id === projectId);
-    if (!project || !project.projectPath) return null;
-    if (!project.projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) return null;
+    if (!project) return null;
 
     const chapters = bundle.chapters
       .filter((item) => item.projectId === projectId && !item.deletedAt)
@@ -794,15 +781,13 @@ class SyncService {
         updatedAt: item.updatedAt,
       }));
 
-    const snapshotList = bundle.snapshots
-      .filter((item) => item.projectId === projectId && !item.deletedAt)
-      .map((item) => ({
-        id: item.id,
-        chapterId: item.chapterId ?? undefined,
-        content: item.contentInline ?? "",
-        description: item.description ?? undefined,
-        createdAt: item.createdAt,
-      }));
+    const snapshotList = localSnapshots.map((snapshot) => ({
+      id: snapshot.id,
+      chapterId: snapshot.chapterId ?? undefined,
+      content: snapshot.content,
+      description: snapshot.description ?? undefined,
+      createdAt: snapshot.createdAt.toISOString(),
+    }));
 
     const scrapPayload = worldDocs.get("scrap");
     const normalizedScrapPayload =
@@ -850,18 +835,49 @@ class SyncService {
 
   private async persistBundleToLuiePackages(bundle: SyncBundle): Promise<void> {
     for (const project of bundle.projects) {
-      if (!project.projectPath || !project.projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
+      const localProject = await db.getClient().project.findUnique({
+        where: { id: project.id },
+        select: {
+          projectPath: true,
+          snapshots: {
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              chapterId: true,
+              content: true,
+              description: true,
+              createdAt: true,
+            },
+          },
+        },
+      }) as {
+        projectPath?: string | null;
+        snapshots?: Array<{
+          id: string;
+          chapterId: string | null;
+          content: string;
+          description: string | null;
+          createdAt: Date;
+        }>;
+      } | null;
+
+      const projectPath = toNullableString(localProject?.projectPath);
+      if (!projectPath || !projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
         continue;
       }
-      const payload = this.buildProjectPackagePayload(bundle, project.id);
+      const payload = this.buildProjectPackagePayload(
+        bundle,
+        project.id,
+        localProject?.snapshots ?? [],
+      );
       if (!payload) continue;
 
       try {
-        await writeLuiePackage(project.projectPath, payload, logger);
+        await writeLuiePackage(projectPath, payload, logger);
       } catch (error) {
         logger.warn("Failed to persist merged bundle into .luie package", {
           projectId: project.id,
-          projectPath: project.projectPath,
+          projectPath,
           error,
         });
       }
