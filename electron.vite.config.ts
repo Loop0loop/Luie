@@ -50,6 +50,10 @@ export default defineConfig({
       emptyOutDir: true,
       minify: "esbuild",
       rollupOptions: {
+        input: {
+          index: resolve("src/renderer/index.html"),
+          "auth-result": resolve("src/renderer/auth-result.html"),
+        },
         output: {
           manualChunks: (id) => {
             if (!id.includes("node_modules")) return;

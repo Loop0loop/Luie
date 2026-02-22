@@ -430,6 +430,31 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     });
   }, [runSyncAction, showToast, t]);
 
+  const handleReconnectGoogle = useCallback(() => {
+    void runSyncAction(async () => {
+      const disconnected = await api.sync.disconnect();
+      if (disconnected.success && disconnected.data) {
+        const parsedDisconnect = syncStatusSchema.safeParse(disconnected.data);
+        if (parsedDisconnect.success) {
+          setSyncStatus(parsedDisconnect.data);
+        }
+      }
+
+      const response = await api.sync.connectGoogle();
+      if (!response.success || !response.data) {
+        showToast(t("settings.sync.toast.connectFailed"), "error");
+        return;
+      }
+      const parsed = syncStatusSchema.safeParse(response.data);
+      if (!parsed.success) {
+        showToast(t("settings.sync.toast.connectFailed"), "error");
+        return;
+      }
+      setSyncStatus(parsed.data);
+      showToast(t("settings.sync.toast.connectStarted"), "info");
+    });
+  }, [runSyncAction, showToast, t]);
+
   const handleDisconnect = useCallback(() => {
     void runSyncAction(async () => {
       const response = await api.sync.disconnect();
@@ -593,6 +618,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 status={syncStatus}
                 isBusy={isSyncBusy}
                 onConnectGoogle={handleConnectGoogle}
+                onReconnectGoogle={handleReconnectGoogle}
                 onDisconnect={handleDisconnect}
                 onSyncNow={handleSyncNow}
                 onToggleAutoSync={handleToggleAutoSync}

@@ -244,6 +244,7 @@ export const ja = {
         },
         actions: {
           connectGoogle: "Google 接続",
+          reconnectGoogle: "再ログイン",
           disconnect: "接続解除",
           syncNow: "今すぐ同期",
         },

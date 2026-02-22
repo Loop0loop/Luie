@@ -244,6 +244,7 @@ export const en = {
         },
         actions: {
           connectGoogle: "Connect Google",
+          reconnectGoogle: "Sign in again",
           disconnect: "Disconnect",
           syncNow: "Sync now",
         },

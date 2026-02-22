@@ -19,22 +19,20 @@ const focusMainWindow = (): void => {
 };
 
 const buildAuthResultPageUrl = (status: "success" | "error", detail?: string): string => {
-  const query = new URLSearchParams({
-    status,
-  });
+  const query = new URLSearchParams({ status });
   if (detail) {
     query.set("detail", detail);
   }
 
-  const hash = `#auth-result?${query.toString()}`;
+  const queryString = query.toString();
   const devServerUrl = process.env.VITE_DEV_SERVER_URL || "http://localhost:5173";
   const useDevServer = !app.isPackaged && process.env.NODE_ENV !== "production";
   if (useDevServer) {
-    return `${devServerUrl}/${hash}`;
+    return `${devServerUrl}/auth-result.html?${queryString}`;
   }
 
-  const rendererIndex = pathToFileURL(path.join(__dirname, "../renderer/index.html")).toString();
-  return `${rendererIndex}${hash}`;
+  const rendererEntry = pathToFileURL(path.join(__dirname, "../renderer/auth-result.html")).toString();
+  return `${rendererEntry}?${queryString}`;
 };
 
 const openAuthResultPage = async (status: "success" | "error", detail?: string): Promise<void> => {

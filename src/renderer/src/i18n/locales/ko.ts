@@ -244,6 +244,7 @@ export const ko = {
         },
         actions: {
           connectGoogle: "Google 연결",
+          reconnectGoogle: "다시 로그인",
           disconnect: "연결 해제",
           syncNow: "지금 동기화",
         },

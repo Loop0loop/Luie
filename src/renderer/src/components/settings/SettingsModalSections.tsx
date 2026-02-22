@@ -671,6 +671,7 @@ interface SyncTabProps {
   status: SyncStatus;
   isBusy: boolean;
   onConnectGoogle: () => void;
+  onReconnectGoogle: () => void;
   onDisconnect: () => void;
   onSyncNow: () => void;
   onToggleAutoSync: (enabled: boolean) => void;
@@ -681,12 +682,18 @@ export const SyncTab = memo(function SyncTab({
   status,
   isBusy,
   onConnectGoogle,
+  onReconnectGoogle,
   onDisconnect,
   onSyncNow,
   onToggleAutoSync,
 }: SyncTabProps) {
   const showConnected = status.connected;
   const isConnecting = status.mode === "connecting";
+  const showReconnect = !showConnected && Boolean(status.lastError);
+  const connectLabel = showReconnect
+    ? t("settings.sync.actions.reconnectGoogle")
+    : t("settings.sync.actions.connectGoogle");
+  const connectDisabled = isBusy || (isConnecting && !showReconnect);
   const modeLabel = status.mode === "syncing"
     ? t("settings.sync.status.syncing")
     : status.mode === "connecting"
@@ -729,10 +736,10 @@ export const SyncTab = memo(function SyncTab({
           {!showConnected ? (
             <button
               className="px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50"
-              onClick={onConnectGoogle}
-              disabled={isBusy || isConnecting}
+              onClick={showReconnect ? onReconnectGoogle : onConnectGoogle}
+              disabled={connectDisabled}
             >
-              {t("settings.sync.actions.connectGoogle")}
+              {connectLabel}
             </button>
           ) : (
             <>
