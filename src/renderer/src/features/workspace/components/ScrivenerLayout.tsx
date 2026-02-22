@@ -1,7 +1,9 @@
 import {
   type ReactNode,
   useState,
-  Suspense
+  Suspense,
+  useEffect,
+  useCallback
 } from "react";
 import { type Editor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
@@ -38,11 +40,38 @@ export default function ScrivenerLayout({
   additionalPanels,
 }: ScrivenerLayoutProps) {
   const { t } = useTranslation();
-  const { mainView } = useUIStore();
+  const { mainView, sidebarWidths, setSidebarWidth } = useUIStore();
+
+  const [containerWidth, setContainerWidth] = useState(window.innerWidth);
+
+  useEffect(() => {
+    const handleResize = () => setContainerWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Layout State for visibility toggles
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isInspectorOpen, setIsInspectorOpen] = useState(true);
+
+  const handleBinderResize = useCallback((percentage: number) => {
+    const pxWidth = (percentage / 100) * containerWidth;
+    setSidebarWidth("binder", Math.round(pxWidth));
+  }, [containerWidth, setSidebarWidth]);
+
+  const handleInspectorResize = useCallback((percentage: number) => {
+    const pxWidth = (percentage / 100) * containerWidth;
+    // Scrivener mode typically stores inspector width under a specific key if needed,
+    // or we can use "character"/"memo" etc. if the inspector content matches.
+    // For now, let's use a generic 'inspector' or map it to mainView.type if appropriate.
+    setSidebarWidth("inspector", Math.round(pxWidth));
+  }, [containerWidth, setSidebarWidth]);
+
+  const binderSavedPxWidth = sidebarWidths["binder"] || 210;
+  const binderDefaultPercentage = (binderSavedPxWidth / containerWidth) * 100;
+
+  const inspectorSavedPxWidth = sidebarWidths["inspector"] || 350;
+  const inspectorDefaultPercentage = (inspectorSavedPxWidth / containerWidth) * 100;
 
   const renderMainContent = () => {
     switch (mainView.type) {
@@ -84,9 +113,10 @@ export default function ScrivenerLayout({
             <>
               <Panel
                 id="sidebar"
-                defaultSize={210}
-                minSize={210}
-                maxSize={530}
+                defaultSize={binderDefaultPercentage}
+                minSize={10}
+                maxSize={40}
+                onResize={(size: any) => handleBinderResize(Number(size))}
                 className="bg-panel border-r border-border flex flex-col shrink-0 min-w-0"
               >
                 {sidebar}
@@ -167,9 +197,10 @@ export default function ScrivenerLayout({
 
               <Panel
                 id="inspector"
-                defaultSize={450}
-                minSize={350}
-                maxSize={900}
+                defaultSize={inspectorDefaultPercentage}
+                minSize={15}
+                maxSize={80}
+                onResize={(size: any) => handleInspectorResize(Number(size))}
                 className="bg-panel flex flex-col shrink-0 min-w-0"
               >
                 {/* Floating Toggle wrapper */}

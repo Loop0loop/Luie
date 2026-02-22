@@ -69,10 +69,20 @@ export default function GoogleDocsLayout({
     isSidebarOpen,
     docsRightTab: activeRightTab,
     isBinderBarOpen,
+    sidebarWidths,
     setSidebarOpen,
     setDocsRightTab: setActiveRightTab,
     setBinderBarOpen,
+    setSidebarWidth,
   } = useUIStore();
+
+  const [containerWidth, setContainerWidth] = useState(window.innerWidth);
+
+  useEffect(() => {
+    const handleResize = () => setContainerWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   /* Keep docs side panel opening behavior centralized */
   useEffect(() => {
@@ -89,6 +99,23 @@ export default function GoogleDocsLayout({
     }
     openDocsRightTab(nextTab);
   }, [activeRightTab, setActiveRightTab]);
+
+  const handleLeftResize = useCallback((percentage: number) => {
+    const pxWidth = (percentage / 100) * containerWidth;
+    setSidebarWidth("binder", Math.round(pxWidth));
+  }, [containerWidth, setSidebarWidth]);
+
+  const handleRightResize = useCallback((percentage: number) => {
+    if (!activeRightTab) return;
+    const pxWidth = (percentage / 100) * containerWidth;
+    setSidebarWidth(activeRightTab, Math.round(pxWidth));
+  }, [activeRightTab, containerWidth, setSidebarWidth]);
+
+  const leftSavedPxWidth = sidebarWidths["binder"] || 210;
+  const leftDefaultPercentage = (leftSavedPxWidth / containerWidth) * 100;
+
+  const rightSavedPxWidth = activeRightTab ? sidebarWidths[activeRightTab] || 350 : 350;
+  const rightDefaultPercentage = (rightSavedPxWidth / containerWidth) * 100;
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-sans transition-colors duration-200">
@@ -184,7 +211,14 @@ export default function GoogleDocsLayout({
           {/* Left Sidebar (Manuscript Only) */}
           {isSidebarOpen && (
             <>
-              <Panel id="left-sidebar" defaultSize={210} minSize={210} maxSize={530} className="bg-background border-r border-border overflow-hidden flex flex-col shrink-0 min-w-0">
+              <Panel
+                id="left-sidebar"
+                defaultSize={leftDefaultPercentage}
+                minSize={10}
+                maxSize={40}
+                onResize={(size: any) => handleLeftResize(Number(size))}
+                className="bg-background border-r border-border overflow-hidden flex flex-col shrink-0 min-w-0"
+              >
                 {sidebar}
               </Panel>
 
@@ -234,7 +268,14 @@ export default function GoogleDocsLayout({
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
 
-              <Panel id="right-context-panel" defaultSize={450} minSize={350} maxSize={900} className="bg-background border-l border-border overflow-hidden flex flex-col shrink-0 min-w-0">
+              <Panel
+                id="right-context-panel"
+                defaultSize={rightDefaultPercentage}
+                minSize={15}
+                maxSize={80}
+                onResize={(size: any) => handleRightResize(Number(size))}
+                className="bg-background border-l border-border overflow-hidden flex flex-col shrink-0 min-w-0"
+              >
                 <div className="h-full flex flex-col">
                   {activeRightTab === "character" && (
                     <div className="h-full">

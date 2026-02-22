@@ -1,4 +1,4 @@
-import { useCallback, Suspense, type ReactNode } from "react";
+import { useCallback, Suspense, type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { User, Globe, StickyNote, Sparkles, History, Trash2, ChevronLeft, X } from "lucide-react";
 import React from 'react';
@@ -24,7 +24,14 @@ interface BinderSidebarProps {
 
 export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOffset }: BinderSidebarProps) {
     const { t } = useTranslation();
-    const { docsRightTab, setDocsRightTab } = useUIStore();
+    const { docsRightTab, setDocsRightTab, sidebarWidths, setSidebarWidth } = useUIStore();
+    const [containerWidth, setContainerWidth] = useState(window.innerWidth);
+
+    useEffect(() => {
+        const handleResize = () => setContainerWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const VALID_TABS: BinderTab[] = ["character", "world", "scrap", "analysis", "snapshot", "trash"];
     const activeRightTab: BinderTab | null =
@@ -45,6 +52,18 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
         },
         [activeRightTab, setActiveRightTab]
     );
+
+    const handleResize = useCallback(
+        (percentage: number) => {
+            if (!activeRightTab) return;
+            const pxWidth = (percentage / 100) * containerWidth;
+            setSidebarWidth(activeRightTab, Math.round(pxWidth));
+        },
+        [activeRightTab, containerWidth, setSidebarWidth]
+    );
+
+    const savedPxWidth = activeRightTab ? sidebarWidths[activeRightTab] || 350 : 350;
+    const defaultPercentage = (savedPxWidth / containerWidth) * 100;
 
     const handleBackToSnapshotList = () => {
         // TODO: Need snapshot viewer state inside snapshot panel
@@ -114,7 +133,14 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
                 <div className="absolute inset-y-0 -left-1 -right-1" />
             </PanelResizeHandle>
 
-            <Panel id="binder-sidebar" defaultSize={450} minSize={350} maxSize={900} className="bg-panel shadow-2xl flex flex-row shrink-0 min-w-0 z-10 transition-none">
+            <Panel
+                id="binder-sidebar"
+                defaultSize={defaultPercentage}
+                minSize={15}
+                maxSize={80}
+                onResize={(size: any) => handleResize(Number(size))}
+                className="bg-panel shadow-2xl flex flex-row shrink-0 min-w-0 z-10 transition-none"
+            >
                 <div className="flex-1 h-full overflow-hidden relative min-w-0">
                     <button
                         onClick={() => setActiveRightTab(null)}

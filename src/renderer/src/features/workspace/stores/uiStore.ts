@@ -12,6 +12,7 @@ import type { Snapshot } from "@shared/types";
 export type ContextTab = "synopsis" | "characters" | "terms";
 export type ResearchTab = "character" | "world" | "scrap" | "analysis";
 export type WorldTab = "synopsis" | "terms" | "mindmap" | "drawing" | "plot";
+export type SidebarFeature = "binder" | "character" | "world" | "scrap" | "analysis" | "snapshot" | "trash" | "memo" | "export";
 export type DocsRightTab =
   | "character"
   | "world"
@@ -50,6 +51,9 @@ interface UIStore {
   docsRightTab: DocsRightTab;
   isBinderBarOpen: boolean;
 
+  // Sidebar Widths (in pixels)
+  sidebarWidths: Record<string, number>;
+
   setView: (view: UIStore["view"]) => void;
   setContextTab: (tab: ContextTab) => void;
   setWorldTab: (tab: WorldTab) => void;
@@ -65,6 +69,7 @@ interface UIStore {
   setManuscriptMenuOpen: (isOpen: boolean) => void;
   setDocsRightTab: (tab: DocsRightTab) => void;
   setBinderBarOpen: (isOpen: boolean) => void;
+  setSidebarWidth: (feature: string, width: number) => void;
 
   // Scrivener Mode Main View State
   mainView: { type: "editor" | "character" | "world" | "memo" | "trash" | "analysis"; id?: string };
@@ -83,6 +88,16 @@ export const useUIStore = create<UIStore>()(
       isManuscriptMenuOpen: false,
       docsRightTab: null,
       isBinderBarOpen: true,
+      sidebarWidths: {
+        binder: 280,
+        character: 350,
+        world: 350,
+        memo: 350,
+        analysis: 350,
+        snapshot: 350,
+        trash: 350,
+        export: 350,
+      },
 
       mainView: { type: "editor" },
 
@@ -139,6 +154,13 @@ export const useUIStore = create<UIStore>()(
       setDocsRightTab: (docsRightTab) => set({ docsRightTab }),
       setBinderBarOpen: (isBinderBarOpen) => set({ isBinderBarOpen }),
       setMainView: (mainView) => set({ mainView }),
+      setSidebarWidth: (feature, width) =>
+        set((state) => ({
+          sidebarWidths: {
+            ...state.sidebarWidths,
+            [feature]: width,
+          },
+        })),
     }),
     {
       name: STORAGE_KEY_UI,
@@ -154,6 +176,7 @@ export const useUIStore = create<UIStore>()(
         isContextOpen: state.isContextOpen,
         isManuscriptMenuOpen: state.isManuscriptMenuOpen,
         isBinderBarOpen: state.isBinderBarOpen,
+        sidebarWidths: state.sidebarWidths,
       }),
     },
   ),
