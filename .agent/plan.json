@@ -1,5 +1,5 @@
 {
-    "project": "Luie Renderer Refactoring Phase 6",
+    "project": "Luie Renderer Refactoring Phase 6 (DONE)",
     "goal": "Modularize the monolithic Tiptap Editor and clean up the remainder of EditorRoot.",
     "tasks": [
         {

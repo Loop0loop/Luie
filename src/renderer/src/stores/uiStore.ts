@@ -42,10 +42,10 @@ interface UIStore {
   view: "template" | "editor" | "corkboard" | "outliner";
   contextTab: ContextTab;
   worldTab: WorldTab;
-  
+
   // Resizable Panels State
   panels: ResizablePanelData[];
-  
+
   isSidebarOpen: boolean;
   isContextOpen: boolean;
   isManuscriptMenuOpen: boolean;
@@ -57,13 +57,13 @@ interface UIStore {
   setView: (view: UIStore["view"]) => void;
   setContextTab: (tab: ContextTab) => void;
   setWorldTab: (tab: WorldTab) => void;
-  
+
   // Panel Layout Actions
   addPanel: (content: RightPanelContent, insertAt?: number) => void;
   removePanel: (id: string) => void;
   updatePanelSize: (id: string, size: number) => void;
   setPanels: (panels: ResizablePanelData[]) => void;
-  
+
   setSidebarOpen: (isOpen: boolean) => void;
   setContextOpen: (isOpen: boolean) => void;
   setManuscriptMenuOpen: (isOpen: boolean) => void;
@@ -87,22 +87,22 @@ export const useUIStore = create<UIStore>()(
       isSidebarOpen: DEFAULT_UI_SIDEBAR_OPEN,
       isContextOpen: DEFAULT_UI_CONTEXT_OPEN,
       isManuscriptMenuOpen: false,
-      sidebarWidth: 260,
-      contextWidth: 320,
+      sidebarWidth: 15,
+      contextWidth: 20,
       docsRightTab: null,
       isBinderBarOpen: true,
-      
+
       mainView: { type: "editor" },
 
       setView: (view) => set({ view }),
       setContextTab: (contextTab) => set({ contextTab }),
       setWorldTab: (worldTab) => set({ worldTab }),
-      
+
       addPanel: (content, insertAt) => set((state) => {
         // Prevent duplicates
-        const existing = state.panels.find(p => 
-          p.content.type === content.type && 
-          p.content.id === content.id && 
+        const existing = state.panels.find(p =>
+          p.content.type === content.type &&
+          p.content.id === content.id &&
           p.content.tab === content.tab
         );
         if (existing) return state;
@@ -115,7 +115,7 @@ export const useUIStore = create<UIStore>()(
         const newPanel: ResizablePanelData = {
           id: `panel-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           content,
-          size: state.panels.length === 0 ? 100 : 50 
+          size: state.panels.length === 0 ? 100 : 50
         };
         const newPanels = [...state.panels];
         if (insertAt !== undefined && insertAt >= 0 && insertAt <= newPanels.length) {
@@ -129,12 +129,12 @@ export const useUIStore = create<UIStore>()(
         return { ...state, panels: newPanels };
       }),
       removePanel: (id) => set((state) => {
-         const newPanels = state.panels.filter(p => p.id !== id);
-         if (newPanels.length > 0) {
-             const sizePerPanel = 100 / newPanels.length;
-             newPanels.forEach(p => p.size = sizePerPanel);
-         }
-         return { panels: newPanels };
+        const newPanels = state.panels.filter(p => p.id !== id);
+        if (newPanels.length > 0) {
+          const sizePerPanel = 100 / newPanels.length;
+          newPanels.forEach(p => p.size = sizePerPanel);
+        }
+        return { panels: newPanels };
       }),
       updatePanelSize: (id, size) => set((state) => ({
         panels: state.panels.map(p => p.id === id ? { ...p, size } : p)
@@ -160,8 +160,8 @@ export const useUIStore = create<UIStore>()(
         panels: state.panels.filter(p => p.content.type !== "snapshot").map(p => ({
           ...p,
           content: p.content.type === "snapshot" ? {
-              type: DEFAULT_UI_RIGHT_PANEL_TYPE as RightPanelContent["type"],
-              tab: DEFAULT_UI_RESEARCH_TAB as ResearchTab,
+            type: DEFAULT_UI_RIGHT_PANEL_TYPE as RightPanelContent["type"],
+            tab: DEFAULT_UI_RESEARCH_TAB as ResearchTab,
           } : p.content
         })),
         isSidebarOpen: state.isSidebarOpen,
