@@ -2,7 +2,7 @@ import { useCallback, Suspense, type ReactNode, useEffect, useState } from "reac
 import { useTranslation } from "react-i18next";
 import { User, Globe, StickyNote, Sparkles, History, Trash2, ChevronLeft, X } from "lucide-react";
 import React from 'react';
-import { Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
+import { Panel, Separator as PanelResizeHandle, type PanelSize } from "react-resizable-panels";
 import { cn } from "@shared/types/utils";
 import { useUIStore, type DocsRightTab } from "@renderer/features/workspace/stores/uiStore";
 import { DraggableItem } from "@shared/ui/DraggableItem";
@@ -53,20 +53,29 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
         [activeRightTab, setActiveRightTab]
     );
 
+    const getPercentage = useCallback((panelSize: PanelSize): number => {
+        if (typeof panelSize === "number") {
+            return panelSize;
+        }
+        const parsed = typeof panelSize === "string" ? Number.parseFloat(panelSize) : Number(panelSize);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }, []);
+
     const handleResize = useCallback(
-        (percentage: number) => {
+        (panelSize: PanelSize) => {
             if (!activeRightTab) return;
+            const percentage = getPercentage(panelSize);
             const pxWidth = (percentage / 100) * containerWidth;
             setSidebarWidth(activeRightTab, Math.round(pxWidth));
         },
-        [activeRightTab, containerWidth, setSidebarWidth]
+        [activeRightTab, containerWidth, getPercentage, setSidebarWidth]
     );
 
     const savedPxWidth = activeRightTab ? sidebarWidths[activeRightTab] || 350 : 350;
     const defaultPercentage = (savedPxWidth / containerWidth) * 100;
 
     const handleBackToSnapshotList = () => {
-        // TODO: Need snapshot viewer state inside snapshot panel
+        setActiveRightTab("snapshot");
     };
 
     const renderIconBar = () => (
@@ -136,9 +145,9 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
             <Panel
                 id="binder-sidebar"
                 defaultSize={defaultPercentage}
-                minSize={15}
-                maxSize={80}
-                onResize={(size: any) => handleResize(Number(size))}
+                minSize={250}
+                maxSize={800}
+                onResize={handleResize}
                 className="bg-panel shadow-2xl flex flex-row shrink-0 min-w-0 z-10 transition-none"
             >
                 <div className="flex-1 h-full overflow-hidden relative min-w-0">

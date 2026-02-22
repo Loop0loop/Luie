@@ -778,6 +778,7 @@ export const ko = {
         defaultName: "새 용어",
         defaultCategory: "일반",
         notFound: "용어를 찾을 수 없습니다",
+        reorderFailed: "용어 순서 저장에 실패했습니다",
         label: "용어",
         definitionLabel: "정의",
         categoryLabel: "카테고리",

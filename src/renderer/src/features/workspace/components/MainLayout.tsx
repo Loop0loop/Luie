@@ -5,15 +5,17 @@ import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "reac
 import { useUIStore } from '@renderer/features/workspace/stores/uiStore';
 import { useTranslation } from "react-i18next";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
+import StatusFooter from "@shared/ui/StatusFooter";
 
 interface MainLayoutProps {
   children: ReactNode;
   sidebar?: ReactNode;
   contextPanel?: ReactNode;
   additionalPanels?: ReactNode;
+  onOpenExport?: () => void;
 }
 
-export default function MainLayout({ children, sidebar, contextPanel, additionalPanels }: MainLayoutProps) {
+export default function MainLayout({ children, sidebar, contextPanel, additionalPanels, onOpenExport }: MainLayoutProps) {
   const { t } = useTranslation();
   const {
     isSidebarOpen,
@@ -83,6 +85,7 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
               {additionalPanels}
             </PanelGroup>
           </div>
+          <StatusFooter onOpenExport={onOpenExport} />
         </Panel>
 
         {isContextOpen && (

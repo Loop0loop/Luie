@@ -1,6 +1,6 @@
 import { useCallback, useEffect, type ReactNode } from 'react';
 import { type Editor as TiptapEditor } from "@tiptap/react";
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type PanelSize } from "react-resizable-panels";
 import WindowBar from '@renderer/features/workspace/components/WindowBar';
 import { cn } from '@shared/types/utils';
 import { useUIStore } from '@renderer/features/workspace/stores/uiStore';
@@ -12,6 +12,7 @@ import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import Editor from "@renderer/features/editor/components/Editor";
 import EditorToolbar from '@renderer/features/editor/components/EditorToolbar';
 import { EditorRuler } from "@renderer/features/editor/components/EditorRuler";
+import StatusFooter from "@shared/ui/StatusFooter";
 import { useState } from 'react';
 
 import ResearchPanel from "@renderer/features/research/components/ResearchPanel";
@@ -46,6 +47,7 @@ interface GoogleDocsLayoutProps {
   onRenameChapter?: (id: string, title: string) => void;
   onSaveChapter?: (title: string, content: string) => void | Promise<void>;
   additionalPanels?: ReactNode;
+  onOpenExport?: () => void;
 }
 
 export default function GoogleDocsLayout({
@@ -60,6 +62,7 @@ export default function GoogleDocsLayout({
   onRenameChapter,
   onSaveChapter,
   additionalPanels,
+  onOpenExport,
 }: GoogleDocsLayoutProps) {
   const { t } = useTranslation();
   const [trashRefreshKey, setTrashRefreshKey] = useState(0);
@@ -100,16 +103,26 @@ export default function GoogleDocsLayout({
     openDocsRightTab(nextTab);
   }, [activeRightTab, setActiveRightTab]);
 
-  const handleLeftResize = useCallback((percentage: number) => {
+  const getPercentage = useCallback((panelSize: PanelSize): number => {
+    if (typeof panelSize === "number") {
+      return panelSize;
+    }
+    const parsed = typeof panelSize === "string" ? Number.parseFloat(panelSize) : Number(panelSize);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }, []);
+
+  const handleLeftResize = useCallback((panelSize: PanelSize) => {
+    const percentage = getPercentage(panelSize);
     const pxWidth = (percentage / 100) * containerWidth;
     setSidebarWidth("binder", Math.round(pxWidth));
-  }, [containerWidth, setSidebarWidth]);
+  }, [containerWidth, getPercentage, setSidebarWidth]);
 
-  const handleRightResize = useCallback((percentage: number) => {
+  const handleRightResize = useCallback((panelSize: PanelSize) => {
     if (!activeRightTab) return;
+    const percentage = getPercentage(panelSize);
     const pxWidth = (percentage / 100) * containerWidth;
     setSidebarWidth(activeRightTab, Math.round(pxWidth));
-  }, [activeRightTab, containerWidth, setSidebarWidth]);
+  }, [activeRightTab, containerWidth, getPercentage, setSidebarWidth]);
 
   const leftSavedPxWidth = sidebarWidths["binder"] || 210;
   const leftDefaultPercentage = (leftSavedPxWidth / containerWidth) * 100;
@@ -214,9 +227,9 @@ export default function GoogleDocsLayout({
               <Panel
                 id="left-sidebar"
                 defaultSize={leftDefaultPercentage}
-                minSize={10}
-                maxSize={40}
-                onResize={(size: any) => handleLeftResize(Number(size))}
+                minSize={220}
+                maxSize={440}
+                onResize={handleLeftResize}
                 className="bg-background border-r border-border overflow-hidden flex flex-col shrink-0 min-w-0"
               >
                 {sidebar}
@@ -255,6 +268,7 @@ export default function GoogleDocsLayout({
                       {children}
                     </div>
                   </main>
+                  <StatusFooter onOpenExport={onOpenExport} />
                 </Panel>
                 {additionalPanels}
               </PanelGroup>
@@ -271,9 +285,9 @@ export default function GoogleDocsLayout({
               <Panel
                 id="right-context-panel"
                 defaultSize={rightDefaultPercentage}
-                minSize={15}
-                maxSize={80}
-                onResize={(size: any) => handleRightResize(Number(size))}
+                minSize={215}
+                maxSize={830}
+                onResize={handleRightResize}
                 className="bg-background border-l border-border overflow-hidden flex flex-col shrink-0 min-w-0"
               >
                 <div className="h-full flex flex-col">

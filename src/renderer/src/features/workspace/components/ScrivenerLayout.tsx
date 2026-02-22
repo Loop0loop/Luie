@@ -11,7 +11,7 @@ import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import Ribbon from "@renderer/features/editor/components/Ribbon";
 import InspectorPanel from "@renderer/features/editor/components/InspectorPanel";
 import { Menu, ChevronRight } from "lucide-react";
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type PanelSize } from "react-resizable-panels";
 
 interface ScrivenerLayoutProps {
   children?: ReactNode;
@@ -54,18 +54,25 @@ export default function ScrivenerLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isInspectorOpen, setIsInspectorOpen] = useState(true);
 
-  const handleBinderResize = useCallback((percentage: number) => {
+  const getPercentage = useCallback((panelSize: PanelSize): number => {
+    if (typeof panelSize === "number") {
+      return panelSize;
+    }
+    const parsed = typeof panelSize === "string" ? Number.parseFloat(panelSize) : Number(panelSize);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }, []);
+
+  const handleBinderResize = useCallback((panelSize: PanelSize) => {
+    const percentage = getPercentage(panelSize);
     const pxWidth = (percentage / 100) * containerWidth;
     setSidebarWidth("binder", Math.round(pxWidth));
-  }, [containerWidth, setSidebarWidth]);
+  }, [containerWidth, getPercentage, setSidebarWidth]);
 
-  const handleInspectorResize = useCallback((percentage: number) => {
+  const handleInspectorResize = useCallback((panelSize: PanelSize) => {
+    const percentage = getPercentage(panelSize);
     const pxWidth = (percentage / 100) * containerWidth;
-    // Scrivener mode typically stores inspector width under a specific key if needed,
-    // or we can use "character"/"memo" etc. if the inspector content matches.
-    // For now, let's use a generic 'inspector' or map it to mainView.type if appropriate.
     setSidebarWidth("inspector", Math.round(pxWidth));
-  }, [containerWidth, setSidebarWidth]);
+  }, [containerWidth, getPercentage, setSidebarWidth]);
 
   const binderSavedPxWidth = sidebarWidths["binder"] || 210;
   const binderDefaultPercentage = (binderSavedPxWidth / containerWidth) * 100;
@@ -114,9 +121,9 @@ export default function ScrivenerLayout({
               <Panel
                 id="sidebar"
                 defaultSize={binderDefaultPercentage}
-                minSize={10}
-                maxSize={40}
-                onResize={(size: any) => handleBinderResize(Number(size))}
+                minSize={220}
+                maxSize={440}
+                onResize={handleBinderResize}
                 className="bg-panel border-r border-border flex flex-col shrink-0 min-w-0"
               >
                 {sidebar}
@@ -181,7 +188,7 @@ export default function ScrivenerLayout({
               </PanelGroup>
             </div>
 
-            {/* Footer Info */}
+            {/* Scrivener Info Line */}
             <div className="h-6 bg-surface border-t border-border flex items-center px-3 text-xs text-muted justify-between shrink-0">
               <span>{/* Word Count etc */}</span>
               <span>{t("scrivener.target", { count: 2000 })}</span>
@@ -198,9 +205,9 @@ export default function ScrivenerLayout({
               <Panel
                 id="inspector"
                 defaultSize={inspectorDefaultPercentage}
-                minSize={15}
-                maxSize={80}
-                onResize={(size: any) => handleInspectorResize(Number(size))}
+                minSize={245}
+                maxSize={400}
+                onResize={handleInspectorResize}
                 className="bg-panel flex flex-col shrink-0 min-w-0"
               >
                 {/* Floating Toggle wrapper */}

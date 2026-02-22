@@ -28,6 +28,12 @@ import { writeLuiePackage } from "../../handler/system/ipcFsHandlers.js";
 import { db } from "../../database/index.js";
 import { settingsManager } from "../../manager/settingsManager.js";
 import { readLuieEntry } from "../../utils/luiePackage.js";
+import {
+  isRecord,
+  normalizeWorldScrapPayload,
+  parseWorldJsonSafely,
+  toWorldUpdatedAt,
+} from "../../../shared/world/worldDocumentCodec.js";
 import { syncAuthService } from "./syncAuthService.js";
 import {
   createEmptySyncBundle,
@@ -66,18 +72,6 @@ const toNullableString = (value: unknown): string | null =>
 const toNumber = (value: unknown, fallback = 0): number =>
   typeof value === "number" && Number.isFinite(value) ? value : fallback;
 
-const parseJson = (raw: string | null): unknown | null => {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as unknown;
-  } catch {
-    return null;
-  }
-};
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value && typeof value === "object");
-
 const sortByUpdatedAtDesc = <T extends { updatedAt: string }>(rows: T[]): T[] =>
   [...rows].sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt));
 
@@ -97,6 +91,16 @@ const AUTH_FATAL_ERROR_PATTERNS = [
   "SYNC_AUTH_INVALID_SESSION",
   "SYNC_TOKEN_DECRYPT_FAILED",
   "SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE",
+];
+
+const WORLD_DOCUMENT_FILES: Array<{
+  docType: "synopsis" | "plot" | "drawing" | "mindmap";
+  fileName: string;
+}> = [
+  { docType: "synopsis", fileName: LUIE_WORLD_SYNOPSIS_FILE },
+  { docType: "plot", fileName: LUIE_WORLD_PLOT_FILE },
+  { docType: "drawing", fileName: LUIE_WORLD_DRAWING_FILE },
+  { docType: "mindmap", fileName: LUIE_WORLD_MINDMAP_FILE },
 ];
 
 const isAuthFatalMessage = (message: string): boolean =>
@@ -190,6 +194,42 @@ export class SyncService {
     return Object.keys(next).length > 0 ? next : undefined;
   }
 
+  private persistMigratedTokenCipher(
+    tokenType: "access" | "refresh",
+    migratedCipher?: string,
+  ): void {
+    if (!migratedCipher) return;
+    settingsManager.setSyncSettings(
+      tokenType === "access"
+        ? { accessTokenCipher: migratedCipher }
+        : { refreshTokenCipher: migratedCipher },
+    );
+  }
+
+  private resolveStartupAuthFailure(syncSettings: SyncSettings): string | null {
+    const accessTokenResult = syncAuthService.getAccessToken(syncSettings);
+    if (accessTokenResult.errorCode && isAuthFatalMessage(accessTokenResult.errorCode)) {
+      return accessTokenResult.errorCode;
+    }
+    this.persistMigratedTokenCipher("access", accessTokenResult.migratedCipher);
+
+    const refreshTokenResult = syncAuthService.getRefreshToken(syncSettings);
+    if (refreshTokenResult.errorCode && isAuthFatalMessage(refreshTokenResult.errorCode)) {
+      return refreshTokenResult.errorCode;
+    }
+    this.persistMigratedTokenCipher("refresh", refreshTokenResult.migratedCipher);
+
+    const hasRecoverableTokenPath =
+      Boolean(accessTokenResult.token) || Boolean(refreshTokenResult.token);
+    if (hasRecoverableTokenPath) return null;
+
+    return (
+      accessTokenResult.errorCode ??
+      refreshTokenResult.errorCode ??
+      "SYNC_ACCESS_TOKEN_UNAVAILABLE"
+    );
+  }
+
   initialize(): void {
     const syncSettings = settingsManager.getSyncSettings();
     this.status = toSyncStatusFromSettings(syncSettings, this.status);
@@ -202,41 +242,8 @@ export class SyncService {
     }
 
     if (syncSettings.connected) {
-      const accessTokenResult = syncAuthService.getAccessToken(syncSettings);
-      let fatalAuthError: string | null = null;
-      if (accessTokenResult.errorCode && isAuthFatalMessage(accessTokenResult.errorCode)) {
-        fatalAuthError = accessTokenResult.errorCode;
-      }
-      if (accessTokenResult.migratedCipher) {
-        settingsManager.setSyncSettings({ accessTokenCipher: accessTokenResult.migratedCipher });
-      }
-
-      const refreshTokenResult = syncAuthService.getRefreshToken(syncSettings);
-      if (
-        !fatalAuthError &&
-        refreshTokenResult.errorCode &&
-        isAuthFatalMessage(refreshTokenResult.errorCode)
-      ) {
-        fatalAuthError = refreshTokenResult.errorCode;
-      }
-      if (refreshTokenResult.migratedCipher) {
-        settingsManager.setSyncSettings({ refreshTokenCipher: refreshTokenResult.migratedCipher });
-      }
-
-      if (!fatalAuthError) {
-        const hasRecoverableTokenPath =
-          Boolean(accessTokenResult.token) || Boolean(refreshTokenResult.token);
-        if (!hasRecoverableTokenPath) {
-          fatalAuthError =
-            accessTokenResult.errorCode ??
-            refreshTokenResult.errorCode ??
-            "SYNC_ACCESS_TOKEN_UNAVAILABLE";
-        }
-      }
-
-      if (fatalAuthError) {
-        this.applyAuthFailureState(fatalAuthError);
-      }
+      const fatalAuthError = this.resolveStartupAuthFailure(syncSettings);
+      if (fatalAuthError) this.applyAuthFailureState(fatalAuthError);
     }
 
     this.broadcastStatus();
@@ -551,98 +558,166 @@ export class SyncService {
     })) as Array<Record<string, unknown>>;
 
     for (const projectRow of projectRows) {
-      const projectId = toNullableString(projectRow.id);
-      if (!projectId) continue;
-      const projectPath = toNullableString(projectRow.projectPath);
-      const projectUpdatedAt = toIsoString(projectRow.updatedAt);
+      await this.collectProjectBundleData(bundle, userId, projectRow);
+    }
+    this.appendPendingProjectDeleteTombstones(bundle, userId, pendingProjectDeletes);
 
-      bundle.projects.push({
-        id: projectId,
+    return bundle;
+  }
+
+  private async collectProjectBundleData(
+    bundle: SyncBundle,
+    userId: string,
+    projectRow: Record<string, unknown>,
+  ): Promise<void> {
+    const project = this.appendProjectRecord(bundle, userId, projectRow);
+    if (!project) return;
+    const { projectId, projectPath, projectUpdatedAt } = project;
+
+    this.appendChapterRecords(
+      bundle,
+      userId,
+      projectId,
+      Array.isArray(projectRow.chapters)
+        ? (projectRow.chapters as Array<Record<string, unknown>>)
+        : [],
+    );
+    this.appendCharacterRecords(
+      bundle,
+      userId,
+      projectId,
+      Array.isArray(projectRow.characters)
+        ? (projectRow.characters as Array<Record<string, unknown>>)
+        : [],
+    );
+    this.appendTermRecords(
+      bundle,
+      userId,
+      projectId,
+      Array.isArray(projectRow.terms)
+        ? (projectRow.terms as Array<Record<string, unknown>>)
+        : [],
+    );
+
+    if (projectPath && projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
+      await this.collectWorldDocuments(bundle, userId, projectId, projectPath, projectUpdatedAt);
+    }
+  }
+
+  private appendProjectRecord(
+    bundle: SyncBundle,
+    userId: string,
+    projectRow: Record<string, unknown>,
+  ): { projectId: string; projectPath: string | null; projectUpdatedAt: string } | null {
+    const projectId = toNullableString(projectRow.id);
+    if (!projectId) return null;
+    const projectUpdatedAt = toIsoString(projectRow.updatedAt);
+
+    bundle.projects.push({
+      id: projectId,
+      userId,
+      title: toNullableString(projectRow.title) ?? "Untitled",
+      description: toNullableString(projectRow.description),
+      createdAt: toIsoString(projectRow.createdAt),
+      updatedAt: projectUpdatedAt,
+    });
+
+    return {
+      projectId,
+      projectPath: toNullableString(projectRow.projectPath),
+      projectUpdatedAt,
+    };
+  }
+
+  private appendChapterRecords(
+    bundle: SyncBundle,
+    userId: string,
+    projectId: string,
+    chapters: Array<Record<string, unknown>>,
+  ): void {
+    for (const row of chapters) {
+      const chapterId = toNullableString(row.id);
+      if (!chapterId) continue;
+      const chapterDeletedAt = toNullableString(row.deletedAt);
+      bundle.chapters.push({
+        id: chapterId,
         userId,
-        title: toNullableString(projectRow.title) ?? "Untitled",
-        description: toNullableString(projectRow.description),
-        createdAt: toIsoString(projectRow.createdAt),
-        updatedAt: projectUpdatedAt,
+        projectId,
+        title: toNullableString(row.title) ?? "Untitled",
+        content: toNullableString(row.content) ?? "",
+        synopsis: toNullableString(row.synopsis),
+        order: toNumber(row.order),
+        wordCount: toNumber(row.wordCount),
+        createdAt: toIsoString(row.createdAt),
+        updatedAt: toIsoString(row.updatedAt),
+        deletedAt: chapterDeletedAt,
       });
 
-      const chapters = Array.isArray(projectRow.chapters)
-        ? (projectRow.chapters as Array<Record<string, unknown>>)
-        : [];
-      for (const row of chapters) {
-        const chapterId = toNullableString(row.id);
-        if (!chapterId) continue;
-        const chapterDeletedAt = toNullableString(row.deletedAt);
-        bundle.chapters.push({
-          id: chapterId,
-          userId,
-          projectId,
-          title: toNullableString(row.title) ?? "Untitled",
-          content: toNullableString(row.content) ?? "",
-          synopsis: toNullableString(row.synopsis),
-          order: toNumber(row.order),
-          wordCount: toNumber(row.wordCount),
-          createdAt: toIsoString(row.createdAt),
-          updatedAt: toIsoString(row.updatedAt),
-          deletedAt: chapterDeletedAt,
-        });
-
-        if (chapterDeletedAt) {
-          bundle.tombstones.push({
-            id: `${projectId}:chapter:${chapterId}`,
-            userId,
-            projectId,
-            entityType: "chapter",
-            entityId: chapterId,
-            deletedAt: chapterDeletedAt,
-            updatedAt: chapterDeletedAt,
-          });
-        }
-      }
-
-      const characters = Array.isArray(projectRow.characters)
-        ? (projectRow.characters as Array<Record<string, unknown>>)
-        : [];
-      for (const row of characters) {
-        const characterId = toNullableString(row.id);
-        if (!characterId) continue;
-        bundle.characters.push({
-          id: characterId,
-          userId,
-          projectId,
-          name: toNullableString(row.name) ?? "Character",
-          description: toNullableString(row.description),
-          firstAppearance: toNullableString(row.firstAppearance),
-          attributes: toNullableString(row.attributes),
-          createdAt: toIsoString(row.createdAt),
-          updatedAt: toIsoString(row.updatedAt),
-        });
-      }
-
-      const terms = Array.isArray(projectRow.terms)
-        ? (projectRow.terms as Array<Record<string, unknown>>)
-        : [];
-      for (const row of terms) {
-        const termId = toNullableString(row.id);
-        if (!termId) continue;
-        bundle.terms.push({
-          id: termId,
-          userId,
-          projectId,
-          term: toNullableString(row.term) ?? "Term",
-          definition: toNullableString(row.definition),
-          category: toNullableString(row.category),
-          order: toNumber(row.order),
-          firstAppearance: toNullableString(row.firstAppearance),
-          createdAt: toIsoString(row.createdAt),
-          updatedAt: toIsoString(row.updatedAt),
-        });
-      }
-
-      if (projectPath && projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
-        await this.collectWorldDocuments(bundle, userId, projectId, projectPath, projectUpdatedAt);
-      }
+      if (!chapterDeletedAt) continue;
+      bundle.tombstones.push({
+        id: `${projectId}:chapter:${chapterId}`,
+        userId,
+        projectId,
+        entityType: "chapter",
+        entityId: chapterId,
+        deletedAt: chapterDeletedAt,
+        updatedAt: chapterDeletedAt,
+      });
     }
+  }
 
+  private appendCharacterRecords(
+    bundle: SyncBundle,
+    userId: string,
+    projectId: string,
+    characters: Array<Record<string, unknown>>,
+  ): void {
+    for (const row of characters) {
+      const characterId = toNullableString(row.id);
+      if (!characterId) continue;
+      bundle.characters.push({
+        id: characterId,
+        userId,
+        projectId,
+        name: toNullableString(row.name) ?? "Character",
+        description: toNullableString(row.description),
+        firstAppearance: toNullableString(row.firstAppearance),
+        attributes: toNullableString(row.attributes),
+        createdAt: toIsoString(row.createdAt),
+        updatedAt: toIsoString(row.updatedAt),
+      });
+    }
+  }
+
+  private appendTermRecords(
+    bundle: SyncBundle,
+    userId: string,
+    projectId: string,
+    terms: Array<Record<string, unknown>>,
+  ): void {
+    for (const row of terms) {
+      const termId = toNullableString(row.id);
+      if (!termId) continue;
+      bundle.terms.push({
+        id: termId,
+        userId,
+        projectId,
+        term: toNullableString(row.term) ?? "Term",
+        definition: toNullableString(row.definition),
+        category: toNullableString(row.category),
+        order: toNumber(row.order),
+        firstAppearance: toNullableString(row.firstAppearance),
+        createdAt: toIsoString(row.createdAt),
+        updatedAt: toIsoString(row.updatedAt),
+      });
+    }
+  }
+
+  private appendPendingProjectDeleteTombstones(
+    bundle: SyncBundle,
+    userId: string,
+    pendingProjectDeletes: SyncPendingProjectDelete[],
+  ): void {
     for (const pendingDelete of pendingProjectDeletes) {
       bundle.tombstones.push({
         id: `${pendingDelete.projectId}:project:${pendingDelete.projectId}`,
@@ -654,8 +729,53 @@ export class SyncService {
         updatedAt: pendingDelete.deletedAt,
       });
     }
+  }
 
-    return bundle;
+  private addWorldDocumentRecord(
+    bundle: SyncBundle,
+    userId: string,
+    projectId: string,
+    docType: SyncBundle["worldDocuments"][number]["docType"],
+    payload: unknown,
+    updatedAtFallback: string,
+  ): void {
+    bundle.worldDocuments.push({
+      id: `${projectId}:${docType}`,
+      userId,
+      projectId,
+      docType,
+      payload,
+      updatedAt: toWorldUpdatedAt(payload) ?? updatedAtFallback,
+    });
+  }
+
+  private async readWorldDocumentPayload(
+    projectPath: string,
+    fileName: string,
+  ): Promise<unknown | null> {
+    const raw = await readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${fileName}`, logger);
+    return parseWorldJsonSafely(raw);
+  }
+
+  private appendScrapMemos(
+    bundle: SyncBundle,
+    userId: string,
+    projectId: string,
+    payload: unknown,
+    updatedAtFallback: string,
+  ): void {
+    const normalizedScrap = normalizeWorldScrapPayload(payload);
+    for (const memo of normalizedScrap.memos) {
+      bundle.memos.push({
+        id: memo.id || randomUUID(),
+        userId,
+        projectId,
+        title: memo.title || "Memo",
+        content: memo.content,
+        tags: memo.tags,
+        updatedAt: memo.updatedAt || updatedAtFallback,
+      });
+    }
   }
 
   private async collectWorldDocuments(
@@ -665,106 +785,74 @@ export class SyncService {
     projectPath: string,
     updatedAtFallback: string,
   ): Promise<void> {
-    const addWorldDocument = (docType: SyncBundle["worldDocuments"][number]["docType"], payload: unknown, updatedAt?: string) => {
-      bundle.worldDocuments.push({
-        id: `${projectId}:${docType}`,
+    for (const descriptor of WORLD_DOCUMENT_FILES) {
+      const payload = await this.readWorldDocumentPayload(projectPath, descriptor.fileName);
+      if (!payload) continue;
+      this.addWorldDocumentRecord(
+        bundle,
         userId,
         projectId,
-        docType,
+        descriptor.docType,
         payload,
-        updatedAt: updatedAt ?? updatedAtFallback,
-      });
-    };
-
-    const synopsisRaw = await readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`, logger);
-    const synopsis = parseJson(synopsisRaw);
-    if (synopsis) {
-      addWorldDocument("synopsis", synopsis, isRecord(synopsis) ? toNullableString(synopsis.updatedAt) ?? undefined : undefined);
+        updatedAtFallback,
+      );
     }
 
-    const plotRaw = await readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_PLOT_FILE}`, logger);
-    const plot = parseJson(plotRaw);
-    if (plot) {
-      addWorldDocument("plot", plot, isRecord(plot) ? toNullableString(plot.updatedAt) ?? undefined : undefined);
-    }
-
-    const drawingRaw = await readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`, logger);
-    const drawing = parseJson(drawingRaw);
-    if (drawing) {
-      addWorldDocument("drawing", drawing, isRecord(drawing) ? toNullableString(drawing.updatedAt) ?? undefined : undefined);
-    }
-
-    const mindmapRaw = await readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_MINDMAP_FILE}`, logger);
-    const mindmap = parseJson(mindmapRaw);
-    if (mindmap) {
-      addWorldDocument("mindmap", mindmap, isRecord(mindmap) ? toNullableString(mindmap.updatedAt) ?? undefined : undefined);
-    }
-
-    const memosRaw = await readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SCRAP_MEMOS_FILE}`, logger);
-    const memosPayload = parseJson(memosRaw);
-    if (!isRecord(memosPayload)) {
-      return;
-    }
-
-    addWorldDocument(
-      "scrap",
-      memosPayload,
-      toNullableString(memosPayload.updatedAt) ?? undefined,
+    const scrapPayload = await this.readWorldDocumentPayload(
+      projectPath,
+      LUIE_WORLD_SCRAP_MEMOS_FILE,
     );
+    if (!isRecord(scrapPayload)) return;
 
-    const memos = Array.isArray(memosPayload.memos)
-      ? (memosPayload.memos as Array<Record<string, unknown>>)
-      : [];
-    for (const memo of memos) {
-      const id = toNullableString(memo.id) ?? randomUUID();
-      bundle.memos.push({
-        id,
-        userId,
-        projectId,
-        title: toNullableString(memo.title) ?? "Memo",
-        content: toNullableString(memo.content) ?? "",
-        tags: Array.isArray(memo.tags)
-          ? memo.tags.filter((tag): tag is string => typeof tag === "string")
-          : [],
-        updatedAt: toIsoString(memo.updatedAt, updatedAtFallback),
-      });
-    }
+    this.addWorldDocumentRecord(
+      bundle,
+      userId,
+      projectId,
+      "scrap",
+      scrapPayload,
+      updatedAtFallback,
+    );
+    this.appendScrapMemos(bundle, userId, projectId, scrapPayload, updatedAtFallback);
   }
 
-  private async applyMergedBundleToLocal(bundle: SyncBundle): Promise<void> {
-    const prisma = db.getClient();
+  private collectDeletedProjectIds(bundle: SyncBundle): Set<string> {
     const deletedProjectIds = new Set<string>();
     for (const project of bundle.projects) {
-      if (project.deletedAt) {
-        deletedProjectIds.add(project.id);
-      }
+      if (project.deletedAt) deletedProjectIds.add(project.id);
     }
     for (const tombstone of bundle.tombstones) {
       if (tombstone.entityType !== "project") continue;
       deletedProjectIds.add(tombstone.entityId);
       deletedProjectIds.add(tombstone.projectId);
     }
+    return deletedProjectIds;
+  }
 
+  private async applyProjectDeletes(
+    prisma: ReturnType<(typeof db)["getClient"]>,
+    deletedProjectIds: Set<string>,
+  ): Promise<void> {
     for (const projectId of deletedProjectIds) {
-      const existing = await prisma.project.findUnique({
+      const existing = (await prisma.project.findUnique({
         where: { id: projectId },
         select: { id: true },
-      }) as { id?: string } | null;
+      })) as { id?: string } | null;
       if (!existing?.id) continue;
-      await prisma.project.delete({
-        where: { id: projectId },
-      });
+      await prisma.project.delete({ where: { id: projectId } });
     }
+  }
 
-    for (const project of bundle.projects) {
-      if (project.deletedAt || deletedProjectIds.has(project.id)) {
-        continue;
-      }
-
-      const existing = await prisma.project.findUnique({
+  private async upsertProjects(
+    prisma: ReturnType<(typeof db)["getClient"]>,
+    projects: SyncBundle["projects"],
+    deletedProjectIds: Set<string>,
+  ): Promise<void> {
+    for (const project of projects) {
+      if (project.deletedAt || deletedProjectIds.has(project.id)) continue;
+      const existing = (await prisma.project.findUnique({
         where: { id: project.id },
         select: { id: true },
-      }) as { id?: string } | null;
+      })) as { id?: string } | null;
 
       if (existing?.id) {
         await prisma.project.update({
@@ -775,41 +863,41 @@ export class SyncService {
             updatedAt: new Date(project.updatedAt),
           },
         });
-      } else {
-        await prisma.project.create({
-          data: {
-            id: project.id,
-            title: project.title,
-            description: project.description,
-            createdAt: new Date(project.createdAt),
-            updatedAt: new Date(project.updatedAt),
-            settings: {
-              create: {
-                autoSave: true,
-                autoSaveInterval: DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
-              },
+        continue;
+      }
+
+      await prisma.project.create({
+        data: {
+          id: project.id,
+          title: project.title,
+          description: project.description,
+          createdAt: new Date(project.createdAt),
+          updatedAt: new Date(project.updatedAt),
+          settings: {
+            create: {
+              autoSave: true,
+              autoSaveInterval: DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
             },
           },
-        });
-      }
+        },
+      });
     }
+  }
 
-    for (const chapter of bundle.chapters) {
-      if (deletedProjectIds.has(chapter.projectId)) continue;
-      await this.upsertChapter(prisma, chapter);
-    }
-
-    for (const character of bundle.characters) {
+  private async upsertCharacters(
+    prisma: ReturnType<(typeof db)["getClient"]>,
+    characters: SyncBundle["characters"],
+    deletedProjectIds: Set<string>,
+  ): Promise<void> {
+    for (const character of characters) {
       if (deletedProjectIds.has(character.projectId)) continue;
-      const existing = await prisma.character.findUnique({
+      const existing = (await prisma.character.findUnique({
         where: { id: character.id },
         select: { id: true },
-      }) as { id?: string } | null;
+      })) as { id?: string } | null;
 
       if (character.deletedAt) {
-        if (existing?.id) {
-          await prisma.character.delete({ where: { id: character.id } });
-        }
+        if (existing?.id) await prisma.character.delete({ where: { id: character.id } });
         continue;
       }
 
@@ -817,9 +905,10 @@ export class SyncService {
         name: character.name,
         description: character.description,
         firstAppearance: character.firstAppearance,
-        attributes: typeof character.attributes === "string"
-          ? character.attributes
-          : JSON.stringify(character.attributes ?? null),
+        attributes:
+          typeof character.attributes === "string"
+            ? character.attributes
+            : JSON.stringify(character.attributes ?? null),
         updatedAt: new Date(character.updatedAt),
         project: {
           connect: { id: character.projectId },
@@ -827,10 +916,7 @@ export class SyncService {
       };
 
       if (existing?.id) {
-        await prisma.character.update({
-          where: { id: character.id },
-          data,
-        });
+        await prisma.character.update({ where: { id: character.id }, data });
       } else {
         await prisma.character.create({
           data: {
@@ -841,18 +927,22 @@ export class SyncService {
         });
       }
     }
+  }
 
-    for (const term of bundle.terms) {
+  private async upsertTerms(
+    prisma: ReturnType<(typeof db)["getClient"]>,
+    terms: SyncBundle["terms"],
+    deletedProjectIds: Set<string>,
+  ): Promise<void> {
+    for (const term of terms) {
       if (deletedProjectIds.has(term.projectId)) continue;
-      const existing = await prisma.term.findUnique({
+      const existing = (await prisma.term.findUnique({
         where: { id: term.id },
         select: { id: true },
-      }) as { id?: string } | null;
+      })) as { id?: string } | null;
 
       if (term.deletedAt) {
-        if (existing?.id) {
-          await prisma.term.delete({ where: { id: term.id } });
-        }
+        if (existing?.id) await prisma.term.delete({ where: { id: term.id } });
         continue;
       }
 
@@ -869,10 +959,7 @@ export class SyncService {
       };
 
       if (existing?.id) {
-        await prisma.term.update({
-          where: { id: term.id },
-          data,
-        });
+        await prisma.term.update({ where: { id: term.id }, data });
       } else {
         await prisma.term.create({
           data: {
@@ -883,14 +970,20 @@ export class SyncService {
         });
       }
     }
+  }
 
-    for (const tombstone of bundle.tombstones) {
+  private async applyChapterTombstones(
+    prisma: ReturnType<(typeof db)["getClient"]>,
+    tombstones: SyncBundle["tombstones"],
+    deletedProjectIds: Set<string>,
+  ): Promise<void> {
+    for (const tombstone of tombstones) {
       if (tombstone.entityType !== "chapter") continue;
       if (deletedProjectIds.has(tombstone.projectId)) continue;
-      const existing = await prisma.chapter.findUnique({
+      const existing = (await prisma.chapter.findUnique({
         where: { id: tombstone.entityId },
         select: { id: true, projectId: true },
-      }) as { id?: string; projectId?: string } | null;
+      })) as { id?: string; projectId?: string } | null;
       if (!existing?.id || existing.projectId !== tombstone.projectId) continue;
       await prisma.chapter.update({
         where: { id: tombstone.entityId },
@@ -900,6 +993,22 @@ export class SyncService {
         },
       });
     }
+  }
+
+  private async applyMergedBundleToLocal(bundle: SyncBundle): Promise<void> {
+    const prisma = db.getClient();
+    const deletedProjectIds = this.collectDeletedProjectIds(bundle);
+    await this.applyProjectDeletes(prisma, deletedProjectIds);
+    await this.upsertProjects(prisma, bundle.projects, deletedProjectIds);
+
+    for (const chapter of bundle.chapters) {
+      if (deletedProjectIds.has(chapter.projectId)) continue;
+      await this.upsertChapter(prisma, chapter);
+    }
+
+    await this.upsertCharacters(prisma, bundle.characters, deletedProjectIds);
+    await this.upsertTerms(prisma, bundle.terms, deletedProjectIds);
+    await this.applyChapterTombstones(prisma, bundle.tombstones, deletedProjectIds);
 
     await this.persistBundleToLuiePackages(bundle);
   }

@@ -779,6 +779,7 @@ export const en = {
         defaultName: "New Term",
         defaultCategory: "General",
         notFound: "Term not found",
+        reorderFailed: "Failed to save term order",
         label: "Term",
         definitionLabel: "Definition",
         categoryLabel: "Category",

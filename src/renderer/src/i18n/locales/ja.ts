@@ -779,6 +779,7 @@ export const ja = {
         defaultName: "新しい用語",
         defaultCategory: "一般",
         notFound: "用語が見つかりません",
+        reorderFailed: "用語の並び順の保存に失敗しました",
         label: "用語",
         definitionLabel: "定義",
         categoryLabel: "カテゴリ",

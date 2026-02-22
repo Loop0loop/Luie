@@ -8,14 +8,8 @@ import {
   LUIE_WORLD_SYNOPSIS_FILE,
 } from "@shared/constants";
 import type {
-  ScrapMemo,
   WorldDrawingData,
-  WorldDrawingIconType,
-  WorldDrawingPath,
-  WorldDrawingTool,
   WorldMindmapData,
-  WorldMindmapEdge,
-  WorldMindmapNode,
   WorldPlotCard,
   WorldPlotColumn,
   WorldPlotData,
@@ -23,12 +17,18 @@ import type {
   WorldSynopsisData,
   WorldSynopsisStatus,
 } from "@shared/types";
+import {
+  normalizeWorldDrawingPaths,
+  normalizeWorldMindmapEdges,
+  normalizeWorldMindmapNodes,
+  normalizeWorldScrapPayload,
+  toWorldDrawingIcon,
+  toWorldDrawingTool,
+} from "@shared/world/worldDocumentCodec";
 import { api } from "@shared/api";
 
 const WORLD_LOCAL_STORAGE_PREFIX = "luie:world:";
 
-const DRAWING_TOOLS = new Set<WorldDrawingTool>(["pen", "text", "eraser", "icon"]);
-const DRAWING_ICONS = new Set<WorldDrawingIconType>(["mountain", "castle", "village"]);
 const SYNOPSIS_STATUS = new Set<WorldSynopsisStatus>(["draft", "working", "locked"]);
 
 export const DEFAULT_WORLD_SYNOPSIS: WorldSynopsisData = {
@@ -154,99 +154,21 @@ const normalizePlot = (input: unknown): WorldPlotData => {
   };
 };
 
-const normalizeDrawingPath = (input: unknown): WorldDrawingPath | null => {
-  if (!input || typeof input !== "object") return null;
-  const source = input as Record<string, unknown>;
-  const type = source.type;
-  if (type !== "path" && type !== "text" && type !== "icon") return null;
-
-  const path: WorldDrawingPath = {
-    id: typeof source.id === "string" && source.id.length > 0 ? source.id : `${Date.now()}`,
-    type,
-    color: typeof source.color === "string" ? source.color : "#000000",
-  };
-
-  if (typeof source.d === "string") path.d = source.d;
-  if (typeof source.width === "number") path.width = source.width;
-  if (typeof source.x === "number") path.x = source.x;
-  if (typeof source.y === "number") path.y = source.y;
-  if (typeof source.text === "string") path.text = source.text;
-  if (typeof source.icon === "string" && DRAWING_ICONS.has(source.icon as WorldDrawingIconType)) {
-    path.icon = source.icon as WorldDrawingIconType;
-  }
-
-  return path;
-};
-
 const normalizeDrawing = (input: unknown): WorldDrawingData => {
   if (!input || typeof input !== "object") {
     return { ...DEFAULT_WORLD_DRAWING };
   }
 
   const source = input as Record<string, unknown>;
-  const rawPaths = Array.isArray(source.paths) ? source.paths : [];
-  const paths = rawPaths.map(normalizeDrawingPath).filter((path): path is WorldDrawingPath => path !== null);
-
-  const tool =
-    typeof source.tool === "string" && DRAWING_TOOLS.has(source.tool as WorldDrawingTool)
-      ? (source.tool as WorldDrawingTool)
-      : DEFAULT_WORLD_DRAWING.tool;
-
-  const iconType =
-    typeof source.iconType === "string" && DRAWING_ICONS.has(source.iconType as WorldDrawingIconType)
-      ? (source.iconType as WorldDrawingIconType)
-      : DEFAULT_WORLD_DRAWING.iconType;
 
   return {
-    paths,
-    tool,
-    iconType,
+    paths: normalizeWorldDrawingPaths(source.paths),
+    tool: toWorldDrawingTool(source.tool, DEFAULT_WORLD_DRAWING.tool ?? "pen"),
+    iconType: toWorldDrawingIcon(source.iconType, DEFAULT_WORLD_DRAWING.iconType ?? "mountain"),
     color: typeof source.color === "string" ? source.color : DEFAULT_WORLD_DRAWING.color,
     lineWidth:
       typeof source.lineWidth === "number" ? source.lineWidth : DEFAULT_WORLD_DRAWING.lineWidth,
     updatedAt: typeof source.updatedAt === "string" ? source.updatedAt : undefined,
-  };
-};
-
-const normalizeMindmapNode = (input: unknown, index: number): WorldMindmapNode | null => {
-  if (!input || typeof input !== "object") return null;
-  const source = input as Record<string, unknown>;
-  const position = source.position;
-  if (!position || typeof position !== "object") return null;
-  const pos = position as Record<string, unknown>;
-
-  return {
-    id: typeof source.id === "string" && source.id.length > 0 ? source.id : `node-${index}`,
-    type: typeof source.type === "string" ? source.type : undefined,
-    position: {
-      x: typeof pos.x === "number" ? pos.x : 0,
-      y: typeof pos.y === "number" ? pos.y : 0,
-    },
-    data: {
-      label:
-        typeof (source.data as Record<string, unknown> | undefined)?.label === "string"
-          ? ((source.data as Record<string, unknown>).label as string)
-          : "",
-      image:
-        typeof (source.data as Record<string, unknown> | undefined)?.image === "string"
-          ? ((source.data as Record<string, unknown>).image as string)
-          : undefined,
-    },
-  };
-};
-
-const normalizeMindmapEdge = (input: unknown, index: number): WorldMindmapEdge | null => {
-  if (!input || typeof input !== "object") return null;
-  const source = input as Record<string, unknown>;
-  const sourceId = typeof source.source === "string" ? source.source : "";
-  const targetId = typeof source.target === "string" ? source.target : "";
-  if (!sourceId || !targetId) return null;
-
-  return {
-    id: typeof source.id === "string" && source.id.length > 0 ? source.id : `edge-${index}`,
-    source: sourceId,
-    target: targetId,
-    type: typeof source.type === "string" ? source.type : undefined,
   };
 };
 
@@ -256,34 +178,11 @@ const normalizeMindmap = (input: unknown): WorldMindmapData => {
   }
 
   const source = input as Record<string, unknown>;
-  const rawNodes = Array.isArray(source.nodes) ? source.nodes : [];
-  const rawEdges = Array.isArray(source.edges) ? source.edges : [];
 
   return {
-    nodes: rawNodes
-      .map((node, index) => normalizeMindmapNode(node, index))
-      .filter((node): node is WorldMindmapNode => node !== null),
-    edges: rawEdges
-      .map((edge, index) => normalizeMindmapEdge(edge, index))
-      .filter((edge): edge is WorldMindmapEdge => edge !== null),
+    nodes: normalizeWorldMindmapNodes(source.nodes),
+    edges: normalizeWorldMindmapEdges(source.edges),
     updatedAt: typeof source.updatedAt === "string" ? source.updatedAt : undefined,
-  };
-};
-
-const normalizeScrapMemo = (input: unknown, index: number): ScrapMemo | null => {
-  if (!input || typeof input !== "object") return null;
-  const source = input as Record<string, unknown>;
-  return {
-    id: typeof source.id === "string" && source.id.length > 0 ? source.id : `memo-${index}`,
-    title: typeof source.title === "string" ? source.title : "",
-    content: typeof source.content === "string" ? source.content : "",
-    tags: Array.isArray(source.tags)
-      ? source.tags.filter((tag): tag is string => typeof tag === "string")
-      : [],
-    updatedAt:
-      typeof source.updatedAt === "string"
-        ? source.updatedAt
-        : new Date().toISOString(),
   };
 };
 
@@ -292,15 +191,7 @@ const normalizeScrapMemos = (input: unknown): WorldScrapMemosData => {
     return { ...DEFAULT_WORLD_SCRAP_MEMOS };
   }
 
-  const source = input as Record<string, unknown>;
-  const rawMemos = Array.isArray(source.memos) ? source.memos : [];
-
-  return {
-    memos: rawMemos
-      .map((memo, index) => normalizeScrapMemo(memo, index))
-      .filter((memo): memo is ScrapMemo => memo !== null),
-    updatedAt: typeof source.updatedAt === "string" ? source.updatedAt : undefined,
-  };
+  return normalizeWorldScrapPayload(input);
 };
 
 export const worldPackageStorage = {

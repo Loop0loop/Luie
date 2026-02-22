@@ -39,16 +39,19 @@ import type {
   CharacterExportRecord,
   TermExportRecord,
   SnapshotExportRecord,
-  ScrapMemo,
   WorldDrawingData,
-  WorldDrawingPath,
-  WorldMindmapEdge,
   WorldMindmapData,
-  WorldMindmapNode,
   WorldPlotData,
   WorldScrapMemosData,
   WorldSynopsisData,
 } from "../../../shared/types/index.js";
+import {
+  normalizeWorldDrawingPaths,
+  normalizeWorldMindmapEdges,
+  normalizeWorldMindmapNodes,
+  normalizeWorldScrapMemos,
+  parseWorldJsonSafely,
+} from "../../../shared/world/worldDocumentCodec.js";
 import { writeLuiePackage } from "../../handler/system/ipcFsHandlers.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import { ensureLuieExtension, readLuieEntry } from "../../utils/luiePackage.js";
@@ -166,115 +169,49 @@ const LuieSnapshotsSchema = z
   })
   .passthrough();
 
-const parseJsonSafely = (raw: string | null): unknown | null => {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as unknown;
-  } catch {
-    return null;
-  }
+const parseJsonSafely = parseWorldJsonSafely;
+
+type LuieMeta = z.infer<typeof LuieMetaSchema>;
+type ExistingProjectLookup = { id: string; updatedAt: Date } | null;
+type ChapterCreateRow = {
+  id: string;
+  projectId: string;
+  title: string;
+  content: string;
+  synopsis?: string | null;
+  order: number;
+  wordCount: number;
 };
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value && typeof value === "object" && !Array.isArray(value));
-
-const normalizeDrawingPaths = (value: unknown): WorldDrawingPath[] => {
-  if (!Array.isArray(value)) return [];
-  const normalized: WorldDrawingPath[] = [];
-
-  for (const [index, item] of value.entries()) {
-    if (!isRecord(item)) continue;
-    const type = item.type;
-    if (type !== "path" && type !== "text" && type !== "icon") continue;
-
-    const path: WorldDrawingPath = {
-      id: typeof item.id === "string" && item.id.length > 0 ? item.id : `path-${index}`,
-      type,
-      color: typeof item.color === "string" ? item.color : "#000000",
-    };
-
-    if (typeof item.d === "string") path.d = item.d;
-    if (typeof item.width === "number") path.width = item.width;
-    if (typeof item.x === "number") path.x = item.x;
-    if (typeof item.y === "number") path.y = item.y;
-    if (typeof item.text === "string") path.text = item.text;
-    if (item.icon === "mountain" || item.icon === "castle" || item.icon === "village") {
-      path.icon = item.icon;
-    }
-
-    normalized.push(path);
-  }
-
-  return normalized;
+type CharacterCreateRow = {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string | null;
+  firstAppearance: string | null;
+  attributes: string | null;
 };
-
-const normalizeMindmapNodes = (value: unknown): WorldMindmapNode[] => {
-  if (!Array.isArray(value)) return [];
-  const normalized: WorldMindmapNode[] = [];
-
-  for (const [index, item] of value.entries()) {
-    if (!isRecord(item)) continue;
-    const position = item.position;
-    if (!isRecord(position)) continue;
-
-    const data = isRecord(item.data) ? item.data : undefined;
-    normalized.push({
-      id: typeof item.id === "string" && item.id.length > 0 ? item.id : `node-${index}`,
-      type: typeof item.type === "string" ? item.type : undefined,
-      position: {
-        x: typeof position.x === "number" ? position.x : 0,
-        y: typeof position.y === "number" ? position.y : 0,
-      },
-      data: {
-        label: typeof data?.label === "string" ? data.label : "",
-        image: typeof data?.image === "string" ? data.image : undefined,
-      },
-    });
-  }
-
-  return normalized;
+type TermCreateRow = {
+  id: string;
+  projectId: string;
+  term: string;
+  definition: string | null;
+  category: string | null;
+  firstAppearance: string | null;
 };
-
-const normalizeMindmapEdges = (value: unknown): WorldMindmapEdge[] => {
-  if (!Array.isArray(value)) return [];
-  const normalized: WorldMindmapEdge[] = [];
-
-  for (const [index, item] of value.entries()) {
-    if (!isRecord(item)) continue;
-    const source = typeof item.source === "string" ? item.source : "";
-    const target = typeof item.target === "string" ? item.target : "";
-    if (!source || !target) continue;
-
-    normalized.push({
-      id: typeof item.id === "string" && item.id.length > 0 ? item.id : `edge-${index}`,
-      source,
-      target,
-      type: typeof item.type === "string" ? item.type : undefined,
-    });
-  }
-
-  return normalized;
+type SnapshotCreateRow = {
+  id: string;
+  projectId: string;
+  chapterId: string | null;
+  content: string;
+  contentLength: number;
+  description: string | null;
+  createdAt: Date;
 };
-
-const normalizeScrapMemos = (value: unknown): ScrapMemo[] => {
-  if (!Array.isArray(value)) return [];
-  const normalized: ScrapMemo[] = [];
-
-  for (const [index, item] of value.entries()) {
-    if (!isRecord(item)) continue;
-    normalized.push({
-      id: typeof item.id === "string" && item.id.length > 0 ? item.id : `memo-${index}`,
-      title: typeof item.title === "string" ? item.title : "",
-      content: typeof item.content === "string" ? item.content : "",
-      tags: Array.isArray(item.tags)
-        ? item.tags.filter((tag): tag is string => typeof tag === "string")
-        : [],
-      updatedAt:
-        typeof item.updatedAt === "string" ? item.updatedAt : new Date().toISOString(),
-    });
-  }
-
-  return normalized;
+type LuieImportCollections = {
+  characters: Array<Record<string, unknown>>;
+  terms: Array<Record<string, unknown>>;
+  snapshots: Array<z.infer<typeof LuieSnapshotSchema>>;
+  worldSynopsis?: string;
 };
 
 export class ProjectService {
@@ -316,35 +253,272 @@ export class ProjectService {
     }
   }
 
+  private async readMetaOrMarkCorrupt(
+    resolvedPath: string,
+  ): Promise<{ meta: LuieMeta | null; luieCorrupted: boolean }> {
+    try {
+      const metaRaw = await readLuieEntry(resolvedPath, LUIE_PACKAGE_META_FILENAME, logger);
+      if (!metaRaw) {
+        throw new Error("MISSING_META");
+      }
+      const parsedMeta = LuieMetaSchema.safeParse(JSON.parse(metaRaw));
+      if (!parsedMeta.success) {
+        throw new Error("INVALID_META");
+      }
+      return { meta: parsedMeta.data, luieCorrupted: false };
+    } catch (error) {
+      logger.warn("Failed to read .luie meta; treating as corrupted", {
+        packagePath: resolvedPath,
+        error,
+      });
+      return { meta: null, luieCorrupted: true };
+    }
+  }
+
+  private async findProjectByPath(resolvedPath: string): Promise<ExistingProjectLookup> {
+    return (await db.getClient().project.findFirst({
+      where: { projectPath: resolvedPath },
+      select: { id: true, updatedAt: true },
+    })) as ExistingProjectLookup;
+  }
+
+  private resolveImportIdentity(
+    meta: LuieMeta,
+    existingByPath: ExistingProjectLookup,
+  ): { resolvedProjectId: string; legacyProjectId: string | null } {
+    const metaProjectId = typeof meta.projectId === "string" ? meta.projectId : undefined;
+    const resolvedProjectId = metaProjectId ?? existingByPath?.id ?? randomUUID();
+    const legacyProjectId =
+      existingByPath && existingByPath.id !== resolvedProjectId
+        ? existingByPath.id
+        : null;
+    return { resolvedProjectId, legacyProjectId };
+  }
+
+  private shouldUseDatabaseAsSource(
+    existing: ExistingProjectLookup,
+    meta: LuieMeta,
+  ): boolean {
+    const metaUpdatedAt = meta.updatedAt ? new Date(meta.updatedAt) : null;
+    return Boolean(existing && metaUpdatedAt && existing.updatedAt > metaUpdatedAt);
+  }
+
+  private async readLuieImportCollections(
+    resolvedPath: string,
+  ): Promise<LuieImportCollections> {
+    const [charactersRaw, termsRaw, snapshotsRaw, worldSynopsisRaw] = await Promise.all([
+      readLuieEntry(resolvedPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`, logger),
+      readLuieEntry(resolvedPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`, logger),
+      readLuieEntry(resolvedPath, `${LUIE_SNAPSHOTS_DIR}/index.json`, logger),
+      readLuieEntry(resolvedPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`, logger),
+    ]);
+
+    const parsedCharacters = LuieCharactersSchema.safeParse(parseJsonSafely(charactersRaw));
+    const parsedTerms = LuieTermsSchema.safeParse(parseJsonSafely(termsRaw));
+    const parsedSnapshots = LuieSnapshotsSchema.safeParse(parseJsonSafely(snapshotsRaw));
+    const parsedWorldSynopsis = LuieWorldSynopsisSchema.safeParse(
+      parseJsonSafely(worldSynopsisRaw),
+    );
+
+    return {
+      characters: parsedCharacters.success ? parsedCharacters.data.characters ?? [] : [],
+      terms: parsedTerms.success ? parsedTerms.data.terms ?? [] : [],
+      snapshots: parsedSnapshots.success ? parsedSnapshots.data.snapshots ?? [] : [],
+      worldSynopsis:
+        parsedWorldSynopsis.success &&
+        typeof parsedWorldSynopsis.data.synopsis === "string"
+          ? parsedWorldSynopsis.data.synopsis
+          : undefined,
+    };
+  }
+
+  private async buildChapterCreateRows(
+    resolvedPath: string,
+    resolvedProjectId: string,
+    chaptersMeta: NonNullable<LuieMeta["chapters"]>,
+  ): Promise<ChapterCreateRow[]> {
+    const chaptersForCreate: ChapterCreateRow[] = [];
+    for (let index = 0; index < chaptersMeta.length; index += 1) {
+      const chapter = chaptersMeta[index];
+      const chapterId = chapter.id ?? randomUUID();
+      const entryPath =
+        chapter.file ?? `${LUIE_MANUSCRIPT_DIR}/${chapterId}${MARKDOWN_EXTENSION}`;
+      const contentRaw =
+        typeof chapter.content === "string"
+          ? chapter.content
+          : await readLuieEntry(resolvedPath, entryPath, logger);
+      const content = contentRaw ?? "";
+
+      chaptersForCreate.push({
+        id: chapterId,
+        projectId: resolvedProjectId,
+        title: chapter.title ?? `Chapter ${index + 1}`,
+        content,
+        synopsis: null,
+        order: typeof chapter.order === "number" ? chapter.order : index,
+        wordCount: content.length,
+      });
+    }
+    return chaptersForCreate;
+  }
+
+  private buildCharacterCreateRows(
+    resolvedProjectId: string,
+    characters: Array<Record<string, unknown>>,
+  ): CharacterCreateRow[] {
+    return characters.map((character, index) => {
+      const name =
+        typeof character.name === "string" && character.name.trim().length > 0
+          ? character.name
+          : `Character ${index + 1}`;
+      const attributes =
+        typeof character.attributes === "string"
+          ? character.attributes
+          : character.attributes
+            ? JSON.stringify(character.attributes)
+            : null;
+      return {
+        id: typeof character.id === "string" ? character.id : randomUUID(),
+        projectId: resolvedProjectId,
+        name,
+        description:
+          typeof character.description === "string" ? character.description : null,
+        firstAppearance:
+          typeof character.firstAppearance === "string" ? character.firstAppearance : null,
+        attributes,
+      };
+    });
+  }
+
+  private buildTermCreateRows(
+    resolvedProjectId: string,
+    terms: Array<Record<string, unknown>>,
+  ): TermCreateRow[] {
+    return terms.map((term, index) => {
+      const termLabel =
+        typeof term.term === "string" && term.term.trim().length > 0
+          ? term.term
+          : `Term ${index + 1}`;
+      return {
+        id: typeof term.id === "string" ? term.id : randomUUID(),
+        projectId: resolvedProjectId,
+        term: termLabel,
+        definition: typeof term.definition === "string" ? term.definition : null,
+        category: typeof term.category === "string" ? term.category : null,
+        firstAppearance:
+          typeof term.firstAppearance === "string" ? term.firstAppearance : null,
+      };
+    });
+  }
+
+  private buildSnapshotCreateRows(
+    resolvedProjectId: string,
+    snapshots: Array<z.infer<typeof LuieSnapshotSchema>>,
+  ): SnapshotCreateRow[] {
+    return snapshots
+      .filter((snapshot) => typeof snapshot.id === "string")
+      .map((snapshot) => {
+        const content = snapshot.content ?? "";
+        return {
+          id: snapshot.id,
+          projectId: snapshot.projectId ?? resolvedProjectId,
+          chapterId:
+            typeof snapshot.chapterId === "string" ? snapshot.chapterId : null,
+          content,
+          contentLength: content.length,
+          description:
+            typeof snapshot.description === "string" ? snapshot.description : null,
+          createdAt: snapshot.createdAt ? new Date(snapshot.createdAt) : new Date(),
+        };
+      });
+  }
+
+  private async applyImportTransaction(input: {
+    resolvedProjectId: string;
+    legacyProjectId: string | null;
+    existing: ExistingProjectLookup;
+    meta: LuieMeta;
+    worldSynopsis?: string;
+    resolvedPath: string;
+    chaptersForCreate: ChapterCreateRow[];
+    charactersForCreate: CharacterCreateRow[];
+    termsForCreate: TermCreateRow[];
+    snapshotsForCreate: SnapshotCreateRow[];
+  }) {
+    const {
+      resolvedProjectId,
+      legacyProjectId,
+      existing,
+      meta,
+      worldSynopsis,
+      resolvedPath,
+      chaptersForCreate,
+      charactersForCreate,
+      termsForCreate,
+      snapshotsForCreate,
+    } = input;
+
+    return (await db.getClient().$transaction(async (
+      tx: ReturnType<(typeof db)["getClient"]>,
+    ) => {
+      if (legacyProjectId) {
+        await tx.project.delete({ where: { id: legacyProjectId } });
+      }
+
+      if (existing) {
+        await tx.project.delete({ where: { id: resolvedProjectId } });
+      }
+
+      const project = await tx.project.create({
+        data: {
+          id: resolvedProjectId,
+          title: meta.title ?? "Recovered Project",
+          description:
+            (typeof meta.description === "string" ? meta.description : undefined) ??
+            worldSynopsis ??
+            undefined,
+          projectPath: resolvedPath,
+          createdAt: meta.createdAt ? new Date(meta.createdAt) : undefined,
+          updatedAt: meta.updatedAt ? new Date(meta.updatedAt) : undefined,
+          settings: {
+            create: {
+              autoSave: true,
+              autoSaveInterval: DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
+            },
+          },
+        },
+        include: { settings: true },
+      });
+
+      if (chaptersForCreate.length > 0) {
+        await tx.chapter.createMany({ data: chaptersForCreate });
+      }
+      if (charactersForCreate.length > 0) {
+        await tx.character.createMany({ data: charactersForCreate });
+      }
+      if (termsForCreate.length > 0) {
+        await tx.term.createMany({ data: termsForCreate });
+      }
+      if (snapshotsForCreate.length > 0) {
+        await tx.snapshot.createMany({ data: snapshotsForCreate });
+      }
+      return project;
+    })) as {
+      id: string;
+      title: string;
+      description?: string | null;
+      projectPath?: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+      settings?: unknown;
+    };
+  }
+
   async openLuieProject(packagePath: string) {
     try {
       const resolvedPath = ensureLuieExtension(packagePath);
-      let metaRaw: string | null = null;
-      let meta: z.infer<typeof LuieMetaSchema> | null = null;
-      let luieCorrupted = false;
-
-      try {
-        metaRaw = await readLuieEntry(resolvedPath, LUIE_PACKAGE_META_FILENAME, logger);
-        if (!metaRaw) {
-          throw new Error("MISSING_META");
-        }
-        const parsedMeta = LuieMetaSchema.safeParse(JSON.parse(metaRaw));
-        if (!parsedMeta.success) {
-          throw new Error("INVALID_META");
-        }
-        meta = parsedMeta.data;
-      } catch (error) {
-        luieCorrupted = true;
-        logger.warn("Failed to read .luie meta; treating as corrupted", {
-          packagePath: resolvedPath,
-          error,
-        });
-      }
-
-      const existingByPath = (await db.getClient().project.findFirst({
-        where: { projectPath: resolvedPath },
-        select: { id: true, updatedAt: true },
-      })) as { id: string; updatedAt: Date } | null;
+      const { meta, luieCorrupted } = await this.readMetaOrMarkCorrupt(resolvedPath);
+      const existingByPath = await this.findProjectByPath(resolvedPath);
 
       if (luieCorrupted) {
         if (!existingByPath) {
@@ -354,7 +528,6 @@ export class ProjectService {
             { packagePath: resolvedPath },
           );
         }
-
         await this.exportProjectPackage(existingByPath.id);
         const project = await this.getProject(existingByPath.id);
         return { project, recovery: true };
@@ -368,21 +541,13 @@ export class ProjectService {
         );
       }
 
-      const metaProjectId = typeof meta.projectId === "string" ? meta.projectId : undefined;
-
-      const resolvedProjectId = metaProjectId ?? existingByPath?.id ?? randomUUID();
-      const legacyProjectId =
-        existingByPath && existingByPath.id !== resolvedProjectId
-          ? existingByPath.id
-          : null;
-
+      const { resolvedProjectId, legacyProjectId } = this.resolveImportIdentity(meta, existingByPath);
       const existing = (await db.getClient().project.findUnique({
         where: { id: resolvedProjectId },
         select: { id: true, updatedAt: true },
-      })) as { id: string; updatedAt: Date } | null;
+      })) as ExistingProjectLookup;
 
-      const metaUpdatedAt = meta?.updatedAt ? new Date(meta.updatedAt) : null;
-      if (existing && metaUpdatedAt && existing.updatedAt > metaUpdatedAt) {
+      if (this.shouldUseDatabaseAsSource(existing, meta)) {
         logger.info("DB newer than .luie package; exporting", {
           projectId: resolvedProjectId,
           packagePath,
@@ -392,181 +557,35 @@ export class ProjectService {
         return { project, conflict: "db-newer" };
       }
 
-      const chaptersMeta = meta?.chapters ?? [];
-
-      const [charactersRaw, termsRaw, snapshotsRaw, worldSynopsisRaw] = await Promise.all([
-        readLuieEntry(resolvedPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`, logger),
-        readLuieEntry(resolvedPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`, logger),
-        readLuieEntry(resolvedPath, `${LUIE_SNAPSHOTS_DIR}/index.json`, logger),
-        readLuieEntry(resolvedPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`, logger),
-      ]);
-
-      const parsedCharacters = LuieCharactersSchema.safeParse(parseJsonSafely(charactersRaw));
-      const parsedTerms = LuieTermsSchema.safeParse(parseJsonSafely(termsRaw));
-      const parsedSnapshots = LuieSnapshotsSchema.safeParse(parseJsonSafely(snapshotsRaw));
-      const parsedWorldSynopsis = LuieWorldSynopsisSchema.safeParse(
-        parseJsonSafely(worldSynopsisRaw),
+      const chaptersMeta = meta.chapters ?? [];
+      const collections = await this.readLuieImportCollections(resolvedPath);
+      const chaptersForCreate = await this.buildChapterCreateRows(
+        resolvedPath,
+        resolvedProjectId,
+        chaptersMeta,
+      );
+      const charactersForCreate = this.buildCharacterCreateRows(
+        resolvedProjectId,
+        collections.characters,
+      );
+      const termsForCreate = this.buildTermCreateRows(resolvedProjectId, collections.terms);
+      const snapshotsForCreate = this.buildSnapshotCreateRows(
+        resolvedProjectId,
+        collections.snapshots,
       );
 
-      const characters = parsedCharacters.success
-        ? parsedCharacters.data.characters ?? []
-        : [];
-      const terms = parsedTerms.success ? parsedTerms.data.terms ?? [] : [];
-      const snapshots = parsedSnapshots.success
-        ? parsedSnapshots.data.snapshots ?? []
-        : [];
-      const worldSynopsis =
-        parsedWorldSynopsis.success && typeof parsedWorldSynopsis.data.synopsis === "string"
-          ? parsedWorldSynopsis.data.synopsis
-          : undefined;
-
-      const chaptersForCreate = [] as Array<{
-        id: string;
-        projectId: string;
-        title: string;
-        content: string;
-        synopsis?: string | null;
-        order: number;
-        wordCount: number;
-      }>;
-
-      for (let index = 0; index < chaptersMeta.length; index += 1) {
-        const chapter = chaptersMeta[index];
-        const chapterId = chapter.id ?? randomUUID();
-        const entryPath =
-          chapter.file ?? `${LUIE_MANUSCRIPT_DIR}/${chapterId}${MARKDOWN_EXTENSION}`;
-
-        const contentRaw =
-          typeof chapter.content === "string"
-            ? chapter.content
-            : await readLuieEntry(resolvedPath, entryPath, logger);
-        const content = contentRaw ?? "";
-
-        chaptersForCreate.push({
-          id: chapterId,
-          projectId: resolvedProjectId,
-          title: chapter.title ?? `Chapter ${index + 1}`,
-          content,
-          synopsis: null,
-          order: typeof chapter.order === "number" ? chapter.order : index,
-          wordCount: content.length,
-        });
-      }
-
-      const charactersForCreate = characters.map((character, index) => {
-        const name =
-          typeof character.name === "string" && character.name.trim().length > 0
-            ? character.name
-            : `Character ${index + 1}`;
-        const attributes =
-          typeof character.attributes === "string"
-            ? character.attributes
-            : character.attributes
-              ? JSON.stringify(character.attributes)
-              : null;
-        return {
-          id: typeof character.id === "string" ? character.id : randomUUID(),
-          projectId: resolvedProjectId,
-          name,
-          description:
-            typeof character.description === "string" ? character.description : null,
-          firstAppearance:
-            typeof character.firstAppearance === "string" ? character.firstAppearance : null,
-          attributes,
-        };
+      const created = await this.applyImportTransaction({
+        resolvedProjectId,
+        legacyProjectId,
+        existing,
+        meta,
+        worldSynopsis: collections.worldSynopsis,
+        resolvedPath,
+        chaptersForCreate,
+        charactersForCreate,
+        termsForCreate,
+        snapshotsForCreate,
       });
-
-      const termsForCreate = terms.map((term, index) => {
-        const termLabel =
-          typeof term.term === "string" && term.term.trim().length > 0
-            ? term.term
-            : `Term ${index + 1}`;
-        return {
-          id: typeof term.id === "string" ? term.id : randomUUID(),
-          projectId: resolvedProjectId,
-          term: termLabel,
-          definition: typeof term.definition === "string" ? term.definition : null,
-          category: typeof term.category === "string" ? term.category : null,
-          firstAppearance:
-            typeof term.firstAppearance === "string" ? term.firstAppearance : null,
-        };
-      });
-
-      const snapshotsForCreate = snapshots
-        .filter((snapshot) => typeof snapshot.id === "string")
-        .map((snapshot) => {
-          const content = snapshot.content ?? "";
-          return {
-            id: snapshot.id,
-            projectId: snapshot.projectId ?? resolvedProjectId,
-            chapterId:
-              typeof snapshot.chapterId === "string" ? snapshot.chapterId : null,
-            content,
-            contentLength: content.length,
-            description:
-              typeof snapshot.description === "string" ? snapshot.description : null,
-            createdAt: snapshot.createdAt ? new Date(snapshot.createdAt) : new Date(),
-          };
-        });
-
-      const created = (await db.getClient().$transaction(async (
-        tx: ReturnType<(typeof db)["getClient"]>,
-      ) => {
-        if (legacyProjectId) {
-          await tx.project.delete({ where: { id: legacyProjectId } });
-        }
-
-        if (existing) {
-          await tx.project.delete({ where: { id: resolvedProjectId } });
-        }
-
-        const project = await tx.project.create({
-          data: {
-            id: resolvedProjectId,
-            title: meta.title ?? "Recovered Project",
-            description:
-              (typeof meta.description === "string" ? meta.description : undefined) ??
-              worldSynopsis ??
-              undefined,
-            projectPath: resolvedPath,
-            createdAt: meta.createdAt ? new Date(meta.createdAt) : undefined,
-            updatedAt: meta.updatedAt ? new Date(meta.updatedAt) : undefined,
-            settings: {
-              create: {
-                autoSave: true,
-                autoSaveInterval: DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
-              },
-            },
-          },
-          include: { settings: true },
-        });
-
-        if (chaptersForCreate.length > 0) {
-          await tx.chapter.createMany({ data: chaptersForCreate });
-        }
-
-        if (charactersForCreate.length > 0) {
-          await tx.character.createMany({ data: charactersForCreate });
-        }
-
-        if (termsForCreate.length > 0) {
-          await tx.term.createMany({ data: termsForCreate });
-        }
-
-        if (snapshotsForCreate.length > 0) {
-          await tx.snapshot.createMany({ data: snapshotsForCreate });
-        }
-
-        return project;
-      })) as {
-        id: string;
-        title: string;
-        description?: string | null;
-        projectPath?: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        settings?: unknown;
-      };
 
       logger.info(".luie package hydrated", {
         projectId: created.id,
@@ -839,8 +858,8 @@ export class ProjectService {
     this.exportTimers.set(projectId, timer);
   }
 
-  async exportProjectPackage(projectId: string) {
-    const project = (await db.getClient().project.findUnique({
+  private async getProjectForExport(projectId: string): Promise<ProjectExportRecord | null> {
+    return (await db.getClient().project.findUnique({
       where: { id: projectId },
       include: {
         chapters: { where: { deletedAt: null }, orderBy: { order: "asc" } },
@@ -849,21 +868,28 @@ export class ProjectService {
         snapshots: { orderBy: { createdAt: "desc" } },
       },
     })) as ProjectExportRecord | null;
+  }
 
-    if (!project?.projectPath) {
+  private resolveExportPath(
+    projectId: string,
+    projectPath?: string | null,
+  ): string | null {
+    if (!projectPath) {
       logger.info("Skipping package export (missing projectPath)", { projectId });
-      return;
+      return null;
     }
-
-    if (!project.projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
+    if (!projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
       logger.info("Skipping package export (not .luie)", {
         projectId,
-        projectPath: project.projectPath,
+        projectPath,
       });
-      return;
+      return null;
     }
+    return projectPath;
+  }
 
-    const chapters = project.chapters.map((chapter: ChapterExportRecord) => ({
+  private buildExportChapterData(chapters: ChapterExportRecord[]) {
+    const exportChapters = chapters.map((chapter) => ({
       id: chapter.id,
       title: chapter.title,
       order: chapter.order,
@@ -871,15 +897,17 @@ export class ProjectService {
       content: chapter.content,
       file: `${LUIE_MANUSCRIPT_DIR}/${chapter.id}${MARKDOWN_EXTENSION}`,
     }));
-
-    const chapterMeta = chapters.map((chapter) => ({
+    const chapterMeta = exportChapters.map((chapter) => ({
       id: chapter.id,
       title: chapter.title,
       order: chapter.order,
       file: chapter.file,
     }));
+    return { exportChapters, chapterMeta };
+  }
 
-    const characters = project.characters.map((character: CharacterExportRecord) => {
+  private buildExportCharacterData(characters: CharacterExportRecord[]) {
+    return characters.map((character) => {
       let attributes: unknown = undefined;
       if (character.attributes) {
         try {
@@ -898,8 +926,10 @@ export class ProjectService {
         updatedAt: character.updatedAt,
       };
     });
+  }
 
-    const terms = project.terms.map((term: TermExportRecord) => ({
+  private buildExportTermData(terms: TermExportRecord[]) {
+    return terms.map((term) => ({
       id: term.id,
       term: term.term,
       definition: term.definition,
@@ -908,8 +938,10 @@ export class ProjectService {
       createdAt: term.createdAt,
       updatedAt: term.updatedAt,
     }));
+  }
 
-    const rawSnapshots = project.snapshots.map((snapshot: SnapshotExportRecord) => ({
+  private buildExportSnapshotData(snapshots: SnapshotExportRecord[]) {
+    const rawSnapshots = snapshots.map((snapshot) => ({
       id: snapshot.id,
       projectId: snapshot.projectId,
       chapterId: snapshot.chapterId,
@@ -917,111 +949,146 @@ export class ProjectService {
       description: snapshot.description,
       createdAt: snapshot.createdAt?.toISOString?.() ?? String(snapshot.createdAt),
     }));
+    const snapshotExportLimit =
+      settingsManager.getAll().snapshotExportLimit ?? SNAPSHOT_FILE_KEEP_COUNT;
+    return snapshotExportLimit > 0
+      ? rawSnapshots.slice(0, snapshotExportLimit)
+      : rawSnapshots;
+  }
 
-    const snapshotExportLimit = settingsManager.getAll().snapshotExportLimit ?? SNAPSHOT_FILE_KEEP_COUNT;
-    const snapshots =
-      snapshotExportLimit > 0
-        ? rawSnapshots.slice(0, snapshotExportLimit)
-        : rawSnapshots;
-
-    const [existingSynopsisRaw, existingPlotRaw, existingDrawingRaw, existingMindmapRaw, existingMemosRaw] = await Promise.all([
-      readLuieEntry(project.projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`, logger),
-      readLuieEntry(project.projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_PLOT_FILE}`, logger),
-      readLuieEntry(project.projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`, logger),
-      readLuieEntry(project.projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_MINDMAP_FILE}`, logger),
-      readLuieEntry(project.projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SCRAP_MEMOS_FILE}`, logger),
+  private async readWorldPayloadFromPackage(projectPath: string) {
+    const [
+      existingSynopsisRaw,
+      existingPlotRaw,
+      existingDrawingRaw,
+      existingMindmapRaw,
+      existingMemosRaw,
+    ] = await Promise.all([
+      readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`, logger),
+      readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_PLOT_FILE}`, logger),
+      readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`, logger),
+      readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_MINDMAP_FILE}`, logger),
+      readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SCRAP_MEMOS_FILE}`, logger),
     ]);
 
-    const parsedSynopsis = LuieWorldSynopsisSchema.safeParse(parseJsonSafely(existingSynopsisRaw));
-    const parsedPlot = LuieWorldPlotSchema.safeParse(parseJsonSafely(existingPlotRaw));
-    const parsedDrawing = LuieWorldDrawingSchema.safeParse(parseJsonSafely(existingDrawingRaw));
-    const parsedMindmap = LuieWorldMindmapSchema.safeParse(parseJsonSafely(existingMindmapRaw));
-    const parsedMemos = LuieWorldScrapMemosSchema.safeParse(parseJsonSafely(existingMemosRaw));
+    return {
+      synopsis: LuieWorldSynopsisSchema.safeParse(parseJsonSafely(existingSynopsisRaw)),
+      plot: LuieWorldPlotSchema.safeParse(parseJsonSafely(existingPlotRaw)),
+      drawing: LuieWorldDrawingSchema.safeParse(parseJsonSafely(existingDrawingRaw)),
+      mindmap: LuieWorldMindmapSchema.safeParse(parseJsonSafely(existingMindmapRaw)),
+      memos: LuieWorldScrapMemosSchema.safeParse(parseJsonSafely(existingMemosRaw)),
+    };
+  }
 
-    const synopsis: WorldSynopsisData = {
+  private buildWorldSynopsis(
+    project: ProjectExportRecord,
+    parsedSynopsis: ReturnType<typeof LuieWorldSynopsisSchema.safeParse>,
+  ): WorldSynopsisData {
+    return {
       synopsis:
         project.description ??
-        (parsedSynopsis?.success && typeof parsedSynopsis.data.synopsis === "string"
+        (parsedSynopsis.success && typeof parsedSynopsis.data.synopsis === "string"
           ? parsedSynopsis.data.synopsis
           : ""),
       status:
-        parsedSynopsis?.success && parsedSynopsis.data.status
+        parsedSynopsis.success && parsedSynopsis.data.status
           ? parsedSynopsis.data.status
           : "draft",
       genre:
-        parsedSynopsis?.success && typeof parsedSynopsis.data.genre === "string"
+        parsedSynopsis.success && typeof parsedSynopsis.data.genre === "string"
           ? parsedSynopsis.data.genre
           : undefined,
       targetAudience:
-        parsedSynopsis?.success && typeof parsedSynopsis.data.targetAudience === "string"
+        parsedSynopsis.success && typeof parsedSynopsis.data.targetAudience === "string"
           ? parsedSynopsis.data.targetAudience
           : undefined,
       logline:
-        parsedSynopsis?.success && typeof parsedSynopsis.data.logline === "string"
+        parsedSynopsis.success && typeof parsedSynopsis.data.logline === "string"
           ? parsedSynopsis.data.logline
           : undefined,
       updatedAt:
-        parsedSynopsis?.success && typeof parsedSynopsis.data.updatedAt === "string"
+        parsedSynopsis.success && typeof parsedSynopsis.data.updatedAt === "string"
           ? parsedSynopsis.data.updatedAt
           : undefined,
     };
+  }
 
-    const plot: WorldPlotData =
-      parsedPlot?.success && Array.isArray(parsedPlot.data.columns)
-        ? {
-            columns: parsedPlot.data.columns,
-            updatedAt:
-              typeof parsedPlot.data.updatedAt === "string"
-                ? parsedPlot.data.updatedAt
-                : undefined,
-          }
-        : { columns: [] };
+  private buildWorldPlot(
+    parsedPlot: ReturnType<typeof LuieWorldPlotSchema.safeParse>,
+  ): WorldPlotData {
+    if (!parsedPlot.success || !Array.isArray(parsedPlot.data.columns)) {
+      return { columns: [] };
+    }
+    return {
+      columns: parsedPlot.data.columns,
+      updatedAt:
+        typeof parsedPlot.data.updatedAt === "string"
+          ? parsedPlot.data.updatedAt
+          : undefined,
+    };
+  }
 
-    const drawing: WorldDrawingData =
-      parsedDrawing?.success && Array.isArray(parsedDrawing.data.paths)
-        ? ({
-            paths: normalizeDrawingPaths(parsedDrawing.data.paths),
-            tool: parsedDrawing.data.tool,
-            iconType: parsedDrawing.data.iconType,
-            color:
-              typeof parsedDrawing.data.color === "string"
-                ? parsedDrawing.data.color
-                : undefined,
-            lineWidth:
-              typeof parsedDrawing.data.lineWidth === "number"
-                ? parsedDrawing.data.lineWidth
-                : undefined,
-            updatedAt:
-              typeof parsedDrawing.data.updatedAt === "string"
-                ? parsedDrawing.data.updatedAt
-                : undefined,
-          } satisfies WorldDrawingData)
-        : { paths: [] };
+  private buildWorldDrawing(
+    parsedDrawing: ReturnType<typeof LuieWorldDrawingSchema.safeParse>,
+  ): WorldDrawingData {
+    if (!parsedDrawing.success || !Array.isArray(parsedDrawing.data.paths)) {
+      return { paths: [] };
+    }
+    return {
+      paths: normalizeWorldDrawingPaths(parsedDrawing.data.paths),
+      tool: parsedDrawing.data.tool,
+      iconType: parsedDrawing.data.iconType,
+      color:
+        typeof parsedDrawing.data.color === "string"
+          ? parsedDrawing.data.color
+          : undefined,
+      lineWidth:
+        typeof parsedDrawing.data.lineWidth === "number"
+          ? parsedDrawing.data.lineWidth
+          : undefined,
+      updatedAt:
+        typeof parsedDrawing.data.updatedAt === "string"
+          ? parsedDrawing.data.updatedAt
+          : undefined,
+    };
+  }
 
-    const mindmap: WorldMindmapData =
-      parsedMindmap?.success
-        ? {
-            nodes: normalizeMindmapNodes(parsedMindmap.data.nodes),
-            edges: normalizeMindmapEdges(parsedMindmap.data.edges),
-            updatedAt:
-              typeof parsedMindmap.data.updatedAt === "string"
-                ? parsedMindmap.data.updatedAt
-                : undefined,
-          }
-        : { nodes: [], edges: [] };
+  private buildWorldMindmap(
+    parsedMindmap: ReturnType<typeof LuieWorldMindmapSchema.safeParse>,
+  ): WorldMindmapData {
+    if (!parsedMindmap.success) {
+      return { nodes: [], edges: [] };
+    }
+    return {
+      nodes: normalizeWorldMindmapNodes(parsedMindmap.data.nodes),
+      edges: normalizeWorldMindmapEdges(parsedMindmap.data.edges),
+      updatedAt:
+        typeof parsedMindmap.data.updatedAt === "string"
+          ? parsedMindmap.data.updatedAt
+          : undefined,
+    };
+  }
 
-    const memos: WorldScrapMemosData =
-      parsedMemos?.success
-        ? {
-            memos: normalizeScrapMemos(parsedMemos.data.memos),
-            updatedAt:
-              typeof parsedMemos.data.updatedAt === "string"
-                ? parsedMemos.data.updatedAt
-                : undefined,
-          }
-        : { memos: [] };
+  private buildWorldScrapMemos(
+    parsedMemos: ReturnType<typeof LuieWorldScrapMemosSchema.safeParse>,
+  ): WorldScrapMemosData {
+    if (!parsedMemos.success) {
+      return { memos: [] };
+    }
+    return {
+      memos: normalizeWorldScrapMemos(parsedMemos.data.memos),
+      updatedAt:
+        typeof parsedMemos.data.updatedAt === "string"
+          ? parsedMemos.data.updatedAt
+          : undefined,
+    };
+  }
 
-    const meta = {
+  private buildProjectPackageMeta(
+    project: ProjectExportRecord,
+    chapterMeta: Array<{ id: string; title: string; order: number; file: string }>,
+  ) {
+    return {
       format: LUIE_PACKAGE_FORMAT,
       container: LUIE_PACKAGE_CONTAINER_DIR,
       version: LUIE_PACKAGE_VERSION,
@@ -1032,21 +1099,40 @@ export class ProjectService {
       updatedAt: project.updatedAt?.toISOString?.() ?? String(project.updatedAt),
       chapters: chapterMeta,
     };
+  }
+
+  async exportProjectPackage(projectId: string) {
+    const project = await this.getProjectForExport(projectId);
+    const exportPath = this.resolveExportPath(projectId, project?.projectPath);
+    if (!project || !exportPath) return;
+
+    const { exportChapters, chapterMeta } = this.buildExportChapterData(project.chapters);
+    const characters = this.buildExportCharacterData(project.characters);
+    const terms = this.buildExportTermData(project.terms);
+    const snapshots = this.buildExportSnapshotData(project.snapshots);
+    const parsedWorld = await this.readWorldPayloadFromPackage(exportPath);
+
+    const synopsis = this.buildWorldSynopsis(project, parsedWorld.synopsis);
+    const plot = this.buildWorldPlot(parsedWorld.plot);
+    const drawing = this.buildWorldDrawing(parsedWorld.drawing);
+    const mindmap = this.buildWorldMindmap(parsedWorld.mindmap);
+    const memos = this.buildWorldScrapMemos(parsedWorld.memos);
+    const meta = this.buildProjectPackageMeta(project, chapterMeta);
 
     logger.info("Exporting .luie package", {
       projectId,
-      projectPath: project.projectPath,
-      chapterCount: chapters.length,
+      projectPath: exportPath,
+      chapterCount: exportChapters.length,
       characterCount: characters.length,
       termCount: terms.length,
       snapshotCount: snapshots.length,
     });
 
     await writeLuiePackage(
-      project.projectPath,
+      exportPath,
       {
         meta,
-        chapters,
+        chapters: exportChapters,
         characters,
         terms,
         synopsis,

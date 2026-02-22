@@ -235,9 +235,9 @@ export default function EditorRoot() {
                 onSave={handleSave}
                 readOnly={!activeChapterId}
                 chapterId={activeChapterId || undefined}
-                hideToolbar={true}
+                hideToolbar={uiMode === "docs" || uiMode === "scrivener" || uiMode === "editor"}
                 hideFooter={true}
-                hideTitle={true}
+                hideTitle={uiMode === "docs" || uiMode === "scrivener" || uiMode === "editor"}
                 scrollable={uiMode === "scrivener" || uiMode === "default"}
                 onEditorReady={setDocEditor}
             />
@@ -271,6 +271,7 @@ export default function EditorRoot() {
                     onOpenSettings={() => setIsSettingsOpen(true)}
                     onRenameChapter={handleRenameChapter}
                     onSaveChapter={handleSave}
+                    onOpenExport={handleOpenExport}
                     additionalPanels={additionalPanelsComponent}
                 >
                     {sharedEditor}
@@ -317,6 +318,7 @@ export default function EditorRoot() {
                     contextPanel={
                         <ContextPanel activeTab={contextTab} onTabChange={setContextTab} />
                     }
+                    onOpenExport={handleOpenExport}
                     additionalPanels={additionalPanelsComponent}
                 >
                     {sharedEditor}
