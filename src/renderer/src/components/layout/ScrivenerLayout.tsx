@@ -167,9 +167,9 @@ export default function ScrivenerLayout({
 
               <Panel
                 id="inspector"
-                defaultSize={25}
-                minSize={15}
-                maxSize={40}
+                defaultSize={280}
+                minSize={200}
+                maxSize={450}
                 className="bg-panel flex flex-col shrink-0 min-w-0"
               >
                 {/* Floating Toggle wrapper */}

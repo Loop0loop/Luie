@@ -76,10 +76,6 @@ export function GlobalDragContext({ children, onDropToCenter, onDropToSplit }: G
       onDropToCenter?.(dragData);
     } else if (dropZone === "editor-drop-zone-right") {
       onDropToSplit?.(dragData, "right");
-    } else if (dropZone === "editor-drop-zone-left") {
-      onDropToSplit?.(dragData, "left");
-    } else if (dropZone === "editor-drop-zone-bottom") {
-      onDropToSplit?.(dragData, "bottom");
     }
   }, [onDropToCenter, onDropToSplit]);
 

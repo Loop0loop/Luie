@@ -25,21 +25,14 @@ export default function SidebarCharacterList({ onSelectCharacter }: SidebarChara
   const { currentItem: currentProject } = useProjectStore();
   const {
     items: characters,
-    currentItem: currentCharacterFromStore,
     loadAll: loadCharacters,
     create: createCharacter,
-    setCurrentCharacter
   } = useCharacterStore();
-  
-  const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
-  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
-  useEffect(() => {
-    if (currentCharacterFromStore?.id) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync selection
-      setSelectedCharacterId(currentCharacterFromStore.id);
-    }
-  }, [currentCharacterFromStore]);
+  const mainView = useUIStore((state) => state.mainView);
+  const selectedCharacterId = mainView.type === "character" && mainView.id ? mainView.id : null;
+
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
   useEffect(() => {
     if (currentProject) {
@@ -48,9 +41,6 @@ export default function SidebarCharacterList({ onSelectCharacter }: SidebarChara
   }, [currentProject, loadCharacters]);
 
   const handleSelect = (id: string) => {
-    setSelectedCharacterId(id);
-    const char = characters.find((c) => c.id === id);
-    if (char) setCurrentCharacter(char);
     useUIStore.getState().setMainView({ type: "character", id });
     onSelectCharacter?.(id);
   };
@@ -58,12 +48,12 @@ export default function SidebarCharacterList({ onSelectCharacter }: SidebarChara
   const handleAddCharacter = async (templateId: string = "basic") => {
     if (currentProject) {
       const template = CHARACTER_TEMPLATES.find((t) => t.id === templateId) || CHARACTER_TEMPLATES[0];
-      
+
       await createCharacter({
         projectId: currentProject.id,
         name: t("character.defaults.name"),
         description: t("character.uncategorized"),
-        attributes: { templateId: template.id } as Record<string, unknown> 
+        attributes: { templateId: template.id } as Record<string, unknown>
       });
       // createCharacter returns Promise<void> in interface but might return object in implementation?
       // Actually checking store definition: 
@@ -77,7 +67,7 @@ export default function SidebarCharacterList({ onSelectCharacter }: SidebarChara
   const groupedCharacters = useMemo(() => {
     const groups: Record<string, CharacterLike[]> = {};
     const list = characters as CharacterLike[];
-    
+
     list.forEach(char => {
       const group = char.description?.trim() || t("character.uncategorized");
       if (!groups[group]) groups[group] = [];
@@ -89,69 +79,69 @@ export default function SidebarCharacterList({ onSelectCharacter }: SidebarChara
 
   return (
     <div className="flex flex-col h-full bg-sidebar/50">
-        <div className="flex items-center justify-end px-2 py-1 gap-1 border-b border-border/20">
-             <button 
-                className="p-1 hover:bg-white/10 rounded text-muted-foreground hover:text-foreground transition-colors"
-                onClick={() => setIsTemplateModalOpen(true)}
-                title={t("character.addTitle")}
-            >
-                <Plus className="w-4 h-4" />
-            </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-             {Object.entries(groupedCharacters).map(([group, chars]) => (
-                <CharacterGroup 
-                  key={group} 
-                  title={group} 
-                  color={CHARACTER_GROUP_COLORS[group] || CHARACTER_GROUP_COLORS["Uncategorized"]}
-                  characters={chars}
-                  selectedId={selectedCharacterId}
-                  onSelect={handleSelect}
-                />
-              ))}
-              
-              {characters.length === 0 && (
-                  <div className="p-4 text-xs text-muted text-center italic">
-                      {t("character.noCharacters")}
-                  </div>
-              )}
-        </div>
-
-        <Modal
-            isOpen={isTemplateModalOpen}
-            onClose={() => setIsTemplateModalOpen(false)}
-            title={t("character.templateTitle")}
-            width="500px"
+      <div className="flex items-center justify-end px-2 py-1 gap-1 border-b border-border/20">
+        <button
+          className="p-1 hover:bg-white/10 rounded text-muted-foreground hover:text-foreground transition-colors"
+          onClick={() => setIsTemplateModalOpen(true)}
+          title={t("character.addTitle")}
         >
-            <div className="grid grid-cols-2 gap-4 p-4">
-                {CHARACTER_TEMPLATES.map((template) => (
-                    <div 
-                        key={template.id} 
-                        className="flex flex-col items-center justify-center p-4 border border-border rounded-lg cursor-pointer hover:bg-surface-hover transition-colors gap-2"
-                        onClick={() => handleAddCharacter(template.id)}
-                    >
-                    <div className="p-3 bg-surface rounded-full shadow-sm">
-                        <LayoutTemplate size={24} /> 
-                    </div>
-                    <div className="font-semibold text-sm">{t(template.nameKey)}</div>
-                    </div>
-                ))}
+          <Plus className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        {Object.entries(groupedCharacters).map(([group, chars]) => (
+          <CharacterGroup
+            key={group}
+            title={group}
+            color={CHARACTER_GROUP_COLORS[group] || CHARACTER_GROUP_COLORS["Uncategorized"]}
+            characters={chars}
+            selectedId={selectedCharacterId}
+            onSelect={handleSelect}
+          />
+        ))}
+
+        {characters.length === 0 && (
+          <div className="p-4 text-xs text-muted text-center italic">
+            {t("character.noCharacters")}
+          </div>
+        )}
+      </div>
+
+      <Modal
+        isOpen={isTemplateModalOpen}
+        onClose={() => setIsTemplateModalOpen(false)}
+        title={t("character.templateTitle")}
+        width="500px"
+      >
+        <div className="grid grid-cols-2 gap-4 p-4">
+          {CHARACTER_TEMPLATES.map((template) => (
+            <div
+              key={template.id}
+              className="flex flex-col items-center justify-center p-4 border border-border rounded-lg cursor-pointer hover:bg-surface-hover transition-colors gap-2"
+              onClick={() => handleAddCharacter(template.id)}
+            >
+              <div className="p-3 bg-surface rounded-full shadow-sm">
+                <LayoutTemplate size={24} />
+              </div>
+              <div className="font-semibold text-sm">{t(template.nameKey)}</div>
             </div>
-        </Modal>
+          ))}
+        </div>
+      </Modal>
     </div>
   );
 }
 
-function CharacterGroup({ 
-  title, 
-  color, 
-  characters, 
-  selectedId, 
-  onSelect 
-}: { 
-  title: string; 
-  color: string; 
+function CharacterGroup({
+  title,
+  color,
+  characters,
+  selectedId,
+  onSelect
+}: {
+  title: string;
+  color: string;
   characters: CharacterLike[];
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -160,8 +150,8 @@ function CharacterGroup({
 
   return (
     <div>
-      <div 
-        className="px-3 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer flex items-center gap-1.5 select-none transition-colors" 
+      <div
+        className="px-3 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer flex items-center gap-1.5 select-none transition-colors"
         onClick={() => setIsOpen(!isOpen)}
       >
         {isOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
@@ -169,25 +159,25 @@ function CharacterGroup({
         <span className="truncate">{title}</span>
         <span className="ml-auto text-[10px] opacity-70">{characters.length}</span>
       </div>
-      
+
       {isOpen && (
         <div className="flex flex-col">
           {characters.map(char => (
             <DraggableItem
-               key={char.id}
-               id={`char-${char.id}`}
-               data={{ type: "character", id: char.id, title: char.name }}
+              key={char.id}
+              id={`char-${char.id}`}
+              data={{ type: "character", id: char.id, title: char.name }}
             >
-                <div 
-                  className={cn(
-                      "pl-8 pr-3 py-1.5 cursor-pointer text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors border-l-2 border-transparent",
-                      selectedId === char.id && "bg-accent/10 text-accent border-accent"
-                  )}
-                  onClick={() => onSelect(char.id)}
-                >
-                  <User className="w-3.5 h-3.5 opacity-70" />
-                  <span className="truncate">{char.name}</span>
-                </div>
+              <div
+                className={cn(
+                  "pl-8 pr-3 py-1.5 cursor-pointer text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors border-l-2 border-transparent",
+                  selectedId === char.id && "bg-accent/10 text-accent border-accent"
+                )}
+                onClick={() => onSelect(char.id)}
+              >
+                <User className="w-3.5 h-3.5 opacity-70" />
+                <span className="truncate">{char.name}</span>
+              </div>
             </DraggableItem>
           ))}
         </div>

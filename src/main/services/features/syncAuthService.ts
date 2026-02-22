@@ -234,7 +234,6 @@ class SyncAuthService {
     const authorizeUrl = new URL(`${url}/auth/v1/authorize`);
     authorizeUrl.searchParams.set("provider", "google");
     authorizeUrl.searchParams.set("redirect_to", OAUTH_REDIRECT_URI);
-    authorizeUrl.searchParams.set("state", state);
     authorizeUrl.searchParams.set("code_challenge", challenge);
     authorizeUrl.searchParams.set("code_challenge_method", "s256");
 
@@ -252,7 +251,6 @@ class SyncAuthService {
     }
 
     const parsed = new URL(callbackUrl);
-    const state = parsed.searchParams.get("state");
     const code = parsed.searchParams.get("code");
     const error = parsed.searchParams.get("error");
     const errorCode = parsed.searchParams.get("error_code");
@@ -269,10 +267,6 @@ class SyncAuthService {
     if (!code) {
       this.clearPendingPkce();
       throw new Error("SYNC_AUTH_CODE_MISSING");
-    }
-    if (!state || state !== pending.state) {
-      this.clearPendingPkce();
-      throw new Error("SYNC_AUTH_STATE_MISMATCH");
     }
 
     const token = await this.exchangeCodeForSession(code, pending.verifier);

@@ -2,13 +2,16 @@ import { Tag, Clock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useMemo } from "react";
 import { useMemoStore } from "../../../stores/memoStore";
+import { useUIStore } from "../../../stores/uiStore";
 
 export default function MemoMainView() {
     const { t } = useTranslation();
-    const { notes, activeNoteId, updateNote } = useMemoStore();
+    const { notes, updateNote } = useMemoStore();
+    const mainView = useUIStore((state) => state.mainView);
+    const activeNoteId = mainView.type === "memo" ? mainView.id : null;
 
-    const activeNote = useMemo(() => 
-        notes.find((n) => n.id === activeNoteId), 
+    const activeNote = useMemo(() =>
+        notes.find((n) => n.id === activeNoteId),
         [notes, activeNoteId]
     );
 
@@ -23,16 +26,16 @@ export default function MemoMainView() {
     return (
         <div className="h-full flex flex-col bg-panel overflow-hidden max-w-4xl mx-auto w-full p-8">
             <div className="flex items-center gap-2 mb-4">
-            <Tag className="w-4 h-4 text-muted-foreground" />
-            <input
-                className="bg-transparent border-none outline-none text-sm text-muted-foreground w-full placeholder:text-muted"
-                placeholder={t("memo.placeholder.tags")}
-                value={activeNote.tags.join(", ")}
-                onChange={(e) => {
-                    const tags = e.target.value.split(",").map((tag) => tag.trim());
-                    updateNote(activeNote.id, { tags });
-                }}
-            />
+                <Tag className="w-4 h-4 text-muted-foreground" />
+                <input
+                    className="bg-transparent border-none outline-none text-sm text-muted-foreground w-full placeholder:text-muted"
+                    placeholder={t("memo.placeholder.tags")}
+                    value={activeNote.tags.join(", ")}
+                    onChange={(e) => {
+                        const tags = e.target.value.split(",").map((tag) => tag.trim());
+                        updateNote(activeNote.id, { tags });
+                    }}
+                />
             </div>
 
             <input
@@ -41,7 +44,7 @@ export default function MemoMainView() {
                 onChange={(e) => updateNote(activeNote.id, { title: e.target.value })}
                 placeholder={t("memo.placeholder.title")}
             />
-            
+
             <div className="flex items-center gap-2 text-xs text-muted-foreground mb-6">
                 <Clock className="w-3 h-3" />
                 <span>{new Date(activeNote.updatedAt).toLocaleString()}</span>

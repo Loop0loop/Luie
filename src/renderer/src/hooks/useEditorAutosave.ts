@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useToast } from "../components/common/ToastContext";
 import { api } from "../services/api";
 import { EDITOR_AUTOSAVE_DEBOUNCE_MS } from "../../../shared/constants";
-import { useEditorStatusStore } from "../stores/editorStatusStore";
+import { useEditorStore } from "../stores/editorStore";
 
 interface UseEditorAutosaveProps {
   onSave?: (title: string, content: string) => Promise<void> | void;
@@ -17,7 +17,7 @@ export function useEditorAutosave({ onSave, title, content }: UseEditorAutosaveP
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   
   useEffect(() => {
-    useEditorStatusStore.getState().setSaveStatus(saveStatus);
+    useEditorStore.getState().setSaveStatus(saveStatus);
   }, [saveStatus]);
 
   const lastSavedRef = useRef({ title, content });

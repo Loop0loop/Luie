@@ -4,20 +4,17 @@ import type { Note } from "../../../shared/types";
 
 interface MemoStore {
   notes: Note[];
-  activeNoteId: string | null;
-  
+
   loadNotes: (projectId: string) => void;
   addNote: (projectId: string, note: Omit<Note, "id" | "projectId" | "createdAt" | "updatedAt">) => void;
-  updateNote: (id: string, updates: Partial<Omit<Note, "id" | "projectId" | "createdAt">> ) => void;
+  updateNote: (id: string, updates: Partial<Omit<Note, "id" | "projectId" | "createdAt">>) => void;
   deleteNote: (id: string) => void;
-  setActiveNoteId: (id: string | null) => void;
 }
 
 export const useMemoStore = create<MemoStore>()(
   persist(
     (set) => ({
       notes: [],
-      activeNoteId: null,
 
       loadNotes: () => {
         // In a real app with backend, this would fetch from API.
@@ -28,7 +25,7 @@ export const useMemoStore = create<MemoStore>()(
         // The existing code used `readLocalStorageJson`.
         // To keep it simple and compatible with existing `MemoSection`'s data format:
         // Existing format: { notes: Note[] } inside `luie:memos:${projectId}`
-        
+
         // Actually, let's just use the store state. 
         // If we want PER-PROJECT notes, we should filter by projectId or clear/reload.
         // The persist middleware saves the WHOLE store to one key.
@@ -44,24 +41,20 @@ export const useMemoStore = create<MemoStore>()(
           createdAt: new Date(),
           updatedAt: new Date(),
         };
-        return { 
-          notes: [...state.notes, newNote],
-          activeNoteId: newNote.id 
+        return {
+          notes: [...state.notes, newNote]
         };
       }),
 
       updateNote: (id, updates) => set((state) => ({
-        notes: state.notes.map((n) => 
+        notes: state.notes.map((n) =>
           n.id === id ? { ...n, ...updates, updatedAt: new Date() } : n
         )
       })),
 
       deleteNote: (id) => set((state) => ({
-        notes: state.notes.filter((n) => n.id !== id),
-        activeNoteId: state.activeNoteId === id ? null : state.activeNoteId
+        notes: state.notes.filter((n) => n.id !== id)
       })),
-
-      setActiveNoteId: (id) => set({ activeNoteId: id }),
     }),
     {
       name: "luie:memo-store", // Single global store for now, or we can make it project-specific? 

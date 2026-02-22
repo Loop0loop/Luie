@@ -190,7 +190,7 @@ function MemoSectionInner({
   return (
     <div className="flex flex-col h-full bg-sidebar/30">
       <PanelGroup
-        orientation="horizontal"
+        orientation="vertical"
         onLayoutChanged={handleLayoutChange}
         defaultLayout={
           initialLayout ?? {
@@ -229,7 +229,7 @@ function MemoSectionInner({
                 itemContent={(_index, note) => (
                   <div
                     className={cn(
-                      "px-4 py-3 border-b border-border cursor-pointer transition-colors hover:bg-element-hover overflow-hidden w-full",
+                      "px-4 py-3 border-b border-border cursor-pointer transition-colors hover:bg-element-hover overflow-hidden w-full box-border",
                       activeNoteId === note.id && "bg-active border-l-[3px] border-l-accent pl-3.25",
                     )}
                     onClick={() => setActiveNoteId(note.id)}

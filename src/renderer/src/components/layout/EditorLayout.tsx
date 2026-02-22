@@ -187,7 +187,7 @@ export default function EditorLayout({
 
           {/* Editor Column Wrapper */}
           <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative" id="editor-layout">
-            <Panel id="main-editor-view" minSize={20} className="min-w-0 bg-transparent relative flex flex-col">
+            <Panel id="main-editor-view" minSize={300} className="min-w-0 bg-transparent relative flex flex-col">
               <div className="flex-1 h-full overflow-hidden flex flex-col relative">
                 <EditorDropZones />
 
@@ -225,7 +225,7 @@ export default function EditorLayout({
                   <div className="absolute inset-y-0 -left-1 -right-1" />
                 </PanelResizeHandle>
 
-                <Panel id="binder-sidebar" defaultSize={25} minSize={15} maxSize={40} className="bg-panel shadow-2xl flex flex-row shrink-0 min-w-0 z-10 transition-none">
+                <Panel id="binder-sidebar" defaultSize={280} minSize={200} maxSize={450} className="bg-panel shadow-2xl flex flex-row shrink-0 min-w-0 z-10 transition-none">
                   <div className="flex-1 h-full overflow-hidden relative min-w-0">
                     <button
                       onClick={() => setActiveRightTab(null)}

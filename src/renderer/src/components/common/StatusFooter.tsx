@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Loader2, Check, Share } from "lucide-react";
-import { useEditorStatusStore } from "../../stores/editorStatusStore";
+import { useEditorStore } from "../../stores/editorStore";
 
 interface StatusFooterProps {
   onOpenExport?: () => void;
@@ -9,7 +9,7 @@ interface StatusFooterProps {
 
 export default function StatusFooter({ onOpenExport, hideExport }: StatusFooterProps) {
   const { t } = useTranslation();
-  const { wordCount, charCount, saveStatus } = useEditorStatusStore();
+  const { wordCount, charCount, saveStatus } = useEditorStore();
 
   return (
     <div className="h-8 border-t border-border flex items-center justify-end gap-4 px-4 text-xs text-muted-foreground bg-background shrink-0 select-none z-20">

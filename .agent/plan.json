@@ -8,7 +8,7 @@
             "priority": "P0",
             "assignedAgent": "frontend",
             "dependencies": [],
-            "description": "Refactor EditorLayout.tsx, GoogleDocsLayout.tsx, and ScrivenerLayout.tsx to rely strictly on react-resizable-panels instead of manual window.addEventListener pointermove logic. Eliminate hardcoded width calculations."
+            "description": "DONE"
         },
         {
             "id": "phase-2",
@@ -18,7 +18,7 @@
             "dependencies": [
                 "phase-1"
             ],
-            "description": "Extract global shortcuts to a ShortcutProvider. Extract View/Routing rendering logic into smaller chunk components from App.tsx."
+            "description": "DONE"
         },
         {
             "id": "phase-3",
@@ -26,17 +26,19 @@
             "priority": "P1",
             "assignedAgent": "frontend",
             "dependencies": [
-                "phase-1"
+                "phase-2"
             ],
-            "description": "Decouple GlobalDragContext.tsx business logic from the routing/layout mechanisms. Refactor EditorDropZones to use native dnd-kit collision detection."
+            "description": "DONE"
         },
         {
             "id": "phase-4",
             "title": "Store Consolidation",
             "priority": "P2",
             "assignedAgent": "frontend",
-            "dependencies": [],
-            "description": "Consolidate the 12 scattered Zustand stores. Merge heavily coupled stores (e.g., uiStore, editorStatusStore) to prevent state synchronization bugs."
+            "dependencies": [
+                "phase-3"
+            ],
+            "description": "DONE: Deleted editorStatusStore.ts and autoSaveStore.ts by merging them into editorStore.ts and local hooks. Cleaned up redundant UI synchronization loops in characterStore, memoStore, and termStore by prioritizing uiStore's mainView as the single source of truth."
         }
     ]
 }
