@@ -291,6 +291,14 @@ export const ko = {
         deleteConfirm: "정말로 \"{title}\" 프로젝트를 삭제할까요? 이 작업은 되돌릴 수 없습니다.",
         deleteConfirmLabel: "삭제",
         emptyPath: "(No path)",
+        pathMissingBadge: "파일 없음",
+        pathMissingDescription: ".luie 파일을 찾을 수 없음",
+        sync: {
+          synced: "동기화됨",
+          pending: "동기화 대기",
+          localOnly: "로컬 전용",
+          syncError: "동기화 오류",
+        },
         actions: {
           cancel: "취소",
           save: "저장",
@@ -347,6 +355,7 @@ export const ko = {
       toast: {
         recoveredFromDb: "파일이 손상되어 로컬 캐시에서 복구했습니다.",
         dbNewerSynced: "로컬 캐시가 최신이라 프로젝트 파일을 갱신했습니다.",
+        pathMissing: ".luie 파일이 없어 로컬 데이터로 프로젝트를 엽니다.",
       },
       templateDescription: "{templateId} 템플릿으로 생성됨",
     },

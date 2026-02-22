@@ -21,6 +21,7 @@ const mocked = vi.hoisted(() => {
       findUnique: vi.fn(async () => null),
       update: vi.fn(),
       create: vi.fn(),
+      delete: vi.fn(),
     },
     chapter: {
       findUnique: vi.fn(),
@@ -109,11 +110,30 @@ vi.mock("../../../src/main/manager/settingsManager.js", () => ({
       return { ...mocked.syncSettings };
     },
     clearSyncSettings: () => {
+      const pendingDeletes = Array.isArray(mocked.syncSettings.pendingProjectDeletes)
+        ? [...mocked.syncSettings.pendingProjectDeletes]
+        : undefined;
       for (const key of Object.keys(mocked.syncSettings)) {
         delete (mocked.syncSettings as Record<string, unknown>)[key];
       }
       mocked.syncSettings.connected = false;
       mocked.syncSettings.autoSync = true;
+      if (pendingDeletes && pendingDeletes.length > 0) {
+        mocked.syncSettings.pendingProjectDeletes = pendingDeletes;
+      }
+      return { ...mocked.syncSettings };
+    },
+    removePendingProjectDeletes: (projectIds: string[]) => {
+      const pending = Array.isArray(mocked.syncSettings.pendingProjectDeletes)
+        ? mocked.syncSettings.pendingProjectDeletes
+        : [];
+      const idSet = new Set(projectIds);
+      const filtered = pending.filter((entry) => !idSet.has(entry.projectId));
+      if (filtered.length === 0) {
+        delete (mocked.syncSettings as Record<string, unknown>).pendingProjectDeletes;
+      } else {
+        mocked.syncSettings.pendingProjectDeletes = filtered;
+      }
       return { ...mocked.syncSettings };
     },
   },
@@ -140,6 +160,7 @@ describe("SyncService auth hardening", () => {
     }
     mocked.syncSettings.connected = false;
     mocked.syncSettings.autoSync = true;
+    delete (mocked.syncSettings as Record<string, unknown>).pendingProjectDeletes;
   });
 
   it("downgrades connected state on startup when no usable token path exists", async () => {
@@ -207,5 +228,53 @@ describe("SyncService auth hardening", () => {
 
     expect(mocked.startGoogleAuth).toHaveBeenCalledTimes(1);
     expect(service.getStatus().mode).toBe("connecting");
+  });
+
+  it("syncs queued project deletions as tombstones and clears queue after success", async () => {
+    const deletedAt = new Date().toISOString();
+    mocked.syncSettings.connected = true;
+    mocked.syncSettings.autoSync = false;
+    mocked.syncSettings.userId = "00000000-0000-0000-0000-000000000001";
+    mocked.syncSettings.expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    mocked.syncSettings.accessTokenCipher = "cipher";
+    mocked.syncSettings.pendingProjectDeletes = [
+      {
+        projectId: "project-1",
+        deletedAt,
+      },
+    ];
+    mocked.getAccessToken.mockReturnValue({ token: "access-token" });
+    mocked.getRefreshToken.mockReturnValue({ token: "refresh-token" });
+    mocked.fetchBundle.mockResolvedValue({
+      projects: [],
+      chapters: [],
+      characters: [],
+      terms: [],
+      worldDocuments: [],
+      memos: [],
+      snapshots: [],
+      tombstones: [],
+    });
+    mocked.upsertBundle.mockResolvedValue(undefined);
+
+    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const service = new SyncService();
+    service.initialize();
+    const result = await service.runNow("manual");
+
+    expect(result.success).toBe(true);
+    const upsertPayload = mocked.upsertBundle.mock.calls[0]?.[1] as {
+      tombstones: Array<{ entityType: string; entityId: string; deletedAt: string }>;
+    };
+    expect(upsertPayload.tombstones).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          entityType: "project",
+          entityId: "project-1",
+          deletedAt,
+        }),
+      ]),
+    );
+    expect(mocked.syncSettings.pendingProjectDeletes).toBeUndefined();
   });
 });

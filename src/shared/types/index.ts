@@ -8,6 +8,7 @@ export interface Project {
   title: string;
   description?: string | null;
   projectPath?: string | null;
+  pathMissing?: boolean;
   createdAt: string | Date;
   updatedAt: string | Date;
 }
@@ -347,6 +348,11 @@ export type AppBootstrapStatus = {
 export type SyncProvider = "google";
 export type SyncMode = "idle" | "connecting" | "syncing" | "error";
 
+export interface SyncPendingProjectDelete {
+  projectId: string;
+  deletedAt: string;
+}
+
 export interface SyncConflictSummary {
   chapters: number;
   memos: number;
@@ -386,6 +392,7 @@ export interface SyncSettings extends SyncConnection {
   pendingAuthState?: string;
   pendingAuthVerifierCipher?: string;
   pendingAuthCreatedAt?: string;
+  pendingProjectDeletes?: SyncPendingProjectDelete[];
 }
 
 export interface WindowBounds {

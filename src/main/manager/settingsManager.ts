@@ -10,6 +10,7 @@ import type {
   AppSettings,
   EditorSettings,
   ShortcutMap,
+  SyncPendingProjectDelete,
   SyncSettings,
   WindowBounds,
   WindowMenuBarMode,
@@ -340,6 +341,24 @@ export class SettingsManager {
 
   getSyncSettings(): SyncSettings {
     const current = this.store.get("sync");
+    const pendingProjectDeletes = Array.isArray(current?.pendingProjectDeletes)
+      ? current.pendingProjectDeletes
+        .filter((entry): entry is SyncPendingProjectDelete =>
+          Boolean(
+            entry &&
+            typeof entry === "object" &&
+            typeof entry.projectId === "string" &&
+            entry.projectId.length > 0 &&
+            typeof entry.deletedAt === "string" &&
+            entry.deletedAt.length > 0,
+          ),
+        )
+        .map((entry) => ({
+          projectId: entry.projectId,
+          deletedAt: entry.deletedAt,
+        }))
+      : undefined;
+
     return {
       connected: current?.connected ?? false,
       provider: current?.provider,
@@ -354,6 +373,7 @@ export class SettingsManager {
       pendingAuthState: current?.pendingAuthState,
       pendingAuthVerifierCipher: current?.pendingAuthVerifierCipher,
       pendingAuthCreatedAt: current?.pendingAuthCreatedAt,
+      pendingProjectDeletes,
     };
   }
 
@@ -387,10 +407,45 @@ export class SettingsManager {
     });
   }
 
+  addPendingProjectDelete(input: SyncPendingProjectDelete): SyncSettings {
+    const current = this.getSyncSettings();
+    const existing = Array.isArray(current.pendingProjectDeletes)
+      ? current.pendingProjectDeletes
+      : [];
+    const withoutSameProject = existing.filter((entry) => entry.projectId !== input.projectId);
+    return this.setSyncSettings({
+      pendingProjectDeletes: [
+        ...withoutSameProject,
+        {
+          projectId: input.projectId,
+          deletedAt: input.deletedAt,
+        },
+      ],
+    });
+  }
+
+  removePendingProjectDeletes(projectIds: string[]): SyncSettings {
+    if (projectIds.length === 0) {
+      return this.getSyncSettings();
+    }
+
+    const projectIdSet = new Set(projectIds);
+    const current = this.getSyncSettings();
+    const existing = Array.isArray(current.pendingProjectDeletes)
+      ? current.pendingProjectDeletes
+      : [];
+    const filtered = existing.filter((entry) => !projectIdSet.has(entry.projectId));
+    return this.setSyncSettings({
+      pendingProjectDeletes: filtered.length > 0 ? filtered : undefined,
+    });
+  }
+
   clearSyncSettings(): SyncSettings {
+    const current = this.getSyncSettings();
     const next: SyncSettings = {
       connected: false,
       autoSync: true,
+      pendingProjectDeletes: current.pendingProjectDeletes,
     };
     this.store.set("sync", next as unknown as AppSettings["sync"]);
     return next;

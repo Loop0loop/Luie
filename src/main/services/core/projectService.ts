@@ -531,7 +531,36 @@ export class ProjectService {
         orderBy: { updatedAt: "desc" },
       });
 
-      return projects;
+      const withPathStatus = await Promise.all(
+        projects.map(async (project) => {
+          const projectPath =
+            typeof project.projectPath === "string" ? project.projectPath : null;
+          const isLuiePath = Boolean(
+            projectPath && projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION),
+          );
+          if (!isLuiePath || !projectPath) {
+            return {
+              ...project,
+              pathMissing: false,
+            };
+          }
+
+          try {
+            await fs.access(projectPath);
+            return {
+              ...project,
+              pathMissing: false,
+            };
+          } catch {
+            return {
+              ...project,
+              pathMissing: true,
+            };
+          }
+        }),
+      );
+
+      return withPathStatus;
     } catch (error) {
       logger.error("Failed to get all projects", error);
       throw new ServiceError(
@@ -606,7 +635,28 @@ export class ProjectService {
   }
 
   async deleteProject(id: string) {
+    let queuedProjectDelete = false;
+
     try {
+      const existing = await db.getClient().project.findUnique({
+        where: { id },
+        select: { id: true },
+      });
+
+      if (!existing?.id) {
+        throw new ServiceError(
+          ErrorCode.PROJECT_NOT_FOUND,
+          "Project not found",
+          { id },
+        );
+      }
+
+      settingsManager.addPendingProjectDelete({
+        projectId: id,
+        deletedAt: new Date().toISOString(),
+      });
+      queuedProjectDelete = true;
+
       await db.getClient().project.delete({
         where: { id },
       });
@@ -614,7 +664,13 @@ export class ProjectService {
       logger.info("Project deleted successfully", { projectId: id });
       return { success: true };
     } catch (error) {
+      if (queuedProjectDelete) {
+        settingsManager.removePendingProjectDeletes([id]);
+      }
       logger.error("Failed to delete project", error);
+      if (error instanceof ServiceError) {
+        throw error;
+      }
       throw new ServiceError(
         ErrorCode.PROJECT_DELETE_FAILED,
         "Failed to delete project",

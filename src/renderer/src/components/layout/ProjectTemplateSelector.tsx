@@ -1,9 +1,9 @@
-import { useState, useOptimistic, useActionState, useId } from "react";
+import { useState, useOptimistic, useActionState, useId, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import WindowBar from "./WindowBar";
 import { Plus, Book, FileText, FileType, MoreVertical } from "lucide-react";
-import type { Project } from "../../../../shared/types";
+import type { Project, SyncStatus } from "../../../../shared/types";
 import { useProjectStore } from "../../stores/projectStore";
 import { ConfirmDialog, Modal } from "../common/Modal";
 import { api } from "../../services/api";
@@ -33,6 +33,18 @@ export default function ProjectTemplateSelector({
 }: ProjectTemplateSelectorProps) {
   const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState("all");
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>({
+    connected: false,
+    autoSync: true,
+    mode: "idle",
+    inFlight: false,
+    queued: false,
+    conflicts: {
+      chapters: 0,
+      memos: 0,
+      total: 0,
+    },
+  });
 
   const { deleteProject, updateProject } = useProjectStore();
 
@@ -53,6 +65,22 @@ export default function ProjectTemplateSelector({
 
   const { menuOpenId, menuPosition, menuRef, closeMenu, toggleMenuByElement } =
     useFloatingMenu<HTMLButtonElement>();
+
+  useEffect(() => {
+    let active = true;
+    void api.sync.getStatus().then((response) => {
+      if (!active || !response.success || !response.data) return;
+      setSyncStatus(response.data);
+    });
+    const unsubscribe = api.sync.onStatusChanged((status) => {
+      if (!active) return;
+      setSyncStatus(status);
+    });
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
 
   // Dialog States
   const [renameDialog, setRenameDialog] = useState<{
@@ -150,6 +178,29 @@ export default function ProjectTemplateSelector({
       : templates.filter(
           (t) => t.category === activeCategory || t.category === "all",
         );
+
+  const toTimestamp = (value: unknown): number => {
+    const parsed = Date.parse(String(value ?? ""));
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const getProjectSyncBadge = (project: Project): "synced" | "pending" | "localOnly" | "syncError" => {
+    if (!syncStatus.connected) {
+      return syncStatus.mode === "error" ? "syncError" : "localOnly";
+    }
+
+    const lastSyncedAt = toTimestamp(syncStatus.lastSyncedAt);
+    if (!lastSyncedAt) {
+      return "pending";
+    }
+
+    const updatedAt = toTimestamp(project.updatedAt);
+    if (!updatedAt) {
+      return "pending";
+    }
+
+    return updatedAt <= lastSyncedAt ? "synced" : "pending";
+  };
 
   const handleSelectTemplate = async (templateId: string) => {
     try {
@@ -340,37 +391,59 @@ export default function ProjectTemplateSelector({
             </div>
 
             <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-              {optimisticProjects.slice(0, 4).map((p) => (
-                <div
-                  key={p.id}
-                  className="bg-surface border border-border rounded-lg p-5 w-full text-left cursor-pointer transition-all duration-200 relative flex justify-between items-start hover:bg-surface-hover hover:border-border-active hover:-translate-y-0.5 hover:shadow-md group"
-                  onClick={() => onOpenProject?.(p)}
-                >
-                  <div className="flex-1 overflow-hidden">
-                    <div className="text-[15px] font-semibold text-fg mb-1">{p.title}</div>
-                    <div
-                      className="text-xs text-muted whitespace-nowrap overflow-hidden text-ellipsis"
-                      title={p.projectPath ?? ""}
-                    >
-                      {p.projectPath ?? t("settings.projectTemplate.emptyPath")}
-                    </div>
-                  </div>
-
-                  <button
-                    className="opacity-85 p-1 rounded text-subtle border-none bg-transparent cursor-pointer absolute top-2.5 right-2.5 z-10 transition-all hover:opacity-100 hover:bg-active hover:text-fg group-hover:opacity-100"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      toggleMenuByElement(p.id, e.currentTarget);
-                      api.logger.info("Project context menu", {
-                        id: p.id,
-                      });
-                    }}
+              {optimisticProjects.slice(0, 4).map((p) => {
+                const syncBadge = getProjectSyncBadge(p);
+                return (
+                  <div
+                    key={p.id}
+                    className="bg-surface border border-border rounded-lg p-5 w-full text-left cursor-pointer transition-all duration-200 relative flex justify-between items-start hover:bg-surface-hover hover:border-border-active hover:-translate-y-0.5 hover:shadow-md group"
+                    onClick={() => onOpenProject?.(p)}
                   >
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
+                    <div className="flex-1 overflow-hidden">
+                      <div className="mb-1 flex items-center gap-2">
+                        <div className="text-[15px] font-semibold text-fg truncate">{p.title}</div>
+                        <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${syncBadge === "synced"
+                          ? "bg-emerald-500/15 text-emerald-300"
+                          : syncBadge === "pending"
+                            ? "bg-amber-500/15 text-amber-300"
+                            : syncBadge === "syncError"
+                              ? "bg-red-500/15 text-red-300"
+                              : "bg-zinc-500/15 text-zinc-300"
+                          }`}>
+                          {t(`settings.projectTemplate.sync.${syncBadge}`)}
+                        </span>
+                        {p.pathMissing && (
+                          <span className="inline-flex shrink-0 items-center rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-medium text-red-300">
+                            {t("settings.projectTemplate.pathMissingBadge")}
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        className="text-xs text-muted whitespace-nowrap overflow-hidden text-ellipsis"
+                        title={p.projectPath ?? ""}
+                      >
+                        {p.pathMissing
+                          ? t("settings.projectTemplate.pathMissingDescription")
+                          : p.projectPath ?? t("settings.projectTemplate.emptyPath")}
+                      </div>
+                    </div>
+
+                    <button
+                      className="opacity-85 p-1 rounded text-subtle border-none bg-transparent cursor-pointer absolute top-2.5 right-2.5 z-10 transition-all hover:opacity-100 hover:bg-active hover:text-fg group-hover:opacity-100"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        toggleMenuByElement(p.id, e.currentTarget);
+                        api.logger.info("Project context menu", {
+                          id: p.id,
+                        });
+                      }}
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

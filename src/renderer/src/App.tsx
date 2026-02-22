@@ -156,10 +156,13 @@ export default function App() {
 
   const handleOpenExistingProject = useCallback(
     (project: (typeof projects)[number]) => {
+      if (project.pathMissing) {
+        showToast(t("project.toast.pathMissing"), "info");
+      }
       setCurrentProject(project);
       setView("editor");
     },
-    [setCurrentProject, setView],
+    [setCurrentProject, setView, showToast, t],
   );
 
   const handleOpenLuieFile = useCallback(async () => {

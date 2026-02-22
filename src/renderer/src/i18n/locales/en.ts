@@ -291,6 +291,14 @@ export const en = {
         deleteConfirm: "Are you sure you want to delete \"{title}\"? This cannot be undone.",
         deleteConfirmLabel: "Delete",
         emptyPath: "(No path)",
+        pathMissingBadge: "Missing file",
+        pathMissingDescription: ".luie file is missing",
+        sync: {
+          synced: "Synced",
+          pending: "Pending",
+          localOnly: "Local only",
+          syncError: "Sync error",
+        },
         actions: {
           cancel: "Cancel",
           save: "Save",
@@ -347,6 +355,7 @@ export const en = {
       toast: {
         recoveredFromDb: "The file was corrupted, so we restored it from local cache.",
         dbNewerSynced: "Local cache was newer, so the project file was updated.",
+        pathMissing: "The .luie file is missing, so the project opened from local data.",
       },
       templateDescription: "Created with {templateId} template",
     },

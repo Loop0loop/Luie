@@ -291,6 +291,14 @@ export const ja = {
         deleteConfirm: "\"{title}\" を削除しますか？この操作は取り消せません。",
         deleteConfirmLabel: "削除",
         emptyPath: "(No path)",
+        pathMissingBadge: "ファイルなし",
+        pathMissingDescription: ".luie ファイルが見つかりません",
+        sync: {
+          synced: "同期済み",
+          pending: "同期待ち",
+          localOnly: "ローカルのみ",
+          syncError: "同期エラー",
+        },
         actions: {
           cancel: "キャンセル",
           save: "保存",
@@ -347,6 +355,7 @@ export const ja = {
       toast: {
         recoveredFromDb: "ファイルが破損していたため、ローカルキャッシュから復元しました。",
         dbNewerSynced: "ローカルキャッシュが新しいため、プロジェクトファイルを更新しました。",
+        pathMissing: ".luie ファイルが見つからないため、ローカルデータで開きます。",
       },
       templateDescription: "{templateId} テンプレートで作成",
     },

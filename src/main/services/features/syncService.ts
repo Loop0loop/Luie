@@ -17,7 +17,12 @@ import {
 } from "../../../shared/constants/index.js";
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { createLogger } from "../../../shared/logger/index.js";
-import type { SyncRunResult, SyncSettings, SyncStatus } from "../../../shared/types/index.js";
+import type {
+  SyncPendingProjectDelete,
+  SyncRunResult,
+  SyncSettings,
+  SyncStatus,
+} from "../../../shared/types/index.js";
 import type { LuiePackageExportData } from "../../handler/system/ipcFsHandlers.js";
 import { writeLuiePackage } from "../../handler/system/ipcFsHandlers.js";
 import { db } from "../../database/index.js";
@@ -111,6 +116,26 @@ const toSyncStatusFromSettings = (
   lastSyncedAt: syncSettings.lastSyncedAt,
   lastError: syncSettings.lastError,
 });
+
+const normalizePendingProjectDeletes = (
+  value: SyncSettings["pendingProjectDeletes"],
+): SyncPendingProjectDelete[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((entry): entry is SyncPendingProjectDelete =>
+      Boolean(
+        entry &&
+        typeof entry.projectId === "string" &&
+        entry.projectId.length > 0 &&
+        typeof entry.deletedAt === "string" &&
+        entry.deletedAt.length > 0,
+      ),
+    )
+    .map((entry) => ({
+      projectId: entry.projectId,
+      deletedAt: entry.deletedAt,
+    }));
+};
 
 export class SyncService {
   private status: SyncStatus = INITIAL_STATUS;
@@ -323,6 +348,9 @@ export class SyncService {
       if (!userId) {
         throw new Error("SYNC_USER_ID_MISSING");
       }
+      const pendingProjectDeleteIds = normalizePendingProjectDeletes(
+        syncSettings.pendingProjectDeletes,
+      ).map((entry) => entry.projectId);
 
       const accessToken = await this.ensureAccessToken(syncSettings);
       const [remoteBundle, localBundle] = await Promise.all([
@@ -339,6 +367,9 @@ export class SyncService {
         lastSyncedAt: syncedAt,
         lastError: undefined,
       });
+      if (pendingProjectDeleteIds.length > 0) {
+        settingsManager.removePendingProjectDeletes(pendingProjectDeleteIds);
+      }
 
       const result: SyncRunResult = {
         success: true,
@@ -439,6 +470,9 @@ export class SyncService {
   private async buildLocalBundle(userId: string): Promise<SyncBundle> {
     const bundle = createEmptySyncBundle();
     const prisma = db.getClient();
+    const pendingProjectDeletes = normalizePendingProjectDeletes(
+      settingsManager.getSyncSettings().pendingProjectDeletes,
+    );
     const projectRows = (await prisma.project.findMany({
       include: {
         chapters: true,
@@ -540,6 +574,18 @@ export class SyncService {
       }
     }
 
+    for (const pendingDelete of pendingProjectDeletes) {
+      bundle.tombstones.push({
+        id: `${pendingDelete.projectId}:project:${pendingDelete.projectId}`,
+        userId,
+        projectId: pendingDelete.projectId,
+        entityType: "project",
+        entityId: pendingDelete.projectId,
+        deletedAt: pendingDelete.deletedAt,
+        updatedAt: pendingDelete.deletedAt,
+      });
+    }
+
     return bundle;
   }
 
@@ -618,8 +664,34 @@ export class SyncService {
 
   private async applyMergedBundleToLocal(bundle: SyncBundle): Promise<void> {
     const prisma = db.getClient();
+    const deletedProjectIds = new Set<string>();
+    for (const project of bundle.projects) {
+      if (project.deletedAt) {
+        deletedProjectIds.add(project.id);
+      }
+    }
+    for (const tombstone of bundle.tombstones) {
+      if (tombstone.entityType !== "project") continue;
+      deletedProjectIds.add(tombstone.entityId);
+      deletedProjectIds.add(tombstone.projectId);
+    }
+
+    for (const projectId of deletedProjectIds) {
+      const existing = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { id: true },
+      }) as { id?: string } | null;
+      if (!existing?.id) continue;
+      await prisma.project.delete({
+        where: { id: projectId },
+      });
+    }
 
     for (const project of bundle.projects) {
+      if (project.deletedAt || deletedProjectIds.has(project.id)) {
+        continue;
+      }
+
       const existing = await prisma.project.findUnique({
         where: { id: project.id },
         select: { id: true },
@@ -654,10 +726,12 @@ export class SyncService {
     }
 
     for (const chapter of bundle.chapters) {
+      if (deletedProjectIds.has(chapter.projectId)) continue;
       await this.upsertChapter(prisma, chapter);
     }
 
     for (const character of bundle.characters) {
+      if (deletedProjectIds.has(character.projectId)) continue;
       const existing = await prisma.character.findUnique({
         where: { id: character.id },
         select: { id: true },
@@ -700,6 +774,7 @@ export class SyncService {
     }
 
     for (const term of bundle.terms) {
+      if (deletedProjectIds.has(term.projectId)) continue;
       const existing = await prisma.term.findUnique({
         where: { id: term.id },
         select: { id: true },
@@ -742,6 +817,7 @@ export class SyncService {
 
     for (const tombstone of bundle.tombstones) {
       if (tombstone.entityType !== "chapter") continue;
+      if (deletedProjectIds.has(tombstone.projectId)) continue;
       const existing = await prisma.chapter.findUnique({
         where: { id: tombstone.entityId },
         select: { id: true, projectId: true },
@@ -771,7 +847,7 @@ export class SyncService {
     }>,
   ): LuiePackageExportData | null {
     const project = bundle.projects.find((item) => item.id === projectId);
-    if (!project) return null;
+    if (!project || project.deletedAt) return null;
 
     const chapters = bundle.chapters
       .filter((item) => item.projectId === projectId && !item.deletedAt)
