@@ -202,6 +202,7 @@ export const syncStatusSchema = z.object({
   inFlight: z.boolean(),
   queued: z.boolean(),
   conflicts: syncConflictSummarySchema,
+  projectLastSyncedAtByProjectId: z.record(z.string(), z.string()).optional(),
 });
 
 export const syncRunResultSchema = z.object({

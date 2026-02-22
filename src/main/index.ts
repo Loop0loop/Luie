@@ -17,6 +17,7 @@ import { registerAppReady } from "./lifecycle/appReady.js";
 import { extractAuthCallbackUrl, handleDeepLinkUrl } from "./lifecycle/deepLink.js";
 import { registerShutdownHandlers } from "./lifecycle/shutdown.js";
 import { registerSingleInstance } from "./lifecycle/singleInstance.js";
+import { settingsManager } from "./manager/settingsManager.js";
 import { syncService } from "./services/features/syncService.js";
 
 configureLogger({
@@ -46,26 +47,40 @@ if (process.platform === "darwin") {
 }
 
 const registerLuieProtocol = (): void => {
+  const protocol = "luie";
   let registered = false;
   if (process.defaultApp) {
     const appEntry = process.argv[1] ? path.resolve(process.argv[1]) : "";
     if (appEntry) {
-      registered = app.setAsDefaultProtocolClient("luie", process.execPath, [appEntry]);
+      registered = app.setAsDefaultProtocolClient(protocol, process.execPath, [appEntry]);
     }
   } else {
-    registered = app.setAsDefaultProtocolClient("luie");
+    registered = app.setAsDefaultProtocolClient(protocol);
   }
 
   if (!registered) {
+    const reason = "SYNC_PROTOCOL_REGISTRATION_FAILED:luie:setAsDefaultProtocolClient returned false";
+    const syncSettings = settingsManager.getSyncSettings();
+    if (!syncSettings.connected) {
+      settingsManager.setSyncSettings({ lastError: reason });
+    }
     logger.warn("Failed to register custom protocol for OAuth callback", {
-      protocol: "luie",
+      protocol,
       defaultApp: process.defaultApp,
+      reason,
     });
     return;
   }
 
+  const syncSettings = settingsManager.getSyncSettings();
+  if (
+    syncSettings.lastError?.startsWith("SYNC_PROTOCOL_REGISTRATION_FAILED:")
+  ) {
+    settingsManager.setSyncSettings({ lastError: undefined });
+  }
+
   logger.info("Custom protocol registered", {
-    protocol: "luie",
+    protocol,
     defaultApp: process.defaultApp,
   });
 };

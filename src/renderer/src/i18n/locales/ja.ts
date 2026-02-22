@@ -276,8 +276,10 @@ export const ja = {
         },
         dialog: {
           selectPath: "プロジェクト保存先を選択",
+          repairPathTitle: ".luie ファイルを再接続",
           renameTitle: "プロジェクト名を変更",
           deleteTitle: "プロジェクトを削除",
+          removeMissingTitle: "一覧から削除",
         },
         filter: {
           markdown: "Markdown",
@@ -285,11 +287,15 @@ export const ja = {
         },
         context: {
           open: "開く",
+          repairPath: "パスを修復",
+          removeMissing: "一覧から削除",
           rename: "名前を変更",
           delete: "削除",
         },
         deleteConfirm: "\"{title}\" を削除しますか？この操作は取り消せません。",
         deleteConfirmLabel: "削除",
+        removeMissingConfirm: "\"{title}\" を一覧から削除しますか？",
+        removeMissingConfirmLabel: "削除",
         emptyPath: "(No path)",
         pathMissingBadge: "ファイルなし",
         pathMissingDescription: ".luie ファイルが見つかりません",
@@ -305,6 +311,12 @@ export const ja = {
           saving: "保存中...",
           openLuie: ".luie を開く",
           restoreSnapshot: "スナップショットを復元",
+        },
+        toast: {
+          pathMissingBlocked:
+            ".luie ファイルが見つからないため開けません。先にパス修復を行ってください。",
+          pathRepaired: "プロジェクトのパスを修復しました。",
+          pathRepairFailed: "プロジェクトのパス修復に失敗しました。",
         },
         error: {
           notFound: "プロジェクトが見つかりません。",

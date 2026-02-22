@@ -162,11 +162,13 @@ const mergeWithTextConflictCopies = <
     updatedAt: string;
     content: string;
     title: string;
+    deletedAt?: string | null;
   },
 >(
   local: T[],
   remote: T[],
   buildConflictCopy: (loser: T) => T,
+  shouldCreateConflictCopy?: (localItem: T, remoteItem: T) => boolean,
 ): { merged: T[]; conflicts: number } => {
   const merged = new Map<string, T>();
   const remoteMap = new Map<string, T>();
@@ -189,8 +191,13 @@ const mergeWithTextConflictCopies = <
     const [winner, loser] = chooseLatest(localItem, remoteItem);
     if (localItem.content !== remoteItem.content) {
       conflicts += 1;
-      const copy = buildConflictCopy(loser);
-      merged.set(copy.id, copy);
+      const shouldCreate = shouldCreateConflictCopy
+        ? shouldCreateConflictCopy(localItem, remoteItem)
+        : true;
+      if (shouldCreate) {
+        const copy = buildConflictCopy(loser);
+        merged.set(copy.id, copy);
+      }
     }
     merged.set(remoteItem.id, winner);
   }
@@ -296,31 +303,55 @@ export const mergeSyncBundles = (
   merged: SyncBundle;
   conflicts: SyncConflictSummary;
 } => {
-  const chapterMerged = mergeWithTextConflictCopies(local.chapters, remote.chapters, (loser) => ({
-    ...loser,
-    id: randomUUID(),
-    title: `${loser.title} (Conflict Copy)`,
-    order: loser.order + 10000,
-    updatedAt: new Date().toISOString(),
-  }));
+  const tombstoneSet = new Set(
+    [...local.tombstones, ...remote.tombstones].map(
+      (tombstone) => `${tombstone.entityType}:${tombstone.entityId}`,
+    ),
+  );
 
-  const memoMerged = mergeWithTextConflictCopies(local.memos, remote.memos, (loser) => ({
-    ...loser,
-    id: randomUUID(),
-    title: `${loser.title} (Conflict Copy)`,
-    updatedAt: new Date().toISOString(),
-  }));
+  const chapterMerged = mergeWithTextConflictCopies(
+    local.chapters,
+    remote.chapters,
+    (loser) => ({
+      ...loser,
+      id: randomUUID(),
+      title: `${loser.title} (Conflict Copy)`,
+      order: loser.order + 10000,
+      updatedAt: new Date().toISOString(),
+    }),
+    (localItem, remoteItem) =>
+      !localItem.deletedAt &&
+      !remoteItem.deletedAt &&
+      !tombstoneSet.has(`chapter:${localItem.id}`) &&
+      !tombstoneSet.has(`chapter:${remoteItem.id}`),
+  );
+
+  const memoMerged = mergeWithTextConflictCopies(
+    local.memos,
+    remote.memos,
+    (loser) => ({
+      ...loser,
+      id: randomUUID(),
+      title: `${loser.title} (Conflict Copy)`,
+      updatedAt: new Date().toISOString(),
+    }),
+    (localItem, remoteItem) =>
+      !localItem.deletedAt &&
+      !remoteItem.deletedAt &&
+      !tombstoneSet.has(`memo:${localItem.id}`) &&
+      !tombstoneSet.has(`memo:${remoteItem.id}`),
+  );
 
   const merged: SyncBundle = {
-      projects: mergeEntityList(local.projects, remote.projects),
-      chapters: chapterMerged.merged,
-      characters: mergeEntityList(local.characters, remote.characters),
-      terms: mergeEntityList(local.terms, remote.terms),
-      worldDocuments: mergeWorldDocs(local.worldDocuments, remote.worldDocuments),
-      memos: memoMerged.merged,
-      snapshots: mergeEntityList(local.snapshots, remote.snapshots),
-      tombstones: mergeEntityList(local.tombstones, remote.tombstones),
-    };
+    projects: mergeEntityList(local.projects, remote.projects),
+    chapters: chapterMerged.merged,
+    characters: mergeEntityList(local.characters, remote.characters),
+    terms: mergeEntityList(local.terms, remote.terms),
+    worldDocuments: mergeWorldDocs(local.worldDocuments, remote.worldDocuments),
+    memos: memoMerged.merged,
+    snapshots: mergeEntityList(local.snapshots, remote.snapshots),
+    tombstones: mergeEntityList(local.tombstones, remote.tombstones),
+  };
 
   return {
     merged: applyTombstonesToBundle(merged),

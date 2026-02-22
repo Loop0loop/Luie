@@ -80,5 +80,38 @@ describe("syncMapper project tombstones", () => {
     expect(merged.worldDocuments).toEqual([]);
     expect(merged.memos).toEqual([]);
   });
-});
 
+  it("does not create conflict copy when chapter is deleted", () => {
+    const local = createEmptySyncBundle();
+    local.chapters.push({
+      id: "chapter-1",
+      userId: "user-1",
+      projectId: "project-1",
+      title: "Chapter",
+      content: "local text",
+      order: 0,
+      wordCount: 10,
+      createdAt: "2026-02-22T00:00:00.000Z",
+      updatedAt: "2026-02-22T00:00:00.000Z",
+      deletedAt: "2026-02-22T00:10:00.000Z",
+    });
+
+    const remote = createEmptySyncBundle();
+    remote.chapters.push({
+      id: "chapter-1",
+      userId: "user-1",
+      projectId: "project-1",
+      title: "Chapter",
+      content: "remote text",
+      order: 0,
+      wordCount: 11,
+      createdAt: "2026-02-22T00:00:00.000Z",
+      updatedAt: "2026-02-22T00:12:00.000Z",
+    });
+
+    const { merged, conflicts } = mergeSyncBundles(local, remote);
+    expect(conflicts.chapters).toBe(1);
+    expect(merged.chapters.filter((chapter) => chapter.title.includes("(Conflict Copy)"))).toHaveLength(0);
+    expect(merged.chapters).toHaveLength(1);
+  });
+});

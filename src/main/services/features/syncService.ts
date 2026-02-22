@@ -115,6 +115,7 @@ const toSyncStatusFromSettings = (
   autoSync: syncSettings.autoSync,
   lastSyncedAt: syncSettings.lastSyncedAt,
   lastError: syncSettings.lastError,
+  projectLastSyncedAtByProjectId: syncSettings.projectLastSyncedAtByProjectId,
 });
 
 const normalizePendingProjectDeletes = (
@@ -158,6 +159,37 @@ export class SyncService {
     });
   }
 
+  private buildProjectSyncMapForSuccess(
+    syncSettings: SyncSettings,
+    merged: SyncBundle,
+    syncedAt: string,
+    pendingProjectDeleteIds: string[],
+  ): Record<string, string> | undefined {
+    const next = {
+      ...(syncSettings.projectLastSyncedAtByProjectId ?? {}),
+    };
+
+    for (const projectId of pendingProjectDeleteIds) {
+      delete next[projectId];
+    }
+
+    for (const project of merged.projects) {
+      if (project.deletedAt) {
+        delete next[project.id];
+        continue;
+      }
+      next[project.id] = syncedAt;
+    }
+
+    for (const tombstone of merged.tombstones) {
+      if (tombstone.entityType !== "project") continue;
+      delete next[tombstone.entityId];
+      delete next[tombstone.projectId];
+    }
+
+    return Object.keys(next).length > 0 ? next : undefined;
+  }
+
   initialize(): void {
     const syncSettings = settingsManager.getSyncSettings();
     this.status = toSyncStatusFromSettings(syncSettings, this.status);
@@ -171,18 +203,39 @@ export class SyncService {
 
     if (syncSettings.connected) {
       const accessTokenResult = syncAuthService.getAccessToken(syncSettings);
+      let fatalAuthError: string | null = null;
+      if (accessTokenResult.errorCode && isAuthFatalMessage(accessTokenResult.errorCode)) {
+        fatalAuthError = accessTokenResult.errorCode;
+      }
       if (accessTokenResult.migratedCipher) {
         settingsManager.setSyncSettings({ accessTokenCipher: accessTokenResult.migratedCipher });
       }
+
       const refreshTokenResult = syncAuthService.getRefreshToken(syncSettings);
+      if (
+        !fatalAuthError &&
+        refreshTokenResult.errorCode &&
+        isAuthFatalMessage(refreshTokenResult.errorCode)
+      ) {
+        fatalAuthError = refreshTokenResult.errorCode;
+      }
       if (refreshTokenResult.migratedCipher) {
         settingsManager.setSyncSettings({ refreshTokenCipher: refreshTokenResult.migratedCipher });
       }
 
-      const hasRecoverableTokenPath =
-        Boolean(accessTokenResult.token) || Boolean(refreshTokenResult.token);
-      if (!hasRecoverableTokenPath) {
-        this.applyAuthFailureState("SYNC_ACCESS_TOKEN_UNAVAILABLE");
+      if (!fatalAuthError) {
+        const hasRecoverableTokenPath =
+          Boolean(accessTokenResult.token) || Boolean(refreshTokenResult.token);
+        if (!hasRecoverableTokenPath) {
+          fatalAuthError =
+            accessTokenResult.errorCode ??
+            refreshTokenResult.errorCode ??
+            "SYNC_ACCESS_TOKEN_UNAVAILABLE";
+        }
+      }
+
+      if (fatalAuthError) {
+        this.applyAuthFailureState(fatalAuthError);
       }
     }
 
@@ -363,9 +416,16 @@ export class SyncService {
       await syncRepository.upsertBundle(accessToken, merged);
 
       const syncedAt = new Date().toISOString();
+      const projectLastSyncedAtByProjectId = this.buildProjectSyncMapForSuccess(
+        syncSettings,
+        merged,
+        syncedAt,
+        pendingProjectDeleteIds,
+      );
       const nextSettings = settingsManager.setSyncSettings({
         lastSyncedAt: syncedAt,
         lastError: undefined,
+        projectLastSyncedAtByProjectId,
       });
       if (pendingProjectDeleteIds.length > 0) {
         settingsManager.removePendingProjectDeletes(pendingProjectDeleteIds);
@@ -433,11 +493,17 @@ export class SyncService {
       ? Date.parse(syncSettings.expiresAt) <= Date.now() + 60_000
       : true;
     const accessTokenResult = syncAuthService.getAccessToken(syncSettings);
+    if (accessTokenResult.errorCode && isAuthFatalMessage(accessTokenResult.errorCode)) {
+      throw new Error(accessTokenResult.errorCode);
+    }
     maybePersistMigratedToken(accessTokenResult.migratedCipher);
     let token = accessTokenResult.token;
 
     if (expiresSoon || !token) {
       const refreshTokenResult = syncAuthService.getRefreshToken(syncSettings);
+      if (refreshTokenResult.errorCode && isAuthFatalMessage(refreshTokenResult.errorCode)) {
+        throw new Error(refreshTokenResult.errorCode);
+      }
       if (refreshTokenResult.migratedCipher) {
         settingsManager.setSyncSettings({
           refreshTokenCipher: refreshTokenResult.migratedCipher,
@@ -457,6 +523,9 @@ export class SyncService {
         refreshTokenCipher: refreshed.refreshTokenCipher,
       });
       const refreshedToken = syncAuthService.getAccessToken(nextSettings);
+      if (refreshedToken.errorCode && isAuthFatalMessage(refreshedToken.errorCode)) {
+        throw new Error(refreshedToken.errorCode);
+      }
       maybePersistMigratedToken(refreshedToken.migratedCipher);
       token = refreshedToken.token;
     }

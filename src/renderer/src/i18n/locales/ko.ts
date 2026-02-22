@@ -276,8 +276,10 @@ export const ko = {
         },
         dialog: {
           selectPath: "프로젝트 저장 위치 선택",
+          repairPathTitle: ".luie 파일 다시 연결",
           renameTitle: "프로젝트 이름 수정",
           deleteTitle: "프로젝트 삭제",
+          removeMissingTitle: "목록에서 제거",
         },
         filter: {
           markdown: "Markdown",
@@ -285,11 +287,15 @@ export const ko = {
         },
         context: {
           open: "열기",
+          repairPath: "경로 복구",
+          removeMissing: "목록에서 제거",
           rename: "이름 수정",
           delete: "삭제",
         },
         deleteConfirm: "정말로 \"{title}\" 프로젝트를 삭제할까요? 이 작업은 되돌릴 수 없습니다.",
         deleteConfirmLabel: "삭제",
+        removeMissingConfirm: "\"{title}\" 항목을 목록에서 제거할까요?",
+        removeMissingConfirmLabel: "제거",
         emptyPath: "(No path)",
         pathMissingBadge: "파일 없음",
         pathMissingDescription: ".luie 파일을 찾을 수 없음",
@@ -305,6 +311,11 @@ export const ko = {
           saving: "저장 중...",
           openLuie: ".luie 열기",
           restoreSnapshot: "스냅샷 복원하기",
+        },
+        toast: {
+          pathMissingBlocked: ".luie 파일이 없어 바로 열 수 없습니다. 경로 복구를 먼저 진행해 주세요.",
+          pathRepaired: "프로젝트 경로를 복구했습니다.",
+          pathRepairFailed: "프로젝트 경로 복구에 실패했습니다.",
         },
         error: {
           notFound: "프로젝트를 찾을 수 없습니다.",

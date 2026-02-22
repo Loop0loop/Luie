@@ -4,7 +4,7 @@ import "@fontsource-variable/inter";
 import "@fontsource-variable/noto-sans-kr";
 import "@fontsource-variable/noto-sans-jp";
 import "./styles/global.css";
-import OAuthResultPage from "./components/auth/OAuthResultPage";
+import OAuthResultPage from "@renderer/features/auth/components/OAuthResultPage";
 
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 

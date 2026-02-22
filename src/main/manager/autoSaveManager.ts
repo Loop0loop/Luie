@@ -416,6 +416,10 @@ export class AutoSaveManager extends EventEmitter {
         }
       }
     } catch (error) {
+      const fsError = error as NodeJS.ErrnoException;
+      if (fsError?.code === "ENOENT") {
+        return results;
+      }
       logger.warn("Failed to list mirror files", error);
     }
 

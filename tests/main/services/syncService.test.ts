@@ -185,12 +185,15 @@ describe("SyncService auth hardening", () => {
     mocked.syncSettings.userId = "00000000-0000-0000-0000-000000000001";
     mocked.syncSettings.refreshTokenCipher = "broken-refresh";
     mocked.getAccessToken.mockReturnValue({ token: null });
-    mocked.getRefreshToken.mockReturnValue({ token: null });
+    mocked.getRefreshToken.mockReturnValue({
+      token: null,
+      errorCode: "SYNC_TOKEN_DECRYPT_FAILED:broken-refresh",
+    });
 
     const { SyncService } = await import("../../../src/main/services/features/syncService.js");
     const service = new SyncService();
     service.initialize();
-    expect(service.getStatus().lastError).toContain("SYNC_ACCESS_TOKEN_UNAVAILABLE");
+    expect(service.getStatus().lastError).toContain("SYNC_TOKEN_DECRYPT_FAILED");
     expect(service.getStatus().connected).toBe(false);
     expect(mocked.fetchBundle).not.toHaveBeenCalled();
     expect(mocked.refreshSession).not.toHaveBeenCalled();
@@ -276,5 +279,50 @@ describe("SyncService auth hardening", () => {
       ]),
     );
     expect(mocked.syncSettings.pendingProjectDeletes).toBeUndefined();
+  });
+
+  it("updates per-project sync timestamps on successful sync", async () => {
+    const syncedUserId = "00000000-0000-0000-0000-000000000001";
+    mocked.syncSettings.connected = true;
+    mocked.syncSettings.autoSync = false;
+    mocked.syncSettings.userId = syncedUserId;
+    mocked.syncSettings.expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    mocked.syncSettings.accessTokenCipher = "cipher";
+    mocked.getAccessToken.mockReturnValue({ token: "access-token" });
+    mocked.getRefreshToken.mockReturnValue({ token: "refresh-token" });
+    mocked.prisma.project.findMany.mockResolvedValue([
+      {
+        id: "project-1",
+        title: "Project",
+        description: null,
+        createdAt: new Date("2026-02-22T00:00:00.000Z"),
+        updatedAt: new Date("2026-02-22T00:00:00.000Z"),
+        projectPath: null,
+        chapters: [],
+        characters: [],
+        terms: [],
+      },
+    ]);
+    mocked.fetchBundle.mockResolvedValue({
+      projects: [],
+      chapters: [],
+      characters: [],
+      terms: [],
+      worldDocuments: [],
+      memos: [],
+      snapshots: [],
+      tombstones: [],
+    });
+    mocked.upsertBundle.mockResolvedValue(undefined);
+
+    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const service = new SyncService();
+    service.initialize();
+    const result = await service.runNow("manual");
+
+    expect(result.success).toBe(true);
+    expect(
+      mocked.syncSettings.projectLastSyncedAtByProjectId?.["project-1"],
+    ).toBeTruthy();
   });
 });

@@ -1,6 +1,6 @@
-import { en } from "./locales/en";
-import { ja } from "./locales/ja";
-import { ko } from "./locales/ko";
+import { en } from "@renderer/i18n/locales/en";
+import { ja } from "@renderer/i18n/locales/ja";
+import { ko } from "@renderer/i18n/locales/ko";
 
 export const resources = {
   ko,

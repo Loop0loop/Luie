@@ -1,8 +1,8 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
-import { resources } from "./resources";
-import { api } from "../services/api";
+import { resources } from "@renderer/i18n/resources";
+import { api } from "@shared/api";
 
 export const SUPPORTED_LANGUAGES = ["ko", "en", "ja"] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];

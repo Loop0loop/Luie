@@ -1,0 +1,52 @@
+import { Trash2 } from "lucide-react";
+import { BufferedInput, BufferedTextArea } from "@shared/ui/BufferedInput";
+import { useTranslation } from "react-i18next";
+
+type WikiSectionProps = {
+  id: string;
+  label: string;
+  content: string;
+  onRename: (newLabel: string) => void;
+  onUpdateContent: (newContent: string) => void;
+  onDelete: () => void;
+};
+
+export function WikiSection({
+  id,
+  label,
+  content,
+  onRename,
+  onUpdateContent,
+  onDelete,
+}: WikiSectionProps) {
+  const { t } = useTranslation();
+  return (
+    <div id={id} className="mb-8">
+      <div className="border-b border-(--namu-border) pb-2 mb-3 flex items-center justify-between">
+        <div className="flex-1">
+            <BufferedInput
+            value={label}
+            className="border-none bg-transparent w-full text-[22px] font-bold text-fg p-1 focus:outline-none focus:bg-surface-hover focus:rounded"
+            onSave={onRename}
+            />
+        </div>
+        <div className="flex gap-2">
+          <button 
+            type="button"
+            className="bg-none border-none text-subtle cursor-pointer p-1 rounded transition-all hover:bg-surface-hover hover:text-danger" 
+            onClick={onDelete}
+            title={t("character.wiki.sectionDeleteTitle")}
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </div>
+      <BufferedTextArea
+        className="w-full min-h-30 leading-relaxed p-3 border border-border rounded bg-surface text-fg resize-y focus:outline-2 focus:outline-(--namu-blue) focus:border-transparent font-sans"
+        value={content || ""}
+        placeholder={t("character.wiki.sectionPlaceholder")}
+        onSave={onUpdateContent}
+      />
+    </div>
+  );
+}

@@ -276,8 +276,10 @@ export const en = {
         },
         dialog: {
           selectPath: "Select project save location",
+          repairPathTitle: "Reconnect .luie file",
           renameTitle: "Rename project",
           deleteTitle: "Delete project",
+          removeMissingTitle: "Remove from list",
         },
         filter: {
           markdown: "Markdown",
@@ -285,11 +287,15 @@ export const en = {
         },
         context: {
           open: "Open",
+          repairPath: "Repair path",
+          removeMissing: "Remove from list",
           rename: "Rename",
           delete: "Delete",
         },
         deleteConfirm: "Are you sure you want to delete \"{title}\"? This cannot be undone.",
         deleteConfirmLabel: "Delete",
+        removeMissingConfirm: "Remove \"{title}\" from this list?",
+        removeMissingConfirmLabel: "Remove",
         emptyPath: "(No path)",
         pathMissingBadge: "Missing file",
         pathMissingDescription: ".luie file is missing",
@@ -305,6 +311,12 @@ export const en = {
           saving: "Saving...",
           openLuie: "Open .luie",
           restoreSnapshot: "Restore snapshot",
+        },
+        toast: {
+          pathMissingBlocked:
+            "This project cannot be opened because its .luie file is missing. Repair the path first.",
+          pathRepaired: "Project path repaired.",
+          pathRepairFailed: "Failed to repair project path.",
         },
         error: {
           notFound: "Project not found.",

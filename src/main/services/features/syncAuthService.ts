@@ -42,6 +42,7 @@ type SyncSession = {
 type AccessTokenResult = {
   token: string | null;
   migratedCipher?: string;
+  errorCode?: string;
 };
 
 type DecodedSecret = {
@@ -234,6 +235,7 @@ class SyncAuthService {
     const authorizeUrl = new URL(`${url}/auth/v1/authorize`);
     authorizeUrl.searchParams.set("provider", "google");
     authorizeUrl.searchParams.set("redirect_to", OAUTH_REDIRECT_URI);
+    authorizeUrl.searchParams.set("state", state);
     authorizeUrl.searchParams.set("code_challenge", challenge);
     authorizeUrl.searchParams.set("code_challenge_method", "s256");
 
@@ -251,6 +253,7 @@ class SyncAuthService {
     }
 
     const parsed = new URL(callbackUrl);
+    const callbackState = parsed.searchParams.get("state");
     const code = parsed.searchParams.get("code");
     const error = parsed.searchParams.get("error");
     const errorCode = parsed.searchParams.get("error_code");
@@ -267,6 +270,10 @@ class SyncAuthService {
     if (!code) {
       this.clearPendingPkce();
       throw new Error("SYNC_AUTH_CODE_MISSING");
+    }
+    if (!callbackState || callbackState !== pending.state) {
+      this.clearPendingPkce();
+      throw new Error("SYNC_AUTH_STATE_MISMATCH");
     }
 
     const token = await this.exchangeCodeForSession(code, pending.verifier);
@@ -295,7 +302,10 @@ class SyncAuthService {
       };
     } catch (error) {
       logger.warn("Failed to decrypt sync access token", { error });
-      return { token: null };
+      return {
+        token: null,
+        errorCode: error instanceof Error ? error.message : String(error),
+      };
     }
   }
 
@@ -311,7 +321,10 @@ class SyncAuthService {
       };
     } catch (error) {
       logger.warn("Failed to decrypt sync refresh token", { error });
-      return { token: null };
+      return {
+        token: null,
+        errorCode: error instanceof Error ? error.message : String(error),
+      };
     }
   }
 

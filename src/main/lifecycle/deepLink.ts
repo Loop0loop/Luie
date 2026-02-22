@@ -28,11 +28,11 @@ const buildAuthResultPageUrl = (status: "success" | "error", detail?: string): s
   const devServerUrl = process.env.VITE_DEV_SERVER_URL || "http://localhost:5173";
   const useDevServer = !app.isPackaged && process.env.NODE_ENV !== "production";
   if (useDevServer) {
-    return `${devServerUrl}/auth-result.html?${queryString}`;
+    return `${devServerUrl}/#auth-result?${queryString}`;
   }
 
-  const rendererEntry = pathToFileURL(path.join(__dirname, "../renderer/auth-result.html")).toString();
-  return `${rendererEntry}?${queryString}`;
+  const rendererEntry = pathToFileURL(path.join(__dirname, "../renderer/index.html")).toString();
+  return `${rendererEntry}#auth-result?${queryString}`;
 };
 
 const openAuthResultPage = async (status: "success" | "error", detail?: string): Promise<void> => {
@@ -95,10 +95,12 @@ export const handleDeepLinkUrl = async (url: string): Promise<boolean> => {
 
     focusMainWindow();
     const message = error instanceof Error ? error.message : String(error);
-    void openAuthResultPage("error", message);
+    const reason = classifyCallbackFailure(error);
+    const detail = `${reason}:${message}`;
+    void openAuthResultPage("error", detail);
     logger.error("Failed to process OAuth callback", {
       url,
-      reason: classifyCallbackFailure(error),
+      reason,
       error,
     });
     return false;

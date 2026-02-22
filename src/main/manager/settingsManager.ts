@@ -359,6 +359,23 @@ export class SettingsManager {
         }))
       : undefined;
 
+    const projectLastSyncedAtByProjectId = current?.projectLastSyncedAtByProjectId;
+    const normalizedProjectSyncMap =
+      projectLastSyncedAtByProjectId &&
+      typeof projectLastSyncedAtByProjectId === "object" &&
+      !Array.isArray(projectLastSyncedAtByProjectId)
+        ? Object.fromEntries(
+          Object.entries(projectLastSyncedAtByProjectId)
+            .filter(
+              (entry): entry is [string, string] =>
+                typeof entry[0] === "string" &&
+                entry[0].length > 0 &&
+                typeof entry[1] === "string" &&
+                entry[1].length > 0,
+            ),
+        )
+        : undefined;
+
     return {
       connected: current?.connected ?? false,
       provider: current?.provider,
@@ -374,6 +391,10 @@ export class SettingsManager {
       pendingAuthVerifierCipher: current?.pendingAuthVerifierCipher,
       pendingAuthCreatedAt: current?.pendingAuthCreatedAt,
       pendingProjectDeletes,
+      projectLastSyncedAtByProjectId:
+        normalizedProjectSyncMap && Object.keys(normalizedProjectSyncMap).length > 0
+          ? normalizedProjectSyncMap
+          : undefined,
     };
   }
 
@@ -383,6 +404,22 @@ export class SettingsManager {
       ...current,
       ...settings,
     };
+    const map = next.projectLastSyncedAtByProjectId;
+    if (map && typeof map === "object" && !Array.isArray(map)) {
+      const normalized = Object.fromEntries(
+        Object.entries(map).filter(
+          (entry): entry is [string, string] =>
+            typeof entry[0] === "string" &&
+            entry[0].length > 0 &&
+            typeof entry[1] === "string" &&
+            entry[1].length > 0,
+        ),
+      );
+      next.projectLastSyncedAtByProjectId =
+        Object.keys(normalized).length > 0 ? normalized : undefined;
+    } else {
+      next.projectLastSyncedAtByProjectId = undefined;
+    }
     this.store.set("sync", next as unknown as AppSettings["sync"]);
     return next;
   }

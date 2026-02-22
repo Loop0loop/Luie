@@ -112,7 +112,9 @@ describe("SyncAuthService", () => {
 
     expect(mocked.shellOpenExternal).toHaveBeenCalledTimes(1);
     const authorizeUrl = String(mocked.shellOpenExternal.mock.calls[0][0]);
-    expect(new URL(authorizeUrl).searchParams.has("state")).toBe(false);
+    const stateFromAuthorize = new URL(authorizeUrl).searchParams.get("state");
+    expect(typeof stateFromAuthorize).toBe("string");
+    expect(stateFromAuthorize).toBe(mocked.state.pendingAuthState);
     expect(mocked.state.pendingAuthVerifierCipher?.startsWith("v2:plain:")).toBe(true);
 
     vi.resetModules();
@@ -120,7 +122,11 @@ describe("SyncAuthService", () => {
       "../../../src/main/services/features/syncAuthService.js"
     );
 
-    const session = await restarted.completeOAuthCallback("luie://auth/callback?code=test-code");
+    const session = await restarted.completeOAuthCallback(
+      `luie://auth/callback?code=test-code&state=${encodeURIComponent(
+        String(mocked.state.pendingAuthState),
+      )}`,
+    );
 
     expect(session.userId).toBe("00000000-0000-0000-0000-000000000001");
     expect(mocked.state.pendingAuthState).toBeUndefined();
@@ -132,12 +138,28 @@ describe("SyncAuthService", () => {
     const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
     await syncAuthService.startGoogleAuth();
 
-    await expect(syncAuthService.completeOAuthCallback("luie://auth/callback")).rejects.toThrow(
-      "SYNC_AUTH_CODE_MISSING",
-    );
+    await expect(
+      syncAuthService.completeOAuthCallback(
+        `luie://auth/callback?state=${encodeURIComponent(String(mocked.state.pendingAuthState))}`,
+      ),
+    ).rejects.toThrow("SYNC_AUTH_CODE_MISSING");
 
     expect(mocked.state.pendingAuthState).toBeUndefined();
     expect(mocked.state.pendingAuthVerifierCipher).toBeUndefined();
+  });
+
+  it("fails when callback state is missing or mismatched", async () => {
+    const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
+    await syncAuthService.startGoogleAuth();
+
+    await expect(
+      syncAuthService.completeOAuthCallback("luie://auth/callback?code=test-code"),
+    ).rejects.toThrow("SYNC_AUTH_STATE_MISMATCH");
+
+    await syncAuthService.startGoogleAuth();
+    await expect(
+      syncAuthService.completeOAuthCallback("luie://auth/callback?code=test-code&state=wrong"),
+    ).rejects.toThrow("SYNC_AUTH_STATE_MISMATCH");
   });
 
   it("blocks duplicate OAuth start while a recent flow is pending", async () => {

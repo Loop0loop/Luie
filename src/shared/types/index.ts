@@ -375,6 +375,7 @@ export interface SyncStatus extends SyncConnection {
   inFlight: boolean;
   queued: boolean;
   conflicts: SyncConflictSummary;
+  projectLastSyncedAtByProjectId?: Record<string, string>;
 }
 
 export interface SyncRunResult {
@@ -393,6 +394,7 @@ export interface SyncSettings extends SyncConnection {
   pendingAuthVerifierCipher?: string;
   pendingAuthCreatedAt?: string;
   pendingProjectDeletes?: SyncPendingProjectDelete[];
+  projectLastSyncedAtByProjectId?: Record<string, string>;
 }
 
 export interface WindowBounds {
