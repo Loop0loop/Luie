@@ -26,6 +26,7 @@ import { openDocsRightTab as openDocsPanelTab } from "@renderer/features/workspa
 import { createLayoutModeActions } from "@renderer/features/workspace/services/layoutModeActions";
 import { GlobalDragContext } from "@shared/ui/GlobalDragContext";
 import { useEditorRootShortcuts } from "@renderer/features/workspace/components/useEditorRootShortcuts";
+import { FeatureErrorBoundary } from "@shared/ui/FeatureErrorBoundary";
 
 const SettingsModal = lazy(() => import("@renderer/features/settings/components/SettingsModal"));
 import { WorkspacePanels } from "@renderer/features/workspace/components/WorkspacePanels";
@@ -205,18 +206,20 @@ export default function EditorRoot() {
         return (
             <>
                 <FocusLayout activeChapterTitle={activeChapterTitle} wordCount={wordCount}>
-                    <Editor
-                        key={activeChapterId ?? "focus-editor"}
-                        chapterId={activeChapterId ?? undefined}
-                        initialTitle={activeChapterTitle}
-                        initialContent={content}
-                        onSave={handleSave}
-                        focusMode={true}
-                        hideToolbar={true}
-                        hideFooter={true}
-                        hideTitle={true}
-                        scrollable={true}
-                    />
+                    <FeatureErrorBoundary featureName="Editor">
+                        <Editor
+                            key={activeChapterId ?? "focus-editor"}
+                            chapterId={activeChapterId ?? undefined}
+                            initialTitle={activeChapterTitle}
+                            initialContent={content}
+                            onSave={handleSave}
+                            focusMode={true}
+                            hideToolbar={true}
+                            hideFooter={true}
+                            hideTitle={true}
+                            scrollable={true}
+                        />
+                    </FeatureErrorBoundary>
                 </FocusLayout>
                 <SmartLinkTooltip />
             </>
@@ -224,19 +227,21 @@ export default function EditorRoot() {
     }
 
     const sharedEditor = (
-        <Editor
-            key={activeChapterId}
-            initialTitle={activeChapter ? activeChapter.title : ""}
-            initialContent={activeChapter ? activeChapter.content : ""}
-            onSave={handleSave}
-            readOnly={!activeChapterId}
-            chapterId={activeChapterId || undefined}
-            hideToolbar={true}
-            hideFooter={true}
-            hideTitle={true}
-            scrollable={uiMode === "scrivener" || uiMode === "default"}
-            onEditorReady={setDocEditor}
-        />
+        <FeatureErrorBoundary featureName="Editor">
+            <Editor
+                key={activeChapterId}
+                initialTitle={activeChapter ? activeChapter.title : ""}
+                initialContent={activeChapter ? activeChapter.content : ""}
+                onSave={handleSave}
+                readOnly={!activeChapterId}
+                chapterId={activeChapterId || undefined}
+                hideToolbar={true}
+                hideFooter={true}
+                hideTitle={true}
+                scrollable={uiMode === "scrivener" || uiMode === "default"}
+                onEditorReady={setDocEditor}
+            />
+        </FeatureErrorBoundary>
     );
 
     const additionalPanelsComponent = (

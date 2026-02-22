@@ -2,8 +2,6 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import {
   DEFAULT_UI_CONTEXT_TAB,
-  DEFAULT_UI_RESEARCH_TAB,
-  DEFAULT_UI_RIGHT_PANEL_TYPE,
   DEFAULT_UI_VIEW,
   DEFAULT_UI_SIDEBAR_OPEN,
   DEFAULT_UI_CONTEXT_OPEN,
@@ -157,13 +155,9 @@ export const useUIStore = create<UIStore>()(
         view: state.view,
         contextTab: state.contextTab,
         worldTab: state.worldTab,
-        panels: state.panels.filter(p => p.content.type !== "snapshot").map(p => ({
-          ...p,
-          content: p.content.type === "snapshot" ? {
-            type: DEFAULT_UI_RIGHT_PANEL_TYPE as RightPanelContent["type"],
-            tab: DEFAULT_UI_RESEARCH_TAB as ResearchTab,
-          } : p.content
-        })),
+        // ✅ panels intentionally excluded from persist:
+        // Restored panels often reference stale chapter/snapshot IDs after restart,
+        // leading to broken UI. Always start fresh on each app launch.
         isSidebarOpen: state.isSidebarOpen,
         isContextOpen: state.isContextOpen,
         isManuscriptMenuOpen: state.isManuscriptMenuOpen,

@@ -7,6 +7,7 @@ import TabButton from "@shared/ui/TabButton";
 import SearchInput from "@shared/ui/SearchInput";
 import type { Character, Term } from "@shared/types";
 import { useTranslation } from "react-i18next";
+import { api } from "@shared/api";
 
 type Tab = "synopsis" | "characters" | "terms";
 
@@ -112,10 +113,14 @@ function ContextPanel({
   const isStale = searchText !== deferredSearchText;
 
   useEffect(() => {
-    if (currentProject?.id) {
-      useCharacterStore.getState().loadCharacters(currentProject.id);
-      useTermStore.getState().loadTerms(currentProject.id);
-    }
+    if (!currentProject?.id) return;
+    const projectId = currentProject.id;
+    void useCharacterStore.getState().loadCharacters(projectId).catch((err: unknown) => {
+      api.logger.error("ContextPanel: failed to load characters", err);
+    });
+    void useTermStore.getState().loadTerms(projectId).catch((err: unknown) => {
+      api.logger.error("ContextPanel: failed to load terms", err);
+    });
   }, [currentProject?.id]);
 
   const filteredCharacters = useMemo(() => {
@@ -160,7 +165,7 @@ function ContextPanel({
           </div>
           <div className="flex-1 p-6 overflow-y-auto">
             <div className="mb-6">
-                            <div className="text-[11px] font-semibold text-muted uppercase mb-2">{t("context.detail.description")}</div>
+              <div className="text-[11px] font-semibold text-muted uppercase mb-2">{t("context.detail.description")}</div>
               <div className="text-sm leading-relaxed text-fg whitespace-pre-wrap">
                 {isCharacter(selectedItem)
                   ? (selectedItem.description ?? "")

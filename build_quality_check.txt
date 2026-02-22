@@ -1,0 +1,319 @@
+
+> luie@0.1.0 build /Users/user/Luie
+> electron-vite build
+
+vite v7.3.1 building ssr environment for production...
+transforming...
+✓ 95 modules transformed.
+rendering chunks...
+[plugin vite:reporter] 
+(!) /Users/user/Luie/src/main/database/index.ts is dynamically imported by /Users/user/Luie/src/main/lifecycle/shutdown.ts but also statically imported by /Users/user/Luie/src/main/lifecycle/bootstrap.ts, /Users/user/Luie/src/main/manager/autoSaveManager.ts, /Users/user/Luie/src/main/services/core/chapterKeywords.ts, /Users/user/Luie/src/main/services/core/chapterService.ts, /Users/user/Luie/src/main/services/core/projectService.ts, /Users/user/Luie/src/main/services/features/autoExtractService.ts, /Users/user/Luie/src/main/services/features/dbRecoveryService.ts, /Users/user/Luie/src/main/services/features/manuscriptAnalysisService.ts, /Users/user/Luie/src/main/services/features/searchService.ts, /Users/user/Luie/src/main/services/features/snapshotArtifacts.ts, /Users/user/Luie/src/main/services/features/snapshotService.ts, /Users/user/Luie/src/main/services/features/syncService.ts, /Users/user/Luie/src/main/services/world/characterService.ts, /Users/user/Luie/src/main/services/world/termService.ts, dynamic import will not move module into another chunk.
+
+[plugin vite:reporter] 
+(!) /Users/user/Luie/src/main/services/features/syncService.ts is dynamically imported by /Users/user/Luie/src/main/handler/core/ipcHandler.ts but also statically imported by /Users/user/Luie/src/main/handler/system/ipcSyncHandlers.ts, /Users/user/Luie/src/main/index.ts, /Users/user/Luie/src/main/lifecycle/deepLink.ts, /Users/user/Luie/src/main/services/index.ts, dynamic import will not move module into another chunk.
+
+out/main/config-HSSbDImy.js             9.96 kB
+out/main/snapshotService-B1lLv_He.js   35.97 kB
+out/main/autoSaveManager-CYMQ2vLX.js   46.94 kB
+out/main/index-B4VPML80.js             93.78 kB
+out/main/index.js                     112.34 kB
+✓ built in 373ms
+vite v7.3.1 building ssr environment for production...
+transforming...
+✓ 12 modules transformed.
+rendering chunks...
+out/preload/index.cjs  11.07 kB
+✓ built in 25ms
+vite v7.3.1 building client environment for production...
+transforming...
+✓ 2223 modules transformed.
+rendering chunks...
+[plugin vite:reporter] 
+(!) /Users/user/Luie/src/renderer/src/features/snapshot/components/SnapshotList.tsx is dynamically imported by /Users/user/Luie/src/renderer/src/features/manuscript/components/BinderSidebar.tsx but also statically imported by /Users/user/Luie/src/renderer/src/features/editor/components/InspectorPanel.tsx, /Users/user/Luie/src/renderer/src/features/manuscript/components/ScrivenerSidebar.tsx, /Users/user/Luie/src/renderer/src/features/manuscript/components/Sidebar.tsx, /Users/user/Luie/src/renderer/src/features/workspace/components/GoogleDocsLayout.tsx, dynamic import will not move module into another chunk.
+
+[plugin vite:reporter] 
+(!) /Users/user/Luie/src/renderer/src/features/trash/components/TrashList.tsx is dynamically imported by /Users/user/Luie/src/renderer/src/features/manuscript/components/BinderSidebar.tsx but also statically imported by /Users/user/Luie/src/renderer/src/features/manuscript/components/ScrivenerSidebar.tsx, /Users/user/Luie/src/renderer/src/features/manuscript/components/Sidebar.tsx, /Users/user/Luie/src/renderer/src/features/workspace/components/GoogleDocsLayout.tsx, dynamic import will not move module into another chunk.
+
+[plugin vite:reporter] 
+(!) /Users/user/Luie/src/renderer/src/features/export/components/ExportPreviewPanel.tsx is dynamically imported by /Users/user/Luie/src/renderer/src/features/workspace/components/WorkspacePanels.tsx but also statically imported by /Users/user/Luie/src/renderer/src/features/workspace/components/GoogleDocsLayout.tsx, dynamic import will not move module into another chunk.
+
+[plugin vite:reporter] 
+(!) /Users/user/Luie/src/renderer/src/features/research/components/ResearchPanel.tsx is dynamically imported by /Users/user/Luie/src/renderer/src/features/manuscript/components/BinderSidebar.tsx, /Users/user/Luie/src/renderer/src/features/workspace/components/WorkspacePanels.tsx but also statically imported by /Users/user/Luie/src/renderer/src/features/workspace/components/GoogleDocsLayout.tsx, dynamic import will not move module into another chunk.
+
+[plugin vite:reporter] 
+(!) /Users/user/Luie/src/renderer/src/features/research/components/WorldPanel.tsx is dynamically imported by /Users/user/Luie/src/renderer/src/features/manuscript/components/BinderSidebar.tsx but also statically imported by /Users/user/Luie/src/renderer/src/features/workspace/components/GoogleDocsLayout.tsx, dynamic import will not move module into another chunk.
+
+../../out/renderer/assets/stats.worker-CFGOW9Vi.js                              0.26 kB
+../../out/renderer/assets/snapshotList.worker-esABswVv.js                       0.30 kB
+../../out/renderer/auth-result.html                                             0.89 kB
+../../out/renderer/index.html                                                   1.03 kB
+../../out/renderer/assets/noto-sans-jp-latin-ext-wght-normal-pB8enYeX.woff2     8.23 kB
+../../out/renderer/assets/noto-sans-kr-latin-ext-wght-normal-B5bX9d3o.woff2     8.30 kB
+../../out/renderer/assets/noto-sans-jp-vietnamese-wght-normal-CFXlG5tS.woff2    9.10 kB
+../../out/renderer/assets/noto-sans-kr-vietnamese-wght-normal-BHUVOYrQ.woff2    9.17 kB
+../../out/renderer/assets/noto-sans-jp-cyrillic-wght-normal-BQJ6xfwZ.woff2      9.98 kB
+../../out/renderer/assets/noto-sans-kr-cyrillic-wght-normal-Bd4ZsfxM.woff2     10.12 kB
+../../out/renderer/assets/inter-vietnamese-wght-normal-CBcvBZtf.woff2          10.25 kB
+../../out/renderer/assets/noto-sans-jp-57-wght-normal-Dcyw3o92.woff2           10.79 kB
+../../out/renderer/assets/inter-greek-ext-wght-normal-DlzME5K_.woff2           11.23 kB
+../../out/renderer/assets/noto-sans-jp-117-wght-normal-D73BPRww.woff2          11.81 kB
+../../out/renderer/assets/noto-sans-kr-98-wght-normal-DO7crlgc.woff2           12.18 kB
+../../out/renderer/assets/noto-sans-kr-97-wght-normal-Dr2ufsTl.woff2           14.18 kB
+../../out/renderer/assets/noto-sans-jp-114-wght-normal-DCIM4jZs.woff2          14.45 kB
+../../out/renderer/assets/noto-sans-kr-117-wght-normal-DNkILo1k.woff2          14.46 kB
+../../out/renderer/assets/noto-sans-kr-118-wght-normal-Be8jlQ51.woff2          14.66 kB
+../../out/renderer/assets/noto-sans-jp-113-wght-normal-CtbyXo_h.woff2          14.80 kB
+../../out/renderer/assets/noto-sans-jp-109-wght-normal-XZ0efpq6.woff2          15.21 kB
+../../out/renderer/assets/noto-sans-jp-101-wght-normal-Dls8jqVU.woff2          15.76 kB
+../../out/renderer/assets/noto-sans-jp-112-wght-normal-CnVx-8lB.woff2          15.82 kB
+../../out/renderer/assets/noto-sans-jp-110-wght-normal-CeHeZFeT.woff2          15.86 kB
+../../out/renderer/assets/noto-sans-jp-115-wght-normal-CDBMNWew.woff2          16.09 kB
+../../out/renderer/assets/noto-sans-kr-116-wght-normal-DvHAaAUg.woff2          16.20 kB
+../../out/renderer/assets/noto-sans-kr-114-wght-normal-BcwVxkxL.woff2          16.21 kB
+../../out/renderer/assets/noto-sans-kr-115-wght-normal-Czx6kN3B.woff2          16.27 kB
+../../out/renderer/assets/noto-sans-jp-116-wght-normal-RqS7_mFx.woff2          16.44 kB
+../../out/renderer/assets/noto-sans-kr-112-wght-normal-DApkhTZy.woff2          16.45 kB
+../../out/renderer/assets/noto-sans-kr-113-wght-normal-DnhzVD4m.woff2          16.46 kB
+../../out/renderer/assets/noto-sans-jp-107-wght-normal-BMH1cYUp.woff2          16.65 kB
+../../out/renderer/assets/noto-sans-jp-103-wght-normal-Cf0qKmex.woff2          16.66 kB
+../../out/renderer/assets/noto-sans-kr-119-wght-normal-C_6m2-od.woff2          16.68 kB
+../../out/renderer/assets/noto-sans-kr-38-wght-normal-D7aEX-Z7.woff2           16.69 kB
+../../out/renderer/assets/noto-sans-kr-99-wght-normal-DzzxDKB5.woff2           16.89 kB
+../../out/renderer/assets/noto-sans-jp-86-wght-normal-B0MkLvt0.woff2           16.96 kB
+../../out/renderer/assets/noto-sans-jp-111-wght-normal-DyRaOVPC.woff2          16.98 kB
+../../out/renderer/assets/noto-sans-jp-96-wght-normal-Bww_3Upk.woff2           17.01 kB
+../../out/renderer/assets/noto-sans-jp-93-wght-normal-ChR3IuHk.woff2           17.16 kB
+../../out/renderer/assets/noto-sans-jp-88-wght-normal-CyIWoFtM.woff2           17.33 kB
+../../out/renderer/assets/noto-sans-jp-95-wght-normal-cEmZK7kl.woff2           17.35 kB
+../../out/renderer/assets/noto-sans-kr-111-wght-normal-DeeXajyY.woff2          17.46 kB
+../../out/renderer/assets/noto-sans-jp-97-wght-normal-DEi73Ic_.woff2           17.49 kB
+../../out/renderer/assets/noto-sans-jp-102-wght-normal-CKMRrjm1.woff2          17.52 kB
+../../out/renderer/assets/noto-sans-jp-85-wght-normal-CPi4u8zn.woff2           17.52 kB
+../../out/renderer/assets/noto-sans-jp-105-wght-normal-CTXm1m1e.woff2          17.59 kB
+../../out/renderer/assets/noto-sans-kr-110-wght-normal-Bz2J7MHi.woff2          17.61 kB
+../../out/renderer/assets/noto-sans-jp-81-wght-normal-C3e5dWMK.woff2           17.69 kB
+../../out/renderer/assets/noto-sans-jp-104-wght-normal-DU15_Tmk.woff2          17.79 kB
+../../out/renderer/assets/noto-sans-jp-76-wght-normal-HKTYIip9.woff2           17.95 kB
+../../out/renderer/assets/noto-sans-jp-89-wght-normal-B-qGeNph.woff2           18.06 kB
+../../out/renderer/assets/noto-sans-kr-109-wght-normal-B6hzfDSQ.woff2          18.06 kB
+../../out/renderer/assets/noto-sans-jp-94-wght-normal-CTW0oM41.woff2           18.12 kB
+../../out/renderer/assets/noto-sans-kr-41-wght-normal-CrDDFHLC.woff2           18.14 kB
+../../out/renderer/assets/noto-sans-jp-74-wght-normal-iogpiswj.woff2           18.16 kB
+../../out/renderer/assets/noto-sans-jp-67-wght-normal-BmPiBD9j.woff2           18.17 kB
+../../out/renderer/assets/noto-sans-jp-66-wght-normal-C9Pvbzcq.woff2           18.23 kB
+../../out/renderer/assets/noto-sans-jp-80-wght-normal-C8rE7JRr.woff2           18.23 kB
+../../out/renderer/assets/noto-sans-jp-83-wght-normal-CdGQgLIl.woff2           18.25 kB
+../../out/renderer/assets/noto-sans-jp-63-wght-normal-pZDrjPWR.woff2           18.25 kB
+../../out/renderer/assets/noto-sans-jp-118-wght-normal-U5v7NshZ.woff2          18.34 kB
+../../out/renderer/assets/noto-sans-kr-107-wght-normal-CWnd6wcQ.woff2          18.42 kB
+../../out/renderer/assets/noto-sans-jp-108-wght-normal-1F5IhFoa.woff2          18.44 kB
+../../out/renderer/assets/noto-sans-kr-44-wght-normal-BOzNPFw1.woff2           18.50 kB
+../../out/renderer/assets/noto-sans-kr-64-wght-normal-KNqhDR8m.woff2           18.58 kB
+../../out/renderer/assets/noto-sans-jp-91-wght-normal-BZRsdRL6.woff2           18.63 kB
+../../out/renderer/assets/noto-sans-jp-98-wght-normal-BE30qkDG.woff2           18.64 kB
+../../out/renderer/assets/inter-cyrillic-wght-normal-DqGufNeO.woff2            18.75 kB
+../../out/renderer/assets/noto-sans-jp-82-wght-normal-BjuKihWA.woff2           18.77 kB
+../../out/renderer/assets/noto-sans-jp-92-wght-normal-Bfqhr8vr.woff2           18.86 kB
+../../out/renderer/assets/noto-sans-jp-90-wght-normal-sQganGqO.woff2           18.90 kB
+../../out/renderer/assets/noto-sans-jp-77-wght-normal-zMwvLrLX.woff2           18.90 kB
+../../out/renderer/assets/noto-sans-jp-75-wght-normal-DYpRVFfS.woff2           18.93 kB
+../../out/renderer/assets/noto-sans-jp-84-wght-normal-BqzEfM_o.woff2           18.98 kB
+../../out/renderer/assets/inter-greek-wght-normal-CkhJZR-_.woff2               19.00 kB
+../../out/renderer/assets/noto-sans-jp-99-wght-normal-Cj5IF6EZ.woff2           19.27 kB
+../../out/renderer/assets/noto-sans-jp-87-wght-normal-D5BdgnTn.woff2           19.32 kB
+../../out/renderer/assets/noto-sans-kr-94-wght-normal-ihdiE-sw.woff2           19.42 kB
+../../out/renderer/assets/noto-sans-jp-106-wght-normal-COtgWfsA.woff2          19.50 kB
+../../out/renderer/assets/noto-sans-kr-108-wght-normal-CVosuT20.woff2          19.67 kB
+../../out/renderer/assets/noto-sans-jp-73-wght-normal-CwrK-6j-.woff2           19.69 kB
+../../out/renderer/assets/noto-sans-jp-62-wght-normal-Dvl1bj2o.woff2           19.73 kB
+../../out/renderer/assets/noto-sans-kr-45-wght-normal-HgLQPnZe.woff2           19.74 kB
+../../out/renderer/assets/noto-sans-kr-51-wght-normal-DYiiYWHC.woff2           19.74 kB
+../../out/renderer/assets/noto-sans-jp-79-wght-normal-YT6TNXn0.woff2           19.79 kB
+../../out/renderer/assets/noto-sans-kr-8-wght-normal-CstSMSR0.woff2            19.83 kB
+../../out/renderer/assets/noto-sans-jp-69-wght-normal-DjC_tZTr.woff2           19.85 kB
+../../out/renderer/assets/noto-sans-jp-70-wght-normal-BhDpOk5L.woff2           19.87 kB
+../../out/renderer/assets/noto-sans-kr-25-wght-normal-pcUlc7hZ.woff2           19.88 kB
+../../out/renderer/assets/noto-sans-jp-59-wght-normal-DUxkCIOP.woff2           20.02 kB
+../../out/renderer/assets/noto-sans-jp-78-wght-normal-CJFvkh-5.woff2           20.09 kB
+../../out/renderer/assets/noto-sans-jp-100-wght-normal-IGIcweVU.woff2          20.10 kB
+../../out/renderer/assets/noto-sans-kr-11-wght-normal-DnDO1vGF.woff2           20.16 kB
+../../out/renderer/assets/noto-sans-kr-42-wght-normal-_xElrv31.woff2           20.23 kB
+../../out/renderer/assets/noto-sans-jp-71-wght-normal-BeAYbG_b.woff2           20.29 kB
+../../out/renderer/assets/noto-sans-jp-65-wght-normal-ZWzDwZG9.woff2           20.48 kB
+../../out/renderer/assets/noto-sans-kr-10-wght-normal-D44PZdTN.woff2           20.49 kB
+../../out/renderer/assets/noto-sans-kr-6-wght-normal-CJnF25Ox.woff2            20.60 kB
+../../out/renderer/assets/noto-sans-kr-55-wght-normal-Bb2kolOu.woff2           20.70 kB
+../../out/renderer/assets/noto-sans-kr-5-wght-normal-D2ndBBlz.woff2            20.78 kB
+../../out/renderer/assets/noto-sans-kr-46-wght-normal-B8aQM0KO.woff2           20.92 kB
+../../out/renderer/assets/noto-sans-kr-40-wght-normal-B6XNibcs.woff2           20.98 kB
+../../out/renderer/assets/noto-sans-kr-7-wght-normal-CImCbZMD.woff2            21.01 kB
+../../out/renderer/assets/noto-sans-kr-63-wght-normal-Cc2PlhZU.woff2           21.04 kB
+../../out/renderer/assets/noto-sans-jp-61-wght-normal-DqwoqK_H.woff2           21.05 kB
+../../out/renderer/assets/noto-sans-kr-54-wght-normal-Dh8YqAZX.woff2           21.08 kB
+../../out/renderer/assets/noto-sans-kr-53-wght-normal-D_jDj1TO.woff2           21.11 kB
+../../out/renderer/assets/noto-sans-kr-37-wght-normal-D0Nod484.woff2           21.28 kB
+../../out/renderer/assets/noto-sans-kr-96-wght-normal-BsiGrPsV.woff2           21.32 kB
+../../out/renderer/assets/noto-sans-kr-57-wght-normal-B8WEhlXz.woff2           21.33 kB
+../../out/renderer/assets/noto-sans-kr-36-wght-normal-BQ3DsEFp.woff2           21.36 kB
+../../out/renderer/assets/noto-sans-kr-35-wght-normal-CNljDv8x.woff2           21.36 kB
+../../out/renderer/assets/noto-sans-jp-72-wght-normal-t74baR93.woff2           21.38 kB
+../../out/renderer/assets/noto-sans-kr-48-wght-normal-Ds0KCpXR.woff2           21.41 kB
+../../out/renderer/assets/noto-sans-kr-56-wght-normal-C-IXS01q.woff2           21.42 kB
+../../out/renderer/assets/noto-sans-kr-39-wght-normal-QVs81SbT.woff2           21.44 kB
+../../out/renderer/assets/noto-sans-kr-43-wght-normal-D4Z4qIjx.woff2           21.47 kB
+../../out/renderer/assets/noto-sans-kr-50-wght-normal-C8Hs8Bel.woff2           21.50 kB
+../../out/renderer/assets/noto-sans-kr-16-wght-normal-D7pAhItn.woff2           21.50 kB
+../../out/renderer/assets/noto-sans-kr-34-wght-normal-Dn9wUbC5.woff2           21.56 kB
+../../out/renderer/assets/noto-sans-kr-18-wght-normal-B_Xt9mRz.woff2           21.66 kB
+../../out/renderer/assets/noto-sans-jp-68-wght-normal-BM7y9lVd.woff2           21.88 kB
+../../out/renderer/assets/noto-sans-kr-28-wght-normal-COQop0OG.woff2           21.95 kB
+../../out/renderer/assets/noto-sans-kr-62-wght-normal-Brkp78oR.woff2           21.95 kB
+../../out/renderer/assets/noto-sans-kr-58-wght-normal-CPkb-af3.woff2           22.05 kB
+../../out/renderer/assets/noto-sans-kr-14-wght-normal-BtTu50RG.woff2           22.10 kB
+../../out/renderer/assets/noto-sans-kr-47-wght-normal-CisIuWX8.woff2           22.20 kB
+../../out/renderer/assets/noto-sans-kr-21-wght-normal-CuThq_3_.woff2           22.27 kB
+../../out/renderer/assets/noto-sans-kr-52-wght-normal-RCgHYf1C.woff2           22.29 kB
+../../out/renderer/assets/noto-sans-kr-9-wght-normal-Dc1zs_Pa.woff2            22.40 kB
+../../out/renderer/assets/noto-sans-jp-64-wght-normal-DGBgUuRb.woff2           22.53 kB
+../../out/renderer/assets/noto-sans-kr-13-wght-normal-olvHB9I9.woff2           22.67 kB
+../../out/renderer/assets/noto-sans-kr-12-wght-normal-gICIGsXI.woff2           22.71 kB
+../../out/renderer/assets/noto-sans-kr-15-wght-normal-CxFswjwr.woff2           22.76 kB
+../../out/renderer/assets/noto-sans-kr-49-wght-normal-BC5F4RRq.woff2           22.84 kB
+../../out/renderer/assets/noto-sans-kr-29-wght-normal-Bwniia0r.woff2           23.14 kB
+../../out/renderer/assets/noto-sans-kr-4-wght-normal-MlF4wjtz.woff2            23.34 kB
+../../out/renderer/assets/noto-sans-jp-60-wght-normal-B1SQjyhM.woff2           23.54 kB
+../../out/renderer/assets/noto-sans-kr-22-wght-normal-D-9XnguA.woff2           23.54 kB
+../../out/renderer/assets/noto-sans-kr-30-wght-normal-BNXqYhtq.woff2           23.55 kB
+../../out/renderer/assets/noto-sans-kr-17-wght-normal-CcMq9J3c.woff2           23.59 kB
+../../out/renderer/assets/noto-sans-kr-31-wght-normal-BoAdonrH.woff2           23.64 kB
+../../out/renderer/assets/noto-sans-kr-61-wght-normal-C9Nbt4dY.woff2           23.80 kB
+../../out/renderer/assets/noto-sans-kr-23-wght-normal-CsoKTgIH.woff2           24.07 kB
+../../out/renderer/assets/noto-sans-kr-103-wght-normal-C9B_csKo.woff2          24.40 kB
+../../out/renderer/assets/noto-sans-kr-27-wght-normal-BYvOljic.woff2           24.48 kB
+../../out/renderer/assets/noto-sans-kr-60-wght-normal-DriWx1rc.woff2           24.51 kB
+../../out/renderer/assets/noto-sans-kr-106-wght-normal-DCG_yG2L.woff2          24.75 kB
+../../out/renderer/assets/noto-sans-kr-3-wght-normal-DZIqdvJw.woff2            24.79 kB
+../../out/renderer/assets/noto-sans-jp-latin-wght-normal-JmuruAaA.woff2        24.84 kB
+../../out/renderer/assets/noto-sans-kr-19-wght-normal-DicL0vd6.woff2           25.16 kB
+../../out/renderer/assets/noto-sans-kr-33-wght-normal-DMSZNpMD.woff2           25.17 kB
+../../out/renderer/assets/noto-sans-kr-105-wght-normal-Bwk-4itQ.woff2          25.23 kB
+../../out/renderer/assets/noto-sans-kr-59-wght-normal-C4laA72l.woff2           25.25 kB
+../../out/renderer/assets/noto-sans-jp-58-wght-normal-C-mIssxc.woff2           25.30 kB
+../../out/renderer/assets/noto-sans-kr-24-wght-normal-CVm75uzf.woff2           25.47 kB
+../../out/renderer/assets/noto-sans-kr-102-wght-normal-DPlG-Gq_.woff2          25.58 kB
+../../out/renderer/assets/noto-sans-kr-26-wght-normal-gwaK2bp7.woff2           25.64 kB
+../../out/renderer/assets/noto-sans-kr-20-wght-normal-PxcBBeNg.woff2           25.91 kB
+../../out/renderer/assets/inter-cyrillic-ext-wght-normal-BOeWTOD4.woff2        25.96 kB
+../../out/renderer/assets/noto-sans-kr-latin-wght-normal-CZ1P3i-_.woff2        26.00 kB
+../../out/renderer/assets/noto-sans-kr-101-wght-normal-yIk-xkbt.woff2          26.08 kB
+../../out/renderer/assets/noto-sans-kr-100-wght-normal-BUnzX67h.woff2          26.27 kB
+../../out/renderer/assets/noto-sans-kr-32-wght-normal-BREiG6LA.woff2           26.40 kB
+../../out/renderer/assets/noto-sans-kr-104-wght-normal-BV6o_vl3.woff2          28.69 kB
+../../out/renderer/assets/noto-sans-kr-93-wght-normal-LhQTABfI.woff2           29.06 kB
+../../out/renderer/assets/noto-sans-jp-54-wght-normal-DkswS7jl.woff2           31.29 kB
+../../out/renderer/assets/noto-sans-jp-2-wght-normal-RseJrQYo.woff2            32.33 kB
+../../out/renderer/assets/noto-sans-kr-0-wght-normal-D06yvloL.woff2            34.28 kB
+../../out/renderer/assets/noto-sans-kr-2-wght-normal-BlW3AcBF.woff2            35.98 kB
+../../out/renderer/assets/noto-sans-jp-56-wght-normal-k2E-xsGo.woff2           37.46 kB
+../../out/renderer/assets/noto-sans-jp-53-wght-normal-DwAVKRqn.woff2           38.59 kB
+../../out/renderer/assets/noto-sans-kr-83-wght-normal-McHuBf-B.woff2           41.16 kB
+../../out/renderer/assets/noto-sans-kr-90-wght-normal-lqvjLFoO.woff2           41.93 kB
+../../out/renderer/assets/noto-sans-jp-55-wght-normal-BYcCjSG_.woff2           42.46 kB
+../../out/renderer/assets/noto-sans-kr-92-wght-normal-CfCk7nA7.woff2           42.69 kB
+../../out/renderer/assets/noto-sans-jp-3-wght-normal--H5uv3v4.woff2            43.30 kB
+../../out/renderer/assets/noto-sans-kr-91-wght-normal-DsGtjSva.woff2           44.99 kB
+../../out/renderer/assets/noto-sans-kr-87-wght-normal-CBZPTWsE.woff2           45.02 kB
+../../out/renderer/assets/noto-sans-kr-72-wght-normal-CYbqUrRD.woff2           45.52 kB
+../../out/renderer/assets/noto-sans-kr-89-wght-normal-D3Fd3_EL.woff2           45.53 kB
+../../out/renderer/assets/noto-sans-kr-88-wght-normal-_V-zytEf.woff2           46.46 kB
+../../out/renderer/assets/noto-sans-kr-70-wght-normal-BSMUUut2.woff2           47.28 kB
+../../out/renderer/assets/noto-sans-kr-81-wght-normal-DZCTVH03.woff2           48.02 kB
+../../out/renderer/assets/inter-latin-wght-normal-Dx4kXJAl.woff2               48.26 kB
+../../out/renderer/assets/noto-sans-kr-69-wght-normal-BReeBVHk.woff2           48.36 kB
+../../out/renderer/assets/noto-sans-kr-67-wght-normal-CWhGYJ2i.woff2           48.38 kB
+../../out/renderer/assets/noto-sans-kr-78-wght-normal-CxH4Pb6I.woff2           48.44 kB
+../../out/renderer/assets/noto-sans-kr-76-wght-normal-BRcUMWZ8.woff2           48.58 kB
+../../out/renderer/assets/noto-sans-kr-73-wght-normal-Dq-lIKz-.woff2           50.30 kB
+../../out/renderer/assets/noto-sans-kr-82-wght-normal-CJo3UUYg.woff2           50.54 kB
+../../out/renderer/assets/noto-sans-kr-80-wght-normal-C5D21FTw.woff2           51.00 kB
+../../out/renderer/assets/noto-sans-kr-86-wght-normal-B7E1-Ec0.woff2           51.62 kB
+../../out/renderer/assets/noto-sans-kr-68-wght-normal-BrksQ5yZ.woff2           51.74 kB
+../../out/renderer/assets/noto-sans-kr-85-wght-normal-BlAw-6qA.woff2           52.55 kB
+../../out/renderer/assets/noto-sans-kr-77-wght-normal-q_AHRG0H.woff2           52.61 kB
+../../out/renderer/assets/noto-sans-kr-95-wght-normal-aqERMEsW.woff2           53.26 kB
+../../out/renderer/assets/noto-sans-kr-74-wght-normal-Dsmj0w4F.woff2           54.44 kB
+../../out/renderer/assets/noto-sans-kr-84-wght-normal-DLV_AXtC.woff2           54.48 kB
+../../out/renderer/assets/noto-sans-kr-66-wght-normal-IxdJCmlc.woff2           56.06 kB
+../../out/renderer/assets/noto-sans-kr-1-wght-normal-Bqp_kP4o.woff2            56.20 kB
+../../out/renderer/assets/noto-sans-kr-75-wght-normal-JM9JBG-M.woff2           56.76 kB
+../../out/renderer/assets/noto-sans-kr-71-wght-normal-D9VPS-IJ.woff2           56.89 kB
+../../out/renderer/assets/noto-sans-jp-51-wght-normal-Cqxu35Xk.woff2           57.22 kB
+../../out/renderer/assets/noto-sans-jp-46-wght-normal-BmRwgAv-.woff2           57.87 kB
+../../out/renderer/assets/noto-sans-jp-50-wght-normal-Cw6P8USA.woff2           60.60 kB
+../../out/renderer/assets/noto-sans-kr-79-wght-normal-Bdi4I7EA.woff2           60.84 kB
+../../out/renderer/assets/noto-sans-jp-20-wght-normal-FgfhxZU_.woff2           61.27 kB
+../../out/renderer/assets/noto-sans-jp-49-wght-normal-6kT-KCCt.woff2           61.64 kB
+../../out/renderer/assets/noto-sans-jp-36-wght-normal-Dyc832Mi.woff2           62.52 kB
+../../out/renderer/assets/noto-sans-jp-40-wght-normal-Ac3ANHeE.woff2           64.03 kB
+../../out/renderer/assets/noto-sans-jp-27-wght-normal-jmtCcHJ0.woff2           64.12 kB
+../../out/renderer/assets/noto-sans-kr-65-wght-normal-FHC1ZHx-.woff2           64.46 kB
+../../out/renderer/assets/noto-sans-jp-42-wght-normal-C4xWUztV.woff2           64.83 kB
+../../out/renderer/assets/noto-sans-jp-33-wght-normal-BnYdH6SQ.woff2           65.23 kB
+../../out/renderer/assets/noto-sans-jp-12-wght-normal-CZgOv4iD.woff2           66.53 kB
+../../out/renderer/assets/noto-sans-jp-45-wght-normal-BF-EckBd.woff2           67.03 kB
+../../out/renderer/assets/noto-sans-jp-26-wght-normal-Bu8z50LX.woff2           67.72 kB
+../../out/renderer/assets/noto-sans-jp-47-wght-normal-0LM1TynG.woff2           67.92 kB
+../../out/renderer/assets/noto-sans-jp-16-wght-normal-CIRRqAST.woff2           69.08 kB
+../../out/renderer/assets/noto-sans-jp-38-wght-normal-6T50SRVw.woff2           69.12 kB
+../../out/renderer/assets/noto-sans-jp-43-wght-normal-DAb0Sc5Y.woff2           69.98 kB
+../../out/renderer/assets/noto-sans-jp-1-wght-normal-CARGyt1_.woff2            69.99 kB
+../../out/renderer/assets/noto-sans-jp-35-wght-normal-C7HufUhC.woff2           70.01 kB
+../../out/renderer/assets/noto-sans-jp-28-wght-normal-DQNwlFIU.woff2           70.77 kB
+../../out/renderer/assets/noto-sans-jp-48-wght-normal-DrhQr74m.woff2           71.94 kB
+../../out/renderer/assets/noto-sans-jp-14-wght-normal-DbDHiDFQ.woff2           72.06 kB
+../../out/renderer/assets/noto-sans-jp-21-wght-normal-Ur8WYMVQ.woff2           72.06 kB
+../../out/renderer/assets/noto-sans-jp-44-wght-normal-DyPSHqCN.woff2           72.06 kB
+../../out/renderer/assets/noto-sans-jp-13-wght-normal-B3bKCuev.woff2           72.82 kB
+../../out/renderer/assets/noto-sans-jp-32-wght-normal-CRZDfOIz.woff2           73.42 kB
+../../out/renderer/assets/noto-sans-jp-37-wght-normal-BA1uUhJR.woff2           73.63 kB
+../../out/renderer/assets/noto-sans-jp-22-wght-normal-BACXhehE.woff2           74.16 kB
+../../out/renderer/assets/noto-sans-jp-52-wght-normal-DYmSQol3.woff2           74.85 kB
+../../out/renderer/assets/noto-sans-jp-10-wght-normal-DtPkCCyJ.woff2           75.15 kB
+../../out/renderer/assets/noto-sans-jp-39-wght-normal-CN8CV109.woff2           75.29 kB
+../../out/renderer/assets/noto-sans-jp-9-wght-normal-mnr2cWCS.woff2            75.54 kB
+../../out/renderer/assets/noto-sans-jp-11-wght-normal-Dkj9SGze.woff2           75.62 kB
+../../out/renderer/assets/noto-sans-jp-41-wght-normal-B-bcLJUI.woff2           75.84 kB
+../../out/renderer/assets/noto-sans-jp-23-wght-normal-BguN3TwY.woff2           75.89 kB
+../../out/renderer/assets/noto-sans-jp-29-wght-normal-BnPJOTuS.woff2           75.98 kB
+../../out/renderer/assets/noto-sans-jp-4-wght-normal-Dc2VWjiv.woff2            77.20 kB
+../../out/renderer/assets/noto-sans-jp-18-wght-normal-DhyYlhdC.woff2           77.71 kB
+../../out/renderer/assets/noto-sans-jp-119-wght-normal-D3TauSHf.woff2          79.10 kB
+../../out/renderer/assets/noto-sans-jp-8-wght-normal-B-fyrhM6.woff2            79.26 kB
+../../out/renderer/assets/noto-sans-jp-30-wght-normal-Bj8BZBgx.woff2           80.00 kB
+../../out/renderer/assets/noto-sans-jp-25-wght-normal-VS5EnqV2.woff2           80.25 kB
+../../out/renderer/assets/noto-sans-jp-15-wght-normal-BHvX48uZ.woff2           80.48 kB
+../../out/renderer/assets/noto-sans-jp-17-wght-normal-Cypgkvf4.woff2           80.65 kB
+../../out/renderer/assets/noto-sans-jp-7-wght-normal-DPLqcl0u.woff2            82.78 kB
+../../out/renderer/assets/noto-sans-jp-0-wght-normal-ChZwicxE.woff2            82.88 kB
+../../out/renderer/assets/noto-sans-jp-24-wght-normal-CXEahOPk.woff2           82.96 kB
+../../out/renderer/assets/noto-sans-jp-34-wght-normal-CGJbTgpI.woff2           85.06 kB
+../../out/renderer/assets/inter-latin-ext-wght-normal-DO1Apj_S.woff2           85.07 kB
+../../out/renderer/assets/noto-sans-jp-31-wght-normal-Commwwo1.woff2           86.41 kB
+../../out/renderer/assets/noto-sans-jp-5-wght-normal-CeuaJ3GQ.woff2            86.85 kB
+../../out/renderer/assets/noto-sans-jp-19-wght-normal-Cm6ySjN8.woff2           87.03 kB
+../../out/renderer/assets/noto-sans-jp-6-wght-normal-BETiiYWj.woff2            90.14 kB
+../../out/renderer/assets/index-DShcOdnn.css                                    3.89 kB
+../../out/renderer/assets/react-vendor-B5DZHykP.css                             7.32 kB
+../../out/renderer/assets/global-jVZQtNSM.css                                  87.41 kB
+../../out/renderer/assets/vendor-CpVQhOXR.css                                 179.12 kB
+../../out/renderer/assets/auth-result-WPT_6Fs6.js                               0.28 kB
+../../out/renderer/assets/global-DYf913Ju.js                                    2.49 kB
+../../out/renderer/assets/SnapshotViewer-DT-Vc-ED.js                            4.24 kB
+../../out/renderer/assets/ExportWindow-c_wIpFFA.js                             15.71 kB
+../../out/renderer/assets/ui-vendor-CXzhF6fI.js                                25.57 kB
+../../out/renderer/assets/SettingsModal-DAxHC4bk.js                            36.25 kB
+../../out/renderer/assets/vendor-BEkCSTra.js                                  204.76 kB
+../../out/renderer/assets/editor-vendor-Cz4tP8jP.js                           346.95 kB
+../../out/renderer/assets/index-BnQSYVEw.js                                   347.86 kB
+../../out/renderer/assets/react-vendor-DtzyIMSd.js                            456.20 kB
+✓ built in 2.56s

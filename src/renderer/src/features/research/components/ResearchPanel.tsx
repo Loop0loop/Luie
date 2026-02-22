@@ -7,6 +7,7 @@ import WorldSection from "@renderer/features/research/components/WorldSection";
 import AnalysisSection from "@renderer/features/research/components/AnalysisSection";
 import SynopsisSection from "@renderer/features/research/components/SynopsisSection";
 import { cn } from "@shared/types/utils";
+import { FeatureErrorBoundary } from "@shared/ui/FeatureErrorBoundary";
 
 interface ResearchPanelProps {
   activeTab: string; // 'character' | 'world' | 'scrap' | 'analysis' | 'synopsis'
@@ -20,7 +21,7 @@ export default function ResearchPanel({
   onTabChange,
 }: ResearchPanelProps) {
   const { t } = useTranslation();
-  
+
   const tabConfig: Record<
     string,
     { title: string; icon: React.JSX.Element }
@@ -51,57 +52,57 @@ export default function ResearchPanel({
       {onTabChange ? (
         /* Tab Navigation Header (Google Docs Mode) */
         <div className="flex items-center border-b border-border bg-background overflow-x-auto no-scrollbar shrink-0 h-12 px-2 gap-2">
-            {tabs.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                <button
-                    key={tab.id}
-                    onClick={() => onTabChange(tab.id)}
-                    className={cn(
-                        "flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium whitespace-nowrap rounded-full transition-colors",
-                        isActive
-                            ? "bg-[#c2e7ff] text-[#001d35]" 
-                            : "text-[#444746] dark:text-[#c4c7c5] hover:bg-[#1f1f1f]/5 dark:hover:bg-white/10"
-                    )}
-                    title={tab.label}
-                >
-                    <Icon className="w-4 h-4" />
-                    <span>{tab.label}</span>
-                </button>
-                );
-            })}
-             {onClose && (
-                <button onClick={onClose} className="ml-auto p-1 text-muted hover:text-fg">
-                    <X className="w-4 h-4" />
-                </button>
-            )}
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => onTabChange(tab.id)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium whitespace-nowrap rounded-full transition-colors",
+                  isActive
+                    ? "bg-[#c2e7ff] text-[#001d35]"
+                    : "text-[#444746] dark:text-[#c4c7c5] hover:bg-[#1f1f1f]/5 dark:hover:bg-white/10"
+                )}
+                title={tab.label}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+          {onClose && (
+            <button onClick={onClose} className="ml-auto p-1 text-muted hover:text-fg">
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       ) : (
         /* Standard Header (Standard View) */
         <div className="h-12 flex items-center justify-between px-4 border-b border-border bg-bg-primary shrink-0">
-            <div className="font-semibold text-sm text-fg flex items-center gap-2">
+          <div className="font-semibold text-sm text-fg flex items-center gap-2">
             {icon}
             <span>{title}</span>
-            </div>
-            {onClose && (
-                <button
-                className="p-1 rounded text-muted cursor-pointer border-none bg-transparent flex items-center justify-center hover:bg-hover hover:text-fg"
-                onClick={onClose}
-                title={t("research.tooltip.closePanel")}
-                >
-                <X className="icon-lg" />
-                </button>
-            )}
+          </div>
+          {onClose && (
+            <button
+              className="p-1 rounded text-muted cursor-pointer border-none bg-transparent flex items-center justify-center hover:bg-hover hover:text-fg"
+              onClick={onClose}
+              title={t("research.tooltip.closePanel")}
+            >
+              <X className="icon-lg" />
+            </button>
+          )}
         </div>
       )}
 
       <div className="flex-1 flex flex-col overflow-hidden bg-bg-primary relative">
-        {activeTab === "character" && <CharacterManager />}
-        {activeTab === "world" && <WorldSection />}
-        {activeTab === "scrap" && <MemoSection />}
-        {activeTab === "analysis" && <AnalysisSection />}
-        {activeTab === "synopsis" && <SynopsisSection />}
+        {activeTab === "character" && <FeatureErrorBoundary featureName="Characters"><CharacterManager /></FeatureErrorBoundary>}
+        {activeTab === "world" && <FeatureErrorBoundary featureName="World"><WorldSection /></FeatureErrorBoundary>}
+        {activeTab === "scrap" && <FeatureErrorBoundary featureName="Scrap"><MemoSection /></FeatureErrorBoundary>}
+        {activeTab === "analysis" && <FeatureErrorBoundary featureName="Analysis"><AnalysisSection /></FeatureErrorBoundary>}
+        {activeTab === "synopsis" && <FeatureErrorBoundary featureName="Synopsis"><SynopsisSection /></FeatureErrorBoundary>}
       </div>
     </div>
   );

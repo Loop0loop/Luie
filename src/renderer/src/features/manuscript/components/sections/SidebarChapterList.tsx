@@ -84,7 +84,7 @@ export default function SidebarChapterList() {
             {/* Menu Overlay */}
             {menuOpenId && (
                 <div
-                    className="fixed inset-0 z-[9999] bg-transparent"
+                    className="fixed inset-0 z-modal bg-transparent"
                     onPointerDown={closeMenu}
                 />
             )}

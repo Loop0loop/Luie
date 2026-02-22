@@ -9,6 +9,33 @@ import {
 import { editorSettingsSchema } from "@shared/schemas/index.js";
 import { api } from "@shared/api";
 
+/**
+ * Register a global unhandledrejection listener so that Promise rejections
+ * that are not caught anywhere are at least logged to the main process instead
+ * of silently disappearing. This runs once when the renderer boots.
+ */
+function setupUnhandledRejectionHandler(): void {
+  window.addEventListener("unhandledrejection", (event: PromiseRejectionEvent) => {
+    const reason = event.reason as unknown;
+    const message =
+      reason instanceof Error
+        ? reason.message
+        : typeof reason === "string"
+          ? reason
+          : "Unknown unhandled rejection";
+
+    api?.logger?.error("[renderer] Unhandled Promise rejection", {
+      message,
+      stack: reason instanceof Error ? reason.stack : undefined,
+    });
+
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.warn("[Luie] Unhandled Promise rejection ↴", reason);
+    }
+  });
+}
+
 type ThemeSeed = Pick<
   EditorSettings,
   "theme" | "themeTemp" | "themeContrast" | "themeAccent" | "themeTexture"
@@ -40,6 +67,9 @@ const toThemeSeed = (settings: EditorSettings): ThemeSeed => ({
 });
 
 export const setupRenderer = async (): Promise<void> => {
+  // ✅ Register global rejection handler before anything else
+  setupUnhandledRejectionHandler();
+
   applyThemeSeed(DEFAULT_THEME_SEED);
 
   try {

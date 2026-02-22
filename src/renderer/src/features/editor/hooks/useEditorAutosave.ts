@@ -15,39 +15,68 @@ const RETRY_DELAYS = [1000, 2000, 5000];
 export function useEditorAutosave({ onSave, title, content }: UseEditorAutosaveProps) {
   const { showToast } = useToast();
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  
+
+  // 🔐 Unmount guard — prevents setState after component is gone
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   useEffect(() => {
     useEditorStore.getState().setSaveStatus(saveStatus);
   }, [saveStatus]);
 
   const lastSavedRef = useRef({ title, content });
   const retryCount = useRef(0);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ✅ Separate timer refs so each can be individually cleared
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const idleResetTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const performSaveRef = useRef<((currentTitle: string, currentContent: string) => void) | null>(null);
 
   const performSave = useCallback(async (currentTitle: string, currentContent: string) => {
     if (!onSave) return;
+    // Guard: don't update state if unmounted
+    if (!isMountedRef.current) return;
 
     setSaveStatus("saving");
     try {
       await Promise.resolve(onSave(currentTitle, currentContent));
+
+      if (!isMountedRef.current) return;
+
       lastSavedRef.current = { title: currentTitle, content: currentContent };
       setSaveStatus("saved");
       retryCount.current = 0;
       api.lifecycle?.setDirty?.(false);
-      
-      // Reset to idle after a delay for UI
-      setTimeout(() => setSaveStatus("idle"), 2000);
+
+      // ✅ Track idle reset timer so we can cancel on unmount
+      if (idleResetTimerRef.current) clearTimeout(idleResetTimerRef.current);
+      idleResetTimerRef.current = setTimeout(() => {
+        if (isMountedRef.current) setSaveStatus("idle");
+      }, 2000);
     } catch (error) {
       api.logger.error("Autosave failed", error);
+
+      if (!isMountedRef.current) return;
       setSaveStatus("error");
 
       if (retryCount.current < RETRY_DELAYS.length) {
         const delay = RETRY_DELAYS[retryCount.current];
         retryCount.current++;
         showToast(`Save failed. Retrying in ${delay / 1000}s...`, "info", 2000);
-        setTimeout(() => {
-          performSaveRef.current?.(currentTitle, currentContent);
+
+        // ✅ Track retry timer so we can cancel on unmount
+        if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = setTimeout(() => {
+          if (isMountedRef.current) {
+            performSaveRef.current?.(currentTitle, currentContent);
+          }
         }, delay);
       } else {
         showToast("Autosave failed. Check connection.", "error");
@@ -62,8 +91,7 @@ export function useEditorAutosave({ onSave, title, content }: UseEditorAutosaveP
   // Debounced save trigger
   useEffect(() => {
     if (!onSave) return;
-    
-    // Don't save if nothing changed from LAST SUCCESSFUL save
+
     if (
       title === lastSavedRef.current.title &&
       content === lastSavedRef.current.content
@@ -74,17 +102,26 @@ export function useEditorAutosave({ onSave, title, content }: UseEditorAutosaveP
 
     api.lifecycle?.setDirty?.(true);
 
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
 
-    timeoutRef.current = setTimeout(() => {
+    debounceTimerRef.current = setTimeout(() => {
       void performSave(title, content);
     }, EDITOR_AUTOSAVE_DEBOUNCE_MS);
 
     return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     };
   }, [title, content, onSave, performSave]);
 
+  // ✅ Full cleanup on unmount: cancel ALL pending timers + reset retry state
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      if (idleResetTimerRef.current) clearTimeout(idleResetTimerRef.current);
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      retryCount.current = 0;
+    };
+  }, []);
+
   return { saveStatus };
 }
-

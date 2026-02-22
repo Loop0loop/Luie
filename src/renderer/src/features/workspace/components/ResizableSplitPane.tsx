@@ -28,32 +28,38 @@ export default function ResizableSplitPane({
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // ✅ P2 Fix: Store isDragging in a ref so the mousemove handler always reads
+  // the latest value without causing the resize callback to be recreated on every drag tick.
+  // This prevents the useEffect from repeatedly removing and re-adding window listeners.
+  const isDraggingRef = useRef(false);
+
   const startResizing = useCallback(() => {
+    isDraggingRef.current = true;
     setIsDragging(true);
   }, []);
 
   const stopResizing = useCallback(() => {
+    isDraggingRef.current = false;
     setIsDragging(false);
   }, []);
 
+  // ✅ resize no longer depends on isDragging state — reads ref instead
   const resize = useCallback(
     (mouseMoveEvent: MouseEvent) => {
-      if (isDragging && containerRef.current) {
-        requestAnimationFrame(() => {
-          if (!containerRef.current) return;
-          const containerRect = containerRef.current.getBoundingClientRect();
-          // Calculate width from the right edge
-          const newWidth = containerRect.right - mouseMoveEvent.clientX;
-          
-          if (newWidth >= minRightWidth && newWidth <= maxRightWidth) {
-            setRightWidth(newWidth);
-          }
-        });
-      }
+      if (!isDraggingRef.current || !containerRef.current) return;
+      requestAnimationFrame(() => {
+        if (!containerRef.current || !isDraggingRef.current) return;
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const newWidth = containerRect.right - mouseMoveEvent.clientX;
+        if (newWidth >= minRightWidth && newWidth <= maxRightWidth) {
+          setRightWidth(newWidth);
+        }
+      });
     },
-    [isDragging, minRightWidth, maxRightWidth]
+    [minRightWidth, maxRightWidth],
   );
 
+  // ✅ Now resize/stopResizing are stable references — listeners registered once
   useEffect(() => {
     window.addEventListener("mousemove", resize);
     window.addEventListener("mouseup", stopResizing);
@@ -64,8 +70,8 @@ export default function ResizableSplitPane({
   }, [resize, stopResizing]);
 
   return (
-    <div 
-      ref={containerRef} 
+    <div
+      ref={containerRef}
       style={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}
     >
       {/* LEFT PANE (Flexible) */}
@@ -83,16 +89,16 @@ export default function ResizableSplitPane({
               width: '4px',
               cursor: 'col-resize',
               background: isDragging ? '#10B981' : 'transparent',
-              borderLeft: '1px solid #E5E5E5',
+              borderLeft: '1px solid var(--border)',
               transition: 'background 0.2s',
               zIndex: 10,
               flexShrink: 0,
             }}
             className="group hover:bg-emerald-500/20"
           />
-          
+
           <div style={{ width: rightWidth, height: '100%', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
-             {right}
+            {right}
           </div>
         </>
       )}
