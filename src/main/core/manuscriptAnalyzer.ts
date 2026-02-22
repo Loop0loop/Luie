@@ -29,9 +29,9 @@ class ManuscriptAnalyzer {
    * 캐릭터, Term, 원고 내용을 통합
    */
   buildAnalysisContext(
-    chapter: Chapter,
-    characters: Character[],
-    terms: Term[]
+    chapter: Pick<Chapter, "title" | "content">,
+    characters: Array<Pick<Character, "name" | "description">>,
+    terms: Array<Pick<Term, "term" | "definition" | "category">>,
   ): AnalysisContext {
     const nounPhrases = this.extractNounPhrases(chapter.content);
 

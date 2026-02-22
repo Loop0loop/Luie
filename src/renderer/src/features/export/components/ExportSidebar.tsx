@@ -1,4 +1,5 @@
-import { useTranslation } from "react-i18next";
+import type { ElementType } from "react";
+import type { TFunction } from "i18next";
 import { Download, FileText, Layout, Type, AlignJustify, Info, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from '@shared/types/utils';
 
@@ -11,7 +12,7 @@ const SectionHeader = ({
 }: {
     id: string;
     title: string;
-    icon: React.ElementType;
+    icon: ElementType;
     expanded: boolean;
     onToggle: (id: string) => void
 }) => (
@@ -28,7 +29,7 @@ const SectionHeader = ({
 );
 
 interface ExportSidebarProps {
-    t: ReturnType<typeof useTranslation>["t"];
+    t: TFunction;
     isExporting: boolean;
     hasChapter: boolean;
     format: "word" | "hwp";
@@ -115,7 +116,7 @@ export function ExportSidebar({
                                         : "bg-surface border-transparent hover:bg-surface-hover text-muted"
                                 )}
                             >
-                                <span className="font-bold text-lg mb-1">HWPX</span>
+                                <span className="font-bold text-lg mb-1">{t("exportWindow.format.hwp_label")}</span>
                                 <span className="text-[10px] opacity-80">{t("exportWindow.format.hwp")}</span>
                                 <span className="absolute top-1 right-1 text-[9px] px-1.5 py-0.5 bg-accent text-white rounded font-bold">{t("exportWindow.format.beta")}</span>
                             </button>
@@ -128,7 +129,7 @@ export function ExportSidebar({
                                         : "bg-surface border-transparent hover:bg-surface-hover text-muted"
                                 )}
                             >
-                                <span className="font-bold text-lg mb-1">Word</span>
+                                <span className="font-bold text-lg mb-1">{t("exportWindow.format.word_label")}</span>
                                 <span className="text-[10px] opacity-80">{t("exportWindow.format.word")}</span>
                             </button>
                         </div>

@@ -255,11 +255,11 @@ describe("ExportService", () => {
         chapterId: "test-chapter-id",
         title: "Test Invalid",
         content: "<p>Test</p>",
-        format: "INVALID" as unknown as "DOCX" | "HWPX",
+        format: "INVALID",
         outputPath: path.join(testOutputDir, "test-invalid.txt"),
       };
       
-      const result = await exportService.export(options);
+      const result = await exportService.export(options as ExportOptions);
       
       expect(result.success).toBe(false);
       expect(result.error).toBeTruthy();

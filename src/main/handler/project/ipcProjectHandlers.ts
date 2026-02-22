@@ -19,6 +19,7 @@ type ProjectServiceLike = {
   getAllProjects: () => Promise<unknown>;
   updateProject: (input: ProjectUpdateInput) => Promise<unknown>;
   deleteProject: (id: string) => Promise<unknown>;
+  removeProjectFromList: (id: string) => Promise<unknown>;
 };
 
 export function registerProjectIPCHandlers(
@@ -66,6 +67,13 @@ export function registerProjectIPCHandlers(
       failMessage: "Failed to delete project",
       argsSchema: z.tuple([projectIdSchema]),
       handler: (id: string) => projectService.deleteProject(id),
+    },
+    {
+      channel: IPC_CHANNELS.PROJECT_REMOVE_LOCAL,
+      logTag: "PROJECT_REMOVE_LOCAL",
+      failMessage: "Failed to remove project from list",
+      argsSchema: z.tuple([projectIdSchema]),
+      handler: (id: string) => projectService.removeProjectFromList(id),
     },
   ]);
 }

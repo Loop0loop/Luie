@@ -20,7 +20,7 @@ import { useChapterManagement } from "@renderer/features/manuscript/hooks/useCha
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useWorkspaceDropHandlers } from "@renderer/features/workspace/hooks/useWorkspaceDropHandlers";
 import { emitShortcutCommand } from "@renderer/features/workspace/hooks/useShortcutCommand";
-import { useDialog } from "@shared/ui/DialogProvider";
+import { useDialog } from "@shared/ui/useDialog";
 import { api } from "@shared/api";
 import { openDocsRightTab as openDocsPanelTab } from "@renderer/features/workspace/services/docsPanelService";
 import { createLayoutModeActions } from "@renderer/features/workspace/services/layoutModeActions";
@@ -139,7 +139,7 @@ export default function EditorRoot() {
                 handleOpenExport,
                 onToggleManuscriptLegacy: () =>
                     emitShortcutCommand({ type: "sidebar.section.toggle", section: "manuscript" }),
-                onOpenSidebarSectionLegacy: (section: any) =>
+                onOpenSidebarSectionLegacy: (section: "snapshot" | "trash") =>
                     emitShortcutCommand({ type: "sidebar.section.open", section }),
             }),
         [

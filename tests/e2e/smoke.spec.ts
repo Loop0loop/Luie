@@ -5,12 +5,7 @@ test("app boots to template selector @smoke", async () => {
   const { app, page, testDbDir } = await launchApp({ waitForRender: false });
 
   const result = (await page.evaluate(async () => {
-    const api = (window as unknown as { api?: unknown }).api as
-      | {
-          project: { getAll: () => Promise<unknown> };
-          settings: { getAll: () => Promise<unknown>; getEditor: () => Promise<unknown> };
-        }
-      | undefined;
+    const api = (window as Window & { api?: Window["api"] }).api;
 
     if (!api) {
       return { hasApi: false };

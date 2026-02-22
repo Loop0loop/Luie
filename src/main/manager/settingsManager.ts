@@ -203,7 +203,8 @@ export class SettingsManager {
     }
 
     if ("titleBarMode" in current) {
-      this.store.delete("titleBarMode" as unknown as keyof AppSettings);
+      const { titleBarMode: _legacyTitleBarMode, ...next } = current;
+      this.store.set(next);
     }
   }
 
@@ -420,7 +421,7 @@ export class SettingsManager {
     } else {
       next.projectLastSyncedAtByProjectId = undefined;
     }
-    this.store.set("sync", next as unknown as AppSettings["sync"]);
+    this.store.set("sync", next);
     return next;
   }
 
@@ -484,7 +485,7 @@ export class SettingsManager {
       autoSync: true,
       pendingProjectDeletes: current.pendingProjectDeletes,
     };
-    this.store.set("sync", next as unknown as AppSettings["sync"]);
+    this.store.set("sync", next);
     return next;
   }
 

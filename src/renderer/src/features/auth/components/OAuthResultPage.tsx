@@ -1,8 +1,12 @@
 import { useMemo } from "react";
 
 type OAuthResultStatus = "success" | "error";
+type OAuthSuccessReason = "STALE_CONNECTED";
 type OAuthFailureReason = "NO_PENDING" | "EXPIRED" | "STATE_MISMATCH" | "UNKNOWN";
 
+const KNOWN_SUCCESS_REASONS = new Set<OAuthSuccessReason>([
+  "STALE_CONNECTED",
+]);
 const KNOWN_FAILURE_REASONS = new Set<OAuthFailureReason>([
   "NO_PENDING",
   "EXPIRED",
@@ -10,17 +14,17 @@ const KNOWN_FAILURE_REASONS = new Set<OAuthFailureReason>([
   "UNKNOWN",
 ]);
 
-const splitFailureDetail = (detail?: string): {
-  reason?: OAuthFailureReason;
+const splitDetail = <TReason extends string>(detail: string | undefined, knownReasons: Set<TReason>): {
+  reason?: TReason;
   message?: string;
 } => {
   if (!detail) return {};
   const colonIndex = detail.indexOf(":");
-  const reasonCandidate = (colonIndex >= 0 ? detail.slice(0, colonIndex) : detail).trim();
-  if (!KNOWN_FAILURE_REASONS.has(reasonCandidate as OAuthFailureReason)) {
+  const reasonCandidate = (colonIndex >= 0 ? detail.slice(0, colonIndex) : detail).trim() as TReason;
+  if (!knownReasons.has(reasonCandidate)) {
     return { message: detail };
   }
-  const reason = reasonCandidate as OAuthFailureReason;
+  const reason = reasonCandidate;
   const message = colonIndex >= 0 ? detail.slice(colonIndex + 1).trim() : undefined;
   return { reason, message };
 };
@@ -28,8 +32,9 @@ const splitFailureDetail = (detail?: string): {
 const parseOAuthResult = (): {
   status: OAuthResultStatus;
   detail?: string;
+  successReason?: OAuthSuccessReason;
   reason?: OAuthFailureReason;
-  reasonMessage?: string;
+  detailMessage?: string;
 } => {
   const searchParams = new URLSearchParams(window.location.search);
   const hash = window.location.hash;
@@ -40,28 +45,43 @@ const parseOAuthResult = (): {
   const detailParam = searchParams.get("detail") ?? hashParams.get("detail");
   const status = statusParam === "success" ? "success" : "error";
 
-  const parsedDetail = splitFailureDetail(detailParam ?? undefined);
-  const reasonMessage =
-    parsedDetail.reason === "NO_PENDING"
+  if (status === "success") {
+    const parsedSuccessDetail = splitDetail(detailParam ?? undefined, KNOWN_SUCCESS_REASONS);
+    const detailMessage =
+      parsedSuccessDetail.reason === "STALE_CONNECTED"
+        ? "앱이 이미 연결된 상태여서 이전 로그인 콜백을 안전하게 무시했습니다."
+        : undefined;
+
+    return {
+      status,
+      detail: parsedSuccessDetail.message ?? detailParam ?? undefined,
+      successReason: parsedSuccessDetail.reason,
+      detailMessage,
+    };
+  }
+
+  const parsedFailureDetail = splitDetail(detailParam ?? undefined, KNOWN_FAILURE_REASONS);
+  const detailMessage =
+    parsedFailureDetail.reason === "NO_PENDING"
       ? "앱에 대기 중인 로그인 요청이 없습니다. 로그인 버튼을 다시 눌러 주세요."
-      : parsedDetail.reason === "EXPIRED"
+      : parsedFailureDetail.reason === "EXPIRED"
         ? "로그인 요청이 만료되었습니다. 앱에서 다시 로그인해 주세요."
-        : parsedDetail.reason === "STATE_MISMATCH"
+        : parsedFailureDetail.reason === "STATE_MISMATCH"
           ? "로그인 보안 검증(state)이 일치하지 않았습니다. 앱에서 다시 로그인해 주세요."
-          : parsedDetail.reason === "UNKNOWN"
+          : parsedFailureDetail.reason === "UNKNOWN"
             ? "알 수 없는 이유로 로그인 콜백 처리에 실패했습니다."
             : undefined;
 
   return {
     status,
-    detail: parsedDetail.message ?? detailParam ?? undefined,
-    reason: parsedDetail.reason,
-    reasonMessage,
+    detail: parsedFailureDetail.message ?? detailParam ?? undefined,
+    reason: parsedFailureDetail.reason,
+    detailMessage,
   };
 };
 
 export default function OAuthResultPage() {
-  const result = useMemo(parseOAuthResult, []);
+  const result = useMemo(() => parseOAuthResult(), []);
   const isSuccess = result.status === "success";
 
   return (
@@ -76,9 +96,9 @@ export default function OAuthResultPage() {
             : "로그인 처리가 완료되지 않았습니다. 앱으로 돌아가 다시 시도해 주세요."}
         </p>
 
-        {result.reasonMessage && !isSuccess && (
+        {result.detailMessage && (
           <p className="mt-4 rounded-lg border border-border bg-surface px-3 py-2 text-xs text-fg">
-            {result.reasonMessage}
+            {result.detailMessage}
           </p>
         )}
 

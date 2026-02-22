@@ -7,7 +7,7 @@ import { DraggableItem } from "@shared/ui/DraggableItem";
 import type { Snapshot } from '@shared/types';
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
-import { useDialog } from "@shared/ui/DialogProvider";
+import { useDialog } from "@shared/ui/useDialog";
 
 interface SnapshotListProps {
   chapterId: string;
@@ -27,7 +27,7 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
 
   const { handleOpenSnapshot } = useSplitView();
   const { loadAll: reloadChapters, items: chapters } = useChapterStore();
-  const currentChapter = chapters.find((chapter: any) => chapter.id === chapterId);
+  const currentChapter = chapters.find((chapter) => chapter.id === chapterId);
 
   const buildSnapshotItems = useCallback((items: Snapshot[]) => {
     return items.map((snapshot) => ({

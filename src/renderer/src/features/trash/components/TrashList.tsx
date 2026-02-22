@@ -5,7 +5,7 @@ import { api } from "@shared/api";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import type { Chapter } from '@shared/types';
 import { useTranslation } from "react-i18next";
-import { useDialog } from "@shared/ui/DialogProvider";
+import { useDialog } from "@shared/ui/useDialog";
 
 interface TrashListProps {
   projectId: string;

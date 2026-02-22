@@ -1,7 +1,7 @@
-import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 
 interface ExportPreviewProps {
-    t: ReturnType<typeof useTranslation>["t"];
+    t: TFunction;
     chapter: { title: string; content: string } | null;
     loadError: string | null;
     paperSize: string;

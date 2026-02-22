@@ -39,8 +39,12 @@ import type {
   CharacterExportRecord,
   TermExportRecord,
   SnapshotExportRecord,
+  ScrapMemo,
   WorldDrawingData,
+  WorldDrawingPath,
+  WorldMindmapEdge,
   WorldMindmapData,
+  WorldMindmapNode,
   WorldPlotData,
   WorldScrapMemosData,
   WorldSynopsisData,
@@ -169,6 +173,108 @@ const parseJsonSafely = (raw: string | null): unknown | null => {
   } catch {
     return null;
   }
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value && typeof value === "object" && !Array.isArray(value));
+
+const normalizeDrawingPaths = (value: unknown): WorldDrawingPath[] => {
+  if (!Array.isArray(value)) return [];
+  const normalized: WorldDrawingPath[] = [];
+
+  for (const [index, item] of value.entries()) {
+    if (!isRecord(item)) continue;
+    const type = item.type;
+    if (type !== "path" && type !== "text" && type !== "icon") continue;
+
+    const path: WorldDrawingPath = {
+      id: typeof item.id === "string" && item.id.length > 0 ? item.id : `path-${index}`,
+      type,
+      color: typeof item.color === "string" ? item.color : "#000000",
+    };
+
+    if (typeof item.d === "string") path.d = item.d;
+    if (typeof item.width === "number") path.width = item.width;
+    if (typeof item.x === "number") path.x = item.x;
+    if (typeof item.y === "number") path.y = item.y;
+    if (typeof item.text === "string") path.text = item.text;
+    if (item.icon === "mountain" || item.icon === "castle" || item.icon === "village") {
+      path.icon = item.icon;
+    }
+
+    normalized.push(path);
+  }
+
+  return normalized;
+};
+
+const normalizeMindmapNodes = (value: unknown): WorldMindmapNode[] => {
+  if (!Array.isArray(value)) return [];
+  const normalized: WorldMindmapNode[] = [];
+
+  for (const [index, item] of value.entries()) {
+    if (!isRecord(item)) continue;
+    const position = item.position;
+    if (!isRecord(position)) continue;
+
+    const data = isRecord(item.data) ? item.data : undefined;
+    normalized.push({
+      id: typeof item.id === "string" && item.id.length > 0 ? item.id : `node-${index}`,
+      type: typeof item.type === "string" ? item.type : undefined,
+      position: {
+        x: typeof position.x === "number" ? position.x : 0,
+        y: typeof position.y === "number" ? position.y : 0,
+      },
+      data: {
+        label: typeof data?.label === "string" ? data.label : "",
+        image: typeof data?.image === "string" ? data.image : undefined,
+      },
+    });
+  }
+
+  return normalized;
+};
+
+const normalizeMindmapEdges = (value: unknown): WorldMindmapEdge[] => {
+  if (!Array.isArray(value)) return [];
+  const normalized: WorldMindmapEdge[] = [];
+
+  for (const [index, item] of value.entries()) {
+    if (!isRecord(item)) continue;
+    const source = typeof item.source === "string" ? item.source : "";
+    const target = typeof item.target === "string" ? item.target : "";
+    if (!source || !target) continue;
+
+    normalized.push({
+      id: typeof item.id === "string" && item.id.length > 0 ? item.id : `edge-${index}`,
+      source,
+      target,
+      type: typeof item.type === "string" ? item.type : undefined,
+    });
+  }
+
+  return normalized;
+};
+
+const normalizeScrapMemos = (value: unknown): ScrapMemo[] => {
+  if (!Array.isArray(value)) return [];
+  const normalized: ScrapMemo[] = [];
+
+  for (const [index, item] of value.entries()) {
+    if (!isRecord(item)) continue;
+    normalized.push({
+      id: typeof item.id === "string" && item.id.length > 0 ? item.id : `memo-${index}`,
+      title: typeof item.title === "string" ? item.title : "",
+      content: typeof item.content === "string" ? item.content : "",
+      tags: Array.isArray(item.tags)
+        ? item.tags.filter((tag): tag is string => typeof tag === "string")
+        : [],
+      updatedAt:
+        typeof item.updatedAt === "string" ? item.updatedAt : new Date().toISOString(),
+    });
+  }
+
+  return normalized;
 };
 
 export class ProjectService {
@@ -680,6 +786,41 @@ export class ProjectService {
     }
   }
 
+  async removeProjectFromList(id: string) {
+    try {
+      const existing = await db.getClient().project.findUnique({
+        where: { id },
+        select: { id: true },
+      });
+
+      if (!existing?.id) {
+        throw new ServiceError(
+          ErrorCode.PROJECT_NOT_FOUND,
+          "Project not found",
+          { id },
+        );
+      }
+
+      await db.getClient().project.delete({
+        where: { id },
+      });
+
+      logger.info("Project removed from list", { projectId: id });
+      return { success: true };
+    } catch (error) {
+      logger.error("Failed to remove project from list", error);
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      throw new ServiceError(
+        ErrorCode.PROJECT_DELETE_FAILED,
+        "Failed to remove project from list",
+        { id },
+        error,
+      );
+    }
+  }
+
   schedulePackageExport(projectId: string, reason?: string) {
     const existing = this.exportTimers.get(projectId);
     if (existing) {
@@ -839,7 +980,7 @@ export class ProjectService {
     const drawing: WorldDrawingData =
       parsedDrawing?.success && Array.isArray(parsedDrawing.data.paths)
         ? ({
-            paths: parsedDrawing.data.paths as unknown as WorldDrawingData["paths"],
+            paths: normalizeDrawingPaths(parsedDrawing.data.paths),
             tool: parsedDrawing.data.tool,
             iconType: parsedDrawing.data.iconType,
             color:
@@ -860,12 +1001,8 @@ export class ProjectService {
     const mindmap: WorldMindmapData =
       parsedMindmap?.success
         ? {
-            nodes: Array.isArray(parsedMindmap.data.nodes)
-              ? (parsedMindmap.data.nodes as unknown as WorldMindmapData["nodes"])
-              : [],
-            edges: Array.isArray(parsedMindmap.data.edges)
-              ? (parsedMindmap.data.edges as unknown as WorldMindmapData["edges"])
-              : [],
+            nodes: normalizeMindmapNodes(parsedMindmap.data.nodes),
+            edges: normalizeMindmapEdges(parsedMindmap.data.edges),
             updatedAt:
               typeof parsedMindmap.data.updatedAt === "string"
                 ? parsedMindmap.data.updatedAt
@@ -876,9 +1013,7 @@ export class ProjectService {
     const memos: WorldScrapMemosData =
       parsedMemos?.success
         ? {
-            memos: Array.isArray(parsedMemos.data.memos)
-              ? (parsedMemos.data.memos as unknown as WorldScrapMemosData["memos"])
-              : [],
+            memos: normalizeScrapMemos(parsedMemos.data.memos),
             updatedAt:
               typeof parsedMemos.data.updatedAt === "string"
                 ? parsedMemos.data.updatedAt

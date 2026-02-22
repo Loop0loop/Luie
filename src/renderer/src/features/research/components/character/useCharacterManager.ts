@@ -27,8 +27,12 @@ export function useCharacterManager(t: TFunction) {
     // Sync with global store selection (e.g. from SmartLinkService)
     useEffect(() => {
         if (currentCharacterFromStore?.id && currentCharacterFromStore.id !== selectedCharacterId) {
-            setSelectedCharacterId(currentCharacterFromStore.id);
+            const syncTimer = window.setTimeout(() => {
+                setSelectedCharacterId(currentCharacterFromStore.id);
+            }, 0);
+            return () => window.clearTimeout(syncTimer);
         }
+        return undefined;
     }, [currentCharacterFromStore, selectedCharacterId]);
 
     useEffect(() => {

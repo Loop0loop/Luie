@@ -1,7 +1,5 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -10,31 +8,12 @@ import {
 } from "react";
 import { ConfirmDialog, PromptDialog } from "@shared/ui/Modal";
 import { useToast, type ToastType } from "@shared/ui/ToastContext";
-
-type ConfirmOptions = {
-  title: string;
-  message: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  isDestructive?: boolean;
-};
-
-type PromptOptions = {
-  title: string;
-  message?: string;
-  defaultValue?: string;
-  placeholder?: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-};
-
-type DialogContextValue = {
-  confirm: (options: ConfirmOptions) => Promise<boolean>;
-  prompt: (options: PromptOptions) => Promise<string | null>;
-  toast: (message: string, type: ToastType, duration?: number) => void;
-};
-
-const DialogContext = createContext<DialogContextValue | null>(null);
+import {
+  DialogContext,
+  type ConfirmOptions,
+  type DialogContextValue,
+  type PromptOptions,
+} from "@shared/ui/dialogContext";
 
 export function DialogProvider({ children }: { children: ReactNode }) {
   const { showToast } = useToast();
@@ -121,13 +100,4 @@ export function DialogProvider({ children }: { children: ReactNode }) {
       />
     </DialogContext.Provider>
   );
-}
-
-// eslint-disable-next-line react-refresh/only-export-components
-export function useDialog(): DialogContextValue {
-  const context = useContext(DialogContext);
-  if (!context) {
-    throw new Error("useDialog must be used within a DialogProvider");
-  }
-  return context;
 }

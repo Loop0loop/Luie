@@ -4,7 +4,7 @@ import { cn } from "@shared/types/utils";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import { MoreVertical, Edit2, Copy, Trash2 } from "lucide-react";
 import { useFloatingMenu } from "@shared/hooks/useFloatingMenu";
-import { useDialog } from "@shared/ui/DialogProvider";
+import { useDialog } from "@shared/ui/useDialog";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useChapterManagement } from "@renderer/features/manuscript/hooks/useChapterManagement";
 
@@ -40,7 +40,7 @@ export default function SidebarChapterList() {
         closeMenu();
 
         if (action === "rename") {
-            const current = chapters.find((chapter: any) => chapter.id === id);
+            const current = chapters.find((chapter) => chapter.id === id);
             if (current) {
                 setEditingId(id);
                 setEditValue(current.title || "");
@@ -119,7 +119,7 @@ export default function SidebarChapterList() {
 
             {/* Chapter List */}
             <div className="flex-1 overflow-y-auto px-2 space-y-0.5 custom-scrollbar pb-4">
-                {chapters.map((chapter: any) => {
+                {chapters.map((chapter) => {
                     const isActive = chapter.id === activeChapterId;
                     const isEditing = chapter.id === editingId;
 

@@ -27,20 +27,6 @@ interface RibbonProps {
   activeChapterId?: string;
 }
 
-type RibbonCommandChain = ReturnType<Editor["chain"]> & {
-  toggleBold: () => RibbonCommandChain;
-  toggleItalic: () => RibbonCommandChain;
-  toggleUnderline: () => RibbonCommandChain;
-  toggleStrike: () => RibbonCommandChain;
-  toggleHighlight: () => RibbonCommandChain;
-  toggleBulletList: () => RibbonCommandChain;
-  toggleOrderedList: () => RibbonCommandChain;
-  setTextAlign: (align: "left" | "center" | "right") => RibbonCommandChain;
-  setParagraph: () => RibbonCommandChain;
-  toggleHeading: (attrs: { level: 1 | 2 }) => RibbonCommandChain;
-  run: () => boolean;
-};
-
 export default function Ribbon({ editor, onOpenSettings, activeChapterId }: RibbonProps) {
   const { t } = useTranslation();
   const maxWidth = useEditorStore((state) => state.maxWidth);
@@ -57,9 +43,9 @@ export default function Ribbon({ editor, onOpenSettings, activeChapterId }: Ribb
   const isActive = (nameOrAttrs: string | Record<string, unknown>, attributes?: Record<string, unknown>) =>
     editor?.isActive(nameOrAttrs as string, attributes) ?? false;
 
-  const withChain = (action: (chain: RibbonCommandChain) => void): void => {
+  const withChain = (action: (chain: ReturnType<Editor["chain"]>) => void): void => {
     if (!editor) return;
-    action(editor.chain().focus() as unknown as RibbonCommandChain);
+    action(editor.chain().focus());
   };
 
 

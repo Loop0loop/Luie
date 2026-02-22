@@ -56,7 +56,7 @@ test("template selector visual snapshot @visual", async ({ page }) => {
         theme: "light",
       };
 
-      const windowApi = window as unknown as Window & { api: any };
+      const windowApi = window as Window & { api?: Record<string, unknown> };
       windowApi.api = {
         project: {
           create: async () => ({ success: false, error: { message: "not supported" } }),

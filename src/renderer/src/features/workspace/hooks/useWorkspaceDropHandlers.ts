@@ -1,15 +1,24 @@
 import { useCallback } from "react";
 import type { DragData } from "@shared/ui/GlobalDragContext";
 import type { EditorUiMode } from "@shared/types";
+import type {
+    ResizablePanelData,
+    WorldTab,
+} from "@renderer/features/workspace/stores/uiStore";
+
+type ScrivenerMainView = {
+    type: "editor" | "character" | "world" | "memo" | "trash" | "analysis";
+    id?: string;
+};
 
 // UI Store actions expected
 interface DropHandlerDependencies {
     uiMode: EditorUiMode;
     handleSelectChapter: (id: string) => void;
     handleSelectResearchItem: (type: "character" | "world" | "scrap" | "analysis") => void;
-    setMainView: (view: any) => void;
-    setWorldTab: (tab: any) => void;
-    addPanel: (panelInfo: any, insertAt?: number) => void;
+    setMainView: (view: ScrivenerMainView) => void;
+    setWorldTab: (tab: WorldTab) => void;
+    addPanel: (panelInfo: ResizablePanelData["content"], insertAt?: number) => void;
 }
 
 export function useWorkspaceDropHandlers({

@@ -306,6 +306,8 @@ contextBridge.exposeInMainWorld("api", {
       safeInvoke(IPC_CHANNELS.PROJECT_UPDATE, input),
     delete: (id: string): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.PROJECT_DELETE, id),
+    removeLocal: (id: string): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.PROJECT_REMOVE_LOCAL, id),
     openLuie: (packagePath: string): Promise<IPCResponse> =>
       safeInvoke(IPC_CHANNELS.PROJECT_OPEN_LUIE, packagePath),
   },

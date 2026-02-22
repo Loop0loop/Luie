@@ -230,8 +230,10 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
           return true;
         }
 
-        // @ts-expect-error - ref is set by forwardRef
-        return component?.ref?.onKeyDown?.(props) ?? false;
+        const suggestionRef = component?.ref as {
+          onKeyDown?: (nextProps: SuggestionKeyDownProps) => boolean;
+        } | undefined;
+        return suggestionRef?.onKeyDown?.(props) ?? false;
       },
 
       onExit() {

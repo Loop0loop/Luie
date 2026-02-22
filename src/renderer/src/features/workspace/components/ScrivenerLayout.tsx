@@ -84,9 +84,9 @@ export default function ScrivenerLayout({
             <>
               <Panel
                 id="sidebar"
-                defaultSize={220}
-                minSize={215}
-                maxSize={435}
+                defaultSize={210}
+                minSize={210}
+                maxSize={530}
                 className="bg-panel border-r border-border flex flex-col shrink-0 min-w-0"
               >
                 {sidebar}
@@ -122,7 +122,7 @@ export default function ScrivenerLayout({
                   <button
                     onClick={() => setIsInspectorOpen(true)}
                     className="p-1 rounded hover:bg-surface-hover text-muted-foreground transition-colors shrink-0"
-                    title="Open Inspector"
+                    title={t("scrivener.inspector.open")}
                   >
                     <Menu className="w-4 h-4" />
                   </button>
@@ -154,7 +154,7 @@ export default function ScrivenerLayout({
             {/* Footer Info */}
             <div className="h-6 bg-surface border-t border-border flex items-center px-3 text-xs text-muted justify-between shrink-0">
               <span>{/* Word Count etc */}</span>
-              <span>Target: 2000 words</span>
+              <span>{t("scrivener.target", { count: 2000 })}</span>
             </div>
           </Panel>
 
@@ -167,25 +167,25 @@ export default function ScrivenerLayout({
 
               <Panel
                 id="inspector"
-                defaultSize={280}
-                minSize={200}
-                maxSize={450}
+                defaultSize={15}
+                minSize={10}
+                maxSize={30}
                 className="bg-panel flex flex-col shrink-0 min-w-0"
               >
                 {/* Floating Toggle wrapper */}
                 <div className="flex items-center justify-between border-b border-border bg-surface px-2 shadow-sm min-h-[32px] shrink-0">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-muted ml-2">Inspector</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted ml-2">{t("scrivener.inspector.title")}</span>
                   <button
                     onClick={() => setIsInspectorOpen(false)}
                     className="p-1.5 rounded hover:bg-surface-hover text-muted-foreground transition-colors"
-                    title="Close Inspector"
+                    title={t("scrivener.inspector.close")}
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
 
                 <div className="flex-1 overflow-hidden flex flex-col">
-                  <Suspense fallback={<div className="p-4 text-xs">Loading Inspector...</div>}>
+                  <Suspense fallback={<div className="p-4 text-xs">{t("scrivener.inspector.loading")}</div>}>
                     <InspectorPanel key={activeChapterId} activeChapterId={activeChapterId} />
                   </Suspense>
                 </div>

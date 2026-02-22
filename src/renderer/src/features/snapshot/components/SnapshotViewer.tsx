@@ -6,7 +6,7 @@ import { api } from "@shared/api";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import type { Snapshot } from '@shared/types';
 import Editor from "@renderer/features/editor/components/Editor";
-import { useDialog } from "@shared/ui/DialogProvider";
+import { useDialog } from "@shared/ui/useDialog";
 import { htmlToPlainText } from "@shared/utils/htmlText";
 
 interface SnapshotViewerProps {

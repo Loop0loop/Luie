@@ -30,8 +30,12 @@ function setupUnhandledRejectionHandler(): void {
     });
 
     if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
-      console.warn("[Luie] Unhandled Promise rejection ↴", reason);
+      void api?.logger?.warn?.("[renderer] Unhandled Promise rejection (dev)", {
+        reason:
+          reason instanceof Error
+            ? { message: reason.message, stack: reason.stack }
+            : reason,
+      });
     }
   });
 }

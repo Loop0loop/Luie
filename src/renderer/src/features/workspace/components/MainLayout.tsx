@@ -18,12 +18,8 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
   const {
     isSidebarOpen,
     isContextOpen,
-    sidebarWidth,
-    contextWidth,
     setSidebarOpen,
     setContextOpen,
-    setSidebarWidth,
-    setContextWidth,
   } = useUIStore();
 
   return (
@@ -35,10 +31,9 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
         {isSidebarOpen && (
           <Panel
             id="sidebar-panel"
-            defaultSize={sidebarWidth}
-            minSize={15}
-            maxSize={40}
-            onResize={(size) => setSidebarWidth(size as unknown as number)}
+            defaultSize={210}
+            minSize={210}
+            maxSize={530}
             className="bg-sidebar border-r border-border overflow-hidden flex flex-col z-10"
           >
             {sidebar}
@@ -98,10 +93,9 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
         {isContextOpen && (
           <Panel
             id="context-panel"
-            defaultSize={contextWidth}
-            minSize={15}
-            maxSize={40}
-            onResize={(size) => setContextWidth(size as unknown as number)}
+            defaultSize={15}
+            minSize={10}
+            maxSize={30}
             className="bg-panel border-l border-border overflow-hidden flex flex-col z-10"
           >
             {contextPanel}

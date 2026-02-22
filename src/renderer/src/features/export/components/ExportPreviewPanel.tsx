@@ -18,7 +18,7 @@ import {
   Globe
 } from "lucide-react";
 import { cn } from '@shared/types/utils';
-import { useDialog } from '@shared/ui/DialogProvider';
+import { useDialog } from '@shared/ui/useDialog';
 
 interface ExportPreviewPanelProps {
   title?: string;

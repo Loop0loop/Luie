@@ -43,7 +43,9 @@ const openAuthResultPage = async (status: "success" | "error", detail?: string):
   }
 };
 
-const classifyCallbackFailure = (error: unknown): string => {
+type OAuthCallbackFailureReason = "NO_PENDING" | "EXPIRED" | "STATE_MISMATCH" | "UNKNOWN";
+
+const classifyCallbackFailure = (error: unknown): OAuthCallbackFailureReason => {
   const message = error instanceof Error ? error.message : String(error);
   if (message.includes("SYNC_AUTH_NO_PENDING_SESSION")) return "NO_PENDING";
   if (message.includes("SYNC_AUTH_REQUEST_EXPIRED")) return "EXPIRED";
@@ -52,6 +54,9 @@ const classifyCallbackFailure = (error: unknown): string => {
   if (message.includes("OAuth callback with invalid state")) return "STATE_MISMATCH";
   return "UNKNOWN";
 };
+
+const isStaleCallbackFailure = (reason: OAuthCallbackFailureReason): boolean =>
+  reason === "NO_PENDING" || reason === "EXPIRED" || reason === "STATE_MISMATCH";
 
 export const extractAuthCallbackUrl = (argv: string[]): string | null => {
   for (const arg of argv) {
@@ -81,24 +86,26 @@ export const handleDeepLinkUrl = async (url: string): Promise<boolean> => {
     logger.info("OAuth callback processed", { url });
     return true;
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const reason = classifyCallbackFailure(error);
     const status = syncService.getStatus();
-    if (status.connected) {
+    if (status.connected && isStaleCallbackFailure(reason)) {
       focusMainWindow();
-      void openAuthResultPage("success");
-      logger.warn("OAuth callback failed but sync is already connected; treating callback as stale", {
+      void openAuthResultPage("success", `STALE_CONNECTED:${reason}`);
+      logger.warn("OAuth callback arrived after connection was already established", {
         url,
-        reason: classifyCallbackFailure(error),
+        reason,
         error,
       });
       return true;
     }
 
     focusMainWindow();
-    const message = error instanceof Error ? error.message : String(error);
-    const reason = classifyCallbackFailure(error);
     const detail = `${reason}:${message}`;
     void openAuthResultPage("error", detail);
-    logger.error("Failed to process OAuth callback", {
+    logger.error(status.connected
+      ? "Failed to process OAuth callback even though sync is connected"
+      : "Failed to process OAuth callback", {
       url,
       reason,
       error,

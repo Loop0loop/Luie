@@ -28,9 +28,9 @@ export default function CharacterManager() {
         {/* LEFT SIDEBAR - Character List */}
         <Panel
           id="sidebar"
-          defaultSize={230}
-          minSize={145}
-          maxSize={360}
+          defaultSize={25}
+          minSize={15}
+          maxSize={40}
           className="bg-sidebar border-r border-border flex flex-col overflow-y-auto"
         >
           <CharacterSidebarList

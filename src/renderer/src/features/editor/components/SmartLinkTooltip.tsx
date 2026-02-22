@@ -33,8 +33,12 @@ export function SmartLinkTooltip({ isSettingsOpen }: { isSettingsOpen?: boolean 
     // Hide tooltip and suppress events while settings are open
     if (isSettingsOpen) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      setState((prev) => (prev.visible ? { ...prev, visible: false } : prev));
-      return;
+      const hideTimer = window.setTimeout(() => {
+        setState((prev) => (prev.visible ? { ...prev, visible: false } : prev));
+      }, 0);
+      return () => {
+        window.clearTimeout(hideTimer);
+      };
     }
 
     const handleMouseOver = (e: MouseEvent) => {

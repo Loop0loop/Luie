@@ -12,23 +12,20 @@ import { MemoSidebarList } from "@renderer/features/research/components/memo/Mem
 
 const MEMO_SIDEBAR_PANEL_ID = "memo-sidebar";
 const MEMO_CONTENT_PANEL_ID = "memo-content";
-const MEMO_SIDEBAR_DEFAULT_SIZE = 230;
-const MEMO_SIDEBAR_MIN_SIZE = 145;
-const MEMO_SIDEBAR_MAX_SIZE = 360;
-const MEMO_CONTENT_MIN_SIZE = 30;
+const MEMO_SIDEBAR_DEFAULT_SIZE = 25;
+const MEMO_SIDEBAR_MIN_SIZE = 15;
+const MEMO_SIDEBAR_MAX_SIZE = 40;
+const MEMO_CONTENT_MIN_SIZE = 20;
 
 const normalizeMemoLayout = (layout: Layout): Layout | undefined => {
   const rawSidebar = layout[MEMO_SIDEBAR_PANEL_ID];
   const rawContent = layout[MEMO_CONTENT_PANEL_ID];
   if (!Number.isFinite(rawSidebar) || !Number.isFinite(rawContent)) return undefined;
 
-  let normalizedSidebar = Math.max(0, Math.min(100, Math.round(Number(rawSidebar))));
-  if (normalizedSidebar < 0) normalizedSidebar = 0;
-  if (normalizedSidebar > 1000) normalizedSidebar = 1000;
-
+  const normalizedSidebar = Math.max(MEMO_SIDEBAR_MIN_SIZE, Math.min(MEMO_SIDEBAR_MAX_SIZE, Math.round(Number(rawSidebar))));
   return {
     [MEMO_SIDEBAR_PANEL_ID]: normalizedSidebar,
-    [MEMO_CONTENT_PANEL_ID]: 1000 - normalizedSidebar,
+    [MEMO_CONTENT_PANEL_ID]: 100 - normalizedSidebar,
   };
 };
 
@@ -101,12 +98,8 @@ function MemoSectionInner({
       <PanelGroup
         orientation="vertical"
         onLayoutChanged={handleLayoutChange}
-        defaultLayout={
-          initialLayout ?? {
-            [MEMO_SIDEBAR_PANEL_ID]: MEMO_SIDEBAR_DEFAULT_SIZE,
-            [MEMO_CONTENT_PANEL_ID]: 1000 - MEMO_SIDEBAR_DEFAULT_SIZE, // Use a larger base to accommodate 230 proportional layout
-          }
-        }
+        defaultLayout={initialLayout}
+        id="memo-panel-group"
         className="h-full! w-full!"
       >
         <Panel

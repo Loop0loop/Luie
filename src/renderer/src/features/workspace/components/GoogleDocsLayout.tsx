@@ -184,7 +184,7 @@ export default function GoogleDocsLayout({
           {/* Left Sidebar (Manuscript Only) */}
           {isSidebarOpen && (
             <>
-              <Panel id="left-sidebar" defaultSize={220} minSize={200} maxSize={420} className="bg-background border-r border-border overflow-hidden flex flex-col shrink-0 min-w-0">
+              <Panel id="left-sidebar" defaultSize={210} minSize={210} maxSize={530} className="bg-background border-r border-border overflow-hidden flex flex-col shrink-0 min-w-0">
                 {sidebar}
               </Panel>
 
@@ -195,10 +195,10 @@ export default function GoogleDocsLayout({
           )}
 
           {/* Main Content Column (Editor + Footer) */}
-          <Panel id="center-content" minSize={300} className="flex-1 flex flex-col min-w-0 bg-secondary/30 relative z-0 transition-colors duration-200">
+          <Panel id="center-content" minSize={130} className="flex-1 flex flex-col min-w-0 bg-secondary/30 relative z-0 transition-colors duration-200">
             <div className="flex-1 relative flex flex-col overflow-hidden">
               <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative" id="google-docs-split-editor">
-                <Panel id="editor-main-panel" minSize={300} className="min-w-0 bg-transparent relative flex flex-col">
+                <Panel id="editor-main-panel" minSize={130} className="min-w-0 bg-transparent relative flex flex-col">
                   <EditorDropZones />
                   <main className="flex-1 overflow-y-auto flex flex-col items-center relative custom-scrollbar bg-sidebar">
                     <div className="sticky top-0 z-30 pt-4 pb-2 shrink-0 select-none bg-sidebar/95 backdrop-blur-sm flex justify-center w-full">
@@ -234,7 +234,7 @@ export default function GoogleDocsLayout({
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
 
-              <Panel id="right-context-panel" defaultSize={280} minSize={200} maxSize={450} className="bg-background border-l border-border overflow-hidden flex flex-col shrink-0 min-w-0">
+              <Panel id="right-context-panel" defaultSize={15} minSize={10} maxSize={30} className="bg-background border-l border-border overflow-hidden flex flex-col shrink-0 min-w-0">
                 <div className="h-full flex flex-col">
                   {activeRightTab === "character" && (
                     <div className="h-full">

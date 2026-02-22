@@ -7,7 +7,10 @@ test("creates project and chapter via IPC @e2e", async () => {
   const { app, page, testDbDir } = await launchApp();
 
   const result = await page.evaluate(async () => {
-    const api = (window as typeof window & { api: any }).api;
+    const api = (window as Window & { api?: Window["api"] }).api;
+    if (!api) {
+      return { projectRes: { success: false, error: { message: "window.api missing" } }, chapterRes: null };
+    }
     const suffix = Math.floor(Date.now() / 1000);
     const projectRes = await api.project.create({
       title: `E2E Project ${suffix}`,
@@ -42,14 +45,24 @@ test("full IPC workflow @e2e", async () => {
   const { app, page, testDbDir } = await launchApp();
 
   const result = await page.evaluate(async () => {
-    const api = (window as typeof window & { api: any }).api;
+    const api = (window as Window & { api?: Window["api"] }).api;
+    if (!api) {
+      return {
+        steps: [{ name: "window.api", success: false, error: { message: "window.api missing" } }],
+        data: {},
+        ids: {},
+      };
+    }
     const suffix = Math.floor(Date.now() / 1000);
 
     const steps: Array<{ name: string; success: boolean; error?: unknown }> = [];
     const data: Record<string, unknown> = {};
     const ids: Record<string, string> = {};
 
-    const record = (name: string, res: any) => {
+    const record = (
+      name: string,
+      res: { success?: boolean; error?: unknown } | null | undefined,
+    ) => {
       steps.push({ name, success: Boolean(res?.success), error: res?.error });
       return res;
     };

@@ -263,10 +263,10 @@ export const ja = {
         sidebarTitle: "Start New Project",
         recentTitle: "Recent Projects",
         category: {
-          all: "All Templates",
-          novel: "Novel",
-          script: "Script",
-          general: "General",
+          all: "全テンプレート (All)",
+          novel: "小説 (Novel)",
+          script: "シナリオ/台本 (Script)",
+          general: "一般 (General)",
         },
         title: {
           blank: "空のプロジェクト (Blank)",
@@ -372,6 +372,7 @@ export const ja = {
       templateDescription: "{templateId} テンプレートで作成",
     },
     sidebar: {
+      title: "PROJECT BINDER",
       menu: {
         openBelow: "下に開く",
         openRight: "右に開く",
@@ -391,6 +392,10 @@ export const ja = {
         characters: "登場人物",
         world: "世界観",
         scrap: "資料スクラップ",
+        synopsis: "あらすじ",
+      },
+      action: {
+        new: "新しい章を追加",
       },
       addChapter: "新しい章を追加...",
       trashEmpty: "空です",
@@ -994,6 +999,15 @@ export const ja = {
         added: "追加",
         close: "閉じる",
       },
+    },
+    scrivener: {
+      inspector: {
+        title: "インスペクター (Inspector)",
+        open: "インスペクターを開く",
+        close: "インスペクターを閉じる",
+        loading: "インスペクターを読み込み中...",
+      },
+      target: "目標: {{count}} 単語",
     },
     trash: {
       confirmRestore: "ゴミ箱から復元しますか？",

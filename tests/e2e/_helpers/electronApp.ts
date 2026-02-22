@@ -46,7 +46,7 @@ export async function launchApp(
   await page.setViewportSize({ width: 1280, height: 720 });
   if (waitForApi) {
     await page.waitForFunction(
-      () => typeof (window as unknown as { api?: unknown }).api !== "undefined",
+      () => typeof (window as Window & { api?: unknown }).api !== "undefined",
       undefined,
       { timeout: 10_000 },
     );

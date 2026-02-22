@@ -12,8 +12,6 @@ export type UiModeIntegrityUiState = {
   isSidebarOpen: boolean;
   isContextOpen: boolean;
   isManuscriptMenuOpen: boolean;
-  sidebarWidth: number;
-  contextWidth: number;
   docsRightTab: DocsRightTab;
   isBinderBarOpen: boolean;
 };
@@ -29,8 +27,6 @@ export type UiModeIntegritySnapshot = {
   isSidebarOpen: boolean;
   isContextOpen: boolean;
   isManuscriptMenuOpen: boolean;
-  sidebarWidth: number;
-  contextWidth: number;
   docsRightTab: DocsRightTab;
   isBinderBarOpen: boolean;
   activeProjectId: string | null;
@@ -64,8 +60,6 @@ export function captureUiModeIntegritySnapshot(input: {
     isSidebarOpen: input.ui.isSidebarOpen,
     isContextOpen: input.ui.isContextOpen,
     isManuscriptMenuOpen: input.ui.isManuscriptMenuOpen,
-    sidebarWidth: input.ui.sidebarWidth,
-    contextWidth: input.ui.contextWidth,
     docsRightTab: input.ui.docsRightTab,
     isBinderBarOpen: input.ui.isBinderBarOpen,
     activeProjectId: input.activeProjectId ?? null,
@@ -94,8 +88,6 @@ const NON_LAYOUT_KEYS: Array<keyof Omit<UiModeIntegritySnapshot, "uiMode">> = [
   "isSidebarOpen",
   "isContextOpen",
   "isManuscriptMenuOpen",
-  "sidebarWidth",
-  "contextWidth",
   "docsRightTab",
   "isBinderBarOpen",
   "activeProjectId",

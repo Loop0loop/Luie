@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type * as ElectronModule from "electron";
 import type { SyncSettings } from "../../../src/shared/types/index.js";
 
 const mocked = vi.hoisted(() => {
@@ -20,7 +21,7 @@ const mocked = vi.hoisted(() => {
 });
 
 vi.mock("electron", async () => {
-  const actual = await vi.importActual<typeof import("electron")>("electron");
+  const actual = await vi.importActual<typeof ElectronModule>("electron");
   return {
     ...actual,
     safeStorage: {
@@ -195,5 +196,15 @@ describe("SyncAuthService", () => {
 
     expect(result.token).toBe("legacy-token");
     expect(result.migratedCipher?.startsWith("v2:plain:")).toBe(true);
+  });
+
+  it("returns false when Supabase env is not configured", async () => {
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_ANON_KEY;
+    delete process.env.SUPADATABASE_PRJ_ID;
+    delete process.env.SUPADATABASE_API;
+
+    const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
+    expect(syncAuthService.isConfigured()).toBe(false);
   });
 });

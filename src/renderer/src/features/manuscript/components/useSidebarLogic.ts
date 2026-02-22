@@ -4,8 +4,9 @@ import { useProjectStore } from "@renderer/features/project/stores/projectStore"
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useChapterManagement } from "@renderer/features/manuscript/hooks/useChapterManagement";
 import { useFloatingMenu } from "@shared/hooks/useFloatingMenu";
-import { useDialog } from "@shared/ui/DialogProvider";
+import { useDialog } from "@shared/ui/useDialog";
 import { useShortcutCommand } from "@renderer/features/workspace/hooks/useShortcutCommand";
+import type { ShortcutCommand } from "@renderer/features/workspace/hooks/useShortcutCommand";
 import { api } from "@shared/api";
 
 export interface Chapter {
@@ -68,7 +69,7 @@ export function useSidebarLogic({
         };
     }, [menuOpenId, setManuscriptMenuOpen]);
 
-    useShortcutCommand((command: any) => {
+    useShortcutCommand((command: ShortcutCommand) => {
         if (command.type === "sidebar.section.toggle") {
             setSidebarOpen(true);
             if (command.section === "manuscript") setManuscriptOpen((prev) => !prev);

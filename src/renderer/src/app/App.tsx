@@ -19,6 +19,7 @@ import { api } from "@shared/api";
 import {
   captureUiModeIntegritySnapshot,
   getUiModeIntegrityViolations,
+  type UiModeIntegrityUiState,
   type UiModeIntegritySnapshot,
 } from "@renderer/features/workspace/services/uiModeIntegrity";
 import {
@@ -124,14 +125,22 @@ export default function App() {
     if (!import.meta.env.DEV) return;
 
     const uiState = useUIStore.getState();
+    const integrityUiState: UiModeIntegrityUiState = {
+      view: uiState.view,
+      contextTab: uiState.contextTab,
+      worldTab: uiState.worldTab,
+      isSplitView: false,
+      splitRatio: 0.5,
+      splitSide: "right",
+      isSidebarOpen: uiState.isSidebarOpen,
+      isContextOpen: uiState.isContextOpen,
+      isManuscriptMenuOpen: uiState.isManuscriptMenuOpen,
+      docsRightTab: uiState.docsRightTab,
+      isBinderBarOpen: uiState.isBinderBarOpen,
+    };
     const snapshot = captureUiModeIntegritySnapshot({
       editor: useEditorStore.getState(),
-      ui: {
-        ...uiState,
-        isSplitView: false,
-        splitRatio: 0.5,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as unknown as any,
+      ui: integrityUiState,
     });
     const previous = uiModeIntegrityRef.current;
     if (previous) {

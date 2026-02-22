@@ -97,8 +97,11 @@ export const ShortcutsTab = memo(function ShortcutsTab({
         if (areShortcutMapsEqual(shortcutDraftsRef.current, shortcutValues)) {
             return;
         }
-        setShortcutDrafts(shortcutValues);
-        shortcutDraftsRef.current = shortcutValues;
+        const syncTimer = window.setTimeout(() => {
+            setShortcutDrafts(shortcutValues);
+            shortcutDraftsRef.current = shortcutValues;
+        }, 0);
+        return () => window.clearTimeout(syncTimer);
     }, [shortcutValues]);
 
     const handleShortcutDraftChange = useCallback((actionId: string, value: string) => {

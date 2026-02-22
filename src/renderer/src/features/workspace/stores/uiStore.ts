@@ -47,8 +47,6 @@ interface UIStore {
   isSidebarOpen: boolean;
   isContextOpen: boolean;
   isManuscriptMenuOpen: boolean;
-  sidebarWidth: number;
-  contextWidth: number;
   docsRightTab: DocsRightTab;
   isBinderBarOpen: boolean;
 
@@ -65,8 +63,6 @@ interface UIStore {
   setSidebarOpen: (isOpen: boolean) => void;
   setContextOpen: (isOpen: boolean) => void;
   setManuscriptMenuOpen: (isOpen: boolean) => void;
-  setSidebarWidth: (width: number) => void;
-  setContextWidth: (width: number) => void;
   setDocsRightTab: (tab: DocsRightTab) => void;
   setBinderBarOpen: (isOpen: boolean) => void;
 
@@ -85,8 +81,6 @@ export const useUIStore = create<UIStore>()(
       isSidebarOpen: DEFAULT_UI_SIDEBAR_OPEN,
       isContextOpen: DEFAULT_UI_CONTEXT_OPEN,
       isManuscriptMenuOpen: false,
-      sidebarWidth: 15,
-      contextWidth: 20,
       docsRightTab: null,
       isBinderBarOpen: true,
 
@@ -142,8 +136,6 @@ export const useUIStore = create<UIStore>()(
       setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
       setContextOpen: (isContextOpen) => set({ isContextOpen }),
       setManuscriptMenuOpen: (isManuscriptMenuOpen) => set({ isManuscriptMenuOpen }),
-      setSidebarWidth: (sidebarWidth) => set({ sidebarWidth }),
-      setContextWidth: (contextWidth) => set({ contextWidth }),
       setDocsRightTab: (docsRightTab) => set({ docsRightTab }),
       setBinderBarOpen: (isBinderBarOpen) => set({ isBinderBarOpen }),
       setMainView: (mainView) => set({ mainView }),
@@ -161,8 +153,6 @@ export const useUIStore = create<UIStore>()(
         isSidebarOpen: state.isSidebarOpen,
         isContextOpen: state.isContextOpen,
         isManuscriptMenuOpen: state.isManuscriptMenuOpen,
-        sidebarWidth: state.sidebarWidth,
-        contextWidth: state.contextWidth,
         isBinderBarOpen: state.isBinderBarOpen,
       }),
     },

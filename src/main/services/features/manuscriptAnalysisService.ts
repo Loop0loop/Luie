@@ -14,7 +14,6 @@ import {
   type AnalysisItemResult,
 } from "./analysis/analysisPrompt.js";
 import type { AnalysisItem, AnalysisContext } from "../../../shared/types/analysis.js";
-import type { Chapter, Character, Term } from "../../../shared/types/index.js";
 import type { BrowserWindow } from "electron";
 import {
   LUIE_PACKAGE_EXTENSION,
@@ -41,6 +40,14 @@ type LuieCharactersFile = {
 
 type LuieTermsFile = {
   terms?: Array<{ term?: string; definition?: string; category?: string }>;
+};
+
+const isAsyncIterable = (value: unknown): value is AsyncIterable<unknown> => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const iterator = (value as { [Symbol.asyncIterator]?: unknown })[Symbol.asyncIterator];
+  return typeof iterator === "function";
 };
 
 const normalizeZipPath = (inputPath: string) =>
@@ -262,11 +269,11 @@ class ManuscriptAnalysisService {
           category: term?.category ?? "기타",
         }));
 
-      const chapter: Chapter = {
+      const chapter = {
         id: chapterId,
         title: chapterTitle,
         content: chapterContent,
-      } as Chapter;
+      };
 
       logger.info("Loaded .luie analysis data", {
         chapterId,
@@ -279,8 +286,8 @@ class ManuscriptAnalysisService {
       // 3. 분석 컨텍스트 구성
       const context = manuscriptAnalyzer.buildAnalysisContext(
         chapter,
-        characters as unknown as Character[],
-        terms as unknown as Term[]
+        characters,
+        terms,
       );
 
       // 4. Gemini 스트리밍 분석
@@ -439,8 +446,18 @@ ${runId}
           },
         });
 
-        const stream = (phaseResult as { stream?: AsyncIterable<unknown> }).stream
-          ?? (phaseResult as unknown as AsyncIterable<unknown>);
+        const streamFromResult =
+          phaseResult && typeof phaseResult === "object" && "stream" in phaseResult
+            ? (phaseResult as { stream?: unknown }).stream
+            : undefined;
+        const stream = isAsyncIterable(streamFromResult)
+          ? streamFromResult
+          : isAsyncIterable(phaseResult)
+            ? phaseResult
+            : null;
+        if (!stream) {
+          throw new Error("ANALYSIS_STREAM_UNAVAILABLE");
+        }
         let buffer = "";
 
         for await (const chunk of stream) {

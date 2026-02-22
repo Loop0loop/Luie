@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useDialog } from '@shared/ui/DialogProvider';
+import { useDialog } from '@shared/ui/useDialog';
 import { api } from "@shared/api";
 import { sanitizePreviewHtml } from "@shared/utils/sanitizeHtml";
+import type { Chapter } from "@shared/types";
 
 export function useExportManager() {
     const { t } = useTranslation();
@@ -29,17 +30,18 @@ export function useExportManager() {
             return;
         }
 
-        api.chapter.get(chapterId).then((response: any) => {
+        api.chapter.get(chapterId).then((response) => {
             if (response.success && response.data) {
+                const chapterData = response.data as Chapter;
                 setChapter({
-                    title: response.data.title,
-                    content: response.data.content || "",
-                    projectId: response.data.projectId,
+                    title: chapterData.title,
+                    content: chapterData.content || "",
+                    projectId: chapterData.projectId,
                 });
             } else {
                 setLoadError(response.error?.message || t("exportWindow.error.loadFailed"));
             }
-        }).catch((error: any) => {
+        }).catch((error: unknown) => {
             setLoadError(error instanceof Error ? error.message : t("exportWindow.error.unknown"));
         });
     }, [chapterId, t]);

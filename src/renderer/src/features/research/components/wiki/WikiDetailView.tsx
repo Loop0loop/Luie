@@ -5,7 +5,7 @@ import { useCharacterStore } from "@renderer/features/research/stores/characterS
 import { BufferedInput } from "@shared/ui/BufferedInput";
 import { Infobox } from "@renderer/features/research/components/wiki/Infobox"; 
 import { WikiSection } from "@renderer/features/research/components/wiki/WikiSection"; 
-import { useDialog } from "@shared/ui/DialogProvider";
+import { useDialog } from "@shared/ui/useDialog";
 import { SUPPORTED_LANGUAGES, i18n } from "@renderer/i18n";
 import { CHARACTER_TEMPLATES } from "@shared/constants";
 

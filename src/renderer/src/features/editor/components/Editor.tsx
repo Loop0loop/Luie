@@ -9,7 +9,7 @@ import { useEditorStats } from "@renderer/features/editor/hooks/useEditorStats";
 import { useEditorConfig } from "@renderer/features/editor/hooks/useEditorConfig";
 import { api } from "@shared/api";
 import { useTranslation } from "react-i18next";
-import { useDialog } from "@shared/ui/DialogProvider";
+import { useDialog } from "@shared/ui/useDialog";
 
 import { useEditorExtensions } from "@renderer/features/editor/components/hooks/useEditorExtensions";
 import { useSmartLinkClickHandler } from "@renderer/features/editor/components/hooks/useSmartLinkClickHandler";

@@ -105,6 +105,9 @@ const decodeSecret = (cipher: string): DecodedSecret => {
     } catch (error) {
       throw new Error(
         `SYNC_TOKEN_DECRYPT_FAILED:${error instanceof Error ? error.message : String(error)}`,
+        {
+          cause: error,
+        },
       );
     }
   }
@@ -204,12 +207,7 @@ class SyncAuthService {
   }
 
   isConfigured(): boolean {
-    try {
-      getSupabaseConfig();
-      return true;
-    } catch {
-      return false;
-    }
+    return getSupabaseConfig() !== null;
   }
 
   async startGoogleAuth(): Promise<void> {

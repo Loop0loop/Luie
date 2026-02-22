@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { EditorView } from "@tiptap/pm/view";
+import type { EditorView } from "@tiptap/pm/view";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { useTermStore } from "@renderer/features/research/stores/termStore";
 import { smartLinkService } from "@renderer/features/editor/services/smartLinkService";
@@ -22,14 +22,14 @@ export function useSmartLinkClickHandler() {
                 const termStore = useTermStore.getState();
 
                 // Search Character
-                const char = charStore.characters.find((c: any) => c.name === text || c.name.includes(text) || text.includes(c.name));
+                const char = charStore.characters.find((c) => c.name === text || c.name.includes(text) || text.includes(c.name));
                 if (char) {
                     smartLinkService.openItem(char.id, "character");
                     return true; // handled
                 }
 
                 // Search Term
-                const term = termStore.terms.find((t: any) => t.term === text || t.term.includes(text) || text.includes(t.term));
+                const term = termStore.terms.find((t) => t.term === text || t.term.includes(text) || text.includes(t.term));
                 if (term) {
                     smartLinkService.openItem(term.id, "term");
                     return true; // handled

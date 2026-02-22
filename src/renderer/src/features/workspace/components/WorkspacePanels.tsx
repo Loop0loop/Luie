@@ -23,7 +23,7 @@ interface WorkspacePanelsProps {
     currentProjectId?: string;
     activeChapterId?: string;
     activeChapterTitle: string;
-    onSave: (title: string, content: string) => Promise<void>;
+    onSave: (title: string, content: string, chapterId?: string) => Promise<void>;
 }
 
 export function WorkspacePanels({
@@ -42,7 +42,7 @@ export function WorkspacePanels({
             {panels.map((panel) => (
                 <Fragment key={panel.id}>
                     <PanelResizeHandle className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-50 relative" />
-                    <Panel defaultSize={panel.size} minSize={20} className="min-w-0 bg-panel relative flex flex-col">
+                    <Panel defaultSize={panel.size} minSize={200} className="min-w-0 bg-panel relative flex flex-col">
                         <div className="flex justify-between items-center p-2 border-b border-border bg-surface text-xs font-semibold text-muted">
                             <span className="uppercase">{panel.content.type}</span>
                             <button onClick={() => removePanel(panel.id)} className="hover:bg-surface-hover rounded p-1">✕</button>
@@ -63,11 +63,18 @@ export function WorkspacePanels({
                                                 (c) =>
                                                     c.projectId === currentProjectId &&
                                                     c.id === panel.content.snapshot?.chapterId,
-                                            )?.content || ""
+                                            )?.content ?? ""
                                         }
-                                        onApplySnapshotText={async (nextContent: any) => {
-                                            if (!activeChapterId) return;
-                                            await onSave(activeChapterTitle, nextContent);
+                                        onApplySnapshotText={async (nextContent: string) => {
+                                            const snapshotChapter = chapters.find(
+                                                (c) =>
+                                                    c.projectId === currentProjectId &&
+                                                    c.id === panel.content.snapshot?.chapterId,
+                                            );
+                                            const targetChapterId = snapshotChapter?.id ?? activeChapterId;
+                                            const targetTitle = snapshotChapter?.title ?? activeChapterTitle;
+                                            if (!targetChapterId) return;
+                                            await onSave(targetTitle, nextContent, targetChapterId);
                                         }}
                                     />
                                 ) : panel.content.type === "export" ? (

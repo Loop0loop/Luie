@@ -2,7 +2,7 @@
  * 챕터 관리 (생성, 수정, 삭제, 선택)
  */
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback } from "react";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { LUIE_PACKAGE_EXTENSION } from "@shared/constants";
@@ -19,23 +19,13 @@ export function useChapterManagement() {
     delete: deleteChapter,
   } = useChapterStore();
 
-  // ✅ Bug #3 Fix: Track previous project ID to detect project switches
-  // When the project changes, reset the active chapter selection to prevent
-  // stale chapter IDs from a previous project from leaking into the new context.
-  const prevProjectIdRef = useRef<string | null | undefined>(currentProject?.id);
-  useEffect(() => {
-    const currentId = currentProject?.id ?? null;
-    if (prevProjectIdRef.current !== currentId) {
-      prevProjectIdRef.current = currentId;
-      // Reset chapter selection on project change
-      setRequestedChapterId(null);
-    }
-  }, [currentProject?.id]);
-
   const activeChapterId =
-    requestedChapterId && chapters.some((c) => c.id === requestedChapterId)
+    requestedChapterId &&
+      chapters.some(
+        (c) => c.id === requestedChapterId && c.projectId === currentProject?.id,
+      )
       ? requestedChapterId
-      : (chapters[0]?.id ?? null);
+      : (chapters.find((c) => c.projectId === currentProject?.id)?.id ?? null);
 
   const activeChapter = activeChapterId
     ? chapters.find((c) => c.id === activeChapterId)
@@ -102,19 +92,19 @@ export function useChapterManagement() {
   );
 
   const handleSave = useCallback(
-    async (title: string, newContent: string) => {
-      // ✅ Bug #3 Fix: Guard against saving to a stale chapter after project switch.
-      // Verify that the chapter being saved actually belongs to the current project
-      // before writing to prevent cross-project data contamination.
-      if (!activeChapterId || !currentProject) return;
+    async (title: string, newContent: string, targetChapterId?: string) => {
+      if (!currentProject) return;
+
+      const chapterId = targetChapterId ?? activeChapterId;
+      if (!chapterId) return;
 
       const chapterBelongsToCurrentProject = chapters.some(
-        (c) => c.id === activeChapterId && c.projectId === currentProject.id,
+        (c) => c.id === chapterId && c.projectId === currentProject.id,
       );
 
       if (!chapterBelongsToCurrentProject) {
         api.logger.warn("handleSave: Blocked stale chapter save after project switch", {
-          chapterId: activeChapterId,
+          chapterId,
           currentProjectId: currentProject.id,
         });
         return;
@@ -122,13 +112,13 @@ export function useChapterManagement() {
 
       api.logger.info(`Saving: ${title}`);
       await updateChapter({
-        id: activeChapterId,
+        id: chapterId,
         title,
         content: newContent,
       });
 
       try {
-        await api.autoSave(activeChapterId, newContent, currentProject.id);
+        await api.autoSave(chapterId, newContent, currentProject.id);
       } catch (error) {
         api.logger.warn("Auto snapshot failed", error);
       }

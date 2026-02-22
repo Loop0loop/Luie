@@ -372,6 +372,7 @@ export const en = {
       templateDescription: "Created with {templateId} template",
     },
     sidebar: {
+      title: "PROJECT BINDER",
       menu: {
         openBelow: "Open below",
         openRight: "Open to the right",
@@ -391,6 +392,10 @@ export const en = {
         characters: "Characters",
         world: "World",
         scrap: "Scrap",
+        synopsis: "Synopsis",
+      },
+      action: {
+        new: "Add New Chapter",
       },
       addChapter: "Add new chapter...",
       trashEmpty: "Empty",
@@ -994,6 +999,15 @@ export const en = {
         added: "Added",
         close: "Close",
       },
+    },
+    scrivener: {
+      inspector: {
+        title: "Inspector",
+        open: "Open Inspector",
+        close: "Close Inspector",
+        loading: "Loading Inspector...",
+      },
+      target: "Target: {{count}} words",
     },
     trash: {
       confirmRestore: "Restore from trash?",

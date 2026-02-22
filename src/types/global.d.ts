@@ -35,6 +35,7 @@ declare global {
           projectPath?: string;
         }) => Promise<IPCResponse<Project>>;
         delete: (id: string) => Promise<IPCResponse<unknown>>;
+        removeLocal: (id: string) => Promise<IPCResponse<unknown>>;
       };
       chapter: {
         create: (input: {

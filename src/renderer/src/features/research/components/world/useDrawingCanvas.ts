@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { DEFAULT_WORLD_DRAWING, worldPackageStorage } from "@renderer/features/research/services/worldPackageStorage";
 import type { WorldDrawingPath } from "@shared/types";
-import { useDialog } from "@shared/ui/DialogProvider";
+import { useDialog } from "@shared/ui/useDialog";
 
 export function useDrawingCanvas({ canvasRef }: { canvasRef: React.RefObject<HTMLDivElement | null> }) {
     const { t } = useTranslation();

@@ -263,10 +263,10 @@ export const ko = {
         sidebarTitle: "Start New Project",
         recentTitle: "Recent Projects",
         category: {
-          all: "All Templates",
-          novel: "Novel (소설)",
-          script: "Script (대본)",
-          general: "General",
+          all: "전체 템플릿 (All)",
+          novel: "소설 (Novel)",
+          script: "시나리오/대본 (Script)",
+          general: "일반 (General)",
         },
         title: {
           blank: "빈 프로젝트 (Blank)",
@@ -371,6 +371,7 @@ export const ko = {
       templateDescription: "{templateId} 템플릿으로 생성됨",
     },
     sidebar: {
+      title: "PROJECT BINDER",
       menu: {
         openBelow: "아래에 열기",
         openRight: "오른쪽에 열기",
@@ -390,6 +391,10 @@ export const ko = {
         characters: "등장인물 (Characters)",
         world: "세계관 (World)",
         scrap: "자료 스크랩",
+        synopsis: "시놉시스 (Synopsis)",
+      },
+      action: {
+        new: "새 회차 추가",
       },
       addChapter: "새 회차 추가...",
       trashEmpty: "비어 있음",
@@ -993,6 +998,15 @@ export const ko = {
         added: "추가됨",
         close: "닫기",
       },
+    },
+    scrivener: {
+      inspector: {
+        title: "인스펙터 (Inspector)",
+        open: "인스펙터 열기",
+        close: "인스펙터 닫기",
+        loading: "인스펙터를 불러오는 중...",
+      },
+      target: "목표: {{count}} 단어",
     },
     trash: {
       confirmRestore: "휴지통에서 복구할까요?",

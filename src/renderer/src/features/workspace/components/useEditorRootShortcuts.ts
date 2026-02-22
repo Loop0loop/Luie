@@ -6,7 +6,7 @@ import {
     EDITOR_TOOLBAR_FONT_MIN,
     EDITOR_TOOLBAR_FONT_STEP,
 } from "@shared/constants/configs";
-import { createLayoutModeActions } from "@renderer/features/workspace/services/layoutModeActions";
+import type { createLayoutModeActions } from "@renderer/features/workspace/services/layoutModeActions";
 import type { EditorUiMode } from "@shared/types";
 import type { WorldTab } from "@renderer/features/workspace/stores/uiStore";
 

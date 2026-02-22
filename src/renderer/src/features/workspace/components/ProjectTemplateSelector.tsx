@@ -1,4 +1,4 @@
-import { useState, useOptimistic, useActionState, useId, useEffect } from "react";
+import { useState, useId, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
@@ -50,34 +50,11 @@ export default function ProjectTemplateSelector({
 
   const { deleteProject, updateProject, loadProjects } = useProjectStore();
 
-  const [optimisticProjects, addOptimisticProject] = useOptimistic(
-    projects,
-    (
-      state,
-      action:
-        | { type: "rename"; id: string; title: string }
-        | { type: "delete"; id: string }
-        | { type: "repair-path"; id: string; projectPath: string }
-        | { type: "reset"; projects: Project[] },
-    ) => {
-      if (action.type === "rename") {
-        return state.map((project) =>
-          project.id === action.id ? { ...project, title: action.title } : project,
-        );
-      }
-      if (action.type === "delete") {
-        return state.filter((project) => project.id !== action.id);
-      }
-      if (action.type === "repair-path") {
-        return state.map((project) =>
-          project.id === action.id
-            ? { ...project, projectPath: action.projectPath, pathMissing: false }
-            : project,
-        );
-      }
-      return action.projects;
-    },
-  );
+  const [localProjects, setLocalProjects] = useState<Project[]>(projects);
+
+  useEffect(() => {
+    setLocalProjects(projects);
+  }, [projects]);
 
   const { menuOpenId, menuPosition, menuRef, closeMenu, toggleMenuByElement } =
     useFloatingMenu<HTMLButtonElement>();
@@ -120,41 +97,49 @@ export default function ProjectTemplateSelector({
     mode: "delete",
   });
 
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [isRenaming, setIsRenaming] = useState(false);
+
   const renameFormId = useId();
-  const [renameState, renameAction, renamePending] = useActionState(
-    async (_prev: { error?: string } | null, formData: FormData) => {
-      const projectId = String(formData.get("projectId") ?? "").trim();
-      const nextTitle = String(formData.get("title") ?? "").trim();
+  const handleRename = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const projectId = String(formData.get("projectId") ?? "").trim();
+    const nextTitle = String(formData.get("title") ?? "").trim();
 
-      if (!projectId) {
-        return { error: t("settings.projectTemplate.error.notFound") };
-      }
-      if (!nextTitle) {
-        return { error: t("settings.projectTemplate.error.nameRequired") };
-      }
-      if (nextTitle === renameDialog.currentTitle) {
-        setRenameDialog((prev) => ({ ...prev, isOpen: false }));
-        return null;
-      }
+    if (!projectId) {
+      setRenameError(t("settings.projectTemplate.error.notFound"));
+      return;
+    }
+    if (!nextTitle) {
+      setRenameError(t("settings.projectTemplate.error.nameRequired"));
+      return;
+    }
+    if (nextTitle === renameDialog.currentTitle) {
+      setRenameDialog((prev) => ({ ...prev, isOpen: false }));
+      return;
+    }
 
-      addOptimisticProject({
-        type: "rename",
-        id: projectId,
-        title: nextTitle,
-      });
+    setRenameError(null);
+    setIsRenaming(true);
 
-      try {
-        await updateProject(projectId, nextTitle);
-        setRenameDialog((prev) => ({ ...prev, isOpen: false }));
-        return null;
-      } catch (error) {
-        addOptimisticProject({ type: "reset", projects });
-        api.logger.error("Failed to update project", error);
-        return { error: t("settings.projectTemplate.error.renameFailed") };
-      }
-    },
-    null,
-  );
+    // Optimistic UI update
+    setLocalProjects((prev) =>
+      prev.map((p) => (p.id === projectId ? { ...p, title: nextTitle } : p)),
+    );
+
+    try {
+      await updateProject(projectId, nextTitle);
+      setRenameDialog((prev) => ({ ...prev, isOpen: false }));
+    } catch (error) {
+      // Revert on failure
+      setLocalProjects(projects);
+      api.logger.error("Failed to update project", error);
+      setRenameError(t("settings.projectTemplate.error.renameFailed"));
+    } finally {
+      setIsRenaming(false);
+    }
+  };
 
   const categories = [
     { id: "all", label: t("settings.projectTemplate.category.all"), icon: <Book className="w-4 h-4" /> },
@@ -231,17 +216,19 @@ export default function ProjectTemplateSelector({
       }
 
       const projectPath = response.data;
-      addOptimisticProject({
-        type: "repair-path",
-        id: project.id,
-        projectPath,
-      });
+      setLocalProjects((prev) =>
+        prev.map((p) =>
+          p.id === project.id
+            ? { ...p, projectPath, pathMissing: false }
+            : p,
+        ),
+      );
 
       await updateProject(project.id, undefined, undefined, projectPath);
       await loadProjects();
       showToast(t("settings.projectTemplate.toast.pathRepaired"), "success");
     } catch (error) {
-      addOptimisticProject({ type: "reset", projects });
+      setLocalProjects(projects);
       showToast(t("settings.projectTemplate.toast.pathRepairFailed"), "error");
       api.logger.error("Failed to repair project path", {
         projectId: project.id,
@@ -286,7 +273,7 @@ export default function ProjectTemplateSelector({
       {/* Context Menu rendered at root level to avoid transform/z-index issues */}
       {menuOpenId &&
         (() => {
-          const p = optimisticProjects.find((proj) => proj.id === menuOpenId);
+          const p = localProjects.find((proj) => proj.id === menuOpenId);
           if (!p) return null;
 
           return (
@@ -362,7 +349,7 @@ export default function ProjectTemplateSelector({
             <button
               className="px-4 py-2 bg-transparent border border-border rounded-md text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg"
               onClick={() => setRenameDialog((prev) => ({ ...prev, isOpen: false }))}
-              disabled={renamePending}
+              disabled={isRenaming}
             >
               {t("settings.projectTemplate.actions.cancel")}
             </button>
@@ -370,16 +357,16 @@ export default function ProjectTemplateSelector({
               className="px-4 py-2 bg-accent border-none rounded-md text-white text-[13px] font-medium cursor-pointer transition-all hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
               type="submit"
               form={renameFormId}
-              disabled={renamePending}
+              disabled={isRenaming}
             >
-              {renamePending ? t("settings.projectTemplate.actions.saving") : t("settings.projectTemplate.actions.save")}
+              {isRenaming ? t("settings.projectTemplate.actions.saving") : t("settings.projectTemplate.actions.save")}
             </button>
           </div>
         }
       >
-        <form id={renameFormId} action={renameAction} className="flex flex-col gap-3">
-          {renameState?.error && (
-            <div className="text-xs text-danger-fg">{renameState.error}</div>
+        <form id={renameFormId} onSubmit={handleRename} className="flex flex-col gap-3">
+          {renameError && (
+            <div className="text-xs text-danger-fg">{renameError}</div>
           )}
           <input type="hidden" name="projectId" value={renameDialog.projectId} />
           <input
@@ -388,7 +375,7 @@ export default function ProjectTemplateSelector({
             defaultValue={renameDialog.currentTitle}
             className="w-full p-2.5 bg-input border border-border rounded-md text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
             autoFocus
-            disabled={renamePending}
+            disabled={isRenaming}
           />
         </form>
       </Modal>
@@ -412,12 +399,25 @@ export default function ProjectTemplateSelector({
         }
         isDestructive
         onConfirm={async () => {
-          addOptimisticProject({ type: "delete", id: deleteDialog.projectId });
+          setLocalProjects((prev) => prev.filter((p) => p.id !== deleteDialog.projectId));
           try {
-            await deleteProject(deleteDialog.projectId);
+            if (deleteDialog.mode === "removeMissing") {
+              const response = await api.project.removeLocal(deleteDialog.projectId);
+              if (!response.success) {
+                throw new Error(response.error?.message ?? "Failed to remove local project");
+              }
+              await loadProjects();
+            } else {
+              await deleteProject(deleteDialog.projectId);
+            }
           } catch (error) {
-            addOptimisticProject({ type: "reset", projects });
-            api.logger.error("Failed to delete project", error);
+            setLocalProjects(projects);
+            api.logger.error(
+              deleteDialog.mode === "removeMissing"
+                ? "Failed to remove missing-path project from list"
+                : "Failed to delete project",
+              error,
+            );
           }
           setDeleteDialog((prev) => ({ ...prev, isOpen: false, mode: "delete" }));
         }}
@@ -467,7 +467,7 @@ export default function ProjectTemplateSelector({
             </div>
 
             <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-              {optimisticProjects.slice(0, 4).map((p) => {
+              {localProjects.slice(0, 4).map((p) => {
                 const syncBadge = getProjectSyncBadge(p);
                 return (
                   <div

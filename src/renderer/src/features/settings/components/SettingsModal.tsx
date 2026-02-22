@@ -86,7 +86,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? "bg-fg text-app shadow-md" : "text-muted hover:bg-surface-hover hover:text-fg"
                   }`}
               >

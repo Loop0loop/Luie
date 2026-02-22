@@ -6,15 +6,7 @@ test("creates 200 chapters via IPC @stress", async () => {
   const { app, page, testDbDir } = await launchApp();
 
   const { success, chapterCount, durationMs, error } = await page.evaluate(async () => {
-    const api = (window as unknown as { api?: Record<string, unknown> }).api as
-      | {
-          project: { create: (input: unknown) => Promise<unknown> };
-          chapter: {
-            create: (input: unknown) => Promise<unknown>;
-            getAll: (projectId: string) => Promise<unknown>;
-          };
-        }
-      | undefined;
+    const api = (window as Window & { api?: Window["api"] }).api;
 
     if (!api) {
       return {
