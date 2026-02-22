@@ -1,37 +1,11 @@
-
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Edge, Node, Connection, NodeProps, ReactFlowInstance, NodeChange, EdgeChange } from "reactflow";
-import ReactFlow, {
-  Background,
-  addEdge,
-  Handle,
-  Position,
-  useNodesState,
-  useEdgesState,
-  MarkerType,
-  applyNodeChanges,
-  applyEdgeChanges,
-  useReactFlow,
-} from "reactflow";
+import { useState, useMemo } from "react";
+import type { Node, NodeProps } from "reactflow";
+import ReactFlow, { Background, Handle, Position, useReactFlow } from "reactflow";
 import "reactflow/dist/style.css";
 import { useTranslation } from "react-i18next";
 import { User, Image as ImageIcon } from "lucide-react";
-import { useProjectStore } from "../../../stores/projectStore";
-import { worldPackageStorage } from "../../../services/worldPackageStorage";
-
-type MindMapNodeData = { 
-    label: string;
-    image?: string; // Optional image URL
-};
-
-const getCssNumber = (name: string, fallback: number) => {
-  if (typeof window === "undefined") return fallback;
-  const value = getComputedStyle(document.documentElement)
-    .getPropertyValue(name)
-    .trim();
-  const parsed = Number.parseFloat(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-};
+import { useMindMapBoard } from "./useMindMapBoard";
+import type { MindMapNodeData } from "./MindMapNodeData";
 
 // Custom Node for MindMap - Character Card Style
 const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
@@ -56,11 +30,11 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
 
   const handleImageUpload = (url: string) => {
     setNodes((nds: Node<MindMapNodeData>[]) =>
-        nds.map((node: Node<MindMapNodeData>) =>
-            node.id === id
-            ? { ...node, data: { ...node.data, image: url } }
-            : node,
-        ),
+      nds.map((node: Node<MindMapNodeData>) =>
+        node.id === id
+          ? { ...node, data: { ...node.data, image: url } }
+          : node,
+      ),
     );
   };
 
@@ -68,7 +42,7 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
     <div
       className="group bg-panel border-2 border-border hover:border-accent rounded-xl shadow-sm hover:shadow-lg transition-all overflow-hidden flex flex-col items-center min-w-[120px]"
       style={{
-          width: (data.image || isEditingImage) ? 160 : "auto",
+        width: (data.image || isEditingImage) ? 160 : "auto",
       }}
       onDoubleClick={(e) => {
         e.stopPropagation();
@@ -77,76 +51,76 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
       }}
     >
       <Handle type="target" position={Position.Top} className="bg-accent! w-3 h-3" />
-      
+
       {/* Image Area */}
-      <div 
+      <div
         className="w-full aspect-square bg-element flex items-center justify-center relative overflow-hidden"
         style={{ display: (data.image || isEditingImage) ? "flex" : "block", height: (data.image || isEditingImage) ? "auto" : 40 }}
       >
-          {isEditingImage ? (
-               <div className="w-full h-full flex flex-col items-center justify-center p-2 bg-panel">
-                   <input 
-                        className="w-full text-xs p-1 border border-border rounded mb-1 bg-element text-fg"
-                        placeholder={t("world.mindmap.urlPlaceholder")}
-                        autoFocus
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                const val = (e.target as HTMLInputElement).value;
-                                if (val) handleImageUpload(val);
-                                setIsEditingImage(false);
-                            }
-                            if (e.key === 'Escape') setIsEditingImage(false);
-                        }}
-                        onBlur={(e) => {
-                            const val = e.target.value;
-                            if (val) handleImageUpload(val);
-                            setIsEditingImage(false);
-                        }}
-                   />
-                   <span className="text-[10px] text-muted">{t("world.mindmap.enterUrl")}</span>
-               </div>
-          ) : data.image ? (
-              <img src={data.image} alt={data.label} className="w-full h-full object-cover" />
-          ) : (
-             <div className="w-full h-full flex items-center justify-center text-muted/30">
-                 <User className="w-6 h-6" />
-             </div>
-          )}
-          
-          {/* Hover Image Edit Button */}
-          {!isEditingImage && (
-            <button 
-                className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/70 rounded text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    setIsEditingImage(true);
-                }}
-                title={t("world.mindmap.uploadImage")}
-            >
-                <ImageIcon className="w-3 h-3" />
-            </button>
-          )}
+        {isEditingImage ? (
+          <div className="w-full h-full flex flex-col items-center justify-center p-2 bg-panel">
+            <input
+              className="w-full text-xs p-1 border border-border rounded mb-1 bg-element text-fg"
+              placeholder={t("world.mindmap.urlPlaceholder")}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const val = (e.target as HTMLInputElement).value;
+                  if (val) handleImageUpload(val);
+                  setIsEditingImage(false);
+                }
+                if (e.key === 'Escape') setIsEditingImage(false);
+              }}
+              onBlur={(e) => {
+                const val = e.target.value;
+                if (val) handleImageUpload(val);
+                setIsEditingImage(false);
+              }}
+            />
+            <span className="text-[10px] text-muted">{t("world.mindmap.enterUrl")}</span>
+          </div>
+        ) : data.image ? (
+          <img src={data.image} alt={data.label} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-muted/30">
+            <User className="w-6 h-6" />
+          </div>
+        )}
+
+        {/* Hover Image Edit Button */}
+        {!isEditingImage && (
+          <button
+            className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/70 rounded text-white opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsEditingImage(true);
+            }}
+            title={t("world.mindmap.uploadImage")}
+          >
+            <ImageIcon className="w-3 h-3" />
+          </button>
+        )}
       </div>
 
       {/* Label Area */}
       <div className="p-2 w-full bg-panel border-t border-border/50">
         {isEditingLabel ? (
-            <input
+          <input
             className="w-full text-center border-none bg-transparent outline-none font-bold text-sm text-fg p-0"
             value={draft ?? data.label}
             onChange={(e) => setDraft(e.target.value)}
             onBlur={commitLabel}
             onKeyDown={(e) => {
-                if (e.key === "Enter") commitLabel();
-                if (e.key === "Escape") {
+              if (e.key === "Enter") commitLabel();
+              if (e.key === "Escape") {
                 setDraft(null);
                 setIsEditingLabel(false);
-                }
+              }
             }}
             autoFocus
-            />
+          />
         ) : (
-            <div className="font-bold text-sm text-fg text-center wrap-break-word leading-tight">{data.label}</div>
+          <div className="font-bold text-sm text-fg text-center wrap-break-word leading-tight">{data.label}</div>
         )}
       </div>
 
@@ -156,249 +130,21 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
 };
 
 export function MindMapBoard() {
-  const { t } = useTranslation();
-  const { currentItem: currentProject } = useProjectStore();
   const nodeTypes = useMemo(() => ({ character: CharacterNode }), []);
-  const flowRef = useRef<ReactFlowInstance | null>(null);
-  const rootX = getCssNumber("--world-mindmap-root-x", 300);
-  const rootY = getCssNumber("--world-mindmap-root-y", 300);
-  const hydratedProjectIdRef = useRef<string | null>(null);
 
-  const getDefaultNodes = useCallback(
-    () => [
-      {
-        id: "root",
-        type: "character",
-        position: { x: rootX, y: rootY },
-        data: { label: t("world.mindmap.rootLabel") },
-      },
-    ],
-    [rootX, rootY, t],
-  );
-
-  const [nodes, setNodes] = useNodesState(getDefaultNodes());
-  const [edges, setEdges] = useEdgesState([]);
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-
-  const pendingNodeChangesRef = useRef<NodeChange[]>([]);
-  const pendingEdgeChangesRef = useRef<EdgeChange[]>([]);
-  const rafNodesRef = useRef<number | null>(null);
-  const rafEdgesRef = useRef<number | null>(null);
-
-  const flushNodeChanges = useCallback(() => {
-    rafNodesRef.current = null;
-    if (pendingNodeChangesRef.current.length === 0) return;
-    const changes = pendingNodeChangesRef.current;
-    pendingNodeChangesRef.current = [];
-    setNodes((nds) => applyNodeChanges(changes, nds));
-  }, [setNodes]);
-
-  const flushEdgeChanges = useCallback(() => {
-    rafEdgesRef.current = null;
-    if (pendingEdgeChangesRef.current.length === 0) return;
-    const changes = pendingEdgeChangesRef.current;
-    pendingEdgeChangesRef.current = [];
-    setEdges((eds) => applyEdgeChanges(changes, eds));
-  }, [setEdges]);
-
-  const onNodesChangeBatched = useCallback(
-    (changes: NodeChange[]) => {
-      pendingNodeChangesRef.current.push(...changes);
-      if (rafNodesRef.current === null) {
-        rafNodesRef.current = window.requestAnimationFrame(flushNodeChanges);
-      }
-    },
-    [flushNodeChanges],
-  );
-
-  const onEdgesChangeBatched = useCallback(
-    (changes: EdgeChange[]) => {
-      pendingEdgeChangesRef.current.push(...changes);
-      if (rafEdgesRef.current === null) {
-        rafEdgesRef.current = window.requestAnimationFrame(flushEdgeChanges);
-      }
-    },
-    [flushEdgeChanges],
-  );
-
-  useEffect(() => {
-    if (!currentProject?.id) {
-      setNodes(getDefaultNodes());
-      setEdges([]);
-      hydratedProjectIdRef.current = null;
-      return;
-    }
-
-    let cancelled = false;
-    void (async () => {
-      const loaded = await worldPackageStorage.loadMindmap(
-        currentProject.id,
-        currentProject.projectPath,
-      );
-      if (cancelled) return;
-      const loadedNodes = loaded.nodes as Node<MindMapNodeData>[];
-      const loadedEdges = loaded.edges as Edge[];
-      setNodes(loadedNodes.length > 0 ? loadedNodes : getDefaultNodes());
-      setEdges(loadedEdges);
-      hydratedProjectIdRef.current = currentProject.id;
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [currentProject?.id, currentProject?.projectPath, getDefaultNodes, setEdges, setNodes]);
-
-  useEffect(() => {
-    if (!currentProject?.id) return;
-    if (hydratedProjectIdRef.current !== currentProject.id) return;
-
-    const timer = window.setTimeout(() => {
-      const serializedNodes = nodes.map((node) => ({
-        id: node.id,
-        type: node.type,
-        position: node.position,
-        data: {
-          label:
-            typeof (node.data as Record<string, unknown> | undefined)?.label === "string"
-              ? ((node.data as Record<string, unknown>).label as string)
-              : "",
-          image:
-            typeof (node.data as Record<string, unknown> | undefined)?.image === "string"
-              ? ((node.data as Record<string, unknown>).image as string)
-              : undefined,
-        },
-      }));
-
-      const serializedEdges = edges.map((edge) => ({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        type: edge.type,
-      }));
-
-      void worldPackageStorage.saveMindmap(currentProject.id, currentProject.projectPath, {
-        nodes: serializedNodes,
-        edges: serializedEdges,
-      });
-    }, 250);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [currentProject?.id, currentProject?.projectPath, edges, nodes]);
-
-
-  const onConnect = useCallback(
-    (params: Connection) =>
-      setEdges((eds) =>
-        addEdge(
-          {
-            ...params,
-            type: "smoothstep",
-            markerEnd: { type: MarkerType.ArrowClosed },
-            style: { stroke: 'var(--accent-primary)', strokeWidth: 2 },
-          },
-          eds,
-        ),
-      ),
-    [setEdges],
-  );
-
-  const onNodeClick = (_: React.MouseEvent, node: Node) => {
-    setSelectedNodeId(node.id);
-  };
-
-  const onPaneDoubleClick = useCallback(
-    (event: React.MouseEvent) => {
-      const bounds = (event.currentTarget as HTMLDivElement).getBoundingClientRect();
-      const instance = flowRef.current;
-      if (!instance) return;
-
-      const position = instance.project({
-        x: event.clientX - bounds.left,
-        y: event.clientY - bounds.top,
-      });
-
-      const newNodeId = Date.now().toString();
-      const newNode: Node<MindMapNodeData> = {
-        id: newNodeId,
-        type: "character",
-        position,
-        data: { label: t("world.mindmap.newTopic") },
-      };
-
-      setNodes((nds) => nds.concat(newNode));
-      setSelectedNodeId(newNodeId);
-    },
-    [setNodes, t],
-  );
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (!selectedNodeId) return;
-
-      if (e.key === "Enter") {
-        e.preventDefault();
-        const selectedNode = nodes.find((n) => n.id === selectedNodeId);
-        if (!selectedNode) return;
-
-        const newNodeId = Date.now().toString();
-        const newNode: Node = {
-          id: newNodeId,
-          type: "character",
-          position: {
-            x: selectedNode.position.x + 200,
-            y: selectedNode.position.y,
-          },
-          data: { label: t("world.mindmap.newTopic") },
-        };
-        setNodes((nds) => nds.concat(newNode));
-        setSelectedNodeId(newNodeId); 
-      }
-
-      if (e.key === "Tab") {
-        e.preventDefault();
-        const selectedNode = nodes.find((n) => n.id === selectedNodeId);
-        if (!selectedNode) return;
-
-        const newNodeId = Date.now().toString();
-        const newNode: Node = {
-          id: newNodeId,
-          type: "character",
-          position: {
-            x: selectedNode.position.x + 150,
-            y: selectedNode.position.y + 150,
-          },
-          data: { label: t("world.mindmap.subTopic") },
-        };
-
-        const newEdge: Edge = {
-          id: `e${selectedNodeId}-${newNodeId}`,
-          source: selectedNodeId,
-          target: newNodeId,
-          type: "smoothstep",
-          markerEnd: { type: MarkerType.ArrowClosed },
-          style: { stroke: 'var(--accent-primary)', strokeWidth: 2 },
-        };
-
-        setNodes((nds) => nds.concat(newNode));
-        setEdges((eds) => eds.concat(newEdge));
-        setSelectedNodeId(newNodeId);
-      }
-
-      if (e.key === "Delete" || e.key === "Backspace") {
-        if (selectedNodeId === "root") return; 
-        setNodes((nds) => nds.filter((n) => n.id !== selectedNodeId));
-        setEdges((eds) =>
-          eds.filter(
-            (e) => e.source !== selectedNodeId && e.target !== selectedNodeId,
-          ),
-        );
-        setSelectedNodeId(null);
-      }
-    },
-    [selectedNodeId, nodes, setNodes, setEdges, t],
-  );
+  const {
+    t,
+    flowRef,
+    nodes,
+    edges,
+    onNodesChangeBatched,
+    onEdgesChangeBatched,
+    onConnect,
+    onNodeClick,
+    onPaneDoubleClick,
+    handleKeyDown,
+    setSelectedNodeId,
+  } = useMindMapBoard();
 
   return (
     <div
@@ -406,7 +152,7 @@ export function MindMapBoard() {
       tabIndex={0}
       onKeyDown={handleKeyDown}
       onDoubleClick={onPaneDoubleClick}
-      style={{ outline: "none" }} 
+      style={{ outline: "none" }}
     >
       <div
         className="absolute top-4 left-1/2 -translate-x-1/2 bg-panel/90 px-6 py-2 rounded-full text-xs font-medium text-fg shadow-lg pointer-events-none z-10 backdrop-blur-md border border-border flex items-center gap-4"
@@ -448,12 +194,12 @@ export function MindMapBoard() {
         proOptions={{ hideAttribution: true }}
       >
         <Background color="var(--grid-line)" gap={24} size={1} />
-        
+
         {/* Custom Controls */}
         <div className="absolute bottom-4 left-4 z-10 flex flex-col gap-2 bg-panel/90 backdrop-blur border border-border p-1.5 rounded-xl shadow-lg">
-            <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.zoomIn()} title={t("world.mindmap.controls.zoomIn")}>+</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.zoomOut()} title={t("world.mindmap.controls.zoomOut")}>-</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.fitView()} title={t("world.mindmap.controls.fitView")}>⛶</button>
+          <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.zoomIn()} title={t("world.mindmap.controls.zoomIn")}>+</button>
+          <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.zoomOut()} title={t("world.mindmap.controls.zoomOut")}>-</button>
+          <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.fitView()} title={t("world.mindmap.controls.fitView")}>⛶</button>
         </div>
       </ReactFlow>
     </div>

@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense, useCallback, useEffect, useMemo, useRef } from "react";
+import { useState, lazy, Suspense, useCallback, useMemo } from "react";
 import { type Editor as TiptapEditor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
 import MainLayout from "./MainLayout";
@@ -19,17 +19,13 @@ import { useEditorStore } from "../../stores/editorStore";
 import { useChapterManagement } from "../../hooks/useChapterManagement";
 import { useSplitView } from "../../hooks/useSplitView";
 import { useWorkspaceDropHandlers } from "../../hooks/useWorkspaceDropHandlers";
-import { useShortcuts } from "../../hooks/useShortcuts";
 import { emitShortcutCommand } from "../../hooks/useShortcutCommand";
 import { useDialog } from "../common/DialogProvider";
-import {
-    EDITOR_TOOLBAR_FONT_MIN,
-    EDITOR_TOOLBAR_FONT_STEP,
-} from "../../../../shared/constants/configs";
 import { api } from "../../services/api";
 import { openDocsRightTab as openDocsPanelTab } from "../../services/docsPanelService";
 import { createLayoutModeActions } from "../../services/layoutModeActions";
 import { GlobalDragContext } from "../common/GlobalDragContext";
+import { useEditorRootShortcuts } from "./useEditorRootShortcuts";
 
 const SettingsModal = lazy(() => import("../settings/SettingsModal"));
 import { WorkspacePanels } from "./WorkspacePanels";
@@ -38,9 +34,6 @@ export default function EditorRoot() {
     const { t } = useTranslation();
     const dialog = useDialog();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const chapterChordRef = useRef<{ digits: string; timerId?: number }>({
-        digits: "",
-    });
 
     const uiMode = useEditorStore((state) => state.uiMode);
     const setUiMode = useEditorStore((state) => state.setUiMode);
@@ -145,7 +138,7 @@ export default function EditorRoot() {
                 handleOpenExport,
                 onToggleManuscriptLegacy: () =>
                     emitShortcutCommand({ type: "sidebar.section.toggle", section: "manuscript" }),
-                onOpenSidebarSectionLegacy: (section) =>
+                onOpenSidebarSectionLegacy: (section: any) =>
                     emitShortcutCommand({ type: "sidebar.section.open", section }),
             }),
         [
@@ -184,114 +177,25 @@ export default function EditorRoot() {
         await updateProject(currentProject.id, nextTitle);
     }, [currentProject, dialog, t, updateProject]);
 
-    const shortcutHandlers = useMemo(
-        () => ({
-            "app.openSettings": () => setIsSettingsOpen(true),
-            "app.closeWindow": () => void api.window.close(),
-            "app.quit": () => void api.app.quit(),
-            "chapter.new": () => void handleAddChapter(),
-            "chapter.save": () => void handleSave(activeChapterTitle, content),
-            "chapter.delete": () => void handleDeleteActiveChapter(),
-            "chapter.open.1": () => openChapterByIndex(0),
-            "chapter.open.2": () => openChapterByIndex(1),
-            "chapter.open.3": () => openChapterByIndex(2),
-            "chapter.open.4": () => openChapterByIndex(3),
-            "chapter.open.5": () => openChapterByIndex(4),
-            "chapter.open.6": () => openChapterByIndex(5),
-            "chapter.open.7": () => openChapterByIndex(6),
-            "chapter.open.8": () => openChapterByIndex(7),
-            "chapter.open.9": () => openChapterByIndex(8),
-            "chapter.open.0": () => openChapterByIndex(9),
-            "view.toggleSidebar": () => setSidebarOpen(!isSidebarOpen),
-            "view.sidebar.open": () => setSidebarOpen(true),
-            "view.sidebar.close": () => setSidebarOpen(false),
-            "view.toggleContextPanel": () => layoutModeActions.toggleContextPanel(),
-            "view.context.open": () => layoutModeActions.openContextPanel(),
-            "view.context.close": () => layoutModeActions.closeContextPanel(),
-            "sidebar.section.manuscript.toggle": () => layoutModeActions.toggleManuscriptPanel(),
-            "sidebar.section.snapshot.open": () => layoutModeActions.openSidebarSection("snapshot"),
-            "sidebar.section.trash.open": () => layoutModeActions.openSidebarSection("trash"),
-            "project.rename": () => void handleRenameProject(),
-            "research.open.character": () => layoutModeActions.openResearchTab("character"),
-            "research.open.world": () => layoutModeActions.openResearchTab("world"),
-            "research.open.scrap": () => layoutModeActions.openResearchTab("scrap"),
-            "research.open.analysis": () => layoutModeActions.openResearchTab("analysis"),
-            "research.open.character.left": () => layoutModeActions.openResearchTab("character"),
-            "research.open.world.left": () => layoutModeActions.openResearchTab("world"),
-            "research.open.scrap.left": () => layoutModeActions.openResearchTab("scrap"),
-            "research.open.analysis.left": () => layoutModeActions.openResearchTab("analysis"),
-            "character.openTemplate": () => emitShortcutCommand({ type: "character.openTemplate" }),
-            "world.tab.synopsis": () => setWorldTab("synopsis"),
-            "world.tab.terms": () => setWorldTab("terms"),
-            "world.tab.mindmap": () => setWorldTab("mindmap"),
-            "world.tab.drawing": () => setWorldTab("drawing"),
-            "world.tab.plot": () => setWorldTab("plot"),
-            "world.addTerm": () => emitShortcutCommand({ type: "world.addTerm" }),
-            "scrap.addMemo": () => emitShortcutCommand({ type: "scrap.addMemo" }),
-            "export.openPreview": () => layoutModeActions.openExportPreview(),
-            "export.openWindow": () => handleQuickExport(),
-            "editor.openRight": () => layoutModeActions.openEditorInSplit(),
-            "editor.openLeft": () => layoutModeActions.openEditorInSplit(),
-            "editor.fontSize.increase": () => void setFontSize(fontSize + EDITOR_TOOLBAR_FONT_STEP),
-            "editor.fontSize.decrease": () => void setFontSize(Math.max(EDITOR_TOOLBAR_FONT_MIN, fontSize - EDITOR_TOOLBAR_FONT_STEP)),
-            "window.toggleFullscreen": () => void api.window.toggleFullscreen(),
-            "view.toggleFocusMode": () => void setUiMode(uiMode === "focus" ? "default" : "focus"),
-        }),
-        [
-            activeChapterTitle,
-            content,
-            handleAddChapter,
-            handleSave,
-            handleDeleteActiveChapter,
-            isSidebarOpen,
-            openChapterByIndex,
-            handleRenameProject,
-            layoutModeActions,
-            handleQuickExport,
-            setWorldTab,
-            setFontSize,
-            fontSize,
-            setSidebarOpen,
-            uiMode,
-            setUiMode,
-        ],
-    );
-
-    useShortcuts(shortcutHandlers);
-
-    useEffect(() => {
-        const CHAPTER_CHORD_TIMEOUT_MS = 700;
-
-        const handleChapterChord = (event: KeyboardEvent) => {
-            const isModifierPressed = event.metaKey || event.ctrlKey;
-            if (!isModifierPressed) return;
-
-            if (!/^[0-9]$/.test(event.key)) return;
-
-            event.preventDefault();
-            event.stopImmediatePropagation();
-
-            chapterChordRef.current.digits += event.key;
-
-            if (chapterChordRef.current.timerId) {
-                window.clearTimeout(chapterChordRef.current.timerId);
-            }
-
-            chapterChordRef.current.timerId = window.setTimeout(() => {
-                const digits = chapterChordRef.current.digits;
-                chapterChordRef.current.digits = "";
-                chapterChordRef.current.timerId = undefined;
-
-                const chapterNumber = digits === "0" ? 10 : Number.parseInt(digits, 10);
-                if (!Number.isFinite(chapterNumber) || chapterNumber <= 0) return;
-
-                openChapterByIndex(chapterNumber - 1);
-            }, CHAPTER_CHORD_TIMEOUT_MS);
-        };
-
-        window.addEventListener("keydown", handleChapterChord, true);
-        return () => window.removeEventListener("keydown", handleChapterChord, true);
-    }, [openChapterByIndex]);
+    useEditorRootShortcuts({
+        setIsSettingsOpen,
+        handleAddChapter,
+        handleSave,
+        handleDeleteActiveChapter,
+        openChapterByIndex,
+        handleRenameProject,
+        handleQuickExport,
+        setSidebarOpen,
+        isSidebarOpen,
+        layoutModeActions,
+        setWorldTab,
+        setFontSize,
+        fontSize,
+        setUiMode,
+        uiMode,
+        activeChapterTitle,
+        content,
+    });
 
     const prefetchSettings = useCallback(() => {
         void import("../settings/SettingsModal");

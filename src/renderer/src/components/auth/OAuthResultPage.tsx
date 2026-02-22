@@ -3,10 +3,18 @@ import { useMemo } from "react";
 type OAuthResultStatus = "success" | "error";
 
 const parseOAuthResult = (): { status: OAuthResultStatus; detail?: string } => {
+  // Support both legacy hash routing (#auth-result?...) and standalone auth-result.html?...
+  const searchParams = new URLSearchParams(window.location.search);
   const hash = window.location.hash;
   const queryStart = hash.indexOf("?");
-  const query = queryStart >= 0 ? hash.slice(queryStart + 1) : "";
-  const params = new URLSearchParams(query);
+  const hashQuery = queryStart >= 0 ? hash.slice(queryStart + 1) : "";
+  const hashParams = new URLSearchParams(hashQuery);
+  const statusParam = searchParams.get("status") ?? hashParams.get("status");
+  const detailParam = searchParams.get("detail") ?? hashParams.get("detail");
+
+  const params = new URLSearchParams();
+  if (statusParam) params.set("status", statusParam);
+  if (detailParam) params.set("detail", detailParam);
   const status = params.get("status") === "success" ? "success" : "error";
   const detail = params.get("detail") ?? undefined;
   return { status, detail };

@@ -81,6 +81,18 @@ export const handleDeepLinkUrl = async (url: string): Promise<boolean> => {
     logger.info("OAuth callback processed", { url });
     return true;
   } catch (error) {
+    const status = syncService.getStatus();
+    if (status.connected) {
+      focusMainWindow();
+      void openAuthResultPage("success");
+      logger.warn("OAuth callback failed but sync is already connected; treating callback as stale", {
+        url,
+        reason: classifyCallbackFailure(error),
+        error,
+      });
+      return true;
+    }
+
     focusMainWindow();
     const message = error instanceof Error ? error.message : String(error);
     void openAuthResultPage("error", message);

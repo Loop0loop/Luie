@@ -1,6 +1,6 @@
 import { Command, Type, Layout, BookOpen, FileText, Keyboard, Monitor, RotateCcw, Globe, Cloud } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { SettingsTabId } from "./SettingsModalSections";
+import type { SettingsTabId } from "./tabs/types";
 import type { FontPreset } from "../../../../shared/types";
 
 export const SETTINGS_TABS: Array<{ id: SettingsTabId; labelKey: string; icon: LucideIcon }> = [
