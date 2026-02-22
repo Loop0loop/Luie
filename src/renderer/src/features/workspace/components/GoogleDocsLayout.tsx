@@ -234,7 +234,7 @@ export default function GoogleDocsLayout({
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
 
-              <Panel id="right-context-panel" defaultSize={15} minSize={10} maxSize={30} className="bg-background border-l border-border overflow-hidden flex flex-col shrink-0 min-w-0">
+              <Panel id="right-context-panel" defaultSize={450} minSize={350} maxSize={900} className="bg-background border-l border-border overflow-hidden flex flex-col shrink-0 min-w-0">
                 <div className="h-full flex flex-col">
                   {activeRightTab === "character" && (
                     <div className="h-full">

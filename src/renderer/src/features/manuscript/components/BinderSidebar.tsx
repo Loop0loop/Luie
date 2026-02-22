@@ -114,7 +114,7 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
                 <div className="absolute inset-y-0 -left-1 -right-1" />
             </PanelResizeHandle>
 
-            <Panel id="binder-sidebar" defaultSize={210} minSize={210} maxSize={300} className="bg-panel shadow-2xl flex flex-row shrink-0 min-w-0 z-10 transition-none">
+            <Panel id="binder-sidebar" defaultSize={450} minSize={350} maxSize={900} className="bg-panel shadow-2xl flex flex-row shrink-0 min-w-0 z-10 transition-none">
                 <div className="flex-1 h-full overflow-hidden relative min-w-0">
                     <button
                         onClick={() => setActiveRightTab(null)}
@@ -184,7 +184,7 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
                 </div>
 
                 {renderIconBar()}
-            </Panel>
+            </Panel >
         </>
     );
 }

@@ -33,7 +33,7 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
             id="sidebar-panel"
             defaultSize={210}
             minSize={210}
-            maxSize={530}
+            maxSize={630}
             className="bg-sidebar border-r border-border overflow-hidden flex flex-col z-10"
           >
             {sidebar}
@@ -93,9 +93,9 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
         {isContextOpen && (
           <Panel
             id="context-panel"
-            defaultSize={15}
-            minSize={10}
-            maxSize={30}
+            defaultSize={310}
+            minSize={310}
+            maxSize={610}
             className="bg-panel border-l border-border overflow-hidden flex flex-col z-10"
           >
             {contextPanel}
