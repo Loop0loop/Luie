@@ -299,6 +299,22 @@ class SyncAuthService {
     }
   }
 
+  getRefreshToken(syncSettings: SyncSettings): AccessTokenResult {
+    if (!syncSettings.refreshTokenCipher) {
+      return { token: null };
+    }
+    try {
+      const decoded = decodeSecret(syncSettings.refreshTokenCipher);
+      return {
+        token: decoded.plain,
+        migratedCipher: decoded.migratedCipher,
+      };
+    } catch (error) {
+      logger.warn("Failed to decrypt sync refresh token", { error });
+      return { token: null };
+    }
+  }
+
   private async exchangeCodeForSession(code: string, verifier: string): Promise<SyncSession> {
     const { url, anonKey } = getSupabaseConfigOrThrow();
     const response = await fetch(`${url}/auth/v1/token?grant_type=pkce`, {

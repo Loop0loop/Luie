@@ -27,6 +27,7 @@ import { useProjectStore } from "../../stores/projectStore";
 import { useTranslation } from "react-i18next";
 import { useShortcutCommand } from "../../hooks/useShortcutCommand";
 import { useUIStore } from "../../stores/uiStore";
+import { useChapterManagement } from "../../hooks/useChapterManagement";
 import { useFloatingMenu } from "../../hooks/useFloatingMenu";
 import { useDialog } from "../common/DialogProvider";
 import type { DragData } from "../common/GlobalDragContext";
@@ -38,15 +39,8 @@ interface Chapter {
 }
 
 interface SidebarProps {
-  chapters: Chapter[];
-  activeChapterId?: string;
   currentProjectTitle?: string;
   currentProjectId?: string;
-  onSelectChapter: (id: string) => void;
-  onAddChapter: () => void;
-  onRenameChapter?: (id: string, title: string) => void;
-  onDuplicateChapter?: (id: string) => void;
-  onDeleteChapter?: (id: string) => void;
   onOpenSettings: () => void;
   onPrefetchSettings?: () => void;
   onSelectResearchItem: (type: "character" | "world" | "scrap" | "analysis") => void;
@@ -67,15 +61,8 @@ type SidebarItem =
   | { type: "trash-empty" };
 
 function Sidebar({
-  chapters,
-  activeChapterId,
   currentProjectTitle,
   currentProjectId,
-  onSelectChapter,
-  onAddChapter,
-  onRenameChapter,
-  onDuplicateChapter,
-  onDeleteChapter,
   onOpenSettings,
   onPrefetchSettings,
   onSelectResearchItem,
@@ -85,6 +72,15 @@ function Sidebar({
   const dialog = useDialog();
   const { updateProject } = useProjectStore();
   const { setSidebarOpen, setManuscriptMenuOpen } = useUIStore();
+  const {
+    chapters,
+    activeChapterId,
+    handleSelectChapter,
+    handleAddChapter,
+    handleRenameChapter,
+    handleDuplicateChapter,
+    handleDeleteChapter,
+  } = useChapterManagement();
   // Section collapse states
   const [isManuscriptOpen, setManuscriptOpen] = useState(true);
   const [isResearchOpen, setResearchOpen] = useState(true);
@@ -156,8 +152,8 @@ function Sidebar({
     if (action === "open_right" && onSplitView) {
       onSplitView("vertical", id);
     }
-    if (action === "rename" && onRenameChapter) {
-      const current = chapters.find((c) => c.id === id);
+    if (action === "rename") {
+      const current = chapters.find((c: Chapter) => c.id === id);
       const nextTitle = (
         await dialog.prompt({
           title: t("sidebar.menu.rename"),
@@ -167,20 +163,20 @@ function Sidebar({
         })
       )?.trim();
       if (nextTitle) {
-        onRenameChapter(id, nextTitle);
+        void handleRenameChapter(id, nextTitle);
       }
     }
-    if (action === "duplicate" && onDuplicateChapter) {
-      onDuplicateChapter(id);
+    if (action === "duplicate") {
+      void handleDuplicateChapter(id);
     }
-    if (action === "delete" && onDeleteChapter) {
+    if (action === "delete") {
       const confirmed = await dialog.confirm({
         title: t("sidebar.menu.delete"),
         message: t("sidebar.prompt.deleteConfirm"),
         isDestructive: true,
       });
       if (!confirmed) return;
-      onDeleteChapter(id);
+      void handleDeleteChapter(id);
     }
   };
 
@@ -188,7 +184,7 @@ function Sidebar({
     const items: SidebarItem[] = [{ type: "manuscript-header" }];
 
     if (isManuscriptOpen) {
-      chapters.forEach((chapter) => items.push({ type: "chapter", chapter }));
+      chapters.forEach((chapter: Chapter) => items.push({ type: "chapter", chapter }));
       items.push({ type: "add-chapter" });
     }
 
@@ -332,36 +328,36 @@ function Sidebar({
                   id={`chapter-${chapter.id}`}
                   data={{ type: "chapter", id: chapter.id, title: chapter.title || "Untitled" }}
                 >
-                <div
-                  className={cn(
-                    "flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] transition-all",
-                    activeChapterId === chapter.id
-                      ? "bg-active text-fg font-medium border-l-[3px] border-accent"
-                      : "text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg",
-                  )}
-                  onClick={() => onSelectChapter(chapter.id)}
-                  onMouseEnter={() => setHoveredItemId(chapter.id)}
-                  onMouseLeave={() => setHoveredItemId(null)}
-                >
-                  <FileText
+                  <div
                     className={cn(
-                      "mr-2 icon-sm",
-                      activeChapterId === chapter.id ? "text-fg" : "text-muted",
+                      "flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] transition-all",
+                      activeChapterId === chapter.id
+                        ? "bg-active text-fg font-medium border-l-[3px] border-accent"
+                        : "text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg",
                     )}
-                  />
-                  <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-                    {chapter.order}. {chapter.title}
-                  </span>
+                    onClick={() => handleSelectChapter(chapter.id)}
+                    onMouseEnter={() => setHoveredItemId(chapter.id)}
+                    onMouseLeave={() => setHoveredItemId(null)}
+                  >
+                    <FileText
+                      className={cn(
+                        "mr-2 icon-sm",
+                        activeChapterId === chapter.id ? "text-fg" : "text-muted",
+                      )}
+                    />
+                    <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                      {chapter.order}. {chapter.title}
+                    </span>
 
-                  {(hoveredItemId === chapter.id || menuOpenId === chapter.id) && (
-                    <div
-                      className="ml-auto p-0.5 rounded hover:bg-bg-active text-muted hover:text-fg"
-                      onClick={(e) => handleMenuClick(e, chapter.id)}
-                    >
-                      <MoreVertical className="icon-sm" />
-                    </div>
-                  )}
-                </div>
+                    {(hoveredItemId === chapter.id || menuOpenId === chapter.id) && (
+                      <div
+                        className="ml-auto p-0.5 rounded hover:bg-bg-active text-muted hover:text-fg"
+                        onClick={(e) => handleMenuClick(e, chapter.id)}
+                      >
+                        <MoreVertical className="icon-sm" />
+                      </div>
+                    )}
+                  </div>
                 </DraggableItem>
               );
             }
@@ -370,7 +366,7 @@ function Sidebar({
               return (
                 <div
                   className="flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg transition-all"
-                  onClick={onAddChapter}
+                  onClick={() => void handleAddChapter()}
                   style={{ color: "var(--text-tertiary)" }}
                 >
                   <Plus className="mr-2 text-muted icon-sm" />
@@ -422,32 +418,32 @@ function Sidebar({
 
               return (
                 <DraggableItem
-                    key={item.id}
-                    id={`research-${item.id}`}
-                    data={{ 
-                        type: dragType,
-                        id: item.id, 
-                        title: meta.label 
-                    }}
-                    className="flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg transition-all"
+                  key={item.id}
+                  id={`research-${item.id}`}
+                  data={{
+                    type: dragType,
+                    id: item.id,
+                    title: meta.label
+                  }}
+                  className="flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg transition-all"
                 >
-                    <div
-                      className="flex items-center w-full"
-                      onClick={() => onSelectResearchItem(item.id)}
-                      onMouseEnter={() => setHoveredItemId(meta.hoverId)}
-                      onMouseLeave={() => setHoveredItemId(null)}
-                    >
-                      {meta.icon}
-                      <span>{meta.label}</span>
-                      {(hoveredItemId === meta.hoverId || menuOpenId === meta.hoverId) && (
-                        <div
-                          className="ml-auto p-0.5 rounded hover:bg-bg-active text-muted hover:text-fg"
-                          onClick={(e) => handleMenuClick(e, meta.hoverId)}
-                        >
-                          <MoreVertical className="icon-sm" />
-                        </div>
-                      )}
-                    </div>
+                  <div
+                    className="flex items-center w-full"
+                    onClick={() => onSelectResearchItem(item.id)}
+                    onMouseEnter={() => setHoveredItemId(meta.hoverId)}
+                    onMouseLeave={() => setHoveredItemId(null)}
+                  >
+                    {meta.icon}
+                    <span>{meta.label}</span>
+                    {(hoveredItemId === meta.hoverId || menuOpenId === meta.hoverId) && (
+                      <div
+                        className="ml-auto p-0.5 rounded hover:bg-bg-active text-muted hover:text-fg"
+                        onClick={(e) => handleMenuClick(e, meta.hoverId)}
+                      >
+                        <MoreVertical className="icon-sm" />
+                      </div>
+                    )}
+                  </div>
                 </DraggableItem>
               );
             }
@@ -470,19 +466,19 @@ function Sidebar({
             }
 
             if (item.type === "snapshot-list") {
-                return (
-                    <div className="h-60 border-b border-border">
-                        <SnapshotList chapterId={item.chapterId} />
-                    </div>
-                );
+              return (
+                <div className="h-60 border-b border-border">
+                  <SnapshotList chapterId={item.chapterId} />
+                </div>
+              );
             }
 
             if (item.type === "snapshot-empty-msg") {
-                return (
-                    <div className="px-4 py-2 text-xs text-muted italic">
-                        {t("sidebar.snapshotEmpty")}
-                    </div>
-                );
+              return (
+                <div className="px-4 py-2 text-xs text-muted italic">
+                  {t("sidebar.snapshotEmpty")}
+                </div>
+              );
             }
 
             if (item.type === "trash-header") {

@@ -18,6 +18,7 @@ import { useUIStore, type DocsRightTab } from "../../stores/uiStore";
 import { useEditorStore } from "../../stores/editorStore";
 import { useChapterManagement } from "../../hooks/useChapterManagement";
 import { useSplitView } from "../../hooks/useSplitView";
+import { useWorkspaceDropHandlers } from "../../hooks/useWorkspaceDropHandlers";
 import { useShortcuts } from "../../hooks/useShortcuts";
 import { emitShortcutCommand } from "../../hooks/useShortcutCommand";
 import { useDialog } from "../common/DialogProvider";
@@ -28,7 +29,7 @@ import {
 import { api } from "../../services/api";
 import { openDocsRightTab as openDocsPanelTab } from "../../services/docsPanelService";
 import { createLayoutModeActions } from "../../services/layoutModeActions";
-import { GlobalDragContext, type DragData } from "../common/GlobalDragContext";
+import { GlobalDragContext } from "../common/GlobalDragContext";
 import { Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
 
 const SettingsModal = lazy(() => import("../settings/SettingsModal"));
@@ -71,7 +72,6 @@ export default function EditorRoot() {
         handleSelectChapter,
         handleAddChapter,
         handleRenameChapter,
-        handleDuplicateChapter,
         handleDeleteChapter,
         handleSave,
     } = useChapterManagement();
@@ -119,95 +119,14 @@ export default function EditorRoot() {
 
     const { setMainView } = useUIStore();
 
-    const handleDropToCenter = useCallback((data: DragData) => {
-        if (data.type === "chapter") {
-            handleSelectChapter(data.id);
-            return;
-        }
-
-        if (uiMode === "scrivener") {
-            switch (data.type) {
-                case "character":
-                    setMainView({ type: "character", id: data.id });
-                    break;
-                case "world":
-                    setWorldTab("terms");
-                    setMainView({ type: "world", id: data.id });
-                    break;
-                case "mindmap":
-                    setWorldTab("mindmap");
-                    setMainView({ type: "world", id: data.id });
-                    break;
-                case "plot":
-                    setWorldTab("plot");
-                    setMainView({ type: "world", id: data.id });
-                    break;
-                case "drawing":
-                    setWorldTab("drawing");
-                    setMainView({ type: "world", id: data.id });
-                    break;
-                case "synopsis":
-                    setWorldTab("synopsis");
-                    setMainView({ type: "world", id: data.id });
-                    break;
-                case "memo":
-                    setMainView({ type: "memo", id: data.id });
-                    break;
-                case "analysis":
-                    setMainView({ type: "analysis", id: data.id });
-                    break;
-                case "trash":
-                    setMainView({ type: "trash", id: data.id });
-                    break;
-            }
-        } else {
-            switch (data.type) {
-                case "character":
-                    handleSelectResearchItem("character");
-                    break;
-                case "world":
-                case "mindmap":
-                case "plot":
-                case "drawing":
-                case "synopsis":
-                    handleSelectResearchItem("world");
-                    break;
-                case "memo":
-                    handleSelectResearchItem("scrap");
-                    break;
-                case "analysis":
-                    handleSelectResearchItem("analysis");
-                    break;
-            }
-        }
-    }, [uiMode, handleSelectChapter, handleSelectResearchItem, setMainView, setWorldTab]);
-
-    const handleDropToSplit = useCallback((data: DragData, side?: "left" | "right" | "bottom") => {
-        let insertAt: number | undefined;
-        if (side === "left") insertAt = 0;
-
-        switch (data.type) {
-            case "chapter":
-                addPanel({ type: "editor", id: data.id }, insertAt);
-                break;
-            case "character":
-                addPanel({ type: "research", tab: "character", id: data.id }, insertAt);
-                break;
-            case "world":
-            case "mindmap":
-            case "plot":
-            case "drawing":
-            case "synopsis":
-                addPanel({ type: "research", tab: "world", id: data.id }, insertAt);
-                break;
-            case "memo":
-                addPanel({ type: "research", tab: "scrap", id: data.id }, insertAt);
-                break;
-            case "analysis":
-                addPanel({ type: "research", tab: "analysis", id: data.id }, insertAt);
-                break;
-        }
-    }, [addPanel]);
+    const { handleDropToCenter, handleDropToSplit } = useWorkspaceDropHandlers({
+        uiMode,
+        handleSelectChapter,
+        handleSelectResearchItem,
+        setMainView,
+        setWorldTab,
+        addPanel,
+    });
 
     const openDocsRightTab = useCallback((tab: Exclude<DocsRightTab, null>) => {
         openDocsPanelTab(tab);
@@ -473,15 +392,7 @@ export default function EditorRoot() {
             {uiMode === 'docs' ? (
                 <GoogleDocsLayout
                     sidebar={
-                        <DocsSidebar
-                            chapters={chapters}
-                            activeChapterId={activeChapterId ?? undefined}
-                            onSelectChapter={handleSelectChapter}
-                            onAddChapter={handleAddChapter}
-                            onRenameChapter={handleRenameChapter}
-                            onDuplicateChapter={handleDuplicateChapter}
-                            onDeleteChapter={handleDeleteChapter}
-                        />
+                        <DocsSidebar />
                     }
                     activeChapterId={activeChapterId ?? undefined}
                     activeChapterTitle={activeChapterTitle}
@@ -510,15 +421,7 @@ export default function EditorRoot() {
             ) : uiMode === "editor" ? (
                 <EditorLayout
                     sidebar={
-                        <DocsSidebar
-                            chapters={chapters}
-                            activeChapterId={activeChapterId ?? undefined}
-                            onSelectChapter={handleSelectChapter}
-                            onAddChapter={handleAddChapter}
-                            onRenameChapter={handleRenameChapter}
-                            onDuplicateChapter={handleDuplicateChapter}
-                            onDeleteChapter={handleDeleteChapter}
-                        />
+                        <DocsSidebar />
                     }
                     activeChapterId={activeChapterId ?? undefined}
                     activeChapterTitle={activeChapterTitle}
@@ -546,16 +449,7 @@ export default function EditorRoot() {
             ) : uiMode === "scrivener" ? (
                 <ScrivenerLayout
                     sidebar={
-                        <ScrivenerSidebar
-                            chapters={chapters}
-                            activeChapterId={activeChapterId ?? undefined}
-                            onSelectChapter={handleSelectChapter}
-                            onAddChapter={handleAddChapter}
-                            onRenameChapter={handleRenameChapter}
-                            onDuplicateChapter={handleDuplicateChapter}
-                            onDeleteChapter={handleDeleteChapter}
-                            currentProjectId={currentProject?.id}
-                        />
+                        <ScrivenerSidebar />
                     }
                     activeChapterId={activeChapterId ?? undefined}
                     activeChapterTitle={activeChapterTitle}
@@ -581,15 +475,6 @@ export default function EditorRoot() {
                 <MainLayout
                     sidebar={
                         <Sidebar
-                            chapters={chapters}
-                            activeChapterId={activeChapterId ?? undefined}
-                            currentProjectTitle={currentProject?.title}
-                            currentProjectId={currentProject?.id}
-                            onSelectChapter={handleSelectChapter}
-                            onAddChapter={handleAddChapter}
-                            onRenameChapter={handleRenameChapter}
-                            onDuplicateChapter={handleDuplicateChapter}
-                            onDeleteChapter={handleDeleteChapter}
                             onOpenSettings={() => setIsSettingsOpen(true)}
                             onPrefetchSettings={prefetchSettings}
                             onSelectResearchItem={handleSelectResearchItem}

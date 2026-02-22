@@ -1,44 +1,32 @@
 {
-    "project": "Luie Renderer Refactoring",
-    "goal": "Refactor src/renderer to eliminate manual DOM manipulations, modularize App.tsx, decouple DnD logic, and consolidate Zustand stores.",
+    "project": "Luie Renderer Refactoring Phase 5 (DONE)",
+    "goal": "Deepen component encapsulation, eliminate prop drilling, and extract duplicated logic in src/renderer.",
     "tasks": [
         {
-            "id": "phase-1",
-            "title": "Layout System Overhaul",
-            "priority": "P0",
+            "id": "phase-5-task-1",
+            "title": "Extract Workspace DnD Handlers",
+            "priority": "P1",
             "assignedAgent": "frontend",
             "dependencies": [],
-            "description": "DONE"
+            "description": "Move the massive `handleDropToCenter` and `handleDropToSplit` functions out of EditorRoot.tsx into a dedicated `useWorkspaceDropHandlers.ts` hook."
         },
         {
-            "id": "phase-2",
-            "title": "App.tsx Monolith Deconstruction",
+            "id": "phase-5-task-2",
+            "title": "Unify ChapterList UI Component",
             "priority": "P1",
             "assignedAgent": "frontend",
-            "dependencies": [
-                "phase-1"
-            ],
-            "description": "DONE"
+            "dependencies": [],
+            "description": "Extract the duplicated Chapter list rendering, drag-item wrappers, and rename/duplicate/delete floating menu logic from DocsSidebar, ScrivenerSidebar, and Sidebar into a single shared `<ChapterList />` component."
         },
         {
-            "id": "phase-3",
-            "title": "DnD Simplification",
-            "priority": "P1",
+            "id": "phase-5-task-3",
+            "title": "Eliminate Chapter Prop Drilling",
+            "priority": "P0",
             "assignedAgent": "frontend",
             "dependencies": [
-                "phase-2"
+                "phase-5-task-2"
             ],
-            "description": "DONE"
-        },
-        {
-            "id": "phase-4",
-            "title": "Store Consolidation",
-            "priority": "P2",
-            "assignedAgent": "frontend",
-            "dependencies": [
-                "phase-3"
-            ],
-            "description": "DONE: Deleted editorStatusStore.ts and autoSaveStore.ts by merging them into editorStore.ts and local hooks. Cleaned up redundant UI synchronization loops in characterStore, memoStore, and termStore by prioritizing uiStore's mainView as the single source of truth."
+            "description": "Remove `chapters`, `activeChapterId`, `onSelectChapter`, `onRenameChapter`, etc. from the prop signatures of Layouts and Sidebars. Have the new `<ChapterList />` and `<Editor />` fetch these directly via `useChapterManagement()`."
         }
     ]
 }

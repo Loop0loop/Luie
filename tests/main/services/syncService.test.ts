@@ -8,6 +8,7 @@ const mocked = vi.hoisted(() => {
   };
 
   const getAccessToken = vi.fn();
+  const getRefreshToken = vi.fn();
   const refreshSession = vi.fn();
   const startGoogleAuth = vi.fn();
   const hasPendingAuthFlow = vi.fn(() => false);
@@ -49,6 +50,7 @@ const mocked = vi.hoisted(() => {
   return {
     syncSettings,
     getAccessToken,
+    getRefreshToken,
     refreshSession,
     startGoogleAuth,
     hasPendingAuthFlow,
@@ -81,6 +83,7 @@ vi.mock("../../../src/main/services/features/syncAuthService.js", () => ({
     startGoogleAuth: (...args: unknown[]) => mocked.startGoogleAuth(...args),
     completeOAuthCallback: vi.fn(),
     getAccessToken: (...args: unknown[]) => mocked.getAccessToken(...args),
+    getRefreshToken: (...args: unknown[]) => mocked.getRefreshToken(...args),
     refreshSession: (...args: unknown[]) => mocked.refreshSession(...args),
   },
 }));
@@ -121,10 +124,12 @@ describe("SyncService auth hardening", () => {
     vi.restoreAllMocks();
     vi.resetModules();
     mocked.getAccessToken.mockReset();
+    mocked.getRefreshToken.mockReset();
     mocked.refreshSession.mockReset();
     mocked.startGoogleAuth.mockReset();
     mocked.hasPendingAuthFlow.mockReset();
     mocked.hasPendingAuthFlow.mockReturnValue(false);
+    mocked.getRefreshToken.mockReturnValue({ token: null });
     mocked.fetchBundle.mockReset();
     mocked.upsertBundle.mockReset();
     mocked.prisma.project.findMany.mockResolvedValue([]);
@@ -142,6 +147,7 @@ describe("SyncService auth hardening", () => {
     mocked.syncSettings.autoSync = false;
     mocked.syncSettings.userId = "00000000-0000-0000-0000-000000000001";
     mocked.getAccessToken.mockReturnValue({ token: null });
+    mocked.getRefreshToken.mockReturnValue({ token: null });
 
     const { SyncService } = await import("../../../src/main/services/features/syncService.js");
     const service = new SyncService();
@@ -152,23 +158,21 @@ describe("SyncService auth hardening", () => {
     expect(status.lastError).toContain("SYNC_ACCESS_TOKEN_UNAVAILABLE");
   });
 
-  it("disconnects when refresh path fails with auth fatal error", async () => {
+  it("disconnects on startup when refresh token is unreadable", async () => {
     mocked.syncSettings.connected = true;
     mocked.syncSettings.autoSync = false;
     mocked.syncSettings.userId = "00000000-0000-0000-0000-000000000001";
     mocked.syncSettings.refreshTokenCipher = "broken-refresh";
     mocked.getAccessToken.mockReturnValue({ token: null });
-    mocked.refreshSession.mockRejectedValue(new Error("SYNC_TOKEN_DECRYPT_FAILED:invalid"));
+    mocked.getRefreshToken.mockReturnValue({ token: null });
 
     const { SyncService } = await import("../../../src/main/services/features/syncService.js");
     const service = new SyncService();
     service.initialize();
-    const result = await service.runNow("manual");
-
-    expect(result.success).toBe(false);
-    expect(result.message).toContain("SYNC_TOKEN_DECRYPT_FAILED");
+    expect(service.getStatus().lastError).toContain("SYNC_ACCESS_TOKEN_UNAVAILABLE");
     expect(service.getStatus().connected).toBe(false);
     expect(mocked.fetchBundle).not.toHaveBeenCalled();
+    expect(mocked.refreshSession).not.toHaveBeenCalled();
   });
 
   it("keeps connected state for non-auth transient errors", async () => {
@@ -178,6 +182,7 @@ describe("SyncService auth hardening", () => {
     mocked.syncSettings.expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
     mocked.syncSettings.accessTokenCipher = "cipher";
     mocked.getAccessToken.mockReturnValue({ token: "access-token" });
+    mocked.getRefreshToken.mockReturnValue({ token: "refresh-token" });
     mocked.fetchBundle.mockRejectedValue(new Error("NETWORK_TIMEOUT"));
 
     const { SyncService } = await import("../../../src/main/services/features/syncService.js");

@@ -145,13 +145,17 @@ export class SyncService {
     }
 
     if (syncSettings.connected) {
-      const tokenResult = syncAuthService.getAccessToken(syncSettings);
-      if (tokenResult.migratedCipher) {
-        settingsManager.setSyncSettings({ accessTokenCipher: tokenResult.migratedCipher });
+      const accessTokenResult = syncAuthService.getAccessToken(syncSettings);
+      if (accessTokenResult.migratedCipher) {
+        settingsManager.setSyncSettings({ accessTokenCipher: accessTokenResult.migratedCipher });
+      }
+      const refreshTokenResult = syncAuthService.getRefreshToken(syncSettings);
+      if (refreshTokenResult.migratedCipher) {
+        settingsManager.setSyncSettings({ refreshTokenCipher: refreshTokenResult.migratedCipher });
       }
 
       const hasRecoverableTokenPath =
-        Boolean(tokenResult.token) || Boolean(syncSettings.refreshTokenCipher);
+        Boolean(accessTokenResult.token) || Boolean(refreshTokenResult.token);
       if (!hasRecoverableTokenPath) {
         this.applyAuthFailureState("SYNC_ACCESS_TOKEN_UNAVAILABLE");
       }
@@ -402,6 +406,16 @@ export class SyncService {
     let token = accessTokenResult.token;
 
     if (expiresSoon || !token) {
+      const refreshTokenResult = syncAuthService.getRefreshToken(syncSettings);
+      if (refreshTokenResult.migratedCipher) {
+        settingsManager.setSyncSettings({
+          refreshTokenCipher: refreshTokenResult.migratedCipher,
+        });
+      }
+      if (!refreshTokenResult.token) {
+        throw new Error("SYNC_AUTH_REFRESH_UNAVAILABLE");
+      }
+
       const refreshed = await syncAuthService.refreshSession(syncSettings);
       const nextSettings = settingsManager.setSyncSettings({
         provider: refreshed.provider,
