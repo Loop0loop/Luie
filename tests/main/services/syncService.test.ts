@@ -9,6 +9,8 @@ const mocked = vi.hoisted(() => {
 
   const getAccessToken = vi.fn();
   const refreshSession = vi.fn();
+  const startGoogleAuth = vi.fn();
+  const hasPendingAuthFlow = vi.fn(() => false);
   const fetchBundle = vi.fn();
   const upsertBundle = vi.fn();
 
@@ -48,6 +50,8 @@ const mocked = vi.hoisted(() => {
     syncSettings,
     getAccessToken,
     refreshSession,
+    startGoogleAuth,
+    hasPendingAuthFlow,
     fetchBundle,
     upsertBundle,
     prisma,
@@ -73,7 +77,8 @@ vi.mock("../../../src/main/database/index.js", () => ({
 vi.mock("../../../src/main/services/features/syncAuthService.js", () => ({
   syncAuthService: {
     isConfigured: () => true,
-    startGoogleAuth: vi.fn(),
+    hasPendingAuthFlow: (...args: unknown[]) => mocked.hasPendingAuthFlow(...args),
+    startGoogleAuth: (...args: unknown[]) => mocked.startGoogleAuth(...args),
     completeOAuthCallback: vi.fn(),
     getAccessToken: (...args: unknown[]) => mocked.getAccessToken(...args),
     refreshSession: (...args: unknown[]) => mocked.refreshSession(...args),
@@ -117,6 +122,9 @@ describe("SyncService auth hardening", () => {
     vi.resetModules();
     mocked.getAccessToken.mockReset();
     mocked.refreshSession.mockReset();
+    mocked.startGoogleAuth.mockReset();
+    mocked.hasPendingAuthFlow.mockReset();
+    mocked.hasPendingAuthFlow.mockReturnValue(false);
     mocked.fetchBundle.mockReset();
     mocked.upsertBundle.mockReset();
     mocked.prisma.project.findMany.mockResolvedValue([]);
@@ -180,5 +188,19 @@ describe("SyncService auth hardening", () => {
     expect(result.success).toBe(false);
     expect(result.message).toContain("NETWORK_TIMEOUT");
     expect(service.getStatus().connected).toBe(true);
+  });
+
+  it("does not launch OAuth again while already connecting", async () => {
+    mocked.startGoogleAuth.mockResolvedValue(undefined);
+
+    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const service = new SyncService();
+    service.initialize();
+
+    await service.connectGoogle();
+    await service.connectGoogle();
+
+    expect(mocked.startGoogleAuth).toHaveBeenCalledTimes(1);
+    expect(service.getStatus().mode).toBe("connecting");
   });
 });

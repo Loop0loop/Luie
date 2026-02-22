@@ -1,0 +1,42 @@
+{
+    "project": "Luie Renderer Refactoring",
+    "goal": "Refactor src/renderer to eliminate manual DOM manipulations, modularize App.tsx, decouple DnD logic, and consolidate Zustand stores.",
+    "tasks": [
+        {
+            "id": "phase-1",
+            "title": "Layout System Overhaul",
+            "priority": "P0",
+            "assignedAgent": "frontend",
+            "dependencies": [],
+            "description": "Refactor EditorLayout.tsx, GoogleDocsLayout.tsx, and ScrivenerLayout.tsx to rely strictly on react-resizable-panels instead of manual window.addEventListener pointermove logic. Eliminate hardcoded width calculations."
+        },
+        {
+            "id": "phase-2",
+            "title": "App.tsx Monolith Deconstruction",
+            "priority": "P1",
+            "assignedAgent": "frontend",
+            "dependencies": [
+                "phase-1"
+            ],
+            "description": "Extract global shortcuts to a ShortcutProvider. Extract View/Routing rendering logic into smaller chunk components from App.tsx."
+        },
+        {
+            "id": "phase-3",
+            "title": "DnD Simplification",
+            "priority": "P1",
+            "assignedAgent": "frontend",
+            "dependencies": [
+                "phase-1"
+            ],
+            "description": "Decouple GlobalDragContext.tsx business logic from the routing/layout mechanisms. Refactor EditorDropZones to use native dnd-kit collision detection."
+        },
+        {
+            "id": "phase-4",
+            "title": "Store Consolidation",
+            "priority": "P2",
+            "assignedAgent": "frontend",
+            "dependencies": [],
+            "description": "Consolidate the 12 scattered Zustand stores. Merge heavily coupled stores (e.g., uiStore, editorStatusStore) to prevent state synchronization bugs."
+        }
+    ]
+}

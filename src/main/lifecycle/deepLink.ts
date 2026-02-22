@@ -10,6 +10,8 @@ const classifyCallbackFailure = (error: unknown): string => {
   if (message.includes("SYNC_AUTH_NO_PENDING_SESSION")) return "NO_PENDING";
   if (message.includes("SYNC_AUTH_REQUEST_EXPIRED")) return "EXPIRED";
   if (message.includes("SYNC_AUTH_STATE_MISMATCH")) return "STATE_MISMATCH";
+  if (message.includes("bad_oauth_state")) return "STATE_MISMATCH";
+  if (message.includes("OAuth callback with invalid state")) return "STATE_MISMATCH";
   return "UNKNOWN";
 };
 

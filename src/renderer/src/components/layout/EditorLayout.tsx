@@ -6,10 +6,9 @@ import {
   useState,
   lazy,
   Suspense,
-  useMemo,
 } from "react";
 import { type Editor } from "@tiptap/react";
-import { Panel, Group as PanelGroup } from "react-resizable-panels";
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
 import {
   User,
@@ -53,44 +52,9 @@ interface EditorLayoutProps {
   additionalPanels?: ReactNode;
 }
 
-// WindowBar 높이: 40px
 const WINDOW_BAR_HEIGHT = 40;
-const BINDER_ICON_BAR_WIDTH = 48; // w-12
-const BINDER_MIN_WIDTH = 240;
-const BINDER_MAX_WIDTH = 900;
-const BINDER_DEFAULT_WIDTH = 320;
-
-// 탭별 기본 너비
-const DEFAULT_TAB_WIDTHS: Record<string, number> = {
-  character: 320,
-  world: 360,
-  scrap: 300,
-  analysis: 380,
-  snapshot: 280,
-  trash: 280,
-};
-
-const STORAGE_KEY = "luie_editor_binder_widths";
 
 type BinderTab = Exclude<DocsRightTab, null | "editor" | "export">;
-
-function loadTabWidths(): Record<string, number> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return { ...DEFAULT_TAB_WIDTHS, ...(JSON.parse(raw) as Record<string, number>) };
-  } catch {
-    // ignore
-  }
-  return { ...DEFAULT_TAB_WIDTHS };
-}
-
-function saveTabWidths(widths: Record<string, number>) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(widths));
-  } catch {
-    // ignore
-  }
-}
 
 export default function EditorLayout({
   children,
@@ -104,71 +68,25 @@ export default function EditorLayout({
 }: EditorLayoutProps) {
   const { t } = useTranslation();
 
-  // UIStore의 docsRightTab을 공유해서 SmartLink 연동
   const { docsRightTab, setDocsRightTab } = useUIStore();
-  // EditorStore에서 maxWidth 가져오기 (PC/Mobile 조판)
   const maxWidth = useEditorStore((state) => state.maxWidth);
 
-  // useSplitView의 rightPanelContent를 사용하여 스냅샷 뷰어 제어
-  // const { panels } = useUIStore(); // Removed as per instruction
-
-  // BinderTab만 허용 (editor/export 제외)
   const VALID_TABS: BinderTab[] = ["character", "world", "scrap", "analysis", "snapshot", "trash"];
   const activeRightTab: BinderTab | null =
     docsRightTab && VALID_TABS.includes(docsRightTab as BinderTab)
       ? (docsRightTab as BinderTab)
       : null;
 
-  // 닫힘 애니메이션을 위한 상태
-  const [closingTab, setClosingTab] = useState<BinderTab | null>(null);
-  const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const binderRef = useRef<HTMLDivElement>(null);
-
   const setActiveRightTab = useCallback(
     (tab: BinderTab | null) => {
-      if (!tab && activeRightTab) {
-        // 닫을 때: closingTab 설정 하여 애니메이션 시작
-        setClosingTab(activeRightTab);
-      }
       setDocsRightTab(tab);
     },
-    [activeRightTab, setDocsRightTab]
+    [setDocsRightTab]
   );
-
-  const handleBinderMouseEnter = useCallback(() => {
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-  }, []);
-
-  const handleBinderMouseLeave = useCallback(() => {
-    // 포커스가 내부에 있으면 닫지 않음 (이름 수정 등)
-    if (document.activeElement && binderRef.current?.contains(document.activeElement)) {
-      return;
-    }
-    closeTimerRef.current = setTimeout(() => {
-      setActiveRightTab(null);
-    }, 600);
-  }, [setActiveRightTab]);
 
   const ribbonRef = useRef<HTMLDivElement>(null);
   const [ribbonHeight, setRibbonHeight] = useState(56);
 
-  // 탭별 너비 기억
-  const [tabWidths, setTabWidths] = useState<Record<string, number>>(loadTabWidths);
-  const [isResizing, setIsResizing] = useState(false);
-
-  // 현재 보여줄 탭 (Active 없으면 Closing)
-  const visibleTab = activeRightTab || closingTab;
-
-  // 현재 탭의 너비
-  const currentWidth = useMemo(
-    () => (visibleTab ? (tabWidths[visibleTab] ?? BINDER_DEFAULT_WIDTH) : BINDER_DEFAULT_WIDTH),
-    [visibleTab, tabWidths]
-  );
-
-  // Ribbon 실제 높이 측정
   useEffect(() => {
     if (!ribbonRef.current) return;
     const observer = new ResizeObserver((entries) => {
@@ -180,46 +98,6 @@ export default function EditorLayout({
     return () => observer.disconnect();
   }, []);
 
-  // BinderBar 리사이즈 핸들러
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing) return;
-      const next = Math.max(
-        BINDER_MIN_WIDTH,
-        Math.min(BINDER_MAX_WIDTH, window.innerWidth - e.clientX - BINDER_ICON_BAR_WIDTH)
-      );
-      const rounded = Math.round(next);
-      if (activeRightTab) {
-        setTabWidths((prev) => {
-          const updated = { ...prev, [activeRightTab]: rounded };
-          saveTabWidths(updated);
-          return updated;
-        });
-      }
-    };
-    const handleMouseUp = () => {
-      if (isResizing) {
-        setIsResizing(false);
-        document.body.style.cursor = "";
-        document.body.style.userSelect = "";
-      }
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isResizing, activeRightTab]);
-
-  const startResize = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-  }, []);
-
-  // 사이드바 시작 위치 = WindowBar + Ribbon
   const sidebarTopOffset = WINDOW_BAR_HEIGHT + ribbonHeight;
 
   const handleRightTabClick = useCallback(
@@ -229,166 +107,55 @@ export default function EditorLayout({
     [activeRightTab, setActiveRightTab]
   );
 
-  // 스냅샷 뷰어에서 목록으로 돌아가기
   const handleBackToSnapshotList = () => {
-    // setRightPanelContent({ type: "snapshot", snapshot: undefined }); // Clear snapshot content to show list
     // TODO: Need snapshot viewer state inside snapshot panel
   };
 
-  // 공통 BinderBar 콘텐츠 렌더링 함수
-  const renderBinderContent = () => (
-    <div
-      ref={binderRef}
-      className="h-full flex flex-row bg-panel border-l border-border shadow-2xl"
-      onMouseEnter={handleBinderMouseEnter}
-      onMouseLeave={handleBinderMouseLeave}
-    >
-      {/* 패널 콘텐츠 영역 */}
-      <div
-        className="flex flex-col overflow-hidden bg-panel shrink-0 relative transition-[width] duration-300 ease-in-out"
-        style={{
-          // activeRightTab이 있으면 width, 없으면 0 (closingTab이 있어도 active가 없으면 0으로 줄어듦 -> 애니메이션)
-          width: activeRightTab ? `${currentWidth}px` : "0px",
-          transition: isResizing ? "none" : undefined,
-        }}
-        onTransitionEnd={() => {
-          // 닫힘 애니메이션이 끝나면 closingTab 제거하여 완전히 언마운트 준비
-          if (!activeRightTab) {
-            setClosingTab(null);
-          }
-        }}
-      >
-        {/* visibleTab이 있으면 렌더링 (닫히는 중에도 내용 유지) */}
-        {visibleTab && (
-          <div className="h-full flex flex-col w-full min-w-[240px] relative">
-            {/* 리사이즈 핸들 (왼쪽 가장자리) */}
-            <div
-              className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-accent/40 active:bg-accent/60 transition-colors z-20 group"
-              onMouseDown={startResize}
-            >
-              <div className="absolute inset-y-0 left-0 w-0.5 bg-border/50 group-hover:bg-accent/60 transition-colors" />
-            </div>
-
-            {/* Absolute Close Button (Header Removed) */}
-            <button
-              onClick={() => setActiveRightTab(null)}
-              className="absolute top-2 right-2 p-1.5 rounded-full bg-surface/80 backdrop-blur-sm border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-all opacity-0 group-hover:opacity-100 peer-hover:opacity-100 hover:opacity-100"
-              title={t("sidebar.toggle.close")}
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            {/* 스냅샷 뷰어일 때 뒤로가기 버튼 (Absolute) */}
-            {visibleTab === 'snapshot' && (
-              <button
-                onClick={handleBackToSnapshotList}
-                className="absolute top-2 left-3 p-1.5 rounded-full bg-surface/80 backdrop-blur-sm border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-all"
-                title={t("common.back")}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            )}
-
-
-            {/* 패널 본문 */}
-            <div className="flex-1 overflow-hidden pt-4"> {/* Header 공간 제거됨 */}
-              <Suspense
-                fallback={
-                  <div className="p-4 text-sm text-muted">
-                    {t("common.loading")}
-                  </div>
-                }
-              >
-                {visibleTab === "character" && (
-                  <ResearchPanel
-                    activeTab="character"
-                    onClose={() => setActiveRightTab(null)}
-                  />
-                )}
-                {visibleTab === "world" && (
-                  <WorldPanel onClose={() => setActiveRightTab(null)} />
-                )}
-                {visibleTab === "scrap" && (
-                  <ResearchPanel
-                    activeTab="scrap"
-                    onClose={() => setActiveRightTab(null)}
-                  />
-                )}
-                {visibleTab === "analysis" && (
-                  <ResearchPanel
-                    activeTab="analysis"
-                    onClose={() => setActiveRightTab(null)}
-                  />
-                )}
-                {visibleTab === "snapshot" &&
-                  // 스냅샷 뷰어 모드 vs 리스트 모드 (Temporary Fallback)
-                  (activeChapterId ? (
-                    <SnapshotList chapterId={activeChapterId} />
-                  ) : (
-                    <div className="p-4 text-xs text-muted italic text-center">
-                      {t("snapshot.list.selectChapter")}
-                    </div>
-                  ))}
-                {visibleTab === "trash" &&
-                  (currentProjectId ? (
-                    <TrashList projectId={currentProjectId} refreshKey={0} />
-                  ) : (
-                    <div className="p-4 text-xs text-muted italic text-center">
-                      {t("sidebar.trashEmpty")}
-                    </div>
-                  ))}
-              </Suspense>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 오른쪽 세로 아이콘 바 */}
-      <div className="w-12 bg-surface border-l border-border flex flex-col items-center py-3 gap-2 shrink-0 z-20">
-        <BinderTabButton
-          icon={<User className="w-5 h-5" />}
-          isActive={activeRightTab === "character"}
-          onClick={() => handleRightTabClick("character")}
-          title={t("research.title.characters")}
-          type="character"
-        />
-        <BinderTabButton
-          icon={<Globe className="w-5 h-5" />}
-          isActive={activeRightTab === "world"}
-          onClick={() => handleRightTabClick("world")}
-          title={t("research.title.world")}
-          type="world"
-        />
-        <BinderTabButton
-          icon={<StickyNote className="w-5 h-5" />}
-          isActive={activeRightTab === "scrap"}
-          onClick={() => handleRightTabClick("scrap")}
-          title={t("research.title.scrap")}
-          type="memo"
-        />
-        <BinderTabButton
-          icon={<Sparkles className="w-5 h-5" />}
-          isActive={activeRightTab === "analysis"}
-          onClick={() => handleRightTabClick("analysis")}
-          title={t("research.title.analysis")}
-          type="analysis"
-        />
-        <div className="w-6 h-px bg-border/50 my-1" />
-        <BinderTabButton
-          icon={<History className="w-5 h-5" />}
-          isActive={activeRightTab === "snapshot"}
-          onClick={() => handleRightTabClick("snapshot")}
-          title={t("sidebar.section.snapshot")}
-          type="snapshot"
-        />
-        <BinderTabButton
-          icon={<Trash2 className="w-5 h-5" />}
-          isActive={activeRightTab === "trash"}
-          onClick={() => handleRightTabClick("trash")}
-          title={t("sidebar.section.trash")}
-          type="trash"
-        />
-      </div>
+  const renderIconBar = () => (
+    <div className="w-12 bg-surface border-l border-border flex flex-col items-center py-3 gap-2 shrink-0 z-20 h-full">
+      <BinderTabButton
+        icon={<User className="w-5 h-5" />}
+        isActive={activeRightTab === "character"}
+        onClick={() => handleRightTabClick("character")}
+        title={t("research.title.characters")}
+        type="character"
+      />
+      <BinderTabButton
+        icon={<Globe className="w-5 h-5" />}
+        isActive={activeRightTab === "world"}
+        onClick={() => handleRightTabClick("world")}
+        title={t("research.title.world")}
+        type="world"
+      />
+      <BinderTabButton
+        icon={<StickyNote className="w-5 h-5" />}
+        isActive={activeRightTab === "scrap"}
+        onClick={() => handleRightTabClick("scrap")}
+        title={t("research.title.scrap")}
+        type="memo"
+      />
+      <BinderTabButton
+        icon={<Sparkles className="w-5 h-5" />}
+        isActive={activeRightTab === "analysis"}
+        onClick={() => handleRightTabClick("analysis")}
+        title={t("research.title.analysis")}
+        type="analysis"
+      />
+      <div className="w-6 h-px bg-border/50 my-1" />
+      <BinderTabButton
+        icon={<History className="w-5 h-5" />}
+        isActive={activeRightTab === "snapshot"}
+        onClick={() => handleRightTabClick("snapshot")}
+        title={t("sidebar.section.snapshot")}
+        type="snapshot"
+      />
+      <BinderTabButton
+        icon={<Trash2 className="w-5 h-5" />}
+        isActive={activeRightTab === "trash"}
+        onClick={() => handleRightTabClick("trash")}
+        title={t("sidebar.section.trash")}
+        type="trash"
+      />
     </div>
   );
 
@@ -419,8 +186,8 @@ export default function EditorLayout({
         <div className="flex-1 h-full overflow-hidden flex flex-row relative">
 
           {/* Editor Column Wrapper */}
-          <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative">
-            <Panel defaultSize={100} minSize={20} className="min-w-0 bg-transparent relative flex flex-col">
+          <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative" id="editor-layout">
+            <Panel id="main-editor-view" minSize={20} className="min-w-0 bg-transparent relative flex flex-col">
               <div className="flex-1 h-full overflow-hidden flex flex-col relative">
                 <EditorDropZones />
 
@@ -448,20 +215,97 @@ export default function EditorLayout({
                 </div>
               </div>
             </Panel>
+
             {additionalPanels}
+
+            {/* RIGHT: 바인더바 Static Panel (에디터 영역을 밈) */}
+            {activeRightTab && (
+              <>
+                <PanelResizeHandle className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-20 relative">
+                  <div className="absolute inset-y-0 -left-1 -right-1" />
+                </PanelResizeHandle>
+
+                <Panel id="binder-sidebar" defaultSize={25} minSize={15} maxSize={40} className="bg-panel shadow-2xl flex flex-row shrink-0 min-w-0 z-10 transition-none">
+                  <div className="flex-1 h-full overflow-hidden relative min-w-0">
+                    <button
+                      onClick={() => setActiveRightTab(null)}
+                      className="absolute top-2 right-2 p-1.5 rounded-full bg-surface/80 backdrop-blur-sm border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-all hover:opacity-100"
+                      title={t("sidebar.toggle.close")}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+
+                    {activeRightTab === 'snapshot' && (
+                      <button
+                        onClick={handleBackToSnapshotList}
+                        className="absolute top-2 left-3 p-1.5 rounded-full bg-surface/80 backdrop-blur-sm border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-all"
+                        title={t("common.back")}
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                    )}
+
+                    <div className="flex-1 overflow-hidden pt-4 h-full">
+                      <Suspense
+                        fallback={
+                          <div className="p-4 text-sm text-muted">
+                            {t("common.loading")}
+                          </div>
+                        }
+                      >
+                        {activeRightTab === "character" && (
+                          <ResearchPanel
+                            activeTab="character"
+                            onClose={() => setActiveRightTab(null)}
+                          />
+                        )}
+                        {activeRightTab === "world" && (
+                          <WorldPanel onClose={() => setActiveRightTab(null)} />
+                        )}
+                        {activeRightTab === "scrap" && (
+                          <ResearchPanel
+                            activeTab="scrap"
+                            onClose={() => setActiveRightTab(null)}
+                          />
+                        )}
+                        {activeRightTab === "analysis" && (
+                          <ResearchPanel
+                            activeTab="analysis"
+                            onClose={() => setActiveRightTab(null)}
+                          />
+                        )}
+                        {activeRightTab === "snapshot" &&
+                          (activeChapterId ? (
+                            <SnapshotList chapterId={activeChapterId} />
+                          ) : (
+                            <div className="p-4 text-xs text-muted italic text-center">
+                              {t("snapshot.list.selectChapter")}
+                            </div>
+                          ))}
+                        {activeRightTab === "trash" &&
+                          (currentProjectId ? (
+                            <TrashList projectId={currentProjectId} refreshKey={0} />
+                          ) : (
+                            <div className="p-4 text-xs text-muted italic text-center">
+                              {t("sidebar.trashEmpty")}
+                            </div>
+                          ))}
+                      </Suspense>
+                    </div>
+                  </div>
+
+                  {renderIconBar()}
+                </Panel>
+              </>
+            )}
           </PanelGroup>
 
-          {/* RIGHT: 바인더바 (Hybrid: Static or Hover) */}
-          {/* activeRightTab이 있거나 닫히는 중(closingTab)일 때 렌더링 */}
-          {activeRightTab || closingTab ? (
-            // 탭 활성화 시: Static Panel (에디터 영역을 밈)
-            <div className="h-full shrink-0 z-20">
-              {renderBinderContent()}
-            </div>
-          ) : (
-            // 탭 비활성 시: Hover Sidebar (에디터 위에 뜸, 패널은 닫혀있고 아이콘바만 보임)
+          {/* 탭 비활성 시: Hover Sidebar (에디터 위에 뜸, 패널은 닫혀있고 아이콘바만 보임) */}
+          {!activeRightTab && (
             <FocusHoverSidebar side="right" topOffset={sidebarTopOffset}>
-              {renderBinderContent()}
+              <div className="h-full flex flex-row shadow-2xl">
+                {renderIconBar()}
+              </div>
             </FocusHoverSidebar>
           )}
         </div>

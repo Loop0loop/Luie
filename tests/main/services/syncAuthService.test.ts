@@ -143,6 +143,28 @@ describe("SyncAuthService", () => {
     expect(mocked.state.pendingAuthVerifierCipher).toBeUndefined();
   });
 
+  it("blocks duplicate OAuth start while a recent flow is pending", async () => {
+    const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
+    await syncAuthService.startGoogleAuth();
+
+    await expect(syncAuthService.startGoogleAuth()).rejects.toThrow("SYNC_AUTH_FLOW_IN_PROGRESS");
+    expect(mocked.shellOpenExternal).toHaveBeenCalledTimes(1);
+  });
+
+  it("includes provider error code when callback contains OAuth error", async () => {
+    const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
+    await syncAuthService.startGoogleAuth();
+
+    await expect(
+      syncAuthService.completeOAuthCallback(
+        "luie://auth/callback?error=invalid_request&error_code=bad_oauth_state&error_description=OAuth+callback+with+invalid+state",
+      ),
+    ).rejects.toThrow("SYNC_AUTH_CALLBACK_ERROR:bad_oauth_state");
+
+    expect(mocked.state.pendingAuthState).toBeUndefined();
+    expect(mocked.state.pendingAuthVerifierCipher).toBeUndefined();
+  });
+
   it("returns migrated cipher when reading legacy base64 token", async () => {
     const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
     const legacyCipher = Buffer.from("legacy-token", "utf-8").toString("base64");

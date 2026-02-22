@@ -122,6 +122,7 @@ const decodeSecret = (cipher: string): DecodedSecret => {
 class SyncAuthService {
   private pendingPkce: PendingPkce | null = null;
   private readonly pendingTtlMs = 10 * 60 * 1000;
+  private readonly pendingReplaceGuardMs = 15 * 1000;
 
   private clearPendingPkce(): void {
     this.pendingPkce = null;
@@ -186,15 +187,19 @@ class SyncAuthService {
     return null;
   }
 
-  private hasActivePendingFlow(): boolean {
+  private getActivePendingPkce(): PendingPkce | null {
     const pending = this.getPendingPkce();
-    if (!pending) return false;
+    if (!pending) return null;
     const isExpired = Date.now() - pending.createdAt > this.pendingTtlMs;
     if (isExpired) {
       this.clearPendingPkce();
-      return false;
+      return null;
     }
-    return true;
+    return pending;
+  }
+
+  hasPendingAuthFlow(): boolean {
+    return this.getActivePendingPkce() !== null;
   }
 
   isConfigured(): boolean {
@@ -207,8 +212,13 @@ class SyncAuthService {
   }
 
   async startGoogleAuth(): Promise<void> {
-    if (this.hasActivePendingFlow()) {
-      logger.info("Replacing existing OAuth flow with a new request");
+    const pending = this.getActivePendingPkce();
+    if (pending) {
+      const ageMs = Date.now() - pending.createdAt;
+      if (ageMs < this.pendingReplaceGuardMs) {
+        throw new Error("SYNC_AUTH_FLOW_IN_PROGRESS");
+      }
+      logger.info("Replacing existing OAuth flow with a new request", { ageMs });
     }
 
     const { url } = getSupabaseConfigOrThrow();
@@ -250,7 +260,11 @@ class SyncAuthService {
 
     if (error) {
       this.clearPendingPkce();
-      throw new Error(errorDescription ?? errorCode ?? error);
+      const normalizedErrorCode = errorCode ?? error;
+      const normalizedDescription = errorDescription ?? error;
+      throw new Error(
+        `SYNC_AUTH_CALLBACK_ERROR:${normalizedErrorCode}:${normalizedDescription}`,
+      );
     }
     if (!code) {
       this.clearPendingPkce();

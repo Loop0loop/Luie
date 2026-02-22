@@ -137,6 +137,13 @@ export class SyncService {
     const syncSettings = settingsManager.getSyncSettings();
     this.status = toSyncStatusFromSettings(syncSettings, this.status);
 
+    if (!syncSettings.connected && syncAuthService.hasPendingAuthFlow()) {
+      this.status = {
+        ...this.status,
+        mode: "connecting",
+      };
+    }
+
     if (syncSettings.connected) {
       const tokenResult = syncAuthService.getAccessToken(syncSettings);
       if (tokenResult.migratedCipher) {
@@ -162,6 +169,10 @@ export class SyncService {
   }
 
   async connectGoogle(): Promise<SyncStatus> {
+    if (this.status.mode === "connecting") {
+      return this.status;
+    }
+
     if (!syncAuthService.isConfigured()) {
       const message =
         "Supabase env is not configured (SUPABASE_URL/SUPABASE_ANON_KEY or SUPADATABASE_PRJ_ID/SUPADATABASE_API)";
@@ -182,6 +193,13 @@ export class SyncService {
       return this.status;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      if (message.includes("SYNC_AUTH_FLOW_IN_PROGRESS")) {
+        this.updateStatus({
+          mode: "connecting",
+          lastError: undefined,
+        });
+        return this.status;
+      }
       this.updateStatus({
         mode: "error",
         lastError: message,
