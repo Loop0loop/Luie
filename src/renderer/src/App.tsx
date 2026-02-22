@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import ProjectTemplateSelector from "./components/layout/ProjectTemplateSelector";
 import EditorRoot from "./components/layout/EditorRoot";
+import OAuthResultPage from "./components/auth/OAuthResultPage";
 
 import { useProjectStore } from "./stores/projectStore";
 import { useUIStore } from "./stores/uiStore";
@@ -32,6 +33,14 @@ const parseBootstrapStatus = (value: unknown): AppBootstrapStatus | null => {
   return parsed.success ? parsed.data : null;
 };
 
+type WindowMode = "app" | "export" | "oauth-result";
+
+const getWindowMode = (): WindowMode => {
+  if (window.location.hash === "#export") return "export";
+  if (window.location.hash.startsWith("#auth-result")) return "oauth-result";
+  return "app";
+};
+
 export default function App() {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -40,11 +49,11 @@ export default function App() {
   });
   const [isBootstrapLoading, setIsBootstrapLoading] = useState(true);
   const uiModeIntegrityRef = useRef<UiModeIntegritySnapshot | null>(null);
-  const [isExportWindow, setIsExportWindow] = useState(window.location.hash === "#export");
+  const [windowMode, setWindowMode] = useState<WindowMode>(getWindowMode());
 
   useEffect(() => {
     const checkHash = () => {
-      setIsExportWindow(window.location.hash === "#export");
+      setWindowMode(getWindowMode());
     };
     window.addEventListener("hashchange", checkHash);
     return () => window.removeEventListener("hashchange", checkHash);
@@ -199,12 +208,16 @@ export default function App() {
     }
   }, [loadProjects, setCurrentProject, setView]);
 
-  if (isExportWindow) {
+  if (windowMode === "export") {
     return (
       <Suspense fallback={<div className="flex items-center justify-center h-screen bg-[#333] text-white">{t("common.loading")}</div>}>
         <ExportWindow />
       </Suspense>
     );
+  }
+
+  if (windowMode === "oauth-result") {
+    return <OAuthResultPage />;
   }
 
   if (!bootstrapStatus.isReady) {

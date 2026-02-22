@@ -1,32 +1,30 @@
 {
-    "project": "Luie Renderer Refactoring Phase 5 (DONE)",
-    "goal": "Deepen component encapsulation, eliminate prop drilling, and extract duplicated logic in src/renderer.",
+    "project": "Luie Renderer Refactoring Phase 6",
+    "goal": "Modularize the monolithic Tiptap Editor and clean up the remainder of EditorRoot.",
     "tasks": [
         {
-            "id": "phase-5-task-1",
-            "title": "Extract Workspace DnD Handlers",
+            "id": "phase-6-task-1",
+            "title": "Modularize Tiptap Hooks",
             "priority": "P1",
             "assignedAgent": "frontend",
             "dependencies": [],
-            "description": "Move the massive `handleDropToCenter` and `handleDropToSplit` functions out of EditorRoot.tsx into a dedicated `useWorkspaceDropHandlers.ts` hook."
+            "description": "Extract `useEditorExtensions.ts`, `useSmartLinkClickHandler.ts`, and `useTypewriterScroll.ts` from `Editor.tsx` to reduce its bloat and clarify the Tiptap setup lifecycle."
         },
         {
-            "id": "phase-5-task-2",
-            "title": "Unify ChapterList UI Component",
+            "id": "phase-6-task-2",
+            "title": "Extract Workspace Panels",
             "priority": "P1",
             "assignedAgent": "frontend",
             "dependencies": [],
-            "description": "Extract the duplicated Chapter list rendering, drag-item wrappers, and rename/duplicate/delete floating menu logic from DocsSidebar, ScrivenerSidebar, and Sidebar into a single shared `<ChapterList />` component."
+            "description": "Move the massive `panels.map(...)` logic taking over 50 lines in `EditorRoot.tsx` into a dedicated `<WorkspacePanels />` component."
         },
         {
-            "id": "phase-5-task-3",
-            "title": "Eliminate Chapter Prop Drilling",
-            "priority": "P0",
+            "id": "phase-6-task-3",
+            "title": "DRY Editor Rendering",
+            "priority": "P2",
             "assignedAgent": "frontend",
-            "dependencies": [
-                "phase-5-task-2"
-            ],
-            "description": "Remove `chapters`, `activeChapterId`, `onSelectChapter`, `onRenameChapter`, etc. from the prop signatures of Layouts and Sidebars. Have the new `<ChapterList />` and `<Editor />` fetch these directly via `useChapterManagement()`."
+            "dependencies": [],
+            "description": "Unify the identical `<Editor>` JSX blocks scattered across the four separate layout modes in `EditorRoot.tsx` into a single, clean factory function or memoized component."
         }
     ]
 }

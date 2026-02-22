@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense, useCallback, useEffect, useMemo, useRef, Fragment } from "react";
+import { useState, lazy, Suspense, useCallback, useEffect, useMemo, useRef } from "react";
 import { type Editor as TiptapEditor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
 import MainLayout from "./MainLayout";
@@ -30,12 +30,9 @@ import { api } from "../../services/api";
 import { openDocsRightTab as openDocsPanelTab } from "../../services/docsPanelService";
 import { createLayoutModeActions } from "../../services/layoutModeActions";
 import { GlobalDragContext } from "../common/GlobalDragContext";
-import { Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
 
 const SettingsModal = lazy(() => import("../settings/SettingsModal"));
-const ResearchPanel = lazy(() => import("../research/ResearchPanel"));
-const SnapshotViewer = lazy(() => import("../snapshot/SnapshotViewer"));
-const ExportPreviewPanel = lazy(() => import("../export/ExportPreviewPanel"));
+import { WorkspacePanels } from "./WorkspacePanels";
 
 export default function EditorRoot() {
     const { t } = useTranslation();
@@ -322,70 +319,33 @@ export default function EditorRoot() {
         );
     }
 
-    const editorContent = (
+    const sharedEditor = (
         <Editor
-            key={activeChapterId ?? "main-editor"}
-            chapterId={activeChapterId ?? undefined}
-            initialTitle={activeChapterTitle}
-            initialContent={content}
+            key={activeChapterId}
+            initialTitle={activeChapter ? activeChapter.title : ""}
+            initialContent={activeChapter ? activeChapter.content : ""}
             onSave={handleSave}
+            readOnly={!activeChapterId}
+            chapterId={activeChapterId || undefined}
+            hideToolbar={true}
+            hideFooter={true}
+            hideTitle={true}
+            scrollable={uiMode === "scrivener" || uiMode === "default"}
+            onEditorReady={setDocEditor}
         />
     );
 
-    const additionalPanelsComponent = panels.map((panel) => (
-        <Fragment key={panel.id}>
-            <PanelResizeHandle className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-50 relative" />
-            <Panel defaultSize={panel.size} minSize={20} className="min-w-0 bg-panel relative flex flex-col">
-                <div className="flex justify-between items-center p-2 border-b border-border bg-surface text-xs font-semibold text-muted">
-                    <span className="uppercase">{panel.content.type}</span>
-                    <button onClick={() => removePanel(panel.id)} className="hover:bg-surface-hover rounded p-1">✕</button>
-                </div>
-
-                <div className="flex-1 overflow-hidden relative">
-                    <Suspense fallback={<div style={{ padding: 20 }}>{t("common.loading")}</div>}>
-                        {panel.content.type === "research" ? (
-                            <ResearchPanel
-                                activeTab={panel.content.tab || "character"}
-                                onClose={() => removePanel(panel.id)}
-                            />
-                        ) : panel.content.type === "snapshot" && panel.content.snapshot ? (
-                            <SnapshotViewer
-                                snapshot={panel.content.snapshot}
-                                currentContent={
-                                    chapters.find(
-                                        (c) =>
-                                            c.projectId === currentProject?.id &&
-                                            c.id === panel.content.snapshot?.chapterId,
-                                    )?.content || ""}
-                                onApplySnapshotText={async (nextContent) => {
-                                    if (!activeChapterId) return;
-                                    await handleSave(activeChapterTitle, nextContent);
-                                }}
-                            />
-                        ) : panel.content.type === "export" ? (
-                            <ExportPreviewPanel title={activeChapterTitle} />
-                        ) : (
-                            <div
-                                style={{
-                                    height: "100%",
-                                    overflow: "hidden",
-                                    background: "var(--bg-primary)",
-                                }}
-                            >
-                                <Editor
-                                    initialTitle={
-                                        chapters.find((c) => c.id === panel.content.id)?.title
-                                    }
-                                    initialContent=""
-                                    readOnly={true}
-                                />
-                            </div>
-                        )}
-                    </Suspense>
-                </div>
-            </Panel>
-        </Fragment>
-    ));
+    const additionalPanelsComponent = (
+        <WorkspacePanels
+            panels={panels}
+            removePanel={removePanel}
+            chapters={chapters}
+            currentProjectId={currentProject?.id}
+            activeChapterId={activeChapterId ?? undefined}
+            activeChapterTitle={activeChapterTitle}
+            onSave={handleSave}
+        />
+    );
 
     return (
         <GlobalDragContext onDropToCenter={handleDropToCenter} onDropToSplit={handleDropToSplit}>
@@ -404,19 +364,7 @@ export default function EditorRoot() {
                     onSaveChapter={handleSave}
                     additionalPanels={additionalPanelsComponent}
                 >
-                    <Editor
-                        key={activeChapterId}
-                        initialTitle={activeChapter ? activeChapter.title : ""}
-                        initialContent={activeChapter ? activeChapter.content : ""}
-                        onSave={handleSave}
-                        readOnly={!activeChapterId}
-                        chapterId={activeChapterId || undefined}
-                        hideToolbar={true}
-                        hideFooter={true}
-                        hideTitle={true}
-                        scrollable={false}
-                        onEditorReady={setDocEditor}
-                    />
+                    {sharedEditor}
                 </GoogleDocsLayout>
             ) : uiMode === "editor" ? (
                 <EditorLayout
@@ -432,19 +380,7 @@ export default function EditorRoot() {
                     onSaveChapter={handleSave}
                     additionalPanels={additionalPanelsComponent}
                 >
-                    <Editor
-                        key={activeChapterId}
-                        initialTitle={activeChapter ? activeChapter.title : ""}
-                        initialContent={activeChapter ? activeChapter.content : ""}
-                        onSave={handleSave}
-                        readOnly={!activeChapterId}
-                        chapterId={activeChapterId || undefined}
-                        hideToolbar={true}
-                        hideFooter={true}
-                        hideTitle={true}
-                        scrollable={false}
-                        onEditorReady={setDocEditor}
-                    />
+                    {sharedEditor}
                 </EditorLayout>
             ) : uiMode === "scrivener" ? (
                 <ScrivenerLayout
@@ -457,19 +393,7 @@ export default function EditorRoot() {
                     onOpenSettings={() => setIsSettingsOpen(true)}
                     additionalPanels={additionalPanelsComponent}
                 >
-                    <Editor
-                        key={activeChapterId}
-                        initialTitle={activeChapter ? activeChapter.title : ""}
-                        initialContent={activeChapter ? activeChapter.content : ""}
-                        onSave={handleSave}
-                        readOnly={!activeChapterId}
-                        chapterId={activeChapterId || undefined}
-                        hideToolbar={true}
-                        hideFooter={true}
-                        hideTitle={true}
-                        scrollable={true}
-                        onEditorReady={setDocEditor}
-                    />
+                    {sharedEditor}
                 </ScrivenerLayout>
             ) : (
                 <MainLayout
@@ -486,7 +410,7 @@ export default function EditorRoot() {
                     }
                     additionalPanels={additionalPanelsComponent}
                 >
-                    {editorContent}
+                    {sharedEditor}
                 </MainLayout>
             )}
 

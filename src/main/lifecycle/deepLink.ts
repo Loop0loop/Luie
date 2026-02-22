@@ -1,4 +1,6 @@
-import { shell } from "electron";
+import { app, shell } from "electron";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { createLogger } from "../../shared/logger/index.js";
 import { windowManager } from "../manager/index.js";
 import { syncService } from "../services/features/syncService.js";
@@ -9,14 +11,6 @@ const OAUTH_CALLBACK_PREFIX = "luie://auth/callback";
 const OAUTH_RETURN_PREFIX = "luie://auth/return";
 const OAUTH_AUTH_PREFIX = "luie://auth/";
 
-const escapeHtml = (value: string): string =>
-  value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-
 const focusMainWindow = (): void => {
   const mainWindow = windowManager.getMainWindow();
   if (!mainWindow) return;
@@ -25,48 +19,22 @@ const focusMainWindow = (): void => {
 };
 
 const buildAuthResultPageUrl = (status: "success" | "error", detail?: string): string => {
-  const title = status === "success" ? "Luie 연결 완료" : "Luie 연결 오류";
-  const heading = status === "success" ? "연결되었습니다!" : "연결에 실패했습니다";
-  const message =
-    status === "success"
-      ? "Google 계정 연결이 완료되었습니다. 아래 버튼으로 앱으로 돌아가세요."
-      : "로그인 처리가 완료되지 않았습니다. 앱으로 돌아가 다시 시도해 주세요.";
-  const errorBlock =
-    status === "error" && detail
-      ? `<pre style="margin:12px 0 0;padding:10px;border-radius:10px;background:#f5f5f5;color:#4a4a4a;white-space:pre-wrap;word-break:break-word;">${escapeHtml(detail)}</pre>`
-      : "";
+  const query = new URLSearchParams({
+    status,
+  });
+  if (detail) {
+    query.set("detail", detail);
+  }
 
-  const html = `<!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${title}</title>
-  <style>
-    :root { color-scheme: light; }
-    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:#f3f6fb; color:#101828; }
-    .wrap { min-height:100vh; display:grid; place-items:center; padding:24px; }
-    .card { width:min(560px,100%); background:#fff; border:1px solid #e7eaf0; border-radius:16px; padding:24px; box-shadow:0 10px 32px rgba(16,24,40,.08); }
-    h1 { margin:0 0 8px; font-size:28px; line-height:1.2; }
-    p { margin:0; color:#344054; line-height:1.5; }
-    .btn { display:inline-block; margin-top:18px; padding:10px 16px; border-radius:10px; background:#2563eb; color:#fff; text-decoration:none; font-weight:600; }
-    .help { margin-top:10px; font-size:13px; color:#667085; }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="card">
-      <h1>${heading}</h1>
-      <p>${message}</p>
-      <a class="btn" href="${OAUTH_RETURN_PREFIX}">앱으로 돌아가기</a>
-      <div class="help">버튼이 동작하지 않으면 Luie 앱을 직접 열어주세요.</div>
-      ${errorBlock}
-    </div>
-  </div>
-</body>
-</html>`;
+  const hash = `#auth-result?${query.toString()}`;
+  const devServerUrl = process.env.VITE_DEV_SERVER_URL || "http://localhost:5173";
+  const useDevServer = !app.isPackaged && process.env.NODE_ENV !== "production";
+  if (useDevServer) {
+    return `${devServerUrl}/${hash}`;
+  }
 
-  return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
+  const rendererIndex = pathToFileURL(path.join(__dirname, "../renderer/index.html")).toString();
+  return `${rendererIndex}${hash}`;
 };
 
 const openAuthResultPage = async (status: "success" | "error", detail?: string): Promise<void> => {
