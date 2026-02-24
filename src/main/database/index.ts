@@ -10,6 +10,7 @@ import * as path from "node:path";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { app } from "electron";
 import { DB_NAME } from "../../shared/constants/index.js";
+import { resolveRuntimeTarget } from "../../shared/runtime/runtimeTarget.js";
 import { createLogger } from "../../shared/logger/index.js";
 import { isProdEnv, isTestEnv } from "../utils/environment.js";
 import { seedIfEmpty } from "./seedDefaults.js";
@@ -223,9 +224,13 @@ class DatabaseService {
 
   private runDbCompatibilityGate(_context: PreparedDatabaseContext): RuntimeDbAdapter {
     const adapter = resolveRuntimeDbAdapter();
-    if (isBunRuntime() && adapter === "better-sqlite3") {
+    const runtimeTarget = resolveRuntimeTarget(process.env.LUIE_RUNTIME_TARGET);
+    if (
+      (runtimeTarget === "electrobun" || isBunRuntime()) &&
+      adapter === "better-sqlite3"
+    ) {
       throw new Error(
-        "DB_COMPAT_GATE_FAILED:BUN_WITH_BETTER_SQLITE3_UNSUPPORTED: switch to libsql migration path",
+        "DB_COMPAT_GATE_FAILED:ELECTROBUN_WITH_BETTER_SQLITE3_UNSUPPORTED: switch to libsql migration path",
       );
     }
     return adapter;

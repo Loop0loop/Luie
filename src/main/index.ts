@@ -11,6 +11,8 @@ if (process.env.NODE_ENV !== 'production') {
 import path from "node:path";
 import { createLogger, configureLogger, LogLevel } from "../shared/logger/index.js";
 import { LOG_DIR_NAME, LOG_FILE_NAME } from "../shared/constants/index.js";
+import { resolveRuntimeTarget } from "../shared/runtime/runtimeTarget.js";
+import { startElectrobunShell } from "../electrobun/index.js";
 import { initDatabaseEnv } from "./prismaEnv.js";
 import { registerAppReady } from "./lifecycle/appReady.js";
 import { extractAuthCallbackUrl, handleDeepLinkUrl } from "./lifecycle/deepLink.js";
@@ -29,11 +31,13 @@ configureLogger({
 });
 
 const logger = createLogger("Main");
+const runtimeTarget = resolveRuntimeTarget(process.env.LUIE_RUNTIME_TARGET);
 logger.info("Main process bootstrap", {
   execPath: process.execPath,
   argv: process.argv,
   isPackaged: app.isPackaged,
   defaultApp: process.defaultApp,
+  runtimeTarget,
 });
 
 initDatabaseEnv();
@@ -87,11 +91,14 @@ const registerLuieProtocol = (): void => {
   });
 };
 
-registerLuieProtocol();
+const startElectronLifecycle = (): void => {
+  registerLuieProtocol();
 
-if (!registerSingleInstance(logger)) {
-  app.quit();
-} else {
+  if (!registerSingleInstance(logger)) {
+    app.quit();
+    return;
+  }
+
   syncService.initialize();
 
   const callbackUrl = extractAuthCallbackUrl(process.argv);
@@ -101,4 +108,23 @@ if (!registerSingleInstance(logger)) {
 
   registerAppReady(logger);
   registerShutdownHandlers(logger);
+};
+
+if (runtimeTarget === "electrobun") {
+  startElectrobunShell({
+    argv: process.argv,
+    lifecycle: {
+      registerProtocol: registerLuieProtocol,
+      registerSingleInstance: () => registerSingleInstance(logger),
+      initializeSync: () => syncService.initialize(),
+      registerAppReady: () => registerAppReady(logger),
+      registerShutdownHandlers: () => registerShutdownHandlers(logger),
+    },
+    deepLink: {
+      extractAuthCallbackUrl,
+      handleDeepLinkUrl,
+    },
+  });
+} else {
+  startElectronLifecycle();
 }
