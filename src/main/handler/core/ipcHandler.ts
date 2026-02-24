@@ -1,4 +1,3 @@
-import { ipcMain } from "electron";
 import { randomUUID } from "node:crypto";
 import type { ZodType } from "zod";
 import {
@@ -8,7 +7,10 @@ import {
 import { ErrorCode } from "../../../shared/constants/index.js";
 import { withLogContext } from "../../../shared/logger/index.js";
 import { isServiceError } from "../../utils/serviceError.js";
+import { platformBridge } from "../../platform/platformBridge.js";
 import type { LoggerLike } from "./types.js";
+
+const { ipcMain } = platformBridge;
 
 type MaybePromise<T> = T | Promise<T>;
 

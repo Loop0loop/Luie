@@ -2,9 +2,10 @@
  * Preload script - Electron contextBridge
  */
 
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge } from "electron";
 import { createErrorResponse, type IPCResponse } from "../shared/ipc/index.js";
 import { IPC_CHANNELS } from "../shared/ipc/channels.js";
+import { electronTransportBridge } from "./transport/electronTransportBridge.js";
 import {
   AUTO_SAVE_FLUSH_MS,
   IPC_DEFAULT_TIMEOUT_MS,
@@ -13,6 +14,8 @@ import {
   LOG_FLUSH_MS,
   ErrorCode,
 } from "../shared/constants/index.js";
+
+const transport = electronTransportBridge;
 
 function sanitizeForIpc(value: unknown, seen = new WeakSet<object>()): unknown {
   if (value === null) return null;
@@ -151,7 +154,7 @@ async function invokeWithTimeout<T>(
     }, timeoutMs);
   });
 
-  const invokePromise = ipcRenderer
+  const invokePromise = transport
     .invoke(channel, ...args)
     .then((response) => response as IPCResponse<T>)
     .catch((error) =>
@@ -483,9 +486,9 @@ contextBridge.exposeInMainWorld("api", {
       const listener = (_event: unknown, status: unknown) => {
         callback(status);
       };
-      ipcRenderer.on(IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED, listener);
+      transport.on(IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED, listener);
       return () => {
-        ipcRenderer.removeListener(IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED, listener);
+        transport.off(IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED, listener);
       };
     },
     quit: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.APP_QUIT),
@@ -582,9 +585,9 @@ contextBridge.exposeInMainWorld("api", {
       const listener = (_event: unknown, status: unknown) => {
         callback(status);
       };
-      ipcRenderer.on(IPC_CHANNELS.SYNC_STATUS_CHANGED, listener);
+      transport.on(IPC_CHANNELS.SYNC_STATUS_CHANGED, listener);
       return () => {
-        ipcRenderer.removeListener(IPC_CHANNELS.SYNC_STATUS_CHANGED, listener);
+        transport.off(IPC_CHANNELS.SYNC_STATUS_CHANGED, listener);
       };
     },
   },
@@ -601,18 +604,18 @@ contextBridge.exposeInMainWorld("api", {
       const listener = (_event: unknown, data: unknown) => {
         callback(data);
       };
-      ipcRenderer.on(IPC_CHANNELS.ANALYSIS_STREAM, listener);
+      transport.on(IPC_CHANNELS.ANALYSIS_STREAM, listener);
       return () => {
-        ipcRenderer.removeListener(IPC_CHANNELS.ANALYSIS_STREAM, listener);
+        transport.off(IPC_CHANNELS.ANALYSIS_STREAM, listener);
       };
     },
     onError: (callback: (error: unknown) => void): (() => void) => {
       const listener = (_event: unknown, error: unknown) => {
         callback(error);
       };
-      ipcRenderer.on(IPC_CHANNELS.ANALYSIS_ERROR, listener);
+      transport.on(IPC_CHANNELS.ANALYSIS_ERROR, listener);
       return () => {
-        ipcRenderer.removeListener(IPC_CHANNELS.ANALYSIS_ERROR, listener);
+        transport.off(IPC_CHANNELS.ANALYSIS_ERROR, listener);
       };
     },
   },
@@ -623,7 +626,7 @@ contextBridge.exposeInMainWorld("api", {
 // immediately flush the autoSave queue and log queue so that
 // all dirty content reaches the main process before shutdown.
 
-ipcRenderer.on(IPC_CHANNELS.APP_BEFORE_QUIT, async () => {
+transport.on(IPC_CHANNELS.APP_BEFORE_QUIT, async () => {
   const hadQueuedAutoSaves = autoSaveQueue.size > 0;
   try {
     // Force-flush any queued auto-saves so IPC arrives at main
@@ -633,7 +636,7 @@ ipcRenderer.on(IPC_CHANNELS.APP_BEFORE_QUIT, async () => {
   } catch {
     // Best effort – even if this fails, mirrors may still have content
   } finally {
-    ipcRenderer.send(IPC_CHANNELS.APP_FLUSH_COMPLETE, {
+    transport.send(IPC_CHANNELS.APP_FLUSH_COMPLETE, {
       hadQueuedAutoSaves,
       rendererDirty,
     });

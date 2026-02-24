@@ -131,4 +131,17 @@ export const IPC_CHANNELS = {
   SYNC_STATUS_CHANGED: "sync:status-changed",
 } as const;
 
+export const IPC_TRANSPORT_CHANNELS = {
+  mainToRenderer: [
+    IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED,
+    IPC_CHANNELS.SYNC_STATUS_CHANGED,
+    IPC_CHANNELS.ANALYSIS_STREAM,
+    IPC_CHANNELS.ANALYSIS_ERROR,
+    IPC_CHANNELS.APP_BEFORE_QUIT,
+  ],
+  rendererToMain: [
+    IPC_CHANNELS.APP_FLUSH_COMPLETE,
+  ],
+} as const;
+
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

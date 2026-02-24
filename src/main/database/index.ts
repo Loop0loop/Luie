@@ -56,6 +56,8 @@ type PrismaCommandResult = {
   stderr: string;
 };
 
+type RuntimeDbAdapter = "better-sqlite3" | "libsql";
+
 const { PrismaClient } = require("@prisma/client") as {
   PrismaClient: new (options?: unknown) => PrismaClient;
 };
@@ -72,6 +74,17 @@ const pathExists = async (targetPath: string): Promise<boolean> => {
 const getPrismaBinPath = (basePath: string): string => {
   const executable = process.platform === "win32" ? "prisma.cmd" : "prisma";
   return path.join(basePath, "node_modules", ".bin", executable);
+};
+
+const resolveRuntimeDbAdapter = (): RuntimeDbAdapter => {
+  const envAdapter = process.env.LUIE_DB_ADAPTER;
+  if (envAdapter === "libsql") return "libsql";
+  return "better-sqlite3";
+};
+
+const isBunRuntime = (): boolean => {
+  const versions = process.versions as NodeJS.ProcessVersions & { bun?: string };
+  return typeof versions.bun === "string" || "Bun" in (globalThis as Record<string, unknown>);
 };
 
 const runPrismaCommand = async (
@@ -156,6 +169,7 @@ class DatabaseService {
 
   private async initializeInternal(): Promise<void> {
     const context = await this.prepareDatabaseContext();
+    const runtimeDbAdapter = this.runDbCompatibilityGate(context);
     this.dbPath = context.dbPath;
 
     logger.info("Initializing database", {
@@ -165,9 +179,16 @@ class DatabaseService {
       userDataPath: app.getPath("userData"),
       dbPath: context.dbPath,
       datasourceUrl: context.datasourceUrl,
+      runtimeDbAdapter,
     });
 
     await this.applySchema(context);
+
+    if (runtimeDbAdapter === "libsql") {
+      throw new Error(
+        "DB_ADAPTER_NOT_IMPLEMENTED:libsql: use dedicated libsql migration branch",
+      );
+    }
 
     const adapter = new PrismaBetterSqlite3({
       url: context.datasourceUrl,
@@ -198,6 +219,16 @@ class DatabaseService {
     }
 
     logger.info("Database service initialized");
+  }
+
+  private runDbCompatibilityGate(_context: PreparedDatabaseContext): RuntimeDbAdapter {
+    const adapter = resolveRuntimeDbAdapter();
+    if (isBunRuntime() && adapter === "better-sqlite3") {
+      throw new Error(
+        "DB_COMPAT_GATE_FAILED:BUN_WITH_BETTER_SQLITE3_UNSUPPORTED: switch to libsql migration path",
+      );
+    }
+    return adapter;
   }
 
   private async prepareDatabaseContext(): Promise<PreparedDatabaseContext> {
