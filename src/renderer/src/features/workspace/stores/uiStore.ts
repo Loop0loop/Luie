@@ -197,14 +197,15 @@ export const useUIStore = create<UIStore>()(
             const sizePerPanel = 100 / panels.length;
             return panels.map((panel) => ({ ...panel, size: sizePerPanel }));
           };
+          const focusedTarget = state.focusedClosableTarget;
 
           if (
-            state.focusedClosableTarget?.kind === "panel" &&
-            state.panels.some((panel) => panel.id === state.focusedClosableTarget?.id)
+            focusedTarget?.kind === "panel" &&
+            state.panels.some((panel) => panel.id === focusedTarget.id)
           ) {
             handled = true;
             const nextPanels = normalizePanelSizes(
-              state.panels.filter((panel) => panel.id !== state.focusedClosableTarget?.id),
+              state.panels.filter((panel) => panel.id !== focusedTarget.id),
             );
             return {
               panels: nextPanels,
@@ -212,7 +213,7 @@ export const useUIStore = create<UIStore>()(
             };
           }
 
-          if (state.focusedClosableTarget?.kind === "docs-tab" && state.docsRightTab) {
+          if (focusedTarget?.kind === "docs-tab" && state.docsRightTab) {
             handled = true;
             return {
               docsRightTab: null,

@@ -1,7 +1,7 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useCallback } from 'react';
 import WindowBar from '@renderer/features/workspace/components/WindowBar';
 import { PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type PanelSize } from "react-resizable-panels";
 import { useUIStore } from '@renderer/features/workspace/stores/uiStore';
 import { useTranslation } from "react-i18next";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
@@ -20,9 +20,22 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
   const {
     isSidebarOpen,
     isContextOpen,
+    sidebarWidths,
     setSidebarOpen,
     setContextOpen,
+    setSidebarWidth,
   } = useUIStore();
+
+  const handleSidebarResize = useCallback((panelSize: PanelSize) => {
+    setSidebarWidth("binder", Math.round(panelSize.inPixels));
+  }, [setSidebarWidth]);
+
+  const handleContextResize = useCallback((panelSize: PanelSize) => {
+    setSidebarWidth("context", Math.round(panelSize.inPixels));
+  }, [setSidebarWidth]);
+
+  const sidebarWidth = sidebarWidths["binder"] || 280;
+  const contextWidth = sidebarWidths["context"] || 310;
 
   return (
     <div className="flex flex-col h-screen bg-app text-fg">
@@ -33,9 +46,10 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
         {isSidebarOpen && (
           <Panel
             id="sidebar-panel"
-            defaultSize={210}
-            minSize={210}
-            maxSize={630}
+            defaultSize={`${sidebarWidth}px`}
+            minSize="210px"
+            maxSize="630px"
+            onResize={handleSidebarResize}
             className="bg-sidebar border-r border-border overflow-hidden flex flex-col z-10"
           >
             {sidebar}
@@ -96,9 +110,10 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
         {isContextOpen && (
           <Panel
             id="context-panel"
-            defaultSize={310}
-            minSize={310}
-            maxSize={610}
+            defaultSize={`${contextWidth}px`}
+            minSize="310px"
+            maxSize="610px"
+            onResize={handleContextResize}
             className="bg-panel border-l border-border overflow-hidden flex flex-col z-10"
           >
             {contextPanel}

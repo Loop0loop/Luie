@@ -2,7 +2,6 @@ import {
   type ReactNode,
   useState,
   Suspense,
-  useEffect,
   useCallback
 } from "react";
 import { type Editor } from "@tiptap/react";
@@ -42,43 +41,21 @@ export default function ScrivenerLayout({
   const { t } = useTranslation();
   const { mainView, sidebarWidths, setSidebarWidth } = useUIStore();
 
-  const [containerWidth, setContainerWidth] = useState(window.innerWidth);
-
-  useEffect(() => {
-    const handleResize = () => setContainerWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   // Layout State for visibility toggles
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isInspectorOpen, setIsInspectorOpen] = useState(true);
 
-  const getPercentage = useCallback((panelSize: PanelSize): number => {
-    if (typeof panelSize === "number") {
-      return panelSize;
-    }
-    const parsed = typeof panelSize === "string" ? Number.parseFloat(panelSize) : Number(panelSize);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }, []);
-
   const handleBinderResize = useCallback((panelSize: PanelSize) => {
-    const percentage = getPercentage(panelSize);
-    const pxWidth = (percentage / 100) * containerWidth;
-    setSidebarWidth("binder", Math.round(pxWidth));
-  }, [containerWidth, getPercentage, setSidebarWidth]);
+    setSidebarWidth("binder", Math.round(panelSize.inPixels));
+  }, [setSidebarWidth]);
 
   const handleInspectorResize = useCallback((panelSize: PanelSize) => {
-    const percentage = getPercentage(panelSize);
-    const pxWidth = (percentage / 100) * containerWidth;
-    setSidebarWidth("inspector", Math.round(pxWidth));
-  }, [containerWidth, getPercentage, setSidebarWidth]);
+    setSidebarWidth("inspector", Math.round(panelSize.inPixels));
+  }, [setSidebarWidth]);
 
   const binderSavedPxWidth = sidebarWidths["binder"] || 210;
-  const binderDefaultPercentage = (binderSavedPxWidth / containerWidth) * 100;
 
   const inspectorSavedPxWidth = sidebarWidths["inspector"] || 350;
-  const inspectorDefaultPercentage = (inspectorSavedPxWidth / containerWidth) * 100;
 
   const renderMainContent = () => {
     switch (mainView.type) {
@@ -120,9 +97,9 @@ export default function ScrivenerLayout({
             <>
               <Panel
                 id="sidebar"
-                defaultSize={binderDefaultPercentage}
-                minSize={220}
-                maxSize={440}
+                defaultSize={`${binderSavedPxWidth}px`}
+                minSize="220px"
+                maxSize="440px"
                 onResize={handleBinderResize}
                 className="bg-panel border-r border-border flex flex-col shrink-0 min-w-0"
               >
@@ -204,9 +181,9 @@ export default function ScrivenerLayout({
 
               <Panel
                 id="inspector"
-                defaultSize={inspectorDefaultPercentage}
-                minSize={245}
-                maxSize={400}
+                defaultSize={`${inspectorSavedPxWidth}px`}
+                minSize="245px"
+                maxSize="400px"
                 onResize={handleInspectorResize}
                 className="bg-panel flex flex-col shrink-0 min-w-0"
               >

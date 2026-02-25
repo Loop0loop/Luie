@@ -1,4 +1,4 @@
-import { useCallback, Suspense, type ReactNode, useEffect, useState } from "react";
+import { useCallback, Suspense, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { User, Globe, StickyNote, Sparkles, History, Trash2, ChevronLeft, X } from "lucide-react";
 import React from 'react';
@@ -24,14 +24,13 @@ interface BinderSidebarProps {
 
 export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOffset }: BinderSidebarProps) {
     const { t } = useTranslation();
-    const { docsRightTab, setDocsRightTab, sidebarWidths, setSidebarWidth } = useUIStore();
-    const [containerWidth, setContainerWidth] = useState(window.innerWidth);
-
-    useEffect(() => {
-        const handleResize = () => setContainerWidth(window.innerWidth);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    const {
+        docsRightTab,
+        setDocsRightTab,
+        sidebarWidths,
+        setSidebarWidth,
+        setFocusedClosableTarget,
+    } = useUIStore();
 
     const VALID_TABS: BinderTab[] = ["character", "world", "scrap", "analysis", "snapshot", "trash"];
     const activeRightTab: BinderTab | null =
@@ -48,31 +47,21 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
 
     const handleRightTabClick = useCallback(
         (tab: BinderTab) => {
+            setFocusedClosableTarget({ kind: "docs-tab" });
             setActiveRightTab(activeRightTab === tab ? null : tab);
         },
-        [activeRightTab, setActiveRightTab]
+        [activeRightTab, setActiveRightTab, setFocusedClosableTarget]
     );
-
-    const getPercentage = useCallback((panelSize: PanelSize): number => {
-        if (typeof panelSize === "number") {
-            return panelSize;
-        }
-        const parsed = typeof panelSize === "string" ? Number.parseFloat(panelSize) : Number(panelSize);
-        return Number.isFinite(parsed) ? parsed : 0;
-    }, []);
 
     const handleResize = useCallback(
         (panelSize: PanelSize) => {
             if (!activeRightTab) return;
-            const percentage = getPercentage(panelSize);
-            const pxWidth = (percentage / 100) * containerWidth;
-            setSidebarWidth(activeRightTab, Math.round(pxWidth));
+            setSidebarWidth(activeRightTab, Math.round(panelSize.inPixels));
         },
-        [activeRightTab, containerWidth, getPercentage, setSidebarWidth]
+        [activeRightTab, setSidebarWidth]
     );
 
     const savedPxWidth = activeRightTab ? sidebarWidths[activeRightTab] || 350 : 350;
-    const defaultPercentage = (savedPxWidth / containerWidth) * 100;
 
     const handleBackToSnapshotList = () => {
         setActiveRightTab("snapshot");
@@ -143,11 +132,15 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
             </PanelResizeHandle>
 
             <Panel
+                key={`binder-sidebar-${activeRightTab}`}
                 id="binder-sidebar"
-                defaultSize={defaultPercentage}
-                minSize={250}
-                maxSize={800}
+                defaultSize={`${savedPxWidth}px`}
+                minSize="250px"
+                maxSize="800px"
                 onResize={handleResize}
+                onMouseDownCapture={() => {
+                    setFocusedClosableTarget({ kind: "docs-tab" });
+                }}
                 className="bg-panel shadow-2xl flex flex-row shrink-0 min-w-0 z-10 transition-none"
             >
                 <div className="flex-1 h-full overflow-hidden relative min-w-0">

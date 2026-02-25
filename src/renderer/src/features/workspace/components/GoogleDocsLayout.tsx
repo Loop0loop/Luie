@@ -95,7 +95,7 @@ export default function GoogleDocsLayout({
     }
     setFocusedClosableTarget({ kind: "docs-tab" });
     openDocsRightTab(nextTab);
-  }, [activeRightTab, openDocsRightTab, setActiveRightTab, setFocusedClosableTarget]);
+  }, [activeRightTab, setActiveRightTab, setFocusedClosableTarget]);
 
   const handleLeftResize = useCallback((panelSize: PanelSize) => {
     setSidebarWidth("binder", Math.round(panelSize.inPixels));
