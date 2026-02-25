@@ -262,7 +262,7 @@ export default function App() {
   if (windowMode === "export") {
     return (
       <>
-        <Suspense fallback={<div className="flex items-center justify-center h-screen bg-[#333] text-white">{t("common.loading")}</div>}>
+        <Suspense fallback={<div className="flex items-center justify-center h-screen bg-[#333] text-white">{t("loading")}</div>}>
           <ExportWindow />
         </Suspense>
         {quitOverlay}

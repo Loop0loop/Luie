@@ -11,6 +11,12 @@ import { useTranslation } from "react-i18next";
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import Ribbon from "@renderer/features/editor/components/Ribbon";
 import InspectorPanel from "@renderer/features/editor/components/InspectorPanel";
+import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import WikiDetailView from "@renderer/features/research/components/wiki/WikiDetailView";
+import WorldSection from "@renderer/features/research/components/WorldSection";
+import MemoMainView from "@renderer/features/research/components/memo/MemoMainView";
+import AnalysisSection from "@renderer/features/research/components/AnalysisSection";
+import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { Menu, ChevronRight } from "lucide-react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type GroupImperativeHandle, type PanelSize } from "react-resizable-panels";
 
@@ -24,12 +30,12 @@ interface ScrivenerLayoutProps {
   additionalPanels?: ReactNode;
 }
 
-import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
-import WikiDetailView from "@renderer/features/research/components/wiki/WikiDetailView";
-import WorldSection from "@renderer/features/research/components/WorldSection";
-import MemoMainView from "@renderer/features/research/components/memo/MemoMainView";
-import AnalysisSection from "@renderer/features/research/components/AnalysisSection";
-import { EditorDropZones } from "@shared/ui/EditorDropZones";
+const SCRIVENER_BINDER_MIN_WIDTH_PX = 220;
+const SCRIVENER_BINDER_MAX_WIDTH_PX = 440;
+const SCRIVENER_BINDER_DEFAULT_WIDTH_PX = 260;
+const SCRIVENER_INSPECTOR_MIN_WIDTH_PX = 245;
+const SCRIVENER_INSPECTOR_MAX_WIDTH_PX = 400;
+const SCRIVENER_INSPECTOR_DEFAULT_WIDTH_PX = 350;
 
 export default function ScrivenerLayout({
   children,
@@ -50,16 +56,38 @@ export default function ScrivenerLayout({
   const [isInspectorOpen, setIsInspectorOpen] = useState(true);
 
   const handleBinderResize = useCallback((panelSize: PanelSize) => {
-    setSidebarWidth("binder", Math.round(panelSize.inPixels));
+    const nextWidth = Math.round(panelSize.inPixels);
+    const bounded = Math.min(
+      SCRIVENER_BINDER_MAX_WIDTH_PX,
+      Math.max(SCRIVENER_BINDER_MIN_WIDTH_PX, nextWidth),
+    );
+    setSidebarWidth("scrivenerBinder", bounded);
   }, [setSidebarWidth]);
 
   const handleInspectorResize = useCallback((panelSize: PanelSize) => {
-    setSidebarWidth("inspector", Math.round(panelSize.inPixels));
+    const nextWidth = Math.round(panelSize.inPixels);
+    const bounded = Math.min(
+      SCRIVENER_INSPECTOR_MAX_WIDTH_PX,
+      Math.max(SCRIVENER_INSPECTOR_MIN_WIDTH_PX, nextWidth),
+    );
+    setSidebarWidth("scrivenerInspector", bounded);
   }, [setSidebarWidth]);
 
-  const binderSavedPxWidth = sidebarWidths["binder"] || 210;
+  const binderSavedPxWidth = Math.min(
+    SCRIVENER_BINDER_MAX_WIDTH_PX,
+    Math.max(
+      SCRIVENER_BINDER_MIN_WIDTH_PX,
+      sidebarWidths["scrivenerBinder"] || SCRIVENER_BINDER_DEFAULT_WIDTH_PX,
+    ),
+  );
 
-  const inspectorSavedPxWidth = sidebarWidths["inspector"] || 350;
+  const inspectorSavedPxWidth = Math.min(
+    SCRIVENER_INSPECTOR_MAX_WIDTH_PX,
+    Math.max(
+      SCRIVENER_INSPECTOR_MIN_WIDTH_PX,
+      sidebarWidths["scrivenerInspector"] || SCRIVENER_INSPECTOR_DEFAULT_WIDTH_PX,
+    ),
+  );
 
   useEffect(() => {
     const previousPanelCount = previousPanelCountRef.current;
@@ -121,8 +149,8 @@ export default function ScrivenerLayout({
               <Panel
                 id="sidebar"
                 defaultSize={`${binderSavedPxWidth}px`}
-                minSize="220px"
-                maxSize="440px"
+                minSize={`${SCRIVENER_BINDER_MIN_WIDTH_PX}px`}
+                maxSize={`${SCRIVENER_BINDER_MAX_WIDTH_PX}px`}
                 onResize={handleBinderResize}
                 className="bg-panel border-r border-border flex flex-col shrink-0 min-w-0"
               >
@@ -210,8 +238,8 @@ export default function ScrivenerLayout({
               <Panel
                 id="inspector"
                 defaultSize={`${inspectorSavedPxWidth}px`}
-                minSize="245px"
-                maxSize="400px"
+                minSize={`${SCRIVENER_INSPECTOR_MIN_WIDTH_PX}px`}
+                maxSize={`${SCRIVENER_INSPECTOR_MAX_WIDTH_PX}px`}
                 onResize={handleInspectorResize}
                 className="bg-panel flex flex-col shrink-0 min-w-0"
               >

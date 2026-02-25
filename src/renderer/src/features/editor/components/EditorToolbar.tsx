@@ -73,10 +73,10 @@ const DefaultToolbar = ({ editor, isMobileView, onToggleMobileView }: EditorTool
   return (
     <div className="flex items-center justify-between h-9 px-2">
       <div className="flex items-center gap-0.5">
-        <ToggleButton onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo()} title={t("common.toolbar.tooltip.undo")}>
+        <ToggleButton onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo()} title={t("toolbar.tooltip.undo")}>
           <Undo2 className="icon-md" />
         </ToggleButton>
-        <ToggleButton onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo()} title={t("common.toolbar.tooltip.redo")}>
+        <ToggleButton onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo()} title={t("toolbar.tooltip.redo")}>
           <Redo2 className="icon-md" />
         </ToggleButton>
         <Divider />
@@ -98,23 +98,23 @@ const DefaultToolbar = ({ editor, isMobileView, onToggleMobileView }: EditorTool
 
         <Divider />
 
-        <ToggleButton active={editor?.isActive("bold")} onClick={() => editor?.chain().focus().toggleBold().run()} title={t("common.toolbar.tooltip.bold")}>
+        <ToggleButton active={editor?.isActive("bold")} onClick={() => editor?.chain().focus().toggleBold().run()} title={t("toolbar.tooltip.bold")}>
           <Bold className="icon-md" />
         </ToggleButton>
-        <ToggleButton active={editor?.isActive("italic")} onClick={() => editor?.chain().focus().toggleItalic().run()} title={t("common.toolbar.tooltip.italic")}>
+        <ToggleButton active={editor?.isActive("italic")} onClick={() => editor?.chain().focus().toggleItalic().run()} title={t("toolbar.tooltip.italic")}>
           <Italic className="icon-md" />
         </ToggleButton>
-        <ToggleButton active={editor?.isActive("underline")} onClick={() => editor?.chain().focus().toggleUnderline().run()} title={t("common.toolbar.tooltip.underline")}>
+        <ToggleButton active={editor?.isActive("underline")} onClick={() => editor?.chain().focus().toggleUnderline().run()} title={t("toolbar.tooltip.underline")}>
           <Underline className="icon-md" />
         </ToggleButton>
-        <ToggleButton active={editor?.isActive("strike")} onClick={() => editor?.chain().focus().toggleStrike().run()} title={t("common.toolbar.tooltip.strikethrough")}>
+        <ToggleButton active={editor?.isActive("strike")} onClick={() => editor?.chain().focus().toggleStrike().run()} title={t("toolbar.tooltip.strikethrough")}>
           <Strikethrough className="icon-md" />
         </ToggleButton>
 
         <Divider />
 
         {/* Color Picker */}
-        <div className="relative w-7 h-7 flex items-center justify-center" title={t("common.toolbar.tooltip.textColor")}>
+        <div className="relative w-7 h-7 flex items-center justify-center" title={t("toolbar.tooltip.textColor")}>
           <input
             type="color"
             className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
@@ -126,20 +126,20 @@ const DefaultToolbar = ({ editor, isMobileView, onToggleMobileView }: EditorTool
           </button>
         </div>
 
-        <ToggleButton active={editor?.isActive("highlight")} onClick={() => editor?.chain().focus().toggleHighlight().run()} title={t("common.toolbar.tooltip.highlight")}>
+        <ToggleButton active={editor?.isActive("highlight")} onClick={() => editor?.chain().focus().toggleHighlight().run()} title={t("toolbar.tooltip.highlight")}>
           <Highlighter className="icon-md" />
         </ToggleButton>
       </div>
 
       {/* Right */}
       <div className="flex items-center gap-0.5">
-        <ToggleButton active={editor?.isActive({ textAlign: "left" })} onClick={() => editor?.chain().focus().setTextAlign("left").run()} title={t("common.toolbar.tooltip.alignLeft")}>
+        <ToggleButton active={editor?.isActive({ textAlign: "left" })} onClick={() => editor?.chain().focus().setTextAlign("left").run()} title={t("toolbar.tooltip.alignLeft")}>
           <AlignLeft className="icon-md" />
         </ToggleButton>
-        <ToggleButton active={editor?.isActive({ textAlign: "center" })} onClick={() => editor?.chain().focus().setTextAlign("center").run()} title={t("common.toolbar.tooltip.alignCenter")}>
+        <ToggleButton active={editor?.isActive({ textAlign: "center" })} onClick={() => editor?.chain().focus().setTextAlign("center").run()} title={t("toolbar.tooltip.alignCenter")}>
           <AlignCenter className="icon-md" />
         </ToggleButton>
-        <ToggleButton active={editor?.isActive({ textAlign: "right" })} onClick={() => editor?.chain().focus().setTextAlign("right").run()} title={t("common.toolbar.tooltip.alignRight")}>
+        <ToggleButton active={editor?.isActive({ textAlign: "right" })} onClick={() => editor?.chain().focus().setTextAlign("right").run()} title={t("toolbar.tooltip.alignRight")}>
           <AlignRight className="icon-md" />
         </ToggleButton>
 
@@ -151,10 +151,10 @@ const DefaultToolbar = ({ editor, isMobileView, onToggleMobileView }: EditorTool
             isMobileView && "bg-active text-accent font-semibold border-active"
           )}
           onClick={onToggleMobileView}
-          title={t("common.toolbar.tooltip.toggleMobileView")}
+          title={t("toolbar.tooltip.toggleMobileView")}
         >
           {isMobileView ? <Smartphone className="icon-sm" /> : <Monitor className="icon-sm" />}
-          <span>{isMobileView ? t("common.toolbar.view.mobile") : t("common.toolbar.view.desktop")}</span>
+          <span>{isMobileView ? t("toolbar.view.mobile") : t("toolbar.view.desktop")}</span>
         </button>
       </div>
     </div>
@@ -168,10 +168,10 @@ const DocsToolbar = ({ editor }: EditorToolbarProps) => {
 
   return (
     <div className="flex flex-wrap items-center gap-1 justify-center w-full px-2">
-      <ToggleButton onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("common.toolbar.tooltip.undo")}>
+      <ToggleButton onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("toolbar.tooltip.undo")}>
         <Undo2 className="w-4 h-4" />
       </ToggleButton>
-      <ToggleButton onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("common.toolbar.tooltip.redo")}>
+      <ToggleButton onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("toolbar.tooltip.redo")}>
         <Redo2 className="w-4 h-4" />
       </ToggleButton>
       <div className="w-px h-5 bg-border mx-2" />
@@ -187,27 +187,27 @@ const DocsToolbar = ({ editor }: EditorToolbarProps) => {
 
       <div className="w-px h-5 bg-border mx-2" />
 
-      <ToggleButton active={editor?.isActive("bold")} onClick={() => editor?.chain().focus().toggleBold().run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("common.toolbar.tooltip.bold")}>
+      <ToggleButton active={editor?.isActive("bold")} onClick={() => editor?.chain().focus().toggleBold().run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("toolbar.tooltip.bold")}>
         <Bold className="w-4 h-4" />
       </ToggleButton>
-      <ToggleButton active={editor?.isActive("italic")} onClick={() => editor?.chain().focus().toggleItalic().run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("common.toolbar.tooltip.italic")}>
+      <ToggleButton active={editor?.isActive("italic")} onClick={() => editor?.chain().focus().toggleItalic().run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("toolbar.tooltip.italic")}>
         <Italic className="w-4 h-4" />
       </ToggleButton>
-      <ToggleButton active={editor?.isActive("underline")} onClick={() => editor?.chain().focus().toggleUnderline().run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("common.toolbar.tooltip.underline")}>
+      <ToggleButton active={editor?.isActive("underline")} onClick={() => editor?.chain().focus().toggleUnderline().run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("toolbar.tooltip.underline")}>
         <Underline className="w-4 h-4" />
       </ToggleButton>
       {/* Color Picker (Simplified) */}
-      <div className="relative w-8 h-8 flex items-center justify-center hover:bg-black/5 rounded-full cursor-pointer" title={t("common.toolbar.tooltip.textColor")}>
+      <div className="relative w-8 h-8 flex items-center justify-center hover:bg-black/5 rounded-full cursor-pointer" title={t("toolbar.tooltip.textColor")}>
         <Type className="w-4 h-4" style={{ color: editor?.getAttributes("textStyle").color || "currentColor" }} />
         <input type="color" className="absolute inset-0 opacity-0 cursor-pointer rounded-full" onChange={(e) => editor?.chain().focus().setColor(e.target.value).run()} />
       </div>
 
       <div className="w-px h-5 bg-border mx-2" />
 
-      <ToggleButton active={editor?.isActive({ textAlign: "left" })} onClick={() => editor?.chain().focus().setTextAlign("left").run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("common.toolbar.tooltip.alignLeft")}>
+      <ToggleButton active={editor?.isActive({ textAlign: "left" })} onClick={() => editor?.chain().focus().setTextAlign("left").run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("toolbar.tooltip.alignLeft")}>
         <AlignLeft className="w-4 h-4" />
       </ToggleButton>
-      <ToggleButton active={editor?.isActive({ textAlign: "center" })} onClick={() => editor?.chain().focus().setTextAlign("center").run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("common.toolbar.tooltip.alignCenter")}>
+      <ToggleButton active={editor?.isActive({ textAlign: "center" })} onClick={() => editor?.chain().focus().setTextAlign("center").run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("toolbar.tooltip.alignCenter")}>
         <AlignCenter className="w-4 h-4" />
       </ToggleButton>
     </div>

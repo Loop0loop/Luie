@@ -110,10 +110,10 @@ export function DrawingCanvas() {
         </div>
 
         <div className="flex flex-col gap-2 pt-2 border-t border-border/50">
-          <button className="w-10 h-10 flex items-center justify-center rounded-lg text-muted hover:text-error hover:bg-error/10" onClick={undo} title={t("common.undo")}>
+          <button className="w-10 h-10 flex items-center justify-center rounded-lg text-muted hover:text-error hover:bg-error/10" onClick={undo} title={t("undo")}>
             <Navigation className="w-5 h-5 -rotate-90" />
           </button>
-          <button className="w-10 h-10 flex items-center justify-center rounded-lg text-muted hover:text-error hover:bg-error/10" onClick={clearCanvas} title={t("common.clear")}>
+          <button className="w-10 h-10 flex items-center justify-center rounded-lg text-muted hover:text-error hover:bg-error/10" onClick={clearCanvas} title={t("clear")}>
             <Eraser className="w-5 h-5" />
           </button>
         </div>

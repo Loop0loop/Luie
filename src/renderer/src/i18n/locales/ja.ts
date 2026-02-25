@@ -3,6 +3,11 @@ export const ja = {
     home: "ホーム",
     share: "共有",
     loading: "読み込み中...",
+    back: "戻る",
+    delete: "削除",
+    undo: "元に戻す",
+    clear: "クリア",
+    exit: "終了",
     menu: {
       file: "ファイル",
       edit: "編集",
@@ -521,6 +526,8 @@ export const ja = {
         alignLeft: "左揃え",
         alignCenter: "中央揃え",
         alignRight: "右揃え",
+        bulletList: "箇条書きリスト",
+        orderedList: "番号付きリスト",
         addComment: "コメントを追加",
         toggleMobileView: "モバイル表示を切替",
         view: {

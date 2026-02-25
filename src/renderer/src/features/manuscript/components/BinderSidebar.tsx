@@ -17,8 +17,8 @@ const TrashList = React.lazy(() => import("@renderer/features/trash/components/T
 type BinderTab = Exclude<DocsRightTab, null | "editor" | "export">;
 
 const EDITOR_RIGHT_MIN_WIDTH_PX = 320;
-const EDITOR_RIGHT_MAX_WIDTH_PX = 900;
-const EDITOR_RIGHT_DEFAULT_WIDTH_PX = 460;
+const EDITOR_RIGHT_MAX_WIDTH_PX = 1400;
+const EDITOR_RIGHT_DEFAULT_WIDTH_PX = 900;
 
 interface BinderSidebarProps {
     activeChapterId?: string;
@@ -173,7 +173,7 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
                         <button
                             onClick={handleBackToSnapshotList}
                             className="absolute top-2 left-3 p-1.5 rounded-full bg-surface/80 backdrop-blur-sm border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-all"
-                            title={t("common.back")}
+                            title={t("back")}
                         >
                             <ChevronLeft className="w-4 h-4" />
                         </button>
@@ -183,7 +183,7 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
                         <Suspense
                             fallback={
                                 <div className="p-4 text-sm text-muted">
-                                    {t("common.loading")}
+                                    {t("loading")}
                                 </div>
                             }
                         >

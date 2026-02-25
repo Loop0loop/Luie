@@ -59,12 +59,12 @@ export default function Ribbon({ editor, onOpenSettings, activeChapterId }: Ribb
           <ToolbarButton
             icon={<Undo className="w-4 h-4" />}
             onClick={() => editor?.chain().focus().undo().run()}
-            title={t("common.action.undo")}
+            title={t("toolbar.tooltip.undo")}
           />
           <ToolbarButton
             icon={<Redo className="w-4 h-4" />}
             onClick={() => editor?.chain().focus().redo().run()}
-            title={t("common.action.redo")}
+            title={t("toolbar.tooltip.redo")}
           />
         </div>
 
@@ -164,7 +164,7 @@ export default function Ribbon({ editor, onOpenSettings, activeChapterId }: Ribb
             title={t("toolbar.tooltip.toggleMobileView")}
           >
             {(maxWidth && maxWidth <= 500) ? <Smartphone className="w-3.5 h-3.5" /> : <Monitor className="w-3.5 h-3.5" />}
-            <span>{(maxWidth && maxWidth <= 500) ? t("common.view.mobile") : t("common.view.pc")}</span>
+            <span>{(maxWidth && maxWidth <= 500) ? t("view.mobile") : t("view.pc")}</span>
           </button>
         </div>
 

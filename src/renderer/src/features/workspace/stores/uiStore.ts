@@ -12,7 +12,25 @@ import type { Snapshot } from "@shared/types";
 export type ContextTab = "synopsis" | "characters" | "terms";
 export type ResearchTab = "character" | "world" | "scrap" | "analysis";
 export type WorldTab = "synopsis" | "terms" | "mindmap" | "drawing" | "plot";
-export type SidebarFeature = "binder" | "character" | "world" | "scrap" | "analysis" | "snapshot" | "trash" | "memo" | "export";
+export type SidebarFeature =
+  | "mainSidebar"
+  | "mainContext"
+  | "docsBinder"
+  | "scrivenerBinder"
+  | "scrivenerInspector"
+  | "character"
+  | "world"
+  | "scrap"
+  | "analysis"
+  | "snapshot"
+  | "trash"
+  | "memo"
+  | "editor"
+  | "export"
+  // Legacy aliases (migrated at hydration)
+  | "binder"
+  | "context"
+  | "inspector";
 export type DocsRightTab =
   | "character"
   | "world"
@@ -40,6 +58,76 @@ export interface ResizablePanelData {
   content: RightPanelContent;
   size: number; // Percentage or flex size
 }
+
+const DEFAULT_SIDEBAR_WIDTHS: Record<string, number> = {
+  mainSidebar: 280,
+  mainContext: 310,
+  docsBinder: 360,
+  scrivenerBinder: 260,
+  scrivenerInspector: 350,
+  character: 900,
+  world: 900,
+  scrap: 900,
+  analysis: 900,
+  snapshot: 900,
+  trash: 900,
+  memo: 350,
+  editor: 900,
+  export: 900,
+};
+
+const SIDEBAR_WIDTH_MIN_PX = 120;
+const SIDEBAR_WIDTH_MAX_PX = 2000;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+const parseSidebarWidth = (value: unknown): number | null => {
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return null;
+    return Math.round(Math.min(SIDEBAR_WIDTH_MAX_PX, Math.max(SIDEBAR_WIDTH_MIN_PX, value)));
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number.parseFloat(value);
+    if (!Number.isFinite(parsed)) return null;
+    return Math.round(Math.min(SIDEBAR_WIDTH_MAX_PX, Math.max(SIDEBAR_WIDTH_MIN_PX, parsed)));
+  }
+
+  return null;
+};
+
+const normalizeSidebarWidths = (input: unknown): Record<string, number> => {
+  const normalized: Record<string, number> = { ...DEFAULT_SIDEBAR_WIDTHS };
+  if (!isRecord(input)) {
+    return normalized;
+  }
+
+  for (const [key, rawValue] of Object.entries(input)) {
+    const width = parseSidebarWidth(rawValue);
+    if (width === null) continue;
+    normalized[key] = width;
+  }
+
+  const legacyBinder = parseSidebarWidth(input.binder);
+  if (legacyBinder !== null) {
+    if (parseSidebarWidth(input.mainSidebar) === null) normalized.mainSidebar = legacyBinder;
+    if (parseSidebarWidth(input.docsBinder) === null) normalized.docsBinder = legacyBinder;
+    if (parseSidebarWidth(input.scrivenerBinder) === null) normalized.scrivenerBinder = legacyBinder;
+  }
+
+  const legacyContext = parseSidebarWidth(input.context);
+  if (legacyContext !== null && parseSidebarWidth(input.mainContext) === null) {
+    normalized.mainContext = legacyContext;
+  }
+
+  const legacyInspector = parseSidebarWidth(input.inspector);
+  if (legacyInspector !== null && parseSidebarWidth(input.scrivenerInspector) === null) {
+    normalized.scrivenerInspector = legacyInspector;
+  }
+
+  return normalized;
+};
 
 interface UIStore {
   view: "template" | "editor" | "corkboard" | "outliner";
@@ -96,16 +184,7 @@ export const useUIStore = create<UIStore>()(
       docsRightTab: null,
       isBinderBarOpen: true,
       focusedClosableTarget: null,
-      sidebarWidths: {
-        binder: 280,
-        character: 350,
-        world: 350,
-        memo: 350,
-        analysis: 350,
-        snapshot: 350,
-        trash: 350,
-        export: 350,
-      },
+      sidebarWidths: { ...DEFAULT_SIDEBAR_WIDTHS },
 
       mainView: { type: "editor" },
 
@@ -182,12 +261,18 @@ export const useUIStore = create<UIStore>()(
       setBinderBarOpen: (isBinderBarOpen) => set({ isBinderBarOpen }),
       setMainView: (mainView) => set({ mainView }),
       setSidebarWidth: (feature, width) =>
-        set((state) => ({
-          sidebarWidths: {
-            ...state.sidebarWidths,
-            [feature]: width,
-          },
-        })),
+        set((state) => {
+          const next = parseSidebarWidth(width);
+          if (next === null) return state;
+          const prev = parseSidebarWidth(state.sidebarWidths[feature]);
+          if (prev !== null && Math.abs(prev - next) < 2) return state;
+          return {
+            sidebarWidths: {
+              ...state.sidebarWidths,
+              [feature]: next,
+            },
+          };
+        }),
       setFocusedClosableTarget: (focusedClosableTarget) => set({ focusedClosableTarget }),
       closeFocusedSurface: () => {
         let handled = false;
@@ -257,8 +342,20 @@ export const useUIStore = create<UIStore>()(
         isContextOpen: state.isContextOpen,
         isManuscriptMenuOpen: state.isManuscriptMenuOpen,
         isBinderBarOpen: state.isBinderBarOpen,
-        sidebarWidths: state.sidebarWidths,
+        sidebarWidths: normalizeSidebarWidths(state.sidebarWidths),
       }),
+      merge: (persistedState, currentState) => {
+        if (!isRecord(persistedState)) {
+          return currentState;
+        }
+
+        const typedPersisted = persistedState as Partial<UIStore>;
+        return {
+          ...currentState,
+          ...typedPersisted,
+          sidebarWidths: normalizeSidebarWidths(typedPersisted.sidebarWidths),
+        };
+      },
     },
   ),
 );

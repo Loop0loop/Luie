@@ -3,6 +3,11 @@ export const ko = {
     home: "홈",
     share: "공유",
     loading: "로딩 중...",
+    back: "뒤로",
+    delete: "삭제",
+    undo: "실행 취소",
+    clear: "지우기",
+    exit: "나가기",
     menu: {
       file: "파일",
       edit: "편집",
@@ -485,7 +490,8 @@ export const ko = {
         exportNoChapter: "챕터를 선택한 뒤 내보내기를 실행하세요.",
         exportOpenFailed: "내보내기 창을 열 수 없습니다.",
       },
-      toolbar: {
+    },
+    toolbar: {
         ribbon: {
           home: "홈",
           insert: "삽입",
@@ -519,6 +525,8 @@ export const ko = {
           alignLeft: "Align Left",
           alignCenter: "Align Center",
           alignRight: "Align Right",
+          bulletList: "글머리 기호 목록",
+          orderedList: "번호 매기기 목록",
           addComment: "댓글 추가",
           toggleMobileView: "모바일 뷰 전환",
           view: {
@@ -1002,7 +1010,7 @@ export const ko = {
           close: "닫기",
         },
       },
-      scrivener: {
+    scrivener: {
         inspector: {
           title: "인스펙터 (Inspector)",
           open: "인스펙터 열기",
@@ -1011,7 +1019,7 @@ export const ko = {
         },
         target: "목표: {{count}} 단어",
       },
-      trash: {
+    trash: {
         confirmRestore: "휴지통에서 복구할까요?",
         confirmPurge: "영구 삭제할까요? 이 작업은 되돌릴 수 없습니다.",
         restoreSuccess: "복구했습니다.",
@@ -1024,6 +1032,5 @@ export const ko = {
         purge: "영구 삭제",
         deleted: "삭제됨",
       },
-    },
   },
 } as const;

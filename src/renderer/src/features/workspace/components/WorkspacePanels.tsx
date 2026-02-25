@@ -47,7 +47,7 @@ export function WorkspacePanels({
                     <Panel
                         id={panel.id}
                         defaultSize={panel.size}
-                        minSize="200px"
+                        minSize="120px"
                         onMouseDownCapture={() => {
                             setFocusedClosableTarget({ kind: "panel", id: panel.id });
                         }}
@@ -59,7 +59,7 @@ export function WorkspacePanels({
                         </div>
 
                         <div className="flex-1 overflow-hidden relative">
-                            <Suspense fallback={<div style={{ padding: 20 }}>{t("common.loading")}</div>}>
+                            <Suspense fallback={<div style={{ padding: 20 }}>{t("loading")}</div>}>
                                 {panel.content.type === "research" ? (
                                     <ResearchPanel
                                         activeTab={panel.content.tab || "character"}

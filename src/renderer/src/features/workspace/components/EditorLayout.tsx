@@ -87,7 +87,7 @@ export default function EditorLayout({
 
           {/* Editor Column Wrapper */}
           <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative" id="editor-layout">
-            <Panel id="main-editor-view" minSize={30} className="min-w-0 bg-transparent relative flex flex-col">
+            <Panel id="main-editor-view" minSize="80px" className="min-w-0 bg-transparent relative flex flex-col">
               <div className="flex-1 h-full overflow-hidden flex flex-col relative">
                 <EditorDropZones />
 

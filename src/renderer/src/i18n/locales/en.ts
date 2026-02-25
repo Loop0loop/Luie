@@ -3,6 +3,11 @@ export const en = {
     home: "Home",
     share: "Share",
     loading: "Loading...",
+    back: "Back",
+    delete: "Delete",
+    undo: "Undo",
+    clear: "Clear",
+    exit: "Exit",
     menu: {
       file: "File",
       edit: "Edit",
@@ -521,6 +526,8 @@ export const en = {
         alignLeft: "Align Left",
         alignCenter: "Align Center",
         alignRight: "Align Right",
+        bulletList: "Bulleted list",
+        orderedList: "Numbered list",
         addComment: "Add Comment",
         toggleMobileView: "Toggle mobile view",
         view: {

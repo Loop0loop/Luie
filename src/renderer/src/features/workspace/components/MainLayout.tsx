@@ -15,6 +15,13 @@ interface MainLayoutProps {
   onOpenExport?: () => void;
 }
 
+const MAIN_SIDEBAR_MIN_WIDTH_PX = 210;
+const MAIN_SIDEBAR_MAX_WIDTH_PX = 630;
+const MAIN_SIDEBAR_DEFAULT_WIDTH_PX = 280;
+const MAIN_CONTEXT_MIN_WIDTH_PX = 310;
+const MAIN_CONTEXT_MAX_WIDTH_PX = 610;
+const MAIN_CONTEXT_DEFAULT_WIDTH_PX = 310;
+
 export default function MainLayout({ children, sidebar, contextPanel, additionalPanels, onOpenExport }: MainLayoutProps) {
   const { t } = useTranslation();
   const {
@@ -27,15 +34,31 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
   } = useUIStore();
 
   const handleSidebarResize = useCallback((panelSize: PanelSize) => {
-    setSidebarWidth("binder", Math.round(panelSize.inPixels));
+    const nextWidth = Math.round(panelSize.inPixels);
+    const bounded = Math.min(
+      MAIN_SIDEBAR_MAX_WIDTH_PX,
+      Math.max(MAIN_SIDEBAR_MIN_WIDTH_PX, nextWidth),
+    );
+    setSidebarWidth("mainSidebar", bounded);
   }, [setSidebarWidth]);
 
   const handleContextResize = useCallback((panelSize: PanelSize) => {
-    setSidebarWidth("context", Math.round(panelSize.inPixels));
+    const nextWidth = Math.round(panelSize.inPixels);
+    const bounded = Math.min(
+      MAIN_CONTEXT_MAX_WIDTH_PX,
+      Math.max(MAIN_CONTEXT_MIN_WIDTH_PX, nextWidth),
+    );
+    setSidebarWidth("mainContext", bounded);
   }, [setSidebarWidth]);
 
-  const sidebarWidth = sidebarWidths["binder"] || 280;
-  const contextWidth = sidebarWidths["context"] || 310;
+  const sidebarWidth = Math.min(
+    MAIN_SIDEBAR_MAX_WIDTH_PX,
+    Math.max(MAIN_SIDEBAR_MIN_WIDTH_PX, sidebarWidths["mainSidebar"] || MAIN_SIDEBAR_DEFAULT_WIDTH_PX),
+  );
+  const contextWidth = Math.min(
+    MAIN_CONTEXT_MAX_WIDTH_PX,
+    Math.max(MAIN_CONTEXT_MIN_WIDTH_PX, sidebarWidths["mainContext"] || MAIN_CONTEXT_DEFAULT_WIDTH_PX),
+  );
 
   return (
     <div className="flex flex-col h-screen bg-app text-fg">
@@ -47,8 +70,8 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
           <Panel
             id="sidebar-panel"
             defaultSize={`${sidebarWidth}px`}
-            minSize="210px"
-            maxSize="630px"
+            minSize={`${MAIN_SIDEBAR_MIN_WIDTH_PX}px`}
+            maxSize={`${MAIN_SIDEBAR_MAX_WIDTH_PX}px`}
             onResize={handleSidebarResize}
             className="bg-sidebar border-r border-border overflow-hidden flex flex-col z-10"
           >
@@ -111,8 +134,8 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
           <Panel
             id="context-panel"
             defaultSize={`${contextWidth}px`}
-            minSize="310px"
-            maxSize="610px"
+            minSize={`${MAIN_CONTEXT_MIN_WIDTH_PX}px`}
+            maxSize={`${MAIN_CONTEXT_MAX_WIDTH_PX}px`}
             onResize={handleContextResize}
             className="bg-panel border-l border-border overflow-hidden flex flex-col z-10"
           >

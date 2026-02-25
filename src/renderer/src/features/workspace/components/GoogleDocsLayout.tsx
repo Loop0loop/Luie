@@ -39,8 +39,8 @@ const DOCS_LEFT_MIN_WIDTH_PX = 300;
 const DOCS_LEFT_MAX_WIDTH_PX = 520;
 const DOCS_LEFT_DEFAULT_WIDTH_PX = 360;
 const DOCS_RIGHT_MIN_WIDTH_PX = 380;
-const DOCS_RIGHT_MAX_WIDTH_PX = 920;
-const DOCS_RIGHT_DEFAULT_WIDTH_PX = 520;
+const DOCS_RIGHT_MAX_WIDTH_PX = 1400;
+const DOCS_RIGHT_DEFAULT_WIDTH_PX = 900;
 
 interface GoogleDocsLayoutProps {
   children: ReactNode;
@@ -110,7 +110,7 @@ export default function GoogleDocsLayout({
       DOCS_LEFT_MAX_WIDTH_PX,
       Math.max(DOCS_LEFT_MIN_WIDTH_PX, nextWidth),
     );
-    setSidebarWidth("binder", bounded);
+    setSidebarWidth("docsBinder", bounded);
   }, [setSidebarWidth]);
 
   const handleRightResize = useCallback((panelSize: PanelSize) => {
@@ -127,7 +127,7 @@ export default function GoogleDocsLayout({
     DOCS_LEFT_MAX_WIDTH_PX,
     Math.max(
       DOCS_LEFT_MIN_WIDTH_PX,
-      sidebarWidths["binder"] || DOCS_LEFT_DEFAULT_WIDTH_PX,
+      sidebarWidths["docsBinder"] || DOCS_LEFT_DEFAULT_WIDTH_PX,
     ),
   );
 
@@ -161,7 +161,7 @@ export default function GoogleDocsLayout({
             </button>
           )}
 
-          <div className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-muted/50 cursor-pointer transition-colors shrink-0" title={t("common.home")}>
+          <div className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-muted/50 cursor-pointer transition-colors shrink-0" title={t("home")}>
             <div className="w-6 h-8 bg-blue-500 rounded-[2px] relative flex items-center justify-center shadow-sm scale-90">
               <div className="w-4 h-0.5 bg-white mb-1 rounded-sm" />
               <div className="w-4 h-0.5 bg-white mb-1 rounded-sm" />
@@ -253,10 +253,10 @@ export default function GoogleDocsLayout({
           )}
 
           {/* Main Content Column (Editor + Footer) */}
-          <Panel id="center-content" minSize="130px" className="flex-1 flex flex-col min-w-0 bg-secondary/30 relative z-0 transition-colors duration-200">
+          <Panel id="center-content" minSize="80px" className="flex-1 flex flex-col min-w-0 bg-secondary/30 relative z-0 transition-colors duration-200">
             <div className="flex-1 relative flex flex-col overflow-hidden">
               <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative" id="google-docs-split-editor">
-                <Panel id="editor-main-panel" minSize="130px" className="min-w-0 bg-transparent relative flex flex-col">
+                <Panel id="editor-main-panel" minSize="80px" className="min-w-0 bg-transparent relative flex flex-col">
                   <EditorDropZones />
                   <main className="flex-1 overflow-y-auto flex flex-col items-center relative custom-scrollbar bg-sidebar">
                     <div className="sticky top-0 z-30 pt-4 pb-2 shrink-0 select-none bg-sidebar/95 backdrop-blur-sm flex justify-center w-full">
@@ -456,7 +456,7 @@ export default function GoogleDocsLayout({
             </button>
           </DraggableItem>
           <div className="mt-auto">
-            <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10" title={t("common.menu.extensions")}>
+            <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10" title={t("menu.extensions")}>
               <Plus className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>

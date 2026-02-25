@@ -53,7 +53,7 @@ export const TermCard = ({
             e.stopPropagation();
             onDelete(item.id);
           }}
-          title={t("common.delete")}
+          title={t("delete")}
         >
           <X className="w-3.5 h-3.5" />
         </button>
