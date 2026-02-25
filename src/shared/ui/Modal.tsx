@@ -26,8 +26,8 @@ export function Modal({
   return (
     <div className="fixed inset-0 z-9999 bg-black/60 backdrop-blur-xs flex items-center justify-center animate-in fade-in duration-200" onMouseDown={onClose}>
       <div
-        className="bg-panel border border-border rounded-xl shadow-2xl w-full max-w-[90vw] flex flex-col overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-2 duration-200"
-        style={{ width }}
+        className={cn("bg-panel border border-border rounded-xl shadow-2xl w-full flex flex-col overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-2 duration-200", !width && "max-w-md")}
+        style={{ width: width || undefined, maxWidth: width ? '90vw' : undefined }}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-secondary">
