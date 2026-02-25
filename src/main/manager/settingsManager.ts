@@ -10,6 +10,7 @@ import type {
   AppSettings,
   EditorSettings,
   ShortcutMap,
+  SyncEntityBaseline,
   SyncPendingProjectDelete,
   SyncSettings,
   WindowBounds,
@@ -377,6 +378,66 @@ export class SettingsManager {
         )
         : undefined;
 
+    const entityBaselinesByProjectId = current?.entityBaselinesByProjectId;
+    const normalizedEntityBaselines =
+      entityBaselinesByProjectId &&
+      typeof entityBaselinesByProjectId === "object" &&
+      !Array.isArray(entityBaselinesByProjectId)
+        ? Object.fromEntries(
+          Object.entries(entityBaselinesByProjectId)
+            .filter(
+              (entry): entry is [string, SyncEntityBaseline] =>
+                typeof entry[0] === "string" &&
+                entry[0].length > 0 &&
+                Boolean(entry[1]) &&
+                typeof entry[1] === "object" &&
+                !Array.isArray(entry[1]),
+            )
+            .map(([projectId, baseline]) => {
+              const chapter =
+                baseline.chapter &&
+                typeof baseline.chapter === "object" &&
+                !Array.isArray(baseline.chapter)
+                  ? Object.fromEntries(
+                    Object.entries(baseline.chapter).filter(
+                      (item): item is [string, string] =>
+                        typeof item[0] === "string" &&
+                        item[0].length > 0 &&
+                        typeof item[1] === "string" &&
+                        item[1].length > 0,
+                    ),
+                  )
+                  : {};
+              const memo =
+                baseline.memo &&
+                typeof baseline.memo === "object" &&
+                !Array.isArray(baseline.memo)
+                  ? Object.fromEntries(
+                    Object.entries(baseline.memo).filter(
+                      (item): item is [string, string] =>
+                        typeof item[0] === "string" &&
+                        item[0].length > 0 &&
+                        typeof item[1] === "string" &&
+                        item[1].length > 0,
+                    ),
+                  )
+                  : {};
+              const capturedAt =
+                typeof baseline.capturedAt === "string" && baseline.capturedAt.length > 0
+                  ? baseline.capturedAt
+                  : new Date().toISOString();
+              return [
+                projectId,
+                {
+                  chapter,
+                  memo,
+                  capturedAt,
+                },
+              ];
+            }),
+        )
+        : undefined;
+
     return {
       connected: current?.connected ?? false,
       provider: current?.provider,
@@ -395,6 +456,10 @@ export class SettingsManager {
       projectLastSyncedAtByProjectId:
         normalizedProjectSyncMap && Object.keys(normalizedProjectSyncMap).length > 0
           ? normalizedProjectSyncMap
+          : undefined,
+      entityBaselinesByProjectId:
+        normalizedEntityBaselines && Object.keys(normalizedEntityBaselines).length > 0
+          ? normalizedEntityBaselines
           : undefined,
     };
   }
@@ -420,6 +485,66 @@ export class SettingsManager {
         Object.keys(normalized).length > 0 ? normalized : undefined;
     } else {
       next.projectLastSyncedAtByProjectId = undefined;
+    }
+    const baselines = next.entityBaselinesByProjectId;
+    if (baselines && typeof baselines === "object" && !Array.isArray(baselines)) {
+      const normalizedBaselines = Object.fromEntries(
+        Object.entries(baselines)
+          .filter(
+            (entry): entry is [string, SyncEntityBaseline] =>
+              typeof entry[0] === "string" &&
+              entry[0].length > 0 &&
+              Boolean(entry[1]) &&
+              typeof entry[1] === "object" &&
+              !Array.isArray(entry[1]),
+          )
+          .map(([projectId, baseline]) => {
+            const chapter =
+              baseline.chapter &&
+              typeof baseline.chapter === "object" &&
+              !Array.isArray(baseline.chapter)
+                ? Object.fromEntries(
+                  Object.entries(baseline.chapter).filter(
+                    (item): item is [string, string] =>
+                      typeof item[0] === "string" &&
+                      item[0].length > 0 &&
+                      typeof item[1] === "string" &&
+                      item[1].length > 0,
+                  ),
+                )
+                : {};
+            const memo =
+              baseline.memo &&
+              typeof baseline.memo === "object" &&
+              !Array.isArray(baseline.memo)
+                ? Object.fromEntries(
+                  Object.entries(baseline.memo).filter(
+                    (item): item is [string, string] =>
+                      typeof item[0] === "string" &&
+                      item[0].length > 0 &&
+                      typeof item[1] === "string" &&
+                      item[1].length > 0,
+                  ),
+                )
+                : {};
+            const capturedAt =
+              typeof baseline.capturedAt === "string" && baseline.capturedAt.length > 0
+                ? baseline.capturedAt
+                : new Date().toISOString();
+            return [
+              projectId,
+              {
+                chapter,
+                memo,
+                capturedAt,
+              },
+            ];
+          }),
+      );
+      next.entityBaselinesByProjectId =
+        Object.keys(normalizedBaselines).length > 0 ? normalizedBaselines : undefined;
+    } else {
+      next.entityBaselinesByProjectId = undefined;
     }
     this.store.set("sync", next);
     return next;
@@ -484,6 +609,7 @@ export class SettingsManager {
       connected: false,
       autoSync: true,
       pendingProjectDeletes: current.pendingProjectDeletes,
+      entityBaselinesByProjectId: current.entityBaselinesByProjectId,
     };
     this.store.set("sync", next);
     return next;

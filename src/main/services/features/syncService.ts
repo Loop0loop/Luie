@@ -18,6 +18,7 @@ import {
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import type {
+  SyncEntityBaseline,
   SyncPendingProjectDelete,
   SyncRunResult,
   SyncSettings,
@@ -192,6 +193,107 @@ export class SyncService {
     }
 
     return Object.keys(next).length > 0 ? next : undefined;
+  }
+
+  private buildEntityBaselineMapForSuccess(
+    syncSettings: SyncSettings,
+    merged: SyncBundle,
+    syncedAt: string,
+    pendingProjectDeleteIds: string[],
+  ): Record<string, SyncEntityBaseline> | undefined {
+    const next: Record<string, SyncEntityBaseline> = {
+      ...(syncSettings.entityBaselinesByProjectId ?? {}),
+    };
+    this.dropEntityBaselines(next, pendingProjectDeleteIds);
+
+    const deletedProjectIds = this.collectDeletedProjectIdsForBaselines(merged);
+    this.dropEntityBaselines(next, Array.from(deletedProjectIds));
+
+    const activeProjectIds = this.seedActiveProjectBaselines(
+      next,
+      merged,
+      deletedProjectIds,
+      syncedAt,
+    );
+    this.applyChapterBaselines(next, merged, deletedProjectIds, activeProjectIds, syncedAt);
+    this.applyMemoBaselines(next, merged, deletedProjectIds, activeProjectIds, syncedAt);
+
+    return Object.keys(next).length > 0 ? next : undefined;
+  }
+
+  private collectDeletedProjectIdsForBaselines(merged: SyncBundle): Set<string> {
+    const deletedProjectIds = new Set<string>();
+    for (const project of merged.projects) {
+      if (project.deletedAt) deletedProjectIds.add(project.id);
+    }
+    for (const tombstone of merged.tombstones) {
+      if (tombstone.entityType !== "project") continue;
+      deletedProjectIds.add(tombstone.entityId);
+      deletedProjectIds.add(tombstone.projectId);
+    }
+    return deletedProjectIds;
+  }
+
+  private dropEntityBaselines(
+    baselines: Record<string, SyncEntityBaseline>,
+    projectIds: string[],
+  ): void {
+    for (const projectId of projectIds) {
+      delete baselines[projectId];
+    }
+  }
+
+  private seedActiveProjectBaselines(
+    baselines: Record<string, SyncEntityBaseline>,
+    merged: SyncBundle,
+    deletedProjectIds: Set<string>,
+    syncedAt: string,
+  ): Set<string> {
+    const activeProjectIds = new Set<string>();
+    for (const project of merged.projects) {
+      if (project.deletedAt || deletedProjectIds.has(project.id)) continue;
+      activeProjectIds.add(project.id);
+      baselines[project.id] = {
+        chapter: {},
+        memo: {},
+        capturedAt: syncedAt,
+      };
+    }
+    return activeProjectIds;
+  }
+
+  private applyChapterBaselines(
+    baselines: Record<string, SyncEntityBaseline>,
+    merged: SyncBundle,
+    deletedProjectIds: Set<string>,
+    activeProjectIds: Set<string>,
+    syncedAt: string,
+  ): void {
+    for (const chapter of merged.chapters) {
+      if (chapter.deletedAt || deletedProjectIds.has(chapter.projectId)) continue;
+      if (!activeProjectIds.has(chapter.projectId)) continue;
+      const baseline = baselines[chapter.projectId];
+      if (!baseline) continue;
+      baseline.chapter[chapter.id] = chapter.updatedAt;
+      baseline.capturedAt = syncedAt;
+    }
+  }
+
+  private applyMemoBaselines(
+    baselines: Record<string, SyncEntityBaseline>,
+    merged: SyncBundle,
+    deletedProjectIds: Set<string>,
+    activeProjectIds: Set<string>,
+    syncedAt: string,
+  ): void {
+    for (const memo of merged.memos) {
+      if (memo.deletedAt || deletedProjectIds.has(memo.projectId)) continue;
+      if (!activeProjectIds.has(memo.projectId)) continue;
+      const baseline = baselines[memo.projectId];
+      if (!baseline) continue;
+      baseline.memo[memo.id] = memo.updatedAt;
+      baseline.capturedAt = syncedAt;
+    }
   }
 
   private persistMigratedTokenCipher(
@@ -418,7 +520,9 @@ export class SyncService {
         this.buildLocalBundle(userId),
       ]);
 
-      const { merged, conflicts } = mergeSyncBundles(localBundle, remoteBundle);
+      const { merged, conflicts } = mergeSyncBundles(localBundle, remoteBundle, {
+        baselinesByProjectId: syncSettings.entityBaselinesByProjectId,
+      });
       await this.applyMergedBundleToLocal(merged);
       await syncRepository.upsertBundle(accessToken, merged);
 
@@ -429,10 +533,17 @@ export class SyncService {
         syncedAt,
         pendingProjectDeleteIds,
       );
+      const entityBaselinesByProjectId = this.buildEntityBaselineMapForSuccess(
+        syncSettings,
+        merged,
+        syncedAt,
+        pendingProjectDeleteIds,
+      );
       const nextSettings = settingsManager.setSyncSettings({
         lastSyncedAt: syncedAt,
         lastError: undefined,
         projectLastSyncedAtByProjectId,
+        entityBaselinesByProjectId,
       });
       if (pendingProjectDeleteIds.length > 0) {
         settingsManager.removePendingProjectDeletes(pendingProjectDeleteIds);

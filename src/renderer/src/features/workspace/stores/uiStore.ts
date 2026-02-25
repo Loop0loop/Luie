@@ -31,6 +31,10 @@ interface RightPanelContent {
   snapshot?: Snapshot;
 }
 
+type FocusedClosableTarget =
+  | { kind: "panel"; id: string }
+  | { kind: "docs-tab" };
+
 export interface ResizablePanelData {
   id: string; // Unique ID for the panel
   content: RightPanelContent;
@@ -50,6 +54,7 @@ interface UIStore {
   isManuscriptMenuOpen: boolean;
   docsRightTab: DocsRightTab;
   isBinderBarOpen: boolean;
+  focusedClosableTarget: FocusedClosableTarget | null;
 
   // Sidebar Widths (in pixels)
   sidebarWidths: Record<string, number>;
@@ -70,6 +75,8 @@ interface UIStore {
   setDocsRightTab: (tab: DocsRightTab) => void;
   setBinderBarOpen: (isOpen: boolean) => void;
   setSidebarWidth: (feature: string, width: number) => void;
+  setFocusedClosableTarget: (target: FocusedClosableTarget | null) => void;
+  closeFocusedSurface: () => boolean;
 
   // Scrivener Mode Main View State
   mainView: { type: "editor" | "character" | "world" | "memo" | "trash" | "analysis"; id?: string };
@@ -88,6 +95,7 @@ export const useUIStore = create<UIStore>()(
       isManuscriptMenuOpen: false,
       docsRightTab: null,
       isBinderBarOpen: true,
+      focusedClosableTarget: null,
       sidebarWidths: {
         binder: 280,
         character: 350,
@@ -133,7 +141,11 @@ export const useUIStore = create<UIStore>()(
         // Normalize sizes roughly
         const sizePerPanel = 100 / newPanels.length;
         newPanels.forEach(p => p.size = sizePerPanel);
-        return { ...state, panels: newPanels };
+        return {
+          ...state,
+          panels: newPanels,
+          focusedClosableTarget: { kind: "panel", id: newPanel.id },
+        };
       }),
       removePanel: (id) => set((state) => {
         const newPanels = state.panels.filter(p => p.id !== id);
@@ -141,7 +153,13 @@ export const useUIStore = create<UIStore>()(
           const sizePerPanel = 100 / newPanels.length;
           newPanels.forEach(p => p.size = sizePerPanel);
         }
-        return { panels: newPanels };
+        const shouldClearFocus =
+          state.focusedClosableTarget?.kind === "panel" &&
+          state.focusedClosableTarget.id === id;
+        return {
+          panels: newPanels,
+          focusedClosableTarget: shouldClearFocus ? null : state.focusedClosableTarget,
+        };
       }),
       updatePanelSize: (id, size) => set((state) => ({
         panels: state.panels.map(p => p.id === id ? { ...p, size } : p)
@@ -151,7 +169,16 @@ export const useUIStore = create<UIStore>()(
       setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
       setContextOpen: (isContextOpen) => set({ isContextOpen }),
       setManuscriptMenuOpen: (isManuscriptMenuOpen) => set({ isManuscriptMenuOpen }),
-      setDocsRightTab: (docsRightTab) => set({ docsRightTab }),
+      setDocsRightTab: (docsRightTab) =>
+        set((state) => ({
+          docsRightTab,
+          focusedClosableTarget:
+            docsRightTab !== null
+              ? { kind: "docs-tab" }
+              : state.focusedClosableTarget?.kind === "docs-tab"
+                ? null
+                : state.focusedClosableTarget,
+        })),
       setBinderBarOpen: (isBinderBarOpen) => set({ isBinderBarOpen }),
       setMainView: (mainView) => set({ mainView }),
       setSidebarWidth: (feature, width) =>
@@ -161,6 +188,59 @@ export const useUIStore = create<UIStore>()(
             [feature]: width,
           },
         })),
+      setFocusedClosableTarget: (focusedClosableTarget) => set({ focusedClosableTarget }),
+      closeFocusedSurface: () => {
+        let handled = false;
+        set((state) => {
+          const normalizePanelSizes = (panels: ResizablePanelData[]): ResizablePanelData[] => {
+            if (panels.length === 0) return [];
+            const sizePerPanel = 100 / panels.length;
+            return panels.map((panel) => ({ ...panel, size: sizePerPanel }));
+          };
+
+          if (
+            state.focusedClosableTarget?.kind === "panel" &&
+            state.panels.some((panel) => panel.id === state.focusedClosableTarget?.id)
+          ) {
+            handled = true;
+            const nextPanels = normalizePanelSizes(
+              state.panels.filter((panel) => panel.id !== state.focusedClosableTarget?.id),
+            );
+            return {
+              panels: nextPanels,
+              focusedClosableTarget: null,
+            };
+          }
+
+          if (state.focusedClosableTarget?.kind === "docs-tab" && state.docsRightTab) {
+            handled = true;
+            return {
+              docsRightTab: null,
+              focusedClosableTarget: null,
+            };
+          }
+
+          if (state.docsRightTab) {
+            handled = true;
+            return {
+              docsRightTab: null,
+              focusedClosableTarget: null,
+            };
+          }
+
+          if (state.panels.length > 0) {
+            handled = true;
+            const nextPanels = normalizePanelSizes(state.panels.slice(0, -1));
+            return {
+              panels: nextPanels,
+              focusedClosableTarget: null,
+            };
+          }
+
+          return state;
+        });
+        return handled;
+      },
     }),
     {
       name: STORAGE_KEY_UI,

@@ -1,5 +1,5 @@
 import { app } from "electron";
-import { promises as fs } from "fs";
+import { promises as fs, type Dirent } from "fs";
 import path from "path";
 import { db } from "../../database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
@@ -19,6 +19,7 @@ import { gzip as gzipCallback } from "node:zlib";
 
 const logger = createLogger("SnapshotArtifacts");
 const gzip = promisify(gzipCallback);
+const SNAPSHOT_ARTIFACT_ID_PATTERN = /-([0-9a-fA-F-]{36})\.snap$/;
 
 
 type FullSnapshotData = {
@@ -127,6 +128,116 @@ function resolveProjectBaseDir(projectPath: string) {
 function resolveLocalSnapshotDir(projectPath: string, projectName: string) {
   const baseDir = resolveProjectBaseDir(projectPath);
   return path.join(baseDir, ".luie", LUIE_SNAPSHOTS_DIR, projectName);
+}
+
+const extractSnapshotIdFromArtifactPath = (artifactPath: string): string | null => {
+  const match = path.basename(artifactPath).match(SNAPSHOT_ARTIFACT_ID_PATTERN);
+  return match?.[1] ?? null;
+};
+
+const collectSnapFilesRecursive = async (rootDir: string, results: string[]): Promise<void> => {
+  let entries: Dirent[];
+  try {
+    entries = await fs.readdir(rootDir, { withFileTypes: true });
+  } catch (error) {
+    const fsError = error as NodeJS.ErrnoException;
+    if (fsError?.code === "ENOENT") return;
+    logger.warn("Failed to read snapshot artifact directory", { rootDir, error });
+    return;
+  }
+
+  for (const entry of entries) {
+    const fullPath = path.join(rootDir, entry.name);
+    if (entry.isDirectory()) {
+      await collectSnapFilesRecursive(fullPath, results);
+      continue;
+    }
+    if (!entry.isFile() || !entry.name.endsWith(".snap")) continue;
+    results.push(fullPath);
+  }
+};
+
+const resolveArtifactRoots = async (): Promise<string[]> => {
+  const roots = new Set<string>([path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR)]);
+  const projects = await db.getClient().project.findMany({
+    select: { id: true, title: true, projectPath: true },
+  }) as Array<{ id: string; title: string; projectPath?: string | null }>;
+
+  for (const project of projects) {
+    if (!project.projectPath) continue;
+    const safeProjectName = sanitizeName(project.title ?? "", String(project.id));
+    roots.add(resolveLocalSnapshotDir(project.projectPath, safeProjectName));
+    roots.add(path.join(resolveProjectBaseDir(project.projectPath), `backup${safeProjectName}`));
+  }
+
+  return Array.from(roots);
+};
+
+export async function cleanupOrphanSnapshotArtifacts(options?: {
+  snapshotIds?: string[];
+  minAgeMs?: number;
+}): Promise<{ scanned: number; deleted: number }> {
+  const targetIds =
+    options?.snapshotIds && options.snapshotIds.length > 0
+      ? new Set(options.snapshotIds)
+      : null;
+  const minAgeMs =
+    typeof options?.minAgeMs === "number" && options.minAgeMs > 0
+      ? options.minAgeMs
+      : 0;
+  const now = Date.now();
+
+  const persistedSnapshots = targetIds
+    ? await db.getClient().snapshot.findMany({
+      where: { id: { in: Array.from(targetIds) } },
+      select: { id: true },
+    })
+    : await db.getClient().snapshot.findMany({
+      select: { id: true },
+    });
+  const persistedSnapshotIds = new Set(persistedSnapshots.map((snapshot) => snapshot.id));
+
+  const roots = await resolveArtifactRoots();
+  const artifactPaths: string[] = [];
+  for (const root of roots) {
+    await collectSnapFilesRecursive(root, artifactPaths);
+  }
+
+  let scanned = 0;
+  let deleted = 0;
+
+  for (const artifactPath of artifactPaths) {
+    const snapshotId = extractSnapshotIdFromArtifactPath(artifactPath);
+    if (!snapshotId) continue;
+    if (targetIds && !targetIds.has(snapshotId)) continue;
+
+    scanned += 1;
+    if (persistedSnapshotIds.has(snapshotId)) continue;
+
+    if (minAgeMs > 0) {
+      try {
+        const stat = await fs.stat(artifactPath);
+        if (now - stat.mtimeMs < minAgeMs) {
+          continue;
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    try {
+      await fs.unlink(artifactPath);
+      deleted += 1;
+    } catch (error) {
+      logger.warn("Failed to delete orphan snapshot artifact", {
+        artifactPath,
+        snapshotId,
+        error,
+      });
+    }
+  }
+
+  return { scanned, deleted };
 }
 
 export async function writeFullSnapshotArtifact(

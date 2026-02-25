@@ -71,11 +71,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-modal flex items-center justify-center bg-black/70 animate-in fade-in duration-150"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-150"
       onClick={onClose}
     >
       <div
-        className="w-[1000px] h-[80vh] max-h-[850px] bg-panel border border-border shadow-xl rounded-xl flex overflow-hidden animate-in zoom-in-95 duration-150"
+        className="w-[1000px] h-[80vh] max-h-[850px] bg-panel border border-border shadow-full rounded-xl flex overflow-hidden animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-64 bg-sidebar border-r border-border flex flex-col pt-3">

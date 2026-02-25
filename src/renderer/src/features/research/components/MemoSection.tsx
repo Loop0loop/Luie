@@ -12,9 +12,9 @@ import { MemoSidebarList } from "@renderer/features/research/components/memo/Mem
 
 const MEMO_SIDEBAR_PANEL_ID = "memo-sidebar";
 const MEMO_CONTENT_PANEL_ID = "memo-content";
-const MEMO_SIDEBAR_DEFAULT_SIZE = 25;
-const MEMO_SIDEBAR_MIN_SIZE = 15;
-const MEMO_SIDEBAR_MAX_SIZE = 40;
+const MEMO_SIDEBAR_DEFAULT_SIZE = 90;
+const MEMO_SIDEBAR_MIN_SIZE = 90;
+const MEMO_SIDEBAR_MAX_SIZE = 190;
 const MEMO_CONTENT_MIN_SIZE = 20;
 
 const normalizeMemoLayout = (layout: Layout): Layout | undefined => {
@@ -96,7 +96,7 @@ function MemoSectionInner({
   return (
     <div className="flex flex-col h-full bg-sidebar/30">
       <PanelGroup
-        orientation="vertical"
+        orientation="horizontal"
         onLayoutChanged={handleLayoutChange}
         defaultLayout={initialLayout}
         id="memo-panel-group"
@@ -120,7 +120,7 @@ function MemoSectionInner({
           />
         </Panel>
 
-        <PanelResizeHandle className="h-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-row-resize flex items-center justify-center -mx-4 z-10 relative">
+        <PanelResizeHandle className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize flex flex-col items-center justify-center -my-4 z-10 relative">
         </PanelResizeHandle>
 
         <Panel id={MEMO_CONTENT_PANEL_ID} minSize={MEMO_CONTENT_MIN_SIZE} className="min-w-0">

@@ -110,8 +110,84 @@ describe("syncMapper project tombstones", () => {
     });
 
     const { merged, conflicts } = mergeSyncBundles(local, remote);
-    expect(conflicts.chapters).toBe(1);
+    expect(conflicts.chapters).toBe(0);
     expect(merged.chapters.filter((chapter) => chapter.title.includes("(Conflict Copy)"))).toHaveLength(0);
     expect(merged.chapters).toHaveLength(1);
+  });
+
+  it("does not create conflict copy without entity baseline", () => {
+    const local = createEmptySyncBundle();
+    local.chapters.push({
+      id: "chapter-1",
+      userId: "user-1",
+      projectId: "project-1",
+      title: "Chapter",
+      content: "local text",
+      order: 0,
+      wordCount: 10,
+      createdAt: "2026-02-22T00:00:00.000Z",
+      updatedAt: "2026-02-22T00:15:00.000Z",
+    });
+
+    const remote = createEmptySyncBundle();
+    remote.chapters.push({
+      id: "chapter-1",
+      userId: "user-1",
+      projectId: "project-1",
+      title: "Chapter",
+      content: "remote text",
+      order: 0,
+      wordCount: 11,
+      createdAt: "2026-02-22T00:00:00.000Z",
+      updatedAt: "2026-02-22T00:16:00.000Z",
+    });
+
+    const { merged, conflicts } = mergeSyncBundles(local, remote);
+    expect(conflicts.chapters).toBe(0);
+    expect(merged.chapters.filter((chapter) => chapter.title.includes("(Conflict Copy)"))).toHaveLength(0);
+    expect(merged.chapters).toHaveLength(1);
+  });
+
+  it("creates conflict copy only when both sides changed after baseline", () => {
+    const local = createEmptySyncBundle();
+    local.chapters.push({
+      id: "chapter-1",
+      userId: "user-1",
+      projectId: "project-1",
+      title: "Chapter",
+      content: "local text",
+      order: 0,
+      wordCount: 10,
+      createdAt: "2026-02-22T00:00:00.000Z",
+      updatedAt: "2026-02-22T00:15:00.000Z",
+    });
+
+    const remote = createEmptySyncBundle();
+    remote.chapters.push({
+      id: "chapter-1",
+      userId: "user-1",
+      projectId: "project-1",
+      title: "Chapter",
+      content: "remote text",
+      order: 0,
+      wordCount: 11,
+      createdAt: "2026-02-22T00:00:00.000Z",
+      updatedAt: "2026-02-22T00:16:00.000Z",
+    });
+
+    const { merged, conflicts } = mergeSyncBundles(local, remote, {
+      baselinesByProjectId: {
+        "project-1": {
+          chapter: {
+            "chapter-1": "2026-02-22T00:10:00.000Z",
+          },
+          memo: {},
+          capturedAt: "2026-02-22T00:10:00.000Z",
+        },
+      },
+    });
+    expect(conflicts.chapters).toBe(1);
+    expect(merged.chapters.filter((chapter) => chapter.title.includes("(Conflict Copy)"))).toHaveLength(1);
+    expect(merged.chapters).toHaveLength(2);
   });
 });

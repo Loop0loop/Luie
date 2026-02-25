@@ -1,6 +1,7 @@
 import { useEffect, useRef, useMemo } from "react";
 import { useShortcuts } from "@renderer/features/workspace/hooks/useShortcuts";
 import { emitShortcutCommand } from "@renderer/features/workspace/hooks/useShortcutCommand";
+import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { api } from "@shared/api";
 import {
     EDITOR_TOOLBAR_FONT_MIN,
@@ -90,7 +91,12 @@ export function useEditorRootShortcuts({
     const shortcutHandlers = useMemo(
         () => ({
             "app.openSettings": () => setIsSettingsOpen(true),
-            "app.closeWindow": () => void api.window.close(),
+            "app.closeWindow": () => {
+                const closedSurface = useUIStore.getState().closeFocusedSurface();
+                if (!closedSurface) {
+                    void api.window.close();
+                }
+            },
             "app.quit": () => void api.app.quit(),
             "chapter.new": () => void handleAddChapter(),
             "chapter.save": () => void handleSave(activeChapterTitle, content),

@@ -173,6 +173,11 @@ const parseJsonSafely = parseWorldJsonSafely;
 
 type LuieMeta = z.infer<typeof LuieMetaSchema>;
 type ExistingProjectLookup = { id: string; updatedAt: Date } | null;
+type LuieMetaReadResult = {
+  meta: LuieMeta | null;
+  luieCorrupted: boolean;
+  recoveryReason?: "missing" | "corrupt";
+};
 type ChapterCreateRow = {
   id: string;
   projectId: string;
@@ -216,6 +221,7 @@ type LuieImportCollections = {
 
 export class ProjectService {
   private exportTimers = new Map<string, NodeJS.Timeout>();
+  private exportInFlight = new Map<string, Promise<void>>();
 
   async createProject(input: ProjectCreateInput) {
     try {
@@ -255,7 +261,17 @@ export class ProjectService {
 
   private async readMetaOrMarkCorrupt(
     resolvedPath: string,
-  ): Promise<{ meta: LuieMeta | null; luieCorrupted: boolean }> {
+  ): Promise<LuieMetaReadResult> {
+    try {
+      await fs.access(resolvedPath);
+    } catch {
+      return {
+        meta: null,
+        luieCorrupted: true,
+        recoveryReason: "missing",
+      };
+    }
+
     try {
       const metaRaw = await readLuieEntry(resolvedPath, LUIE_PACKAGE_META_FILENAME, logger);
       if (!metaRaw) {
@@ -271,7 +287,7 @@ export class ProjectService {
         packagePath: resolvedPath,
         error,
       });
-      return { meta: null, luieCorrupted: true };
+      return { meta: null, luieCorrupted: true, recoveryReason: "corrupt" };
     }
   }
 
@@ -295,12 +311,36 @@ export class ProjectService {
     return { resolvedProjectId, legacyProjectId };
   }
 
-  private shouldUseDatabaseAsSource(
-    existing: ExistingProjectLookup,
-    meta: LuieMeta,
-  ): boolean {
-    const metaUpdatedAt = meta.updatedAt ? new Date(meta.updatedAt) : null;
-    return Boolean(existing && metaUpdatedAt && existing.updatedAt > metaUpdatedAt);
+  private buildRecoveryTimestamp(date = new Date()): string {
+    const pad = (value: number) => String(value).padStart(2, "0");
+    return (
+      `${date.getFullYear()}` +
+      `${pad(date.getMonth() + 1)}` +
+      `${pad(date.getDate())}` +
+      `-${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`
+    );
+  }
+
+  private async resolveRecoveredPackagePath(resolvedPath: string): Promise<string> {
+    const normalized = ensureLuieExtension(resolvedPath);
+    const ext = LUIE_PACKAGE_EXTENSION;
+    const lower = normalized.toLowerCase();
+    const base = lower.endsWith(ext)
+      ? normalized.slice(0, normalized.length - ext.length)
+      : normalized;
+    const timestamp = this.buildRecoveryTimestamp();
+    let candidate = `${base}.recovered-${timestamp}${ext}`;
+    let suffix = 1;
+
+    for (;;) {
+      try {
+        await fs.access(candidate);
+        candidate = `${base}.recovered-${timestamp}-${suffix}${ext}`;
+        suffix += 1;
+      } catch {
+        return candidate;
+      }
+    }
   }
 
   private async readLuieImportCollections(
@@ -517,7 +557,9 @@ export class ProjectService {
   async openLuieProject(packagePath: string) {
     try {
       const resolvedPath = ensureLuieExtension(packagePath);
-      const { meta, luieCorrupted } = await this.readMetaOrMarkCorrupt(resolvedPath);
+      const { meta, luieCorrupted, recoveryReason } = await this.readMetaOrMarkCorrupt(
+        resolvedPath,
+      );
       const existingByPath = await this.findProjectByPath(resolvedPath);
 
       if (luieCorrupted) {
@@ -528,9 +570,29 @@ export class ProjectService {
             { packagePath: resolvedPath },
           );
         }
-        await this.exportProjectPackage(existingByPath.id);
+        const recoveryPath = await this.resolveRecoveredPackagePath(resolvedPath);
+        const exported = await this.exportProjectPackageWithOptions(existingByPath.id, {
+          targetPath: recoveryPath,
+          worldSourcePath: null,
+        });
+        if (!exported) {
+          throw new ServiceError(
+            ErrorCode.FS_WRITE_FAILED,
+            "Failed to write recovered .luie package",
+            { packagePath: resolvedPath, recoveryPath },
+          );
+        }
+        await db.getClient().project.update({
+          where: { id: existingByPath.id },
+          data: { projectPath: recoveryPath },
+        });
         const project = await this.getProject(existingByPath.id);
-        return { project, recovery: true };
+        return {
+          project,
+          recovery: true,
+          recoveryPath,
+          recoveryReason: recoveryReason ?? "corrupt",
+        };
       }
 
       if (!meta) {
@@ -546,16 +608,6 @@ export class ProjectService {
         where: { id: resolvedProjectId },
         select: { id: true, updatedAt: true },
       })) as ExistingProjectLookup;
-
-      if (this.shouldUseDatabaseAsSource(existing, meta)) {
-        logger.info("DB newer than .luie package; exporting", {
-          projectId: resolvedProjectId,
-          packagePath,
-        });
-        await this.exportProjectPackage(resolvedProjectId);
-        const project = await this.getProject(resolvedProjectId);
-        return { project, conflict: "db-newer" };
-      }
 
       const chaptersMeta = meta.chapters ?? [];
       const collections = await this.readLuieImportCollections(resolvedPath);
@@ -759,6 +811,18 @@ export class ProjectService {
     }
   }
 
+  private clearSyncBaselineForProject(projectId: string): void {
+    const syncSettings = settingsManager.getSyncSettings();
+    const existingBaselines = syncSettings.entityBaselinesByProjectId;
+    if (!existingBaselines || !(projectId in existingBaselines)) return;
+    const nextBaselines = { ...existingBaselines };
+    delete nextBaselines[projectId];
+    settingsManager.setSyncSettings({
+      entityBaselinesByProjectId:
+        Object.keys(nextBaselines).length > 0 ? nextBaselines : undefined,
+    });
+  }
+
   async deleteProject(id: string) {
     let queuedProjectDelete = false;
 
@@ -785,6 +849,8 @@ export class ProjectService {
       await db.getClient().project.delete({
         where: { id },
       });
+
+      this.clearSyncBaselineForProject(id);
 
       logger.info("Project deleted successfully", { projectId: id });
       return { success: true };
@@ -824,6 +890,8 @@ export class ProjectService {
         where: { id },
       });
 
+      this.clearSyncBaselineForProject(id);
+
       logger.info("Project removed from list", { projectId: id });
       return { success: true };
     } catch (error) {
@@ -849,13 +917,80 @@ export class ProjectService {
     const timer = setTimeout(async () => {
       this.exportTimers.delete(projectId);
       try {
-        await this.exportProjectPackage(projectId);
+        await this.runPackageExport(projectId);
       } catch (error) {
         logger.error("Failed to export project package", { projectId, reason, error });
       }
     }, PACKAGE_EXPORT_DEBOUNCE_MS);
 
     this.exportTimers.set(projectId, timer);
+  }
+
+  private runPackageExport(projectId: string): Promise<void> {
+    const current = this.exportInFlight.get(projectId);
+    if (current) {
+      return current;
+    }
+
+    const task = this.exportProjectPackage(projectId)
+      .catch((error) => {
+        logger.error("Failed to run package export", { projectId, error });
+        throw error;
+      })
+      .finally(() => {
+        this.exportInFlight.delete(projectId);
+      });
+
+    this.exportInFlight.set(projectId, task);
+    return task;
+  }
+
+  async flushPendingExports(timeoutMs = 8_000): Promise<{
+    total: number;
+    flushed: number;
+    failed: number;
+    timedOut: boolean;
+  }> {
+    const pendingProjectIds = new Set<string>([
+      ...this.exportTimers.keys(),
+      ...this.exportInFlight.keys(),
+    ]);
+
+    for (const [projectId, timer] of this.exportTimers.entries()) {
+      clearTimeout(timer);
+      this.exportTimers.delete(projectId);
+    }
+
+    if (pendingProjectIds.size === 0) {
+      return { total: 0, flushed: 0, failed: 0, timedOut: false };
+    }
+
+    let flushed = 0;
+    let failed = 0;
+    const jobs = Array.from(pendingProjectIds).map(async (projectId) => {
+      try {
+        await this.runPackageExport(projectId);
+        flushed += 1;
+      } catch {
+        failed += 1;
+      }
+    });
+
+    const completion = Promise.all(jobs).then(() => true);
+    const timedOut = await new Promise<boolean>((resolve) => {
+      const timer = setTimeout(() => resolve(true), timeoutMs);
+      void completion.then(() => {
+        clearTimeout(timer);
+        resolve(false);
+      });
+    });
+
+    return {
+      total: pendingProjectIds.size,
+      flushed,
+      failed,
+      timedOut,
+    };
   }
 
   private async getProjectForExport(projectId: string): Promise<ProjectExportRecord | null> {
@@ -956,28 +1091,52 @@ export class ProjectService {
       : rawSnapshots;
   }
 
-  private async readWorldPayloadFromPackage(projectPath: string) {
-    const [
-      existingSynopsisRaw,
-      existingPlotRaw,
-      existingDrawingRaw,
-      existingMindmapRaw,
-      existingMemosRaw,
-    ] = await Promise.all([
-      readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`, logger),
-      readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_PLOT_FILE}`, logger),
-      readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`, logger),
-      readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_MINDMAP_FILE}`, logger),
-      readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SCRAP_MEMOS_FILE}`, logger),
-    ]);
+  private async readWorldPayloadFromPackage(projectPath?: string | null) {
+    if (!projectPath || !projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
+      return {
+        synopsis: LuieWorldSynopsisSchema.safeParse(null),
+        plot: LuieWorldPlotSchema.safeParse(null),
+        drawing: LuieWorldDrawingSchema.safeParse(null),
+        mindmap: LuieWorldMindmapSchema.safeParse(null),
+        memos: LuieWorldScrapMemosSchema.safeParse(null),
+      };
+    }
 
-    return {
-      synopsis: LuieWorldSynopsisSchema.safeParse(parseJsonSafely(existingSynopsisRaw)),
-      plot: LuieWorldPlotSchema.safeParse(parseJsonSafely(existingPlotRaw)),
-      drawing: LuieWorldDrawingSchema.safeParse(parseJsonSafely(existingDrawingRaw)),
-      mindmap: LuieWorldMindmapSchema.safeParse(parseJsonSafely(existingMindmapRaw)),
-      memos: LuieWorldScrapMemosSchema.safeParse(parseJsonSafely(existingMemosRaw)),
-    };
+    try {
+      const [
+        existingSynopsisRaw,
+        existingPlotRaw,
+        existingDrawingRaw,
+        existingMindmapRaw,
+        existingMemosRaw,
+      ] = await Promise.all([
+        readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`, logger),
+        readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_PLOT_FILE}`, logger),
+        readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`, logger),
+        readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_MINDMAP_FILE}`, logger),
+        readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SCRAP_MEMOS_FILE}`, logger),
+      ]);
+
+      return {
+        synopsis: LuieWorldSynopsisSchema.safeParse(parseJsonSafely(existingSynopsisRaw)),
+        plot: LuieWorldPlotSchema.safeParse(parseJsonSafely(existingPlotRaw)),
+        drawing: LuieWorldDrawingSchema.safeParse(parseJsonSafely(existingDrawingRaw)),
+        mindmap: LuieWorldMindmapSchema.safeParse(parseJsonSafely(existingMindmapRaw)),
+        memos: LuieWorldScrapMemosSchema.safeParse(parseJsonSafely(existingMemosRaw)),
+      };
+    } catch (error) {
+      logger.warn("Failed to read world payload from package; falling back to defaults", {
+        projectPath,
+        error,
+      });
+      return {
+        synopsis: LuieWorldSynopsisSchema.safeParse(null),
+        plot: LuieWorldPlotSchema.safeParse(null),
+        drawing: LuieWorldDrawingSchema.safeParse(null),
+        mindmap: LuieWorldMindmapSchema.safeParse(null),
+        memos: LuieWorldScrapMemosSchema.safeParse(null),
+      };
+    }
   }
 
   private buildWorldSynopsis(
@@ -1101,16 +1260,31 @@ export class ProjectService {
     };
   }
 
-  async exportProjectPackage(projectId: string) {
+  private async exportProjectPackageWithOptions(
+    projectId: string,
+    options?: {
+      targetPath?: string;
+      worldSourcePath?: string | null;
+    },
+  ): Promise<boolean> {
     const project = await this.getProjectForExport(projectId);
-    const exportPath = this.resolveExportPath(projectId, project?.projectPath);
-    if (!project || !exportPath) return;
+    if (!project) return false;
+
+    const exportPath = options?.targetPath
+      ? ensureLuieExtension(options.targetPath)
+      : this.resolveExportPath(projectId, project.projectPath);
+    if (!exportPath) return false;
+
+    const worldSourcePath =
+      options?.worldSourcePath === undefined
+        ? exportPath
+        : options.worldSourcePath;
 
     const { exportChapters, chapterMeta } = this.buildExportChapterData(project.chapters);
     const characters = this.buildExportCharacterData(project.characters);
     const terms = this.buildExportTermData(project.terms);
     const snapshots = this.buildExportSnapshotData(project.snapshots);
-    const parsedWorld = await this.readWorldPayloadFromPackage(exportPath);
+    const parsedWorld = await this.readWorldPayloadFromPackage(worldSourcePath);
 
     const synopsis = this.buildWorldSynopsis(project, parsedWorld.synopsis);
     const plot = this.buildWorldPlot(parsedWorld.plot);
@@ -1144,6 +1318,11 @@ export class ProjectService {
       },
       logger,
     );
+    return true;
+  }
+
+  async exportProjectPackage(projectId: string) {
+    await this.exportProjectPackageWithOptions(projectId);
   }
 }
 

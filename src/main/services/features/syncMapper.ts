@@ -1,5 +1,8 @@
 import { randomUUID } from "node:crypto";
-import type { SyncConflictSummary } from "../../../shared/types/index.js";
+import type {
+  SyncConflictSummary,
+  SyncEntityBaseline,
+} from "../../../shared/types/index.js";
 
 export type SyncWorldDocumentType =
   | "synopsis"
@@ -93,6 +96,10 @@ export type SyncBundle = {
   tombstones: SyncTombstoneRecord[];
 };
 
+type MergeSyncBundlesOptions = {
+  baselinesByProjectId?: Record<string, SyncEntityBaseline>;
+};
+
 export const createEmptySyncBundle = (): SyncBundle => ({
   projects: [],
   chapters: [],
@@ -108,6 +115,19 @@ const toTimestamp = (value: string | undefined | null): number => {
   if (!value) return 0;
   const parsed = Date.parse(value);
   return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const getEntityBaselineTimestamp = (
+  baselinesByProjectId: Record<string, SyncEntityBaseline> | undefined,
+  projectId: string,
+  entityType: "chapter" | "memo",
+  entityId: string,
+): number => {
+  const projectBaseline = baselinesByProjectId?.[projectId];
+  if (!projectBaseline) return 0;
+  const entityMap =
+    entityType === "chapter" ? projectBaseline.chapter : projectBaseline.memo;
+  return toTimestamp(entityMap[entityId]);
 };
 
 const chooseLatest = <T extends { updatedAt: string }>(left: T, right: T): [winner: T, loser: T] => {
@@ -190,11 +210,11 @@ const mergeWithTextConflictCopies = <
     }
     const [winner, loser] = chooseLatest(localItem, remoteItem);
     if (localItem.content !== remoteItem.content) {
-      conflicts += 1;
       const shouldCreate = shouldCreateConflictCopy
         ? shouldCreateConflictCopy(localItem, remoteItem)
         : true;
       if (shouldCreate) {
+        conflicts += 1;
         const copy = buildConflictCopy(loser);
         merged.set(copy.id, copy);
       }
@@ -299,6 +319,7 @@ const applyTombstonesToBundle = (bundle: SyncBundle): SyncBundle => {
 export const mergeSyncBundles = (
   local: SyncBundle,
   remote: SyncBundle,
+  options?: MergeSyncBundlesOptions,
 ): {
   merged: SyncBundle;
   conflicts: SyncConflictSummary;
@@ -308,6 +329,7 @@ export const mergeSyncBundles = (
       (tombstone) => `${tombstone.entityType}:${tombstone.entityId}`,
     ),
   );
+  const baselinesByProjectId = options?.baselinesByProjectId;
 
   const chapterMerged = mergeWithTextConflictCopies(
     local.chapters,
@@ -320,10 +342,24 @@ export const mergeSyncBundles = (
       updatedAt: new Date().toISOString(),
     }),
     (localItem, remoteItem) =>
+      localItem.projectId === remoteItem.projectId &&
       !localItem.deletedAt &&
       !remoteItem.deletedAt &&
       !tombstoneSet.has(`chapter:${localItem.id}`) &&
-      !tombstoneSet.has(`chapter:${remoteItem.id}`),
+      !tombstoneSet.has(`chapter:${remoteItem.id}`) &&
+      (() => {
+        const baselineAt = getEntityBaselineTimestamp(
+          baselinesByProjectId,
+          localItem.projectId,
+          "chapter",
+          localItem.id,
+        );
+        if (baselineAt <= 0) return false;
+        return (
+          toTimestamp(localItem.updatedAt) > baselineAt &&
+          toTimestamp(remoteItem.updatedAt) > baselineAt
+        );
+      })(),
   );
 
   const memoMerged = mergeWithTextConflictCopies(
@@ -336,10 +372,24 @@ export const mergeSyncBundles = (
       updatedAt: new Date().toISOString(),
     }),
     (localItem, remoteItem) =>
+      localItem.projectId === remoteItem.projectId &&
       !localItem.deletedAt &&
       !remoteItem.deletedAt &&
       !tombstoneSet.has(`memo:${localItem.id}`) &&
-      !tombstoneSet.has(`memo:${remoteItem.id}`),
+      !tombstoneSet.has(`memo:${remoteItem.id}`) &&
+      (() => {
+        const baselineAt = getEntityBaselineTimestamp(
+          baselinesByProjectId,
+          localItem.projectId,
+          "memo",
+          localItem.id,
+        );
+        if (baselineAt <= 0) return false;
+        return (
+          toTimestamp(localItem.updatedAt) > baselineAt &&
+          toTimestamp(remoteItem.updatedAt) > baselineAt
+        );
+      })(),
   );
 
   const merged: SyncBundle = {

@@ -124,6 +124,33 @@ export class AutoSaveManager extends EventEmitter {
     return Array.from(this.pendingSaves.keys());
   }
 
+  async forgetChapter(projectId: string, chapterId: string): Promise<void> {
+    const timer = this.saveTimers.get(chapterId);
+    if (timer) {
+      clearTimeout(timer);
+      this.saveTimers.delete(chapterId);
+    }
+
+    this.pendingSaves.delete(chapterId);
+    this.lastSaveAt.delete(chapterId);
+
+    const snapshotKey = `${projectId}:${chapterId}`;
+    this.lastSnapshotAt.delete(snapshotKey);
+    this.lastSnapshotHash.delete(snapshotKey);
+    this.lastSnapshotLength.delete(snapshotKey);
+    this.lastEmergencySnapshotAt.delete(snapshotKey);
+    this.snapshotQueue = this.snapshotQueue.filter(
+      (job) => !(job.projectId === projectId && job.chapterId === chapterId),
+    );
+
+    try {
+      const baseDir = this.getMirrorBaseDir(projectId, chapterId);
+      await fs.rm(baseDir, { recursive: true, force: true });
+    } catch (error) {
+      logger.warn("Failed to purge chapter mirrors", { projectId, chapterId, error });
+    }
+  }
+
   setConfig(projectId: string, config: AutoSaveConfig) {
     this.configs.set(projectId, config);
 
@@ -151,6 +178,22 @@ export class AutoSaveManager extends EventEmitter {
     const config = this.getConfig(projectId);
 
     if (!config.enabled) {
+      return;
+    }
+
+    const chapter = await db.getClient().chapter.findUnique({
+      where: { id: chapterId },
+      select: { projectId: true, deletedAt: true },
+    });
+    if (
+      !chapter ||
+      String((chapter as { projectId: unknown }).projectId) !== projectId ||
+      Boolean((chapter as { deletedAt?: unknown }).deletedAt)
+    ) {
+      logger.info("Skipping auto-save for missing/deleted chapter", {
+        chapterId,
+        projectId,
+      });
       return;
     }
 
@@ -467,11 +510,21 @@ export class AutoSaveManager extends EventEmitter {
         // FK safety: verify chapter exists
         const chapter = await db.getClient().chapter.findUnique({
           where: { id: payload.chapterId },
-          select: { id: true, projectId: true },
+          select: { id: true, projectId: true, deletedAt: true },
         });
 
         if (!chapter) {
           logger.warn("Mirror snapshot skipped (missing chapter), cleaning up stale mirror", {
+            chapterId: payload.chapterId,
+            filePath,
+          });
+          await this.cleanStaleMirrorDir(filePath);
+          cleaned += 1;
+          continue;
+        }
+        const chapterDeletedAt = (chapter as { deletedAt?: unknown }).deletedAt;
+        if (chapterDeletedAt !== null && chapterDeletedAt !== undefined) {
+          logger.info("Mirror snapshot skipped (chapter deleted), cleaning up", {
             chapterId: payload.chapterId,
             filePath,
           });

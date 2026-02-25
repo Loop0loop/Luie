@@ -77,15 +77,8 @@ export default function GoogleDocsLayout({
     setDocsRightTab: setActiveRightTab,
     setBinderBarOpen,
     setSidebarWidth,
+    setFocusedClosableTarget,
   } = useUIStore();
-
-  const [containerWidth, setContainerWidth] = useState(window.innerWidth);
-
-  useEffect(() => {
-    const handleResize = () => setContainerWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   /* Keep docs side panel opening behavior centralized */
   useEffect(() => {
@@ -100,35 +93,22 @@ export default function GoogleDocsLayout({
       setActiveRightTab(null);
       return;
     }
+    setFocusedClosableTarget({ kind: "docs-tab" });
     openDocsRightTab(nextTab);
-  }, [activeRightTab, setActiveRightTab]);
-
-  const getPercentage = useCallback((panelSize: PanelSize): number => {
-    if (typeof panelSize === "number") {
-      return panelSize;
-    }
-    const parsed = typeof panelSize === "string" ? Number.parseFloat(panelSize) : Number(panelSize);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }, []);
+  }, [activeRightTab, openDocsRightTab, setActiveRightTab, setFocusedClosableTarget]);
 
   const handleLeftResize = useCallback((panelSize: PanelSize) => {
-    const percentage = getPercentage(panelSize);
-    const pxWidth = (percentage / 100) * containerWidth;
-    setSidebarWidth("binder", Math.round(pxWidth));
-  }, [containerWidth, getPercentage, setSidebarWidth]);
+    setSidebarWidth("binder", Math.round(panelSize.inPixels));
+  }, [setSidebarWidth]);
 
   const handleRightResize = useCallback((panelSize: PanelSize) => {
     if (!activeRightTab) return;
-    const percentage = getPercentage(panelSize);
-    const pxWidth = (percentage / 100) * containerWidth;
-    setSidebarWidth(activeRightTab, Math.round(pxWidth));
-  }, [activeRightTab, containerWidth, getPercentage, setSidebarWidth]);
+    setSidebarWidth(activeRightTab, Math.round(panelSize.inPixels));
+  }, [activeRightTab, setSidebarWidth]);
 
   const leftSavedPxWidth = sidebarWidths["binder"] || 210;
-  const leftDefaultPercentage = (leftSavedPxWidth / containerWidth) * 100;
 
   const rightSavedPxWidth = activeRightTab ? sidebarWidths[activeRightTab] || 350 : 350;
-  const rightDefaultPercentage = (rightSavedPxWidth / containerWidth) * 100;
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-sans transition-colors duration-200">
@@ -226,9 +206,9 @@ export default function GoogleDocsLayout({
             <>
               <Panel
                 id="left-sidebar"
-                defaultSize={leftDefaultPercentage}
-                minSize={220}
-                maxSize={440}
+                defaultSize={`${leftSavedPxWidth}px`}
+                minSize="220px"
+                maxSize="440px"
                 onResize={handleLeftResize}
                 className="bg-background border-r border-border overflow-hidden flex flex-col shrink-0 min-w-0"
               >
@@ -242,10 +222,10 @@ export default function GoogleDocsLayout({
           )}
 
           {/* Main Content Column (Editor + Footer) */}
-          <Panel id="center-content" minSize={130} className="flex-1 flex flex-col min-w-0 bg-secondary/30 relative z-0 transition-colors duration-200">
+          <Panel id="center-content" minSize="130px" className="flex-1 flex flex-col min-w-0 bg-secondary/30 relative z-0 transition-colors duration-200">
             <div className="flex-1 relative flex flex-col overflow-hidden">
               <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative" id="google-docs-split-editor">
-                <Panel id="editor-main-panel" minSize={130} className="min-w-0 bg-transparent relative flex flex-col">
+                <Panel id="editor-main-panel" minSize="130px" className="min-w-0 bg-transparent relative flex flex-col">
                   <EditorDropZones />
                   <main className="flex-1 overflow-y-auto flex flex-col items-center relative custom-scrollbar bg-sidebar">
                     <div className="sticky top-0 z-30 pt-4 pb-2 shrink-0 select-none bg-sidebar/95 backdrop-blur-sm flex justify-center w-full">
@@ -283,11 +263,15 @@ export default function GoogleDocsLayout({
               </PanelResizeHandle>
 
               <Panel
+                key={`right-context-panel-${activeRightTab}`}
                 id="right-context-panel"
-                defaultSize={rightDefaultPercentage}
-                minSize={215}
-                maxSize={830}
+                defaultSize={`${rightSavedPxWidth}px`}
+                minSize="215px"
+                maxSize="830px"
                 onResize={handleRightResize}
+                onMouseDownCapture={() => {
+                  setFocusedClosableTarget({ kind: "docs-tab" });
+                }}
                 className="bg-background border-l border-border overflow-hidden flex flex-col shrink-0 min-w-0"
               >
                 <div className="h-full flex flex-col">

@@ -145,6 +145,7 @@ export const registerAppReady = (logger: Logger): void => {
           "../services/features/snapshotService.js"
         );
         void snapshotService.pruneSnapshotsAllProjects();
+        void snapshotService.cleanupOrphanArtifacts("startup");
       } catch (error) {
         logger.warn("Snapshot recovery/pruning skipped", error);
       }

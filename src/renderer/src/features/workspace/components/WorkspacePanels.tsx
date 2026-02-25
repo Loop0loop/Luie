@@ -3,6 +3,7 @@ import { Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
 import Editor from "@renderer/features/editor/components/Editor";
 import type { ResizablePanelData } from "@renderer/features/workspace/stores/uiStore";
+import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import type { Chapter } from "@shared/types";
 
 // Lazy Loaded Panels
@@ -36,13 +37,21 @@ export function WorkspacePanels({
     onSave,
 }: WorkspacePanelsProps) {
     const { t } = useTranslation();
+    const setFocusedClosableTarget = useUIStore((state) => state.setFocusedClosableTarget);
 
     return (
         <>
             {panels.map((panel) => (
                 <Fragment key={panel.id}>
                     <PanelResizeHandle className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-50 relative" />
-                    <Panel defaultSize={panel.size} minSize={200} className="min-w-0 bg-panel relative flex flex-col">
+                    <Panel
+                        defaultSize={panel.size}
+                        minSize="200px"
+                        onMouseDownCapture={() => {
+                            setFocusedClosableTarget({ kind: "panel", id: panel.id });
+                        }}
+                        className="min-w-0 bg-panel relative flex flex-col"
+                    >
                         <div className="flex justify-between items-center p-2 border-b border-border bg-surface text-xs font-semibold text-muted">
                             <span className="uppercase">{panel.content.type}</span>
                             <button onClick={() => removePanel(panel.id)} className="hover:bg-surface-hover rounded p-1">✕</button>

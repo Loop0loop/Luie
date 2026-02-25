@@ -17,6 +17,8 @@ export interface ProjectOpenResult {
   project: Project;
   recovery?: boolean;
   conflict?: "db-newer" | "luie-newer";
+  recoveryPath?: string;
+  recoveryReason?: "missing" | "corrupt";
 }
 
 export interface Chapter {
@@ -345,6 +347,20 @@ export type AppBootstrapStatus = {
   error?: string;
 };
 
+export type AppQuitPhase =
+  | "idle"
+  | "prepare"
+  | "mirror-durable"
+  | "export-flush"
+  | "finalize"
+  | "aborted"
+  | "completed";
+
+export interface AppQuitPhasePayload {
+  phase: AppQuitPhase;
+  message?: string;
+}
+
 export type SyncProvider = "google";
 export type SyncMode = "idle" | "connecting" | "syncing" | "error";
 
@@ -357,6 +373,12 @@ export interface SyncConflictSummary {
   chapters: number;
   memos: number;
   total: number;
+}
+
+export interface SyncEntityBaseline {
+  chapter: Record<string, string>;
+  memo: Record<string, string>;
+  capturedAt: string;
 }
 
 export interface SyncConnection {
@@ -395,6 +417,7 @@ export interface SyncSettings extends SyncConnection {
   pendingAuthCreatedAt?: string;
   pendingProjectDeletes?: SyncPendingProjectDelete[];
   projectLastSyncedAtByProjectId?: Record<string, string>;
+  entityBaselinesByProjectId?: Record<string, SyncEntityBaseline>;
 }
 
 export interface WindowBounds {

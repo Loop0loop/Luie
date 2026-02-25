@@ -10,6 +10,7 @@ import type {
   Snapshot,
   Term,
   AppBootstrapStatus,
+  AppQuitPhasePayload,
   WindowMenuBarMode,
   SyncRunResult,
   SyncStatus,
@@ -160,6 +161,7 @@ export type RendererApi = {
   autoSave: (chapterId: string, content: string, projectId: string) => Promise<IPCResponse<unknown>>;
   lifecycle: {
     setDirty: (dirty: boolean) => void;
+    onQuitPhase: (callback: (payload: AppQuitPhasePayload) => void) => () => void;
   };
   settings: {
     getAll: () => Promise<IPCResponse<AppSettings>>;
@@ -218,7 +220,13 @@ export type RendererApi = {
 const PRELOAD_UNAVAILABLE_CODE = "PRELOAD_API_UNAVAILABLE";
 const PRELOAD_UNAVAILABLE_MESSAGE =
   "Preload API is unavailable. Restart the app and verify the preload build.";
-const EVENT_SUBSCRIPTION_METHODS = new Set(["onBootstrapStatus", "onStream", "onError", "onStatusChanged"]);
+const EVENT_SUBSCRIPTION_METHODS = new Set([
+  "onBootstrapStatus",
+  "onStream",
+  "onError",
+  "onStatusChanged",
+  "onQuitPhase",
+]);
 const VOID_METHODS = new Set(["setDirty"]);
 
 let apiClient: RendererApi | null = null;

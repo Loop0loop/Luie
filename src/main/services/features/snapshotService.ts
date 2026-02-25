@@ -22,6 +22,7 @@ import type { SnapshotCreateInput } from "../../../shared/types/index.js";
 import { projectService } from "../core/projectService.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import {
+  cleanupOrphanSnapshotArtifacts,
   writeFullSnapshotArtifact,
   readFullSnapshotArtifact,
 } from "./snapshotArtifacts.js";
@@ -29,6 +30,8 @@ import { writeLuiePackage } from "../../handler/system/ipcFsHandlers.js";
 import { sanitizeName } from "../../../shared/utils/sanitize.js";
 
 const logger = createLogger("SnapshotService");
+const ORPHAN_CLEANUP_IDLE_DELAY_MS = 30_000;
+const ORPHAN_CLEANUP_MIN_AGE_MS = 10_000;
 
 async function writeEmergencySnapshotFile(
   input: SnapshotCreateInput,
@@ -90,11 +93,70 @@ async function writeEmergencySnapshotFile(
 }
 
 export class SnapshotService {
+  private orphanArtifactIds = new Set<string>();
+  private orphanCleanupTimer: NodeJS.Timeout | null = null;
+
+  private scheduleOrphanArtifactCleanup(): void {
+    if (this.orphanCleanupTimer) return;
+    this.orphanCleanupTimer = setTimeout(() => {
+      this.orphanCleanupTimer = null;
+      void this.cleanupOrphanArtifacts("idle").catch((error) => {
+        logger.warn("Idle orphan artifact cleanup failed", { error });
+      });
+    }, ORPHAN_CLEANUP_IDLE_DELAY_MS);
+    if (typeof this.orphanCleanupTimer.unref === "function") {
+      this.orphanCleanupTimer.unref();
+    }
+  }
+
+  private queueOrphanArtifactCleanup(snapshotId: string): void {
+    this.orphanArtifactIds.add(snapshotId);
+    this.scheduleOrphanArtifactCleanup();
+  }
+
+  async cleanupOrphanArtifacts(
+    trigger: "startup" | "idle" = "idle",
+  ): Promise<{ scanned: number; deleted: number }> {
+    if (trigger === "startup") {
+      const result = await cleanupOrphanSnapshotArtifacts();
+      logger.info("Startup orphan artifact cleanup completed", result);
+      return result;
+    }
+
+    const queuedIds = Array.from(this.orphanArtifactIds);
+    if (queuedIds.length === 0) {
+      return { scanned: 0, deleted: 0 };
+    }
+
+    for (const id of queuedIds) {
+      this.orphanArtifactIds.delete(id);
+    }
+
+    try {
+      const result = await cleanupOrphanSnapshotArtifacts({
+        snapshotIds: queuedIds,
+        minAgeMs: ORPHAN_CLEANUP_MIN_AGE_MS,
+      });
+      logger.info("Queued orphan artifact cleanup completed", {
+        queued: queuedIds.length,
+        ...result,
+      });
+      return result;
+    } catch (error) {
+      for (const id of queuedIds) {
+        this.orphanArtifactIds.add(id);
+      }
+      throw error;
+    }
+  }
+
   async createSnapshot(input: SnapshotCreateInput) {
+    const snapshotId = randomUUID();
     try {
       const snapshotType = input.type ?? "AUTO";
       const contentLength = input.content.length;
       logger.info("Creating snapshot", {
+        snapshotId,
         projectId: input.projectId,
         chapterId: input.chapterId,
         hasContent: Boolean(input.content),
@@ -102,8 +164,11 @@ export class SnapshotService {
         type: snapshotType,
       });
 
+      await writeFullSnapshotArtifact(snapshotId, input);
+
       const snapshot = await db.getClient().snapshot.create({
         data: {
+          id: snapshotId,
           projectId: input.projectId,
           chapterId: input.chapterId,
           content: input.content,
@@ -113,15 +178,16 @@ export class SnapshotService {
         },
       });
 
-      await writeFullSnapshotArtifact(String(snapshot.id), input);
-
       logger.info("Snapshot created successfully", { snapshotId: snapshot.id });
       projectService.schedulePackageExport(input.projectId, "snapshot:create");
+      this.scheduleOrphanArtifactCleanup();
       return snapshot;
     } catch (error) {
+      this.queueOrphanArtifactCleanup(snapshotId);
       await writeEmergencySnapshotFile(input, error);
       logger.error("Failed to create snapshot", {
         error,
+        snapshotId,
         projectId: input.projectId,
         chapterId: input.chapterId,
       });
@@ -208,6 +274,7 @@ export class SnapshotService {
       await db.getClient().snapshot.delete({
         where: { id },
       });
+      this.queueOrphanArtifactCleanup(id);
 
       logger.info("Snapshot deleted successfully", { snapshotId: id });
       if ((snapshot as { projectId?: unknown })?.projectId) {
@@ -532,6 +599,9 @@ export class SnapshotService {
       );
 
       await Promise.all(deletePromises);
+      for (const snapshot of toDelete) {
+        this.queueOrphanArtifactCleanup(snapshot.id);
+      }
 
       logger.info("Old snapshots deleted successfully", {
         projectId,
@@ -606,6 +676,9 @@ export class SnapshotService {
       await db.getClient().snapshot.deleteMany({
         where: { id: { in: toDelete } },
       });
+      for (const snapshotId of toDelete) {
+        this.queueOrphanArtifactCleanup(snapshotId);
+      }
 
       logger.info("Snapshots pruned", {
         projectId,

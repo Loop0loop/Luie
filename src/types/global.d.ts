@@ -8,6 +8,7 @@ import type {
   EditorSettings,
   AppSettings,
   AppBootstrapStatus,
+  AppQuitPhasePayload,
   SearchResult,
   SyncRunResult,
   SyncStatus,
@@ -182,6 +183,7 @@ declare global {
 
       lifecycle: {
         setDirty: (dirty: boolean) => void;
+        onQuitPhase: (callback: (payload: AppQuitPhasePayload) => void) => () => void;
       };
 
       // Settings API

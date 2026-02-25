@@ -9,12 +9,11 @@ import { useProjectStore } from "@renderer/features/project/stores/projectStore"
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useProjectInit } from "@renderer/features/project/hooks/useProjectInit";
-import { useFileImport } from "@renderer/features/project/hooks/useFileImport";
 import { useProjectTemplate } from "@renderer/features/project/hooks/useProjectTemplate";
 import { useShortcutStore } from "@renderer/features/workspace/stores/shortcutStore";
 import { useToast } from "@shared/ui/ToastContext";
 import { appBootstrapStatusSchema } from "@shared/schemas/index.js";
-import type { AppBootstrapStatus } from "@shared/types/index.js";
+import type { AppBootstrapStatus, AppQuitPhasePayload } from "@shared/types/index.js";
 import { api } from "@shared/api";
 import {
   captureUiModeIntegritySnapshot,
@@ -51,6 +50,7 @@ export default function App() {
   const [isBootstrapLoading, setIsBootstrapLoading] = useState(true);
   const uiModeIntegrityRef = useRef<UiModeIntegritySnapshot | null>(null);
   const [windowMode, setWindowMode] = useState<WindowMode>(getWindowMode());
+  const [quitPhase, setQuitPhase] = useState<AppQuitPhasePayload | null>(null);
 
   useEffect(() => {
     const checkHash = () => {
@@ -109,6 +109,19 @@ export default function App() {
   const { currentProject } = useProjectInit(bootstrapStatus.isReady);
 
   useEffect(() => {
+    const unsubscribe = api.lifecycle.onQuitPhase((payload) => {
+      if (!payload || typeof payload !== "object") return;
+      const next = payload as Partial<AppQuitPhasePayload>;
+      if (typeof next.phase !== "string") return;
+      setQuitPhase({
+        phase: next.phase as AppQuitPhasePayload["phase"],
+        message: typeof next.message === "string" ? next.message : undefined,
+      });
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     if (themeTemp) document.documentElement.setAttribute("data-temp", themeTemp);
     if (themeContrast) document.documentElement.setAttribute("data-contrast", themeContrast);
@@ -161,8 +174,6 @@ export default function App() {
 
   const { handleSelectProject } = useProjectTemplate((_id: string) => { });
 
-  useFileImport(currentProject);
-
   const handleOpenExistingProject = useCallback(
     (project: (typeof projects)[number]) => {
       if (project.pathMissing) {
@@ -201,9 +212,6 @@ export default function App() {
         if (imported.data.recovery) {
           showToast(t("project.toast.recoveredFromDb"), "info");
         }
-        if (imported.data.conflict === "db-newer") {
-          showToast(t("project.toast.dbNewerSynced"), "info");
-        }
       }
     } catch (error) {
       api.logger.error("Failed to open luie file", error);
@@ -228,78 +236,120 @@ export default function App() {
     }
   }, [loadProjects, setCurrentProject, setView]);
 
+  const shouldBlockUiForQuit =
+    quitPhase !== null &&
+    quitPhase.phase !== "idle" &&
+    quitPhase.phase !== "aborted" &&
+    quitPhase.phase !== "completed";
+
+  const quitOverlayMessage =
+    quitPhase?.message ??
+    t("bootstrap.initializing");
+
+  const quitOverlay = shouldBlockUiForQuit ? (
+    <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center px-6">
+      <div className="w-full max-w-xl rounded-2xl border border-border bg-panel p-6 shadow-lg">
+        <p className="text-base font-semibold text-fg">
+          {t("bootstrap.quit")}
+        </p>
+        <p className="mt-2 text-sm text-muted">
+          {quitOverlayMessage}
+        </p>
+      </div>
+    </div>
+  ) : null;
+
   if (windowMode === "export") {
     return (
-      <Suspense fallback={<div className="flex items-center justify-center h-screen bg-[#333] text-white">{t("common.loading")}</div>}>
-        <ExportWindow />
-      </Suspense>
+      <>
+        <Suspense fallback={<div className="flex items-center justify-center h-screen bg-[#333] text-white">{t("common.loading")}</div>}>
+          <ExportWindow />
+        </Suspense>
+        {quitOverlay}
+      </>
     );
   }
 
   if (windowMode === "oauth-result") {
-    return <OAuthResultPage />;
+    return (
+      <>
+        <OAuthResultPage />
+        {quitOverlay}
+      </>
+    );
   }
 
   if (!bootstrapStatus.isReady) {
     const showError = Boolean(bootstrapStatus.error) && !isBootstrapLoading;
 
     return (
-      <div className="min-h-screen bg-app text-fg flex items-center justify-center px-6">
-        <div className="w-full max-w-3xl rounded-2xl border border-border bg-panel p-8 shadow-lg">
-          <div className="space-y-4">
-            <div className="h-6 w-52 rounded-md bg-surface animate-pulse" />
-            <div className="h-4 w-full rounded-md bg-surface animate-pulse" />
-            <div className="h-4 w-[82%] rounded-md bg-surface animate-pulse" />
-            <div className="h-4 w-[68%] rounded-md bg-surface animate-pulse" />
-          </div>
-
-          {!showError && (
-            <p className="mt-6 text-sm text-muted">
-              {t("bootstrap.initializing")}
-            </p>
-          )}
-
-          {showError && (
-            <div className="mt-6 space-y-4">
-              <p className="text-sm text-danger-fg">
-                {bootstrapStatus.error}
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    void refreshBootstrapStatus();
-                  }}
-                  className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 transition-colors"
-                >
-                  {t("bootstrap.retry")}
-                </button>
-                <button
-                  onClick={() => {
-                    void api.app.quit();
-                  }}
-                  className="px-4 py-2 rounded-lg border border-border text-sm font-medium text-fg hover:bg-surface-hover transition-colors"
-                >
-                  {t("bootstrap.quit")}
-                </button>
-              </div>
+      <>
+        <div className="min-h-screen bg-app text-fg flex items-center justify-center px-6">
+          <div className="w-full max-w-3xl rounded-2xl border border-border bg-panel p-8 shadow-lg">
+            <div className="space-y-4">
+              <div className="h-6 w-52 rounded-md bg-surface animate-pulse" />
+              <div className="h-4 w-full rounded-md bg-surface animate-pulse" />
+              <div className="h-4 w-[82%] rounded-md bg-surface animate-pulse" />
+              <div className="h-4 w-[68%] rounded-md bg-surface animate-pulse" />
             </div>
-          )}
+
+            {!showError && (
+              <p className="mt-6 text-sm text-muted">
+                {t("bootstrap.initializing")}
+              </p>
+            )}
+
+            {showError && (
+              <div className="mt-6 space-y-4">
+                <p className="text-sm text-danger-fg">
+                  {bootstrapStatus.error}
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      void refreshBootstrapStatus();
+                    }}
+                    className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 transition-colors"
+                  >
+                    {t("bootstrap.retry")}
+                  </button>
+                  <button
+                    onClick={() => {
+                      void api.app.quit();
+                    }}
+                    className="px-4 py-2 rounded-lg border border-border text-sm font-medium text-fg hover:bg-surface-hover transition-colors"
+                  >
+                    {t("bootstrap.quit")}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+        {quitOverlay}
+      </>
     );
   }
 
   if (view === "template" || !currentProject) {
     return (
-      <ProjectTemplateSelector
-        onSelectProject={handleSelectProject}
-        projects={projects}
-        onOpenProject={handleOpenExistingProject}
-        onOpenLuieFile={handleOpenLuieFile}
-        onOpenSnapshotBackup={handleOpenSnapshotBackup}
-      />
+      <>
+        <ProjectTemplateSelector
+          onSelectProject={handleSelectProject}
+          projects={projects}
+          onOpenProject={handleOpenExistingProject}
+          onOpenLuieFile={handleOpenLuieFile}
+          onOpenSnapshotBackup={handleOpenSnapshotBackup}
+        />
+        {quitOverlay}
+      </>
     );
   }
 
-  return <EditorRoot />;
+  return (
+    <>
+      <EditorRoot />
+      {quitOverlay}
+    </>
+  );
 }

@@ -120,15 +120,23 @@ export class ChapterService {
 
   async updateChapter(input: ChapterUpdateInput) {
     try {
+      const current = await db.getClient().chapter.findUnique({
+        where: { id: input.id },
+        select: { projectId: true, content: true, deletedAt: true },
+      });
+      if ((current as { deletedAt?: unknown } | null)?.deletedAt) {
+        throw new ServiceError(
+          ErrorCode.VALIDATION_FAILED,
+          "Cannot update a deleted chapter",
+          { id: input.id },
+        );
+      }
+
       const updateData: Record<string, unknown> = {};
 
       if (input.title !== undefined) updateData.title = input.title;
       if (input.content !== undefined) {
         const isTest = isTestEnv();
-        const current = await db.getClient().chapter.findUnique({
-          where: { id: input.id },
-          select: { projectId: true, content: true },
-        });
 
         const oldContent = typeof current?.content === "string" ? current.content : "";
         const oldLen = oldContent.length;
@@ -246,6 +254,9 @@ export class ChapterService {
       return updatedChapter;
     } catch (error) {
       logger.error("Failed to update chapter", error);
+      if (error instanceof ServiceError) {
+        throw error;
+      }
       if (isPrismaNotFoundError(error)) {
         throw new ServiceError(
           ErrorCode.CHAPTER_NOT_FOUND,
@@ -274,6 +285,14 @@ export class ChapterService {
         where: { id },
         data: { deletedAt: new Date() },
       });
+
+      if ((chapter as { projectId?: unknown })?.projectId) {
+        const { autoSaveManager } = await import("../../manager/autoSaveManager.js");
+        await autoSaveManager.forgetChapter(
+          String((chapter as { projectId: unknown }).projectId),
+          id,
+        );
+      }
 
       logger.info("Chapter soft-deleted successfully", { chapterId: id });
       if ((chapter as { projectId?: unknown })?.projectId) {
@@ -363,6 +382,14 @@ export class ChapterService {
       });
 
       await db.getClient().chapter.delete({ where: { id } });
+
+      if ((chapter as { projectId?: unknown })?.projectId) {
+        const { autoSaveManager } = await import("../../manager/autoSaveManager.js");
+        await autoSaveManager.forgetChapter(
+          String((chapter as { projectId: unknown }).projectId),
+          id,
+        );
+      }
 
       logger.info("Chapter purged successfully", { chapterId: id });
       if ((chapter as { projectId?: unknown })?.projectId) {

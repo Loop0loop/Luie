@@ -121,6 +121,7 @@ export const IPC_CHANNELS = {
   // App lifecycle (main ↔ renderer quit coordination)
   APP_BEFORE_QUIT: "app:before-quit",
   APP_FLUSH_COMPLETE: "app:flush-complete",
+  APP_QUIT_PHASE: "app:quit-phase",
 
   // Sync
   SYNC_GET_STATUS: "sync:get-status",

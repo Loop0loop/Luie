@@ -457,12 +457,21 @@ contextBridge.exposeInMainWorld("api", {
       scheduleAutoSaveFlush();
     }),
 
-  // Lifecycle API
-  lifecycle: {
-    setDirty: (dirty: boolean): void => {
-      rendererDirty = Boolean(dirty);
-    },
-  },
+	  // Lifecycle API
+	  lifecycle: {
+	    setDirty: (dirty: boolean): void => {
+	      rendererDirty = Boolean(dirty);
+	    },
+	    onQuitPhase: (callback: (payload: unknown) => void): (() => void) => {
+	      const listener = (_event: unknown, payload: unknown) => {
+	        callback(payload);
+	      };
+	      ipcRenderer.on(IPC_CHANNELS.APP_QUIT_PHASE, listener);
+	      return () => {
+	        ipcRenderer.removeListener(IPC_CHANNELS.APP_QUIT_PHASE, listener);
+	      };
+	    },
+	  },
 
   // Window API
   window: {

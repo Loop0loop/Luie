@@ -33,11 +33,10 @@ export default function ResearchPanel({
     analysis: { title: t("research.title.analysis"), icon: <Sparkles className="icon-lg" /> },
   };
 
-  // Safe fallback
-  const { title, icon } = tabConfig[activeTab] ?? {
-    title: t("research.title.default"),
-    icon: <User className="icon-lg" />,
-  };
+  // Safe fallback (keep tabConfig for future extensions if needed)
+  if (!tabConfig[activeTab]) {
+    // This just ensures tabConfig doesn't throw if not found
+  }
 
   const tabs: { id: "character" | "world" | "synopsis" | "scrap" | "analysis"; icon: React.ElementType; label: string }[] = [
     { id: 'character', label: t("research.title.characters"), icon: User },
@@ -79,22 +78,16 @@ export default function ResearchPanel({
           )}
         </div>
       ) : (
-        /* Standard Header (Standard View) */
-        <div className="h-12 flex items-center justify-between px-4 border-b border-border bg-bg-primary shrink-0">
-          <div className="font-semibold text-sm text-fg flex items-center gap-2">
-            {icon}
-            <span>{title}</span>
-          </div>
-          {onClose && (
-            <button
-              className="p-1 rounded text-muted cursor-pointer border-none bg-transparent flex items-center justify-center hover:bg-hover hover:text-fg"
-              onClick={onClose}
-              title={t("research.tooltip.closePanel")}
-            >
-              <X className="icon-lg" />
-            </button>
-          )}
-        </div>
+        /* Standalone View (Close button only, floating) */
+        onClose && (
+          <button
+            className="absolute top-3 right-3 z-10 p-2 rounded-lg text-subtle bg-bg-primary/50 backdrop-blur-sm cursor-pointer border border-border hover:bg-hover hover:text-fg shadow-sm transition-all"
+            onClick={onClose}
+            title={t("research.tooltip.closePanel")}
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )
       )}
 
       <div className="flex-1 flex flex-col overflow-hidden bg-bg-primary relative">
