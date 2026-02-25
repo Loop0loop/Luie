@@ -13,6 +13,8 @@ import Ribbon from "@renderer/features/editor/components/Ribbon";
 import InspectorPanel from "@renderer/features/editor/components/InspectorPanel";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import WikiDetailView from "@renderer/features/research/components/wiki/WikiDetailView";
+import EventDetailView from "@renderer/features/research/components/event/EventDetailView";
+import FactionDetailView from "@renderer/features/research/components/faction/FactionDetailView";
 import WorldSection from "@renderer/features/research/components/WorldSection";
 import MemoMainView from "@renderer/features/research/components/memo/MemoMainView";
 import AnalysisSection from "@renderer/features/research/components/AnalysisSection";
@@ -112,6 +114,10 @@ export default function ScrivenerLayout({
     switch (mainView.type) {
       case "character":
         return <WikiDetailView characterId={mainView.id} />;
+      case "event":
+        return <EventDetailView eventId={mainView.id} />;
+      case "faction":
+        return <FactionDetailView factionId={mainView.id} />;
       case "world":
         return <WorldSection worldId={mainView.id} />;
       case "memo":

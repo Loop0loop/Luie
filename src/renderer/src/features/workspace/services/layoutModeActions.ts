@@ -20,10 +20,12 @@ type LayoutModeActionsOptions = {
 
 const RESEARCH_TAB_TO_DOCS_TAB: Record<
   ResearchTab,
-  "character" | "world" | "scrap" | "analysis"
+  "character" | "world" | "event" | "faction" | "scrap" | "analysis"
 > = {
   character: "character",
   world: "world",
+  event: "event",
+  faction: "faction",
   scrap: "scrap",
   analysis: "analysis",
 };

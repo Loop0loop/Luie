@@ -67,6 +67,38 @@ export const characterUpdateSchema = z.object({
   attributes: z.record(z.string(), z.unknown()).optional(),
 });
 
+export const eventCreateSchema = z.object({
+  projectId: z.string().uuid("Invalid project ID"),
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  firstAppearance: z.string().optional(),
+  attributes: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const eventUpdateSchema = z.object({
+  id: z.string().uuid("Invalid event ID"),
+  name: z.string().min(1, "Name is required").optional(),
+  description: z.string().optional(),
+  firstAppearance: z.string().optional(),
+  attributes: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const factionCreateSchema = z.object({
+  projectId: z.string().uuid("Invalid project ID"),
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  firstAppearance: z.string().optional(),
+  attributes: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const factionUpdateSchema = z.object({
+  id: z.string().uuid("Invalid faction ID"),
+  name: z.string().min(1, "Name is required").optional(),
+  description: z.string().optional(),
+  firstAppearance: z.string().optional(),
+  attributes: z.record(z.string(), z.unknown()).optional(),
+});
+
 export const termCreateSchema = z.object({
   projectId: z.string().uuid("Invalid project ID"),
   term: z.string().min(1, "Term is required"),
@@ -86,6 +118,8 @@ export const termUpdateSchema = z.object({
 export const projectIdSchema = z.string().uuid("Invalid project ID");
 export const chapterIdSchema = z.string().uuid("Invalid chapter ID");
 export const characterIdSchema = z.string().uuid("Invalid character ID");
+export const eventIdSchema = z.string().uuid("Invalid event ID");
+export const factionIdSchema = z.string().uuid("Invalid faction ID");
 export const termIdSchema = z.string().uuid("Invalid term ID");
 export const snapshotIdSchema = z.string().uuid("Invalid snapshot ID");
 

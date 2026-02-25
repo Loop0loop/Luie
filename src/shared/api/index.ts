@@ -3,6 +3,8 @@ import type {
   AppSettings,
   Chapter,
   Character,
+  Event,
+  Faction,
   EditorSettings,
   Project,
   ProjectOpenResult,
@@ -91,6 +93,44 @@ export type RendererApi = {
       category?: string;
       firstAppearance?: string;
     }) => Promise<IPCResponse<Term>>;
+    delete: (id: string) => Promise<IPCResponse<unknown>>;
+  };
+  event: {
+    create: (input: {
+      projectId: string;
+      name: string;
+      description?: string;
+      firstAppearance?: string;
+      attributes?: Record<string, unknown>;
+    }) => Promise<IPCResponse<Event>>;
+    get: (id: string) => Promise<IPCResponse<Event>>;
+    getAll: (projectId: string) => Promise<IPCResponse<Event[]>>;
+    update: (input: {
+      id: string;
+      name?: string;
+      description?: string;
+      firstAppearance?: string;
+      attributes?: Record<string, unknown>;
+    }) => Promise<IPCResponse<Event>>;
+    delete: (id: string) => Promise<IPCResponse<unknown>>;
+  };
+  faction: {
+    create: (input: {
+      projectId: string;
+      name: string;
+      description?: string;
+      firstAppearance?: string;
+      attributes?: Record<string, unknown>;
+    }) => Promise<IPCResponse<Faction>>;
+    get: (id: string) => Promise<IPCResponse<Faction>>;
+    getAll: (projectId: string) => Promise<IPCResponse<Faction[]>>;
+    update: (input: {
+      id: string;
+      name?: string;
+      description?: string;
+      firstAppearance?: string;
+      attributes?: Record<string, unknown>;
+    }) => Promise<IPCResponse<Faction>>;
     delete: (id: string) => Promise<IPCResponse<unknown>>;
   };
   snapshot: {
@@ -273,7 +313,7 @@ const markPreloadUnavailable = (): void => {
 };
 
 const createDeferredApiNode = (path: string[]): unknown =>
-  new Proxy(function deferredApiMethod() {}, {
+  new Proxy(function deferredApiMethod() { }, {
     get: (_target, prop) => {
       if (prop === "then") {
         return undefined;

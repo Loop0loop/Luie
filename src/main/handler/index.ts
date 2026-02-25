@@ -3,6 +3,8 @@ import { autoSaveManager } from "../manager/autoSaveManager.js";
 import {
 	chapterService,
 	characterService,
+	eventService,
+	factionService,
 	projectService,
 	searchService,
 	snapshotService,
@@ -29,6 +31,8 @@ export function registerAllIPCHandlers(): void {
 		logger,
 		characterService,
 		termService,
+		eventService,
+		factionService,
 	});
 
 	registerWritingHandlers({

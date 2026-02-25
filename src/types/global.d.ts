@@ -3,6 +3,8 @@ import type {
   ProjectOpenResult,
   Chapter,
   Character,
+  Event,
+  Faction,
   Term,
   Snapshot,
   EditorSettings,
@@ -78,6 +80,44 @@ declare global {
           firstAppearance?: string;
           attributes?: Record<string, unknown>;
         }) => Promise<IPCResponse<Character>>;
+        delete: (id: string) => Promise<IPCResponse<unknown>>;
+      };
+      event: {
+        create: (input: {
+          projectId: string;
+          name: string;
+          description?: string;
+          firstAppearance?: string;
+          attributes?: Record<string, unknown>;
+        }) => Promise<IPCResponse<Event>>;
+        get: (id: string) => Promise<IPCResponse<Event>>;
+        getAll: (projectId: string) => Promise<IPCResponse<Event[]>>;
+        update: (input: {
+          id: string;
+          name?: string;
+          description?: string;
+          firstAppearance?: string;
+          attributes?: Record<string, unknown>;
+        }) => Promise<IPCResponse<Event>>;
+        delete: (id: string) => Promise<IPCResponse<unknown>>;
+      };
+      faction: {
+        create: (input: {
+          projectId: string;
+          name: string;
+          description?: string;
+          firstAppearance?: string;
+          attributes?: Record<string, unknown>;
+        }) => Promise<IPCResponse<Faction>>;
+        get: (id: string) => Promise<IPCResponse<Faction>>;
+        getAll: (projectId: string) => Promise<IPCResponse<Faction[]>>;
+        update: (input: {
+          id: string;
+          name?: string;
+          description?: string;
+          firstAppearance?: string;
+          attributes?: Record<string, unknown>;
+        }) => Promise<IPCResponse<Faction>>;
         delete: (id: string) => Promise<IPCResponse<unknown>>;
       };
       term: {
@@ -250,4 +290,4 @@ declare global {
   }
 }
 
-export {};
+export { };

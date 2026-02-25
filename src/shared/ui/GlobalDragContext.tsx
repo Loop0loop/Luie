@@ -14,7 +14,7 @@ import {
 import { createPortal } from "react-dom";
 import { api } from "@shared/api";
 
-export type DragItemType = "character" | "chapter" | "world" | "memo" | "analysis" | "synopsis" | "mindmap" | "drawing" | "plot" | "trash" | "snapshot";
+export type DragItemType = "character" | "chapter" | "world" | "event" | "faction" | "memo" | "analysis" | "synopsis" | "mindmap" | "drawing" | "plot" | "trash" | "snapshot";
 
 export interface DragData {
   type: DragItemType;

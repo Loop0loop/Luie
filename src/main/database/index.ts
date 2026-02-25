@@ -40,6 +40,8 @@ type PrismaClient = {
   character: PrismaDelegate<PrismaRecord>;
   term: PrismaDelegate<PrismaRecord>;
   snapshot: PrismaDelegate<PrismaRecord>;
+  event: PrismaDelegate<PrismaRecord>;
+  faction: PrismaDelegate<PrismaRecord>;
   characterAppearance: PrismaDelegate<PrismaRecord>;
   termAppearance: PrismaDelegate<PrismaRecord>;
 };

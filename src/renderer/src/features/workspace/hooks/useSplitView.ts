@@ -23,6 +23,8 @@ export function useSplitView() {
       const contextMap: Record<ResearchTab, ContextTab> = {
         character: "characters",
         world: "terms",
+        event: "terms",
+        faction: "terms",
         scrap: "synopsis",
         analysis: "synopsis",
       };
@@ -33,7 +35,7 @@ export function useSplitView() {
 
   const handleSplitView = useCallback(
     (_type: "vertical" | "horizontal", _contentId: string) => {
-        addPanel({ type: "editor", id: _contentId });
+      addPanel({ type: "editor", id: _contentId });
     },
     [addPanel],
   );
@@ -51,7 +53,7 @@ export function useSplitView() {
 
   const startResizeSplit = useCallback(
     (_e: React.MouseEvent) => {
-       // Deprecated with react-resizable-panels
+      // Deprecated with react-resizable-panels
     },
     [],
   );

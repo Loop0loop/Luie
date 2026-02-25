@@ -32,7 +32,9 @@ import {
   Globe,
   StickyNote,
   Sparkles,
-  Settings
+  Settings,
+  Calendar,
+  Shield
 } from "lucide-react";
 
 const DOCS_LEFT_MIN_WIDTH_PX = 300;
@@ -94,7 +96,7 @@ export default function GoogleDocsLayout({
     }
   }, [activeRightTab]);
 
-  const handleRightTabClick = useCallback((tab: "character" | "world" | "scrap" | "analysis" | "snapshot" | "trash" | "editor" | "export") => {
+  const handleRightTabClick = useCallback((tab: "character" | "world" | "event" | "faction" | "scrap" | "analysis" | "snapshot" | "trash" | "editor" | "export") => {
     const nextTab = activeRightTab === tab ? null : tab;
     if (!nextTab) {
       setActiveRightTab(null);
@@ -318,6 +320,18 @@ export default function GoogleDocsLayout({
                     </div>
                   )}
 
+                  {activeRightTab === "event" && (
+                    <div className="h-full">
+                      <ResearchPanel activeTab="event" onClose={() => setActiveRightTab(null)} />
+                    </div>
+                  )}
+
+                  {activeRightTab === "faction" && (
+                    <div className="h-full">
+                      <ResearchPanel activeTab="faction" onClose={() => setActiveRightTab(null)} />
+                    </div>
+                  )}
+
                   {activeRightTab === "scrap" && (
                     <div className="h-full">
                       <ResearchPanel activeTab="scrap" onClose={() => setActiveRightTab(null)} />
@@ -427,6 +441,32 @@ export default function GoogleDocsLayout({
               title={t("research.title.world")}
             >
               <Globe className="w-5 h-5" />
+            </button>
+          </DraggableItem>
+
+          <DraggableItem id="binder-icon-event" data={{ type: "event", id: "binder-event", title: t("research.title.events", "Events") }}>
+            <button
+              onClick={() => handleRightTabClick("event")}
+              className={cn(
+                "w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors",
+                activeRightTab === "event" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+              )}
+              title={t("research.title.events", "Events")}
+            >
+              <Calendar className="w-5 h-5" />
+            </button>
+          </DraggableItem>
+
+          <DraggableItem id="binder-icon-faction" data={{ type: "faction", id: "binder-faction", title: t("research.title.factions", "Factions") }}>
+            <button
+              onClick={() => handleRightTabClick("faction")}
+              className={cn(
+                "w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors",
+                activeRightTab === "faction" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+              )}
+              title={t("research.title.factions", "Factions")}
+            >
+              <Shield className="w-5 h-5" />
             </button>
           </DraggableItem>
 

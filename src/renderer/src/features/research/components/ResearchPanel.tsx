@@ -1,7 +1,9 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Globe, User, X, Sparkles, FileText, BookOpen } from "lucide-react";
+import { Globe, User, X, Sparkles, FileText, BookOpen, Calendar, Shield } from "lucide-react";
 import CharacterManager from "@renderer/features/research/components/CharacterManager";
+import EventManager from "@renderer/features/research/components/event/EventManager";
+import FactionManager from "@renderer/features/research/components/faction/FactionManager";
 import MemoSection from "@renderer/features/research/components/MemoSection";
 import WorldSection from "@renderer/features/research/components/WorldSection";
 import AnalysisSection from "@renderer/features/research/components/AnalysisSection";
@@ -10,9 +12,9 @@ import { cn } from "@shared/types/utils";
 import { FeatureErrorBoundary } from "@shared/ui/FeatureErrorBoundary";
 
 interface ResearchPanelProps {
-  activeTab: string; // 'character' | 'world' | 'scrap' | 'analysis' | 'synopsis'
+  activeTab: string; // 'character' | 'event' | 'faction' | 'world' | 'scrap' | 'analysis' | 'synopsis'
   onClose?: () => void;
-  onTabChange?: (tab: "character" | "world" | "scrap" | "analysis" | "synopsis") => void;
+  onTabChange?: (tab: "character" | "event" | "faction" | "world" | "scrap" | "analysis" | "synopsis") => void;
 }
 
 export default function ResearchPanel({
@@ -26,11 +28,13 @@ export default function ResearchPanel({
     string,
     { title: string; icon: React.JSX.Element }
   > = {
-    synopsis: { title: t("sidebar.item.synopsis"), icon: <FileText className="icon-lg" /> },
-    character: { title: t("research.title.characters"), icon: <User className="icon-lg" /> },
-    world: { title: t("research.title.world"), icon: <Globe className="icon-lg" /> },
-    scrap: { title: t("research.title.scrap"), icon: <BookOpen className="icon-lg" /> },
-    analysis: { title: t("research.title.analysis"), icon: <Sparkles className="icon-lg" /> },
+    synopsis: { title: t("sidebar.item.synopsis", "Synopsis"), icon: <FileText className="icon-lg" /> },
+    character: { title: t("research.title.characters", "Characters"), icon: <User className="icon-lg" /> },
+    event: { title: t("research.title.events", "Events"), icon: <Calendar className="icon-lg" /> },
+    faction: { title: t("research.title.factions", "Factions"), icon: <Shield className="icon-lg" /> },
+    world: { title: t("research.title.world", "World"), icon: <Globe className="icon-lg" /> },
+    scrap: { title: t("research.title.scrap", "Scrap"), icon: <BookOpen className="icon-lg" /> },
+    analysis: { title: t("research.title.analysis", "Analysis"), icon: <Sparkles className="icon-lg" /> },
   };
 
   // Safe fallback (keep tabConfig for future extensions if needed)
@@ -38,12 +42,14 @@ export default function ResearchPanel({
     // This just ensures tabConfig doesn't throw if not found
   }
 
-  const tabs: { id: "character" | "world" | "synopsis" | "scrap" | "analysis"; icon: React.ElementType; label: string }[] = [
-    { id: 'character', label: t("research.title.characters"), icon: User },
-    { id: 'world', label: t("research.title.world"), icon: Globe },
-    { id: 'synopsis', label: t("sidebar.item.synopsis"), icon: FileText },
-    { id: 'scrap', label: t("research.title.scrap"), icon: BookOpen },
-    { id: 'analysis', label: t("research.title.analysis"), icon: Sparkles }
+  const tabs: { id: "character" | "event" | "faction" | "world" | "synopsis" | "scrap" | "analysis"; icon: React.ElementType; label: string }[] = [
+    { id: 'character', label: t("research.title.characters", "Characters"), icon: User },
+    { id: 'event', label: t("research.title.events", "Events"), icon: Calendar },
+    { id: 'faction', label: t("research.title.factions", "Factions"), icon: Shield },
+    { id: 'world', label: t("research.title.world", "World"), icon: Globe },
+    { id: 'synopsis', label: t("sidebar.item.synopsis", "Synopsis"), icon: FileText },
+    { id: 'scrap', label: t("research.title.scrap", "Scrap"), icon: BookOpen },
+    { id: 'analysis', label: t("research.title.analysis", "Analysis"), icon: Sparkles }
   ];
 
   return (
@@ -92,6 +98,8 @@ export default function ResearchPanel({
 
       <div className="flex-1 flex flex-col overflow-hidden bg-bg-primary relative">
         {activeTab === "character" && <FeatureErrorBoundary featureName="Characters"><CharacterManager /></FeatureErrorBoundary>}
+        {activeTab === "event" && <FeatureErrorBoundary featureName="Events"><EventManager /></FeatureErrorBoundary>}
+        {activeTab === "faction" && <FeatureErrorBoundary featureName="Factions"><FactionManager /></FeatureErrorBoundary>}
         {activeTab === "world" && <FeatureErrorBoundary featureName="World"><WorldSection /></FeatureErrorBoundary>}
         {activeTab === "scrap" && <FeatureErrorBoundary featureName="Scrap"><MemoSection /></FeatureErrorBoundary>}
         {activeTab === "analysis" && <FeatureErrorBoundary featureName="Analysis"><AnalysisSection /></FeatureErrorBoundary>}

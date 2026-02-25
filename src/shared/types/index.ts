@@ -57,6 +57,28 @@ export interface Term {
   updatedAt: string | Date;
 }
 
+export interface Event {
+  id: string;
+  projectId: string;
+  name: string;
+  description?: string | null;
+  firstAppearance?: string | null;
+  attributes?: Record<string, unknown> | string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+export interface Faction {
+  id: string;
+  projectId: string;
+  name: string;
+  description?: string | null;
+  firstAppearance?: string | null;
+  attributes?: Record<string, unknown> | string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
 export interface Snapshot {
   id: string;
   projectId: string;
@@ -199,6 +221,26 @@ export type TermExportRecord = {
   updatedAt: Date;
 };
 
+export type EventExportRecord = {
+  id: string;
+  name: string;
+  description?: string | null;
+  firstAppearance?: string | null;
+  attributes?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type FactionExportRecord = {
+  id: string;
+  name: string;
+  description?: string | null;
+  firstAppearance?: string | null;
+  attributes?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export type SnapshotExportRecord = {
   id: string;
   projectId: string;
@@ -218,6 +260,8 @@ export type ProjectExportRecord = {
   chapters: ChapterExportRecord[];
   characters: CharacterExportRecord[];
   terms: TermExportRecord[];
+  events: EventExportRecord[];
+  factions: FactionExportRecord[];
   snapshots: SnapshotExportRecord[];
 };
 
@@ -298,6 +342,40 @@ export interface TermAppearanceInput {
   chapterId: string;
   position: number;
   context?: string;
+}
+
+// Event Types
+export interface EventCreateInput {
+  projectId: string;
+  name: string;
+  description?: string;
+  firstAppearance?: string;
+  attributes?: Record<string, unknown>;
+}
+
+export interface EventUpdateInput {
+  id: string;
+  name?: string;
+  description?: string;
+  firstAppearance?: string;
+  attributes?: Record<string, unknown>;
+}
+
+// Faction Types
+export interface FactionCreateInput {
+  projectId: string;
+  name: string;
+  description?: string;
+  firstAppearance?: string;
+  attributes?: Record<string, unknown>;
+}
+
+export interface FactionUpdateInput {
+  id: string;
+  name?: string;
+  description?: string;
+  firstAppearance?: string;
+  attributes?: Record<string, unknown>;
 }
 
 // Snapshot Types

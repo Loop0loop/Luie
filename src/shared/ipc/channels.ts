@@ -31,6 +31,20 @@ export const IPC_CHANNELS = {
   CHARACTER_UPDATE: "character:update",
   CHARACTER_DELETE: "character:delete",
 
+  // Event Channels
+  EVENT_CREATE: "event:create",
+  EVENT_GET: "event:get",
+  EVENT_GET_ALL: "event:get-all",
+  EVENT_UPDATE: "event:update",
+  EVENT_DELETE: "event:delete",
+
+  // Faction Channels
+  FACTION_CREATE: "faction:create",
+  FACTION_GET: "faction:get",
+  FACTION_GET_ALL: "faction:get-all",
+  FACTION_UPDATE: "faction:update",
+  FACTION_DELETE: "faction:delete",
+
   // Term Channels
   TERM_CREATE: "term:create",
   TERM_GET: "term:get",

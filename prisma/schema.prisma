@@ -16,63 +16,99 @@ model Project {
   id          String   @id @default(uuid())
   title       String
   description String?
-  projectPath String?  // 프로젝트 저장 경로
+  projectPath String? // 프로젝트 저장 경로
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
-  chapters    Chapter[]
-  characters  Character[]
-  terms       Term[]
-  snapshots   Snapshot[]
-  settings    ProjectSettings?
+  chapters   Chapter[]
+  characters Character[]
+  terms      Term[]
+  events     Event[]
+  factions   Faction[]
+  snapshots  Snapshot[]
+  settings   ProjectSettings?
 }
 
 // 프로젝트 설정
 model ProjectSettings {
-  id              String  @id @default(uuid())
-  projectId       String  @unique
-  autoSave        Boolean @default(true)
-  autoSaveInterval Int    @default(30) // seconds
-  
+  id               String  @id @default(uuid())
+  projectId        String  @unique
+  autoSave         Boolean @default(true)
+  autoSaveInterval Int     @default(30) // seconds
+
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 // 챕터/회차 - 집필 단위
 model Chapter {
-  id          String   @id @default(uuid())
-  projectId   String
-  title       String
-  content     String   @default("")
-  synopsis    String?
-  order       Int
-  wordCount   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  deletedAt   DateTime?
+  id        String    @id @default(uuid())
+  projectId String
+  title     String
+  content   String    @default("")
+  synopsis  String?
+  order     Int
+  wordCount Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   // Relations
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  snapshots   Snapshot[]
-  
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  snapshots Snapshot[]
+
   @@index([projectId, order])
 }
 
 // 캐릭터 관리
 model Character {
-  id          String   @id @default(uuid())
-  projectId   String
-  name        String
-  description String?
+  id              String   @id @default(uuid())
+  projectId       String
+  name            String
+  description     String?
   firstAppearance String? // Chapter ID where character first appears
-  attributes  String?  // JSON field for flexible attributes
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  attributes      String? // JSON field for flexible attributes
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   // Relations
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project     Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
   appearances CharacterAppearance[]
-  
+
+  @@index([projectId, name])
+}
+
+// 사건 관리
+model Event {
+  id              String   @id @default(uuid())
+  projectId       String
+  name            String
+  description     String?
+  firstAppearance String? // Chapter ID where event first appears
+  attributes      String? // JSON field for flexible attributes
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, name])
+}
+
+// 세력 관리
+model Faction {
+  id              String   @id @default(uuid())
+  projectId       String
+  name            String
+  description     String?
+  firstAppearance String? // Chapter ID where faction first appears
+  attributes      String? // JSON field for flexible attributes
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
   @@index([projectId, name])
 }
 
@@ -82,31 +118,31 @@ model CharacterAppearance {
   id          String   @id @default(uuid())
   characterId String
   chapterId   String
-  position    Int      // Position in text where character appears
-  context     String?  // Surrounding text for context
+  position    Int // Position in text where character appears
+  context     String? // Surrounding text for context
   createdAt   DateTime @default(now())
 
-  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
   @@index([characterId, chapterId])
 }
 
 // 고유명사 사전
 model Term {
-  id          String   @id @default(uuid())
-  projectId   String
-  term        String
-  definition  String?
-  category    String?  // e.g., "location", "item", "concept"
-  order       Int      @default(0)
+  id              String   @id @default(uuid())
+  projectId       String
+  term            String
+  definition      String?
+  category        String? // e.g., "location", "item", "concept"
+  order           Int      @default(0)
   firstAppearance String? // Chapter ID
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   // Relations
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   appearances TermAppearance[]
-  
+
   @@index([projectId, term])
 }
 
@@ -119,8 +155,8 @@ model TermAppearance {
   context   String?
   createdAt DateTime @default(now())
 
-  term      Term     @relation(fields: [termId], references: [id], onDelete: Cascade)
-  
+  term Term @relation(fields: [termId], references: [id], onDelete: Cascade)
+
   @@index([termId, chapterId])
 }
 
@@ -131,18 +167,18 @@ enum SnapshotType {
 }
 
 model Snapshot {
-  id          String   @id @default(uuid())
-  projectId   String
-  chapterId   String?
-  content     String
-  contentLength Int     @default(0)
-  type        SnapshotType @default(AUTO)
-  description String?
-  createdAt   DateTime @default(now())
+  id            String       @id @default(uuid())
+  projectId     String
+  chapterId     String?
+  content       String
+  contentLength Int          @default(0)
+  type          SnapshotType @default(AUTO)
+  description   String?
+  createdAt     DateTime     @default(now())
 
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  chapter     Chapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-  
+  project Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  chapter Chapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
   @@index([projectId, createdAt])
   @@index([projectId, chapterId, createdAt])
   @@index([projectId, type, createdAt])

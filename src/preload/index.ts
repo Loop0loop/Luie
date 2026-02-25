@@ -74,6 +74,10 @@ const RETRYABLE_CHANNELS = new Set<string>([
   IPC_CHANNELS.CHAPTER_GET_DELETED,
   IPC_CHANNELS.CHARACTER_GET,
   IPC_CHANNELS.CHARACTER_GET_ALL,
+  IPC_CHANNELS.EVENT_GET,
+  IPC_CHANNELS.EVENT_GET_ALL,
+  IPC_CHANNELS.FACTION_GET,
+  IPC_CHANNELS.FACTION_GET_ALL,
   IPC_CHANNELS.TERM_GET,
   IPC_CHANNELS.TERM_GET_ALL,
   IPC_CHANNELS.SNAPSHOT_GET_ALL,
@@ -348,6 +352,34 @@ contextBridge.exposeInMainWorld("api", {
       safeInvoke(IPC_CHANNELS.CHARACTER_DELETE, id),
   },
 
+  // Event API
+  event: {
+    create: (input: unknown): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.EVENT_CREATE, input),
+    get: (id: string): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.EVENT_GET, id),
+    getAll: (projectId: string): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.EVENT_GET_ALL, projectId),
+    update: (input: unknown): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.EVENT_UPDATE, input),
+    delete: (id: string): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.EVENT_DELETE, id),
+  },
+
+  // Faction API
+  faction: {
+    create: (input: unknown): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.FACTION_CREATE, input),
+    get: (id: string): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.FACTION_GET, id),
+    getAll: (projectId: string): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.FACTION_GET_ALL, projectId),
+    update: (input: unknown): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.FACTION_UPDATE, input),
+    delete: (id: string): Promise<IPCResponse> =>
+      safeInvoke(IPC_CHANNELS.FACTION_DELETE, id),
+  },
+
   // Term API
   term: {
     create: (input: unknown): Promise<IPCResponse> =>
@@ -457,21 +489,21 @@ contextBridge.exposeInMainWorld("api", {
       scheduleAutoSaveFlush();
     }),
 
-	  // Lifecycle API
-	  lifecycle: {
-	    setDirty: (dirty: boolean): void => {
-	      rendererDirty = Boolean(dirty);
-	    },
-	    onQuitPhase: (callback: (payload: unknown) => void): (() => void) => {
-	      const listener = (_event: unknown, payload: unknown) => {
-	        callback(payload);
-	      };
-	      ipcRenderer.on(IPC_CHANNELS.APP_QUIT_PHASE, listener);
-	      return () => {
-	        ipcRenderer.removeListener(IPC_CHANNELS.APP_QUIT_PHASE, listener);
-	      };
-	    },
-	  },
+  // Lifecycle API
+  lifecycle: {
+    setDirty: (dirty: boolean): void => {
+      rendererDirty = Boolean(dirty);
+    },
+    onQuitPhase: (callback: (payload: unknown) => void): (() => void) => {
+      const listener = (_event: unknown, payload: unknown) => {
+        callback(payload);
+      };
+      ipcRenderer.on(IPC_CHANNELS.APP_QUIT_PHASE, listener);
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.APP_QUIT_PHASE, listener);
+      };
+    },
+  },
 
   // Window API
   window: {

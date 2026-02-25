@@ -10,7 +10,7 @@ import {
 import type { Snapshot } from "@shared/types";
 
 export type ContextTab = "synopsis" | "characters" | "terms";
-export type ResearchTab = "character" | "world" | "scrap" | "analysis";
+export type ResearchTab = "character" | "world" | "event" | "faction" | "scrap" | "analysis";
 export type WorldTab = "synopsis" | "terms" | "mindmap" | "drawing" | "plot";
 export type SidebarFeature =
   | "mainSidebar"
@@ -19,6 +19,8 @@ export type SidebarFeature =
   | "scrivenerBinder"
   | "scrivenerInspector"
   | "character"
+  | "event"
+  | "faction"
   | "world"
   | "scrap"
   | "analysis"
@@ -33,6 +35,8 @@ export type SidebarFeature =
   | "inspector";
 export type DocsRightTab =
   | "character"
+  | "event"
+  | "faction"
   | "world"
   | "scrap"
   | "analysis"
@@ -66,6 +70,8 @@ const DEFAULT_SIDEBAR_WIDTHS: Record<string, number> = {
   scrivenerBinder: 260,
   scrivenerInspector: 350,
   character: 900,
+  event: 900,
+  faction: 900,
   world: 900,
   scrap: 900,
   analysis: 900,
@@ -167,8 +173,8 @@ interface UIStore {
   closeFocusedSurface: () => boolean;
 
   // Scrivener Mode Main View State
-  mainView: { type: "editor" | "character" | "world" | "memo" | "trash" | "analysis"; id?: string };
-  setMainView: (view: { type: "editor" | "character" | "world" | "memo" | "trash" | "analysis"; id?: string }) => void;
+  mainView: { type: "editor" | "character" | "event" | "faction" | "world" | "memo" | "trash" | "analysis"; id?: string };
+  setMainView: (view: { type: "editor" | "character" | "event" | "faction" | "world" | "memo" | "trash" | "analysis"; id?: string }) => void;
 }
 
 export const useUIStore = create<UIStore>()(
