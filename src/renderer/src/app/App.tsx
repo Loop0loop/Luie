@@ -37,7 +37,11 @@ const parseBootstrapStatus = (value: unknown): AppBootstrapStatus | null => {
 type WindowMode = "app" | "export" | "oauth-result";
 
 const getWindowMode = (): WindowMode => {
-  if (window.location.hash === "#export") return "export";
+  const searchParams = new URLSearchParams(window.location.search);
+  const mode = searchParams.get("windowMode") ?? searchParams.get("mode");
+  if (mode === "export") return "export";
+  if (mode === "oauth-result") return "oauth-result";
+  if (window.location.hash === "#export" || window.location.hash.startsWith("#export?")) return "export";
   if (window.location.hash.startsWith("#auth-result")) return "oauth-result";
   return "app";
 };

@@ -2,6 +2,7 @@ import { app, shell } from "electron";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { createLogger } from "../../shared/logger/index.js";
+import { settingsManager } from "../manager/settingsManager.js";
 import { windowManager } from "../manager/index.js";
 import { syncService } from "../services/features/syncService.js";
 
@@ -28,18 +29,19 @@ const buildAuthResultPageUrl = (status: "success" | "error", detail?: string): s
   const devServerUrl = process.env.VITE_DEV_SERVER_URL || "http://localhost:5173";
   const useDevServer = !app.isPackaged && process.env.NODE_ENV !== "production";
   if (useDevServer) {
-    return `${devServerUrl}/#auth-result?${queryString}`;
+    return `${devServerUrl}/auth-result.html?${queryString}`;
   }
 
-  const rendererEntry = pathToFileURL(path.join(__dirname, "../renderer/index.html")).toString();
-  return `${rendererEntry}#auth-result?${queryString}`;
+  const rendererEntry = pathToFileURL(path.join(__dirname, "../renderer/auth-result.html")).toString();
+  return `${rendererEntry}?${queryString}`;
 };
 
 const openAuthResultPage = async (status: "success" | "error", detail?: string): Promise<void> => {
+  const targetUrl = buildAuthResultPageUrl(status, detail);
   try {
-    await shell.openExternal(buildAuthResultPageUrl(status, detail));
+    await shell.openExternal(targetUrl);
   } catch (error) {
-    logger.warn("Failed to open auth result page", { error, status });
+    logger.warn("Failed to open auth result page", { error, status, targetUrl });
   }
 };
 
@@ -89,7 +91,9 @@ export const handleDeepLinkUrl = async (url: string): Promise<boolean> => {
     const message = error instanceof Error ? error.message : String(error);
     const reason = classifyCallbackFailure(error);
     const status = syncService.getStatus();
-    if (status.connected && isStaleCallbackFailure(reason)) {
+    const persistedConnected = settingsManager.getSyncSettings().connected;
+    const isConnected = status.connected || persistedConnected;
+    if (isConnected && isStaleCallbackFailure(reason)) {
       focusMainWindow();
       void openAuthResultPage("success", `STALE_CONNECTED:${reason}`);
       logger.warn("OAuth callback arrived after connection was already established", {
@@ -103,7 +107,7 @@ export const handleDeepLinkUrl = async (url: string): Promise<boolean> => {
     focusMainWindow();
     const detail = `${reason}:${message}`;
     void openAuthResultPage("error", detail);
-    logger.error(status.connected
+    logger.error(isConnected
       ? "Failed to process OAuth callback even though sync is connected"
       : "Failed to process OAuth callback", {
       url,

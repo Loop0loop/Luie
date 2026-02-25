@@ -426,7 +426,7 @@ export class SettingsManager {
   }
 
   setPendingSyncAuth(input: {
-    state: string;
+    state?: string;
     verifierCipher: string;
     createdAt: string;
   }): SyncSettings {
