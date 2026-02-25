@@ -3,8 +3,14 @@
  */
 
 import { contextBridge, ipcRenderer } from "electron";
+import type { RendererApi } from "../shared/api/index.js";
 import { createErrorResponse, type IPCResponse } from "../shared/ipc/index.js";
 import { IPC_CHANNELS } from "../shared/ipc/channels.js";
+import type {
+  AppBootstrapStatus,
+  AppQuitPhasePayload,
+  SyncStatus,
+} from "../shared/types/index.js";
 import {
   AUTO_SAVE_FLUSH_MS,
   IPC_DEFAULT_TIMEOUT_MS,
@@ -178,7 +184,7 @@ async function invokeWithTimeout<T>(
   return result;
 }
 
-async function safeInvoke<T = unknown>(channel: string, ...args: unknown[]): Promise<IPCResponse<T>> {
+async function safeInvoke<T = never>(channel: string, ...args: unknown[]): Promise<IPCResponse<T>> {
   const timeoutMs = getTimeoutMs(channel);
   const maxRetries = RETRYABLE_CHANNELS.has(channel) ? 1 : 0;
   let attempt = 0;
@@ -264,7 +270,7 @@ type AutoSavePayload = {
 
 type AutoSavePending = {
   payload: AutoSavePayload;
-  resolvers: Array<(value: IPCResponse) => void>;
+  resolvers: Array<(value: IPCResponse<never>) => void>;
 };
 
 const autoSaveQueue = new Map<string, AutoSavePending>();
@@ -297,122 +303,121 @@ async function flushAutoSaves() {
   );
 }
 
-// Expose API to renderer process
-contextBridge.exposeInMainWorld("api", {
+const rendererApi = {
   // Project API
   project: {
-    create: (input: unknown): Promise<IPCResponse> =>
+    create: (input: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.PROJECT_CREATE, input),
-    get: (id: string): Promise<IPCResponse> =>
+    get: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.PROJECT_GET, id),
-    getAll: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.PROJECT_GET_ALL),
-    update: (input: unknown): Promise<IPCResponse> =>
+    getAll: (): Promise<IPCResponse<never>> => safeInvoke(IPC_CHANNELS.PROJECT_GET_ALL),
+    update: (input: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.PROJECT_UPDATE, input),
-    delete: (id: string): Promise<IPCResponse> =>
+    delete: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.PROJECT_DELETE, id),
-    removeLocal: (id: string): Promise<IPCResponse> =>
+    removeLocal: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.PROJECT_REMOVE_LOCAL, id),
-    openLuie: (packagePath: string): Promise<IPCResponse> =>
+    openLuie: (packagePath: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.PROJECT_OPEN_LUIE, packagePath),
   },
 
   // Chapter API
   chapter: {
-    create: (input: unknown): Promise<IPCResponse> =>
+    create: (input: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.CHAPTER_CREATE, input),
-    get: (id: string): Promise<IPCResponse> =>
+    get: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.CHAPTER_GET, id),
-    getAll: (projectId: string): Promise<IPCResponse> =>
+    getAll: (projectId: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.CHAPTER_GET_ALL, projectId),
-    getDeleted: (projectId: string): Promise<IPCResponse> =>
+    getDeleted: (projectId: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.CHAPTER_GET_DELETED, projectId),
-    update: (input: unknown): Promise<IPCResponse> =>
+    update: (input: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.CHAPTER_UPDATE, input),
-    delete: (id: string): Promise<IPCResponse> =>
+    delete: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.CHAPTER_DELETE, id),
-    restore: (id: string): Promise<IPCResponse> =>
+    restore: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.CHAPTER_RESTORE, id),
-    purge: (id: string): Promise<IPCResponse> =>
+    purge: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.CHAPTER_PURGE, id),
-    reorder: (projectId: string, chapterIds: string[]): Promise<IPCResponse> =>
+    reorder: (projectId: string, chapterIds: string[]): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.CHAPTER_REORDER, projectId, chapterIds),
   },
 
   // Character API
   character: {
-    create: (input: unknown): Promise<IPCResponse> =>
+    create: (input: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.CHARACTER_CREATE, input),
-    get: (id: string): Promise<IPCResponse> =>
+    get: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.CHARACTER_GET, id),
-    getAll: (projectId: string): Promise<IPCResponse> =>
+    getAll: (projectId: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.CHARACTER_GET_ALL, projectId),
-    update: (input: unknown): Promise<IPCResponse> =>
+    update: (input: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.CHARACTER_UPDATE, input),
-    delete: (id: string): Promise<IPCResponse> =>
+    delete: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.CHARACTER_DELETE, id),
   },
 
   // Event API
   event: {
-    create: (input: unknown): Promise<IPCResponse> =>
+    create: (input: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.EVENT_CREATE, input),
-    get: (id: string): Promise<IPCResponse> =>
+    get: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.EVENT_GET, id),
-    getAll: (projectId: string): Promise<IPCResponse> =>
+    getAll: (projectId: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.EVENT_GET_ALL, projectId),
-    update: (input: unknown): Promise<IPCResponse> =>
+    update: (input: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.EVENT_UPDATE, input),
-    delete: (id: string): Promise<IPCResponse> =>
+    delete: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.EVENT_DELETE, id),
   },
 
   // Faction API
   faction: {
-    create: (input: unknown): Promise<IPCResponse> =>
+    create: (input: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.FACTION_CREATE, input),
-    get: (id: string): Promise<IPCResponse> =>
+    get: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.FACTION_GET, id),
-    getAll: (projectId: string): Promise<IPCResponse> =>
+    getAll: (projectId: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.FACTION_GET_ALL, projectId),
-    update: (input: unknown): Promise<IPCResponse> =>
+    update: (input: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.FACTION_UPDATE, input),
-    delete: (id: string): Promise<IPCResponse> =>
+    delete: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.FACTION_DELETE, id),
   },
 
   // Term API
   term: {
-    create: (input: unknown): Promise<IPCResponse> =>
+    create: (input: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.TERM_CREATE, input),
-    get: (id: string): Promise<IPCResponse> =>
+    get: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.TERM_GET, id),
-    getAll: (projectId: string): Promise<IPCResponse> =>
+    getAll: (projectId: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.TERM_GET_ALL, projectId),
-    update: (input: unknown): Promise<IPCResponse> =>
+    update: (input: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.TERM_UPDATE, input),
-    delete: (id: string): Promise<IPCResponse> =>
+    delete: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.TERM_DELETE, id),
   },
 
   // Snapshot API
   snapshot: {
-    create: (input: unknown): Promise<IPCResponse> =>
+    create: (input: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SNAPSHOT_CREATE, input),
-    getAll: (projectId: string): Promise<IPCResponse> =>
+    getAll: (projectId: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SNAPSHOT_GET_ALL, projectId),
-    getByChapter: (chapterId: string): Promise<IPCResponse> =>
+    getByChapter: (chapterId: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SNAPSHOT_GET_BY_CHAPTER, chapterId),
-    importFromFile: (filePath: string): Promise<IPCResponse> =>
+    importFromFile: (filePath: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SNAPSHOT_IMPORT_FILE, filePath),
-    restore: (id: string): Promise<IPCResponse> =>
+    restore: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SNAPSHOT_RESTORE, id),
-    delete: (id: string): Promise<IPCResponse> =>
+    delete: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SNAPSHOT_DELETE, id),
   },
 
   // Export API
   export: {
-    create: (request: unknown): Promise<IPCResponse> =>
+    create: (request: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.EXPORT_CREATE, request),
   },
 
@@ -422,7 +427,7 @@ contextBridge.exposeInMainWorld("api", {
       projectName: string,
       projectPath: string,
       content: string,
-    ): Promise<IPCResponse> =>
+    ): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.FS_SAVE_PROJECT, projectName, projectPath, content),
     selectDirectory: (): Promise<IPCResponse<string>> =>
       safeInvoke(IPC_CHANNELS.FS_SELECT_DIRECTORY),
@@ -447,7 +452,7 @@ contextBridge.exposeInMainWorld("api", {
       entryPath: string,
     ): Promise<IPCResponse<string | null>> =>
       safeInvoke(IPC_CHANNELS.FS_READ_LUIE_ENTRY, packagePath, entryPath),
-    writeFile: (filePath: string, content: string): Promise<IPCResponse> =>
+    writeFile: (filePath: string, content: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.FS_WRITE_FILE, filePath, content),
 
     // .luie package directory helpers
@@ -465,7 +470,7 @@ contextBridge.exposeInMainWorld("api", {
   },
 
   // Search API
-  search: (query: unknown): Promise<IPCResponse> =>
+  search: (query: unknown): Promise<IPCResponse<never>> =>
     safeInvoke(IPC_CHANNELS.SEARCH, query),
 
   // Auto Save API
@@ -473,8 +478,8 @@ contextBridge.exposeInMainWorld("api", {
     chapterId: string,
     content: string,
     projectId: string,
-  ): Promise<IPCResponse> =>
-    new Promise<IPCResponse>((resolve) => {
+  ): Promise<IPCResponse<never>> =>
+    new Promise<IPCResponse<never>>((resolve) => {
       const key = `${projectId}:${chapterId}`;
       const existing = autoSaveQueue.get(key);
       const payload = { chapterId, content, projectId };
@@ -494,8 +499,8 @@ contextBridge.exposeInMainWorld("api", {
     setDirty: (dirty: boolean): void => {
       rendererDirty = Boolean(dirty);
     },
-    onQuitPhase: (callback: (payload: unknown) => void): (() => void) => {
-      const listener = (_event: unknown, payload: unknown) => {
+    onQuitPhase: (callback: (payload: AppQuitPhasePayload) => void): (() => void) => {
+      const listener = (_event: unknown, payload: AppQuitPhasePayload) => {
         callback(payload);
       };
       ipcRenderer.on(IPC_CHANNELS.APP_QUIT_PHASE, listener);
@@ -507,21 +512,21 @@ contextBridge.exposeInMainWorld("api", {
 
   // Window API
   window: {
-    maximize: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.WINDOW_MAXIMIZE),
-    close: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.WINDOW_CLOSE),
-    toggleFullscreen: (): Promise<IPCResponse> =>
+    maximize: (): Promise<IPCResponse<never>> => safeInvoke(IPC_CHANNELS.WINDOW_MAXIMIZE),
+    close: (): Promise<IPCResponse<never>> => safeInvoke(IPC_CHANNELS.WINDOW_CLOSE),
+    toggleFullscreen: (): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.WINDOW_TOGGLE_FULLSCREEN),
-    setFullscreen: (flag: boolean): Promise<IPCResponse> =>
+    setFullscreen: (flag: boolean): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.WINDOW_SET_FULLSCREEN, flag),
-    openExport: (chapterId: string): Promise<IPCResponse> =>
-      safeInvoke(IPC_CHANNELS.WINDOW_OPEN_EXPORT, chapterId),
+    openExport: (chapterId: string): Promise<IPCResponse<boolean>> =>
+      safeInvoke<boolean>(IPC_CHANNELS.WINDOW_OPEN_EXPORT, chapterId),
   },
 
   app: {
-    getBootstrapStatus: (): Promise<IPCResponse> =>
+    getBootstrapStatus: (): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.APP_GET_BOOTSTRAP_STATUS),
-    onBootstrapStatus: (callback: (status: unknown) => void): (() => void) => {
-      const listener = (_event: unknown, status: unknown) => {
+    onBootstrapStatus: (callback: (status: AppBootstrapStatus) => void): (() => void) => {
+      const listener = (_event: unknown, status: AppBootstrapStatus) => {
         callback(status);
       };
       ipcRenderer.on(IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED, listener);
@@ -529,98 +534,98 @@ contextBridge.exposeInMainWorld("api", {
         ipcRenderer.removeListener(IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED, listener);
       };
     },
-    quit: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.APP_QUIT),
+    quit: (): Promise<IPCResponse<never>> => safeInvoke(IPC_CHANNELS.APP_QUIT),
   },
 
   // Logger API
   logger: {
-    debug: (message: string, data?: unknown): Promise<IPCResponse> => {
+    debug: (message: string, data?: unknown): Promise<IPCResponse<never>> => {
       logQueue.push({ level: "debug", message, data: sanitizeForIpc(data) });
       if (logQueue.length >= LOG_BATCH_SIZE) {
         void flushLogs();
       } else {
         scheduleLogFlush();
       }
-      return Promise.resolve({ success: true } as IPCResponse);
+      return Promise.resolve({ success: true } as IPCResponse<never>);
     },
-    info: (message: string, data?: unknown): Promise<IPCResponse> => {
+    info: (message: string, data?: unknown): Promise<IPCResponse<never>> => {
       logQueue.push({ level: "info", message, data: sanitizeForIpc(data) });
       if (logQueue.length >= LOG_BATCH_SIZE) {
         void flushLogs();
       } else {
         scheduleLogFlush();
       }
-      return Promise.resolve({ success: true } as IPCResponse);
+      return Promise.resolve({ success: true } as IPCResponse<never>);
     },
-    warn: (message: string, data?: unknown): Promise<IPCResponse> => {
+    warn: (message: string, data?: unknown): Promise<IPCResponse<never>> => {
       logQueue.push({ level: "warn", message, data: sanitizeForIpc(data) });
       if (logQueue.length >= LOG_BATCH_SIZE) {
         void flushLogs();
       } else {
         scheduleLogFlush();
       }
-      return Promise.resolve({ success: true } as IPCResponse);
+      return Promise.resolve({ success: true } as IPCResponse<never>);
     },
-    error: (message: string, data?: unknown): Promise<IPCResponse> => {
+    error: (message: string, data?: unknown): Promise<IPCResponse<never>> => {
       // errors are flushed immediately
       const payload = { level: "error", message, data: sanitizeForIpc(data) };
       logQueue.push(payload);
       void flushLogs();
-      return Promise.resolve({ success: true } as IPCResponse);
+      return Promise.resolve({ success: true } as IPCResponse<never>);
     },
   },
 
   // Settings API
   settings: {
-    getAll: (): Promise<IPCResponse> =>
+    getAll: (): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_GET_ALL),
-    getEditor: (): Promise<IPCResponse> =>
+    getEditor: (): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_GET_EDITOR),
-    setEditor: (settings: unknown): Promise<IPCResponse> =>
+    setEditor: (settings: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_SET_EDITOR, settings),
-    getAutoSave: (): Promise<IPCResponse> =>
+    getAutoSave: (): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_GET_AUTO_SAVE),
-    setAutoSave: (settings: unknown): Promise<IPCResponse> =>
+    setAutoSave: (settings: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_SET_AUTO_SAVE, settings),
-    getLanguage: (): Promise<IPCResponse> =>
+    getLanguage: (): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_GET_LANGUAGE),
-    setLanguage: (settings: unknown): Promise<IPCResponse> =>
+    setLanguage: (settings: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_SET_LANGUAGE, settings),
-    getMenuBarMode: (): Promise<IPCResponse> =>
+    getMenuBarMode: (): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_GET_MENU_BAR_MODE),
-    setMenuBarMode: (settings: unknown): Promise<IPCResponse> =>
+    setMenuBarMode: (settings: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_SET_MENU_BAR_MODE, settings),
-    getShortcuts: (): Promise<IPCResponse> =>
+    getShortcuts: (): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_GET_SHORTCUTS),
-    setShortcuts: (settings: unknown): Promise<IPCResponse> =>
+    setShortcuts: (settings: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_SET_SHORTCUTS, settings),
-    getWindowBounds: (): Promise<IPCResponse> =>
+    getWindowBounds: (): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_GET_WINDOW_BOUNDS),
-    setWindowBounds: (bounds: unknown): Promise<IPCResponse> =>
+    setWindowBounds: (bounds: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_SET_WINDOW_BOUNDS, bounds),
-    reset: (): Promise<IPCResponse> => safeInvoke(IPC_CHANNELS.SETTINGS_RESET),
+    reset: (): Promise<IPCResponse<never>> => safeInvoke(IPC_CHANNELS.SETTINGS_RESET),
   },
 
   // Recovery API
   recovery: {
-    runDb: (options?: { dryRun?: boolean }): Promise<IPCResponse> =>
+    runDb: (options?: { dryRun?: boolean }): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.RECOVERY_DB_RUN, options),
   },
 
   // Sync API
   sync: {
-    getStatus: (): Promise<IPCResponse> =>
+    getStatus: (): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SYNC_GET_STATUS),
-    connectGoogle: (): Promise<IPCResponse> =>
+    connectGoogle: (): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SYNC_CONNECT_GOOGLE),
-    disconnect: (): Promise<IPCResponse> =>
+    disconnect: (): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SYNC_DISCONNECT),
-    runNow: (): Promise<IPCResponse> =>
+    runNow: (): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SYNC_RUN_NOW),
-    setAutoSync: (settings: unknown): Promise<IPCResponse> =>
+    setAutoSync: (settings: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SYNC_SET_AUTO, settings),
-    onStatusChanged: (callback: (status: unknown) => void): (() => void) => {
-      const listener = (_event: unknown, status: unknown) => {
+    onStatusChanged: (callback: (status: SyncStatus) => void): (() => void) => {
+      const listener = (_event: unknown, status: SyncStatus) => {
         callback(status);
       };
       ipcRenderer.on(IPC_CHANNELS.SYNC_STATUS_CHANGED, listener);
@@ -632,11 +637,11 @@ contextBridge.exposeInMainWorld("api", {
 
   // Analysis API
   analysis: {
-    start: (chapterId: string, projectId: string): Promise<IPCResponse> =>
+    start: (chapterId: string, projectId: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.ANALYSIS_START, { chapterId, projectId }),
-    stop: (): Promise<IPCResponse> =>
+    stop: (): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.ANALYSIS_STOP),
-    clear: (): Promise<IPCResponse> =>
+    clear: (): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.ANALYSIS_CLEAR),
     onStream: (callback: (data: unknown) => void): (() => void) => {
       const listener = (_event: unknown, data: unknown) => {
@@ -657,7 +662,10 @@ contextBridge.exposeInMainWorld("api", {
       };
     },
   },
-});
+} satisfies RendererApi;
+
+// Expose API to renderer process
+contextBridge.exposeInMainWorld("api", rendererApi);
 
 // ─── Graceful Quit Support ──────
 // When the main process signals that the app is about to quit,

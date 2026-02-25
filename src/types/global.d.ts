@@ -268,7 +268,7 @@ declare global {
         close: () => Promise<IPCResponse<unknown>>;
         toggleFullscreen: () => Promise<IPCResponse<unknown>>;
         setFullscreen: (flag: boolean) => Promise<IPCResponse<unknown>>;
-        openExport: (chapterId: string) => Promise<IPCResponse<unknown>>;
+        openExport: (chapterId: string) => Promise<IPCResponse<boolean>>;
       };
 
       logger: {

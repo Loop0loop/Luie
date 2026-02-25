@@ -1,3 +1,5 @@
+import createDOMPurify, { type Config } from "dompurify";
+
 const BLOCKED_TAG_PATTERN =
   /<\s*(script|iframe|object|embed|link|meta)\b[^>]*>([\s\S]*?)<\s*\/\s*\1\s*>/gi;
 const BLOCKED_SELF_CLOSING_TAG_PATTERN =
@@ -17,41 +19,39 @@ const sanitizeHtmlWithRegex = (html: string): string =>
     .replace(JS_PROTOCOL_QUOTED_ATTR_PATTERN, "")
     .replace(JS_PROTOCOL_UNQUOTED_ATTR_PATTERN, "");
 
+const BLOCKED_TAGS = ["script", "iframe", "object", "embed", "link", "meta"];
+const BLOCKED_ATTRS = ["onerror", "onload", "onclick", "onmouseover", "onfocus", "onblur"];
+
+const DOM_PURIFY_CONFIG: Config = {
+  FORBID_TAGS: BLOCKED_TAGS,
+  FORBID_ATTR: BLOCKED_ATTRS,
+  USE_PROFILES: { html: true },
+};
+
+let cachedPurifier: ReturnType<typeof createDOMPurify> | null = null;
+
+const getBrowserPurifier = (): ReturnType<typeof createDOMPurify> | null => {
+  if (
+    typeof window === "undefined" ||
+    typeof document === "undefined" ||
+    !window
+  ) {
+    return null;
+  }
+
+  if (!cachedPurifier) {
+    cachedPurifier = createDOMPurify(window);
+  }
+
+  return cachedPurifier;
+};
+
 export const sanitizePreviewHtml = (html: string): string => {
-  if (typeof document === "undefined") {
+  const purifier = getBrowserPurifier();
+  if (!purifier) {
     return sanitizeHtmlWithRegex(html);
   }
 
-  const template = document.createElement("template");
-  template.innerHTML = html;
-
-  const blockedTags = new Set(["script", "iframe", "object", "embed", "link", "meta"]);
-  const elements = Array.from(template.content.querySelectorAll("*"));
-
-  elements.forEach((element) => {
-    const tagName = element.tagName.toLowerCase();
-    if (blockedTags.has(tagName)) {
-      element.remove();
-      return;
-    }
-
-    Array.from(element.attributes).forEach((attribute) => {
-      const name = attribute.name.toLowerCase();
-      const value = attribute.value.trim().toLowerCase();
-
-      if (name.startsWith("on")) {
-        element.removeAttribute(attribute.name);
-        return;
-      }
-
-      if (
-        (name === "href" || name === "src" || name === "xlink:href") &&
-        value.startsWith("javascript:")
-      ) {
-        element.removeAttribute(attribute.name);
-      }
-    });
-  });
-
-  return template.innerHTML;
+  const sanitized = purifier.sanitize(html, DOM_PURIFY_CONFIG);
+  return typeof sanitized === "string" ? sanitized : sanitizeHtmlWithRegex(html);
 };

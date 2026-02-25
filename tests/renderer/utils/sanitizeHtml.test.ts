@@ -1,21 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { sanitizePreviewHtml } from "../../../src/renderer/src/utils/sanitizeHtml.js";
+import { sanitizePreviewHtml } from "../../../src/shared/utils/sanitizeHtml.js";
 
 describe("sanitizePreviewHtml", () => {
   it("removes blocked tags", () => {
-    const input = `<div>safe<script>alert(1)</script><iframe src="https://evil.com"></iframe></div>`;
+    const input = `<div>safe<script>alert(1)</script><iframe src="https://evil.com"></iframe><object data="x"></object><embed src="x" /></div>`;
     const output = sanitizePreviewHtml(input);
 
     expect(output).toContain("safe");
     expect(output.toLowerCase()).not.toContain("<script");
     expect(output.toLowerCase()).not.toContain("<iframe");
+    expect(output.toLowerCase()).not.toContain("<object");
+    expect(output.toLowerCase()).not.toContain("<embed");
   });
 
   it("removes inline event handlers and javascript urls", () => {
-    const input = `<a onclick="hack()" href="javascript:alert(1)">link</a><img src=javascript:alert(1) onerror='hack()' />`;
+    const input = `<a onclick="hack()" onload="hack()" href="javascript:alert(1)">link</a><img src=javascript:alert(1) onerror='hack()' />`;
     const output = sanitizePreviewHtml(input);
 
     expect(output.toLowerCase()).not.toContain("onclick=");
+    expect(output.toLowerCase()).not.toContain("onload=");
     expect(output.toLowerCase()).not.toContain("onerror=");
     expect(output.toLowerCase()).not.toContain("javascript:");
   });

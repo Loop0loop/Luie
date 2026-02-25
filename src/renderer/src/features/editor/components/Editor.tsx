@@ -10,6 +10,7 @@ import { useEditorConfig } from "@renderer/features/editor/hooks/useEditorConfig
 import { api } from "@shared/api";
 import { useTranslation } from "react-i18next";
 import { useDialog } from "@shared/ui/useDialog";
+import { openQuickExportEntry } from "@renderer/features/workspace/services/exportEntryService";
 
 import { useEditorExtensions } from "@renderer/features/editor/components/hooks/useEditorExtensions";
 import { useSmartLinkClickHandler } from "@renderer/features/editor/components/hooks/useSmartLinkClickHandler";
@@ -140,25 +141,11 @@ function Editor({
   }
 
   const handleOpenExport = async () => {
-    // ... (export logic) ...
-    if (!chapterId || chapterId === "undefined" || chapterId === "null") {
-      api.logger.warn("No valid chapterId available for export", { chapterId });
-      dialog.toast(t("editor.errors.exportNoChapter"), "error");
-      return;
-    }
-
-    api.logger.info("Opening export window", { chapterId });
-    const response = await api.window.openExport(chapterId);
-
-    if (!response.success || response.data !== true) {
-      const message = response.error?.message || t("editor.errors.exportOpenFailed");
-      api.logger.error("Failed to open export window", {
-        chapterId,
-        error: response.error,
-        data: response.data
-      });
-      dialog.toast(message, "error");
-    }
+    await openQuickExportEntry({
+      chapterId,
+      t,
+      toast: dialog.toast,
+    });
   };
 
   return (

@@ -21,9 +21,9 @@ import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useWorkspaceDropHandlers } from "@renderer/features/workspace/hooks/useWorkspaceDropHandlers";
 import { emitShortcutCommand } from "@renderer/features/workspace/hooks/useShortcutCommand";
 import { useDialog } from "@shared/ui/useDialog";
-import { api } from "@shared/api";
 import { openDocsRightTab as openDocsPanelTab } from "@renderer/features/workspace/services/docsPanelService";
 import { createLayoutModeActions } from "@renderer/features/workspace/services/layoutModeActions";
+import { openQuickExportEntry } from "@renderer/features/workspace/services/exportEntryService";
 import { GlobalDragContext } from "@shared/ui/GlobalDragContext";
 import { useEditorRootShortcuts } from "@renderer/features/workspace/components/useEditorRootShortcuts";
 import { FeatureErrorBoundary } from "@shared/ui/FeatureErrorBoundary";
@@ -158,9 +158,12 @@ export default function EditorRoot() {
     );
 
     const handleQuickExport = useCallback(() => {
-        if (!activeChapterId) return;
-        void api.window.openExport(activeChapterId);
-    }, [activeChapterId]);
+        void openQuickExportEntry({
+            chapterId: activeChapterId,
+            t,
+            toast: dialog.toast,
+        });
+    }, [activeChapterId, dialog.toast, t]);
 
     const handleRenameProject = useCallback(async () => {
         if (!currentProject?.id) return;
