@@ -137,7 +137,7 @@ export function useEditorRootShortcuts({
             "world.tab.plot": () => setWorldTab("plot"),
             "world.addTerm": () => emitShortcutCommand({ type: "world.addTerm" }),
             "scrap.addMemo": () => emitShortcutCommand({ type: "scrap.addMemo" }),
-            "export.openPreview": () => layoutModeActions.openExportPreview(),
+            "export.openPreview": () => handleQuickExport(),
             "export.openWindow": () => handleQuickExport(),
             "editor.openRight": () => layoutModeActions.openEditorInSplit(),
             "editor.openLeft": () => layoutModeActions.openEditorInSplit(),

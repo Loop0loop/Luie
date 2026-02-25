@@ -22,6 +22,7 @@ interface EditorLayoutProps {
   currentProjectId?: string;
   editor: Editor | null;
   onOpenSettings?: () => void;
+  onOpenExport?: () => void;
   onRenameChapter?: (id: string, newTitle: string) => Promise<void>;
   onSaveChapter?: (title: string, content: string) => Promise<void>;
   additionalPanels?: ReactNode;
@@ -37,6 +38,7 @@ export default function EditorLayout({
   currentProjectId,
   editor,
   onOpenSettings,
+  onOpenExport,
   additionalPanels,
 }: EditorLayoutProps) {
   const { t } = useTranslation();
@@ -70,6 +72,7 @@ export default function EditorLayout({
           editor={editor}
           onOpenSettings={onOpenSettings}
           activeChapterId={activeChapterId}
+          onOpenExportPreview={onOpenExport}
         />
       </div>
 

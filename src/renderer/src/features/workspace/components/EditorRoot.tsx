@@ -271,7 +271,7 @@ export default function EditorRoot() {
                     onOpenSettings={() => setIsSettingsOpen(true)}
                     onRenameChapter={handleRenameChapter}
                     onSaveChapter={handleSave}
-                    onOpenExport={handleOpenExport}
+                    onOpenExport={handleQuickExport}
                     additionalPanels={additionalPanelsComponent}
                 >
                     {sharedEditor}
@@ -286,6 +286,7 @@ export default function EditorRoot() {
                     currentProjectId={currentProject?.id}
                     editor={docEditor}
                     onOpenSettings={() => setIsSettingsOpen(true)}
+                    onOpenExport={handleQuickExport}
                     onRenameChapter={handleRenameChapter}
                     onSaveChapter={handleSave}
                     additionalPanels={additionalPanelsComponent}
@@ -301,6 +302,7 @@ export default function EditorRoot() {
                     activeChapterTitle={activeChapterTitle}
                     editor={docEditor}
                     onOpenSettings={() => setIsSettingsOpen(true)}
+                    onOpenExport={handleQuickExport}
                     additionalPanels={additionalPanelsComponent}
                 >
                     {sharedEditor}
@@ -318,7 +320,7 @@ export default function EditorRoot() {
                     contextPanel={
                         <ContextPanel activeTab={contextTab} onTabChange={setContextTab} />
                     }
-                    onOpenExport={handleOpenExport}
+                    onOpenExport={handleQuickExport}
                     additionalPanels={additionalPanelsComponent}
                 >
                     {sharedEditor}

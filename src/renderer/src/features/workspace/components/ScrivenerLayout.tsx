@@ -36,6 +36,7 @@ interface ScrivenerLayoutProps {
   activeChapterTitle?: string;
   editor: Editor | null;
   onOpenSettings?: () => void;
+  onOpenExport?: () => void;
   additionalPanels?: ReactNode;
 }
 
@@ -46,6 +47,7 @@ export default function ScrivenerLayout({
   activeChapterTitle,
   editor,
   onOpenSettings,
+  onOpenExport,
   additionalPanels,
 }: ScrivenerLayoutProps) {
   const { t } = useTranslation();
@@ -122,6 +124,7 @@ export default function ScrivenerLayout({
           editor={editor}
           onOpenSettings={onOpenSettings}
           activeChapterId={activeChapterId}
+          onOpenExportPreview={onOpenExport}
         />
         {/* Scrivener-specific toolbar items could go here if separate */}
       </div>

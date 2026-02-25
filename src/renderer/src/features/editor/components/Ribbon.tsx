@@ -19,16 +19,21 @@ import {
 } from "lucide-react";
 import { cn } from "@shared/types/utils";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
-import { api } from "@shared/api";
 import { FontSelector } from "./FontSelector";
 
 interface RibbonProps {
   editor: Editor | null;
   onOpenSettings?: () => void;
   activeChapterId?: string;
+  onOpenExportPreview?: () => void;
 }
 
-export default function Ribbon({ editor, onOpenSettings, activeChapterId }: RibbonProps) {
+export default function Ribbon({
+  editor,
+  onOpenSettings,
+  activeChapterId,
+  onOpenExportPreview,
+}: RibbonProps) {
   const { t } = useTranslation();
   const maxWidth = useEditorStore((state) => state.maxWidth);
   if (!editor) return null;
@@ -40,12 +45,9 @@ export default function Ribbon({ editor, onOpenSettings, activeChapterId }: Ribb
     if (!editor) return;
     action(editor.chain().focus());
   };
-
-
-
-  const handleExport = async () => {
+  const handleExport = () => {
     if (!activeChapterId) return;
-    await api.window.openExport(activeChapterId);
+    onOpenExportPreview?.();
   };
 
   return (
@@ -172,7 +174,7 @@ export default function Ribbon({ editor, onOpenSettings, activeChapterId }: Ribb
         <div className="ml-auto flex items-center gap-0.5">
           <ToolbarButton
             icon={<FileOutput className="w-4 h-4" />}
-            onClick={() => void handleExport()}
+            onClick={handleExport}
             title={t("export.title")}
             disabled={!activeChapterId}
           />
