@@ -1,7 +1,9 @@
-import { useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
-import type { Layout } from "react-resizable-panels";
-import { STORAGE_KEY_MEMO_SIDEBAR_LAYOUT } from "@shared/constants";
+import {
+  STORAGE_KEY_MEMO_SIDEBAR_LAYOUT,
+  STORAGE_KEY_MEMO_SIDEBAR_LAYOUT_LEGACY,
+} from "@shared/constants";
 import { Tag } from "lucide-react";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useTranslation } from "react-i18next";
@@ -9,24 +11,36 @@ import { useShortcutCommand } from "@renderer/features/workspace/hooks/useShortc
 import { readLocalStorageJson, writeLocalStorageJson } from "@shared/utils/localStorage";
 import { useMemoManager, buildDefaultNotes, type Note } from "@renderer/features/research/components/memo/useMemoManager";
 import { MemoSidebarList } from "@renderer/features/research/components/memo/MemoSidebarList";
+import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import {
+  clampSidebarWidth,
+  getSidebarDefaultWidth,
+  getSidebarWidthConfig,
+  toPercentSize,
+  toPxSize,
+} from "@shared/constants/sidebarSizing";
+import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
 
 const MEMO_SIDEBAR_PANEL_ID = "memo-sidebar";
 const MEMO_CONTENT_PANEL_ID = "memo-content";
-const MEMO_SIDEBAR_DEFAULT_SIZE = 90;
-const MEMO_SIDEBAR_MIN_SIZE = 90;
-const MEMO_SIDEBAR_MAX_SIZE = 190;
-const MEMO_CONTENT_MIN_SIZE = 20;
+const MEMO_CONTENT_MIN_SIZE_PERCENT = 20;
 
-const normalizeMemoLayout = (layout: Layout): Layout | undefined => {
-  const rawSidebar = layout[MEMO_SIDEBAR_PANEL_ID];
-  const rawContent = layout[MEMO_CONTENT_PANEL_ID];
-  if (!Number.isFinite(rawSidebar) || !Number.isFinite(rawContent)) return undefined;
+type MemoSidebarLayoutV3 = {
+  sidebarWidthPx: number;
+};
 
-  const normalizedSidebar = Math.max(MEMO_SIDEBAR_MIN_SIZE, Math.min(MEMO_SIDEBAR_MAX_SIZE, Math.round(Number(rawSidebar))));
-  return {
-    [MEMO_SIDEBAR_PANEL_ID]: normalizedSidebar,
-    [MEMO_CONTENT_PANEL_ID]: 100 - normalizedSidebar,
-  };
+const readMemoSidebarWidthFromStorage = (): number | null => {
+  const v3 = readLocalStorageJson<MemoSidebarLayoutV3>(STORAGE_KEY_MEMO_SIDEBAR_LAYOUT);
+  if (typeof v3?.sidebarWidthPx === "number" && Number.isFinite(v3.sidebarWidthPx)) {
+    return Math.round(v3.sidebarWidthPx);
+  }
+
+  // v2 layout exists as percentage-based pair; skip conversion and use default width.
+  if (localStorage.getItem(STORAGE_KEY_MEMO_SIDEBAR_LAYOUT_LEGACY)) {
+    return null;
+  }
+
+  return null;
 };
 
 export default function MemoSection() {
@@ -56,6 +70,9 @@ function MemoSectionInner({
   defaultNotes: Note[];
 }) {
   const { t } = useTranslation();
+  const { sidebarWidths, setSidebarWidth } = useUIStore();
+  const sidebarFeature = "memoSidebar" as const;
+  const sidebarConfig = getSidebarWidthConfig(sidebarFeature);
 
   const {
     activeNoteId,
@@ -68,24 +85,36 @@ function MemoSectionInner({
     updateActiveNote,
   } = useMemoManager(projectId, projectPath, defaultNotes, t);
 
-  const saveLayoutTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const initialLayout = useMemo(() => {
-    const parsed = readLocalStorageJson<Layout>(STORAGE_KEY_MEMO_SIDEBAR_LAYOUT);
-    if (!parsed) return undefined;
-    return normalizeMemoLayout(parsed);
+  const storedSidebarWidthPx = useMemo(() => {
+    const width = readMemoSidebarWidthFromStorage();
+    if (width === null) return null;
+    return clampSidebarWidth(sidebarFeature, width);
   }, []);
 
-  const handleLayoutChange = (layout: Layout) => {
-    if (saveLayoutTimeoutRef.current) {
-      clearTimeout(saveLayoutTimeoutRef.current);
-    }
-    saveLayoutTimeoutRef.current = setTimeout(() => {
-      const normalized = normalizeMemoLayout(layout);
-      if (!normalized) return;
-      void writeLocalStorageJson(STORAGE_KEY_MEMO_SIDEBAR_LAYOUT, normalized);
-    }, 500);
-  };
+  useEffect(() => {
+    if (storedSidebarWidthPx === null) return;
+    setSidebarWidth(sidebarFeature, storedSidebarWidthPx);
+  }, [setSidebarWidth, sidebarFeature, storedSidebarWidthPx]);
+
+  const memoSidebarWidthPx = clampSidebarWidth(
+    sidebarFeature,
+    storedSidebarWidthPx ??
+    sidebarWidths[sidebarFeature] ??
+    getSidebarDefaultWidth(sidebarFeature),
+  );
+
+  const commitMemoSidebarWidth = useCallback(
+    (_feature: string, widthPx: number) => {
+      setSidebarWidth(sidebarFeature, widthPx);
+      writeLocalStorageJson(STORAGE_KEY_MEMO_SIDEBAR_LAYOUT, { sidebarWidthPx: widthPx });
+    },
+    [setSidebarWidth, sidebarFeature],
+  );
+
+  const handleMemoSidebarResize = useSidebarResizeCommit(
+    sidebarFeature,
+    commitMemoSidebarWidth,
+  );
 
   useShortcutCommand((command) => {
     if (command.type === "scrap.addMemo") {
@@ -97,16 +126,15 @@ function MemoSectionInner({
     <div className="flex flex-col h-full bg-sidebar/30">
       <PanelGroup
         orientation="horizontal"
-        onLayoutChanged={handleLayoutChange}
-        defaultLayout={initialLayout}
         id="memo-panel-group"
         className="h-full! w-full!"
       >
         <Panel
           id={MEMO_SIDEBAR_PANEL_ID}
-          defaultSize={MEMO_SIDEBAR_DEFAULT_SIZE}
-          minSize={MEMO_SIDEBAR_MIN_SIZE}
-          maxSize={MEMO_SIDEBAR_MAX_SIZE}
+          defaultSize={toPxSize(memoSidebarWidthPx)}
+          minSize={toPxSize(sidebarConfig.minPx)}
+          maxSize={toPxSize(sidebarConfig.maxPx)}
+          onResize={handleMemoSidebarResize}
           className="min-w-0"
         >
           <MemoSidebarList
@@ -123,7 +151,7 @@ function MemoSectionInner({
         <PanelResizeHandle className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize flex flex-col items-center justify-center -my-4 z-10 relative">
         </PanelResizeHandle>
 
-        <Panel id={MEMO_CONTENT_PANEL_ID} minSize={MEMO_CONTENT_MIN_SIZE} className="min-w-0">
+        <Panel id={MEMO_CONTENT_PANEL_ID} minSize={toPercentSize(MEMO_CONTENT_MIN_SIZE_PERCENT)} className="min-w-0">
           {activeNote ? (
             <div className="h-full flex flex-col bg-panel overflow-hidden">
               <div className="px-6 pt-3 flex items-center gap-2">

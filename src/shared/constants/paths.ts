@@ -4,7 +4,8 @@
 
 export const STORAGE_KEY_MEMOS_PREFIX = 'luie:memos:'
 export const STORAGE_KEY_MEMOS_NONE = 'luie:memos:none'
-export const STORAGE_KEY_MEMO_SIDEBAR_LAYOUT = 'memo-sidebar-layout-v2'
+export const STORAGE_KEY_MEMO_SIDEBAR_LAYOUT = 'memo-sidebar-layout-v3'
+export const STORAGE_KEY_MEMO_SIDEBAR_LAYOUT_LEGACY = 'memo-sidebar-layout-v2'
 export const STORAGE_KEY_CHARACTER_SIDEBAR_LAYOUT = 'character-sidebar-layout-v2'
 export const STORAGE_KEY_FONTS_INSTALLED = 'luie:fonts:installed'
 export const STORAGE_KEY_UI = 'luie-ui'

@@ -4,21 +4,24 @@ import { User, Globe, StickyNote, Sparkles, History, Trash2, ChevronLeft, X } fr
 import React from 'react';
 import { Panel, Separator as PanelResizeHandle, type PanelSize } from "react-resizable-panels";
 import { cn } from "@shared/types/utils";
-import { useUIStore, type DocsRightTab } from "@renderer/features/workspace/stores/uiStore";
+import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import type { DragItemType } from "@shared/ui/GlobalDragContext";
 import FocusHoverSidebar from "@renderer/features/manuscript/components/FocusHoverSidebar";
+import {
+    clampSidebarWidth,
+    getSidebarDefaultWidth,
+    getSidebarWidthConfig,
+    toPxSize,
+} from "@shared/constants/sidebarSizing";
+import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
 
 const ResearchPanel = React.lazy(() => import("@renderer/features/research/components/ResearchPanel"));
 const WorldPanel = React.lazy(() => import("@renderer/features/research/components/WorldPanel"));
 const SnapshotList = React.lazy(() => import("@renderer/features/snapshot/components/SnapshotList").then((m) => ({ default: m.SnapshotList })));
 const TrashList = React.lazy(() => import("@renderer/features/trash/components/TrashList").then((m) => ({ default: m.TrashList })));
 
-type BinderTab = Exclude<DocsRightTab, null | "editor" | "export">;
-
-const EDITOR_RIGHT_MIN_WIDTH_PX = 320;
-const EDITOR_RIGHT_MAX_WIDTH_PX = 1400;
-const EDITOR_RIGHT_DEFAULT_WIDTH_PX = 900;
+type BinderTab = "character" | "world" | "scrap" | "analysis" | "snapshot" | "trash";
 
 interface BinderSidebarProps {
     activeChapterId?: string;
@@ -49,6 +52,15 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
         [setDocsRightTab]
     );
 
+    const rightTabResizeHandlers: Record<BinderTab, (panelSize: PanelSize) => void> = {
+        character: useSidebarResizeCommit("character", setSidebarWidth),
+        world: useSidebarResizeCommit("world", setSidebarWidth),
+        scrap: useSidebarResizeCommit("scrap", setSidebarWidth),
+        analysis: useSidebarResizeCommit("analysis", setSidebarWidth),
+        snapshot: useSidebarResizeCommit("snapshot", setSidebarWidth),
+        trash: useSidebarResizeCommit("trash", setSidebarWidth),
+    };
+
     const handleRightTabClick = useCallback(
         (tab: BinderTab) => {
             setFocusedClosableTarget({ kind: "docs-tab" });
@@ -60,25 +72,18 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
     const handleResize = useCallback(
         (panelSize: PanelSize) => {
             if (!activeRightTab) return;
-            const nextWidth = Math.round(panelSize.inPixels);
-            const bounded = Math.min(
-                EDITOR_RIGHT_MAX_WIDTH_PX,
-                Math.max(EDITOR_RIGHT_MIN_WIDTH_PX, nextWidth),
-            );
-            setSidebarWidth(activeRightTab, bounded);
+            rightTabResizeHandlers[activeRightTab](panelSize);
         },
-        [activeRightTab, setSidebarWidth]
+        [activeRightTab, rightTabResizeHandlers]
     );
 
-    const savedPxWidth = Math.min(
-        EDITOR_RIGHT_MAX_WIDTH_PX,
-        Math.max(
-            EDITOR_RIGHT_MIN_WIDTH_PX,
-            activeRightTab
-                ? sidebarWidths[activeRightTab] || EDITOR_RIGHT_DEFAULT_WIDTH_PX
-                : EDITOR_RIGHT_DEFAULT_WIDTH_PX,
-        ),
-    );
+    const savedPxWidth = activeRightTab
+        ? clampSidebarWidth(
+            activeRightTab,
+            sidebarWidths[activeRightTab] || getSidebarDefaultWidth(activeRightTab),
+        )
+        : getSidebarDefaultWidth("character");
+    const widthConfig = getSidebarWidthConfig(activeRightTab || "character");
 
     const handleBackToSnapshotList = () => {
         setActiveRightTab("snapshot");
@@ -151,9 +156,9 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
             <Panel
                 key={`binder-sidebar-${activeRightTab}`}
                 id="binder-sidebar"
-                defaultSize={`${savedPxWidth}px`}
-                minSize={`${EDITOR_RIGHT_MIN_WIDTH_PX}px`}
-                maxSize={`${EDITOR_RIGHT_MAX_WIDTH_PX}px`}
+                defaultSize={toPxSize(savedPxWidth)}
+                minSize={toPxSize(widthConfig.minPx)}
+                maxSize={toPxSize(widthConfig.maxPx)}
                 onResize={handleResize}
                 onMouseDownCapture={() => {
                     setFocusedClosableTarget({ kind: "docs-tab" });

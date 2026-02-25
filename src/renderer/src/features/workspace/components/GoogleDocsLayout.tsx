@@ -3,7 +3,7 @@ import { type Editor as TiptapEditor } from "@tiptap/react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type PanelSize } from "react-resizable-panels";
 import WindowBar from '@renderer/features/workspace/components/WindowBar';
 import { cn } from '@shared/types/utils';
-import { useUIStore } from '@renderer/features/workspace/stores/uiStore';
+import { useUIStore, type DocsRightTab } from '@renderer/features/workspace/stores/uiStore';
 import { useTranslation } from "react-i18next";
 import { SnapshotList } from "@renderer/features/snapshot/components/SnapshotList";
 import { TrashList } from "@renderer/features/trash/components/TrashList";
@@ -23,6 +23,13 @@ import {
   openDocsRightTab,
 } from "@renderer/features/workspace/services/docsPanelService";
 import {
+  clampSidebarWidth,
+  getSidebarDefaultWidth,
+  getSidebarWidthConfig,
+  toPxSize,
+} from "@shared/constants/sidebarSizing";
+import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
+import {
   Menu,
   ChevronLeft,
   History,
@@ -36,13 +43,6 @@ import {
   Calendar,
   Shield
 } from "lucide-react";
-
-const DOCS_LEFT_MIN_WIDTH_PX = 300;
-const DOCS_LEFT_MAX_WIDTH_PX = 520;
-const DOCS_LEFT_DEFAULT_WIDTH_PX = 360;
-const DOCS_RIGHT_MIN_WIDTH_PX = 380;
-const DOCS_RIGHT_MAX_WIDTH_PX = 1400;
-const DOCS_RIGHT_DEFAULT_WIDTH_PX = 900;
 
 interface GoogleDocsLayoutProps {
   children: ReactNode;
@@ -106,42 +106,39 @@ export default function GoogleDocsLayout({
     openDocsRightTab(nextTab);
   }, [activeRightTab, setActiveRightTab, setFocusedClosableTarget]);
 
-  const handleLeftResize = useCallback((panelSize: PanelSize) => {
-    const nextWidth = Math.round(panelSize.inPixels);
-    const bounded = Math.min(
-      DOCS_LEFT_MAX_WIDTH_PX,
-      Math.max(DOCS_LEFT_MIN_WIDTH_PX, nextWidth),
-    );
-    setSidebarWidth("docsBinder", bounded);
-  }, [setSidebarWidth]);
+  const handleLeftResize = useSidebarResizeCommit("docsBinder", setSidebarWidth);
+  const docsBinderConfig = getSidebarWidthConfig("docsBinder");
+  const rightTabResizeHandlers: Record<Exclude<DocsRightTab, null>, (panelSize: PanelSize) => void> = {
+    character: useSidebarResizeCommit("character", setSidebarWidth),
+    event: useSidebarResizeCommit("event", setSidebarWidth),
+    faction: useSidebarResizeCommit("faction", setSidebarWidth),
+    world: useSidebarResizeCommit("world", setSidebarWidth),
+    scrap: useSidebarResizeCommit("scrap", setSidebarWidth),
+    analysis: useSidebarResizeCommit("analysis", setSidebarWidth),
+    snapshot: useSidebarResizeCommit("snapshot", setSidebarWidth),
+    trash: useSidebarResizeCommit("trash", setSidebarWidth),
+    editor: useSidebarResizeCommit("editor", setSidebarWidth),
+    export: useSidebarResizeCommit("export", setSidebarWidth),
+  };
 
   const handleRightResize = useCallback((panelSize: PanelSize) => {
     if (!activeRightTab) return;
-    const nextWidth = Math.round(panelSize.inPixels);
-    const bounded = Math.min(
-      DOCS_RIGHT_MAX_WIDTH_PX,
-      Math.max(DOCS_RIGHT_MIN_WIDTH_PX, nextWidth),
-    );
-    setSidebarWidth(activeRightTab, bounded);
-  }, [activeRightTab, setSidebarWidth]);
+    rightTabResizeHandlers[activeRightTab](panelSize);
+  }, [activeRightTab, rightTabResizeHandlers]);
 
-  const leftSavedPxWidth = Math.min(
-    DOCS_LEFT_MAX_WIDTH_PX,
-    Math.max(
-      DOCS_LEFT_MIN_WIDTH_PX,
-      sidebarWidths["docsBinder"] || DOCS_LEFT_DEFAULT_WIDTH_PX,
-    ),
+  const leftSavedPxWidth = clampSidebarWidth(
+    "docsBinder",
+    sidebarWidths["docsBinder"] || getSidebarDefaultWidth("docsBinder"),
   );
 
-  const rightSavedPxWidth = Math.min(
-    DOCS_RIGHT_MAX_WIDTH_PX,
-    Math.max(
-      DOCS_RIGHT_MIN_WIDTH_PX,
-      activeRightTab
-        ? sidebarWidths[activeRightTab] || DOCS_RIGHT_DEFAULT_WIDTH_PX
-        : DOCS_RIGHT_DEFAULT_WIDTH_PX,
-    ),
-  );
+  const rightSavedPxWidth = activeRightTab
+    ? clampSidebarWidth(
+      activeRightTab,
+      sidebarWidths[activeRightTab] || getSidebarDefaultWidth(activeRightTab),
+    )
+    : getSidebarDefaultWidth("character");
+
+  const rightWidthConfig = getSidebarWidthConfig(activeRightTab || "character");
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-sans transition-colors duration-200">
@@ -239,9 +236,9 @@ export default function GoogleDocsLayout({
             <>
               <Panel
                 id="left-sidebar"
-                defaultSize={`${leftSavedPxWidth}px`}
-                minSize={`${DOCS_LEFT_MIN_WIDTH_PX}px`}
-                maxSize={`${DOCS_LEFT_MAX_WIDTH_PX}px`}
+                defaultSize={toPxSize(leftSavedPxWidth)}
+                minSize={toPxSize(docsBinderConfig.minPx)}
+                maxSize={toPxSize(docsBinderConfig.maxPx)}
                 onResize={handleLeftResize}
                 className="bg-background border-r border-border overflow-hidden flex flex-col shrink-0 min-w-0"
               >
@@ -298,9 +295,9 @@ export default function GoogleDocsLayout({
               <Panel
                 key={`right-context-panel-${activeRightTab}`}
                 id="right-context-panel"
-                defaultSize={`${rightSavedPxWidth}px`}
-                minSize={`${DOCS_RIGHT_MIN_WIDTH_PX}px`}
-                maxSize={`${DOCS_RIGHT_MAX_WIDTH_PX}px`}
+                defaultSize={toPxSize(rightSavedPxWidth)}
+                minSize={toPxSize(rightWidthConfig.minPx)}
+                maxSize={toPxSize(rightWidthConfig.maxPx)}
                 onResize={handleRightResize}
                 onMouseDownCapture={() => {
                   setFocusedClosableTarget({ kind: "docs-tab" });

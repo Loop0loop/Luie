@@ -2,7 +2,6 @@ import {
   type ReactNode,
   useState,
   Suspense,
-  useCallback,
   useEffect,
   useRef,
 } from "react";
@@ -20,7 +19,15 @@ import MemoMainView from "@renderer/features/research/components/memo/MemoMainVi
 import AnalysisSection from "@renderer/features/research/components/AnalysisSection";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { Menu, ChevronRight } from "lucide-react";
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type GroupImperativeHandle, type PanelSize } from "react-resizable-panels";
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type GroupImperativeHandle } from "react-resizable-panels";
+import {
+  clampSidebarWidth,
+  getSidebarDefaultWidth,
+  getSidebarWidthConfig,
+  toPercentSize,
+  toPxSize,
+} from "@shared/constants/sidebarSizing";
+import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
 
 interface ScrivenerLayoutProps {
   children?: ReactNode;
@@ -31,13 +38,6 @@ interface ScrivenerLayoutProps {
   onOpenSettings?: () => void;
   additionalPanels?: ReactNode;
 }
-
-const SCRIVENER_BINDER_MIN_WIDTH_PX = 220;
-const SCRIVENER_BINDER_MAX_WIDTH_PX = 440;
-const SCRIVENER_BINDER_DEFAULT_WIDTH_PX = 260;
-const SCRIVENER_INSPECTOR_MIN_WIDTH_PX = 245;
-const SCRIVENER_INSPECTOR_MAX_WIDTH_PX = 400;
-const SCRIVENER_INSPECTOR_DEFAULT_WIDTH_PX = 350;
 
 export default function ScrivenerLayout({
   children,
@@ -57,38 +57,19 @@ export default function ScrivenerLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isInspectorOpen, setIsInspectorOpen] = useState(true);
 
-  const handleBinderResize = useCallback((panelSize: PanelSize) => {
-    const nextWidth = Math.round(panelSize.inPixels);
-    const bounded = Math.min(
-      SCRIVENER_BINDER_MAX_WIDTH_PX,
-      Math.max(SCRIVENER_BINDER_MIN_WIDTH_PX, nextWidth),
-    );
-    setSidebarWidth("scrivenerBinder", bounded);
-  }, [setSidebarWidth]);
+  const handleBinderResize = useSidebarResizeCommit("scrivenerBinder", setSidebarWidth);
+  const handleInspectorResize = useSidebarResizeCommit("scrivenerInspector", setSidebarWidth);
+  const binderConfig = getSidebarWidthConfig("scrivenerBinder");
+  const inspectorConfig = getSidebarWidthConfig("scrivenerInspector");
 
-  const handleInspectorResize = useCallback((panelSize: PanelSize) => {
-    const nextWidth = Math.round(panelSize.inPixels);
-    const bounded = Math.min(
-      SCRIVENER_INSPECTOR_MAX_WIDTH_PX,
-      Math.max(SCRIVENER_INSPECTOR_MIN_WIDTH_PX, nextWidth),
-    );
-    setSidebarWidth("scrivenerInspector", bounded);
-  }, [setSidebarWidth]);
-
-  const binderSavedPxWidth = Math.min(
-    SCRIVENER_BINDER_MAX_WIDTH_PX,
-    Math.max(
-      SCRIVENER_BINDER_MIN_WIDTH_PX,
-      sidebarWidths["scrivenerBinder"] || SCRIVENER_BINDER_DEFAULT_WIDTH_PX,
-    ),
+  const binderSavedPxWidth = clampSidebarWidth(
+    "scrivenerBinder",
+    sidebarWidths["scrivenerBinder"] || getSidebarDefaultWidth("scrivenerBinder"),
   );
 
-  const inspectorSavedPxWidth = Math.min(
-    SCRIVENER_INSPECTOR_MAX_WIDTH_PX,
-    Math.max(
-      SCRIVENER_INSPECTOR_MIN_WIDTH_PX,
-      sidebarWidths["scrivenerInspector"] || SCRIVENER_INSPECTOR_DEFAULT_WIDTH_PX,
-    ),
+  const inspectorSavedPxWidth = clampSidebarWidth(
+    "scrivenerInspector",
+    sidebarWidths["scrivenerInspector"] || getSidebarDefaultWidth("scrivenerInspector"),
   );
 
   useEffect(() => {
@@ -154,9 +135,9 @@ export default function ScrivenerLayout({
             <>
               <Panel
                 id="sidebar"
-                defaultSize={`${binderSavedPxWidth}px`}
-                minSize={`${SCRIVENER_BINDER_MIN_WIDTH_PX}px`}
-                maxSize={`${SCRIVENER_BINDER_MAX_WIDTH_PX}px`}
+                defaultSize={toPxSize(binderSavedPxWidth)}
+                minSize={toPxSize(binderConfig.minPx)}
+                maxSize={toPxSize(binderConfig.maxPx)}
                 onResize={handleBinderResize}
                 className="bg-panel border-r border-border flex flex-col shrink-0 min-w-0"
               >
@@ -170,7 +151,7 @@ export default function ScrivenerLayout({
           )}
 
           {/* Pane 2: Editor (Center) */}
-          <Panel id="main-editor" minSize={30} className="min-w-0 bg-canvas flex flex-col relative z-0">
+          <Panel id="main-editor" minSize={toPercentSize(30)} className="min-w-0 bg-canvas flex flex-col relative z-0">
             {/* Header / Title Bar of Editor Pane? (Like Scrivener Header) */}
             <div className="h-8 bg-surface border-b border-border flex items-center px-4 justify-between shrink-0">
               <div className="flex items-center gap-2 overflow-hidden">
@@ -209,7 +190,12 @@ export default function ScrivenerLayout({
                 groupRef={editorSplitGroupRef}
                 id="scrivener-editor-split"
               >
-                <Panel id="editor-content" defaultSize={100} minSize={20} className="min-w-0 relative flex flex-col">
+                <Panel
+                  id="editor-content"
+                  defaultSize={toPercentSize(100)}
+                  minSize={toPercentSize(20)}
+                  className="min-w-0 relative flex flex-col"
+                >
                   <EditorDropZones />
                   {(mainView.type === "world" || mainView.type === "analysis") ? (
                     <div className="h-full w-full bg-white dark:bg-[#1e1e1e]">
@@ -243,9 +229,9 @@ export default function ScrivenerLayout({
 
               <Panel
                 id="inspector"
-                defaultSize={`${inspectorSavedPxWidth}px`}
-                minSize={`${SCRIVENER_INSPECTOR_MIN_WIDTH_PX}px`}
-                maxSize={`${SCRIVENER_INSPECTOR_MAX_WIDTH_PX}px`}
+                defaultSize={toPxSize(inspectorSavedPxWidth)}
+                minSize={toPxSize(inspectorConfig.minPx)}
+                maxSize={toPxSize(inspectorConfig.maxPx)}
                 onResize={handleInspectorResize}
                 className="bg-panel flex flex-col shrink-0 min-w-0"
               >

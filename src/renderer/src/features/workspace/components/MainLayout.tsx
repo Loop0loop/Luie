@@ -1,11 +1,19 @@
-import { type ReactNode, useCallback } from 'react';
+import { type ReactNode } from 'react';
 import WindowBar from '@renderer/features/workspace/components/WindowBar';
 import { PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type PanelSize } from "react-resizable-panels";
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { useUIStore } from '@renderer/features/workspace/stores/uiStore';
 import { useTranslation } from "react-i18next";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import StatusFooter from "@shared/ui/StatusFooter";
+import {
+  clampSidebarWidth,
+  getSidebarDefaultWidth,
+  getSidebarWidthConfig,
+  toPercentSize,
+  toPxSize,
+} from "@shared/constants/sidebarSizing";
+import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -14,13 +22,6 @@ interface MainLayoutProps {
   additionalPanels?: ReactNode;
   onOpenExport?: () => void;
 }
-
-const MAIN_SIDEBAR_MIN_WIDTH_PX = 210;
-const MAIN_SIDEBAR_MAX_WIDTH_PX = 630;
-const MAIN_SIDEBAR_DEFAULT_WIDTH_PX = 280;
-const MAIN_CONTEXT_MIN_WIDTH_PX = 310;
-const MAIN_CONTEXT_MAX_WIDTH_PX = 610;
-const MAIN_CONTEXT_DEFAULT_WIDTH_PX = 310;
 
 export default function MainLayout({ children, sidebar, contextPanel, additionalPanels, onOpenExport }: MainLayoutProps) {
   const { t } = useTranslation();
@@ -33,31 +34,19 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
     setSidebarWidth,
   } = useUIStore();
 
-  const handleSidebarResize = useCallback((panelSize: PanelSize) => {
-    const nextWidth = Math.round(panelSize.inPixels);
-    const bounded = Math.min(
-      MAIN_SIDEBAR_MAX_WIDTH_PX,
-      Math.max(MAIN_SIDEBAR_MIN_WIDTH_PX, nextWidth),
-    );
-    setSidebarWidth("mainSidebar", bounded);
-  }, [setSidebarWidth]);
+  const handleSidebarResize = useSidebarResizeCommit("mainSidebar", setSidebarWidth);
+  const handleContextResize = useSidebarResizeCommit("mainContext", setSidebarWidth);
+  const mainSidebarConfig = getSidebarWidthConfig("mainSidebar");
+  const mainContextConfig = getSidebarWidthConfig("mainContext");
 
-  const handleContextResize = useCallback((panelSize: PanelSize) => {
-    const nextWidth = Math.round(panelSize.inPixels);
-    const bounded = Math.min(
-      MAIN_CONTEXT_MAX_WIDTH_PX,
-      Math.max(MAIN_CONTEXT_MIN_WIDTH_PX, nextWidth),
-    );
-    setSidebarWidth("mainContext", bounded);
-  }, [setSidebarWidth]);
-
-  const sidebarWidth = Math.min(
-    MAIN_SIDEBAR_MAX_WIDTH_PX,
-    Math.max(MAIN_SIDEBAR_MIN_WIDTH_PX, sidebarWidths["mainSidebar"] || MAIN_SIDEBAR_DEFAULT_WIDTH_PX),
+  const sidebarWidth = clampSidebarWidth(
+    "mainSidebar",
+    sidebarWidths["mainSidebar"] || getSidebarDefaultWidth("mainSidebar"),
   );
-  const contextWidth = Math.min(
-    MAIN_CONTEXT_MAX_WIDTH_PX,
-    Math.max(MAIN_CONTEXT_MIN_WIDTH_PX, sidebarWidths["mainContext"] || MAIN_CONTEXT_DEFAULT_WIDTH_PX),
+
+  const contextWidth = clampSidebarWidth(
+    "mainContext",
+    sidebarWidths["mainContext"] || getSidebarDefaultWidth("mainContext"),
   );
 
   return (
@@ -69,9 +58,9 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
         {isSidebarOpen && (
           <Panel
             id="sidebar-panel"
-            defaultSize={`${sidebarWidth}px`}
-            minSize={`${MAIN_SIDEBAR_MIN_WIDTH_PX}px`}
-            maxSize={`${MAIN_SIDEBAR_MAX_WIDTH_PX}px`}
+            defaultSize={toPxSize(sidebarWidth)}
+            minSize={toPxSize(mainSidebarConfig.minPx)}
+            maxSize={toPxSize(mainSidebarConfig.maxPx)}
             onResize={handleSidebarResize}
             className="bg-sidebar border-r border-border overflow-hidden flex flex-col z-10"
           >
@@ -116,7 +105,7 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
 
           <div className="flex-1 overflow-y-auto flex flex-col">
             <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative">
-              <Panel defaultSize={50} minSize={20} className="min-w-0 bg-canvas relative flex flex-col">
+              <Panel defaultSize={toPercentSize(50)} minSize={toPercentSize(20)} className="min-w-0 bg-canvas relative flex flex-col">
                 {children}
               </Panel>
               {additionalPanels}
@@ -133,9 +122,9 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
         {isContextOpen && (
           <Panel
             id="context-panel"
-            defaultSize={`${contextWidth}px`}
-            minSize={`${MAIN_CONTEXT_MIN_WIDTH_PX}px`}
-            maxSize={`${MAIN_CONTEXT_MAX_WIDTH_PX}px`}
+            defaultSize={toPxSize(contextWidth)}
+            minSize={toPxSize(mainContextConfig.minPx)}
+            maxSize={toPxSize(mainContextConfig.maxPx)}
             onResize={handleContextResize}
             className="bg-panel border-l border-border overflow-hidden flex flex-col z-10"
           >

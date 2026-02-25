@@ -5,9 +5,26 @@ import { useTranslation } from "react-i18next";
 import { EVENT_GROUP_COLORS } from "@shared/constants";
 import { useEventManager, type EventLike } from "@renderer/features/research/components/event/useEventManager";
 import { EventSidebarList } from "@renderer/features/research/components/event/EventSidebarList";
+import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import {
+    clampSidebarWidth,
+    getSidebarDefaultWidth,
+    getSidebarWidthConfig,
+    toPercentSize,
+    toPxSize,
+} from "@shared/constants/sidebarSizing";
+import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
 
 export default function EventManager() {
     const { t } = useTranslation();
+    const { sidebarWidths, setSidebarWidth } = useUIStore();
+    const sidebarFeature = "eventSidebar" as const;
+    const sidebarConfig = getSidebarWidthConfig(sidebarFeature);
+    const sidebarWidth = clampSidebarWidth(
+        sidebarFeature,
+        sidebarWidths[sidebarFeature] || getSidebarDefaultWidth(sidebarFeature),
+    );
+    const handleSidebarResize = useSidebarResizeCommit(sidebarFeature, setSidebarWidth);
 
     const {
         selectedEventId,
@@ -26,9 +43,10 @@ export default function EventManager() {
                 {/* LEFT SIDEBAR - Event List */}
                 <Panel
                     id="sidebar"
-                    defaultSize={210}
-                    minSize={145}
-                    maxSize={530}
+                    defaultSize={toPxSize(sidebarWidth)}
+                    minSize={toPxSize(sidebarConfig.minPx)}
+                    maxSize={toPxSize(sidebarConfig.maxPx)}
+                    onResize={handleSidebarResize}
                     className="bg-sidebar border-r border-border flex flex-col overflow-y-auto"
                 >
                     <EventSidebarList
@@ -45,7 +63,7 @@ export default function EventManager() {
                 </PanelResizeHandle>
 
                 {/* RIGHT MAIN - Wiki View */}
-                <Panel id="main" minSize={40}>
+                <Panel id="main" minSize={toPercentSize(40)}>
                     <div className="h-full w-full overflow-hidden flex flex-col">
                         {selectedEvent ? (
                             <EventDetailView

@@ -8,31 +8,17 @@ import {
   STORAGE_KEY_UI,
 } from "@shared/constants";
 import type { Snapshot } from "@shared/types";
+import {
+  buildDefaultSidebarWidths,
+  clampSidebarWidthForAnyFeature,
+  normalizeSidebarWidthInput,
+  type SidebarWidthFeature,
+} from "@shared/constants/sidebarSizing";
 
 export type ContextTab = "synopsis" | "characters" | "terms";
 export type ResearchTab = "character" | "world" | "event" | "faction" | "scrap" | "analysis";
 export type WorldTab = "synopsis" | "terms" | "mindmap" | "drawing" | "plot";
-export type SidebarFeature =
-  | "mainSidebar"
-  | "mainContext"
-  | "docsBinder"
-  | "scrivenerBinder"
-  | "scrivenerInspector"
-  | "character"
-  | "event"
-  | "faction"
-  | "world"
-  | "scrap"
-  | "analysis"
-  | "snapshot"
-  | "trash"
-  | "memo"
-  | "editor"
-  | "export"
-  // Legacy aliases (migrated at hydration)
-  | "binder"
-  | "context"
-  | "inspector";
+export type SidebarFeature = SidebarWidthFeature;
 export type DocsRightTab =
   | "character"
   | "event"
@@ -63,45 +49,10 @@ export interface ResizablePanelData {
   size: number; // Percentage or flex size
 }
 
-const DEFAULT_SIDEBAR_WIDTHS: Record<string, number> = {
-  mainSidebar: 280,
-  mainContext: 310,
-  docsBinder: 360,
-  scrivenerBinder: 260,
-  scrivenerInspector: 350,
-  character: 900,
-  event: 900,
-  faction: 900,
-  world: 900,
-  scrap: 900,
-  analysis: 900,
-  snapshot: 900,
-  trash: 900,
-  memo: 350,
-  editor: 900,
-  export: 900,
-};
-
-const SIDEBAR_WIDTH_MIN_PX = 120;
-const SIDEBAR_WIDTH_MAX_PX = 2000;
+const DEFAULT_SIDEBAR_WIDTHS: Record<string, number> = buildDefaultSidebarWidths();
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
-
-const parseSidebarWidth = (value: unknown): number | null => {
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) return null;
-    return Math.round(Math.min(SIDEBAR_WIDTH_MAX_PX, Math.max(SIDEBAR_WIDTH_MIN_PX, value)));
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number.parseFloat(value);
-    if (!Number.isFinite(parsed)) return null;
-    return Math.round(Math.min(SIDEBAR_WIDTH_MAX_PX, Math.max(SIDEBAR_WIDTH_MIN_PX, parsed)));
-  }
-
-  return null;
-};
 
 const normalizeSidebarWidths = (input: unknown): Record<string, number> => {
   const normalized: Record<string, number> = { ...DEFAULT_SIDEBAR_WIDTHS };
@@ -110,26 +61,35 @@ const normalizeSidebarWidths = (input: unknown): Record<string, number> => {
   }
 
   for (const [key, rawValue] of Object.entries(input)) {
-    const width = parseSidebarWidth(rawValue);
+    const width = normalizeSidebarWidthInput(key, rawValue);
     if (width === null) continue;
     normalized[key] = width;
   }
 
-  const legacyBinder = parseSidebarWidth(input.binder);
+  const legacyBinder = normalizeSidebarWidthInput("binder", input.binder);
   if (legacyBinder !== null) {
-    if (parseSidebarWidth(input.mainSidebar) === null) normalized.mainSidebar = legacyBinder;
-    if (parseSidebarWidth(input.docsBinder) === null) normalized.docsBinder = legacyBinder;
-    if (parseSidebarWidth(input.scrivenerBinder) === null) normalized.scrivenerBinder = legacyBinder;
+    if (normalizeSidebarWidthInput("mainSidebar", input.mainSidebar) === null) {
+      normalized.mainSidebar = clampSidebarWidthForAnyFeature("mainSidebar", legacyBinder);
+    }
+    if (normalizeSidebarWidthInput("docsBinder", input.docsBinder) === null) {
+      normalized.docsBinder = clampSidebarWidthForAnyFeature("docsBinder", legacyBinder);
+    }
+    if (normalizeSidebarWidthInput("scrivenerBinder", input.scrivenerBinder) === null) {
+      normalized.scrivenerBinder = clampSidebarWidthForAnyFeature("scrivenerBinder", legacyBinder);
+    }
   }
 
-  const legacyContext = parseSidebarWidth(input.context);
-  if (legacyContext !== null && parseSidebarWidth(input.mainContext) === null) {
-    normalized.mainContext = legacyContext;
+  const legacyContext = normalizeSidebarWidthInput("context", input.context);
+  if (legacyContext !== null && normalizeSidebarWidthInput("mainContext", input.mainContext) === null) {
+    normalized.mainContext = clampSidebarWidthForAnyFeature("mainContext", legacyContext);
   }
 
-  const legacyInspector = parseSidebarWidth(input.inspector);
-  if (legacyInspector !== null && parseSidebarWidth(input.scrivenerInspector) === null) {
-    normalized.scrivenerInspector = legacyInspector;
+  const legacyInspector = normalizeSidebarWidthInput("inspector", input.inspector);
+  if (
+    legacyInspector !== null &&
+    normalizeSidebarWidthInput("scrivenerInspector", input.scrivenerInspector) === null
+  ) {
+    normalized.scrivenerInspector = clampSidebarWidthForAnyFeature("scrivenerInspector", legacyInspector);
   }
 
   return normalized;
@@ -268,9 +228,9 @@ export const useUIStore = create<UIStore>()(
       setMainView: (mainView) => set({ mainView }),
       setSidebarWidth: (feature, width) =>
         set((state) => {
-          const next = parseSidebarWidth(width);
+          const next = normalizeSidebarWidthInput(feature, width);
           if (next === null) return state;
-          const prev = parseSidebarWidth(state.sidebarWidths[feature]);
+          const prev = normalizeSidebarWidthInput(feature, state.sidebarWidths[feature]);
           if (prev !== null && Math.abs(prev - next) < 2) return state;
           return {
             sidebarWidths: {

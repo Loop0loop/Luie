@@ -5,9 +5,26 @@ import { useTranslation } from "react-i18next";
 import { CHARACTER_GROUP_COLORS } from "@shared/constants";
 import { useCharacterManager, type CharacterLike } from "@renderer/features/research/components/character/useCharacterManager";
 import { CharacterSidebarList } from "@renderer/features/research/components/character/CharacterSidebarList";
+import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import {
+  clampSidebarWidth,
+  getSidebarDefaultWidth,
+  getSidebarWidthConfig,
+  toPercentSize,
+  toPxSize,
+} from "@shared/constants/sidebarSizing";
+import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
 
 export default function CharacterManager() {
   const { t } = useTranslation();
+  const { sidebarWidths, setSidebarWidth } = useUIStore();
+  const sidebarFeature = "characterSidebar" as const;
+  const sidebarConfig = getSidebarWidthConfig(sidebarFeature);
+  const sidebarWidth = clampSidebarWidth(
+    sidebarFeature,
+    sidebarWidths[sidebarFeature] || getSidebarDefaultWidth(sidebarFeature),
+  );
+  const handleSidebarResize = useSidebarResizeCommit(sidebarFeature, setSidebarWidth);
 
   const {
     selectedCharacterId,
@@ -28,9 +45,10 @@ export default function CharacterManager() {
         {/* LEFT SIDEBAR - Character List */}
         <Panel
           id="sidebar"
-          defaultSize={210}
-          minSize={145}
-          maxSize={530}
+          defaultSize={toPxSize(sidebarWidth)}
+          minSize={toPxSize(sidebarConfig.minPx)}
+          maxSize={toPxSize(sidebarConfig.maxPx)}
+          onResize={handleSidebarResize}
           className="bg-sidebar border-r border-border flex flex-col overflow-y-auto"
         >
           <CharacterSidebarList
@@ -49,7 +67,7 @@ export default function CharacterManager() {
         </PanelResizeHandle>
 
         {/* RIGHT MAIN - Wiki View */}
-        <Panel id="main" minSize={40}>
+        <Panel id="main" minSize={toPercentSize(40)}>
           <div className="h-full w-full overflow-hidden flex flex-col">
             {selectedChar ? (
               <WikiDetailView
