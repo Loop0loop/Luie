@@ -16,6 +16,10 @@ const TrashList = React.lazy(() => import("@renderer/features/trash/components/T
 
 type BinderTab = Exclude<DocsRightTab, null | "editor" | "export">;
 
+const EDITOR_RIGHT_MIN_WIDTH_PX = 320;
+const EDITOR_RIGHT_MAX_WIDTH_PX = 900;
+const EDITOR_RIGHT_DEFAULT_WIDTH_PX = 460;
+
 interface BinderSidebarProps {
     activeChapterId?: string;
     currentProjectId?: string;
@@ -56,12 +60,25 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
     const handleResize = useCallback(
         (panelSize: PanelSize) => {
             if (!activeRightTab) return;
-            setSidebarWidth(activeRightTab, Math.round(panelSize.inPixels));
+            const nextWidth = Math.round(panelSize.inPixels);
+            const bounded = Math.min(
+                EDITOR_RIGHT_MAX_WIDTH_PX,
+                Math.max(EDITOR_RIGHT_MIN_WIDTH_PX, nextWidth),
+            );
+            setSidebarWidth(activeRightTab, bounded);
         },
         [activeRightTab, setSidebarWidth]
     );
 
-    const savedPxWidth = activeRightTab ? sidebarWidths[activeRightTab] || 350 : 350;
+    const savedPxWidth = Math.min(
+        EDITOR_RIGHT_MAX_WIDTH_PX,
+        Math.max(
+            EDITOR_RIGHT_MIN_WIDTH_PX,
+            activeRightTab
+                ? sidebarWidths[activeRightTab] || EDITOR_RIGHT_DEFAULT_WIDTH_PX
+                : EDITOR_RIGHT_DEFAULT_WIDTH_PX,
+        ),
+    );
 
     const handleBackToSnapshotList = () => {
         setActiveRightTab("snapshot");
@@ -135,8 +152,8 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
                 key={`binder-sidebar-${activeRightTab}`}
                 id="binder-sidebar"
                 defaultSize={`${savedPxWidth}px`}
-                minSize="250px"
-                maxSize="800px"
+                minSize={`${EDITOR_RIGHT_MIN_WIDTH_PX}px`}
+                maxSize={`${EDITOR_RIGHT_MAX_WIDTH_PX}px`}
                 onResize={handleResize}
                 onMouseDownCapture={() => {
                     setFocusedClosableTarget({ kind: "docs-tab" });

@@ -20,6 +20,7 @@ import {
 import { cn } from "@shared/types/utils";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { api } from "@shared/api";
+import { FontSelector } from "./FontSelector";
 
 interface RibbonProps {
   editor: Editor | null;
@@ -30,15 +31,7 @@ interface RibbonProps {
 export default function Ribbon({ editor, onOpenSettings, activeChapterId }: RibbonProps) {
   const { t } = useTranslation();
   const maxWidth = useEditorStore((state) => state.maxWidth);
-  
   if (!editor) return null;
-
-
-  const fontOptions = [
-    t("toolbar.font.options.arial"),
-    t("toolbar.font.options.inter"),
-    t("toolbar.font.options.roboto"),
-  ];
 
   const isActive = (nameOrAttrs: string | Record<string, unknown>, attributes?: Record<string, unknown>) =>
     editor?.isActive(nameOrAttrs as string, attributes) ?? false;
@@ -57,10 +50,10 @@ export default function Ribbon({ editor, onOpenSettings, activeChapterId }: Ribb
 
   return (
     <div className="flex flex-col w-full bg-[#f9fbfd] dark:bg-[#1e1e1e] border-b border-border z-40 select-none pt-1">
-      
+
       {/* Toolbar Row */}
       <div className="flex items-center px-3 py-1.5 gap-1.5 overflow-x-auto border-t border-border/10 bg-[#edf2fa] dark:bg-[#252525] rounded-full mx-2 mb-2 shadow-sm">
-        
+
         {/* Undo/Redo */}
         <div className="flex items-center gap-0.5 pr-2 border-r border-border/20">
           <ToolbarButton
@@ -80,11 +73,7 @@ export default function Ribbon({ editor, onOpenSettings, activeChapterId }: Ribb
           {/* Style Selector Removed as per request */}
           <div className="hidden" />
           <div className="h-4 w-px bg-border/20" />
-          <select className="h-7 text-xs bg-transparent border-none focus:ring-0 w-24 px-2 hover:bg-black/5 dark:hover:bg-white/10 rounded cursor-pointer">
-            {fontOptions.map((label) => (
-              <option key={label}>{label}</option>
-            ))}
-          </select>
+          <FontSelector />
           <div className="h-4 w-px bg-border/20" />
           <div className="flex items-center">
             <button className="px-1 hover:bg-black/5 rounded text-xs">-</button>
@@ -172,10 +161,10 @@ export default function Ribbon({ editor, onOpenSettings, activeChapterId }: Ribb
               const isMobile = maxWidth && maxWidth <= 500;
               useEditorStore.getState().updateSettings({ maxWidth: isMobile ? 816 : 450 });
             }}
-            title={t("toolbar.layout.toggle")}
+            title={t("toolbar.tooltip.toggleMobileView")}
           >
             {(maxWidth && maxWidth <= 500) ? <Smartphone className="w-3.5 h-3.5" /> : <Monitor className="w-3.5 h-3.5" />}
-            <span>{(maxWidth && maxWidth <= 500) ? t("toolbar.layout.mobile") : t("toolbar.layout.pc")}</span>
+            <span>{(maxWidth && maxWidth <= 500) ? t("common.view.mobile") : t("common.view.pc")}</span>
           </button>
         </div>
 

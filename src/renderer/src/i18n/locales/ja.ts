@@ -904,6 +904,9 @@ export const ja = {
         hwp: "HWP 文書",
         word: "MS Word",
         beta: "BETA",
+        hwp_label: "HWP 文書 (.hwp)",
+        docx_label: "Word 文書 (.docx)",
+        txt_label: "テキスト文書 (.txt)",
       },
       page: {
         paperSize: "用紙サイズ",

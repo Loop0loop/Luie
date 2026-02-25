@@ -1,4 +1,5 @@
 import type { TFunction } from "i18next";
+import "@renderer/styles/components/editor.css";
 
 interface ExportPreviewProps {
     t: TFunction;
@@ -43,7 +44,7 @@ export function ExportPreview({
             <div className="flex-1 overflow-y-auto p-8 flex flex-col items-center gap-8 custom-scrollbar bg-canvas">
                 {/* Page Rendering */}
                 <div
-                    className="bg-white shadow-[0_0_20px_rgba(0,0,0,0.5)] transition-all duration-300 relative shrink-0"
+                    className="bg-[#fcfcfc] dark:bg-[#111111] shadow-[0_0_15px_rgba(0,0,0,0.1)] dark:shadow-[0_0_15px_rgba(0,0,0,0.5)] transition-all duration-300 relative shrink-0 ring-1 ring-border/20 rounded-sm"
                     style={{
                         width: paperSize === "A4" ? "210mm" : paperSize === "Letter" ? "216mm" : "176mm",
                         minHeight: paperSize === "A4" ? "297mm" : paperSize === "Letter" ? "279mm" : "250mm",
@@ -57,7 +58,7 @@ export function ExportPreview({
                 >
                     {/* Content Preview */}
                     <div
-                        className="w-full h-full text-black whitespace-pre-wrap outline-none"
+                        className="w-full h-full text-foreground whitespace-pre-wrap outline-none"
                         style={{
                             fontFamily: fontFamily.includes("Batang") ? "Batang, serif" : fontFamily,
                             fontSize: "10.5pt",
@@ -74,7 +75,7 @@ export function ExportPreview({
                                 <h1 className="text-2xl font-bold text-center mb-10">{chapter.title}</h1>
                                 <div
                                     dangerouslySetInnerHTML={{ __html: sanitizedPreviewContent }}
-                                    className="prose prose-sm max-w-none"
+                                    className="tiptap"
                                 />
                             </>
                         ) : (
@@ -87,7 +88,7 @@ export function ExportPreview({
                     {/* Page Number Footer */}
                     {showPageNumbers && (
                         <div
-                            className="absolute bottom-0 left-0 w-full flex items-center justify-center text-[10pt] text-black pointer-events-none"
+                            className="absolute bottom-0 left-0 w-full flex items-center justify-center text-[10pt] text-foreground/50 pointer-events-none"
                             style={{
                                 height: `${marginBottom}mm`,
                                 fontFamily: fontFamily.includes("Batang") ? "Batang, serif" : fontFamily,
@@ -100,7 +101,7 @@ export function ExportPreview({
 
                 {/* Second Page Ghost (Visual Cue) */}
                 <div
-                    className="bg-white/80 shadow-[0_0_20px_rgba(0,0,0,0.5)] relative shrink-0 opacity-50 pointer-events-none"
+                    className="bg-[#fcfcfc]/80 dark:bg-[#111111]/80 shadow-[0_0_15px_rgba(0,0,0,0.1)] dark:shadow-[0_0_15px_rgba(0,0,0,0.5)] relative shrink-0 opacity-50 pointer-events-none ring-1 ring-border/20 rounded-sm"
                     style={{
                         width: paperSize === "A4" ? "210mm" : paperSize === "Letter" ? "216mm" : "176mm",
                         height: "100mm", // Just a partial view
@@ -109,7 +110,7 @@ export function ExportPreview({
                 >
                     {showPageNumbers && (
                         <div
-                            className="absolute bottom-4 left-0 w-full flex items-center justify-center text-[10pt] text-black"
+                            className="absolute bottom-4 left-0 w-full flex items-center justify-center text-[10pt] text-foreground/50"
                         >
                             - {startPageNumber + 1} -
                         </div>

@@ -904,6 +904,9 @@ export const en = {
         hwp: "HWP document",
         word: "MS Word",
         beta: "BETA",
+        hwp_label: "HWP document (.hwp)",
+        docx_label: "Word document (.docx)",
+        txt_label: "Text document (.txt)",
       },
       page: {
         paperSize: "Paper size",

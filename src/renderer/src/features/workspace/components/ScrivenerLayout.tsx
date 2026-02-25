@@ -2,7 +2,9 @@ import {
   type ReactNode,
   useState,
   Suspense,
-  useCallback
+  useCallback,
+  useEffect,
+  useRef,
 } from "react";
 import { type Editor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
@@ -10,7 +12,7 @@ import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import Ribbon from "@renderer/features/editor/components/Ribbon";
 import InspectorPanel from "@renderer/features/editor/components/InspectorPanel";
 import { Menu, ChevronRight } from "lucide-react";
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type PanelSize } from "react-resizable-panels";
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type GroupImperativeHandle, type PanelSize } from "react-resizable-panels";
 
 interface ScrivenerLayoutProps {
   children?: ReactNode;
@@ -39,7 +41,9 @@ export default function ScrivenerLayout({
   additionalPanels,
 }: ScrivenerLayoutProps) {
   const { t } = useTranslation();
-  const { mainView, sidebarWidths, setSidebarWidth } = useUIStore();
+  const { mainView, panels, sidebarWidths, setSidebarWidth } = useUIStore();
+  const editorSplitGroupRef = useRef<GroupImperativeHandle | null>(null);
+  const previousPanelCountRef = useRef(panels.length);
 
   // Layout State for visibility toggles
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -56,6 +60,25 @@ export default function ScrivenerLayout({
   const binderSavedPxWidth = sidebarWidths["binder"] || 210;
 
   const inspectorSavedPxWidth = sidebarWidths["inspector"] || 350;
+
+  useEffect(() => {
+    const previousPanelCount = previousPanelCountRef.current;
+    const currentPanelCount = panels.length;
+
+    if (previousPanelCount === 0 && currentPanelCount === 1) {
+      const firstPanelId = panels[0]?.id;
+      if (firstPanelId) {
+        requestAnimationFrame(() => {
+          editorSplitGroupRef.current?.setLayout({
+            "editor-content": 50,
+            [firstPanelId]: 50,
+          });
+        });
+      }
+    }
+
+    previousPanelCountRef.current = currentPanelCount;
+  }, [panels]);
 
   const renderMainContent = () => {
     switch (mainView.type) {
@@ -146,7 +169,12 @@ export default function ScrivenerLayout({
 
             {/* Editor Area */}
             <div className="flex-1 overflow-hidden relative flex flex-row">
-              <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative">
+              <PanelGroup
+                orientation="horizontal"
+                className="flex w-full h-full flex-1 overflow-hidden relative"
+                groupRef={editorSplitGroupRef}
+                id="scrivener-editor-split"
+              >
                 <Panel id="editor-content" defaultSize={100} minSize={20} className="min-w-0 relative flex flex-col">
                   <EditorDropZones />
                   {(mainView.type === "world" || mainView.type === "analysis") ? (

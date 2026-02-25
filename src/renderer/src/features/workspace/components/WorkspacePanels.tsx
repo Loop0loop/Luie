@@ -45,6 +45,7 @@ export function WorkspacePanels({
                 <Fragment key={panel.id}>
                     <PanelResizeHandle className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-50 relative" />
                     <Panel
+                        id={panel.id}
                         defaultSize={panel.size}
                         minSize="200px"
                         onMouseDownCapture={() => {

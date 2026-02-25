@@ -35,6 +35,13 @@ import {
   Settings
 } from "lucide-react";
 
+const DOCS_LEFT_MIN_WIDTH_PX = 300;
+const DOCS_LEFT_MAX_WIDTH_PX = 520;
+const DOCS_LEFT_DEFAULT_WIDTH_PX = 360;
+const DOCS_RIGHT_MIN_WIDTH_PX = 380;
+const DOCS_RIGHT_MAX_WIDTH_PX = 920;
+const DOCS_RIGHT_DEFAULT_WIDTH_PX = 520;
+
 interface GoogleDocsLayoutProps {
   children: ReactNode;
   sidebar?: ReactNode;
@@ -98,17 +105,41 @@ export default function GoogleDocsLayout({
   }, [activeRightTab, setActiveRightTab, setFocusedClosableTarget]);
 
   const handleLeftResize = useCallback((panelSize: PanelSize) => {
-    setSidebarWidth("binder", Math.round(panelSize.inPixels));
+    const nextWidth = Math.round(panelSize.inPixels);
+    const bounded = Math.min(
+      DOCS_LEFT_MAX_WIDTH_PX,
+      Math.max(DOCS_LEFT_MIN_WIDTH_PX, nextWidth),
+    );
+    setSidebarWidth("binder", bounded);
   }, [setSidebarWidth]);
 
   const handleRightResize = useCallback((panelSize: PanelSize) => {
     if (!activeRightTab) return;
-    setSidebarWidth(activeRightTab, Math.round(panelSize.inPixels));
+    const nextWidth = Math.round(panelSize.inPixels);
+    const bounded = Math.min(
+      DOCS_RIGHT_MAX_WIDTH_PX,
+      Math.max(DOCS_RIGHT_MIN_WIDTH_PX, nextWidth),
+    );
+    setSidebarWidth(activeRightTab, bounded);
   }, [activeRightTab, setSidebarWidth]);
 
-  const leftSavedPxWidth = sidebarWidths["binder"] || 210;
+  const leftSavedPxWidth = Math.min(
+    DOCS_LEFT_MAX_WIDTH_PX,
+    Math.max(
+      DOCS_LEFT_MIN_WIDTH_PX,
+      sidebarWidths["binder"] || DOCS_LEFT_DEFAULT_WIDTH_PX,
+    ),
+  );
 
-  const rightSavedPxWidth = activeRightTab ? sidebarWidths[activeRightTab] || 350 : 350;
+  const rightSavedPxWidth = Math.min(
+    DOCS_RIGHT_MAX_WIDTH_PX,
+    Math.max(
+      DOCS_RIGHT_MIN_WIDTH_PX,
+      activeRightTab
+        ? sidebarWidths[activeRightTab] || DOCS_RIGHT_DEFAULT_WIDTH_PX
+        : DOCS_RIGHT_DEFAULT_WIDTH_PX,
+    ),
+  );
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-sans transition-colors duration-200">
@@ -207,8 +238,8 @@ export default function GoogleDocsLayout({
               <Panel
                 id="left-sidebar"
                 defaultSize={`${leftSavedPxWidth}px`}
-                minSize="220px"
-                maxSize="440px"
+                minSize={`${DOCS_LEFT_MIN_WIDTH_PX}px`}
+                maxSize={`${DOCS_LEFT_MAX_WIDTH_PX}px`}
                 onResize={handleLeftResize}
                 className="bg-background border-r border-border overflow-hidden flex flex-col shrink-0 min-w-0"
               >
@@ -266,8 +297,8 @@ export default function GoogleDocsLayout({
                 key={`right-context-panel-${activeRightTab}`}
                 id="right-context-panel"
                 defaultSize={`${rightSavedPxWidth}px`}
-                minSize="215px"
-                maxSize="830px"
+                minSize={`${DOCS_RIGHT_MIN_WIDTH_PX}px`}
+                maxSize={`${DOCS_RIGHT_MAX_WIDTH_PX}px`}
                 onResize={handleRightResize}
                 onMouseDownCapture={() => {
                   setFocusedClosableTarget({ kind: "docs-tab" });
