@@ -1,4 +1,4 @@
-import { useCallback, Suspense, type ReactNode } from "react";
+import { useCallback, useMemo, Suspense, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { User, Globe, StickyNote, Sparkles, History, Trash2, ChevronLeft, X } from "lucide-react";
 import React from 'react';
@@ -52,14 +52,28 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
         [setDocsRightTab]
     );
 
-    const rightTabResizeHandlers: Record<BinderTab, (panelSize: PanelSize) => void> = {
-        character: useSidebarResizeCommit("character", setSidebarWidth),
-        world: useSidebarResizeCommit("world", setSidebarWidth),
-        scrap: useSidebarResizeCommit("scrap", setSidebarWidth),
-        analysis: useSidebarResizeCommit("analysis", setSidebarWidth),
-        snapshot: useSidebarResizeCommit("snapshot", setSidebarWidth),
-        trash: useSidebarResizeCommit("trash", setSidebarWidth),
-    };
+    const handleCharacterResize = useSidebarResizeCommit("character", setSidebarWidth);
+    const handleWorldResize = useSidebarResizeCommit("world", setSidebarWidth);
+    const handleScrapResize = useSidebarResizeCommit("scrap", setSidebarWidth);
+    const handleAnalysisResize = useSidebarResizeCommit("analysis", setSidebarWidth);
+    const handleSnapshotResize = useSidebarResizeCommit("snapshot", setSidebarWidth);
+    const handleTrashResize = useSidebarResizeCommit("trash", setSidebarWidth);
+
+    const rightTabResizeHandlers: Record<BinderTab, (panelSize: PanelSize) => void> = useMemo(() => ({
+        character: handleCharacterResize,
+        world: handleWorldResize,
+        scrap: handleScrapResize,
+        analysis: handleAnalysisResize,
+        snapshot: handleSnapshotResize,
+        trash: handleTrashResize,
+    }), [
+        handleCharacterResize,
+        handleWorldResize,
+        handleScrapResize,
+        handleAnalysisResize,
+        handleSnapshotResize,
+        handleTrashResize,
+    ]);
 
     const handleRightTabClick = useCallback(
         (tab: BinderTab) => {

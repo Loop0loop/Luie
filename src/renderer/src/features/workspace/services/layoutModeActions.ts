@@ -42,11 +42,11 @@ export function createLayoutModeActions(options: LayoutModeActionsOptions) {
     },
 
     openExportPreview() {
-      if (options.isDocsMode) {
-        options.openDocsRightTab("export");
-        return;
+      // Keep export preview surface consistent across layouts:
+      // always open it in split-panel mode rather than docs-only right tab mode.
+      if (options.isDocsMode && options.docsRightTab === "export") {
+        options.setDocsRightTab(null);
       }
-
       options.addPanel({ type: "export" });
     },
 

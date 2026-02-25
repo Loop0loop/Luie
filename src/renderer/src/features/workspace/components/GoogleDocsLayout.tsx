@@ -1,4 +1,4 @@
-import { useCallback, useEffect, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, type ReactNode } from 'react';
 import { type Editor as TiptapEditor } from "@tiptap/react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type PanelSize } from "react-resizable-panels";
 import WindowBar from '@renderer/features/workspace/components/WindowBar';
@@ -108,18 +108,40 @@ export default function GoogleDocsLayout({
 
   const handleLeftResize = useSidebarResizeCommit("docsBinder", setSidebarWidth);
   const docsBinderConfig = getSidebarWidthConfig("docsBinder");
-  const rightTabResizeHandlers: Record<Exclude<DocsRightTab, null>, (panelSize: PanelSize) => void> = {
-    character: useSidebarResizeCommit("character", setSidebarWidth),
-    event: useSidebarResizeCommit("event", setSidebarWidth),
-    faction: useSidebarResizeCommit("faction", setSidebarWidth),
-    world: useSidebarResizeCommit("world", setSidebarWidth),
-    scrap: useSidebarResizeCommit("scrap", setSidebarWidth),
-    analysis: useSidebarResizeCommit("analysis", setSidebarWidth),
-    snapshot: useSidebarResizeCommit("snapshot", setSidebarWidth),
-    trash: useSidebarResizeCommit("trash", setSidebarWidth),
-    editor: useSidebarResizeCommit("editor", setSidebarWidth),
-    export: useSidebarResizeCommit("export", setSidebarWidth),
-  };
+  const handleCharacterResize = useSidebarResizeCommit("character", setSidebarWidth);
+  const handleEventResize = useSidebarResizeCommit("event", setSidebarWidth);
+  const handleFactionResize = useSidebarResizeCommit("faction", setSidebarWidth);
+  const handleWorldResize = useSidebarResizeCommit("world", setSidebarWidth);
+  const handleScrapResize = useSidebarResizeCommit("scrap", setSidebarWidth);
+  const handleAnalysisResize = useSidebarResizeCommit("analysis", setSidebarWidth);
+  const handleSnapshotResize = useSidebarResizeCommit("snapshot", setSidebarWidth);
+  const handleTrashResize = useSidebarResizeCommit("trash", setSidebarWidth);
+  const handleEditorResize = useSidebarResizeCommit("editor", setSidebarWidth);
+  const handleExportResize = useSidebarResizeCommit("export", setSidebarWidth);
+
+  const rightTabResizeHandlers: Record<Exclude<DocsRightTab, null>, (panelSize: PanelSize) => void> = useMemo(() => ({
+    character: handleCharacterResize,
+    event: handleEventResize,
+    faction: handleFactionResize,
+    world: handleWorldResize,
+    scrap: handleScrapResize,
+    analysis: handleAnalysisResize,
+    snapshot: handleSnapshotResize,
+    trash: handleTrashResize,
+    editor: handleEditorResize,
+    export: handleExportResize,
+  }), [
+    handleCharacterResize,
+    handleEventResize,
+    handleFactionResize,
+    handleWorldResize,
+    handleScrapResize,
+    handleAnalysisResize,
+    handleSnapshotResize,
+    handleTrashResize,
+    handleEditorResize,
+    handleExportResize,
+  ]);
 
   const handleRightResize = useCallback((panelSize: PanelSize) => {
     if (!activeRightTab) return;

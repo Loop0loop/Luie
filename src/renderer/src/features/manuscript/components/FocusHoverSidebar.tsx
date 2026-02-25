@@ -41,17 +41,12 @@ export default function FocusHoverSidebar({
   const isOpen = forceOpen || isResizing || isHoverOpen;
 
   useEffect(() => {
-    // 외부가 열림 상태를 강제하면 내부 hover 상태를 초기화해
-    // 강제 상태가 풀릴 때 잔류 active 판정을 방지한다.
-    if (forceOpen || isResizing) {
-      setIsHoverOpen(false);
-      hoverOpenRef.current = false;
-    }
-  }, [forceOpen, isResizing]);
-
-  useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (forceOpen || isResizing) {
+        if (hoverOpenRef.current) {
+          hoverOpenRef.current = false;
+          setIsHoverOpen(false);
+        }
         return;
       }
 

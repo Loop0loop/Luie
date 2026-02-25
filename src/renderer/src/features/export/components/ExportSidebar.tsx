@@ -129,7 +129,7 @@ export function ExportSidebar({
                                         : "bg-surface border-transparent hover:bg-surface-hover text-muted"
                                 )}
                             >
-                                <span className="font-bold text-lg mb-1">{t("exportWindow.format.word_label")}</span>
+                                <span className="font-bold text-lg mb-1">{t("exportWindow.format.docx_label")}</span>
                                 <span className="text-[10px] opacity-80">{t("exportWindow.format.word")}</span>
                             </button>
                         </div>

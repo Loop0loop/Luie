@@ -1,6 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
+import { createRequire } from "node:module";
+import ts from "typescript";
+
+const nodeRequire = createRequire(import.meta.url);
 
 const localeFiles = {
   ko: path.resolve("src/renderer/src/i18n/locales/ko.ts"),
@@ -8,21 +12,85 @@ const localeFiles = {
   ja: path.resolve("src/renderer/src/i18n/locales/ja.ts"),
 };
 
-const normalizeModuleSource = (source) => {
-  const withoutExport = source.replace(
-    /export\s+const\s+\w+\s*=\s*/,
-    "module.exports = ",
-  );
-  return withoutExport.replace(/\}\s*as const;\s*$/m, "}");
+const moduleCache = new Map();
+
+const resolveTsModule = (importSpecifier, fromFile) => {
+  if (!importSpecifier.startsWith(".")) {
+    return null;
+  }
+
+  const base = path.resolve(path.dirname(fromFile), importSpecifier);
+  const candidates = [
+    base,
+    `${base}.ts`,
+    `${base}.tsx`,
+    `${base}.js`,
+    `${base}.mjs`,
+    path.join(base, "index.ts"),
+    path.join(base, "index.tsx"),
+    path.join(base, "index.js"),
+    path.join(base, "index.mjs"),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+      return candidate;
+    }
+  }
+
+  throw new Error(`Unable to resolve module "${importSpecifier}" from ${fromFile}`);
 };
 
-const loadLocale = (filePath) => {
-  const source = fs.readFileSync(filePath, "utf8");
-  const normalized = normalizeModuleSource(source);
-  const sandbox = { module: { exports: {} }, exports: {} };
+const loadTsModule = (filePath) => {
+  const absPath = path.resolve(filePath);
+  const cached = moduleCache.get(absPath);
+  if (cached) {
+    return cached.exports;
+  }
+
+  const source = fs.readFileSync(absPath, "utf8");
+  const transpiled = ts.transpileModule(source, {
+    compilerOptions: {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2020,
+      esModuleInterop: true,
+      jsx: ts.JsxEmit.ReactJSX,
+    },
+    fileName: absPath,
+    reportDiagnostics: false,
+  }).outputText;
+
+  const module = { exports: {} };
+  moduleCache.set(absPath, module);
+
+  const localRequire = (importSpecifier) => {
+    const resolvedLocal = resolveTsModule(importSpecifier, absPath);
+    if (resolvedLocal) {
+      return loadTsModule(resolvedLocal);
+    }
+    return nodeRequire(importSpecifier);
+  };
+
+  const sandbox = {
+    module,
+    exports: module.exports,
+    require: localRequire,
+    __dirname: path.dirname(absPath),
+    __filename: absPath,
+    console,
+    process,
+  };
+
   vm.createContext(sandbox);
-  vm.runInContext(normalized, sandbox, { filename: filePath });
-  return sandbox.module.exports;
+  vm.runInContext(transpiled, sandbox, { filename: absPath });
+  return module.exports;
+};
+
+const loadLocale = (language, filePath) => {
+  const mod = loadTsModule(filePath);
+  if (mod?.[language]) return mod[language];
+  if (mod?.default) return mod.default;
+  return mod;
 };
 
 const flattenKeys = (value, prefix = "", output = []) => {
@@ -46,7 +114,7 @@ const flattenKeys = (value, prefix = "", output = []) => {
 const locales = Object.fromEntries(
   Object.entries(localeFiles).map(([language, filePath]) => [
     language,
-    loadLocale(filePath),
+    loadLocale(language, filePath),
   ]),
 );
 
