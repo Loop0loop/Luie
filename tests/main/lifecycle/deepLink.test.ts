@@ -32,6 +32,7 @@ const mocked = vi.hoisted(() => {
 vi.mock("electron", () => ({
   app: {
     isPackaged: false,
+    getPath: () => "/tmp",
   },
   shell: {
     openExternal: (...args: unknown[]) => mocked.openExternal(...args),
@@ -51,12 +52,19 @@ vi.mock("../../../src/main/services/features/syncService.js", () => ({
   },
 }));
 
-const getHashParams = (url: string): URLSearchParams => {
+const getResultParams = (url: string): URLSearchParams => {
   const parsed = new URL(url);
+  const merged = new URLSearchParams(parsed.search);
   const hash = parsed.hash.startsWith("#") ? parsed.hash.slice(1) : parsed.hash;
   const queryStart = hash.indexOf("?");
   const query = queryStart >= 0 ? hash.slice(queryStart + 1) : "";
-  return new URLSearchParams(query);
+  const hashParams = new URLSearchParams(query);
+  for (const [key, value] of hashParams.entries()) {
+    if (!merged.has(key)) {
+      merged.set(key, value);
+    }
+  }
+  return merged;
 };
 
 describe("deepLink OAuth callback routing", () => {
@@ -82,7 +90,8 @@ describe("deepLink OAuth callback routing", () => {
     expect(handled).toBe(true);
     expect(mocked.openExternal).toHaveBeenCalledTimes(1);
     const url = String(mocked.openExternal.mock.calls[0]?.[0]);
-    const params = getHashParams(url);
+    expect(new URL(url).pathname).toBe("/auth-result.html");
+    const params = getResultParams(url);
     expect(params.get("status")).toBe("success");
     expect(params.get("detail")).toBe("STALE_CONNECTED:NO_PENDING");
   });
@@ -97,7 +106,8 @@ describe("deepLink OAuth callback routing", () => {
     expect(handled).toBe(false);
     expect(mocked.openExternal).toHaveBeenCalledTimes(1);
     const url = String(mocked.openExternal.mock.calls[0]?.[0]);
-    const params = getHashParams(url);
+    expect(new URL(url).pathname).toBe("/auth-result.html");
+    const params = getResultParams(url);
     expect(params.get("status")).toBe("error");
     expect(params.get("detail")).toContain("UNKNOWN:");
   });

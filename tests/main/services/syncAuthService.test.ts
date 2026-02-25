@@ -113,9 +113,7 @@ describe("SyncAuthService", () => {
 
     expect(mocked.shellOpenExternal).toHaveBeenCalledTimes(1);
     const authorizeUrl = String(mocked.shellOpenExternal.mock.calls[0][0]);
-    const stateFromAuthorize = new URL(authorizeUrl).searchParams.get("state");
-    expect(typeof stateFromAuthorize).toBe("string");
-    expect(stateFromAuthorize).toBe(mocked.state.pendingAuthState);
+    expect(new URL(authorizeUrl).searchParams.get("state")).toBeNull();
     expect(mocked.state.pendingAuthVerifierCipher?.startsWith("v2:plain:")).toBe(true);
 
     vi.resetModules();
@@ -123,11 +121,7 @@ describe("SyncAuthService", () => {
       "../../../src/main/services/features/syncAuthService.js"
     );
 
-    const session = await restarted.completeOAuthCallback(
-      `luie://auth/callback?code=test-code&state=${encodeURIComponent(
-        String(mocked.state.pendingAuthState),
-      )}`,
-    );
+    const session = await restarted.completeOAuthCallback("luie://auth/callback?code=test-code");
 
     expect(session.userId).toBe("00000000-0000-0000-0000-000000000001");
     expect(mocked.state.pendingAuthState).toBeUndefined();
@@ -149,18 +143,33 @@ describe("SyncAuthService", () => {
     expect(mocked.state.pendingAuthVerifierCipher).toBeUndefined();
   });
 
-  it("fails when callback state is missing or mismatched", async () => {
+  it("accepts callback code without state validation", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            access_token: "access-token",
+            refresh_token: "refresh-token",
+            expires_in: 3600,
+            user: {
+              id: "00000000-0000-0000-0000-000000000001",
+              email: "user@example.com",
+            },
+          }),
+          { status: 200 },
+        ),
+      );
+
     const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
     await syncAuthService.startGoogleAuth();
 
     await expect(
       syncAuthService.completeOAuthCallback("luie://auth/callback?code=test-code"),
-    ).rejects.toThrow("SYNC_AUTH_STATE_MISMATCH");
-
-    await syncAuthService.startGoogleAuth();
-    await expect(
-      syncAuthService.completeOAuthCallback("luie://auth/callback?code=test-code&state=wrong"),
-    ).rejects.toThrow("SYNC_AUTH_STATE_MISMATCH");
+    ).resolves.toMatchObject({
+      userId: "00000000-0000-0000-0000-000000000001",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("blocks duplicate OAuth start while a recent flow is pending", async () => {
@@ -183,6 +192,42 @@ describe("SyncAuthService", () => {
 
     expect(mocked.state.pendingAuthState).toBeUndefined();
     expect(mocked.state.pendingAuthVerifierCipher).toBeUndefined();
+  });
+
+  it("restores pending verifier even when pendingAuthState is missing", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            access_token: "access-token",
+            refresh_token: "refresh-token",
+            expires_in: 3600,
+            user: {
+              id: "00000000-0000-0000-0000-000000000001",
+              email: "user@example.com",
+            },
+          }),
+          { status: 200 },
+        ),
+      );
+
+    const { syncAuthService: firstInstance } = await import(
+      "../../../src/main/services/features/syncAuthService.js"
+    );
+    await firstInstance.startGoogleAuth();
+    delete mocked.state.pendingAuthState;
+
+    vi.resetModules();
+    const { syncAuthService: restarted } = await import(
+      "../../../src/main/services/features/syncAuthService.js"
+    );
+    await expect(
+      restarted.completeOAuthCallback("luie://auth/callback?code=test-code"),
+    ).resolves.toMatchObject({
+      userId: "00000000-0000-0000-0000-000000000001",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("returns migrated cipher when reading legacy base64 token", async () => {

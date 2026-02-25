@@ -8,17 +8,21 @@ if (process.env.NODE_ENV !== 'production') {
   await import("dotenv/config");
 }
 
-import { app } from "electron";
 import path from "node:path";
 import { createLogger, configureLogger, LogLevel } from "../shared/logger/index.js";
 import { LOG_DIR_NAME, LOG_FILE_NAME } from "../shared/constants/index.js";
+import { resolveRuntimeTarget } from "../shared/runtime/runtimeTarget.js";
+import { startElectrobunShell } from "../electrobun/index.js";
 import { initDatabaseEnv } from "./prismaEnv.js";
 import { registerAppReady } from "./lifecycle/appReady.js";
 import { extractAuthCallbackUrl, handleDeepLinkUrl } from "./lifecycle/deepLink.js";
 import { registerShutdownHandlers } from "./lifecycle/shutdown.js";
 import { registerSingleInstance } from "./lifecycle/singleInstance.js";
 import { settingsManager } from "./manager/settingsManager.js";
+import { platformBridge } from "./platform/platformBridge.js";
 import { syncService } from "./services/features/syncService.js";
+
+const { app } = platformBridge;
 
 configureLogger({
   logToFile: true,
@@ -27,11 +31,13 @@ configureLogger({
 });
 
 const logger = createLogger("Main");
+const runtimeTarget = resolveRuntimeTarget(process.env.LUIE_RUNTIME_TARGET);
 logger.info("Main process bootstrap", {
   execPath: process.execPath,
   argv: process.argv,
   isPackaged: app.isPackaged,
   defaultApp: process.defaultApp,
+  runtimeTarget,
 });
 
 initDatabaseEnv();
@@ -85,17 +91,40 @@ const registerLuieProtocol = (): void => {
   });
 };
 
-registerLuieProtocol();
+const startElectronLifecycle = (): void => {
+  registerLuieProtocol();
 
-if (!registerSingleInstance(logger)) {
-  app.quit();
-} else {
+  if (!registerSingleInstance(logger)) {
+    app.quit();
+    return;
+  }
+
+  syncService.initialize();
+
   const callbackUrl = extractAuthCallbackUrl(process.argv);
   if (callbackUrl) {
     void handleDeepLinkUrl(callbackUrl);
   }
 
-  syncService.initialize();
   registerAppReady(logger);
   registerShutdownHandlers(logger);
+};
+
+if (runtimeTarget === "electrobun") {
+  startElectrobunShell({
+    argv: process.argv,
+    lifecycle: {
+      registerProtocol: registerLuieProtocol,
+      registerSingleInstance: () => registerSingleInstance(logger),
+      initializeSync: () => syncService.initialize(),
+      registerAppReady: () => registerAppReady(logger),
+      registerShutdownHandlers: () => registerShutdownHandlers(logger),
+    },
+    deepLink: {
+      extractAuthCallbackUrl,
+      handleDeepLinkUrl,
+    },
+  });
+} else {
+  startElectronLifecycle();
 }

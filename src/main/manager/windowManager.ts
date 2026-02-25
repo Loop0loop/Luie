@@ -2,8 +2,8 @@
  * Window Manager - BrowserWindow 관리
  */
 
-import { BrowserWindow, app } from 'electron'
 import { join } from 'path'
+import type { BrowserWindow as ElectronBrowserWindow } from 'electron'
 import windowStateKeeper from 'electron-window-state'
 import { createLogger } from '../../shared/logger/index.js'
 import {
@@ -15,11 +15,14 @@ import {
   WINDOW_TRAFFIC_LIGHT_Y,
 } from '../../shared/constants/index.js'
 import { settingsManager } from './settingsManager.js'
+import { platformBridge } from '../platform/platformBridge.js'
+
+const { BrowserWindow, app } = platformBridge
 
 const logger = createLogger('WindowManager')
 
 class WindowManager {
-  private mainWindow: BrowserWindow | null = null
+  private mainWindow: ElectronBrowserWindow | null = null
 
   private getTitleBarOptions() {
     if (process.platform !== 'darwin') {
@@ -36,7 +39,7 @@ class WindowManager {
     return settingsManager.getMenuBarMode()
   }
 
-  private applyMenuBarMode(win: BrowserWindow) {
+  private applyMenuBarMode(win: ElectronBrowserWindow) {
     const mode = this.getMenuBarMode()
     const shouldShowMenuBar = mode === 'visible'
 
@@ -63,7 +66,7 @@ class WindowManager {
     win.setMenuBarVisibility(shouldShowMenuBar)
   }
 
-  createMainWindow(): BrowserWindow {
+  createMainWindow(): ElectronBrowserWindow {
     if (this.mainWindow) {
       return this.mainWindow
     }
@@ -127,7 +130,7 @@ class WindowManager {
     return this.mainWindow
   }
 
-  getMainWindow(): BrowserWindow | null {
+  getMainWindow(): ElectronBrowserWindow | null {
     return this.mainWindow
   }
 
@@ -138,9 +141,9 @@ class WindowManager {
   }
 
   // ─── Export Window ────────────────────────────────────────────────────────
-  private exportWindow: BrowserWindow | null = null
+  private exportWindow: ElectronBrowserWindow | null = null
 
-  createExportWindow(chapterId: string): BrowserWindow {
+  createExportWindow(chapterId: string): ElectronBrowserWindow {
     if (this.exportWindow) {
       this.exportWindow.focus()
       return this.exportWindow

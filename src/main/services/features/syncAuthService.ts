@@ -1,8 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
-import { safeStorage, shell } from "electron";
+import { shell } from "electron";
 import { createLogger } from "../../../shared/logger/index.js";
 import type { SyncProvider, SyncSettings } from "../../../shared/types/index.js";
 import { settingsManager } from "../../manager/settingsManager.js";
+import { secureTokenStore } from "../../security/secureTokenStore.js";
 import {
   getSupabaseConfig,
   getSupabaseConfigOrThrow,
@@ -15,7 +16,6 @@ const TOKEN_CODEC_SAFE_PREFIX = "v2:safe:";
 const TOKEN_CODEC_PLAIN_PREFIX = "v2:plain:";
 
 type PendingPkce = {
-  state: string;
   verifier: string;
   createdAt: number;
 };
@@ -63,8 +63,8 @@ const createCodeChallenge = (verifier: string): string =>
   toBase64Url(createHash("sha256").update(verifier).digest());
 
 const encryptSecret = (plain: string): string => {
-  if (safeStorage.isEncryptionAvailable()) {
-    const cipher = safeStorage.encryptString(plain).toString("base64");
+  if (secureTokenStore.isEncryptionAvailable()) {
+    const cipher = secureTokenStore.encryptString(plain).toString("base64");
     return `${TOKEN_CODEC_SAFE_PREFIX}${cipher}`;
   }
   const cipher = Buffer.from(plain, "utf-8").toString("base64");
@@ -73,9 +73,9 @@ const encryptSecret = (plain: string): string => {
 
 const decodeLegacySecret = (legacyCipher: string): DecodedSecret => {
   const payload = Buffer.from(legacyCipher, "base64");
-  if (safeStorage.isEncryptionAvailable()) {
+  if (secureTokenStore.isEncryptionAvailable()) {
     try {
-      const plain = safeStorage.decryptString(payload);
+      const plain = secureTokenStore.decryptString(payload);
       return {
         plain,
         migratedCipher: encryptSecret(plain),
@@ -93,14 +93,14 @@ const decodeLegacySecret = (legacyCipher: string): DecodedSecret => {
 
 const decodeSecret = (cipher: string): DecodedSecret => {
   if (cipher.startsWith(TOKEN_CODEC_SAFE_PREFIX)) {
-    if (!safeStorage.isEncryptionAvailable()) {
+    if (!secureTokenStore.isEncryptionAvailable()) {
       throw new Error("SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE");
     }
     const raw = cipher.slice(TOKEN_CODEC_SAFE_PREFIX.length);
     const payload = Buffer.from(raw, "base64");
     try {
       return {
-        plain: safeStorage.decryptString(payload),
+        plain: secureTokenStore.decryptString(payload),
       };
     } catch (error) {
       throw new Error(
@@ -136,7 +136,6 @@ class SyncAuthService {
   private storePendingPkce(pending: PendingPkce): void {
     this.pendingPkce = pending;
     settingsManager.setPendingSyncAuth({
-      state: pending.state,
       verifierCipher: encryptSecret(pending.verifier),
       createdAt: new Date(pending.createdAt).toISOString(),
     });
@@ -145,7 +144,6 @@ class SyncAuthService {
   private getPendingPkceFromSettings(): PendingPkce | null {
     const syncSettings = settingsManager.getSyncSettings();
     if (
-      !syncSettings.pendingAuthState ||
       !syncSettings.pendingAuthVerifierCipher ||
       !syncSettings.pendingAuthCreatedAt
     ) {
@@ -168,7 +166,6 @@ class SyncAuthService {
         });
       }
       return {
-        state: syncSettings.pendingAuthState,
         verifier: decoded.plain,
         createdAt,
       };
@@ -223,9 +220,7 @@ class SyncAuthService {
     const { url } = getSupabaseConfigOrThrow();
     const verifier = createCodeVerifier();
     const challenge = createCodeChallenge(verifier);
-    const state = toBase64Url(randomBytes(24));
     this.storePendingPkce({
-      state,
       verifier,
       createdAt: Date.now(),
     });
@@ -233,7 +228,6 @@ class SyncAuthService {
     const authorizeUrl = new URL(`${url}/auth/v1/authorize`);
     authorizeUrl.searchParams.set("provider", "google");
     authorizeUrl.searchParams.set("redirect_to", OAUTH_REDIRECT_URI);
-    authorizeUrl.searchParams.set("state", state);
     authorizeUrl.searchParams.set("code_challenge", challenge);
     authorizeUrl.searchParams.set("code_challenge_method", "s256");
 
@@ -251,7 +245,6 @@ class SyncAuthService {
     }
 
     const parsed = new URL(callbackUrl);
-    const callbackState = parsed.searchParams.get("state");
     const code = parsed.searchParams.get("code");
     const error = parsed.searchParams.get("error");
     const errorCode = parsed.searchParams.get("error_code");
@@ -268,10 +261,6 @@ class SyncAuthService {
     if (!code) {
       this.clearPendingPkce();
       throw new Error("SYNC_AUTH_CODE_MISSING");
-    }
-    if (!callbackState || callbackState !== pending.state) {
-      this.clearPendingPkce();
-      throw new Error("SYNC_AUTH_STATE_MISMATCH");
     }
 
     const token = await this.exchangeCodeForSession(code, pending.verifier);

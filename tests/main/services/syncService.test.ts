@@ -11,6 +11,7 @@ const mocked = vi.hoisted(() => {
   const getRefreshToken = vi.fn();
   const refreshSession = vi.fn();
   const startGoogleAuth = vi.fn();
+  const completeOAuthCallback = vi.fn();
   const hasPendingAuthFlow = vi.fn(() => false);
   const fetchBundle = vi.fn();
   const upsertBundle = vi.fn();
@@ -54,6 +55,7 @@ const mocked = vi.hoisted(() => {
     getRefreshToken,
     refreshSession,
     startGoogleAuth,
+    completeOAuthCallback,
     hasPendingAuthFlow,
     fetchBundle,
     upsertBundle,
@@ -82,7 +84,7 @@ vi.mock("../../../src/main/services/features/syncAuthService.js", () => ({
     isConfigured: () => true,
     hasPendingAuthFlow: (...args: unknown[]) => mocked.hasPendingAuthFlow(...args),
     startGoogleAuth: (...args: unknown[]) => mocked.startGoogleAuth(...args),
-    completeOAuthCallback: vi.fn(),
+    completeOAuthCallback: (...args: unknown[]) => mocked.completeOAuthCallback(...args),
     getAccessToken: (...args: unknown[]) => mocked.getAccessToken(...args),
     getRefreshToken: (...args: unknown[]) => mocked.getRefreshToken(...args),
     refreshSession: (...args: unknown[]) => mocked.refreshSession(...args),
@@ -147,6 +149,7 @@ describe("SyncService auth hardening", () => {
     mocked.getRefreshToken.mockReset();
     mocked.refreshSession.mockReset();
     mocked.startGoogleAuth.mockReset();
+    mocked.completeOAuthCallback.mockReset();
     mocked.hasPendingAuthFlow.mockReset();
     mocked.hasPendingAuthFlow.mockReturnValue(false);
     mocked.getRefreshToken.mockReturnValue({ token: null });
@@ -217,6 +220,28 @@ describe("SyncService auth hardening", () => {
     expect(result.success).toBe(false);
     expect(result.message).toContain("NETWORK_TIMEOUT");
     expect(service.getStatus().connected).toBe(true);
+  });
+
+  it("keeps disconnected state and exposes callback error for re-login after oauth failure", async () => {
+    mocked.syncSettings.connected = false;
+    mocked.syncSettings.autoSync = true;
+    mocked.completeOAuthCallback.mockRejectedValue(
+      new Error("SYNC_AUTH_CALLBACK_ERROR:bad_oauth_state:OAuth callback with invalid state"),
+    );
+
+    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const service = new SyncService();
+    service.initialize();
+
+    await expect(
+      service.handleOAuthCallback(
+        "luie://auth/callback?error=invalid_request&error_code=bad_oauth_state",
+      ),
+    ).rejects.toThrow("SYNC_AUTH_CALLBACK_ERROR:bad_oauth_state");
+
+    expect(service.getStatus().connected).toBe(false);
+    expect(service.getStatus().mode).toBe("error");
+    expect(service.getStatus().lastError).toContain("bad_oauth_state");
   });
 
   it("does not launch OAuth again while already connecting", async () => {
