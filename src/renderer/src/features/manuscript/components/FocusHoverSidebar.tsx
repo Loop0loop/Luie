@@ -11,6 +11,10 @@ interface FocusHoverSidebarProps {
   isResizing?: boolean;
   /** 강제로 사이드바를 엽니다. (탭이 활성화된 경우 등) */
   forceOpen?: boolean;
+  /** 가장자리 트리거 폭(px). */
+  triggerWidthPx?: number;
+  /** 사이드바 닫힘 판정 여유(px). */
+  closeTolerancePx?: number;
 }
 
 export default function FocusHoverSidebar({
@@ -20,47 +24,90 @@ export default function FocusHoverSidebar({
   topOffset = 40,
   isResizing = false,
   forceOpen = false,
+  triggerWidthPx = 10,
+  closeTolerancePx = 12,
 }: FocusHoverSidebarProps) {
   // 내부 hover 상태만 관리
   const [isHoverOpen, setIsHoverOpen] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
+  const hoverOpenRef = useRef(false);
+
+  useEffect(() => {
+    hoverOpenRef.current = isHoverOpen;
+  }, [isHoverOpen]);
 
   // 최종 열림 상태는 props와 내부 state의 조합
   const isOpen = forceOpen || isResizing || isHoverOpen;
 
   useEffect(() => {
+    // 외부가 열림 상태를 강제하면 내부 hover 상태를 초기화해
+    // 강제 상태가 풀릴 때 잔류 active 판정을 방지한다.
+    if (forceOpen || isResizing) {
+      setIsHoverOpen(false);
+      hoverOpenRef.current = false;
+    }
+  }, [forceOpen, isResizing]);
+
+  useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      // 강제 오픈 상태거나 리사이즈 중이어도 hover 상태 업데이트는 필요할 수 있음
-      // 하지만 여기서는 hover로 인한 "열림/닫힘" 전환만 제어하면 됨.
-      
       if (forceOpen || isResizing) {
-        // 이미 외부 요인으로 열려있으면 hover 감지 불필요
-        // 단, 마우스가 나갔을 때 forceOpen이 꺼지면 바로 닫혀야 하는가?
-        // 아니면 hover 상태가 유지되어야 하는가?
-        // UX상 마우스가 안에 있으면 hoverOpen도 true여야 자연스러움.
-        // 복잡도를 줄이기 위해, forceOpen일 때는 hover 로직을 무시하고
-        // forceOpen이 꺼지면 닫히도록(혹은 다시 hover 감지) 하는게 나음.
         return;
       }
 
-      // 트리거 영역: 왼쪽 20px 또는 오른쪽 20px
+      // 드래그(마우스 버튼 down) 중에는 hover 토글을 막아
+      // 리사이즈/드래그 중 사이드바가 튀어나오는 UX를 방지한다.
+      if (e.buttons !== 0) return;
+
+      if (e.clientY < topOffset || e.clientY > window.innerHeight) {
+        if (hoverOpenRef.current) {
+          hoverOpenRef.current = false;
+          setIsHoverOpen(false);
+        }
+        return;
+      }
+
       const isTrigger =
-        side === "left" ? e.clientX < 20 : e.clientX > window.innerWidth - 20;
+        side === "left"
+          ? e.clientX <= triggerWidthPx
+          : e.clientX >= window.innerWidth - triggerWidthPx;
+
+      const sidebarRect = sidebarRef.current?.getBoundingClientRect();
+      const isInsideSidebar = Boolean(
+        sidebarRect &&
+        e.clientX >= sidebarRect.left - closeTolerancePx &&
+        e.clientX <= sidebarRect.right + closeTolerancePx &&
+        e.clientY >= sidebarRect.top - closeTolerancePx &&
+        e.clientY <= sidebarRect.bottom + closeTolerancePx,
+      );
 
       if (isTrigger) {
-        setIsHoverOpen(true);
-      } else if (
-        sidebarRef.current &&
-        !sidebarRef.current.contains(e.target as Node)
-      ) {
+        if (!hoverOpenRef.current) {
+          hoverOpenRef.current = true;
+          setIsHoverOpen(true);
+        }
+        return;
+      }
+
+      if (hoverOpenRef.current && !isInsideSidebar) {
+        hoverOpenRef.current = false;
         setIsHoverOpen(false);
       }
     };
 
+    const handleWindowLeave = () => {
+      if (!hoverOpenRef.current) return;
+      hoverOpenRef.current = false;
+      setIsHoverOpen(false);
+    };
+
     window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [side, isResizing, forceOpen]);
+    window.addEventListener("mouseleave", handleWindowLeave);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseleave", handleWindowLeave);
+    };
+  }, [side, isResizing, forceOpen, topOffset, triggerWidthPx, closeTolerancePx]);
 
   const topStyle = `${topOffset}px`;
   const heightStyle = `calc(100vh - ${topOffset}px)`;
@@ -71,11 +118,11 @@ export default function FocusHoverSidebar({
       <div
         ref={triggerRef}
         className={cn(
-          "fixed w-4 z-50 transition-colors duration-300",
+          "fixed z-50 transition-colors duration-200",
           side === "left" ? "left-0" : "right-0",
           isOpen ? "pointer-events-none" : "hover:bg-accent/10"
         )}
-        style={{ top: topStyle, height: heightStyle }}
+        style={{ top: topStyle, height: heightStyle, width: `${triggerWidthPx}px` }}
       />
 
       {/* 사이드바 컨테이너 */}
