@@ -1,13 +1,112 @@
 {
-  "updatedAt": "2026-02-26T00:00:00.000Z",
+  "schemaVersion": 2,
+  "updatedAt": "2026-02-25T16:30:53.766Z",
   "warnings": [
-    "/Users/user/Luie/src/main/manager/autoSaveManager.ts is dynamically imported by /Users/user/Luie/src/main/lifecycle/appReady.ts, /Users/user/Luie/src/main/lifecycle/appReady.ts, /Users/user/Luie/src/main/lifecycle/shutdown.ts, /Users/user/Luie/src/main/services/core/chapterService.ts, /Users/user/Luie/src/main/services/core/chapterService.ts but also statically imported by /Users/user/Luie/src/main/handler/index.ts, dynamic import will not move module into another chunk.",
-    "/Users/user/Luie/src/main/database/index.ts is dynamically imported by /Users/user/Luie/src/main/lifecycle/shutdown.ts but also statically imported by /Users/user/Luie/src/main/lifecycle/bootstrap.ts, /Users/user/Luie/src/main/manager/autoSaveManager.ts, /Users/user/Luie/src/main/services/core/chapterKeywords.ts, /Users/user/Luie/src/main/services/core/chapterService.ts, /Users/user/Luie/src/main/services/core/projectService.ts, /Users/user/Luie/src/main/services/features/autoExtractService.ts, /Users/user/Luie/src/main/services/features/dbRecoveryService.ts, /Users/user/Luie/src/main/services/features/manuscriptAnalysisService.ts, /Users/user/Luie/src/main/services/features/searchService.ts, /Users/user/Luie/src/main/services/features/snapshotArtifacts.ts, /Users/user/Luie/src/main/services/features/snapshotService.ts, /Users/user/Luie/src/main/services/features/syncService.ts, /Users/user/Luie/src/main/services/world/characterService.ts, /Users/user/Luie/src/main/services/world/eventService.ts, /Users/user/Luie/src/main/services/world/factionService.ts, /Users/user/Luie/src/main/services/world/termService.ts, dynamic import will not move module into another chunk.",
-    "/Users/user/Luie/src/main/services/features/syncService.ts is dynamically imported by /Users/user/Luie/src/main/handler/core/ipcHandler.ts but also statically imported by /Users/user/Luie/src/main/handler/system/ipcSyncHandlers.ts, /Users/user/Luie/src/main/index.ts, /Users/user/Luie/src/main/lifecycle/deepLink.ts, /Users/user/Luie/src/main/services/index.ts, dynamic import will not move module into another chunk.",
-    "/Users/user/Luie/src/renderer/src/features/snapshot/components/SnapshotList.tsx is dynamically imported by /Users/user/Luie/src/renderer/src/features/manuscript/components/BinderSidebar.tsx but also statically imported by /Users/user/Luie/src/renderer/src/features/editor/components/InspectorPanel.tsx, /Users/user/Luie/src/renderer/src/features/manuscript/components/ScrivenerSidebar.tsx, /Users/user/Luie/src/renderer/src/features/manuscript/components/Sidebar.tsx, /Users/user/Luie/src/renderer/src/features/workspace/components/GoogleDocsLayout.tsx, dynamic import will not move module into another chunk.",
-    "/Users/user/Luie/src/renderer/src/features/trash/components/TrashList.tsx is dynamically imported by /Users/user/Luie/src/renderer/src/features/manuscript/components/BinderSidebar.tsx but also statically imported by /Users/user/Luie/src/renderer/src/features/manuscript/components/ScrivenerSidebar.tsx, /Users/user/Luie/src/renderer/src/features/manuscript/components/Sidebar.tsx, /Users/user/Luie/src/renderer/src/features/workspace/components/GoogleDocsLayout.tsx, dynamic import will not move module into another chunk.",
-    "/Users/user/Luie/src/renderer/src/features/export/components/ExportPreviewPanel.tsx is dynamically imported by /Users/user/Luie/src/renderer/src/features/workspace/components/WorkspacePanels.tsx but also statically imported by /Users/user/Luie/src/renderer/src/features/workspace/components/GoogleDocsLayout.tsx, dynamic import will not move module into another chunk.",
-    "/Users/user/Luie/src/renderer/src/features/research/components/ResearchPanel.tsx is dynamically imported by /Users/user/Luie/src/renderer/src/features/manuscript/components/BinderSidebar.tsx, /Users/user/Luie/src/renderer/src/features/workspace/components/WorkspacePanels.tsx but also statically imported by /Users/user/Luie/src/renderer/src/features/workspace/components/GoogleDocsLayout.tsx, dynamic import will not move module into another chunk.",
-    "/Users/user/Luie/src/renderer/src/features/research/components/WorldPanel.tsx is dynamically imported by /Users/user/Luie/src/renderer/src/features/manuscript/components/BinderSidebar.tsx but also statically imported by /Users/user/Luie/src/renderer/src/features/workspace/components/GoogleDocsLayout.tsx, dynamic import will not move module into another chunk."
+    {
+      "kind": "dynamic-static-mix",
+      "module": "src/main/database/index.ts",
+      "dynamicImporters": [
+        "src/main/lifecycle/shutdown.ts"
+      ],
+      "staticImporters": [
+        "src/main/lifecycle/bootstrap.ts",
+        "src/main/manager/autoSaveManager.ts",
+        "src/main/services/core/chapterKeywords.ts",
+        "src/main/services/core/chapterService.ts",
+        "src/main/services/core/projectService.ts",
+        "src/main/services/features/autoExtractService.ts",
+        "src/main/services/features/dbRecoveryService.ts",
+        "src/main/services/features/manuscriptAnalysisService.ts",
+        "src/main/services/features/searchService.ts",
+        "src/main/services/features/snapshotArtifacts.ts",
+        "src/main/services/features/snapshotService.ts",
+        "src/main/services/features/syncService.ts",
+        "src/main/services/world/characterService.ts",
+        "src/main/services/world/eventService.ts",
+        "src/main/services/world/factionService.ts",
+        "src/main/services/world/termService.ts"
+      ]
+    },
+    {
+      "kind": "dynamic-static-mix",
+      "module": "src/main/manager/autoSaveManager.ts",
+      "dynamicImporters": [
+        "src/main/lifecycle/appReady.ts",
+        "src/main/lifecycle/shutdown.ts",
+        "src/main/services/core/chapterService.ts"
+      ],
+      "staticImporters": [
+        "src/main/handler/index.ts"
+      ]
+    },
+    {
+      "kind": "dynamic-static-mix",
+      "module": "src/main/services/features/syncService.ts",
+      "dynamicImporters": [
+        "src/main/handler/core/ipcHandler.ts"
+      ],
+      "staticImporters": [
+        "src/main/handler/system/ipcSyncHandlers.ts",
+        "src/main/index.ts",
+        "src/main/lifecycle/deepLink.ts",
+        "src/main/services/index.ts"
+      ]
+    },
+    {
+      "kind": "dynamic-static-mix",
+      "module": "src/renderer/src/features/export/components/ExportPreviewPanel.tsx",
+      "dynamicImporters": [
+        "src/renderer/src/features/workspace/components/WorkspacePanels.tsx"
+      ],
+      "staticImporters": [
+        "src/renderer/src/features/workspace/components/GoogleDocsLayout.tsx"
+      ]
+    },
+    {
+      "kind": "dynamic-static-mix",
+      "module": "src/renderer/src/features/research/components/ResearchPanel.tsx",
+      "dynamicImporters": [
+        "src/renderer/src/features/manuscript/components/BinderSidebar.tsx",
+        "src/renderer/src/features/workspace/components/WorkspacePanels.tsx"
+      ],
+      "staticImporters": [
+        "src/renderer/src/features/workspace/components/GoogleDocsLayout.tsx"
+      ]
+    },
+    {
+      "kind": "dynamic-static-mix",
+      "module": "src/renderer/src/features/research/components/WorldPanel.tsx",
+      "dynamicImporters": [
+        "src/renderer/src/features/manuscript/components/BinderSidebar.tsx"
+      ],
+      "staticImporters": [
+        "src/renderer/src/features/workspace/components/GoogleDocsLayout.tsx"
+      ]
+    },
+    {
+      "kind": "dynamic-static-mix",
+      "module": "src/renderer/src/features/snapshot/components/SnapshotList.tsx",
+      "dynamicImporters": [
+        "src/renderer/src/features/manuscript/components/BinderSidebar.tsx"
+      ],
+      "staticImporters": [
+        "src/renderer/src/features/editor/components/InspectorPanel.tsx",
+        "src/renderer/src/features/manuscript/components/ScrivenerSidebar.tsx",
+        "src/renderer/src/features/manuscript/components/Sidebar.tsx",
+        "src/renderer/src/features/workspace/components/GoogleDocsLayout.tsx"
+      ]
+    },
+    {
+      "kind": "dynamic-static-mix",
+      "module": "src/renderer/src/features/trash/components/TrashList.tsx",
+      "dynamicImporters": [
+        "src/renderer/src/features/manuscript/components/BinderSidebar.tsx"
+      ],
+      "staticImporters": [
+        "src/renderer/src/features/manuscript/components/ScrivenerSidebar.tsx",
+        "src/renderer/src/features/manuscript/components/Sidebar.tsx",
+        "src/renderer/src/features/workspace/components/GoogleDocsLayout.tsx"
+      ]
+    }
   ]
 }

@@ -224,6 +224,49 @@ async function safeInvoke<T = never>(channel: string, ...args: unknown[]): Promi
   ) as IPCResponse<T>;
 }
 
+type CoreMethodMap = {
+  "window.openExport": RendererApi["window"]["openExport"];
+  "project.openLuie": RendererApi["project"]["openLuie"];
+  "project.get": RendererApi["project"]["get"];
+  "project.getAll": RendererApi["project"]["getAll"];
+  "chapter.get": RendererApi["chapter"]["get"];
+  "chapter.getAll": RendererApi["chapter"]["getAll"];
+  "chapter.update": RendererApi["chapter"]["update"];
+  "snapshot.importFromFile": RendererApi["snapshot"]["importFromFile"];
+  "snapshot.restore": RendererApi["snapshot"]["restore"];
+  "sync.getStatus": RendererApi["sync"]["getStatus"];
+  "sync.connectGoogle": RendererApi["sync"]["connectGoogle"];
+  "sync.disconnect": RendererApi["sync"]["disconnect"];
+  "sync.runNow": RendererApi["sync"]["runNow"];
+  "sync.setAutoSync": RendererApi["sync"]["setAutoSync"];
+  "app.getBootstrapStatus": RendererApi["app"]["getBootstrapStatus"];
+  "settings.getAll": RendererApi["settings"]["getAll"];
+  "settings.getEditor": RendererApi["settings"]["getEditor"];
+  "settings.setEditor": RendererApi["settings"]["setEditor"];
+  "settings.getLanguage": RendererApi["settings"]["getLanguage"];
+  "settings.setLanguage": RendererApi["settings"]["setLanguage"];
+  "settings.getMenuBarMode": RendererApi["settings"]["getMenuBarMode"];
+  "settings.setMenuBarMode": RendererApi["settings"]["setMenuBarMode"];
+  "settings.getShortcuts": RendererApi["settings"]["getShortcuts"];
+  "settings.setShortcuts": RendererApi["settings"]["setShortcuts"];
+  "settings.getWindowBounds": RendererApi["settings"]["getWindowBounds"];
+  "settings.setWindowBounds": RendererApi["settings"]["setWindowBounds"];
+  "fs.readLuieEntry": RendererApi["fs"]["readLuieEntry"];
+  "fs.selectFile": RendererApi["fs"]["selectFile"];
+  "fs.selectSaveLocation": RendererApi["fs"]["selectSaveLocation"];
+};
+
+type CoreMethod = keyof CoreMethodMap;
+type CoreResponse<K extends CoreMethod> = Awaited<ReturnType<CoreMethodMap[K]>>;
+
+function safeInvokeCore<K extends CoreMethod>(
+  _method: K,
+  channel: string,
+  ...args: Parameters<CoreMethodMap[K]>
+): Promise<CoreResponse<K>> {
+  return safeInvoke(channel, ...args) as Promise<CoreResponse<K>>;
+}
+
 type LogPayload = {
   level: "debug" | "info" | "warn" | "error" | string;
   message: string;
@@ -308,31 +351,34 @@ const rendererApi = {
   project: {
     create: (input: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.PROJECT_CREATE, input),
-    get: (id: string): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.PROJECT_GET, id),
-    getAll: (): Promise<IPCResponse<never>> => safeInvoke(IPC_CHANNELS.PROJECT_GET_ALL),
+    get: (id: string): ReturnType<RendererApi["project"]["get"]> =>
+      safeInvokeCore("project.get", IPC_CHANNELS.PROJECT_GET, id),
+    getAll: (): ReturnType<RendererApi["project"]["getAll"]> =>
+      safeInvokeCore("project.getAll", IPC_CHANNELS.PROJECT_GET_ALL),
     update: (input: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.PROJECT_UPDATE, input),
     delete: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.PROJECT_DELETE, id),
     removeLocal: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.PROJECT_REMOVE_LOCAL, id),
-    openLuie: (packagePath: string): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.PROJECT_OPEN_LUIE, packagePath),
+    openLuie: (packagePath: string): ReturnType<RendererApi["project"]["openLuie"]> =>
+      safeInvokeCore("project.openLuie", IPC_CHANNELS.PROJECT_OPEN_LUIE, packagePath),
   },
 
   // Chapter API
   chapter: {
     create: (input: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.CHAPTER_CREATE, input),
-    get: (id: string): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.CHAPTER_GET, id),
-    getAll: (projectId: string): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.CHAPTER_GET_ALL, projectId),
+    get: (id: string): ReturnType<RendererApi["chapter"]["get"]> =>
+      safeInvokeCore("chapter.get", IPC_CHANNELS.CHAPTER_GET, id),
+    getAll: (projectId: string): ReturnType<RendererApi["chapter"]["getAll"]> =>
+      safeInvokeCore("chapter.getAll", IPC_CHANNELS.CHAPTER_GET_ALL, projectId),
     getDeleted: (projectId: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.CHAPTER_GET_DELETED, projectId),
-    update: (input: unknown): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.CHAPTER_UPDATE, input),
+    update: (
+      input: Parameters<RendererApi["chapter"]["update"]>[0],
+    ): ReturnType<RendererApi["chapter"]["update"]> =>
+      safeInvokeCore("chapter.update", IPC_CHANNELS.CHAPTER_UPDATE, input),
     delete: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.CHAPTER_DELETE, id),
     restore: (id: string): Promise<IPCResponse<never>> =>
@@ -407,10 +453,12 @@ const rendererApi = {
       safeInvoke(IPC_CHANNELS.SNAPSHOT_GET_ALL, projectId),
     getByChapter: (chapterId: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SNAPSHOT_GET_BY_CHAPTER, chapterId),
-    importFromFile: (filePath: string): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.SNAPSHOT_IMPORT_FILE, filePath),
-    restore: (id: string): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.SNAPSHOT_RESTORE, id),
+    importFromFile: (
+      filePath: string,
+    ): ReturnType<RendererApi["snapshot"]["importFromFile"]> =>
+      safeInvokeCore("snapshot.importFromFile", IPC_CHANNELS.SNAPSHOT_IMPORT_FILE, filePath),
+    restore: (id: string): ReturnType<RendererApi["snapshot"]["restore"]> =>
+      safeInvokeCore("snapshot.restore", IPC_CHANNELS.SNAPSHOT_RESTORE, id),
     delete: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SNAPSHOT_DELETE, id),
   },
@@ -435,23 +483,23 @@ const rendererApi = {
       title?: string;
       defaultPath?: string;
       filters?: Array<{ name: string; extensions: string[] }>;
-    }): Promise<IPCResponse<string>> =>
-      safeInvoke(IPC_CHANNELS.FS_SELECT_FILE, options),
+    }): ReturnType<RendererApi["fs"]["selectFile"]> =>
+      safeInvokeCore("fs.selectFile", IPC_CHANNELS.FS_SELECT_FILE, options),
     selectSnapshotBackup: (): Promise<IPCResponse<string>> =>
       safeInvoke(IPC_CHANNELS.FS_SELECT_SNAPSHOT_BACKUP),
     selectSaveLocation: (options?: {
       title?: string;
       defaultPath?: string;
       filters?: Array<{ name: string; extensions: string[] }>;
-    }): Promise<IPCResponse<string>> =>
-      safeInvoke(IPC_CHANNELS.FS_SELECT_SAVE_LOCATION, options),
+    }): ReturnType<RendererApi["fs"]["selectSaveLocation"]> =>
+      safeInvokeCore("fs.selectSaveLocation", IPC_CHANNELS.FS_SELECT_SAVE_LOCATION, options),
     readFile: (filePath: string): Promise<IPCResponse<string>> =>
       safeInvoke(IPC_CHANNELS.FS_READ_FILE, filePath),
     readLuieEntry: (
       packagePath: string,
       entryPath: string,
-    ): Promise<IPCResponse<string | null>> =>
-      safeInvoke(IPC_CHANNELS.FS_READ_LUIE_ENTRY, packagePath, entryPath),
+    ): ReturnType<RendererApi["fs"]["readLuieEntry"]> =>
+      safeInvokeCore("fs.readLuieEntry", IPC_CHANNELS.FS_READ_LUIE_ENTRY, packagePath, entryPath),
     writeFile: (filePath: string, content: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.FS_WRITE_FILE, filePath, content),
 
@@ -518,13 +566,13 @@ const rendererApi = {
       safeInvoke(IPC_CHANNELS.WINDOW_TOGGLE_FULLSCREEN),
     setFullscreen: (flag: boolean): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.WINDOW_SET_FULLSCREEN, flag),
-    openExport: (chapterId: string): Promise<IPCResponse<boolean>> =>
-      safeInvoke<boolean>(IPC_CHANNELS.WINDOW_OPEN_EXPORT, chapterId),
+    openExport: (chapterId: string): ReturnType<RendererApi["window"]["openExport"]> =>
+      safeInvokeCore("window.openExport", IPC_CHANNELS.WINDOW_OPEN_EXPORT, chapterId),
   },
 
   app: {
-    getBootstrapStatus: (): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.APP_GET_BOOTSTRAP_STATUS),
+    getBootstrapStatus: (): ReturnType<RendererApi["app"]["getBootstrapStatus"]> =>
+      safeInvokeCore("app.getBootstrapStatus", IPC_CHANNELS.APP_GET_BOOTSTRAP_STATUS),
     onBootstrapStatus: (callback: (status: AppBootstrapStatus) => void): (() => void) => {
       const listener = (_event: unknown, status: AppBootstrapStatus) => {
         callback(status);
@@ -577,32 +625,42 @@ const rendererApi = {
 
   // Settings API
   settings: {
-    getAll: (): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.SETTINGS_GET_ALL),
-    getEditor: (): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.SETTINGS_GET_EDITOR),
-    setEditor: (settings: unknown): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.SETTINGS_SET_EDITOR, settings),
+    getAll: (): ReturnType<RendererApi["settings"]["getAll"]> =>
+      safeInvokeCore("settings.getAll", IPC_CHANNELS.SETTINGS_GET_ALL),
+    getEditor: (): ReturnType<RendererApi["settings"]["getEditor"]> =>
+      safeInvokeCore("settings.getEditor", IPC_CHANNELS.SETTINGS_GET_EDITOR),
+    setEditor: (
+      settings: Parameters<RendererApi["settings"]["setEditor"]>[0],
+    ): ReturnType<RendererApi["settings"]["setEditor"]> =>
+      safeInvokeCore("settings.setEditor", IPC_CHANNELS.SETTINGS_SET_EDITOR, settings),
     getAutoSave: (): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_GET_AUTO_SAVE),
     setAutoSave: (settings: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_SET_AUTO_SAVE, settings),
-    getLanguage: (): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.SETTINGS_GET_LANGUAGE),
-    setLanguage: (settings: unknown): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.SETTINGS_SET_LANGUAGE, settings),
-    getMenuBarMode: (): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.SETTINGS_GET_MENU_BAR_MODE),
-    setMenuBarMode: (settings: unknown): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.SETTINGS_SET_MENU_BAR_MODE, settings),
-    getShortcuts: (): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.SETTINGS_GET_SHORTCUTS),
-    setShortcuts: (settings: unknown): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.SETTINGS_SET_SHORTCUTS, settings),
-    getWindowBounds: (): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.SETTINGS_GET_WINDOW_BOUNDS),
-    setWindowBounds: (bounds: unknown): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.SETTINGS_SET_WINDOW_BOUNDS, bounds),
+    getLanguage: (): ReturnType<RendererApi["settings"]["getLanguage"]> =>
+      safeInvokeCore("settings.getLanguage", IPC_CHANNELS.SETTINGS_GET_LANGUAGE),
+    setLanguage: (
+      settings: Parameters<RendererApi["settings"]["setLanguage"]>[0],
+    ): ReturnType<RendererApi["settings"]["setLanguage"]> =>
+      safeInvokeCore("settings.setLanguage", IPC_CHANNELS.SETTINGS_SET_LANGUAGE, settings),
+    getMenuBarMode: (): ReturnType<RendererApi["settings"]["getMenuBarMode"]> =>
+      safeInvokeCore("settings.getMenuBarMode", IPC_CHANNELS.SETTINGS_GET_MENU_BAR_MODE),
+    setMenuBarMode: (
+      settings: Parameters<RendererApi["settings"]["setMenuBarMode"]>[0],
+    ): ReturnType<RendererApi["settings"]["setMenuBarMode"]> =>
+      safeInvokeCore("settings.setMenuBarMode", IPC_CHANNELS.SETTINGS_SET_MENU_BAR_MODE, settings),
+    getShortcuts: (): ReturnType<RendererApi["settings"]["getShortcuts"]> =>
+      safeInvokeCore("settings.getShortcuts", IPC_CHANNELS.SETTINGS_GET_SHORTCUTS),
+    setShortcuts: (
+      settings: Parameters<RendererApi["settings"]["setShortcuts"]>[0],
+    ): ReturnType<RendererApi["settings"]["setShortcuts"]> =>
+      safeInvokeCore("settings.setShortcuts", IPC_CHANNELS.SETTINGS_SET_SHORTCUTS, settings),
+    getWindowBounds: (): ReturnType<RendererApi["settings"]["getWindowBounds"]> =>
+      safeInvokeCore("settings.getWindowBounds", IPC_CHANNELS.SETTINGS_GET_WINDOW_BOUNDS),
+    setWindowBounds: (
+      bounds: Parameters<RendererApi["settings"]["setWindowBounds"]>[0],
+    ): ReturnType<RendererApi["settings"]["setWindowBounds"]> =>
+      safeInvokeCore("settings.setWindowBounds", IPC_CHANNELS.SETTINGS_SET_WINDOW_BOUNDS, bounds),
     reset: (): Promise<IPCResponse<never>> => safeInvoke(IPC_CHANNELS.SETTINGS_RESET),
   },
 
@@ -614,16 +672,18 @@ const rendererApi = {
 
   // Sync API
   sync: {
-    getStatus: (): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.SYNC_GET_STATUS),
-    connectGoogle: (): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.SYNC_CONNECT_GOOGLE),
-    disconnect: (): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.SYNC_DISCONNECT),
-    runNow: (): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.SYNC_RUN_NOW),
-    setAutoSync: (settings: unknown): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.SYNC_SET_AUTO, settings),
+    getStatus: (): ReturnType<RendererApi["sync"]["getStatus"]> =>
+      safeInvokeCore("sync.getStatus", IPC_CHANNELS.SYNC_GET_STATUS),
+    connectGoogle: (): ReturnType<RendererApi["sync"]["connectGoogle"]> =>
+      safeInvokeCore("sync.connectGoogle", IPC_CHANNELS.SYNC_CONNECT_GOOGLE),
+    disconnect: (): ReturnType<RendererApi["sync"]["disconnect"]> =>
+      safeInvokeCore("sync.disconnect", IPC_CHANNELS.SYNC_DISCONNECT),
+    runNow: (): ReturnType<RendererApi["sync"]["runNow"]> =>
+      safeInvokeCore("sync.runNow", IPC_CHANNELS.SYNC_RUN_NOW),
+    setAutoSync: (
+      settings: Parameters<RendererApi["sync"]["setAutoSync"]>[0],
+    ): ReturnType<RendererApi["sync"]["setAutoSync"]> =>
+      safeInvokeCore("sync.setAutoSync", IPC_CHANNELS.SYNC_SET_AUTO, settings),
     onStatusChanged: (callback: (status: SyncStatus) => void): (() => void) => {
       const listener = (_event: unknown, status: SyncStatus) => {
         callback(status);
