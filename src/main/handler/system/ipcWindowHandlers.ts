@@ -110,10 +110,23 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
             { chapterId, receivedType: typeof chapterId },
           );
         }
-        
+
         logger.info("Creating export window", { chapterId });
         windowManager.createExportWindow(chapterId);
         logger.info("Export window created successfully", { chapterId });
+        return true;
+      },
+    },
+    {
+      channel: IPC_CHANNELS.WINDOW_OPEN_WORLD_GRAPH,
+      logTag: "WINDOW_OPEN_WORLD_GRAPH",
+      failMessage: "Failed to open world graph window",
+      handler: () => {
+        logger.info("WINDOW_OPEN_WORLD_GRAPH received");
+
+        logger.info("Creating world graph window");
+        windowManager.createWorldGraphWindow();
+        logger.info("World graph window created successfully");
         return true;
       },
     },

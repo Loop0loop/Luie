@@ -192,10 +192,10 @@ const DocsToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
 
   return (
     <div className="flex flex-wrap items-center gap-1 justify-center w-full px-2">
-      <ToggleButton onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("toolbar.tooltip.undo")}>
+      <ToggleButton onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo()} className="w-8 h-8 rounded-full hover:bg-surface-hover" title={t("toolbar.tooltip.undo")}>
         <Undo2 className="w-4 h-4" />
       </ToggleButton>
-      <ToggleButton onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("toolbar.tooltip.redo")}>
+      <ToggleButton onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo()} className="w-8 h-8 rounded-full hover:bg-surface-hover" title={t("toolbar.tooltip.redo")}>
         <Redo2 className="w-4 h-4" />
       </ToggleButton>
       <div className="w-px h-5 bg-border mx-2" />
@@ -211,27 +211,27 @@ const DocsToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
 
       <div className="w-px h-5 bg-border mx-2" />
 
-      <ToggleButton active={editor?.isActive("bold")} onClick={() => editor?.chain().focus().toggleBold().run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("toolbar.tooltip.bold")}>
+      <ToggleButton active={editor?.isActive("bold")} onClick={() => editor?.chain().focus().toggleBold().run()} className="w-8 h-8 rounded-full hover:bg-surface-hover" title={t("toolbar.tooltip.bold")}>
         <Bold className="w-4 h-4" />
       </ToggleButton>
-      <ToggleButton active={editor?.isActive("italic")} onClick={() => editor?.chain().focus().toggleItalic().run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("toolbar.tooltip.italic")}>
+      <ToggleButton active={editor?.isActive("italic")} onClick={() => editor?.chain().focus().toggleItalic().run()} className="w-8 h-8 rounded-full hover:bg-surface-hover" title={t("toolbar.tooltip.italic")}>
         <Italic className="w-4 h-4" />
       </ToggleButton>
-      <ToggleButton active={editor?.isActive("underline")} onClick={() => editor?.chain().focus().toggleUnderline().run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("toolbar.tooltip.underline")}>
+      <ToggleButton active={editor?.isActive("underline")} onClick={() => editor?.chain().focus().toggleUnderline().run()} className="w-8 h-8 rounded-full hover:bg-surface-hover" title={t("toolbar.tooltip.underline")}>
         <Underline className="w-4 h-4" />
       </ToggleButton>
       {/* Color Picker (Simplified) */}
-      <div className="relative w-8 h-8 flex items-center justify-center hover:bg-black/5 rounded-full cursor-pointer" title={t("toolbar.tooltip.textColor")}>
+      <div className="relative w-8 h-8 flex items-center justify-center hover:bg-surface-hover rounded-full cursor-pointer transition-colors" title={t("toolbar.tooltip.textColor")}>
         <Type className="w-4 h-4" style={{ color: editor?.getAttributes("textStyle").color || "currentColor" }} />
         <input type="color" className="absolute inset-0 opacity-0 cursor-pointer rounded-full" onChange={(e) => editor?.chain().focus().setColor(e.target.value).run()} />
       </div>
 
       <div className="w-px h-5 bg-border mx-2" />
 
-      <ToggleButton active={editor?.isActive({ textAlign: "left" })} onClick={() => editor?.chain().focus().setTextAlign("left").run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("toolbar.tooltip.alignLeft")}>
+      <ToggleButton active={editor?.isActive({ textAlign: "left" })} onClick={() => editor?.chain().focus().setTextAlign("left").run()} className="w-8 h-8 rounded-full hover:bg-surface-hover" title={t("toolbar.tooltip.alignLeft")}>
         <AlignLeft className="w-4 h-4" />
       </ToggleButton>
-      <ToggleButton active={editor?.isActive({ textAlign: "center" })} onClick={() => editor?.chain().focus().setTextAlign("center").run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("toolbar.tooltip.alignCenter")}>
+      <ToggleButton active={editor?.isActive({ textAlign: "center" })} onClick={() => editor?.chain().focus().setTextAlign("center").run()} className="w-8 h-8 rounded-full hover:bg-surface-hover" title={t("toolbar.tooltip.alignCenter")}>
         <AlignCenter className="w-4 h-4" />
       </ToggleButton>
 
@@ -259,13 +259,13 @@ const WordToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col w-full bg-[#f3f2f1] dark:bg-[#2b2b2b] border-b border-border">
+    <div className="flex flex-col w-full bg-panel text-fg border-b border-border">
       {/* Ribbon Tabs */}
       <div className="flex items-center gap-1 px-2 pt-1 border-b border-border">
         <span className="px-4 py-1.5 text-xs bg-background border-t border-x border-border rounded-t font-semibold text-accent cursor-default">{t("toolbar.ribbon.home")}</span>
-        <span className="px-4 py-1.5 text-xs text-muted-foreground hover:bg-muted/50 cursor-pointer rounded-t">{t("toolbar.ribbon.insert")}</span>
-        <span className="px-4 py-1.5 text-xs text-muted-foreground hover:bg-muted/50 cursor-pointer rounded-t">{t("toolbar.ribbon.draw")}</span>
-        <span className="px-4 py-1.5 text-xs text-muted-foreground hover:bg-muted/50 cursor-pointer rounded-t">{t("toolbar.ribbon.view")}</span>
+        <span className="px-4 py-1.5 text-xs text-muted-foreground hover:bg-surface-hover cursor-pointer rounded-t">{t("toolbar.ribbon.insert")}</span>
+        <span className="px-4 py-1.5 text-xs text-muted-foreground hover:bg-surface-hover cursor-pointer rounded-t">{t("toolbar.ribbon.draw")}</span>
+        <span className="px-4 py-1.5 text-xs text-muted-foreground hover:bg-surface-hover cursor-pointer rounded-t">{t("toolbar.ribbon.view")}</span>
         <button
           className={cn(
             "ml-auto mr-2 px-3 py-1 text-[11px] rounded border border-border bg-background/80 text-muted-foreground transition-colors",
@@ -284,7 +284,7 @@ const WordToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
         </button>
       </div>
       {/* Ribbon Content (Home) */}
-      <div className="flex items-center h-20 px-4 py-2 gap-4 bg-[#f3f2f1] dark:bg-[#2b2b2b]">
+      <div className="flex items-center h-20 px-4 py-2 gap-4 bg-panel">
         {/* Clipboard Group (Mock) */}
         <div className="flex flex-col items-center justify-center gap-1 border-r border-border pr-2 opacity-50">
           <span className="text-[10px] text-muted-foreground">{t("toolbar.ribbon.paste")}</span>
@@ -330,7 +330,7 @@ const ScrivenerToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
   const setFontSize = useEditorStore((state) => state.setFontSize);
 
   return (
-    <div className="flex items-center gap-2 p-1 bg-[#e3e3e3] dark:bg-[#333] border-b border-border shadow-inner px-3">
+    <div className="flex items-center gap-2 p-1 bg-surface border-b border-border shadow-inner px-3">
       <FontSelector />
       <div className="flex items-center gap-1 bg-background border border-border rounded px-1">
         <button onClick={() => setFontSize(Math.max(EDITOR_TOOLBAR_FONT_MIN, fontSize - EDITOR_TOOLBAR_FONT_STEP))} className="hover:text-accent">-</button>

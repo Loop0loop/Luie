@@ -88,8 +88,8 @@ export default function ResizableSplitPane({
             style={{
               width: '4px',
               cursor: 'col-resize',
-              background: isDragging ? '#10B981' : 'transparent',
-              borderLeft: '1px solid var(--border)',
+              background: isDragging ? 'var(--accent-bg)' : 'transparent',
+              borderLeft: '1px solid var(--border-default)',
               transition: 'background 0.2s',
               zIndex: 10,
               flexShrink: 0,

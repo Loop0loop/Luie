@@ -181,7 +181,7 @@ function MemoSectionInner({
                 placeholder={t("memo.placeholder.title")}
               />
               <textarea
-                className="flex-1 px-6 pb-6 border-none bg-transparent resize-none outline-none leading-relaxed text-[15px] text-secondary placeholder:text-muted"
+                className="flex-1 px-6 pb-6 border-none bg-transparent resize-none outline-none leading-relaxed text-[15px] text-muted placeholder:text-muted"
                 value={activeNote.content}
                 onChange={(e) => updateActiveNote({ content: e.target.value })}
                 placeholder={t("memo.placeholder.body")}

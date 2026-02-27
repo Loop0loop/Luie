@@ -11,6 +11,16 @@
   --color-element-hover: var(--bg-element-hover);
   --color-active: var(--bg-active);
   --color-canvas: var(--bg-canvas);
+  --color-background: var(--bg-app);
+  --color-card: var(--bg-surface);
+  --color-popover: var(--bg-surface);
+  --color-input: var(--bg-element);
+  --color-ring: var(--ring-color, var(--accent-bg));
+  --color-hover: var(--bg-hover);
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-panel: var(--bg-panel);
+  --color-editor-bg: var(--editor-bg);
 
   /* Text Colors */
   --color-fg: var(--text-primary);
@@ -18,8 +28,24 @@
   --color-subtle: var(--text-tertiary);
   --color-accent: var(--text-accent);
   --color-on-accent: var(--text-on-accent);
+  --color-foreground: var(--text-primary);
+  --color-card-foreground: var(--text-primary);
+  --color-popover-foreground: var(--text-primary);
+  --color-muted-foreground: var(--text-secondary);
+  --color-muted-fg: var(--text-secondary);
+  --color-secondary: var(--bg-secondary);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-primary-foreground: var(--accent-fg);
+  --color-secondary-foreground: var(--text-primary);
+  --color-accent-foreground: var(--accent-fg);
+  --color-destructive-foreground: var(--text-on-accent);
 
   /* Semantic Colors */
+  --color-primary: var(--accent-bg);
+  --color-destructive: var(--danger-fg);
+  --color-error: var(--danger-fg);
   --color-accent-bg: var(--accent-bg);
   --color-accent-fg: var(--accent-fg);
   --color-success-fg: var(--success-fg);
@@ -458,4 +484,3 @@ button {
   background: var(--border-active);
   border-radius: 3px;
 }
-

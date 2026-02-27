@@ -204,11 +204,11 @@ export default function ScrivenerLayout({
                 >
                   <EditorDropZones />
                   {(mainView.type === "world" || mainView.type === "analysis") ? (
-                    <div className="h-full w-full bg-white dark:bg-[#1e1e1e]">
+                    <div className="h-full w-full bg-panel text-fg">
                       {renderMainContent()}
                     </div>
                   ) : (
-                    <div className="h-full w-full overflow-y-auto custom-scrollbar p-8 bg-white dark:bg-[#1e1e1e]">
+                    <div className="h-full w-full overflow-y-auto custom-scrollbar p-8 bg-panel text-fg">
                       <div className="max-w-3xl mx-auto min-h-[500px]">
                         {renderMainContent()}
                       </div>

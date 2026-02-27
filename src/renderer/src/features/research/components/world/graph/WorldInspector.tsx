@@ -1,5 +1,6 @@
 import { useMemo, useCallback, useState, useEffect } from "react";
-import { X, Link, Trash2, Tag, MapPin, Clock, Star } from "lucide-react";
+import { X, Link as LinkIcon, Trash2, Tag, MapPin, Clock, Star } from "lucide-react";
+import { cn } from "@shared/types/utils";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import type { RelationKind } from "@shared/types";
 
@@ -65,7 +66,9 @@ export function WorldInspector() {
                 description: selectedNode.description ?? "",
                 time: (selectedNode.attributes?.time as string) ?? "",
                 region: (selectedNode.attributes?.region as string) ?? "",
-                tags: (selectedNode.attributes?.tags as string) ?? "",
+                tags: Array.isArray(selectedNode.attributes?.tags)
+                    ? selectedNode.attributes.tags.join(", ")
+                    : (((selectedNode.attributes?.tags as unknown) as string) ?? ""),
                 importance: (selectedNode.attributes?.importance as number) ?? 3,
             });
         }
@@ -80,8 +83,7 @@ export function WorldInspector() {
     const handleBlur = useCallback(async () => {
         if (!selectedNode) return;
         const currentAttrs = selectedNode.attributes ?? {};
-        // 값이 같으면 저장 생략 (선택적 최적화 가능)
-        
+
         await updateWorldEntity({
             id: selectedNode.id,
             name: localNode.name || "제목 없음",
@@ -90,8 +92,8 @@ export function WorldInspector() {
                 ...currentAttrs,
                 time: localNode.time,
                 region: localNode.region,
-                tags: localNode.tags,
-                importance: localNode.importance,
+                tags: localNode.tags.split(",").map(t => t.trim()).filter(Boolean),
+                importance: localNode.importance as 1 | 2 | 3 | 4 | 5 | undefined,
             },
         });
     }, [selectedNode, localNode, updateWorldEntity]);
@@ -119,68 +121,99 @@ export function WorldInspector() {
 
     if (!selectedNode && !selectedEdge) {
         return (
-            <div className="inspector-empty">
-                <Link size={24} className="inspector-empty-icon" />
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-muted text-xs text-center p-5">
+                <LinkIcon size={24} className="opacity-30" />
                 <p>노드나 관계를 클릭하면<br />세부 정보가 표시됩니다.</p>
             </div>
         );
     }
 
     return (
-        <div className="inspector-root">
+        <div className="flex flex-col h-full bg-sidebar/40 backdrop-blur-3xl border-l border-border/40 font-sans shadow-[-4px_0_24px_-12px_rgba(0,0,0,0.1)]">
             {/* 노드 인스펙터 */}
             {selectedNode && (
                 <>
-                    <header className="inspector-header">
-                        <span className="inspector-type">{selectedNode.subType ?? selectedNode.entityType}</span>
-                        <div className="flex items-center gap-1">
-                            <button onClick={() => void handleDeleteNode()} className="inspector-icon-btn text-destructive" title="삭제"><Trash2 size={13} /></button>
-                            <button onClick={() => selectNode(null)} className="inspector-icon-btn" title="닫기"><X size={14} /></button>
+                    <header className="flex items-center justify-between px-4 py-3 border-b border-border/40 shrink-0 bg-sidebar/60">
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-accent/60 shadow-sm" />
+                            <span className="text-[10px] font-bold text-muted uppercase tracking-[0.1em]">
+                                {selectedNode.subType ?? selectedNode.entityType}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <button onClick={() => void handleDeleteNode()} className="p-1.5 text-muted hover:text-white hover:bg-destructive rounded-md transition-all shadow-sm border border-transparent hover:border-destructive/50" title="노드 삭제">
+                                <Trash2 size={13} />
+                            </button>
+                            <button onClick={() => selectNode(null)} className="p-1.5 text-muted hover:text-fg hover:bg-element-hover rounded-md transition-all border border-transparent hover:border-border/60" title="닫기">
+                                <X size={14} />
+                            </button>
                         </div>
                     </header>
 
-                    <div className="inspector-body notion-like">
-                        {/* Title */}
-                        <input 
-                            className="notion-title"
-                            value={localNode.name}
-                            onChange={(e) => handleChange("name", e.target.value)}
-                            onBlur={handleBlur}
-                            placeholder="이름 (제목)"
-                        />
+                    <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+                        <div className="p-5 flex flex-col gap-6">
+                            {/* Title (Header) */}
+                            <div className="flex flex-col">
+                                <input
+                                    className="text-[22px] font-bold text-fg border-none bg-transparent outline-none w-full p-1 -ml-1 rounded-md hover:bg-element-hover focus:bg-element-hover focus:ring-1 focus:ring-accent/30 transition-all placeholder:text-muted/40"
+                                    value={localNode.name}
+                                    onChange={(e) => handleChange("name", e.target.value)}
+                                    onBlur={handleBlur}
+                                    placeholder="무명(無名)의 존재"
+                                />
+                            </div>
 
-                        {/* Attributes (Properties) */}
-                        <div className="notion-properties">
-                            <div className="notion-prop-row">
-                                <div className="notion-prop-label"><Clock size={12}/> 시간</div>
-                                <input className="notion-prop-input" value={localNode.time} onChange={(e) => handleChange("time", e.target.value)} onBlur={handleBlur} placeholder="비어 있음" />
-                            </div>
-                            <div className="notion-prop-row">
-                                <div className="notion-prop-label"><MapPin size={12}/> 지역</div>
-                                <input className="notion-prop-input" value={localNode.region} onChange={(e) => handleChange("region", e.target.value)} onBlur={handleBlur} placeholder="비어 있음" />
-                            </div>
-                            <div className="notion-prop-row">
-                                <div className="notion-prop-label"><Tag size={12}/> 태그</div>
-                                <input className="notion-prop-input" value={localNode.tags} onChange={(e) => handleChange("tags", e.target.value)} onBlur={handleBlur} placeholder="쉼표로 구분" />
-                            </div>
-                            <div className="notion-prop-row">
-                                <div className="notion-prop-label"><Star size={12}/> 중요도</div>
-                                <select className="notion-prop-select" value={localNode.importance} onChange={(e) => { handleChange("importance", Number(e.target.value)); setTimeout(handleBlur, 0); }}>
-                                    {[1,2,3,4,5].map(v => <option key={v} value={v}>{"★".repeat(v)}</option>)}
-                                </select>
-                            </div>
-                        </div>
+                            {/* Attributes Grid (Notion-like Properties) */}
+                            <div className="flex flex-col gap-1.5 bg-element/30 rounded-lg p-2 border border-border/40">
 
-                        {/* Description (Body) */}
-                        <div className="notion-desc-container">
-                            <textarea
-                                className="notion-textarea custom-scrollbar"
-                                value={localNode.description}
-                                onChange={(e) => handleChange("description", e.target.value)}
-                                onBlur={handleBlur}
-                                placeholder="설명을 입력하세요..."
-                                rows={10}
-                            />
+                                {/* Time */}
+                                <div className="group flex items-center min-h-[30px] rounded-md hover:bg-element-hover transition-colors px-1">
+                                    <div className="w-[100px] text-[11px] text-muted flex items-center gap-2 font-medium shrink-0">
+                                        <Clock size={13} className="text-muted/70 group-hover:text-muted transition-colors" /> 시간/시기
+                                    </div>
+                                    <input className="flex-1 text-xs text-fg border-none bg-transparent outline-none px-2 py-1 rounded-sm focus:bg-element focus:ring-1 focus:ring-accent/40 min-w-0 transition-all placeholder:text-muted/30" value={localNode.time} onChange={(e) => handleChange("time", e.target.value)} onBlur={handleBlur} placeholder="비어 있음" />
+                                </div>
+
+                                {/* Region */}
+                                <div className="group flex items-center min-h-[30px] rounded-md hover:bg-element-hover transition-colors px-1">
+                                    <div className="w-[100px] text-[11px] text-muted flex items-center gap-2 font-medium shrink-0">
+                                        <MapPin size={13} className="text-muted/70 group-hover:text-muted transition-colors" /> 위치/지역
+                                    </div>
+                                    <input className="flex-1 text-xs text-fg border-none bg-transparent outline-none px-2 py-1 rounded-sm focus:bg-element focus:ring-1 focus:ring-accent/40 min-w-0 transition-all placeholder:text-muted/30" value={localNode.region} onChange={(e) => handleChange("region", e.target.value)} onBlur={handleBlur} placeholder="비어 있음" />
+                                </div>
+
+                                {/* Tags */}
+                                <div className="group flex items-center min-h-[30px] rounded-md hover:bg-element-hover transition-colors px-1">
+                                    <div className="w-[100px] text-[11px] text-muted flex items-center gap-2 font-medium shrink-0">
+                                        <Tag size={13} className="text-muted/70 group-hover:text-muted transition-colors" /> 분류 태그
+                                    </div>
+                                    <input className="flex-1 text-xs text-fg border-none bg-transparent outline-none px-2 py-1 rounded-sm focus:bg-element focus:ring-1 focus:ring-accent/40 min-w-0 transition-all placeholder:text-muted/30" value={localNode.tags} onChange={(e) => handleChange("tags", e.target.value)} onBlur={handleBlur} placeholder="쉼표로 구분..." />
+                                </div>
+
+                                {/* Importance */}
+                                <div className="group flex items-center min-h-[30px] rounded-md hover:bg-element-hover transition-colors px-1">
+                                    <div className="w-[100px] text-[11px] text-muted flex items-center gap-2 font-medium shrink-0">
+                                        <Star size={13} className="text-muted/70 group-hover:text-accent transition-colors" /> 중요도
+                                    </div>
+                                    <div className="flex-1 relative flex items-center">
+                                        <select className="w-full text-xs text-accent border-none bg-transparent outline-none px-2 py-1 rounded-sm focus:bg-element focus:ring-1 focus:ring-accent/40 min-w-0 transition-all cursor-pointer appearance-none font-bold" value={localNode.importance} onChange={(e) => { handleChange("importance", Number(e.target.value)); void setTimeout(handleBlur, 0); }}>
+                                            {[1, 2, 3, 4, 5].map(v => <option key={v} value={v} className="text-fg bg-app">{"★".repeat(v)}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Description (Body Editor) */}
+                            <div className="flex flex-col flex-1 mt-2">
+                                <textarea
+                                    className="w-full flex-1 border-none bg-transparent text-fg text-xs leading-relaxed outline-none resize-none p-2 rounded-md hover:bg-element/50 focus:bg-element/80 transition-all custom-scrollbar placeholder:text-muted/40"
+                                    value={localNode.description}
+                                    onChange={(e) => handleChange("description", e.target.value)}
+                                    onBlur={handleBlur}
+                                    placeholder="여기에 상세 설정, 배경 이야기, 주요 특징 등을 작성하세요..."
+                                    rows={14}
+                                />
+                            </div>
                         </div>
                     </div>
                 </>
@@ -189,104 +222,74 @@ export function WorldInspector() {
             {/* 엣지 인스펙터 */}
             {selectedEdge && (
                 <>
-                    <header className="inspector-header">
-                        <span className="inspector-type">관계 (엣지)</span>
-                        <button onClick={() => selectEdge(null)} className="inspector-icon-btn"><X size={14} /></button>
+                    <header className="flex items-center justify-between px-4 py-3 border-b border-border/40 shrink-0 bg-sidebar/60">
+                        <div className="flex items-center gap-2">
+                            <LinkIcon size={12} className="text-accent" />
+                            <span className="text-[10px] font-bold text-muted uppercase tracking-[0.1em]">관계 (Relation)</span>
+                        </div>
+                        <button onClick={() => selectEdge(null)} className="p-1.5 text-muted hover:text-fg hover:bg-element-hover rounded-md transition-all border border-transparent hover:border-border/60" title="닫기">
+                            <X size={14} />
+                        </button>
                     </header>
 
-                    <div className="inspector-body">
-                        <div className="edge-summary">
-                            <span className="edge-node">{sourceNode?.name ?? "?"}</span>
-                            <span className="edge-arrow">→</span>
-                            <span className="edge-badge">{RELATION_LABELS[selectedEdge.relation]}</span>
-                            <span className="edge-arrow">→</span>
-                            <span className="edge-node">{targetNode?.name ?? "?"}</span>
+                    <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col p-5 gap-6">
+
+                        {/* 관계 요약 표시 */}
+                        <div className="flex flex-col items-center gap-3 p-4 border border-border/40 bg-element/30 rounded-lg shadow-sm">
+                            <div className="flex items-center justify-center gap-2 w-full">
+                                <span className="text-xs text-fg font-bold truncate flex-1 text-right">{sourceNode?.name ?? "?"}</span>
+                                <div className="flex flex-col items-center shrink-0 px-2 animate-pulse-slow">
+                                    <span className="text-[10px] text-accent font-bold mb-1 uppercase tracking-wider">{RELATION_LABELS[selectedEdge.relation]}</span>
+                                    <div className="w-12 h-0.5 bg-accent/30 relative">
+                                        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 w-1.5 h-1.5 border-t-2 border-r-2 border-accent/60 rotate-45" />
+                                    </div>
+                                </div>
+                                <span className="text-xs text-fg font-bold truncate flex-1 text-left">{targetNode?.name ?? "?"}</span>
+                            </div>
                         </div>
 
+                        {/* 편집 모드 */}
                         {editRelation === null ? (
-                            <button onClick={() => setEditRelation(selectedEdge.relation)} className="notion-btn mt-2">유형 변경</button>
+                            <button onClick={() => setEditRelation(selectedEdge.relation)} className="flex justify-center items-center gap-1.5 px-4 py-2 mt-2 rounded-lg border border-border/60 bg-element text-fg text-xs font-bold shadow-sm hover:shadow hover:-translate-y-0.5 transition-all">
+                                관계 유형 변경
+                            </button>
                         ) : (
-                            <div className="flex flex-col gap-2 mt-2">
-                                <select value={editRelation} onChange={(e) => setEditRelation(e.target.value as RelationKind)} className="notion-select">
-                                    {RELATION_KINDS.map(([key, label]) => (
-                                        <option key={key} value={key}>{label}</option>
+                            <div className="flex flex-col gap-3 p-4 bg-element/50 border border-border/60 rounded-lg">
+                                <h4 className="text-[11px] font-bold text-muted uppercase tracking-wider mb-1">새 관계 선택</h4>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {RELATION_KINDS.map(([kind, label]) => (
+                                        <button
+                                            key={kind}
+                                            onClick={() => setEditRelation(kind)}
+                                            className={cn(
+                                                "px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 border",
+                                                editRelation === kind
+                                                    ? "bg-accent/10 border-accent/30 text-accent shadow-sm"
+                                                    : "bg-transparent border-border/40 text-muted hover:bg-element hover:text-fg"
+                                            )}
+                                        >
+                                            {label}
+                                        </button>
                                     ))}
-                                </select>
-                                <div className="flex gap-2">
-                                    <button onClick={() => void saveRelation()} className="notion-btn primary flex-1">저장</button>
-                                    <button onClick={() => setEditRelation(null)} className="notion-btn flex-1">취소</button>
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <button onClick={() => void saveRelation()} className="flex-1 bg-accent text-white text-xs font-bold py-2 rounded-md hover:bg-accent/90 transition-colors shadow-sm">저장</button>
+                                    <button onClick={() => setEditRelation(null)} className="flex-1 bg-element text-fg text-xs font-medium py-2 rounded-md border border-border/60 hover:bg-element-hover transition-colors">취소</button>
                                 </div>
                             </div>
                         )}
 
-                        <button onClick={() => void handleDeleteRelation()} className="notion-btn danger mt-4"><Trash2 size={12}/> 관계 삭제</button>
+                        <div className="flex-1" />
+
+                        {/* 삭제 영역 하단 고정 */}
+                        <div className="border-t border-border/40 pt-4 mt-4">
+                            <button onClick={() => void handleDeleteRelation()} className="w-full flex justify-center items-center gap-2 px-4 py-2 rounded-lg bg-destructive/10 text-destructive text-xs font-bold hover:bg-destructive hover:text-white transition-all border border-destructive/20 hover:border-destructive shadow-sm">
+                                <Trash2 size={13} /> 이 관계 삭제
+                            </button>
+                        </div>
                     </div>
                 </>
             )}
         </div>
     );
 }
-
-            <style>{`
-        .inspector-empty {
-          display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
-          gap: 12px; color: var(--muted); font-size: 12px; text-align: center; padding: 20px;
-        }
-        .inspector-empty-icon { opacity: 0.3; }
-
-        .inspector-root { display: flex; flex-direction: column; height: 100%; font-size: 13px; }
-        .inspector-header {
-          display: flex; align-items: center; justify-content: space-between; padding: 8px 12px;
-          border-bottom: 1px solid var(--border); flex-shrink: 0;
-        }
-        .inspector-type { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-        .inspector-icon-btn {
-          background: none; border: none; cursor: pointer; color: var(--muted); padding: 4px; border-radius: 4px;
-        }
-        .inspector-icon-btn:hover { background: var(--element-hover); color: var(--fg); }
-
-        .inspector-body { padding: 16px 14px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; flex: 1; }
-        
-        /* Notion-like Styles */
-        .notion-title {
-          font-size: 20px; font-weight: 700; color: var(--fg); border: none; background: transparent; 
-          outline: none; width: 100%; padding: 4px; margin-left: -4px; border-radius: 4px;
-        }
-        .notion-title:hover { background: var(--element-hover); }
-        .notion-title:focus { background: transparent; }
-
-        .notion-properties { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
-        .notion-prop-row { display: flex; align-items: center; min-height: 28px; }
-        .notion-prop-label { width: 90px; font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
-        .notion-prop-input, .notion-prop-select {
-          flex: 1; border: none; background: transparent; color: var(--fg); font-size: 13px; padding: 4px 6px;
-          border-radius: 4px; outline: none; min-width: 0;
-        }
-        .notion-prop-input:hover, .notion-prop-select:hover { background: var(--element-hover); }
-        .notion-prop-input:focus, .notion-prop-select:focus { background: var(--element); outline: 1px solid var(--border); }
-        .notion-prop-select { cursor: pointer; -webkit-appearance: none; appearance: none; }
-
-        .notion-desc-container { flex: 1; display: flex; flex-direction: column; margin-top: 8px; }
-        .notion-textarea {
-          width: 100%; flex: 1; border: none; background: transparent; color: var(--fg); font-size: 14px; 
-          line-height: 1.6; outline: none; resize: none; padding: 4px; margin-left: -4px; border-radius: 4px;
-        }
-        .notion-textarea:hover { background: var(--element-hover); }
-        .notion-textarea:focus { background: transparent; }
-
-        .edge-summary { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; background: var(--element); padding: 8px 10px; border-radius: 6px; }
-        .edge-node { font-size: 12px; color: var(--fg); font-weight: 500; }
-        .edge-arrow { color: var(--muted); font-size: 12px; }
-        .edge-badge { padding: 2px 8px; border-radius: 12px; background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); font-size: 11px; font-weight: 600; }
-        
-        .notion-btn {
-          padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--element); 
-          color: var(--fg); font-size: 12px; cursor: pointer; transition: all 0.1s; display: flex; justify-content: center; align-items: center; gap: 6px;
-        }
-        .notion-btn:hover { background: var(--element-hover); }
-        .notion-btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
-        .notion-btn.primary:hover { opacity: 0.9; }
-        .notion-btn.danger { color: var(--destructive); border-color: var(--destructive); }
-        .notion-btn.danger:hover { background: color-mix(in srgb, var(--destructive) 10%, transparent); }
-        .notion-select { padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--element); color: var(--fg); font-size: 12px; outline: none; }
-      `}</style>

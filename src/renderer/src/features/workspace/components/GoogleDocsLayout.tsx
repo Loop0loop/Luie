@@ -177,14 +177,14 @@ export default function GoogleDocsLayout({
           {isSidebarOpen && (
             <button
               onClick={() => setSidebarOpen(false)}
-              className="w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground shrink-0"
+              className="w-10 h-10 rounded-full hover:bg-surface-hover flex items-center justify-center transition-colors text-muted-foreground shrink-0"
               title={t("sidebar.toggle.close")}
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
           )}
 
-          <div className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-muted/50 cursor-pointer transition-colors shrink-0" title={t("home")}>
+          <div className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-hover cursor-pointer transition-colors shrink-0" title={t("home")}>
             <div className="w-6 h-8 bg-blue-500 rounded-[2px] relative flex items-center justify-center shadow-sm scale-90">
               <div className="w-4 h-0.5 bg-white mb-1 rounded-sm" />
               <div className="w-4 h-0.5 bg-white mb-1 rounded-sm" />
@@ -202,28 +202,28 @@ export default function GoogleDocsLayout({
               }
             }}
             placeholder={t("project.defaults.untitled")}
-            className="text-[18px] text-foreground bg-transparent px-2 py-0.5 rounded-[4px] hover:bg-muted/50 focus:bg-background focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200 border border-transparent truncate max-w-[400px] min-w-[150px]"
+            className="text-[18px] text-foreground bg-transparent px-2 py-0.5 rounded-[4px] hover:bg-surface-hover focus:bg-background focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200 border border-transparent truncate max-w-[400px] min-w-[150px]"
           />
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => handleRightTabClick("snapshot")}
-            className={cn("w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground", activeRightTab === "snapshot" && "bg-accent/10 text-accent")}
+            className={cn("w-10 h-10 rounded-full hover:bg-surface-hover flex items-center justify-center transition-colors text-muted-foreground", activeRightTab === "snapshot" && "bg-accent/10 text-accent")}
             title={t("sidebar.section.snapshot")}
           >
             <History className="w-5 h-5" />
           </button>
           <button
             onClick={() => handleRightTabClick("trash")}
-            className={cn("w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground", activeRightTab === "trash" && "bg-accent/10 text-accent")}
+            className={cn("w-10 h-10 rounded-full hover:bg-surface-hover flex items-center justify-center transition-colors text-muted-foreground", activeRightTab === "trash" && "bg-accent/10 text-accent")}
             title={t("sidebar.section.trash")}
           >
             <Trash2 className="w-5 h-5" />
           </button>
           <button
             onClick={onOpenSettings}
-            className="w-10 h-10 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground"
+            className="w-10 h-10 rounded-full hover:bg-surface-hover flex items-center justify-center transition-colors text-muted-foreground"
             title={t("sidebar.section.settings")}
           >
             <Settings className="w-6 h-6" />
@@ -247,7 +247,7 @@ export default function GoogleDocsLayout({
             <div className="absolute left-4 top-4 z-50 pointer-events-auto">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="w-10 h-10 bg-background border border-border/50 shadow-md rounded-full flex items-center justify-center hover:bg-muted/50 transition-all text-muted-foreground"
+                className="w-10 h-10 bg-background border border-border/50 shadow-md rounded-full flex items-center justify-center hover:bg-surface-hover transition-all text-muted-foreground"
                 title={t("sidebar.toggle.open")}
               >
                 <Menu className="w-5 h-5" />
@@ -296,7 +296,7 @@ export default function GoogleDocsLayout({
                         paddingBottom: '96px',
                         paddingLeft: `${pageMargins.left}px`,
                         paddingRight: `${pageMargins.right}px`,
-                        color: 'var(--foreground)'
+                        color: "var(--editor-text, var(--text-primary))"
                       }}
                     >
                       {children}
@@ -312,7 +312,7 @@ export default function GoogleDocsLayout({
           {/* Right Context Panel */}
           {activeRightTab && (
             <>
-              <PanelResizeHandle className="w-1 shrink-0 bg-border/40 hover:bg-[#4285F4] focus-visible:bg-[#4285F4] transition-colors cursor-col-resize z-20 relative">
+              <PanelResizeHandle className="w-1 shrink-0 bg-border/40 hover:bg-accent/60 focus-visible:bg-accent/60 transition-colors cursor-col-resize z-20 relative">
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
 
@@ -406,7 +406,7 @@ export default function GoogleDocsLayout({
                     <div className="flex flex-col h-full">
                       <div className="px-4 py-3 border-b border-border/50 text-xs font-semibold text-muted uppercase tracking-wider bg-sidebar">
                         {t("sidebar.section.trash")}
-                        <button onClick={() => setTrashRefreshKey(k => k + 1)} className="ml-auto p-1 hover:bg-muted/50 rounded">
+                        <button onClick={() => setTrashRefreshKey(k => k + 1)} className="ml-auto p-1 hover:bg-surface-hover rounded">
                           <History className="w-3 h-3 text-muted" />
                         </button>
                       </div>
@@ -433,7 +433,7 @@ export default function GoogleDocsLayout({
         )}>
           <button
             onClick={() => setBinderBarOpen(false)}
-            className="w-full h-8 flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-colors mb-2 border-b border-border/50"
+            className="w-full h-8 flex items-center justify-center hover:bg-surface-hover transition-colors mb-2 border-b border-border/50"
             title={t("sidebar.toggle.close")}
           >
             <ChevronLeft className="w-4 h-4 text-muted-foreground rotate-180" />
@@ -443,8 +443,8 @@ export default function GoogleDocsLayout({
             <button
               onClick={() => handleRightTabClick("character")}
               className={cn(
-                "w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors",
-                activeRightTab === "character" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+                "w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:bg-surface-hover hover:text-fg transition-colors",
+                activeRightTab === "character" && "bg-accent/15 text-accent"
               )}
               title={t("research.title.characters")}
             >
@@ -456,8 +456,8 @@ export default function GoogleDocsLayout({
             <button
               onClick={() => handleRightTabClick("world")}
               className={cn(
-                "w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors",
-                activeRightTab === "world" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+                "w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:bg-surface-hover hover:text-fg transition-colors",
+                activeRightTab === "world" && "bg-accent/15 text-accent"
               )}
               title={t("research.title.world")}
             >
@@ -469,8 +469,8 @@ export default function GoogleDocsLayout({
             <button
               onClick={() => handleRightTabClick("event")}
               className={cn(
-                "w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors",
-                activeRightTab === "event" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+                "w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:bg-surface-hover hover:text-fg transition-colors",
+                activeRightTab === "event" && "bg-accent/15 text-accent"
               )}
               title={t("research.title.events", "Events")}
             >
@@ -482,8 +482,8 @@ export default function GoogleDocsLayout({
             <button
               onClick={() => handleRightTabClick("faction")}
               className={cn(
-                "w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors",
-                activeRightTab === "faction" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+                "w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:bg-surface-hover hover:text-fg transition-colors",
+                activeRightTab === "faction" && "bg-accent/15 text-accent"
               )}
               title={t("research.title.factions", "Factions")}
             >
@@ -495,8 +495,8 @@ export default function GoogleDocsLayout({
             <button
               onClick={() => handleRightTabClick("scrap")}
               className={cn(
-                "w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors",
-                activeRightTab === "scrap" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+                "w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:bg-surface-hover hover:text-fg transition-colors",
+                activeRightTab === "scrap" && "bg-accent/15 text-accent"
               )}
               title={t("research.title.scrap")}
             >
@@ -508,8 +508,8 @@ export default function GoogleDocsLayout({
             <button
               onClick={() => handleRightTabClick("analysis")}
               className={cn(
-                "w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors",
-                activeRightTab === "analysis" && "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+                "w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:bg-surface-hover hover:text-fg transition-colors",
+                activeRightTab === "analysis" && "bg-accent/15 text-accent"
               )}
               title={t("research.title.analysis")}
             >
@@ -517,7 +517,7 @@ export default function GoogleDocsLayout({
             </button>
           </DraggableItem>
           <div className="mt-auto">
-            <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10" title={t("menu.extensions")}>
+            <button className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:bg-surface-hover hover:text-fg transition-colors" title={t("menu.extensions")}>
               <Plus className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
@@ -527,7 +527,7 @@ export default function GoogleDocsLayout({
           <div className="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
             <button
               onClick={() => setBinderBarOpen(true)}
-              className="w-8 h-12 bg-background border border-r-0 border-border shadow-md rounded-l-lg flex items-center justify-center hover:bg-muted/50 transition-colors text-muted-foreground cursor-pointer"
+              className="w-8 h-12 bg-background border border-r-0 border-border shadow-md rounded-l-lg flex items-center justify-center hover:bg-surface-hover transition-colors text-muted-foreground cursor-pointer"
               title={t("sidebar.toggle.open")}
             >
               <ChevronLeft className="w-5 h-5" />

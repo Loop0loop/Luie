@@ -249,6 +249,7 @@ export type RendererApi = {
     toggleFullscreen: () => Promise<IPCResponse<unknown>>;
     setFullscreen: (flag: boolean) => Promise<IPCResponse<unknown>>;
     openExport: (chapterId: string) => Promise<IPCResponse<boolean>>;
+    openWorldGraph: () => Promise<IPCResponse<unknown>>;
   };
   logger: {
     debug: (message: string, data?: unknown) => Promise<IPCResponse<unknown>>;

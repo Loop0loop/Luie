@@ -117,6 +117,7 @@ export const IPC_CHANNELS = {
   WINDOW_TOGGLE_FULLSCREEN: "window:toggle-fullscreen",
   WINDOW_SET_FULLSCREEN: "window:set-fullscreen",
   WINDOW_OPEN_EXPORT: "window:open-export",
+  WINDOW_OPEN_WORLD_GRAPH: "window:open-world-graph",
 
   // App
   APP_GET_VERSION: "app:get-version",

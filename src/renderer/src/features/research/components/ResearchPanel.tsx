@@ -67,8 +67,8 @@ export default function ResearchPanel({
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium whitespace-nowrap rounded-full transition-colors",
                   isActive
-                    ? "bg-[#c2e7ff] text-[#001d35]"
-                    : "text-[#444746] dark:text-[#c4c7c5] hover:bg-[#1f1f1f]/5 dark:hover:bg-white/10"
+                    ? "bg-accent/15 text-accent"
+                    : "text-muted-foreground hover:bg-surface-hover hover:text-fg"
                 )}
                 title={tab.label}
               >

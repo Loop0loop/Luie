@@ -568,6 +568,8 @@ const rendererApi = {
       safeInvoke(IPC_CHANNELS.WINDOW_SET_FULLSCREEN, flag),
     openExport: (chapterId: string): ReturnType<RendererApi["window"]["openExport"]> =>
       safeInvokeCore("window.openExport", IPC_CHANNELS.WINDOW_OPEN_EXPORT, chapterId),
+    openWorldGraph: (): Promise<IPCResponse<unknown>> =>
+      safeInvoke(IPC_CHANNELS.WINDOW_OPEN_WORLD_GRAPH),
   },
 
   app: {

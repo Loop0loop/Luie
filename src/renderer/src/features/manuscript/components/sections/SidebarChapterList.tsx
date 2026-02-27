@@ -132,7 +132,7 @@ export default function SidebarChapterList() {
                             <div
                                 className={cn(
                                     "group flex items-center justify-between px-3 py-2 rounded-md transition-colors cursor-pointer text-sm select-none min-h-[36px]",
-                                    isActive ? "bg-accent/10 text-accent font-medium" : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
+                                    isActive ? "bg-accent/10 text-accent font-medium" : "text-muted-foreground hover:bg-surface-hover hover:text-foreground"
                                 )}
                                 onClick={() => {
                                     handleSelectChapter(chapter.id);

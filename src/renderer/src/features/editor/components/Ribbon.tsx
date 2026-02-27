@@ -54,10 +54,10 @@ export default function Ribbon({
   };
 
   return (
-    <div className="flex flex-col w-full bg-[#f9fbfd] dark:bg-[#1e1e1e] border-b border-border z-40 select-none pt-1">
+    <div className="flex flex-col w-full bg-panel text-fg border-b border-border z-40 select-none pt-1">
 
       {/* Toolbar Row */}
-      <div className="flex items-center px-3 py-1.5 gap-1.5 overflow-x-auto border-t border-border/10 bg-[#edf2fa] dark:bg-[#252525] rounded-full mx-2 mb-2 shadow-sm">
+      <div className="flex items-center px-3 py-1.5 gap-1.5 overflow-x-auto border-t border-border/10 bg-surface rounded-full mx-2 mb-2 shadow-sm">
 
         {/* Undo/Redo */}
         <div className="flex items-center gap-0.5 pr-2 border-r border-border/20">
@@ -81,14 +81,14 @@ export default function Ribbon({
           <FontSelector />
           <div className="h-4 w-px bg-border/20" />
           <div className="flex items-center">
-            <button className="px-1 hover:bg-black/5 rounded text-xs">-</button>
+            <button className="px-1 hover:bg-surface-hover rounded text-xs transition-colors">-</button>
             <input
               type="text"
               defaultValue="11"
               className="w-6 text-center bg-transparent text-xs border border-border/50 rounded mx-1"
               readOnly
             />
-            <button className="px-1 hover:bg-black/5 rounded text-xs">+</button>
+            <button className="px-1 hover:bg-surface-hover rounded text-xs transition-colors">+</button>
           </div>
         </div>
 
@@ -96,8 +96,8 @@ export default function Ribbon({
         <div className="flex items-center gap-0.5 pr-2 border-r border-border/20">
           <button
             className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-black/5 dark:bg-white/5 text-[11px] text-muted border border-transparent cursor-pointer transition-colors hover:bg-black/10 dark:hover:bg-white/10",
-              (maxWidth && maxWidth <= 500) && "bg-blue-100 dark:bg-blue-900/30 text-blue-600 border-blue-200 dark:border-blue-800"
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-element text-[11px] text-muted border border-transparent cursor-pointer transition-colors hover:bg-surface-hover",
+              (maxWidth && maxWidth <= 500) && "bg-accent/15 text-accent border-accent/40"
             )}
             onClick={() => {
               const isMobile = maxWidth && maxWidth <= 500;
@@ -177,9 +177,9 @@ export default function Ribbon({
         <div className="ml-auto flex items-center gap-0.5">
           <button
             className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-black/5 dark:bg-white/5 text-[11px] text-muted border border-transparent transition-colors",
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-element text-[11px] text-muted border border-transparent transition-colors",
               onOpenWorldGraph
-                ? "cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 hover:text-fg"
+                ? "cursor-pointer hover:bg-surface-hover hover:text-fg"
                 : "cursor-not-allowed opacity-50"
             )}
             onClick={onOpenWorldGraph}
@@ -230,7 +230,7 @@ function ToolbarButton({
         "flex items-center justify-center p-1.5 rounded transition-colors",
         isActive
           ? "bg-accent/10 text-accent"
-          : "hover:bg-black/5 dark:hover:bg-white/10 text-fg/70 hover:text-fg",
+          : "hover:bg-surface-hover text-fg/70 hover:text-fg",
         disabled && "opacity-40 cursor-not-allowed",
         className
       )}

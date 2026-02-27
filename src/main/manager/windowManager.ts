@@ -100,11 +100,11 @@ class WindowManager {
 
     // Load the renderer based on environment
     const isPackaged = app.isPackaged
-    
+
     // electron-vite dev command sets VITE_DEV_SERVER_URL
     // If not packaged and no VITE_DEV_SERVER_URL, check if dev server is available
     const devServerUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173'
-    
+
     // Use dev server if not packaged (unless explicitly building for production preview)
     const useDevServer = !isPackaged && process.env.NODE_ENV !== 'production'
 
@@ -191,13 +191,74 @@ class WindowManager {
       this.exportWindow = null
       logger.info('Export window closed')
     })
-    
+
     // Open DevTools in dev mode
     if (useDevServer) {
       this.exportWindow.webContents.openDevTools({ mode: 'detach' })
     }
 
     return this.exportWindow
+  }
+
+  // ─── World Graph Window ───────────────────────────────────────────────────
+  private worldGraphWindow: BrowserWindow | null = null
+
+  createWorldGraphWindow(): BrowserWindow {
+    if (this.worldGraphWindow) {
+      this.worldGraphWindow.focus()
+      return this.worldGraphWindow
+    }
+
+    const width = 1200
+    const height = 800
+
+    this.worldGraphWindow = new BrowserWindow({
+      width,
+      height,
+      minWidth: 1000,
+      minHeight: 600,
+      title: "세계관 그래프",
+      ...this.getTitleBarOptions(),
+      ...(process.platform !== 'darwin'
+        ? { autoHideMenuBar: this.getMenuBarMode() === 'hidden' }
+        : {}),
+      webPreferences: {
+        preload: join(__dirname, '../preload/index.cjs'),
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+      },
+    })
+
+    this.applyMenuBarMode(this.worldGraphWindow)
+
+    // Load URL with hash routing
+    const isPackaged = app.isPackaged
+    const devServerUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173'
+    const useDevServer = !isPackaged && process.env.NODE_ENV !== 'production'
+    const hash = '#world-graph'
+
+    if (useDevServer) {
+      const url = `${devServerUrl}/${hash}`
+      logger.info('Loading world graph window (dev)', { url })
+      this.worldGraphWindow.loadURL(url)
+    } else {
+      const indexPath = join(__dirname, '../renderer/index.html')
+      logger.info('Loading world graph window (prod)', { path: indexPath })
+      this.worldGraphWindow.loadFile(indexPath, { hash: 'world-graph' })
+    }
+
+    this.worldGraphWindow.on('closed', () => {
+      this.worldGraphWindow = null
+      logger.info('World graph window closed')
+    })
+
+    // Open DevTools in dev mode
+    if (useDevServer) {
+      this.worldGraphWindow.webContents.openDevTools({ mode: 'detach' })
+    }
+
+    return this.worldGraphWindow
   }
 
   applyMenuBarModeToAllWindows(): void {

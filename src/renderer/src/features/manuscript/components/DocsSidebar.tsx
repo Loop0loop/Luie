@@ -19,7 +19,7 @@ export default function DocsSidebar({
           <h2 className="font-semibold text-sm text-muted-foreground">{t("sidebar.title")}</h2>
           <button
             onClick={() => { void handleAddChapter(); }}
-            className="w-6 h-6 rounded-md hover:bg-muted/50 flex items-center justify-center transition-colors text-muted-foreground"
+            className="w-6 h-6 rounded-md hover:bg-surface-hover flex items-center justify-center transition-colors text-muted-foreground"
             title={t("sidebar.action.new")}
           >
             <Plus className="w-4 h-4" />

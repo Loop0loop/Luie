@@ -25,18 +25,21 @@ import {
   LUIE_PACKAGE_EXTENSION_NO_DOT,
   LUIE_PACKAGE_FILTER_NAME,
 } from "@shared/constants/paths";
+import WindowBar from "@renderer/features/workspace/components/WindowBar";
 
 const ExportWindow = lazy(() => import("@renderer/features/export/components/ExportWindow"));
+const WorldSection = lazy(() => import("@renderer/features/research/components/world/index"));
 
 const parseBootstrapStatus = (value: unknown): AppBootstrapStatus | null => {
   const parsed = appBootstrapStatusSchema.safeParse(value);
   return parsed.success ? parsed.data : null;
 };
 
-type WindowMode = "app" | "export" | "oauth-result";
+type WindowMode = "app" | "export" | "oauth-result" | "world-graph";
 
 const getWindowMode = (): WindowMode => {
   if (window.location.hash === "#export") return "export";
+  if (window.location.hash === "#world-graph") return "world-graph";
   if (window.location.hash.startsWith("#auth-result")) return "oauth-result";
   return "app";
 };
@@ -274,6 +277,22 @@ export default function App() {
     return (
       <>
         <OAuthResultPage />
+        {quitOverlay}
+      </>
+    );
+  }
+
+  if (windowMode === "world-graph") {
+    return (
+      <>
+        <Suspense fallback={<div className="flex items-center justify-center h-screen bg-app text-fg">{t("loading")}</div>}>
+          <div className="w-screen h-screen flex flex-col bg-app overflow-hidden">
+            <WindowBar title="세계관 에디터 | Luie" />
+            <div className="flex-1 min-h-0 relative">
+              <WorldSection worldId={currentProject?.id || ""} />
+            </div>
+          </div>
+        </Suspense>
         {quitOverlay}
       </>
     );

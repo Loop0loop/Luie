@@ -23,7 +23,7 @@ import "reactflow/dist/style.css";
 import { type WorldGraphNode, type EntityRelation, type RelationKind } from "@shared/types";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import type { WorldViewMode } from "@renderer/features/research/stores/worldBuildingStore";
-import { CustomEntityNode, NODE_COLORS } from "./CustomEntityNode";
+import { CustomEntityNode, MINIMAP_COLORS } from "./CustomEntityNode";
 
 const nodeTypes = {
     custom: CustomEntityNode,
@@ -177,7 +177,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
     }, [nodes, viewMode, selectedNodeId]);
 
     return (
-        <div style={{ width: "100%", height: "100%" }}>
+        <div style={{ width: "100%", height: "100%" }} className="bg-app relative">
             <ReactFlow
                 nodes={styledNodes}
                 edges={edges}
@@ -193,16 +193,29 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
                 minZoom={0.1}
                 maxZoom={2}
                 deleteKeyCode={null}
+                className="react-flow-premium"
             >
-                <Controls />
+                <Controls
+                    className="bg-element/80 backdrop-blur-md border border-border/50 rounded-lg shadow-sm overflow-hidden flex flex-col gap-px fill-muted"
+                    showInteractive={false}
+                />
                 <MiniMap
                     nodeColor={(n) => {
                         const subType = n.data?.subType as string;
-                        return NODE_COLORS[subType]?.bg ?? NODE_COLORS["WorldEntity"].bg;
+                        return MINIMAP_COLORS[subType] ?? MINIMAP_COLORS["WorldEntity"];
                     }}
-                    style={{ background: "var(--sidebar)" }}
+                    nodeStrokeWidth={3}
+                    nodeBorderRadius={4}
+                    className="bg-element/50 backdrop-blur-xl border border-border/50 rounded-xl shadow-lg !bottom-6 !right-6 overflow-hidden"
+                    maskColor="rgba(0, 0, 0, 0.15)"
                 />
-                <Background variant={BackgroundVariant.Dots} gap={20} color="var(--border)" />
+                <Background
+                    variant={BackgroundVariant.Cross}
+                    gap={24}
+                    size={2}
+                    color="var(--border-default)"
+                    className="opacity-40"
+                />
             </ReactFlow>
         </div>
     );

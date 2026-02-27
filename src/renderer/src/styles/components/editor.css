@@ -5,7 +5,7 @@
     outline: none;
     flex: 1;
     height: 100%;
-    color: var(--foreground);
+    color: var(--editor-text, var(--text-primary));
 }
   
 .tiptap .ProseMirror p.is-editor-empty:first-child::before {

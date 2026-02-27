@@ -157,7 +157,7 @@ export function SmartLinkTooltip({ isSettingsOpen }: { isSettingsOpen?: boolean 
       onMouseEnter={handleTooltipEnter}
       onMouseLeave={handleTooltipLeave}
       // ✅ z-[9999] to match Tailwind's registered z-index scale
-      className="fixed z-[9999] bg-white dark:bg-[#1e1e1e] text-popover-foreground rounded-md shadow-xl border border-border p-3 w-[250px] animate-in fade-in zoom-in-95 duration-200 pointer-events-none"
+      className="fixed z-[9999] bg-popover text-popover-foreground rounded-md shadow-xl border border-border p-3 w-[250px] animate-in fade-in zoom-in-95 duration-200 pointer-events-none"
       style={{
         left: state.x,
         top: state.y,

@@ -64,7 +64,7 @@ export default function FocusLayout({
              
              <button 
                 onClick={handleExitFocus}
-                className="group flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/10 hover:bg-muted/30 transition-all text-muted-foreground hover:text-foreground backdrop-blur-sm"
+                className="group flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface/70 hover:bg-surface-hover transition-all text-muted-foreground hover:text-foreground backdrop-blur-sm"
              >
                 <span className="text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0">
                     {t("exit")}
