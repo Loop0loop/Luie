@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-02-27T00:00:00.000Z",
+  "exceptions": [
+    {
+      "id": "sec-prisma-pragma-wal",
+      "type": "prisma-unsafe-raw",
+      "file": "src/main/database/index.ts",
+      "pattern": "PRAGMA",
+      "reason": "SQLite WAL/PRAGMA bootstrap requires raw statement execution",
+      "owner": "platform",
+      "expiresAt": "2026-12-31T23:59:59.000Z"
+    }
+  ]
+}

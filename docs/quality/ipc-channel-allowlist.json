@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-02-27T00:00:00.000Z",
+  "channels": [
+    {
+      "channelKey": "APP_GET_VERSION",
+      "reason": "Reserved for app update/version UI flow",
+      "owner": "platform",
+      "expiresAt": "2026-12-31T23:59:59.000Z"
+    },
+    {
+      "channelKey": "APP_CHECK_UPDATE",
+      "reason": "Reserved for app update/version UI flow",
+      "owner": "platform",
+      "expiresAt": "2026-12-31T23:59:59.000Z"
+    },
+    {
+      "channelKey": "WINDOW_MINIMIZE",
+      "reason": "Reserved for custom titlebar controls",
+      "owner": "platform",
+      "expiresAt": "2026-12-31T23:59:59.000Z"
+    },
+    {
+      "channelKey": "WINDOW_UNMAXIMIZE",
+      "reason": "Reserved for custom titlebar controls",
+      "owner": "platform",
+      "expiresAt": "2026-12-31T23:59:59.000Z"
+    },
+    {
+      "channelKey": "WINDOW_TOGGLE_DEV_TOOLS",
+      "reason": "Reserved for internal debug menu path",
+      "owner": "platform",
+      "expiresAt": "2026-12-31T23:59:59.000Z"
+    },
+    {
+      "channelKey": "WORLD_ENTITY_CREATE",
+      "reason": "V3 범위 제외된 world entity in-progress feature",
+      "owner": "world-team",
+      "expiresAt": "2026-12-31T23:59:59.000Z"
+    },
+    {
+      "channelKey": "WORLD_ENTITY_GET",
+      "reason": "V3 범위 제외된 world entity in-progress feature",
+      "owner": "world-team",
+      "expiresAt": "2026-12-31T23:59:59.000Z"
+    },
+    {
+      "channelKey": "WORLD_ENTITY_GET_ALL",
+      "reason": "V3 범위 제외된 world entity in-progress feature",
+      "owner": "world-team",
+      "expiresAt": "2026-12-31T23:59:59.000Z"
+    },
+    {
+      "channelKey": "WORLD_ENTITY_UPDATE",
+      "reason": "V3 범위 제외된 world entity in-progress feature",
+      "owner": "world-team",
+      "expiresAt": "2026-12-31T23:59:59.000Z"
+    },
+    {
+      "channelKey": "WORLD_ENTITY_UPDATE_POSITION",
+      "reason": "V3 범위 제외된 world entity in-progress feature",
+      "owner": "world-team",
+      "expiresAt": "2026-12-31T23:59:59.000Z"
+    },
+    {
+      "channelKey": "WORLD_ENTITY_DELETE",
+      "reason": "V3 범위 제외된 world entity in-progress feature",
+      "owner": "world-team",
+      "expiresAt": "2026-12-31T23:59:59.000Z"
+    },
+    {
+      "channelKey": "ENTITY_RELATION_CREATE",
+      "reason": "V3 범위 제외된 entity relation in-progress feature",
+      "owner": "world-team",
+      "expiresAt": "2026-12-31T23:59:59.000Z"
+    },
+    {
+      "channelKey": "ENTITY_RELATION_GET_ALL",
+      "reason": "V3 범위 제외된 entity relation in-progress feature",
+      "owner": "world-team",
+      "expiresAt": "2026-12-31T23:59:59.000Z"
+    },
+    {
+      "channelKey": "ENTITY_RELATION_UPDATE",
+      "reason": "V3 범위 제외된 entity relation in-progress feature",
+      "owner": "world-team",
+      "expiresAt": "2026-12-31T23:59:59.000Z"
+    },
+    {
+      "channelKey": "ENTITY_RELATION_DELETE",
+      "reason": "V3 범위 제외된 entity relation in-progress feature",
+      "owner": "world-team",
+      "expiresAt": "2026-12-31T23:59:59.000Z"
+    },
+    {
+      "channelKey": "WORLD_GRAPH_GET",
+      "reason": "V3 범위 제외된 world graph in-progress feature",
+      "owner": "world-team",
+      "expiresAt": "2026-12-31T23:59:59.000Z"
+    }
+  ]
+}

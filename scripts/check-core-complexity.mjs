@@ -3,12 +3,25 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 
-const THRESHOLD = 18;
 const TARGET_FILES = [
   "src/main/services/features/syncService.ts",
   "src/main/services/core/projectService.ts",
   "src/renderer/src/features/workspace/components/ProjectTemplateSelector.tsx",
 ];
+
+const RULE_OVERRIDES = [
+  `complexity:["warn",18]`,
+  `max-depth:["warn",5]`,
+  `max-lines-per-function:["warn",{"max":220,"skipBlankLines":true,"skipComments":true}]`,
+  `no-await-in-loop:["warn"]`,
+];
+
+const TARGET_RULE_IDS = new Set([
+  "complexity",
+  "max-depth",
+  "max-lines-per-function",
+  "no-await-in-loop",
+]);
 
 const args = [
   "-s",
@@ -16,9 +29,11 @@ const args = [
   ...TARGET_FILES,
   "--format",
   "json",
-  "--rule",
-  `complexity:[\"warn\",${THRESHOLD}]`,
 ];
+
+for (const rule of RULE_OVERRIDES) {
+  args.push("--rule", rule);
+}
 
 const result = spawnSync("pnpm", args, {
   cwd: process.cwd(),
@@ -44,21 +59,22 @@ try {
 const findings = [];
 for (const fileResult of parsed) {
   for (const message of fileResult.messages ?? []) {
-    if (message.ruleId !== "complexity") continue;
+    if (!TARGET_RULE_IDS.has(message.ruleId)) continue;
     findings.push({
       file: path.relative(process.cwd(), fileResult.filePath),
       line: message.line,
+      ruleId: message.ruleId,
       message: message.message,
     });
   }
 }
 
 if (findings.length > 0) {
-  console.error(
-    `[check-core-complexity] Complexity threshold exceeded (>${THRESHOLD}) in core files:`,
-  );
+  console.error("[check-core-complexity] Core performance/complexity rules violated:");
   for (const finding of findings) {
-    console.error(`- ${finding.file}:${finding.line} ${finding.message}`);
+    console.error(
+      `- ${finding.file}:${finding.line} [${finding.ruleId}] ${finding.message}`,
+    );
   }
   process.exit(1);
 }
@@ -68,4 +84,4 @@ if (result.status !== 0) {
   process.exit(result.status ?? 1);
 }
 
-console.log(`[check-core-complexity] OK (threshold <= ${THRESHOLD})`);
+console.log("[check-core-complexity] OK");

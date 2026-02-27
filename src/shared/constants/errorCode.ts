@@ -84,6 +84,18 @@ export const ErrorCode = {
   // Unknown/General Errors
   UNKNOWN_ERROR: 'ERR_0000',
   NOT_IMPLEMENTED: 'ERR_0001',
+
+  // World Entity Errors (96xx)
+  WORLD_ENTITY_NOT_FOUND: 'WLD_9601',
+  WORLD_ENTITY_CREATE_FAILED: 'WLD_9602',
+  WORLD_ENTITY_DELETE_FAILED: 'WLD_9603',
+  WORLD_ENTITY_UPDATE_FAILED: 'WLD_9604',
+
+  // Entity Relation Errors (97xx)
+  ENTITY_RELATION_NOT_FOUND: 'REL_9701',
+  ENTITY_RELATION_CREATE_FAILED: 'REL_9702',
+  ENTITY_RELATION_DELETE_FAILED: 'REL_9703',
+  ENTITY_RELATION_UPDATE_FAILED: 'REL_9704',
 } as const
 
 export type ErrorCodeType = typeof ErrorCode[keyof typeof ErrorCode]

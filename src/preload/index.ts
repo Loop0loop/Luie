@@ -722,6 +722,40 @@ const rendererApi = {
       };
     },
   },
+
+  // World Entity API
+  worldEntity: {
+    create: (input: unknown): Promise<IPCResponse<never>> =>
+      safeInvoke(IPC_CHANNELS.WORLD_ENTITY_CREATE, input),
+    get: (id: string): Promise<IPCResponse<never>> =>
+      safeInvoke(IPC_CHANNELS.WORLD_ENTITY_GET, id),
+    getAll: (projectId: string): Promise<IPCResponse<never>> =>
+      safeInvoke(IPC_CHANNELS.WORLD_ENTITY_GET_ALL, projectId),
+    update: (input: unknown): Promise<IPCResponse<never>> =>
+      safeInvoke(IPC_CHANNELS.WORLD_ENTITY_UPDATE, input),
+    updatePosition: (input: unknown): Promise<IPCResponse<never>> =>
+      safeInvoke(IPC_CHANNELS.WORLD_ENTITY_UPDATE_POSITION, input),
+    delete: (id: string): Promise<IPCResponse<never>> =>
+      safeInvoke(IPC_CHANNELS.WORLD_ENTITY_DELETE, id),
+  },
+
+  // Entity Relation API
+  entityRelation: {
+    create: (input: unknown): Promise<IPCResponse<never>> =>
+      safeInvoke(IPC_CHANNELS.ENTITY_RELATION_CREATE, input),
+    getAll: (projectId: string): Promise<IPCResponse<never>> =>
+      safeInvoke(IPC_CHANNELS.ENTITY_RELATION_GET_ALL, projectId),
+    update: (input: unknown): Promise<IPCResponse<never>> =>
+      safeInvoke(IPC_CHANNELS.ENTITY_RELATION_UPDATE, input),
+    delete: (id: string): Promise<IPCResponse<never>> =>
+      safeInvoke(IPC_CHANNELS.ENTITY_RELATION_DELETE, id),
+  },
+
+  // World Graph API
+  worldGraph: {
+    get: (projectId: string): Promise<IPCResponse<never>> =>
+      safeInvoke(IPC_CHANNELS.WORLD_GRAPH_GET, projectId),
+  },
 } satisfies RendererApi;
 
 // Expose API to renderer process

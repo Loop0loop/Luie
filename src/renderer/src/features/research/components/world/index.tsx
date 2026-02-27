@@ -8,6 +8,7 @@ import { SynopsisEditor } from "@renderer/features/research/components/world/Syn
 import { MindMapBoard } from "@renderer/features/research/components/world/MindMapBoard";
 import { DrawingCanvas } from "@renderer/features/research/components/world/DrawingCanvas";
 import { PlotBoard } from "@renderer/features/research/components/world/PlotBoard";
+import { WorldGraphPanel } from "@renderer/features/research/components/world/graph/WorldGraphPanel";
 
 interface WorldSectionProps {
   worldId?: string;
@@ -55,6 +56,13 @@ export default function WorldSection({ worldId }: WorldSectionProps) {
           className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
           activeClassName="text-accent font-semibold border-b-2 border-accent"
         />
+        <TabButton
+          label="세계관 그래프"
+          active={worldTab === "graph"}
+          onClick={() => setWorldTab("graph")}
+          className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
+          activeClassName="text-accent font-semibold border-b-2 border-accent"
+        />
       </div>
 
       <div style={{ flex: 1, overflow: "hidden" }}>
@@ -63,6 +71,7 @@ export default function WorldSection({ worldId }: WorldSectionProps) {
         {worldTab === "mindmap" && <MindMapBoard />}
         {worldTab === "drawing" && <DrawingCanvas />}
         {worldTab === "plot" && <PlotBoard />}
+        {worldTab === "graph" && <WorldGraphPanel />}
       </div>
     </div>
   );

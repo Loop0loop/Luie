@@ -601,3 +601,114 @@ export type {
   AnalysisResult,
   AnalysisError,
 } from "./analysis";
+
+// ─── World Building Types ────────────────────────────────────────────────────
+
+export type WorldEntityType = "Place" | "Concept" | "Rule" | "Item";
+export type WorldEntitySourceType = "Character" | "Faction" | "Event" | "WorldEntity";
+export type RelationKind =
+  | "belongs_to"
+  | "enemy_of"
+  | "causes"
+  | "controls"
+  | "located_in"
+  | "violates";
+
+export interface WorldEntityAttributes {
+  time?: string;
+  region?: string;
+  tags?: string[];
+  importance?: 1 | 2 | 3 | 4 | 5;
+  [key: string]: unknown;
+}
+
+export interface WorldEntity {
+  id: string;
+  projectId: string;
+  type: WorldEntityType;
+  name: string;
+  description?: string | null;
+  firstAppearance?: string | null;
+  attributes?: WorldEntityAttributes | string | null;
+  positionX: number;
+  positionY: number;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+export interface EntityRelation {
+  id: string;
+  projectId: string;
+  sourceId: string;
+  sourceType: WorldEntitySourceType;
+  targetId: string;
+  targetType: WorldEntitySourceType;
+  relation: RelationKind;
+  attributes?: Record<string, unknown> | string | null;
+  sourceWorldEntityId?: string | null;
+  targetWorldEntityId?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+// Input types
+export interface WorldEntityCreateInput {
+  projectId: string;
+  type: WorldEntityType;
+  name: string;
+  description?: string;
+  firstAppearance?: string;
+  attributes?: WorldEntityAttributes;
+  positionX?: number;
+  positionY?: number;
+}
+
+export interface WorldEntityUpdateInput {
+  id: string;
+  type?: WorldEntityType;
+  name?: string;
+  description?: string;
+  firstAppearance?: string;
+  attributes?: WorldEntityAttributes;
+}
+
+export interface WorldEntityUpdatePositionInput {
+  id: string;
+  positionX: number;
+  positionY: number;
+}
+
+export interface EntityRelationCreateInput {
+  projectId: string;
+  sourceId: string;
+  sourceType: WorldEntitySourceType;
+  targetId: string;
+  targetType: WorldEntitySourceType;
+  relation: RelationKind;
+  attributes?: Record<string, unknown>;
+}
+
+export interface EntityRelationUpdateInput {
+  id: string;
+  relation?: RelationKind;
+  attributes?: Record<string, unknown>;
+}
+
+// Graph node — renderer safe
+export interface WorldGraphNode {
+  id: string;
+  entityType: WorldEntitySourceType; // "Character" | "Faction" | "Event" | "WorldEntity"
+  subType?: WorldEntityType;          // Place / Concept / Rule / Item
+  name: string;
+  description?: string | null;
+  firstAppearance?: string | null;
+  attributes?: WorldEntityAttributes | null;
+  positionX: number;
+  positionY: number;
+}
+
+export interface WorldGraphData {
+  nodes: WorldGraphNode[];
+  edges: EntityRelation[];
+}
+

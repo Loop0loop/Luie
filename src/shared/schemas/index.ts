@@ -304,3 +304,67 @@ export const windowBoundsSchema = z.object({
   x: z.number().int(),
   y: z.number().int(),
 });
+
+// ─── World Building Schemas ─────────────────────────────────────────────────
+
+export const worldEntityTypeSchema = z.enum(["Place", "Concept", "Rule", "Item"]);
+export const entityRelationTypeSchema = z.enum([
+  "Character",
+  "Faction",
+  "Event",
+  "WorldEntity",
+]);
+export const relationKindSchema = z.enum([
+  "belongs_to",
+  "enemy_of",
+  "causes",
+  "controls",
+  "located_in",
+  "violates",
+]);
+
+export const worldEntityIdSchema = z.string().uuid("Invalid world entity ID");
+export const entityRelationIdSchema = z.string().uuid("Invalid entity relation ID");
+
+export const worldEntityCreateSchema = z.object({
+  projectId: projectIdSchema,
+  type: worldEntityTypeSchema,
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  firstAppearance: z.string().optional(),
+  attributes: z.record(z.string(), z.unknown()).optional(),
+  positionX: z.number().optional(),
+  positionY: z.number().optional(),
+});
+
+export const worldEntityUpdateSchema = z.object({
+  id: worldEntityIdSchema,
+  type: worldEntityTypeSchema.optional(),
+  name: z.string().min(1, "Name is required").optional(),
+  description: z.string().optional(),
+  firstAppearance: z.string().optional(),
+  attributes: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const worldEntityUpdatePositionSchema = z.object({
+  id: worldEntityIdSchema,
+  positionX: z.number(),
+  positionY: z.number(),
+});
+
+export const entityRelationCreateSchema = z.object({
+  projectId: projectIdSchema,
+  sourceId: z.string().uuid("Invalid source ID"),
+  sourceType: entityRelationTypeSchema,
+  targetId: z.string().uuid("Invalid target ID"),
+  targetType: entityRelationTypeSchema,
+  relation: relationKindSchema,
+  attributes: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const entityRelationUpdateSchema = z.object({
+  id: entityRelationIdSchema,
+  relation: relationKindSchema.optional(),
+  attributes: z.record(z.string(), z.unknown()).optional(),
+});
+

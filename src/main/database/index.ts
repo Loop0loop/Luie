@@ -44,6 +44,8 @@ type PrismaClient = {
   faction: PrismaDelegate<PrismaRecord>;
   characterAppearance: PrismaDelegate<PrismaRecord>;
   termAppearance: PrismaDelegate<PrismaRecord>;
+  worldEntity: PrismaDelegate<PrismaRecord>;
+  entityRelation: PrismaDelegate<PrismaRecord>;
 };
 
 type PreparedDatabaseContext = {

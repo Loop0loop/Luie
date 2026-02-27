@@ -16,6 +16,14 @@ import type {
   WindowMenuBarMode,
   SyncRunResult,
   SyncStatus,
+  WorldEntity,
+  EntityRelation,
+  WorldGraphData,
+  WorldEntityCreateInput,
+  WorldEntityUpdateInput,
+  WorldEntityUpdatePositionInput,
+  EntityRelationCreateInput,
+  EntityRelationUpdateInput,
 } from "@shared/types/index.js";
 
 export type RendererApi = {
@@ -254,6 +262,23 @@ export type RendererApi = {
     clear: () => Promise<IPCResponse<unknown>>;
     onStream: (callback: (data: unknown) => void) => () => void;
     onError: (callback: (error: unknown) => void) => () => void;
+  };
+  worldEntity: {
+    create: (input: WorldEntityCreateInput) => Promise<IPCResponse<WorldEntity>>;
+    get: (id: string) => Promise<IPCResponse<WorldEntity>>;
+    getAll: (projectId: string) => Promise<IPCResponse<WorldEntity[]>>;
+    update: (input: WorldEntityUpdateInput) => Promise<IPCResponse<WorldEntity>>;
+    updatePosition: (input: WorldEntityUpdatePositionInput) => Promise<IPCResponse<WorldEntity>>;
+    delete: (id: string) => Promise<IPCResponse<unknown>>;
+  };
+  entityRelation: {
+    create: (input: EntityRelationCreateInput) => Promise<IPCResponse<EntityRelation>>;
+    getAll: (projectId: string) => Promise<IPCResponse<EntityRelation[]>>;
+    update: (input: EntityRelationUpdateInput) => Promise<IPCResponse<EntityRelation>>;
+    delete: (id: string) => Promise<IPCResponse<unknown>>;
+  };
+  worldGraph: {
+    get: (projectId: string) => Promise<IPCResponse<WorldGraphData>>;
   };
 };
 

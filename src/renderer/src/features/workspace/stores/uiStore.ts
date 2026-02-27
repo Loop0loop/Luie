@@ -17,7 +17,7 @@ import {
 
 export type ContextTab = "synopsis" | "characters" | "terms";
 export type ResearchTab = "character" | "world" | "event" | "faction" | "scrap" | "analysis";
-export type WorldTab = "synopsis" | "terms" | "mindmap" | "drawing" | "plot";
+export type WorldTab = "synopsis" | "terms" | "mindmap" | "drawing" | "plot" | "graph";
 export type SidebarFeature = SidebarWidthFeature;
 export type DocsRightTab =
   | "character"

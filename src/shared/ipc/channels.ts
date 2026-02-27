@@ -144,6 +144,23 @@ export const IPC_CHANNELS = {
   SYNC_RUN_NOW: "sync:run-now",
   SYNC_SET_AUTO: "sync:set-auto",
   SYNC_STATUS_CHANGED: "sync:status-changed",
+
+  // World Entity Channels
+  WORLD_ENTITY_CREATE: "world-entity:create",
+  WORLD_ENTITY_GET: "world-entity:get",
+  WORLD_ENTITY_GET_ALL: "world-entity:get-all",
+  WORLD_ENTITY_UPDATE: "world-entity:update",
+  WORLD_ENTITY_UPDATE_POSITION: "world-entity:update-position",
+  WORLD_ENTITY_DELETE: "world-entity:delete",
+
+  // Entity Relation Channels
+  ENTITY_RELATION_CREATE: "entity-relation:create",
+  ENTITY_RELATION_GET_ALL: "entity-relation:get-all",
+  ENTITY_RELATION_UPDATE: "entity-relation:update",
+  ENTITY_RELATION_DELETE: "entity-relation:delete",
+
+  // World Graph
+  WORLD_GRAPH_GET: "world-graph:get",
 } as const;
 
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

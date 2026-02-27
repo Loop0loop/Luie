@@ -4,6 +4,12 @@ import path from "node:path";
 
 const ROOT = process.cwd();
 const RENDERER_DIR = path.join(ROOT, "src", "renderer", "src");
+const ALLOWLIST_PATH = path.join(
+  ROOT,
+  "docs",
+  "quality",
+  "native-dialog-allowlist.json",
+);
 const TARGET_EXTENSIONS = new Set([".ts", ".tsx"]);
 
 const patterns = [
@@ -68,17 +74,42 @@ const scanFile = async (filePath) => {
 
 const formatPath = (absolutePath) => path.relative(ROOT, absolutePath);
 
+const readAllowlist = async () => {
+  try {
+    const raw = await fs.readFile(ALLOWLIST_PATH, "utf8");
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed?.entries)) return [];
+    return parsed.entries;
+  } catch {
+    return [];
+  }
+};
+
 (async () => {
   const files = await walk(RENDERER_DIR);
   const allHits = (await Promise.all(files.map(scanFile))).flat();
+  const allowlist = await readAllowlist();
+  const now = Date.now();
 
-  if (allHits.length === 0) {
+  const activeAllowlist = allowlist.filter((entry) => {
+    if (!entry?.file) return false;
+    if (!entry.expiresAt) return true;
+    const expiry = Date.parse(entry.expiresAt);
+    return Number.isNaN(expiry) ? false : expiry >= now;
+  });
+
+  const filteredHits = allHits.filter((hit) => {
+    const relative = formatPath(hit.filePath).replace(/\\/g, "/");
+    return !activeAllowlist.some((entry) => entry.file === relative);
+  });
+
+  if (filteredHits.length === 0) {
     console.log("No native dialogs found in renderer code.");
     process.exit(0);
   }
 
   console.error("Native dialog usage is forbidden. Replace with DialogProvider APIs.");
-  for (const hit of allHits) {
+  for (const hit of filteredHits) {
     console.error(
       `- ${formatPath(hit.filePath)}:${hit.line}:${hit.column} [${hit.source}] ${hit.snippet}`,
     );

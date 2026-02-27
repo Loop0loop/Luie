@@ -21,13 +21,15 @@ model Project {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  chapters   Chapter[]
-  characters Character[]
-  terms      Term[]
-  events     Event[]
-  factions   Faction[]
-  snapshots  Snapshot[]
-  settings   ProjectSettings?
+  chapters        Chapter[]
+  characters      Character[]
+  terms           Term[]
+  events          Event[]
+  factions        Faction[]
+  snapshots       Snapshot[]
+  settings        ProjectSettings?
+  worldEntities   WorldEntity[]
+  entityRelations EntityRelation[]
 }
 
 // 프로젝트 설정
@@ -182,4 +184,52 @@ model Snapshot {
   @@index([projectId, createdAt])
   @@index([projectId, chapterId, createdAt])
   @@index([projectId, type, createdAt])
+}
+
+// ─── World Building ─────────────────────────────────────────────────────────
+
+// 범용 세계관 엔티티: Place / Concept / Rule / Item
+model WorldEntity {
+  id              String   @id @default(uuid())
+  projectId       String
+  type            String
+  name            String
+  description     String?
+  firstAppearance String?
+  attributes      String?
+  positionX       Float    @default(0)
+  positionY       Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  project           Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  relationsAsSource EntityRelation[] @relation("RelationSource")
+  relationsAsTarget EntityRelation[] @relation("RelationTarget")
+
+  @@index([projectId, type])
+  @@index([projectId, name])
+}
+
+// 6종 관계: belongs_to / enemy_of / causes / controls / located_in / violates
+model EntityRelation {
+  id                  String   @id @default(uuid())
+  projectId           String
+  sourceId            String
+  sourceType          String
+  targetId            String
+  targetType          String
+  relation            String
+  attributes          String?
+  sourceWorldEntityId String?
+  targetWorldEntityId String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sourceEntity WorldEntity? @relation("RelationSource", fields: [sourceWorldEntityId], references: [id], onDelete: Cascade)
+  targetEntity WorldEntity? @relation("RelationTarget", fields: [targetWorldEntityId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, sourceId])
+  @@index([projectId, targetId])
+  @@index([projectId, relation])
 }

@@ -10,6 +10,8 @@ import {
 	snapshotService,
 	termService,
 	manuscriptAnalysisService,
+	worldEntityService,
+	entityRelationService,
 } from "../services/index.js";
 import { registerProjectHandlers } from "./project/index.js";
 import { registerSearchHandlers } from "./search/index.js";
@@ -33,6 +35,8 @@ export function registerAllIPCHandlers(): void {
 		termService,
 		eventService,
 		factionService,
+		worldEntityService,
+		entityRelationService,
 	});
 
 	registerWritingHandlers({
