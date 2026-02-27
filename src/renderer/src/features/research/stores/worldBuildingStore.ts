@@ -114,7 +114,20 @@ export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
     },
 
     // ─── 뷰 모드 ───────
-    setViewMode: (mode) => set({ viewMode: mode, suggestedMode: null }),
+    setViewMode: (mode) => {
+        set((s) => {
+            let newFilter = { ...s.filter };
+            if (mode === "event-chain") {
+                // 사건 중심형: 사건(Event), 개념(Concept), 장소(Place) 위주로 필터링
+                newFilter.entityTypes = ["Event", "Concept", "Place"];
+                newFilter.relationKinds = ["causes", "located_in", "violates"];
+            } else if (mode === "standard" || mode === "protagonist" || mode === "freeform") {
+                // 표준/주인공/자유형: 전체 노드 표시
+                newFilter = DEFAULT_FILTER;
+            }
+            return { viewMode: mode, suggestedMode: null, filter: newFilter };
+        });
+    },
     setFilter: (partial) =>
         set((s) => ({ filter: { ...s.filter, ...partial } })),
     resetFilter: () => set({ filter: DEFAULT_FILTER }),

@@ -91,8 +91,8 @@ export default function WorldSection({ worldId }: WorldSectionProps) {
                     type="button"
                     onClick={() => setViewMode(mode)}
                     className={`shrink-0 rounded-md px-3 py-1.5 text-[11px] font-medium transition-all duration-200 ${viewMode === mode
-                        ? "bg-accent text-white shadow-sm shadow-accent/20"
-                        : "bg-transparent text-muted hover:text-fg"
+                      ? "bg-accent text-white shadow-sm shadow-accent/20"
+                      : "bg-transparent text-muted hover:text-fg"
                       }`}
                   >
                     {t(VIEW_MODE_LABEL_KEY[mode])}

@@ -326,6 +326,58 @@ export const jaWorkspace = {
         "protagonist": "主人公",
         "eventChain": "イベントチェーン",
         "freeform": "フリーフォーム"
+      },
+      "entityTypes": {
+        "Character": "人物",
+        "Faction": "勢力",
+        "Event": "事件",
+        "Place": "場所",
+        "Concept": "概念",
+        "Rule": "規則",
+        "Item": "事物",
+        "Term": "その他の用語",
+        "WorldEntity": "未分類エンティティ"
+      },
+      "relationTypes": {
+        "belongs_to": "所属",
+        "enemy_of": "敵対",
+        "causes": "原因",
+        "controls": "統制",
+        "located_in": "位置",
+        "violates": "違反"
+      },
+      "inspector": {
+        "emptySelection": "ノードや関係をクリックすると\n詳細情報が表示されます。",
+        "deleteNodeConfirm": "\"{{name}}\"を削除しますか？",
+        "untitled": "名無しの存在",
+        "empty": "空",
+        "tagsPlaceholder": "カンマで区切る...",
+        "descriptionPlaceholder": "ここに詳細設定、背景ストーリー、主な特徴などを記述してください...",
+        "relation": "関係 (Relation)",
+        "changeRelation": "関係タイプを変更",
+        "selectNewRelation": "新しい関係を選択",
+        "save": "保存",
+        "cancel": "キャンセル",
+        "deleteRelation": "この関係を削除",
+        "attributes": {
+          "time": "時間/時期",
+          "region": "位置/地域",
+          "tags": "分類タグ",
+          "importance": "重要度"
+        }
+      },
+      "sidebar": {
+        "entities": "要素",
+        "relations": "関係",
+        "searchPlaceholder": "検索 (名前、内容...)",
+        "entityType": "要素タイプ",
+        "active": "アクティブ",
+        "relationType": "関係タイプ",
+        "resetFilters": "フィルターをリセット",
+        "library": "ライブラリ",
+        "items": "個",
+        "noResults": "検索結果がありません",
+        "noResultsHint": "他のフィルターを選択するか\n検索語を変更してください"
       }
     },
     "synopsis": {

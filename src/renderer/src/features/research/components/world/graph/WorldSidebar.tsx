@@ -3,42 +3,30 @@
  * 엔티티 타입/관계 필터 + 검색
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { Search, FilterX, Layers, Share2, LibraryBig, Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import type { RelationKind } from "@shared/types";
-
-import { NODE_THEMES } from "./CustomEntityNode";
-
-const ENTITY_TYPES: { key: string; label: string }[] = [
-    { key: "Character", label: "인물" },
-    { key: "Faction", label: "세력" },
-    { key: "Event", label: "사건" },
-    { key: "Place", label: "장소" },
-    { key: "Concept", label: "개념" },
-    { key: "Rule", label: "규칙" },
-    { key: "Item", label: "사물" },
-    { key: "Term", label: "기타 용어" },
-];
-
-const RELATION_KINDS: { key: RelationKind; label: string }[] = [
-    { key: "belongs_to", label: "소속" },
-    { key: "enemy_of", label: "적대" },
-    { key: "causes", label: "원인" },
-    { key: "controls", label: "통제" },
-    { key: "located_in", label: "위치" },
-    { key: "violates", label: "위반" },
-];
+import { WORLD_ENTITY_TYPES } from "@shared/constants/world";
+import { WORLD_GRAPH_NODE_THEMES } from "../../../../../../../shared/constants/worldGraphUI";
 
 import { useFilteredGraph } from "@renderer/features/research/stores/worldBuildingStore";
 
-export function WorldSidebar() {
-    const { filter, setFilter, resetFilter, graphData, selectNode } = useWorldBuildingStore();
-    const { nodes: filteredNodes } = useFilteredGraph();
+const RELATION_KINDS: RelationKind[] = [
+    "belongs_to",
+    "enemy_of",
+    "causes",
+    "controls",
+    "located_in",
+    "violates",
+];
 
-    const nodeCount = useMemo(() => graphData?.nodes.length ?? 0, [graphData]);
-    const edgeCount = useMemo(() => graphData?.edges.length ?? 0, [graphData]);
+export function WorldSidebar() {
+    const { t } = useTranslation();
+    const { filter, setFilter, resetFilter, selectNode } = useWorldBuildingStore();
+    const { nodes: filteredNodes } = useFilteredGraph();
 
     const onSearchChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => setFilter({ searchQuery: e.target.value }),
@@ -69,18 +57,14 @@ export function WorldSidebar() {
 
     return (
         <div className="flex flex-col h-full bg-sidebar/40 backdrop-blur-3xl font-sans overflow-hidden border-r border-border/40 pb-2">
-            {/* 상단 헤더 영역 (요약 + 검색) */}
-            <div className="p-4 pb-2 shrink-0 border-b border-border/40 bg-sidebar/60">
-                <div className="flex items-center justify-between text-[10px] font-bold text-muted uppercase tracking-widest mb-3">
-                    <span className="flex items-center gap-1.5"><Layers size={10} /> {nodeCount} Entities</span>
-                    <span className="flex items-center gap-1.5"><Share2 size={10} /> {edgeCount} Relations</span>
-                </div>
+            {/* 상단 검색 영역 */}
+            <div className="p-3 shrink-0 border-b border-border/40 bg-sidebar/60">
 
                 <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg border border-border/60 bg-element/50 focus-within:bg-element hover:border-border transition-all shadow-sm">
                     <Search size={14} className="text-muted" />
                     <input
                         type="text"
-                        placeholder="엔티티 검색 (이름, 내용...)"
+                        placeholder={t("workspace:world.graph.sidebar.searchPlaceholder")}
                         value={filter.searchQuery}
                         onChange={onSearchChange}
                         className="flex-1 min-w-0 bg-transparent border-none text-xs text-fg outline-none placeholder:text-muted/60"
@@ -94,18 +78,18 @@ export function WorldSidebar() {
                 <section className="flex flex-col gap-2 shrink-0">
                     <div className="flex items-center justify-between px-1">
                         <h6 className="text-[11px] font-bold text-fg/80 flex items-center gap-1.5">
-                            <Layers size={12} className="text-muted" /> 엔티티 유형
+                            <Layers size={12} className="text-muted" /> {t("workspace:world.graph.sidebar.entityType")}
                         </h6>
                         {filter.entityTypes.length > 0 && (
                             <span className="text-[9px] bg-accent/10 focus:outline-none text-accent px-1.5 py-0.5 rounded font-bold">
-                                {filter.entityTypes.length} Active
+                                {filter.entityTypes.length} {t("workspace:world.graph.sidebar.active")}
                             </span>
                         )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-1.5">
-                        {ENTITY_TYPES.map(({ key, label }) => {
-                            const theme = NODE_THEMES[key] ?? NODE_THEMES["WorldEntity"];
+                        {WORLD_ENTITY_TYPES.map((key) => {
+                            const theme = WORLD_GRAPH_NODE_THEMES[key] ?? WORLD_GRAPH_NODE_THEMES["WorldEntity"];
                             const isActive = filter.entityTypes.includes(key);
                             return (
                                 <button
@@ -122,7 +106,7 @@ export function WorldSidebar() {
                                     <div className="flex items-center gap-2 overflow-hidden">
                                         <span className={cn("w-2 h-2 rounded-full shrink-0 shadow-sm", theme.iconBg)} />
                                         <span className={cn("text-xs font-medium truncate", isActive ? "text-fg" : "text-muted group-hover:text-fg/80")}>
-                                            {label}
+                                            {t(`workspace:world.graph.entityTypes.${key}`, { defaultValue: key })}
                                         </span>
                                     </div>
                                     {isActive && <Check size={12} className="text-accent shrink-0 ml-1" />}
@@ -136,11 +120,11 @@ export function WorldSidebar() {
                 <section className="flex flex-col gap-2 shrink-0">
                     <div className="flex items-center justify-between px-1">
                         <h6 className="text-[11px] font-bold text-fg/80 flex items-center gap-1.5">
-                            <Share2 size={12} className="text-muted" /> 관계 유형
+                            <Share2 size={12} className="text-muted" /> {t("workspace:world.graph.sidebar.relationType")}
                         </h6>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
-                        {RELATION_KINDS.map(({ key, label }) => {
+                        {RELATION_KINDS.map((key) => {
                             const isActive = filter.relationKinds.includes(key);
                             return (
                                 <button
@@ -154,7 +138,7 @@ export function WorldSidebar() {
                                             : "bg-transparent border-border/40 text-muted hover:bg-element hover:text-fg"
                                     )}
                                 >
-                                    {label}
+                                    {t(`workspace:world.graph.relationTypes.${key}`, { defaultValue: key })}
                                 </button>
                             );
                         })}
@@ -169,27 +153,27 @@ export function WorldSidebar() {
                         className="flex items-center justify-center gap-2 mx-1 py-2 text-xs font-bold text-muted hover:text-fg hover:bg-element-hover rounded-lg border border-border/40 hover:border-border transition-all cursor-pointer shrink-0"
                     >
                         <FilterX size={14} />
-                        모든 필터 초기화
+                        {t("workspace:world.graph.sidebar.resetFilters")}
                     </button>
                 )}
             </div>
 
-            {/* 엔티티 라이브러리 목록 */}
-            <div className="flex-1 min-h-0 bg-sidebar/80 flex flex-col pt-3 border-t border-border/40 shrink-0 basis-1/3">
+            {/* 엔티티 라이브러리 목록 (항상 하단에서 공간 차지) */}
+            <div className="flex-1 min-h-0 bg-sidebar/80 flex flex-col pt-3 border-t border-border/40 mt-auto">
                 <div className="flex items-center justify-between px-4 mb-2">
                     <h6 className="text-xs font-bold text-fg flex items-center gap-1.5">
                         <LibraryBig size={14} className="text-muted" />
-                        라이브러리
+                        {t("workspace:world.graph.sidebar.library")}
                     </h6>
                     <span className="text-[10px] font-bold text-muted bg-element px-1.5 py-0.5 rounded-md">
-                        {filteredNodes.length} 개
+                        {filteredNodes.length} {t("workspace:world.graph.sidebar.items")}
                     </span>
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-3 pb-3 flex flex-col gap-1.5 custom-scrollbar">
                     {filteredNodes.map((node) => {
                         const displayType = node.subType ?? node.entityType;
-                        const theme = NODE_THEMES[displayType] ?? NODE_THEMES["WorldEntity"];
+                        const theme = WORLD_GRAPH_NODE_THEMES[displayType] ?? WORLD_GRAPH_NODE_THEMES["WorldEntity"];
 
                         return (
                             <div
@@ -213,7 +197,7 @@ export function WorldSidebar() {
                                     "text-[9px] font-bold px-1.5 py-0.5 rounded-md whitespace-nowrap shrink-0 opacity-80 group-hover:opacity-100 transition-opacity",
                                     theme.iconBg, theme.text
                                 )}>
-                                    {ENTITY_TYPES.find((t) => t.key === displayType)?.label ?? displayType}
+                                    {t(`workspace:world.graph.entityTypes.${displayType}`, { defaultValue: displayType })}
                                 </span>
                             </div>
                         );
@@ -222,8 +206,8 @@ export function WorldSidebar() {
                     {filteredNodes.length === 0 && (
                         <div className="flex flex-col items-center justify-center h-24 text-center px-4">
                             <LibraryBig size={24} className="text-muted/30 mb-2" />
-                            <p className="text-xs text-muted font-medium">검색 결과가 없습니다</p>
-                            <p className="text-[10px] text-muted/70 mt-1">다른 필터를 선택하거나<br />검색어를 변경해보세요</p>
+                            <p className="text-xs text-muted font-medium">{t("workspace:world.graph.sidebar.noResults")}</p>
+                            <p className="text-[10px] text-muted/70 mt-1 whitespace-pre-line">{t("workspace:world.graph.sidebar.noResultsHint")}</p>
                         </div>
                     )}
                 </div>

@@ -326,6 +326,58 @@ export const koWorkspace = {
         "protagonist": "주인공",
         "eventChain": "사건 체인",
         "freeform": "자유형"
+      },
+      "entityTypes": {
+        "Character": "인물",
+        "Faction": "세력",
+        "Event": "사건",
+        "Place": "장소",
+        "Concept": "개념",
+        "Rule": "규칙",
+        "Item": "사물",
+        "Term": "기타 용어",
+        "WorldEntity": "미분류 엔티티"
+      },
+      "relationTypes": {
+        "belongs_to": "소속",
+        "enemy_of": "적대",
+        "causes": "원인",
+        "controls": "통제",
+        "located_in": "위치",
+        "violates": "위반"
+      },
+      "inspector": {
+        "emptySelection": "노드나 관계를 클릭하면\n세부 정보가 표시됩니다.",
+        "deleteNodeConfirm": "\"{{name}}\"을 삭제할까요?",
+        "untitled": "무명(無名)의 존재",
+        "empty": "비어 있음",
+        "tagsPlaceholder": "쉼표로 구분...",
+        "descriptionPlaceholder": "여기에 상세 설정, 배경 이야기, 주요 특징 등을 작성하세요...",
+        "relation": "관계 (Relation)",
+        "changeRelation": "관계 유형 변경",
+        "selectNewRelation": "새 관계 선택",
+        "save": "저장",
+        "cancel": "취소",
+        "deleteRelation": "이 관계 삭제",
+        "attributes": {
+          "time": "시간/시기",
+          "region": "위치/지역",
+          "tags": "분류 태그",
+          "importance": "중요도"
+        }
+      },
+      "sidebar": {
+        "entities": "요소",
+        "relations": "관계",
+        "searchPlaceholder": "검색 (이름, 내용...)",
+        "entityType": "요소 유형",
+        "active": "활성",
+        "relationType": "관계 유형",
+        "resetFilters": "필터 초기화",
+        "library": "보관함",
+        "items": "개",
+        "noResults": "검색 결과가 없습니다",
+        "noResultsHint": "다른 필터를 선택하거나\n검색어를 변경해보세요"
       }
     },
     "synopsis": {

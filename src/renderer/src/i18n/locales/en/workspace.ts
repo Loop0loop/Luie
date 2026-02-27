@@ -326,6 +326,58 @@ export const enWorkspace = {
         "protagonist": "Protagonist",
         "eventChain": "Event Chain",
         "freeform": "Freeform"
+      },
+      "entityTypes": {
+        "Character": "Character",
+        "Faction": "Faction",
+        "Event": "Event",
+        "Place": "Place",
+        "Concept": "Concept",
+        "Rule": "Rule",
+        "Item": "Item",
+        "Term": "Term",
+        "WorldEntity": "Uncategorized"
+      },
+      "relationTypes": {
+        "belongs_to": "Belongs to",
+        "enemy_of": "Enemy of",
+        "causes": "Causes",
+        "controls": "Controls",
+        "located_in": "Located in",
+        "violates": "Violates"
+      },
+      "inspector": {
+        "emptySelection": "Click on a node or relation\nto view details.",
+        "deleteNodeConfirm": "Delete \"{{name}}\"?",
+        "untitled": "Untitled Entity",
+        "empty": "Empty",
+        "tagsPlaceholder": "Comma separated...",
+        "descriptionPlaceholder": "Write detailed lore, background story, key traits here...",
+        "relation": "Relation",
+        "changeRelation": "Change Relation",
+        "selectNewRelation": "Select New Relation",
+        "save": "Save",
+        "cancel": "Cancel",
+        "deleteRelation": "Delete this relation",
+        "attributes": {
+          "time": "Time/Era",
+          "region": "Region",
+          "tags": "Tags",
+          "importance": "Importance"
+        }
+      },
+      "sidebar": {
+        "entities": "Entities",
+        "relations": "Relations",
+        "searchPlaceholder": "Search (name, content...)",
+        "entityType": "Entity Type",
+        "active": "Active",
+        "relationType": "Relation Type",
+        "resetFilters": "Reset Filters",
+        "library": "Library",
+        "items": "items",
+        "noResults": "No results found",
+        "noResultsHint": "Try selecting different filters or\nchanging your search query"
       }
     },
     "synopsis": {

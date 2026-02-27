@@ -51,7 +51,7 @@ export function WorldGraphPanel() {
   return (
     <div className="h-full overflow-hidden bg-sidebar">
       <div className="flex h-full min-h-0 overflow-hidden">
-        <aside className="w-[220px] shrink-0 overflow-y-auto border-r border-border bg-sidebar">
+        <aside className="w-[280px] shrink-0 overflow-y-auto border-r border-border bg-sidebar">
           <WorldSidebar />
         </aside>
 

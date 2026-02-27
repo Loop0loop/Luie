@@ -1,86 +1,29 @@
 {
-    "feature": "world-building",
-    "version": "1.0.0",
-    "approvedAt": "2026-02-27T13:39:00+09:00",
-    "description": "World-Building Graph with 7 Entities, 6 Relations, 3-panel UI, 4 View Modes",
-    "phases": [
-        {
-            "phase": 1,
-            "name": "Database & IPC",
-            "tasks": [
-                {
-                    "id": "M1",
-                    "title": "Add EntityRelation to Prisma schema",
-                    "agent": "backend",
-                    "priority": "P0"
-                },
-                {
-                    "id": "M2",
-                    "title": "Create CRUD service & IPC handlers for EntityRelation",
-                    "agent": "backend",
-                    "priority": "P0"
-                }
-            ]
-        },
-        {
-            "phase": 2,
-            "name": "Graph Logic & Data Stores",
-            "tasks": [
-                {
-                    "id": "F1",
-                    "title": "Create useWorldBuildingStore Zustand store",
-                    "agent": "frontend",
-                    "priority": "P1"
-                }
-            ]
-        },
-        {
-            "phase": 3,
-            "name": "Graph UI (3-Panel)",
-            "tasks": [
-                {
-                    "id": "U1",
-                    "title": "Sidebar (filters, search, entity list)",
-                    "agent": "frontend",
-                    "priority": "P1"
-                },
-                {
-                    "id": "U2",
-                    "title": "WorldCanvas (React Flow) with custom Nodes & Edges",
-                    "agent": "frontend",
-                    "priority": "P0"
-                },
-                {
-                    "id": "U3",
-                    "title": "4 Viewing Modes",
-                    "agent": "frontend",
-                    "priority": "P2"
-                },
-                {
-                    "id": "U4",
-                    "title": "Inspector panel (details, relations, mentions)",
-                    "agent": "frontend",
-                    "priority": "P1"
-                }
-            ]
-        },
-        {
-            "phase": 4,
-            "name": "Editor Integration",
-            "tasks": [
-                {
-                    "id": "I1",
-                    "title": "Connect Tiptap mentions to World Graph",
-                    "agent": "frontend",
-                    "priority": "P2"
-                },
-                {
-                    "id": "I2",
-                    "title": "QA tests for graph workflows",
-                    "agent": "qa",
-                    "priority": "P2"
-                }
-            ]
-        }
-    ]
+  "phases": [
+    {
+      "name": "Phase 1: UI Layout and i18n Fixes",
+      "tasks": [
+        "Remove header from WorldSidebar",
+        "Adjust WorldSidebar width and separate Library section",
+        "Fix i18n string bugs in WorldSidebar"
+      ],
+      "status": "In Progress"
+    },
+    {
+      "name": "Phase 2: Canvas Feature Enhancement",
+      "tasks": [
+        "Implement double-click to create entity on Canvas",
+        "Implement edge creation context or default relation"
+      ],
+      "status": "Pending"
+    },
+    {
+      "name": "Phase 3: View Modes & Data Sync",
+      "tasks": [
+        "Prepare base structures for 4 view modes",
+        "Check data mapping in Inspector"
+      ],
+      "status": "Pending"
+    }
+  ]
 }
