@@ -29,8 +29,10 @@ import {
   LUIE_WORLD_DRAWING_FILE,
   LUIE_WORLD_MINDMAP_FILE,
   LUIE_WORLD_SCRAP_MEMOS_FILE,
+  LUIE_WORLD_GRAPH_FILE,
 } from "../../../shared/constants/index.js";
 import { sanitizeName } from "../../../shared/utils/sanitize.js";
+import { isWorldEntityBackedType } from "../../../shared/constants/worldRelationRules.js";
 import type {
   ProjectCreateInput,
   ProjectUpdateInput,
@@ -44,6 +46,10 @@ import type {
   WorldPlotData,
   WorldScrapMemosData,
   WorldSynopsisData,
+  WorldGraphData,
+  WorldEntityType,
+  WorldEntitySourceType,
+  RelationKind,
 } from "../../../shared/types/index.js";
 import {
   normalizeWorldDrawingPaths,
@@ -152,6 +158,42 @@ const LuieWorldScrapMemosSchema = z
   })
   .passthrough();
 
+const LuieWorldGraphNodeSchema = z
+  .object({
+    id: z.string(),
+    entityType: z.string(),
+    subType: z.string().optional(),
+    name: z.string(),
+    description: z.string().optional().nullable(),
+    firstAppearance: z.string().optional().nullable(),
+    attributes: z.record(z.string(), z.unknown()).optional().nullable(),
+    positionX: z.number().optional(),
+    positionY: z.number().optional(),
+  })
+  .passthrough();
+
+const LuieWorldGraphEdgeSchema = z
+  .object({
+    id: z.string(),
+    sourceId: z.string(),
+    sourceType: z.string(),
+    targetId: z.string(),
+    targetType: z.string(),
+    relation: z.string(),
+    attributes: z.record(z.string(), z.unknown()).optional().nullable(),
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
+  })
+  .passthrough();
+
+const LuieWorldGraphSchema = z
+  .object({
+    nodes: z.array(LuieWorldGraphNodeSchema).optional(),
+    edges: z.array(LuieWorldGraphEdgeSchema).optional(),
+    updatedAt: z.string().optional(),
+  })
+  .passthrough();
+
 const LuieSnapshotSchema = z
   .object({
     id: z.string(),
@@ -212,12 +254,104 @@ type SnapshotCreateRow = {
   description: string | null;
   createdAt: Date;
 };
+type FactionCreateRow = {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string | null;
+  firstAppearance: string | null;
+  attributes: string | null;
+};
+type EventCreateRow = {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string | null;
+  firstAppearance: string | null;
+  attributes: string | null;
+};
+type WorldEntityCreateRow = {
+  id: string;
+  projectId: string;
+  type: WorldEntityType;
+  name: string;
+  description: string | null;
+  firstAppearance: string | null;
+  attributes: string | null;
+  positionX: number;
+  positionY: number;
+};
+type EntityRelationCreateRow = {
+  id: string;
+  projectId: string;
+  sourceId: string;
+  sourceType: WorldEntitySourceType;
+  targetId: string;
+  targetType: WorldEntitySourceType;
+  relation: RelationKind;
+  attributes: string | null;
+  sourceWorldEntityId: string | null;
+  targetWorldEntityId: string | null;
+};
 type LuieImportCollections = {
   characters: Array<Record<string, unknown>>;
   terms: Array<Record<string, unknown>>;
   snapshots: Array<z.infer<typeof LuieSnapshotSchema>>;
   worldSynopsis?: string;
+  graph?: z.infer<typeof LuieWorldGraphSchema>;
 };
+
+type GraphImportRows = {
+  charactersForCreate: CharacterCreateRow[];
+  termsForCreate: TermCreateRow[];
+  factionsForCreate: FactionCreateRow[];
+  eventsForCreate: EventCreateRow[];
+  worldEntitiesForCreate: WorldEntityCreateRow[];
+  relationsForCreate: EntityRelationCreateRow[];
+};
+
+type GraphImportState = GraphImportRows & {
+  characterIds: Set<string>;
+  termIds: Set<string>;
+  factionIds: Set<string>;
+  eventIds: Set<string>;
+  worldEntityIds: Set<string>;
+};
+
+const WORLD_ENTITY_SOURCE_TYPES = [
+  "Character",
+  "Faction",
+  "Event",
+  "Place",
+  "Concept",
+  "Rule",
+  "Item",
+  "Term",
+  "WorldEntity",
+] as const satisfies readonly WorldEntitySourceType[];
+
+const WORLD_ENTITY_TYPES = ["Place", "Concept", "Rule", "Item"] as const satisfies readonly WorldEntityType[];
+
+const RELATION_KINDS = [
+  "belongs_to",
+  "enemy_of",
+  "causes",
+  "controls",
+  "located_in",
+  "violates",
+] as const satisfies readonly RelationKind[];
+
+const isWorldEntitySourceType = (value: unknown): value is WorldEntitySourceType =>
+  typeof value === "string" &&
+  WORLD_ENTITY_SOURCE_TYPES.includes(value as WorldEntitySourceType);
+
+const isWorldEntityType = (value: unknown): value is WorldEntityType =>
+  typeof value === "string" &&
+  WORLD_ENTITY_TYPES.includes(value as WorldEntityType);
+
+const isRelationKind = (value: unknown): value is RelationKind =>
+  typeof value === "string" &&
+  RELATION_KINDS.includes(value as RelationKind);
 
 export class ProjectService {
   private exportTimers = new Map<string, NodeJS.Timeout>();
@@ -346,11 +480,12 @@ export class ProjectService {
   private async readLuieImportCollections(
     resolvedPath: string,
   ): Promise<LuieImportCollections> {
-    const [charactersRaw, termsRaw, snapshotsRaw, worldSynopsisRaw] = await Promise.all([
+    const [charactersRaw, termsRaw, snapshotsRaw, worldSynopsisRaw, worldGraphRaw] = await Promise.all([
       readLuieEntry(resolvedPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`, logger),
       readLuieEntry(resolvedPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`, logger),
       readLuieEntry(resolvedPath, `${LUIE_SNAPSHOTS_DIR}/index.json`, logger),
       readLuieEntry(resolvedPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`, logger),
+      readLuieEntry(resolvedPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_GRAPH_FILE}`, logger),
     ]);
 
     const parsedCharacters = LuieCharactersSchema.safeParse(parseJsonSafely(charactersRaw));
@@ -359,6 +494,7 @@ export class ProjectService {
     const parsedWorldSynopsis = LuieWorldSynopsisSchema.safeParse(
       parseJsonSafely(worldSynopsisRaw),
     );
+    const parsedGraph = LuieWorldGraphSchema.safeParse(parseJsonSafely(worldGraphRaw));
 
     return {
       characters: parsedCharacters.success ? parsedCharacters.data.characters ?? [] : [],
@@ -369,6 +505,13 @@ export class ProjectService {
         typeof parsedWorldSynopsis.data.synopsis === "string"
           ? parsedWorldSynopsis.data.synopsis
           : undefined,
+      graph: parsedGraph.success
+        ? {
+            nodes: parsedGraph.data.nodes ?? [],
+            edges: parsedGraph.data.edges ?? [],
+            updatedAt: parsedGraph.data.updatedAt,
+          }
+        : undefined,
     };
   }
 
@@ -473,6 +616,254 @@ export class ProjectService {
       });
   }
 
+  private serializeAttributes(input: unknown): string | null {
+    if (input === undefined || input === null) {
+      return null;
+    }
+    if (typeof input === "string") {
+      return input;
+    }
+    try {
+      return JSON.stringify(input);
+    } catch {
+      return null;
+    }
+  }
+
+  private getWorldEntityType(
+    entityType: WorldEntitySourceType,
+    subType: unknown,
+  ): WorldEntityType | null {
+    if (isWorldEntityType(entityType)) {
+      return entityType;
+    }
+    if (entityType === "WorldEntity" && isWorldEntityType(subType)) {
+      return subType;
+    }
+    return null;
+  }
+
+  private createGraphImportState(baseCharacters: CharacterCreateRow[], baseTerms: TermCreateRow[]): GraphImportState {
+    return {
+      charactersForCreate: [...baseCharacters],
+      termsForCreate: [...baseTerms],
+      factionsForCreate: [],
+      eventsForCreate: [],
+      worldEntitiesForCreate: [],
+      relationsForCreate: [],
+      characterIds: new Set(baseCharacters.map((row) => row.id)),
+      termIds: new Set(baseTerms.map((row) => row.id)),
+      factionIds: new Set<string>(),
+      eventIds: new Set<string>(),
+      worldEntityIds: new Set<string>(),
+    };
+  }
+
+  private resolveGraphNodeType(node: z.infer<typeof LuieWorldGraphNodeSchema>): WorldEntitySourceType | null {
+    if (isWorldEntitySourceType(node.entityType)) {
+      return node.entityType;
+    }
+    if (isWorldEntityType(node.subType)) {
+      return node.subType;
+    }
+    return null;
+  }
+
+  private addCharacterNode(state: GraphImportState, projectId: string, node: z.infer<typeof LuieWorldGraphNodeSchema>): void {
+    if (state.characterIds.has(node.id)) return;
+    state.characterIds.add(node.id);
+    state.charactersForCreate.push({
+      id: node.id,
+      projectId,
+      name: node.name,
+      description: typeof node.description === "string" ? node.description : null,
+      firstAppearance: typeof node.firstAppearance === "string" ? node.firstAppearance : null,
+      attributes: this.serializeAttributes(node.attributes),
+    });
+  }
+
+  private addTermNode(state: GraphImportState, projectId: string, node: z.infer<typeof LuieWorldGraphNodeSchema>): void {
+    if (state.termIds.has(node.id)) return;
+    state.termIds.add(node.id);
+    const tagCandidate = Array.isArray(node.attributes?.tags)
+      ? node.attributes.tags.find((tag): tag is string => typeof tag === "string")
+      : null;
+    state.termsForCreate.push({
+      id: node.id,
+      projectId,
+      term: node.name,
+      definition: typeof node.description === "string" ? node.description : null,
+      category: tagCandidate ?? null,
+      firstAppearance: typeof node.firstAppearance === "string" ? node.firstAppearance : null,
+    });
+  }
+
+  private addFactionNode(state: GraphImportState, projectId: string, node: z.infer<typeof LuieWorldGraphNodeSchema>): void {
+    if (state.factionIds.has(node.id)) return;
+    state.factionIds.add(node.id);
+    state.factionsForCreate.push({
+      id: node.id,
+      projectId,
+      name: node.name,
+      description: typeof node.description === "string" ? node.description : null,
+      firstAppearance: typeof node.firstAppearance === "string" ? node.firstAppearance : null,
+      attributes: this.serializeAttributes(node.attributes),
+    });
+  }
+
+  private addEventNode(state: GraphImportState, projectId: string, node: z.infer<typeof LuieWorldGraphNodeSchema>): void {
+    if (state.eventIds.has(node.id)) return;
+    state.eventIds.add(node.id);
+    state.eventsForCreate.push({
+      id: node.id,
+      projectId,
+      name: node.name,
+      description: typeof node.description === "string" ? node.description : null,
+      firstAppearance: typeof node.firstAppearance === "string" ? node.firstAppearance : null,
+      attributes: this.serializeAttributes(node.attributes),
+    });
+  }
+
+  private addWorldEntityNode(
+    state: GraphImportState,
+    projectId: string,
+    entityType: WorldEntitySourceType,
+    node: z.infer<typeof LuieWorldGraphNodeSchema>,
+  ): void {
+    const worldEntityType = this.getWorldEntityType(entityType, node.subType);
+    if (!worldEntityType || state.worldEntityIds.has(node.id)) {
+      return;
+    }
+    state.worldEntityIds.add(node.id);
+    state.worldEntitiesForCreate.push({
+      id: node.id,
+      projectId,
+      type: worldEntityType,
+      name: node.name,
+      description: typeof node.description === "string" ? node.description : null,
+      firstAppearance: typeof node.firstAppearance === "string" ? node.firstAppearance : null,
+      attributes: this.serializeAttributes(node.attributes),
+      positionX: typeof node.positionX === "number" ? node.positionX : 0,
+      positionY: typeof node.positionY === "number" ? node.positionY : 0,
+    });
+  }
+
+  private hasGraphEntity(state: GraphImportState, entityType: WorldEntitySourceType, entityId: string): boolean {
+    switch (entityType) {
+      case "Character":
+        return state.characterIds.has(entityId);
+      case "Term":
+        return state.termIds.has(entityId);
+      case "Faction":
+        return state.factionIds.has(entityId);
+      case "Event":
+        return state.eventIds.has(entityId);
+      case "Place":
+      case "Concept":
+      case "Rule":
+      case "Item":
+      case "WorldEntity":
+        return state.worldEntityIds.has(entityId);
+      default:
+        return false;
+    }
+  }
+
+  private addGraphNodeToState(
+    state: GraphImportState,
+    projectId: string,
+    node: z.infer<typeof LuieWorldGraphNodeSchema>,
+  ): void {
+    if (!node.id || !node.name) {
+      return;
+    }
+    const entityType = this.resolveGraphNodeType(node);
+    if (!entityType) {
+      return;
+    }
+
+    if (entityType === "Character") {
+      this.addCharacterNode(state, projectId, node);
+      return;
+    }
+    if (entityType === "Term") {
+      this.addTermNode(state, projectId, node);
+      return;
+    }
+    if (entityType === "Faction") {
+      this.addFactionNode(state, projectId, node);
+      return;
+    }
+    if (entityType === "Event") {
+      this.addEventNode(state, projectId, node);
+      return;
+    }
+    this.addWorldEntityNode(state, projectId, entityType, node);
+  }
+
+  private addGraphEdgeToState(
+    state: GraphImportState,
+    projectId: string,
+    edge: z.infer<typeof LuieWorldGraphEdgeSchema>,
+  ): void {
+    if (!edge.sourceId || !edge.targetId) {
+      return;
+    }
+    if (!isWorldEntitySourceType(edge.sourceType) || !isWorldEntitySourceType(edge.targetType)) {
+      return;
+    }
+    if (!isRelationKind(edge.relation)) {
+      return;
+    }
+    if (
+      !this.hasGraphEntity(state, edge.sourceType, edge.sourceId) ||
+      !this.hasGraphEntity(state, edge.targetType, edge.targetId)
+    ) {
+      return;
+    }
+
+    state.relationsForCreate.push({
+      id: edge.id || randomUUID(),
+      projectId,
+      sourceId: edge.sourceId,
+      sourceType: edge.sourceType,
+      targetId: edge.targetId,
+      targetType: edge.targetType,
+      relation: edge.relation,
+      attributes: this.serializeAttributes(edge.attributes),
+      sourceWorldEntityId:
+        isWorldEntityBackedType(edge.sourceType) && state.worldEntityIds.has(edge.sourceId)
+          ? edge.sourceId
+          : null,
+      targetWorldEntityId:
+        isWorldEntityBackedType(edge.targetType) && state.worldEntityIds.has(edge.targetId)
+          ? edge.targetId
+          : null,
+    });
+  }
+
+  private buildGraphCreateRows(input: {
+    projectId: string;
+    graph?: z.infer<typeof LuieWorldGraphSchema>;
+    baseCharacters: CharacterCreateRow[];
+    baseTerms: TermCreateRow[];
+  }): GraphImportRows {
+    const state = this.createGraphImportState(input.baseCharacters, input.baseTerms);
+
+    if (!input.graph) {
+      return state;
+    }
+
+    for (const node of input.graph.nodes ?? []) {
+      this.addGraphNodeToState(state, input.projectId, node);
+    }
+    for (const edge of input.graph.edges ?? []) {
+      this.addGraphEdgeToState(state, input.projectId, edge);
+    }
+
+    return state;
+  }
+
   private async applyImportTransaction(input: {
     resolvedProjectId: string;
     legacyProjectId: string | null;
@@ -483,6 +874,10 @@ export class ProjectService {
     chaptersForCreate: ChapterCreateRow[];
     charactersForCreate: CharacterCreateRow[];
     termsForCreate: TermCreateRow[];
+    factionsForCreate: FactionCreateRow[];
+    eventsForCreate: EventCreateRow[];
+    worldEntitiesForCreate: WorldEntityCreateRow[];
+    relationsForCreate: EntityRelationCreateRow[];
     snapshotsForCreate: SnapshotCreateRow[];
   }) {
     const {
@@ -495,6 +890,10 @@ export class ProjectService {
       chaptersForCreate,
       charactersForCreate,
       termsForCreate,
+      factionsForCreate,
+      eventsForCreate,
+      worldEntitiesForCreate,
+      relationsForCreate,
       snapshotsForCreate,
     } = input;
 
@@ -538,6 +937,18 @@ export class ProjectService {
       }
       if (termsForCreate.length > 0) {
         await tx.term.createMany({ data: termsForCreate });
+      }
+      if (factionsForCreate.length > 0) {
+        await tx.faction.createMany({ data: factionsForCreate });
+      }
+      if (eventsForCreate.length > 0) {
+        await tx.event.createMany({ data: eventsForCreate });
+      }
+      if (worldEntitiesForCreate.length > 0) {
+        await tx.worldEntity.createMany({ data: worldEntitiesForCreate });
+      }
+      if (relationsForCreate.length > 0) {
+        await tx.entityRelation.createMany({ data: relationsForCreate });
       }
       if (snapshotsForCreate.length > 0) {
         await tx.snapshot.createMany({ data: snapshotsForCreate });
@@ -621,6 +1032,12 @@ export class ProjectService {
         collections.characters,
       );
       const termsForCreate = this.buildTermCreateRows(resolvedProjectId, collections.terms);
+      const graphRows = this.buildGraphCreateRows({
+        projectId: resolvedProjectId,
+        graph: collections.graph,
+        baseCharacters: charactersForCreate,
+        baseTerms: termsForCreate,
+      });
       const snapshotsForCreate = this.buildSnapshotCreateRows(
         resolvedProjectId,
         collections.snapshots,
@@ -634,16 +1051,24 @@ export class ProjectService {
         worldSynopsis: collections.worldSynopsis,
         resolvedPath,
         chaptersForCreate,
-        charactersForCreate,
-        termsForCreate,
+        charactersForCreate: graphRows.charactersForCreate,
+        termsForCreate: graphRows.termsForCreate,
+        factionsForCreate: graphRows.factionsForCreate,
+        eventsForCreate: graphRows.eventsForCreate,
+        worldEntitiesForCreate: graphRows.worldEntitiesForCreate,
+        relationsForCreate: graphRows.relationsForCreate,
         snapshotsForCreate,
       });
 
       logger.info(".luie package hydrated", {
         projectId: created.id,
         chapterCount: chaptersForCreate.length,
-        characterCount: charactersForCreate.length,
-        termCount: termsForCreate.length,
+        characterCount: graphRows.charactersForCreate.length,
+        termCount: graphRows.termsForCreate.length,
+        factionCount: graphRows.factionsForCreate.length,
+        eventCount: graphRows.eventsForCreate.length,
+        worldEntityCount: graphRows.worldEntitiesForCreate.length,
+        relationCount: graphRows.relationsForCreate.length,
         snapshotCount: snapshotsForCreate.length,
       });
 
@@ -1000,6 +1425,10 @@ export class ProjectService {
         chapters: { where: { deletedAt: null }, orderBy: { order: "asc" } },
         characters: true,
         terms: true,
+        factions: true,
+        events: true,
+        worldEntities: true,
+        entityRelations: true,
         snapshots: { orderBy: { createdAt: "desc" } },
       },
     })) as ProjectExportRecord | null;
@@ -1243,6 +1672,101 @@ export class ProjectService {
     };
   }
 
+  private parseAttributesRecord(raw: string | null | undefined): Record<string, unknown> | null {
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  private buildWorldGraph(project: ProjectExportRecord): WorldGraphData {
+    const nodes: WorldGraphData["nodes"] = [
+      ...project.characters.map((character) => ({
+        id: character.id,
+        entityType: "Character" as const,
+        name: character.name,
+        description: character.description ?? null,
+        firstAppearance: character.firstAppearance ?? null,
+        attributes: this.parseAttributesRecord(character.attributes),
+        positionX: 0,
+        positionY: 0,
+      })),
+      ...project.factions.map((faction) => ({
+        id: faction.id,
+        entityType: "Faction" as const,
+        name: faction.name,
+        description: faction.description ?? null,
+        firstAppearance: faction.firstAppearance ?? null,
+        attributes: this.parseAttributesRecord(faction.attributes),
+        positionX: 0,
+        positionY: 0,
+      })),
+      ...project.events.map((event) => ({
+        id: event.id,
+        entityType: "Event" as const,
+        name: event.name,
+        description: event.description ?? null,
+        firstAppearance: event.firstAppearance ?? null,
+        attributes: this.parseAttributesRecord(event.attributes),
+        positionX: 0,
+        positionY: 0,
+      })),
+      ...project.terms.map((term) => ({
+        id: term.id,
+        entityType: "Term" as const,
+        name: term.term,
+        description: term.definition ?? null,
+        firstAppearance: term.firstAppearance ?? null,
+        attributes: term.category ? ({ tags: [term.category] } as Record<string, unknown>) : null,
+        positionX: 0,
+        positionY: 0,
+      })),
+      ...project.worldEntities.map((entity) => ({
+        id: entity.id,
+        entityType: entity.type,
+        subType: entity.type,
+        name: entity.name,
+        description: entity.description ?? null,
+        firstAppearance: entity.firstAppearance ?? null,
+        attributes:
+          typeof entity.attributes === "string"
+            ? this.parseAttributesRecord(entity.attributes)
+            : (entity.attributes as Record<string, unknown> | null | undefined) ?? null,
+        positionX: entity.positionX,
+        positionY: entity.positionY,
+      })),
+    ];
+
+    const edges: WorldGraphData["edges"] = project.entityRelations.map((edge) => ({
+      id: edge.id,
+      projectId: edge.projectId,
+      sourceId: edge.sourceId,
+      sourceType: edge.sourceType,
+      targetId: edge.targetId,
+      targetType: edge.targetType,
+      relation: edge.relation,
+      attributes:
+        typeof edge.attributes === "string"
+          ? this.parseAttributesRecord(edge.attributes)
+          : (edge.attributes as Record<string, unknown> | null | undefined) ?? null,
+      sourceWorldEntityId: edge.sourceWorldEntityId ?? null,
+      targetWorldEntityId: edge.targetWorldEntityId ?? null,
+      createdAt: edge.createdAt,
+      updatedAt: edge.updatedAt,
+    }));
+
+    return {
+      nodes,
+      edges,
+    };
+  }
+
   private buildProjectPackageMeta(
     project: ProjectExportRecord,
     chapterMeta: Array<{ id: string; title: string; order: number; file: string }>,
@@ -1291,6 +1815,7 @@ export class ProjectService {
     const drawing = this.buildWorldDrawing(parsedWorld.drawing);
     const mindmap = this.buildWorldMindmap(parsedWorld.mindmap);
     const memos = this.buildWorldScrapMemos(parsedWorld.memos);
+    const graph = this.buildWorldGraph(project);
     const meta = this.buildProjectPackageMeta(project, chapterMeta);
 
     logger.info("Exporting .luie package", {
@@ -1299,6 +1824,8 @@ export class ProjectService {
       chapterCount: exportChapters.length,
       characterCount: characters.length,
       termCount: terms.length,
+      worldNodeCount: graph.nodes.length,
+      relationCount: graph.edges.length,
       snapshotCount: snapshots.length,
     });
 
@@ -1314,6 +1841,7 @@ export class ProjectService {
         drawing,
         mindmap,
         memos,
+        graph,
         snapshots,
       },
       logger,

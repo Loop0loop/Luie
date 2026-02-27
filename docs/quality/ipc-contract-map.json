@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-02-27T06:39:06.656Z",
+  "generatedAt": "2026-02-27T09:56:19.139Z",
   "summary": {
-    "definedChannels": 112,
+    "definedChannels": 113,
     "errors": 0,
     "warnings": 1
   },
@@ -182,7 +182,7 @@
         "renderer_listen": [
           {
             "file": "src/preload/index.ts",
-            "line": 771
+            "line": 775
           }
         ],
         "renderer_send": [],
@@ -261,7 +261,7 @@
         "renderer_send": [
           {
             "file": "src/preload/index.ts",
-            "line": 781
+            "line": 785
           }
         ],
         "main_listen": [
@@ -873,7 +873,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/world/ipcEntityRelationHandlers.ts",
-            "line": 30
+            "line": 37
           }
         ],
         "main_emit": [],
@@ -904,7 +904,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/world/ipcEntityRelationHandlers.ts",
-            "line": 54
+            "line": 61
           }
         ],
         "main_emit": [],
@@ -935,7 +935,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/world/ipcEntityRelationHandlers.ts",
-            "line": 38
+            "line": 45
           }
         ],
         "main_emit": [],
@@ -966,7 +966,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/world/ipcEntityRelationHandlers.ts",
-            "line": 46
+            "line": 53
           }
         ],
         "main_emit": [],
@@ -1338,7 +1338,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 499
+            "line": 505
           }
         ],
         "main_emit": [],
@@ -1369,7 +1369,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 459
+            "line": 465
           }
         ],
         "main_emit": [],
@@ -1400,7 +1400,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 474
+            "line": 480
           }
         ],
         "main_emit": [],
@@ -1431,7 +1431,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 437
+            "line": 443
           }
         ],
         "main_emit": [],
@@ -1462,7 +1462,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 368
+            "line": 374
           }
         ],
         "main_emit": [],
@@ -1493,7 +1493,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 401
+            "line": 407
           }
         ],
         "main_emit": [],
@@ -1524,7 +1524,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 379
+            "line": 385
           }
         ],
         "main_emit": [],
@@ -1555,7 +1555,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 422
+            "line": 428
           }
         ],
         "main_emit": [],
@@ -1586,7 +1586,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 486
+            "line": 492
           }
         ],
         "main_emit": [],
@@ -1617,7 +1617,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 564
+            "line": 574
           }
         ],
         "main_emit": [],
@@ -3411,7 +3411,38 @@
         "main_handle": [
           {
             "file": "src/main/handler/world/ipcEntityRelationHandlers.ts",
-            "line": 61
+            "line": 68
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WORLD_GRAPH_GET_MENTIONS",
+      "channel": "world:getMentions",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/index.ts",
+            "line": 763
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcEntityRelationHandlers.ts",
+            "line": 76
           }
         ],
         "main_emit": [],

@@ -197,6 +197,7 @@ export const enBase = {
       "worldTabMindmap": "Go to mindmap",
       "worldTabDrawing": "Go to drawing",
       "worldTabPlot": "Go to plot board",
+      "worldTabGraph": "Go to world graph",
       "addWorldTerm": "Create world term",
       "addScrapMemo": "Create scrap memo",
       "openExportPreview": "Open export preview",

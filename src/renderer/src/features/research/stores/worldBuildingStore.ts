@@ -6,303 +6,549 @@
 import { create } from "zustand";
 import { useMemo } from "react";
 import { api } from "@shared/api";
+import {
+  getDefaultRelationForPair,
+  isRelationAllowed,
+  isWorldEntityBackedType,
+} from "@shared/constants/worldRelationRules";
 import type {
-    WorldGraphData,
-    WorldGraphNode,
-    EntityRelation,
-    WorldEntityCreateInput,
-    WorldEntityUpdateInput,
-    WorldEntityUpdatePositionInput,
-    EntityRelationCreateInput,
-    EntityRelationUpdateInput,
-    RelationKind,
+  Character,
+  EntityRelation,
+  EntityRelationCreateInput,
+  EntityRelationUpdateInput,
+  Event,
+  Faction,
+  RelationKind,
+  Term,
+  WorldEntity,
+  WorldEntityCreateInput,
+  WorldEntityType,
+  WorldEntityUpdateInput,
+  WorldEntityUpdatePositionInput,
+  WorldGraphData,
+  WorldGraphNode,
+  WorldEntitySourceType,
 } from "@shared/types";
-
-// ─── 뷰 모드 ────────────────────────────────────────────────────────────────
 
 export type WorldViewMode = "standard" | "protagonist" | "event-chain" | "freeform";
 
-// ─── 필터 상태 ───────────────────────────────────────────────────────────────
-
 export interface WorldFilter {
-    entityTypes: string[];
-    relationKinds: RelationKind[];
-    searchQuery: string;
-    tags: string[];
+  entityTypes: string[];
+  relationKinds: RelationKind[];
+  searchQuery: string;
+  tags: string[];
 }
 
 const DEFAULT_FILTER: WorldFilter = {
-    entityTypes: ["Character", "Faction", "Event", "Term", "Place", "Concept", "Rule", "Item", "WorldEntity"],
-    relationKinds: ["belongs_to", "enemy_of", "causes", "controls", "located_in", "violates"],
-    searchQuery: "",
-    tags: [],
+  entityTypes: [
+    "Character",
+    "Faction",
+    "Event",
+    "Term",
+    "Place",
+    "Concept",
+    "Rule",
+    "Item",
+    "WorldEntity",
+  ],
+  relationKinds: ["belongs_to", "enemy_of", "causes", "controls", "located_in", "violates"],
+  searchQuery: "",
+  tags: [],
 };
 
-// ─── 스토어 인터페이스 ────────────────────────────────────────────────────────
+type CreateGraphNodeInput = {
+  projectId: string;
+  entityType: WorldEntitySourceType;
+  name: string;
+  description?: string;
+  positionX?: number;
+  positionY?: number;
+  subType?: WorldEntityType;
+};
+
+type UpdateGraphNodeInput = {
+  id: string;
+  entityType: WorldEntitySourceType;
+  name?: string;
+  description?: string;
+  attributes?: Record<string, unknown>;
+  subType?: WorldEntityType;
+};
+
+const toCharacterNode = (item: Character): WorldGraphNode => ({
+  id: item.id,
+  entityType: "Character",
+  name: item.name,
+  description: item.description ?? null,
+  firstAppearance: item.firstAppearance ?? null,
+  attributes:
+    typeof item.attributes === "string"
+      ? null
+      : (item.attributes as Record<string, unknown> | null) ?? null,
+  positionX: 0,
+  positionY: 0,
+});
+
+const toFactionNode = (item: Faction): WorldGraphNode => ({
+  id: item.id,
+  entityType: "Faction",
+  name: item.name,
+  description: item.description ?? null,
+  firstAppearance: item.firstAppearance ?? null,
+  attributes:
+    typeof item.attributes === "string"
+      ? null
+      : (item.attributes as Record<string, unknown> | null) ?? null,
+  positionX: 0,
+  positionY: 0,
+});
+
+const toEventNode = (item: Event): WorldGraphNode => ({
+  id: item.id,
+  entityType: "Event",
+  name: item.name,
+  description: item.description ?? null,
+  firstAppearance: item.firstAppearance ?? null,
+  attributes:
+    typeof item.attributes === "string"
+      ? null
+      : (item.attributes as Record<string, unknown> | null) ?? null,
+  positionX: 0,
+  positionY: 0,
+});
+
+const toTermNode = (item: Term): WorldGraphNode => ({
+  id: item.id,
+  entityType: "Term",
+  name: item.term,
+  description: item.definition ?? null,
+  firstAppearance: item.firstAppearance ?? null,
+  attributes: item.category ? { tags: [item.category] } : null,
+  positionX: 0,
+  positionY: 0,
+});
+
+const toWorldEntityNode = (item: WorldEntity): WorldGraphNode => {
+  const type = (item.type ?? "Place") as WorldEntityType;
+  return {
+    id: item.id,
+    entityType: type,
+    subType: type,
+    name: item.name,
+    description: item.description ?? null,
+    firstAppearance: item.firstAppearance ?? null,
+    attributes:
+      typeof item.attributes === "string"
+        ? null
+        : (item.attributes as Record<string, unknown> | null) ?? null,
+    positionX: item.positionX ?? 0,
+    positionY: item.positionY ?? 0,
+  };
+};
+
+const resolveWorldEntityType = (
+  entityType: WorldEntitySourceType,
+  subType?: WorldEntityType,
+): WorldEntityType => {
+  if (entityType === "Place" || entityType === "Concept" || entityType === "Rule" || entityType === "Item") {
+    return entityType;
+  }
+  return subType ?? "Concept";
+};
+
+const toRelationSourceType = (entityType: WorldEntitySourceType): WorldEntitySourceType => {
+  return entityType;
+};
 
 interface WorldBuildingState {
-    // 데이터
-    graphData: WorldGraphData | null;
-    activeProjectId: string | null;
-    isLoading: boolean;
-    error: string | null;
+  graphData: WorldGraphData | null;
+  activeProjectId: string | null;
+  isLoading: boolean;
+  error: string | null;
 
-    // 뷰 모드
-    viewMode: WorldViewMode;
-    filter: WorldFilter;
+  viewMode: WorldViewMode;
+  filter: WorldFilter;
 
-    // 선택 상태
-    selectedNodeId: string | null;
-    selectedEdgeId: string | null;
+  selectedNodeId: string | null;
+  selectedEdgeId: string | null;
 
-    // 시스템 제안
-    suggestedMode: WorldViewMode | null;
+  suggestedMode: WorldViewMode | null;
 
-    // 액션
-    loadGraph: (projectId: string) => Promise<void>;
-    setViewMode: (mode: WorldViewMode) => void;
-    setFilter: (filter: Partial<WorldFilter>) => void;
-    resetFilter: () => void;
-    selectNode: (nodeId: string | null) => void;
-    selectEdge: (edgeId: string | null) => void;
-    dismissSuggestion: () => void;
+  loadGraph: (projectId: string) => Promise<void>;
+  setViewMode: (mode: WorldViewMode) => void;
+  setFilter: (filter: Partial<WorldFilter>) => void;
+  resetFilter: () => void;
+  selectNode: (nodeId: string | null) => void;
+  selectEdge: (edgeId: string | null) => void;
+  dismissSuggestion: () => void;
 
-    // WorldEntity CRUD
-    createWorldEntity: (input: WorldEntityCreateInput) => Promise<WorldGraphNode | null>;
-    updateWorldEntity: (input: WorldEntityUpdateInput) => Promise<void>;
-    updateWorldEntityPosition: (input: WorldEntityUpdatePositionInput) => Promise<void>;
-    deleteWorldEntity: (id: string) => Promise<void>;
+  createGraphNode: (input: CreateGraphNodeInput) => Promise<WorldGraphNode | null>;
+  updateGraphNode: (input: UpdateGraphNodeInput) => Promise<void>;
+  updateWorldEntityPosition: (input: WorldEntityUpdatePositionInput) => Promise<void>;
+  deleteGraphNode: (id: string) => Promise<void>;
 
-    // EntityRelation CRUD
-    createRelation: (input: EntityRelationCreateInput) => Promise<EntityRelation | null>;
-    updateRelation: (input: EntityRelationUpdateInput) => Promise<void>;
-    deleteRelation: (id: string) => Promise<void>;
+  // Backward compatible aliases
+  createWorldEntity: (input: WorldEntityCreateInput) => Promise<WorldGraphNode | null>;
+  updateWorldEntity: (input: WorldEntityUpdateInput) => Promise<void>;
+  deleteWorldEntity: (id: string) => Promise<void>;
+
+  createRelation: (input: EntityRelationCreateInput) => Promise<EntityRelation | null>;
+  updateRelation: (input: EntityRelationUpdateInput) => Promise<void>;
+  deleteRelation: (id: string) => Promise<void>;
 }
 
-// ─── 스토어 생성 ──────────────────────────────────────────────────────────────
-
 export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
-    graphData: null,
-    activeProjectId: null,
-    isLoading: false,
-    error: null,
-    viewMode: "standard",
-    filter: DEFAULT_FILTER,
-    selectedNodeId: null,
-    selectedEdgeId: null,
-    suggestedMode: null,
+  graphData: null,
+  activeProjectId: null,
+  isLoading: false,
+  error: null,
+  viewMode: "standard",
+  filter: DEFAULT_FILTER,
+  selectedNodeId: null,
+  selectedEdgeId: null,
+  suggestedMode: null,
 
-    // ─── 데이터 로드 ────
-    loadGraph: async (projectId: string) => {
-        set({ isLoading: true, error: null, activeProjectId: projectId });
-        try {
-            const res = await api.worldGraph.get(projectId);
-            if (!res.success || !res.data) {
-                throw new Error(res.error?.message ?? "Graph load failed");
-            }
-            set({ graphData: res.data, isLoading: false });
+  loadGraph: async (projectId: string) => {
+    set({ isLoading: true, error: null, activeProjectId: projectId });
+    try {
+      const res = await api.worldGraph.get(projectId);
+      if (!res.success || !res.data) {
+        throw new Error(res.error?.message ?? "Graph load failed");
+      }
 
-            // 자동 모드 제안: 사건이 많으면 event-chain 제안
-            const eventCount = res.data.nodes.filter((n) => n.entityType === "Event").length;
-            const total = res.data.nodes.length;
-            if (total > 0 && eventCount / total >= 0.4 && get().viewMode === "standard") {
-                set({ suggestedMode: "event-chain" });
-            }
-        } catch (e) {
-            set({ error: String(e), isLoading: false });
-        }
-    },
+      set({
+        graphData: res.data,
+        isLoading: false,
+        selectedNodeId: null,
+        selectedEdgeId: null,
+      });
 
-    // ─── 뷰 모드 ───────
-    setViewMode: (mode) => {
-        set((s) => {
-            let newFilter = { ...s.filter };
-            if (mode === "event-chain") {
-                // 사건 중심형: 사건(Event), 개념(Concept), 장소(Place) 위주로 필터링
-                newFilter.entityTypes = ["Event", "Concept", "Place"];
-                newFilter.relationKinds = ["causes", "located_in", "violates"];
-            } else if (mode === "standard" || mode === "protagonist" || mode === "freeform") {
-                // 표준/주인공/자유형: 전체 노드 표시
-                newFilter = DEFAULT_FILTER;
-            }
-            return { viewMode: mode, suggestedMode: null, filter: newFilter };
-        });
-    },
-    setFilter: (partial) =>
-        set((s) => ({ filter: { ...s.filter, ...partial } })),
-    resetFilter: () => set({ filter: DEFAULT_FILTER }),
+      const eventCount = res.data.nodes.filter((node) => node.entityType === "Event").length;
+      const total = res.data.nodes.length;
+      if (total > 0 && eventCount / total >= 0.4 && get().viewMode === "standard") {
+        set({ suggestedMode: "event-chain" });
+      }
+    } catch (error) {
+      set({ error: String(error), isLoading: false });
+    }
+  },
 
-    // ─── 선택 ──────────
-    selectNode: (nodeId) => set({ selectedNodeId: nodeId, selectedEdgeId: null }),
-    selectEdge: (edgeId) => set({ selectedEdgeId: edgeId, selectedNodeId: null }),
+  setViewMode: (mode) => {
+    set((state) => {
+      let nextFilter = { ...state.filter };
+      if (mode === "event-chain") {
+        nextFilter.entityTypes = ["Event", "Concept", "Place", "Rule", "Item"];
+        nextFilter.relationKinds = ["causes", "located_in", "violates"];
+      } else {
+        nextFilter = DEFAULT_FILTER;
+      }
+      return { viewMode: mode, suggestedMode: null, filter: nextFilter };
+    });
+  },
 
-    // ─── 제안 해제 ──────
-    dismissSuggestion: () => set({ suggestedMode: null }),
+  setFilter: (partial) => set((state) => ({ filter: { ...state.filter, ...partial } })),
+  resetFilter: () => set({ filter: DEFAULT_FILTER }),
 
-    // ─── WorldEntity CRUD ────
+  selectNode: (nodeId) => set({ selectedNodeId: nodeId, selectedEdgeId: null }),
+  selectEdge: (edgeId) => set({ selectedEdgeId: edgeId, selectedNodeId: null }),
+  dismissSuggestion: () => set({ suggestedMode: null }),
 
-    createWorldEntity: async (input) => {
-        const res = await api.worldEntity.create(input);
-        if (!res.success || !res.data) return null;
-        const newNode: WorldGraphNode = {
-            id: res.data.id,
-            entityType: "WorldEntity",
-            subType: res.data.type,
-            name: res.data.name,
-            description: res.data.description,
-            firstAppearance: res.data.firstAppearance,
-            attributes: typeof res.data.attributes === "string"
-                ? null
-                : res.data.attributes ?? null,
-            positionX: res.data.positionX,
-            positionY: res.data.positionY,
-        };
-        set((s) => ({
-            graphData: s.graphData
-                ? { ...s.graphData, nodes: [...s.graphData.nodes, newNode] }
-                : { nodes: [newNode], edges: [] },
-        }));
-        return newNode;
-    },
+  createGraphNode: async (input) => {
+    const projectId = input.projectId || get().activeProjectId;
+    if (!projectId) return null;
 
-    updateWorldEntity: async (input) => {
-        const res = await api.worldEntity.update(input);
-        if (!res.success || !res.data) return;
-        const updated = res.data;
-        set((s) => ({
-            graphData: s.graphData
-                ? {
-                    ...s.graphData,
-                    nodes: s.graphData.nodes.map((n) =>
-                        n.id === input.id
-                            ? {
-                                ...n,
-                                name: updated.name,
-                                description: updated.description,
-                                subType: updated.type,
-                                attributes: typeof updated.attributes === "string"
-                                    ? null
-                                    : updated.attributes ?? null,
-                            }
-                            : n,
-                    ),
-                }
-                : null,
-        }));
-    },
+    const name = input.name.trim() || "Untitled";
+    let nextNode: WorldGraphNode | null = null;
 
-    updateWorldEntityPosition: async (input) => {
-        // 낙관적 업데이트
-        set((s) => ({
-            graphData: s.graphData
-                ? {
-                    ...s.graphData,
-                    nodes: s.graphData.nodes.map((n) =>
-                        n.id === input.id
-                            ? { ...n, positionX: input.positionX, positionY: input.positionY }
-                            : n,
-                    ),
-                }
-                : null,
-        }));
-        await api.worldEntity.updatePosition(input);
-    },
+    if (input.entityType === "Character") {
+      const res = await api.character.create({ projectId, name, description: input.description });
+      if (!res.success || !res.data) return null;
+      nextNode = toCharacterNode(res.data);
+    } else if (input.entityType === "Faction") {
+      const res = await api.faction.create({ projectId, name, description: input.description });
+      if (!res.success || !res.data) return null;
+      nextNode = toFactionNode(res.data);
+    } else if (input.entityType === "Event") {
+      const res = await api.event.create({ projectId, name, description: input.description });
+      if (!res.success || !res.data) return null;
+      nextNode = toEventNode(res.data);
+    } else if (input.entityType === "Term") {
+      const res = await api.term.create({
+        projectId,
+        term: name,
+        definition: input.description,
+      });
+      if (!res.success || !res.data) return null;
+      nextNode = toTermNode(res.data);
+    } else {
+      const res = await api.worldEntity.create({
+        projectId,
+        type: resolveWorldEntityType(input.entityType, input.subType),
+        name,
+        description: input.description,
+        positionX: input.positionX ?? 0,
+        positionY: input.positionY ?? 0,
+      });
+      if (!res.success || !res.data) return null;
+      nextNode = toWorldEntityNode(res.data);
+    }
 
-    deleteWorldEntity: async (id) => {
-        const res = await api.worldEntity.delete(id);
-        if (!res.success) return;
-        set((s) => ({
-            graphData: s.graphData
-                ? {
-                    nodes: s.graphData.nodes.filter((n) => n.id !== id),
-                    edges: s.graphData.edges.filter(
-                        (e) => e.sourceId !== id && e.targetId !== id,
-                    ),
-                }
-                : null,
-            selectedNodeId: s.selectedNodeId === id ? null : s.selectedNodeId,
-        }));
-    },
+    set((state) => ({
+      graphData: state.graphData
+        ? { ...state.graphData, nodes: [...state.graphData.nodes, nextNode!] }
+        : { nodes: [nextNode!], edges: [] },
+      selectedNodeId: nextNode?.id ?? null,
+      selectedEdgeId: null,
+    }));
 
-    // ─── EntityRelation CRUD ────
+    return nextNode;
+  },
 
-    createRelation: async (input) => {
-        const activeProjectId = get().activeProjectId;
-        const resolvedProjectId = input.projectId || activeProjectId;
-        if (!resolvedProjectId) {
-            return null;
-        }
-        const res = await api.entityRelation.create({
-            ...input,
-            projectId: resolvedProjectId,
-        });
-        if (!res.success || !res.data) return null;
-        set((s) => ({
-            graphData: s.graphData
-                ? { ...s.graphData, edges: [...s.graphData.edges, res.data!] }
-                : null,
-        }));
-        return res.data;
-    },
+  updateGraphNode: async (input) => {
+    const graphData = get().graphData;
+    const current = graphData?.nodes.find((node) => node.id === input.id);
+    if (!current) return;
 
-    updateRelation: async (input) => {
-        const res = await api.entityRelation.update(input);
-        if (!res.success || !res.data) return;
-        const updated = res.data;
-        set((s) => ({
-            graphData: s.graphData
-                ? {
-                    ...s.graphData,
-                    edges: s.graphData.edges.map((e) => (e.id === input.id ? updated : e)),
-                }
-                : null,
-        }));
-    },
+    let updatedNode: WorldGraphNode | null = null;
+    if (input.entityType === "Character") {
+      const res = await api.character.update({
+        id: input.id,
+        name: input.name,
+        description: input.description,
+        attributes: input.attributes,
+      });
+      if (!res.success || !res.data) return;
+      updatedNode = toCharacterNode(res.data);
+    } else if (input.entityType === "Faction") {
+      const res = await api.faction.update({
+        id: input.id,
+        name: input.name,
+        description: input.description,
+        attributes: input.attributes,
+      });
+      if (!res.success || !res.data) return;
+      updatedNode = toFactionNode(res.data);
+    } else if (input.entityType === "Event") {
+      const res = await api.event.update({
+        id: input.id,
+        name: input.name,
+        description: input.description,
+        attributes: input.attributes,
+      });
+      if (!res.success || !res.data) return;
+      updatedNode = toEventNode(res.data);
+    } else if (input.entityType === "Term") {
+      const res = await api.term.update({
+        id: input.id,
+        term: input.name,
+        definition: input.description,
+        category:
+          Array.isArray(input.attributes?.tags) && input.attributes?.tags.length > 0
+            ? String(input.attributes.tags[0])
+            : undefined,
+      });
+      if (!res.success || !res.data) return;
+      updatedNode = toTermNode(res.data);
+    } else {
+      const worldEntityType = resolveWorldEntityType(input.entityType, input.subType ?? current.subType);
+      const res = await api.worldEntity.update({
+        id: input.id,
+        type: worldEntityType,
+        name: input.name,
+        description: input.description,
+        attributes: input.attributes,
+      });
+      if (!res.success || !res.data) return;
+      updatedNode = toWorldEntityNode(res.data);
+    }
 
-    deleteRelation: async (id) => {
-        const res = await api.entityRelation.delete(id);
-        if (!res.success) return;
-        set((s) => ({
-            graphData: s.graphData
-                ? { ...s.graphData, edges: s.graphData.edges.filter((e) => e.id !== id) }
-                : null,
-            selectedEdgeId: s.selectedEdgeId === id ? null : s.selectedEdgeId,
-        }));
-    },
+    set((state) => ({
+      graphData: state.graphData
+        ? {
+            ...state.graphData,
+            nodes: state.graphData.nodes.map((node) => (node.id === input.id ? updatedNode! : node)),
+          }
+        : null,
+    }));
+  },
+
+  updateWorldEntityPosition: async (input) => {
+    const current = get().graphData?.nodes.find((node) => node.id === input.id);
+    if (!current) return;
+    if (!isWorldEntityBackedType(current.entityType)) return;
+
+    set((state) => ({
+      graphData: state.graphData
+        ? {
+            ...state.graphData,
+            nodes: state.graphData.nodes.map((node) =>
+              node.id === input.id
+                ? { ...node, positionX: input.positionX, positionY: input.positionY }
+                : node,
+            ),
+          }
+        : null,
+    }));
+
+    await api.worldEntity.updatePosition(input);
+  },
+
+  deleteGraphNode: async (id) => {
+    const current = get().graphData?.nodes.find((node) => node.id === id);
+    if (!current) return;
+
+    if (current.entityType === "Character") {
+      const res = await api.character.delete(id);
+      if (!res.success) return;
+    } else if (current.entityType === "Faction") {
+      const res = await api.faction.delete(id);
+      if (!res.success) return;
+    } else if (current.entityType === "Event") {
+      const res = await api.event.delete(id);
+      if (!res.success) return;
+    } else if (current.entityType === "Term") {
+      const res = await api.term.delete(id);
+      if (!res.success) return;
+    } else {
+      const res = await api.worldEntity.delete(id);
+      if (!res.success) return;
+    }
+
+    set((state) => ({
+      graphData: state.graphData
+        ? {
+            nodes: state.graphData.nodes.filter((node) => node.id !== id),
+            edges: state.graphData.edges.filter((edge) => edge.sourceId !== id && edge.targetId !== id),
+          }
+        : null,
+      selectedNodeId: state.selectedNodeId === id ? null : state.selectedNodeId,
+    }));
+  },
+
+  createWorldEntity: async (input) => {
+    return get().createGraphNode({
+      projectId: input.projectId,
+      entityType: input.type,
+      subType: input.type,
+      name: input.name,
+      description: input.description,
+      positionX: input.positionX,
+      positionY: input.positionY,
+    });
+  },
+
+  updateWorldEntity: async (input) => {
+    const current = get().graphData?.nodes.find((node) => node.id === input.id);
+    if (!current) return;
+    await get().updateGraphNode({
+      id: input.id,
+      entityType: current.entityType,
+      subType: input.type ?? current.subType,
+      name: input.name,
+      description: input.description,
+      attributes: input.attributes,
+    });
+  },
+
+  deleteWorldEntity: async (id) => {
+    await get().deleteGraphNode(id);
+  },
+
+  createRelation: async (input) => {
+    const activeProjectId = get().activeProjectId;
+    const resolvedProjectId = input.projectId || activeProjectId;
+    if (!resolvedProjectId) return null;
+
+    const sourceType = toRelationSourceType(input.sourceType);
+    const targetType = toRelationSourceType(input.targetType);
+    const relation =
+      input.relation ?? getDefaultRelationForPair(sourceType, targetType) ?? "belongs_to";
+
+    if (!isRelationAllowed(relation, sourceType, targetType)) {
+      return null;
+    }
+
+    const res = await api.entityRelation.create({
+      ...input,
+      sourceType,
+      targetType,
+      relation,
+      projectId: resolvedProjectId,
+    });
+    if (!res.success || !res.data) return null;
+
+    set((state) => {
+      if (!state.graphData) return state;
+      const exists = state.graphData.edges.some((edge) => edge.id === res.data!.id);
+      return exists
+        ? state
+        : {
+            graphData: { ...state.graphData, edges: [...state.graphData.edges, res.data!] },
+          };
+    });
+    return res.data;
+  },
+
+  updateRelation: async (input) => {
+    const res = await api.entityRelation.update(input);
+    if (!res.success || !res.data) return;
+    const updated = res.data;
+
+    set((state) => ({
+      graphData: state.graphData
+        ? {
+            ...state.graphData,
+            edges: state.graphData.edges.map((edge) => (edge.id === input.id ? updated : edge)),
+          }
+        : null,
+    }));
+  },
+
+  deleteRelation: async (id) => {
+    const res = await api.entityRelation.delete(id);
+    if (!res.success) return;
+
+    set((state) => ({
+      graphData: state.graphData
+        ? {
+            ...state.graphData,
+            edges: state.graphData.edges.filter((edge) => edge.id !== id),
+          }
+        : null,
+      selectedEdgeId: state.selectedEdgeId === id ? null : state.selectedEdgeId,
+    }));
+  },
 }));
 
-// ─── 셀렉터: 현재 필터 적용된 그래프 ──────────────────────────────────────────
-
 export function useFilteredGraph() {
-    const graphData = useWorldBuildingStore((s) => s.graphData);
-    const filter = useWorldBuildingStore((s) => s.filter);
+  const graphData = useWorldBuildingStore((state) => state.graphData);
+  const filter = useWorldBuildingStore((state) => state.filter);
 
-    return useMemo(() => {
-        if (!graphData) {
-            return { nodes: [], edges: [] };
-        }
-        const { searchQuery, entityTypes, relationKinds } = filter;
+  return useMemo(() => {
+    if (!graphData) {
+      return { nodes: [], edges: [] };
+    }
 
-        const nodes = graphData.nodes.filter((node) => {
-            const displayType = node.subType ?? node.entityType;
-            if (!entityTypes.includes(displayType)) return false;
-            if (
-                searchQuery &&
-                !node.name.toLowerCase().includes(searchQuery.toLowerCase())
-            ) {
-                return false;
-            }
-            return true;
-        });
+    const { searchQuery, entityTypes, relationKinds } = filter;
+    const normalizedQuery = searchQuery.trim().toLowerCase();
 
-        const nodeIds = new Set(nodes.map((node) => node.id));
-        const edges = graphData.edges.filter(
-            (edge) =>
-                relationKinds.includes(edge.relation) &&
-                nodeIds.has(edge.sourceId) &&
-                nodeIds.has(edge.targetId),
-        );
+    const nodes = graphData.nodes.filter((node) => {
+      const displayType = node.subType ?? node.entityType;
+      if (!entityTypes.includes(displayType)) return false;
+      if (!normalizedQuery) return true;
+      const nameMatch = node.name.toLowerCase().includes(normalizedQuery);
+      const descriptionMatch = (node.description ?? "").toLowerCase().includes(normalizedQuery);
+      return nameMatch || descriptionMatch;
+    });
 
-        return { nodes, edges };
-    }, [filter, graphData]);
+    const nodeIds = new Set(nodes.map((node) => node.id));
+    const edges = graphData.edges.filter(
+      (edge) =>
+        relationKinds.includes(edge.relation) &&
+        nodeIds.has(edge.sourceId) &&
+        nodeIds.has(edge.targetId),
+    );
+
+    return { nodes, edges };
+  }, [filter, graphData]);
 }

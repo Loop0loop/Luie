@@ -2,14 +2,20 @@
  * 챕터 관리 (생성, 수정, 삭제, 선택)
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { LUIE_PACKAGE_EXTENSION } from "@shared/constants";
 import { api } from "@shared/api";
+import {
+  consumePendingChapterNavigation,
+  onChapterNavigationRequest,
+} from "@renderer/features/workspace/services/chapterNavigation";
 
 export function useChapterManagement() {
-  const [requestedChapterId, setRequestedChapterId] = useState<string | null>(null);
+  const [requestedChapterId, setRequestedChapterId] = useState<string | null>(
+    () => consumePendingChapterNavigation()?.chapterId ?? null,
+  );
 
   const { currentItem: currentProject } = useProjectStore();
   const {
@@ -35,6 +41,13 @@ export function useChapterManagement() {
 
   const handleSelectChapter = useCallback((id: string) => {
     setRequestedChapterId(id);
+  }, []);
+
+  useEffect(() => {
+    return onChapterNavigationRequest((payload) => {
+      if (!payload.chapterId) return;
+      setRequestedChapterId(payload.chapterId);
+    });
   }, []);
 
   const handleAddChapter = useCallback(async () => {

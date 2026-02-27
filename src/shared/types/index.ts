@@ -263,6 +263,8 @@ export type ProjectExportRecord = {
   events: EventExportRecord[];
   factions: FactionExportRecord[];
   snapshots: SnapshotExportRecord[];
+  worldEntities: WorldEntity[];
+  entityRelations: EntityRelation[];
 };
 
 // Project Types
@@ -578,6 +580,7 @@ export type ShortcutAction =
   | "world.tab.mindmap"
   | "world.tab.drawing"
   | "world.tab.plot"
+  | "world.tab.graph"
   | "world.addTerm"
   | "scrap.addMemo"
   | "export.openPreview"
@@ -609,6 +612,10 @@ export type WorldEntitySourceType =
   | "Character"
   | "Faction"
   | "Event"
+  | "Place"
+  | "Concept"
+  | "Rule"
+  | "Item"
   | "Term"
   | "WorldEntity";
 export type RelationKind =
@@ -715,4 +722,19 @@ export interface WorldGraphNode {
 export interface WorldGraphData {
   nodes: WorldGraphNode[];
   edges: EntityRelation[];
+}
+
+export interface WorldGraphMentionsQuery {
+  projectId: string;
+  entityId: string;
+  entityType: WorldEntitySourceType;
+  limit?: number;
+}
+
+export interface WorldGraphMention {
+  chapterId: string;
+  chapterTitle: string;
+  position: number | null;
+  context?: string;
+  source: "appearance" | "content-match";
 }

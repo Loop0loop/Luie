@@ -2,7 +2,6 @@
  * WorldEntity service — 세계관 엔티티(Place/Concept/Rule/Item) CRUD
  */
 
-import { db } from "../../database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import type {
@@ -11,6 +10,8 @@ import type {
     WorldEntityUpdatePositionInput,
 } from "../../../shared/types/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
+import { projectService } from "../core/projectService.js";
+import { getWorldDbClient } from "./characterService.js";
 
 const logger = createLogger("WorldEntityService");
 
@@ -28,7 +29,7 @@ export class WorldEntityService {
         try {
             logger.info("Creating world entity", input);
 
-            const entity = await db.getClient().worldEntity.create({
+            const entity = await getWorldDbClient().worldEntity.create({
                 data: {
                     projectId: input.projectId,
                     type: input.type,
@@ -42,6 +43,7 @@ export class WorldEntityService {
             });
 
             logger.info("World entity created", { entityId: entity.id });
+            projectService.schedulePackageExport(String(entity.projectId), "world-entity:create");
             return entity;
         } catch (error) {
             logger.error("Failed to create world entity", error);
@@ -56,7 +58,7 @@ export class WorldEntityService {
 
     async getWorldEntity(id: string) {
         try {
-            const entity = await db.getClient().worldEntity.findUnique({
+            const entity = await getWorldDbClient().worldEntity.findUnique({
                 where: { id },
             });
 
@@ -77,7 +79,7 @@ export class WorldEntityService {
 
     async getAllWorldEntities(projectId: string) {
         try {
-            const entities = await db.getClient().worldEntity.findMany({
+            const entities = await getWorldDbClient().worldEntity.findMany({
                 where: { projectId },
                 orderBy: { createdAt: "asc" },
             });
@@ -106,12 +108,13 @@ export class WorldEntityService {
                 updateData.attributes = JSON.stringify(input.attributes);
             }
 
-            const entity = await db.getClient().worldEntity.update({
+            const entity = await getWorldDbClient().worldEntity.update({
                 where: { id: input.id },
                 data: updateData,
             });
 
             logger.info("World entity updated", { entityId: entity.id });
+            projectService.schedulePackageExport(String(entity.projectId), "world-entity:update");
             return entity;
         } catch (error) {
             logger.error("Failed to update world entity", error);
@@ -134,11 +137,12 @@ export class WorldEntityService {
 
     async updateWorldEntityPosition(input: WorldEntityUpdatePositionInput) {
         try {
-            const entity = await db.getClient().worldEntity.update({
+            const entity = await getWorldDbClient().worldEntity.update({
                 where: { id: input.id },
                 data: { positionX: input.positionX, positionY: input.positionY },
             });
 
+            projectService.schedulePackageExport(String(entity.projectId), "world-entity:update-position");
             return entity;
         } catch (error) {
             logger.error("Failed to update world entity position", error);
@@ -161,8 +165,9 @@ export class WorldEntityService {
 
     async deleteWorldEntity(id: string) {
         try {
-            await db.getClient().worldEntity.delete({ where: { id } });
+            const deleted = await getWorldDbClient().worldEntity.delete({ where: { id } });
             logger.info("World entity deleted", { entityId: id });
+            projectService.schedulePackageExport(String(deleted.projectId), "world-entity:delete");
             return { success: true };
         } catch (error) {
             logger.error("Failed to delete world entity", error);

@@ -82,6 +82,7 @@ const getDefaultShortcuts = (platform: NodeJS.Platform): ShortcutMap => {
     "world.tab.mindmap": "",
     "world.tab.drawing": "",
     "world.tab.plot": "",
+    "world.tab.graph": `${mod}+Shift+G`,
     "world.addTerm": "",
     "scrap.addMemo": "",
     "export.openPreview": "",

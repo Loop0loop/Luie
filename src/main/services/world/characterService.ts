@@ -15,6 +15,8 @@ import { ServiceError } from "../../utils/serviceError.js";
 
 const logger = createLogger("CharacterService");
 
+export const getWorldDbClient = () => db.getClient();
+
 function isPrismaNotFoundError(error: unknown): boolean {
   return (
     typeof error === "object" &&

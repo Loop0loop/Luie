@@ -2,6 +2,7 @@ import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import type {
     EntityRelationCreateInput,
     EntityRelationUpdateInput,
+    WorldGraphMentionsQuery,
 } from "../../../shared/types/index.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import {
@@ -9,6 +10,7 @@ import {
     entityRelationUpdateSchema,
     entityRelationIdSchema,
     projectIdSchema,
+    worldGraphMentionsQuerySchema,
 } from "../../../shared/schemas/index.js";
 import { z } from "zod";
 import type { LoggerLike } from "../core/types.js";
@@ -21,9 +23,14 @@ type EntityRelationServiceLike = {
     getWorldGraph: (projectId: string) => Promise<unknown>;
 };
 
+type WorldMentionServiceLike = {
+    getMentions: (query: WorldGraphMentionsQuery) => Promise<unknown>;
+};
+
 export function registerEntityRelationIPCHandlers(
     logger: LoggerLike,
     entityRelationService: EntityRelationServiceLike,
+    worldMentionService: WorldMentionServiceLike,
 ): void {
     registerIpcHandlers(logger, [
         {
@@ -64,6 +71,14 @@ export function registerEntityRelationIPCHandlers(
             argsSchema: z.tuple([projectIdSchema]),
             handler: (projectId: string) =>
                 entityRelationService.getWorldGraph(projectId),
+        },
+        {
+            channel: IPC_CHANNELS.WORLD_GRAPH_GET_MENTIONS,
+            logTag: "WORLD_GRAPH_GET_MENTIONS",
+            failMessage: "Failed to get world graph mentions",
+            argsSchema: z.tuple([worldGraphMentionsQuerySchema]),
+            handler: (query: WorldGraphMentionsQuery) =>
+                worldMentionService.getMentions(query),
         },
     ]);
 }

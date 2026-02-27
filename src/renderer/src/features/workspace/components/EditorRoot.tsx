@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense, useCallback, useMemo } from "react";
+import { useState, lazy, Suspense, useCallback, useMemo, useEffect } from "react";
 import { type Editor as TiptapEditor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
 import MainLayout from "@renderer/features/workspace/components/MainLayout";
@@ -170,8 +170,9 @@ export default function EditorRoot() {
     }, [activeChapterId, dialog.toast, t]);
 
     const handleOpenWorldGraph = useCallback(() => {
-        void window.api?.window.openWorldGraph();
-    }, []);
+        setWorldTab("graph");
+        window.location.hash = "#world-graph";
+    }, [setWorldTab]);
 
     const handleRenameProject = useCallback(async () => {
         if (!currentProject?.id) return;
@@ -211,6 +212,16 @@ export default function EditorRoot() {
 
     const prefetchSettings = useCallback(() => {
         void import("@renderer/features/settings/components/SettingsModal");
+    }, []);
+
+    useEffect(() => {
+        const handleOpenSettings = () => {
+            setIsSettingsOpen(true);
+        };
+        window.addEventListener("luie:open-settings", handleOpenSettings);
+        return () => {
+            window.removeEventListener("luie:open-settings", handleOpenSettings);
+        };
     }, []);
 
     if (uiMode === "focus") {

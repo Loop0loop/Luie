@@ -5,11 +5,23 @@ import { koSnapshot } from "./ko/snapshot";
 import { koScrivener } from "./ko/scrivener";
 import { koTrash } from "./ko/trash";
 import { koMisc } from "./ko/misc";
+import { koWorldGraph } from "./ko/modules/worldGraph";
+
+const koWorkspaceWithWorldGraph = {
+  ...koWorkspace,
+  world: {
+    ...koWorkspace.world,
+    graph: {
+      ...koWorkspace.world.graph,
+      ...koWorldGraph,
+    },
+  },
+} as const;
 
 export const ko = {
   common: {
     ...koBase,
-    ...koWorkspace,
+    ...koWorkspaceWithWorldGraph,
     ...koExport,
     ...koSnapshot,
     ...koScrivener,

@@ -11,6 +11,7 @@ import { api } from "@shared/api";
 import { useTranslation } from "react-i18next";
 import { useDialog } from "@shared/ui/useDialog";
 import { openQuickExportEntry } from "@renderer/features/workspace/services/exportEntryService";
+import { consumePendingEditorFocusQuery } from "@renderer/features/workspace/services/chapterNavigation";
 
 import { useEditorExtensions } from "@renderer/features/editor/components/hooks/useEditorExtensions";
 import { useSmartLinkClickHandler } from "@renderer/features/editor/components/hooks/useSmartLinkClickHandler";
@@ -137,6 +138,35 @@ function Editor({
       editor.commands.setContent(initialContent);
     }
   }, [editor, initialContent]);
+
+  useEffect(() => {
+    if (!editor || !chapterId) return;
+    const pendingQuery = consumePendingEditorFocusQuery(chapterId);
+    if (!pendingQuery) return;
+
+    const timer = window.setTimeout(() => {
+      const text = editor.getText();
+      const normalizedText = text.toLowerCase();
+      const normalizedQuery = pendingQuery.toLowerCase().trim();
+      const index = normalizedQuery.length > 0 ? normalizedText.indexOf(normalizedQuery) : -1;
+
+      try {
+        editor.commands.focus();
+        if (index >= 0) {
+          editor.commands.setTextSelection({
+            from: index + 1,
+            to: index + normalizedQuery.length + 1,
+          });
+        } else {
+          editor.commands.setTextSelection({ from: 1, to: 1 });
+        }
+      } catch {
+        editor.commands.focus();
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [editor, chapterId, initialContent]);
 
   if (!editor) {
     return null;

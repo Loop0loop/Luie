@@ -12,6 +12,7 @@ import {
 	manuscriptAnalysisService,
 	worldEntityService,
 	entityRelationService,
+	worldMentionService,
 } from "../services/index.js";
 import { registerProjectHandlers } from "./project/index.js";
 import { registerSearchHandlers } from "./search/index.js";
@@ -37,6 +38,7 @@ export function registerAllIPCHandlers(): void {
 		factionService,
 		worldEntityService,
 		entityRelationService,
+		worldMentionService,
 	});
 
 	registerWritingHandlers({
@@ -62,4 +64,3 @@ export function registerAllIPCHandlers(): void {
 
 // Backward compat
 export const registerIPCHandlers = registerAllIPCHandlers;
-

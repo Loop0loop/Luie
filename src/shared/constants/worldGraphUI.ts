@@ -27,15 +27,15 @@ export const WORLD_GRAPH_ICON_MAP: Record<WorldEntitySourceType | string, Lucide
 
 // 프리미엄 다이나믹 테마 (Tailwind 기반)
 export const WORLD_GRAPH_NODE_THEMES: Record<WorldEntitySourceType | string, { wrapper: string; iconBg: string; text: string }> = {
-    Character: { wrapper: "bg-indigo-50/95 dark:bg-indigo-950/80 border-indigo-200/60 dark:border-indigo-800/60 shadow-indigo-500/10", iconBg: "bg-indigo-100 dark:bg-indigo-900/60", text: "text-indigo-700 dark:text-indigo-300" },
-    Faction: { wrapper: "bg-orange-50/95 dark:bg-orange-950/80 border-orange-200/60 dark:border-orange-800/60 shadow-orange-500/10", iconBg: "bg-orange-100 dark:bg-orange-900/60", text: "text-orange-700 dark:text-orange-300" },
-    Event: { wrapper: "bg-rose-50/95 dark:bg-rose-950/80 border-rose-200/60 dark:border-rose-800/60 shadow-rose-500/10", iconBg: "bg-rose-100 dark:bg-rose-900/60", text: "text-rose-700 dark:text-rose-300" },
-    Term: { wrapper: "bg-teal-50/95 dark:bg-teal-950/80 border-teal-200/60 dark:border-teal-800/60 shadow-teal-500/10", iconBg: "bg-teal-100 dark:bg-teal-900/60", text: "text-teal-700 dark:text-teal-300" },
-    Place: { wrapper: "bg-emerald-50/95 dark:bg-emerald-950/80 border-emerald-200/60 dark:border-emerald-800/60 shadow-emerald-500/10", iconBg: "bg-emerald-100 dark:bg-emerald-900/60", text: "text-emerald-700 dark:text-emerald-300" },
-    Concept: { wrapper: "bg-sky-50/95 dark:bg-sky-950/80 border-sky-200/60 dark:border-sky-800/60 shadow-sky-500/10", iconBg: "bg-sky-100 dark:bg-sky-900/60", text: "text-sky-700 dark:text-sky-300" },
-    Rule: { wrapper: "bg-purple-50/95 dark:bg-purple-950/80 border-purple-200/60 dark:border-purple-800/60 shadow-purple-500/10", iconBg: "bg-purple-100 dark:bg-purple-900/60", text: "text-purple-700 dark:text-purple-300" },
-    Item: { wrapper: "bg-amber-50/95 dark:bg-amber-950/80 border-amber-200/60 dark:border-amber-800/60 shadow-amber-500/10", iconBg: "bg-amber-100 dark:bg-amber-900/60", text: "text-amber-700 dark:text-amber-300" },
-    WorldEntity: { wrapper: "bg-slate-50/95 dark:bg-slate-900/80 border-slate-200/60 dark:border-slate-800/60 shadow-slate-500/10", iconBg: "bg-slate-100 dark:bg-slate-800/60", text: "text-slate-700 dark:text-slate-300" },
+    Character: { wrapper: "bg-panel border-border", iconBg: "bg-indigo-500/15", text: "text-fg" },
+    Faction: { wrapper: "bg-panel border-border", iconBg: "bg-orange-500/15", text: "text-fg" },
+    Event: { wrapper: "bg-panel border-border", iconBg: "bg-rose-500/15", text: "text-fg" },
+    Term: { wrapper: "bg-panel border-border", iconBg: "bg-teal-500/15", text: "text-fg" },
+    Place: { wrapper: "bg-panel border-border", iconBg: "bg-emerald-500/15", text: "text-fg" },
+    Concept: { wrapper: "bg-panel border-border", iconBg: "bg-sky-500/15", text: "text-fg" },
+    Rule: { wrapper: "bg-panel border-border", iconBg: "bg-purple-500/15", text: "text-fg" },
+    Item: { wrapper: "bg-panel border-border", iconBg: "bg-amber-500/15", text: "text-fg" },
+    WorldEntity: { wrapper: "bg-panel border-border", iconBg: "bg-slate-500/20", text: "text-fg" },
 };
 
 // 미니맵용 단순 색상 매핑

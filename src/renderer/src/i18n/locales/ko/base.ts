@@ -197,6 +197,7 @@ export const koBase = {
       "worldTabMindmap": "마인드맵으로 가기",
       "worldTabDrawing": "맵 드로잉으로 가기",
       "worldTabPlot": "플롯 보드로 가기",
+      "worldTabGraph": "세계관 그래프로 가기",
       "addWorldTerm": "세계관 용어 만들기",
       "addScrapMemo": "자료 스크랩 메모 만들기",
       "openExportPreview": "원고 내보내기",

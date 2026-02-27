@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import ProjectTemplateSelector from "@renderer/features/workspace/components/ProjectTemplateSelector";
 import EditorRoot from "@renderer/features/workspace/components/EditorRoot";
 import OAuthResultPage from "@renderer/features/auth/components/OAuthResultPage";
+import WorldSection from "@renderer/features/research/components/WorldSection";
 
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
@@ -25,10 +26,8 @@ import {
   LUIE_PACKAGE_EXTENSION_NO_DOT,
   LUIE_PACKAGE_FILTER_NAME,
 } from "@shared/constants/paths";
-import WindowBar from "@renderer/features/workspace/components/WindowBar";
 
 const ExportWindow = lazy(() => import("@renderer/features/export/components/ExportWindow"));
-const WorldSection = lazy(() => import("@renderer/features/research/components/world/index"));
 
 const parseBootstrapStatus = (value: unknown): AppBootstrapStatus | null => {
   const parsed = appBootstrapStatusSchema.safeParse(value);
@@ -286,11 +285,19 @@ export default function App() {
     return (
       <>
         <Suspense fallback={<div className="flex items-center justify-center h-screen bg-app text-fg">{t("loading")}</div>}>
-          <div className="w-screen h-screen flex flex-col bg-app overflow-hidden">
-            <WindowBar title="세계관 에디터 | Luie" />
-            <div className="flex-1 min-h-0 relative">
-              <WorldSection worldId={currentProject?.id || ""} />
-            </div>
+          <div className="w-screen h-screen bg-app overflow-hidden">
+            <WorldSection
+              worldId={currentProject?.id || ""}
+              projectTitle={currentProject?.title}
+              graphOnly
+              onBackToEditor={() => {
+                window.location.hash = "";
+              }}
+              onOpenSettings={() => {
+                window.dispatchEvent(new Event("luie:open-settings"));
+                window.location.hash = "";
+              }}
+            />
           </div>
         </Suspense>
         {quitOverlay}

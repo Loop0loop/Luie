@@ -1,12 +1,18 @@
 import { memo } from "react";
 import { Handle, Position } from "reactflow";
 import { cn } from "@shared/types/utils";
+import { WORLD_GRAPH_ICON_MAP, WORLD_GRAPH_NODE_THEMES } from "@shared/constants/worldGraphUI";
 
-import { WORLD_GRAPH_NODE_THEMES, WORLD_GRAPH_ICON_MAP } from "../../../../../../../shared/constants/worldGraphUI";
+type CustomEntityNodeProps = {
+    data: {
+        label: string;
+        subType: string;
+        importance?: number;
+    };
+    selected?: boolean;
+};
 
-
-
-export const CustomEntityNode = memo(({ data, selected }: any) => {
+export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps) => {
     const { label, subType, importance = 3 } = data;
     const themeSpec = WORLD_GRAPH_NODE_THEMES[subType] ?? WORLD_GRAPH_NODE_THEMES["WorldEntity"];
     const Icon = WORLD_GRAPH_ICON_MAP[subType] ?? WORLD_GRAPH_ICON_MAP["WorldEntity"];

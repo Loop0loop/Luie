@@ -568,7 +568,7 @@ const rendererApi = {
       safeInvoke(IPC_CHANNELS.WINDOW_SET_FULLSCREEN, flag),
     openExport: (chapterId: string): ReturnType<RendererApi["window"]["openExport"]> =>
       safeInvokeCore("window.openExport", IPC_CHANNELS.WINDOW_OPEN_EXPORT, chapterId),
-    openWorldGraph: (): Promise<IPCResponse<unknown>> =>
+    openWorldGraph: (): ReturnType<RendererApi["window"]["openWorldGraph"]> =>
       safeInvoke(IPC_CHANNELS.WINDOW_OPEN_WORLD_GRAPH),
   },
 
@@ -755,8 +755,12 @@ const rendererApi = {
 
   // World Graph API
   worldGraph: {
-    get: (projectId: string): Promise<IPCResponse<never>> =>
+    get: (projectId: string): ReturnType<RendererApi["worldGraph"]["get"]> =>
       safeInvoke(IPC_CHANNELS.WORLD_GRAPH_GET, projectId),
+    getMentions: (
+      query: Parameters<RendererApi["worldGraph"]["getMentions"]>[0],
+    ): ReturnType<RendererApi["worldGraph"]["getMentions"]> =>
+      safeInvoke(IPC_CHANNELS.WORLD_GRAPH_GET_MENTIONS, query),
   },
 } satisfies RendererApi;
 

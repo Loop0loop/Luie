@@ -135,6 +135,10 @@ export function useEditorRootShortcuts({
             "world.tab.mindmap": () => setWorldTab("mindmap"),
             "world.tab.drawing": () => setWorldTab("drawing"),
             "world.tab.plot": () => setWorldTab("plot"),
+            "world.tab.graph": () => {
+                layoutModeActions.openResearchTab("world");
+                setWorldTab("graph");
+            },
             "world.addTerm": () => emitShortcutCommand({ type: "world.addTerm" }),
             "scrap.addMemo": () => emitShortcutCommand({ type: "scrap.addMemo" }),
             "export.openPreview": () => handleQuickExport(),

@@ -197,6 +197,7 @@ export const jaBase = {
       "worldTabMindmap": "マインドマップへ移動",
       "worldTabDrawing": "ドローイングへ移動",
       "worldTabPlot": "プロットボードへ移動",
+      "worldTabGraph": "ワールドグラフへ移動",
       "addWorldTerm": "世界観用語を作成",
       "addScrapMemo": "スクラップメモを作成",
       "openExportPreview": "書き出しプレビューを開く",

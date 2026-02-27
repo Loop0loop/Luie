@@ -14,11 +14,16 @@ export function registerWorldHandlers(options: {
   factionService: Parameters<typeof registerFactionIPCHandlers>[1];
   worldEntityService: Parameters<typeof registerWorldEntityIPCHandlers>[1];
   entityRelationService: Parameters<typeof registerEntityRelationIPCHandlers>[1];
+  worldMentionService: Parameters<typeof registerEntityRelationIPCHandlers>[2];
 }): void {
   registerCharacterIPCHandlers(options.logger, options.characterService);
   registerTermIPCHandlers(options.logger, options.termService);
   registerEventIPCHandlers(options.logger, options.eventService);
   registerFactionIPCHandlers(options.logger, options.factionService);
   registerWorldEntityIPCHandlers(options.logger, options.worldEntityService);
-  registerEntityRelationIPCHandlers(options.logger, options.entityRelationService);
+  registerEntityRelationIPCHandlers(
+    options.logger,
+    options.entityRelationService,
+    options.worldMentionService,
+  );
 }

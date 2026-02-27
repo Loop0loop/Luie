@@ -92,6 +92,7 @@ const ALLOW_IN_EDITORS = new Set<ShortcutAction>([
   "world.tab.mindmap",
   "world.tab.drawing",
   "world.tab.plot",
+  "world.tab.graph",
   "world.addTerm",
   "scrap.addMemo",
   "project.rename",

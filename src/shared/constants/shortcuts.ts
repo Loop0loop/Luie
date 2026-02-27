@@ -45,6 +45,7 @@ export const SHORTCUT_ACTIONS: Array<{ id: ShortcutAction; labelKey: string }> =
   { id: "world.tab.mindmap", labelKey: "settings.shortcuts.worldTabMindmap" },
   { id: "world.tab.drawing", labelKey: "settings.shortcuts.worldTabDrawing" },
   { id: "world.tab.plot", labelKey: "settings.shortcuts.worldTabPlot" },
+  { id: "world.tab.graph", labelKey: "settings.shortcuts.worldTabGraph" },
   { id: "world.addTerm", labelKey: "settings.shortcuts.addWorldTerm" },
   { id: "scrap.addMemo", labelKey: "settings.shortcuts.addScrapMemo" },
 
@@ -57,5 +58,4 @@ export const SHORTCUT_ACTIONS: Array<{ id: ShortcutAction; labelKey: string }> =
   { id: "editor.fontSize.decrease", labelKey: "settings.shortcuts.editorFontDecrease" },
   { id: "window.toggleFullscreen", labelKey: "settings.shortcuts.toggleFullscreen" },
 ];
-
 

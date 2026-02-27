@@ -6,6 +6,7 @@ export * from "./world/eventService.js";
 export * from "./world/factionService.js";
 export * from "./world/worldEntityService.js";
 export * from "./world/entityRelationService.js";
+export * from "./world/worldMentionService.js";
 export * from "./features/snapshotService.js";
 export * from "./features/searchService.js";
 export * from "./features/autoExtractService.js";

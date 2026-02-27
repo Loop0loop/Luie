@@ -162,6 +162,7 @@ export const IPC_CHANNELS = {
 
   // World Graph
   WORLD_GRAPH_GET: "world:getGraph",
+  WORLD_GRAPH_GET_MENTIONS: "world:getMentions",
 } as const;
 
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

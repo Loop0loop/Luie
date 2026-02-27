@@ -19,6 +19,8 @@ export type SidebarWidthFeature =
   | "eventSidebar"
   | "factionSidebar"
   | "memoSidebar"
+  | "worldGraphSidebar"
+  | "worldGraphInspector"
   | "binder"
   | "context"
   | "inspector";
@@ -62,6 +64,8 @@ export const SIDEBAR_WIDTH_CONFIG: Record<SidebarWidthFeature, SidebarWidthConfi
   eventSidebar: { ...RESEARCH_LEFT_WIDTH_CONFIG },
   factionSidebar: { ...RESEARCH_LEFT_WIDTH_CONFIG },
   memoSidebar: { minPx: 220, maxPx: 560, defaultPx: 320 },
+  worldGraphSidebar: { minPx: 220, maxPx: 640, defaultPx: 320 },
+  worldGraphInspector: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
   binder: { minPx: 220, maxPx: 630, defaultPx: 280 },
   context: { minPx: 240, maxPx: 610, defaultPx: 310 },
   inspector: { minPx: 245, maxPx: 460, defaultPx: 350 },

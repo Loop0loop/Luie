@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isRelationAllowed } from "../constants/worldRelationRules";
 
 const PATH_MAX_LENGTH = 4096;
 const TITLE_MAX_LENGTH = 255;
@@ -312,6 +313,10 @@ export const entityRelationTypeSchema = z.enum([
   "Character",
   "Faction",
   "Event",
+  "Place",
+  "Concept",
+  "Rule",
+  "Item",
   "Term",
   "WorldEntity",
 ]);
@@ -361,10 +366,25 @@ export const entityRelationCreateSchema = z.object({
   targetType: entityRelationTypeSchema,
   relation: relationKindSchema,
   attributes: z.record(z.string(), z.unknown()).optional(),
+}).superRefine((value, ctx) => {
+  if (!isRelationAllowed(value.relation, value.sourceType, value.targetType)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Invalid relation mapping: ${value.sourceType} -> ${value.targetType} (${value.relation})`,
+      path: ["relation"],
+    });
+  }
 });
 
 export const entityRelationUpdateSchema = z.object({
   id: entityRelationIdSchema,
   relation: relationKindSchema.optional(),
   attributes: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const worldGraphMentionsQuerySchema = z.object({
+  projectId: projectIdSchema,
+  entityId: z.string().uuid("Invalid entity ID"),
+  entityType: entityRelationTypeSchema,
+  limit: z.number().int().positive().max(500).optional(),
 });

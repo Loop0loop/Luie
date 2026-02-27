@@ -2,9 +2,12 @@
  * EntityRelation service — 세계관 6종 관계 CRUD + 그래프 조회
  */
 
-import { db } from "../../database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
+import {
+    isRelationAllowed,
+    isWorldEntityBackedType,
+} from "../../../shared/constants/worldRelationRules.js";
 import type {
     EntityRelationCreateInput,
     EntityRelationUpdateInput,
@@ -17,6 +20,8 @@ import type {
     RelationKind,
 } from "../../../shared/types/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
+import { projectService } from "../core/projectService.js";
+import { getWorldDbClient } from "./characterService.js";
 
 const logger = createLogger("EntityRelationService");
 
@@ -68,6 +73,14 @@ export class EntityRelationService {
         try {
             logger.info("Creating entity relation", input);
 
+            if (!isRelationAllowed(input.relation, input.sourceType, input.targetType)) {
+                throw new ServiceError(
+                    ErrorCode.VALIDATION_FAILED,
+                    "Invalid relation mapping",
+                    { input },
+                );
+            }
+
             const data: Record<string, unknown> = {
                 projectId: input.projectId,
                 sourceId: input.sourceId,
@@ -78,13 +91,14 @@ export class EntityRelationService {
                 attributes: input.attributes ? JSON.stringify(input.attributes) : null,
             };
 
-            // FK 연결 — WorldEntity 타입인 경우에만 DB FK 설정
-            if (input.sourceType === "WorldEntity") data.sourceWorldEntityId = input.sourceId;
-            if (input.targetType === "WorldEntity") data.targetWorldEntityId = input.targetId;
+            // FK 연결 — WorldEntity-backed 타입인 경우 DB FK 설정
+            if (isWorldEntityBackedType(input.sourceType)) data.sourceWorldEntityId = input.sourceId;
+            if (isWorldEntityBackedType(input.targetType)) data.targetWorldEntityId = input.targetId;
 
-            const relation = await db.getClient().entityRelation.create({ data });
+            const relation = await getWorldDbClient().entityRelation.create({ data });
 
             logger.info("Entity relation created", { relationId: relation.id });
+            projectService.schedulePackageExport(input.projectId, "entity-relation:create");
             return relation;
         } catch (error) {
             logger.error("Failed to create entity relation", error);
@@ -99,7 +113,7 @@ export class EntityRelationService {
 
     async getAllRelations(projectId: string) {
         try {
-            const relations = await db.getClient().entityRelation.findMany({
+            const relations = await getWorldDbClient().entityRelation.findMany({
                 where: { projectId },
                 orderBy: { createdAt: "asc" },
             });
@@ -118,6 +132,37 @@ export class EntityRelationService {
 
     async updateRelation(input: EntityRelationUpdateInput) {
         try {
+            const current = await getWorldDbClient().entityRelation.findUnique({
+                where: { id: input.id },
+            });
+            if (!current) {
+                throw new ServiceError(
+                    ErrorCode.ENTITY_RELATION_NOT_FOUND,
+                    "Entity relation not found",
+                    { id: input.id },
+                );
+            }
+
+            if (
+                input.relation &&
+                !isRelationAllowed(
+                    input.relation,
+                    current.sourceType as WorldEntitySourceType,
+                    current.targetType as WorldEntitySourceType,
+                )
+            ) {
+                throw new ServiceError(
+                    ErrorCode.VALIDATION_FAILED,
+                    "Invalid relation mapping",
+                    {
+                        id: input.id,
+                        sourceType: current.sourceType,
+                        targetType: current.targetType,
+                        relation: input.relation,
+                    },
+                );
+            }
+
             const updateData: Record<string, unknown> = {};
 
             if (input.relation !== undefined) updateData.relation = input.relation;
@@ -125,12 +170,13 @@ export class EntityRelationService {
                 updateData.attributes = JSON.stringify(input.attributes);
             }
 
-            const relation = await db.getClient().entityRelation.update({
+            const relation = await getWorldDbClient().entityRelation.update({
                 where: { id: input.id },
                 data: updateData,
             });
 
             logger.info("Entity relation updated", { relationId: relation.id });
+            projectService.schedulePackageExport(String(current.projectId), "entity-relation:update");
             return relation;
         } catch (error) {
             logger.error("Failed to update entity relation", error);
@@ -153,8 +199,9 @@ export class EntityRelationService {
 
     async deleteRelation(id: string) {
         try {
-            await db.getClient().entityRelation.delete({ where: { id } });
+            const deleted = await getWorldDbClient().entityRelation.delete({ where: { id } });
             logger.info("Entity relation deleted", { relationId: id });
+            projectService.schedulePackageExport(String(deleted.projectId), "entity-relation:delete");
             return { success: true };
         } catch (error) {
             logger.error("Failed to delete entity relation", error);
@@ -174,12 +221,12 @@ export class EntityRelationService {
     async getWorldGraph(projectId: string): Promise<WorldGraphData> {
         try {
             const [characters, factions, events, terms, worldEntities, edges] = await Promise.all([
-                db.getClient().character.findMany({ where: { projectId } }),
-                db.getClient().faction.findMany({ where: { projectId } }),
-                db.getClient().event.findMany({ where: { projectId } }),
-                db.getClient().term.findMany({ where: { projectId } }),
-                db.getClient().worldEntity.findMany({ where: { projectId } }),
-                db.getClient().entityRelation.findMany({ where: { projectId } }),
+                getWorldDbClient().character.findMany({ where: { projectId } }),
+                getWorldDbClient().faction.findMany({ where: { projectId } }),
+                getWorldDbClient().event.findMany({ where: { projectId } }),
+                getWorldDbClient().term.findMany({ where: { projectId } }),
+                getWorldDbClient().worldEntity.findMany({ where: { projectId } }),
+                getWorldDbClient().entityRelation.findMany({ where: { projectId } }),
             ]) as [RawRow[], RawRow[], RawRow[], RawRow[], RawRow[], RawRow[]];
 
             const nodes: WorldGraphNode[] = [
@@ -225,7 +272,7 @@ export class EntityRelationService {
                 })),
                 ...worldEntities.map((w): WorldGraphNode => ({
                     id: w.id,
-                    entityType: "WorldEntity" as WorldEntitySourceType,
+                    entityType: (w.type ?? "Place") as WorldEntitySourceType,
                     subType: (w.type ?? "Place") as WorldEntityType,
                     name: w.name,
                     description: w.description,

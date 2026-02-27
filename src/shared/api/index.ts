@@ -24,6 +24,8 @@ import type {
   WorldEntityUpdatePositionInput,
   EntityRelationCreateInput,
   EntityRelationUpdateInput,
+  WorldGraphMention,
+  WorldGraphMentionsQuery,
 } from "@shared/types/index.js";
 
 export type RendererApi = {
@@ -280,6 +282,7 @@ export type RendererApi = {
   };
   worldGraph: {
     get: (projectId: string) => Promise<IPCResponse<WorldGraphData>>;
+    getMentions: (query: WorldGraphMentionsQuery) => Promise<IPCResponse<WorldGraphMention[]>>;
   };
 };
 
