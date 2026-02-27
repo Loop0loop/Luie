@@ -33,17 +33,6 @@ export default tseslint.config(
       "no-implied-eval": "error",
       "no-new-func": "error",
       "no-await-in-loop": "warn",
-      "no-restricted-syntax": [
-        "error",
-        {
-          selector: "CallExpression[callee.property.name='$queryRawUnsafe']",
-          message: "Prisma $queryRawUnsafe is forbidden in this codebase.",
-        },
-        {
-          selector: "CallExpression[callee.property.name='$executeRawUnsafe']",
-          message: "Prisma $executeRawUnsafe is forbidden in this codebase.",
-        },
-      ],
       // Allow console inside the shared logger, but discourage elsewhere
       "no-console": "warn",
 

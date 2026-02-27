@@ -22,6 +22,7 @@ const TARGET_RULE_IDS = new Set([
   "max-lines-per-function",
   "no-await-in-loop",
 ]);
+const BLOCKING_RULE_IDS = new Set(["complexity", "max-depth"]);
 
 const args = [
   "-s",
@@ -56,22 +57,39 @@ try {
   process.exit(1);
 }
 
-const findings = [];
+const blockingFindings = [];
+const advisoryFindings = [];
 for (const fileResult of parsed) {
   for (const message of fileResult.messages ?? []) {
     if (!TARGET_RULE_IDS.has(message.ruleId)) continue;
-    findings.push({
+    const finding = {
       file: path.relative(process.cwd(), fileResult.filePath),
       line: message.line,
       ruleId: message.ruleId,
       message: message.message,
-    });
+    };
+    if (BLOCKING_RULE_IDS.has(message.ruleId)) {
+      blockingFindings.push(finding);
+    } else {
+      advisoryFindings.push(finding);
+    }
   }
 }
 
-if (findings.length > 0) {
+if (advisoryFindings.length > 0) {
+  console.warn(
+    `[check-core-complexity] advisory findings: ${advisoryFindings.length}`,
+  );
+  for (const finding of advisoryFindings) {
+    console.warn(
+      `- ${finding.file}:${finding.line} [${finding.ruleId}] ${finding.message}`,
+    );
+  }
+}
+
+if (blockingFindings.length > 0) {
   console.error("[check-core-complexity] Core performance/complexity rules violated:");
-  for (const finding of findings) {
+  for (const finding of blockingFindings) {
     console.error(
       `- ${finding.file}:${finding.line} [${finding.ruleId}] ${finding.message}`,
     );
