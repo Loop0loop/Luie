@@ -3,6 +3,15 @@ import { Handle, Position } from "reactflow";
 import { cn } from "@shared/types/utils";
 import { WORLD_GRAPH_ICON_MAP, WORLD_GRAPH_NODE_THEMES } from "@shared/constants/worldGraphUI";
 
+const NODE_CONFIG = {
+    SCALE_MULTIPLIER: 0.1,
+    BASE_IMPORTANCE: 3,
+    DEFAULT_IMPORTANCE: 3,
+};
+
+const HANDLE_STYLES =
+    "w-2.5 h-2.5 bg-accent border-[1.5px] border-panel shadow-sm transition-all hover:scale-125 focus:ring-2 focus:ring-accent/50";
+
 type CustomEntityNodeProps = {
     data: {
         label: string;
@@ -13,37 +22,36 @@ type CustomEntityNodeProps = {
 };
 
 export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps) => {
-    const { label, subType, importance = 3 } = data;
+    const { label, subType, importance = NODE_CONFIG.DEFAULT_IMPORTANCE } = data;
     const themeSpec = WORLD_GRAPH_NODE_THEMES[subType] ?? WORLD_GRAPH_NODE_THEMES["WorldEntity"];
     const Icon = WORLD_GRAPH_ICON_MAP[subType] ?? WORLD_GRAPH_ICON_MAP["WorldEntity"];
 
-    // 중요도에 따른 약간의 크기/폰트 조절 (선택 사항)
-    const baseScale = 1 + (importance - 3) * 0.1; // 3이 중간
+    const baseScale = 1 + (importance - NODE_CONFIG.BASE_IMPORTANCE) * NODE_CONFIG.SCALE_MULTIPLIER;
 
     return (
-        <>
+        <div className="group relative">
             <Handle
                 type="target"
                 position={Position.Top}
-                className="w-2 h-2 !opacity-0"
+                className={cn(HANDLE_STYLES, "opacity-0 group-hover:opacity-100 -mt-1")}
                 id="top"
             />
             <Handle
                 type="source"
                 position={Position.Bottom}
-                className="w-2 h-2 !opacity-0"
+                className={cn(HANDLE_STYLES, "opacity-0 group-hover:opacity-100 -mb-1")}
                 id="bottom"
             />
             <Handle
                 type="target"
                 position={Position.Left}
-                className="w-2 h-2 !opacity-0"
+                className={cn(HANDLE_STYLES, "opacity-0 group-hover:opacity-100 -ml-1")}
                 id="left"
             />
             <Handle
                 type="source"
                 position={Position.Right}
-                className="w-2 h-2 !opacity-0"
+                className={cn(HANDLE_STYLES, "opacity-0 group-hover:opacity-100 -mr-1")}
                 id="right"
             />
 
@@ -66,7 +74,7 @@ export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps)
                     {label}
                 </span>
             </div>
-        </>
+        </div>
     );
 });
 

@@ -203,28 +203,6 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
   const [edges, setEdges, onEdgesChange] = useEdgesState(rfEdges);
 
   useEffect(() => {
-    setNodes((prev) => {
-      if (
-        prev.length === rfNodes.length &&
-        prev.every((node, index) => {
-          const next = rfNodes[index];
-          return (
-            node.id === next.id &&
-            node.position.x === next.position.x &&
-            node.position.y === next.position.y &&
-            node.selected === next.selected &&
-            node.data?.label === next.data?.label &&
-            node.data?.subType === next.data?.subType
-          );
-        })
-      ) {
-        return prev;
-      }
-      return rfNodes;
-    });
-  }, [rfNodes, setNodes]);
-
-  useEffect(() => {
     setEdges((prev) => {
       if (
         prev.length === rfEdges.length &&
@@ -238,6 +216,59 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
       return rfEdges;
     });
   }, [rfEdges, setEdges]);
+
+  // Fix: Smart Node Synchronization
+  // Keeps local node position while user drags, but accepts programmatic Layout updates
+  const lastStorePositions = useRef<Record<string, { x: number; y: number }>>({});
+
+  useEffect(() => {
+    setNodes((prev) => {
+      let isChanged = false;
+      const nextNodes = rfNodes.map((rfNode) => {
+        const existing = prev.find((n) => n.id === rfNode.id);
+        const lastPos = lastStorePositions.current[rfNode.id];
+
+        // Remember the DB position so we know if it externally changed
+        lastStorePositions.current[rfNode.id] = { x: rfNode.position.x, y: rfNode.position.y };
+
+        if (!existing) {
+          isChanged = true;
+          return rfNode;
+        }
+
+        const dbPosChanged = lastPos && (lastPos.x !== rfNode.position.x || lastPos.y !== rfNode.position.y);
+
+        let newPos = existing.position;
+        if (dbPosChanged && !existing.dragging) {
+          newPos = rfNode.position;
+        }
+
+        const needsUpdate =
+          existing.position.x !== newPos.x ||
+          existing.position.y !== newPos.y ||
+          existing.selected !== rfNode.selected ||
+          existing.data?.label !== rfNode.data?.label ||
+          existing.data?.subType !== rfNode.data?.subType ||
+          existing.data?.importance !== rfNode.data?.importance;
+
+        if (needsUpdate) {
+          isChanged = true;
+          return {
+            ...existing,
+            data: rfNode.data,
+            selected: rfNode.selected,
+            position: newPos,
+          };
+        }
+        return existing;
+      });
+
+      if (isChanged || prev.length !== rfNodes.length) {
+        return nextNodes;
+      }
+      return prev;
+    });
+  }, [rfNodes, setNodes]);
 
   const onNodeDragStop: NodeMouseHandler = useCallback(
     (_, node) => {
@@ -387,9 +418,9 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
         entityType,
         subType:
           entityType === "Place" ||
-          entityType === "Concept" ||
-          entityType === "Rule" ||
-          entityType === "Item"
+            entityType === "Concept" ||
+            entityType === "Rule" ||
+            entityType === "Item"
             ? entityType
             : undefined,
         name: t("world.graph.canvas.newEntityName", { type: t(`world.graph.entityTypes.${entityType}`, { defaultValue: entityType }) }),

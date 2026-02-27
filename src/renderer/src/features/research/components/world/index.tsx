@@ -140,6 +140,10 @@ export default function WorldSection({
 
   return (
     <div className="relative flex h-full min-h-0 flex-col bg-app">
+      {/* 
+        Fix: Always render the top menu bar for the Graph view.
+        If it's graphOnly (standalone window/tab), render the standalone top bar.
+      */}
       {graphOnly && (
         <div className="flex w-full items-center justify-between gap-2 shrink-0 border-b border-border/60 bg-sidebar/70 px-3 py-2 text-muted">
           <div className="flex min-w-0 items-center gap-2">
@@ -226,6 +230,9 @@ export default function WorldSection({
           {/* 뷰 모드 스위처 (그래프 탭 전용) */}
           {worldTab === "graph" && (
             <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 mr-auto pl-2 border-l border-border/40 text-xs font-semibold text-fg/80">
+                {t("world.tab.graph")}
+              </div>
               {suggestedMode && (
                 <div className="mr-2 flex items-center gap-2 rounded border border-accent/40 bg-accent/15 px-2 py-1 text-[10px] text-fg">
                   <span>
@@ -247,6 +254,7 @@ export default function WorldSection({
                   </button>
                 </div>
               )}
+
               {/* 프리미엄 모드 스위처 */}
               <div className="flex items-center bg-element rounded-lg p-1 border border-border/50 outline-none">
                 {(["standard", "protagonist", "event-chain", "freeform"] as WorldViewMode[]).map((mode) => {
@@ -264,6 +272,32 @@ export default function WorldSection({
                     </button>
                   );
                 })}
+              </div>
+
+              {/* 축 필터 (시간, 공간, 문화) */}
+              <div className="flex items-center bg-element rounded-lg p-1 border border-border/50 outline-none">
+                {(["time", "space", "culture"] as AxisPresetKey[]).map((axis) => (
+                  <button
+                    key={axis}
+                    type="button"
+                    onClick={() => applyAxisPreset(axis)}
+                    className={`shrink-0 rounded-md px-3 py-1.5 text-[11px] font-medium transition-all duration-200 ${activeAxisPreset === axis
+                      ? "bg-accent/20 text-accent font-semibold"
+                      : "bg-transparent text-muted hover:text-fg"
+                      }`}
+                  >
+                    {t(`world.graph.axis.${axis}`)}
+                  </button>
+                ))}
+                {activeAxisPreset && (
+                  <button
+                    type="button"
+                    onClick={clearAxisPreset}
+                    className="shrink-0 rounded-md px-2 py-1.5 text-[11px] text-muted hover:text-fg transition-colors border-l border-border/50 ml-1"
+                  >
+                    {t("world.graph.menu.resetFilter")}
+                  </button>
+                )}
               </div>
             </div>
           )}
