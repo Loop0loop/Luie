@@ -12,6 +12,7 @@ import {
   Type,
   Smartphone,
   Monitor,
+  Network,
   List,
   ListOrdered,
 } from "lucide-react";
@@ -29,6 +30,7 @@ interface EditorToolbarProps {
   editor: Editor | null;
   isMobileView?: boolean;
   onToggleMobileView?: () => void;
+  onOpenWorldGraph?: () => void;
 }
 
 // Reusable Button Config
@@ -65,7 +67,12 @@ const Divider = () => <div className="w-px h-4 bg-border mx-1.5" />;
 
 // --- MODES ---
 
-const DefaultToolbar = ({ editor, isMobileView, onToggleMobileView }: EditorToolbarProps) => {
+const DefaultToolbar = ({
+  editor,
+  isMobileView,
+  onToggleMobileView,
+  onOpenWorldGraph,
+}: EditorToolbarProps) => {
   const { t } = useTranslation();
   const fontSize = useEditorStore((state) => state.fontSize);
   const setFontSize = useEditorStore((state) => state.setFontSize);
@@ -95,6 +102,20 @@ const DefaultToolbar = ({ editor, isMobileView, onToggleMobileView }: EditorTool
         <ToggleButton onClick={() => setFontSize(fontSize + EDITOR_TOOLBAR_FONT_STEP)}>
           <span style={{ fontSize: "var(--editor-toolbar-plus-minus-font-size)" }}>+</span>
         </ToggleButton>
+
+        <Divider />
+
+        <button
+          className={cn(
+            "flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-element text-[11px] text-muted border border-transparent cursor-pointer transition-colors",
+            isMobileView && "bg-active text-accent font-semibold border-active"
+          )}
+          onClick={onToggleMobileView}
+          title={t("toolbar.tooltip.toggleMobileView")}
+        >
+          {isMobileView ? <Smartphone className="icon-sm" /> : <Monitor className="icon-sm" />}
+          <span>{isMobileView ? t("toolbar.view.mobile") : t("toolbar.view.desktop")}</span>
+        </button>
 
         <Divider />
 
@@ -147,21 +168,24 @@ const DefaultToolbar = ({ editor, isMobileView, onToggleMobileView }: EditorTool
 
         <button
           className={cn(
-            "flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-element text-[11px] text-muted border border-transparent cursor-pointer transition-colors",
-            isMobileView && "bg-active text-accent font-semibold border-active"
+            "flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-element text-[11px] text-muted border border-transparent transition-colors",
+            onOpenWorldGraph
+              ? "cursor-pointer hover:bg-hover hover:text-fg"
+              : "cursor-not-allowed opacity-50"
           )}
-          onClick={onToggleMobileView}
-          title={t("toolbar.tooltip.toggleMobileView")}
+          onClick={onOpenWorldGraph}
+          title={t("toolbar.tooltip.openWorldGraph")}
+          disabled={!onOpenWorldGraph}
         >
-          {isMobileView ? <Smartphone className="icon-sm" /> : <Monitor className="icon-sm" />}
-          <span>{isMobileView ? t("toolbar.view.mobile") : t("toolbar.view.desktop")}</span>
+          <Network className="icon-sm" />
+          <span>{t("toolbar.view.graph")}</span>
         </button>
       </div>
     </div>
   )
 }
 
-const DocsToolbar = ({ editor }: EditorToolbarProps) => {
+const DocsToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
   const { t } = useTranslation();
   const fontSize = useEditorStore((state) => state.fontSize);
   const setFontSize = useEditorStore((state) => state.setFontSize);
@@ -210,11 +234,28 @@ const DocsToolbar = ({ editor }: EditorToolbarProps) => {
       <ToggleButton active={editor?.isActive({ textAlign: "center" })} onClick={() => editor?.chain().focus().setTextAlign("center").run()} className="w-8 h-8 rounded-full hover:bg-black/5" title={t("toolbar.tooltip.alignCenter")}>
         <AlignCenter className="w-4 h-4" />
       </ToggleButton>
+
+      <div className="w-px h-5 bg-border mx-2" />
+
+      <button
+        className={cn(
+          "flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-element text-[11px] text-muted border border-transparent transition-colors",
+          onOpenWorldGraph
+            ? "cursor-pointer hover:bg-hover hover:text-fg"
+            : "cursor-not-allowed opacity-50"
+        )}
+        onClick={onOpenWorldGraph}
+        title={t("toolbar.tooltip.openWorldGraph")}
+        disabled={!onOpenWorldGraph}
+      >
+        <Network className="w-3.5 h-3.5" />
+        <span>{t("toolbar.view.graph")}</span>
+      </button>
     </div>
   )
 }
 
-const WordToolbar = ({ editor }: EditorToolbarProps) => {
+const WordToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
   const { t } = useTranslation();
 
   return (
@@ -225,6 +266,22 @@ const WordToolbar = ({ editor }: EditorToolbarProps) => {
         <span className="px-4 py-1.5 text-xs text-muted-foreground hover:bg-muted/50 cursor-pointer rounded-t">{t("toolbar.ribbon.insert")}</span>
         <span className="px-4 py-1.5 text-xs text-muted-foreground hover:bg-muted/50 cursor-pointer rounded-t">{t("toolbar.ribbon.draw")}</span>
         <span className="px-4 py-1.5 text-xs text-muted-foreground hover:bg-muted/50 cursor-pointer rounded-t">{t("toolbar.ribbon.view")}</span>
+        <button
+          className={cn(
+            "ml-auto mr-2 px-3 py-1 text-[11px] rounded border border-border bg-background/80 text-muted-foreground transition-colors",
+            onOpenWorldGraph
+              ? "cursor-pointer hover:bg-hover hover:text-fg"
+              : "cursor-not-allowed opacity-50"
+          )}
+          onClick={onOpenWorldGraph}
+          title={t("toolbar.tooltip.openWorldGraph")}
+          disabled={!onOpenWorldGraph}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <Network className="w-3.5 h-3.5" />
+            <span>{t("toolbar.view.graph")}</span>
+          </span>
+        </button>
       </div>
       {/* Ribbon Content (Home) */}
       <div className="flex items-center h-20 px-4 py-2 gap-4 bg-[#f3f2f1] dark:bg-[#2b2b2b]">
@@ -265,8 +322,9 @@ const WordToolbar = ({ editor }: EditorToolbarProps) => {
   )
 }
 
-const ScrivenerToolbar = ({ editor }: EditorToolbarProps) => {
+const ScrivenerToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
   // Format Bar
+  const { t } = useTranslation();
 
   const fontSize = useEditorStore((state) => state.fontSize);
   const setFontSize = useEditorStore((state) => state.setFontSize);
@@ -291,6 +349,22 @@ const ScrivenerToolbar = ({ editor }: EditorToolbarProps) => {
       <ToggleButton active={editor?.isActive({ textAlign: "left" })} onClick={() => editor?.chain().focus().setTextAlign("left").run()} className="w-6 h-6 hover:bg-hover rounded"><AlignLeft className="w-3.5 h-3.5" /></ToggleButton>
       <ToggleButton active={editor?.isActive({ textAlign: "center" })} onClick={() => editor?.chain().focus().setTextAlign("center").run()} className="w-6 h-6 hover:bg-hover rounded"><AlignCenter className="w-3.5 h-3.5" /></ToggleButton>
       <ToggleButton active={editor?.isActive({ textAlign: "right" })} onClick={() => editor?.chain().focus().setTextAlign("right").run()} className="w-6 h-6 hover:bg-hover rounded"><AlignRight className="w-3.5 h-3.5" /></ToggleButton>
+
+      <div className="ml-auto" />
+      <button
+        className={cn(
+          "flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-element text-[11px] text-muted border border-transparent transition-colors",
+          onOpenWorldGraph
+            ? "cursor-pointer hover:bg-hover hover:text-fg"
+            : "cursor-not-allowed opacity-50"
+        )}
+        onClick={onOpenWorldGraph}
+        title={t("toolbar.tooltip.openWorldGraph")}
+        disabled={!onOpenWorldGraph}
+      >
+        <Network className="w-3.5 h-3.5" />
+        <span>{t("toolbar.view.graph")}</span>
+      </button>
     </div>
   )
 }
@@ -299,6 +373,7 @@ export default function EditorToolbar({
   editor,
   isMobileView,
   onToggleMobileView,
+  onOpenWorldGraph,
 }: EditorToolbarProps) {
   const uiMode = useEditorStore((state) => state.uiMode);
 
@@ -308,10 +383,10 @@ export default function EditorToolbar({
 
   return (
     <div className="flex flex-col select-none transition-all duration-300">
-      {uiMode === 'docs' && <DocsToolbar editor={editor} isMobileView={isMobileView} onToggleMobileView={onToggleMobileView} />}
-      {uiMode === 'editor' && <WordToolbar editor={editor} isMobileView={isMobileView} onToggleMobileView={onToggleMobileView} />}
-      {uiMode === 'scrivener' && <ScrivenerToolbar editor={editor} isMobileView={isMobileView} onToggleMobileView={onToggleMobileView} />}
-      {(uiMode === 'default' || !uiMode) && <DefaultToolbar editor={editor} isMobileView={isMobileView} onToggleMobileView={onToggleMobileView} />}
+      {uiMode === 'docs' && <DocsToolbar editor={editor} isMobileView={isMobileView} onToggleMobileView={onToggleMobileView} onOpenWorldGraph={onOpenWorldGraph} />}
+      {uiMode === 'editor' && <WordToolbar editor={editor} isMobileView={isMobileView} onToggleMobileView={onToggleMobileView} onOpenWorldGraph={onOpenWorldGraph} />}
+      {uiMode === 'scrivener' && <ScrivenerToolbar editor={editor} isMobileView={isMobileView} onToggleMobileView={onToggleMobileView} onOpenWorldGraph={onOpenWorldGraph} />}
+      {(uiMode === 'default' || !uiMode) && <DefaultToolbar editor={editor} isMobileView={isMobileView} onToggleMobileView={onToggleMobileView} onOpenWorldGraph={onOpenWorldGraph} />}
 
       {/* Additional Toolbar Elements logic if needed */}
     </div>

@@ -36,6 +36,7 @@ const NODE_COLORS: Record<WorldEntitySourceType | string, string> = {
     Character: "#6366f1",   // 보라 - 인물
     Faction: "#f59e0b",     // 주황 - 세력
     Event: "#ef4444",       // 빨강 - 사건
+    Term: "#14b8a6",        // 틸 - 용어
     Place: "#10b981",       // 초록 - 장소
     Concept: "#0ea5e9",     // 파랑 - 개념
     Rule: "#8b5cf6",        // 바이올렛 - 규칙
@@ -141,13 +142,17 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
     // 노드 드래그 완료 → 위치 저장
     const onNodeDragStop: NodeMouseHandler = useCallback(
         (_, node) => {
+            const movedNodeType = graphNodes.find((graphNode) => graphNode.id === node.id)?.entityType;
+            if (movedNodeType !== "WorldEntity") {
+                return;
+            }
             void updateWorldEntityPosition({
                 id: node.id,
                 positionX: node.position.x,
                 positionY: node.position.y,
             });
         },
-        [updateWorldEntityPosition],
+        [graphNodes, updateWorldEntityPosition],
     );
 
     // 연결선 새로 그리기
@@ -156,7 +161,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
             if (!params.source || !params.target) return;
             // 기본 관계 belongs_to 로 생성 (Inspector에서 변경 가능)
             void createRelation({
-                projectId: "", // store 내부에서 projectId를 갖고 있지 않아 서버에서 처리
+                projectId: "",
                 sourceId: params.source,
                 sourceType: (graphNodes.find((n) => n.id === params.source)?.entityType ?? "Character"),
                 targetId: params.target,

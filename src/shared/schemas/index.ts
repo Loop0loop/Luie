@@ -312,6 +312,7 @@ export const entityRelationTypeSchema = z.enum([
   "Character",
   "Faction",
   "Event",
+  "Term",
   "WorldEntity",
 ]);
 export const relationKindSchema = z.enum([
@@ -367,4 +368,3 @@ export const entityRelationUpdateSchema = z.object({
   relation: relationKindSchema.optional(),
   attributes: z.record(z.string(), z.unknown()).optional(),
 });
-

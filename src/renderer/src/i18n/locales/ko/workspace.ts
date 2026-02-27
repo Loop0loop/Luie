@@ -37,6 +37,7 @@ export const koWorkspace = {
       "orderedList": "번호 매기기 목록",
       "addComment": "댓글 추가",
       "toggleMobileView": "모바일 뷰 전환",
+      "openWorldGraph": "월드 그래프 열기",
       "view": {
         "mobile": "Mobile View",
         "desktop": "PC View"
@@ -44,7 +45,8 @@ export const koWorkspace = {
     },
     "view": {
       "mobile": "Mobile",
-      "desktop": "PC"
+      "desktop": "PC",
+      "graph": "그래프"
     }
   },
   "textEditor": {

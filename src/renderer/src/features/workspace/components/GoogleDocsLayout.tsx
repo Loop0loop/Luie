@@ -57,6 +57,7 @@ interface GoogleDocsLayoutProps {
   onSaveChapter?: (title: string, content: string) => void | Promise<void>;
   additionalPanels?: ReactNode;
   onOpenExport?: () => void;
+  onOpenWorldGraph?: () => void;
 }
 
 export default function GoogleDocsLayout({
@@ -72,6 +73,7 @@ export default function GoogleDocsLayout({
   onSaveChapter,
   additionalPanels,
   onOpenExport,
+  onOpenWorldGraph,
 }: GoogleDocsLayoutProps) {
   const { t } = useTranslation();
   const [trashRefreshKey, setTrashRefreshKey] = useState(0);
@@ -232,7 +234,7 @@ export default function GoogleDocsLayout({
       {/* 3. Toolbar - Standard Full Width */}
       {editor && (
         <div className="shrink-0 z-40 relative w-full flex justify-center bg-background border-b border-border py-1">
-          <EditorToolbar editor={editor} />
+          <EditorToolbar editor={editor} onOpenWorldGraph={onOpenWorldGraph} />
         </div>
       )}
 

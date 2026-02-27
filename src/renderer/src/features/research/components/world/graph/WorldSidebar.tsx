@@ -12,6 +12,7 @@ const ENTITY_TYPES: { key: WorldEntitySourceType; label: string; color: string }
     { key: "Character", label: "인물", color: "#6366f1" },
     { key: "Faction", label: "세력", color: "#f59e0b" },
     { key: "Event", label: "사건", color: "#ef4444" },
+    { key: "Term", label: "용어", color: "#14b8a6" },
     { key: "WorldEntity", label: "기타(장소/개념/규칙/사물)", color: "#64748b" },
 ];
 

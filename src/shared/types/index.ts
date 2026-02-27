@@ -605,7 +605,12 @@ export type {
 // ─── World Building Types ────────────────────────────────────────────────────
 
 export type WorldEntityType = "Place" | "Concept" | "Rule" | "Item";
-export type WorldEntitySourceType = "Character" | "Faction" | "Event" | "WorldEntity";
+export type WorldEntitySourceType =
+  | "Character"
+  | "Faction"
+  | "Event"
+  | "Term"
+  | "WorldEntity";
 export type RelationKind =
   | "belongs_to"
   | "enemy_of"
@@ -697,7 +702,7 @@ export interface EntityRelationUpdateInput {
 // Graph node — renderer safe
 export interface WorldGraphNode {
   id: string;
-  entityType: WorldEntitySourceType; // "Character" | "Faction" | "Event" | "WorldEntity"
+  entityType: WorldEntitySourceType; // "Character" | "Faction" | "Event" | "Term" | "WorldEntity"
   subType?: WorldEntityType;          // Place / Concept / Rule / Item
   name: string;
   description?: string | null;
@@ -711,4 +716,3 @@ export interface WorldGraphData {
   nodes: WorldGraphNode[];
   edges: EntityRelation[];
 }
-

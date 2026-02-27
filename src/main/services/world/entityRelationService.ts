@@ -23,6 +23,9 @@ const logger = createLogger("EntityRelationService");
 type RawRow = {
     id: string;
     name: string;
+    term?: string;
+    definition?: string | null;
+    category?: string | null;
     description: string | null;
     firstAppearance: string | null;
     attributes: string | null;
@@ -166,17 +169,18 @@ export class EntityRelationService {
 
     /**
      * 프로젝트 전체 세계관 그래프 데이터 조회
-     * Character / Faction / Event / WorldEntity 를 한꺼번에 모아 WorldGraphNode 배열로 변환
+     * Character / Faction / Event / Term / WorldEntity 를 한꺼번에 모아 WorldGraphNode 배열로 변환
      */
     async getWorldGraph(projectId: string): Promise<WorldGraphData> {
         try {
-            const [characters, factions, events, worldEntities, edges] = await Promise.all([
+            const [characters, factions, events, terms, worldEntities, edges] = await Promise.all([
                 db.getClient().character.findMany({ where: { projectId } }),
                 db.getClient().faction.findMany({ where: { projectId } }),
                 db.getClient().event.findMany({ where: { projectId } }),
+                db.getClient().term.findMany({ where: { projectId } }),
                 db.getClient().worldEntity.findMany({ where: { projectId } }),
                 db.getClient().entityRelation.findMany({ where: { projectId } }),
-            ]) as [RawRow[], RawRow[], RawRow[], RawRow[], RawRow[]];
+            ]) as [RawRow[], RawRow[], RawRow[], RawRow[], RawRow[], RawRow[]];
 
             const nodes: WorldGraphNode[] = [
                 ...characters.map((c): WorldGraphNode => ({
@@ -206,6 +210,16 @@ export class EntityRelationService {
                     description: e.description,
                     firstAppearance: e.firstAppearance,
                     attributes: parseAttributes(e.attributes),
+                    positionX: 0,
+                    positionY: 0,
+                })),
+                ...terms.map((t): WorldGraphNode => ({
+                    id: t.id,
+                    entityType: "Term" as WorldEntitySourceType,
+                    name: t.term ?? t.name,
+                    description: t.definition ?? null,
+                    firstAppearance: t.firstAppearance,
+                    attributes: t.category ? { tags: [t.category] } : null,
                     positionX: 0,
                     positionY: 0,
                 })),

@@ -32,7 +32,7 @@ export interface WorldFilter {
 }
 
 const DEFAULT_FILTER: WorldFilter = {
-    entityTypes: ["Character", "Faction", "Event", "WorldEntity"],
+    entityTypes: ["Character", "Faction", "Event", "Term", "WorldEntity"],
     relationKinds: ["belongs_to", "enemy_of", "causes", "controls", "located_in", "violates"],
     searchQuery: "",
     tags: [],
@@ -43,6 +43,7 @@ const DEFAULT_FILTER: WorldFilter = {
 interface WorldBuildingState {
     // 데이터
     graphData: WorldGraphData | null;
+    activeProjectId: string | null;
     isLoading: boolean;
     error: string | null;
 
@@ -82,6 +83,7 @@ interface WorldBuildingState {
 
 export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
     graphData: null,
+    activeProjectId: null,
     isLoading: false,
     error: null,
     viewMode: "standard",
@@ -92,7 +94,7 @@ export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
 
     // ─── 데이터 로드 ────
     loadGraph: async (projectId: string) => {
-        set({ isLoading: true, error: null });
+        set({ isLoading: true, error: null, activeProjectId: projectId });
         try {
             const res = await api.worldGraph.get(projectId);
             if (!res.success || !res.data) {
@@ -212,7 +214,15 @@ export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
     // ─── EntityRelation CRUD ────
 
     createRelation: async (input) => {
-        const res = await api.entityRelation.create(input);
+        const activeProjectId = get().activeProjectId;
+        const resolvedProjectId = input.projectId || activeProjectId;
+        if (!resolvedProjectId) {
+            return null;
+        }
+        const res = await api.entityRelation.create({
+            ...input,
+            projectId: resolvedProjectId,
+        });
         if (!res.success || !res.data) return null;
         set((s) => ({
             graphData: s.graphData

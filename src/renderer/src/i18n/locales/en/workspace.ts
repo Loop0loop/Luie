@@ -37,6 +37,7 @@ export const enWorkspace = {
       "orderedList": "Numbered list",
       "addComment": "Add Comment",
       "toggleMobileView": "Toggle mobile view",
+      "openWorldGraph": "Open world graph",
       "view": {
         "mobile": "Mobile View",
         "desktop": "PC View"
@@ -44,7 +45,8 @@ export const enWorkspace = {
     },
     "view": {
       "mobile": "Mobile",
-      "desktop": "Desktop"
+      "desktop": "Desktop",
+      "graph": "Graph"
     }
   },
   "textEditor": {

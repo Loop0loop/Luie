@@ -154,13 +154,13 @@ export const IPC_CHANNELS = {
   WORLD_ENTITY_DELETE: "world-entity:delete",
 
   // Entity Relation Channels
-  ENTITY_RELATION_CREATE: "entity-relation:create",
-  ENTITY_RELATION_GET_ALL: "entity-relation:get-all",
-  ENTITY_RELATION_UPDATE: "entity-relation:update",
-  ENTITY_RELATION_DELETE: "entity-relation:delete",
+  ENTITY_RELATION_CREATE: "world:createRelation",
+  ENTITY_RELATION_GET_ALL: "world:getRelations",
+  ENTITY_RELATION_UPDATE: "world:updateRelation",
+  ENTITY_RELATION_DELETE: "world:deleteRelation",
 
   // World Graph
-  WORLD_GRAPH_GET: "world-graph:get",
+  WORLD_GRAPH_GET: "world:getGraph",
 } as const;
 
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

@@ -165,6 +165,11 @@ export default function EditorRoot() {
         });
     }, [activeChapterId, dialog.toast, t]);
 
+    const handleOpenWorldGraph = useCallback(() => {
+        setWorldTab("graph");
+        layoutModeActions.openResearchTab("world");
+    }, [layoutModeActions, setWorldTab]);
+
     const handleRenameProject = useCallback(async () => {
         if (!currentProject?.id) return;
 
@@ -238,6 +243,7 @@ export default function EditorRoot() {
                 onSave={handleSave}
                 readOnly={!activeChapterId}
                 chapterId={activeChapterId || undefined}
+                onOpenWorldGraph={handleOpenWorldGraph}
                 hideToolbar={uiMode === "docs" || uiMode === "scrivener" || uiMode === "editor"}
                 hideFooter={true}
                 hideTitle={uiMode === "docs" || uiMode === "scrivener" || uiMode === "editor"}
@@ -275,6 +281,7 @@ export default function EditorRoot() {
                     onRenameChapter={handleRenameChapter}
                     onSaveChapter={handleSave}
                     onOpenExport={handleQuickExport}
+                    onOpenWorldGraph={handleOpenWorldGraph}
                     additionalPanels={additionalPanelsComponent}
                 >
                     {sharedEditor}
@@ -292,6 +299,7 @@ export default function EditorRoot() {
                     onOpenExport={handleQuickExport}
                     onRenameChapter={handleRenameChapter}
                     onSaveChapter={handleSave}
+                    onOpenWorldGraph={handleOpenWorldGraph}
                     additionalPanels={additionalPanelsComponent}
                 >
                     {sharedEditor}
@@ -306,6 +314,7 @@ export default function EditorRoot() {
                     editor={docEditor}
                     onOpenSettings={() => setIsSettingsOpen(true)}
                     onOpenExport={handleQuickExport}
+                    onOpenWorldGraph={handleOpenWorldGraph}
                     additionalPanels={additionalPanelsComponent}
                 >
                     {sharedEditor}

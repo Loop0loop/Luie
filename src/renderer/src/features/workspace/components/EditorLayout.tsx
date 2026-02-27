@@ -26,6 +26,7 @@ interface EditorLayoutProps {
   onRenameChapter?: (id: string, newTitle: string) => Promise<void>;
   onSaveChapter?: (title: string, content: string) => Promise<void>;
   additionalPanels?: ReactNode;
+  onOpenWorldGraph?: () => void;
 }
 
 const WINDOW_BAR_HEIGHT = 40;
@@ -39,6 +40,7 @@ export default function EditorLayout({
   editor,
   onOpenSettings,
   onOpenExport,
+  onOpenWorldGraph,
   additionalPanels,
 }: EditorLayoutProps) {
   const { t } = useTranslation();
@@ -73,6 +75,7 @@ export default function EditorLayout({
           onOpenSettings={onOpenSettings}
           activeChapterId={activeChapterId}
           onOpenExportPreview={onOpenExport}
+          onOpenWorldGraph={onOpenWorldGraph}
         />
       </div>
 

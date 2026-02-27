@@ -16,6 +16,7 @@ import {
   FileOutput,
   Monitor,
   Smartphone,
+  Network,
 } from "lucide-react";
 import { cn } from "@shared/types/utils";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
@@ -26,6 +27,7 @@ interface RibbonProps {
   onOpenSettings?: () => void;
   activeChapterId?: string;
   onOpenExportPreview?: () => void;
+  onOpenWorldGraph?: () => void;
 }
 
 export default function Ribbon({
@@ -33,6 +35,7 @@ export default function Ribbon({
   onOpenSettings,
   activeChapterId,
   onOpenExportPreview,
+  onOpenWorldGraph,
 }: RibbonProps) {
   const { t } = useTranslation();
   const maxWidth = useEditorStore((state) => state.maxWidth);
@@ -87,6 +90,24 @@ export default function Ribbon({
             />
             <button className="px-1 hover:bg-black/5 rounded text-xs">+</button>
           </div>
+        </div>
+
+        {/* Layout Toggle (PC / Mobile) */}
+        <div className="flex items-center gap-0.5 pr-2 border-r border-border/20">
+          <button
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-black/5 dark:bg-white/5 text-[11px] text-muted border border-transparent cursor-pointer transition-colors hover:bg-black/10 dark:hover:bg-white/10",
+              (maxWidth && maxWidth <= 500) && "bg-blue-100 dark:bg-blue-900/30 text-blue-600 border-blue-200 dark:border-blue-800"
+            )}
+            onClick={() => {
+              const isMobile = maxWidth && maxWidth <= 500;
+              useEditorStore.getState().updateSettings({ maxWidth: isMobile ? 816 : 450 });
+            }}
+            title={t("toolbar.tooltip.toggleMobileView")}
+          >
+            {(maxWidth && maxWidth <= 500) ? <Smartphone className="w-3.5 h-3.5" /> : <Monitor className="w-3.5 h-3.5" />}
+            <span>{(maxWidth && maxWidth <= 500) ? t("view.mobile") : t("view.pc")}</span>
+          </button>
         </div>
 
         {/* Formatting */}
@@ -152,26 +173,22 @@ export default function Ribbon({
           />
         </div>
 
-        {/* Layout Toggle (PC / Mobile) */}
-        <div className="flex items-center gap-0.5 pr-2 border-r border-border/20">
-          <button
-            className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-black/5 dark:bg-white/5 text-[11px] text-muted border border-transparent cursor-pointer transition-colors hover:bg-black/10 dark:hover:bg-white/10",
-              (maxWidth && maxWidth <= 500) && "bg-blue-100 dark:bg-blue-900/30 text-blue-600 border-blue-200 dark:border-blue-800"
-            )}
-            onClick={() => {
-              const isMobile = maxWidth && maxWidth <= 500;
-              useEditorStore.getState().updateSettings({ maxWidth: isMobile ? 816 : 450 });
-            }}
-            title={t("toolbar.tooltip.toggleMobileView")}
-          >
-            {(maxWidth && maxWidth <= 500) ? <Smartphone className="w-3.5 h-3.5" /> : <Monitor className="w-3.5 h-3.5" />}
-            <span>{(maxWidth && maxWidth <= 500) ? t("view.mobile") : t("view.pc")}</span>
-          </button>
-        </div>
-
         {/* 오른쪽 끝: 내보내기 & 설정 */}
         <div className="ml-auto flex items-center gap-0.5">
+          <button
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-black/5 dark:bg-white/5 text-[11px] text-muted border border-transparent transition-colors",
+              onOpenWorldGraph
+                ? "cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 hover:text-fg"
+                : "cursor-not-allowed opacity-50"
+            )}
+            onClick={onOpenWorldGraph}
+            title={t("toolbar.tooltip.openWorldGraph")}
+            disabled={!onOpenWorldGraph}
+          >
+            <Network className="w-3.5 h-3.5" />
+            <span>{t("toolbar.view.graph")}</span>
+          </button>
           <ToolbarButton
             icon={<FileOutput className="w-4 h-4" />}
             onClick={handleExport}

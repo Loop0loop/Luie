@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-02-27T04:57:41.484Z",
+  "generatedAt": "2026-02-27T05:33:44.898Z",
   "summary": {
     "definedChannels": 111,
     "errors": 0,
@@ -861,7 +861,7 @@
     },
     {
       "key": "ENTITY_RELATION_CREATE",
-      "channel": "entity-relation:create",
+      "channel": "world:createRelation",
       "allowlisted": true,
       "usage": {
         "renderer_invoke": [
@@ -892,7 +892,7 @@
     },
     {
       "key": "ENTITY_RELATION_DELETE",
-      "channel": "entity-relation:delete",
+      "channel": "world:deleteRelation",
       "allowlisted": true,
       "usage": {
         "renderer_invoke": [
@@ -923,7 +923,7 @@
     },
     {
       "key": "ENTITY_RELATION_GET_ALL",
-      "channel": "entity-relation:get-all",
+      "channel": "world:getRelations",
       "allowlisted": true,
       "usage": {
         "renderer_invoke": [
@@ -954,7 +954,7 @@
     },
     {
       "key": "ENTITY_RELATION_UPDATE",
-      "channel": "entity-relation:update",
+      "channel": "world:updateRelation",
       "allowlisted": true,
       "usage": {
         "renderer_invoke": [
@@ -3368,7 +3368,7 @@
     },
     {
       "key": "WORLD_GRAPH_GET",
-      "channel": "world-graph:get",
+      "channel": "world:getGraph",
       "allowlisted": true,
       "usage": {
         "renderer_invoke": [

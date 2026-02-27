@@ -31,6 +31,7 @@ interface EditorProps {
   scrollable?: boolean; // New prop
   focusMode?: boolean; // New prop for Focus Mode features
   onEditorReady?: (editor: TiptapEditor | null) => void;
+  onOpenWorldGraph?: () => void;
 }
 
 function Editor({
@@ -47,6 +48,7 @@ function Editor({
   scrollable = true, // Default true (for Default/Split layout)
   focusMode = false,
   onEditorReady,
+  onOpenWorldGraph,
 }: EditorProps) {
   const { t } = useTranslation();
   const dialog = useDialog();
@@ -160,6 +162,7 @@ function Editor({
               editor={editor}
               isMobileView={isMobileView}
               onToggleMobileView={() => setIsMobileView(!isMobileView)}
+              onOpenWorldGraph={onOpenWorldGraph}
             />
           )}
         </div>

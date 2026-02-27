@@ -37,6 +37,7 @@ export const jaWorkspace = {
       "orderedList": "番号付きリスト",
       "addComment": "コメントを追加",
       "toggleMobileView": "モバイル表示を切替",
+      "openWorldGraph": "ワールドグラフを開く",
       "view": {
         "mobile": "モバイル表示",
         "desktop": "PC表示"
@@ -44,7 +45,8 @@ export const jaWorkspace = {
     },
     "view": {
       "mobile": "モバイル",
-      "desktop": "PC"
+      "desktop": "PC",
+      "graph": "グラフ"
     }
   },
   "textEditor": {
