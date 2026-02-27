@@ -61,33 +61,32 @@ export const isWorldEntityBackedType = (entityType: WorldEntitySourceType): bool
   WORLD_ENTITY_BACKED_TYPES.has(entityType);
 
 export const isRelationAllowed = (
-  relation: RelationKind,
-  sourceType: WorldEntitySourceType,
-  targetType: WorldEntitySourceType,
+  _relation: RelationKind,
+  _sourceType: WorldEntitySourceType,
+  _targetType: WorldEntitySourceType,
 ): boolean => {
-  const source = normalizeEntityType(sourceType);
-  const target = normalizeEntityType(targetType);
-
-  // Keep backward compatibility for legacy records.
-  if (source === "legacy" || target === "legacy") {
-    return true;
-  }
-
-  const rule = RELATION_RULES[relation];
-  return rule.sources.includes(source) && rule.targets.includes(target);
+  // Allow freeform connections to avoid disrupting the user's flow
+  return true;
 };
 
 export const getDefaultRelationForPair = (
   sourceType: WorldEntitySourceType,
   targetType: WorldEntitySourceType,
-): RelationKind | null => {
+): RelationKind => {
+  const source = normalizeEntityType(sourceType);
+  const target = normalizeEntityType(targetType);
+
   const relationKinds = Object.keys(RELATION_RULES) as RelationKind[];
   for (const kind of relationKinds) {
-    if (isRelationAllowed(kind, sourceType, targetType)) {
+    const rule = RELATION_RULES[kind];
+    if (
+      (source === "legacy" || rule.sources.includes(source as CanonicalEntityType)) &&
+      (target === "legacy" || rule.targets.includes(target as CanonicalEntityType))
+    ) {
       return kind;
     }
   }
-  return null;
+  return "belongs_to"; // Default fallback instead of returning null
 };
 
 export const WORLD_RELATION_RULES = RELATION_RULES;

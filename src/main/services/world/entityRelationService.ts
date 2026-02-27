@@ -68,6 +68,23 @@ function parseAttributes(raw: string | null | undefined): WorldEntityAttributes 
     }
 }
 
+function toEntityRelation(row: RawRow): EntityRelation {
+    return {
+        id: row.id,
+        projectId: String(row.projectId ?? ""),
+        sourceId: String(row.sourceId ?? ""),
+        sourceType: (row.sourceType ?? "Character") as WorldEntitySourceType,
+        targetId: String(row.targetId ?? ""),
+        targetType: (row.targetType ?? "Character") as WorldEntitySourceType,
+        relation: (row.relation ?? "belongs_to") as RelationKind,
+        attributes: parseAttributes(row.attributes),
+        sourceWorldEntityId: (row.sourceWorldEntityId as string | null | undefined) ?? null,
+        targetWorldEntityId: (row.targetWorldEntityId as string | null | undefined) ?? null,
+        createdAt: (row.createdAt as string | Date) ?? new Date(),
+        updatedAt: (row.updatedAt as string | Date) ?? new Date(),
+    };
+}
+
 export class EntityRelationService {
     async createRelation(input: EntityRelationCreateInput) {
         try {
@@ -99,7 +116,7 @@ export class EntityRelationService {
 
             logger.info("Entity relation created", { relationId: relation.id });
             projectService.schedulePackageExport(input.projectId, "entity-relation:create");
-            return relation;
+            return toEntityRelation(relation as RawRow);
         } catch (error) {
             logger.error("Failed to create entity relation", error);
             throw new ServiceError(
@@ -118,7 +135,7 @@ export class EntityRelationService {
                 orderBy: { createdAt: "asc" },
             });
 
-            return relations;
+            return relations.map((relation) => toEntityRelation(relation as RawRow));
         } catch (error) {
             logger.error("Failed to get all entity relations", error);
             throw new ServiceError(
@@ -177,7 +194,7 @@ export class EntityRelationService {
 
             logger.info("Entity relation updated", { relationId: relation.id });
             projectService.schedulePackageExport(String(current.projectId), "entity-relation:update");
-            return relation;
+            return toEntityRelation(relation as RawRow);
         } catch (error) {
             logger.error("Failed to update entity relation", error);
             if (isPrismaNotFoundError(error)) {

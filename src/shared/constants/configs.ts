@@ -86,6 +86,22 @@ export const DEFAULT_EDITOR_THEME_TEXTURE = true;
 export const EDITOR_TOOLBAR_FONT_STEP = 1
 export const EDITOR_TOOLBAR_FONT_MIN = 10
 
+// Editor layout/ruler geometry
+export const INCH_PX = 96
+export const EDITOR_A4_PAGE_WIDTH_PX = 794
+export const EDITOR_A4_PAGE_HEIGHT_PX = 1123
+export const EDITOR_RULER_HEIGHT_PX = 24
+export const EDITOR_RULER_DEFAULT_MARGIN_LEFT_PX = INCH_PX
+export const EDITOR_RULER_DEFAULT_MARGIN_RIGHT_PX = INCH_PX
+export const EDITOR_PAGE_VERTICAL_PADDING_PX = INCH_PX
+export const EDITOR_RULER_MIN_MARGIN_PX = 24
+export const EDITOR_RULER_MIN_BODY_WIDTH_PX = 200
+export const EDITOR_WINDOW_BAR_HEIGHT_PX = 40
+
+// Interaction timings
+export const SIDEBAR_RESIZE_COMMIT_IDLE_MS = 140
+export const TERM_DRAG_COMMIT_TIMEOUT_MS = 8000
+
 export const EDITOR_FONT_FAMILIES = ['serif', 'sans', 'mono'] as const
 export const EDITOR_FONT_PRESETS = [
 	'default',

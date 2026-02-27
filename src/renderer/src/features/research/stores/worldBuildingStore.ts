@@ -193,8 +193,8 @@ interface WorldBuildingState {
   deleteWorldEntity: (id: string) => Promise<void>;
 
   createRelation: (input: EntityRelationCreateInput) => Promise<EntityRelation | null>;
-  updateRelation: (input: EntityRelationUpdateInput) => Promise<void>;
-  deleteRelation: (id: string) => Promise<void>;
+  updateRelation: (input: EntityRelationUpdateInput) => Promise<boolean>;
+  deleteRelation: (id: string) => Promise<boolean>;
 }
 
 export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
@@ -491,7 +491,7 @@ export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
 
   updateRelation: async (input) => {
     const res = await api.entityRelation.update(input);
-    if (!res.success || !res.data) return;
+    if (!res.success || !res.data) return false;
     const updated = res.data;
 
     set((state) => ({
@@ -502,11 +502,12 @@ export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
           }
         : null,
     }));
+    return true;
   },
 
   deleteRelation: async (id) => {
     const res = await api.entityRelation.delete(id);
-    if (!res.success) return;
+    if (!res.success) return false;
 
     set((state) => ({
       graphData: state.graphData
@@ -517,6 +518,7 @@ export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
         : null,
       selectedEdgeId: state.selectedEdgeId === id ? null : state.selectedEdgeId,
     }));
+    return true;
   },
 }));
 

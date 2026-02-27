@@ -4,6 +4,7 @@ import {
   clampSidebarWidth,
   type SidebarWidthFeature,
 } from "@shared/constants/sidebarSizing";
+import { SIDEBAR_RESIZE_COMMIT_IDLE_MS } from "@shared/constants/configs";
 
 type SidebarWidthSetter = (feature: string, width: number) => void;
 
@@ -11,14 +12,12 @@ type UseSidebarResizeCommitOptions = {
   idleMs?: number;
 };
 
-const DEFAULT_IDLE_MS = 140;
-
 export function useSidebarResizeCommit(
   feature: SidebarWidthFeature,
   setSidebarWidth: SidebarWidthSetter,
   options?: UseSidebarResizeCommitOptions,
 ) {
-  const idleMs = options?.idleMs ?? DEFAULT_IDLE_MS;
+  const idleMs = options?.idleMs ?? SIDEBAR_RESIZE_COMMIT_IDLE_MS;
   const pendingWidthRef = useRef<number | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastCommittedWidthRef = useRef<number | null>(null);

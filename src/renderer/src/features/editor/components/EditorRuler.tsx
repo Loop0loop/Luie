@@ -1,14 +1,14 @@
 import React, { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-
-// A4 @ 96 DPI
-const PAGE_WIDTH_PX = 794;
-const DEFAULT_MARGIN_LEFT = 96; // 1 inch
-const DEFAULT_MARGIN_RIGHT = 96; // 1 inch
-const INCH_PX = 96; // 1 inch = 96px at 96 DPI
-const RULER_HEIGHT = 24;
-const MIN_MARGIN = 24; // Minimum margin ~0.25 inch
-const MIN_BODY_WIDTH = 200; // Minimum content area width
+import {
+  EDITOR_A4_PAGE_WIDTH_PX,
+  EDITOR_RULER_DEFAULT_MARGIN_LEFT_PX,
+  EDITOR_RULER_DEFAULT_MARGIN_RIGHT_PX,
+  EDITOR_RULER_HEIGHT_PX,
+  EDITOR_RULER_MIN_BODY_WIDTH_PX,
+  EDITOR_RULER_MIN_MARGIN_PX,
+  INCH_PX,
+} from "@shared/constants/configs";
 
 interface EditorRulerProps {
   onMarginsChange?: (margins: { left: number; right: number; firstLineIndent: number }) => void;
@@ -16,8 +16,8 @@ interface EditorRulerProps {
 
 export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
   const { t } = useTranslation();
-  const [leftMargin, setLeftMargin] = useState(DEFAULT_MARGIN_LEFT);
-  const [rightMargin, setRightMargin] = useState(DEFAULT_MARGIN_RIGHT);
+  const [leftMargin, setLeftMargin] = useState(EDITOR_RULER_DEFAULT_MARGIN_LEFT_PX);
+  const [rightMargin, setRightMargin] = useState(EDITOR_RULER_DEFAULT_MARGIN_RIGHT_PX);
   const [firstLineIndent, setFirstLineIndent] = useState(0);
 
   const rulerRef = useRef<HTMLDivElement>(null);
@@ -52,23 +52,26 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
 
         if (draggingRef.current === "left") {
           const newVal = Math.max(
-            MIN_MARGIN,
-            Math.min(PAGE_WIDTH_PX - rightMargin - MIN_BODY_WIDTH, startValueRef.current + delta),
+            EDITOR_RULER_MIN_MARGIN_PX,
+            Math.min(EDITOR_A4_PAGE_WIDTH_PX - rightMargin - EDITOR_RULER_MIN_BODY_WIDTH_PX, startValueRef.current + delta),
           );
           setLeftMargin(newVal);
           notifyChange(newVal, rightMargin, firstLineIndent);
         } else if (draggingRef.current === "right") {
           // Right margin: dragging right = less margin, dragging left = more margin
           const newVal = Math.max(
-            MIN_MARGIN,
-            Math.min(PAGE_WIDTH_PX - leftMargin - MIN_BODY_WIDTH, startValueRef.current - delta),
+            EDITOR_RULER_MIN_MARGIN_PX,
+            Math.min(EDITOR_A4_PAGE_WIDTH_PX - leftMargin - EDITOR_RULER_MIN_BODY_WIDTH_PX, startValueRef.current - delta),
           );
           setRightMargin(newVal);
           notifyChange(leftMargin, newVal, firstLineIndent);
         } else {
           // firstLine is relative to leftMargin
-          const maxFLI = PAGE_WIDTH_PX - leftMargin - rightMargin - 48;
-          const newVal = Math.max(-leftMargin + MIN_MARGIN, Math.min(maxFLI, startValueRef.current + delta));
+          const maxFLI = EDITOR_A4_PAGE_WIDTH_PX - leftMargin - rightMargin - 48;
+          const newVal = Math.max(
+            -leftMargin + EDITOR_RULER_MIN_MARGIN_PX,
+            Math.min(maxFLI, startValueRef.current + delta),
+          );
           setFirstLineIndent(newVal);
           notifyChange(leftMargin, rightMargin, newVal);
         }
@@ -93,13 +96,13 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
     const ticks: React.ReactNode[] = [];
     const quarterInch = INCH_PX / 4; // 24px
 
-    for (let px = 0; px <= PAGE_WIDTH_PX; px += quarterInch) {
+    for (let px = 0; px <= EDITOR_A4_PAGE_WIDTH_PX; px += quarterInch) {
       const inchIdx = px / INCH_PX;
       const isInch = Math.abs(inchIdx - Math.round(inchIdx)) < 0.01;
       const isHalf = Math.abs((px % INCH_PX) - INCH_PX / 2) < 1;
       const height = isInch ? 10 : isHalf ? 7 : 4;
 
-      const isInMargin = px < leftMargin || px > PAGE_WIDTH_PX - rightMargin;
+      const isInMargin = px < leftMargin || px > EDITOR_A4_PAGE_WIDTH_PX - rightMargin;
 
       ticks.push(
         <div
@@ -118,7 +121,7 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
       );
 
       // Numbers at every inch (skip 0)
-      if (isInch && px > 0 && px < PAGE_WIDTH_PX) {
+      if (isInch && px > 0 && px < EDITOR_A4_PAGE_WIDTH_PX) {
         const inchNum = Math.round(inchIdx);
         ticks.push(
           <div
@@ -144,13 +147,13 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
     return ticks;
   };
 
-  const rightEdge = PAGE_WIDTH_PX - rightMargin;
+  const rightEdge = EDITOR_A4_PAGE_WIDTH_PX - rightMargin;
 
   return (
     <div
       ref={rulerRef}
       className="relative bg-background select-none overflow-visible text-xs"
-      style={{ width: PAGE_WIDTH_PX, height: RULER_HEIGHT }}
+      style={{ width: EDITOR_A4_PAGE_WIDTH_PX, height: EDITOR_RULER_HEIGHT_PX }}
     >
       {/* Gray backgrounds for margins */}
       <div

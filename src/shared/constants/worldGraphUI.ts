@@ -12,6 +12,15 @@ import {
 } from "lucide-react";
 import type { WorldEntitySourceType } from "@shared/types";
 
+export const WORLD_GRAPH_FALLBACK_COLUMNS = 4;
+export const WORLD_GRAPH_FALLBACK_X_STEP_PX = 280;
+export const WORLD_GRAPH_FALLBACK_Y_STEP_PX = 180;
+export const WORLD_GRAPH_CREATE_MENU_WIDTH_PX = 220;
+export const WORLD_GRAPH_CREATE_MENU_HEIGHT_PX = 340;
+export const WORLD_GRAPH_NODE_MENU_WIDTH_PX = 180;
+export const WORLD_GRAPH_NODE_MENU_HEIGHT_PX = 110;
+export const WORLD_GRAPH_MENU_MARGIN_PX = 8;
+
 // 아이콘 매핑
 export const WORLD_GRAPH_ICON_MAP: Record<WorldEntitySourceType | string, LucideIcon> = {
     Character: User,

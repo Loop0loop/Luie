@@ -17,6 +17,10 @@ import { useEditorExtensions } from "@renderer/features/editor/components/hooks/
 import { useSmartLinkClickHandler } from "@renderer/features/editor/components/hooks/useSmartLinkClickHandler";
 import { useTypewriterScroll } from "@renderer/features/editor/components/hooks/useTypewriterScroll";
 import StatusFooter from "@shared/ui/StatusFooter";
+import { EditorSyncBus } from "@renderer/features/workspace/utils/EditorSyncBus";
+import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
+import { useTermStore } from "@renderer/features/research/stores/termStore";
+import type { Character, Term } from "@shared/types";
 
 interface EditorProps {
   initialTitle?: string;
@@ -101,6 +105,29 @@ function Editor({
 
         updateStats(text);
       },
+      onSelectionUpdate: ({ editor }) => {
+        const { from } = editor.state.selection;
+        const $pos = editor.state.doc.resolve(from);
+
+        // Find the node around the cursor
+        const node = $pos.nodeAfter || $pos.nodeBefore || $pos.parent;
+        if (node && (node.isText || node.textContent)) {
+          const text = node.textContent || "";
+          const charStore = useCharacterStore.getState();
+          const termStore = useTermStore.getState();
+
+          const char = charStore.characters.find((c: Character) => text.includes(c.name));
+          if (char) {
+            EditorSyncBus.emit("FOCUS_ENTITY", { entityId: char.id });
+            return;
+          }
+          const term = termStore.terms.find((termItem: Term) => text.includes(termItem.term));
+          if (term) {
+            EditorSyncBus.emit("FOCUS_ENTITY", { entityId: term.id });
+            return;
+          }
+        }
+      },
       editorProps: {
         attributes: {
           class: "tiptap flex-1 flex flex-col outline-none h-full",
@@ -119,6 +146,42 @@ function Editor({
       onEditorReady(editor);
     }
   }, [editor, onEditorReady]);
+
+  // Handle JUMP_TO_MENTION from World Graph
+  useEffect(() => {
+    if (!editor) return;
+    const handleJump = (payload: { entityId: string }) => {
+      const charStore = useCharacterStore.getState();
+      const termStore = useTermStore.getState();
+      const char = charStore.characters.find((item: Character) => item.id === payload.entityId);
+      const term = termStore.terms.find((item: Term) => item.id === payload.entityId);
+      // Note: Factions/Events/Places etc might need to be resolved via worldEntity store
+      // but for now characters and terms are the main searchable entities.
+      const name = char?.name || term?.term;
+
+      if (name) {
+        const docText = editor.getText();
+        const normalizedText = docText.toLowerCase();
+        const normalizedQuery = name.toLowerCase().trim();
+        const index = normalizedQuery.length > 0 ? normalizedText.indexOf(normalizedQuery) : -1;
+
+        if (index >= 0) {
+          editor.commands.focus();
+          editor.commands.setTextSelection({
+            from: index + 1, // Tiptap ranges generally start around 1 for text depending on node structure, but we do our best estimate here.
+            to: index + normalizedQuery.length + 1,
+          });
+          setTimeout(() => {
+            if (editor.view) {
+              editor.view.dispatch(editor.state.tr.scrollIntoView());
+            }
+          }, 50);
+        }
+      }
+    };
+    EditorSyncBus.on("JUMP_TO_MENTION", handleJump);
+    return () => EditorSyncBus.off("JUMP_TO_MENTION", handleJump);
+  }, [editor]);
 
   // ... (Diff effect) ...
   useEffect(() => {

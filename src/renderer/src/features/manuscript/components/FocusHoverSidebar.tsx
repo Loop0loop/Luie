@@ -1,5 +1,6 @@
 import { type ReactNode, useState, useRef, useEffect } from "react";
 import { cn } from "@shared/types/utils";
+import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@shared/constants/configs";
 
 interface FocusHoverSidebarProps {
   children: ReactNode;
@@ -21,7 +22,7 @@ export default function FocusHoverSidebar({
   children,
   className,
   side = "left",
-  topOffset = 40,
+  topOffset = EDITOR_WINDOW_BAR_HEIGHT_PX,
   isResizing = false,
   forceOpen = false,
   triggerWidthPx = 10,

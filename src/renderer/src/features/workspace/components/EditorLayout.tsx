@@ -13,6 +13,7 @@ import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { BinderSidebar } from "@renderer/features/manuscript/components/BinderSidebar";
+import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@shared/constants/configs";
 
 interface EditorLayoutProps {
   children?: ReactNode;
@@ -28,8 +29,6 @@ interface EditorLayoutProps {
   additionalPanels?: ReactNode;
   onOpenWorldGraph?: () => void;
 }
-
-const WINDOW_BAR_HEIGHT = 40;
 
 export default function EditorLayout({
   children,
@@ -61,7 +60,7 @@ export default function EditorLayout({
     return () => observer.disconnect();
   }, []);
 
-  const sidebarTopOffset = WINDOW_BAR_HEIGHT + ribbonHeight;
+  const sidebarTopOffset = EDITOR_WINDOW_BAR_HEIGHT_PX + ribbonHeight;
 
   return (
     <div className="flex flex-col h-screen w-screen bg-app text-fg overflow-hidden relative">

@@ -28,6 +28,16 @@ import {
 import type { EntityRelation, WorldEntitySourceType, WorldGraphNode } from "@shared/types";
 import type { WorldViewMode } from "@renderer/features/research/stores/worldBuildingStore";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
+import {
+  WORLD_GRAPH_CREATE_MENU_HEIGHT_PX,
+  WORLD_GRAPH_CREATE_MENU_WIDTH_PX,
+  WORLD_GRAPH_FALLBACK_COLUMNS,
+  WORLD_GRAPH_FALLBACK_X_STEP_PX,
+  WORLD_GRAPH_FALLBACK_Y_STEP_PX,
+  WORLD_GRAPH_MENU_MARGIN_PX,
+  WORLD_GRAPH_NODE_MENU_HEIGHT_PX,
+  WORLD_GRAPH_NODE_MENU_WIDTH_PX,
+} from "@shared/constants/worldGraphUI";
 import { CustomEntityNode } from "./CustomEntityNode";
 
 const nodeTypes = {
@@ -52,15 +62,6 @@ type NodeMenuState = {
   left: number;
   top: number;
 };
-
-const FALLBACK_COLUMNS = 4;
-const FALLBACK_X_STEP = 280;
-const FALLBACK_Y_STEP = 180;
-const CREATE_MENU_WIDTH_PX = 220;
-const CREATE_MENU_HEIGHT_PX = 340;
-const NODE_MENU_WIDTH_PX = 180;
-const NODE_MENU_HEIGHT_PX = 110;
-const MENU_MARGIN_PX = 8;
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, value));
@@ -88,12 +89,12 @@ const getMenuPosition = (
   const rect = container.getBoundingClientRect();
   const localLeft = clientX - rect.left;
   const localTop = clientY - rect.top;
-  const maxLeft = Math.max(MENU_MARGIN_PX, rect.width - width - MENU_MARGIN_PX);
-  const maxTop = Math.max(MENU_MARGIN_PX, rect.height - height - MENU_MARGIN_PX);
+  const maxLeft = Math.max(WORLD_GRAPH_MENU_MARGIN_PX, rect.width - width - WORLD_GRAPH_MENU_MARGIN_PX);
+  const maxTop = Math.max(WORLD_GRAPH_MENU_MARGIN_PX, rect.height - height - WORLD_GRAPH_MENU_MARGIN_PX);
 
   return {
-    left: clamp(localLeft, MENU_MARGIN_PX, maxLeft),
-    top: clamp(localTop, MENU_MARGIN_PX, maxTop),
+    left: clamp(localLeft, WORLD_GRAPH_MENU_MARGIN_PX, maxLeft),
+    top: clamp(localTop, WORLD_GRAPH_MENU_MARGIN_PX, maxTop),
   };
 };
 
@@ -117,14 +118,14 @@ const readAttributePosition = (
 
 const getFallbackPosition = (nodeId: string, index: number): { x: number; y: number } => {
   const hash = hashText(nodeId);
-  const col = hash % FALLBACK_COLUMNS;
-  const row = Math.floor(index / FALLBACK_COLUMNS);
+  const col = hash % WORLD_GRAPH_FALLBACK_COLUMNS;
+  const row = Math.floor(index / WORLD_GRAPH_FALLBACK_COLUMNS);
   const waveOffsetX = row % 2 === 0 ? 0 : 90;
   const jitterX = (hash % 7) * 14 - 42;
   const jitterY = (Math.floor(hash / 7) % 7) * 12 - 36;
   return {
-    x: col * FALLBACK_X_STEP + waveOffsetX + jitterX,
-    y: row * FALLBACK_Y_STEP + jitterY,
+    x: col * WORLD_GRAPH_FALLBACK_X_STEP_PX + waveOffsetX + jitterX,
+    y: row * WORLD_GRAPH_FALLBACK_Y_STEP_PX + jitterY,
   };
 };
 
@@ -155,8 +156,17 @@ function toRFNode(
   };
 }
 
-function toRFEdge(relation: EntityRelation, translate: (key: string, fallback: string) => string): Edge {
+function toRFEdge(relation: EntityRelation, translate: (key: string, fallback: string) => string, viewMode: WorldViewMode): Edge {
   const color = RELATION_COLORS[relation.relation] ?? "#94a3b8";
+
+  let strokeWidth = 2;
+  let isAnimated = relation.relation === "causes" || relation.relation === "controls";
+
+  if (viewMode === "event-chain" && relation.relation === "causes") {
+    strokeWidth = 4;
+    isAnimated = true;
+  }
+
   return {
     id: relation.id,
     source: relation.sourceId,
@@ -164,8 +174,8 @@ function toRFEdge(relation: EntityRelation, translate: (key: string, fallback: s
     label: translate(`world.graph.relationTypes.${relation.relation}`, relation.relation),
     labelStyle: { fontSize: 10, fill: "#94a3b8", fontWeight: 500 },
     labelBgStyle: { fill: "transparent" },
-    style: { stroke: color, strokeWidth: 2 },
-    animated: relation.relation === "causes" || relation.relation === "controls",
+    style: { stroke: color, strokeWidth },
+    animated: isAnimated,
     markerEnd: { type: MarkerType.ArrowClosed, color },
   };
 }
@@ -196,8 +206,8 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
   const rfEdges = useMemo(() => {
     const translate = (key: string, fallback: string) =>
       i18n.t(key, { defaultValue: fallback });
-    return graphEdges.map((edge) => toRFEdge(edge, translate));
-  }, [graphEdges, i18n]);
+    return graphEdges.map((edge) => toRFEdge(edge, translate, viewMode));
+  }, [graphEdges, i18n, viewMode]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(rfNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(rfEdges);
@@ -341,9 +351,34 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
       setCreateMenu(null);
       setNodeMenu(null);
       selectNode(node.id);
+
+      // Notify editor to jump to mention
+      import("@renderer/features/workspace/utils/EditorSyncBus").then(({ EditorSyncBus }) => {
+        EditorSyncBus.emit("JUMP_TO_MENTION", { entityId: node.id });
+      });
     },
     [selectNode],
   );
+
+  // Sync with Editor
+  useEffect(() => {
+    let isMounted = true;
+    import("@renderer/features/workspace/utils/EditorSyncBus").then(({ EditorSyncBus }) => {
+      if (!isMounted) return;
+      const handleFocus = (payload: { entityId: string }) => {
+        selectNode(payload.entityId);
+        if (rfInstance) {
+          const node = rfInstance.getNode(payload.entityId);
+          if (node) {
+            rfInstance.setCenter(node.position.x, node.position.y, { duration: 800, zoom: 1.2 });
+          }
+        }
+      };
+      EditorSyncBus.on("FOCUS_ENTITY", handleFocus);
+      return () => EditorSyncBus.off("FOCUS_ENTITY", handleFocus);
+    });
+    return () => { isMounted = false; };
+  }, [rfInstance, selectNode]);
 
   const onNodeContextMenu: NodeMouseHandler = useCallback(
     (event, node) => {
@@ -353,8 +388,8 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
         canvasRef.current,
         event.clientX,
         event.clientY,
-        NODE_MENU_WIDTH_PX,
-        NODE_MENU_HEIGHT_PX,
+        WORLD_GRAPH_NODE_MENU_WIDTH_PX,
+        WORLD_GRAPH_NODE_MENU_HEIGHT_PX,
       );
       setCreateMenu(null);
       selectNode(node.id);
@@ -395,8 +430,8 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
         canvasRef.current,
         event.clientX,
         event.clientY,
-        CREATE_MENU_WIDTH_PX,
-        CREATE_MENU_HEIGHT_PX,
+        WORLD_GRAPH_CREATE_MENU_WIDTH_PX,
+        WORLD_GRAPH_CREATE_MENU_HEIGHT_PX,
       );
       setCreateMenu({
         flowX: position.x,
@@ -434,16 +469,51 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
     [activeProjectId, createGraphNode, createMenu, showToast, t],
   );
 
+  const adjacentNodeIds = useMemo(() => {
+    if (viewMode !== "protagonist" || !selectedNodeId) return new Set<string>();
+    const adjacent = new Set<string>();
+    edges.forEach((edge) => {
+      if (edge.source === selectedNodeId) adjacent.add(edge.target);
+      if (edge.target === selectedNodeId) adjacent.add(edge.source);
+    });
+    return adjacent;
+  }, [edges, viewMode, selectedNodeId]);
+
   const styledNodes = useMemo(() => {
     if (viewMode !== "protagonist" || !selectedNodeId) return nodes;
-    return nodes.map((node) => ({
-      ...node,
-      style: {
-        ...node.style,
-        opacity: node.id === selectedNodeId ? 1 : 0.35,
-      },
-    }));
-  }, [nodes, viewMode, selectedNodeId]);
+    return nodes.map((node) => {
+      const isSelected = node.id === selectedNodeId;
+      const isAdjacent = adjacentNodeIds.has(node.id);
+
+      let opacity = 0.15;
+      if (isSelected) opacity = 1;
+      else if (isAdjacent) opacity = 0.8;
+
+      return {
+        ...node,
+        style: {
+          ...node.style,
+          opacity,
+          transition: "opacity 0.3s ease",
+        },
+      };
+    });
+  }, [nodes, viewMode, selectedNodeId, adjacentNodeIds]);
+
+  const styledEdges = useMemo(() => {
+    if (viewMode !== "protagonist" || !selectedNodeId) return edges;
+    return edges.map((edge) => {
+      const isConnected = edge.source === selectedNodeId || edge.target === selectedNodeId;
+      return {
+        ...edge,
+        style: {
+          ...edge.style,
+          opacity: isConnected ? 1 : 0.15,
+          transition: "opacity 0.3s ease",
+        },
+      };
+    });
+  }, [edges, viewMode, selectedNodeId]);
 
   const handleFocusNode = useCallback(() => {
     if (!nodeMenu) return;
@@ -474,7 +544,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
     <div ref={canvasRef} style={{ width: "100%", height: "100%" }} className="bg-app relative">
       <ReactFlow
         nodes={styledNodes}
-        edges={edges}
+        edges={styledEdges}
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}

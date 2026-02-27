@@ -3,6 +3,8 @@ import { X, Link as LinkIcon, Trash2, Tag, MapPin, Clock, Star } from "lucide-re
 import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
 import { api } from "@shared/api";
+import { useToast } from "@shared/ui/ToastContext";
+import { useDialog } from "@shared/ui/useDialog";
 import type { RelationKind, WorldGraphMention } from "@shared/types";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { requestChapterNavigation } from "@renderer/features/workspace/services/chapterNavigation";
@@ -18,6 +20,8 @@ const RELATION_KINDS: RelationKind[] = [
 
 export function WorldInspector() {
   const { t } = useTranslation();
+  const { showToast } = useToast();
+  const dialog = useDialog();
   const graphData = useWorldBuildingStore((state) => state.graphData);
   const activeProjectId = useWorldBuildingStore((state) => state.activeProjectId);
   const selectedNodeId = useWorldBuildingStore((state) => state.selectedNodeId);
@@ -149,25 +153,50 @@ export function WorldInspector() {
 
   const handleDeleteNode = useCallback(async () => {
     if (!selectedNode) return;
-    if (!window.confirm(t("world.graph.inspector.deleteNodeConfirm", { name: selectedNode.name }))) {
+    const confirmed = await dialog.confirm({
+      title: t("world.graph.inspector.deleteNode", { defaultValue: "Delete node" }),
+      message: t("world.graph.inspector.deleteNodeConfirm", { name: selectedNode.name }),
+      isDestructive: true,
+    });
+    if (!confirmed) {
       return;
     }
     await deleteGraphNode(selectedNode.id);
-  }, [deleteGraphNode, selectedNode, t]);
+  }, [deleteGraphNode, dialog, selectedNode, t]);
 
-  const [editRelation, setEditRelation] = useState<RelationKind | null>(null);
+  const [editState, setEditState] = useState<{ edgeId: string; relation: RelationKind } | null>(null);
+  const editRelation =
+    editState && selectedEdgeId && editState.edgeId === selectedEdgeId ? editState.relation : null;
 
   const saveRelation = useCallback(async () => {
-    if (!selectedEdge || !editRelation) return;
-    await updateRelation({ id: selectedEdge.id, relation: editRelation });
-    setEditRelation(null);
-  }, [selectedEdge, editRelation, updateRelation]);
+    if (!selectedEdge || !editState || editState.edgeId !== selectedEdge.id) return;
+    const updated = await updateRelation({ id: selectedEdge.id, relation: editState.relation });
+    if (!updated) {
+      showToast(
+        t("world.graph.inspector.updateRelationFailed", {
+          defaultValue: "Failed to update relation",
+        }),
+        "error",
+      );
+      return;
+    }
+    setEditState(null);
+  }, [editState, selectedEdge, showToast, t, updateRelation]);
 
   const handleDeleteRelation = useCallback(async () => {
     if (!selectedEdge) return;
-    await deleteRelation(selectedEdge.id);
+    const deleted = await deleteRelation(selectedEdge.id);
+    if (!deleted) {
+      showToast(
+        t("world.graph.inspector.deleteRelationFailed", {
+          defaultValue: "Failed to delete relation",
+        }),
+        "error",
+      );
+      return;
+    }
     selectEdge(null);
-  }, [deleteRelation, selectEdge, selectedEdge]);
+  }, [deleteRelation, selectEdge, selectedEdge, showToast, t]);
 
   const handleOpenMention = useCallback((mention: WorldGraphMention) => {
     requestChapterNavigation({
@@ -371,7 +400,7 @@ export function WorldInspector() {
 
             {editRelation === null ? (
               <button
-                onClick={() => setEditRelation(selectedEdge.relation)}
+                onClick={() => setEditState({ edgeId: selectedEdge.id, relation: selectedEdge.relation })}
                 className="flex justify-center items-center gap-1.5 px-4 py-2 rounded-lg border border-border bg-element text-fg text-xs font-bold hover:bg-element-hover transition-all"
               >
                 {t("world.graph.inspector.changeRelation")}
@@ -385,7 +414,16 @@ export function WorldInspector() {
                   {RELATION_KINDS.map((kind) => (
                     <button
                       key={kind}
-                      onClick={() => setEditRelation(kind)}
+                      onClick={() =>
+                        setEditState((previous) =>
+                          previous
+                            ? {
+                                ...previous,
+                                relation: kind,
+                              }
+                            : previous,
+                        )
+                      }
                       className={cn(
                         "px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 border",
                         editRelation === kind
@@ -405,7 +443,7 @@ export function WorldInspector() {
                     {t("world.graph.inspector.save")}
                   </button>
                   <button
-                    onClick={() => setEditRelation(null)}
+                    onClick={() => setEditState(null)}
                     className="flex-1 bg-element text-fg text-xs font-medium py-2 rounded-md border border-border hover:bg-element-hover transition-colors"
                   >
                     {t("world.graph.inspector.cancel")}

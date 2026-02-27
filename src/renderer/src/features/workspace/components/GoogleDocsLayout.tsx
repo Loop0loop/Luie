@@ -28,6 +28,13 @@ import {
   getSidebarWidthConfig,
   toPxSize,
 } from "@shared/constants/sidebarSizing";
+import {
+  EDITOR_A4_PAGE_HEIGHT_PX,
+  EDITOR_A4_PAGE_WIDTH_PX,
+  EDITOR_PAGE_VERTICAL_PADDING_PX,
+  EDITOR_RULER_DEFAULT_MARGIN_LEFT_PX,
+  EDITOR_RULER_DEFAULT_MARGIN_RIGHT_PX,
+} from "@shared/constants/configs";
 import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
 import {
   Menu,
@@ -77,7 +84,11 @@ export default function GoogleDocsLayout({
 }: GoogleDocsLayoutProps) {
   const { t } = useTranslation();
   const [trashRefreshKey, setTrashRefreshKey] = useState(0);
-  const [pageMargins, setPageMargins] = useState({ left: 96, right: 96, firstLineIndent: 0 });
+  const [pageMargins, setPageMargins] = useState({
+    left: EDITOR_RULER_DEFAULT_MARGIN_LEFT_PX,
+    right: EDITOR_RULER_DEFAULT_MARGIN_RIGHT_PX,
+    firstLineIndent: 0,
+  });
 
   const {
     isSidebarOpen,
@@ -289,11 +300,12 @@ export default function GoogleDocsLayout({
                     </div>
 
                     <div
-                      className="mb-8 bg-background min-h-[1123px] transition-all duration-200 ease-in-out relative flex flex-col box-border shadow-md border border-border"
+                      className="mb-8 bg-background transition-all duration-200 ease-in-out relative flex flex-col box-border shadow-md border border-border"
                       style={{
-                        width: '794px',
-                        paddingTop: '96px',
-                        paddingBottom: '96px',
+                        width: `${EDITOR_A4_PAGE_WIDTH_PX}px`,
+                        minHeight: `${EDITOR_A4_PAGE_HEIGHT_PX}px`,
+                        paddingTop: `${EDITOR_PAGE_VERTICAL_PADDING_PX}px`,
+                        paddingBottom: `${EDITOR_PAGE_VERTICAL_PADDING_PX}px`,
                         paddingLeft: `${pageMargins.left}px`,
                         paddingRight: `${pageMargins.right}px`,
                         color: "var(--editor-text, var(--text-primary))"

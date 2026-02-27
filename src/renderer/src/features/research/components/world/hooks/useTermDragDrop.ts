@@ -13,6 +13,7 @@ import { useTermStore } from "@renderer/features/research/stores/termStore";
 import { useToast } from "@shared/ui/ToastContext";
 import { useTranslation } from "react-i18next";
 import { api } from "@shared/api";
+import { TERM_DRAG_COMMIT_TIMEOUT_MS } from "@shared/constants/configs";
 import {
   buildTermOrderUpdates,
   cancelCommitTimeout,
@@ -25,8 +26,6 @@ import {
 interface UseTermDragDropProps {
   terms: Term[];
 }
-
-const COMMIT_TIMEOUT_MS = 8000;
 
 export function useTermDragDrop({ terms }: UseTermDragDropProps) {
   const { loadTerms } = useTermStore();
@@ -79,7 +78,7 @@ export function useTermDragDrop({ terms }: UseTermDragDropProps) {
       clearCommitTimeout();
       commitTimeoutRef.current = startCommitTimeout(
         window.setTimeout,
-        COMMIT_TIMEOUT_MS,
+        TERM_DRAG_COMMIT_TIMEOUT_MS,
         () => {
           if (requestIdRef.current !== requestId) return;
           setTemporaryOrder(previousOrder);
