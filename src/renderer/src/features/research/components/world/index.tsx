@@ -1,6 +1,6 @@
 
 import { useTranslation } from "react-i18next";
-import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { useUIStore, type WorldTab } from "@renderer/features/workspace/stores/uiStore";
 import { useWorldBuildingStore, type WorldViewMode } from "@renderer/features/research/stores/worldBuildingStore";
 import TabButton from "@shared/ui/TabButton";
 
@@ -15,90 +15,82 @@ interface WorldSectionProps {
   worldId?: string;
 }
 
+const WORLD_TAB_ITEMS: Array<{ key: WorldTab; labelKey: string }> = [
+  { key: "terms", labelKey: "world.tab.terms" },
+  { key: "synopsis", labelKey: "world.tab.synopsis" },
+  { key: "mindmap", labelKey: "world.tab.mindmap" },
+  { key: "drawing", labelKey: "world.tab.drawing" },
+  { key: "plot", labelKey: "world.tab.plot" },
+  { key: "graph", labelKey: "world.tab.graph" },
+];
+
+const VIEW_MODE_LABEL_KEY: Record<WorldViewMode, string> = {
+  standard: "world.graph.mode.standard",
+  protagonist: "world.graph.mode.protagonist",
+  "event-chain": "world.graph.mode.eventChain",
+  freeform: "world.graph.mode.freeform",
+};
+
 export default function WorldSection({ worldId }: WorldSectionProps) {
   const { t } = useTranslation();
-  const { worldTab, setWorldTab } = useUIStore();
-  const { viewMode, setViewMode, suggestedMode, dismissSuggestion } = useWorldBuildingStore();
+  const worldTab = useUIStore((state) => state.worldTab);
+  const setWorldTab = useUIStore((state) => state.setWorldTab);
+  const viewMode = useWorldBuildingStore((state) => state.viewMode);
+  const setViewMode = useWorldBuildingStore((state) => state.setViewMode);
+  const suggestedMode = useWorldBuildingStore((state) => state.suggestedMode);
+  const dismissSuggestion = useWorldBuildingStore((state) => state.dismissSuggestion);
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div className="flex w-full bg-sidebar border-b border-border shrink-0 text-muted select-none">
-        <TabButton
-          label={t("world.tab.terms")}
-          active={worldTab === "terms"}
-          onClick={() => setWorldTab("terms")}
-          className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
-          activeClassName="text-accent font-semibold border-b-2 border-accent"
-        />
-        <TabButton
-          label={t("world.tab.synopsis")}
-          active={worldTab === "synopsis"}
-          onClick={() => setWorldTab("synopsis")}
-          className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
-          activeClassName="text-accent font-semibold border-b-2 border-accent"
-        />
-        <TabButton
-          label={t("world.tab.mindmap")}
-          active={worldTab === "mindmap"}
-          onClick={() => setWorldTab("mindmap")}
-          className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
-          activeClassName="text-accent font-semibold border-b-2 border-accent"
-        />
-        <TabButton
-          label={t("world.tab.drawing")}
-          active={worldTab === "drawing"}
-          onClick={() => setWorldTab("drawing")}
-          className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
-          activeClassName="text-accent font-semibold border-b-2 border-accent"
-        />
-        <TabButton
-          label={t("world.tab.plot")}
-          active={worldTab === "plot"}
-          onClick={() => setWorldTab("plot")}
-          className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
-          activeClassName="text-accent font-semibold border-b-2 border-accent"
-        />
-        <TabButton
-          label="세계관 그래프"
-          active={worldTab === "graph"}
-          onClick={() => setWorldTab("graph")}
-          className="flex-1 py-1.5 text-xs text-center cursor-pointer font-medium hover:text-fg hover:bg-element-hover transition-colors font-sans"
-          activeClassName="text-accent font-semibold border-b-2 border-accent"
-        />
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex w-full shrink-0 select-none border-b border-border bg-sidebar text-muted">
+        {WORLD_TAB_ITEMS.map((item) => (
+          <TabButton
+            key={item.key}
+            label={t(item.labelKey)}
+            active={worldTab === item.key}
+            onClick={() => setWorldTab(item.key)}
+            className="flex-1 cursor-pointer py-1.5 text-center text-xs font-medium font-sans transition-colors hover:bg-element-hover hover:text-fg"
+            activeClassName="border-b-2 border-accent text-accent font-semibold"
+          />
+        ))}
 
         {/* View Mode Switcher (Shown only when in Graph Tab) */}
         {worldTab === "graph" && (
-          <div className="flex items-center gap-1 ml-auto mr-2 pl-4 border-l border-border">
+          <div className="ml-auto mr-2 flex items-center gap-1 border-l border-border pl-4">
             {suggestedMode && (
-              <div className="flex items-center gap-2 mr-2 px-2 py-1 bg-accent/15 border border-accent/40 rounded text-[10px] text-fg">
-                <span>추천: {
-                  { standard: "표준", protagonist: "주인공", "event-chain": "사건", freeform: "자유형" }[suggestedMode]
-                }</span>
+              <div className="mr-2 flex items-center gap-2 rounded border border-accent/40 bg-accent/15 px-2 py-1 text-[10px] text-fg">
+                <span>
+                  {t("world.graph.suggestionPrefix")}: {t(VIEW_MODE_LABEL_KEY[suggestedMode])}
+                </span>
                 <button
                   type="button"
                   onClick={() => setViewMode(suggestedMode)}
-                  className="px-1.5 rounded bg-accent text-white hover:opacity-85"
+                  className="rounded bg-accent px-1.5 text-white hover:opacity-85"
                 >
-                  수락
+                  {t("world.graph.suggestionApply")}
                 </button>
-                <button type="button" onClick={dismissSuggestion} className="text-muted hover:text-fg">✕</button>
+                <button
+                  type="button"
+                  onClick={dismissSuggestion}
+                  className="text-muted hover:text-fg"
+                >
+                  ✕
+                </button>
               </div>
             )}
             {(["standard", "protagonist", "event-chain", "freeform"] as WorldViewMode[]).map((mode) => {
-              const labels: Record<WorldViewMode, string> = {
-                standard: "표준",
-                protagonist: "주인공",
-                "event-chain": "사건",
-                freeform: "자유형",
-              };
               return (
                 <button
                   key={mode}
                   type="button"
                   onClick={() => setViewMode(mode)}
-                  className={`px-2.5 py-1 text-[10px] rounded shrink-0 transition-colors font-medium border ${viewMode === mode ? "bg-accent text-white border-accent" : "bg-transparent text-muted border-transparent hover:bg-element-hover hover:text-fg"}`}
+                  className={`shrink-0 rounded border px-2.5 py-1 text-[10px] font-medium transition-colors ${
+                    viewMode === mode
+                      ? "border-accent bg-accent text-white"
+                      : "border-transparent bg-transparent text-muted hover:bg-element-hover hover:text-fg"
+                  }`}
                 >
-                  {labels[mode]}
+                  {t(VIEW_MODE_LABEL_KEY[mode])}
                 </button>
               );
             })}
@@ -106,7 +98,7 @@ export default function WorldSection({ worldId }: WorldSectionProps) {
         )}
       </div>
 
-      <div style={{ flex: 1, overflow: "hidden" }}>
+      <div className="min-h-0 flex-1 overflow-hidden">
         {worldTab === "terms" && <TermManager termId={worldId} />}
         {worldTab === "synopsis" && <SynopsisEditor />}
         {worldTab === "mindmap" && <MindMapBoard />}

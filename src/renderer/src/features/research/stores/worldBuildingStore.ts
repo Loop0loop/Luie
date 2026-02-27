@@ -4,6 +4,7 @@
  */
 
 import { create } from "zustand";
+import { useMemo } from "react";
 import { api } from "@shared/api";
 import type {
     WorldGraphData,
@@ -14,7 +15,6 @@ import type {
     WorldEntityUpdatePositionInput,
     EntityRelationCreateInput,
     EntityRelationUpdateInput,
-    WorldEntitySourceType,
     RelationKind,
 } from "@shared/types";
 
@@ -25,14 +25,14 @@ export type WorldViewMode = "standard" | "protagonist" | "event-chain" | "freefo
 // ─── 필터 상태 ───────────────────────────────────────────────────────────────
 
 export interface WorldFilter {
-    entityTypes: WorldEntitySourceType[];
+    entityTypes: string[];
     relationKinds: RelationKind[];
     searchQuery: string;
     tags: string[];
 }
 
 const DEFAULT_FILTER: WorldFilter = {
-    entityTypes: ["Character", "Faction", "Event", "Term", "WorldEntity"],
+    entityTypes: ["Character", "Faction", "Event", "Term", "Place", "Concept", "Rule", "Item", "WorldEntity"],
     relationKinds: ["belongs_to", "enemy_of", "causes", "controls", "located_in", "violates"],
     searchQuery: "",
     tags: [],
@@ -261,24 +261,35 @@ export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
 // ─── 셀렉터: 현재 필터 적용된 그래프 ──────────────────────────────────────────
 
 export function useFilteredGraph() {
-    return useWorldBuildingStore((s) => {
-        if (!s.graphData) return { nodes: [], edges: [] };
-        const { searchQuery, entityTypes, relationKinds } = s.filter;
+    const graphData = useWorldBuildingStore((s) => s.graphData);
+    const filter = useWorldBuildingStore((s) => s.filter);
 
-        const nodes = s.graphData.nodes.filter((n) => {
-            if (!entityTypes.includes(n.entityType)) return false;
-            if (searchQuery && !n.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return useMemo(() => {
+        if (!graphData) {
+            return { nodes: [], edges: [] };
+        }
+        const { searchQuery, entityTypes, relationKinds } = filter;
+
+        const nodes = graphData.nodes.filter((node) => {
+            const displayType = node.subType ?? node.entityType;
+            if (!entityTypes.includes(displayType)) return false;
+            if (
+                searchQuery &&
+                !node.name.toLowerCase().includes(searchQuery.toLowerCase())
+            ) {
+                return false;
+            }
             return true;
         });
 
-        const nodeIds = new Set(nodes.map((n) => n.id));
-        const edges = s.graphData.edges.filter(
-            (e) =>
-                relationKinds.includes(e.relation) &&
-                nodeIds.has(e.sourceId) &&
-                nodeIds.has(e.targetId),
+        const nodeIds = new Set(nodes.map((node) => node.id));
+        const edges = graphData.edges.filter(
+            (edge) =>
+                relationKinds.includes(edge.relation) &&
+                nodeIds.has(edge.sourceId) &&
+                nodeIds.has(edge.targetId),
         );
 
         return { nodes, edges };
-    });
+    }, [filter, graphData]);
 }

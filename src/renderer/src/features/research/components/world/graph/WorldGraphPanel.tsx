@@ -5,7 +5,8 @@
  * └── 우측: WorldInspector (선택된 노드/엣지 상세)
  */
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useWorldBuildingStore, useFilteredGraph } from "@renderer/features/research/stores/worldBuildingStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { WorldGraphCanvas } from "./WorldGraphCanvas";
@@ -13,43 +14,57 @@ import { WorldSidebar } from "./WorldSidebar";
 import { WorldInspector } from "./WorldInspector";
 
 export function WorldGraphPanel() {
-  const currentProject = useProjectStore((s) => s.currentProject);
-  const {
-    loadGraph,
-    isLoading,
-    error,
-    viewMode,
-  } = useWorldBuildingStore();
+  const { t } = useTranslation();
+  const currentProjectId = useProjectStore((s) => s.currentProject?.id);
+  const loadGraph = useWorldBuildingStore((s) => s.loadGraph);
+  const isLoading = useWorldBuildingStore((s) => s.isLoading);
+  const error = useWorldBuildingStore((s) => s.error);
+  const viewMode = useWorldBuildingStore((s) => s.viewMode);
 
   const filteredGraph = useFilteredGraph();
+  const requestedProjectIdRef = useRef<string | null>(null);
+  const loadGraphRef = useRef(loadGraph);
+
+  useEffect(() => {
+    loadGraphRef.current = loadGraph;
+  }, [loadGraph]);
 
   // 프로젝트 변경 시 그래프 로드
   useEffect(() => {
-    if (currentProject?.id) {
-      void loadGraph(currentProject.id);
+    if (!currentProjectId) {
+      requestedProjectIdRef.current = null;
+      return;
     }
-  }, [currentProject?.id, loadGraph]);
+
+    if (requestedProjectIdRef.current === currentProjectId) {
+      return;
+    }
+
+    requestedProjectIdRef.current = currentProjectId;
+    void loadGraphRef.current(currentProjectId).catch(() => {
+      if (requestedProjectIdRef.current === currentProjectId) {
+        requestedProjectIdRef.current = null;
+      }
+    });
+  }, [currentProjectId]);
 
   return (
-    <div className="world-graph-root">
-      {/* 3패널 레이아웃 */}
-      <div className="world-graph-panels">
-        {/* 좌측 사이드바 */}
-        <aside className="world-graph-sidebar">
+    <div className="h-full overflow-hidden bg-sidebar">
+      <div className="flex h-full min-h-0 overflow-hidden">
+        <aside className="w-[220px] shrink-0 overflow-y-auto border-r border-border bg-sidebar">
           <WorldSidebar />
         </aside>
 
-        {/* 중앙 캔버스 */}
-        <main className="world-graph-canvas-area">
+        <main className="relative min-w-0 flex-1 overflow-hidden">
           {isLoading && (
-            <div className="world-graph-overlay">
-              <span className="world-graph-spinner" />
-              <p>그래프 로딩 중...</p>
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-sm text-muted">
+              <span className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-accent" />
+              <p>{t("world.graph.loading")}</p>
             </div>
           )}
           {error && !isLoading && (
-            <div className="world-graph-overlay world-graph-error">
-              <p>오류: {error}</p>
+            <div className="absolute inset-0 z-10 flex items-center justify-center text-sm text-destructive">
+              <p>{t("world.graph.errorPrefix")}: {error}</p>
             </div>
           )}
           {!isLoading && !error && (
@@ -57,76 +72,10 @@ export function WorldGraphPanel() {
           )}
         </main>
 
-        {/* 우측 인스펙터 */}
-        <aside className="world-graph-inspector">
+        <aside className="w-[280px] shrink-0 overflow-y-auto border-l border-border bg-sidebar">
           <WorldInspector />
         </aside>
       </div>
-
-      <style>{`
-        .world-graph-root {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-          background: var(--sidebar);
-          overflow: hidden;
-        }
-
-        /* 3패널 */
-        .world-graph-panels {
-          display: flex;
-          flex: 1;
-          overflow: hidden;
-          min-height: 0;
-        }
-        .world-graph-sidebar {
-          width: 200px;
-          flex-shrink: 0;
-          border-right: 1px solid var(--border);
-          overflow-y: auto;
-          background: var(--sidebar);
-        }
-        .world-graph-canvas-area {
-          flex: 1;
-          position: relative;
-          overflow: hidden;
-        }
-        .world-graph-inspector {
-          width: 220px;
-          flex-shrink: 0;
-          border-left: 1px solid var(--border);
-          overflow-y: auto;
-          background: var(--sidebar);
-        }
-
-        /* 오버레이 */
-        .world-graph-overlay {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 12px;
-          color: var(--muted);
-          font-size: 13px;
-          z-index: 10;
-        }
-        .world-graph-error {
-          color: var(--destructive, #ef4444);
-        }
-        .world-graph-spinner {
-          width: 24px;
-          height: 24px;
-          border: 2px solid var(--border);
-          border-top-color: var(--accent);
-          border-radius: 50%;
-          animation: wg-spin 0.8s linear infinite;
-        }
-        @keyframes wg-spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }

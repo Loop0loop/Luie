@@ -313,7 +313,20 @@ export const enWorkspace = {
       "synopsis": "Synopsis",
       "mindmap": "Mindmap",
       "drawing": "Map Drawing",
-      "plot": "Plot Board"
+      "plot": "Plot Board",
+      "graph": "World Graph"
+    },
+    "graph": {
+      "loading": "Loading world graph...",
+      "errorPrefix": "Error",
+      "suggestionPrefix": "Suggested",
+      "suggestionApply": "Apply",
+      "mode": {
+        "standard": "Standard",
+        "protagonist": "Protagonist",
+        "eventChain": "Event Chain",
+        "freeform": "Freeform"
+      }
     },
     "synopsis": {
       "title": "Project Synopsis",

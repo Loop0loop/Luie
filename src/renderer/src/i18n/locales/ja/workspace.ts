@@ -313,7 +313,20 @@ export const jaWorkspace = {
       "synopsis": "あらすじ",
       "mindmap": "マインドマップ",
       "drawing": "地図ドローイング",
-      "plot": "プロットボード"
+      "plot": "プロットボード",
+      "graph": "ワールドグラフ"
+    },
+    "graph": {
+      "loading": "ワールドグラフを読み込み中...",
+      "errorPrefix": "エラー",
+      "suggestionPrefix": "提案",
+      "suggestionApply": "適用",
+      "mode": {
+        "standard": "標準",
+        "protagonist": "主人公",
+        "eventChain": "イベントチェーン",
+        "freeform": "フリーフォーム"
+      }
     },
     "synopsis": {
       "title": "プロジェクト概要",

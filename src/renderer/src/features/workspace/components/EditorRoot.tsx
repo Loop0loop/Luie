@@ -12,6 +12,7 @@ import { SmartLinkTooltip } from "@renderer/features/editor/components/SmartLink
 import ContextPanel from "@renderer/features/workspace/components/ContextPanel";
 import ScrivenerLayout from "@renderer/features/workspace/components/ScrivenerLayout";
 import ScrivenerSidebar from "@renderer/features/manuscript/components/ScrivenerSidebar";
+import WorldSection from "@renderer/features/research/components/world/index";
 
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useUIStore, type DocsRightTab } from "@renderer/features/workspace/stores/uiStore";
@@ -74,15 +75,18 @@ export default function EditorRoot() {
 
     const [docEditor, setDocEditor] = useState<TiptapEditor | null>(null);
 
+    const { setMainView, mainView } = useUIStore();
+
     const openChapterByIndex = useCallback(
         (index: number) => {
             if (index < 0 || index >= chapters.length) return;
             const target = chapters[index];
             if (target?.id) {
                 handleSelectChapter(target.id);
+                setMainView({ type: "editor" });
             }
         },
-        [chapters, handleSelectChapter],
+        [chapters, handleSelectChapter, setMainView],
     );
 
     const handleDeleteActiveChapter = useCallback(async () => {
@@ -108,11 +112,14 @@ export default function EditorRoot() {
         handleOpenExport,
     } = useSplitView();
 
-    const { setMainView } = useUIStore();
+    const handleSelectChapterWithView = useCallback((id: string) => {
+        handleSelectChapter(id);
+        setMainView({ type: "editor" });
+    }, [handleSelectChapter, setMainView]);
 
     const { handleDropToCenter, handleDropToSplit } = useWorkspaceDropHandlers({
         uiMode,
-        handleSelectChapter,
+        handleSelectChapter: handleSelectChapterWithView,
         handleSelectResearchItem,
         setMainView,
         setWorldTab,
@@ -166,9 +173,11 @@ export default function EditorRoot() {
     }, [activeChapterId, dialog.toast, t]);
 
     const handleOpenWorldGraph = useCallback(() => {
+        useEditorStore.setState({ uiMode: "scrivener" });
+        void setUiMode("scrivener");
         setWorldTab("graph");
-        layoutModeActions.openResearchTab("world");
-    }, [layoutModeActions, setWorldTab]);
+        setMainView({ type: "world" });
+    }, [setMainView, setUiMode, setWorldTab]);
 
     const handleRenameProject = useCallback(async () => {
         if (!currentProject?.id) return;
@@ -234,7 +243,13 @@ export default function EditorRoot() {
         );
     }
 
-    const sharedEditor = (
+    const sharedEditor = mainView.type === "world" ? (
+        <FeatureErrorBoundary featureName="WorldSection">
+            <div className="h-full w-full bg-white dark:bg-[#1e1e1e]">
+                <WorldSection worldId={mainView.id || ""} />
+            </div>
+        </FeatureErrorBoundary>
+    ) : (
         <FeatureErrorBoundary featureName="Editor">
             <Editor
                 key={activeChapterId}

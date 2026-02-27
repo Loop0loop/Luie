@@ -20,9 +20,14 @@ import ReactFlow, {
     BackgroundVariant,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { type WorldGraphNode, type EntityRelation, type WorldEntitySourceType, type RelationKind } from "@shared/types";
+import { type WorldGraphNode, type EntityRelation, type RelationKind } from "@shared/types";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import type { WorldViewMode } from "@renderer/features/research/stores/worldBuildingStore";
+import { CustomEntityNode, NODE_COLORS } from "./CustomEntityNode";
+
+const nodeTypes = {
+    custom: CustomEntityNode,
+};
 
 interface WorldGraphCanvasProps {
     nodes: WorldGraphNode[];
@@ -30,19 +35,7 @@ interface WorldGraphCanvasProps {
     viewMode: WorldViewMode;
 }
 
-// ─── 엔티티 타입별 색상 ──────────────────────────────────────────────────────
-
-const NODE_COLORS: Record<WorldEntitySourceType | string, string> = {
-    Character: "#6366f1",   // 보라 - 인물
-    Faction: "#f59e0b",     // 주황 - 세력
-    Event: "#ef4444",       // 빨강 - 사건
-    Term: "#14b8a6",        // 틸 - 용어
-    Place: "#10b981",       // 초록 - 장소
-    Concept: "#0ea5e9",     // 파랑 - 개념
-    Rule: "#8b5cf6",        // 바이올렛 - 규칙
-    Item: "#f97316",        // 오렌지 - 사물
-    WorldEntity: "#64748b", // 슬레이트 - 범용
-};
+// ─── 엔티티 타입별 색상 (이제 CustomEntityNode 내부에 위임, 여기서는 엣지 렌더에만 일부 사용) ──────────────────────────────────────────────────────
 
 const RELATION_LABELS: Record<RelationKind, string> = {
     belongs_to: "소속",
@@ -54,21 +47,19 @@ const RELATION_LABELS: Record<RelationKind, string> = {
 };
 
 const RELATION_COLORS: Record<RelationKind, string> = {
-    belongs_to: "#6366f1",
-    enemy_of: "#ef4444",
-    causes: "#f59e0b",
-    controls: "#8b5cf6",
-    located_in: "#10b981",
-    violates: "#f97316",
+    belongs_to: "#c7d2fe", // 연한 색상
+    enemy_of: "#fecaca",
+    causes: "#fed7aa",
+    controls: "#e9d5ff",
+    located_in: "#bbf7d0",
+    violates: "#fde68a",
 };
 
 // ─── 노드 → React Flow 변환 ──────────────────────────────────────────────────
 
-function toRFNode(graphNode: WorldGraphNode, index: number): Node {
+function toRFNode(graphNode: WorldGraphNode, index: number, selectedNodeId: string | null): Node {
     const subType = graphNode.subType ?? graphNode.entityType;
-    const color = NODE_COLORS[subType] ?? NODE_COLORS[graphNode.entityType] ?? "#64748b";
     const importance = (graphNode.attributes?.importance ?? 3) as number;
-    const size = 36 + importance * 8; // 44–76px
 
     return {
         id: graphNode.id,
@@ -79,25 +70,10 @@ function toRFNode(graphNode: WorldGraphNode, index: number): Node {
         data: {
             label: graphNode.name,
             subType,
+            importance,
         },
-        style: {
-            background: color,
-            color: "#fff",
-            borderRadius: "50%",
-            width: size,
-            height: size,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: Math.max(9, 12 - graphNode.name.length * 0.3) + "px",
-            fontWeight: "600",
-            border: `2px solid ${color}`,
-            boxShadow: `0 2px 12px ${color}44`,
-            textAlign: "center",
-            overflow: "hidden",
-            padding: "4px",
-        },
-        type: "default",
+        selected: selectedNodeId === graphNode.id,
+        type: "custom",
     };
 }
 
@@ -112,7 +88,7 @@ function toRFEdge(rel: EntityRelation): Edge {
         label: RELATION_LABELS[rel.relation] ?? rel.relation,
         labelStyle: { fontSize: 10, fill: "#94a3b8", fontWeight: 500 },
         labelBgStyle: { fill: "transparent" },
-        style: { stroke: color, strokeWidth: 1.5 },
+        style: { stroke: color, strokeWidth: 2 },
         animated: rel.relation === "causes" || rel.relation === "controls",
         markerEnd: { type: MarkerType.ArrowClosed, color },
     };
@@ -124,7 +100,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
     const { selectNode, selectEdge, selectedNodeId, updateWorldEntityPosition, createRelation } =
         useWorldBuildingStore();
 
-    const rfNodes = useMemo(() => graphNodes.map(toRFNode), [graphNodes]);
+    const rfNodes = useMemo(() => graphNodes.map((n, i) => toRFNode(n, i, selectedNodeId)), [graphNodes, selectedNodeId]);
     const rfEdges = useMemo(() => graphEdges.map(toRFEdge), [graphEdges]);
 
     const [nodes, setNodes, onNodesChange] = useNodesState(rfNodes);
@@ -205,6 +181,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
             <ReactFlow
                 nodes={styledNodes}
                 edges={edges}
+                nodeTypes={nodeTypes}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onNodeDragStop={onNodeDragStop}
@@ -219,7 +196,10 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
             >
                 <Controls />
                 <MiniMap
-                    nodeColor={(n) => (n.style as Record<string, string>)?.background ?? "#64748b"}
+                    nodeColor={(n) => {
+                        const subType = n.data?.subType as string;
+                        return NODE_COLORS[subType]?.bg ?? NODE_COLORS["WorldEntity"].bg;
+                    }}
                     style={{ background: "var(--sidebar)" }}
                 />
                 <Background variant={BackgroundVariant.Dots} gap={20} color="var(--border)" />

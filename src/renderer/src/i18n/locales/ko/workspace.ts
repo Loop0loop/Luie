@@ -313,7 +313,20 @@ export const koWorkspace = {
       "synopsis": "Synopsis",
       "mindmap": "Mindmap",
       "drawing": "Map Drawing",
-      "plot": "Plot Board"
+      "plot": "Plot Board",
+      "graph": "세계관 그래프"
+    },
+    "graph": {
+      "loading": "세계관 그래프를 불러오는 중...",
+      "errorPrefix": "오류",
+      "suggestionPrefix": "추천",
+      "suggestionApply": "적용",
+      "mode": {
+        "standard": "표준",
+        "protagonist": "주인공",
+        "eventChain": "사건 체인",
+        "freeform": "자유형"
+      }
     },
     "synopsis": {
       "title": "프로젝트 개요 (Synopsis)",
