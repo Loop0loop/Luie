@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SyncSettings } from "../../../src/shared/types/index.js";
+import type { SyncBundle } from "../../../src/main/services/features/syncMapper.js";
 
 const mocked = vi.hoisted(() => {
   const syncSettings: SyncSettings = {
@@ -15,6 +16,7 @@ const mocked = vi.hoisted(() => {
   const fetchBundle = vi.fn();
   const upsertBundle = vi.fn();
   const writeLuiePackage = vi.fn();
+  const readLuieEntry = vi.fn();
 
   const prisma = {
     $transaction: vi.fn(async (handler: unknown) => {
@@ -29,29 +31,52 @@ const mocked = vi.hoisted(() => {
       update: vi.fn(),
       create: vi.fn(),
       delete: vi.fn(),
+      deleteMany: vi.fn(),
     },
     chapter: {
       findUnique: vi.fn(),
       update: vi.fn(),
       create: vi.fn(),
+      deleteMany: vi.fn(),
     },
     character: {
       findUnique: vi.fn(),
       update: vi.fn(),
       create: vi.fn(),
       delete: vi.fn(),
+      deleteMany: vi.fn(),
     },
     term: {
       findUnique: vi.fn(),
       update: vi.fn(),
       create: vi.fn(),
       delete: vi.fn(),
+      deleteMany: vi.fn(),
     },
     snapshot: {
       findUnique: vi.fn(),
       update: vi.fn(),
       create: vi.fn(),
       delete: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+    event: {
+      deleteMany: vi.fn(),
+    },
+    faction: {
+      deleteMany: vi.fn(),
+    },
+    characterAppearance: {
+      deleteMany: vi.fn(),
+    },
+    termAppearance: {
+      deleteMany: vi.fn(),
+    },
+    worldEntity: {
+      deleteMany: vi.fn(),
+    },
+    entityRelation: {
+      deleteMany: vi.fn(),
     },
   };
 
@@ -65,6 +90,7 @@ const mocked = vi.hoisted(() => {
     fetchBundle,
     upsertBundle,
     writeLuiePackage,
+    readLuieEntry,
     prisma,
   };
 });
@@ -79,8 +105,14 @@ vi.mock("../../../src/main/handler/system/ipcFsHandlers.js", () => ({
   writeLuiePackage: (...args: unknown[]) => mocked.writeLuiePackage(...args),
 }));
 
+vi.mock("../../../src/main/utils/luiePackage.js", () => ({
+  readLuieEntry: (...args: unknown[]) => mocked.readLuieEntry(...args),
+}));
+
 vi.mock("../../../src/main/database/index.js", () => ({
   db: {
+    initialize: vi.fn(async () => undefined),
+    disconnect: vi.fn(async () => undefined),
     getClient: () => mocked.prisma,
   },
 }));
@@ -161,7 +193,9 @@ describe("SyncService auth hardening", () => {
     mocked.fetchBundle.mockReset();
     mocked.upsertBundle.mockReset();
     mocked.writeLuiePackage.mockReset();
+    mocked.readLuieEntry.mockReset();
     mocked.writeLuiePackage.mockResolvedValue(undefined);
+    mocked.readLuieEntry.mockResolvedValue(null);
     mocked.prisma.$transaction.mockClear();
     mocked.prisma.project.findMany.mockResolvedValue([]);
     mocked.prisma.project.findUnique.mockResolvedValue(null);
@@ -385,5 +419,138 @@ describe("SyncService auth hardening", () => {
     expect(result.success).toBe(false);
     expect(result.message).toContain("SYNC_LUIE_PERSIST_FAILED");
     expect(mocked.upsertBundle).not.toHaveBeenCalled();
+  });
+
+  it("hydrates missing world docs from existing .luie payload during package build", async () => {
+    mocked.readLuieEntry.mockImplementation(async (_projectPath: string, entryPath: string) => {
+      if (entryPath === "world/synopsis.json") {
+        return JSON.stringify({ synopsis: "kept synopsis", status: "working" });
+      }
+      return null;
+    });
+
+    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const service = new SyncService();
+    const bundle: SyncBundle = {
+      projects: [
+        {
+          id: "project-1",
+          userId: "user-1",
+          title: "Project 1",
+          description: null,
+          createdAt: "2026-02-22T00:00:00.000Z",
+          updatedAt: "2026-02-22T00:00:00.000Z",
+        },
+      ],
+      chapters: [],
+      characters: [],
+      terms: [],
+      worldDocuments: [],
+      memos: [],
+      snapshots: [],
+      tombstones: [],
+    };
+
+    const payloadBuilder = (
+      service as unknown as {
+        buildProjectPackagePayload: (
+          value: SyncBundle,
+          projectId: string,
+          projectPath: string,
+          localSnapshots: Array<{
+            id: string;
+            chapterId: string | null;
+            content: string;
+            description: string | null;
+            createdAt: Date;
+          }>,
+        ) => Promise<unknown>;
+      }
+    ).buildProjectPackagePayload.bind(service);
+
+    const payload = (await payloadBuilder(bundle, "project-1", "/tmp/project-1.luie", [])) as {
+      synopsis?: unknown;
+    } | null;
+
+    expect(payload).not.toBeNull();
+    expect(payload?.synopsis).toMatchObject({
+      synopsis: "kept synopsis",
+      status: "working",
+    });
+  });
+
+  it("normalizes malformed world document payloads before .luie package write", async () => {
+    mocked.readLuieEntry.mockResolvedValue(null);
+
+    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const service = new SyncService();
+    const bundle: SyncBundle = {
+      projects: [
+        {
+          id: "project-1",
+          userId: "user-1",
+          title: "Project 1",
+          description: null,
+          createdAt: "2026-02-22T00:00:00.000Z",
+          updatedAt: "2026-02-22T00:00:00.000Z",
+        },
+      ],
+      chapters: [],
+      characters: [],
+      terms: [],
+      worldDocuments: [
+        {
+          id: "project-1:synopsis",
+          userId: "user-1",
+          projectId: "project-1",
+          docType: "synopsis",
+          payload: "not-json",
+          updatedAt: "2026-02-22T00:00:00.000Z",
+        },
+        {
+          id: "project-1:graph",
+          userId: "user-1",
+          projectId: "project-1",
+          docType: "graph",
+          payload: "still-not-json",
+          updatedAt: "2026-02-22T00:00:00.000Z",
+        },
+      ],
+      memos: [],
+      snapshots: [],
+      tombstones: [],
+    };
+
+    const payloadBuilder = (
+      service as unknown as {
+        buildProjectPackagePayload: (
+          value: SyncBundle,
+          projectId: string,
+          projectPath: string,
+          localSnapshots: Array<{
+            id: string;
+            chapterId: string | null;
+            content: string;
+            description: string | null;
+            createdAt: Date;
+          }>,
+        ) => Promise<unknown>;
+      }
+    ).buildProjectPackagePayload.bind(service);
+
+    const payload = (await payloadBuilder(bundle, "project-1", "/tmp/project-1.luie", [])) as {
+      synopsis?: unknown;
+      graph?: unknown;
+    } | null;
+
+    expect(payload).not.toBeNull();
+    expect(payload?.synopsis).toMatchObject({
+      synopsis: "",
+      status: "draft",
+    });
+    expect(payload?.graph).toMatchObject({
+      nodes: [],
+      edges: [],
+    });
   });
 });

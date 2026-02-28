@@ -39,7 +39,7 @@ export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps)
             {/* 노드 본체 (Pill 형태) - Glassmorphism UI */}
             <div
                 className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 backdrop-blur-md transition-all duration-500 ease-out cursor-grab active:cursor-grabbing",
+                    "flex items-center gap-2 px-3 py-1.5 backdrop-blur-md transition-colors duration-200 ease-out cursor-grab active:cursor-grabbing",
                     isEventChainFocused ? "rounded-lg border-2" : "rounded-full border",
                     isFreeform ? "bg-panel/40 shadow-none border-border/30 hover:bg-panel/80" : themeSpec.wrapper,
                     selected && !isProtagonistSelected ? "ring-2 ring-accent ring-offset-1 ring-offset-app shadow-md scale-105" : "hover:-translate-y-0.5 hover:shadow-md",

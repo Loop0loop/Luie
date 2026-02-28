@@ -84,10 +84,23 @@ const saveLocalStorageJson = (projectId: string, key: string, data: unknown) => 
 
 const readLuieJson = async (projectPath: string, fileName: string): Promise<unknown | null> => {
   const response = await api.fs.readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${fileName}`);
-  if (!response.success || !response.data) return null;
+  if (!response.success) {
+    await api.logger.warn("Failed to read .luie world entry", {
+      projectPath,
+      fileName,
+      error: response.error,
+    });
+    return null;
+  }
+  if (!response.data) return null;
   try {
     return JSON.parse(response.data);
-  } catch {
+  } catch (error) {
+    await api.logger.warn("Invalid .luie world JSON payload", {
+      projectPath,
+      fileName,
+      error,
+    });
     return null;
   }
 };

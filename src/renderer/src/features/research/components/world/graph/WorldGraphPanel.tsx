@@ -134,10 +134,10 @@ export function WorldGraphPanel() {
                   onClick={toggleMap}
                   title={t("world.map.title", { defaultValue: "지도 뷰" })}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-xl border text-[11px] font-semibold backdrop-blur-md transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5",
+                    "flex items-center gap-2 px-3 py-2 rounded-xl border text-[11px] font-semibold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5",
                     isMapOpen
                       ? "bg-accent text-white border-accent"
-                      : "bg-panel/80 text-muted border-border/50 hover:text-fg hover:border-border",
+                      : "bg-panel/95 text-muted border-border/50 hover:text-fg hover:border-border",
                   )}
                 >
                   <Globe size={13} />
@@ -149,10 +149,10 @@ export function WorldGraphPanel() {
                   onClick={toggleTimeline}
                   title={t("world.timeline.title", { defaultValue: "시간선" })}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-xl border text-[11px] font-semibold backdrop-blur-md transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5",
+                    "flex items-center gap-2 px-3 py-2 rounded-xl border text-[11px] font-semibold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5",
                     isTimelineOpen
                       ? "bg-accent text-white border-accent"
-                      : "bg-panel/80 text-muted border-border/50 hover:text-fg hover:border-border",
+                      : "bg-panel/95 text-muted border-border/50 hover:text-fg hover:border-border",
                   )}
                 >
                   <Clock size={13} />
@@ -182,7 +182,7 @@ export function WorldGraphPanel() {
       {/* Timeline Panel — Slide-up from bottom */}
       <div
         className={cn(
-          "shrink-0 border-t border-border/40 bg-panel/70 backdrop-blur-xl overflow-hidden transition-all duration-300 ease-in-out",
+          "shrink-0 border-t border-border/40 bg-panel/95 overflow-hidden transition-all duration-300 ease-in-out",
           isTimelineOpen
             ? "opacity-100"
             : "opacity-0 pointer-events-none",

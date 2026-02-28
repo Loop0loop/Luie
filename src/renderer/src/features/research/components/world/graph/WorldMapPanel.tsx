@@ -4,7 +4,7 @@
  * Place 노드의 located_in 관계를 파싱해 계층 구조로 표현
  */
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, memo } from "react";
 import { X, MapPin, ChevronDown, ChevronRight, Globe } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
@@ -153,7 +153,7 @@ interface WorldMapPanelProps {
     edges: EntityRelation[];
 }
 
-export function WorldMapPanel({ nodes, edges }: WorldMapPanelProps) {
+export const WorldMapPanel = memo(function WorldMapPanel({ nodes, edges }: WorldMapPanelProps) {
     const { t } = useTranslation();
     const toggleMap = useWorldBuildingStore((s) => s.toggleMap);
     const selectedNodeId = useWorldBuildingStore((s) => s.selectedNodeId);
@@ -174,7 +174,7 @@ export function WorldMapPanel({ nodes, edges }: WorldMapPanelProps) {
     );
 
     return (
-        <div className="flex flex-col h-full bg-panel/70 backdrop-blur-xl border-l border-border/40 shadow-2xl">
+        <div className="flex flex-col h-full bg-panel/95 border-l border-border/40 shadow-2xl">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 shrink-0">
                 <div className="flex items-center gap-2">
@@ -246,4 +246,4 @@ export function WorldMapPanel({ nodes, edges }: WorldMapPanelProps) {
             </div>
         </div>
     );
-}
+});

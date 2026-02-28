@@ -1,5 +1,4 @@
 import { beforeAll, afterAll, beforeEach, vi } from "vitest";
-import { execSync } from "node:child_process";
 import * as path from "node:path";
 import * as fs from "node:fs";
 import type { db as DbService } from "../src/main/database/index.js";
@@ -29,14 +28,9 @@ let dbService: typeof DbService | null = null;
 beforeAll(async () => {
   if (skipDbSetup) return;
   fs.mkdirSync(testDbDir, { recursive: true });
-  execSync("pnpm prisma db push --accept-data-loss --force-reset", {
-    stdio: "inherit",
-  });
-  execSync("pnpm db:seed", {
-    stdio: "inherit",
-  });
   const mod = await import("../src/main/database/index.js");
   dbService = mod.db;
+  await dbService.initialize();
 });
 
 beforeEach(async () => {

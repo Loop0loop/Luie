@@ -32,8 +32,13 @@ import { settingsManager } from "../../manager/settingsManager.js";
 import { readLuieEntry } from "../../utils/luiePackage.js";
 import {
   isRecord,
+  normalizeWorldDrawingPaths,
+  normalizeWorldMindmapEdges,
+  normalizeWorldMindmapNodes,
   normalizeWorldScrapPayload,
   parseWorldJsonSafely,
+  toWorldDrawingIcon,
+  toWorldDrawingTool,
   toWorldUpdatedAt,
 } from "../../../shared/world/worldDocumentCodec.js";
 import { syncAuthService } from "./syncAuthService.js";
@@ -105,6 +110,28 @@ const WORLD_DOCUMENT_FILES: Array<{
   { docType: "mindmap", fileName: LUIE_WORLD_MINDMAP_FILE },
   { docType: "graph", fileName: LUIE_WORLD_GRAPH_FILE },
 ];
+
+type WorldDocumentType = SyncBundle["worldDocuments"][number]["docType"];
+
+const WORLD_DOCUMENT_FILE_BY_TYPE: Record<WorldDocumentType, string> = {
+  synopsis: LUIE_WORLD_SYNOPSIS_FILE,
+  plot: LUIE_WORLD_PLOT_FILE,
+  drawing: LUIE_WORLD_DRAWING_FILE,
+  mindmap: LUIE_WORLD_MINDMAP_FILE,
+  graph: LUIE_WORLD_GRAPH_FILE,
+  scrap: LUIE_WORLD_SCRAP_MEMOS_FILE,
+};
+
+const WORLD_DOCUMENT_TYPES: WorldDocumentType[] = [
+  "synopsis",
+  "plot",
+  "drawing",
+  "mindmap",
+  "graph",
+  "scrap",
+];
+
+const WORLD_SYNOPSIS_STATUS = new Set(["draft", "working", "locked"]);
 
 const isAuthFatalMessage = (message: string): boolean =>
   AUTH_FATAL_ERROR_PATTERNS.some((pattern) => message.includes(pattern));
@@ -864,10 +891,38 @@ export class SyncService {
 
   private async readWorldDocumentPayload(
     projectPath: string,
-    fileName: string,
+    docType: WorldDocumentType,
   ): Promise<unknown | null> {
-    const raw = await readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${fileName}`, logger);
-    return parseWorldJsonSafely(raw);
+    const fileName = WORLD_DOCUMENT_FILE_BY_TYPE[docType];
+    const entryPath = `${LUIE_WORLD_DIR}/${fileName}`;
+    let raw: string | null = null;
+    try {
+      raw = await readLuieEntry(projectPath, entryPath, logger);
+    } catch (error) {
+      logger.warn("Failed to read .luie world document for sync; skipping doc", {
+        projectPath,
+        entryPath,
+        docType,
+        error,
+      });
+      return null;
+    }
+
+    if (raw === null) {
+      return null;
+    }
+
+    const parsed = parseWorldJsonSafely(raw);
+    if (parsed === null) {
+      logger.warn("Failed to parse .luie world document for sync; skipping doc", {
+        projectPath,
+        entryPath,
+        docType,
+      });
+      return null;
+    }
+
+    return parsed;
   }
 
   private appendScrapMemos(
@@ -899,7 +954,7 @@ export class SyncService {
     updatedAtFallback: string,
   ): Promise<void> {
     for (const descriptor of WORLD_DOCUMENT_FILES) {
-      const payload = await this.readWorldDocumentPayload(projectPath, descriptor.fileName);
+      const payload = await this.readWorldDocumentPayload(projectPath, descriptor.docType);
       if (!payload) continue;
       this.addWorldDocumentRecord(
         bundle,
@@ -911,10 +966,7 @@ export class SyncService {
       );
     }
 
-    const scrapPayload = await this.readWorldDocumentPayload(
-      projectPath,
-      LUIE_WORLD_SCRAP_MEMOS_FILE,
-    );
+    const scrapPayload = await this.readWorldDocumentPayload(projectPath, "scrap");
     if (!isRecord(scrapPayload)) return;
 
     this.addWorldDocumentRecord(
@@ -926,6 +978,189 @@ export class SyncService {
       updatedAtFallback,
     );
     this.appendScrapMemos(bundle, userId, projectId, scrapPayload, updatedAtFallback);
+  }
+
+  private async hydrateMissingWorldDocsFromPackage(
+    worldDocs: Map<WorldDocumentType, unknown>,
+    projectPath: string,
+  ): Promise<void> {
+    const missingDocTypes = WORLD_DOCUMENT_TYPES.filter((docType) => !worldDocs.has(docType));
+    if (missingDocTypes.length === 0) return;
+
+    await Promise.all(
+      missingDocTypes.map(async (docType) => {
+        const payload = await this.readWorldDocumentPayload(projectPath, docType);
+        if (payload !== null) {
+          worldDocs.set(docType, payload);
+        }
+      }),
+    );
+  }
+
+  private decodeWorldDocumentPayload(
+    projectId: string,
+    docType: WorldDocumentType,
+    payload: unknown,
+  ): unknown {
+    if (typeof payload !== "string") {
+      return payload;
+    }
+    const parsed = parseWorldJsonSafely(payload);
+    if (parsed !== null) {
+      return parsed;
+    }
+    logger.warn("Invalid sync world document payload string; using default payload", {
+      projectId,
+      docType,
+    });
+    return null;
+  }
+
+  private normalizeSynopsisPayload(projectId: string, payload: unknown): Record<string, unknown> {
+    const decoded = this.decodeWorldDocumentPayload(projectId, "synopsis", payload);
+    if (!isRecord(decoded)) {
+      return { synopsis: "", status: "draft" };
+    }
+
+    const statusValue = decoded.status;
+    const status =
+      typeof statusValue === "string" && WORLD_SYNOPSIS_STATUS.has(statusValue)
+        ? statusValue
+        : "draft";
+
+    const normalized: Record<string, unknown> = {
+      synopsis: typeof decoded.synopsis === "string" ? decoded.synopsis : "",
+      status,
+    };
+
+    if (typeof decoded.genre === "string") normalized.genre = decoded.genre;
+    if (typeof decoded.targetAudience === "string") {
+      normalized.targetAudience = decoded.targetAudience;
+    }
+    if (typeof decoded.logline === "string") normalized.logline = decoded.logline;
+    if (typeof decoded.updatedAt === "string") normalized.updatedAt = decoded.updatedAt;
+
+    return normalized;
+  }
+
+  private normalizePlotPayload(projectId: string, payload: unknown): Record<string, unknown> {
+    const decoded = this.decodeWorldDocumentPayload(projectId, "plot", payload);
+    if (!isRecord(decoded)) {
+      return { columns: [] };
+    }
+
+    const rawColumns = Array.isArray(decoded.columns) ? decoded.columns : [];
+    const columns = rawColumns
+      .filter((column): column is Record<string, unknown> => isRecord(column))
+      .map((column, columnIndex) => {
+        const rawCards = Array.isArray(column.cards) ? column.cards : [];
+        const cards = rawCards
+          .filter((card): card is Record<string, unknown> => isRecord(card))
+          .map((card, cardIndex) => ({
+            id:
+              typeof card.id === "string" && card.id.length > 0
+                ? card.id
+                : `card-${columnIndex}-${cardIndex}`,
+            content: typeof card.content === "string" ? card.content : "",
+          }));
+
+        return {
+          id:
+            typeof column.id === "string" && column.id.length > 0
+              ? column.id
+              : `col-${columnIndex}`,
+          title: typeof column.title === "string" ? column.title : "",
+          cards,
+        };
+      });
+
+    return {
+      columns,
+      updatedAt: typeof decoded.updatedAt === "string" ? decoded.updatedAt : undefined,
+    };
+  }
+
+  private normalizeDrawingPayload(projectId: string, payload: unknown): Record<string, unknown> {
+    const decoded = this.decodeWorldDocumentPayload(projectId, "drawing", payload);
+    if (!isRecord(decoded)) {
+      return { paths: [] };
+    }
+
+    return {
+      paths: normalizeWorldDrawingPaths(decoded.paths),
+      tool: toWorldDrawingTool(decoded.tool),
+      iconType: toWorldDrawingIcon(decoded.iconType),
+      color: typeof decoded.color === "string" ? decoded.color : undefined,
+      lineWidth: typeof decoded.lineWidth === "number" ? decoded.lineWidth : undefined,
+      updatedAt: typeof decoded.updatedAt === "string" ? decoded.updatedAt : undefined,
+    };
+  }
+
+  private normalizeMindmapPayload(projectId: string, payload: unknown): Record<string, unknown> {
+    const decoded = this.decodeWorldDocumentPayload(projectId, "mindmap", payload);
+    if (!isRecord(decoded)) {
+      return { nodes: [], edges: [] };
+    }
+
+    return {
+      nodes: normalizeWorldMindmapNodes(decoded.nodes),
+      edges: normalizeWorldMindmapEdges(decoded.edges),
+      updatedAt: typeof decoded.updatedAt === "string" ? decoded.updatedAt : undefined,
+    };
+  }
+
+  private normalizeGraphPayload(projectId: string, payload: unknown): Record<string, unknown> {
+    const decoded = this.decodeWorldDocumentPayload(projectId, "graph", payload);
+    if (!isRecord(decoded)) {
+      return { nodes: [], edges: [] };
+    }
+
+    const nodes = Array.isArray(decoded.nodes)
+      ? decoded.nodes.filter((node): node is Record<string, unknown> => isRecord(node))
+      : [];
+    const edges = Array.isArray(decoded.edges)
+      ? decoded.edges.filter((edge): edge is Record<string, unknown> => isRecord(edge))
+      : [];
+
+    return {
+      nodes,
+      edges,
+      updatedAt: typeof decoded.updatedAt === "string" ? decoded.updatedAt : undefined,
+    };
+  }
+
+  private normalizeScrapPayload(
+    projectId: string,
+    payload: unknown,
+    fallbackMemos: Array<{
+      id: string;
+      title: string;
+      content: string;
+      tags: string[];
+      updatedAt: string;
+    }>,
+    updatedAtFallback: string,
+  ): Record<string, unknown> {
+    const decoded = this.decodeWorldDocumentPayload(projectId, "scrap", payload);
+    if (!isRecord(decoded)) {
+      return {
+        memos: fallbackMemos.map((memo) => ({
+          id: memo.id,
+          title: memo.title,
+          content: memo.content,
+          tags: memo.tags,
+          updatedAt: memo.updatedAt,
+        })),
+        updatedAt: updatedAtFallback,
+      };
+    }
+
+    const normalized = normalizeWorldScrapPayload(decoded);
+    return {
+      memos: normalized.memos,
+      updatedAt:
+        typeof normalized.updatedAt === "string" ? normalized.updatedAt : updatedAtFallback,
+    };
   }
 
   private collectDeletedProjectIds(bundle: SyncBundle): Set<string> {
@@ -1129,9 +1364,10 @@ export class SyncService {
     await this.persistBundleToLuiePackages(bundle);
   }
 
-  private buildProjectPackagePayload(
+  private async buildProjectPackagePayload(
     bundle: SyncBundle,
     projectId: string,
+    projectPath: string,
     localSnapshots: Array<{
       id: string;
       chapterId: string | null;
@@ -1139,7 +1375,7 @@ export class SyncService {
       description: string | null;
       createdAt: Date;
     }>,
-  ): LuiePackageExportData | null {
+  ): Promise<LuiePackageExportData | null> {
     const project = bundle.projects.find((item) => item.id === projectId);
     if (!project || project.deletedAt) return null;
 
@@ -1166,12 +1402,14 @@ export class SyncService {
         firstAppearance: item.firstAppearance ?? undefined,
       }));
 
-    const worldDocs = new Map<string, unknown>();
+    const worldDocs = new Map<WorldDocumentType, unknown>();
     for (const doc of sortByUpdatedAtDesc(bundle.worldDocuments)) {
       if (doc.projectId !== projectId || doc.deletedAt) continue;
       if (worldDocs.has(doc.docType)) continue;
       worldDocs.set(doc.docType, doc.payload);
     }
+
+    await this.hydrateMissingWorldDocsFromPackage(worldDocs, projectPath);
 
     const memos = bundle.memos
       .filter((item) => item.projectId === projectId && !item.deletedAt)
@@ -1191,14 +1429,32 @@ export class SyncService {
       createdAt: snapshot.createdAt.toISOString(),
     }));
 
-    const scrapPayload = worldDocs.get("scrap");
-    const normalizedScrapPayload =
-      isRecord(scrapPayload) && Array.isArray(scrapPayload.memos)
-        ? scrapPayload
-        : {
-            memos,
-            updatedAt: project.updatedAt,
-          };
+    const normalizedSynopsisPayload = this.normalizeSynopsisPayload(
+      projectId,
+      worldDocs.get("synopsis"),
+    );
+    const normalizedPlotPayload = this.normalizePlotPayload(
+      projectId,
+      worldDocs.get("plot"),
+    );
+    const normalizedDrawingPayload = this.normalizeDrawingPayload(
+      projectId,
+      worldDocs.get("drawing"),
+    );
+    const normalizedMindmapPayload = this.normalizeMindmapPayload(
+      projectId,
+      worldDocs.get("mindmap"),
+    );
+    const normalizedGraphPayload = this.normalizeGraphPayload(
+      projectId,
+      worldDocs.get("graph"),
+    );
+    const normalizedScrapPayload = this.normalizeScrapPayload(
+      projectId,
+      worldDocs.get("scrap"),
+      memos,
+      project.updatedAt,
+    );
 
     const metaChapters = chapters.map((chapter) => ({
       id: chapter.id,
@@ -1226,11 +1482,11 @@ export class SyncService {
       })),
       characters,
       terms,
-      synopsis: worldDocs.get("synopsis") ?? { synopsis: "", status: "draft" },
-      plot: worldDocs.get("plot") ?? { columns: [] },
-      drawing: worldDocs.get("drawing") ?? { paths: [] },
-      mindmap: worldDocs.get("mindmap") ?? { nodes: [], edges: [] },
-      graph: worldDocs.get("graph") ?? { nodes: [], edges: [] },
+      synopsis: normalizedSynopsisPayload,
+      plot: normalizedPlotPayload,
+      drawing: normalizedDrawingPayload,
+      mindmap: normalizedMindmapPayload,
+      graph: normalizedGraphPayload,
       memos: normalizedScrapPayload,
       snapshots: snapshotList,
     };
@@ -1269,9 +1525,10 @@ export class SyncService {
       if (!projectPath || !projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
         continue;
       }
-      const payload = this.buildProjectPackagePayload(
+      const payload = await this.buildProjectPackagePayload(
         bundle,
         project.id,
+        projectPath,
         localProject?.snapshots ?? [],
       );
       if (!payload) continue;

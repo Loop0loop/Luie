@@ -387,7 +387,7 @@ export function WorldInspector() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-panel/60 backdrop-blur-xl border-l border-border/40 shadow-2xl">
+    <div className="flex flex-col h-full bg-panel border-l border-border/40 shadow-2xl">
       {selectedNode && (
         <>
           <header className="flex items-center justify-between px-4 py-3 border-b border-border/40 shrink-0 bg-transparent">

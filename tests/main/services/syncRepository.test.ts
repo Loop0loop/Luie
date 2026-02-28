@@ -127,4 +127,60 @@ describe("SyncRepository scope narrowing", () => {
     const body = String((projectsCall?.[1] as RequestInit | undefined)?.body ?? "");
     expect(body.includes("project_path")).toBe(false);
   });
+
+  it("fetchBundle normalizes world document payloads to safe objects", async () => {
+    mocked.fetch.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/rest/v1/world_documents")) {
+        return new Response(
+          JSON.stringify([
+            {
+              id: "project-1:synopsis",
+              user_id: "00000000-0000-0000-0000-000000000001",
+              project_id: "project-1",
+              doc_type: "synopsis",
+              payload: "{\"synopsis\":\"remote\",\"status\":\"working\"}",
+              updated_at: "2026-02-28T00:00:00.000Z",
+            },
+            {
+              id: "project-1:plot",
+              user_id: "00000000-0000-0000-0000-000000000001",
+              project_id: "project-1",
+              doc_type: "plot",
+              payload: "not-json",
+              updated_at: "2026-02-28T00:00:00.000Z",
+            },
+          ]),
+          {
+            status: 200,
+            headers: {
+              "content-type": "application/json",
+            },
+          },
+        );
+      }
+
+      return new Response(JSON.stringify([]), {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+        },
+      });
+    });
+
+    const { syncRepository } = await import("../../../src/main/services/features/syncRepository.js");
+    const bundle = await syncRepository.fetchBundle(
+      "access-token",
+      "00000000-0000-0000-0000-000000000001",
+    );
+
+    const synopsisDoc = bundle.worldDocuments.find((doc) => doc.docType === "synopsis");
+    const plotDoc = bundle.worldDocuments.find((doc) => doc.docType === "plot");
+
+    expect(synopsisDoc?.payload).toMatchObject({
+      synopsis: "remote",
+      status: "working",
+    });
+    expect(plotDoc?.payload).toEqual({});
+  });
 });

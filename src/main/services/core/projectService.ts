@@ -56,7 +56,6 @@ import {
   normalizeWorldMindmapEdges,
   normalizeWorldMindmapNodes,
   normalizeWorldScrapMemos,
-  parseWorldJsonSafely,
 } from "../../../shared/world/worldDocumentCodec.js";
 import { writeLuiePackage } from "../../handler/system/ipcFsHandlers.js";
 import { ServiceError } from "../../utils/serviceError.js";
@@ -212,7 +211,87 @@ const LuieSnapshotsSchema = z
   })
   .passthrough();
 
-const parseJsonSafely = parseWorldJsonSafely;
+const parseLuieDocumentOrThrow = <T>(
+  raw: string | null,
+  schema: z.ZodType<T>,
+  options: {
+    packagePath: string;
+    entryPath: string;
+    label: string;
+  },
+): T | null => {
+  if (typeof raw !== "string" || raw.trim().length === 0) {
+    return null;
+  }
+
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(raw);
+  } catch (error) {
+    throw new ServiceError(
+      ErrorCode.VALIDATION_FAILED,
+      `Invalid ${options.label} JSON in .luie package`,
+      {
+        packagePath: options.packagePath,
+        entryPath: options.entryPath,
+      },
+      error,
+    );
+  }
+
+  const parsed = schema.safeParse(parsedJson);
+  if (!parsed.success) {
+    throw new ServiceError(
+      ErrorCode.VALIDATION_FAILED,
+      `Invalid ${options.label} format in .luie package`,
+      {
+        packagePath: options.packagePath,
+        entryPath: options.entryPath,
+        issues: parsed.error.issues,
+      },
+    );
+  }
+
+  return parsed.data;
+};
+
+const parseLuieDocumentForExport = <T>(
+  raw: string | null,
+  schema: z.ZodType<T>,
+  options: {
+    packagePath: string;
+    entryPath: string;
+    label: string;
+  },
+): ReturnType<z.ZodType<T>["safeParse"]> => {
+  if (typeof raw !== "string" || raw.trim().length === 0) {
+    return schema.safeParse(null);
+  }
+
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(raw);
+  } catch (error) {
+    logger.warn("Invalid .luie world JSON; using default during export", {
+      packagePath: options.packagePath,
+      entryPath: options.entryPath,
+      label: options.label,
+      error,
+    });
+    return schema.safeParse(null);
+  }
+
+  const parsed = schema.safeParse(parsedJson);
+  if (!parsed.success) {
+    logger.warn("Invalid .luie world format; using default during export", {
+      packagePath: options.packagePath,
+      entryPath: options.entryPath,
+      label: options.label,
+      issues: parsed.error.issues,
+    });
+  }
+  return parsed;
+};
 
 type LuieMeta = z.infer<typeof LuieMetaSchema>;
 type ExistingProjectLookup = { id: string; updatedAt: Date } | null;
@@ -489,36 +568,64 @@ export class ProjectService {
   private async readLuieImportCollections(
     resolvedPath: string,
   ): Promise<LuieImportCollections> {
+    const charactersEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`;
+    const termsEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`;
+    const snapshotsEntryPath = `${LUIE_SNAPSHOTS_DIR}/index.json`;
+    const synopsisEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`;
+    const graphEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_GRAPH_FILE}`;
+
     const [charactersRaw, termsRaw, snapshotsRaw, worldSynopsisRaw, worldGraphRaw] = await Promise.all([
-      readLuieEntry(resolvedPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`, logger),
-      readLuieEntry(resolvedPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`, logger),
-      readLuieEntry(resolvedPath, `${LUIE_SNAPSHOTS_DIR}/index.json`, logger),
-      readLuieEntry(resolvedPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`, logger),
-      readLuieEntry(resolvedPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_GRAPH_FILE}`, logger),
+      readLuieEntry(resolvedPath, charactersEntryPath, logger),
+      readLuieEntry(resolvedPath, termsEntryPath, logger),
+      readLuieEntry(resolvedPath, snapshotsEntryPath, logger),
+      readLuieEntry(resolvedPath, synopsisEntryPath, logger),
+      readLuieEntry(resolvedPath, graphEntryPath, logger),
     ]);
 
-    const parsedCharacters = LuieCharactersSchema.safeParse(parseJsonSafely(charactersRaw));
-    const parsedTerms = LuieTermsSchema.safeParse(parseJsonSafely(termsRaw));
-    const parsedSnapshots = LuieSnapshotsSchema.safeParse(parseJsonSafely(snapshotsRaw));
-    const parsedWorldSynopsis = LuieWorldSynopsisSchema.safeParse(
-      parseJsonSafely(worldSynopsisRaw),
+    const parsedCharacters = parseLuieDocumentOrThrow(charactersRaw, LuieCharactersSchema, {
+      packagePath: resolvedPath,
+      entryPath: charactersEntryPath,
+      label: "world characters",
+    });
+    const parsedTerms = parseLuieDocumentOrThrow(termsRaw, LuieTermsSchema, {
+      packagePath: resolvedPath,
+      entryPath: termsEntryPath,
+      label: "world terms",
+    });
+    const parsedSnapshots = parseLuieDocumentOrThrow(snapshotsRaw, LuieSnapshotsSchema, {
+      packagePath: resolvedPath,
+      entryPath: snapshotsEntryPath,
+      label: "snapshot index",
+    });
+    const parsedWorldSynopsis = parseLuieDocumentOrThrow(
+      worldSynopsisRaw,
+      LuieWorldSynopsisSchema,
+      {
+        packagePath: resolvedPath,
+        entryPath: synopsisEntryPath,
+        label: "world synopsis",
+      },
     );
-    const parsedGraph = LuieWorldGraphSchema.safeParse(parseJsonSafely(worldGraphRaw));
+    const parsedGraph = parseLuieDocumentOrThrow(worldGraphRaw, LuieWorldGraphSchema, {
+      packagePath: resolvedPath,
+      entryPath: graphEntryPath,
+      label: "world graph",
+    });
 
     return {
-      characters: parsedCharacters.success ? parsedCharacters.data.characters ?? [] : [],
-      terms: parsedTerms.success ? parsedTerms.data.terms ?? [] : [],
-      snapshots: parsedSnapshots.success ? parsedSnapshots.data.snapshots ?? [] : [],
+      characters: parsedCharacters?.characters ?? [],
+      terms: parsedTerms?.terms ?? [],
+      snapshots: parsedSnapshots?.snapshots ?? [],
       worldSynopsis:
-        parsedWorldSynopsis.success &&
-        typeof parsedWorldSynopsis.data.synopsis === "string"
-          ? parsedWorldSynopsis.data.synopsis
+        parsedWorldSynopsis &&
+        typeof parsedWorldSynopsis.synopsis === "string"
+          ? parsedWorldSynopsis.synopsis
           : undefined,
-      graph: parsedGraph.success
+      graph: parsedGraph
         ? {
-            nodes: parsedGraph.data.nodes ?? [],
-            edges: parsedGraph.data.edges ?? [],
-            updatedAt: parsedGraph.data.updatedAt,
+            nodes: parsedGraph.nodes ?? [],
+            edges: parsedGraph.edges ?? [],
+            updatedAt: parsedGraph.updatedAt,
           }
         : undefined,
     };
@@ -539,6 +646,17 @@ export class ProjectService {
         typeof chapter.content === "string"
           ? chapter.content
           : await readLuieEntry(resolvedPath, entryPath, logger);
+      if (contentRaw === null) {
+        throw new ServiceError(
+          ErrorCode.VALIDATION_FAILED,
+          "Missing chapter content entry in .luie package",
+          {
+            packagePath: resolvedPath,
+            entryPath,
+            chapterId,
+          },
+        );
+      }
       const content = contentRaw ?? "";
 
       chaptersForCreate.push({
@@ -1409,8 +1527,9 @@ export class ProjectService {
       try {
         await this.runPackageExport(projectId);
         flushed += 1;
-      } catch {
+      } catch (error) {
         failed += 1;
+        logger.error("Failed to flush pending package export", { projectId, error });
       }
     });
 
@@ -1544,41 +1663,53 @@ export class ProjectService {
       };
     }
 
-    try {
-      const [
-        existingSynopsisRaw,
-        existingPlotRaw,
-        existingDrawingRaw,
-        existingMindmapRaw,
-        existingMemosRaw,
-      ] = await Promise.all([
-        readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`, logger),
-        readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_PLOT_FILE}`, logger),
-        readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`, logger),
-        readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_MINDMAP_FILE}`, logger),
-        readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_SCRAP_MEMOS_FILE}`, logger),
-      ]);
+    const readWorldDocument = async <T>(
+      fileName: string,
+      schema: z.ZodType<T>,
+      label: string,
+    ): Promise<ReturnType<z.ZodType<T>["safeParse"]>> => {
+      const entryPath = `${LUIE_WORLD_DIR}/${fileName}`;
+      try {
+        const raw = await readLuieEntry(projectPath, entryPath, logger);
+        return parseLuieDocumentForExport(raw, schema, {
+          packagePath: projectPath,
+          entryPath,
+          label,
+        });
+      } catch (error) {
+        logger.warn("Failed to read .luie world document; using default during export", {
+          projectPath,
+          entryPath,
+          label,
+          error,
+        });
+        return schema.safeParse(null);
+      }
+    };
 
-      return {
-        synopsis: LuieWorldSynopsisSchema.safeParse(parseJsonSafely(existingSynopsisRaw)),
-        plot: LuieWorldPlotSchema.safeParse(parseJsonSafely(existingPlotRaw)),
-        drawing: LuieWorldDrawingSchema.safeParse(parseJsonSafely(existingDrawingRaw)),
-        mindmap: LuieWorldMindmapSchema.safeParse(parseJsonSafely(existingMindmapRaw)),
-        memos: LuieWorldScrapMemosSchema.safeParse(parseJsonSafely(existingMemosRaw)),
-      };
-    } catch (error) {
-      logger.warn("Failed to read world payload from package; falling back to defaults", {
-        projectPath,
-        error,
-      });
-      return {
-        synopsis: LuieWorldSynopsisSchema.safeParse(null),
-        plot: LuieWorldPlotSchema.safeParse(null),
-        drawing: LuieWorldDrawingSchema.safeParse(null),
-        mindmap: LuieWorldMindmapSchema.safeParse(null),
-        memos: LuieWorldScrapMemosSchema.safeParse(null),
-      };
-    }
+    const [synopsis, plot, drawing, mindmap, memos] = await Promise.all([
+      readWorldDocument(
+        LUIE_WORLD_SYNOPSIS_FILE,
+        LuieWorldSynopsisSchema,
+        "synopsis",
+      ),
+      readWorldDocument(LUIE_WORLD_PLOT_FILE, LuieWorldPlotSchema, "plot"),
+      readWorldDocument(LUIE_WORLD_DRAWING_FILE, LuieWorldDrawingSchema, "drawing"),
+      readWorldDocument(LUIE_WORLD_MINDMAP_FILE, LuieWorldMindmapSchema, "mindmap"),
+      readWorldDocument(
+        LUIE_WORLD_SCRAP_MEMOS_FILE,
+        LuieWorldScrapMemosSchema,
+        "scrap-memos",
+      ),
+    ]);
+
+    return {
+      synopsis,
+      plot,
+      drawing,
+      mindmap,
+      memos,
+    };
   }
 
   private buildWorldSynopsis(

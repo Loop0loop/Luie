@@ -199,16 +199,12 @@ class DatabaseService {
     if (this.prisma) {
       return;
     }
-    if (this.initPromise) {
-      await this.initPromise;
-      return;
-    }
 
-    this.initPromise = this.initializeInternal().finally(() => {
-      if (!this.prisma) {
+    if (!this.initPromise) {
+      this.initPromise = this.initializeInternal().finally(() => {
         this.initPromise = null;
-      }
-    });
+      });
+    }
 
     await this.initPromise;
   }
@@ -338,12 +334,13 @@ class DatabaseService {
         logger.info("Test database push completed successfully");
       } catch (error) {
         const prismaError = error as { stdout?: string; stderr?: string };
-        logger.error("Failed to push test database", {
+        logger.warn("Failed to push test database; falling back to SQLite bootstrap", {
           error,
           stdout: prismaError.stdout,
           stderr: prismaError.stderr,
+          dbPath: context.dbPath,
         });
-        throw error;
+        this.ensurePackagedSqliteSchema(context.dbPath);
       }
       return;
     }
@@ -504,7 +501,9 @@ class DatabaseService {
 
   async disconnect(): Promise<void> {
     if (this.initPromise && !this.prisma) {
-      await this.initPromise.catch(() => undefined);
+      await this.initPromise.catch((error) => {
+        logger.error("Database initialization failed before disconnect", { error });
+      });
     }
     if (!this.prisma) {
       return;

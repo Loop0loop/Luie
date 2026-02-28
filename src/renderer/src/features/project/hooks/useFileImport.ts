@@ -322,6 +322,7 @@ export function useFileImport(
             terms: createdTermIds.length,
           });
         }
+        importedProjectIdRef.current = currentProject.id;
       } finally {
         if (importingProjectIdRef.current === currentProject.id) {
           importingProjectIdRef.current = null;

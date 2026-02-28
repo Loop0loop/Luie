@@ -39,6 +39,9 @@ const toStringArray = (value: unknown): string[] =>
     ? value.filter((item): item is string => typeof item === "string")
     : [];
 
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value && typeof value === "object" && !Array.isArray(value));
+
 const parseJsonString = (value: string): unknown => {
   try {
     return JSON.parse(value) as unknown;
@@ -172,12 +175,21 @@ const mapWorldDocumentRow = (row: DbRow): SyncWorldDocumentRecord | null => {
     return null;
   }
 
+  const normalizedPayload = normalizeJsonValue(row.payload);
+  const payload = isPlainObject(normalizedPayload) ? normalizedPayload : {};
+  if (!isPlainObject(normalizedPayload)) {
+    logger.warn("Invalid world document payload from sync source; using empty payload", {
+      docType,
+      payloadType: normalizedPayload === null ? "null" : typeof normalizedPayload,
+    });
+  }
+
   return {
     id,
     userId,
     projectId,
     docType,
-    payload: row.payload ?? {},
+    payload,
     updatedAt: toIsoString(row.updated_at),
     deletedAt: toNullableString(row.deleted_at),
   };

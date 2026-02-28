@@ -39,6 +39,29 @@ type LuieTermsFile = {
   terms?: Array<{ term?: string; definition?: string; category?: string }>;
 };
 
+const parseLuieJsonSafe = <T>(
+  raw: string | null,
+  fallback: T,
+  options: {
+    projectPath: string;
+    entryPath: string;
+    label: string;
+  },
+): T => {
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw) as T;
+  } catch (error) {
+    logger.warn("Failed to parse .luie analysis payload; using fallback", {
+      projectPath: options.projectPath,
+      entryPath: options.entryPath,
+      label: options.label,
+      error,
+    });
+    return fallback;
+  }
+};
+
 const isAsyncIterable = (value: unknown): value is AsyncIterable<unknown> => {
   if (!value || typeof value !== "object") {
     return false;
@@ -112,14 +135,36 @@ class ManuscriptAnalysisService {
         throw new Error(`Chapter content not found in .luie: ${chapterId}`);
       }
 
-      const meta = metaRaw ? (JSON.parse(metaRaw) as LuieMeta) : undefined;
+      const meta = parseLuieJsonSafe<LuieMeta | undefined>(
+        metaRaw,
+        undefined,
+        {
+          projectPath,
+          entryPath: LUIE_PACKAGE_META_FILENAME,
+          label: "meta",
+        },
+      );
       const chapterMeta = meta?.chapters?.find((entry) => entry.id === chapterId);
       const chapterTitle = chapterMeta?.title ?? "Untitled";
 
-      const charactersFile = charactersRaw
-        ? (JSON.parse(charactersRaw) as LuieCharactersFile)
-        : { characters: [] };
-      const termsFile = termsRaw ? (JSON.parse(termsRaw) as LuieTermsFile) : { terms: [] };
+      const charactersFile = parseLuieJsonSafe<LuieCharactersFile>(
+        charactersRaw,
+        { characters: [] },
+        {
+          projectPath,
+          entryPath: `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`,
+          label: "world characters",
+        },
+      );
+      const termsFile = parseLuieJsonSafe<LuieTermsFile>(
+        termsRaw,
+        { terms: [] },
+        {
+          projectPath,
+          entryPath: `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`,
+          label: "world terms",
+        },
+      );
 
       const characters = (charactersFile.characters ?? [])
         .filter((char) => Boolean(char?.name))
