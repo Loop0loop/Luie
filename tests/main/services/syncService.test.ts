@@ -17,6 +17,7 @@ const mocked = vi.hoisted(() => {
   const upsertBundle = vi.fn();
   const writeLuiePackage = vi.fn();
   const readLuieEntry = vi.fn();
+  const openLuieProject = vi.fn();
 
   const prisma = {
     $transaction: vi.fn(async (handler: unknown) => {
@@ -91,6 +92,7 @@ const mocked = vi.hoisted(() => {
     upsertBundle,
     writeLuiePackage,
     readLuieEntry,
+    openLuieProject,
     prisma,
   };
 });
@@ -133,6 +135,12 @@ vi.mock("../../../src/main/services/features/syncRepository.js", () => ({
   syncRepository: {
     fetchBundle: (...args: unknown[]) => mocked.fetchBundle(...args),
     upsertBundle: (...args: unknown[]) => mocked.upsertBundle(...args),
+  },
+}));
+
+vi.mock("../../../src/main/services/core/projectService.js", () => ({
+  projectService: {
+    openLuieProject: (...args: unknown[]) => mocked.openLuieProject(...args),
   },
 }));
 
@@ -194,9 +202,22 @@ describe("SyncService auth hardening", () => {
     mocked.upsertBundle.mockReset();
     mocked.writeLuiePackage.mockReset();
     mocked.readLuieEntry.mockReset();
+    mocked.openLuieProject.mockReset();
     mocked.writeLuiePackage.mockResolvedValue(undefined);
     mocked.readLuieEntry.mockResolvedValue(null);
+    mocked.openLuieProject.mockResolvedValue({ project: { id: "project-1" } });
     mocked.prisma.$transaction.mockClear();
+    mocked.prisma.project.update.mockClear();
+    mocked.prisma.project.create.mockClear();
+    mocked.prisma.project.delete.mockClear();
+    mocked.prisma.chapter.update.mockClear();
+    mocked.prisma.chapter.create.mockClear();
+    mocked.prisma.character.update.mockClear();
+    mocked.prisma.character.create.mockClear();
+    mocked.prisma.character.delete.mockClear();
+    mocked.prisma.term.update.mockClear();
+    mocked.prisma.term.create.mockClear();
+    mocked.prisma.term.delete.mockClear();
     mocked.prisma.project.findMany.mockResolvedValue([]);
     mocked.prisma.project.findUnique.mockResolvedValue(null);
 
@@ -418,6 +439,111 @@ describe("SyncService auth hardening", () => {
 
     expect(result.success).toBe(false);
     expect(result.message).toContain("SYNC_LUIE_PERSIST_FAILED");
+    expect(mocked.upsertBundle).not.toHaveBeenCalled();
+    expect(mocked.prisma.$transaction).not.toHaveBeenCalled();
+    expect(mocked.prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it("skips .luie persistence when projectPath is invalid and continues sync", async () => {
+    const syncedUserId = "00000000-0000-0000-0000-000000000001";
+    mocked.syncSettings.connected = true;
+    mocked.syncSettings.autoSync = false;
+    mocked.syncSettings.userId = syncedUserId;
+    mocked.syncSettings.expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    mocked.syncSettings.accessTokenCipher = "cipher";
+    mocked.getAccessToken.mockReturnValue({ token: "access-token" });
+    mocked.getRefreshToken.mockReturnValue({ token: "refresh-token" });
+    mocked.prisma.project.findMany.mockResolvedValue([
+      {
+        id: "project-1",
+        title: "Project",
+        description: null,
+        createdAt: new Date("2026-02-22T00:00:00.000Z"),
+        updatedAt: new Date("2026-02-22T00:00:00.000Z"),
+        projectPath: "relative/unsafe.luie",
+        chapters: [],
+        characters: [],
+        terms: [],
+      },
+    ]);
+    mocked.prisma.project.findUnique.mockResolvedValue({
+      id: "project-1",
+      projectPath: "relative/unsafe.luie",
+      snapshots: [],
+    });
+    mocked.fetchBundle.mockResolvedValue({
+      projects: [],
+      chapters: [],
+      characters: [],
+      terms: [],
+      worldDocuments: [],
+      memos: [],
+      snapshots: [],
+      tombstones: [],
+    });
+    mocked.upsertBundle.mockResolvedValue(undefined);
+
+    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const service = new SyncService();
+    service.initialize();
+    const result = await service.runNow("manual");
+
+    expect(result.success).toBe(true);
+    expect(mocked.writeLuiePackage).not.toHaveBeenCalled();
+    expect(mocked.readLuieEntry).not.toHaveBeenCalled();
+    expect(mocked.prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(mocked.upsertBundle).toHaveBeenCalledTimes(1);
+  });
+
+  it("attempts DB cache recovery from persisted .luie when DB apply fails", async () => {
+    const syncedUserId = "00000000-0000-0000-0000-000000000001";
+    mocked.syncSettings.connected = true;
+    mocked.syncSettings.autoSync = false;
+    mocked.syncSettings.userId = syncedUserId;
+    mocked.syncSettings.expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    mocked.syncSettings.accessTokenCipher = "cipher";
+    mocked.getAccessToken.mockReturnValue({ token: "access-token" });
+    mocked.getRefreshToken.mockReturnValue({ token: "refresh-token" });
+    mocked.prisma.project.findMany.mockResolvedValue([
+      {
+        id: "project-1",
+        title: "Project",
+        description: null,
+        createdAt: new Date("2026-02-22T00:00:00.000Z"),
+        updatedAt: new Date("2026-02-22T00:00:00.000Z"),
+        projectPath: "/tmp/project-1.luie",
+        chapters: [],
+        characters: [],
+        terms: [],
+      },
+    ]);
+    mocked.prisma.project.findUnique.mockResolvedValue({
+      id: "project-1",
+      projectPath: "/tmp/project-1.luie",
+      snapshots: [],
+    });
+    mocked.fetchBundle.mockResolvedValue({
+      projects: [],
+      chapters: [],
+      characters: [],
+      terms: [],
+      worldDocuments: [],
+      memos: [],
+      snapshots: [],
+      tombstones: [],
+    });
+    mocked.upsertBundle.mockResolvedValue(undefined);
+    mocked.prisma.$transaction.mockRejectedValueOnce(new Error("SQLITE_BUSY"));
+
+    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const service = new SyncService();
+    service.initialize();
+    const result = await service.runNow("manual");
+
+    expect(result.success).toBe(false);
+    expect(result.message).toContain("SYNC_DB_CACHE_APPLY_FAILED");
+    expect(mocked.writeLuiePackage).toHaveBeenCalledTimes(1);
+    expect(mocked.openLuieProject).toHaveBeenCalledWith("/tmp/project-1.luie");
     expect(mocked.upsertBundle).not.toHaveBeenCalled();
   });
 

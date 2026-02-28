@@ -30,6 +30,8 @@ import { writeLuiePackage } from "../../handler/system/ipcFsHandlers.js";
 import { db } from "../../database/index.js";
 import { settingsManager } from "../../manager/settingsManager.js";
 import { readLuieEntry } from "../../utils/luiePackage.js";
+import { ensureSafeAbsolutePath } from "../../utils/pathValidation.js";
+import { projectService } from "../core/projectService.js";
 import {
   isRecord,
   normalizeWorldDrawingPaths,
@@ -112,6 +114,7 @@ const WORLD_DOCUMENT_FILES: Array<{
 ];
 
 type WorldDocumentType = SyncBundle["worldDocuments"][number]["docType"];
+type PersistedLuiePackage = { projectId: string; projectPath: string };
 
 const WORLD_DOCUMENT_FILE_BY_TYPE: Record<WorldDocumentType, string> = {
   synopsis: LUIE_WORLD_SYNOPSIS_FILE,
@@ -740,7 +743,22 @@ export class SyncService {
     );
 
     if (projectPath && projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
-      await this.collectWorldDocuments(bundle, userId, projectId, projectPath, projectUpdatedAt);
+      try {
+        const safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
+        await this.collectWorldDocuments(
+          bundle,
+          userId,
+          projectId,
+          safeProjectPath,
+          projectUpdatedAt,
+        );
+      } catch (error) {
+        logger.warn("Skipping sync world document read for invalid projectPath", {
+          projectId,
+          projectPath,
+          error,
+        });
+      }
     }
   }
 
@@ -1344,24 +1362,44 @@ export class SyncService {
   }
 
   private async applyMergedBundleToLocal(bundle: SyncBundle): Promise<void> {
+    // `.luie` package is the source of truth. Persist it first so DB cache
+    // mutations do not commit when package write fails.
+    const persistedPackages = await this.persistBundleToLuiePackages(bundle);
+
     const prisma = db.getClient();
     const deletedProjectIds = this.collectDeletedProjectIds(bundle);
-    await prisma.$transaction(async (tx: unknown) => {
-      const transactionClient = tx as ReturnType<(typeof db)["getClient"]>;
-      await this.applyProjectDeletes(transactionClient, deletedProjectIds);
-      await this.upsertProjects(transactionClient, bundle.projects, deletedProjectIds);
+    try {
+      await prisma.$transaction(async (tx: unknown) => {
+        const transactionClient = tx as ReturnType<(typeof db)["getClient"]>;
+        await this.applyProjectDeletes(transactionClient, deletedProjectIds);
+        await this.upsertProjects(transactionClient, bundle.projects, deletedProjectIds);
 
-      for (const chapter of bundle.chapters) {
-        if (deletedProjectIds.has(chapter.projectId)) continue;
-        await this.upsertChapter(transactionClient, chapter);
+        for (const chapter of bundle.chapters) {
+          if (deletedProjectIds.has(chapter.projectId)) continue;
+          await this.upsertChapter(transactionClient, chapter);
+        }
+
+        await this.upsertCharacters(transactionClient, bundle.characters, deletedProjectIds);
+        await this.upsertTerms(transactionClient, bundle.terms, deletedProjectIds);
+        await this.applyChapterTombstones(transactionClient, bundle.tombstones, deletedProjectIds);
+      });
+    } catch (error) {
+      const persistedProjectIds = persistedPackages.map((item) => item.projectId);
+      logger.error("Failed to apply merged bundle to DB cache after .luie persistence", {
+        error,
+        persistedProjectIds,
+      });
+
+      const failedRecoveryProjectIds = await this.recoverDbCacheFromPersistedPackages(
+        persistedPackages,
+      );
+      if (failedRecoveryProjectIds.length > 0) {
+        throw new Error(
+          `SYNC_DB_CACHE_APPLY_FAILED:${persistedProjectIds.join(",") || "none"};SYNC_DB_CACHE_RECOVERY_FAILED:${failedRecoveryProjectIds.join(",")}`,
+        );
       }
-
-      await this.upsertCharacters(transactionClient, bundle.characters, deletedProjectIds);
-      await this.upsertTerms(transactionClient, bundle.terms, deletedProjectIds);
-      await this.applyChapterTombstones(transactionClient, bundle.tombstones, deletedProjectIds);
-    });
-
-    await this.persistBundleToLuiePackages(bundle);
+      throw new Error(`SYNC_DB_CACHE_APPLY_FAILED:${persistedProjectIds.join(",") || "none"}`);
+    }
   }
 
   private async buildProjectPackagePayload(
@@ -1492,8 +1530,11 @@ export class SyncService {
     };
   }
 
-  private async persistBundleToLuiePackages(bundle: SyncBundle): Promise<void> {
+  private async persistBundleToLuiePackages(
+    bundle: SyncBundle,
+  ): Promise<PersistedLuiePackage[]> {
     const failedProjects: string[] = [];
+    const persistedProjects: PersistedLuiePackage[] = [];
     for (const project of bundle.projects) {
       const localProject = await db.getClient().project.findUnique({
         where: { id: project.id },
@@ -1525,21 +1566,36 @@ export class SyncService {
       if (!projectPath || !projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
         continue;
       }
+      let safeProjectPath: string;
+      try {
+        safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
+      } catch (error) {
+        logger.warn("Skipping .luie persistence for invalid projectPath", {
+          projectId: project.id,
+          projectPath,
+          error,
+        });
+        continue;
+      }
       const payload = await this.buildProjectPackagePayload(
         bundle,
         project.id,
-        projectPath,
+        safeProjectPath,
         localProject?.snapshots ?? [],
       );
       if (!payload) continue;
 
       try {
-        await writeLuiePackage(projectPath, payload, logger);
+        await writeLuiePackage(safeProjectPath, payload, logger);
+        persistedProjects.push({
+          projectId: project.id,
+          projectPath: safeProjectPath,
+        });
       } catch (error) {
         failedProjects.push(project.id);
         logger.error("Failed to persist merged bundle into .luie package", {
           projectId: project.id,
-          projectPath,
+          projectPath: safeProjectPath,
           error,
         });
       }
@@ -1547,6 +1603,28 @@ export class SyncService {
     if (failedProjects.length > 0) {
       throw new Error(`SYNC_LUIE_PERSIST_FAILED:${failedProjects.join(",")}`);
     }
+    return persistedProjects;
+  }
+
+  private async recoverDbCacheFromPersistedPackages(
+    persistedPackages: PersistedLuiePackage[],
+  ): Promise<string[]> {
+    if (persistedPackages.length === 0) return [];
+
+    const failedProjectIds: string[] = [];
+    for (const entry of persistedPackages) {
+      try {
+        await projectService.openLuieProject(entry.projectPath);
+      } catch (error) {
+        failedProjectIds.push(entry.projectId);
+        logger.error("Failed to recover DB cache from persisted .luie package", {
+          projectId: entry.projectId,
+          projectPath: entry.projectPath,
+          error,
+        });
+      }
+    }
+    return failedProjectIds;
   }
 
   private async upsertChapter(

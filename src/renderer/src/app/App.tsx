@@ -10,6 +10,7 @@ import { useProjectStore } from "@renderer/features/project/stores/projectStore"
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useProjectInit } from "@renderer/features/project/hooks/useProjectInit";
+import { useDataRecoveryStore } from "@renderer/features/workspace/stores/useDataRecoveryStore";
 import { useProjectTemplate } from "@renderer/features/project/hooks/useProjectTemplate";
 import { useShortcutStore } from "@renderer/features/workspace/stores/shortcutStore";
 import { useToast } from "@shared/ui/ToastContext";
@@ -212,7 +213,7 @@ export default function App() {
         setCurrentProject(imported.data.project);
         setView("editor");
         if (imported.data.recovery) {
-          showToast(t("project.toast.recoveredFromDb"), "info");
+          useDataRecoveryStore.getState().setRecoveryState(true, imported.data.recoveryReason, imported.data.recoveryPath);
         }
       }
     } catch (error) {

@@ -193,6 +193,28 @@ describe("ProjectService", () => {
       }),
     ).rejects.toBeDefined();
 
+    await expect(localProjectService.openLuieProject("relative/open-target.luie")).rejects.toBeDefined();
+
+    await localProjectService.deleteProject(created.id as string);
+  });
+
+  it("skips package export when projectPath in DB is a relative .luie path", async () => {
+    const validPath = path.join(app.getPath("userData"), "relative-export-skip.luie");
+    const created = await localProjectService.createProject({
+      title: "Relative Export Skip",
+      description: "test",
+      projectPath: validPath,
+    });
+
+    await db.getClient().project.update({
+      where: { id: created.id as string },
+      data: { projectPath: "relative/unsafe.luie" },
+    });
+
+    await expect(
+      localProjectService.exportProjectPackage(created.id as string),
+    ).resolves.toBeUndefined();
+
     await localProjectService.deleteProject(created.id as string);
   });
 });

@@ -23,6 +23,7 @@ import {
 } from "../../../shared/constants/index.js";
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { readLuieEntry } from "../../utils/luiePackage.js";
+import { ensureSafeAbsolutePath } from "../../utils/pathValidation.js";
 
 const logger = createLogger("ManuscriptAnalysisService");
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3-flash-preview";
@@ -118,17 +119,18 @@ class ManuscriptAnalysisService {
       if (!projectPath || !projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
         throw new Error("Project .luie path not found");
       }
+      const safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
 
       // 2. .luie 내부 데이터 로드
       const [metaRaw, chapterContent, charactersRaw, termsRaw] = await Promise.all([
-        readLuieEntry(projectPath, LUIE_PACKAGE_META_FILENAME, logger),
+        readLuieEntry(safeProjectPath, LUIE_PACKAGE_META_FILENAME, logger),
         readLuieEntry(
-          projectPath,
+          safeProjectPath,
           `${LUIE_MANUSCRIPT_DIR}/${chapterId}${MARKDOWN_EXTENSION}`,
           logger,
         ),
-        readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`, logger),
-        readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`, logger),
+        readLuieEntry(safeProjectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`, logger),
+        readLuieEntry(safeProjectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`, logger),
       ]);
 
       if (!chapterContent) {
@@ -139,7 +141,7 @@ class ManuscriptAnalysisService {
         metaRaw,
         undefined,
         {
-          projectPath,
+          projectPath: safeProjectPath,
           entryPath: LUIE_PACKAGE_META_FILENAME,
           label: "meta",
         },
@@ -151,7 +153,7 @@ class ManuscriptAnalysisService {
         charactersRaw,
         { characters: [] },
         {
-          projectPath,
+          projectPath: safeProjectPath,
           entryPath: `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`,
           label: "world characters",
         },
@@ -160,7 +162,7 @@ class ManuscriptAnalysisService {
         termsRaw,
         { terms: [] },
         {
-          projectPath,
+          projectPath: safeProjectPath,
           entryPath: `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`,
           label: "world terms",
         },

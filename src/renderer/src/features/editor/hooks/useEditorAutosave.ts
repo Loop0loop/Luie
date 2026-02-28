@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useToast } from "@shared/ui/ToastContext";
 import { api } from "@shared/api";
 import { EDITOR_AUTOSAVE_DEBOUNCE_MS } from "@shared/constants";
@@ -14,6 +15,7 @@ const RETRY_DELAYS = [1000, 2000, 5000];
 
 export function useEditorAutosave({ onSave, title, content }: UseEditorAutosaveProps) {
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   // 🔐 Unmount guard — prevents setState after component is gone
@@ -69,7 +71,7 @@ export function useEditorAutosave({ onSave, title, content }: UseEditorAutosaveP
       if (retryCount.current < RETRY_DELAYS.length) {
         const delay = RETRY_DELAYS[retryCount.current];
         retryCount.current++;
-        showToast(`Save failed. Retrying in ${delay / 1000}s...`, "info", 2000);
+        showToast(t("editor.autosave.retryingIn", { seconds: delay / 1000 }), "info", 2000);
 
         // ✅ Track retry timer so we can cancel on unmount
         if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
@@ -79,7 +81,7 @@ export function useEditorAutosave({ onSave, title, content }: UseEditorAutosaveP
           }
         }, delay);
       } else {
-        showToast("Autosave failed. Check connection.", "error");
+        showToast(t("editor.autosave.failed"), "error");
       }
     }
   }, [onSave, showToast]);

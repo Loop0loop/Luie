@@ -444,6 +444,10 @@ export class ProjectService {
     return ensureSafeAbsolutePath(trimmed, "projectPath");
   }
 
+  private normalizeLuiePackagePath(inputPath: string, fieldName: string): string {
+    return ensureLuieExtension(ensureSafeAbsolutePath(inputPath, fieldName));
+  }
+
   async createProject(input: ProjectCreateInput) {
     try {
       logger.info("Creating project", input);
@@ -1094,7 +1098,7 @@ export class ProjectService {
 
   async openLuieProject(packagePath: string) {
     try {
-      const resolvedPath = ensureLuieExtension(packagePath);
+      const resolvedPath = this.normalizeLuiePackagePath(packagePath, "packagePath");
       const { meta, luieCorrupted, recoveryReason } = await this.readMetaOrMarkCorrupt(
         resolvedPath,
       );
@@ -1581,7 +1585,16 @@ export class ProjectService {
       });
       return null;
     }
-    return projectPath;
+    try {
+      return ensureSafeAbsolutePath(projectPath, "projectPath");
+    } catch (error) {
+      logger.warn("Skipping package export (invalid projectPath)", {
+        projectId,
+        projectPath,
+        error,
+      });
+      return null;
+    }
   }
 
   private buildExportChapterData(chapters: ChapterExportRecord[]) {
@@ -1939,7 +1952,7 @@ export class ProjectService {
     if (!project) return false;
 
     const exportPath = options?.targetPath
-      ? ensureLuieExtension(options.targetPath)
+      ? this.normalizeLuiePackagePath(options.targetPath, "targetPath")
       : this.resolveExportPath(projectId, project.projectPath);
     if (!exportPath) return false;
 

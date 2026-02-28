@@ -32,6 +32,8 @@ import { FeatureErrorBoundary } from "@shared/ui/FeatureErrorBoundary";
 
 const SettingsModal = lazy(() => import("@renderer/features/settings/components/SettingsModal"));
 import { WorkspacePanels } from "@renderer/features/workspace/components/WorkspacePanels";
+import DataRecoveryBanner from "@renderer/features/workspace/components/DataRecoveryBanner";
+import UpdaterNotification from "@renderer/features/workspace/components/UpdaterNotification";
 
 export default function EditorRoot() {
     const { t } = useTranslation();
@@ -294,6 +296,8 @@ export default function EditorRoot() {
 
     return (
         <GlobalDragContext onDropToCenter={handleDropToCenter} onDropToSplit={handleDropToSplit}>
+            <DataRecoveryBanner />
+            <UpdaterNotification />
             {uiMode === 'docs' ? (
                 <GoogleDocsLayout
                     sidebar={
