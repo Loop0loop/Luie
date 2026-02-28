@@ -1,38 +1,33 @@
 import { memo } from "react";
 import { Check } from "lucide-react";
 import type { TFunction } from "i18next";
-import type { EditorSettings } from "@renderer/features/editor/stores/editorStore";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import type { WindowMenuBarMode } from '@shared/types';
 
 interface AppearanceTabProps {
     t: TFunction;
-    theme: EditorSettings["theme"];
-    themeTemp: EditorSettings["themeTemp"];
-    themeContrast: EditorSettings["themeContrast"];
-    themeAccent: EditorSettings["themeAccent"];
-    themeTexture: boolean;
-    uiMode: EditorSettings["uiMode"];
     isMacOS: boolean;
     menuBarMode: WindowMenuBarMode;
     isMenuBarUpdating: boolean;
-    onApplySettings: (next: Partial<EditorSettings>) => void;
     onMenuBarModeChange: (mode: WindowMenuBarMode) => void;
 }
-
 export const AppearanceTab = memo(function AppearanceTab({
     t,
-    theme,
-    themeTemp,
-    themeContrast,
-    themeAccent,
-    themeTexture,
-    uiMode,
     isMacOS,
     menuBarMode,
     isMenuBarUpdating,
-    onApplySettings,
     onMenuBarModeChange,
 }: AppearanceTabProps) {
+    const {
+        theme,
+        themeTemp,
+        themeContrast,
+        themeAccent,
+        themeTexture,
+        uiMode,
+        updateSettings: onApplySettings,
+    } = useEditorStore();
+
     return (
         <div className="space-y-10 max-w-2xl content-visibility-auto contain-intrinsic-size-[1px_1000px]">
             <section className="space-y-4">

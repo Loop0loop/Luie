@@ -79,7 +79,12 @@ export function registerIpcHandler<TArgs extends unknown[], TResult>(options: {
           .then(({ syncService }) => {
             syncService.onLocalMutation(options.channel);
           })
-          .catch(() => undefined);
+          .catch((error) => {
+            options.logger.error(
+              "Failed to trigger auto sync after local mutation",
+              withLogContext({ error }, { requestId, channel: options.channel }),
+            );
+          });
       }
       return createSuccessResponse(result, {
         timestamp: new Date().toISOString(),

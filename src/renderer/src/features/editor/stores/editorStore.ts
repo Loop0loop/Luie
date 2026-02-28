@@ -27,10 +27,6 @@ import { editorSettingsSchema } from "@shared/schemas";
 import { api } from "@shared/api";
 
 interface EditorStore extends EditorSettings {
-  wordCount: number;
-  charCount: number;
-  saveStatus: "idle" | "saving" | "saved" | "error";
-
   loadSettings: () => Promise<void>;
   updateSettings: (settings: Partial<EditorSettings>) => Promise<void>;
   setFontSize: (size: number) => Promise<void>;
@@ -39,8 +35,6 @@ interface EditorStore extends EditorSettings {
   setUiMode: (mode: EditorUiMode) => Promise<void>;
   resetSettings: () => Promise<void>;
 
-  setStats: (stats: { wordCount: number; charCount: number }) => void;
-  setSaveStatus: (status: "idle" | "saving" | "saved" | "error") => void;
 }
 
 const DEFAULT_SETTINGS: EditorSettings = {
@@ -60,12 +54,7 @@ const DEFAULT_SETTINGS: EditorSettings = {
 export const useEditorStore = create<EditorStore>((set, get) => ({
   ...DEFAULT_SETTINGS,
 
-  wordCount: 0,
-  charCount: 0,
-  saveStatus: "idle",
-
-  setStats: (stats) => set(stats),
-  setSaveStatus: (status) => set({ saveStatus: status }),
+  ...DEFAULT_SETTINGS,
 
   loadSettings: async () => {
     const response = await api.settings.getEditor();

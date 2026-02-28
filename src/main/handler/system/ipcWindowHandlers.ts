@@ -21,6 +21,7 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       logTag: "WINDOW_CLOSE",
       failMessage: "Failed to close window",
       handler: () => {
+        logger.info("WINDOW_CLOSE requested from renderer");
         const win = windowManager.getMainWindow();
         if (!win) return false;
         win.close();
@@ -32,6 +33,7 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       logTag: "APP_QUIT",
       failMessage: "Failed to quit app",
       handler: () => {
+        logger.info("APP_QUIT requested from renderer");
         app.quit();
         return true;
       },

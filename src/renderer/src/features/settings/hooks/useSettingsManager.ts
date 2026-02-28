@@ -2,9 +2,8 @@ import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { useToast } from "@shared/ui/ToastContext";
-import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { useEditorStore, type FontPreset } from "@renderer/features/editor/stores/editorStore";
 import { useShortcutStore } from "@renderer/features/workspace/stores/shortcutStore";
-import type { FontPreset, EditorSettings } from "@renderer/features/editor/stores/editorStore";
 import type { ShortcutMap, SyncStatus, WindowMenuBarMode } from "@shared/types";
 import { SHORTCUT_ACTIONS } from "@shared/constants/shortcuts";
 import { STORAGE_KEY_FONTS_INSTALLED } from "@shared/constants";
@@ -34,30 +33,12 @@ export function useSettingsManager() {
     const { showToast } = useToast();
 
     const {
-        theme,
-        themeTemp,
-        themeContrast,
-        themeAccent,
-        themeTexture,
         fontSize,
         lineHeight,
-        fontFamily,
-        fontPreset,
-        uiMode,
-        updateSettings,
     } = useEditorStore(
         useShallow((state) => ({
-            theme: state.theme,
-            themeTemp: state.themeTemp,
-            themeContrast: state.themeContrast,
-            themeAccent: state.themeAccent,
-            themeTexture: state.themeTexture,
             fontSize: state.fontSize,
             lineHeight: state.lineHeight,
-            fontFamily: state.fontFamily,
-            fontPreset: state.fontPreset,
-            uiMode: state.uiMode,
-            updateSettings: state.updateSettings,
         })),
     );
 
@@ -108,13 +89,6 @@ export function useSettingsManager() {
     useEffect(() => {
         menuBarModeRef.current = menuBarMode;
     }, [menuBarMode]);
-
-    const applySettings = useCallback(
-        (next: Partial<EditorSettings>) => {
-            void updateSettings(next);
-        },
-        [updateSettings],
-    );
 
     useEffect(() => {
         let cancelled = false;
@@ -489,16 +463,8 @@ export function useSettingsManager() {
     return {
         t,
         i18n,
-        theme,
-        themeTemp,
-        themeContrast,
-        themeAccent,
-        themeTexture,
         fontSize,
         lineHeight,
-        fontFamily,
-        fontPreset,
-        uiMode,
         shortcuts,
         shortcutDefaults,
         activeTab,
@@ -517,7 +483,6 @@ export function useSettingsManager() {
         installing,
         installed,
         isMacOS,
-        applySettings,
         handleCommitShortcuts,
         handleResetShortcuts,
         handleMenuBarMode,

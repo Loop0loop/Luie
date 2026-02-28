@@ -93,7 +93,7 @@ const readLuieJson = async (projectPath: string, fileName: string): Promise<unkn
 };
 
 const writeLuieJson = async (projectPath: string, fileName: string, data: unknown) => {
-  const queueKey = `${projectPath}:${fileName}`;
+  const queueKey = projectPath;
   const previousWrite = luieWriteQueue.get(queueKey) ?? Promise.resolve();
   const nextWrite = previousWrite
     .catch(() => undefined)

@@ -1,21 +1,16 @@
 import { memo } from "react";
 import { Minus, Plus, Download } from "lucide-react";
 import type { TFunction } from "i18next";
-import type { EditorSettings } from "@renderer/features/editor/stores/editorStore";
-import { EDITOR_FONT_FAMILIES } from '@shared/constants/configs';
 import type { FontPreset } from "@renderer/features/editor/stores/editorStore";
-import type { OptionalFontOption } from "@renderer/features/settings/components/tabs/types";
-
-interface EditorTabProps {
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { EDITOR_FONT_FAMILIES } from '@shared/constants/configs';
+import type { OptionalFontOption } from "@renderer/features/settings/components/tabs/types"; interface EditorTabProps {
     t: TFunction;
-    fontFamily: EditorSettings["fontFamily"];
-    fontPreset?: FontPreset;
     localFontSize: number;
     localLineHeight: number;
     optionalFonts: OptionalFontOption[];
     installed: Record<string, boolean>;
     installing: Record<string, boolean>;
-    onApplySettings: (next: Partial<EditorSettings>) => void;
     onSetLocalFontSize: (value: number) => void;
     onSetLocalLineHeight: (value: number) => void;
     onInstallFont: (preset: FontPreset, pkg: string) => void;
@@ -23,18 +18,17 @@ interface EditorTabProps {
 
 export const EditorTab = memo(function EditorTab({
     t,
-    fontFamily,
-    fontPreset,
     localFontSize,
     localLineHeight,
     optionalFonts,
     installed,
     installing,
-    onApplySettings,
     onSetLocalFontSize,
     onSetLocalLineHeight,
     onInstallFont,
 }: EditorTabProps) {
+    const { fontFamily, fontPreset, updateSettings: onApplySettings } = useEditorStore();
+
     return (
         <div className="space-y-8 max-w-2xl content-visibility-auto contain-intrinsic-size-[1px_1200px]">
             <section className="space-y-4">

@@ -16,6 +16,7 @@ import ScrivenerSidebar from "@renderer/features/manuscript/components/Scrivener
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useUIStore, type DocsRightTab } from "@renderer/features/workspace/stores/uiStore";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { useEditorStatsStore } from "@renderer/features/editor/stores/editorStatsStore";
 import { useChapterManagement } from "@renderer/features/manuscript/hooks/useChapterManagement";
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useWorkspaceDropHandlers } from "@renderer/features/workspace/hooks/useWorkspaceDropHandlers";
@@ -41,7 +42,7 @@ export default function EditorRoot() {
     const fontSize = useEditorStore((state) => state.fontSize);
     const setFontSize = useEditorStore((state) => state.setFontSize);
 
-    const wordCount = useEditorStore((state) => state.wordCount);
+    const wordCount = useEditorStatsStore((state) => state.wordCount);
     const isDocsMode = uiMode === "docs";
 
     const isSidebarOpen = useUIStore((state) => state.isSidebarOpen);

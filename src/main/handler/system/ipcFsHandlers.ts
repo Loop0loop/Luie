@@ -13,9 +13,6 @@ import {
   LUIE_PACKAGE_EXTENSION,
   LUIE_PACKAGE_EXTENSION_NO_DOT,
   LUIE_PACKAGE_FILTER_NAME,
-  LUIE_PACKAGE_FORMAT,
-  LUIE_PACKAGE_CONTAINER_DIR,
-  LUIE_PACKAGE_VERSION,
   LUIE_PACKAGE_META_FILENAME,
   LUIE_MANUSCRIPT_DIR,
   MARKDOWN_EXTENSION,
@@ -89,6 +86,7 @@ const ALLOWED_TEXT_WRITE_EXTENSIONS = new Set([
   ".txt",
   LUIE_PACKAGE_EXTENSION,
 ]);
+const packageWriteQueue = new Map<string, Promise<void>>();
 
 type FsPathPermission = "read" | "write" | "package";
 
@@ -260,6 +258,37 @@ const ensureParentDir = async (targetPath: string) => {
   await fsp.mkdir(dir, { recursive: true });
 };
 
+const pathExists = async (targetPath: string): Promise<boolean> => {
+  try {
+    await fsp.access(targetPath);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const withPackageWriteLock = async <T>(
+  packagePath: string,
+  task: () => Promise<T>,
+): Promise<T> => {
+  const lockKey = path.resolve(ensureLuieExtension(packagePath));
+  const previous = packageWriteQueue.get(lockKey) ?? Promise.resolve();
+  const current = previous.catch(() => undefined).then(task);
+  const marker = current.then(
+    () => undefined,
+    () => undefined,
+  );
+  packageWriteQueue.set(lockKey, marker);
+
+  try {
+    return await current;
+  } finally {
+    if (packageWriteQueue.get(lockKey) === marker) {
+      packageWriteQueue.delete(lockKey);
+    }
+  }
+};
+
 const buildZipFile = async (
   outputPath: string,
   buildEntries: (zip: yazl.ZipFile) => Promise<void> | void,
@@ -366,76 +395,78 @@ export const writeLuiePackage = async (
   logger: LoggerLike,
 ) => {
   const outputPath = ensureLuieExtension(targetPath);
-  await ensureParentDir(outputPath);
+  return await withPackageWriteLock(outputPath, async () => {
+    await ensureParentDir(outputPath);
 
-  const tempZip = `${outputPath}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
-  const entries: ZipEntryPayload[] = [
-    { name: `${LUIE_MANUSCRIPT_DIR}/`, isDirectory: true },
-    { name: `${LUIE_WORLD_DIR}/`, isDirectory: true },
-    { name: `${LUIE_SNAPSHOTS_DIR}/`, isDirectory: true },
-    { name: `${LUIE_ASSETS_DIR}/`, isDirectory: true },
-    {
-      name: LUIE_PACKAGE_META_FILENAME,
-      content: JSON.stringify(payload.meta ?? {}, null, 2),
-    },
-    {
-      name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`,
-      content: JSON.stringify({ characters: payload.characters ?? [] }, null, 2),
-    },
-    {
-      name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`,
-      content: JSON.stringify({ terms: payload.terms ?? [] }, null, 2),
-    },
-    {
-      name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`,
-      content: JSON.stringify(payload.synopsis ?? { synopsis: "", status: "draft" }, null, 2),
-    },
-    {
-      name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_PLOT_FILE}`,
-      content: JSON.stringify(payload.plot ?? { columns: [] }, null, 2),
-    },
-    {
-      name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`,
-      content: JSON.stringify(payload.drawing ?? { paths: [] }, null, 2),
-    },
-    {
-      name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_MINDMAP_FILE}`,
-      content: JSON.stringify(payload.mindmap ?? { nodes: [], edges: [] }, null, 2),
-    },
-    {
-      name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_SCRAP_MEMOS_FILE}`,
-      content: JSON.stringify(payload.memos ?? { memos: [] }, null, 2),
-    },
-    {
-      name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_GRAPH_FILE}`,
-      content: JSON.stringify(payload.graph ?? { nodes: [], edges: [] }, null, 2),
-    },
-    {
-      name: `${LUIE_SNAPSHOTS_DIR}/index.json`,
-      content: JSON.stringify({ snapshots: payload.snapshots ?? [] }, null, 2),
-    },
-  ];
+    const tempZip = `${outputPath}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
+    const entries: ZipEntryPayload[] = [
+      { name: `${LUIE_MANUSCRIPT_DIR}/`, isDirectory: true },
+      { name: `${LUIE_WORLD_DIR}/`, isDirectory: true },
+      { name: `${LUIE_SNAPSHOTS_DIR}/`, isDirectory: true },
+      { name: `${LUIE_ASSETS_DIR}/`, isDirectory: true },
+      {
+        name: LUIE_PACKAGE_META_FILENAME,
+        content: JSON.stringify(payload.meta ?? {}, null, 2),
+      },
+      {
+        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`,
+        content: JSON.stringify({ characters: payload.characters ?? [] }, null, 2),
+      },
+      {
+        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`,
+        content: JSON.stringify({ terms: payload.terms ?? [] }, null, 2),
+      },
+      {
+        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`,
+        content: JSON.stringify(payload.synopsis ?? { synopsis: "", status: "draft" }, null, 2),
+      },
+      {
+        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_PLOT_FILE}`,
+        content: JSON.stringify(payload.plot ?? { columns: [] }, null, 2),
+      },
+      {
+        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`,
+        content: JSON.stringify(payload.drawing ?? { paths: [] }, null, 2),
+      },
+      {
+        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_MINDMAP_FILE}`,
+        content: JSON.stringify(payload.mindmap ?? { nodes: [], edges: [] }, null, 2),
+      },
+      {
+        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_SCRAP_MEMOS_FILE}`,
+        content: JSON.stringify(payload.memos ?? { memos: [] }, null, 2),
+      },
+      {
+        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_GRAPH_FILE}`,
+        content: JSON.stringify(payload.graph ?? { nodes: [], edges: [] }, null, 2),
+      },
+      {
+        name: `${LUIE_SNAPSHOTS_DIR}/index.json`,
+        content: JSON.stringify({ snapshots: payload.snapshots ?? [] }, null, 2),
+      },
+    ];
 
-  for (const chapter of payload.chapters ?? []) {
-    if (!chapter.id) continue;
-    entries.push({
-      name: `${LUIE_MANUSCRIPT_DIR}/${chapter.id}${MARKDOWN_EXTENSION}`,
-      content: chapter.content ?? "",
-    });
-  }
-
-  if (payload.snapshots && payload.snapshots.length > 0) {
-    for (const snapshot of payload.snapshots) {
-      if (!snapshot.id) continue;
+    for (const chapter of payload.chapters ?? []) {
+      if (!chapter.id) continue;
       entries.push({
-        name: `${LUIE_SNAPSHOTS_DIR}/${snapshot.id}.snap`,
-        content: JSON.stringify(snapshot, null, 2),
+        name: `${LUIE_MANUSCRIPT_DIR}/${chapter.id}${MARKDOWN_EXTENSION}`,
+        content: chapter.content ?? "",
       });
     }
-  }
 
-  await buildZipFile(tempZip, (zip) => addEntriesToZip(zip, entries));
-  await atomicReplace(tempZip, outputPath, logger);
+    if (payload.snapshots && payload.snapshots.length > 0) {
+      for (const snapshot of payload.snapshots) {
+        if (!snapshot.id) continue;
+        entries.push({
+          name: `${LUIE_SNAPSHOTS_DIR}/${snapshot.id}.snap`,
+          content: JSON.stringify(snapshot, null, 2),
+        });
+      }
+    }
+
+    await buildZipFile(tempZip, (zip) => addEntriesToZip(zip, entries));
+    await atomicReplace(tempZip, outputPath, logger);
+  });
 };
 
 const collectDirectoryEntries = async (sourceDir: string, baseDir = sourceDir) => {
@@ -461,6 +492,10 @@ const collectDirectoryEntries = async (sourceDir: string, baseDir = sourceDir) =
       continue;
     }
 
+    if (!item.isFile()) {
+      continue;
+    }
+
     entries.push({ name: relative, fromFilePath: fullPath });
   }
 
@@ -474,12 +509,51 @@ const migrateDirectoryPackageToZip = async (
 ) => {
   const backupPath = `${legacyDir}.dir-legacy-${Date.now()}`;
   await fsp.rename(legacyDir, backupPath);
-  const entries = await collectDirectoryEntries(backupPath);
   const tempZip = `${targetZip}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
 
-  await buildZipFile(tempZip, (zip) => addEntriesToZip(zip, entries));
-  await atomicReplace(tempZip, targetZip, logger);
-  return backupPath;
+  try {
+    const entries = await collectDirectoryEntries(backupPath);
+    await buildZipFile(tempZip, (zip) => addEntriesToZip(zip, entries));
+    await atomicReplace(tempZip, targetZip, logger);
+    return backupPath;
+  } catch (error) {
+    logger.error("Failed to migrate legacy directory package", {
+      legacyDir,
+      targetZip,
+      backupPath,
+      error,
+    });
+
+    try {
+      await fsp.rm(tempZip, { force: true });
+    } catch {
+      // best effort
+    }
+
+    try {
+      if (await pathExists(legacyDir)) {
+        const collidedPath = `${legacyDir}.migration-failed-${Date.now()}`;
+        await fsp.rename(legacyDir, collidedPath);
+        logger.info("Moved partial migration output before restore", {
+          legacyDir,
+          collidedPath,
+        });
+      }
+      await fsp.rename(backupPath, legacyDir);
+      logger.info("Restored legacy directory package after migration failure", {
+        legacyDir,
+        backupPath,
+      });
+    } catch (restoreError) {
+      logger.error("Failed to restore legacy directory package", {
+        legacyDir,
+        backupPath,
+        restoreError,
+      });
+    }
+
+    throw error;
+  }
 };
 
 const rebuildZipWithReplacement = async (
@@ -737,64 +811,65 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
           permission: "package",
         });
         const targetPath = ensureLuieExtension(safePackagePath);
+        await withPackageWriteLock(targetPath, async () => {
+          await ensureParentDir(targetPath);
 
-        await ensureParentDir(targetPath);
-
-        try {
-          const existing = await fsp.stat(targetPath);
-          if (existing.isDirectory()) {
-            await migrateDirectoryPackageToZip(targetPath, targetPath, logger);
-          } else if (existing.isFile()) {
-            const backupPath = `${targetPath}.legacy-${Date.now()}`;
-            await fsp.rename(targetPath, backupPath);
+          try {
+            const existing = await fsp.stat(targetPath);
+            if (existing.isDirectory()) {
+              await migrateDirectoryPackageToZip(targetPath, targetPath, logger);
+            } else if (existing.isFile()) {
+              const backupPath = `${targetPath}.legacy-${Date.now()}`;
+              await fsp.rename(targetPath, backupPath);
+            }
+          } catch (e) {
+            const err = e as NodeJS.ErrnoException;
+            if (err?.code !== "ENOENT") throw e;
           }
-        } catch (e) {
-          const err = e as NodeJS.ErrnoException;
-          if (err?.code !== "ENOENT") throw e;
-        }
 
-        const tempZip = `${targetPath}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
+          const tempZip = `${targetPath}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
 
-        await buildZipFile(tempZip, (zip) =>
-          addEntriesToZip(zip, [
-            ...baseLuieDirectoryEntries(),
-            metaEntry(meta),
-            {
-              name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`,
-              content: JSON.stringify({ characters: [] }, null, 2),
-            },
-            {
-              name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`,
-              content: JSON.stringify({ terms: [] }, null, 2),
-            },
-            {
-              name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`,
-              content: JSON.stringify({ synopsis: "", status: "draft" }, null, 2),
-            },
-            {
-              name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_PLOT_FILE}`,
-              content: JSON.stringify({ columns: [] }, null, 2),
-            },
-            {
-              name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`,
-              content: JSON.stringify({ paths: [] }, null, 2),
-            },
-            {
-              name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_MINDMAP_FILE}`,
-              content: JSON.stringify({ nodes: [], edges: [] }, null, 2),
-            },
-            {
-              name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_SCRAP_MEMOS_FILE}`,
-              content: JSON.stringify({ memos: [] }, null, 2),
-            },
-            {
-              name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_GRAPH_FILE}`,
-              content: JSON.stringify({ nodes: [], edges: [] }, null, 2),
-            },
-          ]),
-        );
+          await buildZipFile(tempZip, (zip) =>
+            addEntriesToZip(zip, [
+              ...baseLuieDirectoryEntries(),
+              metaEntry(meta),
+              {
+                name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`,
+                content: JSON.stringify({ characters: [] }, null, 2),
+              },
+              {
+                name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`,
+                content: JSON.stringify({ terms: [] }, null, 2),
+              },
+              {
+                name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`,
+                content: JSON.stringify({ synopsis: "", status: "draft" }, null, 2),
+              },
+              {
+                name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_PLOT_FILE}`,
+                content: JSON.stringify({ columns: [] }, null, 2),
+              },
+              {
+                name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`,
+                content: JSON.stringify({ paths: [] }, null, 2),
+              },
+              {
+                name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_MINDMAP_FILE}`,
+                content: JSON.stringify({ nodes: [], edges: [] }, null, 2),
+              },
+              {
+                name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_SCRAP_MEMOS_FILE}`,
+                content: JSON.stringify({ memos: [] }, null, 2),
+              },
+              {
+                name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_GRAPH_FILE}`,
+                content: JSON.stringify({ nodes: [], edges: [] }, null, 2),
+              },
+            ]),
+          );
 
-        await atomicReplace(tempZip, targetPath, logger);
+          await atomicReplace(tempZip, targetPath, logger);
+        });
         await approvePathForSession(targetPath, ["read", "write", "package"], "file");
         return { path: targetPath };
       },
@@ -815,47 +890,42 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
           permission: "package",
         });
         assertLuiePackagePath(safeProjectRoot, "projectRoot");
-
-        try {
-          const stat = await fsp.stat(safeProjectRoot);
-          if (stat.isDirectory()) {
-            await migrateDirectoryPackageToZip(
-              safeProjectRoot,
-              safeProjectRoot,
-              logger,
-            );
+        await withPackageWriteLock(safeProjectRoot, async () => {
+          try {
+            const stat = await fsp.stat(safeProjectRoot);
+            if (stat.isDirectory()) {
+              await migrateDirectoryPackageToZip(
+                safeProjectRoot,
+                safeProjectRoot,
+                logger,
+              );
+            }
+          } catch (e) {
+            const err = e as NodeJS.ErrnoException;
+            if (err?.code === "ENOENT") {
+              throw new ServiceError(
+                ErrorCode.FS_WRITE_FAILED,
+                "Project package does not exist. Create the .luie package first.",
+                {
+                  projectRoot: safeProjectRoot,
+                  relativePath: normalized,
+                },
+              );
+            } else {
+              throw e;
+            }
           }
-        } catch (e) {
-          const err = e as NodeJS.ErrnoException;
-          if (err?.code === "ENOENT") {
-            await ensureParentDir(safeProjectRoot);
-            const tempZip = `${safeProjectRoot}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
-            await buildZipFile(tempZip, (zip) =>
-              addEntriesToZip(zip, [
-                ...baseLuieDirectoryEntries(),
-                metaEntry({
-                  format: LUIE_PACKAGE_FORMAT,
-                  container: LUIE_PACKAGE_CONTAINER_DIR,
-                  version: LUIE_PACKAGE_VERSION,
-                  createdAt: new Date().toISOString(),
-                }),
-              ]),
-            );
-            await atomicReplace(tempZip, safeProjectRoot, logger);
-          } else {
-            throw e;
-          }
-        }
 
-        const tempZip = `${safeProjectRoot}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
-        await rebuildZipWithReplacement(
-          safeProjectRoot,
-          tempZip,
-          normalized,
-          content,
-          logger,
-        );
-        await atomicReplace(tempZip, safeProjectRoot, logger);
+          const tempZip = `${safeProjectRoot}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
+          await rebuildZipWithReplacement(
+            safeProjectRoot,
+            tempZip,
+            normalized,
+            content,
+            logger,
+          );
+          await atomicReplace(tempZip, safeProjectRoot, logger);
+        });
         return { path: `${safeProjectRoot}:${normalized}` };
       },
     },

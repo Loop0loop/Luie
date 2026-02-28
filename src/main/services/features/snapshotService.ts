@@ -556,7 +556,15 @@ export class SnapshotService {
           logger,
         );
       } catch (error) {
-        await db.getClient().project.delete({ where: { id: created.id } }).catch(() => undefined);
+        try {
+          await db.getClient().project.delete({ where: { id: created.id } });
+        } catch (rollbackError) {
+          logger.error("Failed to rollback project after snapshot .luie import failure", {
+            projectId: created.id,
+            filePath,
+            error: rollbackError,
+          });
+        }
         throw error;
       }
 

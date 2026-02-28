@@ -17,14 +17,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const {
     t,
     i18n,
-    theme,
-    themeTemp,
-    themeContrast,
-    themeAccent,
-    themeTexture,
-    fontFamily,
-    fontPreset,
-    uiMode,
     shortcuts,
     shortcutDefaults,
     activeTab,
@@ -43,7 +35,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     installing,
     installed,
     isMacOS,
-    applySettings,
     handleCommitShortcuts,
     handleResetShortcuts,
     handleMenuBarMode,
@@ -109,15 +100,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             {activeTab === "appearance" && (
               <AppearanceTab
                 t={t}
-                theme={theme}
-                themeTemp={themeTemp}
-                themeContrast={themeContrast}
-                themeAccent={themeAccent}
-                themeTexture={themeTexture}
-                uiMode={uiMode}
                 isMacOS={isMacOS}
                 menuBarMode={menuBarMode}
-                onApplySettings={applySettings}
                 onMenuBarModeChange={handleMenuBarMode}
                 isMenuBarUpdating={isMenuBarUpdating}
               />
@@ -126,14 +110,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             {activeTab === "editor" && (
               <EditorTab
                 t={t}
-                fontFamily={fontFamily}
-                fontPreset={fontPreset}
                 localFontSize={localFontSize}
                 localLineHeight={localLineHeight}
                 optionalFonts={optionalFonts}
                 installed={installed}
                 installing={installing}
-                onApplySettings={applySettings}
                 onSetLocalFontSize={setLocalFontSize}
                 onSetLocalLineHeight={setLocalLineHeight}
                 onInstallFont={handleInstallFont}

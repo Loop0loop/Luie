@@ -1,50 +1,44 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { useEffect, useRef } from "react";
+import Worker from "@renderer/features/editor/workers/stats.worker?worker";
+import { useEditorStatsStore } from "@renderer/features/editor/stores/editorStatsStore";
 
-type Stats = {
+interface Stats {
   wordCount: number;
   charCount: number;
-};
+}
 
 export function useEditorStats() {
-  const [stats, setStats] = useState<Stats>({ wordCount: 0, charCount: 0 });
+  const setStats = useEditorStatsStore((state) => state.setStats);
   const workerRef = useRef<Worker | null>(null);
-  const debounceRef = useRef<number | null>(null);
+  const timeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const worker = new Worker(new URL("../workers/stats.worker.ts", import.meta.url), {
-      type: "module",
-    });
+    const worker = new Worker();
 
     worker.onmessage = (event: MessageEvent<Stats>) => {
       setStats(event.data);
-      useEditorStore.getState().setStats(event.data);
     };
 
     workerRef.current = worker;
 
     return () => {
-      if (debounceRef.current !== null) {
-        window.clearTimeout(debounceRef.current);
-        debounceRef.current = null;
+      if (timeoutRef.current !== null) {
+        window.clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
       worker.terminate();
       workerRef.current = null;
     };
-  }, []);
+  }, [setStats]);
 
-  const updateStats = useCallback((text: string) => {
-    if (debounceRef.current !== null) {
-      window.clearTimeout(debounceRef.current);
+  const updateStats = (text: string) => {
+    if (timeoutRef.current !== null) {
+      window.clearTimeout(timeoutRef.current);
     }
-    debounceRef.current = window.setTimeout(() => {
+    timeoutRef.current = window.setTimeout(() => {
       workerRef.current?.postMessage({ text });
     }, 120);
-  }, []);
-
-  return {
-    wordCount: stats.wordCount,
-    charCount: stats.charCount,
-    updateStats,
   };
+
+  return { updateStats };
 }

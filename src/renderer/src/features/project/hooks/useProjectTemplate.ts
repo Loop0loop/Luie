@@ -31,7 +31,7 @@ const assertIpcSuccess = (
 };
 
 export function useProjectTemplate(setActiveChapterId: (id: string) => void) {
-  const { createProject, setCurrentProject } = useProjectStore();
+  const { createProject, setCurrentProject, deleteProject } = useProjectStore();
   const { create: createChapter } = useChapterStore();
   const { setView } = useUIStore();
 
@@ -115,7 +115,21 @@ export function useProjectTemplate(setActiveChapterId: (id: string) => void) {
             assertIpcSuccess(writeFileResponse, "WRITE_PROJECT_FILE_FAILED");
           }
         } catch (e) {
-          api.logger.error("Failed to save project file", e);
+          api.logger.error("Failed to save project file", {
+            projectId: newProject.id,
+            projectPath,
+            error: e,
+          });
+          try {
+            await deleteProject(newProject.id);
+          } catch (rollbackError) {
+            api.logger.error("Failed to rollback project after file save failure", {
+              projectId: newProject.id,
+              projectPath,
+              error: rollbackError,
+            });
+          }
+          return;
         }
 
         setCurrentProject(newProject);
@@ -144,7 +158,7 @@ export function useProjectTemplate(setActiveChapterId: (id: string) => void) {
         setView("editor");
       }
     },
-    [createProject, setCurrentProject, createChapter, setView, setActiveChapterId],
+    [createProject, setCurrentProject, deleteProject, createChapter, setView, setActiveChapterId],
   );
 
   return { handleSelectProject };

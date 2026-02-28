@@ -58,7 +58,7 @@ describe("worldPackageStorage", () => {
     expect((loggedError as Error).message).toContain("LUIE_WRITE_FAILED");
   });
 
-  it("serializes concurrent writes for the same .luie world document", async () => {
+  it("serializes concurrent writes for the same .luie package", async () => {
     const writeResolvers: Array<(value: unknown) => void> = [];
     const writeProjectFile = vi.fn().mockImplementation(
       () =>
@@ -83,8 +83,12 @@ describe("worldPackageStorage", () => {
     const firstSave = worldPackageStorage.savePlot("project-1", "/tmp/project-1.luie", {
       columns: [{ id: "col-1", title: "A", cards: [] }],
     });
-    const secondSave = worldPackageStorage.savePlot("project-1", "/tmp/project-1.luie", {
-      columns: [{ id: "col-1", title: "B", cards: [] }],
+    const secondSave = worldPackageStorage.saveDrawing("project-1", "/tmp/project-1.luie", {
+      paths: [],
+      tool: "pen",
+      iconType: "mountain",
+      color: "#000000",
+      lineWidth: 2,
     });
 
     await vi.waitFor(() => {

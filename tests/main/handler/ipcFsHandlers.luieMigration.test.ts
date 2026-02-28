@@ -3,6 +3,7 @@ import path from "node:path";
 import * as fsp from "node:fs/promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IPC_CHANNELS } from "../../../src/shared/ipc/channels.js";
+import { ErrorCode } from "../../../src/shared/constants/errorCode.js";
 
 const mocked = vi.hoisted(() => {
   const handlerMap = new Map<
@@ -127,5 +128,38 @@ describe("ipcFsHandlers legacy .luie migration", () => {
     expect(symlinkResponse.success).toBe(true);
     expect(symlinkResponse.data).toBeNull();
   });
-});
 
+  it("fails writeProjectFile when target .luie package is missing", async () => {
+    const { registerFsIPCHandlers } = await import(
+      "../../../src/main/handler/system/ipcFsHandlers.js"
+    );
+    registerFsIPCHandlers(mocked.logger);
+
+    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-fs-missing-package-"));
+    const workspaceDir = path.join(tempRoot, "workspace");
+    await fsp.mkdir(workspaceDir, { recursive: true });
+    mocked.openDialogPath = workspaceDir;
+
+    const selectDirectoryHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_SELECT_DIRECTORY);
+    expect(selectDirectoryHandler).toBeDefined();
+    const selectResponse = (await selectDirectoryHandler?.({})) as { success: boolean };
+    expect(selectResponse.success).toBe(true);
+
+    const missingPackagePath = path.join(workspaceDir, "missing-package.luie");
+    const writeProjectFileHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_WRITE_PROJECT_FILE);
+    expect(writeProjectFileHandler).toBeDefined();
+    const writeResponse = (await writeProjectFileHandler?.(
+      {},
+      missingPackagePath,
+      "world/synopsis.json",
+      JSON.stringify({ synopsis: "should fail" }),
+    )) as {
+      success: boolean;
+      error?: { code?: string; message?: string };
+    };
+
+    expect(writeResponse.success).toBe(false);
+    expect(writeResponse.error?.code).toBe(ErrorCode.FS_WRITE_FAILED);
+    await expect(fsp.access(missingPackagePath)).rejects.toThrow();
+  });
+});

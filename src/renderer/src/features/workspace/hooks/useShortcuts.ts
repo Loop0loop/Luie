@@ -104,6 +104,14 @@ const ALLOW_IN_EDITORS = new Set<ShortcutAction>([
   "window.toggleFullscreen",
 ]);
 
+// Guardrail: destructive window/app actions must require Cmd/Ctrl.
+// This prevents accidental quits when a persisted shortcut becomes malformed
+// (e.g. plain "q" without modifiers).
+const REQUIRE_PRIMARY_MODIFIER = new Set<ShortcutAction>([
+  "app.closeWindow",
+  "app.quit",
+]);
+
 export function useShortcuts(handlers: ShortcutHandlers, enabled: boolean = true): void {
   const shortcuts = useShortcutStore((state) => state.shortcuts) as ShortcutMap;
 
@@ -115,6 +123,9 @@ export function useShortcuts(handlers: ShortcutHandlers, enabled: boolean = true
       for (const [action, accelerator] of entries) {
         if (!handlers[action]) continue;
         if (isEditableTarget(event) && !ALLOW_IN_EDITORS.has(action)) continue;
+        if (REQUIRE_PRIMARY_MODIFIER.has(action) && !event.metaKey && !event.ctrlKey) {
+          continue;
+        }
         if (matchShortcut(event, accelerator)) {
           event.preventDefault();
           handlers[action]?.();

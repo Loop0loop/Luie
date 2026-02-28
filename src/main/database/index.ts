@@ -12,6 +12,7 @@ import { app } from "electron";
 import { DB_NAME } from "../../shared/constants/index.js";
 import { createLogger } from "../../shared/logger/index.js";
 import { isProdEnv, isTestEnv } from "../utils/environment.js";
+import { ensureSafeAbsolutePath } from "../utils/pathValidation.js";
 import {
   PACKAGED_SCHEMA_BOOTSTRAP_SQL,
   PACKAGED_SCHEMA_COLUMN_PATCHES,
@@ -106,6 +107,30 @@ const pathExists = async (targetPath: string): Promise<boolean> => {
 const getPrismaBinPath = (basePath: string): string => {
   const executable = process.platform === "win32" ? "prisma.cmd" : "prisma";
   return path.join(basePath, "node_modules", ".bin", executable);
+};
+
+const SQLITE_URL_PREFIX = "file:";
+
+const resolveSqliteDatasourceFromEnv = (input: string): { dbPath: string; datasourceUrl: string } => {
+  if (!input.startsWith(SQLITE_URL_PREFIX)) {
+    throw new Error("DATABASE_URL must use sqlite file: URL");
+  }
+
+  const raw = input.slice(SQLITE_URL_PREFIX.length);
+  if (!raw || raw === ":memory:" || raw.startsWith(":memory:?")) {
+    throw new Error("DATABASE_URL must point to a persistent sqlite file path");
+  }
+
+  const queryIndex = raw.indexOf("?");
+  const rawPath = queryIndex >= 0 ? raw.slice(0, queryIndex) : raw;
+  const rawQuery = queryIndex >= 0 ? raw.slice(queryIndex + 1) : "";
+  const absolutePath = ensureSafeAbsolutePath(
+    path.isAbsolute(rawPath) ? rawPath : path.resolve(process.cwd(), rawPath),
+    "DATABASE_URL",
+  );
+  const datasourceUrl = rawQuery.length > 0 ? `file:${absolutePath}?${rawQuery}` : `file:${absolutePath}`;
+
+  return { dbPath: absolutePath, datasourceUrl };
 };
 
 const runPrismaCommand = async (
@@ -213,24 +238,22 @@ class DatabaseService {
     });
 
     if (context.isPackaged) {
-      void seedIfEmpty(this.prisma).catch((error) => {
+      try {
+        await seedIfEmpty(this.prisma);
+      } catch (error) {
         logger.error("Failed to seed packaged database", { error });
-      });
+      }
     }
 
     if (this.prisma.$executeRawUnsafe) {
-      const pragmaCalls = [
-        this.prisma.$executeRawUnsafe("PRAGMA journal_mode=WAL;"),
-        this.prisma.$executeRawUnsafe("PRAGMA synchronous=FULL;"),
-        this.prisma.$executeRawUnsafe("PRAGMA wal_autocheckpoint=1000;"),
-      ];
-      Promise.all(pragmaCalls)
-        .then(() => {
-          logger.info("SQLite WAL mode enabled");
-        })
-        .catch((error) => {
-          logger.warn("Failed to enable WAL mode", { error });
-        });
+      try {
+        await this.prisma.$executeRawUnsafe("PRAGMA journal_mode=WAL;");
+        await this.prisma.$executeRawUnsafe("PRAGMA synchronous=FULL;");
+        await this.prisma.$executeRawUnsafe("PRAGMA wal_autocheckpoint=1000;");
+        logger.info("SQLite WAL mode enabled");
+      } catch (error) {
+        logger.warn("Failed to enable WAL mode", { error });
+      }
     }
 
     logger.info("Database service initialized");
@@ -247,13 +270,14 @@ class DatabaseService {
     let datasourceUrl: string;
 
     if (hasEnvDb) {
-      dbPath = envDb?.replace("file:", "") ?? path.join(userDataPath, DB_NAME);
-      datasourceUrl = envDb ?? `file:${dbPath}`;
+      const resolved = resolveSqliteDatasourceFromEnv(envDb ?? "");
+      dbPath = resolved.dbPath;
+      datasourceUrl = resolved.datasourceUrl;
     } else if (isPackaged) {
-      dbPath = path.join(userDataPath, DB_NAME);
+      dbPath = ensureSafeAbsolutePath(path.join(userDataPath, DB_NAME), "dbPath");
       datasourceUrl = `file:${dbPath}`;
     } else {
-      dbPath = path.join(process.cwd(), "prisma", "dev.db");
+      dbPath = ensureSafeAbsolutePath(path.join(process.cwd(), "prisma", "dev.db"), "dbPath");
       datasourceUrl = `file:${dbPath}`;
     }
 
@@ -382,7 +406,7 @@ class DatabaseService {
         });
       }
     } else {
-      logger.warn("Skipping production migrate deploy; Prisma runtime assets not available", {
+      logger.info("Prisma runtime assets not bundled; using packaged SQLite bootstrap", {
         dbPath: context.dbPath,
         hasMigrations,
         hasSchemaFile,
