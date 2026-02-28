@@ -14,12 +14,16 @@
     "prepreview": "pnpm rebuild:electron",
     "preview": "electron-vite preview",
     "preview:prod": "pnpm build && NODE_ENV=production electron .",
-    "build:mac": "pnpm build && electron-builder --mac --config",
-    "build:win": "pnpm build && electron-builder --win --config",
-    "build:linux": "pnpm build && electron-builder --linux --config",
+    "build:mac": "pnpm generate && pnpm build && electron-builder --mac --config && pnpm verify:packaged-prisma",
+    "build:win": "pnpm generate && pnpm build && electron-builder --win --config",
+    "build:linux": "pnpm generate && pnpm build && electron-builder --linux --config",
     "postinstall": "prisma generate; node scripts/sync-prisma-client.mjs; pnpm rebuild:electron",
     "rebuild:electron": "electron-rebuild --force --module-dir . -w better-sqlite3",
     "generate": "prisma generate; node scripts/sync-prisma-client.mjs",
+    "supabase:openai:link": "node scripts/supabase-openai.mjs link",
+    "supabase:openai:set-secret": "node scripts/supabase-openai.mjs set-secret",
+    "supabase:openai:deploy": "node scripts/supabase-openai.mjs deploy",
+    "supabase:openai:serve": "node scripts/supabase-openai.mjs serve",
     "migrate": "prisma migrate dev",
     "migreate:reset": "prisma migrate reset",
     "db:seed": "node prisma/seed.js",
@@ -36,6 +40,7 @@
     "check:target-file-drift": "node scripts/check-target-file-drift.mjs",
     "check:preload-contract-regression": "node scripts/check-preload-contract-regression.mjs",
     "check:core-complexity": "node scripts/check-core-complexity.mjs",
+    "verify:packaged-prisma": "node scripts/verify-packaged-prisma.mjs",
     "lint": "pnpm run check:deps && pnpm run check:no-native-dialogs && pnpm run check:i18n-parity && pnpm run check:no-escape-hatches && pnpm run check:ipc-contract-map && pnpm run check:security-profile && pnpm run check:preload-contract-regression && eslint src --ext .ts,.tsx",
     "qa:core": "pnpm -s typecheck && pnpm -s lint && pnpm -s check:core-complexity && pnpm -s check:target-file-drift && SKIP_DB_TEST_SETUP=1 pnpm -s vitest tests/main/lifecycle/deepLink.test.ts tests/main/handler/ipcWindowHandlers.test.ts tests/main/handler/ipcInputValidation.test.ts tests/main/services/syncAuthService.test.ts tests/main/services/syncService.test.ts tests/main/services/syncMapper.test.ts tests/main/services/syncRepository.test.ts tests/main/services/exportService.test.ts tests/renderer/hooks/useTermDragDrop.test.ts tests/renderer/services/exportEntryService.test.ts tests/renderer/utils/sanitizeHtml.test.ts tests/scripts/buildWarningNormalization.test.ts tests/scripts/preloadContractRegression.test.ts tests/scripts/ipcContractMap.test.ts tests/scripts/dependencyIntegrity.test.ts tests/scripts/securityProfile.test.ts",
     "format": "prettier --write \"src/**/*.{ts,tsx,json}\"",
@@ -57,6 +62,7 @@
     "@google/genai": "^1.43.0",
     "@prisma/adapter-better-sqlite3": "^7.4.1",
     "@prisma/client": "7.4.1",
+    "@supabase/supabase-js": "^2.98.0",
     "@tiptap/core": "^3.20.0",
     "@tiptap/extension-color": "^3.20.0",
     "@tiptap/extension-details": "^3.20.0",
@@ -117,6 +123,34 @@
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "node_modules/@prisma/client",
+        "to": "node_modules/@prisma/client",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "node_modules/@prisma/client-runtime-utils",
+        "to": "node_modules/@prisma/client-runtime-utils",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "node_modules/bindings",
+        "to": "node_modules/bindings",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "node_modules/file-uri-to-path",
+        "to": "node_modules/file-uri-to-path",
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "mac": {
@@ -168,6 +202,7 @@
     "postcss": "^8.5.6",
     "prettier": "^3.8.1",
     "prisma": "7.4.1",
+    "supabase": "^2.76.15",
     "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.56.1",
@@ -183,11 +218,11 @@
       "@prisma/engines",
       "better-sqlite3",
       "electron",
-      "electron-winstaller",
       "esbuild",
       "lzma-native",
       "prisma",
-      "protobufjs"
+      "protobufjs",
+      "supabase"
     ]
   }
 }

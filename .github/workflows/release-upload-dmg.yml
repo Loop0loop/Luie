@@ -1,0 +1,61 @@
+name: release-upload-dmg
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (example: v0.1.0)"
+        required: true
+        type: string
+      dmg_url:
+        description: "Download URL for locally built .dmg"
+        required: true
+        type: string
+      asset_name:
+        description: "Uploaded asset file name"
+        required: false
+        default: "Luie-mac.dmg"
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  upload-dmg:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate input
+        env:
+          ASSET_NAME: ${{ inputs.asset_name }}
+        run: |
+          case "$ASSET_NAME" in
+            *.dmg) ;;
+            *)
+              echo "asset_name must end with .dmg"
+              exit 1
+              ;;
+          esac
+
+      - name: Download dmg
+        env:
+          DMG_URL: ${{ inputs.dmg_url }}
+          ASSET_NAME: ${{ inputs.asset_name }}
+        run: |
+          curl --fail --location --output "$ASSET_NAME" "$DMG_URL"
+          test -s "$ASSET_NAME"
+
+      - name: Ensure release exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --generate-notes
+
+      - name: Upload dmg to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          ASSET_NAME: ${{ inputs.asset_name }}
+        run: |
+          gh release upload "$TAG" "$ASSET_NAME" --clobber
