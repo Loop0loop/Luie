@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session, dialog } from "electron";
+import { app, BrowserWindow, session, dialog, shell } from "electron";
 import type { WebContents } from "electron";
 import { settingsManager, windowManager } from "../manager/index.js";
 import { isDevEnv } from "../utils/environment.js";
@@ -123,6 +123,39 @@ export const registerAppReady = (logger: Logger): void => {
     app.on("web-contents-created", (_event, webContents) => {
       webContents.on("render-process-gone", (_goneEvent, details) => {
         void handleRendererCrash(logger, webContents, details.reason === "killed");
+      });
+
+      // C2: Block new-window creation — route https/mailto to shell, deny everything else.
+      webContents.setWindowOpenHandler(({ url }) => {
+        try {
+          const parsed = new URL(url);
+          if (parsed.protocol === "https:" || parsed.protocol === "mailto:") {
+            void shell.openExternal(url);
+          }
+        } catch {
+          // malformed URL — silently deny
+        }
+        return { action: "deny" };
+      });
+
+      // C2: Block will-navigate to non-local URLs — send externally, prevent in-app nav.
+      webContents.on("will-navigate", (event, url) => {
+        try {
+          const parsed = new URL(url);
+          const isLocal =
+            parsed.protocol === "luie:" ||
+            parsed.protocol === "file:" ||
+            (parsed.hostname === "localhost" &&
+              (parsed.protocol === "http:" || parsed.protocol === "https:"));
+          if (!isLocal) {
+            event.preventDefault();
+            if (parsed.protocol === "https:" || parsed.protocol === "mailto:") {
+              void shell.openExternal(url);
+            }
+          }
+        } catch {
+          event.preventDefault();
+        }
       });
     });
 

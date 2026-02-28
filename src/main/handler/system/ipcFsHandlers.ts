@@ -13,8 +13,12 @@ import {
   LUIE_PACKAGE_EXTENSION,
   LUIE_PACKAGE_EXTENSION_NO_DOT,
   LUIE_PACKAGE_FILTER_NAME,
+  LUIE_PACKAGE_FORMAT,
+  LUIE_PACKAGE_CONTAINER_DIR,
+  LUIE_PACKAGE_VERSION,
   LUIE_PACKAGE_META_FILENAME,
   LUIE_MANUSCRIPT_DIR,
+  LUIE_MANUSCRIPT_README,
   MARKDOWN_EXTENSION,
   LUIE_WORLD_DIR,
   LUIE_SNAPSHOTS_DIR,
@@ -393,6 +397,18 @@ const addEntriesToZip = async (zip: yazl.ZipFile, entries: ZipEntryPayload[]) =>
   }
 };
 
+const parseObjectJson = (raw: string): Record<string, unknown> | null => {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    // keep fallback
+  }
+  return null;
+};
+
 
 export const writeLuiePackage = async (
   targetPath: string,
@@ -730,7 +746,52 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
           projectDir,
           `${safeName || DEFAULT_PROJECT_FILE_BASENAME}${LUIE_PACKAGE_EXTENSION}`,
         );
-        await fsp.writeFile(fullPath, content, "utf-8");
+
+        const parsedMeta = parseObjectJson(content.trim());
+        const titleFallback = safeName || DEFAULT_PROJECT_DIR_NAME;
+        const nowIso = new Date().toISOString();
+        const meta = {
+          format: LUIE_PACKAGE_FORMAT,
+          container: LUIE_PACKAGE_CONTAINER_DIR,
+          version: LUIE_PACKAGE_VERSION,
+          title: titleFallback,
+          createdAt: nowIso,
+          updatedAt: nowIso,
+          ...(parsedMeta ?? {}),
+        };
+
+        const hasLegacyContent = !parsedMeta && content.trim().length > 0;
+        await writeLuiePackage(
+          fullPath,
+          {
+            meta,
+            chapters: hasLegacyContent
+              ? [
+                  {
+                    id: "legacy-import",
+                    content,
+                  },
+                ]
+              : [],
+            characters: [],
+            terms: [],
+            snapshots: [],
+          },
+          logger,
+        );
+        if (hasLegacyContent) {
+          await withPackageWriteLock(fullPath, async () => {
+            const tempZip = `${fullPath}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
+            await rebuildZipWithReplacement(
+              fullPath,
+              tempZip,
+              LUIE_MANUSCRIPT_README,
+              "# Imported Legacy Content\n\nLegacy project content was migrated into this package.",
+              logger,
+            );
+            await atomicReplace(tempZip, fullPath, logger);
+          });
+        }
         return { path: fullPath, projectDir };
       },
     },

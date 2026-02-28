@@ -244,4 +244,62 @@ describe("ipcFsHandlers legacy .luie migration", () => {
     const restoredContent = await fsp.readFile(packagePath, "utf-8");
     expect(restoredContent).toBe(legacyContent);
   });
+
+  it("writes FS_SAVE_PROJECT output as zip .luie and preserves legacy content", async () => {
+    const { registerFsIPCHandlers } = await import(
+      "../../../src/main/handler/system/ipcFsHandlers.js"
+    );
+    registerFsIPCHandlers(mocked.logger);
+
+    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-fs-save-project-"));
+    const workspaceDir = path.join(tempRoot, "workspace");
+    await fsp.mkdir(workspaceDir, { recursive: true });
+    mocked.openDialogPath = workspaceDir;
+
+    const selectDirectoryHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_SELECT_DIRECTORY);
+    expect(selectDirectoryHandler).toBeDefined();
+    const selectResponse = (await selectDirectoryHandler?.({})) as { success: boolean };
+    expect(selectResponse.success).toBe(true);
+
+    const saveProjectHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_SAVE_PROJECT);
+    expect(saveProjectHandler).toBeDefined();
+    const saveResponse = (await saveProjectHandler?.(
+      {},
+      "Legacy Save Project",
+      workspaceDir,
+      "LEGACY_CONTENT_BODY",
+    )) as {
+      success: boolean;
+      data?: { path: string; projectDir: string };
+    };
+    expect(saveResponse.success).toBe(true);
+    const savedPath = saveResponse.data?.path;
+    expect(savedPath).toBeTruthy();
+
+    const fileBuffer = await fsp.readFile(savedPath ?? "");
+    expect(fileBuffer[0]).toBe(0x50); // 'P'
+    expect(fileBuffer[1]).toBe(0x4b); // 'K'
+
+    const readLuieEntryHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_READ_LUIE_ENTRY);
+    expect(readLuieEntryHandler).toBeDefined();
+
+    const metaResponse = (await readLuieEntryHandler?.(
+      {},
+      savedPath,
+      "meta.json",
+    )) as { success: boolean; data: string | null };
+    expect(metaResponse.success).toBe(true);
+    expect(metaResponse.data).not.toBeNull();
+    expect(JSON.parse(metaResponse.data ?? "{}")).toMatchObject({
+      title: "Legacy Save Project",
+    });
+
+    const legacyContentResponse = (await readLuieEntryHandler?.(
+      {},
+      savedPath,
+      "manuscript/legacy-import.md",
+    )) as { success: boolean; data: string | null };
+    expect(legacyContentResponse.success).toBe(true);
+    expect(legacyContentResponse.data).toBe("LEGACY_CONTENT_BODY");
+  });
 });

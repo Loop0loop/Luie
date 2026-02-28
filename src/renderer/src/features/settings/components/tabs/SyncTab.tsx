@@ -1,6 +1,7 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import type { TFunction } from "i18next";
 import type { SyncStatus } from '@shared/types';
+import { SyncConflictResolverModal } from "@renderer/features/settings/components/SyncConflictResolverModal";
 
 interface SyncTabProps {
     t: TFunction;
@@ -24,6 +25,7 @@ export const SyncTab = memo(function SyncTab({
     onToggleAutoSync,
 }: SyncTabProps) {
     const showConnected = status.connected;
+    const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
     const isConnecting = status.mode === "connecting";
     const showReconnect = !showConnected && (Boolean(status.lastError) || isConnecting);
     const connectLabel = showReconnect
@@ -112,14 +114,31 @@ export const SyncTab = memo(function SyncTab({
                     </button>
                 </div>
 
-                <div className="mt-4 text-xs text-muted">
-                    {t("settings.sync.conflicts", {
-                        total: status.conflicts.total,
-                        chapters: status.conflicts.chapters,
-                        memos: status.conflicts.memos,
-                    })}
+                <div className="mt-4 text-xs text-muted flex items-center justify-between">
+                    <span>
+                        {t("settings.sync.conflicts", {
+                            total: status.conflicts.total,
+                            chapters: status.conflicts.chapters,
+                            memos: status.conflicts.memos,
+                        })}
+                    </span>
+                    {status.conflicts.total > 0 && (
+                        <button
+                            onClick={() => setIsConflictModalOpen(true)}
+                            className="ml-3 px-2.5 py-1 text-xs font-medium rounded-md bg-danger/10 text-danger-fg hover:bg-danger/20 border border-danger/20 transition-colors"
+                        >
+                            {t("settings.sync.conflict.resolveButton", "충돌 해결하기")}
+                        </button>
+                    )}
                 </div>
             </section>
+
+            {isConflictModalOpen && (
+                <SyncConflictResolverModal
+                    summary={status.conflicts}
+                    onClose={() => setIsConflictModalOpen(false)}
+                />
+            )}
         </div>
     );
 });

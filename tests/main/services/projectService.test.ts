@@ -217,4 +217,25 @@ describe("ProjectService", () => {
 
     await localProjectService.deleteProject(created.id as string);
   });
+
+  it("marks pathMissing when DB has relative .luie projectPath", async () => {
+    const validPath = path.join(app.getPath("userData"), "relative-path-missing.luie");
+    const created = await localProjectService.createProject({
+      title: "Relative Path Missing",
+      description: "test",
+      projectPath: validPath,
+    });
+
+    await db.getClient().project.update({
+      where: { id: created.id as string },
+      data: { projectPath: "relative/unsafe.luie" },
+    });
+
+    const all = await localProjectService.getAllProjects();
+    const target = all.find((project) => project.id === created.id);
+    expect(target).toBeDefined();
+    expect(target?.pathMissing).toBe(true);
+
+    await localProjectService.deleteProject(created.id as string);
+  });
 });

@@ -1,5 +1,6 @@
 import { Component } from "react";
 import type { ErrorInfo, ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { RefreshCw, AlertCircle } from "lucide-react";
 import { api } from "@shared/api";
 
@@ -41,7 +42,7 @@ interface State {
  * </FeatureErrorBoundary>
  * ```
  */
-export class FeatureErrorBoundary extends Component<Props, State> {
+class FeatureErrorBoundaryClass extends Component<Props & { t: (key: string, opts?: Record<string, unknown>) => string }, State> {
     public state: State = {
         hasError: false,
         error: null,
@@ -74,7 +75,7 @@ export class FeatureErrorBoundary extends Component<Props, State> {
 
     public render() {
         const { hasError, error, resetKey } = this.state;
-        const { children, featureName = "Feature", fallback } = this.props;
+        const { children, featureName = "Feature", fallback, t } = this.props;
 
         if (hasError) {
             // Allow callers to supply a fully custom fallback
@@ -88,7 +89,7 @@ export class FeatureErrorBoundary extends Component<Props, State> {
 
                     <div className="space-y-1">
                         <p className="text-sm font-semibold text-fg">
-                            {featureName} 영역에서 오류가 발생했습니다
+                            {t("error.boundary.message", { feature: featureName })}
                         </p>
                         {error && (
                             <p className="text-xs text-muted font-mono truncate max-w-[280px]" title={error.message}>
@@ -102,7 +103,7 @@ export class FeatureErrorBoundary extends Component<Props, State> {
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-accent text-on-accent hover:opacity-90 transition-opacity"
                     >
                         <RefreshCw className="w-3.5 h-3.5" />
-                        다시 시도
+                        {t("common.retry")}
                     </button>
                 </div>
             );
@@ -111,4 +112,10 @@ export class FeatureErrorBoundary extends Component<Props, State> {
         // key prop forces full re-mount after reset
         return <div key={resetKey} className="contents">{children}</div>;
     }
+}
+
+/** Functional wrapper to inject i18n `t` into the class-based boundary */
+export function FeatureErrorBoundary(props: Props) {
+    const { t } = useTranslation();
+    return <FeatureErrorBoundaryClass {...props} t={t} />;
 }

@@ -16,6 +16,7 @@ import { ServiceError } from "../../utils/serviceError.js";
 import { writeFileAtomic, readMaybeGzip } from "../../utils/atomicWrite.js";
 import { promisify } from "node:util";
 import { gzip as gzipCallback } from "node:zlib";
+import { ensureSafeAbsolutePath } from "../../utils/pathValidation.js";
 
 const logger = createLogger("SnapshotArtifacts");
 const gzip = promisify(gzipCallback);
@@ -119,14 +120,13 @@ type ProjectSnapshotRecord = {
 };
 
 function resolveProjectBaseDir(projectPath: string) {
-  const normalized = projectPath.trim();
+  const normalized = ensureSafeAbsolutePath(projectPath, "projectPath");
   const normalizedLower = normalized.toLowerCase();
   const extLower = LUIE_PACKAGE_EXTENSION.toLowerCase();
   return normalizedLower.endsWith(extLower) ? path.dirname(normalized) : normalized;
 }
 
-function resolveLocalSnapshotDir(projectPath: string, projectName: string) {
-  const baseDir = resolveProjectBaseDir(projectPath);
+function resolveLocalSnapshotDir(baseDir: string, projectName: string) {
   return path.join(baseDir, ".luie", LUIE_SNAPSHOTS_DIR, projectName);
 }
 
@@ -166,8 +166,17 @@ const resolveArtifactRoots = async (): Promise<string[]> => {
   for (const project of projects) {
     if (!project.projectPath) continue;
     const safeProjectName = sanitizeName(project.title ?? "", String(project.id));
-    roots.add(resolveLocalSnapshotDir(project.projectPath, safeProjectName));
-    roots.add(path.join(resolveProjectBaseDir(project.projectPath), `backup${safeProjectName}`));
+    try {
+      const projectBaseDir = resolveProjectBaseDir(project.projectPath);
+      roots.add(resolveLocalSnapshotDir(projectBaseDir, safeProjectName));
+      roots.add(path.join(projectBaseDir, `backup${safeProjectName}`));
+    } catch (error) {
+      logger.warn("Skipping snapshot artifact roots for invalid projectPath", {
+        projectId: project.id,
+        projectPath: project.projectPath,
+        error,
+      });
+    }
   }
 
   return Array.from(roots);
@@ -334,12 +343,23 @@ export async function writeFullSnapshotArtifact(
   let projectBackupPath: string | undefined;
 
   const safeProjectName = sanitizeName(project.title ?? "", String(project.id));
+  let projectBaseDir: string | null = null;
 
   if (project.projectPath) {
-    const localDir = resolveLocalSnapshotDir(project.projectPath, safeProjectName);
-    await fs.mkdir(localDir, { recursive: true });
-    localPath = path.join(localDir, fileName);
-    await writeFileAtomic(localPath, buffer);
+    try {
+      projectBaseDir = resolveProjectBaseDir(project.projectPath);
+      const localDir = resolveLocalSnapshotDir(projectBaseDir, safeProjectName);
+      await fs.mkdir(localDir, { recursive: true });
+      localPath = path.join(localDir, fileName);
+      await writeFileAtomic(localPath, buffer);
+    } catch (error) {
+      logger.warn("Skipping project-local snapshot artifact write for invalid projectPath", {
+        snapshotId,
+        projectId: project.id,
+        projectPath: project.projectPath,
+        error,
+      });
+    }
   }
 
   const backupDir = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR, safeProjectName);
@@ -347,8 +367,7 @@ export async function writeFullSnapshotArtifact(
   const backupPath = path.join(backupDir, fileName);
   await writeFileAtomic(backupPath, buffer);
 
-  if (project.projectPath) {
-    const projectBaseDir = resolveProjectBaseDir(project.projectPath);
+  if (projectBaseDir) {
     const projectBackupDir = path.join(projectBaseDir, `backup${safeProjectName}`);
     await fs.mkdir(projectBackupDir, { recursive: true });
     projectBackupPath = path.join(projectBackupDir, fileName);

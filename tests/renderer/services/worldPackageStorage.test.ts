@@ -104,4 +104,51 @@ describe("worldPackageStorage", () => {
     await Promise.all([firstSave, secondSave]);
     expect(warn).not.toHaveBeenCalled();
   });
+
+  it("serializes writes when same .luie path uses mixed slash/case variants", async () => {
+    const writeResolvers: Array<(value: unknown) => void> = [];
+    const writeProjectFile = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          writeResolvers.push(resolve);
+        }),
+    );
+    const warn = vi.fn().mockResolvedValue({ success: true });
+
+    setWindowApi({
+      fs: {
+        readLuieEntry: vi.fn().mockResolvedValue({ success: true, data: null }),
+        writeProjectFile,
+      },
+      logger: { warn },
+    });
+
+    const { worldPackageStorage } = await import(
+      "../../../src/renderer/src/features/research/services/worldPackageStorage.js"
+    );
+
+    const firstSave = worldPackageStorage.savePlot("project-1", "C:\\Workspace\\Novel.luie", {
+      columns: [{ id: "col-1", title: "A", cards: [] }],
+    });
+    const secondSave = worldPackageStorage.saveDrawing("project-1", "c:/Workspace/Novel.luie", {
+      paths: [],
+      tool: "pen",
+      iconType: "mountain",
+      color: "#000000",
+      lineWidth: 2,
+    });
+
+    await vi.waitFor(() => {
+      expect(writeProjectFile).toHaveBeenCalledTimes(1);
+    });
+
+    writeResolvers.shift()?.({ success: true, data: { path: "C:\\Workspace\\Novel.luie" } });
+    await vi.waitFor(() => {
+      expect(writeProjectFile).toHaveBeenCalledTimes(2);
+    });
+
+    writeResolvers.shift()?.({ success: true, data: { path: "c:/Workspace/Novel.luie" } });
+    await Promise.all([firstSave, secondSave]);
+    expect(warn).not.toHaveBeenCalled();
+  });
 });

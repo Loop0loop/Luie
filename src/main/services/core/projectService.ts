@@ -1279,7 +1279,8 @@ export class ProjectService {
           }
 
           try {
-            await fs.access(projectPath);
+            const safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
+            await fs.access(safeProjectPath);
             return {
               ...project,
               pathMissing: false,

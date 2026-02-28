@@ -82,6 +82,29 @@ const saveLocalStorageJson = (projectId: string, key: string, data: unknown) => 
   }
 };
 
+const normalizeLuieQueueKey = (projectPath: string): string => {
+  const trimmed = projectPath.trim();
+  if (!trimmed) return projectPath;
+
+  let normalized = trimmed.replace(/\\/g, "/");
+  const hasUncPrefix = normalized.startsWith("//");
+  const body = hasUncPrefix ? normalized.slice(2) : normalized;
+  const collapsedBody = body.replace(/\/{2,}/g, "/");
+  normalized = hasUncPrefix ? `//${collapsedBody}` : collapsedBody;
+
+  const isPosixRoot = normalized === "/";
+  const isWindowsDriveRoot = /^[a-zA-Z]:\/$/.test(normalized);
+  if (!isPosixRoot && !isWindowsDriveRoot) {
+    normalized = normalized.replace(/\/+$/, "");
+  }
+
+  if (/^[a-zA-Z]:\//.test(normalized)) {
+    normalized = `${normalized.charAt(0).toLowerCase()}${normalized.slice(1)}`;
+  }
+
+  return normalized;
+};
+
 const readLuieJson = async (projectPath: string, fileName: string): Promise<unknown | null> => {
   const response = await api.fs.readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${fileName}`);
   if (!response.success) {
@@ -106,7 +129,7 @@ const readLuieJson = async (projectPath: string, fileName: string): Promise<unkn
 };
 
 const writeLuieJson = async (projectPath: string, fileName: string, data: unknown) => {
-  const queueKey = projectPath;
+  const queueKey = normalizeLuieQueueKey(projectPath);
   const previousWrite = luieWriteQueue.get(queueKey) ?? Promise.resolve();
   const nextWrite = previousWrite
     .catch(() => undefined)
