@@ -239,6 +239,7 @@ type CoreMethodMap = {
   "sync.disconnect": RendererApi["sync"]["disconnect"];
   "sync.runNow": RendererApi["sync"]["runNow"];
   "sync.setAutoSync": RendererApi["sync"]["setAutoSync"];
+  "sync.resolveConflict": RendererApi["sync"]["resolveConflict"];
   "app.getBootstrapStatus": RendererApi["app"]["getBootstrapStatus"];
   "settings.getAll": RendererApi["settings"]["getAll"];
   "settings.getEditor": RendererApi["settings"]["getEditor"];
@@ -686,6 +687,10 @@ const rendererApi = {
       settings: Parameters<RendererApi["sync"]["setAutoSync"]>[0],
     ): ReturnType<RendererApi["sync"]["setAutoSync"]> =>
       safeInvokeCore("sync.setAutoSync", IPC_CHANNELS.SYNC_SET_AUTO, settings),
+    resolveConflict: (
+      resolution: Parameters<RendererApi["sync"]["resolveConflict"]>[0],
+    ): ReturnType<RendererApi["sync"]["resolveConflict"]> =>
+      safeInvokeCore("sync.resolveConflict", "sync:resolveConflict", resolution),
     onStatusChanged: (callback: (status: SyncStatus) => void): (() => void) => {
       const listener = (_event: unknown, status: SyncStatus) => {
         callback(status);

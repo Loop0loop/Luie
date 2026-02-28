@@ -1,7 +1,7 @@
 import { memo, useState } from "react";
 import type { TFunction } from "i18next";
 import type { SyncStatus } from '@shared/types';
-import { SyncConflictResolverModal } from "@renderer/features/settings/components/SyncConflictResolverModal";
+import { SyncConflictResolverModal } from "../SyncConflictResolverModal";
 
 interface SyncTabProps {
     t: TFunction;
@@ -24,8 +24,8 @@ export const SyncTab = memo(function SyncTab({
     onSyncNow,
     onToggleAutoSync,
 }: SyncTabProps) {
+    const [isResolving, setIsResolving] = useState(false);
     const showConnected = status.connected;
-    const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
     const isConnecting = status.mode === "connecting";
     const showReconnect = !showConnected && (Boolean(status.lastError) || isConnecting);
     const connectLabel = showReconnect
@@ -114,31 +114,34 @@ export const SyncTab = memo(function SyncTab({
                     </button>
                 </div>
 
-                <div className="mt-4 text-xs text-muted flex items-center justify-between">
-                    <span>
+                <div className="mt-4 flex items-center justify-between bg-warning/10 border border-warning/30 rounded-lg p-3">
+                    <div className="text-sm text-warning-fg">
                         {t("settings.sync.conflicts", {
                             total: status.conflicts.total,
                             chapters: status.conflicts.chapters,
                             memos: status.conflicts.memos,
                         })}
-                    </span>
+                    </div>
                     {status.conflicts.total > 0 && (
                         <button
-                            onClick={() => setIsConflictModalOpen(true)}
-                            className="ml-3 px-2.5 py-1 text-xs font-medium rounded-md bg-danger/10 text-danger-fg hover:bg-danger/20 border border-danger/20 transition-colors"
+                            className="px-3 py-1.5 bg-warning hover:bg-warning/90 text-warning-fg text-xs font-semibold rounded-md shadow-sm transition-colors disabled:opacity-50"
+                            onClick={() => setIsResolving(true)}
+                            disabled={isBusy}
                         >
-                            {t("settings.sync.conflict.resolveButton", "충돌 해결하기")}
+                            {t("settings.sync.actions.resolveConflicts", "Resolve Conflicts")}
                         </button>
                     )}
                 </div>
-            </section>
 
-            {isConflictModalOpen && (
-                <SyncConflictResolverModal
-                    summary={status.conflicts}
-                    onClose={() => setIsConflictModalOpen(false)}
-                />
-            )}
+                {isResolving && (
+                    <SyncConflictResolverModal
+                        conflicts={status.conflicts}
+                        onClose={() => setIsResolving(false)}
+                        onRefresh={onSyncNow}
+                        isBusy={isBusy}
+                    />
+                )}
+            </section>
         </div>
     );
 });

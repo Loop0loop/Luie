@@ -1,28 +1,55 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { WifiOff } from "lucide-react";
-import { useNetworkStatus } from "@renderer/features/workspace/hooks/useNetworkStatus";
+import { WifiOff, X } from "lucide-react";
 
-/**
- * Global offline indicator banner.
- * Renders a thin top bar when the user has no internet connectivity.
- * Informs the user that sync and AI features are paused — no silent degradation.
- */
-export default function OfflineBanner() {
+export function OfflineBanner() {
     const { t } = useTranslation();
-    const { isOnline } = useNetworkStatus();
+    const [isOffline, setIsOffline] = useState(!navigator.onLine);
+    const [dismissed, setDismissed] = useState(false);
 
-    if (isOnline) return null;
+    useEffect(() => {
+        const handleOnline = () => {
+            setIsOffline(false);
+            setDismissed(false); // Reset dismissal on reconnect
+        };
+        const handleOffline = () => {
+            setIsOffline(true);
+            setDismissed(false);
+        };
+
+        window.addEventListener("online", handleOnline);
+        window.addEventListener("offline", handleOffline);
+
+        return () => {
+            window.removeEventListener("online", handleOnline);
+            window.removeEventListener("offline", handleOffline);
+        };
+    }, []);
+
+    if (!isOffline || dismissed) return null;
 
     return (
-        <div
-            role="alert"
-            aria-live="polite"
-            className="w-full bg-warning/15 border-b border-warning/25 px-4 py-2 flex items-center gap-2.5 z-50"
-        >
-            <WifiOff className="w-3.5 h-3.5 text-warning shrink-0" />
-            <span className="text-xs font-medium text-warning-fg">
-                {t("workspace.offline.banner", "인터넷 연결 없음 — 동기화 및 AI 기능이 일시 중단됩니다.")}
-            </span>
+        <div className="w-full bg-warning/15 border-b border-warning/30 px-4 py-2 flex items-center justify-between shadow-sm relative z-[100] animate-in slide-in-from-top-2 fade-in">
+            <div className="flex items-center gap-3">
+                <div className="p-1.5 bg-warning/20 rounded-full text-warning-fg">
+                    <WifiOff className="w-4 h-4" />
+                </div>
+                <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-fg">
+                        {t("workspace.offline.title", "You are navigating offline")}
+                    </span>
+                    <span className="text-xs text-muted">
+                        {t("workspace.offline.desc", "Changes will be saved locally and synced automatically when network connects.")}
+                    </span>
+                </div>
+            </div>
+            <button
+                onClick={() => setDismissed(true)}
+                className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-muted hover:text-fg"
+                title={t("common.dismiss", "Dismiss")}
+            >
+                <X className="w-4 h-4" />
+            </button>
         </div>
     );
 }

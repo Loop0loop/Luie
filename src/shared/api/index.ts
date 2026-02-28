@@ -239,6 +239,7 @@ export type RendererApi = {
     runNow: () => Promise<IPCResponse<SyncRunResult>>;
     setAutoSync: (settings: { enabled: boolean }) => Promise<IPCResponse<SyncStatus>>;
     onStatusChanged: (callback: (status: SyncStatus) => void) => () => void;
+    resolveConflict: (resolution: { type: "chapter" | "memo"; id: string; resolution: "local" | "remote" }) => Promise<IPCResponse<void>>;
   };
   app: {
     getBootstrapStatus: () => Promise<IPCResponse<AppBootstrapStatus>>;

@@ -1337,23 +1337,31 @@ export class ProjectService {
         nextTitle &&
         prevTitle !== nextTitle
       ) {
-        const sepIndex = Math.max(projectPath.lastIndexOf("/"), projectPath.lastIndexOf("\\"));
-        const baseDir = sepIndex >= 0 ? projectPath.slice(0, sepIndex) : projectPath;
-        const snapshotsBase = `${baseDir}${path.sep}.luie${path.sep}${LUIE_SNAPSHOTS_DIR}`;
-        const prevName = sanitizeName(prevTitle, "");
-        const nextName = sanitizeName(nextTitle, "");
-        if (prevName && nextName && prevName !== nextName) {
-          const prevDir = `${snapshotsBase}${path.sep}${prevName}`;
-          const nextDir = `${snapshotsBase}${path.sep}${nextName}`;
-          try {
-            const stat = await fs.stat(prevDir);
-            if (stat.isDirectory()) {
-              await fs.mkdir(snapshotsBase, { recursive: true });
-              await fs.rename(prevDir, nextDir);
+        try {
+          const safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
+          const baseDir = path.dirname(safeProjectPath);
+          const snapshotsBase = `${baseDir}${path.sep}.luie${path.sep}${LUIE_SNAPSHOTS_DIR}`;
+          const prevName = sanitizeName(prevTitle, "");
+          const nextName = sanitizeName(nextTitle, "");
+          if (prevName && nextName && prevName !== nextName) {
+            const prevDir = `${snapshotsBase}${path.sep}${prevName}`;
+            const nextDir = `${snapshotsBase}${path.sep}${nextName}`;
+            try {
+              const stat = await fs.stat(prevDir);
+              if (stat.isDirectory()) {
+                await fs.mkdir(snapshotsBase, { recursive: true });
+                await fs.rename(prevDir, nextDir);
+              }
+            } catch {
+              // ignore if missing or rename fails
             }
-          } catch {
-            // ignore if missing or rename fails
           }
+        } catch (error) {
+          logger.warn("Skipping snapshot directory rename for invalid projectPath", {
+            projectId: project.id,
+            projectPath,
+            error,
+          });
         }
       }
 

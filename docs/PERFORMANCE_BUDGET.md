@@ -1,77 +1,38 @@
-# Renderer Performance Budget
+# Renderer Performance Budget (D1 & D2)
 
-> This document defines the three core performance budgets for the Luie renderer.
-> All measurements should be taken with React DevTools Profiler and Chrome DevTools Memory tab
-> on a mid-range laptop (e.g., Apple M1 base, 8 GB RAM) in production build (`pnpm preview`).
+This document establishes the quantitative performance baselines and budgets for the Luie Renderer process. It serves as the standard against which memory leaks, rendering inefficiencies, and blocking operations are measured.
 
----
+## 1. Core Performance Budgets (D1)
 
-## Budget 1 — Typing Input Latency
+We define three primary metrics for a smooth, app-like user experience.
 
-| Metric | Budget | How to Measure |
-|---|---|---|
-| Keystroke-to-screen latency (Tiptap editor) | **< 50ms** | Chrome DevTools → Performance tab → record while typing, measure event → paint gap |
-| Autosave debounce (idle trigger) | 1000ms (configurable in `EDITOR_AUTOSAVE_DEBOUNCE_MS`) | Currently set, verify not blocking input thread |
+### A. Typing Latency
+- **Target:** `< 50ms` (time from keystroke to visual update).
+- **Measurement:** 100,000-character manuscript editing scenario.
+- **Enforcement:** Achieved via `useBufferedInput`. Editor state changes must not trigger expensive global React topology re-renders.
 
-**Rationale:** The editor is the core experience. Input lag above 50ms is perceptible and degrades the writing flow.
+### B. UI Responsiveness (Search & Filtering)
+- **Target:** `< 100ms` for typical filters, `< 200ms` for massive datasets.
+- **Measurement:** Filtering 5,000 World Nodes or searching across 10,000 Memo scraps.
+- **Enforcement:** 
+  - Debounced input.
+  - Web Workers for heavy text searching (if necessary).
+  - Virtualization (`react-window` or custom) for all lists > 100 items to prevent DOM bloating.
 
-**Current Architecture:**
-- `useBufferedInput.ts` wraps Tiptap with debouncing
-- `useEditorAutosave.ts` debounces at `EDITOR_AUTOSAVE_DEBOUNCE_MS` (do not reduce below 500ms)
+### C. Memory Baseline
+- **Target:** Memory should "converge" after typical usage spikes, not climb infinitely.
+- **Measurement:** Opening and closing 10 different documents/tabs sequentially.
+- **Enforcement:** Strict enforcement of cleanup functions (`return () => observer.disconnect()`, `removeEventListener`, `clearTimeout`) in `useEffect`.
 
-**Warning signs to watch:**
-- Tiptap ProseMirror state updates firing synchronously on every keystroke with expensive node transforms
-- Smart-link scanning (`smartLinkService`) running on every input event
+## 2. Profiling & Observability (D2)
 
----
+### A. React Profiler & Render Discipline
+- Component re-renders are tracked during development using the React Profiler.
+- Zustand global stores (`useProjectStore`, `useEditorStore`) **must** use `useShallow` when subscribing to object/array states to prevent cascading renders.
 
-## Budget 2 — List Scroll Performance
+### B. List Virtualization
+- By default, massive lists (e.g., Snapshots, Search Results, World Nodes) must employ virtual lists. DOM nodes should remain proportional to the viewport height, irrespective of state size.
 
-| Metric | Budget | How to Measure |
-|---|---|---|
-| Chapter list scroll (≤ 1,000 items) | No visible jank (60 fps) | React Profiler → record while scrolling fast |
-| Memory baseline per list item | < 2KB average | DevTools → Memory → heap snapshot |
-
-**Current Architecture:** `react-virtuoso` is applied in:
-- `Sidebar.tsx` (chapter list)
-- `SnapshotList.tsx`
-- `MemoSidebarList.tsx`
-
-**Action if budget fails:** Ensure `itemContent` renders use stable `useCallback` and item identifiers are stable (not index-based).
-
----
-
-## Budget 3 — View-Switch Memory Convergence
-
-| Metric | Budget | How to Measure |
-|---|---|---|
-| Heap growth after 10 view switches | Converges (does not monotonically increase) | DevTools → Memory → take snapshots before/after 10 switches, compare delta |
-| Editor unmount cleanup | All timers cleared, all IPC subscriptions unsubscribed | Manual code audit + memory profiler detached node count |
-
-**Current Architecture:**
-- `useEditorAutosave.ts` has `isMountedRef` guard and clears all 3 timers on unmount ✅
-- `SmartLinkTooltip.tsx` clears all document event listeners on unmount ✅
-- All IPC `onStatusChanged` subscriptions call `unsubscribe()` in `useEffect` cleanup ✅
-
-**Warning signs to watch:**
-- `EditorRoot` re-creating `useSplitView` panels without cleaning up old panel state
-- Large Tiptap document JSON being retained in memory after chapter switch
-
----
-
-## Measurement Checklist
-
-Before each major release, verify:
-
-- [ ] Type 200 characters in editor, record Performance trace — no frame > 50ms
-- [ ] Scroll chapter list with 200+ items — no dropped frames in Profiler
-- [ ] Open 10 chapters sequentially, take heap snapshots — heap is stable ±10%
-- [ ] Network disconnect test — `OfflineBanner` renders within 1 second
-
----
-
-## 측정 일지
-
-| 날짜 | 환경 | Budget 1 | Budget 2 | Budget 3 | 비고 |
-|---|---|---|---|---|---|
-| (측정 전) | — | TBD | TBD | TBD | 기준선 미수립 |
+### C. Error Boundaries (E Guideline crossover)
+- When the budget fails critically (e.g., UI freeze leading to an exception), the `FeatureErrorBoundary` and `GlobalErrorBoundary` step in.
+- These boundaries ensure the application recovers gracefully, attempts an emergency auto-save, and prevents data loss.

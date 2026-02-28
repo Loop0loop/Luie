@@ -2,7 +2,7 @@
  * .luie 파일 임포트 로직
  */
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { z } from "zod";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
@@ -20,6 +20,12 @@ import {
   LUIE_WORLD_TERMS_FILE,
   MARKDOWN_EXTENSION,
 } from "@shared/constants";
+import {
+  canAttemptLuieImport,
+  hasReachedLuieImportRetryLimit,
+  registerLuieImportFailure,
+  type LuieImportRetryState,
+} from "./fileImportRetryPolicy";
 
 const LuieMetaSchema = z.object({
   format: z.literal(LUIE_PACKAGE_FORMAT),
@@ -73,6 +79,14 @@ export function useFileImport(
   const importedProjectIdRef = useRef<string | null>(null);
   const requestedLoadRef = useRef<string | null>(null);
   const importingProjectIdRef = useRef<string | null>(null);
+  const importRetryStateRef = useRef<Map<string, LuieImportRetryState>>(new Map());
+  const retryTimerRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const clearRetryTimer = useCallback((projectId: string) => {
+    const timer = retryTimerRef.current.get(projectId);
+    if (!timer) return;
+    clearTimeout(timer);
+    retryTimerRef.current.delete(projectId);
+  }, []);
 
   useEffect(() => {
     void (async () => {
@@ -88,11 +102,18 @@ export function useFileImport(
       if (requestedLoadRef.current !== currentProject.id) {
         requestedLoadRef.current = currentProject.id;
         // Ensure DB is loaded before deciding to import
-        await Promise.all([
-          loadChapters(currentProject.id),
-          loadCharacters(currentProject.id),
-          loadTerms(currentProject.id),
-        ]);
+        try {
+          await Promise.all([
+            loadChapters(currentProject.id),
+            loadCharacters(currentProject.id),
+            loadTerms(currentProject.id),
+          ]);
+        } catch (error) {
+          await api.logger.warn("Failed to load DB state before .luie import", {
+            projectId: currentProject.id,
+            error,
+          });
+        }
         return;
       }
 
@@ -107,12 +128,21 @@ export function useFileImport(
       // 이미 데이터가 있으면 임포트 안 함
       if (chapters.length > 0 || characters.length > 0 || terms.length > 0) {
         importedProjectIdRef.current = currentProject.id;
+        importRetryStateRef.current.delete(currentProject.id);
+        clearRetryTimer(currentProject.id);
         return;
       }
 
       const path = currentProject.projectPath;
       if (!path.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
         importedProjectIdRef.current = currentProject.id;
+        importRetryStateRef.current.delete(currentProject.id);
+        clearRetryTimer(currentProject.id);
+        return;
+      }
+
+      const retryState = importRetryStateRef.current.get(currentProject.id);
+      if (!canAttemptLuieImport(retryState)) {
         return;
       }
 
@@ -127,8 +157,9 @@ export function useFileImport(
           LUIE_PACKAGE_META_FILENAME,
         );
         if (!metaResult.success || !metaResult.data) {
-          api.logger.warn("Failed to read meta.json", { path });
-          return;
+          throw new Error(
+            `LUIE_IMPORT_META_READ_FAILED:${metaResult.error?.code ?? "EMPTY_META"}`,
+          );
         }
 
         const parsed = LuieMetaSchema.safeParse(JSON.parse(metaResult.data));
@@ -138,6 +169,8 @@ export function useFileImport(
             issues: parsed.error.issues,
           });
           importedProjectIdRef.current = currentProject.id;
+          importRetryStateRef.current.delete(currentProject.id);
+          clearRetryTimer(currentProject.id);
           return;
         }
 
@@ -145,6 +178,8 @@ export function useFileImport(
 
         if (fileChapters.length === 0) {
           importedProjectIdRef.current = currentProject.id;
+          importRetryStateRef.current.delete(currentProject.id);
+          clearRetryTimer(currentProject.id);
           return;
         }
 
@@ -302,6 +337,8 @@ export function useFileImport(
         }
 
         importedProjectIdRef.current = currentProject.id;
+        importRetryStateRef.current.delete(currentProject.id);
+        clearRetryTimer(currentProject.id);
       } catch (error) {
         api.logger.error("Failed to parse project file", { path, error });
         await Promise.allSettled([
@@ -322,7 +359,42 @@ export function useFileImport(
             terms: createdTermIds.length,
           });
         }
-        importedProjectIdRef.current = currentProject.id;
+        const nextRetryState = registerLuieImportFailure(
+          importRetryStateRef.current.get(currentProject.id),
+        );
+
+        if (hasReachedLuieImportRetryLimit(nextRetryState)) {
+          importRetryStateRef.current.delete(currentProject.id);
+          clearRetryTimer(currentProject.id);
+          importedProjectIdRef.current = currentProject.id;
+          await api.logger.warn("Stopped .luie import retries after retry limit", {
+            projectId: currentProject.id,
+            path,
+            attempts: nextRetryState.attempts,
+          });
+          return;
+        }
+
+        importRetryStateRef.current.set(currentProject.id, nextRetryState);
+        await api.logger.warn("Scheduled .luie import retry after failure", {
+          projectId: currentProject.id,
+          path,
+          attempts: nextRetryState.attempts,
+          nextRetryAt: new Date(nextRetryState.nextRetryAt).toISOString(),
+        });
+
+        clearRetryTimer(currentProject.id);
+        const retryDelayMs = Math.max(0, nextRetryState.nextRetryAt - Date.now());
+        const retryProjectId = currentProject.id;
+        const retryTimer = setTimeout(() => {
+          retryTimerRef.current.delete(retryProjectId);
+          void Promise.allSettled([
+            loadChapters(retryProjectId),
+            loadCharacters(retryProjectId),
+            loadTerms(retryProjectId),
+          ]);
+        }, retryDelayMs);
+        retryTimerRef.current.set(retryProjectId, retryTimer);
       } finally {
         if (importingProjectIdRef.current === currentProject.id) {
           importingProjectIdRef.current = null;
@@ -347,5 +419,16 @@ export function useFileImport(
     deleteCharacter,
     createTerm,
     deleteTerm,
+    clearRetryTimer,
   ]);
+
+  useEffect(() => {
+    const retryTimers = retryTimerRef.current;
+    return () => {
+      for (const timer of retryTimers.values()) {
+        clearTimeout(timer);
+      }
+      retryTimers.clear();
+    };
+  }, []);
 }
