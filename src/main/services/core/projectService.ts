@@ -61,6 +61,7 @@ import {
 import { writeLuiePackage } from "../../handler/system/ipcFsHandlers.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import { ensureLuieExtension, readLuieEntry } from "../../utils/luiePackage.js";
+import { ensureSafeAbsolutePath } from "../../utils/pathValidation.js";
 import { settingsManager } from "../../manager/settingsManager.js";
 
 const logger = createLogger("ProjectService");
@@ -357,15 +358,23 @@ export class ProjectService {
   private exportTimers = new Map<string, NodeJS.Timeout>();
   private exportInFlight = new Map<string, Promise<void>>();
 
+  private normalizeProjectPath(inputPath: string | undefined): string | undefined {
+    if (typeof inputPath !== "string") return undefined;
+    const trimmed = inputPath.trim();
+    if (trimmed.length === 0) return undefined;
+    return ensureSafeAbsolutePath(trimmed, "projectPath");
+  }
+
   async createProject(input: ProjectCreateInput) {
     try {
       logger.info("Creating project", input);
+      const projectPath = this.normalizeProjectPath(input.projectPath);
 
       const project = await db.getClient().project.create({
         data: {
           title: input.title,
           description: input.description,
-          projectPath: input.projectPath,
+          projectPath,
           settings: {
             create: {
               autoSave: true,
@@ -1176,6 +1185,10 @@ export class ProjectService {
 
   async updateProject(input: ProjectUpdateInput) {
     try {
+      const normalizedProjectPath =
+        input.projectPath === undefined
+          ? undefined
+          : this.normalizeProjectPath(input.projectPath) ?? null;
       const current = await db.getClient().project.findUnique({
         where: { id: input.id },
         select: { title: true, projectPath: true },
@@ -1186,7 +1199,7 @@ export class ProjectService {
         data: {
           title: input.title,
           description: input.description,
-          projectPath: input.projectPath,
+          projectPath: normalizedProjectPath,
         },
       });
 

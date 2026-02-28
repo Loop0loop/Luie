@@ -28,6 +28,18 @@ export const ensureLuieExtension = (targetPath: string) =>
     ? targetPath
     : `${targetPath}${LUIE_PACKAGE_EXTENSION}`;
 
+const normalizeComparablePath = (input: string): string =>
+  process.platform === "win32" ? input.toLowerCase() : input;
+
+const isPathWithinRoot = (targetPath: string, rootPath: string): boolean => {
+  const normalizedTarget = normalizeComparablePath(path.resolve(targetPath));
+  const normalizedRoot = normalizeComparablePath(path.resolve(rootPath));
+  return (
+    normalizedTarget === normalizedRoot ||
+    normalizedTarget.startsWith(`${normalizedRoot}${path.sep}`)
+  );
+};
+
 export const readZipEntryContent = async (
   zipPath: string,
   entryPath: string,
@@ -127,19 +139,23 @@ export const readLuieEntry = async (
   try {
     const stat = await fsp.stat(targetPath);
     if (stat.isDirectory()) {
-      const resolved = path.normalize(`${targetPath}${path.sep}${normalized}`);
-      const base = path.normalize(targetPath);
-      if (!resolved.startsWith(`${base}${path.sep}`) && resolved !== base) {
-        throw new Error("INVALID_RELATIVE_PATH");
-      }
+      const baseRealPath = await fsp.realpath(targetPath);
+      const candidatePath = path.resolve(targetPath, normalized);
       try {
-        const fileStat = await fsp.stat(resolved);
+        const resolvedEntryPath = await fsp.realpath(candidatePath);
+        if (!isPathWithinRoot(resolvedEntryPath, baseRealPath)) {
+          throw new Error("INVALID_RELATIVE_PATH");
+        }
+        const fileStat = await fsp.stat(resolvedEntryPath);
+        if (fileStat.isDirectory()) {
+          return null;
+        }
         if (fileStat.size > MAX_LUIE_ENTRY_SIZE_BYTES) {
           throw new Error(
             `LUIE_ENTRY_TOO_LARGE:${normalized}:${MAX_LUIE_ENTRY_SIZE_BYTES}`,
           );
         }
-        return await fsp.readFile(resolved, "utf-8");
+        return await fsp.readFile(resolvedEntryPath, "utf-8");
       } catch (error) {
         const err = error as NodeJS.ErrnoException;
         if (err?.code === "ENOENT") return null;

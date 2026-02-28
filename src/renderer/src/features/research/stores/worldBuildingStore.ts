@@ -173,6 +173,8 @@ interface WorldBuildingState {
   selectedEdgeId: string | null;
 
   suggestedMode: WorldViewMode | null;
+  isTimelineOpen: boolean;
+  isMapOpen: boolean;
 
   loadGraph: (projectId: string) => Promise<void>;
   setViewMode: (mode: WorldViewMode) => void;
@@ -181,6 +183,8 @@ interface WorldBuildingState {
   selectNode: (nodeId: string | null) => void;
   selectEdge: (edgeId: string | null) => void;
   dismissSuggestion: () => void;
+  toggleTimeline: () => void;
+  toggleMap: () => void;
 
   createGraphNode: (input: CreateGraphNodeInput) => Promise<WorldGraphNode | null>;
   updateGraphNode: (input: UpdateGraphNodeInput) => Promise<void>;
@@ -207,6 +211,8 @@ export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
   selectedNodeId: null,
   selectedEdgeId: null,
   suggestedMode: null,
+  isTimelineOpen: false,
+  isMapOpen: false,
 
   loadGraph: async (projectId: string) => {
     set({ isLoading: true, error: null, activeProjectId: projectId });
@@ -254,6 +260,8 @@ export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
   selectNode: (nodeId) => set({ selectedNodeId: nodeId, selectedEdgeId: null }),
   selectEdge: (edgeId) => set({ selectedEdgeId: edgeId, selectedNodeId: null }),
   dismissSuggestion: () => set({ suggestedMode: null }),
+  toggleTimeline: () => set((state) => ({ isTimelineOpen: !state.isTimelineOpen })),
+  toggleMap: () => set((state) => ({ isMapOpen: !state.isMapOpen })),
 
   createGraphNode: async (input) => {
     const projectId = input.projectId || get().activeProjectId;
