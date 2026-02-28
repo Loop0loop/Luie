@@ -34,8 +34,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build Windows packages
-        run: pnpm build:win
+      - name: Build Windows packages (no auto publish)
+        run: |
+          pnpm run generate
+          pnpm run build
+          pnpm exec electron-builder --win --config --publish never
 
       - name: Collect .exe assets
         shell: pwsh

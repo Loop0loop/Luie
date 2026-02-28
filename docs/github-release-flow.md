@@ -11,6 +11,9 @@ git push origin v0.1.0
 
 워크플로우: `.github/workflows/release-windows.yml`
 
+참고: Windows workflow는 `electron-builder --publish never`로 빌드하고,  
+다음 단계에서 `gh release upload`로 `.exe`만 업로드합니다.
+
 ## 2) macOS `.dmg` 로컬 빌드
 
 로컬 macOS에서 빌드합니다.

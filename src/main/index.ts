@@ -99,3 +99,5 @@ if (!registerSingleInstance(logger)) {
   registerAppReady(logger);
   registerShutdownHandlers(logger);
 }
+
+
