@@ -9,7 +9,11 @@ import { SHORTCUT_ACTIONS } from "@shared/constants/shortcuts";
 import { STORAGE_KEY_FONTS_INSTALLED } from "@shared/constants";
 import { readLocalStorageJson, writeLocalStorageJson } from "@shared/utils/localStorage";
 import { api } from "@shared/api";
-import { syncRunResultSchema, syncStatusSchema } from "@shared/schemas/index.js";
+import {
+    dbRecoveryResultSchema,
+    syncRunResultSchema,
+    syncStatusSchema,
+} from "@shared/schemas/index.js";
 import { OPTIONAL_FONT_OPTIONS, SHORTCUT_GROUP_ICON_MAP } from "@renderer/features/settings/components/SettingsModalConfig";
 import type { OptionalFontOption, SettingsTabId, ShortcutGroupMap } from "@renderer/features/settings/components/tabs/types";
 
@@ -25,6 +29,7 @@ const DEFAULT_SYNC_STATUS: SyncStatus = {
         chapters: 0,
         memos: 0,
         total: 0,
+        items: [],
     },
 };
 
@@ -278,11 +283,15 @@ export function useSettingsManager() {
         setRecoveryMessage(null);
         try {
             const response = await api.recovery.runDb({ dryRun });
-            if (response.success) {
+            const parsed = dbRecoveryResultSchema.safeParse(response.data);
+            if (response.success && parsed.success) {
                 setRecoveryMessage(
-                    (response.data as { message?: string })?.message ??
+                    parsed.data.message ??
                     t("settings.recovery.success"),
                 );
+                if (!parsed.data.success) {
+                    showToast(parsed.data.message || t("settings.recovery.failed"), "error");
+                }
             } else {
                 setRecoveryMessage(t("settings.recovery.failed"));
                 showToast(t("settings.recovery.failed"), "error");
@@ -428,7 +437,7 @@ export function useSettingsManager() {
         void runSyncAction(async () => {
             const response = await api.sync.runNow();
             const parsedResult = syncRunResultSchema.safeParse(response.data);
-            if (!response.success || !parsedResult.success || !parsedResult.data.success) {
+            if (!response.success || !parsedResult.success) {
                 showToast(t("settings.sync.toast.syncFailed"), "error");
                 return;
             }
@@ -436,6 +445,20 @@ export function useSettingsManager() {
             const parsed = syncStatusSchema.safeParse(nextStatus.data);
             if (parsed.success) {
                 setSyncStatus(parsed.data);
+            }
+            if (!parsedResult.data.success) {
+                if (parsedResult.data.message === "SYNC_CONFLICT_DETECTED") {
+                    showToast(
+                        t(
+                            "settings.sync.toast.conflictDetected",
+                            "Sync conflicts detected. Please resolve them.",
+                        ),
+                        "info",
+                    );
+                    return;
+                }
+                showToast(t("settings.sync.toast.syncFailed"), "error");
+                return;
             }
             showToast(t("settings.sync.toast.synced"), "success");
         });
@@ -455,6 +478,27 @@ export function useSettingsManager() {
                     return;
                 }
                 setSyncStatus(parsed.data);
+            });
+        },
+        [runSyncAction, showToast, t],
+    );
+
+    const handleResolveConflict = useCallback(
+        async (input: { type: "chapter" | "memo"; id: string; resolution: "local" | "remote" }) => {
+            await runSyncAction(async () => {
+                const response = await api.sync.resolveConflict(input);
+                if (!response.success) {
+                    showToast(t("settings.sync.toast.syncFailed"), "error");
+                    return;
+                }
+                const nextStatus = await api.sync.getStatus();
+                const parsed = syncStatusSchema.safeParse(nextStatus.data);
+                if (parsed.success) {
+                    setSyncStatus(parsed.data);
+                    if (parsed.data.conflicts.total === 0) {
+                        showToast(t("settings.sync.conflicts.allResolved", "All conflicts resolved!"), "success");
+                    }
+                }
             });
         },
         [runSyncAction, showToast, t],
@@ -498,5 +542,6 @@ export function useSettingsManager() {
         handleDisconnect,
         handleSyncNow,
         handleToggleAutoSync,
+        handleResolveConflict,
     };
 }

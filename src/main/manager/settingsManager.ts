@@ -38,6 +38,23 @@ import {
 
 const logger = createLogger("SettingsManager");
 
+const sanitizeSyncSettingsForRenderer = (
+  sync: SyncSettings | undefined,
+): SyncSettings | undefined => {
+  if (!sync) return undefined;
+  return {
+    connected: sync.connected ?? false,
+    provider: sync.provider,
+    email: sync.email,
+    userId: sync.userId,
+    expiresAt: sync.expiresAt,
+    autoSync: sync.autoSync ?? true,
+    lastSyncedAt: sync.lastSyncedAt,
+    lastError: sync.lastError,
+    projectLastSyncedAtByProjectId: sync.projectLastSyncedAtByProjectId,
+  };
+};
+
 const getDefaultShortcuts = (platform: NodeJS.Platform): ShortcutMap => {
   const mod = platform === "darwin" ? "Cmd" : "Ctrl";
 
@@ -220,6 +237,15 @@ export class SettingsManager {
   // 전체 설정 가져오기
   getAll(): AppSettings {
     return this.store.store;
+  }
+
+  // 렌더러 노출용 설정 (민감 Sync 시크릿 제거)
+  getAllForRenderer(): AppSettings {
+    const all = this.getAll();
+    return {
+      ...all,
+      sync: sanitizeSyncSettingsForRenderer(all.sync),
+    };
   }
 
   // 전체 설정 저장
@@ -439,6 +465,21 @@ export class SettingsManager {
         )
         : undefined;
 
+    const pendingConflictResolutions = current?.pendingConflictResolutions;
+    const normalizedPendingConflictResolutions =
+      pendingConflictResolutions &&
+      typeof pendingConflictResolutions === "object" &&
+      !Array.isArray(pendingConflictResolutions)
+        ? Object.fromEntries(
+          Object.entries(pendingConflictResolutions).filter(
+            (entry): entry is [string, "local" | "remote"] =>
+              typeof entry[0] === "string" &&
+              entry[0].length > 0 &&
+              (entry[1] === "local" || entry[1] === "remote"),
+          ),
+        )
+        : undefined;
+
     return {
       connected: current?.connected ?? false,
       provider: current?.provider,
@@ -461,6 +502,11 @@ export class SettingsManager {
       entityBaselinesByProjectId:
         normalizedEntityBaselines && Object.keys(normalizedEntityBaselines).length > 0
           ? normalizedEntityBaselines
+          : undefined,
+      pendingConflictResolutions:
+        normalizedPendingConflictResolutions &&
+          Object.keys(normalizedPendingConflictResolutions).length > 0
+          ? normalizedPendingConflictResolutions
           : undefined,
     };
   }
@@ -546,6 +592,27 @@ export class SettingsManager {
         Object.keys(normalizedBaselines).length > 0 ? normalizedBaselines : undefined;
     } else {
       next.entityBaselinesByProjectId = undefined;
+    }
+    const pendingResolutions = next.pendingConflictResolutions;
+    if (
+      pendingResolutions &&
+      typeof pendingResolutions === "object" &&
+      !Array.isArray(pendingResolutions)
+    ) {
+      const normalizedPendingResolutions = Object.fromEntries(
+        Object.entries(pendingResolutions).filter(
+          (entry): entry is [string, "local" | "remote"] =>
+            typeof entry[0] === "string" &&
+            entry[0].length > 0 &&
+            (entry[1] === "local" || entry[1] === "remote"),
+        ),
+      );
+      next.pendingConflictResolutions =
+        Object.keys(normalizedPendingResolutions).length > 0
+          ? normalizedPendingResolutions
+          : undefined;
+    } else {
+      next.pendingConflictResolutions = undefined;
     }
     this.store.set("sync", next);
     return next;

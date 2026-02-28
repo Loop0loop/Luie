@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type {
+  SyncConflictItem,
   SyncConflictSummary,
   SyncEntityBaseline,
 } from "../../../shared/types/index.js";
@@ -99,6 +100,7 @@ export type SyncBundle = {
 
 type MergeSyncBundlesOptions = {
   baselinesByProjectId?: Record<string, SyncEntityBaseline>;
+  conflictResolutions?: Record<string, "local" | "remote">;
 };
 
 export const createEmptySyncBundle = (): SyncBundle => ({
@@ -188,12 +190,15 @@ const mergeWithTextConflictCopies = <
 >(
   local: T[],
   remote: T[],
+  entityType: "chapter" | "memo",
   buildConflictCopy: (loser: T) => T,
   shouldCreateConflictCopy?: (localItem: T, remoteItem: T) => boolean,
-): { merged: T[]; conflicts: number } => {
+  conflictResolutions?: Record<string, "local" | "remote">,
+): { merged: T[]; conflicts: number; conflictItems: SyncConflictItem[] } => {
   const merged = new Map<string, T>();
   const remoteMap = new Map<string, T>();
   let conflicts = 0;
+  const conflictItems: SyncConflictItem[] = [];
 
   for (const item of remote) {
     remoteMap.set(item.id, item);
@@ -209,15 +214,35 @@ const mergeWithTextConflictCopies = <
       merged.set(remoteItem.id, remoteItem);
       continue;
     }
-    const [winner, loser] = chooseLatest(localItem, remoteItem);
+    let [winner, loser] = chooseLatest(localItem, remoteItem);
     if (localItem.content !== remoteItem.content) {
       const shouldCreate = shouldCreateConflictCopy
         ? shouldCreateConflictCopy(localItem, remoteItem)
         : true;
       if (shouldCreate) {
-        conflicts += 1;
-        const copy = buildConflictCopy(loser);
-        merged.set(copy.id, copy);
+        const resolutionKey = `${entityType}:${localItem.id}`;
+        const forcedResolution = conflictResolutions?.[resolutionKey];
+        if (forcedResolution === "local") {
+          winner = localItem;
+          loser = remoteItem;
+        } else if (forcedResolution === "remote") {
+          winner = remoteItem;
+          loser = localItem;
+        } else {
+          conflicts += 1;
+          conflictItems.push({
+            type: entityType,
+            id: localItem.id,
+            projectId: localItem.projectId,
+            title: localItem.title,
+            localUpdatedAt: localItem.updatedAt,
+            remoteUpdatedAt: remoteItem.updatedAt,
+            localPreview: localItem.content.slice(0, 400),
+            remotePreview: remoteItem.content.slice(0, 400),
+          });
+          const copy = buildConflictCopy(loser);
+          merged.set(copy.id, copy);
+        }
       }
     }
     merged.set(remoteItem.id, winner);
@@ -232,14 +257,23 @@ const mergeWithTextConflictCopies = <
   return {
     merged: Array.from(merged.values()),
     conflicts,
+    conflictItems,
   };
 };
 
-const createConflictSummary = (chapterConflicts: number, memoConflicts: number): SyncConflictSummary => ({
-  chapters: chapterConflicts,
-  memos: memoConflicts,
-  total: chapterConflicts + memoConflicts,
-});
+const createConflictSummary = (
+  chapterConflicts: number,
+  memoConflicts: number,
+  items: SyncConflictItem[],
+): SyncConflictSummary => {
+  const total = chapterConflicts + memoConflicts;
+  return {
+    chapters: chapterConflicts,
+    memos: memoConflicts,
+    total,
+    items: items.length > 0 ? items : undefined,
+  };
+};
 
 const applyTombstonesToBundle = (bundle: SyncBundle): SyncBundle => {
   const latestTombstoneByEntity = new Map<string, SyncTombstoneRecord>();
@@ -335,6 +369,7 @@ export const mergeSyncBundles = (
   const chapterMerged = mergeWithTextConflictCopies(
     local.chapters,
     remote.chapters,
+    "chapter",
     (loser) => ({
       ...loser,
       id: randomUUID(),
@@ -361,11 +396,13 @@ export const mergeSyncBundles = (
           toTimestamp(remoteItem.updatedAt) > baselineAt
         );
       })(),
+    options?.conflictResolutions,
   );
 
   const memoMerged = mergeWithTextConflictCopies(
     local.memos,
     remote.memos,
+    "memo",
     (loser) => ({
       ...loser,
       id: randomUUID(),
@@ -391,7 +428,13 @@ export const mergeSyncBundles = (
           toTimestamp(remoteItem.updatedAt) > baselineAt
         );
       })(),
+    options?.conflictResolutions,
   );
+
+  const conflictItems = [
+    ...chapterMerged.conflictItems,
+    ...memoMerged.conflictItems,
+  ];
 
   const merged: SyncBundle = {
     projects: mergeEntityList(local.projects, remote.projects),
@@ -406,6 +449,10 @@ export const mergeSyncBundles = (
 
   return {
     merged: applyTombstonesToBundle(merged),
-    conflicts: createConflictSummary(chapterMerged.conflicts, memoMerged.conflicts),
+    conflicts: createConflictSummary(
+      chapterMerged.conflicts,
+      memoMerged.conflicts,
+      conflictItems,
+    ),
   };
 };

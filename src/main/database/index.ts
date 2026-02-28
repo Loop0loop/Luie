@@ -7,7 +7,6 @@ import { constants as fsConstants } from "node:fs";
 import * as fs from "node:fs/promises";
 import { createRequire } from "node:module";
 import * as path from "node:path";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { app } from "electron";
 import { DB_NAME } from "../../shared/constants/index.js";
 import { createLogger } from "../../shared/logger/index.js";
@@ -84,8 +83,23 @@ type BetterSqlite3Constructor = new (
   options?: { readonly?: boolean; fileMustExist?: boolean; timeout?: number },
 ) => BetterSqlite3Database;
 
+type PrismaBetterSqlite3Constructor = new (options: {
+  url: string;
+}) => unknown;
+
 const { PrismaClient } = require("@prisma/client") as {
   PrismaClient: new (options?: unknown) => PrismaClient;
+};
+
+const loadPrismaBetterSqlite3 = (): PrismaBetterSqlite3Constructor => {
+  const loaded = require("@prisma/adapter-better-sqlite3") as
+    | PrismaBetterSqlite3Constructor
+    | { PrismaBetterSqlite3?: PrismaBetterSqlite3Constructor };
+  if (typeof loaded === "function") return loaded;
+  if (loaded && typeof loaded === "object" && typeof loaded.PrismaBetterSqlite3 === "function") {
+    return loaded.PrismaBetterSqlite3;
+  }
+  throw new Error("Failed to load Prisma better-sqlite3 adapter");
 };
 
 const loadBetterSqlite3 = (): BetterSqlite3Constructor => {
@@ -223,15 +237,7 @@ class DatabaseService {
     });
 
     await this.applySchema(context);
-
-    const adapter = new PrismaBetterSqlite3({
-      url: context.datasourceUrl,
-    });
-
-    this.prisma = new PrismaClient({
-      adapter,
-      log: ["error", "warn"],
-    });
+    this.prisma = this.createPrismaClient(context);
 
     if (context.isPackaged) {
       try {
@@ -253,6 +259,36 @@ class DatabaseService {
     }
 
     logger.info("Database service initialized");
+  }
+
+  private createPrismaClient(context: PreparedDatabaseContext): PrismaClient {
+    try {
+      const PrismaBetterSqlite3 = loadPrismaBetterSqlite3();
+      const adapter = new PrismaBetterSqlite3({
+        url: context.datasourceUrl,
+      });
+      return new PrismaClient({
+        adapter,
+        log: ["error", "warn"],
+      });
+    } catch (error) {
+      // In local dev/test, native ABI mismatch can happen when the addon was rebuilt for Electron.
+      // Fallback to Prisma default sqlite engine to keep tests and CLI workflows unblocked.
+      if (context.isPackaged) {
+        throw error;
+      }
+      logger.warn("Falling back to Prisma default sqlite engine (adapter unavailable)", {
+        error,
+        dbPath: context.dbPath,
+        isTest: context.isTest,
+      });
+      return new PrismaClient({
+        datasources: {
+          db: { url: context.datasourceUrl },
+        },
+        log: ["error", "warn"],
+      });
+    }
   }
 
   private async prepareDatabaseContext(): Promise<PreparedDatabaseContext> {

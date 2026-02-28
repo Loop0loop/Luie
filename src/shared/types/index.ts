@@ -427,6 +427,70 @@ export type AppBootstrapStatus = {
   error?: string;
 };
 
+export type AppUpdateStatus =
+  | "disabled"
+  | "unconfigured"
+  | "not-implemented"
+  | "available"
+  | "up-to-date"
+  | "error";
+
+export interface AppUpdateCheckResult {
+  supported: boolean;
+  available: boolean;
+  status: AppUpdateStatus;
+  currentVersion: string;
+  latestVersion?: string;
+  message?: string;
+}
+
+export type AppUpdateLifecycleStatus =
+  | "idle"
+  | "checking"
+  | "available"
+  | "downloading"
+  | "downloaded"
+  | "applying"
+  | "error";
+
+export interface AppUpdateArtifact {
+  version: string;
+  filePath: string;
+  sha256: string;
+  size: number;
+  sourceUrl: string;
+  downloadedAt: string;
+}
+
+export interface AppUpdateState {
+  status: AppUpdateLifecycleStatus;
+  currentVersion: string;
+  latestVersion?: string;
+  message?: string;
+  rollbackAvailable: boolean;
+  checkedAt?: string;
+  artifact?: AppUpdateArtifact;
+}
+
+export interface AppUpdateDownloadResult {
+  success: boolean;
+  message: string;
+  artifact?: AppUpdateArtifact;
+}
+
+export interface AppUpdateApplyResult {
+  success: boolean;
+  message: string;
+  rollbackAvailable: boolean;
+  relaunched: boolean;
+}
+
+export interface AppUpdateRollbackResult {
+  success: boolean;
+  message: string;
+  restoredVersion?: string;
+}
+
 export type AppQuitPhase =
   | "idle"
   | "prepare"
@@ -441,6 +505,20 @@ export interface AppQuitPhasePayload {
   message?: string;
 }
 
+export interface DbRecoveryCheckpoint {
+  busy: number;
+  log: number;
+  checkpointed: number;
+}
+
+export interface DbRecoveryResult {
+  success: boolean;
+  message: string;
+  backupDir?: string;
+  checkpoint?: DbRecoveryCheckpoint[];
+  integrity?: string[];
+}
+
 export type SyncProvider = "google";
 export type SyncMode = "idle" | "connecting" | "syncing" | "error";
 
@@ -449,10 +527,22 @@ export interface SyncPendingProjectDelete {
   deletedAt: string;
 }
 
+export interface SyncConflictItem {
+  type: "chapter" | "memo";
+  id: string;
+  projectId: string;
+  title: string;
+  localUpdatedAt: string;
+  remoteUpdatedAt: string;
+  localPreview: string;
+  remotePreview: string;
+}
+
 export interface SyncConflictSummary {
   chapters: number;
   memos: number;
   total: number;
+  items?: SyncConflictItem[];
 }
 
 export interface SyncEntityBaseline {
@@ -498,6 +588,7 @@ export interface SyncSettings extends SyncConnection {
   pendingProjectDeletes?: SyncPendingProjectDelete[];
   projectLastSyncedAtByProjectId?: Record<string, string>;
   entityBaselinesByProjectId?: Record<string, SyncEntityBaseline>;
+  pendingConflictResolutions?: Record<string, "local" | "remote">;
 }
 
 export interface WindowBounds {

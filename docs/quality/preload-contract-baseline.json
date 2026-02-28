@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-02-27T04:54:40.896Z",
-  "maxNeverCount": 72,
-  "maxUnknownCount": 41,
+  "updatedAt": "2026-02-28T12:59:28.756Z",
+  "maxNeverCount": 70,
+  "maxUnknownCount": 42,
   "coreMethods": [
     "window.openExport",
     "project.openLuie",

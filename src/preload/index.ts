@@ -8,6 +8,7 @@ import { createErrorResponse, type IPCResponse } from "../shared/ipc/index.js";
 import { IPC_CHANNELS } from "../shared/ipc/channels.js";
 import type {
   AppBootstrapStatus,
+  AppUpdateState,
   AppQuitPhasePayload,
   SyncStatus,
 } from "../shared/types/index.js";
@@ -232,6 +233,7 @@ type CoreMethodMap = {
   "chapter.get": RendererApi["chapter"]["get"];
   "chapter.getAll": RendererApi["chapter"]["getAll"];
   "chapter.update": RendererApi["chapter"]["update"];
+  "snapshot.getByProject": RendererApi["snapshot"]["getByProject"];
   "snapshot.importFromFile": RendererApi["snapshot"]["importFromFile"];
   "snapshot.restore": RendererApi["snapshot"]["restore"];
   "sync.getStatus": RendererApi["sync"]["getStatus"];
@@ -240,6 +242,12 @@ type CoreMethodMap = {
   "sync.runNow": RendererApi["sync"]["runNow"];
   "sync.setAutoSync": RendererApi["sync"]["setAutoSync"];
   "sync.resolveConflict": RendererApi["sync"]["resolveConflict"];
+  "app.getVersion": RendererApi["app"]["getVersion"];
+  "app.checkUpdate": RendererApi["app"]["checkUpdate"];
+  "app.getUpdateState": RendererApi["app"]["getUpdateState"];
+  "app.downloadUpdate": RendererApi["app"]["downloadUpdate"];
+  "app.applyUpdate": RendererApi["app"]["applyUpdate"];
+  "app.rollbackUpdate": RendererApi["app"]["rollbackUpdate"];
   "app.getBootstrapStatus": RendererApi["app"]["getBootstrapStatus"];
   "settings.getAll": RendererApi["settings"]["getAll"];
   "settings.getEditor": RendererApi["settings"]["getEditor"];
@@ -252,6 +260,7 @@ type CoreMethodMap = {
   "settings.setShortcuts": RendererApi["settings"]["setShortcuts"];
   "settings.getWindowBounds": RendererApi["settings"]["getWindowBounds"];
   "settings.setWindowBounds": RendererApi["settings"]["setWindowBounds"];
+  "recovery.runDb": RendererApi["recovery"]["runDb"];
   "fs.readLuieEntry": RendererApi["fs"]["readLuieEntry"];
   "fs.selectFile": RendererApi["fs"]["selectFile"];
   "fs.selectSaveLocation": RendererApi["fs"]["selectSaveLocation"];
@@ -450,6 +459,10 @@ const rendererApi = {
   snapshot: {
     create: (input: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SNAPSHOT_CREATE, input),
+    getByProject: (
+      projectId: string,
+    ): ReturnType<RendererApi["snapshot"]["getByProject"]> =>
+      safeInvokeCore("snapshot.getByProject", IPC_CHANNELS.SNAPSHOT_GET_BY_PROJECT, projectId),
     getAll: (projectId: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SNAPSHOT_GET_ALL, projectId),
     getByChapter: (chapterId: string): Promise<IPCResponse<never>> =>
@@ -574,6 +587,18 @@ const rendererApi = {
   },
 
   app: {
+    getVersion: (): ReturnType<RendererApi["app"]["getVersion"]> =>
+      safeInvokeCore("app.getVersion", IPC_CHANNELS.APP_GET_VERSION),
+    checkUpdate: (): ReturnType<RendererApi["app"]["checkUpdate"]> =>
+      safeInvokeCore("app.checkUpdate", IPC_CHANNELS.APP_CHECK_UPDATE),
+    getUpdateState: (): ReturnType<RendererApi["app"]["getUpdateState"]> =>
+      safeInvokeCore("app.getUpdateState", IPC_CHANNELS.APP_GET_UPDATE_STATE),
+    downloadUpdate: (): ReturnType<RendererApi["app"]["downloadUpdate"]> =>
+      safeInvokeCore("app.downloadUpdate", IPC_CHANNELS.APP_DOWNLOAD_UPDATE),
+    applyUpdate: (): ReturnType<RendererApi["app"]["applyUpdate"]> =>
+      safeInvokeCore("app.applyUpdate", IPC_CHANNELS.APP_APPLY_UPDATE),
+    rollbackUpdate: (): ReturnType<RendererApi["app"]["rollbackUpdate"]> =>
+      safeInvokeCore("app.rollbackUpdate", IPC_CHANNELS.APP_ROLLBACK_UPDATE),
     getBootstrapStatus: (): ReturnType<RendererApi["app"]["getBootstrapStatus"]> =>
       safeInvokeCore("app.getBootstrapStatus", IPC_CHANNELS.APP_GET_BOOTSTRAP_STATUS),
     onBootstrapStatus: (callback: (status: AppBootstrapStatus) => void): (() => void) => {
@@ -583,6 +608,17 @@ const rendererApi = {
       ipcRenderer.on(IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED, listener);
       return () => {
         ipcRenderer.removeListener(IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED, listener);
+      };
+    },
+    onUpdateState: (
+      callback: Parameters<RendererApi["app"]["onUpdateState"]>[0],
+    ): ReturnType<RendererApi["app"]["onUpdateState"]> => {
+      const listener = (_event: unknown, state: AppUpdateState) => {
+        callback(state);
+      };
+      ipcRenderer.on(IPC_CHANNELS.APP_UPDATE_STATE_CHANGED, listener);
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.APP_UPDATE_STATE_CHANGED, listener);
       };
     },
     quit: (): Promise<IPCResponse<never>> => safeInvoke(IPC_CHANNELS.APP_QUIT),
@@ -669,8 +705,10 @@ const rendererApi = {
 
   // Recovery API
   recovery: {
-    runDb: (options?: { dryRun?: boolean }): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.RECOVERY_DB_RUN, options),
+    runDb: (
+      options?: Parameters<RendererApi["recovery"]["runDb"]>[0],
+    ): ReturnType<RendererApi["recovery"]["runDb"]> =>
+      safeInvokeCore("recovery.runDb", IPC_CHANNELS.RECOVERY_DB_RUN, options),
   },
 
   // Sync API
@@ -690,7 +728,11 @@ const rendererApi = {
     resolveConflict: (
       resolution: Parameters<RendererApi["sync"]["resolveConflict"]>[0],
     ): ReturnType<RendererApi["sync"]["resolveConflict"]> =>
-      safeInvokeCore("sync.resolveConflict", "sync:resolveConflict", resolution),
+      safeInvokeCore(
+        "sync.resolveConflict",
+        IPC_CHANNELS.SYNC_RESOLVE_CONFLICT,
+        resolution,
+      ),
     onStatusChanged: (callback: (status: SyncStatus) => void): (() => void) => {
       const listener = (_event: unknown, status: SyncStatus) => {
         callback(status);

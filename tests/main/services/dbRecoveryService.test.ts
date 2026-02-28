@@ -143,4 +143,72 @@ describe("DbRecoveryService", () => {
     expect(await fsp.readFile(shmPath, "utf-8")).toBe("shm-v1");
     expect(mocked.db.initialize).toHaveBeenCalledTimes(1);
   });
+
+  it("fails and restores backup when wal checkpoint remains busy", async () => {
+    const dbPath = path.join(tempRoot, "project.sqlite");
+    const walPath = `${dbPath}-wal`;
+    const shmPath = `${dbPath}-shm`;
+    await fsp.writeFile(dbPath, "db-v1", "utf-8");
+    await fsp.writeFile(walPath, "wal-v1", "utf-8");
+    await fsp.writeFile(shmPath, "shm-v1", "utf-8");
+    mocked.db.getDatabasePath.mockReturnValue(dbPath);
+
+    mocked.db.disconnect.mockImplementation(async () => {
+      await fsp.writeFile(dbPath, "db-corrupt", "utf-8");
+      await fsp.writeFile(walPath, "wal-corrupt", "utf-8");
+      await fsp.writeFile(shmPath, "shm-corrupt", "utf-8");
+    });
+    mocked.sqliteInstance.pragma.mockImplementation((query: string) => {
+      if (query === "wal_checkpoint(FULL)") return [{ busy: 1, log: 10, checkpointed: 0 }];
+      if (query === "integrity_check") return [{ integrity_check: "ok" }];
+      return [];
+    });
+
+    const { DbRecoveryService } = await import(
+      "../../../src/main/services/features/dbRecoveryService.js"
+    );
+    const service = new DbRecoveryService();
+
+    const result = await service.recoverFromWal();
+    expect(result.success).toBe(false);
+    expect(result.message).toContain("DB_RECOVERY_WAL_BUSY");
+    expect(await fsp.readFile(dbPath, "utf-8")).toBe("db-v1");
+    expect(await fsp.readFile(walPath, "utf-8")).toBe("wal-v1");
+    expect(await fsp.readFile(shmPath, "utf-8")).toBe("shm-v1");
+    expect(mocked.db.initialize).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails and restores backup when integrity_check reports corruption", async () => {
+    const dbPath = path.join(tempRoot, "project.sqlite");
+    const walPath = `${dbPath}-wal`;
+    const shmPath = `${dbPath}-shm`;
+    await fsp.writeFile(dbPath, "db-v1", "utf-8");
+    await fsp.writeFile(walPath, "wal-v1", "utf-8");
+    await fsp.writeFile(shmPath, "shm-v1", "utf-8");
+    mocked.db.getDatabasePath.mockReturnValue(dbPath);
+
+    mocked.db.disconnect.mockImplementation(async () => {
+      await fsp.writeFile(dbPath, "db-corrupt", "utf-8");
+      await fsp.writeFile(walPath, "wal-corrupt", "utf-8");
+      await fsp.writeFile(shmPath, "shm-corrupt", "utf-8");
+    });
+    mocked.sqliteInstance.pragma.mockImplementation((query: string) => {
+      if (query === "wal_checkpoint(FULL)") return [{ busy: 0, log: 0, checkpointed: 0 }];
+      if (query === "integrity_check") return [{ integrity_check: "row 12 missing" }];
+      return [];
+    });
+
+    const { DbRecoveryService } = await import(
+      "../../../src/main/services/features/dbRecoveryService.js"
+    );
+    const service = new DbRecoveryService();
+
+    const result = await service.recoverFromWal();
+    expect(result.success).toBe(false);
+    expect(result.message).toContain("DB_RECOVERY_INTEGRITY_FAILED");
+    expect(await fsp.readFile(dbPath, "utf-8")).toBe("db-v1");
+    expect(await fsp.readFile(walPath, "utf-8")).toBe("wal-v1");
+    expect(await fsp.readFile(shmPath, "utf-8")).toBe("shm-v1");
+    expect(mocked.db.initialize).toHaveBeenCalledTimes(1);
+  });
 });

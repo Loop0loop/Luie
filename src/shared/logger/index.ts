@@ -28,14 +28,94 @@ export const LOG_CONTEXT = Symbol.for('luie.logger.context')
 
 type LogContext = Record<string, unknown>
 
-function normalizeLogData(data: unknown): unknown {
-  if (!data || typeof data !== 'object') return data
-  const ctx = (data as Record<symbol, unknown>)[LOG_CONTEXT]
-  if (!ctx || typeof ctx !== 'object') return data
-  if (Array.isArray(data)) {
-    return { items: data, _ctx: ctx }
+const REDACTED_SECRET = '[REDACTED]'
+const REDACTED_PATH = '[REDACTED_PATH]'
+const REDACTED_TEXT = '[REDACTED_TEXT]'
+const SENSITIVE_KEY_PATTERN =
+  /(token|secret|authorization|api[-_]?key|password|cookie|jwt|verifier)/i
+const TEXT_KEY_PATTERN = /(content|synopsis|manuscript|chapterText|prompt)/i
+const PATH_KEY_PATTERN = /(path|dir|directory|cwd|execPath|userData|datasource)/i
+const ABSOLUTE_PATH_PATTERN = /^(?:\/|[a-zA-Z]:\\|[a-zA-Z]:\/).+/
+const BEARER_PATTERN = /Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi
+const JWT_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/
+
+function redactStringValue(value: string, key?: string): string {
+  if (SENSITIVE_KEY_PATTERN.test(key ?? '')) {
+    return REDACTED_SECRET
   }
-  return { ...(data as Record<string, unknown>), _ctx: ctx as LogContext }
+  if (TEXT_KEY_PATTERN.test(key ?? '')) {
+    return REDACTED_TEXT
+  }
+  if (PATH_KEY_PATTERN.test(key ?? '') && ABSOLUTE_PATH_PATTERN.test(value)) {
+    return REDACTED_PATH
+  }
+
+  let next = value.replace(BEARER_PATTERN, 'Bearer [REDACTED]')
+  if (JWT_PATTERN.test(next)) {
+    next = REDACTED_SECRET
+  }
+  return next
+}
+
+function redactLogData(
+  value: unknown,
+  key?: string,
+  seen: WeakSet<object> = new WeakSet<object>(),
+): unknown {
+  if (typeof value === 'string') {
+    return redactStringValue(value, key)
+  }
+  if (typeof value === 'number' || typeof value === 'boolean' || value === null) {
+    return value
+  }
+  if (typeof value === 'bigint') {
+    return value.toString()
+  }
+  if (typeof value === 'undefined' || typeof value === 'function' || typeof value === 'symbol') {
+    return String(value)
+  }
+  if (value instanceof Date) {
+    return value.toISOString()
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => redactLogData(item, key, seen))
+  }
+  if (typeof value === 'object') {
+    const target = value as Record<string, unknown>
+    if (seen.has(target)) {
+      return '[Circular]'
+    }
+    seen.add(target)
+
+    const output: Record<string, unknown> = {}
+    for (const [entryKey, entryValue] of Object.entries(target)) {
+      if (SENSITIVE_KEY_PATTERN.test(entryKey)) {
+        output[entryKey] = REDACTED_SECRET
+        continue
+      }
+      if (TEXT_KEY_PATTERN.test(entryKey) && typeof entryValue === 'string') {
+        output[entryKey] = REDACTED_TEXT
+        continue
+      }
+      if (PATH_KEY_PATTERN.test(entryKey) && typeof entryValue === 'string') {
+        output[entryKey] = redactStringValue(entryValue, entryKey)
+        continue
+      }
+      output[entryKey] = redactLogData(entryValue, entryKey, seen)
+    }
+    return output
+  }
+  return String(value)
+}
+
+function normalizeLogData(data: unknown): unknown {
+  if (!data || typeof data !== 'object') return redactLogData(data)
+  const ctx = (data as Record<symbol, unknown>)[LOG_CONTEXT]
+  if (!ctx || typeof ctx !== 'object') return redactLogData(data)
+  if (Array.isArray(data)) {
+    return redactLogData({ items: data, _ctx: ctx })
+  }
+  return redactLogData({ ...(data as Record<string, unknown>), _ctx: ctx as LogContext })
 }
 
 export function withLogContext<T = unknown>(data: T, context: LogContext) {

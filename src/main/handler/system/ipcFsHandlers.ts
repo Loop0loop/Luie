@@ -38,6 +38,7 @@ import {
   isSafeZipPath,
   normalizeZipPath,
   readLuieEntry,
+  readZipEntryContent,
 } from "../../utils/luiePackage.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
@@ -88,7 +89,6 @@ const MAX_READ_FILE_BYTES = 16 * 1024 * 1024;
 const ALLOWED_TEXT_WRITE_EXTENSIONS = new Set([
   MARKDOWN_EXTENSION,
   ".txt",
-  LUIE_PACKAGE_EXTENSION,
 ]);
 const packageWriteQueue = new Map<string, Promise<void>>();
 
@@ -248,6 +248,13 @@ const assertLuiePackagePath = (packagePath: string, fieldName: string): void => 
 
 const assertSupportedWriteFileExtension = (filePath: string): void => {
   const extension = path.extname(filePath).toLowerCase();
+  if (extension === LUIE_PACKAGE_EXTENSION) {
+    throw new ServiceError(
+      ErrorCode.INVALID_INPUT,
+      "Direct .luie writes are blocked. Use fs.createLuiePackage or fs.writeProjectFile.",
+      { filePath, extension },
+    );
+  }
   if (!ALLOWED_TEXT_WRITE_EXTENSIONS.has(extension)) {
     throw new ServiceError(
       ErrorCode.INVALID_INPUT,
@@ -409,6 +416,138 @@ const parseObjectJson = (raw: string): Record<string, unknown> | null => {
   return null;
 };
 
+const toObjectRecord = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+
+const isCompatibleLuieVersion = (value: unknown): boolean => {
+  if (typeof value === "number") return value === LUIE_PACKAGE_VERSION;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed === LUIE_PACKAGE_VERSION;
+  }
+  return false;
+};
+
+const validateLuieMetaCompatibility = (
+  meta: Record<string, unknown>,
+  context: { source: string },
+): void => {
+  if (meta.format !== LUIE_PACKAGE_FORMAT) {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Generated .luie package metadata format is invalid",
+      { ...context, format: meta.format },
+    );
+  }
+  if (meta.container !== LUIE_PACKAGE_CONTAINER_DIR) {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Generated .luie package metadata container is invalid",
+      { ...context, container: meta.container },
+    );
+  }
+  if (!isCompatibleLuieVersion(meta.version)) {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Generated .luie package metadata version is invalid",
+      { ...context, version: meta.version },
+    );
+  }
+};
+
+const normalizeLuieMetaForWrite = (
+  input: unknown,
+  options: {
+    titleFallback: string;
+    nowIso?: string;
+    createdAtFallback?: string;
+  },
+): Record<string, unknown> => {
+  const rawMeta = toObjectRecord(input);
+  const nowIso = options.nowIso ?? new Date().toISOString();
+  const createdAtFallback = options.createdAtFallback ?? nowIso;
+
+  if (
+    Object.prototype.hasOwnProperty.call(rawMeta, "format") &&
+    rawMeta.format !== LUIE_PACKAGE_FORMAT
+  ) {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Luie metadata format is invalid",
+      { format: rawMeta.format },
+    );
+  }
+  if (
+    Object.prototype.hasOwnProperty.call(rawMeta, "container") &&
+    rawMeta.container !== LUIE_PACKAGE_CONTAINER_DIR
+  ) {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Luie metadata container is invalid",
+      { container: rawMeta.container },
+    );
+  }
+  if (
+    Object.prototype.hasOwnProperty.call(rawMeta, "version") &&
+    !isCompatibleLuieVersion(rawMeta.version)
+  ) {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Luie metadata version is invalid",
+      { version: rawMeta.version },
+    );
+  }
+
+  const title =
+    typeof rawMeta.title === "string" && rawMeta.title.trim().length > 0
+      ? rawMeta.title
+      : options.titleFallback;
+  const createdAt =
+    typeof rawMeta.createdAt === "string" && rawMeta.createdAt.length > 0
+      ? rawMeta.createdAt
+      : createdAtFallback;
+  const updatedAt =
+    typeof rawMeta.updatedAt === "string" && rawMeta.updatedAt.length > 0
+      ? rawMeta.updatedAt
+      : nowIso;
+
+  return {
+    ...rawMeta,
+    format: LUIE_PACKAGE_FORMAT,
+    container: LUIE_PACKAGE_CONTAINER_DIR,
+    version: LUIE_PACKAGE_VERSION,
+    title,
+    createdAt,
+    updatedAt,
+  };
+};
+
+const verifyLuieZipIntegrity = async (
+  zipPath: string,
+  logger: LoggerLike,
+): Promise<void> => {
+  const metaRaw = await readZipEntryContent(zipPath, LUIE_PACKAGE_META_FILENAME, logger);
+  if (!metaRaw) {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Generated .luie package is missing meta.json",
+      { zipPath },
+    );
+  }
+
+  const parsedMeta = parseObjectJson(metaRaw);
+  if (!parsedMeta) {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Generated .luie package metadata is invalid",
+      { zipPath },
+    );
+  }
+  validateLuieMetaCompatibility(parsedMeta, { source: zipPath });
+};
+
 
 export const writeLuiePackage = async (
   targetPath: string,
@@ -419,6 +558,12 @@ export const writeLuiePackage = async (
   return await withPackageWriteLock(outputPath, async () => {
     await ensureParentDir(outputPath);
 
+    const nowIso = new Date().toISOString();
+    const normalizedMeta = normalizeLuieMetaForWrite(payload.meta, {
+      titleFallback: path.basename(outputPath, LUIE_PACKAGE_EXTENSION),
+      nowIso,
+      createdAtFallback: nowIso,
+    });
     const tempZip = `${outputPath}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
     const entries: ZipEntryPayload[] = [
       { name: `${LUIE_MANUSCRIPT_DIR}/`, isDirectory: true },
@@ -427,7 +572,7 @@ export const writeLuiePackage = async (
       { name: `${LUIE_ASSETS_DIR}/`, isDirectory: true },
       {
         name: LUIE_PACKAGE_META_FILENAME,
-        content: JSON.stringify(payload.meta ?? {}, null, 2),
+        content: JSON.stringify(normalizedMeta, null, 2),
       },
       {
         name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`,
@@ -486,6 +631,7 @@ export const writeLuiePackage = async (
     }
 
     await buildZipFile(tempZip, (zip) => addEntriesToZip(zip, entries));
+    await verifyLuieZipIntegrity(tempZip, logger);
     await atomicReplace(tempZip, outputPath, logger);
   });
 };
@@ -534,7 +680,33 @@ const migrateDirectoryPackageToZip = async (
 
   try {
     const entries = await collectDirectoryEntries(backupPath);
-    await buildZipFile(tempZip, (zip) => addEntriesToZip(zip, entries));
+    const hasMetaEntry = entries.some(
+      (entry) => normalizeZipPath(entry.name) === LUIE_PACKAGE_META_FILENAME,
+    );
+    const nowIso = new Date().toISOString();
+    let existingMeta: Record<string, unknown> = {};
+    if (hasMetaEntry) {
+      try {
+        const existingMetaRaw = await fsp.readFile(
+          path.join(backupPath, LUIE_PACKAGE_META_FILENAME),
+          "utf-8",
+        );
+        existingMeta = parseObjectJson(existingMetaRaw) ?? {};
+      } catch {
+        existingMeta = {};
+      }
+    }
+    const normalizedMeta = normalizeLuieMetaForWrite(existingMeta, {
+      titleFallback: path.basename(targetZip, LUIE_PACKAGE_EXTENSION),
+      nowIso,
+      createdAtFallback: nowIso,
+    });
+    const sanitizedEntries = entries.filter(
+      (entry) => normalizeZipPath(entry.name) !== LUIE_PACKAGE_META_FILENAME,
+    );
+    sanitizedEntries.push(metaEntry(normalizedMeta));
+    await buildZipFile(tempZip, (zip) => addEntriesToZip(zip, sanitizedEntries));
+    await verifyLuieZipIntegrity(tempZip, logger);
     await atomicReplace(tempZip, targetZip, logger);
     return backupPath;
   } catch (error) {
@@ -678,7 +850,11 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
         });
         const selectedPath = resolveSaveDialogPath(result);
         if (!selectedPath) return null;
-        await approvePathForSession(selectedPath, ["read", "write", "package"], "file");
+        const isLuiePath = selectedPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION);
+        const permissions: FsPathPermission[] = isLuiePath
+          ? ["read", "write", "package"]
+          : ["read", "write"];
+        await approvePathForSession(selectedPath, permissions, "file");
         return selectedPath;
       },
     },
@@ -702,7 +878,11 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
         });
         const selectedPath = resolveOpenDialogPath(result);
         if (!selectedPath) return null;
-        await approvePathForSession(selectedPath, ["read", "write", "package"], "file");
+        const isLuiePath = selectedPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION);
+        const permissions: FsPathPermission[] = isLuiePath
+          ? ["read", "package"]
+          : ["read"];
+        await approvePathForSession(selectedPath, permissions, "file");
         return selectedPath;
       },
     },
@@ -750,15 +930,11 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
         const parsedMeta = parseObjectJson(content.trim());
         const titleFallback = safeName || DEFAULT_PROJECT_DIR_NAME;
         const nowIso = new Date().toISOString();
-        const meta = {
-          format: LUIE_PACKAGE_FORMAT,
-          container: LUIE_PACKAGE_CONTAINER_DIR,
-          version: LUIE_PACKAGE_VERSION,
-          title: titleFallback,
-          createdAt: nowIso,
-          updatedAt: nowIso,
-          ...(parsedMeta ?? {}),
-        };
+        const meta = normalizeLuieMetaForWrite(parsedMeta ?? {}, {
+          titleFallback,
+          nowIso,
+          createdAtFallback: nowIso,
+        });
 
         const hasLegacyContent = !parsedMeta && content.trim().length > 0;
         await writeLuiePackage(
@@ -789,6 +965,7 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
               "# Imported Legacy Content\n\nLegacy project content was migrated into this package.",
               logger,
             );
+            await verifyLuieZipIntegrity(tempZip, logger);
             await atomicReplace(tempZip, fullPath, logger);
           });
         }
@@ -874,6 +1051,12 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
           permission: "package",
         });
         const targetPath = ensureLuieExtension(safePackagePath);
+        const nowIso = new Date().toISOString();
+        const normalizedMeta = normalizeLuieMetaForWrite(meta, {
+          titleFallback: path.basename(targetPath, LUIE_PACKAGE_EXTENSION),
+          nowIso,
+          createdAtFallback: nowIso,
+        });
         await withPackageWriteLock(targetPath, async () => {
           await ensureParentDir(targetPath);
           const tempZip = `${targetPath}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
@@ -894,14 +1077,14 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
           }
 
           try {
-            await buildZipFile(tempZip, (zip) =>
-              addEntriesToZip(zip, [
-                ...baseLuieDirectoryEntries(),
-                metaEntry(meta),
-                {
-                  name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`,
-                  content: JSON.stringify({ characters: [] }, null, 2),
-                },
+              await buildZipFile(tempZip, (zip) =>
+                addEntriesToZip(zip, [
+                  ...baseLuieDirectoryEntries(),
+                  metaEntry(normalizedMeta),
+                  {
+                    name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`,
+                    content: JSON.stringify({ characters: [] }, null, 2),
+                  },
                 {
                   name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`,
                   content: JSON.stringify({ terms: [] }, null, 2),
@@ -933,6 +1116,7 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
               ]),
             );
 
+            await verifyLuieZipIntegrity(tempZip, logger);
             await atomicReplace(tempZip, targetPath, logger);
           } catch (error) {
             try {
@@ -1022,6 +1206,7 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
             content,
             logger,
           );
+          await verifyLuieZipIntegrity(tempZip, logger);
           await atomicReplace(tempZip, safeProjectRoot, logger);
         });
         return { path: `${safeProjectRoot}:${normalized}` };

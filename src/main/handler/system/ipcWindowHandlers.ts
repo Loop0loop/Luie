@@ -9,6 +9,7 @@ import {
   ensureBootstrapReady,
   getBootstrapStatus,
 } from "../../lifecycle/bootstrap.js";
+import { appUpdateService } from "../../services/features/appUpdateService.js";
 import {
   windowOpenExportArgsSchema,
   windowSetFullscreenArgsSchema,
@@ -37,6 +38,44 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
         app.quit();
         return true;
       },
+    },
+    {
+      channel: IPC_CHANNELS.APP_GET_VERSION,
+      logTag: "APP_GET_VERSION",
+      failMessage: "Failed to get app version",
+      handler: () => ({
+        version: app.getVersion(),
+      }),
+    },
+    {
+      channel: IPC_CHANNELS.APP_CHECK_UPDATE,
+      logTag: "APP_CHECK_UPDATE",
+      failMessage: "Failed to check app update",
+      handler: async () => appUpdateService.checkForUpdate(),
+    },
+    {
+      channel: IPC_CHANNELS.APP_GET_UPDATE_STATE,
+      logTag: "APP_GET_UPDATE_STATE",
+      failMessage: "Failed to get app update state",
+      handler: async () => appUpdateService.getState(),
+    },
+    {
+      channel: IPC_CHANNELS.APP_DOWNLOAD_UPDATE,
+      logTag: "APP_DOWNLOAD_UPDATE",
+      failMessage: "Failed to download app update",
+      handler: async () => appUpdateService.downloadUpdate(),
+    },
+    {
+      channel: IPC_CHANNELS.APP_APPLY_UPDATE,
+      logTag: "APP_APPLY_UPDATE",
+      failMessage: "Failed to apply app update",
+      handler: async () => appUpdateService.applyUpdate(),
+    },
+    {
+      channel: IPC_CHANNELS.APP_ROLLBACK_UPDATE,
+      logTag: "APP_ROLLBACK_UPDATE",
+      failMessage: "Failed to rollback app update",
+      handler: async () => appUpdateService.rollbackUpdate(),
     },
     {
       channel: IPC_CHANNELS.APP_GET_BOOTSTRAP_STATUS,

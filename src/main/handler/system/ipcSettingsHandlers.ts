@@ -35,7 +35,7 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       failMessage: "Failed to get settings",
       handler: async () => {
         const settingsManager = await loadSettingsManager();
-        return settingsManager.getAll();
+        return settingsManager.getAllForRenderer();
       },
     },
     {
@@ -181,7 +181,7 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       handler: async () => {
         const settingsManager = await loadSettingsManager();
         settingsManager.resetToDefaults();
-        return settingsManager.getAll();
+        return settingsManager.getAllForRenderer();
       },
     },
   ]);

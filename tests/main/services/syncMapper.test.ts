@@ -189,5 +189,64 @@ describe("syncMapper project tombstones", () => {
     expect(conflicts.chapters).toBe(1);
     expect(merged.chapters.filter((chapter) => chapter.title.includes("(Conflict Copy)"))).toHaveLength(1);
     expect(merged.chapters).toHaveLength(2);
+    expect(conflicts.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "chapter",
+          id: "chapter-1",
+          projectId: "project-1",
+        }),
+      ]),
+    );
+  });
+
+  it("applies explicit conflict resolution and skips conflict copy creation", () => {
+    const local = createEmptySyncBundle();
+    local.chapters.push({
+      id: "chapter-1",
+      userId: "user-1",
+      projectId: "project-1",
+      title: "Chapter Local",
+      content: "local text",
+      order: 0,
+      wordCount: 10,
+      createdAt: "2026-02-22T00:00:00.000Z",
+      updatedAt: "2026-02-22T00:15:00.000Z",
+    });
+
+    const remote = createEmptySyncBundle();
+    remote.chapters.push({
+      id: "chapter-1",
+      userId: "user-1",
+      projectId: "project-1",
+      title: "Chapter Remote",
+      content: "remote text",
+      order: 0,
+      wordCount: 11,
+      createdAt: "2026-02-22T00:00:00.000Z",
+      updatedAt: "2026-02-22T00:16:00.000Z",
+    });
+
+    const { merged, conflicts } = mergeSyncBundles(local, remote, {
+      baselinesByProjectId: {
+        "project-1": {
+          chapter: {
+            "chapter-1": "2026-02-22T00:10:00.000Z",
+          },
+          memo: {},
+          capturedAt: "2026-02-22T00:10:00.000Z",
+        },
+      },
+      conflictResolutions: {
+        "chapter:chapter-1": "local",
+      },
+    });
+
+    expect(conflicts.chapters).toBe(0);
+    expect(conflicts.total).toBe(0);
+    expect(conflicts.items).toBeUndefined();
+    expect(merged.chapters.filter((chapter) => chapter.title.includes("(Conflict Copy)"))).toHaveLength(0);
+    expect(merged.chapters).toHaveLength(1);
+    expect(merged.chapters[0]?.content).toBe("local text");
   });
 });

@@ -1,7 +1,10 @@
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
-import { syncSetAutoArgsSchema } from "../../../shared/schemas/index.js";
+import {
+  syncResolveConflictArgsSchema,
+  syncSetAutoArgsSchema,
+} from "../../../shared/schemas/index.js";
 import { syncService } from "../../services/features/syncService.js";
 
 export function registerSyncIPCHandlers(logger: LoggerLike): void {
@@ -37,6 +40,17 @@ export function registerSyncIPCHandlers(logger: LoggerLike): void {
       argsSchema: syncSetAutoArgsSchema,
       handler: async (settings: { enabled: boolean }) =>
         syncService.setAutoSync(settings.enabled),
+    },
+    {
+      channel: IPC_CHANNELS.SYNC_RESOLVE_CONFLICT,
+      logTag: "SYNC_RESOLVE_CONFLICT",
+      failMessage: "Failed to resolve sync conflict",
+      argsSchema: syncResolveConflictArgsSchema,
+      handler: async (resolution: {
+        type: "chapter" | "memo";
+        id: string;
+        resolution: "local" | "remote";
+      }) => syncService.resolveConflict(resolution),
     },
   ]);
 }

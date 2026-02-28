@@ -392,6 +392,102 @@ describe("SyncService auth hardening", () => {
     ).toBeTruthy();
   });
 
+  it("surfaces unresolved conflicts and applies manual resolution on retry", async () => {
+    const syncedUserId = "00000000-0000-0000-0000-000000000001";
+    mocked.syncSettings.connected = true;
+    mocked.syncSettings.autoSync = false;
+    mocked.syncSettings.userId = syncedUserId;
+    mocked.syncSettings.expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    mocked.syncSettings.accessTokenCipher = "cipher";
+    mocked.syncSettings.entityBaselinesByProjectId = {
+      "project-1": {
+        chapter: {
+          "chapter-1": "2026-02-22T00:10:00.000Z",
+        },
+        memo: {},
+        capturedAt: "2026-02-22T00:10:00.000Z",
+      },
+    };
+    mocked.getAccessToken.mockReturnValue({ token: "access-token" });
+    mocked.getRefreshToken.mockReturnValue({ token: "refresh-token" });
+    mocked.prisma.project.findMany.mockResolvedValue([
+      {
+        id: "project-1",
+        title: "Project",
+        description: null,
+        createdAt: new Date("2026-02-22T00:00:00.000Z"),
+        updatedAt: new Date("2026-02-22T00:00:00.000Z"),
+        projectPath: null,
+        chapters: [
+          {
+            id: "chapter-1",
+            title: "Local Chapter",
+            content: "local content",
+            synopsis: null,
+            order: 0,
+            wordCount: 10,
+            createdAt: new Date("2026-02-22T00:00:00.000Z"),
+            updatedAt: new Date("2026-02-22T00:15:00.000Z"),
+            deletedAt: null,
+          },
+        ],
+        characters: [],
+        terms: [],
+      },
+    ]);
+    mocked.fetchBundle.mockResolvedValue({
+      projects: [],
+      chapters: [
+        {
+          id: "chapter-1",
+          userId: syncedUserId,
+          projectId: "project-1",
+          title: "Remote Chapter",
+          content: "remote content",
+          synopsis: null,
+          order: 0,
+          wordCount: 11,
+          createdAt: "2026-02-22T00:00:00.000Z",
+          updatedAt: "2026-02-22T00:16:00.000Z",
+        },
+      ],
+      characters: [],
+      terms: [],
+      worldDocuments: [],
+      memos: [],
+      snapshots: [],
+      tombstones: [],
+    });
+    mocked.upsertBundle.mockResolvedValue(undefined);
+
+    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const service = new SyncService();
+    service.initialize();
+
+    const firstRun = await service.runNow("manual");
+    expect(firstRun.success).toBe(false);
+    expect(firstRun.message).toBe("SYNC_CONFLICT_DETECTED");
+    expect(firstRun.conflicts.total).toBe(1);
+    expect(firstRun.conflicts.items?.[0]).toMatchObject({
+      type: "chapter",
+      id: "chapter-1",
+      projectId: "project-1",
+    });
+    expect(mocked.upsertBundle).not.toHaveBeenCalled();
+    expect(mocked.prisma.$transaction).not.toHaveBeenCalled();
+
+    await service.resolveConflict({
+      type: "chapter",
+      id: "chapter-1",
+      resolution: "local",
+    });
+
+    expect(mocked.syncSettings.pendingConflictResolutions).toBeUndefined();
+    expect(mocked.upsertBundle).toHaveBeenCalledTimes(1);
+    expect(mocked.prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(service.getStatus().conflicts.total).toBe(0);
+  });
+
   it("fails sync when .luie package persistence fails", async () => {
     const syncedUserId = "00000000-0000-0000-0000-000000000001";
     mocked.syncSettings.connected = true;

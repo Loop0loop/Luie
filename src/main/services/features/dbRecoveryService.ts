@@ -4,16 +4,45 @@ import { app } from "electron";
 import Database from "better-sqlite3";
 import { createLogger } from "../../../shared/logger/index.js";
 import { SNAPSHOT_BACKUP_DIR } from "../../../shared/constants/paths.js";
+import type { DbRecoveryCheckpoint, DbRecoveryResult } from "../../../shared/types/index.js";
 import { db } from "../../database/index.js";
 
 const logger = createLogger("DbRecoveryService");
 
-export type DbRecoveryResult = {
-  success: boolean;
-  message: string;
-  backupDir?: string;
-  checkpoint?: unknown;
-  integrity?: unknown;
+const toCheckpointRows = (value: unknown): DbRecoveryCheckpoint[] | undefined => {
+  if (!Array.isArray(value)) return undefined;
+  const rows = value
+    .filter((entry): entry is Record<string, unknown> => Boolean(entry && typeof entry === "object"))
+    .map((entry) => ({
+      busy:
+        typeof entry.busy === "number" && Number.isFinite(entry.busy)
+          ? entry.busy
+          : 0,
+      log:
+        typeof entry.log === "number" && Number.isFinite(entry.log)
+          ? entry.log
+          : 0,
+      checkpointed:
+        typeof entry.checkpointed === "number" && Number.isFinite(entry.checkpointed)
+          ? entry.checkpointed
+          : 0,
+    }));
+  return rows.length > 0 ? rows : undefined;
+};
+
+const toIntegrityRows = (value: unknown): string[] | undefined => {
+  if (!Array.isArray(value)) return undefined;
+  const rows = value
+    .map((entry) => {
+      if (typeof entry === "string") return entry;
+      if (entry && typeof entry === "object") {
+        const result = (entry as Record<string, unknown>).integrity_check;
+        if (typeof result === "string") return result;
+      }
+      return null;
+    })
+    .filter((entry): entry is string => typeof entry === "string" && entry.length > 0);
+  return rows.length > 0 ? rows : undefined;
 };
 
 export class DbRecoveryService {
@@ -58,6 +87,19 @@ export class DbRecoveryService {
         sqlite.close();
       }
 
+      const checkpointRows = toCheckpointRows(checkpoint);
+      const integrityRows = toIntegrityRows(integrity);
+      const busyRows = (checkpointRows ?? []).filter((row) => row.busy > 0);
+      if (busyRows.length > 0) {
+        throw new Error(`DB_RECOVERY_WAL_BUSY:${busyRows.map((row) => row.busy).join(",")}`);
+      }
+      const integrityFailures = (integrityRows ?? []).filter(
+        (row) => row.trim().toLowerCase() !== "ok",
+      );
+      if (integrityFailures.length > 0) {
+        throw new Error(`DB_RECOVERY_INTEGRITY_FAILED:${integrityFailures[0]}`);
+      }
+
       await db.initialize();
       disconnected = false;
 
@@ -67,8 +109,8 @@ export class DbRecoveryService {
         success: true,
         message: "Recovery completed successfully.",
         backupDir,
-        checkpoint,
-        integrity,
+        checkpoint: checkpointRows,
+        integrity: integrityRows,
       };
     } catch (error) {
       logger.error("DB recovery failed", { error });

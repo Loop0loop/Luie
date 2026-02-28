@@ -13,6 +13,7 @@ const mocked = vi.hoisted(() => {
     disconnect: vi.fn(),
     runNow: vi.fn(),
     setAutoSync: vi.fn(),
+    resolveConflict: vi.fn(),
   };
 
   return {
@@ -61,6 +62,7 @@ describe("IPC input validation", () => {
     mocked.syncService.disconnect.mockReset();
     mocked.syncService.runNow.mockReset();
     mocked.syncService.setAutoSync.mockReset();
+    mocked.syncService.resolveConflict.mockReset();
   });
 
   it("returns INVALID_INPUT for malformed WINDOW_SET_FULLSCREEN payload", async () => {
@@ -98,5 +100,43 @@ describe("IPC input validation", () => {
     expect(response.success).toBe(false);
     expect(response.error?.code).toBe(ErrorCode.INVALID_INPUT);
     expect(mocked.syncService.setAutoSync).not.toHaveBeenCalled();
+  });
+
+  it("returns INVALID_INPUT for malformed SYNC_RESOLVE_CONFLICT payload", async () => {
+    const { registerSyncIPCHandlers } = await import(
+      "../../../src/main/handler/system/ipcSyncHandlers.js"
+    );
+    registerSyncIPCHandlers(mocked.logger);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.SYNC_RESOLVE_CONFLICT);
+    expect(handler).toBeDefined();
+
+    const response = (await handler?.({}, { type: "chapter", id: "", resolution: "local" })) as {
+      success: boolean;
+      error?: { code: string };
+    };
+
+    expect(response.success).toBe(false);
+    expect(response.error?.code).toBe(ErrorCode.INVALID_INPUT);
+    expect(mocked.syncService.resolveConflict).not.toHaveBeenCalled();
+  });
+
+  it("passes valid SYNC_RESOLVE_CONFLICT payload to syncService", async () => {
+    const { registerSyncIPCHandlers } = await import(
+      "../../../src/main/handler/system/ipcSyncHandlers.js"
+    );
+    mocked.syncService.resolveConflict.mockResolvedValue(undefined);
+    registerSyncIPCHandlers(mocked.logger);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.SYNC_RESOLVE_CONFLICT);
+    expect(handler).toBeDefined();
+
+    const payload = { type: "memo", id: "memo-1", resolution: "remote" } as const;
+    const response = (await handler?.({}, payload)) as {
+      success: boolean;
+    };
+
+    expect(response.success).toBe(true);
+    expect(mocked.syncService.resolveConflict).toHaveBeenCalledWith(payload);
   });
 });

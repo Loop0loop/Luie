@@ -49,6 +49,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     handleDisconnect,
     handleSyncNow,
     handleToggleAutoSync,
+    handleResolveConflict,
   } = useSettingsManager();
 
   const tabs = useMemo(
@@ -154,6 +155,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 onDisconnect={handleDisconnect}
                 onSyncNow={handleSyncNow}
                 onToggleAutoSync={handleToggleAutoSync}
+                onResolveConflict={handleResolveConflict}
               />
             )}
 

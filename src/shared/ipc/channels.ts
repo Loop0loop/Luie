@@ -122,8 +122,13 @@ export const IPC_CHANNELS = {
   // App
   APP_GET_VERSION: "app:get-version",
   APP_CHECK_UPDATE: "app:check-update",
+  APP_GET_UPDATE_STATE: "app:get-update-state",
+  APP_DOWNLOAD_UPDATE: "app:download-update",
+  APP_APPLY_UPDATE: "app:apply-update",
+  APP_ROLLBACK_UPDATE: "app:rollback-update",
   APP_GET_BOOTSTRAP_STATUS: "app:get-bootstrap-status",
   APP_BOOTSTRAP_STATUS_CHANGED: "app:bootstrap-status-changed",
+  APP_UPDATE_STATE_CHANGED: "app:update-state-changed",
   APP_QUIT: "app:quit",
 
   // Export
@@ -144,6 +149,7 @@ export const IPC_CHANNELS = {
   SYNC_DISCONNECT: "sync:disconnect",
   SYNC_RUN_NOW: "sync:run-now",
   SYNC_SET_AUTO: "sync:set-auto",
+  SYNC_RESOLVE_CONFLICT: "sync:resolveConflict",
   SYNC_STATUS_CHANGED: "sync:status-changed",
 
   // World Entity Channels

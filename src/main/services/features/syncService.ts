@@ -66,6 +66,7 @@ const INITIAL_STATUS: SyncStatus = {
     chapters: 0,
     memos: 0,
     total: 0,
+    items: [],
   },
 };
 
@@ -115,6 +116,11 @@ const WORLD_DOCUMENT_FILES: Array<{
 
 type WorldDocumentType = SyncBundle["worldDocuments"][number]["docType"];
 type PersistedLuiePackage = { projectId: string; projectPath: string };
+type SyncConflictResolutionInput = {
+  type: "chapter" | "memo";
+  id: string;
+  resolution: "local" | "remote";
+};
 
 const WORLD_DOCUMENT_FILE_BY_TYPE: Record<WorldDocumentType, string> = {
   synopsis: LUIE_WORLD_SYNOPSIS_FILE,
@@ -478,6 +484,7 @@ export class SyncService {
         chapters: 0,
         memos: 0,
         total: 0,
+        items: [],
       },
     });
     return this.status;
@@ -487,6 +494,38 @@ export class SyncService {
     const next = settingsManager.setSyncSettings({ autoSync: enabled });
     this.updateStatus(toSyncStatusFromSettings(next, this.status));
     return this.status;
+  }
+
+  async resolveConflict(input: SyncConflictResolutionInput): Promise<void> {
+    logger.info("Sync conflict resolution requested", {
+      type: input.type,
+      id: input.id,
+      resolution: input.resolution,
+    });
+    const conflictItems = this.status.conflicts.items ?? [];
+    const conflictExists = conflictItems.some(
+      (item) => item.type === input.type && item.id === input.id,
+    );
+    if (!conflictExists) {
+      throw new Error("SYNC_CONFLICT_NOT_FOUND");
+    }
+
+    const syncSettings = settingsManager.getSyncSettings();
+    const pendingConflictResolutions = {
+      ...(syncSettings.pendingConflictResolutions ?? {}),
+      [`${input.type}:${input.id}`]: input.resolution,
+    };
+    settingsManager.setSyncSettings({
+      pendingConflictResolutions,
+      lastError: undefined,
+    });
+
+    const runResult = await this.runNow(
+      `resolve-conflict:${input.type}:${input.id}:${input.resolution}`,
+    );
+    if (!runResult.success && runResult.message !== "SYNC_CONFLICT_DETECTED") {
+      throw new Error(runResult.message || "SYNC_RESOLVE_CONFLICT_FAILED");
+    }
   }
 
   onLocalMutation(_reason?: string): void {
@@ -554,7 +593,39 @@ export class SyncService {
 
       const { merged, conflicts } = mergeSyncBundles(localBundle, remoteBundle, {
         baselinesByProjectId: syncSettings.entityBaselinesByProjectId,
+        conflictResolutions: syncSettings.pendingConflictResolutions,
       });
+
+      if (conflicts.total > 0) {
+        const unresolvedKeys = new Set(
+          (conflicts.items ?? []).map((item) => `${item.type}:${item.id}`),
+        );
+        const nextResolutionMap = Object.fromEntries(
+          Object.entries(syncSettings.pendingConflictResolutions ?? {}).filter((entry) =>
+            unresolvedKeys.has(entry[0]),
+          ),
+        );
+        settingsManager.setSyncSettings({
+          pendingConflictResolutions:
+            Object.keys(nextResolutionMap).length > 0 ? nextResolutionMap : undefined,
+          lastError: undefined,
+        });
+        this.updateStatus({
+          ...toSyncStatusFromSettings(settingsManager.getSyncSettings(), this.status),
+          mode: "idle",
+          inFlight: false,
+          queued: false,
+          conflicts,
+        });
+        return {
+          success: false,
+          message: "SYNC_CONFLICT_DETECTED",
+          pulled: this.countBundleRows(remoteBundle),
+          pushed: 0,
+          conflicts,
+        };
+      }
+
       await this.applyMergedBundleToLocal(merged);
       await syncRepository.upsertBundle(accessToken, merged);
 
@@ -576,6 +647,7 @@ export class SyncService {
         lastError: undefined,
         projectLastSyncedAtByProjectId,
         entityBaselinesByProjectId,
+        pendingConflictResolutions: undefined,
       });
       if (pendingProjectDeleteIds.length > 0) {
         settingsManager.removePendingProjectDeletes(pendingProjectDeleteIds);

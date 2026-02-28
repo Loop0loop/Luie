@@ -12,6 +12,12 @@ import type {
   Snapshot,
   Term,
   AppBootstrapStatus,
+  AppUpdateCheckResult,
+  AppUpdateState,
+  AppUpdateDownloadResult,
+  AppUpdateApplyResult,
+  AppUpdateRollbackResult,
+  DbRecoveryResult,
   AppQuitPhasePayload,
   WindowMenuBarMode,
   SyncRunResult,
@@ -151,6 +157,7 @@ export type RendererApi = {
       description?: string;
       type?: "AUTO" | "MANUAL";
     }) => Promise<IPCResponse<Snapshot>>;
+    getByProject: (projectId: string) => Promise<IPCResponse<Snapshot[]>>;
     getAll: (projectId: string) => Promise<IPCResponse<Snapshot[]>>;
     getByChapter: (chapterId: string) => Promise<IPCResponse<Snapshot[]>>;
     importFromFile: (filePath: string) => Promise<IPCResponse<Project>>;
@@ -230,7 +237,7 @@ export type RendererApi = {
     reset: () => Promise<IPCResponse<AppSettings>>;
   };
   recovery: {
-    runDb: (options?: { dryRun?: boolean }) => Promise<IPCResponse<unknown>>;
+    runDb: (options?: { dryRun?: boolean }) => Promise<IPCResponse<DbRecoveryResult>>;
   };
   sync: {
     getStatus: () => Promise<IPCResponse<SyncStatus>>;
@@ -242,8 +249,15 @@ export type RendererApi = {
     resolveConflict: (resolution: { type: "chapter" | "memo"; id: string; resolution: "local" | "remote" }) => Promise<IPCResponse<void>>;
   };
   app: {
+    getVersion: () => Promise<IPCResponse<{ version: string }>>;
+    checkUpdate: () => Promise<IPCResponse<AppUpdateCheckResult>>;
+    getUpdateState: () => Promise<IPCResponse<AppUpdateState>>;
+    downloadUpdate: () => Promise<IPCResponse<AppUpdateDownloadResult>>;
+    applyUpdate: () => Promise<IPCResponse<AppUpdateApplyResult>>;
+    rollbackUpdate: () => Promise<IPCResponse<AppUpdateRollbackResult>>;
     getBootstrapStatus: () => Promise<IPCResponse<AppBootstrapStatus>>;
     onBootstrapStatus: (callback: (status: AppBootstrapStatus) => void) => () => void;
+    onUpdateState: (callback: (status: AppUpdateState) => void) => () => void;
     quit: () => Promise<IPCResponse<unknown>>;
   };
   window: {
@@ -292,6 +306,7 @@ const PRELOAD_UNAVAILABLE_MESSAGE =
   "Preload API is unavailable. Restart the app and verify the preload build.";
 const EVENT_SUBSCRIPTION_METHODS = new Set([
   "onBootstrapStatus",
+  "onUpdateState",
   "onStream",
   "onError",
   "onStatusChanged",

@@ -14,6 +14,7 @@ import { createLogger, configureLogger, LogLevel } from "../shared/logger/index.
 import { LOG_DIR_NAME, LOG_FILE_NAME } from "../shared/constants/index.js";
 import { initDatabaseEnv } from "./prismaEnv.js";
 import { registerAppReady } from "./lifecycle/appReady.js";
+import { registerCrashReporting } from "./lifecycle/crashReporting.js";
 import { extractAuthCallbackUrl, handleDeepLinkUrl } from "./lifecycle/deepLink.js";
 import { registerShutdownHandlers } from "./lifecycle/shutdown.js";
 import { registerSingleInstance } from "./lifecycle/singleInstance.js";
@@ -33,6 +34,8 @@ logger.info("Main process bootstrap", {
   isPackaged: app.isPackaged,
   defaultApp: process.defaultApp,
 });
+
+registerCrashReporting(logger);
 
 initDatabaseEnv();
 
@@ -99,5 +102,4 @@ if (!registerSingleInstance(logger)) {
   registerAppReady(logger);
   registerShutdownHandlers(logger);
 }
-
 

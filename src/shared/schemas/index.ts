@@ -213,6 +213,20 @@ export const recoveryRunDbArgsSchema = z.tuple([
     .optional(),
 ]);
 
+export const dbRecoveryCheckpointSchema = z.object({
+  busy: z.number(),
+  log: z.number(),
+  checkpointed: z.number(),
+});
+
+export const dbRecoveryResultSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  backupDir: z.string().optional(),
+  checkpoint: z.array(dbRecoveryCheckpointSchema).optional(),
+  integrity: z.array(z.string()).optional(),
+});
+
 export const appBootstrapStatusSchema = z.object({
   isReady: z.boolean(),
   error: z.string().optional(),
@@ -222,6 +236,20 @@ export const syncConflictSummarySchema = z.object({
   chapters: z.number().int().nonnegative(),
   memos: z.number().int().nonnegative(),
   total: z.number().int().nonnegative(),
+  items: z
+    .array(
+      z.object({
+        type: z.enum(["chapter", "memo"]),
+        id: z.string().min(1),
+        projectId: z.string().min(1),
+        title: z.string(),
+        localUpdatedAt: z.string(),
+        remoteUpdatedAt: z.string(),
+        localPreview: z.string(),
+        remotePreview: z.string(),
+      }),
+    )
+    .optional(),
 });
 
 export const syncStatusSchema = z.object({
@@ -254,6 +282,14 @@ export const syncSetAutoSchema = z.object({
 });
 
 export const syncSetAutoArgsSchema = z.tuple([syncSetAutoSchema]);
+
+export const syncResolveConflictSchema = z.object({
+  type: z.enum(["chapter", "memo"]),
+  id: z.string().min(1),
+  resolution: z.enum(["local", "remote"]),
+});
+
+export const syncResolveConflictArgsSchema = z.tuple([syncResolveConflictSchema]);
 
 export const editorSettingsSchema = z.object({
   fontFamily: z.enum(["serif", "sans", "mono"]),

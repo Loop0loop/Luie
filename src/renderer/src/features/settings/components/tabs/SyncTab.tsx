@@ -12,6 +12,11 @@ interface SyncTabProps {
     onDisconnect: () => void;
     onSyncNow: () => void;
     onToggleAutoSync: (enabled: boolean) => void;
+    onResolveConflict: (input: {
+        type: "chapter" | "memo";
+        id: string;
+        resolution: "local" | "remote";
+    }) => Promise<void>;
 }
 
 export const SyncTab = memo(function SyncTab({
@@ -23,6 +28,7 @@ export const SyncTab = memo(function SyncTab({
     onDisconnect,
     onSyncNow,
     onToggleAutoSync,
+    onResolveConflict,
 }: SyncTabProps) {
     const [isResolving, setIsResolving] = useState(false);
     const showConnected = status.connected;
@@ -138,6 +144,7 @@ export const SyncTab = memo(function SyncTab({
                         conflicts={status.conflicts}
                         onClose={() => setIsResolving(false)}
                         onRefresh={onSyncNow}
+                        onResolve={onResolveConflict}
                         isBusy={isBusy}
                     />
                 )}
