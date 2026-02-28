@@ -13,6 +13,9 @@ const logger = createLogger("SyncAuthService");
 const OAUTH_REDIRECT_URI = "luie://auth/callback";
 const TOKEN_CODEC_SAFE_PREFIX = "v2:safe:";
 const TOKEN_CODEC_PLAIN_PREFIX = "v2:plain:";
+const SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE = "SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE";
+
+type SecretScope = "token" | "pending";
 
 type PendingPkce = {
   state: string;
@@ -62,39 +65,53 @@ const createCodeVerifier = (): string => toBase64Url(randomBytes(48));
 const createCodeChallenge = (verifier: string): string =>
   toBase64Url(createHash("sha256").update(verifier).digest());
 
-const encryptSecret = (plain: string): string => {
+const encryptSecret = (plain: string, scope: SecretScope = "token"): string => {
   if (safeStorage.isEncryptionAvailable()) {
     const cipher = safeStorage.encryptString(plain).toString("base64");
     return `${TOKEN_CODEC_SAFE_PREFIX}${cipher}`;
+  }
+  if (scope === "token") {
+    throw new Error(SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE);
   }
   const cipher = Buffer.from(plain, "utf-8").toString("base64");
   return `${TOKEN_CODEC_PLAIN_PREFIX}${cipher}`;
 };
 
-const decodeLegacySecret = (legacyCipher: string): DecodedSecret => {
+const decodeLegacySecret = (
+  legacyCipher: string,
+  scope: SecretScope = "token",
+): DecodedSecret => {
   const payload = Buffer.from(legacyCipher, "base64");
   if (safeStorage.isEncryptionAvailable()) {
     try {
       const plain = safeStorage.decryptString(payload);
       return {
         plain,
-        migratedCipher: encryptSecret(plain),
+        migratedCipher: encryptSecret(plain, scope),
       };
     } catch {
-      // Legacy fallback can be plain base64 text.
+      // Legacy payload may be plain base64 text.
+      const plain = payload.toString("utf-8");
+      return {
+        plain,
+        migratedCipher: encryptSecret(plain, scope),
+      };
     }
+  }
+  if (scope === "token") {
+    throw new Error(SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE);
   }
   const plain = payload.toString("utf-8");
   return {
     plain,
-    migratedCipher: encryptSecret(plain),
+    migratedCipher: encryptSecret(plain, scope),
   };
 };
 
-const decodeSecret = (cipher: string): DecodedSecret => {
+const decodeSecret = (cipher: string, scope: SecretScope = "token"): DecodedSecret => {
   if (cipher.startsWith(TOKEN_CODEC_SAFE_PREFIX)) {
     if (!safeStorage.isEncryptionAvailable()) {
-      throw new Error("SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE");
+      throw new Error(SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE);
     }
     const raw = cipher.slice(TOKEN_CODEC_SAFE_PREFIX.length);
     const payload = Buffer.from(raw, "base64");
@@ -113,14 +130,21 @@ const decodeSecret = (cipher: string): DecodedSecret => {
   }
 
   if (cipher.startsWith(TOKEN_CODEC_PLAIN_PREFIX)) {
+    if (scope === "token" && !safeStorage.isEncryptionAvailable()) {
+      throw new Error(SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE);
+    }
     const raw = cipher.slice(TOKEN_CODEC_PLAIN_PREFIX.length);
     const payload = Buffer.from(raw, "base64");
+    const plain = payload.toString("utf-8");
+    const migratedCipher =
+      safeStorage.isEncryptionAvailable() ? encryptSecret(plain, scope) : undefined;
     return {
-      plain: payload.toString("utf-8"),
+      plain,
+      migratedCipher,
     };
   }
 
-  return decodeLegacySecret(cipher);
+  return decodeLegacySecret(cipher, scope);
 };
 
 class SyncAuthService {
@@ -137,7 +161,7 @@ class SyncAuthService {
     this.pendingPkce = pending;
     settingsManager.setPendingSyncAuth({
       state: pending.state,
-      verifierCipher: encryptSecret(pending.verifier),
+      verifierCipher: encryptSecret(pending.verifier, "pending"),
       createdAt: new Date(pending.createdAt).toISOString(),
     });
   }
@@ -159,7 +183,7 @@ class SyncAuthService {
     }
 
     try {
-      const decoded = decodeSecret(syncSettings.pendingAuthVerifierCipher);
+      const decoded = decodeSecret(syncSettings.pendingAuthVerifierCipher, "pending");
       if (decoded.migratedCipher) {
         settingsManager.setPendingSyncAuth({
           state: syncSettings.pendingAuthState,

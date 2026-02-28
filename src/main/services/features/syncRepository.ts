@@ -166,7 +166,8 @@ const mapWorldDocumentRow = (row: DbRow): SyncWorldDocumentRecord | null => {
     docType !== "plot" &&
     docType !== "drawing" &&
     docType !== "mindmap" &&
-    docType !== "scrap"
+    docType !== "scrap" &&
+    docType !== "graph"
   ) {
     return null;
   }

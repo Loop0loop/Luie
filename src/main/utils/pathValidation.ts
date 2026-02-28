@@ -3,6 +3,22 @@ import { ErrorCode } from "../../shared/constants/errorCode.js";
 import { ServiceError } from "./serviceError.js";
 
 const MAX_PATH_LENGTH = 4096;
+const RESTRICTED_ROOTS =
+  process.platform === "win32"
+    ? [path.resolve(process.env.WINDIR ?? "C:\\Windows")]
+    : ["/etc", "/bin", "/sbin", "/System", "/private/etc"];
+
+const normalizeForComparison = (value: string): string =>
+  process.platform === "win32" ? value.toLowerCase() : value;
+
+const isPathWithinRoot = (targetPath: string, rootPath: string): boolean => {
+  const normalizedTarget = normalizeForComparison(path.resolve(targetPath));
+  const normalizedRoot = normalizeForComparison(path.resolve(rootPath));
+  return (
+    normalizedTarget === normalizedRoot ||
+    normalizedTarget.startsWith(`${normalizedRoot}${path.sep}`)
+  );
+};
 
 function assertBasePathInput(input: string, fieldName: string): string {
   if (typeof input !== "string") {
@@ -52,5 +68,14 @@ export function ensureSafeAbsolutePath(input: string, fieldName = "path"): strin
   }
 
   const resolved = path.resolve(normalized);
+  for (const restrictedRoot of RESTRICTED_ROOTS) {
+    if (isPathWithinRoot(resolved, restrictedRoot)) {
+      throw new ServiceError(
+        ErrorCode.FS_PERMISSION_DENIED,
+        `${fieldName} points to a restricted system path`,
+        { fieldName, input: resolved, restrictedRoot: path.resolve(restrictedRoot) },
+      );
+    }
+  }
   return resolved;
 }

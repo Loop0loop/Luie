@@ -6,6 +6,7 @@ import * as path from "path";
 import yauzl from "yauzl";
 import yazl from "yazl";
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
+import { ErrorCode } from "../../../shared/constants/errorCode.js";
 import {
   DEFAULT_PROJECT_DIR_NAME,
   DEFAULT_PROJECT_FILE_BASENAME,
@@ -50,6 +51,7 @@ import {
   fsWriteProjectFileArgsSchema,
 } from "../../../shared/schemas/index.js";
 import { ensureSafeAbsolutePath } from "../../utils/pathValidation.js";
+import { ServiceError } from "../../utils/serviceError.js";
 
 export type LuiePackageExportData = {
   meta: Record<string, unknown>;
@@ -79,6 +81,179 @@ type ZipEntryPayload = {
 };
 
 const ZIP_TEMP_SUFFIX = ".tmp";
+const APPROVED_ROOT_TTL_MS = 12 * 60 * 60 * 1000;
+const MAX_APPROVED_ROOTS = 128;
+const MAX_READ_FILE_BYTES = 16 * 1024 * 1024;
+const ALLOWED_TEXT_WRITE_EXTENSIONS = new Set([
+  MARKDOWN_EXTENSION,
+  ".txt",
+  LUIE_PACKAGE_EXTENSION,
+]);
+
+type FsPathPermission = "read" | "write" | "package";
+
+type ApprovedRootEntry = {
+  permissions: Set<FsPathPermission>;
+  expiresAt: number;
+  lastAccessedAt: number;
+};
+
+const approvedRoots = new Map<string, ApprovedRootEntry>();
+
+const normalizeComparablePath = (input: string): string =>
+  process.platform === "win32" ? input.toLowerCase() : input;
+
+const isPathWithinRoot = (targetPath: string, rootPath: string): boolean => {
+  const normalizedTarget = normalizeComparablePath(path.resolve(targetPath));
+  const normalizedRoot = normalizeComparablePath(path.resolve(rootPath));
+  return (
+    normalizedTarget === normalizedRoot ||
+    normalizedTarget.startsWith(`${normalizedRoot}${path.sep}`)
+  );
+};
+
+const pruneApprovedRoots = (): void => {
+  const now = Date.now();
+  for (const [rootPath, entry] of approvedRoots.entries()) {
+    if (entry.expiresAt <= now) {
+      approvedRoots.delete(rootPath);
+    }
+  }
+};
+
+const enforceApprovedRootLimit = (): void => {
+  if (approvedRoots.size <= MAX_APPROVED_ROOTS) return;
+  const candidates = Array.from(approvedRoots.entries()).sort(
+    (left, right) => left[1].lastAccessedAt - right[1].lastAccessedAt,
+  );
+  const overflowCount = approvedRoots.size - MAX_APPROVED_ROOTS;
+  for (const [rootPath] of candidates.slice(0, overflowCount)) {
+    approvedRoots.delete(rootPath);
+  }
+};
+
+const upsertApprovedRoot = (rootPath: string, permissions: FsPathPermission[]): void => {
+  const normalizedRootPath = path.resolve(rootPath);
+  const existing = approvedRoots.get(normalizedRootPath);
+  const now = Date.now();
+  if (existing) {
+    permissions.forEach((permission) => existing.permissions.add(permission));
+    existing.expiresAt = now + APPROVED_ROOT_TTL_MS;
+    existing.lastAccessedAt = now;
+    return;
+  }
+  approvedRoots.set(normalizedRootPath, {
+    permissions: new Set(permissions),
+    expiresAt: now + APPROVED_ROOT_TTL_MS,
+    lastAccessedAt: now,
+  });
+  enforceApprovedRootLimit();
+};
+
+const resolveCanonicalPath = async (
+  inputPath: string,
+  mode: "read" | "write",
+): Promise<string> => {
+  const resolved = path.resolve(inputPath);
+
+  if (mode === "read") {
+    try {
+      return await fsp.realpath(resolved);
+    } catch (error) {
+      const err = error as NodeJS.ErrnoException;
+      if (err?.code === "ENOENT") {
+        return resolved;
+      }
+      throw error;
+    }
+  }
+
+  let cursor = resolved;
+  while (true) {
+    try {
+      await fsp.access(cursor);
+      const canonicalCursor = await fsp.realpath(cursor);
+      if (cursor === resolved) {
+        return canonicalCursor;
+      }
+      const suffix = path.relative(cursor, resolved);
+      return path.resolve(canonicalCursor, suffix);
+    } catch (error) {
+      const err = error as NodeJS.ErrnoException;
+      if (err?.code === "ENOENT") {
+        const parent = path.dirname(cursor);
+        if (parent === cursor) {
+          return resolved;
+        }
+        cursor = parent;
+        continue;
+      }
+      throw error;
+    }
+  }
+};
+
+const approvePathForSession = async (
+  inputPath: string,
+  permissions: FsPathPermission[],
+  treatAs: "file" | "directory" = "file",
+): Promise<void> => {
+  const safePath = ensureSafeAbsolutePath(inputPath, "path");
+  const rootPath = treatAs === "directory" ? safePath : path.dirname(safePath);
+  const canonicalRoot = await resolveCanonicalPath(rootPath, "write");
+  upsertApprovedRoot(canonicalRoot, permissions);
+};
+
+const assertAllowedFsPath = async (
+  inputPath: string,
+  options: {
+    fieldName: string;
+    mode: "read" | "write";
+    permission: FsPathPermission;
+  },
+): Promise<string> => {
+  const safePath = ensureSafeAbsolutePath(inputPath, options.fieldName);
+  const canonicalPath = await resolveCanonicalPath(safePath, options.mode);
+  pruneApprovedRoots();
+
+  for (const [rootPath, entry] of approvedRoots.entries()) {
+    if (!entry.permissions.has(options.permission)) continue;
+    if (!isPathWithinRoot(canonicalPath, rootPath)) continue;
+    entry.lastAccessedAt = Date.now();
+    return safePath;
+  }
+
+  throw new ServiceError(
+    ErrorCode.FS_PERMISSION_DENIED,
+    `${options.fieldName} is outside approved roots`,
+    {
+      fieldName: options.fieldName,
+      path: safePath,
+      permission: options.permission,
+    },
+  );
+};
+
+const assertLuiePackagePath = (packagePath: string, fieldName: string): void => {
+  if (!packagePath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
+    throw new ServiceError(
+      ErrorCode.INVALID_INPUT,
+      `${fieldName} must point to a ${LUIE_PACKAGE_EXTENSION} package`,
+      { fieldName, packagePath },
+    );
+  }
+};
+
+const assertSupportedWriteFileExtension = (filePath: string): void => {
+  const extension = path.extname(filePath).toLowerCase();
+  if (!ALLOWED_TEXT_WRITE_EXTENSIONS.has(extension)) {
+    throw new ServiceError(
+      ErrorCode.INVALID_INPUT,
+      "Unsupported file extension for fs.writeFile",
+      { filePath, extension, allowed: Array.from(ALLOWED_TEXT_WRITE_EXTENSIONS) },
+    );
+  }
+};
 
 const ensureParentDir = async (targetPath: string) => {
   const dir = path.dirname(targetPath);
@@ -378,7 +553,10 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
         const result = await dialog.showOpenDialog({
           properties: ["openDirectory", "createDirectory"],
         });
-        return resolveOpenDialogPath(result);
+        const selectedPath = resolveOpenDialogPath(result);
+        if (!selectedPath) return null;
+        await approvePathForSession(selectedPath, ["read", "write", "package"], "directory");
+        return selectedPath;
       },
     },
     {
@@ -400,7 +578,10 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
             { name: LUIE_PACKAGE_FILTER_NAME, extensions: [LUIE_PACKAGE_EXTENSION_NO_DOT] },
           ],
         });
-        return resolveSaveDialogPath(result);
+        const selectedPath = resolveSaveDialogPath(result);
+        if (!selectedPath) return null;
+        await approvePathForSession(selectedPath, ["read", "write", "package"], "file");
+        return selectedPath;
       },
     },
     {
@@ -421,7 +602,10 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
           filters: options?.filters,
           properties: ["openFile"],
         });
-        return resolveOpenDialogPath(result);
+        const selectedPath = resolveOpenDialogPath(result);
+        if (!selectedPath) return null;
+        await approvePathForSession(selectedPath, ["read", "write", "package"], "file");
+        return selectedPath;
       },
     },
     {
@@ -436,7 +620,10 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
           filters: [{ name: "Snapshot", extensions: ["snap"] }],
           properties: ["openFile"],
         });
-        return resolveOpenDialogPath(result);
+        const selectedPath = resolveOpenDialogPath(result);
+        if (!selectedPath) return null;
+        await approvePathForSession(selectedPath, ["read"], "file");
+        return selectedPath;
       },
     },
     {
@@ -446,7 +633,11 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       argsSchema: fsSaveProjectArgsSchema,
       handler: async (projectName: string, projectPath: string, content: string) => {
         const safeName = sanitizeName(projectName);
-        const safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
+        const safeProjectPath = await assertAllowedFsPath(projectPath, {
+          fieldName: "projectPath",
+          mode: "write",
+          permission: "write",
+        });
         const projectDir = path.join(
           safeProjectPath,
           safeName || DEFAULT_PROJECT_DIR_NAME,
@@ -467,10 +658,25 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       failMessage: "Failed to read file",
       argsSchema: fsReadFileArgsSchema,
       handler: async (filePath: string) => {
-        const safeFilePath = ensureSafeAbsolutePath(filePath, "filePath");
+        const safeFilePath = await assertAllowedFsPath(filePath, {
+          fieldName: "filePath",
+          mode: "read",
+          permission: "read",
+        });
         const stat = await fsp.stat(safeFilePath);
         if (stat.isDirectory()) {
           return null;
+        }
+        if (stat.size > MAX_READ_FILE_BYTES) {
+          throw new ServiceError(
+            ErrorCode.INVALID_INPUT,
+            "File is too large to read through IPC",
+            {
+              filePath: safeFilePath,
+              size: stat.size,
+              maxSize: MAX_READ_FILE_BYTES,
+            },
+          );
         }
         const content = await fsp.readFile(safeFilePath, "utf-8");
         return content;
@@ -481,12 +687,19 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       logTag: "FS_READ_LUIE_ENTRY",
       failMessage: "Failed to read Luie package entry",
       argsSchema: fsReadLuieEntryArgsSchema,
-      handler: async (packagePath: string, entryPath: string) =>
-        readLuieEntry(
-          ensureSafeAbsolutePath(packagePath, "packagePath"),
+      handler: async (packagePath: string, entryPath: string) => {
+        const safePackagePath = await assertAllowedFsPath(packagePath, {
+          fieldName: "packagePath",
+          mode: "read",
+          permission: "package",
+        });
+        assertLuiePackagePath(safePackagePath, "packagePath");
+        return readLuieEntry(
+          safePackagePath,
           entryPath,
           logger,
-        ),
+        );
+      },
     },
     {
       channel: IPC_CHANNELS.FS_WRITE_FILE,
@@ -494,7 +707,12 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       failMessage: "Failed to write file",
       argsSchema: fsWriteFileArgsSchema,
       handler: async (filePath: string, content: string) => {
-        const safeFilePath = ensureSafeAbsolutePath(filePath, "filePath");
+        const safeFilePath = await assertAllowedFsPath(filePath, {
+          fieldName: "filePath",
+          mode: "write",
+          permission: "write",
+        });
+        assertSupportedWriteFileExtension(safeFilePath);
         const dir = path.dirname(safeFilePath);
         await fsp.mkdir(dir, { recursive: true });
         await fsp.writeFile(safeFilePath, content, "utf-8");
@@ -507,7 +725,11 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       failMessage: "Failed to create Luie package",
       argsSchema: fsCreateLuiePackageArgsSchema,
       handler: async (packagePath: string, meta: unknown) => {
-        const safePackagePath = ensureSafeAbsolutePath(packagePath, "packagePath");
+        const safePackagePath = await assertAllowedFsPath(packagePath, {
+          fieldName: "packagePath",
+          mode: "write",
+          permission: "package",
+        });
         const targetPath = ensureLuieExtension(safePackagePath);
 
         await ensureParentDir(targetPath);
@@ -567,6 +789,7 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
         );
 
         await atomicReplace(tempZip, targetPath, logger);
+        await approvePathForSession(targetPath, ["read", "write", "package"], "file");
         return { path: targetPath };
       },
     },
@@ -580,11 +803,12 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
         if (!normalized || !isSafeZipPath(normalized)) {
           throw new Error("INVALID_RELATIVE_PATH");
         }
-        const safeProjectRoot = ensureSafeAbsolutePath(projectRoot, "projectRoot");
-
-        if (!safeProjectRoot.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
-          throw new Error("PROJECT_ROOT_NOT_LUIE_PACKAGE");
-        }
+        const safeProjectRoot = await assertAllowedFsPath(projectRoot, {
+          fieldName: "projectRoot",
+          mode: "write",
+          permission: "package",
+        });
+        assertLuiePackagePath(safeProjectRoot, "projectRoot");
 
         try {
           const stat = await fsp.stat(safeProjectRoot);

@@ -284,7 +284,7 @@ export function WorldInspector() {
   const handleImportanceChange = useCallback(
     async (value: number) => {
       if (!selectedNode) return;
-      handleChange("importance", value);
+      setLocalNode((prev) => ({ ...prev, importance: value }));
       const currentAttrs = selectedNode.attributes ?? {};
       await updateGraphNode({
         id: selectedNode.id,
@@ -296,7 +296,6 @@ export function WorldInspector() {
         },
       });
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [selectedNode, updateGraphNode],
   );
 
@@ -304,7 +303,7 @@ export function WorldInspector() {
   const handleTagsChange = useCallback(
     async (newTags: string[]) => {
       if (!selectedNode) return;
-      handleChange("tags", newTags);
+      setLocalNode((prev) => ({ ...prev, tags: newTags }));
       const currentAttrs = selectedNode.attributes ?? {};
       await updateGraphNode({
         id: selectedNode.id,
@@ -316,7 +315,6 @@ export function WorldInspector() {
         },
       });
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [selectedNode, updateGraphNode],
   );
 

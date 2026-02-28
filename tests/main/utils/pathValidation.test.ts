@@ -41,4 +41,16 @@ describe("pathValidation", () => {
       ErrorCode.REQUIRED_FIELD_MISSING,
     );
   });
+
+  it("rejects restricted system paths", () => {
+    const restrictedPath =
+      process.platform === "win32"
+        ? path.join(process.env.WINDIR ?? "C:\\Windows", "System32", "drivers", "etc", "hosts")
+        : "/etc/hosts";
+
+    expectThrowsWithCode(
+      () => ensureSafeAbsolutePath(restrictedPath, "filePath"),
+      ErrorCode.FS_PERMISSION_DENIED,
+    );
+  });
 });

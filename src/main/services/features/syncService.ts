@@ -9,6 +9,7 @@ import {
   LUIE_PACKAGE_VERSION,
   LUIE_WORLD_DIR,
   LUIE_WORLD_DRAWING_FILE,
+  LUIE_WORLD_GRAPH_FILE,
   LUIE_WORLD_MINDMAP_FILE,
   LUIE_WORLD_PLOT_FILE,
   LUIE_WORLD_SCRAP_MEMOS_FILE,
@@ -95,13 +96,14 @@ const AUTH_FATAL_ERROR_PATTERNS = [
 ];
 
 const WORLD_DOCUMENT_FILES: Array<{
-  docType: "synopsis" | "plot" | "drawing" | "mindmap";
+  docType: "synopsis" | "plot" | "drawing" | "mindmap" | "graph";
   fileName: string;
 }> = [
   { docType: "synopsis", fileName: LUIE_WORLD_SYNOPSIS_FILE },
   { docType: "plot", fileName: LUIE_WORLD_PLOT_FILE },
   { docType: "drawing", fileName: LUIE_WORLD_DRAWING_FILE },
   { docType: "mindmap", fileName: LUIE_WORLD_MINDMAP_FILE },
+  { docType: "graph", fileName: LUIE_WORLD_GRAPH_FILE },
 ];
 
 const isAuthFatalMessage = (message: string): boolean =>
@@ -1225,6 +1227,7 @@ export class SyncService {
       plot: worldDocs.get("plot") ?? { columns: [] },
       drawing: worldDocs.get("drawing") ?? { paths: [] },
       mindmap: worldDocs.get("mindmap") ?? { nodes: [], edges: [] },
+      graph: worldDocs.get("graph") ?? { nodes: [], edges: [] },
       memos: normalizedScrapPayload,
       snapshots: snapshotList,
     };

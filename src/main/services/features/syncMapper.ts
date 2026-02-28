@@ -9,7 +9,8 @@ export type SyncWorldDocumentType =
   | "plot"
   | "drawing"
   | "mindmap"
-  | "scrap";
+  | "scrap"
+  | "graph";
 
 type SyncEntityBase = {
   id: string;

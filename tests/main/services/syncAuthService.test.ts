@@ -118,6 +118,7 @@ describe("SyncAuthService", () => {
     expect(stateFromAuthorize).toBe(mocked.state.pendingAuthState);
     expect(mocked.state.pendingAuthVerifierCipher?.startsWith("v2:plain:")).toBe(true);
 
+    mocked.safeStorageState.available = true;
     vi.resetModules();
     const { syncAuthService: restarted } = await import(
       "../../../src/main/services/features/syncAuthService.js"
@@ -186,6 +187,7 @@ describe("SyncAuthService", () => {
   });
 
   it("returns migrated cipher when reading legacy base64 token", async () => {
+    mocked.safeStorageState.available = true;
     const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
     const legacyCipher = Buffer.from("legacy-token", "utf-8").toString("base64");
     const result = syncAuthService.getAccessToken({
@@ -195,7 +197,20 @@ describe("SyncAuthService", () => {
     });
 
     expect(result.token).toBe("legacy-token");
-    expect(result.migratedCipher?.startsWith("v2:plain:")).toBe(true);
+    expect(result.migratedCipher?.startsWith("v2:safe:")).toBe(true);
+  });
+
+  it("rejects plain token cipher when secure storage is unavailable", async () => {
+    const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
+    const plainCipher = `v2:plain:${Buffer.from("token-in-plain", "utf-8").toString("base64")}`;
+    const result = syncAuthService.getAccessToken({
+      connected: true,
+      autoSync: true,
+      accessTokenCipher: plainCipher,
+    });
+
+    expect(result.token).toBeNull();
+    expect(result.errorCode).toContain("SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE");
   });
 
   it("returns false when Supabase env is not configured", async () => {

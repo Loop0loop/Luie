@@ -40,6 +40,7 @@ import {
 } from "@shared/constants/worldGraphUI";
 import { CustomEntityNode } from "./CustomEntityNode";
 import { useWorldGraphLayout } from "@renderer/features/research/hooks/useWorldGraphLayout";
+import { EditorSyncBus } from "@renderer/features/workspace/utils/EditorSyncBus";
 
 const nodeTypes = {
   custom: CustomEntityNode,
@@ -246,9 +247,11 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
   useEffect(() => {
     setNodes((prev) => {
       let isChanged = false;
+      const prevById = new Map(prev.map((node) => [node.id, node] as const));
+      const sourceRfNodesById = new Map(rfNodes.map((node) => [node.id, node] as const));
       const nextNodes = layoutedNodes.map((layoutNode: Node) => {
-        const existing = prev.find((n) => n.id === layoutNode.id);
-        const sourceRfNode = rfNodes.find(n => n.id === layoutNode.id);
+        const existing = prevById.get(layoutNode.id);
+        const sourceRfNode = sourceRfNodesById.get(layoutNode.id);
         const lastPos = lastStorePositions.current[layoutNode.id];
 
         // Remember the DB position so we know if it externally changed
@@ -262,7 +265,10 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
           return layoutNode;
         }
 
-        const dbPosChanged = lastPos && sourceRfNode && (lastPos.x !== sourceRfNode.position.x || lastPos.y !== sourceRfNode.position.y);
+        const dbPosChanged =
+          lastPos &&
+          sourceRfNode &&
+          (lastPos.x !== sourceRfNode.position.x || lastPos.y !== sourceRfNode.position.y);
 
         // Did the user just switch modes? Force layout position only on mode change transition.
         const didModeSwitched = prevViewModeRef.current !== viewMode;
@@ -381,31 +387,24 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
       selectNode(node.id);
 
       // Notify editor to jump to mention
-      import("@renderer/features/workspace/utils/EditorSyncBus").then(({ EditorSyncBus }) => {
-        EditorSyncBus.emit("JUMP_TO_MENTION", { entityId: node.id });
-      });
+      EditorSyncBus.emit("JUMP_TO_MENTION", { entityId: node.id });
     },
     [selectNode],
   );
 
   // Sync with Editor
   useEffect(() => {
-    let isMounted = true;
-    import("@renderer/features/workspace/utils/EditorSyncBus").then(({ EditorSyncBus }) => {
-      if (!isMounted) return;
-      const handleFocus = (payload: { entityId: string }) => {
-        selectNode(payload.entityId);
-        if (rfInstance) {
-          const node = rfInstance.getNode(payload.entityId);
-          if (node) {
-            rfInstance.setCenter(node.position.x, node.position.y, { duration: 800, zoom: 1.2 });
-          }
+    const handleFocus = (payload: { entityId: string }) => {
+      selectNode(payload.entityId);
+      if (rfInstance) {
+        const node = rfInstance.getNode(payload.entityId);
+        if (node) {
+          rfInstance.setCenter(node.position.x, node.position.y, { duration: 800, zoom: 1.2 });
         }
-      };
-      EditorSyncBus.on("FOCUS_ENTITY", handleFocus);
-      return () => EditorSyncBus.off("FOCUS_ENTITY", handleFocus);
-    });
-    return () => { isMounted = false; };
+      }
+    };
+    EditorSyncBus.on("FOCUS_ENTITY", handleFocus);
+    return () => EditorSyncBus.off("FOCUS_ENTITY", handleFocus);
   }, [rfInstance, selectNode]);
 
   const onNodeContextMenu: NodeMouseHandler = useCallback(
@@ -510,7 +509,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
   const styledNodes = useMemo(() => {
     return nodes.map((node) => {
       let opacity = 1;
-      let display = "flex";
+      const display = "flex";
 
       if (viewMode === "protagonist" && selectedNodeId) {
         const isSelected = node.id === selectedNodeId;
@@ -547,7 +546,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
   const styledEdges = useMemo(() => {
     return edges.map((edge) => {
       let opacity = 1;
-      let isHidden = false;
+      const isHidden = false;
 
       let label = edge.label;
       if (viewMode === "protagonist" && selectedNodeId) {
