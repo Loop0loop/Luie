@@ -218,10 +218,10 @@ export function WorldInspector() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-panel border-l border-border">
+    <div className="flex flex-col h-full bg-panel/60 backdrop-blur-xl border-l border-border/40 shadow-2xl">
       {selectedNode && (
         <>
-          <header className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0 bg-panel">
+          <header className="flex items-center justify-between px-4 py-3 border-b border-border/40 shrink-0 bg-transparent">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-accent/60 shadow-sm" />
               <span className="text-[10px] font-bold text-muted uppercase tracking-[0.1em]">
@@ -367,7 +367,7 @@ export function WorldInspector() {
 
       {selectedEdge && (
         <>
-          <header className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0 bg-panel">
+          <header className="flex items-center justify-between px-4 py-3 border-b border-border/40 shrink-0 bg-transparent">
             <div className="flex items-center gap-2">
               <LinkIcon size={12} className="text-accent" />
               <span className="text-[10px] font-bold text-muted uppercase tracking-[0.1em]">
@@ -418,9 +418,9 @@ export function WorldInspector() {
                         setEditState((previous) =>
                           previous
                             ? {
-                                ...previous,
-                                relation: kind,
-                              }
+                              ...previous,
+                              relation: kind,
+                            }
                             : previous,
                         )
                       }

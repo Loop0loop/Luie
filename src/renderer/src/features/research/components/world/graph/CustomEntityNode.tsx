@@ -17,37 +17,54 @@ type CustomEntityNodeProps = {
         label: string;
         subType: string;
         importance?: number;
+        viewMode?: "standard" | "protagonist" | "event-chain" | "freeform";
     };
     selected?: boolean;
 };
 
 export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps) => {
-    const { label, subType, importance = NODE_CONFIG.DEFAULT_IMPORTANCE } = data;
+    const { label, subType, importance = NODE_CONFIG.DEFAULT_IMPORTANCE, viewMode = "standard" } = data;
     const themeSpec = WORLD_GRAPH_NODE_THEMES[subType] ?? WORLD_GRAPH_NODE_THEMES["WorldEntity"];
     const Icon = WORLD_GRAPH_ICON_MAP[subType] ?? WORLD_GRAPH_ICON_MAP["WorldEntity"];
 
     const baseScale = 1 + (importance - NODE_CONFIG.BASE_IMPORTANCE) * NODE_CONFIG.SCALE_MULTIPLIER;
+
+    // Mode-specific styles
+    const isEventChainFocused = viewMode === "event-chain" && subType === "Event";
+    const isProtagonistSelected = viewMode === "protagonist" && selected;
+    const isFreeform = viewMode === "freeform";
 
     return (
         <div className="group relative">
             {/* 노드 본체 (Pill 형태) - Glassmorphism UI */}
             <div
                 className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm backdrop-blur-md transition-all duration-300 ease-out cursor-grab active:cursor-grabbing",
-                    themeSpec.wrapper,
-                    selected ? "ring-2 ring-accent ring-offset-1 ring-offset-app shadow-md scale-105" : "hover:-translate-y-0.5 hover:shadow-md"
+                    "flex items-center gap-2 px-3 py-1.5 backdrop-blur-md transition-all duration-500 ease-out cursor-grab active:cursor-grabbing",
+                    isEventChainFocused ? "rounded-lg border-2" : "rounded-full border",
+                    isFreeform ? "bg-panel/40 shadow-none border-border/30 hover:bg-panel/80" : themeSpec.wrapper,
+                    selected && !isProtagonistSelected ? "ring-2 ring-accent ring-offset-1 ring-offset-app shadow-md scale-105" : "hover:-translate-y-0.5 hover:shadow-md",
+                    isProtagonistSelected && "ring-4 ring-accent/80 shadow-[0_0_40px_rgba(currentColor,0.4)] scale-110",
+                    isEventChainFocused && "scale-110 shadow-lg"
                 )}
                 style={{
                     transform: `scale(${baseScale})`,
                     transformOrigin: "center center",
                 }}
             >
-                <div className={cn("flex items-center justify-center p-1 rounded-full shrink-0 transition-colors pointer-events-none", themeSpec.iconBg, themeSpec.text)}>
-                    <Icon size={14} strokeWidth={2.5} />
+                <div className={cn("flex items-center justify-center p-1 rounded-full shrink-0 transition-colors pointer-events-none", isFreeform ? "text-muted" : themeSpec.text, isFreeform ? "bg-transparent" : themeSpec.iconBg)}>
+                    <Icon size={14} strokeWidth={isEventChainFocused ? 3 : 2.5} />
                 </div>
-                <span className={cn("font-[600] text-[12.5px] whitespace-nowrap tracking-tight pr-1 pointer-events-none", themeSpec.text)}>
-                    {label}
-                </span>
+                {!isFreeform && (
+                    <span className={cn("font-[600] text-[12.5px] whitespace-nowrap tracking-tight pr-1 pointer-events-none", themeSpec.text)}>
+                        {label}
+                    </span>
+                )}
+                {/* Fallback minimal label for Freeform on hover */}
+                {isFreeform && (
+                    <span className="font-[500] text-[11px] whitespace-nowrap tracking-tight absolute -bottom-5 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-panel/80 px-2 rounded-md border border-border/50 text-muted pointer-events-none">
+                        {label}
+                    </span>
+                )}
             </div>
 
             {/* Handles rendered after main div for z-index stacking */}

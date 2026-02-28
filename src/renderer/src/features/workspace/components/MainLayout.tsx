@@ -105,7 +105,7 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
 
           <div className="flex-1 overflow-y-auto flex flex-col">
             <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative">
-              <Panel defaultSize={toPercentSize(60)} minSize={toPercentSize(20)} className="min-w-0 bg-canvas relative flex flex-col">
+              <Panel defaultSize={toPercentSize(50)} minSize={toPercentSize(20)} className="min-w-0 bg-canvas relative flex flex-col">
                 {children}
               </Panel>
               {additionalPanels}

@@ -39,6 +39,7 @@ import {
   WORLD_GRAPH_NODE_MENU_WIDTH_PX,
 } from "@shared/constants/worldGraphUI";
 import { CustomEntityNode } from "./CustomEntityNode";
+import { useWorldGraphLayout } from "@renderer/features/research/hooks/useWorldGraphLayout";
 
 const nodeTypes = {
   custom: CustomEntityNode,
@@ -133,6 +134,7 @@ function toRFNode(
   graphNode: WorldGraphNode,
   index: number,
   selectedNodeId: string | null,
+  viewMode: WorldViewMode,
 ): Node {
   const subType = graphNode.subType ?? graphNode.entityType;
   const importance = (graphNode.attributes?.importance ?? 3) as number;
@@ -150,6 +152,7 @@ function toRFNode(
       label: graphNode.name,
       subType,
       importance,
+      viewMode,
     },
     selected: selectedNodeId === graphNode.id,
     type: "custom",
@@ -200,8 +203,8 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
   const [nodeMenu, setNodeMenu] = useState<NodeMenuState | null>(null);
 
   const rfNodes = useMemo(
-    () => graphNodes.map((node, index) => toRFNode(node, index, selectedNodeId)),
-    [graphNodes, selectedNodeId],
+    () => graphNodes.map((node, index) => toRFNode(node, index, selectedNodeId, viewMode)),
+    [graphNodes, selectedNodeId, viewMode],
   );
   const rfEdges = useMemo(() => {
     const translate = (key: string, fallback: string) =>
@@ -209,23 +212,30 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
     return graphEdges.map((edge) => toRFEdge(edge, translate, viewMode));
   }, [graphEdges, i18n, viewMode]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(rfNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(rfEdges);
+  const { layoutedNodes, layoutedEdges } = useWorldGraphLayout({
+    nodes: rfNodes,
+    edges: rfEdges,
+    viewMode,
+    selectedNodeId,
+  });
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(layoutedEdges);
 
   useEffect(() => {
     setEdges((prev) => {
       if (
-        prev.length === rfEdges.length &&
+        prev.length === layoutedEdges.length &&
         prev.every((edge, index) => {
-          const next = rfEdges[index];
+          const next = layoutedEdges[index];
           return edge.id === next.id && edge.label === next.label && edge.source === next.source && edge.target === next.target;
         })
       ) {
         return prev;
       }
-      return rfEdges;
+      return layoutedEdges;
     });
-  }, [rfEdges, setEdges]);
+  }, [layoutedEdges, setEdges]);
 
   // Fix: Smart Node Synchronization
   // Keeps local node position while user drags, but accepts programmatic Layout updates
@@ -234,51 +244,63 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
   useEffect(() => {
     setNodes((prev) => {
       let isChanged = false;
-      const nextNodes = rfNodes.map((rfNode) => {
-        const existing = prev.find((n) => n.id === rfNode.id);
-        const lastPos = lastStorePositions.current[rfNode.id];
+      const nextNodes = layoutedNodes.map((layoutNode: Node) => {
+        const existing = prev.find((n) => n.id === layoutNode.id);
+        const sourceRfNode = rfNodes.find(n => n.id === layoutNode.id);
+        const lastPos = lastStorePositions.current[layoutNode.id];
 
         // Remember the DB position so we know if it externally changed
-        lastStorePositions.current[rfNode.id] = { x: rfNode.position.x, y: rfNode.position.y };
+        // We use sourceRfNode.position (DB) for external change tracking, not the layout position
+        if (sourceRfNode) {
+          lastStorePositions.current[layoutNode.id] = { x: sourceRfNode.position.x, y: sourceRfNode.position.y };
+        }
 
         if (!existing) {
           isChanged = true;
-          return rfNode;
+          return layoutNode;
         }
 
-        const dbPosChanged = lastPos && (lastPos.x !== rfNode.position.x || lastPos.y !== rfNode.position.y);
+        const dbPosChanged = lastPos && sourceRfNode && (lastPos.x !== sourceRfNode.position.x || lastPos.y !== sourceRfNode.position.y);
 
         let newPos = existing.position;
-        if (dbPosChanged && !existing.dragging) {
-          newPos = rfNode.position;
+        // Apply either new external DB change, or if a layout shift happened (e.g mode switch).
+        // Since layout changes position continuously (or entirely), we just enforce layout position
+        // if not currently dragging or if DB forced a change
+        if (!existing.dragging && (dbPosChanged || viewMode !== "standard")) {
+          newPos = layoutNode.position;
+        }
+
+        // Specifically for mode switches, forcefully snap to new positions
+        if (!existing.dragging && existing.position.x !== layoutNode.position.x) {
+          newPos = layoutNode.position;
         }
 
         const needsUpdate =
           existing.position.x !== newPos.x ||
           existing.position.y !== newPos.y ||
-          existing.selected !== rfNode.selected ||
-          existing.data?.label !== rfNode.data?.label ||
-          existing.data?.subType !== rfNode.data?.subType ||
-          existing.data?.importance !== rfNode.data?.importance;
+          existing.selected !== layoutNode.selected ||
+          existing.data?.label !== layoutNode.data?.label ||
+          existing.data?.subType !== layoutNode.data?.subType ||
+          existing.data?.importance !== layoutNode.data?.importance;
 
         if (needsUpdate) {
           isChanged = true;
           return {
             ...existing,
-            data: rfNode.data,
-            selected: rfNode.selected,
+            data: layoutNode.data,
+            selected: layoutNode.selected,
             position: newPos,
           };
         }
         return existing;
       });
 
-      if (isChanged || prev.length !== rfNodes.length) {
+      if (isChanged || prev.length !== layoutedNodes.length) {
         return nextNodes;
       }
       return prev;
     });
-  }, [rfNodes, setNodes]);
+  }, [layoutedNodes, rfNodes, viewMode, setNodes]);
 
   const onNodeDragStop: NodeMouseHandler = useCallback(
     (_, node) => {
@@ -470,30 +492,46 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
   );
 
   const adjacentNodeIds = useMemo(() => {
-    if (viewMode !== "protagonist" || !selectedNodeId) return new Set<string>();
+    if (!selectedNodeId) return new Set<string>();
     const adjacent = new Set<string>();
     edges.forEach((edge) => {
       if (edge.source === selectedNodeId) adjacent.add(edge.target);
       if (edge.target === selectedNodeId) adjacent.add(edge.source);
     });
     return adjacent;
-  }, [edges, viewMode, selectedNodeId]);
+  }, [edges, selectedNodeId]);
 
   const styledNodes = useMemo(() => {
-    if (viewMode !== "protagonist" || !selectedNodeId) return nodes;
     return nodes.map((node) => {
-      const isSelected = node.id === selectedNodeId;
-      const isAdjacent = adjacentNodeIds.has(node.id);
+      let opacity = 1;
+      let display = "flex";
 
-      let opacity = 0.15;
-      if (isSelected) opacity = 1;
-      else if (isAdjacent) opacity = 0.8;
+      if (viewMode === "protagonist" && selectedNodeId) {
+        const isSelected = node.id === selectedNodeId;
+        const isAdjacent = adjacentNodeIds.has(node.id);
+
+        opacity = 0.15;
+        if (isSelected) opacity = 1;
+        else if (isAdjacent) opacity = 0.8;
+      } else if (viewMode === "event-chain") {
+        // Event-chain mode: focus on Events and their direct connections
+        const isEvent = node.data?.entityType === "Event";
+        if (selectedNodeId) {
+          const isSelected = node.id === selectedNodeId;
+          const isAdjacent = adjacentNodeIds.has(node.id);
+          opacity = isSelected || isAdjacent ? 1 : 0.15;
+        } else {
+          // Default event chain: events are 1, others are 0.6
+          opacity = isEvent ? 1 : 0.6;
+        }
+      }
 
       return {
         ...node,
         style: {
           ...node.style,
           opacity,
+          display,
           transition: "opacity 0.3s ease",
         },
       };
@@ -501,14 +539,37 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
   }, [nodes, viewMode, selectedNodeId, adjacentNodeIds]);
 
   const styledEdges = useMemo(() => {
-    if (viewMode !== "protagonist" || !selectedNodeId) return edges;
     return edges.map((edge) => {
-      const isConnected = edge.source === selectedNodeId || edge.target === selectedNodeId;
+      let opacity = 1;
+      let isHidden = false;
+
+      let label = edge.label;
+      if (viewMode === "protagonist" && selectedNodeId) {
+        const isConnectedtoSelected = edge.source === selectedNodeId || edge.target === selectedNodeId;
+        opacity = isConnectedtoSelected ? 1 : 0.15;
+      } else if (viewMode === "event-chain") {
+        // Emphasize 'causes' edges
+        const isCauses = edge.data?.relation === "causes" || edge.animated;
+        if (!isCauses) {
+          opacity = 0.3; // Fade out non-causal relations
+        }
+
+        if (selectedNodeId) {
+          const isConnectedtoSelected = edge.source === selectedNodeId || edge.target === selectedNodeId;
+          if (!isConnectedtoSelected) opacity = 0.1;
+        }
+      } else if (viewMode === "freeform") {
+        // Freeform hides labels 
+        label = undefined;
+      }
+
       return {
         ...edge,
+        label,
+        hidden: isHidden,
         style: {
           ...edge.style,
-          opacity: isConnected ? 1 : 0.15,
+          opacity,
           transition: "opacity 0.3s ease",
         },
       };

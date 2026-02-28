@@ -62,10 +62,10 @@ export function WorldSidebar() {
   const hasActiveFilter = filter.entityTypes.length > 0 || filter.relationKinds.length > 0 || Boolean(filter.searchQuery);
 
   return (
-    <div className="flex h-full flex-col bg-sidebar border-r border-border/80">
+    <div className="flex h-full flex-col bg-sidebar/40 backdrop-blur-xl border-r border-border/40 shadow-xl">
       {/* 검색 바 */}
-      <div className="p-4 border-b border-border/60 bg-sidebar">
-        <div className="group flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-element focus-within:ring-2 focus-within:ring-accent/30 focus-within:border-accent/50 transition-all shadow-sm">
+      <div className="p-4 border-b border-border/40 bg-transparent">
+        <div className="group flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 bg-element/50 focus-within:ring-2 focus-within:ring-accent/30 focus-within:border-accent/50 transition-all shadow-sm">
           <Search size={14} className="text-muted group-focus-within:text-accent transition-colors" />
           <input
             type="text"

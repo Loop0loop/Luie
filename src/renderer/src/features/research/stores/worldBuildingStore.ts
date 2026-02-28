@@ -293,13 +293,33 @@ export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
       nextNode = toWorldEntityNode(res.data);
     }
 
-    set((state) => ({
-      graphData: state.graphData
-        ? { ...state.graphData, nodes: [...state.graphData.nodes, nextNode!] }
-        : { nodes: [nextNode!], edges: [] },
-      selectedNodeId: nextNode?.id ?? null,
-      selectedEdgeId: null,
-    }));
+    set((state) => {
+      const newNodes = state.graphData ? [...state.graphData.nodes, nextNode!] : [nextNode!];
+
+      // Auto-suggestion heuristics
+      let suggestedMode: WorldViewMode | null = state.suggestedMode;
+      if (state.viewMode === "standard") {
+        const charCount = newNodes.filter(n => n.entityType === "Character").length;
+        const eventCount = newNodes.filter(n => n.entityType === "Event").length;
+        const total = newNodes.length;
+        if (total > 3) {
+          if (eventCount / total >= 0.4) {
+            suggestedMode = "event-chain";
+          } else if (charCount / total >= 0.4) {
+            suggestedMode = "protagonist";
+          }
+        }
+      }
+
+      return {
+        graphData: state.graphData
+          ? { ...state.graphData, nodes: newNodes }
+          : { nodes: newNodes, edges: [] },
+        selectedNodeId: nextNode?.id ?? null,
+        selectedEdgeId: null,
+        suggestedMode
+      };
+    });
 
     return nextNode;
   },
@@ -365,9 +385,9 @@ export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
     set((state) => ({
       graphData: state.graphData
         ? {
-            ...state.graphData,
-            nodes: state.graphData.nodes.map((node) => (node.id === input.id ? updatedNode! : node)),
-          }
+          ...state.graphData,
+          nodes: state.graphData.nodes.map((node) => (node.id === input.id ? updatedNode! : node)),
+        }
         : null,
     }));
   },
@@ -380,13 +400,13 @@ export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
     set((state) => ({
       graphData: state.graphData
         ? {
-            ...state.graphData,
-            nodes: state.graphData.nodes.map((node) =>
-              node.id === input.id
-                ? { ...node, positionX: input.positionX, positionY: input.positionY }
-                : node,
-            ),
-          }
+          ...state.graphData,
+          nodes: state.graphData.nodes.map((node) =>
+            node.id === input.id
+              ? { ...node, positionX: input.positionX, positionY: input.positionY }
+              : node,
+          ),
+        }
         : null,
     }));
 
@@ -417,9 +437,9 @@ export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
     set((state) => ({
       graphData: state.graphData
         ? {
-            nodes: state.graphData.nodes.filter((node) => node.id !== id),
-            edges: state.graphData.edges.filter((edge) => edge.sourceId !== id && edge.targetId !== id),
-          }
+          nodes: state.graphData.nodes.filter((node) => node.id !== id),
+          edges: state.graphData.edges.filter((edge) => edge.sourceId !== id && edge.targetId !== id),
+        }
         : null,
       selectedNodeId: state.selectedNodeId === id ? null : state.selectedNodeId,
     }));
@@ -483,8 +503,8 @@ export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
       return exists
         ? state
         : {
-            graphData: { ...state.graphData, edges: [...state.graphData.edges, res.data!] },
-          };
+          graphData: { ...state.graphData, edges: [...state.graphData.edges, res.data!] },
+        };
     });
     return res.data;
   },
@@ -497,9 +517,9 @@ export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
     set((state) => ({
       graphData: state.graphData
         ? {
-            ...state.graphData,
-            edges: state.graphData.edges.map((edge) => (edge.id === input.id ? updated : edge)),
-          }
+          ...state.graphData,
+          edges: state.graphData.edges.map((edge) => (edge.id === input.id ? updated : edge)),
+        }
         : null,
     }));
     return true;
@@ -512,9 +532,9 @@ export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
     set((state) => ({
       graphData: state.graphData
         ? {
-            ...state.graphData,
-            edges: state.graphData.edges.filter((edge) => edge.id !== id),
-          }
+          ...state.graphData,
+          edges: state.graphData.edges.filter((edge) => edge.id !== id),
+        }
         : null,
       selectedEdgeId: state.selectedEdgeId === id ? null : state.selectedEdgeId,
     }));

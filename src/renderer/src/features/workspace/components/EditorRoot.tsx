@@ -170,12 +170,9 @@ export default function EditorRoot() {
     }, [activeChapterId, dialog.toast, t]);
 
     const handleOpenWorldGraph = useCallback(() => {
-        const hasWorldPanel = panels.some(p => p.content.type === "research" && p.content.tab === "world");
-        if (!hasWorldPanel) {
-            addPanel({ type: "research", tab: "world" });
-        }
-        setWorldTab("graph"); // Ensure the world section starts on the graph tab
-    }, [addPanel, panels, setWorldTab]);
+        setWorldTab("graph");
+        window.location.hash = "#world-graph";
+    }, [setWorldTab]);
 
     const handleRenameProject = useCallback(async () => {
         if (!currentProject?.id) return;
