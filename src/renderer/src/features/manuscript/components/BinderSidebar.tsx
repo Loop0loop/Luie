@@ -5,6 +5,7 @@ import React from 'react';
 import { Panel, Separator as PanelResizeHandle, type PanelSize } from "react-resizable-panels";
 import { cn } from "@shared/types/utils";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { useShallow } from "zustand/react/shallow";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import type { DragItemType } from "@shared/ui/GlobalDragContext";
 import FocusHoverSidebar from "@renderer/features/manuscript/components/FocusHoverSidebar";
@@ -37,7 +38,15 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
         sidebarWidths,
         setSidebarWidth,
         setFocusedClosableTarget,
-    } = useUIStore();
+    } = useUIStore(
+        useShallow((state) => ({
+            docsRightTab: state.docsRightTab,
+            setDocsRightTab: state.setDocsRightTab,
+            sidebarWidths: state.sidebarWidths,
+            setSidebarWidth: state.setSidebarWidth,
+            setFocusedClosableTarget: state.setFocusedClosableTarget,
+        }))
+    );
 
     const VALID_TABS: BinderTab[] = ["character", "world", "scrap", "analysis", "snapshot", "trash"];
     const activeRightTab: BinderTab | null =

@@ -6,6 +6,7 @@ import { CHARACTER_GROUP_COLORS } from "@shared/constants";
 import { useCharacterManager, type CharacterLike } from "@renderer/features/research/components/character/useCharacterManager";
 import { CharacterSidebarList } from "@renderer/features/research/components/character/CharacterSidebarList";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { useShallow } from "zustand/react/shallow";
 import {
   clampSidebarWidth,
   getSidebarDefaultWidth,
@@ -17,7 +18,12 @@ import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSi
 
 export default function CharacterManager() {
   const { t } = useTranslation();
-  const { sidebarWidths, setSidebarWidth } = useUIStore();
+  const { sidebarWidths, setSidebarWidth } = useUIStore(
+    useShallow((state) => ({
+      sidebarWidths: state.sidebarWidths,
+      setSidebarWidth: state.setSidebarWidth,
+    }))
+  );
   const sidebarFeature = "characterSidebar" as const;
   const sidebarConfig = getSidebarWidthConfig(sidebarFeature);
   const sidebarWidth = clampSidebarWidth(

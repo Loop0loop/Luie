@@ -6,6 +6,7 @@ import { EVENT_GROUP_COLORS } from "@shared/constants";
 import { useEventManager, type EventLike } from "@renderer/features/research/components/event/useEventManager";
 import { EventSidebarList } from "@renderer/features/research/components/event/EventSidebarList";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { useShallow } from "zustand/react/shallow";
 import {
     clampSidebarWidth,
     getSidebarDefaultWidth,
@@ -17,7 +18,12 @@ import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSi
 
 export default function EventManager() {
     const { t } = useTranslation();
-    const { sidebarWidths, setSidebarWidth } = useUIStore();
+    const { sidebarWidths, setSidebarWidth } = useUIStore(
+        useShallow((state) => ({
+            sidebarWidths: state.sidebarWidths,
+            setSidebarWidth: state.setSidebarWidth,
+        }))
+    );
     const sidebarFeature = "eventSidebar" as const;
     const sidebarConfig = getSidebarWidthConfig(sidebarFeature);
     const sidebarWidth = clampSidebarWidth(

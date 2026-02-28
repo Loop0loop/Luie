@@ -11,6 +11,7 @@ import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import Ribbon from "@renderer/features/editor/components/Ribbon";
 import InspectorPanel from "@renderer/features/editor/components/InspectorPanel";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { useShallow } from "zustand/react/shallow";
 import WikiDetailView from "@renderer/features/research/components/wiki/WikiDetailView";
 import EventDetailView from "@renderer/features/research/components/event/EventDetailView";
 import FactionDetailView from "@renderer/features/research/components/faction/FactionDetailView";
@@ -53,7 +54,14 @@ export default function ScrivenerLayout({
   additionalPanels,
 }: ScrivenerLayoutProps) {
   const { t } = useTranslation();
-  const { mainView, panels, sidebarWidths, setSidebarWidth } = useUIStore();
+  const { mainView, panels, sidebarWidths, setSidebarWidth } = useUIStore(
+    useShallow((state: any) => ({
+      mainView: state.mainView,
+      panels: state.panels,
+      sidebarWidths: state.sidebarWidths,
+      setSidebarWidth: state.setSidebarWidth,
+    }))
+  );
   const editorSplitGroupRef = useRef<GroupImperativeHandle | null>(null);
   const previousPanelCountRef = useRef(panels.length);
 

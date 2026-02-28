@@ -4,6 +4,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
+import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { LUIE_PACKAGE_EXTENSION } from "@shared/constants";
 import { api } from "@shared/api";
@@ -23,7 +24,14 @@ export function useChapterManagement() {
     create: createChapter,
     update: updateChapter,
     delete: deleteChapter,
-  } = useChapterStore();
+  } = useChapterStore(
+    useShallow((state) => ({
+      items: state.items,
+      create: state.create,
+      update: state.update,
+      delete: state.delete,
+    }))
+  );
 
   const activeChapterId =
     requestedChapterId &&

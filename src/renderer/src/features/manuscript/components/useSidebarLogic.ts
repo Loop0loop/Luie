@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { useShallow } from "zustand/react/shallow";
 import { useChapterManagement } from "@renderer/features/manuscript/hooks/useChapterManagement";
 import { useFloatingMenu } from "@shared/hooks/useFloatingMenu";
 import { useDialog } from "@shared/ui/useDialog";
@@ -40,7 +41,12 @@ export function useSidebarLogic({
     const { t } = useTranslation();
     const dialog = useDialog();
     const { updateProject } = useProjectStore();
-    const { setSidebarOpen, setManuscriptMenuOpen } = useUIStore();
+    const { setSidebarOpen, setManuscriptMenuOpen } = useUIStore(
+        useShallow(state => ({
+            setSidebarOpen: state.setSidebarOpen,
+            setManuscriptMenuOpen: state.setManuscriptMenuOpen
+        }))
+    );
 
     const chapterManagement = useChapterManagement();
     const {

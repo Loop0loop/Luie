@@ -15,6 +15,7 @@ import ScrivenerSidebar from "@renderer/features/manuscript/components/Scrivener
 
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useUIStore, type DocsRightTab } from "@renderer/features/workspace/stores/uiStore";
+import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useEditorStatsStore } from "@renderer/features/editor/stores/editorStatsStore";
 import { useChapterManagement } from "@renderer/features/manuscript/hooks/useChapterManagement";
@@ -45,14 +46,25 @@ export default function EditorRoot() {
     const wordCount = useEditorStatsStore((state) => state.wordCount);
     const isDocsMode = uiMode === "docs";
 
-    const isSidebarOpen = useUIStore((state) => state.isSidebarOpen);
-    const setSidebarOpen = useUIStore((state) => state.setSidebarOpen);
-    const setContextOpen = useUIStore((state) => state.setContextOpen);
-    const setWorldTab = useUIStore((state) => state.setWorldTab);
-    const docsRightTab = useUIStore((state) => state.docsRightTab);
-    const setDocsRightTab = useUIStore((state) => state.setDocsRightTab);
-    const isManuscriptMenuOpen = useUIStore((state) => state.isManuscriptMenuOpen);
-
+    const {
+        isSidebarOpen,
+        setSidebarOpen,
+        setContextOpen,
+        setWorldTab,
+        docsRightTab,
+        setDocsRightTab,
+        isManuscriptMenuOpen,
+    } = useUIStore(
+        useShallow((state) => ({
+            isSidebarOpen: state.isSidebarOpen,
+            setSidebarOpen: state.setSidebarOpen,
+            setContextOpen: state.setContextOpen,
+            setWorldTab: state.setWorldTab,
+            docsRightTab: state.docsRightTab,
+            setDocsRightTab: state.setDocsRightTab,
+            isManuscriptMenuOpen: state.isManuscriptMenuOpen,
+        }))
+    );
     const currentProject = useProjectStore((state) => state.currentProject);
     const updateProject = useProjectStore((state) => state.updateProject);
 

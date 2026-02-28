@@ -20,6 +20,7 @@ export class DbRecoveryService {
   async recoverFromWal(options?: { dryRun?: boolean }): Promise<DbRecoveryResult> {
     let backupDir: string | undefined;
     let dbPath: string | null = null;
+    let disconnected = false;
     try {
       const resolvedPath = db.getDatabasePath();
       dbPath = resolvedPath;
@@ -45,11 +46,20 @@ export class DbRecoveryService {
       }
 
       await db.disconnect();
+      disconnected = true;
 
       const sqlite = new Database(resolvedPath, { fileMustExist: true });
-      const checkpoint = sqlite.pragma("wal_checkpoint(FULL)");
-      const integrity = sqlite.pragma("integrity_check");
-      sqlite.close();
+      let checkpoint: unknown;
+      let integrity: unknown;
+      try {
+        checkpoint = sqlite.pragma("wal_checkpoint(FULL)");
+        integrity = sqlite.pragma("integrity_check");
+      } finally {
+        sqlite.close();
+      }
+
+      await db.initialize();
+      disconnected = false;
 
       logger.info("DB recovery completed", { dbPath, backupDir });
 
@@ -64,6 +74,16 @@ export class DbRecoveryService {
       logger.error("DB recovery failed", { error });
       if (backupDir && dbPath) {
         await this.restoreBackup(backupDir, dbPath);
+      }
+      if (disconnected) {
+        try {
+          await db.initialize();
+        } catch (reinitializeError) {
+          logger.error("Failed to reinitialize database after recovery failure", {
+            reinitializeError,
+            dbPath,
+          });
+        }
       }
       return {
         success: false,
@@ -90,20 +110,24 @@ export class DbRecoveryService {
 
   private async restoreBackup(backupDir: string, dbPath: string): Promise<void> {
     try {
-      const files = await fs.readdir(backupDir);
-      const dbFile = files.find((name) => name.endsWith(".db"));
-      const walFile = files.find((name) => name.endsWith(".db-wal"));
-      const shmFile = files.find((name) => name.endsWith(".db-shm"));
-
-      if (!dbFile) return;
+      const dbFile = path.basename(dbPath);
+      const walFile = path.basename(`${dbPath}-wal`);
+      const shmFile = path.basename(`${dbPath}-shm`);
       const targetDir = path.dirname(dbPath);
+      const backupDbPath = path.join(backupDir, dbFile);
 
-      await fs.copyFile(path.join(backupDir, dbFile), path.join(targetDir, dbFile));
-      if (walFile) {
-        await fs.copyFile(path.join(backupDir, walFile), path.join(targetDir, walFile));
+      if (!(await this.exists(backupDbPath))) {
+        return;
       }
-      if (shmFile) {
-        await fs.copyFile(path.join(backupDir, shmFile), path.join(targetDir, shmFile));
+
+      await fs.copyFile(backupDbPath, path.join(targetDir, dbFile));
+      const backupWalPath = path.join(backupDir, walFile);
+      const backupShmPath = path.join(backupDir, shmFile);
+      if (await this.exists(backupWalPath)) {
+        await fs.copyFile(backupWalPath, path.join(targetDir, walFile));
+      }
+      if (await this.exists(backupShmPath)) {
+        await fs.copyFile(backupShmPath, path.join(targetDir, shmFile));
       }
     } catch (error) {
       logger.warn("Failed to restore backup", { error });

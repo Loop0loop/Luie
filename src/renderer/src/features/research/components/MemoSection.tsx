@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
+import { useShallow } from "zustand/react/shallow";
 import {
   STORAGE_KEY_MEMO_SIDEBAR_LAYOUT,
   STORAGE_KEY_MEMO_SIDEBAR_LAYOUT_LEGACY,
@@ -70,7 +71,13 @@ function MemoSectionInner({
   defaultNotes: Note[];
 }) {
   const { t } = useTranslation();
-  const { sidebarWidths, setSidebarWidth } = useUIStore();
+  const { sidebarWidths, setSidebarWidth } = useUIStore(
+    useShallow((state: any) => ({
+      sidebarWidths: state.sidebarWidths,
+      setSidebarWidth: state.setSidebarWidth,
+    }))
+  );
+
   const sidebarFeature = "memoSidebar" as const;
   const sidebarConfig = getSidebarWidthConfig(sidebarFeature);
 
