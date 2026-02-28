@@ -85,7 +85,7 @@ export function WorldGraphPanel() {
             minSize={toPxSize(leftConfig.minPx)}
             maxSize={toPxSize(leftConfig.maxPx)}
             onResize={onResizeLeft}
-            className="min-h-0 transition-[flex] duration-200 ease-in-out"
+            className="min-h-0"
           >
             <WorldSidebar />
           </Panel>
@@ -172,7 +172,7 @@ export function WorldGraphPanel() {
             minSize={toPxSize(rightConfig.minPx)}
             maxSize={toPxSize(rightConfig.maxPx)}
             onResize={onResizeRight}
-            className="min-h-0 transition-[flex] duration-200 ease-in-out"
+            className="min-h-0"
           >
             <WorldInspector />
           </Panel>

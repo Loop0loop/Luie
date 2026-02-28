@@ -1111,17 +1111,20 @@ export class SyncService {
   private async applyMergedBundleToLocal(bundle: SyncBundle): Promise<void> {
     const prisma = db.getClient();
     const deletedProjectIds = this.collectDeletedProjectIds(bundle);
-    await this.applyProjectDeletes(prisma, deletedProjectIds);
-    await this.upsertProjects(prisma, bundle.projects, deletedProjectIds);
+    await prisma.$transaction(async (tx: unknown) => {
+      const transactionClient = tx as ReturnType<(typeof db)["getClient"]>;
+      await this.applyProjectDeletes(transactionClient, deletedProjectIds);
+      await this.upsertProjects(transactionClient, bundle.projects, deletedProjectIds);
 
-    for (const chapter of bundle.chapters) {
-      if (deletedProjectIds.has(chapter.projectId)) continue;
-      await this.upsertChapter(prisma, chapter);
-    }
+      for (const chapter of bundle.chapters) {
+        if (deletedProjectIds.has(chapter.projectId)) continue;
+        await this.upsertChapter(transactionClient, chapter);
+      }
 
-    await this.upsertCharacters(prisma, bundle.characters, deletedProjectIds);
-    await this.upsertTerms(prisma, bundle.terms, deletedProjectIds);
-    await this.applyChapterTombstones(prisma, bundle.tombstones, deletedProjectIds);
+      await this.upsertCharacters(transactionClient, bundle.characters, deletedProjectIds);
+      await this.upsertTerms(transactionClient, bundle.terms, deletedProjectIds);
+      await this.applyChapterTombstones(transactionClient, bundle.tombstones, deletedProjectIds);
+    });
 
     await this.persistBundleToLuiePackages(bundle);
   }
@@ -1234,6 +1237,7 @@ export class SyncService {
   }
 
   private async persistBundleToLuiePackages(bundle: SyncBundle): Promise<void> {
+    const failedProjects: string[] = [];
     for (const project of bundle.projects) {
       const localProject = await db.getClient().project.findUnique({
         where: { id: project.id },
@@ -1275,12 +1279,16 @@ export class SyncService {
       try {
         await writeLuiePackage(projectPath, payload, logger);
       } catch (error) {
-        logger.warn("Failed to persist merged bundle into .luie package", {
+        failedProjects.push(project.id);
+        logger.error("Failed to persist merged bundle into .luie package", {
           projectId: project.id,
           projectPath,
           error,
         });
       }
+    }
+    if (failedProjects.length > 0) {
+      throw new Error(`SYNC_LUIE_PERSIST_FAILED:${failedProjects.join(",")}`);
     }
   }
 

@@ -14,8 +14,15 @@ const mocked = vi.hoisted(() => {
   const hasPendingAuthFlow = vi.fn(() => false);
   const fetchBundle = vi.fn();
   const upsertBundle = vi.fn();
+  const writeLuiePackage = vi.fn();
 
   const prisma = {
+    $transaction: vi.fn(async (handler: unknown) => {
+      if (typeof handler === "function") {
+        return await (handler as (client: unknown) => Promise<unknown>)(prisma);
+      }
+      return handler;
+    }),
     project: {
       findMany: vi.fn(async () => []),
       findUnique: vi.fn(async () => null),
@@ -57,6 +64,7 @@ const mocked = vi.hoisted(() => {
     hasPendingAuthFlow,
     fetchBundle,
     upsertBundle,
+    writeLuiePackage,
     prisma,
   };
 });
@@ -68,7 +76,7 @@ vi.mock("electron", () => ({
 }));
 
 vi.mock("../../../src/main/handler/system/ipcFsHandlers.js", () => ({
-  writeLuiePackage: vi.fn(),
+  writeLuiePackage: (...args: unknown[]) => mocked.writeLuiePackage(...args),
 }));
 
 vi.mock("../../../src/main/database/index.js", () => ({
@@ -152,6 +160,9 @@ describe("SyncService auth hardening", () => {
     mocked.getRefreshToken.mockReturnValue({ token: null });
     mocked.fetchBundle.mockReset();
     mocked.upsertBundle.mockReset();
+    mocked.writeLuiePackage.mockReset();
+    mocked.writeLuiePackage.mockResolvedValue(undefined);
+    mocked.prisma.$transaction.mockClear();
     mocked.prisma.project.findMany.mockResolvedValue([]);
     mocked.prisma.project.findUnique.mockResolvedValue(null);
 
@@ -324,5 +335,55 @@ describe("SyncService auth hardening", () => {
     expect(
       mocked.syncSettings.projectLastSyncedAtByProjectId?.["project-1"],
     ).toBeTruthy();
+  });
+
+  it("fails sync when .luie package persistence fails", async () => {
+    const syncedUserId = "00000000-0000-0000-0000-000000000001";
+    mocked.syncSettings.connected = true;
+    mocked.syncSettings.autoSync = false;
+    mocked.syncSettings.userId = syncedUserId;
+    mocked.syncSettings.expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    mocked.syncSettings.accessTokenCipher = "cipher";
+    mocked.getAccessToken.mockReturnValue({ token: "access-token" });
+    mocked.getRefreshToken.mockReturnValue({ token: "refresh-token" });
+    mocked.prisma.project.findMany.mockResolvedValue([
+      {
+        id: "project-1",
+        title: "Project",
+        description: null,
+        createdAt: new Date("2026-02-22T00:00:00.000Z"),
+        updatedAt: new Date("2026-02-22T00:00:00.000Z"),
+        projectPath: "/tmp/project-1.luie",
+        chapters: [],
+        characters: [],
+        terms: [],
+      },
+    ]);
+    mocked.prisma.project.findUnique.mockResolvedValue({
+      id: "project-1",
+      projectPath: "/tmp/project-1.luie",
+      snapshots: [],
+    });
+    mocked.fetchBundle.mockResolvedValue({
+      projects: [],
+      chapters: [],
+      characters: [],
+      terms: [],
+      worldDocuments: [],
+      memos: [],
+      snapshots: [],
+      tombstones: [],
+    });
+    mocked.upsertBundle.mockResolvedValue(undefined);
+    mocked.writeLuiePackage.mockRejectedValue(new Error("disk full"));
+
+    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const service = new SyncService();
+    service.initialize();
+    const result = await service.runNow("manual");
+
+    expect(result.success).toBe(false);
+    expect(result.message).toContain("SYNC_LUIE_PERSIST_FAILED");
+    expect(mocked.upsertBundle).not.toHaveBeenCalled();
   });
 });

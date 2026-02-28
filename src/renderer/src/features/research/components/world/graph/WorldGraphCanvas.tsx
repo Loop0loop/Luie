@@ -509,35 +509,31 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
   const styledNodes = useMemo(() => {
     return nodes.map((node) => {
       let opacity = 1;
-      const display = "flex";
 
       if (viewMode === "protagonist" && selectedNodeId) {
         const isSelected = node.id === selectedNodeId;
         const isAdjacent = adjacentNodeIds.has(node.id);
-
-        opacity = 0.15;
-        if (isSelected) opacity = 1;
-        else if (isAdjacent) opacity = 0.8;
+        opacity = isSelected ? 1 : isAdjacent ? 0.8 : 0.15;
       } else if (viewMode === "event-chain") {
-        // Event-chain mode: focus on Events and their direct connections
         const isEvent = node.data?.entityType === "Event";
         if (selectedNodeId) {
           const isSelected = node.id === selectedNodeId;
           const isAdjacent = adjacentNodeIds.has(node.id);
           opacity = isSelected || isAdjacent ? 1 : 0.15;
         } else {
-          // Default event chain: events are 1, others are 0.6
           opacity = isEvent ? 1 : 0.6;
         }
       }
+
+      if (opacity === 1 && !node.style?.opacity) return node;
 
       return {
         ...node,
         style: {
           ...node.style,
           opacity,
-          display,
-          transition: "opacity 0.3s ease",
+          // NOTE: NO transition here — adding CSS transition to every node
+          // causes the compositor to re-paint every dragged frame, causing lag.
         },
       };
     });
@@ -546,36 +542,31 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
   const styledEdges = useMemo(() => {
     return edges.map((edge) => {
       let opacity = 1;
-      const isHidden = false;
-
       let label = edge.label;
-      if (viewMode === "protagonist" && selectedNodeId) {
-        const isConnectedtoSelected = edge.source === selectedNodeId || edge.target === selectedNodeId;
-        opacity = isConnectedtoSelected ? 1 : 0.15;
-      } else if (viewMode === "event-chain") {
-        // Emphasize 'causes' edges
-        const isCauses = edge.data?.relation === "causes" || edge.animated;
-        if (!isCauses) {
-          opacity = 0.3; // Fade out non-causal relations
-        }
 
+      if (viewMode === "protagonist" && selectedNodeId) {
+        const isConnected = edge.source === selectedNodeId || edge.target === selectedNodeId;
+        opacity = isConnected ? 1 : 0.15;
+      } else if (viewMode === "event-chain") {
+        const isCauses = edge.data?.relation === "causes" || edge.animated;
+        opacity = isCauses ? 1 : 0.3;
         if (selectedNodeId) {
-          const isConnectedtoSelected = edge.source === selectedNodeId || edge.target === selectedNodeId;
-          if (!isConnectedtoSelected) opacity = 0.1;
+          const isConnected = edge.source === selectedNodeId || edge.target === selectedNodeId;
+          if (!isConnected) opacity = 0.1;
         }
       } else if (viewMode === "freeform") {
-        // Freeform hides labels 
         label = undefined;
       }
+
+      if (opacity === 1 && label === edge.label && !edge.style?.opacity) return edge;
 
       return {
         ...edge,
         label,
-        hidden: isHidden,
         style: {
           ...edge.style,
           opacity,
-          transition: "opacity 0.3s ease",
+          // No transition on edges during drag
         },
       };
     });

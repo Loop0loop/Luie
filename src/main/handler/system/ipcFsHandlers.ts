@@ -449,6 +449,12 @@ const collectDirectoryEntries = async (sourceDir: string, baseDir = sourceDir) =
       continue;
     }
 
+    // Skip symlinks during directory-package migration to prevent
+    // packaging files outside the selected legacy .luie directory.
+    if (item.isSymbolicLink()) {
+      continue;
+    }
+
     if (item.isDirectory()) {
       entries.push({ name: `${relative}/`, isDirectory: true });
       entries.push(...(await collectDirectoryEntries(fullPath, baseDir)));

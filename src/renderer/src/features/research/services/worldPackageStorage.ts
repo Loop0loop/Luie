@@ -28,6 +28,7 @@ import {
 import { api } from "@shared/api";
 
 const WORLD_LOCAL_STORAGE_PREFIX = "luie:world:";
+const luieWriteQueue = new Map<string, Promise<void>>();
 
 const SYNOPSIS_STATUS = new Set<WorldSynopsisStatus>(["draft", "working", "locked"]);
 
@@ -92,7 +93,31 @@ const readLuieJson = async (projectPath: string, fileName: string): Promise<unkn
 };
 
 const writeLuieJson = async (projectPath: string, fileName: string, data: unknown) => {
-  await api.fs.writeProjectFile(projectPath, `${LUIE_WORLD_DIR}/${fileName}`, JSON.stringify(data, null, 2));
+  const queueKey = `${projectPath}:${fileName}`;
+  const previousWrite = luieWriteQueue.get(queueKey) ?? Promise.resolve();
+  const nextWrite = previousWrite
+    .catch(() => undefined)
+    .then(async () => {
+      const response = await api.fs.writeProjectFile(
+        projectPath,
+        `${LUIE_WORLD_DIR}/${fileName}`,
+        JSON.stringify(data, null, 2),
+      );
+      if (!response.success) {
+        const code = response.error?.code ?? "UNKNOWN_ERROR";
+        const message = response.error?.message ?? "Failed to write .luie world entry";
+        throw new Error(`LUIE_WRITE_FAILED:${fileName}:${code}:${message}`);
+      }
+    });
+  luieWriteQueue.set(queueKey, nextWrite);
+
+  try {
+    await nextWrite;
+  } finally {
+    if (luieWriteQueue.get(queueKey) === nextWrite) {
+      luieWriteQueue.delete(queueKey);
+    }
+  }
 };
 
 const normalizeSynopsis = (input: unknown, synopsisFallback = ""): WorldSynopsisData => {

@@ -1,8 +1,5 @@
 import "dotenv/config";
 import { GoogleGenAI } from "@google/genai";
-import * as fsp from "fs/promises";
-import * as path from "path";
-import yauzl from "yauzl";
 import { createLogger } from "../../../shared/logger/index.js";
 import { db } from "../../database/index.js";
 import { manuscriptAnalyzer } from "../../core/manuscriptAnalyzer.js";
@@ -25,10 +22,10 @@ import {
   MARKDOWN_EXTENSION,
 } from "../../../shared/constants/index.js";
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
+import { readLuieEntry } from "../../utils/luiePackage.js";
 
 const logger = createLogger("ManuscriptAnalysisService");
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3-flash-preview";
-const MAX_LUIE_ENTRY_SIZE_BYTES = 5 * 1024 * 1024;
 
 type LuieMeta = {
   chapters?: Array<{ id: string; title?: string; order?: number }>;
@@ -48,137 +45,6 @@ const isAsyncIterable = (value: unknown): value is AsyncIterable<unknown> => {
   }
   const iterator = (value as { [Symbol.asyncIterator]?: unknown })[Symbol.asyncIterator];
   return typeof iterator === "function";
-};
-
-const normalizeZipPath = (inputPath: string) =>
-  path.posix
-    .normalize(inputPath.replace(/\\/g, "/"))
-    .replace(/^\.(\/|\\)/, "")
-    .replace(/^\//, "");
-
-const isSafeZipPath = (inputPath: string) => {
-  const normalized = normalizeZipPath(inputPath);
-  if (!normalized) return false;
-  if (normalized.startsWith("../") || normalized.startsWith("..\\")) return false;
-  if (normalized.includes("../") || normalized.includes("..\\")) return false;
-  return !path.isAbsolute(normalized);
-};
-
-const readZipEntryContent = async (zipPath: string, entryPath: string): Promise<string | null> => {
-  const normalized = normalizeZipPath(entryPath);
-  if (!normalized || !isSafeZipPath(normalized)) {
-    throw new Error("INVALID_RELATIVE_PATH");
-  }
-
-  let found = false;
-  let result: string | null = null;
-
-  await new Promise<void>((resolve, reject) => {
-    yauzl.open(zipPath, { lazyEntries: true }, (openErr: Error | null, zipfile?: yauzl.ZipFile) => {
-      if (openErr || !zipfile) {
-        reject(openErr ?? new Error("FAILED_TO_OPEN_ZIP"));
-        return;
-      }
-
-      zipfile.on("entry", (entry: yauzl.Entry) => {
-        const entryName = normalizeZipPath(entry.fileName);
-        if (!entryName || !isSafeZipPath(entryName)) {
-          zipfile.readEntry();
-          return;
-        }
-
-        if (entryName !== normalized) {
-          zipfile.readEntry();
-          return;
-        }
-
-        found = true;
-
-        zipfile.openReadStream(entry, (streamErr, stream) => {
-          if (streamErr || !stream) {
-            reject(streamErr ?? new Error("FAILED_TO_READ_ZIP_ENTRY"));
-            return;
-          }
-
-          const chunks: Buffer[] = [];
-          let totalSize = 0;
-          stream.on("data", (chunk) => {
-            totalSize += chunk.length;
-            if (totalSize > MAX_LUIE_ENTRY_SIZE_BYTES) {
-              stream.destroy(
-                new Error(
-                  `LUIE_ENTRY_TOO_LARGE:${entryName}:${MAX_LUIE_ENTRY_SIZE_BYTES}`,
-                ),
-              );
-              return;
-            }
-            chunks.push(chunk);
-          });
-          stream.on("error", reject);
-          stream.on("end", () => {
-            result = Buffer.concat(chunks).toString("utf-8");
-            resolve();
-          });
-        });
-      });
-
-      zipfile.on("end", () => {
-        if (!found) {
-          resolve();
-        }
-      });
-
-      zipfile.on("error", reject);
-      zipfile.readEntry();
-    });
-  });
-
-  return result;
-};
-
-const readLuieEntry = async (packagePath: string, entryPath: string): Promise<string | null> => {
-  const normalized = normalizeZipPath(entryPath);
-  if (!normalized || !isSafeZipPath(normalized)) {
-    throw new Error("INVALID_RELATIVE_PATH");
-  }
-
-  let stat: Awaited<ReturnType<typeof fsp.stat>>;
-  try {
-    stat = await fsp.stat(packagePath);
-  } catch (error) {
-    const err = error as NodeJS.ErrnoException;
-    if (err?.code === "ENOENT") return null;
-    throw error;
-  }
-
-  if (stat.isDirectory()) {
-    const fullPath = path.join(packagePath, normalized);
-    const resolved = path.resolve(fullPath);
-    const base = path.resolve(packagePath);
-    if (!resolved.startsWith(base)) {
-      throw new Error("INVALID_RELATIVE_PATH");
-    }
-
-    try {
-      const fileStat = await fsp.stat(fullPath);
-      if (fileStat.size > MAX_LUIE_ENTRY_SIZE_BYTES) {
-        throw new Error(
-          `LUIE_ENTRY_TOO_LARGE:${normalized}:${MAX_LUIE_ENTRY_SIZE_BYTES}`,
-        );
-      }
-      return await fsp.readFile(fullPath, "utf-8");
-    } catch (error) {
-      const err = error as NodeJS.ErrnoException;
-      if (err?.code === "ENOENT") return null;
-      throw error;
-    }
-  }
-
-  if (stat.isFile()) {
-    return await readZipEntryContent(packagePath, normalized);
-  }
-
-  return null;
 };
 
 /**
@@ -232,13 +98,14 @@ class ManuscriptAnalysisService {
 
       // 2. .luie 내부 데이터 로드
       const [metaRaw, chapterContent, charactersRaw, termsRaw] = await Promise.all([
-        readLuieEntry(projectPath, LUIE_PACKAGE_META_FILENAME),
+        readLuieEntry(projectPath, LUIE_PACKAGE_META_FILENAME, logger),
         readLuieEntry(
           projectPath,
-          `${LUIE_MANUSCRIPT_DIR}/${chapterId}${MARKDOWN_EXTENSION}`
+          `${LUIE_MANUSCRIPT_DIR}/${chapterId}${MARKDOWN_EXTENSION}`,
+          logger,
         ),
-        readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`),
-        readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`),
+        readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`, logger),
+        readLuieEntry(projectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`, logger),
       ]);
 
       if (!chapterContent) {

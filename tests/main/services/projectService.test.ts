@@ -53,4 +53,29 @@ describe("ProjectService", () => {
     expect(result.recovery).toBe(true);
     expect(result.project.id).toBe(created.id);
   });
+
+  it("rejects invalid projectPath on create and update", async () => {
+    await expect(
+      localProjectService.createProject({
+        title: "Invalid Path",
+        description: "test",
+        projectPath: "relative/path.luie",
+      }),
+    ).rejects.toBeDefined();
+
+    const created = await localProjectService.createProject({
+      title: "Valid Path",
+      description: "test",
+      projectPath: path.join(app.getPath("userData"), "valid-path.luie"),
+    });
+
+    await expect(
+      localProjectService.updateProject({
+        id: created.id as string,
+        projectPath: "relative/updated.luie",
+      }),
+    ).rejects.toBeDefined();
+
+    await localProjectService.deleteProject(created.id as string);
+  });
 });

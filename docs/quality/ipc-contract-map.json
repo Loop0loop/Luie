@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-02-28T08:57:41.622Z",
+  "generatedAt": "2026-02-28T09:37:56.362Z",
   "summary": {
     "definedChannels": 113,
     "errors": 0,
@@ -48,7 +48,7 @@
         "main_emit": [
           {
             "file": "src/main/services/features/manuscriptAnalysisService.ts",
-            "line": 685
+            "line": 552
           }
         ],
         "renderer_listen": [
@@ -141,11 +141,11 @@
         "main_emit": [
           {
             "file": "src/main/services/features/manuscriptAnalysisService.ts",
-            "line": 420
+            "line": 287
           },
           {
             "file": "src/main/services/features/manuscriptAnalysisService.ts",
-            "line": 641
+            "line": 508
           }
         ],
         "renderer_listen": [
@@ -1338,7 +1338,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 723
+            "line": 729
           }
         ],
         "main_emit": [],
@@ -1369,7 +1369,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 656
+            "line": 662
           }
         ],
         "main_emit": [],
@@ -1400,7 +1400,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 686
+            "line": 692
           }
         ],
         "main_emit": [],
@@ -1431,7 +1431,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 630
+            "line": 636
           }
         ],
         "main_emit": [],
@@ -1462,7 +1462,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 549
+            "line": 555
           }
         ],
         "main_emit": [],
@@ -1493,7 +1493,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 588
+            "line": 594
           }
         ],
         "main_emit": [],
@@ -1524,7 +1524,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 563
+            "line": 569
           }
         ],
         "main_emit": [],
@@ -1555,7 +1555,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 612
+            "line": 618
           }
         ],
         "main_emit": [],
@@ -1586,7 +1586,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 705
+            "line": 711
           }
         ],
         "main_emit": [],
@@ -1617,7 +1617,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 797
+            "line": 803
           }
         ],
         "main_emit": [],
@@ -2786,7 +2786,7 @@
         "main_emit": [
           {
             "file": "src/main/services/features/syncService.ts",
-            "line": 1351
+            "line": 1359
           }
         ],
         "renderer_listen": [

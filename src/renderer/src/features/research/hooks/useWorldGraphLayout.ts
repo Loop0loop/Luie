@@ -4,10 +4,10 @@ import dagre from "dagre";
 import type { WorldViewMode } from "@renderer/features/research/stores/worldBuildingStore";
 
 interface UseWorldGraphLayoutProps {
-    nodes: Node[];
-    edges: Edge[];
-    viewMode: WorldViewMode;
-    selectedNodeId: string | null;
+  nodes: Node[];
+  edges: Edge[];
+  viewMode: WorldViewMode;
+  selectedNodeId: string | null;
 }
 
 const DAGRE_NODE_WIDTH = 180;
@@ -20,7 +20,6 @@ export function useWorldGraphLayout({ nodes, edges, viewMode, selectedNodeId }: 
     }
 
     if (viewMode === "standard" || viewMode === "freeform") {
-      // Use original DB/store positions.
       return nodes;
     }
 
@@ -33,10 +32,8 @@ export function useWorldGraphLayout({ nodes, edges, viewMode, selectedNodeId }: 
         g.setNode(node.id, { width: DAGRE_NODE_WIDTH, height: DAGRE_NODE_HEIGHT });
       });
 
-      // Filter self-loops before adding to dagre to prevent malformed chain renders.
       const validEdges = edges.filter((edge) => edge.source !== edge.target);
       validEdges.forEach((edge) => {
-        // In event-chain, prioritize "causes" relationships for the horizontal timeline.
         const weight = edge.data?.relation === "causes" ? 100 : 1;
         g.setEdge(edge.source, edge.target, { weight });
       });
@@ -45,9 +42,7 @@ export function useWorldGraphLayout({ nodes, edges, viewMode, selectedNodeId }: 
 
       return nodes.map((node) => {
         const nodeWithPosition = g.node(node.id);
-        if (!nodeWithPosition) {
-          return node;
-        }
+        if (!nodeWithPosition) return node;
         return {
           ...node,
           position: {
@@ -59,89 +54,82 @@ export function useWorldGraphLayout({ nodes, edges, viewMode, selectedNodeId }: 
     }
 
     if (viewMode === "protagonist") {
-      // Radial layout around selected node, or largest hub if none selected.
-      let centerNodeId = selectedNodeId;
+      // Build adjacency list for O(n+m) BFS instead of O(n*m)
+      const adjacencyList = new Map<string, string[]>();
+      const degreeMap = new Map<string, number>();
 
+      for (const node of nodes) {
+        adjacencyList.set(node.id, []);
+        degreeMap.set(node.id, 0);
+      }
+      for (const edge of edges) {
+        adjacencyList.get(edge.source)?.push(edge.target);
+        adjacencyList.get(edge.target)?.push(edge.source);
+        degreeMap.set(edge.source, (degreeMap.get(edge.source) ?? 0) + 1);
+        degreeMap.set(edge.target, (degreeMap.get(edge.target) ?? 0) + 1);
+      }
+
+      let centerNodeId = selectedNodeId;
       if (!centerNodeId) {
-        // Find node with most connections.
-        const connectionCounts: Record<string, number> = {};
-        edges.forEach((edge) => {
-          connectionCounts[edge.source] = (connectionCounts[edge.source] || 0) + 1;
-          connectionCounts[edge.target] = (connectionCounts[edge.target] || 0) + 1;
-        });
-        const chars = nodes.filter((node) => node.data?.entityType === "Character");
-        const candidatePool = chars.length > 0 ? chars : nodes;
-        centerNodeId = candidatePool.reduce(
-          (max, node) =>
-            (connectionCounts[node.id] || 0) > (connectionCounts[max.id] || 0) ? node : max,
-          candidatePool[0],
+        const chars = nodes.filter((n) => n.data?.entityType === "Character");
+        const pool = chars.length > 0 ? chars : nodes;
+        centerNodeId = pool.reduce(
+          (max, n) => (degreeMap.get(n.id) ?? 0) > (degreeMap.get(max.id) ?? 0) ? n : max,
+          pool[0],
         )?.id;
       }
 
-      if (!centerNodeId) {
-        return nodes;
-      }
+      if (!centerNodeId) return nodes;
 
-      const centerNode = nodes.find((node) => node.id === centerNodeId);
-      if (!centerNode) {
-        return nodes;
-      }
+      const centerNode = nodes.find((n) => n.id === centerNodeId);
+      if (!centerNode) return nodes;
 
-      // Group into concentric circles.
-      const radiusStep = 250;
-      const centerPos = { x: 0, y: 0 };
-
-      // Calculate degrees of separation.
-      const distances: Record<string, number> = { [centerNodeId]: 0 };
+      // BFS using adjacency list — O(n+m)
+      const distances = new Map<string, number>([[centerNodeId, 0]]);
       const queue: string[] = [centerNodeId];
 
       while (queue.length > 0) {
-        const curr = queue.shift();
-        if (!curr) continue;
-        const dist = distances[curr] ?? 0;
-
-        edges.forEach((edge) => {
-          const neighbor =
-            edge.source === curr ? edge.target : edge.target === curr ? edge.source : null;
-          if (neighbor && distances[neighbor] === undefined) {
-            distances[neighbor] = dist + 1;
+        const curr = queue.shift()!;
+        const dist = distances.get(curr) ?? 0;
+        for (const neighbor of adjacencyList.get(curr) ?? []) {
+          if (!distances.has(neighbor)) {
+            distances.set(neighbor, dist + 1);
             queue.push(neighbor);
           }
-        });
+        }
       }
 
-      // Remaining nodes pushed to the furthest ring.
-      const maxDist = Math.max(1, ...Object.values(distances));
-      nodes.forEach((node) => {
-        if (distances[node.id] === undefined) {
-          distances[node.id] = maxDist + 1;
+      const maxDist = Math.max(1, ...distances.values());
+      for (const node of nodes) {
+        if (!distances.has(node.id)) {
+          distances.set(node.id, maxDist + 1);
         }
-      });
+      }
 
-      const rings: Record<number, Node[]> = {};
-      nodes.forEach((node) => {
-        const distance = distances[node.id] ?? maxDist + 1;
-        if (!rings[distance]) rings[distance] = [];
-        rings[distance].push(node);
-      });
+      const rings = new Map<number, Node[]>();
+      for (const node of nodes) {
+        const d = distances.get(node.id) ?? maxDist + 1;
+        const ring = rings.get(d) ?? [];
+        ring.push(node);
+        rings.set(d, ring);
+      }
+
+      const RADIUS_STEP = 250;
 
       return nodes.map((node) => {
         if (node.id === centerNodeId) {
-          return { ...node, position: { x: centerPos.x, y: centerPos.y } };
+          return { ...node, position: { x: 0, y: 0 } };
         }
-
-        const ringDist = distances[node.id] ?? maxDist + 1;
-        const ringNodes = rings[ringDist] ?? [node];
-        const index = ringNodes.findIndex((item) => item.id === node.id);
-        const safeIndex = index >= 0 ? index : 0;
-        const angle = (safeIndex / Math.max(ringNodes.length, 1)) * 2 * Math.PI;
-        const radius = ringDist * radiusStep;
-
+        const d = distances.get(node.id) ?? maxDist + 1;
+        const ring = rings.get(d) ?? [node];
+        const idx = ring.findIndex((n) => n.id === node.id);
+        const angle = (Math.max(0, idx) / Math.max(ring.length, 1)) * 2 * Math.PI;
+        const radius = d * RADIUS_STEP;
         return {
           ...node,
           position: {
-            x: centerPos.x + Math.cos(angle) * radius,
-            y: centerPos.y + Math.sin(angle) * radius,
+            x: Math.cos(angle) * radius,
+            y: Math.sin(angle) * radius,
           },
         };
       });
