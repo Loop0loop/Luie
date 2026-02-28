@@ -1,16 +1,18 @@
 /**
  * WorldSidebar - 좌측 사이드바
- * 엔티티/관계 필터 + 검색 + 엔티티 라이브러리
+ * 엔티티/관계 필터 + 검색 + 엔티티 라이브러리 (타입별 그룹)
  */
 
-import { useCallback } from "react";
-import { Search, FilterX, Layers, Share2, LibraryBig, Check, X } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { Search, FilterX, Layers, Share2, LibraryBig, Check, X, ChevronDown, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
 import { WORLD_ENTITY_TYPES } from "@shared/constants/world";
-import { WORLD_GRAPH_NODE_THEMES } from "@shared/constants/worldGraphUI";
-import type { RelationKind } from "@shared/types";
+import { WORLD_GRAPH_NODE_THEMES, WORLD_GRAPH_ICON_MAP } from "@shared/constants/worldGraphUI";
+import type { RelationKind, WorldGraphNode } from "@shared/types";
 import { useFilteredGraph, useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const RELATION_KINDS: RelationKind[] = [
   "belongs_to",
@@ -21,6 +23,77 @@ const RELATION_KINDS: RelationKind[] = [
   "violates",
 ];
 
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+interface EntityGroupProps {
+  entityType: string;
+  nodes: WorldGraphNode[];
+  isOpen: boolean;
+  onToggle: () => void;
+  onSelect: (nodeId: string) => void;
+  t: (key: string, opts?: Record<string, unknown>) => string;
+}
+
+function EntityGroup({ entityType, nodes, isOpen, onToggle, onSelect, t }: EntityGroupProps) {
+  const theme = WORLD_GRAPH_NODE_THEMES[entityType] ?? WORLD_GRAPH_NODE_THEMES.WorldEntity;
+  const Icon = WORLD_GRAPH_ICON_MAP[entityType] ?? WORLD_GRAPH_ICON_MAP.WorldEntity;
+  const label = t(`world.graph.entityTypes.${entityType}`, { defaultValue: entityType });
+
+  return (
+    <div className="flex flex-col">
+      {/* Group Header */}
+      <button
+        type="button"
+        onClick={onToggle}
+        className="group flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-element/60 transition-colors text-left w-full"
+      >
+        <div className="flex items-center gap-2">
+          <div className={cn("flex h-5 w-5 items-center justify-center rounded-md shrink-0", theme.iconBg, theme.text)}>
+            <Icon size={11} strokeWidth={2.5} />
+          </div>
+          <span className="text-[12px] font-semibold text-fg/80 group-hover:text-fg transition-colors">{label}</span>
+          <span className="text-[10px] text-muted bg-element/80 border border-border/40 px-1.5 py-0.5 rounded-full font-medium">
+            {nodes.length}
+          </span>
+        </div>
+        <div className="text-muted/60 group-hover:text-muted transition-colors">
+          {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+        </div>
+      </button>
+
+      {/* Group Items */}
+      {isOpen && nodes.length > 0 && (
+        <div className="ml-1 pl-3 border-l border-border/30 flex flex-col gap-0.5 py-0.5 mb-1">
+          {nodes.map((node) => (
+            <button
+              key={node.id}
+              type="button"
+              draggable
+              onDragStart={(event) => {
+                event.dataTransfer.setData("application/reactflow", JSON.stringify(node));
+                event.dataTransfer.effectAllowed = "move";
+              }}
+              onClick={() => onSelect(node.id)}
+              className="group flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-element/80 hover:text-fg transition-all text-left w-full cursor-pointer"
+            >
+              <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", theme.iconBg)} />
+              <span className="truncate text-[12px] text-fg/70 group-hover:text-fg transition-colors">{node.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {isOpen && nodes.length === 0 && (
+        <div className="ml-1 pl-3 border-l border-border/30 py-2">
+          <span className="text-[11px] text-muted/50 italic px-2">비어 있음</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 export function WorldSidebar() {
   const { t } = useTranslation();
   const filter = useWorldBuildingStore((state) => state.filter);
@@ -28,6 +101,11 @@ export function WorldSidebar() {
   const resetFilter = useWorldBuildingStore((state) => state.resetFilter);
   const selectNode = useWorldBuildingStore((state) => state.selectNode);
   const { nodes: filteredNodes } = useFilteredGraph();
+
+  // 각 그룹의 열림/닫힘 상태. 기본은 활성화된 필터 타입은 열려있음
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(WORLD_ENTITY_TYPES.map((type) => [type, true])),
+  );
 
   const onSearchChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) =>
@@ -59,7 +137,43 @@ export function WorldSidebar() {
 
   const clearSearch = useCallback(() => setFilter({ searchQuery: "" }), [setFilter]);
 
+  const toggleGroup = useCallback((entityType: string) => {
+    setOpenGroups((prev) => ({ ...prev, [entityType]: !prev[entityType] }));
+  }, []);
+
   const hasActiveFilter = filter.entityTypes.length > 0 || filter.relationKinds.length > 0 || Boolean(filter.searchQuery);
+
+  /** 필터링된 노드를 타입별로 그룹화 */
+  const groupedNodes = useMemo(() => {
+    const groups: Record<string, WorldGraphNode[]> = {};
+    for (const type of WORLD_ENTITY_TYPES) {
+      groups[type] = [];
+    }
+    for (const node of filteredNodes) {
+      const key = node.subType ?? node.entityType;
+      if (key in groups) {
+        groups[key].push(node);
+      } else if (node.entityType in groups) {
+        groups[node.entityType].push(node);
+      } else {
+        (groups["WorldEntity"] ??= []).push(node);
+      }
+    }
+    return groups;
+  }, [filteredNodes]);
+
+  /** 실제로 노드가 있는 타입부터 정렬 (빈 타입은 뒤로) */
+  const sortedEntityTypes = useMemo(
+    () =>
+      [...WORLD_ENTITY_TYPES].sort((a, b) => {
+        const aHas = (groupedNodes[a]?.length ?? 0) > 0;
+        const bHas = (groupedNodes[b]?.length ?? 0) > 0;
+        if (aHas && !bHas) return -1;
+        if (!aHas && bHas) return 1;
+        return 0;
+      }),
+    [groupedNodes],
+  );
 
   return (
     <div className="flex h-full flex-col bg-sidebar/40 backdrop-blur-xl border-r border-border/40 shadow-xl">
@@ -82,14 +196,14 @@ export function WorldSidebar() {
         </div>
       </div>
 
-      <div className="overflow-y-auto custom-scrollbar flex flex-col gap-6 px-4 py-5 border-b border-border/60">
+      <div className="overflow-y-auto custom-scrollbar flex flex-col gap-5 px-4 py-5 border-b border-border/60">
         {/* 엔티티 타입 필터 */}
-        <section className="flex flex-col gap-3">
+        <section className="flex flex-col gap-2">
           <h6 className="text-[11px] font-bold text-muted uppercase tracking-wider flex items-center gap-2">
             <Layers size={12} />
             {t("world.graph.sidebar.entityType")}
           </h6>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-0.5">
             {WORLD_ENTITY_TYPES.map((key) => {
               const theme = WORLD_GRAPH_NODE_THEMES[key] ?? WORLD_GRAPH_NODE_THEMES.WorldEntity;
               const isActive = filter.entityTypes.includes(key);
@@ -99,7 +213,7 @@ export function WorldSidebar() {
                   type="button"
                   onClick={() => toggleEntityType(key)}
                   className={cn(
-                    "group flex items-center justify-between px-2.5 py-2 rounded-md border text-left transition-all duration-200",
+                    "group flex items-center justify-between px-2.5 py-1.5 rounded-md border text-left transition-all duration-200",
                     isActive ? "bg-element border-border shadow-sm" : "bg-transparent border-transparent hover:bg-element hover:border-border/50",
                   )}
                 >
@@ -107,7 +221,7 @@ export function WorldSidebar() {
                     <div className={cn("flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border transition-colors", isActive ? "bg-accent border-accent text-white" : "border-border bg-sidebar group-hover:border-border")}>
                       {isActive && <Check size={10} strokeWidth={3} />}
                     </div>
-                    <span className={cn("text-[13px] truncate", isActive ? "text-fg font-medium" : "text-muted group-hover:text-fg/80")}>
+                    <span className={cn("text-[12px] truncate", isActive ? "text-fg font-medium" : "text-muted group-hover:text-fg/80")}>
                       {t(`world.graph.entityTypes.${key}`, { defaultValue: key })}
                     </span>
                   </div>
@@ -121,7 +235,7 @@ export function WorldSidebar() {
         </section>
 
         {/* 관계 타입 필터 */}
-        <section className="flex flex-col gap-3">
+        <section className="flex flex-col gap-2">
           <h6 className="text-[11px] font-bold text-muted uppercase tracking-wider flex items-center gap-2">
             <Share2 size={12} />
             {t("world.graph.sidebar.relationType")}
@@ -135,7 +249,7 @@ export function WorldSidebar() {
                   type="button"
                   onClick={() => toggleRelationKind(key)}
                   className={cn(
-                    "px-3 py-1.5 rounded-md text-[12px] font-medium transition-all duration-200 border",
+                    "px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-200 border",
                     isActive ? "bg-accent text-white border-accent shadow-sm" : "bg-element border-border text-muted hover:text-fg hover:border-border/80",
                   )}
                 >
@@ -150,15 +264,15 @@ export function WorldSidebar() {
           <button
             type="button"
             onClick={resetFilter}
-            className="group flex items-center justify-center gap-2 py-2 mt-2 text-xs font-semibold text-muted hover:text-fg rounded-lg border border-border/60 hover:border-border bg-element/50 hover:bg-element transition-all"
+            className="group flex items-center justify-center gap-2 py-1.5 text-xs font-semibold text-muted hover:text-fg rounded-lg border border-border/60 hover:border-border bg-element/50 hover:bg-element transition-all"
           >
-            <FilterX size={14} className="group-hover:text-destructive transition-colors" />
+            <FilterX size={13} className="group-hover:text-destructive transition-colors" />
             {t("world.graph.sidebar.resetFilters")}
           </button>
         )}
       </div>
 
-      {/* 라이브러리 목록 */}
+      {/* 라이브러리 — 엔티티 타입별 그룹 */}
       <div className="flex-1 min-h-0 flex flex-col bg-panel">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-sidebar/50">
           <h6 className="text-[11px] font-bold text-muted uppercase tracking-wider flex items-center gap-2">
@@ -170,32 +284,21 @@ export function WorldSidebar() {
           </span>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-3 flex flex-col gap-2">
-          {filteredNodes.map((node) => {
-            const displayType = node.subType ?? node.entityType;
-            const theme = WORLD_GRAPH_NODE_THEMES[displayType] ?? WORLD_GRAPH_NODE_THEMES.WorldEntity;
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-3 flex flex-col gap-0.5">
+          {sortedEntityTypes.map((entityType) => {
+            const nodes = groupedNodes[entityType] ?? [];
+            // 필터에서 비활성화된 타입이고 검색 결과도 없으면 숨김
+            if (nodes.length === 0 && !filter.entityTypes.includes(entityType)) return null;
             return (
-              <button
-                key={node.id}
-                type="button"
-                draggable
-                onDragStart={(event) => {
-                  event.dataTransfer.setData("application/reactflow", JSON.stringify(node));
-                  event.dataTransfer.effectAllowed = "move";
-                }}
-                onClick={() => selectNode(node.id)}
-                className={cn(
-                  "group flex items-center justify-between p-2.5 rounded-lg border border-border/80 bg-sidebar shadow-sm transition-all hover:border-accent/40 hover:shadow-md hover:-translate-y-[1px] text-left",
-                )}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className={cn("w-2.5 h-2.5 rounded-full shrink-0 shadow-sm", theme.iconBg)} />
-                  <div className="flex flex-col min-w-0">
-                    <span className="truncate font-semibold text-[13px] text-fg group-hover:text-accent transition-colors">{node.name}</span>
-                    <span className="text-[10px] text-muted truncate">{t(`world.graph.entityTypes.${displayType}`, { defaultValue: displayType })}</span>
-                  </div>
-                </div>
-              </button>
+              <EntityGroup
+                key={entityType}
+                entityType={entityType}
+                nodes={nodes}
+                isOpen={openGroups[entityType] ?? false}
+                onToggle={() => toggleGroup(entityType)}
+                onSelect={selectNode}
+                t={t}
+              />
             );
           })}
 

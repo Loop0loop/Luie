@@ -1,5 +1,5 @@
-import { useMemo, useCallback, useState, useEffect } from "react";
-import { X, Link as LinkIcon, Trash2, Tag, MapPin, Clock, Star } from "lucide-react";
+import { useMemo, useCallback, useState, useEffect, useRef, type KeyboardEvent } from "react";
+import { X, Link as LinkIcon, Trash2, MapPin, Clock, Star, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
 import { api } from "@shared/api";
@@ -9,6 +9,8 @@ import type { RelationKind, WorldGraphMention } from "@shared/types";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { requestChapterNavigation } from "@renderer/features/workspace/services/chapterNavigation";
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
 const RELATION_KINDS: RelationKind[] = [
   "belongs_to",
   "enemy_of",
@@ -17,6 +19,133 @@ const RELATION_KINDS: RelationKind[] = [
   "located_in",
   "violates",
 ];
+
+const IMPORTANCE_MAX = 5;
+
+/** 웹소설 작가를 위한 타임라인 퀵 프리셋 */
+const TIME_PRESETS = ["서막", "전편", "중편", "후편", "에필로그"] as const;
+type TimePreset = (typeof TIME_PRESETS)[number];
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+/** ★ 별점 UI */
+function StarRating({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  const [hover, setHover] = useState<number | null>(null);
+
+  return (
+    <div className="flex items-center gap-0.5">
+      {Array.from({ length: IMPORTANCE_MAX }, (_, i) => i + 1).map((star) => {
+        const filled = star <= (hover ?? value);
+        return (
+          <button
+            key={star}
+            type="button"
+            onMouseEnter={() => setHover(star)}
+            onMouseLeave={() => setHover(null)}
+            onClick={() => onChange(star)}
+            className="p-0.5 transition-transform hover:scale-110"
+            aria-label={`중요도 ${star}`}
+          >
+            <Star
+              size={14}
+              className={cn(
+                "transition-colors",
+                filled ? "fill-amber-400 text-amber-400" : "text-muted/40",
+              )}
+            />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** 태그 Chip 입력 UI */
+function TagChipInput({
+  tags,
+  onChange,
+}: {
+  tags: string[];
+  onChange: (tags: string[]) => void;
+}) {
+  const [inputValue, setInputValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const addTag = useCallback(
+    (raw: string) => {
+      const trimmed = raw.trim().replace(/^#/, "");
+      if (!trimmed || tags.includes(trimmed)) {
+        setInputValue("");
+        return;
+      }
+      onChange([...tags, trimmed]);
+      setInputValue("");
+    },
+    [onChange, tags],
+  );
+
+  const removeTag = useCallback(
+    (tag: string) => {
+      onChange(tags.filter((t) => t !== tag));
+    },
+    [onChange, tags],
+  );
+
+  const onKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === "Enter" || event.key === ",") {
+        event.preventDefault();
+        addTag(inputValue);
+      } else if (event.key === "Backspace" && !inputValue && tags.length > 0) {
+        removeTag(tags[tags.length - 1]);
+      }
+    },
+    [addTag, inputValue, removeTag, tags],
+  );
+
+  return (
+    <div
+      className="flex flex-wrap gap-1.5 p-2 rounded-lg border border-border/50 bg-element/40 focus-within:ring-2 focus-within:ring-accent/30 focus-within:border-accent/50 transition-all cursor-text min-h-[36px]"
+      onClick={() => inputRef.current?.focus()}
+    >
+      {tags.map((tag) => (
+        <span
+          key={tag}
+          className="inline-flex items-center gap-1 rounded-full bg-accent/15 border border-accent/30 px-2 py-0.5 text-[11px] font-medium text-accent"
+        >
+          #{tag}
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              removeTag(tag);
+            }}
+            className="text-accent/60 hover:text-accent transition-colors"
+          >
+            <X size={9} strokeWidth={3} />
+          </button>
+        </span>
+      ))}
+      <input
+        ref={inputRef}
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        onKeyDown={onKeyDown}
+        onBlur={() => { if (inputValue) addTag(inputValue); }}
+        placeholder={tags.length === 0 ? "태그 입력 후 Enter…" : ""}
+        className="flex-1 min-w-[80px] bg-transparent text-[11px] text-fg outline-none placeholder:text-muted/40"
+      />
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export function WorldInspector() {
   const { t } = useTranslation();
@@ -55,9 +184,9 @@ export function WorldInspector() {
     description: string;
     time: string;
     region: string;
-    tags: string;
+    tags: string[];
     importance: number;
-  }>({ name: "", description: "", time: "", region: "", tags: "", importance: 3 });
+  }>({ name: "", description: "", time: "", region: "", tags: [], importance: 3 });
 
   const [mentions, setMentions] = useState<WorldGraphMention[]>([]);
   const [mentionsLoading, setMentionsLoading] = useState(false);
@@ -74,8 +203,8 @@ export function WorldInspector() {
       time: typeof timeValue === "string" ? timeValue : "",
       region: typeof regionValue === "string" ? regionValue : "",
       tags: Array.isArray(tagsValue)
-        ? tagsValue.filter((tag): tag is string => typeof tag === "string").join(", ")
-        : "",
+        ? tagsValue.filter((tag): tag is string => typeof tag === "string")
+        : [],
       importance: typeof importanceValue === "number" ? Math.max(1, Math.min(5, importanceValue)) : 3,
     };
     queueMicrotask(() => {
@@ -127,8 +256,8 @@ export function WorldInspector() {
     };
   }, [activeProjectId, selectedNode]);
 
-  const handleChange = (field: keyof typeof localNode, value: string | number) => {
-    setLocalNode((previous) => ({ ...previous, [field]: value }));
+  const handleChange = <K extends keyof typeof localNode>(field: K, value: (typeof localNode)[K]) => {
+    setLocalNode((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleBlur = useCallback(async () => {
@@ -145,11 +274,51 @@ export function WorldInspector() {
         ...currentAttrs,
         time: localNode.time,
         region: localNode.region,
-        tags: localNode.tags.split(",").map((value) => value.trim()).filter(Boolean),
+        tags: localNode.tags,
         importance: localNode.importance as 1 | 2 | 3 | 4 | 5,
       },
     });
   }, [localNode, selectedNode, t, updateGraphNode]);
+
+  /** 중요도 변경 즉시 저장 */
+  const handleImportanceChange = useCallback(
+    async (value: number) => {
+      if (!selectedNode) return;
+      handleChange("importance", value);
+      const currentAttrs = selectedNode.attributes ?? {};
+      await updateGraphNode({
+        id: selectedNode.id,
+        entityType: selectedNode.entityType,
+        subType: selectedNode.subType,
+        attributes: {
+          ...currentAttrs,
+          importance: value as 1 | 2 | 3 | 4 | 5,
+        },
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedNode, updateGraphNode],
+  );
+
+  /** 태그 변경 즉시 저장 */
+  const handleTagsChange = useCallback(
+    async (newTags: string[]) => {
+      if (!selectedNode) return;
+      handleChange("tags", newTags);
+      const currentAttrs = selectedNode.attributes ?? {};
+      await updateGraphNode({
+        id: selectedNode.id,
+        entityType: selectedNode.entityType,
+        subType: selectedNode.subType,
+        attributes: {
+          ...currentAttrs,
+          tags: newTags,
+        },
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedNode, updateGraphNode],
+  );
 
   const handleDeleteNode = useCallback(async () => {
     if (!selectedNode) return;
@@ -210,9 +379,11 @@ export function WorldInspector() {
 
   if (!selectedNode && !selectedEdge) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-3 text-muted text-xs text-center p-5">
-        <LinkIcon size={24} className="opacity-30" />
-        <p className="whitespace-pre-line">{t("world.graph.inspector.emptySelection")}</p>
+      <div className="flex flex-col items-center justify-center h-full gap-4 text-muted text-xs text-center p-6">
+        <div className="w-12 h-12 rounded-2xl bg-element/50 border border-border/40 flex items-center justify-center">
+          <LinkIcon size={20} className="opacity-40" />
+        </div>
+        <p className="whitespace-pre-line leading-relaxed">{t("world.graph.inspector.emptySelection")}</p>
       </div>
     );
   }
@@ -249,37 +420,68 @@ export function WorldInspector() {
           </header>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
-            <div className="p-5 flex flex-col gap-6">
+            <div className="p-4 flex flex-col gap-5">
+              {/* 이름 */}
               <input
-                className="text-[22px] font-bold text-fg border-none bg-transparent outline-none w-full p-1 -ml-1 rounded-md hover:bg-element focus:bg-element transition-all placeholder:text-muted/40"
+                className="text-[20px] font-bold text-fg border-none bg-transparent outline-none w-full p-1 -ml-1 rounded-md hover:bg-element focus:bg-element transition-all placeholder:text-muted/40"
                 value={localNode.name}
                 onChange={(event) => handleChange("name", event.target.value)}
                 onBlur={handleBlur}
                 placeholder={t("world.graph.inspector.untitled")}
               />
 
-              <div className="flex flex-col gap-1.5 bg-element/30 rounded-lg p-2 border border-border/60">
-                <div className="group flex items-center min-h-[30px] rounded-md hover:bg-element transition-colors px-1">
-                  <div className="w-[100px] text-[11px] text-muted flex items-center gap-2 font-medium shrink-0">
-                    <Clock size={13} />
-                    {t("world.graph.inspector.attributes.time")}
+              {/* ── 속성 카드 ── */}
+              <div className="flex flex-col gap-3 rounded-xl border border-border/40 bg-element/20 p-3">
+
+                {/* 시간/시기 */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted uppercase tracking-wider">
+                    <Clock size={11} />
+                    <span>{t("world.graph.inspector.attributes.time")}</span>
+                  </div>
+                  {/* 퀵 프리셋 버튼 */}
+                  <div className="flex flex-wrap gap-1">
+                    {TIME_PRESETS.map((preset: TimePreset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => {
+                          handleChange("time", preset);
+                          void setTimeout(handleBlur, 0);
+                        }}
+                        className={cn(
+                          "px-2.5 py-1 rounded-full text-[10px] font-medium border transition-all",
+                          localNode.time === preset
+                            ? "bg-accent/20 text-accent border-accent/40"
+                            : "bg-element/50 text-muted border-border/40 hover:text-fg hover:border-border",
+                        )}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                    {localNode.time && !TIME_PRESETS.includes(localNode.time as TimePreset) && (
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-accent/20 text-accent border border-accent/40">
+                        {localNode.time}
+                      </span>
+                    )}
                   </div>
                   <input
-                    className="flex-1 text-xs text-fg border-none bg-transparent outline-none px-2 py-1 rounded-sm focus:bg-panel min-w-0 transition-all placeholder:text-muted/40"
+                    className="w-full text-xs text-fg bg-element/40 border border-border/40 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 transition-all placeholder:text-muted/40"
                     value={localNode.time}
                     onChange={(event) => handleChange("time", event.target.value)}
                     onBlur={handleBlur}
-                    placeholder={t("world.graph.inspector.empty")}
+                    placeholder="시간/시기 자유 입력…"
                   />
                 </div>
 
-                <div className="group flex items-center min-h-[30px] rounded-md hover:bg-element transition-colors px-1">
-                  <div className="w-[100px] text-[11px] text-muted flex items-center gap-2 font-medium shrink-0">
-                    <MapPin size={13} />
-                    {t("world.graph.inspector.attributes.region")}
+                {/* 위치/지역 */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted uppercase tracking-wider">
+                    <MapPin size={11} />
+                    <span>{t("world.graph.inspector.attributes.region")}</span>
                   </div>
                   <input
-                    className="flex-1 text-xs text-fg border-none bg-transparent outline-none px-2 py-1 rounded-sm focus:bg-panel min-w-0 transition-all placeholder:text-muted/40"
+                    className="w-full text-xs text-fg bg-element/40 border border-border/40 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 transition-all placeholder:text-muted/40"
                     value={localNode.region}
                     onChange={(event) => handleChange("region", event.target.value)}
                     onBlur={handleBlur}
@@ -287,76 +489,73 @@ export function WorldInspector() {
                   />
                 </div>
 
-                <div className="group flex items-center min-h-[30px] rounded-md hover:bg-element transition-colors px-1">
-                  <div className="w-[100px] text-[11px] text-muted flex items-center gap-2 font-medium shrink-0">
-                    <Tag size={13} />
-                    {t("world.graph.inspector.attributes.tags")}
+                {/* 태그 */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted uppercase tracking-wider">
+                    <Plus size={11} />
+                    <span>{t("world.graph.inspector.attributes.tags")}</span>
                   </div>
-                  <input
-                    className="flex-1 text-xs text-fg border-none bg-transparent outline-none px-2 py-1 rounded-sm focus:bg-panel min-w-0 transition-all placeholder:text-muted/40"
-                    value={localNode.tags}
-                    onChange={(event) => handleChange("tags", event.target.value)}
-                    onBlur={handleBlur}
-                    placeholder={t("world.graph.inspector.tagsPlaceholder")}
+                  <TagChipInput
+                    tags={localNode.tags}
+                    onChange={handleTagsChange}
                   />
                 </div>
 
-                <div className="group flex items-center min-h-[30px] rounded-md hover:bg-element transition-colors px-1">
-                  <div className="w-[100px] text-[11px] text-muted flex items-center gap-2 font-medium shrink-0">
-                    <Star size={13} />
-                    {t("world.graph.inspector.attributes.importance")}
+                {/* 중요도 */}
+                <div className="flex items-center justify-between min-h-[28px]">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted uppercase tracking-wider">
+                    <Star size={11} />
+                    <span>{t("world.graph.inspector.attributes.importance")}</span>
                   </div>
-                  <select
-                    className="flex-1 text-xs text-fg border-none bg-transparent outline-none px-2 py-1 rounded-sm focus:bg-panel min-w-0 transition-all cursor-pointer"
+                  <StarRating
                     value={localNode.importance}
-                    onChange={(event) => {
-                      handleChange("importance", Number(event.target.value));
-                      void setTimeout(handleBlur, 0);
-                    }}
-                  >
-                    {[1, 2, 3, 4, 5].map((value) => (
-                      <option key={value} value={value} className="text-fg bg-panel">
-                        {"★".repeat(value)}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={handleImportanceChange}
+                  />
                 </div>
               </div>
 
-              <textarea
-                className="w-full h-[180px] border-none bg-transparent text-fg text-xs leading-relaxed outline-none resize-none p-2 rounded-md hover:bg-element/40 focus:bg-element/60 transition-all custom-scrollbar placeholder:text-muted/40"
-                value={localNode.description}
-                onChange={(event) => handleChange("description", event.target.value)}
-                onBlur={handleBlur}
-                placeholder={t("world.graph.inspector.descriptionPlaceholder")}
-              />
+              {/* 설명 */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-bold text-muted uppercase tracking-wider">설명</span>
+                <textarea
+                  className="w-full h-[140px] border border-border/40 bg-element/20 text-fg text-xs leading-relaxed outline-none resize-none p-3 rounded-lg focus:ring-2 focus:ring-accent/30 focus:border-accent/50 transition-all custom-scrollbar placeholder:text-muted/40"
+                  value={localNode.description}
+                  onChange={(event) => handleChange("description", event.target.value)}
+                  onBlur={handleBlur}
+                  placeholder={t("world.graph.inspector.descriptionPlaceholder")}
+                />
+              </div>
 
-              <div className="flex flex-col gap-2 pt-4 border-t border-border/60">
-                <h4 className="text-[11px] font-bold text-muted uppercase tracking-wider flex items-center gap-1.5">
-                  <Star size={12} className="text-accent" />
+              {/* 언급 섹션 */}
+              <div className="flex flex-col gap-2 pt-3 border-t border-border/40">
+                <h4 className="text-[10px] font-bold text-muted uppercase tracking-wider flex items-center gap-1.5">
+                  <LinkIcon size={11} className="text-accent" />
                   {t("world.graph.inspector.mentions")}
                 </h4>
 
                 {mentionsLoading && (
-                  <p className="text-xs text-muted">{t("world.graph.inspector.mentionsLoading")}</p>
+                  <p className="text-[11px] text-muted">{t("world.graph.inspector.mentionsLoading")}</p>
                 )}
 
                 {!mentionsLoading && mentions.length === 0 && (
-                  <p className="text-xs text-muted">{t("world.graph.inspector.mentionsEmpty")}</p>
+                  <p className="text-[11px] text-muted/60">{t("world.graph.inspector.mentionsEmpty")}</p>
                 )}
 
                 {!mentionsLoading &&
                   mentions.map((mention, index) => (
                     <button
                       key={`${mention.chapterId}-${index}`}
-                      type="button"
                       onClick={() => handleOpenMention(mention)}
-                      className="text-xs text-muted/80 flex items-center justify-between p-2.5 bg-element/30 rounded-lg border border-border/60 hover:bg-element hover:text-fg hover:border-accent/40 transition-all text-left group"
+                      className="group w-full text-left rounded-lg border border-border/40 bg-element/30 p-3 hover:bg-element hover:border-accent/40 transition-all"
                     >
-                      <span className="flex-1 truncate font-medium">{mention.chapterTitle}</span>
-                      <span className="shrink-0 font-bold ml-2 text-[10px] text-accent opacity-0 group-hover:opacity-100 transition-opacity">
-                        {t("world.graph.inspector.openMention", { defaultValue: "Open" })}
-                      </span>
+                      <p className="text-[11px] font-semibold text-fg/80 truncate group-hover:text-accent transition-colors">
+                        {mention.chapterTitle}
+                      </p>
+                      {mention.context && (
+                        <p className="mt-0.5 text-[10px] text-muted line-clamp-2 leading-relaxed">
+                          {mention.context}
+                        </p>
+                      )}
                     </button>
                   ))}
               </div>
@@ -371,96 +570,74 @@ export function WorldInspector() {
             <div className="flex items-center gap-2">
               <LinkIcon size={12} className="text-accent" />
               <span className="text-[10px] font-bold text-muted uppercase tracking-[0.1em]">
-                {t("world.graph.inspector.relation")}
+                {t("world.graph.inspector.relationHeader")}
               </span>
             </div>
-            <button
-              onClick={() => selectEdge(null)}
-              className="p-1.5 text-muted hover:text-fg hover:bg-element rounded-md transition-all"
-            >
-              <X size={14} />
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => void handleDeleteRelation()}
+                className="p-1.5 text-muted hover:text-white hover:bg-destructive rounded-md transition-all"
+                title={t("world.graph.inspector.deleteRelation", { defaultValue: "Delete relation" })}
+              >
+                <Trash2 size={13} />
+              </button>
+              <button
+                onClick={() => selectEdge(null)}
+                className="p-1.5 text-muted hover:text-fg hover:bg-element rounded-md transition-all"
+              >
+                <X size={14} />
+              </button>
+            </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col p-5 gap-6">
-            <div className="flex flex-col items-center gap-3 p-4 border border-border/60 bg-element/20 rounded-lg shadow-sm">
-              <div className="flex items-center justify-center gap-2 w-full">
-                <span className="text-xs text-fg font-bold truncate flex-1 text-right">{sourceNode?.name ?? "?"}</span>
-                <div className="flex flex-col items-center shrink-0 px-2">
-                  <span className="text-[10px] text-accent font-bold mb-1 uppercase tracking-wider">
-                    {t(`world.graph.relationTypes.${selectedEdge.relation}`, { defaultValue: selectedEdge.relation })}
-                  </span>
-                  <div className="w-12 h-0.5 bg-accent/30 relative">
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 w-1.5 h-1.5 border-t-2 border-r-2 border-accent/60 rotate-45" />
-                  </div>
-                </div>
-                <span className="text-xs text-fg font-bold truncate flex-1 text-left">{targetNode?.name ?? "?"}</span>
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">
+            {/* 관계 노드 요약 */}
+            <div className="flex items-center gap-3 rounded-xl border border-border/40 bg-element/20 p-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-1">출발</p>
+                <p className="text-sm font-semibold text-fg truncate">{sourceNode?.name ?? "—"}</p>
+              </div>
+              <div className="text-muted/60 shrink-0">→</div>
+              <div className="flex-1 min-w-0 text-right">
+                <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-1">도착</p>
+                <p className="text-sm font-semibold text-fg truncate">{targetNode?.name ?? "—"}</p>
               </div>
             </div>
 
-            {editRelation === null ? (
-              <button
-                onClick={() => setEditState({ edgeId: selectedEdge.id, relation: selectedEdge.relation })}
-                className="flex justify-center items-center gap-1.5 px-4 py-2 rounded-lg border border-border bg-element text-fg text-xs font-bold hover:bg-element-hover transition-all"
-              >
-                {t("world.graph.inspector.changeRelation")}
-              </button>
-            ) : (
-              <div className="flex flex-col gap-3 p-4 bg-element/30 border border-border rounded-lg">
-                <h4 className="text-[11px] font-bold text-muted uppercase tracking-wider">
-                  {t("world.graph.inspector.selectNewRelation")}
-                </h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {RELATION_KINDS.map((kind) => (
+            {/* 관계 종류 편집 */}
+            <div className="flex flex-col gap-2">
+              <p className="text-[10px] font-bold text-muted uppercase tracking-wider">관계 종류</p>
+              <div className="flex flex-wrap gap-1.5">
+                {RELATION_KINDS.map((kind) => {
+                  const isActive = (editRelation ?? selectedEdge.relation) === kind;
+                  return (
                     <button
                       key={kind}
+                      type="button"
                       onClick={() =>
-                        setEditState((previous) =>
-                          previous
-                            ? {
-                              ...previous,
-                              relation: kind,
-                            }
-                            : previous,
-                        )
+                        setEditState({ edgeId: selectedEdge.id, relation: kind })
                       }
                       className={cn(
-                        "px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 border",
-                        editRelation === kind
-                          ? "bg-accent/10 border-accent/30 text-accent"
-                          : "bg-transparent border-border text-muted hover:bg-element hover:text-fg",
+                        "px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-all",
+                        isActive
+                          ? "bg-accent text-white border-accent shadow-sm"
+                          : "bg-element/50 border-border/50 text-muted hover:text-fg hover:border-border",
                       )}
                     >
                       {t(`world.graph.relationTypes.${kind}`, { defaultValue: kind })}
                     </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => void saveRelation()}
-                    className="flex-1 bg-accent text-white text-xs font-bold py-2 rounded-md hover:bg-accent/90 transition-colors"
-                  >
-                    {t("world.graph.inspector.save")}
-                  </button>
-                  <button
-                    onClick={() => setEditState(null)}
-                    className="flex-1 bg-element text-fg text-xs font-medium py-2 rounded-md border border-border hover:bg-element-hover transition-colors"
-                  >
-                    {t("world.graph.inspector.cancel")}
-                  </button>
-                </div>
+                  );
+                })}
               </div>
-            )}
-
-            <div className="flex-1" />
-
-            <div className="border-t border-border/60 pt-4 mt-4">
-              <button
-                onClick={() => void handleDeleteRelation()}
-                className="w-full flex justify-center items-center gap-2 px-4 py-2 rounded-lg bg-destructive/10 text-destructive text-xs font-bold hover:bg-destructive hover:text-white transition-all border border-destructive/20"
-              >
-                <Trash2 size={13} /> {t("world.graph.inspector.deleteRelation")}
-              </button>
+              {editRelation && (
+                <button
+                  type="button"
+                  onClick={() => void saveRelation()}
+                  className="w-full mt-1 py-2 rounded-lg bg-accent text-white text-xs font-semibold hover:bg-accent/90 transition-colors shadow-sm"
+                >
+                  {t("world.graph.inspector.saveRelation", { defaultValue: "Save" })}
+                </button>
+              )}
             </div>
           </div>
         </>
