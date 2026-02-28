@@ -298,6 +298,7 @@ export const jaBase = {
         "delete": "削除"
       },
       "deleteConfirm": "\"{title}\" を削除しますか？この操作は取り消せません。",
+      "deleteFileOption": "ディスク上の .luie ファイルも削除する",
       "deleteConfirmLabel": "削除",
       "removeMissingConfirm": "\"{title}\" を一覧から削除しますか？",
       "removeMissingConfirmLabel": "削除",

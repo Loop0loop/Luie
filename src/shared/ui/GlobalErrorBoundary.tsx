@@ -24,9 +24,26 @@ export class GlobalErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    const stackPreview = (errorInfo.componentStack ?? "")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .slice(0, 6);
+    const signatureSource = stackPreview.join("|");
+    let signatureHash = 0;
+    for (let i = 0; i < signatureSource.length; i += 1) {
+      signatureHash = (signatureHash << 5) - signatureHash + signatureSource.charCodeAt(i);
+      signatureHash |= 0;
+    }
+    const errorSignature = `geb:${Math.abs(signatureHash)}`;
+
     api?.logger?.error("GlobalErrorBoundary caught an error", {
       error,
       errorInfo,
+      errorSignature,
+      location: window.location.href,
+      routeHash: window.location.hash,
+      componentStackPreview: stackPreview,
     });
   }
 

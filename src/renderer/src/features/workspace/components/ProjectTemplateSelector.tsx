@@ -5,7 +5,7 @@ import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import { Plus, Book, FileText, FileType, MoreVertical } from "lucide-react";
 import type { Project, SyncStatus } from "@shared/types";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
-import { ConfirmDialog, Modal } from "@shared/ui/Modal";
+import { Modal } from "@shared/ui/Modal";
 import { api } from "@shared/api";
 import { useToast } from "@shared/ui/ToastContext";
 import { useFloatingMenu } from "@shared/hooks/useFloatingMenu";
@@ -39,6 +39,7 @@ export default function ProjectTemplateSelector({
     connected: false,
     autoSync: true,
     mode: "idle",
+    health: "disconnected",
     inFlight: false,
     queued: false,
     conflicts: {
@@ -48,7 +49,7 @@ export default function ProjectTemplateSelector({
     },
   });
 
-  const { deleteProject, updateProject, loadProjects } = useProjectStore();
+  const { deleteProjectWithOptions, updateProject, loadProjects } = useProjectStore();
 
   const [localProjects, setLocalProjects] = useState<Project[]>(projects);
 
@@ -90,11 +91,13 @@ export default function ProjectTemplateSelector({
     projectId: string;
     projectTitle: string;
     mode: "delete" | "removeMissing";
+    deleteFile: boolean;
   }>({
     isOpen: false,
     projectId: "",
     projectTitle: "",
     mode: "delete",
+    deleteFile: false,
   });
 
   const [renameError, setRenameError] = useState<string | null>(null);
@@ -188,8 +191,23 @@ export default function ProjectTemplateSelector({
   };
 
   const getProjectSyncBadge = (project: Project): "synced" | "pending" | "localOnly" | "syncError" => {
-    if (!syncStatus.connected) {
-      return syncStatus.mode === "error" ? "syncError" : "localOnly";
+    const projectState = syncStatus.projectStateById?.[project.id];
+    if (projectState?.state === "error") {
+      return "syncError";
+    }
+    if (projectState?.state === "pending") {
+      return "pending";
+    }
+    if (projectState?.state === "synced") {
+      return "synced";
+    }
+
+    if (syncStatus.health === "degraded") {
+      return "syncError";
+    }
+
+    if (syncStatus.health === "disconnected" || !syncStatus.connected) {
+      return "localOnly";
     }
 
     const lastSyncedAt = toTimestamp(syncStatus.projectLastSyncedAtByProjectId?.[project.id]);
@@ -216,15 +234,20 @@ export default function ProjectTemplateSelector({
       }
 
       const projectPath = response.data;
+      const approved = await api.fs.approveProjectPath(projectPath);
+      if (!approved.success || !approved.data?.normalizedPath) {
+        throw new Error("Failed to approve repaired project path");
+      }
+      const normalizedPath = approved.data.normalizedPath;
       setLocalProjects((prev) =>
         prev.map((p) =>
           p.id === project.id
-            ? { ...p, projectPath, pathMissing: false }
+            ? { ...p, projectPath: normalizedPath, pathMissing: false }
             : p,
         ),
       );
 
-      await updateProject(project.id, undefined, undefined, projectPath);
+      await updateProject(project.id, undefined, undefined, normalizedPath);
       await loadProjects();
       showToast(t("settings.projectTemplate.toast.pathRepaired"), "success");
     } catch (error) {
@@ -328,6 +351,7 @@ export default function ProjectTemplateSelector({
                     projectId: p.id,
                     projectTitle: p.title,
                     mode: p.pathMissing ? "removeMissing" : "delete",
+                    deleteFile: false,
                   });
                 }}
               >
@@ -380,49 +404,100 @@ export default function ProjectTemplateSelector({
         </form>
       </Modal>
 
-      <ConfirmDialog
+      <Modal
         isOpen={deleteDialog.isOpen}
+        onClose={() =>
+          setDeleteDialog((prev) => ({
+            ...prev,
+            isOpen: false,
+            mode: "delete",
+            deleteFile: false,
+          }))
+        }
         title={
           deleteDialog.mode === "removeMissing"
             ? t("settings.projectTemplate.dialog.removeMissingTitle")
             : t("settings.projectTemplate.dialog.deleteTitle")
         }
-        message={
-          deleteDialog.mode === "removeMissing"
-            ? t("settings.projectTemplate.removeMissingConfirm", { title: deleteDialog.projectTitle })
-            : t("settings.projectTemplate.deleteConfirm", { title: deleteDialog.projectTitle })
-        }
-        confirmLabel={
-          deleteDialog.mode === "removeMissing"
-            ? t("settings.projectTemplate.removeMissingConfirmLabel")
-            : t("settings.projectTemplate.deleteConfirmLabel")
-        }
-        isDestructive
-        onConfirm={async () => {
-          setLocalProjects((prev) => prev.filter((p) => p.id !== deleteDialog.projectId));
-          try {
-            if (deleteDialog.mode === "removeMissing") {
-              const response = await api.project.removeLocal(deleteDialog.projectId);
-              if (!response.success) {
-                throw new Error(response.error?.message ?? "Failed to remove local project");
+        footer={
+          <div className="flex justify-end gap-3 w-full">
+            <button
+              className="px-4 py-2 bg-transparent border border-border rounded-md text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg"
+              onClick={() =>
+                setDeleteDialog((prev) => ({
+                  ...prev,
+                  isOpen: false,
+                  mode: "delete",
+                  deleteFile: false,
+                }))
               }
-              await loadProjects();
-            } else {
-              await deleteProject(deleteDialog.projectId);
-            }
-          } catch (error) {
-            setLocalProjects(projects);
-            api.logger.error(
-              deleteDialog.mode === "removeMissing"
-                ? "Failed to remove missing-path project from list"
-                : "Failed to delete project",
-              error,
-            );
-          }
-          setDeleteDialog((prev) => ({ ...prev, isOpen: false, mode: "delete" }));
-        }}
-        onCancel={() => setDeleteDialog((prev) => ({ ...prev, isOpen: false, mode: "delete" }))}
-      />
+            >
+              {t("settings.projectTemplate.actions.cancel")}
+            </button>
+            <button
+              className="px-4 py-2 bg-red-500 border-none rounded-md text-white text-[13px] font-medium cursor-pointer transition-all hover:bg-red-600"
+              onClick={async () => {
+                setLocalProjects((prev) => prev.filter((p) => p.id !== deleteDialog.projectId));
+                try {
+                  if (deleteDialog.mode === "removeMissing") {
+                    const response = await api.project.removeLocal(deleteDialog.projectId);
+                    if (!response.success) {
+                      throw new Error(response.error?.message ?? "Failed to remove local project");
+                    }
+                    await loadProjects();
+                  } else {
+                    await deleteProjectWithOptions({
+                      id: deleteDialog.projectId,
+                      deleteFile: deleteDialog.deleteFile,
+                    });
+                  }
+                } catch (error) {
+                  setLocalProjects(projects);
+                  api.logger.error(
+                    deleteDialog.mode === "removeMissing"
+                      ? "Failed to remove missing-path project from list"
+                      : "Failed to delete project",
+                    error,
+                  );
+                }
+                setDeleteDialog((prev) => ({
+                  ...prev,
+                  isOpen: false,
+                  mode: "delete",
+                  deleteFile: false,
+                }));
+              }}
+            >
+              {deleteDialog.mode === "removeMissing"
+                ? t("settings.projectTemplate.removeMissingConfirmLabel")
+                : t("settings.projectTemplate.deleteConfirmLabel")}
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <p>
+            {deleteDialog.mode === "removeMissing"
+              ? t("settings.projectTemplate.removeMissingConfirm", { title: deleteDialog.projectTitle })
+              : t("settings.projectTemplate.deleteConfirm", { title: deleteDialog.projectTitle })}
+          </p>
+          {deleteDialog.mode === "delete" && (
+            <label className="flex items-center gap-2 text-xs text-muted select-none">
+              <input
+                type="checkbox"
+                checked={deleteDialog.deleteFile}
+                onChange={(event) =>
+                  setDeleteDialog((prev) => ({
+                    ...prev,
+                    deleteFile: event.target.checked,
+                  }))
+                }
+              />
+              {t("settings.projectTemplate.deleteFileOption")}
+            </label>
+          )}
+        </div>
+      </Modal>
 
       <div className="flex-1 flex h-[calc(100vh-32px)]">
         <div className="w-60 bg-sidebar py-8 px-4 flex flex-col gap-2 border-r border-border">

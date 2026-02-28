@@ -31,9 +31,11 @@ export const SyncTab = memo(function SyncTab({
     onResolveConflict,
 }: SyncTabProps) {
     const [isResolving, setIsResolving] = useState(false);
-    const showConnected = status.connected;
+    const showConnected = status.connected && status.health !== "disconnected";
     const isConnecting = status.mode === "connecting";
-    const showReconnect = !showConnected && (Boolean(status.lastError) || isConnecting);
+    const isDegraded = status.health === "degraded";
+    const showReconnect = isDegraded || (!showConnected && (Boolean(status.lastError) || isConnecting));
+    const showAuthAction = !showConnected || isDegraded;
     const connectLabel = showReconnect
         ? t("settings.sync.actions.reconnectGoogle")
         : t("settings.sync.actions.connectGoogle");
@@ -45,6 +47,11 @@ export const SyncTab = memo(function SyncTab({
             : status.mode === "error"
                 ? t("settings.sync.status.error")
                 : t("settings.sync.status.idle");
+    const healthLabel = status.health === "connected"
+        ? t("settings.sync.health.connected", { defaultValue: "Connected" })
+        : status.health === "degraded"
+            ? t("settings.sync.health.degraded", { defaultValue: "Degraded" })
+            : t("settings.sync.health.disconnected", { defaultValue: "Disconnected" });
 
     return (
         <div className="space-y-6 max-w-2xl content-visibility-auto contain-intrinsic-size-[1px_500px]">
@@ -55,7 +62,7 @@ export const SyncTab = memo(function SyncTab({
                 <div className="grid grid-cols-2 gap-3 text-sm mb-4">
                     <div className="text-muted">{t("settings.sync.fields.connection")}</div>
                     <div className="text-fg font-medium">
-                        {showConnected ? t("settings.sync.connected") : t("settings.sync.disconnected")}
+                        {healthLabel}
                     </div>
 
                     <div className="text-muted">{t("settings.sync.fields.email")}</div>
@@ -68,8 +75,20 @@ export const SyncTab = memo(function SyncTab({
 
                     <div className="text-muted">{t("settings.sync.fields.mode")}</div>
                     <div className="text-fg font-medium">{modeLabel}</div>
+
+                    <div className="text-muted">{t("settings.sync.fields.lastRun", { defaultValue: "Last run" })}</div>
+                    <div className="text-fg font-medium">
+                        {status.lastRun
+                            ? `${new Date(status.lastRun.at).toLocaleString()} · ↑${status.lastRun.pushed} ↓${status.lastRun.pulled} · C${status.lastRun.conflicts}`
+                            : "-"}
+                    </div>
                 </div>
 
+                {status.degradedReason && (
+                    <div className="mb-4 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning-fg">
+                        {status.degradedReason}
+                    </div>
+                )}
                 {status.lastError && (
                     <div className="mb-4 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger-fg">
                         {status.lastError}
@@ -77,7 +96,7 @@ export const SyncTab = memo(function SyncTab({
                 )}
 
                 <div className="flex flex-wrap gap-3">
-                    {!showConnected ? (
+                    {showAuthAction ? (
                         <button
                             className="px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50"
                             onClick={showReconnect ? onReconnectGoogle : onConnectGoogle}
@@ -109,9 +128,9 @@ export const SyncTab = memo(function SyncTab({
                     <span className="text-sm text-fg">{t("settings.sync.fields.autoSync")}</span>
                     <button
                         onClick={() => onToggleAutoSync(!status.autoSync)}
-                        disabled={isBusy || !showConnected}
+                        disabled={isBusy || !status.connected}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${status.autoSync ? "bg-accent" : "bg-border"
-                            } ${isBusy || !showConnected ? "opacity-50 cursor-not-allowed" : ""}`}
+                            } ${isBusy || !status.connected ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                         <span
                             className={`${status.autoSync ? "translate-x-6" : "translate-x-1"

@@ -229,7 +229,7 @@ describe("SyncService auth hardening", () => {
     delete (mocked.syncSettings as Record<string, unknown>).pendingProjectDeletes;
   });
 
-  it("downgrades connected state on startup when no usable token path exists", async () => {
+  it("switches to degraded health on startup when no usable token path exists", async () => {
     mocked.syncSettings.connected = true;
     mocked.syncSettings.autoSync = false;
     mocked.syncSettings.userId = "00000000-0000-0000-0000-000000000001";
@@ -241,11 +241,13 @@ describe("SyncService auth hardening", () => {
     service.initialize();
 
     const status = service.getStatus();
-    expect(status.connected).toBe(false);
+    expect(status.connected).toBe(true);
+    expect(status.health).toBe("degraded");
+    expect(status.degradedReason).toContain("SYNC_ACCESS_TOKEN_UNAVAILABLE");
     expect(status.lastError).toContain("SYNC_ACCESS_TOKEN_UNAVAILABLE");
   });
 
-  it("disconnects on startup when refresh token is unreadable", async () => {
+  it("keeps session but marks degraded when refresh token is unreadable", async () => {
     mocked.syncSettings.connected = true;
     mocked.syncSettings.autoSync = false;
     mocked.syncSettings.userId = "00000000-0000-0000-0000-000000000001";
@@ -260,7 +262,8 @@ describe("SyncService auth hardening", () => {
     const service = new SyncService();
     service.initialize();
     expect(service.getStatus().lastError).toContain("SYNC_TOKEN_DECRYPT_FAILED");
-    expect(service.getStatus().connected).toBe(false);
+    expect(service.getStatus().connected).toBe(true);
+    expect(service.getStatus().health).toBe("degraded");
     expect(mocked.fetchBundle).not.toHaveBeenCalled();
     expect(mocked.refreshSession).not.toHaveBeenCalled();
   });

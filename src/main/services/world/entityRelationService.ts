@@ -315,7 +315,12 @@ export class EntityRelationService {
                 updatedAt: (e.updatedAt as string | Date) ?? new Date(),
             }));
 
-            return { nodes, edges: typedEdges };
+            const nodeIds = new Set(nodes.map((node) => node.id));
+            const filteredEdges = typedEdges.filter(
+                (edge) => nodeIds.has(edge.sourceId) && nodeIds.has(edge.targetId),
+            );
+
+            return { nodes, edges: filteredEdges };
         } catch (error) {
             logger.error("Failed to get world graph", error);
             throw new ServiceError(
@@ -325,6 +330,82 @@ export class EntityRelationService {
                 error,
             );
         }
+    }
+
+    async cleanupOrphanRelationsAcrossProjects(options?: { dryRun?: boolean }): Promise<{
+        scannedProjects: number;
+        scannedRelations: number;
+        orphanRelations: number;
+        removedRelations: number;
+    }> {
+        const dryRun = options?.dryRun ?? false;
+        const projects = await getWorldDbClient().project.findMany({
+            select: { id: true },
+        });
+
+        let scannedRelations = 0;
+        let orphanRelations = 0;
+        let removedRelations = 0;
+
+        for (const project of projects) {
+            const projectId = String(project.id);
+            const [characters, factions, events, terms, worldEntities, relations] = await Promise.all([
+                getWorldDbClient().character.findMany({ where: { projectId }, select: { id: true } }),
+                getWorldDbClient().faction.findMany({ where: { projectId }, select: { id: true } }),
+                getWorldDbClient().event.findMany({ where: { projectId }, select: { id: true } }),
+                getWorldDbClient().term.findMany({ where: { projectId }, select: { id: true } }),
+                getWorldDbClient().worldEntity.findMany({ where: { projectId }, select: { id: true } }),
+                getWorldDbClient().entityRelation.findMany({
+                    where: { projectId },
+                    select: { id: true, sourceId: true, targetId: true },
+                }),
+            ]);
+
+            const nodeIds = new Set<string>([
+                ...characters.map((item) => String(item.id)),
+                ...factions.map((item) => String(item.id)),
+                ...events.map((item) => String(item.id)),
+                ...terms.map((item) => String(item.id)),
+                ...worldEntities.map((item) => String(item.id)),
+            ]);
+
+            const orphanIds = relations
+                .filter((relation) => !nodeIds.has(String(relation.sourceId)) || !nodeIds.has(String(relation.targetId)))
+                .map((relation) => String(relation.id));
+
+            scannedRelations += relations.length;
+            orphanRelations += orphanIds.length;
+
+            if (orphanIds.length === 0 || dryRun) {
+                continue;
+            }
+
+            const result = await getWorldDbClient().entityRelation.deleteMany({
+                where: {
+                    projectId,
+                    id: { in: orphanIds },
+                },
+            });
+            removedRelations += result.count;
+            if (result.count > 0) {
+                projectService.schedulePackageExport(projectId, "entity-relation:cleanup-orphans");
+            }
+        }
+
+        logger.info("Entity relation orphan cleanup completed", {
+            dryRun,
+            scannedProjects: projects.length,
+            scannedRelations,
+            orphanRelations,
+            removedRelations,
+        });
+
+        return {
+            scannedProjects: projects.length,
+            scannedRelations,
+            orphanRelations,
+            removedRelations,
+        };
     }
 }
 

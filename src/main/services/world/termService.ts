@@ -147,11 +147,23 @@ export class TermService {
         select: { projectId: true },
       });
 
-      await db.getClient().term.deleteMany({ where: { id } });
+      const projectId = term?.projectId ? String(term.projectId) : null;
+
+      await db.getClient().$transaction(async (tx: ReturnType<(typeof db)["getClient"]>) => {
+        if (projectId) {
+          await tx.entityRelation.deleteMany({
+            where: {
+              projectId,
+              OR: [{ sourceId: id }, { targetId: id }],
+            },
+          });
+        }
+        await tx.term.deleteMany({ where: { id } });
+      });
 
       logger.info("Term deleted successfully", { termId: id });
-      if (term?.projectId) {
-        projectService.schedulePackageExport(String(term.projectId), "term:delete");
+      if (projectId) {
+        projectService.schedulePackageExport(projectId, "term:delete");
       }
       return { success: true };
     } catch (error) {

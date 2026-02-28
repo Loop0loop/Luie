@@ -367,8 +367,9 @@ const rendererApi = {
       safeInvokeCore("project.getAll", IPC_CHANNELS.PROJECT_GET_ALL),
     update: (input: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.PROJECT_UPDATE, input),
-    delete: (id: string): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.PROJECT_DELETE, id),
+    delete: (
+      input: string | { id: string; deleteFile?: boolean },
+    ): Promise<IPCResponse<never>> => safeInvoke(IPC_CHANNELS.PROJECT_DELETE, input),
     removeLocal: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.PROJECT_REMOVE_LOCAL, id),
     openLuie: (packagePath: string): ReturnType<RendererApi["project"]["openLuie"]> =>
@@ -529,6 +530,10 @@ const rendererApi = {
       content: string,
     ): Promise<IPCResponse<{ path: string }>> =>
       safeInvoke(IPC_CHANNELS.FS_WRITE_PROJECT_FILE, projectRoot, relativePath, content),
+    approveProjectPath: (
+      projectPath: string,
+    ): Promise<IPCResponse<{ approved: boolean; normalizedPath: string }>> =>
+      safeInvoke(IPC_CHANNELS.FS_APPROVE_PROJECT_PATH, projectPath),
   },
 
   // Search API

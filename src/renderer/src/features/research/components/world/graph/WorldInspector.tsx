@@ -26,6 +26,32 @@ const IMPORTANCE_MAX = 5;
 const TIME_PRESETS = ["서막", "전편", "중편", "후편", "에필로그"] as const;
 type TimePreset = (typeof TIME_PRESETS)[number];
 
+const isSameLocalNodeState = (
+  left: {
+    name: string;
+    description: string;
+    time: string;
+    region: string;
+    tags: string[];
+    importance: number;
+  },
+  right: {
+    name: string;
+    description: string;
+    time: string;
+    region: string;
+    tags: string[];
+    importance: number;
+  },
+): boolean =>
+  left.name === right.name &&
+  left.description === right.description &&
+  left.time === right.time &&
+  left.region === right.region &&
+  left.importance === right.importance &&
+  left.tags.length === right.tags.length &&
+  left.tags.every((tag, index) => tag === right.tags[index]);
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 /** ★ 별점 UI */
@@ -208,14 +234,17 @@ export function WorldInspector() {
       importance: typeof importanceValue === "number" ? Math.max(1, Math.min(5, importanceValue)) : 3,
     };
     queueMicrotask(() => {
-      setLocalNode(nextLocalNode);
+      setLocalNode((previous) =>
+        isSameLocalNodeState(previous, nextLocalNode) ? previous : nextLocalNode,
+      );
     });
   }, [selectedNode]);
 
   useEffect(() => {
     if (!selectedNode || !activeProjectId) {
       queueMicrotask(() => {
-        setMentions([]);
+        setMentions((previous) => (previous.length > 0 ? [] : previous));
+        setMentionsLoading(false);
       });
       return;
     }

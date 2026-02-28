@@ -11,6 +11,7 @@
     "predev": "pnpm rebuild:electron",
     "dev": "electron-vite",
     "build": "electron-vite build",
+    "build:debug-profile": "LUIE_DEBUG_PROFILE=1 electron-vite build",
     "prepreview": "pnpm rebuild:electron",
     "preview": "electron-vite preview",
     "preview:prod": "pnpm build && NODE_ENV=production electron .",

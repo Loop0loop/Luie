@@ -298,6 +298,7 @@ export const koBase = {
         "delete": "삭제"
       },
       "deleteConfirm": "정말로 \"{title}\" 프로젝트를 삭제할까요? 이 작업은 되돌릴 수 없습니다.",
+      "deleteFileOption": "디스크의 .luie 파일도 삭제",
       "deleteConfirmLabel": "삭제",
       "removeMissingConfirm": "\"{title}\" 항목을 목록에서 제거할까요?",
       "removeMissingConfirmLabel": "제거",

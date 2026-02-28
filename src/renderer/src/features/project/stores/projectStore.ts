@@ -28,6 +28,7 @@ interface ProjectStore extends BaseProjectStore {
     projectPath?: string,
   ) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
+  deleteProjectWithOptions: (input: { id: string; deleteFile?: boolean }) => Promise<void>;
   setCurrentProject: (project: Project | null) => void;
 
   // 호환성 필드
@@ -64,6 +65,27 @@ export const useProjectStore = create<ProjectStore>((set, _get, store) => {
       projectPath?: string,
     ) => crudSlice.update({ id, title, description, projectPath }),
     deleteProject: (id: string) => crudSlice.delete(id),
+    deleteProjectWithOptions: async (input: { id: string; deleteFile?: boolean }) => {
+      setWithAlias({ isLoading: true, error: null } as Partial<ProjectStore>);
+      try {
+        const response = await api.project.delete(input);
+        if (response.success) {
+          setWithAlias((state) => ({
+            items: state.items.filter((item) => item.id !== input.id),
+            currentItem: state.currentItem?.id === input.id ? null : state.currentItem,
+          }) as Partial<ProjectStore>);
+        } else {
+          setWithAlias({ error: response.error?.message } as Partial<ProjectStore>);
+          throw new Error(response.error?.message ?? "Failed to delete project");
+        }
+      } catch (error) {
+        api.logger.error("Failed to delete Project with options:", error);
+        setWithAlias({ error: (error as Error).message } as Partial<ProjectStore>);
+        throw error;
+      } finally {
+        setWithAlias({ isLoading: false } as Partial<ProjectStore>);
+      }
+    },
     setCurrentProject: (project: Project | null) =>
       crudSlice.setCurrent(project),
 

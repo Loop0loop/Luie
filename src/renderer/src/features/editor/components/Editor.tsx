@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent, type Editor as TiptapEditor } from "@tiptap/react";
 import "@renderer/styles/components/editor.css";
 import { cn } from "@shared/types/utils";
@@ -76,10 +76,11 @@ function Editor({
   });
 
   const [content, setContent] = useState(initialContent);
+  const updateStatsRef = useRef(updateStats);
 
   useEffect(() => {
-    setContent(initialContent);
-  }, [initialContent]);
+    updateStatsRef.current = updateStats;
+  }, [updateStats]);
 
   useEditorAutosave({
     onSave: readOnly ? undefined : onSave,
@@ -98,12 +99,12 @@ function Editor({
         const html = editor.getHTML();
         const text = editor.getText();
 
-        setContent(html);
+        setContent((previous) => (previous === html ? previous : html));
         if (!readOnly) {
           api.lifecycle?.setDirty?.(true);
         }
 
-        updateStats(text);
+        updateStatsRef.current(text);
       },
       onSelectionUpdate: ({ editor }) => {
         const { from } = editor.state.selection;
@@ -136,7 +137,7 @@ function Editor({
         handleClick: handleSmartLinkClick,
       },
     },
-    [extensions, fontFamilyCss, fontSize, lineHeight, updateStats],
+    [extensions, fontFamilyCss, fontSize, lineHeight],
   );
 
   useTypewriterScroll(editor, focusMode);

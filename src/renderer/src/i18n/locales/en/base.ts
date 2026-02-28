@@ -298,6 +298,7 @@ export const enBase = {
         "delete": "Delete"
       },
       "deleteConfirm": "Are you sure you want to delete \"{title}\"? This cannot be undone.",
+      "deleteFileOption": "Also delete the .luie file on disk",
       "deleteConfirmLabel": "Delete",
       "removeMissingConfirm": "Remove \"{title}\" from this list?",
       "removeMissingConfirmLabel": "Remove",

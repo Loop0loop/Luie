@@ -11,7 +11,7 @@ import { i18n } from "@renderer/i18n";
 import { initializeTemplateProject } from "./projectTemplateInitialization";
 
 export function useProjectTemplate(setActiveChapterId: (id: string) => void) {
-  const { createProject, setCurrentProject, deleteProject } = useProjectStore();
+  const { createProject, setCurrentProject, deleteProject, updateProject } = useProjectStore();
   const { create: createChapter } = useChapterStore();
   const { setView } = useUIStore();
 
@@ -71,12 +71,26 @@ export function useProjectTemplate(setActiveChapterId: (id: string) => void) {
           return;
         }
 
-        setCurrentProject(newProject);
+        let currentProject = newProject;
+        const normalizedProjectPath = initialized.projectPath;
+        if (
+          typeof normalizedProjectPath === "string" &&
+          normalizedProjectPath.length > 0 &&
+          normalizedProjectPath !== (newProject.projectPath ?? "")
+        ) {
+          await updateProject(newProject.id, undefined, undefined, normalizedProjectPath);
+          currentProject = {
+            ...newProject,
+            projectPath: normalizedProjectPath,
+          };
+        }
+
+        setCurrentProject(currentProject);
         setActiveChapterId(initialized.chapterId);
         setView("editor");
       }
     },
-    [createProject, setCurrentProject, deleteProject, createChapter, setView, setActiveChapterId],
+    [createProject, setCurrentProject, deleteProject, updateProject, createChapter, setView, setActiveChapterId],
   );
 
   return { handleSelectProject };

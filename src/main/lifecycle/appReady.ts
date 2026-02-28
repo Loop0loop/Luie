@@ -149,6 +149,23 @@ export const registerAppReady = (logger: Logger): void => {
       } catch (error) {
         logger.warn("Snapshot recovery/pruning skipped", error);
       }
+
+      try {
+        const { projectService } = await import("../services/core/projectService.js");
+        await projectService.reconcileProjectPathDuplicates();
+      } catch (error) {
+        logger.warn("Project path duplicate reconciliation skipped", error);
+      }
+
+      try {
+        const { entityRelationService } = await import(
+          "../services/world/entityRelationService.js"
+        );
+        await entityRelationService.cleanupOrphanRelationsAcrossProjects({ dryRun: true });
+        await entityRelationService.cleanupOrphanRelationsAcrossProjects({ dryRun: false });
+      } catch (error) {
+        logger.warn("Entity relation orphan cleanup skipped", error);
+      }
     });
 
     app.on("activate", () => {

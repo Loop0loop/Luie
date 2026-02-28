@@ -281,6 +281,11 @@ export interface ProjectUpdateInput {
   projectPath?: string;
 }
 
+export interface ProjectDeleteInput {
+  id: string;
+  deleteFile?: boolean;
+}
+
 // Chapter Types
 export interface ChapterCreateInput {
   projectId: string;
@@ -521,6 +526,7 @@ export interface DbRecoveryResult {
 
 export type SyncProvider = "google";
 export type SyncMode = "idle" | "connecting" | "syncing" | "error";
+export type SyncHealth = "connected" | "degraded" | "disconnected";
 
 export interface SyncPendingProjectDelete {
   projectId: string;
@@ -564,10 +570,28 @@ export interface SyncConnection {
 
 export interface SyncStatus extends SyncConnection {
   mode: SyncMode;
+  health: SyncHealth;
+  degradedReason?: string;
   inFlight: boolean;
   queued: boolean;
   conflicts: SyncConflictSummary;
   projectLastSyncedAtByProjectId?: Record<string, string>;
+  projectStateById?: Record<
+    string,
+    {
+      state: "synced" | "pending" | "error";
+      lastSyncedAt?: string;
+      reason?: string;
+    }
+  >;
+  lastRun?: {
+    at: string;
+    pulled: number;
+    pushed: number;
+    conflicts: number;
+    success: boolean;
+    message: string;
+  };
 }
 
 export interface SyncRunResult {

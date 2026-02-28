@@ -138,12 +138,27 @@ export class EventService {
                 select: { projectId: true },
             });
 
-            await db.getClient().event.deleteMany({ where: { id } });
+            const projectId =
+                (event as { projectId?: unknown })?.projectId
+                    ? String((event as { projectId: unknown }).projectId)
+                    : null;
+
+            await db.getClient().$transaction(async (tx: ReturnType<(typeof db)["getClient"]>) => {
+                if (projectId) {
+                    await tx.entityRelation.deleteMany({
+                        where: {
+                            projectId,
+                            OR: [{ sourceId: id }, { targetId: id }],
+                        },
+                    });
+                }
+                await tx.event.deleteMany({ where: { id } });
+            });
 
             logger.info("Event deleted successfully", { eventId: id });
-            if ((event as { projectId?: unknown })?.projectId) {
+            if (projectId) {
                 projectService.schedulePackageExport(
-                    String((event as { projectId: unknown }).projectId),
+                    projectId,
                     "event:delete",
                 );
             }

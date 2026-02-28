@@ -157,12 +157,27 @@ export class CharacterService {
         select: { projectId: true },
       });
 
-      await db.getClient().character.deleteMany({ where: { id } });
+      const projectId =
+        (character as { projectId?: unknown })?.projectId
+          ? String((character as { projectId: unknown }).projectId)
+          : null;
+
+      await db.getClient().$transaction(async (tx: ReturnType<(typeof db)["getClient"]>) => {
+        if (projectId) {
+          await tx.entityRelation.deleteMany({
+            where: {
+              projectId,
+              OR: [{ sourceId: id }, { targetId: id }],
+            },
+          });
+        }
+        await tx.character.deleteMany({ where: { id } });
+      });
 
       logger.info("Character deleted successfully", { characterId: id });
-      if ((character as { projectId?: unknown })?.projectId) {
+      if (projectId) {
         projectService.schedulePackageExport(
-          String((character as { projectId: unknown }).projectId),
+          projectId,
           "character:delete",
         );
       }

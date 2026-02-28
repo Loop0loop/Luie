@@ -67,6 +67,7 @@ export default function App() {
   const loadShortcuts = useShortcutStore((state) => state.loadShortcuts);
   const projects = useProjectStore((state) => state.items);
   const setCurrentProject = useProjectStore((state) => state.setCurrentProject);
+  const updateProject = useProjectStore((state) => state.updateProject);
   const loadProjects = useProjectStore((state) => state.loadProjects);
   const theme = useEditorStore((state) => state.theme);
   const themeTemp = useEditorStore((state) => state.themeTemp);
@@ -178,15 +179,35 @@ export default function App() {
   const { handleSelectProject } = useProjectTemplate((_id: string) => { });
 
   const handleOpenExistingProject = useCallback(
-    (project: (typeof projects)[number]) => {
+    async (project: (typeof projects)[number]) => {
       if (project.pathMissing) {
         showToast(t("settings.projectTemplate.pathMissingDescription"), "info");
         return;
       }
-      setCurrentProject(project);
-      setView("editor");
+      try {
+        let nextProject = project;
+        const projectPath = project.projectPath ?? "";
+        if (projectPath.toLowerCase().endsWith(".luie")) {
+          const approved = await api.fs.approveProjectPath(projectPath);
+          if (approved.success && approved.data?.normalizedPath) {
+            const normalizedPath = approved.data.normalizedPath;
+            if (normalizedPath !== projectPath) {
+              await updateProject(project.id, undefined, undefined, normalizedPath);
+              nextProject = { ...project, projectPath: normalizedPath };
+            }
+          }
+        }
+        setCurrentProject(nextProject);
+        setView("editor");
+      } catch (error) {
+        api.logger.error("Failed to open existing project", {
+          projectId: project.id,
+          error,
+        });
+        showToast(t("settings.projectTemplate.toast.pathRepairFailed"), "error");
+      }
     },
-    [setCurrentProject, setView, showToast, t],
+    [setCurrentProject, setView, showToast, t, updateProject],
   );
 
   useEffect(() => {
@@ -210,7 +231,20 @@ export default function App() {
       const selectedPath = response.data;
       const imported = await api.project.openLuie(selectedPath);
       if (imported.success && imported.data) {
-        setCurrentProject(imported.data.project);
+        const approved = await api.fs.approveProjectPath(
+          imported.data.project.projectPath ?? selectedPath,
+        );
+        const normalizedPath =
+          approved.success && approved.data?.normalizedPath
+            ? approved.data.normalizedPath
+            : imported.data.project.projectPath ?? selectedPath;
+        if (normalizedPath !== imported.data.project.projectPath) {
+          await updateProject(imported.data.project.id, undefined, undefined, normalizedPath);
+        }
+        setCurrentProject({
+          ...imported.data.project,
+          projectPath: normalizedPath,
+        });
         setView("editor");
         if (imported.data.recovery) {
           useDataRecoveryStore.getState().setRecoveryState(true, imported.data.recoveryReason, imported.data.recoveryPath);
@@ -219,7 +253,7 @@ export default function App() {
     } catch (error) {
       api.logger.error("Failed to open luie file", error);
     }
-  }, [setCurrentProject, setView, showToast, t]);
+  }, [setCurrentProject, setView, t, updateProject]);
 
   const handleOpenSnapshotBackup = useCallback(async () => {
     try {
@@ -364,7 +398,9 @@ export default function App() {
         <ProjectTemplateSelector
           onSelectProject={handleSelectProject}
           projects={projects}
-          onOpenProject={handleOpenExistingProject}
+          onOpenProject={(project) => {
+            void handleOpenExistingProject(project);
+          }}
           onOpenLuieFile={handleOpenLuieFile}
           onOpenSnapshotBackup={handleOpenSnapshotBackup}
         />

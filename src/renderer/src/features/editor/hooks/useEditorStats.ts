@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import Worker from "@renderer/features/editor/workers/stats.worker?worker";
 import { useEditorStatsStore } from "@renderer/features/editor/stores/editorStatsStore";
 
@@ -31,14 +31,14 @@ export function useEditorStats() {
     };
   }, [setStats]);
 
-  const updateStats = (text: string) => {
+  const updateStats = useCallback((text: string) => {
     if (timeoutRef.current !== null) {
       window.clearTimeout(timeoutRef.current);
     }
     timeoutRef.current = window.setTimeout(() => {
       workerRef.current?.postMessage({ text });
     }, 120);
-  };
+  }, []);
 
   return { updateStats };
 }

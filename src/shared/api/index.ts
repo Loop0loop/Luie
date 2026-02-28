@@ -50,7 +50,7 @@ export type RendererApi = {
       description?: string;
       projectPath?: string;
     }) => Promise<IPCResponse<Project>>;
-    delete: (id: string) => Promise<IPCResponse<unknown>>;
+    delete: (input: string | { id: string; deleteFile?: boolean }) => Promise<IPCResponse<unknown>>;
     removeLocal: (id: string) => Promise<IPCResponse<unknown>>;
   };
   chapter: {
@@ -209,6 +209,7 @@ export type RendererApi = {
     writeFile: (filePath: string, content: string) => Promise<IPCResponse<unknown>>;
     createLuiePackage: (packagePath: string, meta: unknown) => Promise<IPCResponse<{ path: string }>>;
     writeProjectFile: (projectRoot: string, relativePath: string, content: string) => Promise<IPCResponse<{ path: string }>>;
+    approveProjectPath: (projectPath: string) => Promise<IPCResponse<{ approved: boolean; normalizedPath: string }>>;
   };
   search: (query: {
     projectId: string;

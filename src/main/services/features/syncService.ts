@@ -60,6 +60,7 @@ const INITIAL_STATUS: SyncStatus = {
   connected: false,
   autoSync: true,
   mode: "idle",
+  health: "disconnected",
   inFlight: false,
   queued: false,
   conflicts: {
@@ -159,6 +160,15 @@ const toSyncStatusFromSettings = (
   lastSyncedAt: syncSettings.lastSyncedAt,
   lastError: syncSettings.lastError,
   projectLastSyncedAtByProjectId: syncSettings.projectLastSyncedAtByProjectId,
+  health: syncSettings.connected
+    ? baseStatus.health === "degraded"
+      ? "degraded"
+      : "connected"
+    : "disconnected",
+  degradedReason:
+    syncSettings.connected && baseStatus.health === "degraded"
+      ? baseStatus.degradedReason ?? syncSettings.lastError
+      : undefined,
 });
 
 const normalizePendingProjectDeletes = (
@@ -187,18 +197,69 @@ export class SyncService {
   private queuedRun = false;
   private autoSyncTimer: NodeJS.Timeout | null = null;
 
-  private applyAuthFailureState(message: string): void {
-    const cleared = settingsManager.clearSyncSettings();
+  private toSyncedProjectStates(
+    syncMap: Record<string, string> | undefined,
+  ): SyncStatus["projectStateById"] {
+    if (!syncMap) return undefined;
+    const entries = Object.entries(syncMap);
+    if (entries.length === 0) return undefined;
+    return Object.fromEntries(
+      entries.map(([projectId, lastSyncedAt]) => [
+        projectId,
+        {
+          state: "synced" as const,
+          lastSyncedAt,
+        },
+      ]),
+    );
+  }
+
+  private withConflictProjectStates(
+    base: SyncStatus["projectStateById"],
+    conflicts: SyncStatus["conflicts"],
+  ): SyncStatus["projectStateById"] {
+    const next = { ...(base ?? {}) };
+    for (const item of conflicts.items ?? []) {
+      next[item.projectId] = {
+        state: "pending",
+        lastSyncedAt: next[item.projectId]?.lastSyncedAt,
+        reason: "SYNC_CONFLICT_DETECTED",
+      };
+    }
+    return Object.keys(next).length > 0 ? next : undefined;
+  }
+
+  private withErrorProjectStates(
+    base: SyncStatus["projectStateById"],
+    reason: string,
+  ): SyncStatus["projectStateById"] {
+    if (!base) return base;
+    const next = Object.fromEntries(
+      Object.entries(base).map(([projectId, state]) => [
+        projectId,
+        {
+          state: "error" as const,
+          lastSyncedAt: state.lastSyncedAt,
+          reason,
+        },
+      ]),
+    );
+    return Object.keys(next).length > 0 ? next : undefined;
+  }
+
+  private applyAuthFailureState(message: string, lastRun?: SyncStatus["lastRun"]): void {
     const next = settingsManager.setSyncSettings({
-      ...cleared,
       lastError: message,
     });
     this.updateStatus({
-      ...toSyncStatusFromSettings(next, INITIAL_STATUS),
+      ...toSyncStatusFromSettings(next, this.status),
       mode: "error",
+      health: "degraded",
+      degradedReason: message,
       inFlight: false,
       queued: false,
-      conflicts: INITIAL_STATUS.conflicts,
+      projectStateById: this.withErrorProjectStates(this.status.projectStateById, message),
+      lastRun: lastRun ?? this.status.lastRun,
     });
   }
 
@@ -407,6 +468,8 @@ export class SyncService {
         "Supabase env is not configured (SUPABASE_URL/SUPABASE_ANON_KEY or SUPADATABASE_PRJ_ID/SUPADATABASE_API)";
       this.updateStatus({
         mode: "error",
+        health: "disconnected",
+        degradedReason: undefined,
         lastError: message,
       });
       return this.status;
@@ -414,6 +477,8 @@ export class SyncService {
 
     this.updateStatus({
       mode: "connecting",
+      health: "disconnected",
+      degradedReason: undefined,
       lastError: undefined,
     });
 
@@ -425,12 +490,16 @@ export class SyncService {
       if (message.includes("SYNC_AUTH_FLOW_IN_PROGRESS")) {
         this.updateStatus({
           mode: "connecting",
+          health: "disconnected",
+          degradedReason: undefined,
           lastError: undefined,
         });
         return this.status;
       }
       this.updateStatus({
         mode: "error",
+        health: "disconnected",
+        degradedReason: undefined,
         lastError: message,
       });
       return this.status;
@@ -456,6 +525,8 @@ export class SyncService {
       this.updateStatus({
         ...toSyncStatusFromSettings(next, this.status),
         mode: "idle",
+        health: "connected",
+        degradedReason: undefined,
       });
       void this.runNow("oauth-callback");
     } catch (error) {
@@ -478,6 +549,8 @@ export class SyncService {
     this.updateStatus({
       ...toSyncStatusFromSettings(cleared, INITIAL_STATUS),
       mode: "idle",
+      health: "disconnected",
+      degradedReason: undefined,
       queued: false,
       inFlight: false,
       conflicts: {
@@ -486,6 +559,7 @@ export class SyncService {
         total: 0,
         items: [],
       },
+      projectStateById: undefined,
     });
     return this.status;
   }
@@ -610,17 +684,33 @@ export class SyncService {
             Object.keys(nextResolutionMap).length > 0 ? nextResolutionMap : undefined,
           lastError: undefined,
         });
+        const lastRunAt = new Date().toISOString();
+        const lastRun = {
+          at: lastRunAt,
+          pulled: this.countBundleRows(remoteBundle),
+          pushed: 0,
+          conflicts: conflicts.total,
+          success: false,
+          message: "SYNC_CONFLICT_DETECTED",
+        } as const;
         this.updateStatus({
           ...toSyncStatusFromSettings(settingsManager.getSyncSettings(), this.status),
           mode: "idle",
+          health: "connected",
+          degradedReason: undefined,
           inFlight: false,
           queued: false,
           conflicts,
+          projectStateById: this.withConflictProjectStates(
+            this.toSyncedProjectStates(syncSettings.projectLastSyncedAtByProjectId),
+            conflicts,
+          ),
+          lastRun,
         });
         return {
           success: false,
           message: "SYNC_CONFLICT_DETECTED",
-          pulled: this.countBundleRows(remoteBundle),
+          pulled: lastRun.pulled,
           pushed: 0,
           conflicts,
         };
@@ -665,8 +755,19 @@ export class SyncService {
       this.updateStatus({
         ...toSyncStatusFromSettings(nextSettings, this.status),
         mode: "idle",
+        health: "connected",
+        degradedReason: undefined,
         inFlight: false,
         conflicts,
+        projectStateById: this.toSyncedProjectStates(projectLastSyncedAtByProjectId),
+        lastRun: {
+          at: syncedAt,
+          pulled: result.pulled,
+          pushed: result.pushed,
+          conflicts: result.conflicts.total,
+          success: true,
+          message: result.message,
+        },
       });
 
       if (this.queuedRun) {
@@ -677,8 +778,17 @@ export class SyncService {
       return result;
     } catch (error) {
       const message = toSyncErrorMessage(error);
+      const failureAt = new Date().toISOString();
+      const failureRun = {
+        at: failureAt,
+        pulled: 0,
+        pushed: 0,
+        conflicts: this.status.conflicts.total,
+        success: false,
+        message,
+      } as const;
       if (isAuthFatalMessage(message)) {
-        this.applyAuthFailureState(message);
+        this.applyAuthFailureState(message, failureRun);
       } else {
         const nextSettings = settingsManager.setSyncSettings({
           lastError: message,
@@ -686,8 +796,12 @@ export class SyncService {
         this.updateStatus({
           ...toSyncStatusFromSettings(nextSettings, this.status),
           mode: "error",
+          health: this.status.connected ? "connected" : "disconnected",
+          degradedReason: undefined,
           inFlight: false,
           queued: false,
+          projectStateById: this.withErrorProjectStates(this.status.projectStateById, message),
+          lastRun: failureRun,
         });
       }
       this.queuedRun = false;

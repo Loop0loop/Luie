@@ -34,6 +34,7 @@ import {
 import { sanitizeName } from "../../../shared/utils/sanitize.js";
 import { isWorldEntityBackedType } from "../../../shared/constants/worldRelationRules.js";
 import type {
+  ProjectDeleteInput,
   ProjectCreateInput,
   ProjectUpdateInput,
   ProjectExportRecord,
@@ -448,10 +449,130 @@ export class ProjectService {
     return ensureLuieExtension(ensureSafeAbsolutePath(inputPath, fieldName));
   }
 
+  private toProjectPathKey(projectPath: string): string {
+    const resolved = path.resolve(projectPath);
+    return process.platform === "win32" ? resolved.toLowerCase() : resolved;
+  }
+
+  private async findProjectPathConflict(
+    projectPath: string,
+    excludeProjectId?: string,
+  ): Promise<{ id: string } | null> {
+    const targetKey = this.toProjectPathKey(projectPath);
+    const projects = await db.getClient().project.findMany({
+      where: {
+        projectPath: { not: null },
+      },
+      select: { id: true, projectPath: true },
+    });
+
+    for (const project of projects) {
+      if (typeof project.projectPath !== "string" || project.projectPath.length === 0) {
+        continue;
+      }
+      if (excludeProjectId && String(project.id) === excludeProjectId) continue;
+
+      try {
+        const safePath = ensureSafeAbsolutePath(project.projectPath, "projectPath");
+        if (this.toProjectPathKey(safePath) === targetKey) {
+          return { id: String(project.id) };
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    return null;
+  }
+
+  async reconcileProjectPathDuplicates(): Promise<{
+    duplicateGroups: number;
+    clearedRecords: number;
+  }> {
+    const projects = await db.getClient().project.findMany({
+      where: {
+        projectPath: { not: null },
+      },
+      select: {
+        id: true,
+        projectPath: true,
+        updatedAt: true,
+      },
+    });
+
+    const groups = new Map<string, Array<{ id: string; projectPath: string; updatedAt: Date }>>();
+    for (const project of projects) {
+      if (typeof project.projectPath !== "string" || project.projectPath.length === 0) {
+        continue;
+      }
+      try {
+        const safePath = ensureSafeAbsolutePath(project.projectPath, "projectPath");
+        const key = this.toProjectPathKey(safePath);
+        const bucket = groups.get(key) ?? [];
+        bucket.push({
+          id: String(project.id),
+          projectPath: safePath,
+          updatedAt:
+            project.updatedAt instanceof Date
+              ? project.updatedAt
+              : new Date(String(project.updatedAt)),
+        });
+        groups.set(key, bucket);
+      } catch {
+        continue;
+      }
+    }
+
+    let duplicateGroups = 0;
+    let clearedRecords = 0;
+
+    for (const entries of groups.values()) {
+      if (entries.length <= 1) continue;
+      duplicateGroups += 1;
+      const sorted = [...entries].sort(
+        (left, right) => right.updatedAt.getTime() - left.updatedAt.getTime(),
+      );
+      const keep = sorted[0];
+      const stale = sorted.slice(1);
+
+      for (const item of stale) {
+        await db.getClient().project.update({
+          where: { id: item.id },
+          data: { projectPath: null },
+        });
+        clearedRecords += 1;
+        logger.warn("Cleared duplicate projectPath from stale record", {
+          keepProjectId: keep.id,
+          staleProjectId: item.id,
+          projectPath: item.projectPath,
+        });
+      }
+    }
+
+    if (duplicateGroups > 0) {
+      logger.info("Project path duplicate reconciliation completed", {
+        duplicateGroups,
+        clearedRecords,
+      });
+    }
+
+    return { duplicateGroups, clearedRecords };
+  }
+
   async createProject(input: ProjectCreateInput) {
     try {
       logger.info("Creating project", input);
       const projectPath = this.normalizeProjectPath(input.projectPath);
+      if (projectPath) {
+        const conflict = await this.findProjectPathConflict(projectPath);
+        if (conflict) {
+          throw new ServiceError(
+            ErrorCode.VALIDATION_FAILED,
+            "Project path is already registered",
+            { projectPath, conflictProjectId: conflict.id },
+          );
+        }
+      }
 
       const project = await db.getClient().project.create({
         data: {
@@ -1312,6 +1433,16 @@ export class ProjectService {
         input.projectPath === undefined
           ? undefined
           : this.normalizeProjectPath(input.projectPath) ?? null;
+      if (normalizedProjectPath) {
+        const conflict = await this.findProjectPathConflict(normalizedProjectPath, input.id);
+        if (conflict) {
+          throw new ServiceError(
+            ErrorCode.VALIDATION_FAILED,
+            "Project path is already registered",
+            { projectPath: normalizedProjectPath, conflictProjectId: conflict.id },
+          );
+        }
+      }
       const current = await db.getClient().project.findUnique({
         where: { id: input.id },
         select: { title: true, projectPath: true },
@@ -1392,40 +1523,53 @@ export class ProjectService {
     });
   }
 
-  async deleteProject(id: string) {
+  async deleteProject(input: string | ProjectDeleteInput) {
+    const request =
+      typeof input === "string"
+        ? { id: input, deleteFile: false }
+        : { id: input.id, deleteFile: Boolean(input.deleteFile) };
     let queuedProjectDelete = false;
 
     try {
       const existing = await db.getClient().project.findUnique({
-        where: { id },
-        select: { id: true },
+        where: { id: request.id },
+        select: { id: true, projectPath: true },
       });
 
       if (!existing?.id) {
         throw new ServiceError(
           ErrorCode.PROJECT_NOT_FOUND,
           "Project not found",
-          { id },
+          { id: request.id },
         );
       }
 
+      if (request.deleteFile) {
+        const projectPath =
+          typeof existing.projectPath === "string" ? existing.projectPath : null;
+        if (projectPath && projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
+          const safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
+          await fs.rm(safeProjectPath, { force: true, recursive: true });
+        }
+      }
+
       settingsManager.addPendingProjectDelete({
-        projectId: id,
+        projectId: request.id,
         deletedAt: new Date().toISOString(),
       });
       queuedProjectDelete = true;
 
       await db.getClient().project.delete({
-        where: { id },
+        where: { id: request.id },
       });
 
-      this.clearSyncBaselineForProject(id);
+      this.clearSyncBaselineForProject(request.id);
 
-      logger.info("Project deleted successfully", { projectId: id });
+      logger.info("Project deleted successfully", { projectId: request.id, deleteFile: request.deleteFile });
       return { success: true };
     } catch (error) {
       if (queuedProjectDelete) {
-        settingsManager.removePendingProjectDeletes([id]);
+        settingsManager.removePendingProjectDeletes([request.id]);
       }
       logger.error("Failed to delete project", error);
       if (error instanceof ServiceError) {
@@ -1434,7 +1578,7 @@ export class ProjectService {
       throw new ServiceError(
         ErrorCode.PROJECT_DELETE_FAILED,
         "Failed to delete project",
-        { id },
+        { id: request.id, deleteFile: request.deleteFile },
         error,
       );
     }

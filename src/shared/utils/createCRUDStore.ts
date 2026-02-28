@@ -63,8 +63,14 @@ export function createAliasSetter<
   return (partial: Partial<TStore> | ((state: TStore) => Partial<TStore>)) =>
     set((state: TStore) => {
       const next = typeof partial === "function" ? partial(state) : partial;
-      const nextItems = next.items ?? state.items;
-      const nextCurrent = next.currentItem ?? state.currentItem;
+      const hasNextItems = Object.prototype.hasOwnProperty.call(next, "items");
+      const hasNextCurrent = Object.prototype.hasOwnProperty.call(next, "currentItem");
+      const nextItems =
+        hasNextItems && next.items !== undefined ? next.items : state.items;
+      // Preserve explicit null so alias current state does not drift from currentItem.
+      const nextCurrent = hasNextCurrent
+        ? (next.currentItem as TItem | null)
+        : state.currentItem;
 
       return {
         ...next,

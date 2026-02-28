@@ -138,12 +138,27 @@ export class FactionService {
                 select: { projectId: true },
             });
 
-            await db.getClient().faction.deleteMany({ where: { id } });
+            const projectId =
+                (faction as { projectId?: unknown })?.projectId
+                    ? String((faction as { projectId: unknown }).projectId)
+                    : null;
+
+            await db.getClient().$transaction(async (tx: ReturnType<(typeof db)["getClient"]>) => {
+                if (projectId) {
+                    await tx.entityRelation.deleteMany({
+                        where: {
+                            projectId,
+                            OR: [{ sourceId: id }, { targetId: id }],
+                        },
+                    });
+                }
+                await tx.faction.deleteMany({ where: { id } });
+            });
 
             logger.info("Faction deleted successfully", { factionId: id });
-            if ((faction as { projectId?: unknown })?.projectId) {
+            if (projectId) {
                 projectService.schedulePackageExport(
-                    String((faction as { projectId: unknown }).projectId),
+                    projectId,
                     "faction:delete",
                 );
             }

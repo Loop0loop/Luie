@@ -1,12 +1,14 @@
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import type {
   ProjectCreateInput,
+  ProjectDeleteInput,
   ProjectUpdateInput,
 } from "../../../shared/types/index.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
 import {
   projectCreateSchema,
+  projectDeleteArgSchema,
   projectUpdateSchema,
   projectIdSchema,
 } from "../../../shared/schemas/index.js";
@@ -18,7 +20,7 @@ type ProjectServiceLike = {
   getProject: (id: string) => Promise<unknown>;
   getAllProjects: () => Promise<unknown>;
   updateProject: (input: ProjectUpdateInput) => Promise<unknown>;
-  deleteProject: (id: string) => Promise<unknown>;
+  deleteProject: (input: string | ProjectDeleteInput) => Promise<unknown>;
   removeProjectFromList: (id: string) => Promise<unknown>;
 };
 
@@ -65,8 +67,8 @@ export function registerProjectIPCHandlers(
       channel: IPC_CHANNELS.PROJECT_DELETE,
       logTag: "PROJECT_DELETE",
       failMessage: "Failed to delete project",
-      argsSchema: z.tuple([projectIdSchema]),
-      handler: (id: string) => projectService.deleteProject(id),
+      argsSchema: z.tuple([projectDeleteArgSchema]),
+      handler: (input: string | ProjectDeleteInput) => projectService.deleteProject(input),
     },
     {
       channel: IPC_CHANNELS.PROJECT_REMOVE_LOCAL,

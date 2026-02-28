@@ -154,9 +154,12 @@ export const useUIStore = create<UIStore>()(
 
       mainView: { type: "editor" },
 
-      setView: (view) => set({ view }),
-      setContextTab: (contextTab) => set({ contextTab }),
-      setWorldTab: (worldTab) => set({ worldTab }),
+      setView: (view) =>
+        set((state) => (state.view === view ? state : { view })),
+      setContextTab: (contextTab) =>
+        set((state) => (state.contextTab === contextTab ? state : { contextTab })),
+      setWorldTab: (worldTab) =>
+        set((state) => (state.worldTab === worldTab ? state : { worldTab })),
 
       addPanel: (content, insertAt) => set((state) => {
         // Prevent duplicates
@@ -211,21 +214,50 @@ export const useUIStore = create<UIStore>()(
       })),
       setPanels: (panels) => set({ panels }),
 
-      setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
-      setContextOpen: (isContextOpen) => set({ isContextOpen }),
-      setManuscriptMenuOpen: (isManuscriptMenuOpen) => set({ isManuscriptMenuOpen }),
+      setSidebarOpen: (isSidebarOpen) =>
+        set((state) =>
+          state.isSidebarOpen === isSidebarOpen ? state : { isSidebarOpen }),
+      setContextOpen: (isContextOpen) =>
+        set((state) =>
+          state.isContextOpen === isContextOpen ? state : { isContextOpen }),
+      setManuscriptMenuOpen: (isManuscriptMenuOpen) =>
+        set((state) =>
+          state.isManuscriptMenuOpen === isManuscriptMenuOpen
+            ? state
+            : { isManuscriptMenuOpen }),
       setDocsRightTab: (docsRightTab) =>
-        set((state) => ({
-          docsRightTab,
-          focusedClosableTarget:
+        set((state) => {
+          const nextFocusedClosableTarget =
             docsRightTab !== null
-              ? { kind: "docs-tab" }
+              ? { kind: "docs-tab" as const }
               : state.focusedClosableTarget?.kind === "docs-tab"
                 ? null
-                : state.focusedClosableTarget,
-        })),
-      setBinderBarOpen: (isBinderBarOpen) => set({ isBinderBarOpen }),
-      setMainView: (mainView) => set({ mainView }),
+                : state.focusedClosableTarget;
+          const focusedUnchanged =
+            state.focusedClosableTarget?.kind === nextFocusedClosableTarget?.kind &&
+            (state.focusedClosableTarget?.kind !== "panel" ||
+              state.focusedClosableTarget.id ===
+                (nextFocusedClosableTarget?.kind === "panel"
+                  ? nextFocusedClosableTarget.id
+                  : undefined));
+          if (state.docsRightTab === docsRightTab && focusedUnchanged) {
+            return state;
+          }
+          return {
+            docsRightTab,
+            focusedClosableTarget: nextFocusedClosableTarget,
+          };
+        }),
+      setBinderBarOpen: (isBinderBarOpen) =>
+        set((state) =>
+          state.isBinderBarOpen === isBinderBarOpen
+            ? state
+            : { isBinderBarOpen }),
+      setMainView: (mainView) =>
+        set((state) =>
+          state.mainView.type === mainView.type && state.mainView.id === mainView.id
+            ? state
+            : { mainView }),
       setSidebarWidth: (feature, width) =>
         set((state) => {
           const next = normalizeSidebarWidthInput(feature, width);
@@ -239,7 +271,18 @@ export const useUIStore = create<UIStore>()(
             },
           };
         }),
-      setFocusedClosableTarget: (focusedClosableTarget) => set({ focusedClosableTarget }),
+      setFocusedClosableTarget: (focusedClosableTarget) =>
+        set((state) => {
+          const current = state.focusedClosableTarget;
+          const same =
+            current?.kind === focusedClosableTarget?.kind &&
+            (current?.kind !== "panel" ||
+              current.id ===
+                (focusedClosableTarget?.kind === "panel"
+                  ? focusedClosableTarget.id
+                  : undefined));
+          return same ? state : { focusedClosableTarget };
+        }),
       closeFocusedSurface: () => {
         let handled = false;
         set((state) => {

@@ -88,6 +88,7 @@ export const IPC_CHANNELS = {
   // Luie package directory (.luie)
   FS_CREATE_LUIE_PACKAGE: "fs:create-luie-package",
   FS_WRITE_PROJECT_FILE: "fs:write-project-file",
+  FS_APPROVE_PROJECT_PATH: "fs:approve-project-path",
 
   // Settings
   SETTINGS_GET_ALL: "settings:get-all",

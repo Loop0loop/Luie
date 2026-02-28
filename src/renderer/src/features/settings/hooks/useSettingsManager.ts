@@ -23,6 +23,7 @@ const DEFAULT_SYNC_STATUS: SyncStatus = {
     connected: false,
     autoSync: true,
     mode: "idle",
+    health: "disconnected",
     inFlight: false,
     queued: false,
     conflicts: {

@@ -44,6 +44,7 @@ import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
 import { sanitizeName } from "../../../shared/utils/sanitize.js";
 import {
+  fsApproveProjectPathArgsSchema,
   fsCreateLuiePackageArgsSchema,
   fsReadFileArgsSchema,
   fsReadLuieEntryArgsSchema,
@@ -204,6 +205,23 @@ const approvePathForSession = async (
   const rootPath = treatAs === "directory" ? safePath : path.dirname(safePath);
   const canonicalRoot = await resolveCanonicalPath(rootPath, "write");
   upsertApprovedRoot(canonicalRoot, permissions);
+};
+
+const resolveApprovedProjectPath = async (projectPath: string): Promise<string> => {
+  const safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
+  if (safeProjectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
+    return ensureLuieExtension(safeProjectPath);
+  }
+  const luieCandidate = ensureLuieExtension(safeProjectPath);
+  if (luieCandidate === safeProjectPath) {
+    return safeProjectPath;
+  }
+  try {
+    await fsp.access(luieCandidate);
+    return luieCandidate;
+  } catch {
+    return safeProjectPath;
+  }
 };
 
 const assertAllowedFsPath = async (
@@ -815,6 +833,25 @@ const rebuildZipWithReplacement = async (
 
 export function registerFsIPCHandlers(logger: LoggerLike): void {
   registerIpcHandlers(logger, [
+    {
+      channel: IPC_CHANNELS.FS_APPROVE_PROJECT_PATH,
+      logTag: "FS_APPROVE_PROJECT_PATH",
+      failMessage: "Failed to approve project path",
+      argsSchema: fsApproveProjectPathArgsSchema,
+      handler: async (projectPath: string) => {
+        const normalizedPath = await resolveApprovedProjectPath(projectPath);
+        const isLuiePath = normalizedPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION);
+        await approvePathForSession(
+          normalizedPath,
+          isLuiePath ? ["read", "package"] : ["read"],
+          "file",
+        );
+        return {
+          approved: true,
+          normalizedPath,
+        };
+      },
+    },
     {
       channel: IPC_CHANNELS.FS_SELECT_DIRECTORY,
       logTag: "FS_SELECT_DIRECTORY",

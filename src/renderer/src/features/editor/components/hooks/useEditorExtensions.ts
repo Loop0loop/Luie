@@ -65,6 +65,7 @@ export function useEditorExtensions({
     focusMode = false,
 }: UseEditorExtensionsProps) {
     const { t } = useTranslation();
+    const placeholder = t("editor.placeholder.body");
 
     const extensions = useMemo(
         () => [
@@ -94,7 +95,7 @@ export function useEditorExtensions({
             DetailsSummary,
             DetailsContent,
             Placeholder.configure({
-                placeholder: t("editor.placeholder.body"),
+                placeholder,
             }),
             SlashCommand,
             SmartLink,
@@ -109,7 +110,7 @@ export function useEditorExtensions({
                 })
             ] : []),
         ],
-        [comparisonContent, diffMode, t, focusMode],
+        [comparisonContent, diffMode, placeholder, focusMode],
     );
 
     return extensions;

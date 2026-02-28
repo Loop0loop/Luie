@@ -96,7 +96,6 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
   }, [chapterId, t, buildSnapshotItems]);
 
   useEffect(() => {
-    // console.log("SnapshotList mounted/updated", chapterId);
     void loadSnapshots();
   }, [loadSnapshots, chapterId]);
 
