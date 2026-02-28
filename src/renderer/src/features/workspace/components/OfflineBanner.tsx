@@ -4,15 +4,19 @@ import { WifiOff, X } from "lucide-react";
 
 export function OfflineBanner() {
     const { t } = useTranslation();
-    const [isOffline, setIsOffline] = useState(!navigator.onLine);
+    const [isOffline, setIsOffline] = useState(() => !navigator.onLine);
     const [dismissed, setDismissed] = useState(false);
 
     useEffect(() => {
+        let mounted = true;
+
         const handleOnline = () => {
+            if (!mounted) return;
             setIsOffline(false);
             setDismissed(false); // Reset dismissal on reconnect
         };
         const handleOffline = () => {
+            if (!mounted) return;
             setIsOffline(true);
             setDismissed(false);
         };
@@ -21,6 +25,7 @@ export function OfflineBanner() {
         window.addEventListener("offline", handleOffline);
 
         return () => {
+            mounted = false;
             window.removeEventListener("online", handleOnline);
             window.removeEventListener("offline", handleOffline);
         };

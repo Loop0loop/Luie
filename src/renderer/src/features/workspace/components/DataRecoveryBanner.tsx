@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { AlertCircle, FileCheck, X } from "lucide-react";
 import { useDataRecoveryStore } from "@renderer/features/workspace/stores/useDataRecoveryStore";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useToast } from "@shared/ui/ToastContext";
 
 export default function DataRecoveryBanner() {
@@ -9,9 +9,14 @@ export default function DataRecoveryBanner() {
     const { showToast } = useToast();
     const { hasRecovered, recoveryReason, dismissRecovery } = useDataRecoveryStore();
 
+    const hasShownToastRef = useRef(false);
+
     useEffect(() => {
-        if (hasRecovered) {
+        if (hasRecovered && !hasShownToastRef.current) {
             showToast(t("project.toast.recoveredFromDb", "Project was successfully recovered from safety snapshot."), "info");
+            hasShownToastRef.current = true;
+        } else if (!hasRecovered) {
+            hasShownToastRef.current = false;
         }
     }, [hasRecovered, showToast, t]);
 
