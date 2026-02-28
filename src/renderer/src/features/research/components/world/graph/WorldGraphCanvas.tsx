@@ -240,6 +240,8 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
   // Fix: Smart Node Synchronization
   // Keeps local node position while user drags, but accepts programmatic Layout updates
   const lastStorePositions = useRef<Record<string, { x: number; y: number }>>({});
+  // Track previous viewMode to detect mode transitions (for auto-layout trigger)
+  const prevViewModeRef = useRef<WorldViewMode>(viewMode);
 
   useEffect(() => {
     setNodes((prev) => {
@@ -262,17 +264,18 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
 
         const dbPosChanged = lastPos && sourceRfNode && (lastPos.x !== sourceRfNode.position.x || lastPos.y !== sourceRfNode.position.y);
 
-        let newPos = existing.position;
-        // Apply either new external DB change, or if a layout shift happened (e.g mode switch).
-        // Since layout changes position continuously (or entirely), we just enforce layout position
-        // if not currently dragging or if DB forced a change
-        if (!existing.dragging && (dbPosChanged || viewMode !== "standard")) {
-          newPos = layoutNode.position;
-        }
+        // Did the user just switch modes? Force layout position only on mode change transition.
+        const didModeSwitched = prevViewModeRef.current !== viewMode;
 
-        // Specifically for mode switches, forcefully snap to new positions
-        if (!existing.dragging && existing.position.x !== layoutNode.position.x) {
-          newPos = layoutNode.position;
+        let newPos = existing.position;
+
+        // Only override position if:
+        // 1. DB explicitly changed position (another device/sync)
+        // 2. User just switched viewMode (triggers auto-layout recalculation)
+        if (!existing.dragging && dbPosChanged) {
+          newPos = sourceRfNode!.position; // Use DB position on external changes
+        } else if (!existing.dragging && didModeSwitched) {
+          newPos = layoutNode.position; // Use layout position only on mode switch
         }
 
         const needsUpdate =
@@ -300,6 +303,9 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
       }
       return prev;
     });
+
+    // Update the prevViewMode ref after processing
+    prevViewModeRef.current = viewMode;
   }, [layoutedNodes, rfNodes, viewMode, setNodes]);
 
   const onNodeDragStop: NodeMouseHandler = useCallback(
@@ -622,6 +628,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
         maxZoom={2}
         deleteKeyCode={null}
         className="react-flow-premium"
+        proOptions={{ hideAttribution: true }}
       >
         <Background
           variant={BackgroundVariant.Cross}

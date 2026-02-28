@@ -237,8 +237,10 @@ export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({
     set((state) => {
       let nextFilter = { ...state.filter };
       if (mode === "event-chain") {
-        nextFilter.entityTypes = ["Event", "Concept", "Place", "Rule", "Item"];
-        nextFilter.relationKinds = ["causes", "located_in", "violates"];
+        // Event-chain focuses on Events and their causal connections,
+        // but Character/Faction remain visible as they participate in events
+        nextFilter.entityTypes = ["Event", "Character", "Faction", "Concept", "Place", "Rule", "Item", "WorldEntity"];
+        nextFilter.relationKinds = ["causes", "located_in", "violates", "belongs_to", "controls"];
       } else {
         nextFilter = DEFAULT_FILTER;
       }

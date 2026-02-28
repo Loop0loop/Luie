@@ -40,7 +40,9 @@ export function useWorldGraphLayout({ nodes, edges, viewMode, selectedNodeId }: 
                 g.setNode(node.id, { width: DAGRE_NODE_WIDTH, height: DAGRE_NODE_HEIGHT });
             });
 
-            edges.forEach((edge) => {
+            // Filter self-loops before adding to dagre to prevent malformed chain renders
+            const validEdges = edges.filter(e => e.source !== e.target);
+            validEdges.forEach((edge) => {
                 // In event-chain, prioritize 'causes' relationships for the horizontal timeline
                 const weight = edge.data?.relation === "causes" ? 100 : 1;
                 g.setEdge(edge.source, edge.target, { weight });

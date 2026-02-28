@@ -69,13 +69,13 @@ export function WorldGraphPanel() {
           minSize={toPxSize(leftConfig.minPx)}
           maxSize={toPxSize(leftConfig.maxPx)}
           onResize={onResizeLeft}
-          className="min-h-0"
+          className="min-h-0 transition-[flex] duration-200 ease-in-out"
         >
           <WorldSidebar />
         </Panel>
 
         <PanelResizeHandle className="group relative w-3 shrink-0 cursor-col-resize bg-transparent select-none touch-none">
-          <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border group-hover:bg-accent group-data-[dragging]:bg-accent transition-colors" />
+          <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border/40 group-hover:bg-accent group-data-[dragging]:bg-accent transition-colors" />
         </PanelResizeHandle>
 
         <Panel id="world-graph-canvas" minSize={toPercentSize(28)} className="min-h-0">
@@ -104,7 +104,7 @@ export function WorldGraphPanel() {
         </Panel>
 
         <PanelResizeHandle className="group relative w-3 shrink-0 cursor-col-resize bg-transparent select-none touch-none">
-          <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border group-hover:bg-accent group-data-[dragging]:bg-accent transition-colors" />
+          <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border/40 group-hover:bg-accent group-data-[dragging]:bg-accent transition-colors" />
         </PanelResizeHandle>
 
         <Panel
@@ -113,7 +113,7 @@ export function WorldGraphPanel() {
           minSize={toPxSize(rightConfig.minPx)}
           maxSize={toPxSize(rightConfig.maxPx)}
           onResize={onResizeRight}
-          className="min-h-0"
+          className="min-h-0 transition-[flex] duration-200 ease-in-out"
         >
           <WorldInspector />
         </Panel>
