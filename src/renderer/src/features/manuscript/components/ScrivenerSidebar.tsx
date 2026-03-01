@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
     ChevronRight,
@@ -17,31 +16,25 @@ interface ScrivenerSidebarProps {
     currentProjectId?: string;
 }
 
-type SectionId = "manuscript" | "characters" | "world" | "scrap" | "snapshots" | "trash" | "analysis";
-
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useChapterManagement } from "@renderer/features/manuscript/hooks/useChapterManagement";
+import { useShallow } from "zustand/react/shallow";
+import type { ScrivenerSectionId } from "@renderer/features/workspace/stores/uiStore";
 
 export default function ScrivenerSidebar({
     currentProjectId,
 }: ScrivenerSidebarProps) {
     const { t } = useTranslation();
     const { handleAddChapter, activeChapterId } = useChapterManagement();
+    const { scrivenerSections, setScrivenerSectionOpen } = useUIStore(
+        useShallow((state) => ({
+            scrivenerSections: state.scrivenerSections,
+            setScrivenerSectionOpen: state.setScrivenerSectionOpen,
+        })),
+    );
 
-
-    // Track expanded sections
-    const [expanded, setExpanded] = useState<Record<SectionId, boolean>>({
-        manuscript: true,
-        characters: true, // Default open for visibility
-        world: false,
-        scrap: false,
-        snapshots: false,
-        analysis: false,
-        trash: false,
-    });
-
-    const toggleSection = (id: SectionId) => {
-        setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
+    const toggleSection = (id: ScrivenerSectionId) => {
+        setScrivenerSectionOpen(id, !scrivenerSections[id]);
     };
 
     return (
@@ -56,7 +49,7 @@ export default function ScrivenerSidebar({
                 <CollapsibleSection
                     id="manuscript"
                     title={t("sidebar.section.manuscript")}
-                    isOpen={expanded.manuscript}
+                    isOpen={scrivenerSections.manuscript}
                     onToggle={() => toggleSection("manuscript")}
                     actions={
                         <button
@@ -75,7 +68,7 @@ export default function ScrivenerSidebar({
                 <CollapsibleSection
                     id="characters"
                     title={t("research.title.characters")}
-                    isOpen={expanded.characters}
+                    isOpen={scrivenerSections.characters}
                     onToggle={() => toggleSection("characters")}
                 >
                     <SidebarCharacterList />
@@ -85,7 +78,7 @@ export default function ScrivenerSidebar({
                 <CollapsibleSection
                     id="world"
                     title={t("research.title.world")}
-                    isOpen={expanded.world}
+                    isOpen={scrivenerSections.world}
                     onToggle={() => toggleSection("world")}
                 >
                     <SidebarWorldList />
@@ -95,7 +88,7 @@ export default function ScrivenerSidebar({
                 <CollapsibleSection
                     id="scrap"
                     title={t("research.title.scrap")}
-                    isOpen={expanded.scrap}
+                    isOpen={scrivenerSections.scrap}
                     onToggle={() => toggleSection("scrap")}
                 >
                     <div className="h-64 border-b border-border/10">
@@ -107,7 +100,7 @@ export default function ScrivenerSidebar({
                 <CollapsibleSection
                     id="snapshots"
                     title={t("sidebar.section.snapshot")}
-                    isOpen={expanded.snapshots}
+                    isOpen={scrivenerSections.snapshots}
                     onToggle={() => toggleSection("snapshots")}
                 >
                     <div className="h-64 border-b border-border/10">
@@ -123,7 +116,7 @@ export default function ScrivenerSidebar({
                 <CollapsibleSection
                     id="analysis"
                     title={t("research.title.analysis")}
-                    isOpen={expanded.analysis} // Need to add to state
+                    isOpen={scrivenerSections.analysis}
                     onToggle={() => toggleSection("analysis")}
                 >
                     <div className="flex flex-col h-full bg-sidebar/50">
@@ -142,7 +135,7 @@ export default function ScrivenerSidebar({
                 <CollapsibleSection
                     id="trash"
                     title={t("sidebar.section.trash")}
-                    isOpen={expanded.trash}
+                    isOpen={scrivenerSections.trash}
                     onToggle={() => toggleSection("trash")}
                 >
                     {currentProjectId && <TrashList projectId={currentProjectId} refreshKey={0} />}
@@ -159,7 +152,7 @@ function CollapsibleSection({
     actions,
     children
 }: {
-    id: SectionId;
+    id: ScrivenerSectionId;
     title: string;
     isOpen: boolean;
     onToggle: () => void;

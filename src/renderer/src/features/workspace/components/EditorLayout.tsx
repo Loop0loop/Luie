@@ -11,6 +11,7 @@ import FocusHoverSidebar from "@renderer/features/manuscript/components/FocusHov
 import Ribbon from "@renderer/features/editor/components/Ribbon";
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { BinderSidebar } from "@renderer/features/manuscript/components/BinderSidebar";
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@shared/constants/configs";
@@ -45,6 +46,7 @@ export default function EditorLayout({
   const { t } = useTranslation();
 
   const maxWidth = useEditorStore((state) => state.maxWidth);
+  const hasUiHydrated = useUIStore((state) => state.hasHydrated);
 
   const ribbonRef = useRef<HTMLDivElement>(null);
   const [ribbonHeight, setRibbonHeight] = useState(56);
@@ -91,7 +93,12 @@ export default function EditorLayout({
         <div className="flex-1 h-full overflow-hidden flex flex-row relative">
 
           {/* Editor Column Wrapper */}
-          <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative" id="editor-layout">
+          <PanelGroup
+            key={hasUiHydrated ? "editor-layout-hydrated" : "editor-layout-cold"}
+            orientation="horizontal"
+            className="flex w-full h-full flex-1 overflow-hidden relative"
+            id="editor-layout"
+          >
             <Panel id="main-editor-view" minSize="80px" className="min-w-0 bg-transparent relative flex flex-col">
               <div className="flex-1 h-full overflow-hidden flex flex-col relative">
                 <EditorDropZones />

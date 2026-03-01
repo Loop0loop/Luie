@@ -72,7 +72,7 @@ function MemoSectionInner({
 }) {
   const { t } = useTranslation();
   const { sidebarWidths, setSidebarWidth } = useUIStore(
-    useShallow((state: any) => ({
+    useShallow((state) => ({
       sidebarWidths: state.sidebarWidths,
       setSidebarWidth: state.setSidebarWidth,
     }))
@@ -122,7 +122,6 @@ function MemoSectionInner({
     sidebarFeature,
     commitMemoSidebarWidth,
   );
-
   useShortcutCommand((command) => {
     if (command.type === "scrap.addMemo") {
       handleAddNote();

@@ -78,7 +78,10 @@ export function WorldGraphPanel() {
     <div className="h-full overflow-hidden bg-app flex flex-col">
       {/* Main Panel Layout */}
       <div className="flex-1 min-h-0 flex overflow-hidden">
-        <PanelGroup orientation="horizontal" className="h-full! w-full!">
+        <PanelGroup
+          orientation="horizontal"
+          className="h-full! w-full!"
+        >
           <Panel
             id="world-graph-sidebar"
             defaultSize={toPxSize(leftWidth)}

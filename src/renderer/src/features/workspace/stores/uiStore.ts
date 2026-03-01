@@ -10,7 +10,7 @@ import {
 import type { Snapshot } from "@shared/types";
 import {
   buildDefaultSidebarWidths,
-  clampSidebarWidthForAnyFeature,
+  normalizeSidebarWidthsWithMigrations,
   normalizeSidebarWidthInput,
   type SidebarWidthFeature,
 } from "@shared/constants/sidebarSizing";
@@ -54,45 +54,25 @@ const DEFAULT_SIDEBAR_WIDTHS: Record<string, number> = buildDefaultSidebarWidths
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
-const normalizeSidebarWidths = (input: unknown): Record<string, number> => {
-  const normalized: Record<string, number> = { ...DEFAULT_SIDEBAR_WIDTHS };
-  if (!isRecord(input)) {
-    return normalized;
-  }
+export type ScrivenerSectionId =
+  | "manuscript"
+  | "characters"
+  | "world"
+  | "scrap"
+  | "snapshots"
+  | "analysis"
+  | "trash";
 
-  for (const [key, rawValue] of Object.entries(input)) {
-    const width = normalizeSidebarWidthInput(key, rawValue);
-    if (width === null) continue;
-    normalized[key] = width;
-  }
+export type ScrivenerSectionsState = Record<ScrivenerSectionId, boolean>;
 
-  const legacyBinder = normalizeSidebarWidthInput("binder", input.binder);
-  if (legacyBinder !== null) {
-    if (normalizeSidebarWidthInput("mainSidebar", input.mainSidebar) === null) {
-      normalized.mainSidebar = clampSidebarWidthForAnyFeature("mainSidebar", legacyBinder);
-    }
-    if (normalizeSidebarWidthInput("docsBinder", input.docsBinder) === null) {
-      normalized.docsBinder = clampSidebarWidthForAnyFeature("docsBinder", legacyBinder);
-    }
-    if (normalizeSidebarWidthInput("scrivenerBinder", input.scrivenerBinder) === null) {
-      normalized.scrivenerBinder = clampSidebarWidthForAnyFeature("scrivenerBinder", legacyBinder);
-    }
-  }
-
-  const legacyContext = normalizeSidebarWidthInput("context", input.context);
-  if (legacyContext !== null && normalizeSidebarWidthInput("mainContext", input.mainContext) === null) {
-    normalized.mainContext = clampSidebarWidthForAnyFeature("mainContext", legacyContext);
-  }
-
-  const legacyInspector = normalizeSidebarWidthInput("inspector", input.inspector);
-  if (
-    legacyInspector !== null &&
-    normalizeSidebarWidthInput("scrivenerInspector", input.scrivenerInspector) === null
-  ) {
-    normalized.scrivenerInspector = clampSidebarWidthForAnyFeature("scrivenerInspector", legacyInspector);
-  }
-
-  return normalized;
+const DEFAULT_SCRIVENER_SECTIONS: ScrivenerSectionsState = {
+  manuscript: true,
+  characters: true,
+  world: false,
+  scrap: false,
+  snapshots: false,
+  analysis: false,
+  trash: false,
 };
 
 interface UIStore {
@@ -108,6 +88,10 @@ interface UIStore {
   isManuscriptMenuOpen: boolean;
   docsRightTab: DocsRightTab;
   isBinderBarOpen: boolean;
+  scrivenerSidebarOpen: boolean;
+  scrivenerInspectorOpen: boolean;
+  scrivenerSections: ScrivenerSectionsState;
+  hasHydrated: boolean;
   focusedClosableTarget: FocusedClosableTarget | null;
 
   // Sidebar Widths (in pixels)
@@ -128,7 +112,12 @@ interface UIStore {
   setManuscriptMenuOpen: (isOpen: boolean) => void;
   setDocsRightTab: (tab: DocsRightTab) => void;
   setBinderBarOpen: (isOpen: boolean) => void;
+  setScrivenerSidebarOpen: (isOpen: boolean) => void;
+  setScrivenerInspectorOpen: (isOpen: boolean) => void;
+  setScrivenerSectionOpen: (section: ScrivenerSectionId, isOpen: boolean) => void;
+  setScrivenerSections: (sections: Partial<ScrivenerSectionsState>) => void;
   setSidebarWidth: (feature: string, width: number) => void;
+  setHasHydrated: (value: boolean) => void;
   setFocusedClosableTarget: (target: FocusedClosableTarget | null) => void;
   closeFocusedSurface: () => boolean;
 
@@ -149,6 +138,10 @@ export const useUIStore = create<UIStore>()(
       isManuscriptMenuOpen: false,
       docsRightTab: null,
       isBinderBarOpen: true,
+      scrivenerSidebarOpen: true,
+      scrivenerInspectorOpen: true,
+      scrivenerSections: { ...DEFAULT_SCRIVENER_SECTIONS },
+      hasHydrated: false,
       focusedClosableTarget: null,
       sidebarWidths: { ...DEFAULT_SIDEBAR_WIDTHS },
 
@@ -253,6 +246,36 @@ export const useUIStore = create<UIStore>()(
           state.isBinderBarOpen === isBinderBarOpen
             ? state
             : { isBinderBarOpen }),
+      setScrivenerSidebarOpen: (scrivenerSidebarOpen) =>
+        set((state) =>
+          state.scrivenerSidebarOpen === scrivenerSidebarOpen
+            ? state
+            : { scrivenerSidebarOpen }),
+      setScrivenerInspectorOpen: (scrivenerInspectorOpen) =>
+        set((state) =>
+          state.scrivenerInspectorOpen === scrivenerInspectorOpen
+            ? state
+            : { scrivenerInspectorOpen }),
+      setScrivenerSectionOpen: (section, isOpen) =>
+        set((state) => {
+          if (state.scrivenerSections[section] === isOpen) return state;
+          return {
+            scrivenerSections: {
+              ...state.scrivenerSections,
+              [section]: isOpen,
+            },
+          };
+        }),
+      setScrivenerSections: (sections) =>
+        set((state) => {
+          const nextSections = {
+            ...state.scrivenerSections,
+            ...sections,
+          };
+          const unchanged = (Object.keys(DEFAULT_SCRIVENER_SECTIONS) as ScrivenerSectionId[])
+            .every((section) => state.scrivenerSections[section] === nextSections[section]);
+          return unchanged ? state : { scrivenerSections: nextSections };
+        }),
       setMainView: (mainView) =>
         set((state) =>
           state.mainView.type === mainView.type && state.mainView.id === mainView.id
@@ -271,6 +294,8 @@ export const useUIStore = create<UIStore>()(
             },
           };
         }),
+      setHasHydrated: (hasHydrated) =>
+        set((state) => (state.hasHydrated === hasHydrated ? state : { hasHydrated })),
       setFocusedClosableTarget: (focusedClosableTarget) =>
         set((state) => {
           const current = state.focusedClosableTarget;
@@ -351,7 +376,10 @@ export const useUIStore = create<UIStore>()(
         isContextOpen: state.isContextOpen,
         isManuscriptMenuOpen: state.isManuscriptMenuOpen,
         isBinderBarOpen: state.isBinderBarOpen,
-        sidebarWidths: normalizeSidebarWidths(state.sidebarWidths),
+        scrivenerSidebarOpen: state.scrivenerSidebarOpen,
+        scrivenerInspectorOpen: state.scrivenerInspectorOpen,
+        scrivenerSections: state.scrivenerSections,
+        sidebarWidths: normalizeSidebarWidthsWithMigrations(state.sidebarWidths),
       }),
       merge: (persistedState, currentState) => {
         if (!isRecord(persistedState)) {
@@ -362,8 +390,17 @@ export const useUIStore = create<UIStore>()(
         return {
           ...currentState,
           ...typedPersisted,
-          sidebarWidths: normalizeSidebarWidths(typedPersisted.sidebarWidths),
+          scrivenerSections: {
+            ...DEFAULT_SCRIVENER_SECTIONS,
+            ...(isRecord(typedPersisted.scrivenerSections)
+              ? typedPersisted.scrivenerSections as Partial<ScrivenerSectionsState>
+              : {}),
+          },
+          sidebarWidths: normalizeSidebarWidthsWithMigrations(typedPersisted.sidebarWidths),
         };
+      },
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
       },
     },
   ),

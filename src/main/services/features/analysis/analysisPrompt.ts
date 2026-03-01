@@ -50,11 +50,11 @@ export const ANALYSIS_FEW_SHOT_EXAMPLES = `
 }
 
 예시 2 (모순점 발견):
-입력: "창끝이 닿자마자 방패에는 금이 가기 시작했다." (이전 챕터: "이 방패는 절대 부서지지 않는다")
+입력: "방패는 절대 깨지지 않는다고 믿었다. 하지만 다음 문장에서 그 방패가 바로 산산조각 났다."
 출력: {
   "type": "suggestion",
-  "content": "3챕터에서 언급된 '절대 방패' 설정과 이 장면의 충돌이 조금 신경 쓰입니다. 독자들이 '어? 아까는 안 부서진다며?'라고 생각할 수도 있을 것 같아요.",
-  "quote": "창끝이 닿자마자 방패에는 금이 가기 시작했다.",
+  "content": "같은 본문 안에서 방패의 내구도 설정이 상충돼 독자가 설정을 헷갈릴 수 있습니다. 두 문장 사이의 조건이나 예외를 한 줄 보강하면 자연스러워집니다.",
+  "quote": "방패는 절대 깨지지 않는다고 믿었다. 하지만 다음 문장에서 그 방패가 바로 산산조각 났다.",
   "contextId": "ctx-2"
 }
 
@@ -87,10 +87,12 @@ export const ANALYSIS_SYSTEM_INSTRUCTION = `
 
 ## 제약 사항
 1. 독자 관점에서 분석 (전지적 시점 X)
-2. 구체적인 텍스트 인용 필수 (quote 필드 활용)
+2. 구체적인 텍스트 인용 필수 (quote 필드 활용, 원고 본문의 정확한 부분 문자열만 허용)
 3. 예의 바르고 존중하는 어조 유지
 4. 문제점만이 아닌 잘된 점도 언급
 5. JSONL 형식으로만 응답 (각 줄마다 JSON 객체 1개, 코드블록 금지)
+6. 제공된 원고 본문 외 정보 사용 금지 (외부 지식, 추측, 기억, 세계관 DB/캐릭터 DB 가정 금지)
+7. 본문에 없는 인물/설정/사건을 새로 만들어서 언급 금지
 
 ## 출력 형식
 - JSONL만 허용: 각 줄마다 JSON 객체 1개
@@ -103,6 +105,7 @@ export const ANALYSIS_SYSTEM_INSTRUCTION = `
 ## 중요
 - 작가의 창작 의도를 존중하되, 독자가 혼란스러울 부분은 명확히 지적
 - "이건 틀렸어요"가 아닌 "독자가 이렇게 느낄 수 있어요" 톤 유지
+- 근거가 부족하면 단정하지 말고, "본문 근거 부족"으로 명시
 `.trim();
 
 /**
@@ -110,7 +113,7 @@ export const ANALYSIS_SYSTEM_INSTRUCTION = `
  * AnalysisContext를 Gemini Prompt로 변환
  */
 export function formatAnalysisContext(context: AnalysisContext): string {
-  const { characters, terms, manuscript } = context;
+  const { manuscript } = context;
 
   let prompt = `# 원고 분석 요청\n\n`;
 
@@ -119,38 +122,22 @@ export function formatAnalysisContext(context: AnalysisContext): string {
   prompt += `**제목**: ${manuscript.title}\n\n`;
   prompt += `**내용**:\n${manuscript.content}\n\n`;
 
-  // 2. 등장 캐릭터
-  if (characters.length > 0) {
-    prompt += `## 등장 캐릭터\n`;
-    characters.forEach((char) => {
-      prompt += `- **${char.name}**: ${char.description}\n`;
-    });
-    prompt += `\n`;
-  }
-
-  // 3. 세계관 용어
-  if (terms.length > 0) {
-    prompt += `## 세계관 용어\n`;
-    terms.forEach((term) => {
-      prompt += `- **${term.term}** (${term.category}): ${term.definition}\n`;
-    });
-    prompt += `\n`;
-  }
-
-  // 4. 추출된 명사구 (NLP 결과)
+  // 2. 추출된 명사구 (원고 본문 기반 NLP 결과)
   if (manuscript.nounPhrases.length > 0) {
     prompt += `## 주요 명사구\n`;
     prompt += manuscript.nounPhrases.slice(0, 20).join(", ");
     prompt += `\n\n`;
   }
 
-  // 5. 분석 요청
+  // 3. 분석 요청
   prompt += `## 분석 요청\n`;
-  prompt += `위 원고를 독자 관점에서 분석해주세요.\n`;
+  prompt += `위 원고 본문만 근거로 독자 관점에서 분석해주세요.\n`;
   prompt += `- 독자가 느낄 감정, 몰입도\n`;
   prompt += `- 설정 모순, 캐릭터 일관성 문제\n`;
   prompt += `- 플롯 구멍, 개연성 문제\n`;
   prompt += `- 개선 제안\n\n`;
+  prompt += `중요: 본문에 없는 사실을 추가하지 마세요.\n`;
+  prompt += `reaction/suggestion의 quote는 반드시 본문에서 정확히 복사한 문장(또는 구절)이어야 합니다.\n`;
   prompt += `JSONL 형식으로만 응답하세요.\n`;
   prompt += `반드시 다음 구성으로 포함하세요 (각 줄 1개 JSON):\n`;
   prompt += `- intro 1개\n`;

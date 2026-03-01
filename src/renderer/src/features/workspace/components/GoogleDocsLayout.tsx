@@ -67,6 +67,19 @@ interface GoogleDocsLayoutProps {
   onOpenWorldGraph?: () => void;
 }
 
+const DOCS_TAB_WIDTH_FEATURE_MAP = {
+  character: "docsCharacter",
+  event: "docsEvent",
+  faction: "docsFaction",
+  world: "docsWorld",
+  scrap: "docsScrap",
+  analysis: "docsAnalysis",
+  snapshot: "docsSnapshot",
+  trash: "docsTrash",
+  editor: "docsEditor",
+  export: "docsExport",
+} as const;
+
 export default function GoogleDocsLayout({
   children,
   sidebar,
@@ -100,6 +113,7 @@ export default function GoogleDocsLayout({
     setBinderBarOpen,
     setSidebarWidth,
     setFocusedClosableTarget,
+    hasHydrated,
   } = useUIStore();
 
   /* Keep docs side panel opening behavior centralized */
@@ -121,16 +135,16 @@ export default function GoogleDocsLayout({
 
   const handleLeftResize = useSidebarResizeCommit("docsBinder", setSidebarWidth);
   const docsBinderConfig = getSidebarWidthConfig("docsBinder");
-  const handleCharacterResize = useSidebarResizeCommit("character", setSidebarWidth);
-  const handleEventResize = useSidebarResizeCommit("event", setSidebarWidth);
-  const handleFactionResize = useSidebarResizeCommit("faction", setSidebarWidth);
-  const handleWorldResize = useSidebarResizeCommit("world", setSidebarWidth);
-  const handleScrapResize = useSidebarResizeCommit("scrap", setSidebarWidth);
-  const handleAnalysisResize = useSidebarResizeCommit("analysis", setSidebarWidth);
-  const handleSnapshotResize = useSidebarResizeCommit("snapshot", setSidebarWidth);
-  const handleTrashResize = useSidebarResizeCommit("trash", setSidebarWidth);
-  const handleEditorResize = useSidebarResizeCommit("editor", setSidebarWidth);
-  const handleExportResize = useSidebarResizeCommit("export", setSidebarWidth);
+  const handleCharacterResize = useSidebarResizeCommit("docsCharacter", setSidebarWidth);
+  const handleEventResize = useSidebarResizeCommit("docsEvent", setSidebarWidth);
+  const handleFactionResize = useSidebarResizeCommit("docsFaction", setSidebarWidth);
+  const handleWorldResize = useSidebarResizeCommit("docsWorld", setSidebarWidth);
+  const handleScrapResize = useSidebarResizeCommit("docsScrap", setSidebarWidth);
+  const handleAnalysisResize = useSidebarResizeCommit("docsAnalysis", setSidebarWidth);
+  const handleSnapshotResize = useSidebarResizeCommit("docsSnapshot", setSidebarWidth);
+  const handleTrashResize = useSidebarResizeCommit("docsTrash", setSidebarWidth);
+  const handleEditorResize = useSidebarResizeCommit("docsEditor", setSidebarWidth);
+  const handleExportResize = useSidebarResizeCommit("docsExport", setSidebarWidth);
 
   const rightTabResizeHandlers: Record<Exclude<DocsRightTab, null>, (panelSize: PanelSize) => void> = useMemo(() => ({
     character: handleCharacterResize,
@@ -168,12 +182,15 @@ export default function GoogleDocsLayout({
 
   const rightSavedPxWidth = activeRightTab
     ? clampSidebarWidth(
-      activeRightTab,
-      sidebarWidths[activeRightTab] || getSidebarDefaultWidth(activeRightTab),
+      DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab],
+      sidebarWidths[DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab]]
+        || getSidebarDefaultWidth(DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab]),
     )
-    : getSidebarDefaultWidth("character");
+    : getSidebarDefaultWidth("docsCharacter");
 
-  const rightWidthConfig = getSidebarWidthConfig(activeRightTab || "character");
+  const rightWidthConfig = getSidebarWidthConfig(
+    activeRightTab ? DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab] : "docsCharacter",
+  );
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-sans transition-colors duration-200">
@@ -251,7 +268,12 @@ export default function GoogleDocsLayout({
 
       {/* 4. Main Body */}
       <div className="flex-1 flex flex-row overflow-hidden relative">
-        <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative" id="google-docs-layout">
+        <PanelGroup
+          key={hasHydrated ? "docs-layout-hydrated" : "docs-layout-cold"}
+          orientation="horizontal"
+          className="flex w-full h-full flex-1 overflow-hidden relative"
+          id="google-docs-layout"
+        >
 
           {/* Floating Sidebar Toggle (Visible when closed) - Placed securely z-50 */}
           {!isSidebarOpen && (
@@ -330,7 +352,7 @@ export default function GoogleDocsLayout({
 
               <Panel
                 key={`right-context-panel-${activeRightTab}`}
-                id="right-context-panel"
+                id={`right-context-panel-${activeRightTab}`}
                 defaultSize={toPxSize(rightSavedPxWidth)}
                 minSize={toPxSize(rightWidthConfig.minPx)}
                 maxSize={toPxSize(rightWidthConfig.maxPx)}

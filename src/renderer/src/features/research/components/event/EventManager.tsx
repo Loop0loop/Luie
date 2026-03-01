@@ -31,7 +31,6 @@ export default function EventManager() {
         sidebarWidths[sidebarFeature] || getSidebarDefaultWidth(sidebarFeature),
     );
     const handleSidebarResize = useSidebarResizeCommit(sidebarFeature, setSidebarWidth);
-
     const {
         selectedEventId,
         setSelectedEventId,
@@ -69,7 +68,7 @@ export default function EventManager() {
                 </PanelResizeHandle>
 
                 {/* RIGHT MAIN - Wiki View */}
-                <Panel id="main" minSize={toPercentSize(40)}>
+                <Panel id="main" minSize={toPercentSize(20)}>
                     <div className="h-full w-full overflow-hidden flex flex-col">
                         {selectedEvent ? (
                             <EventDetailView

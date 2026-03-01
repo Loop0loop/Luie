@@ -16,9 +16,6 @@ import {
   LUIE_PACKAGE_EXTENSION,
   LUIE_PACKAGE_META_FILENAME,
   LUIE_MANUSCRIPT_DIR,
-  LUIE_WORLD_DIR,
-  LUIE_WORLD_CHARACTERS_FILE,
-  LUIE_WORLD_TERMS_FILE,
   MARKDOWN_EXTENSION,
 } from "../../../shared/constants/index.js";
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
@@ -30,14 +27,6 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3-flash-preview";
 
 type LuieMeta = {
   chapters?: Array<{ id: string; title?: string; order?: number }>;
-};
-
-type LuieCharactersFile = {
-  characters?: Array<{ name?: string; description?: string }>;
-};
-
-type LuieTermsFile = {
-  terms?: Array<{ term?: string; definition?: string; category?: string }>;
 };
 
 const parseLuieJsonSafe = <T>(
@@ -122,15 +111,13 @@ class ManuscriptAnalysisService {
       const safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
 
       // 2. .luie 내부 데이터 로드
-      const [metaRaw, chapterContent, charactersRaw, termsRaw] = await Promise.all([
+      const [metaRaw, chapterContent] = await Promise.all([
         readLuieEntry(safeProjectPath, LUIE_PACKAGE_META_FILENAME, logger),
         readLuieEntry(
           safeProjectPath,
           `${LUIE_MANUSCRIPT_DIR}/${chapterId}${MARKDOWN_EXTENSION}`,
           logger,
         ),
-        readLuieEntry(safeProjectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`, logger),
-        readLuieEntry(safeProjectPath, `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`, logger),
       ]);
 
       if (!chapterContent) {
@@ -149,40 +136,6 @@ class ManuscriptAnalysisService {
       const chapterMeta = meta?.chapters?.find((entry) => entry.id === chapterId);
       const chapterTitle = chapterMeta?.title ?? "Untitled";
 
-      const charactersFile = parseLuieJsonSafe<LuieCharactersFile>(
-        charactersRaw,
-        { characters: [] },
-        {
-          projectPath: safeProjectPath,
-          entryPath: `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`,
-          label: "world characters",
-        },
-      );
-      const termsFile = parseLuieJsonSafe<LuieTermsFile>(
-        termsRaw,
-        { terms: [] },
-        {
-          projectPath: safeProjectPath,
-          entryPath: `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`,
-          label: "world terms",
-        },
-      );
-
-      const characters = (charactersFile.characters ?? [])
-        .filter((char) => Boolean(char?.name))
-        .map((char) => ({
-          name: char?.name ?? "",
-          description: char?.description ?? "",
-        }));
-
-      const terms = (termsFile.terms ?? [])
-        .filter((term) => Boolean(term?.term))
-        .map((term) => ({
-          term: term?.term ?? "",
-          definition: term?.definition ?? "",
-          category: term?.category ?? "기타",
-        }));
-
       const chapter = {
         id: chapterId,
         title: chapterTitle,
@@ -192,16 +145,14 @@ class ManuscriptAnalysisService {
       logger.info("Loaded .luie analysis data", {
         chapterId,
         chapterTitle,
-        characterCount: characters.length,
-        termCount: terms.length,
         contentLength: chapterContent.length,
       });
 
       // 3. 분석 컨텍스트 구성
       const context = manuscriptAnalyzer.buildAnalysisContext(
         chapter,
-        characters,
-        terms,
+        [],
+        [],
       );
 
       // 4. Gemini 스트리밍 분석
@@ -271,10 +222,14 @@ ${formatAnalysisContext(context)}
 ${runId}
 
 # Style
-같은 요청이어도 표현을 바꿔서 답변하세요. 이전 응답과 동일 문장을 반복하지 마세요.`;
+같은 요청이어도 표현을 바꿔서 답변하세요. 이전 응답과 동일 문장을 반복하지 마세요.
+본문에 없는 사실은 절대 추가하지 마세요.
+reaction/suggestion의 quote는 반드시 본문에 있는 문구를 그대로 사용하세요.`;
 
     const items: AnalysisItem[] = [];
     let itemCounter = 0;
+    const seenSignatures = new Set<string>();
+    const normalizedManuscript = context.manuscript.content.replace(/\s+/g, " ").trim();
 
     // 사용 가능한 모델 목록 (fallback)
     const modelCandidates = [
@@ -310,6 +265,37 @@ ${runId}
       const emitItem = (itemData: AnalysisItemResult) => {
         try {
           const validated = AnalysisItemSchema.parse(itemData);
+          const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
+
+          const requiresQuote =
+            validated.type === "reaction" || validated.type === "suggestion";
+          const normalizedQuote = normalize(validated.quote ?? "");
+          if (requiresQuote && !normalizedQuote) {
+            logger.warn("Skipping analysis item without quote", {
+              chapterId,
+              type: validated.type,
+            });
+            return;
+          }
+
+          if (requiresQuote && normalizedManuscript && !normalizedManuscript.includes(normalizedQuote)) {
+            logger.warn("Skipping analysis item with quote outside manuscript", {
+              chapterId,
+              type: validated.type,
+              quotePreview: normalizedQuote.slice(0, 120),
+            });
+            return;
+          }
+
+          const signature = `${validated.type}|${normalize(validated.content).toLowerCase()}|${normalizedQuote.toLowerCase()}`;
+          if (seenSignatures.has(signature)) {
+            logger.info("Skipping duplicate analysis item", {
+              chapterId,
+              type: validated.type,
+            });
+            return;
+          }
+          seenSignatures.add(signature);
 
           const item: AnalysisItem = {
             id: `analysis-${++itemCounter}`,
@@ -320,7 +306,7 @@ ${runId}
           };
 
           items.push(item);
-          parsedItems.push(itemData);
+          parsedItems.push(validated);
 
           logger.info("Attempting to send stream item", {
             itemId: item.id,
@@ -354,7 +340,7 @@ ${runId}
           contents: [{ role: "user", parts: [{ text: promptText }] }],
           config: {
             responseMimeType: "text/plain",
-            temperature: 0.8,
+            temperature: 0.5,
             topP: 0.9,
             topK: 40,
           },

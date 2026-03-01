@@ -1,13 +1,14 @@
 import { useCallback } from "react";
 import type { DragData } from "@shared/ui/GlobalDragContext";
 import type { EditorUiMode } from "@shared/types";
+import { openDocsRightTab } from "@renderer/features/workspace/services/docsPanelService";
 import type {
     ResizablePanelData,
     WorldTab,
 } from "@renderer/features/workspace/stores/uiStore";
 
 type ScrivenerMainView = {
-    type: "editor" | "character" | "world" | "memo" | "trash" | "analysis";
+    type: "editor" | "character" | "event" | "faction" | "world" | "memo" | "trash" | "analysis";
     id?: string;
 };
 
@@ -29,6 +30,34 @@ export function useWorkspaceDropHandlers({
     setWorldTab,
     addPanel,
 }: DropHandlerDependencies) {
+    const isDocsLikeMode = uiMode === "docs" || uiMode === "editor";
+
+    const getDocsTabByDragType = useCallback((type: DragData["type"]) => {
+        switch (type) {
+            case "character":
+                return "character" as const;
+            case "event":
+                return "event" as const;
+            case "faction":
+                return "faction" as const;
+            case "world":
+            case "mindmap":
+            case "plot":
+            case "drawing":
+            case "synopsis":
+                return "world" as const;
+            case "memo":
+                return "scrap" as const;
+            case "analysis":
+                return "analysis" as const;
+            case "snapshot":
+                return "snapshot" as const;
+            case "trash":
+                return "trash" as const;
+            default:
+                return null;
+        }
+    }, []);
 
     const handleDropToCenter = useCallback((data: DragData) => {
         if (data.type === "chapter") {
@@ -36,10 +65,24 @@ export function useWorkspaceDropHandlers({
             return;
         }
 
+        if (isDocsLikeMode) {
+            const docsTab = getDocsTabByDragType(data.type);
+            if (docsTab) {
+                openDocsRightTab(docsTab);
+            }
+            return;
+        }
+
         if (uiMode === "scrivener") {
             switch (data.type) {
                 case "character":
                     setMainView({ type: "character", id: data.id });
+                    break;
+                case "event":
+                    setMainView({ type: "event", id: data.id });
+                    break;
+                case "faction":
+                    setMainView({ type: "faction", id: data.id });
                     break;
                 case "world":
                     setWorldTab("terms");
@@ -76,6 +119,12 @@ export function useWorkspaceDropHandlers({
                 case "character":
                     handleSelectResearchItem("character");
                     break;
+                case "event":
+                    addPanel({ type: "research", tab: "event", id: data.id });
+                    break;
+                case "faction":
+                    addPanel({ type: "research", tab: "faction", id: data.id });
+                    break;
                 case "world":
                 case "mindmap":
                 case "plot":
@@ -91,9 +140,26 @@ export function useWorkspaceDropHandlers({
                     break;
             }
         }
-    }, [uiMode, handleSelectChapter, handleSelectResearchItem, setMainView, setWorldTab]);
+    }, [
+        getDocsTabByDragType,
+        handleSelectChapter,
+        handleSelectResearchItem,
+        isDocsLikeMode,
+        addPanel,
+        setMainView,
+        setWorldTab,
+        uiMode,
+    ]);
 
     const handleDropToSplit = useCallback((data: DragData, side?: "left" | "right" | "bottom") => {
+        if (isDocsLikeMode) {
+            const docsTab = getDocsTabByDragType(data.type);
+            if (docsTab) {
+                openDocsRightTab(docsTab);
+            }
+            return;
+        }
+
         let insertAt: number | undefined;
         if (side === "left") insertAt = 0;
 
@@ -103,6 +169,12 @@ export function useWorkspaceDropHandlers({
                 break;
             case "character":
                 addPanel({ type: "research", tab: "character", id: data.id }, insertAt);
+                break;
+            case "event":
+                addPanel({ type: "research", tab: "event", id: data.id }, insertAt);
+                break;
+            case "faction":
+                addPanel({ type: "research", tab: "faction", id: data.id }, insertAt);
                 break;
             case "world":
             case "mindmap":
@@ -118,7 +190,7 @@ export function useWorkspaceDropHandlers({
                 addPanel({ type: "research", tab: "analysis", id: data.id }, insertAt);
                 break;
         }
-    }, [addPanel]);
+    }, [addPanel, getDocsTabByDragType, isDocsLikeMode]);
 
     return {
         handleDropToCenter,

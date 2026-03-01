@@ -29,6 +29,7 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
     isSidebarOpen,
     isContextOpen,
     sidebarWidths,
+    hasHydrated,
     setSidebarOpen,
     setContextOpen,
     setSidebarWidth,
@@ -53,7 +54,11 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
     <div className="flex flex-col h-screen bg-app text-fg">
       <WindowBar />
 
-      <PanelGroup orientation="horizontal" className="flex flex-1 overflow-hidden relative w-full h-full">
+      <PanelGroup
+        key={hasHydrated ? "main-layout-hydrated" : "main-layout-cold"}
+        orientation="horizontal"
+        className="flex flex-1 overflow-hidden relative w-full h-full"
+      >
         {/* Sidebar */}
         {isSidebarOpen && (
           <Panel

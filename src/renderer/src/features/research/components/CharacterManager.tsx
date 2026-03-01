@@ -31,7 +31,6 @@ export default function CharacterManager() {
     sidebarWidths[sidebarFeature] || getSidebarDefaultWidth(sidebarFeature),
   );
   const handleSidebarResize = useSidebarResizeCommit(sidebarFeature, setSidebarWidth);
-
   const {
     selectedCharacterId,
     setSelectedCharacterId,
@@ -73,7 +72,7 @@ export default function CharacterManager() {
         </PanelResizeHandle>
 
         {/* RIGHT MAIN - Wiki View */}
-        <Panel id="main" minSize={toPercentSize(40)}>
+        <Panel id="main" minSize={toPercentSize(20)}>
           <div className="h-full w-full overflow-hidden flex flex-col">
             {selectedChar ? (
               <WikiDetailView

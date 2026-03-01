@@ -4,6 +4,22 @@ export type SidebarWidthFeature =
   | "docsBinder"
   | "scrivenerBinder"
   | "scrivenerInspector"
+  | "docsCharacter"
+  | "docsEvent"
+  | "docsFaction"
+  | "docsWorld"
+  | "docsScrap"
+  | "docsAnalysis"
+  | "docsSnapshot"
+  | "docsTrash"
+  | "docsEditor"
+  | "docsExport"
+  | "editorCharacter"
+  | "editorWorld"
+  | "editorScrap"
+  | "editorAnalysis"
+  | "editorSnapshot"
+  | "editorTrash"
   | "character"
   | "event"
   | "faction"
@@ -33,13 +49,13 @@ export type SidebarWidthConfig = {
 
 const RIGHT_CONTEXT_WIDTH_CONFIG: SidebarWidthConfig = {
   minPx: 320,
-  maxPx: 1400,
-  defaultPx: 900,
+  maxPx: 560,
+  defaultPx: 420,
 };
 
 const RESEARCH_LEFT_WIDTH_CONFIG: SidebarWidthConfig = {
   minPx: 145,
-  maxPx: 530,
+  maxPx: 420,
   defaultPx: 210,
 };
 
@@ -49,6 +65,23 @@ export const SIDEBAR_WIDTH_CONFIG: Record<SidebarWidthFeature, SidebarWidthConfi
   docsBinder: { minPx: 300, maxPx: 520, defaultPx: 360 },
   scrivenerBinder: { minPx: 220, maxPx: 440, defaultPx: 260 },
   scrivenerInspector: { minPx: 245, maxPx: 400, defaultPx: 350 },
+  docsCharacter: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
+  docsEvent: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
+  docsFaction: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
+  docsWorld: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
+  docsScrap: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
+  docsAnalysis: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
+  docsSnapshot: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
+  docsTrash: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
+  docsEditor: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
+  docsExport: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
+  editorCharacter: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
+  editorWorld: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
+  editorScrap: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
+  editorAnalysis: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
+  editorSnapshot: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
+  editorTrash: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
+  // Legacy shared right-panel keys (read only for migration)
   character: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
   event: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
   faction: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
@@ -129,6 +162,83 @@ export const normalizeSidebarWidthInput = (
   const numeric = getNumeric(value);
   if (numeric === null) return null;
   return clampSidebarWidthForAnyFeature(feature, numeric);
+};
+
+const applyLegacyRightWidthMigration = (
+  input: Record<string, unknown>,
+  normalized: Record<string, number>,
+): void => {
+  const copyLegacyWidthIfMissing = (
+    legacyKey: string,
+    targetKeys: SidebarWidthFeature[],
+  ) => {
+    const legacyWidth = normalizeSidebarWidthInput(legacyKey, input[legacyKey]);
+    if (legacyWidth === null) return;
+
+    targetKeys.forEach((targetKey) => {
+      if (normalizeSidebarWidthInput(targetKey, input[targetKey]) !== null) return;
+      normalized[targetKey] = clampSidebarWidthForAnyFeature(targetKey, legacyWidth);
+    });
+  };
+
+  copyLegacyWidthIfMissing("character", ["docsCharacter", "editorCharacter"]);
+  copyLegacyWidthIfMissing("event", ["docsEvent"]);
+  copyLegacyWidthIfMissing("faction", ["docsFaction"]);
+  copyLegacyWidthIfMissing("world", ["docsWorld", "editorWorld"]);
+  copyLegacyWidthIfMissing("scrap", ["docsScrap", "editorScrap"]);
+  copyLegacyWidthIfMissing("analysis", ["docsAnalysis", "editorAnalysis"]);
+  copyLegacyWidthIfMissing("snapshot", ["docsSnapshot", "editorSnapshot"]);
+  copyLegacyWidthIfMissing("trash", ["docsTrash", "editorTrash"]);
+  copyLegacyWidthIfMissing("editor", ["docsEditor"]);
+  copyLegacyWidthIfMissing("export", ["docsExport"]);
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+export const normalizeSidebarWidthsWithMigrations = (
+  input: unknown,
+): Record<string, number> => {
+  const normalized: Record<string, number> = buildDefaultSidebarWidths();
+  if (!isRecord(input)) {
+    return normalized;
+  }
+
+  Object.entries(input).forEach(([key, rawValue]) => {
+    const width = normalizeSidebarWidthInput(key, rawValue);
+    if (width === null) return;
+    normalized[key] = width;
+  });
+
+  const legacyBinder = normalizeSidebarWidthInput("binder", input.binder);
+  if (legacyBinder !== null) {
+    if (normalizeSidebarWidthInput("mainSidebar", input.mainSidebar) === null) {
+      normalized.mainSidebar = clampSidebarWidthForAnyFeature("mainSidebar", legacyBinder);
+    }
+    if (normalizeSidebarWidthInput("docsBinder", input.docsBinder) === null) {
+      normalized.docsBinder = clampSidebarWidthForAnyFeature("docsBinder", legacyBinder);
+    }
+    if (normalizeSidebarWidthInput("scrivenerBinder", input.scrivenerBinder) === null) {
+      normalized.scrivenerBinder = clampSidebarWidthForAnyFeature("scrivenerBinder", legacyBinder);
+    }
+  }
+
+  const legacyContext = normalizeSidebarWidthInput("context", input.context);
+  if (legacyContext !== null && normalizeSidebarWidthInput("mainContext", input.mainContext) === null) {
+    normalized.mainContext = clampSidebarWidthForAnyFeature("mainContext", legacyContext);
+  }
+
+  const legacyInspector = normalizeSidebarWidthInput("inspector", input.inspector);
+  if (
+    legacyInspector !== null &&
+    normalizeSidebarWidthInput("scrivenerInspector", input.scrivenerInspector) === null
+  ) {
+    normalized.scrivenerInspector = clampSidebarWidthForAnyFeature("scrivenerInspector", legacyInspector);
+  }
+
+  applyLegacyRightWidthMigration(input, normalized);
+
+  return normalized;
 };
 
 export const toPxSize = (value: number): string =>

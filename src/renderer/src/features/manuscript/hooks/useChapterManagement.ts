@@ -2,7 +2,7 @@
  * 챕터 관리 (생성, 수정, 삭제, 선택)
  */
 
-import { useState, useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
@@ -14,49 +14,123 @@ import {
 } from "@renderer/features/workspace/services/chapterNavigation";
 
 export function useChapterManagement() {
-  const [requestedChapterId, setRequestedChapterId] = useState<string | null>(
-    () => consumePendingChapterNavigation()?.chapterId ?? null,
-  );
-
+  const pendingChapterIdRef = useRef<string | null>(null);
   const { currentItem: currentProject } = useProjectStore();
   const {
     items: chapters,
+    currentItem: currentChapter,
+    setCurrent: setCurrentChapter,
     create: createChapter,
     update: updateChapter,
     delete: deleteChapter,
   } = useChapterStore(
     useShallow((state) => ({
       items: state.items,
+      currentItem: state.currentItem,
+      setCurrent: state.setCurrent,
       create: state.create,
       update: state.update,
       delete: state.delete,
     }))
   );
 
-  const activeChapterId =
-    requestedChapterId &&
-      chapters.some(
-        (c) => c.id === requestedChapterId && c.projectId === currentProject?.id,
-      )
-      ? requestedChapterId
-      : (chapters.find((c) => c.projectId === currentProject?.id)?.id ?? null);
+  const projectChapters = useMemo(
+    () => chapters.filter((c) => c.projectId === currentProject?.id),
+    [chapters, currentProject?.id],
+  );
 
-  const activeChapter = activeChapterId
-    ? chapters.find((c) => c.id === activeChapterId)
-    : undefined;
+  const activeChapter = useMemo(() => {
+    if (
+      currentChapter &&
+      currentChapter.projectId === currentProject?.id &&
+      projectChapters.some((chapter) => chapter.id === currentChapter.id)
+    ) {
+      return projectChapters.find((chapter) => chapter.id === currentChapter.id) ?? currentChapter;
+    }
+
+    return projectChapters[0];
+  }, [currentChapter, currentProject?.id, projectChapters]);
+
+  const activeChapterId = activeChapter?.id ?? null;
 
   const content = activeChapter?.content ?? "";
 
-  const handleSelectChapter = useCallback((id: string) => {
-    setRequestedChapterId(id);
-  }, []);
+  const handleSelectChapter = useCallback(
+    (id: string) => {
+      if (!currentProject) {
+        pendingChapterIdRef.current = id;
+        return;
+      }
+
+      const target = chapters.find(
+        (chapter) => chapter.id === id && chapter.projectId === currentProject.id,
+      );
+
+      if (!target) {
+        pendingChapterIdRef.current = id;
+        api.logger.warn("handleSelectChapter: target chapter not found", {
+          chapterId: id,
+          currentProjectId: currentProject.id,
+        });
+        return;
+      }
+
+      pendingChapterIdRef.current = null;
+      if (currentChapter?.id === target.id) {
+        return;
+      }
+      setCurrentChapter(target);
+    },
+    [chapters, currentChapter?.id, currentProject, setCurrentChapter],
+  );
 
   useEffect(() => {
+    const pending = consumePendingChapterNavigation();
+    if (pending?.chapterId) {
+      handleSelectChapter(pending.chapterId);
+    }
+
     return onChapterNavigationRequest((payload) => {
       if (!payload.chapterId) return;
-      setRequestedChapterId(payload.chapterId);
+      handleSelectChapter(payload.chapterId);
     });
-  }, []);
+  }, [handleSelectChapter]);
+
+  useEffect(() => {
+    if (!currentProject) {
+      if (currentChapter) {
+        setCurrentChapter(null);
+      }
+      return;
+    }
+
+    const pendingChapterId = pendingChapterIdRef.current;
+    if (pendingChapterId) {
+      const pendingTarget = chapters.find(
+        (chapter) => chapter.id === pendingChapterId && chapter.projectId === currentProject.id,
+      );
+      if (pendingTarget) {
+        pendingChapterIdRef.current = null;
+        if (currentChapter?.id !== pendingTarget.id) {
+          setCurrentChapter(pendingTarget);
+        }
+        return;
+      }
+    }
+
+    const isCurrentChapterValid =
+      currentChapter?.projectId === currentProject.id &&
+      chapters.some((chapter) => chapter.id === currentChapter.id);
+
+    if (isCurrentChapterValid) {
+      return;
+    }
+
+    const nextChapter = chapters.find((chapter) => chapter.projectId === currentProject.id) ?? null;
+    if ((nextChapter?.id ?? null) !== (currentChapter?.id ?? null)) {
+      setCurrentChapter(nextChapter);
+    }
+  }, [chapters, currentChapter, currentProject, setCurrentChapter]);
 
   const handleAddChapter = useCallback(async () => {
     if (!currentProject) {
@@ -64,11 +138,14 @@ export function useChapterManagement() {
       return;
     }
 
-    await createChapter({
+    const created = await createChapter({
       projectId: currentProject.id,
-      title: `Chapter ${chapters.length + 1}`,
+      title: `Chapter ${projectChapters.length + 1}`,
     });
-  }, [currentProject, createChapter, chapters.length]);
+    if (created) {
+      setCurrentChapter(created);
+    }
+  }, [currentProject, createChapter, projectChapters.length, setCurrentChapter]);
 
   const handleRenameChapter = useCallback(
     async (id: string, title: string) => {
@@ -84,7 +161,7 @@ export function useChapterManagement() {
         return;
       }
 
-      const source = chapters.find((c) => c.id === id);
+      const source = projectChapters.find((c) => c.id === id);
       if (!source) {
         return;
       }
@@ -97,19 +174,32 @@ export function useChapterManagement() {
       if (created?.id && source.content) {
         await updateChapter({ id: created.id, content: source.content });
       }
+
+      if (created) {
+        setCurrentChapter(created);
+      }
     },
-    [chapters, currentProject, createChapter, updateChapter],
+    [projectChapters, currentProject, createChapter, updateChapter, setCurrentChapter],
   );
 
   const handleDeleteChapter = useCallback(
     async (id: string) => {
+      const chaptersInCurrentProject = chapters.filter(
+        (chapter) => chapter.projectId === currentProject?.id,
+      );
+      const currentIndex = chaptersInCurrentProject.findIndex((chapter) => chapter.id === id);
+      const remaining = chaptersInCurrentProject.filter((chapter) => chapter.id !== id);
+      const deletingActiveChapter = activeChapterId === id;
+
       await deleteChapter(id);
-      if (activeChapterId === id) {
-        const remaining = chapters.filter((c) => c.id !== id);
-        setRequestedChapterId(remaining[0]?.id ?? null);
+
+      if (deletingActiveChapter) {
+        const nextIndex = Math.min(currentIndex, remaining.length - 1);
+        const fallback = nextIndex >= 0 ? remaining[nextIndex] : null;
+        setCurrentChapter(fallback ?? null);
       }
     },
-    [deleteChapter, activeChapterId, chapters],
+    [chapters, currentProject?.id, deleteChapter, activeChapterId, setCurrentChapter],
   );
 
   const handleSave = useCallback(

@@ -30,6 +30,15 @@ interface BinderSidebarProps {
     sidebarTopOffset: number;
 }
 
+const EDITOR_TAB_WIDTH_FEATURE_MAP = {
+    character: "editorCharacter",
+    world: "editorWorld",
+    scrap: "editorScrap",
+    analysis: "editorAnalysis",
+    snapshot: "editorSnapshot",
+    trash: "editorTrash",
+} as const;
+
 export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOffset }: BinderSidebarProps) {
     const { t } = useTranslation();
     const {
@@ -38,6 +47,7 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
         sidebarWidths,
         setSidebarWidth,
         setFocusedClosableTarget,
+        hasHydrated,
     } = useUIStore(
         useShallow((state) => ({
             docsRightTab: state.docsRightTab,
@@ -45,6 +55,7 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
             sidebarWidths: state.sidebarWidths,
             setSidebarWidth: state.setSidebarWidth,
             setFocusedClosableTarget: state.setFocusedClosableTarget,
+            hasHydrated: state.hasHydrated,
         }))
     );
 
@@ -61,12 +72,12 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
         [setDocsRightTab]
     );
 
-    const handleCharacterResize = useSidebarResizeCommit("character", setSidebarWidth);
-    const handleWorldResize = useSidebarResizeCommit("world", setSidebarWidth);
-    const handleScrapResize = useSidebarResizeCommit("scrap", setSidebarWidth);
-    const handleAnalysisResize = useSidebarResizeCommit("analysis", setSidebarWidth);
-    const handleSnapshotResize = useSidebarResizeCommit("snapshot", setSidebarWidth);
-    const handleTrashResize = useSidebarResizeCommit("trash", setSidebarWidth);
+    const handleCharacterResize = useSidebarResizeCommit("editorCharacter", setSidebarWidth);
+    const handleWorldResize = useSidebarResizeCommit("editorWorld", setSidebarWidth);
+    const handleScrapResize = useSidebarResizeCommit("editorScrap", setSidebarWidth);
+    const handleAnalysisResize = useSidebarResizeCommit("editorAnalysis", setSidebarWidth);
+    const handleSnapshotResize = useSidebarResizeCommit("editorSnapshot", setSidebarWidth);
+    const handleTrashResize = useSidebarResizeCommit("editorTrash", setSidebarWidth);
 
     const rightTabResizeHandlers: Record<BinderTab, (panelSize: PanelSize) => void> = useMemo(() => ({
         character: handleCharacterResize,
@@ -102,11 +113,14 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
 
     const savedPxWidth = activeRightTab
         ? clampSidebarWidth(
-            activeRightTab,
-            sidebarWidths[activeRightTab] || getSidebarDefaultWidth(activeRightTab),
+            EDITOR_TAB_WIDTH_FEATURE_MAP[activeRightTab],
+            sidebarWidths[EDITOR_TAB_WIDTH_FEATURE_MAP[activeRightTab]]
+            || getSidebarDefaultWidth(EDITOR_TAB_WIDTH_FEATURE_MAP[activeRightTab]),
         )
-        : getSidebarDefaultWidth("character");
-    const widthConfig = getSidebarWidthConfig(activeRightTab || "character");
+        : getSidebarDefaultWidth("editorCharacter");
+    const widthConfig = getSidebarWidthConfig(
+        activeRightTab ? EDITOR_TAB_WIDTH_FEATURE_MAP[activeRightTab] : "editorCharacter",
+    );
 
     const handleBackToSnapshotList = () => {
         setActiveRightTab("snapshot");
@@ -177,8 +191,8 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
             </PanelResizeHandle>
 
             <Panel
-                key={`binder-sidebar-${activeRightTab}`}
-                id="binder-sidebar"
+                key={`binder-sidebar-${activeRightTab}-${hasHydrated ? "hydrated" : "cold"}`}
+                id={`binder-sidebar-${activeRightTab}`}
                 defaultSize={toPxSize(savedPxWidth)}
                 minSize={toPxSize(widthConfig.minPx)}
                 maxSize={toPxSize(widthConfig.maxPx)}

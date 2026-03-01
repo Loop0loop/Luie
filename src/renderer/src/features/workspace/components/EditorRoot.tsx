@@ -21,6 +21,7 @@ import { useEditorStatsStore } from "@renderer/features/editor/stores/editorStat
 import { useChapterManagement } from "@renderer/features/manuscript/hooks/useChapterManagement";
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useWorkspaceDropHandlers } from "@renderer/features/workspace/hooks/useWorkspaceDropHandlers";
+import { useProjectLayoutPersistence } from "@renderer/features/workspace/hooks/useProjectLayoutPersistence";
 import { emitShortcutCommand } from "@renderer/features/workspace/hooks/useShortcutCommand";
 import { useDialog } from "@shared/ui/useDialog";
 import { openDocsRightTab as openDocsPanelTab } from "@renderer/features/workspace/services/docsPanelService";
@@ -70,6 +71,8 @@ export default function EditorRoot() {
     );
     const currentProject = useProjectStore((state) => state.currentProject);
     const updateProject = useProjectStore((state) => state.updateProject);
+
+    useProjectLayoutPersistence(currentProject?.id ?? null, uiMode);
 
     const {
         chapters,

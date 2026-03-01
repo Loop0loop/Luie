@@ -1,6 +1,5 @@
 import {
   type ReactNode,
-  useState,
   Suspense,
   useEffect,
   useRef,
@@ -54,20 +53,31 @@ export default function ScrivenerLayout({
   additionalPanels,
 }: ScrivenerLayoutProps) {
   const { t } = useTranslation();
-  const { mainView, panels, sidebarWidths, setSidebarWidth } = useUIStore(
-    useShallow((state: any) => ({
+  const {
+    mainView,
+    panels,
+    sidebarWidths,
+    hasHydrated,
+    scrivenerSidebarOpen: isSidebarOpen,
+    scrivenerInspectorOpen: isInspectorOpen,
+    setScrivenerSidebarOpen: setIsSidebarOpen,
+    setScrivenerInspectorOpen: setIsInspectorOpen,
+    setSidebarWidth,
+  } = useUIStore(
+    useShallow((state) => ({
       mainView: state.mainView,
       panels: state.panels,
       sidebarWidths: state.sidebarWidths,
+      hasHydrated: state.hasHydrated,
+      scrivenerSidebarOpen: state.scrivenerSidebarOpen,
+      scrivenerInspectorOpen: state.scrivenerInspectorOpen,
+      setScrivenerSidebarOpen: state.setScrivenerSidebarOpen,
+      setScrivenerInspectorOpen: state.setScrivenerInspectorOpen,
       setSidebarWidth: state.setSidebarWidth,
     }))
   );
   const editorSplitGroupRef = useRef<GroupImperativeHandle | null>(null);
   const previousPanelCountRef = useRef(panels.length);
-
-  // Layout State for visibility toggles
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isInspectorOpen, setIsInspectorOpen] = useState(true);
 
   const handleBinderResize = useSidebarResizeCommit("scrivenerBinder", setSidebarWidth);
   const handleInspectorResize = useSidebarResizeCommit("scrivenerInspector", setSidebarWidth);
@@ -142,7 +152,12 @@ export default function ScrivenerLayout({
 
       {/* 3. Main 3-Pane Body using react-resizable-panels entirely */}
       <div className="flex-1 flex overflow-hidden relative">
-        <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative" id="scrivener-layout">
+        <PanelGroup
+          key={hasHydrated ? "scrivener-layout-hydrated" : "scrivener-layout-cold"}
+          orientation="horizontal"
+          className="flex w-full h-full flex-1 overflow-hidden relative"
+          id="scrivener-layout"
+        >
 
           {/* Pane 1: Binder (Sidebar) */}
           {isSidebarOpen && (

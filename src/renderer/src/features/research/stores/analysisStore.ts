@@ -92,8 +92,17 @@ export const useAnalysisStore = create<AnalysisStore>((set, _get) => ({
     }
 
     if (chunk.item) {
+      const normalize = (value: string | undefined) =>
+        (value ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+      const incomingSignature = `${chunk.item.type}|${normalize(chunk.item.content)}|${normalize(chunk.item.quote)}`;
+
       set((state) => ({
-        items: [...state.items, chunk.item],
+        items: state.items.some((existing) => {
+          const existingSignature = `${existing.type}|${normalize(existing.content)}|${normalize(existing.quote)}`;
+          return existingSignature === incomingSignature;
+        })
+          ? state.items
+          : [...state.items, chunk.item],
       }));
     }
   },
