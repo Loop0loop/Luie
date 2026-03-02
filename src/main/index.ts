@@ -28,31 +28,18 @@ configureLogger({
 });
 
 const logger = createLogger("Main");
+const isDefaultApp = process.defaultApp === true;
 logger.info("Main process bootstrap", {
   execPath: process.execPath,
   argv: process.argv,
   isPackaged: app.isPackaged,
-  defaultApp: process.defaultApp,
+  defaultApp: isDefaultApp,
 });
-
-registerCrashReporting(logger);
-
-initDatabaseEnv();
-
-// Disable GPU acceleration for better stability
-app.disableHardwareAcceleration();
-
-if (process.platform === "darwin") {
-  app.on("open-url", (event, url) => {
-    event.preventDefault();
-    void handleDeepLinkUrl(url);
-  });
-}
 
 const registerLuieProtocol = (): void => {
   const protocol = "luie";
   let registered = false;
-  if (process.defaultApp) {
+  if (isDefaultApp) {
     const appEntry = process.argv[1] ? path.resolve(process.argv[1]) : "";
     if (appEntry) {
       registered = app.setAsDefaultProtocolClient(protocol, process.execPath, [appEntry]);
@@ -69,7 +56,7 @@ const registerLuieProtocol = (): void => {
     }
     logger.warn("Failed to register custom protocol for OAuth callback", {
       protocol,
-      defaultApp: process.defaultApp,
+      defaultApp: isDefaultApp,
       reason,
     });
     return;
@@ -84,15 +71,29 @@ const registerLuieProtocol = (): void => {
 
   logger.info("Custom protocol registered", {
     protocol,
-    defaultApp: process.defaultApp,
+    defaultApp: isDefaultApp,
   });
 };
-
-registerLuieProtocol();
 
 if (!registerSingleInstance(logger)) {
   app.quit();
 } else {
+  registerCrashReporting(logger);
+
+  initDatabaseEnv();
+
+  // Disable GPU acceleration for better stability
+  app.disableHardwareAcceleration();
+
+  if (process.platform === "darwin") {
+    app.on("open-url", (event, url) => {
+      event.preventDefault();
+      void handleDeepLinkUrl(url);
+    });
+  }
+
+  registerLuieProtocol();
+
   const callbackUrl = extractAuthCallbackUrl(process.argv);
   if (callbackUrl) {
     void handleDeepLinkUrl(callbackUrl);
@@ -102,4 +103,3 @@ if (!registerSingleInstance(logger)) {
   registerAppReady(logger);
   registerShutdownHandlers(logger);
 }
-

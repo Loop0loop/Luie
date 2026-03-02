@@ -34,7 +34,7 @@ const REDACTED_TEXT = '[REDACTED_TEXT]'
 const SENSITIVE_KEY_PATTERN =
   /(token|secret|authorization|api[-_]?key|password|cookie|jwt|verifier)/i
 const TEXT_KEY_PATTERN = /(content|synopsis|manuscript|chapterText|prompt)/i
-const PATH_KEY_PATTERN = /(path|dir|directory|cwd|execPath|userData|datasource)/i
+const PATH_KEY_PATTERN = /(path|dir|directory|cwd|execPath|userData|datasource|argv)/i
 const ABSOLUTE_PATH_PATTERN = /^(?:\/|[a-zA-Z]:\\|[a-zA-Z]:\/).+/
 const BEARER_PATTERN = /Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi
 const JWT_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/
@@ -71,7 +71,10 @@ function redactLogData(
   if (typeof value === 'bigint') {
     return value.toString()
   }
-  if (typeof value === 'undefined' || typeof value === 'function' || typeof value === 'symbol') {
+  if (typeof value === 'undefined') {
+    return undefined
+  }
+  if (typeof value === 'function' || typeof value === 'symbol') {
     return String(value)
   }
   if (value instanceof Date) {
@@ -141,23 +144,23 @@ class Logger {
       message,
       timestamp: new Date().toISOString(),
       context: this.context,
-      data: normalizedData,
+      ...(normalizedData !== undefined ? { data: normalizedData } : {}),
     }
 
     const formattedMessage = `[${entry.timestamp}] [${entry.level}] [${entry.context}] ${entry.message}`
 
     switch (level) {
       case LogLevel.DEBUG:
-        console.debug(formattedMessage, normalizedData || '')
+        console.debug(formattedMessage, normalizedData ?? '')
         break
       case LogLevel.INFO:
-        console.info(formattedMessage, normalizedData || '')
+        console.info(formattedMessage, normalizedData ?? '')
         break
       case LogLevel.WARN:
-        console.warn(formattedMessage, normalizedData || '')
+        console.warn(formattedMessage, normalizedData ?? '')
         break
       case LogLevel.ERROR:
-        console.error(formattedMessage, normalizedData || '')
+        console.error(formattedMessage, normalizedData ?? '')
         break
     }
 

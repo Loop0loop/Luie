@@ -66,6 +66,8 @@ type PrismaCommandResult = {
   stderr: string;
 };
 
+type PackagedSchemaMode = "bootstrap" | "prisma-migrate";
+
 type BetterSqlite3Statement<Row extends object = Record<string, unknown>> = {
   get: (...params: unknown[]) => Row | undefined;
   all: (...params: unknown[]) => Row[];
@@ -191,6 +193,11 @@ const runPrismaCommand = async (
       reject(failure);
     });
   });
+};
+
+const resolvePackagedSchemaMode = (): PackagedSchemaMode => {
+  const rawMode = (process.env.LUIE_PACKAGED_SCHEMA_MODE ?? "").trim().toLowerCase();
+  return rawMode === "prisma-migrate" ? "prisma-migrate" : "bootstrap";
 };
 
 class DatabaseService {
@@ -416,6 +423,16 @@ class DatabaseService {
       commandEnv: NodeJS.ProcessEnv;
     },
   ): Promise<void> {
+    const schemaMode = resolvePackagedSchemaMode();
+    if (schemaMode === "bootstrap") {
+      logger.info("Using packaged SQLite bootstrap schema mode", {
+        dbPath: context.dbPath,
+        schemaMode,
+      });
+      this.ensurePackagedSqliteSchema(context.dbPath);
+      return;
+    }
+
     const { dbExists, schemaPath, prismaPath, hasMigrations, commandEnv } = options;
     const hasSchemaFile = await pathExists(schemaPath);
     const hasPrismaBinary = await pathExists(prismaPath);
@@ -436,15 +453,17 @@ class DatabaseService {
           error,
           stdout: prismaError.stdout,
           stderr: prismaError.stderr,
+          schemaMode,
         });
       }
     } else {
-      logger.info("Prisma runtime assets not bundled; using packaged SQLite bootstrap", {
+      logger.warn("Prisma migrate mode requested, but migration assets are missing; using SQLite bootstrap fallback", {
         dbPath: context.dbPath,
         hasMigrations,
         hasSchemaFile,
         hasPrismaBinary,
         resourcesPath: process.resourcesPath,
+        schemaMode,
       });
     }
 

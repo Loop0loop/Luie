@@ -36,4 +36,21 @@ describe("logger redaction", () => {
     expect((payload.nested as Record<string, unknown>).synopsis).toBe("[REDACTED_TEXT]");
     expect(payload.ok).toBe("safe-value");
   });
+
+  it("redacts argv absolute paths and keeps undefined values as undefined", () => {
+    configureLogger({ minLevel: LogLevel.DEBUG, logToFile: false });
+    const logger = createLogger("RedactionTest");
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
+
+    logger.info("argv redaction check", {
+      argv: ["C:\\Users\\kaziz\\AppData\\Local\\Programs\\luie\\Luie.exe"],
+      defaultApp: undefined,
+    });
+
+    expect(infoSpy).toHaveBeenCalledTimes(1);
+    const payload = infoSpy.mock.calls[0]?.[1] as Record<string, unknown>;
+
+    expect((payload.argv as string[])[0]).toBe("[REDACTED_PATH]");
+    expect(payload.defaultApp).toBeUndefined();
+  });
 });

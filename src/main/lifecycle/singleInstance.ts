@@ -12,13 +12,20 @@ export const registerSingleInstance = (logger: Logger): boolean => {
     : app.requestSingleInstanceLock();
 
   if (!gotTheLock) {
-    logger.warn("Another instance is already running");
+    const callbackUrl = extractAuthCallbackUrl(process.argv);
+    logger.info("Secondary instance detected; forwarding to primary instance and exiting", {
+      hasCallbackUrl: Boolean(callbackUrl),
+      argv: process.argv,
+    });
     app.quit();
     return false;
   }
 
   app.on("second-instance", (_event, argv) => {
     const callbackUrl = extractAuthCallbackUrl(argv);
+    logger.info("Second instance event received", {
+      hasCallbackUrl: Boolean(callbackUrl),
+    });
     if (callbackUrl) {
       void handleDeepLinkUrl(callbackUrl);
     }
