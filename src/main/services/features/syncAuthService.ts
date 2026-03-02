@@ -18,7 +18,7 @@ const SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE = "SYNC_TOKEN_SECURE_STORAGE_UNAVAIL
 type SecretScope = "token" | "pending";
 
 type PendingPkce = {
-  state: string;
+  state?: string;
   verifier: string;
   createdAt: number;
 };
@@ -169,7 +169,6 @@ class SyncAuthService {
   private getPendingPkceFromSettings(): PendingPkce | null {
     const syncSettings = settingsManager.getSyncSettings();
     if (
-      !syncSettings.pendingAuthState ||
       !syncSettings.pendingAuthVerifierCipher ||
       !syncSettings.pendingAuthCreatedAt
     ) {
@@ -191,7 +190,7 @@ class SyncAuthService {
           createdAt: syncSettings.pendingAuthCreatedAt,
         });
       }
-      return {
+    return {
         state: syncSettings.pendingAuthState,
         verifier: decoded.plain,
         createdAt,
@@ -205,6 +204,12 @@ class SyncAuthService {
 
   private getPendingPkce(): PendingPkce | null {
     if (this.pendingPkce) {
+      if (!this.pendingPkce.state) {
+        const pendingAuthState = settingsManager.getSyncSettings().pendingAuthState;
+        if (pendingAuthState) {
+          this.pendingPkce.state = pendingAuthState;
+        }
+      }
       return this.pendingPkce;
     }
     const restored = this.getPendingPkceFromSettings();
@@ -247,9 +252,7 @@ class SyncAuthService {
     const { url } = getSupabaseConfigOrThrow();
     const verifier = createCodeVerifier();
     const challenge = createCodeChallenge(verifier);
-    const state = toBase64Url(randomBytes(24));
     this.storePendingPkce({
-      state,
       verifier,
       createdAt: Date.now(),
     });
@@ -257,7 +260,6 @@ class SyncAuthService {
     const authorizeUrl = new URL(`${url}/auth/v1/authorize`);
     authorizeUrl.searchParams.set("provider", "google");
     authorizeUrl.searchParams.set("redirect_to", OAUTH_REDIRECT_URI);
-    authorizeUrl.searchParams.set("state", state);
     authorizeUrl.searchParams.set("code_challenge", challenge);
     authorizeUrl.searchParams.set("code_challenge_method", "s256");
 
@@ -275,11 +277,17 @@ class SyncAuthService {
     }
 
     const parsed = new URL(callbackUrl);
-    const callbackState = parsed.searchParams.get("state");
-    const code = parsed.searchParams.get("code");
-    const error = parsed.searchParams.get("error");
-    const errorCode = parsed.searchParams.get("error_code");
-    const errorDescription = parsed.searchParams.get("error_description");
+    const queryParams = parsed.searchParams;
+    const rawHash = parsed.hash.startsWith("#") ? parsed.hash.slice(1) : parsed.hash;
+    const hashParams = new URLSearchParams(rawHash);
+    const readParam = (key: string): string | null =>
+      queryParams.get(key) ?? hashParams.get(key);
+
+    const callbackState = readParam("state");
+    const code = readParam("code");
+    const error = readParam("error");
+    const errorCode = readParam("error_code");
+    const errorDescription = readParam("error_description");
 
     if (error) {
       this.clearPendingPkce();
@@ -293,7 +301,11 @@ class SyncAuthService {
       this.clearPendingPkce();
       throw new Error("SYNC_AUTH_CODE_MISSING");
     }
-    if (!callbackState || callbackState !== pending.state) {
+    if (
+      pending.state &&
+      callbackState &&
+      callbackState !== pending.state
+    ) {
       this.clearPendingPkce();
       throw new Error("SYNC_AUTH_STATE_MISMATCH");
     }

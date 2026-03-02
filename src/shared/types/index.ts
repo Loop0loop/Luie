@@ -594,6 +594,21 @@ export interface SyncStatus extends SyncConnection {
   };
 }
 
+export type SyncAuthResultStatus = "success" | "error" | "stale";
+
+export type SyncAuthResultReason =
+  | "NO_PENDING"
+  | "EXPIRED"
+  | "STATE_MISMATCH"
+  | "UNKNOWN";
+
+export interface SyncAuthResult {
+  status: SyncAuthResultStatus;
+  reason?: SyncAuthResultReason;
+  detail?: string;
+  timestamp: string;
+}
+
 export interface SyncRunResult {
   success: boolean;
   message: string;

@@ -10,6 +10,7 @@ import type {
   AppBootstrapStatus,
   AppUpdateState,
   AppQuitPhasePayload,
+  SyncAuthResult,
   SyncStatus,
 } from "../shared/types/index.js";
 import {
@@ -766,6 +767,15 @@ const rendererApi = {
       ipcRenderer.on(IPC_CHANNELS.SYNC_STATUS_CHANGED, listener);
       return () => {
         ipcRenderer.removeListener(IPC_CHANNELS.SYNC_STATUS_CHANGED, listener);
+      };
+    },
+    onAuthResult: (callback: (result: SyncAuthResult) => void): (() => void) => {
+      const listener = (_event: unknown, result: SyncAuthResult) => {
+        callback(result);
+      };
+      ipcRenderer.on(IPC_CHANNELS.SYNC_AUTH_RESULT, listener);
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.SYNC_AUTH_RESULT, listener);
       };
     },
   },

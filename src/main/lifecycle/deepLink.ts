@@ -1,7 +1,7 @@
-import { app, shell } from "electron";
-import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { BrowserWindow } from "electron";
+import { IPC_CHANNELS } from "../../shared/ipc/channels.js";
 import { createLogger } from "../../shared/logger/index.js";
+import type { SyncAuthResult, SyncAuthResultReason } from "../../shared/types/index.js";
 import { windowManager } from "../manager/index.js";
 import { syncService } from "../services/features/syncService.js";
 
@@ -26,28 +26,15 @@ const focusMainWindow = (): void => {
   }
 };
 
-const buildAuthResultPageUrl = (status: "success" | "error", detail?: string): string => {
-  const query = new URLSearchParams({ status });
-  if (detail) {
-    query.set("detail", detail);
-  }
-
-  const queryString = query.toString();
-  const devServerUrl = process.env.VITE_DEV_SERVER_URL || "http://localhost:5173";
-  const useDevServer = !app.isPackaged && process.env.NODE_ENV !== "production";
-  if (useDevServer) {
-    return `${devServerUrl}/#auth-result?${queryString}`;
-  }
-
-  const rendererEntry = pathToFileURL(path.join(__dirname, "../renderer/index.html")).toString();
-  return `${rendererEntry}#auth-result?${queryString}`;
-};
-
-const openAuthResultPage = async (status: "success" | "error", detail?: string): Promise<void> => {
-  try {
-    await shell.openExternal(buildAuthResultPageUrl(status, detail));
-  } catch (error) {
-    logger.warn("Failed to open auth result page", { error, status });
+const broadcastAuthResult = (result: SyncAuthResult): void => {
+  const targets = BrowserWindow.getAllWindows();
+  for (const win of targets) {
+    if (win.isDestroyed()) continue;
+    try {
+      win.webContents.send(IPC_CHANNELS.SYNC_AUTH_RESULT, result);
+    } catch (error) {
+      logger.warn("Failed to broadcast OAuth result", { error });
+    }
   }
 };
 
@@ -65,6 +52,13 @@ const classifyCallbackFailure = (error: unknown): OAuthCallbackFailureReason => 
 
 const isStaleCallbackFailure = (reason: OAuthCallbackFailureReason): boolean =>
   reason === "NO_PENDING" || reason === "EXPIRED" || reason === "STATE_MISMATCH";
+
+const toSyncAuthReason = (reason: OAuthCallbackFailureReason): SyncAuthResultReason => {
+  if (reason === "NO_PENDING") return "NO_PENDING";
+  if (reason === "EXPIRED") return "EXPIRED";
+  if (reason === "STATE_MISMATCH") return "STATE_MISMATCH";
+  return "UNKNOWN";
+};
 
 export const extractAuthCallbackUrl = (argv: string[]): string | null => {
   for (const arg of argv) {
@@ -90,7 +84,10 @@ export const handleDeepLinkUrl = async (url: string): Promise<boolean> => {
   try {
     await syncService.handleOAuthCallback(url);
     focusMainWindow();
-    void openAuthResultPage("success");
+    broadcastAuthResult({
+      status: "success",
+      timestamp: new Date().toISOString(),
+    });
     logger.info("OAuth callback processed", { url });
     return true;
   } catch (error) {
@@ -99,7 +96,12 @@ export const handleDeepLinkUrl = async (url: string): Promise<boolean> => {
     const status = syncService.getStatus();
     if (status.connected && isStaleCallbackFailure(reason)) {
       focusMainWindow();
-      void openAuthResultPage("success", `STALE_CONNECTED:${reason}`);
+      broadcastAuthResult({
+        status: "stale",
+        reason: toSyncAuthReason(reason),
+        detail: message,
+        timestamp: new Date().toISOString(),
+      });
       logger.warn("OAuth callback arrived after connection was already established", {
         url,
         reason,
@@ -109,8 +111,12 @@ export const handleDeepLinkUrl = async (url: string): Promise<boolean> => {
     }
 
     focusMainWindow();
-    const detail = `${reason}:${message}`;
-    void openAuthResultPage("error", detail);
+    broadcastAuthResult({
+      status: "error",
+      reason: toSyncAuthReason(reason),
+      detail: message,
+      timestamp: new Date().toISOString(),
+    });
     logger.error(status.connected
       ? "Failed to process OAuth callback even though sync is connected"
       : "Failed to process OAuth callback", {

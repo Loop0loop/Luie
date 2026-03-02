@@ -169,6 +169,48 @@ export function useSettingsManager() {
         };
     }, []);
 
+    useEffect(() => {
+        const unsubscribe = api.sync.onAuthResult((result) => {
+            if (!result) return;
+
+            if (result.status === "success") {
+                showToast(
+                    t("settings.sync.toast.connected", "Google 계정 연결이 완료되었습니다."),
+                    "success",
+                );
+            } else if (result.status === "stale") {
+                showToast(
+                    t(
+                        "settings.sync.toast.staleCallback",
+                        "이미 처리된 로그인 콜백입니다. 현재 연결 상태를 유지합니다.",
+                    ),
+                    "info",
+                );
+            } else {
+                const message =
+                    result.reason === "STATE_MISMATCH"
+                        ? t(
+                            "settings.sync.toast.stateMismatch",
+                            "로그인 보안 검증(state)이 일치하지 않았습니다. 다시 로그인해 주세요.",
+                        )
+                        : result.reason === "EXPIRED"
+                            ? t("settings.sync.toast.callbackExpired", "로그인 요청이 만료되었습니다. 다시 로그인해 주세요.")
+                            : t("settings.sync.toast.connectFailed");
+                showToast(message, "error");
+            }
+
+            void (async () => {
+                const response = await api.sync.getStatus();
+                if (!response.success || !response.data) return;
+                const parsed = syncStatusSchema.safeParse(response.data);
+                if (!parsed.success) return;
+                setSyncStatus(parsed.data);
+            })();
+        });
+
+        return unsubscribe;
+    }, [showToast, t]);
+
     const handleCommitShortcuts = useCallback(
         (nextDrafts: Record<string, string>) => {
             if (shortcutUpdateLockRef.current) return;

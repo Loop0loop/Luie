@@ -21,6 +21,7 @@ import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { readLuieEntry } from "../../utils/luiePackage.js";
 import { ensureSafeAbsolutePath } from "../../utils/pathValidation.js";
 import { invokeGeminiProxy } from "./analysis/geminiApiKeyResolver.js";
+import { buildDeterministicAnalysisItems } from "./analysis/localFallbackAnalyzer.js";
 
 const logger = createLogger("ManuscriptAnalysisService");
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3-flash-preview";
@@ -507,6 +508,38 @@ reaction/suggestion의 quote는 반드시 본문에 있는 문구를 그대로 �
       });
     } catch (error) {
       logger.error("Gemini streaming failed", { error });
+      const fallback = buildDeterministicAnalysisItems(context);
+      if (fallback.length > 0) {
+        logger.warn("Using deterministic local fallback for analysis", {
+          chapterId,
+          fallbackCount: fallback.length,
+          reason: error instanceof Error ? error.message : String(error),
+        });
+
+        const fallbackItems: AnalysisItem[] = fallback.map((entry, index) => ({
+          id: `analysis-fallback-${index + 1}`,
+          type: entry.type,
+          content: entry.content,
+          quote: entry.quote,
+          contextId: entry.contextId,
+        }));
+
+        if (this.currentWindow && !this.currentWindow.isDestroyed()) {
+          for (const item of fallbackItems) {
+            this.currentWindow.webContents.send(IPC_CHANNELS.ANALYSIS_STREAM, {
+              item,
+              done: false,
+            });
+          }
+          this.currentWindow.webContents.send(IPC_CHANNELS.ANALYSIS_STREAM, {
+            item: null,
+            done: true,
+          });
+        }
+
+        this.analysisCache.set(chapterId, fallbackItems);
+        return;
+      }
       
       // 에러 타입 감지
       let errorCode: "API_KEY_MISSING" | "NETWORK_ERROR" | "QUOTA_EXCEEDED" | "INVALID_REQUEST" | "UNKNOWN" = "UNKNOWN";

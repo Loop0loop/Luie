@@ -256,7 +256,11 @@ export const koBase = {
       "conflicts": "충돌: 총 {{total}}건 (원고 {{chapters}} / 스크랩 {{memos}})",
       "toast": {
         "connectStarted": "브라우저에서 Google 로그인을 완료해 주세요.",
+        "connected": "Google 계정 연결이 완료되었습니다.",
         "connectFailed": "Google 연결에 실패했습니다.",
+        "staleCallback": "이미 처리된 로그인 콜백입니다. 현재 연결 상태를 유지합니다.",
+        "stateMismatch": "로그인 보안 검증(state)이 일치하지 않았습니다. 다시 로그인해 주세요.",
+        "callbackExpired": "로그인 요청이 만료되었습니다. 다시 로그인해 주세요.",
         "disconnectFailed": "연결 해제에 실패했습니다.",
         "disconnected": "연결이 해제되었습니다.",
         "syncFailed": "동기화에 실패했습니다.",
@@ -499,11 +503,11 @@ export const koBase = {
     }
   },
   "startupWizard": {
-    "title": "앱 구성중입니다",
+    "title": "작업 공간을 초기화하는 중입니다...",
     "subtitle": "필수 구성을 확인하고 있어요. 잠시만 기다려 주세요.",
     "status": {
-      "configuring": "앱 구성중입니다...",
-      "launching": "메인 화면을 여는 중입니다...",
+      "configuring": "작업 공간을 초기화하는 중입니다...",
+      "launching": "작업 공간을 초기화하는 중입니다...",
       "failed": "시작 구성에 실패했습니다."
     },
     "actions": {

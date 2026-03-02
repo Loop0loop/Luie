@@ -11,9 +11,7 @@ export default function StartupWizard() {
   const { t } = useTranslation();
   const [phase, setPhase] = useState<BootPhase>("configuring");
   const [statusMessage, setStatusMessage] = useState<string>(
-    t("startupWizard.status.configuring", {
-      defaultValue: "앱 구성중입니다...",
-    }),
+    t("bootstrap.initializing"),
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -21,11 +19,7 @@ export default function StartupWizard() {
   const runStartupFlow = useCallback(async () => {
     setPhase("configuring");
     setErrorMessage(null);
-    setStatusMessage(
-      t("startupWizard.status.configuring", {
-        defaultValue: "앱 구성중입니다...",
-      }),
-    );
+    setStatusMessage(t("bootstrap.initializing"));
 
     const readinessResponse = await api.startup.getReadiness();
     if (!readinessResponse.success || !readinessResponse.data) {
@@ -48,11 +42,7 @@ export default function StartupWizard() {
     }
 
     setPhase("launching");
-    setStatusMessage(
-      t("startupWizard.status.launching", {
-        defaultValue: "메인 화면을 여는 중입니다...",
-      }),
-    );
+    setStatusMessage(t("bootstrap.initializing"));
   }, [t]);
 
   useEffect(() => {
@@ -89,7 +79,7 @@ export default function StartupWizard() {
           </div>
 
           <h1 className="text-xl font-semibold">
-            {t("startupWizard.title", { defaultValue: "앱 구성중입니다" })}
+            {t("startupWizard.title", { defaultValue: "작업 공간을 초기화하는 중입니다..." })}
           </h1>
           <p className="text-sm text-muted">
             {t("startupWizard.subtitle", {

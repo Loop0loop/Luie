@@ -23,7 +23,6 @@ const WINDOW_BACKGROUND_COLOR = '#f4f4f5'
 
 class WindowManager {
   private mainWindow: BrowserWindow | null = null
-  private splashWindow: BrowserWindow | null = null
   private startupWizardWindow: BrowserWindow | null = null
 
   private resolveWindowIconPath(): string | undefined {
@@ -267,121 +266,6 @@ class WindowManager {
       this.mainWindow.show()
     }
     this.mainWindow.focus()
-  }
-
-  createSplashWindow(): BrowserWindow {
-    if (this.splashWindow && !this.splashWindow.isDestroyed()) {
-      return this.splashWindow
-    }
-
-    const windowIconPath = this.resolveWindowIconPath()
-    const splashHtml = `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Luie Starting</title>
-    <style>
-      :root { color-scheme: dark; }
-      html, body {
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        background: radial-gradient(circle at 15% 10%, #2a364f 0%, #10141f 45%, #0b0f17 100%);
-        color: #f1f5f9;
-        font-family: "Segoe UI", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
-      }
-      .shell {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 14px;
-      }
-      .logo {
-        width: 64px;
-        height: 64px;
-        border-radius: 18px;
-        background: linear-gradient(145deg, #5aa2ff, #2f6ef2);
-        box-shadow: 0 10px 26px rgba(47, 110, 242, 0.5);
-      }
-      .title {
-        font-size: 21px;
-        font-weight: 700;
-        letter-spacing: 0.2px;
-      }
-      .subtitle {
-        font-size: 13px;
-        color: #93a4bf;
-        min-height: 16px;
-      }
-      .spinner {
-        width: 26px;
-        height: 26px;
-        border: 3px solid rgba(148, 163, 184, 0.2);
-        border-top-color: #5aa2ff;
-        border-radius: 999px;
-        animation: spin 0.9s linear infinite;
-      }
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="shell">
-      <div class="logo"></div>
-      <div class="title">Luie</div>
-      <div class="subtitle">Starting...</div>
-      <div class="spinner"></div>
-    </div>
-  </body>
-</html>`
-
-    this.splashWindow = new BrowserWindow({
-      width: 420,
-      height: 300,
-      frame: false,
-      resizable: false,
-      minimizable: false,
-      maximizable: false,
-      fullscreenable: false,
-      alwaysOnTop: true,
-      movable: true,
-      show: false,
-      center: true,
-      title: `${APP_NAME} Starting`,
-      backgroundColor: '#0b0f17',
-      ...(windowIconPath ? { icon: windowIconPath } : {}),
-      webPreferences: {
-        sandbox: true,
-        contextIsolation: true,
-        nodeIntegration: false,
-      },
-    })
-
-    const splashUrl = `data:text/html;charset=UTF-8,${encodeURIComponent(splashHtml)}`
-    void this.splashWindow.loadURL(splashUrl).catch((error) => {
-      logger.error('Failed to load splash window', { error })
-    })
-    this.splashWindow.once('ready-to-show', () => {
-      if (this.splashWindow && !this.splashWindow.isDestroyed()) {
-        this.splashWindow.show()
-      }
-    })
-    this.splashWindow.on('closed', () => {
-      this.splashWindow = null
-    })
-
-    return this.splashWindow
-  }
-
-  closeSplashWindow(): void {
-    if (this.splashWindow && !this.splashWindow.isDestroyed()) {
-      this.splashWindow.close()
-    }
-    this.splashWindow = null
   }
 
   // ─── Export Window ────────────────────────────────────────────────────────

@@ -24,6 +24,7 @@ import type {
   SyncStatus,
   RuntimeSupabaseConfig,
   RuntimeSupabaseConfigView,
+  SyncAuthResult,
   StartupReadiness,
   WorldEntity,
   EntityRelation,
@@ -259,6 +260,7 @@ export type RendererApi = {
       }>
     >;
     onStatusChanged: (callback: (status: SyncStatus) => void) => () => void;
+    onAuthResult: (callback: (result: SyncAuthResult) => void) => () => void;
     resolveConflict: (resolution: { type: "chapter" | "memo"; id: string; resolution: "local" | "remote" }) => Promise<IPCResponse<void>>;
   };
   startup: {
@@ -327,6 +329,7 @@ const EVENT_SUBSCRIPTION_METHODS = new Set([
   "onStream",
   "onError",
   "onStatusChanged",
+  "onAuthResult",
   "onQuitPhase",
 ]);
 const VOID_METHODS = new Set(["setDirty"]);

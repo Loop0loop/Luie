@@ -256,7 +256,11 @@ export const enBase = {
       "conflicts": "Conflicts: {{total}} total (chapters {{chapters}} / scrap {{memos}})",
       "toast": {
         "connectStarted": "Complete Google sign-in in your browser.",
+        "connected": "Google account connected successfully.",
         "connectFailed": "Failed to connect Google.",
+        "staleCallback": "This login callback was already handled. Keeping the current connection.",
+        "stateMismatch": "OAuth state validation failed. Please sign in again.",
+        "callbackExpired": "Login request expired. Please sign in again.",
         "disconnectFailed": "Failed to disconnect.",
         "disconnected": "Disconnected successfully.",
         "syncFailed": "Sync failed.",
@@ -499,11 +503,11 @@ export const enBase = {
     }
   },
   "startupWizard": {
-    "title": "Preparing Luie",
+    "title": "Initializing workspace...",
     "subtitle": "Checking required setup. Please wait a moment.",
     "status": {
-      "configuring": "Configuring the app...",
-      "launching": "Opening main window...",
+      "configuring": "Initializing workspace...",
+      "launching": "Initializing workspace...",
       "failed": "Startup configuration failed."
     },
     "actions": {

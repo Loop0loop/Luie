@@ -29,9 +29,7 @@ const toHttpError = (status: number, message: string): HttpError => {
   return error;
 };
 
-const resolveProxyEndpoint = (
-  config: RuntimeSupabaseConfig,
-): string => {
+const resolveProxyEndpoint = (config: RuntimeSupabaseConfig): string => {
   const custom = process.env.LUIE_GEMINI_PROXY_URL?.trim();
   if (custom && custom.length > 0) {
     return custom;
@@ -66,16 +64,24 @@ const extractTextFromCandidates = (candidates: unknown): string | null => {
   return texts.join("\n").trim();
 };
 
-export const invokeGeminiProxy = async (
-  request: GeminiProxyRequest,
-): Promise<string> => {
-  const supabaseConfig = getSupabaseConfig();
-  if (!supabaseConfig) {
-    throw new Error(
-      "SUPABASE_NOT_CONFIGURED: runtime configuration is not completed. Set Supabase URL/Anon Key first.",
-    );
+const resolveLocalGeminiApiKey = (): string | null => {
+  const keyCandidates = [
+    process.env.GEMINI_API_KEY,
+    process.env.GOOGLE_GCP_API,
+    process.env.GOOGLE_API_KEY,
+  ];
+  for (const candidate of keyCandidates) {
+    if (typeof candidate !== "string") continue;
+    const trimmed = candidate.trim();
+    if (trimmed.length > 0) return trimmed;
   }
+  return null;
+};
 
+const invokeEdgeProxy = async (
+  request: GeminiProxyRequest,
+  supabaseConfig: RuntimeSupabaseConfig,
+): Promise<string> => {
   const accessToken = await syncService.getEdgeAccessToken();
   const endpoint = resolveProxyEndpoint(supabaseConfig);
 
@@ -105,4 +111,103 @@ export const invokeGeminiProxy = async (
     throw new Error("GEMINI_PROXY_EMPTY_RESPONSE");
   }
   return text;
+};
+
+const invokeLocalGemini = async (request: GeminiProxyRequest, apiKey: string): Promise<string> => {
+  const generationConfig: Record<string, unknown> = {};
+  if (request.responseMimeType) {
+    generationConfig.responseMimeType = request.responseMimeType;
+  }
+  if (request.responseSchema) {
+    generationConfig.responseSchema = request.responseSchema;
+  }
+  if (typeof request.temperature === "number") {
+    generationConfig.temperature = request.temperature;
+  }
+  if (typeof request.topP === "number") {
+    generationConfig.topP = request.topP;
+  }
+  if (typeof request.topK === "number") {
+    generationConfig.topK = request.topK;
+  }
+  if (typeof request.maxOutputTokens === "number") {
+    generationConfig.maxOutputTokens = request.maxOutputTokens;
+  }
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+      request.model,
+    )}:generateContent?key=${encodeURIComponent(apiKey)}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: request.prompt }] }],
+        generationConfig,
+      }),
+    },
+  );
+
+  const responseText = await response.text();
+  let responseJson: unknown = null;
+  try {
+    responseJson = JSON.parse(responseText);
+  } catch {
+    responseJson = null;
+  }
+
+  if (!response.ok) {
+    throw toHttpError(
+      response.status,
+      `GEMINI_LOCAL_FAILED:${response.status}:${responseText}`,
+    );
+  }
+
+  const text = extractTextFromCandidates(
+    responseJson && typeof responseJson === "object"
+      ? (responseJson as { candidates?: unknown }).candidates
+      : null,
+  );
+  if (!text) {
+    throw new Error("GEMINI_LOCAL_EMPTY_RESPONSE");
+  }
+  return text;
+};
+
+export const invokeGeminiProxy = async (
+  request: GeminiProxyRequest,
+): Promise<string> => {
+  const supabaseConfig = getSupabaseConfig();
+  const localApiKey = resolveLocalGeminiApiKey();
+  const failures: string[] = [];
+
+  if (supabaseConfig) {
+    try {
+      return await invokeEdgeProxy(request, supabaseConfig);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      failures.push(`edge:${message}`);
+      logger.warn("Edge Gemini path failed; falling back to local path", {
+        message,
+      });
+    }
+  } else {
+    failures.push("edge:SUPABASE_NOT_CONFIGURED");
+  }
+
+  if (localApiKey) {
+    try {
+      return await invokeLocalGemini(request, localApiKey);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      failures.push(`local:${message}`);
+      logger.warn("Local Gemini path failed", { message });
+    }
+  } else {
+    failures.push("local:GEMINI_LOCAL_API_KEY_MISSING");
+  }
+
+  throw new Error(`GEMINI_ALL_PATHS_FAILED:${failures.join("|")}`);
 };

@@ -155,6 +155,7 @@ export const IPC_CHANNELS = {
   SYNC_SET_RUNTIME_CONFIG: "sync:set-runtime-config",
   SYNC_VALIDATE_RUNTIME_CONFIG: "sync:validate-runtime-config",
   SYNC_STATUS_CHANGED: "sync:status-changed",
+  SYNC_AUTH_RESULT: "sync:auth-result",
 
   // Startup Wizard
   STARTUP_GET_READINESS: "startup:get-readiness",

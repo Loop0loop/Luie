@@ -256,7 +256,11 @@ export const jaBase = {
       "conflicts": "競合: 合計 {{total}} 件（原稿 {{chapters}} / スクラップ {{memos}}）",
       "toast": {
         "connectStarted": "ブラウザで Google ログインを完了してください。",
+        "connected": "Google アカウントの接続が完了しました。",
         "connectFailed": "Google 接続に失敗しました。",
+        "staleCallback": "このログインコールバックは既に処理済みです。現在の接続状態を維持します。",
+        "stateMismatch": "OAuth state の検証に失敗しました。再度ログインしてください。",
+        "callbackExpired": "ログイン要求の有効期限が切れました。再度ログインしてください。",
         "disconnectFailed": "接続解除に失敗しました。",
         "disconnected": "接続を解除しました。",
         "syncFailed": "同期に失敗しました。",
@@ -499,11 +503,11 @@ export const jaBase = {
     }
   },
   "startupWizard": {
-    "title": "アプリを準備中です",
+    "title": "ワークスペースを初期化しています...",
     "subtitle": "必要な構成を確認しています。しばらくお待ちください。",
     "status": {
-      "configuring": "アプリを構成中です...",
-      "launching": "メイン画面を開いています...",
+      "configuring": "ワークスペースを初期化しています...",
+      "launching": "ワークスペースを初期化しています...",
       "failed": "起動準備に失敗しました。"
     },
     "actions": {

@@ -55,11 +55,15 @@ vi.mock("../../../src/main/manager/settingsManager.js", () => ({
       return { ...mocked.state };
     },
     setPendingSyncAuth: (input: {
-      state: string;
+      state?: string;
       verifierCipher: string;
       createdAt: string;
     }) => {
-      mocked.state.pendingAuthState = input.state;
+      if (input.state) {
+        mocked.state.pendingAuthState = input.state;
+      } else {
+        delete mocked.state.pendingAuthState;
+      }
       mocked.state.pendingAuthVerifierCipher = input.verifierCipher;
       mocked.state.pendingAuthCreatedAt = input.createdAt;
       return { ...mocked.state };
@@ -114,8 +118,8 @@ describe("SyncAuthService", () => {
     expect(mocked.shellOpenExternal).toHaveBeenCalledTimes(1);
     const authorizeUrl = String(mocked.shellOpenExternal.mock.calls[0][0]);
     const stateFromAuthorize = new URL(authorizeUrl).searchParams.get("state");
-    expect(typeof stateFromAuthorize).toBe("string");
-    expect(stateFromAuthorize).toBe(mocked.state.pendingAuthState);
+    expect(stateFromAuthorize).toBeNull();
+    expect(mocked.state.pendingAuthState).toBeUndefined();
     expect(mocked.state.pendingAuthVerifierCipher?.startsWith("v2:plain:")).toBe(true);
 
     mocked.safeStorageState.available = true;
@@ -124,11 +128,7 @@ describe("SyncAuthService", () => {
       "../../../src/main/services/features/syncAuthService.js"
     );
 
-    const session = await restarted.completeOAuthCallback(
-      `luie://auth/callback?code=test-code&state=${encodeURIComponent(
-        String(mocked.state.pendingAuthState),
-      )}`,
-    );
+    const session = await restarted.completeOAuthCallback("luie://auth/callback?code=test-code");
 
     expect(session.userId).toBe("00000000-0000-0000-0000-000000000001");
     expect(mocked.state.pendingAuthState).toBeUndefined();
@@ -150,18 +150,65 @@ describe("SyncAuthService", () => {
     expect(mocked.state.pendingAuthVerifierCipher).toBeUndefined();
   });
 
-  it("fails when callback state is missing or mismatched", async () => {
+  it("accepts callback without state when using verifier-only flow", async () => {
+    mocked.safeStorageState.available = true;
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            access_token: "access-token",
+            refresh_token: "refresh-token",
+            user: {
+              id: "00000000-0000-0000-0000-000000000002",
+            },
+          }),
+          { status: 200 },
+        ),
+      );
+
+    const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
+    await syncAuthService.startGoogleAuth();
+    const session = await syncAuthService.completeOAuthCallback("luie://auth/callback?code=test-code");
+
+    expect(session.userId).toBe("00000000-0000-0000-0000-000000000002");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps legacy state mismatch validation when pending state exists", async () => {
     const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
     await syncAuthService.startGoogleAuth();
 
-    await expect(
-      syncAuthService.completeOAuthCallback("luie://auth/callback?code=test-code"),
-    ).rejects.toThrow("SYNC_AUTH_STATE_MISMATCH");
+    mocked.state.pendingAuthState = "legacy-state-token";
 
-    await syncAuthService.startGoogleAuth();
     await expect(
       syncAuthService.completeOAuthCallback("luie://auth/callback?code=test-code&state=wrong"),
     ).rejects.toThrow("SYNC_AUTH_STATE_MISMATCH");
+  });
+
+  it("accepts OAuth callback params from hash fragment", async () => {
+    mocked.safeStorageState.available = true;
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            access_token: "access-token",
+            refresh_token: "refresh-token",
+            user: {
+              id: "00000000-0000-0000-0000-000000000003",
+            },
+          }),
+          { status: 200 },
+        ),
+      );
+
+    const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
+    await syncAuthService.startGoogleAuth();
+
+    const session = await syncAuthService.completeOAuthCallback("luie://auth/callback#code=test-code");
+    expect(session.userId).toBe("00000000-0000-0000-0000-000000000003");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("blocks duplicate OAuth start while a recent flow is pending", async () => {

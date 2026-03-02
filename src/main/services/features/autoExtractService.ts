@@ -6,6 +6,7 @@ import { keywordExtractor } from "../../core/keywordExtractor.js";
 import { characterService } from "../world/characterService.js";
 import { termService } from "../world/termService.js";
 import { invokeGeminiProxy } from "./analysis/geminiApiKeyResolver.js";
+import { buildDeterministicGeminiResult } from "./analysis/localFallbackAnalyzer.js";
 import {
   FEW_SHOT_EXAMPLES,
   GEMINI_RESPONSE_SCHEMA,
@@ -179,18 +180,15 @@ JSON 형식으로만 답하세요:`;
       const parsed = GeminiResultSchema.safeParse(JSON.parse(text));
       if (!parsed.success) {
         logger.warn("Gemini response parse failed", parsed.error);
-        return null;
+        return buildDeterministicGeminiResult(name, contexts);
       }
 
       return parsed.data;
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (message.includes("SYNC_AUTH_REQUIRED_FOR_EDGE")) {
-        logger.warn("Skipping auto extraction: sync auth required for edge");
-      } else {
-        logger.error("Gemini classification failed", error);
-      }
-      return null;
+      logger.warn("Gemini classification failed; using local deterministic fallback", {
+        error,
+      });
+      return buildDeterministicGeminiResult(name, contexts);
     }
   }
 }

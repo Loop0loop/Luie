@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { IPC_CHANNELS } from "../../../src/shared/ipc/channels.js";
 
 const mocked = vi.hoisted(() => {
-  const openExternal = vi.fn<(...args: unknown[]) => Promise<void>>();
   const handleOAuthCallback = vi.fn<(...args: unknown[]) => Promise<void>>();
   const status = {
     connected: false,
@@ -19,10 +19,13 @@ const mocked = vi.hoisted(() => {
     isMinimized: vi.fn(() => false),
     restore: vi.fn(),
     focus: vi.fn(),
+    isDestroyed: vi.fn(() => false),
+    webContents: {
+      send: vi.fn(),
+    },
   };
 
   return {
-    openExternal,
     handleOAuthCallback,
     status,
     mainWindow,
@@ -33,14 +36,15 @@ vi.mock("electron", () => ({
   app: {
     isPackaged: false,
   },
-  shell: {
-    openExternal: (...args: unknown[]) => mocked.openExternal(...args),
+  BrowserWindow: {
+    getAllWindows: () => [mocked.mainWindow],
   },
 }));
 
 vi.mock("../../../src/main/manager/index.js", () => ({
   windowManager: {
     getMainWindow: () => mocked.mainWindow,
+    getStartupWizardWindow: () => null,
   },
 }));
 
@@ -51,28 +55,22 @@ vi.mock("../../../src/main/services/features/syncService.js", () => ({
   },
 }));
 
-const getHashParams = (url: string): URLSearchParams => {
-  const parsed = new URL(url);
-  const hash = parsed.hash.startsWith("#") ? parsed.hash.slice(1) : parsed.hash;
-  const queryStart = hash.indexOf("?");
-  const query = queryStart >= 0 ? hash.slice(queryStart + 1) : "";
-  return new URLSearchParams(query);
-};
-
 describe("deepLink OAuth callback routing", () => {
   beforeEach(() => {
     vi.resetModules();
-    mocked.openExternal.mockReset();
     mocked.handleOAuthCallback.mockReset();
     mocked.mainWindow.isMinimized.mockReset();
     mocked.mainWindow.restore.mockReset();
     mocked.mainWindow.focus.mockReset();
+    mocked.mainWindow.isDestroyed.mockReset();
+    mocked.mainWindow.webContents.send.mockReset();
     mocked.mainWindow.isMinimized.mockReturnValue(false);
+    mocked.mainWindow.isDestroyed.mockReturnValue(false);
     mocked.status.connected = false;
     mocked.status.mode = "idle";
   });
 
-  it("treats stale callback as success when already connected", async () => {
+  it("broadcasts stale result when callback is stale but already connected", async () => {
     mocked.status.connected = true;
     mocked.handleOAuthCallback.mockRejectedValue(new Error("SYNC_AUTH_NO_PENDING_SESSION"));
 
@@ -80,14 +78,16 @@ describe("deepLink OAuth callback routing", () => {
     const handled = await handleDeepLinkUrl("luie://auth/callback?error=invalid_request");
 
     expect(handled).toBe(true);
-    expect(mocked.openExternal).toHaveBeenCalledTimes(1);
-    const url = String(mocked.openExternal.mock.calls[0]?.[0]);
-    const params = getHashParams(url);
-    expect(params.get("status")).toBe("success");
-    expect(params.get("detail")).toBe("STALE_CONNECTED:NO_PENDING");
+    expect(mocked.mainWindow.webContents.send).toHaveBeenCalledWith(
+      IPC_CHANNELS.SYNC_AUTH_RESULT,
+      expect.objectContaining({
+        status: "stale",
+        reason: "NO_PENDING",
+      }),
+    );
   });
 
-  it("does not mask unknown callback failure as success", async () => {
+  it("broadcasts error result for unknown callback failure", async () => {
     mocked.status.connected = true;
     mocked.handleOAuthCallback.mockRejectedValue(new Error("OAUTH_FLOW_BROKEN"));
 
@@ -95,10 +95,12 @@ describe("deepLink OAuth callback routing", () => {
     const handled = await handleDeepLinkUrl("luie://auth/callback?error=invalid_request");
 
     expect(handled).toBe(false);
-    expect(mocked.openExternal).toHaveBeenCalledTimes(1);
-    const url = String(mocked.openExternal.mock.calls[0]?.[0]);
-    const params = getHashParams(url);
-    expect(params.get("status")).toBe("error");
-    expect(params.get("detail")).toContain("UNKNOWN:");
+    expect(mocked.mainWindow.webContents.send).toHaveBeenCalledWith(
+      IPC_CHANNELS.SYNC_AUTH_RESULT,
+      expect.objectContaining({
+        status: "error",
+        reason: "UNKNOWN",
+      }),
+    );
   });
 });

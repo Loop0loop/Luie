@@ -146,9 +146,12 @@ export const registerAppReady = (logger: Logger, options: AppReadyOptions = {}):
     const triggerFirstRendererReady = (reason: string): void => {
       if (firstRendererReadyTriggered) return;
       firstRendererReadyTriggered = true;
-      windowManager.closeSplashWindow();
       windowManager.showMainWindow();
       logger.info("Startup checkpoint: renderer ready", {
+        reason,
+        startupElapsedMs: Date.now() - startupStartedAtMs,
+      });
+      logger.info("Startup checkpoint: main window shown", {
         reason,
         startupElapsedMs: Date.now() - startupStartedAtMs,
       });
@@ -182,11 +185,6 @@ export const registerAppReady = (logger: Logger, options: AppReadyOptions = {}):
 
       logger.info("Starting main window flow", {
         reason,
-        startupElapsedMs: Date.now() - startupStartedAtMs,
-      });
-
-      windowManager.createSplashWindow();
-      logger.info("Startup checkpoint: splash window created", {
         startupElapsedMs: Date.now() - startupStartedAtMs,
       });
 
