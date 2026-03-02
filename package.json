@@ -1,6 +1,6 @@
 {
   "name": "luie",
-  "version": "0.1.8",
+  "version": "0.1.10",
   "description": "흐름을 방해하지 않는 집필 도구",
   "main": "out/main/index.js",
   "type": "module",
