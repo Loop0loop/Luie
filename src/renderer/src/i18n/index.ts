@@ -6,13 +6,34 @@ import { api } from "@shared/api";
 
 export const SUPPORTED_LANGUAGES = ["ko", "en", "ja"] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+let initPromise: Promise<typeof i18n> | null = null;
+
+const loadSavedLanguagePreference = async (): Promise<void> => {
+  try {
+    const response = await api.settings.getLanguage();
+    const savedLanguage = response.success ? response.data?.language : undefined;
+    if (!savedLanguage || !SUPPORTED_LANGUAGES.includes(savedLanguage)) {
+      return;
+    }
+
+    if (i18n.language !== savedLanguage) {
+      await i18n.changeLanguage(savedLanguage);
+    }
+  } catch {
+    // Best effort; default language already active.
+  }
+};
 
 export async function initI18n(): Promise<typeof i18n> {
   if (i18n.isInitialized) {
     return i18n;
   }
 
-  await i18n
+  if (initPromise) {
+    return initPromise;
+  }
+
+  initPromise = i18n
     .use(initReactI18next)
     .use(LanguageDetector)
     .init({
@@ -27,19 +48,22 @@ export async function initI18n(): Promise<typeof i18n> {
         order: ["localStorage", "navigator"],
         caches: ["localStorage"],
       },
+      react: {
+        useSuspense: false,
+      },
+    })
+    .then(() => {
+      // Stored language sync runs after the first paint path has already continued.
+      void loadSavedLanguagePreference();
+      return i18n;
+    })
+    .finally(() => {
+      if (!i18n.isInitialized) {
+        initPromise = null;
+      }
     });
 
-  try {
-    const response = await api.settings.getAll();
-    const savedLanguage = response.success ? response.data?.language : undefined;
-    if (savedLanguage && SUPPORTED_LANGUAGES.includes(savedLanguage)) {
-      await i18n.changeLanguage(savedLanguage);
-    }
-  } catch {
-    // Best effort; default language already set
-  }
-
-  return i18n;
+  return initPromise;
 }
 
 export async function setLanguage(language: SupportedLanguage): Promise<void> {

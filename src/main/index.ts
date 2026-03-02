@@ -29,11 +29,13 @@ configureLogger({
 
 const logger = createLogger("Main");
 const isDefaultApp = process.defaultApp === true;
+const startupStartedAtMs = Date.now();
 logger.info("Main process bootstrap", {
   execPath: process.execPath,
   argv: process.argv,
   isPackaged: app.isPackaged,
   defaultApp: isDefaultApp,
+  startupStartedAtMs,
 });
 
 const registerLuieProtocol = (): void => {
@@ -99,7 +101,16 @@ if (!registerSingleInstance(logger)) {
     void handleDeepLinkUrl(callbackUrl);
   }
 
-  syncService.initialize();
-  registerAppReady(logger);
+  registerAppReady(logger, {
+    startupStartedAtMs,
+    onFirstRendererReady: () => {
+      const syncInitializeStartedAt = Date.now();
+      syncService.initialize();
+      logger.info("Startup checkpoint: sync service initialized", {
+        elapsedMs: Date.now() - syncInitializeStartedAt,
+        startupElapsedMs: Date.now() - startupStartedAtMs,
+      });
+    },
+  });
   registerShutdownHandlers(logger);
 }

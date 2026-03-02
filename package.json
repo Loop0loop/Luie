@@ -15,7 +15,8 @@
     "prepreview": "pnpm rebuild:electron",
     "preview": "electron-vite preview",
     "preview:prod": "pnpm build && NODE_ENV=production electron .",
-    "build:mac": "pnpm generate && pnpm build && electron-builder --mac --config && pnpm verify:packaged-prisma",
+    "build:mac": "pnpm build:mac:package && node scripts/release-mac.mjs",
+    "build:mac:package": "pnpm generate && pnpm build && ELECTRON_BUILDER_CACHE=.cache/electron-builder electron-builder --mac --config && pnpm verify:packaged-prisma",
     "build:win": "pnpm build:win:x64",
     "build:win:x64": "pnpm generate && pnpm build && electron-builder --win --x64 --config",
     "build:win:arm64": "pnpm generate && pnpm build && electron-builder --win --arm64 --config",
@@ -23,7 +24,8 @@
     "build:linux": "pnpm generate && pnpm build && electron-builder --linux --config",
     "postinstall": "prisma generate && node scripts/sync-prisma-client.mjs && pnpm run rebuild:electron",
     "rebuild:electron": "electron-rebuild --force --module-dir . -w better-sqlite3",
-    "generate": "prisma generate && node scripts/sync-prisma-client.mjs",
+    "generate": "pnpm generate:icons && prisma generate && node scripts/sync-prisma-client.mjs",
+    "generate:icons": "node scripts/generate-app-icons.mjs",
     "supabase:openai:link": "node scripts/supabase-openai.mjs link",
     "supabase:openai:set-secret": "node scripts/supabase-openai.mjs set-secret",
     "supabase:openai:deploy": "node scripts/supabase-openai.mjs deploy",
@@ -114,7 +116,8 @@
     "appId": "com.luie.app",
     "productName": "Luie",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "build"
     },
     "files": [
       "out/**/*",
@@ -155,22 +158,70 @@
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "build/icons/icon.png",
+        "to": "icon.png"
+      }
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Loop0loop",
+        "repo": "Luie",
+        "releaseType": "release"
       }
     ],
     "mac": {
       "category": "public.app-category.productivity",
+      "icon": "build/icons/icon.icns",
       "target": [
         "dmg",
         "zip"
       ]
     },
     "win": {
+      "icon": "build/icons/icon.ico",
+      "executableName": "Luie",
       "target": [
-        "nsis",
-        "portable"
+        {
+          "target": "nsis-web",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ]
     },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "allowElevation": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "Luie",
+      "uninstallDisplayName": "Luie",
+      "displayLanguageSelector": false,
+      "installerIcon": "build/icons/icon.ico",
+      "uninstallerIcon": "build/icons/icon.ico",
+      "installerHeaderIcon": "build/icons/icon.ico"
+    },
+    "nsisWeb": {
+      "artifactName": "Luie-Web-Setup-${version}-${arch}.${ext}"
+    },
+    "portable": {
+      "artifactName": "Luie-Portable-${version}-${arch}.${ext}"
+    },
     "linux": {
+      "icon": "build/icons/icon.png",
       "target": [
         "AppImage",
         "deb"

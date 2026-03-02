@@ -8,6 +8,14 @@ import { ensureBootstrapReady } from "./bootstrap.js";
 
 type Logger = ReturnType<typeof createLogger>;
 
+type AppReadyOptions = {
+  startupStartedAtMs?: number;
+  onFirstRendererReady?: () => void;
+};
+
+const STARTUP_MAINTENANCE_DELAY_MS = 1500;
+const FIRST_RENDERER_FALLBACK_MS = 8000;
+
 const buildProdCspPolicy = () =>
   [
     "default-src 'self'",
@@ -35,6 +43,8 @@ const resolveCspPolicy = (isDev: boolean): string | null => {
   }
   return process.env.LUIE_DEV_CSP === "1" ? buildDevCspPolicy() : null;
 };
+
+const isFileUrl = (url: string): boolean => url.startsWith("file://");
 
 const handleRendererCrash = async (
   logger: Logger,
@@ -76,12 +86,90 @@ const handleRendererCrash = async (
   }
 };
 
-export const registerAppReady = (logger: Logger): void => {
+const runDeferredStartupMaintenance = async (logger: Logger): Promise<void> => {
+  const startedAt = Date.now();
+  const status = await ensureBootstrapReady();
+  if (!status.isReady) {
+    logger.error("App bootstrap did not complete", status);
+    return;
+  }
+
+  try {
+    const { autoSaveManager } = await import("../manager/autoSaveManager.js");
+    await autoSaveManager.flushMirrorsToSnapshots("startup-recovery");
+    const { snapshotService } = await import("../services/features/snapshotService.js");
+    void snapshotService.pruneSnapshotsAllProjects();
+    void snapshotService.cleanupOrphanArtifacts("startup");
+  } catch (error) {
+    logger.warn("Snapshot recovery/pruning skipped", error);
+  }
+
+  try {
+    const { projectService } = await import("../services/core/projectService.js");
+    await projectService.reconcileProjectPathDuplicates();
+  } catch (error) {
+    logger.warn("Project path duplicate reconciliation skipped", error);
+  }
+
+  try {
+    const { entityRelationService } = await import(
+      "../services/world/entityRelationService.js"
+    );
+    await entityRelationService.cleanupOrphanRelationsAcrossProjects({ dryRun: true });
+    await entityRelationService.cleanupOrphanRelationsAcrossProjects({ dryRun: false });
+  } catch (error) {
+    logger.warn("Entity relation orphan cleanup skipped", error);
+  }
+
+  logger.info("Deferred startup maintenance completed", {
+    elapsedMs: Date.now() - startedAt,
+  });
+};
+
+export const registerAppReady = (logger: Logger, options: AppReadyOptions = {}): void => {
+  const startupStartedAtMs = options.startupStartedAtMs ?? Date.now();
+
   app.whenReady().then(async () => {
-    logger.info("App is ready");
+    logger.info("App is ready", {
+      startupElapsedMs: Date.now() - startupStartedAtMs,
+    });
 
     const isDev = isDevEnv();
     const cspPolicy = resolveCspPolicy(isDev);
+
+    let firstRendererReadyTriggered = false;
+    let startupMaintenanceScheduled = false;
+
+    const triggerFirstRendererReady = (reason: string): void => {
+      if (firstRendererReadyTriggered) return;
+      firstRendererReadyTriggered = true;
+      logger.info("Startup checkpoint: renderer ready", {
+        reason,
+        startupElapsedMs: Date.now() - startupStartedAtMs,
+      });
+
+      if (!options.onFirstRendererReady) {
+        return;
+      }
+
+      try {
+        options.onFirstRendererReady();
+      } catch (error) {
+        logger.warn("Startup hook failed: onFirstRendererReady", error);
+      }
+    };
+
+    const scheduleStartupMaintenance = (reason: string): void => {
+      if (startupMaintenanceScheduled) return;
+      startupMaintenanceScheduled = true;
+      logger.info("Deferred startup maintenance scheduled", {
+        reason,
+        delayMs: STARTUP_MAINTENANCE_DELAY_MS,
+      });
+      setTimeout(() => {
+        void runDeferredStartupMaintenance(logger);
+      }, STARTUP_MAINTENANCE_DELAY_MS);
+    };
 
     if (isDev) {
       session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
@@ -113,7 +201,7 @@ export const registerAppReady = (logger: Logger): void => {
         ];
       }
 
-      if (cspPolicy) {
+      if (cspPolicy && !isFileUrl(details.url)) {
         responseHeaders["Content-Security-Policy"] = [cspPolicy];
       }
 
@@ -121,52 +209,85 @@ export const registerAppReady = (logger: Logger): void => {
     });
 
     app.on("web-contents-created", (_event, webContents) => {
+      webContents.on(
+        "did-fail-load",
+        (_loadEvent, errorCode, errorDescription, validatedURL, isMainFrame) => {
+          logger.error("Renderer failed to load", {
+            errorCode,
+            errorDescription,
+            validatedURL,
+            isMainFrame,
+            startupElapsedMs: Date.now() - startupStartedAtMs,
+          });
+        },
+      );
+      webContents.on("did-finish-load", () => {
+        const startupElapsedMs = Date.now() - startupStartedAtMs;
+        logger.info("Renderer finished load", {
+          url: webContents.getURL(),
+          startupElapsedMs,
+        });
+
+        if (webContents.getType() === "window") {
+          triggerFirstRendererReady("did-finish-load");
+          scheduleStartupMaintenance("did-finish-load");
+        }
+      });
+      webContents.on(
+        "console-message",
+        (_consoleEvent, level, message, line, sourceId) => {
+          if (level < 2) return;
+          logger.warn("Renderer console message", {
+            level,
+            message,
+            line,
+            sourceId,
+          });
+        },
+      );
       webContents.on("render-process-gone", (_goneEvent, details) => {
         void handleRendererCrash(logger, webContents, details.reason === "killed");
       });
     });
 
+    const ipcRegistrationStartedAt = Date.now();
     const { registerIPCHandlers } = await import("../handler/index.js");
     registerIPCHandlers();
+    logger.info("Startup checkpoint: IPC handlers ready", {
+      elapsedMs: Date.now() - ipcRegistrationStartedAt,
+      startupElapsedMs: Date.now() - startupStartedAtMs,
+    });
 
     windowManager.createMainWindow();
+    logger.info("Startup checkpoint: main window requested", {
+      startupElapsedMs: Date.now() - startupStartedAtMs,
+    });
+
     applyApplicationMenu(settingsManager.getMenuBarMode());
 
-    void ensureBootstrapReady().then(async (status) => {
-      if (!status.isReady) {
-        logger.error("App bootstrap did not complete", status);
-        return;
-      }
+    const bootstrapStartedAt = Date.now();
+    void ensureBootstrapReady()
+      .then((status) => {
+        logger.info("Startup checkpoint: bootstrap ready", {
+          isReady: status.isReady,
+          bootstrapElapsedMs: Date.now() - bootstrapStartedAt,
+          startupElapsedMs: Date.now() - startupStartedAtMs,
+        });
 
-      try {
-        const { autoSaveManager } = await import("../manager/autoSaveManager.js");
-        await autoSaveManager.flushMirrorsToSnapshots("startup-recovery");
-        const { snapshotService } = await import(
-          "../services/features/snapshotService.js"
-        );
-        void snapshotService.pruneSnapshotsAllProjects();
-        void snapshotService.cleanupOrphanArtifacts("startup");
-      } catch (error) {
-        logger.warn("Snapshot recovery/pruning skipped", error);
-      }
+        if (!status.isReady) {
+          logger.error("App bootstrap did not complete", status);
+        }
+      })
+      .catch((error) => {
+        logger.error("App bootstrap did not complete", error);
+      });
 
-      try {
-        const { projectService } = await import("../services/core/projectService.js");
-        await projectService.reconcileProjectPathDuplicates();
-      } catch (error) {
-        logger.warn("Project path duplicate reconciliation skipped", error);
+    setTimeout(() => {
+      if (!firstRendererReadyTriggered) {
+        triggerFirstRendererReady("fallback-timeout");
       }
-
-      try {
-        const { entityRelationService } = await import(
-          "../services/world/entityRelationService.js"
-        );
-        await entityRelationService.cleanupOrphanRelationsAcrossProjects({ dryRun: true });
-        await entityRelationService.cleanupOrphanRelationsAcrossProjects({ dryRun: false });
-      } catch (error) {
-        logger.warn("Entity relation orphan cleanup skipped", error);
-      }
-    });
+      scheduleStartupMaintenance("fallback-timeout");
+    }, FIRST_RENDERER_FALLBACK_MS);
 
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) {

@@ -3,10 +3,12 @@
  */
 
 import { BrowserWindow, app } from 'electron'
+import { existsSync } from 'fs'
 import { join } from 'path'
 import windowStateKeeper from 'electron-window-state'
 import { createLogger } from '../../shared/logger/index.js'
 import {
+  APP_NAME,
   WINDOW_DEFAULT_HEIGHT,
   WINDOW_DEFAULT_WIDTH,
   WINDOW_MIN_HEIGHT,
@@ -17,9 +19,29 @@ import {
 import { settingsManager } from './settingsManager.js'
 
 const logger = createLogger('WindowManager')
+const WINDOW_BACKGROUND_COLOR = '#f4f4f5'
 
 class WindowManager {
   private mainWindow: BrowserWindow | null = null
+
+  private resolveWindowIconPath(): string | undefined {
+    const packagedCandidates = [
+      join(process.resourcesPath, 'icon.png'),
+      join(process.resourcesPath, 'build', 'icons', 'icon.png'),
+    ]
+    const devCandidates = [
+      join(app.getAppPath(), 'build', 'icons', 'icon.png'),
+      join(app.getAppPath(), 'assets', 'public', 'luie.png'),
+    ]
+
+    const candidates = app.isPackaged ? packagedCandidates : devCandidates
+    for (const candidate of candidates) {
+      if (existsSync(candidate)) {
+        return candidate
+      }
+    }
+    return undefined
+  }
 
   private getTitleBarOptions() {
     if (process.platform !== 'darwin') {
@@ -74,6 +96,8 @@ class WindowManager {
       defaultHeight: WINDOW_DEFAULT_HEIGHT,
     })
 
+    const windowIconPath = this.resolveWindowIconPath()
+
     this.mainWindow = new BrowserWindow({
       x: windowState.x,
       y: windowState.y,
@@ -81,6 +105,10 @@ class WindowManager {
       height: windowState.height,
       minWidth: WINDOW_MIN_WIDTH,
       minHeight: WINDOW_MIN_HEIGHT,
+      title: APP_NAME,
+      show: false,
+      backgroundColor: WINDOW_BACKGROUND_COLOR,
+      ...(windowIconPath ? { icon: windowIconPath } : {}),
       ...this.getTitleBarOptions(),
       ...(process.platform !== 'darwin'
         ? { autoHideMenuBar: this.getMenuBarMode() === 'hidden' }
@@ -110,13 +138,24 @@ class WindowManager {
 
     if (useDevServer) {
       logger.info('Loading development server', { url: devServerUrl, isPackaged })
-      this.mainWindow.loadURL(devServerUrl)
+      void this.mainWindow.loadURL(devServerUrl).catch((error) => {
+        logger.error('Failed to load development renderer URL', { url: devServerUrl, error })
+      })
       this.mainWindow.webContents.openDevTools({ mode: 'detach' })
     } else {
       const indexPath = join(__dirname, '../renderer/index.html')
       logger.info('Loading production renderer', { path: indexPath, isPackaged })
-      this.mainWindow.loadFile(indexPath)
+      void this.mainWindow.loadFile(indexPath).catch((error) => {
+        logger.error('Failed to load production renderer file', { path: indexPath, error })
+      })
     }
+
+    this.mainWindow.once('ready-to-show', () => {
+      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+        this.mainWindow.show()
+        logger.info('Main window ready to show')
+      }
+    })
 
     this.mainWindow.on('closed', () => {
       this.mainWindow = null
@@ -150,12 +189,16 @@ class WindowManager {
     const width = 1200
     const height = 900
 
+    const windowIconPath = this.resolveWindowIconPath()
+
     this.exportWindow = new BrowserWindow({
       width,
       height,
       minWidth: 1000,
       minHeight: 700,
       title: "내보내기 및 인쇄 미리보기",
+      backgroundColor: WINDOW_BACKGROUND_COLOR,
+      ...(windowIconPath ? { icon: windowIconPath } : {}),
       ...this.getTitleBarOptions(),
       ...(process.platform !== 'darwin'
         ? { autoHideMenuBar: this.getMenuBarMode() === 'hidden' }
@@ -180,11 +223,22 @@ class WindowManager {
     if (useDevServer) {
       const url = `${devServerUrl}/${query}${hash}`
       logger.info('Loading export window (dev)', { url })
-      this.exportWindow.loadURL(url)
+      void this.exportWindow.loadURL(url).catch((error) => {
+        logger.error('Failed to load export window (dev)', { url, error })
+      })
     } else {
       const indexPath = join(__dirname, '../renderer/index.html')
       logger.info('Loading export window (prod)', { path: indexPath })
-      this.exportWindow.loadFile(indexPath, { hash: 'export', search: query })
+      void this.exportWindow
+        .loadFile(indexPath, { hash: 'export', search: query })
+        .catch((error) => {
+          logger.error('Failed to load export window (prod)', {
+            path: indexPath,
+            hash: 'export',
+            search: query,
+            error,
+          })
+        })
     }
 
     this.exportWindow.on('closed', () => {
@@ -212,12 +266,16 @@ class WindowManager {
     const width = 1200
     const height = 800
 
+    const windowIconPath = this.resolveWindowIconPath()
+
     this.worldGraphWindow = new BrowserWindow({
       width,
       height,
       minWidth: 1000,
       minHeight: 600,
       title: "세계관 그래프",
+      backgroundColor: WINDOW_BACKGROUND_COLOR,
+      ...(windowIconPath ? { icon: windowIconPath } : {}),
       ...this.getTitleBarOptions(),
       ...(process.platform !== 'darwin'
         ? { autoHideMenuBar: this.getMenuBarMode() === 'hidden' }
@@ -241,11 +299,21 @@ class WindowManager {
     if (useDevServer) {
       const url = `${devServerUrl}/${hash}`
       logger.info('Loading world graph window (dev)', { url })
-      this.worldGraphWindow.loadURL(url)
+      void this.worldGraphWindow.loadURL(url).catch((error) => {
+        logger.error('Failed to load world graph window (dev)', { url, error })
+      })
     } else {
       const indexPath = join(__dirname, '../renderer/index.html')
       logger.info('Loading world graph window (prod)', { path: indexPath })
-      this.worldGraphWindow.loadFile(indexPath, { hash: 'world-graph' })
+      void this.worldGraphWindow
+        .loadFile(indexPath, { hash: 'world-graph' })
+        .catch((error) => {
+          logger.error('Failed to load world graph window (prod)', {
+            path: indexPath,
+            hash: 'world-graph',
+            error,
+          })
+        })
     }
 
     this.worldGraphWindow.on('closed', () => {

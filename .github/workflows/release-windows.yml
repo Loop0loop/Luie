@@ -13,8 +13,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-windows:
+  build-and-publish:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, arm64]
 
     steps:
       - name: Checkout
@@ -34,60 +38,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build Windows packages (no auto publish)
-        run: |
-          pnpm run generate
-          pnpm run build
-          pnpm exec electron-builder --win --config --publish never
+      - name: Build and publish Windows packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: pnpm run build:win:${{ matrix.arch }} -- --publish always
 
-      - name: Collect .exe assets
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Path release-assets -Force | Out-Null
-          Get-ChildItem -Path dist -Filter *.exe -File | Copy-Item -Destination release-assets
-          if (-not (Get-ChildItem -Path release-assets -Filter *.exe -File)) {
-            throw "No .exe files were found in dist/"
-          }
-
-      - name: Upload artifact
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: windows-exe
-          path: release-assets/*.exe
-          if-no-files-found: error
-
-  upload-release:
-    runs-on: ubuntu-latest
-    needs: build-windows
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-exe
-          path: release-assets
-
-      - name: Ensure release exists
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --generate-notes
-
-      - name: Upload .exe to release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          shopt -s nullglob
-          files=(release-assets/*.exe)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "No .exe files found to upload"
-            exit 1
-          fi
-          gh release upload "$TAG" "${files[@]}" --clobber
+          name: windows-${{ matrix.arch }}-dist
+          path: |
+            dist/*.exe
+            dist/*.7z
+            dist/*.yml
+            dist/*.blockmap
+          if-no-files-found: warn
