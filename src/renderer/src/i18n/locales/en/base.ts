@@ -499,13 +499,15 @@ export const enBase = {
     }
   },
   "startupWizard": {
-    "title": "Pre-main startup checks",
-    "subtitle": "Complete diagnostics, runtime setup, and login before entering the main window.",
-    "steps": {
-      "diagnostics": "Diagnostics",
-      "runtimeConfig": "Supabase Runtime Config",
-      "oauth": "Google OAuth",
-      "complete": "Complete"
+    "title": "Preparing Luie",
+    "subtitle": "Checking required setup. Please wait a moment.",
+    "status": {
+      "configuring": "Configuring the app...",
+      "launching": "Opening main window...",
+      "failed": "Startup configuration failed."
+    },
+    "actions": {
+      "retry": "Retry"
     }
   }
 } as const;

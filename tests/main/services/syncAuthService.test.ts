@@ -213,13 +213,15 @@ describe("SyncAuthService", () => {
     expect(result.errorCode).toContain("SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE");
   });
 
-  it("returns false when Supabase env is not configured", async () => {
+  it("returns true when bundled Supabase defaults are available", async () => {
     delete process.env.SUPABASE_URL;
     delete process.env.SUPABASE_ANON_KEY;
     delete process.env.SUPADATABASE_PRJ_ID;
     delete process.env.SUPADATABASE_API;
+    delete process.env.SUPADB_URL;
+    delete process.env.SUPABASE_PUBLISHABLE_KEY;
 
     const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
-    expect(syncAuthService.isConfigured()).toBe(false);
+    expect(syncAuthService.isConfigured()).toBe(true);
   });
 });

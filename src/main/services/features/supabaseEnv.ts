@@ -23,10 +23,30 @@ export type ResolvedSupabaseConfig = SupabaseConfig & {
 
 const trimEnv = (key: string): string | null => trimAndUnquote(process.env[key]);
 
+const BUNDLED_DEFAULT_SUPABASE_URL = "https://qzgyjlbpnxxpspoyibpt.supabase.co";
+const BUNDLED_DEFAULT_SUPABASE_ANON_KEY =
+  "sb_publishable_tBNCOdvGzLgTuc6PUXI-Bg_qmt1FwYs";
+
+const resolveFromBundledDefaults = (): ResolvedSupabaseConfig | null => {
+  const bundled = normalizeRuntimeSupabaseConfigInput({
+    url: BUNDLED_DEFAULT_SUPABASE_URL,
+    anonKey: BUNDLED_DEFAULT_SUPABASE_ANON_KEY,
+  });
+  if (!bundled) return null;
+  return {
+    ...bundled,
+    source: "legacy",
+  };
+};
+
 const resolveFromEnv = (): ResolvedSupabaseConfig | null => {
   const envConfig = normalizeRuntimeSupabaseConfigInput({
-    url: trimEnv("SUPABASE_URL") ?? undefined,
-    anonKey: trimEnv("SUPABASE_ANON_KEY") ?? undefined,
+    url: trimEnv("SUPABASE_URL") ?? trimEnv("SUPADB_URL") ?? undefined,
+    anonKey:
+      trimEnv("SUPABASE_ANON_KEY") ??
+      trimEnv("SUPABASE_PUBLISHABLE_KEY") ??
+      trimEnv("SUPADATABASE_API") ??
+      undefined,
   });
   if (!envConfig) {
     return null;
@@ -90,7 +110,10 @@ const resolveFromLegacyEnv = (): ResolvedSupabaseConfig | null => {
 };
 
 export const getResolvedSupabaseConfig = (): ResolvedSupabaseConfig | null =>
-  resolveFromEnv() ?? resolveFromRuntimeSettings() ?? resolveFromLegacyEnv();
+  resolveFromEnv() ??
+  resolveFromRuntimeSettings() ??
+  resolveFromLegacyEnv() ??
+  resolveFromBundledDefaults();
 
 export const getSupabaseConfig = (): SupabaseConfig | null => {
   const config = getResolvedSupabaseConfig();

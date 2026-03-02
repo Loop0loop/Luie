@@ -1,4 +1,4 @@
-import { BrowserWindow, app } from "electron";
+import { BrowserWindow, app, shell } from "electron";
 import { createHash } from "node:crypto";
 import * as fsp from "node:fs/promises";
 import path from "node:path";
@@ -22,6 +22,8 @@ const UPDATE_DIR_NAME = "updates";
 const PENDING_META_FILE = "pending.json";
 const CURRENT_META_FILE = "current.json";
 const ROLLBACK_META_FILE = "rollback.json";
+const DEFAULT_UPDATE_FEED_URL =
+  "https://api.github.com/repos/Loop0loop/Luie/releases/latest";
 const VERSION_PATTERN = /^v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
 const SHA256_PATTERN = /^(?:sha256:)?[a-fA-F0-9]{64}$/;
 
@@ -35,7 +37,7 @@ type ParsedSemver = {
 type UpdateFeedManifest = {
   version: string;
   url: string;
-  sha256: string;
+  sha256?: string;
   size?: number;
 };
 
@@ -153,6 +155,8 @@ const extractManifestFromFeedPayload = (
       ? source.version
       : typeof source.latestVersion === "string"
         ? source.latestVersion
+        : typeof source.tag_name === "string"
+          ? source.tag_name
         : "",
   );
   if (!normalizedVersion) return null;
@@ -172,14 +176,114 @@ const extractManifestFromFeedPayload = (
         ? source.checksum
         : null;
 
-  if (!rawUrl || !rawSha) return null;
+  if (rawUrl) {
+    let resolvedUrl: URL;
+    try {
+      resolvedUrl = new URL(rawUrl, feedUrl);
+    } catch {
+      return null;
+    }
+    if (resolvedUrl.protocol !== "https:") {
+      return null;
+    }
 
-  const normalizedSha = normalizeSha256(rawSha);
-  if (!normalizedSha) return null;
+    const size =
+      typeof source.size === "number" && Number.isFinite(source.size) && source.size > 0
+        ? source.size
+        : undefined;
+    const normalizedSha = rawSha ? normalizeSha256(rawSha) ?? undefined : undefined;
+
+    return {
+      version: normalizedVersion,
+      url: resolvedUrl.toString(),
+      sha256: normalizedSha,
+      size,
+    };
+  }
+
+  const assetsRaw = source.assets;
+  if (!Array.isArray(assetsRaw)) {
+    return null;
+  }
+
+  type ReleaseAsset = {
+    name: string;
+    url: string;
+    size?: number;
+    sha256?: string;
+  };
+
+  const assets: ReleaseAsset[] = assetsRaw
+    .map((asset): ReleaseAsset | null => {
+      if (!asset || typeof asset !== "object" || Array.isArray(asset)) return null;
+      const item = asset as Record<string, unknown>;
+      const name = typeof item.name === "string" ? item.name : "";
+      const url =
+        typeof item.browser_download_url === "string"
+          ? item.browser_download_url
+          : typeof item.url === "string"
+            ? item.url
+            : "";
+      if (!name || !url) return null;
+      const digest =
+        typeof item.digest === "string"
+          ? item.digest
+          : typeof item.sha256 === "string"
+            ? item.sha256
+            : typeof item.checksum === "string"
+              ? item.checksum
+              : undefined;
+      const normalizedSha = digest ? normalizeSha256(digest) ?? undefined : undefined;
+      const size =
+        typeof item.size === "number" && Number.isFinite(item.size) && item.size > 0
+          ? item.size
+          : undefined;
+      return {
+        name,
+        url,
+        size,
+        sha256: normalizedSha,
+      };
+    })
+    .filter((asset): asset is ReleaseAsset => Boolean(asset));
+
+  if (assets.length === 0) {
+    return null;
+  }
+
+  const platformPrefs =
+    process.platform === "win32"
+      ? ["web-setup", ".exe", "portable"]
+      : process.platform === "darwin"
+        ? [".dmg", ".zip"]
+        : [".appimage", ".deb", ".rpm"];
+
+  const arch = process.arch.toLowerCase();
+  const otherArchTokens = ["x64", "arm64", "ia32"].filter((token) => token !== arch);
+
+  const scoreAsset = (asset: ReleaseAsset): number => {
+    const name = asset.name.toLowerCase();
+    let score = 0;
+    for (const pref of platformPrefs) {
+      if (name.includes(pref)) {
+        score += 40;
+      }
+    }
+    if (name.includes(arch)) {
+      score += 30;
+    }
+    if (!otherArchTokens.some((token) => name.includes(token))) {
+      score += 5;
+    }
+    return score;
+  };
+
+  const best = [...assets].sort((left, right) => scoreAsset(right) - scoreAsset(left))[0];
+  if (!best) return null;
 
   let resolvedUrl: URL;
   try {
-    resolvedUrl = new URL(rawUrl, feedUrl);
+    resolvedUrl = new URL(best.url, feedUrl);
   } catch {
     return null;
   }
@@ -187,16 +291,11 @@ const extractManifestFromFeedPayload = (
     return null;
   }
 
-  const size =
-    typeof source.size === "number" && Number.isFinite(source.size) && source.size > 0
-      ? source.size
-      : undefined;
-
   return {
     version: normalizedVersion,
     url: resolvedUrl.toString(),
-    sha256: normalizedSha,
-    size,
+    sha256: best.sha256,
+    size: best.size,
   };
 };
 
@@ -361,7 +460,7 @@ export class AppUpdateService {
       };
     }
 
-    const feedUrl = process.env.LUIE_UPDATE_FEED_URL?.trim();
+    const feedUrl = process.env.LUIE_UPDATE_FEED_URL?.trim() ?? DEFAULT_UPDATE_FEED_URL;
     if (!feedUrl) {
       this.cachedManifest = null;
       this.setState({
@@ -491,6 +590,31 @@ export class AppUpdateService {
     return createHash("sha256").update(content).digest("hex");
   }
 
+  private async tryLaunchInstaller(filePath: string): Promise<boolean> {
+    const lower = filePath.toLowerCase();
+    const launchableExtensions = [".exe", ".msi", ".dmg", ".pkg", ".appimage", ".deb", ".rpm"];
+    if (!launchableExtensions.some((ext) => lower.endsWith(ext))) {
+      return false;
+    }
+    const launchError = await shell.openPath(filePath);
+    if (launchError) {
+      logger.warn("Failed to launch downloaded update artifact", {
+        filePath,
+        launchError,
+      });
+      return false;
+    }
+
+    setTimeout(() => {
+      try {
+        app.quit();
+      } catch (error) {
+        logger.warn("Failed to quit app after launching installer", { error });
+      }
+    }, 180);
+    return true;
+  }
+
   private async ensureManifestForDownload(): Promise<UpdateFeedManifest> {
     if (this.cachedManifest) return this.cachedManifest;
     const check = await this.checkForUpdate();
@@ -595,7 +719,7 @@ export class AppUpdateService {
         throw new Error(`UPDATE_DOWNLOAD_SIZE_MISMATCH:${manifest.size}:${total}`);
       }
       const actualSha = hash.digest("hex");
-      if (actualSha !== manifest.sha256) {
+      if (manifest.sha256 && actualSha !== manifest.sha256) {
         throw new Error("UPDATE_DOWNLOAD_HASH_MISMATCH");
       }
 
@@ -603,7 +727,7 @@ export class AppUpdateService {
       const artifact: AppUpdateArtifact = {
         version: manifest.version,
         filePath: finalPath,
-        sha256: manifest.sha256,
+        sha256: actualSha,
         size: total,
         sourceUrl: manifest.url,
         downloadedAt: new Date().toISOString(),
@@ -714,6 +838,16 @@ export class AppUpdateService {
       return {
         success: true,
         message: "UPDATE_APPLY_OK_TEST_MODE",
+        rollbackAvailable,
+        relaunched: false,
+      };
+    }
+
+    const launchedInstaller = await this.tryLaunchInstaller(pendingArtifact.filePath);
+    if (launchedInstaller) {
+      return {
+        success: true,
+        message: "UPDATE_APPLY_INSTALLER_LAUNCHED",
         rollbackAvailable,
         relaunched: false,
       };

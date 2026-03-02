@@ -499,13 +499,15 @@ export const jaBase = {
     }
   },
   "startupWizard": {
-    "title": "メイン起動前チェック",
-    "subtitle": "診断、ランタイム設定、ログインを完了するとメイン画面に進めます。",
-    "steps": {
-      "diagnostics": "診断",
-      "runtimeConfig": "Supabase ランタイム設定",
-      "oauth": "Google OAuth",
-      "complete": "完了"
+    "title": "アプリを準備中です",
+    "subtitle": "必要な構成を確認しています。しばらくお待ちください。",
+    "status": {
+      "configuring": "アプリを構成中です...",
+      "launching": "メイン画面を開いています...",
+      "failed": "起動準備に失敗しました。"
+    },
+    "actions": {
+      "retry": "再試行"
     }
   }
 } as const;

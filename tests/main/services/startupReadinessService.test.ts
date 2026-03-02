@@ -106,7 +106,7 @@ describe("startupReadinessService", () => {
     const readiness = await startupReadinessService.getReadiness();
     expect(readiness.mustRunWizard).toBe(true);
     expect(readiness.reasons).toContain("supabaseRuntimeConfig");
-    expect(readiness.reasons).toContain("supabaseSession");
+    expect(readiness.reasons).not.toContain("supabaseSession");
   });
 
   it("completes wizard only when all checks pass", async () => {

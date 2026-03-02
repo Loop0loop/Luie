@@ -499,13 +499,15 @@ export const koBase = {
     }
   },
   "startupWizard": {
-    "title": "메인 진입 전 시작 점검",
-    "subtitle": "진단, 런타임 설정, 로그인을 완료해야 메인 창으로 진입할 수 있습니다.",
-    "steps": {
-      "diagnostics": "진단",
-      "runtimeConfig": "Supabase 런타임 설정",
-      "oauth": "Google OAuth",
-      "complete": "완료"
+    "title": "앱 구성중입니다",
+    "subtitle": "필수 구성을 확인하고 있어요. 잠시만 기다려 주세요.",
+    "status": {
+      "configuring": "앱 구성중입니다...",
+      "launching": "메인 화면을 여는 중입니다...",
+      "failed": "시작 구성에 실패했습니다."
+    },
+    "actions": {
+      "retry": "다시 시도"
     }
   }
 } as const;

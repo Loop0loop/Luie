@@ -61,6 +61,7 @@
   "mac": {
     "category": "public.app-category.productivity",
     "icon": "build/icons/icon.icns",
+    "artifactName": "Luie-${version}-${arch}.${ext}",
     "target": [
       "dmg",
       "zip"
@@ -97,6 +98,7 @@
   },
   "linux": {
     "icon": "build/icons/icon.png",
+    "artifactName": "Luie-${version}-${arch}.${ext}",
     "target": [
       "AppImage",
       "deb"

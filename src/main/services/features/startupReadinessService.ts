@@ -21,10 +21,11 @@ const buildCheck = (
   key: StartupCheckKey,
   ok: boolean,
   detail?: string,
+  blocking = true,
 ): StartupCheck => ({
   key,
   ok,
-  blocking: true,
+  blocking,
   detail,
   checkedAt: nowIso(),
 });
@@ -176,7 +177,12 @@ class StartupReadinessService {
     try {
       const syncSettings = settingsManager.getSyncSettings();
       if (!syncSettings.connected || !syncSettings.userId) {
-        return buildCheck("supabaseSession", false, "Sync login is required");
+        return buildCheck(
+          "supabaseSession",
+          false,
+          "Sync login is not connected yet (non-blocking)",
+          false,
+        );
       }
 
       const access = syncAuthService.getAccessToken(syncSettings);
@@ -188,6 +194,7 @@ class StartupReadinessService {
           "supabaseSession",
           false,
           access.errorCode ?? refresh.errorCode ?? "No usable JWT token",
+          false,
         );
       }
 
@@ -196,6 +203,7 @@ class StartupReadinessService {
           "supabaseSession",
           false,
           "Access token is unavailable. Reconnect sync login.",
+          false,
         );
       }
 
@@ -205,6 +213,7 @@ class StartupReadinessService {
           "supabaseSession",
           false,
           "Runtime Supabase configuration is not completed",
+          false,
         );
       }
 
@@ -220,6 +229,7 @@ class StartupReadinessService {
           "supabaseSession",
           false,
           `Edge auth health check failed (${edgeResponse.status})`,
+          false,
         );
       }
 
@@ -235,6 +245,7 @@ class StartupReadinessService {
           "supabaseSession",
           false,
           "Edge auth health response is invalid",
+          false,
         );
       }
 
@@ -242,10 +253,11 @@ class StartupReadinessService {
         "supabaseSession",
         true,
         edgePayload.userId ?? syncSettings.email ?? syncSettings.userId,
+        false,
       );
     } catch (error) {
       logger.warn("Startup session check failed", { error });
-      return buildCheck("supabaseSession", false, this.toErrorMessage(error));
+      return buildCheck("supabaseSession", false, this.toErrorMessage(error), false);
     }
   }
 
