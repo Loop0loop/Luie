@@ -70,20 +70,8 @@
     "icon": "build/icons/icon.ico",
     "executableName": "Luie",
     "target": [
-      {
-        "target": "nsis-web",
-        "arch": [
-          "x64",
-          "arm64"
-        ]
-      },
-      {
-        "target": "portable",
-        "arch": [
-          "x64",
-          "arm64"
-        ]
-      }
+      "nsis-web",
+      "portable"
     ]
   },
   "nsis": {

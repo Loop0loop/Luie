@@ -17,6 +17,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         arch: [x64, arm64]
 
@@ -38,10 +39,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Validate tag and package version
+        run: node -e "const fs=require('fs');const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));const tag=(process.env.GITHUB_REF_NAME||'').replace(/^v/,'');if(!tag){console.error('Missing tag');process.exit(1)}if(pkg.version!==tag){console.error(`Tag version (${tag}) and package.json version (${pkg.version}) must match.`);process.exit(1)}"
+
       - name: Build and publish Windows packages
         env:
           GH_TOKEN: ${{ github.token }}
-        run: pnpm run build:win:${{ matrix.arch }} -- --publish always
+        run: pnpm generate && pnpm build && electron-builder --win --${{ matrix.arch }} --config electron-builder.json --publish always
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
