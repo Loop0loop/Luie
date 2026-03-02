@@ -46,7 +46,7 @@ jobs:
       - name: Build and publish Windows packages
         env:
           GH_TOKEN: ${{ github.token }}
-        run: pnpm generate && pnpm build && electron-builder --win --${{ matrix.arch }} --config electron-builder.json --publish always
+        run: pnpm generate && pnpm build && pnpm exec electron-builder --win --${{ matrix.arch }} --config electron-builder.json --publish always
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
