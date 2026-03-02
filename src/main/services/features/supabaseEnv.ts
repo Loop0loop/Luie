@@ -4,8 +4,14 @@ export type SupabaseConfig = {
 };
 
 const trimEnv = (key: string): string | null => {
-  const value = process.env[key]?.trim();
-  return value && value.length > 0 ? value : null;
+  const raw = process.env[key]?.trim();
+  if (!raw || raw.length === 0) return null;
+
+  const quoteWrapped =
+    (raw.startsWith('"') && raw.endsWith('"')) ||
+    (raw.startsWith("'") && raw.endsWith("'"));
+  const value = quoteWrapped ? raw.slice(1, -1).trim() : raw;
+  return value.length > 0 ? value : null;
 };
 
 const isHttpUrl = (value: string): boolean => /^https?:\/\//i.test(value);

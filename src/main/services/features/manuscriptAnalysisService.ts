@@ -21,6 +21,7 @@ import {
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { readLuieEntry } from "../../utils/luiePackage.js";
 import { ensureSafeAbsolutePath } from "../../utils/pathValidation.js";
+import { resolveGeminiApiKey } from "./analysis/geminiApiKeyResolver.js";
 
 const logger = createLogger("ManuscriptAnalysisService");
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3-flash-preview";
@@ -82,10 +83,10 @@ class ManuscriptAnalysisService {
       throw new Error("Analysis already in progress");
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = await resolveGeminiApiKey();
     if (!apiKey) {
-      logger.error("GEMINI_API_KEY not set");
-      throw new Error("GEMINI_API_KEY not found in environment variables");
+      logger.error("GEMINI_API_KEY not available (env + luieEnv fallback)");
+      throw new Error("GEMINI_API_KEY not found in environment variables or luieEnv");
     }
 
     this.isAnalyzing = true;

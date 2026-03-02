@@ -131,6 +131,28 @@ const getFallbackPosition = (nodeId: string, index: number): { x: number; y: num
   };
 };
 
+const resolveEdgeHandles = (
+  sourceNode: Node | undefined,
+  targetNode: Node | undefined,
+): { sourceHandle?: string; targetHandle?: string } => {
+  if (!sourceNode || !targetNode) {
+    return {};
+  }
+
+  const dx = targetNode.position.x - sourceNode.position.x;
+  const dy = targetNode.position.y - sourceNode.position.y;
+
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    return dx >= 0
+      ? { sourceHandle: "right", targetHandle: "left" }
+      : { sourceHandle: "left", targetHandle: "right" };
+  }
+
+  return dy >= 0
+    ? { sourceHandle: "bottom", targetHandle: "top" }
+    : { sourceHandle: "top", targetHandle: "bottom" };
+};
+
 function toRFNode(
   graphNode: WorldGraphNode,
   index: number,
@@ -153,6 +175,7 @@ function toRFNode(
       label: graphNode.name,
       subType,
       importance,
+      entityType: graphNode.entityType,
       viewMode,
     },
     selected: selectedNodeId === graphNode.id,
@@ -160,8 +183,17 @@ function toRFNode(
   };
 }
 
-function toRFEdge(relation: EntityRelation, translate: (key: string, fallback: string) => string, viewMode: WorldViewMode): Edge {
+function toRFEdge(
+  relation: EntityRelation,
+  translate: (key: string, fallback: string) => string,
+  viewMode: WorldViewMode,
+  nodeById: Map<string, Node>,
+): Edge {
   const color = RELATION_COLORS[relation.relation] ?? "#94a3b8";
+  const { sourceHandle, targetHandle } = resolveEdgeHandles(
+    nodeById.get(relation.sourceId),
+    nodeById.get(relation.targetId),
+  );
 
   let strokeWidth = 2;
   let isAnimated = relation.relation === "causes" || relation.relation === "controls";
@@ -175,6 +207,9 @@ function toRFEdge(relation: EntityRelation, translate: (key: string, fallback: s
     id: relation.id,
     source: relation.sourceId,
     target: relation.targetId,
+    sourceHandle,
+    targetHandle,
+    type: "smoothstep",
     label: translate(`world.graph.relationTypes.${relation.relation}`, relation.relation),
     labelStyle: { fontSize: 10, fill: "#94a3b8", fontWeight: 500 },
     labelBgStyle: { fill: "transparent" },
@@ -210,8 +245,9 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
   const rfEdges = useMemo(() => {
     const translate = (key: string, fallback: string) =>
       i18n.t(key, { defaultValue: fallback });
-    return graphEdges.map((edge) => toRFEdge(edge, translate, viewMode));
-  }, [graphEdges, i18n, viewMode]);
+    const nodeById = new Map(rfNodes.map((node) => [node.id, node] as const));
+    return graphEdges.map((edge) => toRFEdge(edge, translate, viewMode, nodeById));
+  }, [graphEdges, i18n, rfNodes, viewMode]);
 
   const { layoutedNodes, layoutedEdges } = useWorldGraphLayout({
     nodes: rfNodes,

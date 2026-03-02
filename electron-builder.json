@@ -1,0 +1,117 @@
+{
+  "appId": "com.luie.app",
+  "productName": "Luie",
+  "directories": {
+    "output": "dist",
+    "buildResources": "build"
+  },
+  "files": [
+    "out/**/*",
+    "package.json"
+  ],
+  "extraResources": [
+    {
+      "from": "node_modules/.prisma",
+      "to": "node_modules/.prisma",
+      "filter": [
+        "**/*"
+      ]
+    },
+    {
+      "from": "node_modules/@prisma/client",
+      "to": "node_modules/@prisma/client",
+      "filter": [
+        "**/*"
+      ]
+    },
+    {
+      "from": "node_modules/@prisma/client-runtime-utils",
+      "to": "node_modules/@prisma/client-runtime-utils",
+      "filter": [
+        "**/*"
+      ]
+    },
+    {
+      "from": "node_modules/bindings",
+      "to": "node_modules/bindings",
+      "filter": [
+        "**/*"
+      ]
+    },
+    {
+      "from": "node_modules/file-uri-to-path",
+      "to": "node_modules/file-uri-to-path",
+      "filter": [
+        "**/*"
+      ]
+    },
+    {
+      "from": "build/icons/icon.png",
+      "to": "icon.png"
+    }
+  ],
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "Loop0loop",
+      "repo": "Luie",
+      "releaseType": "release"
+    }
+  ],
+  "mac": {
+    "category": "public.app-category.productivity",
+    "icon": "build/icons/icon.icns",
+    "target": [
+      "dmg",
+      "zip"
+    ]
+  },
+  "win": {
+    "icon": "build/icons/icon.ico",
+    "executableName": "Luie",
+    "target": [
+      {
+        "target": "nsis-web",
+        "arch": [
+          "x64",
+          "arm64"
+        ]
+      },
+      {
+        "target": "portable",
+        "arch": [
+          "x64",
+          "arm64"
+        ]
+      }
+    ]
+  },
+  "nsis": {
+    "oneClick": true,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": false,
+    "allowElevation": true,
+    "createDesktopShortcut": "always",
+    "createStartMenuShortcut": true,
+    "shortcutName": "Luie",
+    "uninstallDisplayName": "Luie",
+    "displayLanguageSelector": false,
+    "installerIcon": "build/icons/icon.ico",
+    "uninstallerIcon": "build/icons/icon.ico",
+    "installerHeaderIcon": "build/icons/icon.ico",
+    "warningsAsErrors": false
+  },
+  "nsisWeb": {
+    "artifactName": "Luie-Web-Setup-${version}-${arch}.${ext}"
+  },
+  "portable": {
+    "artifactName": "Luie-Portable-${version}-${arch}.${ext}"
+  },
+  "linux": {
+    "icon": "build/icons/icon.png",
+    "target": [
+      "AppImage",
+      "deb"
+    ]
+  }
+}

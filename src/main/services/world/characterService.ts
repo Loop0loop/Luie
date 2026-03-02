@@ -88,13 +88,6 @@ export class CharacterService {
       const characters = await db.getClient().character.findMany({
         where: { projectId },
         orderBy: { createdAt: "asc" },
-        include: {
-          _count: {
-            select: {
-              appearances: true,
-            },
-          },
-        },
       });
 
       return characters;

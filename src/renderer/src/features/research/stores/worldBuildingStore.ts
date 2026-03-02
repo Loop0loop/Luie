@@ -75,16 +75,34 @@ type UpdateGraphNodeInput = {
   subType?: WorldEntityType;
 };
 
+const parseNodeAttributes = (
+  value: unknown,
+): Record<string, unknown> | null => {
+  if (!value) return null;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+};
+
 const toCharacterNode = (item: Character): WorldGraphNode => ({
   id: item.id,
   entityType: "Character",
   name: item.name,
   description: item.description ?? null,
   firstAppearance: item.firstAppearance ?? null,
-  attributes:
-    typeof item.attributes === "string"
-      ? null
-      : (item.attributes as Record<string, unknown> | null) ?? null,
+  attributes: parseNodeAttributes(item.attributes),
   positionX: 0,
   positionY: 0,
 });
@@ -95,10 +113,7 @@ const toFactionNode = (item: Faction): WorldGraphNode => ({
   name: item.name,
   description: item.description ?? null,
   firstAppearance: item.firstAppearance ?? null,
-  attributes:
-    typeof item.attributes === "string"
-      ? null
-      : (item.attributes as Record<string, unknown> | null) ?? null,
+  attributes: parseNodeAttributes(item.attributes),
   positionX: 0,
   positionY: 0,
 });
@@ -109,10 +124,7 @@ const toEventNode = (item: Event): WorldGraphNode => ({
   name: item.name,
   description: item.description ?? null,
   firstAppearance: item.firstAppearance ?? null,
-  attributes:
-    typeof item.attributes === "string"
-      ? null
-      : (item.attributes as Record<string, unknown> | null) ?? null,
+  attributes: parseNodeAttributes(item.attributes),
   positionX: 0,
   positionY: 0,
 });
@@ -137,10 +149,7 @@ const toWorldEntityNode = (item: WorldEntity): WorldGraphNode => {
     name: item.name,
     description: item.description ?? null,
     firstAppearance: item.firstAppearance ?? null,
-    attributes:
-      typeof item.attributes === "string"
-        ? null
-        : (item.attributes as Record<string, unknown> | null) ?? null,
+    attributes: parseNodeAttributes(item.attributes),
     positionX: item.positionX ?? 0,
     positionY: item.positionY ?? 0,
   };

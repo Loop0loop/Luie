@@ -52,6 +52,15 @@ const isSameLocalNodeState = (
   left.tags.length === right.tags.length &&
   left.tags.every((tag, index) => tag === right.tags[index]);
 
+type LocalNodeDraft = {
+  name: string;
+  description: string;
+  time: string;
+  region: string;
+  tags: string[];
+  importance: number;
+};
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 /** ★ 별점 UI */
@@ -205,14 +214,15 @@ export function WorldInspector() {
     [graphData, selectedEdge],
   );
 
-  const [localNode, setLocalNode] = useState<{
-    name: string;
-    description: string;
-    time: string;
-    region: string;
-    tags: string[];
-    importance: number;
-  }>({ name: "", description: "", time: "", region: "", tags: [], importance: 3 });
+  const [localNode, setLocalNode] = useState<LocalNodeDraft>({
+    name: "",
+    description: "",
+    time: "",
+    region: "",
+    tags: [],
+    importance: 3,
+  });
+  const localNodeRef = useRef<LocalNodeDraft>(localNode);
 
   const [mentions, setMentions] = useState<WorldGraphMention[]>([]);
   const [mentionsLoading, setMentionsLoading] = useState(false);
@@ -234,11 +244,19 @@ export function WorldInspector() {
       importance: typeof importanceValue === "number" ? Math.max(1, Math.min(5, importanceValue)) : 3,
     };
     queueMicrotask(() => {
-      setLocalNode((previous) =>
-        isSameLocalNodeState(previous, nextLocalNode) ? previous : nextLocalNode,
-      );
+      setLocalNode((previous) => {
+        if (isSameLocalNodeState(previous, nextLocalNode)) {
+          return previous;
+        }
+        localNodeRef.current = nextLocalNode;
+        return nextLocalNode;
+      });
     });
   }, [selectedNode]);
+
+  useEffect(() => {
+    localNodeRef.current = localNode;
+  }, [localNode]);
 
   useEffect(() => {
     if (!selectedNode || !activeProjectId) {
@@ -285,66 +303,67 @@ export function WorldInspector() {
     };
   }, [activeProjectId, selectedNode]);
 
-  const handleChange = <K extends keyof typeof localNode>(field: K, value: (typeof localNode)[K]) => {
-    setLocalNode((prev) => ({ ...prev, [field]: value }));
+  const handleChange = <K extends keyof LocalNodeDraft>(field: K, value: LocalNodeDraft[K]) => {
+    setLocalNode((prev) => {
+      const next = { ...prev, [field]: value };
+      localNodeRef.current = next;
+      return next;
+    });
   };
 
-  const handleBlur = useCallback(async () => {
+  const commitNode = useCallback(async (draft?: LocalNodeDraft) => {
     if (!selectedNode) return;
+    const nextDraft = draft ?? localNodeRef.current;
     const currentAttrs = selectedNode.attributes ?? {};
 
     await updateGraphNode({
       id: selectedNode.id,
       entityType: selectedNode.entityType,
       subType: selectedNode.subType,
-      name: localNode.name || t("world.graph.inspector.untitled"),
-      description: localNode.description,
+      name: nextDraft.name || t("world.graph.inspector.untitled"),
+      description: nextDraft.description,
       attributes: {
         ...currentAttrs,
-        time: localNode.time,
-        region: localNode.region,
-        tags: localNode.tags,
-        importance: localNode.importance as 1 | 2 | 3 | 4 | 5,
+        time: nextDraft.time,
+        region: nextDraft.region,
+        tags: nextDraft.tags,
+        importance: nextDraft.importance as 1 | 2 | 3 | 4 | 5,
       },
     });
-  }, [localNode, selectedNode, t, updateGraphNode]);
+  }, [selectedNode, t, updateGraphNode]);
+
+  const handleBlur = useCallback(async () => {
+    await commitNode();
+  }, [commitNode]);
 
   /** 중요도 변경 즉시 저장 */
   const handleImportanceChange = useCallback(
     async (value: number) => {
       if (!selectedNode) return;
-      setLocalNode((prev) => ({ ...prev, importance: value }));
-      const currentAttrs = selectedNode.attributes ?? {};
-      await updateGraphNode({
-        id: selectedNode.id,
-        entityType: selectedNode.entityType,
-        subType: selectedNode.subType,
-        attributes: {
-          ...currentAttrs,
-          importance: value as 1 | 2 | 3 | 4 | 5,
-        },
-      });
+      const nextDraft: LocalNodeDraft = {
+        ...localNodeRef.current,
+        importance: value,
+      };
+      setLocalNode(nextDraft);
+      localNodeRef.current = nextDraft;
+      await commitNode(nextDraft);
     },
-    [selectedNode, updateGraphNode],
+    [commitNode, selectedNode],
   );
 
   /** 태그 변경 즉시 저장 */
   const handleTagsChange = useCallback(
     async (newTags: string[]) => {
       if (!selectedNode) return;
-      setLocalNode((prev) => ({ ...prev, tags: newTags }));
-      const currentAttrs = selectedNode.attributes ?? {};
-      await updateGraphNode({
-        id: selectedNode.id,
-        entityType: selectedNode.entityType,
-        subType: selectedNode.subType,
-        attributes: {
-          ...currentAttrs,
-          tags: newTags,
-        },
-      });
+      const nextDraft: LocalNodeDraft = {
+        ...localNodeRef.current,
+        tags: newTags,
+      };
+      setLocalNode(nextDraft);
+      localNodeRef.current = nextDraft;
+      await commitNode(nextDraft);
     },
-    [selectedNode, updateGraphNode],
+    [commitNode, selectedNode],
   );
 
   const handleDeleteNode = useCallback(async () => {
@@ -473,8 +492,13 @@ export function WorldInspector() {
                         key={preset}
                         type="button"
                         onClick={() => {
-                          handleChange("time", preset);
-                          void setTimeout(handleBlur, 0);
+                          const nextDraft: LocalNodeDraft = {
+                            ...localNodeRef.current,
+                            time: preset,
+                          };
+                          setLocalNode(nextDraft);
+                          localNodeRef.current = nextDraft;
+                          void commitNode(nextDraft);
                         }}
                         className={cn(
                           "px-2.5 py-1 rounded-full text-[10px] font-medium border transition-all",

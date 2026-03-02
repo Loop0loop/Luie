@@ -81,13 +81,6 @@ export class TermService {
       const terms = await db.getClient().term.findMany({
         where: { projectId },
         orderBy: { term: "asc" },
-        include: {
-          _count: {
-            select: {
-              appearances: true,
-            },
-          },
-        },
       });
 
       return terms;

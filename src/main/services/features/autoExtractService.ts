@@ -6,6 +6,7 @@ import { keywordExtractor } from "../../core/keywordExtractor.js";
 import { characterService } from "../world/characterService.js";
 import { termService } from "../world/termService.js";
 import { GoogleGenAI } from "@google/genai";
+import { resolveGeminiApiKey } from "./analysis/geminiApiKeyResolver.js";
 import {
   FEW_SHOT_EXAMPLES,
   GEMINI_RESPONSE_SCHEMA,
@@ -99,9 +100,9 @@ class AutoExtractService {
       return;
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = await resolveGeminiApiKey();
     if (!apiKey) {
-      logger.warn("GEMINI_API_KEY not set; skipping auto extraction");
+      logger.warn("GEMINI_API_KEY not available (env + luieEnv fallback); skipping auto extraction");
       return;
     }
 

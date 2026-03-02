@@ -849,23 +849,50 @@ export class ProjectService {
   private buildSnapshotCreateRows(
     resolvedProjectId: string,
     snapshots: Array<z.infer<typeof LuieSnapshotSchema>>,
+    validChapterIds: Set<string>,
   ): SnapshotCreateRow[] {
-    return snapshots
-      .filter((snapshot) => typeof snapshot.id === "string")
-      .map((snapshot) => {
-        const content = snapshot.content ?? "";
-        return {
-          id: snapshot.id,
-          projectId: snapshot.projectId ?? resolvedProjectId,
-          chapterId:
-            typeof snapshot.chapterId === "string" ? snapshot.chapterId : null,
-          content,
-          contentLength: content.length,
-          description:
-            typeof snapshot.description === "string" ? snapshot.description : null,
-          createdAt: snapshot.createdAt ? new Date(snapshot.createdAt) : new Date(),
-        };
+    const deduped = new Set<string>();
+    const rows: SnapshotCreateRow[] = [];
+
+    for (const snapshot of snapshots) {
+      if (typeof snapshot.id !== "string" || snapshot.id.trim().length === 0) {
+        continue;
+      }
+      if (deduped.has(snapshot.id)) {
+        continue;
+      }
+      deduped.add(snapshot.id);
+
+      const content = typeof snapshot.content === "string" ? snapshot.content : "";
+      const rawChapterId =
+        typeof snapshot.chapterId === "string" ? snapshot.chapterId.trim() : "";
+      const hasValidChapter = rawChapterId.length > 0 && validChapterIds.has(rawChapterId);
+      if (rawChapterId.length > 0 && !hasValidChapter) {
+        logger.warn("Snapshot chapter reference missing during .luie import; detaching snapshot", {
+          snapshotId: snapshot.id,
+          chapterId: rawChapterId,
+          projectId: resolvedProjectId,
+        });
+      }
+
+      const createdAt =
+        typeof snapshot.createdAt === "string" && snapshot.createdAt.trim().length > 0
+          ? new Date(snapshot.createdAt)
+          : new Date();
+      const safeCreatedAt = Number.isNaN(createdAt.getTime()) ? new Date() : createdAt;
+
+      rows.push({
+        id: snapshot.id,
+        projectId: resolvedProjectId,
+        chapterId: hasValidChapter ? rawChapterId : null,
+        content,
+        contentLength: content.length,
+        description: typeof snapshot.description === "string" ? snapshot.description : null,
+        createdAt: safeCreatedAt,
       });
+    }
+
+    return rows;
   }
 
   private serializeAttributes(input: unknown): string | null {
@@ -1293,6 +1320,7 @@ export class ProjectService {
       const snapshotsForCreate = this.buildSnapshotCreateRows(
         resolvedProjectId,
         collections.snapshots,
+        new Set(chaptersForCreate.map((chapter) => chapter.id)),
       );
 
       const created = await this.applyImportTransaction({
@@ -1372,15 +1400,13 @@ export class ProjectService {
   async getAllProjects() {
     try {
       const projects = await db.getClient().project.findMany({
-        include: {
-          settings: true,
-          _count: {
-            select: {
-              chapters: true,
-              characters: true,
-              terms: true,
-            },
-          },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          projectPath: true,
+          createdAt: true,
+          updatedAt: true,
         },
         orderBy: { updatedAt: "desc" },
       });
