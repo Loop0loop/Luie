@@ -30,6 +30,7 @@ const mocked = vi.hoisted(() => {
 vi.mock("electron", () => ({
   app: {
     quit: vi.fn(),
+    getVersion: vi.fn(() => "0.0.0-test"),
   },
   ipcMain: {
     handle: vi.fn(
@@ -138,5 +139,23 @@ describe("IPC input validation", () => {
 
     expect(response.success).toBe(true);
     expect(mocked.syncService.resolveConflict).toHaveBeenCalledWith(payload);
+  });
+
+  it("returns INVALID_INPUT for malformed SYNC_SET_RUNTIME_CONFIG payload", async () => {
+    const { registerSyncIPCHandlers } = await import(
+      "../../../src/main/handler/system/ipcSyncHandlers.js"
+    );
+    registerSyncIPCHandlers(mocked.logger);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.SYNC_SET_RUNTIME_CONFIG);
+    expect(handler).toBeDefined();
+
+    const response = (await handler?.({}, { url: "", anonKey: "" })) as {
+      success: boolean;
+      error?: { code: string };
+    };
+
+    expect(response.success).toBe(false);
+    expect(response.error?.code).toBe(ErrorCode.INVALID_INPUT);
   });
 });

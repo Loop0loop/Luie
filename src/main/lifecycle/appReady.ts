@@ -5,6 +5,7 @@ import { isDevEnv } from "../utils/environment.js";
 import type { createLogger } from "../../shared/logger/index.js";
 import { applyApplicationMenu } from "./menu.js";
 import { ensureBootstrapReady } from "./bootstrap.js";
+import { startupReadinessService } from "../services/features/startupReadinessService.js";
 
 type Logger = ReturnType<typeof createLogger>;
 
@@ -139,6 +140,8 @@ export const registerAppReady = (logger: Logger, options: AppReadyOptions = {}):
 
     let firstRendererReadyTriggered = false;
     let startupMaintenanceScheduled = false;
+    let mainFlowStarted = false;
+    let fallbackTimer: NodeJS.Timeout | null = null;
 
     const triggerFirstRendererReady = (reason: string): void => {
       if (firstRendererReadyTriggered) return;
@@ -171,6 +174,53 @@ export const registerAppReady = (logger: Logger, options: AppReadyOptions = {}):
       setTimeout(() => {
         void runDeferredStartupMaintenance(logger);
       }, STARTUP_MAINTENANCE_DELAY_MS);
+    };
+
+    const startMainWindowFlow = (reason: string): void => {
+      if (mainFlowStarted) return;
+      mainFlowStarted = true;
+
+      logger.info("Starting main window flow", {
+        reason,
+        startupElapsedMs: Date.now() - startupStartedAtMs,
+      });
+
+      windowManager.createSplashWindow();
+      logger.info("Startup checkpoint: splash window created", {
+        startupElapsedMs: Date.now() - startupStartedAtMs,
+      });
+
+      windowManager.createMainWindow({ deferShow: true });
+      logger.info("Startup checkpoint: main window requested", {
+        startupElapsedMs: Date.now() - startupStartedAtMs,
+      });
+
+      const bootstrapStartedAt = Date.now();
+      void ensureBootstrapReady()
+        .then((status) => {
+          logger.info("Startup checkpoint: bootstrap ready", {
+            isReady: status.isReady,
+            bootstrapElapsedMs: Date.now() - bootstrapStartedAt,
+            startupElapsedMs: Date.now() - startupStartedAtMs,
+          });
+
+          if (!status.isReady) {
+            logger.error("App bootstrap did not complete", status);
+          }
+        })
+        .catch((error) => {
+          logger.error("App bootstrap did not complete", error);
+        });
+
+      if (fallbackTimer) {
+        clearTimeout(fallbackTimer);
+      }
+      fallbackTimer = setTimeout(() => {
+        if (!firstRendererReadyTriggered) {
+          triggerFirstRendererReady("fallback-timeout");
+        }
+        scheduleStartupMaintenance("fallback-timeout");
+      }, FIRST_RENDERER_FALLBACK_MS);
     };
 
     if (isDev) {
@@ -230,23 +280,26 @@ export const registerAppReady = (logger: Logger, options: AppReadyOptions = {}):
           startupElapsedMs,
         });
 
-        if (webContents.getType() === "window") {
+        if (
+          webContents.getType() === "window" &&
+          windowManager.isMainWindowWebContentsId(webContents.id)
+        ) {
           triggerFirstRendererReady("did-finish-load");
           scheduleStartupMaintenance("did-finish-load");
         }
       });
-      webContents.on(
-        "console-message",
-        (_consoleEvent, level, message, line, sourceId) => {
-          if (level < 2) return;
-          logger.warn("Renderer console message", {
-            level,
-            message,
-            line,
-            sourceId,
-          });
-        },
-      );
+      webContents.on("console-message", (consoleEvent) => {
+        const { level, message, lineNumber, sourceId } = consoleEvent;
+        const severity =
+          level === "error" ? 3 : level === "warning" ? 2 : level === "info" ? 1 : 0;
+        if (severity < 2) return;
+        logger.warn("Renderer console message", {
+          level,
+          message,
+          line: lineNumber,
+          sourceId,
+        });
+      });
       webContents.on("render-process-gone", (_goneEvent, details) => {
         void handleRendererCrash(logger, webContents, details.reason === "killed");
       });
@@ -260,46 +313,45 @@ export const registerAppReady = (logger: Logger, options: AppReadyOptions = {}):
       startupElapsedMs: Date.now() - startupStartedAtMs,
     });
 
-    windowManager.createSplashWindow();
-    logger.info("Startup checkpoint: splash window created", {
-      startupElapsedMs: Date.now() - startupStartedAtMs,
-    });
-
-    windowManager.createMainWindow({ deferShow: true });
-    logger.info("Startup checkpoint: main window requested", {
-      startupElapsedMs: Date.now() - startupStartedAtMs,
-    });
-
     applyApplicationMenu(settingsManager.getMenuBarMode());
 
-    const bootstrapStartedAt = Date.now();
-    void ensureBootstrapReady()
-      .then((status) => {
-        logger.info("Startup checkpoint: bootstrap ready", {
-          isReady: status.isReady,
-          bootstrapElapsedMs: Date.now() - bootstrapStartedAt,
-          startupElapsedMs: Date.now() - startupStartedAtMs,
-        });
+    const readiness = await startupReadinessService.getReadiness();
+    logger.info("Startup readiness evaluated", {
+      mustRunWizard: readiness.mustRunWizard,
+      reasons: readiness.reasons,
+      completedAt: readiness.completedAt,
+    });
 
-        if (!status.isReady) {
-          logger.error("App bootstrap did not complete", status);
-        }
-      })
-      .catch((error) => {
-        logger.error("App bootstrap did not complete", error);
+    if (readiness.mustRunWizard) {
+      windowManager.createStartupWizardWindow();
+      logger.info("Startup wizard requested before main window", {
+        reasons: readiness.reasons,
       });
+    } else {
+      startMainWindowFlow("readiness-pass");
+    }
 
-    setTimeout(() => {
-      if (!firstRendererReadyTriggered) {
-        triggerFirstRendererReady("fallback-timeout");
+    startupReadinessService.onWizardCompleted((nextReadiness) => {
+      logger.info("Startup wizard completion received", {
+        mustRunWizard: nextReadiness.mustRunWizard,
+        reasons: nextReadiness.reasons,
+      });
+      if (nextReadiness.mustRunWizard) {
+        return;
       }
-      scheduleStartupMaintenance("fallback-timeout");
-    }, FIRST_RENDERER_FALLBACK_MS);
+      windowManager.closeStartupWizardWindow();
+      startMainWindowFlow("wizard-complete");
+    });
 
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) {
-        windowManager.createMainWindow();
-        void ensureBootstrapReady();
+        void startupReadinessService.getReadiness().then((nextReadiness) => {
+          if (nextReadiness.mustRunWizard) {
+            windowManager.createStartupWizardWindow();
+            return;
+          }
+          startMainWindowFlow("activate");
+        });
       }
     });
   });

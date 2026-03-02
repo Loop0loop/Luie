@@ -497,5 +497,15 @@ export const koBase = {
       "exportNoChapter": "챕터를 선택한 뒤 내보내기를 실행하세요.",
       "exportOpenFailed": "내보내기 창을 열 수 없습니다."
     }
+  },
+  "startupWizard": {
+    "title": "메인 진입 전 시작 점검",
+    "subtitle": "진단, 런타임 설정, 로그인을 완료해야 메인 창으로 진입할 수 있습니다.",
+    "steps": {
+      "diagnostics": "진단",
+      "runtimeConfig": "Supabase 런타임 설정",
+      "oauth": "Google OAuth",
+      "complete": "완료"
+    }
   }
 } as const;

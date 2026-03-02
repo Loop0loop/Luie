@@ -62,7 +62,8 @@ export default function EditorLayout({
     return () => observer.disconnect();
   }, []);
 
-  const sidebarTopOffset = EDITOR_WINDOW_BAR_HEIGHT_PX + ribbonHeight;
+  const isMacOS = navigator.platform.toLowerCase().includes("mac");
+  const sidebarTopOffset = (isMacOS ? EDITOR_WINDOW_BAR_HEIGHT_PX : 0) + ribbonHeight;
 
   return (
     <div className="flex flex-col h-screen w-screen bg-app text-fg overflow-hidden relative">

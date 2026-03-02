@@ -386,7 +386,9 @@ class SyncRepository {
   ): Promise<DbRow[]> {
     const config = getSupabaseConfig();
     if (!config) {
-      throw new Error("SUPABASE_NOT_CONFIGURED");
+      throw new Error(
+        "SUPABASE_NOT_CONFIGURED: runtime configuration is not completed",
+      );
     }
 
     const query = new URLSearchParams();

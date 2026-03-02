@@ -1,5 +1,4 @@
 import "dotenv/config";
-import { GoogleGenAI } from "@google/genai";
 import { createLogger } from "../../../shared/logger/index.js";
 import { db } from "../../database/index.js";
 import { manuscriptAnalyzer } from "../../core/manuscriptAnalyzer.js";
@@ -21,7 +20,7 @@ import {
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { readLuieEntry } from "../../utils/luiePackage.js";
 import { ensureSafeAbsolutePath } from "../../utils/pathValidation.js";
-import { resolveGeminiApiKey } from "./analysis/geminiApiKeyResolver.js";
+import { invokeGeminiProxy } from "./analysis/geminiApiKeyResolver.js";
 
 const logger = createLogger("ManuscriptAnalysisService");
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3-flash-preview";
@@ -53,14 +52,6 @@ const parseLuieJsonSafe = <T>(
   }
 };
 
-const isAsyncIterable = (value: unknown): value is AsyncIterable<unknown> => {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const iterator = (value as { [Symbol.asyncIterator]?: unknown })[Symbol.asyncIterator];
-  return typeof iterator === "function";
-};
-
 /**
  * 원고 분석 서비스
  * Gemini API를 활용한 실시간 스트리밍 분석
@@ -81,12 +72,6 @@ class ManuscriptAnalysisService {
     if (this.isAnalyzing) {
       logger.warn("Analysis already in progress");
       throw new Error("Analysis already in progress");
-    }
-
-    const apiKey = await resolveGeminiApiKey();
-    if (!apiKey) {
-      logger.error("GEMINI_API_KEY not available (env + luieEnv fallback)");
-      throw new Error("GEMINI_API_KEY not found in environment variables or luieEnv");
     }
 
     this.isAnalyzing = true;
@@ -158,7 +143,7 @@ class ManuscriptAnalysisService {
 
       // 4. Gemini 스트리밍 분석
       const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      await this.streamAnalysisWithGemini(context, chapterId, apiKey, runId);
+      await this.streamAnalysisWithGemini(context, chapterId, runId);
 
       logger.info("Analysis completed", { chapterId, projectId });
     } catch (error) {
@@ -206,11 +191,8 @@ class ManuscriptAnalysisService {
   private async streamAnalysisWithGemini(
     context: AnalysisContext,
     chapterId: string,
-    apiKey: string,
     runId: string
   ): Promise<void> {
-    const genAI = new GoogleGenAI({ apiKey });
-
     const prompt = `${ANALYSIS_SYSTEM_INSTRUCTION}
 
 ${ANALYSIS_FEW_SHOT_EXAMPLES}
@@ -247,21 +229,6 @@ reaction/suggestion의 quote는 반드시 본문에 있는 문구를 그대로 �
     try {
       let usedModel = "";
       const parsedItems: AnalysisItemResult[] = [];
-
-      const extractChunkText = (chunk: unknown): string => {
-        if (!chunk) return "";
-        const maybeTextFn = (chunk as { text?: unknown }).text;
-        if (typeof maybeTextFn === "function") {
-          return (chunk as { text: () => string }).text();
-        }
-        if (typeof maybeTextFn === "string") {
-          return maybeTextFn;
-        }
-        const partText = (chunk as {
-          candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-        })?.candidates?.[0]?.content?.parts?.[0]?.text;
-        return typeof partText === "string" ? partText : "";
-      };
 
       const emitItem = (itemData: AnalysisItemResult) => {
         try {
@@ -336,125 +303,104 @@ reaction/suggestion의 quote는 반드시 본문에 있는 문구를 그대로 �
       };
 
       const streamJsonlFromModel = async (model: string, promptText: string, phase: string) => {
-        const phaseResult = await genAI.models.generateContentStream({
+        const responseText = await invokeGeminiProxy({
           model,
-          contents: [{ role: "user", parts: [{ text: promptText }] }],
-          config: {
-            responseMimeType: "text/plain",
-            temperature: 0.5,
-            topP: 0.9,
-            topK: 40,
-          },
+          prompt: promptText,
+          responseMimeType: "text/plain",
+          temperature: 0.5,
+          topP: 0.9,
+          topK: 40,
         });
 
-        const streamFromResult =
-          phaseResult && typeof phaseResult === "object" && "stream" in phaseResult
-            ? (phaseResult as { stream?: unknown }).stream
-            : undefined;
-        const stream = isAsyncIterable(streamFromResult)
-          ? streamFromResult
-          : isAsyncIterable(phaseResult)
-            ? phaseResult
-            : null;
-        if (!stream) {
-          throw new Error("ANALYSIS_STREAM_UNAVAILABLE");
-        }
-        let buffer = "";
+        let buffer = responseText;
 
-        for await (const chunk of stream) {
-          const chunkText = extractChunkText(chunk);
-          if (!chunkText) continue;
+        // Try to extract complete JSON objects from buffer
+        while (buffer.length > 0) {
+          const trimmed = buffer.trimStart();
+          if (!trimmed) {
+            buffer = "";
+            break;
+          }
 
-          buffer += chunkText;
+          // Skip code fences
+          if (trimmed.startsWith("```")) {
+            const endFence = trimmed.indexOf("\n");
+            if (endFence === -1) break;
+            buffer = trimmed.slice(endFence + 1);
+            continue;
+          }
 
-          // Try to extract complete JSON objects from buffer
-          while (buffer.length > 0) {
-            const trimmed = buffer.trimStart();
-            if (!trimmed) {
+          if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+            // Skip non-JSON content
+            const nextJson = Math.min(
+              trimmed.indexOf("{") === -1 ? Infinity : trimmed.indexOf("{"),
+              trimmed.indexOf("[") === -1 ? Infinity : trimmed.indexOf("["),
+            );
+            if (nextJson === Infinity) {
               buffer = "";
               break;
             }
+            buffer = trimmed.slice(nextJson);
+            continue;
+          }
 
-            // Skip code fences
-            if (trimmed.startsWith("```")) {
-              const endFence = trimmed.indexOf("\n");
-              if (endFence === -1) break;
-              buffer = trimmed.slice(endFence + 1);
+          // Find complete JSON object/array
+          let braceCount = 0;
+          let inString = false;
+          let escape = false;
+          let jsonEnd = -1;
+          const isArray = trimmed[0] === "[";
+          const openChar = isArray ? "[" : "{";
+          const closeChar = isArray ? "]" : "}";
+
+          for (let i = 0; i < trimmed.length; i++) {
+            const char = trimmed[i];
+
+            if (escape) {
+              escape = false;
               continue;
             }
 
-            if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
-              // Skip non-JSON content
-              const nextJson = Math.min(
-                trimmed.indexOf("{") === -1 ? Infinity : trimmed.indexOf("{"),
-                trimmed.indexOf("[") === -1 ? Infinity : trimmed.indexOf("[")
-              );
-              if (nextJson === Infinity) {
-                buffer = "";
+            if (char === "\\") {
+              escape = true;
+              continue;
+            }
+
+            if (char === '"') {
+              inString = !inString;
+              continue;
+            }
+
+            if (inString) continue;
+
+            if (char === openChar) {
+              braceCount++;
+            } else if (char === closeChar) {
+              braceCount--;
+              if (braceCount === 0) {
+                jsonEnd = i + 1;
                 break;
               }
-              buffer = trimmed.slice(nextJson);
-              continue;
             }
+          }
 
-            // Find complete JSON object/array
-            let braceCount = 0;
-            let inString = false;
-            let escape = false;
-            let jsonEnd = -1;
-            const isArray = trimmed[0] === "[";
-            const openChar = isArray ? "[" : "{";
-            const closeChar = isArray ? "]" : "}";
+          if (jsonEnd === -1) {
+            // Incomplete JSON, try final parse as fallback.
+            break;
+          }
 
-            for (let i = 0; i < trimmed.length; i++) {
-              const char = trimmed[i];
+          const jsonStr = trimmed.slice(0, jsonEnd);
+          buffer = trimmed.slice(jsonEnd);
 
-              if (escape) {
-                escape = false;
-                continue;
-              }
-
-              if (char === "\\") {
-                escape = true;
-                continue;
-              }
-
-              if (char === '"') {
-                inString = !inString;
-                continue;
-              }
-
-              if (inString) continue;
-
-              if (char === openChar) {
-                braceCount++;
-              } else if (char === closeChar) {
-                braceCount--;
-                if (braceCount === 0) {
-                  jsonEnd = i + 1;
-                  break;
-                }
-              }
+          try {
+            const parsed = JSON.parse(jsonStr);
+            if (Array.isArray(parsed)) {
+              parsed.forEach((item) => emitItem(item));
+            } else {
+              emitItem(parsed);
             }
-
-            if (jsonEnd === -1) {
-              // Incomplete JSON, wait for more data
-              break;
-            }
-
-            const jsonStr = trimmed.slice(0, jsonEnd);
-            buffer = trimmed.slice(jsonEnd);
-
-            try {
-              const parsed = JSON.parse(jsonStr);
-              if (Array.isArray(parsed)) {
-                parsed.forEach((item) => emitItem(item));
-              } else {
-                emitItem(parsed);
-              }
-            } catch (error) {
-              logger.warn("Failed to parse JSON", { error, jsonStr: jsonStr.slice(0, 200), phase });
-            }
+          } catch (error) {
+            logger.warn("Failed to parse JSON", { error, jsonStr: jsonStr.slice(0, 200), phase });
           }
         }
 
@@ -565,6 +511,15 @@ reaction/suggestion의 quote는 반드시 본문에 있는 문구를 그대로 �
       // 에러 타입 감지
       let errorCode: "API_KEY_MISSING" | "NETWORK_ERROR" | "QUOTA_EXCEEDED" | "INVALID_REQUEST" | "UNKNOWN" = "UNKNOWN";
       let errorMessage = "분석 중 오류가 발생했습니다.";
+      const rawMessage = error instanceof Error ? error.message : String(error);
+
+      if (rawMessage.includes("SYNC_AUTH_REQUIRED_FOR_EDGE")) {
+        errorCode = "INVALID_REQUEST";
+        errorMessage = "분석을 실행하려면 Sync 로그인이 필요합니다.";
+      } else if (rawMessage.includes("SUPABASE_NOT_CONFIGURED")) {
+        errorCode = "INVALID_REQUEST";
+        errorMessage = "Supabase 런타임 설정을 먼저 완료해주세요.";
+      }
       
       if (error && typeof error === "object" && "status" in error) {
         const apiError = error as { status: number; message?: string };

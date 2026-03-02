@@ -99,6 +99,8 @@ const RETRYABLE_CHANNELS = new Set<string>([
   IPC_CHANNELS.SETTINGS_GET_WINDOW_BOUNDS,
   IPC_CHANNELS.APP_GET_BOOTSTRAP_STATUS,
   IPC_CHANNELS.SYNC_GET_STATUS,
+  IPC_CHANNELS.SYNC_GET_RUNTIME_CONFIG,
+  IPC_CHANNELS.STARTUP_GET_READINESS,
 ]);
 
 const randomByteArray = (size: number): Uint8Array => {
@@ -241,7 +243,12 @@ type CoreMethodMap = {
   "sync.disconnect": RendererApi["sync"]["disconnect"];
   "sync.runNow": RendererApi["sync"]["runNow"];
   "sync.setAutoSync": RendererApi["sync"]["setAutoSync"];
+  "sync.getRuntimeConfig": RendererApi["sync"]["getRuntimeConfig"];
+  "sync.setRuntimeConfig": RendererApi["sync"]["setRuntimeConfig"];
+  "sync.validateRuntimeConfig": RendererApi["sync"]["validateRuntimeConfig"];
   "sync.resolveConflict": RendererApi["sync"]["resolveConflict"];
+  "startup.getReadiness": RendererApi["startup"]["getReadiness"];
+  "startup.completeWizard": RendererApi["startup"]["completeWizard"];
   "app.getVersion": RendererApi["app"]["getVersion"];
   "app.checkUpdate": RendererApi["app"]["checkUpdate"];
   "app.getUpdateState": RendererApi["app"]["getUpdateState"];
@@ -730,6 +737,20 @@ const rendererApi = {
       settings: Parameters<RendererApi["sync"]["setAutoSync"]>[0],
     ): ReturnType<RendererApi["sync"]["setAutoSync"]> =>
       safeInvokeCore("sync.setAutoSync", IPC_CHANNELS.SYNC_SET_AUTO, settings),
+    getRuntimeConfig: (): ReturnType<RendererApi["sync"]["getRuntimeConfig"]> =>
+      safeInvokeCore("sync.getRuntimeConfig", IPC_CHANNELS.SYNC_GET_RUNTIME_CONFIG),
+    setRuntimeConfig: (
+      settings: Parameters<RendererApi["sync"]["setRuntimeConfig"]>[0],
+    ): ReturnType<RendererApi["sync"]["setRuntimeConfig"]> =>
+      safeInvokeCore("sync.setRuntimeConfig", IPC_CHANNELS.SYNC_SET_RUNTIME_CONFIG, settings),
+    validateRuntimeConfig: (
+      settings: Parameters<RendererApi["sync"]["validateRuntimeConfig"]>[0],
+    ): ReturnType<RendererApi["sync"]["validateRuntimeConfig"]> =>
+      safeInvokeCore(
+        "sync.validateRuntimeConfig",
+        IPC_CHANNELS.SYNC_VALIDATE_RUNTIME_CONFIG,
+        settings,
+      ),
     resolveConflict: (
       resolution: Parameters<RendererApi["sync"]["resolveConflict"]>[0],
     ): ReturnType<RendererApi["sync"]["resolveConflict"]> =>
@@ -747,6 +768,13 @@ const rendererApi = {
         ipcRenderer.removeListener(IPC_CHANNELS.SYNC_STATUS_CHANGED, listener);
       };
     },
+  },
+
+  startup: {
+    getReadiness: (): ReturnType<RendererApi["startup"]["getReadiness"]> =>
+      safeInvokeCore("startup.getReadiness", IPC_CHANNELS.STARTUP_GET_READINESS),
+    completeWizard: (): ReturnType<RendererApi["startup"]["completeWizard"]> =>
+      safeInvokeCore("startup.completeWizard", IPC_CHANNELS.STARTUP_COMPLETE_WIZARD),
   },
 
   // Analysis API

@@ -603,6 +603,17 @@ export interface SyncRunResult {
   syncedAt?: string;
 }
 
+export interface RuntimeSupabaseConfig {
+  url: string;
+  anonKey: string;
+}
+
+export interface RuntimeSupabaseConfigView {
+  url: string | null;
+  hasAnonKey: boolean;
+  source?: "env" | "runtime" | "legacy";
+}
+
 export interface SyncSettings extends SyncConnection {
   accessTokenCipher?: string;
   refreshTokenCipher?: string;
@@ -613,6 +624,35 @@ export interface SyncSettings extends SyncConnection {
   projectLastSyncedAtByProjectId?: Record<string, string>;
   entityBaselinesByProjectId?: Record<string, SyncEntityBaseline>;
   pendingConflictResolutions?: Record<string, "local" | "remote">;
+  runtimeSupabaseConfig?: RuntimeSupabaseConfig;
+}
+
+export type StartupCheckKey =
+  | "osPermission"
+  | "dataDirRW"
+  | "defaultLuiePath"
+  | "sqliteConnect"
+  | "sqliteWal"
+  | "supabaseRuntimeConfig"
+  | "supabaseSession";
+
+export interface StartupCheck {
+  key: StartupCheckKey;
+  ok: boolean;
+  blocking: boolean;
+  detail?: string;
+  checkedAt: string;
+}
+
+export interface StartupReadiness {
+  mustRunWizard: boolean;
+  checks: StartupCheck[];
+  reasons: StartupCheckKey[];
+  completedAt?: string;
+}
+
+export interface StartupSettings {
+  completedAt?: string;
 }
 
 export interface WindowBounds {
@@ -652,6 +692,7 @@ export interface AppSettings {
   lastWindowState?: WindowState;
   menuBarMode?: WindowMenuBarMode;
   sync?: SyncSettings;
+  startup?: StartupSettings;
 }
 
 export type ShortcutAction =

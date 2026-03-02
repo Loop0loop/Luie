@@ -2,10 +2,37 @@ import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
 import {
+  syncRuntimeConfigSetArgsSchema,
+  syncRuntimeConfigValidateArgsSchema,
   syncResolveConflictArgsSchema,
   syncSetAutoArgsSchema,
 } from "../../../shared/schemas/index.js";
+import type { RuntimeSupabaseConfig } from "../../../shared/types/index.js";
 import { syncService } from "../../services/features/syncService.js";
+
+const loadSettingsManager = (() => {
+  let cached: Promise<
+    typeof import("../../manager/settingsManager.js")
+  > | null = null;
+  return async () => {
+    if (!cached) {
+      cached = import("../../manager/settingsManager.js");
+    }
+    return cached;
+  };
+})();
+
+const loadSupabaseEnvModule = (() => {
+  let cached: Promise<
+    typeof import("../../services/features/supabaseEnv.js")
+  > | null = null;
+  return async () => {
+    if (!cached) {
+      cached = import("../../services/features/supabaseEnv.js");
+    }
+    return cached;
+  };
+})();
 
 export function registerSyncIPCHandlers(logger: LoggerLike): void {
   registerIpcHandlers(logger, [
@@ -51,6 +78,51 @@ export function registerSyncIPCHandlers(logger: LoggerLike): void {
         id: string;
         resolution: "local" | "remote";
       }) => syncService.resolveConflict(resolution),
+    },
+    {
+      channel: IPC_CHANNELS.SYNC_GET_RUNTIME_CONFIG,
+      logTag: "SYNC_GET_RUNTIME_CONFIG",
+      failMessage: "Failed to get runtime Supabase config",
+      handler: async () => {
+        const [{ settingsManager }, supabaseEnv] = await Promise.all([
+          loadSettingsManager(),
+          loadSupabaseEnvModule(),
+        ]);
+        return settingsManager.getRuntimeSupabaseConfigView({
+          source: supabaseEnv.getSupabaseConfigSource() ?? undefined,
+        });
+      },
+    },
+    {
+      channel: IPC_CHANNELS.SYNC_SET_RUNTIME_CONFIG,
+      logTag: "SYNC_SET_RUNTIME_CONFIG",
+      failMessage: "Failed to set runtime Supabase config",
+      argsSchema: syncRuntimeConfigSetArgsSchema,
+      handler: async (config: RuntimeSupabaseConfig) => {
+        const [{ settingsManager }, supabaseEnv] = await Promise.all([
+          loadSettingsManager(),
+          loadSupabaseEnvModule(),
+        ]);
+        const validation = supabaseEnv.setRuntimeSupabaseConfig(config);
+        if (!validation.valid) {
+          return {
+            url: null,
+            hasAnonKey: false,
+            source: "runtime" as const,
+          };
+        }
+        return settingsManager.getRuntimeSupabaseConfigView({
+          source: "runtime",
+        });
+      },
+    },
+    {
+      channel: IPC_CHANNELS.SYNC_VALIDATE_RUNTIME_CONFIG,
+      logTag: "SYNC_VALIDATE_RUNTIME_CONFIG",
+      failMessage: "Failed to validate runtime Supabase config",
+      argsSchema: syncRuntimeConfigValidateArgsSchema,
+      handler: async (config: Partial<RuntimeSupabaseConfig>) =>
+        (await loadSupabaseEnvModule()).validateRuntimeSupabaseConfig(config),
     },
   ]);
 }

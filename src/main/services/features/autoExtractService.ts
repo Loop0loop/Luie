@@ -5,8 +5,7 @@ import { db } from "../../database/index.js";
 import { keywordExtractor } from "../../core/keywordExtractor.js";
 import { characterService } from "../world/characterService.js";
 import { termService } from "../world/termService.js";
-import { GoogleGenAI } from "@google/genai";
-import { resolveGeminiApiKey } from "./analysis/geminiApiKeyResolver.js";
+import { invokeGeminiProxy } from "./analysis/geminiApiKeyResolver.js";
 import {
   FEW_SHOT_EXAMPLES,
   GEMINI_RESPONSE_SCHEMA,
@@ -100,16 +99,10 @@ class AutoExtractService {
       return;
     }
 
-    const apiKey = await resolveGeminiApiKey();
-    if (!apiKey) {
-      logger.warn("GEMINI_API_KEY not available (env + luieEnv fallback); skipping auto extraction");
-      return;
-    }
-
     for (const name of uniqueCandidates) {
       const contexts = dirtyParagraphs.filter((p) => p.includes(name)).slice(0, 3);
 
-      const result = await this.classifyWithGemini(name, contexts, apiKey);
+      const result = await this.classifyWithGemini(name, contexts);
       if (!result) {
         continue;
       }
@@ -145,7 +138,6 @@ class AutoExtractService {
   private async classifyWithGemini(
     name: string,
     contexts: string[],
-    apiKey: string,
   ): Promise<GeminiResult | null> {
     const contextText = contexts.map((c, i) => `문맥 ${i + 1}: ${c}`).join("\n");
 
@@ -177,17 +169,13 @@ ${contextText}
 JSON 형식으로만 답하세요:`;
 
     try {
-      const ai = new GoogleGenAI({ apiKey });
-      const response = await ai.models.generateContent({
+      const text = await invokeGeminiProxy({
         model: GEMINI_MODEL,
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: GEMINI_RESPONSE_SCHEMA,
-        },
+        prompt,
+        responseMimeType: "application/json",
+        responseSchema: GEMINI_RESPONSE_SCHEMA as unknown as Record<string, unknown>,
       });
 
-      const text = response.text ?? "";
       const parsed = GeminiResultSchema.safeParse(JSON.parse(text));
       if (!parsed.success) {
         logger.warn("Gemini response parse failed", parsed.error);
@@ -196,7 +184,12 @@ JSON 형식으로만 답하세요:`;
 
       return parsed.data;
     } catch (error) {
-      logger.error("Gemini classification failed", error);
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes("SYNC_AUTH_REQUIRED_FOR_EDGE")) {
+        logger.warn("Skipping auto extraction: sync auth required for edge");
+      } else {
+        logger.error("Gemini classification failed", error);
+      }
       return null;
     }
   }

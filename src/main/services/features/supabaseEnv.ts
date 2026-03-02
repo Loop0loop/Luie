@@ -1,98 +1,140 @@
+import type { RuntimeSupabaseConfig } from "../../../shared/types/index.js";
+import { settingsManager } from "../../manager/settingsManager.js";
+import {
+  isHttpUrl,
+  normalizeRuntimeSupabaseConfigInput,
+  normalizeSupabaseUrl,
+  toSupabaseProjectId,
+  trimAndUnquote,
+  validateRuntimeSupabaseConfigInput,
+  type RuntimeSupabaseConfigValidation,
+} from "./supabaseConfigValidation.js";
+
 export type SupabaseConfig = {
   url: string;
   anonKey: string;
 };
 
-const trimEnv = (key: string): string | null => {
-  const raw = process.env[key]?.trim();
-  if (!raw || raw.length === 0) return null;
+export type SupabaseConfigSource = "env" | "runtime" | "legacy";
 
-  const quoteWrapped =
-    (raw.startsWith('"') && raw.endsWith('"')) ||
-    (raw.startsWith("'") && raw.endsWith("'"));
-  const value = quoteWrapped ? raw.slice(1, -1).trim() : raw;
-  return value.length > 0 ? value : null;
+export type ResolvedSupabaseConfig = SupabaseConfig & {
+  source: SupabaseConfigSource;
 };
 
-const isHttpUrl = (value: string): boolean => /^https?:\/\//i.test(value);
+const trimEnv = (key: string): string | null => trimAndUnquote(process.env[key]);
 
-const normalizeUrl = (value: string): string =>
-  value.endsWith("/") ? value.slice(0, -1) : value;
+const resolveFromEnv = (): ResolvedSupabaseConfig | null => {
+  const envConfig = normalizeRuntimeSupabaseConfigInput({
+    url: trimEnv("SUPABASE_URL") ?? undefined,
+    anonKey: trimEnv("SUPABASE_ANON_KEY") ?? undefined,
+  });
+  if (!envConfig) {
+    return null;
+  }
+  return {
+    ...envConfig,
+    source: "env",
+  };
+};
 
-const toProjectId = (raw: string): string | null => {
-  let value = raw.trim();
-  if (!value) return null;
+const resolveFromRuntimeSettings = (): ResolvedSupabaseConfig | null => {
+  const getter = (
+    settingsManager as unknown as {
+      getRuntimeSupabaseConfig?: () => RuntimeSupabaseConfig | undefined;
+    }
+  ).getRuntimeSupabaseConfig;
+  if (typeof getter !== "function") {
+    return null;
+  }
 
-  if (isHttpUrl(value)) {
-    try {
-      value = new URL(value).hostname;
-    } catch {
-      return null;
+  const runtime = getter.call(settingsManager);
+  const normalized = normalizeRuntimeSupabaseConfigInput(runtime);
+  if (!normalized) {
+    return null;
+  }
+  return {
+    ...normalized,
+    source: "runtime",
+  };
+};
+
+const resolveFromLegacyEnv = (): ResolvedSupabaseConfig | null => {
+  const supadatabaseApi = trimEnv("SUPADATABASE_API");
+  const projectIdRaw = trimEnv("SUPADATABASE_PRJ_ID");
+
+  let url: string | null = null;
+  let anonKey: string | null = null;
+
+  if (supadatabaseApi && isHttpUrl(supadatabaseApi)) {
+    url = normalizeSupabaseUrl(supadatabaseApi);
+  } else if (projectIdRaw) {
+    const projectId = toSupabaseProjectId(projectIdRaw);
+    if (projectId) {
+      url = `https://${projectId}.supabase.co`;
     }
   }
 
-  value = value.replace(/^https?:\/\//i, "");
-  value = value.replace(/\/.*$/, "");
-  if (value.endsWith(".supabase.co")) {
-    value = value.slice(0, -".supabase.co".length);
-  }
-  if (value.includes(".")) {
-    value = value.split(".")[0] ?? value;
-  }
-  if (!/^[a-z0-9-]+$/i.test(value)) {
-    return null;
-  }
-
-  return value.toLowerCase();
-};
-
-const resolveUrl = (): string | null => {
-  const explicitUrl = trimEnv("SUPABASE_URL");
-  if (explicitUrl) {
-    return normalizeUrl(explicitUrl);
-  }
-
-  const supadatabaseApi = trimEnv("SUPADATABASE_API");
-  if (supadatabaseApi && isHttpUrl(supadatabaseApi)) {
-    return normalizeUrl(supadatabaseApi);
-  }
-
-  const projectIdRaw = trimEnv("SUPADATABASE_PRJ_ID");
-  if (!projectIdRaw) return null;
-  const projectId = toProjectId(projectIdRaw);
-  if (!projectId) return null;
-  return `https://${projectId}.supabase.co`;
-};
-
-const resolveAnonKey = (): string | null => {
-  const explicitKey = trimEnv("SUPABASE_ANON_KEY");
-  if (explicitKey) {
-    return explicitKey;
-  }
-
-  const supadatabaseApi = trimEnv("SUPADATABASE_API");
   if (supadatabaseApi && !isHttpUrl(supadatabaseApi)) {
-    return supadatabaseApi;
+    anonKey = supadatabaseApi;
   }
 
-  return null;
-};
-
-export const getSupabaseConfig = (): SupabaseConfig | null => {
-  const url = resolveUrl();
-  const anonKey = resolveAnonKey();
   if (!url || !anonKey) {
     return null;
   }
-  return { url, anonKey };
+
+  return {
+    url,
+    anonKey,
+    source: "legacy",
+  };
+};
+
+export const getResolvedSupabaseConfig = (): ResolvedSupabaseConfig | null =>
+  resolveFromEnv() ?? resolveFromRuntimeSettings() ?? resolveFromLegacyEnv();
+
+export const getSupabaseConfig = (): SupabaseConfig | null => {
+  const config = getResolvedSupabaseConfig();
+  if (!config) return null;
+  return {
+    url: config.url,
+    anonKey: config.anonKey,
+  };
 };
 
 export const getSupabaseConfigOrThrow = (): SupabaseConfig => {
   const config = getSupabaseConfig();
   if (!config) {
     throw new Error(
-      "SUPABASE_NOT_CONFIGURED: set SUPABASE_URL/SUPABASE_ANON_KEY or SUPADATABASE_PRJ_ID/SUPADATABASE_API",
+      "SUPABASE_NOT_CONFIGURED: runtime configuration is not completed. Set Supabase URL/Anon Key in Startup Wizard or sync settings.",
     );
   }
   return config;
 };
+
+export const getSupabaseConfigSource = (): SupabaseConfigSource | null =>
+  getResolvedSupabaseConfig()?.source ?? null;
+
+export const getRuntimeSupabaseConfig = (): RuntimeSupabaseConfig | null =>
+  normalizeRuntimeSupabaseConfigInput(resolveFromRuntimeSettings()) ?? null;
+
+export const setRuntimeSupabaseConfig = (
+  input: RuntimeSupabaseConfig,
+): RuntimeSupabaseConfigValidation => {
+  const validation = validateRuntimeSupabaseConfigInput(input);
+  if (!validation.valid || !validation.normalized) {
+    return validation;
+  }
+  const setter = (
+    settingsManager as unknown as {
+      setRuntimeSupabaseConfig?: (input: RuntimeSupabaseConfig) => unknown;
+    }
+  ).setRuntimeSupabaseConfig;
+  if (typeof setter === "function") {
+    setter.call(settingsManager, validation.normalized);
+  }
+  return validation;
+};
+
+export const validateRuntimeSupabaseConfig = (
+  input: Partial<RuntimeSupabaseConfig> | null | undefined,
+): RuntimeSupabaseConfigValidation => validateRuntimeSupabaseConfigInput(input);

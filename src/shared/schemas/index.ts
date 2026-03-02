@@ -243,6 +243,31 @@ export const appBootstrapStatusSchema = z.object({
   error: z.string().optional(),
 });
 
+const startupCheckKeySchema = z.enum([
+  "osPermission",
+  "dataDirRW",
+  "defaultLuiePath",
+  "sqliteConnect",
+  "sqliteWal",
+  "supabaseRuntimeConfig",
+  "supabaseSession",
+]);
+
+export const startupCheckSchema = z.object({
+  key: startupCheckKeySchema,
+  ok: z.boolean(),
+  blocking: z.boolean(),
+  detail: z.string().optional(),
+  checkedAt: z.string(),
+});
+
+export const startupReadinessSchema = z.object({
+  mustRunWizard: z.boolean(),
+  checks: z.array(startupCheckSchema),
+  reasons: z.array(startupCheckKeySchema),
+  completedAt: z.string().optional(),
+});
+
 export const syncConflictSummarySchema = z.object({
   chapters: z.number().int().nonnegative(),
   memos: z.number().int().nonnegative(),
@@ -315,6 +340,42 @@ export const syncSetAutoSchema = z.object({
 });
 
 export const syncSetAutoArgsSchema = z.tuple([syncSetAutoSchema]);
+
+export const runtimeSupabaseConfigSchema = z.object({
+  url: z
+    .string()
+    .min(1)
+    .max(1024)
+    .refine((value) => {
+      try {
+        const parsed = new URL(value);
+        return parsed.protocol === "http:" || parsed.protocol === "https:";
+      } catch {
+        return false;
+      }
+    }, "Supabase URL must be a valid http(s) URL"),
+  anonKey: z.string().min(16).max(8096),
+});
+
+export const runtimeSupabaseConfigInputSchema = z.object({
+  url: z.string().max(1024).optional(),
+  anonKey: z.string().max(8096).optional(),
+});
+
+export const runtimeSupabaseConfigViewSchema = z.object({
+  url: z.string().nullable(),
+  hasAnonKey: z.boolean(),
+  source: z.enum(["env", "runtime", "legacy"]).optional(),
+});
+
+export const runtimeSupabaseConfigValidationSchema = z.object({
+  valid: z.boolean(),
+  issues: z.array(z.string()),
+  normalized: runtimeSupabaseConfigSchema.optional(),
+});
+
+export const syncRuntimeConfigSetArgsSchema = z.tuple([runtimeSupabaseConfigSchema]);
+export const syncRuntimeConfigValidateArgsSchema = z.tuple([runtimeSupabaseConfigInputSchema]);
 
 export const syncResolveConflictSchema = z.object({
   type: z.enum(["chapter", "memo"]),

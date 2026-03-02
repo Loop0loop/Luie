@@ -22,6 +22,9 @@ import type {
   WindowMenuBarMode,
   SyncRunResult,
   SyncStatus,
+  RuntimeSupabaseConfig,
+  RuntimeSupabaseConfigView,
+  StartupReadiness,
   WorldEntity,
   EntityRelation,
   WorldGraphData,
@@ -246,8 +249,21 @@ export type RendererApi = {
     disconnect: () => Promise<IPCResponse<SyncStatus>>;
     runNow: () => Promise<IPCResponse<SyncRunResult>>;
     setAutoSync: (settings: { enabled: boolean }) => Promise<IPCResponse<SyncStatus>>;
+    getRuntimeConfig: () => Promise<IPCResponse<RuntimeSupabaseConfigView>>;
+    setRuntimeConfig: (settings: RuntimeSupabaseConfig) => Promise<IPCResponse<RuntimeSupabaseConfigView>>;
+    validateRuntimeConfig: (settings: RuntimeSupabaseConfig) => Promise<
+      IPCResponse<{
+        valid: boolean;
+        issues: string[];
+        normalized?: RuntimeSupabaseConfig;
+      }>
+    >;
     onStatusChanged: (callback: (status: SyncStatus) => void) => () => void;
     resolveConflict: (resolution: { type: "chapter" | "memo"; id: string; resolution: "local" | "remote" }) => Promise<IPCResponse<void>>;
+  };
+  startup: {
+    getReadiness: () => Promise<IPCResponse<StartupReadiness>>;
+    completeWizard: () => Promise<IPCResponse<StartupReadiness>>;
   };
   app: {
     getVersion: () => Promise<IPCResponse<{ version: string }>>;

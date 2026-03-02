@@ -497,5 +497,15 @@ export const enBase = {
       "exportNoChapter": "Select a chapter before exporting.",
       "exportOpenFailed": "Unable to open the export window."
     }
+  },
+  "startupWizard": {
+    "title": "Pre-main startup checks",
+    "subtitle": "Complete diagnostics, runtime setup, and login before entering the main window.",
+    "steps": {
+      "diagnostics": "Diagnostics",
+      "runtimeConfig": "Supabase Runtime Config",
+      "oauth": "Google OAuth",
+      "complete": "Complete"
+    }
   }
 } as const;

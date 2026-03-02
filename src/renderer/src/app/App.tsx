@@ -5,6 +5,7 @@ import ProjectTemplateSelector from "@renderer/features/workspace/components/Pro
 import EditorRoot from "@renderer/features/workspace/components/EditorRoot";
 import OAuthResultPage from "@renderer/features/auth/components/OAuthResultPage";
 import WorldSection from "@renderer/features/research/components/WorldSection";
+import StartupWizard from "@renderer/features/startup/components/StartupWizard";
 
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
@@ -35,11 +36,12 @@ const parseBootstrapStatus = (value: unknown): AppBootstrapStatus | null => {
   return parsed.success ? parsed.data : null;
 };
 
-type WindowMode = "app" | "export" | "oauth-result" | "world-graph";
+type WindowMode = "app" | "export" | "oauth-result" | "world-graph" | "startup-wizard";
 
 const getWindowMode = (): WindowMode => {
   if (window.location.hash === "#export") return "export";
   if (window.location.hash === "#world-graph") return "world-graph";
+  if (window.location.hash === "#startup-wizard") return "startup-wizard";
   if (window.location.hash.startsWith("#auth-result")) return "oauth-result";
   return "app";
 };
@@ -335,6 +337,15 @@ export default function App() {
             />
           </div>
         </Suspense>
+        {quitOverlay}
+      </>
+    );
+  }
+
+  if (windowMode === "startup-wizard") {
+    return (
+      <>
+        <StartupWizard />
         {quitOverlay}
       </>
     );

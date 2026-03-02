@@ -23,7 +23,7 @@ const createMenuTemplate = (): MenuItemConstructorOptions[] => {
 };
 
 export const applyApplicationMenu = (mode: WindowMenuBarMode): void => {
-  if (mode === "hidden") {
+  if (process.platform !== "darwin" || mode === "hidden") {
     Menu.setApplicationMenu(null);
     return;
   }

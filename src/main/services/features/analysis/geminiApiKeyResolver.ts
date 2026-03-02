@@ -1,116 +1,108 @@
 import { createLogger } from "../../../../shared/logger/index.js";
+import type { RuntimeSupabaseConfig } from "../../../../shared/types/index.js";
 import { getSupabaseConfig } from "../supabaseEnv.js";
+import { syncService } from "../syncService.js";
 
-const logger = createLogger("GeminiApiKeyResolver");
-const CACHE_TTL_MS = 5 * 60 * 1000;
+const logger = createLogger("GeminiProxyClient");
 
-let cachedApiKey: string | null = null;
-let cachedAt = 0;
-
-type LuieEnvPayload = {
-  geminiApiKey?: unknown;
-  GEMINI_API_KEY?: unknown;
-  data?: {
-    geminiApiKey?: unknown;
-    GEMINI_API_KEY?: unknown;
-  };
-  secrets?: {
-    geminiApiKey?: unknown;
-    GEMINI_API_KEY?: unknown;
-  };
+export type GeminiProxyRequest = {
+  model: string;
+  prompt: string;
+  responseMimeType?: "text/plain" | "application/json";
+  responseSchema?: Record<string, unknown>;
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  maxOutputTokens?: number;
 };
 
-const pickString = (value: unknown): string | null => {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
+type GeminiProxyResponse = {
+  text?: unknown;
+  candidates?: unknown;
 };
 
-const extractApiKey = (payload: LuieEnvPayload): string | null =>
-  pickString(payload.geminiApiKey) ??
-  pickString(payload.GEMINI_API_KEY) ??
-  pickString(payload.data?.geminiApiKey) ??
-  pickString(payload.data?.GEMINI_API_KEY) ??
-  pickString(payload.secrets?.geminiApiKey) ??
-  pickString(payload.secrets?.GEMINI_API_KEY);
+type HttpError = Error & { status?: number };
 
-const resolveEdgeFunctionUrl = (): { url: string; anonKey: string } | null => {
-  const customUrl = pickString(process.env.LUIE_ENV_FUNCTION_URL);
-  const config = getSupabaseConfig();
+const toHttpError = (status: number, message: string): HttpError => {
+  const error = new Error(message) as HttpError;
+  error.status = status;
+  return error;
+};
 
-  if (customUrl && config?.anonKey) {
-    return { url: customUrl, anonKey: config.anonKey };
+const resolveProxyEndpoint = (
+  config: RuntimeSupabaseConfig,
+): string => {
+  const custom = process.env.LUIE_GEMINI_PROXY_URL?.trim();
+  if (custom && custom.length > 0) {
+    return custom;
   }
+  return `${config.url}/functions/v1/gemini-proxy`;
+};
 
-  if (!config) {
+const pickText = (value: unknown): string | null => {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+  return null;
+};
+
+const extractTextFromCandidates = (candidates: unknown): string | null => {
+  if (!Array.isArray(candidates)) {
     return null;
   }
-
-  return {
-    url: `${config.url}/functions/v1/luieEnv`,
-    anonKey: config.anonKey,
-  };
+  const first = candidates[0];
+  if (!first || typeof first !== "object") return null;
+  const content = (first as { content?: unknown }).content;
+  if (!content || typeof content !== "object") return null;
+  const parts = (content as { parts?: unknown }).parts;
+  if (!Array.isArray(parts)) return null;
+  const texts = parts
+    .map((part) =>
+      part && typeof part === "object" ? pickText((part as { text?: unknown }).text) : null
+    )
+    .filter((item): item is string => Boolean(item));
+  if (texts.length === 0) return null;
+  return texts.join("\n").trim();
 };
 
-const fetchApiKeyFromEdgeFunction = async (): Promise<string | null> => {
-  const endpoint = resolveEdgeFunctionUrl();
-  if (!endpoint) {
-    return null;
+export const invokeGeminiProxy = async (
+  request: GeminiProxyRequest,
+): Promise<string> => {
+  const supabaseConfig = getSupabaseConfig();
+  if (!supabaseConfig) {
+    throw new Error(
+      "SUPABASE_NOT_CONFIGURED: runtime configuration is not completed. Set Supabase URL/Anon Key first.",
+    );
   }
 
-  try {
-    const response = await fetch(endpoint.url, {
-      method: "GET",
-      headers: {
-        apikey: endpoint.anonKey,
-        Authorization: `Bearer ${endpoint.anonKey}`,
-      },
+  const accessToken = await syncService.getEdgeAccessToken();
+  const endpoint = resolveProxyEndpoint(supabaseConfig);
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabaseConfig.anonKey,
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    logger.warn("gemini-proxy request failed", {
+      endpoint,
+      status: response.status,
+      body,
     });
-
-    if (!response.ok) {
-      logger.warn("Supabase luieEnv request failed", {
-        status: response.status,
-        endpoint: endpoint.url,
-      });
-      return null;
-    }
-
-    const payload = (await response.json()) as LuieEnvPayload;
-    const apiKey = extractApiKey(payload);
-    if (!apiKey) {
-      logger.warn("Supabase luieEnv response missing GEMINI_API_KEY", {
-        endpoint: endpoint.url,
-      });
-      return null;
-    }
-
-    return apiKey;
-  } catch (error) {
-    logger.warn("Supabase luieEnv request threw", {
-      endpoint: endpoint.url,
-      error,
-    });
-    return null;
-  }
-};
-
-export const resolveGeminiApiKey = async (): Promise<string | null> => {
-  const envApiKey = pickString(process.env.GEMINI_API_KEY);
-  if (envApiKey) {
-    return envApiKey;
+    throw toHttpError(response.status, `GEMINI_PROXY_FAILED:${response.status}:${body}`);
   }
 
-  if (cachedApiKey && Date.now() - cachedAt < CACHE_TTL_MS) {
-    return cachedApiKey;
+  const payload = (await response.json()) as GeminiProxyResponse;
+  const text = pickText(payload.text) ?? extractTextFromCandidates(payload.candidates);
+  if (!text) {
+    throw new Error("GEMINI_PROXY_EMPTY_RESPONSE");
   }
-
-  const fetched = await fetchApiKeyFromEdgeFunction();
-  if (!fetched) {
-    return null;
-  }
-
-  cachedApiKey = fetched;
-  cachedAt = Date.now();
-  logger.info("Using GEMINI_API_KEY from Supabase luieEnv edge function");
-  return fetched;
+  return text;
 };

@@ -24,6 +24,7 @@ const WINDOW_BACKGROUND_COLOR = '#f4f4f5'
 class WindowManager {
   private mainWindow: BrowserWindow | null = null
   private splashWindow: BrowserWindow | null = null
+  private startupWizardWindow: BrowserWindow | null = null
 
   private resolveWindowIconPath(): string | undefined {
     const packagedCandidates = [
@@ -59,9 +60,15 @@ class WindowManager {
     return settingsManager.getMenuBarMode()
   }
 
+  private shouldShowMenuBar() {
+    if (process.platform !== 'darwin') {
+      return false
+    }
+    return this.getMenuBarMode() === 'visible'
+  }
+
   private applyMenuBarMode(win: BrowserWindow) {
-    const mode = this.getMenuBarMode()
-    const shouldShowMenuBar = mode === 'visible'
+    const shouldShowMenuBar = this.shouldShowMenuBar()
 
     if (process.platform === 'darwin') {
       if (shouldShowMenuBar) {
@@ -82,8 +89,8 @@ class WindowManager {
       return
     }
 
-    win.setAutoHideMenuBar(!shouldShowMenuBar)
-    win.setMenuBarVisibility(shouldShowMenuBar)
+    win.setAutoHideMenuBar(true)
+    win.setMenuBarVisibility(false)
   }
 
   createMainWindow(options: { deferShow?: boolean } = {}): BrowserWindow {
@@ -113,7 +120,7 @@ class WindowManager {
       ...(windowIconPath ? { icon: windowIconPath } : {}),
       ...this.getTitleBarOptions(),
       ...(process.platform !== 'darwin'
-        ? { autoHideMenuBar: this.getMenuBarMode() === 'hidden' }
+        ? { autoHideMenuBar: !this.shouldShowMenuBar() }
         : {}),
       webPreferences: {
         preload: join(__dirname, '../preload/index.cjs'),
@@ -170,8 +177,80 @@ class WindowManager {
     return this.mainWindow
   }
 
+  createStartupWizardWindow(): BrowserWindow {
+    if (this.startupWizardWindow && !this.startupWizardWindow.isDestroyed()) {
+      this.startupWizardWindow.focus()
+      return this.startupWizardWindow
+    }
+
+    const windowIconPath = this.resolveWindowIconPath()
+    const isPackaged = app.isPackaged
+    const devServerUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173'
+    const useDevServer = !isPackaged && process.env.NODE_ENV !== 'production'
+
+    this.startupWizardWindow = new BrowserWindow({
+      width: 980,
+      height: 720,
+      minWidth: 860,
+      minHeight: 620,
+      show: true,
+      title: `${APP_NAME} Setup`,
+      backgroundColor: '#0b1020',
+      ...(windowIconPath ? { icon: windowIconPath } : {}),
+      ...this.getTitleBarOptions(),
+      ...(process.platform !== 'darwin' ? { autoHideMenuBar: true } : {}),
+      webPreferences: {
+        preload: join(__dirname, '../preload/index.cjs'),
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+      },
+    })
+
+    this.applyMenuBarMode(this.startupWizardWindow)
+
+    if (useDevServer) {
+      const wizardUrl = `${devServerUrl}/#startup-wizard`
+      logger.info('Loading startup wizard (dev)', { wizardUrl })
+      void this.startupWizardWindow.loadURL(wizardUrl).catch((error) => {
+        logger.error('Failed to load startup wizard (dev)', { wizardUrl, error })
+      })
+    } else {
+      const indexPath = join(__dirname, '../renderer/index.html')
+      logger.info('Loading startup wizard (prod)', { path: indexPath })
+      void this.startupWizardWindow.loadFile(indexPath, { hash: 'startup-wizard' }).catch((error) => {
+        logger.error('Failed to load startup wizard (prod)', { path: indexPath, error })
+      })
+    }
+
+    this.startupWizardWindow.on('closed', () => {
+      this.startupWizardWindow = null
+      logger.info('Startup wizard window closed')
+    })
+
+    return this.startupWizardWindow
+  }
+
   getMainWindow(): BrowserWindow | null {
     return this.mainWindow
+  }
+
+  isMainWindowWebContentsId(webContentsId: number): boolean {
+    if (!this.mainWindow || this.mainWindow.isDestroyed()) {
+      return false
+    }
+    return this.mainWindow.webContents.id === webContentsId
+  }
+
+  getStartupWizardWindow(): BrowserWindow | null {
+    return this.startupWizardWindow
+  }
+
+  closeStartupWizardWindow(): void {
+    if (this.startupWizardWindow && !this.startupWizardWindow.isDestroyed()) {
+      this.startupWizardWindow.close()
+    }
+    this.startupWizardWindow = null
   }
 
   closeMainWindow(): void {
@@ -330,7 +409,7 @@ class WindowManager {
       ...(windowIconPath ? { icon: windowIconPath } : {}),
       ...this.getTitleBarOptions(),
       ...(process.platform !== 'darwin'
-        ? { autoHideMenuBar: this.getMenuBarMode() === 'hidden' }
+        ? { autoHideMenuBar: !this.shouldShowMenuBar() }
         : {}),
       webPreferences: {
         preload: join(__dirname, '../preload/index.cjs'),
@@ -407,7 +486,7 @@ class WindowManager {
       ...(windowIconPath ? { icon: windowIconPath } : {}),
       ...this.getTitleBarOptions(),
       ...(process.platform !== 'darwin'
-        ? { autoHideMenuBar: this.getMenuBarMode() === 'hidden' }
+        ? { autoHideMenuBar: !this.shouldShowMenuBar() }
         : {}),
       webPreferences: {
         preload: join(__dirname, '../preload/index.cjs'),

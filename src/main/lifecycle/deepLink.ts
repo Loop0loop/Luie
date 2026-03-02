@@ -13,9 +13,17 @@ const OAUTH_AUTH_PREFIX = "luie://auth/";
 
 const focusMainWindow = (): void => {
   const mainWindow = windowManager.getMainWindow();
-  if (!mainWindow) return;
-  if (mainWindow.isMinimized()) mainWindow.restore();
-  mainWindow.focus();
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+    return;
+  }
+
+  const wizardWindow = windowManager.getStartupWizardWindow();
+  if (wizardWindow && !wizardWindow.isDestroyed()) {
+    if (wizardWindow.isMinimized()) wizardWindow.restore();
+    wizardWindow.focus();
+  }
 };
 
 const buildAuthResultPageUrl = (status: "success" | "error", detail?: string): string => {

@@ -151,7 +151,14 @@ export const IPC_CHANNELS = {
   SYNC_RUN_NOW: "sync:run-now",
   SYNC_SET_AUTO: "sync:set-auto",
   SYNC_RESOLVE_CONFLICT: "sync:resolveConflict",
+  SYNC_GET_RUNTIME_CONFIG: "sync:get-runtime-config",
+  SYNC_SET_RUNTIME_CONFIG: "sync:set-runtime-config",
+  SYNC_VALIDATE_RUNTIME_CONFIG: "sync:validate-runtime-config",
   SYNC_STATUS_CHANGED: "sync:status-changed",
+
+  // Startup Wizard
+  STARTUP_GET_READINESS: "startup:get-readiness",
+  STARTUP_COMPLETE_WIZARD: "startup:complete-wizard",
 
   // World Entity Channels
   WORLD_ENTITY_CREATE: "world-entity:create",

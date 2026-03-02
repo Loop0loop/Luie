@@ -465,7 +465,7 @@ export class SyncService {
 
     if (!syncAuthService.isConfigured()) {
       const message =
-        "Supabase env is not configured (SUPABASE_URL/SUPABASE_ANON_KEY or SUPADATABASE_PRJ_ID/SUPADATABASE_API)";
+        "Supabase runtime configuration is not completed. Open Startup Wizard or sync settings and set Supabase URL/Anon Key.";
       this.updateStatus({
         mode: "error",
         health: "disconnected",
@@ -504,6 +504,14 @@ export class SyncService {
       });
       return this.status;
     }
+  }
+
+  async getEdgeAccessToken(): Promise<string> {
+    const syncSettings = settingsManager.getSyncSettings();
+    if (!syncSettings.connected || !syncSettings.userId) {
+      throw new Error("SYNC_AUTH_REQUIRED_FOR_EDGE");
+    }
+    return this.ensureAccessToken(syncSettings);
   }
 
   async handleOAuthCallback(callbackUrl: string): Promise<void> {

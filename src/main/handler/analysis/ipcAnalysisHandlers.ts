@@ -67,15 +67,27 @@ export function registerAnalysisIPCHandlers(
       handler: async (request: AnalysisRequest) => {
         logger.info("ANALYSIS_START", { request });
 
-        const apiKeyValidation = analysisSecurity.validateAPIKey();
-        if (!apiKeyValidation.valid) {
-          throwIpcError(ErrorCode.ANALYSIS_API_KEY_MISSING, apiKeyValidation.message);
-        }
-
         const targetWindow = requireAnalysisWindow();
 
         analysisSecurity.registerSecurityListeners(targetWindow);
-        await service.startAnalysis(request.chapterId, request.projectId, targetWindow);
+        try {
+          await service.startAnalysis(request.chapterId, request.projectId, targetWindow);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          if (message.includes("SYNC_AUTH_REQUIRED_FOR_EDGE")) {
+            throwIpcError(
+              ErrorCode.SYNC_AUTH_REQUIRED_FOR_EDGE,
+              "Edge AI 호출에는 Sync 로그인이 필요합니다.",
+            );
+          }
+          if (message.includes("SUPABASE_NOT_CONFIGURED")) {
+            throwIpcError(
+              ErrorCode.ANALYSIS_INVALID_REQUEST,
+              "Supabase 런타임 설정이 완료되지 않았습니다.",
+            );
+          }
+          throw error;
+        }
 
         return true;
       },

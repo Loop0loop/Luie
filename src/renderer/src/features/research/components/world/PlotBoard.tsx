@@ -83,9 +83,12 @@ export function PlotBoard() {
     if (!element) return;
 
     const handleWheel = (event: WheelEvent) => {
-      if (event.deltaY === 0) return;
+      // Keep natural trackpad scrolling unless user explicitly requests horizontal shift-scroll.
+      if (!event.shiftKey) return;
+      if (event.deltaY === 0 && event.deltaX === 0) return;
       event.preventDefault();
-      element.scrollLeft += event.deltaY;
+      const delta = event.deltaY !== 0 ? event.deltaY : event.deltaX;
+      element.scrollLeft += delta;
     };
 
     element.addEventListener("wheel", handleWheel, { passive: false });

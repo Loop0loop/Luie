@@ -15,6 +15,7 @@ import ReactFlow, {
   type NodeMouseHandler,
   type ReactFlowInstance,
   BackgroundVariant,
+  PanOnScrollMode,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { useTranslation } from "react-i18next";
@@ -652,6 +653,12 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
         fitView
         minZoom={0.1}
         maxZoom={2}
+        panOnScroll
+        panOnScrollMode={PanOnScrollMode.Free}
+        zoomOnPinch
+        zoomOnScroll={false}
+        zoomOnDoubleClick={false}
+        preventScrolling={false}
         deleteKeyCode={null}
         className="react-flow-premium"
         proOptions={{ hideAttribution: true }}

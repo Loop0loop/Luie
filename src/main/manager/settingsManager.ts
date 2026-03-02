@@ -10,9 +10,12 @@ import type {
   AppSettings,
   EditorSettings,
   ShortcutMap,
+  RuntimeSupabaseConfig,
+  RuntimeSupabaseConfigView,
   SyncEntityBaseline,
   SyncPendingProjectDelete,
   SyncSettings,
+  StartupSettings,
   WindowBounds,
   WindowMenuBarMode,
   WindowState,
@@ -115,6 +118,31 @@ const getDefaultShortcuts = (platform: NodeJS.Platform): ShortcutMap => {
 };
 
 const DEFAULT_SHORTCUTS = getDefaultShortcuts(process.platform);
+const DEFAULT_MENU_BAR_MODE: WindowMenuBarMode =
+  process.platform === "darwin" ? "visible" : "hidden";
+
+const normalizeRuntimeSupabaseConfig = (
+  value: unknown,
+): RuntimeSupabaseConfig | undefined => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+  const url =
+    typeof (value as { url?: unknown }).url === "string"
+      ? (value as { url: string }).url.trim()
+      : "";
+  const anonKey =
+    typeof (value as { anonKey?: unknown }).anonKey === "string"
+      ? (value as { anonKey: string }).anonKey.trim()
+      : "";
+  if (url.length === 0 || anonKey.length === 0) {
+    return undefined;
+  }
+  return {
+    url: url.endsWith("/") ? url.slice(0, -1) : url,
+    anonKey,
+  };
+};
 
 const DEFAULT_SETTINGS: AppSettings = {
   editor: {
@@ -138,11 +166,12 @@ const DEFAULT_SETTINGS: AppSettings = {
   snapshotExportLimit: SNAPSHOT_FILE_KEEP_COUNT,
   windowBounds: undefined,
   lastWindowState: undefined,
-  menuBarMode: "visible",
+  menuBarMode: DEFAULT_MENU_BAR_MODE,
   sync: {
     connected: false,
     autoSync: true,
   } as SyncSettings,
+  startup: {} as StartupSettings,
 };
 
 export class SettingsManager {
@@ -218,7 +247,7 @@ export class SettingsManager {
     };
 
     if (!current.menuBarMode) {
-      this.store.set("menuBarMode", "visible");
+      this.store.set("menuBarMode", DEFAULT_MENU_BAR_MODE);
     }
 
     if ("titleBarMode" in current) {
@@ -263,6 +292,7 @@ export class SettingsManager {
       lastWindowState: settings.lastWindowState ?? current.lastWindowState,
       menuBarMode: settings.menuBarMode ?? current.menuBarMode,
       sync: settings.sync ?? current.sync,
+      startup: settings.startup ?? current.startup,
     };
     this.store.set(merged);
     logger.info("Settings updated", { settings: merged });
@@ -361,7 +391,7 @@ export class SettingsManager {
   }
 
   getMenuBarMode(): WindowMenuBarMode {
-    return this.store.get("menuBarMode") ?? "visible";
+    return this.store.get("menuBarMode") ?? DEFAULT_MENU_BAR_MODE;
   }
 
   setMenuBarMode(mode: WindowMenuBarMode): void {
@@ -508,6 +538,9 @@ export class SettingsManager {
           Object.keys(normalizedPendingConflictResolutions).length > 0
           ? normalizedPendingConflictResolutions
           : undefined,
+      runtimeSupabaseConfig: normalizeRuntimeSupabaseConfig(
+        (current as SyncSettings).runtimeSupabaseConfig,
+      ),
     };
   }
 
@@ -614,6 +647,7 @@ export class SettingsManager {
     } else {
       next.pendingConflictResolutions = undefined;
     }
+    next.runtimeSupabaseConfig = normalizeRuntimeSupabaseConfig(next.runtimeSupabaseConfig);
     this.store.set("sync", next);
     return next;
   }
@@ -678,9 +712,69 @@ export class SettingsManager {
       autoSync: true,
       pendingProjectDeletes: current.pendingProjectDeletes,
       entityBaselinesByProjectId: current.entityBaselinesByProjectId,
+      runtimeSupabaseConfig: current.runtimeSupabaseConfig,
     };
     this.store.set("sync", next);
     return next;
+  }
+
+  getRuntimeSupabaseConfig(): RuntimeSupabaseConfig | undefined {
+    const current = this.getSyncSettings();
+    return normalizeRuntimeSupabaseConfig(current.runtimeSupabaseConfig);
+  }
+
+  getRuntimeSupabaseConfigView(input?: {
+    source?: RuntimeSupabaseConfigView["source"];
+  }): RuntimeSupabaseConfigView {
+    const runtime = this.getRuntimeSupabaseConfig();
+    return {
+      url: runtime?.url ?? null,
+      hasAnonKey: Boolean(runtime?.anonKey),
+      source: input?.source,
+    };
+  }
+
+  setRuntimeSupabaseConfig(config: RuntimeSupabaseConfig): RuntimeSupabaseConfig | undefined {
+    const normalized = normalizeRuntimeSupabaseConfig(config);
+    this.setSyncSettings({
+      runtimeSupabaseConfig: normalized,
+    });
+    return normalized;
+  }
+
+  clearRuntimeSupabaseConfig(): void {
+    this.setSyncSettings({
+      runtimeSupabaseConfig: undefined,
+    });
+  }
+
+  getStartupSettings(): StartupSettings {
+    const startup = this.store.get("startup");
+    if (!startup || typeof startup !== "object" || Array.isArray(startup)) {
+      return {};
+    }
+    const completedAt =
+      typeof startup.completedAt === "string" && startup.completedAt.length > 0
+        ? startup.completedAt
+        : undefined;
+    return { completedAt };
+  }
+
+  setStartupSettings(settings: Partial<StartupSettings>): StartupSettings {
+    const current = this.getStartupSettings();
+    const hasCompletedAt = Object.prototype.hasOwnProperty.call(settings, "completedAt");
+    const nextCompletedAt = hasCompletedAt ? settings.completedAt : current.completedAt;
+    const next: StartupSettings = nextCompletedAt ? { completedAt: nextCompletedAt } : {};
+    this.store.set("startup", next);
+    return next;
+  }
+
+  setStartupCompletedAt(completedAt: string): StartupSettings {
+    return this.setStartupSettings({ completedAt });
+  }
+
+  clearStartupCompletedAt(): StartupSettings {
+    return this.setStartupSettings({ completedAt: undefined });
   }
 
   // 설정 초기화

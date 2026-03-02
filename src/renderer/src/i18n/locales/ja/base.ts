@@ -497,5 +497,15 @@ export const jaBase = {
       "exportNoChapter": "書き出す前に章を選択してください。",
       "exportOpenFailed": "書き出しウィンドウを開けません。"
     }
+  },
+  "startupWizard": {
+    "title": "メイン起動前チェック",
+    "subtitle": "診断、ランタイム設定、ログインを完了するとメイン画面に進めます。",
+    "steps": {
+      "diagnostics": "診断",
+      "runtimeConfig": "Supabase ランタイム設定",
+      "oauth": "Google OAuth",
+      "complete": "完了"
+    }
   }
 } as const;
