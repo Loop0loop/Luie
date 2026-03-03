@@ -2,21 +2,12 @@
  * Snapshot service - 버전 관리 스냅샷 비즈니스 로직
  */
 
-import { promises as fsPromises } from "fs";
-import path from "path";
 import { randomUUID } from "node:crypto";
-import { app } from "electron";
 import { db } from "../../database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import {
   ErrorCode,
   DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT,
-  DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
-  SNAPSHOT_MIRROR_DIR,
-  LUIE_PACKAGE_EXTENSION,
-  LUIE_PACKAGE_FORMAT,
-  LUIE_PACKAGE_CONTAINER_DIR,
-  LUIE_PACKAGE_VERSION,
 } from "../../../shared/constants/index.js";
 import type { SnapshotCreateInput } from "../../../shared/types/index.js";
 import { projectService } from "../core/projectService.js";
@@ -24,73 +15,13 @@ import { ServiceError } from "../../utils/serviceError.js";
 import {
   cleanupOrphanSnapshotArtifacts,
   writeFullSnapshotArtifact,
-  readFullSnapshotArtifact,
 } from "./snapshotArtifacts.js";
-import { writeLuiePackage } from "../../handler/system/ipcFsHandlers.js";
-import { sanitizeName } from "../../../shared/utils/sanitize.js";
+import { writeEmergencySnapshotFile } from "./snapshot/snapshotEmergencyFile.js";
+import { importSnapshotFromFile } from "./snapshot/snapshotImportFromFile.js";
 
 const logger = createLogger("SnapshotService");
 const ORPHAN_CLEANUP_IDLE_DELAY_MS = 30_000;
 const ORPHAN_CLEANUP_MIN_AGE_MS = 10_000;
-
-async function writeEmergencySnapshotFile(
-  input: SnapshotCreateInput,
-  error?: unknown,
-) {
-  try {
-    const emergencyDir = path.join(
-      app.getPath("userData"),
-      SNAPSHOT_MIRROR_DIR,
-      "_emergency",
-    );
-    await fsPromises.mkdir(emergencyDir, { recursive: true });
-
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const filePath = path.join(
-      emergencyDir,
-      `emergency-${input.projectId}-${input.chapterId ?? "project"}-${timestamp}.json`,
-    );
-
-    const payload = JSON.stringify(
-      {
-        projectId: input.projectId,
-        chapterId: input.chapterId ?? null,
-        content: input.content,
-        description: input.description ?? null,
-        type: input.type ?? "AUTO",
-        createdAt: new Date().toISOString(),
-        error: error instanceof Error ? { message: error.message, name: error.name } : undefined,
-      },
-      null,
-      2,
-    );
-
-    const tempPath = `${filePath}.tmp`;
-    await fsPromises.writeFile(tempPath, payload, "utf8");
-    const handle = await fsPromises.open(tempPath, "r+");
-    try {
-      await handle.sync();
-    } finally {
-      await handle.close();
-    }
-    await fsPromises.rename(tempPath, filePath);
-
-    try {
-      const dirHandle = await fsPromises.open(emergencyDir, "r");
-      try {
-        await dirHandle.sync();
-      } finally {
-        await dirHandle.close();
-      }
-    } catch (syncError) {
-      logger.warn("Failed to fsync emergency snapshot directory", syncError);
-    }
-
-    logger.warn("Emergency snapshot file written", { filePath });
-  } catch (writeError) {
-    logger.error("Failed to write emergency snapshot file", writeError);
-  }
-}
 
 export class SnapshotService {
   private orphanArtifactIds = new Set<string>();
@@ -184,7 +115,7 @@ export class SnapshotService {
       return snapshot;
     } catch (error) {
       this.queueOrphanArtifactCleanup(snapshotId);
-      await writeEmergencySnapshotFile(input, error);
+      await writeEmergencySnapshotFile(input, logger, error);
       logger.error("Failed to create snapshot", {
         error,
         snapshotId,
@@ -362,212 +293,7 @@ export class SnapshotService {
   async importSnapshotFile(filePath: string) {
     try {
       logger.info("Importing snapshot file", { filePath });
-
-      const snapshot = await readFullSnapshotArtifact(filePath);
-      const projectData = snapshot.data.project;
-      const settings = snapshot.data.settings as
-        | { autoSave?: boolean; autoSaveInterval?: number }
-        | undefined;
-
-      const safeTitle = sanitizeName(
-        projectData.title || "Recovered Snapshot",
-        "Recovered Snapshot",
-      );
-      const documentsDir = app.getPath("documents");
-      let basePath = path.join(
-        documentsDir,
-        `${safeTitle || "Recovered Snapshot"}${LUIE_PACKAGE_EXTENSION}`,
-      );
-
-      try {
-        await fsPromises.access(basePath);
-        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-        basePath = path.join(
-          documentsDir,
-          `${safeTitle || "Recovered Snapshot"}-${timestamp}${LUIE_PACKAGE_EXTENSION}`,
-        );
-      } catch {
-        // Path does not exist, keep basePath as-is.
-      }
-
-      const projectPath = basePath;
-
-      const autoSave =
-        typeof settings?.autoSave === "boolean" ? settings.autoSave : true;
-      const autoSaveInterval =
-        typeof settings?.autoSaveInterval === "number"
-          ? settings.autoSaveInterval
-          : DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS;
-
-      const project = (await db.getClient().$transaction(
-        async (tx: ReturnType<(typeof db)["getClient"]>) => {
-        const created = await tx.project.create({
-          data: {
-            title: projectData.title || "Recovered Snapshot",
-            description: projectData.description ?? undefined,
-            projectPath,
-            settings: {
-              create: {
-                autoSave,
-                autoSaveInterval,
-              },
-            },
-          },
-          include: {
-            settings: true,
-          },
-        });
-
-        const projectId = created.id;
-
-        const chapterIdMap = new Map<string, string>();
-        const characterIdMap = new Map<string, string>();
-        const termIdMap = new Map<string, string>();
-
-        const chaptersForCreate = snapshot.data.chapters.map((chapter, index) => {
-          const nextId = randomUUID();
-          chapterIdMap.set(chapter.id, nextId);
-          return {
-            id: nextId,
-            projectId,
-            title: chapter.title,
-            content: chapter.content ?? "",
-            synopsis: chapter.synopsis ?? null,
-            order: typeof chapter.order === "number" ? chapter.order : index,
-            wordCount: chapter.wordCount ?? 0,
-          };
-        });
-
-        const charactersForCreate = snapshot.data.characters.map((character) => {
-          const nextId = randomUUID();
-          characterIdMap.set(character.id, nextId);
-          return {
-            id: nextId,
-            projectId,
-            name: character.name,
-            description: character.description ?? null,
-            firstAppearance: character.firstAppearance ?? null,
-            attributes:
-              typeof character.attributes === "string"
-                ? character.attributes
-                : character.attributes
-                  ? JSON.stringify(character.attributes)
-                  : null,
-          };
-        });
-
-        const termsForCreate = snapshot.data.terms.map((term) => {
-          const nextId = randomUUID();
-          termIdMap.set(term.id, nextId);
-          return {
-            id: nextId,
-            projectId,
-            term: term.term,
-            definition: term.definition ?? null,
-            category: term.category ?? null,
-            firstAppearance: term.firstAppearance ?? null,
-          };
-        });
-
-        if (chaptersForCreate.length > 0) {
-          await tx.chapter.createMany({
-            data: chaptersForCreate,
-          });
-        }
-
-        if (charactersForCreate.length > 0) {
-          await tx.character.createMany({
-            data: charactersForCreate,
-          });
-        }
-
-        if (termsForCreate.length > 0) {
-          await tx.term.createMany({
-            data: termsForCreate,
-          });
-        }
-
-        return {
-          created,
-          chapterIdMap,
-          characterIdMap,
-          termIdMap,
-        };
-      })) as {
-        created: {
-          id: string;
-          title: string;
-          description?: string | null;
-          createdAt: Date;
-          updatedAt: Date;
-        };
-        chapterIdMap: Map<string, string>;
-        characterIdMap: Map<string, string>;
-        termIdMap: Map<string, string>;
-      };
-
-      const { created, chapterIdMap, characterIdMap, termIdMap } = project;
-
-      const meta = {
-        format: LUIE_PACKAGE_FORMAT,
-        container: LUIE_PACKAGE_CONTAINER_DIR,
-        version: LUIE_PACKAGE_VERSION,
-        projectId: created.id,
-        title: created.title,
-        description: created.description ?? undefined,
-        createdAt: created.createdAt?.toISOString?.() ?? String(created.createdAt),
-        updatedAt: created.updatedAt?.toISOString?.() ?? String(created.updatedAt),
-      };
-
-      try {
-        await writeLuiePackage(
-          projectPath,
-          {
-            meta,
-            chapters: snapshot.data.chapters.map((chapter) => ({
-              id: chapterIdMap.get(chapter.id) ?? chapter.id,
-              content: chapter.content ?? "",
-            })),
-            characters: snapshot.data.characters.map((character) => ({
-              id: characterIdMap.get(character.id) ?? character.id,
-              name: character.name,
-              description: character.description ?? null,
-              firstAppearance: character.firstAppearance ?? null,
-              attributes:
-                typeof character.attributes === "string"
-                  ? character.attributes
-                  : character.attributes
-                    ? JSON.stringify(character.attributes)
-                    : null,
-              createdAt: new Date(character.createdAt),
-              updatedAt: new Date(character.updatedAt),
-            })),
-            terms: snapshot.data.terms.map((term) => ({
-              id: termIdMap.get(term.id) ?? term.id,
-              term: term.term,
-              definition: term.definition ?? null,
-              category: term.category ?? null,
-              firstAppearance: term.firstAppearance ?? null,
-              createdAt: new Date(term.createdAt),
-              updatedAt: new Date(term.updatedAt),
-            })),
-            snapshots: [],
-          },
-          logger,
-        );
-      } catch (error) {
-        try {
-          await db.getClient().project.delete({ where: { id: created.id } });
-        } catch (rollbackError) {
-          logger.error("Failed to rollback project after snapshot .luie import failure", {
-            projectId: created.id,
-            filePath,
-            error: rollbackError,
-          });
-        }
-        throw error;
-      }
-
+      const created = await importSnapshotFromFile(filePath, logger);
       logger.info("Snapshot imported successfully", {
         projectId: created.id,
         filePath,

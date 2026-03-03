@@ -3,6 +3,7 @@
  */
 
 import { contextBridge, ipcRenderer } from "electron";
+import type { IpcRendererEvent } from "electron";
 import type { RendererApi } from "../shared/api/index.js";
 import { createErrorResponse, type IPCResponse } from "../shared/ipc/index.js";
 import { IPC_CHANNELS } from "../shared/ipc/channels.js";
@@ -575,7 +576,7 @@ const rendererApi = {
       rendererDirty = Boolean(dirty);
     },
     onQuitPhase: (callback: (payload: AppQuitPhasePayload) => void): (() => void) => {
-      const listener = (_event: unknown, payload: AppQuitPhasePayload) => {
+      const listener = (_event: IpcRendererEvent, payload: AppQuitPhasePayload) => {
         callback(payload);
       };
       ipcRenderer.on(IPC_CHANNELS.APP_QUIT_PHASE, listener);

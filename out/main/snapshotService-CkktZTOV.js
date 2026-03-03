@@ -2,7 +2,7 @@ import { promises as S } from "fs";
 import w from "path";
 import { randomUUID as C } from "node:crypto";
 import { app as D } from "electron";
-import { c as N, d as u, S as y, E as m, ax as W, ah as v, f as q, e as X, ay as Z, L as R, p as T, az as tt, aA as et, aB as at, aC as rt, aD as nt, au as ot, as as st } from "./index.js";
+import { c as N, d as u, S as y, E as m, A as W, x as v, f as q, e as X, ai as Z, L as R, p as T, aj as tt, ak as et, al as at, am as rt, z as nt, af as ot, ad as st } from "./index.js";
 import { promisify as b } from "node:util";
 import { gzip as G, gunzip as it } from "node:zlib";
 const ct = N("AtomicWrite"), dt = b(G), pt = b(it);

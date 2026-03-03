@@ -170,6 +170,7 @@ describe("ipcWindowHandlers", () => {
 
   it("returns unconfigured status for packaged build without feed url", async () => {
     mocked.appIsPackaged = true;
+    process.env.LUIE_UPDATE_FEED_URL = "   ";
     const { registerWindowIPCHandlers } = await import(
       "../../../src/main/handler/system/ipcWindowHandlers.js"
     );

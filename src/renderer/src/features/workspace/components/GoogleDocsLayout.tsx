@@ -4,6 +4,7 @@ import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type PanelS
 import WindowBar from '@renderer/features/workspace/components/WindowBar';
 import { cn } from '@shared/types/utils';
 import { useUIStore, type DocsRightTab } from '@renderer/features/workspace/stores/uiStore';
+import { useShallow } from "zustand/react/shallow";
 import { useTranslation } from "react-i18next";
 import { SnapshotList } from "@renderer/features/snapshot/components/SnapshotList";
 import { TrashList } from "@renderer/features/trash/components/TrashList";
@@ -114,7 +115,20 @@ export default function GoogleDocsLayout({
     setSidebarWidth,
     setFocusedClosableTarget,
     hasHydrated,
-  } = useUIStore();
+  } = useUIStore(
+    useShallow((state) => ({
+      isSidebarOpen: state.isSidebarOpen,
+      docsRightTab: state.docsRightTab,
+      isBinderBarOpen: state.isBinderBarOpen,
+      sidebarWidths: state.sidebarWidths,
+      setSidebarOpen: state.setSidebarOpen,
+      setDocsRightTab: state.setDocsRightTab,
+      setBinderBarOpen: state.setBinderBarOpen,
+      setSidebarWidth: state.setSidebarWidth,
+      setFocusedClosableTarget: state.setFocusedClosableTarget,
+      hasHydrated: state.hasHydrated,
+    }))
+  );
 
   /* Keep docs side panel opening behavior centralized */
   useEffect(() => {
@@ -184,7 +198,7 @@ export default function GoogleDocsLayout({
     ? clampSidebarWidth(
       DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab],
       sidebarWidths[DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab]]
-        || getSidebarDefaultWidth(DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab]),
+      || getSidebarDefaultWidth(DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab]),
     )
     : getSidebarDefaultWidth("docsCharacter");
 

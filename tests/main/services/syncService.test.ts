@@ -103,7 +103,7 @@ vi.mock("electron", () => ({
   },
 }));
 
-vi.mock("../../../src/main/handler/system/ipcFsHandlers.js", () => ({
+vi.mock("../../../src/main/services/io/luiePackageWriter.js", () => ({
   writeLuiePackage: (...args: unknown[]) => mocked.writeLuiePackage(...args),
 }));
 

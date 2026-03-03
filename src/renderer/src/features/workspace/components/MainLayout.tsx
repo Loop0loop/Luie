@@ -3,6 +3,7 @@ import WindowBar from '@renderer/features/workspace/components/WindowBar';
 import { PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { useUIStore } from '@renderer/features/workspace/stores/uiStore';
+import { useShallow } from "zustand/react/shallow";
 import { useTranslation } from "react-i18next";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import StatusFooter from "@shared/ui/StatusFooter";
@@ -33,7 +34,17 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
     setSidebarOpen,
     setContextOpen,
     setSidebarWidth,
-  } = useUIStore();
+  } = useUIStore(
+    useShallow((state) => ({
+      isSidebarOpen: state.isSidebarOpen,
+      isContextOpen: state.isContextOpen,
+      sidebarWidths: state.sidebarWidths,
+      hasHydrated: state.hasHydrated,
+      setSidebarOpen: state.setSidebarOpen,
+      setContextOpen: state.setContextOpen,
+      setSidebarWidth: state.setSidebarWidth,
+    }))
+  );
 
   const handleSidebarResize = useSidebarResizeCommit("mainSidebar", setSidebarWidth);
   const handleContextResize = useSidebarResizeCommit("mainContext", setSidebarWidth);

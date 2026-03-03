@@ -31,7 +31,6 @@ import {
   LUIE_WORLD_SCRAP_MEMOS_FILE,
   LUIE_WORLD_GRAPH_FILE,
 } from "../../../shared/constants/index.js";
-import { sanitizeName } from "../../../shared/utils/sanitize.js";
 import { isWorldEntityBackedType } from "../../../shared/constants/worldRelationRules.js";
 import type {
   ProjectDeleteInput,
@@ -58,11 +57,18 @@ import {
   normalizeWorldMindmapNodes,
   normalizeWorldScrapMemos,
 } from "../../../shared/world/worldDocumentCodec.js";
-import { writeLuiePackage } from "../../handler/system/ipcFsHandlers.js";
+import { writeLuiePackage } from "../io/luiePackageWriter.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import { ensureLuieExtension, readLuieEntry } from "../../utils/luiePackage.js";
 import { ensureSafeAbsolutePath } from "../../utils/pathValidation.js";
 import { settingsManager } from "../../manager/settingsManager.js";
+import { ProjectExportQueue } from "./project/projectExportQueue.js";
+import {
+  findProjectPathConflict,
+  normalizeLuiePackagePath,
+  normalizeProjectPath,
+  renameSnapshotDirectoryForProjectTitleChange,
+} from "./project/projectPathPolicy.js";
 
 const logger = createLogger("ProjectService");
 
@@ -435,55 +441,19 @@ const isRelationKind = (value: unknown): value is RelationKind =>
   RELATION_KINDS.includes(value as RelationKind);
 
 export class ProjectService {
-  private exportTimers = new Map<string, NodeJS.Timeout>();
-  private exportInFlight = new Map<string, Promise<void>>();
-
-  private normalizeProjectPath(inputPath: string | undefined): string | undefined {
-    if (typeof inputPath !== "string") return undefined;
-    const trimmed = inputPath.trim();
-    if (trimmed.length === 0) return undefined;
-    return ensureSafeAbsolutePath(trimmed, "projectPath");
-  }
-
-  private normalizeLuiePackagePath(inputPath: string, fieldName: string): string {
-    return ensureLuieExtension(ensureSafeAbsolutePath(inputPath, fieldName));
-  }
+  private exportQueue = new ProjectExportQueue(
+    PACKAGE_EXPORT_DEBOUNCE_MS,
+    async (projectId: string) => {
+      await this.exportProjectPackage(projectId);
+    },
+    logger,
+  );
 
   private toProjectPathKey(projectPath: string): string {
     const resolved = path.resolve(projectPath);
     return process.platform === "win32" ? resolved.toLowerCase() : resolved;
   }
 
-  private async findProjectPathConflict(
-    projectPath: string,
-    excludeProjectId?: string,
-  ): Promise<{ id: string } | null> {
-    const targetKey = this.toProjectPathKey(projectPath);
-    const projects = await db.getClient().project.findMany({
-      where: {
-        projectPath: { not: null },
-      },
-      select: { id: true, projectPath: true },
-    });
-
-    for (const project of projects) {
-      if (typeof project.projectPath !== "string" || project.projectPath.length === 0) {
-        continue;
-      }
-      if (excludeProjectId && String(project.id) === excludeProjectId) continue;
-
-      try {
-        const safePath = ensureSafeAbsolutePath(project.projectPath, "projectPath");
-        if (this.toProjectPathKey(safePath) === targetKey) {
-          return { id: String(project.id) };
-        }
-      } catch {
-        continue;
-      }
-    }
-
-    return null;
-  }
 
   async reconcileProjectPathDuplicates(): Promise<{
     duplicateGroups: number;
@@ -562,9 +532,9 @@ export class ProjectService {
   async createProject(input: ProjectCreateInput) {
     try {
       logger.info("Creating project", input);
-      const projectPath = this.normalizeProjectPath(input.projectPath);
+      const projectPath = normalizeProjectPath(input.projectPath);
       if (projectPath) {
-        const conflict = await this.findProjectPathConflict(projectPath);
+        const conflict = await findProjectPathConflict(projectPath);
         if (conflict) {
           throw new ServiceError(
             ErrorCode.VALIDATION_FAILED,
@@ -1246,7 +1216,7 @@ export class ProjectService {
 
   async openLuieProject(packagePath: string) {
     try {
-      const resolvedPath = this.normalizeLuiePackagePath(packagePath, "packagePath");
+      const resolvedPath = normalizeLuiePackagePath(packagePath, "packagePath");
       const { meta, luieCorrupted, recoveryReason } = await this.readMetaOrMarkCorrupt(
         resolvedPath,
       );
@@ -1458,17 +1428,22 @@ export class ProjectService {
       const normalizedProjectPath =
         input.projectPath === undefined
           ? undefined
-          : this.normalizeProjectPath(input.projectPath) ?? null;
+          : normalizeProjectPath(input.projectPath) ?? null;
       if (normalizedProjectPath) {
-        const conflict = await this.findProjectPathConflict(normalizedProjectPath, input.id);
+        const conflict = await findProjectPathConflict(normalizedProjectPath, input.id);
         if (conflict) {
           throw new ServiceError(
             ErrorCode.VALIDATION_FAILED,
             "Project path is already registered",
-            { projectPath: normalizedProjectPath, conflictProjectId: conflict.id },
+            {
+              projectPath: normalizedProjectPath,
+              conflictProjectId: conflict.id,
+              projectId: input.id,
+            },
           );
         }
       }
+
       const current = await db.getClient().project.findUnique({
         where: { id: input.id },
         select: { title: true, projectPath: true },
@@ -1486,41 +1461,13 @@ export class ProjectService {
       const prevTitle = typeof current?.title === "string" ? current.title : "";
       const nextTitle = typeof project.title === "string" ? project.title : "";
       const projectPath = typeof project.projectPath === "string" ? project.projectPath : null;
-
-      if (
-        projectPath &&
-        projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION) &&
-        prevTitle &&
-        nextTitle &&
-        prevTitle !== nextTitle
-      ) {
-        try {
-          const safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
-          const baseDir = path.dirname(safeProjectPath);
-          const snapshotsBase = `${baseDir}${path.sep}.luie${path.sep}${LUIE_SNAPSHOTS_DIR}`;
-          const prevName = sanitizeName(prevTitle, "");
-          const nextName = sanitizeName(nextTitle, "");
-          if (prevName && nextName && prevName !== nextName) {
-            const prevDir = `${snapshotsBase}${path.sep}${prevName}`;
-            const nextDir = `${snapshotsBase}${path.sep}${nextName}`;
-            try {
-              const stat = await fs.stat(prevDir);
-              if (stat.isDirectory()) {
-                await fs.mkdir(snapshotsBase, { recursive: true });
-                await fs.rename(prevDir, nextDir);
-              }
-            } catch {
-              // ignore if missing or rename fails
-            }
-          }
-        } catch (error) {
-          logger.warn("Skipping snapshot directory rename for invalid projectPath", {
-            projectId: project.id,
-            projectPath,
-            error,
-          });
-        }
-      }
+      await renameSnapshotDirectoryForProjectTitleChange({
+        projectId: String(project.id),
+        projectPath,
+        previousTitle: prevTitle,
+        nextTitle,
+        logger,
+      });
 
       const projectId = String(project.id);
       logger.info("Project updated successfully", { projectId });
@@ -1648,40 +1595,7 @@ export class ProjectService {
   }
 
   schedulePackageExport(projectId: string, reason?: string) {
-    const existing = this.exportTimers.get(projectId);
-    if (existing) {
-      clearTimeout(existing);
-    }
-
-    const timer = setTimeout(async () => {
-      this.exportTimers.delete(projectId);
-      try {
-        await this.runPackageExport(projectId);
-      } catch (error) {
-        logger.error("Failed to export project package", { projectId, reason, error });
-      }
-    }, PACKAGE_EXPORT_DEBOUNCE_MS);
-
-    this.exportTimers.set(projectId, timer);
-  }
-
-  private runPackageExport(projectId: string): Promise<void> {
-    const current = this.exportInFlight.get(projectId);
-    if (current) {
-      return current;
-    }
-
-    const task = this.exportProjectPackage(projectId)
-      .catch((error) => {
-        logger.error("Failed to run package export", { projectId, error });
-        throw error;
-      })
-      .finally(() => {
-        this.exportInFlight.delete(projectId);
-      });
-
-    this.exportInFlight.set(projectId, task);
-    return task;
+    this.exportQueue.schedule(projectId, reason);
   }
 
   async flushPendingExports(timeoutMs = 8_000): Promise<{
@@ -1690,47 +1604,7 @@ export class ProjectService {
     failed: number;
     timedOut: boolean;
   }> {
-    const pendingProjectIds = new Set<string>([
-      ...this.exportTimers.keys(),
-      ...this.exportInFlight.keys(),
-    ]);
-
-    for (const [projectId, timer] of this.exportTimers.entries()) {
-      clearTimeout(timer);
-      this.exportTimers.delete(projectId);
-    }
-
-    if (pendingProjectIds.size === 0) {
-      return { total: 0, flushed: 0, failed: 0, timedOut: false };
-    }
-
-    let flushed = 0;
-    let failed = 0;
-    const jobs = Array.from(pendingProjectIds).map(async (projectId) => {
-      try {
-        await this.runPackageExport(projectId);
-        flushed += 1;
-      } catch (error) {
-        failed += 1;
-        logger.error("Failed to flush pending package export", { projectId, error });
-      }
-    });
-
-    const completion = Promise.all(jobs).then(() => true);
-    const timedOut = await new Promise<boolean>((resolve) => {
-      const timer = setTimeout(() => resolve(true), timeoutMs);
-      void completion.then(() => {
-        clearTimeout(timer);
-        resolve(false);
-      });
-    });
-
-    return {
-      total: pendingProjectIds.size,
-      flushed,
-      failed,
-      timedOut,
-    };
+    return await this.exportQueue.flush(timeoutMs);
   }
 
   private async getProjectForExport(projectId: string): Promise<ProjectExportRecord | null> {
@@ -2131,7 +2005,7 @@ export class ProjectService {
     if (!project) return false;
 
     const exportPath = options?.targetPath
-      ? this.normalizeLuiePackagePath(options.targetPath, "targetPath")
+      ? normalizeLuiePackagePath(options.targetPath, "targetPath")
       : this.resolveExportPath(projectId, project.projectPath);
     if (!exportPath) return false;
 

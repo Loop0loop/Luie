@@ -15,6 +15,9 @@ vi.mock("electron", () => ({
     isPackaged: false,
     getPath: () => testDbDir,
   },
+  nativeTheme: {
+    shouldUseDarkColors: false,
+  },
 }));
 
 type PrismaClient = ReturnType<(typeof DbService)["getClient"]> & {

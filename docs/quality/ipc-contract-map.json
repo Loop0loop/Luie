@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-02-28T12:59:22.400Z",
+  "generatedAt": "2026-03-03T12:14:52.261Z",
   "summary": {
-    "definedChannels": 119,
+    "definedChannels": 126,
     "errors": 0,
     "warnings": 0
   },
@@ -15,13 +15,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 754
+            "line": 798
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/analysis/ipcAnalysisHandlers.ts",
-            "line": 94
+            "line": 106
           }
         ],
         "main_emit": [],
@@ -48,13 +48,13 @@
         "main_emit": [
           {
             "file": "src/main/services/features/manuscriptAnalysisService.ts",
-            "line": 599
+            "line": 574
           }
         ],
         "renderer_listen": [
           {
             "file": "src/preload/index.ts",
-            "line": 768
+            "line": 812
           }
         ],
         "renderer_send": [],
@@ -77,7 +77,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 750
+            "line": 794
           }
         ],
         "main_handle": [
@@ -108,13 +108,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 752
+            "line": 796
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/analysis/ipcAnalysisHandlers.ts",
-            "line": 84
+            "line": 96
           }
         ],
         "main_emit": [],
@@ -141,17 +141,25 @@
         "main_emit": [
           {
             "file": "src/main/services/features/manuscriptAnalysisService.ts",
-            "line": 334
+            "line": 289
           },
           {
             "file": "src/main/services/features/manuscriptAnalysisService.ts",
-            "line": 555
+            "line": 489
+          },
+          {
+            "file": "src/main/services/features/manuscriptAnalysisService.ts",
+            "line": 529
+          },
+          {
+            "file": "src/main/services/features/manuscriptAnalysisService.ts",
+            "line": 534
           }
         ],
         "renderer_listen": [
           {
             "file": "src/preload/index.ts",
-            "line": 759
+            "line": 803
           }
         ],
         "renderer_send": [],
@@ -160,7 +168,7 @@
       "usageCounts": {
         "renderer_invoke": 0,
         "main_handle": 0,
-        "main_emit": 2,
+        "main_emit": 4,
         "renderer_listen": 1,
         "renderer_send": 0,
         "main_listen": 0
@@ -174,7 +182,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 599
+            "line": 613
           }
         ],
         "main_handle": [
@@ -213,7 +221,7 @@
         "renderer_listen": [
           {
             "file": "src/preload/index.ts",
-            "line": 822
+            "line": 866
           }
         ],
         "renderer_send": [],
@@ -244,7 +252,7 @@
         "renderer_listen": [
           {
             "file": "src/preload/index.ts",
-            "line": 608
+            "line": 622
           }
         ],
         "renderer_send": [],
@@ -267,7 +275,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 593
+            "line": 607
           }
         ],
         "main_handle": [
@@ -298,7 +306,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 597
+            "line": 611
           }
         ],
         "main_handle": [
@@ -333,7 +341,7 @@
         "renderer_send": [
           {
             "file": "src/preload/index.ts",
-            "line": 832
+            "line": 876
           }
         ],
         "main_listen": [
@@ -360,7 +368,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 603
+            "line": 617
           }
         ],
         "main_handle": [
@@ -391,7 +399,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 595
+            "line": 609
           }
         ],
         "main_handle": [
@@ -422,7 +430,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 591
+            "line": 605
           }
         ],
         "main_handle": [
@@ -453,7 +461,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 624
+            "line": 638
           }
         ],
         "main_handle": [
@@ -492,7 +500,7 @@
         "renderer_listen": [
           {
             "file": "src/preload/index.ts",
-            "line": 568
+            "line": 582
           }
         ],
         "renderer_send": [],
@@ -515,7 +523,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 601
+            "line": 615
           }
         ],
         "main_handle": [
@@ -548,13 +556,13 @@
         "main_emit": [
           {
             "file": "src/main/services/features/appUpdateService.ts",
-            "line": 277
+            "line": 527
           }
         ],
         "renderer_listen": [
           {
             "file": "src/preload/index.ts",
-            "line": 619
+            "line": 633
           }
         ],
         "renderer_send": [],
@@ -577,7 +585,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 348
+            "line": 357
           }
         ],
         "main_handle": [
@@ -608,7 +616,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 381
+            "line": 391
           }
         ],
         "main_handle": [
@@ -639,7 +647,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 393
+            "line": 403
           }
         ],
         "main_handle": [
@@ -670,7 +678,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 383
+            "line": 393
           }
         ],
         "main_handle": [
@@ -701,7 +709,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 385
+            "line": 395
           }
         ],
         "main_handle": [
@@ -732,7 +740,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 387
+            "line": 397
           }
         ],
         "main_handle": [
@@ -763,7 +771,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 397
+            "line": 407
           }
         ],
         "main_handle": [
@@ -794,7 +802,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 399
+            "line": 409
           }
         ],
         "main_handle": [
@@ -825,7 +833,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 395
+            "line": 405
           }
         ],
         "main_handle": [
@@ -856,7 +864,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 391
+            "line": 401
           }
         ],
         "main_handle": [
@@ -887,7 +895,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 405
+            "line": 415
           }
         ],
         "main_handle": [
@@ -918,7 +926,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 413
+            "line": 423
           }
         ],
         "main_handle": [
@@ -949,7 +957,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 407
+            "line": 417
           }
         ],
         "main_handle": [
@@ -980,7 +988,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 409
+            "line": 419
           }
         ],
         "main_handle": [
@@ -1011,7 +1019,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 411
+            "line": 421
           }
         ],
         "main_handle": [
@@ -1042,7 +1050,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 794
+            "line": 838
           }
         ],
         "main_handle": [
@@ -1073,7 +1081,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 800
+            "line": 844
           }
         ],
         "main_handle": [
@@ -1104,7 +1112,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 796
+            "line": 840
           }
         ],
         "main_handle": [
@@ -1135,7 +1143,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 798
+            "line": 842
           }
         ],
         "main_handle": [
@@ -1166,7 +1174,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 419
+            "line": 429
           }
         ],
         "main_handle": [
@@ -1197,7 +1205,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 427
+            "line": 437
           }
         ],
         "main_handle": [
@@ -1228,7 +1236,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 421
+            "line": 431
           }
         ],
         "main_handle": [
@@ -1259,7 +1267,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 423
+            "line": 433
           }
         ],
         "main_handle": [
@@ -1290,7 +1298,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 425
+            "line": 435
           }
         ],
         "main_handle": [
@@ -1321,7 +1329,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 483
+            "line": 493
           }
         ],
         "main_handle": [
@@ -1352,7 +1360,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 433
+            "line": 443
           }
         ],
         "main_handle": [
@@ -1383,7 +1391,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 441
+            "line": 451
           }
         ],
         "main_handle": [
@@ -1414,7 +1422,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 435
+            "line": 445
           }
         ],
         "main_handle": [
@@ -1445,7 +1453,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 437
+            "line": 447
           }
         ],
         "main_handle": [
@@ -1476,13 +1484,44 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 439
+            "line": 449
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/world/ipcFactionHandlers.ts",
             "line": 52
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "FS_APPROVE_PROJECT_PATH",
+      "channel": "fs:approve-project-path",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/index.ts",
+            "line": 545
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/ipcFsHandlers.registry.ts",
+            "line": 91
           }
         ],
         "main_emit": [],
@@ -1507,13 +1546,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 525
+            "line": 535
           }
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 1043
+            "file": "src/main/handler/system/ipcFsHandlers.registry.ts",
+            "line": 274
           }
         ],
         "main_emit": [],
@@ -1538,13 +1577,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 511
+            "line": 521
           }
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 976
+            "file": "src/main/handler/system/ipcFsHandlers.registry.ts",
+            "line": 207
           }
         ],
         "main_emit": [],
@@ -1569,13 +1608,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 516
+            "line": 526
           }
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 1006
+            "file": "src/main/handler/system/ipcFsHandlers.registry.ts",
+            "line": 237
           }
         ],
         "main_emit": [],
@@ -1600,13 +1639,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 493
+            "line": 503
           }
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 908
+            "file": "src/main/handler/system/ipcFsHandlers.registry.ts",
+            "line": 199
           }
         ],
         "main_emit": [],
@@ -1631,13 +1670,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 495
+            "line": 505
           }
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 819
+            "file": "src/main/handler/system/ipcFsHandlers.registry.ts",
+            "line": 110
           }
         ],
         "main_emit": [],
@@ -1662,13 +1701,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 501
+            "line": 511
           }
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 862
+            "file": "src/main/handler/system/ipcFsHandlers.registry.ts",
+            "line": 153
           }
         ],
         "main_emit": [],
@@ -1693,13 +1732,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 509
+            "line": 519
           }
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 833
+            "file": "src/main/handler/system/ipcFsHandlers.registry.ts",
+            "line": 124
           }
         ],
         "main_emit": [],
@@ -1724,13 +1763,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 503
+            "line": 513
           }
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 890
+            "file": "src/main/handler/system/ipcFsHandlers.registry.ts",
+            "line": 181
           }
         ],
         "main_emit": [],
@@ -1755,13 +1794,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 518
+            "line": 528
           }
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 1025
+            "file": "src/main/handler/system/ipcFsHandlers.registry.ts",
+            "line": 256
           }
         ],
         "main_emit": [],
@@ -1786,13 +1825,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 531
+            "line": 541
           }
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcFsHandlers.ts",
-            "line": 1160
+            "file": "src/main/handler/system/ipcFsHandlers.registry.ts",
+            "line": 282
           }
         ],
         "main_emit": [],
@@ -1817,7 +1856,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 305
+            "line": 314
           }
         ],
         "main_handle": [
@@ -1848,7 +1887,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 300
+            "line": 309
           }
         ],
         "main_handle": [
@@ -1879,13 +1918,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 363
+            "line": 372
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/project/ipcProjectHandlers.ts",
-            "line": 31
+            "line": 33
           }
         ],
         "main_emit": [],
@@ -1910,13 +1949,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 371
+            "line": 381
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/project/ipcProjectHandlers.ts",
-            "line": 65
+            "line": 67
           }
         ],
         "main_emit": [],
@@ -1941,13 +1980,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 365
+            "line": 374
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/project/ipcProjectHandlers.ts",
-            "line": 45
+            "line": 47
           }
         ],
         "main_emit": [],
@@ -1972,13 +2011,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 367
+            "line": 376
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/project/ipcProjectHandlers.ts",
-            "line": 52
+            "line": 54
           }
         ],
         "main_emit": [],
@@ -2003,13 +2042,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 375
+            "line": 385
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/project/ipcProjectHandlers.ts",
-            "line": 38
+            "line": 40
           }
         ],
         "main_emit": [],
@@ -2034,13 +2073,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 373
+            "line": 383
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/project/ipcProjectHandlers.ts",
-            "line": 72
+            "line": 74
           }
         ],
         "main_emit": [],
@@ -2065,13 +2104,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 369
+            "line": 378
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/project/ipcProjectHandlers.ts",
-            "line": 58
+            "line": 60
           }
         ],
         "main_emit": [],
@@ -2096,7 +2135,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 711
+            "line": 725
           }
         ],
         "main_handle": [
@@ -2127,7 +2166,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 536
+            "line": 550
           }
         ],
         "main_handle": [
@@ -2158,7 +2197,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 668
+            "line": 682
           }
         ],
         "main_handle": [
@@ -2189,7 +2228,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 676
+            "line": 690
           }
         ],
         "main_handle": [
@@ -2220,7 +2259,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 670
+            "line": 684
           }
         ],
         "main_handle": [
@@ -2251,7 +2290,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 680
+            "line": 694
           }
         ],
         "main_handle": [
@@ -2282,7 +2321,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 686
+            "line": 700
           }
         ],
         "main_handle": [
@@ -2313,7 +2352,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 692
+            "line": 706
           }
         ],
         "main_handle": [
@@ -2344,7 +2383,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 698
+            "line": 712
           }
         ],
         "main_handle": [
@@ -2375,7 +2414,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 703
+            "line": 717
           }
         ],
         "main_handle": [
@@ -2406,7 +2445,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 678
+            "line": 692
           }
         ],
         "main_handle": [
@@ -2437,7 +2476,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 674
+            "line": 688
           }
         ],
         "main_handle": [
@@ -2468,7 +2507,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 684
+            "line": 698
           }
         ],
         "main_handle": [
@@ -2499,7 +2538,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 690
+            "line": 704
           }
         ],
         "main_handle": [
@@ -2530,7 +2569,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 696
+            "line": 710
           }
         ],
         "main_handle": [
@@ -2561,7 +2600,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 702
+            "line": 716
           }
         ],
         "main_handle": [
@@ -2592,7 +2631,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 461
+            "line": 471
           }
         ],
         "main_handle": [
@@ -2623,7 +2662,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 477
+            "line": 487
           }
         ],
         "main_handle": [
@@ -2654,7 +2693,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 467
+            "line": 477
           }
         ],
         "main_handle": [
@@ -2685,7 +2724,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 469
+            "line": 479
           }
         ],
         "main_handle": [
@@ -2716,7 +2755,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 465
+            "line": 475
           }
         ],
         "main_handle": [
@@ -2747,7 +2786,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 473
+            "line": 483
           }
         ],
         "main_handle": [
@@ -2778,7 +2817,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 475
+            "line": 485
           }
         ],
         "main_handle": [
@@ -2802,6 +2841,99 @@
       }
     },
     {
+      "key": "STARTUP_COMPLETE_WIZARD",
+      "channel": "startup:complete-wizard",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/index.ts",
+            "line": 788
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/ipcStartupHandlers.ts",
+            "line": 15
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "STARTUP_GET_READINESS",
+      "channel": "startup:get-readiness",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/index.ts",
+            "line": 786
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/ipcStartupHandlers.ts",
+            "line": 9
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SYNC_AUTH_RESULT",
+      "channel": "sync:auth-result",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [],
+        "main_handle": [],
+        "main_emit": [
+          {
+            "file": "src/main/lifecycle/deepLink.ts",
+            "line": 34
+          }
+        ],
+        "renderer_listen": [
+          {
+            "file": "src/preload/index.ts",
+            "line": 777
+          }
+        ],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 0,
+        "main_handle": 0,
+        "main_emit": 1,
+        "renderer_listen": 1,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
       "key": "SYNC_CONNECT_GOOGLE",
       "channel": "sync:connect-google",
       "allowlisted": false,
@@ -2809,13 +2941,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 719
+            "line": 733
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcSyncHandlers.ts",
-            "line": 19
+            "line": 46
           }
         ],
         "main_emit": [],
@@ -2840,13 +2972,44 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 721
+            "line": 735
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcSyncHandlers.ts",
-            "line": 25
+            "line": 52
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SYNC_GET_RUNTIME_CONFIG",
+      "channel": "sync:get-runtime-config",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/index.ts",
+            "line": 743
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/ipcSyncHandlers.ts",
+            "line": 83
           }
         ],
         "main_emit": [],
@@ -2871,13 +3034,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 717
+            "line": 731
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcSyncHandlers.ts",
-            "line": 13
+            "line": 40
           }
         ],
         "main_emit": [],
@@ -2902,13 +3065,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 731
+            "line": 759
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcSyncHandlers.ts",
-            "line": 45
+            "line": 72
           }
         ],
         "main_emit": [],
@@ -2933,13 +3096,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 723
+            "line": 737
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcSyncHandlers.ts",
-            "line": 31
+            "line": 58
           }
         ],
         "main_emit": [],
@@ -2964,13 +3127,44 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 727
+            "line": 741
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/system/ipcSyncHandlers.ts",
-            "line": 37
+            "line": 64
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SYNC_SET_RUNTIME_CONFIG",
+      "channel": "sync:set-runtime-config",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/index.ts",
+            "line": 747
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/ipcSyncHandlers.ts",
+            "line": 97
           }
         ],
         "main_emit": [],
@@ -2997,13 +3191,13 @@
         "main_emit": [
           {
             "file": "src/main/services/features/syncService.ts",
-            "line": 1766
+            "line": 1313
           }
         ],
         "renderer_listen": [
           {
             "file": "src/preload/index.ts",
-            "line": 740
+            "line": 768
           }
         ],
         "renderer_send": [],
@@ -3019,6 +3213,37 @@
       }
     },
     {
+      "key": "SYNC_VALIDATE_RUNTIME_CONFIG",
+      "channel": "sync:validate-runtime-config",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/index.ts",
+            "line": 751
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/ipcSyncHandlers.ts",
+            "line": 120
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
       "key": "TERM_CREATE",
       "channel": "term:create",
       "allowlisted": false,
@@ -3026,7 +3251,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 447
+            "line": 457
           }
         ],
         "main_handle": [
@@ -3057,7 +3282,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 455
+            "line": 465
           }
         ],
         "main_handle": [
@@ -3088,7 +3313,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 449
+            "line": 459
           }
         ],
         "main_handle": [
@@ -3119,7 +3344,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 451
+            "line": 461
           }
         ],
         "main_handle": [
@@ -3150,7 +3375,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 453
+            "line": 463
           }
         ],
         "main_handle": [
@@ -3181,7 +3406,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 578
+            "line": 592
           }
         ],
         "main_handle": [
@@ -3212,7 +3437,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 577
+            "line": 591
           }
         ],
         "main_handle": [
@@ -3264,7 +3489,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 584
+            "line": 598
           }
         ],
         "main_handle": [
@@ -3295,7 +3520,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 586
+            "line": 600
           }
         ],
         "main_handle": [
@@ -3326,7 +3551,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 582
+            "line": 596
           }
         ],
         "main_handle": [
@@ -3378,7 +3603,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 580
+            "line": 594
           }
         ],
         "main_handle": [
@@ -3430,7 +3655,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 778
+            "line": 822
           }
         ],
         "main_handle": [
@@ -3461,7 +3686,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 788
+            "line": 832
           }
         ],
         "main_handle": [
@@ -3492,7 +3717,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 780
+            "line": 824
           }
         ],
         "main_handle": [
@@ -3523,7 +3748,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 782
+            "line": 826
           }
         ],
         "main_handle": [
@@ -3554,7 +3779,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 784
+            "line": 828
           }
         ],
         "main_handle": [
@@ -3585,7 +3810,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 786
+            "line": 830
           }
         ],
         "main_handle": [
@@ -3616,7 +3841,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 806
+            "line": 850
           }
         ],
         "main_handle": [
@@ -3647,7 +3872,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/index.ts",
-            "line": 810
+            "line": 854
           }
         ],
         "main_handle": [

@@ -73,9 +73,19 @@ export function useSidebarResizeCommit(
   useEffect(() => {
     const isSeparatorTarget = (target: EventTarget | null): boolean => {
       if (!(target instanceof Element)) return false;
-      return Boolean(
-        target.closest("[data-separator]") || target.closest('[role="separator"]'),
-      );
+      // Walk up to 5 levels to handle nested hit-area divs inside Separator
+      let el: Element | null = target;
+      for (let i = 0; i < 5; i++) {
+        if (!el) break;
+        if (
+          el.hasAttribute("data-separator") ||
+          el.getAttribute("role") === "separator"
+        ) {
+          return true;
+        }
+        el = el.parentElement;
+      }
+      return false;
     };
 
     const handlePointerDown = (event: PointerEvent) => {

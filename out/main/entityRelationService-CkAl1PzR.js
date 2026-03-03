@@ -1,4 +1,4 @@
-import { aE as S, S as l, E as y, aF as _, p as E, c as N } from "./index.js";
+import { g as S, S as l, E as y, an as _, p as f, c as N } from "./index.js";
 import { g as i } from "./characterService-CNN-DedU.js";
 const s = N("EntityRelationService");
 function D(a) {
@@ -43,7 +43,7 @@ class M {
       };
       _(e.sourceType) && (r.sourceWorldEntityId = e.sourceId), _(e.targetType) && (r.targetWorldEntityId = e.targetId);
       const n = await i().entityRelation.create({ data: r });
-      return s.info("Entity relation created", { relationId: n.id }), E.schedulePackageExport(e.projectId, "entity-relation:create"), A(n);
+      return s.info("Entity relation created", { relationId: n.id }), f.schedulePackageExport(e.projectId, "entity-relation:create"), A(n);
     } catch (r) {
       throw s.error("Failed to create entity relation", r), new l(
         y.ENTITY_RELATION_CREATE_FAILED,
@@ -90,7 +90,7 @@ class M {
         where: { id: e.id },
         data: n
       });
-      return s.info("Entity relation updated", { relationId: c.id }), E.schedulePackageExport(String(r.projectId), "entity-relation:update"), A(c);
+      return s.info("Entity relation updated", { relationId: c.id }), f.schedulePackageExport(String(r.projectId), "entity-relation:update"), A(c);
     } catch (r) {
       throw s.error("Failed to update entity relation", r), D(r) ? new l(
         y.ENTITY_RELATION_NOT_FOUND,
@@ -108,7 +108,7 @@ class M {
   async deleteRelation(e) {
     try {
       const r = await i().entityRelation.delete({ where: { id: e } });
-      return s.info("Entity relation deleted", { relationId: e }), E.schedulePackageExport(String(r.projectId), "entity-relation:delete"), { success: !0 };
+      return s.info("Entity relation deleted", { relationId: e }), f.schedulePackageExport(String(r.projectId), "entity-relation:delete"), { success: !0 };
     } catch (r) {
       throw s.error("Failed to delete entity relation", r), new l(
         y.ENTITY_RELATION_DELETE_FAILED,
@@ -124,7 +124,7 @@ class M {
    */
   async getWorldGraph(e) {
     try {
-      const [r, n, c, u, g, f] = await Promise.all([
+      const [r, n, c, u, g, E] = await Promise.all([
         i().character.findMany({ where: { projectId: e } }),
         i().faction.findMany({ where: { projectId: e } }),
         i().event.findMany({ where: { projectId: e } }),
@@ -183,7 +183,7 @@ class M {
           positionX: t.positionX ?? 0,
           positionY: t.positionY ?? 0
         }))
-      ], I = f.map((t) => ({
+      ], I = E.map((t) => ({
         id: t.id,
         projectId: t.projectId ?? e,
         sourceId: t.sourceId ?? "",
@@ -214,8 +214,8 @@ class M {
       select: { id: !0 }
     });
     let c = 0, u = 0, g = 0;
-    for (const f of n) {
-      const d = String(f.id), [I, h, T, t, F, w] = await Promise.all([
+    for (const E of n) {
+      const d = String(E.id), [I, h, T, t, F, w] = await Promise.all([
         i().character.findMany({ where: { projectId: d }, select: { id: !0 } }),
         i().faction.findMany({ where: { projectId: d }, select: { id: !0 } }),
         i().event.findMany({ where: { projectId: d }, select: { id: !0 } }),
@@ -240,7 +240,7 @@ class M {
           id: { in: m }
         }
       });
-      g += b.count, b.count > 0 && E.schedulePackageExport(d, "entity-relation:cleanup-orphans");
+      g += b.count, b.count > 0 && f.schedulePackageExport(d, "entity-relation:cleanup-orphans");
     }
     return s.info("Entity relation orphan cleanup completed", {
       dryRun: r,

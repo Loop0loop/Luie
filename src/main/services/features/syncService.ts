@@ -1,12 +1,7 @@
 import { BrowserWindow } from "electron";
 import { randomUUID } from "node:crypto";
 import {
-  DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
-  LUIE_MANUSCRIPT_DIR,
-  LUIE_PACKAGE_CONTAINER_DIR,
   LUIE_PACKAGE_EXTENSION,
-  LUIE_PACKAGE_FORMAT,
-  LUIE_PACKAGE_VERSION,
   LUIE_WORLD_DIR,
   LUIE_WORLD_DRAWING_FILE,
   LUIE_WORLD_GRAPH_FILE,
@@ -14,7 +9,6 @@ import {
   LUIE_WORLD_PLOT_FILE,
   LUIE_WORLD_SCRAP_MEMOS_FILE,
   LUIE_WORLD_SYNOPSIS_FILE,
-  MARKDOWN_EXTENSION,
 } from "../../../shared/constants/index.js";
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { createLogger } from "../../../shared/logger/index.js";
@@ -25,30 +19,36 @@ import type {
   SyncSettings,
   SyncStatus,
 } from "../../../shared/types/index.js";
-import type { LuiePackageExportData } from "../../handler/system/ipcFsHandlers.js";
-import { writeLuiePackage } from "../../handler/system/ipcFsHandlers.js";
+import type { LuiePackageExportData } from "../io/luiePackageTypes.js";
 import { db } from "../../database/index.js";
 import { settingsManager } from "../../manager/settingsManager.js";
 import { readLuieEntry } from "../../utils/luiePackage.js";
 import { ensureSafeAbsolutePath } from "../../utils/pathValidation.js";
-import { projectService } from "../core/projectService.js";
 import {
   isRecord,
-  normalizeWorldDrawingPaths,
-  normalizeWorldMindmapEdges,
-  normalizeWorldMindmapNodes,
   normalizeWorldScrapPayload,
   parseWorldJsonSafely,
-  toWorldDrawingIcon,
-  toWorldDrawingTool,
   toWorldUpdatedAt,
 } from "../../../shared/world/worldDocumentCodec.js";
 import { syncAuthService } from "./syncAuthService.js";
 import {
+  buildProjectPackagePayload as buildProjectPackagePayloadImpl,
+  persistBundleToLuiePackages,
+  recoverDbCacheFromPersistedPackages,
+} from "./sync/syncPackagePersistence.js";
+import {
+  applyChapterTombstones,
+  applyProjectDeletes,
+  collectDeletedProjectIds,
+  upsertChapter,
+  upsertCharacters,
+  upsertProjects,
+  upsertTerms,
+} from "./sync/syncLocalApply.js";
+import {
   createEmptySyncBundle,
   mergeSyncBundles,
   type SyncBundle,
-  type SyncChapterRecord,
 } from "./syncMapper.js";
 import { syncRepository } from "./syncRepository.js";
 
@@ -83,9 +83,6 @@ const toNullableString = (value: unknown): string | null =>
 const toNumber = (value: unknown, fallback = 0): number =>
   typeof value === "number" && Number.isFinite(value) ? value : fallback;
 
-const sortByUpdatedAtDesc = <T extends { updatedAt: string }>(rows: T[]): T[] =>
-  [...rows].sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt));
-
 const toSyncErrorMessage = (error: unknown): string => {
   const raw = error instanceof Error ? error.message : String(error);
   if (raw.startsWith("SUPABASE_SCHEMA_MISSING:")) {
@@ -116,7 +113,6 @@ const WORLD_DOCUMENT_FILES: Array<{
 ];
 
 type WorldDocumentType = SyncBundle["worldDocuments"][number]["docType"];
-type PersistedLuiePackage = { projectId: string; projectPath: string };
 type SyncConflictResolutionInput = {
   type: "chapter" | "memo";
   id: string;
@@ -140,8 +136,6 @@ const WORLD_DOCUMENT_TYPES: WorldDocumentType[] = [
   "graph",
   "scrap",
 ];
-
-const WORLD_SYNOPSIS_STATUS = new Set(["draft", "working", "locked"]);
 
 const isAuthFatalMessage = (message: string): boolean =>
   AUTH_FATAL_ERROR_PATTERNS.some((pattern) => message.includes(pattern));
@@ -1209,393 +1203,6 @@ export class SyncService {
     );
   }
 
-  private decodeWorldDocumentPayload(
-    projectId: string,
-    docType: WorldDocumentType,
-    payload: unknown,
-  ): unknown {
-    if (typeof payload !== "string") {
-      return payload;
-    }
-    const parsed = parseWorldJsonSafely(payload);
-    if (parsed !== null) {
-      return parsed;
-    }
-    logger.warn("Invalid sync world document payload string; using default payload", {
-      projectId,
-      docType,
-    });
-    return null;
-  }
-
-  private normalizeSynopsisPayload(projectId: string, payload: unknown): Record<string, unknown> {
-    const decoded = this.decodeWorldDocumentPayload(projectId, "synopsis", payload);
-    if (!isRecord(decoded)) {
-      return { synopsis: "", status: "draft" };
-    }
-
-    const statusValue = decoded.status;
-    const status =
-      typeof statusValue === "string" && WORLD_SYNOPSIS_STATUS.has(statusValue)
-        ? statusValue
-        : "draft";
-
-    const normalized: Record<string, unknown> = {
-      synopsis: typeof decoded.synopsis === "string" ? decoded.synopsis : "",
-      status,
-    };
-
-    if (typeof decoded.genre === "string") normalized.genre = decoded.genre;
-    if (typeof decoded.targetAudience === "string") {
-      normalized.targetAudience = decoded.targetAudience;
-    }
-    if (typeof decoded.logline === "string") normalized.logline = decoded.logline;
-    if (typeof decoded.updatedAt === "string") normalized.updatedAt = decoded.updatedAt;
-
-    return normalized;
-  }
-
-  private normalizePlotPayload(projectId: string, payload: unknown): Record<string, unknown> {
-    const decoded = this.decodeWorldDocumentPayload(projectId, "plot", payload);
-    if (!isRecord(decoded)) {
-      return { columns: [] };
-    }
-
-    const rawColumns = Array.isArray(decoded.columns) ? decoded.columns : [];
-    const columns = rawColumns
-      .filter((column): column is Record<string, unknown> => isRecord(column))
-      .map((column, columnIndex) => {
-        const rawCards = Array.isArray(column.cards) ? column.cards : [];
-        const cards = rawCards
-          .filter((card): card is Record<string, unknown> => isRecord(card))
-          .map((card, cardIndex) => ({
-            id:
-              typeof card.id === "string" && card.id.length > 0
-                ? card.id
-                : `card-${columnIndex}-${cardIndex}`,
-            content: typeof card.content === "string" ? card.content : "",
-          }));
-
-        return {
-          id:
-            typeof column.id === "string" && column.id.length > 0
-              ? column.id
-              : `col-${columnIndex}`,
-          title: typeof column.title === "string" ? column.title : "",
-          cards,
-        };
-      });
-
-    return {
-      columns,
-      updatedAt: typeof decoded.updatedAt === "string" ? decoded.updatedAt : undefined,
-    };
-  }
-
-  private normalizeDrawingPayload(projectId: string, payload: unknown): Record<string, unknown> {
-    const decoded = this.decodeWorldDocumentPayload(projectId, "drawing", payload);
-    if (!isRecord(decoded)) {
-      return { paths: [] };
-    }
-
-    return {
-      paths: normalizeWorldDrawingPaths(decoded.paths),
-      tool: toWorldDrawingTool(decoded.tool),
-      iconType: toWorldDrawingIcon(decoded.iconType),
-      color: typeof decoded.color === "string" ? decoded.color : undefined,
-      lineWidth: typeof decoded.lineWidth === "number" ? decoded.lineWidth : undefined,
-      updatedAt: typeof decoded.updatedAt === "string" ? decoded.updatedAt : undefined,
-    };
-  }
-
-  private normalizeMindmapPayload(projectId: string, payload: unknown): Record<string, unknown> {
-    const decoded = this.decodeWorldDocumentPayload(projectId, "mindmap", payload);
-    if (!isRecord(decoded)) {
-      return { nodes: [], edges: [] };
-    }
-
-    return {
-      nodes: normalizeWorldMindmapNodes(decoded.nodes),
-      edges: normalizeWorldMindmapEdges(decoded.edges),
-      updatedAt: typeof decoded.updatedAt === "string" ? decoded.updatedAt : undefined,
-    };
-  }
-
-  private normalizeGraphPayload(projectId: string, payload: unknown): Record<string, unknown> {
-    const decoded = this.decodeWorldDocumentPayload(projectId, "graph", payload);
-    if (!isRecord(decoded)) {
-      return { nodes: [], edges: [] };
-    }
-
-    const nodes = Array.isArray(decoded.nodes)
-      ? decoded.nodes.filter((node): node is Record<string, unknown> => isRecord(node))
-      : [];
-    const edges = Array.isArray(decoded.edges)
-      ? decoded.edges.filter((edge): edge is Record<string, unknown> => isRecord(edge))
-      : [];
-
-    return {
-      nodes,
-      edges,
-      updatedAt: typeof decoded.updatedAt === "string" ? decoded.updatedAt : undefined,
-    };
-  }
-
-  private normalizeScrapPayload(
-    projectId: string,
-    payload: unknown,
-    fallbackMemos: Array<{
-      id: string;
-      title: string;
-      content: string;
-      tags: string[];
-      updatedAt: string;
-    }>,
-    updatedAtFallback: string,
-  ): Record<string, unknown> {
-    const decoded = this.decodeWorldDocumentPayload(projectId, "scrap", payload);
-    if (!isRecord(decoded)) {
-      return {
-        memos: fallbackMemos.map((memo) => ({
-          id: memo.id,
-          title: memo.title,
-          content: memo.content,
-          tags: memo.tags,
-          updatedAt: memo.updatedAt,
-        })),
-        updatedAt: updatedAtFallback,
-      };
-    }
-
-    const normalized = normalizeWorldScrapPayload(decoded);
-    return {
-      memos: normalized.memos,
-      updatedAt:
-        typeof normalized.updatedAt === "string" ? normalized.updatedAt : updatedAtFallback,
-    };
-  }
-
-  private collectDeletedProjectIds(bundle: SyncBundle): Set<string> {
-    const deletedProjectIds = new Set<string>();
-    for (const project of bundle.projects) {
-      if (project.deletedAt) deletedProjectIds.add(project.id);
-    }
-    for (const tombstone of bundle.tombstones) {
-      if (tombstone.entityType !== "project") continue;
-      deletedProjectIds.add(tombstone.entityId);
-      deletedProjectIds.add(tombstone.projectId);
-    }
-    return deletedProjectIds;
-  }
-
-  private async applyProjectDeletes(
-    prisma: ReturnType<(typeof db)["getClient"]>,
-    deletedProjectIds: Set<string>,
-  ): Promise<void> {
-    for (const projectId of deletedProjectIds) {
-      const existing = (await prisma.project.findUnique({
-        where: { id: projectId },
-        select: { id: true },
-      })) as { id?: string } | null;
-      if (!existing?.id) continue;
-      await prisma.project.delete({ where: { id: projectId } });
-    }
-  }
-
-  private async upsertProjects(
-    prisma: ReturnType<(typeof db)["getClient"]>,
-    projects: SyncBundle["projects"],
-    deletedProjectIds: Set<string>,
-  ): Promise<void> {
-    for (const project of projects) {
-      if (project.deletedAt || deletedProjectIds.has(project.id)) continue;
-      const existing = (await prisma.project.findUnique({
-        where: { id: project.id },
-        select: { id: true },
-      })) as { id?: string } | null;
-
-      if (existing?.id) {
-        await prisma.project.update({
-          where: { id: project.id },
-          data: {
-            title: project.title,
-            description: project.description,
-            updatedAt: new Date(project.updatedAt),
-          },
-        });
-        continue;
-      }
-
-      await prisma.project.create({
-        data: {
-          id: project.id,
-          title: project.title,
-          description: project.description,
-          createdAt: new Date(project.createdAt),
-          updatedAt: new Date(project.updatedAt),
-          settings: {
-            create: {
-              autoSave: true,
-              autoSaveInterval: DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
-            },
-          },
-        },
-      });
-    }
-  }
-
-  private async upsertCharacters(
-    prisma: ReturnType<(typeof db)["getClient"]>,
-    characters: SyncBundle["characters"],
-    deletedProjectIds: Set<string>,
-  ): Promise<void> {
-    for (const character of characters) {
-      if (deletedProjectIds.has(character.projectId)) continue;
-      const existing = (await prisma.character.findUnique({
-        where: { id: character.id },
-        select: { id: true },
-      })) as { id?: string } | null;
-
-      if (character.deletedAt) {
-        if (existing?.id) await prisma.character.delete({ where: { id: character.id } });
-        continue;
-      }
-
-      const data = {
-        name: character.name,
-        description: character.description,
-        firstAppearance: character.firstAppearance,
-        attributes:
-          typeof character.attributes === "string"
-            ? character.attributes
-            : JSON.stringify(character.attributes ?? null),
-        updatedAt: new Date(character.updatedAt),
-        project: {
-          connect: { id: character.projectId },
-        },
-      };
-
-      if (existing?.id) {
-        await prisma.character.update({ where: { id: character.id }, data });
-      } else {
-        await prisma.character.create({
-          data: {
-            id: character.id,
-            ...data,
-            createdAt: new Date(character.createdAt),
-          },
-        });
-      }
-    }
-  }
-
-  private async upsertTerms(
-    prisma: ReturnType<(typeof db)["getClient"]>,
-    terms: SyncBundle["terms"],
-    deletedProjectIds: Set<string>,
-  ): Promise<void> {
-    for (const term of terms) {
-      if (deletedProjectIds.has(term.projectId)) continue;
-      const existing = (await prisma.term.findUnique({
-        where: { id: term.id },
-        select: { id: true },
-      })) as { id?: string } | null;
-
-      if (term.deletedAt) {
-        if (existing?.id) await prisma.term.delete({ where: { id: term.id } });
-        continue;
-      }
-
-      const data = {
-        term: term.term,
-        definition: term.definition,
-        category: term.category,
-        order: term.order,
-        firstAppearance: term.firstAppearance,
-        updatedAt: new Date(term.updatedAt),
-        project: {
-          connect: { id: term.projectId },
-        },
-      };
-
-      if (existing?.id) {
-        await prisma.term.update({ where: { id: term.id }, data });
-      } else {
-        await prisma.term.create({
-          data: {
-            id: term.id,
-            ...data,
-            createdAt: new Date(term.createdAt),
-          },
-        });
-      }
-    }
-  }
-
-  private async applyChapterTombstones(
-    prisma: ReturnType<(typeof db)["getClient"]>,
-    tombstones: SyncBundle["tombstones"],
-    deletedProjectIds: Set<string>,
-  ): Promise<void> {
-    for (const tombstone of tombstones) {
-      if (tombstone.entityType !== "chapter") continue;
-      if (deletedProjectIds.has(tombstone.projectId)) continue;
-      const existing = (await prisma.chapter.findUnique({
-        where: { id: tombstone.entityId },
-        select: { id: true, projectId: true },
-      })) as { id?: string; projectId?: string } | null;
-      if (!existing?.id || existing.projectId !== tombstone.projectId) continue;
-      await prisma.chapter.update({
-        where: { id: tombstone.entityId },
-        data: {
-          deletedAt: new Date(tombstone.deletedAt),
-          updatedAt: new Date(tombstone.updatedAt),
-        },
-      });
-    }
-  }
-
-  private async applyMergedBundleToLocal(bundle: SyncBundle): Promise<void> {
-    // `.luie` package is the source of truth. Persist it first so DB cache
-    // mutations do not commit when package write fails.
-    const persistedPackages = await this.persistBundleToLuiePackages(bundle);
-
-    const prisma = db.getClient();
-    const deletedProjectIds = this.collectDeletedProjectIds(bundle);
-    try {
-      await prisma.$transaction(async (tx: unknown) => {
-        const transactionClient = tx as ReturnType<(typeof db)["getClient"]>;
-        await this.applyProjectDeletes(transactionClient, deletedProjectIds);
-        await this.upsertProjects(transactionClient, bundle.projects, deletedProjectIds);
-
-        for (const chapter of bundle.chapters) {
-          if (deletedProjectIds.has(chapter.projectId)) continue;
-          await this.upsertChapter(transactionClient, chapter);
-        }
-
-        await this.upsertCharacters(transactionClient, bundle.characters, deletedProjectIds);
-        await this.upsertTerms(transactionClient, bundle.terms, deletedProjectIds);
-        await this.applyChapterTombstones(transactionClient, bundle.tombstones, deletedProjectIds);
-      });
-    } catch (error) {
-      const persistedProjectIds = persistedPackages.map((item) => item.projectId);
-      logger.error("Failed to apply merged bundle to DB cache after .luie persistence", {
-        error,
-        persistedProjectIds,
-      });
-
-      const failedRecoveryProjectIds = await this.recoverDbCacheFromPersistedPackages(
-        persistedPackages,
-      );
-      if (failedRecoveryProjectIds.length > 0) {
-        throw new Error(
-          `SYNC_DB_CACHE_APPLY_FAILED:${persistedProjectIds.join(",") || "none"};SYNC_DB_CACHE_RECOVERY_FAILED:${failedRecoveryProjectIds.join(",")}`,
-        );
-      }
-      throw new Error(`SYNC_DB_CACHE_APPLY_FAILED:${persistedProjectIds.join(",") || "none"}`);
-    }
-  }
-
   private async buildProjectPackagePayload(
     bundle: SyncBundle,
     projectId: string,
@@ -1608,254 +1215,72 @@ export class SyncService {
       createdAt: Date;
     }>,
   ): Promise<LuiePackageExportData | null> {
-    const project = bundle.projects.find((item) => item.id === projectId);
-    if (!project || project.deletedAt) return null;
-
-    const chapters = bundle.chapters
-      .filter((item) => item.projectId === projectId && !item.deletedAt)
-      .sort((left, right) => left.order - right.order);
-    const characters = bundle.characters
-      .filter((item) => item.projectId === projectId && !item.deletedAt)
-      .map((item) => ({
-        id: item.id,
-        name: item.name,
-        description: item.description ?? undefined,
-        firstAppearance: item.firstAppearance ?? undefined,
-        attributes: item.attributes ?? undefined,
-      }));
-    const terms = bundle.terms
-      .filter((item) => item.projectId === projectId && !item.deletedAt)
-      .sort((left, right) => left.order - right.order)
-      .map((item) => ({
-        id: item.id,
-        term: item.term,
-        definition: item.definition ?? undefined,
-        category: item.category ?? undefined,
-        firstAppearance: item.firstAppearance ?? undefined,
-      }));
-
-    const worldDocs = new Map<WorldDocumentType, unknown>();
-    for (const doc of sortByUpdatedAtDesc(bundle.worldDocuments)) {
-      if (doc.projectId !== projectId || doc.deletedAt) continue;
-      if (worldDocs.has(doc.docType)) continue;
-      worldDocs.set(doc.docType, doc.payload);
-    }
-
-    await this.hydrateMissingWorldDocsFromPackage(worldDocs, projectPath);
-
-    const memos = bundle.memos
-      .filter((item) => item.projectId === projectId && !item.deletedAt)
-      .map((item) => ({
-        id: item.id,
-        title: item.title,
-        content: item.content,
-        tags: item.tags,
-        updatedAt: item.updatedAt,
-      }));
-
-    const snapshotList = localSnapshots.map((snapshot) => ({
-      id: snapshot.id,
-      chapterId: snapshot.chapterId ?? undefined,
-      content: snapshot.content,
-      description: snapshot.description ?? undefined,
-      createdAt: snapshot.createdAt.toISOString(),
-    }));
-
-    const normalizedSynopsisPayload = this.normalizeSynopsisPayload(
+    return buildProjectPackagePayloadImpl({
+      bundle,
       projectId,
-      worldDocs.get("synopsis"),
-    );
-    const normalizedPlotPayload = this.normalizePlotPayload(
-      projectId,
-      worldDocs.get("plot"),
-    );
-    const normalizedDrawingPayload = this.normalizeDrawingPayload(
-      projectId,
-      worldDocs.get("drawing"),
-    );
-    const normalizedMindmapPayload = this.normalizeMindmapPayload(
-      projectId,
-      worldDocs.get("mindmap"),
-    );
-    const normalizedGraphPayload = this.normalizeGraphPayload(
-      projectId,
-      worldDocs.get("graph"),
-    );
-    const normalizedScrapPayload = this.normalizeScrapPayload(
-      projectId,
-      worldDocs.get("scrap"),
-      memos,
-      project.updatedAt,
-    );
-
-    const metaChapters = chapters.map((chapter) => ({
-      id: chapter.id,
-      title: chapter.title,
-      order: chapter.order,
-      file: `${LUIE_MANUSCRIPT_DIR}/${chapter.id}${MARKDOWN_EXTENSION}`,
-      updatedAt: chapter.updatedAt,
-    }));
-
-    return {
-      meta: {
-        format: LUIE_PACKAGE_FORMAT,
-        container: LUIE_PACKAGE_CONTAINER_DIR,
-        version: LUIE_PACKAGE_VERSION,
-        projectId: project.id,
-        title: project.title,
-        description: project.description ?? undefined,
-        createdAt: project.createdAt,
-        updatedAt: project.updatedAt,
-        chapters: metaChapters,
-      },
-      chapters: chapters.map((chapter) => ({
-        id: chapter.id,
-        content: chapter.content,
-      })),
-      characters,
-      terms,
-      synopsis: normalizedSynopsisPayload,
-      plot: normalizedPlotPayload,
-      drawing: normalizedDrawingPayload,
-      mindmap: normalizedMindmapPayload,
-      graph: normalizedGraphPayload,
-      memos: normalizedScrapPayload,
-      snapshots: snapshotList,
-    };
+      projectPath,
+      localSnapshots,
+      hydrateMissingWorldDocsFromPackage: (worldDocs, targetProjectPath) =>
+        this.hydrateMissingWorldDocsFromPackage(worldDocs, targetProjectPath),
+      logger,
+    });
   }
 
-  private async persistBundleToLuiePackages(
-    bundle: SyncBundle,
-  ): Promise<PersistedLuiePackage[]> {
-    const failedProjects: string[] = [];
-    const persistedProjects: PersistedLuiePackage[] = [];
-    for (const project of bundle.projects) {
-      const localProject = await db.getClient().project.findUnique({
-        where: { id: project.id },
-        select: {
-          projectPath: true,
-          snapshots: {
-            orderBy: { createdAt: "desc" },
-            select: {
-              id: true,
-              chapterId: true,
-              content: true,
-              description: true,
-              createdAt: true,
-            },
-          },
-        },
-      }) as {
-        projectPath?: string | null;
-        snapshots?: Array<{
-          id: string;
-          chapterId: string | null;
-          content: string;
-          description: string | null;
-          createdAt: Date;
-        }>;
-      } | null;
+  private async applyMergedBundleToLocal(bundle: SyncBundle): Promise<void> {
+    // `.luie` package is the source of truth. Persist it first so DB cache
+    // mutations do not commit when package write fails.
+    const persistedPackages = await persistBundleToLuiePackages({
+      bundle,
+      hydrateMissingWorldDocsFromPackage: (worldDocs, projectPath) =>
+        this.hydrateMissingWorldDocsFromPackage(worldDocs, projectPath),
+      buildProjectPackagePayload: (args) =>
+        this.buildProjectPackagePayload(
+          args.bundle,
+          args.projectId,
+          args.projectPath,
+          args.localSnapshots,
+        ),
+      logger,
+    });
 
-      const projectPath = toNullableString(localProject?.projectPath);
-      if (!projectPath || !projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
-        continue;
-      }
-      let safeProjectPath: string;
-      try {
-        safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
-      } catch (error) {
-        logger.warn("Skipping .luie persistence for invalid projectPath", {
-          projectId: project.id,
-          projectPath,
-          error,
-        });
-        continue;
-      }
-      const payload = await this.buildProjectPackagePayload(
-        bundle,
-        project.id,
-        safeProjectPath,
-        localProject?.snapshots ?? [],
+    const prisma = db.getClient();
+    const deletedProjectIds = collectDeletedProjectIds(bundle);
+    try {
+      await prisma.$transaction(async (tx: unknown) => {
+        const transactionClient = tx as ReturnType<(typeof db)["getClient"]>;
+        await applyProjectDeletes(transactionClient, deletedProjectIds);
+        await upsertProjects(transactionClient, bundle.projects, deletedProjectIds);
+
+        for (const chapter of bundle.chapters) {
+          if (deletedProjectIds.has(chapter.projectId)) continue;
+          await upsertChapter(transactionClient, chapter);
+        }
+
+        await upsertCharacters(transactionClient, bundle.characters, deletedProjectIds);
+        await upsertTerms(transactionClient, bundle.terms, deletedProjectIds);
+        await applyChapterTombstones(
+          transactionClient,
+          bundle.tombstones,
+          deletedProjectIds,
+        );
+      });
+    } catch (error) {
+      const persistedProjectIds = persistedPackages.map((item) => item.projectId);
+      logger.error("Failed to apply merged bundle to DB cache after .luie persistence", {
+        error,
+        persistedProjectIds,
+      });
+
+      const failedRecoveryProjectIds = await recoverDbCacheFromPersistedPackages(
+        persistedPackages,
+        logger,
       );
-      if (!payload) continue;
-
-      try {
-        await writeLuiePackage(safeProjectPath, payload, logger);
-        persistedProjects.push({
-          projectId: project.id,
-          projectPath: safeProjectPath,
-        });
-      } catch (error) {
-        failedProjects.push(project.id);
-        logger.error("Failed to persist merged bundle into .luie package", {
-          projectId: project.id,
-          projectPath: safeProjectPath,
-          error,
-        });
+      if (failedRecoveryProjectIds.length > 0) {
+        throw new Error(
+          `SYNC_DB_CACHE_APPLY_FAILED:${persistedProjectIds.join(",") || "none"};SYNC_DB_CACHE_RECOVERY_FAILED:${failedRecoveryProjectIds.join(",")}`,
+        );
       }
-    }
-    if (failedProjects.length > 0) {
-      throw new Error(`SYNC_LUIE_PERSIST_FAILED:${failedProjects.join(",")}`);
-    }
-    return persistedProjects;
-  }
-
-  private async recoverDbCacheFromPersistedPackages(
-    persistedPackages: PersistedLuiePackage[],
-  ): Promise<string[]> {
-    if (persistedPackages.length === 0) return [];
-
-    const failedProjectIds: string[] = [];
-    for (const entry of persistedPackages) {
-      try {
-        await projectService.openLuieProject(entry.projectPath);
-      } catch (error) {
-        failedProjectIds.push(entry.projectId);
-        logger.error("Failed to recover DB cache from persisted .luie package", {
-          projectId: entry.projectId,
-          projectPath: entry.projectPath,
-          error,
-        });
-      }
-    }
-    return failedProjectIds;
-  }
-
-  private async upsertChapter(
-    prisma: ReturnType<(typeof db)["getClient"]>,
-    chapter: SyncChapterRecord,
-  ): Promise<void> {
-    const existing = await prisma.chapter.findUnique({
-      where: { id: chapter.id },
-      select: { id: true },
-    }) as { id?: string } | null;
-
-    const data = {
-      title: chapter.title,
-      content: chapter.content,
-      synopsis: chapter.synopsis,
-      order: chapter.order,
-      wordCount: chapter.wordCount,
-      updatedAt: new Date(chapter.updatedAt),
-      deletedAt: chapter.deletedAt ? new Date(chapter.deletedAt) : null,
-      project: {
-        connect: { id: chapter.projectId },
-      },
-    };
-
-    if (existing?.id) {
-      await prisma.chapter.update({
-        where: { id: chapter.id },
-        data,
-      });
-    } else {
-      await prisma.chapter.create({
-        data: {
-          id: chapter.id,
-          ...data,
-          createdAt: new Date(chapter.createdAt),
-        },
-      });
+      throw new Error(`SYNC_DB_CACHE_APPLY_FAILED:${persistedProjectIds.join(",") || "none"}`);
     }
   }
 

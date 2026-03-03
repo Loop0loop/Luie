@@ -28,6 +28,94 @@ function isPrismaNotFoundError(error: unknown): boolean {
 }
 
 export class ChapterService {
+  private async resolveProjectTitle(projectId: string | undefined): Promise<string> {
+    if (!projectId) return "Unknown";
+    const project = await db.getClient().project.findUnique({
+      where: { id: projectId },
+      select: { title: true },
+    });
+    return typeof (project as { title?: unknown } | null)?.title === "string"
+      ? String((project as { title: string }).title)
+      : "Unknown";
+  }
+
+  private async writeSuspiciousContentDump(input: {
+    projectId: string | undefined;
+    chapterId: string;
+    filePrefix: string;
+    content: string;
+  }): Promise<string | undefined> {
+    if (isTestEnv()) return undefined;
+    const projectTitle = await this.resolveProjectTitle(input.projectId);
+    const safeTitle = sanitizeName(projectTitle, "Unknown");
+    const dumpDir = path.join(
+      app.getPath("userData"),
+      SNAPSHOT_BACKUP_DIR,
+      safeTitle || "Unknown",
+      "_suspicious",
+    );
+    await fs.mkdir(dumpDir, { recursive: true });
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const dumpPath = path.join(dumpDir, `${input.filePrefix}-${input.chapterId}-${timestamp}.txt`);
+    await fs.writeFile(dumpPath, input.content, "utf8");
+    return dumpPath;
+  }
+
+  private async applyContentUpdate(
+    input: ChapterUpdateInput,
+    current: { projectId?: unknown; content?: unknown } | null,
+    updateData: Record<string, unknown>,
+  ): Promise<void> {
+    if (input.content === undefined) return;
+
+    const oldContent = typeof current?.content === "string" ? current.content : "";
+    const oldLen = oldContent.length;
+    const newLen = input.content.length;
+    const projectId = typeof current?.projectId === "string" ? current.projectId : undefined;
+
+    if (oldLen > 0 && newLen === 0) {
+      const dumpPath = await this.writeSuspiciousContentDump({
+        projectId,
+        chapterId: input.id,
+        filePrefix: "dump-empty",
+        content: oldContent,
+      });
+      logger.warn("Empty content save blocked.", { chapterId: input.id, oldLen, dumpPath });
+      throw new ServiceError(
+        ErrorCode.VALIDATION_FAILED,
+        "Empty content save blocked",
+        { chapterId: input.id, oldLen },
+      );
+    }
+
+    if (!isTestEnv() && oldLen > 1000 && newLen < oldLen * 0.1) {
+      const dumpPath = await this.writeSuspiciousContentDump({
+        projectId,
+        chapterId: input.id,
+        filePrefix: "dump",
+        content: input.content,
+      });
+      logger.warn("Suspicious large deletion detected. Save blocked.", {
+        chapterId: input.id,
+        oldLen,
+        newLen,
+        dumpPath,
+      });
+      throw new ServiceError(
+        ErrorCode.VALIDATION_FAILED,
+        "Suspicious large deletion detected; save blocked",
+        { chapterId: input.id, oldLen, newLen },
+      );
+    }
+
+    updateData.content = input.content;
+    updateData.wordCount = input.content.length;
+    if (!projectId) return;
+
+    await trackKeywordAppearances(input.id, input.content, projectId);
+    autoExtractService.scheduleAnalysis(input.id, projectId, input.content);
+  }
+
   async createChapter(input: ChapterCreateInput) {
     try {
       if (!input.title || input.title.trim().length === 0) {
@@ -135,108 +223,11 @@ export class ChapterService {
       const updateData: Record<string, unknown> = {};
 
       if (input.title !== undefined) updateData.title = input.title;
-      if (input.content !== undefined) {
-        const isTest = isTestEnv();
-
-        const oldContent = typeof current?.content === "string" ? current.content : "";
-        const oldLen = oldContent.length;
-        const newLen = input.content.length;
-
-        if (oldLen > 0 && newLen === 0) {
-          let dumpPath: string | undefined;
-          if (!isTest) {
-            const project = current?.projectId
-              ? await db.getClient().project.findUnique({
-                  where: { id: String(current.projectId) },
-                  select: { title: true },
-                })
-              : null;
-
-            const projectTitle =
-              typeof (project as { title?: unknown } | null)?.title === "string"
-                ? String((project as { title: string }).title)
-                : "Unknown";
-            const safeTitle = sanitizeName(projectTitle, "Unknown");
-            const dumpDir = path.join(
-              app.getPath("userData"),
-              SNAPSHOT_BACKUP_DIR,
-              safeTitle || "Unknown",
-              "_suspicious",
-            );
-            await fs.mkdir(dumpDir, { recursive: true });
-            const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-            dumpPath = path.join(dumpDir, `dump-empty-${input.id}-${timestamp}.txt`);
-            await fs.writeFile(dumpPath, oldContent, "utf8");
-          }
-
-          logger.warn("Empty content save blocked.", {
-            chapterId: input.id,
-            oldLen,
-            dumpPath,
-          });
-
-          throw new ServiceError(
-            ErrorCode.VALIDATION_FAILED,
-            "Empty content save blocked",
-            { chapterId: input.id, oldLen },
-          );
-        }
-
-        if (!isTest && oldLen > 1000 && newLen < oldLen * 0.1) {
-          const project = current?.projectId
-            ? await db.getClient().project.findUnique({
-                where: { id: String(current.projectId) },
-                select: { title: true },
-              })
-            : null;
-
-          const projectTitle =
-            typeof (project as { title?: unknown } | null)?.title === "string"
-              ? String((project as { title: string }).title)
-              : "Unknown";
-          const safeTitle = sanitizeName(projectTitle, "Unknown");
-          const dumpDir = path.join(
-            app.getPath("userData"),
-            SNAPSHOT_BACKUP_DIR,
-            safeTitle || "Unknown",
-            "_suspicious",
-          );
-          await fs.mkdir(dumpDir, { recursive: true });
-          const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-          const dumpPath = path.join(dumpDir, `dump-${input.id}-${timestamp}.txt`);
-          await fs.writeFile(dumpPath, input.content, "utf8");
-
-          logger.warn("Suspicious large deletion detected. Save blocked.", {
-            chapterId: input.id,
-            oldLen,
-            newLen,
-            dumpPath,
-          });
-
-          throw new ServiceError(
-            ErrorCode.VALIDATION_FAILED,
-            "Suspicious large deletion detected; save blocked",
-            { chapterId: input.id, oldLen, newLen },
-          );
-        }
-
-        updateData.content = input.content;
-        updateData.wordCount = input.content.length;
-
-        if (current) {
-          await trackKeywordAppearances(
-            input.id,
-            input.content,
-            String((current as { projectId: unknown }).projectId),
-          );
-
-          autoExtractService.scheduleAnalysis(
-            input.id,
-            String((current as { projectId: unknown }).projectId),
-            input.content,
-          );
-        }
-      }
+      await this.applyContentUpdate(
+        input,
+        current as { projectId?: unknown; content?: unknown } | null,
+        updateData,
+      );
       if (input.synopsis !== undefined) updateData.synopsis = input.synopsis;
 
       const updatedChapter = await db.getClient().chapter.update({
