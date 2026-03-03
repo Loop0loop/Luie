@@ -3,6 +3,7 @@ import { Minus, Plus, Download } from "lucide-react";
 import type { TFunction } from "i18next";
 import type { FontPreset } from "@renderer/features/editor/stores/editorStore";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { useShallow } from "zustand/react/shallow";
 import { EDITOR_FONT_FAMILIES } from '@shared/constants/configs';
 import type { OptionalFontOption } from "@renderer/features/settings/components/tabs/types"; interface EditorTabProps {
     t: TFunction;
@@ -27,7 +28,13 @@ export const EditorTab = memo(function EditorTab({
     onSetLocalLineHeight,
     onInstallFont,
 }: EditorTabProps) {
-    const { fontFamily, fontPreset, updateSettings: onApplySettings } = useEditorStore();
+    const { fontFamily, fontPreset, updateSettings: onApplySettings } = useEditorStore(
+        useShallow((state) => ({
+            fontFamily: state.fontFamily,
+            fontPreset: state.fontPreset,
+            updateSettings: state.updateSettings,
+        }))
+    );
 
     return (
         <div className="space-y-8 max-w-2xl">

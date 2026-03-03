@@ -1,0 +1,1253 @@
+import { app, dialog } from "electron";
+import type { OpenDialogReturnValue, SaveDialogReturnValue } from "electron";
+import * as fs from "fs";
+import * as fsp from "fs/promises";
+import * as path from "path";
+import yauzl from "yauzl";
+import yazl from "yazl";
+import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
+import { ErrorCode } from "../../../shared/constants/errorCode.js";
+import {
+  DEFAULT_PROJECT_DIR_NAME,
+  DEFAULT_PROJECT_FILE_BASENAME,
+  LUIE_PACKAGE_EXTENSION,
+  LUIE_PACKAGE_EXTENSION_NO_DOT,
+  LUIE_PACKAGE_FILTER_NAME,
+  LUIE_PACKAGE_FORMAT,
+  LUIE_PACKAGE_CONTAINER_DIR,
+  LUIE_PACKAGE_VERSION,
+  LUIE_PACKAGE_META_FILENAME,
+  LUIE_MANUSCRIPT_DIR,
+  LUIE_MANUSCRIPT_README,
+  MARKDOWN_EXTENSION,
+  LUIE_WORLD_DIR,
+  LUIE_SNAPSHOTS_DIR,
+  LUIE_ASSETS_DIR,
+  LUIE_WORLD_CHARACTERS_FILE,
+  LUIE_WORLD_TERMS_FILE,
+  LUIE_WORLD_SYNOPSIS_FILE,
+  LUIE_WORLD_PLOT_FILE,
+  LUIE_WORLD_DRAWING_FILE,
+  LUIE_WORLD_MINDMAP_FILE,
+  LUIE_WORLD_SCRAP_MEMOS_FILE,
+  LUIE_WORLD_GRAPH_FILE,
+} from "../../../shared/constants/index.js";
+import { SNAPSHOT_BACKUP_DIR } from "../../../shared/constants/paths.js";
+import {
+  ensureLuieExtension,
+  isSafeZipPath,
+  normalizeZipPath,
+  readLuieEntry,
+  readZipEntryContent,
+} from "../../utils/luiePackage.js";
+import { registerIpcHandlers } from "../core/ipcRegistrar.js";
+import type { LoggerLike } from "../core/types.js";
+import { sanitizeName } from "../../../shared/utils/sanitize.js";
+import {
+  fsApproveProjectPathArgsSchema,
+  fsCreateLuiePackageArgsSchema,
+  fsReadFileArgsSchema,
+  fsReadLuieEntryArgsSchema,
+  fsSaveProjectArgsSchema,
+  fsSelectDialogArgsSchema,
+  fsWriteFileArgsSchema,
+  fsWriteProjectFileArgsSchema,
+} from "../../../shared/schemas/index.js";
+import { ensureSafeAbsolutePath } from "../../utils/pathValidation.js";
+import { ServiceError } from "../../utils/serviceError.js";
+
+export type LuiePackageExportData = {
+  meta: Record<string, unknown>;
+  chapters: Array<{ id: string; content?: string | null }>;
+  characters: unknown[];
+  terms: unknown[];
+  synopsis?: unknown;
+  plot?: unknown;
+  drawing?: unknown;
+  mindmap?: unknown;
+  memos?: unknown;
+  graph?: unknown;
+  snapshots: Array<{
+    id: string;
+    chapterId?: string | null;
+    content?: string | null;
+    description?: string | null;
+    createdAt?: string;
+  }>;
+};
+
+type ZipEntryPayload = {
+  name: string;
+  content?: string;
+  isDirectory?: boolean;
+  fromFilePath?: string;
+};
+
+const ZIP_TEMP_SUFFIX = ".tmp";
+const APPROVED_ROOT_TTL_MS = 12 * 60 * 60 * 1000;
+const MAX_APPROVED_ROOTS = 128;
+const MAX_READ_FILE_BYTES = 16 * 1024 * 1024;
+const ALLOWED_TEXT_WRITE_EXTENSIONS = new Set([
+  MARKDOWN_EXTENSION,
+  ".txt",
+]);
+const packageWriteQueue = new Map<string, Promise<void>>();
+
+type FsPathPermission = "read" | "write" | "package";
+
+type ApprovedRootEntry = {
+  permissions: Set<FsPathPermission>;
+  expiresAt: number;
+  lastAccessedAt: number;
+};
+
+const approvedRoots = new Map<string, ApprovedRootEntry>();
+
+const normalizeComparablePath = (input: string): string =>
+  process.platform === "win32" ? input.toLowerCase() : input;
+
+const isPathWithinRoot = (targetPath: string, rootPath: string): boolean => {
+  const normalizedTarget = normalizeComparablePath(path.resolve(targetPath));
+  const normalizedRoot = normalizeComparablePath(path.resolve(rootPath));
+  return (
+    normalizedTarget === normalizedRoot ||
+    normalizedTarget.startsWith(`${normalizedRoot}${path.sep}`)
+  );
+};
+
+const pruneApprovedRoots = (): void => {
+  const now = Date.now();
+  for (const [rootPath, entry] of approvedRoots.entries()) {
+    if (entry.expiresAt <= now) {
+      approvedRoots.delete(rootPath);
+    }
+  }
+};
+
+const enforceApprovedRootLimit = (): void => {
+  if (approvedRoots.size <= MAX_APPROVED_ROOTS) return;
+  const candidates = Array.from(approvedRoots.entries()).sort(
+    (left, right) => left[1].lastAccessedAt - right[1].lastAccessedAt,
+  );
+  const overflowCount = approvedRoots.size - MAX_APPROVED_ROOTS;
+  for (const [rootPath] of candidates.slice(0, overflowCount)) {
+    approvedRoots.delete(rootPath);
+  }
+};
+
+const upsertApprovedRoot = (rootPath: string, permissions: FsPathPermission[]): void => {
+  const normalizedRootPath = path.resolve(rootPath);
+  const existing = approvedRoots.get(normalizedRootPath);
+  const now = Date.now();
+  if (existing) {
+    permissions.forEach((permission) => existing.permissions.add(permission));
+    existing.expiresAt = now + APPROVED_ROOT_TTL_MS;
+    existing.lastAccessedAt = now;
+    return;
+  }
+  approvedRoots.set(normalizedRootPath, {
+    permissions: new Set(permissions),
+    expiresAt: now + APPROVED_ROOT_TTL_MS,
+    lastAccessedAt: now,
+  });
+  enforceApprovedRootLimit();
+};
+
+const resolveCanonicalPath = async (
+  inputPath: string,
+  mode: "read" | "write",
+): Promise<string> => {
+  const resolved = path.resolve(inputPath);
+
+  if (mode === "read") {
+    try {
+      return await fsp.realpath(resolved);
+    } catch (error) {
+      const err = error as NodeJS.ErrnoException;
+      if (err?.code === "ENOENT") {
+        return resolved;
+      }
+      throw error;
+    }
+  }
+
+  let cursor = resolved;
+  while (true) {
+    try {
+      await fsp.access(cursor);
+      const canonicalCursor = await fsp.realpath(cursor);
+      if (cursor === resolved) {
+        return canonicalCursor;
+      }
+      const suffix = path.relative(cursor, resolved);
+      return path.resolve(canonicalCursor, suffix);
+    } catch (error) {
+      const err = error as NodeJS.ErrnoException;
+      if (err?.code === "ENOENT") {
+        const parent = path.dirname(cursor);
+        if (parent === cursor) {
+          return resolved;
+        }
+        cursor = parent;
+        continue;
+      }
+      throw error;
+    }
+  }
+};
+
+const approvePathForSession = async (
+  inputPath: string,
+  permissions: FsPathPermission[],
+  treatAs: "file" | "directory" = "file",
+): Promise<void> => {
+  const safePath = ensureSafeAbsolutePath(inputPath, "path");
+  const rootPath = treatAs === "directory" ? safePath : path.dirname(safePath);
+  const canonicalRoot = await resolveCanonicalPath(rootPath, "write");
+  upsertApprovedRoot(canonicalRoot, permissions);
+};
+
+const resolveApprovedProjectPath = async (projectPath: string): Promise<string> => {
+  const safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
+  if (safeProjectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
+    return ensureLuieExtension(safeProjectPath);
+  }
+  const luieCandidate = ensureLuieExtension(safeProjectPath);
+  if (luieCandidate === safeProjectPath) {
+    return safeProjectPath;
+  }
+  try {
+    await fsp.access(luieCandidate);
+    return luieCandidate;
+  } catch {
+    return safeProjectPath;
+  }
+};
+
+const assertAllowedFsPath = async (
+  inputPath: string,
+  options: {
+    fieldName: string;
+    mode: "read" | "write";
+    permission: FsPathPermission;
+  },
+): Promise<string> => {
+  const safePath = ensureSafeAbsolutePath(inputPath, options.fieldName);
+  const canonicalPath = await resolveCanonicalPath(safePath, options.mode);
+  pruneApprovedRoots();
+
+  for (const [rootPath, entry] of approvedRoots.entries()) {
+    if (!entry.permissions.has(options.permission)) continue;
+    if (!isPathWithinRoot(canonicalPath, rootPath)) continue;
+    entry.lastAccessedAt = Date.now();
+    return safePath;
+  }
+
+  throw new ServiceError(
+    ErrorCode.FS_PERMISSION_DENIED,
+    `${options.fieldName} is outside approved roots`,
+    {
+      fieldName: options.fieldName,
+      path: safePath,
+      permission: options.permission,
+    },
+  );
+};
+
+const assertLuiePackagePath = (packagePath: string, fieldName: string): void => {
+  if (!packagePath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
+    throw new ServiceError(
+      ErrorCode.INVALID_INPUT,
+      `${fieldName} must point to a ${LUIE_PACKAGE_EXTENSION} package`,
+      { fieldName, packagePath },
+    );
+  }
+};
+
+const assertSupportedWriteFileExtension = (filePath: string): void => {
+  const extension = path.extname(filePath).toLowerCase();
+  if (extension === LUIE_PACKAGE_EXTENSION) {
+    throw new ServiceError(
+      ErrorCode.INVALID_INPUT,
+      "Direct .luie writes are blocked. Use fs.createLuiePackage or fs.writeProjectFile.",
+      { filePath, extension },
+    );
+  }
+  if (!ALLOWED_TEXT_WRITE_EXTENSIONS.has(extension)) {
+    throw new ServiceError(
+      ErrorCode.INVALID_INPUT,
+      "Unsupported file extension for fs.writeFile",
+      { filePath, extension, allowed: Array.from(ALLOWED_TEXT_WRITE_EXTENSIONS) },
+    );
+  }
+};
+
+const ensureParentDir = async (targetPath: string) => {
+  const dir = path.dirname(targetPath);
+  await fsp.mkdir(dir, { recursive: true });
+};
+
+const pathExists = async (targetPath: string): Promise<boolean> => {
+  try {
+    await fsp.access(targetPath);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const withPackageWriteLock = async <T>(
+  packagePath: string,
+  task: () => Promise<T>,
+): Promise<T> => {
+  const lockKey = path.resolve(ensureLuieExtension(packagePath));
+  const previous = packageWriteQueue.get(lockKey) ?? Promise.resolve();
+  const current = previous.catch(() => undefined).then(task);
+  const marker = current.then(
+    () => undefined,
+    () => undefined,
+  );
+  packageWriteQueue.set(lockKey, marker);
+
+  try {
+    return await current;
+  } finally {
+    if (packageWriteQueue.get(lockKey) === marker) {
+      packageWriteQueue.delete(lockKey);
+    }
+  }
+};
+
+const buildZipFile = async (
+  outputPath: string,
+  buildEntries: (zip: yazl.ZipFile) => Promise<void> | void,
+) => {
+  const zip = new yazl.ZipFile();
+  const output = fs.createWriteStream(outputPath);
+
+  const completion = new Promise<void>((resolve, reject) => {
+    output.on("close", () => resolve());
+    output.on("error", reject);
+    zip.outputStream.on("error", reject);
+  });
+
+  zip.outputStream.pipe(output);
+  await buildEntries(zip);
+  zip.end();
+  await completion;
+};
+
+const atomicReplace = async (tempPath: string, targetPath: string, logger: LoggerLike) => {
+  const backupPath = `${targetPath}.bak-${Date.now()}`;
+  let backedUp = false;
+
+  try {
+    await fsp.rename(tempPath, targetPath);
+    return;
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    if (
+      err?.code !== "EEXIST" &&
+      err?.code !== "ENOTEMPTY" &&
+      err?.code !== "EPERM" &&
+      err?.code !== "EISDIR"
+    ) {
+      throw error;
+    }
+  }
+
+  try {
+    await fsp.rename(targetPath, backupPath);
+    backedUp = true;
+    await fsp.rename(tempPath, targetPath);
+    await fsp.rm(backupPath, { force: true, recursive: true });
+  } catch (error) {
+    logger.error("Atomic replace failed", { error, targetPath });
+    if (backedUp) {
+      try {
+        await fsp.rename(backupPath, targetPath);
+      } catch (restoreError) {
+        logger.error("Failed to restore backup", { restoreError, targetPath, backupPath });
+      }
+    }
+    throw error;
+  }
+};
+
+const baseLuieDirectoryEntries = () => [
+  { name: `${LUIE_MANUSCRIPT_DIR}/`, isDirectory: true },
+  { name: `${LUIE_WORLD_DIR}/`, isDirectory: true },
+  { name: `${LUIE_SNAPSHOTS_DIR}/`, isDirectory: true },
+  { name: `${LUIE_ASSETS_DIR}/`, isDirectory: true },
+];
+
+const metaEntry = (meta: unknown) => ({
+  name: LUIE_PACKAGE_META_FILENAME,
+  content: JSON.stringify(meta ?? {}, null, 2),
+});
+
+const resolveOpenDialogPath = (result: OpenDialogReturnValue) => {
+  if (result.canceled || result.filePaths.length === 0) {
+    return null;
+  }
+  return result.filePaths[0];
+};
+
+const resolveSaveDialogPath = (result: SaveDialogReturnValue) => {
+  if (result.canceled || !result.filePath) {
+    return null;
+  }
+  return result.filePath;
+};
+
+const addEntriesToZip = async (zip: yazl.ZipFile, entries: ZipEntryPayload[]) => {
+  for (const entry of entries) {
+    const normalized = normalizeZipPath(entry.name);
+    if (!normalized || !isSafeZipPath(normalized)) {
+      throw new Error("INVALID_ZIP_ENTRY_PATH");
+    }
+
+    if (entry.isDirectory) {
+      zip.addEmptyDirectory(normalized.endsWith("/") ? normalized : `${normalized}/`);
+      continue;
+    }
+
+    if (entry.fromFilePath) {
+      zip.addFile(entry.fromFilePath, normalized);
+      continue;
+    }
+
+    const buffer = Buffer.from(entry.content ?? "", "utf-8");
+    zip.addBuffer(buffer, normalized);
+  }
+};
+
+const parseObjectJson = (raw: string): Record<string, unknown> | null => {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    // keep fallback
+  }
+  return null;
+};
+
+const toObjectRecord = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+
+const isCompatibleLuieVersion = (value: unknown): boolean => {
+  if (typeof value === "number") return value === LUIE_PACKAGE_VERSION;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed === LUIE_PACKAGE_VERSION;
+  }
+  return false;
+};
+
+const validateLuieMetaCompatibility = (
+  meta: Record<string, unknown>,
+  context: { source: string },
+): void => {
+  if (meta.format !== LUIE_PACKAGE_FORMAT) {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Generated .luie package metadata format is invalid",
+      { ...context, format: meta.format },
+    );
+  }
+  if (meta.container !== LUIE_PACKAGE_CONTAINER_DIR) {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Generated .luie package metadata container is invalid",
+      { ...context, container: meta.container },
+    );
+  }
+  if (!isCompatibleLuieVersion(meta.version)) {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Generated .luie package metadata version is invalid",
+      { ...context, version: meta.version },
+    );
+  }
+};
+
+const normalizeLuieMetaForWrite = (
+  input: unknown,
+  options: {
+    titleFallback: string;
+    nowIso?: string;
+    createdAtFallback?: string;
+  },
+): Record<string, unknown> => {
+  const rawMeta = toObjectRecord(input);
+  const nowIso = options.nowIso ?? new Date().toISOString();
+  const createdAtFallback = options.createdAtFallback ?? nowIso;
+
+  if (
+    Object.prototype.hasOwnProperty.call(rawMeta, "format") &&
+    rawMeta.format !== LUIE_PACKAGE_FORMAT
+  ) {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Luie metadata format is invalid",
+      { format: rawMeta.format },
+    );
+  }
+  if (
+    Object.prototype.hasOwnProperty.call(rawMeta, "container") &&
+    rawMeta.container !== LUIE_PACKAGE_CONTAINER_DIR
+  ) {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Luie metadata container is invalid",
+      { container: rawMeta.container },
+    );
+  }
+  if (
+    Object.prototype.hasOwnProperty.call(rawMeta, "version") &&
+    !isCompatibleLuieVersion(rawMeta.version)
+  ) {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Luie metadata version is invalid",
+      { version: rawMeta.version },
+    );
+  }
+
+  const title =
+    typeof rawMeta.title === "string" && rawMeta.title.trim().length > 0
+      ? rawMeta.title
+      : options.titleFallback;
+  const createdAt =
+    typeof rawMeta.createdAt === "string" && rawMeta.createdAt.length > 0
+      ? rawMeta.createdAt
+      : createdAtFallback;
+  const updatedAt =
+    typeof rawMeta.updatedAt === "string" && rawMeta.updatedAt.length > 0
+      ? rawMeta.updatedAt
+      : nowIso;
+
+  return {
+    ...rawMeta,
+    format: LUIE_PACKAGE_FORMAT,
+    container: LUIE_PACKAGE_CONTAINER_DIR,
+    version: LUIE_PACKAGE_VERSION,
+    title,
+    createdAt,
+    updatedAt,
+  };
+};
+
+const verifyLuieZipIntegrity = async (
+  zipPath: string,
+  logger: LoggerLike,
+): Promise<void> => {
+  const metaRaw = await readZipEntryContent(zipPath, LUIE_PACKAGE_META_FILENAME, logger);
+  if (!metaRaw) {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Generated .luie package is missing meta.json",
+      { zipPath },
+    );
+  }
+
+  const parsedMeta = parseObjectJson(metaRaw);
+  if (!parsedMeta) {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Generated .luie package metadata is invalid",
+      { zipPath },
+    );
+  }
+  validateLuieMetaCompatibility(parsedMeta, { source: zipPath });
+};
+
+
+export const writeLuiePackage = async (
+  targetPath: string,
+  payload: LuiePackageExportData,
+  logger: LoggerLike,
+) => {
+  const outputPath = ensureLuieExtension(targetPath);
+  return await withPackageWriteLock(outputPath, async () => {
+    await ensureParentDir(outputPath);
+
+    const nowIso = new Date().toISOString();
+    const normalizedMeta = normalizeLuieMetaForWrite(payload.meta, {
+      titleFallback: path.basename(outputPath, LUIE_PACKAGE_EXTENSION),
+      nowIso,
+      createdAtFallback: nowIso,
+    });
+    const tempZip = `${outputPath}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
+    const entries: ZipEntryPayload[] = [
+      { name: `${LUIE_MANUSCRIPT_DIR}/`, isDirectory: true },
+      { name: `${LUIE_WORLD_DIR}/`, isDirectory: true },
+      { name: `${LUIE_SNAPSHOTS_DIR}/`, isDirectory: true },
+      { name: `${LUIE_ASSETS_DIR}/`, isDirectory: true },
+      {
+        name: LUIE_PACKAGE_META_FILENAME,
+        content: JSON.stringify(normalizedMeta, null, 2),
+      },
+      {
+        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`,
+        content: JSON.stringify({ characters: payload.characters ?? [] }, null, 2),
+      },
+      {
+        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`,
+        content: JSON.stringify({ terms: payload.terms ?? [] }, null, 2),
+      },
+      {
+        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`,
+        content: JSON.stringify(payload.synopsis ?? { synopsis: "", status: "draft" }, null, 2),
+      },
+      {
+        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_PLOT_FILE}`,
+        content: JSON.stringify(payload.plot ?? { columns: [] }, null, 2),
+      },
+      {
+        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`,
+        content: JSON.stringify(payload.drawing ?? { paths: [] }, null, 2),
+      },
+      {
+        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_MINDMAP_FILE}`,
+        content: JSON.stringify(payload.mindmap ?? { nodes: [], edges: [] }, null, 2),
+      },
+      {
+        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_SCRAP_MEMOS_FILE}`,
+        content: JSON.stringify(payload.memos ?? { memos: [] }, null, 2),
+      },
+      {
+        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_GRAPH_FILE}`,
+        content: JSON.stringify(payload.graph ?? { nodes: [], edges: [] }, null, 2),
+      },
+      {
+        name: `${LUIE_SNAPSHOTS_DIR}/index.json`,
+        content: JSON.stringify({ snapshots: payload.snapshots ?? [] }, null, 2),
+      },
+    ];
+
+    for (const chapter of payload.chapters ?? []) {
+      if (!chapter.id) continue;
+      entries.push({
+        name: `${LUIE_MANUSCRIPT_DIR}/${chapter.id}${MARKDOWN_EXTENSION}`,
+        content: chapter.content ?? "",
+      });
+    }
+
+    if (payload.snapshots && payload.snapshots.length > 0) {
+      for (const snapshot of payload.snapshots) {
+        if (!snapshot.id) continue;
+        entries.push({
+          name: `${LUIE_SNAPSHOTS_DIR}/${snapshot.id}.snap`,
+          content: JSON.stringify(snapshot, null, 2),
+        });
+      }
+    }
+
+    await buildZipFile(tempZip, (zip) => addEntriesToZip(zip, entries));
+    await verifyLuieZipIntegrity(tempZip, logger);
+    await atomicReplace(tempZip, outputPath, logger);
+  });
+};
+
+const collectDirectoryEntries = async (sourceDir: string, baseDir = sourceDir) => {
+  const entries: ZipEntryPayload[] = [];
+  const items = await fsp.readdir(sourceDir, { withFileTypes: true });
+
+  for (const item of items) {
+    const fullPath = `${sourceDir}${path.sep}${item.name}`;
+    const relative = normalizeZipPath(path.relative(baseDir, fullPath));
+    if (!relative || !isSafeZipPath(relative)) {
+      continue;
+    }
+
+    // Skip symlinks during directory-package migration to prevent
+    // packaging files outside the selected legacy .luie directory.
+    if (item.isSymbolicLink()) {
+      continue;
+    }
+
+    if (item.isDirectory()) {
+      entries.push({ name: `${relative}/`, isDirectory: true });
+      entries.push(...(await collectDirectoryEntries(fullPath, baseDir)));
+      continue;
+    }
+
+    if (!item.isFile()) {
+      continue;
+    }
+
+    entries.push({ name: relative, fromFilePath: fullPath });
+  }
+
+  return entries;
+};
+
+const migrateDirectoryPackageToZip = async (
+  legacyDir: string,
+  targetZip: string,
+  logger: LoggerLike,
+) => {
+  const backupPath = `${legacyDir}.dir-legacy-${Date.now()}`;
+  await fsp.rename(legacyDir, backupPath);
+  const tempZip = `${targetZip}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
+
+  try {
+    const entries = await collectDirectoryEntries(backupPath);
+    const hasMetaEntry = entries.some(
+      (entry) => normalizeZipPath(entry.name) === LUIE_PACKAGE_META_FILENAME,
+    );
+    const nowIso = new Date().toISOString();
+    let existingMeta: Record<string, unknown> = {};
+    if (hasMetaEntry) {
+      try {
+        const existingMetaRaw = await fsp.readFile(
+          path.join(backupPath, LUIE_PACKAGE_META_FILENAME),
+          "utf-8",
+        );
+        existingMeta = parseObjectJson(existingMetaRaw) ?? {};
+      } catch {
+        existingMeta = {};
+      }
+    }
+    const normalizedMeta = normalizeLuieMetaForWrite(existingMeta, {
+      titleFallback: path.basename(targetZip, LUIE_PACKAGE_EXTENSION),
+      nowIso,
+      createdAtFallback: nowIso,
+    });
+    const sanitizedEntries = entries.filter(
+      (entry) => normalizeZipPath(entry.name) !== LUIE_PACKAGE_META_FILENAME,
+    );
+    sanitizedEntries.push(metaEntry(normalizedMeta));
+    await buildZipFile(tempZip, (zip) => addEntriesToZip(zip, sanitizedEntries));
+    await verifyLuieZipIntegrity(tempZip, logger);
+    await atomicReplace(tempZip, targetZip, logger);
+    return backupPath;
+  } catch (error) {
+    logger.error("Failed to migrate legacy directory package", {
+      legacyDir,
+      targetZip,
+      backupPath,
+      error,
+    });
+
+    try {
+      await fsp.rm(tempZip, { force: true });
+    } catch {
+      // best effort
+    }
+
+    try {
+      if (await pathExists(legacyDir)) {
+        const collidedPath = `${legacyDir}.migration-failed-${Date.now()}`;
+        await fsp.rename(legacyDir, collidedPath);
+        logger.info("Moved partial migration output before restore", {
+          legacyDir,
+          collidedPath,
+        });
+      }
+      await fsp.rename(backupPath, legacyDir);
+      logger.info("Restored legacy directory package after migration failure", {
+        legacyDir,
+        backupPath,
+      });
+    } catch (restoreError) {
+      logger.error("Failed to restore legacy directory package", {
+        legacyDir,
+        backupPath,
+        restoreError,
+      });
+    }
+
+    throw error;
+  }
+};
+
+const rebuildZipWithReplacement = async (
+  sourceZip: string,
+  targetZip: string,
+  replacementPath: string,
+  replacementContent: string,
+  logger: LoggerLike,
+) => {
+  const safeReplacement = normalizeZipPath(replacementPath);
+  if (!safeReplacement || !isSafeZipPath(safeReplacement)) {
+    throw new Error("INVALID_RELATIVE_PATH");
+  }
+
+  await buildZipFile(targetZip, async (zip) => {
+    await new Promise<void>((resolve, reject) => {
+      yauzl.open(sourceZip, { lazyEntries: true }, (openErr: Error | null, zipfile?: yauzl.ZipFile) => {
+        if (openErr || !zipfile) {
+          reject(openErr ?? new Error("FAILED_TO_OPEN_ZIP"));
+          return;
+        }
+
+        const handleEntry = (entry: yauzl.Entry) => {
+          const entryName = normalizeZipPath(entry.fileName);
+          if (!entryName || !isSafeZipPath(entryName)) {
+            logger.error("Unsafe zip entry skipped", { entry: entry.fileName, sourceZip });
+            zipfile.readEntry();
+            return;
+          }
+
+          if (entryName === safeReplacement) {
+            zipfile.readEntry();
+            return;
+          }
+
+          if (entry.fileName.endsWith("/")) {
+            zip.addEmptyDirectory(entryName.endsWith("/") ? entryName : `${entryName}/`);
+            zipfile.readEntry();
+            return;
+          }
+
+          zipfile.openReadStream(entry, (streamErr: Error | null, stream?: NodeJS.ReadableStream) => {
+            if (streamErr || !stream) {
+              reject(streamErr ?? new Error("FAILED_TO_READ_ZIP_ENTRY"));
+              return;
+            }
+
+            zip.addReadStream(stream, entryName);
+            stream.on("end", () => zipfile.readEntry());
+            stream.on("error", reject);
+          });
+        };
+
+        zipfile.on("entry", handleEntry);
+        zipfile.on("error", reject);
+        zipfile.on("end", resolve);
+        zipfile.readEntry();
+      });
+    });
+
+    // Always append the replacement entry so existing entries are overwritten
+    // and missing entries are created in a single rebuild pass.
+    zip.addBuffer(Buffer.from(replacementContent, "utf-8"), safeReplacement);
+  });
+};
+
+export function registerFsIPCHandlers(logger: LoggerLike): void {
+  registerIpcHandlers(logger, [
+    {
+      channel: IPC_CHANNELS.FS_APPROVE_PROJECT_PATH,
+      logTag: "FS_APPROVE_PROJECT_PATH",
+      failMessage: "Failed to approve project path",
+      argsSchema: fsApproveProjectPathArgsSchema,
+      handler: async (projectPath: string) => {
+        const normalizedPath = await resolveApprovedProjectPath(projectPath);
+        const isLuiePath = normalizedPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION);
+        await approvePathForSession(
+          normalizedPath,
+          isLuiePath ? ["read", "package"] : ["read"],
+          "file",
+        );
+        return {
+          approved: true,
+          normalizedPath,
+        };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.FS_SELECT_DIRECTORY,
+      logTag: "FS_SELECT_DIRECTORY",
+      failMessage: "Failed to select directory",
+      handler: async () => {
+        const result = await dialog.showOpenDialog({
+          properties: ["openDirectory", "createDirectory"],
+        });
+        const selectedPath = resolveOpenDialogPath(result);
+        if (!selectedPath) return null;
+        await approvePathForSession(selectedPath, ["read", "write", "package"], "directory");
+        return selectedPath;
+      },
+    },
+    {
+      channel: IPC_CHANNELS.FS_SELECT_SAVE_LOCATION,
+      logTag: "FS_SELECT_SAVE_LOCATION",
+      failMessage: "Failed to select save location",
+      argsSchema: fsSelectDialogArgsSchema,
+      handler: async (
+        options?: {
+          filters?: { name: string; extensions: string[] }[];
+          defaultPath?: string;
+          title?: string;
+        },
+      ) => {
+        const result = await dialog.showSaveDialog({
+          title: options?.title,
+          defaultPath: options?.defaultPath,
+          filters: options?.filters ?? [
+            { name: LUIE_PACKAGE_FILTER_NAME, extensions: [LUIE_PACKAGE_EXTENSION_NO_DOT] },
+          ],
+        });
+        const selectedPath = resolveSaveDialogPath(result);
+        if (!selectedPath) return null;
+        const isLuiePath = selectedPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION);
+        const permissions: FsPathPermission[] = isLuiePath
+          ? ["read", "write", "package"]
+          : ["read", "write"];
+        await approvePathForSession(selectedPath, permissions, "file");
+        return selectedPath;
+      },
+    },
+    {
+      channel: IPC_CHANNELS.FS_SELECT_FILE,
+      logTag: "FS_SELECT_FILE",
+      failMessage: "Failed to select file",
+      argsSchema: fsSelectDialogArgsSchema,
+      handler: async (
+        options?: {
+          filters?: { name: string; extensions: string[] }[];
+          defaultPath?: string;
+          title?: string;
+        },
+      ) => {
+        const result = await dialog.showOpenDialog({
+          title: options?.title,
+          defaultPath: options?.defaultPath,
+          filters: options?.filters,
+          properties: ["openFile"],
+        });
+        const selectedPath = resolveOpenDialogPath(result);
+        if (!selectedPath) return null;
+        const isLuiePath = selectedPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION);
+        const permissions: FsPathPermission[] = isLuiePath
+          ? ["read", "package"]
+          : ["read"];
+        await approvePathForSession(selectedPath, permissions, "file");
+        return selectedPath;
+      },
+    },
+    {
+      channel: IPC_CHANNELS.FS_SELECT_SNAPSHOT_BACKUP,
+      logTag: "FS_SELECT_SNAPSHOT_BACKUP",
+      failMessage: "Failed to select snapshot backup",
+      handler: async () => {
+        const backupDir = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR);
+        const result = await dialog.showOpenDialog({
+          title: "스냅샷 복원하기",
+          defaultPath: backupDir,
+          filters: [{ name: "Snapshot", extensions: ["snap"] }],
+          properties: ["openFile"],
+        });
+        const selectedPath = resolveOpenDialogPath(result);
+        if (!selectedPath) return null;
+        await approvePathForSession(selectedPath, ["read"], "file");
+        return selectedPath;
+      },
+    },
+    {
+      channel: IPC_CHANNELS.FS_SAVE_PROJECT,
+      logTag: "FS_SAVE_PROJECT",
+      failMessage: "Failed to save project",
+      argsSchema: fsSaveProjectArgsSchema,
+      handler: async (projectName: string, projectPath: string, content: string) => {
+        const safeName = sanitizeName(projectName);
+        const safeProjectPath = await assertAllowedFsPath(projectPath, {
+          fieldName: "projectPath",
+          mode: "write",
+          permission: "write",
+        });
+        const projectDir = path.join(
+          safeProjectPath,
+          safeName || DEFAULT_PROJECT_DIR_NAME,
+        );
+        await fsp.mkdir(projectDir, { recursive: true });
+
+        const fullPath = path.join(
+          projectDir,
+          `${safeName || DEFAULT_PROJECT_FILE_BASENAME}${LUIE_PACKAGE_EXTENSION}`,
+        );
+
+        const parsedMeta = parseObjectJson(content.trim());
+        const titleFallback = safeName || DEFAULT_PROJECT_DIR_NAME;
+        const nowIso = new Date().toISOString();
+        const meta = normalizeLuieMetaForWrite(parsedMeta ?? {}, {
+          titleFallback,
+          nowIso,
+          createdAtFallback: nowIso,
+        });
+
+        const hasLegacyContent = !parsedMeta && content.trim().length > 0;
+        await writeLuiePackage(
+          fullPath,
+          {
+            meta,
+            chapters: hasLegacyContent
+              ? [
+                  {
+                    id: "legacy-import",
+                    content,
+                  },
+                ]
+              : [],
+            characters: [],
+            terms: [],
+            snapshots: [],
+          },
+          logger,
+        );
+        if (hasLegacyContent) {
+          await withPackageWriteLock(fullPath, async () => {
+            const tempZip = `${fullPath}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
+            await rebuildZipWithReplacement(
+              fullPath,
+              tempZip,
+              LUIE_MANUSCRIPT_README,
+              "# Imported Legacy Content\n\nLegacy project content was migrated into this package.",
+              logger,
+            );
+            await verifyLuieZipIntegrity(tempZip, logger);
+            await atomicReplace(tempZip, fullPath, logger);
+          });
+        }
+        return { path: fullPath, projectDir };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.FS_READ_FILE,
+      logTag: "FS_READ_FILE",
+      failMessage: "Failed to read file",
+      argsSchema: fsReadFileArgsSchema,
+      handler: async (filePath: string) => {
+        const safeFilePath = await assertAllowedFsPath(filePath, {
+          fieldName: "filePath",
+          mode: "read",
+          permission: "read",
+        });
+        const stat = await fsp.stat(safeFilePath);
+        if (stat.isDirectory()) {
+          return null;
+        }
+        if (stat.size > MAX_READ_FILE_BYTES) {
+          throw new ServiceError(
+            ErrorCode.INVALID_INPUT,
+            "File is too large to read through IPC",
+            {
+              filePath: safeFilePath,
+              size: stat.size,
+              maxSize: MAX_READ_FILE_BYTES,
+            },
+          );
+        }
+        const content = await fsp.readFile(safeFilePath, "utf-8");
+        return content;
+      },
+    },
+    {
+      channel: IPC_CHANNELS.FS_READ_LUIE_ENTRY,
+      logTag: "FS_READ_LUIE_ENTRY",
+      failMessage: "Failed to read Luie package entry",
+      argsSchema: fsReadLuieEntryArgsSchema,
+      handler: async (packagePath: string, entryPath: string) => {
+        const safePackagePath = await assertAllowedFsPath(packagePath, {
+          fieldName: "packagePath",
+          mode: "read",
+          permission: "package",
+        });
+        assertLuiePackagePath(safePackagePath, "packagePath");
+        return readLuieEntry(
+          safePackagePath,
+          entryPath,
+          logger,
+        );
+      },
+    },
+    {
+      channel: IPC_CHANNELS.FS_WRITE_FILE,
+      logTag: "FS_WRITE_FILE",
+      failMessage: "Failed to write file",
+      argsSchema: fsWriteFileArgsSchema,
+      handler: async (filePath: string, content: string) => {
+        const safeFilePath = await assertAllowedFsPath(filePath, {
+          fieldName: "filePath",
+          mode: "write",
+          permission: "write",
+        });
+        assertSupportedWriteFileExtension(safeFilePath);
+        const dir = path.dirname(safeFilePath);
+        await fsp.mkdir(dir, { recursive: true });
+        await fsp.writeFile(safeFilePath, content, "utf-8");
+        return { path: safeFilePath };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE,
+      logTag: "FS_CREATE_LUIE_PACKAGE",
+      failMessage: "Failed to create Luie package",
+      argsSchema: fsCreateLuiePackageArgsSchema,
+      handler: async (packagePath: string, meta: unknown) => {
+        const safePackagePath = await assertAllowedFsPath(packagePath, {
+          fieldName: "packagePath",
+          mode: "write",
+          permission: "package",
+        });
+        const targetPath = ensureLuieExtension(safePackagePath);
+        const nowIso = new Date().toISOString();
+        const normalizedMeta = normalizeLuieMetaForWrite(meta, {
+          titleFallback: path.basename(targetPath, LUIE_PACKAGE_EXTENSION),
+          nowIso,
+          createdAtFallback: nowIso,
+        });
+        await withPackageWriteLock(targetPath, async () => {
+          await ensureParentDir(targetPath);
+          const tempZip = `${targetPath}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
+          let legacyFileBackupPath: string | null = null;
+
+          try {
+            const existing = await fsp.stat(targetPath);
+            if (existing.isDirectory()) {
+              await migrateDirectoryPackageToZip(targetPath, targetPath, logger);
+            } else if (existing.isFile()) {
+              const backupPath = `${targetPath}.legacy-${Date.now()}`;
+              await fsp.rename(targetPath, backupPath);
+              legacyFileBackupPath = backupPath;
+            }
+          } catch (e) {
+            const err = e as NodeJS.ErrnoException;
+            if (err?.code !== "ENOENT") throw e;
+          }
+
+          try {
+              await buildZipFile(tempZip, (zip) =>
+                addEntriesToZip(zip, [
+                  ...baseLuieDirectoryEntries(),
+                  metaEntry(normalizedMeta),
+                  {
+                    name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`,
+                    content: JSON.stringify({ characters: [] }, null, 2),
+                  },
+                {
+                  name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`,
+                  content: JSON.stringify({ terms: [] }, null, 2),
+                },
+                {
+                  name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`,
+                  content: JSON.stringify({ synopsis: "", status: "draft" }, null, 2),
+                },
+                {
+                  name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_PLOT_FILE}`,
+                  content: JSON.stringify({ columns: [] }, null, 2),
+                },
+                {
+                  name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`,
+                  content: JSON.stringify({ paths: [] }, null, 2),
+                },
+                {
+                  name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_MINDMAP_FILE}`,
+                  content: JSON.stringify({ nodes: [], edges: [] }, null, 2),
+                },
+                {
+                  name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_SCRAP_MEMOS_FILE}`,
+                  content: JSON.stringify({ memos: [] }, null, 2),
+                },
+                {
+                  name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_GRAPH_FILE}`,
+                  content: JSON.stringify({ nodes: [], edges: [] }, null, 2),
+                },
+              ]),
+            );
+
+            await verifyLuieZipIntegrity(tempZip, logger);
+            await atomicReplace(tempZip, targetPath, logger);
+          } catch (error) {
+            try {
+              await fsp.rm(tempZip, { force: true });
+            } catch {
+              // best effort
+            }
+
+            if (legacyFileBackupPath) {
+              try {
+                if (await pathExists(targetPath)) {
+                  const collidedPath = `${targetPath}.create-failed-${Date.now()}`;
+                  await fsp.rename(targetPath, collidedPath);
+                  logger.info("Moved failed create output before restore", {
+                    targetPath,
+                    collidedPath,
+                  });
+                }
+                await fsp.rename(legacyFileBackupPath, targetPath);
+                logger.info("Restored existing .luie package after create failure", {
+                  targetPath,
+                  backupPath: legacyFileBackupPath,
+                });
+              } catch (restoreError) {
+                logger.error("Failed to restore existing .luie package after create failure", {
+                  targetPath,
+                  backupPath: legacyFileBackupPath,
+                  restoreError,
+                });
+              }
+            }
+
+            throw error;
+          }
+        });
+        await approvePathForSession(targetPath, ["read", "write", "package"], "file");
+        return { path: targetPath };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.FS_WRITE_PROJECT_FILE,
+      logTag: "FS_WRITE_PROJECT_FILE",
+      failMessage: "Failed to write project file",
+      argsSchema: fsWriteProjectFileArgsSchema,
+      handler: async (projectRoot: string, relativePath: string, content: string) => {
+        const normalized = normalizeZipPath(relativePath);
+        if (!normalized || !isSafeZipPath(normalized)) {
+          throw new Error("INVALID_RELATIVE_PATH");
+        }
+        const safeProjectRoot = await assertAllowedFsPath(projectRoot, {
+          fieldName: "projectRoot",
+          mode: "write",
+          permission: "package",
+        });
+        assertLuiePackagePath(safeProjectRoot, "projectRoot");
+        await withPackageWriteLock(safeProjectRoot, async () => {
+          try {
+            const stat = await fsp.stat(safeProjectRoot);
+            if (stat.isDirectory()) {
+              await migrateDirectoryPackageToZip(
+                safeProjectRoot,
+                safeProjectRoot,
+                logger,
+              );
+            }
+          } catch (e) {
+            const err = e as NodeJS.ErrnoException;
+            if (err?.code === "ENOENT") {
+              throw new ServiceError(
+                ErrorCode.FS_WRITE_FAILED,
+                "Project package does not exist. Create the .luie package first.",
+                {
+                  projectRoot: safeProjectRoot,
+                  relativePath: normalized,
+                },
+              );
+            } else {
+              throw e;
+            }
+          }
+
+          const tempZip = `${safeProjectRoot}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
+          await rebuildZipWithReplacement(
+            safeProjectRoot,
+            tempZip,
+            normalized,
+            content,
+            logger,
+          );
+          await verifyLuieZipIntegrity(tempZip, logger);
+          await atomicReplace(tempZip, safeProjectRoot, logger);
+        });
+        return { path: `${safeProjectRoot}:${normalized}` };
+      },
+    },
+  ]);
+}

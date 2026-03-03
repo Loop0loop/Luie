@@ -2,6 +2,7 @@ import { memo } from "react";
 import { Check } from "lucide-react";
 import type { TFunction } from "i18next";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { useShallow } from "zustand/react/shallow";
 import type { WindowMenuBarMode } from '@shared/types';
 
 interface AppearanceTabProps {
@@ -26,7 +27,17 @@ export const AppearanceTab = memo(function AppearanceTab({
         themeTexture,
         uiMode,
         updateSettings: onApplySettings,
-    } = useEditorStore();
+    } = useEditorStore(
+        useShallow((state) => ({
+            theme: state.theme,
+            themeTemp: state.themeTemp,
+            themeContrast: state.themeContrast,
+            themeAccent: state.themeAccent,
+            themeTexture: state.themeTexture,
+            uiMode: state.uiMode,
+            updateSettings: state.updateSettings,
+        }))
+    );
 
     return (
         <div className="space-y-10 max-w-2xl">

@@ -63,7 +63,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-150"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 animate-in fade-in duration-100"
       onClick={onClose}
     >
       <div

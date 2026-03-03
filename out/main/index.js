@@ -1,36 +1,36 @@
-import { app as S, BrowserWindow as V, Menu as Ae, shell as Yn, safeStorage as K, session as cr, dialog as ft, ipcMain as Jr } from "electron";
+import { app as S, nativeTheme as Yn, BrowserWindow as V, Menu as Ae, shell as Xn, safeStorage as K, session as cr, dialog as ft, ipcMain as Jr } from "electron";
 import * as at from "node:path";
 import M from "node:path";
-import * as Xn from "fs";
-import { existsSync as qn, promises as pt } from "fs";
+import * as qn from "fs";
+import { existsSync as Vn, promises as pt } from "fs";
 import * as C from "path";
 import _t, { join as G } from "path";
-import Vn from "electron-window-state";
+import Kn from "electron-window-state";
 import dr from "electron-store";
 import * as Mt from "node:fs/promises";
 import { access as Qr, mkdir as lr, writeFile as pr, unlink as ur } from "node:fs/promises";
-import { spawn as Kn } from "node:child_process";
+import { spawn as Jn } from "node:child_process";
 import { constants as ve, promises as Dt } from "node:fs";
-import { createRequire as Jn } from "node:module";
-import { EventEmitter as Qn } from "node:events";
-import { randomBytes as Zn, createHash as to, randomUUID as q } from "node:crypto";
+import { createRequire as Qn } from "node:module";
+import { EventEmitter as Zn } from "node:events";
+import { randomBytes as to, createHash as eo, randomUUID as q } from "node:crypto";
 import * as R from "fs/promises";
 import Zr from "yauzl";
-import eo from "yazl";
+import ro from "yazl";
 import { z as i } from "zod";
-import ro from "node:module";
-const Qi = import.meta.filename, et = import.meta.dirname, Zi = ro.createRequire(import.meta.url);
+import no from "node:module";
+const Qi = import.meta.filename, et = import.meta.dirname, Zi = no.createRequire(import.meta.url);
 var Je = /* @__PURE__ */ ((n) => (n.DEBUG = "DEBUG", n.INFO = "INFO", n.WARN = "WARN", n.ERROR = "ERROR", n))(Je || {});
-const ie = /* @__PURE__ */ Symbol.for("luie.logger.context"), Ue = "[REDACTED]", no = "[REDACTED_PATH]", tn = "[REDACTED_TEXT]", en = /(token|secret|authorization|api[-_]?key|password|cookie|jwt|verifier)/i, rn = /(content|synopsis|manuscript|chapterText|prompt)/i, nn = /(path|dir|directory|cwd|execPath|userData|datasource|argv)/i, oo = /^(?:\/|[a-zA-Z]:\\|[a-zA-Z]:\/).+/, ao = /Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, so = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+const ie = /* @__PURE__ */ Symbol.for("luie.logger.context"), Ue = "[REDACTED]", oo = "[REDACTED_PATH]", tn = "[REDACTED_TEXT]", en = /(token|secret|authorization|api[-_]?key|password|cookie|jwt|verifier)/i, rn = /(content|synopsis|manuscript|chapterText|prompt)/i, nn = /(path|dir|directory|cwd|execPath|userData|datasource|argv)/i, ao = /^(?:\/|[a-zA-Z]:\\|[a-zA-Z]:\/).+/, so = /Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, io = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 function hr(n, t) {
   if (en.test(t ?? ""))
     return Ue;
   if (rn.test(t ?? ""))
     return tn;
-  if (nn.test(t ?? "") && oo.test(n))
-    return no;
-  let e = n.replace(ao, "Bearer [REDACTED]");
-  return so.test(e) && (e = Ue), e;
+  if (nn.test(t ?? "") && ao.test(n))
+    return oo;
+  let e = n.replace(so, "Bearer [REDACTED]");
+  return io.test(e) && (e = Ue), e;
 }
 function Ct(n, t, e = /* @__PURE__ */ new WeakSet()) {
   if (typeof n == "string")
@@ -72,7 +72,7 @@ function Ct(n, t, e = /* @__PURE__ */ new WeakSet()) {
     return String(n);
   }
 }
-function io(n) {
+function co(n) {
   if (!n || typeof n != "object") return Ct(n);
   const t = n[ie];
   return !t || typeof t != "object" ? Ct(n) : Array.isArray(n) ? Ct({ items: n, _ctx: t }) : Ct({ ...n, _ctx: t });
@@ -80,14 +80,14 @@ function io(n) {
 function Me(n, t) {
   return n && typeof n == "object" ? { ...n, [ie]: t } : { value: n, [ie]: t };
 }
-class co {
+class lo {
   context;
   constructor(t) {
     this.context = t;
   }
   log(t, e, r) {
-    if (!lo(t)) return;
-    const o = io(r), a = {
+    if (!po(t)) return;
+    const o = co(r), a = {
       level: t,
       message: e,
       timestamp: (/* @__PURE__ */ new Date()).toISOString(),
@@ -108,7 +108,7 @@ class co {
         console.error(s, o ?? "");
         break;
     }
-    Z.logToFile && Z.logFilePath && ho(a);
+    Z.logToFile && Z.logFilePath && fo(a);
   }
   debug(t, e) {
     this.log("DEBUG", t, e);
@@ -134,10 +134,10 @@ let Z = {
   logToFile: !1,
   logFilePath: ""
 }, Te = null;
-function lo(n) {
+function po(n) {
   return fr[n] >= fr[Z.minLevel];
 }
-async function po() {
+async function uo() {
   !on || !Z.logFilePath || (Te || (Te = (async () => {
     const n = await import("node:path");
     await (await import("node:fs/promises")).mkdir(n.dirname(Z.logFilePath), {
@@ -145,18 +145,18 @@ async function po() {
     });
   })()), await Te);
 }
-function uo(n) {
+function ho(n) {
   try {
     return JSON.stringify(n);
   } catch {
     return '"[unserializable]"';
   }
 }
-async function ho(n) {
+async function fo(n) {
   if (!(!on || !Z.logFilePath))
     try {
-      await po();
-      const t = await import("node:fs/promises"), e = uo(n);
+      await uo();
+      const t = await import("node:fs/promises"), e = ho(n);
       await t.appendFile(Z.logFilePath, `${e}
 `, "utf8");
     } catch {
@@ -169,7 +169,7 @@ function an(n) {
   };
 }
 function x(n) {
-  return new co(n);
+  return new lo(n);
 }
 const tc = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
@@ -178,13 +178,13 @@ const tc = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   configureLogger: an,
   createLogger: x,
   withLogContext: Me
-}, Symbol.toStringTag, { value: "Module" })), fo = "Luie", Eo = "0.1.0", sn = (n, t) => typeof n == "string" && n.trim().length > 0 ? n : t, Er = sn(
+}, Symbol.toStringTag, { value: "Module" })), Eo = "Luie", go = "0.1.0", sn = (n, t) => typeof n == "string" && n.trim().length > 0 ? n : t, Er = sn(
   "luie",
-  fo
-), go = sn(
-  "0.1.16",
   Eo
-), cn = "luie.db", mo = 3e4, Ao = mo, ec = 1e3, ke = 30, To = !0, rc = 300 * 1e3, nc = 60 * 1e3, oc = 200, ac = 5e3, So = 3e3, yo = 1e4, _o = 8e3, wo = 2e4, sc = 60 * 1e3, ic = 2e3, dn = 50, cc = 2e3, dc = 1, lc = 0, pc = 30, uc = 50, hc = 2e3, Io = 5e3, Po = 1400, Ro = 900, Co = 1e3, No = 600, Do = 16, Lo = 16, Oo = "sans", bo = "inter", jo = 16, Fo = 1.6, vo = 800, Uo = "blue", Mo = !0, ko = "logs", Wo = "luie.log", fc = "snapshot-mirror", Bo = "Backups", Se = "settings", $o = "settings.json", ln = "luie", j = ".luie", xo = "luie", Gt = "luie", Go = "Luie Project", gr = "New Project", Ho = "project", Ht = "zip", zt = 1, mt = "meta.json", Tt = "manuscript", zo = `${Tt}/README.md`, D = "world", Lt = "snapshots", pn = "assets", Qe = "characters.json", Ze = "terms.json", Ot = "synopsis.json", qt = "plot-board.json", Vt = "map-drawing.json", Kt = "mindmap.json", ue = "scrap-memos.json", Jt = "graph.json", Yt = ".md", _ = {
+), mo = sn(
+  "0.1.16",
+  go
+), cn = "luie.db", Ao = 3e4, To = Ao, ec = 1e3, ke = 30, So = !0, rc = 300 * 1e3, nc = 60 * 1e3, oc = 200, ac = 5e3, yo = 3e3, _o = 1e4, wo = 8e3, Io = 2e4, sc = 60 * 1e3, ic = 2e3, dn = 50, cc = 2e3, dc = 1, lc = 0, pc = 30, uc = 50, hc = 2e3, Po = 5e3, Ro = 1400, Co = 900, No = 1e3, Do = 600, Lo = 16, Oo = 16, bo = "sans", jo = "inter", Fo = 16, vo = 1.6, Uo = 800, Mo = "blue", ko = !0, Wo = "logs", Bo = "luie.log", fc = "snapshot-mirror", $o = "Backups", Se = "settings", xo = "settings.json", ln = "luie", j = ".luie", Go = "luie", Gt = "luie", Ho = "Luie Project", gr = "New Project", zo = "project", Ht = "zip", zt = 1, mt = "meta.json", Tt = "manuscript", Yo = `${Tt}/README.md`, D = "world", Lt = "snapshots", pn = "assets", Qe = "characters.json", Ze = "terms.json", Ot = "synopsis.json", qt = "plot-board.json", Vt = "map-drawing.json", Kt = "mindmap.json", ue = "scrap-memos.json", Jt = "graph.json", Yt = ".md", _ = {
   // Database Errors (1xxx)
   DB_CONNECTION_FAILED: "DB_1001",
   DB_QUERY_FAILED: "DB_1002",
@@ -262,13 +262,13 @@ const tc = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   ENTITY_RELATION_CREATE_FAILED: "REL_9702",
   ENTITY_RELATION_DELETE_FAILED: "REL_9703",
   ENTITY_RELATION_UPDATE_FAILED: "REL_9704"
-}, Yo = /* @__PURE__ */ new Set([
+}, Xo = /* @__PURE__ */ new Set([
   "Place",
   "Concept",
   "Rule",
   "Item",
   "WorldEntity"
-]), mr = (n) => Yo.has(n), Xo = (n, t, e) => !0, qo = "light", Vo = "neutral", Ko = "soft", tr = () => process.env.VITEST === "true" || process.env.NODE_ENV === "test", Jo = () => !S.isPackaged && !tr(), Qo = () => S.isPackaged, Zo = () => M.join(process.cwd(), "prisma", "dev.db"), ta = () => M.join(process.cwd(), "prisma", ".tmp", "test.db"), ea = () => M.join(S.getPath("userData"), cn);
+]), mr = (n) => Xo.has(n), qo = (n, t, e) => !0, Vo = "neutral", Ko = "soft", tr = () => process.env.VITEST === "true" || process.env.NODE_ENV === "test", Jo = () => !S.isPackaged && !tr(), Qo = () => S.isPackaged, Zo = () => M.join(process.cwd(), "prisma", "dev.db"), ta = () => M.join(process.cwd(), "prisma", ".tmp", "test.db"), ea = () => M.join(S.getPath("userData"), cn);
 function ra() {
   if (process.env.DATABASE_URL) return;
   const n = tr() ? ta() : S.isPackaged ? ea() : Zo();
@@ -352,25 +352,25 @@ const wt = x("SettingsManager"), na = (n) => {
       url: t.endsWith("/") ? t.slice(0, -1) : t,
       anonKey: e
     };
-}, Ar = {
+}, Ar = () => ({
   editor: {
-    fontFamily: Oo,
-    fontPreset: bo,
-    fontSize: jo,
-    lineHeight: Fo,
-    maxWidth: vo,
-    theme: qo,
+    fontFamily: bo,
+    fontPreset: jo,
+    fontSize: Fo,
+    lineHeight: vo,
+    maxWidth: Uo,
+    theme: Yn.shouldUseDarkColors ? "dark" : "light",
     themeTemp: Vo,
     themeContrast: Ko,
-    themeAccent: Uo,
-    themeTexture: Mo,
+    themeAccent: Mo,
+    themeTexture: ko,
     uiMode: "default"
   },
   language: "ko",
   shortcuts: oe,
   lastProjectPath: void 0,
-  autoSaveEnabled: To,
-  autoSaveInterval: Ao,
+  autoSaveEnabled: So,
+  autoSaveInterval: To,
   snapshotExportLimit: dn,
   windowBounds: void 0,
   lastWindowState: void 0,
@@ -380,15 +380,15 @@ const wt = x("SettingsManager"), na = (n) => {
     autoSync: !0
   },
   startup: {}
-};
+});
 class Et {
   static instance;
   store;
   constructor() {
-    const t = S.getPath("userData"), e = `${t}/${ln}/${Se}`, r = `${e}/${$o}`;
+    const t = S.getPath("userData"), e = `${t}/${ln}/${Se}`, r = `${e}/${xo}`;
     this.store = new dr({
       name: Se,
-      defaults: Ar,
+      defaults: Ar(),
       // 저장 위치: userData/settings.json
       cwd: t,
       encryptionKey: void 0,
@@ -404,7 +404,7 @@ class Et {
       try {
         const a = new dr({
           name: Se,
-          defaults: Ar,
+          defaults: Ar(),
           cwd: t,
           fileExtension: "json"
         });
@@ -762,13 +762,13 @@ class aa {
       G(S.getAppPath(), "assets", "public", "luie.png")
     ], r = S.isPackaged ? t : e;
     for (const o of r)
-      if (qn(o))
+      if (Vn(o))
         return o;
   }
   getTitleBarOptions() {
     return process.platform !== "darwin" ? {} : {
       titleBarStyle: "hiddenInset",
-      trafficLightPosition: { x: Do, y: Lo }
+      trafficLightPosition: { x: Lo, y: Oo }
     };
   }
   getMenuBarMode() {
@@ -793,17 +793,17 @@ class aa {
     const e = t.deferShow === !0;
     if (this.mainWindow)
       return this.mainWindow;
-    const r = Vn({
-      defaultWidth: Po,
-      defaultHeight: Ro
+    const r = Kn({
+      defaultWidth: Ro,
+      defaultHeight: Co
     }), o = this.resolveWindowIconPath();
     this.mainWindow = new V({
       x: r.x,
       y: r.y,
       width: r.width,
       height: r.height,
-      minWidth: Co,
-      minHeight: No,
+      minWidth: No,
+      minHeight: Do,
       title: Er,
       show: !1,
       backgroundColor: ye,
@@ -1463,7 +1463,7 @@ async function ga(n) {
     }
   }), yr.info("Seed completed (default project created)"), !0);
 }
-const F = x("DatabaseService"), er = Jn(import.meta.url), { PrismaClient: _r } = er("@prisma/client"), ma = () => {
+const F = x("DatabaseService"), er = Qn(import.meta.url), { PrismaClient: _r } = er("@prisma/client"), ma = () => {
   const n = er("@prisma/adapter-better-sqlite3");
   if (typeof n == "function") return n;
   if (n && typeof n == "object" && typeof n.PrismaBetterSqlite3 == "function")
@@ -1493,7 +1493,7 @@ const F = x("DatabaseService"), er = Jn(import.meta.url), { PrismaClient: _r } =
   ), s = o.length > 0 ? `file:${a}?${o}` : `file:${a}`;
   return { dbPath: a, datasourceUrl: s };
 }, _e = async (n, t, e) => await new Promise((r, o) => {
-  const a = Kn(n, t, {
+  const a = Jn(n, t, {
     env: e,
     shell: !1,
     windowsHide: !0
@@ -1880,7 +1880,7 @@ const Ia = (n) => n instanceof Error && n.message ? n.message : "Failed to initi
   getSupabaseConfigSource: mn,
   setRuntimeSupabaseConfig: ja,
   validateRuntimeSupabaseConfig: Fa
-}, Symbol.toStringTag, { value: "Module" })), Ft = x("SyncAuthService"), va = "https://eluie.kro.kr/auth/callback", xe = "v2:safe:", Ge = "v2:plain:", ce = "SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE", An = (n) => n.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, ""), Ua = () => An(Zn(48)), Ma = (n) => An(to("sha256").update(n).digest()), te = () => {
+}, Symbol.toStringTag, { value: "Module" })), Ft = x("SyncAuthService"), va = "https://eluie.kro.kr/auth/callback", xe = "v2:safe:", Ge = "v2:plain:", ce = "SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE", An = (n) => n.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, ""), Ua = () => An(to(48)), Ma = (n) => An(eo("sha256").update(n).digest()), te = () => {
   const n = process.env.LUIE_OAUTH_REDIRECT_URI?.trim();
   return n && n.length > 0 ? n : va;
 }, At = (n, t = "token") => {
@@ -2024,7 +2024,7 @@ class Wa {
       authorizeBase: `${s.origin}${s.pathname}`,
       redirectUri: a,
       authorizeUrl: s.toString()
-    }), await Yn.openExternal(s.toString());
+    }), await Xn.openExternal(s.toString());
   }
   async completeOAuthCallback(t) {
     const e = this.getPendingPkce();
@@ -2153,7 +2153,7 @@ const H = new Wa(), Ba = x("StartupReadinessService"), Ie = "startup:wizard-comp
   checkedAt: Tn()
 });
 class $a {
-  events = new Qn();
+  events = new Zn();
   async getReadiness() {
     const t = await this.runChecks(), e = t.filter((a) => a.blocking && !a.ok).map((a) => a.key), r = T.getStartupSettings().completedAt;
     return {
@@ -2715,7 +2715,7 @@ function yn(n) {
   return {
     ...n,
     timestamp: t,
-    version: n?.version ?? go
+    version: n?.version ?? mo
   };
 }
 function os(n, t) {
@@ -3192,7 +3192,7 @@ const Hc = i.tuple([Pn]), zc = i.tuple([Cs]), Ns = i.object({
   relation: Cn,
   attributes: i.record(i.string(), i.unknown()).optional()
 }).superRefine((n, t) => {
-  Xo(n.relation, n.sourceType, n.targetType);
+  qo(n.relation, n.sourceType, n.targetType);
 }), nd = i.object({
   id: Ds,
   relation: Cn.optional(),
@@ -3334,7 +3334,7 @@ const Hc = i.tuple([Pn]), zc = i.tuple([Cs]), Ns = i.object({
     re.get(e) === a && re.delete(e);
   }
 }, Ee = async (n, t) => {
-  const e = new eo.ZipFile(), r = Xn.createWriteStream(n), o = new Promise((a, s) => {
+  const e = new ro.ZipFile(), r = qn.createWriteStream(n), o = new Promise((a, s) => {
     r.on("close", () => a()), r.on("error", s), e.outputStream.on("error", s);
   });
   e.outputStream.pipe(r), await t(e), e.end(), await o;
@@ -3681,7 +3681,7 @@ function ad(n) {
           title: t?.title,
           defaultPath: t?.defaultPath,
           filters: t?.filters ?? [
-            { name: Go, extensions: [xo] }
+            { name: Ho, extensions: [Go] }
           ]
         }), r = Ms(e);
         if (!r) return null;
@@ -3711,7 +3711,7 @@ function ad(n) {
       logTag: "FS_SELECT_SNAPSHOT_BACKUP",
       failMessage: "Failed to select snapshot backup",
       handler: async () => {
-        const t = C.join(S.getPath("userData"), Bo), e = await ft.showOpenDialog({
+        const t = C.join(S.getPath("userData"), $o), e = await ft.showOpenDialog({
           title: "스냅샷 복원하기",
           defaultPath: t,
           filters: [{ name: "Snapshot", extensions: ["snap"] }],
@@ -3737,7 +3737,7 @@ function ad(n) {
         await R.mkdir(s, { recursive: !0 });
         const c = C.join(
           s,
-          `${o || Ho}${j}`
+          `${o || zo}${j}`
         ), p = ar(r.trim()), d = o || gr, l = (/* @__PURE__ */ new Date()).toISOString(), u = le(p ?? {}, {
           titleFallback: d,
           nowIso: l,
@@ -3763,7 +3763,7 @@ function ad(n) {
           await Ur(
             c,
             A,
-            zo,
+            Yo,
             `# Imported Legacy Content
 
 Legacy project content was migrated into this package.`,
@@ -4979,7 +4979,7 @@ class Bn {
       } catch (a) {
         P.error("Failed to export project package", { projectId: t, reason: e, error: a });
       }
-    }, Io);
+    }, Po);
     this.exportTimers.set(t, o);
   }
   runPackageExport(t) {
@@ -7079,7 +7079,7 @@ const pe = new zn(), Ri = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
           c = await new Promise((h) => {
             const f = setTimeout(
               () => h(!1),
-              So
+              yo
             );
             Jr.once(k.APP_FLUSH_COMPLETE, (g, w) => {
               p = !!w?.hadQueuedAutoSaves, d = !!w?.rendererDirty, clearTimeout(f), h(!0);
@@ -7121,7 +7121,7 @@ const pe = new zn(), Ri = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
             try {
               await Promise.race([
                 r.flushAll(),
-                new Promise((g) => setTimeout(g, yo))
+                new Promise((g) => setTimeout(g, _o))
               ]), await r.flushMirrorsToSnapshots("session-end");
             } catch (g) {
               n.error("Save during quit failed", g);
@@ -7145,7 +7145,7 @@ const pe = new zn(), Ri = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
         }
       ot(s, "export-flush", "프로젝트 파일(.luie)을 안전하게 저장 중입니다...");
       let m = "continue";
-      if ((await a.flushPendingExports(_o)).timedOut) {
+      if ((await a.flushPendingExports(wo)).timedOut) {
         const h = await Fe(s, {
           type: "question",
           title: "저장 지연 감지",
@@ -7156,7 +7156,7 @@ const pe = new zn(), Ri = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
           cancelId: 1,
           noLink: !0
         });
-        (h.response === 1 || h.response === 0 && (await a.flushPendingExports(wo)).timedOut && (await Fe(s, {
+        (h.response === 1 || h.response === 0 && (await a.flushPendingExports(Io)).timedOut && (await Fe(s, {
           type: "warning",
           title: "저장 지연 지속",
           message: "저장이 아직 완료되지 않았습니다.",
@@ -7218,7 +7218,7 @@ const pe = new zn(), Ri = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
 process.env.NODE_ENV !== "production" && await import("./config-HSSbDImy.js").then((n) => n.c);
 an({
   logToFile: !0,
-  logFilePath: M.join(S.getPath("userData"), ko, Wo),
+  logFilePath: M.join(S.getPath("userData"), Wo, Bo),
   minLevel: Je.INFO
 });
 const st = x("Main"), se = process.defaultApp === !0, Ke = Date.now();
@@ -7313,7 +7313,7 @@ export {
   Ht as aB,
   Gt as aC,
   sr as aD,
-  Xo as aE,
+  qo as aE,
   mr as aF,
   tc as aG,
   Ec as aH,
@@ -7328,7 +7328,7 @@ export {
   tr as ag,
   ze as ah,
   ec as ai,
-  Ao as aj,
+  To as aj,
   ca as ak,
   sc as al,
   dc as am,
@@ -7342,14 +7342,14 @@ export {
   cc as au,
   nc as av,
   rc as aw,
-  go as ax,
+  mo as ax,
   Lt as ay,
   ke as az,
   Tt as b,
   x as c,
   N as d,
   W as e,
-  Bo as f,
+  $o as f,
   ds as g,
   _c as h,
   yt as i,
