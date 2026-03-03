@@ -58,6 +58,7 @@ vi.mock("../../../src/main/manager/settingsManager.js", () => ({
       state?: string;
       verifierCipher: string;
       createdAt: string;
+      redirectUri?: string;
     }) => {
       if (input.state) {
         mocked.state.pendingAuthState = input.state;
@@ -66,12 +67,18 @@ vi.mock("../../../src/main/manager/settingsManager.js", () => ({
       }
       mocked.state.pendingAuthVerifierCipher = input.verifierCipher;
       mocked.state.pendingAuthCreatedAt = input.createdAt;
+      if (input.redirectUri) {
+        mocked.state.pendingAuthRedirectUri = input.redirectUri;
+      } else {
+        delete mocked.state.pendingAuthRedirectUri;
+      }
       return { ...mocked.state };
     },
     clearPendingSyncAuth: () => {
       delete mocked.state.pendingAuthState;
       delete mocked.state.pendingAuthVerifierCipher;
       delete mocked.state.pendingAuthCreatedAt;
+      delete mocked.state.pendingAuthRedirectUri;
       return { ...mocked.state };
     },
   },
@@ -118,9 +125,12 @@ describe("SyncAuthService", () => {
     expect(mocked.shellOpenExternal).toHaveBeenCalledTimes(1);
     const authorizeUrl = String(mocked.shellOpenExternal.mock.calls[0][0]);
     const stateFromAuthorize = new URL(authorizeUrl).searchParams.get("state");
+    const redirectTo = new URL(authorizeUrl).searchParams.get("redirect_to");
     expect(stateFromAuthorize).toBeNull();
     expect(mocked.state.pendingAuthState).toBeUndefined();
+    expect(redirectTo).toBe("https://eluie.kro.kr/auth/callback");
     expect(mocked.state.pendingAuthVerifierCipher?.startsWith("v2:plain:")).toBe(true);
+    expect(mocked.state.pendingAuthRedirectUri).toBe("https://eluie.kro.kr/auth/callback");
 
     mocked.safeStorageState.available = true;
     vi.resetModules();
@@ -140,17 +150,15 @@ describe("SyncAuthService", () => {
     const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
     await syncAuthService.startGoogleAuth();
 
-    await expect(
-      syncAuthService.completeOAuthCallback(
-        `luie://auth/callback?state=${encodeURIComponent(String(mocked.state.pendingAuthState))}`,
-      ),
-    ).rejects.toThrow("SYNC_AUTH_CODE_MISSING");
+    await expect(syncAuthService.completeOAuthCallback("luie://auth/callback")).rejects.toThrow(
+      "SYNC_AUTH_CODE_MISSING",
+    );
 
     expect(mocked.state.pendingAuthState).toBeUndefined();
     expect(mocked.state.pendingAuthVerifierCipher).toBeUndefined();
   });
 
-  it("accepts callback without state when using verifier-only flow", async () => {
+  it("accepts callback without app state (verifier-only flow)", async () => {
     mocked.safeStorageState.available = true;
     const fetchMock = vi
       .spyOn(globalThis, "fetch")

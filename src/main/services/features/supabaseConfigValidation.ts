@@ -12,8 +12,17 @@ export const trimAndUnquote = (value: unknown): string | null => {
   return normalized.length > 0 ? normalized : null;
 };
 
-export const normalizeSupabaseUrl = (value: string): string =>
-  value.endsWith("/") ? value.slice(0, -1) : value;
+export const normalizeSupabaseUrl = (value: string): string => {
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+  try {
+    const parsed = new URL(trimmed);
+    // Supabase base URL must be project origin only.
+    return parsed.origin;
+  } catch {
+    return trimmed.endsWith("/") ? trimmed.slice(0, -1) : trimmed;
+  }
+};
 
 export const isHttpUrl = (value: string): boolean => /^https?:\/\//i.test(value);
 

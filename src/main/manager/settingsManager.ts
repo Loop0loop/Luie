@@ -524,6 +524,7 @@ export class SettingsManager {
       pendingAuthState: current?.pendingAuthState,
       pendingAuthVerifierCipher: current?.pendingAuthVerifierCipher,
       pendingAuthCreatedAt: current?.pendingAuthCreatedAt,
+      pendingAuthRedirectUri: current?.pendingAuthRedirectUri,
       pendingProjectDeletes,
       projectLastSyncedAtByProjectId:
         normalizedProjectSyncMap && Object.keys(normalizedProjectSyncMap).length > 0
@@ -656,11 +657,13 @@ export class SettingsManager {
     state?: string;
     verifierCipher: string;
     createdAt: string;
+    redirectUri?: string;
   }): SyncSettings {
     return this.setSyncSettings({
       pendingAuthState: input.state,
       pendingAuthVerifierCipher: input.verifierCipher,
       pendingAuthCreatedAt: input.createdAt,
+      pendingAuthRedirectUri: input.redirectUri,
     });
   }
 
@@ -669,6 +672,7 @@ export class SettingsManager {
       pendingAuthState: undefined,
       pendingAuthVerifierCipher: undefined,
       pendingAuthCreatedAt: undefined,
+      pendingAuthRedirectUri: undefined,
     });
   }
 

@@ -103,4 +103,25 @@ describe("deepLink OAuth callback routing", () => {
       }),
     );
   });
+
+  it("does not remap Supabase bad_oauth_state to local STATE_MISMATCH", async () => {
+    mocked.status.connected = true;
+    mocked.handleOAuthCallback.mockRejectedValue(
+      new Error("SYNC_AUTH_CALLBACK_ERROR:bad_oauth_state:OAuth state parameter is invalid"),
+    );
+
+    const { handleDeepLinkUrl } = await import("../../../src/main/lifecycle/deepLink.js");
+    const handled = await handleDeepLinkUrl(
+      "luie://auth/callback?error=invalid_request&error_code=bad_oauth_state",
+    );
+
+    expect(handled).toBe(false);
+    expect(mocked.mainWindow.webContents.send).toHaveBeenCalledWith(
+      IPC_CHANNELS.SYNC_AUTH_RESULT,
+      expect.objectContaining({
+        status: "error",
+        reason: "UNKNOWN",
+      }),
+    );
+  });
 });

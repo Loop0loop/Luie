@@ -635,6 +635,7 @@ export interface SyncSettings extends SyncConnection {
   pendingAuthState?: string;
   pendingAuthVerifierCipher?: string;
   pendingAuthCreatedAt?: string;
+  pendingAuthRedirectUri?: string;
   pendingProjectDeletes?: SyncPendingProjectDelete[];
   projectLastSyncedAtByProjectId?: Record<string, string>;
   entityBaselinesByProjectId?: Record<string, SyncEntityBaseline>;

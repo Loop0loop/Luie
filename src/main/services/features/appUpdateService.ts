@@ -41,6 +41,13 @@ type UpdateFeedManifest = {
   size?: number;
 };
 
+type ReleaseAsset = {
+  name: string;
+  url: string;
+  size?: number;
+  sha256?: string;
+};
+
 const normalizeVersionString = (input: string): string | null => {
   const trimmed = input.trim();
   if (!VERSION_PATTERN.test(trimmed)) return null;
@@ -111,6 +118,104 @@ const normalizeSha256 = (input: string): string | null => {
   const trimmed = input.trim();
   if (!SHA256_PATTERN.test(trimmed)) return null;
   return trimmed.toLowerCase().replace(/^sha256:/, "");
+};
+
+const getPlatformPrefs = (): string[] =>
+  process.platform === "win32"
+    ? ["web-setup", ".exe", "portable"]
+    : process.platform === "darwin"
+      ? [".dmg", ".zip"]
+      : [".appimage", ".deb", ".rpm"];
+
+const scoreReleaseAsset = (asset: ReleaseAsset): number => {
+  const platformPrefs = getPlatformPrefs();
+  const arch = process.arch.toLowerCase();
+  const otherArchTokens = ["x64", "arm64", "ia32"].filter((token) => token !== arch);
+  const name = asset.name.toLowerCase();
+
+  let score = 0;
+  for (const pref of platformPrefs) {
+    if (name.includes(pref)) {
+      score += 40;
+    }
+  }
+  if (name.includes(arch)) {
+    score += 30;
+  }
+  if (!otherArchTokens.some((token) => name.includes(token))) {
+    score += 5;
+  }
+  return score;
+};
+
+const pickBestReleaseAsset = (assets: ReleaseAsset[]): ReleaseAsset | null => {
+  if (assets.length === 0) return null;
+  return [...assets].sort((left, right) => scoreReleaseAsset(right) - scoreReleaseAsset(left))[0] ?? null;
+};
+
+const toHttpsUrl = (input: string, baseUrl: URL): URL | null => {
+  try {
+    const resolved = new URL(input, baseUrl);
+    if (resolved.protocol !== "https:") return null;
+    return resolved;
+  } catch {
+    return null;
+  }
+};
+
+const extractGithubRepoFromApiReleaseLatestUrl = (
+  feedUrl: URL,
+): { owner: string; repo: string } | null => {
+  if (feedUrl.hostname !== "api.github.com") return null;
+  const matched = feedUrl.pathname.match(/^\/repos\/([^/]+)\/([^/]+)\/releases\/latest\/?$/i);
+  if (!matched) return null;
+  return {
+    owner: decodeURIComponent(matched[1]),
+    repo: decodeURIComponent(matched[2]),
+  };
+};
+
+const extractVersionFromGithubReleasePageUrl = (releasePageUrl: URL): string | null => {
+  const matched = releasePageUrl.pathname.match(/\/releases\/tag\/([^/?#]+)$/i);
+  if (!matched) return null;
+  return normalizeVersionString(decodeURIComponent(matched[1]));
+};
+
+const escapeRegex = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const parseReleaseAssetsFromExpandedHtml = (
+  html: string,
+  owner: string,
+  repo: string,
+  tag: string,
+): ReleaseAsset[] => {
+  const assetLinkPattern = new RegExp(
+    `/` +
+      `${escapeRegex(owner)}` +
+      "/" +
+      `${escapeRegex(repo)}` +
+      `/releases/download/` +
+      `${escapeRegex(tag)}` +
+      `/([^"?#<]+)`,
+    "gi",
+  );
+  const dedup = new Set<string>();
+  const results: ReleaseAsset[] = [];
+  let matched: RegExpExecArray | null;
+  while ((matched = assetLinkPattern.exec(html)) !== null) {
+    const rawPath = matched[0];
+    const filename = decodeURIComponent(matched[1]).trim();
+    if (!filename) continue;
+    const assetPath = rawPath.replace(/&amp;/g, "&");
+    if (dedup.has(assetPath)) continue;
+    dedup.add(assetPath);
+    results.push({
+      name: filename,
+      url: `https://github.com${assetPath}`,
+    });
+  }
+  return results;
 };
 
 const extractVersionFromFeedPayload = (payload: unknown): string | null => {
@@ -206,24 +311,13 @@ const extractManifestFromFeedPayload = (
     return null;
   }
 
-  type ReleaseAsset = {
-    name: string;
-    url: string;
-    size?: number;
-    sha256?: string;
-  };
-
   const assets: ReleaseAsset[] = assetsRaw
     .map((asset): ReleaseAsset | null => {
       if (!asset || typeof asset !== "object" || Array.isArray(asset)) return null;
       const item = asset as Record<string, unknown>;
       const name = typeof item.name === "string" ? item.name : "";
       const url =
-        typeof item.browser_download_url === "string"
-          ? item.browser_download_url
-          : typeof item.url === "string"
-            ? item.url
-            : "";
+        typeof item.browser_download_url === "string" ? item.browser_download_url : "";
       if (!name || !url) return null;
       const digest =
         typeof item.digest === "string"
@@ -251,45 +345,10 @@ const extractManifestFromFeedPayload = (
     return null;
   }
 
-  const platformPrefs =
-    process.platform === "win32"
-      ? ["web-setup", ".exe", "portable"]
-      : process.platform === "darwin"
-        ? [".dmg", ".zip"]
-        : [".appimage", ".deb", ".rpm"];
-
-  const arch = process.arch.toLowerCase();
-  const otherArchTokens = ["x64", "arm64", "ia32"].filter((token) => token !== arch);
-
-  const scoreAsset = (asset: ReleaseAsset): number => {
-    const name = asset.name.toLowerCase();
-    let score = 0;
-    for (const pref of platformPrefs) {
-      if (name.includes(pref)) {
-        score += 40;
-      }
-    }
-    if (name.includes(arch)) {
-      score += 30;
-    }
-    if (!otherArchTokens.some((token) => name.includes(token))) {
-      score += 5;
-    }
-    return score;
-  };
-
-  const best = [...assets].sort((left, right) => scoreAsset(right) - scoreAsset(left))[0];
+  const best = pickBestReleaseAsset(assets);
   if (!best) return null;
-
-  let resolvedUrl: URL;
-  try {
-    resolvedUrl = new URL(best.url, feedUrl);
-  } catch {
-    return null;
-  }
-  if (resolvedUrl.protocol !== "https:") {
-    return null;
-  }
+  const resolvedUrl = toHttpsUrl(best.url, feedUrl);
+  if (!resolvedUrl) return null;
 
   return {
     version: normalizedVersion,
@@ -323,6 +382,98 @@ const isSafeArtifact = (value: unknown): value is AppUpdateArtifact => {
     typeof source.downloadedAt === "string" &&
     source.downloadedAt.length > 0
   );
+};
+
+const buildFeedHeaders = (feedUrl: URL): Record<string, string> => {
+  const headers: Record<string, string> = {
+    Accept: "application/json, text/plain;q=0.9",
+    "User-Agent": `Luie-Updater/${app.getVersion()}`,
+  };
+
+  if (feedUrl.hostname === "api.github.com") {
+    headers.Accept = "application/vnd.github+json";
+    headers["X-GitHub-Api-Version"] = "2022-11-28";
+  }
+
+  return headers;
+};
+
+const fetchGithubReleaseFallback = async (
+  feedUrl: URL,
+): Promise<{ latestVersion: string; manifest: UpdateFeedManifest | null } | null> => {
+  const repo = extractGithubRepoFromApiReleaseLatestUrl(feedUrl);
+  if (!repo) return null;
+
+  const latestReleaseUrl = new URL(
+    `https://github.com/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}/releases/latest`,
+  );
+  const latestResponse = await fetch(latestReleaseUrl, {
+    method: "GET",
+    headers: buildFeedHeaders(latestReleaseUrl),
+  });
+  if (!latestResponse.ok) {
+    return null;
+  }
+
+  const latestPageUrl = toHttpsUrl(latestResponse.url, latestReleaseUrl);
+  if (!latestPageUrl) {
+    return null;
+  }
+
+  const latestTagRaw = latestPageUrl.pathname.split("/").pop();
+  if (!latestTagRaw) {
+    return null;
+  }
+  const latestTag = decodeURIComponent(latestTagRaw);
+  const latestVersion =
+    extractVersionFromGithubReleasePageUrl(latestPageUrl) ??
+    normalizeVersionString(latestTag);
+  if (!latestVersion) {
+    return null;
+  }
+
+  const assetsUrl = new URL(
+    `https://github.com/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}/releases/expanded_assets/${encodeURIComponent(
+      latestTag,
+    )}`,
+  );
+  const assetsResponse = await fetch(assetsUrl, {
+    method: "GET",
+    headers: buildFeedHeaders(assetsUrl),
+  });
+  if (!assetsResponse.ok) {
+    return {
+      latestVersion,
+      manifest: null,
+    };
+  }
+
+  const html = await assetsResponse.text();
+  const assets = parseReleaseAssetsFromExpandedHtml(html, repo.owner, repo.repo, latestTag);
+  const best = pickBestReleaseAsset(assets);
+  if (!best) {
+    return {
+      latestVersion,
+      manifest: null,
+    };
+  }
+  const resolvedUrl = toHttpsUrl(best.url, assetsUrl);
+  if (!resolvedUrl) {
+    return {
+      latestVersion,
+      manifest: null,
+    };
+  }
+
+  return {
+    latestVersion,
+    manifest: {
+      version: latestVersion,
+      url: resolvedUrl.toString(),
+      size: best.size,
+      sha256: best.sha256,
+    },
+  };
 };
 
 const pathExists = async (targetPath: string): Promise<boolean> => {
@@ -398,10 +549,16 @@ export class AppUpdateService {
     try {
       const response = await fetch(feedUrl, {
         method: "GET",
-        headers: { Accept: "application/json, text/plain;q=0.9" },
+        headers: buildFeedHeaders(feedUrl),
         signal: controller.signal,
       });
       if (!response.ok) {
+        if (response.status === 403 && feedUrl.hostname === "api.github.com") {
+          const fallback = await fetchGithubReleaseFallback(feedUrl);
+          if (fallback) {
+            return fallback;
+          }
+        }
         throw new Error(`UPDATE_FEED_HTTP_${response.status}`);
       }
       const raw = await response.text();

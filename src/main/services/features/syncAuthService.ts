@@ -10,7 +10,7 @@ import {
 
 const logger = createLogger("SyncAuthService");
 
-const OAUTH_REDIRECT_URI = "luie://auth/callback";
+const DEFAULT_OAUTH_REDIRECT_URI = "https://eluie.kro.kr/auth/callback";
 const TOKEN_CODEC_SAFE_PREFIX = "v2:safe:";
 const TOKEN_CODEC_PLAIN_PREFIX = "v2:plain:";
 const SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE = "SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE";
@@ -21,6 +21,7 @@ type PendingPkce = {
   state?: string;
   verifier: string;
   createdAt: number;
+  redirectUri: string;
 };
 
 type SupabaseTokenResponse = {
@@ -64,6 +65,14 @@ const createCodeVerifier = (): string => toBase64Url(randomBytes(48));
 
 const createCodeChallenge = (verifier: string): string =>
   toBase64Url(createHash("sha256").update(verifier).digest());
+
+const resolveOAuthRedirectUri = (): string => {
+  const fromEnv = process.env.LUIE_OAUTH_REDIRECT_URI?.trim();
+  if (fromEnv && fromEnv.length > 0) {
+    return fromEnv;
+  }
+  return DEFAULT_OAUTH_REDIRECT_URI;
+};
 
 const encryptSecret = (plain: string, scope: SecretScope = "token"): string => {
   if (safeStorage.isEncryptionAvailable()) {
@@ -150,7 +159,6 @@ const decodeSecret = (cipher: string, scope: SecretScope = "token"): DecodedSecr
 class SyncAuthService {
   private pendingPkce: PendingPkce | null = null;
   private readonly pendingTtlMs = 10 * 60 * 1000;
-  private readonly pendingReplaceGuardMs = 15 * 1000;
 
   private clearPendingPkce(): void {
     this.pendingPkce = null;
@@ -163,6 +171,7 @@ class SyncAuthService {
       state: pending.state,
       verifierCipher: encryptSecret(pending.verifier, "pending"),
       createdAt: new Date(pending.createdAt).toISOString(),
+      redirectUri: pending.redirectUri,
     });
   }
 
@@ -188,12 +197,14 @@ class SyncAuthService {
           state: syncSettings.pendingAuthState,
           verifierCipher: decoded.migratedCipher,
           createdAt: syncSettings.pendingAuthCreatedAt,
+          redirectUri: syncSettings.pendingAuthRedirectUri,
         });
       }
-    return {
+      return {
         state: syncSettings.pendingAuthState,
         verifier: decoded.plain,
         createdAt,
+        redirectUri: syncSettings.pendingAuthRedirectUri || resolveOAuthRedirectUri(),
       };
     } catch (error) {
       logger.warn("Failed to decode pending OAuth verifier", { error });
@@ -209,6 +220,10 @@ class SyncAuthService {
         if (pendingAuthState) {
           this.pendingPkce.state = pendingAuthState;
         }
+      }
+      if (!this.pendingPkce.redirectUri) {
+        const pendingRedirectUri = settingsManager.getSyncSettings().pendingAuthRedirectUri;
+        this.pendingPkce.redirectUri = pendingRedirectUri || resolveOAuthRedirectUri();
       }
       return this.pendingPkce;
     }
@@ -243,25 +258,30 @@ class SyncAuthService {
     const pending = this.getActivePendingPkce();
     if (pending) {
       const ageMs = Date.now() - pending.createdAt;
-      if (ageMs < this.pendingReplaceGuardMs) {
-        throw new Error("SYNC_AUTH_FLOW_IN_PROGRESS");
-      }
-      logger.info("Replacing existing OAuth flow with a new request", { ageMs });
+      logger.info("OAuth flow already in progress", { ageMs });
+      throw new Error("SYNC_AUTH_FLOW_IN_PROGRESS");
     }
 
     const { url } = getSupabaseConfigOrThrow();
     const verifier = createCodeVerifier();
     const challenge = createCodeChallenge(verifier);
+    const redirectUri = resolveOAuthRedirectUri();
     this.storePendingPkce({
       verifier,
       createdAt: Date.now(),
+      redirectUri,
     });
 
-    const authorizeUrl = new URL(`${url}/auth/v1/authorize`);
+    const authorizeUrl = new URL("/auth/v1/authorize", url);
     authorizeUrl.searchParams.set("provider", "google");
-    authorizeUrl.searchParams.set("redirect_to", OAUTH_REDIRECT_URI);
+    authorizeUrl.searchParams.set("redirect_to", redirectUri);
     authorizeUrl.searchParams.set("code_challenge", challenge);
     authorizeUrl.searchParams.set("code_challenge_method", "s256");
+    logger.info("Opening OAuth authorize URL", {
+      authorizeBase: `${authorizeUrl.origin}${authorizeUrl.pathname}`,
+      redirectUri,
+      authorizeUrl: authorizeUrl.toString(),
+    });
 
     await shell.openExternal(authorizeUrl.toString());
   }
@@ -301,16 +321,16 @@ class SyncAuthService {
       this.clearPendingPkce();
       throw new Error("SYNC_AUTH_CODE_MISSING");
     }
-    if (
-      pending.state &&
-      callbackState &&
-      callbackState !== pending.state
-    ) {
+    if (pending.state && (!callbackState || callbackState !== pending.state)) {
       this.clearPendingPkce();
       throw new Error("SYNC_AUTH_STATE_MISMATCH");
     }
 
-    const token = await this.exchangeCodeForSession(code, pending.verifier);
+    const token = await this.exchangeCodeForSession(
+      code,
+      pending.verifier,
+      pending.redirectUri || resolveOAuthRedirectUri(),
+    );
     this.clearPendingPkce();
     return token;
   }
@@ -362,9 +382,15 @@ class SyncAuthService {
     }
   }
 
-  private async exchangeCodeForSession(code: string, verifier: string): Promise<SyncSession> {
+  private async exchangeCodeForSession(
+    code: string,
+    verifier: string,
+    redirectUri: string,
+  ): Promise<SyncSession> {
     const { url, anonKey } = getSupabaseConfigOrThrow();
-    const response = await fetch(`${url}/auth/v1/token?grant_type=pkce`, {
+    const tokenUrl = new URL("/auth/v1/token", url);
+    tokenUrl.searchParams.set("grant_type", "pkce");
+    const response = await fetch(tokenUrl, {
       method: "POST",
       headers: {
         apikey: anonKey,
@@ -373,7 +399,7 @@ class SyncAuthService {
       body: JSON.stringify({
         auth_code: code,
         code_verifier: verifier,
-        redirect_uri: OAUTH_REDIRECT_URI,
+        redirect_uri: redirectUri,
       }),
     });
 
@@ -388,7 +414,9 @@ class SyncAuthService {
 
   private async exchangeRefreshToken(refreshToken: string): Promise<SyncSession> {
     const { url, anonKey } = getSupabaseConfigOrThrow();
-    const response = await fetch(`${url}/auth/v1/token?grant_type=refresh_token`, {
+    const tokenUrl = new URL("/auth/v1/token", url);
+    tokenUrl.searchParams.set("grant_type", "refresh_token");
+    const response = await fetch(tokenUrl, {
       method: "POST",
       headers: {
         apikey: anonKey,
