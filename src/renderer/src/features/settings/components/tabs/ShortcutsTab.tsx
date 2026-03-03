@@ -120,7 +120,7 @@ export const ShortcutsTab = memo(function ShortcutsTab({
     }, [onCommitShortcuts]);
 
     return (
-        <div className="max-w-2xl space-y-8 pb-20 content-visibility-auto contain-intrinsic-size-[1px_1400px]">
+        <div className="max-w-2xl space-y-8 pb-20">
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-bold text-fg">{t("settings.shortcuts.title")}</h3>
                 <button

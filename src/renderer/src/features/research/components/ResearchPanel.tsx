@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Globe, User, X, Sparkles, FileText, BookOpen, Calendar, Shield } from "lucide-react";
+import { Globe, User, Sparkles, FileText, BookOpen, Calendar, Shield } from "lucide-react";
 import CharacterManager from "@renderer/features/research/components/CharacterManager";
 import EventManager from "@renderer/features/research/components/event/EventManager";
 import FactionManager from "@renderer/features/research/components/faction/FactionManager";
@@ -19,7 +19,7 @@ interface ResearchPanelProps {
 
 export default function ResearchPanel({
   activeTab,
-  onClose,
+  onClose: _onClose,
   onTabChange,
 }: ResearchPanelProps) {
   const { t } = useTranslation();
@@ -77,24 +77,9 @@ export default function ResearchPanel({
               </button>
             );
           })}
-          {onClose && (
-            <button onClick={onClose} className="ml-auto p-1 text-muted hover:text-fg">
-              <X className="w-4 h-4" />
-            </button>
-          )}
+
         </div>
-      ) : (
-        /* Standalone View (Close button only, floating) */
-        onClose && (
-          <button
-            className="absolute top-3 right-3 z-10 p-2 rounded-lg text-subtle bg-bg-primary/50 backdrop-blur-sm cursor-pointer border border-border hover:bg-hover hover:text-fg shadow-sm transition-all"
-            onClick={onClose}
-            title={t("research.tooltip.closePanel")}
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )
-      )}
+      ) : null}
 
       <div className="flex-1 flex flex-col overflow-hidden bg-bg-primary relative">
         {activeTab === "character" && <FeatureErrorBoundary featureName="Characters"><CharacterManager /></FeatureErrorBoundary>}

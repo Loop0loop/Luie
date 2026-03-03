@@ -54,7 +54,7 @@ export const SyncTab = memo(function SyncTab({
             : t("settings.sync.health.disconnected", { defaultValue: "Disconnected" });
 
     return (
-        <div className="space-y-6 max-w-2xl content-visibility-auto contain-intrinsic-size-[1px_500px]">
+        <div className="space-y-6 max-w-2xl">
             <section className="p-4 bg-surface rounded-xl border border-border">
                 <h3 className="text-base font-semibold text-fg mb-2">{t("settings.sync.title")}</h3>
                 <p className="text-sm text-muted mb-4">{t("settings.sync.description")}</p>

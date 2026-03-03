@@ -30,7 +30,7 @@ export const EditorTab = memo(function EditorTab({
     const { fontFamily, fontPreset, updateSettings: onApplySettings } = useEditorStore();
 
     return (
-        <div className="space-y-8 max-w-2xl content-visibility-auto contain-intrinsic-size-[1px_1200px]">
+        <div className="space-y-8 max-w-2xl">
             <section className="space-y-4">
                 <h3 className="text-base font-semibold text-fg">{t("settings.section.font")}</h3>
                 <div className="grid grid-cols-3 gap-3">

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Globe, FileText, Map, Kanban, X } from "lucide-react";
+import { Globe, FileText, Map, Kanban } from "lucide-react";
 import { cn } from "@shared/types/utils";
 // Tab Components
 import WorldSection from "@renderer/features/research/components/WorldSection"; // Terms/Proper Nouns
@@ -12,7 +12,7 @@ interface WorldPanelProps {
   onClose?: () => void;
 }
 
-export default function WorldPanel({ onClose }: WorldPanelProps) {
+export default function WorldPanel(_props: WorldPanelProps) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"terms" | "synopsis" | "map" | "plot">("terms");
 
@@ -47,11 +47,7 @@ export default function WorldPanel({ onClose }: WorldPanelProps) {
             </button>
           );
         })}
-        {onClose && (
-            <button onClick={onClose} className="ml-auto p-1 text-muted hover:text-fg rounded-full hover:bg-surface-hover transition-colors">
-                <X className="w-4 h-4" />
-            </button>
-        )}
+
       </div>
 
       {/* Content Area */}

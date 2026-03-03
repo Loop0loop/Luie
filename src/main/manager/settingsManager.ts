@@ -3,7 +3,7 @@
  */
 
 import Store from "electron-store";
-import { app } from "electron";
+import { app, nativeTheme } from "electron";
 import { createLogger } from "../../shared/logger/index.js";
 import { access } from "node:fs/promises";
 import type {
@@ -28,7 +28,6 @@ import {
   DEFAULT_EDITOR_FONT_SIZE,
   DEFAULT_EDITOR_LINE_HEIGHT,
   DEFAULT_EDITOR_MAX_WIDTH,
-  DEFAULT_EDITOR_THEME,
   DEFAULT_EDITOR_THEME_ACCENT,
   DEFAULT_EDITOR_THEME_CONTRAST,
   DEFAULT_EDITOR_THEME_TEMP,
@@ -144,14 +143,14 @@ const normalizeRuntimeSupabaseConfig = (
   };
 };
 
-const DEFAULT_SETTINGS: AppSettings = {
+const getDefaultSettings = (): AppSettings => ({
   editor: {
     fontFamily: DEFAULT_EDITOR_FONT_FAMILY,
     fontPreset: DEFAULT_EDITOR_FONT_PRESET,
     fontSize: DEFAULT_EDITOR_FONT_SIZE,
     lineHeight: DEFAULT_EDITOR_LINE_HEIGHT,
     maxWidth: DEFAULT_EDITOR_MAX_WIDTH,
-    theme: DEFAULT_EDITOR_THEME,
+    theme: nativeTheme.shouldUseDarkColors ? "dark" : "light",
     themeTemp: DEFAULT_EDITOR_THEME_TEMP,
     themeContrast: DEFAULT_EDITOR_THEME_CONTRAST,
     themeAccent: DEFAULT_EDITOR_THEME_ACCENT,
@@ -172,7 +171,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     autoSync: true,
   } as SyncSettings,
   startup: {} as StartupSettings,
-};
+});
 
 export class SettingsManager {
   private static instance: SettingsManager;
@@ -188,7 +187,7 @@ export class SettingsManager {
 
     this.store = new Store<AppSettings>({
       name: SETTINGS_STORE_NAME,
-      defaults: DEFAULT_SETTINGS,
+      defaults: getDefaultSettings(),
       // 저장 위치: userData/settings.json
       cwd: settingsPath,
       encryptionKey: undefined, // 필요하다면 암호화 키 추가
@@ -218,7 +217,7 @@ export class SettingsManager {
     try {
       const legacyStore = new Store<AppSettings>({
         name: SETTINGS_STORE_NAME,
-        defaults: DEFAULT_SETTINGS,
+        defaults: getDefaultSettings(),
         cwd: legacyCwd,
         fileExtension: "json",
       });
@@ -421,8 +420,8 @@ export class SettingsManager {
     const projectLastSyncedAtByProjectId = current?.projectLastSyncedAtByProjectId;
     const normalizedProjectSyncMap =
       projectLastSyncedAtByProjectId &&
-      typeof projectLastSyncedAtByProjectId === "object" &&
-      !Array.isArray(projectLastSyncedAtByProjectId)
+        typeof projectLastSyncedAtByProjectId === "object" &&
+        !Array.isArray(projectLastSyncedAtByProjectId)
         ? Object.fromEntries(
           Object.entries(projectLastSyncedAtByProjectId)
             .filter(
@@ -438,8 +437,8 @@ export class SettingsManager {
     const entityBaselinesByProjectId = current?.entityBaselinesByProjectId;
     const normalizedEntityBaselines =
       entityBaselinesByProjectId &&
-      typeof entityBaselinesByProjectId === "object" &&
-      !Array.isArray(entityBaselinesByProjectId)
+        typeof entityBaselinesByProjectId === "object" &&
+        !Array.isArray(entityBaselinesByProjectId)
         ? Object.fromEntries(
           Object.entries(entityBaselinesByProjectId)
             .filter(
@@ -453,8 +452,8 @@ export class SettingsManager {
             .map(([projectId, baseline]) => {
               const chapter =
                 baseline.chapter &&
-                typeof baseline.chapter === "object" &&
-                !Array.isArray(baseline.chapter)
+                  typeof baseline.chapter === "object" &&
+                  !Array.isArray(baseline.chapter)
                   ? Object.fromEntries(
                     Object.entries(baseline.chapter).filter(
                       (item): item is [string, string] =>
@@ -467,8 +466,8 @@ export class SettingsManager {
                   : {};
               const memo =
                 baseline.memo &&
-                typeof baseline.memo === "object" &&
-                !Array.isArray(baseline.memo)
+                  typeof baseline.memo === "object" &&
+                  !Array.isArray(baseline.memo)
                   ? Object.fromEntries(
                     Object.entries(baseline.memo).filter(
                       (item): item is [string, string] =>
@@ -498,8 +497,8 @@ export class SettingsManager {
     const pendingConflictResolutions = current?.pendingConflictResolutions;
     const normalizedPendingConflictResolutions =
       pendingConflictResolutions &&
-      typeof pendingConflictResolutions === "object" &&
-      !Array.isArray(pendingConflictResolutions)
+        typeof pendingConflictResolutions === "object" &&
+        !Array.isArray(pendingConflictResolutions)
         ? Object.fromEntries(
           Object.entries(pendingConflictResolutions).filter(
             (entry): entry is [string, "local" | "remote"] =>
@@ -582,8 +581,8 @@ export class SettingsManager {
           .map(([projectId, baseline]) => {
             const chapter =
               baseline.chapter &&
-              typeof baseline.chapter === "object" &&
-              !Array.isArray(baseline.chapter)
+                typeof baseline.chapter === "object" &&
+                !Array.isArray(baseline.chapter)
                 ? Object.fromEntries(
                   Object.entries(baseline.chapter).filter(
                     (item): item is [string, string] =>
@@ -596,8 +595,8 @@ export class SettingsManager {
                 : {};
             const memo =
               baseline.memo &&
-              typeof baseline.memo === "object" &&
-              !Array.isArray(baseline.memo)
+                typeof baseline.memo === "object" &&
+                !Array.isArray(baseline.memo)
                 ? Object.fromEntries(
                   Object.entries(baseline.memo).filter(
                     (item): item is [string, string] =>

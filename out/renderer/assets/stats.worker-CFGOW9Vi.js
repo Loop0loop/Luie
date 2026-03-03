@@ -1,0 +1,1 @@
+(function(){"use strict";const l=s=>{let t=0,e=!1;for(let n=0;n<s.length;n+=1){const o=s[n]<=" ";!o&&!e?(t+=1,e=!0):o&&(e=!1)}return t};self.addEventListener("message",s=>{const t=s.data?.text??"",e={wordCount:l(t),charCount:t.length};self.postMessage(e)})})();

@@ -25,7 +25,7 @@ export function MemoSidebarList({
     handleAddNote,
 }: MemoSidebarListProps) {
     return (
-        <div className="h-full bg-sidebar border-r border-border flex flex-col content-visibility-auto contain-intrinsic-size-[1px_600px]">
+        <div className="h-full bg-sidebar border-r border-border flex flex-col">
             <div className="px-4 py-3 text-xs font-bold text-muted flex justify-between items-center uppercase tracking-wider">
                 <span>{t("memo.sectionTitle")}</span>
                 <Plus className="icon-sm cursor-pointer hover:text-fg transition-colors" onClick={handleAddNote} />

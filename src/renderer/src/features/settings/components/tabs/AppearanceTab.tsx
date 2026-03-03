@@ -29,7 +29,7 @@ export const AppearanceTab = memo(function AppearanceTab({
     } = useEditorStore();
 
     return (
-        <div className="space-y-10 max-w-2xl content-visibility-auto contain-intrinsic-size-[1px_1000px]">
+        <div className="space-y-10 max-w-2xl">
             <section className="space-y-4">
                 <div>
                     <h3 className="text-base font-semibold text-fg">{t("settings.appearance.baseTheme.title")}</h3>
