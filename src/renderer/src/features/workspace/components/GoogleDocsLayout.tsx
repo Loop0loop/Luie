@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, type ReactNode } from 'react';
+import { useCallback, useEffect, type ReactNode } from 'react';
 import { type Editor as TiptapEditor } from "@tiptap/react";
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type PanelSize } from "react-resizable-panels";
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import WindowBar from '@renderer/features/workspace/components/WindowBar';
 import { cn } from '@shared/types/utils';
-import { useUIStore, type DocsRightTab } from '@renderer/features/workspace/stores/uiStore';
+import { useUIStore } from '@renderer/features/workspace/stores/uiStore';
 import { useShallow } from "zustand/react/shallow";
 import { useTranslation } from "react-i18next";
 import { SnapshotList } from "@renderer/features/snapshot/components/SnapshotList";
@@ -28,7 +28,9 @@ import {
   getSidebarDefaultWidth,
   getSidebarWidthConfig,
   toPxSize,
+  type SidebarWidthFeature
 } from "@shared/constants/sidebarSizing";
+import type { LayoutPersistEntry } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import {
   EDITOR_A4_PAGE_HEIGHT_PX,
   EDITOR_A4_PAGE_WIDTH_PX,
@@ -36,7 +38,7 @@ import {
   EDITOR_RULER_DEFAULT_MARGIN_LEFT_PX,
   EDITOR_RULER_DEFAULT_MARGIN_RIGHT_PX,
 } from "@shared/constants/configs";
-import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
+import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import {
   Menu,
   ChevronLeft,
@@ -112,7 +114,6 @@ export default function GoogleDocsLayout({
     setSidebarOpen,
     setDocsRightTab: setActiveRightTab,
     setBinderBarOpen,
-    setSidebarWidth,
     setFocusedClosableTarget,
     hasHydrated,
   } = useUIStore(
@@ -124,7 +125,6 @@ export default function GoogleDocsLayout({
       setSidebarOpen: state.setSidebarOpen,
       setDocsRightTab: state.setDocsRightTab,
       setBinderBarOpen: state.setBinderBarOpen,
-      setSidebarWidth: state.setSidebarWidth,
       setFocusedClosableTarget: state.setFocusedClosableTarget,
       hasHydrated: state.hasHydrated,
     }))
@@ -147,47 +147,20 @@ export default function GoogleDocsLayout({
     openDocsRightTab(nextTab);
   }, [activeRightTab, setActiveRightTab, setFocusedClosableTarget]);
 
-  const handleLeftResize = useSidebarResizeCommit("docsBinder", setSidebarWidth);
   const docsBinderConfig = getSidebarWidthConfig("docsBinder");
-  const handleCharacterResize = useSidebarResizeCommit("docsCharacter", setSidebarWidth);
-  const handleEventResize = useSidebarResizeCommit("docsEvent", setSidebarWidth);
-  const handleFactionResize = useSidebarResizeCommit("docsFaction", setSidebarWidth);
-  const handleWorldResize = useSidebarResizeCommit("docsWorld", setSidebarWidth);
-  const handleScrapResize = useSidebarResizeCommit("docsScrap", setSidebarWidth);
-  const handleAnalysisResize = useSidebarResizeCommit("docsAnalysis", setSidebarWidth);
-  const handleSnapshotResize = useSidebarResizeCommit("docsSnapshot", setSidebarWidth);
-  const handleTrashResize = useSidebarResizeCommit("docsTrash", setSidebarWidth);
-  const handleEditorResize = useSidebarResizeCommit("docsEditor", setSidebarWidth);
-  const handleExportResize = useSidebarResizeCommit("docsExport", setSidebarWidth);
 
-  const rightTabResizeHandlers: Record<Exclude<DocsRightTab, null>, (panelSize: PanelSize) => void> = useMemo(() => ({
-    character: handleCharacterResize,
-    event: handleEventResize,
-    faction: handleFactionResize,
-    world: handleWorldResize,
-    scrap: handleScrapResize,
-    analysis: handleAnalysisResize,
-    snapshot: handleSnapshotResize,
-    trash: handleTrashResize,
-    editor: handleEditorResize,
-    export: handleExportResize,
-  }), [
-    handleCharacterResize,
-    handleEventResize,
-    handleFactionResize,
-    handleWorldResize,
-    handleScrapResize,
-    handleAnalysisResize,
-    handleSnapshotResize,
-    handleTrashResize,
-    handleEditorResize,
-    handleExportResize,
-  ]);
+  // Create an array of layout entries for useLayoutPersist
+  const layoutEntries: LayoutPersistEntry[] = [
+    { id: "left-sidebar", feature: "docsBinder" as const }
+  ];
+  if (activeRightTab) {
+    layoutEntries.push({
+      id: `right-context-panel-${activeRightTab}`,
+      feature: DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab] as SidebarWidthFeature
+    });
+  }
 
-  const handleRightResize = useCallback((panelSize: PanelSize) => {
-    if (!activeRightTab) return;
-    rightTabResizeHandlers[activeRightTab](panelSize);
-  }, [activeRightTab, rightTabResizeHandlers]);
+  const onLayoutChanged = useLayoutPersist(layoutEntries);
 
   const leftSavedPxWidth = clampSidebarWidth(
     "docsBinder",
@@ -287,6 +260,7 @@ export default function GoogleDocsLayout({
           orientation="horizontal"
           className="flex w-full h-full flex-1 overflow-hidden relative"
           id="google-docs-layout"
+          onLayoutChanged={onLayoutChanged}
         >
 
           {/* Floating Sidebar Toggle (Visible when closed) - Placed securely z-50 */}
@@ -310,7 +284,6 @@ export default function GoogleDocsLayout({
                 defaultSize={toPxSize(leftSavedPxWidth)}
                 minSize={toPxSize(docsBinderConfig.minPx)}
                 maxSize={toPxSize(docsBinderConfig.maxPx)}
-                onResize={handleLeftResize}
                 className="bg-background border-r border-border overflow-hidden flex flex-col shrink-0 min-w-0"
               >
                 {sidebar}
@@ -370,7 +343,6 @@ export default function GoogleDocsLayout({
                 defaultSize={toPxSize(rightSavedPxWidth)}
                 minSize={toPxSize(rightWidthConfig.minPx)}
                 maxSize={toPxSize(rightWidthConfig.maxPx)}
-                onResize={handleRightResize}
                 onMouseDownCapture={() => {
                   setFocusedClosableTarget({ kind: "docs-tab" });
                 }}

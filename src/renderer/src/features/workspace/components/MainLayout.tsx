@@ -14,7 +14,7 @@ import {
   toPercentSize,
   toPxSize,
 } from "@shared/constants/sidebarSizing";
-import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
+import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -33,7 +33,6 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
     hasHydrated,
     setSidebarOpen,
     setContextOpen,
-    setSidebarWidth,
   } = useUIStore(
     useShallow((state) => ({
       isSidebarOpen: state.isSidebarOpen,
@@ -42,14 +41,16 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
       hasHydrated: state.hasHydrated,
       setSidebarOpen: state.setSidebarOpen,
       setContextOpen: state.setContextOpen,
-      setSidebarWidth: state.setSidebarWidth,
     }))
   );
 
-  const handleSidebarResize = useSidebarResizeCommit("mainSidebar", setSidebarWidth);
-  const handleContextResize = useSidebarResizeCommit("mainContext", setSidebarWidth);
   const mainSidebarConfig = getSidebarWidthConfig("mainSidebar");
   const mainContextConfig = getSidebarWidthConfig("mainContext");
+
+  const onLayoutChanged = useLayoutPersist([
+    { id: "sidebar-panel", feature: "mainSidebar" },
+    { id: "context-panel", feature: "mainContext" },
+  ]);
 
   const sidebarWidth = clampSidebarWidth(
     "mainSidebar",
@@ -69,6 +70,7 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
         key={hasHydrated ? "main-layout-hydrated" : "main-layout-cold"}
         orientation="horizontal"
         className="flex flex-1 overflow-hidden relative w-full h-full"
+        onLayoutChanged={onLayoutChanged}
       >
         {/* Sidebar */}
         {isSidebarOpen && (
@@ -77,7 +79,6 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
             defaultSize={toPxSize(sidebarWidth)}
             minSize={toPxSize(mainSidebarConfig.minPx)}
             maxSize={toPxSize(mainSidebarConfig.maxPx)}
-            onResize={handleSidebarResize}
             className="bg-sidebar border-r border-border overflow-hidden flex flex-col z-10"
           >
             {sidebar}
@@ -141,7 +142,6 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
             defaultSize={toPxSize(contextWidth)}
             minSize={toPxSize(mainContextConfig.minPx)}
             maxSize={toPxSize(mainContextConfig.maxPx)}
-            onResize={handleContextResize}
             className="bg-panel border-l border-border overflow-hidden flex flex-col z-10"
           >
             {contextPanel}

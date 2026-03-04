@@ -60,11 +60,11 @@ const RESEARCH_LEFT_WIDTH_CONFIG: SidebarWidthConfig = {
 };
 
 export const SIDEBAR_WIDTH_CONFIG: Record<SidebarWidthFeature, SidebarWidthConfig> = {
-  mainSidebar: { minPx: 210, maxPx: 630, defaultPx: 280 },
+  mainSidebar: { minPx: 210, maxPx: 330, defaultPx: 280 },
   mainContext: { minPx: 310, maxPx: 610, defaultPx: 310 },
-  docsBinder: { minPx: 300, maxPx: 520, defaultPx: 360 },
-  scrivenerBinder: { minPx: 220, maxPx: 440, defaultPx: 260 },
-  scrivenerInspector: { minPx: 245, maxPx: 400, defaultPx: 350 },
+  docsBinder: { minPx: 300, maxPx: 610, defaultPx: 360 },
+  scrivenerBinder: { minPx: 220, maxPx: 610, defaultPx: 260 },
+  scrivenerInspector: { minPx: 245, maxPx: 610, defaultPx: 350 },
   docsCharacter: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
   docsEvent: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
   docsFaction: { ...RIGHT_CONTEXT_WIDTH_CONFIG },

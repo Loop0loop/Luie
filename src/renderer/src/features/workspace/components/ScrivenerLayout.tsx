@@ -27,7 +27,7 @@ import {
   toPercentSize,
   toPxSize,
 } from "@shared/constants/sidebarSizing";
-import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
+import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
 
 interface ScrivenerLayoutProps {
   children?: ReactNode;
@@ -62,7 +62,6 @@ export default function ScrivenerLayout({
     scrivenerInspectorOpen: isInspectorOpen,
     setScrivenerSidebarOpen: setIsSidebarOpen,
     setScrivenerInspectorOpen: setIsInspectorOpen,
-    setSidebarWidth,
   } = useUIStore(
     useShallow((state) => ({
       mainView: state.mainView,
@@ -73,16 +72,18 @@ export default function ScrivenerLayout({
       scrivenerInspectorOpen: state.scrivenerInspectorOpen,
       setScrivenerSidebarOpen: state.setScrivenerSidebarOpen,
       setScrivenerInspectorOpen: state.setScrivenerInspectorOpen,
-      setSidebarWidth: state.setSidebarWidth,
     }))
   );
   const editorSplitGroupRef = useRef<GroupImperativeHandle | null>(null);
   const previousPanelCountRef = useRef(panels.length);
 
-  const handleBinderResize = useSidebarResizeCommit("scrivenerBinder", setSidebarWidth);
-  const handleInspectorResize = useSidebarResizeCommit("scrivenerInspector", setSidebarWidth);
   const binderConfig = getSidebarWidthConfig("scrivenerBinder");
   const inspectorConfig = getSidebarWidthConfig("scrivenerInspector");
+
+  const onLayoutChanged = useLayoutPersist([
+    { id: "sidebar", feature: "scrivenerBinder" },
+    { id: "inspector", feature: "scrivenerInspector" },
+  ]);
 
   const binderSavedPxWidth = clampSidebarWidth(
     "scrivenerBinder",
@@ -157,6 +158,7 @@ export default function ScrivenerLayout({
           orientation="horizontal"
           className="flex w-full h-full flex-1 overflow-hidden relative"
           id="scrivener-layout"
+          onLayoutChanged={onLayoutChanged}
         >
 
           {/* Pane 1: Binder (Sidebar) */}
@@ -167,7 +169,6 @@ export default function ScrivenerLayout({
                 defaultSize={toPxSize(binderSavedPxWidth)}
                 minSize={toPxSize(binderConfig.minPx)}
                 maxSize={toPxSize(binderConfig.maxPx)}
-                onResize={handleBinderResize}
                 className="bg-panel border-r border-border flex flex-col shrink-0 min-w-0"
               >
                 {sidebar}
@@ -261,7 +262,6 @@ export default function ScrivenerLayout({
                 defaultSize={toPxSize(inspectorSavedPxWidth)}
                 minSize={toPxSize(inspectorConfig.minPx)}
                 maxSize={toPxSize(inspectorConfig.maxPx)}
-                onResize={handleInspectorResize}
                 className="bg-panel flex flex-col shrink-0 min-w-0"
               >
                 {/* Floating Toggle wrapper */}
