@@ -100,14 +100,20 @@ export default function ProjectTemplateSelector({
             toggleMenuByElement={toggleMenuByElement}
             onConnectGoogle={async () => {
               try {
-                await api.sync.connectGoogle();
+                const response = await api.sync.connectGoogle();
+                if (response.success && response.data) {
+                  selectorState.setSyncStatus(response.data);
+                }
               } catch (error) {
                 api.logger.error("Failed to connect google", error);
               }
             }}
             onDisconnectGoogle={async () => {
               try {
-                await api.sync.disconnect();
+                const response = await api.sync.disconnect();
+                if (response.success && response.data) {
+                  selectorState.setSyncStatus(response.data);
+                }
               } catch (error) {
                 api.logger.error("Failed to disconnect google", error);
               }

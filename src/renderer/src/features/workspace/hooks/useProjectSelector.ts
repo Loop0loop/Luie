@@ -17,6 +17,7 @@ export interface ProjectSelectorState {
     activeCategory: string;
     setActiveCategory: (cat: string) => void;
     syncStatus: SyncStatus;
+    setSyncStatus: React.Dispatch<React.SetStateAction<SyncStatus>>;
     localProjects: Project[];
     setLocalProjects: React.Dispatch<React.SetStateAction<Project[]>>;
     menuOpenId: string | null;
@@ -287,6 +288,7 @@ export function useProjectSelector(projects: Project[]): ProjectSelectorState & 
         activeCategory,
         setActiveCategory,
         syncStatus,
+        setSyncStatus,
         localProjects,
         setLocalProjects,
         menuOpenId,
