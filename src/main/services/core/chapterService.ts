@@ -9,7 +9,7 @@ import { db } from "../../database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode, SNAPSHOT_BACKUP_DIR } from "../../../shared/constants/index.js";
 import type { ChapterCreateInput, ChapterUpdateInput } from "../../../shared/types/index.js";
-import { autoExtractService } from "../features/autoExtractService.js";
+import { autoExtractService } from "../features/autoExtract/autoExtractService.js";
 import { projectService } from "./projectService.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import { trackKeywordAppearances } from "./chapterKeywords.js";

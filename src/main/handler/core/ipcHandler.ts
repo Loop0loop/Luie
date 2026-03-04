@@ -75,7 +75,7 @@ export function registerIpcHandler<TArgs extends unknown[], TResult>(options: {
     try {
       const result = await options.handler(...parsedArgs);
       if (shouldTriggerAutoSync(options.channel)) {
-        void import("../../services/features/syncService.js")
+        void import("../../services/features/sync/syncService.js")
           .then(({ syncService }) => {
             syncService.onLocalMutation(options.channel);
           })

@@ -3,7 +3,7 @@
  */
 
 import Store from "electron-store";
-import { app, nativeTheme } from "electron";
+import { app } from "electron";
 import { createLogger } from "../../shared/logger/index.js";
 import { access } from "node:fs/promises";
 import type {
@@ -12,7 +12,6 @@ import type {
   ShortcutMap,
   RuntimeSupabaseConfig,
   RuntimeSupabaseConfigView,
-  SyncEntityBaseline,
   SyncPendingProjectDelete,
   SyncSettings,
   StartupSettings,
@@ -21,157 +20,18 @@ import type {
   WindowState,
 } from "../../shared/types/index.js";
 import {
-  DEFAULT_AUTO_SAVE_ENABLED,
-  DEFAULT_AUTO_SAVE_INTERVAL_MS,
-  DEFAULT_EDITOR_FONT_FAMILY,
-  DEFAULT_EDITOR_FONT_PRESET,
-  DEFAULT_EDITOR_FONT_SIZE,
-  DEFAULT_EDITOR_LINE_HEIGHT,
-  DEFAULT_EDITOR_MAX_WIDTH,
-  DEFAULT_EDITOR_THEME_ACCENT,
-  DEFAULT_EDITOR_THEME_CONTRAST,
-  DEFAULT_EDITOR_THEME_TEMP,
-  DEFAULT_EDITOR_THEME_TEXTURE,
-  SNAPSHOT_FILE_KEEP_COUNT,
-  APP_DIR_NAME,
-  SETTINGS_FILE_NAME,
-  SETTINGS_STORE_NAME,
-} from "../../shared/constants/index.js";
+  DEFAULT_MENU_BAR_MODE,
+  DEFAULT_SHORTCUTS,
+  SETTINGS_STORE_APP_DIR_NAME,
+  SETTINGS_STORE_BASENAME,
+  SETTINGS_STORE_FILE_NAME,
+  getDefaultSettings,
+  normalizeRuntimeSupabaseConfig,
+  sanitizeSyncSettingsForRenderer,
+} from "./settings/settingsDefaults.js";
+import { normalizeSyncSettings } from "./settings/syncSettingsNormalizer.js";
 
 const logger = createLogger("SettingsManager");
-
-const sanitizeSyncSettingsForRenderer = (
-  sync: SyncSettings | undefined,
-): SyncSettings | undefined => {
-  if (!sync) return undefined;
-  return {
-    connected: sync.connected ?? false,
-    provider: sync.provider,
-    email: sync.email,
-    userId: sync.userId,
-    expiresAt: sync.expiresAt,
-    autoSync: sync.autoSync ?? true,
-    lastSyncedAt: sync.lastSyncedAt,
-    lastError: sync.lastError,
-    projectLastSyncedAtByProjectId: sync.projectLastSyncedAtByProjectId,
-  };
-};
-
-const getDefaultShortcuts = (platform: NodeJS.Platform): ShortcutMap => {
-  const mod = platform === "darwin" ? "Cmd" : "Ctrl";
-
-  return {
-    "app.openSettings": `${mod}+,`,
-    "app.closeWindow": `${mod}+W`,
-    "app.quit": `${mod}+Q`,
-    "chapter.new": `${mod}+N`,
-    "chapter.save": `${mod}+S`,
-    "chapter.delete": `${mod}+Backspace`,
-    "chapter.open.1": `${mod}+1`,
-    "chapter.open.2": `${mod}+2`,
-    "chapter.open.3": `${mod}+3`,
-    "chapter.open.4": `${mod}+4`,
-    "chapter.open.5": `${mod}+5`,
-    "chapter.open.6": `${mod}+6`,
-    "chapter.open.7": `${mod}+7`,
-    "chapter.open.8": `${mod}+8`,
-    "chapter.open.9": `${mod}+9`,
-    "chapter.open.0": `${mod}+0`,
-    "view.toggleSidebar": `${mod}+B`,
-    "view.sidebar.open": "",
-    "view.sidebar.close": "",
-    "view.toggleContextPanel": `${mod}+Shift+B`,
-    "view.context.open": "",
-    "view.context.close": "",
-    "sidebar.section.manuscript.toggle": "",
-    "sidebar.section.snapshot.open": "",
-    "sidebar.section.trash.open": "",
-    "project.rename": "",
-    "research.open.character": `${mod}+T`,
-    "research.open.world": "",
-    "research.open.scrap": "",
-    "research.open.analysis": "",
-    "research.open.character.left": "",
-    "research.open.world.left": "",
-    "research.open.scrap.left": "",
-    "research.open.analysis.left": "",
-    "character.openTemplate": "",
-    "world.tab.synopsis": "",
-    "world.tab.terms": "",
-    "world.tab.mindmap": "",
-    "world.tab.drawing": "",
-    "world.tab.plot": "",
-    "world.tab.graph": `${mod}+Shift+G`,
-    "world.addTerm": "",
-    "scrap.addMemo": "",
-    "export.openPreview": "",
-    "export.openWindow": "",
-    "editor.openRight": "",
-    "editor.openLeft": "",
-    "split.swapSides": "",
-    "editor.fontSize.increase": "",
-    "editor.fontSize.decrease": "",
-    "window.toggleFullscreen": "F11",
-    "view.toggleFocusMode": "Shift+F11",
-  };
-};
-
-const DEFAULT_SHORTCUTS = getDefaultShortcuts(process.platform);
-const DEFAULT_MENU_BAR_MODE: WindowMenuBarMode =
-  process.platform === "darwin" ? "visible" : "hidden";
-
-const normalizeRuntimeSupabaseConfig = (
-  value: unknown,
-): RuntimeSupabaseConfig | undefined => {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return undefined;
-  }
-  const url =
-    typeof (value as { url?: unknown }).url === "string"
-      ? (value as { url: string }).url.trim()
-      : "";
-  const anonKey =
-    typeof (value as { anonKey?: unknown }).anonKey === "string"
-      ? (value as { anonKey: string }).anonKey.trim()
-      : "";
-  if (url.length === 0 || anonKey.length === 0) {
-    return undefined;
-  }
-  return {
-    url: url.endsWith("/") ? url.slice(0, -1) : url,
-    anonKey,
-  };
-};
-
-const getDefaultSettings = (): AppSettings => ({
-  editor: {
-    fontFamily: DEFAULT_EDITOR_FONT_FAMILY,
-    fontPreset: DEFAULT_EDITOR_FONT_PRESET,
-    fontSize: DEFAULT_EDITOR_FONT_SIZE,
-    lineHeight: DEFAULT_EDITOR_LINE_HEIGHT,
-    maxWidth: DEFAULT_EDITOR_MAX_WIDTH,
-    theme: nativeTheme.shouldUseDarkColors ? "dark" : "light",
-    themeTemp: DEFAULT_EDITOR_THEME_TEMP,
-    themeContrast: DEFAULT_EDITOR_THEME_CONTRAST,
-    themeAccent: DEFAULT_EDITOR_THEME_ACCENT,
-    themeTexture: DEFAULT_EDITOR_THEME_TEXTURE,
-    uiMode: "default",
-  },
-  language: "ko",
-  shortcuts: DEFAULT_SHORTCUTS,
-  lastProjectPath: undefined,
-  autoSaveEnabled: DEFAULT_AUTO_SAVE_ENABLED,
-  autoSaveInterval: DEFAULT_AUTO_SAVE_INTERVAL_MS,
-  snapshotExportLimit: SNAPSHOT_FILE_KEEP_COUNT,
-  windowBounds: undefined,
-  lastWindowState: undefined,
-  menuBarMode: DEFAULT_MENU_BAR_MODE,
-  sync: {
-    connected: false,
-    autoSync: true,
-  } as SyncSettings,
-  startup: {} as StartupSettings,
-});
 
 export class SettingsManager {
   private static instance: SettingsManager;
@@ -182,11 +42,11 @@ export class SettingsManager {
 
     // 기존(레거시) 경로: userData/luie/settings/settings.json
     // app.getPath('userData')가 이미 '.../luie'인 경우 이중으로 들어가 혼동을 유발했음
-    const legacyCwd = `${settingsPath}/${APP_DIR_NAME}/${SETTINGS_STORE_NAME}`;
-    const legacyFile = `${legacyCwd}/${SETTINGS_FILE_NAME}`;
+    const legacyCwd = `${settingsPath}/${SETTINGS_STORE_APP_DIR_NAME}/${SETTINGS_STORE_BASENAME}`;
+    const legacyFile = `${legacyCwd}/${SETTINGS_STORE_FILE_NAME}`;
 
     this.store = new Store<AppSettings>({
-      name: SETTINGS_STORE_NAME,
+      name: SETTINGS_STORE_BASENAME,
       defaults: getDefaultSettings(),
       // 저장 위치: userData/settings.json
       cwd: settingsPath,
@@ -216,7 +76,7 @@ export class SettingsManager {
 
     try {
       const legacyStore = new Store<AppSettings>({
-        name: SETTINGS_STORE_NAME,
+        name: SETTINGS_STORE_BASENAME,
         defaults: getDefaultSettings(),
         cwd: legacyCwd,
         fileExtension: "json",
@@ -398,256 +258,14 @@ export class SettingsManager {
   }
 
   getSyncSettings(): SyncSettings {
-    const current = this.store.get("sync");
-    const pendingProjectDeletes = Array.isArray(current?.pendingProjectDeletes)
-      ? current.pendingProjectDeletes
-        .filter((entry): entry is SyncPendingProjectDelete =>
-          Boolean(
-            entry &&
-            typeof entry === "object" &&
-            typeof entry.projectId === "string" &&
-            entry.projectId.length > 0 &&
-            typeof entry.deletedAt === "string" &&
-            entry.deletedAt.length > 0,
-          ),
-        )
-        .map((entry) => ({
-          projectId: entry.projectId,
-          deletedAt: entry.deletedAt,
-        }))
-      : undefined;
-
-    const projectLastSyncedAtByProjectId = current?.projectLastSyncedAtByProjectId;
-    const normalizedProjectSyncMap =
-      projectLastSyncedAtByProjectId &&
-        typeof projectLastSyncedAtByProjectId === "object" &&
-        !Array.isArray(projectLastSyncedAtByProjectId)
-        ? Object.fromEntries(
-          Object.entries(projectLastSyncedAtByProjectId)
-            .filter(
-              (entry): entry is [string, string] =>
-                typeof entry[0] === "string" &&
-                entry[0].length > 0 &&
-                typeof entry[1] === "string" &&
-                entry[1].length > 0,
-            ),
-        )
-        : undefined;
-
-    const entityBaselinesByProjectId = current?.entityBaselinesByProjectId;
-    const normalizedEntityBaselines =
-      entityBaselinesByProjectId &&
-        typeof entityBaselinesByProjectId === "object" &&
-        !Array.isArray(entityBaselinesByProjectId)
-        ? Object.fromEntries(
-          Object.entries(entityBaselinesByProjectId)
-            .filter(
-              (entry): entry is [string, SyncEntityBaseline] =>
-                typeof entry[0] === "string" &&
-                entry[0].length > 0 &&
-                Boolean(entry[1]) &&
-                typeof entry[1] === "object" &&
-                !Array.isArray(entry[1]),
-            )
-            .map(([projectId, baseline]) => {
-              const chapter =
-                baseline.chapter &&
-                  typeof baseline.chapter === "object" &&
-                  !Array.isArray(baseline.chapter)
-                  ? Object.fromEntries(
-                    Object.entries(baseline.chapter).filter(
-                      (item): item is [string, string] =>
-                        typeof item[0] === "string" &&
-                        item[0].length > 0 &&
-                        typeof item[1] === "string" &&
-                        item[1].length > 0,
-                    ),
-                  )
-                  : {};
-              const memo =
-                baseline.memo &&
-                  typeof baseline.memo === "object" &&
-                  !Array.isArray(baseline.memo)
-                  ? Object.fromEntries(
-                    Object.entries(baseline.memo).filter(
-                      (item): item is [string, string] =>
-                        typeof item[0] === "string" &&
-                        item[0].length > 0 &&
-                        typeof item[1] === "string" &&
-                        item[1].length > 0,
-                    ),
-                  )
-                  : {};
-              const capturedAt =
-                typeof baseline.capturedAt === "string" && baseline.capturedAt.length > 0
-                  ? baseline.capturedAt
-                  : new Date().toISOString();
-              return [
-                projectId,
-                {
-                  chapter,
-                  memo,
-                  capturedAt,
-                },
-              ];
-            }),
-        )
-        : undefined;
-
-    const pendingConflictResolutions = current?.pendingConflictResolutions;
-    const normalizedPendingConflictResolutions =
-      pendingConflictResolutions &&
-        typeof pendingConflictResolutions === "object" &&
-        !Array.isArray(pendingConflictResolutions)
-        ? Object.fromEntries(
-          Object.entries(pendingConflictResolutions).filter(
-            (entry): entry is [string, "local" | "remote"] =>
-              typeof entry[0] === "string" &&
-              entry[0].length > 0 &&
-              (entry[1] === "local" || entry[1] === "remote"),
-          ),
-        )
-        : undefined;
-
-    return {
-      connected: current?.connected ?? false,
-      provider: current?.provider,
-      email: current?.email,
-      userId: current?.userId,
-      expiresAt: current?.expiresAt,
-      autoSync: current?.autoSync ?? true,
-      lastSyncedAt: current?.lastSyncedAt,
-      lastError: current?.lastError,
-      accessTokenCipher: current?.accessTokenCipher,
-      refreshTokenCipher: current?.refreshTokenCipher,
-      pendingAuthState: current?.pendingAuthState,
-      pendingAuthVerifierCipher: current?.pendingAuthVerifierCipher,
-      pendingAuthCreatedAt: current?.pendingAuthCreatedAt,
-      pendingAuthRedirectUri: current?.pendingAuthRedirectUri,
-      pendingProjectDeletes,
-      projectLastSyncedAtByProjectId:
-        normalizedProjectSyncMap && Object.keys(normalizedProjectSyncMap).length > 0
-          ? normalizedProjectSyncMap
-          : undefined,
-      entityBaselinesByProjectId:
-        normalizedEntityBaselines && Object.keys(normalizedEntityBaselines).length > 0
-          ? normalizedEntityBaselines
-          : undefined,
-      pendingConflictResolutions:
-        normalizedPendingConflictResolutions &&
-          Object.keys(normalizedPendingConflictResolutions).length > 0
-          ? normalizedPendingConflictResolutions
-          : undefined,
-      runtimeSupabaseConfig: normalizeRuntimeSupabaseConfig(
-        (current as SyncSettings).runtimeSupabaseConfig,
-      ),
-    };
+    return normalizeSyncSettings(this.store.get("sync"));
   }
 
   setSyncSettings(settings: Partial<SyncSettings>): SyncSettings {
-    const current = this.getSyncSettings();
-    const next: SyncSettings = {
-      ...current,
+    const next = normalizeSyncSettings({
+      ...this.getSyncSettings(),
       ...settings,
-    };
-    const map = next.projectLastSyncedAtByProjectId;
-    if (map && typeof map === "object" && !Array.isArray(map)) {
-      const normalized = Object.fromEntries(
-        Object.entries(map).filter(
-          (entry): entry is [string, string] =>
-            typeof entry[0] === "string" &&
-            entry[0].length > 0 &&
-            typeof entry[1] === "string" &&
-            entry[1].length > 0,
-        ),
-      );
-      next.projectLastSyncedAtByProjectId =
-        Object.keys(normalized).length > 0 ? normalized : undefined;
-    } else {
-      next.projectLastSyncedAtByProjectId = undefined;
-    }
-    const baselines = next.entityBaselinesByProjectId;
-    if (baselines && typeof baselines === "object" && !Array.isArray(baselines)) {
-      const normalizedBaselines = Object.fromEntries(
-        Object.entries(baselines)
-          .filter(
-            (entry): entry is [string, SyncEntityBaseline] =>
-              typeof entry[0] === "string" &&
-              entry[0].length > 0 &&
-              Boolean(entry[1]) &&
-              typeof entry[1] === "object" &&
-              !Array.isArray(entry[1]),
-          )
-          .map(([projectId, baseline]) => {
-            const chapter =
-              baseline.chapter &&
-                typeof baseline.chapter === "object" &&
-                !Array.isArray(baseline.chapter)
-                ? Object.fromEntries(
-                  Object.entries(baseline.chapter).filter(
-                    (item): item is [string, string] =>
-                      typeof item[0] === "string" &&
-                      item[0].length > 0 &&
-                      typeof item[1] === "string" &&
-                      item[1].length > 0,
-                  ),
-                )
-                : {};
-            const memo =
-              baseline.memo &&
-                typeof baseline.memo === "object" &&
-                !Array.isArray(baseline.memo)
-                ? Object.fromEntries(
-                  Object.entries(baseline.memo).filter(
-                    (item): item is [string, string] =>
-                      typeof item[0] === "string" &&
-                      item[0].length > 0 &&
-                      typeof item[1] === "string" &&
-                      item[1].length > 0,
-                  ),
-                )
-                : {};
-            const capturedAt =
-              typeof baseline.capturedAt === "string" && baseline.capturedAt.length > 0
-                ? baseline.capturedAt
-                : new Date().toISOString();
-            return [
-              projectId,
-              {
-                chapter,
-                memo,
-                capturedAt,
-              },
-            ];
-          }),
-      );
-      next.entityBaselinesByProjectId =
-        Object.keys(normalizedBaselines).length > 0 ? normalizedBaselines : undefined;
-    } else {
-      next.entityBaselinesByProjectId = undefined;
-    }
-    const pendingResolutions = next.pendingConflictResolutions;
-    if (
-      pendingResolutions &&
-      typeof pendingResolutions === "object" &&
-      !Array.isArray(pendingResolutions)
-    ) {
-      const normalizedPendingResolutions = Object.fromEntries(
-        Object.entries(pendingResolutions).filter(
-          (entry): entry is [string, "local" | "remote"] =>
-            typeof entry[0] === "string" &&
-            entry[0].length > 0 &&
-            (entry[1] === "local" || entry[1] === "remote"),
-        ),
-      );
-      next.pendingConflictResolutions =
-        Object.keys(normalizedPendingResolutions).length > 0
-          ? normalizedPendingResolutions
-          : undefined;
-    } else {
-      next.pendingConflictResolutions = undefined;
-    }
-    next.runtimeSupabaseConfig = normalizeRuntimeSupabaseConfig(next.runtimeSupabaseConfig);
+    });
     this.store.set("sync", next);
     return next;
   }

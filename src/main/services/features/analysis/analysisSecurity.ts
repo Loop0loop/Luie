@@ -1,6 +1,6 @@
 import type { BrowserWindow } from "electron";
 import { createLogger } from "../../../../shared/logger/index.js";
-import { manuscriptAnalysisService } from "../manuscriptAnalysisService.js";
+import { manuscriptAnalysisService } from "../analysis/manuscriptAnalysisService.js";
 
 const logger = createLogger("AnalysisSecurity");
 

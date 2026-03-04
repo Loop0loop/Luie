@@ -8,8 +8,8 @@ import { createLogger } from "../../../shared/logger/index.js";
 import type { StartupCheck, StartupCheckKey, StartupReadiness } from "../../../shared/types/index.js";
 import { db } from "../../database/index.js";
 import { settingsManager } from "../../manager/settingsManager.js";
-import { getSupabaseConfig, getSupabaseConfigSource } from "./supabaseEnv.js";
-import { syncAuthService } from "./syncAuthService.js";
+import { getSupabaseConfig, getSupabaseConfigSource } from "./sync/supabaseEnv.js";
+import { syncAuthService } from "./sync/syncAuthService.js";
 
 const logger = createLogger("StartupReadinessService");
 

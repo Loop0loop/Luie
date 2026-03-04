@@ -1,5 +1,5 @@
 import { chapterService } from "../../services/core/chapterService.js";
-import { snapshotService } from "../../services/features/snapshotService.js";
+import { snapshotService } from "../../services/features/snapshot/snapshotService.js";
 import { DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT } from "../../../shared/constants/index.js";
 
 type LoggerLike = {

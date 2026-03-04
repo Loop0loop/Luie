@@ -16,8 +16,8 @@ import {
   cleanupOrphanSnapshotArtifacts,
   writeFullSnapshotArtifact,
 } from "./snapshotArtifacts.js";
-import { writeEmergencySnapshotFile } from "./snapshot/snapshotEmergencyFile.js";
-import { importSnapshotFromFile } from "./snapshot/snapshotImportFromFile.js";
+import { writeEmergencySnapshotFile } from "./snapshotEmergencyFile.js";
+import { importSnapshotFromFile } from "./snapshotImportFromFile.js";
 
 const logger = createLogger("SnapshotService");
 const ORPHAN_CLEANUP_IDLE_DELAY_MS = 30_000;

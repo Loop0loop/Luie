@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SyncSettings } from "../../../src/shared/types/index.js";
-import type { SyncBundle } from "../../../src/main/services/features/syncMapper.js";
+import type { SyncBundle } from "../../../src/main/services/features/sync/syncMapper.js";
 
 const mocked = vi.hoisted(() => {
   const syncSettings: SyncSettings = {
@@ -119,7 +119,7 @@ vi.mock("../../../src/main/database/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/features/syncAuthService.js", () => ({
+vi.mock("../../../src/main/services/features/sync/syncAuthService.js", () => ({
   syncAuthService: {
     isConfigured: () => true,
     hasPendingAuthFlow: (...args: unknown[]) => mocked.hasPendingAuthFlow(...args),
@@ -131,7 +131,7 @@ vi.mock("../../../src/main/services/features/syncAuthService.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/features/syncRepository.js", () => ({
+vi.mock("../../../src/main/services/features/sync/syncRepository.js", () => ({
   syncRepository: {
     fetchBundle: (...args: unknown[]) => mocked.fetchBundle(...args),
     upsertBundle: (...args: unknown[]) => mocked.upsertBundle(...args),
@@ -236,7 +236,7 @@ describe("SyncService auth hardening", () => {
     mocked.getAccessToken.mockReturnValue({ token: null });
     mocked.getRefreshToken.mockReturnValue({ token: null });
 
-    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();
     service.initialize();
 
@@ -258,7 +258,7 @@ describe("SyncService auth hardening", () => {
       errorCode: "SYNC_TOKEN_DECRYPT_FAILED:broken-refresh",
     });
 
-    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();
     service.initialize();
     expect(service.getStatus().lastError).toContain("SYNC_TOKEN_DECRYPT_FAILED");
@@ -278,7 +278,7 @@ describe("SyncService auth hardening", () => {
     mocked.getRefreshToken.mockReturnValue({ token: "refresh-token" });
     mocked.fetchBundle.mockRejectedValue(new Error("NETWORK_TIMEOUT"));
 
-    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();
     service.initialize();
     const result = await service.runNow("manual");
@@ -291,7 +291,7 @@ describe("SyncService auth hardening", () => {
   it("does not launch OAuth again while already connecting", async () => {
     mocked.startGoogleAuth.mockResolvedValue(undefined);
 
-    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();
     service.initialize();
 
@@ -329,7 +329,7 @@ describe("SyncService auth hardening", () => {
     });
     mocked.upsertBundle.mockResolvedValue(undefined);
 
-    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();
     service.initialize();
     const result = await service.runNow("manual");
@@ -384,7 +384,7 @@ describe("SyncService auth hardening", () => {
     });
     mocked.upsertBundle.mockResolvedValue(undefined);
 
-    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();
     service.initialize();
     const result = await service.runNow("manual");
@@ -463,7 +463,7 @@ describe("SyncService auth hardening", () => {
     });
     mocked.upsertBundle.mockResolvedValue(undefined);
 
-    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();
     service.initialize();
 
@@ -531,7 +531,7 @@ describe("SyncService auth hardening", () => {
     mocked.upsertBundle.mockResolvedValue(undefined);
     mocked.writeLuiePackage.mockRejectedValue(new Error("disk full"));
 
-    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();
     service.initialize();
     const result = await service.runNow("manual");
@@ -582,7 +582,7 @@ describe("SyncService auth hardening", () => {
     });
     mocked.upsertBundle.mockResolvedValue(undefined);
 
-    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();
     service.initialize();
     const result = await service.runNow("manual");
@@ -634,7 +634,7 @@ describe("SyncService auth hardening", () => {
     mocked.upsertBundle.mockResolvedValue(undefined);
     mocked.prisma.$transaction.mockRejectedValueOnce(new Error("SQLITE_BUSY"));
 
-    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();
     service.initialize();
     const result = await service.runNow("manual");
@@ -654,7 +654,7 @@ describe("SyncService auth hardening", () => {
       return null;
     });
 
-    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();
     const bundle: SyncBundle = {
       projects: [
@@ -707,7 +707,7 @@ describe("SyncService auth hardening", () => {
   it("normalizes malformed world document payloads before .luie package write", async () => {
     mocked.readLuieEntry.mockResolvedValue(null);
 
-    const { SyncService } = await import("../../../src/main/services/features/syncService.js");
+    const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();
     const bundle: SyncBundle = {
       projects: [

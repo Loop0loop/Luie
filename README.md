@@ -1,6 +1,6 @@
 # Luie - 차세대 작가 집필 환경
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.16-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 > "흐름을 방해하지 않는 집필 도구"

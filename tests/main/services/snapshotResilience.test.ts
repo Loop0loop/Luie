@@ -5,9 +5,9 @@ import { app } from "electron";
 import { db } from "../../../src/main/database/index.js";
 import { projectService } from "../../../src/main/services/core/projectService.js";
 import { chapterService } from "../../../src/main/services/core/chapterService.js";
-import { snapshotService } from "../../../src/main/services/features/snapshotService.js";
+import { snapshotService } from "../../../src/main/services/features/snapshot/snapshotService.js";
 import { autoSaveManager } from "../../../src/main/manager/autoSaveManager.js";
-import { readFullSnapshotArtifact } from "../../../src/main/services/features/snapshotArtifacts.js";
+import { readFullSnapshotArtifact } from "../../../src/main/services/features/snapshot/snapshotArtifacts.js";
 import {
   SNAPSHOT_MIRROR_DIR,
   SNAPSHOT_BACKUP_DIR,

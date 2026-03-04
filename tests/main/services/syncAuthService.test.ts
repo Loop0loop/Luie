@@ -118,7 +118,7 @@ describe("SyncAuthService", () => {
       );
 
     const { syncAuthService: firstInstance } = await import(
-      "../../../src/main/services/features/syncAuthService.js"
+      "../../../src/main/services/features/sync/syncAuthService.js"
     );
     await firstInstance.startGoogleAuth();
 
@@ -135,7 +135,7 @@ describe("SyncAuthService", () => {
     mocked.safeStorageState.available = true;
     vi.resetModules();
     const { syncAuthService: restarted } = await import(
-      "../../../src/main/services/features/syncAuthService.js"
+      "../../../src/main/services/features/sync/syncAuthService.js"
     );
 
     const session = await restarted.completeOAuthCallback("luie://auth/callback?code=test-code");
@@ -147,7 +147,7 @@ describe("SyncAuthService", () => {
   });
 
   it("fails when callback code is missing and clears pending auth", async () => {
-    const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
+    const { syncAuthService } = await import("../../../src/main/services/features/sync/syncAuthService.js");
     await syncAuthService.startGoogleAuth();
 
     await expect(syncAuthService.completeOAuthCallback("luie://auth/callback")).rejects.toThrow(
@@ -175,7 +175,7 @@ describe("SyncAuthService", () => {
         ),
       );
 
-    const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
+    const { syncAuthService } = await import("../../../src/main/services/features/sync/syncAuthService.js");
     await syncAuthService.startGoogleAuth();
     const session = await syncAuthService.completeOAuthCallback("luie://auth/callback?code=test-code");
 
@@ -184,7 +184,7 @@ describe("SyncAuthService", () => {
   });
 
   it("keeps legacy state mismatch validation when pending state exists", async () => {
-    const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
+    const { syncAuthService } = await import("../../../src/main/services/features/sync/syncAuthService.js");
     await syncAuthService.startGoogleAuth();
 
     mocked.state.pendingAuthState = "legacy-state-token";
@@ -211,7 +211,7 @@ describe("SyncAuthService", () => {
         ),
       );
 
-    const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
+    const { syncAuthService } = await import("../../../src/main/services/features/sync/syncAuthService.js");
     await syncAuthService.startGoogleAuth();
 
     const session = await syncAuthService.completeOAuthCallback("luie://auth/callback#code=test-code");
@@ -220,7 +220,7 @@ describe("SyncAuthService", () => {
   });
 
   it("blocks duplicate OAuth start while a recent flow is pending", async () => {
-    const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
+    const { syncAuthService } = await import("../../../src/main/services/features/sync/syncAuthService.js");
     await syncAuthService.startGoogleAuth();
 
     await expect(syncAuthService.startGoogleAuth()).rejects.toThrow("SYNC_AUTH_FLOW_IN_PROGRESS");
@@ -228,7 +228,7 @@ describe("SyncAuthService", () => {
   });
 
   it("includes provider error code when callback contains OAuth error", async () => {
-    const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
+    const { syncAuthService } = await import("../../../src/main/services/features/sync/syncAuthService.js");
     await syncAuthService.startGoogleAuth();
 
     await expect(
@@ -243,7 +243,7 @@ describe("SyncAuthService", () => {
 
   it("returns migrated cipher when reading legacy base64 token", async () => {
     mocked.safeStorageState.available = true;
-    const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
+    const { syncAuthService } = await import("../../../src/main/services/features/sync/syncAuthService.js");
     const legacyCipher = Buffer.from("legacy-token", "utf-8").toString("base64");
     const result = syncAuthService.getAccessToken({
       connected: true,
@@ -256,7 +256,7 @@ describe("SyncAuthService", () => {
   });
 
   it("rejects plain token cipher when secure storage is unavailable", async () => {
-    const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
+    const { syncAuthService } = await import("../../../src/main/services/features/sync/syncAuthService.js");
     const plainCipher = `v2:plain:${Buffer.from("token-in-plain", "utf-8").toString("base64")}`;
     const result = syncAuthService.getAccessToken({
       connected: true,
@@ -276,7 +276,7 @@ describe("SyncAuthService", () => {
     delete process.env.SUPADB_URL;
     delete process.env.SUPABASE_PUBLISHABLE_KEY;
 
-    const { syncAuthService } = await import("../../../src/main/services/features/syncAuthService.js");
+    const { syncAuthService } = await import("../../../src/main/services/features/sync/syncAuthService.js");
     expect(syncAuthService.isConfigured()).toBe(true);
   });
 });

@@ -111,7 +111,7 @@ describe("appUpdateService", () => {
     );
 
     const { appUpdateService } = await import(
-      "../../../src/main/services/features/appUpdateService.js"
+      "../../../src/main/services/features/appUpdate/appUpdateService.js"
     );
     const check = await appUpdateService.checkForUpdate();
     expect(check.available).toBe(true);
@@ -158,7 +158,7 @@ describe("appUpdateService", () => {
     );
 
     const { appUpdateService } = await import(
-      "../../../src/main/services/features/appUpdateService.js"
+      "../../../src/main/services/features/appUpdate/appUpdateService.js"
     );
     const result = await appUpdateService.applyUpdate();
 
@@ -215,7 +215,7 @@ describe("appUpdateService", () => {
     );
 
     const { appUpdateService } = await import(
-      "../../../src/main/services/features/appUpdateService.js"
+      "../../../src/main/services/features/appUpdate/appUpdateService.js"
     );
     const result = await appUpdateService.rollbackUpdate();
 

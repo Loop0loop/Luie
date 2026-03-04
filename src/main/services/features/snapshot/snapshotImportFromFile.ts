@@ -12,7 +12,7 @@ import {
 } from "../../../../shared/constants/index.js";
 import { sanitizeName } from "../../../../shared/utils/sanitize.js";
 import { writeLuiePackage } from "../../io/luiePackageWriter.js";
-import { readFullSnapshotArtifact } from "../snapshotArtifacts.js";
+import { readFullSnapshotArtifact } from "./snapshotArtifacts.js";
 
 type LoggerLike = {
   info: (message: string, data?: unknown) => void;
@@ -261,4 +261,3 @@ export const importSnapshotFromFile = async (
 
   return created;
 };
-

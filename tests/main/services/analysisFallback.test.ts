@@ -15,11 +15,11 @@ const mocked = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("../../../src/main/services/features/supabaseEnv.js", () => ({
+vi.mock("../../../src/main/services/features/sync/supabaseEnv.js", () => ({
   getSupabaseConfig: () => mocked.supabaseConfig.current,
 }));
 
-vi.mock("../../../src/main/services/features/syncService.js", () => ({
+vi.mock("../../../src/main/services/features/sync/syncService.js", () => ({
   syncService: {
     getEdgeAccessToken: async () => {
       if (mocked.edgeTokenError.current) {

@@ -7,7 +7,7 @@ import { promises as fs } from "fs";
 import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } from "docx";
 import { ServiceError } from "../../utils/serviceError.js";
 import { ErrorCode } from "../../../shared/constants/errorCode.js";
-import { hwpxExportService } from "./exportServiceHwpx.js";
+import { hwpxExportService } from "./hwpx/hwpxExportService.js";
 
 // ============================================================================
 // Types

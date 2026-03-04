@@ -98,7 +98,7 @@ const runDeferredStartupMaintenance = async (logger: Logger): Promise<void> => {
   try {
     const { autoSaveManager } = await import("../manager/autoSaveManager.js");
     await autoSaveManager.flushMirrorsToSnapshots("startup-recovery");
-    const { snapshotService } = await import("../services/features/snapshotService.js");
+    const { snapshotService } = await import("../services/features/snapshot/snapshotService.js");
     void snapshotService.pruneSnapshotsAllProjects();
     void snapshotService.cleanupOrphanArtifacts("startup");
   } catch (error) {

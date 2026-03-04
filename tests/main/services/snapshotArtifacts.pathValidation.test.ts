@@ -76,7 +76,7 @@ describe("snapshotArtifacts projectPath hardening", () => {
     });
 
     const { writeFullSnapshotArtifact } = await import(
-      "../../../src/main/services/features/snapshotArtifacts.js"
+      "../../../src/main/services/features/snapshot/snapshotArtifacts.js"
     );
 
     await writeFullSnapshotArtifact("11111111-1111-1111-1111-111111111111", {
@@ -134,7 +134,7 @@ describe("snapshotArtifacts projectPath hardening", () => {
     mocked.dbClient.snapshot.findMany.mockResolvedValue([]);
 
     const { cleanupOrphanSnapshotArtifacts } = await import(
-      "../../../src/main/services/features/snapshotArtifacts.js"
+      "../../../src/main/services/features/snapshot/snapshotArtifacts.js"
     );
 
     const result = await cleanupOrphanSnapshotArtifacts();

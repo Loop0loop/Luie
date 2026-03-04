@@ -3,7 +3,7 @@
 import { EventEmitter } from "events";
 import { promises as fs } from "fs";
 import { chapterService } from "../services/core/chapterService.js";
-import { snapshotService } from "../services/features/snapshotService.js";
+import { snapshotService } from "../services/features/snapshot/snapshotService.js";
 import { createLogger } from "../../shared/logger/index.js";
 import { ErrorCode } from "../../shared/constants/index.js";
 import { isServiceError } from "../utils/serviceError.js";
@@ -21,6 +21,7 @@ import {
   EMERGENCY_SNAPSHOT_INTERVAL_MS,
 } from "../../shared/constants/index.js";
 import { AutoSaveMirrorStore } from "./autoSave/autoSaveMirrorStore.js";
+import type { AutoSaveConfig, PendingSave } from "./autoSave/autoSaveTypes.js";
 import {
   createScheduledSnapshot,
   flushAllPendingSaves,
@@ -33,22 +34,6 @@ import {
 } from "./autoSave/autoSaveSnapshotJobs.js";
 
 const logger = createLogger("AutoSaveManager");
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-interface AutoSaveConfig {
-  enabled: boolean;
-  interval: number;
-  debounceMs: number;
-}
-
-interface PendingSave {
-  chapterId: string;
-  content: string;
-  projectId: string;
-}
-
-// ─── AutoSaveManager ────────────────────────────────────────────────────────
 
 export class AutoSaveManager extends EventEmitter {
   private static instance: AutoSaveManager;
@@ -210,6 +195,9 @@ export class AutoSaveManager extends EventEmitter {
     const timer = setTimeout(async () => {
       await this.performSave(chapterId);
     }, config.debounceMs);
+    if (typeof timer.unref === "function") {
+      timer.unref();
+    }
 
     this.saveTimers.set(chapterId, timer);
   }
@@ -314,17 +302,20 @@ export class AutoSaveManager extends EventEmitter {
     if (!this.snapshotProcessing) {
       this.snapshotProcessing = true;
       setImmediate(async () => {
-        await processSnapshotJobs({
-          jobs: this.snapshotQueue,
-          writeTimestampedMirror: (targetProjectId, targetChapterId, targetContent) =>
-            this.mirrorStore.writeTimestampedMirror(
-              targetProjectId,
-              targetChapterId,
-              targetContent,
-            ),
-          logger,
-        });
-        this.snapshotProcessing = false;
+        try {
+          await processSnapshotJobs({
+            jobs: this.snapshotQueue,
+            writeTimestampedMirror: (targetProjectId, targetChapterId, targetContent) =>
+              this.mirrorStore.writeTimestampedMirror(
+                targetProjectId,
+                targetChapterId,
+                targetContent,
+              ),
+            logger,
+          });
+        } finally {
+          this.snapshotProcessing = false;
+        }
       });
     }
   }
@@ -368,6 +359,9 @@ export class AutoSaveManager extends EventEmitter {
         }
       });
     }, config.interval);
+    if (typeof timer.unref === "function") {
+      timer.unref();
+    }
 
     this.intervalTimers.set(projectId, timer);
     logger.info("Auto-save started", { projectId, interval: config.interval });
@@ -404,6 +398,9 @@ export class AutoSaveManager extends EventEmitter {
         await this.createSnapshot(projectId);
       });
     }, SNAPSHOT_INTERVAL_MS);
+    if (typeof timer.unref === "function") {
+      timer.unref();
+    }
 
     this.snapshotTimers.set(projectId, timer);
     logger.info("Snapshot schedule started", {

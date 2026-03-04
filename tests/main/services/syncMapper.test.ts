@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createEmptySyncBundle,
   mergeSyncBundles,
-} from "../../../src/main/services/features/syncMapper.js";
+} from "../../../src/main/services/features/sync/syncMapper.js";
 
 describe("syncMapper project tombstones", () => {
   it("drops project-scoped entities when a project tombstone exists", () => {

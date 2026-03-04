@@ -1,7 +1,7 @@
 import { createLogger } from "../../../../shared/logger/index.js";
 import type { RuntimeSupabaseConfig } from "../../../../shared/types/index.js";
-import { getSupabaseConfig } from "../supabaseEnv.js";
-import { syncService } from "../syncService.js";
+import { getSupabaseConfig } from "../sync/supabaseEnv.js";
+import { syncService } from "../sync/syncService.js";
 
 const logger = createLogger("GeminiProxyClient");
 

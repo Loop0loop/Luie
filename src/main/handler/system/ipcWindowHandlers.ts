@@ -9,7 +9,7 @@ import {
   ensureBootstrapReady,
   getBootstrapStatus,
 } from "../../lifecycle/bootstrap.js";
-import { appUpdateService } from "../../services/features/appUpdateService.js";
+import { appUpdateService } from "../../services/features/appUpdate/appUpdateService.js";
 import {
   windowOpenExportArgsSchema,
   windowSetFullscreenArgsSchema,

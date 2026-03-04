@@ -1,7 +1,7 @@
 import { DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS } from "../../../../shared/constants/index.js";
-import type { SyncBundle } from "../syncMapper.js";
-import type { SyncChapterRecord } from "../syncMapper.js";
-import { db } from "../../../database/index.js";
+import type { SyncBundle } from "./syncMapper.js";
+import type { SyncChapterRecord } from "./syncMapper.js";
+import type { db } from "../../../database/index.js";
 
 export const collectDeletedProjectIds = (bundle: SyncBundle): Set<string> => {
   const deletedProjectIds = new Set<string>();
@@ -220,4 +220,3 @@ export const applyChapterTombstones = async (
     });
   }
 };
-

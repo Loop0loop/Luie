@@ -11,7 +11,7 @@ import { writeLuiePackage } from "../../io/luiePackageWriter.js";
 import { db } from "../../../database/index.js";
 import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
 import { projectService } from "../../core/projectService.js";
-import type { SyncBundle } from "../syncMapper.js";
+import type { SyncBundle } from "./syncMapper.js";
 import type { WorldDocumentType } from "./syncWorldDocNormalizer.js";
 import {
   normalizeDrawingPayload,

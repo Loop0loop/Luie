@@ -3,7 +3,7 @@ import {
   normalizeRuntimeSupabaseConfigInput,
   normalizeSupabaseUrl,
   validateRuntimeSupabaseConfigInput,
-} from "../../../src/main/services/features/supabaseConfigValidation.js";
+} from "../../../src/main/services/features/sync/supabaseConfigValidation.js";
 
 describe("supabaseConfigValidation", () => {
   it("normalizes Supabase URL to project origin only", () => {

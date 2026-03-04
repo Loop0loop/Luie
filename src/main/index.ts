@@ -19,7 +19,7 @@ import { extractAuthCallbackUrl, handleDeepLinkUrl } from "./lifecycle/deepLink.
 import { registerShutdownHandlers } from "./lifecycle/shutdown.js";
 import { registerSingleInstance } from "./lifecycle/singleInstance.js";
 import { settingsManager } from "./manager/settingsManager.js";
-import { syncService } from "./services/features/syncService.js";
+import { syncService } from "./services/features/sync/syncService.js";
 
 configureLogger({
   logToFile: true,

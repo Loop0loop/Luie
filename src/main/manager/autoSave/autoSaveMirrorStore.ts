@@ -2,7 +2,7 @@ import { app } from "electron";
 import { promises as fs } from "fs";
 import path from "path";
 import { db } from "../../database/index.js";
-import { snapshotService } from "../../services/features/snapshotService.js";
+import { snapshotService } from "../../services/features/snapshot/snapshotService.js";
 import { writeGzipAtomic, readMaybeGzip } from "../../utils/atomicWrite.js";
 import {
   SNAPSHOT_MIRROR_DIR,

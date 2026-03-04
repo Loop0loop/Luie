@@ -51,7 +51,7 @@ vi.mock("../../../src/main/manager/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/features/syncService.js", () => ({
+vi.mock("../../../src/main/services/features/sync/syncService.js", () => ({
   syncService: mocked.syncService,
 }));
 

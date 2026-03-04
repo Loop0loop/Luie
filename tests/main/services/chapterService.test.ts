@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeAll } from "vitest";
 import { ChapterService } from "../../../src/main/services/core/chapterService.js";
 import { ProjectService } from "../../../src/main/services/core/projectService.js";
-import { autoExtractService } from "../../../src/main/services/features/autoExtractService.js";
+import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { projectService } from "../../../src/main/services/core/projectService.js";
 import { generateText } from "../../helpers/generateText";
 import { ErrorCode } from "../../../src/shared/constants/errorCode";

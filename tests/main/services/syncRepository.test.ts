@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { SyncBundle } from "../../../src/main/services/features/syncMapper.js";
+import type { SyncBundle } from "../../../src/main/services/features/sync/syncMapper.js";
 
 const mocked = vi.hoisted(() => ({
   fetch: vi.fn(),
 }));
 
-vi.mock("../../../src/main/services/features/supabaseEnv.js", () => ({
+vi.mock("../../../src/main/services/features/sync/supabaseEnv.js", () => ({
   getSupabaseConfig: () => ({
     url: "https://example.supabase.co",
     anonKey: "anon-key",
@@ -35,7 +35,7 @@ describe("SyncRepository scope narrowing", () => {
         }),
     );
 
-    const { syncRepository } = await import("../../../src/main/services/features/syncRepository.js");
+    const { syncRepository } = await import("../../../src/main/services/features/sync/syncRepository.js");
     const bundle = await syncRepository.fetchBundle(
       "access-token",
       "00000000-0000-0000-0000-000000000001",
@@ -54,9 +54,9 @@ describe("SyncRepository scope narrowing", () => {
     );
 
     const { createEmptySyncBundle } = await import(
-      "../../../src/main/services/features/syncMapper.js"
+      "../../../src/main/services/features/sync/syncMapper.js"
     );
-    const { syncRepository } = await import("../../../src/main/services/features/syncRepository.js");
+    const { syncRepository } = await import("../../../src/main/services/features/sync/syncRepository.js");
 
     const bundle: SyncBundle = createEmptySyncBundle();
     bundle.projects.push({
@@ -168,7 +168,7 @@ describe("SyncRepository scope narrowing", () => {
       });
     });
 
-    const { syncRepository } = await import("../../../src/main/services/features/syncRepository.js");
+    const { syncRepository } = await import("../../../src/main/services/features/sync/syncRepository.js");
     const bundle = await syncRepository.fetchBundle(
       "access-token",
       "00000000-0000-0000-0000-000000000001",

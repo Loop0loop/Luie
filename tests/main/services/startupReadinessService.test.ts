@@ -55,12 +55,12 @@ vi.mock("../../../src/main/manager/settingsManager.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/features/supabaseEnv.js", () => ({
+vi.mock("../../../src/main/services/features/sync/supabaseEnv.js", () => ({
   getSupabaseConfig: () => mocked.supabaseConfig.current,
   getSupabaseConfigSource: () => mocked.supabaseSource.current,
 }));
 
-vi.mock("../../../src/main/services/features/syncAuthService.js", () => ({
+vi.mock("../../../src/main/services/features/sync/syncAuthService.js", () => ({
   syncAuthService: {
     getAccessToken: (...args: unknown[]) => mocked.getAccessToken(...args),
     getRefreshToken: (...args: unknown[]) => mocked.getRefreshToken(...args),

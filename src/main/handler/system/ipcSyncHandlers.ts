@@ -1,6 +1,8 @@
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
+import type * as SettingsManagerModule from "../../manager/settingsManager.js";
+import type * as SupabaseEnvModule from "../../services/features/sync/supabaseEnv.js";
 import {
   syncRuntimeConfigSetArgsSchema,
   syncRuntimeConfigValidateArgsSchema,
@@ -8,12 +10,10 @@ import {
   syncSetAutoArgsSchema,
 } from "../../../shared/schemas/index.js";
 import type { RuntimeSupabaseConfig } from "../../../shared/types/index.js";
-import { syncService } from "../../services/features/syncService.js";
+import { syncService } from "../../services/features/sync/syncService.js";
 
 const loadSettingsManager = (() => {
-  let cached: Promise<
-    typeof import("../../manager/settingsManager.js")
-  > | null = null;
+  let cached: Promise<typeof SettingsManagerModule> | null = null;
   return async () => {
     if (!cached) {
       cached = import("../../manager/settingsManager.js");
@@ -23,12 +23,10 @@ const loadSettingsManager = (() => {
 })();
 
 const loadSupabaseEnvModule = (() => {
-  let cached: Promise<
-    typeof import("../../services/features/supabaseEnv.js")
-  > | null = null;
+  let cached: Promise<typeof SupabaseEnvModule> | null = null;
   return async () => {
     if (!cached) {
-      cached = import("../../services/features/supabaseEnv.js");
+      cached = import("../../services/features/sync/supabaseEnv.js");
     }
     return cached;
   };

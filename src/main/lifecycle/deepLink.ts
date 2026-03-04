@@ -3,7 +3,7 @@ import { IPC_CHANNELS } from "../../shared/ipc/channels.js";
 import { createLogger } from "../../shared/logger/index.js";
 import type { SyncAuthResult, SyncAuthResultReason } from "../../shared/types/index.js";
 import { windowManager } from "../manager/index.js";
-import { syncService } from "../services/features/syncService.js";
+import { syncService } from "../services/features/sync/syncService.js";
 
 const logger = createLogger("DeepLink");
 

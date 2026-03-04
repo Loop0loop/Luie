@@ -52,7 +52,7 @@ export const registerShutdownHandlers = (logger: Logger): void => {
       logger.info("App is quitting");
 
       const { autoSaveManager } = await import("../manager/autoSaveManager.js");
-      const { snapshotService } = await import("../services/features/snapshotService.js");
+      const { snapshotService } = await import("../services/features/snapshot/snapshotService.js");
       const { projectService } = await import("../services/core/projectService.js");
       const mainWindow = windowManager.getMainWindow();
 
