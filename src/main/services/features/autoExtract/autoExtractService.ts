@@ -174,7 +174,7 @@ JSON 형식으로만 답하세요:`;
         model: GEMINI_MODEL,
         prompt,
         responseMimeType: "application/json",
-        responseSchema: GEMINI_RESPONSE_SCHEMA as unknown as Record<string, unknown>,
+        responseSchema: GEMINI_RESPONSE_SCHEMA,
       });
 
       const parsed = GeminiResultSchema.safeParse(JSON.parse(text));

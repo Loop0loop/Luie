@@ -85,7 +85,7 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
         )}
 
         {isSidebarOpen && (
-          <PanelResizeHandle className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative" />
+          <PanelResizeHandle data-separator-feature="mainSidebar" className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative" />
         )}
 
         {/* Main Content */}
@@ -131,7 +131,7 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
         </Panel>
 
         {isContextOpen && (
-          <PanelResizeHandle className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative" />
+          <PanelResizeHandle data-separator-feature="mainContext" className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative" />
         )}
 
         {/* Context Panel */}

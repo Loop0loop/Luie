@@ -43,12 +43,17 @@ const shouldSkipDir = (dirName) =>
 const isInternalAlias = (specifier) =>
   ALLOWED_INTERNAL_PREFIXES.some((prefix) => specifier.startsWith(prefix));
 
+const stripImportQueryAndHash = (specifier) =>
+  specifier.split("?")[0]?.split("#")[0] ?? specifier;
+
 export const toPackageName = (specifier) => {
-  if (specifier.startsWith("@")) {
-    const [scope, name] = specifier.split("/");
-    return scope && name ? `${scope}/${name}` : specifier;
+  const sanitized = stripImportQueryAndHash(specifier);
+  if (!sanitized) return specifier;
+  if (sanitized.startsWith("@")) {
+    const [scope, name] = sanitized.split("/");
+    return scope && name ? `${scope}/${name}` : sanitized;
   }
-  return specifier.split("/")[0] ?? specifier;
+  return sanitized.split("/")[0] ?? sanitized;
 };
 
 const collectFiles = (dir, output = []) => {
@@ -115,15 +120,16 @@ const resolvePathCandidates = (basePath) => {
 };
 
 const resolveInternalImport = (sourceFile, specifier) => {
-  if (specifier.startsWith("node:")) return true;
+  const sanitized = stripImportQueryAndHash(specifier);
+  if (sanitized.startsWith("node:")) return true;
 
   let basePath;
-  if (specifier.startsWith(".")) {
-    basePath = path.resolve(path.dirname(sourceFile), specifier);
-  } else if (specifier.startsWith("/")) {
-    basePath = path.resolve(PROJECT_ROOT, `.${specifier}`);
+  if (sanitized.startsWith(".")) {
+    basePath = path.resolve(path.dirname(sourceFile), sanitized);
+  } else if (sanitized.startsWith("/")) {
+    basePath = path.resolve(PROJECT_ROOT, `.${sanitized}`);
   } else {
-    basePath = normalizeAliasPath(specifier);
+    basePath = normalizeAliasPath(sanitized);
   }
   if (!basePath) return true;
 

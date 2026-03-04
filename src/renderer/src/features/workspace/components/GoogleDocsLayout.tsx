@@ -316,7 +316,7 @@ export default function GoogleDocsLayout({
                 {sidebar}
               </Panel>
 
-              <PanelResizeHandle className="w-1 shrink-0 bg-border/40 hover:bg-blue-500/50 focus-visible:bg-blue-500/50 transition-colors cursor-col-resize z-20 relative">
+              <PanelResizeHandle data-separator-feature="docsBinder" className="w-1 shrink-0 bg-border/40 hover:bg-blue-500/50 focus-visible:bg-blue-500/50 transition-colors cursor-col-resize z-20 relative">
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
             </>
@@ -360,7 +360,7 @@ export default function GoogleDocsLayout({
           {/* Right Context Panel */}
           {activeRightTab && (
             <>
-              <PanelResizeHandle className="w-1 shrink-0 bg-border/40 hover:bg-accent/60 focus-visible:bg-accent/60 transition-colors cursor-col-resize z-20 relative">
+              <PanelResizeHandle data-separator-feature={DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab]} className="w-1 shrink-0 bg-border/40 hover:bg-accent/60 focus-visible:bg-accent/60 transition-colors cursor-col-resize z-20 relative">
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
 

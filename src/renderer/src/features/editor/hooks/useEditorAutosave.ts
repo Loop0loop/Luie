@@ -84,7 +84,7 @@ export function useEditorAutosave({ onSave, title, content }: UseEditorAutosaveP
         showToast(t("editor.autosave.failed"), "error");
       }
     }
-  }, [onSave, showToast]);
+  }, [onSave, showToast, t]);
 
   useEffect(() => {
     performSaveRef.current = performSave;

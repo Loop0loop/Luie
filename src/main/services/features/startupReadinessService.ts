@@ -142,11 +142,7 @@ class StartupReadinessService {
   private async checkSqliteWal(): Promise<StartupCheck> {
     try {
       await db.initialize();
-      const client = db.getClient();
-      if (typeof client.$executeRawUnsafe === "function") {
-        await client.$executeRawUnsafe("PRAGMA journal_mode=WAL;");
-      }
-      return buildCheck("sqliteWal", true, "WAL mode enabled");
+      return buildCheck("sqliteWal", true, "WAL mode enforced during DB initialization");
     } catch (error) {
       return buildCheck("sqliteWal", false, this.toErrorMessage(error));
     }

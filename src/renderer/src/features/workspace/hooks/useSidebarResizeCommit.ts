@@ -77,10 +77,16 @@ export function useSidebarResizeCommit(
       let el: Element | null = target;
       for (let i = 0; i < 5; i++) {
         if (!el) break;
-        if (
+        const elFeature = el.getAttribute("data-separator-feature");
+
+        // If the separator has a feature tag, it must match this hook's feature
+        if (elFeature) {
+          if (elFeature === feature) return true;
+        } else if (
           el.hasAttribute("data-separator") ||
           el.getAttribute("role") === "separator"
         ) {
+          // Fallback for separators without a feature tag (legacy compatibility)
           return true;
         }
         el = el.parentElement;
@@ -110,7 +116,7 @@ export function useSidebarResizeCommit(
       window.removeEventListener("pointercancel", handlePointerEnd, true);
       window.removeEventListener("blur", handlePointerEnd);
     };
-  }, [flushPendingWidth]);
+  }, [feature, flushPendingWidth]);
 
   return onResize;
 }

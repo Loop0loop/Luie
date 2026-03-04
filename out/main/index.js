@@ -1793,12 +1793,9 @@ const es = (e) => e instanceof Error && e.message ? e.message : "Failed to initi
     source: "env"
   } : null;
 }, Kr = () => {
-  const e = g.getRuntimeSupabaseConfig;
-  if (typeof e != "function")
-    return null;
-  const t = e.call(g), r = oe(t);
-  return r ? {
-    ...r,
+  const e = g.getRuntimeSupabaseConfig(), t = oe(e);
+  return t ? {
+    ...t,
     source: "runtime"
   } : null;
 }, cs = () => {
@@ -1830,10 +1827,7 @@ const es = (e) => e instanceof Error && e.message ? e.message : "Failed to initi
   return e;
 }, Jr = () => Ge()?.source ?? null, ds = () => oe(Kr()) ?? null, ls = (e) => {
   const t = qr(e);
-  if (!t.valid || !t.normalized)
-    return t;
-  const r = g.setRuntimeSupabaseConfig;
-  return typeof r == "function" && r.call(g, t.normalized), t;
+  return !t.valid || !t.normalized || g.setRuntimeSupabaseConfig(t.normalized), t;
 }, ps = (e) => qr(e), rd = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   getResolvedSupabaseConfig: Ge,
@@ -2194,9 +2188,7 @@ class Ts {
   }
   async checkSqliteWal() {
     try {
-      await P.initialize();
-      const t = P.getClient();
-      return typeof t.$executeRawUnsafe == "function" && await t.$executeRawUnsafe("PRAGMA journal_mode=WAL;"), C("sqliteWal", !0, "WAL mode enabled");
+      return await P.initialize(), C("sqliteWal", !0, "WAL mode enforced during DB initialization");
     } catch (t) {
       return C("sqliteWal", !1, this.toErrorMessage(t));
     }
@@ -2453,7 +2445,7 @@ const he = new Ts(), ir = 1500, Ss = 8e3, ms = () => [
         Is(e, A, b.reason === "killed");
       });
     });
-    const S = Date.now(), { registerIPCHandlers: I } = await import("./index-kxwU6Zuh.js");
+    const S = Date.now(), { registerIPCHandlers: I } = await import("./index-DWvJDrmq.js");
     I(), e.info("Startup checkpoint: IPC handlers ready", {
       elapsedMs: Date.now() - S,
       startupElapsedMs: Date.now() - r

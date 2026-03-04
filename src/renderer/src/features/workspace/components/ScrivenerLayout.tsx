@@ -173,7 +173,7 @@ export default function ScrivenerLayout({
                 {sidebar}
               </Panel>
 
-              <PanelResizeHandle className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative">
+              <PanelResizeHandle data-separator-feature="scrivenerBinder" className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative">
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
             </>
@@ -252,7 +252,7 @@ export default function ScrivenerLayout({
           {/* Pane 3: Inspector (Right) */}
           {isInspectorOpen && (
             <>
-              <PanelResizeHandle className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative">
+              <PanelResizeHandle data-separator-feature="scrivenerInspector" className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative">
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
 

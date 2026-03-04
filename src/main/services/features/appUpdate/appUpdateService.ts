@@ -55,15 +55,7 @@ export class AppUpdateService {
   }
 
   private broadcastState(): void {
-    const browserWindowApi = BrowserWindow as unknown as
-      | {
-          getAllWindows?: () => Array<{
-            isDestroyed: () => boolean;
-            webContents: { send: (channel: string, payload: unknown) => void };
-          }>;
-        }
-      | undefined;
-    const windows = browserWindowApi?.getAllWindows?.() ?? [];
+    const windows = BrowserWindow.getAllWindows();
     for (const win of windows) {
       if (win.isDestroyed()) continue;
       try {

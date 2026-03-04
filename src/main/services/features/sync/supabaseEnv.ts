@@ -58,16 +58,7 @@ const resolveFromEnv = (): ResolvedSupabaseConfig | null => {
 };
 
 const resolveFromRuntimeSettings = (): ResolvedSupabaseConfig | null => {
-  const getter = (
-    settingsManager as unknown as {
-      getRuntimeSupabaseConfig?: () => RuntimeSupabaseConfig | undefined;
-    }
-  ).getRuntimeSupabaseConfig;
-  if (typeof getter !== "function") {
-    return null;
-  }
-
-  const runtime = getter.call(settingsManager);
+  const runtime = settingsManager.getRuntimeSupabaseConfig();
   const normalized = normalizeRuntimeSupabaseConfigInput(runtime);
   if (!normalized) {
     return null;
@@ -147,14 +138,7 @@ export const setRuntimeSupabaseConfig = (
   if (!validation.valid || !validation.normalized) {
     return validation;
   }
-  const setter = (
-    settingsManager as unknown as {
-      setRuntimeSupabaseConfig?: (input: RuntimeSupabaseConfig) => unknown;
-    }
-  ).setRuntimeSupabaseConfig;
-  if (typeof setter === "function") {
-    setter.call(settingsManager, validation.normalized);
-  }
+  settingsManager.setRuntimeSupabaseConfig(validation.normalized);
   return validation;
 };
 

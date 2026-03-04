@@ -5,7 +5,7 @@ import Editor from "@renderer/features/editor/components/Editor";
 import type { ResizablePanelData } from "@renderer/features/workspace/stores/uiStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import type { Chapter } from "@shared/types";
-import { toPercentSize, toPxSize } from "@shared/constants/sidebarSizing";
+import { toPercentSize } from "@shared/constants/sidebarSizing";
 
 // Lazy Loaded Panels
 const ResearchPanel = React.lazy(
@@ -48,7 +48,7 @@ export function WorkspacePanels({
                     <Panel
                         id={panel.id}
                         defaultSize={toPercentSize(panel.size)}
-                        minSize={toPxSize(120)}
+                        minSize={15}
                         onMouseDownCapture={() => {
                             setFocusedClosableTarget({ kind: "panel", id: panel.id });
                         }}
@@ -56,7 +56,16 @@ export function WorkspacePanels({
                     >
                         <div className="flex justify-between items-center p-2 border-b border-border bg-surface text-xs font-semibold text-muted">
                             <span className="uppercase">{panel.content.type}</span>
-                            <button onClick={() => removePanel(panel.id)} className="hover:bg-surface-hover rounded p-1">✕</button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setFocusedClosableTarget({ kind: "panel", id: panel.id });
+                                    removePanel(panel.id);
+                                }}
+                                className="hover:bg-surface-hover rounded p-1"
+                            >
+                                ✕
+                            </button>
                         </div>
 
                         <div className="flex-1 overflow-hidden relative">
