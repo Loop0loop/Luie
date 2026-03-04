@@ -1,4 +1,4 @@
-import { createLogger } from "../../../shared/logger/index.js";
+import { createLogger } from "../../../../shared/logger/index.js";
 import type {
   SyncBundle,
   SyncChapterRecord,

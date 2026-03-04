@@ -3,7 +3,7 @@ import type {
   SyncConflictItem,
   SyncConflictSummary,
   SyncEntityBaseline,
-} from "../../../shared/types/index.js";
+} from "../../../../shared/types/index.js";
 
 export type SyncWorldDocumentType =
   | "synopsis"

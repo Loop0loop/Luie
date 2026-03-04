@@ -2,8 +2,8 @@ import { BrowserWindow, app, shell } from "electron";
 import { createHash } from "node:crypto";
 import * as fsp from "node:fs/promises";
 import path from "node:path";
-import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
-import { createLogger } from "../../../shared/logger/index.js";
+import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
+import { createLogger } from "../../../../shared/logger/index.js";
 import type {
   AppUpdateApplyResult,
   AppUpdateArtifact,
@@ -11,7 +11,7 @@ import type {
   AppUpdateDownloadResult,
   AppUpdateRollbackResult,
   AppUpdateState,
-} from "../../../shared/types/index.js";
+} from "../../../../shared/types/index.js";
 import {
   DEFAULT_UPDATE_FEED_URL,
   compareSemver,

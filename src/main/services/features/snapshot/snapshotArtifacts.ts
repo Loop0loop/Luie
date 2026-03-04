@@ -1,22 +1,22 @@
 import { app } from "electron";
 import { promises as fs, type Dirent } from "fs";
 import path from "path";
-import { db } from "../../database/index.js";
-import { createLogger } from "../../../shared/logger/index.js";
+import { db } from "../../../database/index.js";
+import { createLogger } from "../../../../shared/logger/index.js";
 import {
   APP_VERSION,
   ErrorCode,
   LUIE_PACKAGE_EXTENSION,
   LUIE_SNAPSHOTS_DIR,
   SNAPSHOT_BACKUP_DIR,
-} from "../../../shared/constants/index.js";
-import { sanitizeName } from "../../../shared/utils/sanitize.js";
-import type { SnapshotCreateInput } from "../../../shared/types/index.js";
-import { ServiceError } from "../../utils/serviceError.js";
-import { writeFileAtomic, readMaybeGzip } from "../../utils/atomicWrite.js";
+} from "../../../../shared/constants/index.js";
+import { sanitizeName } from "../../../../shared/utils/sanitize.js";
+import type { SnapshotCreateInput } from "../../../../shared/types/index.js";
+import { ServiceError } from "../../../utils/serviceError.js";
+import { writeFileAtomic, readMaybeGzip } from "../../../utils/atomicWrite.js";
 import { promisify } from "node:util";
 import { gzip as gzipCallback } from "node:zlib";
-import { ensureSafeAbsolutePath } from "../../utils/pathValidation.js";
+import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
 
 const logger = createLogger("SnapshotArtifacts");
 const gzip = promisify(gzipCallback);

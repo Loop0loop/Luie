@@ -3,15 +3,15 @@
  */
 
 import { randomUUID } from "node:crypto";
-import { db } from "../../database/index.js";
-import { createLogger } from "../../../shared/logger/index.js";
+import { db } from "../../../database/index.js";
+import { createLogger } from "../../../../shared/logger/index.js";
 import {
   ErrorCode,
   DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT,
-} from "../../../shared/constants/index.js";
-import type { SnapshotCreateInput } from "../../../shared/types/index.js";
-import { projectService } from "../core/projectService.js";
-import { ServiceError } from "../../utils/serviceError.js";
+} from "../../../../shared/constants/index.js";
+import type { SnapshotCreateInput } from "../../../../shared/types/index.js";
+import { projectService } from "../../core/projectService.js";
+import { ServiceError } from "../../../utils/serviceError.js";
 import {
   cleanupOrphanSnapshotArtifacts,
   writeFullSnapshotArtifact,

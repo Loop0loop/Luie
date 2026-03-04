@@ -1,15 +1,15 @@
 import { BrowserWindow } from "electron";
-import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
-import { createLogger } from "../../../shared/logger/index.js";
+import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
+import { createLogger } from "../../../../shared/logger/index.js";
 import type {
   SyncPendingProjectDelete,
   SyncRunResult,
   SyncSettings,
   SyncStatus,
-} from "../../../shared/types/index.js";
-import type { LuiePackageExportData } from "../io/luiePackageTypes.js";
-import { db } from "../../database/index.js";
-import { settingsManager } from "../../manager/settingsManager.js";
+} from "../../../../shared/types/index.js";
+import type { LuiePackageExportData } from "../../io/luiePackageTypes.js";
+import { db } from "../../../database/index.js";
+import { settingsManager } from "../../../manager/settingsManager.js";
 import { syncAuthService } from "./syncAuthService.js";
 import type { SyncBundle } from "./syncMapper.js";
 import {

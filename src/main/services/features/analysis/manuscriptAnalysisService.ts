@@ -1,18 +1,18 @@
 import "dotenv/config";
-import { createLogger } from "../../../shared/logger/index.js";
-import { db } from "../../database/index.js";
-import { manuscriptAnalyzer } from "../../core/manuscriptAnalyzer.js";
-import type { AnalysisItem, AnalysisContext } from "../../../shared/types/analysis.js";
+import { createLogger } from "../../../../shared/logger/index.js";
+import { db } from "../../../database/index.js";
+import { manuscriptAnalyzer } from "../../../core/manuscriptAnalyzer.js";
+import type { AnalysisItem, AnalysisContext } from "../../../../shared/types/analysis.js";
 import type { BrowserWindow } from "electron";
 import {
   LUIE_PACKAGE_EXTENSION,
   LUIE_PACKAGE_META_FILENAME,
   LUIE_MANUSCRIPT_DIR,
   MARKDOWN_EXTENSION,
-} from "../../../shared/constants/index.js";
-import { readLuieEntry } from "../../utils/luiePackage.js";
-import { ensureSafeAbsolutePath } from "../../utils/pathValidation.js";
-import { runGeminiAnalysisStream } from "./analysis/analysisStreamRunner.js";
+} from "../../../../shared/constants/index.js";
+import { readLuieEntry } from "../../../utils/luiePackage.js";
+import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
+import { runGeminiAnalysisStream } from "./analysisStreamRunner.js";
 
 const logger = createLogger("ManuscriptAnalysisService");
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3-flash-preview";

@@ -2453,7 +2453,7 @@ const he = new Ts(), ir = 1500, Ss = 8e3, ms = () => [
         Is(e, A, b.reason === "killed");
       });
     });
-    const S = Date.now(), { registerIPCHandlers: I } = await import("./index-caoz8ILQ.js");
+    const S = Date.now(), { registerIPCHandlers: I } = await import("./index-kxwU6Zuh.js");
     I(), e.info("Startup checkpoint: IPC handlers ready", {
       elapsedMs: Date.now() - S,
       startupElapsedMs: Date.now() - r

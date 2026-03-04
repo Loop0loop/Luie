@@ -9,15 +9,15 @@
 import { promises as fs } from "fs";
 import path from "path";
 import JSZip from "jszip";
-import { ServiceError } from "../../utils/serviceError.js";
-import { ErrorCode } from "../../../shared/constants/errorCode.js";
-import type { ExportOptions, ExportResult } from "./exportService.js";
+import { ServiceError } from "../../../utils/serviceError.js";
+import { ErrorCode } from "../../../../shared/constants/errorCode.js";
+import type { ExportOptions, ExportResult } from "../exportService.js";
 import {
   convertHtmlToParagraphs,
   escapeXml,
   htmlToText,
   parseXmlAttributes,
-} from "./hwpx/hwpxParagraphBuilder.js";
+} from "./hwpxParagraphBuilder.js";
 import {
   HWPX_CONTAINER_RDF_XML,
   HWPX_CONTAINER_XML,
@@ -26,7 +26,7 @@ import {
   HWPX_SETTINGS_XML,
   HWPX_VERSION_XML,
   buildHwpxContentHpfXml,
-} from "./hwpx/hwpxStaticXmlTemplates.js";
+} from "./hwpxStaticXmlTemplates.js";
 
 const MM_TO_HWPUNIT = 283.465;
 

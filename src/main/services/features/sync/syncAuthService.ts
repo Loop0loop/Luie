@@ -1,8 +1,8 @@
 import { createHash, randomBytes } from "node:crypto";
 import { safeStorage, shell } from "electron";
-import { createLogger } from "../../../shared/logger/index.js";
-import type { SyncProvider, SyncSettings } from "../../../shared/types/index.js";
-import { settingsManager } from "../../manager/settingsManager.js";
+import { createLogger } from "../../../../shared/logger/index.js";
+import type { SyncProvider, SyncSettings } from "../../../../shared/types/index.js";
+import { settingsManager } from "../../../manager/settingsManager.js";
 import {
   getSupabaseConfig,
   getSupabaseConfigOrThrow,

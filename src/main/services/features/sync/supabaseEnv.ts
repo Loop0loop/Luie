@@ -1,5 +1,5 @@
-import type { RuntimeSupabaseConfig } from "../../../shared/types/index.js";
-import { settingsManager } from "../../manager/settingsManager.js";
+import type { RuntimeSupabaseConfig } from "../../../../shared/types/index.js";
+import { settingsManager } from "../../../manager/settingsManager.js";
 import {
   isHttpUrl,
   normalizeRuntimeSupabaseConfigInput,

@@ -1,18 +1,18 @@
 import "dotenv/config";
-import { createLogger } from "../../../shared/logger/index.js";
-import { AUTO_EXTRACT_DEBOUNCE_MS } from "../../../shared/constants/index.js";
-import { db } from "../../database/index.js";
-import { keywordExtractor } from "../../core/keywordExtractor.js";
-import { characterService } from "../world/characterService.js";
-import { termService } from "../world/termService.js";
-import { invokeGeminiProxy } from "./analysis/geminiApiKeyResolver.js";
-import { buildDeterministicGeminiResult } from "./analysis/localFallbackAnalyzer.js";
+import { createLogger } from "../../../../shared/logger/index.js";
+import { AUTO_EXTRACT_DEBOUNCE_MS } from "../../../../shared/constants/index.js";
+import { db } from "../../../database/index.js";
+import { keywordExtractor } from "../../../core/keywordExtractor.js";
+import { characterService } from "../../world/characterService.js";
+import { termService } from "../../world/termService.js";
+import { invokeGeminiProxy } from "../analysis/geminiApiKeyResolver.js";
+import { buildDeterministicGeminiResult } from "../analysis/localFallbackAnalyzer.js";
 import {
   FEW_SHOT_EXAMPLES,
   GEMINI_RESPONSE_SCHEMA,
   GeminiResultSchema,
   type GeminiResult,
-} from "./autoExtract/autoExtractPrompt.js";
+} from "./autoExtractPrompt.js";
 
 const logger = createLogger("AutoExtractService");
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";

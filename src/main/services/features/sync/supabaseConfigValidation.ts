@@ -1,4 +1,4 @@
-import type { RuntimeSupabaseConfig } from "../../../shared/types/index.js";
+import type { RuntimeSupabaseConfig } from "../../../../shared/types/index.js";
 
 export const trimAndUnquote = (value: unknown): string | null => {
   if (typeof value !== "string") return null;
