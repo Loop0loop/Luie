@@ -1,6 +1,8 @@
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import type { Project } from "@shared/types";
 import { api } from "@shared/api";
+import { useTranslation } from "react-i18next";
+import { useToast } from "@shared/ui/ToastContext";
 import { useProjectSelector } from "../hooks/useProjectSelector";
 import { ProjectCategorySidebar } from "./project-selector/ProjectCategorySidebar";
 import { RecentProjectsSection } from "./project-selector/RecentProjectsSection";
@@ -23,6 +25,8 @@ export default function ProjectTemplateSelector({
   onOpenLuieFile,
   onOpenSnapshotBackup,
 }: ProjectTemplateSelectorProps) {
+  const { t } = useTranslation();
+  const { showToast } = useToast();
   const selectorState = useProjectSelector(projects);
   const {
     activeCategory,
@@ -100,12 +104,20 @@ export default function ProjectTemplateSelector({
             toggleMenuByElement={toggleMenuByElement}
             onConnectGoogle={async () => {
               try {
+                // api.sync.connectGoogle handles creating the browser intent
+                // We show a toast directly like useSettingsManager does to give visual feedback
                 const response = await api.sync.connectGoogle();
                 if (response.success && response.data) {
                   selectorState.setSyncStatus(response.data);
+                  showToast(t("settings.sync.toast.connected", "Google 계정 연결이 완료되었습니다."), "success");
+                } else {
+                  api.logger.error("Failed to connect google", response.error);
+                  showToast(t("settings.sync.toast.connectFailed", "연결 실패: ") + " " + String(response.error), "error");
                 }
-              } catch (error) {
-                api.logger.error("Failed to connect google", error);
+              } catch (error: unknown) {
+                const msg = error instanceof Error ? error.message : String(error);
+                api.logger.error("Error during connect google", error);
+                showToast(t("settings.sync.toast.connectFailed", "연결 실패: ") + " " + msg, "error");
               }
             }}
             onDisconnectGoogle={async () => {
