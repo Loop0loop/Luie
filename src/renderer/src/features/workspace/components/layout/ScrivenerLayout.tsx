@@ -91,18 +91,10 @@ export default function ScrivenerLayout({
       ?? sidebarWidths["scrivenerBinder"]
       ?? getSidebarDefaultWidth("scrivenerBinder"),
   );
-  const binderDefaultSize = useMemo(
-    () => toPxSize(binderSavedPxWidth),
-    [isSidebarOpen],
-  );
 
   const inspectorSavedPxWidth = clampSidebarWidth(
     "scrivenerInspector",
     sidebarWidths["scrivenerInspector"] || getSidebarDefaultWidth("scrivenerInspector"),
-  );
-  const inspectorDefaultSize = useMemo(
-    () => toPxSize(inspectorSavedPxWidth),
-    [isInspectorOpen],
   );
 
   useEffect(() => {
@@ -176,7 +168,7 @@ export default function ScrivenerLayout({
             <>
               <Panel
                 id="sidebar"
-                defaultSize={binderDefaultSize}
+                defaultSize={toPxSize(binderSavedPxWidth)}
                 minSize={toPxSize(binderConfig.minPx)}
                 maxSize={toPxSize(binderConfig.maxPx)}
                 className="bg-panel border-r border-border flex flex-col shrink-0 min-w-0"
@@ -269,7 +261,7 @@ export default function ScrivenerLayout({
 
               <Panel
                 id="inspector"
-                defaultSize={inspectorDefaultSize}
+                defaultSize={toPxSize(inspectorSavedPxWidth)}
                 minSize={toPxSize(inspectorConfig.minPx)}
                 maxSize={toPxSize(inspectorConfig.maxPx)}
                 className="bg-panel flex flex-col shrink-0 min-w-0"

@@ -45,7 +45,7 @@ export function TemplateGrid({ activeCategory, onSelectTemplate }: TemplateGridP
 
     return (
         <div className="flex-1 overflow-y-auto p-8 relative z-0">
-            <div className="max-w-350 mx-auto">
+            <div className="w-full max-w-7xl mr-auto">
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-x-6 gap-y-10">
                     {filteredTemplates.map((template) => (
                         <div

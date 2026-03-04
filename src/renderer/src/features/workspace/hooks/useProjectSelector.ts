@@ -1,4 +1,4 @@
-import { useState, useId, useEffect } from "react";
+import { useState, useId, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@shared/api";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
@@ -114,7 +114,7 @@ export function useProjectSelector(projects: Project[]): ProjectSelectorState & 
     const [isRenaming, setIsRenaming] = useState(false);
     const renameFormId = useId();
 
-    const handleRename = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleRename = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
         const projectId = String(formData.get("projectId") ?? "").trim();
@@ -152,14 +152,14 @@ export function useProjectSelector(projects: Project[]): ProjectSelectorState & 
         } finally {
             setIsRenaming(false);
         }
-    };
+    }, [projects, renameDialog.currentTitle, t, updateProject]);
 
     const toTimestamp = (value: unknown): number => {
         const parsed = Date.parse(String(value ?? ""));
         return Number.isFinite(parsed) ? parsed : 0;
     };
 
-    const getProjectSyncBadge = (project: Project): "synced" | "pending" | "localOnly" | "syncError" => {
+    const getProjectSyncBadge = useCallback((project: Project): "synced" | "pending" | "localOnly" | "syncError" => {
         const projectState = syncStatus.projectStateById?.[project.id];
         if (projectState?.state === "error") {
             return "syncError";
@@ -190,9 +190,9 @@ export function useProjectSelector(projects: Project[]): ProjectSelectorState & 
         }
 
         return updatedAt <= lastSyncedAt ? "synced" : "pending";
-    };
+    }, [syncStatus]);
 
-    const handleRepairProjectPath = async (project: Project) => {
+    const handleRepairProjectPath = useCallback(async (project: Project) => {
         try {
             const response = await api.fs.selectFile({
                 title: t("settings.projectTemplate.dialog.repairPathTitle"),
@@ -227,9 +227,9 @@ export function useProjectSelector(projects: Project[]): ProjectSelectorState & 
                 error,
             });
         }
-    };
+    }, [loadProjects, projects, showToast, t, updateProject]);
 
-    const handleDeleteOrRemove = async () => {
+    const handleDeleteOrRemove = useCallback(async () => {
         setLocalProjects((prev) => prev.filter((p) => p.id !== deleteDialog.projectId));
         try {
             if (deleteDialog.mode === "removeMissing") {
@@ -259,9 +259,9 @@ export function useProjectSelector(projects: Project[]): ProjectSelectorState & 
             mode: "delete",
             deleteFile: false,
         }));
-    };
+    }, [deleteDialog.deleteFile, deleteDialog.mode, deleteDialog.projectId, deleteProjectWithOptions, loadProjects, projects]);
 
-    const handleSelectTemplate = async (
+    const handleSelectTemplate = useCallback(async (
         templateId: string,
         onSelectProject: (templateId: string, projectPath: string) => void
     ) => {
@@ -281,7 +281,7 @@ export function useProjectSelector(projects: Project[]): ProjectSelectorState & 
         } catch (error) {
             api.logger.error("Failed to select directory", error);
         }
-    };
+    }, [t]);
 
     return {
         activeCategory,

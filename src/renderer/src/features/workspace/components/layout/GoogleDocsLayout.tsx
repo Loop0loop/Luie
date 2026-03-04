@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { type Editor as TiptapEditor } from "@tiptap/react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import WindowBar from '@renderer/features/workspace/components/WindowBar';
@@ -19,7 +19,6 @@ import ResearchPanel from "@renderer/features/research/components/ResearchPanel"
 import WorldPanel from "@renderer/features/research/components/WorldPanel";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import {
-  ensureDocsPanelVisible,
   openDocsRightTab,
 } from "@renderer/features/workspace/services/docsPanelService";
 import {
@@ -134,13 +133,6 @@ export default function GoogleDocsLayout({
     }))
   );
 
-  /* Keep docs side panel opening behavior centralized */
-  useEffect(() => {
-    if (activeRightTab) {
-      ensureDocsPanelVisible();
-    }
-  }, [activeRightTab]);
-
   const handleRightTabClick = useCallback((tab: "character" | "world" | "event" | "faction" | "scrap" | "analysis" | "snapshot" | "trash" | "editor" | "export") => {
     if (activeRightTab === tab) {
       closeRightPanel();
@@ -173,10 +165,6 @@ export default function GoogleDocsLayout({
     ?? sidebarWidths["docsBinder"]
     ?? getSidebarDefaultWidth("docsBinder"),
   );
-  const leftPanelDefaultSize = useMemo(
-    () => toPxSize(leftSavedPxWidth),
-    [isSidebarOpen],
-  );
 
   const rightSavedPxWidth = activeRightTab
     ? clampSidebarWidth(
@@ -186,14 +174,6 @@ export default function GoogleDocsLayout({
       ?? getSidebarDefaultWidth(DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab]),
     )
     : regions.rightPanel.widthByTab.character;
-
-  const rightPanelMountKey = activeRightTab
-    ? `right-context-panel-${activeRightTab}`
-    : null;
-  const rightPanelDefaultSize = useMemo(
-    () => toPxSize(rightSavedPxWidth),
-    [rightPanelMountKey],
-  );
 
   const rightWidthConfig = getSidebarWidthConfig(
     activeRightTab ? DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab] : "docsCharacter",
@@ -301,7 +281,7 @@ export default function GoogleDocsLayout({
             <>
               <Panel
                 id="left-sidebar"
-                defaultSize={leftPanelDefaultSize}
+                defaultSize={toPxSize(leftSavedPxWidth)}
                 minSize={toPxSize(docsBinderConfig.minPx)}
                 maxSize={toPxSize(docsBinderConfig.maxPx)}
                 className="bg-background border-r border-border overflow-hidden flex flex-col shrink-0 min-w-0"
@@ -360,7 +340,7 @@ export default function GoogleDocsLayout({
               <Panel
                 key={`right-context-panel-${activeRightTab}`}
                 id={`right-context-panel-${activeRightTab}`}
-                defaultSize={rightPanelDefaultSize}
+                defaultSize={toPxSize(rightSavedPxWidth)}
                 minSize={toPxSize(rightWidthConfig.minPx)}
                 maxSize={toPxSize(rightWidthConfig.maxPx)}
                 onMouseDownCapture={() => {

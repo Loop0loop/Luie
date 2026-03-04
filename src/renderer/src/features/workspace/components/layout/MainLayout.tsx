@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo } from 'react';
+import { type ReactNode } from 'react';
 import WindowBar from '@renderer/features/workspace/components/WindowBar';
 import { PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
@@ -60,18 +60,10 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
       sidebarWidths["mainSidebar"] ??
       getSidebarDefaultWidth("mainSidebar"),
   );
-  const sidebarDefaultSize = useMemo(
-    () => toPxSize(sidebarWidth),
-    [isSidebarOpen],
-  );
 
   const contextWidth = clampSidebarWidth(
     "mainContext",
     sidebarWidths["mainContext"] || getSidebarDefaultWidth("mainContext"),
-  );
-  const contextDefaultSize = useMemo(
-    () => toPxSize(contextWidth),
-    [isContextOpen],
   );
 
   return (
@@ -88,7 +80,7 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
         {isSidebarOpen && (
           <Panel
             id="sidebar-panel"
-            defaultSize={sidebarDefaultSize}
+            defaultSize={toPxSize(sidebarWidth)}
             minSize={toPxSize(mainSidebarConfig.minPx)}
             maxSize={toPxSize(mainSidebarConfig.maxPx)}
             className="bg-sidebar border-r border-border overflow-hidden flex flex-col z-10"
@@ -151,7 +143,7 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
         {isContextOpen && (
           <Panel
             id="context-panel"
-            defaultSize={contextDefaultSize}
+            defaultSize={toPxSize(contextWidth)}
             minSize={toPxSize(mainContextConfig.minPx)}
             maxSize={toPxSize(mainContextConfig.maxPx)}
             className="bg-panel border-l border-border overflow-hidden flex flex-col z-10"

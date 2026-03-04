@@ -1,25 +1,31 @@
 import { useTranslation } from "react-i18next";
-import { MoreVertical } from "lucide-react";
-import type { Project } from "@shared/types";
+import { MoreVertical, LogOut, CheckCircle2 } from "lucide-react";
+import type { Project, SyncStatus } from "@shared/types";
 import { api } from "@shared/api";
 import { useToast } from "@shared/ui/ToastContext";
 
 interface RecentProjectsSectionProps {
     localProjects: Project[];
+    syncStatus: SyncStatus;
     getProjectSyncBadge: (project: Project) => "synced" | "pending" | "localOnly" | "syncError";
     onOpenProject?: (project: Project) => void;
     onOpenLuieFile?: () => void;
     onOpenSnapshotBackup?: () => void;
     toggleMenuByElement: (id: string, element: HTMLElement) => void;
+    onConnectGoogle?: () => void;
+    onDisconnectGoogle?: () => void;
 }
 
 export function RecentProjectsSection({
     localProjects,
+    syncStatus,
     getProjectSyncBadge,
     onOpenProject,
     onOpenLuieFile,
     onOpenSnapshotBackup,
     toggleMenuByElement,
+    onConnectGoogle,
+    onDisconnectGoogle,
 }: RecentProjectsSectionProps) {
     const { t } = useTranslation();
     const { showToast } = useToast();
@@ -45,6 +51,35 @@ export function RecentProjectsSection({
                     >
                         {t("settings.projectTemplate.actions.restoreSnapshot")}
                     </button>
+
+                    <div className="w-px h-4 bg-border mx-2"></div>
+
+                    {syncStatus.connected ? (
+                        <div className="flex items-center gap-3 pl-1">
+                            <div className="flex items-center gap-1.5 opacity-80">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                <span className="text-xs font-medium text-fg truncate max-w-[120px]" title={syncStatus.email}>
+                                    {syncStatus.email}
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                className="px-3 py-1.5 text-xs rounded-md bg-surface border border-border text-fg hover:bg-red-500/10 hover:text-red-400 transition-colors flex items-center gap-1.5 leading-none"
+                                onClick={() => onDisconnectGoogle?.()}
+                            >
+                                <LogOut className="w-3 h-3" />
+                                {t("settings.sync.actions.disconnectGoogle", "로그아웃")}
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            type="button"
+                            className="px-4 py-1.5 text-xs font-medium rounded-md bg-accent text-white hover:bg-accent-hover transition-colors"
+                            onClick={() => onConnectGoogle?.()}
+                        >
+                            {t("settings.sync.actions.connectGoogle", "Google 연동")}
+                        </button>
+                    )}
                 </div>
             </div>
 

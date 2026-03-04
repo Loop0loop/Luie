@@ -1,5 +1,6 @@
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import type { Project } from "@shared/types";
+import { api } from "@shared/api";
 import { useProjectSelector } from "../hooks/useProjectSelector";
 import { ProjectCategorySidebar } from "./project-selector/ProjectCategorySidebar";
 import { RecentProjectsSection } from "./project-selector/RecentProjectsSection";
@@ -91,11 +92,26 @@ export default function ProjectTemplateSelector({
         <div className="flex-1 p-12 overflow-y-auto bg-app min-w-0">
           <RecentProjectsSection
             localProjects={localProjects}
+            syncStatus={selectorState.syncStatus}
             getProjectSyncBadge={selectorState.getProjectSyncBadge}
             onOpenProject={onOpenProject}
             onOpenLuieFile={onOpenLuieFile}
             onOpenSnapshotBackup={onOpenSnapshotBackup}
             toggleMenuByElement={toggleMenuByElement}
+            onConnectGoogle={async () => {
+              try {
+                await api.sync.connectGoogle();
+              } catch (error) {
+                api.logger.error("Failed to connect google", error);
+              }
+            }}
+            onDisconnectGoogle={async () => {
+              try {
+                await api.sync.disconnect();
+              } catch (error) {
+                api.logger.error("Failed to disconnect google", error);
+              }
+            }}
           />
           <TemplateGrid
             activeCategory={activeCategory}
