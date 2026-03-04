@@ -173,6 +173,10 @@ export default function GoogleDocsLayout({
     ?? sidebarWidths["docsBinder"]
     ?? getSidebarDefaultWidth("docsBinder"),
   );
+  const leftPanelDefaultSize = useMemo(
+    () => toPxSize(leftSavedPxWidth),
+    [isSidebarOpen],
+  );
 
   const rightSavedPxWidth = activeRightTab
     ? clampSidebarWidth(
@@ -182,6 +186,14 @@ export default function GoogleDocsLayout({
       ?? getSidebarDefaultWidth(DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab]),
     )
     : regions.rightPanel.widthByTab.character;
+
+  const rightPanelMountKey = activeRightTab
+    ? `right-context-panel-${activeRightTab}`
+    : null;
+  const rightPanelDefaultSize = useMemo(
+    () => toPxSize(rightSavedPxWidth),
+    [rightPanelMountKey],
+  );
 
   const rightWidthConfig = getSidebarWidthConfig(
     activeRightTab ? DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab] : "docsCharacter",
@@ -289,7 +301,7 @@ export default function GoogleDocsLayout({
             <>
               <Panel
                 id="left-sidebar"
-                defaultSize={toPxSize(leftSavedPxWidth)}
+                defaultSize={leftPanelDefaultSize}
                 minSize={toPxSize(docsBinderConfig.minPx)}
                 maxSize={toPxSize(docsBinderConfig.maxPx)}
                 className="bg-background border-r border-border overflow-hidden flex flex-col shrink-0 min-w-0"
@@ -348,7 +360,7 @@ export default function GoogleDocsLayout({
               <Panel
                 key={`right-context-panel-${activeRightTab}`}
                 id={`right-context-panel-${activeRightTab}`}
-                defaultSize={toPxSize(rightSavedPxWidth)}
+                defaultSize={rightPanelDefaultSize}
                 minSize={toPxSize(rightWidthConfig.minPx)}
                 maxSize={toPxSize(rightWidthConfig.maxPx)}
                 onMouseDownCapture={() => {

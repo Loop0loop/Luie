@@ -29,10 +29,41 @@ export function useLayoutPersist(entries: LayoutPersistEntry[]) {
         new Map<SidebarWidthFeature, { width: number; timestampMs: number }>(),
     );
     const isHandlingLayoutRef = useRef(false);
+    const pendingCommitRef = useRef(new Map<SidebarWidthFeature, number>());
+    const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         entriesRef.current = entries;
     }, [entries]);
+
+    const flushPendingCommits = useCallback(() => {
+        const pendingEntries = Array.from(pendingCommitRef.current.entries());
+        pendingCommitRef.current.clear();
+        for (const [feature, width] of pendingEntries) {
+            setSidebarWidth(feature, width);
+        }
+    }, [setSidebarWidth]);
+
+    const scheduleCommitFlush = useCallback(() => {
+        if (flushTimeoutRef.current !== null) return;
+        flushTimeoutRef.current = setTimeout(() => {
+            flushTimeoutRef.current = null;
+            flushPendingCommits();
+        }, 0);
+    }, [flushPendingCommits]);
+
+    useEffect(
+        () => () => {
+            if (flushTimeoutRef.current !== null) {
+                clearTimeout(flushTimeoutRef.current);
+                flushTimeoutRef.current = null;
+            }
+            if (pendingCommitRef.current.size > 0) {
+                flushPendingCommits();
+            }
+        },
+        [flushPendingCommits],
+    );
 
     return useCallback(
         (layout: Layout) => {
@@ -95,12 +126,13 @@ export function useLayoutPersist(entries: LayoutPersistEntry[]) {
 
                     logger.info(`[useLayoutPersist] Committing width to store`, { feature: entry.feature, clampedPx });
                     lastCommitRef.current.set(entry.feature, { width: clampedPx, timestampMs: nowMs });
-                    setSidebarWidth(entry.feature, clampedPx);
+                    pendingCommitRef.current.set(entry.feature, clampedPx);
                 }
+                scheduleCommitFlush();
             } finally {
                 isHandlingLayoutRef.current = false;
             }
         },
-        [setSidebarWidth],
+        [scheduleCommitFlush],
     );
 }

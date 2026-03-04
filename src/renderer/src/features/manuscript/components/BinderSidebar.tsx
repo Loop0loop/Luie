@@ -135,6 +135,14 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
             || getSidebarDefaultWidth(EDITOR_TAB_WIDTH_FEATURE_MAP[activeRightTab]),
         )
         : getSidebarDefaultWidth("editorCharacter");
+
+    const panelMountKey = activeRightTab
+        ? `binder-sidebar-${activeRightTab}-${hasHydrated ? "hydrated" : "cold"}`
+        : null;
+    const panelDefaultSize = useMemo(
+        () => toPxSize(savedPxWidth),
+        [panelMountKey],
+    );
     const widthConfig = getSidebarWidthConfig(
         activeRightTab ? EDITOR_TAB_WIDTH_FEATURE_MAP[activeRightTab] : "editorCharacter",
     );
@@ -207,9 +215,9 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
             </PanelResizeHandle>
 
             <Panel
-                key={`binder-sidebar-${activeRightTab}-${hasHydrated ? "hydrated" : "cold"}`}
+                key={panelMountKey}
                 id={`binder-sidebar-${activeRightTab}`}
-                defaultSize={toPxSize(savedPxWidth)}
+                defaultSize={panelDefaultSize}
                 minSize={toPxSize(widthConfig.minPx)}
                 maxSize={toPxSize(widthConfig.maxPx)}
                 onResize={handleResize}
