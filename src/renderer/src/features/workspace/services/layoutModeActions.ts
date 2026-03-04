@@ -5,12 +5,16 @@ type SidebarSection = "snapshot" | "trash";
 type LayoutModeActionsOptions = {
   isDocsMode: boolean;
   isSidebarOpen: boolean;
+  isContextOpen: boolean;
   docsRightTab: DocsRightTab;
   activeChapterId?: string | null;
   openDocsRightTab: (tab: Exclude<DocsRightTab, null>) => void;
+  openRightPanelTab?: (tab: Exclude<DocsRightTab, null>) => void;
+  closeRightPanel?: () => void;
+  toggleLeftSidebar?: () => void;
   setDocsRightTab: (tab: DocsRightTab) => void;
   setSidebarOpen: (isOpen: boolean) => void;
-  setContextOpen: (isOpen: boolean) => void; // Keep setContextOpen as it's used
+  setContextOpen: (isOpen: boolean) => void;
   addPanel: (content: { type: "editor" | "research" | "export"; id?: string; tab?: ResearchTab }) => void;
   handleSelectResearchItem: (tab: ResearchTab) => void;
   handleOpenExport: () => void;
@@ -31,10 +35,14 @@ const RESEARCH_TAB_TO_DOCS_TAB: Record<
 };
 
 export function createLayoutModeActions(options: LayoutModeActionsOptions) {
+  const openDocsTab = options.openRightPanelTab ?? options.openDocsRightTab;
+  const closeDocsPanel = options.closeRightPanel ?? (() => options.setDocsRightTab(null));
+  const toggleSidebar = options.toggleLeftSidebar ?? (() => options.setSidebarOpen(!options.isSidebarOpen));
+
   return {
     openResearchTab(tab: ResearchTab) {
       if (options.isDocsMode) {
-        options.openDocsRightTab(RESEARCH_TAB_TO_DOCS_TAB[tab]);
+        openDocsTab(RESEARCH_TAB_TO_DOCS_TAB[tab]);
         return;
       }
 
@@ -60,7 +68,7 @@ export function createLayoutModeActions(options: LayoutModeActionsOptions) {
           type: "editor",
           id: options.activeChapterId,
         });
-        options.openDocsRightTab("editor");
+        openDocsTab("editor");
         return;
       }
 
@@ -69,21 +77,16 @@ export function createLayoutModeActions(options: LayoutModeActionsOptions) {
 
     toggleContextPanel() {
       if (!options.isDocsMode) {
-        // The instruction implies isContextOpen is removed, so we can't use it directly.
-        // Assuming the intent is to toggle the context panel state,
-        // but without knowing the current state, we can only open it.
-        // If the original intent was to toggle based on a state, that state needs to be passed in.
-        // For now, we'll just open it if it's not docs mode.
-        options.setContextOpen(true);
+        options.setContextOpen(!options.isContextOpen);
         return;
       }
 
       if (options.docsRightTab) {
-        options.setDocsRightTab(null);
+        closeDocsPanel();
         return;
       }
 
-      options.openDocsRightTab("character");
+      openDocsTab("character");
     },
 
     openContextPanel() {
@@ -92,7 +95,7 @@ export function createLayoutModeActions(options: LayoutModeActionsOptions) {
         return;
       }
 
-      options.openDocsRightTab(options.docsRightTab ?? "character");
+      openDocsTab(options.docsRightTab ?? "character");
     },
 
     closeContextPanel() {
@@ -101,12 +104,12 @@ export function createLayoutModeActions(options: LayoutModeActionsOptions) {
         return;
       }
 
-      options.setDocsRightTab(null);
+      closeDocsPanel();
     },
 
     toggleManuscriptPanel() {
       if (options.isDocsMode) {
-        options.setSidebarOpen(!options.isSidebarOpen);
+        toggleSidebar();
         return;
       }
 
@@ -115,7 +118,7 @@ export function createLayoutModeActions(options: LayoutModeActionsOptions) {
 
     openSidebarSection(section: SidebarSection) {
       if (options.isDocsMode) {
-        options.openDocsRightTab(section);
+        openDocsTab(section);
         return;
       }
 

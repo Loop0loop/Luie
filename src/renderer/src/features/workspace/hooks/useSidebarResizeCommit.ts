@@ -21,7 +21,6 @@ export function useSidebarResizeCommit(
   const pendingWidthRef = useRef<number | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastCommittedWidthRef = useRef<number | null>(null);
-  const isSeparatorDraggingRef = useRef(false);
 
   const flushPendingWidth = useCallback(() => {
     if (pendingWidthRef.current === null) return;
@@ -50,9 +49,6 @@ export function useSidebarResizeCommit(
 
   const onResize = useCallback(
     (panelSize: PanelSize) => {
-      // Ignore passive resizes (layout reflow, mode switch, viewport changes).
-      // Persist only when the user is actively dragging a resize separator.
-      if (!isSeparatorDraggingRef.current) return;
       pendingWidthRef.current = clampSidebarWidth(
         feature,
         Math.round(panelSize.inPixels),
@@ -69,54 +65,6 @@ export function useSidebarResizeCommit(
     }
     flushPendingWidth();
   }, [flushPendingWidth]);
-
-  useEffect(() => {
-    const isSeparatorTarget = (target: EventTarget | null): boolean => {
-      if (!(target instanceof Element)) return false;
-      // Walk up to 5 levels to handle nested hit-area divs inside Separator
-      let el: Element | null = target;
-      for (let i = 0; i < 5; i++) {
-        if (!el) break;
-        const elFeature = el.getAttribute("data-separator-feature");
-
-        // If the separator has a feature tag, it must match this hook's feature
-        if (elFeature) {
-          if (elFeature === feature) return true;
-        } else if (
-          el.hasAttribute("data-separator") ||
-          el.getAttribute("role") === "separator"
-        ) {
-          // Fallback for separators without a feature tag (legacy compatibility)
-          return true;
-        }
-        el = el.parentElement;
-      }
-      return false;
-    };
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!isSeparatorTarget(event.target)) return;
-      isSeparatorDraggingRef.current = true;
-    };
-
-    const handlePointerEnd = () => {
-      if (!isSeparatorDraggingRef.current) return;
-      isSeparatorDraggingRef.current = false;
-      flushPendingWidth();
-    };
-
-    window.addEventListener("pointerdown", handlePointerDown, true);
-    window.addEventListener("pointerup", handlePointerEnd, true);
-    window.addEventListener("pointercancel", handlePointerEnd, true);
-    window.addEventListener("blur", handlePointerEnd);
-
-    return () => {
-      window.removeEventListener("pointerdown", handlePointerDown, true);
-      window.removeEventListener("pointerup", handlePointerEnd, true);
-      window.removeEventListener("pointercancel", handlePointerEnd, true);
-      window.removeEventListener("blur", handlePointerEnd);
-    };
-  }, [feature, flushPendingWidth]);
 
   return onResize;
 }

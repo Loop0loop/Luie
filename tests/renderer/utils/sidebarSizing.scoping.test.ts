@@ -14,8 +14,8 @@ describe("sidebarSizing scoped width migration", () => {
 
     expect(normalized.docsCharacter).toBe(520);
     expect(normalized.editorCharacter).toBe(520);
-    expect(normalized.docsAnalysis).toBe(560);
-    expect(normalized.editorAnalysis).toBe(560);
+    expect(normalized.docsAnalysis).toBe(610);
+    expect(normalized.editorAnalysis).toBe(610);
     expect(normalized.docsSnapshot).toBe(480);
     expect(normalized.editorSnapshot).toBe(480);
   });
@@ -28,11 +28,11 @@ describe("sidebarSizing scoped width migration", () => {
     });
 
     expect(normalized.docsCharacter).toBe(430);
-    expect(normalized.editorCharacter).toBe(390);
+    expect(normalized.editorCharacter).toBe(400);
   });
 
   it("applies conservative default width for scoped right panels", () => {
-    expect(getSidebarDefaultWidth("docsCharacter")).toBe(420);
-    expect(getSidebarDefaultWidth("editorCharacter")).toBe(420);
+    expect(getSidebarDefaultWidth("docsCharacter")).toBe(600);
+    expect(getSidebarDefaultWidth("editorCharacter")).toBe(600);
   });
 });

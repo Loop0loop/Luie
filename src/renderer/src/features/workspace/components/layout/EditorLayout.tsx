@@ -13,8 +13,9 @@ import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
-import { BinderSidebar } from "@renderer/features/manuscript/components/BinderSidebar";
+import { BinderSidebar, BinderSidebarRail } from "@renderer/features/manuscript/components/BinderSidebar";
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@shared/constants/configs";
+import { toPercentSize } from "@shared/constants/sidebarSizing";
 
 interface EditorLayoutProps {
   children?: ReactNode;
@@ -100,7 +101,7 @@ export default function EditorLayout({
             className="flex w-full h-full flex-1 overflow-hidden relative"
             id="editor-layout"
           >
-            <Panel id="main-editor-view" minSize="80px" className="min-w-0 bg-transparent relative flex flex-col">
+            <Panel id="main-editor-view" minSize={toPercentSize(10)} className="min-w-0 bg-transparent relative flex flex-col">
               <div className="flex-1 h-full overflow-hidden flex flex-col relative">
                 <EditorDropZones />
 
@@ -137,6 +138,8 @@ export default function EditorLayout({
               sidebarTopOffset={sidebarTopOffset}
             />
           </PanelGroup>
+
+          <BinderSidebarRail sidebarTopOffset={sidebarTopOffset} />
         </div>
       </div>
     </div>

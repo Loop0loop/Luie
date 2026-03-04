@@ -29,18 +29,20 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
   const {
     isSidebarOpen,
     isContextOpen,
+    regions,
     sidebarWidths,
     hasHydrated,
-    setSidebarOpen,
-    setContextOpen,
+    toggleLeftSidebar,
+    setRegionOpen,
   } = useUIStore(
     useShallow((state) => ({
-      isSidebarOpen: state.isSidebarOpen,
-      isContextOpen: state.isContextOpen,
+      isSidebarOpen: state.regions.leftSidebar.open,
+      isContextOpen: state.regions.rightPanel.open,
+      regions: state.regions,
       sidebarWidths: state.sidebarWidths,
       hasHydrated: state.hasHydrated,
-      setSidebarOpen: state.setSidebarOpen,
-      setContextOpen: state.setContextOpen,
+      toggleLeftSidebar: state.toggleLeftSidebar,
+      setRegionOpen: state.setRegionOpen,
     }))
   );
 
@@ -54,7 +56,9 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
 
   const sidebarWidth = clampSidebarWidth(
     "mainSidebar",
-    sidebarWidths["mainSidebar"] || getSidebarDefaultWidth("mainSidebar"),
+    regions.leftSidebar.widthPx ??
+      sidebarWidths["mainSidebar"] ??
+      getSidebarDefaultWidth("mainSidebar"),
   );
 
   const contextWidth = clampSidebarWidth(
@@ -95,7 +99,7 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
           <div className="flex items-center px-4 py-2 h-12 shrink-0">
             <button
               className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-all hover:bg-active hover:text-fg"
-              onClick={() => setSidebarOpen(!isSidebarOpen)}
+              onClick={toggleLeftSidebar}
               title={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
             >
               {isSidebarOpen ? (
@@ -109,7 +113,7 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
 
             <button
               className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-all hover:bg-active hover:text-fg"
-              onClick={() => setContextOpen(!isContextOpen)}
+              onClick={() => setRegionOpen("rightPanel", !isContextOpen)}
               title={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
             >
               {isContextOpen ? (

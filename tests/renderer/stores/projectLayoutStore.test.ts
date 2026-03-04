@@ -59,10 +59,10 @@ beforeEach(() => {
 });
 
 describe("projectLayoutStore", () => {
-  it("sanitizes docs tabs to exclude snapshot/trash", () => {
+  it("sanitizes docs tabs and keeps supported values", () => {
     expect(projectLayoutModule.sanitizePersistedDocsRightTab("character")).toBe("character");
-    expect(projectLayoutModule.sanitizePersistedDocsRightTab("snapshot")).toBeNull();
-    expect(projectLayoutModule.sanitizePersistedDocsRightTab("trash")).toBeNull();
+    expect(projectLayoutModule.sanitizePersistedDocsRightTab("snapshot")).toBe("snapshot");
+    expect(projectLayoutModule.sanitizePersistedDocsRightTab("trash")).toBe("trash");
     expect(projectLayoutModule.sanitizePersistedDocsRightTab(null)).toBeNull();
   });
 
@@ -94,7 +94,7 @@ describe("projectLayoutStore", () => {
     expect(b.docs.sidebarOpen).toBe(false);
   });
 
-  it("coerces unsafe docs tab values to null on write", () => {
+  it("persists snapshot docs tab on write", () => {
     const store = projectLayoutModule.useProjectLayoutStore.getState();
 
     store.upsertProjectLayout("project-a", {
@@ -106,6 +106,6 @@ describe("projectLayoutStore", () => {
     });
 
     const saved = projectLayoutModule.useProjectLayoutStore.getState().getProjectLayout("project-a");
-    expect(saved.docs.rightTab).toBeNull();
+    expect(saved.docs.rightTab).toBe("snapshot");
   });
 });

@@ -10,6 +10,8 @@ import {
 import type { Snapshot } from "@shared/types";
 import {
   buildDefaultSidebarWidths,
+  getSidebarDefaultWidth,
+  getSynchronizedSidebarWidthFeatures,
   normalizeSidebarWidthsWithMigrations,
   normalizeSidebarWidthInput,
   type SidebarWidthFeature,
@@ -31,6 +33,31 @@ export type DocsRightTab =
   | "editor"
   | "export"
   | null;
+
+export type RightPanelTab = Exclude<DocsRightTab, null>;
+
+export type RegionId = "leftSidebar" | "rightPanel" | "rightRail";
+
+export interface LeftSidebarRegionState {
+  open: boolean;
+  widthPx: number;
+}
+
+export interface RightPanelRegionState {
+  open: boolean;
+  activeTab: RightPanelTab | null;
+  widthByTab: Record<RightPanelTab, number>;
+}
+
+export interface RightRailRegionState {
+  open: boolean;
+}
+
+export interface UIRegionsState {
+  leftSidebar: LeftSidebarRegionState;
+  rightPanel: RightPanelRegionState;
+  rightRail: RightRailRegionState;
+}
 
 interface RightPanelContent {
   type: "research" | "editor" | "snapshot" | "export";
@@ -54,6 +81,202 @@ const DEFAULT_SIDEBAR_WIDTHS: Record<string, number> = buildDefaultSidebarWidths
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
+const RIGHT_PANEL_TABS = [
+  "character",
+  "event",
+  "faction",
+  "world",
+  "scrap",
+  "analysis",
+  "snapshot",
+  "trash",
+  "editor",
+  "export",
+] as const satisfies readonly RightPanelTab[];
+
+const RIGHT_PANEL_TAB_FEATURE_MAP: Record<RightPanelTab, SidebarWidthFeature> = {
+  character: "docsCharacter",
+  event: "docsEvent",
+  faction: "docsFaction",
+  world: "docsWorld",
+  scrap: "docsScrap",
+  analysis: "docsAnalysis",
+  snapshot: "docsSnapshot",
+  trash: "docsTrash",
+  editor: "docsEditor",
+  export: "docsExport",
+};
+
+const getRightPanelTabByFeature = (feature: string): RightPanelTab | null => {
+  switch (feature) {
+    case "docsCharacter":
+    case "editorCharacter":
+    case "character":
+      return "character";
+    case "docsEvent":
+    case "event":
+      return "event";
+    case "docsFaction":
+    case "faction":
+      return "faction";
+    case "docsWorld":
+    case "editorWorld":
+    case "world":
+      return "world";
+    case "docsScrap":
+    case "editorScrap":
+    case "scrap":
+      return "scrap";
+    case "docsAnalysis":
+    case "editorAnalysis":
+    case "analysis":
+      return "analysis";
+    case "docsSnapshot":
+    case "editorSnapshot":
+    case "snapshot":
+      return "snapshot";
+    case "docsTrash":
+    case "editorTrash":
+    case "trash":
+      return "trash";
+    case "docsEditor":
+    case "editor":
+      return "editor";
+    case "docsExport":
+    case "export":
+      return "export";
+    default:
+      return null;
+  }
+};
+
+const buildDefaultRightPanelWidths = (): Record<RightPanelTab, number> =>
+  Object.fromEntries(
+    RIGHT_PANEL_TABS.map((tab) => [
+      tab,
+      getSidebarDefaultWidth(RIGHT_PANEL_TAB_FEATURE_MAP[tab]),
+    ]),
+  ) as Record<RightPanelTab, number>;
+
+const normalizeRightPanelTab = (value: unknown): RightPanelTab | null => {
+  if (typeof value !== "string") return null;
+  return RIGHT_PANEL_TABS.includes(value as RightPanelTab)
+    ? (value as RightPanelTab)
+    : null;
+};
+
+const buildRegionsFromLegacyState = (legacy: {
+  isSidebarOpen?: boolean;
+  isContextOpen?: boolean;
+  docsRightTab?: DocsRightTab;
+  isBinderBarOpen?: boolean;
+  scrivenerSidebarOpen?: boolean;
+  scrivenerInspectorOpen?: boolean;
+  sidebarWidths?: Record<string, number>;
+  regions?: unknown;
+}): UIRegionsState => {
+  const normalizedSidebarWidths = normalizeSidebarWidthsWithMigrations(legacy.sidebarWidths);
+  const defaultRightPanelWidths = buildDefaultRightPanelWidths();
+  const fallbackActiveTab = normalizeRightPanelTab(legacy.docsRightTab);
+  const persistedRegions = isRecord(legacy.regions) ? legacy.regions : null;
+  const persistedLeft = persistedRegions && isRecord(persistedRegions.leftSidebar)
+    ? persistedRegions.leftSidebar
+    : null;
+  const persistedRightPanel = persistedRegions && isRecord(persistedRegions.rightPanel)
+    ? persistedRegions.rightPanel
+    : null;
+  const persistedRightRail = persistedRegions && isRecord(persistedRegions.rightRail)
+    ? persistedRegions.rightRail
+    : null;
+  const persistedWidthByTab = persistedRightPanel && isRecord(persistedRightPanel.widthByTab)
+    ? persistedRightPanel.widthByTab
+    : null;
+
+  const widthByTab = { ...defaultRightPanelWidths };
+  RIGHT_PANEL_TABS.forEach((tab) => {
+    const persistedWidth = persistedWidthByTab ? persistedWidthByTab[tab] : undefined;
+    const normalizedPersistedWidth = normalizeSidebarWidthInput(
+      RIGHT_PANEL_TAB_FEATURE_MAP[tab],
+      persistedWidth,
+    );
+    if (normalizedPersistedWidth !== null) {
+      widthByTab[tab] = normalizedPersistedWidth;
+      return;
+    }
+    const legacyWidth = normalizeSidebarWidthInput(
+      RIGHT_PANEL_TAB_FEATURE_MAP[tab],
+      normalizedSidebarWidths[RIGHT_PANEL_TAB_FEATURE_MAP[tab]],
+    );
+    if (legacyWidth !== null) {
+      widthByTab[tab] = legacyWidth;
+    }
+  });
+
+  const legacyLeftWidth = normalizeSidebarWidthInput(
+    "mainSidebar",
+    normalizedSidebarWidths.mainSidebar,
+  );
+  const leftWidthFromRegions = normalizeSidebarWidthInput(
+    "mainSidebar",
+    persistedLeft?.widthPx,
+  );
+  const leftSidebarWidthPx =
+    leftWidthFromRegions ??
+    legacyLeftWidth ??
+    getSidebarDefaultWidth("mainSidebar");
+
+  const activeTabFromRegions = normalizeRightPanelTab(
+    persistedRightPanel?.activeTab,
+  );
+  const activeTab = activeTabFromRegions ?? fallbackActiveTab;
+
+  const leftOpenFromRegions =
+    typeof persistedLeft?.open === "boolean"
+      ? persistedLeft.open
+      : undefined;
+  const rightOpenFromRegions =
+    typeof persistedRightPanel?.open === "boolean"
+      ? persistedRightPanel.open
+      : undefined;
+  const rightRailOpenFromRegions =
+    typeof persistedRightRail?.open === "boolean"
+      ? persistedRightRail.open
+      : undefined;
+
+  return {
+    leftSidebar: {
+      open:
+        leftOpenFromRegions ??
+        (typeof legacy.isSidebarOpen === "boolean"
+          ? legacy.isSidebarOpen
+          : typeof legacy.scrivenerSidebarOpen === "boolean"
+            ? legacy.scrivenerSidebarOpen
+            : DEFAULT_UI_SIDEBAR_OPEN),
+      widthPx: leftSidebarWidthPx,
+    },
+    rightPanel: {
+      open:
+        rightOpenFromRegions ??
+        (activeTab !== null
+          ? true
+          : typeof legacy.isContextOpen === "boolean"
+            ? legacy.isContextOpen
+            : typeof legacy.scrivenerInspectorOpen === "boolean"
+              ? legacy.scrivenerInspectorOpen
+              : DEFAULT_UI_CONTEXT_OPEN),
+      activeTab,
+      widthByTab,
+    },
+    rightRail: {
+      open:
+        rightRailOpenFromRegions ??
+        (typeof legacy.isBinderBarOpen === "boolean"
+          ? legacy.isBinderBarOpen
+          : true),
+    },
+  };
+};
+
 export type ScrivenerSectionId =
   | "manuscript"
   | "characters"
@@ -75,6 +298,25 @@ const DEFAULT_SCRIVENER_SECTIONS: ScrivenerSectionsState = {
   trash: false,
 };
 
+const DEFAULT_REGIONS: UIRegionsState = buildRegionsFromLegacyState({
+  isSidebarOpen: DEFAULT_UI_SIDEBAR_OPEN,
+  isContextOpen: DEFAULT_UI_CONTEXT_OPEN,
+  docsRightTab: null,
+  isBinderBarOpen: true,
+  scrivenerSidebarOpen: true,
+  scrivenerInspectorOpen: true,
+  sidebarWidths: DEFAULT_SIDEBAR_WIDTHS,
+});
+
+const cloneRegions = (regions: UIRegionsState): UIRegionsState => ({
+  leftSidebar: { ...regions.leftSidebar },
+  rightPanel: {
+    ...regions.rightPanel,
+    widthByTab: { ...regions.rightPanel.widthByTab },
+  },
+  rightRail: { ...regions.rightRail },
+});
+
 interface UIStore {
   view: "template" | "editor" | "corkboard" | "outliner";
   contextTab: ContextTab;
@@ -93,6 +335,7 @@ interface UIStore {
   scrivenerSections: ScrivenerSectionsState;
   hasHydrated: boolean;
   focusedClosableTarget: FocusedClosableTarget | null;
+  regions: UIRegionsState;
 
   // Sidebar Widths (in pixels)
   sidebarWidths: Record<string, number>;
@@ -117,6 +360,12 @@ interface UIStore {
   setScrivenerSectionOpen: (section: ScrivenerSectionId, isOpen: boolean) => void;
   setScrivenerSections: (sections: Partial<ScrivenerSectionsState>) => void;
   setSidebarWidth: (feature: string, width: number) => void;
+  setRegionOpen: (region: RegionId, open: boolean) => void;
+  setRegionWidth: (region: Exclude<RegionId, "rightRail">, width: number) => void;
+  openRightPanelTab: (tab: RightPanelTab) => void;
+  closeRightPanel: () => void;
+  toggleLeftSidebar: () => void;
+  setRightPanelWidth: (tab: RightPanelTab, width: number) => void;
   setHasHydrated: (value: boolean) => void;
   setFocusedClosableTarget: (target: FocusedClosableTarget | null) => void;
   closeFocusedSurface: () => boolean;
@@ -133,17 +382,18 @@ export const useUIStore = create<UIStore>()(
       contextTab: DEFAULT_UI_CONTEXT_TAB as ContextTab,
       worldTab: "terms",
       panels: [],
-      isSidebarOpen: DEFAULT_UI_SIDEBAR_OPEN,
-      isContextOpen: DEFAULT_UI_CONTEXT_OPEN,
+      isSidebarOpen: DEFAULT_REGIONS.leftSidebar.open,
+      isContextOpen: DEFAULT_REGIONS.rightPanel.open,
       isManuscriptMenuOpen: false,
-      docsRightTab: null,
-      isBinderBarOpen: true,
-      scrivenerSidebarOpen: true,
-      scrivenerInspectorOpen: true,
+      docsRightTab: DEFAULT_REGIONS.rightPanel.activeTab,
+      isBinderBarOpen: DEFAULT_REGIONS.rightRail.open,
+      scrivenerSidebarOpen: DEFAULT_REGIONS.leftSidebar.open,
+      scrivenerInspectorOpen: DEFAULT_REGIONS.rightPanel.open,
       scrivenerSections: { ...DEFAULT_SCRIVENER_SECTIONS },
       hasHydrated: false,
       focusedClosableTarget: null,
       sidebarWidths: { ...DEFAULT_SIDEBAR_WIDTHS },
+      regions: cloneRegions(DEFAULT_REGIONS),
 
       mainView: { type: "editor" },
 
@@ -208,11 +458,36 @@ export const useUIStore = create<UIStore>()(
       setPanels: (panels) => set({ panels }),
 
       setSidebarOpen: (isSidebarOpen) =>
-        set((state) =>
-          state.isSidebarOpen === isSidebarOpen ? state : { isSidebarOpen }),
+        set((state) => {
+          const unchanged =
+            state.isSidebarOpen === isSidebarOpen &&
+            state.regions.leftSidebar.open === isSidebarOpen;
+          if (unchanged) return state;
+          return {
+            isSidebarOpen,
+            regions: {
+              ...state.regions,
+              leftSidebar: {
+                ...state.regions.leftSidebar,
+                open: isSidebarOpen,
+              },
+            },
+          };
+        }),
       setContextOpen: (isContextOpen) =>
-        set((state) =>
-          state.isContextOpen === isContextOpen ? state : { isContextOpen }),
+        set((state) => {
+          const unchanged =
+            state.isContextOpen === isContextOpen &&
+            state.regions.rightPanel.open === isContextOpen;
+          if (unchanged) return state;
+          const nextRegions = cloneRegions(state.regions);
+          nextRegions.rightPanel.open = isContextOpen;
+          return {
+            isContextOpen,
+            scrivenerInspectorOpen: isContextOpen,
+            regions: nextRegions,
+          };
+        }),
       setManuscriptMenuOpen: (isManuscriptMenuOpen) =>
         set((state) =>
           state.isManuscriptMenuOpen === isManuscriptMenuOpen
@@ -233,29 +508,82 @@ export const useUIStore = create<UIStore>()(
                 (nextFocusedClosableTarget?.kind === "panel"
                   ? nextFocusedClosableTarget.id
                   : undefined));
-          if (state.docsRightTab === docsRightTab && focusedUnchanged) {
+          const nextRightPanelOpen = docsRightTab !== null;
+          const nextRegions = {
+            ...state.regions,
+            rightPanel: {
+              ...state.regions.rightPanel,
+              open: nextRightPanelOpen,
+              activeTab: docsRightTab,
+            },
+          };
+          if (
+            state.docsRightTab === docsRightTab &&
+            focusedUnchanged &&
+            state.regions.rightPanel.open === nextRightPanelOpen &&
+            state.regions.rightPanel.activeTab === docsRightTab
+          ) {
             return state;
           }
           return {
             docsRightTab,
+            isContextOpen: nextRightPanelOpen,
+            scrivenerInspectorOpen: nextRightPanelOpen,
+            regions: nextRegions,
             focusedClosableTarget: nextFocusedClosableTarget,
           };
         }),
       setBinderBarOpen: (isBinderBarOpen) =>
-        set((state) =>
-          state.isBinderBarOpen === isBinderBarOpen
-            ? state
-            : { isBinderBarOpen }),
+        set((state) => {
+          const unchanged =
+            state.isBinderBarOpen === isBinderBarOpen &&
+            state.regions.rightRail.open === isBinderBarOpen;
+          if (unchanged) return state;
+          return {
+            isBinderBarOpen,
+            regions: {
+              ...state.regions,
+              rightRail: {
+                ...state.regions.rightRail,
+                open: isBinderBarOpen,
+              },
+            },
+          };
+        }),
       setScrivenerSidebarOpen: (scrivenerSidebarOpen) =>
-        set((state) =>
-          state.scrivenerSidebarOpen === scrivenerSidebarOpen
-            ? state
-            : { scrivenerSidebarOpen }),
+        set((state) => {
+          const unchanged =
+            state.scrivenerSidebarOpen === scrivenerSidebarOpen &&
+            state.regions.leftSidebar.open === scrivenerSidebarOpen;
+          if (unchanged) return state;
+          return {
+            scrivenerSidebarOpen,
+            regions: {
+              ...state.regions,
+              leftSidebar: {
+                ...state.regions.leftSidebar,
+                open: scrivenerSidebarOpen,
+              },
+            },
+          };
+        }),
       setScrivenerInspectorOpen: (scrivenerInspectorOpen) =>
-        set((state) =>
-          state.scrivenerInspectorOpen === scrivenerInspectorOpen
-            ? state
-            : { scrivenerInspectorOpen }),
+        set((state) => {
+          const unchanged =
+            state.scrivenerInspectorOpen === scrivenerInspectorOpen &&
+            state.regions.rightPanel.open === scrivenerInspectorOpen;
+          if (unchanged) return state;
+          return {
+            scrivenerInspectorOpen,
+            regions: {
+              ...state.regions,
+              rightPanel: {
+                ...state.regions.rightPanel,
+                open: scrivenerInspectorOpen,
+              },
+            },
+          };
+        }),
       setScrivenerSectionOpen: (section, isOpen) =>
         set((state) => {
           if (state.scrivenerSections[section] === isOpen) return state;
@@ -283,14 +611,179 @@ export const useUIStore = create<UIStore>()(
             : { mainView }),
       setSidebarWidth: (feature, width) =>
         set((state) => {
-          const next = normalizeSidebarWidthInput(feature, width);
-          if (next === null) return state;
-          const prev = normalizeSidebarWidthInput(feature, state.sidebarWidths[feature]);
-          if (prev !== null && Math.abs(prev - next) < 2) return state;
+          const targetFeatures = [
+            feature,
+            ...getSynchronizedSidebarWidthFeatures(feature),
+          ];
+          const uniqueTargetFeatures = Array.from(new Set(targetFeatures));
+          const nextSidebarWidths = { ...state.sidebarWidths };
+          const nextRegions = cloneRegions(state.regions);
+          let didUpdate = false;
+
+          for (const targetFeature of uniqueTargetFeatures) {
+            const next = normalizeSidebarWidthInput(targetFeature, width);
+            if (next === null) continue;
+            const prev = normalizeSidebarWidthInput(
+              targetFeature,
+              state.sidebarWidths[targetFeature],
+            );
+            if (prev !== null && Math.abs(prev - next) < 2) continue;
+            nextSidebarWidths[targetFeature] = next;
+            if (
+              targetFeature === "mainSidebar" ||
+              targetFeature === "docsBinder" ||
+              targetFeature === "scrivenerBinder" ||
+              targetFeature === "binder"
+            ) {
+              nextRegions.leftSidebar.widthPx = next;
+            }
+            const targetTab = getRightPanelTabByFeature(targetFeature);
+            if (targetTab) {
+              nextRegions.rightPanel.widthByTab[targetTab] = next;
+            }
+            didUpdate = true;
+          }
+
+          if (!didUpdate) return state;
           return {
+            sidebarWidths: nextSidebarWidths,
+            regions: nextRegions,
+          };
+        }),
+      setRegionOpen: (region, open) =>
+        set((state) => {
+          if (state.regions[region].open === open) return state;
+          const nextRegions = cloneRegions(state.regions);
+          nextRegions[region].open = open;
+          const patch: Partial<UIStore> = { regions: nextRegions };
+          if (region === "leftSidebar") {
+            patch.isSidebarOpen = open;
+            patch.scrivenerSidebarOpen = open;
+          }
+          if (region === "rightPanel") {
+            patch.isContextOpen = open;
+            patch.scrivenerInspectorOpen = open;
+            patch.docsRightTab = open ? state.docsRightTab : null;
+            if (!open) {
+              patch.focusedClosableTarget =
+                state.focusedClosableTarget?.kind === "docs-tab"
+                  ? null
+                  : state.focusedClosableTarget;
+            }
+          }
+          if (region === "rightRail") {
+            patch.isBinderBarOpen = open;
+          }
+          return patch;
+        }),
+      setRegionWidth: (region, width) =>
+        set((state) => {
+          if (region === "leftSidebar") {
+            const normalized = normalizeSidebarWidthInput("mainSidebar", width);
+            if (normalized === null) return state;
+            const nextRegions = cloneRegions(state.regions);
+            if (Math.abs(nextRegions.leftSidebar.widthPx - normalized) < 2) {
+              return state;
+            }
+            nextRegions.leftSidebar.widthPx = normalized;
+            return {
+              regions: nextRegions,
+              sidebarWidths: {
+                ...state.sidebarWidths,
+                mainSidebar: normalized,
+                docsBinder: normalized,
+                scrivenerBinder: normalized,
+                binder: normalized,
+              },
+            };
+          }
+
+          const activeTab = state.regions.rightPanel.activeTab ?? "character";
+          const targetFeature = RIGHT_PANEL_TAB_FEATURE_MAP[activeTab];
+          const normalized = normalizeSidebarWidthInput(targetFeature, width);
+          if (normalized === null) return state;
+          const nextRegions = cloneRegions(state.regions);
+          if (Math.abs(nextRegions.rightPanel.widthByTab[activeTab] - normalized) < 2) {
+            return state;
+          }
+          nextRegions.rightPanel.widthByTab[activeTab] = normalized;
+          return {
+            regions: nextRegions,
             sidebarWidths: {
               ...state.sidebarWidths,
-              [feature]: next,
+              [targetFeature]: normalized,
+            },
+          };
+        }),
+      openRightPanelTab: (tab) =>
+        set((state) => {
+          const nextTab = normalizeRightPanelTab(tab);
+          if (!nextTab) return state;
+          const isAlreadyOpen =
+            state.regions.rightPanel.open &&
+            state.regions.rightPanel.activeTab === nextTab &&
+            state.docsRightTab === nextTab &&
+            state.regions.rightRail.open &&
+            state.isBinderBarOpen;
+          if (isAlreadyOpen) return state;
+          const nextRegions = cloneRegions(state.regions);
+          nextRegions.rightPanel.open = true;
+          nextRegions.rightPanel.activeTab = nextTab;
+          nextRegions.rightRail.open = true;
+          return {
+            docsRightTab: nextTab,
+            isContextOpen: true,
+            scrivenerInspectorOpen: true,
+            isBinderBarOpen: true,
+            regions: nextRegions,
+            focusedClosableTarget: { kind: "docs-tab" },
+          };
+        }),
+      closeRightPanel: () =>
+        set((state) => {
+          if (!state.regions.rightPanel.open && state.docsRightTab === null) {
+            return state;
+          }
+          const nextRegions = cloneRegions(state.regions);
+          nextRegions.rightPanel.open = false;
+          return {
+            docsRightTab: null,
+            isContextOpen: false,
+            scrivenerInspectorOpen: false,
+            regions: nextRegions,
+            focusedClosableTarget:
+              state.focusedClosableTarget?.kind === "docs-tab"
+                ? null
+                : state.focusedClosableTarget,
+          };
+        }),
+      toggleLeftSidebar: () =>
+        set((state) => {
+          const nextOpen = !state.regions.leftSidebar.open;
+          const nextRegions = cloneRegions(state.regions);
+          nextRegions.leftSidebar.open = nextOpen;
+          return {
+            isSidebarOpen: nextOpen,
+            scrivenerSidebarOpen: nextOpen,
+            regions: nextRegions,
+          };
+        }),
+      setRightPanelWidth: (tab, width) =>
+        set((state) => {
+          const normalizedTab = normalizeRightPanelTab(tab);
+          if (!normalizedTab) return state;
+          const targetFeature = RIGHT_PANEL_TAB_FEATURE_MAP[normalizedTab];
+          const normalizedWidth = normalizeSidebarWidthInput(targetFeature, width);
+          if (normalizedWidth === null) return state;
+          const currentWidth = state.regions.rightPanel.widthByTab[normalizedTab];
+          if (Math.abs(currentWidth - normalizedWidth) < 2) return state;
+          const nextRegions = cloneRegions(state.regions);
+          nextRegions.rightPanel.widthByTab[normalizedTab] = normalizedWidth;
+          return {
+            regions: nextRegions,
+            sidebarWidths: {
+              ...state.sidebarWidths,
+              [targetFeature]: normalizedWidth,
             },
           };
         }),
@@ -334,16 +827,28 @@ export const useUIStore = create<UIStore>()(
 
           if (focusedTarget?.kind === "docs-tab" && state.docsRightTab) {
             handled = true;
+            const nextRegions = cloneRegions(state.regions);
+            nextRegions.rightPanel.open = false;
+            nextRegions.rightPanel.activeTab = null;
             return {
               docsRightTab: null,
+              isContextOpen: false,
+              scrivenerInspectorOpen: false,
+              regions: nextRegions,
               focusedClosableTarget: null,
             };
           }
 
           if (state.docsRightTab) {
             handled = true;
+            const nextRegions = cloneRegions(state.regions);
+            nextRegions.rightPanel.open = false;
+            nextRegions.rightPanel.activeTab = null;
             return {
               docsRightTab: null,
+              isContextOpen: false,
+              scrivenerInspectorOpen: false,
+              regions: nextRegions,
               focusedClosableTarget: null,
             };
           }
@@ -380,6 +885,7 @@ export const useUIStore = create<UIStore>()(
         scrivenerInspectorOpen: state.scrivenerInspectorOpen,
         scrivenerSections: state.scrivenerSections,
         sidebarWidths: normalizeSidebarWidthsWithMigrations(state.sidebarWidths),
+        regions: cloneRegions(state.regions),
       }),
       merge: (persistedState, currentState) => {
         if (!isRecord(persistedState)) {
@@ -387,16 +893,55 @@ export const useUIStore = create<UIStore>()(
         }
 
         const typedPersisted = persistedState as Partial<UIStore>;
+        const normalizedSidebarWidths = normalizeSidebarWidthsWithMigrations(
+          typedPersisted.sidebarWidths,
+        );
+        const migratedRegions = buildRegionsFromLegacyState({
+          isSidebarOpen:
+            typeof typedPersisted.isSidebarOpen === "boolean"
+              ? typedPersisted.isSidebarOpen
+              : undefined,
+          isContextOpen:
+            typeof typedPersisted.isContextOpen === "boolean"
+              ? typedPersisted.isContextOpen
+              : undefined,
+          docsRightTab: normalizeRightPanelTab(typedPersisted.docsRightTab),
+          isBinderBarOpen:
+            typeof typedPersisted.isBinderBarOpen === "boolean"
+              ? typedPersisted.isBinderBarOpen
+              : undefined,
+          scrivenerSidebarOpen:
+            typeof typedPersisted.scrivenerSidebarOpen === "boolean"
+              ? typedPersisted.scrivenerSidebarOpen
+              : undefined,
+          scrivenerInspectorOpen:
+            typeof typedPersisted.scrivenerInspectorOpen === "boolean"
+              ? typedPersisted.scrivenerInspectorOpen
+              : undefined,
+          sidebarWidths: normalizedSidebarWidths,
+          regions: typedPersisted.regions,
+        });
+
+        const docsRightTab =
+          normalizeRightPanelTab(typedPersisted.docsRightTab) ??
+          migratedRegions.rightPanel.activeTab;
         return {
           ...currentState,
           ...typedPersisted,
+          isSidebarOpen: migratedRegions.leftSidebar.open,
+          isContextOpen: migratedRegions.rightPanel.open,
+          docsRightTab,
+          isBinderBarOpen: migratedRegions.rightRail.open,
+          scrivenerSidebarOpen: migratedRegions.leftSidebar.open,
+          scrivenerInspectorOpen: migratedRegions.rightPanel.open,
           scrivenerSections: {
             ...DEFAULT_SCRIVENER_SECTIONS,
             ...(isRecord(typedPersisted.scrivenerSections)
               ? typedPersisted.scrivenerSections as Partial<ScrivenerSectionsState>
               : {}),
           },
-          sidebarWidths: normalizeSidebarWidthsWithMigrations(typedPersisted.sidebarWidths),
+          sidebarWidths: normalizedSidebarWidths,
+          regions: migratedRegions,
         };
       },
       onRehydrateStorage: () => (state) => {

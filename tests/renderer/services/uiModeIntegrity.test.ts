@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   captureUiModeIntegritySnapshot,
   getUiModeIntegrityViolations,
-} from "../../../src/renderer/src/services/uiModeIntegrity.js";
-import type { EditorSettings } from "../../../src/shared/types/index.js";
+} from "../../../src/renderer/src/features/workspace/services/uiModeIntegrity";
+import type { EditorSettings } from "../../../src/shared/types";
 
 const baseEditorSettings: EditorSettings = {
   fontFamily: "sans",
@@ -29,16 +29,9 @@ const baseSnapshot = () =>
       isSplitView: true,
       splitRatio: 0.55,
       splitSide: "right",
-      rightPanelContent: {
-        type: "research",
-        id: "chapter-2",
-        tab: "world",
-      },
       isSidebarOpen: true,
       isContextOpen: true,
       isManuscriptMenuOpen: false,
-      sidebarWidth: 280,
-      contextWidth: 360,
       docsRightTab: "world",
       isBinderBarOpen: true,
     },
@@ -64,19 +57,17 @@ describe("uiMode integrity snapshot", () => {
       ...before,
       uiMode: "editor" as const,
       docsRightTab: "character" as const,
-      contextWidth: 420,
     };
 
     const violations = getUiModeIntegrityViolations(before, after);
     expect(violations).toContain("docsRightTab");
-    expect(violations).toContain("contextWidth");
   });
 
   it("ignores state diffs when mode did not change", () => {
     const before = baseSnapshot();
     const after = {
       ...before,
-      contextWidth: 420,
+      docsRightTab: "character" as const,
     };
 
     const violations = getUiModeIntegrityViolations(before, after);

@@ -47,61 +47,61 @@ export type SidebarWidthConfig = {
   defaultPx: number;
 };
 
-const RIGHT_CONTEXT_WIDTH_CONFIG: SidebarWidthConfig = {
-  minPx: 320,
-  maxPx: 560,
-  defaultPx: 420,
+const PANEL_SIDEBAR_WIDTH_CONFIG: SidebarWidthConfig = {
+  minPx: 150,
+  maxPx: 250,
+  defaultPx: 200,
 };
 
-const RESEARCH_LEFT_WIDTH_CONFIG: SidebarWidthConfig = {
-  minPx: 145,
-  maxPx: 420,
-  defaultPx: 210,
+const PANEL_WIDTH_CONFIG: SidebarWidthConfig = {
+  minPx: 400,
+  maxPx: 1000,
+  defaultPx: 600,
 };
 
 export const SIDEBAR_WIDTH_CONFIG: Record<SidebarWidthFeature, SidebarWidthConfig> = {
-  mainSidebar: { minPx: 210, maxPx: 330, defaultPx: 280 },
-  mainContext: { minPx: 310, maxPx: 610, defaultPx: 310 },
-  docsBinder: { minPx: 300, maxPx: 610, defaultPx: 360 },
-  scrivenerBinder: { minPx: 220, maxPx: 610, defaultPx: 260 },
-  scrivenerInspector: { minPx: 245, maxPx: 610, defaultPx: 350 },
-  docsCharacter: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  docsEvent: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  docsFaction: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  docsWorld: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  docsScrap: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  docsAnalysis: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  docsSnapshot: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  docsTrash: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  docsEditor: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  docsExport: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  editorCharacter: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  editorWorld: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  editorScrap: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  editorAnalysis: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  editorSnapshot: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  editorTrash: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
+  mainSidebar: { ...PANEL_SIDEBAR_WIDTH_CONFIG },
+  mainContext: { ...PANEL_WIDTH_CONFIG },
+  docsBinder: { ...PANEL_SIDEBAR_WIDTH_CONFIG },
+  scrivenerBinder: { ...PANEL_SIDEBAR_WIDTH_CONFIG },
+  scrivenerInspector: { ...PANEL_WIDTH_CONFIG },
+  docsCharacter: { ...PANEL_WIDTH_CONFIG },
+  docsEvent: { ...PANEL_WIDTH_CONFIG },
+  docsFaction: { ...PANEL_WIDTH_CONFIG },
+  docsWorld: { ...PANEL_WIDTH_CONFIG },
+  docsScrap: { ...PANEL_WIDTH_CONFIG },
+  docsAnalysis: { ...PANEL_WIDTH_CONFIG },
+  docsSnapshot: { ...PANEL_WIDTH_CONFIG },
+  docsTrash: { ...PANEL_WIDTH_CONFIG },
+  docsEditor: { ...PANEL_WIDTH_CONFIG },
+  docsExport: { ...PANEL_WIDTH_CONFIG },
+  editorCharacter: { ...PANEL_WIDTH_CONFIG },
+  editorWorld: { ...PANEL_WIDTH_CONFIG },
+  editorScrap: { ...PANEL_WIDTH_CONFIG },
+  editorAnalysis: { ...PANEL_WIDTH_CONFIG },
+  editorSnapshot: { ...PANEL_WIDTH_CONFIG },
+  editorTrash: { ...PANEL_WIDTH_CONFIG },
   // Legacy shared right-panel keys (read only for migration)
-  character: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  event: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  faction: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  world: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  scrap: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  analysis: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  snapshot: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  trash: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  memo: { minPx: 240, maxPx: 620, defaultPx: 350 },
-  editor: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  export: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  characterSidebar: { ...RESEARCH_LEFT_WIDTH_CONFIG },
-  eventSidebar: { ...RESEARCH_LEFT_WIDTH_CONFIG },
-  factionSidebar: { ...RESEARCH_LEFT_WIDTH_CONFIG },
-  memoSidebar: { minPx: 220, maxPx: 560, defaultPx: 320 },
-  worldGraphSidebar: { minPx: 220, maxPx: 640, defaultPx: 320 },
-  worldGraphInspector: { ...RIGHT_CONTEXT_WIDTH_CONFIG },
-  binder: { minPx: 220, maxPx: 630, defaultPx: 280 },
-  context: { minPx: 240, maxPx: 610, defaultPx: 310 },
-  inspector: { minPx: 245, maxPx: 460, defaultPx: 350 },
+  character: { ...PANEL_WIDTH_CONFIG },
+  event: { ...PANEL_WIDTH_CONFIG },
+  faction: { ...PANEL_WIDTH_CONFIG },
+  world: { ...PANEL_WIDTH_CONFIG },
+  scrap: { ...PANEL_WIDTH_CONFIG },
+  analysis: { ...PANEL_WIDTH_CONFIG },
+  snapshot: { ...PANEL_WIDTH_CONFIG },
+  trash: { ...PANEL_WIDTH_CONFIG },
+  memo: { ...PANEL_WIDTH_CONFIG },
+  editor: { ...PANEL_WIDTH_CONFIG },
+  export: { ...PANEL_WIDTH_CONFIG },
+  characterSidebar: { ...PANEL_SIDEBAR_WIDTH_CONFIG },
+  eventSidebar: { ...PANEL_SIDEBAR_WIDTH_CONFIG },
+  factionSidebar: { ...PANEL_SIDEBAR_WIDTH_CONFIG },
+  memoSidebar: { ...PANEL_SIDEBAR_WIDTH_CONFIG },
+  worldGraphSidebar: { ...PANEL_SIDEBAR_WIDTH_CONFIG },
+  worldGraphInspector: { ...PANEL_WIDTH_CONFIG },
+  binder: { ...PANEL_SIDEBAR_WIDTH_CONFIG },
+  context: { ...PANEL_WIDTH_CONFIG },
+  inspector: { ...PANEL_WIDTH_CONFIG },
 };
 
 const FALLBACK_MIN_PX = 120;
@@ -148,6 +148,32 @@ export const buildDefaultSidebarWidths = (): Record<SidebarWidthFeature, number>
       SIDEBAR_WIDTH_CONFIG[feature].defaultPx,
     ]),
   ) as Record<SidebarWidthFeature, number>;
+
+const SIDEBAR_WIDTH_SYNC_GROUPS: SidebarWidthFeature[][] = [
+  ["mainSidebar", "docsBinder", "scrivenerBinder", "binder"],
+  ["mainContext", "scrivenerInspector", "context", "inspector"],
+  ["docsCharacter", "editorCharacter", "character"],
+  ["docsEvent", "event"],
+  ["docsFaction", "faction"],
+  ["docsWorld", "editorWorld", "world"],
+  ["docsScrap", "editorScrap", "scrap"],
+  ["docsAnalysis", "editorAnalysis", "analysis"],
+  ["docsSnapshot", "editorSnapshot", "snapshot"],
+  ["docsTrash", "editorTrash", "trash"],
+  ["docsEditor", "editor"],
+  ["docsExport", "export"],
+];
+
+export const getSynchronizedSidebarWidthFeatures = (
+  feature: string,
+): SidebarWidthFeature[] => {
+  if (!isSidebarWidthFeature(feature)) return [];
+  const group = SIDEBAR_WIDTH_SYNC_GROUPS.find((syncGroup) =>
+    syncGroup.includes(feature),
+  );
+  if (!group) return [];
+  return group.filter((syncFeature) => syncFeature !== feature);
+};
 
 export const normalizeSidebarWidthInput = (
   feature: string,

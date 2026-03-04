@@ -10,6 +10,8 @@ export type PersistedDocsRightTab =
   | "world"
   | "scrap"
   | "analysis"
+  | "snapshot"
+  | "trash"
   | "editor"
   | "export"
   | null;
@@ -21,6 +23,8 @@ const PERSISTABLE_DOCS_TABS = new Set<Exclude<PersistedDocsRightTab, null>>([
   "world",
   "scrap",
   "analysis",
+  "snapshot",
+  "trash",
   "editor",
   "export",
 ]);

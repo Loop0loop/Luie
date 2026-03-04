@@ -1,4 +1,4 @@
-import { useCallback, useEffect, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { type Editor as TiptapEditor } from "@tiptap/react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import WindowBar from '@renderer/features/workspace/components/WindowBar';
@@ -14,7 +14,6 @@ import Editor from "@renderer/features/editor/components/Editor";
 import EditorToolbar from '@renderer/features/editor/components/EditorToolbar';
 import { EditorRuler } from "@renderer/features/editor/components/EditorRuler";
 import StatusFooter from "@shared/ui/StatusFooter";
-import { useState } from 'react';
 
 import ResearchPanel from "@renderer/features/research/components/ResearchPanel";
 import WorldPanel from "@renderer/features/research/components/WorldPanel";
@@ -27,6 +26,7 @@ import {
   clampSidebarWidth,
   getSidebarDefaultWidth,
   getSidebarWidthConfig,
+  toPercentSize,
   toPxSize,
   type SidebarWidthFeature
 } from "@shared/constants/sidebarSizing";
@@ -108,22 +108,26 @@ export default function GoogleDocsLayout({
 
   const {
     isSidebarOpen,
-    docsRightTab: activeRightTab,
+    activeRightTab,
     isBinderBarOpen,
+    regions,
     sidebarWidths,
-    setSidebarOpen,
-    setDocsRightTab: setActiveRightTab,
+    setRegionOpen,
+    closeRightPanel,
     setBinderBarOpen,
     setFocusedClosableTarget,
     hasHydrated,
   } = useUIStore(
     useShallow((state) => ({
-      isSidebarOpen: state.isSidebarOpen,
-      docsRightTab: state.docsRightTab,
-      isBinderBarOpen: state.isBinderBarOpen,
+      isSidebarOpen: state.regions.leftSidebar.open,
+      activeRightTab: state.regions.rightPanel.open
+        ? state.docsRightTab ?? state.regions.rightPanel.activeTab
+        : null,
+      isBinderBarOpen: state.regions.rightRail.open,
+      regions: state.regions,
       sidebarWidths: state.sidebarWidths,
-      setSidebarOpen: state.setSidebarOpen,
-      setDocsRightTab: state.setDocsRightTab,
+      setRegionOpen: state.setRegionOpen,
+      closeRightPanel: state.closeRightPanel,
       setBinderBarOpen: state.setBinderBarOpen,
       setFocusedClosableTarget: state.setFocusedClosableTarget,
       hasHydrated: state.hasHydrated,
@@ -138,42 +142,46 @@ export default function GoogleDocsLayout({
   }, [activeRightTab]);
 
   const handleRightTabClick = useCallback((tab: "character" | "world" | "event" | "faction" | "scrap" | "analysis" | "snapshot" | "trash" | "editor" | "export") => {
-    const nextTab = activeRightTab === tab ? null : tab;
-    if (!nextTab) {
-      setActiveRightTab(null);
+    if (activeRightTab === tab) {
+      closeRightPanel();
       return;
     }
     setFocusedClosableTarget({ kind: "docs-tab" });
-    openDocsRightTab(nextTab);
-  }, [activeRightTab, setActiveRightTab, setFocusedClosableTarget]);
+    openDocsRightTab(tab);
+  }, [activeRightTab, closeRightPanel, setFocusedClosableTarget]);
 
   const docsBinderConfig = getSidebarWidthConfig("docsBinder");
 
-  // Create an array of layout entries for useLayoutPersist
-  const layoutEntries: LayoutPersistEntry[] = [
-    { id: "left-sidebar", feature: "docsBinder" as const }
-  ];
-  if (activeRightTab) {
-    layoutEntries.push({
-      id: `right-context-panel-${activeRightTab}`,
-      feature: DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab] as SidebarWidthFeature
-    });
-  }
+  const layoutEntries = useMemo<LayoutPersistEntry[]>(() => {
+    const entries: LayoutPersistEntry[] = [
+      { id: "left-sidebar", feature: "docsBinder" as const },
+    ];
+    if (activeRightTab) {
+      entries.push({
+        id: `right-context-panel-${activeRightTab}`,
+        feature: DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab] as SidebarWidthFeature,
+      });
+    }
+    return entries;
+  }, [activeRightTab]);
 
   const onLayoutChanged = useLayoutPersist(layoutEntries);
 
   const leftSavedPxWidth = clampSidebarWidth(
     "docsBinder",
-    sidebarWidths["docsBinder"] || getSidebarDefaultWidth("docsBinder"),
+    regions.leftSidebar.widthPx
+    ?? sidebarWidths["docsBinder"]
+    ?? getSidebarDefaultWidth("docsBinder"),
   );
 
   const rightSavedPxWidth = activeRightTab
     ? clampSidebarWidth(
       DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab],
-      sidebarWidths[DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab]]
-      || getSidebarDefaultWidth(DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab]),
+      regions.rightPanel.widthByTab[activeRightTab]
+      ?? sidebarWidths[DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab]]
+      ?? getSidebarDefaultWidth(DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab]),
     )
-    : getSidebarDefaultWidth("docsCharacter");
+    : regions.rightPanel.widthByTab.character;
 
   const rightWidthConfig = getSidebarWidthConfig(
     activeRightTab ? DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab] : "docsCharacter",
@@ -191,7 +199,7 @@ export default function GoogleDocsLayout({
         <div className="flex items-center gap-3 min-w-0">
           {isSidebarOpen && (
             <button
-              onClick={() => setSidebarOpen(false)}
+              onClick={() => setRegionOpen("leftSidebar", false)}
               className="w-10 h-10 rounded-full hover:bg-surface-hover flex items-center justify-center transition-colors text-muted-foreground shrink-0"
               title={t("sidebar.toggle.close")}
             >
@@ -255,6 +263,19 @@ export default function GoogleDocsLayout({
 
       {/* 4. Main Body */}
       <div className="flex-1 flex flex-row overflow-hidden relative">
+        {/* Floating Sidebar Toggle (Visible when closed) */}
+        {!isSidebarOpen && (
+          <div className="absolute left-4 top-4 z-50 pointer-events-auto">
+            <button
+              onClick={() => setRegionOpen("leftSidebar", true)}
+              className="w-10 h-10 bg-background border border-border/50 shadow-md rounded-full flex items-center justify-center hover:bg-surface-hover transition-all text-muted-foreground"
+              title={t("sidebar.toggle.open")}
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+
         <PanelGroup
           key={hasHydrated ? "docs-layout-hydrated" : "docs-layout-cold"}
           orientation="horizontal"
@@ -262,19 +283,6 @@ export default function GoogleDocsLayout({
           id="google-docs-layout"
           onLayoutChanged={onLayoutChanged}
         >
-
-          {/* Floating Sidebar Toggle (Visible when closed) - Placed securely z-50 */}
-          {!isSidebarOpen && (
-            <div className="absolute left-4 top-4 z-50 pointer-events-auto">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="w-10 h-10 bg-background border border-border/50 shadow-md rounded-full flex items-center justify-center hover:bg-surface-hover transition-all text-muted-foreground"
-                title={t("sidebar.toggle.open")}
-              >
-                <Menu className="w-5 h-5" />
-              </button>
-            </div>
-          )}
 
           {/* Left Sidebar (Manuscript Only) */}
           {isSidebarOpen && (
@@ -296,10 +304,10 @@ export default function GoogleDocsLayout({
           )}
 
           {/* Main Content Column (Editor + Footer) */}
-          <Panel id="center-content" minSize="80px" className="flex-1 flex flex-col min-w-0 bg-secondary/30 relative z-0 transition-colors duration-200">
+          <Panel id="center-content" minSize={toPercentSize(10)} className="flex-1 flex flex-col min-w-0 bg-secondary/30 relative z-0 transition-colors duration-200">
             <div className="flex-1 relative flex flex-col overflow-hidden">
               <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative" id="google-docs-split-editor">
-                <Panel id="editor-main-panel" minSize="80px" className="min-w-0 bg-transparent relative flex flex-col">
+                <Panel id="editor-main-panel" minSize={toPercentSize(10)} className="min-w-0 bg-transparent relative flex flex-col">
                   <EditorDropZones />
                   <main className="flex-1 overflow-y-auto flex flex-col items-center relative custom-scrollbar bg-sidebar">
                     <div className="sticky top-0 z-30 pt-4 pb-2 shrink-0 select-none bg-sidebar/95 backdrop-blur-sm flex justify-center w-full">
@@ -351,37 +359,37 @@ export default function GoogleDocsLayout({
                 <div className="h-full flex flex-col">
                   {activeRightTab === "character" && (
                     <div className="h-full">
-                      <ResearchPanel activeTab="character" onClose={() => setActiveRightTab(null)} />
+                      <ResearchPanel activeTab="character" onClose={closeRightPanel} />
                     </div>
                   )}
 
                   {activeRightTab === "world" && (
                     <div className="h-full">
-                      <WorldPanel onClose={() => setActiveRightTab(null)} />
+                      <WorldPanel onClose={closeRightPanel} />
                     </div>
                   )}
 
                   {activeRightTab === "event" && (
                     <div className="h-full">
-                      <ResearchPanel activeTab="event" onClose={() => setActiveRightTab(null)} />
+                      <ResearchPanel activeTab="event" onClose={closeRightPanel} />
                     </div>
                   )}
 
                   {activeRightTab === "faction" && (
                     <div className="h-full">
-                      <ResearchPanel activeTab="faction" onClose={() => setActiveRightTab(null)} />
+                      <ResearchPanel activeTab="faction" onClose={closeRightPanel} />
                     </div>
                   )}
 
                   {activeRightTab === "scrap" && (
                     <div className="h-full">
-                      <ResearchPanel activeTab="scrap" onClose={() => setActiveRightTab(null)} />
+                      <ResearchPanel activeTab="scrap" onClose={closeRightPanel} />
                     </div>
                   )}
 
                   {activeRightTab === "analysis" && (
                     <div className="h-full">
-                      <ResearchPanel activeTab="analysis" onClose={() => setActiveRightTab(null)} />
+                      <ResearchPanel activeTab="analysis" onClose={closeRightPanel} />
                     </div>
                   )}
 

@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { Layout } from "react-resizable-panels";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import type { SidebarWidthFeature } from "@shared/constants/sidebarSizing";
@@ -24,53 +24,83 @@ export interface LayoutPersistEntry {
  */
 export function useLayoutPersist(entries: LayoutPersistEntry[]) {
     const setSidebarWidth = useUIStore((state) => state.setSidebarWidth);
+    const entriesRef = useRef(entries);
+    const lastCommitRef = useRef(
+        new Map<SidebarWidthFeature, { width: number; timestampMs: number }>(),
+    );
+    const isHandlingLayoutRef = useRef(false);
+
+    useEffect(() => {
+        entriesRef.current = entries;
+    }, [entries]);
 
     return useCallback(
         (layout: Layout) => {
+            if (isHandlingLayoutRef.current) {
+                logger.warn(`[useLayoutPersist] Re-entrant onLayoutChanged ignored`);
+                return;
+            }
+            isHandlingLayoutRef.current = true;
             logger.info(`[useLayoutPersist] onLayoutChanged triggered`, { layout });
+            try {
+                const nowMs = Date.now();
+                for (const entry of entriesRef.current) {
+                    // layout map contains panel id -> flexGrow; we only use it as presence signal.
+                    const flexGrow = layout[entry.id];
+                    if (typeof flexGrow !== "number") continue;
 
-            for (const entry of entries) {
-                // layout array contains flexGrow numbers. We don't use them directly
-                // because we want absolute pixels based on the user's screen size.
-                const flexGrow = layout[entry.id];
-                if (typeof flexGrow !== "number") continue;
+                    const el = document.getElementById(String(entry.id));
+                    if (!el) {
+                        logger.warn(`[useLayoutPersist] Panel element not found in DOM`, { entryId: entry.id });
+                        continue;
+                    }
 
-                const el = document.getElementById(String(entry.id));
-                if (!el) {
-                    logger.warn(`[useLayoutPersist] Panel element not found in DOM`, { entryId: entry.id });
-                    continue;
-                }
+                    const renderedWidthPx = el.getBoundingClientRect().width;
+                    if (renderedWidthPx <= 0) {
+                        logger.warn(`[useLayoutPersist] Rendered width <= 0`, { entryId: entry.id, renderedWidthPx });
+                        continue;
+                    }
 
-                const renderedWidthPx = el.getBoundingClientRect().width;
-                if (renderedWidthPx <= 0) {
-                    logger.warn(`[useLayoutPersist] Rendered width <= 0`, { entryId: entry.id, renderedWidthPx });
-                    continue;
-                }
+                    const config = getSidebarWidthConfig(entry.feature);
+                    const clampedPx = clampSidebarWidthForAnyFeature(
+                        entry.feature,
+                        renderedWidthPx,
+                    );
 
-                const config = getSidebarWidthConfig(entry.feature);
-                const clampedPx = clampSidebarWidthForAnyFeature(
-                    entry.feature,
-                    renderedWidthPx,
-                );
+                    logger.info(`[useLayoutPersist] Evaluated width`, {
+                        feature: entry.feature,
+                        rawWidthPx: renderedWidthPx,
+                        clampedPx,
+                        configMin: config.minPx,
+                        configMax: config.maxPx,
+                    });
 
-                logger.info(`[useLayoutPersist] Evaluated width`, {
-                    feature: entry.feature,
-                    rawWidthPx: renderedWidthPx,
-                    clampedPx,
-                    configMin: config.minPx,
-                    configMax: config.maxPx,
-                });
+                    if (clampedPx < config.minPx || clampedPx > config.maxPx) {
+                        logger.warn(`[useLayoutPersist] Skipping commit, out of bounds`, { feature: entry.feature, clampedPx });
+                        continue;
+                    }
 
-                // Only save if within strictly configured bounds 
-                if (clampedPx >= config.minPx && clampedPx <= config.maxPx) {
+                    const previousCommit = lastCommitRef.current.get(entry.feature);
+                    if (
+                        previousCommit &&
+                        Math.abs(previousCommit.width - clampedPx) < 2 &&
+                        nowMs - previousCommit.timestampMs < 600
+                    ) {
+                        logger.debug(`[useLayoutPersist] Skipping deduped commit`, {
+                            feature: entry.feature,
+                            clampedPx,
+                        });
+                        continue;
+                    }
+
                     logger.info(`[useLayoutPersist] Committing width to store`, { feature: entry.feature, clampedPx });
+                    lastCommitRef.current.set(entry.feature, { width: clampedPx, timestampMs: nowMs });
                     setSidebarWidth(entry.feature, clampedPx);
-                } else {
-                    logger.warn(`[useLayoutPersist] Skipping commit, out of bounds`, { feature: entry.feature, clampedPx });
                 }
+            } finally {
+                isHandlingLayoutRef.current = false;
             }
         },
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [setSidebarWidth, ...entries.map((e) => e.id), ...entries.map((e) => e.feature)],
+        [setSidebarWidth],
     );
 }

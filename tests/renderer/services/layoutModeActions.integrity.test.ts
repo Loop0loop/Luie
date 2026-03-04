@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createLayoutModeActions } from "../../../src/renderer/src/services/layoutModeActions.js";
-import type { DocsRightTab } from "../../../src/renderer/src/stores/uiStore.js";
+import { createLayoutModeActions } from "../../../src/renderer/src/features/workspace/services/layoutModeActions";
+import type { DocsRightTab } from "../../../src/renderer/src/features/workspace/stores/uiStore";
 
 type OptionsOverrides = Partial<Parameters<typeof createLayoutModeActions>[0]>;
 
@@ -11,14 +11,15 @@ const createOptions = (overrides: OptionsOverrides = {}) => ({
   docsRightTab: null as DocsRightTab,
   activeChapterId: "chapter-1",
   openDocsRightTab: vi.fn(),
+  openRightPanelTab: vi.fn(),
+  closeRightPanel: vi.fn(),
+  toggleLeftSidebar: vi.fn(),
   setDocsRightTab: vi.fn(),
   setContextOpen: vi.fn(),
   setSidebarOpen: vi.fn(),
-  setSplitSide: vi.fn(),
-  setRightPanelContent: vi.fn(),
+  addPanel: vi.fn(),
   handleSelectResearchItem: vi.fn(),
   handleOpenExport: vi.fn(),
-  handleSplitView: vi.fn(),
   onToggleManuscriptLegacy: vi.fn(),
   onOpenSidebarSectionLegacy: vi.fn(),
   ...overrides,
@@ -29,31 +30,31 @@ describe("layoutModeActions integrity", () => {
     vi.clearAllMocks();
   });
 
-  it("routes research tab action by mode without mixed side-effects", () => {
+  it("routes research action by mode without mixed side-effects", () => {
     const docsOptions = createOptions({ isDocsMode: true });
-    const docsActions = createLayoutModeActions(docsOptions);
-    docsActions.openResearchTab("world", "right");
+    createLayoutModeActions(docsOptions).openResearchTab("world");
 
-    expect(docsOptions.openDocsRightTab).toHaveBeenCalledWith("world");
-    expect(docsOptions.setSplitSide).not.toHaveBeenCalled();
+    expect(docsOptions.openRightPanelTab).toHaveBeenCalledWith("world");
+    expect(docsOptions.addPanel).not.toHaveBeenCalled();
     expect(docsOptions.handleSelectResearchItem).not.toHaveBeenCalled();
 
     const defaultOptions = createOptions({ isDocsMode: false });
-    const defaultActions = createLayoutModeActions(defaultOptions);
-    defaultActions.openResearchTab("world", "left");
+    createLayoutModeActions(defaultOptions).openResearchTab("world");
 
-    expect(defaultOptions.setSplitSide).toHaveBeenCalledWith("left");
-    expect(defaultOptions.handleSelectResearchItem).toHaveBeenCalledWith("world");
-    expect(defaultOptions.openDocsRightTab).not.toHaveBeenCalled();
+    expect(defaultOptions.addPanel).toHaveBeenCalledWith({
+      type: "research",
+      tab: "world",
+    });
+    expect(defaultOptions.openRightPanelTab).not.toHaveBeenCalled();
   });
 
-  it("keeps context panel toggle semantics mode-specific", () => {
+  it("keeps context toggle semantics mode-specific", () => {
     const docsWithTab = createOptions({
       isDocsMode: true,
       docsRightTab: "analysis",
     });
     createLayoutModeActions(docsWithTab).toggleContextPanel();
-    expect(docsWithTab.setDocsRightTab).toHaveBeenCalledWith(null);
+    expect(docsWithTab.closeRightPanel).toHaveBeenCalledTimes(1);
     expect(docsWithTab.setContextOpen).not.toHaveBeenCalled();
 
     const docsWithoutTab = createOptions({
@@ -61,7 +62,7 @@ describe("layoutModeActions integrity", () => {
       docsRightTab: null,
     });
     createLayoutModeActions(docsWithoutTab).toggleContextPanel();
-    expect(docsWithoutTab.openDocsRightTab).toHaveBeenCalledWith("character");
+    expect(docsWithoutTab.openRightPanelTab).toHaveBeenCalledWith("character");
     expect(docsWithoutTab.setContextOpen).not.toHaveBeenCalled();
 
     const defaultMode = createOptions({
@@ -70,34 +71,35 @@ describe("layoutModeActions integrity", () => {
     });
     createLayoutModeActions(defaultMode).toggleContextPanel();
     expect(defaultMode.setContextOpen).toHaveBeenCalledWith(false);
-    expect(defaultMode.setDocsRightTab).not.toHaveBeenCalled();
+    expect(defaultMode.closeRightPanel).not.toHaveBeenCalled();
   });
 
-  it("opens editor in split only when chapter exists and by mode", () => {
+  it("opens editor split only when chapter exists and by mode", () => {
     const noChapter = createOptions({ activeChapterId: null });
-    createLayoutModeActions(noChapter).openEditorInSplit("right");
-    expect(noChapter.setRightPanelContent).not.toHaveBeenCalled();
-    expect(noChapter.handleSplitView).not.toHaveBeenCalled();
+    createLayoutModeActions(noChapter).openEditorInSplit();
+    expect(noChapter.addPanel).not.toHaveBeenCalled();
+    expect(noChapter.openRightPanelTab).not.toHaveBeenCalled();
 
     const docsMode = createOptions({
       isDocsMode: true,
       activeChapterId: "chapter-9",
     });
-    createLayoutModeActions(docsMode).openEditorInSplit("right");
-    expect(docsMode.setRightPanelContent).toHaveBeenCalledWith({
+    createLayoutModeActions(docsMode).openEditorInSplit();
+    expect(docsMode.addPanel).toHaveBeenCalledWith({
       type: "editor",
       id: "chapter-9",
     });
-    expect(docsMode.openDocsRightTab).toHaveBeenCalledWith("editor");
-    expect(docsMode.handleSplitView).not.toHaveBeenCalled();
+    expect(docsMode.openRightPanelTab).toHaveBeenCalledWith("editor");
 
     const defaultMode = createOptions({
       isDocsMode: false,
       activeChapterId: "chapter-9",
     });
-    createLayoutModeActions(defaultMode).openEditorInSplit("left");
-    expect(defaultMode.setSplitSide).toHaveBeenCalledWith("left");
-    expect(defaultMode.handleSplitView).toHaveBeenCalledWith("vertical", "chapter-9");
-    expect(defaultMode.openDocsRightTab).not.toHaveBeenCalled();
+    createLayoutModeActions(defaultMode).openEditorInSplit();
+    expect(defaultMode.addPanel).toHaveBeenCalledWith({
+      type: "editor",
+      id: "chapter-9",
+    });
+    expect(defaultMode.openRightPanelTab).not.toHaveBeenCalled();
   });
 });

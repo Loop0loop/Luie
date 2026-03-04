@@ -39,11 +39,16 @@ const EDITOR_TAB_WIDTH_FEATURE_MAP = {
     trash: "editorTrash",
 } as const;
 
-export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOffset }: BinderSidebarProps) {
+export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOffset: _sidebarTopOffset }: BinderSidebarProps) {
     const { t } = useTranslation();
     const {
         docsRightTab,
-        setDocsRightTab,
+        rightPanelOpen,
+        rightPanelActiveTab,
+        isRightRailOpen,
+        openRightPanelTab,
+        closeRightPanel,
+        setRegionOpen,
         sidebarWidths,
         setSidebarWidth,
         setFocusedClosableTarget,
@@ -51,7 +56,12 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
     } = useUIStore(
         useShallow((state) => ({
             docsRightTab: state.docsRightTab,
-            setDocsRightTab: state.setDocsRightTab,
+            rightPanelOpen: state.regions.rightPanel.open,
+            rightPanelActiveTab: state.regions.rightPanel.activeTab,
+            isRightRailOpen: state.regions.rightRail.open,
+            openRightPanelTab: state.openRightPanelTab,
+            closeRightPanel: state.closeRightPanel,
+            setRegionOpen: state.setRegionOpen,
             sidebarWidths: state.sidebarWidths,
             setSidebarWidth: state.setSidebarWidth,
             setFocusedClosableTarget: state.setFocusedClosableTarget,
@@ -60,16 +70,23 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
     );
 
     const VALID_TABS: BinderTab[] = ["character", "world", "scrap", "analysis", "snapshot", "trash"];
+    const activeTabCandidate = rightPanelOpen
+        ? (docsRightTab ?? rightPanelActiveTab)
+        : null;
     const activeRightTab: BinderTab | null =
-        docsRightTab && VALID_TABS.includes(docsRightTab as BinderTab)
-            ? (docsRightTab as BinderTab)
+        activeTabCandidate && VALID_TABS.includes(activeTabCandidate as BinderTab)
+            ? (activeTabCandidate as BinderTab)
             : null;
 
     const setActiveRightTab = useCallback(
         (tab: BinderTab | null) => {
-            setDocsRightTab(tab);
+            if (tab === null) {
+                closeRightPanel();
+                return;
+            }
+            openRightPanelTab(tab);
         },
-        [setDocsRightTab]
+        [closeRightPanel, openRightPanelTab]
     );
 
     const handleCharacterResize = useSidebarResizeCommit("editorCharacter", setSidebarWidth);
@@ -128,6 +145,13 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
 
     const renderIconBar = () => (
         <div className="w-12 bg-surface border-l border-border flex flex-col items-center py-3 gap-2 shrink-0 z-20 h-full">
+            <button
+                onClick={() => setRegionOpen("rightRail", false)}
+                className="w-8 h-8 mb-1 rounded-full hover:bg-surface-hover text-muted-foreground flex items-center justify-center"
+                title={t("sidebar.toggle.close")}
+            >
+                <ChevronLeft className="w-4 h-4 rotate-180" />
+            </button>
             <BinderTabButton
                 icon={<User className="w-5 h-5" />}
                 isActive={activeRightTab === "character"}
@@ -174,15 +198,7 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
         </div>
     );
 
-    if (!activeRightTab) {
-        return (
-            <FocusHoverSidebar side="right" topOffset={sidebarTopOffset}>
-                <div className="h-full flex flex-row shadow-2xl">
-                    {renderIconBar()}
-                </div>
-            </FocusHoverSidebar>
-        );
-    }
+    if (!activeRightTab) return null;
 
     return (
         <>
@@ -265,14 +281,138 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
                                     <div className="p-4 text-xs text-muted italic text-center">
                                         {t("sidebar.trashEmpty")}
                                     </div>
-                                ))}
+                ))}
                         </Suspense>
                     </div>
                 </div>
 
-                {renderIconBar()}
+                {isRightRailOpen ? (
+                    renderIconBar()
+                ) : (
+                    <div className="w-8 bg-surface border-l border-border flex items-start justify-center py-3 shrink-0">
+                        <button
+                            onClick={() => setRegionOpen("rightRail", true)}
+                            className="w-6 h-6 rounded-md hover:bg-surface-hover text-muted-foreground flex items-center justify-center"
+                            title={t("sidebar.toggle.open")}
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
             </Panel >
         </>
+    );
+}
+
+export function BinderSidebarRail({ sidebarTopOffset }: { sidebarTopOffset: number }) {
+    const { t } = useTranslation();
+    const {
+        docsRightTab,
+        rightPanelOpen,
+        rightPanelActiveTab,
+        isRightRailOpen,
+        openRightPanelTab,
+        setRegionOpen,
+        setFocusedClosableTarget,
+    } = useUIStore(
+        useShallow((state) => ({
+            docsRightTab: state.docsRightTab,
+            rightPanelOpen: state.regions.rightPanel.open,
+            rightPanelActiveTab: state.regions.rightPanel.activeTab,
+            isRightRailOpen: state.regions.rightRail.open,
+            openRightPanelTab: state.openRightPanelTab,
+            setRegionOpen: state.setRegionOpen,
+            setFocusedClosableTarget: state.setFocusedClosableTarget,
+        }))
+    );
+
+    const VALID_TABS: BinderTab[] = ["character", "world", "scrap", "analysis", "snapshot", "trash"];
+    const activeTabCandidate = rightPanelOpen
+        ? (docsRightTab ?? rightPanelActiveTab)
+        : null;
+    const activeRightTab: BinderTab | null =
+        activeTabCandidate && VALID_TABS.includes(activeTabCandidate as BinderTab)
+            ? (activeTabCandidate as BinderTab)
+            : null;
+
+    if (activeRightTab) return null;
+
+    const handleRightTabClick = (tab: BinderTab) => {
+        setFocusedClosableTarget({ kind: "docs-tab" });
+        openRightPanelTab(tab);
+    };
+
+    if (!isRightRailOpen) {
+        return (
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
+                <button
+                    onClick={() => setRegionOpen("rightRail", true)}
+                    className="w-8 h-12 bg-background border border-r-0 border-border shadow-md rounded-l-lg flex items-center justify-center hover:bg-surface-hover transition-colors text-muted-foreground"
+                    title={t("sidebar.toggle.open")}
+                >
+                    <ChevronLeft className="w-5 h-5" />
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <FocusHoverSidebar side="right" topOffset={sidebarTopOffset}>
+            <div className="h-full flex flex-row shadow-2xl">
+                <div className="w-12 bg-surface border-l border-border flex flex-col items-center py-3 gap-2 shrink-0 z-20 h-full">
+                    <button
+                        onClick={() => setRegionOpen("rightRail", false)}
+                        className="w-8 h-8 mb-1 rounded-full hover:bg-surface-hover text-muted-foreground flex items-center justify-center"
+                        title={t("sidebar.toggle.close")}
+                    >
+                        <ChevronLeft className="w-4 h-4 rotate-180" />
+                    </button>
+                    <BinderTabButton
+                        icon={<User className="w-5 h-5" />}
+                        isActive={activeRightTab === "character"}
+                        onClick={() => handleRightTabClick("character")}
+                        title={t("research.title.characters")}
+                        type="character"
+                    />
+                    <BinderTabButton
+                        icon={<Globe className="w-5 h-5" />}
+                        isActive={activeRightTab === "world"}
+                        onClick={() => handleRightTabClick("world")}
+                        title={t("research.title.world")}
+                        type="world"
+                    />
+                    <BinderTabButton
+                        icon={<StickyNote className="w-5 h-5" />}
+                        isActive={activeRightTab === "scrap"}
+                        onClick={() => handleRightTabClick("scrap")}
+                        title={t("research.title.scrap")}
+                        type="memo"
+                    />
+                    <BinderTabButton
+                        icon={<Sparkles className="w-5 h-5" />}
+                        isActive={activeRightTab === "analysis"}
+                        onClick={() => handleRightTabClick("analysis")}
+                        title={t("research.title.analysis")}
+                        type="analysis"
+                    />
+                    <div className="w-6 h-px bg-border/50 my-1" />
+                    <BinderTabButton
+                        icon={<History className="w-5 h-5" />}
+                        isActive={activeRightTab === "snapshot"}
+                        onClick={() => handleRightTabClick("snapshot")}
+                        title={t("sidebar.section.snapshot")}
+                        type="snapshot"
+                    />
+                    <BinderTabButton
+                        icon={<Trash2 className="w-5 h-5" />}
+                        isActive={activeRightTab === "trash"}
+                        onClick={() => handleRightTabClick("trash")}
+                        title={t("sidebar.section.trash")}
+                        type="trash"
+                    />
+                </div>
+            </div>
+        </FocusHoverSidebar>
     );
 }
 

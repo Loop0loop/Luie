@@ -56,22 +56,22 @@ export default function ScrivenerLayout({
   const {
     mainView,
     panels,
+    regions,
     sidebarWidths,
     hasHydrated,
-    scrivenerSidebarOpen: isSidebarOpen,
-    scrivenerInspectorOpen: isInspectorOpen,
-    setScrivenerSidebarOpen: setIsSidebarOpen,
-    setScrivenerInspectorOpen: setIsInspectorOpen,
+    isSidebarOpen,
+    isInspectorOpen,
+    setRegionOpen,
   } = useUIStore(
     useShallow((state) => ({
       mainView: state.mainView,
       panels: state.panels,
+      regions: state.regions,
       sidebarWidths: state.sidebarWidths,
       hasHydrated: state.hasHydrated,
-      scrivenerSidebarOpen: state.scrivenerSidebarOpen,
-      scrivenerInspectorOpen: state.scrivenerInspectorOpen,
-      setScrivenerSidebarOpen: state.setScrivenerSidebarOpen,
-      setScrivenerInspectorOpen: state.setScrivenerInspectorOpen,
+      isSidebarOpen: state.regions.leftSidebar.open,
+      isInspectorOpen: state.regions.rightPanel.open,
+      setRegionOpen: state.setRegionOpen,
     }))
   );
   const editorSplitGroupRef = useRef<GroupImperativeHandle | null>(null);
@@ -87,7 +87,9 @@ export default function ScrivenerLayout({
 
   const binderSavedPxWidth = clampSidebarWidth(
     "scrivenerBinder",
-    sidebarWidths["scrivenerBinder"] || getSidebarDefaultWidth("scrivenerBinder"),
+    regions.leftSidebar.widthPx
+      ?? sidebarWidths["scrivenerBinder"]
+      ?? getSidebarDefaultWidth("scrivenerBinder"),
   );
 
   const inspectorSavedPxWidth = clampSidebarWidth(
@@ -188,7 +190,7 @@ export default function ScrivenerLayout({
                 {/* Floating Sidebar Toggle when closed */}
                 {!isSidebarOpen && (
                   <button
-                    onClick={() => setIsSidebarOpen(true)}
+                    onClick={() => setRegionOpen("leftSidebar", true)}
                     className="p-1 rounded hover:bg-surface-hover text-muted-foreground transition-colors mr-2 shrink-0"
                     title={t("sidebar.toggle.open")}
                   >
@@ -202,7 +204,7 @@ export default function ScrivenerLayout({
               <div className="flex items-center gap-2">
                 {!isInspectorOpen && (
                   <button
-                    onClick={() => setIsInspectorOpen(true)}
+                    onClick={() => setRegionOpen("rightPanel", true)}
                     className="p-1 rounded hover:bg-surface-hover text-muted-foreground transition-colors shrink-0"
                     title={t("scrivener.inspector.open")}
                   >
@@ -268,7 +270,7 @@ export default function ScrivenerLayout({
                 <div className="flex items-center justify-between border-b border-border bg-surface px-2 shadow-sm min-h-[32px] shrink-0">
                   <span className="text-xs font-semibold uppercase tracking-wide text-muted ml-2">{t("scrivener.inspector.title")}</span>
                   <button
-                    onClick={() => setIsInspectorOpen(false)}
+                    onClick={() => setRegionOpen("rightPanel", false)}
                     className="p-1.5 rounded hover:bg-surface-hover text-muted-foreground transition-colors"
                     title={t("scrivener.inspector.close")}
                   >
