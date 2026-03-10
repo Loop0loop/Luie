@@ -7,14 +7,12 @@ import { useUIStore, type ResearchTab, type ContextTab } from "@renderer/feature
 import type { Snapshot } from "@shared/types";
 
 export function useSplitView() {
-  const {
-    panels,
-    contextTab,
-    addPanel,
-    removePanel,
-    setPanels,
-    setContextTab,
-  } = useUIStore();
+  const panels = useUIStore((state) => state.panels);
+  const contextTab = useUIStore((state) => state.contextTab);
+  const addPanel = useUIStore((state) => state.addPanel);
+  const removePanel = useUIStore((state) => state.removePanel);
+  const setPanels = useUIStore((state) => state.setPanels);
+  const setContextTab = useUIStore((state) => state.setContextTab);
 
   const handleSelectResearchItem = useCallback(
     (type: ResearchTab) => {

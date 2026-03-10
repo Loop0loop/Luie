@@ -7,7 +7,9 @@ import { useToast } from "@shared/ui/ToastContext";
 export default function DataRecoveryBanner() {
     const { t } = useTranslation();
     const { showToast } = useToast();
-    const { hasRecovered, recoveryReason, dismissRecovery } = useDataRecoveryStore();
+    const hasRecovered = useDataRecoveryStore((state) => state.hasRecovered);
+    const recoveryReason = useDataRecoveryStore((state) => state.recoveryReason);
+    const dismissRecovery = useDataRecoveryStore((state) => state.dismissRecovery);
 
     const hasShownToastRef = useRef(false);
 

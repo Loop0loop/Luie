@@ -176,7 +176,7 @@ export default function App() {
     uiModeIntegrityRef.current = snapshot;
   });
 
-  const { setView } = useUIStore();
+  const setView = useUIStore((state) => state.setView);
 
   const { handleSelectProject } = useProjectTemplate((_id: string) => { });
 

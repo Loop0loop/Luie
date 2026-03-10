@@ -2,8 +2,15 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useAnalysisStore } from "@renderer/features/research/stores/analysisStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
+import { useShallow } from "zustand/react/shallow";
 import type { AnalysisItem } from "@shared/types/analysis";
-import { PenTool, Sparkles, ArrowRight, Quote, MessageSquare } from "lucide-react";
+import {
+  PenTool,
+  Sparkles,
+  ArrowRight,
+  Quote,
+  MessageSquare,
+} from "lucide-react";
 import { useToast } from "@shared/ui/ToastContext";
 import { Modal } from "@shared/ui/Modal";
 import { useTranslation } from "react-i18next";
@@ -11,8 +18,18 @@ import { api } from "@shared/api";
 
 export default function AnalysisSection() {
   const { t } = useTranslation();
-  const { items: chapters, currentChapter, setCurrent } = useChapterStore();
-  const { currentProject } = useProjectStore();
+  const {
+    items: chapters,
+    currentItem: currentChapter,
+    setCurrent,
+  } = useChapterStore(
+    useShallow((state) => ({
+      items: state.items,
+      currentItem: state.currentItem,
+      setCurrent: state.setCurrent,
+    })),
+  );
+  const currentProject = useProjectStore((state) => state.currentItem);
   const {
     items: analysisItems,
     isAnalyzing,
@@ -20,19 +37,35 @@ export default function AnalysisSection() {
     startAnalysis,
     clearAnalysis,
     addStreamItem,
-    setError
-  } = useAnalysisStore();
+    setError,
+    stopAnalysis,
+  } = useAnalysisStore(
+    useShallow((state) => ({
+      items: state.items,
+      isAnalyzing: state.isAnalyzing,
+      error: state.error,
+      startAnalysis: state.startAnalysis,
+      clearAnalysis: state.clearAnalysis,
+      addStreamItem: state.addStreamItem,
+      setError: state.setError,
+      stopAnalysis: state.stopAnalysis,
+    })),
+  );
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [analyzedChapterId, setAnalyzedChapterId] = useState<string>("");
   const { showToast } = useToast();
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  const isAnalyzingRef = useRef(isAnalyzing);
+
+  useEffect(() => {
+    isAnalyzingRef.current = isAnalyzing;
+  }, [isAnalyzing]);
 
   // Active chapter for analysis - always use currentChapter from editor
   const activeChapterId =
-    currentChapter?.id
-    || (chapters.length > 0 ? chapters[0].id : "");
+    currentChapter?.id || (chapters.length > 0 ? chapters[0].id : "");
 
   // Register streaming listeners
   useEffect(() => {
@@ -57,15 +90,14 @@ export default function AnalysisSection() {
   useEffect(() => {
     return () => {
       const cleanup = async () => {
-        const currentlyAnalyzing = useAnalysisStore.getState().isAnalyzing;
-        if (currentlyAnalyzing) {
-          await useAnalysisStore.getState().stopAnalysis();
+        if (isAnalyzingRef.current) {
+          await stopAnalysis();
         }
         // Don't clear analysis data on every cleanup - only on intentional user action
       };
       void cleanup();
     };
-  }, []);
+  }, [stopAnalysis]);
 
   // Show error toast
   useEffect(() => {
@@ -108,52 +140,67 @@ export default function AnalysisSection() {
     t,
   ]);
 
-  const handleNavigate = useCallback((contextId: string) => {
-    // Navigate to the chapter that was analyzed
-    const targetChapterId = analyzedChapterId || activeChapterId;
-    const targetChapter = chapters.find(c => c.id === targetChapterId);
+  const handleNavigate = useCallback(
+    (contextId: string) => {
+      // Navigate to the chapter that was analyzed
+      const targetChapterId = analyzedChapterId || activeChapterId;
+      const targetChapter = chapters.find((c) => c.id === targetChapterId);
 
-    if (targetChapter) {
-      setCurrent(targetChapter);
-      showToast(t("analysis.toast.navigateChapter", { title: targetChapter.title }), "info");
-    } else {
-      showToast(t("analysis.toast.navigateFallback", { contextId }), "info");
-    }
-  }, [analyzedChapterId, activeChapterId, chapters, setCurrent, showToast, t]);
+      if (targetChapter) {
+        setCurrent(targetChapter);
+        showToast(
+          t("analysis.toast.navigateChapter", { title: targetChapter.title }),
+          "info",
+        );
+      } else {
+        showToast(t("analysis.toast.navigateFallback", { contextId }), "info");
+      }
+    },
+    [analyzedChapterId, activeChapterId, chapters, setCurrent, showToast, t],
+  );
 
   return (
     <div className="flex flex-col h-full w-full bg-bg-panel text-text-primary font-serif selection:bg-accent-bg/20">
-
       {/* 1. Minimal Header */}
       <div className="flex-none px-8 py-6 flex items-center justify-between border-b border-border/40 bg-bg-panel/50 backdrop-blur-sm sticky top-0 z-20">
         <div className="flex items-center gap-2 opacity-60">
           <PenTool className="w-4 h-4" />
-          <span className="text-sm font-medium tracking-widest uppercase">{t("analysis.title")}</span>
+          <span className="text-sm font-medium tracking-widest uppercase">
+            {t("analysis.title")}
+          </span>
         </div>
 
         {/* Chapter Selector (Inline style) */}
         {!isAnalyzing && (
           <div className="flex items-center gap-4 animate-in fade-in duration-500">
             <div className="flex items-center gap-3">
-              <span className="text-sm text-text-secondary hidden sm:inline">{t("analysis.selectChapter")}</span>
+              <span className="text-sm text-text-secondary hidden sm:inline">
+                {t("analysis.selectChapter")}
+              </span>
               <select
                 className="bg-transparent text-sm font-bold border-b border-border hover:border-text-primary cursor-pointer focus:outline-none transition-colors py-1"
                 value={activeChapterId}
                 onChange={(e) => {
-                  const selected = chapters.find(c => c.id === e.target.value);
+                  const selected = chapters.find(
+                    (c) => c.id === e.target.value,
+                  );
                   if (selected) {
                     setCurrent(selected);
                   }
                 }}
               >
-                {chapters.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                {chapters.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div className="flex items-center gap-2">
               {analysisItems.length > 0 && (
                 <button
-                  onClick={() => void useAnalysisStore.getState().clearAnalysis()}
+                  onClick={() => void clearAnalysis()}
                   className="text-xs font-semibold tracking-wide px-3 py-1 rounded-full border border-border text-text-secondary hover:text-text-primary hover:border-text-primary transition-colors"
                 >
                   {t("analysis.actions.reset")}
@@ -174,7 +221,6 @@ export default function AnalysisSection() {
       {/* 2. Content Area (Full Bleed / Editorial Layout) */}
       <div className="flex-1 overflow-y-auto px-6 sm:px-12 md:px-20 py-12 custom-scrollbar">
         <div className="max-w-3xl mx-auto flex flex-col gap-12 min-h-[50vh]">
-
           {/* Empty / Start State */}
           {analysisItems.length === 0 && !isAnalyzing && (
             <div className="flex flex-col items-center justify-center py-20 opacity-60 hover:opacity-100 transition-opacity">
@@ -187,7 +233,9 @@ export default function AnalysisSection() {
                 className="group flex items-center gap-3 px-8 py-4 rounded-full bg-surface hover:bg-surface-hover border border-border shadow-sm hover:shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Sparkles className="w-5 h-5 text-accent animate-pulse" />
-                <span className="text-lg font-medium">{t("analysis.startButton")}</span>
+                <span className="text-lg font-medium">
+                  {t("analysis.startButton")}
+                </span>
                 <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
               </button>
 
@@ -209,7 +257,9 @@ export default function AnalysisSection() {
           {/* Loading State */}
           {isAnalyzing && analysisItems.length === 0 && (
             <div className="flex items-center justify-center py-20 animate-pulse">
-              <span className="text-lg text-text-tertiary italic">{t("analysis.analyzing")}</span>
+              <span className="text-lg text-text-tertiary italic">
+                {t("analysis.analyzing")}
+              </span>
             </div>
           )}
 
@@ -221,16 +271,16 @@ export default function AnalysisSection() {
                 key={item.id}
                 className={`
                         relative group animate-in slide-in-from-bottom-2 fade-in duration-700
-                        ${item.type === 'intro' ? 'text-lg md:text-xl leading-relaxed mb-8 font-medium' : ''}
-                        ${item.type === 'outro' ? 'text-right mt-12 text-text-secondary italic pt-8 border-t border-border/30' : ''}
-                        ${(item.type === 'reaction' || item.type === 'suggestion') ? 'pl-6 md:pl-8 border-l-2 border-transparent hover:border-accent transition-all cursor-pointer rounded-r-xl hover:bg-surface-hover/50 py-4 -my-4 pr-4' : ''}
+                        ${item.type === "intro" ? "text-lg md:text-xl leading-relaxed mb-8 font-medium" : ""}
+                        ${item.type === "outro" ? "text-right mt-12 text-text-secondary italic pt-8 border-t border-border/30" : ""}
+                        ${item.type === "reaction" || item.type === "suggestion" ? "pl-6 md:pl-8 border-l-2 border-transparent hover:border-accent transition-all cursor-pointer rounded-r-xl hover:bg-surface-hover/50 py-4 -my-4 pr-4" : ""}
                     `}
                 onClick={() => item.contextId && handleNavigate(item.contextId)}
               >
                 {/* Icons for Feedback Items */}
-                {(item.type === 'reaction' || item.type === 'suggestion') && (
+                {(item.type === "reaction" || item.type === "suggestion") && (
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-bg-panel border border-border p-1.5 rounded-full shadow-sm z-10">
-                    {item.type === 'reaction' ? (
+                    {item.type === "reaction" ? (
                       <MessageSquare className="w-4 h-4 text-accent" />
                     ) : (
                       <Quote className="w-4 h-4 text-orange-500" />
@@ -239,12 +289,14 @@ export default function AnalysisSection() {
                 )}
 
                 {/* Meta Label */}
-                {(item.type === 'reaction' || item.type === 'suggestion') && (
+                {(item.type === "reaction" || item.type === "suggestion") && (
                   <div className="text-xs font-bold tracking-widest text-text-tertiary mb-2 uppercase opacity-50 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-                    {item.type === 'reaction'
+                    {item.type === "reaction"
                       ? t("analysis.result.reaction")
                       : t("analysis.result.contradiction")}
-                    {item.quote && <span className="w-1 h-1 rounded-full bg-text-tertiary"></span>}
+                    {item.quote && (
+                      <span className="w-1 h-1 rounded-full bg-text-tertiary"></span>
+                    )}
                   </div>
                 )}
 
@@ -256,7 +308,9 @@ export default function AnalysisSection() {
                 )}
 
                 {/* Main Content */}
-                <p className={`whitespace-pre-wrap ${item.type !== 'intro' ? 'text-lg leading-loose text-text-primary' : ''}`}>
+                <p
+                  className={`whitespace-pre-wrap ${item.type !== "intro" ? "text-lg leading-loose text-text-primary" : ""}`}
+                >
                   {item.content}
                 </p>
 
@@ -270,7 +324,7 @@ export default function AnalysisSection() {
                   </div>
                 )}
               </div>
-            )
+            );
           })}
 
           <div ref={bottomRef} className="h-12" />

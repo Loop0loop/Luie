@@ -6,7 +6,8 @@ import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 
 export default function MemoMainView() {
     const { t } = useTranslation();
-    const { notes, updateNote } = useMemoStore();
+    const notes = useMemoStore((state) => state.notes);
+    const updateNote = useMemoStore((state) => state.updateNote);
     const mainView = useUIStore((state) => state.mainView);
     const activeNoteId = mainView.type === "memo" ? mainView.id : null;
 

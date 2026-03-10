@@ -23,7 +23,7 @@ export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashList
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [purgingId, setPurgingId] = useState<string | null>(null);
 
-  const { loadAll: reloadChapters } = useChapterStore();
+  const reloadChapters = useChapterStore((state) => state.loadAll);
 
   const loadTrash = useCallback(async () => {
     if (!projectId) return;

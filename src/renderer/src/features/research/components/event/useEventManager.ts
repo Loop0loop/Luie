@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { type TFunction } from "i18next";
 import { useEventStore } from "@renderer/features/research/stores/eventStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
@@ -11,14 +12,22 @@ export type EventLike = {
 };
 
 export function useEventManager(t: TFunction) {
-    const { currentItem: currentProject } = useProjectStore();
+    const currentProject = useProjectStore((state) => state.currentItem);
     const {
         items: events,
         currentItem: currentEventFromStore,
         loadAll: loadEvents,
         create: createEvent,
         update: updateEvent,
-    } = useEventStore();
+    } = useEventStore(
+        useShallow((state) => ({
+            items: state.items,
+            currentItem: state.currentItem,
+            loadAll: state.loadAll,
+            create: state.create,
+            update: state.update,
+        })),
+    );
 
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 

@@ -15,7 +15,7 @@ interface SnapshotViewerProps {
   onApplySnapshotText?: (content: string) => void | Promise<void>;
 }
 function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: SnapshotViewerProps) {
-  const { loadAll: reloadChapters } = useChapterStore();
+  const reloadChapters = useChapterStore((state) => state.loadAll);
   const [selectedAdditions, setSelectedAdditions] = useState<Set<number>>(new Set());
   const { t } = useTranslation();
   const dialog = useDialog();

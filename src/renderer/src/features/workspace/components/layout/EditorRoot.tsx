@@ -101,7 +101,7 @@ export default function EditorRoot() {
 
     const [docEditor, setDocEditor] = useState<TiptapEditor | null>(null);
 
-    const { setMainView } = useUIStore();
+    const setMainView = useUIStore((state) => state.setMainView);
 
     const openChapterByIndex = useCallback(
         (index: number) => {

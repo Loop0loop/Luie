@@ -15,7 +15,7 @@ import {
 
 export function useChapterManagement() {
   const pendingChapterIdRef = useRef<string | null>(null);
-  const { currentItem: currentProject } = useProjectStore();
+  const currentProject = useProjectStore((state) => state.currentItem);
   const {
     items: chapters,
     currentItem: currentChapter,

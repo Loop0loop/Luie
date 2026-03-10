@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 
 const TARGET_FILES = [
-  "src/main/services/features/syncService.ts",
+  "src/main/services/features/sync/syncService.ts",
   "src/main/services/core/projectService.ts",
   "src/renderer/src/features/workspace/components/ProjectTemplateSelector.tsx",
 ];
@@ -24,13 +24,7 @@ const TARGET_RULE_IDS = new Set([
 ]);
 const BLOCKING_RULE_IDS = new Set(["complexity", "max-depth"]);
 
-const args = [
-  "-s",
-  "eslint",
-  ...TARGET_FILES,
-  "--format",
-  "json",
-];
+const args = ["-s", "eslint", ...TARGET_FILES, "--format", "json"];
 
 for (const rule of RULE_OVERRIDES) {
   args.push("--rule", rule);
@@ -42,7 +36,9 @@ const result = spawnSync("pnpm", args, {
 });
 
 if (!result.stdout) {
-  console.error(result.stderr || "[check-core-complexity] eslint produced no output");
+  console.error(
+    result.stderr || "[check-core-complexity] eslint produced no output",
+  );
   process.exit(1);
 }
 
@@ -88,7 +84,9 @@ if (advisoryFindings.length > 0) {
 }
 
 if (blockingFindings.length > 0) {
-  console.error("[check-core-complexity] Core performance/complexity rules violated:");
+  console.error(
+    "[check-core-complexity] Core performance/complexity rules violated:",
+  );
   for (const finding of blockingFindings) {
     console.error(
       `- ${finding.file}:${finding.line} [${finding.ruleId}] ${finding.message}`,

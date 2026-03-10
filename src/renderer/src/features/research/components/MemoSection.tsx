@@ -47,7 +47,7 @@ const readMemoSidebarWidthFromStorage = (): number | null => {
 
 export default function MemoSection() {
   const { t } = useTranslation();
-  const { currentItem: currentProject } = useProjectStore();
+  const currentProject = useProjectStore((state) => state.currentItem);
   const defaultNotes = useMemo(() => buildDefaultNotes(t), [t]);
   const currentProjectId = currentProject?.id;
   const currentProjectPath = currentProject?.projectPath ?? null;

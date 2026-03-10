@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
@@ -9,38 +9,44 @@ import { DraggableItem } from "@shared/ui/DraggableItem";
 
 export default function SidebarMemoList() {
   const { t } = useTranslation();
-  const { currentItem: currentProject } = useProjectStore();
-  const { notes, addNote, loadNotes } = useMemoStore();
+  const currentProject = useProjectStore((state) => state.currentItem);
+  const notes = useMemoStore((state) => state.notes);
+  const addNote = useMemoStore((state) => state.addNote);
+  const loadNotes = useMemoStore((state) => state.loadNotes);
+  const flushSave = useMemoStore((state) => state.flushSave);
+  const setMainView = useUIStore((state) => state.setMainView);
   const mainView = useUIStore((state) => state.mainView);
-  const activeNoteId = mainView.type === "memo" && mainView.id ? mainView.id : null;
+  const activeNoteId =
+    mainView.type === "memo" && mainView.id ? mainView.id : null;
 
   const currentProjectId = currentProject?.id ?? null;
+  const currentProjectPath = currentProject?.projectPath ?? null;
 
   useEffect(() => {
     if (currentProjectId) {
-      loadNotes(currentProjectId);
+      void loadNotes(currentProjectId, currentProjectPath);
     }
-  }, [currentProjectId, loadNotes]);
+    return () => {
+      void flushSave();
+    };
+  }, [currentProjectId, currentProjectPath, flushSave, loadNotes]);
 
-  // Filter notes by project if needed, or assume store is cleared/loaded per project.
-  // For now, filtering is safer.
-  const projectNotes = useMemo(() =>
-    currentProjectId ? notes.filter(n => n.projectId === currentProjectId) : [],
-    [notes, currentProjectId]
-  );
+  const projectNotes = currentProjectId ? notes : [];
 
   const handleAddNote = () => {
     if (!currentProjectId) return;
-    addNote(currentProjectId, {
+    const created = addNote(currentProjectId, {
       title: t("project.defaults.noteTitle"),
       content: "",
       tags: [],
     });
-    useUIStore.getState().setMainView({ type: "memo" });
+    if (created?.id) {
+      setMainView({ type: "memo", id: created.id });
+    }
   };
 
   const handleSelect = (id: string) => {
-    useUIStore.getState().setMainView({ type: "memo", id });
+    setMainView({ type: "memo", id });
   };
 
   return (
@@ -61,20 +67,27 @@ export default function SidebarMemoList() {
             {t("memo.empty")}
           </div>
         )}
-        {projectNotes.map(note => (
+        {projectNotes.map((note) => (
           <DraggableItem
             key={note.id}
             id={`memo-${note.id}`}
-            data={{ type: "memo", id: note.id, title: note.title || t("project.defaults.untitled") }}
+            data={{
+              type: "memo",
+              id: note.id,
+              title: note.title || t("project.defaults.untitled"),
+            }}
           >
             <div
               className={cn(
                 "px-3 py-2 border-b border-border/20 cursor-pointer hover:bg-white/5 transition-colors",
-                note.id === activeNoteId && "bg-white/10 text-accent font-medium"
+                note.id === activeNoteId &&
+                  "bg-white/10 text-accent font-medium",
               )}
               onClick={() => handleSelect(note.id)}
             >
-              <div className="font-medium text-sm truncate">{note.title || t("project.defaults.untitled")}</div>
+              <div className="font-medium text-sm truncate">
+                {note.title || t("project.defaults.untitled")}
+              </div>
               <div className="text-xs text-muted-foreground truncate opacity-70">
                 {new Date(note.updatedAt).toLocaleDateString()}
               </div>

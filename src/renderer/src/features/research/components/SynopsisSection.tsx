@@ -3,7 +3,7 @@ import { useProjectStore } from "@renderer/features/project/stores/projectStore"
 
 export default function SynopsisSection() {
   const { t } = useTranslation();
-  const { currentProject } = useProjectStore();
+  const currentProject = useProjectStore((state) => state.currentItem);
 
   return (
     <div style={{ padding: "var(--context-panel-section-padding, 16px)" }}>

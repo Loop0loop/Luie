@@ -8,6 +8,7 @@ import { WikiSection } from "@renderer/features/research/components/wiki/WikiSec
 import { useDialog } from "@shared/ui/useDialog";
 import { SUPPORTED_LANGUAGES, i18n } from "@renderer/i18n";
 import { CHARACTER_TEMPLATES } from "@shared/constants";
+import { useShallow } from "zustand/react/shallow";
 
 
 // Types for Dynamic Customization
@@ -31,7 +32,13 @@ interface WikiDetailViewProps {
 export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
   const { t } = useTranslation();
   const dialog = useDialog();
-  const { currentItem: character, updateCharacter, loadCharacter } = useCharacterStore();
+  const { currentItem: character, updateCharacter, loadCharacter } = useCharacterStore(
+    useShallow((state) => ({
+      currentItem: state.currentItem,
+      updateCharacter: state.updateCharacter,
+      loadCharacter: state.loadCharacter,
+    })),
+  );
 
   useEffect(() => {
     if (characterId) {

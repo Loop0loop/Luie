@@ -21,6 +21,8 @@ import {
   normalizeSidebarWidthInput,
   type SidebarWidthFeature,
 } from "@shared/constants/sidebarSizing";
+import { uiStorePersistedStateSchema } from "@shared/schemas";
+import { z } from "zod";
 
 export type ContextTab = "synopsis" | "characters" | "terms";
 export type ResearchTab = "character" | "world" | "event" | "faction" | "scrap" | "analysis";
@@ -87,6 +89,11 @@ const DEFAULT_LAYOUT_SURFACE_RATIOS: Record<LayoutSurfaceId, number> =
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+const warnPersistValidation = (message: string, error: z.ZodError): void => {
+  if (typeof window === "undefined") return;
+  void window.api?.logger?.warn?.(message, z.flattenError(error));
+};
 
 const RIGHT_PANEL_TABS = [
   "character",
@@ -925,7 +932,13 @@ export const useUIStore = create<UIStore>()(
           return currentState;
         }
 
-        const typedPersisted = persistedState as Partial<UIStore>;
+        const parsedPersisted = uiStorePersistedStateSchema.safeParse(persistedState);
+        if (!parsedPersisted.success) {
+          warnPersistValidation("Invalid UI store persisted state", parsedPersisted.error);
+          return currentState;
+        }
+
+        const typedPersisted = parsedPersisted.data as Partial<UIStore>;
         const normalizedSidebarWidths = normalizeSidebarWidthsWithMigrations(
           typedPersisted.sidebarWidths,
         );

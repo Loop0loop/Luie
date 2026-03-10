@@ -6,6 +6,7 @@ import { BufferedInput } from "@shared/ui/BufferedInput";
 import { Infobox } from "@renderer/features/research/components/wiki/Infobox";
 import { WikiSection } from "@renderer/features/research/components/wiki/WikiSection";
 import { useDialog } from "@shared/ui/useDialog";
+import { useShallow } from "zustand/react/shallow";
 
 type WikiSectionData = {
     id: string;
@@ -27,7 +28,13 @@ interface FactionDetailViewProps {
 export default function FactionDetailView({ factionId }: FactionDetailViewProps) {
     const { t } = useTranslation();
     const dialog = useDialog();
-    const { currentItem: factionObj, updateFaction, loadFaction } = useFactionStore();
+    const { currentItem: factionObj, updateFaction, loadFaction } = useFactionStore(
+        useShallow((state) => ({
+            currentItem: state.currentItem,
+            updateFaction: state.updateFaction,
+            loadFaction: state.loadFaction,
+        })),
+    );
 
     useEffect(() => {
         if (factionId) {

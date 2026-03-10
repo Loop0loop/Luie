@@ -11,9 +11,12 @@ import { i18n } from "@renderer/i18n";
 import { initializeTemplateProject } from "./projectTemplateInitialization";
 
 export function useProjectTemplate(setActiveChapterId: (id: string) => void) {
-  const { createProject, setCurrentProject, deleteProject, updateProject } = useProjectStore();
-  const { create: createChapter } = useChapterStore();
-  const { setView } = useUIStore();
+  const createProject = useProjectStore((state) => state.createProject);
+  const setCurrentProject = useProjectStore((state) => state.setCurrentProject);
+  const deleteProject = useProjectStore((state) => state.deleteProject);
+  const updateProject = useProjectStore((state) => state.updateProject);
+  const createChapter = useChapterStore((state) => state.create);
+  const setView = useUIStore((state) => state.setView);
 
   const handleSelectProject = useCallback(
     async (templateId: string, projectPath: string) => {

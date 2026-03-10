@@ -60,7 +60,9 @@ export function useProjectSelector(projects: Project[]): ProjectSelectorState & 
         },
     });
 
-    const { deleteProjectWithOptions, updateProject, loadProjects } = useProjectStore();
+    const deleteProjectWithOptions = useProjectStore((state) => state.deleteProjectWithOptions);
+    const updateProject = useProjectStore((state) => state.updateProject);
+    const loadProjects = useProjectStore((state) => state.loadProjects);
     const [localProjects, setLocalProjects] = useState<Project[]>(projects);
 
     useEffect(() => {

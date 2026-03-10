@@ -20,7 +20,8 @@ type InspectorTab = "synopsis" | "metadata" | "notes" | "snapshots";
 export default function InspectorPanel({ activeChapterId }: InspectorPanelProps) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<InspectorTab>("synopsis");
-  const { items: chapters, update } = useChapterStore();
+  const chapters = useChapterStore((state) => state.items);
+  const update = useChapterStore((state) => state.update);
 
   const activeChapter = chapters.find((c) => c.id === activeChapterId);
 

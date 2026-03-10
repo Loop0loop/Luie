@@ -22,8 +22,8 @@ export function SmartLinkTooltip({ isSettingsOpen }: { isSettingsOpen?: boolean 
     id: "",
   });
 
-  const { items: characters } = useCharacterStore();
-  const { items: terms } = useTermStore();
+  const characters = useCharacterStore((state) => state.items);
+  const terms = useTermStore((state) => state.items);
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);

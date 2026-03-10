@@ -1,6 +1,13 @@
 import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, ChevronDown, ChevronRight, LayoutTemplate, User } from "lucide-react";
+import {
+  Plus,
+  ChevronDown,
+  ChevronRight,
+  LayoutTemplate,
+  User,
+} from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
@@ -20,17 +27,27 @@ type CharacterLike = {
   attributes?: unknown;
 };
 
-export default function SidebarCharacterList({ onSelectCharacter }: SidebarCharacterListProps) {
+export default function SidebarCharacterList({
+  onSelectCharacter,
+}: SidebarCharacterListProps) {
   const { t } = useTranslation();
-  const { currentItem: currentProject } = useProjectStore();
+  const currentProject = useProjectStore((state) => state.currentItem);
   const {
     items: characters,
     loadAll: loadCharacters,
     create: createCharacter,
-  } = useCharacterStore();
+  } = useCharacterStore(
+    useShallow((state) => ({
+      items: state.items,
+      loadAll: state.loadAll,
+      create: state.create,
+    })),
+  );
 
   const mainView = useUIStore((state) => state.mainView);
-  const selectedCharacterId = mainView.type === "character" && mainView.id ? mainView.id : null;
+  const setMainView = useUIStore((state) => state.setMainView);
+  const selectedCharacterId =
+    mainView.type === "character" && mainView.id ? mainView.id : null;
 
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
@@ -41,22 +58,24 @@ export default function SidebarCharacterList({ onSelectCharacter }: SidebarChara
   }, [currentProject, loadCharacters]);
 
   const handleSelect = (id: string) => {
-    useUIStore.getState().setMainView({ type: "character", id });
+    setMainView({ type: "character", id });
     onSelectCharacter?.(id);
   };
 
   const handleAddCharacter = async (templateId: string = "basic") => {
     if (currentProject) {
-      const template = CHARACTER_TEMPLATES.find((t) => t.id === templateId) || CHARACTER_TEMPLATES[0];
+      const template =
+        CHARACTER_TEMPLATES.find((t) => t.id === templateId) ||
+        CHARACTER_TEMPLATES[0];
 
       await createCharacter({
         projectId: currentProject.id,
         name: t("character.defaults.name"),
         description: t("character.uncategorized"),
-        attributes: { templateId: template.id } as Record<string, unknown>
+        attributes: { templateId: template.id } as Record<string, unknown>,
       });
       // createCharacter returns Promise<void> in interface but might return object in implementation?
-      // Actually checking store definition: 
+      // Actually checking store definition:
       // createCharacter: async (input) => { await crudSlice.create(input); }
       // crudSlice.create usually updates state but might not return the item.
       // We rely on store update.
@@ -68,7 +87,7 @@ export default function SidebarCharacterList({ onSelectCharacter }: SidebarChara
     const groups: Record<string, CharacterLike[]> = {};
     const list = characters as CharacterLike[];
 
-    list.forEach(char => {
+    list.forEach((char) => {
       const group = char.description?.trim() || t("character.uncategorized");
       if (!groups[group]) groups[group] = [];
       groups[group].push(char);
@@ -94,7 +113,10 @@ export default function SidebarCharacterList({ onSelectCharacter }: SidebarChara
           <CharacterGroup
             key={group}
             title={group}
-            color={CHARACTER_GROUP_COLORS[group] || CHARACTER_GROUP_COLORS["Uncategorized"]}
+            color={
+              CHARACTER_GROUP_COLORS[group] ||
+              CHARACTER_GROUP_COLORS["Uncategorized"]
+            }
             characters={chars}
             selectedId={selectedCharacterId}
             onSelect={handleSelect}
@@ -138,7 +160,7 @@ function CharacterGroup({
   color,
   characters,
   selectedId,
-  onSelect
+  onSelect,
 }: {
   title: string;
   color: string;
@@ -154,15 +176,24 @@ function CharacterGroup({
         className="px-3 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer flex items-center gap-1.5 select-none transition-colors"
         onClick={() => setIsOpen(!isOpen)}
       >
-        {isOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+        {isOpen ? (
+          <ChevronDown className="w-3 h-3" />
+        ) : (
+          <ChevronRight className="w-3 h-3" />
+        )}
+        <div
+          className="w-2 h-2 rounded-full"
+          style={{ backgroundColor: color }}
+        />
         <span className="truncate">{title}</span>
-        <span className="ml-auto text-[10px] opacity-70">{characters.length}</span>
+        <span className="ml-auto text-[10px] opacity-70">
+          {characters.length}
+        </span>
       </div>
 
       {isOpen && (
         <div className="flex flex-col">
-          {characters.map(char => (
+          {characters.map((char) => (
             <DraggableItem
               key={char.id}
               id={`char-${char.id}`}
@@ -171,7 +202,8 @@ function CharacterGroup({
               <div
                 className={cn(
                   "pl-8 pr-3 py-1.5 cursor-pointer text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors border-l-2 border-transparent",
-                  selectedId === char.id && "bg-accent/10 text-accent border-accent"
+                  selectedId === char.id &&
+                    "bg-accent/10 text-accent border-accent",
                 )}
                 onClick={() => onSelect(char.id)}
               >

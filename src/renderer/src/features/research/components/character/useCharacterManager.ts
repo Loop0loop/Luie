@@ -3,6 +3,7 @@ import { type TFunction } from "i18next";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { CHARACTER_TEMPLATES } from "@shared/constants";
+import { useShallow } from "zustand/react/shallow";
 
 export type CharacterLike = {
     id: string;
@@ -12,14 +13,22 @@ export type CharacterLike = {
 };
 
 export function useCharacterManager(t: TFunction) {
-    const { currentItem: currentProject } = useProjectStore();
+    const currentProject = useProjectStore((state) => state.currentItem);
     const {
         items: characters,
         currentItem: currentCharacterFromStore,
         loadAll: loadCharacters,
         create: createCharacter,
         update: updateCharacter,
-    } = useCharacterStore();
+    } = useCharacterStore(
+        useShallow((state) => ({
+            items: state.items,
+            currentItem: state.currentItem,
+            loadAll: state.loadAll,
+            create: state.create,
+            update: state.update,
+        })),
+    );
 
     const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
     const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);

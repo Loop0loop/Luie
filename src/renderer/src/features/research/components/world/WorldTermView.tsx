@@ -4,7 +4,8 @@ import { BufferedInput, BufferedTextArea } from "@shared/ui/BufferedInput";
 
 export default function WorldTermView() {
   const { t } = useTranslation();
-  const { currentTerm, updateTerm } = useTermStore();
+  const currentTerm = useTermStore((state) => state.currentTerm);
+  const updateTerm = useTermStore((state) => state.updateTerm);
 
   if (!currentTerm) {
       return (

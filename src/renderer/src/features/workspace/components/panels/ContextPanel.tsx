@@ -102,9 +102,9 @@ function ContextPanel({
     }
   };
 
-  const { currentProject } = useProjectStore();
-  const { characters } = useCharacterStore();
-  const { terms } = useTermStore();
+  const currentProject = useProjectStore((state) => state.currentProject);
+  const characters = useCharacterStore((state) => state.characters);
+  const terms = useTermStore((state) => state.terms);
 
   const [searchText, setSearchText] = useState("");
   const [selectedItem, setSelectedItem] = useState<ContextItem | null>(null);

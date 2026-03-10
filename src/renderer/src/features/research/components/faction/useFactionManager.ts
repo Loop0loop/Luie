@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { type TFunction } from "i18next";
 import { useFactionStore } from "@renderer/features/research/stores/factionStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
+import { useShallow } from "zustand/react/shallow";
 
 export type FactionLike = {
     id: string;
@@ -11,14 +12,22 @@ export type FactionLike = {
 };
 
 export function useFactionManager(t: TFunction) {
-    const { currentItem: currentProject } = useProjectStore();
+    const currentProject = useProjectStore((state) => state.currentItem);
     const {
         items: factions,
         currentItem: currentFactionFromStore,
         loadAll: loadFactions,
         create: createFaction,
         update: updateFaction,
-    } = useFactionStore();
+    } = useFactionStore(
+        useShallow((state) => ({
+            items: state.items,
+            currentItem: state.currentItem,
+            loadAll: state.loadAll,
+            create: state.create,
+            update: state.update,
+        })),
+    );
 
     const [selectedFactionId, setSelectedFactionId] = useState<string | null>(null);
 

@@ -15,12 +15,12 @@ const baseContentSchema = z
   .string()
   .max(LARGE_TEXT_MAX_LENGTH, "Content is too large");
 
-const dialogFilterSchema = z.object({
+const dialogFilterSchema = z.strictObject({
   name: z.string().min(1).max(100),
   extensions: z.array(z.string().min(1).max(20)).max(20),
 });
 
-const dialogOptionsSchema = z.object({
+const dialogOptionsSchema = z.strictObject({
   filters: z.array(dialogFilterSchema).max(20).optional(),
   defaultPath: basePathSchema.optional(),
   title: z.string().min(1).max(200).optional(),
@@ -218,7 +218,7 @@ export const analysisStartArgsSchema = z.tuple([
 ]);
 export const recoveryRunDbArgsSchema = z.tuple([
   z
-    .object({
+    .strictObject({
       dryRun: z.boolean().optional(),
     })
     .optional(),
@@ -335,13 +335,13 @@ export const syncRunResultSchema = z.object({
   syncedAt: z.string().optional(),
 });
 
-export const syncSetAutoSchema = z.object({
+export const syncSetAutoSchema = z.strictObject({
   enabled: z.boolean(),
 });
 
 export const syncSetAutoArgsSchema = z.tuple([syncSetAutoSchema]);
 
-export const runtimeSupabaseConfigSchema = z.object({
+export const runtimeSupabaseConfigSchema = z.strictObject({
   url: z
     .string()
     .min(1)
@@ -357,7 +357,7 @@ export const runtimeSupabaseConfigSchema = z.object({
   anonKey: z.string().min(16).max(8096),
 });
 
-export const runtimeSupabaseConfigInputSchema = z.object({
+export const runtimeSupabaseConfigInputSchema = z.strictObject({
   url: z.string().max(1024).optional(),
   anonKey: z.string().max(8096).optional(),
 });
@@ -377,7 +377,7 @@ export const runtimeSupabaseConfigValidationSchema = z.object({
 export const syncRuntimeConfigSetArgsSchema = z.tuple([runtimeSupabaseConfigSchema]);
 export const syncRuntimeConfigValidateArgsSchema = z.tuple([runtimeSupabaseConfigInputSchema]);
 
-export const syncResolveConflictSchema = z.object({
+export const syncResolveConflictSchema = z.strictObject({
   type: z.enum(["chapter", "memo"]),
   id: z.string().min(1),
   resolution: z.enum(["local", "remote"]),
@@ -385,7 +385,7 @@ export const syncResolveConflictSchema = z.object({
 
 export const syncResolveConflictArgsSchema = z.tuple([syncResolveConflictSchema]);
 
-export const editorSettingsSchema = z.object({
+export const editorSettingsSchema = z.strictObject({
   fontFamily: z.enum(["serif", "sans", "mono"]),
   fontPreset: z
     .enum([
@@ -412,28 +412,132 @@ export const editorSettingsSchema = z.object({
   uiMode: z.enum(["default", "docs", "editor", "word", "scrivener"]).transform(v => v === "word" ? "editor" : v).pipe(z.enum(["default", "docs", "editor", "scrivener"])).catch("default"),
 });
 
-export const settingsAutoSaveSchema = z.object({
+export const settingsAutoSaveSchema = z.strictObject({
   enabled: z.boolean().optional(),
   interval: z.number().int().positive().optional(),
 });
 
-export const settingsLanguageSchema = z.object({
+export const settingsLanguageSchema = z.strictObject({
   language: z.enum(["ko", "en", "ja"]),
 });
 
-export const settingsMenuBarModeSchema = z.object({
+export const settingsMenuBarModeSchema = z.strictObject({
   mode: z.enum(["hidden", "visible"]),
 });
 
-export const settingsShortcutsSchema = z.object({
+export const settingsShortcutsSchema = z.strictObject({
   shortcuts: z.record(z.string(), z.string()),
 });
 
-export const windowBoundsSchema = z.object({
+export const windowBoundsSchema = z.strictObject({
   width: z.number().int().positive(),
   height: z.number().int().positive(),
   x: z.number().int(),
   y: z.number().int(),
+});
+
+const uiRightPanelTabSchema = z.enum([
+  "character",
+  "event",
+  "faction",
+  "world",
+  "scrap",
+  "analysis",
+  "snapshot",
+  "trash",
+  "editor",
+  "export",
+]);
+
+const uiMainViewSchema = z.strictObject({
+  type: z.enum([
+    "editor",
+    "character",
+    "event",
+    "faction",
+    "world",
+    "memo",
+    "trash",
+    "analysis",
+  ]),
+  id: z.string().optional(),
+});
+
+const uiScrivenerSectionsSchema = z.strictObject({
+  manuscript: z.boolean(),
+  characters: z.boolean(),
+  world: z.boolean(),
+  scrap: z.boolean(),
+  snapshots: z.boolean(),
+  analysis: z.boolean(),
+  trash: z.boolean(),
+});
+
+const uiRegionsSchema = z.strictObject({
+  leftSidebar: z.strictObject({
+    open: z.boolean(),
+    widthPx: z.number().finite(),
+  }),
+  rightPanel: z.strictObject({
+    open: z.boolean(),
+    activeTab: uiRightPanelTabSchema.nullable(),
+    widthByTab: z.record(z.string(), z.number().finite()),
+  }),
+  rightRail: z.strictObject({
+    open: z.boolean(),
+  }),
+});
+
+export const uiStorePersistedStateSchema = z.strictObject({
+  view: z.enum(["template", "editor", "corkboard", "outliner"]).optional(),
+  contextTab: z.enum(["synopsis", "characters", "terms"]).optional(),
+  worldTab: z.enum(["synopsis", "terms", "mindmap", "drawing", "plot", "graph"]).optional(),
+  isSidebarOpen: z.boolean().optional(),
+  isContextOpen: z.boolean().optional(),
+  isManuscriptMenuOpen: z.boolean().optional(),
+  isBinderBarOpen: z.boolean().optional(),
+  scrivenerSidebarOpen: z.boolean().optional(),
+  scrivenerInspectorOpen: z.boolean().optional(),
+  scrivenerSections: uiScrivenerSectionsSchema.optional(),
+  sidebarWidths: z.record(z.string(), z.number().finite()).optional(),
+  layoutSurfaceRatios: z.record(z.string(), z.number().finite()).optional(),
+  regions: uiRegionsSchema.optional(),
+  docsRightTab: uiRightPanelTabSchema.nullable().optional(),
+  mainView: uiMainViewSchema.optional(),
+});
+
+const projectLayoutStateSchema = z.strictObject({
+  main: z.strictObject({
+    sidebarOpen: z.boolean(),
+    contextOpen: z.boolean(),
+  }),
+  docs: z.strictObject({
+    sidebarOpen: z.boolean(),
+    binderBarOpen: z.boolean(),
+    rightTab: uiRightPanelTabSchema.nullable(),
+  }),
+  scrivener: z.strictObject({
+    sidebarOpen: z.boolean(),
+    inspectorOpen: z.boolean(),
+    sections: uiScrivenerSectionsSchema,
+  }),
+});
+
+export const projectLayoutPersistedStateSchema = z.strictObject({
+  byProject: z.record(z.string(), projectLayoutStateSchema),
+});
+
+const scrapMemoSchema = z.strictObject({
+  id: z.string().min(1),
+  title: z.string(),
+  content: z.string(),
+  tags: z.array(z.string()),
+  updatedAt: z.string(),
+});
+
+export const worldScrapMemosDataSchema = z.strictObject({
+  memos: z.array(scrapMemoSchema),
+  updatedAt: z.string().optional(),
 });
 
 // ─── World Building Schemas ─────────────────────────────────────────────────

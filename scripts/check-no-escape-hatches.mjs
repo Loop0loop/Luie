@@ -16,16 +16,33 @@ const DISALLOWED_PATTERNS = [
 ];
 
 const CORE_TODO_TARGETS = new Set([
-  path.join("src", "renderer", "src", "features", "manuscript", "components", "BinderSidebar.tsx"),
-  path.join("src", "renderer", "src", "features", "editor", "components", "InspectorPanel.tsx"),
-  path.join("src", "main", "services", "features", "syncService.ts"),
+  path.join(
+    "src",
+    "renderer",
+    "src",
+    "features",
+    "manuscript",
+    "components",
+    "BinderSidebar.tsx",
+  ),
+  path.join(
+    "src",
+    "renderer",
+    "src",
+    "features",
+    "editor",
+    "components",
+    "InspectorPanel.tsx",
+  ),
+  path.join("src", "main", "services", "features", "sync", "syncService.ts"),
   path.join("src", "main", "services", "core", "projectService.ts"),
 ]);
 
 const CORE_TODO_PATTERN = /\b(TODO|FIXME|HACK)\b/;
 
 const shouldCheckFile = (relativePath) =>
-  /\.(ts|tsx|js|jsx|mjs|cjs)$/.test(relativePath) && !relativePath.endsWith(".d.ts");
+  /\.(ts|tsx|js|jsx|mjs|cjs)$/.test(relativePath) &&
+  !relativePath.endsWith(".d.ts");
 
 const findings = [];
 

@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { z } from "zod";
+import { useShallow } from "zustand/react/shallow";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { useTermStore } from "@renderer/features/research/stores/termStore";
@@ -27,33 +28,37 @@ import {
   type LuieImportRetryState,
 } from "./fileImportRetryPolicy";
 
-const LuieMetaSchema = z.object({
-  format: z.literal(LUIE_PACKAGE_FORMAT),
-  version: z.number(),
-  chapters: z
-    .array(
-      z.object({
-        id: z.string().optional(),
-        title: z.string().optional(),
-        order: z.number().optional(),
-        file: z.string().optional(),
-        content: z.string().optional(),
-      }),
-    )
-    .optional(),
-}).passthrough();
+const LuieMetaSchema = z
+  .object({
+    format: z.literal(LUIE_PACKAGE_FORMAT),
+    version: z.number(),
+    chapters: z
+      .array(
+        z.object({
+          id: z.string().optional(),
+          title: z.string().optional(),
+          order: z.number().optional(),
+          file: z.string().optional(),
+          content: z.string().optional(),
+        }),
+      )
+      .optional(),
+  })
+  .passthrough();
 
-const WorldCharactersSchema = z.object({
-  characters: z.array(z.record(z.string(), z.unknown())).optional(),
-}).passthrough();
+const WorldCharactersSchema = z
+  .object({
+    characters: z.array(z.record(z.string(), z.unknown())).optional(),
+  })
+  .passthrough();
 
-const WorldTermsSchema = z.object({
-  terms: z.array(z.record(z.string(), z.unknown())).optional(),
-}).passthrough();
+const WorldTermsSchema = z
+  .object({
+    terms: z.array(z.record(z.string(), z.unknown())).optional(),
+  })
+  .passthrough();
 
-export function useFileImport(
-  currentProject: Project | null,
-) {
+export function useFileImport(currentProject: Project | null) {
   const {
     items: chapters,
     isLoading: chaptersLoading,
@@ -61,26 +66,55 @@ export function useFileImport(
     create: createChapter,
     update: updateChapter,
     delete: deleteChapter,
-  } = useChapterStore();
+  } = useChapterStore(
+    useShallow((state) => ({
+      items: state.items,
+      isLoading: state.isLoading,
+      loadAll: state.loadAll,
+      create: state.create,
+      update: state.update,
+      delete: state.delete,
+    })),
+  );
   const {
-    characters,
+    items: characters,
     isLoading: charactersLoading,
-    loadCharacters,
+    loadAll: loadCharacters,
     create: createCharacter,
     delete: deleteCharacter,
-  } = useCharacterStore();
+  } = useCharacterStore(
+    useShallow((state) => ({
+      items: state.items,
+      isLoading: state.isLoading,
+      loadAll: state.loadAll,
+      create: state.create,
+      delete: state.delete,
+    })),
+  );
   const {
-    terms,
+    items: terms,
     isLoading: termsLoading,
-    loadTerms,
+    loadAll: loadTerms,
     create: createTerm,
     delete: deleteTerm,
-  } = useTermStore();
+  } = useTermStore(
+    useShallow((state) => ({
+      items: state.items,
+      isLoading: state.isLoading,
+      loadAll: state.loadAll,
+      create: state.create,
+      delete: state.delete,
+    })),
+  );
   const importedProjectIdRef = useRef<string | null>(null);
   const requestedLoadRef = useRef<string | null>(null);
   const importingProjectIdRef = useRef<string | null>(null);
-  const importRetryStateRef = useRef<Map<string, LuieImportRetryState>>(new Map());
-  const retryTimerRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const importRetryStateRef = useRef<Map<string, LuieImportRetryState>>(
+    new Map(),
+  );
+  const retryTimerRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  );
   const clearRetryTimer = useCallback((projectId: string) => {
     const timer = retryTimerRef.current.get(projectId);
     if (!timer) return;
@@ -192,8 +226,11 @@ export function useFileImport(
         for (const ch of fileChapters) {
           const title = ch.title ?? i18n.t("project.defaults.untitled");
           let chapterContent = typeof ch.content === "string" ? ch.content : "";
-          const entryPath = ch.file ||
-            (ch.id ? `${LUIE_MANUSCRIPT_DIR}/${ch.id}${MARKDOWN_EXTENSION}` : null);
+          const entryPath =
+            ch.file ||
+            (ch.id
+              ? `${LUIE_MANUSCRIPT_DIR}/${ch.id}${MARKDOWN_EXTENSION}`
+              : null);
 
           if (typeof ch.content !== "string" && entryPath) {
             const contentResult = await api.fs.readLuieEntry(path, entryPath);
@@ -232,15 +269,18 @@ export function useFileImport(
             );
           }
           if (charactersResult.data) {
-            const parsedCharacters = WorldCharactersSchema.safeParse(JSON.parse(charactersResult.data));
+            const parsedCharacters = WorldCharactersSchema.safeParse(
+              JSON.parse(charactersResult.data),
+            );
             if (!parsedCharacters.success) {
               throw new Error("LUIE_IMPORT_CHARACTERS_INVALID_FORMAT");
             }
             const list = parsedCharacters.data.characters ?? [];
             for (const character of list) {
-              const name = typeof character.name === "string"
-                ? character.name
-                : i18n.t("project.defaults.untitled");
+              const name =
+                typeof character.name === "string"
+                  ? character.name
+                  : i18n.t("project.defaults.untitled");
               characterInputs.push({
                 projectId: currentProject.id,
                 name,
@@ -253,7 +293,8 @@ export function useFileImport(
                     ? character.firstAppearance
                     : undefined,
                 attributes:
-                  typeof character.attributes === "object" && character.attributes !== null
+                  typeof character.attributes === "object" &&
+                  character.attributes !== null
                     ? (character.attributes as Record<string, unknown>)
                     : undefined,
               });
@@ -279,21 +320,27 @@ export function useFileImport(
             );
           }
           if (termsResult.data) {
-            const parsedTerms = WorldTermsSchema.safeParse(JSON.parse(termsResult.data));
+            const parsedTerms = WorldTermsSchema.safeParse(
+              JSON.parse(termsResult.data),
+            );
             if (!parsedTerms.success) {
               throw new Error("LUIE_IMPORT_TERMS_INVALID_FORMAT");
             }
             const list = parsedTerms.data.terms ?? [];
             for (const term of list) {
-              const termText = typeof term.term === "string"
-                ? term.term
-                : i18n.t("project.defaults.untitled");
+              const termText =
+                typeof term.term === "string"
+                  ? term.term
+                  : i18n.t("project.defaults.untitled");
               termInputs.push({
                 projectId: currentProject.id,
                 term: termText,
                 definition:
-                  typeof term.definition === "string" ? term.definition : undefined,
-                category: typeof term.category === "string" ? term.category : undefined,
+                  typeof term.definition === "string"
+                    ? term.definition
+                    : undefined,
+                category:
+                  typeof term.category === "string" ? term.category : undefined,
                 firstAppearance:
                   typeof term.firstAppearance === "string"
                     ? term.firstAppearance
@@ -313,10 +360,15 @@ export function useFileImport(
             throw new Error("LUIE_IMPORT_CHAPTER_CREATE_FAILED");
           }
           createdChapterIds.push(created.id);
-          await updateChapter({ id: created.id, content: chapterInput.content });
+          await updateChapter({
+            id: created.id,
+            content: chapterInput.content,
+          });
           const chapterUpdateError = useChapterStore.getState().error;
           if (chapterUpdateError) {
-            throw new Error(`LUIE_IMPORT_CHAPTER_UPDATE_FAILED:${chapterUpdateError}`);
+            throw new Error(
+              `LUIE_IMPORT_CHAPTER_UPDATE_FAILED:${chapterUpdateError}`,
+            );
           }
         }
 
@@ -351,13 +403,16 @@ export function useFileImport(
           createdCharacterIds.length > 0 ||
           createdTermIds.length > 0
         ) {
-          await api.logger.warn("Rolled back partial .luie import after failure", {
-            projectId: currentProject.id,
-            path,
-            chapters: createdChapterIds.length,
-            characters: createdCharacterIds.length,
-            terms: createdTermIds.length,
-          });
+          await api.logger.warn(
+            "Rolled back partial .luie import after failure",
+            {
+              projectId: currentProject.id,
+              path,
+              chapters: createdChapterIds.length,
+              characters: createdCharacterIds.length,
+              terms: createdTermIds.length,
+            },
+          );
         }
         const nextRetryState = registerLuieImportFailure(
           importRetryStateRef.current.get(currentProject.id),
@@ -367,11 +422,14 @@ export function useFileImport(
           importRetryStateRef.current.delete(currentProject.id);
           clearRetryTimer(currentProject.id);
           importedProjectIdRef.current = currentProject.id;
-          await api.logger.warn("Stopped .luie import retries after retry limit", {
-            projectId: currentProject.id,
-            path,
-            attempts: nextRetryState.attempts,
-          });
+          await api.logger.warn(
+            "Stopped .luie import retries after retry limit",
+            {
+              projectId: currentProject.id,
+              path,
+              attempts: nextRetryState.attempts,
+            },
+          );
           return;
         }
 
@@ -384,7 +442,10 @@ export function useFileImport(
         });
 
         clearRetryTimer(currentProject.id);
-        const retryDelayMs = Math.max(0, nextRetryState.nextRetryAt - Date.now());
+        const retryDelayMs = Math.max(
+          0,
+          nextRetryState.nextRetryAt - Date.now(),
+        );
         const retryProjectId = currentProject.id;
         const retryTimer = setTimeout(() => {
           retryTimerRef.current.delete(retryProjectId);

@@ -6,6 +6,7 @@ import { BufferedInput } from "@shared/ui/BufferedInput";
 import { Infobox } from "@renderer/features/research/components/wiki/Infobox";
 import { WikiSection } from "@renderer/features/research/components/wiki/WikiSection";
 import { useDialog } from "@shared/ui/useDialog";
+import { useShallow } from "zustand/react/shallow";
 
 type WikiSectionData = {
     id: string;
@@ -27,7 +28,13 @@ interface EventDetailViewProps {
 export default function EventDetailView({ eventId }: EventDetailViewProps) {
     const { t } = useTranslation();
     const dialog = useDialog();
-    const { currentItem: eventObj, updateEvent, loadEvent } = useEventStore();
+    const { currentItem: eventObj, updateEvent, loadEvent } = useEventStore(
+        useShallow((state) => ({
+            currentItem: state.currentItem,
+            updateEvent: state.updateEvent,
+            loadEvent: state.loadEvent,
+        })),
+    );
 
     useEffect(() => {
         if (eventId) {

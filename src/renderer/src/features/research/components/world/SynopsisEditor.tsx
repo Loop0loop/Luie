@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { BufferedTextArea, BufferedInput } from "@shared/ui/BufferedInput";
 import { cn } from "@shared/types/utils";
@@ -9,7 +10,13 @@ import type { WorldSynopsisData, WorldSynopsisStatus } from "@shared/types";
 
 export function SynopsisEditor() {
   const { t } = useTranslation();
-  const { currentItem: currentProject, updateProject } = useProjectStore();
+  const { currentItem: currentProject, update: updateProject } =
+    useProjectStore(
+      useShallow((state) => ({
+        currentItem: state.currentItem,
+        update: state.update,
+      })),
+    );
   const [status, setStatus] = useState<WorldSynopsisStatus>("draft");
   const [isFocused, setIsFocused] = useState(false);
   const [genre, setGenre] = useState("");
@@ -36,7 +43,11 @@ export function SynopsisEditor() {
     return () => {
       cancelled = true;
     };
-  }, [currentProject?.id, currentProject?.projectPath, currentProject?.description]);
+  }, [
+    currentProject?.id,
+    currentProject?.projectPath,
+    currentProject?.description,
+  ]);
 
   const persistSynopsis = (overrides: Partial<WorldSynopsisData>) => {
     if (!currentProject?.id) return;
@@ -48,7 +59,11 @@ export function SynopsisEditor() {
       logline,
       ...overrides,
     };
-    void worldPackageStorage.saveSynopsis(currentProject.id, currentProject.projectPath, payload);
+    void worldPackageStorage.saveSynopsis(
+      currentProject.id,
+      currentProject.projectPath,
+      payload,
+    );
   };
 
   if (!currentProject) return null;
@@ -56,13 +71,17 @@ export function SynopsisEditor() {
   return (
     <div className="h-full flex flex-col bg-[#faf9f6]/50 dark:bg-zinc-900 overflow-hidden transition-colors duration-500">
       {/* Header - Minimalist */}
-      <div className={cn(
-        "flex items-center justify-between px-8 py-4 shrink-0 transition-opacity duration-300",
-        isFocused ? "opacity-50 hover:opacity-100" : "opacity-100 z-10"
-      )}>
+      <div
+        className={cn(
+          "flex items-center justify-between px-8 py-4 shrink-0 transition-opacity duration-300",
+          isFocused ? "opacity-50 hover:opacity-100" : "opacity-100 z-10",
+        )}
+      >
         <div className="flex items-center gap-3">
           <FileText className="w-5 h-5 text-muted" />
-          <h2 className="text-sm font-medium text-muted tracking-widest">{t("world.synopsis.title")}</h2>
+          <h2 className="text-sm font-medium text-muted tracking-widest">
+            {t("world.synopsis.title")}
+          </h2>
         </div>
 
         <div className="flex items-center gap-2 bg-surface border border-border rounded-full p-1 shadow-xs">
@@ -77,7 +96,7 @@ export function SynopsisEditor() {
                 "px-3 py-1 rounded-full text-[11px] font-bold transition-all flex items-center gap-1.5 border-none",
                 status === s
                   ? "bg-accent text-accent-fg shadow-sm"
-                  : "text-subtle bg-transparent hover:text-fg hover:bg-surface-hover"
+                  : "text-subtle bg-transparent hover:text-fg hover:bg-surface-hover",
               )}
             >
               {s === "locked" && <Lock className="w-3 h-3" />}
@@ -92,10 +111,8 @@ export function SynopsisEditor() {
       {/* Editor Area - Document Style */}
       <div className="flex-1 overflow-y-auto relative group custom-scrollbar">
         <div className="max-w-3xl mx-auto px-12 py-16 min-h-full flex flex-col gap-12">
-
           {/* Metadata Section - Clean, Field-like */}
           <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-
             {/* Top Row: Genre & Audience */}
             <div className="grid grid-cols-2 gap-12">
               <div className="group/field">
@@ -104,7 +121,10 @@ export function SynopsisEditor() {
                 </label>
                 <BufferedInput
                   className="w-full bg-transparent border-b border-border/50 py-1 text-base font-serif text-fg placeholder:text-muted/20 focus:border-accent focus:outline-none transition-colors rounded-none"
-                  placeholder={t("world.synopsis.genrePlaceholder", "e.g. Dark Fantasy")}
+                  placeholder={t(
+                    "world.synopsis.genrePlaceholder",
+                    "e.g. Dark Fantasy",
+                  )}
                   value={genre}
                   onSave={(val) => {
                     setGenre(val);
@@ -118,7 +138,10 @@ export function SynopsisEditor() {
                 </label>
                 <BufferedInput
                   className="w-full bg-transparent border-b border-border/50 py-1 text-base font-serif text-fg placeholder:text-muted/20 focus:border-accent focus:outline-none transition-colors rounded-none"
-                  placeholder={t("world.synopsis.audiencePlaceholder", "e.g. Young Adult")}
+                  placeholder={t(
+                    "world.synopsis.audiencePlaceholder",
+                    "e.g. Young Adult",
+                  )}
                   value={targetAudience}
                   onSave={(val) => {
                     setTargetAudience(val);
@@ -131,11 +154,15 @@ export function SynopsisEditor() {
             {/* Logline - Featured */}
             <div className="group/field">
               <label className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 group-focus-within/field:text-accent transition-colors">
-                <Sparkles className="w-3 h-3" /> {t("world.synopsis.logline", "Logline")}
+                <Sparkles className="w-3 h-3" />{" "}
+                {t("world.synopsis.logline", "Logline")}
               </label>
               <BufferedTextArea
                 className="w-full bg-transparent border-none p-0 resize-none text-2xl font-serif italic text-fg placeholder:text-muted/10 leading-relaxed focus:outline-none"
-                placeholder={t("world.synopsis.loglinePlaceholder", "One sentence summary of your story...")}
+                placeholder={t(
+                  "world.synopsis.loglinePlaceholder",
+                  "One sentence summary of your story...",
+                )}
                 value={logline}
                 onSave={(val) => {
                   setLogline(val);
@@ -155,14 +182,15 @@ export function SynopsisEditor() {
               className={cn(
                 "w-full h-full bg-transparent border-none outline-none resize-none transition-all placeholder:text-muted/10 focus:placeholder:text-muted/20",
                 "text-lg leading-loose font-serif text-fg focus:ring-0",
-                status === "locked" && "opacity-70 cursor-not-allowed select-none"
+                status === "locked" &&
+                  "opacity-70 cursor-not-allowed select-none",
               )}
               style={{ boxShadow: "none" }}
               placeholder={t("world.synopsis.placeholder")}
               value={currentProject.description || ""}
               readOnly={status === "locked"}
               onSave={(val) => {
-                void updateProject(currentProject.id, undefined, val);
+                void updateProject({ id: currentProject.id, description: val });
                 persistSynopsis({ synopsis: val });
               }}
               onFocus={() => setIsFocused(true)}

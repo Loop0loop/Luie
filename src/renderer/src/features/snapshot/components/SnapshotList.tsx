@@ -8,6 +8,7 @@ import type { Snapshot } from '@shared/types';
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useDialog } from "@shared/ui/useDialog";
+import { useShallow } from "zustand/react/shallow";
 
 interface SnapshotListProps {
   chapterId: string;
@@ -26,7 +27,12 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
   const workerRef = useRef<Worker | null>(null);
 
   const { handleOpenSnapshot } = useSplitView();
-  const { loadAll: reloadChapters, items: chapters } = useChapterStore();
+  const { loadAll: reloadChapters, items: chapters } = useChapterStore(
+    useShallow((state) => ({
+      loadAll: state.loadAll,
+      items: state.items,
+    })),
+  );
   const currentChapter = chapters.find((chapter) => chapter.id === chapterId);
 
   const buildSnapshotItems = useCallback((items: Snapshot[]) => {

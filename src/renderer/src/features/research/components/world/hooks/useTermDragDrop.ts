@@ -28,7 +28,7 @@ interface UseTermDragDropProps {
 }
 
 export function useTermDragDrop({ terms }: UseTermDragDropProps) {
-  const { loadTerms } = useTermStore();
+  const loadTerms = useTermStore((state) => state.loadTerms);
   const { showToast } = useToast();
   const { t } = useTranslation();
   const [activeId, setActiveId] = useState<string | null>(null);

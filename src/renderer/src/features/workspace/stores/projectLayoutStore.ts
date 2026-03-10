@@ -1,7 +1,9 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { STORAGE_KEY_PROJECT_LAYOUT } from "@shared/constants";
+import { projectLayoutPersistedStateSchema } from "@shared/schemas";
 import type { DocsRightTab, ScrivenerSectionId, ScrivenerSectionsState } from "./uiStore";
+import { z } from "zod";
 
 export type PersistedDocsRightTab =
   | "character"
@@ -75,6 +77,11 @@ const createDefaultProjectLayoutState = (): ProjectLayoutState => ({
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+const warnPersistValidation = (message: string, error: z.ZodError): void => {
+  if (typeof window === "undefined") return;
+  void window.api?.logger?.warn?.(message, z.flattenError(error));
+};
 
 const sanitizeScrivenerSections = (input: unknown): ScrivenerSectionsState => {
   const next = { ...DEFAULT_SCRIVENER_SECTIONS };
@@ -216,12 +223,21 @@ export const useProjectLayoutStore = create<ProjectLayoutStore>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ byProject: state.byProject }),
       merge: (persistedState, currentState) => {
-        if (!isRecord(persistedState) || !isRecord(persistedState.byProject)) {
+        if (!isRecord(persistedState)) {
+          return currentState;
+        }
+
+        const parsedPersisted = projectLayoutPersistedStateSchema.safeParse(persistedState);
+        if (!parsedPersisted.success) {
+          warnPersistValidation(
+            "Invalid project layout persisted state",
+            parsedPersisted.error,
+          );
           return currentState;
         }
 
         const normalizedByProject: Record<string, ProjectLayoutState> = {};
-        Object.entries(persistedState.byProject).forEach(([projectId, value]) => {
+        Object.entries(parsedPersisted.data.byProject).forEach(([projectId, value]) => {
           normalizedByProject[projectId] = sanitizeProjectLayoutState(value);
         });
 
