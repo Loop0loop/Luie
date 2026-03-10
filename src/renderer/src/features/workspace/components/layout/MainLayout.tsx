@@ -8,12 +8,12 @@ import { useTranslation } from "react-i18next";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import StatusFooter from "@shared/ui/StatusFooter";
 import {
-  clampSidebarWidth,
-  getSidebarDefaultWidth,
-  getSidebarWidthConfig,
-  toPercentSize,
-  toPxSize,
-} from "@shared/constants/sidebarSizing";
+  getLayoutSurfaceConfig,
+  getLayoutSurfaceDefaultRatio,
+  toPanelPercentSize,
+  toPanelPixelSize,
+} from "@shared/constants/layoutSizing";
+import { toPercentSize } from "@shared/constants/sidebarSizing";
 import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
 
 interface MainLayoutProps {
@@ -29,8 +29,7 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
   const {
     isSidebarOpen,
     isContextOpen,
-    regions,
-    sidebarWidths,
+    layoutSurfaceRatios,
     hasHydrated,
     toggleLeftSidebar,
     setRegionOpen,
@@ -38,33 +37,25 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
     useShallow((state) => ({
       isSidebarOpen: state.regions.leftSidebar.open,
       isContextOpen: state.regions.rightPanel.open,
-      regions: state.regions,
-      sidebarWidths: state.sidebarWidths,
+      layoutSurfaceRatios: state.layoutSurfaceRatios,
       hasHydrated: state.hasHydrated,
       toggleLeftSidebar: state.toggleLeftSidebar,
       setRegionOpen: state.setRegionOpen,
     }))
   );
 
-  const mainSidebarConfig = getSidebarWidthConfig("mainSidebar");
-  const mainContextConfig = getSidebarWidthConfig("mainContext");
+  const mainSidebarConfig = getLayoutSurfaceConfig("default.sidebar");
+  const mainContextConfig = getLayoutSurfaceConfig("default.panel");
 
   const onLayoutChanged = useLayoutPersist([
-    { id: "sidebar-panel", feature: "mainSidebar" },
-    { id: "context-panel", feature: "mainContext" },
+    { id: "sidebar-panel", surface: "default.sidebar" },
+    { id: "context-panel", surface: "default.panel" },
   ]);
 
-  const sidebarWidth = clampSidebarWidth(
-    "mainSidebar",
-    regions.leftSidebar.widthPx ??
-      sidebarWidths["mainSidebar"] ??
-      getSidebarDefaultWidth("mainSidebar"),
-  );
-
-  const contextWidth = clampSidebarWidth(
-    "mainContext",
-    sidebarWidths["mainContext"] || getSidebarDefaultWidth("mainContext"),
-  );
+  const sidebarRatio =
+    layoutSurfaceRatios["default.sidebar"] ?? getLayoutSurfaceDefaultRatio("default.sidebar");
+  const contextRatio =
+    layoutSurfaceRatios["default.panel"] ?? getLayoutSurfaceDefaultRatio("default.panel");
 
   return (
     <div className="flex flex-col h-screen bg-app text-fg">
@@ -80,9 +71,9 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
         {isSidebarOpen && (
           <Panel
             id="sidebar-panel"
-            defaultSize={toPxSize(sidebarWidth)}
-            minSize={toPxSize(mainSidebarConfig.minPx)}
-            maxSize={toPxSize(mainSidebarConfig.maxPx)}
+            defaultSize={toPanelPercentSize(sidebarRatio)}
+            minSize={toPanelPixelSize(mainSidebarConfig.minPx)}
+            maxSize={toPanelPixelSize(mainSidebarConfig.maxPx)}
             className="bg-sidebar border-r border-border overflow-hidden flex flex-col z-10"
           >
             {sidebar}
@@ -90,7 +81,7 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
         )}
 
         {isSidebarOpen && (
-          <PanelResizeHandle data-separator-feature="mainSidebar" className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative" />
+          <PanelResizeHandle data-separator-feature="default.sidebar" className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative" />
         )}
 
         {/* Main Content */}
@@ -136,16 +127,16 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
         </Panel>
 
         {isContextOpen && (
-          <PanelResizeHandle data-separator-feature="mainContext" className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative" />
+          <PanelResizeHandle data-separator-feature="default.panel" className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative" />
         )}
 
         {/* Context Panel */}
         {isContextOpen && (
           <Panel
             id="context-panel"
-            defaultSize={toPxSize(contextWidth)}
-            minSize={toPxSize(mainContextConfig.minPx)}
-            maxSize={toPxSize(mainContextConfig.maxPx)}
+            defaultSize={toPanelPercentSize(contextRatio)}
+            minSize={toPanelPixelSize(mainContextConfig.minPx)}
+            maxSize={toPanelPixelSize(mainContextConfig.maxPx)}
             className="bg-panel border-l border-border overflow-hidden flex flex-col z-10"
           >
             {contextPanel}

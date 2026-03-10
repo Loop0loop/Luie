@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useRef } from "react";
 import type { Layout } from "react-resizable-panels";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
-import type { SidebarWidthFeature } from "@shared/constants/sidebarSizing";
 import {
-    clampSidebarWidthForAnyFeature,
-    getSidebarWidthConfig,
-} from "@shared/constants/sidebarSizing";
+    normalizeLayoutSurfaceRatioInput,
+    type LayoutSurfaceId,
+} from "@shared/constants/layoutSizing";
 import { createLogger } from "@shared/logger";
 
 const logger = createLogger("useLayoutPersist");
@@ -13,23 +12,24 @@ const logger = createLogger("useLayoutPersist");
 export interface LayoutPersistEntry {
     /** Must match the Panel's `id` prop */
     id: string;
-    /** uiStore key to save the resulting pixel width to */
-    feature: SidebarWidthFeature;
+    /** uiStore key to save the resulting ratio to */
+    surface: LayoutSurfaceId;
 }
 
 /**
- * Hook that wires Group.onLayoutChanged to uiStore.setSidebarWidth.
- * It reads actual rendered pixel widths from the DOM, bypassing the complex
- * percent/pixel conversion issues in react-resizable-panels.
+ * Hook that wires Group.onLayoutChanged to uiStore.setLayoutSurfaceRatio.
+ * react-resizable-panels already reports stable percentages after each drag,
+ * so layout-level surfaces can persist ratios directly and remain responsive
+ * across different monitor widths.
  */
 export function useLayoutPersist(entries: LayoutPersistEntry[]) {
-    const setSidebarWidth = useUIStore((state) => state.setSidebarWidth);
+    const setLayoutSurfaceRatio = useUIStore((state) => state.setLayoutSurfaceRatio);
     const entriesRef = useRef(entries);
     const lastCommitRef = useRef(
-        new Map<SidebarWidthFeature, { width: number; timestampMs: number }>(),
+        new Map<LayoutSurfaceId, { ratio: number; timestampMs: number }>(),
     );
     const isHandlingLayoutRef = useRef(false);
-    const pendingCommitRef = useRef(new Map<SidebarWidthFeature, number>());
+    const pendingCommitRef = useRef(new Map<LayoutSurfaceId, number>());
     const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
@@ -39,10 +39,10 @@ export function useLayoutPersist(entries: LayoutPersistEntry[]) {
     const flushPendingCommits = useCallback(() => {
         const pendingEntries = Array.from(pendingCommitRef.current.entries());
         pendingCommitRef.current.clear();
-        for (const [feature, width] of pendingEntries) {
-            setSidebarWidth(feature, width);
+        for (const [surface, ratio] of pendingEntries) {
+            setLayoutSurfaceRatio(surface, ratio);
         }
-    }, [setSidebarWidth]);
+    }, [setLayoutSurfaceRatio]);
 
     const scheduleCommitFlush = useCallback(() => {
         if (flushTimeoutRef.current !== null) return;
@@ -76,57 +76,38 @@ export function useLayoutPersist(entries: LayoutPersistEntry[]) {
             try {
                 const nowMs = Date.now();
                 for (const entry of entriesRef.current) {
-                    // layout map contains panel id -> flexGrow; we only use it as presence signal.
-                    const flexGrow = layout[entry.id];
-                    if (typeof flexGrow !== "number") continue;
-
-                    const el = document.getElementById(String(entry.id));
-                    if (!el) {
-                        logger.warn(`[useLayoutPersist] Panel element not found in DOM`, { entryId: entry.id });
-                        continue;
-                    }
-
-                    const renderedWidthPx = el.getBoundingClientRect().width;
-                    if (renderedWidthPx <= 0) {
-                        logger.warn(`[useLayoutPersist] Rendered width <= 0`, { entryId: entry.id, renderedWidthPx });
-                        continue;
-                    }
-
-                    const config = getSidebarWidthConfig(entry.feature);
-                    const clampedPx = clampSidebarWidthForAnyFeature(
-                        entry.feature,
-                        renderedWidthPx,
+                    const nextRatio = normalizeLayoutSurfaceRatioInput(
+                        entry.surface,
+                        layout[entry.id],
                     );
-
-                    logger.info(`[useLayoutPersist] Evaluated width`, {
-                        feature: entry.feature,
-                        rawWidthPx: renderedWidthPx,
-                        clampedPx,
-                        configMin: config.minPx,
-                        configMax: config.maxPx,
-                    });
-
-                    if (clampedPx < config.minPx || clampedPx > config.maxPx) {
-                        logger.warn(`[useLayoutPersist] Skipping commit, out of bounds`, { feature: entry.feature, clampedPx });
-                        continue;
-                    }
-
-                    const previousCommit = lastCommitRef.current.get(entry.feature);
-                    if (
-                        previousCommit &&
-                        Math.abs(previousCommit.width - clampedPx) < 2 &&
-                        nowMs - previousCommit.timestampMs < 600
-                    ) {
-                        logger.debug(`[useLayoutPersist] Skipping deduped commit`, {
-                            feature: entry.feature,
-                            clampedPx,
+                    if (nextRatio === null) {
+                        logger.warn(`[useLayoutPersist] Invalid layout ratio`, {
+                            entryId: entry.id,
+                            surface: entry.surface,
+                            layoutValue: layout[entry.id],
                         });
                         continue;
                     }
 
-                    logger.info(`[useLayoutPersist] Committing width to store`, { feature: entry.feature, clampedPx });
-                    lastCommitRef.current.set(entry.feature, { width: clampedPx, timestampMs: nowMs });
-                    pendingCommitRef.current.set(entry.feature, clampedPx);
+                    const previousCommit = lastCommitRef.current.get(entry.surface);
+                    if (
+                        previousCommit &&
+                        Math.abs(previousCommit.ratio - nextRatio) < 0.1 &&
+                        nowMs - previousCommit.timestampMs < 600
+                    ) {
+                        logger.debug(`[useLayoutPersist] Skipping deduped commit`, {
+                            surface: entry.surface,
+                            nextRatio,
+                        });
+                        continue;
+                    }
+
+                    logger.info(`[useLayoutPersist] Committing layout surface ratio`, {
+                        surface: entry.surface,
+                        nextRatio,
+                    });
+                    lastCommitRef.current.set(entry.surface, { ratio: nextRatio, timestampMs: nowMs });
+                    pendingCommitRef.current.set(entry.surface, nextRatio);
                 }
                 scheduleCommitFlush();
             } finally {

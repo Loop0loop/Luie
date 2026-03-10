@@ -9,6 +9,11 @@ import {
 } from "@shared/constants";
 import type { Snapshot } from "@shared/types";
 import {
+  buildDefaultLayoutSurfaceRatios,
+  normalizeLayoutSurfaceRatiosWithMigrations,
+  type LayoutSurfaceId,
+} from "@shared/constants/layoutSizing";
+import {
   buildDefaultSidebarWidths,
   getSidebarDefaultWidth,
   getSynchronizedSidebarWidthFeatures,
@@ -77,6 +82,8 @@ export interface ResizablePanelData {
 }
 
 const DEFAULT_SIDEBAR_WIDTHS: Record<string, number> = buildDefaultSidebarWidths();
+const DEFAULT_LAYOUT_SURFACE_RATIOS: Record<LayoutSurfaceId, number> =
+  buildDefaultLayoutSurfaceRatios();
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -339,6 +346,7 @@ interface UIStore {
 
   // Sidebar Widths (in pixels)
   sidebarWidths: Record<string, number>;
+  layoutSurfaceRatios: Record<LayoutSurfaceId, number>;
 
   setView: (view: UIStore["view"]) => void;
   setContextTab: (tab: ContextTab) => void;
@@ -360,6 +368,7 @@ interface UIStore {
   setScrivenerSectionOpen: (section: ScrivenerSectionId, isOpen: boolean) => void;
   setScrivenerSections: (sections: Partial<ScrivenerSectionsState>) => void;
   setSidebarWidth: (feature: string, width: number) => void;
+  setLayoutSurfaceRatio: (surface: LayoutSurfaceId, ratio: number) => void;
   setRegionOpen: (region: RegionId, open: boolean) => void;
   setRegionWidth: (region: Exclude<RegionId, "rightRail">, width: number) => void;
   openRightPanelTab: (tab: RightPanelTab) => void;
@@ -393,6 +402,7 @@ export const useUIStore = create<UIStore>()(
       hasHydrated: false,
       focusedClosableTarget: null,
       sidebarWidths: { ...DEFAULT_SIDEBAR_WIDTHS },
+      layoutSurfaceRatios: { ...DEFAULT_LAYOUT_SURFACE_RATIOS },
       regions: cloneRegions(DEFAULT_REGIONS),
 
       mainView: { type: "editor" },
@@ -650,6 +660,25 @@ export const useUIStore = create<UIStore>()(
             regions: nextRegions,
           };
         }),
+      setLayoutSurfaceRatio: (surface, ratio) =>
+        set((state) => {
+          const normalizedRatios = normalizeLayoutSurfaceRatiosWithMigrations({
+            ...state.layoutSurfaceRatios,
+            [surface]: ratio,
+          });
+          const nextRatio = normalizedRatios[surface];
+          const previousRatio = state.layoutSurfaceRatios[surface];
+          if (Math.abs(previousRatio - nextRatio) < 0.1) {
+            return state;
+          }
+
+          return {
+            layoutSurfaceRatios: {
+              ...state.layoutSurfaceRatios,
+              [surface]: nextRatio,
+            },
+          };
+        }),
       setRegionOpen: (region, open) =>
         set((state) => {
           if (state.regions[region].open === open) return state;
@@ -885,6 +914,10 @@ export const useUIStore = create<UIStore>()(
         scrivenerInspectorOpen: state.scrivenerInspectorOpen,
         scrivenerSections: state.scrivenerSections,
         sidebarWidths: normalizeSidebarWidthsWithMigrations(state.sidebarWidths),
+        layoutSurfaceRatios: normalizeLayoutSurfaceRatiosWithMigrations(
+          state.layoutSurfaceRatios,
+          state.sidebarWidths,
+        ),
         regions: cloneRegions(state.regions),
       }),
       merge: (persistedState, currentState) => {
@@ -895,6 +928,10 @@ export const useUIStore = create<UIStore>()(
         const typedPersisted = persistedState as Partial<UIStore>;
         const normalizedSidebarWidths = normalizeSidebarWidthsWithMigrations(
           typedPersisted.sidebarWidths,
+        );
+        const normalizedLayoutSurfaceRatios = normalizeLayoutSurfaceRatiosWithMigrations(
+          typedPersisted.layoutSurfaceRatios,
+          normalizedSidebarWidths,
         );
         const migratedRegions = buildRegionsFromLegacyState({
           isSidebarOpen:
@@ -941,6 +978,7 @@ export const useUIStore = create<UIStore>()(
               : {}),
           },
           sidebarWidths: normalizedSidebarWidths,
+          layoutSurfaceRatios: normalizedLayoutSurfaceRatios,
           regions: migratedRegions,
         };
       },

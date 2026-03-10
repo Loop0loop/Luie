@@ -22,13 +22,13 @@ import {
   openDocsRightTab,
 } from "@renderer/features/workspace/services/docsPanelService";
 import {
-  clampSidebarWidth,
-  getSidebarDefaultWidth,
-  getSidebarWidthConfig,
-  toPercentSize,
-  toPxSize,
-  type SidebarWidthFeature
-} from "@shared/constants/sidebarSizing";
+  getDocsLayoutPanelSurface,
+  getLayoutSurfaceConfig,
+  getLayoutSurfaceDefaultRatio,
+  toPanelPercentSize,
+  toPanelPixelSize,
+  type DocsLayoutPanelTab,
+} from "@shared/constants/layoutSizing";
 import type { LayoutPersistEntry } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import {
   EDITOR_A4_PAGE_HEIGHT_PX,
@@ -38,6 +38,7 @@ import {
   EDITOR_RULER_DEFAULT_MARGIN_RIGHT_PX,
 } from "@shared/constants/configs";
 import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
+import { toPercentSize } from "@shared/constants/sidebarSizing";
 import {
   Menu,
   ChevronLeft,
@@ -69,19 +70,6 @@ interface GoogleDocsLayoutProps {
   onOpenWorldGraph?: () => void;
 }
 
-const DOCS_TAB_WIDTH_FEATURE_MAP = {
-  character: "docsCharacter",
-  event: "docsEvent",
-  faction: "docsFaction",
-  world: "docsWorld",
-  scrap: "docsScrap",
-  analysis: "docsAnalysis",
-  snapshot: "docsSnapshot",
-  trash: "docsTrash",
-  editor: "docsEditor",
-  export: "docsExport",
-} as const;
-
 export default function GoogleDocsLayout({
   children,
   sidebar,
@@ -108,12 +96,11 @@ export default function GoogleDocsLayout({
   const {
     isSidebarOpen,
     activeRightTab,
-    isBinderBarOpen,
-    regions,
-    sidebarWidths,
+    isPanelRailOpen,
+    layoutSurfaceRatios,
     setRegionOpen,
     closeRightPanel,
-    setBinderBarOpen,
+    setPanelRailOpen,
     setFocusedClosableTarget,
     hasHydrated,
   } = useUIStore(
@@ -122,18 +109,17 @@ export default function GoogleDocsLayout({
       activeRightTab: state.regions.rightPanel.open
         ? state.docsRightTab ?? state.regions.rightPanel.activeTab
         : null,
-      isBinderBarOpen: state.regions.rightRail.open,
-      regions: state.regions,
-      sidebarWidths: state.sidebarWidths,
+      isPanelRailOpen: state.regions.rightRail.open,
+      layoutSurfaceRatios: state.layoutSurfaceRatios,
       setRegionOpen: state.setRegionOpen,
       closeRightPanel: state.closeRightPanel,
-      setBinderBarOpen: state.setBinderBarOpen,
+      setPanelRailOpen: state.setBinderBarOpen,
       setFocusedClosableTarget: state.setFocusedClosableTarget,
       hasHydrated: state.hasHydrated,
     }))
   );
 
-  const handleRightTabClick = useCallback((tab: "character" | "world" | "event" | "faction" | "scrap" | "analysis" | "snapshot" | "trash" | "editor" | "export") => {
+  const handleRightTabClick = useCallback((tab: DocsLayoutPanelTab) => {
     if (activeRightTab === tab) {
       closeRightPanel();
       return;
@@ -142,16 +128,16 @@ export default function GoogleDocsLayout({
     openDocsRightTab(tab);
   }, [activeRightTab, closeRightPanel, setFocusedClosableTarget]);
 
-  const docsBinderConfig = getSidebarWidthConfig("docsBinder");
+  const docsSidebarConfig = getLayoutSurfaceConfig("docs.sidebar");
 
   const layoutEntries = useMemo<LayoutPersistEntry[]>(() => {
     const entries: LayoutPersistEntry[] = [
-      { id: "left-sidebar", feature: "docsBinder" as const },
+      { id: "left-sidebar", surface: "docs.sidebar" },
     ];
     if (activeRightTab) {
       entries.push({
         id: `right-context-panel-${activeRightTab}`,
-        feature: DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab] as SidebarWidthFeature,
+        surface: getDocsLayoutPanelSurface(activeRightTab),
       });
     }
     return entries;
@@ -159,25 +145,18 @@ export default function GoogleDocsLayout({
 
   const onLayoutChanged = useLayoutPersist(layoutEntries);
 
-  const leftSavedPxWidth = clampSidebarWidth(
-    "docsBinder",
-    regions.leftSidebar.widthPx
-    ?? sidebarWidths["docsBinder"]
-    ?? getSidebarDefaultWidth("docsBinder"),
-  );
+  const docsSidebarRatio =
+    layoutSurfaceRatios["docs.sidebar"] ?? getLayoutSurfaceDefaultRatio("docs.sidebar");
 
-  const rightSavedPxWidth = activeRightTab
-    ? clampSidebarWidth(
-      DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab],
-      regions.rightPanel.widthByTab[activeRightTab]
-      ?? sidebarWidths[DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab]]
-      ?? getSidebarDefaultWidth(DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab]),
-    )
-    : regions.rightPanel.widthByTab.character;
-
-  const rightWidthConfig = getSidebarWidthConfig(
-    activeRightTab ? DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab] : "docsCharacter",
-  );
+  const activePanelSurface = activeRightTab
+    ? getDocsLayoutPanelSurface(activeRightTab)
+    : null;
+  const rightPanelRatio = activePanelSurface
+    ? layoutSurfaceRatios[activePanelSurface] ?? getLayoutSurfaceDefaultRatio(activePanelSurface)
+    : null;
+  const rightPanelConfig = activePanelSurface
+    ? getLayoutSurfaceConfig(activePanelSurface)
+    : null;
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-sans transition-colors duration-200">
@@ -281,15 +260,15 @@ export default function GoogleDocsLayout({
             <>
               <Panel
                 id="left-sidebar"
-                defaultSize={toPxSize(leftSavedPxWidth)}
-                minSize={toPxSize(docsBinderConfig.minPx)}
-                maxSize={toPxSize(docsBinderConfig.maxPx)}
+                defaultSize={toPanelPercentSize(docsSidebarRatio)}
+                minSize={toPanelPixelSize(docsSidebarConfig.minPx)}
+                maxSize={toPanelPixelSize(docsSidebarConfig.maxPx)}
                 className="bg-background border-r border-border overflow-hidden flex flex-col shrink-0 min-w-0"
               >
                 {sidebar}
               </Panel>
 
-              <PanelResizeHandle data-separator-feature="docsBinder" className="w-1 shrink-0 bg-border/40 hover:bg-blue-500/50 focus-visible:bg-blue-500/50 transition-colors cursor-col-resize z-20 relative">
+              <PanelResizeHandle data-separator-feature="docs.sidebar" className="w-1 shrink-0 bg-border/40 hover:bg-blue-500/50 focus-visible:bg-blue-500/50 transition-colors cursor-col-resize z-20 relative">
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
             </>
@@ -333,19 +312,19 @@ export default function GoogleDocsLayout({
           {/* Right Context Panel */}
           {activeRightTab && (
             <>
-              <PanelResizeHandle data-separator-feature={DOCS_TAB_WIDTH_FEATURE_MAP[activeRightTab]} className="w-1 shrink-0 bg-border/40 hover:bg-accent/60 focus-visible:bg-accent/60 transition-colors cursor-col-resize z-20 relative">
-                <div className="absolute inset-y-0 -left-1 -right-1" />
-              </PanelResizeHandle>
+                  <PanelResizeHandle data-separator-feature={activePanelSurface} className="w-1 shrink-0 bg-border/40 hover:bg-accent/60 focus-visible:bg-accent/60 transition-colors cursor-col-resize z-20 relative">
+                    <div className="absolute inset-y-0 -left-1 -right-1" />
+                  </PanelResizeHandle>
 
-              <Panel
-                key={`right-context-panel-${activeRightTab}`}
-                id={`right-context-panel-${activeRightTab}`}
-                defaultSize={toPxSize(rightSavedPxWidth)}
-                minSize={toPxSize(rightWidthConfig.minPx)}
-                maxSize={toPxSize(rightWidthConfig.maxPx)}
-                onMouseDownCapture={() => {
-                  setFocusedClosableTarget({ kind: "docs-tab" });
-                }}
+                  <Panel
+                    key={`right-context-panel-${activeRightTab}`}
+                    id={`right-context-panel-${activeRightTab}`}
+                    defaultSize={toPanelPercentSize(rightPanelRatio ?? 0)}
+                    minSize={toPanelPixelSize(rightPanelConfig?.minPx ?? 320)}
+                    maxSize={toPanelPixelSize(rightPanelConfig?.maxPx ?? 760)}
+                    onMouseDownCapture={() => {
+                      setFocusedClosableTarget({ kind: "docs-tab" });
+                    }}
                 className="bg-background border-l border-border overflow-hidden flex flex-col shrink-0 min-w-0"
               >
                 <div className="h-full flex flex-col">
@@ -446,13 +425,13 @@ export default function GoogleDocsLayout({
 
         </PanelGroup>
 
-        {/* Right Icon Bar (Binder Bar) - OUTSIDE the PanelGroup so it's a fixed width on far right */}
+        {/* Right Panel Rail - fixed width and intentionally separate from panel sizing */}
         <div className={cn(
           "bg-background border-l border-border flex flex-col items-center py-4 gap-4 shrink-0 z-10 transition-all duration-300 ease-in-out overflow-hidden h-full",
-          isBinderBarOpen ? "w-14 opacity-100" : "w-0 opacity-0 border-l-0"
+          isPanelRailOpen ? "w-14 opacity-100" : "w-0 opacity-0 border-l-0"
         )}>
           <button
-            onClick={() => setBinderBarOpen(false)}
+            onClick={() => setPanelRailOpen(false)}
             className="w-full h-8 flex items-center justify-center hover:bg-surface-hover transition-colors mb-2 border-b border-border/50"
             title={t("sidebar.toggle.close")}
           >
@@ -543,10 +522,10 @@ export default function GoogleDocsLayout({
           </div>
         </div>
 
-        {!isBinderBarOpen && (
+        {!isPanelRailOpen && (
           <div className="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
             <button
-              onClick={() => setBinderBarOpen(true)}
+              onClick={() => setPanelRailOpen(true)}
               className="w-8 h-12 bg-background border border-r-0 border-border shadow-md rounded-l-lg flex items-center justify-center hover:bg-surface-hover transition-colors text-muted-foreground cursor-pointer"
               title={t("sidebar.toggle.open")}
             >

@@ -10,19 +10,21 @@ import { DraggableItem } from "@shared/ui/DraggableItem";
 import type { DragItemType } from "@shared/ui/GlobalDragContext";
 import FocusHoverSidebar from "@renderer/features/manuscript/components/FocusHoverSidebar";
 import {
-    clampSidebarWidth,
-    getSidebarDefaultWidth,
-    getSidebarWidthConfig,
-    toPxSize,
-} from "@shared/constants/sidebarSizing";
-import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
+    getEditorLayoutPanelSurface,
+    getLayoutSurfaceConfig,
+    getLayoutSurfaceDefaultRatio,
+    toPanelPercentSize,
+    toPanelPixelSize,
+    type EditorLayoutPanelTab,
+} from "@shared/constants/layoutSizing";
+import { useLayoutSurfaceResizeCommit } from "@renderer/features/workspace/hooks/useLayoutSurfaceResizeCommit";
 
 const ResearchPanel = React.lazy(() => import("@renderer/features/research/components/ResearchPanel"));
 const WorldPanel = React.lazy(() => import("@renderer/features/research/components/WorldPanel"));
 const SnapshotList = React.lazy(() => import("@renderer/features/snapshot/components/SnapshotList").then((m) => ({ default: m.SnapshotList })));
 const TrashList = React.lazy(() => import("@renderer/features/trash/components/TrashList").then((m) => ({ default: m.TrashList })));
 
-type BinderTab = "character" | "world" | "scrap" | "analysis" | "snapshot" | "trash";
+type BinderTab = EditorLayoutPanelTab;
 
 interface BinderSidebarProps {
     activeChapterId?: string;
@@ -30,27 +32,18 @@ interface BinderSidebarProps {
     sidebarTopOffset: number;
 }
 
-const EDITOR_TAB_WIDTH_FEATURE_MAP = {
-    character: "editorCharacter",
-    world: "editorWorld",
-    scrap: "editorScrap",
-    analysis: "editorAnalysis",
-    snapshot: "editorSnapshot",
-    trash: "editorTrash",
-} as const;
-
 export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOffset: _sidebarTopOffset }: BinderSidebarProps) {
     const { t } = useTranslation();
     const {
         docsRightTab,
         rightPanelOpen,
         rightPanelActiveTab,
-        isRightRailOpen,
+        isPanelRailOpen,
         openRightPanelTab,
         closeRightPanel,
         setRegionOpen,
-        sidebarWidths,
-        setSidebarWidth,
+        layoutSurfaceRatios,
+        setLayoutSurfaceRatio,
         setFocusedClosableTarget,
         hasHydrated,
     } = useUIStore(
@@ -58,12 +51,12 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
             docsRightTab: state.docsRightTab,
             rightPanelOpen: state.regions.rightPanel.open,
             rightPanelActiveTab: state.regions.rightPanel.activeTab,
-            isRightRailOpen: state.regions.rightRail.open,
+            isPanelRailOpen: state.regions.rightRail.open,
             openRightPanelTab: state.openRightPanelTab,
             closeRightPanel: state.closeRightPanel,
             setRegionOpen: state.setRegionOpen,
-            sidebarWidths: state.sidebarWidths,
-            setSidebarWidth: state.setSidebarWidth,
+            layoutSurfaceRatios: state.layoutSurfaceRatios,
+            setLayoutSurfaceRatio: state.setLayoutSurfaceRatio,
             setFocusedClosableTarget: state.setFocusedClosableTarget,
             hasHydrated: state.hasHydrated,
         }))
@@ -89,12 +82,30 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
         [closeRightPanel, openRightPanelTab]
     );
 
-    const handleCharacterResize = useSidebarResizeCommit("editorCharacter", setSidebarWidth);
-    const handleWorldResize = useSidebarResizeCommit("editorWorld", setSidebarWidth);
-    const handleScrapResize = useSidebarResizeCommit("editorScrap", setSidebarWidth);
-    const handleAnalysisResize = useSidebarResizeCommit("editorAnalysis", setSidebarWidth);
-    const handleSnapshotResize = useSidebarResizeCommit("editorSnapshot", setSidebarWidth);
-    const handleTrashResize = useSidebarResizeCommit("editorTrash", setSidebarWidth);
+    const handleCharacterResize = useLayoutSurfaceResizeCommit(
+        getEditorLayoutPanelSurface("character"),
+        setLayoutSurfaceRatio,
+    );
+    const handleWorldResize = useLayoutSurfaceResizeCommit(
+        getEditorLayoutPanelSurface("world"),
+        setLayoutSurfaceRatio,
+    );
+    const handleScrapResize = useLayoutSurfaceResizeCommit(
+        getEditorLayoutPanelSurface("scrap"),
+        setLayoutSurfaceRatio,
+    );
+    const handleAnalysisResize = useLayoutSurfaceResizeCommit(
+        getEditorLayoutPanelSurface("analysis"),
+        setLayoutSurfaceRatio,
+    );
+    const handleSnapshotResize = useLayoutSurfaceResizeCommit(
+        getEditorLayoutPanelSurface("snapshot"),
+        setLayoutSurfaceRatio,
+    );
+    const handleTrashResize = useLayoutSurfaceResizeCommit(
+        getEditorLayoutPanelSurface("trash"),
+        setLayoutSurfaceRatio,
+    );
 
     const rightTabResizeHandlers: Record<BinderTab, (panelSize: PanelSize) => void> = useMemo(() => ({
         character: handleCharacterResize,
@@ -128,20 +139,16 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
         [activeRightTab, rightTabResizeHandlers]
     );
 
-    const savedPxWidth = activeRightTab
-        ? clampSidebarWidth(
-            EDITOR_TAB_WIDTH_FEATURE_MAP[activeRightTab],
-            sidebarWidths[EDITOR_TAB_WIDTH_FEATURE_MAP[activeRightTab]]
-            || getSidebarDefaultWidth(EDITOR_TAB_WIDTH_FEATURE_MAP[activeRightTab]),
-        )
-        : getSidebarDefaultWidth("editorCharacter");
+    const activePanelSurface = activeRightTab
+        ? getEditorLayoutPanelSurface(activeRightTab)
+        : getEditorLayoutPanelSurface("character");
+    const savedRatio = layoutSurfaceRatios[activePanelSurface]
+        ?? getLayoutSurfaceDefaultRatio(activePanelSurface);
 
     const panelMountKey = activeRightTab
         ? `binder-sidebar-${activeRightTab}-${hasHydrated ? "hydrated" : "cold"}`
         : null;
-    const widthConfig = getSidebarWidthConfig(
-        activeRightTab ? EDITOR_TAB_WIDTH_FEATURE_MAP[activeRightTab] : "editorCharacter",
-    );
+    const widthConfig = getLayoutSurfaceConfig(activePanelSurface);
 
     const handleBackToSnapshotList = () => {
         setActiveRightTab("snapshot");
@@ -213,9 +220,9 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
             <Panel
                 key={panelMountKey}
                 id={`binder-sidebar-${activeRightTab}`}
-                defaultSize={toPxSize(savedPxWidth)}
-                minSize={toPxSize(widthConfig.minPx)}
-                maxSize={toPxSize(widthConfig.maxPx)}
+                defaultSize={toPanelPercentSize(savedRatio)}
+                minSize={toPanelPixelSize(widthConfig.minPx)}
+                maxSize={toPanelPixelSize(widthConfig.maxPx)}
                 onResize={handleResize}
                 onMouseDownCapture={() => {
                     setFocusedClosableTarget({ kind: "docs-tab" });
@@ -290,7 +297,7 @@ export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOff
                     </div>
                 </div>
 
-                {isRightRailOpen ? (
+                {isPanelRailOpen ? (
                     renderIconBar()
                 ) : (
                     <div className="w-8 bg-surface border-l border-border flex items-start justify-center py-3 shrink-0">

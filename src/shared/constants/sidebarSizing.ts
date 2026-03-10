@@ -1,3 +1,11 @@
+/**
+ * Feature-local sidebar sizing and legacy width migration.
+ *
+ * Layout-level surfaces (default/docs/editor/scrivener) now live in
+ * `layoutSizing.ts` so manuscript sidebars, panel rails, and inspectors can
+ * evolve independently per layout.
+ */
+
 export type SidebarWidthFeature =
   | "mainSidebar"
   | "mainContext"
@@ -48,13 +56,13 @@ export type SidebarWidthConfig = {
 };
 
 const PANEL_SIDEBAR_WIDTH_CONFIG: SidebarWidthConfig = {
-  minPx: 150,
-  maxPx: 250,
-  defaultPx: 200,
+  minPx: 220,
+  maxPx: 420,
+  defaultPx: 280,
 };
 
 const PANEL_WIDTH_CONFIG: SidebarWidthConfig = {
-  minPx: 400,
+  minPx: 200,
   maxPx: 1000,
   defaultPx: 600,
 };

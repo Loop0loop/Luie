@@ -6,6 +6,7 @@ export const DEFAULT_EDITOR_THEME_TEMP = "neutral";
 export const DEFAULT_EDITOR_THEME_CONTRAST = "soft";
 export * from './characterTemplates'
 export * from './shortcuts'
+export * from './layoutSizing'
 export * from './sidebarSizing'
 export * from './world'
 export * from './worldRelationRules'

@@ -21,12 +21,12 @@ import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { Menu, ChevronRight } from "lucide-react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type GroupImperativeHandle } from "react-resizable-panels";
 import {
-  clampSidebarWidth,
-  getSidebarDefaultWidth,
-  getSidebarWidthConfig,
-  toPercentSize,
-  toPxSize,
-} from "@shared/constants/sidebarSizing";
+  getLayoutSurfaceConfig,
+  getLayoutSurfaceDefaultRatio,
+  toPanelPercentSize,
+  toPanelPixelSize,
+} from "@shared/constants/layoutSizing";
+import { toPercentSize } from "@shared/constants/sidebarSizing";
 import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
 
 interface ScrivenerLayoutProps {
@@ -56,8 +56,7 @@ export default function ScrivenerLayout({
   const {
     mainView,
     panels,
-    regions,
-    sidebarWidths,
+    layoutSurfaceRatios,
     hasHydrated,
     isSidebarOpen,
     isInspectorOpen,
@@ -66,8 +65,7 @@ export default function ScrivenerLayout({
     useShallow((state) => ({
       mainView: state.mainView,
       panels: state.panels,
-      regions: state.regions,
-      sidebarWidths: state.sidebarWidths,
+      layoutSurfaceRatios: state.layoutSurfaceRatios,
       hasHydrated: state.hasHydrated,
       isSidebarOpen: state.regions.leftSidebar.open,
       isInspectorOpen: state.regions.rightPanel.open,
@@ -77,25 +75,20 @@ export default function ScrivenerLayout({
   const editorSplitGroupRef = useRef<GroupImperativeHandle | null>(null);
   const previousPanelCountRef = useRef(panels.length);
 
-  const binderConfig = getSidebarWidthConfig("scrivenerBinder");
-  const inspectorConfig = getSidebarWidthConfig("scrivenerInspector");
+  const binderConfig = getLayoutSurfaceConfig("scrivener.binder");
+  const inspectorConfig = getLayoutSurfaceConfig("scrivener.inspector");
 
   const onLayoutChanged = useLayoutPersist([
-    { id: "sidebar", feature: "scrivenerBinder" },
-    { id: "inspector", feature: "scrivenerInspector" },
+    { id: "sidebar", surface: "scrivener.binder" },
+    { id: "inspector", surface: "scrivener.inspector" },
   ]);
 
-  const binderSavedPxWidth = clampSidebarWidth(
-    "scrivenerBinder",
-    regions.leftSidebar.widthPx
-      ?? sidebarWidths["scrivenerBinder"]
-      ?? getSidebarDefaultWidth("scrivenerBinder"),
-  );
-
-  const inspectorSavedPxWidth = clampSidebarWidth(
-    "scrivenerInspector",
-    sidebarWidths["scrivenerInspector"] || getSidebarDefaultWidth("scrivenerInspector"),
-  );
+  const binderRatio =
+    layoutSurfaceRatios["scrivener.binder"] ??
+    getLayoutSurfaceDefaultRatio("scrivener.binder");
+  const inspectorRatio =
+    layoutSurfaceRatios["scrivener.inspector"] ??
+    getLayoutSurfaceDefaultRatio("scrivener.inspector");
 
   useEffect(() => {
     const previousPanelCount = previousPanelCountRef.current;
@@ -168,15 +161,15 @@ export default function ScrivenerLayout({
             <>
               <Panel
                 id="sidebar"
-                defaultSize={toPxSize(binderSavedPxWidth)}
-                minSize={toPxSize(binderConfig.minPx)}
-                maxSize={toPxSize(binderConfig.maxPx)}
+                defaultSize={toPanelPercentSize(binderRatio)}
+                minSize={toPanelPixelSize(binderConfig.minPx)}
+                maxSize={toPanelPixelSize(binderConfig.maxPx)}
                 className="bg-panel border-r border-border flex flex-col shrink-0 min-w-0"
               >
                 {sidebar}
               </Panel>
 
-              <PanelResizeHandle data-separator-feature="scrivenerBinder" className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative">
+              <PanelResizeHandle data-separator-feature="scrivener.binder" className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative">
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
             </>
@@ -255,15 +248,15 @@ export default function ScrivenerLayout({
           {/* Pane 3: Inspector (Right) */}
           {isInspectorOpen && (
             <>
-              <PanelResizeHandle data-separator-feature="scrivenerInspector" className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative">
+              <PanelResizeHandle data-separator-feature="scrivener.inspector" className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative">
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
 
               <Panel
                 id="inspector"
-                defaultSize={toPxSize(inspectorSavedPxWidth)}
-                minSize={toPxSize(inspectorConfig.minPx)}
-                maxSize={toPxSize(inspectorConfig.maxPx)}
+                defaultSize={toPanelPercentSize(inspectorRatio)}
+                minSize={toPanelPixelSize(inspectorConfig.minPx)}
+                maxSize={toPanelPixelSize(inspectorConfig.maxPx)}
                 className="bg-panel flex flex-col shrink-0 min-w-0"
               >
                 {/* Floating Toggle wrapper */}
