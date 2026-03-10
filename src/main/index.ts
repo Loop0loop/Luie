@@ -41,8 +41,8 @@ logger.info("Main process bootstrap", {
 const registerLuieProtocol = (): void => {
   const protocol = "luie";
   let registered = false;
+  const appEntry = app.getAppPath();
   if (isDefaultApp) {
-    const appEntry = process.argv[1] ? path.resolve(process.argv[1]) : "";
     if (appEntry) {
       registered = app.setAsDefaultProtocolClient(protocol, process.execPath, [appEntry]);
     }
@@ -74,6 +74,7 @@ const registerLuieProtocol = (): void => {
   logger.info("Custom protocol registered", {
     protocol,
     defaultApp: isDefaultApp,
+    appEntry,
   });
 };
 

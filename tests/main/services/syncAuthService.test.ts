@@ -44,6 +44,7 @@ vi.mock("electron", async () => {
 vi.mock("../../../src/main/manager/settingsManager.js", () => ({
   settingsManager: {
     getSyncSettings: () => ({ ...mocked.state }),
+    getRuntimeSupabaseConfig: () => undefined,
     setSyncSettings: (patch: Partial<SyncSettings>) => {
       for (const [key, value] of Object.entries(patch)) {
         if (value === undefined) {
@@ -128,9 +129,9 @@ describe("SyncAuthService", () => {
     const redirectTo = new URL(authorizeUrl).searchParams.get("redirect_to");
     expect(stateFromAuthorize).toBeNull();
     expect(mocked.state.pendingAuthState).toBeUndefined();
-    expect(redirectTo).toBe("https://eluie.kro.kr/auth/callback");
+    expect(redirectTo).toBe("luie://auth/callback");
     expect(mocked.state.pendingAuthVerifierCipher?.startsWith("v2:plain:")).toBe(true);
-    expect(mocked.state.pendingAuthRedirectUri).toBe("https://eluie.kro.kr/auth/callback");
+    expect(mocked.state.pendingAuthRedirectUri).toBe("luie://auth/callback");
 
     mocked.safeStorageState.available = true;
     vi.resetModules();

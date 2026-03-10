@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type GroupImperativeHandle } from "react-resizable-panels";
 import { Clock, Globe } from "lucide-react";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
@@ -19,6 +19,7 @@ import { WorldSidebar } from "./WorldSidebar";
 import { WorldInspector } from "./WorldInspector";
 import { WorldTimelinePanel } from "./WorldTimelinePanel";
 import { WorldMapPanel } from "./WorldMapPanel";
+import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -57,6 +58,29 @@ export function WorldGraphPanel() {
   const onResizeLeft = useSidebarResizeCommit(leftFeature, setSidebarWidth);
   const onResizeRight = useSidebarResizeCommit(rightFeature, setSidebarWidth);
   const requestedProjectIdRef = useRef<string | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const panelGroupRef = useRef<GroupImperativeHandle | null>(null);
+
+  useFixedPixelPanelGroupLayout({
+    containerRef,
+    groupRef: panelGroupRef,
+    fixedPanels: [
+      {
+        id: "world-graph-sidebar",
+        widthPx: leftWidth,
+        minPx: leftConfig.minPx,
+        maxPx: leftConfig.maxPx,
+      },
+      {
+        id: "world-graph-inspector",
+        widthPx: rightWidth,
+        minPx: rightConfig.minPx,
+        maxPx: rightConfig.maxPx,
+      },
+    ],
+    flexPanelId: "world-graph-canvas",
+    flexPanelMinPercent: 28,
+  });
 
   useEffect(() => {
     if (!currentProjectId) {
@@ -77,8 +101,9 @@ export function WorldGraphPanel() {
   return (
     <div className="h-full overflow-hidden bg-app flex flex-col">
       {/* Main Panel Layout */}
-      <div className="flex-1 min-h-0 flex overflow-hidden">
+      <div ref={containerRef} className="flex-1 min-h-0 flex overflow-hidden">
         <PanelGroup
+          groupRef={panelGroupRef}
           orientation="horizontal"
           className="h-full! w-full!"
         >

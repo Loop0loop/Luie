@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo } from "react";
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type GroupImperativeHandle } from "react-resizable-panels";
 import { useShallow } from "zustand/react/shallow";
 import {
   STORAGE_KEY_MEMO_SIDEBAR_LAYOUT,
@@ -21,6 +21,7 @@ import {
   toPxSize,
 } from "@shared/constants/sidebarSizing";
 import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
+import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
 
 const MEMO_SIDEBAR_PANEL_ID = "memo-sidebar";
 const MEMO_CONTENT_PANEL_ID = "memo-content";
@@ -122,6 +123,24 @@ function MemoSectionInner({
     sidebarFeature,
     commitMemoSidebarWidth,
   );
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const panelGroupRef = useRef<GroupImperativeHandle | null>(null);
+
+  useFixedPixelPanelGroupLayout({
+    containerRef,
+    groupRef: panelGroupRef,
+    fixedPanels: [
+      {
+        id: MEMO_SIDEBAR_PANEL_ID,
+        widthPx: memoSidebarWidthPx,
+        minPx: sidebarConfig.minPx,
+        maxPx: sidebarConfig.maxPx,
+      },
+    ],
+    flexPanelId: MEMO_CONTENT_PANEL_ID,
+    flexPanelMinPercent: MEMO_CONTENT_MIN_SIZE_PERCENT,
+  });
+
   useShortcutCommand((command) => {
     if (command.type === "scrap.addMemo") {
       handleAddNote();
@@ -129,8 +148,9 @@ function MemoSectionInner({
   });
 
   return (
-    <div className="flex flex-col h-full bg-sidebar/30">
+    <div ref={containerRef} className="flex flex-col h-full bg-sidebar/30">
       <PanelGroup
+        groupRef={panelGroupRef}
         orientation="horizontal"
         id="memo-panel-group"
         className="h-full! w-full!"

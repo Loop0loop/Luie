@@ -10,7 +10,7 @@ import {
 
 const logger = createLogger("SyncAuthService");
 
-const DEFAULT_OAUTH_REDIRECT_URI = "https://eluie.kro.kr/auth/callback";
+const DEFAULT_OAUTH_REDIRECT_URI = "luie://auth/callback";
 const TOKEN_CODEC_SAFE_PREFIX = "v2:safe:";
 const TOKEN_CODEC_PLAIN_PREFIX = "v2:plain:";
 const SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE = "SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE";

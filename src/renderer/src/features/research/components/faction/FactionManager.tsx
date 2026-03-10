@@ -1,4 +1,5 @@
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
+import { useRef } from "react";
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type GroupImperativeHandle } from "react-resizable-panels";
 import { Shield } from "lucide-react";
 import FactionDetailView from "@renderer/features/research/components/faction/FactionDetailView";
 import { useTranslation } from "react-i18next";
@@ -15,6 +16,7 @@ import {
     toPxSize,
 } from "@shared/constants/sidebarSizing";
 import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
+import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
 
 export default function FactionManager() {
     const { t } = useTranslation();
@@ -31,6 +33,24 @@ export default function FactionManager() {
         sidebarWidths[sidebarFeature] || getSidebarDefaultWidth(sidebarFeature),
     );
     const handleSidebarResize = useSidebarResizeCommit(sidebarFeature, setSidebarWidth);
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const panelGroupRef = useRef<GroupImperativeHandle | null>(null);
+
+    useFixedPixelPanelGroupLayout({
+        containerRef,
+        groupRef: panelGroupRef,
+        fixedPanels: [
+            {
+                id: "sidebar",
+                widthPx: sidebarWidth,
+                minPx: sidebarConfig.minPx,
+                maxPx: sidebarConfig.maxPx,
+            },
+        ],
+        flexPanelId: "main",
+        flexPanelMinPercent: 20,
+    });
+
     const {
         selectedFactionId,
         setSelectedFactionId,
@@ -40,8 +60,9 @@ export default function FactionManager() {
     } = useFactionManager(t);
 
     return (
-        <div className="flex w-full h-full bg-canvas overflow-hidden">
+        <div ref={containerRef} className="flex w-full h-full bg-canvas overflow-hidden">
             <PanelGroup
+                groupRef={panelGroupRef}
                 orientation="horizontal"
                 className="h-full! w-full!"
             >

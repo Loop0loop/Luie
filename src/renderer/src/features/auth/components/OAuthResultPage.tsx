@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 type OAuthResultStatus = "success" | "error";
 type OAuthSuccessReason = "STALE_CONNECTED";
@@ -80,9 +80,45 @@ const parseOAuthResult = (): {
   };
 };
 
+const buildOAuthCallbackDeepLink = (): string | null => {
+  if (typeof window === "undefined") return null;
+
+  const { protocol, search, hash } = window.location;
+  if (protocol !== "http:" && protocol !== "https:") {
+    return null;
+  }
+
+  const searchParams = new URLSearchParams(search);
+  const rawHash = hash.startsWith("#") ? hash.slice(1) : hash;
+  const hashParams = new URLSearchParams(rawHash);
+  const hasCallbackPayload =
+    searchParams.has("code") ||
+    searchParams.has("error") ||
+    hashParams.has("code") ||
+    hashParams.has("error");
+
+  if (!hasCallbackPayload) {
+    return null;
+  }
+
+  const searchSuffix = search && search !== "?" ? search : "";
+  const hashSuffix = hash && hash !== "#" ? hash : "";
+  return `luie://auth/callback${searchSuffix}${hashSuffix}`;
+};
+
 export default function OAuthResultPage() {
   const result = useMemo(() => parseOAuthResult(), []);
+  const callbackDeepLink = useMemo(() => buildOAuthCallbackDeepLink(), []);
   const isSuccess = result.status === "success";
+  const returnHref = callbackDeepLink ?? "luie://auth/return";
+
+  useEffect(() => {
+    if (!callbackDeepLink) return;
+    const timer = window.setTimeout(() => {
+      window.location.href = callbackDeepLink;
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [callbackDeepLink]);
 
   return (
     <div className="min-h-screen bg-app text-fg flex items-center justify-center px-6">
@@ -91,9 +127,11 @@ export default function OAuthResultPage() {
           {isSuccess ? "연결되었습니다!" : "연결에 실패했습니다"}
         </h1>
         <p className="mt-3 text-sm text-muted leading-6">
-          {isSuccess
-            ? "Google 계정 연결이 완료되었습니다. 아래 버튼을 눌러 Luie 앱으로 돌아가세요."
-            : "로그인 처리가 완료되지 않았습니다. 앱으로 돌아가 다시 시도해 주세요."}
+          {callbackDeepLink
+            ? "브라우저가 Luie 앱으로 돌아가도록 시도하고 있습니다. 열기 확인창이 나오면 허용해 주세요."
+            : isSuccess
+              ? "Google 계정 연결이 완료되었습니다. 아래 버튼을 눌러 Luie 앱으로 돌아가세요."
+              : "로그인 처리가 완료되지 않았습니다. 앱으로 돌아가 다시 시도해 주세요."}
         </p>
 
         {result.detailMessage && (
@@ -109,10 +147,10 @@ export default function OAuthResultPage() {
         )}
 
         <a
-          href="luie://auth/return"
+          href={returnHref}
           className="mt-6 inline-flex items-center rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent/90"
         >
-          앱으로 돌아가기
+          {callbackDeepLink ? "Luie 열기" : "앱으로 돌아가기"}
         </a>
         <p className="mt-3 text-xs text-muted">
           버튼이 동작하지 않으면 Luie 앱을 직접 열어 주세요.
