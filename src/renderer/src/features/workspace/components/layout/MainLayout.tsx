@@ -15,16 +15,25 @@ import {
 } from "@shared/constants/layoutSizing";
 import { toPercentSize } from "@shared/constants/sidebarSizing";
 import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
+import { buildPanelGroupCompositionKey } from "@renderer/features/workspace/utils/panelGroupLayout";
 
 interface MainLayoutProps {
   children: ReactNode;
   sidebar?: ReactNode;
   contextPanel?: ReactNode;
   additionalPanels?: ReactNode;
+  additionalPanelIds?: string[];
   onOpenExport?: () => void;
 }
 
-export default function MainLayout({ children, sidebar, contextPanel, additionalPanels, onOpenExport }: MainLayoutProps) {
+export default function MainLayout({
+  children,
+  sidebar,
+  contextPanel,
+  additionalPanels,
+  additionalPanelIds = [],
+  onOpenExport,
+}: MainLayoutProps) {
   const { t } = useTranslation();
   const {
     isSidebarOpen,
@@ -56,13 +65,25 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
     layoutSurfaceRatios["default.sidebar"] ?? getLayoutSurfaceDefaultRatio("default.sidebar");
   const contextRatio =
     layoutSurfaceRatios["default.panel"] ?? getLayoutSurfaceDefaultRatio("default.panel");
+  const mainLayoutGroupKey = buildPanelGroupCompositionKey(
+    `main-layout-${hasHydrated ? "hydrated" : "cold"}`,
+    [
+      ...(isSidebarOpen ? ["sidebar-panel"] : []),
+      "main-content-panel",
+      ...(isContextOpen ? ["context-panel"] : []),
+    ],
+  );
+  const mainContentGroupKey = buildPanelGroupCompositionKey(
+    "main-layout-content",
+    ["main-primary-content", ...additionalPanelIds],
+  );
 
   return (
     <div className="flex flex-col h-screen bg-app text-fg">
       <WindowBar />
 
       <PanelGroup
-        key={hasHydrated ? "main-layout-hydrated" : "main-layout-cold"}
+        key={mainLayoutGroupKey}
         orientation="horizontal"
         className="flex flex-1 overflow-hidden relative w-full h-full"
         onLayoutChanged={onLayoutChanged}
@@ -116,8 +137,17 @@ export default function MainLayout({ children, sidebar, contextPanel, additional
           </div>
 
           <div className="flex-1 overflow-y-auto flex flex-col">
-            <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative">
-              <Panel defaultSize={toPercentSize(50)} minSize={toPercentSize(20)} className="min-w-0 bg-canvas relative flex flex-col">
+            <PanelGroup
+              key={mainContentGroupKey}
+              orientation="horizontal"
+              className="flex w-full h-full flex-1 overflow-hidden relative"
+            >
+              <Panel
+                id="main-primary-content"
+                defaultSize={toPercentSize(50)}
+                minSize={toPercentSize(20)}
+                className="min-w-0 bg-canvas relative flex flex-col"
+              >
                 {children}
               </Panel>
               {additionalPanels}

@@ -16,6 +16,7 @@ import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { BinderSidebar, BinderSidebarRail } from "@renderer/features/manuscript/components/BinderSidebar";
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@shared/constants/configs";
 import { toPercentSize } from "@shared/constants/sidebarSizing";
+import { buildPanelGroupCompositionKey } from "@renderer/features/workspace/utils/panelGroupLayout";
 
 interface EditorLayoutProps {
   children?: ReactNode;
@@ -29,6 +30,7 @@ interface EditorLayoutProps {
   onRenameChapter?: (id: string, newTitle: string) => Promise<void>;
   onSaveChapter?: (title: string, content: string) => Promise<void>;
   additionalPanels?: ReactNode;
+  additionalPanelIds?: string[];
   onOpenWorldGraph?: () => void;
 }
 
@@ -43,11 +45,13 @@ export default function EditorLayout({
   onOpenExport,
   onOpenWorldGraph,
   additionalPanels,
+  additionalPanelIds = [],
 }: EditorLayoutProps) {
   const { t } = useTranslation();
 
   const maxWidth = useEditorStore((state) => state.maxWidth);
   const hasUiHydrated = useUIStore((state) => state.hasHydrated);
+  const activeRightTab = useUIStore((state) => state.docsRightTab);
 
   const ribbonRef = useRef<HTMLDivElement>(null);
   const [ribbonHeight, setRibbonHeight] = useState(56);
@@ -65,6 +69,14 @@ export default function EditorLayout({
 
   const isMacOS = navigator.platform.toLowerCase().includes("mac");
   const sidebarTopOffset = (isMacOS ? EDITOR_WINDOW_BAR_HEIGHT_PX : 0) + ribbonHeight;
+  const editorLayoutGroupKey = buildPanelGroupCompositionKey(
+    `editor-layout-${hasUiHydrated ? "hydrated" : "cold"}`,
+    [
+      "main-editor-view",
+      ...additionalPanelIds,
+      ...(activeRightTab ? [`binder-sidebar-${activeRightTab}`] : []),
+    ],
+  );
 
   return (
     <div className="flex flex-col h-screen w-screen bg-app text-fg overflow-hidden relative">
@@ -96,7 +108,7 @@ export default function EditorLayout({
 
           {/* Editor Column Wrapper */}
           <PanelGroup
-            key={hasUiHydrated ? "editor-layout-hydrated" : "editor-layout-cold"}
+            key={editorLayoutGroupKey}
             orientation="horizontal"
             className="flex w-full h-full flex-1 overflow-hidden relative"
             id="editor-layout"

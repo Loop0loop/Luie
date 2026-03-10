@@ -39,6 +39,7 @@ import {
 } from "@shared/constants/configs";
 import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import { toPercentSize } from "@shared/constants/sidebarSizing";
+import { buildPanelGroupCompositionKey } from "@renderer/features/workspace/utils/panelGroupLayout";
 import {
   Menu,
   ChevronLeft,
@@ -66,6 +67,7 @@ interface GoogleDocsLayoutProps {
   onRenameChapter?: (id: string, title: string) => void;
   onSaveChapter?: (title: string, content: string) => void | Promise<void>;
   additionalPanels?: ReactNode;
+  additionalPanelIds?: string[];
   onOpenExport?: () => void;
   onOpenWorldGraph?: () => void;
 }
@@ -82,6 +84,7 @@ export default function GoogleDocsLayout({
   onRenameChapter,
   onSaveChapter,
   additionalPanels,
+  additionalPanelIds = [],
   onOpenExport,
   onOpenWorldGraph,
 }: GoogleDocsLayoutProps) {
@@ -157,6 +160,18 @@ export default function GoogleDocsLayout({
   const rightPanelConfig = activePanelSurface
     ? getLayoutSurfaceConfig(activePanelSurface)
     : null;
+  const docsLayoutGroupKey = buildPanelGroupCompositionKey(
+    `docs-layout-${hasHydrated ? "hydrated" : "cold"}`,
+    [
+      ...(isSidebarOpen ? ["left-sidebar"] : []),
+      "center-content",
+      ...(activeRightTab ? [`right-context-panel-${activeRightTab}`] : []),
+    ],
+  );
+  const docsEditorSplitKey = buildPanelGroupCompositionKey(
+    "docs-editor-split",
+    ["editor-main-panel", ...additionalPanelIds],
+  );
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-sans transition-colors duration-200">
@@ -248,7 +263,7 @@ export default function GoogleDocsLayout({
         )}
 
         <PanelGroup
-          key={hasHydrated ? "docs-layout-hydrated" : "docs-layout-cold"}
+          key={docsLayoutGroupKey}
           orientation="horizontal"
           className="flex w-full h-full flex-1 overflow-hidden relative"
           id="google-docs-layout"
@@ -277,7 +292,12 @@ export default function GoogleDocsLayout({
           {/* Main Content Column (Editor + Footer) */}
           <Panel id="center-content" minSize={toPercentSize(10)} className="flex-1 flex flex-col min-w-0 bg-secondary/30 relative z-0 transition-colors duration-200">
             <div className="flex-1 relative flex flex-col overflow-hidden">
-              <PanelGroup orientation="horizontal" className="flex w-full h-full flex-1 overflow-hidden relative" id="google-docs-split-editor">
+              <PanelGroup
+                key={docsEditorSplitKey}
+                orientation="horizontal"
+                className="flex w-full h-full flex-1 overflow-hidden relative"
+                id="google-docs-split-editor"
+              >
                 <Panel id="editor-main-panel" minSize={toPercentSize(10)} className="min-w-0 bg-transparent relative flex flex-col">
                   <EditorDropZones />
                   <main className="flex-1 overflow-y-auto flex flex-col items-center relative custom-scrollbar bg-sidebar">

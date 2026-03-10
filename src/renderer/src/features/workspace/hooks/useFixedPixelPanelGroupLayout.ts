@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { GroupImperativeHandle } from "react-resizable-panels";
+import { groupLayoutMatchesPanels } from "@renderer/features/workspace/utils/panelGroupLayout";
 
 type FixedPanelSpec = {
   id: string;
@@ -56,6 +57,11 @@ export function useFixedPixelPanelGroupLayout({
   useEffect(() => {
     const group = groupRef.current;
     if (!group || containerWidth <= 0) return;
+
+    const expectedPanelIds = [...fixedPanels.map((panel) => panel.id), flexPanelId];
+    if (!groupLayoutMatchesPanels(group, expectedPanelIds)) {
+      return;
+    }
 
     const nextLayout: Record<string, number> = {};
     const maxFixedPercent = Math.max(0, 100 - flexPanelMinPercent);

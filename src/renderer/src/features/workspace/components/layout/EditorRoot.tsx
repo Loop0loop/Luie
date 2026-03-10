@@ -136,6 +136,10 @@ export default function EditorRoot() {
         handleSplitView,
         handleOpenExport,
     } = useSplitView();
+    const additionalPanelIds = useMemo(
+        () => panels.map((panel) => panel.id),
+        [panels],
+    );
 
     const handleSelectChapterWithView = useCallback((id: string) => {
         handleSelectChapter(id);
@@ -301,7 +305,6 @@ export default function EditorRoot() {
             />
         </FeatureErrorBoundary>
     );
-
     const additionalPanelsComponent = (
         <WorkspacePanels
             panels={panels}
@@ -335,6 +338,7 @@ export default function EditorRoot() {
                     onOpenExport={handleQuickExport}
                     onOpenWorldGraph={handleOpenWorldGraph}
                     additionalPanels={additionalPanelsComponent}
+                    additionalPanelIds={additionalPanelIds}
                 >
                     {sharedEditor}
                 </GoogleDocsLayout>
@@ -353,6 +357,7 @@ export default function EditorRoot() {
                     onSaveChapter={handleSave}
                     onOpenWorldGraph={handleOpenWorldGraph}
                     additionalPanels={additionalPanelsComponent}
+                    additionalPanelIds={additionalPanelIds}
                 >
                     {sharedEditor}
                 </EditorLayout>
@@ -386,6 +391,7 @@ export default function EditorRoot() {
                     }
                     onOpenExport={handleQuickExport}
                     additionalPanels={additionalPanelsComponent}
+                    additionalPanelIds={additionalPanelIds}
                 >
                     {sharedEditor}
                 </MainLayout>

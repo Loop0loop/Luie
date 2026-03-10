@@ -28,6 +28,10 @@ import {
 } from "@shared/constants/layoutSizing";
 import { toPercentSize } from "@shared/constants/sidebarSizing";
 import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
+import {
+  buildPanelGroupCompositionKey,
+  groupLayoutMatchesPanels,
+} from "@renderer/features/workspace/utils/panelGroupLayout";
 
 interface ScrivenerLayoutProps {
   children?: ReactNode;
@@ -89,16 +93,37 @@ export default function ScrivenerLayout({
   const inspectorRatio =
     layoutSurfaceRatios["scrivener.inspector"] ??
     getLayoutSurfaceDefaultRatio("scrivener.inspector");
+  const scrivenerLayoutGroupKey = buildPanelGroupCompositionKey(
+    `scrivener-layout-${hasHydrated ? "hydrated" : "cold"}`,
+    [
+      ...(isSidebarOpen ? ["sidebar"] : []),
+      "main-editor",
+      ...(isInspectorOpen ? ["inspector"] : []),
+    ],
+  );
+  const scrivenerEditorSplitKey = buildPanelGroupCompositionKey(
+    "scrivener-editor-split",
+    ["editor-content", ...panels.map((panel) => panel.id)],
+  );
 
   useEffect(() => {
     const previousPanelCount = previousPanelCountRef.current;
     const currentPanelCount = panels.length;
+    let frameId: number | null = null;
 
     if (previousPanelCount === 0 && currentPanelCount === 1) {
       const firstPanelId = panels[0]?.id;
       if (firstPanelId) {
-        requestAnimationFrame(() => {
-          editorSplitGroupRef.current?.setLayout({
+        frameId = requestAnimationFrame(() => {
+          const group = editorSplitGroupRef.current;
+          if (!group) {
+            return;
+          }
+          if (!groupLayoutMatchesPanels(group, ["editor-content", firstPanelId])) {
+            return;
+          }
+
+          group.setLayout({
             "editor-content": 50,
             [firstPanelId]: 50,
           });
@@ -107,6 +132,12 @@ export default function ScrivenerLayout({
     }
 
     previousPanelCountRef.current = currentPanelCount;
+
+    return () => {
+      if (frameId !== null) {
+        cancelAnimationFrame(frameId);
+      }
+    };
   }, [panels]);
 
   const renderMainContent = () => {
@@ -149,7 +180,7 @@ export default function ScrivenerLayout({
       {/* 3. Main 3-Pane Body using react-resizable-panels entirely */}
       <div className="flex-1 flex overflow-hidden relative">
         <PanelGroup
-          key={hasHydrated ? "scrivener-layout-hydrated" : "scrivener-layout-cold"}
+          key={scrivenerLayoutGroupKey}
           orientation="horizontal"
           className="flex w-full h-full flex-1 overflow-hidden relative"
           id="scrivener-layout"
@@ -210,6 +241,7 @@ export default function ScrivenerLayout({
             {/* Editor Area */}
             <div className="flex-1 overflow-hidden relative flex flex-row">
               <PanelGroup
+                key={scrivenerEditorSplitKey}
                 orientation="horizontal"
                 className="flex w-full h-full flex-1 overflow-hidden relative"
                 groupRef={editorSplitGroupRef}
