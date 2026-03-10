@@ -10,8 +10,9 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    environmentMatchGlobs: [["tests/dom/**/*.test.tsx", "jsdom"]],
     setupFiles: ["./tests/setup.ts"],
-    include: ["tests/**/*.test.ts"],
+    include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
     testTimeout: 60000,
   },
 });

@@ -7,6 +7,7 @@ import {
   LUIE_WORLD_SCRAP_MEMOS_FILE,
   LUIE_WORLD_SYNOPSIS_FILE,
 } from "@shared/constants";
+import { WORLD_SCRAP_MEMOS_SCHEMA_VERSION } from "@shared/constants/persistence";
 import type {
   WorldDrawingData,
   WorldMindmapData,
@@ -25,8 +26,17 @@ import {
   toWorldDrawingTool,
 } from "@shared/world/worldDocumentCodec";
 import { api } from "@shared/api";
-import { worldScrapMemosDataSchema } from "@shared/schemas";
-import { z } from "zod";
+import {
+  type WorldScrapMemosPersistedData,
+  worldScrapMemosDataSchema,
+} from "@shared/schemas";
+import {
+  buildMigrationEventData,
+  buildRecoveryEventData,
+  buildValidationFailureData,
+  emitOperationalLog,
+} from "@shared/logger";
+import type { ZodError } from "zod";
 
 const WORLD_LOCAL_STORAGE_PREFIX = "luie:world:";
 const luieWriteQueue = new Map<string, Promise<void>>();
@@ -98,6 +108,14 @@ const saveLocalStorageJson = (
   }
 };
 
+const removeLocalStorageJson = (projectId: string, key: string) => {
+  try {
+    localStorage.removeItem(buildLocalStorageKey(projectId, key));
+  } catch {
+    // local fallback only
+  }
+};
+
 const normalizeLuieQueueKey = (projectPath: string): string => {
   const trimmed = projectPath.trim();
   if (!trimmed) return projectPath;
@@ -119,6 +137,119 @@ const normalizeLuieQueueKey = (projectPath: string): string => {
   }
 
   return normalized;
+};
+
+const toScrapMemosSourceLabel = (
+  source: "localStorage" | "luie-package",
+): string => (source === "luie-package" ? ".luie package" : "local storage");
+
+const logScrapMemosValidationFailure = (
+  message: string,
+  error: ZodError,
+  input: {
+    source: "localStorage" | "luie-package";
+    projectId: string;
+    projectPath?: string | null;
+    persistedVersion?: number;
+  },
+) => {
+  emitOperationalLog(api.logger, "warn", message, {
+    ...buildValidationFailureData({
+      scope: "world-scrap-memos",
+      domain: "persist",
+      source: input.source,
+      storageKey:
+        input.source === "localStorage"
+          ? buildLocalStorageKey(input.projectId, "scrap-memos")
+          : undefined,
+      fallback: "default_world_scrap_memos",
+      persistedVersion: input.persistedVersion,
+      targetVersion: WORLD_SCRAP_MEMOS_SCHEMA_VERSION,
+      error,
+    }),
+    projectId: input.projectId,
+    ...(input.projectPath ? { projectPath: input.projectPath } : {}),
+  });
+};
+
+const logScrapMemosRecovery = (input: {
+  event: string;
+  action: string;
+  source: "localStorage" | "luie-package";
+  projectId: string;
+  projectPath?: string | null;
+  persistedVersion?: number;
+  reason: string;
+}) => {
+  emitOperationalLog(api.logger, "info", "World scrap memos recovery applied", {
+    ...buildRecoveryEventData({
+      scope: "world-scrap-memos",
+      event: input.event,
+      storageKey:
+        input.source === "localStorage"
+          ? buildLocalStorageKey(input.projectId, "scrap-memos")
+          : undefined,
+      source: input.source,
+      action: input.action,
+      persistedVersion: input.persistedVersion,
+      targetVersion: WORLD_SCRAP_MEMOS_SCHEMA_VERSION,
+      reason: input.reason,
+    }),
+    projectId: input.projectId,
+    ...(input.projectPath ? { projectPath: input.projectPath } : {}),
+  });
+};
+
+const parseScrapMemosPayload = async (
+  payload: unknown,
+  input: {
+    source: "localStorage" | "luie-package";
+    projectId: string;
+    projectPath?: string | null;
+  },
+): Promise<WorldScrapMemosPersistedData | null> => {
+  if (payload === null || payload === undefined) {
+    return null;
+  }
+
+  const parsed = worldScrapMemosDataSchema.safeParse(payload);
+  if (!parsed.success) {
+    const persistedVersion =
+      payload &&
+      typeof payload === "object" &&
+      typeof (payload as Record<string, unknown>).schemaVersion === "number"
+        ? ((payload as Record<string, unknown>).schemaVersion as number)
+        : undefined;
+    logScrapMemosValidationFailure(
+      `Invalid scrap memos payload in ${toScrapMemosSourceLabel(input.source)}`,
+      parsed.error,
+      {
+        ...input,
+        persistedVersion,
+      },
+    );
+    return null;
+  }
+
+  const persistedVersion = parsed.data.schemaVersion ?? 1;
+  if (persistedVersion < WORLD_SCRAP_MEMOS_SCHEMA_VERSION) {
+    emitOperationalLog(api.logger, "info", "World scrap memos payload migrated", {
+      ...buildMigrationEventData({
+        scope: "world-scrap-memos",
+        source: input.source,
+        fromVersion: persistedVersion,
+        toVersion: WORLD_SCRAP_MEMOS_SCHEMA_VERSION,
+        status: "migrated",
+      }),
+      projectId: input.projectId,
+      ...(input.projectPath ? { projectPath: input.projectPath } : {}),
+    });
+  }
+
+  return {
+    ...parsed.data,
+    schemaVersion: WORLD_SCRAP_MEMOS_SCHEMA_VERSION,
+  };
 };
 
 const readLuieJson = async (
@@ -471,29 +602,40 @@ export const worldPackageStorage = {
 
     if (isLuieProjectPath(projectPath)) {
       const data = await readLuieJson(projectPath, LUIE_WORLD_SCRAP_MEMOS_FILE);
-      const parsed = worldScrapMemosDataSchema.safeParse(data);
-      if (!parsed.success) {
-        await api.logger.warn("Invalid scrap memos payload in .luie package", {
-          projectId,
-          projectPath,
-          error: z.flattenError(parsed.error),
-        });
+      const parsed = await parseScrapMemosPayload(data, {
+        source: "luie-package",
+        projectId,
+        projectPath,
+      });
+      if (!parsed) {
         return { ...DEFAULT_WORLD_SCRAP_MEMOS };
       }
-      saveLocalStorageJson(projectId, "scrap-memos", parsed.data);
-      return parsed.data;
+      saveLocalStorageJson(projectId, "scrap-memos", parsed);
+      return parsed;
     }
 
     const local = loadLocalStorageJson<unknown>(projectId, "scrap-memos");
-    const parsed = worldScrapMemosDataSchema.safeParse(local);
-    if (!parsed.success) {
-      await api.logger.warn("Invalid scrap memos payload in local storage", {
-        projectId,
-        error: z.flattenError(parsed.error),
-      });
+    const parsed = await parseScrapMemosPayload(local, {
+      source: "localStorage",
+      projectId,
+    });
+    if (!parsed) {
+      if (local !== null) {
+        removeLocalStorageJson(projectId, "scrap-memos");
+        logScrapMemosRecovery({
+          event: "persist.reset",
+          action: "drop_invalid_local_payload",
+          source: "localStorage",
+          projectId,
+          reason: "schema_validation_failed",
+        });
+      }
       return { ...DEFAULT_WORLD_SCRAP_MEMOS };
     }
-    return parsed.data;
+    if (parsed.schemaVersion !== WORLD_SCRAP_MEMOS_SCHEMA_VERSION) {
+      saveLocalStorageJson(projectId, "scrap-memos", parsed);
+    }
+    return parsed;
   },
 
   async saveScrapMemos(
@@ -504,15 +646,21 @@ export const worldPackageStorage = {
     if (!projectId) return;
 
     const payload: WorldScrapMemosData = {
+      schemaVersion: WORLD_SCRAP_MEMOS_SCHEMA_VERSION,
       memos: data.memos,
       updatedAt: new Date().toISOString(),
     };
     const parsed = worldScrapMemosDataSchema.safeParse(payload);
     if (!parsed.success) {
-      await api.logger.warn("Refused to persist invalid scrap memos payload", {
-        projectId,
-        error: z.flattenError(parsed.error),
-      });
+      logScrapMemosValidationFailure(
+        "Refused to persist invalid scrap memos payload",
+        parsed.error,
+        {
+          source: "localStorage",
+          projectId,
+          projectPath,
+        },
+      );
       return;
     }
 

@@ -40,10 +40,14 @@ class MemoryStorage implements StorageLike {
 
 const memoryStorage = new MemoryStorage();
 
-const loadProjectLayoutStore = async (persistedState?: unknown) => {
+const loadProjectLayoutStore = async (
+  persistedState?: unknown,
+  persistedStorageVersion = 0,
+) => {
   vi.resetModules();
   memoryStorage.clear();
   const warn = vi.fn().mockResolvedValue({ success: true });
+  const info = vi.fn().mockResolvedValue({ success: true });
 
   Object.defineProperty(globalThis, "localStorage", {
     value: memoryStorage,
@@ -55,6 +59,7 @@ const loadProjectLayoutStore = async (persistedState?: unknown) => {
       api: {
         logger: {
           warn,
+          info,
         },
       },
     },
@@ -65,14 +70,14 @@ const loadProjectLayoutStore = async (persistedState?: unknown) => {
   if (persistedState !== undefined) {
     memoryStorage.setItem(
       STORAGE_KEY_PROJECT_LAYOUT,
-      JSON.stringify({ state: persistedState, version: 0 }),
+      JSON.stringify({ state: persistedState, version: persistedStorageVersion }),
     );
   }
 
   const module =
     await import("../../../src/renderer/src/features/workspace/stores/projectLayoutStore.js");
 
-  return { module, warn };
+  return { module, warn, info };
 };
 
 describe("projectLayoutStore persist rehydrate", () => {
@@ -155,6 +160,48 @@ describe("projectLayoutStore persist rehydrate", () => {
     expect(state.main.sidebarOpen).toBe(false);
     expect(state.docs.rightTab).toBe("world");
     expect(state.scrivener.sections.analysis).toBe(true);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("falls back to defaults when persisted payload comes from a future version", async () => {
+    const { module, warn } = await loadProjectLayoutStore(
+      {
+        schemaVersion: 99,
+        byProject: {
+          "project-1": {
+            main: {
+              sidebarOpen: false,
+              contextOpen: false,
+            },
+            docs: {
+              sidebarOpen: false,
+              binderBarOpen: false,
+              rightTab: "analysis",
+            },
+            scrivener: {
+              sidebarOpen: false,
+              inspectorOpen: false,
+              sections: {
+                manuscript: true,
+                characters: false,
+                world: false,
+                scrap: false,
+                snapshots: false,
+                analysis: false,
+                trash: false,
+              },
+            },
+          },
+        },
+      },
+      99,
+    );
+
+    const state = module.useProjectLayoutStore
+      .getState()
+      .getProjectLayout("project-1");
+    expect(state.main.sidebarOpen).toBe(true);
+    expect(state.docs.rightTab).toBeNull();
     expect(warn).not.toHaveBeenCalled();
   });
 });

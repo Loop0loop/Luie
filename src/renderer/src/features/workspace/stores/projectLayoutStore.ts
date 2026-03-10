@@ -1,9 +1,22 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { STORAGE_KEY_PROJECT_LAYOUT } from "@shared/constants";
-import { projectLayoutPersistedStateSchema } from "@shared/schemas";
+import {
+  PROJECT_LAYOUT_SCHEMA_VERSION,
+  STORAGE_KEY_PROJECT_LAYOUT,
+} from "@shared/constants";
+import {
+  type ProjectLayoutPersistedState,
+  projectLayoutPersistedStateSchema,
+} from "@shared/schemas";
 import type { DocsRightTab, ScrivenerSectionId, ScrivenerSectionsState } from "./uiStore";
-import { z } from "zod";
+import {
+  buildMigrationEventData,
+  buildRecoveryEventData,
+  buildValidationFailureData,
+  createPerformanceTimer,
+  emitOperationalLog,
+} from "@shared/logger";
+import type { ZodError } from "zod";
 
 export type PersistedDocsRightTab =
   | "character"
@@ -78,9 +91,58 @@ const createDefaultProjectLayoutState = (): ProjectLayoutState => ({
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
-const warnPersistValidation = (message: string, error: z.ZodError): void => {
+const getBrowserLogger = () =>
+  typeof window === "undefined" ? null : (window.api?.logger ?? null);
+
+const resetPersistedProjectLayoutStorage = (
+  action: string,
+  reason: string,
+  persistedVersion?: number,
+): void => {
   if (typeof window === "undefined") return;
-  void window.api?.logger?.warn?.(message, z.flattenError(error));
+  try {
+    localStorage.removeItem(STORAGE_KEY_PROJECT_LAYOUT);
+  } catch {
+    // Best effort recovery only.
+  }
+
+  emitOperationalLog(
+    getBrowserLogger(),
+    "info",
+    "Project layout persisted state reset",
+    buildRecoveryEventData({
+      scope: "project-layout-store",
+      event: "persist.reset",
+      storageKey: STORAGE_KEY_PROJECT_LAYOUT,
+      source: "localStorage",
+      action,
+      reason,
+      persistedVersion,
+      targetVersion: PROJECT_LAYOUT_SCHEMA_VERSION,
+    }),
+  );
+};
+
+const warnPersistValidation = (
+  message: string,
+  error: ZodError,
+  persistedVersion?: number,
+): void => {
+  emitOperationalLog(
+    getBrowserLogger(),
+    "warn",
+    message,
+    buildValidationFailureData({
+      scope: "project-layout-store",
+      domain: "persist",
+      source: "localStorage",
+      storageKey: STORAGE_KEY_PROJECT_LAYOUT,
+      fallback: "reset_to_defaults",
+      persistedVersion,
+      targetVersion: PROJECT_LAYOUT_SCHEMA_VERSION,
+      error,
+    }),
+  );
 };
 
 const sanitizeScrivenerSections = (input: unknown): ScrivenerSectionsState => {
@@ -145,6 +207,56 @@ const sanitizeProjectLayoutState = (input: unknown): ProjectLayoutState => {
           : defaults.scrivener.inspectorOpen,
       sections: sanitizeScrivenerSections(scrivenerInput.sections),
     },
+  };
+};
+
+const migrateProjectLayoutPersistedState = (
+  persistedState: unknown,
+  persistedVersion: number,
+): ProjectLayoutPersistedState => {
+  if (!isRecord(persistedState)) {
+    resetPersistedProjectLayoutStorage(
+      "drop_corrupt_payload",
+      "persisted_state_not_object",
+      persistedVersion,
+    );
+    return {
+      schemaVersion: PROJECT_LAYOUT_SCHEMA_VERSION,
+      byProject: {},
+    };
+  }
+
+  if (persistedVersion > PROJECT_LAYOUT_SCHEMA_VERSION) {
+    resetPersistedProjectLayoutStorage(
+      "drop_future_version",
+      "persisted_state_version_is_newer_than_runtime",
+      persistedVersion,
+    );
+    return {
+      schemaVersion: PROJECT_LAYOUT_SCHEMA_VERSION,
+      byProject: {},
+    };
+  }
+
+  if (persistedVersion < PROJECT_LAYOUT_SCHEMA_VERSION) {
+    emitOperationalLog(
+      getBrowserLogger(),
+      "info",
+      "Project layout persisted state migrated",
+      buildMigrationEventData({
+        scope: "project-layout-store",
+        storageKey: STORAGE_KEY_PROJECT_LAYOUT,
+        source: "localStorage",
+        fromVersion: persistedVersion,
+        toVersion: PROJECT_LAYOUT_SCHEMA_VERSION,
+        status: "migrated",
+      }),
+    );
+  }
+
+  return {
+    ...(persistedState as ProjectLayoutPersistedState),
+    schemaVersion: PROJECT_LAYOUT_SCHEMA_VERSION,
   };
 };
 
@@ -220,18 +332,38 @@ export const useProjectLayoutStore = create<ProjectLayoutStore>()(
     }),
     {
       name: STORAGE_KEY_PROJECT_LAYOUT,
+      version: PROJECT_LAYOUT_SCHEMA_VERSION,
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ byProject: state.byProject }),
+      migrate: (persistedState, version) =>
+        migrateProjectLayoutPersistedState(persistedState, version),
+      partialize: (state) => ({
+        schemaVersion: PROJECT_LAYOUT_SCHEMA_VERSION,
+        byProject: state.byProject,
+      }),
       merge: (persistedState, currentState) => {
         if (!isRecord(persistedState)) {
+          resetPersistedProjectLayoutStorage(
+            "drop_corrupt_payload",
+            "persisted_state_not_object",
+          );
           return currentState;
         }
 
         const parsedPersisted = projectLayoutPersistedStateSchema.safeParse(persistedState);
         if (!parsedPersisted.success) {
+          const version =
+            typeof persistedState.schemaVersion === "number"
+              ? persistedState.schemaVersion
+              : undefined;
           warnPersistValidation(
             "Invalid project layout persisted state",
             parsedPersisted.error,
+            version,
+          );
+          resetPersistedProjectLayoutStorage(
+            "drop_invalid_payload",
+            "schema_validation_failed",
+            version,
           );
           return currentState;
         }
@@ -244,6 +376,33 @@ export const useProjectLayoutStore = create<ProjectLayoutStore>()(
         return {
           ...currentState,
           byProject: normalizedByProject,
+        };
+      },
+      onRehydrateStorage: () => {
+        const timer = createPerformanceTimer({
+          scope: "project-layout-store",
+          event: "persist.rehydrate.project-layout-store",
+          meta: {
+            storageKey: STORAGE_KEY_PROJECT_LAYOUT,
+            targetVersion: PROJECT_LAYOUT_SCHEMA_VERSION,
+          },
+        });
+
+        return (_state, error) => {
+          if (error) {
+            timer.fail(getBrowserLogger(), error, {
+              action: "rehydrate_failed",
+            });
+            resetPersistedProjectLayoutStorage(
+              "drop_rehydrate_failure",
+              error instanceof Error ? error.message : String(error),
+            );
+            return;
+          }
+
+          timer.complete(getBrowserLogger(), {
+            action: "rehydrate_completed",
+          });
         };
       },
     },

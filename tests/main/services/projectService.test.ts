@@ -2,15 +2,22 @@ import { describe, it, expect, vi, beforeAll } from "vitest";
 import path from "node:path";
 import { promises as fs } from "node:fs";
 import { app } from "electron";
-import { ProjectService, projectService } from "../../../src/main/services/core/projectService.js";
+import {
+  ProjectService,
+  projectService,
+} from "../../../src/main/services/core/projectService.js";
 import { db } from "../../../src/main/database/index.js";
 import { readLuieEntry } from "../../../src/main/utils/luiePackage.js";
 
 const localProjectService = new ProjectService();
 
 beforeAll(() => {
-  vi.spyOn(projectService, "schedulePackageExport").mockImplementation(() => {});
-  vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(() => {});
+  vi.spyOn(projectService, "schedulePackageExport").mockImplementation(
+    () => {},
+  );
+  vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(
+    () => {},
+  );
 });
 
 describe("ProjectService", () => {
@@ -31,7 +38,9 @@ describe("ProjectService", () => {
     expect(updated.title).toBe("CRUD Project Updated");
 
     await localProjectService.deleteProject(created.id as string);
-    await expect(localProjectService.getProject(created.id as string)).rejects.toBeDefined();
+    await expect(
+      localProjectService.getProject(created.id as string),
+    ).rejects.toBeDefined();
   });
 
   it("reuses prisma client (db cache)", async () => {
@@ -53,7 +62,10 @@ describe("ProjectService", () => {
   });
 
   it("recovers .luie from db when package is corrupted", async () => {
-    const projectPath = path.join(app.getPath("userData"), "Recovery Project.luie");
+    const projectPath = path.join(
+      app.getPath("userData"),
+      "Recovery Project.luie",
+    );
     const created = await localProjectService.createProject({
       title: "Recovery Project",
       description: "test",
@@ -68,7 +80,10 @@ describe("ProjectService", () => {
   });
 
   it("fails open when .luie world documents are invalid without deleting existing db data", async () => {
-    const projectPath = path.join(app.getPath("userData"), "Invalid Import Project.luie");
+    const projectPath = path.join(
+      app.getPath("userData"),
+      "Invalid Import Project.luie",
+    );
     await fs.rm(projectPath, { recursive: true, force: true });
 
     const created = await localProjectService.createProject({
@@ -113,18 +128,40 @@ describe("ProjectService", () => {
       ),
       "utf-8",
     );
-    await fs.writeFile(path.join(projectPath, "manuscript", "chapter-1.md"), "# chapter", "utf-8");
-    await fs.writeFile(path.join(projectPath, "world", "characters.json"), "{ invalid json", "utf-8");
-    await fs.writeFile(path.join(projectPath, "world", "terms.json"), JSON.stringify({ terms: [] }), "utf-8");
+    await fs.writeFile(
+      path.join(projectPath, "manuscript", "chapter-1.md"),
+      "# chapter",
+      "utf-8",
+    );
+    await fs.writeFile(
+      path.join(projectPath, "world", "characters.json"),
+      "{ invalid json",
+      "utf-8",
+    );
+    await fs.writeFile(
+      path.join(projectPath, "world", "terms.json"),
+      JSON.stringify({ terms: [] }),
+      "utf-8",
+    );
     await fs.writeFile(
       path.join(projectPath, "world", "synopsis.json"),
       JSON.stringify({ synopsis: "", status: "draft" }),
       "utf-8",
     );
-    await fs.writeFile(path.join(projectPath, "world", "graph.json"), JSON.stringify({ nodes: [], edges: [] }), "utf-8");
-    await fs.writeFile(path.join(projectPath, "snapshots", "index.json"), JSON.stringify({ snapshots: [] }), "utf-8");
+    await fs.writeFile(
+      path.join(projectPath, "world", "graph.json"),
+      JSON.stringify({ nodes: [], edges: [] }),
+      "utf-8",
+    );
+    await fs.writeFile(
+      path.join(projectPath, "snapshots", "index.json"),
+      JSON.stringify({ snapshots: [] }),
+      "utf-8",
+    );
 
-    await expect(localProjectService.openLuieProject(projectPath)).rejects.toBeDefined();
+    await expect(
+      localProjectService.openLuieProject(projectPath),
+    ).rejects.toBeDefined();
 
     const protectedCharacter = await db.getClient().character.findUnique({
       where: { id: protectedCharacterId },
@@ -137,7 +174,10 @@ describe("ProjectService", () => {
   });
 
   it("keeps readable world docs when one .luie world file read fails during export", async () => {
-    const projectPath = path.join(app.getPath("userData"), "Partial World Export.luie");
+    const projectPath = path.join(
+      app.getPath("userData"),
+      "Partial World Export.luie",
+    );
     await fs.rm(projectPath, { recursive: true, force: true });
 
     const created = await localProjectService.createProject({
@@ -149,7 +189,11 @@ describe("ProjectService", () => {
     await fs.mkdir(path.join(projectPath, "world"), { recursive: true });
     await fs.writeFile(
       path.join(projectPath, "world", "synopsis.json"),
-      JSON.stringify({ synopsis: "keep this synopsis", status: "working" }, null, 2),
+      JSON.stringify(
+        { synopsis: "keep this synopsis", status: "working" },
+        null,
+        2,
+      ),
       "utf-8",
     );
     await fs.writeFile(
@@ -193,13 +237,18 @@ describe("ProjectService", () => {
       }),
     ).rejects.toBeDefined();
 
-    await expect(localProjectService.openLuieProject("relative/open-target.luie")).rejects.toBeDefined();
+    await expect(
+      localProjectService.openLuieProject("relative/open-target.luie"),
+    ).rejects.toBeDefined();
 
     await localProjectService.deleteProject(created.id as string);
   });
 
   it("skips package export when projectPath in DB is a relative .luie path", async () => {
-    const validPath = path.join(app.getPath("userData"), "relative-export-skip.luie");
+    const validPath = path.join(
+      app.getPath("userData"),
+      "relative-export-skip.luie",
+    );
     const created = await localProjectService.createProject({
       title: "Relative Export Skip",
       description: "test",
@@ -219,7 +268,10 @@ describe("ProjectService", () => {
   });
 
   it("marks pathMissing when DB has relative .luie projectPath", async () => {
-    const validPath = path.join(app.getPath("userData"), "relative-path-missing.luie");
+    const validPath = path.join(
+      app.getPath("userData"),
+      "relative-path-missing.luie",
+    );
     const created = await localProjectService.createProject({
       title: "Relative Path Missing",
       description: "test",
@@ -237,5 +289,70 @@ describe("ProjectService", () => {
     expect(target?.pathMissing).toBe(true);
 
     await localProjectService.deleteProject(created.id as string);
+  });
+
+  it("reconciles duplicate absolute project paths and leaves one survivor", async () => {
+    const sharedPath = path.join(
+      app.getPath("userData"),
+      "duplicate-path-target.luie",
+    );
+    const first = await localProjectService.createProject({
+      title: "Duplicate Path A",
+      projectPath: path.join(app.getPath("userData"), "duplicate-path-a.luie"),
+    });
+    const second = await localProjectService.createProject({
+      title: "Duplicate Path B",
+      projectPath: path.join(app.getPath("userData"), "duplicate-path-b.luie"),
+    });
+    const third = await localProjectService.createProject({
+      title: "Duplicate Path C",
+      projectPath: path.join(app.getPath("userData"), "duplicate-path-c.luie"),
+    });
+
+    await db.getClient().project.update({
+      where: { id: String(first.id) },
+      data: { projectPath: sharedPath },
+    });
+    await db.getClient().project.update({
+      where: { id: String(second.id) },
+      data: { projectPath: sharedPath },
+    });
+    await db.getClient().project.update({
+      where: { id: String(third.id) },
+      data: { projectPath: sharedPath },
+    });
+
+    const reconciliation =
+      await localProjectService.reconcileProjectPathDuplicates();
+    expect(reconciliation.duplicateGroups).toBe(1);
+    expect(reconciliation.clearedRecords).toBe(2);
+
+    const survivors = await db.getClient().project.findMany({
+      where: {
+        id: {
+          in: [String(first.id), String(second.id), String(third.id)],
+        },
+      },
+      select: {
+        id: true,
+        projectPath: true,
+      },
+      orderBy: {
+        id: "asc",
+      },
+    });
+
+    expect(
+      survivors.filter((project) => project.projectPath === sharedPath),
+    ).toHaveLength(1);
+    expect(
+      survivors.filter((project) => project.projectPath === null),
+    ).toHaveLength(2);
+
+    await Promise.all([
+      localProjectService.deleteProject(String(first.id)),
+      localProjectService.deleteProject(String(second.id)),
+      localProjectService.deleteProject(String(third.id)),
+    ]);
   });
 });

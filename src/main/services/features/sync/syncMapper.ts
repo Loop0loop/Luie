@@ -133,13 +133,19 @@ const getEntityBaselineTimestamp = (
   return toTimestamp(entityMap[entityId]);
 };
 
-const chooseLatest = <T extends { updatedAt: string }>(left: T, right: T): [winner: T, loser: T] => {
+const chooseLatest = <T extends { updatedAt: string }>(
+  left: T,
+  right: T,
+): [winner: T, loser: T] => {
   return toTimestamp(left.updatedAt) >= toTimestamp(right.updatedAt)
     ? [left, right]
     : [right, left];
 };
 
-const mergeEntityList = <T extends { id: string; updatedAt: string }>(local: T[], remote: T[]): T[] => {
+const mergeEntityList = <T extends { id: string; updatedAt: string }>(
+  local: T[],
+  remote: T[],
+): T[] => {
   const merged = new Map<string, T>();
   for (const item of local) {
     merged.set(item.id, item);
@@ -214,7 +220,11 @@ const mergeWithTextConflictCopies = <
       merged.set(remoteItem.id, remoteItem);
       continue;
     }
-    let [winner, loser] = chooseLatest(localItem, remoteItem);
+    const [initialWinner, conflictCopySource] = chooseLatest(
+      localItem,
+      remoteItem,
+    );
+    let winner = initialWinner;
     if (localItem.content !== remoteItem.content) {
       const shouldCreate = shouldCreateConflictCopy
         ? shouldCreateConflictCopy(localItem, remoteItem)
@@ -224,10 +234,8 @@ const mergeWithTextConflictCopies = <
         const forcedResolution = conflictResolutions?.[resolutionKey];
         if (forcedResolution === "local") {
           winner = localItem;
-          loser = remoteItem;
         } else if (forcedResolution === "remote") {
           winner = remoteItem;
-          loser = localItem;
         } else {
           conflicts += 1;
           conflictItems.push({
@@ -240,7 +248,7 @@ const mergeWithTextConflictCopies = <
             localPreview: localItem.content.slice(0, 400),
             remotePreview: remoteItem.content.slice(0, 400),
           });
-          const copy = buildConflictCopy(loser);
+          const copy = buildConflictCopy(conflictCopySource);
           merged.set(copy.id, copy);
         }
       }
@@ -303,13 +311,16 @@ const applyTombstonesToBundle = (bundle: SyncBundle): SyncBundle => {
   const isProjectDeleted = (projectId: string): boolean =>
     deletedProjectIds.has(projectId);
 
-  const applyChapterTombstone = (chapter: SyncChapterRecord): SyncChapterRecord => {
+  const applyChapterTombstone = (
+    chapter: SyncChapterRecord,
+  ): SyncChapterRecord => {
     const tombstone = latestTombstoneByEntity.get(`chapter:${chapter.id}`);
     if (!tombstone) return chapter;
     const deletedAt = tombstone.deletedAt;
-    const updatedAt = toTimestamp(tombstone.updatedAt) > toTimestamp(chapter.updatedAt)
-      ? tombstone.updatedAt
-      : chapter.updatedAt;
+    const updatedAt =
+      toTimestamp(tombstone.updatedAt) > toTimestamp(chapter.updatedAt)
+        ? tombstone.updatedAt
+        : chapter.updatedAt;
     return {
       ...chapter,
       deletedAt,
@@ -317,8 +328,13 @@ const applyTombstonesToBundle = (bundle: SyncBundle): SyncBundle => {
     };
   };
 
-  const filterByTombstone = <T extends { id: string }>(entityType: string, rows: T[]): T[] =>
-    rows.filter((row) => !latestTombstoneByEntity.has(`${entityType}:${row.id}`));
+  const filterByTombstone = <T extends { id: string }>(
+    entityType: string,
+    rows: T[],
+  ): T[] =>
+    rows.filter(
+      (row) => !latestTombstoneByEntity.has(`${entityType}:${row.id}`),
+    );
 
   return {
     ...bundle,
@@ -331,7 +347,9 @@ const applyTombstonesToBundle = (bundle: SyncBundle): SyncBundle => {
       .map(applyChapterTombstone),
     characters: filterByTombstone(
       "character",
-      bundle.characters.filter((character) => !isProjectDeleted(character.projectId)),
+      bundle.characters.filter(
+        (character) => !isProjectDeleted(character.projectId),
+      ),
     ),
     terms: filterByTombstone(
       "term",
@@ -346,7 +364,9 @@ const applyTombstonesToBundle = (bundle: SyncBundle): SyncBundle => {
     ),
     snapshots: filterByTombstone(
       "snapshot",
-      bundle.snapshots.filter((snapshot) => !isProjectDeleted(snapshot.projectId)),
+      bundle.snapshots.filter(
+        (snapshot) => !isProjectDeleted(snapshot.projectId),
+      ),
     ),
   };
 };

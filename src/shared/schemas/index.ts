@@ -1,5 +1,10 @@
 import { z } from "zod";
 import { isRelationAllowed } from "../constants/worldRelationRules";
+import {
+  PROJECT_LAYOUT_SCHEMA_VERSION,
+  UI_STORE_SCHEMA_VERSION,
+  WORLD_SCRAP_MEMOS_SCHEMA_VERSION,
+} from "../constants/persistence";
 
 const PATH_MAX_LENGTH = 4096;
 const TITLE_MAX_LENGTH = 255;
@@ -188,7 +193,9 @@ export const exportRequestSchema = z.object({
 
 export const exportCreateArgsSchema = z.tuple([exportRequestSchema]);
 
-export const fsSelectDialogArgsSchema = z.tuple([dialogOptionsSchema.optional()]);
+export const fsSelectDialogArgsSchema = z.tuple([
+  dialogOptionsSchema.optional(),
+]);
 export const fsSaveProjectArgsSchema = z.tuple([
   z.string().min(1).max(TITLE_MAX_LENGTH),
   basePathSchema,
@@ -199,8 +206,14 @@ export const fsReadLuieEntryArgsSchema = z.tuple([
   basePathSchema,
   z.string().min(1).max(PATH_MAX_LENGTH),
 ]);
-export const fsWriteFileArgsSchema = z.tuple([basePathSchema, baseContentSchema]);
-export const fsCreateLuiePackageArgsSchema = z.tuple([basePathSchema, z.unknown()]);
+export const fsWriteFileArgsSchema = z.tuple([
+  basePathSchema,
+  baseContentSchema,
+]);
+export const fsCreateLuiePackageArgsSchema = z.tuple([
+  basePathSchema,
+  z.unknown(),
+]);
 export const fsWriteProjectFileArgsSchema = z.tuple([
   basePathSchema,
   z.string().min(1).max(PATH_MAX_LENGTH),
@@ -210,6 +223,15 @@ export const fsApproveProjectPathArgsSchema = z.tuple([basePathSchema]);
 
 export const windowSetFullscreenArgsSchema = z.tuple([z.boolean()]);
 export const windowOpenExportArgsSchema = z.tuple([chapterIdSchema]);
+const loggerLogEntrySchema = z.strictObject({
+  level: z.enum(["debug", "info", "warn", "error"]),
+  message: z.string().min(1).max(LARGE_TEXT_MAX_LENGTH),
+  data: z.unknown().optional(),
+});
+export const loggerLogArgsSchema = z.tuple([loggerLogEntrySchema]);
+export const loggerLogBatchArgsSchema = z.tuple([
+  z.array(loggerLogEntrySchema).max(1000),
+]);
 export const analysisStartArgsSchema = z.tuple([
   z.object({
     chapterId: chapterIdSchema,
@@ -374,8 +396,12 @@ export const runtimeSupabaseConfigValidationSchema = z.object({
   normalized: runtimeSupabaseConfigSchema.optional(),
 });
 
-export const syncRuntimeConfigSetArgsSchema = z.tuple([runtimeSupabaseConfigSchema]);
-export const syncRuntimeConfigValidateArgsSchema = z.tuple([runtimeSupabaseConfigInputSchema]);
+export const syncRuntimeConfigSetArgsSchema = z.tuple([
+  runtimeSupabaseConfigSchema,
+]);
+export const syncRuntimeConfigValidateArgsSchema = z.tuple([
+  runtimeSupabaseConfigInputSchema,
+]);
 
 export const syncResolveConflictSchema = z.strictObject({
   type: z.enum(["chapter", "memo"]),
@@ -383,7 +409,9 @@ export const syncResolveConflictSchema = z.strictObject({
   resolution: z.enum(["local", "remote"]),
 });
 
-export const syncResolveConflictArgsSchema = z.tuple([syncResolveConflictSchema]);
+export const syncResolveConflictArgsSchema = z.tuple([
+  syncResolveConflictSchema,
+]);
 
 export const editorSettingsSchema = z.strictObject({
   fontFamily: z.enum(["serif", "sans", "mono"]),
@@ -409,7 +437,11 @@ export const editorSettingsSchema = z.strictObject({
     .optional()
     .default("blue"),
   themeTexture: z.boolean().optional().default(true),
-  uiMode: z.enum(["default", "docs", "editor", "word", "scrivener"]).transform(v => v === "word" ? "editor" : v).pipe(z.enum(["default", "docs", "editor", "scrivener"])).catch("default"),
+  uiMode: z
+    .enum(["default", "docs", "editor", "word", "scrivener"])
+    .transform((v) => (v === "word" ? "editor" : v))
+    .pipe(z.enum(["default", "docs", "editor", "scrivener"]))
+    .catch("default"),
 });
 
 export const settingsAutoSaveSchema = z.strictObject({
@@ -489,9 +521,12 @@ const uiRegionsSchema = z.strictObject({
 });
 
 export const uiStorePersistedStateSchema = z.strictObject({
+  schemaVersion: z.number().int().positive().max(UI_STORE_SCHEMA_VERSION).optional(),
   view: z.enum(["template", "editor", "corkboard", "outliner"]).optional(),
   contextTab: z.enum(["synopsis", "characters", "terms"]).optional(),
-  worldTab: z.enum(["synopsis", "terms", "mindmap", "drawing", "plot", "graph"]).optional(),
+  worldTab: z
+    .enum(["synopsis", "terms", "mindmap", "drawing", "plot", "graph"])
+    .optional(),
   isSidebarOpen: z.boolean().optional(),
   isContextOpen: z.boolean().optional(),
   isManuscriptMenuOpen: z.boolean().optional(),
@@ -524,6 +559,12 @@ const projectLayoutStateSchema = z.strictObject({
 });
 
 export const projectLayoutPersistedStateSchema = z.strictObject({
+  schemaVersion: z
+    .number()
+    .int()
+    .positive()
+    .max(PROJECT_LAYOUT_SCHEMA_VERSION)
+    .optional(),
   byProject: z.record(z.string(), projectLayoutStateSchema),
 });
 
@@ -536,13 +577,32 @@ const scrapMemoSchema = z.strictObject({
 });
 
 export const worldScrapMemosDataSchema = z.strictObject({
+  schemaVersion: z
+    .number()
+    .int()
+    .positive()
+    .max(WORLD_SCRAP_MEMOS_SCHEMA_VERSION)
+    .optional(),
   memos: z.array(scrapMemoSchema),
   updatedAt: z.string().optional(),
 });
 
+export type UiStorePersistedState = z.infer<typeof uiStorePersistedStateSchema>;
+export type ProjectLayoutPersistedState = z.infer<
+  typeof projectLayoutPersistedStateSchema
+>;
+export type WorldScrapMemosPersistedData = z.infer<
+  typeof worldScrapMemosDataSchema
+>;
+
 // ─── World Building Schemas ─────────────────────────────────────────────────
 
-export const worldEntityTypeSchema = z.enum(["Place", "Concept", "Rule", "Item"]);
+export const worldEntityTypeSchema = z.enum([
+  "Place",
+  "Concept",
+  "Rule",
+  "Item",
+]);
 export const entityRelationTypeSchema = z.enum([
   "Character",
   "Faction",
@@ -564,7 +624,9 @@ export const relationKindSchema = z.enum([
 ]);
 
 export const worldEntityIdSchema = z.string().uuid("Invalid world entity ID");
-export const entityRelationIdSchema = z.string().uuid("Invalid entity relation ID");
+export const entityRelationIdSchema = z
+  .string()
+  .uuid("Invalid entity relation ID");
 
 export const worldEntityCreateSchema = z.object({
   projectId: projectIdSchema,
@@ -592,23 +654,27 @@ export const worldEntityUpdatePositionSchema = z.object({
   positionY: z.number(),
 });
 
-export const entityRelationCreateSchema = z.object({
-  projectId: projectIdSchema,
-  sourceId: z.string().uuid("Invalid source ID"),
-  sourceType: entityRelationTypeSchema,
-  targetId: z.string().uuid("Invalid target ID"),
-  targetType: entityRelationTypeSchema,
-  relation: relationKindSchema,
-  attributes: z.record(z.string(), z.unknown()).optional(),
-}).superRefine((value, ctx) => {
-  if (!isRelationAllowed(value.relation, value.sourceType, value.targetType)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: `Invalid relation mapping: ${value.sourceType} -> ${value.targetType} (${value.relation})`,
-      path: ["relation"],
-    });
-  }
-});
+export const entityRelationCreateSchema = z
+  .object({
+    projectId: projectIdSchema,
+    sourceId: z.string().uuid("Invalid source ID"),
+    sourceType: entityRelationTypeSchema,
+    targetId: z.string().uuid("Invalid target ID"),
+    targetType: entityRelationTypeSchema,
+    relation: relationKindSchema,
+    attributes: z.record(z.string(), z.unknown()).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (
+      !isRelationAllowed(value.relation, value.sourceType, value.targetType)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Invalid relation mapping: ${value.sourceType} -> ${value.targetType} (${value.relation})`,
+        path: ["relation"],
+      });
+    }
+  });
 
 export const entityRelationUpdateSchema = z.object({
   id: entityRelationIdSchema,

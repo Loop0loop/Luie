@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   evaluateIpcContract,
   extractChannelDefinitions,
+  hasIpcContractDrift,
 } from "../../scripts/check-ipc-contract-map.mjs";
 
 const createUsageNode = () => ({
@@ -20,7 +21,8 @@ describe("check-ipc-contract-map", () => {
         PROJECT_GET: "project:get",
       } as const;
     `;
-    const { channelMap, duplicateChannelValues } = extractChannelDefinitions(source);
+    const { channelMap, duplicateChannelValues } =
+      extractChannelDefinitions(source);
     const usageByKey = new Map();
     usageByKey.set("PROJECT_GET", {
       ...createUsageNode(),
@@ -45,7 +47,8 @@ describe("check-ipc-contract-map", () => {
         APP_BOOTSTRAP_STATUS_CHANGED: "app:bootstrap-status-changed",
       } as const;
     `;
-    const { channelMap, duplicateChannelValues } = extractChannelDefinitions(source);
+    const { channelMap, duplicateChannelValues } =
+      extractChannelDefinitions(source);
     const usageByKey = new Map();
     usageByKey.set("APP_BOOTSTRAP_STATUS_CHANGED", {
       ...createUsageNode(),
@@ -70,7 +73,8 @@ describe("check-ipc-contract-map", () => {
         APP_GET_VERSION: "app:get-version",
       } as const;
     `;
-    const { channelMap, duplicateChannelValues } = extractChannelDefinitions(source);
+    const { channelMap, duplicateChannelValues } =
+      extractChannelDefinitions(source);
 
     const result = evaluateIpcContract({
       channelMap,
@@ -85,9 +89,11 @@ describe("check-ipc-contract-map", () => {
       now: new Date("2026-01-01T00:00:00.000Z"),
     });
 
-    expect(result.errors.some((message) => message.includes("allowlist entry expired"))).toBe(
-      true,
-    );
+    expect(
+      result.errors.some((message) =>
+        message.includes("allowlist entry expired"),
+      ),
+    ).toBe(true);
   });
 
   it("warns when handler exists but renderer invoke is missing", () => {
@@ -96,11 +102,14 @@ describe("check-ipc-contract-map", () => {
         SNAPSHOT_GET_BY_PROJECT: "snapshot:get-by-project",
       } as const;
     `;
-    const { channelMap, duplicateChannelValues } = extractChannelDefinitions(source);
+    const { channelMap, duplicateChannelValues } =
+      extractChannelDefinitions(source);
     const usageByKey = new Map();
     usageByKey.set("SNAPSHOT_GET_BY_PROJECT", {
       ...createUsageNode(),
-      main_handle: [{ file: "src/main/handler/writing/ipcSnapshotHandlers.ts", line: 35 }],
+      main_handle: [
+        { file: "src/main/handler/writing/ipcSnapshotHandlers.ts", line: 35 },
+      ],
     });
 
     const result = evaluateIpcContract({
@@ -113,5 +122,10 @@ describe("check-ipc-contract-map", () => {
     expect(result.warnings).toContain(
       "handler exists but renderer invoke missing: SNAPSHOT_GET_BY_PROJECT",
     );
+  });
+
+  it("detects serialized contract drift", () => {
+    expect(hasIpcContractDrift('{"a":1}\n', '{"a":2}\n')).toBe(true);
+    expect(hasIpcContractDrift('{"a":1}\n', '{"a":1}\n')).toBe(false);
   });
 });

@@ -18,10 +18,7 @@ import {
 } from "../../../../shared/world/worldDocumentCodec.js";
 import { readLuieEntry } from "../../../utils/luiePackage.js";
 import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
-import {
-  createEmptySyncBundle,
-  type SyncBundle,
-} from "./syncMapper.js";
+import { createEmptySyncBundle, type SyncBundle } from "./syncMapper.js";
 import type { LoggerLike as LuieWriterLogger } from "../../io/luiePackageTypes.js";
 
 type LoggerLike = LuieWriterLogger & {
@@ -59,7 +56,10 @@ const WORLD_DOCUMENT_TYPES: WorldDocumentType[] = [
   "scrap",
 ];
 
-const toIsoString = (value: unknown, fallback = new Date().toISOString()): string => {
+const toIsoString = (
+  value: unknown,
+  fallback = new Date().toISOString(),
+): string => {
   if (typeof value === "string" && value.length > 0) return value;
   if (value instanceof Date) return value.toISOString();
   return fallback;
@@ -75,7 +75,11 @@ const appendProjectRecord = (
   bundle: SyncBundle,
   userId: string,
   projectRow: Record<string, unknown>,
-): { projectId: string; projectPath: string | null; projectUpdatedAt: string } | null => {
+): {
+  projectId: string;
+  projectPath: string | null;
+  projectUpdatedAt: string;
+} | null => {
   const projectId = toNullableString(projectRow.id);
   if (!projectId) return null;
   const projectUpdatedAt = toIsoString(projectRow.updatedAt);
@@ -223,7 +227,7 @@ const readWorldDocumentPayload = async (
 ): Promise<unknown | null> => {
   const fileName = WORLD_DOCUMENT_FILE_BY_TYPE[docType];
   const entryPath = `${LUIE_WORLD_DIR}/${fileName}`;
-  let raw: string | null = null;
+  let raw: string | null;
   try {
     raw = await readLuieEntry(projectPath, entryPath, logger);
   } catch (error) {
@@ -358,9 +362,15 @@ const collectProjectBundleData = async (
       : [],
   );
 
-  if (projectPath && projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
+  if (
+    projectPath &&
+    projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)
+  ) {
     try {
-      const safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
+      const safeProjectPath = ensureSafeAbsolutePath(
+        projectPath,
+        "projectPath",
+      );
       await collectWorldDocuments({
         bundle,
         userId,
@@ -387,7 +397,12 @@ export const buildLocalSyncBundle = async (input: {
 }): Promise<SyncBundle> => {
   const bundle = createEmptySyncBundle();
   for (const projectRow of input.projectRows) {
-    await collectProjectBundleData(bundle, input.userId, projectRow, input.logger);
+    await collectProjectBundleData(
+      bundle,
+      input.userId,
+      projectRow,
+      input.logger,
+    );
   }
   appendPendingProjectDeleteTombstones(
     bundle,
@@ -402,12 +417,18 @@ export const hydrateMissingWorldDocsFromPackage = async (
   projectPath: string,
   logger: LoggerLike,
 ): Promise<void> => {
-  const missingDocTypes = WORLD_DOCUMENT_TYPES.filter((docType) => !worldDocs.has(docType));
+  const missingDocTypes = WORLD_DOCUMENT_TYPES.filter(
+    (docType) => !worldDocs.has(docType),
+  );
   if (missingDocTypes.length === 0) return;
 
   await Promise.all(
     missingDocTypes.map(async (docType) => {
-      const payload = await readWorldDocumentPayload(projectPath, docType, logger);
+      const payload = await readWorldDocumentPayload(
+        projectPath,
+        docType,
+        logger,
+      );
       if (payload !== null) {
         worldDocs.set(docType, payload);
       }

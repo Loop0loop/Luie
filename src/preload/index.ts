@@ -21,6 +21,7 @@ import {
   LOG_BATCH_SIZE,
   LOG_FLUSH_MS,
   ErrorCode,
+  OBSERVABILITY_EVENT_SCHEMA_VERSION,
 } from "../shared/constants/index.js";
 
 function sanitizeForIpc(value: unknown, seen = new WeakSet<object>()): unknown {
@@ -73,6 +74,11 @@ const LONG_TIMEOUT_CHANNELS = new Set<string>([
   IPC_CHANNELS.EXPORT_CREATE,
   IPC_CHANNELS.PROJECT_OPEN_LUIE,
   IPC_CHANNELS.SYNC_RUN_NOW,
+]);
+
+const LOGGER_CHANNELS = new Set<string>([
+  IPC_CHANNELS.LOGGER_LOG,
+  IPC_CHANNELS.LOGGER_LOG_BATCH,
 ]);
 
 const RETRYABLE_CHANNELS = new Set<string>([
@@ -150,6 +156,11 @@ async function invokeWithTimeout<T>(
 
   const timeoutPromise = new Promise<IPCResponse<T>>((resolve) => {
     timeoutId = window.setTimeout(() => {
+      enqueueDiagnosticLog("warn", "Preload IPC request timed out", channel, {
+        kind: "timeout",
+        requestId,
+        timeoutMs,
+      });
       resolve(
         createErrorResponse(
           ErrorCode.IPC_TIMEOUT,
@@ -169,8 +180,19 @@ async function invokeWithTimeout<T>(
   const invokePromise = ipcRenderer
     .invoke(channel, ...args)
     .then((response) => response as IPCResponse<T>)
-    .catch((error) =>
-      createErrorResponse(
+    .catch((error) => {
+      enqueueDiagnosticLog("error", "Preload IPC invoke failed", channel, {
+        kind: "invoke_failed",
+        requestId,
+        error:
+          error instanceof Error
+            ? {
+                name: error.name,
+                message: error.message,
+              }
+            : String(error),
+      });
+      return createErrorResponse(
         ErrorCode.IPC_INVOKE_FAILED,
         error instanceof Error ? error.message : String(error),
         { channel },
@@ -179,8 +201,8 @@ async function invokeWithTimeout<T>(
           requestId,
           channel,
         },
-      ) as IPCResponse<T>,
-    );
+      ) as IPCResponse<T>;
+    });
 
   const result = await Promise.race([invokePromise, timeoutPromise]);
   if (timeoutId !== null) {
@@ -292,8 +314,52 @@ type LogPayload = {
   data?: unknown;
 };
 
+type DiagnosticValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | {
+      name?: string;
+      message?: string;
+    };
+
+type DiagnosticRecord = Record<string, DiagnosticValue>;
+
 const logQueue: LogPayload[] = [];
 let logFlushTimer: number | null = null;
+
+function enqueueDiagnosticLog(
+  level: "warn" | "error",
+  message: string,
+  channel: string,
+  data: DiagnosticRecord,
+) {
+  const payload: LogPayload = {
+    level,
+    message,
+    data: sanitizeForIpc({
+      schemaVersion: OBSERVABILITY_EVENT_SCHEMA_VERSION,
+      domain: "ipc",
+      event: "preload.ipc-diagnostic",
+      scope: "preload",
+      channel,
+      ...data,
+    }),
+  };
+
+  if (LOGGER_CHANNELS.has(channel)) {
+    return;
+  }
+
+  logQueue.push(payload);
+  if (level === "error" || logQueue.length >= LOG_BATCH_SIZE) {
+    void flushLogs();
+  } else {
+    scheduleLogFlush();
+  }
+}
 
 function scheduleLogFlush() {
   if (logFlushTimer !== null) return;

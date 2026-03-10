@@ -1,6 +1,10 @@
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
+import {
+  loggerLogArgsSchema,
+  loggerLogBatchArgsSchema,
+} from "../../../shared/schemas/index.js";
 
 type LogEntry = { level: string; message: string; data?: unknown };
 
@@ -36,8 +40,10 @@ export function registerLoggerIPCHandlers(logger: LoggerLike): void {
       channel: IPC_CHANNELS.LOGGER_LOG,
       logTag: "LOGGER_LOG",
       failMessage: "Failed to log",
+      argsSchema: loggerLogArgsSchema,
       handler: async ({ level, message, data }: LogEntry) => {
-        const { createLogger } = await import("../../../shared/logger/index.js");
+        const { createLogger } =
+          await import("../../../shared/logger/index.js");
         const ipcLogger = createLogger("IPCLogger");
         logEntry(ipcLogger, { level, message, data });
         return { success: true };
@@ -47,8 +53,10 @@ export function registerLoggerIPCHandlers(logger: LoggerLike): void {
       channel: IPC_CHANNELS.LOGGER_LOG_BATCH,
       logTag: "LOGGER_LOG_BATCH",
       failMessage: "Failed to log batch",
+      argsSchema: loggerLogBatchArgsSchema,
       handler: async (entries: LogEntry[]) => {
-        const { createLogger } = await import("../../../shared/logger/index.js");
+        const { createLogger } =
+          await import("../../../shared/logger/index.js");
         const ipcLogger = createLogger("IPCLogger");
         for (const entry of entries) {
           logEntry(ipcLogger, entry);

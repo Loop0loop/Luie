@@ -57,7 +57,9 @@ const extractTextFromCandidates = (candidates: unknown): string | null => {
   if (!Array.isArray(parts)) return null;
   const texts = parts
     .map((part) =>
-      part && typeof part === "object" ? pickText((part as { text?: unknown }).text) : null
+      part && typeof part === "object"
+        ? pickText((part as { text?: unknown }).text)
+        : null,
     )
     .filter((item): item is string => Boolean(item));
   if (texts.length === 0) return null;
@@ -102,18 +104,25 @@ const invokeEdgeProxy = async (
       status: response.status,
       body,
     });
-    throw toHttpError(response.status, `GEMINI_PROXY_FAILED:${response.status}:${body}`);
+    throw toHttpError(
+      response.status,
+      `GEMINI_PROXY_FAILED:${response.status}:${body}`,
+    );
   }
 
   const payload = (await response.json()) as GeminiProxyResponse;
-  const text = pickText(payload.text) ?? extractTextFromCandidates(payload.candidates);
+  const text =
+    pickText(payload.text) ?? extractTextFromCandidates(payload.candidates);
   if (!text) {
     throw new Error("GEMINI_PROXY_EMPTY_RESPONSE");
   }
   return text;
 };
 
-const invokeLocalGemini = async (request: GeminiProxyRequest, apiKey: string): Promise<string> => {
+const invokeLocalGemini = async (
+  request: GeminiProxyRequest,
+  apiKey: string,
+): Promise<string> => {
   const generationConfig: Record<string, unknown> = {};
   if (request.responseMimeType) {
     generationConfig.responseMimeType = request.responseMimeType;
@@ -151,7 +160,7 @@ const invokeLocalGemini = async (request: GeminiProxyRequest, apiKey: string): P
   );
 
   const responseText = await response.text();
-  let responseJson: unknown = null;
+  let responseJson: unknown;
   try {
     responseJson = JSON.parse(responseText);
   } catch {

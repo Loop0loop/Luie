@@ -263,6 +263,48 @@ describe("worldPackageStorage", () => {
     );
   });
 
+  it("persists scrap memo schema version in local storage and .luie writes", async () => {
+    const writeProjectFile = vi.fn().mockResolvedValue({ success: true });
+    const warn = vi.fn().mockResolvedValue({ success: true });
+
+    setWindowApi({
+      fs: {
+        readLuieEntry: vi.fn().mockResolvedValue({ success: true, data: null }),
+        writeProjectFile,
+      },
+      logger: { warn },
+    });
+
+    const { worldPackageStorage } =
+      await import("../../../src/renderer/src/features/research/services/worldPackageStorage.js");
+
+    await worldPackageStorage.saveScrapMemos(
+      "project-1",
+      "/tmp/project-1.luie",
+      {
+        memos: [
+          {
+            id: "memo-1",
+            title: "Memo",
+            content: "Body",
+            tags: ["tag"],
+            updatedAt: "2026-03-10T00:00:00.000Z",
+          },
+        ],
+      },
+    );
+
+    const localRaw = memoryStorage.getItem("luie:world:project-1:scrap-memos");
+    expect(localRaw).not.toBeNull();
+    const localPayload = JSON.parse(localRaw!);
+    expect(localPayload.schemaVersion).toBe(2);
+    expect(writeProjectFile).toHaveBeenCalledWith(
+      "/tmp/project-1.luie",
+      expect.stringContaining("scrap"),
+      expect.stringContaining("\"schemaVersion\": 2"),
+    );
+  });
+
   it("refuses to persist invalid scrap memo payloads", async () => {
     const writeProjectFile = vi.fn().mockResolvedValue({ success: true });
     const warn = vi.fn().mockResolvedValue({ success: true });

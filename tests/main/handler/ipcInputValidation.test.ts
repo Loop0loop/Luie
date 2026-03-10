@@ -21,6 +21,7 @@ const mocked = vi.hoisted(() => {
     syncService,
     logger: {
       info: vi.fn(),
+      warn: vi.fn(),
       debug: vi.fn(),
       error: vi.fn(),
     },
@@ -64,6 +65,7 @@ describe("IPC input validation", () => {
     mocked.syncService.runNow.mockReset();
     mocked.syncService.setAutoSync.mockReset();
     mocked.syncService.resolveConflict.mockReset();
+    mocked.logger.warn.mockReset();
   });
 
   it("returns INVALID_INPUT for malformed WINDOW_SET_FULLSCREEN payload", async () => {
@@ -99,6 +101,14 @@ describe("IPC input validation", () => {
     expect(response.success).toBe(false);
     expect(response.error?.code).toBe(ErrorCode.INVALID_INPUT);
     expect(mocked.syncService.setAutoSync).not.toHaveBeenCalled();
+    expect(mocked.logger.warn).toHaveBeenCalledWith(
+      "IPC request rejected by schema validation",
+      expect.objectContaining({
+        scope: "ipc-handler",
+        domain: "ipc",
+        event: "validation.failed",
+      }),
+    );
   });
 
   it("returns INVALID_INPUT for SYNC_SET_AUTO payload with extra keys", async () => {

@@ -6,6 +6,7 @@ import {
   DEFAULT_UI_SIDEBAR_OPEN,
   DEFAULT_UI_CONTEXT_OPEN,
   STORAGE_KEY_UI,
+  UI_STORE_SCHEMA_VERSION,
 } from "@shared/constants";
 import type { Snapshot } from "@shared/types";
 import {
@@ -21,8 +22,18 @@ import {
   normalizeSidebarWidthInput,
   type SidebarWidthFeature,
 } from "@shared/constants/sidebarSizing";
-import { uiStorePersistedStateSchema } from "@shared/schemas";
-import { z } from "zod";
+import {
+  type UiStorePersistedState,
+  uiStorePersistedStateSchema,
+} from "@shared/schemas";
+import {
+  buildMigrationEventData,
+  buildRecoveryEventData,
+  buildValidationFailureData,
+  createPerformanceTimer,
+  emitOperationalLog,
+} from "@shared/logger";
+import type { ZodError } from "zod";
 
 export type ContextTab = "synopsis" | "characters" | "terms";
 export type ResearchTab = "character" | "world" | "event" | "faction" | "scrap" | "analysis";
@@ -90,9 +101,58 @@ const DEFAULT_LAYOUT_SURFACE_RATIOS: Record<LayoutSurfaceId, number> =
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
-const warnPersistValidation = (message: string, error: z.ZodError): void => {
+const getBrowserLogger = () =>
+  typeof window === "undefined" ? null : (window.api?.logger ?? null);
+
+const resetPersistedUiStorage = (
+  action: string,
+  reason: string,
+  persistedVersion?: number,
+): void => {
   if (typeof window === "undefined") return;
-  void window.api?.logger?.warn?.(message, z.flattenError(error));
+  try {
+    localStorage.removeItem(STORAGE_KEY_UI);
+  } catch {
+    // Best effort recovery only.
+  }
+
+  emitOperationalLog(
+    getBrowserLogger(),
+    "info",
+    "UI store persisted state reset",
+    buildRecoveryEventData({
+      scope: "ui-store",
+      event: "persist.reset",
+      storageKey: STORAGE_KEY_UI,
+      source: "localStorage",
+      action,
+      reason,
+      persistedVersion,
+      targetVersion: UI_STORE_SCHEMA_VERSION,
+    }),
+  );
+};
+
+const warnPersistValidation = (
+  message: string,
+  error: ZodError,
+  persistedVersion?: number,
+): void => {
+  emitOperationalLog(
+    getBrowserLogger(),
+    "warn",
+    message,
+    buildValidationFailureData({
+      scope: "ui-store",
+      domain: "persist",
+      source: "localStorage",
+      storageKey: STORAGE_KEY_UI,
+      fallback: "reset_to_defaults",
+      persistedVersion,
+      targetVersion: UI_STORE_SCHEMA_VERSION,
+      error,
+    }),
+  );
 };
 
 const RIGHT_PANEL_TABS = [
@@ -330,6 +390,50 @@ const cloneRegions = (regions: UIRegionsState): UIRegionsState => ({
   },
   rightRail: { ...regions.rightRail },
 });
+
+const migrateUiPersistedState = (
+  persistedState: unknown,
+  persistedVersion: number,
+): UiStorePersistedState => {
+  if (!isRecord(persistedState)) {
+    resetPersistedUiStorage(
+      "drop_corrupt_payload",
+      "persisted_state_not_object",
+      persistedVersion,
+    );
+    return { schemaVersion: UI_STORE_SCHEMA_VERSION };
+  }
+
+  if (persistedVersion > UI_STORE_SCHEMA_VERSION) {
+    resetPersistedUiStorage(
+      "drop_future_version",
+      "persisted_state_version_is_newer_than_runtime",
+      persistedVersion,
+    );
+    return { schemaVersion: UI_STORE_SCHEMA_VERSION };
+  }
+
+  if (persistedVersion < UI_STORE_SCHEMA_VERSION) {
+    emitOperationalLog(
+      getBrowserLogger(),
+      "info",
+      "UI store persisted state migrated",
+      buildMigrationEventData({
+        scope: "ui-store",
+        storageKey: STORAGE_KEY_UI,
+        source: "localStorage",
+        fromVersion: persistedVersion,
+        toVersion: UI_STORE_SCHEMA_VERSION,
+        status: "migrated",
+      }),
+    );
+  }
+
+  return {
+    ...(persistedState as UiStorePersistedState),
+    schemaVersion: UI_STORE_SCHEMA_VERSION,
+  };
+};
 
 interface UIStore {
   view: "template" | "editor" | "corkboard" | "outliner";
@@ -905,8 +1009,12 @@ export const useUIStore = create<UIStore>()(
     }),
     {
       name: STORAGE_KEY_UI,
+      version: UI_STORE_SCHEMA_VERSION,
       storage: createJSONStorage(() => localStorage),
+      migrate: (persistedState, version) =>
+        migrateUiPersistedState(persistedState, version),
       partialize: (state) => ({
+        schemaVersion: UI_STORE_SCHEMA_VERSION,
         view: state.view,
         contextTab: state.contextTab,
         worldTab: state.worldTab,
@@ -929,12 +1037,29 @@ export const useUIStore = create<UIStore>()(
       }),
       merge: (persistedState, currentState) => {
         if (!isRecord(persistedState)) {
+          resetPersistedUiStorage(
+            "drop_corrupt_payload",
+            "persisted_state_not_object",
+          );
           return currentState;
         }
 
         const parsedPersisted = uiStorePersistedStateSchema.safeParse(persistedState);
         if (!parsedPersisted.success) {
-          warnPersistValidation("Invalid UI store persisted state", parsedPersisted.error);
+          const version =
+            typeof persistedState.schemaVersion === "number"
+              ? persistedState.schemaVersion
+              : undefined;
+          warnPersistValidation(
+            "Invalid UI store persisted state",
+            parsedPersisted.error,
+            version,
+          );
+          resetPersistedUiStorage(
+            "drop_invalid_payload",
+            "schema_validation_failed",
+            version,
+          );
           return currentState;
         }
 
@@ -995,8 +1120,31 @@ export const useUIStore = create<UIStore>()(
           regions: migratedRegions,
         };
       },
-      onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true);
+      onRehydrateStorage: () => {
+        const timer = createPerformanceTimer({
+          scope: "ui-store",
+          event: "persist.rehydrate.ui-store",
+          meta: {
+            storageKey: STORAGE_KEY_UI,
+            targetVersion: UI_STORE_SCHEMA_VERSION,
+          },
+        });
+        return (state, error) => {
+          if (error) {
+            timer.fail(getBrowserLogger(), error, {
+              action: "rehydrate_failed",
+            });
+            resetPersistedUiStorage(
+              "drop_rehydrate_failure",
+              error instanceof Error ? error.message : String(error),
+            );
+          } else {
+            timer.complete(getBrowserLogger(), {
+              action: "rehydrate_completed",
+            });
+          }
+          state?.setHasHydrated(true);
+        };
       },
     },
   ),

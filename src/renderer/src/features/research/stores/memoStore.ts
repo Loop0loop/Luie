@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { api } from "@shared/api";
 import { DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS } from "@shared/constants";
+import { createPerformanceTimer } from "@shared/logger";
 import type { ScrapMemo } from "@shared/types";
 import { worldPackageStorage } from "@renderer/features/research/services/worldPackageStorage";
 
@@ -122,6 +123,13 @@ export const useMemoStore = create<MemoStore>((set, get) => {
         isLoading: true,
         error: null,
       });
+      const timer = createPerformanceTimer({
+        scope: "memo-store",
+        event: "memo-store.load-notes",
+        meta: {
+          projectId,
+        },
+      });
 
       try {
         const loaded = await worldPackageStorage.loadScrapMemos(
@@ -142,6 +150,10 @@ export const useMemoStore = create<MemoStore>((set, get) => {
           isSaving: false,
           error: null,
         });
+        timer.complete(api.logger, {
+          projectId,
+          noteCount: nextNotes.length,
+        });
       } catch (error) {
         const message = normalizeErrorMessage(error);
         void api.logger.warn("Failed to load memo store state", {
@@ -156,6 +168,10 @@ export const useMemoStore = create<MemoStore>((set, get) => {
           isLoading: false,
           isSaving: false,
           error: message,
+        });
+        timer.fail(api.logger, error, {
+          projectId,
+          fallbackNoteCount: fallbackNotes.length,
         });
       }
     },

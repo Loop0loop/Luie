@@ -188,6 +188,7 @@ export interface ScrapMemo {
 }
 
 export interface WorldScrapMemosData {
+  schemaVersion?: number;
   memos: ScrapMemo[];
   updatedAt?: string;
 }

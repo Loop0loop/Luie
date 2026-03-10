@@ -254,3 +254,5 @@ export function configureLogger(options: LoggerOptions): void {
 export function createLogger(context: string): Logger {
   return new Logger(context)
 }
+
+export * from './observability'

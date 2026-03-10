@@ -6,7 +6,10 @@ import {
   createSuccessResponse,
 } from "../../../shared/ipc/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
-import { withLogContext } from "../../../shared/logger/index.js";
+import {
+  buildValidationFailureData,
+  withLogContext,
+} from "../../../shared/logger/index.js";
 import { isServiceError } from "../../utils/serviceError.js";
 import type { LoggerLike } from "./types.js";
 
@@ -55,6 +58,21 @@ export function registerIpcHandler<TArgs extends unknown[], TResult>(options: {
     if (options.argsSchema) {
       const parsed = options.argsSchema.safeParse(args);
       if (!parsed.success) {
+        options.logger.warn?.(
+          "IPC request rejected by schema validation",
+          withLogContext(
+            buildValidationFailureData({
+              scope: "ipc-handler",
+              domain: "ipc",
+              source: "ipcMain.handle",
+              channel: options.channel,
+              requestId,
+              fallback: "return_invalid_input",
+              error: parsed.error,
+            }),
+            { requestId, channel: options.channel },
+          ),
+        );
         const details = {
           issues: parsed.error.issues,
         };

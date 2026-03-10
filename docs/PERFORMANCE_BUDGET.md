@@ -36,3 +36,30 @@ We define three primary metrics for a smooth, app-like user experience.
 ### C. Error Boundaries (E Guideline crossover)
 - When the budget fails critically (e.g., UI freeze leading to an exception), the `FeatureErrorBoundary` and `GlobalErrorBoundary` step in.
 - These boundaries ensure the application recovers gracefully, attempts an emergency auto-save, and prevents data loss.
+
+## 3. Operational Measurement Points
+
+These event names are the baseline instrumentation points that should remain stable across releases.
+
+- `bootstrap.ensure-ready`
+  Target: `< 1500ms` on a healthy local DB.
+- `persist.rehydrate.ui-store`
+  Target: `< 50ms`.
+- `persist.rehydrate.project-layout-store`
+  Target: `< 50ms`.
+- `project-init.startup-loads`
+  Target: `< 400ms` for project list + editor settings.
+- `project-init.project-switch-loads`
+  Target: `< 500ms` for chapters + characters + terms on a typical project.
+- `memo-store.load-notes`
+  Target: `< 120ms` for a typical project.
+- `renderer.startup.setupRenderer`
+  Target: `< 300ms`.
+- `renderer.startup.initI18n`
+  Target: `< 150ms`.
+
+## 4. Regression Rule
+
+- New features must reuse existing event names when extending an existing flow.
+- New performance-sensitive flows must emit a structured `performance` event before release.
+- If a baseline is exceeded repeatedly in release testing, the PR must either optimize the flow or update this document with an explicit justification.

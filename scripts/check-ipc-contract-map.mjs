@@ -35,9 +35,16 @@ const USAGE_CATEGORIES = [
 ];
 
 const createUsageNode = () =>
-  Object.fromEntries(
-    USAGE_CATEGORIES.map((category) => [category, []]),
-  );
+  Object.fromEntries(USAGE_CATEGORIES.map((category) => [category, []]));
+
+const normalizeSerializedJson = (value) => value.replace(/\r\n/g, "\n");
+const parseContractOutput = (value) => {
+  try {
+    return JSON.parse(normalizeSerializedJson(value));
+  } catch {
+    return null;
+  }
+};
 
 const countLineNumber = (content, index) =>
   content.slice(0, index).split(/\r?\n/).length;
@@ -175,14 +182,11 @@ export const collectIpcUsage = (files, rootDir = PROJECT_ROOT) => {
           (ref, index, array) =>
             array.findIndex(
               (candidate) =>
-                candidate.file === ref.file &&
-                candidate.line === ref.line,
+                candidate.file === ref.file && candidate.line === ref.line,
             ) === index,
         )
         .sort((a, b) =>
-          a.file === b.file
-            ? a.line - b.line
-            : a.file.localeCompare(b.file),
+          a.file === b.file ? a.line - b.line : a.file.localeCompare(b.file),
         );
     }
   }
@@ -269,7 +273,10 @@ export const evaluateIpcContract = ({
         allowlisted: isAllowlisted,
         usage,
         usageCounts: Object.fromEntries(
-          USAGE_CATEGORIES.map((category) => [category, usage[category].length]),
+          USAGE_CATEGORIES.map((category) => [
+            category,
+            usage[category].length,
+          ]),
         ),
       };
     })
@@ -280,6 +287,24 @@ export const evaluateIpcContract = ({
     warnings,
     entries: contractEntries,
   };
+};
+
+export const hasIpcContractDrift = (previousOutput, nextOutput) => {
+  const previousParsed = parseContractOutput(previousOutput);
+  const nextParsed = parseContractOutput(nextOutput);
+
+  if (!previousParsed || !nextParsed) {
+    return (
+      normalizeSerializedJson(previousOutput) !==
+      normalizeSerializedJson(nextOutput)
+    );
+  }
+
+  const { generatedAt: _previousGeneratedAt, ...previousComparable } =
+    previousParsed;
+  const { generatedAt: _nextGeneratedAt, ...nextComparable } = nextParsed;
+
+  return JSON.stringify(previousComparable) !== JSON.stringify(nextComparable);
 };
 
 export const runIpcContractMapCheck = async () => {
@@ -310,7 +335,15 @@ export const runIpcContractMapCheck = async () => {
     },
     entries: evaluation.entries,
   };
-  await writeFile(OUTPUT_MAP_FILE, `${JSON.stringify(output, null, 2)}\n`, "utf8");
+  const nextOutput = `${JSON.stringify(output, null, 2)}\n`;
+  const previousOutput = fs.existsSync(OUTPUT_MAP_FILE)
+    ? await readFile(OUTPUT_MAP_FILE, "utf8")
+    : "";
+  const driftDetected = hasIpcContractDrift(previousOutput, nextOutput);
+
+  if (driftDetected) {
+    await writeFile(OUTPUT_MAP_FILE, nextOutput, "utf8");
+  }
 
   if (evaluation.warnings.length > 0) {
     console.warn("[check-ipc-contract-map] warnings:");
@@ -320,6 +353,13 @@ export const runIpcContractMapCheck = async () => {
   if (evaluation.errors.length > 0) {
     console.error("[check-ipc-contract-map] errors:");
     evaluation.errors.forEach((error) => console.error(`- ${error}`));
+    return { exitCode: 1 };
+  }
+
+  if (driftDetected) {
+    console.error(
+      "[check-ipc-contract-map] drift detected: docs/quality/ipc-contract-map.json was regenerated. Commit the updated contract map.",
+    );
     return { exitCode: 1 };
   }
 

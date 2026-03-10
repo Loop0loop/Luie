@@ -2,6 +2,7 @@ import { Component } from "react";
 import type { ErrorInfo, ReactNode } from "react";
 import { RefreshCw, AlertCircle } from "lucide-react";
 import { api } from "@shared/api";
+import { buildRuntimeErrorData, emitOperationalLog } from "@shared/logger";
 
 interface Props {
     children: ReactNode;
@@ -55,11 +56,20 @@ export class FeatureErrorBoundary extends Component<Props, State> {
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         const { featureName = "Unknown", onError } = this.props;
 
-        api?.logger?.error(`FeatureErrorBoundary [${featureName}] caught an error`, {
-            error: error.message,
-            stack: error.stack,
-            componentStack: errorInfo.componentStack,
-        });
+        emitOperationalLog(
+            api?.logger,
+            "error",
+            `FeatureErrorBoundary [${featureName}] caught an error`,
+            buildRuntimeErrorData({
+                scope: "feature-error-boundary",
+                kind: "react-boundary",
+                error,
+                meta: {
+                    featureName,
+                    componentStack: errorInfo.componentStack,
+                },
+            }),
+        );
 
         onError?.(error, errorInfo);
     }

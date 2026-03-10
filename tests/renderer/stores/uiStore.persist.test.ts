@@ -43,10 +43,14 @@ class MemoryStorage implements StorageLike {
 
 const memoryStorage = new MemoryStorage();
 
-const loadUiStore = async (persistedState?: unknown) => {
+const loadUiStore = async (
+  persistedState?: unknown,
+  persistedStorageVersion = 0,
+) => {
   vi.resetModules();
   memoryStorage.clear();
   const warn = vi.fn().mockResolvedValue({ success: true });
+  const info = vi.fn().mockResolvedValue({ success: true });
 
   Object.defineProperty(globalThis, "localStorage", {
     value: memoryStorage,
@@ -58,6 +62,7 @@ const loadUiStore = async (persistedState?: unknown) => {
       api: {
         logger: {
           warn,
+          info,
         },
       },
     },
@@ -68,14 +73,14 @@ const loadUiStore = async (persistedState?: unknown) => {
   if (persistedState !== undefined) {
     memoryStorage.setItem(
       STORAGE_KEY_UI,
-      JSON.stringify({ state: persistedState, version: 0 }),
+      JSON.stringify({ state: persistedState, version: persistedStorageVersion }),
     );
   }
 
   const module =
     await import("../../../src/renderer/src/features/workspace/stores/uiStore.js");
 
-  return { module, warn };
+  return { module, warn, info };
 };
 
 describe("uiStore persist rehydrate", () => {
@@ -134,6 +139,19 @@ describe("uiStore persist rehydrate", () => {
     expect(state.contextTab).toBe("characters");
     expect(state.regions.leftSidebar.widthPx).toBe(288);
     expect(state.regions.rightPanel.activeTab).toBe("world");
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("falls back to defaults when persisted payload comes from a future version", async () => {
+    const { module, warn } = await loadUiStore(
+      {
+        schemaVersion: 99,
+        view: "editor",
+      },
+      99,
+    );
+
+    expect(module.useUIStore.getState().view).toBe(DEFAULT_UI_VIEW);
     expect(warn).not.toHaveBeenCalled();
   });
 });

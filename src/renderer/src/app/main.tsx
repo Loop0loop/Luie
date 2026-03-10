@@ -9,30 +9,46 @@ import App from "@renderer/app/App";
 import { GlobalErrorBoundary } from "@shared/ui/GlobalErrorBoundary";
 import { ToastProvider } from "@shared/ui/Toast";
 import { DialogProvider } from "@shared/ui/DialogProvider";
+import {
+  OBSERVABILITY_EVENT_SCHEMA_VERSION,
+} from "@shared/constants";
+import {
+  createPerformanceTimer,
+  emitOperationalLog,
+} from "@shared/logger";
 import "@renderer/styles/global.css";
 
 const rendererStartupStartedAt = performance.now();
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 
+const startupLogger = window.api?.logger ?? null;
+
 const logStartup = (message: string, data?: Record<string, unknown>) => {
-  const request = window.api?.logger?.info?.(message, data);
-  if (!request) return;
-  void request.catch(() => undefined);
+  emitOperationalLog(startupLogger, "info", message, {
+    schemaVersion: OBSERVABILITY_EVENT_SCHEMA_VERSION,
+    domain: "performance",
+    event: message,
+    scope: "renderer-startup",
+    ...(data ?? {}),
+  });
 };
 
 const elapsedMs = () => Number((performance.now() - rendererStartupStartedAt).toFixed(1));
 
 const runBackgroundTask = (label: string, task: () => Promise<unknown>) => {
+  const timer = createPerformanceTimer({
+    scope: "renderer-startup",
+    event: `renderer.startup.${label}`,
+  });
   void task()
     .then(() => {
-      logStartup(`Renderer startup task completed: ${label}`, {
+      timer.complete(startupLogger, {
         elapsedMs: elapsedMs(),
       });
     })
     .catch((error) => {
-      logStartup(`Renderer startup task failed: ${label}`, {
+      timer.fail(startupLogger, error, {
         elapsedMs: elapsedMs(),
-        error: error instanceof Error ? error.message : String(error),
       });
     });
 };

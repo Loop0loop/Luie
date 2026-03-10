@@ -3,6 +3,8 @@
  */
 
 import { useEffect } from "react";
+import { api } from "@shared/api";
+import { createPerformanceTimer } from "@shared/logger";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
@@ -20,16 +22,59 @@ export function useProjectInit(enabled = true) {
   // 앱 시작 시 프로젝트 & 설정 로드
   useEffect(() => {
     if (!enabled) return;
-    void loadProjects();
-    void loadSettings();
+    const timer = createPerformanceTimer({
+      scope: "project-init",
+      event: "project-init.startup-loads",
+    });
+
+    void Promise.allSettled([loadProjects(), loadSettings()])
+      .then((results) => {
+        const rejected = results.filter((result) => result.status === "rejected");
+        if (rejected.length > 0) {
+          const reason = rejected[0]?.status === "rejected" ? rejected[0].reason : null;
+          timer.fail(api.logger, reason, {
+            rejectedCount: rejected.length,
+          });
+          return;
+        }
+
+        timer.complete(api.logger, {
+          rejectedCount: 0,
+        });
+      });
   }, [enabled, loadProjects, loadSettings]);
 
   // 현재 프로젝트 변경 시 챕터 로드
   useEffect(() => {
     if (!enabled || !currentProject) return;
-    void loadChapters(currentProject.id);
-    void loadCharacters(currentProject.id);
-    void loadTerms(currentProject.id);
+    const timer = createPerformanceTimer({
+      scope: "project-init",
+      event: "project-init.project-switch-loads",
+      meta: {
+        projectId: currentProject.id,
+      },
+    });
+
+    void Promise.allSettled([
+      loadChapters(currentProject.id),
+      loadCharacters(currentProject.id),
+      loadTerms(currentProject.id),
+    ]).then((results) => {
+      const rejected = results.filter((result) => result.status === "rejected");
+      if (rejected.length > 0) {
+        const reason = rejected[0]?.status === "rejected" ? rejected[0].reason : null;
+        timer.fail(api.logger, reason, {
+          projectId: currentProject.id,
+          rejectedCount: rejected.length,
+        });
+        return;
+      }
+
+      timer.complete(api.logger, {
+        projectId: currentProject.id,
+        rejectedCount: 0,
+      });
+    });
   }, [enabled, currentProject, loadChapters, loadCharacters, loadTerms]);
 
   return { currentProject };

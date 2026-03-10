@@ -7,6 +7,7 @@ const mocked = vi.hoisted(() => ({
     saveScrapMemos: vi.fn(),
   },
   warn: vi.fn(),
+  info: vi.fn(),
 }));
 
 vi.mock(
@@ -36,6 +37,7 @@ describe("memoStore", () => {
     mocked.storage.loadScrapMemos.mockReset();
     mocked.storage.saveScrapMemos.mockReset();
     mocked.warn.mockReset();
+    mocked.info.mockReset();
     mocked.storage.loadScrapMemos.mockResolvedValue({ memos: [] });
     mocked.storage.saveScrapMemos.mockResolvedValue(undefined);
 
@@ -44,6 +46,7 @@ describe("memoStore", () => {
         api: {
           logger: {
             warn: mocked.warn,
+            info: mocked.info,
           },
         },
       },
@@ -168,5 +171,68 @@ describe("memoStore", () => {
     expect(resetState.activeProjectId).toBeNull();
     expect(resetState.notes).toEqual([]);
     expect(resetState.error).toBeNull();
+  });
+
+  it("ignores stale memo loads that resolve after a project switch", async () => {
+    let resolveProjectOne: ((value: { memos: typeof sampleNote[] }) => void) | null =
+      null;
+    mocked.storage.loadScrapMemos
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveProjectOne = resolve;
+          }),
+      )
+      .mockResolvedValueOnce({
+        memos: [
+          {
+            ...sampleNote,
+            id: "memo-2",
+            title: "Fresh project memo",
+          },
+        ],
+      });
+
+    const firstLoad = memoStoreModule.useMemoStore
+      .getState()
+      .loadNotes("project-1", "/tmp/project-1.luie");
+    await Promise.resolve();
+
+    const secondLoad = memoStoreModule.useMemoStore
+      .getState()
+      .loadNotes("project-2", "/tmp/project-2.luie");
+    await secondLoad;
+
+    resolveProjectOne?.({ memos: [sampleNote] });
+    await firstLoad;
+
+    const state = memoStoreModule.useMemoStore.getState();
+    expect(state.activeProjectId).toBe("project-2");
+    expect(state.notes).toEqual([
+      expect.objectContaining({
+        id: "memo-2",
+        title: "Fresh project memo",
+      }),
+    ]);
+  });
+
+  it("records memo load timing after successful load", async () => {
+    mocked.storage.loadScrapMemos.mockResolvedValueOnce({
+      memos: [sampleNote],
+    });
+
+    await memoStoreModule.useMemoStore
+      .getState()
+      .loadNotes("project-1", "/tmp/project-1.luie");
+
+    expect(mocked.info).toHaveBeenCalledWith(
+      "memo-store.load-notes",
+      expect.objectContaining({
+        event: "memo-store.load-notes",
+        scope: "memo-store",
+        projectId: "project-1",
+        noteCount: 1,
+      }),
+    );
   });
 });

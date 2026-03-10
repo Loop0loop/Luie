@@ -1,5 +1,8 @@
 import { BrowserWindow } from "electron";
-import { createLogger } from "../../shared/logger/index.js";
+import {
+  createLogger,
+  createPerformanceTimer,
+} from "../../shared/logger/index.js";
 import { IPC_CHANNELS } from "../../shared/ipc/channels.js";
 import type { AppBootstrapStatus } from "../../shared/types/index.js";
 import { db } from "../database/index.js";
@@ -43,17 +46,27 @@ export const ensureBootstrapReady = async (): Promise<AppBootstrapStatus> => {
   }
 
   updateBootstrapStatus({ isReady: false });
+  const timer = createPerformanceTimer({
+    scope: "bootstrap",
+    event: "bootstrap.ensure-ready",
+  });
 
   bootstrapPromise = db
     .initialize()
     .then(() => {
       updateBootstrapStatus({ isReady: true });
+      timer.complete(logger, {
+        isReady: true,
+      });
       logger.info("Bootstrap completed");
       return bootstrapStatus;
     })
     .catch((error) => {
       const message = getErrorMessage(error);
       updateBootstrapStatus({ isReady: false, error: message });
+      timer.fail(logger, error, {
+        isReady: false,
+      });
       logger.error("Bootstrap failed", error);
       return bootstrapStatus;
     })

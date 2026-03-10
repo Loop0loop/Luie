@@ -3,6 +3,7 @@ import type { ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { api } from "@shared/api";
 import { i18n } from "@renderer/i18n";
+import { buildRuntimeErrorData, emitOperationalLog } from "@shared/logger";
 
 interface Props {
   children: ReactNode;
@@ -37,13 +38,19 @@ export class GlobalErrorBoundary extends Component<Props, State> {
     }
     const errorSignature = `geb:${Math.abs(signatureHash)}`;
 
-    api?.logger?.error("GlobalErrorBoundary caught an error", {
-      error,
-      errorInfo,
-      errorSignature,
-      location: window.location.href,
-      routeHash: window.location.hash,
-      componentStackPreview: stackPreview,
+    emitOperationalLog(api?.logger, "error", "GlobalErrorBoundary caught an error", {
+      ...buildRuntimeErrorData({
+        scope: "global-error-boundary",
+        kind: "react-boundary",
+        error,
+        meta: {
+          errorSignature,
+          location: window.location.href,
+          routeHash: window.location.hash,
+          componentStackPreview: stackPreview,
+          componentStack: errorInfo.componentStack,
+        },
+      }),
     });
   }
 
