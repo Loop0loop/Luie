@@ -99,11 +99,16 @@ export default function ScrivenerLayout({
       ...(isSidebarOpen ? ["sidebar"] : []),
       "main-editor",
       ...(isInspectorOpen ? ["inspector"] : []),
+      ...(!isSidebarOpen && !isInspectorOpen ? ["scrivener-layout-placeholder"] : []),
     ],
   );
   const scrivenerEditorSplitKey = buildPanelGroupCompositionKey(
     "scrivener-editor-split",
-    ["editor-content", ...panels.map((panel) => panel.id)],
+    [
+      "editor-content",
+      ...panels.map((panel) => panel.id),
+      ...(panels.length === 0 ? ["scrivener-editor-placeholder"] : []),
+    ],
   );
 
   useEffect(() => {
@@ -183,7 +188,7 @@ export default function ScrivenerLayout({
           key={scrivenerLayoutGroupKey}
           orientation="horizontal"
           className="flex w-full h-full flex-1 overflow-hidden relative"
-          id="scrivener-layout"
+          id={scrivenerLayoutGroupKey}
           onLayoutChanged={onLayoutChanged}
         >
 
@@ -207,7 +212,11 @@ export default function ScrivenerLayout({
           )}
 
           {/* Pane 2: Editor (Center) */}
-          <Panel id="main-editor" minSize={toPercentSize(30)} className="min-w-0 bg-canvas flex flex-col relative z-0">
+          <Panel
+            id="main-editor"
+            minSize={toPercentSize(30)}
+            className="min-w-0 bg-canvas flex flex-col relative z-0"
+          >
             {/* Header / Title Bar of Editor Pane? (Like Scrivener Header) */}
             <div className="h-8 bg-surface border-b border-border flex items-center px-4 justify-between shrink-0">
               <div className="flex items-center gap-2 overflow-hidden">
@@ -245,7 +254,7 @@ export default function ScrivenerLayout({
                 orientation="horizontal"
                 className="flex w-full h-full flex-1 overflow-hidden relative"
                 groupRef={editorSplitGroupRef}
-                id="scrivener-editor-split"
+                id={scrivenerEditorSplitKey}
               >
                 <Panel
                   id="editor-content"
@@ -267,6 +276,15 @@ export default function ScrivenerLayout({
                   )}
                 </Panel>
                 {additionalPanels}
+                {panels.length === 0 && (
+                  <Panel
+                    id="scrivener-editor-placeholder"
+                    defaultSize={0}
+                    minSize={0}
+                    maxSize={0}
+                    className="pointer-events-none overflow-hidden opacity-0"
+                  />
+                )}
               </PanelGroup>
             </div>
 
@@ -310,6 +328,16 @@ export default function ScrivenerLayout({
                 </div>
               </Panel>
             </>
+          )}
+
+          {!isSidebarOpen && !isInspectorOpen && (
+            <Panel
+              id="scrivener-layout-placeholder"
+              defaultSize={0}
+              minSize={0}
+              maxSize={0}
+              className="pointer-events-none overflow-hidden opacity-0"
+            />
           )}
 
         </PanelGroup>

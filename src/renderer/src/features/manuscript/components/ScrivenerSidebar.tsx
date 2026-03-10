@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import {
     ChevronRight,
@@ -6,8 +7,6 @@ import {
 } from "lucide-react";
 import { cn } from "@shared/types/utils";
 import DocsSidebar from "@renderer/features/manuscript/components/DocsSidebar";
-import { TrashList } from "@renderer/features/trash/components/TrashList";
-import { SnapshotList } from "@renderer/features/snapshot/components/SnapshotList";
 import SidebarCharacterList from "@renderer/features/manuscript/components/sections/SidebarCharacterList";
 import SidebarWorldList from "@renderer/features/manuscript/components/sections/SidebarWorldList";
 import SidebarMemoList from "@renderer/features/manuscript/components/sections/SidebarMemoList";
@@ -20,6 +19,17 @@ import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useChapterManagement } from "@renderer/features/manuscript/hooks/useChapterManagement";
 import { useShallow } from "zustand/react/shallow";
 import type { ScrivenerSectionId } from "@renderer/features/workspace/stores/uiStore";
+
+const SnapshotList = lazy(() =>
+    import("@renderer/features/snapshot/components/SnapshotList").then((module) => ({
+        default: module.SnapshotList,
+    })),
+);
+const TrashList = lazy(() =>
+    import("@renderer/features/trash/components/TrashList").then((module) => ({
+        default: module.TrashList,
+    })),
+);
 
 export default function ScrivenerSidebar({
     currentProjectId,
@@ -105,7 +115,9 @@ export default function ScrivenerSidebar({
                 >
                     <div className="h-64 border-b border-border/10">
                         {activeChapterId ? (
-                            <SnapshotList chapterId={activeChapterId} />
+                            <Suspense fallback={<div className="p-4 text-xs text-muted">{t("loading")}</div>}>
+                                <SnapshotList chapterId={activeChapterId} />
+                            </Suspense>
                         ) : (
                             <div className="p-4 text-xs text-muted text-center italic">{t("snapshot.noActiveChapter")}</div>
                         )}
@@ -138,7 +150,11 @@ export default function ScrivenerSidebar({
                     isOpen={scrivenerSections.trash}
                     onToggle={() => toggleSection("trash")}
                 >
-                    {currentProjectId && <TrashList projectId={currentProjectId} refreshKey={0} />}
+                    {currentProjectId && (
+                        <Suspense fallback={<div className="p-4 text-xs text-muted">{t("loading")}</div>}>
+                            <TrashList projectId={currentProjectId} refreshKey={0} />
+                        </Suspense>
+                    )}
                 </CollapsibleSection>
             </div>
         </div>

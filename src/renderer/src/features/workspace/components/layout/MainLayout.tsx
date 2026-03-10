@@ -71,11 +71,16 @@ export default function MainLayout({
       ...(isSidebarOpen ? ["sidebar-panel"] : []),
       "main-content-panel",
       ...(isContextOpen ? ["context-panel"] : []),
+      ...(!isSidebarOpen && !isContextOpen ? ["main-layout-placeholder"] : []),
     ],
   );
   const mainContentGroupKey = buildPanelGroupCompositionKey(
     "main-layout-content",
-    ["main-primary-content", ...additionalPanelIds],
+    [
+      "main-primary-content",
+      ...additionalPanelIds,
+      ...(additionalPanelIds.length === 0 ? ["main-content-placeholder"] : []),
+    ],
   );
 
   return (
@@ -84,6 +89,7 @@ export default function MainLayout({
 
       <PanelGroup
         key={mainLayoutGroupKey}
+        id={mainLayoutGroupKey}
         orientation="horizontal"
         className="flex flex-1 overflow-hidden relative w-full h-full"
         onLayoutChanged={onLayoutChanged}
@@ -106,7 +112,10 @@ export default function MainLayout({
         )}
 
         {/* Main Content */}
-        <Panel id="main-content-panel" className="flex-1 min-w-0 bg-app relative flex flex-col z-0">
+        <Panel
+          id="main-content-panel"
+          className="flex-1 min-w-0 bg-app relative flex flex-col z-0"
+        >
           <EditorDropZones />
           <div className="flex items-center px-4 py-2 h-12 shrink-0">
             <button
@@ -139,6 +148,7 @@ export default function MainLayout({
           <div className="flex-1 overflow-y-auto flex flex-col">
             <PanelGroup
               key={mainContentGroupKey}
+              id={mainContentGroupKey}
               orientation="horizontal"
               className="flex w-full h-full flex-1 overflow-hidden relative"
             >
@@ -151,6 +161,15 @@ export default function MainLayout({
                 {children}
               </Panel>
               {additionalPanels}
+              {additionalPanelIds.length === 0 && (
+                <Panel
+                  id="main-content-placeholder"
+                  defaultSize={0}
+                  minSize={0}
+                  maxSize={0}
+                  className="pointer-events-none overflow-hidden opacity-0"
+                />
+              )}
             </PanelGroup>
           </div>
           <StatusFooter onOpenExport={onOpenExport} />
@@ -171,6 +190,16 @@ export default function MainLayout({
           >
             {contextPanel}
           </Panel>
+        )}
+
+        {!isSidebarOpen && !isContextOpen && (
+          <Panel
+            id="main-layout-placeholder"
+            defaultSize={0}
+            minSize={0}
+            maxSize={0}
+            className="pointer-events-none overflow-hidden opacity-0"
+          />
         )}
       </PanelGroup>
     </div>

@@ -805,6 +805,7 @@ export const useUIStore = create<UIStore>()(
             patch.scrivenerInspectorOpen = open;
             patch.docsRightTab = open ? state.docsRightTab : null;
             if (!open) {
+              nextRegions.rightPanel.activeTab = null;
               patch.focusedClosableTarget =
                 state.focusedClosableTarget?.kind === "docs-tab"
                   ? null
@@ -886,6 +887,7 @@ export const useUIStore = create<UIStore>()(
           }
           const nextRegions = cloneRegions(state.regions);
           nextRegions.rightPanel.open = false;
+          nextRegions.rightPanel.activeTab = null;
           return {
             docsRightTab: null,
             isContextOpen: false,

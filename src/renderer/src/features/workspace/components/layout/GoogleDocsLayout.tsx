@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useState, type ReactNode } from 'react';
 import { type Editor as TiptapEditor } from "@tiptap/react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import WindowBar from '@renderer/features/workspace/components/WindowBar';
@@ -6,17 +6,12 @@ import { cn } from '@shared/types/utils';
 import { useUIStore } from '@renderer/features/workspace/stores/uiStore';
 import { useShallow } from "zustand/react/shallow";
 import { useTranslation } from "react-i18next";
-import { SnapshotList } from "@renderer/features/snapshot/components/SnapshotList";
-import { TrashList } from "@renderer/features/trash/components/TrashList";
-import ExportPreviewPanel from "@renderer/features/export/components/ExportPreviewPanel";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import Editor from "@renderer/features/editor/components/Editor";
 import EditorToolbar from '@renderer/features/editor/components/EditorToolbar';
 import { EditorRuler } from "@renderer/features/editor/components/EditorRuler";
 import StatusFooter from "@shared/ui/StatusFooter";
 
-import ResearchPanel from "@renderer/features/research/components/ResearchPanel";
-import WorldPanel from "@renderer/features/research/components/WorldPanel";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import {
   openDocsRightTab,
@@ -54,6 +49,20 @@ import {
   Calendar,
   Shield
 } from "lucide-react";
+
+const ResearchPanel = lazy(() => import("@renderer/features/research/components/ResearchPanel"));
+const WorldPanel = lazy(() => import("@renderer/features/research/components/WorldPanel"));
+const SnapshotList = lazy(() =>
+  import("@renderer/features/snapshot/components/SnapshotList").then((module) => ({
+    default: module.SnapshotList,
+  })),
+);
+const TrashList = lazy(() =>
+  import("@renderer/features/trash/components/TrashList").then((module) => ({
+    default: module.TrashList,
+  })),
+);
+const ExportPreviewPanel = lazy(() => import("@renderer/features/export/components/ExportPreviewPanel"));
 
 interface GoogleDocsLayoutProps {
   children: ReactNode;
@@ -166,11 +175,16 @@ export default function GoogleDocsLayout({
       ...(isSidebarOpen ? ["left-sidebar"] : []),
       "center-content",
       ...(activeRightTab ? [`right-context-panel-${activeRightTab}`] : []),
+      ...(!isSidebarOpen && !activeRightTab ? ["docs-layout-placeholder"] : []),
     ],
   );
   const docsEditorSplitKey = buildPanelGroupCompositionKey(
     "docs-editor-split",
-    ["editor-main-panel", ...additionalPanelIds],
+    [
+      "editor-main-panel",
+      ...additionalPanelIds,
+      ...(additionalPanelIds.length === 0 ? ["docs-editor-placeholder"] : []),
+    ],
   );
 
   return (
@@ -266,7 +280,7 @@ export default function GoogleDocsLayout({
           key={docsLayoutGroupKey}
           orientation="horizontal"
           className="flex w-full h-full flex-1 overflow-hidden relative"
-          id="google-docs-layout"
+          id={docsLayoutGroupKey}
           onLayoutChanged={onLayoutChanged}
         >
 
@@ -290,15 +304,23 @@ export default function GoogleDocsLayout({
           )}
 
           {/* Main Content Column (Editor + Footer) */}
-          <Panel id="center-content" minSize={toPercentSize(10)} className="flex-1 flex flex-col min-w-0 bg-secondary/30 relative z-0 transition-colors duration-200">
+          <Panel
+            id="center-content"
+            minSize={toPercentSize(10)}
+            className="flex-1 flex flex-col min-w-0 bg-secondary/30 relative z-0 transition-colors duration-200"
+          >
             <div className="flex-1 relative flex flex-col overflow-hidden">
               <PanelGroup
                 key={docsEditorSplitKey}
                 orientation="horizontal"
                 className="flex w-full h-full flex-1 overflow-hidden relative"
-                id="google-docs-split-editor"
+                id={docsEditorSplitKey}
               >
-                <Panel id="editor-main-panel" minSize={toPercentSize(10)} className="min-w-0 bg-transparent relative flex flex-col">
+                <Panel
+                  id="editor-main-panel"
+                  minSize={toPercentSize(10)}
+                  className="min-w-0 bg-transparent relative flex flex-col"
+                >
                   <EditorDropZones />
                   <main className="flex-1 overflow-y-auto flex flex-col items-center relative custom-scrollbar bg-sidebar">
                     <div className="sticky top-0 z-30 pt-4 pb-2 shrink-0 select-none bg-sidebar/95 backdrop-blur-sm flex justify-center w-full">
@@ -325,6 +347,15 @@ export default function GoogleDocsLayout({
                   <StatusFooter onOpenExport={onOpenExport} />
                 </Panel>
                 {additionalPanels}
+                {additionalPanelIds.length === 0 && (
+                  <Panel
+                    id="docs-editor-placeholder"
+                    defaultSize={0}
+                    minSize={0}
+                    maxSize={0}
+                    className="pointer-events-none overflow-hidden opacity-0"
+                  />
+                )}
               </PanelGroup>
             </div>
           </Panel>
@@ -349,39 +380,51 @@ export default function GoogleDocsLayout({
               >
                 <div className="h-full flex flex-col">
                   {activeRightTab === "character" && (
-                    <div className="h-full">
-                      <ResearchPanel activeTab="character" onClose={closeRightPanel} />
-                    </div>
+                    <Suspense fallback={<div className="p-4 text-sm text-muted">{t("loading")}</div>}>
+                      <div className="h-full">
+                        <ResearchPanel activeTab="character" onClose={closeRightPanel} />
+                      </div>
+                    </Suspense>
                   )}
 
                   {activeRightTab === "world" && (
-                    <div className="h-full">
-                      <WorldPanel onClose={closeRightPanel} />
-                    </div>
+                    <Suspense fallback={<div className="p-4 text-sm text-muted">{t("loading")}</div>}>
+                      <div className="h-full">
+                        <WorldPanel onClose={closeRightPanel} />
+                      </div>
+                    </Suspense>
                   )}
 
                   {activeRightTab === "event" && (
-                    <div className="h-full">
-                      <ResearchPanel activeTab="event" onClose={closeRightPanel} />
-                    </div>
+                    <Suspense fallback={<div className="p-4 text-sm text-muted">{t("loading")}</div>}>
+                      <div className="h-full">
+                        <ResearchPanel activeTab="event" onClose={closeRightPanel} />
+                      </div>
+                    </Suspense>
                   )}
 
                   {activeRightTab === "faction" && (
-                    <div className="h-full">
-                      <ResearchPanel activeTab="faction" onClose={closeRightPanel} />
-                    </div>
+                    <Suspense fallback={<div className="p-4 text-sm text-muted">{t("loading")}</div>}>
+                      <div className="h-full">
+                        <ResearchPanel activeTab="faction" onClose={closeRightPanel} />
+                      </div>
+                    </Suspense>
                   )}
 
                   {activeRightTab === "scrap" && (
-                    <div className="h-full">
-                      <ResearchPanel activeTab="scrap" onClose={closeRightPanel} />
-                    </div>
+                    <Suspense fallback={<div className="p-4 text-sm text-muted">{t("loading")}</div>}>
+                      <div className="h-full">
+                        <ResearchPanel activeTab="scrap" onClose={closeRightPanel} />
+                      </div>
+                    </Suspense>
                   )}
 
                   {activeRightTab === "analysis" && (
-                    <div className="h-full">
-                      <ResearchPanel activeTab="analysis" onClose={closeRightPanel} />
-                    </div>
+                    <Suspense fallback={<div className="p-4 text-sm text-muted">{t("loading")}</div>}>
+                      <div className="h-full">
+                        <ResearchPanel activeTab="analysis" onClose={closeRightPanel} />
+                      </div>
+                    </Suspense>
                   )}
 
                   {activeRightTab === "editor" && (
@@ -401,9 +444,11 @@ export default function GoogleDocsLayout({
                   )}
 
                   {activeRightTab === "export" && (
-                    <div className="h-full">
-                      <ExportPreviewPanel title={activeChapterTitle} />
-                    </div>
+                    <Suspense fallback={<div className="p-4 text-sm text-muted">{t("loading")}</div>}>
+                      <div className="h-full">
+                        <ExportPreviewPanel title={activeChapterTitle} />
+                      </div>
+                    </Suspense>
                   )}
 
                   {activeRightTab === "snapshot" && (
@@ -412,7 +457,9 @@ export default function GoogleDocsLayout({
                         {t("sidebar.section.snapshot")}
                       </div>
                       {activeChapterId ? (
-                        <SnapshotList chapterId={activeChapterId} />
+                        <Suspense fallback={<div className="px-4 py-4 text-xs text-muted italic text-center">{t("loading")}</div>}>
+                          <SnapshotList chapterId={activeChapterId} />
+                        </Suspense>
                       ) : (
                         <div className="px-4 py-4 text-xs text-muted italic text-center">
                           {t("snapshot.list.selectChapter")}
@@ -430,7 +477,9 @@ export default function GoogleDocsLayout({
                         </button>
                       </div>
                       {currentProjectId ? (
-                        <TrashList projectId={currentProjectId} refreshKey={trashRefreshKey} />
+                        <Suspense fallback={<div className="px-4 py-4 text-xs text-muted italic text-center">{t("loading")}</div>}>
+                          <TrashList projectId={currentProjectId} refreshKey={trashRefreshKey} />
+                        </Suspense>
                       ) : (
                         <div className="px-4 py-4 text-xs text-muted italic text-center">
                           {t("sidebar.trashEmpty")}
@@ -441,6 +490,16 @@ export default function GoogleDocsLayout({
                 </div>
               </Panel>
             </>
+          )}
+
+          {!isSidebarOpen && !activeRightTab && (
+            <Panel
+              id="docs-layout-placeholder"
+              defaultSize={0}
+              minSize={0}
+              maxSize={0}
+              className="pointer-events-none overflow-hidden opacity-0"
+            />
           )}
 
         </PanelGroup>

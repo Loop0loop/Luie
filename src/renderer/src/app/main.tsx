@@ -1,9 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import "@fontsource-variable/inter";
-import "@fontsource-variable/noto-sans-kr";
-import "@fontsource-variable/noto-sans-jp";
 import { initI18n } from "@renderer/i18n";
+import { startRendererFontLoading } from "@renderer/app/fontLoader";
 import { setupRenderer } from "@renderer/app/setup";
 import App from "@renderer/app/App";
 import { GlobalErrorBoundary } from "@shared/ui/GlobalErrorBoundary";
@@ -20,6 +18,7 @@ import "@renderer/styles/global.css";
 
 const rendererStartupStartedAt = performance.now();
 const root = ReactDOM.createRoot(document.getElementById("root")!);
+const i18nPromise = initI18n();
 
 const startupLogger = window.api?.logger ?? null;
 
@@ -65,6 +64,8 @@ root.render(
   </React.StrictMode>
 );
 
+startRendererFontLoading(i18nPromise);
+
 logStartup("Renderer root mounted", { elapsedMs: elapsedMs() });
 
 requestAnimationFrame(() => {
@@ -72,4 +73,4 @@ requestAnimationFrame(() => {
 });
 
 runBackgroundTask("setupRenderer", setupRenderer);
-runBackgroundTask("initI18n", initI18n);
+runBackgroundTask("initI18n", () => i18nPromise);

@@ -53,6 +53,7 @@ export function useEditorRootShortcuts({
     const chapterChordRef = useRef<{ digits: string; timerId?: number }>({
         digits: "",
     });
+    const closeActionFrameRef = useRef<number | null>(null);
 
     useEffect(() => {
         const CHAPTER_CHORD_TIMEOUT_MS = 700;
@@ -88,14 +89,27 @@ export function useEditorRootShortcuts({
         return () => window.removeEventListener("keydown", handleChapterChord, true);
     }, [openChapterByIndex]);
 
+    useEffect(() => () => {
+        if (closeActionFrameRef.current !== null) {
+            cancelAnimationFrame(closeActionFrameRef.current);
+            closeActionFrameRef.current = null;
+        }
+    }, []);
+
     const shortcutHandlers = useMemo(
         () => ({
             "app.openSettings": () => setIsSettingsOpen(true),
             "app.closeWindow": () => {
-                const closedSurface = useUIStore.getState().closeFocusedSurface();
-                if (!closedSurface) {
-                    void api.window.close();
+                if (closeActionFrameRef.current !== null) {
+                    cancelAnimationFrame(closeActionFrameRef.current);
                 }
+                closeActionFrameRef.current = window.requestAnimationFrame(() => {
+                    closeActionFrameRef.current = null;
+                    const closedSurface = useUIStore.getState().closeFocusedSurface();
+                    if (!closedSurface) {
+                        void api.window.close();
+                    }
+                });
             },
             "app.quit": () => void api.app.quit(),
             "chapter.new": () => void handleAddChapter(),

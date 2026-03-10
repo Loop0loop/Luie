@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   FileText,
@@ -8,8 +8,13 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
-import { SnapshotList } from "@renderer/features/snapshot/components/SnapshotList";
 import { cn } from "@shared/types/utils";
+
+const SnapshotList = lazy(() =>
+  import("@renderer/features/snapshot/components/SnapshotList").then((module) => ({
+    default: module.SnapshotList,
+  })),
+);
 
 interface InspectorPanelProps {
   activeChapterId?: string;
@@ -157,7 +162,9 @@ export default function InspectorPanel({ activeChapterId }: InspectorPanelProps)
 
         {activeTab === "snapshots" && (
           <div className="h-full flex flex-col">
-             <SnapshotList chapterId={activeChapterId} />
+             <Suspense fallback={<div className="p-4 text-xs text-muted">{t("loading")}</div>}>
+               <SnapshotList chapterId={activeChapterId} />
+             </Suspense>
           </div>
         )}
       </div>

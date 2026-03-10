@@ -75,6 +75,9 @@ export default function EditorLayout({
       "main-editor-view",
       ...additionalPanelIds,
       ...(activeRightTab ? [`binder-sidebar-${activeRightTab}`] : []),
+      ...(!activeRightTab && additionalPanelIds.length === 0
+        ? ["editor-layout-placeholder"]
+        : []),
     ],
   );
 
@@ -111,9 +114,13 @@ export default function EditorLayout({
             key={editorLayoutGroupKey}
             orientation="horizontal"
             className="flex w-full h-full flex-1 overflow-hidden relative"
-            id="editor-layout"
+            id={editorLayoutGroupKey}
           >
-            <Panel id="main-editor-view" minSize={toPercentSize(10)} className="min-w-0 bg-transparent relative flex flex-col">
+            <Panel
+              id="main-editor-view"
+              minSize={toPercentSize(10)}
+              className="min-w-0 bg-transparent relative flex flex-col"
+            >
               <div className="flex-1 h-full overflow-hidden flex flex-col relative">
                 <EditorDropZones />
 
@@ -149,6 +156,16 @@ export default function EditorLayout({
               currentProjectId={currentProjectId}
               sidebarTopOffset={sidebarTopOffset}
             />
+
+            {!activeRightTab && additionalPanelIds.length === 0 && (
+              <Panel
+                id="editor-layout-placeholder"
+                defaultSize={0}
+                minSize={0}
+                maxSize={0}
+                className="pointer-events-none overflow-hidden opacity-0"
+              />
+            )}
           </PanelGroup>
 
           <BinderSidebarRail sidebarTopOffset={sidebarTopOffset} />

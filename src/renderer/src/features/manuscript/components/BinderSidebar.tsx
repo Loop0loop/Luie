@@ -32,7 +32,11 @@ interface BinderSidebarProps {
     sidebarTopOffset: number;
 }
 
-export function BinderSidebar({ activeChapterId, currentProjectId, sidebarTopOffset: _sidebarTopOffset }: BinderSidebarProps) {
+export function BinderSidebar({
+    activeChapterId,
+    currentProjectId,
+    sidebarTopOffset: _sidebarTopOffset,
+}: BinderSidebarProps) {
     const { t } = useTranslation();
     const {
         docsRightTab,

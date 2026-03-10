@@ -206,6 +206,22 @@ let globalLoggerOptions: Required<LoggerOptions> = {
 
 let ensureLogFileReadyPromise: Promise<void> | null = null
 
+type NodePathModule = {
+  dirname: (path: string) => string
+}
+
+type NodeFsPromisesModule = {
+  mkdir: (path: string, options: { recursive: boolean }) => Promise<unknown>
+  appendFile: (
+    path: string,
+    data: string,
+    encoding: BufferEncoding,
+  ) => Promise<unknown>
+}
+
+const importNodeModule = async <T>(specifier: string): Promise<T> =>
+  import(/* @vite-ignore */ specifier) as Promise<T>
+
 function shouldLog(level: LogLevel): boolean {
   return levelOrder[level] >= levelOrder[globalLoggerOptions.minLevel]
 }
@@ -214,8 +230,8 @@ async function ensureLogFileReady(): Promise<void> {
   if (!isNodeRuntime || !globalLoggerOptions.logFilePath) return
   if (!ensureLogFileReadyPromise) {
     ensureLogFileReadyPromise = (async () => {
-      const path = await import('node:path')
-      const fs = await import('node:fs/promises')
+      const path = await importNodeModule<NodePathModule>("node:path")
+      const fs = await importNodeModule<NodeFsPromisesModule>("node:fs/promises")
       await fs.mkdir(path.dirname(globalLoggerOptions.logFilePath), {
         recursive: true,
       })
@@ -236,7 +252,7 @@ async function writeLogToFile(entry: LogEntry): Promise<void> {
   if (!isNodeRuntime || !globalLoggerOptions.logFilePath) return
   try {
     await ensureLogFileReady()
-    const fs = await import('node:fs/promises')
+    const fs = await importNodeModule<NodeFsPromisesModule>("node:fs/promises")
     const line = safeStringify(entry)
     await fs.appendFile(globalLoggerOptions.logFilePath, `${line}\n`, 'utf8')
   } catch {

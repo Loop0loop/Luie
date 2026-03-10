@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { lazy, memo, Suspense } from "react";
 import { cn } from "@shared/types/utils";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import {
@@ -19,13 +19,22 @@ import {
   History,
   Sparkles,
 } from "lucide-react";
-import { SnapshotList } from "@renderer/features/snapshot/components/SnapshotList";
-import { TrashList } from "@renderer/features/trash/components/TrashList";
 import type { DragData } from "@shared/ui/GlobalDragContext";
 import {
   useSidebarLogic,
   type SidebarItem,
 } from "@renderer/features/manuscript/components/useSidebarLogic";
+
+const SnapshotList = lazy(() =>
+  import("@renderer/features/snapshot/components/SnapshotList").then((module) => ({
+    default: module.SnapshotList,
+  })),
+);
+const TrashList = lazy(() =>
+  import("@renderer/features/trash/components/TrashList").then((module) => ({
+    default: module.TrashList,
+  })),
+);
 
 interface SidebarProps {
   currentProjectTitle?: string;
@@ -240,7 +249,9 @@ function Sidebar({
     if (item.type === "snapshot-list") {
       return (
         <div className="h-60 border-b border-border">
-          <SnapshotList chapterId={item.chapterId} />
+          <Suspense fallback={<div className="p-3 text-xs text-muted">{t("loading")}</div>}>
+            <SnapshotList chapterId={item.chapterId} />
+          </Suspense>
         </div>
       );
     }
@@ -285,7 +296,9 @@ function Sidebar({
     if (item.type === "trash-list") {
       return (
         <div className="h-60 border-b border-border">
-          <TrashList projectId={item.projectId} refreshKey={item.refreshKey} />
+          <Suspense fallback={<div className="p-3 text-xs text-muted">{t("loading")}</div>}>
+            <TrashList projectId={item.projectId} refreshKey={item.refreshKey} />
+          </Suspense>
         </div>
       );
     }
