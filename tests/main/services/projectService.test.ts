@@ -268,7 +268,7 @@ describe("ProjectService", () => {
     await localProjectService.deleteProject(created.id as string);
   });
 
-  it("marks pathMissing when DB has relative .luie projectPath", async () => {
+  it("marks invalid attachment state when DB has relative .luie projectPath", async () => {
     const validPath = path.join(
       app.getPath("userData"),
       "relative-path-missing.luie",
@@ -287,7 +287,23 @@ describe("ProjectService", () => {
     const all = await localProjectService.getAllProjects();
     const target = all.find((project) => project.id === created.id);
     expect(target).toBeDefined();
+    expect(target?.attachmentStatus).toBe("invalid-attachment");
     expect(target?.pathMissing).toBe(true);
+
+    await localProjectService.deleteProject(created.id as string);
+  });
+
+  it("marks detached when project has no local attachment", async () => {
+    const created = await localProjectService.createProject({
+      title: "Detached Project",
+      description: "test",
+    });
+
+    const all = await localProjectService.getAllProjects();
+    const target = all.find((project) => project.id === created.id);
+    expect(target).toBeDefined();
+    expect(target?.attachmentStatus).toBe("detached");
+    expect(target?.pathMissing).toBe(false);
 
     await localProjectService.deleteProject(created.id as string);
   });

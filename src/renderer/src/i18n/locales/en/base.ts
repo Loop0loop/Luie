@@ -306,9 +306,13 @@ export const enBase = {
       "deleteConfirmLabel": "Delete",
       "removeMissingConfirm": "Remove \"{title}\" from this list?",
       "removeMissingConfirmLabel": "Remove",
-      "emptyPath": "(No path)",
-      "pathMissingBadge": "Missing file",
-      "pathMissingDescription": ".luie file is missing",
+      "emptyPath": "No local attachment",
+      "detachedBadge": "Detached",
+      "detachedDescription": "No local .luie attachment on this device",
+      "missingAttachmentBadge": "Missing file",
+      "missingAttachmentDescription": "Attached .luie file is missing",
+      "invalidAttachmentBadge": "Invalid path",
+      "invalidAttachmentDescription": "Attached .luie path is invalid on this device",
       "sync": {
         "synced": "Synced",
         "pending": "Pending",
@@ -323,7 +327,7 @@ export const enBase = {
         "restoreSnapshot": "Restore snapshot"
       },
       "toast": {
-        "pathMissingBlocked": "This project cannot be opened because its .luie file is missing. Repair the path first.",
+        "pathMissingBlocked": "This project's local .luie attachment is unavailable. Repair the path first.",
         "pathRepaired": "Project path repaired.",
         "pathRepairFailed": "Failed to repair project path."
       },
@@ -376,7 +380,9 @@ export const enBase = {
     "toast": {
       "recoveredFromDb": "The file was corrupted, so we restored it from local cache.",
       "dbNewerSynced": "Local cache was newer, so the project file was updated.",
-      "pathMissing": "The .luie file is missing, so the project opened from local data."
+      "pathMissing": "The local .luie attachment is unavailable, so the project opened from local data.",
+      "missingAttachment": "The attached .luie file is missing, so the project opened from local data.",
+      "invalidAttachment": "The attached .luie path is invalid, so the project opened from local data."
     },
     "templateDescription": "Created with {templateId} template"
   },

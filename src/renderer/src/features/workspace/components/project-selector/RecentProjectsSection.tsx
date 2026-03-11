@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { MoreVertical, LogOut } from "lucide-react";
-import type { Project, SyncStatus } from "@shared/types";
+import type { Project, ProjectAttachmentStatus, SyncStatus } from "@shared/types";
 import { api } from "@shared/api";
 
 interface RecentProjectsSectionProps {
@@ -27,6 +27,30 @@ export function RecentProjectsSection({
     onDisconnectGoogle,
 }: RecentProjectsSectionProps) {
     const { t } = useTranslation();
+    const getAttachmentBadgeKey = (status: ProjectAttachmentStatus | undefined) => {
+        switch (status) {
+            case "detached":
+                return "detachedBadge";
+            case "missing-attachment":
+                return "missingAttachmentBadge";
+            case "invalid-attachment":
+                return "invalidAttachmentBadge";
+            default:
+                return null;
+        }
+    };
+    const getAttachmentDescription = (project: Project) => {
+        switch (project.attachmentStatus) {
+            case "detached":
+                return t("settings.projectTemplate.detachedDescription");
+            case "missing-attachment":
+                return t("settings.projectTemplate.missingAttachmentDescription");
+            case "invalid-attachment":
+                return t("settings.projectTemplate.invalidAttachmentDescription");
+            default:
+                return project.projectPath ?? t("settings.projectTemplate.emptyPath");
+        }
+    };
 
     return (
         <div className="mb-10">
@@ -109,6 +133,7 @@ export function RecentProjectsSection({
             <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
                 {localProjects.slice(0, 4).map((p) => {
                     const syncBadge = getProjectSyncBadge(p);
+                    const attachmentBadgeKey = getAttachmentBadgeKey(p.attachmentStatus);
                     return (
                         <div
                             key={p.id}
@@ -130,9 +155,15 @@ export function RecentProjectsSection({
                                         }`}>
                                         {t(`settings.projectTemplate.sync.${syncBadge}`)}
                                     </span>
-                                    {p.pathMissing && (
-                                        <span className="inline-flex shrink-0 items-center rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-medium text-red-300">
-                                            {t("settings.projectTemplate.pathMissingBadge")}
+                                    {attachmentBadgeKey && (
+                                        <span
+                                            className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                                p.attachmentStatus === "detached"
+                                                    ? "bg-zinc-500/15 text-zinc-300"
+                                                    : "bg-red-500/15 text-red-300"
+                                            }`}
+                                        >
+                                            {t(`settings.projectTemplate.${attachmentBadgeKey}`)}
                                         </span>
                                     )}
                                 </div>
@@ -140,9 +171,7 @@ export function RecentProjectsSection({
                                     className="text-xs text-muted whitespace-nowrap overflow-hidden text-ellipsis"
                                     title={p.projectPath ?? ""}
                                 >
-                                    {p.pathMissing
-                                        ? t("settings.projectTemplate.pathMissingDescription")
-                                        : p.projectPath ?? t("settings.projectTemplate.emptyPath")}
+                                    {getAttachmentDescription(p)}
                                 </div>
                             </div>
 

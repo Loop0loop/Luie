@@ -306,9 +306,13 @@ export const jaBase = {
       "deleteConfirmLabel": "削除",
       "removeMissingConfirm": "\"{title}\" を一覧から削除しますか？",
       "removeMissingConfirmLabel": "削除",
-      "emptyPath": "(No path)",
-      "pathMissingBadge": "ファイルなし",
-      "pathMissingDescription": ".luie ファイルが見つかりません",
+      "emptyPath": "ローカル接続なし",
+      "detachedBadge": "未接続",
+      "detachedDescription": "この端末にはローカル .luie 接続がありません",
+      "missingAttachmentBadge": "ファイルなし",
+      "missingAttachmentDescription": "接続された .luie ファイルが見つかりません",
+      "invalidAttachmentBadge": "パス異常",
+      "invalidAttachmentDescription": "接続された .luie パスがこの端末では無効です",
       "sync": {
         "synced": "同期済み",
         "pending": "同期待ち",
@@ -323,7 +327,7 @@ export const jaBase = {
         "restoreSnapshot": "スナップショットを復元"
       },
       "toast": {
-        "pathMissingBlocked": ".luie ファイルが見つからないため開けません。先にパス修復を行ってください。",
+        "pathMissingBlocked": "ローカル .luie 接続を利用できないため開けません。先にパス修復を行ってください。",
         "pathRepaired": "プロジェクトのパスを修復しました。",
         "pathRepairFailed": "プロジェクトのパス修復に失敗しました。"
       },
@@ -376,7 +380,9 @@ export const jaBase = {
     "toast": {
       "recoveredFromDb": "ファイルが破損していたため、ローカルキャッシュから復元しました。",
       "dbNewerSynced": "ローカルキャッシュが新しいため、プロジェクトファイルを更新しました。",
-      "pathMissing": ".luie ファイルが見つからないため、ローカルデータで開きます。"
+      "pathMissing": "ローカル .luie 接続を利用できないため、ローカルデータで開きます。",
+      "missingAttachment": "接続された .luie ファイルが見つからないため、ローカルデータで開きます。",
+      "invalidAttachment": "接続された .luie パスが無効なため、ローカルデータで開きます。"
     },
     "templateDescription": "{templateId} テンプレートで作成"
   },

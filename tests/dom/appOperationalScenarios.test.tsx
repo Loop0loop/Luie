@@ -16,7 +16,8 @@ const mocked = vi.hoisted(() => {
     "bootstrap.initializing": "Initializing app",
     "bootstrap.retry": "Retry bootstrap",
     "bootstrap.quit": "Quit app",
-    "project.toast.pathMissing": "Open from local data",
+    "project.toast.missingAttachment": "Open from local data",
+    "project.toast.invalidAttachment": "Open from local data (invalid path)",
     loading: "Loading",
     "errorBoundary.title": "Unexpected error",
     "errorBoundary.description": "The app hit an unexpected error.",
@@ -48,6 +49,7 @@ const mocked = vi.hoisted(() => {
           id: string;
           title: string;
           projectPath?: string | null;
+          attachmentStatus?: "attached" | "detached" | "missing-attachment" | "invalid-attachment";
           pathMissing?: boolean;
           createdAt: string;
           updatedAt: string;
@@ -348,6 +350,7 @@ describe("app operational scenarios", () => {
       id: "project-1",
       title: "Recovered Project",
       projectPath: "/tmp/missing.luie",
+      attachmentStatus: "missing-attachment",
       pathMissing: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

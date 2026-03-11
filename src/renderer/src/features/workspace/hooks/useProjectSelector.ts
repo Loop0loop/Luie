@@ -214,7 +214,12 @@ export function useProjectSelector(projects: Project[]): ProjectSelectorState & 
             setLocalProjects((prev) =>
                 prev.map((p) =>
                     p.id === project.id
-                        ? { ...p, projectPath: normalizedPath, pathMissing: false }
+                        ? {
+                            ...p,
+                            projectPath: normalizedPath,
+                            attachmentStatus: "attached",
+                            pathMissing: false,
+                        }
                         : p,
                 ),
             );

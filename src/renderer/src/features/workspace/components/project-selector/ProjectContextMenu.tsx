@@ -23,6 +23,9 @@ export function ProjectContextMenu({
     onDeleteRequest,
 }: ProjectContextMenuProps) {
     const { t } = useTranslation();
+    const canRepairAttachment =
+        project.attachmentStatus === "missing-attachment" ||
+        project.attachmentStatus === "invalid-attachment";
 
     return (
         <div
@@ -40,7 +43,7 @@ export function ProjectContextMenu({
             >
                 {t("settings.projectTemplate.context.open")}
             </div>
-            {project.pathMissing && (
+            {canRepairAttachment && (
                 <div
                     className="px-2.5 py-2.5 rounded-lg text-[13px] text-fg cursor-pointer select-none hover:bg-active"
                     onClick={() => {
@@ -68,7 +71,7 @@ export function ProjectContextMenu({
                     onDeleteRequest(project);
                 }}
             >
-                {project.pathMissing
+                {canRepairAttachment
                     ? t("settings.projectTemplate.context.removeMissing")
                     : t("settings.projectTemplate.context.delete")}
             </div>

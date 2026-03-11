@@ -3,11 +3,19 @@
  */
 
 // Model Types (Renderer-safe)
+export type ProjectAttachmentStatus =
+  | "attached"
+  | "detached"
+  | "missing-attachment"
+  | "invalid-attachment";
+
 export interface Project {
   id: string;
   title: string;
   description?: string | null;
   projectPath?: string | null;
+  attachmentStatus?: ProjectAttachmentStatus;
+  // Legacy compatibility flag. Prefer attachmentStatus for new code.
   pathMissing?: boolean;
   createdAt: string | Date;
   updatedAt: string | Date;

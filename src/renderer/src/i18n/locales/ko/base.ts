@@ -306,9 +306,13 @@ export const koBase = {
       "deleteConfirmLabel": "삭제",
       "removeMissingConfirm": "\"{title}\" 항목을 목록에서 제거할까요?",
       "removeMissingConfirmLabel": "제거",
-      "emptyPath": "(No path)",
-      "pathMissingBadge": "파일 없음",
-      "pathMissingDescription": ".luie 파일을 찾을 수 없음",
+      "emptyPath": "로컬 연결 없음",
+      "detachedBadge": "연결 안 됨",
+      "detachedDescription": "이 기기에 연결된 로컬 .luie 파일이 없습니다",
+      "missingAttachmentBadge": "파일 없음",
+      "missingAttachmentDescription": "연결된 .luie 파일을 찾을 수 없습니다",
+      "invalidAttachmentBadge": "경로 오류",
+      "invalidAttachmentDescription": "연결된 .luie 경로가 이 기기에서 유효하지 않습니다",
       "sync": {
         "synced": "동기화됨",
         "pending": "동기화 대기",
@@ -323,7 +327,7 @@ export const koBase = {
         "restoreSnapshot": "스냅샷 복원하기"
       },
       "toast": {
-        "pathMissingBlocked": ".luie 파일이 없어 바로 열 수 없습니다. 경로 복구를 먼저 진행해 주세요.",
+        "pathMissingBlocked": "로컬 .luie 연결을 사용할 수 없어 바로 열 수 없습니다. 경로 복구를 먼저 진행해 주세요.",
         "pathRepaired": "프로젝트 경로를 복구했습니다.",
         "pathRepairFailed": "프로젝트 경로 복구에 실패했습니다."
       },
@@ -376,7 +380,9 @@ export const koBase = {
     "toast": {
       "recoveredFromDb": "파일이 손상되어 로컬 캐시에서 복구했습니다.",
       "dbNewerSynced": "로컬 캐시가 최신이라 프로젝트 파일을 갱신했습니다.",
-      "pathMissing": ".luie 파일이 없어 로컬 데이터로 프로젝트를 엽니다."
+      "pathMissing": "로컬 .luie 연결을 사용할 수 없어 로컬 데이터로 프로젝트를 엽니다.",
+      "missingAttachment": "연결된 .luie 파일을 찾을 수 없어 로컬 데이터로 프로젝트를 엽니다.",
+      "invalidAttachment": "연결된 .luie 경로가 유효하지 않아 로컬 데이터로 프로젝트를 엽니다."
     },
     "templateDescription": "{templateId} 템플릿으로 생성됨"
   },

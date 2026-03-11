@@ -77,7 +77,11 @@ export default function ProjectTemplateSelector({
               isOpen: true,
               projectId: project.id,
               projectTitle: project.title,
-              mode: project.pathMissing ? "removeMissing" : "delete",
+              mode:
+                project.attachmentStatus === "missing-attachment" ||
+                project.attachmentStatus === "invalid-attachment"
+                  ? "removeMissing"
+                  : "delete",
               deleteFile: false,
             })}
           />

@@ -191,7 +191,12 @@ export default function App() {
             const normalizedPath = approved.data.normalizedPath;
             if (normalizedPath !== projectPath) {
               await updateProject(project.id, undefined, undefined, normalizedPath);
-              nextProject = { ...project, projectPath: normalizedPath };
+              nextProject = {
+                ...project,
+                projectPath: normalizedPath,
+                attachmentStatus: "attached",
+                pathMissing: false,
+              };
             }
           }
         }
@@ -209,9 +214,15 @@ export default function App() {
   );
 
   useEffect(() => {
-    if (!currentProject?.pathMissing) return;
-    showToast(t("project.toast.pathMissing"), "info");
-  }, [currentProject?.id, currentProject?.pathMissing, showToast, t]);
+    const status = currentProject?.attachmentStatus;
+    if (status === "missing-attachment") {
+      showToast(t("project.toast.missingAttachment"), "info");
+      return;
+    }
+    if (status === "invalid-attachment") {
+      showToast(t("project.toast.invalidAttachment"), "info");
+    }
+  }, [currentProject?.attachmentStatus, currentProject?.id, showToast, t]);
 
   const handleOpenLuieFile = useCallback(async () => {
     try {
