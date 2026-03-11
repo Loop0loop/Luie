@@ -1,40 +1,42 @@
-import { app as S, nativeTheme as la, shell as pa, safeStorage as rt, BrowserWindow as tt, Menu as Pe, session as yr, dialog as We, ipcMain as ua } from "electron";
-import * as ct from "node:path";
-import W from "node:path";
+import { app as T, nativeTheme as Ea, shell as ma, safeStorage as tt, BrowserWindow as Rt, Menu as De, session as _r, dialog as He, ipcMain as Aa } from "electron";
+import * as ot from "node:path";
+import k from "node:path";
 import { z as u } from "zod";
-import { EventEmitter as ha } from "events";
-import * as fa from "fs";
-import { promises as R, existsSync as ga } from "fs";
-import * as Y from "fs/promises";
-import * as at from "path";
-import C, { join as V } from "path";
-import { spawn as Ea } from "node:child_process";
-import { constants as Be, promises as Nt } from "node:fs";
-import * as Ht from "node:fs/promises";
-import { access as fn, mkdir as Sr, writeFile as Tr, unlink as wr } from "node:fs/promises";
-import { createRequire as ma } from "node:module";
+import { EventEmitter as ya } from "events";
+import * as Sa from "fs";
+import { promises as R, existsSync as Ta } from "fs";
+import * as H from "fs/promises";
+import * as rt from "path";
+import C, { join as ht } from "path";
+import * as Gt from "node:fs/promises";
+import { access as yn, mkdir as Ir, writeFile as Pr, unlink as Cr } from "node:fs/promises";
+import { spawn as wa } from "node:child_process";
+import { constants as Ye, promises as Ct } from "node:fs";
+import { createRequire as _a } from "node:module";
+import { PrismaClient as Ia } from "@prisma/client";
+import Pa from "better-sqlite3";
 import "./config-B9Gu_Tvs.js";
-import _r from "electron-store";
-import Aa from "yauzl";
-import ya from "yazl";
-import { randomUUID as X, randomBytes as Sa, createHash as Ta } from "node:crypto";
-import { Type as ut } from "@google/genai";
-import { promisify as pr } from "node:util";
-import { gzip as gn, gunzip as wa } from "node:zlib";
-import _a from "electron-window-state";
-import { EventEmitter as Ia } from "node:events";
-import Pa from "node:module";
-const Ml = import.meta.filename, st = import.meta.dirname, kl = Pa.createRequire(import.meta.url), Wl = 2, Bl = 2, $l = 2, $e = 1, Ca = (r) => !!r && typeof r == "object" && typeof r.then == "function", Ce = () => typeof performance < "u" && typeof performance.now == "function" ? performance.now() : Date.now(), xe = (r, t, e, n) => {
+import Rr from "electron-store";
+import Ca from "yauzl";
+import Ra from "yazl";
+import { randomUUID as Y, randomBytes as Da, createHash as Na } from "node:crypto";
+import { Type as dt } from "@google/genai";
+import { promisify as Er } from "node:util";
+import { gzip as Sn, gunzip as La } from "node:zlib";
+import Oa from "electron-window-state";
+import { EventEmitter as ja } from "node:events";
+import ba from "node:module";
+const Jl = import.meta.filename, Ne = import.meta.dirname, Ql = ba.createRequire(import.meta.url), Zl = 2, tp = 2, ep = 2, ze = 1, Fa = (r) => !!r && typeof r == "object" && typeof r.then == "function", Le = () => typeof performance < "u" && typeof performance.now == "function" ? performance.now() : Date.now(), Xe = (r, t, e, n) => {
   const a = r?.[t];
   if (a)
     try {
       const o = a(e, n);
-      Ca(o) && o.then(() => {
+      Fa(o) && o.then(() => {
       }, () => {
       });
     } catch {
     }
-}, En = (r) => ({
+}, Tn = (r) => ({
   flattened: u.flattenError(r),
   pretty: u.prettifyError(r),
   issues: r.issues.map((t) => ({
@@ -42,8 +44,8 @@ const Ml = import.meta.filename, st = import.meta.dirname, kl = Pa.createRequire
     path: t.path.map(String).join("."),
     message: t.message
   }))
-}), Ra = (r) => ({
-  schemaVersion: $e,
+}), va = (r) => ({
+  schemaVersion: ze,
   domain: r.domain ?? "validation",
   event: "validation.failed",
   scope: r.scope,
@@ -54,15 +56,15 @@ const Ml = import.meta.filename, st = import.meta.dirname, kl = Pa.createRequire
   ...typeof r.persistedVersion == "number" ? { persistedVersion: r.persistedVersion } : {},
   ...typeof r.targetVersion == "number" ? { targetVersion: r.targetVersion } : {},
   ...r.fallback ? { fallback: r.fallback } : {},
-  zod: En(r.error),
+  zod: Tn(r.error),
   ...r.meta ?? {}
-}), mn = (r) => {
-  const t = Ce();
+}), wn = (r) => {
+  const t = Le();
   return {
     complete(e, n) {
-      const a = Number((Ce() - t).toFixed(1));
-      return xe(e, "info", r.event, {
-        schemaVersion: $e,
+      const a = Number((Le() - t).toFixed(1));
+      return Xe(e, "info", r.event, {
+        schemaVersion: ze,
         domain: "performance",
         event: r.event,
         scope: r.scope,
@@ -73,9 +75,9 @@ const Ml = import.meta.filename, st = import.meta.dirname, kl = Pa.createRequire
       }), a;
     },
     fail(e, n, a) {
-      const o = Number((Ce() - t).toFixed(1));
-      return xe(e, "warn", r.event, {
-        schemaVersion: $e,
+      const o = Number((Le() - t).toFixed(1));
+      return Xe(e, "warn", r.event, {
+        schemaVersion: ze,
         domain: "performance",
         event: r.event,
         scope: r.scope,
@@ -91,21 +93,21 @@ const Ml = import.meta.filename, st = import.meta.dirname, kl = Pa.createRequire
     }
   };
 };
-var ur = /* @__PURE__ */ ((r) => (r.DEBUG = "DEBUG", r.INFO = "INFO", r.WARN = "WARN", r.ERROR = "ERROR", r))(ur || {});
-const pe = /* @__PURE__ */ Symbol.for("luie.logger.context"), Ge = "[REDACTED]", Na = "[REDACTED_PATH]", An = "[REDACTED_TEXT]", yn = /(token|secret|authorization|api[-_]?key|password|cookie|jwt|verifier)/i, Sn = /(content|synopsis|manuscript|chapterText|prompt)/i, Tn = /(path|dir|directory|cwd|execPath|userData|datasource|argv)/i, Da = /^(?:\/|[a-zA-Z]:\\|[a-zA-Z]:\/).+/, La = /Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, Oa = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
-function Ir(r, t) {
-  if (yn.test(t ?? ""))
-    return Ge;
-  if (Sn.test(t ?? ""))
-    return An;
-  if (Tn.test(t ?? "") && Da.test(r))
-    return Na;
-  let e = r.replace(La, "Bearer [REDACTED]");
-  return Oa.test(e) && (e = Ge), e;
+var mr = /* @__PURE__ */ ((r) => (r.DEBUG = "DEBUG", r.INFO = "INFO", r.WARN = "WARN", r.ERROR = "ERROR", r))(mr || {});
+const fe = /* @__PURE__ */ Symbol.for("luie.logger.context"), Ke = "[REDACTED]", Ua = "[REDACTED_PATH]", _n = "[REDACTED_TEXT]", In = /(token|secret|authorization|api[-_]?key|password|cookie|jwt|verifier)/i, Pn = /(content|synopsis|manuscript|chapterText|prompt)/i, Cn = /(path|dir|directory|cwd|execPath|userData|datasource|argv)/i, Ma = /^(?:\/|[a-zA-Z]:\\|[a-zA-Z]:\/).+/, ka = /Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, Wa = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+function Dr(r, t) {
+  if (In.test(t ?? ""))
+    return Ke;
+  if (Pn.test(t ?? ""))
+    return _n;
+  if (Cn.test(t ?? "") && Ma.test(r))
+    return Ua;
+  let e = r.replace(ka, "Bearer [REDACTED]");
+  return Wa.test(e) && (e = Ke), e;
 }
-function Pt(r, t, e = /* @__PURE__ */ new WeakSet()) {
+function _t(r, t, e = /* @__PURE__ */ new WeakSet()) {
   if (typeof r == "string")
-    return Ir(r, t);
+    return Dr(r, t);
   if (typeof r == "number" || typeof r == "boolean" || r === null)
     return r;
   if (typeof r == "bigint")
@@ -116,7 +118,7 @@ function Pt(r, t, e = /* @__PURE__ */ new WeakSet()) {
     if (r instanceof Date)
       return r.toISOString();
     if (Array.isArray(r))
-      return r.map((n) => Pt(n, t, e));
+      return r.map((n) => _t(n, t, e));
     if (typeof r == "object") {
       const n = r;
       if (e.has(n))
@@ -124,41 +126,41 @@ function Pt(r, t, e = /* @__PURE__ */ new WeakSet()) {
       e.add(n);
       const a = {};
       for (const [o, s] of Object.entries(n)) {
-        if (yn.test(o)) {
-          a[o] = Ge;
+        if (In.test(o)) {
+          a[o] = Ke;
           continue;
         }
-        if (Sn.test(o) && typeof s == "string") {
-          a[o] = An;
+        if (Pn.test(o) && typeof s == "string") {
+          a[o] = _n;
           continue;
         }
-        if (Tn.test(o) && typeof s == "string") {
-          a[o] = Ir(s, o);
+        if (Cn.test(o) && typeof s == "string") {
+          a[o] = Dr(s, o);
           continue;
         }
-        a[o] = Pt(s, o, e);
+        a[o] = _t(s, o, e);
       }
       return a;
     }
     return String(r);
   }
 }
-function ja(r) {
-  if (!r || typeof r != "object") return Pt(r);
-  const t = r[pe];
-  return !t || typeof t != "object" ? Pt(r) : Array.isArray(r) ? Pt({ items: r, _ctx: t }) : Pt({ ...r, _ctx: t });
+function Ba(r) {
+  if (!r || typeof r != "object") return _t(r);
+  const t = r[fe];
+  return !t || typeof t != "object" ? _t(r) : Array.isArray(r) ? _t({ items: r, _ctx: t }) : _t({ ...r, _ctx: t });
 }
-function ba(r, t) {
-  return r && typeof r == "object" ? { ...r, [pe]: t } : { value: r, [pe]: t };
+function $a(r, t) {
+  return r && typeof r == "object" ? { ...r, [fe]: t } : { value: r, [fe]: t };
 }
-class Fa {
+class xa {
   context;
   constructor(t) {
     this.context = t;
   }
   log(t, e, n) {
-    if (!va(t)) return;
-    const a = ja(n), o = {
+    if (!Ga(t)) return;
+    const a = Ba(n), o = {
       level: t,
       message: e,
       timestamp: (/* @__PURE__ */ new Date()).toISOString(),
@@ -179,7 +181,7 @@ class Fa {
         console.error(s, a ?? "");
         break;
     }
-    ot.logToFile && ot.logFilePath && ka(o);
+    nt.logToFile && nt.logFilePath && za(o);
   }
   debug(t, e) {
     this.log("DEBUG", t, e);
@@ -194,76 +196,76 @@ class Fa {
     this.log("ERROR", t, e);
   }
 }
-const wn = typeof process < "u" && typeof process.versions < "u" && !!process.versions.node, Pr = {
+const Rn = typeof process < "u" && typeof process.versions < "u" && !!process.versions.node, Nr = {
   DEBUG: 10,
   INFO: 20,
   WARN: 30,
   ERROR: 40
 };
-let ot = {
+let nt = {
   minLevel: "DEBUG",
   logToFile: !1,
   logFilePath: ""
-}, Re = null;
-const He = async (r) => import(
+}, Oe = null;
+const Ve = async (r) => import(
   /* @vite-ignore */
   r
 );
-function va(r) {
-  return Pr[r] >= Pr[ot.minLevel];
+function Ga(r) {
+  return Nr[r] >= Nr[nt.minLevel];
 }
-async function Ua() {
-  !wn || !ot.logFilePath || (Re || (Re = (async () => {
-    const r = await He("node:path");
-    await (await He("node:fs/promises")).mkdir(r.dirname(ot.logFilePath), {
+async function Ha() {
+  !Rn || !nt.logFilePath || (Oe || (Oe = (async () => {
+    const r = await Ve("node:path");
+    await (await Ve("node:fs/promises")).mkdir(r.dirname(nt.logFilePath), {
       recursive: !0
     });
-  })()), await Re);
+  })()), await Oe);
 }
-function Ma(r) {
+function Ya(r) {
   try {
     return JSON.stringify(r);
   } catch {
     return '"[unserializable]"';
   }
 }
-async function ka(r) {
-  if (!(!wn || !ot.logFilePath))
+async function za(r) {
+  if (!(!Rn || !nt.logFilePath))
     try {
-      await Ua();
-      const t = await He("node:fs/promises"), e = Ma(r);
-      await t.appendFile(ot.logFilePath, `${e}
+      await Ha();
+      const t = await Ve("node:fs/promises"), e = Ya(r);
+      await t.appendFile(nt.logFilePath, `${e}
 `, "utf8");
     } catch {
     }
 }
-function _n(r) {
-  ot = {
-    ...ot,
+function Dn(r) {
+  nt = {
+    ...nt,
     ...r
   };
 }
-function N(r) {
-  return new Fa(r);
+function D(r) {
+  return new xa(r);
 }
-const xl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const rp = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  LOG_CONTEXT: pe,
-  LogLevel: ur,
-  buildValidationFailureData: Ra,
-  configureLogger: _n,
-  createLogger: N,
-  createPerformanceTimer: mn,
-  emitOperationalLog: xe,
-  summarizeZodError: En,
-  withLogContext: ba
-}, Symbol.toStringTag, { value: "Module" })), Wa = "Luie", Ba = "0.1.0", In = (r, t) => typeof r == "string" && r.trim().length > 0 ? r : t, Cr = In(
+  LOG_CONTEXT: fe,
+  LogLevel: mr,
+  buildValidationFailureData: va,
+  configureLogger: Dn,
+  createLogger: D,
+  createPerformanceTimer: wn,
+  emitOperationalLog: Xe,
+  summarizeZodError: Tn,
+  withLogContext: $a
+}, Symbol.toStringTag, { value: "Module" })), Xa = "Luie", Ka = "0.1.0", Nn = (r, t) => typeof r == "string" && r.trim().length > 0 ? r : t, Lr = Nn(
   "luie",
-  Wa
-), $a = In(
+  Xa
+), Va = Nn(
   "0.1.16",
-  Ba
-), Pn = "luie.db", xa = 3e4, Cn = xa, Ga = 1e3, Ee = 30, Ha = !0, Ya = 300 * 1e3, za = 60 * 1e3, Xa = 200, qa = 5e3, Ka = 3e3, Va = 1e4, Ja = 8e3, Qa = 2e4, Ne = 60 * 1e3, Za = 2e3, ue = 50, Rn = 2e3, to = 1, eo = 0, ro = 30, Rr = 50, no = 2e3, ao = 5e3, oo = 1400, so = 900, io = 1e3, co = 600, lo = 16, po = 16, uo = "sans", ho = "inter", fo = 16, go = 1.6, Eo = 800, mo = "blue", Ao = !0, yo = "logs", So = "luie.log", Ye = "snapshot-mirror", hr = "Backups", To = "settings", wo = "settings.json", Nn = "luie", K = ".luie", Gl = "luie", Dt = "luie", Hl = "Luie Project", Yl = "New Project", zl = "project", Lt = "zip", Ot = 1, me = "meta.json", vt = "manuscript", Xl = `${vt}/README.md`, G = "world", jt = "snapshots", _o = "assets", Dn = "characters.json", Ln = "terms.json", Qt = "synopsis.json", Ae = "plot-board.json", ye = "map-drawing.json", Se = "mindmap.json", fr = "scrap-memos.json", Te = "graph.json", we = ".md", E = {
+  Ka
+), Ln = "luie.db", qa = 3e4, On = qa, Ja = 1e3, ye = 30, Qa = !0, Za = 300 * 1e3, to = 60 * 1e3, eo = 200, ro = 5e3, no = 3e3, ao = 1e4, oo = 8e3, so = 2e4, je = 60 * 1e3, io = 2e3, ge = 50, jn = 2e3, co = 1, lo = 0, po = 30, Or = 50, uo = 2e3, ho = 5e3, fo = 1400, go = 900, Eo = 1e3, mo = 600, Ao = 16, yo = 16, So = "sans", To = "inter", wo = 16, _o = 1.6, Io = 800, Po = "blue", Co = !0, Ro = "logs", Do = "luie.log", qe = "snapshot-mirror", Ar = "Backups", No = "settings", Lo = "settings.json", bn = "luie", X = ".luie", np = "luie", Dt = "luie", ap = "Luie Project", op = "New Project", sp = "project", Nt = "zip", Lt = 1, Se = "meta.json", Ft = "manuscript", ip = `${Ft}/README.md`, x = "world", Ot = "snapshots", Oo = "assets", Fn = "characters.json", vn = "terms.json", Jt = "synopsis.json", Te = "plot-board.json", we = "map-drawing.json", _e = "mindmap.json", yr = "scrap-memos.json", Ie = "graph.json", Pe = ".md", E = {
   // Database Errors (1xxx)
   DB_CONNECTION_FAILED: "DB_1001",
   DB_QUERY_FAILED: "DB_1002",
@@ -341,16 +343,16 @@ const xl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   ENTITY_RELATION_CREATE_FAILED: "REL_9702",
   ENTITY_RELATION_DELETE_FAILED: "REL_9703",
   ENTITY_RELATION_UPDATE_FAILED: "REL_9704"
-}, Io = /* @__PURE__ */ new Set([
+}, jo = /* @__PURE__ */ new Set([
   "Place",
   "Concept",
   "Rule",
   "Item",
   "WorldEntity"
-]), Nr = (r) => Io.has(r), ql = (r, t, e) => !0, Po = "neutral", Co = "soft", qt = () => process.env.VITEST === "true" || process.env.NODE_ENV === "test", Ro = () => !S.isPackaged && !qt(), No = () => S.isPackaged, Do = () => W.join(process.cwd(), "prisma", "dev.db"), Lo = () => W.join(process.cwd(), "prisma", ".tmp", "test.db"), Oo = () => W.join(S.getPath("userData"), Pn);
-function jo() {
+]), jr = (r) => jo.has(r), cp = (r, t, e) => !0, bo = "neutral", Fo = "soft", Xt = () => process.env.VITEST === "true" || process.env.NODE_ENV === "test", vo = () => !T.isPackaged && !Xt(), Uo = () => T.isPackaged, Mo = () => k.join(process.cwd(), "prisma", "dev.db"), ko = () => k.join(process.cwd(), "prisma", ".tmp", "test.db"), Wo = () => k.join(T.getPath("userData"), Ln);
+function Bo() {
   if (process.env.DATABASE_URL) return;
-  const r = qt() ? Lo() : S.isPackaged ? Oo() : Do();
+  const r = Xt() ? ko() : T.isPackaged ? Wo() : Mo();
   process.env.DATABASE_URL = `file:${r}`;
 }
 class f extends Error {
@@ -360,14 +362,14 @@ class f extends Error {
     super(e), this.code = t, this.details = n, a && (this.cause = a);
   }
 }
-function bo(r) {
+function $o(r) {
   return typeof r == "object" && r !== null && "code" in r && "message" in r;
 }
-const Dr = 4096, Fo = process.platform === "win32" ? [W.resolve(process.env.WINDIR ?? "C:\\Windows")] : ["/etc", "/bin", "/sbin", "/System", "/private/etc"], Lr = (r) => process.platform === "win32" ? r.toLowerCase() : r, vo = (r, t) => {
-  const e = Lr(W.resolve(r)), n = Lr(W.resolve(t));
-  return e === n || e.startsWith(`${n}${W.sep}`);
+const br = 4096, xo = process.platform === "win32" ? [k.resolve(process.env.WINDIR ?? "C:\\Windows")] : ["/etc", "/bin", "/sbin", "/System", "/private/etc"], Fr = (r) => process.platform === "win32" ? r.toLowerCase() : r, Go = (r, t) => {
+  const e = Fr(k.resolve(r)), n = Fr(k.resolve(t));
+  return e === n || e.startsWith(`${n}${k.sep}`);
 };
-function Uo(r, t) {
+function Ho(r, t) {
   if (typeof r != "string")
     throw new f(
       E.INVALID_INPUT,
@@ -381,11 +383,11 @@ function Uo(r, t) {
       `${t} is required`,
       { fieldName: t }
     );
-  if (e.length > Dr)
+  if (e.length > br)
     throw new f(
       E.INVALID_INPUT,
       `${t} is too long`,
-      { fieldName: t, length: e.length, maxLength: Dr }
+      { fieldName: t, length: e.length, maxLength: br }
     );
   if (e.includes("\0"))
     throw new f(
@@ -395,25 +397,109 @@ function Uo(r, t) {
     );
   return e;
 }
-function z(r, t = "path") {
-  const e = Uo(r, t);
-  if (!W.isAbsolute(e))
+function K(r, t = "path") {
+  const e = Ho(r, t);
+  if (!k.isAbsolute(e))
     throw new f(
       E.INVALID_INPUT,
       `${t} must be an absolute path`,
       { fieldName: t, input: e }
     );
-  const n = W.resolve(e);
-  for (const a of Fo)
-    if (vo(n, a))
+  const n = k.resolve(e);
+  for (const a of xo)
+    if (Go(n, a))
       throw new f(
         E.FS_PERMISSION_DENIED,
         `${t} points to a restricted system path`,
-        { fieldName: t, input: n, restrictedRoot: W.resolve(a) }
+        { fieldName: t, input: n, restrictedRoot: k.resolve(a) }
       );
   return n;
 }
-const Mo = [
+const vr = D("DatabaseSeed");
+async function Yo(r) {
+  const t = await r.project.count();
+  return t > 0 ? (vr.info("Seed skipped (projects exist)", { count: t }), !1) : (await r.project.create({
+    data: {
+      title: "새 프로젝트",
+      description: "",
+      settings: {
+        create: {
+          autoSave: !0,
+          autoSaveInterval: 30
+        }
+      },
+      chapters: {
+        create: [
+          {
+            title: "1장",
+            content: "",
+            order: 1,
+            wordCount: 0
+          }
+        ]
+      }
+    }
+  }), vr.info("Seed completed (default project created)"), !0);
+}
+const zo = _a(import.meta.url), Ur = Ia;
+async function Mt(r) {
+  try {
+    return await Gt.access(r, Ye.F_OK), !0;
+  } catch {
+    return !1;
+  }
+}
+function Xo(r) {
+  const t = r.trim();
+  if (!t)
+    throw new Error("DATABASE_URL is empty");
+  const n = (t.startsWith("file:") ? t : `file:${t}`).slice(5), a = n.indexOf("?"), o = a === -1 ? n : n.slice(0, a), s = a === -1 ? "" : n.slice(a), c = decodeURIComponent(o), d = ot.isAbsolute(c) ? c : ot.resolve(process.cwd(), c);
+  return {
+    dbPath: d,
+    datasourceUrl: `file:${d}${s}`
+  };
+}
+function Ko() {
+  return process.env.LUIE_PACKAGED_SCHEMA_MODE === "prisma" ? "prisma" : "bootstrap";
+}
+function Vo(r) {
+  return ot.join(r, "node_modules", "prisma", "build", "index.js");
+}
+function qo() {
+  const r = zo("@prisma/adapter-better-sqlite3"), t = r.PrismaBetterSQLite3 ?? r.PrismaBetterSqlite3 ?? r.default;
+  if (typeof t != "function")
+    throw new Error("Prisma better-sqlite3 adapter is unavailable");
+  return t;
+}
+function be(r, t, e) {
+  const n = r.endsWith(".js"), a = n ? process.execPath : r, o = n ? [r, ...t] : t;
+  return new Promise((s, c) => {
+    const d = wa(a, o, {
+      cwd: process.cwd(),
+      env: e,
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    let l = "", i = "";
+    d.stdout.on("data", (p) => {
+      l += p.toString();
+    }), d.stderr.on("data", (p) => {
+      i += p.toString();
+    }), d.on("error", (p) => {
+      const m = p;
+      m.stdout = l, m.stderr = i, c(m);
+    }), d.on("close", (p) => {
+      if (p === 0) {
+        s();
+        return;
+      }
+      const m = new Error(
+        `Prisma command failed with exit code ${p ?? "unknown"}`
+      );
+      m.status = p, m.stdout = l, m.stderr = i, c(m);
+    });
+  });
+}
+const Jo = [
   "Project",
   "ProjectSettings",
   "Chapter",
@@ -426,7 +512,7 @@ const Mo = [
   "Snapshot",
   "WorldEntity",
   "EntityRelation"
-], ko = [
+], Qo = [
   {
     table: "Term",
     column: "order",
@@ -472,7 +558,7 @@ const Mo = [
     column: "attributes",
     sql: 'ALTER TABLE "Character" ADD COLUMN "attributes" TEXT;'
   }
-], Wo = {
+], Zo = {
   Project: ["id", "title", "projectPath"],
   ProjectSettings: ["id", "projectId", "autoSave", "autoSaveInterval"],
   Chapter: ["id", "projectId", "order", "wordCount", "deletedAt"],
@@ -485,7 +571,7 @@ const Mo = [
   Snapshot: ["id", "projectId", "content", "contentLength", "type"],
   WorldEntity: ["id", "projectId", "type", "name", "positionX", "positionY"],
   EntityRelation: ["id", "projectId", "sourceId", "targetId", "relation"]
-}, Bo = `
+}, ts = `
 CREATE TABLE IF NOT EXISTS "Project" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "title" TEXT NOT NULL,
@@ -636,84 +722,50 @@ CREATE INDEX IF NOT EXISTS "WorldEntity_projectId_name_idx" ON "WorldEntity"("pr
 CREATE INDEX IF NOT EXISTS "EntityRelation_projectId_sourceId_idx" ON "EntityRelation"("projectId", "sourceId");
 CREATE INDEX IF NOT EXISTS "EntityRelation_projectId_targetId_idx" ON "EntityRelation"("projectId", "targetId");
 CREATE INDEX IF NOT EXISTS "EntityRelation_projectId_relation_idx" ON "EntityRelation"("projectId", "relation");
-`, Or = N("DatabaseSeed");
-async function $o(r) {
-  const t = await r.project.count();
-  return t > 0 ? (Or.info("Seed skipped (projects exist)", { count: t }), !1) : (await r.project.create({
-    data: {
-      title: "새 프로젝트",
-      description: "",
-      settings: {
-        create: {
-          autoSave: !0,
-          autoSaveInterval: 30
-        }
-      },
-      chapters: {
-        create: [
-          {
-            title: "1장",
-            content: "",
-            order: 1,
-            wordCount: 0
-          }
-        ]
-      }
-    }
-  }), Or.info("Seed completed (default project created)"), !0);
+`;
+function es(r) {
+  return r.replaceAll('"', '""');
 }
-const j = N("DatabaseService"), gr = ma(import.meta.url), { PrismaClient: jr } = gr("@prisma/client"), xo = () => {
-  const r = gr("@prisma/adapter-better-sqlite3");
-  if (typeof r == "function") return r;
-  if (r && typeof r == "object" && typeof r.PrismaBetterSqlite3 == "function")
-    return r.PrismaBetterSqlite3;
-  throw new Error("Failed to load Prisma better-sqlite3 adapter");
-}, Go = () => {
-  const r = gr("better-sqlite3");
-  return typeof r == "function" ? r : r.default;
-}, Ho = (r) => `"${r.replace(/"/g, '""')}"`, kt = async (r) => {
+function Mr(r, t) {
+  return !!r.prepare(
+    "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1;"
+  ).get(t);
+}
+function kr(r, t, e) {
+  const n = es(t);
+  return r.prepare(`PRAGMA table_info("${n}")`).all().some((o) => o.name === e);
+}
+function Fe(r, t) {
+  const e = new Pa(r);
   try {
-    return await Ht.access(r, Be.F_OK), !0;
-  } catch {
-    return !1;
-  }
-}, Yo = (r) => {
-  const t = process.platform === "win32" ? "prisma.cmd" : "prisma";
-  return ct.join(r, "node_modules", ".bin", t);
-}, br = "file:", zo = (r) => {
-  if (!r.startsWith(br))
-    throw new Error("DATABASE_URL must use sqlite file: URL");
-  const t = r.slice(br.length);
-  if (!t || t === ":memory:" || t.startsWith(":memory:?"))
-    throw new Error("DATABASE_URL must point to a persistent sqlite file path");
-  const e = t.indexOf("?"), n = e >= 0 ? t.slice(0, e) : t, a = e >= 0 ? t.slice(e + 1) : "", o = z(
-    ct.isAbsolute(n) ? n : ct.resolve(process.cwd(), n),
-    "DATABASE_URL"
-  ), s = a.length > 0 ? `file:${o}?${a}` : `file:${o}`;
-  return { dbPath: o, datasourceUrl: s };
-}, De = async (r, t, e) => await new Promise((n, a) => {
-  const o = Ea(r, t, {
-    env: e,
-    shell: !1,
-    windowsHide: !0
-  });
-  let s = "", c = "";
-  o.stdout?.on("data", (d) => {
-    s += d.toString();
-  }), o.stderr?.on("data", (d) => {
-    c += d.toString();
-  }), o.on("error", (d) => {
-    a(d);
-  }), o.on("close", (d) => {
-    if (d === 0) {
-      n({ stdout: s, stderr: c });
+    e.pragma("journal_mode = WAL"), e.exec(ts);
+    let n = 0;
+    for (const s of Qo)
+      Mr(e, s.table) && (kr(e, s.table, s.column) || (e.exec(s.sql), n += 1));
+    const a = Jo.filter(
+      (s) => !Mr(e, s)
+    ), o = Object.entries(Zo).flatMap(
+      ([s, c]) => c.filter((d) => !kr(e, s, d)).map((d) => `${s}.${d}`)
+    );
+    if (a.length > 0 || o.length > 0) {
+      t.warn("Packaged SQLite bootstrap completed with schema gaps", {
+        dbPath: r,
+        missingTables: a,
+        missingColumns: o,
+        patchedColumns: n
+      });
       return;
     }
-    const l = new Error(`Prisma command failed with exit code ${d}`);
-    l.code = d, l.stdout = s, l.stderr = c, a(l);
-  });
-}), Xo = () => (process.env.LUIE_PACKAGED_SCHEMA_MODE ?? "").trim().toLowerCase() === "prisma-migrate" ? "prisma-migrate" : "bootstrap";
-class Ct {
+    t.info("Packaged SQLite bootstrap schema ensured", {
+      dbPath: r,
+      patchedColumns: n
+    });
+  } finally {
+    e.close();
+  }
+}
+const L = D("DatabaseService");
+class It {
   static instance;
   prisma = null;
   dbPath = null;
@@ -721,7 +773,7 @@ class Ct {
   constructor() {
   }
   static getInstance() {
-    return Ct.instance || (Ct.instance = new Ct()), Ct.instance;
+    return It.instance || (It.instance = new It()), It.instance;
   }
   async initialize() {
     this.prisma || (this.initPromise || (this.initPromise = this.initializeInternal().finally(() => {
@@ -730,44 +782,44 @@ class Ct {
   }
   async initializeInternal() {
     const t = await this.prepareDatabaseContext();
-    if (this.dbPath = t.dbPath, j.info("Initializing database", {
+    if (this.dbPath = t.dbPath, L.info("Initializing database", {
       isPackaged: t.isPackaged,
       isTest: t.isTest,
       hasEnvDb: !!process.env.DATABASE_URL,
-      userDataPath: S.getPath("userData"),
+      userDataPath: T.getPath("userData"),
       dbPath: t.dbPath,
       datasourceUrl: t.datasourceUrl
     }), await this.applySchema(t), this.prisma = this.createPrismaClient(t), t.isPackaged)
       try {
-        await $o(this.prisma);
+        await Yo(this.prisma);
       } catch (e) {
-        j.error("Failed to seed packaged database", { error: e });
+        L.error("Failed to seed packaged database", { error: e });
       }
     if (this.prisma.$executeRawUnsafe)
       try {
-        await this.prisma.$executeRawUnsafe("PRAGMA journal_mode=WAL;"), await this.prisma.$executeRawUnsafe("PRAGMA synchronous=FULL;"), await this.prisma.$executeRawUnsafe("PRAGMA wal_autocheckpoint=1000;"), j.info("SQLite WAL mode enabled");
+        await this.prisma.$executeRawUnsafe("PRAGMA journal_mode=WAL;"), await this.prisma.$executeRawUnsafe("PRAGMA synchronous=FULL;"), await this.prisma.$executeRawUnsafe("PRAGMA wal_autocheckpoint=1000;"), L.info("SQLite WAL mode enabled");
       } catch (e) {
-        j.warn("Failed to enable WAL mode", { error: e });
+        L.warn("Failed to enable WAL mode", { error: e });
       }
-    j.info("Database service initialized");
+    L.info("Database service initialized");
   }
   createPrismaClient(t) {
     try {
-      const e = xo(), n = new e({
+      const e = qo(), n = new e({
         url: t.datasourceUrl
       });
-      return new jr({
+      return new Ur({
         adapter: n,
         log: ["error", "warn"]
       });
     } catch (e) {
       if (t.isPackaged)
         throw e;
-      return j.warn("Falling back to Prisma default sqlite engine (adapter unavailable)", {
+      return L.warn("Falling back to Prisma default sqlite engine (adapter unavailable)", {
         error: e,
         dbPath: t.dbPath,
         isTest: t.isTest
-      }), new jr({
+      }), new Ur({
         datasources: {
           db: { url: t.datasourceUrl }
         },
@@ -776,13 +828,13 @@ class Ct {
     }
   }
   async prepareDatabaseContext() {
-    const t = No(), e = S.getPath("userData"), n = qt(), a = process.env.DATABASE_URL, o = !!a;
+    const t = Uo(), e = T.getPath("userData"), n = Xt(), a = process.env.DATABASE_URL, o = !!a;
     let s, c;
     if (o) {
-      const d = zo(a ?? "");
+      const d = Xo(a ?? "");
       s = d.dbPath, c = d.datasourceUrl;
-    } else t ? (s = z(ct.join(e, Pn), "dbPath"), c = `file:${s}`) : (s = z(ct.join(process.cwd(), "prisma", "dev.db"), "dbPath"), c = `file:${s}`);
-    return process.env.DATABASE_URL = c, await Ht.mkdir(e, { recursive: !0 }), await Ht.mkdir(ct.dirname(s), { recursive: !0 }), await kt(s) || await Ht.writeFile(s, ""), {
+    } else t ? (s = K(ot.join(e, Ln), "dbPath"), c = `file:${s}`) : (s = K(ot.join(process.cwd(), "prisma", "dev.db"), "dbPath"), c = `file:${s}`);
+    return process.env.DATABASE_URL = c, await Gt.mkdir(e, { recursive: !0 }), await Gt.mkdir(ot.dirname(s), { recursive: !0 }), await Mt(s) || await Gt.writeFile(s, ""), {
       dbPath: s,
       datasourceUrl: c,
       isPackaged: t,
@@ -790,7 +842,7 @@ class Ct {
     };
   }
   async applySchema(t) {
-    const e = await kt(t.dbPath), n = t.isPackaged ? process.resourcesPath : process.cwd(), a = ct.join(n, "prisma", "schema.prisma"), o = Yo(n), s = ct.join(n, "prisma", "migrations"), c = await kt(s) && await Ht.readdir(s, { withFileTypes: !0 }).then((l) => l.some((i) => i.isDirectory())), d = { ...process.env, DATABASE_URL: t.datasourceUrl };
+    const e = await Mt(t.dbPath), n = t.isPackaged ? process.resourcesPath : process.cwd(), a = ot.join(n, "prisma", "schema.prisma"), o = Vo(n), s = ot.join(n, "prisma", "migrations"), c = await Mt(s) && await Gt.readdir(s, { withFileTypes: !0 }).then((l) => l.some((i) => i.isDirectory())), d = { ...process.env, DATABASE_URL: t.datasourceUrl };
     if (t.isPackaged) {
       await this.applyPackagedSchema(t, {
         dbExists: e,
@@ -802,43 +854,43 @@ class Ct {
       return;
     }
     if (t.isTest) {
-      j.info("Running test database push", {
+      L.info("Running test database push", {
         dbPath: t.dbPath,
         dbExists: e,
         command: "db push"
       });
       try {
-        await De(
+        await be(
           o,
           ["db", "push", "--accept-data-loss", `--schema=${a}`],
           d
-        ), j.info("Test database push completed successfully");
+        ), L.info("Test database push completed successfully");
       } catch (l) {
         const i = l;
-        j.warn("Failed to push test database; falling back to SQLite bootstrap", {
+        L.warn("Failed to push test database; falling back to SQLite bootstrap", {
           error: l,
           stdout: i.stdout,
           stderr: i.stderr,
           dbPath: t.dbPath
-        }), this.ensurePackagedSqliteSchema(t.dbPath);
+        }), Fe(t.dbPath, L);
       }
       return;
     }
-    j.info("Running development database push", {
+    L.info("Running development database push", {
       dbPath: t.dbPath,
       dbExists: e,
       hasMigrations: c,
       command: "db push"
     });
     try {
-      await De(
+      await be(
         o,
         ["db", "push", "--accept-data-loss", `--schema=${a}`],
         d
-      ), j.info("Development database ready");
+      ), L.info("Development database ready");
     } catch (l) {
       const i = l;
-      throw j.error("Failed to prepare development database", {
+      throw L.error("Failed to prepare development database", {
         error: l,
         stdout: i.stdout,
         stderr: i.stderr
@@ -846,34 +898,34 @@ class Ct {
     }
   }
   async applyPackagedSchema(t, e) {
-    const n = Xo();
+    const n = Ko();
     if (n === "bootstrap") {
-      j.info("Using packaged SQLite bootstrap schema mode", {
+      L.info("Using packaged SQLite bootstrap schema mode", {
         dbPath: t.dbPath,
         schemaMode: n
-      }), this.ensurePackagedSqliteSchema(t.dbPath);
+      }), Fe(t.dbPath, L);
       return;
     }
-    const { dbExists: a, schemaPath: o, prismaPath: s, hasMigrations: c, commandEnv: d } = e, l = await kt(o), i = await kt(s);
+    const { dbExists: a, schemaPath: o, prismaPath: s, hasMigrations: c, commandEnv: d } = e, l = await Mt(o), i = await Mt(s);
     if (c && l && i) {
-      j.info("Running production migrations", {
+      L.info("Running production migrations", {
         dbPath: t.dbPath,
         dbExists: a,
         command: "migrate deploy"
       });
       try {
-        await De(s, ["migrate", "deploy", `--schema=${o}`], d), j.info("Production migrations applied successfully");
+        await be(s, ["migrate", "deploy", `--schema=${o}`], d), L.info("Production migrations applied successfully");
       } catch (p) {
-        const A = p;
-        j.warn("Production migrate deploy failed; using SQLite bootstrap fallback", {
+        const m = p;
+        L.warn("Production migrate deploy failed; using SQLite bootstrap fallback", {
           error: p,
-          stdout: A.stdout,
-          stderr: A.stderr,
+          stdout: m.stdout,
+          stderr: m.stderr,
           schemaMode: n
         });
       }
     } else
-      j.warn("Prisma migrate mode requested, but migration assets are missing; using SQLite bootstrap fallback", {
+      L.warn("Prisma migrate mode requested, but migration assets are missing; using SQLite bootstrap fallback", {
         dbPath: t.dbPath,
         hasMigrations: c,
         hasSchemaFile: l,
@@ -881,43 +933,7 @@ class Ct {
         resourcesPath: process.resourcesPath,
         schemaMode: n
       });
-    this.ensurePackagedSqliteSchema(t.dbPath);
-  }
-  ensurePackagedSqliteSchema(t) {
-    const e = Go(), n = new e(t);
-    try {
-      n.pragma("foreign_keys = ON");
-      const a = Mo.filter(
-        (c) => !this.sqliteTableExists(n, c)
-      );
-      n.exec(Bo);
-      const o = [];
-      for (const c of ko)
-        this.sqliteTableExists(n, c.table) && (this.sqliteTableHasColumn(n, c.table, c.column) || (n.exec(c.sql), o.push(`${c.table}.${c.column}`)));
-      const s = [];
-      for (const [c, d] of Object.entries(Wo))
-        for (const l of d)
-          this.sqliteTableHasColumn(n, c, l) || s.push(`${c}.${l}`);
-      if (s.length > 0)
-        throw new Error(`Packaged SQLite schema verification failed: missing ${s.join(", ")}`);
-      (a.length > 0 || o.length > 0) && j.info("Packaged SQLite schema bootstrap applied", {
-        dbPath: t,
-        createdTables: a,
-        patchedColumns: o
-      });
-    } finally {
-      n.close();
-    }
-  }
-  sqliteTableExists(t, e) {
-    return !!t.prepare(
-      "SELECT 1 AS found FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1"
-    ).get(e)?.found;
-  }
-  sqliteTableHasColumn(t, e, n) {
-    return this.sqliteTableExists(t, e) ? t.prepare(
-      `PRAGMA table_info(${Ho(e)})`
-    ).all().some((s) => s.name === n) : !1;
+    Fe(t.dbPath, L);
   }
   getClient() {
     if (!this.prisma)
@@ -931,12 +947,12 @@ class Ct {
   }
   async disconnect() {
     this.initPromise && !this.prisma && await this.initPromise.catch((t) => {
-      j.error("Database initialization failed before disconnect", { error: t });
-    }), this.prisma && (await this.prisma.$disconnect(), this.prisma = null, j.info("Database disconnected"));
+      L.error("Database initialization failed before disconnect", { error: t });
+    }), this.prisma && (await this.prisma.$disconnect(), this.prisma = null, L.info("Database disconnected"));
   }
 }
-const h = Ct.getInstance(), Fr = N("KeywordExtractor");
-class qo {
+const h = It.getInstance(), Wr = D("KeywordExtractor");
+class rs {
   koreanRegex = /[가-힣]{2,}/g;
   commonWords = /* @__PURE__ */ new Set([
     "그",
@@ -993,7 +1009,7 @@ class qo {
         type: "term"
       }), n.add(s)));
     }
-    return Fr.debug("Keywords extracted", {
+    return Wr.debug("Keywords extracted", {
       keywordCount: e.length,
       textLength: t.length
     }), e;
@@ -1004,7 +1020,7 @@ class qo {
       const s = o[0];
       this.shouldSkip(s) || n.has(s) || !this.characterNames.has(s) && !this.termNames.has(s) && (e.push(s), n.add(s));
     }
-    return Fr.debug("New keywords extracted", {
+    return Wr.debug("New keywords extracted", {
       keywordCount: e.length
     }), e;
   }
@@ -1029,7 +1045,7 @@ class qo {
     this.characterNames.clear(), this.termNames.clear();
   }
 }
-const Et = new qo(), Ko = Nn, Vo = wo, Le = To, Jo = (r) => {
+const ft = new rs(), ns = bn, as = Lo, ve = No, os = (r) => {
   if (r)
     return {
       connected: r.connected ?? !1,
@@ -1042,7 +1058,7 @@ const Et = new qo(), Ko = Nn, Vo = wo, Le = To, Jo = (r) => {
       lastError: r.lastError,
       projectLastSyncedAtByProjectId: r.projectLastSyncedAtByProjectId
     };
-}, Qo = (r) => {
+}, ss = (r) => {
   const t = r === "darwin" ? "Cmd" : "Ctrl";
   return {
     "app.openSettings": `${t}+,`,
@@ -1098,7 +1114,7 @@ const Et = new qo(), Ko = Nn, Vo = wo, Le = To, Jo = (r) => {
     "window.toggleFullscreen": "F11",
     "view.toggleFocusMode": "Shift+F11"
   };
-}, ce = Qo(process.platform), ze = process.platform === "darwin" ? "visible" : "hidden", Xe = (r) => {
+}, le = ss(process.platform), Je = process.platform === "darwin" ? "visible" : "hidden", Qe = (r) => {
   if (!r || typeof r != "object" || Array.isArray(r))
     return;
   const t = typeof r.url == "string" ? r.url.trim() : "", e = typeof r.anonKey == "string" ? r.anonKey.trim() : "";
@@ -1107,78 +1123,78 @@ const Et = new qo(), Ko = Nn, Vo = wo, Le = To, Jo = (r) => {
       url: t.endsWith("/") ? t.slice(0, -1) : t,
       anonKey: e
     };
-}, vr = () => ({
+}, Br = () => ({
   editor: {
-    fontFamily: uo,
-    fontPreset: ho,
-    fontSize: fo,
-    lineHeight: go,
-    maxWidth: Eo,
-    theme: la.shouldUseDarkColors ? "dark" : "light",
-    themeTemp: Po,
-    themeContrast: Co,
-    themeAccent: mo,
-    themeTexture: Ao,
+    fontFamily: So,
+    fontPreset: To,
+    fontSize: wo,
+    lineHeight: _o,
+    maxWidth: Io,
+    theme: Ea.shouldUseDarkColors ? "dark" : "light",
+    themeTemp: bo,
+    themeContrast: Fo,
+    themeAccent: Po,
+    themeTexture: Co,
     uiMode: "default"
   },
   language: "ko",
-  shortcuts: ce,
+  shortcuts: le,
   lastProjectPath: void 0,
-  autoSaveEnabled: Ha,
-  autoSaveInterval: Cn,
-  snapshotExportLimit: ue,
+  autoSaveEnabled: Qa,
+  autoSaveInterval: On,
+  snapshotExportLimit: ge,
   windowBounds: void 0,
   lastWindowState: void 0,
-  menuBarMode: ze,
+  menuBarMode: Je,
   sync: {
     connected: !1,
     autoSync: !0
   },
   startup: {}
-}), Tt = (r) => typeof r == "string" && r.length > 0, Zo = (r) => {
+}), yt = (r) => typeof r == "string" && r.length > 0, is = (r) => {
   if (!Array.isArray(r)) return;
   const t = r.filter(
-    (e) => !!(e && typeof e == "object" && Tt(e.projectId) && Tt(e.deletedAt))
+    (e) => !!(e && typeof e == "object" && yt(e.projectId) && yt(e.deletedAt))
   ).map((e) => ({
     projectId: e.projectId,
     deletedAt: e.deletedAt
   }));
   return t.length > 0 ? t : void 0;
-}, qe = (r) => {
+}, Ze = (r) => {
   if (!r || typeof r != "object" || Array.isArray(r))
     return;
   const t = Object.fromEntries(
     Object.entries(r).filter(
-      (e) => Tt(e[0]) && Tt(e[1])
+      (e) => yt(e[0]) && yt(e[1])
     )
   );
   return Object.keys(t).length > 0 ? t : void 0;
-}, ts = (r) => {
+}, cs = (r) => {
   if (!r || typeof r != "object" || Array.isArray(r))
     return null;
   const t = r;
   return {
-    chapter: qe(t.chapter) ?? {},
-    memo: qe(t.memo) ?? {},
-    capturedAt: Tt(t.capturedAt) ? t.capturedAt : (/* @__PURE__ */ new Date()).toISOString()
+    chapter: Ze(t.chapter) ?? {},
+    memo: Ze(t.memo) ?? {},
+    capturedAt: yt(t.capturedAt) ? t.capturedAt : (/* @__PURE__ */ new Date()).toISOString()
   };
-}, es = (r) => {
+}, ds = (r) => {
   if (!r || typeof r != "object" || Array.isArray(r))
     return;
   const t = Object.fromEntries(
-    Object.entries(r).filter(([e]) => Tt(e)).map(([e, n]) => [e, ts(n)]).filter((e) => !!e[1])
+    Object.entries(r).filter(([e]) => yt(e)).map(([e, n]) => [e, cs(n)]).filter((e) => !!e[1])
   );
   return Object.keys(t).length > 0 ? t : void 0;
-}, rs = (r) => {
+}, ls = (r) => {
   if (!r || typeof r != "object" || Array.isArray(r))
     return;
   const t = Object.fromEntries(
     Object.entries(r).filter(
-      (e) => Tt(e[0]) && (e[1] === "local" || e[1] === "remote")
+      (e) => yt(e[0]) && (e[1] === "local" || e[1] === "remote")
     )
   );
   return Object.keys(t).length > 0 ? t : void 0;
-}, Ur = (r) => {
+}, $r = (r) => {
   const t = r ?? {};
   return {
     connected: t.connected ?? !1,
@@ -1195,29 +1211,29 @@ const Et = new qo(), Ko = Nn, Vo = wo, Le = To, Jo = (r) => {
     pendingAuthVerifierCipher: t.pendingAuthVerifierCipher,
     pendingAuthCreatedAt: t.pendingAuthCreatedAt,
     pendingAuthRedirectUri: t.pendingAuthRedirectUri,
-    pendingProjectDeletes: Zo(t.pendingProjectDeletes),
-    projectLastSyncedAtByProjectId: qe(t.projectLastSyncedAtByProjectId),
-    entityBaselinesByProjectId: es(t.entityBaselinesByProjectId),
-    pendingConflictResolutions: rs(
+    pendingProjectDeletes: is(t.pendingProjectDeletes),
+    projectLastSyncedAtByProjectId: Ze(t.projectLastSyncedAtByProjectId),
+    entityBaselinesByProjectId: ds(t.entityBaselinesByProjectId),
+    pendingConflictResolutions: ls(
       t.pendingConflictResolutions
     ),
-    runtimeSupabaseConfig: Xe(t.runtimeSupabaseConfig)
+    runtimeSupabaseConfig: Qe(t.runtimeSupabaseConfig)
   };
-}, _t = N("SettingsManager");
-class mt {
+}, Tt = D("SettingsManager");
+class gt {
   static instance;
   store;
   constructor() {
-    const t = S.getPath("userData"), e = `${t}/${Ko}/${Le}`, n = `${e}/${Vo}`;
-    this.store = new _r({
-      name: Le,
-      defaults: vr(),
+    const t = T.getPath("userData"), e = `${t}/${ns}/${ve}`, n = `${e}/${as}`;
+    this.store = new Rr({
+      name: ve,
+      defaults: Br(),
       // 저장 위치: userData/settings.json
       cwd: t,
       encryptionKey: void 0,
       // 필요하다면 암호화 키 추가
       fileExtension: "json"
-    }), this.migrateLegacySettingsIfNeeded(e, n), this.migrateLegacyWindowSettings(), _t.info("Settings manager initialized", {
+    }), this.migrateLegacySettingsIfNeeded(e, n), this.migrateLegacyWindowSettings(), Tt.info("Settings manager initialized", {
       path: this.store.path
     });
   }
@@ -1225,36 +1241,36 @@ class mt {
     const n = await this.pathExists(e), a = await this.pathExists(this.store.path);
     if (!(!n || a))
       try {
-        const o = new _r({
-          name: Le,
-          defaults: vr(),
+        const o = new Rr({
+          name: ve,
+          defaults: Br(),
           cwd: t,
           fileExtension: "json"
         });
-        this.store.set(o.store), _t.info("Settings migrated from legacy path", {
+        this.store.set(o.store), Tt.info("Settings migrated from legacy path", {
           from: o.path,
           to: this.store.path
         });
       } catch (o) {
-        _t.error("Failed to migrate legacy settings", o);
+        Tt.error("Failed to migrate legacy settings", o);
       }
   }
   async pathExists(t) {
     try {
-      return await fn(t), !0;
+      return await yn(t), !0;
     } catch {
       return !1;
     }
   }
   migrateLegacyWindowSettings() {
     const t = this.store.store;
-    if (t.menuBarMode || this.store.set("menuBarMode", ze), "titleBarMode" in t) {
+    if (t.menuBarMode || this.store.set("menuBarMode", Je), "titleBarMode" in t) {
       const { titleBarMode: e, ...n } = t;
       this.store.set(n);
     }
   }
   static getInstance() {
-    return mt.instance || (mt.instance = new mt()), mt.instance;
+    return gt.instance || (gt.instance = new gt()), gt.instance;
   }
   // 전체 설정 가져오기
   getAll() {
@@ -1265,7 +1281,7 @@ class mt {
     const t = this.getAll();
     return {
       ...t,
-      sync: Jo(t.sync)
+      sync: os(t.sync)
     };
   }
   // 전체 설정 저장
@@ -1284,14 +1300,14 @@ class mt {
       sync: t.sync ?? e.sync,
       startup: t.startup ?? e.startup
     };
-    this.store.set(n), _t.info("Settings updated", { settings: n });
+    this.store.set(n), Tt.info("Settings updated", { settings: n });
   }
   // 에디터 설정
   getEditorSettings() {
     return this.store.get("editor");
   }
   setEditorSettings(t) {
-    this.store.set("editor", { ...this.getEditorSettings(), ...t }), _t.info("Editor settings updated", { settings: t });
+    this.store.set("editor", { ...this.getEditorSettings(), ...t }), Tt.info("Editor settings updated", { settings: t });
   }
   // 개별 에디터 설정 편의 메서드
   setEditorTheme(t) {
@@ -1316,10 +1332,10 @@ class mt {
   // 단축키 설정
   getShortcuts() {
     const t = this.store.get("shortcuts") ?? {};
-    return { shortcuts: { ...ce, ...t }, defaults: ce };
+    return { shortcuts: { ...le, ...t }, defaults: le };
   }
   setShortcuts(t) {
-    const e = { ...ce, ...t };
+    const e = { ...le, ...t };
     return this.store.set("shortcuts", e), e;
   }
   // 프로젝트 경로
@@ -1356,16 +1372,16 @@ class mt {
     this.store.set("lastWindowState", t);
   }
   getMenuBarMode() {
-    return this.store.get("menuBarMode") ?? ze;
+    return this.store.get("menuBarMode") ?? Je;
   }
   setMenuBarMode(t) {
     this.store.set("menuBarMode", t);
   }
   getSyncSettings() {
-    return Ur(this.store.get("sync"));
+    return $r(this.store.get("sync"));
   }
   setSyncSettings(t) {
-    const e = Ur({
+    const e = $r({
       ...this.getSyncSettings(),
       ...t
     });
@@ -1419,7 +1435,7 @@ class mt {
   }
   getRuntimeSupabaseConfig() {
     const t = this.getSyncSettings();
-    return Xe(t.runtimeSupabaseConfig);
+    return Qe(t.runtimeSupabaseConfig);
   }
   getRuntimeSupabaseConfigView(t) {
     const e = this.getRuntimeSupabaseConfig();
@@ -1430,7 +1446,7 @@ class mt {
     };
   }
   setRuntimeSupabaseConfig(t) {
-    const e = Xe(t);
+    const e = Qe(t);
     return this.setSyncSettings({
       runtimeSupabaseConfig: e
     }), e;
@@ -1456,23 +1472,23 @@ class mt {
   }
   // 설정 초기화
   resetToDefaults() {
-    this.store.clear(), _t.info("Settings reset to defaults");
+    this.store.clear(), Tt.info("Settings reset to defaults");
   }
   // 저장 경로 가져오기 (디버깅용)
   getSettingsPath() {
     return this.store.path;
   }
 }
-const _ = mt.getInstance(), Kl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const _ = gt.getInstance(), dp = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  SettingsManager: mt,
+  SettingsManager: gt,
   settingsManager: _
-}, Symbol.toStringTag, { value: "Module" })), ns = () => ({
+}, Symbol.toStringTag, { value: "Module" })), ps = () => ({
   timer: null,
   inFlight: null,
   dirty: !1
 });
-class as {
+class us {
   constructor(t, e, n) {
     this.debounceMs = t, this.runExport = e, this.logger = n;
   }
@@ -1480,7 +1496,7 @@ class as {
   getOrCreate(t) {
     const e = this.states.get(t);
     if (e) return e;
-    const n = ns();
+    const n = ps();
     return this.states.set(t, n), n;
   }
   cleanupIfIdle(t) {
@@ -1541,20 +1557,20 @@ class as {
     };
   }
 }
-const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id, deleteFile: !!r.deleteFile }, ss = async (r) => {
-  if (!r.deleteFile || !r.projectPath || !r.projectPath.toLowerCase().endsWith(K)) return;
-  const t = z(r.projectPath, "projectPath");
+const hs = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id, deleteFile: !!r.deleteFile }, fs = async (r) => {
+  if (!r.deleteFile || !r.projectPath || !r.projectPath.toLowerCase().endsWith(X)) return;
+  const t = K(r.projectPath, "projectPath");
   await R.rm(t, { force: !0, recursive: !0 });
-}, is = async (r) => await Promise.all(
+}, gs = async (r) => await Promise.all(
   r.map(async (t) => {
     const e = typeof t.projectPath == "string" ? t.projectPath : null;
-    if (!!!(e && e.toLowerCase().endsWith(K)) || !e)
+    if (!!!(e && e.toLowerCase().endsWith(X)) || !e)
       return {
         ...t,
         pathMissing: !1
       };
     try {
-      const a = z(e, "projectPath");
+      const a = K(e, "projectPath");
       return await R.access(a), {
         ...t,
         pathMissing: !1
@@ -1566,29 +1582,29 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
       };
     }
   })
-), bt = (r, t = "") => {
+), jt = (r, t = "") => {
   const e = r.trim();
   return e ? e.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim() : t;
-}, he = 5 * 1024 * 1024, Kt = (r) => at.posix.normalize(r.replace(/\\/g, "/")).replace(/^\.(\/|\\)/, "").replace(/^\//, ""), fe = (r) => {
+}, Ee = 5 * 1024 * 1024, Kt = (r) => rt.posix.normalize(r.replace(/\\/g, "/")).replace(/^\.(\/|\\)/, "").replace(/^\//, ""), me = (r) => {
   const t = Kt(r);
-  return !t || t.startsWith("../") || t.startsWith("..\\") || t.includes("../") || t.includes("..\\") ? !1 : !at.isAbsolute(t);
-}, Zt = (r) => r.toLowerCase().endsWith(K) ? r : `${r}${K}`, Mr = (r) => process.platform === "win32" ? r.toLowerCase() : r, cs = (r, t) => {
-  const e = Mr(at.resolve(r)), n = Mr(at.resolve(t));
-  return e === n || e.startsWith(`${n}${at.sep}`);
-}, On = async (r, t, e) => {
+  return !t || t.startsWith("../") || t.startsWith("..\\") || t.includes("../") || t.includes("..\\") ? !1 : !rt.isAbsolute(t);
+}, Qt = (r) => r.toLowerCase().endsWith(X) ? r : `${r}${X}`, xr = (r) => process.platform === "win32" ? r.toLowerCase() : r, Es = (r, t) => {
+  const e = xr(rt.resolve(r)), n = xr(rt.resolve(t));
+  return e === n || e.startsWith(`${n}${rt.sep}`);
+}, Un = async (r, t, e) => {
   const n = Kt(t);
-  if (!n || !fe(n))
+  if (!n || !me(n))
     throw new Error("INVALID_RELATIVE_PATH");
   let a = !1, o = null;
   return await new Promise((s, c) => {
-    Aa.open(r, { lazyEntries: !0 }, (d, l) => {
+    Ca.open(r, { lazyEntries: !0 }, (d, l) => {
       if (d || !l) {
         c(d ?? new Error("FAILED_TO_OPEN_ZIP"));
         return;
       }
       l.on("entry", (i) => {
         const p = Kt(i.fileName);
-        if (!p || !fe(p)) {
+        if (!p || !me(p)) {
           e?.error("Unsafe zip entry skipped", { entry: i.fileName, zipPath: r }), l.readEntry();
           return;
         }
@@ -1600,77 +1616,77 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
           a = !0, o = null, l.close(), s();
           return;
         }
-        l.openReadStream(i, (A, w) => {
-          if (A || !w) {
-            c(A ?? new Error("FAILED_TO_READ_ZIP_ENTRY"));
+        l.openReadStream(i, (m, w) => {
+          if (m || !w) {
+            c(m ?? new Error("FAILED_TO_READ_ZIP_ENTRY"));
             return;
           }
           a = !0;
-          const g = [], m = w;
-          let T = 0;
-          m.on("data", (I) => {
-            if (T += I.length, T > he) {
-              m.destroy(
+          const g = [], A = w;
+          let S = 0;
+          A.on("data", (I) => {
+            if (S += I.length, S > Ee) {
+              A.destroy(
                 new Error(
-                  `LUIE_ENTRY_TOO_LARGE:${p}:${he}`
+                  `LUIE_ENTRY_TOO_LARGE:${p}:${Ee}`
                 )
               );
               return;
             }
             g.push(I);
-          }), m.on("end", () => {
+          }), A.on("end", () => {
             o = Buffer.concat(g).toString("utf-8"), l.close(), s();
-          }), m.on("error", c);
+          }), A.on("error", c);
         });
       }), l.on("end", () => {
         a || s();
       }), l.on("error", c), l.readEntry();
     });
   }), o;
-}, et = async (r, t, e) => {
-  const n = Zt(r), a = Kt(t);
-  if (!a || !fe(a))
+}, Z = async (r, t, e) => {
+  const n = Qt(r), a = Kt(t);
+  if (!a || !me(a))
     throw new Error("INVALID_RELATIVE_PATH");
   try {
-    const o = await Y.stat(n);
+    const o = await H.stat(n);
     if (o.isDirectory()) {
-      const s = await Y.realpath(n), c = at.resolve(n, a);
+      const s = await H.realpath(n), c = rt.resolve(n, a);
       try {
-        const d = await Y.realpath(c);
-        if (!cs(d, s))
+        const d = await H.realpath(c);
+        if (!Es(d, s))
           throw new Error("INVALID_RELATIVE_PATH");
-        const l = await Y.stat(d);
+        const l = await H.stat(d);
         if (l.isDirectory())
           return null;
-        if (l.size > he)
+        if (l.size > Ee)
           throw new Error(
-            `LUIE_ENTRY_TOO_LARGE:${a}:${he}`
+            `LUIE_ENTRY_TOO_LARGE:${a}:${Ee}`
           );
-        return await Y.readFile(d, "utf-8");
+        return await H.readFile(d, "utf-8");
       } catch (d) {
         if (d?.code === "ENOENT") return null;
         throw d;
       }
     }
     if (o.isFile())
-      return await On(n, a, e);
+      return await Un(n, a, e);
   } catch (o) {
     if (o?.code === "ENOENT") return null;
     throw o;
   }
   return null;
-}, kr = (r) => {
+}, Gr = (r) => {
   const t = C.resolve(r);
   return process.platform === "win32" ? t.toLowerCase() : t;
-}, Wr = (r) => {
+}, Hr = (r) => {
   if (typeof r != "string") return;
   const t = r.trim();
-  return t.length > 0 ? z(t, "projectPath") : void 0;
-}, jn = (r, t) => {
-  const e = z(r, t);
-  return Zt(e);
-}, Br = async (r, t) => {
-  const e = kr(r), n = await h.getClient().project.findMany({
+  return t.length > 0 ? K(t, "projectPath") : void 0;
+}, Mn = (r, t) => {
+  const e = K(r, t);
+  return Qt(e);
+}, Yr = async (r, t) => {
+  const e = Gr(r), n = await h.getClient().project.findMany({
     select: {
       id: !0,
       title: !0,
@@ -1680,8 +1696,8 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
   for (const a of n)
     if (!(t && String(a.id) === t) && !(typeof a.projectPath != "string" || a.projectPath.trim().length === 0))
       try {
-        const o = z(a.projectPath, "projectPath");
-        if (kr(o) === e)
+        const o = K(a.projectPath, "projectPath");
+        if (Gr(o) === e)
           return {
             id: String(a.id),
             title: typeof a.title == "string" ? a.title : "",
@@ -1690,19 +1706,19 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
       } catch {
       }
   return null;
-}, ds = async (r) => {
+}, ms = async (r) => {
   const { projectId: t, projectPath: e, previousTitle: n, nextTitle: a, logger: o } = r;
   if (!(!e || n === a))
     try {
-      const s = z(e, "projectPath"), d = `${C.dirname(s)}${C.sep}.luie${C.sep}${jt}`, l = bt(n, ""), i = bt(a, "");
+      const s = K(e, "projectPath"), d = `${C.dirname(s)}${C.sep}.luie${C.sep}${Ot}`, l = jt(n, ""), i = jt(a, "");
       if (!l || !i || l === i) return;
-      const p = `${d}${C.sep}${l}`, A = `${d}${C.sep}${i}`;
+      const p = `${d}${C.sep}${l}`, m = `${d}${C.sep}${i}`;
       try {
         if (!(await R.stat(p)).isDirectory()) return;
       } catch {
         return;
       }
-      await R.mkdir(C.dirname(A), { recursive: !0 }), await R.rename(p, A);
+      await R.mkdir(C.dirname(m), { recursive: !0 }), await R.rename(p, m);
     } catch (s) {
       o.warn("Failed to rename snapshot directory after project title update", {
         projectId: t,
@@ -1711,15 +1727,15 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
         error: s
       });
     }
-}, ls = (r) => {
+}, As = (r) => {
   const t = C.resolve(r);
   return process.platform === "win32" ? t.toLowerCase() : t;
-}, ps = (r) => {
+}, ys = (r) => {
   const t = /* @__PURE__ */ new Map();
   for (const e of r)
     if (!(typeof e.projectPath != "string" || e.projectPath.length === 0))
       try {
-        const n = z(e.projectPath, "projectPath"), a = ls(n), o = t.get(a) ?? [];
+        const n = K(e.projectPath, "projectPath"), a = As(n), o = t.get(a) ?? [];
         o.push({
           id: String(e.id),
           projectPath: n,
@@ -1729,14 +1745,14 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
         continue;
       }
   return Array.from(t.values()).filter((e) => e.length > 1);
-}, bn = (r) => {
-  if (typeof r == "number") return r === Ot;
+}, kn = (r) => {
+  if (typeof r == "number") return r === Lt;
   if (typeof r == "string" && r.trim().length > 0) {
     const t = Number(r);
-    return Number.isFinite(t) && t === Ot;
+    return Number.isFinite(t) && t === Lt;
   }
   return !1;
-}, us = (r) => {
+}, Ss = (r) => {
   try {
     const t = JSON.parse(r);
     if (t && typeof t == "object" && !Array.isArray(t))
@@ -1744,40 +1760,40 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
   } catch {
   }
   return null;
-}, hs = (r) => r && typeof r == "object" && !Array.isArray(r) ? r : {}, fs = (r, t) => {
+}, Ts = (r) => r && typeof r == "object" && !Array.isArray(r) ? r : {}, ws = (r, t) => {
   if (r.format !== Dt)
     throw new f(
       E.FS_WRITE_FAILED,
       "Generated .luie package metadata format is invalid",
       { ...t, format: r.format }
     );
-  if (r.container !== Lt)
+  if (r.container !== Nt)
     throw new f(
       E.FS_WRITE_FAILED,
       "Generated .luie package metadata container is invalid",
       { ...t, container: r.container }
     );
-  if (!bn(r.version))
+  if (!kn(r.version))
     throw new f(
       E.FS_WRITE_FAILED,
       "Generated .luie package metadata version is invalid",
       { ...t, version: r.version }
     );
-}, gs = (r, t) => {
-  const e = hs(r), n = t.nowIso ?? (/* @__PURE__ */ new Date()).toISOString(), a = t.createdAtFallback ?? n;
+}, _s = (r, t) => {
+  const e = Ts(r), n = t.nowIso ?? (/* @__PURE__ */ new Date()).toISOString(), a = t.createdAtFallback ?? n;
   if (Object.prototype.hasOwnProperty.call(e, "format") && e.format !== Dt)
     throw new f(
       E.FS_WRITE_FAILED,
       "Luie metadata format is invalid",
       { format: e.format }
     );
-  if (Object.prototype.hasOwnProperty.call(e, "container") && e.container !== Lt)
+  if (Object.prototype.hasOwnProperty.call(e, "container") && e.container !== Nt)
     throw new f(
       E.FS_WRITE_FAILED,
       "Luie metadata container is invalid",
       { container: e.container }
     );
-  if (Object.prototype.hasOwnProperty.call(e, "version") && !bn(e.version))
+  if (Object.prototype.hasOwnProperty.call(e, "version") && !kn(e.version))
     throw new f(
       E.FS_WRITE_FAILED,
       "Luie metadata version is invalid",
@@ -1787,61 +1803,61 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
   return {
     ...e,
     format: Dt,
-    container: Lt,
-    version: Ot,
+    container: Nt,
+    version: Lt,
     title: o,
     createdAt: s,
     updatedAt: c
   };
-}, Es = async (r, t) => {
-  const e = await On(r, me, t);
+}, Is = async (r, t) => {
+  const e = await Un(r, Se, t);
   if (!e)
     throw new f(
       E.FS_WRITE_FAILED,
       "Generated .luie package is missing meta.json",
       { zipPath: r }
     );
-  const n = us(e);
+  const n = Ss(e);
   if (!n)
     throw new f(
       E.FS_WRITE_FAILED,
       "Generated .luie package metadata is invalid",
       { zipPath: r }
     );
-  fs(n, { source: r });
-}, ms = ".tmp", ne = /* @__PURE__ */ new Map(), As = async (r) => {
-  const t = at.dirname(r);
-  await Y.mkdir(t, { recursive: !0 });
-}, Vl = async (r) => {
+  ws(n, { source: r });
+}, Ps = ".tmp", re = /* @__PURE__ */ new Map(), Cs = async (r) => {
+  const t = rt.dirname(r);
+  await H.mkdir(t, { recursive: !0 });
+}, lp = async (r) => {
   try {
-    return await Y.access(r), !0;
+    return await H.access(r), !0;
   } catch {
     return !1;
   }
-}, ys = async (r, t) => {
-  const e = at.resolve(Zt(r)), a = (ne.get(e) ?? Promise.resolve()).catch(() => {
+}, Rs = async (r, t) => {
+  const e = rt.resolve(Qt(r)), a = (re.get(e) ?? Promise.resolve()).catch(() => {
   }).then(t), o = a.then(
     () => {
     },
     () => {
     }
   );
-  ne.set(e, o);
+  re.set(e, o);
   try {
     return await a;
   } finally {
-    ne.get(e) === o && ne.delete(e);
+    re.get(e) === o && re.delete(e);
   }
-}, Ss = async (r, t) => {
-  const e = new ya.ZipFile(), n = fa.createWriteStream(r), a = new Promise((o, s) => {
+}, Ds = async (r, t) => {
+  const e = new Ra.ZipFile(), n = Sa.createWriteStream(r), a = new Promise((o, s) => {
     n.on("close", () => o()), n.on("error", s), e.outputStream.on("error", s);
   });
   e.outputStream.pipe(n), await t(e), e.end(), await a;
-}, Ts = async (r, t, e) => {
+}, Ns = async (r, t, e) => {
   const n = `${t}.bak-${Date.now()}`;
   let a = !1;
   try {
-    await Y.rename(r, t);
+    await H.rename(r, t);
     return;
   } catch (o) {
     const s = o;
@@ -1849,28 +1865,28 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
       throw o;
   }
   try {
-    await Y.rename(t, n), a = !0, await Y.rename(r, t), await Y.rm(n, { force: !0, recursive: !0 });
+    await H.rename(t, n), a = !0, await H.rename(r, t), await H.rm(n, { force: !0, recursive: !0 });
   } catch (o) {
     if (e.error("Atomic replace failed", { error: o, targetPath: t }), a)
       try {
-        await Y.rename(n, t);
+        await H.rename(n, t);
       } catch (s) {
         e.error("Failed to restore backup", { restoreError: s, targetPath: t, backupPath: n });
       }
     throw o;
   }
-}, ws = () => [
-  { name: `${vt}/`, isDirectory: !0 },
-  { name: `${G}/`, isDirectory: !0 },
-  { name: `${jt}/`, isDirectory: !0 },
-  { name: `${_o}/`, isDirectory: !0 }
-], Jl = (r) => ({
-  name: me,
+}, Ls = () => [
+  { name: `${Ft}/`, isDirectory: !0 },
+  { name: `${x}/`, isDirectory: !0 },
+  { name: `${Ot}/`, isDirectory: !0 },
+  { name: `${Oo}/`, isDirectory: !0 }
+], pp = (r) => ({
+  name: Se,
   content: JSON.stringify(r ?? {}, null, 2)
-}), _s = async (r, t) => {
+}), Os = async (r, t) => {
   for (const e of t) {
     const n = Kt(e.name);
-    if (!n || !fe(n))
+    if (!n || !me(n))
       throw new Error("INVALID_ZIP_ENTRY_PATH");
     if (e.isDirectory) {
       r.addEmptyDirectory(n.endsWith("/") ? n : `${n}/`);
@@ -1883,85 +1899,85 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     const a = Buffer.from(e.content ?? "", "utf-8");
     r.addBuffer(a, n);
   }
-}, Er = async (r, t, e) => {
-  const n = Zt(r);
-  return await ys(n, async () => {
-    await As(n);
-    const a = (/* @__PURE__ */ new Date()).toISOString(), o = gs(t.meta, {
-      titleFallback: at.basename(n, K),
+}, Sr = async (r, t, e) => {
+  const n = Qt(r);
+  return await Rs(n, async () => {
+    await Cs(n);
+    const a = (/* @__PURE__ */ new Date()).toISOString(), o = _s(t.meta, {
+      titleFallback: rt.basename(n, X),
       nowIso: a,
       createdAtFallback: a
-    }), s = `${n}${ms}-${Date.now()}`, c = [
-      ...ws(),
+    }), s = `${n}${Ps}-${Date.now()}`, c = [
+      ...Ls(),
       {
-        name: me,
+        name: Se,
         content: JSON.stringify(o, null, 2)
       },
       {
-        name: `${G}/${Dn}`,
+        name: `${x}/${Fn}`,
         content: JSON.stringify({ characters: t.characters ?? [] }, null, 2)
       },
       {
-        name: `${G}/${Ln}`,
+        name: `${x}/${vn}`,
         content: JSON.stringify({ terms: t.terms ?? [] }, null, 2)
       },
       {
-        name: `${G}/${Qt}`,
+        name: `${x}/${Jt}`,
         content: JSON.stringify(t.synopsis ?? { synopsis: "", status: "draft" }, null, 2)
       },
       {
-        name: `${G}/${Ae}`,
+        name: `${x}/${Te}`,
         content: JSON.stringify(t.plot ?? { columns: [] }, null, 2)
       },
       {
-        name: `${G}/${ye}`,
+        name: `${x}/${we}`,
         content: JSON.stringify(t.drawing ?? { paths: [] }, null, 2)
       },
       {
-        name: `${G}/${Se}`,
+        name: `${x}/${_e}`,
         content: JSON.stringify(t.mindmap ?? { nodes: [], edges: [] }, null, 2)
       },
       {
-        name: `${G}/${fr}`,
+        name: `${x}/${yr}`,
         content: JSON.stringify(t.memos ?? { memos: [] }, null, 2)
       },
       {
-        name: `${G}/${Te}`,
+        name: `${x}/${Ie}`,
         content: JSON.stringify(t.graph ?? { nodes: [], edges: [] }, null, 2)
       },
       {
-        name: `${jt}/index.json`,
+        name: `${Ot}/index.json`,
         content: JSON.stringify({ snapshots: t.snapshots ?? [] }, null, 2)
       }
     ];
     for (const d of t.chapters ?? [])
       d.id && c.push({
-        name: `${vt}/${d.id}${we}`,
+        name: `${Ft}/${d.id}${Pe}`,
         content: d.content ?? ""
       });
     if (t.snapshots && t.snapshots.length > 0)
       for (const d of t.snapshots)
         d.id && c.push({
-          name: `${jt}/${d.id}.snap`,
+          name: `${Ot}/${d.id}.snap`,
           content: JSON.stringify(d, null, 2)
         });
-    await Ss(s, (d) => _s(d, c)), await Es(s, e), await Ts(s, n, e);
+    await Ds(s, (d) => Os(d, c)), await Is(s, e), await Ns(s, n, e);
   });
-}, Fn = /* @__PURE__ */ new Set(["mountain", "castle", "village"]), Is = /* @__PURE__ */ new Set(["pen", "text", "eraser", "icon"]), U = (r) => !!(r && typeof r == "object" && !Array.isArray(r)), vn = (r) => {
+}, Wn = /* @__PURE__ */ new Set(["mountain", "castle", "village"]), js = /* @__PURE__ */ new Set(["pen", "text", "eraser", "icon"]), v = (r) => !!(r && typeof r == "object" && !Array.isArray(r)), Bn = (r) => {
   if (!r) return null;
   try {
     return JSON.parse(r);
   } catch {
     return null;
   }
-}, Ps = (r) => {
-  if (U(r))
+}, bs = (r) => {
+  if (v(r))
     return typeof r.updatedAt == "string" ? r.updatedAt : void 0;
-}, Cs = (r, t = "pen") => typeof r == "string" && Is.has(r) ? r : t, Rs = (r, t = "mountain") => typeof r == "string" && Fn.has(r) ? r : t, Un = (r) => {
+}, Fs = (r, t = "pen") => typeof r == "string" && js.has(r) ? r : t, vs = (r, t = "mountain") => typeof r == "string" && Wn.has(r) ? r : t, $n = (r) => {
   if (!Array.isArray(r)) return [];
   const t = [];
   for (const [e, n] of r.entries()) {
-    if (!U(n)) continue;
+    if (!v(n)) continue;
     const a = n.type;
     if (a !== "path" && a !== "text" && a !== "icon") continue;
     const o = {
@@ -1969,17 +1985,17 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
       type: a,
       color: typeof n.color == "string" ? n.color : "#000000"
     };
-    typeof n.d == "string" && (o.d = n.d), typeof n.width == "number" && (o.width = n.width), typeof n.x == "number" && (o.x = n.x), typeof n.y == "number" && (o.y = n.y), typeof n.text == "string" && (o.text = n.text), typeof n.icon == "string" && Fn.has(n.icon) && (o.icon = n.icon), t.push(o);
+    typeof n.d == "string" && (o.d = n.d), typeof n.width == "number" && (o.width = n.width), typeof n.x == "number" && (o.x = n.x), typeof n.y == "number" && (o.y = n.y), typeof n.text == "string" && (o.text = n.text), typeof n.icon == "string" && Wn.has(n.icon) && (o.icon = n.icon), t.push(o);
   }
   return t;
-}, Mn = (r) => {
+}, xn = (r) => {
   if (!Array.isArray(r)) return [];
   const t = [];
   for (const [e, n] of r.entries()) {
-    if (!U(n)) continue;
+    if (!v(n)) continue;
     const a = n.position;
-    if (!U(a)) continue;
-    const o = U(n.data) ? n.data : void 0;
+    if (!v(a)) continue;
+    const o = v(n.data) ? n.data : void 0;
     t.push({
       id: typeof n.id == "string" && n.id.length > 0 ? n.id : `node-${e}`,
       type: typeof n.type == "string" ? n.type : void 0,
@@ -1994,11 +2010,11 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     });
   }
   return t;
-}, kn = (r) => {
+}, Gn = (r) => {
   if (!Array.isArray(r)) return [];
   const t = [];
   for (const [e, n] of r.entries()) {
-    if (!U(n)) continue;
+    if (!v(n)) continue;
     const a = typeof n.source == "string" ? n.source : "", o = typeof n.target == "string" ? n.target : "";
     !a || !o || t.push({
       id: typeof n.id == "string" && n.id.length > 0 ? n.id : `edge-${e}`,
@@ -2008,16 +2024,16 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     });
   }
   return t;
-}, Ns = (r, t, e) => U(r) ? {
+}, Us = (r, t, e) => v(r) ? {
   id: typeof r.id == "string" && r.id.length > 0 ? r.id : `memo-${t}`,
   title: typeof r.title == "string" ? r.title : "",
   content: typeof r.content == "string" ? r.content : "",
   tags: Array.isArray(r.tags) ? r.tags.filter((n) => typeof n == "string") : [],
   updatedAt: typeof r.updatedAt == "string" ? r.updatedAt : e()
-} : null, Wn = (r, t = () => (/* @__PURE__ */ new Date()).toISOString()) => Array.isArray(r) ? r.map((e, n) => Ns(e, n, t)).filter((e) => e !== null) : [], Bn = (r, t = () => (/* @__PURE__ */ new Date()).toISOString()) => U(r) ? {
-  memos: Wn(r.memos, t),
+} : null, Hn = (r, t = () => (/* @__PURE__ */ new Date()).toISOString()) => Array.isArray(r) ? r.map((e, n) => Us(e, n, t)).filter((e) => e !== null) : [], Yn = (r, t = () => (/* @__PURE__ */ new Date()).toISOString()) => v(r) ? {
+  memos: Hn(r.memos, t),
   updatedAt: typeof r.updatedAt == "string" ? r.updatedAt : void 0
-} : { memos: [] }, Wt = (r) => {
+} : { memos: [] }, kt = (r) => {
   if (!r) return null;
   try {
     const t = JSON.parse(r);
@@ -2025,14 +2041,14 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
   } catch {
     return null;
   }
-}, Ds = (r) => {
+}, Ms = (r) => {
   const t = r.map((n) => ({
     id: n.id,
     title: n.title,
     order: n.order,
     updatedAt: n.updatedAt,
     content: n.content,
-    file: `${vt}/${n.id}${we}`
+    file: `${Ft}/${n.id}${Pe}`
   })), e = t.map((n) => ({
     id: n.id,
     title: n.title,
@@ -2040,7 +2056,7 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     file: n.file
   }));
   return { exportChapters: t, chapterMeta: e };
-}, Ls = (r) => r.map((t) => {
+}, ks = (r) => r.map((t) => {
   let e;
   if (t.attributes)
     try {
@@ -2057,7 +2073,7 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     createdAt: t.createdAt,
     updatedAt: t.updatedAt
   };
-}), Os = (r) => r.map((t) => ({
+}), Ws = (r) => r.map((t) => ({
   id: t.id,
   term: t.term,
   definition: t.definition,
@@ -2065,7 +2081,7 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
   firstAppearance: t.firstAppearance,
   createdAt: t.createdAt,
   updatedAt: t.updatedAt
-})), js = (r, t) => {
+})), Bs = (r, t) => {
   const e = r.map((n) => ({
     id: n.id,
     projectId: n.projectId,
@@ -2075,7 +2091,7 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     createdAt: n.createdAt?.toISOString?.() ?? String(n.createdAt)
   }));
   return t > 0 ? e.slice(0, t) : e;
-}, bs = (r, t) => {
+}, $s = (r, t) => {
   const e = t.success ? t.data : void 0;
   return {
     synopsis: r.description ?? (typeof e?.synopsis == "string" ? e.synopsis : ""),
@@ -2085,24 +2101,24 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     logline: typeof e?.logline == "string" ? e.logline : void 0,
     updatedAt: typeof e?.updatedAt == "string" ? e.updatedAt : void 0
   };
-}, Fs = (r) => !r.success || !Array.isArray(r.data.columns) ? { columns: [] } : {
+}, xs = (r) => !r.success || !Array.isArray(r.data.columns) ? { columns: [] } : {
   columns: r.data.columns,
   updatedAt: typeof r.data.updatedAt == "string" ? r.data.updatedAt : void 0
-}, vs = (r) => !r.success || !Array.isArray(r.data.paths) ? { paths: [] } : {
-  paths: Un(r.data.paths),
+}, Gs = (r) => !r.success || !Array.isArray(r.data.paths) ? { paths: [] } : {
+  paths: $n(r.data.paths),
   tool: r.data.tool,
   iconType: r.data.iconType,
   color: typeof r.data.color == "string" ? r.data.color : void 0,
   lineWidth: typeof r.data.lineWidth == "number" ? r.data.lineWidth : void 0,
   updatedAt: typeof r.data.updatedAt == "string" ? r.data.updatedAt : void 0
-}, Us = (r) => r.success ? {
-  nodes: Mn(r.data.nodes),
-  edges: kn(r.data.edges),
+}, Hs = (r) => r.success ? {
+  nodes: xn(r.data.nodes),
+  edges: Gn(r.data.edges),
   updatedAt: typeof r.data.updatedAt == "string" ? r.data.updatedAt : void 0
-} : { nodes: [], edges: [] }, Ms = (r) => r.success ? {
-  memos: Wn(r.data.memos),
+} : { nodes: [], edges: [] }, Ys = (r) => r.success ? {
+  memos: Hn(r.data.memos),
   updatedAt: typeof r.data.updatedAt == "string" ? r.data.updatedAt : void 0
-} : { memos: [] }, ks = (r) => {
+} : { memos: [] }, zs = (r) => {
   const t = [
     ...r.characters.map((n) => ({
       id: n.id,
@@ -2110,7 +2126,7 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
       name: n.name,
       description: n.description ?? null,
       firstAppearance: n.firstAppearance ?? null,
-      attributes: Wt(n.attributes),
+      attributes: kt(n.attributes),
       positionX: 0,
       positionY: 0
     })),
@@ -2120,7 +2136,7 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
       name: n.name,
       description: n.description ?? null,
       firstAppearance: n.firstAppearance ?? null,
-      attributes: Wt(n.attributes),
+      attributes: kt(n.attributes),
       positionX: 0,
       positionY: 0
     })),
@@ -2130,7 +2146,7 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
       name: n.name,
       description: n.description ?? null,
       firstAppearance: n.firstAppearance ?? null,
-      attributes: Wt(n.attributes),
+      attributes: kt(n.attributes),
       positionX: 0,
       positionY: 0
     })),
@@ -2151,7 +2167,7 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
       name: n.name,
       description: n.description ?? null,
       firstAppearance: n.firstAppearance ?? null,
-      attributes: typeof n.attributes == "string" ? Wt(n.attributes) : n.attributes ?? null,
+      attributes: typeof n.attributes == "string" ? kt(n.attributes) : n.attributes ?? null,
       positionX: n.positionX,
       positionY: n.positionY
     }))
@@ -2163,7 +2179,7 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     targetId: n.targetId,
     targetType: n.targetType,
     relation: n.relation,
-    attributes: typeof n.attributes == "string" ? Wt(n.attributes) : n.attributes ?? null,
+    attributes: typeof n.attributes == "string" ? kt(n.attributes) : n.attributes ?? null,
     sourceWorldEntityId: n.sourceWorldEntityId ?? null,
     targetWorldEntityId: n.targetWorldEntityId ?? null,
     createdAt: n.createdAt,
@@ -2173,17 +2189,17 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     nodes: t,
     edges: e
   };
-}, Ws = (r, t) => ({
+}, Xs = (r, t) => ({
   format: Dt,
-  container: Lt,
-  version: Ot,
+  container: Nt,
+  version: Lt,
   projectId: r.id,
   title: r.title,
   description: r.description,
   createdAt: r.createdAt?.toISOString?.() ?? String(r.createdAt),
   updatedAt: r.updatedAt?.toISOString?.() ?? String(r.updatedAt),
   chapters: t
-}), Bs = u.object({
+}), Ks = u.object({
   format: u.string().optional(),
   version: u.number().optional(),
   projectId: u.string().optional(),
@@ -2201,18 +2217,18 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
       updatedAt: u.string().optional()
     })
   ).optional()
-}).passthrough(), $s = u.object({
+}).passthrough(), Vs = u.object({
   characters: u.array(u.record(u.string(), u.unknown())).optional()
-}).passthrough(), xs = u.object({
+}).passthrough(), qs = u.object({
   terms: u.array(u.record(u.string(), u.unknown())).optional()
-}).passthrough(), Ke = u.object({
+}).passthrough(), tr = u.object({
   synopsis: u.string().optional(),
   status: u.enum(["draft", "working", "locked"]).optional(),
   genre: u.string().optional(),
   targetAudience: u.string().optional(),
   logline: u.string().optional(),
   updatedAt: u.string().optional()
-}).passthrough(), $r = u.object({
+}).passthrough(), zr = u.object({
   columns: u.array(
     u.object({
       id: u.string(),
@@ -2226,21 +2242,21 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     })
   ).optional(),
   updatedAt: u.string().optional()
-}).passthrough(), xr = u.object({
+}).passthrough(), Xr = u.object({
   paths: u.array(u.record(u.string(), u.unknown())).optional(),
   tool: u.enum(["pen", "text", "eraser", "icon"]).optional(),
   iconType: u.enum(["mountain", "castle", "village"]).optional(),
   color: u.string().optional(),
   lineWidth: u.number().optional(),
   updatedAt: u.string().optional()
-}).passthrough(), Gr = u.object({
+}).passthrough(), Kr = u.object({
   nodes: u.array(u.record(u.string(), u.unknown())).optional(),
   edges: u.array(u.record(u.string(), u.unknown())).optional(),
   updatedAt: u.string().optional()
-}).passthrough(), Hr = u.object({
+}).passthrough(), Vr = u.object({
   memos: u.array(u.record(u.string(), u.unknown())).optional(),
   updatedAt: u.string().optional()
-}).passthrough(), Gs = u.object({
+}).passthrough(), Js = u.object({
   id: u.string(),
   entityType: u.string(),
   subType: u.string().optional(),
@@ -2250,7 +2266,7 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
   attributes: u.record(u.string(), u.unknown()).optional().nullable(),
   positionX: u.number().optional(),
   positionY: u.number().optional()
-}).passthrough(), Hs = u.object({
+}).passthrough(), Qs = u.object({
   id: u.string(),
   sourceId: u.string(),
   sourceType: u.string(),
@@ -2260,20 +2276,20 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
   attributes: u.record(u.string(), u.unknown()).optional().nullable(),
   createdAt: u.string().optional(),
   updatedAt: u.string().optional()
-}).passthrough(), Ys = u.object({
-  nodes: u.array(Gs).optional(),
-  edges: u.array(Hs).optional(),
+}).passthrough(), Zs = u.object({
+  nodes: u.array(Js).optional(),
+  edges: u.array(Qs).optional(),
   updatedAt: u.string().optional()
-}).passthrough(), zs = u.object({
+}).passthrough(), ti = u.object({
   id: u.string(),
   projectId: u.string().optional(),
   chapterId: u.string().optional().nullable(),
   content: u.string().optional(),
   description: u.string().optional().nullable(),
   createdAt: u.string().optional()
-}).passthrough(), Xs = u.object({
-  snapshots: u.array(zs).optional()
-}).passthrough(), qs = (r, t, e, n) => {
+}).passthrough(), ei = u.object({
+  snapshots: u.array(ti).optional()
+}).passthrough(), ri = (r, t, e, n) => {
   if (typeof r != "string" || r.trim().length === 0)
     return t.safeParse(null);
   let a;
@@ -2294,7 +2310,7 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     label: e.label,
     issues: o.error.issues
   }), o;
-}, Ks = async (r) => await h.getClient().project.findUnique({
+}, ni = async (r) => await h.getClient().project.findUnique({
   where: { id: r },
   include: {
     chapters: { where: { deletedAt: null }, orderBy: { order: "asc" } },
@@ -2306,16 +2322,16 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     entityRelations: !0,
     snapshots: { orderBy: { createdAt: "desc" } }
   }
-}), Vs = (r, t, e) => {
+}), ai = (r, t, e) => {
   if (!t)
     return e.info("Skipping package export (missing projectPath)", { projectId: r }), null;
-  if (!t.toLowerCase().endsWith(K))
+  if (!t.toLowerCase().endsWith(X))
     return e.info("Skipping package export (not .luie)", {
       projectId: r,
       projectPath: t
     }), null;
   try {
-    return z(t, "projectPath");
+    return K(t, "projectPath");
   } catch (n) {
     return e.warn("Skipping package export (invalid projectPath)", {
       projectId: r,
@@ -2323,21 +2339,21 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
       error: n
     }), null;
   }
-}, Js = async (r, t) => {
-  if (!r || !r.toLowerCase().endsWith(K))
+}, oi = async (r, t) => {
+  if (!r || !r.toLowerCase().endsWith(X))
     return {
-      synopsis: Ke.safeParse(null),
-      plot: $r.safeParse(null),
-      drawing: xr.safeParse(null),
-      mindmap: Gr.safeParse(null),
-      memos: Hr.safeParse(null)
+      synopsis: tr.safeParse(null),
+      plot: zr.safeParse(null),
+      drawing: Xr.safeParse(null),
+      mindmap: Kr.safeParse(null),
+      memos: Vr.safeParse(null)
     };
   const e = async (d, l, i) => {
-    const p = `${G}/${d}`;
+    const p = `${x}/${d}`;
     try {
-      const A = await et(r, p, t);
-      return qs(
-        A,
+      const m = await Z(r, p, t);
+      return ri(
+        m,
         l,
         {
           packagePath: r,
@@ -2346,26 +2362,26 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
         },
         t
       );
-    } catch (A) {
+    } catch (m) {
       return t.warn("Failed to read .luie world document; using default during export", {
         projectPath: r,
         entryPath: p,
         label: i,
-        error: A
+        error: m
       }), l.safeParse(null);
     }
   }, [n, a, o, s, c] = await Promise.all([
     e(
-      Qt,
-      Ke,
+      Jt,
+      tr,
       "synopsis"
     ),
-    e(Ae, $r, "plot"),
-    e(ye, xr, "drawing"),
-    e(Se, Gr, "mindmap"),
+    e(Te, zr, "plot"),
+    e(we, Xr, "drawing"),
+    e(_e, Kr, "mindmap"),
     e(
-      fr,
-      Hr,
+      yr,
+      Vr,
       "scrap-memos"
     )
   ]);
@@ -2376,22 +2392,22 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     mindmap: s,
     memos: c
   };
-}, Qs = async (r) => {
-  const t = await Ks(r.projectId);
+}, si = async (r) => {
+  const t = await ni(r.projectId);
   if (!t) return !1;
-  const e = r.options?.targetPath ? jn(r.options.targetPath, "targetPath") : Vs(r.projectId, t.projectPath, r.logger);
+  const e = r.options?.targetPath ? Mn(r.options.targetPath, "targetPath") : ai(r.projectId, t.projectPath, r.logger);
   if (!e) return !1;
-  const n = r.options?.worldSourcePath === void 0 ? e : r.options.worldSourcePath, { exportChapters: a, chapterMeta: o } = Ds(t.chapters), s = Ls(t.characters), c = Os(t.terms), d = _.getAll().snapshotExportLimit ?? ue, l = js(t.snapshots, d), i = await Js(n, r.logger), p = bs(t, i.synopsis), A = Fs(i.plot), w = vs(i.drawing), g = Us(i.mindmap), m = Ms(i.memos), T = ks(t), I = Ws(t, o);
+  const n = r.options?.worldSourcePath === void 0 ? e : r.options.worldSourcePath, { exportChapters: a, chapterMeta: o } = Ms(t.chapters), s = ks(t.characters), c = Ws(t.terms), d = _.getAll().snapshotExportLimit ?? ge, l = Bs(t.snapshots, d), i = await oi(n, r.logger), p = $s(t, i.synopsis), m = xs(i.plot), w = Gs(i.drawing), g = Hs(i.mindmap), A = Ys(i.memos), S = zs(t), I = Xs(t, o);
   return r.logger.info("Exporting .luie package", {
     projectId: r.projectId,
     projectPath: e,
     chapterCount: a.length,
     characterCount: s.length,
     termCount: c.length,
-    worldNodeCount: T.nodes.length,
-    relationCount: T.edges.length,
+    worldNodeCount: S.nodes.length,
+    relationCount: S.edges.length,
     snapshotCount: l.length
-  }), await Er(
+  }), await Sr(
     e,
     {
       meta: I,
@@ -2399,19 +2415,19 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
       characters: s,
       terms: c,
       synopsis: p,
-      plot: A,
+      plot: m,
       drawing: w,
       mindmap: g,
-      memos: m,
-      graph: T,
+      memos: A,
+      graph: S,
       snapshots: l
     },
     r.logger
   ), !0;
-}, Zs = async (r) => {
+}, ii = async (r) => {
   const t = [];
   for (let e = 0; e < r.chaptersMeta.length; e += 1) {
-    const n = r.chaptersMeta[e], a = n.id ?? X(), o = n.file ?? `${vt}/${a}${we}`, s = typeof n.content == "string" ? n.content : await r.readChapterEntry(o);
+    const n = r.chaptersMeta[e], a = n.id ?? Y(), o = n.file ?? `${Ft}/${a}${Pe}`, s = typeof n.content == "string" ? n.content : await r.readChapterEntry(o);
     if (s === null)
       throw new f(
         E.VALIDATION_FAILED,
@@ -2434,27 +2450,27 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     });
   }
   return t;
-}, ti = (r, t) => t.map((e, n) => {
+}, ci = (r, t) => t.map((e, n) => {
   const a = typeof e.name == "string" && e.name.trim().length > 0 ? e.name : `Character ${n + 1}`, o = typeof e.attributes == "string" ? e.attributes : e.attributes ? JSON.stringify(e.attributes) : null;
   return {
-    id: typeof e.id == "string" ? e.id : X(),
+    id: typeof e.id == "string" ? e.id : Y(),
     projectId: r,
     name: a,
     description: typeof e.description == "string" ? e.description : null,
     firstAppearance: typeof e.firstAppearance == "string" ? e.firstAppearance : null,
     attributes: o
   };
-}), ei = (r, t) => t.map((e, n) => {
+}), di = (r, t) => t.map((e, n) => {
   const a = typeof e.term == "string" && e.term.trim().length > 0 ? e.term : `Term ${n + 1}`;
   return {
-    id: typeof e.id == "string" ? e.id : X(),
+    id: typeof e.id == "string" ? e.id : Y(),
     projectId: r,
     term: a,
     definition: typeof e.definition == "string" ? e.definition : null,
     category: typeof e.category == "string" ? e.category : null,
     firstAppearance: typeof e.firstAppearance == "string" ? e.firstAppearance : null
   };
-}), ri = (r) => {
+}), li = (r) => {
   const t = /* @__PURE__ */ new Set(), e = [];
   for (const n of r.snapshots) {
     if (typeof n.id != "string" || n.id.trim().length === 0 || t.has(n.id))
@@ -2478,7 +2494,7 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     });
   }
   return e;
-}, ni = [
+}, pi = [
   "Character",
   "Faction",
   "Event",
@@ -2488,14 +2504,14 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
   "Item",
   "Term",
   "WorldEntity"
-], ai = ["Place", "Concept", "Rule", "Item"], oi = [
+], ui = ["Place", "Concept", "Rule", "Item"], hi = [
   "belongs_to",
   "enemy_of",
   "causes",
   "controls",
   "located_in",
   "violates"
-], Ve = (r) => typeof r == "string" && ni.includes(r), Je = (r) => typeof r == "string" && ai.includes(r), si = (r) => typeof r == "string" && oi.includes(r), te = (r) => {
+], er = (r) => typeof r == "string" && pi.includes(r), rr = (r) => typeof r == "string" && ui.includes(r), fi = (r) => typeof r == "string" && hi.includes(r), Zt = (r) => {
   if (r == null)
     return null;
   if (typeof r == "string")
@@ -2505,7 +2521,7 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
   } catch {
     return null;
   }
-}, ii = (r, t) => Je(r) ? r : r === "WorldEntity" && Je(t) ? t : null, ci = (r, t) => ({
+}, gi = (r, t) => rr(r) ? r : r === "WorldEntity" && rr(t) ? t : null, Ei = (r, t) => ({
   charactersForCreate: [...r],
   termsForCreate: [...t],
   factionsForCreate: [],
@@ -2517,16 +2533,16 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
   factionIds: /* @__PURE__ */ new Set(),
   eventIds: /* @__PURE__ */ new Set(),
   worldEntityIds: /* @__PURE__ */ new Set()
-}), di = (r) => Ve(r.entityType) ? r.entityType : Je(r.subType) ? r.subType : null, li = (r, t, e) => {
+}), mi = (r) => er(r.entityType) ? r.entityType : rr(r.subType) ? r.subType : null, Ai = (r, t, e) => {
   !e.id || !e.name || r.characterIds.has(e.id) || (r.characterIds.add(e.id), r.charactersForCreate.push({
     id: e.id,
     projectId: t,
     name: e.name,
     description: typeof e.description == "string" ? e.description : null,
     firstAppearance: typeof e.firstAppearance == "string" ? e.firstAppearance : null,
-    attributes: te(e.attributes)
+    attributes: Zt(e.attributes)
   }));
-}, pi = (r, t, e) => {
+}, yi = (r, t, e) => {
   if (!e.id || !e.name || r.termIds.has(e.id)) return;
   r.termIds.add(e.id);
   const n = Array.isArray(e.attributes?.tags) ? e.attributes.tags.find((a) => typeof a == "string") : null;
@@ -2538,27 +2554,27 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     category: n ?? null,
     firstAppearance: typeof e.firstAppearance == "string" ? e.firstAppearance : null
   });
-}, ui = (r, t, e) => {
+}, Si = (r, t, e) => {
   !e.id || !e.name || r.factionIds.has(e.id) || (r.factionIds.add(e.id), r.factionsForCreate.push({
     id: e.id,
     projectId: t,
     name: e.name,
     description: typeof e.description == "string" ? e.description : null,
     firstAppearance: typeof e.firstAppearance == "string" ? e.firstAppearance : null,
-    attributes: te(e.attributes)
+    attributes: Zt(e.attributes)
   }));
-}, hi = (r, t, e) => {
+}, Ti = (r, t, e) => {
   !e.id || !e.name || r.eventIds.has(e.id) || (r.eventIds.add(e.id), r.eventsForCreate.push({
     id: e.id,
     projectId: t,
     name: e.name,
     description: typeof e.description == "string" ? e.description : null,
     firstAppearance: typeof e.firstAppearance == "string" ? e.firstAppearance : null,
-    attributes: te(e.attributes)
+    attributes: Zt(e.attributes)
   }));
-}, fi = (r, t, e, n) => {
+}, wi = (r, t, e, n) => {
   if (!n.id || !n.name) return;
-  const a = ii(e, n.subType);
+  const a = gi(e, n.subType);
   !a || r.worldEntityIds.has(n.id) || (r.worldEntityIds.add(n.id), r.worldEntitiesForCreate.push({
     id: n.id,
     projectId: t,
@@ -2566,11 +2582,11 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     name: n.name,
     description: typeof n.description == "string" ? n.description : null,
     firstAppearance: typeof n.firstAppearance == "string" ? n.firstAppearance : null,
-    attributes: te(n.attributes),
+    attributes: Zt(n.attributes),
     positionX: typeof n.positionX == "number" ? n.positionX : 0,
     positionY: typeof n.positionY == "number" ? n.positionY : 0
   }));
-}, Yr = (r, t, e) => {
+}, qr = (r, t, e) => {
   switch (t) {
     case "Character":
       return r.characterIds.has(e);
@@ -2589,52 +2605,52 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     default:
       return !1;
   }
-}, gi = (r, t, e) => {
+}, _i = (r, t, e) => {
   if (!e.id || !e.name)
     return;
-  const n = di(e);
+  const n = mi(e);
   if (n) {
     if (n === "Character") {
-      li(r, t, e);
+      Ai(r, t, e);
       return;
     }
     if (n === "Term") {
-      pi(r, t, e);
+      yi(r, t, e);
       return;
     }
     if (n === "Faction") {
-      ui(r, t, e);
+      Si(r, t, e);
       return;
     }
     if (n === "Event") {
-      hi(r, t, e);
+      Ti(r, t, e);
       return;
     }
-    fi(r, t, n, e);
+    wi(r, t, n, e);
   }
-}, Ei = (r, t, e) => {
-  !e.sourceId || !e.targetId || !Ve(e.sourceType) || !Ve(e.targetType) || si(e.relation) && (!Yr(r, e.sourceType, e.sourceId) || !Yr(r, e.targetType, e.targetId) || r.relationsForCreate.push({
-    id: e.id || X(),
+}, Ii = (r, t, e) => {
+  !e.sourceId || !e.targetId || !er(e.sourceType) || !er(e.targetType) || fi(e.relation) && (!qr(r, e.sourceType, e.sourceId) || !qr(r, e.targetType, e.targetId) || r.relationsForCreate.push({
+    id: e.id || Y(),
     projectId: t,
     sourceId: e.sourceId,
     sourceType: e.sourceType,
     targetId: e.targetId,
     targetType: e.targetType,
     relation: e.relation,
-    attributes: te(e.attributes),
-    sourceWorldEntityId: Nr(e.sourceType) && r.worldEntityIds.has(e.sourceId) ? e.sourceId : null,
-    targetWorldEntityId: Nr(e.targetType) && r.worldEntityIds.has(e.targetId) ? e.targetId : null
+    attributes: Zt(e.attributes),
+    sourceWorldEntityId: jr(e.sourceType) && r.worldEntityIds.has(e.sourceId) ? e.sourceId : null,
+    targetWorldEntityId: jr(e.targetType) && r.worldEntityIds.has(e.targetId) ? e.targetId : null
   }));
-}, mi = (r) => {
-  const t = ci(r.baseCharacters, r.baseTerms);
+}, Pi = (r) => {
+  const t = Ei(r.baseCharacters, r.baseTerms);
   if (!r.graph)
     return t;
   for (const e of r.graph.nodes ?? [])
-    gi(t, r.projectId, e);
+    _i(t, r.projectId, e);
   for (const e of r.graph.edges ?? [])
-    Ei(t, r.projectId, e);
+    Ii(t, r.projectId, e);
   return t;
-}, Ai = async (r) => {
+}, Ci = async (r) => {
   const {
     resolvedProjectId: t,
     legacyProjectId: e,
@@ -2647,13 +2663,13 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     termsForCreate: l,
     factionsForCreate: i,
     eventsForCreate: p,
-    worldEntitiesForCreate: A,
+    worldEntitiesForCreate: m,
     relationsForCreate: w,
     snapshotsForCreate: g
   } = r;
-  return await h.getClient().$transaction(async (m) => {
-    e && await m.project.delete({ where: { id: e } }), n && await m.project.delete({ where: { id: t } });
-    const T = await m.project.create({
+  return await h.getClient().$transaction(async (A) => {
+    e && await A.project.delete({ where: { id: e } }), n && await A.project.delete({ where: { id: t } });
+    const S = await A.project.create({
       data: {
         id: t,
         title: a.title ?? "Recovered Project",
@@ -2664,15 +2680,15 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
         settings: {
           create: {
             autoSave: !0,
-            autoSaveInterval: Ee
+            autoSaveInterval: ye
           }
         }
       },
       include: { settings: !0 }
     });
-    return c.length > 0 && await m.chapter.createMany({ data: c }), d.length > 0 && await m.character.createMany({ data: d }), l.length > 0 && await m.term.createMany({ data: l }), i.length > 0 && await m.faction.createMany({ data: i }), p.length > 0 && await m.event.createMany({ data: p }), A.length > 0 && await m.worldEntity.createMany({ data: A }), w.length > 0 && await m.entityRelation.createMany({ data: w }), g.length > 0 && await m.snapshot.createMany({ data: g }), T;
+    return c.length > 0 && await A.chapter.createMany({ data: c }), d.length > 0 && await A.character.createMany({ data: d }), l.length > 0 && await A.term.createMany({ data: l }), i.length > 0 && await A.faction.createMany({ data: i }), p.length > 0 && await A.event.createMany({ data: p }), m.length > 0 && await A.worldEntity.createMany({ data: m }), w.length > 0 && await A.entityRelation.createMany({ data: w }), g.length > 0 && await A.snapshot.createMany({ data: g }), S;
   });
-}, Bt = (r, t, e) => {
+}, Wt = (r, t, e) => {
   if (typeof r != "string" || r.trim().length === 0)
     return null;
   let n;
@@ -2701,10 +2717,10 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
       }
     );
   return a.data;
-}, yi = async (r) => await h.getClient().project.findFirst({
+}, Ri = async (r) => await h.getClient().project.findFirst({
   where: { projectPath: r },
   select: { id: !0, updatedAt: !0 }
-}), Si = async (r, t) => {
+}), Di = async (r, t) => {
   try {
     await R.access(r);
   } catch {
@@ -2715,10 +2731,10 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     };
   }
   try {
-    const e = await et(r, me, t);
+    const e = await Z(r, Se, t);
     if (!e)
       throw new Error("MISSING_META");
-    const n = Bs.safeParse(JSON.parse(e));
+    const n = Ks.safeParse(JSON.parse(e));
     if (!n.success)
       throw new Error("INVALID_META");
     return { meta: n.data, luieCorrupted: !1 };
@@ -2728,14 +2744,14 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
       error: e
     }), { meta: null, luieCorrupted: !0, recoveryReason: "corrupt" };
   }
-}, Ti = (r, t) => {
-  const n = (typeof r.projectId == "string" ? r.projectId : void 0) ?? t?.id ?? X(), a = t && t.id !== n ? t.id : null;
+}, Ni = (r, t) => {
+  const n = (typeof r.projectId == "string" ? r.projectId : void 0) ?? t?.id ?? Y(), a = t && t.id !== n ? t.id : null;
   return { resolvedProjectId: n, legacyProjectId: a };
-}, wi = (r = /* @__PURE__ */ new Date()) => {
+}, Li = (r = /* @__PURE__ */ new Date()) => {
   const t = (e) => String(e).padStart(2, "0");
   return `${r.getFullYear()}${t(r.getMonth() + 1)}${t(r.getDate())}-${t(r.getHours())}${t(r.getMinutes())}${t(r.getSeconds())}`;
-}, _i = async (r) => {
-  const t = Zt(r), e = K, a = t.toLowerCase().endsWith(e) ? t.slice(0, t.length - e.length) : t, o = wi();
+}, Oi = async (r) => {
+  const t = Qt(r), e = X, a = t.toLowerCase().endsWith(e) ? t.slice(0, t.length - e.length) : t, o = Li();
   let s = `${a}.recovered-${o}${e}`, c = 1;
   for (; ; )
     try {
@@ -2743,54 +2759,54 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     } catch {
       return s;
     }
-}, Ii = async (r, t) => {
-  const e = `${G}/${Dn}`, n = `${G}/${Ln}`, a = `${jt}/index.json`, o = `${G}/${Qt}`, s = `${G}/${Te}`, [c, d, l, i, p] = await Promise.all([
-    et(r, e, t),
-    et(r, n, t),
-    et(r, a, t),
-    et(r, o, t),
-    et(r, s, t)
-  ]), A = Bt(c, $s, {
+}, ji = async (r, t) => {
+  const e = `${x}/${Fn}`, n = `${x}/${vn}`, a = `${Ot}/index.json`, o = `${x}/${Jt}`, s = `${x}/${Ie}`, [c, d, l, i, p] = await Promise.all([
+    Z(r, e, t),
+    Z(r, n, t),
+    Z(r, a, t),
+    Z(r, o, t),
+    Z(r, s, t)
+  ]), m = Wt(c, Vs, {
     packagePath: r,
     entryPath: e,
     label: "world characters"
-  }), w = Bt(d, xs, {
+  }), w = Wt(d, qs, {
     packagePath: r,
     entryPath: n,
     label: "world terms"
-  }), g = Bt(l, Xs, {
+  }), g = Wt(l, ei, {
     packagePath: r,
     entryPath: a,
     label: "snapshot index"
-  }), m = Bt(
+  }), A = Wt(
     i,
-    Ke,
+    tr,
     {
       packagePath: r,
       entryPath: o,
       label: "world synopsis"
     }
-  ), T = Bt(p, Ys, {
+  ), S = Wt(p, Zs, {
     packagePath: r,
     entryPath: s,
     label: "world graph"
   });
   return {
-    characters: A?.characters ?? [],
+    characters: m?.characters ?? [],
     terms: w?.terms ?? [],
     snapshots: g?.snapshots ?? [],
-    worldSynopsis: m && typeof m.synopsis == "string" ? m.synopsis : void 0,
-    graph: T ? {
-      nodes: T.nodes ?? [],
-      edges: T.edges ?? [],
-      updatedAt: T.updatedAt
+    worldSynopsis: A && typeof A.synopsis == "string" ? A.synopsis : void 0,
+    graph: S ? {
+      nodes: S.nodes ?? [],
+      edges: S.edges ?? [],
+      updatedAt: S.updatedAt
     } : void 0
   };
-}, Pi = async (r) => {
-  const t = jn(r.packagePath, "packagePath"), { meta: e, luieCorrupted: n, recoveryReason: a } = await Si(
+}, bi = async (r) => {
+  const t = Mn(r.packagePath, "packagePath"), { meta: e, luieCorrupted: n, recoveryReason: a } = await Di(
     t,
     r.logger
-  ), o = await yi(t);
+  ), o = await Ri(t);
   if (n) {
     if (!o)
       throw new f(
@@ -2798,7 +2814,7 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
         "Failed to read .luie meta",
         { packagePath: t }
       );
-    const I = await _i(t);
+    const I = await Oi(t);
     if (!await r.exportRecoveredPackage(o.id, I))
       throw new f(
         E.FS_WRITE_FAILED,
@@ -2821,28 +2837,28 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
       "Invalid .luie meta format",
       { packagePath: t }
     );
-  const { resolvedProjectId: s, legacyProjectId: c } = Ti(e, o), d = await h.getClient().project.findUnique({
+  const { resolvedProjectId: s, legacyProjectId: c } = Ni(e, o), d = await h.getClient().project.findUnique({
     where: { id: s },
     select: { id: !0, updatedAt: !0 }
-  }), l = e.chapters ?? [], i = await Ii(t, r.logger), p = await Zs({
+  }), l = e.chapters ?? [], i = await ji(t, r.logger), p = await ii({
     packagePath: t,
     resolvedProjectId: s,
     chaptersMeta: l,
-    readChapterEntry: async (I) => await et(t, I, r.logger)
-  }), A = ti(
+    readChapterEntry: async (I) => await Z(t, I, r.logger)
+  }), m = ci(
     s,
     i.characters
-  ), w = ei(s, i.terms), g = mi({
+  ), w = di(s, i.terms), g = Pi({
     projectId: s,
     graph: i.graph,
-    baseCharacters: A,
+    baseCharacters: m,
     baseTerms: w
-  }), m = ri({
+  }), A = li({
     resolvedProjectId: s,
     snapshots: i.snapshots,
     validChapterIds: new Set(p.map((I) => I.id)),
     logger: r.logger
-  }), T = await Ai({
+  }), S = await Ci({
     resolvedProjectId: s,
     legacyProjectId: c,
     existing: d,
@@ -2856,10 +2872,10 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     eventsForCreate: g.eventsForCreate,
     worldEntitiesForCreate: g.worldEntitiesForCreate,
     relationsForCreate: g.relationsForCreate,
-    snapshotsForCreate: m
+    snapshotsForCreate: A
   });
   return r.logger.info(".luie package hydrated", {
-    projectId: T.id,
+    projectId: S.id,
     chapterCount: p.length,
     characterCount: g.charactersForCreate.length,
     termCount: g.termsForCreate.length,
@@ -2867,16 +2883,16 @@ const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id,
     eventCount: g.eventsForCreate.length,
     worldEntityCount: g.worldEntitiesForCreate.length,
     relationCount: g.relationsForCreate.length,
-    snapshotCount: m.length
-  }), { project: T, conflict: "luie-newer" };
-}, M = N("ProjectService");
-class Ci {
-  exportQueue = new as(
-    ao,
+    snapshotCount: A.length
+  }), { project: S, conflict: "luie-newer" };
+}, U = D("ProjectService");
+class Fi {
+  exportQueue = new us(
+    ho,
     async (t) => {
       await this.exportProjectPackage(t);
     },
-    M
+    U
   );
   async reconcileProjectPathDuplicates() {
     const t = await h.getClient().project.findMany({
@@ -2888,7 +2904,7 @@ class Ci {
         projectPath: !0,
         updatedAt: !0
       }
-    }), e = ps(
+    }), e = ys(
       t.map((s) => ({
         id: String(s.id),
         projectPath: typeof s.projectPath == "string" ? s.projectPath : null,
@@ -2904,7 +2920,7 @@ class Ci {
             await h.getClient().project.update({
               where: { id: i.id },
               data: { projectPath: null }
-            }), M.warn("Cleared duplicate projectPath from stale record", {
+            }), U.warn("Cleared duplicate projectPath from stale record", {
               keepProjectId: d.id,
               staleProjectId: i.id,
               projectPath: i.projectPath
@@ -2916,17 +2932,17 @@ class Ci {
       (s, c) => s + c,
       0
     );
-    return a > 0 && M.info("Project path duplicate reconciliation completed", {
+    return a > 0 && U.info("Project path duplicate reconciliation completed", {
       duplicateGroups: a,
       clearedRecords: o
     }), { duplicateGroups: a, clearedRecords: o };
   }
   async createProject(t) {
     try {
-      M.info("Creating project", t);
-      const e = Wr(t.projectPath);
+      U.info("Creating project", t);
+      const e = Hr(t.projectPath);
       if (e) {
-        const o = await Br(e);
+        const o = await Yr(e);
         if (o)
           throw new f(
             E.VALIDATION_FAILED,
@@ -2942,7 +2958,7 @@ class Ci {
           settings: {
             create: {
               autoSave: !0,
-              autoSaveInterval: Ee
+              autoSaveInterval: ye
             }
           }
         },
@@ -2950,9 +2966,9 @@ class Ci {
           settings: !0
         }
       }), a = String(n.id);
-      return M.info("Project created successfully", { projectId: a }), this.schedulePackageExport(a, "project:create"), n;
+      return U.info("Project created successfully", { projectId: a }), this.schedulePackageExport(a, "project:create"), n;
     } catch (e) {
-      throw M.error("Failed to create project", e), new f(
+      throw U.error("Failed to create project", e), new f(
         E.PROJECT_CREATE_FAILED,
         "Failed to create project",
         { input: t },
@@ -2962,9 +2978,9 @@ class Ci {
   }
   async openLuieProject(t) {
     try {
-      return await Pi({
+      return await bi({
         packagePath: t,
-        logger: M,
+        logger: U,
         exportRecoveredPackage: async (e, n) => await this.exportProjectPackageWithOptions(e, {
           targetPath: n,
           worldSourcePath: null
@@ -2972,7 +2988,7 @@ class Ci {
         getProjectById: async (e) => await this.getProject(e)
       });
     } catch (e) {
-      throw M.error("Failed to open .luie package", { packagePath: t, error: e }), e instanceof f ? e : new f(
+      throw U.error("Failed to open .luie package", { packagePath: t, error: e }), e instanceof f ? e : new f(
         E.PROJECT_CREATE_FAILED,
         "Failed to open .luie package",
         { packagePath: t },
@@ -3002,7 +3018,7 @@ class Ci {
         );
       return e;
     } catch (e) {
-      throw M.error("Failed to get project", e), e;
+      throw U.error("Failed to get project", e), e;
     }
   }
   async getAllProjects() {
@@ -3018,7 +3034,7 @@ class Ci {
         },
         orderBy: { updatedAt: "desc" }
       });
-      return await is(
+      return await gs(
         t.map((e) => ({
           ...e,
           id: String(e.id),
@@ -3027,7 +3043,7 @@ class Ci {
         }))
       );
     } catch (t) {
-      throw M.error("Failed to get all projects", t), new f(
+      throw U.error("Failed to get all projects", t), new f(
         E.DB_QUERY_FAILED,
         "Failed to get all projects",
         void 0,
@@ -3037,9 +3053,9 @@ class Ci {
   }
   async updateProject(t) {
     try {
-      const e = t.projectPath === void 0 ? void 0 : Wr(t.projectPath) ?? null;
+      const e = t.projectPath === void 0 ? void 0 : Hr(t.projectPath) ?? null;
       if (e) {
-        const l = await Br(
+        const l = await Yr(
           e,
           t.id
         );
@@ -3065,17 +3081,17 @@ class Ci {
           projectPath: e
         }
       }), o = typeof n?.title == "string" ? n.title : "", s = typeof a.title == "string" ? a.title : "", c = typeof a.projectPath == "string" ? a.projectPath : null;
-      await ds({
+      await ms({
         projectId: String(a.id),
         projectPath: c,
         previousTitle: o,
         nextTitle: s,
-        logger: M
+        logger: U
       });
       const d = String(a.id);
-      return M.info("Project updated successfully", { projectId: d }), this.schedulePackageExport(d, "project:update"), a;
+      return U.info("Project updated successfully", { projectId: d }), this.schedulePackageExport(d, "project:update"), a;
     } catch (e) {
-      throw M.error("Failed to update project", e), new f(
+      throw U.error("Failed to update project", e), new f(
         E.PROJECT_UPDATE_FAILED,
         "Failed to update project",
         { input: t },
@@ -3092,7 +3108,7 @@ class Ci {
     });
   }
   async deleteProject(t) {
-    const e = os(t);
+    const e = hs(t);
     let n = !1;
     try {
       const a = await h.getClient().project.findUnique({
@@ -3105,7 +3121,7 @@ class Ci {
           "Project not found",
           { id: e.id }
         );
-      return await ss({
+      return await fs({
         deleteFile: e.deleteFile,
         projectPath: typeof a.projectPath == "string" ? a.projectPath : null
       }), _.addPendingProjectDelete({
@@ -3113,12 +3129,12 @@ class Ci {
         deletedAt: (/* @__PURE__ */ new Date()).toISOString()
       }), n = !0, await h.getClient().project.delete({
         where: { id: e.id }
-      }), this.clearSyncBaselineForProject(e.id), M.info("Project deleted successfully", {
+      }), this.clearSyncBaselineForProject(e.id), U.info("Project deleted successfully", {
         projectId: e.id,
         deleteFile: e.deleteFile
       }), { success: !0 };
     } catch (a) {
-      throw n && _.removePendingProjectDeletes([e.id]), M.error("Failed to delete project", a), a instanceof f ? a : new f(
+      throw n && _.removePendingProjectDeletes([e.id]), U.error("Failed to delete project", a), a instanceof f ? a : new f(
         E.PROJECT_DELETE_FAILED,
         "Failed to delete project",
         { id: e.id, deleteFile: e.deleteFile },
@@ -3139,9 +3155,9 @@ class Ci {
         );
       return await h.getClient().project.delete({
         where: { id: t }
-      }), this.clearSyncBaselineForProject(t), M.info("Project removed from list", { projectId: t }), { success: !0 };
+      }), this.clearSyncBaselineForProject(t), U.info("Project removed from list", { projectId: t }), { success: !0 };
     } catch (e) {
-      throw M.error("Failed to remove project from list", e), e instanceof f ? e : new f(
+      throw U.error("Failed to remove project from list", e), e instanceof f ? e : new f(
         E.PROJECT_DELETE_FAILED,
         "Failed to remove project from list",
         { id: t },
@@ -3156,24 +3172,24 @@ class Ci {
     return await this.exportQueue.flush(t);
   }
   async exportProjectPackageWithOptions(t, e) {
-    return await Qs({
+    return await si({
       projectId: t,
       options: e,
-      logger: M
+      logger: U
     });
   }
   async exportProjectPackage(t) {
     await this.exportProjectPackageWithOptions(t);
   }
 }
-const F = new Ci(), x = N("CharacterService"), Ql = () => h.getClient();
-function Ri(r) {
+const b = new Fi(), $ = D("CharacterService"), up = () => h.getClient();
+function vi(r) {
   return typeof r == "object" && r !== null && "code" in r && r.code === "P2025";
 }
-class Ni {
+class Ui {
   async createCharacter(t) {
     try {
-      x.info("Creating character", t);
+      $.info("Creating character", t);
       const e = await h.getClient().character.create({
         data: {
           projectId: t.projectId,
@@ -3183,11 +3199,11 @@ class Ni {
           attributes: t.attributes ? JSON.stringify(t.attributes) : null
         }
       });
-      return x.info("Character created successfully", {
+      return $.info("Character created successfully", {
         characterId: e.id
-      }), F.schedulePackageExport(t.projectId, "character:create"), e;
+      }), b.schedulePackageExport(t.projectId, "character:create"), e;
     } catch (e) {
-      throw x.error("Failed to create character", e), new f(
+      throw $.error("Failed to create character", e), new f(
         E.CHARACTER_CREATE_FAILED,
         "Failed to create character",
         { input: t },
@@ -3213,7 +3229,7 @@ class Ni {
         );
       return e;
     } catch (e) {
-      throw x.error("Failed to get character", e), e;
+      throw $.error("Failed to get character", e), e;
     }
   }
   async getAllCharacters(t) {
@@ -3223,7 +3239,7 @@ class Ni {
         orderBy: { createdAt: "asc" }
       });
     } catch (e) {
-      throw x.error("Failed to get all characters", e), new f(
+      throw $.error("Failed to get all characters", e), new f(
         E.DB_QUERY_FAILED,
         "Failed to get all characters",
         { projectId: t },
@@ -3239,11 +3255,11 @@ class Ni {
         where: { id: t.id },
         data: e
       });
-      return x.info("Character updated successfully", {
+      return $.info("Character updated successfully", {
         characterId: n.id
-      }), F.schedulePackageExport(String(n.projectId), "character:update"), n;
+      }), b.schedulePackageExport(String(n.projectId), "character:update"), n;
     } catch (e) {
-      throw x.error("Failed to update character", e), Ri(e) ? new f(
+      throw $.error("Failed to update character", e), vi(e) ? new f(
         E.CHARACTER_NOT_FOUND,
         "Character not found",
         { id: t.id },
@@ -3269,12 +3285,12 @@ class Ni {
             OR: [{ sourceId: t }, { targetId: t }]
           }
         }), await a.character.deleteMany({ where: { id: t } });
-      }), x.info("Character deleted successfully", { characterId: t }), n && F.schedulePackageExport(
+      }), $.info("Character deleted successfully", { characterId: t }), n && b.schedulePackageExport(
         n,
         "character:delete"
       ), { success: !0 };
     } catch (e) {
-      throw x.error("Failed to delete character", e), new f(
+      throw $.error("Failed to delete character", e), new f(
         E.CHARACTER_DELETE_FAILED,
         "Failed to delete character",
         { id: t },
@@ -3292,12 +3308,12 @@ class Ni {
           context: t.context
         }
       });
-      return x.info("Character appearance recorded", {
+      return $.info("Character appearance recorded", {
         characterId: t.characterId,
         chapterId: t.chapterId
       }), e;
     } catch (e) {
-      throw x.error("Failed to record character appearance", e), new f(
+      throw $.error("Failed to record character appearance", e), new f(
         E.DB_QUERY_FAILED,
         "Failed to record character appearance",
         { input: t },
@@ -3315,7 +3331,7 @@ class Ni {
         orderBy: { position: "asc" }
       });
     } catch (e) {
-      throw x.error("Failed to get appearances by chapter", e), new f(
+      throw $.error("Failed to get appearances by chapter", e), new f(
         E.DB_QUERY_FAILED,
         "Failed to get character appearances",
         { chapterId: t },
@@ -3337,9 +3353,9 @@ class Ni {
       n.firstAppearance || (await h.getClient().character.update({
         where: { id: t },
         data: { firstAppearance: e }
-      }), x.info("First appearance updated", { characterId: t, chapterId: e }));
+      }), $.info("First appearance updated", { characterId: t, chapterId: e }));
     } catch (n) {
-      throw x.error("Failed to update first appearance", n), new f(
+      throw $.error("Failed to update first appearance", n), new f(
         E.CHARACTER_UPDATE_FAILED,
         "Failed to update first appearance",
         { characterId: t, chapterId: e },
@@ -3357,7 +3373,7 @@ class Ni {
         orderBy: { name: "asc" }
       });
     } catch (n) {
-      throw x.error("Failed to search characters", n), new f(
+      throw $.error("Failed to search characters", n), new f(
         E.SEARCH_QUERY_FAILED,
         "Failed to search characters",
         { projectId: t, query: e },
@@ -3366,14 +3382,14 @@ class Ni {
     }
   }
 }
-const Qe = new Ni(), B = N("TermService");
-function Di(r) {
+const nr = new Ui(), W = D("TermService");
+function Mi(r) {
   return typeof r == "object" && r !== null && "code" in r && r.code === "P2025";
 }
-class Li {
+class ki {
   async createTerm(t) {
     try {
-      B.info("Creating term", t);
+      W.info("Creating term", t);
       const e = await h.getClient().term.create({
         data: {
           projectId: t.projectId,
@@ -3384,9 +3400,9 @@ class Li {
           firstAppearance: t.firstAppearance
         }
       });
-      return B.info("Term created successfully", { termId: e.id }), F.schedulePackageExport(t.projectId, "term:create"), e;
+      return W.info("Term created successfully", { termId: e.id }), b.schedulePackageExport(t.projectId, "term:create"), e;
     } catch (e) {
-      throw B.error("Failed to create term", e), new f(
+      throw W.error("Failed to create term", e), new f(
         E.TERM_CREATE_FAILED,
         "Failed to create term",
         { input: t },
@@ -3408,7 +3424,7 @@ class Li {
         throw new f(E.TERM_NOT_FOUND, "Term not found", { id: t });
       return e;
     } catch (e) {
-      throw B.error("Failed to get term", e), e;
+      throw W.error("Failed to get term", e), e;
     }
   }
   async getAllTerms(t) {
@@ -3418,7 +3434,7 @@ class Li {
         orderBy: { term: "asc" }
       });
     } catch (e) {
-      throw B.error("Failed to get all terms", e), new f(
+      throw W.error("Failed to get all terms", e), new f(
         E.DB_QUERY_FAILED,
         "Failed to get all terms",
         { projectId: t },
@@ -3434,9 +3450,9 @@ class Li {
         where: { id: t.id },
         data: e
       });
-      return B.info("Term updated successfully", { termId: n.id }), F.schedulePackageExport(String(n.projectId), "term:update"), n;
+      return W.info("Term updated successfully", { termId: n.id }), b.schedulePackageExport(String(n.projectId), "term:update"), n;
     } catch (e) {
-      throw B.error("Failed to update term", e), Di(e) ? new f(
+      throw W.error("Failed to update term", e), Mi(e) ? new f(
         E.TERM_NOT_FOUND,
         "Term not found",
         { id: t.id },
@@ -3462,9 +3478,9 @@ class Li {
             OR: [{ sourceId: t }, { targetId: t }]
           }
         }), await a.term.deleteMany({ where: { id: t } });
-      }), B.info("Term deleted successfully", { termId: t }), n && F.schedulePackageExport(n, "term:delete"), { success: !0 };
+      }), W.info("Term deleted successfully", { termId: t }), n && b.schedulePackageExport(n, "term:delete"), { success: !0 };
     } catch (e) {
-      throw B.error("Failed to delete term", e), new f(
+      throw W.error("Failed to delete term", e), new f(
         E.TERM_DELETE_FAILED,
         "Failed to delete term",
         { id: t },
@@ -3482,12 +3498,12 @@ class Li {
           context: t.context
         }
       });
-      return B.info("Term appearance recorded", {
+      return W.info("Term appearance recorded", {
         termId: t.termId,
         chapterId: t.chapterId
       }), e;
     } catch (e) {
-      throw B.error("Failed to record term appearance", e), new f(
+      throw W.error("Failed to record term appearance", e), new f(
         E.DB_QUERY_FAILED,
         "Failed to record term appearance",
         { input: t },
@@ -3505,7 +3521,7 @@ class Li {
         orderBy: { position: "asc" }
       });
     } catch (e) {
-      throw B.error("Failed to get appearances by chapter", e), new f(
+      throw W.error("Failed to get appearances by chapter", e), new f(
         E.DB_QUERY_FAILED,
         "Failed to get term appearances",
         { chapterId: t },
@@ -3523,9 +3539,9 @@ class Li {
       n.firstAppearance || (await h.getClient().term.update({
         where: { id: t },
         data: { firstAppearance: e }
-      }), B.info("First appearance updated", { termId: t, chapterId: e }));
+      }), W.info("First appearance updated", { termId: t, chapterId: e }));
     } catch (n) {
-      throw B.error("Failed to update first appearance", n), new f(
+      throw W.error("Failed to update first appearance", n), new f(
         E.TERM_UPDATE_FAILED,
         "Failed to update first appearance",
         { termId: t, chapterId: e },
@@ -3543,7 +3559,7 @@ class Li {
         orderBy: { term: "asc" }
       });
     } catch (n) {
-      throw B.error("Failed to search terms", n), new f(
+      throw W.error("Failed to search terms", n), new f(
         E.SEARCH_QUERY_FAILED,
         "Failed to search terms",
         { projectId: t, query: e },
@@ -3561,7 +3577,7 @@ class Li {
         orderBy: { term: "asc" }
       });
     } catch (n) {
-      throw B.error("Failed to get terms by category", n), new f(
+      throw W.error("Failed to get terms by category", n), new f(
         E.DB_QUERY_FAILED,
         "Failed to get terms by category",
         { projectId: t, category: e },
@@ -3570,13 +3586,13 @@ class Li {
     }
   }
 }
-const Ze = new Li(), Vt = (r) => {
+const ar = new ki(), Vt = (r) => {
   if (typeof r != "string") return null;
   const t = r.trim();
   if (!t) return null;
   const n = t.startsWith('"') && t.endsWith('"') || t.startsWith("'") && t.endsWith("'") ? t.slice(1, -1).trim() : t;
   return n.length > 0 ? n : null;
-}, $n = (r) => {
+}, zn = (r) => {
   const t = r.trim();
   if (!t) return t;
   try {
@@ -3584,37 +3600,37 @@ const Ze = new Li(), Vt = (r) => {
   } catch {
     return t.endsWith("/") ? t.slice(0, -1) : t;
   }
-}, tr = (r) => /^https?:\/\//i.test(r), xn = (r) => {
+}, or = (r) => /^https?:\/\//i.test(r), Xn = (r) => {
   try {
     const t = new URL(r);
-    return t.protocol !== "http:" && t.protocol !== "https:" ? null : $n(t.toString());
+    return t.protocol !== "http:" && t.protocol !== "https:" ? null : zn(t.toString());
   } catch {
     return null;
   }
-}, Oi = (r) => {
+}, Wi = (r) => {
   let t = r.trim();
   if (!t) return null;
-  if (tr(t))
+  if (or(t))
     try {
       t = new URL(t).hostname;
     } catch {
       return null;
     }
   return t = t.replace(/^https?:\/\//i, ""), t = t.replace(/\/.*$/, ""), t.endsWith(".supabase.co") && (t = t.slice(0, -12)), t.includes(".") && (t = t.split(".")[0] ?? t), /^[a-z0-9-]+$/i.test(t) ? t.toLowerCase() : null;
-}, _e = (r) => {
+}, Ce = (r) => {
   if (!r) return null;
   const t = Vt(r.url), e = Vt(r.anonKey);
   if (!t || !e) return null;
-  const n = xn(t);
+  const n = Xn(t);
   return n ? {
     url: n,
     anonKey: e
   } : null;
-}, Gn = (r) => {
+}, Kn = (r) => {
   const t = [], e = Vt(r?.url), n = Vt(r?.anonKey);
   e || t.push("SUPABASE_URL_REQUIRED"), n || t.push("SUPABASE_ANON_KEY_REQUIRED");
   let a = null;
-  return e && (a = xn(e), a || t.push("SUPABASE_URL_INVALID")), n && n.length < 16 && t.push("SUPABASE_ANON_KEY_TOO_SHORT"), t.length > 0 || !a || !n ? {
+  return e && (a = Xn(e), a || t.push("SUPABASE_URL_INVALID")), n && n.length < 16 && t.push("SUPABASE_ANON_KEY_TOO_SHORT"), t.length > 0 || !a || !n ? {
     valid: !1,
     issues: t
   } : {
@@ -3625,70 +3641,70 @@ const Ze = new Li(), Vt = (r) => {
       anonKey: n
     }
   };
-}, gt = (r) => Vt(process.env[r]), ji = "https://qzgyjlbpnxxpspoyibpt.supabase.co", bi = "sb_publishable_tBNCOdvGzLgTuc6PUXI-Bg_qmt1FwYs", Fi = () => {
-  const r = _e({
-    url: ji,
-    anonKey: bi
+}, ut = (r) => Vt(process.env[r]), Bi = "https://qzgyjlbpnxxpspoyibpt.supabase.co", $i = "sb_publishable_tBNCOdvGzLgTuc6PUXI-Bg_qmt1FwYs", xi = () => {
+  const r = Ce({
+    url: Bi,
+    anonKey: $i
   });
   return r ? {
     ...r,
     source: "legacy"
   } : null;
-}, vi = () => {
-  const r = _e({
-    url: gt("SUPABASE_URL") ?? gt("SUPADB_URL") ?? void 0,
-    anonKey: gt("SUPABASE_ANON_KEY") ?? gt("SUPABASE_PUBLISHABLE_KEY") ?? gt("SUPADATABASE_API") ?? void 0
+}, Gi = () => {
+  const r = Ce({
+    url: ut("SUPABASE_URL") ?? ut("SUPADB_URL") ?? void 0,
+    anonKey: ut("SUPABASE_ANON_KEY") ?? ut("SUPABASE_PUBLISHABLE_KEY") ?? ut("SUPADATABASE_API") ?? void 0
   });
   return r ? {
     ...r,
     source: "env"
   } : null;
-}, Hn = () => {
-  const r = _.getRuntimeSupabaseConfig(), t = _e(r);
+}, Vn = () => {
+  const r = _.getRuntimeSupabaseConfig(), t = Ce(r);
   return t ? {
     ...t,
     source: "runtime"
   } : null;
-}, Ui = () => {
-  const r = gt("SUPADATABASE_API"), t = gt("SUPADATABASE_PRJ_ID");
+}, Hi = () => {
+  const r = ut("SUPADATABASE_API"), t = ut("SUPADATABASE_PRJ_ID");
   let e = null, n = null;
-  if (r && tr(r))
-    e = $n(r);
+  if (r && or(r))
+    e = zn(r);
   else if (t) {
-    const a = Oi(t);
+    const a = Wi(t);
     a && (e = `https://${a}.supabase.co`);
   }
-  return r && !tr(r) && (n = r), !e || !n ? null : {
+  return r && !or(r) && (n = r), !e || !n ? null : {
     url: e,
     anonKey: n,
     source: "legacy"
   };
-}, mr = () => vi() ?? Hn() ?? Ui() ?? Fi(), lt = () => {
-  const r = mr();
+}, Tr = () => Gi() ?? Vn() ?? Hi() ?? xi(), it = () => {
+  const r = Tr();
   return r ? {
     url: r.url,
     anonKey: r.anonKey
   } : null;
-}, Xt = () => {
-  const r = lt();
+}, zt = () => {
+  const r = it();
   if (!r)
     throw new Error(
       "SUPABASE_NOT_CONFIGURED: runtime configuration is not completed. Set Supabase URL/Anon Key in Startup Wizard or sync settings."
     );
   return r;
-}, Yn = () => mr()?.source ?? null, Mi = () => _e(Hn()) ?? null, ki = (r) => {
-  const t = Gn(r);
+}, qn = () => Tr()?.source ?? null, Yi = () => Ce(Vn()) ?? null, zi = (r) => {
+  const t = Kn(r);
   return !t.valid || !t.normalized || _.setRuntimeSupabaseConfig(t.normalized), t;
-}, Wi = (r) => Gn(r), Zl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+}, Xi = (r) => Kn(r), hp = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  getResolvedSupabaseConfig: mr,
-  getRuntimeSupabaseConfig: Mi,
-  getSupabaseConfig: lt,
-  getSupabaseConfigOrThrow: Xt,
-  getSupabaseConfigSource: Yn,
-  setRuntimeSupabaseConfig: ki,
-  validateRuntimeSupabaseConfig: Wi
-}, Symbol.toStringTag, { value: "Module" })), Ft = {
+  getResolvedSupabaseConfig: Tr,
+  getRuntimeSupabaseConfig: Yi,
+  getSupabaseConfig: it,
+  getSupabaseConfigOrThrow: zt,
+  getSupabaseConfigSource: qn,
+  setRuntimeSupabaseConfig: zi,
+  validateRuntimeSupabaseConfig: Xi
+}, Symbol.toStringTag, { value: "Module" })), bt = {
   // Project Channels
   PROJECT_CREATE: "project:create",
   PROJECT_GET: "project:get",
@@ -3839,49 +3855,49 @@ const Ze = new Li(), Vt = (r) => {
   // World Graph
   WORLD_GRAPH_GET: "world:getGraph",
   WORLD_GRAPH_GET_MENTIONS: "world:getMentions"
-}, $t = N("SyncAuthService"), Bi = "luie://auth/callback", er = "v2:safe:", rr = "v2:plain:", ge = "SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE", zn = (r) => r.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, ""), $i = () => zn(Sa(48)), xi = (r) => zn(Ta("sha256").update(r).digest()), ae = () => {
+}, Bt = D("SyncAuthService"), Ki = "luie://auth/callback", sr = "v2:safe:", ir = "v2:plain:", Ae = "SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE", Jn = (r) => r.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, ""), Vi = () => Jn(Da(48)), qi = (r) => Jn(Na("sha256").update(r).digest()), ne = () => {
   const r = process.env.LUIE_OAUTH_REDIRECT_URI?.trim();
-  return r && r.length > 0 ? r : Bi;
-}, St = (r, t = "token") => {
-  if (rt.isEncryptionAvailable()) {
-    const n = rt.encryptString(r).toString("base64");
-    return `${er}${n}`;
+  return r && r.length > 0 ? r : Ki;
+}, At = (r, t = "token") => {
+  if (tt.isEncryptionAvailable()) {
+    const n = tt.encryptString(r).toString("base64");
+    return `${sr}${n}`;
   }
   if (t === "token")
-    throw new Error(ge);
+    throw new Error(Ae);
   const e = Buffer.from(r, "utf-8").toString("base64");
-  return `${rr}${e}`;
-}, Gi = (r, t = "token") => {
+  return `${ir}${e}`;
+}, Ji = (r, t = "token") => {
   const e = Buffer.from(r, "base64");
-  if (rt.isEncryptionAvailable())
+  if (tt.isEncryptionAvailable())
     try {
-      const a = rt.decryptString(e);
+      const a = tt.decryptString(e);
       return {
         plain: a,
-        migratedCipher: St(a, t)
+        migratedCipher: At(a, t)
       };
     } catch {
       const a = e.toString("utf-8");
       return {
         plain: a,
-        migratedCipher: St(a, t)
+        migratedCipher: At(a, t)
       };
     }
   if (t === "token")
-    throw new Error(ge);
+    throw new Error(Ae);
   const n = e.toString("utf-8");
   return {
     plain: n,
-    migratedCipher: St(n, t)
+    migratedCipher: At(n, t)
   };
-}, oe = (r, t = "token") => {
-  if (r.startsWith(er)) {
-    if (!rt.isEncryptionAvailable())
-      throw new Error(ge);
-    const e = r.slice(er.length), n = Buffer.from(e, "base64");
+}, ae = (r, t = "token") => {
+  if (r.startsWith(sr)) {
+    if (!tt.isEncryptionAvailable())
+      throw new Error(Ae);
+    const e = r.slice(sr.length), n = Buffer.from(e, "base64");
     try {
       return {
-        plain: rt.decryptString(n)
+        plain: tt.decryptString(n)
       };
     } catch (a) {
       throw new Error(
@@ -3892,18 +3908,18 @@ const Ze = new Li(), Vt = (r) => {
       );
     }
   }
-  if (r.startsWith(rr)) {
-    if (t === "token" && !rt.isEncryptionAvailable())
-      throw new Error(ge);
-    const e = r.slice(rr.length), a = Buffer.from(e, "base64").toString("utf-8"), o = rt.isEncryptionAvailable() ? St(a, t) : void 0;
+  if (r.startsWith(ir)) {
+    if (t === "token" && !tt.isEncryptionAvailable())
+      throw new Error(Ae);
+    const e = r.slice(ir.length), a = Buffer.from(e, "base64").toString("utf-8"), o = tt.isEncryptionAvailable() ? At(a, t) : void 0;
     return {
       plain: a,
       migratedCipher: o
     };
   }
-  return Gi(r, t);
+  return Ji(r, t);
 };
-class Hi {
+class Qi {
   pendingPkce = null;
   pendingTtlMs = 600 * 1e3;
   clearPendingPkce() {
@@ -3912,7 +3928,7 @@ class Hi {
   storePendingPkce(t) {
     this.pendingPkce = t, _.setPendingSyncAuth({
       state: t.state,
-      verifierCipher: St(t.verifier, "pending"),
+      verifierCipher: At(t.verifier, "pending"),
       createdAt: new Date(t.createdAt).toISOString(),
       redirectUri: t.redirectUri
     });
@@ -3925,7 +3941,7 @@ class Hi {
     if (!Number.isFinite(e))
       return this.clearPendingPkce(), null;
     try {
-      const n = oe(t.pendingAuthVerifierCipher, "pending");
+      const n = ae(t.pendingAuthVerifierCipher, "pending");
       return n.migratedCipher && _.setPendingSyncAuth({
         state: t.pendingAuthState,
         verifierCipher: n.migratedCipher,
@@ -3935,10 +3951,10 @@ class Hi {
         state: t.pendingAuthState,
         verifier: n.plain,
         createdAt: e,
-        redirectUri: t.pendingAuthRedirectUri || ae()
+        redirectUri: t.pendingAuthRedirectUri || ne()
       };
     } catch (n) {
-      return $t.warn("Failed to decode pending OAuth verifier", { error: n }), this.clearPendingPkce(), null;
+      return Bt.warn("Failed to decode pending OAuth verifier", { error: n }), this.clearPendingPkce(), null;
     }
   }
   getPendingPkce() {
@@ -3949,7 +3965,7 @@ class Hi {
       }
       if (!this.pendingPkce.redirectUri) {
         const e = _.getSyncSettings().pendingAuthRedirectUri;
-        this.pendingPkce.redirectUri = e || ae();
+        this.pendingPkce.redirectUri = e || ne();
       }
       return this.pendingPkce;
     }
@@ -3964,26 +3980,26 @@ class Hi {
     return this.getActivePendingPkce() !== null;
   }
   isConfigured() {
-    return lt() !== null;
+    return it() !== null;
   }
   async startGoogleAuth() {
     const t = this.getActivePendingPkce();
     if (t) {
       const c = Date.now() - t.createdAt;
-      throw $t.info("OAuth flow already in progress", { ageMs: c }), new Error("SYNC_AUTH_FLOW_IN_PROGRESS");
+      throw Bt.info("OAuth flow already in progress", { ageMs: c }), new Error("SYNC_AUTH_FLOW_IN_PROGRESS");
     }
-    const { url: e } = Xt(), n = $i(), a = xi(n), o = ae();
+    const { url: e } = zt(), n = Vi(), a = qi(n), o = ne();
     this.storePendingPkce({
       verifier: n,
       createdAt: Date.now(),
       redirectUri: o
     });
     const s = new URL("/auth/v1/authorize", e);
-    s.searchParams.set("provider", "google"), s.searchParams.set("redirect_to", o), s.searchParams.set("code_challenge", a), s.searchParams.set("code_challenge_method", "s256"), $t.info("Opening OAuth authorize URL", {
+    s.searchParams.set("provider", "google"), s.searchParams.set("redirect_to", o), s.searchParams.set("code_challenge", a), s.searchParams.set("code_challenge_method", "s256"), Bt.info("Opening OAuth authorize URL", {
       authorizeBase: `${s.origin}${s.pathname}`,
       redirectUri: o,
       authorizeUrl: s.toString()
-    }), await pa.openExternal(s.toString());
+    }), await ma.openExternal(s.toString());
   }
   async completeOAuthCallback(t) {
     const e = this.getPendingPkce();
@@ -3991,12 +4007,12 @@ class Hi {
       throw new Error("SYNC_AUTH_NO_PENDING_SESSION");
     if (Date.now() - e.createdAt > this.pendingTtlMs)
       throw this.clearPendingPkce(), new Error("SYNC_AUTH_REQUEST_EXPIRED");
-    const n = new URL(t), a = n.searchParams, o = n.hash.startsWith("#") ? n.hash.slice(1) : n.hash, s = new URLSearchParams(o), c = (g) => a.get(g) ?? s.get(g), d = c("state"), l = c("code"), i = c("error"), p = c("error_code"), A = c("error_description");
+    const n = new URL(t), a = n.searchParams, o = n.hash.startsWith("#") ? n.hash.slice(1) : n.hash, s = new URLSearchParams(o), c = (g) => a.get(g) ?? s.get(g), d = c("state"), l = c("code"), i = c("error"), p = c("error_code"), m = c("error_description");
     if (i) {
       this.clearPendingPkce();
-      const g = p ?? i, m = A ?? i;
+      const g = p ?? i, A = m ?? i;
       throw new Error(
-        `SYNC_AUTH_CALLBACK_ERROR:${g}:${m}`
+        `SYNC_AUTH_CALLBACK_ERROR:${g}:${A}`
       );
     }
     if (!l)
@@ -4006,27 +4022,27 @@ class Hi {
     const w = await this.exchangeCodeForSession(
       l,
       e.verifier,
-      e.redirectUri || ae()
+      e.redirectUri || ne()
     );
     return this.clearPendingPkce(), w;
   }
   async refreshSession(t) {
     if (!t.refreshTokenCipher || !t.userId)
       throw new Error("SYNC_AUTH_REFRESH_UNAVAILABLE");
-    const e = oe(t.refreshTokenCipher).plain;
+    const e = ae(t.refreshTokenCipher).plain;
     return await this.exchangeRefreshToken(e);
   }
   getAccessToken(t) {
     if (!t.accessTokenCipher)
       return { token: null };
     try {
-      const e = oe(t.accessTokenCipher);
+      const e = ae(t.accessTokenCipher);
       return {
         token: e.plain,
         migratedCipher: e.migratedCipher
       };
     } catch (e) {
-      return $t.warn("Failed to decrypt sync access token", { error: e }), {
+      return Bt.warn("Failed to decrypt sync access token", { error: e }), {
         token: null,
         errorCode: e instanceof Error ? e.message : String(e)
       };
@@ -4036,20 +4052,20 @@ class Hi {
     if (!t.refreshTokenCipher)
       return { token: null };
     try {
-      const e = oe(t.refreshTokenCipher);
+      const e = ae(t.refreshTokenCipher);
       return {
         token: e.plain,
         migratedCipher: e.migratedCipher
       };
     } catch (e) {
-      return $t.warn("Failed to decrypt sync refresh token", { error: e }), {
+      return Bt.warn("Failed to decrypt sync refresh token", { error: e }), {
         token: null,
         errorCode: e instanceof Error ? e.message : String(e)
       };
     }
   }
   async exchangeCodeForSession(t, e, n) {
-    const { url: a, anonKey: o } = Xt(), s = new URL("/auth/v1/token", a);
+    const { url: a, anonKey: o } = zt(), s = new URL("/auth/v1/token", a);
     s.searchParams.set("grant_type", "pkce");
     const c = await fetch(s, {
       method: "POST",
@@ -4071,7 +4087,7 @@ class Hi {
     return this.toSyncSession(d);
   }
   async exchangeRefreshToken(t) {
-    const { url: e, anonKey: n } = Xt(), a = new URL("/auth/v1/token", e);
+    const { url: e, anonKey: n } = zt(), a = new URL("/auth/v1/token", e);
     a.searchParams.set("grant_type", "refresh_token");
     const o = await fetch(a, {
       method: "POST",
@@ -4099,12 +4115,12 @@ class Hi {
       userId: a,
       email: t.user?.email,
       expiresAt: t.expires_in ? new Date(Date.now() + t.expires_in * 1e3).toISOString() : void 0,
-      accessTokenCipher: St(e),
-      refreshTokenCipher: St(n)
+      accessTokenCipher: At(e),
+      refreshTokenCipher: At(n)
     };
   }
 }
-const J = new Hi(), Xn = () => ({
+const V = new Qi(), Qn = () => ({
   projects: [],
   chapters: [],
   characters: [],
@@ -4113,16 +4129,16 @@ const J = new Hi(), Xn = () => ({
   memos: [],
   snapshots: [],
   tombstones: []
-}), nt = (r) => {
+}), et = (r) => {
   if (!r) return 0;
   const t = Date.parse(r);
   return Number.isFinite(t) ? t : 0;
-}, zr = (r, t, e, n) => {
+}, Jr = (r, t, e, n) => {
   const a = r?.[t];
   if (!a) return 0;
   const o = e === "chapter" ? a.chapter : a.memo;
-  return nt(o[n]);
-}, Ie = (r, t) => nt(r.updatedAt) >= nt(t.updatedAt) ? [r, t] : [t, r], xt = (r, t) => {
+  return et(o[n]);
+}, Re = (r, t) => et(r.updatedAt) >= et(t.updatedAt) ? [r, t] : [t, r], $t = (r, t) => {
   const e = /* @__PURE__ */ new Map();
   for (const n of r)
     e.set(n.id, n);
@@ -4132,11 +4148,11 @@ const J = new Hi(), Xn = () => ({
       e.set(n.id, n);
       continue;
     }
-    const [o] = Ie(a, n);
+    const [o] = Re(a, n);
     e.set(n.id, o);
   }
   return Array.from(e.values());
-}, Yi = (r, t) => {
+}, Zi = (r, t) => {
   const e = /* @__PURE__ */ new Map();
   for (const n of r)
     e.set(`${n.projectId}:${n.docType}`, n);
@@ -4146,11 +4162,11 @@ const J = new Hi(), Xn = () => ({
       e.set(a, n);
       continue;
     }
-    const [s] = Ie(o, n);
+    const [s] = Re(o, n);
     e.set(a, s);
   }
   return Array.from(e.values());
-}, Xr = (r, t, e, n, a, o) => {
+}, Qr = (r, t, e, n, a, o) => {
   const s = /* @__PURE__ */ new Map(), c = /* @__PURE__ */ new Map();
   let d = 0;
   const l = [];
@@ -4164,13 +4180,13 @@ const J = new Hi(), Xn = () => ({
       s.set(i.id, i);
       continue;
     }
-    const [A, w] = Ie(
+    const [m, w] = Re(
       p,
       i
     );
-    let g = A;
+    let g = m;
     if (p.content !== i.content && (a ? a(p, i) : !0)) {
-      const T = `${e}:${p.id}`, I = o?.[T];
+      const S = `${e}:${p.id}`, I = o?.[S];
       if (I === "local")
         g = p;
       else if (I === "remote")
@@ -4186,8 +4202,8 @@ const J = new Hi(), Xn = () => ({
           localPreview: p.content.slice(0, 400),
           remotePreview: i.content.slice(0, 400)
         });
-        const b = n(w);
-        s.set(b.id, b);
+        const j = n(w);
+        s.set(j.id, j);
       }
     }
     s.set(i.id, g);
@@ -4199,7 +4215,7 @@ const J = new Hi(), Xn = () => ({
     conflicts: d,
     conflictItems: l
   };
-}, zi = (r, t, e) => {
+}, tc = (r, t, e) => {
   const n = r + t;
   return {
     chapters: r,
@@ -4207,7 +4223,7 @@ const J = new Hi(), Xn = () => ({
     total: n,
     items: e.length > 0 ? e : void 0
   };
-}, Xi = (r) => {
+}, ec = (r) => {
   const t = /* @__PURE__ */ new Map();
   for (const s of r.tombstones) {
     const c = `${s.entityType}:${s.entityId}`, d = t.get(c);
@@ -4215,7 +4231,7 @@ const J = new Hi(), Xn = () => ({
       t.set(c, s);
       continue;
     }
-    const [l] = Ie(d, s);
+    const [l] = Re(d, s);
     t.set(c, l);
   }
   const e = /* @__PURE__ */ new Set();
@@ -4226,7 +4242,7 @@ const J = new Hi(), Xn = () => ({
   const n = (s) => e.has(s), a = (s) => {
     const c = t.get(`chapter:${s.id}`);
     if (!c) return s;
-    const d = c.deletedAt, l = nt(c.updatedAt) > nt(s.updatedAt) ? c.updatedAt : s.updatedAt;
+    const d = c.deletedAt, l = et(c.updatedAt) > et(s.updatedAt) ? c.updatedAt : s.updatedAt;
     return {
       ...s,
       deletedAt: d,
@@ -4266,125 +4282,125 @@ const J = new Hi(), Xn = () => ({
       )
     )
   };
-}, qi = (r, t, e) => {
+}, rc = (r, t, e) => {
   const n = new Set(
     [...r.tombstones, ...t.tombstones].map(
       (l) => `${l.entityType}:${l.entityId}`
     )
-  ), a = e?.baselinesByProjectId, o = Xr(
+  ), a = e?.baselinesByProjectId, o = Qr(
     r.chapters,
     t.chapters,
     "chapter",
     (l) => ({
       ...l,
-      id: X(),
+      id: Y(),
       title: `${l.title} (Conflict Copy)`,
       order: l.order + 1e4,
       updatedAt: (/* @__PURE__ */ new Date()).toISOString()
     }),
     (l, i) => l.projectId === i.projectId && !l.deletedAt && !i.deletedAt && !n.has(`chapter:${l.id}`) && !n.has(`chapter:${i.id}`) && (() => {
-      const p = zr(
+      const p = Jr(
         a,
         l.projectId,
         "chapter",
         l.id
       );
-      return p <= 0 ? !1 : nt(l.updatedAt) > p && nt(i.updatedAt) > p;
+      return p <= 0 ? !1 : et(l.updatedAt) > p && et(i.updatedAt) > p;
     })(),
     e?.conflictResolutions
-  ), s = Xr(
+  ), s = Qr(
     r.memos,
     t.memos,
     "memo",
     (l) => ({
       ...l,
-      id: X(),
+      id: Y(),
       title: `${l.title} (Conflict Copy)`,
       updatedAt: (/* @__PURE__ */ new Date()).toISOString()
     }),
     (l, i) => l.projectId === i.projectId && !l.deletedAt && !i.deletedAt && !n.has(`memo:${l.id}`) && !n.has(`memo:${i.id}`) && (() => {
-      const p = zr(
+      const p = Jr(
         a,
         l.projectId,
         "memo",
         l.id
       );
-      return p <= 0 ? !1 : nt(l.updatedAt) > p && nt(i.updatedAt) > p;
+      return p <= 0 ? !1 : et(l.updatedAt) > p && et(i.updatedAt) > p;
     })(),
     e?.conflictResolutions
   ), c = [
     ...o.conflictItems,
     ...s.conflictItems
   ], d = {
-    projects: xt(r.projects, t.projects),
+    projects: $t(r.projects, t.projects),
     chapters: o.merged,
-    characters: xt(r.characters, t.characters),
-    terms: xt(r.terms, t.terms),
-    worldDocuments: Yi(r.worldDocuments, t.worldDocuments),
+    characters: $t(r.characters, t.characters),
+    terms: $t(r.terms, t.terms),
+    worldDocuments: Zi(r.worldDocuments, t.worldDocuments),
     memos: s.merged,
-    snapshots: xt(r.snapshots, t.snapshots),
-    tombstones: xt(r.tombstones, t.tombstones)
+    snapshots: $t(r.snapshots, t.snapshots),
+    tombstones: $t(r.tombstones, t.tombstones)
   };
   return {
-    merged: Xi(d),
-    conflicts: zi(
+    merged: ec(d),
+    conflicts: tc(
       o.conflicts,
       s.conflicts,
       c
     )
   };
-}, Ki = [
-  { docType: "synopsis", fileName: Qt },
-  { docType: "plot", fileName: Ae },
-  { docType: "drawing", fileName: ye },
-  { docType: "mindmap", fileName: Se },
-  { docType: "graph", fileName: Te }
-], Vi = {
-  synopsis: Qt,
-  plot: Ae,
-  drawing: ye,
-  mindmap: Se,
-  graph: Te,
-  scrap: fr
-}, Ji = [
+}, nc = [
+  { docType: "synopsis", fileName: Jt },
+  { docType: "plot", fileName: Te },
+  { docType: "drawing", fileName: we },
+  { docType: "mindmap", fileName: _e },
+  { docType: "graph", fileName: Ie }
+], ac = {
+  synopsis: Jt,
+  plot: Te,
+  drawing: we,
+  mindmap: _e,
+  graph: Ie,
+  scrap: yr
+}, oc = [
   "synopsis",
   "plot",
   "drawing",
   "mindmap",
   "graph",
   "scrap"
-], pt = (r, t = (/* @__PURE__ */ new Date()).toISOString()) => typeof r == "string" && r.length > 0 ? r : r instanceof Date ? r.toISOString() : t, v = (r) => typeof r == "string" ? r : null, nr = (r, t = 0) => typeof r == "number" && Number.isFinite(r) ? r : t, Qi = (r, t, e) => {
-  const n = v(e.id);
+], ct = (r, t = (/* @__PURE__ */ new Date()).toISOString()) => typeof r == "string" && r.length > 0 ? r : r instanceof Date ? r.toISOString() : t, F = (r) => typeof r == "string" ? r : null, cr = (r, t = 0) => typeof r == "number" && Number.isFinite(r) ? r : t, sc = (r, t, e) => {
+  const n = F(e.id);
   if (!n) return null;
-  const a = pt(e.updatedAt);
+  const a = ct(e.updatedAt);
   return r.projects.push({
     id: n,
     userId: t,
-    title: v(e.title) ?? "Untitled",
-    description: v(e.description),
-    createdAt: pt(e.createdAt),
+    title: F(e.title) ?? "Untitled",
+    description: F(e.description),
+    createdAt: ct(e.createdAt),
     updatedAt: a
   }), {
     projectId: n,
-    projectPath: v(e.projectPath),
+    projectPath: F(e.projectPath),
     projectUpdatedAt: a
   };
-}, Zi = (r, t, e, n) => {
+}, ic = (r, t, e, n) => {
   for (const a of n) {
-    const o = v(a.id);
+    const o = F(a.id);
     if (!o) continue;
-    const s = v(a.deletedAt);
+    const s = F(a.deletedAt);
     r.chapters.push({
       id: o,
       userId: t,
       projectId: e,
-      title: v(a.title) ?? "Untitled",
-      content: v(a.content) ?? "",
-      synopsis: v(a.synopsis),
-      order: nr(a.order),
-      wordCount: nr(a.wordCount),
-      createdAt: pt(a.createdAt),
-      updatedAt: pt(a.updatedAt),
+      title: F(a.title) ?? "Untitled",
+      content: F(a.content) ?? "",
+      synopsis: F(a.synopsis),
+      order: cr(a.order),
+      wordCount: cr(a.wordCount),
+      createdAt: ct(a.createdAt),
+      updatedAt: ct(a.updatedAt),
       deletedAt: s
     }), s && r.tombstones.push({
       id: `${e}:chapter:${o}`,
@@ -4396,38 +4412,38 @@ const J = new Hi(), Xn = () => ({
       updatedAt: s
     });
   }
-}, tc = (r, t, e, n) => {
+}, cc = (r, t, e, n) => {
   for (const a of n) {
-    const o = v(a.id);
+    const o = F(a.id);
     o && r.characters.push({
       id: o,
       userId: t,
       projectId: e,
-      name: v(a.name) ?? "Character",
-      description: v(a.description),
-      firstAppearance: v(a.firstAppearance),
-      attributes: v(a.attributes),
-      createdAt: pt(a.createdAt),
-      updatedAt: pt(a.updatedAt)
+      name: F(a.name) ?? "Character",
+      description: F(a.description),
+      firstAppearance: F(a.firstAppearance),
+      attributes: F(a.attributes),
+      createdAt: ct(a.createdAt),
+      updatedAt: ct(a.updatedAt)
     });
   }
-}, ec = (r, t, e, n) => {
+}, dc = (r, t, e, n) => {
   for (const a of n) {
-    const o = v(a.id);
+    const o = F(a.id);
     o && r.terms.push({
       id: o,
       userId: t,
       projectId: e,
-      term: v(a.term) ?? "Term",
-      definition: v(a.definition),
-      category: v(a.category),
-      order: nr(a.order),
-      firstAppearance: v(a.firstAppearance),
-      createdAt: pt(a.createdAt),
-      updatedAt: pt(a.updatedAt)
+      term: F(a.term) ?? "Term",
+      definition: F(a.definition),
+      category: F(a.category),
+      order: cr(a.order),
+      firstAppearance: F(a.firstAppearance),
+      createdAt: ct(a.createdAt),
+      updatedAt: ct(a.updatedAt)
     });
   }
-}, rc = (r, t, e) => {
+}, lc = (r, t, e) => {
   for (const n of e)
     r.tombstones.push({
       id: `${n.projectId}:project:${n.projectId}`,
@@ -4438,20 +4454,20 @@ const J = new Hi(), Xn = () => ({
       deletedAt: n.deletedAt,
       updatedAt: n.deletedAt
     });
-}, qr = (r, t, e, n, a, o) => {
+}, Zr = (r, t, e, n, a, o) => {
   r.worldDocuments.push({
     id: `${e}:${n}`,
     userId: t,
     projectId: e,
     docType: n,
     payload: a,
-    updatedAt: Ps(a) ?? o
+    updatedAt: bs(a) ?? o
   });
-}, ar = async (r, t, e) => {
-  const n = Vi[t], a = `${G}/${n}`;
+}, dr = async (r, t, e) => {
+  const n = ac[t], a = `${x}/${n}`;
   let o;
   try {
-    o = await et(r, a, e);
+    o = await Z(r, a, e);
   } catch (c) {
     return e.warn("Failed to read .luie world document for sync; skipping doc", {
       projectPath: r,
@@ -4462,17 +4478,17 @@ const J = new Hi(), Xn = () => ({
   }
   if (o === null)
     return null;
-  const s = vn(o);
+  const s = Bn(o);
   return s === null ? (e.warn("Failed to parse .luie world document for sync; skipping doc", {
     projectPath: r,
     entryPath: a,
     docType: t
   }), null) : s;
-}, nc = (r, t, e, n, a) => {
-  const o = Bn(n);
+}, pc = (r, t, e, n, a) => {
+  const o = Yn(n);
   for (const s of o.memos)
     r.memos.push({
-      id: s.id || X(),
+      id: s.id || Y(),
       userId: t,
       projectId: e,
       title: s.title || "Memo",
@@ -4480,14 +4496,14 @@ const J = new Hi(), Xn = () => ({
       tags: s.tags,
       updatedAt: s.updatedAt || a
     });
-}, ac = async (r) => {
-  for (const e of Ki) {
-    const n = await ar(
+}, uc = async (r) => {
+  for (const e of nc) {
+    const n = await dr(
       r.projectPath,
       e.docType,
       r.logger
     );
-    n && qr(
+    n && Zr(
       r.bundle,
       r.userId,
       r.projectId,
@@ -4496,51 +4512,51 @@ const J = new Hi(), Xn = () => ({
       r.updatedAtFallback
     );
   }
-  const t = await ar(
+  const t = await dr(
     r.projectPath,
     "scrap",
     r.logger
   );
-  U(t) && (qr(
+  v(t) && (Zr(
     r.bundle,
     r.userId,
     r.projectId,
     "scrap",
     t,
     r.updatedAtFallback
-  ), nc(
+  ), pc(
     r.bundle,
     r.userId,
     r.projectId,
     t,
     r.updatedAtFallback
   ));
-}, oc = async (r, t, e, n) => {
-  const a = Qi(r, t, e);
+}, hc = async (r, t, e, n) => {
+  const a = sc(r, t, e);
   if (!a) return;
   const { projectId: o, projectPath: s, projectUpdatedAt: c } = a;
-  if (Zi(
+  if (ic(
     r,
     t,
     o,
     Array.isArray(e.chapters) ? e.chapters : []
-  ), tc(
+  ), cc(
     r,
     t,
     o,
     Array.isArray(e.characters) ? e.characters : []
-  ), ec(
+  ), dc(
     r,
     t,
     o,
     Array.isArray(e.terms) ? e.terms : []
-  ), s && s.toLowerCase().endsWith(K))
+  ), s && s.toLowerCase().endsWith(X))
     try {
-      const d = z(
+      const d = K(
         s,
         "projectPath"
       );
-      await ac({
+      await uc({
         bundle: r,
         userId: t,
         projectId: o,
@@ -4555,27 +4571,27 @@ const J = new Hi(), Xn = () => ({
         error: d
       });
     }
-}, sc = async (r) => {
-  const t = Xn();
+}, fc = async (r) => {
+  const t = Qn();
   for (const e of r.projectRows)
-    await oc(
+    await hc(
       t,
       r.userId,
       e,
       r.logger
     );
-  return rc(
+  return lc(
     t,
     r.userId,
     r.pendingProjectDeletes
   ), t;
-}, qn = async (r, t, e) => {
-  const n = Ji.filter(
+}, Zn = async (r, t, e) => {
+  const n = oc.filter(
     (a) => !r.has(a)
   );
   n.length !== 0 && await Promise.all(
     n.map(async (a) => {
-      const o = await ar(
+      const o = await dr(
         t,
         a,
         e
@@ -4583,7 +4599,7 @@ const J = new Hi(), Xn = () => ({
       o !== null && r.set(a, o);
     })
   );
-}, Kr = (r) => {
+}, tn = (r) => {
   if (!r) return;
   const t = Object.entries(r);
   if (t.length !== 0)
@@ -4596,7 +4612,7 @@ const J = new Hi(), Xn = () => ({
         }
       ])
     );
-}, ic = (r, t) => {
+}, gc = (r, t) => {
   const e = { ...r ?? {} };
   for (const n of t.items ?? [])
     e[n.projectId] = {
@@ -4605,7 +4621,7 @@ const J = new Hi(), Xn = () => ({
       reason: "SYNC_CONFLICT_DETECTED"
     };
   return Object.keys(e).length > 0 ? e : void 0;
-}, Kn = (r, t) => {
+}, ta = (r, t) => {
   if (!r) return r;
   const e = Object.fromEntries(
     Object.entries(r).map(([n, a]) => [
@@ -4618,7 +4634,7 @@ const J = new Hi(), Xn = () => ({
     ])
   );
   return Object.keys(e).length > 0 ? e : void 0;
-}, cc = (r, t, e, n) => {
+}, Ec = (r, t, e, n) => {
   const a = {
     ...r.projectLastSyncedAtByProjectId ?? {}
   };
@@ -4634,17 +4650,17 @@ const J = new Hi(), Xn = () => ({
   for (const o of t.tombstones)
     o.entityType === "project" && (delete a[o.entityId], delete a[o.projectId]);
   return Object.keys(a).length > 0 ? a : void 0;
-}, dc = (r) => {
+}, mc = (r) => {
   const t = /* @__PURE__ */ new Set();
   for (const e of r.projects)
     e.deletedAt && t.add(e.id);
   for (const e of r.tombstones)
     e.entityType === "project" && (t.add(e.entityId), t.add(e.projectId));
   return t;
-}, Vr = (r, t) => {
+}, en = (r, t) => {
   for (const e of t)
     delete r[e];
-}, lc = (r, t, e, n) => {
+}, Ac = (r, t, e, n) => {
   const a = /* @__PURE__ */ new Set();
   for (const o of t.projects)
     o.deletedAt || e.has(o.id) || (a.add(o.id), r[o.id] = {
@@ -4653,58 +4669,58 @@ const J = new Hi(), Xn = () => ({
       capturedAt: n
     });
   return a;
-}, pc = (r, t, e, n, a) => {
+}, yc = (r, t, e, n, a) => {
   for (const o of t.chapters) {
     if (o.deletedAt || e.has(o.projectId) || !n.has(o.projectId)) continue;
     const s = r[o.projectId];
     s && (s.chapter[o.id] = o.updatedAt, s.capturedAt = a);
   }
-}, uc = (r, t, e, n, a) => {
+}, Sc = (r, t, e, n, a) => {
   for (const o of t.memos) {
     if (o.deletedAt || e.has(o.projectId) || !n.has(o.projectId)) continue;
     const s = r[o.projectId];
     s && (s.memo[o.id] = o.updatedAt, s.capturedAt = a);
   }
-}, hc = (r, t, e, n) => {
+}, Tc = (r, t, e, n) => {
   const a = {
     ...r.entityBaselinesByProjectId ?? {}
   };
-  Vr(a, n);
-  const o = dc(t);
-  Vr(a, Array.from(o));
-  const s = lc(
+  en(a, n);
+  const o = mc(t);
+  en(a, Array.from(o));
+  const s = Ac(
     a,
     t,
     o,
     e
   );
-  return pc(a, t, o, s, e), uc(a, t, o, s, e), Object.keys(a).length > 0 ? a : void 0;
-}, fc = async (r) => {
+  return yc(a, t, o, s, e), Sc(a, t, o, s, e), Object.keys(a).length > 0 ? a : void 0;
+}, wc = async (r) => {
   const t = (o) => {
     o && _.setSyncSettings({
       accessTokenCipher: o
     });
-  }, e = r.syncSettings.expiresAt ? Date.parse(r.syncSettings.expiresAt) <= Date.now() + 6e4 : !0, n = J.getAccessToken(r.syncSettings);
+  }, e = r.syncSettings.expiresAt ? Date.parse(r.syncSettings.expiresAt) <= Date.now() + 6e4 : !0, n = V.getAccessToken(r.syncSettings);
   if (n.errorCode && r.isAuthFatalMessage(n.errorCode))
     throw new Error(n.errorCode);
   t(n.migratedCipher);
   let a = n.token;
   if (e || !a) {
-    const o = J.getRefreshToken(r.syncSettings);
+    const o = V.getRefreshToken(r.syncSettings);
     if (o.errorCode && r.isAuthFatalMessage(o.errorCode))
       throw new Error(o.errorCode);
     if (o.migratedCipher && _.setSyncSettings({
       refreshTokenCipher: o.migratedCipher
     }), !o.token)
       throw new Error("SYNC_AUTH_REFRESH_UNAVAILABLE");
-    const s = await J.refreshSession(r.syncSettings), c = _.setSyncSettings({
+    const s = await V.refreshSession(r.syncSettings), c = _.setSyncSettings({
       provider: s.provider,
       userId: s.userId,
       email: s.email,
       expiresAt: s.expiresAt,
       accessTokenCipher: s.accessTokenCipher,
       refreshTokenCipher: s.refreshTokenCipher
-    }), d = J.getAccessToken(c);
+    }), d = V.getAccessToken(c);
     if (d.errorCode && r.isAuthFatalMessage(d.errorCode))
       throw new Error(d.errorCode);
     t(d.migratedCipher), a = d.token;
@@ -4712,20 +4728,20 @@ const J = new Hi(), Xn = () => ({
   if (!a)
     throw new Error("SYNC_ACCESS_TOKEN_UNAVAILABLE");
   return a;
-}, gc = (r) => {
+}, _c = (r) => {
   const t = /* @__PURE__ */ new Set();
   for (const e of r.projects)
     e.deletedAt && t.add(e.id);
   for (const e of r.tombstones)
     e.entityType === "project" && (t.add(e.entityId), t.add(e.projectId));
   return t;
-}, Ec = async (r, t) => {
+}, Ic = async (r, t) => {
   for (const e of t)
     (await r.project.findUnique({
       where: { id: e },
       select: { id: !0 }
     }))?.id && await r.project.delete({ where: { id: e } });
-}, mc = async (r, t, e) => {
+}, Pc = async (r, t, e) => {
   for (const n of t) {
     if (n.deletedAt || e.has(n.id)) continue;
     if ((await r.project.findUnique({
@@ -4752,13 +4768,13 @@ const J = new Hi(), Xn = () => ({
         settings: {
           create: {
             autoSave: !0,
-            autoSaveInterval: Ee
+            autoSaveInterval: ye
           }
         }
       }
     });
   }
-}, Ac = async (r, t) => {
+}, Cc = async (r, t) => {
   const e = await r.chapter.findUnique({
     where: { id: t.id },
     select: { id: !0 }
@@ -4784,7 +4800,7 @@ const J = new Hi(), Xn = () => ({
       createdAt: new Date(t.createdAt)
     }
   });
-}, yc = async (r, t, e) => {
+}, Rc = async (r, t, e) => {
   for (const n of t) {
     if (e.has(n.projectId)) continue;
     const a = await r.character.findUnique({
@@ -4813,7 +4829,7 @@ const J = new Hi(), Xn = () => ({
       }
     });
   }
-}, Sc = async (r, t, e) => {
+}, Dc = async (r, t, e) => {
   for (const n of t) {
     if (e.has(n.projectId)) continue;
     const a = await r.term.findUnique({
@@ -4843,7 +4859,7 @@ const J = new Hi(), Xn = () => ({
       }
     });
   }
-}, Tc = async (r, t, e) => {
+}, Nc = async (r, t, e) => {
   for (const n of t) {
     if (n.entityType !== "chapter" || e.has(n.projectId)) continue;
     const a = await r.chapter.findUnique({
@@ -4858,28 +4874,28 @@ const J = new Hi(), Xn = () => ({
       }
     });
   }
-}, wc = /* @__PURE__ */ new Set(["draft", "working", "locked"]), Ut = (r, t, e, n) => {
+}, Lc = /* @__PURE__ */ new Set(["draft", "working", "locked"]), vt = (r, t, e, n) => {
   if (typeof e != "string")
     return e;
-  const a = vn(e);
+  const a = Bn(e);
   return a !== null ? a : (n.warn("Invalid sync world document payload string; using default payload", {
     projectId: r,
     docType: t
   }), null);
-}, _c = (r, t, e) => {
-  const n = Ut(r, "synopsis", t, e);
-  if (!U(n))
+}, Oc = (r, t, e) => {
+  const n = vt(r, "synopsis", t, e);
+  if (!v(n))
     return { synopsis: "", status: "draft" };
-  const a = n.status, o = typeof a == "string" && wc.has(a) ? a : "draft", s = {
+  const a = n.status, o = typeof a == "string" && Lc.has(a) ? a : "draft", s = {
     synopsis: typeof n.synopsis == "string" ? n.synopsis : "",
     status: o
   };
   return typeof n.genre == "string" && (s.genre = n.genre), typeof n.targetAudience == "string" && (s.targetAudience = n.targetAudience), typeof n.logline == "string" && (s.logline = n.logline), typeof n.updatedAt == "string" && (s.updatedAt = n.updatedAt), s;
-}, Ic = (r, t, e) => {
-  const n = Ut(r, "plot", t, e);
-  return U(n) ? {
-    columns: (Array.isArray(n.columns) ? n.columns : []).filter((s) => U(s)).map((s, c) => {
-      const l = (Array.isArray(s.cards) ? s.cards : []).filter((i) => U(i)).map((i, p) => ({
+}, jc = (r, t, e) => {
+  const n = vt(r, "plot", t, e);
+  return v(n) ? {
+    columns: (Array.isArray(n.columns) ? n.columns : []).filter((s) => v(s)).map((s, c) => {
+      const l = (Array.isArray(s.cards) ? s.cards : []).filter((i) => v(i)).map((i, p) => ({
         id: typeof i.id == "string" && i.id.length > 0 ? i.id : `card-${c}-${p}`,
         content: typeof i.content == "string" ? i.content : ""
       }));
@@ -4891,36 +4907,36 @@ const J = new Hi(), Xn = () => ({
     }),
     updatedAt: typeof n.updatedAt == "string" ? n.updatedAt : void 0
   } : { columns: [] };
-}, Pc = (r, t, e) => {
-  const n = Ut(r, "drawing", t, e);
-  return U(n) ? {
-    paths: Un(n.paths),
-    tool: Cs(n.tool),
-    iconType: Rs(n.iconType),
+}, bc = (r, t, e) => {
+  const n = vt(r, "drawing", t, e);
+  return v(n) ? {
+    paths: $n(n.paths),
+    tool: Fs(n.tool),
+    iconType: vs(n.iconType),
     color: typeof n.color == "string" ? n.color : void 0,
     lineWidth: typeof n.lineWidth == "number" ? n.lineWidth : void 0,
     updatedAt: typeof n.updatedAt == "string" ? n.updatedAt : void 0
   } : { paths: [] };
-}, Cc = (r, t, e) => {
-  const n = Ut(r, "mindmap", t, e);
-  return U(n) ? {
-    nodes: Mn(n.nodes),
-    edges: kn(n.edges),
+}, Fc = (r, t, e) => {
+  const n = vt(r, "mindmap", t, e);
+  return v(n) ? {
+    nodes: xn(n.nodes),
+    edges: Gn(n.edges),
     updatedAt: typeof n.updatedAt == "string" ? n.updatedAt : void 0
   } : { nodes: [], edges: [] };
-}, Rc = (r, t, e) => {
-  const n = Ut(r, "graph", t, e);
-  if (!U(n))
+}, vc = (r, t, e) => {
+  const n = vt(r, "graph", t, e);
+  if (!v(n))
     return { nodes: [], edges: [] };
-  const a = Array.isArray(n.nodes) ? n.nodes.filter((s) => U(s)) : [], o = Array.isArray(n.edges) ? n.edges.filter((s) => U(s)) : [];
+  const a = Array.isArray(n.nodes) ? n.nodes.filter((s) => v(s)) : [], o = Array.isArray(n.edges) ? n.edges.filter((s) => v(s)) : [];
   return {
     nodes: a,
     edges: o,
     updatedAt: typeof n.updatedAt == "string" ? n.updatedAt : void 0
   };
-}, Nc = (r, t, e, n, a) => {
-  const o = Ut(r, "scrap", t, a);
-  if (!U(o))
+}, Uc = (r, t, e, n, a) => {
+  const o = vt(r, "scrap", t, a);
+  if (!v(o))
     return {
       memos: e.map((c) => ({
         id: c.id,
@@ -4931,12 +4947,12 @@ const J = new Hi(), Xn = () => ({
       })),
       updatedAt: n
     };
-  const s = Bn(o);
+  const s = Yn(o);
   return {
     memos: s.memos,
     updatedAt: typeof s.updatedAt == "string" ? s.updatedAt : n
   };
-}, Dc = (r) => typeof r == "string" ? r : null, Lc = (r) => [...r].sort((t, e) => Date.parse(e.updatedAt) - Date.parse(t.updatedAt)), Vn = async (r) => {
+}, Mc = (r) => typeof r == "string" ? r : null, kc = (r) => [...r].sort((t, e) => Date.parse(e.updatedAt) - Date.parse(t.updatedAt)), ea = async (r) => {
   const {
     bundle: t,
     projectId: e,
@@ -4946,23 +4962,23 @@ const J = new Hi(), Xn = () => ({
     logger: s
   } = r, c = t.projects.find((y) => y.id === e);
   if (!c || c.deletedAt) return null;
-  const d = t.chapters.filter((y) => y.projectId === e && !y.deletedAt).sort((y, re) => y.order - re.order), l = t.characters.filter((y) => y.projectId === e && !y.deletedAt).map((y) => ({
+  const d = t.chapters.filter((y) => y.projectId === e && !y.deletedAt).sort((y, ee) => y.order - ee.order), l = t.characters.filter((y) => y.projectId === e && !y.deletedAt).map((y) => ({
     id: y.id,
     name: y.name,
     description: y.description ?? void 0,
     firstAppearance: y.firstAppearance ?? void 0,
     attributes: y.attributes ?? void 0
-  })), i = t.terms.filter((y) => y.projectId === e && !y.deletedAt).sort((y, re) => y.order - re.order).map((y) => ({
+  })), i = t.terms.filter((y) => y.projectId === e && !y.deletedAt).sort((y, ee) => y.order - ee.order).map((y) => ({
     id: y.id,
     term: y.term,
     definition: y.definition ?? void 0,
     category: y.category ?? void 0,
     firstAppearance: y.firstAppearance ?? void 0
   })), p = /* @__PURE__ */ new Map();
-  for (const y of Lc(t.worldDocuments))
+  for (const y of kc(t.worldDocuments))
     y.projectId !== e || y.deletedAt || p.has(y.docType) || p.set(y.docType, y.payload);
   await o(p, n);
-  const A = t.memos.filter((y) => y.projectId === e && !y.deletedAt).map((y) => ({
+  const m = t.memos.filter((y) => y.projectId === e && !y.deletedAt).map((y) => ({
     id: y.id,
     title: y.title,
     content: y.content,
@@ -4974,50 +4990,50 @@ const J = new Hi(), Xn = () => ({
     content: y.content,
     description: y.description ?? void 0,
     createdAt: y.createdAt.toISOString()
-  })), g = _c(
+  })), g = Oc(
     e,
     p.get("synopsis"),
     s
-  ), m = Ic(
+  ), A = jc(
     e,
     p.get("plot"),
     s
-  ), T = Pc(
+  ), S = bc(
     e,
     p.get("drawing"),
     s
-  ), I = Cc(
+  ), I = Fc(
     e,
     p.get("mindmap"),
     s
-  ), b = Rc(
+  ), j = vc(
     e,
     p.get("graph"),
     s
-  ), wt = Nc(
+  ), St = Uc(
     e,
     p.get("scrap"),
-    A,
+    m,
     c.updatedAt,
     s
-  ), Mt = d.map((y) => ({
+  ), Ut = d.map((y) => ({
     id: y.id,
     title: y.title,
     order: y.order,
-    file: `${vt}/${y.id}${we}`,
+    file: `${Ft}/${y.id}${Pe}`,
     updatedAt: y.updatedAt
   }));
   return {
     meta: {
       format: Dt,
-      container: Lt,
-      version: Ot,
+      container: Nt,
+      version: Lt,
       projectId: c.id,
       title: c.title,
       description: c.description ?? void 0,
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
-      chapters: Mt
+      chapters: Ut
     },
     chapters: d.map((y) => ({
       id: y.id,
@@ -5026,15 +5042,15 @@ const J = new Hi(), Xn = () => ({
     characters: l,
     terms: i,
     synopsis: g,
-    plot: m,
-    drawing: T,
+    plot: A,
+    drawing: S,
     mindmap: I,
-    graph: b,
-    memos: wt,
+    graph: j,
+    memos: St,
     snapshots: w
   };
-}, Oc = async (r) => {
-  const { bundle: t, hydrateMissingWorldDocsFromPackage: e, logger: n } = r, a = r.buildProjectPackagePayload ?? Vn, o = [], s = [];
+}, Wc = async (r) => {
+  const { bundle: t, hydrateMissingWorldDocsFromPackage: e, logger: n } = r, a = r.buildProjectPackagePayload ?? ea, o = [], s = [];
   for (const c of t.projects) {
     const d = await h.getClient().project.findUnique({
       where: { id: c.id },
@@ -5051,17 +5067,17 @@ const J = new Hi(), Xn = () => ({
           }
         }
       }
-    }), l = Dc(d?.projectPath);
-    if (!l || !l.toLowerCase().endsWith(K))
+    }), l = Mc(d?.projectPath);
+    if (!l || !l.toLowerCase().endsWith(X))
       continue;
     let i;
     try {
-      i = z(l, "projectPath");
-    } catch (A) {
+      i = K(l, "projectPath");
+    } catch (m) {
       n.warn("Skipping .luie persistence for invalid projectPath", {
         projectId: c.id,
         projectPath: l,
-        error: A
+        error: m
       });
       continue;
     }
@@ -5075,27 +5091,27 @@ const J = new Hi(), Xn = () => ({
     });
     if (p)
       try {
-        await Er(i, p, n), s.push({
+        await Sr(i, p, n), s.push({
           projectId: c.id,
           projectPath: i
         });
-      } catch (A) {
+      } catch (m) {
         o.push(c.id), n.error("Failed to persist merged bundle into .luie package", {
           projectId: c.id,
           projectPath: i,
-          error: A
+          error: m
         });
       }
   }
   if (o.length > 0)
     throw new Error(`SYNC_LUIE_PERSIST_FAILED:${o.join(",")}`);
   return s;
-}, jc = async (r, t) => {
+}, Bc = async (r, t) => {
   if (r.length === 0) return [];
   const e = [];
   for (const n of r)
     try {
-      await F.openLuieProject(n.projectPath);
+      await b.openLuieProject(n.projectPath);
     } catch (a) {
       e.push(n.projectId), t.error("Failed to recover DB cache from persisted .luie package", {
         projectId: n.projectId,
@@ -5104,40 +5120,35 @@ const J = new Hi(), Xn = () => ({
       });
     }
   return e;
-}, bc = async (r) => Vn({
+}, $c = async (r) => ea({
   bundle: r.bundle,
   projectId: r.projectId,
   projectPath: r.projectPath,
   localSnapshots: r.localSnapshots,
   hydrateMissingWorldDocsFromPackage: r.hydrateMissingWorldDocsFromPackage,
   logger: r.logger
-}), Fc = async (r) => {
-  const t = await Oc({
+}), xc = async (r) => {
+  const t = await Wc({
     bundle: r.bundle,
     hydrateMissingWorldDocsFromPackage: r.hydrateMissingWorldDocsFromPackage,
     buildProjectPackagePayload: r.buildProjectPackagePayload,
     logger: r.logger
-  }), e = h.getClient(), n = gc(r.bundle);
+  }), e = h.getClient(), n = _c(r.bundle);
   try {
     await e.$transaction(async (a) => {
-      const o = a;
-      await Ec(o, n), await mc(
-        o,
+      await Ic(a, n), await Pc(
+        a,
         r.bundle.projects,
         n
       );
-      for (const s of r.bundle.chapters)
-        n.has(s.projectId) || await Ac(o, s);
-      await yc(
-        o,
+      for (const o of r.bundle.chapters)
+        n.has(o.projectId) || await Cc(a, o);
+      await Rc(
+        a,
         r.bundle.characters,
         n
-      ), await Sc(
-        o,
-        r.bundle.terms,
-        n
-      ), await Tc(
-        o,
+      ), await Dc(a, r.bundle.terms, n), await Nc(
+        a,
         r.bundle.tombstones,
         n
       );
@@ -5151,7 +5162,7 @@ const J = new Hi(), Xn = () => ({
         persistedProjectIds: o
       }
     );
-    const s = await jc(
+    const s = await Bc(
       t,
       r.logger
     );
@@ -5163,81 +5174,81 @@ const J = new Hi(), Xn = () => ({
       { cause: a }
     );
   }
-}, Jn = N("SyncRepository"), P = (r) => typeof r == "string" ? r : null, ee = (r, t) => typeof r == "string" && r.length > 0 ? r : t, Q = (r, t = (/* @__PURE__ */ new Date()).toISOString()) => typeof r == "string" && r.length > 0 ? r : r instanceof Date ? r.toISOString() : t, or = (r, t = 0) => typeof r == "number" && Number.isFinite(r) ? r : t, vc = (r) => Array.isArray(r) ? r.filter((t) => typeof t == "string") : [], Jr = (r) => !!(r && typeof r == "object" && !Array.isArray(r)), Uc = (r) => {
+}, ra = D("SyncRepository"), P = (r) => typeof r == "string" ? r : null, te = (r, t) => typeof r == "string" && r.length > 0 ? r : t, q = (r, t = (/* @__PURE__ */ new Date()).toISOString()) => typeof r == "string" && r.length > 0 ? r : r instanceof Date ? r.toISOString() : t, lr = (r, t = 0) => typeof r == "number" && Number.isFinite(r) ? r : t, Gc = (r) => Array.isArray(r) ? r.filter((t) => typeof t == "string") : [], rn = (r) => !!(r && typeof r == "object" && !Array.isArray(r)), Hc = (r) => {
   try {
     return JSON.parse(r);
   } catch {
     return r;
   }
-}, Ar = (r) => typeof r == "string" ? Uc(r) : r ?? null, ht = (r) => {
+}, wr = (r) => typeof r == "string" ? Hc(r) : r ?? null, lt = (r) => {
   const t = {};
   for (const [e, n] of Object.entries(r))
     n !== void 0 && (t[e] = n);
   return t;
-}, Qr = async (r, t, e) => {
+}, nn = async (r, t, e) => {
   const n = await e.text();
   return e.status === 404 && n.includes("PGRST205") ? new Error(`SUPABASE_SCHEMA_MISSING:${t}`) : new Error(`SUPABASE_${r}_FAILED:${t}:${e.status}:${n}`);
-}, Mc = (r) => {
+}, Yc = (r) => {
   const t = P(r.id), e = P(r.user_id);
   return !t || !e ? null : {
     id: t,
     userId: e,
-    title: ee(r.title, "Untitled"),
+    title: te(r.title, "Untitled"),
     description: P(r.description),
-    createdAt: Q(r.created_at),
-    updatedAt: Q(r.updated_at),
+    createdAt: q(r.created_at),
+    updatedAt: q(r.updated_at),
     deletedAt: P(r.deleted_at)
   };
-}, kc = (r) => {
+}, zc = (r) => {
   const t = P(r.id), e = P(r.user_id), n = P(r.project_id);
   return !t || !e || !n ? null : {
     id: t,
     userId: e,
     projectId: n,
-    title: ee(r.title, "Untitled"),
+    title: te(r.title, "Untitled"),
     content: P(r.content) ?? "",
     synopsis: P(r.synopsis),
-    order: or(r.order),
-    wordCount: or(r.word_count),
-    createdAt: Q(r.created_at),
-    updatedAt: Q(r.updated_at),
+    order: lr(r.order),
+    wordCount: lr(r.word_count),
+    createdAt: q(r.created_at),
+    updatedAt: q(r.updated_at),
     deletedAt: P(r.deleted_at)
   };
-}, Wc = (r) => {
+}, Xc = (r) => {
   const t = P(r.id), e = P(r.user_id), n = P(r.project_id);
   return !t || !e || !n ? null : {
     id: t,
     userId: e,
     projectId: n,
-    name: ee(r.name, "Character"),
+    name: te(r.name, "Character"),
     description: P(r.description),
     firstAppearance: P(r.first_appearance),
-    attributes: Ar(r.attributes),
-    createdAt: Q(r.created_at),
-    updatedAt: Q(r.updated_at),
+    attributes: wr(r.attributes),
+    createdAt: q(r.created_at),
+    updatedAt: q(r.updated_at),
     deletedAt: P(r.deleted_at)
   };
-}, Bc = (r) => {
+}, Kc = (r) => {
   const t = P(r.id), e = P(r.user_id), n = P(r.project_id);
   return !t || !e || !n ? null : {
     id: t,
     userId: e,
     projectId: n,
-    term: ee(r.term, "Term"),
+    term: te(r.term, "Term"),
     definition: P(r.definition),
     category: P(r.category),
-    order: or(r.order),
+    order: lr(r.order),
     firstAppearance: P(r.first_appearance),
-    createdAt: Q(r.created_at),
-    updatedAt: Q(r.updated_at),
+    createdAt: q(r.created_at),
+    updatedAt: q(r.updated_at),
     deletedAt: P(r.deleted_at)
   };
-}, $c = (r) => {
+}, Vc = (r) => {
   const t = P(r.id), e = P(r.user_id), n = P(r.project_id), a = P(r.doc_type);
   if (!t || !e || !n || !a || a !== "synopsis" && a !== "plot" && a !== "drawing" && a !== "mindmap" && a !== "scrap" && a !== "graph")
     return null;
-  const o = Ar(r.payload), s = Jr(o) ? o : {};
-  return Jr(o) || Jn.warn("Invalid world document payload from sync source; using empty payload", {
+  const o = wr(r.payload), s = rn(o) ? o : {};
+  return rn(o) || ra.warn("Invalid world document payload from sync source; using empty payload", {
     docType: a,
     payloadType: o === null ? "null" : typeof o
   }), {
@@ -5246,22 +5257,22 @@ const J = new Hi(), Xn = () => ({
     projectId: n,
     docType: a,
     payload: s,
-    updatedAt: Q(r.updated_at),
+    updatedAt: q(r.updated_at),
     deletedAt: P(r.deleted_at)
   };
-}, xc = (r) => {
+}, qc = (r) => {
   const t = P(r.id), e = P(r.user_id), n = P(r.project_id);
   return !t || !e || !n ? null : {
     id: t,
     userId: e,
     projectId: n,
-    title: ee(r.title, "Memo"),
+    title: te(r.title, "Memo"),
     content: P(r.content) ?? "",
-    tags: vc(r.tags),
-    updatedAt: Q(r.updated_at),
+    tags: Gc(r.tags),
+    updatedAt: q(r.updated_at),
     deletedAt: P(r.deleted_at)
   };
-}, Gc = (r) => {
+}, Jc = (r) => {
   const t = P(r.id), e = P(r.user_id), n = P(r.project_id), a = P(r.entity_type), o = P(r.entity_id);
   return !t || !e || !n || !a || !o ? null : {
     id: t,
@@ -5269,16 +5280,16 @@ const J = new Hi(), Xn = () => ({
     projectId: n,
     entityType: a,
     entityId: o,
-    deletedAt: Q(r.deleted_at),
-    updatedAt: Q(r.updated_at)
+    deletedAt: q(r.deleted_at),
+    updatedAt: q(r.updated_at)
   };
 };
-class Hc {
+class Qc {
   isConfigured() {
-    return lt() !== null;
+    return it() !== null;
   }
   async fetchBundle(t, e) {
-    const n = Xn(), [
+    const n = Qn(), [
       a,
       o,
       s,
@@ -5295,11 +5306,11 @@ class Hc {
       this.fetchTableRaw("memos", t, e),
       this.fetchTableRaw("tombstones", t, e)
     ]);
-    return n.projects = a.map(Mc).filter((p) => p !== null), n.chapters = o.map(kc).filter((p) => p !== null), n.characters = s.map(Wc).filter((p) => p !== null), n.terms = c.map(Bc).filter((p) => p !== null), n.worldDocuments = d.map($c).filter((p) => p !== null), n.memos = l.map(xc).filter((p) => p !== null), n.tombstones = i.map(Gc).filter((p) => p !== null), n;
+    return n.projects = a.map(Yc).filter((p) => p !== null), n.chapters = o.map(zc).filter((p) => p !== null), n.characters = s.map(Xc).filter((p) => p !== null), n.terms = c.map(Kc).filter((p) => p !== null), n.worldDocuments = d.map(Vc).filter((p) => p !== null), n.memos = l.map(qc).filter((p) => p !== null), n.tombstones = i.map(Jc).filter((p) => p !== null), n;
   }
   async upsertBundle(t, e) {
     const n = e.projects.map(
-      (i) => ht({
+      (i) => lt({
         id: i.id,
         user_id: i.userId,
         title: i.title,
@@ -5309,7 +5320,7 @@ class Hc {
         deleted_at: i.deletedAt ?? null
       })
     ), a = e.chapters.map(
-      (i) => ht({
+      (i) => lt({
         id: i.id,
         user_id: i.userId,
         project_id: i.projectId,
@@ -5323,20 +5334,20 @@ class Hc {
         deleted_at: i.deletedAt ?? null
       })
     ), o = e.characters.map(
-      (i) => ht({
+      (i) => lt({
         id: i.id,
         user_id: i.userId,
         project_id: i.projectId,
         name: i.name,
         description: i.description ?? null,
         first_appearance: i.firstAppearance ?? null,
-        attributes: Ar(i.attributes),
+        attributes: wr(i.attributes),
         created_at: i.createdAt,
         updated_at: i.updatedAt,
         deleted_at: i.deletedAt ?? null
       })
     ), s = e.terms.map(
-      (i) => ht({
+      (i) => lt({
         id: i.id,
         user_id: i.userId,
         project_id: i.projectId,
@@ -5350,7 +5361,7 @@ class Hc {
         deleted_at: i.deletedAt ?? null
       })
     ), c = e.worldDocuments.map(
-      (i) => ht({
+      (i) => lt({
         id: i.id,
         user_id: i.userId,
         project_id: i.projectId,
@@ -5360,7 +5371,7 @@ class Hc {
         deleted_at: i.deletedAt ?? null
       })
     ), d = e.memos.map(
-      (i) => ht({
+      (i) => lt({
         id: i.id,
         user_id: i.userId,
         project_id: i.projectId,
@@ -5371,7 +5382,7 @@ class Hc {
         deleted_at: i.deletedAt ?? null
       })
     ), l = e.tombstones.map(
-      (i) => ht({
+      (i) => lt({
         id: i.id,
         user_id: i.userId,
         project_id: i.projectId,
@@ -5384,7 +5395,7 @@ class Hc {
     await this.upsertTable("projects", t, n, "id,user_id"), await this.upsertTable("chapters", t, a, "id,user_id"), await this.upsertTable("characters", t, o, "id,user_id"), await this.upsertTable("terms", t, s, "id,user_id"), await this.upsertTable("world_documents", t, c, "id,user_id"), await this.upsertTable("memos", t, d, "id,user_id"), await this.upsertTable("tombstones", t, l, "id,user_id");
   }
   async fetchTableRaw(t, e, n) {
-    const a = lt();
+    const a = it();
     if (!a)
       throw new Error(
         "SUPABASE_NOT_CONFIGURED: runtime configuration is not completed"
@@ -5399,8 +5410,8 @@ class Hc {
       }
     });
     if (!s.ok) {
-      const d = await Qr("FETCH", t, s);
-      throw Jn.warn("Failed to fetch sync table", {
+      const d = await nn("FETCH", t, s);
+      throw ra.warn("Failed to fetch sync table", {
         table: t,
         status: s.status,
         error: d.message
@@ -5411,7 +5422,7 @@ class Hc {
   }
   async upsertTable(t, e, n, a) {
     if (n.length === 0) return;
-    const o = Xt(), s = await fetch(
+    const o = zt(), s = await fetch(
       `${o.url}/rest/v1/${t}?on_conflict=${encodeURIComponent(a)}`,
       {
         method: "POST",
@@ -5425,10 +5436,10 @@ class Hc {
       }
     );
     if (!s.ok)
-      throw await Qr("UPSERT", t, s);
+      throw await nn("UPSERT", t, s);
   }
 }
-const Zr = new Hc(), Yc = async (r) => {
+const an = new Qc(), Zc = async (r) => {
   r.updateStatus({
     mode: "syncing",
     inFlight: !0,
@@ -5440,22 +5451,22 @@ const Zr = new Hc(), Yc = async (r) => {
     if (!e)
       throw new Error("SYNC_USER_ID_MISSING");
     const n = r.normalizePendingProjectDeletes(t.pendingProjectDeletes).map((g) => g.projectId), a = await r.ensureAccessToken(t), [o, s] = await Promise.all([
-      Zr.fetchBundle(a, e),
+      an.fetchBundle(a, e),
       r.buildLocalBundle(e)
-    ]), { merged: c, conflicts: d } = qi(s, o, {
+    ]), { merged: c, conflicts: d } = rc(s, o, {
       baselinesByProjectId: t.entityBaselinesByProjectId,
       conflictResolutions: t.pendingConflictResolutions
     });
     if (d.total > 0) {
       const g = new Set(
-        (d.items ?? []).map((b) => `${b.type}:${b.id}`)
-      ), m = Object.fromEntries(
+        (d.items ?? []).map((j) => `${j.type}:${j.id}`)
+      ), A = Object.fromEntries(
         Object.entries(t.pendingConflictResolutions ?? {}).filter(
-          (b) => g.has(b[0])
+          (j) => g.has(j[0])
         )
       );
       _.setSyncSettings({
-        pendingConflictResolutions: Object.keys(m).length > 0 ? m : void 0,
+        pendingConflictResolutions: Object.keys(A).length > 0 ? A : void 0,
         lastError: void 0
       });
       const I = {
@@ -5474,8 +5485,8 @@ const Zr = new Hc(), Yc = async (r) => {
         inFlight: !1,
         queued: !1,
         conflicts: d,
-        projectStateById: ic(
-          Kr(t.projectLastSyncedAtByProjectId),
+        projectStateById: gc(
+          tn(t.projectLastSyncedAtByProjectId),
           d
         ),
         lastRun: I
@@ -5487,18 +5498,18 @@ const Zr = new Hc(), Yc = async (r) => {
         conflicts: d
       };
     }
-    await r.applyMergedBundleToLocal(c), await Zr.upsertBundle(a, c);
-    const l = (/* @__PURE__ */ new Date()).toISOString(), i = cc(
+    await r.applyMergedBundleToLocal(c), await an.upsertBundle(a, c);
+    const l = (/* @__PURE__ */ new Date()).toISOString(), i = Ec(
       t,
       c,
       l,
       n
-    ), p = hc(
+    ), p = Tc(
       t,
       c,
       l,
       n
-    ), A = _.setSyncSettings({
+    ), m = _.setSyncSettings({
       lastSyncedAt: l,
       lastError: void 0,
       projectLastSyncedAtByProjectId: i,
@@ -5515,13 +5526,13 @@ const Zr = new Hc(), Yc = async (r) => {
       syncedAt: l
     };
     return r.updateStatus({
-      ...r.toSyncStatusFromSettings(A, r.getStatus()),
+      ...r.toSyncStatusFromSettings(m, r.getStatus()),
       mode: "idle",
       health: "connected",
       degradedReason: void 0,
       inFlight: !1,
       conflicts: d,
-      projectStateById: Kr(i),
+      projectStateById: tn(i),
       lastRun: {
         at: l,
         pulled: w.pulled,
@@ -5553,7 +5564,7 @@ const Zr = new Hc(), Yc = async (r) => {
         degradedReason: void 0,
         inFlight: !1,
         queued: !1,
-        projectStateById: Kn(r.getStatus().projectStateById, e),
+        projectStateById: ta(r.getStatus().projectStateById, e),
         lastRun: a
       });
     }
@@ -5565,18 +5576,18 @@ const Zr = new Hc(), Yc = async (r) => {
       conflicts: r.getStatus().conflicts
     };
   }
-}, tn = (r, t) => {
+}, on = (r, t) => {
   t && _.setSyncSettings(
     r === "access" ? { accessTokenCipher: t } : { refreshTokenCipher: t }
   );
-}, zc = (r, t) => {
-  const e = J.getAccessToken(r);
+}, td = (r, t) => {
+  const e = V.getAccessToken(r);
   if (e.errorCode && t(e.errorCode))
     return e.errorCode;
-  tn("access", e.migratedCipher);
-  const n = J.getRefreshToken(r);
-  return n.errorCode && t(n.errorCode) ? n.errorCode : (tn("refresh", n.migratedCipher), !!e.token || !!n.token ? null : e.errorCode ?? n.errorCode ?? "SYNC_ACCESS_TOKEN_UNAVAILABLE");
-}, Xc = async (r) => {
+  on("access", e.migratedCipher);
+  const n = V.getRefreshToken(r);
+  return n.errorCode && t(n.errorCode) ? n.errorCode : (on("refresh", n.migratedCipher), !!e.token || !!n.token ? null : e.errorCode ?? n.errorCode ?? "SYNC_ACCESS_TOKEN_UNAVAILABLE");
+}, ed = async (r) => {
   const e = await h.getClient().project.findMany({
     include: {
       chapters: !0,
@@ -5584,24 +5595,24 @@ const Zr = new Hc(), Yc = async (r) => {
       terms: !0
     }
   });
-  return await sc({
+  return await fc({
     userId: r.userId,
     pendingProjectDeletes: r.pendingProjectDeletes,
     projectRows: e,
     logger: r.logger
   });
-}, qc = async (r) => await bc({
+}, rd = async (r) => await $c({
   bundle: r.bundle,
   projectId: r.projectId,
   projectPath: r.projectPath,
   localSnapshots: r.localSnapshots,
-  hydrateMissingWorldDocsFromPackage: async (t, e) => await qn(
+  hydrateMissingWorldDocsFromPackage: async (t, e) => await Zn(
     t,
     e,
     r.logger
   ),
   logger: r.logger
-}), Kc = (r) => r.projects.length + r.chapters.length + r.characters.length + r.terms.length + r.worldDocuments.length + r.memos.length + r.snapshots.length + r.tombstones.length, Vc = 1500, en = {
+}), nd = (r) => r.projects.length + r.chapters.length + r.characters.length + r.terms.length + r.worldDocuments.length + r.memos.length + r.snapshots.length + r.tombstones.length, ad = 1500, sn = {
   connected: !1,
   autoSync: !0,
   mode: "idle",
@@ -5614,17 +5625,17 @@ const Zr = new Hc(), Yc = async (r) => {
     total: 0,
     items: []
   }
-}, Jc = [
+}, od = [
   "SYNC_ACCESS_TOKEN_UNAVAILABLE",
   "SYNC_AUTH_REFRESH_UNAVAILABLE",
   "SYNC_AUTH_REFRESH_FAILED",
   "SYNC_AUTH_INVALID_SESSION",
   "SYNC_TOKEN_DECRYPT_FAILED",
   "SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE"
-], Qc = (r) => {
+], sd = (r) => {
   const t = r instanceof Error ? r.message : String(r);
   return t.startsWith("SUPABASE_SCHEMA_MISSING:") ? `SYNC_REMOTE_SCHEMA_MISSING:${t.split(":")[1] ?? "unknown"}: apply supabase/migrations/20260219000000_luie_sync.sql to this Supabase project` : t;
-}, Oe = (r) => Jc.some((t) => r.includes(t)), It = (r, t) => ({
+}, Ue = (r) => od.some((t) => r.includes(t)), wt = (r, t) => ({
   ...t,
   connected: r.connected,
   provider: r.provider,
@@ -5637,14 +5648,14 @@ const Zr = new Hc(), Yc = async (r) => {
   projectLastSyncedAtByProjectId: r.projectLastSyncedAtByProjectId,
   health: r.connected ? t.health === "degraded" ? "degraded" : "connected" : "disconnected",
   degradedReason: r.connected && t.health === "degraded" ? t.degradedReason ?? r.lastError : void 0
-}), rn = (r) => Array.isArray(r) ? r.filter(
+}), cn = (r) => Array.isArray(r) ? r.filter(
   (t) => !!(t && typeof t.projectId == "string" && t.projectId.length > 0 && typeof t.deletedAt == "string" && t.deletedAt.length > 0)
 ).map((t) => ({
   projectId: t.projectId,
   deletedAt: t.deletedAt
-})) : [], ft = N("SyncService");
-class Qn {
-  status = en;
+})) : [], pt = D("SyncService");
+class na {
+  status = sn;
   inFlightPromise = null;
   queuedRun = !1;
   autoSyncTimer = null;
@@ -5653,25 +5664,25 @@ class Qn {
       lastError: t
     });
     this.updateStatus({
-      ...It(n, this.status),
+      ...wt(n, this.status),
       mode: "error",
       health: "degraded",
       degradedReason: t,
       inFlight: !1,
       queued: !1,
-      projectStateById: Kn(this.status.projectStateById, t),
+      projectStateById: ta(this.status.projectStateById, t),
       lastRun: e ?? this.status.lastRun
     });
   }
   initialize() {
     const t = _.getSyncSettings();
-    if (this.status = It(t, this.status), !t.connected && J.hasPendingAuthFlow() && (this.status = {
+    if (this.status = wt(t, this.status), !t.connected && V.hasPendingAuthFlow() && (this.status = {
       ...this.status,
       mode: "connecting"
     }), t.connected) {
-      const e = zc(
+      const e = td(
         t,
-        Oe
+        Ue
       );
       e && this.applyAuthFailureState(e);
     }
@@ -5683,7 +5694,7 @@ class Qn {
   async connectGoogle() {
     if (this.status.mode === "connecting")
       return this.status;
-    if (!J.isConfigured())
+    if (!V.isConfigured())
       return this.updateStatus({
         mode: "error",
         health: "disconnected",
@@ -5697,7 +5708,7 @@ class Qn {
       lastError: void 0
     });
     try {
-      return await J.startGoogleAuth(), this.status;
+      return await V.startGoogleAuth(), this.status;
     } catch (t) {
       const e = t instanceof Error ? t.message : String(t);
       return e.includes("SYNC_AUTH_FLOW_IN_PROGRESS") ? (this.updateStatus({
@@ -5721,7 +5732,7 @@ class Qn {
   }
   async handleOAuthCallback(t) {
     try {
-      const e = await J.completeOAuthCallback(t), n = _.getSyncSettings(), a = _.setSyncSettings({
+      const e = await V.completeOAuthCallback(t), n = _.getSyncSettings(), a = _.setSyncSettings({
         ...n,
         connected: !0,
         provider: e.provider,
@@ -5733,7 +5744,7 @@ class Qn {
         lastError: void 0
       });
       this.updateStatus({
-        ...It(a, this.status),
+        ...wt(a, this.status),
         mode: "idle",
         health: "connected",
         degradedReason: void 0
@@ -5750,7 +5761,7 @@ class Qn {
     this.autoSyncTimer && (clearTimeout(this.autoSyncTimer), this.autoSyncTimer = null), this.queuedRun = !1;
     const t = _.clearSyncSettings();
     return this.updateStatus({
-      ...It(t, en),
+      ...wt(t, sn),
       mode: "idle",
       health: "disconnected",
       degradedReason: void 0,
@@ -5767,10 +5778,10 @@ class Qn {
   }
   async setAutoSync(t) {
     const e = _.setSyncSettings({ autoSync: t });
-    return this.updateStatus(It(e, this.status)), this.status;
+    return this.updateStatus(wt(e, this.status)), this.status;
   }
   async resolveConflict(t) {
-    if (ft.info("Sync conflict resolution requested", {
+    if (pt.info("Sync conflict resolution requested", {
       type: t.type,
       id: t.id,
       resolution: t.resolution
@@ -5795,7 +5806,7 @@ class Qn {
   onLocalMutation(t) {
     !this.status.connected || !this.status.autoSync || (this.autoSyncTimer && clearTimeout(this.autoSyncTimer), this.autoSyncTimer = setTimeout(() => {
       this.autoSyncTimer = null, this.runNow("auto");
-    }, Vc));
+    }, ad));
   }
   async runNow(t = "manual") {
     if (!this.status.connected)
@@ -5814,7 +5825,7 @@ class Qn {
     return this.inFlightPromise = e, e;
   }
   async executeRun(t) {
-    return await Yc({
+    return await Zc({
       reason: t,
       getStatus: () => this.status,
       getQueuedRun: () => this.queuedRun,
@@ -5824,60 +5835,60 @@ class Qn {
       runQueuedSync: () => {
         this.runNow("queued");
       },
-      normalizePendingProjectDeletes: rn,
-      toSyncStatusFromSettings: It,
+      normalizePendingProjectDeletes: cn,
+      toSyncStatusFromSettings: wt,
       ensureAccessToken: async (e) => await this.ensureAccessToken(e),
       buildLocalBundle: async (e) => await this.buildLocalBundle(e),
       applyMergedBundleToLocal: async (e) => await this.applyMergedBundleToLocal(e),
       countBundleRows: (e) => this.countBundleRows(e),
       updateStatus: (e) => this.updateStatus(e),
       applyAuthFailureState: (e, n) => this.applyAuthFailureState(e, n),
-      isAuthFatalMessage: Oe,
-      toSyncErrorMessage: Qc,
+      isAuthFatalMessage: Ue,
+      toSyncErrorMessage: sd,
       logRunFailed: (e, n) => {
-        ft.error("Sync run failed", { error: e, reason: n });
+        pt.error("Sync run failed", { error: e, reason: n });
       }
     });
   }
   async ensureAccessToken(t) {
-    return await fc({
+    return await wc({
       syncSettings: t,
-      isAuthFatalMessage: Oe
+      isAuthFatalMessage: Ue
     });
   }
   async buildLocalBundle(t) {
-    return await Xc({
-      logger: ft,
-      pendingProjectDeletes: rn(
+    return await ed({
+      logger: pt,
+      pendingProjectDeletes: cn(
         _.getSyncSettings().pendingProjectDeletes
       ),
       userId: t
     });
   }
   async buildProjectPackagePayload(t, e, n, a) {
-    return await qc({
+    return await rd({
       bundle: t,
       localSnapshots: a,
-      logger: ft,
+      logger: pt,
       projectId: e,
       projectPath: n
     });
   }
   async applyMergedBundleToLocal(t) {
-    await Fc({
+    await xc({
       bundle: t,
-      hydrateMissingWorldDocsFromPackage: async (e, n) => await qn(e, n, ft),
+      hydrateMissingWorldDocsFromPackage: async (e, n) => await Zn(e, n, pt),
       buildProjectPackagePayload: async (e) => await this.buildProjectPackagePayload(
         e.bundle,
         e.projectId,
         e.projectPath,
         e.localSnapshots
       ),
-      logger: ft
+      logger: pt
     });
   }
   countBundleRows(t) {
-    return Kc(t);
+    return nd(t);
   }
   updateStatus(t) {
     this.status = {
@@ -5886,33 +5897,33 @@ class Qn {
     }, this.broadcastStatus();
   }
   broadcastStatus() {
-    const t = tt.getAllWindows();
+    const t = Rt.getAllWindows();
     for (const e of t)
       if (!e.isDestroyed())
         try {
-          e.webContents.send(Ft.SYNC_STATUS_CHANGED, this.status);
+          e.webContents.send(bt.SYNC_STATUS_CHANGED, this.status);
         } catch (n) {
-          ft.warn("Failed to broadcast sync status", { error: n });
+          pt.warn("Failed to broadcast sync status", { error: n });
         }
   }
 }
-const Jt = new Qn(), tp = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const qt = new na(), fp = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  SyncService: Qn,
-  syncService: Jt
-}, Symbol.toStringTag, { value: "Module" })), sr = N("GeminiProxyClient"), Zn = (r, t) => {
+  SyncService: na,
+  syncService: qt
+}, Symbol.toStringTag, { value: "Module" })), pr = D("GeminiProxyClient"), aa = (r, t) => {
   const e = new Error(t);
   return e.status = r, e;
-}, Zc = (r) => {
+}, id = (r) => {
   const t = process.env.LUIE_GEMINI_PROXY_URL?.trim();
   return t && t.length > 0 ? t : `${r.url}/functions/v1/gemini-proxy`;
-}, ta = (r) => {
+}, oa = (r) => {
   if (typeof r == "string") {
     const t = r.trim();
     return t.length > 0 ? t : null;
   }
   return null;
-}, ea = (r) => {
+}, sa = (r) => {
   if (!Array.isArray(r))
     return null;
   const t = r[0];
@@ -5922,11 +5933,11 @@ const Jt = new Qn(), tp = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
   const n = e.parts;
   if (!Array.isArray(n)) return null;
   const a = n.map(
-    (o) => o && typeof o == "object" ? ta(o.text) : null
+    (o) => o && typeof o == "object" ? oa(o.text) : null
   ).filter((o) => !!o);
   return a.length === 0 ? null : a.join(`
 `).trim();
-}, td = () => {
+}, cd = () => {
   const r = [
     process.env.GEMINI_API_KEY,
     process.env.GOOGLE_GCP_API,
@@ -5938,8 +5949,8 @@ const Jt = new Qn(), tp = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
     if (e.length > 0) return e;
   }
   return null;
-}, ed = async (r, t) => {
-  const e = await Jt.getEdgeAccessToken(), n = Zc(t), a = await fetch(n, {
+}, dd = async (r, t) => {
+  const e = await qt.getEdgeAccessToken(), n = id(t), a = await fetch(n, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -5950,20 +5961,20 @@ const Jt = new Qn(), tp = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
   });
   if (!a.ok) {
     const c = await a.text();
-    throw sr.warn("gemini-proxy request failed", {
+    throw pr.warn("gemini-proxy request failed", {
       endpoint: n,
       status: a.status,
       body: c
-    }), Zn(
+    }), aa(
       a.status,
       `GEMINI_PROXY_FAILED:${a.status}:${c}`
     );
   }
-  const o = await a.json(), s = ta(o.text) ?? ea(o.candidates);
+  const o = await a.json(), s = oa(o.text) ?? sa(o.candidates);
   if (!s)
     throw new Error("GEMINI_PROXY_EMPTY_RESPONSE");
   return s;
-}, rd = async (r, t) => {
+}, ld = async (r, t) => {
   const e = {};
   r.responseMimeType && (e.responseMimeType = r.responseMimeType), r.responseSchema && (e.responseSchema = r.responseSchema), typeof r.temperature == "number" && (e.temperature = r.temperature), typeof r.topP == "number" && (e.topP = r.topP), typeof r.topK == "number" && (e.topK = r.topK), typeof r.maxOutputTokens == "number" && (e.maxOutputTokens = r.maxOutputTokens);
   const n = await fetch(
@@ -5988,24 +5999,24 @@ const Jt = new Qn(), tp = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
     o = null;
   }
   if (!n.ok)
-    throw Zn(
+    throw aa(
       n.status,
       `GEMINI_LOCAL_FAILED:${n.status}:${a}`
     );
-  const s = ea(
+  const s = sa(
     o && typeof o == "object" ? o.candidates : null
   );
   if (!s)
     throw new Error("GEMINI_LOCAL_EMPTY_RESPONSE");
   return s;
-}, nd = async (r) => {
-  const t = lt(), e = td(), n = [];
+}, pd = async (r) => {
+  const t = it(), e = cd(), n = [];
   if (t)
     try {
-      return await ed(r, t);
+      return await dd(r, t);
     } catch (a) {
       const o = a instanceof Error ? a.message : String(a);
-      n.push(`edge:${o}`), sr.warn("Edge Gemini path failed; falling back to local path", {
+      n.push(`edge:${o}`), pr.warn("Edge Gemini path failed; falling back to local path", {
         message: o
       });
     }
@@ -6013,26 +6024,26 @@ const Jt = new Qn(), tp = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
     n.push("edge:SUPABASE_NOT_CONFIGURED");
   if (e)
     try {
-      return await rd(r, e);
+      return await ld(r, e);
     } catch (a) {
       const o = a instanceof Error ? a.message : String(a);
-      n.push(`local:${o}`), sr.warn("Local Gemini path failed", { message: o });
+      n.push(`local:${o}`), pr.warn("Local Gemini path failed", { message: o });
     }
   else
     n.push("local:GEMINI_LOCAL_API_KEY_MISSING");
   throw new Error(`GEMINI_ALL_PATHS_FAILED:${n.join("|")}`);
-}, ra = (r) => r.replace(/\s+/g, " ").trim(), ad = (r, t = "본문 발췌") => {
-  const e = ra(r);
+}, ia = (r) => r.replace(/\s+/g, " ").trim(), ud = (r, t = "본문 발췌") => {
+  const e = ia(r);
   return e ? e.slice(0, Math.min(120, e.length)) : t;
-}, od = (r, t) => {
-  const e = ra(r);
+}, hd = (r, t) => {
+  const e = ia(r);
   if (!e) return t;
   const n = Math.min(e.length - 1, t.length + 1);
   if (n <= 0 || n >= e.length) return t;
   const a = e.slice(n, Math.min(e.length, n + 120)).trim();
   return a.length > 0 ? a : t;
-}, ep = (r) => {
-  const t = r.manuscript.content, e = ad(t), n = od(t, e);
+}, gp = (r) => {
+  const t = r.manuscript.content, e = ud(t), n = hd(t, e);
   return [
     {
       type: "intro",
@@ -6061,11 +6072,11 @@ const Jt = new Qn(), tp = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
       content: "로컬 분석 기준으로는 전체 흐름이 안정적입니다. 위 두 지점을 다듬으면 독자 체감 완성도가 더 올라갈 수 있습니다."
     }
   ];
-}, sd = (r, t) => {
+}, fd = (r, t) => {
   const e = `${r} ${t.join(" ")}`;
   return /(길드|협회|조직|단체|학교|대학|회사|연맹)/.test(e) ? "organization" : /(성|탑|궁|마을|도시|숲|산|강|거리|던전)/.test(e) ? "location" : /(검|창|방패|반지|목걸이|무기|유물|artifact|아이템)/i.test(e) ? "item" : /(님|씨|군|양|왕|황제|공주|기사|마법사|선생|대장)/.test(e) ? "character" : "concept";
-}, nn = (r, t) => {
-  const e = sd(r, t), n = t.length >= 3 ? "main" : t.length >= 2 ? "supporting" : "minor";
+}, dn = (r, t) => {
+  const e = fd(r, t), n = t.length >= 3 ? "main" : t.length >= 2 ? "supporting" : "minor";
   return {
     name: r,
     entityType: e,
@@ -6074,14 +6085,14 @@ const Jt = new Qn(), tp = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
     confidence: t.length >= 2 ? 0.58 : 0.42,
     reasoning: "Edge/원격 모델 호출 실패로 로컬 규칙 기반 추정치를 사용했습니다."
   };
-}, id = u.object({
+}, gd = u.object({
   name: u.string(),
   entityType: u.enum(["character", "location", "organization", "item", "concept"]),
   importance: u.enum(["main", "supporting", "minor", "unknown"]).default("unknown"),
   summary: u.string(),
   confidence: u.number().min(0).max(1).default(0.5),
   reasoning: u.string().optional()
-}), cd = `
+}), Ed = `
 예시 1:
 입력: "이준혁은 서울대학교 의과대학을 졸업한 뒤 강남세브란스병원에서 근무하고 있다."
 출력: {
@@ -6114,21 +6125,21 @@ const Jt = new Qn(), tp = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
   "confidence": 0.9,
   "reasoning": "조직의 목적과 성격이 명확히 드러남"
 }
-`.trim(), dd = {
-  type: ut.OBJECT,
+`.trim(), md = {
+  type: dt.OBJECT,
   properties: {
-    name: { type: ut.STRING },
+    name: { type: dt.STRING },
     entityType: {
-      type: ut.STRING,
+      type: dt.STRING,
       enum: ["character", "location", "organization", "item", "concept"]
     },
     importance: {
-      type: ut.STRING,
+      type: dt.STRING,
       enum: ["main", "supporting", "minor", "unknown"]
     },
-    summary: { type: ut.STRING },
-    confidence: { type: ut.NUMBER },
-    reasoning: { type: ut.STRING }
+    summary: { type: dt.STRING },
+    confidence: { type: dt.NUMBER },
+    reasoning: { type: dt.STRING }
   },
   required: ["name", "entityType", "importance", "summary", "confidence"],
   propertyOrdering: [
@@ -6139,8 +6150,8 @@ const Jt = new Qn(), tp = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
     "confidence",
     "reasoning"
   ]
-}, se = N("AutoExtractService"), ld = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
-class pd {
+}, oe = D("AutoExtractService"), Ad = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
+class yd {
   timers = /* @__PURE__ */ new Map();
   paragraphCache = /* @__PURE__ */ new Map();
   scheduleAnalysis(t, e, n) {
@@ -6148,9 +6159,9 @@ class pd {
     o && clearTimeout(o);
     const s = setTimeout(() => {
       this.analyzeChapter(t, e, n).catch((c) => {
-        se.error("Auto extraction failed", { chapterId: t, projectId: e, error: c });
+        oe.error("Auto extraction failed", { chapterId: t, projectId: e, error: c });
       });
-    }, no);
+    }, uo);
     this.timers.set(a, s);
   }
   splitParagraphs(t) {
@@ -6179,28 +6190,28 @@ class pd {
         select: { id: !0, term: !0, definition: !0, category: !0 }
       })
     ]);
-    Et.setKnownCharacters(o.map((i) => i.name)), Et.setKnownTerms(s.map((i) => i.term));
-    const c = a.flatMap((i) => Et.extractNouns(i)), d = Et.filterByFrequency(c, 2).filter((i) => !o.some((p) => p.name === i)).filter((i) => !s.some((p) => p.term === i)), l = Array.from(new Set(d)).slice(0, 10);
+    ft.setKnownCharacters(o.map((i) => i.name)), ft.setKnownTerms(s.map((i) => i.term));
+    const c = a.flatMap((i) => ft.extractNouns(i)), d = ft.filterByFrequency(c, 2).filter((i) => !o.some((p) => p.name === i)).filter((i) => !s.some((p) => p.term === i)), l = Array.from(new Set(d)).slice(0, 10);
     if (l.length !== 0) {
       for (const i of l) {
-        const p = a.filter((w) => w.includes(i)).slice(0, 3), A = await this.classifyWithGemini(i, p);
-        A && (A.entityType === "character" ? await Qe.createCharacter({
+        const p = a.filter((w) => w.includes(i)).slice(0, 3), m = await this.classifyWithGemini(i, p);
+        m && (m.entityType === "character" ? await nr.createCharacter({
           projectId: e,
-          name: A.name,
-          description: A.summary,
+          name: m.name,
+          description: m.summary,
           attributes: {
-            importance: A.importance,
-            confidence: A.confidence,
+            importance: m.importance,
+            confidence: m.confidence,
             source: "auto-extract"
           }
-        }) : await Ze.createTerm({
+        }) : await ar.createTerm({
           projectId: e,
-          term: A.name,
-          definition: A.summary,
-          category: A.entityType
+          term: m.name,
+          definition: m.summary,
+          category: m.entityType
         }));
       }
-      se.info("Auto extraction completed", {
+      oe.info("Auto extraction completed", {
         projectId: e,
         chapterId: t,
         candidateCount: l.length
@@ -6224,7 +6235,7 @@ class pd {
 - minor: 일시적으로 언급되는 요소
 - unknown: 판단하기 어려운 경우
 
-${cd}
+${Ed}
 
 ---
 
@@ -6236,22 +6247,22 @@ ${n}
 
 JSON 형식으로만 답하세요:`;
     try {
-      const o = await nd({
-        model: ld,
+      const o = await pd({
+        model: Ad,
         prompt: a,
         responseMimeType: "application/json",
-        responseSchema: dd
-      }), s = id.safeParse(JSON.parse(o));
-      return s.success ? s.data : (se.warn("Gemini response parse failed", s.error), nn(t, e));
+        responseSchema: md
+      }), s = gd.safeParse(JSON.parse(o));
+      return s.success ? s.data : (oe.warn("Gemini response parse failed", s.error), dn(t, e));
     } catch (o) {
-      return se.warn("Gemini classification failed; using local deterministic fallback", {
+      return oe.warn("Gemini classification failed; using local deterministic fallback", {
         error: o
-      }), nn(t, e);
+      }), dn(t, e);
     }
   }
 }
-const ud = new pd(), an = N("ChapterKeywords");
-async function hd(r, t, e) {
+const Sd = new yd(), ln = D("ChapterKeywords");
+async function Td(r, t, e) {
   try {
     const n = await h.getClient().character.findMany({
       where: { projectId: e },
@@ -6260,44 +6271,44 @@ async function hd(r, t, e) {
       where: { projectId: e },
       select: { id: !0, term: !0 }
     }), o = n.map((d) => d.name), s = a.map((d) => d.term);
-    Et.setKnownCharacters(o), Et.setKnownTerms(s);
-    const c = Et.extractFromText(t);
+    ft.setKnownCharacters(o), ft.setKnownTerms(s);
+    const c = ft.extractFromText(t);
     for (const d of c.filter((l) => l.type === "character")) {
       const l = n.find((i) => i.name === d.text);
-      l && (await Qe.recordAppearance({
+      l && (await nr.recordAppearance({
         characterId: String(l.id),
         chapterId: r,
         position: d.position,
-        context: on(t, d.position, Rr)
-      }), await Qe.updateFirstAppearance(String(l.id), r));
+        context: pn(t, d.position, Or)
+      }), await nr.updateFirstAppearance(String(l.id), r));
     }
     for (const d of c.filter((l) => l.type === "term")) {
       const l = a.find((i) => i.term === d.text);
-      l && (await Ze.recordAppearance({
+      l && (await ar.recordAppearance({
         termId: String(l.id),
         chapterId: r,
         position: d.position,
-        context: on(t, d.position, Rr)
-      }), await Ze.updateFirstAppearance(String(l.id), r));
+        context: pn(t, d.position, Or)
+      }), await ar.updateFirstAppearance(String(l.id), r));
     }
-    an.info("Keyword tracking completed", {
+    ln.info("Keyword tracking completed", {
       chapterId: r,
       characterCount: c.filter((d) => d.type === "character").length,
       termCount: c.filter((d) => d.type === "term").length
     });
   } catch (n) {
-    an.error("Failed to track keyword appearances", n);
+    ln.error("Failed to track keyword appearances", n);
   }
 }
-function on(r, t, e) {
+function pn(r, t, e) {
   const n = Math.max(0, t - e), a = Math.min(r.length, t + e);
   return r.substring(n, a);
 }
-const k = N("ChapterService");
-function sn(r) {
+const M = D("ChapterService");
+function un(r) {
   return typeof r == "object" && r !== null && "code" in r && r.code === "P2025";
 }
-class fd {
+class wd {
   async resolveProjectTitle(t) {
     if (!t) return "Unknown";
     const e = await h.getClient().project.findUnique({
@@ -6307,16 +6318,16 @@ class fd {
     return typeof e?.title == "string" ? String(e.title) : "Unknown";
   }
   async writeSuspiciousContentDump(t) {
-    if (qt()) return;
-    const e = await this.resolveProjectTitle(t.projectId), n = bt(e, "Unknown"), a = C.join(
-      S.getPath("userData"),
-      hr,
+    if (Xt()) return;
+    const e = await this.resolveProjectTitle(t.projectId), n = jt(e, "Unknown"), a = C.join(
+      T.getPath("userData"),
+      Ar,
       n || "Unknown",
       "_suspicious"
     );
-    await Y.mkdir(a, { recursive: !0 });
+    await H.mkdir(a, { recursive: !0 });
     const o = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-"), s = C.join(a, `${t.filePrefix}-${t.chapterId}-${o}.txt`);
-    return await Y.writeFile(s, t.content, "utf8"), s;
+    return await H.writeFile(s, t.content, "utf8"), s;
   }
   async applyContentUpdate(t, e, n) {
     if (t.content === void 0) return;
@@ -6328,20 +6339,20 @@ class fd {
         filePrefix: "dump-empty",
         content: a
       });
-      throw k.warn("Empty content save blocked.", { chapterId: t.id, oldLen: o, dumpPath: d }), new f(
+      throw M.warn("Empty content save blocked.", { chapterId: t.id, oldLen: o, dumpPath: d }), new f(
         E.VALIDATION_FAILED,
         "Empty content save blocked",
         { chapterId: t.id, oldLen: o }
       );
     }
-    if (!qt() && o > 1e3 && s < o * 0.1) {
+    if (!Xt() && o > 1e3 && s < o * 0.1) {
       const d = await this.writeSuspiciousContentDump({
         projectId: c,
         chapterId: t.id,
         filePrefix: "dump",
         content: t.content
       });
-      throw k.warn("Suspicious large deletion detected. Save blocked.", {
+      throw M.warn("Suspicious large deletion detected. Save blocked.", {
         chapterId: t.id,
         oldLen: o,
         newLen: s,
@@ -6352,7 +6363,7 @@ class fd {
         { chapterId: t.id, oldLen: o, newLen: s }
       );
     }
-    n.content = t.content, n.wordCount = t.content.length, c && (await hd(t.id, t.content, c), ud.scheduleAnalysis(t.id, c, t.content));
+    n.content = t.content, n.wordCount = t.content.length, c && (await Td(t.id, t.content, c), Sd.scheduleAnalysis(t.id, c, t.content));
   }
   async createChapter(t) {
     try {
@@ -6362,7 +6373,7 @@ class fd {
           "Chapter title is required",
           { input: t }
         );
-      k.info("Creating chapter", t);
+      M.info("Creating chapter", t);
       const e = await h.getClient().chapter.findFirst({
         where: { projectId: t.projectId, deletedAt: null },
         orderBy: { order: "desc" },
@@ -6376,9 +6387,9 @@ class fd {
           content: ""
         }
       });
-      return k.info("Chapter created successfully", { chapterId: o.id }), F.schedulePackageExport(t.projectId, "chapter:create"), o;
+      return M.info("Chapter created successfully", { chapterId: o.id }), b.schedulePackageExport(t.projectId, "chapter:create"), o;
     } catch (e) {
-      throw k.error("Failed to create chapter", e), e instanceof f ? e : new f(
+      throw M.error("Failed to create chapter", e), e instanceof f ? e : new f(
         E.CHAPTER_CREATE_FAILED,
         "Failed to create chapter",
         { input: t },
@@ -6399,7 +6410,7 @@ class fd {
         );
       return e;
     } catch (e) {
-      throw k.error("Failed to get chapter", e), e;
+      throw M.error("Failed to get chapter", e), e;
     }
   }
   async getAllChapters(t) {
@@ -6409,7 +6420,7 @@ class fd {
         orderBy: { order: "asc" }
       });
     } catch (e) {
-      throw k.error("Failed to get all chapters", e), new f(
+      throw M.error("Failed to get all chapters", e), new f(
         E.DB_QUERY_FAILED,
         "Failed to get all chapters",
         { projectId: t },
@@ -6439,14 +6450,14 @@ class fd {
         where: { id: t.id },
         data: n
       });
-      return k.info("Chapter updated successfully", {
+      return M.info("Chapter updated successfully", {
         chapterId: a.id
-      }), F.schedulePackageExport(
+      }), b.schedulePackageExport(
         String(a.projectId),
         "chapter:update"
       ), a;
     } catch (e) {
-      throw k.error("Failed to update chapter", e), e instanceof f ? e : sn(e) ? new f(
+      throw M.error("Failed to update chapter", e), e instanceof f ? e : un(e) ? new f(
         E.CHAPTER_NOT_FOUND,
         "Chapter not found",
         { id: t.id },
@@ -6468,15 +6479,15 @@ class fd {
         where: { id: t },
         data: { deletedAt: /* @__PURE__ */ new Date() }
       });
-      return e?.projectId && await Z.forgetChapter(
+      return e?.projectId && await Q.forgetChapter(
         String(e.projectId),
         t
-      ), k.info("Chapter soft-deleted successfully", { chapterId: t }), e?.projectId && F.schedulePackageExport(
+      ), M.info("Chapter soft-deleted successfully", { chapterId: t }), e?.projectId && b.schedulePackageExport(
         String(e.projectId),
         "chapter:delete"
       ), n;
     } catch (e) {
-      throw k.error("Failed to delete chapter", e), new f(
+      throw M.error("Failed to delete chapter", e), new f(
         E.CHAPTER_DELETE_FAILED,
         "Failed to delete chapter",
         { id: t },
@@ -6491,7 +6502,7 @@ class fd {
         orderBy: { deletedAt: "desc" }
       });
     } catch (e) {
-      throw k.error("Failed to get deleted chapters", e), new f(
+      throw M.error("Failed to get deleted chapters", e), new f(
         E.DB_QUERY_FAILED,
         "Failed to get deleted chapters",
         { projectId: t },
@@ -6517,9 +6528,9 @@ class fd {
           deletedAt: null
         }
       });
-      return k.info("Chapter restored successfully", { chapterId: t }), F.schedulePackageExport(String(e.projectId), "chapter:restore"), n;
+      return M.info("Chapter restored successfully", { chapterId: t }), b.schedulePackageExport(String(e.projectId), "chapter:restore"), n;
     } catch (e) {
-      throw k.error("Failed to restore chapter", e), sn(e) ? new f(
+      throw M.error("Failed to restore chapter", e), un(e) ? new f(
         E.CHAPTER_NOT_FOUND,
         "Chapter not found",
         { id: t },
@@ -6538,15 +6549,15 @@ class fd {
         where: { id: t },
         select: { projectId: !0 }
       });
-      return await h.getClient().chapter.delete({ where: { id: t } }), e?.projectId && await Z.forgetChapter(
+      return await h.getClient().chapter.delete({ where: { id: t } }), e?.projectId && await Q.forgetChapter(
         String(e.projectId),
         t
-      ), k.info("Chapter purged successfully", { chapterId: t }), e?.projectId && F.schedulePackageExport(
+      ), M.info("Chapter purged successfully", { chapterId: t }), e?.projectId && b.schedulePackageExport(
         String(e.projectId),
         "chapter:purge"
       ), { success: !0 };
     } catch (e) {
-      throw k.error("Failed to purge chapter", e), new f(
+      throw M.error("Failed to purge chapter", e), new f(
         E.CHAPTER_DELETE_FAILED,
         "Failed to purge chapter",
         { id: t },
@@ -6563,9 +6574,9 @@ class fd {
             data: { order: a + 1 }
           })
         )
-      ), k.info("Chapters reordered successfully", { projectId: t }), F.schedulePackageExport(t, "chapter:reorder"), { success: !0 };
+      ), M.info("Chapters reordered successfully", { projectId: t }), b.schedulePackageExport(t, "chapter:reorder"), { success: !0 };
     } catch (n) {
-      throw k.error("Failed to reorder chapters", n), new f(
+      throw M.error("Failed to reorder chapters", n), new f(
         E.DB_TRANSACTION_FAILED,
         "Failed to reorder chapters",
         { projectId: t },
@@ -6574,8 +6585,8 @@ class fd {
     }
   }
 }
-const na = new fd(), gd = N("AtomicWrite"), Ed = pr(gn), md = pr(wa);
-async function de(r, t) {
+const ca = new wd(), _d = D("AtomicWrite"), Id = Er(Sn), Pd = Er(La);
+async function pe(r, t) {
   const e = C.dirname(r), n = C.join(e, `${C.basename(r)}.tmp-${Date.now()}`);
   await R.writeFile(n, t);
   const a = await R.open(n, "r+");
@@ -6593,58 +6604,58 @@ async function de(r, t) {
       await o.close();
     }
   } catch (o) {
-    gd.warn("Failed to fsync directory", { dir: e, error: o });
+    _d.warn("Failed to fsync directory", { dir: e, error: o });
   }
 }
-async function cn(r, t) {
-  const e = await Ed(Buffer.from(t, "utf8"));
-  await de(r, e);
+async function hn(r, t) {
+  const e = await Id(Buffer.from(t, "utf8"));
+  await pe(r, e);
 }
-async function aa(r) {
+async function da(r) {
   const t = await R.readFile(r);
-  return (t.length >= 2 && t[0] === 31 && t[1] === 139 ? await md(t) : t).toString("utf8");
+  return (t.length >= 2 && t[0] === 31 && t[1] === 139 ? await Pd(t) : t).toString("utf8");
 }
-const At = N("SnapshotArtifacts"), Ad = pr(gn), yd = /-([0-9a-fA-F-]{36})\.snap$/;
-async function Sd(r) {
-  const t = await aa(r);
+const Et = D("SnapshotArtifacts"), Cd = Er(Sn), Rd = /-([0-9a-fA-F-]{36})\.snap$/;
+async function Dd(r) {
+  const t = await da(r);
   return JSON.parse(t);
 }
-function oa(r) {
-  const t = z(r, "projectPath"), e = t.toLowerCase(), n = K.toLowerCase();
+function la(r) {
+  const t = K(r, "projectPath"), e = t.toLowerCase(), n = X.toLowerCase();
   return e.endsWith(n) ? C.dirname(t) : t;
 }
-function sa(r, t) {
-  return C.join(r, ".luie", jt, t);
+function pa(r, t) {
+  return C.join(r, ".luie", Ot, t);
 }
-const Td = (r) => C.basename(r).match(yd)?.[1] ?? null, ia = async (r, t) => {
+const Nd = (r) => C.basename(r).match(Rd)?.[1] ?? null, ua = async (r, t) => {
   let e;
   try {
     e = await R.readdir(r, { withFileTypes: !0 });
   } catch (n) {
     if (n?.code === "ENOENT") return;
-    At.warn("Failed to read snapshot artifact directory", { rootDir: r, error: n });
+    Et.warn("Failed to read snapshot artifact directory", { rootDir: r, error: n });
     return;
   }
   for (const n of e) {
     const a = C.join(r, n.name);
     if (n.isDirectory()) {
-      await ia(a, t);
+      await ua(a, t);
       continue;
     }
     !n.isFile() || !n.name.endsWith(".snap") || t.push(a);
   }
-}, wd = async () => {
-  const r = /* @__PURE__ */ new Set([C.join(S.getPath("userData"), hr)]), t = await h.getClient().project.findMany({
+}, Ld = async () => {
+  const r = /* @__PURE__ */ new Set([C.join(T.getPath("userData"), Ar)]), t = await h.getClient().project.findMany({
     select: { id: !0, title: !0, projectPath: !0 }
   });
   for (const e of t) {
     if (!e.projectPath) continue;
-    const n = bt(e.title ?? "", String(e.id));
+    const n = jt(e.title ?? "", String(e.id));
     try {
-      const a = oa(e.projectPath);
-      r.add(sa(a, n)), r.add(C.join(a, `backup${n}`));
+      const a = la(e.projectPath);
+      r.add(pa(a, n)), r.add(C.join(a, `backup${n}`));
     } catch (a) {
-      At.warn("Skipping snapshot artifact roots for invalid projectPath", {
+      Et.warn("Skipping snapshot artifact roots for invalid projectPath", {
         projectId: e.id,
         projectPath: e.projectPath,
         error: a
@@ -6653,42 +6664,44 @@ const Td = (r) => C.basename(r).match(yd)?.[1] ?? null, ia = async (r, t) => {
   }
   return Array.from(r);
 };
-async function dn(r) {
+async function fn(r) {
   const t = r?.snapshotIds && r.snapshotIds.length > 0 ? new Set(r.snapshotIds) : null, e = typeof r?.minAgeMs == "number" && r.minAgeMs > 0 ? r.minAgeMs : 0, n = Date.now(), a = t ? await h.getClient().snapshot.findMany({
     where: { id: { in: Array.from(t) } },
     select: { id: !0 }
   }) : await h.getClient().snapshot.findMany({
     select: { id: !0 }
-  }), o = new Set(a.map((i) => i.id)), s = await wd(), c = [];
+  }), o = new Set(
+    a.map((i) => i.id)
+  ), s = await Ld(), c = [];
   for (const i of s)
-    await ia(i, c);
+    await ua(i, c);
   let d = 0, l = 0;
   for (const i of c) {
-    const p = Td(i);
+    const p = Nd(i);
     if (p && !(t && !t.has(p)) && (d += 1, !o.has(p))) {
       if (e > 0)
         try {
-          const A = await R.stat(i);
-          if (n - A.mtimeMs < e)
+          const m = await R.stat(i);
+          if (n - m.mtimeMs < e)
             continue;
         } catch {
           continue;
         }
       try {
         await R.unlink(i), l += 1;
-      } catch (A) {
-        At.warn("Failed to delete orphan snapshot artifact", {
+      } catch (m) {
+        Et.warn("Failed to delete orphan snapshot artifact", {
           artifactPath: i,
           snapshotId: p,
-          error: A
+          error: m
         });
       }
     }
   }
   return { scanned: d, deleted: l };
 }
-async function _d(r, t) {
-  At.info("Preparing snapshot artifact", {
+async function Od(r, t) {
+  Et.info("Preparing snapshot artifact", {
     snapshotId: r,
     projectId: t.projectId,
     chapterId: t.chapterId
@@ -6706,13 +6719,13 @@ async function _d(r, t) {
     throw new f(E.PROJECT_NOT_FOUND, "Project not found", {
       projectId: t.projectId
     });
-  e.projectPath || At.warn("Project path missing for snapshot; skipping local package snapshot", {
+  e.projectPath || Et.warn("Project path missing for snapshot; skipping local package snapshot", {
     snapshotId: r,
     projectId: t.projectId
   });
   const n = {
     meta: {
-      version: $a,
+      version: Va,
       timestamp: (/* @__PURE__ */ new Date()).toISOString(),
       snapshotId: r,
       projectId: String(e.id)
@@ -6760,31 +6773,31 @@ async function _d(r, t) {
         content: t.content ?? null
       }
     }
-  }, a = JSON.stringify(n), o = await Ad(Buffer.from(a, "utf8")), c = `${(/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-")}-${r}.snap`;
+  }, a = JSON.stringify(n), o = await Cd(Buffer.from(a, "utf8")), c = `${(/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-")}-${r}.snap`;
   let d, l;
-  const i = bt(e.title ?? "", String(e.id));
+  const i = jt(e.title ?? "", String(e.id));
   let p = null;
   if (e.projectPath)
     try {
-      p = oa(e.projectPath);
-      const g = sa(p, i);
-      await R.mkdir(g, { recursive: !0 }), d = C.join(g, c), await de(d, o);
+      p = la(e.projectPath);
+      const g = pa(p, i);
+      await R.mkdir(g, { recursive: !0 }), d = C.join(g, c), await pe(d, o);
     } catch (g) {
-      At.warn("Skipping project-local snapshot artifact write for invalid projectPath", {
+      Et.warn("Skipping project-local snapshot artifact write for invalid projectPath", {
         snapshotId: r,
         projectId: e.id,
         projectPath: e.projectPath,
         error: g
       });
     }
-  const A = C.join(S.getPath("userData"), hr, i);
-  await R.mkdir(A, { recursive: !0 });
-  const w = C.join(A, c);
-  if (await de(w, o), p) {
+  const m = C.join(T.getPath("userData"), Ar, i);
+  await R.mkdir(m, { recursive: !0 });
+  const w = C.join(m, c);
+  if (await pe(w, o), p) {
     const g = C.join(p, `backup${i}`);
-    await R.mkdir(g, { recursive: !0 }), l = C.join(g, c), await de(l, o);
+    await R.mkdir(g, { recursive: !0 }), l = C.join(g, c), await pe(l, o);
   }
-  At.info("Full snapshot saved", {
+  Et.info("Full snapshot saved", {
     snapshotId: r,
     projectId: e.id,
     projectPath: e.projectPath,
@@ -6793,11 +6806,11 @@ async function _d(r, t) {
     projectBackupPath: l
   });
 }
-const Id = async (r, t, e) => {
+const jd = async (r, t, e) => {
   try {
     const n = C.join(
-      S.getPath("userData"),
-      Ye,
+      T.getPath("userData"),
+      qe,
       "_emergency"
     );
     await R.mkdir(n, { recursive: !0 });
@@ -6839,30 +6852,30 @@ const Id = async (r, t, e) => {
   } catch (n) {
     t.error("Failed to write emergency snapshot file", n);
   }
-}, Pd = async (r) => {
-  const t = bt(r || "Recovered Snapshot", "Recovered Snapshot"), e = S.getPath("documents");
+}, bd = async (r) => {
+  const t = jt(r || "Recovered Snapshot", "Recovered Snapshot"), e = T.getPath("documents");
   let n = C.join(
     e,
-    `${t || "Recovered Snapshot"}${K}`
+    `${t || "Recovered Snapshot"}${X}`
   );
   try {
     await R.access(n);
     const a = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-");
     n = C.join(
       e,
-      `${t || "Recovered Snapshot"}-${a}${K}`
+      `${t || "Recovered Snapshot"}-${a}${X}`
     );
   } catch {
   }
   return n;
-}, Cd = (r) => {
+}, Fd = (r) => {
   const t = r;
   return {
     autoSave: typeof t?.autoSave == "boolean" ? t.autoSave : !0,
-    autoSaveInterval: typeof t?.autoSaveInterval == "number" ? t.autoSaveInterval : Ee
+    autoSaveInterval: typeof t?.autoSaveInterval == "number" ? t.autoSaveInterval : ye
   };
-}, Rd = async (r, t) => {
-  const { autoSave: e, autoSaveInterval: n } = Cd(r.data.settings), a = r.data.project;
+}, vd = async (r, t) => {
+  const { autoSave: e, autoSaveInterval: n } = Fd(r.data.settings), a = r.data.project;
   return await h.getClient().$transaction(
     async (s) => {
       const c = await s.project.create({
@@ -6880,40 +6893,40 @@ const Id = async (r, t, e) => {
         include: {
           settings: !0
         }
-      }), d = c.id, l = /* @__PURE__ */ new Map(), i = /* @__PURE__ */ new Map(), p = /* @__PURE__ */ new Map(), A = r.data.chapters.map((m, T) => {
-        const I = X();
-        return l.set(m.id, I), {
+      }), d = c.id, l = /* @__PURE__ */ new Map(), i = /* @__PURE__ */ new Map(), p = /* @__PURE__ */ new Map(), m = r.data.chapters.map((A, S) => {
+        const I = Y();
+        return l.set(A.id, I), {
           id: I,
           projectId: d,
-          title: m.title,
-          content: m.content ?? "",
-          synopsis: m.synopsis ?? null,
-          order: typeof m.order == "number" ? m.order : T,
-          wordCount: m.wordCount ?? 0
+          title: A.title,
+          content: A.content ?? "",
+          synopsis: A.synopsis ?? null,
+          order: typeof A.order == "number" ? A.order : S,
+          wordCount: A.wordCount ?? 0
         };
-      }), w = r.data.characters.map((m) => {
-        const T = X();
-        return i.set(m.id, T), {
-          id: T,
+      }), w = r.data.characters.map((A) => {
+        const S = Y();
+        return i.set(A.id, S), {
+          id: S,
           projectId: d,
-          name: m.name,
-          description: m.description ?? null,
-          firstAppearance: m.firstAppearance ?? null,
-          attributes: typeof m.attributes == "string" ? m.attributes : m.attributes ? JSON.stringify(m.attributes) : null
+          name: A.name,
+          description: A.description ?? null,
+          firstAppearance: A.firstAppearance ?? null,
+          attributes: typeof A.attributes == "string" ? A.attributes : A.attributes ? JSON.stringify(A.attributes) : null
         };
-      }), g = r.data.terms.map((m) => {
-        const T = X();
-        return p.set(m.id, T), {
-          id: T,
+      }), g = r.data.terms.map((A) => {
+        const S = Y();
+        return p.set(A.id, S), {
+          id: S,
           projectId: d,
-          term: m.term,
-          definition: m.definition ?? null,
-          category: m.category ?? null,
-          firstAppearance: m.firstAppearance ?? null
+          term: A.term,
+          definition: A.definition ?? null,
+          category: A.category ?? null,
+          firstAppearance: A.firstAppearance ?? null
         };
       });
-      return A.length > 0 && await s.chapter.createMany({
-        data: A
+      return m.length > 0 && await s.chapter.createMany({
+        data: m
       }), w.length > 0 && await s.character.createMany({
         data: w
       }), g.length > 0 && await s.term.createMany({
@@ -6932,16 +6945,16 @@ const Id = async (r, t, e) => {
       };
     }
   );
-}, Nd = (r) => ({
+}, Ud = (r) => ({
   format: Dt,
-  container: Lt,
-  version: Ot,
+  container: Nt,
+  version: Lt,
   projectId: r.id,
   title: r.title,
   description: r.description ?? void 0,
   createdAt: r.createdAt?.toISOString?.() ?? String(r.createdAt),
   updatedAt: r.updatedAt?.toISOString?.() ?? String(r.updatedAt)
-}), Dd = async (r, t, e) => {
+}), Md = async (r, t, e) => {
   try {
     await h.getClient().project.delete({ where: { id: r } });
   } catch (n) {
@@ -6951,10 +6964,10 @@ const Id = async (r, t, e) => {
       error: n
     });
   }
-}, Ld = async (r, t) => {
-  const e = await Sd(r), n = await Pd(e.data.project.title), a = await Rd(e, n), { created: o, chapterIdMap: s, characterIdMap: c, termIdMap: d } = a, l = Nd(o);
+}, kd = async (r, t) => {
+  const e = await Dd(r), n = await bd(e.data.project.title), a = await vd(e, n), { created: o, chapterIdMap: s, characterIdMap: c, termIdMap: d } = a, l = Ud(o);
   try {
-    await Er(
+    await Sr(
       n,
       {
         meta: l,
@@ -6985,27 +6998,27 @@ const Id = async (r, t, e) => {
       t
     );
   } catch (i) {
-    throw await Dd(o.id, r, t), i;
+    throw await Md(o.id, r, t), i;
   }
   return o;
-}, D = N("SnapshotService"), Od = 3e4, jd = 1e4;
-class bd {
+}, N = D("SnapshotService"), Wd = 3e4, Bd = 1e4;
+class $d {
   orphanArtifactIds = /* @__PURE__ */ new Set();
   orphanCleanupTimer = null;
   scheduleOrphanArtifactCleanup() {
     this.orphanCleanupTimer || (this.orphanCleanupTimer = setTimeout(() => {
       this.orphanCleanupTimer = null, this.cleanupOrphanArtifacts("idle").catch((t) => {
-        D.warn("Idle orphan artifact cleanup failed", { error: t });
+        N.warn("Idle orphan artifact cleanup failed", { error: t });
       });
-    }, Od), typeof this.orphanCleanupTimer.unref == "function" && this.orphanCleanupTimer.unref());
+    }, Wd), typeof this.orphanCleanupTimer.unref == "function" && this.orphanCleanupTimer.unref());
   }
   queueOrphanArtifactCleanup(t) {
     this.orphanArtifactIds.add(t), this.scheduleOrphanArtifactCleanup();
   }
   async cleanupOrphanArtifacts(t = "idle") {
     if (t === "startup") {
-      const n = await dn();
-      return D.info("Startup orphan artifact cleanup completed", n), n;
+      const n = await fn();
+      return N.info("Startup orphan artifact cleanup completed", n), n;
     }
     const e = Array.from(this.orphanArtifactIds);
     if (e.length === 0)
@@ -7013,11 +7026,11 @@ class bd {
     for (const n of e)
       this.orphanArtifactIds.delete(n);
     try {
-      const n = await dn({
+      const n = await fn({
         snapshotIds: e,
-        minAgeMs: jd
+        minAgeMs: Bd
       });
-      return D.info("Queued orphan artifact cleanup completed", {
+      return N.info("Queued orphan artifact cleanup completed", {
         queued: e.length,
         ...n
       }), n;
@@ -7028,17 +7041,17 @@ class bd {
     }
   }
   async createSnapshot(t) {
-    const e = X();
+    const e = Y();
     try {
       const n = t.type ?? "AUTO", a = t.content.length;
-      D.info("Creating snapshot", {
+      N.info("Creating snapshot", {
         snapshotId: e,
         projectId: t.projectId,
         chapterId: t.chapterId,
         hasContent: !!t.content,
         descriptionLength: t.description?.length ?? 0,
         type: n
-      }), await _d(e, t);
+      }), await Od(e, t);
       const o = await h.getClient().snapshot.create({
         data: {
           id: e,
@@ -7050,9 +7063,9 @@ class bd {
           description: t.description
         }
       });
-      return D.info("Snapshot created successfully", { snapshotId: o.id }), F.schedulePackageExport(t.projectId, "snapshot:create"), this.scheduleOrphanArtifactCleanup(), o;
+      return N.info("Snapshot created successfully", { snapshotId: o.id }), b.schedulePackageExport(t.projectId, "snapshot:create"), this.scheduleOrphanArtifactCleanup(), o;
     } catch (n) {
-      throw this.queueOrphanArtifactCleanup(e), await Id(t, D, n), D.error("Failed to create snapshot", {
+      throw this.queueOrphanArtifactCleanup(e), await jd(t, N, n), N.error("Failed to create snapshot", {
         error: n,
         snapshotId: e,
         projectId: t.projectId,
@@ -7078,7 +7091,7 @@ class bd {
         );
       return e;
     } catch (e) {
-      throw D.error("Failed to get snapshot", e), new f(
+      throw N.error("Failed to get snapshot", e), new f(
         E.DB_QUERY_FAILED,
         "Failed to get snapshot",
         { id: t },
@@ -7093,7 +7106,7 @@ class bd {
         orderBy: { createdAt: "desc" }
       });
     } catch (e) {
-      throw D.error("Failed to get snapshots by project", e), new f(
+      throw N.error("Failed to get snapshots by project", e), new f(
         E.DB_QUERY_FAILED,
         "Failed to get snapshots by project",
         { projectId: t },
@@ -7108,7 +7121,7 @@ class bd {
         orderBy: { createdAt: "desc" }
       });
     } catch (e) {
-      throw D.error("Failed to get snapshots by chapter", e), new f(
+      throw N.error("Failed to get snapshots by chapter", e), new f(
         E.DB_QUERY_FAILED,
         "Failed to get snapshots by chapter",
         { chapterId: t },
@@ -7124,12 +7137,12 @@ class bd {
       });
       return await h.getClient().snapshot.delete({
         where: { id: t }
-      }), this.queueOrphanArtifactCleanup(t), D.info("Snapshot deleted successfully", { snapshotId: t }), e?.projectId && F.schedulePackageExport(
+      }), this.queueOrphanArtifactCleanup(t), N.info("Snapshot deleted successfully", { snapshotId: t }), e?.projectId && b.schedulePackageExport(
         String(e.projectId),
         "snapshot:delete"
       ), { success: !0 };
     } catch (e) {
-      throw D.error("Failed to delete snapshot", e), new f(
+      throw N.error("Failed to delete snapshot", e), new f(
         E.SNAPSHOT_DELETE_FAILED,
         "Failed to delete snapshot",
         { id: t },
@@ -7161,15 +7174,15 @@ class bd {
           content: n,
           wordCount: n.length
         }
-      }), D.info("Snapshot restored successfully", {
+      }), N.info("Snapshot restored successfully", {
         snapshotId: t,
         chapterId: e.chapterId
-      }), F.schedulePackageExport(String(e.projectId), "snapshot:restore"), {
+      }), b.schedulePackageExport(String(e.projectId), "snapshot:restore"), {
         success: !0,
         chapterId: e.chapterId
       };
     } catch (e) {
-      throw D.error("Failed to restore snapshot", e), e instanceof f ? e : new f(
+      throw N.error("Failed to restore snapshot", e), e instanceof f ? e : new f(
         E.SNAPSHOT_RESTORE_FAILED,
         "Failed to restore snapshot",
         { snapshotId: t },
@@ -7179,14 +7192,14 @@ class bd {
   }
   async importSnapshotFile(t) {
     try {
-      D.info("Importing snapshot file", { filePath: t });
-      const e = await Ld(t, D);
-      return D.info("Snapshot imported successfully", {
+      N.info("Importing snapshot file", { filePath: t });
+      const e = await kd(t, N);
+      return N.info("Snapshot imported successfully", {
         projectId: e.id,
         filePath: t
       }), e;
     } catch (e) {
-      throw D.error("Failed to import snapshot file", e), new f(
+      throw N.error("Failed to import snapshot file", e), new f(
         E.SNAPSHOT_RESTORE_FAILED,
         "Failed to import snapshot file",
         { filePath: t },
@@ -7194,7 +7207,7 @@ class bd {
       );
     }
   }
-  async deleteOldSnapshots(t, e = Rn) {
+  async deleteOldSnapshots(t, e = jn) {
     try {
       const n = await h.getClient().snapshot.findMany({
         where: { projectId: t },
@@ -7210,12 +7223,12 @@ class bd {
       await Promise.all(o);
       for (const s of a)
         this.queueOrphanArtifactCleanup(s.id);
-      return D.info("Old snapshots deleted successfully", {
+      return N.info("Old snapshots deleted successfully", {
         projectId: t,
         deletedCount: a.length
       }), { success: !0, deletedCount: a.length };
     } catch (n) {
-      throw D.error("Failed to delete old snapshots", n), new f(
+      throw N.error("Failed to delete old snapshots", n), new f(
         E.DB_QUERY_FAILED,
         "Failed to delete old snapshots",
         { projectId: t, keepCount: e },
@@ -7235,10 +7248,10 @@ class bd {
         return { success: !0, deletedCount: 0 };
       const c = [], d = /* @__PURE__ */ new Set(), l = /* @__PURE__ */ new Set();
       for (const i of s) {
-        const p = i.createdAt instanceof Date ? i.createdAt : new Date(String(i.createdAt)), A = e - p.getTime();
-        if (A < a)
+        const p = i.createdAt instanceof Date ? i.createdAt : new Date(String(i.createdAt)), m = e - p.getTime();
+        if (m < a)
           continue;
-        if (A < o) {
+        if (m < o) {
           const g = p.toISOString().slice(0, 13);
           d.has(g) ? c.push(i.id) : d.add(g);
           continue;
@@ -7253,12 +7266,12 @@ class bd {
       });
       for (const i of c)
         this.queueOrphanArtifactCleanup(i);
-      return D.info("Snapshots pruned", {
+      return N.info("Snapshots pruned", {
         projectId: t,
         deletedCount: c.length
       }), { success: !0, deletedCount: c.length };
     } catch (s) {
-      throw D.error("Failed to prune snapshots", s), new f(
+      throw N.error("Failed to prune snapshots", s), new f(
         E.DB_QUERY_FAILED,
         "Failed to prune snapshots",
         { projectId: t },
@@ -7284,7 +7297,7 @@ class bd {
         orderBy: { createdAt: "desc" }
       });
     } catch (e) {
-      throw D.error("Failed to get latest snapshot", e), new f(
+      throw N.error("Failed to get latest snapshot", e), new f(
         E.DB_QUERY_FAILED,
         "Failed to get latest snapshot",
         { chapterId: t },
@@ -7293,15 +7306,15 @@ class bd {
     }
   }
 }
-const q = new bd();
-class Fd {
+const z = new $d();
+class xd {
   constructor(t) {
     this.logger = t;
   }
   getMirrorBaseDir(t, e) {
     return C.join(
-      S.getPath("userData"),
-      Ye,
+      T.getPath("userData"),
+      qe,
       t,
       e
     );
@@ -7315,7 +7328,7 @@ class Fd {
         null,
         2
       );
-      await cn(o, s);
+      await hn(o, s);
     } catch (a) {
       this.logger.error("Failed to write latest mirror", a);
     }
@@ -7329,12 +7342,12 @@ class Fd {
         null,
         2
       );
-      await cn(s, c);
+      await hn(s, c);
       const d = (await R.readdir(a)).filter(
         (l) => l.endsWith(".snap") && l !== "latest.snap"
       );
-      if (d.length > ue) {
-        const i = d.sort().slice(0, d.length - ue);
+      if (d.length > ge) {
+        const i = d.sort().slice(0, d.length - ge);
         await Promise.all(
           i.map((p) => R.unlink(C.join(a, p)).catch(() => {
           }))
@@ -7378,10 +7391,10 @@ class Fd {
           }), await this.cleanStaleMirrorDir(o), a += 1;
           continue;
         }
-        const l = await q.getLatestSnapshot(s.chapterId), i = l?.createdAt ? new Date(String(l.createdAt)).getTime() : 0, p = s.updatedAt ? new Date(s.updatedAt).getTime() : 0;
+        const l = await z.getLatestSnapshot(s.chapterId), i = l?.createdAt ? new Date(String(l.createdAt)).getTime() : 0, p = s.updatedAt ? new Date(s.updatedAt).getTime() : 0;
         if (p && p <= i)
           continue;
-        await q.createSnapshot({
+        await z.createSnapshot({
           projectId: s.projectId,
           chapterId: s.chapterId,
           content: s.content,
@@ -7394,7 +7407,7 @@ class Fd {
     return this.logger.info("Mirror snapshot flush completed", { created: n, cleaned: a, reason: t }), { created: n, cleaned: a };
   }
   async listLatestMirrorFiles() {
-    const t = C.join(S.getPath("userData"), Ye), e = [];
+    const t = C.join(T.getPath("userData"), qe), e = [];
     try {
       const n = await R.readdir(t, { withFileTypes: !0 });
       for (const a of n) {
@@ -7418,7 +7431,7 @@ class Fd {
   }
   async readMirrorPayload(t) {
     try {
-      const e = await aa(t), n = JSON.parse(e);
+      const e = await da(t), n = JSON.parse(e);
       return typeof n.projectId != "string" || typeof n.chapterId != "string" ? null : {
         projectId: n.projectId,
         chapterId: n.chapterId,
@@ -7442,27 +7455,27 @@ class Fd {
     }
   }
 }
-const vd = async (r, t, e) => {
+const Gd = async (r, t, e) => {
   try {
     if (e) {
-      const a = await na.getChapter(e);
-      await q.createSnapshot({
+      const a = await ca.getChapter(e);
+      await z.createSnapshot({
         projectId: r,
         chapterId: String(a.id ?? e),
         content: String(a.content ?? ""),
         description: `자동 스냅샷 ${(/* @__PURE__ */ new Date()).toLocaleString()}`
       });
     } else
-      await q.createSnapshot({
+      await z.createSnapshot({
         projectId: r,
         content: JSON.stringify({ timestamp: Date.now() }),
         description: `프로젝트 스냅샷 ${(/* @__PURE__ */ new Date()).toLocaleString()}`
       });
-    await q.deleteOldSnapshots(r, Rn), t.info("Snapshot created", { projectId: r, chapterId: e });
+    await z.deleteOldSnapshots(r, jn), t.info("Snapshot created", { projectId: r, chapterId: e });
   } catch (n) {
     t.error("Failed to create snapshot", n);
   }
-}, Ud = async (r, t, e) => {
+}, Hd = async (r, t, e) => {
   const n = Array.from(
     new Set(Array.from(r.values()).map((a) => a.projectId))
   );
@@ -7474,7 +7487,7 @@ const vd = async (r, t, e) => {
       for (const [s] of o)
         await e(s);
     });
-}, Md = async (r, t, e) => {
+}, Yd = async (r, t, e) => {
   if (r.length === 0)
     return { mirrored: 0, snapshots: 0 };
   let n = 0, a = 0;
@@ -7486,7 +7499,7 @@ const vd = async (r, t, e) => {
     }
   for (const o of r)
     try {
-      await q.createSnapshot({
+      await z.createSnapshot({
         projectId: o.projectId,
         chapterId: o.chapterId,
         content: o.content,
@@ -7496,7 +7509,7 @@ const vd = async (r, t, e) => {
       e.error("Emergency snapshot failed", s);
     }
   return e.info("Emergency flush completed", { mirrored: n, snapshots: a }), { mirrored: n, snapshots: a };
-}, kd = async (r) => {
+}, zd = async (r) => {
   const {
     projectId: t,
     chapterId: e,
@@ -7512,34 +7525,34 @@ const vd = async (r, t, e) => {
   if (!(i - p < o)) {
     s.set(l, i);
     try {
-      await q.createSnapshot({
+      await z.createSnapshot({
         projectId: t,
         chapterId: e,
         content: n,
         description: `긴급 마이크로 스냅샷 ${(/* @__PURE__ */ new Date()).toLocaleString()}`
       }), await c(t, e, n);
-    } catch (A) {
-      d.warn("Failed to create emergency micro snapshot", { error: A, chapterId: e });
+    } catch (m) {
+      d.warn("Failed to create emergency micro snapshot", { error: m, chapterId: e });
     }
   }
-}, Wd = async (r) => {
+}, Xd = async (r) => {
   const { jobs: t, writeTimestampedMirror: e, logger: n } = r;
   for (; t.length > 0; ) {
     const a = t.shift();
     if (a)
       try {
-        await q.createSnapshot({
+        await z.createSnapshot({
           projectId: a.projectId,
           chapterId: a.chapterId,
           content: a.content,
           description: `자동 스냅샷 ${(/* @__PURE__ */ new Date()).toLocaleString()}`
-        }), await q.deleteOldSnapshots(a.projectId, Za), await e(a.projectId, a.chapterId, a.content);
+        }), await z.deleteOldSnapshots(a.projectId, io), await e(a.projectId, a.chapterId, a.content);
       } catch (o) {
         n.error("Failed to create snapshot", o);
       }
   }
-}, $ = N("AutoSaveManager");
-class Rt extends ha {
+}, B = D("AutoSaveManager");
+class Pt extends ya {
   static instance;
   // Save state
   saveTimers = /* @__PURE__ */ new Map();
@@ -7557,14 +7570,14 @@ class Rt extends ha {
   snapshotProcessing = !1;
   projectTaskQueue = /* @__PURE__ */ new Map();
   criticalFlushPromise = null;
-  mirrorStore = new Fd($);
+  mirrorStore = new xd(B);
   constructor() {
     super(), this.on("error", (t) => {
-      $.warn("Auto-save error event", t);
+      B.warn("Auto-save error event", t);
     }), this.startCleanupInterval();
   }
   static getInstance() {
-    return Rt.instance || (Rt.instance = new Rt()), Rt.instance;
+    return Pt.instance || (Pt.instance = new Pt()), Pt.instance;
   }
   // ─── Public API ──────────────────────────────────────────────────────────
   /** Check if there are unsaved changes pending IPC or DB write. */
@@ -7590,7 +7603,7 @@ class Rt extends ha {
       const o = this.mirrorStore.getMirrorBaseDir(t, e);
       await R.rm(o, { recursive: !0, force: !0 });
     } catch (o) {
-      $.warn("Failed to purge chapter mirrors", { projectId: t, chapterId: e, error: o });
+      B.warn("Failed to purge chapter mirrors", { projectId: t, chapterId: e, error: o });
     }
   }
   setConfig(t, e) {
@@ -7599,8 +7612,8 @@ class Rt extends ha {
   getConfig(t) {
     return this.configs.get(t) || {
       enabled: !0,
-      interval: Cn,
-      debounceMs: Ga
+      interval: On,
+      debounceMs: Ja
     };
   }
   // ─── Trigger Save (entry point from IPC) ─────────────────────────────────
@@ -7613,25 +7626,25 @@ class Rt extends ha {
       select: { projectId: !0, deletedAt: !0 }
     });
     if (!o || String(o.projectId) !== n || o.deletedAt) {
-      $.info("Skipping auto-save for missing/deleted chapter", {
+      B.info("Skipping auto-save for missing/deleted chapter", {
         chapterId: t,
         projectId: n
       });
       return;
     }
-    this.pendingSaves.set(t, { chapterId: t, content: e, projectId: n }), this.lastSaveAt.set(t, Date.now()), await this.mirrorStore.writeLatestMirror(n, t, e), kd({
+    this.pendingSaves.set(t, { chapterId: t, content: e, projectId: n }), this.lastSaveAt.set(t, Date.now()), await this.mirrorStore.writeLatestMirror(n, t, e), zd({
       projectId: n,
       chapterId: t,
       content: e,
-      maxLength: Xa,
-      minIntervalMs: qa,
+      maxLength: eo,
+      minIntervalMs: ro,
       lastSnapshotAtByChapterKey: this.lastEmergencySnapshotAt,
       writeTimestampedMirror: (d, l, i) => this.mirrorStore.writeTimestampedMirror(
         d,
         l,
         i
       ),
-      logger: $
+      logger: B
     });
     const s = this.saveTimers.get(t);
     s && clearTimeout(s);
@@ -7645,13 +7658,13 @@ class Rt extends ha {
     const e = this.pendingSaves.get(t);
     if (e)
       try {
-        await na.updateChapter({
+        await ca.updateChapter({
           id: e.chapterId,
           content: e.content
-        }), this.pendingSaves.delete(t), this.saveTimers.delete(t), this.lastSaveAt.delete(t), this.emit("saved", { chapterId: t }), await this.mirrorStore.writeLatestMirror(e.projectId, e.chapterId, e.content), this.maybeEnqueueSnapshot(e.projectId, e.chapterId, e.content), $.info("Auto-save completed", { chapterId: t });
+        }), this.pendingSaves.delete(t), this.saveTimers.delete(t), this.lastSaveAt.delete(t), this.emit("saved", { chapterId: t }), await this.mirrorStore.writeLatestMirror(e.projectId, e.chapterId, e.content), this.maybeEnqueueSnapshot(e.projectId, e.chapterId, e.content), B.info("Auto-save completed", { chapterId: t });
       } catch (n) {
-        if (bo(n) && n.code === E.VALIDATION_FAILED) {
-          $.warn("Auto-save blocked by validation; writing safety snapshot", {
+        if ($o(n) && n.code === E.VALIDATION_FAILED) {
+          B.warn("Auto-save blocked by validation; writing safety snapshot", {
             chapterId: t,
             error: n
           });
@@ -7664,42 +7677,42 @@ class Rt extends ha {
               e.projectId,
               e.chapterId,
               e.content
-            ), await q.createSnapshot({
+            ), await z.createSnapshot({
               projectId: e.projectId,
               chapterId: e.chapterId,
               content: e.content,
               description: `Safety snapshot (블로킹된 저장) ${(/* @__PURE__ */ new Date()).toLocaleString()}`
             });
           } catch (a) {
-            $.error("Failed to write safety snapshot after validation block", a);
+            B.error("Failed to write safety snapshot after validation block", a);
           }
           this.pendingSaves.delete(t), this.saveTimers.delete(t), this.lastSaveAt.delete(t), this.emit("save-blocked", { chapterId: t, error: n });
           return;
         }
-        $.error("Auto-save failed", n), this.listenerCount("error") > 0 && this.emit("error", { chapterId: t, error: n });
+        B.error("Auto-save failed", n), this.listenerCount("error") > 0 && this.emit("error", { chapterId: t, error: n });
       }
   }
   // ─── Snapshot Scheduling (Time Machine style) ────────────────────────────
   maybeEnqueueSnapshot(t, e, n) {
     const a = `${t}:${e}`, o = Date.now(), s = this.lastSnapshotAt.get(a) ?? 0;
-    if (o - s < Ne || n.length < to) return;
+    if (o - s < je || n.length < co) return;
     const c = this.hashContent(n);
     if (this.lastSnapshotHash.get(a) === c) return;
     const l = this.lastSnapshotLength.get(a) ?? 0;
     if (l > 0) {
       const i = Math.abs(n.length - l);
-      if (i / l < eo && i < ro) return;
+      if (i / l < lo && i < po) return;
     }
     this.lastSnapshotAt.set(a, o), this.lastSnapshotHash.set(a, c), this.lastSnapshotLength.set(a, n.length), this.snapshotQueue.push({ projectId: t, chapterId: e, content: n }), this.snapshotProcessing || (this.snapshotProcessing = !0, setImmediate(async () => {
       try {
-        await Wd({
+        await Xd({
           jobs: this.snapshotQueue,
-          writeTimestampedMirror: (i, p, A) => this.mirrorStore.writeTimestampedMirror(
+          writeTimestampedMirror: (i, p, m) => this.mirrorStore.writeTimestampedMirror(
             i,
             p,
-            A
+            m
           ),
-          logger: $
+          logger: B
         });
       } finally {
         this.snapshotProcessing = !1;
@@ -7735,13 +7748,13 @@ class Rt extends ha {
         );
       });
     }, e.interval);
-    typeof a.unref == "function" && a.unref(), this.intervalTimers.set(t, a), $.info("Auto-save started", { projectId: t, interval: e.interval });
+    typeof a.unref == "function" && a.unref(), this.intervalTimers.set(t, a), B.info("Auto-save started", { projectId: t, interval: e.interval });
   }
   stopAutoSave(t) {
     const e = this.intervalTimers.get(t);
-    e && (clearInterval(e), this.intervalTimers.delete(t), $.info("Auto-save stopped", { projectId: t }));
+    e && (clearInterval(e), this.intervalTimers.delete(t), B.info("Auto-save stopped", { projectId: t }));
     const n = this.snapshotTimers.get(t);
-    n && (clearInterval(n), this.snapshotTimers.delete(t), $.info("Snapshot schedule stopped", { projectId: t }));
+    n && (clearInterval(n), this.snapshotTimers.delete(t), B.info("Snapshot schedule stopped", { projectId: t }));
   }
   startSnapshotSchedule(t) {
     const e = this.snapshotTimers.get(t);
@@ -7752,21 +7765,21 @@ class Rt extends ha {
       this.enqueueProjectTask(t, async () => {
         await this.createSnapshot(t);
       });
-    }, Ne);
-    typeof n.unref == "function" && n.unref(), this.snapshotTimers.set(t, n), $.info("Snapshot schedule started", {
+    }, je);
+    typeof n.unref == "function" && n.unref(), this.snapshotTimers.set(t, n), B.info("Snapshot schedule started", {
       projectId: t,
-      interval: Ne
+      interval: je
     });
   }
   async createSnapshot(t, e) {
-    await vd(t, $, e);
+    await Gd(t, B, e);
   }
   // ─── Flush (quit / critical) ──────────────────────────────────────────────
   /**
    * Flush ALL pending saves to DB. Used during normal quit.
    */
   async flushAll() {
-    await Ud(
+    await Hd(
       this.pendingSaves,
       (t, e) => this.enqueueProjectTask(t, e),
       (t) => this.performSave(t)
@@ -7780,10 +7793,10 @@ class Rt extends ha {
   async flushCritical() {
     if (this.criticalFlushPromise)
       return this.criticalFlushPromise;
-    this.criticalFlushPromise = Md(
+    this.criticalFlushPromise = Yd(
       Array.from(this.pendingSaves.values()),
       (t, e, n) => this.mirrorStore.writeLatestMirror(t, e, n),
-      $
+      B
     );
     try {
       return await this.criticalFlushPromise;
@@ -7801,13 +7814,13 @@ class Rt extends ha {
   startCleanupInterval() {
     const t = setInterval(() => {
       this.cleanupOldEntries();
-    }, za);
+    }, to);
     typeof t.unref == "function" && t.unref();
   }
   cleanupOldEntries() {
     const t = Date.now();
     for (const [e, n] of Array.from(this.lastSaveAt.entries()))
-      if (t - n > Ya) {
+      if (t - n > Za) {
         const a = this.saveTimers.get(e);
         a && clearTimeout(a), this.saveTimers.delete(e), this.pendingSaves.delete(e), this.lastSaveAt.delete(e);
       }
@@ -7816,126 +7829,171 @@ class Rt extends ha {
     this.stopAutoSave(t), this.configs.delete(t);
   }
 }
-const Z = Rt.getInstance(), L = N("WindowManager"), je = "#f4f4f5";
-class Bd {
+const Q = Pt.getInstance(), Me = "#f4f4f5", se = () => {
+  const r = [
+    ht(process.resourcesPath, "icon.png"),
+    ht(process.resourcesPath, "build", "icons", "icon.png")
+  ], t = [
+    ht(T.getAppPath(), "build", "icons", "icon.png"),
+    ht(T.getAppPath(), "assets", "public", "luie.png")
+  ], e = T.isPackaged ? r : t;
+  for (const n of e)
+    if (Ta(n))
+      return n;
+}, ie = () => process.platform !== "darwin" ? {} : {
+  titleBarStyle: "hiddenInset",
+  trafficLightPosition: { x: Ao, y: yo }
+}, ue = (r) => process.platform !== "darwin" ? !1 : r === "visible", Kd = (r, t) => {
+  const e = ue(t);
+  if (process.platform === "darwin") {
+    if (e) {
+      r.isSimpleFullScreen() && r.setSimpleFullScreen(!1), r.isFullScreen() && r.setFullScreen(!1), r.setMenuBarVisibility(!0);
+      return;
+    }
+    r.setMenuBarVisibility(!1), r.isSimpleFullScreen() || r.setSimpleFullScreen(!0);
+    return;
+  }
+  r.setAutoHideMenuBar(!0), r.setMenuBarVisibility(!1);
+}, Vd = (r) => ({
+  preload: r,
+  contextIsolation: !0,
+  nodeIntegration: !1,
+  sandbox: !0
+}), ce = (r) => r ? { icon: r } : {}, ha = () => {
+  const r = T.isPackaged, t = process.env.VITE_DEV_SERVER_URL || "http://localhost:5173", e = !r && process.env.NODE_ENV !== "production";
+  return {
+    isPackaged: r,
+    devServerUrl: t,
+    useDevServer: e
+  };
+}, qd = (r, t) => {
+  const e = new URL(r.endsWith("/") ? r : `${r}/`);
+  return t.search && (e.search = t.search.startsWith("?") ? t.search.slice(1) : t.search), t.hash && (e.hash = t.hash.startsWith("#") ? t.hash : `#${t.hash}`), e.toString();
+}, Jd = async (r) => {
+  const t = ha(), e = r.route ?? {};
+  if (t.useDevServer) {
+    const a = qd(t.devServerUrl, e);
+    return r.logger.info(`Loading ${r.label} (dev)`, { url: a }), await r.window.loadURL(a), t;
+  }
+  const n = ht(r.baseDir, "../renderer/index.html");
+  return r.logger.info(`Loading ${r.label} (prod)`, { path: n }), await r.window.loadFile(n, {
+    hash: e.hash?.startsWith("#") ? e.hash.slice(1) : e.hash,
+    search: e.search
+  }), t;
+}, J = D("WindowManager");
+class Qd {
   mainWindow = null;
   startupWizardWindow = null;
-  resolveWindowIconPath() {
-    const t = [
-      V(process.resourcesPath, "icon.png"),
-      V(process.resourcesPath, "build", "icons", "icon.png")
-    ], e = [
-      V(S.getAppPath(), "build", "icons", "icon.png"),
-      V(S.getAppPath(), "assets", "public", "luie.png")
-    ], n = S.isPackaged ? t : e;
-    for (const a of n)
-      if (ga(a))
-        return a;
-  }
-  getTitleBarOptions() {
-    return process.platform !== "darwin" ? {} : {
-      titleBarStyle: "hiddenInset",
-      trafficLightPosition: { x: lo, y: po }
-    };
-  }
+  exportWindow = null;
+  worldGraphWindow = null;
   getMenuBarMode() {
     return _.getMenuBarMode();
   }
-  shouldShowMenuBar() {
-    return process.platform !== "darwin" ? !1 : this.getMenuBarMode() === "visible";
-  }
   applyMenuBarMode(t) {
-    const e = this.shouldShowMenuBar();
-    if (process.platform === "darwin") {
-      if (e) {
-        t.isSimpleFullScreen() && t.setSimpleFullScreen(!1), t.isFullScreen() && t.setFullScreen(!1), t.setMenuBarVisibility(!0);
-        return;
-      }
-      t.setMenuBarVisibility(!1), t.isSimpleFullScreen() || t.setSimpleFullScreen(!0);
-      return;
-    }
-    t.setAutoHideMenuBar(!0), t.setMenuBarVisibility(!1);
+    Kd(t, this.getMenuBarMode());
+  }
+  createBrowserWindow(t) {
+    return new Rt({
+      ...t,
+      webPreferences: t.webPreferences ?? Vd(ht(Ne, "../preload/index.cjs"))
+    });
+  }
+  attachWindowClosedLogger(t, e, n) {
+    t.on("closed", () => {
+      e(), J.info(`${n} closed`);
+    });
+  }
+  async loadSecondaryWindowRoute(t) {
+    const e = await Jd({
+      baseDir: Ne,
+      label: t.label,
+      logger: J,
+      route: t.route,
+      window: t.window
+    });
+    t.openDevToolsInDev && e.useDevServer && t.window.webContents.openDevTools({ mode: "detach" });
   }
   createMainWindow(t = {}) {
     const e = t.deferShow === !0;
     if (this.mainWindow)
       return this.mainWindow;
-    const n = _a({
-      defaultWidth: oo,
-      defaultHeight: so
-    }), a = this.resolveWindowIconPath();
-    this.mainWindow = new tt({
+    const n = Oa({
+      defaultWidth: fo,
+      defaultHeight: go
+    }), a = ha(), o = se();
+    if (this.mainWindow = this.createBrowserWindow({
       x: n.x,
       y: n.y,
       width: n.width,
       height: n.height,
-      minWidth: io,
-      minHeight: co,
-      title: Cr,
+      minWidth: Eo,
+      minHeight: mo,
+      title: Lr,
       show: !1,
-      backgroundColor: je,
-      ...a ? { icon: a } : {},
-      ...this.getTitleBarOptions(),
-      ...process.platform !== "darwin" ? { autoHideMenuBar: !this.shouldShowMenuBar() } : {},
-      webPreferences: {
-        preload: V(st, "../preload/index.cjs"),
-        contextIsolation: !0,
-        nodeIntegration: !1,
-        sandbox: !0
-      }
-    }), this.applyMenuBarMode(this.mainWindow), n.manage(this.mainWindow);
-    const o = S.isPackaged, s = process.env.VITE_DEV_SERVER_URL || "http://localhost:5173", c = !o && process.env.NODE_ENV !== "production";
-    if (c)
-      L.info("Loading development server", { url: s, isPackaged: o }), this.mainWindow.loadURL(s).catch((d) => {
-        L.error("Failed to load development renderer URL", { url: s, error: d });
+      backgroundColor: Me,
+      ...ce(o),
+      ...ie(),
+      ...process.platform !== "darwin" ? { autoHideMenuBar: !ue(this.getMenuBarMode()) } : {}
+    }), this.applyMenuBarMode(this.mainWindow), n.manage(this.mainWindow), a.useDevServer)
+      J.info("Loading development server", {
+        url: a.devServerUrl,
+        isPackaged: a.isPackaged
+      }), this.mainWindow.loadURL(a.devServerUrl).catch((s) => {
+        J.error("Failed to load development renderer URL", {
+          url: a.devServerUrl,
+          error: s
+        });
       }), this.mainWindow.webContents.openDevTools({ mode: "detach" });
     else {
-      const d = V(st, "../renderer/index.html");
-      L.info("Loading production renderer", { path: d, isPackaged: o }), this.mainWindow.loadFile(d).catch((l) => {
-        L.error("Failed to load production renderer file", { path: d, error: l });
+      const s = ht(Ne, "../renderer/index.html");
+      J.info("Loading production renderer", {
+        path: s,
+        isPackaged: a.isPackaged
+      }), this.mainWindow.loadFile(s).catch((c) => {
+        J.error("Failed to load production renderer file", {
+          path: s,
+          error: c
+        });
       });
     }
     return this.mainWindow.once("ready-to-show", () => {
-      this.mainWindow && !this.mainWindow.isDestroyed() && (L.info("Main window ready to show", { deferShow: e }), e || this.showMainWindow());
-    }), this.mainWindow.on("closed", () => {
-      this.mainWindow = null, L.info("Main window closed");
-    }), L.info("Main window created", { isPackaged: o, useDevServer: c }), this.mainWindow;
+      this.mainWindow && !this.mainWindow.isDestroyed() && (J.info("Main window ready to show", { deferShow: e }), e || this.showMainWindow());
+    }), this.attachWindowClosedLogger(
+      this.mainWindow,
+      () => {
+        this.mainWindow = null;
+      },
+      "Main window"
+    ), J.info("Main window created", {
+      isPackaged: a.isPackaged,
+      useDevServer: a.useDevServer
+    }), this.mainWindow;
   }
   createStartupWizardWindow() {
-    if (this.startupWizardWindow && !this.startupWizardWindow.isDestroyed())
-      return this.startupWizardWindow.focus(), this.startupWizardWindow;
-    const t = this.resolveWindowIconPath(), e = S.isPackaged, n = process.env.VITE_DEV_SERVER_URL || "http://localhost:5173", a = !e && process.env.NODE_ENV !== "production";
-    if (this.startupWizardWindow = new tt({
+    return this.startupWizardWindow && !this.startupWizardWindow.isDestroyed() ? (this.startupWizardWindow.focus(), this.startupWizardWindow) : (this.startupWizardWindow = this.createBrowserWindow({
       width: 980,
       height: 720,
       minWidth: 860,
       minHeight: 620,
       show: !0,
-      title: `${Cr} Setup`,
+      title: `${Lr} Setup`,
       backgroundColor: "#0b1020",
-      ...t ? { icon: t } : {},
-      ...this.getTitleBarOptions(),
-      ...process.platform !== "darwin" ? { autoHideMenuBar: !0 } : {},
-      webPreferences: {
-        preload: V(st, "../preload/index.cjs"),
-        contextIsolation: !0,
-        nodeIntegration: !1,
-        sandbox: !0
-      }
-    }), this.applyMenuBarMode(this.startupWizardWindow), a) {
-      const o = `${n}/#startup-wizard`;
-      L.info("Loading startup wizard (dev)", { wizardUrl: o }), this.startupWizardWindow.loadURL(o).catch((s) => {
-        L.error("Failed to load startup wizard (dev)", { wizardUrl: o, error: s });
-      });
-    } else {
-      const o = V(st, "../renderer/index.html");
-      L.info("Loading startup wizard (prod)", { path: o }), this.startupWizardWindow.loadFile(o, { hash: "startup-wizard" }).catch((s) => {
-        L.error("Failed to load startup wizard (prod)", { path: o, error: s });
-      });
-    }
-    return this.startupWizardWindow.on("closed", () => {
-      this.startupWizardWindow = null, L.info("Startup wizard window closed");
-    }), this.startupWizardWindow;
+      ...ce(se()),
+      ...ie(),
+      ...process.platform !== "darwin" ? { autoHideMenuBar: !0 } : {}
+    }), this.applyMenuBarMode(this.startupWizardWindow), this.loadSecondaryWindowRoute({
+      label: "startup wizard",
+      route: { hash: "startup-wizard" },
+      window: this.startupWizardWindow
+    }).catch((t) => {
+      J.error("Failed to load startup wizard", { error: t });
+    }), this.attachWindowClosedLogger(
+      this.startupWizardWindow,
+      () => {
+        this.startupWizardWindow = null;
+      },
+      "Startup wizard window"
+    ), this.startupWizardWindow);
   }
   getMainWindow() {
     return this.mainWindow;
@@ -7955,103 +8013,72 @@ class Bd {
   showMainWindow() {
     !this.mainWindow || this.mainWindow.isDestroyed() || (this.mainWindow.isVisible() || this.mainWindow.show(), this.mainWindow.focus());
   }
-  // ─── Export Window ────────────────────────────────────────────────────────
-  exportWindow = null;
   createExportWindow(t) {
     if (this.exportWindow)
       return this.exportWindow.focus(), this.exportWindow;
-    const e = 1200, n = 900, a = this.resolveWindowIconPath();
-    this.exportWindow = new tt({
-      width: e,
-      height: n,
+    this.exportWindow = this.createBrowserWindow({
+      width: 1200,
+      height: 900,
       minWidth: 1e3,
       minHeight: 700,
       title: "내보내기 및 인쇄 미리보기",
-      backgroundColor: je,
-      ...a ? { icon: a } : {},
-      ...this.getTitleBarOptions(),
-      ...process.platform !== "darwin" ? { autoHideMenuBar: !this.shouldShowMenuBar() } : {},
-      webPreferences: {
-        preload: V(st, "../preload/index.cjs"),
-        contextIsolation: !0,
-        nodeIntegration: !1,
-        sandbox: !0
-      }
+      backgroundColor: Me,
+      ...ce(se()),
+      ...ie(),
+      ...process.platform !== "darwin" ? { autoHideMenuBar: !ue(this.getMenuBarMode()) } : {}
     }), this.applyMenuBarMode(this.exportWindow);
-    const o = S.isPackaged, s = process.env.VITE_DEV_SERVER_URL || "http://localhost:5173", c = !o && process.env.NODE_ENV !== "production", d = `?chapterId=${t}`, l = "#export";
-    if (c) {
-      const i = `${s}/${d}${l}`;
-      L.info("Loading export window (dev)", { url: i }), this.exportWindow.loadURL(i).catch((p) => {
-        L.error("Failed to load export window (dev)", { url: i, error: p });
-      });
-    } else {
-      const i = V(st, "../renderer/index.html");
-      L.info("Loading export window (prod)", { path: i }), this.exportWindow.loadFile(i, { hash: "export", search: d }).catch((p) => {
-        L.error("Failed to load export window (prod)", {
-          path: i,
-          hash: "export",
-          search: d,
-          error: p
-        });
-      });
-    }
-    return this.exportWindow.on("closed", () => {
-      this.exportWindow = null, L.info("Export window closed");
-    }), c && this.exportWindow.webContents.openDevTools({ mode: "detach" }), this.exportWindow;
+    const e = { hash: "export", search: `?chapterId=${t}` };
+    return this.loadSecondaryWindowRoute({
+      label: "export window",
+      openDevToolsInDev: !0,
+      route: e,
+      window: this.exportWindow
+    }).catch((n) => {
+      J.error("Failed to load export window", { route: e, error: n });
+    }), this.attachWindowClosedLogger(
+      this.exportWindow,
+      () => {
+        this.exportWindow = null;
+      },
+      "Export window"
+    ), this.exportWindow;
   }
-  // ─── World Graph Window ───────────────────────────────────────────────────
-  worldGraphWindow = null;
   createWorldGraphWindow() {
-    if (this.worldGraphWindow)
-      return this.worldGraphWindow.focus(), this.worldGraphWindow;
-    const t = 1200, e = 800, n = this.resolveWindowIconPath();
-    this.worldGraphWindow = new tt({
-      width: t,
-      height: e,
+    return this.worldGraphWindow ? (this.worldGraphWindow.focus(), this.worldGraphWindow) : (this.worldGraphWindow = this.createBrowserWindow({
+      width: 1200,
+      height: 800,
       minWidth: 1e3,
       minHeight: 600,
       title: "세계관 그래프",
-      backgroundColor: je,
-      ...n ? { icon: n } : {},
-      ...this.getTitleBarOptions(),
-      ...process.platform !== "darwin" ? { autoHideMenuBar: !this.shouldShowMenuBar() } : {},
-      webPreferences: {
-        preload: V(st, "../preload/index.cjs"),
-        contextIsolation: !0,
-        nodeIntegration: !1,
-        sandbox: !0
-      }
-    }), this.applyMenuBarMode(this.worldGraphWindow);
-    const a = S.isPackaged, o = process.env.VITE_DEV_SERVER_URL || "http://localhost:5173", s = !a && process.env.NODE_ENV !== "production", c = "#world-graph";
-    if (s) {
-      const d = `${o}/${c}`;
-      L.info("Loading world graph window (dev)", { url: d }), this.worldGraphWindow.loadURL(d).catch((l) => {
-        L.error("Failed to load world graph window (dev)", { url: d, error: l });
-      });
-    } else {
-      const d = V(st, "../renderer/index.html");
-      L.info("Loading world graph window (prod)", { path: d }), this.worldGraphWindow.loadFile(d, { hash: "world-graph" }).catch((l) => {
-        L.error("Failed to load world graph window (prod)", {
-          path: d,
-          hash: "world-graph",
-          error: l
-        });
-      });
-    }
-    return this.worldGraphWindow.on("closed", () => {
-      this.worldGraphWindow = null, L.info("World graph window closed");
-    }), s && this.worldGraphWindow.webContents.openDevTools({ mode: "detach" }), this.worldGraphWindow;
+      backgroundColor: Me,
+      ...ce(se()),
+      ...ie(),
+      ...process.platform !== "darwin" ? { autoHideMenuBar: !ue(this.getMenuBarMode()) } : {}
+    }), this.applyMenuBarMode(this.worldGraphWindow), this.loadSecondaryWindowRoute({
+      label: "world graph window",
+      openDevToolsInDev: !0,
+      route: { hash: "world-graph" },
+      window: this.worldGraphWindow
+    }).catch((t) => {
+      J.error("Failed to load world graph window", { error: t });
+    }), this.attachWindowClosedLogger(
+      this.worldGraphWindow,
+      () => {
+        this.worldGraphWindow = null;
+      },
+      "World graph window"
+    ), this.worldGraphWindow);
   }
   applyMenuBarModeToAllWindows() {
-    const t = tt.getAllWindows();
+    const t = Rt.getAllWindows();
     for (const e of t)
       e.isDestroyed() || this.applyMenuBarMode(e);
   }
 }
-const H = new Bd(), rp = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const G = new Qd(), Ep = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  windowManager: H
-}, Symbol.toStringTag, { value: "Module" })), $d = () => {
+  windowManager: G
+}, Symbol.toStringTag, { value: "Module" })), Zd = () => {
   const r = {
     label: "File",
     submenu: process.platform === "darwin" ? [{ role: "close" }] : [{ role: "close" }, { role: "quit" }]
@@ -8063,53 +8090,53 @@ const H = new Bd(), rp = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.de
     { role: "viewMenu" },
     { role: "windowMenu" }
   ] : [r, { role: "editMenu" }, { role: "viewMenu" }, { role: "windowMenu" }, { role: "help" }];
-}, xd = (r) => {
+}, tl = (r) => {
   if (process.platform !== "darwin" || r === "hidden") {
-    Pe.setApplicationMenu(null);
+    De.setApplicationMenu(null);
     return;
   }
-  Pe.setApplicationMenu(Pe.buildFromTemplate($d()));
-}, Yt = N("BootstrapLifecycle");
-let yt = { isReady: !1 }, Gt = null;
-const Gd = (r) => r instanceof Error && r.message ? r.message : "Failed to initialize database", Hd = () => {
-  for (const r of tt.getAllWindows())
+  De.setApplicationMenu(De.buildFromTemplate(Zd()));
+}, Ht = D("BootstrapLifecycle");
+let mt = { isReady: !1 }, xt = null;
+const el = (r) => r instanceof Error && r.message ? r.message : "Failed to initialize database", rl = () => {
+  for (const r of Rt.getAllWindows())
     if (!r.isDestroyed())
       try {
-        r.webContents.send(Ft.APP_BOOTSTRAP_STATUS_CHANGED, yt);
+        r.webContents.send(bt.APP_BOOTSTRAP_STATUS_CHANGED, mt);
       } catch (t) {
-        Yt.warn("Failed to broadcast bootstrap status", t);
+        Ht.warn("Failed to broadcast bootstrap status", t);
       }
-}, be = (r) => {
-  yt = r, Hd();
-}, np = () => yt, ca = async () => {
-  if (yt.isReady)
-    return yt;
-  if (Gt)
-    return Gt;
-  be({ isReady: !1 });
-  const r = mn({
+}, ke = (r) => {
+  mt = r, rl();
+}, mp = () => mt, fa = async () => {
+  if (mt.isReady)
+    return mt;
+  if (xt)
+    return xt;
+  ke({ isReady: !1 });
+  const r = wn({
     scope: "bootstrap",
     event: "bootstrap.ensure-ready"
   });
-  return Gt = h.initialize().then(() => (be({ isReady: !0 }), r.complete(Yt, {
+  return xt = h.initialize().then(() => (ke({ isReady: !0 }), r.complete(Ht, {
     isReady: !0
-  }), Yt.info("Bootstrap completed"), yt)).catch((t) => {
-    const e = Gd(t);
-    return be({ isReady: !1, error: e }), r.fail(Yt, t, {
+  }), Ht.info("Bootstrap completed"), mt)).catch((t) => {
+    const e = el(t);
+    return ke({ isReady: !1, error: e }), r.fail(Ht, t, {
       isReady: !1
-    }), Yt.error("Bootstrap failed", t), yt;
+    }), Ht.error("Bootstrap failed", t), mt;
   }).finally(() => {
-    Gt = null;
-  }), Gt;
-}, Yd = N("StartupReadinessService"), Fe = "startup:wizard-completed", da = () => (/* @__PURE__ */ new Date()).toISOString(), O = (r, t, e, n = !0) => ({
+    xt = null;
+  }), xt;
+}, nl = D("StartupReadinessService"), We = "startup:wizard-completed", ga = () => (/* @__PURE__ */ new Date()).toISOString(), O = (r, t, e, n = !0) => ({
   key: r,
   ok: t,
   blocking: n,
   detail: e,
-  checkedAt: da()
+  checkedAt: ga()
 });
-class zd {
-  events = new Ia();
+class al {
+  events = new ja();
   async getReadiness() {
     const t = await this.runChecks(), e = t.filter((o) => o.blocking && !o.ok).map((o) => o.key), n = _.getStartupSettings().completedAt;
     return {
@@ -8123,13 +8150,13 @@ class zd {
     const t = await this.getReadiness();
     if (t.reasons.length > 0)
       return t;
-    _.setStartupCompletedAt(da());
+    _.setStartupCompletedAt(ga());
     const e = await this.getReadiness();
-    return this.events.emit(Fe, e), e;
+    return this.events.emit(We, e), e;
   }
   onWizardCompleted(t) {
-    return this.events.on(Fe, t), () => {
-      this.events.off(Fe, t);
+    return this.events.on(We, t), () => {
+      this.events.off(We, t);
     };
   }
   async runChecks() {
@@ -8138,7 +8165,7 @@ class zd {
   }
   async checkSafeStorage() {
     try {
-      const t = rt.isEncryptionAvailable();
+      const t = tt.isEncryptionAvailable();
       return O(
         "osPermission",
         t,
@@ -8149,9 +8176,9 @@ class zd {
     }
   }
   async checkDataDirRW() {
-    const t = S.getPath("userData"), e = W.join(t, `.startup-rw-${Date.now()}.tmp`);
+    const t = T.getPath("userData"), e = k.join(t, `.startup-rw-${Date.now()}.tmp`);
     try {
-      return await Sr(t, { recursive: !0 }), await Tr(e, "ok", { encoding: "utf8" }), O("dataDirRW", !0, t);
+      return await Ir(t, { recursive: !0 }), await Pr(e, "ok", { encoding: "utf8" }), O("dataDirRW", !0, t);
     } catch (n) {
       return O(
         "dataDirRW",
@@ -8159,14 +8186,14 @@ class zd {
         `${t}: ${this.toErrorMessage(n)}`
       );
     } finally {
-      await wr(e).catch(() => {
+      await Cr(e).catch(() => {
       });
     }
   }
   async checkDefaultLuiePath() {
-    const t = S.getPath("documents"), e = W.join(t, Nn), n = W.join(e, ".startup-probe");
+    const t = T.getPath("documents"), e = k.join(t, bn), n = k.join(e, ".startup-probe");
     try {
-      return await Sr(e, { recursive: !0 }), await fn(e, Be.R_OK | Be.W_OK), await Tr(n, "ok", { encoding: "utf8" }), O("defaultLuiePath", !0, e);
+      return await Ir(e, { recursive: !0 }), await yn(e, Ye.R_OK | Ye.W_OK), await Pr(n, "ok", { encoding: "utf8" }), O("defaultLuiePath", !0, e);
     } catch (a) {
       return O(
         "defaultLuiePath",
@@ -8174,7 +8201,7 @@ class zd {
         `${e}: ${this.toErrorMessage(a)}`
       );
     } finally {
-      await wr(n).catch(() => {
+      await Cr(n).catch(() => {
       });
     }
   }
@@ -8194,7 +8221,7 @@ class zd {
   }
   async checkSupabaseRuntimeConfig() {
     try {
-      const t = lt(), e = Yn();
+      const t = it(), e = qn();
       return t ? O(
         "supabaseRuntimeConfig",
         !0,
@@ -8218,7 +8245,7 @@ class zd {
           "Sync login is not connected yet (non-blocking)",
           !1
         );
-      const e = J.getAccessToken(t), n = J.getRefreshToken(t);
+      const e = V.getAccessToken(t), n = V.getRefreshToken(t);
       if (!(!!e.token || !!n.token))
         return O(
           "supabaseSession",
@@ -8233,7 +8260,7 @@ class zd {
           "Access token is unavailable. Reconnect sync login.",
           !1
         );
-      const o = lt();
+      const o = it();
       if (!o)
         return O(
           "supabaseSession",
@@ -8273,21 +8300,21 @@ class zd {
         !1
       );
     } catch (t) {
-      return Yd.warn("Startup session check failed", { error: t }), O("supabaseSession", !1, this.toErrorMessage(t), !1);
+      return nl.warn("Startup session check failed", { error: t }), O("supabaseSession", !1, this.toErrorMessage(t), !1);
     }
   }
   toErrorMessage(t) {
     return t instanceof Error && t.message ? t.message : String(t);
   }
 }
-const ve = new zd(), ln = 1500, Xd = 8e3, qd = () => [
+const Be = new al(), gn = 1500, ol = 8e3, sl = () => [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
   "img-src 'self' data: https:",
   "font-src 'self' data: https://cdn.jsdelivr.net",
   "connect-src 'self'"
-].join("; "), Kd = () => [
+].join("; "), il = () => [
   "default-src 'self' http://localhost:5173 ws://localhost:5173",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:5173",
   "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net http://localhost:5173",
@@ -8295,40 +8322,40 @@ const ve = new zd(), ln = 1500, Xd = 8e3, qd = () => [
   "font-src 'self' data: https://cdn.jsdelivr.net",
   "connect-src 'self' http://localhost:5173 ws://localhost:5173",
   "worker-src 'self' blob:"
-].join("; "), Vd = (r) => r ? process.env.LUIE_DEV_CSP === "1" ? Kd() : null : qd(), Jd = (r) => r.startsWith("file://"), Qd = async (r, t, e) => {
+].join("; "), cl = (r) => r ? process.env.LUIE_DEV_CSP === "1" ? il() : null : sl(), dl = (r) => r.startsWith("file://"), ll = async (r, t, e) => {
   r.error("Renderer process crashed", {
     killed: e,
     webContentsId: t.id
   });
   try {
-    await Z.flushCritical(), r.info("Emergency save completed after crash");
+    await Q.flushCritical(), r.info("Emergency save completed after crash");
   } catch (a) {
     r.error("Failed to save during crash recovery", a);
   }
-  const n = H.getMainWindow();
-  n && !n.isDestroyed() && ((await We.showMessageBox(n, {
+  const n = G.getMainWindow();
+  n && !n.isDestroyed() && ((await He.showMessageBox(n, {
     type: "error",
     title: "앱이 예기치 않게 종료되었습니다",
     message: "렌더러 프로세스가 충돌했습니다. 앱을 다시 시작하시겠습니까?",
     buttons: ["다시 시작", "종료"],
     defaultId: 0,
     cancelId: 1
-  })).response === 0 ? (H.closeMainWindow(), setTimeout(() => {
-    H.createMainWindow();
-  }, 500)) : S.quit());
-}, Zd = async (r) => {
-  const t = Date.now(), e = await ca();
+  })).response === 0 ? (G.closeMainWindow(), setTimeout(() => {
+    G.createMainWindow();
+  }, 500)) : T.quit());
+}, pl = async (r) => {
+  const t = Date.now(), e = await fa();
   if (!e.isReady) {
     r.error("App bootstrap did not complete", e);
     return;
   }
   try {
-    await Z.flushMirrorsToSnapshots("startup-recovery"), q.pruneSnapshotsAllProjects(), q.cleanupOrphanArtifacts("startup");
+    await Q.flushMirrorsToSnapshots("startup-recovery"), z.pruneSnapshotsAllProjects(), z.cleanupOrphanArtifacts("startup");
   } catch (n) {
     r.warn("Snapshot recovery/pruning skipped", n);
   }
   try {
-    await F.reconcileProjectPathDuplicates();
+    await b.reconcileProjectPathDuplicates();
   } catch (n) {
     r.warn("Project path duplicate reconciliation skipped", n);
   }
@@ -8341,65 +8368,65 @@ const ve = new zd(), ln = 1500, Xd = 8e3, qd = () => [
   r.info("Deferred startup maintenance completed", {
     elapsedMs: Date.now() - t
   });
-}, tl = (r, t = {}) => {
+}, ul = (r, t = {}) => {
   const e = t.startupStartedAtMs ?? Date.now();
-  S.whenReady().then(async () => {
+  T.whenReady().then(async () => {
     r.info("App is ready", {
       startupElapsedMs: Date.now() - e
     });
-    const n = Ro(), a = Vd(n);
+    const n = vo(), a = cl(n);
     let o = !1, s = !1, c = !1, d = null;
-    const l = (m) => {
-      if (!o && (o = !0, H.showMainWindow(), r.info("Startup checkpoint: renderer ready", {
-        reason: m,
+    const l = (A) => {
+      if (!o && (o = !0, G.showMainWindow(), r.info("Startup checkpoint: renderer ready", {
+        reason: A,
         startupElapsedMs: Date.now() - e
       }), r.info("Startup checkpoint: main window shown", {
-        reason: m,
+        reason: A,
         startupElapsedMs: Date.now() - e
       }), !!t.onFirstRendererReady))
         try {
           t.onFirstRendererReady();
-        } catch (T) {
-          r.warn("Startup hook failed: onFirstRendererReady", T);
+        } catch (S) {
+          r.warn("Startup hook failed: onFirstRendererReady", S);
         }
-    }, i = (m) => {
+    }, i = (A) => {
       s || (s = !0, r.info("Deferred startup maintenance scheduled", {
-        reason: m,
-        delayMs: ln
+        reason: A,
+        delayMs: gn
       }), setTimeout(() => {
-        Zd(r);
-      }, ln));
-    }, p = (m) => {
+        pl(r);
+      }, gn));
+    }, p = (A) => {
       if (c) return;
       c = !0, r.info("Starting main window flow", {
-        reason: m,
+        reason: A,
         startupElapsedMs: Date.now() - e
-      }), H.createMainWindow({ deferShow: !0 }), r.info("Startup checkpoint: main window requested", {
+      }), G.createMainWindow({ deferShow: !0 }), r.info("Startup checkpoint: main window requested", {
         startupElapsedMs: Date.now() - e
       });
-      const T = Date.now();
-      ca().then((I) => {
+      const S = Date.now();
+      fa().then((I) => {
         r.info("Startup checkpoint: bootstrap ready", {
           isReady: I.isReady,
-          bootstrapElapsedMs: Date.now() - T,
+          bootstrapElapsedMs: Date.now() - S,
           startupElapsedMs: Date.now() - e
         }), I.isReady || r.error("App bootstrap did not complete", I);
       }).catch((I) => {
         r.error("App bootstrap did not complete", I);
       }), d && clearTimeout(d), d = setTimeout(() => {
         o || l("fallback-timeout"), i("fallback-timeout");
-      }, Xd);
+      }, ol);
     };
-    n && yr.defaultSession.webRequest.onBeforeSendHeaders((m, T) => {
-      T({
+    n && _r.defaultSession.webRequest.onBeforeSendHeaders((A, S) => {
+      S({
         requestHeaders: {
-          ...m.requestHeaders,
+          ...A.requestHeaders,
           Origin: "http://localhost:5173"
         }
       });
-    }), yr.defaultSession.webRequest.onHeadersReceived((m, T) => {
+    }), _r.defaultSession.webRequest.onHeadersReceived((A, S) => {
       const I = {
-        ...m.responseHeaders
+        ...A.responseHeaders
       };
       n && (I["Access-Control-Allow-Origin"] = ["*"], I["Access-Control-Allow-Headers"] = ["*"], I["Access-Control-Allow-Methods"] = [
         "GET",
@@ -8408,136 +8435,136 @@ const ve = new zd(), ln = 1500, Xd = 8e3, qd = () => [
         "PATCH",
         "DELETE",
         "OPTIONS"
-      ]), a && !Jd(m.url) && (I["Content-Security-Policy"] = [a]), T({ responseHeaders: I });
-    }), S.on("web-contents-created", (m, T) => {
-      T.on(
+      ]), a && !dl(A.url) && (I["Content-Security-Policy"] = [a]), S({ responseHeaders: I });
+    }), T.on("web-contents-created", (A, S) => {
+      S.on(
         "did-fail-load",
-        (I, b, wt, Mt, y) => {
+        (I, j, St, Ut, y) => {
           r.error("Renderer failed to load", {
-            errorCode: b,
-            errorDescription: wt,
-            validatedURL: Mt,
+            errorCode: j,
+            errorDescription: St,
+            validatedURL: Ut,
             isMainFrame: y,
             startupElapsedMs: Date.now() - e
           });
         }
-      ), T.on("did-finish-load", () => {
+      ), S.on("did-finish-load", () => {
         const I = Date.now() - e;
         r.info("Renderer finished load", {
-          url: T.getURL(),
+          url: S.getURL(),
           startupElapsedMs: I
-        }), T.getType() === "window" && H.isMainWindowWebContentsId(T.id) && (l("did-finish-load"), i("did-finish-load"));
-      }), T.on("console-message", (I) => {
-        const { level: b, message: wt, lineNumber: Mt, sourceId: y } = I;
-        (b === "error" ? 3 : b === "warning" ? 2 : b === "info" ? 1 : 0) < 2 || r.warn("Renderer console message", {
-          level: b,
-          message: wt,
-          line: Mt,
+        }), S.getType() === "window" && G.isMainWindowWebContentsId(S.id) && (l("did-finish-load"), i("did-finish-load"));
+      }), S.on("console-message", (I) => {
+        const { level: j, message: St, lineNumber: Ut, sourceId: y } = I;
+        (j === "error" ? 3 : j === "warning" ? 2 : j === "info" ? 1 : 0) < 2 || r.warn("Renderer console message", {
+          level: j,
+          message: St,
+          line: Ut,
           sourceId: y
         });
-      }), T.on("render-process-gone", (I, b) => {
-        Qd(r, T, b.reason === "killed");
+      }), S.on("render-process-gone", (I, j) => {
+        ll(r, S, j.reason === "killed");
       });
     });
-    const A = Date.now(), { registerIPCHandlers: w } = await import("./index-6tHHrYSS.js");
+    const m = Date.now(), { registerIPCHandlers: w } = await import("./index-6tHHrYSS.js");
     w(), r.info("Startup checkpoint: IPC handlers ready", {
-      elapsedMs: Date.now() - A,
+      elapsedMs: Date.now() - m,
       startupElapsedMs: Date.now() - e
-    }), xd(_.getMenuBarMode());
-    const g = await ve.getReadiness();
+    }), tl(_.getMenuBarMode());
+    const g = await Be.getReadiness();
     r.info("Startup readiness evaluated", {
       mustRunWizard: g.mustRunWizard,
       reasons: g.reasons,
       completedAt: g.completedAt
-    }), g.mustRunWizard ? (H.createStartupWizardWindow(), r.info("Startup wizard requested before main window", {
+    }), g.mustRunWizard ? (G.createStartupWizardWindow(), r.info("Startup wizard requested before main window", {
       reasons: g.reasons
-    })) : p("readiness-pass"), ve.onWizardCompleted((m) => {
+    })) : p("readiness-pass"), Be.onWizardCompleted((A) => {
       r.info("Startup wizard completion received", {
-        mustRunWizard: m.mustRunWizard,
-        reasons: m.reasons
-      }), !m.mustRunWizard && (H.closeStartupWizardWindow(), p("wizard-complete"));
-    }), S.on("activate", () => {
-      tt.getAllWindows().length === 0 && ve.getReadiness().then((m) => {
-        if (m.mustRunWizard) {
-          H.createStartupWizardWindow();
+        mustRunWizard: A.mustRunWizard,
+        reasons: A.reasons
+      }), !A.mustRunWizard && (G.closeStartupWizardWindow(), p("wizard-complete"));
+    }), T.on("activate", () => {
+      Rt.getAllWindows().length === 0 && Be.getReadiness().then((A) => {
+        if (A.mustRunWizard) {
+          G.createStartupWizardWindow();
           return;
         }
         p("activate");
       });
     });
   });
-}, el = "crash-reports", pn = 100;
-let un = !1;
-const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOKEN]").replace(/\b(eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.)[A-Za-z0-9_-]+\b/g, "$1[REDACTED_JWT]").replace(
+}, hl = "crash-reports", En = 100;
+let mn = !1;
+const $e = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOKEN]").replace(/\b(eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.)[A-Za-z0-9_-]+\b/g, "$1[REDACTED_JWT]").replace(
   /\b(AIza[0-9A-Za-z_-]{16,}|sk-[A-Za-z0-9_-]{16,}|pk_[A-Za-z0-9_-]{16,})\b/g,
   "[REDACTED_SECRET]"
-), ir = (r, t = 0) => {
+), ur = (r, t = 0) => {
   if (r == null) return r;
   if (t >= 4) return "[TRUNCATED_DEPTH]";
   if (typeof r == "string" || typeof r == "number" || typeof r == "boolean")
-    return typeof r == "string" ? Ue(r) : r;
+    return typeof r == "string" ? $e(r) : r;
   if (typeof r == "bigint" || typeof r == "symbol") return r.toString();
   if (typeof r == "function") return "[Function]";
   if (r instanceof Error)
     return {
       name: r.name,
-      message: Ue(r.message),
-      stack: r.stack ? Ue(r.stack) : void 0
+      message: $e(r.message),
+      stack: r.stack ? $e(r.stack) : void 0
     };
   if (Array.isArray(r))
-    return r.slice(0, 50).map((e) => ir(e, t + 1));
+    return r.slice(0, 50).map((e) => ur(e, t + 1));
   if (typeof r == "object") {
     const n = Object.entries(r).slice(0, 100), a = {};
     for (const [o, s] of n)
-      a[o] = ir(s, t + 1);
+      a[o] = ur(s, t + 1);
     return a;
   }
   return String(r);
-}, rl = () => W.join(S.getPath("userData"), el), nl = async (r, t) => {
-  const e = await Nt.readdir(r, { withFileTypes: !0 }), n = await Promise.all(
+}, fl = () => k.join(T.getPath("userData"), hl), gl = async (r, t) => {
+  const e = await Ct.readdir(r, { withFileTypes: !0 }), n = await Promise.all(
     e.filter((o) => o.isFile() && o.name.endsWith(".json")).map(async (o) => {
-      const s = W.join(r, o.name), c = await Nt.stat(s);
+      const s = k.join(r, o.name), c = await Ct.stat(s);
       return { fullPath: s, mtimeMs: c.mtimeMs };
     })
   );
-  if (n.length <= pn) return;
+  if (n.length <= En) return;
   n.sort((o, s) => s.mtimeMs - o.mtimeMs);
-  const a = n.slice(pn);
+  const a = n.slice(En);
   await Promise.all(
     a.map(async (o) => {
       try {
-        await Nt.rm(o.fullPath, { force: !0 });
+        await Ct.rm(o.fullPath, { force: !0 });
       } catch (s) {
         t.warn("Failed to remove stale crash report", { error: s, path: o.fullPath });
       }
     })
   );
-}, al = async (r, t, e) => {
-  const n = rl();
-  await Nt.mkdir(n, { recursive: !0 });
-  const a = (/* @__PURE__ */ new Date()).toISOString(), o = X(), s = `${a.replace(/[:.]/g, "-")}-${t}-${o}.json`, c = W.join(n, s), d = `${c}.tmp`, l = {
+}, El = async (r, t, e) => {
+  const n = fl();
+  await Ct.mkdir(n, { recursive: !0 });
+  const a = (/* @__PURE__ */ new Date()).toISOString(), o = Y(), s = `${a.replace(/[:.]/g, "-")}-${t}-${o}.json`, c = k.join(n, s), d = `${c}.tmp`, l = {
     id: o,
     timestamp: a,
     type: t,
-    appVersion: S.getVersion(),
-    isPackaged: S.isPackaged,
+    appVersion: T.getVersion(),
+    isPackaged: T.isPackaged,
     platform: process.platform,
     arch: process.arch,
     pid: process.pid,
     processType: process.type,
     electronVersion: process.versions.electron,
     nodeVersion: process.versions.node,
-    payload: ir(e)
+    payload: ur(e)
   };
-  await Nt.writeFile(d, JSON.stringify(l, null, 2), "utf-8"), await Nt.rename(d, c), await nl(n, r);
-}, ol = (r, t) => {
+  await Ct.writeFile(d, JSON.stringify(l, null, 2), "utf-8"), await Ct.rename(d, c), await gl(n, r);
+}, ml = (r, t) => {
   const e = t ?? {}, n = r ?? {};
   return {
     webContentsId: typeof n.id == "number" ? n.id : void 0,
     reason: e.reason,
     exitCode: e.exitCode
   };
-}, sl = (r) => {
+}, Al = (r) => {
   const t = r ?? {};
   return {
     type: t.type,
@@ -8546,11 +8573,11 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
     serviceName: t.serviceName,
     name: t.name
   };
-}, il = (r) => {
-  if (un) return;
-  un = !0;
+}, yl = (r) => {
+  if (mn) return;
+  mn = !0;
   const t = (e, n) => {
-    al(r, e, n).catch((a) => {
+    El(r, e, n).catch((a) => {
       r.warn("Failed to persist crash report", { error: a, kind: e });
     });
   };
@@ -8563,94 +8590,94 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
     t("unhandled-rejection", {
       reason: e
     });
-  }), S.on("render-process-gone", (e, n, a) => {
-    t("render-process-gone", ol(n, a));
-  }), S.on("child-process-gone", (e, n) => {
-    t("child-process-gone", sl(n));
+  }), T.on("render-process-gone", (e, n, a) => {
+    t("render-process-gone", ml(n, a));
+  }), T.on("child-process-gone", (e, n) => {
+    t("child-process-gone", Al(n));
   });
-}, zt = N("DeepLink"), cl = "luie://auth/callback", dl = "luie://auth/return", ll = "luie://auth/", ie = () => {
-  const r = H.getMainWindow();
+}, Yt = D("DeepLink"), Sl = "luie://auth/callback", Tl = "luie://auth/return", wl = "luie://auth/", de = () => {
+  const r = G.getMainWindow();
   if (r) {
     r.isMinimized() && r.restore(), r.focus();
     return;
   }
-  const t = H.getStartupWizardWindow();
+  const t = G.getStartupWizardWindow();
   t && !t.isDestroyed() && (t.isMinimized() && t.restore(), t.focus());
-}, Me = (r) => {
-  const t = tt.getAllWindows();
+}, xe = (r) => {
+  const t = Rt.getAllWindows();
   for (const e of t)
     if (!e.isDestroyed())
       try {
-        e.webContents.send(Ft.SYNC_AUTH_RESULT, r);
+        e.webContents.send(bt.SYNC_AUTH_RESULT, r);
       } catch (n) {
-        zt.warn("Failed to broadcast OAuth result", { error: n });
+        Yt.warn("Failed to broadcast OAuth result", { error: n });
       }
-}, pl = (r) => {
+}, _l = (r) => {
   const t = r instanceof Error ? r.message : String(r);
   return t.includes("SYNC_AUTH_NO_PENDING_SESSION") ? "NO_PENDING" : t.includes("SYNC_AUTH_REQUEST_EXPIRED") ? "EXPIRED" : t.includes("SYNC_AUTH_STATE_MISMATCH") ? "STATE_MISMATCH" : "UNKNOWN";
-}, ul = (r) => r === "NO_PENDING" || r === "EXPIRED" || r === "STATE_MISMATCH", hn = (r) => r === "NO_PENDING" ? "NO_PENDING" : r === "EXPIRED" ? "EXPIRED" : r === "STATE_MISMATCH" ? "STATE_MISMATCH" : "UNKNOWN", cr = (r) => {
+}, Il = (r) => r === "NO_PENDING" || r === "EXPIRED" || r === "STATE_MISMATCH", An = (r) => r === "NO_PENDING" ? "NO_PENDING" : r === "EXPIRED" ? "EXPIRED" : r === "STATE_MISMATCH" ? "STATE_MISMATCH" : "UNKNOWN", hr = (r) => {
   for (const t of r)
-    if (typeof t == "string" && t.startsWith(ll))
+    if (typeof t == "string" && t.startsWith(wl))
       return t;
   return null;
-}, dr = async (r) => {
-  if (r.startsWith(dl))
-    return ie(), zt.info("OAuth return deep link handled", { url: r }), !0;
-  if (!r.startsWith(cl))
+}, fr = async (r) => {
+  if (r.startsWith(Tl))
+    return de(), Yt.info("OAuth return deep link handled", { url: r }), !0;
+  if (!r.startsWith(Sl))
     return !1;
   try {
-    return await Jt.handleOAuthCallback(r), ie(), Me({
+    return await qt.handleOAuthCallback(r), de(), xe({
       status: "success",
       timestamp: (/* @__PURE__ */ new Date()).toISOString()
-    }), zt.info("OAuth callback processed", { url: r }), !0;
+    }), Yt.info("OAuth callback processed", { url: r }), !0;
   } catch (t) {
-    const e = t instanceof Error ? t.message : String(t), n = pl(t), a = Jt.getStatus();
-    return a.connected && ul(n) ? (ie(), Me({
+    const e = t instanceof Error ? t.message : String(t), n = _l(t), a = qt.getStatus();
+    return a.connected && Il(n) ? (de(), xe({
       status: "stale",
-      reason: hn(n),
+      reason: An(n),
       detail: e,
       timestamp: (/* @__PURE__ */ new Date()).toISOString()
-    }), zt.warn("OAuth callback arrived after connection was already established", {
+    }), Yt.warn("OAuth callback arrived after connection was already established", {
       url: r,
       reason: n,
       error: t
-    }), !0) : (ie(), Me({
+    }), !0) : (de(), xe({
       status: "error",
-      reason: hn(n),
+      reason: An(n),
       detail: e,
       timestamp: (/* @__PURE__ */ new Date()).toISOString()
-    }), zt.error(a.connected ? "Failed to process OAuth callback even though sync is connected" : "Failed to process OAuth callback", {
+    }), Yt.error(a.connected ? "Failed to process OAuth callback even though sync is connected" : "Failed to process OAuth callback", {
       url: r,
       reason: n,
       error: t
     }), !1);
   }
-}, it = (r, t, e) => {
+}, at = (r, t, e) => {
   if (!(!r || r.isDestroyed()))
     try {
-      r.webContents.send(Ft.APP_QUIT_PHASE, { phase: t, message: e });
+      r.webContents.send(bt.APP_QUIT_PHASE, { phase: t, message: e });
     } catch {
     }
-}, ke = async (r, t) => r && !r.isDestroyed() ? We.showMessageBox(r, t) : We.showMessageBox(t), hl = (r) => {
+}, Ge = async (r, t) => r && !r.isDestroyed() ? He.showMessageBox(r, t) : He.showMessageBox(t), Pl = (r) => {
   let t = !1;
-  S.on("window-all-closed", () => {
-    process.platform !== "darwin" && S.quit();
-  }), S.on("before-quit", (e) => {
+  T.on("window-all-closed", () => {
+    process.platform !== "darwin" && T.quit();
+  }), T.on("before-quit", (e) => {
     t || (t = !0, e.preventDefault(), (async () => {
       r.info("App is quitting");
-      const n = H.getMainWindow();
-      it(n, "prepare", "데이터를 안전하게 정리하고 있습니다...");
+      const n = G.getMainWindow();
+      at(n, "prepare", "데이터를 안전하게 정리하고 있습니다...");
       let a = !1, o = !1, s = !1;
       if (n && !n.isDestroyed() && n.webContents)
         try {
           a = await new Promise((p) => {
-            const A = setTimeout(
+            const m = setTimeout(
               () => p(!1),
-              Ka
+              no
             );
-            ua.once(Ft.APP_FLUSH_COMPLETE, (w, g) => {
-              o = !!g?.hadQueuedAutoSaves, s = !!g?.rendererDirty, clearTimeout(A), p(!0);
-            }), n.webContents.send(Ft.APP_BEFORE_QUIT);
+            Aa.once(bt.APP_FLUSH_COMPLETE, (w, g) => {
+              o = !!g?.hadQueuedAutoSaves, s = !!g?.rendererDirty, clearTimeout(m), p(!0);
+            }), n.webContents.send(bt.APP_BEFORE_QUIT);
           }), r.info("Renderer flush phase completed", {
             rendererFlushed: a,
             rendererHadQueued: o,
@@ -8659,17 +8686,17 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
         } catch (p) {
           r.warn("Renderer flush request failed", p);
         }
-      it(n, "mirror-durable", "크래시 대비 미러를 먼저 보존하고 있습니다...");
+      at(n, "mirror-durable", "크래시 대비 미러를 먼저 보존하고 있습니다...");
       try {
-        const { mirrored: p } = await Z.flushCritical();
+        const { mirrored: p } = await Q.flushCritical();
         r.info("Pre-dialog mirror flush completed", { mirrored: p });
       } catch (p) {
         r.error("Pre-dialog mirror flush failed", p);
       }
-      const c = Z.getPendingSaveCount();
+      const c = Q.getPendingSaveCount();
       if (c > 0 || o || s || !a)
         try {
-          const p = c > 0 ? `${c}개의 변경사항이 저장되지 않았습니다.` : "저장되지 않은 변경사항이 있을 수 있습니다.", A = await ke(n, {
+          const p = c > 0 ? `${c}개의 변경사항이 저장되지 않았습니다.` : "저장되지 않은 변경사항이 있을 수 있습니다.", m = await Ge(n, {
             type: "question",
             title: "저장되지 않은 변경사항",
             message: p,
@@ -8679,24 +8706,24 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
             cancelId: 2,
             noLink: !0
           });
-          if (A.response === 2) {
-            r.info("Quit cancelled by user"), t = !1, it(n, "aborted", "종료가 취소되었습니다.");
+          if (m.response === 2) {
+            r.info("Quit cancelled by user"), t = !1, at(n, "aborted", "종료가 취소되었습니다.");
             return;
           }
-          if (A.response === 0) {
+          if (m.response === 0) {
             r.info("User chose: save and quit");
             try {
               await Promise.race([
-                Z.flushAll(),
-                new Promise((w) => setTimeout(w, Va))
-              ]), await Z.flushMirrorsToSnapshots("session-end");
+                Q.flushAll(),
+                new Promise((w) => setTimeout(w, ao))
+              ]), await Q.flushMirrorsToSnapshots("session-end");
             } catch (w) {
               r.error("Save during quit failed", w);
             }
           } else {
             r.info("User chose: quit without saving (mirrors already on disk)");
             try {
-              await Z.flushMirrorsToSnapshots("session-end-no-save");
+              await Q.flushMirrorsToSnapshots("session-end-no-save");
             } catch (w) {
               r.warn("Mirror-to-snapshot conversion failed", w);
             }
@@ -8706,14 +8733,14 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
         }
       else
         try {
-          await Z.flushMirrorsToSnapshots("session-end");
+          await Q.flushMirrorsToSnapshots("session-end");
         } catch (p) {
           r.warn("Session-end mirror flush failed", p);
         }
-      it(n, "export-flush", "프로젝트 파일(.luie)을 안전하게 저장 중입니다...");
+      at(n, "export-flush", "프로젝트 파일(.luie)을 안전하게 저장 중입니다...");
       let l = "continue";
-      if ((await F.flushPendingExports(Ja)).timedOut) {
-        const p = await ke(n, {
+      if ((await b.flushPendingExports(oo)).timedOut) {
+        const p = await Ge(n, {
           type: "question",
           title: "저장 지연 감지",
           message: "프로젝트 파일 저장이 지연되고 있습니다.",
@@ -8723,7 +8750,7 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
           cancelId: 1,
           noLink: !0
         });
-        (p.response === 1 || p.response === 0 && (await F.flushPendingExports(Qa)).timedOut && (await ke(n, {
+        (p.response === 1 || p.response === 0 && (await b.flushPendingExports(so)).timedOut && (await Ge(n, {
           type: "warning",
           title: "저장 지연 지속",
           message: "저장이 아직 완료되지 않았습니다.",
@@ -8735,12 +8762,12 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
         })).response === 0) && (l = "cancel");
       }
       if (l === "cancel") {
-        r.info("Quit cancelled by user during export flush"), t = !1, it(n, "aborted", "종료가 취소되었습니다.");
+        r.info("Quit cancelled by user during export flush"), t = !1, at(n, "aborted", "종료가 취소되었습니다.");
         return;
       }
-      it(n, "finalize", "마무리 정리 중입니다...");
+      at(n, "finalize", "마무리 정리 중입니다...");
       try {
-        await q.pruneSnapshotsAllProjects();
+        await z.pruneSnapshotsAllProjects();
       } catch (p) {
         r.warn("Snapshot pruning failed during quit", p);
       }
@@ -8749,161 +8776,161 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
       } catch (p) {
         r.warn("DB disconnect failed during quit", p);
       }
-      it(n, "completed", "안전하게 종료합니다."), S.exit(0);
+      at(n, "completed", "안전하게 종료합니다."), T.exit(0);
     })().catch((n) => {
       r.error("Quit guard failed", n), t = !1;
-      const a = H.getMainWindow();
-      it(a, "aborted", "종료 중 오류가 발생해 취소되었습니다.");
+      const a = G.getMainWindow();
+      at(a, "aborted", "종료 중 오류가 발생해 취소되었습니다.");
     }));
   }), process.on("SIGINT", () => {
-    r.info("Received SIGINT"), S.quit();
+    r.info("Received SIGINT"), T.quit();
   }), process.on("SIGTERM", () => {
-    r.info("Received SIGTERM"), S.quit();
+    r.info("Received SIGTERM"), T.quit();
   }), process.on("uncaughtException", (e) => {
     r.error("Uncaught exception", e);
   }), process.on("unhandledRejection", (e) => {
     r.error("Unhandled rejection", e);
   });
-}, fl = (r) => {
-  if (!(process.env.E2E_DISABLE_SINGLE_INSTANCE === "1" ? !0 : S.requestSingleInstanceLock())) {
-    const n = cr(process.argv);
+}, Cl = (r) => {
+  if (!(process.env.E2E_DISABLE_SINGLE_INSTANCE === "1" ? !0 : T.requestSingleInstanceLock())) {
+    const n = hr(process.argv);
     return r.info("Secondary instance detected; forwarding to primary instance and exiting", {
       hasCallbackUrl: !!n,
       argv: process.argv
-    }), S.quit(), !1;
+    }), T.quit(), !1;
   }
-  return S.on("second-instance", (n, a) => {
-    const o = cr(a);
+  return T.on("second-instance", (n, a) => {
+    const o = hr(a);
     r.info("Second instance event received", {
       hasCallbackUrl: !!o
-    }), o && dr(o);
-    const s = H.getMainWindow();
+    }), o && fr(o);
+    const s = G.getMainWindow();
     s && (s.isMinimized() && s.restore(), s.focus());
   }), !0;
 };
 process.env.NODE_ENV !== "production" && await import("./config-B9Gu_Tvs.js").then((r) => r.c);
-_n({
+Dn({
   logToFile: !0,
-  logFilePath: W.join(S.getPath("userData"), yo, So),
-  minLevel: ur.INFO
+  logFilePath: k.join(T.getPath("userData"), Ro, Do),
+  minLevel: mr.INFO
 });
-const dt = N("Main"), le = process.defaultApp === !0, lr = Date.now();
-dt.info("Main process bootstrap", {
+const st = D("Main"), he = process.defaultApp === !0, gr = Date.now();
+st.info("Main process bootstrap", {
   execPath: process.execPath,
   argv: process.argv,
-  isPackaged: S.isPackaged,
-  defaultApp: le,
-  startupStartedAtMs: lr
+  isPackaged: T.isPackaged,
+  defaultApp: he,
+  startupStartedAtMs: gr
 });
-const gl = () => {
+const Rl = () => {
   const r = "luie";
   let t = !1;
-  const e = S.getAppPath();
-  if (le ? e && (t = S.setAsDefaultProtocolClient(r, process.execPath, [e])) : t = S.setAsDefaultProtocolClient(r), !t) {
+  const e = T.getAppPath();
+  if (he ? e && (t = T.setAsDefaultProtocolClient(r, process.execPath, [e])) : t = T.setAsDefaultProtocolClient(r), !t) {
     const a = "SYNC_PROTOCOL_REGISTRATION_FAILED:luie:setAsDefaultProtocolClient returned false";
-    _.getSyncSettings().connected || _.setSyncSettings({ lastError: a }), dt.warn("Failed to register custom protocol for OAuth callback", {
+    _.getSyncSettings().connected || _.setSyncSettings({ lastError: a }), st.warn("Failed to register custom protocol for OAuth callback", {
       protocol: r,
-      defaultApp: le,
+      defaultApp: he,
       reason: a
     });
     return;
   }
-  _.getSyncSettings().lastError?.startsWith("SYNC_PROTOCOL_REGISTRATION_FAILED:") && _.setSyncSettings({ lastError: void 0 }), dt.info("Custom protocol registered", {
+  _.getSyncSettings().lastError?.startsWith("SYNC_PROTOCOL_REGISTRATION_FAILED:") && _.setSyncSettings({ lastError: void 0 }), st.info("Custom protocol registered", {
     protocol: r,
-    defaultApp: le,
+    defaultApp: he,
     appEntry: e
   });
 };
-if (!fl(dt))
-  S.quit();
+if (!Cl(st))
+  T.quit();
 else {
-  il(dt), jo(), S.disableHardwareAcceleration(), process.platform === "darwin" && S.on("open-url", (t, e) => {
-    t.preventDefault(), dr(e);
-  }), gl();
-  const r = cr(process.argv);
-  r && dr(r), tl(dt, {
-    startupStartedAtMs: lr,
+  yl(st), Bo(), T.disableHardwareAcceleration(), process.platform === "darwin" && T.on("open-url", (t, e) => {
+    t.preventDefault(), fr(e);
+  }), Rl();
+  const r = hr(process.argv);
+  r && fr(r), ul(st, {
+    startupStartedAtMs: gr,
     onFirstRendererReady: () => {
       const t = Date.now();
-      Jt.initialize(), dt.info("Startup checkpoint: sync service initialized", {
+      qt.initialize(), st.info("Startup checkpoint: sync service initialized", {
         elapsedMs: Date.now() - t,
-        startupElapsedMs: Date.now() - lr
+        startupElapsedMs: Date.now() - gr
       });
     }
-  }), hl(dt);
+  }), Pl(st);
 }
 export {
-  Xl as $,
-  $a as A,
-  Vl as B,
-  bt as C,
-  Yl as D,
+  ip as $,
+  Va as A,
+  lp as B,
+  jt as C,
+  op as D,
   E,
-  zl as F,
-  Er as G,
-  ys as H,
-  Ft as I,
-  As as J,
-  G as K,
-  K as L,
-  we as M,
-  Dn as N,
-  Ln as O,
-  Bl as P,
-  Qt as Q,
-  Ae as R,
+  sp as F,
+  Sr as G,
+  Rs as H,
+  bt as I,
+  Cs as J,
+  x as K,
+  X as L,
+  Pe as M,
+  Fn as N,
+  vn as O,
+  tp as P,
+  Jt as Q,
+  Te as R,
   f as S,
-  ye as T,
-  Wl as U,
-  Se as V,
-  $l as W,
-  fr as X,
-  Te as Y,
-  ms as Z,
-  ws as _,
-  me as a,
-  Gl as a0,
-  Hl as a1,
-  xd as a2,
-  ve as a3,
-  Jt as a4,
-  H as a5,
-  ca as a6,
-  np as a7,
-  na as a8,
-  Qe as a9,
-  Ze as aa,
-  Z as ab,
-  q as ac,
-  Nr as ad,
-  xl as ae,
-  Kl as af,
-  Zl as ag,
-  tp as ah,
-  rp as ai,
-  ep as b,
-  N as c,
+  we as T,
+  Zl as U,
+  _e as V,
+  ep as W,
+  yr as X,
+  Ie as Y,
+  Ps as Z,
+  Ls as _,
+  Se as a,
+  np as a0,
+  ap as a1,
+  tl as a2,
+  Be as a3,
+  qt as a4,
+  G as a5,
+  fa as a6,
+  mp as a7,
+  ca as a8,
+  nr as a9,
+  ar as aa,
+  Q as ab,
+  z as ac,
+  jr as ad,
+  rp as ae,
+  dp as af,
+  hp as ag,
+  fp as ah,
+  Ep as ai,
+  gp as b,
+  D as c,
   h as d,
-  z as e,
-  vt as f,
-  Ql as g,
-  hr as h,
-  nd as i,
-  Ra as j,
-  Et as k,
-  bo as l,
-  ql as m,
-  Zt as n,
+  K as e,
+  Ft as f,
+  up as g,
+  Ar as h,
+  pd as i,
+  va as j,
+  ft as k,
+  $o as l,
+  cp as m,
+  Qt as n,
   Kt as o,
-  F as p,
-  fe as q,
-  et as r,
-  Ss as s,
-  us as t,
-  gs as u,
-  Jl as v,
-  ba as w,
-  _s as x,
-  Es as y,
-  Ts as z
+  b as p,
+  me as q,
+  Z as r,
+  Ds as s,
+  Ss as t,
+  _s as u,
+  pp as v,
+  $a as w,
+  Os as x,
+  Is as y,
+  Ns as z
 };

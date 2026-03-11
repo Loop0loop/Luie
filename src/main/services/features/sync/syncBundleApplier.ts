@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import type { LuiePackageExportData } from "../../io/luiePackageTypes.js";
 import { db } from "../../../database/index.js";
 import {
@@ -80,32 +81,27 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
   const prisma = db.getClient();
   const deletedProjectIds = collectDeletedProjectIds(input.bundle);
   try {
-    await prisma.$transaction(async (tx: unknown) => {
-      const transactionClient = tx as ReturnType<(typeof db)["getClient"]>;
-      await applyProjectDeletes(transactionClient, deletedProjectIds);
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await applyProjectDeletes(tx, deletedProjectIds);
       await upsertProjects(
-        transactionClient,
+        tx,
         input.bundle.projects,
         deletedProjectIds,
       );
 
       for (const chapter of input.bundle.chapters) {
         if (deletedProjectIds.has(chapter.projectId)) continue;
-        await upsertChapter(transactionClient, chapter);
+        await upsertChapter(tx, chapter);
       }
 
       await upsertCharacters(
-        transactionClient,
+        tx,
         input.bundle.characters,
         deletedProjectIds,
       );
-      await upsertTerms(
-        transactionClient,
-        input.bundle.terms,
-        deletedProjectIds,
-      );
+      await upsertTerms(tx, input.bundle.terms, deletedProjectIds);
       await applyChapterTombstones(
-        transactionClient,
+        tx,
         input.bundle.tombstones,
         deletedProjectIds,
       );

@@ -2,94 +2,88 @@
  * Window Manager - BrowserWindow 관리
  */
 
-import { BrowserWindow, app } from 'electron'
-import { existsSync } from 'fs'
-import { join } from 'path'
-import windowStateKeeper from 'electron-window-state'
-import { createLogger } from '../../shared/logger/index.js'
+import { BrowserWindow, type BrowserWindowConstructorOptions } from "electron"
+import { join } from "path"
+import windowStateKeeper from "electron-window-state"
+import { createLogger } from "../../shared/logger/index.js"
 import {
   APP_NAME,
   WINDOW_DEFAULT_HEIGHT,
   WINDOW_DEFAULT_WIDTH,
   WINDOW_MIN_HEIGHT,
   WINDOW_MIN_WIDTH,
-  WINDOW_TRAFFIC_LIGHT_X,
-  WINDOW_TRAFFIC_LIGHT_Y,
-} from '../../shared/constants/index.js'
-import { settingsManager } from './settingsManager.js'
+} from "../../shared/constants/index.js"
+import { settingsManager } from "./settingsManager.js"
+import {
+  applyWindowMenuBarMode,
+  createSecureWebPreferences,
+  getTitleBarOptions,
+  resolveWindowIconPath,
+  shouldShowMenuBar,
+  WINDOW_BACKGROUND_COLOR,
+  withWindowIcon,
+} from "./window/windowChrome.js"
+import {
+  getRendererEnvironment,
+  loadRendererRoute,
+  type RendererRouteTarget,
+} from "./window/windowRouting.js"
 
-const logger = createLogger('WindowManager')
-const WINDOW_BACKGROUND_COLOR = '#f4f4f5'
+const logger = createLogger("WindowManager")
 
 class WindowManager {
   private mainWindow: BrowserWindow | null = null
   private startupWizardWindow: BrowserWindow | null = null
-
-  private resolveWindowIconPath(): string | undefined {
-    const packagedCandidates = [
-      join(process.resourcesPath, 'icon.png'),
-      join(process.resourcesPath, 'build', 'icons', 'icon.png'),
-    ]
-    const devCandidates = [
-      join(app.getAppPath(), 'build', 'icons', 'icon.png'),
-      join(app.getAppPath(), 'assets', 'public', 'luie.png'),
-    ]
-
-    const candidates = app.isPackaged ? packagedCandidates : devCandidates
-    for (const candidate of candidates) {
-      if (existsSync(candidate)) {
-        return candidate
-      }
-    }
-    return undefined
-  }
-
-  private getTitleBarOptions() {
-    if (process.platform !== 'darwin') {
-      return {}
-    }
-
-    return {
-      titleBarStyle: 'hiddenInset' as const,
-      trafficLightPosition: { x: WINDOW_TRAFFIC_LIGHT_X, y: WINDOW_TRAFFIC_LIGHT_Y },
-    }
-  }
+  private exportWindow: BrowserWindow | null = null
+  private worldGraphWindow: BrowserWindow | null = null
 
   private getMenuBarMode() {
     return settingsManager.getMenuBarMode()
   }
 
-  private shouldShowMenuBar() {
-    if (process.platform !== 'darwin') {
-      return false
-    }
-    return this.getMenuBarMode() === 'visible'
+  private applyMenuBarMode(win: BrowserWindow) {
+    applyWindowMenuBarMode(win, this.getMenuBarMode())
   }
 
-  private applyMenuBarMode(win: BrowserWindow) {
-    const shouldShowMenuBar = this.shouldShowMenuBar()
+  private createBrowserWindow(
+    options: BrowserWindowConstructorOptions,
+  ): BrowserWindow {
+    return new BrowserWindow({
+      ...options,
+      webPreferences:
+        options.webPreferences ??
+        createSecureWebPreferences(join(__dirname, "../preload/index.cjs")),
+    })
+  }
 
-    if (process.platform === 'darwin') {
-      if (shouldShowMenuBar) {
-        if (win.isSimpleFullScreen()) {
-          win.setSimpleFullScreen(false)
-        }
-        if (win.isFullScreen()) {
-          win.setFullScreen(false)
-        }
-        win.setMenuBarVisibility(true)
-        return
-      }
+  private attachWindowClosedLogger(
+    win: BrowserWindow,
+    onClosed: () => void,
+    label: string,
+  ): void {
+    win.on("closed", () => {
+      onClosed()
+      logger.info(`${label} closed`)
+    })
+  }
 
-      win.setMenuBarVisibility(false)
-      if (!win.isSimpleFullScreen()) {
-        win.setSimpleFullScreen(true)
-      }
-      return
+  private async loadSecondaryWindowRoute(input: {
+    label: string
+    openDevToolsInDev?: boolean
+    route: RendererRouteTarget
+    window: BrowserWindow
+  }): Promise<void> {
+    const environment = await loadRendererRoute({
+      baseDir: __dirname,
+      label: input.label,
+      logger,
+      route: input.route,
+      window: input.window,
+    })
+
+    if (input.openDevToolsInDev && environment.useDevServer) {
+      input.window.webContents.openDevTools({ mode: "detach" })
     }
-
-    win.setAutoHideMenuBar(true)
-    win.setMenuBarVisibility(false)
   }
 
   createMainWindow(options: { deferShow?: boolean } = {}): BrowserWindow {
@@ -98,15 +92,14 @@ class WindowManager {
       return this.mainWindow
     }
 
-    // Load window state (position, size, maximized)
     const windowState = windowStateKeeper({
       defaultWidth: WINDOW_DEFAULT_WIDTH,
       defaultHeight: WINDOW_DEFAULT_HEIGHT,
     })
+    const environment = getRendererEnvironment()
+    const windowIconPath = resolveWindowIconPath()
 
-    const windowIconPath = this.resolveWindowIconPath()
-
-    this.mainWindow = new BrowserWindow({
+    this.mainWindow = this.createBrowserWindow({
       x: windowState.x,
       y: windowState.y,
       width: windowState.width,
@@ -116,63 +109,63 @@ class WindowManager {
       title: APP_NAME,
       show: false,
       backgroundColor: WINDOW_BACKGROUND_COLOR,
-      ...(windowIconPath ? { icon: windowIconPath } : {}),
-      ...this.getTitleBarOptions(),
-      ...(process.platform !== 'darwin'
-        ? { autoHideMenuBar: !this.shouldShowMenuBar() }
+      ...withWindowIcon(windowIconPath),
+      ...getTitleBarOptions(),
+      ...(process.platform !== "darwin"
+        ? { autoHideMenuBar: !shouldShowMenuBar(this.getMenuBarMode()) }
         : {}),
-      webPreferences: {
-        preload: join(__dirname, '../preload/index.cjs'),
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: true,
-      },
     })
 
     this.applyMenuBarMode(this.mainWindow)
-
-    // Track window state changes
     windowState.manage(this.mainWindow)
 
-    // Load the renderer based on environment
-    const isPackaged = app.isPackaged
-
-    // electron-vite dev command sets VITE_DEV_SERVER_URL
-    // If not packaged and no VITE_DEV_SERVER_URL, check if dev server is available
-    const devServerUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173'
-
-    // Use dev server if not packaged (unless explicitly building for production preview)
-    const useDevServer = !isPackaged && process.env.NODE_ENV !== 'production'
-
-    if (useDevServer) {
-      logger.info('Loading development server', { url: devServerUrl, isPackaged })
-      void this.mainWindow.loadURL(devServerUrl).catch((error) => {
-        logger.error('Failed to load development renderer URL', { url: devServerUrl, error })
+    if (environment.useDevServer) {
+      logger.info("Loading development server", {
+        url: environment.devServerUrl,
+        isPackaged: environment.isPackaged,
       })
-      this.mainWindow.webContents.openDevTools({ mode: 'detach' })
+      void this.mainWindow.loadURL(environment.devServerUrl).catch((error) => {
+        logger.error("Failed to load development renderer URL", {
+          url: environment.devServerUrl,
+          error,
+        })
+      })
+      this.mainWindow.webContents.openDevTools({ mode: "detach" })
     } else {
-      const indexPath = join(__dirname, '../renderer/index.html')
-      logger.info('Loading production renderer', { path: indexPath, isPackaged })
+      const indexPath = join(__dirname, "../renderer/index.html")
+      logger.info("Loading production renderer", {
+        path: indexPath,
+        isPackaged: environment.isPackaged,
+      })
       void this.mainWindow.loadFile(indexPath).catch((error) => {
-        logger.error('Failed to load production renderer file', { path: indexPath, error })
+        logger.error("Failed to load production renderer file", {
+          path: indexPath,
+          error,
+        })
       })
     }
 
-    this.mainWindow.once('ready-to-show', () => {
+    this.mainWindow.once("ready-to-show", () => {
       if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-        logger.info('Main window ready to show', { deferShow })
+        logger.info("Main window ready to show", { deferShow })
         if (!deferShow) {
           this.showMainWindow()
         }
       }
     })
 
-    this.mainWindow.on('closed', () => {
-      this.mainWindow = null
-      logger.info('Main window closed')
-    })
+    this.attachWindowClosedLogger(
+      this.mainWindow,
+      () => {
+        this.mainWindow = null
+      },
+      "Main window",
+    )
 
-    logger.info('Main window created', { isPackaged, useDevServer })
+    logger.info("Main window created", {
+      isPackaged: environment.isPackaged,
+      useDevServer: environment.useDevServer,
+    })
     return this.mainWindow
   }
 
@@ -182,50 +175,36 @@ class WindowManager {
       return this.startupWizardWindow
     }
 
-    const windowIconPath = this.resolveWindowIconPath()
-    const isPackaged = app.isPackaged
-    const devServerUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173'
-    const useDevServer = !isPackaged && process.env.NODE_ENV !== 'production'
-
-    this.startupWizardWindow = new BrowserWindow({
+    this.startupWizardWindow = this.createBrowserWindow({
       width: 980,
       height: 720,
       minWidth: 860,
       minHeight: 620,
       show: true,
       title: `${APP_NAME} Setup`,
-      backgroundColor: '#0b1020',
-      ...(windowIconPath ? { icon: windowIconPath } : {}),
-      ...this.getTitleBarOptions(),
-      ...(process.platform !== 'darwin' ? { autoHideMenuBar: true } : {}),
-      webPreferences: {
-        preload: join(__dirname, '../preload/index.cjs'),
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: true,
-      },
+      backgroundColor: "#0b1020",
+      ...withWindowIcon(resolveWindowIconPath()),
+      ...getTitleBarOptions(),
+      ...(process.platform !== "darwin" ? { autoHideMenuBar: true } : {}),
     })
 
     this.applyMenuBarMode(this.startupWizardWindow)
 
-    if (useDevServer) {
-      const wizardUrl = `${devServerUrl}/#startup-wizard`
-      logger.info('Loading startup wizard (dev)', { wizardUrl })
-      void this.startupWizardWindow.loadURL(wizardUrl).catch((error) => {
-        logger.error('Failed to load startup wizard (dev)', { wizardUrl, error })
-      })
-    } else {
-      const indexPath = join(__dirname, '../renderer/index.html')
-      logger.info('Loading startup wizard (prod)', { path: indexPath })
-      void this.startupWizardWindow.loadFile(indexPath, { hash: 'startup-wizard' }).catch((error) => {
-        logger.error('Failed to load startup wizard (prod)', { path: indexPath, error })
-      })
-    }
-
-    this.startupWizardWindow.on('closed', () => {
-      this.startupWizardWindow = null
-      logger.info('Startup wizard window closed')
+    void this.loadSecondaryWindowRoute({
+      label: "startup wizard",
+      route: { hash: "startup-wizard" },
+      window: this.startupWizardWindow,
+    }).catch((error) => {
+      logger.error("Failed to load startup wizard", { error })
     })
+
+    this.attachWindowClosedLogger(
+      this.startupWizardWindow,
+      () => {
+        this.startupWizardWindow = null
+      },
+      "Startup wizard window",
+    )
 
     return this.startupWizardWindow
   }
@@ -268,86 +247,48 @@ class WindowManager {
     this.mainWindow.focus()
   }
 
-  // ─── Export Window ────────────────────────────────────────────────────────
-  private exportWindow: BrowserWindow | null = null
-
   createExportWindow(chapterId: string): BrowserWindow {
     if (this.exportWindow) {
       this.exportWindow.focus()
       return this.exportWindow
     }
 
-    // Default size for export preview (large enough for split view)
-    const width = 1200
-    const height = 900
-
-    const windowIconPath = this.resolveWindowIconPath()
-
-    this.exportWindow = new BrowserWindow({
-      width,
-      height,
+    this.exportWindow = this.createBrowserWindow({
+      width: 1200,
+      height: 900,
       minWidth: 1000,
       minHeight: 700,
       title: "내보내기 및 인쇄 미리보기",
       backgroundColor: WINDOW_BACKGROUND_COLOR,
-      ...(windowIconPath ? { icon: windowIconPath } : {}),
-      ...this.getTitleBarOptions(),
-      ...(process.platform !== 'darwin'
-        ? { autoHideMenuBar: !this.shouldShowMenuBar() }
+      ...withWindowIcon(resolveWindowIconPath()),
+      ...getTitleBarOptions(),
+      ...(process.platform !== "darwin"
+        ? { autoHideMenuBar: !shouldShowMenuBar(this.getMenuBarMode()) }
         : {}),
-      webPreferences: {
-        preload: join(__dirname, '../preload/index.cjs'),
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: true,
-      },
     })
 
     this.applyMenuBarMode(this.exportWindow)
 
-    // Load URL with hash routing
-    const isPackaged = app.isPackaged
-    const devServerUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173'
-    const useDevServer = !isPackaged && process.env.NODE_ENV !== 'production'
-    const query = `?chapterId=${chapterId}`
-    const hash = '#export'
-
-    if (useDevServer) {
-      const url = `${devServerUrl}/${query}${hash}`
-      logger.info('Loading export window (dev)', { url })
-      void this.exportWindow.loadURL(url).catch((error) => {
-        logger.error('Failed to load export window (dev)', { url, error })
-      })
-    } else {
-      const indexPath = join(__dirname, '../renderer/index.html')
-      logger.info('Loading export window (prod)', { path: indexPath })
-      void this.exportWindow
-        .loadFile(indexPath, { hash: 'export', search: query })
-        .catch((error) => {
-          logger.error('Failed to load export window (prod)', {
-            path: indexPath,
-            hash: 'export',
-            search: query,
-            error,
-          })
-        })
-    }
-
-    this.exportWindow.on('closed', () => {
-      this.exportWindow = null
-      logger.info('Export window closed')
+    const route = { hash: "export", search: `?chapterId=${chapterId}` }
+    void this.loadSecondaryWindowRoute({
+      label: "export window",
+      openDevToolsInDev: true,
+      route,
+      window: this.exportWindow,
+    }).catch((error) => {
+      logger.error("Failed to load export window", { route, error })
     })
 
-    // Open DevTools in dev mode
-    if (useDevServer) {
-      this.exportWindow.webContents.openDevTools({ mode: 'detach' })
-    }
+    this.attachWindowClosedLogger(
+      this.exportWindow,
+      () => {
+        this.exportWindow = null
+      },
+      "Export window",
+    )
 
     return this.exportWindow
   }
-
-  // ─── World Graph Window ───────────────────────────────────────────────────
-  private worldGraphWindow: BrowserWindow | null = null
 
   createWorldGraphWindow(): BrowserWindow {
     if (this.worldGraphWindow) {
@@ -355,68 +296,38 @@ class WindowManager {
       return this.worldGraphWindow
     }
 
-    const width = 1200
-    const height = 800
-
-    const windowIconPath = this.resolveWindowIconPath()
-
-    this.worldGraphWindow = new BrowserWindow({
-      width,
-      height,
+    this.worldGraphWindow = this.createBrowserWindow({
+      width: 1200,
+      height: 800,
       minWidth: 1000,
       minHeight: 600,
       title: "세계관 그래프",
       backgroundColor: WINDOW_BACKGROUND_COLOR,
-      ...(windowIconPath ? { icon: windowIconPath } : {}),
-      ...this.getTitleBarOptions(),
-      ...(process.platform !== 'darwin'
-        ? { autoHideMenuBar: !this.shouldShowMenuBar() }
+      ...withWindowIcon(resolveWindowIconPath()),
+      ...getTitleBarOptions(),
+      ...(process.platform !== "darwin"
+        ? { autoHideMenuBar: !shouldShowMenuBar(this.getMenuBarMode()) }
         : {}),
-      webPreferences: {
-        preload: join(__dirname, '../preload/index.cjs'),
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: true,
-      },
     })
 
     this.applyMenuBarMode(this.worldGraphWindow)
 
-    // Load URL with hash routing
-    const isPackaged = app.isPackaged
-    const devServerUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173'
-    const useDevServer = !isPackaged && process.env.NODE_ENV !== 'production'
-    const hash = '#world-graph'
-
-    if (useDevServer) {
-      const url = `${devServerUrl}/${hash}`
-      logger.info('Loading world graph window (dev)', { url })
-      void this.worldGraphWindow.loadURL(url).catch((error) => {
-        logger.error('Failed to load world graph window (dev)', { url, error })
-      })
-    } else {
-      const indexPath = join(__dirname, '../renderer/index.html')
-      logger.info('Loading world graph window (prod)', { path: indexPath })
-      void this.worldGraphWindow
-        .loadFile(indexPath, { hash: 'world-graph' })
-        .catch((error) => {
-          logger.error('Failed to load world graph window (prod)', {
-            path: indexPath,
-            hash: 'world-graph',
-            error,
-          })
-        })
-    }
-
-    this.worldGraphWindow.on('closed', () => {
-      this.worldGraphWindow = null
-      logger.info('World graph window closed')
+    void this.loadSecondaryWindowRoute({
+      label: "world graph window",
+      openDevToolsInDev: true,
+      route: { hash: "world-graph" },
+      window: this.worldGraphWindow,
+    }).catch((error) => {
+      logger.error("Failed to load world graph window", { error })
     })
 
-    // Open DevTools in dev mode
-    if (useDevServer) {
-      this.worldGraphWindow.webContents.openDevTools({ mode: 'detach' })
-    }
+    this.attachWindowClosedLogger(
+      this.worldGraphWindow,
+      () => {
+        this.worldGraphWindow = null
+      },
+      "World graph window",
+    )
 
     return this.worldGraphWindow
   }

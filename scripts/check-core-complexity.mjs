@@ -12,6 +12,7 @@ const BLOCKING_TARGET_FILES = [
 const ADVISORY_TARGET_FILES = [
   "src/main/database/index.ts",
   "src/main/manager/autoSaveManager.ts",
+  "src/main/manager/windowManager.ts",
   "src/main/services/core/chapterService.ts",
   "src/main/services/features/snapshot/snapshotService.ts",
   "src/main/services/features/sync/syncRepository.ts",

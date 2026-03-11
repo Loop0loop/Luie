@@ -204,7 +204,9 @@ export async function cleanupOrphanSnapshotArtifacts(options?: {
     : await db.getClient().snapshot.findMany({
       select: { id: true },
     });
-  const persistedSnapshotIds = new Set(persistedSnapshots.map((snapshot) => snapshot.id));
+  const persistedSnapshotIds = new Set(
+    persistedSnapshots.map((snapshot: { id: string }) => snapshot.id),
+  );
 
   const roots = await resolveArtifactRoots();
   const artifactPaths: string[] = [];

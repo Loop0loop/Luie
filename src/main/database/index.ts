@@ -2,203 +2,30 @@
  * Database service using Prisma Client
  */
 
-import { spawn } from "node:child_process";
-import { constants as fsConstants } from "node:fs";
 import * as fs from "node:fs/promises";
-import { createRequire } from "node:module";
 import * as path from "node:path";
 import { app } from "electron";
 import { DB_NAME } from "../../shared/constants/index.js";
 import { createLogger } from "../../shared/logger/index.js";
 import { isProdEnv, isTestEnv } from "../utils/environment.js";
 import { ensureSafeAbsolutePath } from "../utils/pathValidation.js";
-import {
-  PACKAGED_SCHEMA_BOOTSTRAP_SQL,
-  PACKAGED_SCHEMA_COLUMN_PATCHES,
-  PACKAGED_SCHEMA_REQUIRED_COLUMNS,
-  PACKAGED_SCHEMA_REQUIRED_TABLES,
-} from "./packagedSchema.js";
 import { seedIfEmpty } from "./seedDefaults.js";
+import {
+  getPrismaBinPath,
+  loadPrismaBetterSqlite3,
+  pathExists,
+  PrismaClientCtor,
+  resolvePackagedSchemaMode,
+  resolveSqliteDatasourceFromEnv,
+  runPrismaCommand,
+} from "./databaseRuntime.js";
+import { ensurePackagedSqliteSchema } from "./databaseSchemaBootstrap.js";
+import type {
+  PreparedDatabaseContext,
+  PrismaClient,
+} from "./databaseTypes.js";
 
 const logger = createLogger("DatabaseService");
-const require = createRequire(import.meta.url);
-
-type PrismaDelegate<T extends Record<string, unknown>> = {
-  create: (args: unknown) => Promise<T>;
-  createMany: (args: unknown) => Promise<{ count: number }>;
-  findUnique: (args: unknown) => Promise<T | null>;
-  findMany: (args: unknown) => Promise<T[]>;
-  update: (args: unknown) => Promise<T>;
-  delete: (args: unknown) => Promise<T>;
-  deleteMany: (args: unknown) => Promise<{ count: number }>;
-  findFirst: (args: unknown) => Promise<T | null>;
-  count: (args?: unknown) => Promise<number>;
-};
-
-type PrismaRecord = Record<string, unknown>;
-
-type PrismaClient = {
-  $disconnect: () => Promise<void>;
-  $transaction: (args: unknown) => Promise<unknown>;
-  $executeRawUnsafe?: (query: string) => Promise<unknown>;
-  project: PrismaDelegate<PrismaRecord>;
-  chapter: PrismaDelegate<PrismaRecord>;
-  character: PrismaDelegate<PrismaRecord>;
-  term: PrismaDelegate<PrismaRecord>;
-  snapshot: PrismaDelegate<PrismaRecord>;
-  event: PrismaDelegate<PrismaRecord>;
-  faction: PrismaDelegate<PrismaRecord>;
-  characterAppearance: PrismaDelegate<PrismaRecord>;
-  termAppearance: PrismaDelegate<PrismaRecord>;
-  worldEntity: PrismaDelegate<PrismaRecord>;
-  entityRelation: PrismaDelegate<PrismaRecord>;
-};
-
-type PreparedDatabaseContext = {
-  dbPath: string;
-  datasourceUrl: string;
-  isPackaged: boolean;
-  isTest: boolean;
-};
-
-type PrismaCommandResult = {
-  stdout: string;
-  stderr: string;
-};
-
-type PackagedSchemaMode = "bootstrap" | "prisma-migrate";
-
-type BetterSqlite3Statement<Row extends object = Record<string, unknown>> = {
-  get: (...params: unknown[]) => Row | undefined;
-  all: (...params: unknown[]) => Row[];
-};
-
-type BetterSqlite3Database = {
-  pragma: (source: string) => unknown;
-  exec: (source: string) => void;
-  prepare: <Row extends object = Record<string, unknown>>(source: string) => BetterSqlite3Statement<Row>;
-  close: () => void;
-};
-
-type BetterSqlite3Constructor = new (
-  filename: string,
-  options?: { readonly?: boolean; fileMustExist?: boolean; timeout?: number },
-) => BetterSqlite3Database;
-
-type PrismaBetterSqlite3Constructor = new (options: {
-  url: string;
-}) => unknown;
-
-const { PrismaClient } = require("@prisma/client") as {
-  PrismaClient: new (options?: unknown) => PrismaClient;
-};
-
-const loadPrismaBetterSqlite3 = (): PrismaBetterSqlite3Constructor => {
-  const loaded = require("@prisma/adapter-better-sqlite3") as
-    | PrismaBetterSqlite3Constructor
-    | { PrismaBetterSqlite3?: PrismaBetterSqlite3Constructor };
-  if (typeof loaded === "function") return loaded;
-  if (loaded && typeof loaded === "object" && typeof loaded.PrismaBetterSqlite3 === "function") {
-    return loaded.PrismaBetterSqlite3;
-  }
-  throw new Error("Failed to load Prisma better-sqlite3 adapter");
-};
-
-const loadBetterSqlite3 = (): BetterSqlite3Constructor => {
-  const loaded = require("better-sqlite3") as BetterSqlite3Constructor | { default: BetterSqlite3Constructor };
-  return typeof loaded === "function" ? loaded : loaded.default;
-};
-
-const escapeSqlIdentifier = (name: string): string => `"${name.replace(/"/g, "\"\"")}"`;
-
-const pathExists = async (targetPath: string): Promise<boolean> => {
-  try {
-    await fs.access(targetPath, fsConstants.F_OK);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
-const getPrismaBinPath = (basePath: string): string => {
-  const executable = process.platform === "win32" ? "prisma.cmd" : "prisma";
-  return path.join(basePath, "node_modules", ".bin", executable);
-};
-
-const SQLITE_URL_PREFIX = "file:";
-
-const resolveSqliteDatasourceFromEnv = (input: string): { dbPath: string; datasourceUrl: string } => {
-  if (!input.startsWith(SQLITE_URL_PREFIX)) {
-    throw new Error("DATABASE_URL must use sqlite file: URL");
-  }
-
-  const raw = input.slice(SQLITE_URL_PREFIX.length);
-  if (!raw || raw === ":memory:" || raw.startsWith(":memory:?")) {
-    throw new Error("DATABASE_URL must point to a persistent sqlite file path");
-  }
-
-  const queryIndex = raw.indexOf("?");
-  const rawPath = queryIndex >= 0 ? raw.slice(0, queryIndex) : raw;
-  const rawQuery = queryIndex >= 0 ? raw.slice(queryIndex + 1) : "";
-  const absolutePath = ensureSafeAbsolutePath(
-    path.isAbsolute(rawPath) ? rawPath : path.resolve(process.cwd(), rawPath),
-    "DATABASE_URL",
-  );
-  const datasourceUrl = rawQuery.length > 0 ? `file:${absolutePath}?${rawQuery}` : `file:${absolutePath}`;
-
-  return { dbPath: absolutePath, datasourceUrl };
-};
-
-const runPrismaCommand = async (
-  commandPath: string,
-  commandArgs: string[],
-  env: NodeJS.ProcessEnv,
-): Promise<PrismaCommandResult> => {
-  return await new Promise<PrismaCommandResult>((resolve, reject) => {
-    const child = spawn(commandPath, commandArgs, {
-      env,
-      shell: false,
-      windowsHide: true,
-    });
-
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout?.on("data", (chunk: Buffer | string) => {
-      stdout += chunk.toString();
-    });
-
-    child.stderr?.on("data", (chunk: Buffer | string) => {
-      stderr += chunk.toString();
-    });
-
-    child.on("error", (error) => {
-      reject(error);
-    });
-
-    child.on("close", (code) => {
-      if (code === 0) {
-        resolve({ stdout, stderr });
-        return;
-      }
-
-      const failure = new Error(`Prisma command failed with exit code ${code}`) as Error & {
-        code: number | null;
-        stdout: string;
-        stderr: string;
-      };
-      failure.code = code;
-      failure.stdout = stdout;
-      failure.stderr = stderr;
-      reject(failure);
-    });
-  });
-};
-
-const resolvePackagedSchemaMode = (): PackagedSchemaMode => {
-  const rawMode = (process.env.LUIE_PACKAGED_SCHEMA_MODE ?? "").trim().toLowerCase();
-  return rawMode === "prisma-migrate" ? "prisma-migrate" : "bootstrap";
-};
 
 class DatabaseService {
   private static instance: DatabaseService;
@@ -248,7 +75,7 @@ class DatabaseService {
 
     if (context.isPackaged) {
       try {
-        await seedIfEmpty(this.prisma);
+        await seedIfEmpty(this.prisma as Parameters<typeof seedIfEmpty>[0]);
       } catch (error) {
         logger.error("Failed to seed packaged database", { error });
       }
@@ -274,10 +101,10 @@ class DatabaseService {
       const adapter = new PrismaBetterSqlite3({
         url: context.datasourceUrl,
       });
-      return new PrismaClient({
-        adapter,
+      return new PrismaClientCtor({
+        adapter: adapter as never,
         log: ["error", "warn"],
-      });
+      } as never);
     } catch (error) {
       // In local dev/test, native ABI mismatch can happen when the addon was rebuilt for Electron.
       // Fallback to Prisma default sqlite engine to keep tests and CLI workflows unblocked.
@@ -289,12 +116,12 @@ class DatabaseService {
         dbPath: context.dbPath,
         isTest: context.isTest,
       });
-      return new PrismaClient({
+      return new PrismaClientCtor({
         datasources: {
           db: { url: context.datasourceUrl },
         },
         log: ["error", "warn"],
-      });
+      } as never);
     }
   }
 
@@ -383,7 +210,7 @@ class DatabaseService {
           stderr: prismaError.stderr,
           dbPath: context.dbPath,
         });
-        this.ensurePackagedSqliteSchema(context.dbPath);
+        ensurePackagedSqliteSchema(context.dbPath, logger);
       }
       return;
     }
@@ -429,7 +256,7 @@ class DatabaseService {
         dbPath: context.dbPath,
         schemaMode,
       });
-      this.ensurePackagedSqliteSchema(context.dbPath);
+      ensurePackagedSqliteSchema(context.dbPath, logger);
       return;
     }
 
@@ -467,77 +294,7 @@ class DatabaseService {
       });
     }
 
-    this.ensurePackagedSqliteSchema(context.dbPath);
-  }
-
-  private ensurePackagedSqliteSchema(dbPath: string): void {
-    const BetterSqlite3 = loadBetterSqlite3();
-    const sqlite = new BetterSqlite3(dbPath);
-
-    try {
-      sqlite.pragma("foreign_keys = ON");
-
-      const missingTablesBefore = PACKAGED_SCHEMA_REQUIRED_TABLES.filter(
-        (table) => !this.sqliteTableExists(sqlite, table),
-      );
-
-      // Idempotent schema bootstrap for packaged runtime when Prisma CLI assets are missing.
-      sqlite.exec(PACKAGED_SCHEMA_BOOTSTRAP_SQL);
-
-      const patchedColumns: string[] = [];
-      for (const patch of PACKAGED_SCHEMA_COLUMN_PATCHES) {
-        if (!this.sqliteTableExists(sqlite, patch.table)) {
-          continue;
-        }
-        if (this.sqliteTableHasColumn(sqlite, patch.table, patch.column)) {
-          continue;
-        }
-        sqlite.exec(patch.sql);
-        patchedColumns.push(`${patch.table}.${patch.column}`);
-      }
-
-      const missingColumns: string[] = [];
-      for (const [table, requiredColumns] of Object.entries(PACKAGED_SCHEMA_REQUIRED_COLUMNS)) {
-        for (const column of requiredColumns) {
-          if (!this.sqliteTableHasColumn(sqlite, table, column)) {
-            missingColumns.push(`${table}.${column}`);
-          }
-        }
-      }
-
-      if (missingColumns.length > 0) {
-        throw new Error(`Packaged SQLite schema verification failed: missing ${missingColumns.join(", ")}`);
-      }
-
-      if (missingTablesBefore.length > 0 || patchedColumns.length > 0) {
-        logger.info("Packaged SQLite schema bootstrap applied", {
-          dbPath,
-          createdTables: missingTablesBefore,
-          patchedColumns,
-        });
-      }
-    } finally {
-      sqlite.close();
-    }
-  }
-
-  private sqliteTableExists(sqlite: BetterSqlite3Database, tableName: string): boolean {
-    const statement = sqlite.prepare<{ found: number }>(
-      "SELECT 1 AS found FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1",
-    );
-    return Boolean(statement.get(tableName)?.found);
-  }
-
-  private sqliteTableHasColumn(sqlite: BetterSqlite3Database, tableName: string, columnName: string): boolean {
-    if (!this.sqliteTableExists(sqlite, tableName)) {
-      return false;
-    }
-
-    const statement = sqlite.prepare<{ name: string }>(
-      `PRAGMA table_info(${escapeSqlIdentifier(tableName)})`,
-    );
-    const columns = statement.all();
-    return columns.some((column) => column.name === columnName);
+    ensurePackagedSqliteSchema(context.dbPath, logger);
   }
 
   getClient(): PrismaClient {

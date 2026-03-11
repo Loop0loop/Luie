@@ -2,6 +2,7 @@
  * EntityRelation service — 세계관 6종 관계 CRUD + 그래프 조회
  */
 
+import type { Prisma } from "@prisma/client";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import {
@@ -27,13 +28,13 @@ const logger = createLogger("EntityRelationService");
 
 type RawRow = {
     id: string;
-    name: string;
+    name?: string;
     term?: string;
     definition?: string | null;
     category?: string | null;
-    description: string | null;
-    firstAppearance: string | null;
-    attributes: string | null;
+    description?: string | null;
+    firstAppearance?: string | null;
+    attributes?: string | null;
     type?: string;
     positionX?: number;
     positionY?: number;
@@ -98,7 +99,7 @@ export class EntityRelationService {
                 );
             }
 
-            const data: Record<string, unknown> = {
+            const data: Prisma.EntityRelationUncheckedCreateInput = {
                 projectId: input.projectId,
                 sourceId: input.sourceId,
                 sourceType: input.sourceType,
@@ -135,7 +136,7 @@ export class EntityRelationService {
                 orderBy: { createdAt: "asc" },
             });
 
-            return relations.map((relation) => toEntityRelation(relation as RawRow));
+            return relations.map(toEntityRelation);
         } catch (error) {
             logger.error("Failed to get all entity relations", error);
             throw new ServiceError(
@@ -244,7 +245,7 @@ export class EntityRelationService {
                 getWorldDbClient().term.findMany({ where: { projectId } }),
                 getWorldDbClient().worldEntity.findMany({ where: { projectId } }),
                 getWorldDbClient().entityRelation.findMany({ where: { projectId } }),
-            ]) as [RawRow[], RawRow[], RawRow[], RawRow[], RawRow[], RawRow[]];
+            ]);
 
             const nodes: WorldGraphNode[] = [
                 ...characters.map((c): WorldGraphNode => ({
@@ -362,16 +363,16 @@ export class EntityRelationService {
             ]);
 
             const nodeIds = new Set<string>([
-                ...characters.map((item) => String(item.id)),
-                ...factions.map((item) => String(item.id)),
-                ...events.map((item) => String(item.id)),
-                ...terms.map((item) => String(item.id)),
-                ...worldEntities.map((item) => String(item.id)),
+                ...characters.map((item: { id: string }) => String(item.id)),
+                ...factions.map((item: { id: string }) => String(item.id)),
+                ...events.map((item: { id: string }) => String(item.id)),
+                ...terms.map((item: { id: string }) => String(item.id)),
+                ...worldEntities.map((item: { id: string }) => String(item.id)),
             ]);
 
             const orphanIds = relations
-                .filter((relation) => !nodeIds.has(String(relation.sourceId)) || !nodeIds.has(String(relation.targetId)))
-                .map((relation) => String(relation.id));
+                .filter((relation: { sourceId: string; targetId: string }) => !nodeIds.has(String(relation.sourceId)) || !nodeIds.has(String(relation.targetId)))
+                .map((relation: { id: string }) => String(relation.id));
 
             scannedRelations += relations.length;
             orphanRelations += orphanIds.length;

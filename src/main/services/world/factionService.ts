@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { db } from "../../database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
@@ -143,7 +144,7 @@ export class FactionService {
                     ? String((faction as { projectId: unknown }).projectId)
                     : null;
 
-            await db.getClient().$transaction(async (tx: ReturnType<(typeof db)["getClient"]>) => {
+            await db.getClient().$transaction(async (tx: Prisma.TransactionClient) => {
                 if (projectId) {
                     await tx.entityRelation.deleteMany({
                         where: {

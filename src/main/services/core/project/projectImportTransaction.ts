@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { db } from "../../../database/index.js";
 import { DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS } from "../../../../shared/constants/index.js";
 import type {
@@ -58,7 +59,7 @@ export const applyProjectImportTransaction = async (
   } = input;
 
   return (await db.getClient().$transaction(async (
-    tx: ReturnType<(typeof db)["getClient"]>,
+    tx: Prisma.TransactionClient,
   ) => {
     if (legacyProjectId) {
       await tx.project.delete({ where: { id: legacyProjectId } });

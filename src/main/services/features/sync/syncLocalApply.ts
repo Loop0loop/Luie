@@ -1,7 +1,7 @@
+import type { Prisma } from "@prisma/client";
 import { DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS } from "../../../../shared/constants/index.js";
 import type { SyncBundle } from "./syncMapper.js";
 import type { SyncChapterRecord } from "./syncMapper.js";
-import type { db } from "../../../database/index.js";
 
 export const collectDeletedProjectIds = (bundle: SyncBundle): Set<string> => {
   const deletedProjectIds = new Set<string>();
@@ -17,7 +17,7 @@ export const collectDeletedProjectIds = (bundle: SyncBundle): Set<string> => {
 };
 
 export const applyProjectDeletes = async (
-  prisma: ReturnType<(typeof db)["getClient"]>,
+  prisma: Prisma.TransactionClient,
   deletedProjectIds: Set<string>,
 ): Promise<void> => {
   for (const projectId of deletedProjectIds) {
@@ -31,7 +31,7 @@ export const applyProjectDeletes = async (
 };
 
 export const upsertProjects = async (
-  prisma: ReturnType<(typeof db)["getClient"]>,
+  prisma: Prisma.TransactionClient,
   projects: SyncBundle["projects"],
   deletedProjectIds: Set<string>,
 ): Promise<void> => {
@@ -73,7 +73,7 @@ export const upsertProjects = async (
 };
 
 export const upsertChapter = async (
-  prisma: ReturnType<(typeof db)["getClient"]>,
+  prisma: Prisma.TransactionClient,
   chapter: SyncChapterRecord,
 ): Promise<void> => {
   const existing = (await prisma.chapter.findUnique({
@@ -111,7 +111,7 @@ export const upsertChapter = async (
 };
 
 export const upsertCharacters = async (
-  prisma: ReturnType<(typeof db)["getClient"]>,
+  prisma: Prisma.TransactionClient,
   characters: SyncBundle["characters"],
   deletedProjectIds: Set<string>,
 ): Promise<void> => {
@@ -156,7 +156,7 @@ export const upsertCharacters = async (
 };
 
 export const upsertTerms = async (
-  prisma: ReturnType<(typeof db)["getClient"]>,
+  prisma: Prisma.TransactionClient,
   terms: SyncBundle["terms"],
   deletedProjectIds: Set<string>,
 ): Promise<void> => {
@@ -199,7 +199,7 @@ export const upsertTerms = async (
 };
 
 export const applyChapterTombstones = async (
-  prisma: ReturnType<(typeof db)["getClient"]>,
+  prisma: Prisma.TransactionClient,
   tombstones: SyncBundle["tombstones"],
   deletedProjectIds: Set<string>,
 ): Promise<void> => {

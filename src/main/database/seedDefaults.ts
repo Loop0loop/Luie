@@ -4,8 +4,8 @@ const logger = createLogger("DatabaseSeed");
 
 type SeedClient = {
   project: {
-    count: () => Promise<number>;
-    create: (args: unknown) => Promise<unknown>;
+    count: () => PromiseLike<number> | number;
+    create: (args: unknown) => PromiseLike<unknown> | unknown;
   };
 };
 

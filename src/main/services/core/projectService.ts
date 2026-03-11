@@ -58,7 +58,7 @@ export class ProjectService {
     });
 
     const duplicateGroupsToReconcile = collectDuplicateProjectPathGroups(
-      projects.map((project) => ({
+      projects.map((project: { id: string; projectPath: string | null; updatedAt: Date }) => ({
         id: String(project.id),
         projectPath:
           typeof project.projectPath === "string" ? project.projectPath : null,
@@ -230,7 +230,14 @@ export class ProjectService {
       });
 
       return await withProjectPathStatus(
-        projects.map((project) => ({
+        projects.map((project: {
+          id: string;
+          title: string;
+          description: string | null;
+          projectPath: string | null;
+          createdAt: Date;
+          updatedAt: Date;
+        }) => ({
           ...project,
           id: String(project.id),
           description:

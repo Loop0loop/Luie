@@ -437,7 +437,7 @@ export class SnapshotService {
     });
 
     const results = await Promise.all(
-      projects.map((project) => this.pruneSnapshots(String(project.id))),
+      projects.map((project: { id: string }) => this.pruneSnapshots(String(project.id))),
     );
 
     const deletedCount = results.reduce(

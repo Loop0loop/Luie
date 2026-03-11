@@ -2,6 +2,7 @@ import { promises as fsPromises } from "fs";
 import path from "path";
 import { randomUUID } from "node:crypto";
 import { app } from "electron";
+import type { Prisma } from "@prisma/client";
 import { db } from "../../../database/index.js";
 import {
   DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
@@ -77,7 +78,7 @@ const createImportedProject = async (
   const projectData = snapshot.data.project;
 
   const result = await db.getClient().$transaction(
-    async (tx: ReturnType<(typeof db)["getClient"]>) => {
+    async (tx: Prisma.TransactionClient) => {
       const created = await tx.project.create({
         data: {
           title: projectData.title || "Recovered Snapshot",

@@ -2,6 +2,7 @@
  * Term service - 고유명사 사전 관리 비즈니스 로직
  */
 
+import type { Prisma } from "@prisma/client";
 import { db } from "../../database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
@@ -142,7 +143,7 @@ export class TermService {
 
       const projectId = term?.projectId ? String(term.projectId) : null;
 
-      await db.getClient().$transaction(async (tx: ReturnType<(typeof db)["getClient"]>) => {
+      await db.getClient().$transaction(async (tx: Prisma.TransactionClient) => {
         if (projectId) {
           await tx.entityRelation.deleteMany({
             where: {
