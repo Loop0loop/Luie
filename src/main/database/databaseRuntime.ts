@@ -64,6 +64,22 @@ export function getPrismaBinPath(baseDir: string): string {
   return path.join(baseDir, "node_modules", "prisma", "build", "index.js");
 }
 
+function resolveJavaScriptRuntimeCommand(): string {
+  if (!process.versions.electron) {
+    return process.execPath;
+  }
+
+  const explicitNodePath = [
+    process.env.NODE,
+    process.env.npm_node_execpath,
+    process.env.PNPM_NODE_EXEC_PATH,
+  ].find((candidate): candidate is string => (
+    typeof candidate === "string" && candidate.length > 0
+  ));
+
+  return explicitNodePath ?? "node";
+}
+
 export function loadPrismaBetterSqlite3(): new (input: {
   url: string;
 }) => unknown {
@@ -87,7 +103,9 @@ export function runPrismaCommand(
   env: NodeJS.ProcessEnv,
 ): Promise<void> {
   const isJavaScriptEntry = prismaPath.endsWith(".js");
-  const command = isJavaScriptEntry ? process.execPath : prismaPath;
+  const command = isJavaScriptEntry
+    ? resolveJavaScriptRuntimeCommand()
+    : prismaPath;
   const commandArgs = isJavaScriptEntry ? [prismaPath, ...args] : args;
 
   return new Promise((resolve, reject) => {

@@ -12,33 +12,23 @@ import { app } from "electron";
 import path from "node:path";
 import { createLogger, configureLogger, LogLevel } from "../shared/logger/index.js";
 import { LOG_DIR_NAME, LOG_FILE_NAME } from "../shared/constants/index.js";
-import { initDatabaseEnv } from "./prismaEnv.js";
-import { registerAppReady } from "./lifecycle/appReady.js";
-import { registerCrashReporting } from "./lifecycle/crashReporting.js";
-import { extractAuthCallbackUrl, handleDeepLinkUrl } from "./lifecycle/deepLink.js";
-import { registerShutdownHandlers } from "./lifecycle/shutdown.js";
 import { registerSingleInstance } from "./lifecycle/singleInstance.js";
-import { settingsManager } from "./manager/settingsManager.js";
-import { syncService } from "./services/features/sync/syncService.js";
-
-configureLogger({
-  logToFile: true,
-  logFilePath: path.join(app.getPath("userData"), LOG_DIR_NAME, LOG_FILE_NAME),
-  minLevel: LogLevel.INFO,
-});
-
-const logger = createLogger("Main");
 const isDefaultApp = process.defaultApp === true;
 const startupStartedAtMs = Date.now();
-logger.info("Main process bootstrap", {
-  execPath: process.execPath,
-  argv: process.argv,
-  isPackaged: app.isPackaged,
-  defaultApp: isDefaultApp,
-  startupStartedAtMs,
-});
 
-const registerLuieProtocol = (): void => {
+const configureMainLogger = () => {
+  configureLogger({
+    logToFile: true,
+    logFilePath: path.join(app.getPath("userData"), LOG_DIR_NAME, LOG_FILE_NAME),
+    minLevel: LogLevel.INFO,
+  });
+  return createLogger("Main");
+};
+
+const registerLuieProtocol = async (
+  logger: ReturnType<typeof createLogger>,
+): Promise<void> => {
+  const { settingsManager } = await import("./manager/settingsManager.js");
   const protocol = "luie";
   let registered = false;
   const appEntry = app.getAppPath();
@@ -78,9 +68,36 @@ const registerLuieProtocol = (): void => {
   });
 };
 
-if (!registerSingleInstance(logger)) {
-  app.quit();
+const bootstrapLogger = createLogger("Main");
+
+if (!registerSingleInstance(bootstrapLogger)) {
+  app.exit(0);
 } else {
+  const logger = configureMainLogger();
+  logger.info("Main process bootstrap", {
+    execPath: process.execPath,
+    argv: process.argv,
+    isPackaged: app.isPackaged,
+    defaultApp: isDefaultApp,
+    startupStartedAtMs,
+  });
+
+  const [
+    { initDatabaseEnv },
+    { registerAppReady },
+    { registerCrashReporting },
+    { extractAuthCallbackUrl, handleDeepLinkUrl },
+    { registerShutdownHandlers },
+    { syncService },
+  ] = await Promise.all([
+    import("./prismaEnv.js"),
+    import("./lifecycle/appReady.js"),
+    import("./lifecycle/crashReporting.js"),
+    import("./lifecycle/deepLink.js"),
+    import("./lifecycle/shutdown.js"),
+    import("./services/features/sync/syncService.js"),
+  ]);
+
   registerCrashReporting(logger);
 
   initDatabaseEnv();
@@ -95,7 +112,7 @@ if (!registerSingleInstance(logger)) {
     });
   }
 
-  registerLuieProtocol();
+  await registerLuieProtocol(logger);
 
   const callbackUrl = extractAuthCallbackUrl(process.argv);
   if (callbackUrl) {

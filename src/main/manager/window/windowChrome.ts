@@ -10,14 +10,22 @@ import {
 export const WINDOW_BACKGROUND_COLOR = "#f4f4f5"
 
 export const resolveWindowIconPath = (): string | undefined => {
-  const packagedCandidates = [
-    join(process.resourcesPath, "icon.png"),
-    join(process.resourcesPath, "build", "icons", "icon.png"),
-  ]
-  const devCandidates = [
-    join(app.getAppPath(), "build", "icons", "icon.png"),
-    join(app.getAppPath(), "assets", "public", "luie.png"),
-  ]
+  const packagedCandidates =
+    typeof process.resourcesPath === "string" && process.resourcesPath.length > 0
+      ? [
+          join(process.resourcesPath, "icon.png"),
+          join(process.resourcesPath, "build", "icons", "icon.png"),
+        ]
+      : []
+  const appPath =
+    typeof app.getAppPath === "function" ? app.getAppPath() : undefined
+  const devCandidates =
+    typeof appPath === "string" && appPath.length > 0
+      ? [
+          join(appPath, "build", "icons", "icon.png"),
+          join(appPath, "assets", "public", "luie.png"),
+        ]
+      : []
 
   const candidates = app.isPackaged ? packagedCandidates : devCandidates
   for (const candidate of candidates) {

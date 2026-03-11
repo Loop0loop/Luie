@@ -137,28 +137,31 @@ export const registerAppReady = (logger: Logger, options: AppReadyOptions = {}):
     const isDev = isDevEnv();
     const cspPolicy = resolveCspPolicy(isDev);
 
-    let firstRendererReadyTriggered = false;
+    let rendererReadyForCurrentMainWindow = false;
+    let firstRendererStartupHookTriggered = false;
     let startupMaintenanceScheduled = false;
-    let mainFlowStarted = false;
     let fallbackTimer: NodeJS.Timeout | null = null;
 
     const triggerFirstRendererReady = (reason: string): void => {
-      if (firstRendererReadyTriggered) return;
-      firstRendererReadyTriggered = true;
-      windowManager.showMainWindow();
-      logger.info("Startup checkpoint: renderer ready", {
-        reason,
-        startupElapsedMs: Date.now() - startupStartedAtMs,
-      });
-      logger.info("Startup checkpoint: main window shown", {
-        reason,
-        startupElapsedMs: Date.now() - startupStartedAtMs,
-      });
+      if (!rendererReadyForCurrentMainWindow) {
+        rendererReadyForCurrentMainWindow = true;
+        windowManager.showMainWindow();
+        logger.info("Startup checkpoint: renderer ready", {
+          reason,
+          startupElapsedMs: Date.now() - startupStartedAtMs,
+        });
+        logger.info("Startup checkpoint: main window shown", {
+          reason,
+          startupElapsedMs: Date.now() - startupStartedAtMs,
+        });
+      }
 
-      if (!options.onFirstRendererReady) {
+      if (firstRendererStartupHookTriggered || !options.onFirstRendererReady) {
         return;
       }
 
+      firstRendererStartupHookTriggered = true;
+      windowManager.showMainWindow();
       try {
         options.onFirstRendererReady();
       } catch (error) {
@@ -179,8 +182,15 @@ export const registerAppReady = (logger: Logger, options: AppReadyOptions = {}):
     };
 
     const startMainWindowFlow = (reason: string): void => {
-      if (mainFlowStarted) return;
-      mainFlowStarted = true;
+      const existingMainWindow = windowManager.getMainWindow();
+      if (existingMainWindow && !existingMainWindow.isDestroyed()) {
+        if (!existingMainWindow.isVisible()) {
+          windowManager.showMainWindow();
+        }
+        return;
+      }
+
+      rendererReadyForCurrentMainWindow = false;
 
       logger.info("Starting main window flow", {
         reason,
@@ -213,7 +223,7 @@ export const registerAppReady = (logger: Logger, options: AppReadyOptions = {}):
         clearTimeout(fallbackTimer);
       }
       fallbackTimer = setTimeout(() => {
-        if (!firstRendererReadyTriggered) {
+        if (!rendererReadyForCurrentMainWindow) {
           triggerFirstRendererReady("fallback-timeout");
         }
         scheduleStartupMaintenance("fallback-timeout");

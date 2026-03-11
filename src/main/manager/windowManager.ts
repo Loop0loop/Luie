@@ -67,6 +67,23 @@ class WindowManager {
     })
   }
 
+  private attachWindowEvent(
+    win: BrowserWindow,
+    eventName: "ready-to-show",
+    listener: () => void,
+  ): void {
+    const eventTarget = win as BrowserWindow & {
+      once?: (event: "ready-to-show", listener: () => void) => BrowserWindow
+      on: (event: "ready-to-show", listener: () => void) => BrowserWindow
+    }
+
+    if (typeof eventTarget.once === "function") {
+      eventTarget.once(eventName, listener)
+      return
+    }
+    eventTarget.on(eventName, listener)
+  }
+
   private async loadSecondaryWindowRoute(input: {
     label: string
     openDevToolsInDev?: boolean
@@ -86,11 +103,26 @@ class WindowManager {
     }
   }
 
+  private attachLoadFailureLogging(
+    result: Promise<unknown> | unknown,
+    onError: (error: unknown) => void,
+  ): void {
+    if (
+      result &&
+      typeof result === "object" &&
+      "catch" in result &&
+      typeof result.catch === "function"
+    ) {
+      void result.catch(onError)
+    }
+  }
+
   createMainWindow(options: { deferShow?: boolean } = {}): BrowserWindow {
     const deferShow = options.deferShow === true
-    if (this.mainWindow) {
+    if (this.mainWindow && !this.mainWindow.isDestroyed()) {
       return this.mainWindow
     }
+    this.mainWindow = null
 
     const windowState = windowStateKeeper({
       defaultWidth: WINDOW_DEFAULT_WIDTH,
@@ -124,12 +156,15 @@ class WindowManager {
         url: environment.devServerUrl,
         isPackaged: environment.isPackaged,
       })
-      void this.mainWindow.loadURL(environment.devServerUrl).catch((error) => {
-        logger.error("Failed to load development renderer URL", {
-          url: environment.devServerUrl,
-          error,
-        })
-      })
+      this.attachLoadFailureLogging(
+        this.mainWindow.loadURL(environment.devServerUrl),
+        (error) => {
+          logger.error("Failed to load development renderer URL", {
+            url: environment.devServerUrl,
+            error,
+          })
+        },
+      )
       this.mainWindow.webContents.openDevTools({ mode: "detach" })
     } else {
       const indexPath = join(__dirname, "../renderer/index.html")
@@ -137,7 +172,7 @@ class WindowManager {
         path: indexPath,
         isPackaged: environment.isPackaged,
       })
-      void this.mainWindow.loadFile(indexPath).catch((error) => {
+      this.attachLoadFailureLogging(this.mainWindow.loadFile(indexPath), (error) => {
         logger.error("Failed to load production renderer file", {
           path: indexPath,
           error,
@@ -145,7 +180,7 @@ class WindowManager {
       })
     }
 
-    this.mainWindow.once("ready-to-show", () => {
+    this.attachWindowEvent(this.mainWindow, "ready-to-show", () => {
       if (this.mainWindow && !this.mainWindow.isDestroyed()) {
         logger.info("Main window ready to show", { deferShow })
         if (!deferShow) {
@@ -248,10 +283,11 @@ class WindowManager {
   }
 
   createExportWindow(chapterId: string): BrowserWindow {
-    if (this.exportWindow) {
+    if (this.exportWindow && !this.exportWindow.isDestroyed()) {
       this.exportWindow.focus()
       return this.exportWindow
     }
+    this.exportWindow = null
 
     this.exportWindow = this.createBrowserWindow({
       width: 1200,
@@ -291,10 +327,11 @@ class WindowManager {
   }
 
   createWorldGraphWindow(): BrowserWindow {
-    if (this.worldGraphWindow) {
+    if (this.worldGraphWindow && !this.worldGraphWindow.isDestroyed()) {
       this.worldGraphWindow.focus()
       return this.worldGraphWindow
     }
+    this.worldGraphWindow = null
 
     this.worldGraphWindow = this.createBrowserWindow({
       width: 1200,

@@ -281,7 +281,7 @@ export class EntityRelationService {
                 ...terms.map((t): WorldGraphNode => ({
                     id: t.id,
                     entityType: "Term" as WorldEntitySourceType,
-                    name: t.term ?? t.name,
+                    name: t.term,
                     description: t.definition ?? null,
                     firstAppearance: t.firstAppearance,
                     attributes: t.category ? { tags: [t.category] } : null,
