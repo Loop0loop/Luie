@@ -1,10 +1,10 @@
 import { promises as fs } from "fs";
 import path from "path";
-import { db } from "../../../database/index.js";
 import { LUIE_SNAPSHOTS_DIR } from "../../../../shared/constants/index.js";
 import { sanitizeName } from "../../../../shared/utils/sanitize.js";
 import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
 import { ensureLuieExtension } from "../../../utils/luiePackage.js";
+import { listProjectAttachmentEntries } from "./projectAttachmentStore.js";
 
 type LoggerLike = {
   warn: (message: string, data?: unknown) => void;
@@ -31,13 +31,7 @@ export const findProjectPathConflict = async (
   currentProjectId?: string,
 ): Promise<{ id: string; title: string; projectPath: string } | null> => {
   const targetKey = toProjectPathKey(projectPath);
-  const projects = await db.getClient().project.findMany({
-    select: {
-      id: true,
-      title: true,
-      projectPath: true,
-    },
-  });
+  const projects = await listProjectAttachmentEntries();
 
   for (const project of projects) {
     if (currentProjectId && String(project.id) === currentProjectId) continue;

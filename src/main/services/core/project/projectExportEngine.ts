@@ -17,6 +17,7 @@ import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
 import { settingsManager } from "../../../manager/settingsManager.js";
 import type { LoggerLike as LuieWriterLogger } from "../../io/luiePackageTypes.js";
 import { normalizeLuiePackagePath } from "./projectPathPolicy.js";
+import { getProjectAttachmentPath } from "./projectAttachmentStore.js";
 import {
   buildExportChapterData,
   buildExportCharacterData,
@@ -204,10 +205,11 @@ export const exportProjectPackageWithOptions = async (input: {
 }): Promise<boolean> => {
   const project = await getProjectForExport(input.projectId);
   if (!project) return false;
+  const attachedProjectPath = await getProjectAttachmentPath(input.projectId);
 
   const exportPath = input.options?.targetPath
     ? normalizeLuiePackagePath(input.options.targetPath, "targetPath")
-    : resolveExportPath(input.projectId, project.projectPath, input.logger);
+    : resolveExportPath(input.projectId, attachedProjectPath, input.logger);
   if (!exportPath) return false;
 
   const worldSourcePath =

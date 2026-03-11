@@ -11,6 +11,7 @@ import type {
   TermCreateRow,
   WorldEntityCreateRow,
 } from "./projectImportCodec.js";
+import { setProjectAttachmentPath } from "./projectAttachmentStore.js";
 
 type ExistingProjectLookup = { id: string; updatedAt: Date } | null;
 
@@ -58,7 +59,7 @@ export const applyProjectImportTransaction = async (
     snapshotsForCreate,
   } = input;
 
-  return (await db.getClient().$transaction(async (
+  const project = (await db.getClient().$transaction(async (
     tx: Prisma.TransactionClient,
   ) => {
     if (legacyProjectId) {
@@ -77,7 +78,6 @@ export const applyProjectImportTransaction = async (
           (typeof meta.description === "string" ? meta.description : undefined) ??
           worldSynopsis ??
           undefined,
-        projectPath: resolvedPath,
         createdAt: meta.createdAt ? new Date(meta.createdAt) : undefined,
         updatedAt: meta.updatedAt ? new Date(meta.updatedAt) : undefined,
         settings: {
@@ -114,6 +114,7 @@ export const applyProjectImportTransaction = async (
     if (snapshotsForCreate.length > 0) {
       await tx.snapshot.createMany({ data: snapshotsForCreate });
     }
+    await setProjectAttachmentPath(resolvedProjectId, resolvedPath, tx);
     return project;
   })) as {
     id: string;
@@ -123,5 +124,10 @@ export const applyProjectImportTransaction = async (
     createdAt: Date;
     updatedAt: Date;
     settings?: unknown;
+  };
+
+  return {
+    ...project,
+    projectPath: resolvedPath,
   };
 };

@@ -204,6 +204,7 @@ Done when:
 
 ## Phase 2. Detached-first runtime split
 
+- [x] Introduce a dedicated attachment access seam instead of letting feature code read/write `Project.projectPath` directly
 - [ ] Extract attachment metadata out of `Project`
 - [ ] Design `app.db` tables for `ProjectAttachment`, recent projects, and last-opened state
 - [ ] Design `replica.db` as durable local mirror of canonical domain

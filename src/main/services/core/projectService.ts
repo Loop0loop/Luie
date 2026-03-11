@@ -23,6 +23,12 @@ import {
 } from "./project/projectDeletionPolicy.js";
 import { withProjectPathStatus } from "./project/projectListStatus.js";
 import {
+  getProjectAttachmentPath,
+  hydrateProjectsWithAttachmentPaths,
+  listProjectAttachmentEntries,
+  setProjectAttachmentPath,
+} from "./project/projectAttachmentStore.js";
+import {
   findProjectPathConflict,
   normalizeProjectPath,
   renameSnapshotDirectoryForProjectTitleChange,
@@ -46,22 +52,14 @@ export class ProjectService {
     duplicateGroups: number;
     clearedRecords: number;
   }> {
-    const projects = await db.getClient().project.findMany({
-      where: {
-        projectPath: { not: null },
-      },
-      select: {
-        id: true,
-        projectPath: true,
-        updatedAt: true,
-      },
-    });
+    const projects = (await listProjectAttachmentEntries()).filter(
+      (project) => project.projectPath !== null,
+    );
 
     const duplicateGroupsToReconcile = collectDuplicateProjectPathGroups(
-      projects.map((project: { id: string; projectPath: string | null; updatedAt: Date }) => ({
+      projects.map((project) => ({
         id: String(project.id),
-        projectPath:
-          typeof project.projectPath === "string" ? project.projectPath : null,
+        projectPath: project.projectPath,
         updatedAt: project.updatedAt,
       })),
     );
@@ -76,10 +74,7 @@ export class ProjectService {
 
         await Promise.all(
           stale.map(async (item) => {
-            await db.getClient().project.update({
-              where: { id: item.id },
-              data: { projectPath: null },
-            });
+            await setProjectAttachmentPath(item.id, null);
             logger.warn("Cleared duplicate projectPath from stale record", {
               keepProjectId: keep.id,
               staleProjectId: item.id,
@@ -127,7 +122,6 @@ export class ProjectService {
         data: {
           title: input.title,
           description: input.description,
-          projectPath,
           settings: {
             create: {
               autoSave: true,
@@ -141,9 +135,15 @@ export class ProjectService {
       });
 
       const projectId = String(project.id);
+      if (projectPath !== undefined) {
+        await setProjectAttachmentPath(projectId, projectPath);
+      }
       logger.info("Project created successfully", { projectId });
       this.schedulePackageExport(projectId, "project:create");
-      return project;
+      return {
+        ...project,
+        projectPath: projectPath ?? null,
+      };
     } catch (error) {
       logger.error("Failed to create project", error);
       if (error instanceof ServiceError) {
@@ -211,7 +211,10 @@ export class ProjectService {
         );
       }
 
-      return project;
+      return {
+        ...project,
+        projectPath: await getProjectAttachmentPath(id),
+      };
     } catch (error) {
       logger.error("Failed to get project", error);
       throw error;
@@ -225,19 +228,17 @@ export class ProjectService {
           id: true,
           title: true,
           description: true,
-          projectPath: true,
           createdAt: true,
           updatedAt: true,
         },
         orderBy: { updatedAt: "desc" },
       });
 
-      return await withProjectPathStatus(
+      const projectsWithAttachments = await hydrateProjectsWithAttachmentPaths(
         projects.map((project: {
           id: string;
           title: string;
           description: string | null;
-          projectPath: string | null;
           createdAt: Date;
           updatedAt: Date;
         }) => ({
@@ -245,9 +246,11 @@ export class ProjectService {
           id: String(project.id),
           description:
             typeof project.description === "string" ? project.description : null,
-          projectPath:
-            typeof project.projectPath === "string" ? project.projectPath : null,
         })),
+      );
+
+      return await withProjectPathStatus(
+        projectsWithAttachments,
       );
     } catch (error) {
       logger.error("Failed to get all projects", error);
@@ -284,27 +287,35 @@ export class ProjectService {
         }
       }
 
-      const current = await db.getClient().project.findUnique({
-        where: { id: input.id },
-        select: { title: true, projectPath: true },
-      });
+      const [current, currentProjectPath] = await Promise.all([
+        db.getClient().project.findUnique({
+          where: { id: input.id },
+          select: { title: true },
+        }),
+        getProjectAttachmentPath(input.id),
+      ]);
 
       const project = await db.getClient().project.update({
         where: { id: input.id },
         data: {
           title: input.title,
           description: input.description,
-          projectPath: normalizedProjectPath,
         },
       });
 
+      const nextProjectPath =
+        normalizedProjectPath === undefined
+          ? currentProjectPath
+          : normalizedProjectPath;
+      if (normalizedProjectPath !== undefined) {
+        await setProjectAttachmentPath(input.id, normalizedProjectPath);
+      }
+
       const prevTitle = typeof current?.title === "string" ? current.title : "";
       const nextTitle = typeof project.title === "string" ? project.title : "";
-      const projectPath =
-        typeof project.projectPath === "string" ? project.projectPath : null;
       await renameSnapshotDirectoryForProjectTitleChange({
         projectId: String(project.id),
-        projectPath,
+        projectPath: nextProjectPath ?? null,
         previousTitle: prevTitle,
         nextTitle,
         logger,
@@ -313,7 +324,10 @@ export class ProjectService {
       const projectId = String(project.id);
       logger.info("Project updated successfully", { projectId });
       this.schedulePackageExport(projectId, "project:update");
-      return project;
+      return {
+        ...project,
+        projectPath: nextProjectPath ?? null,
+      };
     } catch (error) {
       logger.error("Failed to update project", error);
       if (error instanceof ServiceError) {
@@ -345,10 +359,13 @@ export class ProjectService {
     let queuedProjectDelete = false;
 
     try {
-      const existing = await db.getClient().project.findUnique({
-        where: { id: request.id },
-        select: { id: true, projectPath: true },
-      });
+      const [existing, projectPath] = await Promise.all([
+        db.getClient().project.findUnique({
+          where: { id: request.id },
+          select: { id: true },
+        }),
+        getProjectAttachmentPath(request.id),
+      ]);
 
       if (!existing?.id) {
         throw new ServiceError(
@@ -360,8 +377,7 @@ export class ProjectService {
 
       await deleteProjectPackageFileIfRequested({
         deleteFile: request.deleteFile,
-        projectPath:
-          typeof existing.projectPath === "string" ? existing.projectPath : null,
+        projectPath,
       });
 
       settingsManager.addPendingProjectDelete({

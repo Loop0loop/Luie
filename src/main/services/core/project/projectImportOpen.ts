@@ -33,6 +33,10 @@ import {
 } from "./projectImportCodec.js";
 import { buildGraphCreateRows } from "./projectImportGraph.js";
 import { applyProjectImportTransaction } from "./projectImportTransaction.js";
+import {
+  findProjectByAttachmentPath,
+  setProjectAttachmentPath,
+} from "./projectAttachmentStore.js";
 
 type LoggerLike = LuieWriterLogger & {
   info: (message: string, details?: unknown) => void;
@@ -99,10 +103,14 @@ const parseLuieDocumentOrThrow = <T>(
 };
 
 const findProjectByPath = async (resolvedPath: string): Promise<ExistingProjectLookup> => {
-  return (await db.getClient().project.findFirst({
-    where: { projectPath: resolvedPath },
-    select: { id: true, updatedAt: true },
-  })) as ExistingProjectLookup;
+  const project = await findProjectByAttachmentPath(resolvedPath);
+  if (!project) {
+    return null;
+  }
+  return {
+    id: project.id,
+    updatedAt: project.updatedAt,
+  };
 };
 
 const readMetaOrMarkCorrupt = async (
@@ -280,10 +288,7 @@ export const openLuieProjectPackage = async (input: {
         { packagePath: resolvedPath, recoveryPath },
       );
     }
-    await db.getClient().project.update({
-      where: { id: existingByPath.id },
-      data: { projectPath: recoveryPath },
-    });
+    await setProjectAttachmentPath(existingByPath.id, recoveryPath);
     const project = await input.getProjectById(existingByPath.id);
     return {
       project,
