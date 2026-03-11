@@ -1,30 +1,11 @@
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import type { TFunction } from "i18next";
-import {
-  useMemoStore,
-  type MemoNote,
-} from "@renderer/features/research/stores/memoStore";
+import type { Note } from "@renderer/features/research/stores/memo.types";
+import { cloneNotes } from "./memoDefaults";
+import { useMemoViewState } from "./useMemoViewState";
+import { useProjectMemoNotes } from "./useProjectMemoNotes";
 
-export type Note = MemoNote;
-
-const cloneNotes = (notes: Note[]): Note[] =>
-  notes.map((note) => ({
-    ...note,
-    tags: [...note.tags],
-  }));
-
-export function buildDefaultNotes(t: TFunction): Note[] {
-  const rawNotes = t("memo.defaultNotes", { returnObjects: true }) as Array<
-    Omit<Note, "updatedAt">
-  >;
-  const updatedAt = new Date().toISOString();
-
-  return rawNotes.map((note) => ({
-    ...note,
-    tags: [...note.tags],
-    updatedAt,
-  }));
-}
+export type { Note } from "@renderer/features/research/stores/memo.types";
+export { buildDefaultNotes } from "./memoDefaults";
 
 export function useMemoManager(
   projectId: string | undefined,
@@ -32,44 +13,19 @@ export function useMemoManager(
   defaultNotes: Note[],
   t: TFunction,
 ) {
-  const notes = useMemoStore((state) => state.notes);
-  const isLoading = useMemoStore((state) => state.isLoading);
-  const loadNotes = useMemoStore((state) => state.loadNotes);
-  const addNote = useMemoStore((state) => state.addNote);
-  const updateNote = useMemoStore((state) => state.updateNote);
-
-  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(
-    defaultNotes[0]?.id ?? "1",
-  );
-  const [searchTerm, setSearchTerm] = useState("");
-  const deferredSearchTerm = useDeferredValue(searchTerm);
-
-  useEffect(() => {
-    if (!projectId) return;
-    void loadNotes(projectId, projectPath, defaultNotes);
-  }, [defaultNotes, loadNotes, projectId, projectPath]);
-
-  const activeNoteId = useMemo(() => {
-    if (selectedNoteId && notes.some((note) => note.id === selectedNoteId)) {
-      return selectedNoteId;
-    }
-    return notes[0]?.id ?? defaultNotes[0]?.id ?? "1";
-  }, [defaultNotes, notes, selectedNoteId]);
-
-  const activeNote = useMemo(
-    () => notes.find((note) => note.id === activeNoteId) ?? null,
-    [notes, activeNoteId],
-  );
-
-  const filteredNotes = useMemo(() => {
-    if (!deferredSearchTerm) return notes;
-    const query = deferredSearchTerm.toLowerCase();
-    return notes.filter(
-      (note) =>
-        note.title.toLowerCase().includes(query) ||
-        note.content.toLowerCase().includes(query),
-    );
-  }, [notes, deferredSearchTerm]);
+  const { addNote, isLoading, notes, updateNote } = useProjectMemoNotes({
+    defaultNotes,
+    projectId,
+    projectPath,
+  });
+  const {
+    activeNote,
+    activeNoteId,
+    filteredNotes,
+    searchTerm,
+    setActiveNoteId,
+    setSearchTerm,
+  } = useMemoViewState(notes, defaultNotes);
 
   const handleAddNote = () => {
     if (!projectId) return;
@@ -81,7 +37,7 @@ export function useMemoManager(
     });
 
     if (created?.id) {
-      setSelectedNoteId(created.id);
+      setActiveNoteId(created.id);
     }
   };
 
@@ -94,7 +50,7 @@ export function useMemoManager(
     notes: cloneNotes(notes),
     isLoading,
     activeNoteId,
-    setActiveNoteId: setSelectedNoteId,
+    setActiveNoteId,
     searchTerm,
     setSearchTerm,
     activeNote,

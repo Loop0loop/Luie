@@ -1,19 +1,14 @@
-import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
-import { useMemoStore } from "@renderer/features/research/stores/memoStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { cn } from "@shared/types/utils";
 import { DraggableItem } from "@shared/ui/DraggableItem";
+import { useProjectMemoNotes } from "@renderer/features/research/components/memo/useProjectMemoNotes";
 
 export default function SidebarMemoList() {
   const { t } = useTranslation();
   const currentProject = useProjectStore((state) => state.currentItem);
-  const notes = useMemoStore((state) => state.notes);
-  const addNote = useMemoStore((state) => state.addNote);
-  const loadNotes = useMemoStore((state) => state.loadNotes);
-  const flushSave = useMemoStore((state) => state.flushSave);
   const setMainView = useUIStore((state) => state.setMainView);
   const mainView = useUIStore((state) => state.mainView);
   const activeNoteId =
@@ -21,15 +16,11 @@ export default function SidebarMemoList() {
 
   const currentProjectId = currentProject?.id ?? null;
   const currentProjectPath = currentProject?.projectPath ?? null;
-
-  useEffect(() => {
-    if (currentProjectId) {
-      void loadNotes(currentProjectId, currentProjectPath);
-    }
-    return () => {
-      void flushSave();
-    };
-  }, [currentProjectId, currentProjectPath, flushSave, loadNotes]);
+  const { addNote, notes } = useProjectMemoNotes({
+    flushOnCleanup: true,
+    projectId: currentProjectId ?? undefined,
+    projectPath: currentProjectPath,
+  });
 
   const projectNotes = currentProjectId ? notes : [];
 

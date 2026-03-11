@@ -3,7 +3,7 @@ import { Plus, Clock } from "lucide-react";
 import { type TFunction } from "i18next";
 import { cn } from "@shared/types/utils";
 import SearchInput from "@shared/ui/SearchInput";
-import type { Note } from "@renderer/features/research/components/memo/useMemoManager";
+import type { Note } from "@renderer/features/research/stores/memo.types";
 
 interface MemoSidebarListProps {
     t: TFunction;

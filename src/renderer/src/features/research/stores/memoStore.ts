@@ -2,11 +2,8 @@ import { create } from "zustand";
 import { api } from "@shared/api";
 import { DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS } from "@shared/constants";
 import { createPerformanceTimer } from "@shared/logger";
-import type { ScrapMemo } from "@shared/types";
 import { worldPackageStorage } from "@renderer/features/research/services/worldPackageStorage";
-
-export type MemoNote = ScrapMemo;
-export type MemoNoteInput = Omit<MemoNote, "id" | "updatedAt">;
+import type { MemoNote, MemoNoteInput } from "./memo.types";
 
 type MemoStore = {
   activeProjectId: string | null;
