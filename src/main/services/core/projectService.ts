@@ -146,6 +146,9 @@ export class ProjectService {
       return project;
     } catch (error) {
       logger.error("Failed to create project", error);
+      if (error instanceof ServiceError) {
+        throw error;
+      }
       throw new ServiceError(
         ErrorCode.PROJECT_CREATE_FAILED,
         "Failed to create project",
@@ -313,6 +316,9 @@ export class ProjectService {
       return project;
     } catch (error) {
       logger.error("Failed to update project", error);
+      if (error instanceof ServiceError) {
+        throw error;
+      }
       throw new ServiceError(
         ErrorCode.PROJECT_UPDATE_FAILED,
         "Failed to update project",

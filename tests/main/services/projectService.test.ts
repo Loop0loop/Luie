@@ -8,6 +8,7 @@ import {
 } from "../../../src/main/services/core/projectService.js";
 import { db } from "../../../src/main/database/index.js";
 import { readLuieEntry } from "../../../src/main/utils/luiePackage.js";
+import { ErrorCode } from "../../../src/shared/constants/errorCode.js";
 
 const localProjectService = new ProjectService();
 
@@ -222,7 +223,7 @@ describe("ProjectService", () => {
         description: "test",
         projectPath: "relative/path.luie",
       }),
-    ).rejects.toBeDefined();
+    ).rejects.toMatchObject({ code: ErrorCode.INVALID_INPUT });
 
     const created = await localProjectService.createProject({
       title: "Valid Path",
@@ -235,7 +236,7 @@ describe("ProjectService", () => {
         id: created.id as string,
         projectPath: "relative/updated.luie",
       }),
-    ).rejects.toBeDefined();
+    ).rejects.toMatchObject({ code: ErrorCode.INVALID_INPUT });
 
     await expect(
       localProjectService.openLuieProject("relative/open-target.luie"),

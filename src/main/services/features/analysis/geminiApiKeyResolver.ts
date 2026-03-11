@@ -16,12 +16,33 @@ export type GeminiProxyRequest = {
   maxOutputTokens?: number;
 };
 
+export type GeminiProxyInvokeOptions = {
+  signal?: AbortSignal;
+};
+
 type GeminiProxyResponse = {
   text?: unknown;
   candidates?: unknown;
 };
 
 type HttpError = Error & { status?: number };
+
+const createAbortError = (): Error => {
+  const error = new Error("Analysis aborted");
+  error.name = "AbortError";
+  return error;
+};
+
+const isAbortError = (error: unknown): boolean =>
+  error instanceof Error && error.name === "AbortError";
+
+const throwIfAborted = (signal?: AbortSignal): void => {
+  if (!signal?.aborted) return;
+  if (signal.reason instanceof Error) {
+    throw signal.reason;
+  }
+  throw createAbortError();
+};
 
 const toHttpError = (status: number, message: string): HttpError => {
   const error = new Error(message) as HttpError;
@@ -83,7 +104,9 @@ const resolveLocalGeminiApiKey = (): string | null => {
 const invokeEdgeProxy = async (
   request: GeminiProxyRequest,
   supabaseConfig: RuntimeSupabaseConfig,
+  options: GeminiProxyInvokeOptions = {},
 ): Promise<string> => {
+  throwIfAborted(options.signal);
   const accessToken = await syncService.getEdgeAccessToken();
   const endpoint = resolveProxyEndpoint(supabaseConfig);
 
@@ -95,6 +118,7 @@ const invokeEdgeProxy = async (
       Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify(request),
+    signal: options.signal,
   });
 
   if (!response.ok) {
@@ -122,7 +146,9 @@ const invokeEdgeProxy = async (
 const invokeLocalGemini = async (
   request: GeminiProxyRequest,
   apiKey: string,
+  options: GeminiProxyInvokeOptions = {},
 ): Promise<string> => {
+  throwIfAborted(options.signal);
   const generationConfig: Record<string, unknown> = {};
   if (request.responseMimeType) {
     generationConfig.responseMimeType = request.responseMimeType;
@@ -152,6 +178,7 @@ const invokeLocalGemini = async (
       headers: {
         "Content-Type": "application/json",
       },
+      signal: options.signal,
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: request.prompt }] }],
         generationConfig,
@@ -187,15 +214,20 @@ const invokeLocalGemini = async (
 
 export const invokeGeminiProxy = async (
   request: GeminiProxyRequest,
+  options: GeminiProxyInvokeOptions = {},
 ): Promise<string> => {
+  throwIfAborted(options.signal);
   const supabaseConfig = getSupabaseConfig();
   const localApiKey = resolveLocalGeminiApiKey();
   const failures: string[] = [];
 
   if (supabaseConfig) {
     try {
-      return await invokeEdgeProxy(request, supabaseConfig);
+      return await invokeEdgeProxy(request, supabaseConfig, options);
     } catch (error) {
+      if (isAbortError(error) || options.signal?.aborted) {
+        throw error;
+      }
       const message = error instanceof Error ? error.message : String(error);
       failures.push(`edge:${message}`);
       logger.warn("Edge Gemini path failed; falling back to local path", {
@@ -208,8 +240,12 @@ export const invokeGeminiProxy = async (
 
   if (localApiKey) {
     try {
-      return await invokeLocalGemini(request, localApiKey);
+      throwIfAborted(options.signal);
+      return await invokeLocalGemini(request, localApiKey, options);
     } catch (error) {
+      if (isAbortError(error) || options.signal?.aborted) {
+        throw error;
+      }
       const message = error instanceof Error ? error.message : String(error);
       failures.push(`local:${message}`);
       logger.warn("Local Gemini path failed", { message });
