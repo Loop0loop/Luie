@@ -695,6 +695,7 @@ export interface EditorSettings {
   themeAccent: ThemeAccent;
   themeTexture: ThemeTexture;
   uiMode: EditorUiMode;
+  enableAnimations: boolean;
 }
 
 export interface AppSettings {

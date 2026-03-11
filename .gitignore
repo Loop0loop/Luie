@@ -24,6 +24,7 @@ lerna-debug.log*
 prisma/migrations/
 prisma/dev.db-wal
 prisma/dev.db-shm
+prisma/.tmp
 
 
 

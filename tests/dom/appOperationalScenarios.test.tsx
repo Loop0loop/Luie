@@ -7,6 +7,8 @@ import { createRoot, type Root } from "react-dom/client";
 import App from "../../src/renderer/src/app/App.js";
 import { FeatureErrorBoundary } from "../../src/shared/ui/FeatureErrorBoundary.js";
 import { GlobalErrorBoundary } from "../../src/shared/ui/GlobalErrorBoundary.js";
+import type { useUIStore as UseUIStore } from "../../src/renderer/src/features/workspace/stores/uiStore.js";
+import type { useEditorStore as UseEditorStore } from "../../src/renderer/src/features/editor/stores/editorStore.js";
 
 const mocked = vi.hoisted(() => {
   const translations: Record<string, string> = {
@@ -14,6 +16,7 @@ const mocked = vi.hoisted(() => {
     "bootstrap.initializing": "Initializing app",
     "bootstrap.retry": "Retry bootstrap",
     "bootstrap.quit": "Quit app",
+    "project.toast.pathMissing": "Open from local data",
     loading: "Loading",
     "errorBoundary.title": "Unexpected error",
     "errorBoundary.description": "The app hit an unexpected error.",
@@ -37,6 +40,19 @@ const mocked = vi.hoisted(() => {
     setCurrentProject: vi.fn(),
     updateProject: vi.fn(),
     loadProjects: vi.fn(),
+  };
+
+  const projectInitState = {
+    currentProject: null as
+      | {
+          id: string;
+          title: string;
+          projectPath?: string | null;
+          pathMissing?: boolean;
+          createdAt: string;
+          updatedAt: string;
+        }
+      | null,
   };
 
   const editorState = {
@@ -82,6 +98,7 @@ const mocked = vi.hoisted(() => {
     translate,
     uiState,
     projectState,
+    projectInitState,
     editorState,
     shortcutState,
     showToast: vi.fn(),
@@ -138,7 +155,7 @@ vi.mock("@renderer/features/export/components/ExportWindow", () => ({
 
 vi.mock("@renderer/features/project/hooks/useProjectInit", () => ({
   useProjectInit: () => ({
-    currentProject: null,
+    currentProject: mocked.projectInitState.currentProject,
   }),
 }));
 
@@ -163,7 +180,7 @@ vi.mock("@renderer/features/workspace/services/uiModeIntegrity", () => ({
 
 vi.mock("@renderer/features/workspace/stores/uiStore", () => {
   const useUIStore = ((selector: (state: typeof mocked.uiState) => unknown) =>
-    selector(mocked.uiState)) as typeof import("../../src/renderer/src/features/workspace/stores/uiStore.js").useUIStore;
+    selector(mocked.uiState)) as typeof UseUIStore;
   Object.assign(useUIStore, {
     getState: () => mocked.uiState,
   });
@@ -179,7 +196,7 @@ vi.mock("@renderer/features/project/stores/projectStore", () => ({
 vi.mock("@renderer/features/editor/stores/editorStore", () => {
   const useEditorStore = ((
     selector: (state: typeof mocked.editorState) => unknown,
-  ) => selector(mocked.editorState)) as typeof import("../../src/renderer/src/features/editor/stores/editorStore.js").useEditorStore;
+  ) => selector(mocked.editorState)) as typeof UseEditorStore;
   Object.assign(useEditorStore, {
     getState: () => mocked.editorState,
   });
@@ -246,6 +263,7 @@ describe("app operational scenarios", () => {
     });
     document.body.innerHTML = "";
     window.location.hash = "";
+    mocked.uiState.view = "template";
     mocked.api.app.getBootstrapStatus.mockReset();
     mocked.api.app.onBootstrapStatus.mockReset();
     mocked.api.app.onBootstrapStatus.mockReturnValue(() => undefined);
@@ -256,6 +274,12 @@ describe("app operational scenarios", () => {
     mocked.api.logger.warn.mockReset();
     mocked.api.logger.info.mockReset();
     mocked.shortcutState.loadShortcuts.mockReset();
+    mocked.projectState.setCurrentProject.mockReset();
+    mocked.projectState.updateProject.mockReset();
+    mocked.projectState.loadProjects.mockReset();
+    mocked.projectInitState.currentProject = null;
+    mocked.uiState.setView.mockReset();
+    mocked.showToast.mockReset();
   });
 
   afterEach(() => {
@@ -310,6 +334,33 @@ describe("app operational scenarios", () => {
 
     await clickButtonByText(view.container, "Quit app");
     expect(mocked.api.app.quit).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps path-missing projects open and shows local-data toast", async () => {
+    mocked.api.app.getBootstrapStatus.mockResolvedValue({
+      success: true,
+      data: {
+        isReady: true,
+      },
+    });
+    mocked.uiState.view = "editor";
+    mocked.projectInitState.currentProject = {
+      id: "project-1",
+      title: "Recovered Project",
+      projectPath: "/tmp/missing.luie",
+      pathMissing: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const view = mountView(<App />);
+    mountedViews.push(view);
+    await flushAsync();
+
+    expect(view.container.querySelector('[data-testid="editor-root"]')).not.toBeNull();
+    expect(mocked.showToast).toHaveBeenCalledWith("Open from local data", "info");
+    expect(mocked.projectState.setCurrentProject).not.toHaveBeenCalled();
+    expect(mocked.uiState.setView).not.toHaveBeenCalledWith("template");
   });
 
   it("keeps outer UI alive when a feature boundary recovers from a crash", async () => {

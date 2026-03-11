@@ -1,5 +1,6 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { History } from "lucide-react";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useTranslation } from "react-i18next";
 import { Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
 import Editor from "@renderer/features/editor/components/Editor";
@@ -145,7 +146,34 @@ export function GoogleDocsRightPanel({
   rightPanelRatio,
   trashRefreshKey,
 }: GoogleDocsRightPanelProps) {
-  if (!activeRightTab) {
+  const enableAnimations = useEditorStore(state => state.enableAnimations);
+  const [renderedTab, setRenderedTab] = useState(activeRightTab);
+  const [isClosing, setIsClosing] = useState(false);
+
+  if (activeRightTab && activeRightTab !== renderedTab) {
+    setRenderedTab(activeRightTab);
+    setIsClosing(false);
+  }
+
+  useEffect(() => {
+    if (!activeRightTab && renderedTab) {
+      if (enableAnimations) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setIsClosing(true);
+        const timer = setTimeout(() => {
+          setRenderedTab(null);
+          setIsClosing(false);
+        }, 200);
+        return () => clearTimeout(timer);
+      } else {
+        setRenderedTab(null);
+        return undefined;
+      }
+    }
+    return undefined;
+  }, [activeRightTab, enableAnimations, renderedTab]);
+
+  if (!renderedTab) {
     return null;
   }
 
@@ -153,44 +181,52 @@ export function GoogleDocsRightPanel({
     <>
       <PanelResizeHandle
         data-separator-feature={activePanelSurface}
-        className="relative z-20 w-1 shrink-0 cursor-col-resize bg-border/40 transition-colors hover:bg-accent/60 focus-visible:bg-accent/60"
+        className={`relative z-20 w-1 shrink-0 cursor-col-resize bg-border/40 transition-colors hover:bg-accent/60 focus-visible:bg-accent/60 ${
+          enableAnimations && isClosing ? "opacity-0 transition-opacity duration-200" : ""
+        }`}
       >
         <div className="absolute inset-y-0 -left-1 -right-1" />
       </PanelResizeHandle>
 
       <Panel
-        key={`right-context-panel-${activeRightTab}`}
-        id={`right-context-panel-${activeRightTab}`}
+        key={`right-context-panel-${renderedTab}`}
+        id={`right-context-panel-${renderedTab}`}
         defaultSize={toPanelPercentSize(rightPanelRatio)}
         minSize={toPanelPixelSize(rightPanelMinPx)}
         maxSize={toPanelPixelSize(rightPanelMaxPx)}
         onMouseDownCapture={onFocus}
-        className="flex min-w-0 shrink-0 flex-col overflow-hidden border-l border-border bg-background"
+        className={`flex min-w-0 shrink-0 flex-col overflow-hidden border-l border-border bg-background ${
+          enableAnimations
+            ? isClosing
+              ? "animate-out slide-out-to-right fade-out duration-200"
+              : "animate-in slide-in-from-right fade-in duration-200"
+            : ""
+        }`}
       >
         <div className="flex h-full flex-col">
-          {activeRightTab === "character" && (
+          {renderedTab === "character" && (
             <ResearchContent activeTab="character" onClose={closeRightPanel} />
           )}
-          {activeRightTab === "world" && (
+          {renderedTab === "world" && (
             <Suspense fallback={<LoadingFallback />}>
               <div className="h-full">
                 <WorldPanel onClose={closeRightPanel} />
               </div>
             </Suspense>
           )}
-          {activeRightTab === "event" && (
+          {renderedTab === "event" && (
             <ResearchContent activeTab="event" onClose={closeRightPanel} />
           )}
-          {activeRightTab === "faction" && (
+          {renderedTab === "faction" && (
             <ResearchContent activeTab="faction" onClose={closeRightPanel} />
           )}
-          {activeRightTab === "scrap" && (
+          {renderedTab === "scrap" && (
             <ResearchContent activeTab="scrap" onClose={closeRightPanel} />
           )}
-          {activeRightTab === "analysis" && (
+          {renderedTab === "analysis" && (
             <ResearchContent activeTab="analysis" onClose={closeRightPanel} />
           )}
-          {activeRightTab === "editor" && (
+          {renderedTab === "editor" && (
             <div className="h-full">
               <Editor
                 key={`docs-side-editor-${activeChapterId ?? "none"}`}
@@ -205,17 +241,17 @@ export function GoogleDocsRightPanel({
               />
             </div>
           )}
-          {activeRightTab === "export" && (
+          {renderedTab === "export" && (
             <Suspense fallback={<LoadingFallback />}>
               <div className="h-full">
                 <ExportPreviewPanel title={activeChapterTitle} />
               </div>
             </Suspense>
           )}
-          {activeRightTab === "snapshot" && (
+          {renderedTab === "snapshot" && (
             <SnapshotPanel activeChapterId={activeChapterId} />
           )}
-          {activeRightTab === "trash" && (
+          {renderedTab === "trash" && (
             <TrashPanel
               currentProjectId={currentProjectId}
               onRefreshTrash={onRefreshTrash}

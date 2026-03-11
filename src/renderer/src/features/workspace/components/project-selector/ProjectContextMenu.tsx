@@ -31,17 +31,15 @@ export function ProjectContextMenu({
             style={{ top: menuPosition.y, left: menuPosition.x }}
             onClick={(e) => e.stopPropagation()}
         >
-            {!project.pathMissing && (
-                <div
-                    className="px-2.5 py-2.5 rounded-lg text-[13px] text-fg cursor-pointer select-none hover:bg-active"
-                    onClick={() => {
-                        closeMenu();
-                        onOpenProject?.(project);
-                    }}
-                >
-                    {t("settings.projectTemplate.context.open")}
-                </div>
-            )}
+            <div
+                className="px-2.5 py-2.5 rounded-lg text-[13px] text-fg cursor-pointer select-none hover:bg-active"
+                onClick={() => {
+                    closeMenu();
+                    onOpenProject?.(project);
+                }}
+            >
+                {t("settings.projectTemplate.context.open")}
+            </div>
             {project.pathMissing && (
                 <div
                     className="px-2.5 py-2.5 rounded-lg text-[13px] text-fg cursor-pointer select-none hover:bg-active"

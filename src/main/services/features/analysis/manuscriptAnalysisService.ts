@@ -4,6 +4,7 @@ import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
 import { db } from "../../../database/index.js";
 import { manuscriptAnalyzer } from "../../../core/manuscriptAnalyzer.js";
 import type { AnalysisItem, AnalysisContext } from "../../../../shared/types/analysis.js";
+import type { Character, Chapter, Term } from "../../../../shared/types/index.js";
 import type { BrowserWindow } from "electron";
 import {
   LUIE_PACKAGE_EXTENSION,
@@ -31,6 +32,13 @@ type ActiveAnalysisRun = {
   runId: string;
   controller: AbortController;
   window: BrowserWindow;
+};
+
+type AnalysisSourcePayload = {
+  chapter: Pick<Chapter, "id" | "title" | "content">;
+  characters: Array<Pick<Character, "name" | "description">>;
+  terms: Array<Pick<Term, "term" | "definition" | "category">>;
+  source: "luie" | "db";
 };
 
 const parseLuieJsonSafe = <T>(
@@ -121,27 +129,19 @@ export class ManuscriptAnalysisService {
     errorWindow.webContents.send(IPC_CHANNELS.ANALYSIS_ERROR, payload);
   }
 
-  private async runAnalysis(
+  private async loadChapterFromLuie(
     chapterId: string,
-    projectId: string,
-    runId: string,
-    signal: AbortSignal,
-  ): Promise<void> {
+    projectPath: string | null,
+  ): Promise<Pick<Chapter, "id" | "title" | "content"> | null> {
+    if (
+      !projectPath ||
+      !projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)
+    ) {
+      return null;
+    }
+
     try {
-      const project = await db.getClient().project.findUnique({
-        where: { id: projectId },
-        select: { projectPath: true },
-      });
-      if (signal.aborted || !this.isRunActive(runId)) {
-        return;
-      }
-
-      const projectPath = typeof project?.projectPath === "string" ? project.projectPath : "";
-      if (!projectPath || !projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
-        throw new Error("Project .luie path not found");
-      }
       const safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
-
       const [metaRaw, chapterContent] = await Promise.all([
         readLuieEntry(safeProjectPath, LUIE_PACKAGE_META_FILENAME, logger),
         readLuieEntry(
@@ -150,12 +150,9 @@ export class ManuscriptAnalysisService {
           logger,
         ),
       ]);
-      if (signal.aborted || !this.isRunActive(runId)) {
-        return;
-      }
 
       if (!chapterContent) {
-        throw new Error(`Chapter content not found in .luie: ${chapterId}`);
+        return null;
       }
 
       const meta = parseLuieJsonSafe<LuieMeta | undefined>(
@@ -168,33 +165,143 @@ export class ManuscriptAnalysisService {
         },
       );
       const chapterMeta = meta?.chapters?.find((entry) => entry.id === chapterId);
-      const chapterTitle = chapterMeta?.title ?? "Untitled";
 
-      const chapter = {
+      return {
         id: chapterId,
-        title: chapterTitle,
+        title: chapterMeta?.title ?? "Untitled",
         content: chapterContent,
       };
+    } catch (error) {
+      logger.warn("Failed to load .luie chapter for analysis; falling back to DB", {
+        chapterId,
+        projectPath,
+        error,
+      });
+      return null;
+    }
+  }
 
+  private async loadChapterFromDatabase(
+    chapterId: string,
+    projectId: string,
+  ): Promise<Pick<Chapter, "id" | "title" | "content"> | null> {
+    const chapter = await db.getClient().chapter.findFirst({
+      where: {
+        id: chapterId,
+        projectId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+      },
+    });
+
+    if (!chapter) {
+      return null;
+    }
+
+    return {
+      id: String(chapter.id),
+      title: chapter.title,
+      content: chapter.content ?? "",
+    };
+  }
+
+  private async loadAnalysisSource(
+    chapterId: string,
+    projectId: string,
+  ): Promise<AnalysisSourcePayload> {
+    const project = await db.getClient().project.findUnique({
+      where: { id: projectId },
+      select: {
+        projectPath: true,
+        characters: {
+          select: {
+            name: true,
+            description: true,
+          },
+        },
+        terms: {
+          orderBy: { order: "asc" },
+          select: {
+            term: true,
+            definition: true,
+            category: true,
+          },
+        },
+      },
+    });
+
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    const projectPath =
+      typeof project.projectPath === "string" ? project.projectPath : null;
+
+    const luieChapter = await this.loadChapterFromLuie(chapterId, projectPath);
+    if (luieChapter) {
       logger.info("Loaded .luie analysis data", {
         chapterId,
-        chapterTitle,
-        contentLength: chapterContent.length,
-        runId,
+        chapterTitle: luieChapter.title,
+        contentLength: luieChapter.content.length,
       });
+      return {
+        chapter: luieChapter,
+        characters: project.characters,
+        terms: project.terms,
+        source: "luie",
+      };
+    }
 
-      const context = manuscriptAnalyzer.buildAnalysisContext(
-        chapter,
-        [],
-        [],
-      );
+    const databaseChapter = await this.loadChapterFromDatabase(chapterId, projectId);
+    if (!databaseChapter) {
+      throw new Error(`Chapter content not found: ${chapterId}`);
+    }
+
+    logger.info("Loaded DB analysis data", {
+      chapterId,
+      chapterTitle: databaseChapter.title,
+      contentLength: databaseChapter.content.length,
+      projectPath,
+    });
+    return {
+      chapter: databaseChapter,
+      characters: project.characters,
+      terms: project.terms,
+      source: "db",
+    };
+  }
+
+  private async runAnalysis(
+    chapterId: string,
+    projectId: string,
+    runId: string,
+    signal: AbortSignal,
+  ): Promise<void> {
+    try {
+      const analysisSource = await this.loadAnalysisSource(chapterId, projectId);
       if (signal.aborted || !this.isRunActive(runId)) {
         return;
       }
 
+      const context = manuscriptAnalyzer.buildAnalysisContext(
+        analysisSource.chapter,
+        analysisSource.characters,
+        analysisSource.terms,
+      );
+
       const outcome = await this.streamAnalysisWithGemini(context, chapterId, runId, signal);
       if ((outcome === "completed" || outcome === "fallback") && this.isRunActive(runId)) {
-        logger.info("Analysis completed", { chapterId, projectId, runId, outcome });
+        logger.info("Analysis completed", {
+          chapterId,
+          projectId,
+          runId,
+          outcome,
+          source: analysisSource.source,
+        });
       }
     } catch (error) {
       if (signal.aborted || !this.isRunActive(runId) || isAnalysisAbortError(error)) {

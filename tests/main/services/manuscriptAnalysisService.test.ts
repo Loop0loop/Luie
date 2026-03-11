@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocked = vi.hoisted(() => ({
   projectFindUnique: vi.fn(),
+  chapterFindFirst: vi.fn(),
   readLuieEntry: vi.fn(),
   buildAnalysisContext: vi.fn(),
   runGeminiAnalysisStream: vi.fn(),
@@ -31,6 +32,7 @@ vi.mock("../../../src/main/database/index.js", () => ({
         deleteMany: mocked.deleteMany,
       },
       chapter: {
+        findFirst: mocked.chapterFindFirst,
         deleteMany: mocked.deleteMany,
       },
       project: {
@@ -81,6 +83,13 @@ describe("ManuscriptAnalysisService", () => {
     vi.clearAllMocks();
     mocked.projectFindUnique.mockResolvedValue({
       projectPath: "/tmp/test-project.luie",
+      characters: [],
+      terms: [],
+    });
+    mocked.chapterFindFirst.mockResolvedValue({
+      id: "chapter-1",
+      title: "Chapter 1",
+      content: "# chapter content",
     });
     mocked.readLuieEntry.mockImplementation(async (_projectPath: string, entryPath: string) => {
       if (entryPath === "meta.json") {
@@ -128,6 +137,41 @@ describe("ManuscriptAnalysisService", () => {
     await vi.waitFor(() => {
       expect(service.isAnalysisInProgress()).toBe(false);
     });
+  });
+
+  it("falls back to DB chapter content when .luie package is unavailable", async () => {
+    mocked.projectFindUnique.mockResolvedValue({
+      projectPath: null,
+      characters: [{ name: "Alice", description: "Hero" }],
+      terms: [{ term: "Arcology", definition: "Mega city", category: "place" }],
+    });
+    mocked.chapterFindFirst.mockResolvedValue({
+      id: "chapter-1",
+      title: "DB Chapter",
+      content: "db chapter content",
+    });
+
+    const service = new ManuscriptAnalysisService();
+    const window = createWindow();
+
+    await expect(
+      service.startAnalysis("chapter-1", "project-1", window as never),
+    ).resolves.toBeUndefined();
+
+    await vi.waitFor(() => {
+      expect(mocked.runGeminiAnalysisStream).toHaveBeenCalledTimes(1);
+    });
+
+    expect(mocked.buildAnalysisContext).toHaveBeenCalledWith(
+      {
+        id: "chapter-1",
+        title: "DB Chapter",
+        content: "db chapter content",
+      },
+      [{ name: "Alice", description: "Hero" }],
+      [{ term: "Arcology", definition: "Mega city", category: "place" }],
+    );
+    expect(mocked.readLuieEntry).not.toHaveBeenCalled();
   });
 
   it("aborts the active run when stopAnalysis is called", async () => {

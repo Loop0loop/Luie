@@ -26,6 +26,7 @@ export const AppearanceTab = memo(function AppearanceTab({
         themeAccent,
         themeTexture,
         uiMode,
+        enableAnimations,
         updateSettings: onApplySettings,
     } = useEditorStore(
         useShallow((state) => ({
@@ -35,6 +36,7 @@ export const AppearanceTab = memo(function AppearanceTab({
             themeAccent: state.themeAccent,
             themeTexture: state.themeTexture,
             uiMode: state.uiMode,
+            enableAnimations: state.enableAnimations,
             updateSettings: state.updateSettings,
         }))
     );
@@ -126,6 +128,32 @@ export const AppearanceTab = memo(function AppearanceTab({
                     </div>
                 </section>
 
+                <section className="space-y-4">
+                    <div>
+                        <h3 className="text-base font-semibold text-fg">{t("settings.appearance.animations.title", "애니메이션 활성화")}</h3>
+                        <p className="text-sm text-muted mt-1">{t("settings.appearance.animations.description", "UI 변경 시 부드러운 애니메이션 효과를 적용합니다.")}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => onApplySettings({ enableAnimations: !enableAnimations })}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${enableAnimations ? "bg-accent" : "bg-border"
+                                }`}
+                        >
+                            <span
+                                className={`${enableAnimations ? "translate-x-6" : "translate-x-1"
+                                    } inline-block h-4 w-4 transform rounded-full bg-surface shadow-sm transition-transform`}
+                            />
+                        </button>
+                        <span className="text-sm font-medium text-fg">
+                            {enableAnimations ? t("settings.appearance.animations.on", "켜짐") : t("settings.appearance.animations.off", "꺼짐")}
+                        </span>
+                    </div>
+                </section>
+            </div>
+
+            <div className="h-px bg-border my-6" />
+
+            <div className="grid grid-cols-2 gap-8">
                 <section className="space-y-4">
                     <div>
                         <h3 className="text-base font-semibold text-fg">{t("settings.appearance.contrast.title")}</h3>

@@ -2,7 +2,6 @@ import { useTranslation } from "react-i18next";
 import { MoreVertical, LogOut } from "lucide-react";
 import type { Project, SyncStatus } from "@shared/types";
 import { api } from "@shared/api";
-import { useToast } from "@shared/ui/ToastContext";
 
 interface RecentProjectsSectionProps {
     localProjects: Project[];
@@ -28,7 +27,6 @@ export function RecentProjectsSection({
     onDisconnectGoogle,
 }: RecentProjectsSectionProps) {
     const { t } = useTranslation();
-    const { showToast } = useToast();
 
     return (
         <div className="mb-10">
@@ -116,10 +114,6 @@ export function RecentProjectsSection({
                             key={p.id}
                             className="bg-surface border border-border rounded-lg p-5 w-full text-left cursor-pointer transition-all duration-200 relative flex justify-between items-start hover:bg-surface-hover hover:border-border-active hover:-translate-y-0.5 hover:shadow-md group"
                             onClick={() => {
-                                if (p.pathMissing) {
-                                    showToast(t("settings.projectTemplate.toast.pathMissingBlocked"), "info");
-                                    return;
-                                }
                                 onOpenProject?.(p);
                             }}
                         >

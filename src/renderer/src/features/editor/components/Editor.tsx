@@ -90,25 +90,43 @@ function Editor({
 
   // Tiptap Extensions imported remotely
 
+  const updateContentRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (updateContentRef.current) {
+        window.clearTimeout(updateContentRef.current);
+      }
+    };
+  }, []);
+
   const editor = useEditor(
     {
       extensions,
       editable: !readOnly,
       content: initialContent,
       onUpdate: ({ editor }) => {
-        const html = editor.getHTML();
-        const text = editor.getText();
-
-        setContent((previous) => (previous === html ? previous : html));
         if (!readOnly) {
           api.lifecycle?.setDirty?.(true);
         }
 
-        updateStatsRef.current(text);
+        if (updateContentRef.current) {
+          window.clearTimeout(updateContentRef.current);
+        }
+
+        updateContentRef.current = window.setTimeout(() => {
+          const html = editor.getHTML();
+          const text = editor.getText();
+
+          setContent((previous) => (previous === html ? previous : html));
+          updateStatsRef.current(text);
+          updateContentRef.current = null;
+        }, 500);
       },
       onSelectionUpdate: ({ editor }) => {
         const { from } = editor.state.selection;
         const $pos = editor.state.doc.resolve(from);
+
 
         // Find the node around the cursor
         const node = $pos.nodeAfter || $pos.nodeBefore || $pos.parent;

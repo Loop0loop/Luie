@@ -182,10 +182,6 @@ export default function App() {
 
   const handleOpenExistingProject = useCallback(
     async (project: (typeof projects)[number]) => {
-      if (project.pathMissing) {
-        showToast(t("settings.projectTemplate.pathMissingDescription"), "info");
-        return;
-      }
       try {
         let nextProject = project;
         const projectPath = project.projectPath ?? "";
@@ -214,10 +210,8 @@ export default function App() {
 
   useEffect(() => {
     if (!currentProject?.pathMissing) return;
-    showToast(t("settings.projectTemplate.pathMissingDescription"), "info");
-    setCurrentProject(null);
-    setView("template");
-  }, [currentProject, setCurrentProject, setView, showToast, t]);
+    showToast(t("project.toast.pathMissing"), "info");
+  }, [currentProject?.id, currentProject?.pathMissing, showToast, t]);
 
   const handleOpenLuieFile = useCallback(async () => {
     try {

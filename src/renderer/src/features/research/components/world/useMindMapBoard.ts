@@ -165,7 +165,7 @@ export function useMindMapBoard() {
           edges: serializedEdges,
         },
       );
-    }, 250);
+    }, 1000);
 
     return () => {
       window.clearTimeout(timer);

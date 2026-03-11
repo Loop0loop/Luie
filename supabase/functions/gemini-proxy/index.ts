@@ -71,13 +71,16 @@ Deno.serve(async (req: Request) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const supabaseAnonKey =
     Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SB_PUBLISHABLE_KEY");
-  const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+  const geminiApiKey =
+    Deno.env.get("GEMINI_API_KEY") ??
+    Deno.env.get("GOOGLE_GCP_API") ??
+    Deno.env.get("GOOGLE_API_KEY");
 
   if (!supabaseUrl || !supabaseAnonKey) {
     return internalError("Supabase runtime env is missing (SUPABASE_URL / SUPABASE_ANON_KEY)");
   }
   if (!geminiApiKey) {
-    return internalError("GEMINI_API_KEY is not configured");
+    return internalError("Gemini API key is not configured");
   }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {

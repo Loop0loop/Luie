@@ -443,6 +443,7 @@ export const editorSettingsSchema = z.strictObject({
     .transform((v) => (v === "word" ? "editor" : v))
     .pipe(z.enum(["default", "docs", "editor", "scrivener"]))
     .catch("default"),
+  enableAnimations: z.boolean().optional().default(true),
 });
 
 export const settingsAutoSaveSchema = z.strictObject({

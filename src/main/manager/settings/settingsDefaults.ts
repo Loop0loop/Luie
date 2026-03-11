@@ -144,6 +144,7 @@ export const getDefaultSettings = (): AppSettings => ({
     themeAccent: DEFAULT_EDITOR_THEME_ACCENT,
     themeTexture: DEFAULT_EDITOR_THEME_TEXTURE,
     uiMode: "default",
+    enableAnimations: true,
   },
   language: "ko",
   shortcuts: DEFAULT_SHORTCUTS,

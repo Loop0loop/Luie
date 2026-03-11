@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useState, useEffect } from 'react';
 import WindowBar from '@renderer/features/workspace/components/WindowBar';
 import { PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
@@ -6,6 +6,7 @@ import { useUIStore } from '@renderer/features/workspace/stores/uiStore';
 import { useShallow } from "zustand/react/shallow";
 import { useTranslation } from "react-i18next";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import StatusFooter from "@shared/ui/StatusFooter";
 import {
   getLayoutSurfaceConfig,
@@ -58,6 +59,59 @@ export default function MainLayout({
     { id: "context-panel", surface: "default.panel" },
   ]);
 
+  const enableAnimations = useEditorStore((state) => state.enableAnimations);
+
+  const [localSidebarOpen, setLocalSidebarOpen] = useState(isSidebarOpen);
+  const [localContextOpen, setLocalContextOpen] = useState(isContextOpen);
+  const [isSidebarClosing, setIsSidebarClosing] = useState(false);
+  const [isContextClosing, setIsContextClosing] = useState(false);
+
+  if (isSidebarOpen && !localSidebarOpen) {
+    setLocalSidebarOpen(true);
+    setIsSidebarClosing(false);
+  }
+
+  useEffect(() => {
+    if (!isSidebarOpen && localSidebarOpen) {
+      if (enableAnimations) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setIsSidebarClosing(true);
+        const timer = setTimeout(() => {
+          setLocalSidebarOpen(false);
+          setIsSidebarClosing(false);
+        }, 200);
+        return () => clearTimeout(timer);
+      } else {
+        setLocalSidebarOpen(false);
+        return undefined;
+      }
+    }
+    return undefined;
+  }, [isSidebarOpen, enableAnimations, localSidebarOpen]);
+
+  if (isContextOpen && !localContextOpen) {
+    setLocalContextOpen(true);
+    setIsContextClosing(false);
+  }
+
+  useEffect(() => {
+    if (!isContextOpen && localContextOpen) {
+      if (enableAnimations) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setIsContextClosing(true);
+        const timer = setTimeout(() => {
+          setLocalContextOpen(false);
+          setIsContextClosing(false);
+        }, 200);
+        return () => clearTimeout(timer);
+      } else {
+        setLocalContextOpen(false);
+        return undefined;
+      }
+    }
+    return undefined;
+  }, [isContextOpen, enableAnimations, localContextOpen]);
+
   const sidebarRatio =
     layoutSurfaceRatios["default.sidebar"] ?? getLayoutSurfaceDefaultRatio("default.sidebar");
   const contextRatio =
@@ -74,19 +128,25 @@ export default function MainLayout({
         onLayoutChanged={onLayoutChanged}
       >
         {/* Sidebar */}
-        {isSidebarOpen && (
+        {localSidebarOpen && (
           <Panel
             id="sidebar-panel"
             defaultSize={toPanelPercentSize(sidebarRatio)}
             minSize={toPanelPixelSize(mainSidebarConfig.minPx)}
             maxSize={toPanelPixelSize(mainSidebarConfig.maxPx)}
-            className="bg-sidebar border-r border-border overflow-hidden flex flex-col z-10"
+            className={`bg-sidebar border-r border-border overflow-hidden flex flex-col z-10 ${
+              enableAnimations
+                ? isSidebarClosing
+                  ? "animate-out slide-out-to-left fade-out duration-200"
+                  : "animate-in slide-in-from-left fade-in duration-200"
+                : ""
+            }`}
           >
             {sidebar}
           </Panel>
         )}
 
-        {isSidebarOpen && (
+        {localSidebarOpen && (
           <PanelResizeHandle data-separator-feature="default.sidebar" className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative" />
         )}
 
@@ -153,24 +213,30 @@ export default function MainLayout({
           <StatusFooter onOpenExport={onOpenExport} />
         </Panel>
 
-        {isContextOpen && (
+        {localContextOpen && (
           <PanelResizeHandle data-separator-feature="default.panel" className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative" />
         )}
 
         {/* Context Panel */}
-        {isContextOpen && (
+        {localContextOpen && (
           <Panel
             id="context-panel"
             defaultSize={toPanelPercentSize(contextRatio)}
             minSize={toPanelPixelSize(mainContextConfig.minPx)}
             maxSize={toPanelPixelSize(mainContextConfig.maxPx)}
-            className="bg-panel border-l border-border overflow-hidden flex flex-col z-10"
+            className={`bg-panel border-l border-border overflow-hidden flex flex-col z-10 ${
+              enableAnimations
+                ? isContextClosing
+                  ? "animate-out slide-out-to-right fade-out duration-200"
+                  : "animate-in slide-in-from-right fade-in duration-200"
+                : ""
+            }`}
           >
             {contextPanel}
           </Panel>
         )}
 
-        {!isSidebarOpen && !isContextOpen && (
+        {!localSidebarOpen && !localContextOpen && (
           <Panel
             id="main-layout-placeholder"
             defaultSize={0}

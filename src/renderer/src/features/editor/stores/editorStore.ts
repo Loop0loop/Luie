@@ -49,6 +49,7 @@ const DEFAULT_SETTINGS: EditorSettings = {
   themeAccent: DEFAULT_EDITOR_THEME_ACCENT as ThemeAccent,
   themeTexture: DEFAULT_EDITOR_THEME_TEXTURE as ThemeTexture,
   uiMode: "default",
+  enableAnimations: true,
 };
 
 export const useEditorStore = create<EditorStore>((set, get) => ({
@@ -82,6 +83,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       themeAccent: current.themeAccent ?? DEFAULT_EDITOR_THEME_ACCENT,
       themeTexture: current.themeTexture ?? DEFAULT_EDITOR_THEME_TEXTURE,
       uiMode: current.uiMode ?? "default",
+      enableAnimations: current.enableAnimations ?? true,
       ...newSettings,
     };
     const response = await api.settings.setEditor(updated);
