@@ -4,7 +4,7 @@ import { initI18n } from "@renderer/i18n";
 import { startRendererFontLoading } from "@renderer/app/fontLoader";
 import { setupRenderer } from "@renderer/app/setup";
 import App from "@renderer/app/App";
-import { GlobalErrorBoundary } from "@shared/ui/GlobalErrorBoundary";
+import { GlobalErrorBoundary } from "@renderer/shared/error-boundaries/GlobalErrorBoundary";
 import { ToastProvider } from "@shared/ui/Toast";
 import { DialogProvider } from "@shared/ui/DialogProvider";
 import {

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import { MoreVertical, Edit2, Copy, Trash2 } from "lucide-react";
-import { useFloatingMenu } from "@shared/hooks/useFloatingMenu";
+import { useFloatingMenu } from "@renderer/shared/hooks/useFloatingMenu";
 import { useDialog } from "@shared/ui/useDialog";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useChapterManagement } from "@renderer/features/manuscript/hooks/useChapterManagement";

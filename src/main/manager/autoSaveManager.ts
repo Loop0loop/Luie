@@ -354,9 +354,13 @@ export class AutoSaveManager extends EventEmitter {
         const pendingSaves = Array.from(this.pendingSaves.entries()).filter(
           ([, pending]) => pending.projectId === projectId,
         );
-        for (const [chapterId] of pendingSaves) {
-          await this.performSave(chapterId);
-        }
+        await pendingSaves.reduce<Promise<void>>(
+          (chain, [chapterId]) =>
+            chain.then(async () => {
+              await this.performSave(chapterId);
+            }),
+          Promise.resolve(),
+        );
       });
     }, config.interval);
     if (typeof timer.unref === "function") {

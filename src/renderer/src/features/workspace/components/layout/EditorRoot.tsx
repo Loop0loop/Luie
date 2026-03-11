@@ -29,7 +29,7 @@ import { createLayoutModeActions } from "@renderer/features/workspace/services/l
 import { openQuickExportEntry } from "@renderer/features/workspace/services/exportEntryService";
 import { GlobalDragContext } from "@shared/ui/GlobalDragContext";
 import { useEditorRootShortcuts } from "@renderer/features/workspace/components/useEditorRootShortcuts";
-import { FeatureErrorBoundary } from "@shared/ui/FeatureErrorBoundary";
+import { FeatureErrorBoundary } from "@renderer/shared/error-boundaries/FeatureErrorBoundary";
 
 const SettingsModal = lazy(() => import("@renderer/features/settings/components/SettingsModal"));
 import { WorkspacePanels } from "@renderer/features/workspace/components/panels/WorkspacePanels";

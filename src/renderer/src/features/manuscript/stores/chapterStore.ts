@@ -4,8 +4,8 @@ import {
   createAliasSetter,
   createCRUDSlice,
   withProjectScopedGetAll,
-} from "@shared/utils/createCRUDStore";
-import type { CRUDStore } from "@shared/utils/createCRUDStore";
+} from "@renderer/shared/store/createCRUDStore";
+import type { CRUDStore } from "@renderer/shared/store/createCRUDStore";
 import type { ChapterCreateInput, ChapterUpdateInput } from "@shared/types";
 import { api } from "@shared/api";
 

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { Project } from "@shared/types";
-import { createAliasSetter, createCRUDSlice } from "@shared/utils/createCRUDStore";
-import type { CRUDStore } from "@shared/utils/createCRUDStore";
+import { createAliasSetter, createCRUDSlice } from "@renderer/shared/store/createCRUDStore";
+import type { CRUDStore } from "@renderer/shared/store/createCRUDStore";
 import type { ProjectCreateInput, ProjectUpdateInput } from "@shared/types";
 import { api } from "@shared/api";
 

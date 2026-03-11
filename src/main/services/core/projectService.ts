@@ -3,13 +3,10 @@
  */
 
 import { db } from "../../database/index.js";
-import { promises as fs } from "fs";
-import path from "path";
 import { createLogger } from "../../../shared/logger/index.js";
 import {
   ErrorCode,
   DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
-  LUIE_PACKAGE_EXTENSION,
   PACKAGE_EXPORT_DEBOUNCE_MS,
 } from "../../../shared/constants/index.js";
 import type {
@@ -18,14 +15,19 @@ import type {
   ProjectUpdateInput,
 } from "../../../shared/types/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
-import { ensureSafeAbsolutePath } from "../../utils/pathValidation.js";
 import { settingsManager } from "../../manager/settingsManager.js";
 import { ProjectExportQueue } from "./project/projectExportQueue.js";
+import {
+  deleteProjectPackageFileIfRequested,
+  normalizeProjectDeleteInput,
+} from "./project/projectDeletionPolicy.js";
+import { withProjectPathStatus } from "./project/projectListStatus.js";
 import {
   findProjectPathConflict,
   normalizeProjectPath,
   renameSnapshotDirectoryForProjectTitleChange,
 } from "./project/projectPathPolicy.js";
+import { collectDuplicateProjectPathGroups } from "./project/projectPathReconciliation.js";
 import { exportProjectPackageWithOptions as exportProjectPackageWithOptionsImpl } from "./project/projectExportEngine.js";
 import { openLuieProjectPackage } from "./project/projectImportOpen.js";
 
@@ -39,11 +41,6 @@ export class ProjectService {
     },
     logger,
   );
-
-  private toProjectPathKey(projectPath: string): string {
-    const resolved = path.resolve(projectPath);
-    return process.platform === "win32" ? resolved.toLowerCase() : resolved;
-  }
 
   async reconcileProjectPathDuplicates(): Promise<{
     duplicateGroups: number;
@@ -60,40 +57,13 @@ export class ProjectService {
       },
     });
 
-    const groups = new Map<
-      string,
-      Array<{ id: string; projectPath: string; updatedAt: Date }>
-    >();
-    for (const project of projects) {
-      if (
-        typeof project.projectPath !== "string" ||
-        project.projectPath.length === 0
-      ) {
-        continue;
-      }
-      try {
-        const safePath = ensureSafeAbsolutePath(
-          project.projectPath,
-          "projectPath",
-        );
-        const key = this.toProjectPathKey(safePath);
-        const bucket = groups.get(key) ?? [];
-        bucket.push({
-          id: String(project.id),
-          projectPath: safePath,
-          updatedAt:
-            project.updatedAt instanceof Date
-              ? project.updatedAt
-              : new Date(String(project.updatedAt)),
-        });
-        groups.set(key, bucket);
-      } catch {
-        continue;
-      }
-    }
-
-    const duplicateGroupsToReconcile = Array.from(groups.values()).filter(
-      (entries) => entries.length > 1,
+    const duplicateGroupsToReconcile = collectDuplicateProjectPathGroups(
+      projects.map((project) => ({
+        id: String(project.id),
+        projectPath:
+          typeof project.projectPath === "string" ? project.projectPath : null,
+        updatedAt: project.updatedAt,
+      })),
     );
 
     const reconciliationResults = await Promise.all(
@@ -259,43 +229,16 @@ export class ProjectService {
         orderBy: { updatedAt: "desc" },
       });
 
-      const withPathStatus = await Promise.all(
-        projects.map(async (project) => {
-          const projectPath =
-            typeof project.projectPath === "string"
-              ? project.projectPath
-              : null;
-          const isLuiePath = Boolean(
-            projectPath &&
-            projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION),
-          );
-          if (!isLuiePath || !projectPath) {
-            return {
-              ...project,
-              pathMissing: false,
-            };
-          }
-
-          try {
-            const safeProjectPath = ensureSafeAbsolutePath(
-              projectPath,
-              "projectPath",
-            );
-            await fs.access(safeProjectPath);
-            return {
-              ...project,
-              pathMissing: false,
-            };
-          } catch {
-            return {
-              ...project,
-              pathMissing: true,
-            };
-          }
-        }),
+      return await withProjectPathStatus(
+        projects.map((project) => ({
+          ...project,
+          id: String(project.id),
+          description:
+            typeof project.description === "string" ? project.description : null,
+          projectPath:
+            typeof project.projectPath === "string" ? project.projectPath : null,
+        })),
       );
-
-      return withPathStatus;
     } catch (error) {
       logger.error("Failed to get all projects", error);
       throw new ServiceError(
@@ -385,10 +328,7 @@ export class ProjectService {
   }
 
   async deleteProject(input: string | ProjectDeleteInput) {
-    const request =
-      typeof input === "string"
-        ? { id: input, deleteFile: false }
-        : { id: input.id, deleteFile: Boolean(input.deleteFile) };
+    const request = normalizeProjectDeleteInput(input);
     let queuedProjectDelete = false;
 
     try {
@@ -405,22 +345,11 @@ export class ProjectService {
         );
       }
 
-      if (request.deleteFile) {
-        const projectPath =
-          typeof existing.projectPath === "string"
-            ? existing.projectPath
-            : null;
-        if (
-          projectPath &&
-          projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)
-        ) {
-          const safeProjectPath = ensureSafeAbsolutePath(
-            projectPath,
-            "projectPath",
-          );
-          await fs.rm(safeProjectPath, { force: true, recursive: true });
-        }
-      }
+      await deleteProjectPackageFileIfRequested({
+        deleteFile: request.deleteFile,
+        projectPath:
+          typeof existing.projectPath === "string" ? existing.projectPath : null,
+      });
 
       settingsManager.addPendingProjectDelete({
         projectId: request.id,

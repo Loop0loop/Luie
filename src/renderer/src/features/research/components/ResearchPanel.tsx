@@ -9,7 +9,7 @@ import WorldSection from "@renderer/features/research/components/WorldSection";
 import AnalysisSection from "@renderer/features/research/components/AnalysisSection";
 import SynopsisSection from "@renderer/features/research/components/SynopsisSection";
 import { cn } from "@shared/types/utils";
-import { FeatureErrorBoundary } from "@shared/ui/FeatureErrorBoundary";
+import { FeatureErrorBoundary } from "@renderer/shared/error-boundaries/FeatureErrorBoundary";
 
 interface ResearchPanelProps {
   activeTab: string; // 'character' | 'event' | 'faction' | 'world' | 'scrap' | 'analysis' | 'synopsis'

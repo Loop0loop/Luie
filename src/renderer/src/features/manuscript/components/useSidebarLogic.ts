@@ -4,7 +4,7 @@ import { useProjectStore } from "@renderer/features/project/stores/projectStore"
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useShallow } from "zustand/react/shallow";
 import { useChapterManagement } from "@renderer/features/manuscript/hooks/useChapterManagement";
-import { useFloatingMenu } from "@shared/hooks/useFloatingMenu";
+import { useFloatingMenu } from "@renderer/shared/hooks/useFloatingMenu";
 import { useDialog } from "@shared/ui/useDialog";
 import { useShortcutCommand } from "@renderer/features/workspace/hooks/useShortcutCommand";
 import type { ShortcutCommand } from "@renderer/features/workspace/hooks/useShortcutCommand";

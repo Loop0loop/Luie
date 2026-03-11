@@ -2,18 +2,14 @@ import { BrowserWindow } from "electron";
 import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import type {
-  SyncPendingProjectDelete,
   SyncRunResult,
   SyncSettings,
   SyncStatus,
 } from "../../../../shared/types/index.js";
-import type { LuiePackageExportData } from "../../io/luiePackageTypes.js";
-import { db } from "../../../database/index.js";
 import { settingsManager } from "../../../manager/settingsManager.js";
 import { syncAuthService } from "./syncAuthService.js";
 import type { SyncBundle } from "./syncMapper.js";
 import {
-  buildLocalSyncBundle,
   hydrateMissingWorldDocsFromPackage,
 } from "./syncBundleCollector.js";
 import {
@@ -22,101 +18,25 @@ import {
 import { ensureSyncAccessToken } from "./syncAccessToken.js";
 import {
   applyMergedBundleToLocalFirstLuie,
-  buildSyncProjectPackagePayload,
 } from "./syncBundleApplier.js";
 import { executeSyncRun } from "./syncRunExecutor.js";
 import { resolveStartupAuthFailure as resolveStartupAuthFailureImpl } from "./syncAuthStatus.js";
+import {
+  buildLocalBundleFromDatabase,
+  buildProjectPackagePayloadForSync,
+  countBundleRows,
+} from "./syncBundleHelpers.js";
+import {
+  AUTO_SYNC_DEBOUNCE_MS,
+  INITIAL_STATUS,
+  isAuthFatalMessage,
+  normalizePendingProjectDeletes,
+  toSyncErrorMessage,
+  toSyncStatusFromSettings,
+  type SyncConflictResolutionInput,
+} from "./syncStatusHelpers.js";
 
 const logger = createLogger("SyncService");
-
-const AUTO_SYNC_DEBOUNCE_MS = 1500;
-
-const INITIAL_STATUS: SyncStatus = {
-  connected: false,
-  autoSync: true,
-  mode: "idle",
-  health: "disconnected",
-  inFlight: false,
-  queued: false,
-  conflicts: {
-    chapters: 0,
-    memos: 0,
-    total: 0,
-    items: [],
-  },
-};
-
-const toSyncErrorMessage = (error: unknown): string => {
-  const raw = error instanceof Error ? error.message : String(error);
-  if (raw.startsWith("SUPABASE_SCHEMA_MISSING:")) {
-    const table = raw.split(":")[1] ?? "unknown";
-    return `SYNC_REMOTE_SCHEMA_MISSING:${table}: apply supabase/migrations/20260219000000_luie_sync.sql to this Supabase project`;
-  }
-  return raw;
-};
-
-const AUTH_FATAL_ERROR_PATTERNS = [
-  "SYNC_ACCESS_TOKEN_UNAVAILABLE",
-  "SYNC_AUTH_REFRESH_UNAVAILABLE",
-  "SYNC_AUTH_REFRESH_FAILED",
-  "SYNC_AUTH_INVALID_SESSION",
-  "SYNC_TOKEN_DECRYPT_FAILED",
-  "SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE",
-];
-
-type SyncConflictResolutionInput = {
-  type: "chapter" | "memo";
-  id: string;
-  resolution: "local" | "remote";
-};
-
-const isAuthFatalMessage = (message: string): boolean =>
-  AUTH_FATAL_ERROR_PATTERNS.some((pattern) => message.includes(pattern));
-
-const toSyncStatusFromSettings = (
-  syncSettings: SyncSettings,
-  baseStatus: SyncStatus,
-): SyncStatus => ({
-  ...baseStatus,
-  connected: syncSettings.connected,
-  provider: syncSettings.provider,
-  email: syncSettings.email,
-  userId: syncSettings.userId,
-  expiresAt: syncSettings.expiresAt,
-  autoSync: syncSettings.autoSync,
-  lastSyncedAt: syncSettings.lastSyncedAt,
-  lastError: syncSettings.lastError,
-  projectLastSyncedAtByProjectId: syncSettings.projectLastSyncedAtByProjectId,
-  health: syncSettings.connected
-    ? baseStatus.health === "degraded"
-      ? "degraded"
-      : "connected"
-    : "disconnected",
-  degradedReason:
-    syncSettings.connected && baseStatus.health === "degraded"
-      ? baseStatus.degradedReason ?? syncSettings.lastError
-      : undefined,
-});
-
-const normalizePendingProjectDeletes = (
-  value: SyncSettings["pendingProjectDeletes"],
-): SyncPendingProjectDelete[] => {
-  if (!Array.isArray(value)) return [];
-  return value
-    .filter((entry): entry is SyncPendingProjectDelete =>
-      Boolean(
-        entry &&
-        typeof entry.projectId === "string" &&
-        entry.projectId.length > 0 &&
-        typeof entry.deletedAt === "string" &&
-        entry.deletedAt.length > 0,
-      ),
-    )
-    .map((entry) => ({
-      projectId: entry.projectId,
-      deletedAt: entry.deletedAt,
-    }));
-};
 
 export class SyncService {
   private status: SyncStatus = INITIAL_STATUS;
@@ -397,23 +317,12 @@ export class SyncService {
   }
 
   private async buildLocalBundle(userId: string): Promise<SyncBundle> {
-    const prisma = db.getClient();
-    const pendingProjectDeletes = normalizePendingProjectDeletes(
-      settingsManager.getSyncSettings().pendingProjectDeletes,
-    );
-    const projectRows = (await prisma.project.findMany({
-      include: {
-        chapters: true,
-        characters: true,
-        terms: true,
-      },
-    })) as Array<Record<string, unknown>>;
-
-    return await buildLocalSyncBundle({
-      userId,
-      pendingProjectDeletes,
-      projectRows,
+    return await buildLocalBundleFromDatabase({
       logger,
+      pendingProjectDeletes: normalizePendingProjectDeletes(
+        settingsManager.getSyncSettings().pendingProjectDeletes,
+      ),
+      userId,
     });
   }
 
@@ -428,15 +337,13 @@ export class SyncService {
       description: string | null;
       createdAt: Date;
     }>,
-  ): Promise<LuiePackageExportData | null> {
-    return await buildSyncProjectPackagePayload({
+  ) {
+    return await buildProjectPackagePayloadForSync({
       bundle,
+      localSnapshots,
+      logger,
       projectId,
       projectPath,
-      localSnapshots,
-      hydrateMissingWorldDocsFromPackage: async (worldDocs, targetProjectPath) =>
-        await hydrateMissingWorldDocsFromPackage(worldDocs, targetProjectPath, logger),
-      logger,
     });
   }
 
@@ -457,16 +364,7 @@ export class SyncService {
   }
 
   private countBundleRows(bundle: SyncBundle): number {
-    return (
-      bundle.projects.length +
-      bundle.chapters.length +
-      bundle.characters.length +
-      bundle.terms.length +
-      bundle.worldDocuments.length +
-      bundle.memos.length +
-      bundle.snapshots.length +
-      bundle.tombstones.length
-    );
+    return countBundleRows(bundle);
   }
 
   private updateStatus(next: Partial<SyncStatus>): void {

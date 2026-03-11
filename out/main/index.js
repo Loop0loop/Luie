@@ -1,5 +1,5 @@
 import { app as S, nativeTheme as la, shell as pa, safeStorage as rt, BrowserWindow as tt, Menu as Pe, session as yr, dialog as We, ipcMain as ua } from "electron";
-import * as dt from "node:path";
+import * as ct from "node:path";
 import W from "node:path";
 import { z as u } from "zod";
 import { EventEmitter as ha } from "events";
@@ -11,20 +11,20 @@ import C, { join as V } from "path";
 import { spawn as Ea } from "node:child_process";
 import { constants as Be, promises as Nt } from "node:fs";
 import * as Ht from "node:fs/promises";
-import { access as gn, mkdir as Sr, writeFile as Tr, unlink as wr } from "node:fs/promises";
+import { access as fn, mkdir as Sr, writeFile as Tr, unlink as wr } from "node:fs/promises";
 import { createRequire as ma } from "node:module";
 import "./config-B9Gu_Tvs.js";
 import _r from "electron-store";
 import Aa from "yauzl";
 import ya from "yazl";
 import { randomUUID as X, randomBytes as Sa, createHash as Ta } from "node:crypto";
-import { Type as ht } from "@google/genai";
+import { Type as ut } from "@google/genai";
 import { promisify as pr } from "node:util";
-import { gzip as En, gunzip as wa } from "node:zlib";
+import { gzip as gn, gunzip as wa } from "node:zlib";
 import _a from "electron-window-state";
 import { EventEmitter as Ia } from "node:events";
 import Pa from "node:module";
-const Dl = import.meta.filename, st = import.meta.dirname, Ll = Pa.createRequire(import.meta.url), Ol = 2, jl = 2, bl = 2, $e = 1, Ca = (r) => !!r && typeof r == "object" && typeof r.then == "function", Ce = () => typeof performance < "u" && typeof performance.now == "function" ? performance.now() : Date.now(), xe = (r, t, e, n) => {
+const Ml = import.meta.filename, st = import.meta.dirname, kl = Pa.createRequire(import.meta.url), Wl = 2, Bl = 2, $l = 2, $e = 1, Ca = (r) => !!r && typeof r == "object" && typeof r.then == "function", Ce = () => typeof performance < "u" && typeof performance.now == "function" ? performance.now() : Date.now(), xe = (r, t, e, n) => {
   const a = r?.[t];
   if (a)
     try {
@@ -34,7 +34,7 @@ const Dl = import.meta.filename, st = import.meta.dirname, Ll = Pa.createRequire
       });
     } catch {
     }
-}, mn = (r) => ({
+}, En = (r) => ({
   flattened: u.flattenError(r),
   pretty: u.prettifyError(r),
   issues: r.issues.map((t) => ({
@@ -54,9 +54,9 @@ const Dl = import.meta.filename, st = import.meta.dirname, Ll = Pa.createRequire
   ...typeof r.persistedVersion == "number" ? { persistedVersion: r.persistedVersion } : {},
   ...typeof r.targetVersion == "number" ? { targetVersion: r.targetVersion } : {},
   ...r.fallback ? { fallback: r.fallback } : {},
-  zod: mn(r.error),
+  zod: En(r.error),
   ...r.meta ?? {}
-}), An = (r) => {
+}), mn = (r) => {
   const t = Ce();
   return {
     complete(e, n) {
@@ -92,13 +92,13 @@ const Dl = import.meta.filename, st = import.meta.dirname, Ll = Pa.createRequire
   };
 };
 var ur = /* @__PURE__ */ ((r) => (r.DEBUG = "DEBUG", r.INFO = "INFO", r.WARN = "WARN", r.ERROR = "ERROR", r))(ur || {});
-const pe = /* @__PURE__ */ Symbol.for("luie.logger.context"), Ge = "[REDACTED]", Na = "[REDACTED_PATH]", yn = "[REDACTED_TEXT]", Sn = /(token|secret|authorization|api[-_]?key|password|cookie|jwt|verifier)/i, Tn = /(content|synopsis|manuscript|chapterText|prompt)/i, wn = /(path|dir|directory|cwd|execPath|userData|datasource|argv)/i, Da = /^(?:\/|[a-zA-Z]:\\|[a-zA-Z]:\/).+/, La = /Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, Oa = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+const pe = /* @__PURE__ */ Symbol.for("luie.logger.context"), Ge = "[REDACTED]", Na = "[REDACTED_PATH]", An = "[REDACTED_TEXT]", yn = /(token|secret|authorization|api[-_]?key|password|cookie|jwt|verifier)/i, Sn = /(content|synopsis|manuscript|chapterText|prompt)/i, Tn = /(path|dir|directory|cwd|execPath|userData|datasource|argv)/i, Da = /^(?:\/|[a-zA-Z]:\\|[a-zA-Z]:\/).+/, La = /Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, Oa = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 function Ir(r, t) {
-  if (Sn.test(t ?? ""))
+  if (yn.test(t ?? ""))
     return Ge;
-  if (Tn.test(t ?? ""))
-    return yn;
-  if (wn.test(t ?? "") && Da.test(r))
+  if (Sn.test(t ?? ""))
+    return An;
+  if (Tn.test(t ?? "") && Da.test(r))
     return Na;
   let e = r.replace(La, "Bearer [REDACTED]");
   return Oa.test(e) && (e = Ge), e;
@@ -124,15 +124,15 @@ function Pt(r, t, e = /* @__PURE__ */ new WeakSet()) {
       e.add(n);
       const a = {};
       for (const [o, s] of Object.entries(n)) {
-        if (Sn.test(o)) {
+        if (yn.test(o)) {
           a[o] = Ge;
           continue;
         }
-        if (Tn.test(o) && typeof s == "string") {
-          a[o] = yn;
+        if (Sn.test(o) && typeof s == "string") {
+          a[o] = An;
           continue;
         }
-        if (wn.test(o) && typeof s == "string") {
+        if (Tn.test(o) && typeof s == "string") {
           a[o] = Ir(s, o);
           continue;
         }
@@ -194,7 +194,7 @@ class Fa {
     this.log("ERROR", t, e);
   }
 }
-const _n = typeof process < "u" && typeof process.versions < "u" && !!process.versions.node, Pr = {
+const wn = typeof process < "u" && typeof process.versions < "u" && !!process.versions.node, Pr = {
   DEBUG: 10,
   INFO: 20,
   WARN: 30,
@@ -213,7 +213,7 @@ function va(r) {
   return Pr[r] >= Pr[ot.minLevel];
 }
 async function Ua() {
-  !_n || !ot.logFilePath || (Re || (Re = (async () => {
+  !wn || !ot.logFilePath || (Re || (Re = (async () => {
     const r = await He("node:path");
     await (await He("node:fs/promises")).mkdir(r.dirname(ot.logFilePath), {
       recursive: !0
@@ -228,7 +228,7 @@ function Ma(r) {
   }
 }
 async function ka(r) {
-  if (!(!_n || !ot.logFilePath))
+  if (!(!wn || !ot.logFilePath))
     try {
       await Ua();
       const t = await He("node:fs/promises"), e = Ma(r);
@@ -237,7 +237,7 @@ async function ka(r) {
     } catch {
     }
 }
-function In(r) {
+function _n(r) {
   ot = {
     ...ot,
     ...r
@@ -246,24 +246,24 @@ function In(r) {
 function N(r) {
   return new Fa(r);
 }
-const Fl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const xl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   LOG_CONTEXT: pe,
   LogLevel: ur,
   buildValidationFailureData: Ra,
-  configureLogger: In,
+  configureLogger: _n,
   createLogger: N,
-  createPerformanceTimer: An,
+  createPerformanceTimer: mn,
   emitOperationalLog: xe,
-  summarizeZodError: mn,
+  summarizeZodError: En,
   withLogContext: ba
-}, Symbol.toStringTag, { value: "Module" })), Wa = "Luie", Ba = "0.1.0", Pn = (r, t) => typeof r == "string" && r.trim().length > 0 ? r : t, Cr = Pn(
+}, Symbol.toStringTag, { value: "Module" })), Wa = "Luie", Ba = "0.1.0", In = (r, t) => typeof r == "string" && r.trim().length > 0 ? r : t, Cr = In(
   "luie",
   Wa
-), $a = Pn(
+), $a = In(
   "0.1.16",
   Ba
-), Cn = "luie.db", xa = 3e4, Rn = xa, Ga = 1e3, Ee = 30, Ha = !0, Ya = 300 * 1e3, za = 60 * 1e3, Xa = 200, Ka = 5e3, qa = 3e3, Va = 1e4, Ja = 8e3, Qa = 2e4, Ne = 60 * 1e3, Za = 2e3, ue = 50, Nn = 2e3, to = 1, eo = 0, ro = 30, Rr = 50, no = 2e3, ao = 5e3, oo = 1400, so = 900, io = 1e3, co = 600, lo = 16, po = 16, uo = "sans", ho = "inter", fo = 16, go = 1.6, Eo = 800, mo = "blue", Ao = !0, yo = "logs", So = "luie.log", Ye = "snapshot-mirror", hr = "Backups", To = "settings", wo = "settings.json", Dn = "luie", q = ".luie", vl = "luie", Dt = "luie", Ul = "Luie Project", Ml = "New Project", kl = "project", Lt = "zip", Ot = 1, me = "meta.json", vt = "manuscript", Wl = `${vt}/README.md`, G = "world", jt = "snapshots", _o = "assets", Ln = "characters.json", On = "terms.json", Qt = "synopsis.json", Ae = "plot-board.json", ye = "map-drawing.json", Se = "mindmap.json", fr = "scrap-memos.json", Te = "graph.json", we = ".md", E = {
+), Pn = "luie.db", xa = 3e4, Cn = xa, Ga = 1e3, Ee = 30, Ha = !0, Ya = 300 * 1e3, za = 60 * 1e3, Xa = 200, qa = 5e3, Ka = 3e3, Va = 1e4, Ja = 8e3, Qa = 2e4, Ne = 60 * 1e3, Za = 2e3, ue = 50, Rn = 2e3, to = 1, eo = 0, ro = 30, Rr = 50, no = 2e3, ao = 5e3, oo = 1400, so = 900, io = 1e3, co = 600, lo = 16, po = 16, uo = "sans", ho = "inter", fo = 16, go = 1.6, Eo = 800, mo = "blue", Ao = !0, yo = "logs", So = "luie.log", Ye = "snapshot-mirror", hr = "Backups", To = "settings", wo = "settings.json", Nn = "luie", K = ".luie", Gl = "luie", Dt = "luie", Hl = "Luie Project", Yl = "New Project", zl = "project", Lt = "zip", Ot = 1, me = "meta.json", vt = "manuscript", Xl = `${vt}/README.md`, G = "world", jt = "snapshots", _o = "assets", Dn = "characters.json", Ln = "terms.json", Qt = "synopsis.json", Ae = "plot-board.json", ye = "map-drawing.json", Se = "mindmap.json", fr = "scrap-memos.json", Te = "graph.json", we = ".md", E = {
   // Database Errors (1xxx)
   DB_CONNECTION_FAILED: "DB_1001",
   DB_QUERY_FAILED: "DB_1002",
@@ -347,10 +347,10 @@ const Fl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   "Rule",
   "Item",
   "WorldEntity"
-]), Nr = (r) => Io.has(r), Bl = (r, t, e) => !0, Po = "neutral", Co = "soft", Kt = () => process.env.VITEST === "true" || process.env.NODE_ENV === "test", Ro = () => !S.isPackaged && !Kt(), No = () => S.isPackaged, Do = () => W.join(process.cwd(), "prisma", "dev.db"), Lo = () => W.join(process.cwd(), "prisma", ".tmp", "test.db"), Oo = () => W.join(S.getPath("userData"), Cn);
+]), Nr = (r) => Io.has(r), ql = (r, t, e) => !0, Po = "neutral", Co = "soft", qt = () => process.env.VITEST === "true" || process.env.NODE_ENV === "test", Ro = () => !S.isPackaged && !qt(), No = () => S.isPackaged, Do = () => W.join(process.cwd(), "prisma", "dev.db"), Lo = () => W.join(process.cwd(), "prisma", ".tmp", "test.db"), Oo = () => W.join(S.getPath("userData"), Pn);
 function jo() {
   if (process.env.DATABASE_URL) return;
-  const r = Kt() ? Lo() : S.isPackaged ? Oo() : Do();
+  const r = qt() ? Lo() : S.isPackaged ? Oo() : Do();
   process.env.DATABASE_URL = `file:${r}`;
 }
 class f extends Error {
@@ -679,7 +679,7 @@ const j = N("DatabaseService"), gr = ma(import.meta.url), { PrismaClient: jr } =
   }
 }, Yo = (r) => {
   const t = process.platform === "win32" ? "prisma.cmd" : "prisma";
-  return dt.join(r, "node_modules", ".bin", t);
+  return ct.join(r, "node_modules", ".bin", t);
 }, br = "file:", zo = (r) => {
   if (!r.startsWith(br))
     throw new Error("DATABASE_URL must use sqlite file: URL");
@@ -687,7 +687,7 @@ const j = N("DatabaseService"), gr = ma(import.meta.url), { PrismaClient: jr } =
   if (!t || t === ":memory:" || t.startsWith(":memory:?"))
     throw new Error("DATABASE_URL must point to a persistent sqlite file path");
   const e = t.indexOf("?"), n = e >= 0 ? t.slice(0, e) : t, a = e >= 0 ? t.slice(e + 1) : "", o = z(
-    dt.isAbsolute(n) ? n : dt.resolve(process.cwd(), n),
+    ct.isAbsolute(n) ? n : ct.resolve(process.cwd(), n),
     "DATABASE_URL"
   ), s = a.length > 0 ? `file:${o}?${a}` : `file:${o}`;
   return { dbPath: o, datasourceUrl: s };
@@ -776,13 +776,13 @@ class Ct {
     }
   }
   async prepareDatabaseContext() {
-    const t = No(), e = S.getPath("userData"), n = Kt(), a = process.env.DATABASE_URL, o = !!a;
+    const t = No(), e = S.getPath("userData"), n = qt(), a = process.env.DATABASE_URL, o = !!a;
     let s, c;
     if (o) {
       const d = zo(a ?? "");
       s = d.dbPath, c = d.datasourceUrl;
-    } else t ? (s = z(dt.join(e, Cn), "dbPath"), c = `file:${s}`) : (s = z(dt.join(process.cwd(), "prisma", "dev.db"), "dbPath"), c = `file:${s}`);
-    return process.env.DATABASE_URL = c, await Ht.mkdir(e, { recursive: !0 }), await Ht.mkdir(dt.dirname(s), { recursive: !0 }), await kt(s) || await Ht.writeFile(s, ""), {
+    } else t ? (s = z(ct.join(e, Pn), "dbPath"), c = `file:${s}`) : (s = z(ct.join(process.cwd(), "prisma", "dev.db"), "dbPath"), c = `file:${s}`);
+    return process.env.DATABASE_URL = c, await Ht.mkdir(e, { recursive: !0 }), await Ht.mkdir(ct.dirname(s), { recursive: !0 }), await kt(s) || await Ht.writeFile(s, ""), {
       dbPath: s,
       datasourceUrl: c,
       isPackaged: t,
@@ -790,7 +790,7 @@ class Ct {
     };
   }
   async applySchema(t) {
-    const e = await kt(t.dbPath), n = t.isPackaged ? process.resourcesPath : process.cwd(), a = dt.join(n, "prisma", "schema.prisma"), o = Yo(n), s = dt.join(n, "prisma", "migrations"), c = await kt(s) && await Ht.readdir(s, { withFileTypes: !0 }).then((l) => l.some((i) => i.isDirectory())), d = { ...process.env, DATABASE_URL: t.datasourceUrl };
+    const e = await kt(t.dbPath), n = t.isPackaged ? process.resourcesPath : process.cwd(), a = ct.join(n, "prisma", "schema.prisma"), o = Yo(n), s = ct.join(n, "prisma", "migrations"), c = await kt(s) && await Ht.readdir(s, { withFileTypes: !0 }).then((l) => l.some((i) => i.isDirectory())), d = { ...process.env, DATABASE_URL: t.datasourceUrl };
     if (t.isPackaged) {
       await this.applyPackagedSchema(t, {
         dbExists: e,
@@ -936,7 +936,7 @@ class Ct {
   }
 }
 const h = Ct.getInstance(), Fr = N("KeywordExtractor");
-class Ko {
+class qo {
   koreanRegex = /[가-힣]{2,}/g;
   commonWords = /* @__PURE__ */ new Set([
     "그",
@@ -1029,7 +1029,7 @@ class Ko {
     this.characterNames.clear(), this.termNames.clear();
   }
 }
-const Et = new Ko(), qo = Dn, Vo = wo, Le = To, Jo = (r) => {
+const Et = new qo(), Ko = Nn, Vo = wo, Le = To, Jo = (r) => {
   if (r)
     return {
       connected: r.connected ?? !1,
@@ -1125,7 +1125,7 @@ const Et = new Ko(), qo = Dn, Vo = wo, Le = To, Jo = (r) => {
   shortcuts: ce,
   lastProjectPath: void 0,
   autoSaveEnabled: Ha,
-  autoSaveInterval: Rn,
+  autoSaveInterval: Cn,
   snapshotExportLimit: ue,
   windowBounds: void 0,
   lastWindowState: void 0,
@@ -1144,7 +1144,7 @@ const Et = new Ko(), qo = Dn, Vo = wo, Le = To, Jo = (r) => {
     deletedAt: e.deletedAt
   }));
   return t.length > 0 ? t : void 0;
-}, Ke = (r) => {
+}, qe = (r) => {
   if (!r || typeof r != "object" || Array.isArray(r))
     return;
   const t = Object.fromEntries(
@@ -1158,8 +1158,8 @@ const Et = new Ko(), qo = Dn, Vo = wo, Le = To, Jo = (r) => {
     return null;
   const t = r;
   return {
-    chapter: Ke(t.chapter) ?? {},
-    memo: Ke(t.memo) ?? {},
+    chapter: qe(t.chapter) ?? {},
+    memo: qe(t.memo) ?? {},
     capturedAt: Tt(t.capturedAt) ? t.capturedAt : (/* @__PURE__ */ new Date()).toISOString()
   };
 }, es = (r) => {
@@ -1196,7 +1196,7 @@ const Et = new Ko(), qo = Dn, Vo = wo, Le = To, Jo = (r) => {
     pendingAuthCreatedAt: t.pendingAuthCreatedAt,
     pendingAuthRedirectUri: t.pendingAuthRedirectUri,
     pendingProjectDeletes: Zo(t.pendingProjectDeletes),
-    projectLastSyncedAtByProjectId: Ke(t.projectLastSyncedAtByProjectId),
+    projectLastSyncedAtByProjectId: qe(t.projectLastSyncedAtByProjectId),
     entityBaselinesByProjectId: es(t.entityBaselinesByProjectId),
     pendingConflictResolutions: rs(
       t.pendingConflictResolutions
@@ -1208,7 +1208,7 @@ class mt {
   static instance;
   store;
   constructor() {
-    const t = S.getPath("userData"), e = `${t}/${qo}/${Le}`, n = `${e}/${Vo}`;
+    const t = S.getPath("userData"), e = `${t}/${Ko}/${Le}`, n = `${e}/${Vo}`;
     this.store = new _r({
       name: Le,
       defaults: vr(),
@@ -1241,7 +1241,7 @@ class mt {
   }
   async pathExists(t) {
     try {
-      return await gn(t), !0;
+      return await fn(t), !0;
     } catch {
       return !1;
     }
@@ -1463,7 +1463,7 @@ class mt {
     return this.store.path;
   }
 }
-const _ = mt.getInstance(), $l = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const _ = mt.getInstance(), Kl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   SettingsManager: mt,
   settingsManager: _
@@ -1541,17 +1541,42 @@ class as {
     };
   }
 }
-const bt = (r, t = "") => {
+const os = (r) => typeof r == "string" ? { id: r, deleteFile: !1 } : { id: r.id, deleteFile: !!r.deleteFile }, ss = async (r) => {
+  if (!r.deleteFile || !r.projectPath || !r.projectPath.toLowerCase().endsWith(K)) return;
+  const t = z(r.projectPath, "projectPath");
+  await R.rm(t, { force: !0, recursive: !0 });
+}, is = async (r) => await Promise.all(
+  r.map(async (t) => {
+    const e = typeof t.projectPath == "string" ? t.projectPath : null;
+    if (!!!(e && e.toLowerCase().endsWith(K)) || !e)
+      return {
+        ...t,
+        pathMissing: !1
+      };
+    try {
+      const a = z(e, "projectPath");
+      return await R.access(a), {
+        ...t,
+        pathMissing: !1
+      };
+    } catch {
+      return {
+        ...t,
+        pathMissing: !0
+      };
+    }
+  })
+), bt = (r, t = "") => {
   const e = r.trim();
   return e ? e.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim() : t;
-}, he = 5 * 1024 * 1024, qt = (r) => at.posix.normalize(r.replace(/\\/g, "/")).replace(/^\.(\/|\\)/, "").replace(/^\//, ""), fe = (r) => {
-  const t = qt(r);
+}, he = 5 * 1024 * 1024, Kt = (r) => at.posix.normalize(r.replace(/\\/g, "/")).replace(/^\.(\/|\\)/, "").replace(/^\//, ""), fe = (r) => {
+  const t = Kt(r);
   return !t || t.startsWith("../") || t.startsWith("..\\") || t.includes("../") || t.includes("..\\") ? !1 : !at.isAbsolute(t);
-}, Zt = (r) => r.toLowerCase().endsWith(q) ? r : `${r}${q}`, Mr = (r) => process.platform === "win32" ? r.toLowerCase() : r, os = (r, t) => {
+}, Zt = (r) => r.toLowerCase().endsWith(K) ? r : `${r}${K}`, Mr = (r) => process.platform === "win32" ? r.toLowerCase() : r, cs = (r, t) => {
   const e = Mr(at.resolve(r)), n = Mr(at.resolve(t));
   return e === n || e.startsWith(`${n}${at.sep}`);
-}, jn = async (r, t, e) => {
-  const n = qt(t);
+}, On = async (r, t, e) => {
+  const n = Kt(t);
   if (!n || !fe(n))
     throw new Error("INVALID_RELATIVE_PATH");
   let a = !1, o = null;
@@ -1562,7 +1587,7 @@ const bt = (r, t = "") => {
         return;
       }
       l.on("entry", (i) => {
-        const p = qt(i.fileName);
+        const p = Kt(i.fileName);
         if (!p || !fe(p)) {
           e?.error("Unsafe zip entry skipped", { entry: i.fileName, zipPath: r }), l.readEntry();
           return;
@@ -1603,7 +1628,7 @@ const bt = (r, t = "") => {
     });
   }), o;
 }, et = async (r, t, e) => {
-  const n = Zt(r), a = qt(t);
+  const n = Zt(r), a = Kt(t);
   if (!a || !fe(a))
     throw new Error("INVALID_RELATIVE_PATH");
   try {
@@ -1612,7 +1637,7 @@ const bt = (r, t = "") => {
       const s = await Y.realpath(n), c = at.resolve(n, a);
       try {
         const d = await Y.realpath(c);
-        if (!os(d, s))
+        if (!cs(d, s))
           throw new Error("INVALID_RELATIVE_PATH");
         const l = await Y.stat(d);
         if (l.isDirectory())
@@ -1628,7 +1653,7 @@ const bt = (r, t = "") => {
       }
     }
     if (o.isFile())
-      return await jn(n, a, e);
+      return await On(n, a, e);
   } catch (o) {
     if (o?.code === "ENOENT") return null;
     throw o;
@@ -1641,7 +1666,7 @@ const bt = (r, t = "") => {
   if (typeof r != "string") return;
   const t = r.trim();
   return t.length > 0 ? z(t, "projectPath") : void 0;
-}, bn = (r, t) => {
+}, jn = (r, t) => {
   const e = z(r, t);
   return Zt(e);
 }, Br = async (r, t) => {
@@ -1665,7 +1690,7 @@ const bt = (r, t = "") => {
       } catch {
       }
   return null;
-}, ss = async (r) => {
+}, ds = async (r) => {
   const { projectId: t, projectPath: e, previousTitle: n, nextTitle: a, logger: o } = r;
   if (!(!e || n === a))
     try {
@@ -1686,14 +1711,32 @@ const bt = (r, t = "") => {
         error: s
       });
     }
-}, Fn = (r) => {
+}, ls = (r) => {
+  const t = C.resolve(r);
+  return process.platform === "win32" ? t.toLowerCase() : t;
+}, ps = (r) => {
+  const t = /* @__PURE__ */ new Map();
+  for (const e of r)
+    if (!(typeof e.projectPath != "string" || e.projectPath.length === 0))
+      try {
+        const n = z(e.projectPath, "projectPath"), a = ls(n), o = t.get(a) ?? [];
+        o.push({
+          id: String(e.id),
+          projectPath: n,
+          updatedAt: e.updatedAt instanceof Date ? e.updatedAt : new Date(String(e.updatedAt))
+        }), t.set(a, o);
+      } catch {
+        continue;
+      }
+  return Array.from(t.values()).filter((e) => e.length > 1);
+}, bn = (r) => {
   if (typeof r == "number") return r === Ot;
   if (typeof r == "string" && r.trim().length > 0) {
     const t = Number(r);
     return Number.isFinite(t) && t === Ot;
   }
   return !1;
-}, is = (r) => {
+}, us = (r) => {
   try {
     const t = JSON.parse(r);
     if (t && typeof t == "object" && !Array.isArray(t))
@@ -1701,7 +1744,7 @@ const bt = (r, t = "") => {
   } catch {
   }
   return null;
-}, cs = (r) => r && typeof r == "object" && !Array.isArray(r) ? r : {}, ds = (r, t) => {
+}, hs = (r) => r && typeof r == "object" && !Array.isArray(r) ? r : {}, fs = (r, t) => {
   if (r.format !== Dt)
     throw new f(
       E.FS_WRITE_FAILED,
@@ -1714,14 +1757,14 @@ const bt = (r, t = "") => {
       "Generated .luie package metadata container is invalid",
       { ...t, container: r.container }
     );
-  if (!Fn(r.version))
+  if (!bn(r.version))
     throw new f(
       E.FS_WRITE_FAILED,
       "Generated .luie package metadata version is invalid",
       { ...t, version: r.version }
     );
-}, ls = (r, t) => {
-  const e = cs(r), n = t.nowIso ?? (/* @__PURE__ */ new Date()).toISOString(), a = t.createdAtFallback ?? n;
+}, gs = (r, t) => {
+  const e = hs(r), n = t.nowIso ?? (/* @__PURE__ */ new Date()).toISOString(), a = t.createdAtFallback ?? n;
   if (Object.prototype.hasOwnProperty.call(e, "format") && e.format !== Dt)
     throw new f(
       E.FS_WRITE_FAILED,
@@ -1734,7 +1777,7 @@ const bt = (r, t = "") => {
       "Luie metadata container is invalid",
       { container: e.container }
     );
-  if (Object.prototype.hasOwnProperty.call(e, "version") && !Fn(e.version))
+  if (Object.prototype.hasOwnProperty.call(e, "version") && !bn(e.version))
     throw new f(
       E.FS_WRITE_FAILED,
       "Luie metadata version is invalid",
@@ -1750,32 +1793,32 @@ const bt = (r, t = "") => {
     createdAt: s,
     updatedAt: c
   };
-}, ps = async (r, t) => {
-  const e = await jn(r, me, t);
+}, Es = async (r, t) => {
+  const e = await On(r, me, t);
   if (!e)
     throw new f(
       E.FS_WRITE_FAILED,
       "Generated .luie package is missing meta.json",
       { zipPath: r }
     );
-  const n = is(e);
+  const n = us(e);
   if (!n)
     throw new f(
       E.FS_WRITE_FAILED,
       "Generated .luie package metadata is invalid",
       { zipPath: r }
     );
-  ds(n, { source: r });
-}, us = ".tmp", ne = /* @__PURE__ */ new Map(), hs = async (r) => {
+  fs(n, { source: r });
+}, ms = ".tmp", ne = /* @__PURE__ */ new Map(), As = async (r) => {
   const t = at.dirname(r);
   await Y.mkdir(t, { recursive: !0 });
-}, xl = async (r) => {
+}, Vl = async (r) => {
   try {
     return await Y.access(r), !0;
   } catch {
     return !1;
   }
-}, fs = async (r, t) => {
+}, ys = async (r, t) => {
   const e = at.resolve(Zt(r)), a = (ne.get(e) ?? Promise.resolve()).catch(() => {
   }).then(t), o = a.then(
     () => {
@@ -1789,12 +1832,12 @@ const bt = (r, t = "") => {
   } finally {
     ne.get(e) === o && ne.delete(e);
   }
-}, gs = async (r, t) => {
+}, Ss = async (r, t) => {
   const e = new ya.ZipFile(), n = fa.createWriteStream(r), a = new Promise((o, s) => {
     n.on("close", () => o()), n.on("error", s), e.outputStream.on("error", s);
   });
   e.outputStream.pipe(n), await t(e), e.end(), await a;
-}, Es = async (r, t, e) => {
+}, Ts = async (r, t, e) => {
   const n = `${t}.bak-${Date.now()}`;
   let a = !1;
   try {
@@ -1816,17 +1859,17 @@ const bt = (r, t = "") => {
       }
     throw o;
   }
-}, ms = () => [
+}, ws = () => [
   { name: `${vt}/`, isDirectory: !0 },
   { name: `${G}/`, isDirectory: !0 },
   { name: `${jt}/`, isDirectory: !0 },
   { name: `${_o}/`, isDirectory: !0 }
-], Gl = (r) => ({
+], Jl = (r) => ({
   name: me,
   content: JSON.stringify(r ?? {}, null, 2)
-}), As = async (r, t) => {
+}), _s = async (r, t) => {
   for (const e of t) {
-    const n = qt(e.name);
+    const n = Kt(e.name);
     if (!n || !fe(n))
       throw new Error("INVALID_ZIP_ENTRY_PATH");
     if (e.isDirectory) {
@@ -1842,24 +1885,24 @@ const bt = (r, t = "") => {
   }
 }, Er = async (r, t, e) => {
   const n = Zt(r);
-  return await fs(n, async () => {
-    await hs(n);
-    const a = (/* @__PURE__ */ new Date()).toISOString(), o = ls(t.meta, {
-      titleFallback: at.basename(n, q),
+  return await ys(n, async () => {
+    await As(n);
+    const a = (/* @__PURE__ */ new Date()).toISOString(), o = gs(t.meta, {
+      titleFallback: at.basename(n, K),
       nowIso: a,
       createdAtFallback: a
-    }), s = `${n}${us}-${Date.now()}`, c = [
-      ...ms(),
+    }), s = `${n}${ms}-${Date.now()}`, c = [
+      ...ws(),
       {
         name: me,
         content: JSON.stringify(o, null, 2)
       },
       {
-        name: `${G}/${Ln}`,
+        name: `${G}/${Dn}`,
         content: JSON.stringify({ characters: t.characters ?? [] }, null, 2)
       },
       {
-        name: `${G}/${On}`,
+        name: `${G}/${Ln}`,
         content: JSON.stringify({ terms: t.terms ?? [] }, null, 2)
       },
       {
@@ -1902,19 +1945,19 @@ const bt = (r, t = "") => {
           name: `${jt}/${d.id}.snap`,
           content: JSON.stringify(d, null, 2)
         });
-    await gs(s, (d) => As(d, c)), await ps(s, e), await Es(s, n, e);
+    await Ss(s, (d) => _s(d, c)), await Es(s, e), await Ts(s, n, e);
   });
-}, vn = /* @__PURE__ */ new Set(["mountain", "castle", "village"]), ys = /* @__PURE__ */ new Set(["pen", "text", "eraser", "icon"]), U = (r) => !!(r && typeof r == "object" && !Array.isArray(r)), Un = (r) => {
+}, Fn = /* @__PURE__ */ new Set(["mountain", "castle", "village"]), Is = /* @__PURE__ */ new Set(["pen", "text", "eraser", "icon"]), U = (r) => !!(r && typeof r == "object" && !Array.isArray(r)), vn = (r) => {
   if (!r) return null;
   try {
     return JSON.parse(r);
   } catch {
     return null;
   }
-}, Ss = (r) => {
+}, Ps = (r) => {
   if (U(r))
     return typeof r.updatedAt == "string" ? r.updatedAt : void 0;
-}, Ts = (r, t = "pen") => typeof r == "string" && ys.has(r) ? r : t, ws = (r, t = "mountain") => typeof r == "string" && vn.has(r) ? r : t, Mn = (r) => {
+}, Cs = (r, t = "pen") => typeof r == "string" && Is.has(r) ? r : t, Rs = (r, t = "mountain") => typeof r == "string" && Fn.has(r) ? r : t, Un = (r) => {
   if (!Array.isArray(r)) return [];
   const t = [];
   for (const [e, n] of r.entries()) {
@@ -1926,10 +1969,10 @@ const bt = (r, t = "") => {
       type: a,
       color: typeof n.color == "string" ? n.color : "#000000"
     };
-    typeof n.d == "string" && (o.d = n.d), typeof n.width == "number" && (o.width = n.width), typeof n.x == "number" && (o.x = n.x), typeof n.y == "number" && (o.y = n.y), typeof n.text == "string" && (o.text = n.text), typeof n.icon == "string" && vn.has(n.icon) && (o.icon = n.icon), t.push(o);
+    typeof n.d == "string" && (o.d = n.d), typeof n.width == "number" && (o.width = n.width), typeof n.x == "number" && (o.x = n.x), typeof n.y == "number" && (o.y = n.y), typeof n.text == "string" && (o.text = n.text), typeof n.icon == "string" && Fn.has(n.icon) && (o.icon = n.icon), t.push(o);
   }
   return t;
-}, kn = (r) => {
+}, Mn = (r) => {
   if (!Array.isArray(r)) return [];
   const t = [];
   for (const [e, n] of r.entries()) {
@@ -1951,7 +1994,7 @@ const bt = (r, t = "") => {
     });
   }
   return t;
-}, Wn = (r) => {
+}, kn = (r) => {
   if (!Array.isArray(r)) return [];
   const t = [];
   for (const [e, n] of r.entries()) {
@@ -1965,14 +2008,14 @@ const bt = (r, t = "") => {
     });
   }
   return t;
-}, _s = (r, t, e) => U(r) ? {
+}, Ns = (r, t, e) => U(r) ? {
   id: typeof r.id == "string" && r.id.length > 0 ? r.id : `memo-${t}`,
   title: typeof r.title == "string" ? r.title : "",
   content: typeof r.content == "string" ? r.content : "",
   tags: Array.isArray(r.tags) ? r.tags.filter((n) => typeof n == "string") : [],
   updatedAt: typeof r.updatedAt == "string" ? r.updatedAt : e()
-} : null, Bn = (r, t = () => (/* @__PURE__ */ new Date()).toISOString()) => Array.isArray(r) ? r.map((e, n) => _s(e, n, t)).filter((e) => e !== null) : [], $n = (r, t = () => (/* @__PURE__ */ new Date()).toISOString()) => U(r) ? {
-  memos: Bn(r.memos, t),
+} : null, Wn = (r, t = () => (/* @__PURE__ */ new Date()).toISOString()) => Array.isArray(r) ? r.map((e, n) => Ns(e, n, t)).filter((e) => e !== null) : [], Bn = (r, t = () => (/* @__PURE__ */ new Date()).toISOString()) => U(r) ? {
+  memos: Wn(r.memos, t),
   updatedAt: typeof r.updatedAt == "string" ? r.updatedAt : void 0
 } : { memos: [] }, Wt = (r) => {
   if (!r) return null;
@@ -1982,7 +2025,7 @@ const bt = (r, t = "") => {
   } catch {
     return null;
   }
-}, Is = (r) => {
+}, Ds = (r) => {
   const t = r.map((n) => ({
     id: n.id,
     title: n.title,
@@ -1997,7 +2040,7 @@ const bt = (r, t = "") => {
     file: n.file
   }));
   return { exportChapters: t, chapterMeta: e };
-}, Ps = (r) => r.map((t) => {
+}, Ls = (r) => r.map((t) => {
   let e;
   if (t.attributes)
     try {
@@ -2014,7 +2057,7 @@ const bt = (r, t = "") => {
     createdAt: t.createdAt,
     updatedAt: t.updatedAt
   };
-}), Cs = (r) => r.map((t) => ({
+}), Os = (r) => r.map((t) => ({
   id: t.id,
   term: t.term,
   definition: t.definition,
@@ -2022,7 +2065,7 @@ const bt = (r, t = "") => {
   firstAppearance: t.firstAppearance,
   createdAt: t.createdAt,
   updatedAt: t.updatedAt
-})), Rs = (r, t) => {
+})), js = (r, t) => {
   const e = r.map((n) => ({
     id: n.id,
     projectId: n.projectId,
@@ -2032,7 +2075,7 @@ const bt = (r, t = "") => {
     createdAt: n.createdAt?.toISOString?.() ?? String(n.createdAt)
   }));
   return t > 0 ? e.slice(0, t) : e;
-}, Ns = (r, t) => {
+}, bs = (r, t) => {
   const e = t.success ? t.data : void 0;
   return {
     synopsis: r.description ?? (typeof e?.synopsis == "string" ? e.synopsis : ""),
@@ -2042,24 +2085,24 @@ const bt = (r, t = "") => {
     logline: typeof e?.logline == "string" ? e.logline : void 0,
     updatedAt: typeof e?.updatedAt == "string" ? e.updatedAt : void 0
   };
-}, Ds = (r) => !r.success || !Array.isArray(r.data.columns) ? { columns: [] } : {
+}, Fs = (r) => !r.success || !Array.isArray(r.data.columns) ? { columns: [] } : {
   columns: r.data.columns,
   updatedAt: typeof r.data.updatedAt == "string" ? r.data.updatedAt : void 0
-}, Ls = (r) => !r.success || !Array.isArray(r.data.paths) ? { paths: [] } : {
-  paths: Mn(r.data.paths),
+}, vs = (r) => !r.success || !Array.isArray(r.data.paths) ? { paths: [] } : {
+  paths: Un(r.data.paths),
   tool: r.data.tool,
   iconType: r.data.iconType,
   color: typeof r.data.color == "string" ? r.data.color : void 0,
   lineWidth: typeof r.data.lineWidth == "number" ? r.data.lineWidth : void 0,
   updatedAt: typeof r.data.updatedAt == "string" ? r.data.updatedAt : void 0
-}, Os = (r) => r.success ? {
-  nodes: kn(r.data.nodes),
-  edges: Wn(r.data.edges),
+}, Us = (r) => r.success ? {
+  nodes: Mn(r.data.nodes),
+  edges: kn(r.data.edges),
   updatedAt: typeof r.data.updatedAt == "string" ? r.data.updatedAt : void 0
-} : { nodes: [], edges: [] }, js = (r) => r.success ? {
-  memos: Bn(r.data.memos),
+} : { nodes: [], edges: [] }, Ms = (r) => r.success ? {
+  memos: Wn(r.data.memos),
   updatedAt: typeof r.data.updatedAt == "string" ? r.data.updatedAt : void 0
-} : { memos: [] }, bs = (r) => {
+} : { memos: [] }, ks = (r) => {
   const t = [
     ...r.characters.map((n) => ({
       id: n.id,
@@ -2130,7 +2173,7 @@ const bt = (r, t = "") => {
     nodes: t,
     edges: e
   };
-}, Fs = (r, t) => ({
+}, Ws = (r, t) => ({
   format: Dt,
   container: Lt,
   version: Ot,
@@ -2140,7 +2183,7 @@ const bt = (r, t = "") => {
   createdAt: r.createdAt?.toISOString?.() ?? String(r.createdAt),
   updatedAt: r.updatedAt?.toISOString?.() ?? String(r.updatedAt),
   chapters: t
-}), vs = u.object({
+}), Bs = u.object({
   format: u.string().optional(),
   version: u.number().optional(),
   projectId: u.string().optional(),
@@ -2158,11 +2201,11 @@ const bt = (r, t = "") => {
       updatedAt: u.string().optional()
     })
   ).optional()
-}).passthrough(), Us = u.object({
+}).passthrough(), $s = u.object({
   characters: u.array(u.record(u.string(), u.unknown())).optional()
-}).passthrough(), Ms = u.object({
+}).passthrough(), xs = u.object({
   terms: u.array(u.record(u.string(), u.unknown())).optional()
-}).passthrough(), qe = u.object({
+}).passthrough(), Ke = u.object({
   synopsis: u.string().optional(),
   status: u.enum(["draft", "working", "locked"]).optional(),
   genre: u.string().optional(),
@@ -2197,7 +2240,7 @@ const bt = (r, t = "") => {
 }).passthrough(), Hr = u.object({
   memos: u.array(u.record(u.string(), u.unknown())).optional(),
   updatedAt: u.string().optional()
-}).passthrough(), ks = u.object({
+}).passthrough(), Gs = u.object({
   id: u.string(),
   entityType: u.string(),
   subType: u.string().optional(),
@@ -2207,7 +2250,7 @@ const bt = (r, t = "") => {
   attributes: u.record(u.string(), u.unknown()).optional().nullable(),
   positionX: u.number().optional(),
   positionY: u.number().optional()
-}).passthrough(), Ws = u.object({
+}).passthrough(), Hs = u.object({
   id: u.string(),
   sourceId: u.string(),
   sourceType: u.string(),
@@ -2217,20 +2260,20 @@ const bt = (r, t = "") => {
   attributes: u.record(u.string(), u.unknown()).optional().nullable(),
   createdAt: u.string().optional(),
   updatedAt: u.string().optional()
-}).passthrough(), Bs = u.object({
-  nodes: u.array(ks).optional(),
-  edges: u.array(Ws).optional(),
+}).passthrough(), Ys = u.object({
+  nodes: u.array(Gs).optional(),
+  edges: u.array(Hs).optional(),
   updatedAt: u.string().optional()
-}).passthrough(), $s = u.object({
+}).passthrough(), zs = u.object({
   id: u.string(),
   projectId: u.string().optional(),
   chapterId: u.string().optional().nullable(),
   content: u.string().optional(),
   description: u.string().optional().nullable(),
   createdAt: u.string().optional()
-}).passthrough(), xs = u.object({
-  snapshots: u.array($s).optional()
-}).passthrough(), Gs = (r, t, e, n) => {
+}).passthrough(), Xs = u.object({
+  snapshots: u.array(zs).optional()
+}).passthrough(), qs = (r, t, e, n) => {
   if (typeof r != "string" || r.trim().length === 0)
     return t.safeParse(null);
   let a;
@@ -2251,7 +2294,7 @@ const bt = (r, t = "") => {
     label: e.label,
     issues: o.error.issues
   }), o;
-}, Hs = async (r) => await h.getClient().project.findUnique({
+}, Ks = async (r) => await h.getClient().project.findUnique({
   where: { id: r },
   include: {
     chapters: { where: { deletedAt: null }, orderBy: { order: "asc" } },
@@ -2263,10 +2306,10 @@ const bt = (r, t = "") => {
     entityRelations: !0,
     snapshots: { orderBy: { createdAt: "desc" } }
   }
-}), Ys = (r, t, e) => {
+}), Vs = (r, t, e) => {
   if (!t)
     return e.info("Skipping package export (missing projectPath)", { projectId: r }), null;
-  if (!t.toLowerCase().endsWith(q))
+  if (!t.toLowerCase().endsWith(K))
     return e.info("Skipping package export (not .luie)", {
       projectId: r,
       projectPath: t
@@ -2280,10 +2323,10 @@ const bt = (r, t = "") => {
       error: n
     }), null;
   }
-}, zs = async (r, t) => {
-  if (!r || !r.toLowerCase().endsWith(q))
+}, Js = async (r, t) => {
+  if (!r || !r.toLowerCase().endsWith(K))
     return {
-      synopsis: qe.safeParse(null),
+      synopsis: Ke.safeParse(null),
       plot: $r.safeParse(null),
       drawing: xr.safeParse(null),
       mindmap: Gr.safeParse(null),
@@ -2293,7 +2336,7 @@ const bt = (r, t = "") => {
     const p = `${G}/${d}`;
     try {
       const A = await et(r, p, t);
-      return Gs(
+      return qs(
         A,
         l,
         {
@@ -2314,7 +2357,7 @@ const bt = (r, t = "") => {
   }, [n, a, o, s, c] = await Promise.all([
     e(
       Qt,
-      qe,
+      Ke,
       "synopsis"
     ),
     e(Ae, $r, "plot"),
@@ -2333,12 +2376,12 @@ const bt = (r, t = "") => {
     mindmap: s,
     memos: c
   };
-}, Xs = async (r) => {
-  const t = await Hs(r.projectId);
+}, Qs = async (r) => {
+  const t = await Ks(r.projectId);
   if (!t) return !1;
-  const e = r.options?.targetPath ? bn(r.options.targetPath, "targetPath") : Ys(r.projectId, t.projectPath, r.logger);
+  const e = r.options?.targetPath ? jn(r.options.targetPath, "targetPath") : Vs(r.projectId, t.projectPath, r.logger);
   if (!e) return !1;
-  const n = r.options?.worldSourcePath === void 0 ? e : r.options.worldSourcePath, { exportChapters: a, chapterMeta: o } = Is(t.chapters), s = Ps(t.characters), c = Cs(t.terms), d = _.getAll().snapshotExportLimit ?? ue, l = Rs(t.snapshots, d), i = await zs(n, r.logger), p = Ns(t, i.synopsis), A = Ds(i.plot), w = Ls(i.drawing), g = Os(i.mindmap), m = js(i.memos), T = bs(t), I = Fs(t, o);
+  const n = r.options?.worldSourcePath === void 0 ? e : r.options.worldSourcePath, { exportChapters: a, chapterMeta: o } = Ds(t.chapters), s = Ls(t.characters), c = Os(t.terms), d = _.getAll().snapshotExportLimit ?? ue, l = js(t.snapshots, d), i = await Js(n, r.logger), p = bs(t, i.synopsis), A = Fs(i.plot), w = vs(i.drawing), g = Us(i.mindmap), m = Ms(i.memos), T = ks(t), I = Ws(t, o);
   return r.logger.info("Exporting .luie package", {
     projectId: r.projectId,
     projectPath: e,
@@ -2365,7 +2408,7 @@ const bt = (r, t = "") => {
     },
     r.logger
   ), !0;
-}, Ks = async (r) => {
+}, Zs = async (r) => {
   const t = [];
   for (let e = 0; e < r.chaptersMeta.length; e += 1) {
     const n = r.chaptersMeta[e], a = n.id ?? X(), o = n.file ?? `${vt}/${a}${we}`, s = typeof n.content == "string" ? n.content : await r.readChapterEntry(o);
@@ -2391,7 +2434,7 @@ const bt = (r, t = "") => {
     });
   }
   return t;
-}, qs = (r, t) => t.map((e, n) => {
+}, ti = (r, t) => t.map((e, n) => {
   const a = typeof e.name == "string" && e.name.trim().length > 0 ? e.name : `Character ${n + 1}`, o = typeof e.attributes == "string" ? e.attributes : e.attributes ? JSON.stringify(e.attributes) : null;
   return {
     id: typeof e.id == "string" ? e.id : X(),
@@ -2401,7 +2444,7 @@ const bt = (r, t = "") => {
     firstAppearance: typeof e.firstAppearance == "string" ? e.firstAppearance : null,
     attributes: o
   };
-}), Vs = (r, t) => t.map((e, n) => {
+}), ei = (r, t) => t.map((e, n) => {
   const a = typeof e.term == "string" && e.term.trim().length > 0 ? e.term : `Term ${n + 1}`;
   return {
     id: typeof e.id == "string" ? e.id : X(),
@@ -2411,7 +2454,7 @@ const bt = (r, t = "") => {
     category: typeof e.category == "string" ? e.category : null,
     firstAppearance: typeof e.firstAppearance == "string" ? e.firstAppearance : null
   };
-}), Js = (r) => {
+}), ri = (r) => {
   const t = /* @__PURE__ */ new Set(), e = [];
   for (const n of r.snapshots) {
     if (typeof n.id != "string" || n.id.trim().length === 0 || t.has(n.id))
@@ -2435,7 +2478,7 @@ const bt = (r, t = "") => {
     });
   }
   return e;
-}, Qs = [
+}, ni = [
   "Character",
   "Faction",
   "Event",
@@ -2445,14 +2488,14 @@ const bt = (r, t = "") => {
   "Item",
   "Term",
   "WorldEntity"
-], Zs = ["Place", "Concept", "Rule", "Item"], ti = [
+], ai = ["Place", "Concept", "Rule", "Item"], oi = [
   "belongs_to",
   "enemy_of",
   "causes",
   "controls",
   "located_in",
   "violates"
-], Ve = (r) => typeof r == "string" && Qs.includes(r), Je = (r) => typeof r == "string" && Zs.includes(r), ei = (r) => typeof r == "string" && ti.includes(r), te = (r) => {
+], Ve = (r) => typeof r == "string" && ni.includes(r), Je = (r) => typeof r == "string" && ai.includes(r), si = (r) => typeof r == "string" && oi.includes(r), te = (r) => {
   if (r == null)
     return null;
   if (typeof r == "string")
@@ -2462,7 +2505,7 @@ const bt = (r, t = "") => {
   } catch {
     return null;
   }
-}, ri = (r, t) => Je(r) ? r : r === "WorldEntity" && Je(t) ? t : null, ni = (r, t) => ({
+}, ii = (r, t) => Je(r) ? r : r === "WorldEntity" && Je(t) ? t : null, ci = (r, t) => ({
   charactersForCreate: [...r],
   termsForCreate: [...t],
   factionsForCreate: [],
@@ -2474,7 +2517,7 @@ const bt = (r, t = "") => {
   factionIds: /* @__PURE__ */ new Set(),
   eventIds: /* @__PURE__ */ new Set(),
   worldEntityIds: /* @__PURE__ */ new Set()
-}), ai = (r) => Ve(r.entityType) ? r.entityType : Je(r.subType) ? r.subType : null, oi = (r, t, e) => {
+}), di = (r) => Ve(r.entityType) ? r.entityType : Je(r.subType) ? r.subType : null, li = (r, t, e) => {
   !e.id || !e.name || r.characterIds.has(e.id) || (r.characterIds.add(e.id), r.charactersForCreate.push({
     id: e.id,
     projectId: t,
@@ -2483,7 +2526,7 @@ const bt = (r, t = "") => {
     firstAppearance: typeof e.firstAppearance == "string" ? e.firstAppearance : null,
     attributes: te(e.attributes)
   }));
-}, si = (r, t, e) => {
+}, pi = (r, t, e) => {
   if (!e.id || !e.name || r.termIds.has(e.id)) return;
   r.termIds.add(e.id);
   const n = Array.isArray(e.attributes?.tags) ? e.attributes.tags.find((a) => typeof a == "string") : null;
@@ -2495,7 +2538,7 @@ const bt = (r, t = "") => {
     category: n ?? null,
     firstAppearance: typeof e.firstAppearance == "string" ? e.firstAppearance : null
   });
-}, ii = (r, t, e) => {
+}, ui = (r, t, e) => {
   !e.id || !e.name || r.factionIds.has(e.id) || (r.factionIds.add(e.id), r.factionsForCreate.push({
     id: e.id,
     projectId: t,
@@ -2504,7 +2547,7 @@ const bt = (r, t = "") => {
     firstAppearance: typeof e.firstAppearance == "string" ? e.firstAppearance : null,
     attributes: te(e.attributes)
   }));
-}, ci = (r, t, e) => {
+}, hi = (r, t, e) => {
   !e.id || !e.name || r.eventIds.has(e.id) || (r.eventIds.add(e.id), r.eventsForCreate.push({
     id: e.id,
     projectId: t,
@@ -2513,9 +2556,9 @@ const bt = (r, t = "") => {
     firstAppearance: typeof e.firstAppearance == "string" ? e.firstAppearance : null,
     attributes: te(e.attributes)
   }));
-}, di = (r, t, e, n) => {
+}, fi = (r, t, e, n) => {
   if (!n.id || !n.name) return;
-  const a = ri(e, n.subType);
+  const a = ii(e, n.subType);
   !a || r.worldEntityIds.has(n.id) || (r.worldEntityIds.add(n.id), r.worldEntitiesForCreate.push({
     id: n.id,
     projectId: t,
@@ -2546,31 +2589,31 @@ const bt = (r, t = "") => {
     default:
       return !1;
   }
-}, li = (r, t, e) => {
+}, gi = (r, t, e) => {
   if (!e.id || !e.name)
     return;
-  const n = ai(e);
+  const n = di(e);
   if (n) {
     if (n === "Character") {
-      oi(r, t, e);
+      li(r, t, e);
       return;
     }
     if (n === "Term") {
-      si(r, t, e);
+      pi(r, t, e);
       return;
     }
     if (n === "Faction") {
-      ii(r, t, e);
+      ui(r, t, e);
       return;
     }
     if (n === "Event") {
-      ci(r, t, e);
+      hi(r, t, e);
       return;
     }
-    di(r, t, n, e);
+    fi(r, t, n, e);
   }
-}, pi = (r, t, e) => {
-  !e.sourceId || !e.targetId || !Ve(e.sourceType) || !Ve(e.targetType) || ei(e.relation) && (!Yr(r, e.sourceType, e.sourceId) || !Yr(r, e.targetType, e.targetId) || r.relationsForCreate.push({
+}, Ei = (r, t, e) => {
+  !e.sourceId || !e.targetId || !Ve(e.sourceType) || !Ve(e.targetType) || si(e.relation) && (!Yr(r, e.sourceType, e.sourceId) || !Yr(r, e.targetType, e.targetId) || r.relationsForCreate.push({
     id: e.id || X(),
     projectId: t,
     sourceId: e.sourceId,
@@ -2582,16 +2625,16 @@ const bt = (r, t = "") => {
     sourceWorldEntityId: Nr(e.sourceType) && r.worldEntityIds.has(e.sourceId) ? e.sourceId : null,
     targetWorldEntityId: Nr(e.targetType) && r.worldEntityIds.has(e.targetId) ? e.targetId : null
   }));
-}, ui = (r) => {
-  const t = ni(r.baseCharacters, r.baseTerms);
+}, mi = (r) => {
+  const t = ci(r.baseCharacters, r.baseTerms);
   if (!r.graph)
     return t;
   for (const e of r.graph.nodes ?? [])
-    li(t, r.projectId, e);
+    gi(t, r.projectId, e);
   for (const e of r.graph.edges ?? [])
-    pi(t, r.projectId, e);
+    Ei(t, r.projectId, e);
   return t;
-}, hi = async (r) => {
+}, Ai = async (r) => {
   const {
     resolvedProjectId: t,
     legacyProjectId: e,
@@ -2658,10 +2701,10 @@ const bt = (r, t = "") => {
       }
     );
   return a.data;
-}, fi = async (r) => await h.getClient().project.findFirst({
+}, yi = async (r) => await h.getClient().project.findFirst({
   where: { projectPath: r },
   select: { id: !0, updatedAt: !0 }
-}), gi = async (r, t) => {
+}), Si = async (r, t) => {
   try {
     await R.access(r);
   } catch {
@@ -2675,7 +2718,7 @@ const bt = (r, t = "") => {
     const e = await et(r, me, t);
     if (!e)
       throw new Error("MISSING_META");
-    const n = vs.safeParse(JSON.parse(e));
+    const n = Bs.safeParse(JSON.parse(e));
     if (!n.success)
       throw new Error("INVALID_META");
     return { meta: n.data, luieCorrupted: !1 };
@@ -2685,14 +2728,14 @@ const bt = (r, t = "") => {
       error: e
     }), { meta: null, luieCorrupted: !0, recoveryReason: "corrupt" };
   }
-}, Ei = (r, t) => {
+}, Ti = (r, t) => {
   const n = (typeof r.projectId == "string" ? r.projectId : void 0) ?? t?.id ?? X(), a = t && t.id !== n ? t.id : null;
   return { resolvedProjectId: n, legacyProjectId: a };
-}, mi = (r = /* @__PURE__ */ new Date()) => {
+}, wi = (r = /* @__PURE__ */ new Date()) => {
   const t = (e) => String(e).padStart(2, "0");
   return `${r.getFullYear()}${t(r.getMonth() + 1)}${t(r.getDate())}-${t(r.getHours())}${t(r.getMinutes())}${t(r.getSeconds())}`;
-}, Ai = async (r) => {
-  const t = Zt(r), e = q, a = t.toLowerCase().endsWith(e) ? t.slice(0, t.length - e.length) : t, o = mi();
+}, _i = async (r) => {
+  const t = Zt(r), e = K, a = t.toLowerCase().endsWith(e) ? t.slice(0, t.length - e.length) : t, o = wi();
   let s = `${a}.recovered-${o}${e}`, c = 1;
   for (; ; )
     try {
@@ -2700,34 +2743,34 @@ const bt = (r, t = "") => {
     } catch {
       return s;
     }
-}, yi = async (r, t) => {
-  const e = `${G}/${Ln}`, n = `${G}/${On}`, a = `${jt}/index.json`, o = `${G}/${Qt}`, s = `${G}/${Te}`, [c, d, l, i, p] = await Promise.all([
+}, Ii = async (r, t) => {
+  const e = `${G}/${Dn}`, n = `${G}/${Ln}`, a = `${jt}/index.json`, o = `${G}/${Qt}`, s = `${G}/${Te}`, [c, d, l, i, p] = await Promise.all([
     et(r, e, t),
     et(r, n, t),
     et(r, a, t),
     et(r, o, t),
     et(r, s, t)
-  ]), A = Bt(c, Us, {
+  ]), A = Bt(c, $s, {
     packagePath: r,
     entryPath: e,
     label: "world characters"
-  }), w = Bt(d, Ms, {
+  }), w = Bt(d, xs, {
     packagePath: r,
     entryPath: n,
     label: "world terms"
-  }), g = Bt(l, xs, {
+  }), g = Bt(l, Xs, {
     packagePath: r,
     entryPath: a,
     label: "snapshot index"
   }), m = Bt(
     i,
-    qe,
+    Ke,
     {
       packagePath: r,
       entryPath: o,
       label: "world synopsis"
     }
-  ), T = Bt(p, Bs, {
+  ), T = Bt(p, Ys, {
     packagePath: r,
     entryPath: s,
     label: "world graph"
@@ -2743,11 +2786,11 @@ const bt = (r, t = "") => {
       updatedAt: T.updatedAt
     } : void 0
   };
-}, Si = async (r) => {
-  const t = bn(r.packagePath, "packagePath"), { meta: e, luieCorrupted: n, recoveryReason: a } = await gi(
+}, Pi = async (r) => {
+  const t = jn(r.packagePath, "packagePath"), { meta: e, luieCorrupted: n, recoveryReason: a } = await Si(
     t,
     r.logger
-  ), o = await fi(t);
+  ), o = await yi(t);
   if (n) {
     if (!o)
       throw new f(
@@ -2755,7 +2798,7 @@ const bt = (r, t = "") => {
         "Failed to read .luie meta",
         { packagePath: t }
       );
-    const I = await Ai(t);
+    const I = await _i(t);
     if (!await r.exportRecoveredPackage(o.id, I))
       throw new f(
         E.FS_WRITE_FAILED,
@@ -2778,28 +2821,28 @@ const bt = (r, t = "") => {
       "Invalid .luie meta format",
       { packagePath: t }
     );
-  const { resolvedProjectId: s, legacyProjectId: c } = Ei(e, o), d = await h.getClient().project.findUnique({
+  const { resolvedProjectId: s, legacyProjectId: c } = Ti(e, o), d = await h.getClient().project.findUnique({
     where: { id: s },
     select: { id: !0, updatedAt: !0 }
-  }), l = e.chapters ?? [], i = await yi(t, r.logger), p = await Ks({
+  }), l = e.chapters ?? [], i = await Ii(t, r.logger), p = await Zs({
     packagePath: t,
     resolvedProjectId: s,
     chaptersMeta: l,
     readChapterEntry: async (I) => await et(t, I, r.logger)
-  }), A = qs(
+  }), A = ti(
     s,
     i.characters
-  ), w = Vs(s, i.terms), g = ui({
+  ), w = ei(s, i.terms), g = mi({
     projectId: s,
     graph: i.graph,
     baseCharacters: A,
     baseTerms: w
-  }), m = Js({
+  }), m = ri({
     resolvedProjectId: s,
     snapshots: i.snapshots,
     validChapterIds: new Set(p.map((I) => I.id)),
     logger: r.logger
-  }), T = await hi({
+  }), T = await Ai({
     resolvedProjectId: s,
     legacyProjectId: c,
     existing: d,
@@ -2827,7 +2870,7 @@ const bt = (r, t = "") => {
     snapshotCount: m.length
   }), { project: T, conflict: "luie-newer" };
 }, M = N("ProjectService");
-class Ti {
+class Ci {
   exportQueue = new as(
     ao,
     async (t) => {
@@ -2835,10 +2878,6 @@ class Ti {
     },
     M
   );
-  toProjectPathKey(t) {
-    const e = C.resolve(t);
-    return process.platform === "win32" ? e.toLowerCase() : e;
-  }
   async reconcileProjectPathDuplicates() {
     const t = await h.getClient().project.findMany({
       where: {
@@ -2849,50 +2888,38 @@ class Ti {
         projectPath: !0,
         updatedAt: !0
       }
-    }), e = /* @__PURE__ */ new Map();
-    for (const c of t)
-      if (!(typeof c.projectPath != "string" || c.projectPath.length === 0))
-        try {
-          const d = z(
-            c.projectPath,
-            "projectPath"
-          ), l = this.toProjectPathKey(d), i = e.get(l) ?? [];
-          i.push({
-            id: String(c.id),
-            projectPath: d,
-            updatedAt: c.updatedAt instanceof Date ? c.updatedAt : new Date(String(c.updatedAt))
-          }), e.set(l, i);
-        } catch {
-          continue;
-        }
-    const n = Array.from(e.values()).filter(
-      (c) => c.length > 1
-    ), a = await Promise.all(
-      n.map(async (c) => {
-        const d = [...c].sort(
-          (p, A) => A.updatedAt.getTime() - p.updatedAt.getTime()
-        ), l = d[0], i = d.slice(1);
+    }), e = ps(
+      t.map((s) => ({
+        id: String(s.id),
+        projectPath: typeof s.projectPath == "string" ? s.projectPath : null,
+        updatedAt: s.updatedAt
+      }))
+    ), n = await Promise.all(
+      e.map(async (s) => {
+        const c = [...s].sort(
+          (i, p) => p.updatedAt.getTime() - i.updatedAt.getTime()
+        ), d = c[0], l = c.slice(1);
         return await Promise.all(
-          i.map(async (p) => {
+          l.map(async (i) => {
             await h.getClient().project.update({
-              where: { id: p.id },
+              where: { id: i.id },
               data: { projectPath: null }
             }), M.warn("Cleared duplicate projectPath from stale record", {
-              keepProjectId: l.id,
-              staleProjectId: p.id,
-              projectPath: p.projectPath
+              keepProjectId: d.id,
+              staleProjectId: i.id,
+              projectPath: i.projectPath
             });
           })
-        ), i.length;
+        ), l.length;
       })
-    ), o = n.length, s = a.reduce(
-      (c, d) => c + d,
+    ), a = e.length, o = n.reduce(
+      (s, c) => s + c,
       0
     );
-    return o > 0 && M.info("Project path duplicate reconciliation completed", {
-      duplicateGroups: o,
-      clearedRecords: s
-    }), { duplicateGroups: o, clearedRecords: s };
+    return a > 0 && M.info("Project path duplicate reconciliation completed", {
+      duplicateGroups: a,
+      clearedRecords: o
+    }), { duplicateGroups: a, clearedRecords: o };
   }
   async createProject(t) {
     try {
@@ -2935,7 +2962,7 @@ class Ti {
   }
   async openLuieProject(t) {
     try {
-      return await Si({
+      return await Pi({
         packagePath: t,
         logger: M,
         exportRecoveredPackage: async (e, n) => await this.exportProjectPackageWithOptions(e, {
@@ -2991,30 +3018,13 @@ class Ti {
         },
         orderBy: { updatedAt: "desc" }
       });
-      return await Promise.all(
-        t.map(async (n) => {
-          const a = typeof n.projectPath == "string" ? n.projectPath : null;
-          if (!!!(a && a.toLowerCase().endsWith(q)) || !a)
-            return {
-              ...n,
-              pathMissing: !1
-            };
-          try {
-            const s = z(
-              a,
-              "projectPath"
-            );
-            return await R.access(s), {
-              ...n,
-              pathMissing: !1
-            };
-          } catch {
-            return {
-              ...n,
-              pathMissing: !0
-            };
-          }
-        })
+      return await is(
+        t.map((e) => ({
+          ...e,
+          id: String(e.id),
+          description: typeof e.description == "string" ? e.description : null,
+          projectPath: typeof e.projectPath == "string" ? e.projectPath : null
+        }))
       );
     } catch (t) {
       throw M.error("Failed to get all projects", t), new f(
@@ -3055,7 +3065,7 @@ class Ti {
           projectPath: e
         }
       }), o = typeof n?.title == "string" ? n.title : "", s = typeof a.title == "string" ? a.title : "", c = typeof a.projectPath == "string" ? a.projectPath : null;
-      await ss({
+      await ds({
         projectId: String(a.id),
         projectPath: c,
         previousTitle: o,
@@ -3082,7 +3092,7 @@ class Ti {
     });
   }
   async deleteProject(t) {
-    const e = typeof t == "string" ? { id: t, deleteFile: !1 } : { id: t.id, deleteFile: !!t.deleteFile };
+    const e = os(t);
     let n = !1;
     try {
       const a = await h.getClient().project.findUnique({
@@ -3095,17 +3105,10 @@ class Ti {
           "Project not found",
           { id: e.id }
         );
-      if (e.deleteFile) {
-        const o = typeof a.projectPath == "string" ? a.projectPath : null;
-        if (o && o.toLowerCase().endsWith(q)) {
-          const s = z(
-            o,
-            "projectPath"
-          );
-          await R.rm(s, { force: !0, recursive: !0 });
-        }
-      }
-      return _.addPendingProjectDelete({
+      return await ss({
+        deleteFile: e.deleteFile,
+        projectPath: typeof a.projectPath == "string" ? a.projectPath : null
+      }), _.addPendingProjectDelete({
         projectId: e.id,
         deletedAt: (/* @__PURE__ */ new Date()).toISOString()
       }), n = !0, await h.getClient().project.delete({
@@ -3153,7 +3156,7 @@ class Ti {
     return await this.exportQueue.flush(t);
   }
   async exportProjectPackageWithOptions(t, e) {
-    return await Xs({
+    return await Qs({
       projectId: t,
       options: e,
       logger: M
@@ -3163,11 +3166,11 @@ class Ti {
     await this.exportProjectPackageWithOptions(t);
   }
 }
-const F = new Ti(), x = N("CharacterService"), Hl = () => h.getClient();
-function wi(r) {
+const F = new Ci(), x = N("CharacterService"), Ql = () => h.getClient();
+function Ri(r) {
   return typeof r == "object" && r !== null && "code" in r && r.code === "P2025";
 }
-class _i {
+class Ni {
   async createCharacter(t) {
     try {
       x.info("Creating character", t);
@@ -3240,7 +3243,7 @@ class _i {
         characterId: n.id
       }), F.schedulePackageExport(String(n.projectId), "character:update"), n;
     } catch (e) {
-      throw x.error("Failed to update character", e), wi(e) ? new f(
+      throw x.error("Failed to update character", e), Ri(e) ? new f(
         E.CHARACTER_NOT_FOUND,
         "Character not found",
         { id: t.id },
@@ -3363,11 +3366,11 @@ class _i {
     }
   }
 }
-const Qe = new _i(), B = N("TermService");
-function Ii(r) {
+const Qe = new Ni(), B = N("TermService");
+function Di(r) {
   return typeof r == "object" && r !== null && "code" in r && r.code === "P2025";
 }
-class Pi {
+class Li {
   async createTerm(t) {
     try {
       B.info("Creating term", t);
@@ -3433,7 +3436,7 @@ class Pi {
       });
       return B.info("Term updated successfully", { termId: n.id }), F.schedulePackageExport(String(n.projectId), "term:update"), n;
     } catch (e) {
-      throw B.error("Failed to update term", e), Ii(e) ? new f(
+      throw B.error("Failed to update term", e), Di(e) ? new f(
         E.TERM_NOT_FOUND,
         "Term not found",
         { id: t.id },
@@ -3567,13 +3570,13 @@ class Pi {
     }
   }
 }
-const Ze = new Pi(), Vt = (r) => {
+const Ze = new Li(), Vt = (r) => {
   if (typeof r != "string") return null;
   const t = r.trim();
   if (!t) return null;
   const n = t.startsWith('"') && t.endsWith('"') || t.startsWith("'") && t.endsWith("'") ? t.slice(1, -1).trim() : t;
   return n.length > 0 ? n : null;
-}, xn = (r) => {
+}, $n = (r) => {
   const t = r.trim();
   if (!t) return t;
   try {
@@ -3581,14 +3584,14 @@ const Ze = new Pi(), Vt = (r) => {
   } catch {
     return t.endsWith("/") ? t.slice(0, -1) : t;
   }
-}, tr = (r) => /^https?:\/\//i.test(r), Gn = (r) => {
+}, tr = (r) => /^https?:\/\//i.test(r), xn = (r) => {
   try {
     const t = new URL(r);
-    return t.protocol !== "http:" && t.protocol !== "https:" ? null : xn(t.toString());
+    return t.protocol !== "http:" && t.protocol !== "https:" ? null : $n(t.toString());
   } catch {
     return null;
   }
-}, Ci = (r) => {
+}, Oi = (r) => {
   let t = r.trim();
   if (!t) return null;
   if (tr(t))
@@ -3602,16 +3605,16 @@ const Ze = new Pi(), Vt = (r) => {
   if (!r) return null;
   const t = Vt(r.url), e = Vt(r.anonKey);
   if (!t || !e) return null;
-  const n = Gn(t);
+  const n = xn(t);
   return n ? {
     url: n,
     anonKey: e
   } : null;
-}, Hn = (r) => {
+}, Gn = (r) => {
   const t = [], e = Vt(r?.url), n = Vt(r?.anonKey);
   e || t.push("SUPABASE_URL_REQUIRED"), n || t.push("SUPABASE_ANON_KEY_REQUIRED");
   let a = null;
-  return e && (a = Gn(e), a || t.push("SUPABASE_URL_INVALID")), n && n.length < 16 && t.push("SUPABASE_ANON_KEY_TOO_SHORT"), t.length > 0 || !a || !n ? {
+  return e && (a = xn(e), a || t.push("SUPABASE_URL_INVALID")), n && n.length < 16 && t.push("SUPABASE_ANON_KEY_TOO_SHORT"), t.length > 0 || !a || !n ? {
     valid: !1,
     issues: t
   } : {
@@ -3622,16 +3625,16 @@ const Ze = new Pi(), Vt = (r) => {
       anonKey: n
     }
   };
-}, gt = (r) => Vt(process.env[r]), Ri = "https://qzgyjlbpnxxpspoyibpt.supabase.co", Ni = "sb_publishable_tBNCOdvGzLgTuc6PUXI-Bg_qmt1FwYs", Di = () => {
+}, gt = (r) => Vt(process.env[r]), ji = "https://qzgyjlbpnxxpspoyibpt.supabase.co", bi = "sb_publishable_tBNCOdvGzLgTuc6PUXI-Bg_qmt1FwYs", Fi = () => {
   const r = _e({
-    url: Ri,
-    anonKey: Ni
+    url: ji,
+    anonKey: bi
   });
   return r ? {
     ...r,
     source: "legacy"
   } : null;
-}, Li = () => {
+}, vi = () => {
   const r = _e({
     url: gt("SUPABASE_URL") ?? gt("SUPADB_URL") ?? void 0,
     anonKey: gt("SUPABASE_ANON_KEY") ?? gt("SUPABASE_PUBLISHABLE_KEY") ?? gt("SUPADATABASE_API") ?? void 0
@@ -3640,19 +3643,19 @@ const Ze = new Pi(), Vt = (r) => {
     ...r,
     source: "env"
   } : null;
-}, Yn = () => {
+}, Hn = () => {
   const r = _.getRuntimeSupabaseConfig(), t = _e(r);
   return t ? {
     ...t,
     source: "runtime"
   } : null;
-}, Oi = () => {
+}, Ui = () => {
   const r = gt("SUPADATABASE_API"), t = gt("SUPADATABASE_PRJ_ID");
   let e = null, n = null;
   if (r && tr(r))
-    e = xn(r);
+    e = $n(r);
   else if (t) {
-    const a = Ci(t);
+    const a = Oi(t);
     a && (e = `https://${a}.supabase.co`);
   }
   return r && !tr(r) && (n = r), !e || !n ? null : {
@@ -3660,31 +3663,31 @@ const Ze = new Pi(), Vt = (r) => {
     anonKey: n,
     source: "legacy"
   };
-}, mr = () => Li() ?? Yn() ?? Oi() ?? Di(), pt = () => {
+}, mr = () => vi() ?? Hn() ?? Ui() ?? Fi(), lt = () => {
   const r = mr();
   return r ? {
     url: r.url,
     anonKey: r.anonKey
   } : null;
 }, Xt = () => {
-  const r = pt();
+  const r = lt();
   if (!r)
     throw new Error(
       "SUPABASE_NOT_CONFIGURED: runtime configuration is not completed. Set Supabase URL/Anon Key in Startup Wizard or sync settings."
     );
   return r;
-}, zn = () => mr()?.source ?? null, ji = () => _e(Yn()) ?? null, bi = (r) => {
-  const t = Hn(r);
+}, Yn = () => mr()?.source ?? null, Mi = () => _e(Hn()) ?? null, ki = (r) => {
+  const t = Gn(r);
   return !t.valid || !t.normalized || _.setRuntimeSupabaseConfig(t.normalized), t;
-}, Fi = (r) => Hn(r), Yl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+}, Wi = (r) => Gn(r), Zl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   getResolvedSupabaseConfig: mr,
-  getRuntimeSupabaseConfig: ji,
-  getSupabaseConfig: pt,
+  getRuntimeSupabaseConfig: Mi,
+  getSupabaseConfig: lt,
   getSupabaseConfigOrThrow: Xt,
-  getSupabaseConfigSource: zn,
-  setRuntimeSupabaseConfig: bi,
-  validateRuntimeSupabaseConfig: Fi
+  getSupabaseConfigSource: Yn,
+  setRuntimeSupabaseConfig: ki,
+  validateRuntimeSupabaseConfig: Wi
 }, Symbol.toStringTag, { value: "Module" })), Ft = {
   // Project Channels
   PROJECT_CREATE: "project:create",
@@ -3836,9 +3839,9 @@ const Ze = new Pi(), Vt = (r) => {
   // World Graph
   WORLD_GRAPH_GET: "world:getGraph",
   WORLD_GRAPH_GET_MENTIONS: "world:getMentions"
-}, $t = N("SyncAuthService"), vi = "luie://auth/callback", er = "v2:safe:", rr = "v2:plain:", ge = "SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE", Xn = (r) => r.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, ""), Ui = () => Xn(Sa(48)), Mi = (r) => Xn(Ta("sha256").update(r).digest()), ae = () => {
+}, $t = N("SyncAuthService"), Bi = "luie://auth/callback", er = "v2:safe:", rr = "v2:plain:", ge = "SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE", zn = (r) => r.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, ""), $i = () => zn(Sa(48)), xi = (r) => zn(Ta("sha256").update(r).digest()), ae = () => {
   const r = process.env.LUIE_OAUTH_REDIRECT_URI?.trim();
-  return r && r.length > 0 ? r : vi;
+  return r && r.length > 0 ? r : Bi;
 }, St = (r, t = "token") => {
   if (rt.isEncryptionAvailable()) {
     const n = rt.encryptString(r).toString("base64");
@@ -3848,7 +3851,7 @@ const Ze = new Pi(), Vt = (r) => {
     throw new Error(ge);
   const e = Buffer.from(r, "utf-8").toString("base64");
   return `${rr}${e}`;
-}, ki = (r, t = "token") => {
+}, Gi = (r, t = "token") => {
   const e = Buffer.from(r, "base64");
   if (rt.isEncryptionAvailable())
     try {
@@ -3898,9 +3901,9 @@ const Ze = new Pi(), Vt = (r) => {
       migratedCipher: o
     };
   }
-  return ki(r, t);
+  return Gi(r, t);
 };
-class Wi {
+class Hi {
   pendingPkce = null;
   pendingTtlMs = 600 * 1e3;
   clearPendingPkce() {
@@ -3961,7 +3964,7 @@ class Wi {
     return this.getActivePendingPkce() !== null;
   }
   isConfigured() {
-    return pt() !== null;
+    return lt() !== null;
   }
   async startGoogleAuth() {
     const t = this.getActivePendingPkce();
@@ -3969,7 +3972,7 @@ class Wi {
       const c = Date.now() - t.createdAt;
       throw $t.info("OAuth flow already in progress", { ageMs: c }), new Error("SYNC_AUTH_FLOW_IN_PROGRESS");
     }
-    const { url: e } = Xt(), n = Ui(), a = Mi(n), o = ae();
+    const { url: e } = Xt(), n = $i(), a = xi(n), o = ae();
     this.storePendingPkce({
       verifier: n,
       createdAt: Date.now(),
@@ -4101,7 +4104,7 @@ class Wi {
     };
   }
 }
-const J = new Wi(), Kn = () => ({
+const J = new Hi(), Xn = () => ({
   projects: [],
   chapters: [],
   characters: [],
@@ -4133,7 +4136,7 @@ const J = new Wi(), Kn = () => ({
     e.set(n.id, o);
   }
   return Array.from(e.values());
-}, Bi = (r, t) => {
+}, Yi = (r, t) => {
   const e = /* @__PURE__ */ new Map();
   for (const n of r)
     e.set(`${n.projectId}:${n.docType}`, n);
@@ -4196,7 +4199,7 @@ const J = new Wi(), Kn = () => ({
     conflicts: d,
     conflictItems: l
   };
-}, $i = (r, t, e) => {
+}, zi = (r, t, e) => {
   const n = r + t;
   return {
     chapters: r,
@@ -4204,7 +4207,7 @@ const J = new Wi(), Kn = () => ({
     total: n,
     items: e.length > 0 ? e : void 0
   };
-}, xi = (r) => {
+}, Xi = (r) => {
   const t = /* @__PURE__ */ new Map();
   for (const s of r.tombstones) {
     const c = `${s.entityType}:${s.entityId}`, d = t.get(c);
@@ -4263,7 +4266,7 @@ const J = new Wi(), Kn = () => ({
       )
     )
   };
-}, Gi = (r, t, e) => {
+}, qi = (r, t, e) => {
   const n = new Set(
     [...r.tombstones, ...t.tombstones].map(
       (l) => `${l.entityType}:${l.entityId}`
@@ -4317,56 +4320,56 @@ const J = new Wi(), Kn = () => ({
     chapters: o.merged,
     characters: xt(r.characters, t.characters),
     terms: xt(r.terms, t.terms),
-    worldDocuments: Bi(r.worldDocuments, t.worldDocuments),
+    worldDocuments: Yi(r.worldDocuments, t.worldDocuments),
     memos: s.merged,
     snapshots: xt(r.snapshots, t.snapshots),
     tombstones: xt(r.tombstones, t.tombstones)
   };
   return {
-    merged: xi(d),
-    conflicts: $i(
+    merged: Xi(d),
+    conflicts: zi(
       o.conflicts,
       s.conflicts,
       c
     )
   };
-}, Hi = [
+}, Ki = [
   { docType: "synopsis", fileName: Qt },
   { docType: "plot", fileName: Ae },
   { docType: "drawing", fileName: ye },
   { docType: "mindmap", fileName: Se },
   { docType: "graph", fileName: Te }
-], Yi = {
+], Vi = {
   synopsis: Qt,
   plot: Ae,
   drawing: ye,
   mindmap: Se,
   graph: Te,
   scrap: fr
-}, zi = [
+}, Ji = [
   "synopsis",
   "plot",
   "drawing",
   "mindmap",
   "graph",
   "scrap"
-], ut = (r, t = (/* @__PURE__ */ new Date()).toISOString()) => typeof r == "string" && r.length > 0 ? r : r instanceof Date ? r.toISOString() : t, v = (r) => typeof r == "string" ? r : null, nr = (r, t = 0) => typeof r == "number" && Number.isFinite(r) ? r : t, Xi = (r, t, e) => {
+], pt = (r, t = (/* @__PURE__ */ new Date()).toISOString()) => typeof r == "string" && r.length > 0 ? r : r instanceof Date ? r.toISOString() : t, v = (r) => typeof r == "string" ? r : null, nr = (r, t = 0) => typeof r == "number" && Number.isFinite(r) ? r : t, Qi = (r, t, e) => {
   const n = v(e.id);
   if (!n) return null;
-  const a = ut(e.updatedAt);
+  const a = pt(e.updatedAt);
   return r.projects.push({
     id: n,
     userId: t,
     title: v(e.title) ?? "Untitled",
     description: v(e.description),
-    createdAt: ut(e.createdAt),
+    createdAt: pt(e.createdAt),
     updatedAt: a
   }), {
     projectId: n,
     projectPath: v(e.projectPath),
     projectUpdatedAt: a
   };
-}, Ki = (r, t, e, n) => {
+}, Zi = (r, t, e, n) => {
   for (const a of n) {
     const o = v(a.id);
     if (!o) continue;
@@ -4380,8 +4383,8 @@ const J = new Wi(), Kn = () => ({
       synopsis: v(a.synopsis),
       order: nr(a.order),
       wordCount: nr(a.wordCount),
-      createdAt: ut(a.createdAt),
-      updatedAt: ut(a.updatedAt),
+      createdAt: pt(a.createdAt),
+      updatedAt: pt(a.updatedAt),
       deletedAt: s
     }), s && r.tombstones.push({
       id: `${e}:chapter:${o}`,
@@ -4393,7 +4396,7 @@ const J = new Wi(), Kn = () => ({
       updatedAt: s
     });
   }
-}, qi = (r, t, e, n) => {
+}, tc = (r, t, e, n) => {
   for (const a of n) {
     const o = v(a.id);
     o && r.characters.push({
@@ -4404,11 +4407,11 @@ const J = new Wi(), Kn = () => ({
       description: v(a.description),
       firstAppearance: v(a.firstAppearance),
       attributes: v(a.attributes),
-      createdAt: ut(a.createdAt),
-      updatedAt: ut(a.updatedAt)
+      createdAt: pt(a.createdAt),
+      updatedAt: pt(a.updatedAt)
     });
   }
-}, Vi = (r, t, e, n) => {
+}, ec = (r, t, e, n) => {
   for (const a of n) {
     const o = v(a.id);
     o && r.terms.push({
@@ -4420,11 +4423,11 @@ const J = new Wi(), Kn = () => ({
       category: v(a.category),
       order: nr(a.order),
       firstAppearance: v(a.firstAppearance),
-      createdAt: ut(a.createdAt),
-      updatedAt: ut(a.updatedAt)
+      createdAt: pt(a.createdAt),
+      updatedAt: pt(a.updatedAt)
     });
   }
-}, Ji = (r, t, e) => {
+}, rc = (r, t, e) => {
   for (const n of e)
     r.tombstones.push({
       id: `${n.projectId}:project:${n.projectId}`,
@@ -4435,17 +4438,17 @@ const J = new Wi(), Kn = () => ({
       deletedAt: n.deletedAt,
       updatedAt: n.deletedAt
     });
-}, Kr = (r, t, e, n, a, o) => {
+}, qr = (r, t, e, n, a, o) => {
   r.worldDocuments.push({
     id: `${e}:${n}`,
     userId: t,
     projectId: e,
     docType: n,
     payload: a,
-    updatedAt: Ss(a) ?? o
+    updatedAt: Ps(a) ?? o
   });
 }, ar = async (r, t, e) => {
-  const n = Yi[t], a = `${G}/${n}`;
+  const n = Vi[t], a = `${G}/${n}`;
   let o;
   try {
     o = await et(r, a, e);
@@ -4459,14 +4462,14 @@ const J = new Wi(), Kn = () => ({
   }
   if (o === null)
     return null;
-  const s = Un(o);
+  const s = vn(o);
   return s === null ? (e.warn("Failed to parse .luie world document for sync; skipping doc", {
     projectPath: r,
     entryPath: a,
     docType: t
   }), null) : s;
-}, Qi = (r, t, e, n, a) => {
-  const o = $n(n);
+}, nc = (r, t, e, n, a) => {
+  const o = Bn(n);
   for (const s of o.memos)
     r.memos.push({
       id: s.id || X(),
@@ -4477,14 +4480,14 @@ const J = new Wi(), Kn = () => ({
       tags: s.tags,
       updatedAt: s.updatedAt || a
     });
-}, Zi = async (r) => {
-  for (const e of Hi) {
+}, ac = async (r) => {
+  for (const e of Ki) {
     const n = await ar(
       r.projectPath,
       e.docType,
       r.logger
     );
-    n && Kr(
+    n && qr(
       r.bundle,
       r.userId,
       r.projectId,
@@ -4498,46 +4501,46 @@ const J = new Wi(), Kn = () => ({
     "scrap",
     r.logger
   );
-  U(t) && (Kr(
+  U(t) && (qr(
     r.bundle,
     r.userId,
     r.projectId,
     "scrap",
     t,
     r.updatedAtFallback
-  ), Qi(
+  ), nc(
     r.bundle,
     r.userId,
     r.projectId,
     t,
     r.updatedAtFallback
   ));
-}, tc = async (r, t, e, n) => {
-  const a = Xi(r, t, e);
+}, oc = async (r, t, e, n) => {
+  const a = Qi(r, t, e);
   if (!a) return;
   const { projectId: o, projectPath: s, projectUpdatedAt: c } = a;
-  if (Ki(
+  if (Zi(
     r,
     t,
     o,
     Array.isArray(e.chapters) ? e.chapters : []
-  ), qi(
+  ), tc(
     r,
     t,
     o,
     Array.isArray(e.characters) ? e.characters : []
-  ), Vi(
+  ), ec(
     r,
     t,
     o,
     Array.isArray(e.terms) ? e.terms : []
-  ), s && s.toLowerCase().endsWith(q))
+  ), s && s.toLowerCase().endsWith(K))
     try {
       const d = z(
         s,
         "projectPath"
       );
-      await Zi({
+      await ac({
         bundle: r,
         userId: t,
         projectId: o,
@@ -4552,22 +4555,22 @@ const J = new Wi(), Kn = () => ({
         error: d
       });
     }
-}, ec = async (r) => {
-  const t = Kn();
+}, sc = async (r) => {
+  const t = Xn();
   for (const e of r.projectRows)
-    await tc(
+    await oc(
       t,
       r.userId,
       e,
       r.logger
     );
-  return Ji(
+  return rc(
     t,
     r.userId,
     r.pendingProjectDeletes
   ), t;
-}, qr = async (r, t, e) => {
-  const n = zi.filter(
+}, qn = async (r, t, e) => {
+  const n = Ji.filter(
     (a) => !r.has(a)
   );
   n.length !== 0 && await Promise.all(
@@ -4580,7 +4583,7 @@ const J = new Wi(), Kn = () => ({
       o !== null && r.set(a, o);
     })
   );
-}, Vr = (r) => {
+}, Kr = (r) => {
   if (!r) return;
   const t = Object.entries(r);
   if (t.length !== 0)
@@ -4593,7 +4596,7 @@ const J = new Wi(), Kn = () => ({
         }
       ])
     );
-}, rc = (r, t) => {
+}, ic = (r, t) => {
   const e = { ...r ?? {} };
   for (const n of t.items ?? [])
     e[n.projectId] = {
@@ -4602,7 +4605,7 @@ const J = new Wi(), Kn = () => ({
       reason: "SYNC_CONFLICT_DETECTED"
     };
   return Object.keys(e).length > 0 ? e : void 0;
-}, qn = (r, t) => {
+}, Kn = (r, t) => {
   if (!r) return r;
   const e = Object.fromEntries(
     Object.entries(r).map(([n, a]) => [
@@ -4615,7 +4618,7 @@ const J = new Wi(), Kn = () => ({
     ])
   );
   return Object.keys(e).length > 0 ? e : void 0;
-}, nc = (r, t, e, n) => {
+}, cc = (r, t, e, n) => {
   const a = {
     ...r.projectLastSyncedAtByProjectId ?? {}
   };
@@ -4631,17 +4634,17 @@ const J = new Wi(), Kn = () => ({
   for (const o of t.tombstones)
     o.entityType === "project" && (delete a[o.entityId], delete a[o.projectId]);
   return Object.keys(a).length > 0 ? a : void 0;
-}, ac = (r) => {
+}, dc = (r) => {
   const t = /* @__PURE__ */ new Set();
   for (const e of r.projects)
     e.deletedAt && t.add(e.id);
   for (const e of r.tombstones)
     e.entityType === "project" && (t.add(e.entityId), t.add(e.projectId));
   return t;
-}, Jr = (r, t) => {
+}, Vr = (r, t) => {
   for (const e of t)
     delete r[e];
-}, oc = (r, t, e, n) => {
+}, lc = (r, t, e, n) => {
   const a = /* @__PURE__ */ new Set();
   for (const o of t.projects)
     o.deletedAt || e.has(o.id) || (a.add(o.id), r[o.id] = {
@@ -4650,33 +4653,33 @@ const J = new Wi(), Kn = () => ({
       capturedAt: n
     });
   return a;
-}, sc = (r, t, e, n, a) => {
+}, pc = (r, t, e, n, a) => {
   for (const o of t.chapters) {
     if (o.deletedAt || e.has(o.projectId) || !n.has(o.projectId)) continue;
     const s = r[o.projectId];
     s && (s.chapter[o.id] = o.updatedAt, s.capturedAt = a);
   }
-}, ic = (r, t, e, n, a) => {
+}, uc = (r, t, e, n, a) => {
   for (const o of t.memos) {
     if (o.deletedAt || e.has(o.projectId) || !n.has(o.projectId)) continue;
     const s = r[o.projectId];
     s && (s.memo[o.id] = o.updatedAt, s.capturedAt = a);
   }
-}, cc = (r, t, e, n) => {
+}, hc = (r, t, e, n) => {
   const a = {
     ...r.entityBaselinesByProjectId ?? {}
   };
-  Jr(a, n);
-  const o = ac(t);
-  Jr(a, Array.from(o));
-  const s = oc(
+  Vr(a, n);
+  const o = dc(t);
+  Vr(a, Array.from(o));
+  const s = lc(
     a,
     t,
     o,
     e
   );
-  return sc(a, t, o, s, e), ic(a, t, o, s, e), Object.keys(a).length > 0 ? a : void 0;
-}, dc = async (r) => {
+  return pc(a, t, o, s, e), uc(a, t, o, s, e), Object.keys(a).length > 0 ? a : void 0;
+}, fc = async (r) => {
   const t = (o) => {
     o && _.setSyncSettings({
       accessTokenCipher: o
@@ -4709,20 +4712,20 @@ const J = new Wi(), Kn = () => ({
   if (!a)
     throw new Error("SYNC_ACCESS_TOKEN_UNAVAILABLE");
   return a;
-}, lc = (r) => {
+}, gc = (r) => {
   const t = /* @__PURE__ */ new Set();
   for (const e of r.projects)
     e.deletedAt && t.add(e.id);
   for (const e of r.tombstones)
     e.entityType === "project" && (t.add(e.entityId), t.add(e.projectId));
   return t;
-}, pc = async (r, t) => {
+}, Ec = async (r, t) => {
   for (const e of t)
     (await r.project.findUnique({
       where: { id: e },
       select: { id: !0 }
     }))?.id && await r.project.delete({ where: { id: e } });
-}, uc = async (r, t, e) => {
+}, mc = async (r, t, e) => {
   for (const n of t) {
     if (n.deletedAt || e.has(n.id)) continue;
     if ((await r.project.findUnique({
@@ -4755,7 +4758,7 @@ const J = new Wi(), Kn = () => ({
       }
     });
   }
-}, hc = async (r, t) => {
+}, Ac = async (r, t) => {
   const e = await r.chapter.findUnique({
     where: { id: t.id },
     select: { id: !0 }
@@ -4781,7 +4784,7 @@ const J = new Wi(), Kn = () => ({
       createdAt: new Date(t.createdAt)
     }
   });
-}, fc = async (r, t, e) => {
+}, yc = async (r, t, e) => {
   for (const n of t) {
     if (e.has(n.projectId)) continue;
     const a = await r.character.findUnique({
@@ -4810,7 +4813,7 @@ const J = new Wi(), Kn = () => ({
       }
     });
   }
-}, gc = async (r, t, e) => {
+}, Sc = async (r, t, e) => {
   for (const n of t) {
     if (e.has(n.projectId)) continue;
     const a = await r.term.findUnique({
@@ -4840,7 +4843,7 @@ const J = new Wi(), Kn = () => ({
       }
     });
   }
-}, Ec = async (r, t, e) => {
+}, Tc = async (r, t, e) => {
   for (const n of t) {
     if (n.entityType !== "chapter" || e.has(n.projectId)) continue;
     const a = await r.chapter.findUnique({
@@ -4855,24 +4858,24 @@ const J = new Wi(), Kn = () => ({
       }
     });
   }
-}, mc = /* @__PURE__ */ new Set(["draft", "working", "locked"]), Ut = (r, t, e, n) => {
+}, wc = /* @__PURE__ */ new Set(["draft", "working", "locked"]), Ut = (r, t, e, n) => {
   if (typeof e != "string")
     return e;
-  const a = Un(e);
+  const a = vn(e);
   return a !== null ? a : (n.warn("Invalid sync world document payload string; using default payload", {
     projectId: r,
     docType: t
   }), null);
-}, Ac = (r, t, e) => {
+}, _c = (r, t, e) => {
   const n = Ut(r, "synopsis", t, e);
   if (!U(n))
     return { synopsis: "", status: "draft" };
-  const a = n.status, o = typeof a == "string" && mc.has(a) ? a : "draft", s = {
+  const a = n.status, o = typeof a == "string" && wc.has(a) ? a : "draft", s = {
     synopsis: typeof n.synopsis == "string" ? n.synopsis : "",
     status: o
   };
   return typeof n.genre == "string" && (s.genre = n.genre), typeof n.targetAudience == "string" && (s.targetAudience = n.targetAudience), typeof n.logline == "string" && (s.logline = n.logline), typeof n.updatedAt == "string" && (s.updatedAt = n.updatedAt), s;
-}, yc = (r, t, e) => {
+}, Ic = (r, t, e) => {
   const n = Ut(r, "plot", t, e);
   return U(n) ? {
     columns: (Array.isArray(n.columns) ? n.columns : []).filter((s) => U(s)).map((s, c) => {
@@ -4888,24 +4891,24 @@ const J = new Wi(), Kn = () => ({
     }),
     updatedAt: typeof n.updatedAt == "string" ? n.updatedAt : void 0
   } : { columns: [] };
-}, Sc = (r, t, e) => {
+}, Pc = (r, t, e) => {
   const n = Ut(r, "drawing", t, e);
   return U(n) ? {
-    paths: Mn(n.paths),
-    tool: Ts(n.tool),
-    iconType: ws(n.iconType),
+    paths: Un(n.paths),
+    tool: Cs(n.tool),
+    iconType: Rs(n.iconType),
     color: typeof n.color == "string" ? n.color : void 0,
     lineWidth: typeof n.lineWidth == "number" ? n.lineWidth : void 0,
     updatedAt: typeof n.updatedAt == "string" ? n.updatedAt : void 0
   } : { paths: [] };
-}, Tc = (r, t, e) => {
+}, Cc = (r, t, e) => {
   const n = Ut(r, "mindmap", t, e);
   return U(n) ? {
-    nodes: kn(n.nodes),
-    edges: Wn(n.edges),
+    nodes: Mn(n.nodes),
+    edges: kn(n.edges),
     updatedAt: typeof n.updatedAt == "string" ? n.updatedAt : void 0
   } : { nodes: [], edges: [] };
-}, wc = (r, t, e) => {
+}, Rc = (r, t, e) => {
   const n = Ut(r, "graph", t, e);
   if (!U(n))
     return { nodes: [], edges: [] };
@@ -4915,7 +4918,7 @@ const J = new Wi(), Kn = () => ({
     edges: o,
     updatedAt: typeof n.updatedAt == "string" ? n.updatedAt : void 0
   };
-}, _c = (r, t, e, n, a) => {
+}, Nc = (r, t, e, n, a) => {
   const o = Ut(r, "scrap", t, a);
   if (!U(o))
     return {
@@ -4928,12 +4931,12 @@ const J = new Wi(), Kn = () => ({
       })),
       updatedAt: n
     };
-  const s = $n(o);
+  const s = Bn(o);
   return {
     memos: s.memos,
     updatedAt: typeof s.updatedAt == "string" ? s.updatedAt : n
   };
-}, Ic = (r) => typeof r == "string" ? r : null, Pc = (r) => [...r].sort((t, e) => Date.parse(e.updatedAt) - Date.parse(t.updatedAt)), Vn = async (r) => {
+}, Dc = (r) => typeof r == "string" ? r : null, Lc = (r) => [...r].sort((t, e) => Date.parse(e.updatedAt) - Date.parse(t.updatedAt)), Vn = async (r) => {
   const {
     bundle: t,
     projectId: e,
@@ -4956,7 +4959,7 @@ const J = new Wi(), Kn = () => ({
     category: y.category ?? void 0,
     firstAppearance: y.firstAppearance ?? void 0
   })), p = /* @__PURE__ */ new Map();
-  for (const y of Pc(t.worldDocuments))
+  for (const y of Lc(t.worldDocuments))
     y.projectId !== e || y.deletedAt || p.has(y.docType) || p.set(y.docType, y.payload);
   await o(p, n);
   const A = t.memos.filter((y) => y.projectId === e && !y.deletedAt).map((y) => ({
@@ -4971,27 +4974,27 @@ const J = new Wi(), Kn = () => ({
     content: y.content,
     description: y.description ?? void 0,
     createdAt: y.createdAt.toISOString()
-  })), g = Ac(
+  })), g = _c(
     e,
     p.get("synopsis"),
     s
-  ), m = yc(
+  ), m = Ic(
     e,
     p.get("plot"),
     s
-  ), T = Sc(
+  ), T = Pc(
     e,
     p.get("drawing"),
     s
-  ), I = Tc(
+  ), I = Cc(
     e,
     p.get("mindmap"),
     s
-  ), b = wc(
+  ), b = Rc(
     e,
     p.get("graph"),
     s
-  ), wt = _c(
+  ), wt = Nc(
     e,
     p.get("scrap"),
     A,
@@ -5030,7 +5033,7 @@ const J = new Wi(), Kn = () => ({
     memos: wt,
     snapshots: w
   };
-}, Cc = async (r) => {
+}, Oc = async (r) => {
   const { bundle: t, hydrateMissingWorldDocsFromPackage: e, logger: n } = r, a = r.buildProjectPackagePayload ?? Vn, o = [], s = [];
   for (const c of t.projects) {
     const d = await h.getClient().project.findUnique({
@@ -5048,8 +5051,8 @@ const J = new Wi(), Kn = () => ({
           }
         }
       }
-    }), l = Ic(d?.projectPath);
-    if (!l || !l.toLowerCase().endsWith(q))
+    }), l = Dc(d?.projectPath);
+    if (!l || !l.toLowerCase().endsWith(K))
       continue;
     let i;
     try {
@@ -5087,7 +5090,7 @@ const J = new Wi(), Kn = () => ({
   if (o.length > 0)
     throw new Error(`SYNC_LUIE_PERSIST_FAILED:${o.join(",")}`);
   return s;
-}, Rc = async (r, t) => {
+}, jc = async (r, t) => {
   if (r.length === 0) return [];
   const e = [];
   for (const n of r)
@@ -5101,39 +5104,39 @@ const J = new Wi(), Kn = () => ({
       });
     }
   return e;
-}, Nc = async (r) => Vn({
+}, bc = async (r) => Vn({
   bundle: r.bundle,
   projectId: r.projectId,
   projectPath: r.projectPath,
   localSnapshots: r.localSnapshots,
   hydrateMissingWorldDocsFromPackage: r.hydrateMissingWorldDocsFromPackage,
   logger: r.logger
-}), Dc = async (r) => {
-  const t = await Cc({
+}), Fc = async (r) => {
+  const t = await Oc({
     bundle: r.bundle,
     hydrateMissingWorldDocsFromPackage: r.hydrateMissingWorldDocsFromPackage,
     buildProjectPackagePayload: r.buildProjectPackagePayload,
     logger: r.logger
-  }), e = h.getClient(), n = lc(r.bundle);
+  }), e = h.getClient(), n = gc(r.bundle);
   try {
     await e.$transaction(async (a) => {
       const o = a;
-      await pc(o, n), await uc(
+      await Ec(o, n), await mc(
         o,
         r.bundle.projects,
         n
       );
       for (const s of r.bundle.chapters)
-        n.has(s.projectId) || await hc(o, s);
-      await fc(
+        n.has(s.projectId) || await Ac(o, s);
+      await yc(
         o,
         r.bundle.characters,
         n
-      ), await gc(
+      ), await Sc(
         o,
         r.bundle.terms,
         n
-      ), await Ec(
+      ), await Tc(
         o,
         r.bundle.tombstones,
         n
@@ -5148,7 +5151,7 @@ const J = new Wi(), Kn = () => ({
         persistedProjectIds: o
       }
     );
-    const s = await Rc(
+    const s = await jc(
       t,
       r.logger
     );
@@ -5160,21 +5163,21 @@ const J = new Wi(), Kn = () => ({
       { cause: a }
     );
   }
-}, Jn = N("SyncRepository"), P = (r) => typeof r == "string" ? r : null, ee = (r, t) => typeof r == "string" && r.length > 0 ? r : t, Q = (r, t = (/* @__PURE__ */ new Date()).toISOString()) => typeof r == "string" && r.length > 0 ? r : r instanceof Date ? r.toISOString() : t, or = (r, t = 0) => typeof r == "number" && Number.isFinite(r) ? r : t, Lc = (r) => Array.isArray(r) ? r.filter((t) => typeof t == "string") : [], Qr = (r) => !!(r && typeof r == "object" && !Array.isArray(r)), Oc = (r) => {
+}, Jn = N("SyncRepository"), P = (r) => typeof r == "string" ? r : null, ee = (r, t) => typeof r == "string" && r.length > 0 ? r : t, Q = (r, t = (/* @__PURE__ */ new Date()).toISOString()) => typeof r == "string" && r.length > 0 ? r : r instanceof Date ? r.toISOString() : t, or = (r, t = 0) => typeof r == "number" && Number.isFinite(r) ? r : t, vc = (r) => Array.isArray(r) ? r.filter((t) => typeof t == "string") : [], Jr = (r) => !!(r && typeof r == "object" && !Array.isArray(r)), Uc = (r) => {
   try {
     return JSON.parse(r);
   } catch {
     return r;
   }
-}, Ar = (r) => typeof r == "string" ? Oc(r) : r ?? null, ft = (r) => {
+}, Ar = (r) => typeof r == "string" ? Uc(r) : r ?? null, ht = (r) => {
   const t = {};
   for (const [e, n] of Object.entries(r))
     n !== void 0 && (t[e] = n);
   return t;
-}, Zr = async (r, t, e) => {
+}, Qr = async (r, t, e) => {
   const n = await e.text();
   return e.status === 404 && n.includes("PGRST205") ? new Error(`SUPABASE_SCHEMA_MISSING:${t}`) : new Error(`SUPABASE_${r}_FAILED:${t}:${e.status}:${n}`);
-}, jc = (r) => {
+}, Mc = (r) => {
   const t = P(r.id), e = P(r.user_id);
   return !t || !e ? null : {
     id: t,
@@ -5185,7 +5188,7 @@ const J = new Wi(), Kn = () => ({
     updatedAt: Q(r.updated_at),
     deletedAt: P(r.deleted_at)
   };
-}, bc = (r) => {
+}, kc = (r) => {
   const t = P(r.id), e = P(r.user_id), n = P(r.project_id);
   return !t || !e || !n ? null : {
     id: t,
@@ -5200,7 +5203,7 @@ const J = new Wi(), Kn = () => ({
     updatedAt: Q(r.updated_at),
     deletedAt: P(r.deleted_at)
   };
-}, Fc = (r) => {
+}, Wc = (r) => {
   const t = P(r.id), e = P(r.user_id), n = P(r.project_id);
   return !t || !e || !n ? null : {
     id: t,
@@ -5214,7 +5217,7 @@ const J = new Wi(), Kn = () => ({
     updatedAt: Q(r.updated_at),
     deletedAt: P(r.deleted_at)
   };
-}, vc = (r) => {
+}, Bc = (r) => {
   const t = P(r.id), e = P(r.user_id), n = P(r.project_id);
   return !t || !e || !n ? null : {
     id: t,
@@ -5229,12 +5232,12 @@ const J = new Wi(), Kn = () => ({
     updatedAt: Q(r.updated_at),
     deletedAt: P(r.deleted_at)
   };
-}, Uc = (r) => {
+}, $c = (r) => {
   const t = P(r.id), e = P(r.user_id), n = P(r.project_id), a = P(r.doc_type);
   if (!t || !e || !n || !a || a !== "synopsis" && a !== "plot" && a !== "drawing" && a !== "mindmap" && a !== "scrap" && a !== "graph")
     return null;
-  const o = Ar(r.payload), s = Qr(o) ? o : {};
-  return Qr(o) || Jn.warn("Invalid world document payload from sync source; using empty payload", {
+  const o = Ar(r.payload), s = Jr(o) ? o : {};
+  return Jr(o) || Jn.warn("Invalid world document payload from sync source; using empty payload", {
     docType: a,
     payloadType: o === null ? "null" : typeof o
   }), {
@@ -5246,7 +5249,7 @@ const J = new Wi(), Kn = () => ({
     updatedAt: Q(r.updated_at),
     deletedAt: P(r.deleted_at)
   };
-}, Mc = (r) => {
+}, xc = (r) => {
   const t = P(r.id), e = P(r.user_id), n = P(r.project_id);
   return !t || !e || !n ? null : {
     id: t,
@@ -5254,11 +5257,11 @@ const J = new Wi(), Kn = () => ({
     projectId: n,
     title: ee(r.title, "Memo"),
     content: P(r.content) ?? "",
-    tags: Lc(r.tags),
+    tags: vc(r.tags),
     updatedAt: Q(r.updated_at),
     deletedAt: P(r.deleted_at)
   };
-}, kc = (r) => {
+}, Gc = (r) => {
   const t = P(r.id), e = P(r.user_id), n = P(r.project_id), a = P(r.entity_type), o = P(r.entity_id);
   return !t || !e || !n || !a || !o ? null : {
     id: t,
@@ -5270,12 +5273,12 @@ const J = new Wi(), Kn = () => ({
     updatedAt: Q(r.updated_at)
   };
 };
-class Wc {
+class Hc {
   isConfigured() {
-    return pt() !== null;
+    return lt() !== null;
   }
   async fetchBundle(t, e) {
-    const n = Kn(), [
+    const n = Xn(), [
       a,
       o,
       s,
@@ -5292,11 +5295,11 @@ class Wc {
       this.fetchTableRaw("memos", t, e),
       this.fetchTableRaw("tombstones", t, e)
     ]);
-    return n.projects = a.map(jc).filter((p) => p !== null), n.chapters = o.map(bc).filter((p) => p !== null), n.characters = s.map(Fc).filter((p) => p !== null), n.terms = c.map(vc).filter((p) => p !== null), n.worldDocuments = d.map(Uc).filter((p) => p !== null), n.memos = l.map(Mc).filter((p) => p !== null), n.tombstones = i.map(kc).filter((p) => p !== null), n;
+    return n.projects = a.map(Mc).filter((p) => p !== null), n.chapters = o.map(kc).filter((p) => p !== null), n.characters = s.map(Wc).filter((p) => p !== null), n.terms = c.map(Bc).filter((p) => p !== null), n.worldDocuments = d.map($c).filter((p) => p !== null), n.memos = l.map(xc).filter((p) => p !== null), n.tombstones = i.map(Gc).filter((p) => p !== null), n;
   }
   async upsertBundle(t, e) {
     const n = e.projects.map(
-      (i) => ft({
+      (i) => ht({
         id: i.id,
         user_id: i.userId,
         title: i.title,
@@ -5306,7 +5309,7 @@ class Wc {
         deleted_at: i.deletedAt ?? null
       })
     ), a = e.chapters.map(
-      (i) => ft({
+      (i) => ht({
         id: i.id,
         user_id: i.userId,
         project_id: i.projectId,
@@ -5320,7 +5323,7 @@ class Wc {
         deleted_at: i.deletedAt ?? null
       })
     ), o = e.characters.map(
-      (i) => ft({
+      (i) => ht({
         id: i.id,
         user_id: i.userId,
         project_id: i.projectId,
@@ -5333,7 +5336,7 @@ class Wc {
         deleted_at: i.deletedAt ?? null
       })
     ), s = e.terms.map(
-      (i) => ft({
+      (i) => ht({
         id: i.id,
         user_id: i.userId,
         project_id: i.projectId,
@@ -5347,7 +5350,7 @@ class Wc {
         deleted_at: i.deletedAt ?? null
       })
     ), c = e.worldDocuments.map(
-      (i) => ft({
+      (i) => ht({
         id: i.id,
         user_id: i.userId,
         project_id: i.projectId,
@@ -5357,7 +5360,7 @@ class Wc {
         deleted_at: i.deletedAt ?? null
       })
     ), d = e.memos.map(
-      (i) => ft({
+      (i) => ht({
         id: i.id,
         user_id: i.userId,
         project_id: i.projectId,
@@ -5368,7 +5371,7 @@ class Wc {
         deleted_at: i.deletedAt ?? null
       })
     ), l = e.tombstones.map(
-      (i) => ft({
+      (i) => ht({
         id: i.id,
         user_id: i.userId,
         project_id: i.projectId,
@@ -5381,7 +5384,7 @@ class Wc {
     await this.upsertTable("projects", t, n, "id,user_id"), await this.upsertTable("chapters", t, a, "id,user_id"), await this.upsertTable("characters", t, o, "id,user_id"), await this.upsertTable("terms", t, s, "id,user_id"), await this.upsertTable("world_documents", t, c, "id,user_id"), await this.upsertTable("memos", t, d, "id,user_id"), await this.upsertTable("tombstones", t, l, "id,user_id");
   }
   async fetchTableRaw(t, e, n) {
-    const a = pt();
+    const a = lt();
     if (!a)
       throw new Error(
         "SUPABASE_NOT_CONFIGURED: runtime configuration is not completed"
@@ -5396,7 +5399,7 @@ class Wc {
       }
     });
     if (!s.ok) {
-      const d = await Zr("FETCH", t, s);
+      const d = await Qr("FETCH", t, s);
       throw Jn.warn("Failed to fetch sync table", {
         table: t,
         status: s.status,
@@ -5422,10 +5425,10 @@ class Wc {
       }
     );
     if (!s.ok)
-      throw await Zr("UPSERT", t, s);
+      throw await Qr("UPSERT", t, s);
   }
 }
-const tn = new Wc(), Bc = async (r) => {
+const Zr = new Hc(), Yc = async (r) => {
   r.updateStatus({
     mode: "syncing",
     inFlight: !0,
@@ -5437,9 +5440,9 @@ const tn = new Wc(), Bc = async (r) => {
     if (!e)
       throw new Error("SYNC_USER_ID_MISSING");
     const n = r.normalizePendingProjectDeletes(t.pendingProjectDeletes).map((g) => g.projectId), a = await r.ensureAccessToken(t), [o, s] = await Promise.all([
-      tn.fetchBundle(a, e),
+      Zr.fetchBundle(a, e),
       r.buildLocalBundle(e)
-    ]), { merged: c, conflicts: d } = Gi(s, o, {
+    ]), { merged: c, conflicts: d } = qi(s, o, {
       baselinesByProjectId: t.entityBaselinesByProjectId,
       conflictResolutions: t.pendingConflictResolutions
     });
@@ -5471,8 +5474,8 @@ const tn = new Wc(), Bc = async (r) => {
         inFlight: !1,
         queued: !1,
         conflicts: d,
-        projectStateById: rc(
-          Vr(t.projectLastSyncedAtByProjectId),
+        projectStateById: ic(
+          Kr(t.projectLastSyncedAtByProjectId),
           d
         ),
         lastRun: I
@@ -5484,13 +5487,13 @@ const tn = new Wc(), Bc = async (r) => {
         conflicts: d
       };
     }
-    await r.applyMergedBundleToLocal(c), await tn.upsertBundle(a, c);
-    const l = (/* @__PURE__ */ new Date()).toISOString(), i = nc(
+    await r.applyMergedBundleToLocal(c), await Zr.upsertBundle(a, c);
+    const l = (/* @__PURE__ */ new Date()).toISOString(), i = cc(
       t,
       c,
       l,
       n
-    ), p = cc(
+    ), p = hc(
       t,
       c,
       l,
@@ -5518,7 +5521,7 @@ const tn = new Wc(), Bc = async (r) => {
       degradedReason: void 0,
       inFlight: !1,
       conflicts: d,
-      projectStateById: Vr(i),
+      projectStateById: Kr(i),
       lastRun: {
         at: l,
         pulled: w.pulled,
@@ -5550,7 +5553,7 @@ const tn = new Wc(), Bc = async (r) => {
         degradedReason: void 0,
         inFlight: !1,
         queued: !1,
-        projectStateById: qn(r.getStatus().projectStateById, e),
+        projectStateById: Kn(r.getStatus().projectStateById, e),
         lastRun: a
       });
     }
@@ -5562,18 +5565,43 @@ const tn = new Wc(), Bc = async (r) => {
       conflicts: r.getStatus().conflicts
     };
   }
-}, en = (r, t) => {
+}, tn = (r, t) => {
   t && _.setSyncSettings(
     r === "access" ? { accessTokenCipher: t } : { refreshTokenCipher: t }
   );
-}, $c = (r, t) => {
+}, zc = (r, t) => {
   const e = J.getAccessToken(r);
   if (e.errorCode && t(e.errorCode))
     return e.errorCode;
-  en("access", e.migratedCipher);
+  tn("access", e.migratedCipher);
   const n = J.getRefreshToken(r);
-  return n.errorCode && t(n.errorCode) ? n.errorCode : (en("refresh", n.migratedCipher), !!e.token || !!n.token ? null : e.errorCode ?? n.errorCode ?? "SYNC_ACCESS_TOKEN_UNAVAILABLE");
-}, it = N("SyncService"), xc = 1500, rn = {
+  return n.errorCode && t(n.errorCode) ? n.errorCode : (tn("refresh", n.migratedCipher), !!e.token || !!n.token ? null : e.errorCode ?? n.errorCode ?? "SYNC_ACCESS_TOKEN_UNAVAILABLE");
+}, Xc = async (r) => {
+  const e = await h.getClient().project.findMany({
+    include: {
+      chapters: !0,
+      characters: !0,
+      terms: !0
+    }
+  });
+  return await sc({
+    userId: r.userId,
+    pendingProjectDeletes: r.pendingProjectDeletes,
+    projectRows: e,
+    logger: r.logger
+  });
+}, qc = async (r) => await bc({
+  bundle: r.bundle,
+  projectId: r.projectId,
+  projectPath: r.projectPath,
+  localSnapshots: r.localSnapshots,
+  hydrateMissingWorldDocsFromPackage: async (t, e) => await qn(
+    t,
+    e,
+    r.logger
+  ),
+  logger: r.logger
+}), Kc = (r) => r.projects.length + r.chapters.length + r.characters.length + r.terms.length + r.worldDocuments.length + r.memos.length + r.snapshots.length + r.tombstones.length, Vc = 1500, en = {
   connected: !1,
   autoSync: !0,
   mode: "idle",
@@ -5586,17 +5614,17 @@ const tn = new Wc(), Bc = async (r) => {
     total: 0,
     items: []
   }
-}, Gc = (r) => {
-  const t = r instanceof Error ? r.message : String(r);
-  return t.startsWith("SUPABASE_SCHEMA_MISSING:") ? `SYNC_REMOTE_SCHEMA_MISSING:${t.split(":")[1] ?? "unknown"}: apply supabase/migrations/20260219000000_luie_sync.sql to this Supabase project` : t;
-}, Hc = [
+}, Jc = [
   "SYNC_ACCESS_TOKEN_UNAVAILABLE",
   "SYNC_AUTH_REFRESH_UNAVAILABLE",
   "SYNC_AUTH_REFRESH_FAILED",
   "SYNC_AUTH_INVALID_SESSION",
   "SYNC_TOKEN_DECRYPT_FAILED",
   "SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE"
-], Oe = (r) => Hc.some((t) => r.includes(t)), It = (r, t) => ({
+], Qc = (r) => {
+  const t = r instanceof Error ? r.message : String(r);
+  return t.startsWith("SUPABASE_SCHEMA_MISSING:") ? `SYNC_REMOTE_SCHEMA_MISSING:${t.split(":")[1] ?? "unknown"}: apply supabase/migrations/20260219000000_luie_sync.sql to this Supabase project` : t;
+}, Oe = (r) => Jc.some((t) => r.includes(t)), It = (r, t) => ({
   ...t,
   connected: r.connected,
   provider: r.provider,
@@ -5609,14 +5637,14 @@ const tn = new Wc(), Bc = async (r) => {
   projectLastSyncedAtByProjectId: r.projectLastSyncedAtByProjectId,
   health: r.connected ? t.health === "degraded" ? "degraded" : "connected" : "disconnected",
   degradedReason: r.connected && t.health === "degraded" ? t.degradedReason ?? r.lastError : void 0
-}), nn = (r) => Array.isArray(r) ? r.filter(
+}), rn = (r) => Array.isArray(r) ? r.filter(
   (t) => !!(t && typeof t.projectId == "string" && t.projectId.length > 0 && typeof t.deletedAt == "string" && t.deletedAt.length > 0)
 ).map((t) => ({
   projectId: t.projectId,
   deletedAt: t.deletedAt
-})) : [];
+})) : [], ft = N("SyncService");
 class Qn {
-  status = rn;
+  status = en;
   inFlightPromise = null;
   queuedRun = !1;
   autoSyncTimer = null;
@@ -5631,7 +5659,7 @@ class Qn {
       degradedReason: t,
       inFlight: !1,
       queued: !1,
-      projectStateById: qn(this.status.projectStateById, t),
+      projectStateById: Kn(this.status.projectStateById, t),
       lastRun: e ?? this.status.lastRun
     });
   }
@@ -5641,7 +5669,7 @@ class Qn {
       ...this.status,
       mode: "connecting"
     }), t.connected) {
-      const e = $c(
+      const e = zc(
         t,
         Oe
       );
@@ -5722,7 +5750,7 @@ class Qn {
     this.autoSyncTimer && (clearTimeout(this.autoSyncTimer), this.autoSyncTimer = null), this.queuedRun = !1;
     const t = _.clearSyncSettings();
     return this.updateStatus({
-      ...It(t, rn),
+      ...It(t, en),
       mode: "idle",
       health: "disconnected",
       degradedReason: void 0,
@@ -5742,7 +5770,7 @@ class Qn {
     return this.updateStatus(It(e, this.status)), this.status;
   }
   async resolveConflict(t) {
-    if (it.info("Sync conflict resolution requested", {
+    if (ft.info("Sync conflict resolution requested", {
       type: t.type,
       id: t.id,
       resolution: t.resolution
@@ -5767,7 +5795,7 @@ class Qn {
   onLocalMutation(t) {
     !this.status.connected || !this.status.autoSync || (this.autoSyncTimer && clearTimeout(this.autoSyncTimer), this.autoSyncTimer = setTimeout(() => {
       this.autoSyncTimer = null, this.runNow("auto");
-    }, xc));
+    }, Vc));
   }
   async runNow(t = "manual") {
     if (!this.status.connected)
@@ -5786,7 +5814,7 @@ class Qn {
     return this.inFlightPromise = e, e;
   }
   async executeRun(t) {
-    return await Bc({
+    return await Yc({
       reason: t,
       getStatus: () => this.status,
       getQueuedRun: () => this.queuedRun,
@@ -5796,7 +5824,7 @@ class Qn {
       runQueuedSync: () => {
         this.runNow("queued");
       },
-      normalizePendingProjectDeletes: nn,
+      normalizePendingProjectDeletes: rn,
       toSyncStatusFromSettings: It,
       ensureAccessToken: async (e) => await this.ensureAccessToken(e),
       buildLocalBundle: async (e) => await this.buildLocalBundle(e),
@@ -5805,60 +5833,51 @@ class Qn {
       updateStatus: (e) => this.updateStatus(e),
       applyAuthFailureState: (e, n) => this.applyAuthFailureState(e, n),
       isAuthFatalMessage: Oe,
-      toSyncErrorMessage: Gc,
+      toSyncErrorMessage: Qc,
       logRunFailed: (e, n) => {
-        it.error("Sync run failed", { error: e, reason: n });
+        ft.error("Sync run failed", { error: e, reason: n });
       }
     });
   }
   async ensureAccessToken(t) {
-    return await dc({
+    return await fc({
       syncSettings: t,
       isAuthFatalMessage: Oe
     });
   }
   async buildLocalBundle(t) {
-    const e = h.getClient(), n = nn(
-      _.getSyncSettings().pendingProjectDeletes
-    ), a = await e.project.findMany({
-      include: {
-        chapters: !0,
-        characters: !0,
-        terms: !0
-      }
-    });
-    return await ec({
-      userId: t,
-      pendingProjectDeletes: n,
-      projectRows: a,
-      logger: it
+    return await Xc({
+      logger: ft,
+      pendingProjectDeletes: rn(
+        _.getSyncSettings().pendingProjectDeletes
+      ),
+      userId: t
     });
   }
   async buildProjectPackagePayload(t, e, n, a) {
-    return await Nc({
+    return await qc({
       bundle: t,
-      projectId: e,
-      projectPath: n,
       localSnapshots: a,
-      hydrateMissingWorldDocsFromPackage: async (o, s) => await qr(o, s, it),
-      logger: it
+      logger: ft,
+      projectId: e,
+      projectPath: n
     });
   }
   async applyMergedBundleToLocal(t) {
-    await Dc({
+    await Fc({
       bundle: t,
-      hydrateMissingWorldDocsFromPackage: async (e, n) => await qr(e, n, it),
+      hydrateMissingWorldDocsFromPackage: async (e, n) => await qn(e, n, ft),
       buildProjectPackagePayload: async (e) => await this.buildProjectPackagePayload(
         e.bundle,
         e.projectId,
         e.projectPath,
         e.localSnapshots
       ),
-      logger: it
+      logger: ft
     });
   }
   countBundleRows(t) {
-    return t.projects.length + t.chapters.length + t.characters.length + t.terms.length + t.worldDocuments.length + t.memos.length + t.snapshots.length + t.tombstones.length;
+    return Kc(t);
   }
   updateStatus(t) {
     this.status = {
@@ -5873,18 +5892,18 @@ class Qn {
         try {
           e.webContents.send(Ft.SYNC_STATUS_CHANGED, this.status);
         } catch (n) {
-          it.warn("Failed to broadcast sync status", { error: n });
+          ft.warn("Failed to broadcast sync status", { error: n });
         }
   }
 }
-const Jt = new Qn(), zl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const Jt = new Qn(), tp = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   SyncService: Qn,
   syncService: Jt
 }, Symbol.toStringTag, { value: "Module" })), sr = N("GeminiProxyClient"), Zn = (r, t) => {
   const e = new Error(t);
   return e.status = r, e;
-}, Yc = (r) => {
+}, Zc = (r) => {
   const t = process.env.LUIE_GEMINI_PROXY_URL?.trim();
   return t && t.length > 0 ? t : `${r.url}/functions/v1/gemini-proxy`;
 }, ta = (r) => {
@@ -5907,7 +5926,7 @@ const Jt = new Qn(), zl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
   ).filter((o) => !!o);
   return a.length === 0 ? null : a.join(`
 `).trim();
-}, zc = () => {
+}, td = () => {
   const r = [
     process.env.GEMINI_API_KEY,
     process.env.GOOGLE_GCP_API,
@@ -5919,8 +5938,8 @@ const Jt = new Qn(), zl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
     if (e.length > 0) return e;
   }
   return null;
-}, Xc = async (r, t) => {
-  const e = await Jt.getEdgeAccessToken(), n = Yc(t), a = await fetch(n, {
+}, ed = async (r, t) => {
+  const e = await Jt.getEdgeAccessToken(), n = Zc(t), a = await fetch(n, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -5944,7 +5963,7 @@ const Jt = new Qn(), zl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
   if (!s)
     throw new Error("GEMINI_PROXY_EMPTY_RESPONSE");
   return s;
-}, Kc = async (r, t) => {
+}, rd = async (r, t) => {
   const e = {};
   r.responseMimeType && (e.responseMimeType = r.responseMimeType), r.responseSchema && (e.responseSchema = r.responseSchema), typeof r.temperature == "number" && (e.temperature = r.temperature), typeof r.topP == "number" && (e.topP = r.topP), typeof r.topK == "number" && (e.topK = r.topK), typeof r.maxOutputTokens == "number" && (e.maxOutputTokens = r.maxOutputTokens);
   const n = await fetch(
@@ -5979,11 +5998,11 @@ const Jt = new Qn(), zl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
   if (!s)
     throw new Error("GEMINI_LOCAL_EMPTY_RESPONSE");
   return s;
-}, qc = async (r) => {
-  const t = pt(), e = zc(), n = [];
+}, nd = async (r) => {
+  const t = lt(), e = td(), n = [];
   if (t)
     try {
-      return await Xc(r, t);
+      return await ed(r, t);
     } catch (a) {
       const o = a instanceof Error ? a.message : String(a);
       n.push(`edge:${o}`), sr.warn("Edge Gemini path failed; falling back to local path", {
@@ -5994,7 +6013,7 @@ const Jt = new Qn(), zl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
     n.push("edge:SUPABASE_NOT_CONFIGURED");
   if (e)
     try {
-      return await Kc(r, e);
+      return await rd(r, e);
     } catch (a) {
       const o = a instanceof Error ? a.message : String(a);
       n.push(`local:${o}`), sr.warn("Local Gemini path failed", { message: o });
@@ -6002,18 +6021,18 @@ const Jt = new Qn(), zl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
   else
     n.push("local:GEMINI_LOCAL_API_KEY_MISSING");
   throw new Error(`GEMINI_ALL_PATHS_FAILED:${n.join("|")}`);
-}, ra = (r) => r.replace(/\s+/g, " ").trim(), Vc = (r, t = "본문 발췌") => {
+}, ra = (r) => r.replace(/\s+/g, " ").trim(), ad = (r, t = "본문 발췌") => {
   const e = ra(r);
   return e ? e.slice(0, Math.min(120, e.length)) : t;
-}, Jc = (r, t) => {
+}, od = (r, t) => {
   const e = ra(r);
   if (!e) return t;
   const n = Math.min(e.length - 1, t.length + 1);
   if (n <= 0 || n >= e.length) return t;
   const a = e.slice(n, Math.min(e.length, n + 120)).trim();
   return a.length > 0 ? a : t;
-}, Xl = (r) => {
-  const t = r.manuscript.content, e = Vc(t), n = Jc(t, e);
+}, ep = (r) => {
+  const t = r.manuscript.content, e = ad(t), n = od(t, e);
   return [
     {
       type: "intro",
@@ -6042,11 +6061,11 @@ const Jt = new Qn(), zl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
       content: "로컬 분석 기준으로는 전체 흐름이 안정적입니다. 위 두 지점을 다듬으면 독자 체감 완성도가 더 올라갈 수 있습니다."
     }
   ];
-}, Qc = (r, t) => {
+}, sd = (r, t) => {
   const e = `${r} ${t.join(" ")}`;
   return /(길드|협회|조직|단체|학교|대학|회사|연맹)/.test(e) ? "organization" : /(성|탑|궁|마을|도시|숲|산|강|거리|던전)/.test(e) ? "location" : /(검|창|방패|반지|목걸이|무기|유물|artifact|아이템)/i.test(e) ? "item" : /(님|씨|군|양|왕|황제|공주|기사|마법사|선생|대장)/.test(e) ? "character" : "concept";
-}, an = (r, t) => {
-  const e = Qc(r, t), n = t.length >= 3 ? "main" : t.length >= 2 ? "supporting" : "minor";
+}, nn = (r, t) => {
+  const e = sd(r, t), n = t.length >= 3 ? "main" : t.length >= 2 ? "supporting" : "minor";
   return {
     name: r,
     entityType: e,
@@ -6055,14 +6074,14 @@ const Jt = new Qn(), zl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
     confidence: t.length >= 2 ? 0.58 : 0.42,
     reasoning: "Edge/원격 모델 호출 실패로 로컬 규칙 기반 추정치를 사용했습니다."
   };
-}, Zc = u.object({
+}, id = u.object({
   name: u.string(),
   entityType: u.enum(["character", "location", "organization", "item", "concept"]),
   importance: u.enum(["main", "supporting", "minor", "unknown"]).default("unknown"),
   summary: u.string(),
   confidence: u.number().min(0).max(1).default(0.5),
   reasoning: u.string().optional()
-}), td = `
+}), cd = `
 예시 1:
 입력: "이준혁은 서울대학교 의과대학을 졸업한 뒤 강남세브란스병원에서 근무하고 있다."
 출력: {
@@ -6095,21 +6114,21 @@ const Jt = new Qn(), zl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
   "confidence": 0.9,
   "reasoning": "조직의 목적과 성격이 명확히 드러남"
 }
-`.trim(), ed = {
-  type: ht.OBJECT,
+`.trim(), dd = {
+  type: ut.OBJECT,
   properties: {
-    name: { type: ht.STRING },
+    name: { type: ut.STRING },
     entityType: {
-      type: ht.STRING,
+      type: ut.STRING,
       enum: ["character", "location", "organization", "item", "concept"]
     },
     importance: {
-      type: ht.STRING,
+      type: ut.STRING,
       enum: ["main", "supporting", "minor", "unknown"]
     },
-    summary: { type: ht.STRING },
-    confidence: { type: ht.NUMBER },
-    reasoning: { type: ht.STRING }
+    summary: { type: ut.STRING },
+    confidence: { type: ut.NUMBER },
+    reasoning: { type: ut.STRING }
   },
   required: ["name", "entityType", "importance", "summary", "confidence"],
   propertyOrdering: [
@@ -6120,8 +6139,8 @@ const Jt = new Qn(), zl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.d
     "confidence",
     "reasoning"
   ]
-}, se = N("AutoExtractService"), rd = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
-class nd {
+}, se = N("AutoExtractService"), ld = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
+class pd {
   timers = /* @__PURE__ */ new Map();
   paragraphCache = /* @__PURE__ */ new Map();
   scheduleAnalysis(t, e, n) {
@@ -6205,7 +6224,7 @@ class nd {
 - minor: 일시적으로 언급되는 요소
 - unknown: 판단하기 어려운 경우
 
-${td}
+${cd}
 
 ---
 
@@ -6217,22 +6236,22 @@ ${n}
 
 JSON 형식으로만 답하세요:`;
     try {
-      const o = await qc({
-        model: rd,
+      const o = await nd({
+        model: ld,
         prompt: a,
         responseMimeType: "application/json",
-        responseSchema: ed
-      }), s = Zc.safeParse(JSON.parse(o));
-      return s.success ? s.data : (se.warn("Gemini response parse failed", s.error), an(t, e));
+        responseSchema: dd
+      }), s = id.safeParse(JSON.parse(o));
+      return s.success ? s.data : (se.warn("Gemini response parse failed", s.error), nn(t, e));
     } catch (o) {
       return se.warn("Gemini classification failed; using local deterministic fallback", {
         error: o
-      }), an(t, e);
+      }), nn(t, e);
     }
   }
 }
-const ad = new nd(), on = N("ChapterKeywords");
-async function od(r, t, e) {
+const ud = new pd(), an = N("ChapterKeywords");
+async function hd(r, t, e) {
   try {
     const n = await h.getClient().character.findMany({
       where: { projectId: e },
@@ -6249,7 +6268,7 @@ async function od(r, t, e) {
         characterId: String(l.id),
         chapterId: r,
         position: d.position,
-        context: sn(t, d.position, Rr)
+        context: on(t, d.position, Rr)
       }), await Qe.updateFirstAppearance(String(l.id), r));
     }
     for (const d of c.filter((l) => l.type === "term")) {
@@ -6258,27 +6277,27 @@ async function od(r, t, e) {
         termId: String(l.id),
         chapterId: r,
         position: d.position,
-        context: sn(t, d.position, Rr)
+        context: on(t, d.position, Rr)
       }), await Ze.updateFirstAppearance(String(l.id), r));
     }
-    on.info("Keyword tracking completed", {
+    an.info("Keyword tracking completed", {
       chapterId: r,
       characterCount: c.filter((d) => d.type === "character").length,
       termCount: c.filter((d) => d.type === "term").length
     });
   } catch (n) {
-    on.error("Failed to track keyword appearances", n);
+    an.error("Failed to track keyword appearances", n);
   }
 }
-function sn(r, t, e) {
+function on(r, t, e) {
   const n = Math.max(0, t - e), a = Math.min(r.length, t + e);
   return r.substring(n, a);
 }
 const k = N("ChapterService");
-function cn(r) {
+function sn(r) {
   return typeof r == "object" && r !== null && "code" in r && r.code === "P2025";
 }
-class sd {
+class fd {
   async resolveProjectTitle(t) {
     if (!t) return "Unknown";
     const e = await h.getClient().project.findUnique({
@@ -6288,7 +6307,7 @@ class sd {
     return typeof e?.title == "string" ? String(e.title) : "Unknown";
   }
   async writeSuspiciousContentDump(t) {
-    if (Kt()) return;
+    if (qt()) return;
     const e = await this.resolveProjectTitle(t.projectId), n = bt(e, "Unknown"), a = C.join(
       S.getPath("userData"),
       hr,
@@ -6315,7 +6334,7 @@ class sd {
         { chapterId: t.id, oldLen: o }
       );
     }
-    if (!Kt() && o > 1e3 && s < o * 0.1) {
+    if (!qt() && o > 1e3 && s < o * 0.1) {
       const d = await this.writeSuspiciousContentDump({
         projectId: c,
         chapterId: t.id,
@@ -6333,7 +6352,7 @@ class sd {
         { chapterId: t.id, oldLen: o, newLen: s }
       );
     }
-    n.content = t.content, n.wordCount = t.content.length, c && (await od(t.id, t.content, c), ad.scheduleAnalysis(t.id, c, t.content));
+    n.content = t.content, n.wordCount = t.content.length, c && (await hd(t.id, t.content, c), ud.scheduleAnalysis(t.id, c, t.content));
   }
   async createChapter(t) {
     try {
@@ -6427,7 +6446,7 @@ class sd {
         "chapter:update"
       ), a;
     } catch (e) {
-      throw k.error("Failed to update chapter", e), e instanceof f ? e : cn(e) ? new f(
+      throw k.error("Failed to update chapter", e), e instanceof f ? e : sn(e) ? new f(
         E.CHAPTER_NOT_FOUND,
         "Chapter not found",
         { id: t.id },
@@ -6500,7 +6519,7 @@ class sd {
       });
       return k.info("Chapter restored successfully", { chapterId: t }), F.schedulePackageExport(String(e.projectId), "chapter:restore"), n;
     } catch (e) {
-      throw k.error("Failed to restore chapter", e), cn(e) ? new f(
+      throw k.error("Failed to restore chapter", e), sn(e) ? new f(
         E.CHAPTER_NOT_FOUND,
         "Chapter not found",
         { id: t },
@@ -6555,7 +6574,7 @@ class sd {
     }
   }
 }
-const na = new sd(), id = N("AtomicWrite"), cd = pr(En), dd = pr(wa);
+const na = new fd(), gd = N("AtomicWrite"), Ed = pr(gn), md = pr(wa);
 async function de(r, t) {
   const e = C.dirname(r), n = C.join(e, `${C.basename(r)}.tmp-${Date.now()}`);
   await R.writeFile(n, t);
@@ -6574,30 +6593,30 @@ async function de(r, t) {
       await o.close();
     }
   } catch (o) {
-    id.warn("Failed to fsync directory", { dir: e, error: o });
+    gd.warn("Failed to fsync directory", { dir: e, error: o });
   }
 }
-async function dn(r, t) {
-  const e = await cd(Buffer.from(t, "utf8"));
+async function cn(r, t) {
+  const e = await Ed(Buffer.from(t, "utf8"));
   await de(r, e);
 }
 async function aa(r) {
   const t = await R.readFile(r);
-  return (t.length >= 2 && t[0] === 31 && t[1] === 139 ? await dd(t) : t).toString("utf8");
+  return (t.length >= 2 && t[0] === 31 && t[1] === 139 ? await md(t) : t).toString("utf8");
 }
-const At = N("SnapshotArtifacts"), ld = pr(En), pd = /-([0-9a-fA-F-]{36})\.snap$/;
-async function ud(r) {
+const At = N("SnapshotArtifacts"), Ad = pr(gn), yd = /-([0-9a-fA-F-]{36})\.snap$/;
+async function Sd(r) {
   const t = await aa(r);
   return JSON.parse(t);
 }
 function oa(r) {
-  const t = z(r, "projectPath"), e = t.toLowerCase(), n = q.toLowerCase();
+  const t = z(r, "projectPath"), e = t.toLowerCase(), n = K.toLowerCase();
   return e.endsWith(n) ? C.dirname(t) : t;
 }
 function sa(r, t) {
   return C.join(r, ".luie", jt, t);
 }
-const hd = (r) => C.basename(r).match(pd)?.[1] ?? null, ia = async (r, t) => {
+const Td = (r) => C.basename(r).match(yd)?.[1] ?? null, ia = async (r, t) => {
   let e;
   try {
     e = await R.readdir(r, { withFileTypes: !0 });
@@ -6614,7 +6633,7 @@ const hd = (r) => C.basename(r).match(pd)?.[1] ?? null, ia = async (r, t) => {
     }
     !n.isFile() || !n.name.endsWith(".snap") || t.push(a);
   }
-}, fd = async () => {
+}, wd = async () => {
   const r = /* @__PURE__ */ new Set([C.join(S.getPath("userData"), hr)]), t = await h.getClient().project.findMany({
     select: { id: !0, title: !0, projectPath: !0 }
   });
@@ -6634,18 +6653,18 @@ const hd = (r) => C.basename(r).match(pd)?.[1] ?? null, ia = async (r, t) => {
   }
   return Array.from(r);
 };
-async function ln(r) {
+async function dn(r) {
   const t = r?.snapshotIds && r.snapshotIds.length > 0 ? new Set(r.snapshotIds) : null, e = typeof r?.minAgeMs == "number" && r.minAgeMs > 0 ? r.minAgeMs : 0, n = Date.now(), a = t ? await h.getClient().snapshot.findMany({
     where: { id: { in: Array.from(t) } },
     select: { id: !0 }
   }) : await h.getClient().snapshot.findMany({
     select: { id: !0 }
-  }), o = new Set(a.map((i) => i.id)), s = await fd(), c = [];
+  }), o = new Set(a.map((i) => i.id)), s = await wd(), c = [];
   for (const i of s)
     await ia(i, c);
   let d = 0, l = 0;
   for (const i of c) {
-    const p = hd(i);
+    const p = Td(i);
     if (p && !(t && !t.has(p)) && (d += 1, !o.has(p))) {
       if (e > 0)
         try {
@@ -6668,7 +6687,7 @@ async function ln(r) {
   }
   return { scanned: d, deleted: l };
 }
-async function gd(r, t) {
+async function _d(r, t) {
   At.info("Preparing snapshot artifact", {
     snapshotId: r,
     projectId: t.projectId,
@@ -6741,7 +6760,7 @@ async function gd(r, t) {
         content: t.content ?? null
       }
     }
-  }, a = JSON.stringify(n), o = await ld(Buffer.from(a, "utf8")), c = `${(/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-")}-${r}.snap`;
+  }, a = JSON.stringify(n), o = await Ad(Buffer.from(a, "utf8")), c = `${(/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-")}-${r}.snap`;
   let d, l;
   const i = bt(e.title ?? "", String(e.id));
   let p = null;
@@ -6774,7 +6793,7 @@ async function gd(r, t) {
     projectBackupPath: l
   });
 }
-const Ed = async (r, t, e) => {
+const Id = async (r, t, e) => {
   try {
     const n = C.join(
       S.getPath("userData"),
@@ -6820,30 +6839,30 @@ const Ed = async (r, t, e) => {
   } catch (n) {
     t.error("Failed to write emergency snapshot file", n);
   }
-}, md = async (r) => {
+}, Pd = async (r) => {
   const t = bt(r || "Recovered Snapshot", "Recovered Snapshot"), e = S.getPath("documents");
   let n = C.join(
     e,
-    `${t || "Recovered Snapshot"}${q}`
+    `${t || "Recovered Snapshot"}${K}`
   );
   try {
     await R.access(n);
     const a = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-");
     n = C.join(
       e,
-      `${t || "Recovered Snapshot"}-${a}${q}`
+      `${t || "Recovered Snapshot"}-${a}${K}`
     );
   } catch {
   }
   return n;
-}, Ad = (r) => {
+}, Cd = (r) => {
   const t = r;
   return {
     autoSave: typeof t?.autoSave == "boolean" ? t.autoSave : !0,
     autoSaveInterval: typeof t?.autoSaveInterval == "number" ? t.autoSaveInterval : Ee
   };
-}, yd = async (r, t) => {
-  const { autoSave: e, autoSaveInterval: n } = Ad(r.data.settings), a = r.data.project;
+}, Rd = async (r, t) => {
+  const { autoSave: e, autoSaveInterval: n } = Cd(r.data.settings), a = r.data.project;
   return await h.getClient().$transaction(
     async (s) => {
       const c = await s.project.create({
@@ -6913,7 +6932,7 @@ const Ed = async (r, t, e) => {
       };
     }
   );
-}, Sd = (r) => ({
+}, Nd = (r) => ({
   format: Dt,
   container: Lt,
   version: Ot,
@@ -6922,7 +6941,7 @@ const Ed = async (r, t, e) => {
   description: r.description ?? void 0,
   createdAt: r.createdAt?.toISOString?.() ?? String(r.createdAt),
   updatedAt: r.updatedAt?.toISOString?.() ?? String(r.updatedAt)
-}), Td = async (r, t, e) => {
+}), Dd = async (r, t, e) => {
   try {
     await h.getClient().project.delete({ where: { id: r } });
   } catch (n) {
@@ -6932,8 +6951,8 @@ const Ed = async (r, t, e) => {
       error: n
     });
   }
-}, wd = async (r, t) => {
-  const e = await ud(r), n = await md(e.data.project.title), a = await yd(e, n), { created: o, chapterIdMap: s, characterIdMap: c, termIdMap: d } = a, l = Sd(o);
+}, Ld = async (r, t) => {
+  const e = await Sd(r), n = await Pd(e.data.project.title), a = await Rd(e, n), { created: o, chapterIdMap: s, characterIdMap: c, termIdMap: d } = a, l = Nd(o);
   try {
     await Er(
       n,
@@ -6966,11 +6985,11 @@ const Ed = async (r, t, e) => {
       t
     );
   } catch (i) {
-    throw await Td(o.id, r, t), i;
+    throw await Dd(o.id, r, t), i;
   }
   return o;
-}, D = N("SnapshotService"), _d = 3e4, Id = 1e4;
-class Pd {
+}, D = N("SnapshotService"), Od = 3e4, jd = 1e4;
+class bd {
   orphanArtifactIds = /* @__PURE__ */ new Set();
   orphanCleanupTimer = null;
   scheduleOrphanArtifactCleanup() {
@@ -6978,14 +6997,14 @@ class Pd {
       this.orphanCleanupTimer = null, this.cleanupOrphanArtifacts("idle").catch((t) => {
         D.warn("Idle orphan artifact cleanup failed", { error: t });
       });
-    }, _d), typeof this.orphanCleanupTimer.unref == "function" && this.orphanCleanupTimer.unref());
+    }, Od), typeof this.orphanCleanupTimer.unref == "function" && this.orphanCleanupTimer.unref());
   }
   queueOrphanArtifactCleanup(t) {
     this.orphanArtifactIds.add(t), this.scheduleOrphanArtifactCleanup();
   }
   async cleanupOrphanArtifacts(t = "idle") {
     if (t === "startup") {
-      const n = await ln();
+      const n = await dn();
       return D.info("Startup orphan artifact cleanup completed", n), n;
     }
     const e = Array.from(this.orphanArtifactIds);
@@ -6994,9 +7013,9 @@ class Pd {
     for (const n of e)
       this.orphanArtifactIds.delete(n);
     try {
-      const n = await ln({
+      const n = await dn({
         snapshotIds: e,
-        minAgeMs: Id
+        minAgeMs: jd
       });
       return D.info("Queued orphan artifact cleanup completed", {
         queued: e.length,
@@ -7019,7 +7038,7 @@ class Pd {
         hasContent: !!t.content,
         descriptionLength: t.description?.length ?? 0,
         type: n
-      }), await gd(e, t);
+      }), await _d(e, t);
       const o = await h.getClient().snapshot.create({
         data: {
           id: e,
@@ -7033,7 +7052,7 @@ class Pd {
       });
       return D.info("Snapshot created successfully", { snapshotId: o.id }), F.schedulePackageExport(t.projectId, "snapshot:create"), this.scheduleOrphanArtifactCleanup(), o;
     } catch (n) {
-      throw this.queueOrphanArtifactCleanup(e), await Ed(t, D, n), D.error("Failed to create snapshot", {
+      throw this.queueOrphanArtifactCleanup(e), await Id(t, D, n), D.error("Failed to create snapshot", {
         error: n,
         snapshotId: e,
         projectId: t.projectId,
@@ -7161,7 +7180,7 @@ class Pd {
   async importSnapshotFile(t) {
     try {
       D.info("Importing snapshot file", { filePath: t });
-      const e = await wd(t, D);
+      const e = await Ld(t, D);
       return D.info("Snapshot imported successfully", {
         projectId: e.id,
         filePath: t
@@ -7175,7 +7194,7 @@ class Pd {
       );
     }
   }
-  async deleteOldSnapshots(t, e = Nn) {
+  async deleteOldSnapshots(t, e = Rn) {
     try {
       const n = await h.getClient().snapshot.findMany({
         where: { projectId: t },
@@ -7274,8 +7293,8 @@ class Pd {
     }
   }
 }
-const K = new Pd();
-class Cd {
+const q = new bd();
+class Fd {
   constructor(t) {
     this.logger = t;
   }
@@ -7296,7 +7315,7 @@ class Cd {
         null,
         2
       );
-      await dn(o, s);
+      await cn(o, s);
     } catch (a) {
       this.logger.error("Failed to write latest mirror", a);
     }
@@ -7310,7 +7329,7 @@ class Cd {
         null,
         2
       );
-      await dn(s, c);
+      await cn(s, c);
       const d = (await R.readdir(a)).filter(
         (l) => l.endsWith(".snap") && l !== "latest.snap"
       );
@@ -7359,10 +7378,10 @@ class Cd {
           }), await this.cleanStaleMirrorDir(o), a += 1;
           continue;
         }
-        const l = await K.getLatestSnapshot(s.chapterId), i = l?.createdAt ? new Date(String(l.createdAt)).getTime() : 0, p = s.updatedAt ? new Date(s.updatedAt).getTime() : 0;
+        const l = await q.getLatestSnapshot(s.chapterId), i = l?.createdAt ? new Date(String(l.createdAt)).getTime() : 0, p = s.updatedAt ? new Date(s.updatedAt).getTime() : 0;
         if (p && p <= i)
           continue;
-        await K.createSnapshot({
+        await q.createSnapshot({
           projectId: s.projectId,
           chapterId: s.chapterId,
           content: s.content,
@@ -7423,27 +7442,27 @@ class Cd {
     }
   }
 }
-const Rd = async (r, t, e) => {
+const vd = async (r, t, e) => {
   try {
     if (e) {
       const a = await na.getChapter(e);
-      await K.createSnapshot({
+      await q.createSnapshot({
         projectId: r,
         chapterId: String(a.id ?? e),
         content: String(a.content ?? ""),
         description: `자동 스냅샷 ${(/* @__PURE__ */ new Date()).toLocaleString()}`
       });
     } else
-      await K.createSnapshot({
+      await q.createSnapshot({
         projectId: r,
         content: JSON.stringify({ timestamp: Date.now() }),
         description: `프로젝트 스냅샷 ${(/* @__PURE__ */ new Date()).toLocaleString()}`
       });
-    await K.deleteOldSnapshots(r, Nn), t.info("Snapshot created", { projectId: r, chapterId: e });
+    await q.deleteOldSnapshots(r, Rn), t.info("Snapshot created", { projectId: r, chapterId: e });
   } catch (n) {
     t.error("Failed to create snapshot", n);
   }
-}, Nd = async (r, t, e) => {
+}, Ud = async (r, t, e) => {
   const n = Array.from(
     new Set(Array.from(r.values()).map((a) => a.projectId))
   );
@@ -7455,7 +7474,7 @@ const Rd = async (r, t, e) => {
       for (const [s] of o)
         await e(s);
     });
-}, Dd = async (r, t, e) => {
+}, Md = async (r, t, e) => {
   if (r.length === 0)
     return { mirrored: 0, snapshots: 0 };
   let n = 0, a = 0;
@@ -7467,7 +7486,7 @@ const Rd = async (r, t, e) => {
     }
   for (const o of r)
     try {
-      await K.createSnapshot({
+      await q.createSnapshot({
         projectId: o.projectId,
         chapterId: o.chapterId,
         content: o.content,
@@ -7477,7 +7496,7 @@ const Rd = async (r, t, e) => {
       e.error("Emergency snapshot failed", s);
     }
   return e.info("Emergency flush completed", { mirrored: n, snapshots: a }), { mirrored: n, snapshots: a };
-}, Ld = async (r) => {
+}, kd = async (r) => {
   const {
     projectId: t,
     chapterId: e,
@@ -7493,7 +7512,7 @@ const Rd = async (r, t, e) => {
   if (!(i - p < o)) {
     s.set(l, i);
     try {
-      await K.createSnapshot({
+      await q.createSnapshot({
         projectId: t,
         chapterId: e,
         content: n,
@@ -7503,18 +7522,18 @@ const Rd = async (r, t, e) => {
       d.warn("Failed to create emergency micro snapshot", { error: A, chapterId: e });
     }
   }
-}, Od = async (r) => {
+}, Wd = async (r) => {
   const { jobs: t, writeTimestampedMirror: e, logger: n } = r;
   for (; t.length > 0; ) {
     const a = t.shift();
     if (a)
       try {
-        await K.createSnapshot({
+        await q.createSnapshot({
           projectId: a.projectId,
           chapterId: a.chapterId,
           content: a.content,
           description: `자동 스냅샷 ${(/* @__PURE__ */ new Date()).toLocaleString()}`
-        }), await K.deleteOldSnapshots(a.projectId, Za), await e(a.projectId, a.chapterId, a.content);
+        }), await q.deleteOldSnapshots(a.projectId, Za), await e(a.projectId, a.chapterId, a.content);
       } catch (o) {
         n.error("Failed to create snapshot", o);
       }
@@ -7538,7 +7557,7 @@ class Rt extends ha {
   snapshotProcessing = !1;
   projectTaskQueue = /* @__PURE__ */ new Map();
   criticalFlushPromise = null;
-  mirrorStore = new Cd($);
+  mirrorStore = new Fd($);
   constructor() {
     super(), this.on("error", (t) => {
       $.warn("Auto-save error event", t);
@@ -7580,7 +7599,7 @@ class Rt extends ha {
   getConfig(t) {
     return this.configs.get(t) || {
       enabled: !0,
-      interval: Rn,
+      interval: Cn,
       debounceMs: Ga
     };
   }
@@ -7600,12 +7619,12 @@ class Rt extends ha {
       });
       return;
     }
-    this.pendingSaves.set(t, { chapterId: t, content: e, projectId: n }), this.lastSaveAt.set(t, Date.now()), await this.mirrorStore.writeLatestMirror(n, t, e), Ld({
+    this.pendingSaves.set(t, { chapterId: t, content: e, projectId: n }), this.lastSaveAt.set(t, Date.now()), await this.mirrorStore.writeLatestMirror(n, t, e), kd({
       projectId: n,
       chapterId: t,
       content: e,
       maxLength: Xa,
-      minIntervalMs: Ka,
+      minIntervalMs: qa,
       lastSnapshotAtByChapterKey: this.lastEmergencySnapshotAt,
       writeTimestampedMirror: (d, l, i) => this.mirrorStore.writeTimestampedMirror(
         d,
@@ -7645,7 +7664,7 @@ class Rt extends ha {
               e.projectId,
               e.chapterId,
               e.content
-            ), await K.createSnapshot({
+            ), await q.createSnapshot({
               projectId: e.projectId,
               chapterId: e.chapterId,
               content: e.content,
@@ -7673,7 +7692,7 @@ class Rt extends ha {
     }
     this.lastSnapshotAt.set(a, o), this.lastSnapshotHash.set(a, c), this.lastSnapshotLength.set(a, n.length), this.snapshotQueue.push({ projectId: t, chapterId: e, content: n }), this.snapshotProcessing || (this.snapshotProcessing = !0, setImmediate(async () => {
       try {
-        await Od({
+        await Wd({
           jobs: this.snapshotQueue,
           writeTimestampedMirror: (i, p, A) => this.mirrorStore.writeTimestampedMirror(
             i,
@@ -7706,11 +7725,14 @@ class Rt extends ha {
     n && clearInterval(n);
     const a = setInterval(() => {
       this.enqueueProjectTask(t, async () => {
-        const o = Array.from(this.pendingSaves.entries()).filter(
+        await Array.from(this.pendingSaves.entries()).filter(
           ([, s]) => s.projectId === t
+        ).reduce(
+          (s, [c]) => s.then(async () => {
+            await this.performSave(c);
+          }),
+          Promise.resolve()
         );
-        for (const [s] of o)
-          await this.performSave(s);
       });
     }, e.interval);
     typeof a.unref == "function" && a.unref(), this.intervalTimers.set(t, a), $.info("Auto-save started", { projectId: t, interval: e.interval });
@@ -7737,14 +7759,14 @@ class Rt extends ha {
     });
   }
   async createSnapshot(t, e) {
-    await Rd(t, $, e);
+    await vd(t, $, e);
   }
   // ─── Flush (quit / critical) ──────────────────────────────────────────────
   /**
    * Flush ALL pending saves to DB. Used during normal quit.
    */
   async flushAll() {
-    await Nd(
+    await Ud(
       this.pendingSaves,
       (t, e) => this.enqueueProjectTask(t, e),
       (t) => this.performSave(t)
@@ -7758,7 +7780,7 @@ class Rt extends ha {
   async flushCritical() {
     if (this.criticalFlushPromise)
       return this.criticalFlushPromise;
-    this.criticalFlushPromise = Dd(
+    this.criticalFlushPromise = Md(
       Array.from(this.pendingSaves.values()),
       (t, e, n) => this.mirrorStore.writeLatestMirror(t, e, n),
       $
@@ -7795,7 +7817,7 @@ class Rt extends ha {
   }
 }
 const Z = Rt.getInstance(), L = N("WindowManager"), je = "#f4f4f5";
-class jd {
+class Bd {
   mainWindow = null;
   startupWizardWindow = null;
   resolveWindowIconPath() {
@@ -8026,10 +8048,10 @@ class jd {
       e.isDestroyed() || this.applyMenuBarMode(e);
   }
 }
-const H = new jd(), Kl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const H = new Bd(), rp = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   windowManager: H
-}, Symbol.toStringTag, { value: "Module" })), bd = () => {
+}, Symbol.toStringTag, { value: "Module" })), $d = () => {
   const r = {
     label: "File",
     submenu: process.platform === "darwin" ? [{ role: "close" }] : [{ role: "close" }, { role: "quit" }]
@@ -8041,15 +8063,15 @@ const H = new jd(), Kl = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.de
     { role: "viewMenu" },
     { role: "windowMenu" }
   ] : [r, { role: "editMenu" }, { role: "viewMenu" }, { role: "windowMenu" }, { role: "help" }];
-}, Fd = (r) => {
+}, xd = (r) => {
   if (process.platform !== "darwin" || r === "hidden") {
     Pe.setApplicationMenu(null);
     return;
   }
-  Pe.setApplicationMenu(Pe.buildFromTemplate(bd()));
+  Pe.setApplicationMenu(Pe.buildFromTemplate($d()));
 }, Yt = N("BootstrapLifecycle");
 let yt = { isReady: !1 }, Gt = null;
-const vd = (r) => r instanceof Error && r.message ? r.message : "Failed to initialize database", Ud = () => {
+const Gd = (r) => r instanceof Error && r.message ? r.message : "Failed to initialize database", Hd = () => {
   for (const r of tt.getAllWindows())
     if (!r.isDestroyed())
       try {
@@ -8058,35 +8080,35 @@ const vd = (r) => r instanceof Error && r.message ? r.message : "Failed to initi
         Yt.warn("Failed to broadcast bootstrap status", t);
       }
 }, be = (r) => {
-  yt = r, Ud();
-}, ql = () => yt, ca = async () => {
+  yt = r, Hd();
+}, np = () => yt, ca = async () => {
   if (yt.isReady)
     return yt;
   if (Gt)
     return Gt;
   be({ isReady: !1 });
-  const r = An({
+  const r = mn({
     scope: "bootstrap",
     event: "bootstrap.ensure-ready"
   });
   return Gt = h.initialize().then(() => (be({ isReady: !0 }), r.complete(Yt, {
     isReady: !0
   }), Yt.info("Bootstrap completed"), yt)).catch((t) => {
-    const e = vd(t);
+    const e = Gd(t);
     return be({ isReady: !1, error: e }), r.fail(Yt, t, {
       isReady: !1
     }), Yt.error("Bootstrap failed", t), yt;
   }).finally(() => {
     Gt = null;
   }), Gt;
-}, Md = N("StartupReadinessService"), Fe = "startup:wizard-completed", da = () => (/* @__PURE__ */ new Date()).toISOString(), O = (r, t, e, n = !0) => ({
+}, Yd = N("StartupReadinessService"), Fe = "startup:wizard-completed", da = () => (/* @__PURE__ */ new Date()).toISOString(), O = (r, t, e, n = !0) => ({
   key: r,
   ok: t,
   blocking: n,
   detail: e,
   checkedAt: da()
 });
-class kd {
+class zd {
   events = new Ia();
   async getReadiness() {
     const t = await this.runChecks(), e = t.filter((o) => o.blocking && !o.ok).map((o) => o.key), n = _.getStartupSettings().completedAt;
@@ -8142,9 +8164,9 @@ class kd {
     }
   }
   async checkDefaultLuiePath() {
-    const t = S.getPath("documents"), e = W.join(t, Dn), n = W.join(e, ".startup-probe");
+    const t = S.getPath("documents"), e = W.join(t, Nn), n = W.join(e, ".startup-probe");
     try {
-      return await Sr(e, { recursive: !0 }), await gn(e, Be.R_OK | Be.W_OK), await Tr(n, "ok", { encoding: "utf8" }), O("defaultLuiePath", !0, e);
+      return await Sr(e, { recursive: !0 }), await fn(e, Be.R_OK | Be.W_OK), await Tr(n, "ok", { encoding: "utf8" }), O("defaultLuiePath", !0, e);
     } catch (a) {
       return O(
         "defaultLuiePath",
@@ -8172,7 +8194,7 @@ class kd {
   }
   async checkSupabaseRuntimeConfig() {
     try {
-      const t = pt(), e = zn();
+      const t = lt(), e = Yn();
       return t ? O(
         "supabaseRuntimeConfig",
         !0,
@@ -8211,7 +8233,7 @@ class kd {
           "Access token is unavailable. Reconnect sync login.",
           !1
         );
-      const o = pt();
+      const o = lt();
       if (!o)
         return O(
           "supabaseSession",
@@ -8251,21 +8273,21 @@ class kd {
         !1
       );
     } catch (t) {
-      return Md.warn("Startup session check failed", { error: t }), O("supabaseSession", !1, this.toErrorMessage(t), !1);
+      return Yd.warn("Startup session check failed", { error: t }), O("supabaseSession", !1, this.toErrorMessage(t), !1);
     }
   }
   toErrorMessage(t) {
     return t instanceof Error && t.message ? t.message : String(t);
   }
 }
-const ve = new kd(), pn = 1500, Wd = 8e3, Bd = () => [
+const ve = new zd(), ln = 1500, Xd = 8e3, qd = () => [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
   "img-src 'self' data: https:",
   "font-src 'self' data: https://cdn.jsdelivr.net",
   "connect-src 'self'"
-].join("; "), $d = () => [
+].join("; "), Kd = () => [
   "default-src 'self' http://localhost:5173 ws://localhost:5173",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:5173",
   "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net http://localhost:5173",
@@ -8273,7 +8295,7 @@ const ve = new kd(), pn = 1500, Wd = 8e3, Bd = () => [
   "font-src 'self' data: https://cdn.jsdelivr.net",
   "connect-src 'self' http://localhost:5173 ws://localhost:5173",
   "worker-src 'self' blob:"
-].join("; "), xd = (r) => r ? process.env.LUIE_DEV_CSP === "1" ? $d() : null : Bd(), Gd = (r) => r.startsWith("file://"), Hd = async (r, t, e) => {
+].join("; "), Vd = (r) => r ? process.env.LUIE_DEV_CSP === "1" ? Kd() : null : qd(), Jd = (r) => r.startsWith("file://"), Qd = async (r, t, e) => {
   r.error("Renderer process crashed", {
     killed: e,
     webContentsId: t.id
@@ -8294,14 +8316,14 @@ const ve = new kd(), pn = 1500, Wd = 8e3, Bd = () => [
   })).response === 0 ? (H.closeMainWindow(), setTimeout(() => {
     H.createMainWindow();
   }, 500)) : S.quit());
-}, Yd = async (r) => {
+}, Zd = async (r) => {
   const t = Date.now(), e = await ca();
   if (!e.isReady) {
     r.error("App bootstrap did not complete", e);
     return;
   }
   try {
-    await Z.flushMirrorsToSnapshots("startup-recovery"), K.pruneSnapshotsAllProjects(), K.cleanupOrphanArtifacts("startup");
+    await Z.flushMirrorsToSnapshots("startup-recovery"), q.pruneSnapshotsAllProjects(), q.cleanupOrphanArtifacts("startup");
   } catch (n) {
     r.warn("Snapshot recovery/pruning skipped", n);
   }
@@ -8319,13 +8341,13 @@ const ve = new kd(), pn = 1500, Wd = 8e3, Bd = () => [
   r.info("Deferred startup maintenance completed", {
     elapsedMs: Date.now() - t
   });
-}, zd = (r, t = {}) => {
+}, tl = (r, t = {}) => {
   const e = t.startupStartedAtMs ?? Date.now();
   S.whenReady().then(async () => {
     r.info("App is ready", {
       startupElapsedMs: Date.now() - e
     });
-    const n = Ro(), a = xd(n);
+    const n = Ro(), a = Vd(n);
     let o = !1, s = !1, c = !1, d = null;
     const l = (m) => {
       if (!o && (o = !0, H.showMainWindow(), r.info("Startup checkpoint: renderer ready", {
@@ -8343,10 +8365,10 @@ const ve = new kd(), pn = 1500, Wd = 8e3, Bd = () => [
     }, i = (m) => {
       s || (s = !0, r.info("Deferred startup maintenance scheduled", {
         reason: m,
-        delayMs: pn
+        delayMs: ln
       }), setTimeout(() => {
-        Yd(r);
-      }, pn));
+        Zd(r);
+      }, ln));
     }, p = (m) => {
       if (c) return;
       c = !0, r.info("Starting main window flow", {
@@ -8366,7 +8388,7 @@ const ve = new kd(), pn = 1500, Wd = 8e3, Bd = () => [
         r.error("App bootstrap did not complete", I);
       }), d && clearTimeout(d), d = setTimeout(() => {
         o || l("fallback-timeout"), i("fallback-timeout");
-      }, Wd);
+      }, Xd);
     };
     n && yr.defaultSession.webRequest.onBeforeSendHeaders((m, T) => {
       T({
@@ -8386,7 +8408,7 @@ const ve = new kd(), pn = 1500, Wd = 8e3, Bd = () => [
         "PATCH",
         "DELETE",
         "OPTIONS"
-      ]), a && !Gd(m.url) && (I["Content-Security-Policy"] = [a]), T({ responseHeaders: I });
+      ]), a && !Jd(m.url) && (I["Content-Security-Policy"] = [a]), T({ responseHeaders: I });
     }), S.on("web-contents-created", (m, T) => {
       T.on(
         "did-fail-load",
@@ -8414,14 +8436,14 @@ const ve = new kd(), pn = 1500, Wd = 8e3, Bd = () => [
           sourceId: y
         });
       }), T.on("render-process-gone", (I, b) => {
-        Hd(r, T, b.reason === "killed");
+        Qd(r, T, b.reason === "killed");
       });
     });
     const A = Date.now(), { registerIPCHandlers: w } = await import("./index-6tHHrYSS.js");
     w(), r.info("Startup checkpoint: IPC handlers ready", {
       elapsedMs: Date.now() - A,
       startupElapsedMs: Date.now() - e
-    }), Fd(_.getMenuBarMode());
+    }), xd(_.getMenuBarMode());
     const g = await ve.getReadiness();
     r.info("Startup readiness evaluated", {
       mustRunWizard: g.mustRunWizard,
@@ -8444,8 +8466,8 @@ const ve = new kd(), pn = 1500, Wd = 8e3, Bd = () => [
       });
     });
   });
-}, Xd = "crash-reports", un = 100;
-let hn = !1;
+}, el = "crash-reports", pn = 100;
+let un = !1;
 const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOKEN]").replace(/\b(eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.)[A-Za-z0-9_-]+\b/g, "$1[REDACTED_JWT]").replace(
   /\b(AIza[0-9A-Za-z_-]{16,}|sk-[A-Za-z0-9_-]{16,}|pk_[A-Za-z0-9_-]{16,})\b/g,
   "[REDACTED_SECRET]"
@@ -8471,16 +8493,16 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
     return a;
   }
   return String(r);
-}, Kd = () => W.join(S.getPath("userData"), Xd), qd = async (r, t) => {
+}, rl = () => W.join(S.getPath("userData"), el), nl = async (r, t) => {
   const e = await Nt.readdir(r, { withFileTypes: !0 }), n = await Promise.all(
     e.filter((o) => o.isFile() && o.name.endsWith(".json")).map(async (o) => {
       const s = W.join(r, o.name), c = await Nt.stat(s);
       return { fullPath: s, mtimeMs: c.mtimeMs };
     })
   );
-  if (n.length <= un) return;
+  if (n.length <= pn) return;
   n.sort((o, s) => s.mtimeMs - o.mtimeMs);
-  const a = n.slice(un);
+  const a = n.slice(pn);
   await Promise.all(
     a.map(async (o) => {
       try {
@@ -8490,8 +8512,8 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
       }
     })
   );
-}, Vd = async (r, t, e) => {
-  const n = Kd();
+}, al = async (r, t, e) => {
+  const n = rl();
   await Nt.mkdir(n, { recursive: !0 });
   const a = (/* @__PURE__ */ new Date()).toISOString(), o = X(), s = `${a.replace(/[:.]/g, "-")}-${t}-${o}.json`, c = W.join(n, s), d = `${c}.tmp`, l = {
     id: o,
@@ -8507,15 +8529,15 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
     nodeVersion: process.versions.node,
     payload: ir(e)
   };
-  await Nt.writeFile(d, JSON.stringify(l, null, 2), "utf-8"), await Nt.rename(d, c), await qd(n, r);
-}, Jd = (r, t) => {
+  await Nt.writeFile(d, JSON.stringify(l, null, 2), "utf-8"), await Nt.rename(d, c), await nl(n, r);
+}, ol = (r, t) => {
   const e = t ?? {}, n = r ?? {};
   return {
     webContentsId: typeof n.id == "number" ? n.id : void 0,
     reason: e.reason,
     exitCode: e.exitCode
   };
-}, Qd = (r) => {
+}, sl = (r) => {
   const t = r ?? {};
   return {
     type: t.type,
@@ -8524,11 +8546,11 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
     serviceName: t.serviceName,
     name: t.name
   };
-}, Zd = (r) => {
-  if (hn) return;
-  hn = !0;
+}, il = (r) => {
+  if (un) return;
+  un = !0;
   const t = (e, n) => {
-    Vd(r, e, n).catch((a) => {
+    al(r, e, n).catch((a) => {
       r.warn("Failed to persist crash report", { error: a, kind: e });
     });
   };
@@ -8542,11 +8564,11 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
       reason: e
     });
   }), S.on("render-process-gone", (e, n, a) => {
-    t("render-process-gone", Jd(n, a));
+    t("render-process-gone", ol(n, a));
   }), S.on("child-process-gone", (e, n) => {
-    t("child-process-gone", Qd(n));
+    t("child-process-gone", sl(n));
   });
-}, zt = N("DeepLink"), tl = "luie://auth/callback", el = "luie://auth/return", rl = "luie://auth/", ie = () => {
+}, zt = N("DeepLink"), cl = "luie://auth/callback", dl = "luie://auth/return", ll = "luie://auth/", ie = () => {
   const r = H.getMainWindow();
   if (r) {
     r.isMinimized() && r.restore(), r.focus();
@@ -8563,18 +8585,18 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
       } catch (n) {
         zt.warn("Failed to broadcast OAuth result", { error: n });
       }
-}, nl = (r) => {
+}, pl = (r) => {
   const t = r instanceof Error ? r.message : String(r);
   return t.includes("SYNC_AUTH_NO_PENDING_SESSION") ? "NO_PENDING" : t.includes("SYNC_AUTH_REQUEST_EXPIRED") ? "EXPIRED" : t.includes("SYNC_AUTH_STATE_MISMATCH") ? "STATE_MISMATCH" : "UNKNOWN";
-}, al = (r) => r === "NO_PENDING" || r === "EXPIRED" || r === "STATE_MISMATCH", fn = (r) => r === "NO_PENDING" ? "NO_PENDING" : r === "EXPIRED" ? "EXPIRED" : r === "STATE_MISMATCH" ? "STATE_MISMATCH" : "UNKNOWN", cr = (r) => {
+}, ul = (r) => r === "NO_PENDING" || r === "EXPIRED" || r === "STATE_MISMATCH", hn = (r) => r === "NO_PENDING" ? "NO_PENDING" : r === "EXPIRED" ? "EXPIRED" : r === "STATE_MISMATCH" ? "STATE_MISMATCH" : "UNKNOWN", cr = (r) => {
   for (const t of r)
-    if (typeof t == "string" && t.startsWith(rl))
+    if (typeof t == "string" && t.startsWith(ll))
       return t;
   return null;
 }, dr = async (r) => {
-  if (r.startsWith(el))
+  if (r.startsWith(dl))
     return ie(), zt.info("OAuth return deep link handled", { url: r }), !0;
-  if (!r.startsWith(tl))
+  if (!r.startsWith(cl))
     return !1;
   try {
     return await Jt.handleOAuthCallback(r), ie(), Me({
@@ -8582,10 +8604,10 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
       timestamp: (/* @__PURE__ */ new Date()).toISOString()
     }), zt.info("OAuth callback processed", { url: r }), !0;
   } catch (t) {
-    const e = t instanceof Error ? t.message : String(t), n = nl(t), a = Jt.getStatus();
-    return a.connected && al(n) ? (ie(), Me({
+    const e = t instanceof Error ? t.message : String(t), n = pl(t), a = Jt.getStatus();
+    return a.connected && ul(n) ? (ie(), Me({
       status: "stale",
-      reason: fn(n),
+      reason: hn(n),
       detail: e,
       timestamp: (/* @__PURE__ */ new Date()).toISOString()
     }), zt.warn("OAuth callback arrived after connection was already established", {
@@ -8594,7 +8616,7 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
       error: t
     }), !0) : (ie(), Me({
       status: "error",
-      reason: fn(n),
+      reason: hn(n),
       detail: e,
       timestamp: (/* @__PURE__ */ new Date()).toISOString()
     }), zt.error(a.connected ? "Failed to process OAuth callback even though sync is connected" : "Failed to process OAuth callback", {
@@ -8603,13 +8625,13 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
       error: t
     }), !1);
   }
-}, ct = (r, t, e) => {
+}, it = (r, t, e) => {
   if (!(!r || r.isDestroyed()))
     try {
       r.webContents.send(Ft.APP_QUIT_PHASE, { phase: t, message: e });
     } catch {
     }
-}, ke = async (r, t) => r && !r.isDestroyed() ? We.showMessageBox(r, t) : We.showMessageBox(t), ol = (r) => {
+}, ke = async (r, t) => r && !r.isDestroyed() ? We.showMessageBox(r, t) : We.showMessageBox(t), hl = (r) => {
   let t = !1;
   S.on("window-all-closed", () => {
     process.platform !== "darwin" && S.quit();
@@ -8617,14 +8639,14 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
     t || (t = !0, e.preventDefault(), (async () => {
       r.info("App is quitting");
       const n = H.getMainWindow();
-      ct(n, "prepare", "데이터를 안전하게 정리하고 있습니다...");
+      it(n, "prepare", "데이터를 안전하게 정리하고 있습니다...");
       let a = !1, o = !1, s = !1;
       if (n && !n.isDestroyed() && n.webContents)
         try {
           a = await new Promise((p) => {
             const A = setTimeout(
               () => p(!1),
-              qa
+              Ka
             );
             ua.once(Ft.APP_FLUSH_COMPLETE, (w, g) => {
               o = !!g?.hadQueuedAutoSaves, s = !!g?.rendererDirty, clearTimeout(A), p(!0);
@@ -8637,7 +8659,7 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
         } catch (p) {
           r.warn("Renderer flush request failed", p);
         }
-      ct(n, "mirror-durable", "크래시 대비 미러를 먼저 보존하고 있습니다...");
+      it(n, "mirror-durable", "크래시 대비 미러를 먼저 보존하고 있습니다...");
       try {
         const { mirrored: p } = await Z.flushCritical();
         r.info("Pre-dialog mirror flush completed", { mirrored: p });
@@ -8658,7 +8680,7 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
             noLink: !0
           });
           if (A.response === 2) {
-            r.info("Quit cancelled by user"), t = !1, ct(n, "aborted", "종료가 취소되었습니다.");
+            r.info("Quit cancelled by user"), t = !1, it(n, "aborted", "종료가 취소되었습니다.");
             return;
           }
           if (A.response === 0) {
@@ -8688,7 +8710,7 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
         } catch (p) {
           r.warn("Session-end mirror flush failed", p);
         }
-      ct(n, "export-flush", "프로젝트 파일(.luie)을 안전하게 저장 중입니다...");
+      it(n, "export-flush", "프로젝트 파일(.luie)을 안전하게 저장 중입니다...");
       let l = "continue";
       if ((await F.flushPendingExports(Ja)).timedOut) {
         const p = await ke(n, {
@@ -8713,12 +8735,12 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
         })).response === 0) && (l = "cancel");
       }
       if (l === "cancel") {
-        r.info("Quit cancelled by user during export flush"), t = !1, ct(n, "aborted", "종료가 취소되었습니다.");
+        r.info("Quit cancelled by user during export flush"), t = !1, it(n, "aborted", "종료가 취소되었습니다.");
         return;
       }
-      ct(n, "finalize", "마무리 정리 중입니다...");
+      it(n, "finalize", "마무리 정리 중입니다...");
       try {
-        await K.pruneSnapshotsAllProjects();
+        await q.pruneSnapshotsAllProjects();
       } catch (p) {
         r.warn("Snapshot pruning failed during quit", p);
       }
@@ -8727,11 +8749,11 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
       } catch (p) {
         r.warn("DB disconnect failed during quit", p);
       }
-      ct(n, "completed", "안전하게 종료합니다."), S.exit(0);
+      it(n, "completed", "안전하게 종료합니다."), S.exit(0);
     })().catch((n) => {
       r.error("Quit guard failed", n), t = !1;
       const a = H.getMainWindow();
-      ct(a, "aborted", "종료 중 오류가 발생해 취소되었습니다.");
+      it(a, "aborted", "종료 중 오류가 발생해 취소되었습니다.");
     }));
   }), process.on("SIGINT", () => {
     r.info("Received SIGINT"), S.quit();
@@ -8742,7 +8764,7 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
   }), process.on("unhandledRejection", (e) => {
     r.error("Unhandled rejection", e);
   });
-}, sl = (r) => {
+}, fl = (r) => {
   if (!(process.env.E2E_DISABLE_SINGLE_INSTANCE === "1" ? !0 : S.requestSingleInstanceLock())) {
     const n = cr(process.argv);
     return r.info("Secondary instance detected; forwarding to primary instance and exiting", {
@@ -8760,128 +8782,128 @@ const Ue = (r) => r.replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOK
   }), !0;
 };
 process.env.NODE_ENV !== "production" && await import("./config-B9Gu_Tvs.js").then((r) => r.c);
-In({
+_n({
   logToFile: !0,
   logFilePath: W.join(S.getPath("userData"), yo, So),
   minLevel: ur.INFO
 });
-const lt = N("Main"), le = process.defaultApp === !0, lr = Date.now();
-lt.info("Main process bootstrap", {
+const dt = N("Main"), le = process.defaultApp === !0, lr = Date.now();
+dt.info("Main process bootstrap", {
   execPath: process.execPath,
   argv: process.argv,
   isPackaged: S.isPackaged,
   defaultApp: le,
   startupStartedAtMs: lr
 });
-const il = () => {
+const gl = () => {
   const r = "luie";
   let t = !1;
   const e = S.getAppPath();
   if (le ? e && (t = S.setAsDefaultProtocolClient(r, process.execPath, [e])) : t = S.setAsDefaultProtocolClient(r), !t) {
     const a = "SYNC_PROTOCOL_REGISTRATION_FAILED:luie:setAsDefaultProtocolClient returned false";
-    _.getSyncSettings().connected || _.setSyncSettings({ lastError: a }), lt.warn("Failed to register custom protocol for OAuth callback", {
+    _.getSyncSettings().connected || _.setSyncSettings({ lastError: a }), dt.warn("Failed to register custom protocol for OAuth callback", {
       protocol: r,
       defaultApp: le,
       reason: a
     });
     return;
   }
-  _.getSyncSettings().lastError?.startsWith("SYNC_PROTOCOL_REGISTRATION_FAILED:") && _.setSyncSettings({ lastError: void 0 }), lt.info("Custom protocol registered", {
+  _.getSyncSettings().lastError?.startsWith("SYNC_PROTOCOL_REGISTRATION_FAILED:") && _.setSyncSettings({ lastError: void 0 }), dt.info("Custom protocol registered", {
     protocol: r,
     defaultApp: le,
     appEntry: e
   });
 };
-if (!sl(lt))
+if (!fl(dt))
   S.quit();
 else {
-  Zd(lt), jo(), S.disableHardwareAcceleration(), process.platform === "darwin" && S.on("open-url", (t, e) => {
+  il(dt), jo(), S.disableHardwareAcceleration(), process.platform === "darwin" && S.on("open-url", (t, e) => {
     t.preventDefault(), dr(e);
-  }), il();
+  }), gl();
   const r = cr(process.argv);
-  r && dr(r), zd(lt, {
+  r && dr(r), tl(dt, {
     startupStartedAtMs: lr,
     onFirstRendererReady: () => {
       const t = Date.now();
-      Jt.initialize(), lt.info("Startup checkpoint: sync service initialized", {
+      Jt.initialize(), dt.info("Startup checkpoint: sync service initialized", {
         elapsedMs: Date.now() - t,
         startupElapsedMs: Date.now() - lr
       });
     }
-  }), ol(lt);
+  }), hl(dt);
 }
 export {
-  Wl as $,
+  Xl as $,
   $a as A,
-  xl as B,
+  Vl as B,
   bt as C,
-  Ml as D,
+  Yl as D,
   E,
-  kl as F,
+  zl as F,
   Er as G,
-  fs as H,
+  ys as H,
   Ft as I,
-  hs as J,
+  As as J,
   G as K,
-  q as L,
+  K as L,
   we as M,
-  Ln as N,
-  On as O,
-  jl as P,
+  Dn as N,
+  Ln as O,
+  Bl as P,
   Qt as Q,
   Ae as R,
   f as S,
   ye as T,
-  Ol as U,
+  Wl as U,
   Se as V,
-  bl as W,
+  $l as W,
   fr as X,
   Te as Y,
-  us as Z,
-  ms as _,
+  ms as Z,
+  ws as _,
   me as a,
-  vl as a0,
-  Ul as a1,
-  Fd as a2,
+  Gl as a0,
+  Hl as a1,
+  xd as a2,
   ve as a3,
   Jt as a4,
   H as a5,
   ca as a6,
-  ql as a7,
+  np as a7,
   na as a8,
   Qe as a9,
   Ze as aa,
   Z as ab,
-  K as ac,
+  q as ac,
   Nr as ad,
-  Fl as ae,
-  $l as af,
-  Yl as ag,
-  zl as ah,
-  Kl as ai,
-  Xl as b,
+  xl as ae,
+  Kl as af,
+  Zl as ag,
+  tp as ah,
+  rp as ai,
+  ep as b,
   N as c,
   h as d,
   z as e,
   vt as f,
-  Hl as g,
+  Ql as g,
   hr as h,
-  qc as i,
+  nd as i,
   Ra as j,
   Et as k,
   bo as l,
-  Bl as m,
+  ql as m,
   Zt as n,
-  qt as o,
+  Kt as o,
   F as p,
   fe as q,
   et as r,
-  gs as s,
-  is as t,
-  ls as u,
-  Gl as v,
+  Ss as s,
+  us as t,
+  gs as u,
+  Jl as v,
   ba as w,
-  As as x,
-  ps as y,
-  Es as z
+  _s as x,
+  Es as y,
+  Ts as z
 };
