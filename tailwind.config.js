@@ -37,6 +37,22 @@ export default {
         "border-active": "var(--border-active)",
         "border-focus": "var(--border-focus)",
       },
+      spacing: {
+        "control-x": "0.75rem",
+        "control-y": "0.5rem",
+        "panel-pad": "1.25rem",
+        "panel-gap": "1rem",
+        rail: "3rem",
+      },
+      borderRadius: {
+        control: "0.625rem",
+        panel: "0.875rem",
+        shell: "1rem",
+      },
+      boxShadow: {
+        panel: "0 10px 28px rgba(15, 23, 42, 0.14)",
+        modal: "0 24px 56px rgba(15, 23, 42, 0.22)",
+      },
       zIndex: {
         // ─── Semantic Layer System ────────────────────────────────────────────
         // Use these tokens instead of raw numbers so stacking order is

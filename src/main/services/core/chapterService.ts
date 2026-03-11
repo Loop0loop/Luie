@@ -10,6 +10,7 @@ import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode, SNAPSHOT_BACKUP_DIR } from "../../../shared/constants/index.js";
 import type { ChapterCreateInput, ChapterUpdateInput } from "../../../shared/types/index.js";
 import { autoExtractService } from "../features/autoExtract/autoExtractService.js";
+import { autoSaveManager } from "../../manager/autoSaveManager.js";
 import { projectService } from "./projectService.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import { trackKeywordAppearances } from "./chapterKeywords.js";
@@ -278,7 +279,6 @@ export class ChapterService {
       });
 
       if ((chapter as { projectId?: unknown })?.projectId) {
-        const { autoSaveManager } = await import("../../manager/autoSaveManager.js");
         await autoSaveManager.forgetChapter(
           String((chapter as { projectId: unknown }).projectId),
           id,
@@ -375,7 +375,6 @@ export class ChapterService {
       await db.getClient().chapter.delete({ where: { id } });
 
       if ((chapter as { projectId?: unknown })?.projectId) {
-        const { autoSaveManager } = await import("../../manager/autoSaveManager.js");
         await autoSaveManager.forgetChapter(
           String((chapter as { projectId: unknown }).projectId),
           id,

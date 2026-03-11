@@ -1,14 +1,9 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 import {
   DEFAULT_UI_CONTEXT_TAB,
   DEFAULT_UI_VIEW,
-  DEFAULT_UI_SIDEBAR_OPEN,
-  DEFAULT_UI_CONTEXT_OPEN,
-  STORAGE_KEY_UI,
-  UI_STORE_SCHEMA_VERSION,
 } from "@shared/constants";
-import type { Snapshot } from "@shared/types";
 import {
   buildDefaultLayoutSurfaceRatios,
   normalizeLayoutSurfaceRatiosWithMigrations,
@@ -16,485 +11,50 @@ import {
 } from "@shared/constants/layoutSizing";
 import {
   buildDefaultSidebarWidths,
-  getSidebarDefaultWidth,
   getSynchronizedSidebarWidthFeatures,
-  normalizeSidebarWidthsWithMigrations,
   normalizeSidebarWidthInput,
-  type SidebarWidthFeature,
 } from "@shared/constants/sidebarSizing";
-import {
-  type UiStorePersistedState,
-  uiStorePersistedStateSchema,
-} from "@shared/schemas";
-import {
-  buildMigrationEventData,
-  buildRecoveryEventData,
-  buildValidationFailureData,
-  createPerformanceTimer,
-  emitOperationalLog,
-} from "@shared/logger";
-import type { ZodError } from "zod";
 import {
   clearFocusedClosableTarget,
   getFocusedClosableTarget,
   setFocusedClosableTarget as setTransientFocusedClosableTarget,
-  type FocusedClosableTarget,
 } from "@renderer/features/workspace/stores/closableFocusStore";
+import {
+  cloneRegions,
+  DEFAULT_REGIONS,
+  getRightPanelTabByFeature,
+  normalizeRightPanelTab,
+  RIGHT_PANEL_TAB_FEATURE_MAP,
+} from "./uiStore.regions";
+import { buildUiStorePersistOptions } from "./uiStore.persist";
+import { DEFAULT_SCRIVENER_SECTIONS } from "./uiStore.types";
+import type {
+  ContextTab,
+  MainView,
+  ResizablePanelData,
+  ScrivenerSectionId,
+  UIStore,
+} from "./uiStore.types";
 
-export type ContextTab = "synopsis" | "characters" | "terms";
-export type ResearchTab = "character" | "world" | "event" | "faction" | "scrap" | "analysis";
-export type WorldTab = "synopsis" | "terms" | "mindmap" | "drawing" | "plot" | "graph";
-export type SidebarFeature = SidebarWidthFeature;
-export type DocsRightTab =
-  | "character"
-  | "event"
-  | "faction"
-  | "world"
-  | "scrap"
-  | "analysis"
-  | "snapshot"
-  | "trash"
-  | "editor"
-  | "export"
-  | null;
-
-export type RightPanelTab = Exclude<DocsRightTab, null>;
-
-export type RegionId = "leftSidebar" | "rightPanel" | "rightRail";
-
-export interface LeftSidebarRegionState {
-  open: boolean;
-  widthPx: number;
-}
-
-export interface RightPanelRegionState {
-  open: boolean;
-  activeTab: RightPanelTab | null;
-  widthByTab: Record<RightPanelTab, number>;
-}
-
-export interface RightRailRegionState {
-  open: boolean;
-}
-
-export interface UIRegionsState {
-  leftSidebar: LeftSidebarRegionState;
-  rightPanel: RightPanelRegionState;
-  rightRail: RightRailRegionState;
-}
-
-interface RightPanelContent {
-  type: "research" | "editor" | "snapshot" | "export";
-  id?: string;
-  tab?: ResearchTab;
-  snapshot?: Snapshot;
-}
-
-export interface ResizablePanelData {
-  id: string; // Unique ID for the panel
-  content: RightPanelContent;
-  size: number; // Percentage or flex size
-}
-
+export type {
+  ContextTab,
+  DocsRightTab,
+  MainView,
+  RegionId,
+  ResizablePanelData,
+  ResearchTab,
+  RightPanelContent,
+  RightPanelTab,
+  ScrivenerSectionId,
+  ScrivenerSectionsState,
+  SidebarFeature,
+  UIRegionsState,
+  UIStore,
+  WorldTab,
+} from "./uiStore.types";
 const DEFAULT_SIDEBAR_WIDTHS: Record<string, number> = buildDefaultSidebarWidths();
 const DEFAULT_LAYOUT_SURFACE_RATIOS: Record<LayoutSurfaceId, number> =
   buildDefaultLayoutSurfaceRatios();
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value) && typeof value === "object" && !Array.isArray(value);
-
-const getBrowserLogger = () =>
-  typeof window === "undefined" ? null : (window.api?.logger ?? null);
-
-const resetPersistedUiStorage = (
-  action: string,
-  reason: string,
-  persistedVersion?: number,
-): void => {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.removeItem(STORAGE_KEY_UI);
-  } catch {
-    // Best effort recovery only.
-  }
-
-  emitOperationalLog(
-    getBrowserLogger(),
-    "info",
-    "UI store persisted state reset",
-    buildRecoveryEventData({
-      scope: "ui-store",
-      event: "persist.reset",
-      storageKey: STORAGE_KEY_UI,
-      source: "localStorage",
-      action,
-      reason,
-      persistedVersion,
-      targetVersion: UI_STORE_SCHEMA_VERSION,
-    }),
-  );
-};
-
-const warnPersistValidation = (
-  message: string,
-  error: ZodError,
-  persistedVersion?: number,
-): void => {
-  emitOperationalLog(
-    getBrowserLogger(),
-    "warn",
-    message,
-    buildValidationFailureData({
-      scope: "ui-store",
-      domain: "persist",
-      source: "localStorage",
-      storageKey: STORAGE_KEY_UI,
-      fallback: "reset_to_defaults",
-      persistedVersion,
-      targetVersion: UI_STORE_SCHEMA_VERSION,
-      error,
-    }),
-  );
-};
-
-const RIGHT_PANEL_TABS = [
-  "character",
-  "event",
-  "faction",
-  "world",
-  "scrap",
-  "analysis",
-  "snapshot",
-  "trash",
-  "editor",
-  "export",
-] as const satisfies readonly RightPanelTab[];
-
-const RIGHT_PANEL_TAB_FEATURE_MAP: Record<RightPanelTab, SidebarWidthFeature> = {
-  character: "docsCharacter",
-  event: "docsEvent",
-  faction: "docsFaction",
-  world: "docsWorld",
-  scrap: "docsScrap",
-  analysis: "docsAnalysis",
-  snapshot: "docsSnapshot",
-  trash: "docsTrash",
-  editor: "docsEditor",
-  export: "docsExport",
-};
-
-const getRightPanelTabByFeature = (feature: string): RightPanelTab | null => {
-  switch (feature) {
-    case "docsCharacter":
-    case "editorCharacter":
-    case "character":
-      return "character";
-    case "docsEvent":
-    case "event":
-      return "event";
-    case "docsFaction":
-    case "faction":
-      return "faction";
-    case "docsWorld":
-    case "editorWorld":
-    case "world":
-      return "world";
-    case "docsScrap":
-    case "editorScrap":
-    case "scrap":
-      return "scrap";
-    case "docsAnalysis":
-    case "editorAnalysis":
-    case "analysis":
-      return "analysis";
-    case "docsSnapshot":
-    case "editorSnapshot":
-    case "snapshot":
-      return "snapshot";
-    case "docsTrash":
-    case "editorTrash":
-    case "trash":
-      return "trash";
-    case "docsEditor":
-    case "editor":
-      return "editor";
-    case "docsExport":
-    case "export":
-      return "export";
-    default:
-      return null;
-  }
-};
-
-const buildDefaultRightPanelWidths = (): Record<RightPanelTab, number> =>
-  Object.fromEntries(
-    RIGHT_PANEL_TABS.map((tab) => [
-      tab,
-      getSidebarDefaultWidth(RIGHT_PANEL_TAB_FEATURE_MAP[tab]),
-    ]),
-  ) as Record<RightPanelTab, number>;
-
-const normalizeRightPanelTab = (value: unknown): RightPanelTab | null => {
-  if (typeof value !== "string") return null;
-  return RIGHT_PANEL_TABS.includes(value as RightPanelTab)
-    ? (value as RightPanelTab)
-    : null;
-};
-
-const buildRegionsFromLegacyState = (legacy: {
-  isSidebarOpen?: boolean;
-  isContextOpen?: boolean;
-  docsRightTab?: DocsRightTab;
-  isBinderBarOpen?: boolean;
-  scrivenerSidebarOpen?: boolean;
-  scrivenerInspectorOpen?: boolean;
-  sidebarWidths?: Record<string, number>;
-  regions?: unknown;
-}): UIRegionsState => {
-  const normalizedSidebarWidths = normalizeSidebarWidthsWithMigrations(legacy.sidebarWidths);
-  const defaultRightPanelWidths = buildDefaultRightPanelWidths();
-  const fallbackActiveTab = normalizeRightPanelTab(legacy.docsRightTab);
-  const persistedRegions = isRecord(legacy.regions) ? legacy.regions : null;
-  const persistedLeft = persistedRegions && isRecord(persistedRegions.leftSidebar)
-    ? persistedRegions.leftSidebar
-    : null;
-  const persistedRightPanel = persistedRegions && isRecord(persistedRegions.rightPanel)
-    ? persistedRegions.rightPanel
-    : null;
-  const persistedRightRail = persistedRegions && isRecord(persistedRegions.rightRail)
-    ? persistedRegions.rightRail
-    : null;
-  const persistedWidthByTab = persistedRightPanel && isRecord(persistedRightPanel.widthByTab)
-    ? persistedRightPanel.widthByTab
-    : null;
-
-  const widthByTab = { ...defaultRightPanelWidths };
-  RIGHT_PANEL_TABS.forEach((tab) => {
-    const persistedWidth = persistedWidthByTab ? persistedWidthByTab[tab] : undefined;
-    const normalizedPersistedWidth = normalizeSidebarWidthInput(
-      RIGHT_PANEL_TAB_FEATURE_MAP[tab],
-      persistedWidth,
-    );
-    if (normalizedPersistedWidth !== null) {
-      widthByTab[tab] = normalizedPersistedWidth;
-      return;
-    }
-    const legacyWidth = normalizeSidebarWidthInput(
-      RIGHT_PANEL_TAB_FEATURE_MAP[tab],
-      normalizedSidebarWidths[RIGHT_PANEL_TAB_FEATURE_MAP[tab]],
-    );
-    if (legacyWidth !== null) {
-      widthByTab[tab] = legacyWidth;
-    }
-  });
-
-  const legacyLeftWidth = normalizeSidebarWidthInput(
-    "mainSidebar",
-    normalizedSidebarWidths.mainSidebar,
-  );
-  const leftWidthFromRegions = normalizeSidebarWidthInput(
-    "mainSidebar",
-    persistedLeft?.widthPx,
-  );
-  const leftSidebarWidthPx =
-    leftWidthFromRegions ??
-    legacyLeftWidth ??
-    getSidebarDefaultWidth("mainSidebar");
-
-  const activeTabFromRegions = normalizeRightPanelTab(
-    persistedRightPanel?.activeTab,
-  );
-  const activeTab = activeTabFromRegions ?? fallbackActiveTab;
-
-  const leftOpenFromRegions =
-    typeof persistedLeft?.open === "boolean"
-      ? persistedLeft.open
-      : undefined;
-  const rightOpenFromRegions =
-    typeof persistedRightPanel?.open === "boolean"
-      ? persistedRightPanel.open
-      : undefined;
-  const rightRailOpenFromRegions =
-    typeof persistedRightRail?.open === "boolean"
-      ? persistedRightRail.open
-      : undefined;
-
-  return {
-    leftSidebar: {
-      open:
-        leftOpenFromRegions ??
-        (typeof legacy.isSidebarOpen === "boolean"
-          ? legacy.isSidebarOpen
-          : typeof legacy.scrivenerSidebarOpen === "boolean"
-            ? legacy.scrivenerSidebarOpen
-            : DEFAULT_UI_SIDEBAR_OPEN),
-      widthPx: leftSidebarWidthPx,
-    },
-    rightPanel: {
-      open:
-        rightOpenFromRegions ??
-        (activeTab !== null
-          ? true
-          : typeof legacy.isContextOpen === "boolean"
-            ? legacy.isContextOpen
-            : typeof legacy.scrivenerInspectorOpen === "boolean"
-              ? legacy.scrivenerInspectorOpen
-              : DEFAULT_UI_CONTEXT_OPEN),
-      activeTab,
-      widthByTab,
-    },
-    rightRail: {
-      open:
-        rightRailOpenFromRegions ??
-        (typeof legacy.isBinderBarOpen === "boolean"
-          ? legacy.isBinderBarOpen
-          : true),
-    },
-  };
-};
-
-export type ScrivenerSectionId =
-  | "manuscript"
-  | "characters"
-  | "world"
-  | "scrap"
-  | "snapshots"
-  | "analysis"
-  | "trash";
-
-export type ScrivenerSectionsState = Record<ScrivenerSectionId, boolean>;
-
-const DEFAULT_SCRIVENER_SECTIONS: ScrivenerSectionsState = {
-  manuscript: true,
-  characters: true,
-  world: false,
-  scrap: false,
-  snapshots: false,
-  analysis: false,
-  trash: false,
-};
-
-const DEFAULT_REGIONS: UIRegionsState = buildRegionsFromLegacyState({
-  isSidebarOpen: DEFAULT_UI_SIDEBAR_OPEN,
-  isContextOpen: DEFAULT_UI_CONTEXT_OPEN,
-  docsRightTab: null,
-  isBinderBarOpen: true,
-  scrivenerSidebarOpen: true,
-  scrivenerInspectorOpen: true,
-  sidebarWidths: DEFAULT_SIDEBAR_WIDTHS,
-});
-
-const cloneRegions = (regions: UIRegionsState): UIRegionsState => ({
-  leftSidebar: { ...regions.leftSidebar },
-  rightPanel: {
-    ...regions.rightPanel,
-    widthByTab: { ...regions.rightPanel.widthByTab },
-  },
-  rightRail: { ...regions.rightRail },
-});
-
-const migrateUiPersistedState = (
-  persistedState: unknown,
-  persistedVersion: number,
-): UiStorePersistedState => {
-  if (!isRecord(persistedState)) {
-    resetPersistedUiStorage(
-      "drop_corrupt_payload",
-      "persisted_state_not_object",
-      persistedVersion,
-    );
-    return { schemaVersion: UI_STORE_SCHEMA_VERSION };
-  }
-
-  if (persistedVersion > UI_STORE_SCHEMA_VERSION) {
-    resetPersistedUiStorage(
-      "drop_future_version",
-      "persisted_state_version_is_newer_than_runtime",
-      persistedVersion,
-    );
-    return { schemaVersion: UI_STORE_SCHEMA_VERSION };
-  }
-
-  if (persistedVersion < UI_STORE_SCHEMA_VERSION) {
-    emitOperationalLog(
-      getBrowserLogger(),
-      "info",
-      "UI store persisted state migrated",
-      buildMigrationEventData({
-        scope: "ui-store",
-        storageKey: STORAGE_KEY_UI,
-        source: "localStorage",
-        fromVersion: persistedVersion,
-        toVersion: UI_STORE_SCHEMA_VERSION,
-        status: "migrated",
-      }),
-    );
-  }
-
-  return {
-    ...(persistedState as UiStorePersistedState),
-    schemaVersion: UI_STORE_SCHEMA_VERSION,
-  };
-};
-
-interface UIStore {
-  view: "template" | "editor" | "corkboard" | "outliner";
-  contextTab: ContextTab;
-  worldTab: WorldTab;
-
-  // Resizable Panels State
-  panels: ResizablePanelData[];
-
-  isSidebarOpen: boolean;
-  isContextOpen: boolean;
-  isManuscriptMenuOpen: boolean;
-  docsRightTab: DocsRightTab;
-  isBinderBarOpen: boolean;
-  scrivenerSidebarOpen: boolean;
-  scrivenerInspectorOpen: boolean;
-  scrivenerSections: ScrivenerSectionsState;
-  hasHydrated: boolean;
-  regions: UIRegionsState;
-
-  // Sidebar Widths (in pixels)
-  sidebarWidths: Record<string, number>;
-  layoutSurfaceRatios: Record<LayoutSurfaceId, number>;
-
-  setView: (view: UIStore["view"]) => void;
-  setContextTab: (tab: ContextTab) => void;
-  setWorldTab: (tab: WorldTab) => void;
-
-  // Panel Layout Actions
-  addPanel: (content: RightPanelContent, insertAt?: number) => void;
-  removePanel: (id: string) => void;
-  updatePanelSize: (id: string, size: number) => void;
-  setPanels: (panels: ResizablePanelData[]) => void;
-
-  setSidebarOpen: (isOpen: boolean) => void;
-  setContextOpen: (isOpen: boolean) => void;
-  setManuscriptMenuOpen: (isOpen: boolean) => void;
-  setDocsRightTab: (tab: DocsRightTab) => void;
-  setBinderBarOpen: (isOpen: boolean) => void;
-  setScrivenerSidebarOpen: (isOpen: boolean) => void;
-  setScrivenerInspectorOpen: (isOpen: boolean) => void;
-  setScrivenerSectionOpen: (section: ScrivenerSectionId, isOpen: boolean) => void;
-  setScrivenerSections: (sections: Partial<ScrivenerSectionsState>) => void;
-  setSidebarWidth: (feature: string, width: number) => void;
-  setLayoutSurfaceRatio: (surface: LayoutSurfaceId, ratio: number) => void;
-  setRegionOpen: (region: RegionId, open: boolean) => void;
-  setRegionWidth: (region: Exclude<RegionId, "rightRail">, width: number) => void;
-  openRightPanelTab: (tab: RightPanelTab) => void;
-  closeRightPanel: () => void;
-  toggleLeftSidebar: () => void;
-  setRightPanelWidth: (tab: RightPanelTab, width: number) => void;
-  setHasHydrated: (value: boolean) => void;
-  setFocusedClosableTarget: (target: FocusedClosableTarget | null) => void;
-  closeFocusedSurface: () => boolean;
-
-  // Scrivener Mode Main View State
-  mainView: { type: "editor" | "character" | "event" | "faction" | "world" | "memo" | "trash" | "analysis"; id?: string };
-  setMainView: (view: { type: "editor" | "character" | "event" | "faction" | "world" | "memo" | "trash" | "analysis"; id?: string }) => void;
-}
 
 export const useUIStore = create<UIStore>()(
   persist(
@@ -516,7 +76,7 @@ export const useUIStore = create<UIStore>()(
       layoutSurfaceRatios: { ...DEFAULT_LAYOUT_SURFACE_RATIOS },
       regions: cloneRegions(DEFAULT_REGIONS),
 
-      mainView: { type: "editor" },
+      mainView: { type: "editor" } as MainView,
 
       setView: (view) =>
         set((state) => (state.view === view ? state : { view })),
@@ -996,145 +556,6 @@ export const useUIStore = create<UIStore>()(
         return handled;
       },
     }),
-    {
-      name: STORAGE_KEY_UI,
-      version: UI_STORE_SCHEMA_VERSION,
-      storage: createJSONStorage(() => localStorage),
-      migrate: (persistedState, version) =>
-        migrateUiPersistedState(persistedState, version),
-      partialize: (state) => ({
-        schemaVersion: UI_STORE_SCHEMA_VERSION,
-        view: state.view,
-        contextTab: state.contextTab,
-        worldTab: state.worldTab,
-        // ✅ panels intentionally excluded from persist:
-        // Restored panels often reference stale chapter/snapshot IDs after restart,
-        // leading to broken UI. Always start fresh on each app launch.
-        isSidebarOpen: state.isSidebarOpen,
-        isContextOpen: state.isContextOpen,
-        isManuscriptMenuOpen: state.isManuscriptMenuOpen,
-        isBinderBarOpen: state.isBinderBarOpen,
-        scrivenerSidebarOpen: state.scrivenerSidebarOpen,
-        scrivenerInspectorOpen: state.scrivenerInspectorOpen,
-        scrivenerSections: state.scrivenerSections,
-        sidebarWidths: normalizeSidebarWidthsWithMigrations(state.sidebarWidths),
-        layoutSurfaceRatios: normalizeLayoutSurfaceRatiosWithMigrations(
-          state.layoutSurfaceRatios,
-          state.sidebarWidths,
-        ),
-        regions: cloneRegions(state.regions),
-      }),
-      merge: (persistedState, currentState) => {
-        if (!isRecord(persistedState)) {
-          resetPersistedUiStorage(
-            "drop_corrupt_payload",
-            "persisted_state_not_object",
-          );
-          return currentState;
-        }
-
-        const parsedPersisted = uiStorePersistedStateSchema.safeParse(persistedState);
-        if (!parsedPersisted.success) {
-          const version =
-            typeof persistedState.schemaVersion === "number"
-              ? persistedState.schemaVersion
-              : undefined;
-          warnPersistValidation(
-            "Invalid UI store persisted state",
-            parsedPersisted.error,
-            version,
-          );
-          resetPersistedUiStorage(
-            "drop_invalid_payload",
-            "schema_validation_failed",
-            version,
-          );
-          return currentState;
-        }
-
-        const typedPersisted = parsedPersisted.data as Partial<UIStore>;
-        const normalizedSidebarWidths = normalizeSidebarWidthsWithMigrations(
-          typedPersisted.sidebarWidths,
-        );
-        const normalizedLayoutSurfaceRatios = normalizeLayoutSurfaceRatiosWithMigrations(
-          typedPersisted.layoutSurfaceRatios,
-          normalizedSidebarWidths,
-        );
-        const migratedRegions = buildRegionsFromLegacyState({
-          isSidebarOpen:
-            typeof typedPersisted.isSidebarOpen === "boolean"
-              ? typedPersisted.isSidebarOpen
-              : undefined,
-          isContextOpen:
-            typeof typedPersisted.isContextOpen === "boolean"
-              ? typedPersisted.isContextOpen
-              : undefined,
-          docsRightTab: normalizeRightPanelTab(typedPersisted.docsRightTab),
-          isBinderBarOpen:
-            typeof typedPersisted.isBinderBarOpen === "boolean"
-              ? typedPersisted.isBinderBarOpen
-              : undefined,
-          scrivenerSidebarOpen:
-            typeof typedPersisted.scrivenerSidebarOpen === "boolean"
-              ? typedPersisted.scrivenerSidebarOpen
-              : undefined,
-          scrivenerInspectorOpen:
-            typeof typedPersisted.scrivenerInspectorOpen === "boolean"
-              ? typedPersisted.scrivenerInspectorOpen
-              : undefined,
-          sidebarWidths: normalizedSidebarWidths,
-          regions: typedPersisted.regions,
-        });
-
-        const docsRightTab =
-          normalizeRightPanelTab(typedPersisted.docsRightTab) ??
-          migratedRegions.rightPanel.activeTab;
-        return {
-          ...currentState,
-          ...typedPersisted,
-          isSidebarOpen: migratedRegions.leftSidebar.open,
-          isContextOpen: migratedRegions.rightPanel.open,
-          docsRightTab,
-          isBinderBarOpen: migratedRegions.rightRail.open,
-          scrivenerSidebarOpen: migratedRegions.leftSidebar.open,
-          scrivenerInspectorOpen: migratedRegions.rightPanel.open,
-          scrivenerSections: {
-            ...DEFAULT_SCRIVENER_SECTIONS,
-            ...(isRecord(typedPersisted.scrivenerSections)
-              ? typedPersisted.scrivenerSections as Partial<ScrivenerSectionsState>
-              : {}),
-          },
-          sidebarWidths: normalizedSidebarWidths,
-          layoutSurfaceRatios: normalizedLayoutSurfaceRatios,
-          regions: migratedRegions,
-        };
-      },
-      onRehydrateStorage: () => {
-        const timer = createPerformanceTimer({
-          scope: "ui-store",
-          event: "persist.rehydrate.ui-store",
-          meta: {
-            storageKey: STORAGE_KEY_UI,
-            targetVersion: UI_STORE_SCHEMA_VERSION,
-          },
-        });
-        return (state, error) => {
-          if (error) {
-            timer.fail(getBrowserLogger(), error, {
-              action: "rehydrate_failed",
-            });
-            resetPersistedUiStorage(
-              "drop_rehydrate_failure",
-              error instanceof Error ? error.message : String(error),
-            );
-          } else {
-            timer.complete(getBrowserLogger(), {
-              action: "rehydrate_completed",
-            });
-          }
-          state?.setHasHydrated(true);
-        };
-      },
-    },
+    buildUiStorePersistOptions(),
   ),
 );

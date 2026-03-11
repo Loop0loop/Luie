@@ -16,7 +16,7 @@ export default function SearchInput({
 }: SearchInputProps) {
   if (variant === "memo") {
     return (
-      <div className="flex items-center gap-2 bg-element px-2 py-1.5 rounded">
+      <div className="flex items-center gap-2 bg-element px-control-x py-control-y rounded-control">
         <Search
           style={{ width: "var(--memo-search-icon-size)", height: "var(--memo-search-icon-size)" }}
           color="var(--text-tertiary)"
@@ -42,7 +42,7 @@ export default function SearchInput({
     <div className="relative">
       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none icon-sm" />
       <input
-        className="w-full bg-element border border-border rounded-md py-2 px-3 pl-8 text-[13px] text-fg outline-none transition-all focus:border-active focus:ring-1 focus:ring-active"
+        className="w-full bg-element border border-border rounded-control py-2 px-3 pl-8 text-[13px] text-fg outline-none transition-all focus:border-active focus:ring-1 focus:ring-active"
         placeholder={placeholder}
         value={value}
         onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}

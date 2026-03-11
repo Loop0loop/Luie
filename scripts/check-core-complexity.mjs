@@ -3,11 +3,27 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 
-const TARGET_FILES = [
+const BLOCKING_TARGET_FILES = [
   "src/main/services/features/sync/syncService.ts",
   "src/main/services/core/projectService.ts",
   "src/renderer/src/features/workspace/components/ProjectTemplateSelector.tsx",
 ];
+
+const ADVISORY_TARGET_FILES = [
+  "src/main/database/index.ts",
+  "src/main/manager/autoSaveManager.ts",
+  "src/main/services/core/chapterService.ts",
+  "src/main/services/features/snapshot/snapshotService.ts",
+  "src/main/services/features/sync/syncRepository.ts",
+  "src/renderer/src/features/research/services/worldPackageStorage.ts",
+  "src/renderer/src/features/research/stores/worldBuildingStore.ts",
+  "src/renderer/src/features/settings/hooks/useSettingsManager.ts",
+  "src/renderer/src/features/workspace/components/layout/GoogleDocsLayout.tsx",
+  "src/renderer/src/features/workspace/stores/uiStore.ts",
+];
+
+const TARGET_FILES = [...BLOCKING_TARGET_FILES, ...ADVISORY_TARGET_FILES];
+const BLOCKING_TARGET_FILE_SET = new Set(BLOCKING_TARGET_FILES);
 
 const RULE_OVERRIDES = [
   `complexity:["warn",18]`,
@@ -64,7 +80,10 @@ for (const fileResult of parsed) {
       ruleId: message.ruleId,
       message: message.message,
     };
-    if (BLOCKING_RULE_IDS.has(message.ruleId)) {
+    if (
+      BLOCKING_RULE_IDS.has(message.ruleId) &&
+      BLOCKING_TARGET_FILE_SET.has(finding.file)
+    ) {
       blockingFindings.push(finding);
     } else {
       advisoryFindings.push(finding);

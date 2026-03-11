@@ -1,6 +1,9 @@
 import { app, BrowserWindow, session, dialog } from "electron";
 import type { WebContents } from "electron";
+import { autoSaveManager } from "../manager/autoSaveManager.js";
 import { settingsManager, windowManager } from "../manager/index.js";
+import { projectService } from "../services/core/projectService.js";
+import { snapshotService } from "../services/features/snapshot/snapshotService.js";
 import { isDevEnv } from "../utils/environment.js";
 import type { createLogger } from "../../shared/logger/index.js";
 import { applyApplicationMenu } from "./menu.js";
@@ -58,7 +61,6 @@ const handleRendererCrash = async (
   });
 
   try {
-    const { autoSaveManager } = await import("../manager/autoSaveManager.js");
     await autoSaveManager.flushCritical();
     logger.info("Emergency save completed after crash");
   } catch (error) {
@@ -96,9 +98,7 @@ const runDeferredStartupMaintenance = async (logger: Logger): Promise<void> => {
   }
 
   try {
-    const { autoSaveManager } = await import("../manager/autoSaveManager.js");
     await autoSaveManager.flushMirrorsToSnapshots("startup-recovery");
-    const { snapshotService } = await import("../services/features/snapshot/snapshotService.js");
     void snapshotService.pruneSnapshotsAllProjects();
     void snapshotService.cleanupOrphanArtifacts("startup");
   } catch (error) {
@@ -106,7 +106,6 @@ const runDeferredStartupMaintenance = async (logger: Logger): Promise<void> => {
   }
 
   try {
-    const { projectService } = await import("../services/core/projectService.js");
     await projectService.reconcileProjectPathDuplicates();
   } catch (error) {
     logger.warn("Project path duplicate reconciliation skipped", error);

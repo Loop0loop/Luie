@@ -1,6 +1,10 @@
 import { app, ipcMain, dialog } from "electron";
 import type { BrowserWindow } from "electron";
 import { windowManager } from "../manager/index.js";
+import { autoSaveManager } from "../manager/autoSaveManager.js";
+import { db } from "../database/index.js";
+import { projectService } from "../services/core/projectService.js";
+import { snapshotService } from "../services/features/snapshot/snapshotService.js";
 import { IPC_CHANNELS } from "../../shared/ipc/channels.js";
 import {
   QUIT_EXPORT_HARD_TIMEOUT_MS,
@@ -51,9 +55,6 @@ export const registerShutdownHandlers = (logger: Logger): void => {
     void (async () => {
       logger.info("App is quitting");
 
-      const { autoSaveManager } = await import("../manager/autoSaveManager.js");
-      const { snapshotService } = await import("../services/features/snapshot/snapshotService.js");
-      const { projectService } = await import("../services/core/projectService.js");
       const mainWindow = windowManager.getMainWindow();
 
       sendQuitPhase(mainWindow, "prepare", "데이터를 안전하게 정리하고 있습니다...");
@@ -212,7 +213,6 @@ export const registerShutdownHandlers = (logger: Logger): void => {
       }
 
       try {
-        const { db } = await import("../database/index.js");
         await db.disconnect();
       } catch (error) {
         logger.warn("DB disconnect failed during quit", error);

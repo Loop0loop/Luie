@@ -26,7 +26,7 @@ export function Modal({
   return (
     <div className="fixed inset-0 z-9999 bg-black/60 backdrop-blur-xs flex items-center justify-center animate-in fade-in duration-200" onMouseDown={onClose}>
       <div
-        className={cn("bg-panel border border-border rounded-xl shadow-2xl w-full flex flex-col overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-2 duration-200", !width && "max-w-md")}
+        className={cn("bg-panel border border-border rounded-shell shadow-modal w-full flex flex-col overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-2 duration-200", !width && "max-w-md")}
         style={{ width: width || undefined, maxWidth: width ? '90vw' : undefined }}
         onMouseDown={(e) => e.stopPropagation()}
       >
@@ -74,12 +74,12 @@ export function ConfirmDialog({
       title={title}
       footer={
         <div className="flex justify-end gap-3 w-full">
-          <button className="px-4 py-2 bg-transparent border border-border rounded-md text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg" onClick={onCancel}>
+          <button className="px-4 py-2 bg-transparent border border-border rounded-control text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg" onClick={onCancel}>
             {effectiveCancelLabel}
           </button>
           <button
             className={cn(
-              "px-4 py-2 border-none rounded-md text-white text-[13px] font-medium cursor-pointer transition-all hover:brightness-110",
+              "px-4 py-2 border-none rounded-control text-white text-[13px] font-medium cursor-pointer transition-all hover:brightness-110",
               isDestructive ? "bg-red-500 hover:bg-red-600" : "bg-accent"
             )}
             onClick={onConfirm}
@@ -134,10 +134,10 @@ export function PromptDialog({
       title={title}
       footer={
         <div className="flex justify-end gap-3 w-full">
-          <button className="px-4 py-2 bg-transparent border border-border rounded-md text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg" onClick={onCancel}>
+          <button className="px-4 py-2 bg-transparent border border-border rounded-control text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg" onClick={onCancel}>
             {effectiveCancelLabel}
           </button>
-          <button className="px-4 py-2 bg-accent border-none rounded-md text-white text-[13px] font-medium cursor-pointer transition-all hover:brightness-110" onClick={handleSubmit}>
+          <button className="px-4 py-2 bg-accent border-none rounded-control text-white text-[13px] font-medium cursor-pointer transition-all hover:brightness-110" onClick={handleSubmit}>
             {effectiveConfirmLabel}
           </button>
         </div>
@@ -147,7 +147,7 @@ export function PromptDialog({
       <input
         key={`${isOpen}-${defaultValue}`}
         id={inputId}
-        className="w-full p-2.5 bg-input border border-border rounded-md text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+        className="w-full p-2.5 bg-input border border-border rounded-control text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
         defaultValue={defaultValue}
         placeholder={placeholder}
         autoFocus
