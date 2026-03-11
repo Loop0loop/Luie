@@ -1,1 +1,0 @@
-(function(){"use strict";const a=t=>{if(!t)return"";const e=t instanceof Date?t:new Date(t);return Number.isNaN(e.getTime())?"":e.toLocaleString()};self.addEventListener("message",t=>{const n={items:(t.data?.snapshots??[]).map(s=>({snapshot:s,formattedDate:a(s.createdAt)}))};self.postMessage(n)})})();
