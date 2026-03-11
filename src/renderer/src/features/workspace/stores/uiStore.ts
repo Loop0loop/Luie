@@ -34,6 +34,12 @@ import {
   emitOperationalLog,
 } from "@shared/logger";
 import type { ZodError } from "zod";
+import {
+  clearFocusedClosableTarget,
+  getFocusedClosableTarget,
+  setFocusedClosableTarget as setTransientFocusedClosableTarget,
+  type FocusedClosableTarget,
+} from "@renderer/features/workspace/stores/closableFocusStore";
 
 export type ContextTab = "synopsis" | "characters" | "terms";
 export type ResearchTab = "character" | "world" | "event" | "faction" | "scrap" | "analysis";
@@ -83,10 +89,6 @@ interface RightPanelContent {
   tab?: ResearchTab;
   snapshot?: Snapshot;
 }
-
-type FocusedClosableTarget =
-  | { kind: "panel"; id: string }
-  | { kind: "docs-tab" };
 
 export interface ResizablePanelData {
   id: string; // Unique ID for the panel
@@ -452,7 +454,6 @@ interface UIStore {
   scrivenerInspectorOpen: boolean;
   scrivenerSections: ScrivenerSectionsState;
   hasHydrated: boolean;
-  focusedClosableTarget: FocusedClosableTarget | null;
   regions: UIRegionsState;
 
   // Sidebar Widths (in pixels)
@@ -511,7 +512,6 @@ export const useUIStore = create<UIStore>()(
       scrivenerInspectorOpen: DEFAULT_REGIONS.rightPanel.open,
       scrivenerSections: { ...DEFAULT_SCRIVENER_SECTIONS },
       hasHydrated: false,
-      focusedClosableTarget: null,
       sidebarWidths: { ...DEFAULT_SIDEBAR_WIDTHS },
       layoutSurfaceRatios: { ...DEFAULT_LAYOUT_SURFACE_RATIOS },
       regions: cloneRegions(DEFAULT_REGIONS),
@@ -525,54 +525,59 @@ export const useUIStore = create<UIStore>()(
       setWorldTab: (worldTab) =>
         set((state) => (state.worldTab === worldTab ? state : { worldTab })),
 
-      addPanel: (content, insertAt) => set((state) => {
-        // Prevent duplicates
-        const existing = state.panels.find(p =>
-          p.content.type === content.type &&
-          p.content.id === content.id &&
-          p.content.tab === content.tab
-        );
-        if (existing) return state;
+      addPanel: (content, insertAt) => {
+        let nextFocusedPanelId: string | null = null;
+        set((state) => {
+          const existing = state.panels.find((panel) =>
+            panel.content.type === content.type &&
+            panel.content.id === content.id &&
+            panel.content.tab === content.tab,
+          );
+          if (existing || state.panels.length >= 3) {
+            return state;
+          }
 
-        // Limit overpopulation
-        if (state.panels.length >= 3) {
-          return state; // Do not add more than 3 side panels
-        }
-
-        const newPanel: ResizablePanelData = {
-          id: `panel-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          content,
-          size: state.panels.length === 0 ? 100 : 50
-        };
-        const newPanels = [...state.panels];
-        if (insertAt !== undefined && insertAt >= 0 && insertAt <= newPanels.length) {
-          newPanels.splice(insertAt, 0, newPanel);
-        } else {
-          newPanels.push(newPanel);
-        }
-        // Normalize sizes roughly
-        const sizePerPanel = 100 / newPanels.length;
-        newPanels.forEach(p => p.size = sizePerPanel);
-        return {
-          ...state,
-          panels: newPanels,
-          focusedClosableTarget: { kind: "panel", id: newPanel.id },
-        };
-      }),
-      removePanel: (id) => set((state) => {
-        const newPanels = state.panels.filter(p => p.id !== id);
-        if (newPanels.length > 0) {
+          const newPanel: ResizablePanelData = {
+            id: `panel-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            content,
+            size: state.panels.length === 0 ? 100 : 50,
+          };
+          const newPanels = [...state.panels];
+          if (insertAt !== undefined && insertAt >= 0 && insertAt <= newPanels.length) {
+            newPanels.splice(insertAt, 0, newPanel);
+          } else {
+            newPanels.push(newPanel);
+          }
           const sizePerPanel = 100 / newPanels.length;
-          newPanels.forEach(p => p.size = sizePerPanel);
+          newPanels.forEach((panel) => {
+            panel.size = sizePerPanel;
+          });
+          nextFocusedPanelId = newPanel.id;
+          return {
+            ...state,
+            panels: newPanels,
+          };
+        });
+        if (nextFocusedPanelId) {
+          setTransientFocusedClosableTarget({ kind: "panel", id: nextFocusedPanelId });
         }
-        const shouldClearFocus =
-          state.focusedClosableTarget?.kind === "panel" &&
-          state.focusedClosableTarget.id === id;
-        return {
-          panels: newPanels,
-          focusedClosableTarget: shouldClearFocus ? null : state.focusedClosableTarget,
-        };
-      }),
+      },
+      removePanel: (id) => {
+        const focusedTarget = getFocusedClosableTarget();
+        set((state) => {
+          const newPanels = state.panels.filter((panel) => panel.id !== id);
+          if (newPanels.length > 0) {
+            const sizePerPanel = 100 / newPanels.length;
+            newPanels.forEach((panel) => {
+              panel.size = sizePerPanel;
+            });
+          }
+          return { panels: newPanels };
+        });
+        if (focusedTarget?.kind === "panel" && focusedTarget.id === id) {
+          clearFocusedClosableTarget();
+        }
+      },
       updatePanelSize: (id, size) => set((state) => ({
         panels: state.panels.map(p => p.id === id ? { ...p, size } : p)
       })),
@@ -614,21 +619,8 @@ export const useUIStore = create<UIStore>()(
           state.isManuscriptMenuOpen === isManuscriptMenuOpen
             ? state
             : { isManuscriptMenuOpen }),
-      setDocsRightTab: (docsRightTab) =>
+      setDocsRightTab: (docsRightTab) => {
         set((state) => {
-          const nextFocusedClosableTarget =
-            docsRightTab !== null
-              ? { kind: "docs-tab" as const }
-              : state.focusedClosableTarget?.kind === "docs-tab"
-                ? null
-                : state.focusedClosableTarget;
-          const focusedUnchanged =
-            state.focusedClosableTarget?.kind === nextFocusedClosableTarget?.kind &&
-            (state.focusedClosableTarget?.kind !== "panel" ||
-              state.focusedClosableTarget.id ===
-                (nextFocusedClosableTarget?.kind === "panel"
-                  ? nextFocusedClosableTarget.id
-                  : undefined));
           const nextRightPanelOpen = docsRightTab !== null;
           const nextRegions = {
             ...state.regions,
@@ -640,7 +632,6 @@ export const useUIStore = create<UIStore>()(
           };
           if (
             state.docsRightTab === docsRightTab &&
-            focusedUnchanged &&
             state.regions.rightPanel.open === nextRightPanelOpen &&
             state.regions.rightPanel.activeTab === docsRightTab
           ) {
@@ -651,9 +642,14 @@ export const useUIStore = create<UIStore>()(
             isContextOpen: nextRightPanelOpen,
             scrivenerInspectorOpen: nextRightPanelOpen,
             regions: nextRegions,
-            focusedClosableTarget: nextFocusedClosableTarget,
           };
-        }),
+        });
+        if (docsRightTab !== null) {
+          setTransientFocusedClosableTarget({ kind: "docs-tab" });
+        } else if (getFocusedClosableTarget()?.kind === "docs-tab") {
+          clearFocusedClosableTarget();
+        }
+      },
       setBinderBarOpen: (isBinderBarOpen) =>
         set((state) => {
           const unchanged =
@@ -790,7 +786,7 @@ export const useUIStore = create<UIStore>()(
             },
           };
         }),
-      setRegionOpen: (region, open) =>
+      setRegionOpen: (region, open) => {
         set((state) => {
           if (state.regions[region].open === open) return state;
           const nextRegions = cloneRegions(state.regions);
@@ -806,17 +802,17 @@ export const useUIStore = create<UIStore>()(
             patch.docsRightTab = open ? state.docsRightTab : null;
             if (!open) {
               nextRegions.rightPanel.activeTab = null;
-              patch.focusedClosableTarget =
-                state.focusedClosableTarget?.kind === "docs-tab"
-                  ? null
-                  : state.focusedClosableTarget;
             }
           }
           if (region === "rightRail") {
             patch.isBinderBarOpen = open;
           }
           return patch;
-        }),
+        });
+        if (region === "rightPanel" && !open && getFocusedClosableTarget()?.kind === "docs-tab") {
+          clearFocusedClosableTarget();
+        }
+      },
       setRegionWidth: (region, width) =>
         set((state) => {
           if (region === "leftSidebar") {
@@ -856,7 +852,7 @@ export const useUIStore = create<UIStore>()(
             },
           };
         }),
-      openRightPanelTab: (tab) =>
+      openRightPanelTab: (tab) => {
         set((state) => {
           const nextTab = normalizeRightPanelTab(tab);
           if (!nextTab) return state;
@@ -877,10 +873,11 @@ export const useUIStore = create<UIStore>()(
             scrivenerInspectorOpen: true,
             isBinderBarOpen: true,
             regions: nextRegions,
-            focusedClosableTarget: { kind: "docs-tab" },
           };
-        }),
-      closeRightPanel: () =>
+        });
+        setTransientFocusedClosableTarget({ kind: "docs-tab" });
+      },
+      closeRightPanel: () => {
         set((state) => {
           if (!state.regions.rightPanel.open && state.docsRightTab === null) {
             return state;
@@ -893,12 +890,12 @@ export const useUIStore = create<UIStore>()(
             isContextOpen: false,
             scrivenerInspectorOpen: false,
             regions: nextRegions,
-            focusedClosableTarget:
-              state.focusedClosableTarget?.kind === "docs-tab"
-                ? null
-                : state.focusedClosableTarget,
           };
-        }),
+        });
+        if (getFocusedClosableTarget()?.kind === "docs-tab") {
+          clearFocusedClosableTarget();
+        }
+      },
       toggleLeftSidebar: () =>
         set((state) => {
           const nextOpen = !state.regions.leftSidebar.open;
@@ -931,18 +928,9 @@ export const useUIStore = create<UIStore>()(
         }),
       setHasHydrated: (hasHydrated) =>
         set((state) => (state.hasHydrated === hasHydrated ? state : { hasHydrated })),
-      setFocusedClosableTarget: (focusedClosableTarget) =>
-        set((state) => {
-          const current = state.focusedClosableTarget;
-          const same =
-            current?.kind === focusedClosableTarget?.kind &&
-            (current?.kind !== "panel" ||
-              current.id ===
-                (focusedClosableTarget?.kind === "panel"
-                  ? focusedClosableTarget.id
-                  : undefined));
-          return same ? state : { focusedClosableTarget };
-        }),
+      setFocusedClosableTarget: (focusedClosableTarget) => {
+        setTransientFocusedClosableTarget(focusedClosableTarget);
+      },
       closeFocusedSurface: () => {
         let handled = false;
         set((state) => {
@@ -951,7 +939,7 @@ export const useUIStore = create<UIStore>()(
             const sizePerPanel = 100 / panels.length;
             return panels.map((panel) => ({ ...panel, size: sizePerPanel }));
           };
-          const focusedTarget = state.focusedClosableTarget;
+          const focusedTarget = getFocusedClosableTarget();
 
           if (
             focusedTarget?.kind === "panel" &&
@@ -963,7 +951,6 @@ export const useUIStore = create<UIStore>()(
             );
             return {
               panels: nextPanels,
-              focusedClosableTarget: null,
             };
           }
 
@@ -977,7 +964,6 @@ export const useUIStore = create<UIStore>()(
               isContextOpen: false,
               scrivenerInspectorOpen: false,
               regions: nextRegions,
-              focusedClosableTarget: null,
             };
           }
 
@@ -991,7 +977,6 @@ export const useUIStore = create<UIStore>()(
               isContextOpen: false,
               scrivenerInspectorOpen: false,
               regions: nextRegions,
-              focusedClosableTarget: null,
             };
           }
 
@@ -1000,12 +985,14 @@ export const useUIStore = create<UIStore>()(
             const nextPanels = normalizePanelSizes(state.panels.slice(0, -1));
             return {
               panels: nextPanels,
-              focusedClosableTarget: null,
             };
           }
 
           return state;
         });
+        if (handled) {
+          clearFocusedClosableTarget();
+        }
         return handled;
       },
     }),

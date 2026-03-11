@@ -34,7 +34,6 @@ import {
 } from "@shared/constants/configs";
 import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import { toPercentSize } from "@shared/constants/sidebarSizing";
-import { buildPanelGroupCompositionKey } from "@renderer/features/workspace/utils/panelGroupLayout";
 import {
   Menu,
   ChevronLeft,
@@ -114,7 +113,6 @@ export default function GoogleDocsLayout({
     closeRightPanel,
     setPanelRailOpen,
     setFocusedClosableTarget,
-    hasHydrated,
   } = useUIStore(
     useShallow((state) => ({
       isSidebarOpen: state.regions.leftSidebar.open,
@@ -127,7 +125,6 @@ export default function GoogleDocsLayout({
       closeRightPanel: state.closeRightPanel,
       setPanelRailOpen: state.setBinderBarOpen,
       setFocusedClosableTarget: state.setFocusedClosableTarget,
-      hasHydrated: state.hasHydrated,
     }))
   );
 
@@ -169,23 +166,6 @@ export default function GoogleDocsLayout({
   const rightPanelConfig = activePanelSurface
     ? getLayoutSurfaceConfig(activePanelSurface)
     : null;
-  const docsLayoutGroupKey = buildPanelGroupCompositionKey(
-    `docs-layout-${hasHydrated ? "hydrated" : "cold"}`,
-    [
-      ...(isSidebarOpen ? ["left-sidebar"] : []),
-      "center-content",
-      ...(activeRightTab ? [`right-context-panel-${activeRightTab}`] : []),
-      ...(!isSidebarOpen && !activeRightTab ? ["docs-layout-placeholder"] : []),
-    ],
-  );
-  const docsEditorSplitKey = buildPanelGroupCompositionKey(
-    "docs-editor-split",
-    [
-      "editor-main-panel",
-      ...additionalPanelIds,
-      ...(additionalPanelIds.length === 0 ? ["docs-editor-placeholder"] : []),
-    ],
-  );
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-sans transition-colors duration-200">
@@ -225,7 +205,7 @@ export default function GoogleDocsLayout({
               }
             }}
             placeholder={t("project.defaults.untitled")}
-            className="text-[18px] text-foreground bg-transparent px-2 py-0.5 rounded-[4px] hover:bg-surface-hover focus:bg-background focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200 border border-transparent truncate max-w-[400px] min-w-[150px]"
+            className="text-[18px] text-foreground bg-transparent px-2 py-0.5 rounded-[4px] hover:bg-surface-hover focus:bg-background focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors duration-150 border border-transparent truncate max-w-[400px] min-w-[150px]"
           />
         </div>
 
@@ -268,7 +248,7 @@ export default function GoogleDocsLayout({
           <div className="absolute left-4 top-4 z-50 pointer-events-auto">
             <button
               onClick={() => setRegionOpen("leftSidebar", true)}
-              className="w-10 h-10 bg-background border border-border/50 shadow-md rounded-full flex items-center justify-center hover:bg-surface-hover transition-all text-muted-foreground"
+              className="w-10 h-10 bg-background border border-border/50 shadow-sm rounded-full flex items-center justify-center hover:bg-surface-hover transition-colors duration-150 text-muted-foreground"
               title={t("sidebar.toggle.open")}
             >
               <Menu className="w-5 h-5" />
@@ -277,10 +257,9 @@ export default function GoogleDocsLayout({
         )}
 
         <PanelGroup
-          key={docsLayoutGroupKey}
           orientation="horizontal"
           className="flex w-full h-full flex-1 overflow-hidden relative"
-          id={docsLayoutGroupKey}
+          id="docs-layout-group"
           onLayoutChanged={onLayoutChanged}
         >
 
@@ -311,10 +290,9 @@ export default function GoogleDocsLayout({
           >
             <div className="flex-1 relative flex flex-col overflow-hidden">
               <PanelGroup
-                key={docsEditorSplitKey}
                 orientation="horizontal"
                 className="flex w-full h-full flex-1 overflow-hidden relative"
-                id={docsEditorSplitKey}
+                id="docs-editor-split-group"
               >
                 <Panel
                   id="editor-main-panel"
@@ -330,7 +308,7 @@ export default function GoogleDocsLayout({
                     </div>
 
                     <div
-                      className="mb-8 bg-background transition-all duration-200 ease-in-out relative flex flex-col box-border shadow-md border border-border"
+                      className="mb-8 bg-background transition-shadow duration-150 ease-in-out relative flex flex-col box-border shadow-sm border border-border"
                       style={{
                         width: `${EDITOR_A4_PAGE_WIDTH_PX}px`,
                         minHeight: `${EDITOR_A4_PAGE_HEIGHT_PX}px`,

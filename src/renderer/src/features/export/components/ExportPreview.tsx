@@ -11,6 +11,7 @@ interface ExportPreviewProps {
     marginLeft: number;
     fontFamily: string;
     lineHeight: string;
+    normalizeLineSpacing: boolean;
     sanitizedPreviewContent: string;
     showPageNumbers: boolean;
     startPageNumber: number;
@@ -26,6 +27,7 @@ export function ExportPreview({
     marginLeft,
     fontFamily,
     lineHeight,
+    normalizeLineSpacing,
     sanitizedPreviewContent,
     showPageNumbers,
     startPageNumber,
@@ -37,6 +39,11 @@ export function ExportPreview({
                 <div className="flex items-center gap-2 text-xs text-muted">
                     <span className="bg-surface px-2 py-0.5 rounded text-fg border border-border">100%</span>
                     <span>{t("exportWindow.preview.label")}</span>
+                    {normalizeLineSpacing && (
+                        <span className="bg-accent/10 px-2 py-0.5 rounded text-accent border border-accent/20">
+                            {t("exportWindow.preview.normalized")}
+                        </span>
+                    )}
                 </div>
             </div>
 

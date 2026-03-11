@@ -15,7 +15,6 @@ import {
 } from "@shared/constants/layoutSizing";
 import { toPercentSize } from "@shared/constants/sidebarSizing";
 import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
-import { buildPanelGroupCompositionKey } from "@renderer/features/workspace/utils/panelGroupLayout";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -39,7 +38,6 @@ export default function MainLayout({
     isSidebarOpen,
     isContextOpen,
     layoutSurfaceRatios,
-    hasHydrated,
     toggleLeftSidebar,
     setRegionOpen,
   } = useUIStore(
@@ -47,7 +45,6 @@ export default function MainLayout({
       isSidebarOpen: state.regions.leftSidebar.open,
       isContextOpen: state.regions.rightPanel.open,
       layoutSurfaceRatios: state.layoutSurfaceRatios,
-      hasHydrated: state.hasHydrated,
       toggleLeftSidebar: state.toggleLeftSidebar,
       setRegionOpen: state.setRegionOpen,
     }))
@@ -65,31 +62,13 @@ export default function MainLayout({
     layoutSurfaceRatios["default.sidebar"] ?? getLayoutSurfaceDefaultRatio("default.sidebar");
   const contextRatio =
     layoutSurfaceRatios["default.panel"] ?? getLayoutSurfaceDefaultRatio("default.panel");
-  const mainLayoutGroupKey = buildPanelGroupCompositionKey(
-    `main-layout-${hasHydrated ? "hydrated" : "cold"}`,
-    [
-      ...(isSidebarOpen ? ["sidebar-panel"] : []),
-      "main-content-panel",
-      ...(isContextOpen ? ["context-panel"] : []),
-      ...(!isSidebarOpen && !isContextOpen ? ["main-layout-placeholder"] : []),
-    ],
-  );
-  const mainContentGroupKey = buildPanelGroupCompositionKey(
-    "main-layout-content",
-    [
-      "main-primary-content",
-      ...additionalPanelIds,
-      ...(additionalPanelIds.length === 0 ? ["main-content-placeholder"] : []),
-    ],
-  );
 
   return (
     <div className="flex flex-col h-screen bg-app text-fg">
       <WindowBar />
 
       <PanelGroup
-        key={mainLayoutGroupKey}
-        id={mainLayoutGroupKey}
+        id="main-layout-group"
         orientation="horizontal"
         className="flex flex-1 overflow-hidden relative w-full h-full"
         onLayoutChanged={onLayoutChanged}
@@ -119,7 +98,7 @@ export default function MainLayout({
           <EditorDropZones />
           <div className="flex items-center px-4 py-2 h-12 shrink-0">
             <button
-              className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-all hover:bg-active hover:text-fg"
+              className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-colors duration-150 hover:bg-active hover:text-fg"
               onClick={toggleLeftSidebar}
               title={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
             >
@@ -133,7 +112,7 @@ export default function MainLayout({
             <div className="flex-1" />
 
             <button
-              className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-all hover:bg-active hover:text-fg"
+              className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-colors duration-150 hover:bg-active hover:text-fg"
               onClick={() => setRegionOpen("rightPanel", !isContextOpen)}
               title={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
             >
@@ -147,8 +126,7 @@ export default function MainLayout({
 
           <div className="flex-1 overflow-y-auto flex flex-col">
             <PanelGroup
-              key={mainContentGroupKey}
-              id={mainContentGroupKey}
+              id="main-layout-content-group"
               orientation="horizontal"
               className="flex w-full h-full flex-1 overflow-hidden relative"
             >

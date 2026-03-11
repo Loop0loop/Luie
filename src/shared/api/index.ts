@@ -183,6 +183,7 @@ export type RendererApi = {
       fontFamily: string;
       fontSize: number;
       lineHeight: string;
+      normalizeLineSpacing?: boolean;
       showPageNumbers: boolean;
       startPageNumber: number;
     }) => Promise<

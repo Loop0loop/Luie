@@ -118,7 +118,9 @@ export const jaExport = {
         "nanum": "Nanum Myeongjo"
       },
       "fontHint": "フォントがない場合は、近い明朝/ゴシック体に置き換えられます。",
-      "lineHeight": "行間"
+      "lineHeight": "行間",
+      "normalizeLineSpacing": "行間を整える",
+      "normalizeLineSpacingHint": "Web 由来のスタイルを外し、崩れた改行を整え、先頭タイトルの重複とリスト形状をエクスポート向けに整理します。"
     },
     "headerSettings": {
       "showPageNumbers": "ページ番号を表示",
@@ -130,6 +132,7 @@ export const jaExport = {
     },
     "preview": {
       "label": "プレビュー",
+      "normalized": "整形適用中",
       "errorTitle": "エラー",
       "loading": "章を読み込み中..."
     },

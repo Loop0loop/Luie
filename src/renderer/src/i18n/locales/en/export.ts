@@ -118,7 +118,9 @@ export const enExport = {
         "nanum": "Nanum Myeongjo"
       },
       "fontHint": "If the font is not available, a similar serif/sans font will be used.",
-      "lineHeight": "Line height"
+      "lineHeight": "Line height",
+      "normalizeLineSpacing": "Normalize spacing",
+      "normalizeLineSpacingHint": "Removes pasted web styling, fixes broken line breaks, removes duplicated title lines, and rebuilds list-like lines for export."
     },
     "headerSettings": {
       "showPageNumbers": "Show page numbers",
@@ -130,6 +132,7 @@ export const enExport = {
     },
     "preview": {
       "label": "Preview",
+      "normalized": "Normalization on",
       "errorTitle": "Error",
       "loading": "Loading chapter..."
     },

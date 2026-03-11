@@ -25,6 +25,8 @@ export default function ExportWindow() {
     setLineHeight,
     fontFamily,
     setFontFamily,
+    normalizeLineSpacing,
+    setNormalizeLineSpacing,
     showPageNumbers,
     setShowPageNumbers,
     startPageNumber,
@@ -62,6 +64,8 @@ export default function ExportWindow() {
           setLineHeight={setLineHeight}
           fontFamily={fontFamily}
           setFontFamily={setFontFamily}
+          normalizeLineSpacing={normalizeLineSpacing}
+          setNormalizeLineSpacing={setNormalizeLineSpacing}
           showPageNumbers={showPageNumbers}
           setShowPageNumbers={setShowPageNumbers}
           startPageNumber={startPageNumber}
@@ -82,6 +86,7 @@ export default function ExportWindow() {
           marginLeft={marginLeft}
           fontFamily={fontFamily}
           lineHeight={lineHeight}
+          normalizeLineSpacing={normalizeLineSpacing}
           sanitizedPreviewContent={sanitizedPreviewContent}
           showPageNumbers={showPageNumbers}
           startPageNumber={startPageNumber}

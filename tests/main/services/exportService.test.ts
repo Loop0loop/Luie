@@ -73,6 +73,28 @@ describe("ExportService", () => {
       expect(result.success).toBe(true);
       expect(result.filePath).toBeTruthy();
     });
+
+    it("should export normalized pasted content to DOCX", async () => {
+      const options: ExportOptions = {
+        projectId: "test-project-id",
+        chapterId: "test-chapter-id",
+        title: "Normalized Chapter",
+        content: `
+          <h1 style="font-size:28px">Normalized Chapter</h1>
+          <p style="line-height:240%">• first item</p>
+          <p>• second item</p>
+          <div>First line<br>Second line</div>
+        `,
+        format: "DOCX",
+        normalizeLineSpacing: true,
+        outputPath: path.join(testOutputDir, "test-normalized.docx"),
+      };
+
+      const result = await exportService.export(options);
+
+      expect(result.success).toBe(true);
+      expect(result.filePath).toBeTruthy();
+    });
     
     it("should apply custom margins", async () => {
       const options: ExportOptions = {

@@ -187,6 +187,7 @@ export const exportRequestSchema = z.object({
   fontFamily: z.string().min(1).max(100).optional(),
   fontSize: z.number().positive().max(96).optional(),
   lineHeight: z.string().min(1).max(20).optional(),
+  normalizeLineSpacing: z.boolean().optional(),
   showPageNumbers: z.boolean().optional(),
   startPageNumber: z.number().int().min(1).max(100_000).optional(),
 });

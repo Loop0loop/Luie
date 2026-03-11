@@ -8,6 +8,7 @@ import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } fro
 import { ServiceError } from "../../utils/serviceError.js";
 import { ErrorCode } from "../../../shared/constants/errorCode.js";
 import { hwpxExportService } from "./hwpx/hwpxExportService.js";
+import { prepareExportContent } from "../../../shared/utils/exportContentNormalization.js";
 
 // ============================================================================
 // Types
@@ -32,6 +33,7 @@ export interface ExportOptions {
   fontFamily?: string;
   fontSize?: number; // pt
   lineHeight?: string; // "100%", "160%", "180%", "200%"
+  normalizeLineSpacing?: boolean;
   
   // Page numbers
   showPageNumbers?: boolean;
@@ -76,6 +78,7 @@ const DEFAULT_SETTINGS = {
   fontFamily: "Batang",
   fontSize: 10, // pt
   lineHeight: "160%",
+  normalizeLineSpacing: false,
   showPageNumbers: true,
   startPageNumber: 1,
 };
@@ -107,92 +110,154 @@ function parseLineHeight(lineHeight: string): number {
   return Math.round((percentage / 100) * 240);
 }
 
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'");
+}
+
+function stripHtmlTags(text: string): string {
+  return decodeHtmlEntities(text.replace(/<[^>]+>/g, " "))
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /**
  * HTML을 파싱하여 Paragraph 배열로 변환
  * 간단한 파서 (향후 개선 필요)
  */
 function htmlToParagraphs(html: string, options: Required<ExportOptions>): Paragraph[] {
   const paragraphs: Paragraph[] = [];
-  
-  // HTML 태그 제거 및 기본 파싱
-  // TipTap 에디터에서 생성된 HTML을 단순하게 파싱
-  const tempDiv = html
-    .replace(/<h1[^>]*>(.*?)<\/h1>/gi, "HEADING1:::$1:::")
-    .replace(/<h2[^>]*>(.*?)<\/h2>/gi, "HEADING2:::$1:::")
-    .replace(/<h3[^>]*>(.*?)<\/h3>/gi, "HEADING3:::$1:::")
-    .replace(/<p[^>]*>(.*?)<\/p>/gi, "PARAGRAPH:::$1:::")
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<strong>(.*?)<\/strong>/gi, "BOLD:::$1:::")
-    .replace(/<em>(.*?)<\/em>/gi, "ITALIC:::$1:::")
-    .replace(/<u>(.*?)<\/u>/gi, "UNDERLINE:::$1:::")
-    .replace(/<[^>]+>/g, ""); // 나머지 태그 제거
-  
-  const lines = tempDiv.split(":::");
-  
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    
-    if (!line) continue;
-    
-    if (line === "HEADING1" && lines[i + 1]) {
-      paragraphs.push(
-        new Paragraph({
-          text: lines[i + 1],
-          heading: HeadingLevel.HEADING_1,
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 240, after: 120 },
-        })
-      );
-      i++;
-    } else if (line === "HEADING2" && lines[i + 1]) {
-      paragraphs.push(
-        new Paragraph({
-          text: lines[i + 1],
-          heading: HeadingLevel.HEADING_2,
-          spacing: { before: 200, after: 100 },
-        })
-      );
-      i++;
-    } else if (line === "HEADING3" && lines[i + 1]) {
-      paragraphs.push(
-        new Paragraph({
-          text: lines[i + 1],
-          heading: HeadingLevel.HEADING_3,
-          spacing: { before: 160, after: 80 },
-        })
-      );
-      i++;
-    } else if (line === "PARAGRAPH" && lines[i + 1]) {
-      const text = lines[i + 1];
-      const runs: TextRun[] = [];
-      
-      // Simple text run creation
-      runs.push(
-        new TextRun({
-          text,
-          font: options.fontFamily,
-          size: ptToHalfPt(options.fontSize),
-        })
-      );
-      
-      paragraphs.push(
-        new Paragraph({
-          children: runs,
-          spacing: {
-            before: 0,
-            after: 0,
-            line: parseLineHeight(options.lineHeight),
-          },
-          indent: {
-            firstLine: mmToTwips(3.5), // 10pt ≈ 3.5mm
-          },
-        })
-      );
-      i++;
+
+  const pushParagraph = (text: string, orderedPrefix?: string) => {
+    if (text.length === 0) {
+      return;
     }
+
+    paragraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: orderedPrefix ? `${orderedPrefix} ${text}` : text,
+            font: options.fontFamily,
+            size: ptToHalfPt(options.fontSize),
+          }),
+        ],
+        spacing: {
+          before: 0,
+          after: 0,
+          line: parseLineHeight(options.lineHeight),
+        },
+        indent: orderedPrefix === undefined
+          ? { firstLine: mmToTwips(3.5) }
+          : { left: mmToTwips(6), hanging: mmToTwips(3) },
+      }),
+    );
+  };
+
+  const blockPattern = /<(h1|h2|h3|p|ul|ol)[^>]*>([\s\S]*?)<\/\1>/gi;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null = blockPattern.exec(html);
+
+  const flushPlainText = (value: string) => {
+    const text = stripHtmlTags(value);
+    if (text.length > 0) {
+      pushParagraph(text);
+    }
+  };
+
+  while (match) {
+    flushPlainText(html.slice(lastIndex, match.index));
+
+    const tag = match[1].toLowerCase();
+    const content = match[2];
+
+    if (tag === "h1" || tag === "h2" || tag === "h3") {
+      const text = stripHtmlTags(content);
+      if (text.length > 0) {
+        paragraphs.push(
+          new Paragraph({
+            text,
+            heading:
+              tag === "h1"
+                ? HeadingLevel.HEADING_1
+                : tag === "h2"
+                  ? HeadingLevel.HEADING_2
+                  : HeadingLevel.HEADING_3,
+            alignment: tag === "h1" ? AlignmentType.CENTER : AlignmentType.LEFT,
+            spacing:
+              tag === "h1"
+                ? { before: 240, after: 120 }
+                : tag === "h2"
+                  ? { before: 200, after: 100 }
+                  : { before: 160, after: 80 },
+          }),
+        );
+      }
+    } else if (tag === "p") {
+      pushParagraph(stripHtmlTags(content));
+    } else if (tag === "ul" || tag === "ol") {
+      const items = Array.from(
+        content.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi),
+        (item) => stripHtmlTags(item[1]),
+      ).filter(Boolean);
+      for (const [index, item] of items.entries()) {
+        if (tag === "ul") {
+          paragraphs.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: item,
+                  font: options.fontFamily,
+                  size: ptToHalfPt(options.fontSize),
+                }),
+              ],
+              spacing: {
+                before: 0,
+                after: 0,
+                line: parseLineHeight(options.lineHeight),
+              },
+              indent: {
+                left: mmToTwips(6),
+                hanging: mmToTwips(3),
+              },
+              bullet: { level: 0 },
+            }),
+          );
+        } else {
+          pushParagraph(item, `${index + 1}.`);
+        }
+      }
+    }
+
+    lastIndex = match.index + match[0].length;
+    match = blockPattern.exec(html);
   }
-  
+
+  flushPlainText(html.slice(lastIndex));
   return paragraphs;
+}
+
+function buildTitleParagraph(options: Required<ExportOptions>): Paragraph {
+  return new Paragraph({
+    children: [
+      new TextRun({
+        text: options.title,
+        font: options.fontFamily,
+        size: ptToHalfPt(options.fontSize + 6),
+        bold: true,
+      }),
+    ],
+    alignment: AlignmentType.CENTER,
+    spacing: {
+      before: 120,
+      after: 180,
+    },
+  });
 }
 
 
@@ -243,9 +308,16 @@ export class ExportService {
   private async exportDocx(options: Required<ExportOptions>): Promise<ExportResult> {
     try {
       const paperSize = PAPER_SIZES[options.paperSize];
-      
-      // Parse HTML to paragraphs
-      const paragraphs = htmlToParagraphs(options.content, options);
+      const preparedContent = options.normalizeLineSpacing
+        ? prepareExportContent({
+            html: options.content,
+            title: options.title,
+          })
+        : null;
+      const bodyHtml = preparedContent?.html ?? options.content;
+      const paragraphs = options.normalizeLineSpacing
+        ? [buildTitleParagraph(options), ...htmlToParagraphs(bodyHtml, options)]
+        : htmlToParagraphs(bodyHtml, options);
       
       // Create document
       const doc = new Document({
@@ -305,7 +377,17 @@ export class ExportService {
    * 별도의 HWPX 전용 서비스 사용
    */
   private async exportHwpx(options: Required<ExportOptions>): Promise<ExportResult> {
-    return await hwpxExportService.exportHwpx(options);
+    const preparedContent = options.normalizeLineSpacing
+      ? prepareExportContent({
+          html: options.content,
+          title: options.title,
+        })
+      : null;
+
+    return await hwpxExportService.exportHwpx({
+      ...options,
+      content: preparedContent?.html ?? options.content,
+    });
   }
 }
 

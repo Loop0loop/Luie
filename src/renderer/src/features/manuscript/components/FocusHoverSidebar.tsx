@@ -1,4 +1,4 @@
-import { type ReactNode, useState, useRef, useEffect } from "react";
+import { type ReactNode, useState, useRef, useEffect, useCallback } from "react";
 import { cn } from "@shared/types/utils";
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@shared/constants/configs";
 
@@ -14,8 +14,12 @@ interface FocusHoverSidebarProps {
   forceOpen?: boolean;
   /** 가장자리 트리거 폭(px). */
   triggerWidthPx?: number;
+  /** 닫혀 있을 때 활성화되는 숨은 영역 폭(px). */
+  activationWidthPx?: number;
   /** 사이드바 닫힘 판정 여유(px). */
   closeTolerancePx?: number;
+  /** 사이드바를 닫기 전 대기 시간(ms). */
+  closeDelayMs?: number;
 }
 
 export default function FocusHoverSidebar({
@@ -26,13 +30,21 @@ export default function FocusHoverSidebar({
   isResizing = false,
   forceOpen = false,
   triggerWidthPx = 10,
+  activationWidthPx,
   closeTolerancePx = 12,
+  closeDelayMs = 220,
 }: FocusHoverSidebarProps) {
-  // 내부 hover 상태만 관리
   const [isHoverOpen, setIsHoverOpen] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLDivElement>(null);
   const hoverOpenRef = useRef(false);
+  const sidebarRectRef = useRef<DOMRect | null>(null);
+  const sidebarWidthRef = useRef(0);
+  const mouseFrameRef = useRef<number | null>(null);
+  const closeTimeoutRef = useRef<number | null>(null);
+  const latestMouseEventRef = useRef<Pick<
+    MouseEvent,
+    "clientX" | "clientY" | "buttons"
+  > | null>(null);
 
   useEffect(() => {
     hoverOpenRef.current = isHoverOpen;
@@ -41,34 +53,106 @@ export default function FocusHoverSidebar({
   // 최종 열림 상태는 props와 내부 state의 조합
   const isOpen = forceOpen || isResizing || isHoverOpen;
 
+  const clearPendingClose = useCallback(() => {
+    if (closeTimeoutRef.current !== null) {
+      window.clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+  }, []);
+
+  const closeHoverSidebar = useCallback(() => {
+    clearPendingClose();
+    if (!hoverOpenRef.current) {
+      return;
+    }
+    hoverOpenRef.current = false;
+    setIsHoverOpen(false);
+  }, [clearPendingClose]);
+
+  const openHoverSidebar = useCallback(() => {
+    clearPendingClose();
+    if (forceOpen || isResizing || hoverOpenRef.current) {
+      return;
+    }
+    hoverOpenRef.current = true;
+    setIsHoverOpen(true);
+  }, [clearPendingClose, forceOpen, isResizing]);
+
+  const scheduleHoverClose = useCallback(() => {
+    if (forceOpen || isResizing || closeTimeoutRef.current !== null) {
+      return;
+    }
+    closeTimeoutRef.current = window.setTimeout(() => {
+      closeTimeoutRef.current = null;
+      closeHoverSidebar();
+    }, closeDelayMs);
+  }, [closeDelayMs, closeHoverSidebar, forceOpen, isResizing]);
+
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (forceOpen || isResizing) {
-        if (hoverOpenRef.current) {
-          hoverOpenRef.current = false;
-          setIsHoverOpen(false);
-        }
-        return;
-      }
+    const updateSidebarMetrics = () => {
+      sidebarRectRef.current = sidebarRef.current?.getBoundingClientRect() ?? null;
+      sidebarWidthRef.current = sidebarRef.current?.offsetWidth ?? 0;
+    };
+
+    updateSidebarMetrics();
+
+    const resizeObserver =
+      sidebarRef.current === null
+        ? null
+        : new ResizeObserver(() => {
+            updateSidebarMetrics();
+          });
+
+    if (sidebarRef.current && resizeObserver) {
+      resizeObserver.observe(sidebarRef.current);
+    }
+
+    window.addEventListener("resize", updateSidebarMetrics);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", updateSidebarMetrics);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!forceOpen && !isResizing) {
+      return;
+    }
+    clearPendingClose();
+    hoverOpenRef.current = false;
+    const frameId = window.requestAnimationFrame(() => {
+      setIsHoverOpen(false);
+    });
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [clearPendingClose, forceOpen, isResizing]);
+
+  useEffect(() => {
+    const processMouseMove = () => {
+      mouseFrameRef.current = null;
+      const e = latestMouseEventRef.current;
+      if (!e) return;
 
       // 드래그(마우스 버튼 down) 중에는 hover 토글을 막아
       // 리사이즈/드래그 중 사이드바가 튀어나오는 UX를 방지한다.
       if (e.buttons !== 0) return;
 
       if (e.clientY < topOffset || e.clientY > window.innerHeight) {
-        if (hoverOpenRef.current) {
-          hoverOpenRef.current = false;
-          setIsHoverOpen(false);
-        }
+        closeHoverSidebar();
         return;
       }
 
-      const isTrigger =
-        side === "left"
-          ? e.clientX <= triggerWidthPx
-          : e.clientX >= window.innerWidth - triggerWidthPx;
+      const resolvedActivationWidth =
+        activationWidthPx ?? Math.max(triggerWidthPx, sidebarWidthRef.current);
 
-      const sidebarRect = sidebarRef.current?.getBoundingClientRect();
+      const isWithinActivationZone =
+        side === "left"
+          ? e.clientX <= resolvedActivationWidth
+          : e.clientX >= window.innerWidth - resolvedActivationWidth;
+
+      const sidebarRect = sidebarRectRef.current;
       const isInsideSidebar = Boolean(
         sidebarRect &&
         e.clientX >= sidebarRect.left - closeTolerancePx &&
@@ -77,33 +161,52 @@ export default function FocusHoverSidebar({
         e.clientY <= sidebarRect.bottom + closeTolerancePx,
       );
 
-      if (isTrigger) {
-        if (!hoverOpenRef.current) {
-          hoverOpenRef.current = true;
-          setIsHoverOpen(true);
-        }
+      if (isWithinActivationZone || isInsideSidebar) {
+        openHoverSidebar();
         return;
       }
 
-      if (hoverOpenRef.current && !isInsideSidebar) {
-        hoverOpenRef.current = false;
-        setIsHoverOpen(false);
+      if (hoverOpenRef.current) {
+        scheduleHoverClose();
       }
     };
 
-    const handleWindowLeave = () => {
-      if (!hoverOpenRef.current) return;
-      hoverOpenRef.current = false;
-      setIsHoverOpen(false);
+    const handleMouseMove = (e: MouseEvent) => {
+      latestMouseEventRef.current = {
+        clientX: e.clientX,
+        clientY: e.clientY,
+        buttons: e.buttons,
+      };
+      if (mouseFrameRef.current !== null) return;
+      mouseFrameRef.current = window.requestAnimationFrame(processMouseMove);
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
+    const handleWindowLeave = () => {
+      closeHoverSidebar();
+    };
+
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
     window.addEventListener("mouseleave", handleWindowLeave);
     return () => {
+      clearPendingClose();
+      if (mouseFrameRef.current !== null) {
+        cancelAnimationFrame(mouseFrameRef.current);
+        mouseFrameRef.current = null;
+      }
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseleave", handleWindowLeave);
     };
-  }, [side, isResizing, forceOpen, topOffset, triggerWidthPx, closeTolerancePx]);
+  }, [
+    activationWidthPx,
+    clearPendingClose,
+    closeHoverSidebar,
+    closeTolerancePx,
+    openHoverSidebar,
+    scheduleHoverClose,
+    side,
+    topOffset,
+    triggerWidthPx,
+  ]);
 
   const topStyle = `${topOffset}px`;
   const heightStyle = `calc(100vh - ${topOffset}px)`;
@@ -112,9 +215,8 @@ export default function FocusHoverSidebar({
     <>
       {/* 트리거 힌트 영역 */}
       <div
-        ref={triggerRef}
         className={cn(
-          "fixed z-50 transition-colors duration-200",
+          "fixed z-50 transition-colors duration-150",
           side === "left" ? "left-0" : "right-0",
           isOpen ? "pointer-events-none" : "hover:bg-accent/10"
         )}
@@ -125,7 +227,7 @@ export default function FocusHoverSidebar({
       <div
         ref={sidebarRef}
         className={cn(
-          "fixed z-50 transition-transform duration-300 ease-in-out shadow-2xl bg-panel",
+          "fixed z-50 transition-transform duration-150 ease-out shadow-xl bg-panel will-change-transform",
           side === "left"
             ? "left-0 border-r border-border"
             : "right-0 border-l border-border",

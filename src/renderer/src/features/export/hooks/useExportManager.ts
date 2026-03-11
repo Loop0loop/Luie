@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useDialog } from '@shared/ui/useDialog';
 import { api } from "@shared/api";
 import { sanitizePreviewHtml } from "@shared/utils/sanitizeHtml";
+import { prepareExportContent } from "@shared/utils/exportContentNormalization";
 import type { Chapter } from "@shared/types";
 
 export function useExportManager() {
@@ -53,13 +54,25 @@ export function useExportManager() {
     const [marginLeft, setMarginLeft] = useState(20);
     const [lineHeight, setLineHeight] = useState("160%");
     const [fontFamily, setFontFamily] = useState("Batang");
+    const [normalizeLineSpacing, setNormalizeLineSpacing] = useState(false);
 
     const [showPageNumbers, setShowPageNumbers] = useState(true);
     const [startPageNumber, setStartPageNumber] = useState(1);
 
+    const preparedPreviewContent = useMemo(
+        () =>
+            normalizeLineSpacing && chapter
+                ? prepareExportContent({
+                    html: chapter.content,
+                    title: chapter.title,
+                }).html
+                : chapter?.content ?? "",
+        [chapter, normalizeLineSpacing],
+    );
+
     const sanitizedPreviewContent = useMemo(
-        () => (chapter?.content ? sanitizePreviewHtml(chapter.content) : ""),
-        [chapter?.content],
+        () => (preparedPreviewContent ? sanitizePreviewHtml(preparedPreviewContent) : ""),
+        [preparedPreviewContent],
     );
 
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -99,6 +112,7 @@ export function useExportManager() {
                 fontFamily,
                 fontSize: 10,
                 lineHeight,
+                normalizeLineSpacing,
                 showPageNumbers,
                 startPageNumber,
             });
@@ -161,6 +175,8 @@ export function useExportManager() {
         setLineHeight,
         fontFamily,
         setFontFamily,
+        normalizeLineSpacing,
+        setNormalizeLineSpacing,
         showPageNumbers,
         setShowPageNumbers,
         startPageNumber,

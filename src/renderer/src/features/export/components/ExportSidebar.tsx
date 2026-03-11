@@ -46,6 +46,8 @@ interface ExportSidebarProps {
     setLineHeight: (val: string) => void;
     fontFamily: string;
     setFontFamily: (val: string) => void;
+    normalizeLineSpacing: boolean;
+    setNormalizeLineSpacing: (val: boolean) => void;
     showPageNumbers: boolean;
     setShowPageNumbers: (val: boolean) => void;
     startPageNumber: number;
@@ -73,6 +75,8 @@ export function ExportSidebar({
     setLineHeight,
     fontFamily,
     setFontFamily,
+    normalizeLineSpacing,
+    setNormalizeLineSpacing,
     showPageNumbers,
     setShowPageNumbers,
     startPageNumber,
@@ -258,6 +262,35 @@ export function ExportSidebar({
                                             {lh}
                                         </button>
                                     ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2 rounded-xl border border-border bg-surface/60 p-3">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-sm font-semibold text-fg">
+                                            {t("exportWindow.typography.normalizeLineSpacing")}
+                                        </label>
+                                        <p className="text-[11px] leading-relaxed text-muted">
+                                            {t("exportWindow.typography.normalizeLineSpacingHint")}
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setNormalizeLineSpacing(!normalizeLineSpacing)}
+                                        className={cn(
+                                            "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2",
+                                            normalizeLineSpacing ? "bg-accent" : "bg-border",
+                                        )}
+                                        aria-pressed={normalizeLineSpacing}
+                                    >
+                                        <span
+                                            className={cn(
+                                                "inline-block h-4 w-4 transform rounded-full bg-surface shadow-sm transition-transform",
+                                                normalizeLineSpacing ? "translate-x-6" : "translate-x-1",
+                                            )}
+                                        />
+                                    </button>
                                 </div>
                             </div>
                         </div>

@@ -49,7 +49,6 @@ export function BinderSidebar({
         layoutSurfaceRatios,
         setLayoutSurfaceRatio,
         setFocusedClosableTarget,
-        hasHydrated,
     } = useUIStore(
         useShallow((state) => ({
             docsRightTab: state.docsRightTab,
@@ -62,7 +61,6 @@ export function BinderSidebar({
             layoutSurfaceRatios: state.layoutSurfaceRatios,
             setLayoutSurfaceRatio: state.setLayoutSurfaceRatio,
             setFocusedClosableTarget: state.setFocusedClosableTarget,
-            hasHydrated: state.hasHydrated,
         }))
     );
 
@@ -149,9 +147,6 @@ export function BinderSidebar({
     const savedRatio = layoutSurfaceRatios[activePanelSurface]
         ?? getLayoutSurfaceDefaultRatio(activePanelSurface);
 
-    const panelMountKey = activeRightTab
-        ? `binder-sidebar-${activeRightTab}-${hasHydrated ? "hydrated" : "cold"}`
-        : null;
     const widthConfig = getLayoutSurfaceConfig(activePanelSurface);
 
     const handleBackToSnapshotList = () => {
@@ -222,7 +217,6 @@ export function BinderSidebar({
             </PanelResizeHandle>
 
             <Panel
-                key={panelMountKey}
                 id={`binder-sidebar-${activeRightTab}`}
                 defaultSize={toPanelPercentSize(savedRatio)}
                 minSize={toPanelPixelSize(widthConfig.minPx)}
@@ -231,12 +225,12 @@ export function BinderSidebar({
                 onMouseDownCapture={() => {
                     setFocusedClosableTarget({ kind: "docs-tab" });
                 }}
-                className="bg-panel shadow-2xl flex flex-row shrink-0 min-w-0 z-10 transition-none"
+                className="bg-panel shadow-xl flex flex-row shrink-0 min-w-0 z-10"
             >
                 <div className="flex-1 h-full overflow-hidden relative min-w-0">
                     <button
                         onClick={() => setActiveRightTab(null)}
-                        className="absolute top-2 right-2 p-1.5 rounded-full bg-surface/80 backdrop-blur-sm border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-all hover:opacity-100"
+                        className="absolute top-2 right-2 p-1.5 rounded-full bg-surface/90 border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-colors duration-150"
                         title={t("sidebar.toggle.close")}
                     >
                         <X className="w-4 h-4" />
@@ -245,7 +239,7 @@ export function BinderSidebar({
                     {activeRightTab === 'snapshot' && (
                         <button
                             onClick={handleBackToSnapshotList}
-                            className="absolute top-2 left-3 p-1.5 rounded-full bg-surface/80 backdrop-blur-sm border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-all"
+                            className="absolute top-2 left-3 p-1.5 rounded-full bg-surface/90 border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-colors duration-150"
                             title={t("back")}
                         >
                             <ChevronLeft className="w-4 h-4" />
@@ -362,7 +356,7 @@ export function BinderSidebarRail({ sidebarTopOffset }: { sidebarTopOffset: numb
             <div className="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
                 <button
                     onClick={() => setRegionOpen("rightRail", true)}
-                    className="w-8 h-12 bg-background border border-r-0 border-border shadow-md rounded-l-lg flex items-center justify-center hover:bg-surface-hover transition-colors text-muted-foreground"
+                    className="w-8 h-12 bg-background border border-r-0 border-border shadow-sm rounded-l-lg flex items-center justify-center hover:bg-surface-hover transition-colors duration-150 text-muted-foreground"
                     title={t("sidebar.toggle.open")}
                 >
                     <ChevronLeft className="w-5 h-5" />
@@ -372,12 +366,17 @@ export function BinderSidebarRail({ sidebarTopOffset }: { sidebarTopOffset: numb
     }
 
     return (
-        <FocusHoverSidebar side="right" topOffset={sidebarTopOffset}>
-            <div className="h-full flex flex-row shadow-2xl">
+        <FocusHoverSidebar
+            side="right"
+            topOffset={sidebarTopOffset}
+            activationWidthPx={84}
+            closeDelayMs={240}
+        >
+            <div className="h-full flex flex-row shadow-xl">
                 <div className="w-12 bg-surface border-l border-border flex flex-col items-center py-3 gap-2 shrink-0 z-20 h-full">
                     <button
                         onClick={() => setRegionOpen("rightRail", false)}
-                        className="w-8 h-8 mb-1 rounded-full hover:bg-surface-hover text-muted-foreground flex items-center justify-center"
+                        className="w-9 h-9 mb-1 rounded-full hover:bg-surface-hover text-muted-foreground flex items-center justify-center transition-colors duration-150"
                         title={t("sidebar.toggle.close")}
                     >
                         <ChevronLeft className="w-4 h-4 rotate-180" />
@@ -449,7 +448,7 @@ function BinderTabButton({
             onClick={onClick}
             title={title}
             className={cn(
-                "w-9 h-9 flex items-center justify-center rounded-full transition-colors",
+                "w-10 h-10 flex items-center justify-center rounded-full transition-[background-color,color,transform] duration-150 active:scale-95",
                 isActive
                     ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
                     : "text-muted hover:text-fg hover:bg-black/5 dark:hover:bg-white/5"

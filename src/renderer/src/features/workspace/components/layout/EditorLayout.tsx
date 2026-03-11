@@ -16,7 +16,6 @@ import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { BinderSidebar, BinderSidebarRail } from "@renderer/features/manuscript/components/BinderSidebar";
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@shared/constants/configs";
 import { toPercentSize } from "@shared/constants/sidebarSizing";
-import { buildPanelGroupCompositionKey } from "@renderer/features/workspace/utils/panelGroupLayout";
 
 interface EditorLayoutProps {
   children?: ReactNode;
@@ -50,7 +49,6 @@ export default function EditorLayout({
   const { t } = useTranslation();
 
   const maxWidth = useEditorStore((state) => state.maxWidth);
-  const hasUiHydrated = useUIStore((state) => state.hasHydrated);
   const activeRightTab = useUIStore((state) => state.docsRightTab);
 
   const ribbonRef = useRef<HTMLDivElement>(null);
@@ -69,17 +67,6 @@ export default function EditorLayout({
 
   const isMacOS = navigator.platform.toLowerCase().includes("mac");
   const sidebarTopOffset = (isMacOS ? EDITOR_WINDOW_BAR_HEIGHT_PX : 0) + ribbonHeight;
-  const editorLayoutGroupKey = buildPanelGroupCompositionKey(
-    `editor-layout-${hasUiHydrated ? "hydrated" : "cold"}`,
-    [
-      "main-editor-view",
-      ...additionalPanelIds,
-      ...(activeRightTab ? [`binder-sidebar-${activeRightTab}`] : []),
-      ...(!activeRightTab && additionalPanelIds.length === 0
-        ? ["editor-layout-placeholder"]
-        : []),
-    ],
-  );
 
   return (
     <div className="flex flex-col h-screen w-screen bg-app text-fg overflow-hidden relative">
@@ -100,7 +87,12 @@ export default function EditorLayout({
       {/* 3. Main Area (Horizontal Flex) */}
       <div className="flex-1 overflow-hidden relative flex flex-row">
         {/* LEFT: 원고 사이드바 (Overlay Hover) */}
-        <FocusHoverSidebar side="left" topOffset={sidebarTopOffset}>
+        <FocusHoverSidebar
+          side="left"
+          topOffset={sidebarTopOffset}
+          activationWidthPx={320}
+          closeDelayMs={260}
+        >
           <div className="h-full flex flex-col bg-panel border-r border-border min-w-[280px]">
             {sidebar}
           </div>
@@ -111,10 +103,9 @@ export default function EditorLayout({
 
           {/* Editor Column Wrapper */}
           <PanelGroup
-            key={editorLayoutGroupKey}
             orientation="horizontal"
             className="flex w-full h-full flex-1 overflow-hidden relative"
-            id={editorLayoutGroupKey}
+            id="editor-layout-group"
           >
             <Panel
               id="main-editor-view"
@@ -128,7 +119,7 @@ export default function EditorLayout({
                 <div className="flex-1 h-full overflow-y-auto bg-sidebar flex flex-col items-center custom-scrollbar shrink-0 relative">
                   {/* A4 페이지 (max-width 적용) */}
                   <div
-                    className="min-h-[1056px] bg-surface text-fg shadow-2xl border border-border py-12 px-12 my-8 transition-all duration-200 ease-out shrink-0"
+                    className="min-h-[1056px] bg-surface text-fg shadow-xl border border-border py-12 px-12 my-8 transition-shadow duration-150 ease-out shrink-0"
                     style={{ width: maxWidth ?? 816 }}
                   >
                     {/* 챕터 제목 */}

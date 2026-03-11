@@ -72,7 +72,6 @@ export function useLayoutPersist(entries: LayoutPersistEntry[]) {
                 return;
             }
             isHandlingLayoutRef.current = true;
-            logger.info(`[useLayoutPersist] onLayoutChanged triggered`, { layout });
             try {
                 const nowMs = Date.now();
                 for (const entry of entriesRef.current) {
@@ -102,7 +101,7 @@ export function useLayoutPersist(entries: LayoutPersistEntry[]) {
                         continue;
                     }
 
-                    logger.info(`[useLayoutPersist] Committing layout surface ratio`, {
+                    logger.debug(`[useLayoutPersist] Committing layout surface ratio`, {
                         surface: entry.surface,
                         nextRatio,
                     });

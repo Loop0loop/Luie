@@ -118,7 +118,9 @@ export const koExport = {
         "nanum": "나눔명조"
       },
       "fontHint": "OS에 해당 폰트가 없을 경우, 가장 유사한 명조/고딕체로 대체됩니다.",
-      "lineHeight": "줄 간격"
+      "lineHeight": "줄 간격",
+      "normalizeLineSpacing": "줄간격 맞춤",
+      "normalizeLineSpacingHint": "웹에서 붙여넣은 스타일을 걷어내고, 어긋난 줄바꿈을 정리하고, 첫 줄 제목 중복과 리스트 모양을 내보내기용으로 정리합니다."
     },
     "headerSettings": {
       "showPageNumbers": "쪽 번호 표시",
@@ -130,6 +132,7 @@ export const koExport = {
     },
     "preview": {
       "label": "미리보기",
+      "normalized": "정리 적용됨",
       "errorTitle": "오류",
       "loading": "챕터를 불러오는 중..."
     },

@@ -29,7 +29,6 @@ import {
 import { toPercentSize } from "@shared/constants/sidebarSizing";
 import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import {
-  buildPanelGroupCompositionKey,
   groupLayoutMatchesPanels,
 } from "@renderer/features/workspace/utils/panelGroupLayout";
 
@@ -61,7 +60,6 @@ export default function ScrivenerLayout({
     mainView,
     panels,
     layoutSurfaceRatios,
-    hasHydrated,
     isSidebarOpen,
     isInspectorOpen,
     setRegionOpen,
@@ -70,7 +68,6 @@ export default function ScrivenerLayout({
       mainView: state.mainView,
       panels: state.panels,
       layoutSurfaceRatios: state.layoutSurfaceRatios,
-      hasHydrated: state.hasHydrated,
       isSidebarOpen: state.regions.leftSidebar.open,
       isInspectorOpen: state.regions.rightPanel.open,
       setRegionOpen: state.setRegionOpen,
@@ -93,23 +90,6 @@ export default function ScrivenerLayout({
   const inspectorRatio =
     layoutSurfaceRatios["scrivener.inspector"] ??
     getLayoutSurfaceDefaultRatio("scrivener.inspector");
-  const scrivenerLayoutGroupKey = buildPanelGroupCompositionKey(
-    `scrivener-layout-${hasHydrated ? "hydrated" : "cold"}`,
-    [
-      ...(isSidebarOpen ? ["sidebar"] : []),
-      "main-editor",
-      ...(isInspectorOpen ? ["inspector"] : []),
-      ...(!isSidebarOpen && !isInspectorOpen ? ["scrivener-layout-placeholder"] : []),
-    ],
-  );
-  const scrivenerEditorSplitKey = buildPanelGroupCompositionKey(
-    "scrivener-editor-split",
-    [
-      "editor-content",
-      ...panels.map((panel) => panel.id),
-      ...(panels.length === 0 ? ["scrivener-editor-placeholder"] : []),
-    ],
-  );
 
   useEffect(() => {
     const previousPanelCount = previousPanelCountRef.current;
@@ -185,10 +165,9 @@ export default function ScrivenerLayout({
       {/* 3. Main 3-Pane Body using react-resizable-panels entirely */}
       <div className="flex-1 flex overflow-hidden relative">
         <PanelGroup
-          key={scrivenerLayoutGroupKey}
           orientation="horizontal"
           className="flex w-full h-full flex-1 overflow-hidden relative"
-          id={scrivenerLayoutGroupKey}
+          id="scrivener-layout-group"
           onLayoutChanged={onLayoutChanged}
         >
 
@@ -250,11 +229,10 @@ export default function ScrivenerLayout({
             {/* Editor Area */}
             <div className="flex-1 overflow-hidden relative flex flex-row">
               <PanelGroup
-                key={scrivenerEditorSplitKey}
                 orientation="horizontal"
                 className="flex w-full h-full flex-1 overflow-hidden relative"
                 groupRef={editorSplitGroupRef}
-                id={scrivenerEditorSplitKey}
+                id="scrivener-editor-split-group"
               >
                 <Panel
                   id="editor-content"
