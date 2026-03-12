@@ -63,6 +63,8 @@ beforeEach(async () => {
   if (!dbService || !cacheDbService) return;
   const client: PrismaClient = dbService.getClient();
   const cacheClient: CachePrismaClient = cacheDbService.getClient();
+  await cacheClient.$executeRawUnsafe('DELETE FROM "ChapterSearchDocumentFts";');
+  await cacheClient.chapterSearchDocument.deleteMany({});
   await client.snapshot.deleteMany({});
   await cacheClient.termAppearance.deleteMany({});
   await cacheClient.characterAppearance.deleteMany({});

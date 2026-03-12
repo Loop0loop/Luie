@@ -17,6 +17,7 @@ import { appearanceCacheService } from "../world/appearanceCacheService.js";
 import { trackKeywordAppearances } from "./chapterKeywords.js";
 import { sanitizeName } from "../../../shared/utils/sanitize.js";
 import { isTestEnv } from "../../utils/environment.js";
+import { chapterSearchCacheService } from "../features/chapterSearchCacheService.js";
 
 const logger = createLogger("ChapterService");
 
@@ -152,6 +153,15 @@ export class ChapterService {
       });
 
       logger.info("Chapter created successfully", { chapterId: chapter.id });
+      await chapterSearchCacheService.upsertChapter({
+        chapterId: String(chapter.id),
+        projectId: String(chapter.projectId),
+        title: chapter.title,
+        synopsis: chapter.synopsis ?? null,
+        content: chapter.content,
+        wordCount: chapter.wordCount,
+        order: chapter.order,
+      });
       await projectService.attemptImmediatePackageExport(
         input.projectId,
         "chapter:create",
@@ -243,6 +253,15 @@ export class ChapterService {
       logger.info("Chapter updated successfully", {
         chapterId: updatedChapter.id,
       });
+      await chapterSearchCacheService.upsertChapter({
+        chapterId: String(updatedChapter.id),
+        projectId: String((updatedChapter as { projectId: unknown }).projectId),
+        title: updatedChapter.title,
+        synopsis: updatedChapter.synopsis ?? null,
+        content: updatedChapter.content,
+        wordCount: updatedChapter.wordCount,
+        order: updatedChapter.order,
+      });
       await projectService.attemptImmediatePackageExport(
         String((updatedChapter as { projectId: unknown }).projectId),
         "chapter:update",
@@ -289,6 +308,7 @@ export class ChapterService {
         );
       }
       await appearanceCacheService.clearChapter(id);
+      await chapterSearchCacheService.clearChapter(id);
 
       logger.info("Chapter soft-deleted successfully", { chapterId: id });
       if ((chapter as { projectId?: unknown })?.projectId) {
@@ -352,6 +372,15 @@ export class ChapterService {
         String(current.content ?? ""),
         String(current.projectId),
       );
+      await chapterSearchCacheService.upsertChapter({
+        chapterId: String(restored.id),
+        projectId: String(current.projectId),
+        title: restored.title,
+        synopsis: restored.synopsis ?? null,
+        content: restored.content,
+        wordCount: restored.wordCount,
+        order: restored.order,
+      });
 
       logger.info("Chapter restored successfully", { chapterId: id });
       await projectService.attemptImmediatePackageExport(
@@ -387,6 +416,7 @@ export class ChapterService {
 
       await db.getClient().chapter.delete({ where: { id } });
       await appearanceCacheService.clearChapter(id);
+      await chapterSearchCacheService.clearChapter(id);
 
       if ((chapter as { projectId?: unknown })?.projectId) {
         await autoSaveManager.forgetChapter(
@@ -426,6 +456,7 @@ export class ChapterService {
       );
 
       logger.info("Chapters reordered successfully", { projectId });
+      await chapterSearchCacheService.rebuildProject(projectId);
       await projectService.attemptImmediatePackageExport(
         projectId,
         "chapter:reorder",

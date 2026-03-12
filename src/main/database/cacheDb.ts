@@ -1,7 +1,6 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { app } from "electron";
-import type { PrismaClient as CachePrismaClient } from "@prisma-cache/client";
 import { PrismaClient as CachePrismaClientCtor } from "@prisma-cache/client";
 import { CACHE_DB_NAME } from "../../shared/constants/index.js";
 import { createLogger } from "../../shared/logger/index.js";
@@ -19,6 +18,7 @@ import { ensurePackagedCacheSqliteSchema } from "./cacheSchemaBootstrap.js";
 
 const logger = createLogger("CacheDatabaseService");
 const CACHE_ENV_KEY = "CACHE_DATABASE_URL";
+type CachePrismaClient = InstanceType<typeof CachePrismaClientCtor>;
 
 type PreparedCacheDatabaseContext = {
   dbPath: string;
@@ -66,6 +66,7 @@ class CacheDatabaseService {
     });
 
     await this.applySchema(context);
+    ensurePackagedCacheSqliteSchema(context.dbPath, logger);
     this.prisma = this.createPrismaClient(context);
 
     try {
@@ -155,7 +156,7 @@ class CacheDatabaseService {
   private async applySchema(context: PreparedCacheDatabaseContext): Promise<void> {
     const dbExists = await pathExists(context.dbPath);
     const cwd = context.isPackaged ? process.resourcesPath : process.cwd();
-    const schemaPath = path.join(cwd, "prisma", "cache.schema.prisma");
+    const schemaPath = path.join(cwd, "prisma", "cache", "schema.prisma");
     const prismaPath = getPrismaBinPath(cwd);
     const commandEnv = {
       ...process.env,

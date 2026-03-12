@@ -39,7 +39,8 @@ transport-only payloads, durable local replica state, rebuildable cache, or mach
 | scrap memos | yes | `.luie`, `replica.db` | canonical authored content |
 | `graph` payload | no | `.luie` transport, sync transport | derived transport/view of canonical world models |
 | `CharacterAppearance`, `TermAppearance` | no | `cache.db` | rebuildable |
-| FTS, analysis cache, derived graph layout | no | `cache.db` | rebuildable |
+| chapter search projections, FTS, derived graph layout | no | `cache.db` | rebuildable |
+| analysis results cache | no durable cache today | memory only | intentionally ephemeral until security policy exists |
 | recent project list, last opened state, window/layout state | no | `app.db` | machine-local metadata |
 
 ## Phase 0 decisions
@@ -116,4 +117,5 @@ Disallowed going forward:
 - packaged `.luie` bootstrap still carries attachment metadata
 - `snapshots` exist in sync merge types but not in sync transport
 - `Project` create/update still rely on queued export rather than the immediate durability helper
-- cache isolation is only partially complete: appearance cache is split out, but analysis/search/FTS artifacts are still mixed into the replica runtime surface
+- analysis results remain memory-only by design and are intentionally excluded from durable cache until an explicit security policy exists
+- current durable search artifacts now live in `cache.db`; any future FTS variants or derived graph/search helpers must stay cache-only too

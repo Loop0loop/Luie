@@ -327,7 +327,7 @@ Current checkpoint:
 
 - [x] Move `CharacterAppearance` and `TermAppearance` into cache-only storage
 - [x] Define rebuild triggers and invalidation rules
-- [ ] Move analysis/search/FTS artifacts into cache-only storage
+- [x] Move analysis/search/FTS artifacts into cache-only storage
 - [x] Prove cache deletion is safe
 
 Done when:
@@ -337,11 +337,20 @@ Done when:
 Current checkpoint:
 
 - `prisma/schema.prisma` no longer carries `CharacterAppearance` and `TermAppearance`
-- `prisma/cache.schema.prisma` and `cacheDb` now own appearance cache writes/reads
+- `prisma/cache/schema.prisma` and `cacheDb` now own appearance cache writes/reads
+- `ChapterSearchDocument` now lives in `cache.db`, and chapter search lazily rebuilds safely after cache loss
+- SQLite FTS rows for chapter search now live beside the projection cache and rebuild from replica state
 - chapter keyword tracking clears and rebuilds chapter cache deterministically
 - character/term create and rename paths rebuild project appearance cache so late additions can hydrate old chapters
-- project delete clears appearance cache rows in the separate cache store
+- project delete clears appearance/search cache rows in the separate cache store
 - boundary tests now lock the split so appearance cache does not drift back into the runtime replica schema
+- analysis results remain intentionally memory-only for now because current security flows clear them on close and explicit purge
+
+Phase 7 exit:
+
+- all currently durable derived search artifacts are isolated in `cache.db`
+- deleting `cache.db` does not discard user-authored project data
+- analysis remains intentionally ephemeral rather than being silently persisted
 
 ## Phase 8. Container evolution
 

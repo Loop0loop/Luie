@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../node_modules/@prisma-cache/client"
+  output   = "../../node_modules/@prisma-cache/client"
 }
 
 datasource db {
@@ -34,4 +34,19 @@ model TermAppearance {
   @@unique([termId, chapterId, position])
   @@index([projectId, chapterId])
   @@index([projectId, termId, chapterId])
+}
+
+model ChapterSearchDocument {
+  chapterId     String   @id
+  projectId     String
+  title         String
+  synopsis      String?
+  searchText    String
+  wordCount     Int
+  chapterOrder  Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([projectId, chapterOrder])
 }

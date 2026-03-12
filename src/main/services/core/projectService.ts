@@ -48,6 +48,7 @@ import { openLuieProjectPackage } from "./project/projectImportOpen.js";
 import { LuieMetaSchema } from "./project/projectLuieSchemas.js";
 import { readLuieEntry } from "../../utils/luiePackage.js";
 import { appearanceCacheService } from "../world/appearanceCacheService.js";
+import { chapterSearchCacheService } from "../features/chapterSearchCacheService.js";
 
 const logger = createLogger("ProjectService");
 
@@ -627,9 +628,12 @@ export class ProjectService {
         where: { id: request.id },
       });
       try {
-        await appearanceCacheService.clearProject(request.id);
+        await Promise.all([
+          appearanceCacheService.clearProject(request.id),
+          chapterSearchCacheService.clearProject(request.id),
+        ]);
       } catch (cacheError) {
-        logger.warn("Failed to clear project appearance cache during delete", {
+        logger.warn("Failed to clear project cache during delete", {
           projectId: request.id,
           cacheError,
         });
@@ -678,9 +682,12 @@ export class ProjectService {
         where: { id },
       });
       try {
-        await appearanceCacheService.clearProject(id);
+        await Promise.all([
+          appearanceCacheService.clearProject(id),
+          chapterSearchCacheService.clearProject(id),
+        ]);
       } catch (cacheError) {
-        logger.warn("Failed to clear project appearance cache during remove", {
+        logger.warn("Failed to clear project cache during remove", {
           projectId: id,
           cacheError,
         });
