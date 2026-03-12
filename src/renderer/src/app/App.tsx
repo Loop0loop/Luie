@@ -119,6 +119,32 @@ export default function App() {
   const { currentProject } = useProjectInit(bootstrapStatus.isReady);
 
   useEffect(() => {
+    const projectId = currentProject?.id;
+    if (!projectId) {
+      return;
+    }
+
+    let active = true;
+    void api.project.markOpened?.(projectId)
+      .then((response) => {
+        if (!active || !response?.success) {
+          return;
+        }
+        void loadProjects();
+      })
+      .catch((error) => {
+        api.logger.warn("Failed to update project local open state", {
+          projectId,
+          error,
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [currentProject?.id, loadProjects]);
+
+  useEffect(() => {
     const unsubscribe = api.lifecycle.onQuitPhase((payload) => {
       if (!payload || typeof payload !== "object") return;
       const next = payload as Partial<AppQuitPhasePayload>;

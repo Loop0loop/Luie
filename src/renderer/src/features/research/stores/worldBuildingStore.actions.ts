@@ -9,9 +9,7 @@ import type {
 import {
   appendNodeToGraph,
   appendRelationToGraph,
-  getFilterForViewMode,
   getResolvedRelationKind,
-  getSuggestedModeForNodes,
   isValidRelationForPair,
   isWorldEntityBackedType,
   removeNodeFromGraph,
@@ -40,14 +38,11 @@ type StoreGetter<T> = () => T;
 type WorldBuildingActions = Pick<
   WorldBuildingState,
   | "loadGraph"
-  | "setViewMode"
+  | "setMainView"
   | "setFilter"
   | "resetFilter"
   | "selectNode"
   | "selectEdge"
-  | "dismissSuggestion"
-  | "toggleTimeline"
-  | "toggleMap"
   | "createGraphNode"
   | "updateGraphNode"
   | "updateWorldEntityPosition"
@@ -80,44 +75,24 @@ export function createWorldBuildingActions(
           throw new Error(response.error?.message ?? "Graph load failed");
         }
 
-        const suggestedMode =
-          response.data.nodes.length > 0 &&
-          response.data.nodes.filter((node) => node.entityType === "Event").length /
-            response.data.nodes.length >=
-            0.4 &&
-          get().viewMode === "standard"
-            ? "event-chain"
-            : null;
-
         set({
           graphData: response.data,
           isLoading: false,
           selectedNodeId: null,
           selectedEdgeId: null,
-          suggestedMode,
         });
       } catch (error) {
         set({ error: String(error), isLoading: false });
       }
     },
 
-    setViewMode: (mode) => {
-      set((state) => ({
-        viewMode: mode,
-        suggestedMode: null,
-        filter: getFilterForViewMode(mode, state.filter),
-      }));
-    },
+    setMainView: (view) => set({ mainView: view }),
 
     setFilter: (filter) =>
       set((state) => ({ filter: { ...state.filter, ...filter } })),
     resetFilter: () => set({ filter: DEFAULT_FILTER }),
-    selectNode: (nodeId) => set({ selectedNodeId: nodeId, selectedEdgeId: null }),
-    selectEdge: (edgeId) => set({ selectedEdgeId: edgeId, selectedNodeId: null }),
-    dismissSuggestion: () => set({ suggestedMode: null }),
-    toggleTimeline: () =>
-      set((state) => ({ isTimelineOpen: !state.isTimelineOpen })),
-    toggleMap: () => set((state) => ({ isMapOpen: !state.isMapOpen })),
+    selectNode: (nodeId: string | null) => set({ selectedNodeId: nodeId, selectedEdgeId: null }),
+    selectEdge: (edgeId: string | null) => set({ selectedEdgeId: edgeId, selectedNodeId: null }),
 
     createGraphNode: async (input) => {
       const projectId = input.projectId || get().activeProjectId;
@@ -132,11 +107,6 @@ export function createWorldBuildingActions(
           graphData: nextGraph,
           selectedNodeId: nextNode.id,
           selectedEdgeId: null,
-          suggestedMode: getSuggestedModeForNodes(
-            nextGraph.nodes,
-            state.viewMode,
-            state.suggestedMode,
-          ),
         };
       });
 

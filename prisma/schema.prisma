@@ -21,6 +21,8 @@ model Project {
   updatedAt   DateTime @updatedAt
 
   // Relations
+  attachment      ProjectAttachment?
+  localState      ProjectLocalState?
   chapters        Chapter[]
   characters      Character[]
   terms           Term[]
@@ -32,6 +34,28 @@ model Project {
   entityRelations EntityRelation[]
   worldDocuments  WorldDocument[]
   scrapMemos      ScrapMemo[]
+}
+
+// 앱 로컬 attachment metadata.
+// canonical project content가 아니라 현재 기기에서 어떤 .luie에 연결됐는지 표현한다.
+model ProjectAttachment {
+  projectId   String   @id
+  projectPath String?  @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// 앱 로컬 프로젝트 상태.
+// 최근 프로젝트 정렬과 마지막 열기 시각처럼 기기 의존 메타데이터만 저장한다.
+model ProjectLocalState {
+  projectId     String    @id
+  lastOpenedAt  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 // 프로젝트별 로컬 런타임 정책.

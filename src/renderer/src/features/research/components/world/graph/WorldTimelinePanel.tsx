@@ -5,7 +5,7 @@
  */
 
 import { useMemo, useCallback } from "react";
-import { X, Clock, CircleDot } from "lucide-react";
+import { Clock, CircleDot } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
 import type { WorldGraphNode, EntityRelation } from "@shared/types";
@@ -143,7 +143,6 @@ interface WorldTimelinePanelProps {
 
 export function WorldTimelinePanel({ nodes }: WorldTimelinePanelProps) {
     const { t } = useTranslation();
-    const toggleTimeline = useWorldBuildingStore((s) => s.toggleTimeline);
     const selectedNodeId = useWorldBuildingStore((s) => s.selectedNodeId);
     const selectNode = useWorldBuildingStore((s) => s.selectNode);
 
@@ -181,13 +180,6 @@ export function WorldTimelinePanel({ nodes }: WorldTimelinePanelProps) {
                         </p>
                     </div>
                 </div>
-                <button
-                    type="button"
-                    onClick={toggleTimeline}
-                    className="p-1.5 text-muted hover:text-fg hover:bg-element rounded-md transition-all"
-                >
-                    <X size={14} />
-                </button>
             </div>
         );
     }
@@ -205,13 +197,6 @@ export function WorldTimelinePanel({ nodes }: WorldTimelinePanelProps) {
                         {timelineNodes.length}개 사건
                     </span>
                 </div>
-                <button
-                    type="button"
-                    onClick={toggleTimeline}
-                    className="p-1.5 text-muted hover:text-fg hover:bg-element rounded-md transition-all"
-                >
-                    <X size={14} />
-                </button>
             </div>
 
             {/* Timeline Scroll Area */}

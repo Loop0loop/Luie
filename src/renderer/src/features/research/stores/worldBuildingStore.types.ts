@@ -12,11 +12,7 @@ import type {
   WorldGraphNode,
 } from "@shared/types";
 
-export type WorldViewMode =
-  | "standard"
-  | "protagonist"
-  | "event-chain"
-  | "freeform";
+export type WorldMainView = "graph" | "timeline" | "map";
 
 export interface WorldFilter {
   entityTypes: string[];
@@ -73,22 +69,17 @@ export interface WorldBuildingState {
   activeProjectId: string | null;
   isLoading: boolean;
   error: string | null;
-  viewMode: WorldViewMode;
+  mainView: WorldMainView;
   filter: WorldFilter;
   selectedNodeId: string | null;
   selectedEdgeId: string | null;
-  suggestedMode: WorldViewMode | null;
-  isTimelineOpen: boolean;
-  isMapOpen: boolean;
   loadGraph: (projectId: string) => Promise<void>;
-  setViewMode: (mode: WorldViewMode) => void;
+  setMainView: (view: WorldMainView) => void;
   setFilter: (filter: Partial<WorldFilter>) => void;
   resetFilter: () => void;
   selectNode: (nodeId: string | null) => void;
   selectEdge: (edgeId: string | null) => void;
-  dismissSuggestion: () => void;
-  toggleTimeline: () => void;
-  toggleMap: () => void;
+
   createGraphNode: (input: CreateGraphNodeInput) => Promise<WorldGraphNode | null>;
   updateGraphNode: (input: UpdateGraphNodeInput) => Promise<void>;
   updateWorldEntityPosition: (input: WorldEntityUpdatePositionInput) => Promise<void>;
@@ -106,24 +97,18 @@ export const INITIAL_WORLD_BUILDING_STATE = {
   activeProjectId: null,
   isLoading: false,
   error: null,
-  viewMode: "standard",
+  mainView: "graph",
   filter: DEFAULT_FILTER,
   selectedNodeId: null,
   selectedEdgeId: null,
-  suggestedMode: null,
-  isTimelineOpen: false,
-  isMapOpen: false,
 } satisfies Pick<
   WorldBuildingState,
   | "graphData"
   | "activeProjectId"
   | "isLoading"
   | "error"
-  | "viewMode"
+  | "mainView"
   | "filter"
   | "selectedNodeId"
   | "selectedEdgeId"
-  | "suggestedMode"
-  | "isTimelineOpen"
-  | "isMapOpen"
 >;

@@ -60,6 +60,7 @@ export type RendererApi = {
     }) => Promise<IPCResponse<Project>>;
     delete: (input: string | { id: string; deleteFile?: boolean }) => Promise<IPCResponse<unknown>>;
     removeLocal: (id: string) => Promise<IPCResponse<unknown>>;
+    markOpened: (id: string) => Promise<IPCResponse<{ projectId: string; lastOpenedAt: string }>>;
   };
   chapter: {
     create: (input: {

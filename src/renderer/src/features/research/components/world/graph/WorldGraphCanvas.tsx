@@ -8,7 +8,6 @@ import ReactFlow, {
   MarkerType,
   useEdgesState,
   useNodesState,
-  type Connection,
   type Edge,
   type EdgeMouseHandler,
   type Node,
@@ -23,11 +22,8 @@ import { useToast } from "@shared/ui/ToastContext";
 import { useDialog } from "@shared/ui/useDialog";
 import { WORLD_ENTITY_TYPES, RELATION_COLORS } from "@shared/constants/world";
 import {
-  getDefaultRelationForPair,
-  isWorldEntityBackedType,
 } from "@shared/constants/worldRelationRules";
 import type { EntityRelation, WorldEntitySourceType, WorldGraphNode } from "@shared/types";
-import type { WorldViewMode } from "@renderer/features/research/stores/worldBuildingStore";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import {
   WORLD_GRAPH_CREATE_MENU_HEIGHT_PX,
@@ -50,7 +46,6 @@ const nodeTypes = {
 interface WorldGraphCanvasProps {
   nodes: WorldGraphNode[];
   edges: EntityRelation[];
-  viewMode: WorldViewMode;
 }
 
 type CreateMenuState = {
@@ -158,7 +153,6 @@ function toRFNode(
   graphNode: WorldGraphNode,
   index: number,
   selectedNodeId: string | null,
-  viewMode: WorldViewMode,
 ): Node {
   const subType = graphNode.subType ?? graphNode.entityType;
   const importance = (graphNode.attributes?.importance ?? 3) as number;
@@ -177,7 +171,6 @@ function toRFNode(
       subType,
       importance,
       entityType: graphNode.entityType,
-      viewMode,
     },
     selected: selectedNodeId === graphNode.id,
     type: "custom",
@@ -187,7 +180,6 @@ function toRFNode(
 function toRFEdge(
   relation: EntityRelation,
   translate: (key: string, fallback: string) => string,
-  viewMode: WorldViewMode,
   nodeById: Map<string, Node>,
 ): Edge {
   const color = RELATION_COLORS[relation.relation] ?? "#94a3b8";
@@ -196,13 +188,7 @@ function toRFEdge(
     nodeById.get(relation.targetId),
   );
 
-  let strokeWidth = 2;
-  let isAnimated = relation.relation === "causes" || relation.relation === "controls";
-
-  if (viewMode === "event-chain" && relation.relation === "causes") {
-    strokeWidth = 4;
-    isAnimated = true;
-  }
+  const isAnimated = relation.relation === "causes" || relation.relation === "controls";
 
   return {
     id: relation.id,
@@ -214,13 +200,13 @@ function toRFEdge(
     label: translate(`world.graph.relationTypes.${relation.relation}`, relation.relation),
     labelStyle: { fontSize: 10, fill: "#94a3b8", fontWeight: 500 },
     labelBgStyle: { fill: "transparent" },
-    style: { stroke: color, strokeWidth },
+    style: { stroke: color, strokeWidth: 2 },
     animated: isAnimated,
     markerEnd: { type: MarkerType.ArrowClosed, color },
   };
 }
 
-export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMode }: WorldGraphCanvasProps) {
+export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: WorldGraphCanvasProps) {
   const { t, i18n } = useTranslation();
   const { showToast } = useToast();
   const dialog = useDialog();
@@ -229,9 +215,6 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
   const selectNode = useWorldBuildingStore((state) => state.selectNode);
   const selectEdge = useWorldBuildingStore((state) => state.selectEdge);
   const createGraphNode = useWorldBuildingStore((state) => state.createGraphNode);
-  const createRelation = useWorldBuildingStore((state) => state.createRelation);
-  const updateWorldEntityPosition = useWorldBuildingStore((state) => state.updateWorldEntityPosition);
-  const updateGraphNode = useWorldBuildingStore((state) => state.updateGraphNode);
   const deleteGraphNode = useWorldBuildingStore((state) => state.deleteGraphNode);
 
   const canvasRef = useRef<HTMLDivElement | null>(null);
@@ -240,21 +223,19 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
   const [nodeMenu, setNodeMenu] = useState<NodeMenuState | null>(null);
 
   const rfNodes = useMemo(
-    () => graphNodes.map((node, index) => toRFNode(node, index, selectedNodeId, viewMode)),
-    [graphNodes, selectedNodeId, viewMode],
+    () => graphNodes.map((node, index) => toRFNode(node, index, selectedNodeId)),
+    [graphNodes, selectedNodeId],
   );
   const rfEdges = useMemo(() => {
     const translate = (key: string, fallback: string) =>
       i18n.t(key, { defaultValue: fallback });
     const nodeById = new Map(rfNodes.map((node) => [node.id, node] as const));
-    return graphEdges.map((edge) => toRFEdge(edge, translate, viewMode, nodeById));
-  }, [graphEdges, i18n, rfNodes, viewMode]);
+    return graphEdges.map((edge) => toRFEdge(edge, translate, nodeById));
+  }, [graphEdges, i18n, rfNodes]);
 
   const { layoutedNodes, layoutedEdges } = useWorldGraphLayout({
     nodes: rfNodes,
     edges: rfEdges,
-    viewMode,
-    selectedNodeId,
   });
 
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes);
@@ -278,8 +259,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
   // Fix: Smart Node Synchronization
   // Keeps local node position while user drags, but accepts programmatic Layout updates
   const lastStorePositions = useRef<Record<string, { x: number; y: number }>>({});
-  // Track previous viewMode to detect mode transitions (for auto-layout trigger)
-  const prevViewModeRef = useRef<WorldViewMode>(viewMode);
+
 
   useEffect(() => {
     setNodes((prev) => {
@@ -307,8 +287,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
           sourceRfNode &&
           (lastPos.x !== sourceRfNode.position.x || lastPos.y !== sourceRfNode.position.y);
 
-        // Did the user just switch modes? Force layout position only on mode change transition.
-        const didModeSwitched = prevViewModeRef.current !== viewMode;
+        const didModeSwitched = false;
 
         let newPos = existing.position;
 
@@ -347,75 +326,9 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
       return prev;
     });
 
-    // Update the prevViewMode ref after processing
-    prevViewModeRef.current = viewMode;
-  }, [layoutedNodes, rfNodes, viewMode, setNodes]);
+  }, [layoutedNodes, rfNodes, setNodes]);
 
-  const onNodeDragStop: NodeMouseHandler = useCallback(
-    (_, node) => {
-      const movedNode = graphNodes.find((graphNode) => graphNode.id === node.id);
-      if (!movedNode) {
-        return;
-      }
 
-      const nextX = Math.round(node.position.x);
-      const nextY = Math.round(node.position.y);
-
-      if (isWorldEntityBackedType(movedNode.entityType)) {
-        void updateWorldEntityPosition({
-          id: node.id,
-          positionX: nextX,
-          positionY: nextY,
-        });
-        return;
-      }
-
-      const currentAttributes =
-        movedNode.attributes && typeof movedNode.attributes === "object" && !Array.isArray(movedNode.attributes)
-          ? movedNode.attributes
-          : {};
-      void updateGraphNode({
-        id: movedNode.id,
-        entityType: movedNode.entityType,
-        subType: movedNode.subType,
-        attributes: {
-          ...currentAttributes,
-          graphPosition: { x: nextX, y: nextY },
-        },
-      });
-    },
-    [graphNodes, updateGraphNode, updateWorldEntityPosition],
-  );
-
-  const onConnect = useCallback(
-    (params: Connection) => {
-      if (!params.source || !params.target) return;
-
-      const sourceType = (graphNodes.find((node) => node.id === params.source)?.entityType ??
-        "Character") as WorldEntitySourceType;
-      const targetType = (graphNodes.find((node) => node.id === params.target)?.entityType ??
-        "Character") as WorldEntitySourceType;
-      const relation = getDefaultRelationForPair(sourceType, targetType);
-      if (!relation) {
-        showToast(t("world.graph.canvas.invalidRelation"), "error");
-        return;
-      }
-
-      void createRelation({
-        projectId: activeProjectId ?? "",
-        sourceId: params.source,
-        sourceType,
-        targetId: params.target,
-        targetType,
-        relation,
-      }).then((created) => {
-        if (!created) {
-          showToast(t("world.graph.canvas.invalidRelation"), "error");
-        }
-      });
-    },
-    [activeProjectId, createRelation, graphNodes, showToast, t],
-  );
 
   const onNodeClick: NodeMouseHandler = useCallback(
     (_, node) => {
@@ -547,52 +460,29 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
     return nodes.map((node) => {
       let opacity = 1;
 
-      if (viewMode === "protagonist" && selectedNodeId) {
+      if (selectedNodeId) {
         const isSelected = node.id === selectedNodeId;
         const isAdjacent = adjacentNodeIds.has(node.id);
-        opacity = isSelected ? 1 : isAdjacent ? 0.8 : 0.15;
-      } else if (viewMode === "event-chain") {
-        const isEvent = node.data?.entityType === "Event";
-        if (selectedNodeId) {
-          const isSelected = node.id === selectedNodeId;
-          const isAdjacent = adjacentNodeIds.has(node.id);
-          opacity = isSelected || isAdjacent ? 1 : 0.15;
-        } else {
-          opacity = isEvent ? 1 : 0.6;
-        }
+        opacity = isSelected || isAdjacent ? 1 : 0.15;
       }
 
       if (opacity === 1 && !node.style?.opacity) return node;
 
       return {
         ...node,
-        style: {
-          ...node.style,
-          opacity,
-          // NOTE: NO transition here — adding CSS transition to every node
-          // causes the compositor to re-paint every dragged frame, causing lag.
-        },
+        style: { ...node.style, opacity },
       };
     });
-  }, [nodes, viewMode, selectedNodeId, adjacentNodeIds]);
+  }, [nodes, selectedNodeId, adjacentNodeIds]);
 
   const styledEdges = useMemo(() => {
     return edges.map((edge) => {
       let opacity = 1;
-      let label = edge.label;
+      const label = edge.label;
 
-      if (viewMode === "protagonist" && selectedNodeId) {
+      if (selectedNodeId) {
         const isConnected = edge.source === selectedNodeId || edge.target === selectedNodeId;
         opacity = isConnected ? 1 : 0.15;
-      } else if (viewMode === "event-chain") {
-        const isCauses = edge.data?.relation === "causes" || edge.animated;
-        opacity = isCauses ? 1 : 0.3;
-        if (selectedNodeId) {
-          const isConnected = edge.source === selectedNodeId || edge.target === selectedNodeId;
-          if (!isConnected) opacity = 0.1;
-        }
-      } else if (viewMode === "freeform") {
-        label = undefined;
       }
 
       if (opacity === 1 && label === edge.label && !edge.style?.opacity) return edge;
@@ -600,14 +490,10 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
       return {
         ...edge,
         label,
-        style: {
-          ...edge.style,
-          opacity,
-          // No transition on edges during drag
-        },
+        style: { ...edge.style, opacity },
       };
     });
-  }, [edges, viewMode, selectedNodeId]);
+  }, [edges, selectedNodeId]);
 
   const handleFocusNode = useCallback(() => {
     if (!nodeMenu) return;
@@ -642,8 +528,9 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onNodeDragStop={onNodeDragStop}
-        onConnect={onConnect}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        elementsSelectable={true}
         onNodeClick={onNodeClick}
         onNodeContextMenu={onNodeContextMenu}
         onEdgeClick={onEdgeClick}
@@ -676,8 +563,8 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
         <div
           className="absolute z-20 min-w-48 rounded-lg border border-border bg-panel shadow-xl p-2"
           style={{
-            left: createMenu.left,
-            top: createMenu.top,
+            left: createMenu!.left,
+            top: createMenu!.top,
           }}
         >
           <p className="px-2 pb-2 text-[11px] font-semibold text-muted">
@@ -702,8 +589,8 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges, viewMod
         <div
           className="absolute z-20 w-[180px] rounded-lg border border-border bg-panel shadow-xl p-2"
           style={{
-            left: nodeMenu.left,
-            top: nodeMenu.top,
+            left: nodeMenu!.left,
+            top: nodeMenu!.top,
           }}
         >
           <button

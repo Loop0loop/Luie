@@ -257,6 +257,7 @@ type CoreMethodMap = {
   "project.openLuie": RendererApi["project"]["openLuie"];
   "project.get": RendererApi["project"]["get"];
   "project.getAll": RendererApi["project"]["getAll"];
+  "project.markOpened": RendererApi["project"]["markOpened"];
   "chapter.get": RendererApi["chapter"]["get"];
   "chapter.getAll": RendererApi["chapter"]["getAll"];
   "chapter.update": RendererApi["chapter"]["update"];
@@ -450,6 +451,8 @@ const rendererApi = {
       safeInvoke(IPC_CHANNELS.PROJECT_REMOVE_LOCAL, id),
     openLuie: (packagePath: string): ReturnType<RendererApi["project"]["openLuie"]> =>
       safeInvokeCore("project.openLuie", IPC_CHANNELS.PROJECT_OPEN_LUIE, packagePath),
+    markOpened: (id: string): ReturnType<RendererApi["project"]["markOpened"]> =>
+      safeInvokeCore("project.markOpened", IPC_CHANNELS.PROJECT_MARK_OPENED, id),
   },
 
   // Chapter API

@@ -1,10 +1,11 @@
 // Packaged SQLite bootstrap schema mirrors the current local runtime surface.
-// It includes canonical project tables plus replica tables required for
-// detached/offline editing. `Project.projectPath` remains here only as a
-// legacy compatibility field until attachment metadata is fully extracted into
-// app-local storage.
+// It includes canonical project tables, replica tables for detached/offline
+// editing, and app-local attachment metadata. `Project.projectPath` remains as
+// a legacy fallback column while attachment metadata moves to ProjectAttachment.
 export const PACKAGED_SCHEMA_REQUIRED_TABLES = [
   "Project",
+  "ProjectAttachment",
+  "ProjectLocalState",
   "ProjectSettings",
   "Chapter",
   "Character",
@@ -78,6 +79,8 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
   // `projectPath` stays as a legacy compatibility column for now, but it is not
   // a required canonical project field for bootstrap integrity checks.
   Project: ["id", "title"],
+  ProjectAttachment: ["projectId", "projectPath"],
+  ProjectLocalState: ["projectId", "lastOpenedAt"],
   ProjectSettings: ["id", "projectId", "autoSave", "autoSaveInterval"],
   Chapter: ["id", "projectId", "order", "wordCount", "deletedAt"],
   Character: ["id", "projectId", "firstAppearance", "attributes"],
@@ -101,6 +104,20 @@ CREATE TABLE IF NOT EXISTS "Project" (
     "projectPath" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
+);
+CREATE TABLE IF NOT EXISTS "ProjectAttachment" (
+    "projectId" TEXT NOT NULL PRIMARY KEY,
+    "projectPath" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "ProjectAttachment_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "ProjectLocalState" (
+    "projectId" TEXT NOT NULL PRIMARY KEY,
+    "lastOpenedAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "ProjectLocalState_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "ProjectSettings" (
     "id" TEXT NOT NULL PRIMARY KEY,
@@ -248,7 +265,9 @@ CREATE TABLE IF NOT EXISTS "EntityRelation" (
     CONSTRAINT "EntityRelation_sourceWorldEntityId_fkey" FOREIGN KEY ("sourceWorldEntityId") REFERENCES "WorldEntity" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "EntityRelation_targetWorldEntityId_fkey" FOREIGN KEY ("targetWorldEntityId") REFERENCES "WorldEntity" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+CREATE UNIQUE INDEX IF NOT EXISTS "ProjectAttachment_projectPath_key" ON "ProjectAttachment"("projectPath");
 CREATE UNIQUE INDEX IF NOT EXISTS "ProjectSettings_projectId_key" ON "ProjectSettings"("projectId");
+CREATE INDEX IF NOT EXISTS "ProjectLocalState_lastOpenedAt_idx" ON "ProjectLocalState"("lastOpenedAt");
 CREATE INDEX IF NOT EXISTS "Chapter_projectId_order_idx" ON "Chapter"("projectId", "order");
 CREATE INDEX IF NOT EXISTS "Character_projectId_name_idx" ON "Character"("projectId", "name");
 CREATE INDEX IF NOT EXISTS "Event_projectId_name_idx" ON "Event"("projectId", "name");

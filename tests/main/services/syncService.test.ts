@@ -34,6 +34,13 @@ const mocked = vi.hoisted(() => {
       delete: vi.fn(),
       deleteMany: vi.fn(),
     },
+    projectAttachment: {
+      findMany: vi.fn(async () => []),
+      findUnique: vi.fn(async () => null),
+      findFirst: vi.fn(async () => null),
+      upsert: vi.fn(),
+      deleteMany: vi.fn(),
+    },
     chapter: {
       findUnique: vi.fn(),
       update: vi.fn(),
@@ -218,6 +225,11 @@ describe("SyncService auth hardening", () => {
     mocked.prisma.project.update.mockClear();
     mocked.prisma.project.create.mockClear();
     mocked.prisma.project.delete.mockClear();
+    mocked.prisma.projectAttachment.findMany.mockClear();
+    mocked.prisma.projectAttachment.findUnique.mockClear();
+    mocked.prisma.projectAttachment.findFirst.mockClear();
+    mocked.prisma.projectAttachment.upsert.mockClear();
+    mocked.prisma.projectAttachment.deleteMany.mockClear();
     mocked.prisma.chapter.update.mockClear();
     mocked.prisma.chapter.create.mockClear();
     mocked.prisma.character.update.mockClear();

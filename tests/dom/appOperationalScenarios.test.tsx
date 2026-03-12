@@ -85,6 +85,7 @@ const mocked = vi.hoisted(() => {
     },
     project: {
       openLuie: vi.fn(),
+      markOpened: vi.fn(),
     },
     snapshot: {
       importFromFile: vi.fn(),
@@ -279,6 +280,14 @@ describe("app operational scenarios", () => {
     mocked.projectState.setCurrentProject.mockReset();
     mocked.projectState.updateProject.mockReset();
     mocked.projectState.loadProjects.mockReset();
+    mocked.api.project.markOpened.mockReset();
+    mocked.api.project.markOpened.mockResolvedValue({
+      success: true,
+      data: {
+        projectId: "project-1",
+        lastOpenedAt: "2026-03-12T00:00:00.000Z",
+      },
+    });
     mocked.projectInitState.currentProject = null;
     mocked.uiState.setView.mockReset();
     mocked.showToast.mockReset();
@@ -364,6 +373,31 @@ describe("app operational scenarios", () => {
     expect(mocked.showToast).toHaveBeenCalledWith("Open from local data", "info");
     expect(mocked.projectState.setCurrentProject).not.toHaveBeenCalled();
     expect(mocked.uiState.setView).not.toHaveBeenCalledWith("template");
+  });
+
+  it("marks the current project as opened and refreshes project ordering", async () => {
+    mocked.api.app.getBootstrapStatus.mockResolvedValue({
+      success: true,
+      data: {
+        isReady: true,
+      },
+    });
+    mocked.projectInitState.currentProject = {
+      id: "project-1",
+      title: "Opened Project",
+      projectPath: null,
+      attachmentStatus: "detached",
+      pathMissing: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const view = mountView(<App />);
+    mountedViews.push(view);
+    await flushAsync();
+
+    expect(mocked.api.project.markOpened).toHaveBeenCalledWith("project-1");
+    expect(mocked.projectState.loadProjects).toHaveBeenCalled();
   });
 
   it("keeps outer UI alive when a feature boundary recovers from a crash", async () => {

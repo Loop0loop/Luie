@@ -5,7 +5,7 @@
  */
 
 import { useMemo, useState, useCallback, memo } from "react";
-import { X, MapPin, ChevronDown, ChevronRight, Globe } from "lucide-react";
+import { MapPin, ChevronDown, ChevronRight, Globe } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
 import type { WorldGraphNode, EntityRelation } from "@shared/types";
@@ -155,7 +155,6 @@ interface WorldMapPanelProps {
 
 export const WorldMapPanel = memo(function WorldMapPanel({ nodes, edges }: WorldMapPanelProps) {
     const { t } = useTranslation();
-    const toggleMap = useWorldBuildingStore((s) => s.toggleMap);
     const selectedNodeId = useWorldBuildingStore((s) => s.selectedNodeId);
     const selectNode = useWorldBuildingStore((s) => s.selectNode);
 
@@ -188,13 +187,6 @@ export const WorldMapPanel = memo(function WorldMapPanel({ nodes, edges }: World
                         </span>
                     )}
                 </div>
-                <button
-                    type="button"
-                    onClick={toggleMap}
-                    className="p-1.5 text-muted hover:text-fg hover:bg-element rounded-md transition-all"
-                >
-                    <X size={14} />
-                </button>
             </div>
 
             {/* Map Info Badge */}

@@ -260,16 +260,25 @@ Done when:
 
 ## Phase 4. Attachment metadata extraction
 
-- [ ] Move attachment metadata out of `Project`
-- [ ] Design `app.db` records for `ProjectAttachment`, recent projects, and last-opened state
-- [ ] Remove `project_path` from Supabase sync expectations
-- [ ] Remove `Project.projectPath` from packaged `.luie` schema requirements
-- [ ] Write migration rules for existing local installs
+- [x] Introduce `ProjectAttachment` as the app-local attachment store for runtime reads/writes
+- [ ] Remove legacy `Project.projectPath` fallback after the migration window closes
+- [x] Introduce `ProjectLocalState.lastOpenedAt` as app-local recent/opened metadata
+- [ ] Design the rest of `app.db` records for recent projects, pinned state, and startup selection
+- [x] Remove `project_path` from Supabase sync expectations
+- [x] Remove `Project.projectPath` from packaged `.luie` schema requirements
+- [x] Add a startup migration path that backfills valid legacy `Project.projectPath` values into `ProjectAttachment`
 
 Done when:
 
 - attachment location is app-local metadata only
 - canonical project records are portable between devices and containers
+
+Current checkpoint:
+
+- `ProjectAttachment` now exists in local Prisma/bootstrap schema
+- `ProjectLocalState` now stores `lastOpenedAt`, and project lists sort by app-local recent/opened state before `updatedAt`
+- attachment store reads `ProjectAttachment` first and falls back to legacy `Project.projectPath` only for unmigrated rows
+- new attachment writes no longer persist semantic state on `Project.projectPath`
 
 ## Phase 5. `.luie` reconciliation and materialization
 

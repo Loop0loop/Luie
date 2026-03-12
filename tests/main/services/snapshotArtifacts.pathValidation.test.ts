@@ -21,6 +21,13 @@ const mocked = vi.hoisted(() => {
       findMany: vi.fn(),
       findUnique: vi.fn(),
     },
+    projectAttachment: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      deleteMany: vi.fn(),
+      upsert: vi.fn(),
+      findFirst: vi.fn(),
+    },
     projectSettings: {
       deleteMany,
     },
@@ -65,6 +72,8 @@ describe("snapshotArtifacts projectPath hardening", () => {
     mocked.db.getClient.mockClear();
     mocked.dbClient.project.findMany.mockReset();
     mocked.dbClient.project.findUnique.mockReset();
+    mocked.dbClient.projectAttachment.findMany.mockReset();
+    mocked.dbClient.projectAttachment.findUnique.mockReset();
     mocked.dbClient.snapshot.findMany.mockReset();
 
     tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-snapshot-artifacts-"));
@@ -97,6 +106,7 @@ describe("snapshotArtifacts projectPath hardening", () => {
       characters: [],
       terms: [],
     });
+    mocked.dbClient.projectAttachment.findUnique.mockResolvedValue(null);
 
     const { writeFullSnapshotArtifact } = await import(
       "../../../src/main/services/features/snapshot/snapshotArtifacts.js"
@@ -154,6 +164,7 @@ describe("snapshotArtifacts projectPath hardening", () => {
         projectPath: relativeProjectPath,
       },
     ]);
+    mocked.dbClient.projectAttachment.findMany.mockResolvedValue([]);
     mocked.dbClient.snapshot.findMany.mockResolvedValue([]);
 
     const { cleanupOrphanSnapshotArtifacts } = await import(

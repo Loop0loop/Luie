@@ -25,6 +25,7 @@ transport-only payloads, durable local replica state, rebuildable cache, or mach
 | --- | --- | --- | --- |
 | `Project` identity, title, description | yes | `.luie`, `replica.db` | project content |
 | `Project.projectPath` | no | `app.db` | attachment metadata only |
+| `ProjectLocalState.lastOpenedAt` | no | `app.db` | recent/opened ordering metadata |
 | `ProjectSettings.autoSave`, `ProjectSettings.autoSaveInterval` | no | `replica.db` or `app.db` | local runtime policy, not portable project content |
 | `Chapter` | yes | `.luie`, `replica.db` | canonical |
 | `Character` | yes | `.luie`, `replica.db` | canonical |

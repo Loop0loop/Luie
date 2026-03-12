@@ -21,6 +21,12 @@ vi.mock("electron", () => ({
 }));
 
 type PrismaClient = ReturnType<(typeof DbService)["getClient"]> & {
+  projectAttachment?: {
+    deleteMany: (args: unknown) => Promise<{ count: number }>;
+  };
+  projectLocalState?: {
+    deleteMany: (args: unknown) => Promise<{ count: number }>;
+  };
   projectSettings?: {
     deleteMany: (args: unknown) => Promise<{ count: number }>;
   };
@@ -54,6 +60,12 @@ beforeEach(async () => {
   }
   if (client.worldDocument?.deleteMany) {
     await client.worldDocument.deleteMany({});
+  }
+  if (client.projectLocalState?.deleteMany) {
+    await client.projectLocalState.deleteMany({});
+  }
+  if (client.projectAttachment?.deleteMany) {
+    await client.projectAttachment.deleteMany({});
   }
   await client.term.deleteMany({});
   await client.character.deleteMany({});

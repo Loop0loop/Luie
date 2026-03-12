@@ -15,7 +15,7 @@ import type {
   WorldGraphData,
   WorldGraphNode,
 } from "@shared/types";
-import { DEFAULT_FILTER, type WorldFilter, type WorldViewMode } from "./worldBuildingStore.types";
+import { type WorldFilter } from "./worldBuildingStore.types";
 
 export const parseNodeAttributes = (
   value: unknown,
@@ -116,59 +116,7 @@ export const toRelationSourceType = (
   entityType: WorldEntitySourceType,
 ): WorldEntitySourceType => entityType;
 
-export const getSuggestedModeForNodes = (
-  nodes: WorldGraphNode[],
-  viewMode: WorldViewMode,
-  currentSuggestedMode: WorldViewMode | null,
-): WorldViewMode | null => {
-  if (viewMode !== "standard") {
-    return currentSuggestedMode;
-  }
 
-  const charCount = nodes.filter((node) => node.entityType === "Character").length;
-  const eventCount = nodes.filter((node) => node.entityType === "Event").length;
-  const total = nodes.length;
-  if (total <= 3) {
-    return currentSuggestedMode;
-  }
-  if (eventCount / total >= 0.4) {
-    return "event-chain";
-  }
-  if (charCount / total >= 0.4) {
-    return "protagonist";
-  }
-  return currentSuggestedMode;
-};
-
-export const getFilterForViewMode = (
-  mode: WorldViewMode,
-  currentFilter: WorldFilter,
-): WorldFilter => {
-  if (mode !== "event-chain") {
-    return DEFAULT_FILTER;
-  }
-
-  return {
-    ...currentFilter,
-    entityTypes: [
-      "Event",
-      "Character",
-      "Faction",
-      "Concept",
-      "Place",
-      "Rule",
-      "Item",
-      "WorldEntity",
-    ],
-    relationKinds: [
-      "causes",
-      "located_in",
-      "violates",
-      "belongs_to",
-      "controls",
-    ],
-  };
-};
 
 export const appendNodeToGraph = (
   graphData: WorldGraphData | null,

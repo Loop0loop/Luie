@@ -47,6 +47,19 @@ vi.mock("../../../src/main/database/index.js", () => ({
         findMany: vi.fn(),
         deleteMany: mocked.deleteMany,
       },
+      projectAttachment: {
+        findMany: vi.fn(async () => []),
+        findUnique: vi.fn(async () => null),
+        findFirst: vi.fn(async () => null),
+        upsert: vi.fn(),
+        deleteMany: mocked.deleteMany,
+      },
+      projectLocalState: {
+        findMany: vi.fn(async () => []),
+        findUnique: vi.fn(async () => null),
+        upsert: vi.fn(),
+        deleteMany: mocked.deleteMany,
+      },
     }),
   },
 }));

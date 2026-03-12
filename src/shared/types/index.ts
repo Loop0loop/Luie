@@ -15,6 +15,8 @@ export interface Project {
   description?: string | null;
   // Legacy attachment metadata. Not canonical project content.
   projectPath?: string | null;
+  // App-local metadata for recent/opened ordering.
+  lastOpenedAt?: string | Date | null;
   attachmentStatus?: ProjectAttachmentStatus;
   // Legacy compatibility flag. Prefer attachmentStatus for new code.
   pathMissing?: boolean;
@@ -730,6 +732,7 @@ export interface AppSettings {
   editor: EditorSettings;
   language?: "ko" | "en" | "ja";
   shortcuts?: ShortcutMap;
+  // Legacy machine-local path hint. New recent/opened state lives in ProjectLocalState.
   lastProjectPath?: string;
   autoSaveEnabled: boolean;
   autoSaveInterval: number;

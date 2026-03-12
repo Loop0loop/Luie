@@ -26,8 +26,15 @@ import {
   getProjectAttachmentPath,
   hydrateProjectsWithAttachmentPaths,
   listProjectAttachmentEntries,
+  migrateLegacyProjectAttachments,
   setProjectAttachmentPath,
 } from "./project/projectAttachmentStore.js";
+import {
+  getProjectLastOpenedAt,
+  hydrateProjectsWithLocalState,
+  markProjectOpened as markProjectOpenedLocalState,
+  sortProjectsByRecentLocalState,
+} from "./project/projectLocalStateStore.js";
 import {
   findProjectPathConflict,
   normalizeProjectPath,
@@ -51,7 +58,10 @@ export class ProjectService {
   async reconcileProjectPathDuplicates(): Promise<{
     duplicateGroups: number;
     clearedRecords: number;
+    migratedRecords: number;
+    skippedInvalidRecords: number;
   }> {
+    const migration = await migrateLegacyProjectAttachments();
     const projects = (await listProjectAttachmentEntries()).filter(
       (project) => project.projectPath !== null,
     );
@@ -100,7 +110,16 @@ export class ProjectService {
       });
     }
 
-    return { duplicateGroups, clearedRecords };
+    if (migration.migratedRecords > 0 || migration.clearedLegacyRecords > 0) {
+      logger.info("Legacy project attachment migration completed", migration);
+    }
+
+    return {
+      duplicateGroups,
+      clearedRecords,
+      migratedRecords: migration.migratedRecords,
+      skippedInvalidRecords: migration.skippedInvalidRecords,
+    };
   }
 
   async createProject(input: ProjectCreateInput) {
@@ -214,6 +233,7 @@ export class ProjectService {
       return {
         ...project,
         projectPath: await getProjectAttachmentPath(id),
+        lastOpenedAt: await getProjectLastOpenedAt(id),
       };
     } catch (error) {
       logger.error("Failed to get project", error);
@@ -231,11 +251,9 @@ export class ProjectService {
           createdAt: true,
           updatedAt: true,
         },
-        orderBy: { updatedAt: "desc" },
       });
 
-      const projectsWithAttachments = await hydrateProjectsWithAttachmentPaths(
-        projects.map((project: {
+      const normalizedProjects = projects.map((project: {
           id: string;
           title: string;
           description: string | null;
@@ -246,11 +264,17 @@ export class ProjectService {
           id: String(project.id),
           description:
             typeof project.description === "string" ? project.description : null,
-        })),
+        }));
+
+      const projectsWithAttachments = await hydrateProjectsWithAttachmentPaths(
+        normalizedProjects,
+      );
+      const projectsWithLocalState = await hydrateProjectsWithLocalState(
+        projectsWithAttachments,
       );
 
       return await withProjectPathStatus(
-        projectsWithAttachments,
+        sortProjectsByRecentLocalState(projectsWithLocalState),
       );
     } catch (error) {
       logger.error("Failed to get all projects", error);
@@ -449,6 +473,18 @@ export class ProjectService {
         error,
       );
     }
+  }
+
+  async markProjectOpened(id: string) {
+    const lastOpenedAt = await markProjectOpenedLocalState(id);
+    logger.info("Project marked as opened", {
+      projectId: id,
+      lastOpenedAt: lastOpenedAt.toISOString(),
+    });
+    return {
+      projectId: id,
+      lastOpenedAt: lastOpenedAt.toISOString(),
+    };
   }
 
   schedulePackageExport(projectId: string, reason?: string) {

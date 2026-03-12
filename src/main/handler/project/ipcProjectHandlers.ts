@@ -22,6 +22,7 @@ type ProjectServiceLike = {
   updateProject: (input: ProjectUpdateInput) => Promise<unknown>;
   deleteProject: (input: string | ProjectDeleteInput) => Promise<unknown>;
   removeProjectFromList: (id: string) => Promise<unknown>;
+  markProjectOpened: (id: string) => Promise<unknown>;
 };
 
 export function registerProjectIPCHandlers(
@@ -76,6 +77,13 @@ export function registerProjectIPCHandlers(
       failMessage: "Failed to remove project from list",
       argsSchema: z.tuple([projectIdSchema]),
       handler: (id: string) => projectService.removeProjectFromList(id),
+    },
+    {
+      channel: IPC_CHANNELS.PROJECT_MARK_OPENED,
+      logTag: "PROJECT_MARK_OPENED",
+      failMessage: "Failed to update project local state",
+      argsSchema: z.tuple([projectIdSchema]),
+      handler: (id: string) => projectService.markProjectOpened(id),
     },
   ]);
 }
