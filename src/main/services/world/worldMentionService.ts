@@ -8,6 +8,7 @@ import type {
 import { ServiceError } from "../../utils/serviceError.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import { getWorldDbClient } from "./characterService.js";
+import { appearanceCacheService } from "./appearanceCacheService.js";
 
 const logger = createLogger("WorldMentionService");
 const CONTEXT_RADIUS = 48;
@@ -110,16 +111,14 @@ export class WorldMentionService {
 
     const client = getWorldDbClient();
     const appearanceRows = (query.entityType === "Character"
-      ? await client.characterAppearance.findMany({
-          where: { characterId: query.entityId },
-          orderBy: { createdAt: "asc" },
-          take: query.limit ?? DEFAULT_LIMIT,
-        })
-      : await client.termAppearance.findMany({
-          where: { termId: query.entityId },
-          orderBy: { createdAt: "asc" },
-          take: query.limit ?? DEFAULT_LIMIT,
-        })) as AppearanceRow[];
+      ? await appearanceCacheService.getCharacterAppearancesByEntity(
+          query.entityId,
+          query.limit ?? DEFAULT_LIMIT,
+        )
+      : await appearanceCacheService.getTermAppearancesByEntity(
+          query.entityId,
+          query.limit ?? DEFAULT_LIMIT,
+        )) as AppearanceRow[];
 
     if (appearanceRows.length === 0) {
       return [];
@@ -130,6 +129,7 @@ export class WorldMentionService {
       where: {
         id: { in: chapterIds },
         projectId: query.projectId,
+        deletedAt: null,
       },
       select: { id: true, title: true },
     })) as Array<{ id: string; title: string }>;

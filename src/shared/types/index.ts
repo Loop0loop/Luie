@@ -350,6 +350,7 @@ export interface CharacterUpdateInput {
 }
 
 export interface CharacterAppearanceInput {
+  projectId: string;
   characterId: string;
   chapterId: string;
   position: number;
@@ -376,6 +377,7 @@ export interface TermUpdateInput {
 }
 
 export interface TermAppearanceInput {
+  projectId: string;
   termId: string;
   chapterId: string;
   position: number;

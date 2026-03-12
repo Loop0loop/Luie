@@ -27,6 +27,40 @@ export class SnapshotService {
   private orphanArtifactIds = new Set<string>();
   private orphanCleanupTimer: NodeJS.Timeout | null = null;
 
+  private async attemptImmediatePackageExport(input: {
+    projectId: string;
+    reason:
+      | "snapshot:create"
+      | "snapshot:delete"
+      | "snapshot:restore"
+      | "snapshot:delete-old"
+      | "snapshot:prune";
+    snapshotInput?: SnapshotCreateInput;
+  }): Promise<void> {
+    const result = await projectService.attemptImmediatePackageExport(
+      input.projectId,
+      input.reason,
+    );
+    if (!result.error) {
+      return;
+    }
+    if (input.snapshotInput) {
+      try {
+        await writeEmergencySnapshotFile(
+          input.snapshotInput,
+          logger,
+          result.error,
+        );
+      } catch (emergencyError) {
+        logger.warn("Failed to write emergency snapshot after export failure", {
+          projectId: input.projectId,
+          reason: input.reason,
+          error: emergencyError,
+        });
+      }
+    }
+  }
+
   private scheduleOrphanArtifactCleanup(): void {
     if (this.orphanCleanupTimer) return;
     this.orphanCleanupTimer = setTimeout(() => {
@@ -110,7 +144,11 @@ export class SnapshotService {
       });
 
       logger.info("Snapshot created successfully", { snapshotId: snapshot.id });
-      projectService.schedulePackageExport(input.projectId, "snapshot:create");
+      await this.attemptImmediatePackageExport({
+        projectId: input.projectId,
+        reason: "snapshot:create",
+        snapshotInput: input,
+      });
       this.scheduleOrphanArtifactCleanup();
       return snapshot;
     } catch (error) {
@@ -209,10 +247,10 @@ export class SnapshotService {
 
       logger.info("Snapshot deleted successfully", { snapshotId: id });
       if ((snapshot as { projectId?: unknown })?.projectId) {
-        projectService.schedulePackageExport(
-          String((snapshot as { projectId: unknown }).projectId),
-          "snapshot:delete",
-        );
+        await this.attemptImmediatePackageExport({
+          projectId: String((snapshot as { projectId: unknown }).projectId),
+          reason: "snapshot:delete",
+        });
       }
       return { success: true };
     } catch (error) {
@@ -270,7 +308,10 @@ export class SnapshotService {
         chapterId: snapshot.chapterId,
       });
 
-      projectService.schedulePackageExport(String(snapshot.projectId), "snapshot:restore");
+      await this.attemptImmediatePackageExport({
+        projectId: String(snapshot.projectId),
+        reason: "snapshot:restore",
+      });
 
       return {
         success: true,
@@ -340,6 +381,11 @@ export class SnapshotService {
       logger.info("Old snapshots deleted successfully", {
         projectId,
         deletedCount: toDelete.length,
+      });
+
+      await this.attemptImmediatePackageExport({
+        projectId,
+        reason: "snapshot:delete-old",
       });
 
       return { success: true, deletedCount: toDelete.length };
@@ -417,6 +463,11 @@ export class SnapshotService {
       logger.info("Snapshots pruned", {
         projectId,
         deletedCount: toDelete.length,
+      });
+
+      await this.attemptImmediatePackageExport({
+        projectId,
+        reason: "snapshot:prune",
       });
 
       return { success: true, deletedCount: toDelete.length };

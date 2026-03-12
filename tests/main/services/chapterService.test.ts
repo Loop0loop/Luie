@@ -17,6 +17,9 @@ const localProjectService = new ProjectService();
 beforeAll(() => {
   vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(() => {});
   vi.spyOn(projectService, "schedulePackageExport").mockImplementation(() => {});
+  vi.spyOn(projectService, "attemptImmediatePackageExport").mockResolvedValue({
+    exported: false,
+  });
   vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(() => {});
 });
 
@@ -91,13 +94,18 @@ describe("ChapterService", () => {
 
     const content = generateText(50000);
 
-    for (let i = 0; i < 100; i += 1) {
-      const chapter = await chapterService.createChapter({
-        projectId: project.id as string,
-        title: `Chapter ${i + 1}`,
-      });
-      await chapterService.updateChapter({ id: chapter.id as string, content });
-    }
+    await Promise.all(
+      Array.from({ length: 100 }, async (_value, index) => {
+        const chapter = await chapterService.createChapter({
+          projectId: project.id as string,
+          title: `Chapter ${index + 1}`,
+        });
+        await chapterService.updateChapter({
+          id: chapter.id as string,
+          content,
+        });
+      }),
+    );
 
     const chapters = await chapterService.getAllChapters(project.id as string);
     expect(chapters).toHaveLength(100);

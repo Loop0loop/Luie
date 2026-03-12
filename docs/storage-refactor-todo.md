@@ -300,18 +300,50 @@ Current checkpoint:
 - explicit attach existing `.luie` and materialize-to-new-`.luie` flows now exist as first-class project actions
 - recovery UX now distinguishes missing original package recovery from corrupt package recovery
 
-## Phase 6. Cache isolation
+## Phase 6. Canonical durability hardening
 
-- [ ] Move `CharacterAppearance` and `TermAppearance` into cache-only storage
-- [ ] Define rebuild triggers and invalidation rules
+- [x] Make snapshot create/delete/restore attempt immediate `.luie` export instead of debounce-only export
+- [x] Make snapshot retention flows (`deleteOldSnapshots`, `pruneSnapshots`) refresh `.luie` immediately when they delete canonical snapshot data
+- [x] Expand immediate `.luie` durability coverage to the remaining canonical write surfaces (`Chapter`, `Character`, `Term`, `Event`, `Faction`, `WorldEntity`, `EntityRelation`)
+- [x] Add a destructive recovery test that proves `.db` loss can recover project + snapshots from `.luie`
+- [x] Decide which operations remain mirror-first for UX/perf and which must be canonical-first
+
+Done when:
+
+- deleting the local replica cannot silently discard newer snapshot state than the attached `.luie`
+- `.luie` durability guarantees are documented per canonical write surface
+
+Current checkpoint:
+
+- snapshot writes now use immediate export attempts through the shared project export queue
+- snapshot export failures fall back to queued retry instead of staying debounce-only
+- snapshot retention jobs no longer mutate DB-only state without attempting to refresh the attached `.luie`
+- chapter/world canonical write services now use the shared immediate durability helper instead of direct debounce-only export
+- `firstAppearance` auto-fill paths for `Character` and `Term` now refresh the attached `.luie` immediately too
+- an integration test now proves that deleting the local sqlite replica still allows project + snapshot recovery from the attached `.luie`
+- policy is now explicit: high-frequency renderer mirror flows stay mirror-first, canonical main-process entity/snapshot writes use immediate durability, and `Project` create/update remains the one deliberate queued-export exception
+
+## Phase 7. Cache isolation
+
+- [x] Move `CharacterAppearance` and `TermAppearance` into cache-only storage
+- [x] Define rebuild triggers and invalidation rules
 - [ ] Move analysis/search/FTS artifacts into cache-only storage
-- [ ] Prove cache deletion is safe
+- [x] Prove cache deletion is safe
 
 Done when:
 
 - cache deletion never loses user-authored project data
 
-## Phase 7. Container evolution
+Current checkpoint:
+
+- `prisma/schema.prisma` no longer carries `CharacterAppearance` and `TermAppearance`
+- `prisma/cache.schema.prisma` and `cacheDb` now own appearance cache writes/reads
+- chapter keyword tracking clears and rebuilds chapter cache deterministically
+- character/term create and rename paths rebuild project appearance cache so late additions can hydrate old chapters
+- project delete clears appearance cache rows in the separate cache store
+- boundary tests now lock the split so appearance cache does not drift back into the runtime replica schema
+
+## Phase 8. Container evolution
 
 - [ ] Decide whether `.luie` stays package-based or becomes SQLite-backed
 - [ ] If `.luie` becomes SQLite-backed, keep the canonical contract unchanged

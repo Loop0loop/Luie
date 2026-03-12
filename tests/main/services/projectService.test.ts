@@ -258,12 +258,22 @@ describe("ProjectService", () => {
 
     await db.getClient().project.update({
       where: { id: created.id as string },
-      data: { projectPath: "relative/unsafe.luie" },
+      data: { projectPath: null },
+    });
+    await db.getClient().projectAttachment.upsert({
+      where: { projectId: created.id as string },
+      create: {
+        projectId: created.id as string,
+        projectPath: "relative/unsafe.luie",
+      },
+      update: {
+        projectPath: "relative/unsafe.luie",
+      },
     });
 
     await expect(
       localProjectService.exportProjectPackage(created.id as string),
-    ).resolves.toBeUndefined();
+    ).resolves.toBe(false);
 
     await localProjectService.deleteProject(created.id as string);
   });
@@ -281,7 +291,17 @@ describe("ProjectService", () => {
 
     await db.getClient().project.update({
       where: { id: created.id as string },
-      data: { projectPath: "relative/unsafe.luie" },
+      data: { projectPath: null },
+    });
+    await db.getClient().projectAttachment.upsert({
+      where: { projectId: created.id as string },
+      create: {
+        projectId: created.id as string,
+        projectPath: "relative/unsafe.luie",
+      },
+      update: {
+        projectPath: "relative/unsafe.luie",
+      },
     });
 
     const all = await localProjectService.getAllProjects();
@@ -326,6 +346,13 @@ describe("ProjectService", () => {
       projectPath: path.join(app.getPath("userData"), "duplicate-path-c.luie"),
     });
 
+    await db.getClient().projectAttachment.deleteMany({
+      where: {
+        projectId: {
+          in: [String(first.id), String(second.id), String(third.id)],
+        },
+      },
+    });
     await db.getClient().project.update({
       where: { id: String(first.id) },
       data: { projectPath: sharedPath },
@@ -344,20 +371,11 @@ describe("ProjectService", () => {
     expect(reconciliation.duplicateGroups).toBe(1);
     expect(reconciliation.clearedRecords).toBe(2);
 
-    const survivors = await db.getClient().project.findMany({
-      where: {
-        id: {
-          in: [String(first.id), String(second.id), String(third.id)],
-        },
-      },
-      select: {
-        id: true,
-        projectPath: true,
-      },
-      orderBy: {
-        id: "asc",
-      },
-    });
+    const survivors = (await localProjectService.getAllProjects()).filter((project) =>
+      [String(first.id), String(second.id), String(third.id)].includes(
+        String(project.id),
+      ),
+    );
 
     expect(
       survivors.filter((project) => project.projectPath === sharedPath),

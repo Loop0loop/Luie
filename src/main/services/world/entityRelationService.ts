@@ -116,7 +116,10 @@ export class EntityRelationService {
             const relation = await getWorldDbClient().entityRelation.create({ data });
 
             logger.info("Entity relation created", { relationId: relation.id });
-            projectService.schedulePackageExport(input.projectId, "entity-relation:create");
+            await projectService.attemptImmediatePackageExport(
+                input.projectId,
+                "entity-relation:create",
+            );
             return toEntityRelation(relation as RawRow);
         } catch (error) {
             logger.error("Failed to create entity relation", error);
@@ -194,7 +197,10 @@ export class EntityRelationService {
             });
 
             logger.info("Entity relation updated", { relationId: relation.id });
-            projectService.schedulePackageExport(String(current.projectId), "entity-relation:update");
+            await projectService.attemptImmediatePackageExport(
+                String(current.projectId),
+                "entity-relation:update",
+            );
             return toEntityRelation(relation as RawRow);
         } catch (error) {
             logger.error("Failed to update entity relation", error);
@@ -219,7 +225,10 @@ export class EntityRelationService {
         try {
             const deleted = await getWorldDbClient().entityRelation.delete({ where: { id } });
             logger.info("Entity relation deleted", { relationId: id });
-            projectService.schedulePackageExport(String(deleted.projectId), "entity-relation:delete");
+            await projectService.attemptImmediatePackageExport(
+                String(deleted.projectId),
+                "entity-relation:delete",
+            );
             return { success: true };
         } catch (error) {
             logger.error("Failed to delete entity relation", error);
@@ -389,7 +398,10 @@ export class EntityRelationService {
             });
             removedRelations += result.count;
             if (result.count > 0) {
-                projectService.schedulePackageExport(projectId, "entity-relation:cleanup-orphans");
+                await projectService.attemptImmediatePackageExport(
+                    projectId,
+                    "entity-relation:cleanup-orphans",
+                );
             }
         }
 

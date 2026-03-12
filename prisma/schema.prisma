@@ -101,8 +101,7 @@ model Character {
   updatedAt       DateTime @updatedAt
 
   // Relations
-  project     Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  appearances CharacterAppearance[]
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, name])
 }
@@ -139,21 +138,6 @@ model Faction {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, name])
-}
-
-// Cache models (rebuildable, non-canonical)
-// 캐릭터 등장 추적
-model CharacterAppearance {
-  id          String   @id @default(uuid())
-  characterId String
-  chapterId   String
-  position    Int // Position in text where character appears
-  context     String? // Surrounding text for context
-  createdAt   DateTime @default(now())
-
-  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
-
-  @@index([characterId, chapterId])
 }
 
 // Detached/synced 프로젝트가 .luie attachment 없이도 편집될 수 있도록
@@ -203,24 +187,9 @@ model Term {
   updatedAt       DateTime @updatedAt
 
   // Relations
-  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  appearances TermAppearance[]
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, term])
-}
-
-// 고유명사 등장 추적
-model TermAppearance {
-  id        String   @id @default(uuid())
-  termId    String
-  chapterId String
-  position  Int
-  context   String?
-  createdAt DateTime @default(now())
-
-  term Term @relation(fields: [termId], references: [id], onDelete: Cascade)
-
-  @@index([termId, chapterId])
 }
 
 // 스냅샷 (버전 관리, canonical user data)

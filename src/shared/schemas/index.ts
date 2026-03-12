@@ -146,6 +146,7 @@ export const autoSaveArgsSchema = z.tuple([
 ]);
 
 export const characterAppearanceSchema = z.object({
+  projectId: projectIdSchema,
   characterId: characterIdSchema,
   chapterId: chapterIdSchema,
   position: z.number().int().nonnegative(),
@@ -153,6 +154,7 @@ export const characterAppearanceSchema = z.object({
 });
 
 export const termAppearanceSchema = z.object({
+  projectId: projectIdSchema,
   termId: termIdSchema,
   chapterId: chapterIdSchema,
   position: z.number().int().nonnegative(),

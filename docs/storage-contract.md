@@ -102,10 +102,18 @@ Disallowed going forward:
 - new durable project-content writes in renderer `localStorage`
 - new canonical or replica semantics built on browser storage
 
+## Phase 6 durability policy
+
+- renderer-side high-frequency mirror flows remain mirror-first for UX and crash recovery, while attached projects still write `.luie` directly where that path already exists
+- main-process canonical entity writes (`Chapter`, `Character`, `Term`, `Event`, `Faction`, `WorldEntity`, `EntityRelation`) and snapshot mutations use immediate `.luie` durability attempts with queued retry fallback
+- `Project` create/update remains the one queued-export exception for now; it is lower-risk metadata than chapter/entity/snapshot state and can be revisited separately
+
 ## Current known gaps
 
-- detached world documents and memos still fall back to `localStorage`
+- detached world documents and memos still carry a legacy `localStorage` migration bridge, even though durable writes now go to replica storage
 - sync does not yet cover the full canonical world model surface
 - attachment metadata is still physically stored on `Project.projectPath`
 - packaged `.luie` bootstrap still carries attachment metadata
 - `snapshots` exist in sync merge types but not in sync transport
+- `Project` create/update still rely on queued export rather than the immediate durability helper
+- cache isolation is only partially complete: appearance cache is split out, but analysis/search/FTS artifacts are still mixed into the replica runtime surface

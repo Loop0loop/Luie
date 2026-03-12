@@ -47,15 +47,14 @@ import { exportProjectPackageWithOptions as exportProjectPackageWithOptionsImpl 
 import { openLuieProjectPackage } from "./project/projectImportOpen.js";
 import { LuieMetaSchema } from "./project/projectLuieSchemas.js";
 import { readLuieEntry } from "../../utils/luiePackage.js";
+import { appearanceCacheService } from "../world/appearanceCacheService.js";
 
 const logger = createLogger("ProjectService");
 
 export class ProjectService {
   private exportQueue = new ProjectExportQueue(
     PACKAGE_EXPORT_DEBOUNCE_MS,
-    async (projectId: string) => {
-      await this.exportProjectPackage(projectId);
-    },
+    async (projectId: string) => await this.exportProjectPackage(projectId),
     logger,
   );
 
@@ -627,6 +626,14 @@ export class ProjectService {
       await db.getClient().project.delete({
         where: { id: request.id },
       });
+      try {
+        await appearanceCacheService.clearProject(request.id);
+      } catch (cacheError) {
+        logger.warn("Failed to clear project appearance cache during delete", {
+          projectId: request.id,
+          cacheError,
+        });
+      }
 
       this.clearSyncBaselineForProject(request.id);
 
@@ -670,6 +677,14 @@ export class ProjectService {
       await db.getClient().project.delete({
         where: { id },
       });
+      try {
+        await appearanceCacheService.clearProject(id);
+      } catch (cacheError) {
+        logger.warn("Failed to clear project appearance cache during remove", {
+          projectId: id,
+          cacheError,
+        });
+      }
 
       this.clearSyncBaselineForProject(id);
 
@@ -705,6 +720,37 @@ export class ProjectService {
     this.exportQueue.schedule(projectId, reason);
   }
 
+  async exportProjectPackageNow(projectId: string, reason?: string): Promise<boolean> {
+    return await this.exportQueue.runNow(projectId, reason);
+  }
+
+  async attemptImmediatePackageExport(
+    projectId: string,
+    reason: string,
+  ): Promise<{ exported: boolean; error?: unknown }> {
+    try {
+      const exported = await this.exportProjectPackageNow(projectId, reason);
+      if (!exported) {
+        logger.info("Skipped immediate project package export", {
+          projectId,
+          reason,
+        });
+      }
+      return { exported };
+    } catch (error) {
+      this.schedulePackageExport(projectId, `${reason}:retry`);
+      logger.warn("Immediate project package export failed; queued retry", {
+        projectId,
+        reason,
+        error,
+      });
+      return {
+        exported: false,
+        error,
+      };
+    }
+  }
+
   async flushPendingExports(timeoutMs = 8_000): Promise<{
     total: number;
     flushed: number;
@@ -728,8 +774,8 @@ export class ProjectService {
     });
   }
 
-  async exportProjectPackage(projectId: string) {
-    await this.exportProjectPackageWithOptions(projectId);
+  async exportProjectPackage(projectId: string): Promise<boolean> {
+    return await this.exportProjectPackageWithOptions(projectId);
   }
 }
 

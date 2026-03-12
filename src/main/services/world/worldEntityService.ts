@@ -43,7 +43,10 @@ export class WorldEntityService {
             });
 
             logger.info("World entity created", { entityId: entity.id });
-            projectService.schedulePackageExport(String(entity.projectId), "world-entity:create");
+            await projectService.attemptImmediatePackageExport(
+                String(entity.projectId),
+                "world-entity:create",
+            );
             return entity;
         } catch (error) {
             logger.error("Failed to create world entity", error);
@@ -114,7 +117,10 @@ export class WorldEntityService {
             });
 
             logger.info("World entity updated", { entityId: entity.id });
-            projectService.schedulePackageExport(String(entity.projectId), "world-entity:update");
+            await projectService.attemptImmediatePackageExport(
+                String(entity.projectId),
+                "world-entity:update",
+            );
             return entity;
         } catch (error) {
             logger.error("Failed to update world entity", error);
@@ -142,7 +148,10 @@ export class WorldEntityService {
                 data: { positionX: input.positionX, positionY: input.positionY },
             });
 
-            projectService.schedulePackageExport(String(entity.projectId), "world-entity:update-position");
+            await projectService.attemptImmediatePackageExport(
+                String(entity.projectId),
+                "world-entity:update-position",
+            );
             return entity;
         } catch (error) {
             logger.error("Failed to update world entity position", error);
@@ -167,7 +176,10 @@ export class WorldEntityService {
         try {
             const deleted = await getWorldDbClient().worldEntity.delete({ where: { id } });
             logger.info("World entity deleted", { entityId: id });
-            projectService.schedulePackageExport(String(deleted.projectId), "world-entity:delete");
+            await projectService.attemptImmediatePackageExport(
+                String(deleted.projectId),
+                "world-entity:delete",
+            );
             return { success: true };
         } catch (error) {
             logger.error("Failed to delete world entity", error);

@@ -38,7 +38,10 @@ export class FactionService {
             logger.info("Faction created successfully", {
                 factionId: faction.id,
             });
-            projectService.schedulePackageExport(input.projectId, "faction:create");
+            await projectService.attemptImmediatePackageExport(
+                input.projectId,
+                "faction:create",
+            );
             return faction;
         } catch (error) {
             logger.error("Failed to create faction", error);
@@ -111,7 +114,10 @@ export class FactionService {
             logger.info("Faction updated successfully", {
                 factionId: faction.id,
             });
-            projectService.schedulePackageExport(String(faction.projectId), "faction:update");
+            await projectService.attemptImmediatePackageExport(
+                String(faction.projectId),
+                "faction:update",
+            );
             return faction;
         } catch (error) {
             logger.error("Failed to update faction", error);
@@ -158,7 +164,7 @@ export class FactionService {
 
             logger.info("Faction deleted successfully", { factionId: id });
             if (projectId) {
-                projectService.schedulePackageExport(
+                await projectService.attemptImmediatePackageExport(
                     projectId,
                     "faction:delete",
                 );

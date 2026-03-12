@@ -7,6 +7,7 @@ import { APP_DIR_NAME } from "../../../shared/constants/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import type { StartupCheck, StartupCheckKey, StartupReadiness } from "../../../shared/types/index.js";
 import { db } from "../../database/index.js";
+import { cacheDb } from "../../database/cacheDb.js";
 import { settingsManager } from "../../manager/settingsManager.js";
 import { getSupabaseConfig, getSupabaseConfigSource } from "./sync/supabaseEnv.js";
 import { syncAuthService } from "./sync/syncAuthService.js";
@@ -131,8 +132,9 @@ class StartupReadinessService {
 
   private async checkSqliteConnect(): Promise<StartupCheck> {
     try {
-      await db.initialize();
+      await Promise.all([db.initialize(), cacheDb.initialize()]);
       db.getClient();
+      cacheDb.getClient();
       return buildCheck("sqliteConnect", true, "SQLite connection ready");
     } catch (error) {
       return buildCheck("sqliteConnect", false, this.toErrorMessage(error));
@@ -141,7 +143,7 @@ class StartupReadinessService {
 
   private async checkSqliteWal(): Promise<StartupCheck> {
     try {
-      await db.initialize();
+      await Promise.all([db.initialize(), cacheDb.initialize()]);
       return buildCheck("sqliteWal", true, "WAL mode enforced during DB initialization");
     } catch (error) {
       return buildCheck("sqliteWal", false, this.toErrorMessage(error));

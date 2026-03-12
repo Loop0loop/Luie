@@ -1,0 +1,161 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocked = vi.hoisted(() => ({
+  initialize: vi.fn(async () => undefined),
+  disconnect: vi.fn(async () => undefined),
+  snapshotCreate: vi.fn(),
+  snapshotFindUnique: vi.fn(),
+  snapshotFindMany: vi.fn(),
+  snapshotDelete: vi.fn(),
+  snapshotDeleteMany: vi.fn(),
+  snapshotFindFirst: vi.fn(),
+  chapterUpdate: vi.fn(),
+  projectFindMany: vi.fn(),
+  writeFullSnapshotArtifact: vi.fn(),
+  cleanupOrphanSnapshotArtifacts: vi.fn(async () => ({ scanned: 0, deleted: 0 })),
+  writeEmergencySnapshotFile: vi.fn(async () => undefined),
+  importSnapshotFromFile: vi.fn(),
+  attemptImmediatePackageExport: vi.fn(async () => ({ exported: true })),
+}));
+
+vi.mock("../../../src/main/database/index.js", () => ({
+  db: {
+    initialize: mocked.initialize,
+    disconnect: mocked.disconnect,
+    getClient: () => ({
+      snapshot: {
+        create: mocked.snapshotCreate,
+        findUnique: mocked.snapshotFindUnique,
+        findMany: mocked.snapshotFindMany,
+        delete: mocked.snapshotDelete,
+        deleteMany: mocked.snapshotDeleteMany,
+        findFirst: mocked.snapshotFindFirst,
+      },
+      chapter: {
+        update: mocked.chapterUpdate,
+      },
+      project: {
+        findMany: mocked.projectFindMany,
+      },
+    }),
+  },
+}));
+
+vi.mock("../../../src/main/services/core/projectService.js", () => ({
+  projectService: {
+    attemptImmediatePackageExport: (...args: unknown[]) =>
+      mocked.attemptImmediatePackageExport(...args),
+  },
+}));
+
+vi.mock("../../../src/main/services/features/snapshot/snapshotArtifacts.js", () => ({
+  writeFullSnapshotArtifact: (...args: unknown[]) =>
+    mocked.writeFullSnapshotArtifact(...args),
+  cleanupOrphanSnapshotArtifacts: (...args: unknown[]) =>
+    mocked.cleanupOrphanSnapshotArtifacts(...args),
+}));
+
+vi.mock("../../../src/main/services/features/snapshot/snapshotEmergencyFile.js", () => ({
+  writeEmergencySnapshotFile: (...args: unknown[]) =>
+    mocked.writeEmergencySnapshotFile(...args),
+}));
+
+vi.mock("../../../src/main/services/features/snapshot/snapshotImportFromFile.js", () => ({
+  importSnapshotFromFile: (...args: unknown[]) => mocked.importSnapshotFromFile(...args),
+}));
+
+import { SnapshotService } from "../../../src/main/services/features/snapshot/snapshotService.js";
+
+describe("SnapshotService package durability", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocked.snapshotCreate.mockResolvedValue({
+      id: "snapshot-1",
+      projectId: "project-1",
+      chapterId: "chapter-1",
+      content: "hello",
+      createdAt: new Date("2026-03-12T00:00:00.000Z"),
+    });
+    mocked.snapshotDelete.mockResolvedValue({ id: "snapshot-1" });
+    mocked.snapshotDeleteMany.mockResolvedValue({ count: 1 });
+    mocked.chapterUpdate.mockResolvedValue({ id: "chapter-1" });
+    mocked.projectFindMany.mockResolvedValue([]);
+    mocked.snapshotFindMany.mockResolvedValue([]);
+    mocked.snapshotFindUnique.mockResolvedValue({
+      id: "snapshot-1",
+      projectId: "project-1",
+      chapterId: "chapter-1",
+      content: "restored content",
+    });
+  });
+
+  it("attempts immediate .luie export after snapshot creation", async () => {
+    const service = new SnapshotService();
+
+    const created = await service.createSnapshot({
+      projectId: "project-1",
+      chapterId: "chapter-1",
+      content: "hello",
+      description: "snapshot",
+    });
+
+    expect(created).toMatchObject({ id: "snapshot-1" });
+    expect(mocked.attemptImmediatePackageExport).toHaveBeenCalledWith(
+      "project-1",
+      "snapshot:create",
+    );
+  });
+
+  it("writes an emergency file when immediate export reports a retryable failure", async () => {
+    mocked.attemptImmediatePackageExport.mockResolvedValueOnce({
+      exported: false,
+      error: new Error("disk failure"),
+    });
+    const service = new SnapshotService();
+
+    const created = await service.createSnapshot({
+      projectId: "project-1",
+      chapterId: "chapter-1",
+      content: "hello",
+      description: "snapshot",
+    });
+
+    expect(created).toMatchObject({ id: "snapshot-1" });
+    expect(mocked.writeEmergencySnapshotFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectId: "project-1",
+        chapterId: "chapter-1",
+        content: "hello",
+      }),
+      expect.any(Object),
+      expect.any(Error),
+    );
+  });
+
+  it("refreshes the attached .luie immediately after snapshot restore and pruning", async () => {
+    mocked.snapshotFindMany.mockResolvedValue([
+      {
+        id: "snapshot-old-1",
+        createdAt: new Date("2026-02-20T00:00:00.000Z"),
+      },
+      {
+        id: "snapshot-old-2",
+        createdAt: new Date("2026-02-20T01:00:00.000Z"),
+      },
+    ]);
+
+    const service = new SnapshotService();
+
+    await service.restoreSnapshot("snapshot-1");
+    await service.pruneSnapshots("project-1");
+
+    expect(mocked.attemptImmediatePackageExport).toHaveBeenCalledWith(
+      "project-1",
+      "snapshot:restore",
+    );
+    expect(mocked.attemptImmediatePackageExport).toHaveBeenCalledWith(
+      "project-1",
+      "snapshot:prune",
+    );
+  });
+});

@@ -11,8 +11,10 @@ import type {
   CharacterUpdateInput,
   CharacterAppearanceInput,
 } from "../../../shared/types/index.js";
+import { rebuildProjectKeywordAppearances } from "../core/chapterKeywords.js";
 import { projectService } from "../core/projectService.js";
 import { ServiceError } from "../../utils/serviceError.js";
+import { appearanceCacheService } from "./appearanceCacheService.js";
 
 const logger = createLogger("CharacterService");
 
@@ -45,7 +47,14 @@ export class CharacterService {
       logger.info("Character created successfully", {
         characterId: character.id,
       });
-      projectService.schedulePackageExport(input.projectId, "character:create");
+      await rebuildProjectKeywordAppearances(input.projectId, {
+        includeCharacters: true,
+        includeTerms: false,
+      });
+      await projectService.attemptImmediatePackageExport(
+        input.projectId,
+        "character:create",
+      );
       return character;
     } catch (error) {
       logger.error("Failed to create character", error);
@@ -62,11 +71,6 @@ export class CharacterService {
     try {
       const character = await db.getClient().character.findUnique({
         where: { id },
-        include: {
-          appearances: {
-            orderBy: { createdAt: "asc" },
-          },
-        },
       });
 
       if (!character) {
@@ -77,7 +81,11 @@ export class CharacterService {
         );
       }
 
-      return character;
+      const appearances = await appearanceCacheService.getCharacterAppearancesByEntity(id);
+      return {
+        ...character,
+        appearances,
+      };
     } catch (error) {
       logger.error("Failed to get character", error);
       throw error;
@@ -123,7 +131,16 @@ export class CharacterService {
       logger.info("Character updated successfully", {
         characterId: character.id,
       });
-      projectService.schedulePackageExport(String(character.projectId), "character:update");
+      if (input.name !== undefined) {
+        await rebuildProjectKeywordAppearances(String(character.projectId), {
+          includeCharacters: true,
+          includeTerms: false,
+        });
+      }
+      await projectService.attemptImmediatePackageExport(
+        String(character.projectId),
+        "character:update",
+      );
       return character;
     } catch (error) {
       logger.error("Failed to update character", error);
@@ -167,10 +184,11 @@ export class CharacterService {
         }
         await tx.character.deleteMany({ where: { id } });
       });
+      await appearanceCacheService.clearCharacterEntity(id);
 
       logger.info("Character deleted successfully", { characterId: id });
       if (projectId) {
-        projectService.schedulePackageExport(
+        await projectService.attemptImmediatePackageExport(
           projectId,
           "character:delete",
         );
@@ -189,14 +207,7 @@ export class CharacterService {
 
   async recordAppearance(input: CharacterAppearanceInput) {
     try {
-      const appearance = await db.getClient().characterAppearance.create({
-        data: {
-          characterId: input.characterId,
-          chapterId: input.chapterId,
-          position: input.position,
-          context: input.context,
-        },
-      });
+      const appearance = await appearanceCacheService.recordCharacterAppearance(input);
 
       logger.info("Character appearance recorded", {
         characterId: input.characterId,
@@ -217,15 +228,22 @@ export class CharacterService {
 
   async getAppearancesByChapter(chapterId: string) {
     try {
-      const appearances = await db.getClient().characterAppearance.findMany({
-        where: { chapterId },
-        include: {
-          character: true,
-        },
-        orderBy: { position: "asc" },
+      const appearances =
+        await appearanceCacheService.getCharacterAppearancesByChapter(chapterId);
+      const characterIds = Array.from(
+        new Set(appearances.map((appearance) => appearance.characterId)),
+      );
+      const characters = await db.getClient().character.findMany({
+        where: { id: { in: characterIds } },
       });
+      const characterById = new Map(
+        characters.map((character) => [String(character.id), character]),
+      );
 
-      return appearances;
+      return appearances.map((appearance) => ({
+        ...appearance,
+        character: characterById.get(appearance.characterId) ?? null,
+      }));
     } catch (error) {
       logger.error("Failed to get appearances by chapter", error);
       throw new ServiceError(
@@ -258,6 +276,10 @@ export class CharacterService {
         });
 
         logger.info("First appearance updated", { characterId, chapterId });
+        await projectService.attemptImmediatePackageExport(
+          String(character.projectId),
+          "character:update-first-appearance",
+        );
       }
     } catch (error) {
       logger.error("Failed to update first appearance", error);
