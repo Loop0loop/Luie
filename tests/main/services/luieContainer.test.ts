@@ -2,6 +2,7 @@ import os from "node:os";
 import path from "node:path";
 import * as fsp from "node:fs/promises";
 import { afterEach, describe, expect, it } from "vitest";
+import { ErrorCode } from "../../../src/shared/constants/errorCode.js";
 import {
   probeLuieContainer,
   readLuieContainerEntry,
@@ -24,7 +25,7 @@ describe("luieContainer", () => {
     tempRoot = "";
   });
 
-  it("detects package-v1 zip containers written through the container seam", async () => {
+  it("writes sqlite-v2 containers by default through the container seam", async () => {
     tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-"));
     const packagePath = path.join(tempRoot, "project.luie");
 
@@ -43,6 +44,12 @@ describe("luieContainer", () => {
         ],
         characters: [],
         terms: [],
+        synopsis: { synopsis: "", status: "draft" },
+        plot: { columns: [] },
+        drawing: { paths: [] },
+        mindmap: { nodes: [], edges: [] },
+        memos: { memos: [] },
+        graph: { nodes: [], edges: [] },
         snapshots: [],
       },
       logger,
@@ -58,14 +65,16 @@ describe("luieContainer", () => {
 
     expect(probe).toMatchObject({
       exists: true,
-      kind: "package-v1",
+      kind: "sqlite-v2",
       layout: "file",
     });
+    expect(metaRaw).toContain('"container": "sqlite"');
+    expect(metaRaw).toContain('"version": 2');
     expect(metaRaw).toContain('"title": "Container Test"');
     expect(chapterRaw).toBe("# hello");
   });
 
-  it("detects legacy directory packages as package-v1", async () => {
+  it("detects legacy directory packages and rejects reads", async () => {
     tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-dir-"));
     const packagePath = path.join(tempRoot, "legacy-project.luie");
     await fsp.mkdir(path.join(packagePath, "manuscript"), { recursive: true });
@@ -76,14 +85,36 @@ describe("luieContainer", () => {
     );
 
     const probe = await probeLuieContainer(packagePath);
-    const metaRaw = await readLuieContainerEntry(packagePath, "meta.json", logger);
 
     expect(probe).toMatchObject({
       exists: true,
-      kind: "package-v1",
+      kind: "legacy-package",
       layout: "directory",
     });
-    expect(metaRaw).toContain('"title": "Legacy Dir"');
+    await expect(
+      readLuieContainerEntry(packagePath, "meta.json", logger),
+    ).rejects.toMatchObject({
+      code: ErrorCode.LUIE_LEGACY_FORMAT_UNSUPPORTED,
+    });
+  });
+
+  it("detects legacy zip packages and rejects reads", async () => {
+    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-zip-"));
+    const packagePath = path.join(tempRoot, "legacy-project.luie");
+    await fsp.writeFile(packagePath, Buffer.from([0x50, 0x4b, 0x03, 0x04]));
+
+    const probe = await probeLuieContainer(packagePath);
+
+    expect(probe).toMatchObject({
+      exists: true,
+      kind: "legacy-package",
+      layout: "file",
+    });
+    await expect(
+      readLuieContainerEntry(packagePath, "meta.json", logger),
+    ).rejects.toMatchObject({
+      code: ErrorCode.LUIE_LEGACY_FORMAT_UNSUPPORTED,
+    });
   });
 
   it("reads sqlite-v2 .luie entries through the same container seam", async () => {
@@ -92,7 +123,6 @@ describe("luieContainer", () => {
 
     await writeLuieContainer({
       targetPath: packagePath,
-      kind: "sqlite-v2",
       payload: {
         meta: {
           projectId: "project-2",
@@ -106,6 +136,12 @@ describe("luieContainer", () => {
         ],
         characters: [],
         terms: [],
+        synopsis: { synopsis: "", status: "draft" },
+        plot: { columns: [] },
+        drawing: { paths: [] },
+        mindmap: { nodes: [], edges: [] },
+        memos: { memos: [] },
+        graph: { nodes: [], edges: [] },
         snapshots: [
           {
             id: "snapshot-1",
@@ -154,7 +190,6 @@ describe("luieContainer", () => {
 
     await writeLuieContainer({
       targetPath: packagePath,
-      kind: "sqlite-v2",
       payload: {
         meta: {
           projectId: "project-3",
@@ -163,6 +198,12 @@ describe("luieContainer", () => {
         chapters: [],
         characters: [],
         terms: [],
+        synopsis: { synopsis: "", status: "draft" },
+        plot: { columns: [] },
+        drawing: { paths: [] },
+        mindmap: { nodes: [], edges: [] },
+        memos: { memos: [] },
+        graph: { nodes: [], edges: [] },
         snapshots: [],
       },
       logger,
@@ -183,6 +224,12 @@ describe("luieContainer", () => {
         ],
         characters: [],
         terms: [],
+        synopsis: { synopsis: "", status: "draft" },
+        plot: { columns: [] },
+        drawing: { paths: [] },
+        mindmap: { nodes: [], edges: [] },
+        memos: { memos: [] },
+        graph: { nodes: [], edges: [] },
         snapshots: [],
       },
       logger,

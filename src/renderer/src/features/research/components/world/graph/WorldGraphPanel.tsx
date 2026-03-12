@@ -12,12 +12,16 @@ import {
   toPxSize,
 } from "@shared/constants/sidebarSizing";
 import { useFilteredGraph, useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
-import { WorldSidebar } from "./WorldSidebar";
+import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 import { WorldGraphCanvas } from "./WorldGraphCanvas";
-import { WorldInspector } from "./WorldInspector";
-import { WorldGraphTopNav } from "./WorldGraphTopNav";
 import { WorldTimelinePanel } from "./WorldTimelinePanel";
 import { WorldMapPanel } from "./WorldMapPanel";
+import { ActivityBar } from "./ActivityBar";
+import { PrimarySidebar } from "./PrimarySidebar";
+import { NoteMainView } from "./views/NoteMainView";
+import { EntityMainView } from "./views/EntityMainView";
+import { LibraryMainView } from "./views/LibraryMainView";
+import { TimelineMainView } from "./views/TimelineMainView";
 import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
 
 export function WorldGraphPanel() {
@@ -28,24 +32,21 @@ export function WorldGraphPanel() {
   const loadGraph = useWorldBuildingStore((state) => state.loadGraph);
   const isLoading = useWorldBuildingStore((state) => state.isLoading);
   const error = useWorldBuildingStore((state) => state.error);
-  const mainView = useWorldBuildingStore((state) => state.mainView);
   const filteredGraph = useFilteredGraph();
 
-  const leftFeature = "worldGraphSidebar" as const;
-  const rightFeature = "worldGraphInspector" as const;
-  const leftConfig = getSidebarWidthConfig(leftFeature);
-  const rightConfig = getSidebarWidthConfig(rightFeature);
-  const leftWidth = clampSidebarWidth(
-    leftFeature,
-    sidebarWidths[leftFeature] || getSidebarDefaultWidth(leftFeature),
-  );
-  const rightWidth = clampSidebarWidth(
-    rightFeature,
-    sidebarWidths[rightFeature] || getSidebarDefaultWidth(rightFeature),
+  // IDE Store
+  const activeTab = useGraphIdeStore((state) => state.activeTab);
+  const isSidebarOpen = useGraphIdeStore((state) => state.isSidebarOpen);
+  const setSidebarOpen = useGraphIdeStore((state) => state.setSidebarOpen);
+
+  const feature = "worldGraphSidebar" as const;
+  const config = getSidebarWidthConfig(feature);
+  const width = clampSidebarWidth(
+    feature,
+    sidebarWidths[feature] || getSidebarDefaultWidth(feature),
   );
 
-  const onResizeLeft = useSidebarResizeCommit(leftFeature, setSidebarWidth);
-  const onResizeRight = useSidebarResizeCommit(rightFeature, setSidebarWidth);
+  const onResize = useSidebarResizeCommit(feature, setSidebarWidth);
   const requestedProjectIdRef = useRef<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const panelGroupRef = useRef<GroupImperativeHandle | null>(null);
@@ -53,22 +54,16 @@ export function WorldGraphPanel() {
   useFixedPixelPanelGroupLayout({
     containerRef,
     groupRef: panelGroupRef,
-    fixedPanels: [
+    fixedPanels: isSidebarOpen ? [
       {
-        id: "world-graph-sidebar",
-        widthPx: leftWidth,
-        minPx: leftConfig.minPx,
-        maxPx: leftConfig.maxPx,
+        id: "world-ide-sidebar",
+        widthPx: width,
+        minPx: config.minPx,
+        maxPx: config.maxPx,
       },
-      {
-        id: "world-graph-inspector",
-        widthPx: rightWidth,
-        minPx: rightConfig.minPx,
-        maxPx: rightConfig.maxPx,
-      },
-    ],
-    flexPanelId: "world-graph-canvas",
-    flexPanelMinPercent: 28,
+    ] : [],
+    flexPanelId: "world-ide-main",
+    flexPanelMinPercent: 30,
   });
 
   useEffect(() => {
@@ -87,90 +82,80 @@ export function WorldGraphPanel() {
     });
   }, [currentProjectId, loadGraph]);
 
+  const renderMainViewContent = () => {
+    if (isLoading) {
+      return (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-sm text-muted bg-app/70">
+          <span className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-accent" />
+          <p>{t("world.graph.loading")}</p>
+        </div>
+      );
+    }
+    if (error) {
+      return (
+        <div className="absolute inset-0 z-10 flex items-center justify-center text-sm text-destructive">
+          <p>
+            {t("world.graph.errorPrefix")}: {error}
+          </p>
+        </div>
+      );
+    }
+
+    switch (activeTab) {
+      case "graph":
+        return <WorldGraphCanvas nodes={filteredGraph.nodes} edges={filteredGraph.edges} />;
+      case "timeline":
+        return <TimelineMainView nodes={filteredGraph.nodes} edges={filteredGraph.edges} />;
+      case "note":
+        return <NoteMainView />;
+      case "entity":
+        return <EntityMainView />;
+      case "library":
+        return <LibraryMainView />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="h-full w-full overflow-hidden bg-app flex flex-row">
-      <div className="flex-1 overflow-hidden bg-app flex flex-col">
-        {/* Main Panel Layout */}
-        <div ref={containerRef} className="flex-1 min-h-0 flex overflow-hidden">
-          <PanelGroup
-            groupRef={panelGroupRef}
-            orientation="horizontal"
-            className="h-full! w-full!"
-          >
-            <Panel
-              id="world-graph-sidebar"
-              defaultSize={toPxSize(leftWidth)}
-              minSize={toPxSize(leftConfig.minPx)}
-              maxSize={toPxSize(leftConfig.maxPx)}
-              onResize={onResizeLeft}
-              className="min-h-0"
-            >
-              <WorldSidebar />
-            </Panel>
+      <ActivityBar />
 
-            <PanelResizeHandle className="group relative w-3 shrink-0 cursor-col-resize bg-transparent select-none touch-none">
-              <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border/40 group-hover:bg-accent group-data-[dragging]:bg-accent transition-colors" />
-            </PanelResizeHandle>
+      <div ref={containerRef} className="flex-1 min-h-0 flex overflow-hidden">
+        <PanelGroup
+          groupRef={panelGroupRef}
+          orientation="horizontal"
+          className="h-full! w-full!"
+        >
+          {isSidebarOpen && (
+            <>
+              <Panel
+                id="world-ide-sidebar"
+                defaultSize={toPxSize(width)}
+                minSize={toPxSize(config.minPx)}
+                maxSize={toPxSize(config.maxPx)}
+                onResize={onResize}
+                onCollapse={() => setSidebarOpen(false)}
+                collapsible
+                className="min-h-0"
+              >
+                <PrimarySidebar />
+              </Panel>
 
-            <Panel id="world-graph-canvas" minSize={toPercentSize(28)} className="min-h-0 relative">
-                <div className="flex flex-col h-full w-full">
-                  <WorldGraphTopNav />
-                  <main className="relative flex-1 min-w-0 min-h-0 overflow-hidden">
-                    {isLoading && (
-                      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-sm text-muted bg-app/70">
-                        <span className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-accent" />
-                        <p>{t("world.graph.loading")}</p>
-                      </div>
-                    )}
-                    {error && !isLoading && (
-                      <div className="absolute inset-0 z-10 flex items-center justify-center text-sm text-destructive">
-                        <p>
-                          {t("world.graph.errorPrefix")}: {error}
-                        </p>
-                      </div>
-                    )}
-                    {!isLoading && !error && (
-                      <>
-                        {mainView === "graph" && (
-                          <WorldGraphCanvas
-                            nodes={filteredGraph.nodes}
-                            edges={filteredGraph.edges}
-                          />
-                        )}
-                        {mainView === "timeline" && (
-                          <WorldTimelinePanel
-                            nodes={filteredGraph.nodes}
-                            edges={filteredGraph.edges}
-                          />
-                        )}
-                        {mainView === "map" && (
-                          <WorldMapPanel
-                            nodes={filteredGraph.nodes}
-                            edges={filteredGraph.edges}
-                          />
-                        )}
-                      </>
-                    )}
-                  </main>
-                </div>
-            </Panel>
+              <PanelResizeHandle className="group relative w-3 shrink-0 cursor-col-resize bg-transparent select-none touch-none">
+                <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border/40 group-hover:bg-accent group-data-[dragging]:bg-accent transition-colors" />
+              </PanelResizeHandle>
+            </>
+          )}
 
-            <PanelResizeHandle className="group relative w-3 shrink-0 cursor-col-resize bg-transparent select-none touch-none">
-              <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border/40 group-hover:bg-accent group-data-[dragging]:bg-accent transition-colors" />
-            </PanelResizeHandle>
-
-            <Panel
-              id="world-graph-inspector"
-              defaultSize={toPxSize(rightWidth)}
-              minSize={toPxSize(rightConfig.minPx)}
-              maxSize={toPxSize(rightConfig.maxPx)}
-              onResize={onResizeRight}
-              className="min-h-0"
-            >
-              <WorldInspector />
-            </Panel>
-          </PanelGroup>
-        </div>
+          <Panel id="world-ide-main" minSize={toPercentSize(30)} className="min-h-0 relative">
+            <div className="flex flex-col h-full w-full">
+              <main className="relative flex-1 min-w-0 min-h-0 overflow-hidden">
+                {renderMainViewContent()}
+              </main>
+            </div>
+          </Panel>
+        </PanelGroup>
       </div>
     </div>
   );

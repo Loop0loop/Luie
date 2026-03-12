@@ -155,6 +155,12 @@ const readMetaOrMarkCorrupt = async (
     }
     return { meta: parsedMeta.data, luieCorrupted: false };
   } catch (error) {
+    if (
+      error instanceof ServiceError &&
+      error.code === ErrorCode.LUIE_LEGACY_FORMAT_UNSUPPORTED
+    ) {
+      throw error;
+    }
     logger.warn("Failed to read .luie meta; treating as corrupted", {
       packagePath: resolvedPath,
       error,
@@ -477,5 +483,8 @@ export const openLuieProjectPackage = async (input: {
     snapshotCount: snapshotsForCreate.length,
   });
 
-  return { project: created, conflict: "luie-newer" as const };
+  return {
+    project: await input.getProjectById(created.id),
+    conflict: "luie-newer" as const,
+  };
 };

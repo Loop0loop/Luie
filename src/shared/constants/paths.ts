@@ -26,8 +26,9 @@ export const LUIE_PACKAGE_FILTER_NAME = 'Luie Project'
 export const DEFAULT_PROJECT_DIR_NAME = 'New Project'
 export const DEFAULT_PROJECT_FILE_BASENAME = 'project'
 export const DEFAULT_PROJECT_FILENAME = `New Project${LUIE_PACKAGE_EXTENSION}`
-export const LUIE_PACKAGE_CONTAINER_DIR = 'zip'
-export const LUIE_PACKAGE_VERSION = 1
+// `.luie` is now a single-file SQLite container.
+export const LUIE_PACKAGE_CONTAINER_DIR = 'sqlite'
+export const LUIE_PACKAGE_VERSION = 2
 export const LUIE_PACKAGE_META_FILENAME = 'meta.json'
 export const LUIE_MANUSCRIPT_DIR = 'manuscript'
 export const LUIE_MANUSCRIPT_README = `${LUIE_MANUSCRIPT_DIR}/README.md`

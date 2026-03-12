@@ -288,8 +288,6 @@ export const enBase = {
         "repairPathTitle": "Reconnect .luie file",
         "attachLuieTitle": "Attach existing .luie",
         "materializeLuieTitle": "Create new .luie file",
-        "materializeLuiePackageTitle": "Create new .luie file (package)",
-        "materializeLuieSqliteTitle": "Create new .luie file (SQLite)",
         "renameTitle": "Rename project",
         "deleteTitle": "Delete project",
         "removeMissingTitle": "Remove from list"
@@ -303,8 +301,6 @@ export const enBase = {
         "repairPath": "Repair path",
         "attachLuie": "Attach .luie",
         "materializeLuie": "Create .luie",
-        "materializeLuiePackage": "Create .luie (package)",
-        "materializeLuieSqlite": "Create .luie (SQLite)",
         "removeMissing": "Remove from list",
         "rename": "Rename",
         "delete": "Delete"
@@ -321,6 +317,8 @@ export const enBase = {
       "missingAttachmentDescription": "Attached .luie file is missing",
       "invalidAttachmentBadge": "Invalid path",
       "invalidAttachmentDescription": "Attached .luie path is invalid on this device",
+      "unsupportedLegacyBadge": "Legacy format",
+      "unsupportedLegacyDescription": "This app no longer supports legacy package .luie files",
       "sync": {
         "synced": "Synced",
         "pending": "Pending",
@@ -341,9 +339,8 @@ export const enBase = {
         "luieAttached": ".luie file attached.",
         "luieAttachFailed": "Failed to attach .luie file.",
         "luieMaterialized": "Created and attached a new .luie file.",
-        "luieMaterializedPackage": "Created and attached a new package-based .luie file.",
-        "luieMaterializedSqlite": "Created and attached a new SQLite-backed .luie file.",
-        "luieMaterializeFailed": "Failed to create .luie file."
+        "luieMaterializeFailed": "Failed to create .luie file.",
+        "legacyUnsupportedBlocked": "This app no longer supports legacy package .luie files."
       },
       "error": {
         "notFound": "Project not found.",
@@ -397,7 +394,8 @@ export const enBase = {
       "dbNewerSynced": "Local cache was newer, so the project file was updated.",
       "pathMissing": "The local .luie attachment is unavailable, so the project opened from local data.",
       "missingAttachment": "The attached .luie file is missing, so the project opened from local data.",
-      "invalidAttachment": "The attached .luie path is invalid, so the project opened from local data."
+      "invalidAttachment": "The attached .luie path is invalid, so the project opened from local data.",
+      "legacyUnsupportedAttachment": "This app no longer supports legacy package .luie files."
     },
     "templateDescription": "Created with {templateId} template"
   },

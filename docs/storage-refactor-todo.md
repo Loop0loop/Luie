@@ -354,47 +354,30 @@ Phase 7 exit:
 
 ## Phase 8. Container evolution
 
-- [ ] Decide whether `.luie` stays package-based or becomes SQLite-backed
-- [ ] If `.luie` becomes SQLite-backed, keep the canonical contract unchanged
-- [ ] Design migration from current package layout
-- [ ] Preserve import/export compatibility for existing `.luie`
-- [x] Freeze Phase 8 DoD and guardrails before SQLite implementation
-- [x] Add `LuieContainer` abstraction so container-kind logic stops leaking across services
+- [x] Freeze container DoD and guardrails before the SQLite cutover
+- [x] Add `LuieContainer` abstraction so container logic stops leaking across services
+- [x] Make `.luie` a SQLite-backed single-file canonical container
+- [x] Remove dual-format materialize choices from public UI/API
+- [x] Reject legacy package `.luie` files explicitly instead of partially opening them
+- [x] Add an old-school QA gate document with manual + automated evidence
 
 Done when:
 
-- canonical semantics do not depend on the current container implementation
+- `.luie` semantics are SQLite-only and canonical semantics no longer depend on zip/package compatibility
 
 Current checkpoint:
 
-- Phase 8 will prefer `.luie-first` with a future sqlite-backed container, but functionality takes precedence over optimization claims
-- Phase 8A is complete: DoD is frozen and the container seam shields core services from raw zip logic
-- Phase 8B is complete: `sqlite-v2` now uses the same entry contract, and writes preserve the existing container kind unless explicitly overridden
-- Phase 8C is complete: materialize flows can now explicitly choose `package-v1` or `sqlite-v2` without changing backward-compatible defaults
-- `docs/luie-container-dod.md` now defines the Phase 8 guardrails, DoD, non-goals, and explicit failure conditions
-- core `.luie` readers/writers now go through `LuieContainer`, so container-kind branching is no longer scattered across project/sync/analysis services
-- `LuieContainer` now supports both `package-v1` and `sqlite-v2` entry reads while keeping the package-style entry contract unchanged
-- explicit sqlite writes now create a single-file `.luie` without `.wal`/`.shm` sidecars, and existing sqlite containers stay sqlite on later exports
-- project materialize UI now exposes separate package/sqlite actions and forwards explicit container choice through IPC to the writer layer
-- regression tests now lock both compatibility slices so package-based `.luie` flows and sqlite-backed `.luie` flows stay aligned
-
-Phase 8B next slice:
-
-- [x] Enable `sqlite-v2` entry reads through `LuieContainer`
-- [x] Make `LuieContainer` preserve existing container kind on writes
-- [x] Prove sqlite-backed `.luie` writes do not leak `.wal` or `.shm` sidecar files
-- [x] Keep new sqlite support behind explicit write choice or existing-kind preservation only
-
-Phase 8C next slice:
-
-- [x] Add explicit `containerKind` choice to materialize flows
-- [x] Keep no-option defaults backward-compatible
-- [x] Expose explicit package/sqlite materialize actions in the project UI
-- [x] Test that explicit materialize choice reaches container writes
+- Phase 8A, 8B, 8C are historical slices only; current runtime policy is sqlite-only
+- `.luie` read/write, materialize, snapshot import, sync persistence, and immediate durability paths now target `sqlite-v2`
+- legacy package `.luie` files are detected as `unsupported-legacy-container`
+- renderer UI no longer offers package/sqlite selection; there is one `.luie` creation path
+- `docs/luie-container-dod.md` now reflects the sqlite-only policy
+- `docs/phase-8d-qa-gate.md` tracks the manual + automated release gate
 
 Reference:
 
 - `/Users/user/Luie/docs/luie-container-dod.md`
+- `/Users/user/Luie/docs/phase-8d-qa-gate.md`
 
 ## Immediate hotspots
 

@@ -7,9 +7,8 @@ export type ProjectAttachmentStatus =
   | "attached"
   | "detached"
   | "missing-attachment"
-  | "invalid-attachment";
-
-export type LuieWritableContainerKind = "package-v1" | "sqlite-v2";
+  | "invalid-attachment"
+  | "unsupported-legacy-container";
 
 export interface Project {
   id: string;
@@ -20,6 +19,7 @@ export interface Project {
   // App-local metadata for recent/opened ordering.
   lastOpenedAt?: string | Date | null;
   attachmentStatus?: ProjectAttachmentStatus;
+  attachmentContainerKind?: "sqlite-v2" | "legacy-package" | "unknown" | null;
   // Legacy compatibility flag. Prefer attachmentStatus for new code.
   pathMissing?: boolean;
   createdAt: string | Date;

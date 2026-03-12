@@ -9,24 +9,16 @@ import type { LoggerLike } from "../core/types.js";
 import {
   projectCreateSchema,
   projectDeleteArgSchema,
-  projectMaterializeLuieOptionsSchema,
   projectUpdateSchema,
   projectIdSchema,
 } from "../../../shared/schemas/index.js";
 import { z } from "zod";
-import type { LuieWritableContainerKind } from "../../../shared/types/index.js";
 
 type ProjectServiceLike = {
   createProject: (input: ProjectCreateInput) => Promise<unknown>;
   openLuieProject: (packagePath: string) => Promise<unknown>;
   attachProjectPackage: (projectId: string, packagePath: string) => Promise<unknown>;
-  materializeProjectPackage: (
-    projectId: string,
-    targetPath: string,
-    options?: {
-      containerKind?: LuieWritableContainerKind;
-    },
-  ) => Promise<unknown>;
+  materializeProjectPackage: (projectId: string, targetPath: string) => Promise<unknown>;
   getProject: (id: string) => Promise<unknown>;
   getAllProjects: () => Promise<unknown>;
   updateProject: (input: ProjectUpdateInput) => Promise<unknown>;
@@ -69,15 +61,9 @@ export function registerProjectIPCHandlers(
       argsSchema: z.tuple([
         projectIdSchema,
         z.string().min(1),
-        projectMaterializeLuieOptionsSchema,
       ]),
-      handler: (
-        projectId: string,
-        targetPath: string,
-        options?: {
-          containerKind?: LuieWritableContainerKind;
-        },
-      ) => projectService.materializeProjectPackage(projectId, targetPath, options),
+      handler: (projectId: string, targetPath: string) =>
+        projectService.materializeProjectPackage(projectId, targetPath),
     },
     {
       channel: IPC_CHANNELS.PROJECT_GET,

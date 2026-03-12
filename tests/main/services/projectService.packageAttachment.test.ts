@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ErrorCode, LUIE_PACKAGE_META_FILENAME } from "../../../src/shared/constants/index.js";
+import { ServiceError } from "../../../src/main/utils/serviceError.js";
 
 const mocked = vi.hoisted(() => ({
   projectFindUnique: vi.fn(),
@@ -14,6 +15,8 @@ const mocked = vi.hoisted(() => ({
 
 vi.mock("../../../src/main/database/index.js", () => ({
   db: {
+    initialize: vi.fn(async () => undefined),
+    disconnect: vi.fn(async () => undefined),
     getClient: () => ({
       project: {
         findUnique: mocked.projectFindUnique,
@@ -103,7 +106,8 @@ describe("ProjectService package attachment flows", () => {
     mocked.readLuieContainerEntry.mockResolvedValue(
       JSON.stringify({
         format: "luie",
-        version: 1,
+        version: 2,
+        container: "sqlite",
         projectId: "project-1",
         title: "Project 1",
       }),
@@ -155,7 +159,8 @@ describe("ProjectService package attachment flows", () => {
     mocked.readLuieContainerEntry.mockResolvedValue(
       JSON.stringify({
         format: "luie",
-        version: 1,
+        version: 2,
+        container: "sqlite",
         projectId: "other-project",
         title: "Other Project",
       }),
@@ -208,31 +213,22 @@ describe("ProjectService package attachment flows", () => {
     });
   });
 
-  it("materializes detached runtime into a sqlite-backed .luie when requested", async () => {
-    const service = new ProjectService();
-    vi.spyOn(service, "getProject").mockResolvedValue({
-      id: "project-1",
-      title: "Project 1",
-      createdAt: new Date("2026-03-12T00:00:00.000Z"),
-      updatedAt: new Date("2026-03-12T00:00:00.000Z"),
-      projectPath: "/tmp/sqlite-target.luie",
-      attachmentStatus: "attached",
-      pathMissing: false,
-    });
-
-    await service.materializeProjectPackage("project-1", "/tmp/sqlite-target.luie", {
-      containerKind: "sqlite-v2",
-    });
-
-    expect(mocked.exportProjectPackageWithOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        projectId: "project-1",
-        options: {
-          targetPath: "/tmp/sqlite-target.luie",
-          worldSourcePath: "/tmp/current.luie",
-          containerKind: "sqlite-v2",
-        },
-      }),
+  it("propagates legacy container rejection when attaching an old package", async () => {
+    mocked.readLuieContainerEntry.mockRejectedValue(
+      new ServiceError(
+        ErrorCode.LUIE_LEGACY_FORMAT_UNSUPPORTED,
+        "현재 앱은 구형 package .luie를 지원하지 않습니다",
+      ),
     );
+
+    const service = new ProjectService();
+
+    await expect(
+      service.attachProjectPackage("project-1", "/tmp/legacy.luie"),
+    ).rejects.toMatchObject({
+      code: ErrorCode.LUIE_LEGACY_FORMAT_UNSUPPORTED,
+    });
+    expect(mocked.exportProjectPackageWithOptions).not.toHaveBeenCalled();
+    expect(mocked.setProjectAttachmentPath).not.toHaveBeenCalled();
   });
 });

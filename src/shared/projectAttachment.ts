@@ -12,7 +12,9 @@ const toNonEmptyPath = (value: string | null | undefined): string | null =>
 export const isBrokenAttachmentStatus = (
   status: ProjectAttachmentStatus | null | undefined,
 ): boolean =>
-  status === "missing-attachment" || status === "invalid-attachment";
+  status === "missing-attachment" ||
+  status === "invalid-attachment" ||
+  status === "unsupported-legacy-container";
 
 export const getReadableProjectAttachmentPath = (
   project: ProjectAttachmentLike,

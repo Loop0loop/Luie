@@ -3,11 +3,7 @@ import { ErrorCode } from "../../../shared/constants/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import {
   ensureLuieExtension,
-  readLuieEntry,
 } from "../../utils/luiePackage.js";
-import {
-  writeLuiePackage,
-} from "./luiePackageWriter.js";
 import {
   readLuieSqliteEntry,
   writeLuieSqliteContainer,
@@ -18,8 +14,10 @@ import type {
 } from "./luiePackageTypes.js";
 
 const SQLITE_HEADER = "SQLite format 3\u0000";
+const LEGACY_LUIE_UNSUPPORTED_MESSAGE =
+  "현재 앱은 구형 package .luie를 지원하지 않습니다";
 
-export type LuieContainerKind = "package-v1" | "sqlite-v2" | "unknown";
+export type LuieContainerKind = "legacy-package" | "sqlite-v2" | "unknown";
 export type LuieContainerLayout = "file" | "directory" | "missing";
 
 export type LuieContainerProbe = {
@@ -61,7 +59,7 @@ export const probeLuieContainer = async (
       return {
         normalizedPath,
         exists: true,
-        kind: "package-v1",
+        kind: "legacy-package",
         layout: "directory",
       };
     }
@@ -88,7 +86,7 @@ export const probeLuieContainer = async (
       return {
         normalizedPath,
         exists: true,
-        kind: "package-v1",
+        kind: "legacy-package",
         layout: "file",
       };
     }
@@ -116,7 +114,7 @@ export const probeLuieContainer = async (
 export const readLuieContainerEntry = async (
   targetPath: string,
   entryPath: string,
-  logger?: Pick<LoggerLike, "error">,
+  _logger?: Pick<LoggerLike, "error">,
 ): Promise<string | null> => {
   const probe = await probeLuieContainer(targetPath);
 
@@ -124,12 +122,20 @@ export const readLuieContainerEntry = async (
     return null;
   }
 
-  if (probe.kind === "package-v1") {
-    return await readLuieEntry(probe.normalizedPath, entryPath, logger);
-  }
-
   if (probe.kind === "sqlite-v2") {
     return await readLuieSqliteEntry(probe.normalizedPath, entryPath);
+  }
+
+  if (probe.kind === "legacy-package") {
+    throw new ServiceError(
+      ErrorCode.LUIE_LEGACY_FORMAT_UNSUPPORTED,
+      LEGACY_LUIE_UNSUPPORTED_MESSAGE,
+      {
+        packagePath: probe.normalizedPath,
+        entryPath,
+        containerKind: probe.kind,
+      },
+    );
   }
 
   throw new ServiceError(
@@ -147,38 +153,31 @@ export const writeLuieContainer = async (input: {
   targetPath: string;
   payload: LuiePackageExportData;
   logger: LoggerLike;
-  kind?: Exclude<LuieContainerKind, "unknown">;
 }): Promise<{
   normalizedPath: string;
-  kind: Exclude<LuieContainerKind, "unknown">;
+  kind: "sqlite-v2";
 }> => {
   const normalizedPath = ensureLuieExtension(input.targetPath);
   const probe = await probeLuieContainer(normalizedPath);
-  const kind =
-    input.kind ??
-    (() => {
-      if (!probe.exists) {
-        return "package-v1" as const;
-      }
-      if (probe.kind === "unknown") {
-        throw new ServiceError(
-          ErrorCode.FS_WRITE_FAILED,
-          "Unsupported .luie container format",
-          {
-            targetPath: probe.normalizedPath,
-            containerKind: probe.kind,
-          },
-        );
-      }
-      return probe.kind;
-    })();
-
-  if (kind === "package-v1") {
-    await writeLuiePackage(normalizedPath, input.payload, input.logger);
-    return {
-      normalizedPath,
-      kind,
-    };
+  if (probe.exists && probe.kind === "legacy-package") {
+    throw new ServiceError(
+      ErrorCode.LUIE_LEGACY_FORMAT_UNSUPPORTED,
+      LEGACY_LUIE_UNSUPPORTED_MESSAGE,
+      {
+        targetPath: probe.normalizedPath,
+        containerKind: probe.kind,
+      },
+    );
+  }
+  if (probe.exists && probe.kind === "unknown") {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Unsupported .luie container format",
+      {
+        targetPath: probe.normalizedPath,
+        containerKind: probe.kind,
+      },
+    );
   }
 
   await writeLuieSqliteContainer({
@@ -188,6 +187,6 @@ export const writeLuieContainer = async (input: {
   });
   return {
     normalizedPath,
-    kind,
+    kind: "sqlite-v2",
   };
 };

@@ -6,7 +6,6 @@ import type {
   Event,
   Faction,
   EditorSettings,
-  LuieWritableContainerKind,
   Project,
   ProjectOpenResult,
   SearchResult,
@@ -63,13 +62,7 @@ export type RendererApi = {
     removeLocal: (id: string) => Promise<IPCResponse<unknown>>;
     markOpened: (id: string) => Promise<IPCResponse<{ projectId: string; lastOpenedAt: string }>>;
     attachLuie: (projectId: string, packagePath: string) => Promise<IPCResponse<Project>>;
-    materializeLuie: (
-      projectId: string,
-      targetPath: string,
-      options?: {
-        containerKind?: LuieWritableContainerKind;
-      },
-    ) => Promise<IPCResponse<Project>>;
+    materializeLuie: (projectId: string, targetPath: string) => Promise<IPCResponse<Project>>;
   };
   chapter: {
     create: (input: {

@@ -81,7 +81,8 @@ export default function ProjectTemplateSelector({
               projectTitle: project.title,
               mode:
                 project.attachmentStatus === "missing-attachment" ||
-                project.attachmentStatus === "invalid-attachment"
+                project.attachmentStatus === "invalid-attachment" ||
+                project.attachmentStatus === "unsupported-legacy-container"
                   ? "removeMissing"
                   : "delete",
               deleteFile: false,

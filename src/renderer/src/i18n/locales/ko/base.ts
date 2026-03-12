@@ -288,8 +288,6 @@ export const koBase = {
         "repairPathTitle": ".luie 파일 다시 연결",
         "attachLuieTitle": "기존 .luie 연결",
         "materializeLuieTitle": "새 .luie 파일 만들기",
-        "materializeLuiePackageTitle": "새 .luie 파일 만들기 (패키지)",
-        "materializeLuieSqliteTitle": "새 .luie 파일 만들기 (SQLite)",
         "renameTitle": "프로젝트 이름 수정",
         "deleteTitle": "프로젝트 삭제",
         "removeMissingTitle": "목록에서 제거"
@@ -303,8 +301,6 @@ export const koBase = {
         "repairPath": "경로 복구",
         "attachLuie": ".luie 연결",
         "materializeLuie": ".luie 생성",
-        "materializeLuiePackage": ".luie 생성 (패키지)",
-        "materializeLuieSqlite": ".luie 생성 (SQLite)",
         "removeMissing": "목록에서 제거",
         "rename": "이름 수정",
         "delete": "삭제"
@@ -321,6 +317,8 @@ export const koBase = {
       "missingAttachmentDescription": "연결된 .luie 파일을 찾을 수 없습니다",
       "invalidAttachmentBadge": "경로 오류",
       "invalidAttachmentDescription": "연결된 .luie 경로가 이 기기에서 유효하지 않습니다",
+      "unsupportedLegacyBadge": "구형 형식",
+      "unsupportedLegacyDescription": "이 앱은 구형 package .luie를 더 이상 지원하지 않습니다",
       "sync": {
         "synced": "동기화됨",
         "pending": "동기화 대기",
@@ -341,9 +339,8 @@ export const koBase = {
         "luieAttached": ".luie 파일을 연결했습니다.",
         "luieAttachFailed": ".luie 연결에 실패했습니다.",
         "luieMaterialized": "새 .luie 파일을 만들고 연결했습니다.",
-        "luieMaterializedPackage": "새 패키지형 .luie 파일을 만들고 연결했습니다.",
-        "luieMaterializedSqlite": "새 SQLite형 .luie 파일을 만들고 연결했습니다.",
-        "luieMaterializeFailed": ".luie 파일 생성에 실패했습니다."
+        "luieMaterializeFailed": ".luie 파일 생성에 실패했습니다.",
+        "legacyUnsupportedBlocked": "현재 앱은 구형 package .luie를 지원하지 않습니다."
       },
       "error": {
         "notFound": "프로젝트를 찾을 수 없습니다.",
@@ -397,7 +394,8 @@ export const koBase = {
       "dbNewerSynced": "로컬 캐시가 최신이라 프로젝트 파일을 갱신했습니다.",
       "pathMissing": "로컬 .luie 연결을 사용할 수 없어 로컬 데이터로 프로젝트를 엽니다.",
       "missingAttachment": "연결된 .luie 파일을 찾을 수 없어 로컬 데이터로 프로젝트를 엽니다.",
-      "invalidAttachment": "연결된 .luie 경로가 유효하지 않아 로컬 데이터로 프로젝트를 엽니다."
+      "invalidAttachment": "연결된 .luie 경로가 유효하지 않아 로컬 데이터로 프로젝트를 엽니다.",
+      "legacyUnsupportedAttachment": "현재 앱은 구형 package .luie를 지원하지 않습니다."
     },
     "templateDescription": "{templateId} 템플릿으로 생성됨"
   },

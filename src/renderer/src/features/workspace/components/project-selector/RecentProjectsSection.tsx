@@ -35,6 +35,8 @@ export function RecentProjectsSection({
                 return "missingAttachmentBadge";
             case "invalid-attachment":
                 return "invalidAttachmentBadge";
+            case "unsupported-legacy-container":
+                return "unsupportedLegacyBadge";
             default:
                 return null;
         }
@@ -47,6 +49,8 @@ export function RecentProjectsSection({
                 return t("settings.projectTemplate.missingAttachmentDescription");
             case "invalid-attachment":
                 return t("settings.projectTemplate.invalidAttachmentDescription");
+            case "unsupported-legacy-container":
+                return t("settings.projectTemplate.unsupportedLegacyDescription");
             default:
                 return project.projectPath ?? t("settings.projectTemplate.emptyPath");
         }
@@ -160,6 +164,8 @@ export function RecentProjectsSection({
                                             className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
                                                 p.attachmentStatus === "detached"
                                                     ? "bg-zinc-500/15 text-zinc-300"
+                                                    : p.attachmentStatus === "unsupported-legacy-container"
+                                                        ? "bg-amber-500/15 text-amber-300"
                                                     : "bg-red-500/15 text-red-300"
                                             }`}
                                         >

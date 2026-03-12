@@ -13,7 +13,6 @@ import {
 import type {
   ProjectCreateInput,
   ProjectDeleteInput,
-  LuieWritableContainerKind,
   ProjectUpdateInput,
 } from "../../../shared/types/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
@@ -214,8 +213,7 @@ export class ProjectService {
 
   private async getProjectWithAttachmentStatus(id: string) {
     const project = await this.getProject(id);
-    const [enriched] = await withProjectPathStatus([project]);
-    return enriched ?? project;
+    return project;
   }
 
   private async readLuieMetaForAttachment(packagePath: string) {
@@ -227,6 +225,9 @@ export class ProjectService {
         logger,
       );
     } catch (error) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
       throw new ServiceError(
         ErrorCode.FS_READ_FAILED,
         "Failed to read .luie package meta",
@@ -358,9 +359,6 @@ export class ProjectService {
   async materializeProjectPackage(
     projectId: string,
     targetPath: string,
-    options?: {
-      containerKind?: LuieWritableContainerKind;
-    },
   ) {
     try {
       const normalizedPath = normalizeLuiePackagePath(targetPath, "targetPath");
@@ -396,7 +394,6 @@ export class ProjectService {
       const exported = await this.exportProjectPackageWithOptions(projectId, {
         targetPath: normalizedPath,
         worldSourcePath: currentAttachmentPath ?? null,
-        containerKind: options?.containerKind,
       });
       if (!exported) {
         throw new ServiceError(
@@ -413,7 +410,7 @@ export class ProjectService {
       logger.info("Project materialized into .luie package", {
         projectId,
         targetPath: normalizedPath,
-        containerKind: options?.containerKind ?? "package-v1",
+        containerKind: "sqlite-v2",
       });
       return await this.getProjectWithAttachmentStatus(projectId);
     } catch (error) {
@@ -457,11 +454,13 @@ export class ProjectService {
         );
       }
 
-      return {
+      const projectWithAttachment = {
         ...project,
         projectPath: await getProjectAttachmentPath(id),
         lastOpenedAt: await getProjectLastOpenedAt(id),
       };
+      const [enriched] = await withProjectPathStatus([projectWithAttachment]);
+      return enriched ?? projectWithAttachment;
     } catch (error) {
       logger.error("Failed to get project", error);
       throw error;
@@ -785,7 +784,6 @@ export class ProjectService {
     options?: {
       targetPath?: string;
       worldSourcePath?: string | null;
-      containerKind?: LuieWritableContainerKind;
     },
   ): Promise<boolean> {
     return await exportProjectPackageWithOptionsImpl({

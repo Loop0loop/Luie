@@ -1,7 +1,9 @@
 import * as fsp from "node:fs/promises";
 import Database from "better-sqlite3";
 import {
+  LUIE_PACKAGE_CONTAINER_DIR,
   LUIE_PACKAGE_FORMAT,
+  LUIE_PACKAGE_VERSION,
 } from "../../../shared/constants/index.js";
 import { ErrorCode } from "../../../shared/constants/errorCode.js";
 import { normalizeZipPath, isSafeZipPath } from "../../utils/luiePackage.js";
@@ -17,8 +19,6 @@ import type {
   LoggerLike,
 } from "./luiePackageTypes.js";
 
-const SQLITE_CONTAINER_LABEL = "sqlite";
-const SQLITE_CONTAINER_VERSION = 2;
 const SQLITE_JOURNAL_MODE = "DELETE";
 const MAX_LUIE_ENTRY_SIZE_BYTES = 5 * 1024 * 1024;
 
@@ -84,8 +84,8 @@ const assertSupportedSqliteContainer = (
   if (
     !row ||
     row.format !== LUIE_PACKAGE_FORMAT ||
-    row.container !== SQLITE_CONTAINER_LABEL ||
-    Number(row.version) !== SQLITE_CONTAINER_VERSION
+    row.container !== LUIE_PACKAGE_CONTAINER_DIR ||
+    Number(row.version) !== LUIE_PACKAGE_VERSION
   ) {
     throw new ServiceError(
       ErrorCode.FS_READ_FAILED,
@@ -160,8 +160,8 @@ export const writeLuieSqliteContainer = async (input: {
 
       const nowIso = new Date().toISOString();
       const entries = buildLuieContainerTextEntries(input.payload, input.targetPath, {
-        containerLabel: SQLITE_CONTAINER_LABEL,
-        containerVersion: SQLITE_CONTAINER_VERSION,
+        containerLabel: LUIE_PACKAGE_CONTAINER_DIR,
+        containerVersion: LUIE_PACKAGE_VERSION,
       });
 
       const writeTransaction = database.transaction(() => {
@@ -178,8 +178,8 @@ export const writeLuieSqliteContainer = async (input: {
           )
           .run(
             LUIE_PACKAGE_FORMAT,
-            SQLITE_CONTAINER_LABEL,
-            SQLITE_CONTAINER_VERSION,
+            LUIE_PACKAGE_CONTAINER_DIR,
+            LUIE_PACKAGE_VERSION,
             nowIso,
             nowIso,
           );
@@ -210,6 +210,42 @@ export const writeLuieSqliteContainer = async (input: {
         // best-effort cleanup only
       }
       throw error;
+    }
+  });
+};
+
+export const writeLuieSqliteEntry = async (input: {
+  targetPath: string;
+  entryPath: string;
+  content: string;
+  logger: LoggerLike;
+}): Promise<void> => {
+  const normalizedEntryPath = normalizeEntryPathOrThrow(input.entryPath);
+
+  await withPackageWriteLock(input.targetPath, async () => {
+    const database = openSqliteContainer(input.targetPath, {
+      readonly: false,
+      fileMustExist: true,
+    });
+
+    try {
+      database.pragma(`journal_mode = ${SQLITE_JOURNAL_MODE}`);
+      database.pragma("synchronous = FULL");
+      assertSupportedSqliteContainer(database, input.targetPath);
+
+      const nowIso = new Date().toISOString();
+      database
+        .prepare(
+          `INSERT INTO "LuieContainerEntry" ("path", "content", "createdAt", "updatedAt")
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT("path") DO UPDATE SET "content" = excluded."content", "updatedAt" = excluded."updatedAt"`,
+        )
+        .run(normalizedEntryPath, input.content, nowIso, nowIso);
+      database
+        .prepare(`UPDATE "LuieContainerInfo" SET "updatedAt" = ? WHERE "id" = 1`)
+        .run(nowIso);
+    } finally {
+      database.close();
     }
   });
 };

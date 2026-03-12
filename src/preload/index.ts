@@ -468,16 +468,12 @@ const rendererApi = {
     materializeLuie: (
       projectId: string,
       targetPath: string,
-      options?: {
-        containerKind?: "package-v1" | "sqlite-v2";
-      },
     ): ReturnType<RendererApi["project"]["materializeLuie"]> =>
       safeInvokeCore(
         "project.materializeLuie",
         IPC_CHANNELS.PROJECT_MATERIALIZE_LUIE,
         projectId,
         targetPath,
-        options,
       ),
   },
 

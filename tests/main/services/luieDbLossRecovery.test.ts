@@ -6,7 +6,7 @@ import { db } from "../../../src/main/database/index.js";
 import { projectService } from "../../../src/main/services/core/projectService.js";
 import { chapterService } from "../../../src/main/services/core/chapterService.js";
 import { snapshotService } from "../../../src/main/services/features/snapshot/snapshotService.js";
-import { readLuieEntry } from "../../../src/main/utils/luiePackage.js";
+import { readLuieContainerEntry } from "../../../src/main/services/io/luieContainer.js";
 
 describe("`.luie` recovery after local DB loss", () => {
   it("reimports project content and snapshots from `.luie` after the sqlite replica is deleted", async () => {
@@ -39,7 +39,10 @@ describe("`.luie` recovery after local DB loss", () => {
 
     await projectService.flushPendingExports();
 
-    const snapshotIndexRaw = await readLuieEntry(projectPath, "snapshots/index.json");
+    const snapshotIndexRaw = await readLuieContainerEntry(
+      projectPath,
+      "snapshots/index.json",
+    );
     const snapshotIndex = JSON.parse(snapshotIndexRaw ?? "{}") as {
       snapshots?: Array<{ content?: string }>;
     };

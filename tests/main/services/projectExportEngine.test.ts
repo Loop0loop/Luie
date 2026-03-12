@@ -20,6 +20,8 @@ const mocked = vi.hoisted(() => {
 
 vi.mock("../../../src/main/database/index.js", () => ({
   db: {
+    initialize: vi.fn(async () => undefined),
+    disconnect: vi.fn(async () => undefined),
     getClient: () => ({
       project: {
         findUnique: mocked.projectFindUnique,
@@ -159,7 +161,7 @@ describe("projectExportEngine", () => {
     );
   });
 
-  it("forwards an explicit container kind to the container writer", async () => {
+  it("always writes sqlite-backed .luie output", async () => {
     const logger = {
       info: vi.fn(),
       warn: vi.fn(),
@@ -170,7 +172,6 @@ describe("projectExportEngine", () => {
       logger,
       options: {
         targetPath: "/tmp/project-1-sqlite.luie",
-        containerKind: "sqlite-v2",
       },
     });
 
@@ -178,7 +179,12 @@ describe("projectExportEngine", () => {
     expect(mocked.writeLuieContainer).toHaveBeenCalledWith(
       expect.objectContaining({
         targetPath: "/tmp/project-1-sqlite.luie",
-        kind: "sqlite-v2",
+        payload: expect.objectContaining({
+          meta: expect.objectContaining({
+            container: "sqlite",
+            version: 2,
+          }),
+        }),
       }),
     );
   });

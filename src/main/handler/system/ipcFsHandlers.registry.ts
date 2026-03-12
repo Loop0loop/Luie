@@ -11,7 +11,7 @@ import {
   MARKDOWN_EXTENSION,
 } from "../../../shared/constants/index.js";
 import { SNAPSHOT_BACKUP_DIR } from "../../../shared/constants/paths.js";
-import { readLuieEntry } from "../../utils/luiePackage.js";
+import { readLuieContainerEntry } from "../../services/io/luieContainer.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
 import {
@@ -245,7 +245,7 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
           permission: "package",
         });
         assertLuiePackagePath(safePackagePath, "packagePath");
-        return readLuieEntry(
+        return readLuieContainerEntry(
           safePackagePath,
           entryPath,
           logger,

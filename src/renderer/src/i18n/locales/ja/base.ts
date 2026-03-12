@@ -288,8 +288,6 @@ export const jaBase = {
         "repairPathTitle": ".luie ファイルを再接続",
         "attachLuieTitle": "既存の .luie を接続",
         "materializeLuieTitle": "新しい .luie ファイルを作成",
-        "materializeLuiePackageTitle": "新しい .luie ファイルを作成 (パッケージ)",
-        "materializeLuieSqliteTitle": "新しい .luie ファイルを作成 (SQLite)",
         "renameTitle": "プロジェクト名を変更",
         "deleteTitle": "プロジェクトを削除",
         "removeMissingTitle": "一覧から削除"
@@ -303,8 +301,6 @@ export const jaBase = {
         "repairPath": "パスを修復",
         "attachLuie": ".luie を接続",
         "materializeLuie": ".luie を作成",
-        "materializeLuiePackage": ".luie を作成 (パッケージ)",
-        "materializeLuieSqlite": ".luie を作成 (SQLite)",
         "removeMissing": "一覧から削除",
         "rename": "名前を変更",
         "delete": "削除"
@@ -321,6 +317,8 @@ export const jaBase = {
       "missingAttachmentDescription": "接続された .luie ファイルが見つかりません",
       "invalidAttachmentBadge": "パス異常",
       "invalidAttachmentDescription": "接続された .luie パスがこの端末では無効です",
+      "unsupportedLegacyBadge": "旧形式",
+      "unsupportedLegacyDescription": "このアプリは旧 package .luie をもうサポートしていません",
       "sync": {
         "synced": "同期済み",
         "pending": "同期待ち",
@@ -341,9 +339,8 @@ export const jaBase = {
         "luieAttached": ".luie ファイルを接続しました。",
         "luieAttachFailed": ".luie の接続に失敗しました。",
         "luieMaterialized": "新しい .luie ファイルを作成して接続しました。",
-        "luieMaterializedPackage": "新しいパッケージ型 .luie ファイルを作成して接続しました。",
-        "luieMaterializedSqlite": "新しい SQLite 型 .luie ファイルを作成して接続しました。",
-        "luieMaterializeFailed": ".luie ファイルの作成に失敗しました。"
+        "luieMaterializeFailed": ".luie ファイルの作成に失敗しました。",
+        "legacyUnsupportedBlocked": "このアプリは旧 package .luie をもうサポートしていません。"
       },
       "error": {
         "notFound": "プロジェクトが見つかりません。",
@@ -397,7 +394,8 @@ export const jaBase = {
       "dbNewerSynced": "ローカルキャッシュが新しいため、プロジェクトファイルを更新しました。",
       "pathMissing": "ローカル .luie 接続を利用できないため、ローカルデータで開きます。",
       "missingAttachment": "接続された .luie ファイルが見つからないため、ローカルデータで開きます。",
-      "invalidAttachment": "接続された .luie パスが無効なため、ローカルデータで開きます。"
+      "invalidAttachment": "接続された .luie パスが無効なため、ローカルデータで開きます。",
+      "legacyUnsupportedAttachment": "このアプリは旧 package .luie をもうサポートしていません。"
     },
     "templateDescription": "{templateId} テンプレートで作成"
   },

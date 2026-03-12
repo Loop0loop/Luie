@@ -1,79 +1,46 @@
 # Luie Container DoD
 
-> Status: Phase 8A complete, Phase 8B complete, Phase 8C complete, Phase 8D pending
-> Scope: `.luie` container evolution without breaking existing project behavior
+> Status: Phase 8D complete
+> Policy: `.luie` is now SQLite-only (`sqlite-v2`)
 
 ## Philosophy
 
 - Correctness before optimization.
-- Existing `.luie` projects must keep opening and exporting while Phase 8 is in progress.
-- No "clever" storage rewrite is allowed if we cannot explain the failure mode and recovery path.
+- `.luie` is the canonical project artifact.
+- `replica.db` may be deleted; `.luie` must still recover project content and snapshots.
+- Legacy package `.luie` files are not silently migrated, not partially opened, and not best-effort repaired.
 - We do not claim performance wins without measurement.
-- We do not accept pathological regressions in exchange for abstraction.
 
 ## Guardrails
 
-- No forced migration on open.
+- No dual-format runtime behavior.
+- No automatic package-to-sqlite migration.
 - No silent fallback that leaves canonical state only in `replica.db`.
-- No background conversion that mutates a user `.luie` file without an explicit write action.
-- No `.luie-wal` or `.luie-shm` sidecar files for canonical sqlite-backed `.luie`.
-- No per-keystroke full-project container rewrite.
-- No format-specific logic scattered across feature services once the container seam exists.
+- No `.luie-wal` or `.luie-shm` sidecar files.
+- No feature service should need to know about zip/package containers anymore.
 
-## Phase 8 Overall DoD
+## Phase 8D DoD
 
-Phase 8 is done when all of the following are true:
+Phase 8D is done when all of the following are true:
 
-1. Existing package-based `.luie` files still open, export, analyze, sync, attach, and recover correctly.
-2. The app can identify a `.luie` container kind before mutating it.
-3. Core project import/export flows depend on a `LuieContainer` seam, not raw zip helpers.
-4. SQLite-backed `.luie` can be introduced without rewriting project services again.
-5. Attached canonical writes persist to the attached `.luie` or fail loudly with an explicit recovery path.
-6. Deleting `replica.db` does not destroy canonical `.luie` data.
-7. The current container kind and compatibility contract are documented and test-covered.
+1. New `.luie` creation, materialize, snapshot import, sync persistence, and immediate durability writes all produce `sqlite-v2`.
+2. `package-v1` is no longer a supported read path. Open, attach, import, and raw entry reads fail with the same explicit legacy-unsupported error.
+3. Project attachment state distinguishes `unsupported-legacy-container` from `missing-attachment` and `invalid-attachment`.
+4. Renderer UI exposes one materialize action only. Users do not choose container kind.
+5. `fs.readLuieEntry` reads sqlite-backed `.luie` entries only and rejects legacy containers explicitly.
+6. Recovery tests prove that deleting `replica.db` does not destroy project or snapshot data as long as the sqlite `.luie` exists.
+7. QA evidence is tracked in `/Users/user/Luie/docs/phase-8d-qa-gate.md`.
 
-## Phase 8A DoD
+## Explicit Non-Goals
 
-Phase 8A is the compatibility slice. It is done when:
+- No legacy importer.
+- No background or one-shot conversion tool.
+- No compatibility guarantee for pre-cutover package `.luie` files during alpha.
+- No speculative performance tuning beyond avoiding obviously pathological write paths.
 
-1. A `LuieContainer` probe/read/write interface exists.
-2. The current package-based `.luie` implementation sits behind that interface as `package-v1`.
-3. Core project import/export and attachment-meta reads use the interface.
-4. Container probing can distinguish `package-v1`, `sqlite-v2`, and missing/unknown files.
-5. Tests lock current behavior for package file, package directory, and sqlite-header detection.
-6. No user-facing project workflow regresses from the current package-based behavior.
+## Failure Conditions
 
-## Explicit Non-Goals For 8A
-
-- No sqlite-backed `.luie` read path yet.
-- No sqlite-backed `.luie` write path yet.
-- No automatic migration from package `.luie` to sqlite `.luie`.
-- No performance tuning beyond avoiding obviously bad write-amplification patterns.
-
-## Phase 8B DoD
-
-Phase 8B is the sqlite-container compatibility slice. It is done when:
-
-1. `sqlite-v2` `.luie` files can be read through the same entry interface as `package-v1`.
-2. Core import/export/analyze/sync flows do not need new container-specific branching.
-3. Writes preserve the existing container kind unless an explicit kind is requested.
-4. New sqlite-backed `.luie` writes do not create `.wal` or `.shm` sidecar files.
-5. There is still no forced migration of existing package-based `.luie` files.
-6. Tests prove both package-v1 and sqlite-v2 compatibility through the shared container seam.
-
-## Phase 8C DoD
-
-Phase 8C is the explicit-container-choice slice. It is done when:
-
-1. New `.luie` materialize flows can explicitly request `package-v1` or `sqlite-v2`.
-2. Backward-compatible defaults remain intact when no container kind is specified.
-3. Existing attached exports still preserve container kind without extra UI decisions.
-4. There is still no automatic migration of existing `.luie` files.
-5. Tests prove the explicit choice is forwarded from project materialize flows to container writes.
-
-## What Will Count As Failure
-
-- A valid old `.luie` file no longer opens.
-- `.luie` export/import changes behavior without a test catching it.
-- A new abstraction adds more full-project rewrites than the current package flow.
-- A feature service has to know whether `.luie` is zip or sqlite to do normal project work.
+- A new `.luie` write path creates anything other than `sqlite-v2`.
+- Legacy package `.luie` files partially open instead of failing deterministically.
+- A feature silently falls back to local cache when canonical `.luie` access should fail loudly.
+- Deleting `replica.db` loses snapshots or user-authored project data.

@@ -212,6 +212,10 @@ export default function App() {
 
   const handleOpenExistingProject = useCallback(
     async (project: (typeof projects)[number]) => {
+      if (project.attachmentStatus === "unsupported-legacy-container") {
+        showToast(t("settings.projectTemplate.toast.legacyUnsupportedBlocked"), "error");
+        return;
+      }
       try {
         let nextProject = project;
         const projectPath = getReadableLuieAttachmentPath(project);
@@ -251,6 +255,10 @@ export default function App() {
     }
     if (status === "invalid-attachment") {
       showToast(t("project.toast.invalidAttachment"), "info");
+      return;
+    }
+    if (status === "unsupported-legacy-container") {
+      showToast(t("project.toast.legacyUnsupportedAttachment"), "error");
     }
   }, [currentProject?.attachmentStatus, currentProject?.id, showToast, t]);
 
@@ -288,11 +296,16 @@ export default function App() {
         if (imported.data.recovery) {
           useDataRecoveryStore.getState().setRecoveryState(true, imported.data.recoveryReason, imported.data.recoveryPath);
         }
+      } else {
+        showToast(
+          imported.error?.message ?? t("settings.projectTemplate.toast.luieAttachFailed"),
+          "error",
+        );
       }
     } catch (error) {
       api.logger.error("Failed to open luie file", error);
     }
-  }, [setCurrentProject, setView, t, updateProject]);
+  }, [setCurrentProject, setView, showToast, t, updateProject]);
 
   const handleOpenSnapshotBackup = useCallback(async () => {
     try {
