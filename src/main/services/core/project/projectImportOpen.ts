@@ -8,8 +8,12 @@ import {
   LUIE_PACKAGE_META_FILENAME,
   LUIE_SNAPSHOTS_DIR,
   LUIE_WORLD_CHARACTERS_FILE,
+  LUIE_WORLD_DRAWING_FILE,
   LUIE_WORLD_DIR,
   LUIE_WORLD_GRAPH_FILE,
+  LUIE_WORLD_MINDMAP_FILE,
+  LUIE_WORLD_PLOT_FILE,
+  LUIE_WORLD_SCRAP_MEMOS_FILE,
   LUIE_WORLD_SYNOPSIS_FILE,
   LUIE_WORLD_TERMS_FILE,
 } from "../../../../shared/constants/index.js";
@@ -22,7 +26,11 @@ import {
   LuieMetaSchema,
   LuieSnapshotsSchema,
   LuieTermsSchema,
+  LuieWorldDrawingSchema,
   LuieWorldGraphSchema,
+  LuieWorldMindmapSchema,
+  LuieWorldPlotSchema,
+  LuieWorldScrapMemosSchema,
   LuieWorldSynopsisSchema,
 } from "./projectLuieSchemas.js";
 import {
@@ -54,7 +62,11 @@ type LuieImportCollections = {
   characters: Array<Record<string, unknown>>;
   terms: Array<Record<string, unknown>>;
   snapshots: Array<NonNullable<z.infer<typeof LuieSnapshotsSchema>["snapshots"]>[number]>;
-  worldSynopsis?: string;
+  synopsis?: z.infer<typeof LuieWorldSynopsisSchema>;
+  plot?: z.infer<typeof LuieWorldPlotSchema>;
+  drawing?: z.infer<typeof LuieWorldDrawingSchema>;
+  mindmap?: z.infer<typeof LuieWorldMindmapSchema>;
+  memos?: z.infer<typeof LuieWorldScrapMemosSchema>;
   graph?: z.infer<typeof LuieWorldGraphSchema>;
 };
 
@@ -199,13 +211,31 @@ const readLuieImportCollections = async (
   const termsEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`;
   const snapshotsEntryPath = `${LUIE_SNAPSHOTS_DIR}/index.json`;
   const synopsisEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`;
+  const plotEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_PLOT_FILE}`;
+  const drawingEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`;
+  const mindmapEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_MINDMAP_FILE}`;
+  const memosEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_SCRAP_MEMOS_FILE}`;
   const graphEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_GRAPH_FILE}`;
 
-  const [charactersRaw, termsRaw, snapshotsRaw, worldSynopsisRaw, worldGraphRaw] = await Promise.all([
+  const [
+    charactersRaw,
+    termsRaw,
+    snapshotsRaw,
+    worldSynopsisRaw,
+    worldPlotRaw,
+    worldDrawingRaw,
+    worldMindmapRaw,
+    worldScrapMemosRaw,
+    worldGraphRaw,
+  ] = await Promise.all([
     readLuieEntry(resolvedPath, charactersEntryPath, logger),
     readLuieEntry(resolvedPath, termsEntryPath, logger),
     readLuieEntry(resolvedPath, snapshotsEntryPath, logger),
     readLuieEntry(resolvedPath, synopsisEntryPath, logger),
+    readLuieEntry(resolvedPath, plotEntryPath, logger),
+    readLuieEntry(resolvedPath, drawingEntryPath, logger),
+    readLuieEntry(resolvedPath, mindmapEntryPath, logger),
+    readLuieEntry(resolvedPath, memosEntryPath, logger),
     readLuieEntry(resolvedPath, graphEntryPath, logger),
   ]);
 
@@ -233,6 +263,38 @@ const readLuieImportCollections = async (
       label: "world synopsis",
     },
   );
+  const parsedWorldPlot = parseLuieDocumentOrThrow(worldPlotRaw, LuieWorldPlotSchema, {
+    packagePath: resolvedPath,
+    entryPath: plotEntryPath,
+    label: "world plot",
+  });
+  const parsedWorldDrawing = parseLuieDocumentOrThrow(
+    worldDrawingRaw,
+    LuieWorldDrawingSchema,
+    {
+      packagePath: resolvedPath,
+      entryPath: drawingEntryPath,
+      label: "world drawing",
+    },
+  );
+  const parsedWorldMindmap = parseLuieDocumentOrThrow(
+    worldMindmapRaw,
+    LuieWorldMindmapSchema,
+    {
+      packagePath: resolvedPath,
+      entryPath: mindmapEntryPath,
+      label: "world mindmap",
+    },
+  );
+  const parsedWorldScrapMemos = parseLuieDocumentOrThrow(
+    worldScrapMemosRaw,
+    LuieWorldScrapMemosSchema,
+    {
+      packagePath: resolvedPath,
+      entryPath: memosEntryPath,
+      label: "world scrap memos",
+    },
+  );
   const parsedGraph = parseLuieDocumentOrThrow(worldGraphRaw, LuieWorldGraphSchema, {
     packagePath: resolvedPath,
     entryPath: graphEntryPath,
@@ -243,11 +305,48 @@ const readLuieImportCollections = async (
     characters: parsedCharacters?.characters ?? [],
     terms: parsedTerms?.terms ?? [],
     snapshots: parsedSnapshots?.snapshots ?? [],
-    worldSynopsis:
-      parsedWorldSynopsis &&
-      typeof parsedWorldSynopsis.synopsis === "string"
-        ? parsedWorldSynopsis.synopsis
-        : undefined,
+    synopsis: parsedWorldSynopsis
+      ? {
+          synopsis:
+            typeof parsedWorldSynopsis.synopsis === "string"
+              ? parsedWorldSynopsis.synopsis
+              : "",
+          status: parsedWorldSynopsis.status,
+          genre: parsedWorldSynopsis.genre,
+          targetAudience: parsedWorldSynopsis.targetAudience,
+          logline: parsedWorldSynopsis.logline,
+          updatedAt: parsedWorldSynopsis.updatedAt,
+        }
+      : undefined,
+    plot: parsedWorldPlot
+      ? {
+          columns: parsedWorldPlot.columns ?? [],
+          updatedAt: parsedWorldPlot.updatedAt,
+        }
+      : undefined,
+    drawing: parsedWorldDrawing
+      ? {
+          paths: parsedWorldDrawing.paths ?? [],
+          tool: parsedWorldDrawing.tool,
+          iconType: parsedWorldDrawing.iconType,
+          color: parsedWorldDrawing.color,
+          lineWidth: parsedWorldDrawing.lineWidth,
+          updatedAt: parsedWorldDrawing.updatedAt,
+        }
+      : undefined,
+    mindmap: parsedWorldMindmap
+      ? {
+          nodes: parsedWorldMindmap.nodes ?? [],
+          edges: parsedWorldMindmap.edges ?? [],
+          updatedAt: parsedWorldMindmap.updatedAt,
+        }
+      : undefined,
+    memos: parsedWorldScrapMemos
+      ? {
+          memos: parsedWorldScrapMemos.memos ?? [],
+          updatedAt: parsedWorldScrapMemos.updatedAt,
+        }
+      : undefined,
     graph: parsedGraph
       ? {
           nodes: parsedGraph.nodes ?? [],
@@ -344,7 +443,12 @@ export const openLuieProjectPackage = async (input: {
     legacyProjectId,
     existing,
     meta,
-    worldSynopsis: collections.worldSynopsis,
+    worldSynopsis: collections.synopsis,
+    worldPlot: collections.plot,
+    worldDrawing: collections.drawing,
+    worldMindmap: collections.mindmap,
+    worldScrapMemos: collections.memos,
+    worldGraph: collections.graph,
     resolvedPath,
     chaptersForCreate,
     charactersForCreate: graphRows.charactersForCreate,
