@@ -202,6 +202,25 @@ export interface WorldScrapMemosData {
   updatedAt?: string;
 }
 
+export type ReplicaWorldDocumentType =
+  | "synopsis"
+  | "plot"
+  | "drawing"
+  | "mindmap"
+  | "graph"
+  | "scrap";
+
+export interface WorldReplicaDocumentResult {
+  found: boolean;
+  payload: unknown | null;
+  updatedAt?: string;
+}
+
+export interface WorldReplicaScrapMemosResult {
+  found: boolean;
+  data: WorldScrapMemosData | null;
+}
+
 // Export/Package Types
 export type ChapterExportRecord = {
   id: string;

@@ -36,6 +36,10 @@ import type {
   EntityRelationUpdateInput,
   WorldGraphMention,
   WorldGraphMentionsQuery,
+  ReplicaWorldDocumentType,
+  WorldReplicaDocumentResult,
+  WorldReplicaScrapMemosResult,
+  WorldScrapMemosData,
 } from "@shared/types/index.js";
 
 export type RendererApi = {
@@ -318,6 +322,22 @@ export type RendererApi = {
   worldGraph: {
     get: (projectId: string) => Promise<IPCResponse<WorldGraphData>>;
     getMentions: (query: WorldGraphMentionsQuery) => Promise<IPCResponse<WorldGraphMention[]>>;
+  };
+  worldStorage: {
+    getDocument: (input: {
+      projectId: string;
+      docType: ReplicaWorldDocumentType;
+    }) => Promise<IPCResponse<WorldReplicaDocumentResult>>;
+    setDocument: (input: {
+      projectId: string;
+      docType: ReplicaWorldDocumentType;
+      payload: unknown;
+    }) => Promise<IPCResponse<unknown>>;
+    getScrapMemos: (projectId: string) => Promise<IPCResponse<WorldReplicaScrapMemosResult>>;
+    setScrapMemos: (input: {
+      projectId: string;
+      data: WorldScrapMemosData;
+    }) => Promise<IPCResponse<unknown>>;
   };
 };
 

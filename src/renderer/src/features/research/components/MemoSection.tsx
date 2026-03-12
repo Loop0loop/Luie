@@ -20,6 +20,7 @@ import {
   toPercentSize,
   toPxSize,
 } from "@shared/constants/sidebarSizing";
+import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
 import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
 import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
 
@@ -50,7 +51,7 @@ export default function MemoSection() {
   const currentProject = useProjectStore((state) => state.currentItem);
   const defaultNotes = useMemo(() => buildDefaultNotes(t), [t]);
   const currentProjectId = currentProject?.id;
-  const currentProjectPath = currentProject?.projectPath ?? null;
+  const currentProjectPath = getReadableLuieAttachmentPath(currentProject);
 
   return (
     <MemoSectionInner

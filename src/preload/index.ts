@@ -920,6 +920,24 @@ const rendererApi = {
     ): ReturnType<RendererApi["worldGraph"]["getMentions"]> =>
       safeInvoke(IPC_CHANNELS.WORLD_GRAPH_GET_MENTIONS, query),
   },
+  worldStorage: {
+    getDocument: (
+      input: Parameters<RendererApi["worldStorage"]["getDocument"]>[0],
+    ): ReturnType<RendererApi["worldStorage"]["getDocument"]> =>
+      safeInvoke(IPC_CHANNELS.WORLD_STORAGE_GET_DOCUMENT, input),
+    setDocument: (
+      input: Parameters<RendererApi["worldStorage"]["setDocument"]>[0],
+    ): ReturnType<RendererApi["worldStorage"]["setDocument"]> =>
+      safeInvoke(IPC_CHANNELS.WORLD_STORAGE_SET_DOCUMENT, input),
+    getScrapMemos: (
+      projectId: Parameters<RendererApi["worldStorage"]["getScrapMemos"]>[0],
+    ): ReturnType<RendererApi["worldStorage"]["getScrapMemos"]> =>
+      safeInvoke(IPC_CHANNELS.WORLD_STORAGE_GET_SCRAP_MEMOS, projectId),
+    setScrapMemos: (
+      input: Parameters<RendererApi["worldStorage"]["setScrapMemos"]>[0],
+    ): ReturnType<RendererApi["worldStorage"]["setScrapMemos"]> =>
+      safeInvoke(IPC_CHANNELS.WORLD_STORAGE_SET_SCRAP_MEMOS, input),
+  },
 } satisfies RendererApi;
 
 // Expose API to renderer process

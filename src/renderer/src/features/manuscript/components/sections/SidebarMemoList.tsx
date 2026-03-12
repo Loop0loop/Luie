@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { cn } from "@shared/types/utils";
+import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import { useProjectMemoNotes } from "@renderer/features/research/components/memo/useProjectMemoNotes";
 
@@ -15,7 +16,7 @@ export default function SidebarMemoList() {
     mainView.type === "memo" && mainView.id ? mainView.id : null;
 
   const currentProjectId = currentProject?.id ?? null;
-  const currentProjectPath = currentProject?.projectPath ?? null;
+  const currentProjectPath = getReadableLuieAttachmentPath(currentProject);
   const { addNote, notes } = useProjectMemoNotes({
     flushOnCleanup: true,
     projectId: currentProjectId ?? undefined,

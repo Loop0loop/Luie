@@ -1,6 +1,8 @@
-// Packaged `.luie` bootstrap schema mirrors the canonical project surface.
-// `Project.projectPath` remains here only as a legacy compatibility field until
-// attachment metadata is fully extracted into app-local storage.
+// Packaged SQLite bootstrap schema mirrors the current local runtime surface.
+// It includes canonical project tables plus replica tables required for
+// detached/offline editing. `Project.projectPath` remains here only as a
+// legacy compatibility field until attachment metadata is fully extracted into
+// app-local storage.
 export const PACKAGED_SCHEMA_REQUIRED_TABLES = [
   "Project",
   "ProjectSettings",
@@ -9,6 +11,8 @@ export const PACKAGED_SCHEMA_REQUIRED_TABLES = [
   "Event",
   "Faction",
   "CharacterAppearance",
+  "WorldDocument",
+  "ScrapMemo",
   "Term",
   "TermAppearance",
   "Snapshot",
@@ -80,6 +84,8 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
   Event: ["id", "projectId", "name"],
   Faction: ["id", "projectId", "name"],
   CharacterAppearance: ["id", "characterId", "chapterId", "position"],
+  WorldDocument: ["id", "projectId", "docType", "payload"],
+  ScrapMemo: ["id", "projectId", "title", "content", "tags", "sortOrder", "updatedAt"],
   Term: ["id", "projectId", "term", "order"],
   TermAppearance: ["id", "termId", "chapterId", "position"],
   Snapshot: ["id", "projectId", "content", "contentLength", "type"],
@@ -158,6 +164,26 @@ CREATE TABLE IF NOT EXISTS "CharacterAppearance" (
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "CharacterAppearance_characterId_fkey" FOREIGN KEY ("characterId") REFERENCES "Character" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+CREATE TABLE IF NOT EXISTS "WorldDocument" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "docType" TEXT NOT NULL,
+    "payload" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "WorldDocument_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "ScrapMemo" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "tags" TEXT NOT NULL DEFAULT '[]',
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "ScrapMemo_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
 CREATE TABLE IF NOT EXISTS "Term" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,
@@ -228,6 +254,10 @@ CREATE INDEX IF NOT EXISTS "Character_projectId_name_idx" ON "Character"("projec
 CREATE INDEX IF NOT EXISTS "Event_projectId_name_idx" ON "Event"("projectId", "name");
 CREATE INDEX IF NOT EXISTS "Faction_projectId_name_idx" ON "Faction"("projectId", "name");
 CREATE INDEX IF NOT EXISTS "CharacterAppearance_characterId_chapterId_idx" ON "CharacterAppearance"("characterId", "chapterId");
+CREATE UNIQUE INDEX IF NOT EXISTS "WorldDocument_projectId_docType_key" ON "WorldDocument"("projectId", "docType");
+CREATE INDEX IF NOT EXISTS "WorldDocument_projectId_updatedAt_idx" ON "WorldDocument"("projectId", "updatedAt");
+CREATE INDEX IF NOT EXISTS "ScrapMemo_projectId_sortOrder_idx" ON "ScrapMemo"("projectId", "sortOrder");
+CREATE INDEX IF NOT EXISTS "ScrapMemo_projectId_updatedAt_idx" ON "ScrapMemo"("projectId", "updatedAt");
 CREATE INDEX IF NOT EXISTS "Term_projectId_term_idx" ON "Term"("projectId", "term");
 CREATE INDEX IF NOT EXISTS "TermAppearance_termId_chapterId_idx" ON "TermAppearance"("termId", "chapterId");
 CREATE INDEX IF NOT EXISTS "Snapshot_projectId_createdAt_idx" ON "Snapshot"("projectId", "createdAt");

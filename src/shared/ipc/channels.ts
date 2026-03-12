@@ -178,6 +178,12 @@ export const IPC_CHANNELS = {
   // World Graph
   WORLD_GRAPH_GET: "world:getGraph",
   WORLD_GRAPH_GET_MENTIONS: "world:getMentions",
+
+  // World replica storage
+  WORLD_STORAGE_GET_DOCUMENT: "world-storage:get-document",
+  WORLD_STORAGE_SET_DOCUMENT: "world-storage:set-document",
+  WORLD_STORAGE_GET_SCRAP_MEMOS: "world-storage:get-scrap-memos",
+  WORLD_STORAGE_SET_SCRAP_MEMOS: "world-storage:set-scrap-memos",
 } as const;
 
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

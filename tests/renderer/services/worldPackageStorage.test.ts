@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { STORAGE_KEY_UI } from "../../../src/shared/constants/index.js";
 import type { WorldScrapMemosData } from "../../../src/shared/types/index.js";
 
 type StorageLike = {
@@ -49,7 +48,27 @@ type TestWindowApi = {
   logger: {
     warn: ReturnType<typeof vi.fn>;
   };
+  worldStorage: {
+    getDocument: ReturnType<typeof vi.fn>;
+    setDocument: ReturnType<typeof vi.fn>;
+    getScrapMemos: ReturnType<typeof vi.fn>;
+    setScrapMemos: ReturnType<typeof vi.fn>;
+  };
 };
+
+const createWorldStorageApi = (overrides?: Partial<TestWindowApi["worldStorage"]>) => ({
+  getDocument: vi.fn().mockResolvedValue({
+    success: true,
+    data: { found: false, payload: null },
+  }),
+  setDocument: vi.fn().mockResolvedValue({ success: true }),
+  getScrapMemos: vi.fn().mockResolvedValue({
+    success: true,
+    data: { found: false, data: null },
+  }),
+  setScrapMemos: vi.fn().mockResolvedValue({ success: true }),
+  ...overrides,
+});
 
 const setWindowApi = (api: TestWindowApi) => {
   Object.assign(globalThis, {
@@ -87,6 +106,7 @@ describe("worldPackageStorage", () => {
         writeProjectFile,
       },
       logger: { warn },
+      worldStorage: createWorldStorageApi(),
     });
 
     const { worldPackageStorage } =
@@ -120,6 +140,7 @@ describe("worldPackageStorage", () => {
         writeProjectFile,
       },
       logger: { warn },
+      worldStorage: createWorldStorageApi(),
     });
 
     const { worldPackageStorage } =
@@ -180,6 +201,7 @@ describe("worldPackageStorage", () => {
         writeProjectFile,
       },
       logger: { warn },
+      worldStorage: createWorldStorageApi(),
     });
 
     const { worldPackageStorage } =
@@ -246,6 +268,7 @@ describe("worldPackageStorage", () => {
         writeProjectFile: vi.fn().mockResolvedValue({ success: true }),
       },
       logger: { warn },
+      worldStorage: createWorldStorageApi(),
     });
 
     const { worldPackageStorage, DEFAULT_WORLD_SCRAP_MEMOS } =
@@ -263,9 +286,10 @@ describe("worldPackageStorage", () => {
     );
   });
 
-  it("persists scrap memo schema version in local storage and .luie writes", async () => {
+  it("persists scrap memo schema version in replica storage and .luie writes", async () => {
     const writeProjectFile = vi.fn().mockResolvedValue({ success: true });
     const warn = vi.fn().mockResolvedValue({ success: true });
+    const worldStorage = createWorldStorageApi();
 
     setWindowApi({
       fs: {
@@ -273,6 +297,7 @@ describe("worldPackageStorage", () => {
         writeProjectFile,
       },
       logger: { warn },
+      worldStorage,
     });
 
     const { worldPackageStorage } =
@@ -294,10 +319,13 @@ describe("worldPackageStorage", () => {
       },
     );
 
-    const localRaw = memoryStorage.getItem("luie:world:project-1:scrap-memos");
-    expect(localRaw).not.toBeNull();
-    const localPayload = JSON.parse(localRaw!);
-    expect(localPayload.schemaVersion).toBe(2);
+    expect(memoryStorage.getItem("luie:world:project-1:scrap-memos")).toBeNull();
+    expect(worldStorage.setScrapMemos).toHaveBeenCalledWith({
+      projectId: "project-1",
+      data: expect.objectContaining({
+        schemaVersion: 2,
+      }),
+    });
     expect(writeProjectFile).toHaveBeenCalledWith(
       "/tmp/project-1.luie",
       expect.stringContaining("scrap"),
@@ -305,9 +333,51 @@ describe("worldPackageStorage", () => {
     );
   });
 
+  it("migrates legacy local synopsis data into replica storage", async () => {
+    const worldStorage = createWorldStorageApi();
+    const warn = vi.fn().mockResolvedValue({ success: true });
+
+    memoryStorage.setItem(
+      "luie:world:project-1:synopsis",
+      JSON.stringify({
+        synopsis: "legacy synopsis",
+        status: "working",
+      }),
+    );
+
+    setWindowApi({
+      fs: {
+        readLuieEntry: vi.fn().mockResolvedValue({ success: true, data: null }),
+        writeProjectFile: vi.fn().mockResolvedValue({ success: true }),
+      },
+      logger: { warn },
+      worldStorage,
+    });
+
+    const { worldPackageStorage } =
+      await import("../../../src/renderer/src/features/research/services/worldPackageStorage.js");
+
+    const result = await worldPackageStorage.loadSynopsis("project-1");
+
+    expect(result).toEqual({
+      synopsis: "legacy synopsis",
+      status: "working",
+    });
+    expect(worldStorage.setDocument).toHaveBeenCalledWith({
+      projectId: "project-1",
+      docType: "synopsis",
+      payload: {
+        synopsis: "legacy synopsis",
+        status: "working",
+      },
+    });
+    expect(memoryStorage.getItem("luie:world:project-1:synopsis")).toBeNull();
+  });
+
   it("refuses to persist invalid scrap memo payloads", async () => {
     const writeProjectFile = vi.fn().mockResolvedValue({ success: true });
     const warn = vi.fn().mockResolvedValue({ success: true });
+    const worldStorage = createWorldStorageApi();
 
     setWindowApi({
       fs: {
@@ -315,6 +385,7 @@ describe("worldPackageStorage", () => {
         writeProjectFile,
       },
       logger: { warn },
+      worldStorage,
     });
 
     const { worldPackageStorage } =
@@ -340,6 +411,7 @@ describe("worldPackageStorage", () => {
 
     expect(writeProjectFile).not.toHaveBeenCalled();
     expect(memoryStorage.length).toBe(0);
+    expect(worldStorage.setScrapMemos).not.toHaveBeenCalled();
     expect(warn).toHaveBeenCalledWith(
       "Refused to persist invalid scrap memos payload",
       expect.any(Object),

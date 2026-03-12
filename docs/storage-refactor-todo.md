@@ -227,9 +227,9 @@ Done when:
 
 ## Phase 2. Detached durable runtime
 
-- [ ] Introduce a durable local replica for world documents and memos
-- [ ] Remove renderer `localStorage` as the durable write path for `synopsis`, `plot`, `drawing`, `mindmap`, `scrap`, and scrap memos
-- [ ] Make detached project open/read/write operate on durable local storage
+- [x] Introduce a durable local replica for world documents and memos
+- [x] Remove renderer `localStorage` as the durable write path for `synopsis`, `plot`, `drawing`, `mindmap`, `scrap`, and scrap memos
+- [x] Make detached project open/read/write operate on durable local storage
 - [ ] Define how runtime world tables hydrate from detached world document state
 - [ ] Prove that a synced-but-unattached project survives restart and remains editable
 
@@ -237,6 +237,12 @@ Done when:
 
 - no canonical edit path depends on browser `localStorage`
 - detached projects behave like first-class local projects
+
+Current checkpoint:
+
+- `WorldDocument` and `ScrapMemo` replica tables now exist in local Prisma/bootstrap schema
+- renderer world storage now reads `replica -> .luie -> legacy localStorage` and writes `replica -> .luie`
+- `localStorage` remains only as a one-time migration bridge for old world payloads
 
 ## Phase 3. Sync semantic closure
 

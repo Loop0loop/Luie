@@ -4,6 +4,7 @@ import { registerEventIPCHandlers } from "./ipcEventHandlers.js";
 import { registerFactionIPCHandlers } from "./ipcFactionHandlers.js";
 import { registerWorldEntityIPCHandlers } from "./ipcWorldEntityHandlers.js";
 import { registerEntityRelationIPCHandlers } from "./ipcEntityRelationHandlers.js";
+import { registerWorldStorageIPCHandlers } from "./ipcWorldStorageHandlers.js";
 import type { AppLogger } from "../core/types.js";
 
 export function registerWorldHandlers(options: {
@@ -15,6 +16,7 @@ export function registerWorldHandlers(options: {
   worldEntityService: Parameters<typeof registerWorldEntityIPCHandlers>[1];
   entityRelationService: Parameters<typeof registerEntityRelationIPCHandlers>[1];
   worldMentionService: Parameters<typeof registerEntityRelationIPCHandlers>[2];
+  worldReplicaService: Parameters<typeof registerWorldStorageIPCHandlers>[1];
 }): void {
   registerCharacterIPCHandlers(options.logger, options.characterService);
   registerTermIPCHandlers(options.logger, options.termService);
@@ -26,4 +28,5 @@ export function registerWorldHandlers(options: {
     options.entityRelationService,
     options.worldMentionService,
   );
+  registerWorldStorageIPCHandlers(options.logger, options.worldReplicaService);
 }

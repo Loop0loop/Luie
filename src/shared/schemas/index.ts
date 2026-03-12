@@ -589,6 +589,35 @@ export const worldScrapMemosDataSchema = z.strictObject({
   updatedAt: z.string().optional(),
 });
 
+export const replicaWorldDocumentTypeSchema = z.enum([
+  "synopsis",
+  "plot",
+  "drawing",
+  "mindmap",
+  "graph",
+  "scrap",
+]);
+
+export const worldReplicaDocumentGetSchema = z.strictObject({
+  projectId: projectIdSchema,
+  docType: replicaWorldDocumentTypeSchema,
+});
+
+export const worldReplicaDocumentSetSchema = z.strictObject({
+  projectId: projectIdSchema,
+  docType: replicaWorldDocumentTypeSchema,
+  payload: z.unknown(),
+});
+
+export const worldReplicaScrapMemosGetSchema = z.strictObject({
+  projectId: projectIdSchema,
+});
+
+export const worldReplicaScrapMemosSetSchema = z.strictObject({
+  projectId: projectIdSchema,
+  data: worldScrapMemosDataSchema,
+});
+
 export type UiStorePersistedState = z.infer<typeof uiStorePersistedStateSchema>;
 export type ProjectLayoutPersistedState = z.infer<
   typeof projectLayoutPersistedStateSchema

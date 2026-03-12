@@ -24,6 +24,12 @@ type PrismaClient = ReturnType<(typeof DbService)["getClient"]> & {
   projectSettings?: {
     deleteMany: (args: unknown) => Promise<{ count: number }>;
   };
+  scrapMemo?: {
+    deleteMany: (args: unknown) => Promise<{ count: number }>;
+  };
+  worldDocument?: {
+    deleteMany: (args: unknown) => Promise<{ count: number }>;
+  };
 };
 
 let dbService: typeof DbService | null = null;
@@ -43,6 +49,12 @@ beforeEach(async () => {
   await client.snapshot.deleteMany({});
   await client.termAppearance.deleteMany({});
   await client.characterAppearance.deleteMany({});
+  if (client.scrapMemo?.deleteMany) {
+    await client.scrapMemo.deleteMany({});
+  }
+  if (client.worldDocument?.deleteMany) {
+    await client.worldDocument.deleteMany({});
+  }
   await client.term.deleteMany({});
   await client.character.deleteMany({});
   await client.chapter.deleteMany({});

@@ -30,6 +30,8 @@ model Project {
   settings        ProjectSettings?
   worldEntities   WorldEntity[]
   entityRelations EntityRelation[]
+  worldDocuments  WorldDocument[]
+  scrapMemos      ScrapMemo[]
 }
 
 // 프로젝트별 로컬 런타임 정책.
@@ -128,6 +130,40 @@ model CharacterAppearance {
   character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
 
   @@index([characterId, chapterId])
+}
+
+// Detached/synced 프로젝트가 .luie attachment 없이도 편집될 수 있도록
+// world 문서를 로컬 replica DB에 보관한다.
+model WorldDocument {
+  id        String   @id @default(uuid())
+  projectId String
+  docType   String
+  payload   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, docType])
+  @@index([projectId, updatedAt])
+}
+
+// Scrap memo는 sync/materialize를 위해 개별 row도 유지한다.
+// `.luie` payload와 replica row는 함께 갱신된다.
+model ScrapMemo {
+  id        String   @id
+  projectId String
+  title     String
+  content   String
+  tags      String   @default("[]") // JSON array
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, sortOrder])
+  @@index([projectId, updatedAt])
 }
 
 // 고유명사 사전
