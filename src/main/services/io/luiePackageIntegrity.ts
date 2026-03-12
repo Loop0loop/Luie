@@ -68,11 +68,15 @@ export const normalizeLuieMetaForWrite = (
     titleFallback: string;
     nowIso?: string;
     createdAtFallback?: string;
+    containerLabel?: string;
+    containerVersion?: number;
   },
 ): Record<string, unknown> => {
   const rawMeta = toObjectRecord(input);
   const nowIso = options.nowIso ?? new Date().toISOString();
   const createdAtFallback = options.createdAtFallback ?? nowIso;
+  const containerLabel = options.containerLabel ?? LUIE_PACKAGE_CONTAINER_DIR;
+  const containerVersion = options.containerVersion ?? LUIE_PACKAGE_VERSION;
 
   if (
     Object.prototype.hasOwnProperty.call(rawMeta, "format") &&
@@ -86,7 +90,7 @@ export const normalizeLuieMetaForWrite = (
   }
   if (
     Object.prototype.hasOwnProperty.call(rawMeta, "container") &&
-    rawMeta.container !== LUIE_PACKAGE_CONTAINER_DIR
+    rawMeta.container !== containerLabel
   ) {
     throw new ServiceError(
       ErrorCode.FS_WRITE_FAILED,
@@ -96,7 +100,11 @@ export const normalizeLuieMetaForWrite = (
   }
   if (
     Object.prototype.hasOwnProperty.call(rawMeta, "version") &&
-    !isCompatibleLuieVersion(rawMeta.version)
+    !(
+      (typeof rawMeta.version === "number" && rawMeta.version === containerVersion) ||
+      (typeof rawMeta.version === "string" &&
+        Number(rawMeta.version) === containerVersion)
+    )
   ) {
     throw new ServiceError(
       ErrorCode.FS_WRITE_FAILED,
@@ -121,8 +129,8 @@ export const normalizeLuieMetaForWrite = (
   return {
     ...rawMeta,
     format: LUIE_PACKAGE_FORMAT,
-    container: LUIE_PACKAGE_CONTAINER_DIR,
-    version: LUIE_PACKAGE_VERSION,
+    container: containerLabel,
+    version: containerVersion,
     title,
     createdAt,
     updatedAt,

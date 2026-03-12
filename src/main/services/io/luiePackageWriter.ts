@@ -5,26 +5,18 @@ import yazl from "yazl";
 import {
   LUIE_ASSETS_DIR,
   LUIE_MANUSCRIPT_DIR,
-  LUIE_PACKAGE_EXTENSION,
-  LUIE_SNAPSHOTS_DIR,
-  LUIE_WORLD_CHARACTERS_FILE,
-  LUIE_WORLD_DIR,
-  LUIE_WORLD_DRAWING_FILE,
-  LUIE_WORLD_GRAPH_FILE,
-  LUIE_WORLD_MINDMAP_FILE,
-  LUIE_WORLD_PLOT_FILE,
-  LUIE_WORLD_SCRAP_MEMOS_FILE,
-  LUIE_WORLD_SYNOPSIS_FILE,
-  LUIE_WORLD_TERMS_FILE,
-  MARKDOWN_EXTENSION,
+  LUIE_PACKAGE_CONTAINER_DIR,
   LUIE_PACKAGE_META_FILENAME,
+  LUIE_PACKAGE_VERSION,
+  LUIE_SNAPSHOTS_DIR,
+  LUIE_WORLD_DIR,
 } from "../../../shared/constants/index.js";
 import { isSafeZipPath, normalizeZipPath, ensureLuieExtension } from "../../utils/luiePackage.js";
 import {
-  normalizeLuieMetaForWrite,
   verifyLuieZipIntegrity,
 } from "./luiePackageIntegrity.js";
 import type { LuiePackageExportData, LoggerLike, ZipEntryPayload } from "./luiePackageTypes.js";
+import { buildLuieContainerTextEntries } from "./luieContainerEntries.js";
 
 export const ZIP_TEMP_SUFFIX = ".tmp";
 
@@ -169,74 +161,17 @@ export const writeLuiePackage = async (
   return await withPackageWriteLock(outputPath, async () => {
     await ensureParentDir(outputPath);
 
-    const nowIso = new Date().toISOString();
-    const normalizedMeta = normalizeLuieMetaForWrite(payload.meta, {
-      titleFallback: path.basename(outputPath, LUIE_PACKAGE_EXTENSION),
-      nowIso,
-      createdAtFallback: nowIso,
-    });
     const tempZip = `${outputPath}${ZIP_TEMP_SUFFIX}-${Date.now()}`;
     const entries: ZipEntryPayload[] = [
       ...baseLuieDirectoryEntries(),
-      {
-        name: LUIE_PACKAGE_META_FILENAME,
-        content: JSON.stringify(normalizedMeta, null, 2),
-      },
-      {
-        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`,
-        content: JSON.stringify({ characters: payload.characters ?? [] }, null, 2),
-      },
-      {
-        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`,
-        content: JSON.stringify({ terms: payload.terms ?? [] }, null, 2),
-      },
-      {
-        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`,
-        content: JSON.stringify(payload.synopsis ?? { synopsis: "", status: "draft" }, null, 2),
-      },
-      {
-        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_PLOT_FILE}`,
-        content: JSON.stringify(payload.plot ?? { columns: [] }, null, 2),
-      },
-      {
-        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`,
-        content: JSON.stringify(payload.drawing ?? { paths: [] }, null, 2),
-      },
-      {
-        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_MINDMAP_FILE}`,
-        content: JSON.stringify(payload.mindmap ?? { nodes: [], edges: [] }, null, 2),
-      },
-      {
-        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_SCRAP_MEMOS_FILE}`,
-        content: JSON.stringify(payload.memos ?? { memos: [] }, null, 2),
-      },
-      {
-        name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_GRAPH_FILE}`,
-        content: JSON.stringify(payload.graph ?? { nodes: [], edges: [] }, null, 2),
-      },
-      {
-        name: `${LUIE_SNAPSHOTS_DIR}/index.json`,
-        content: JSON.stringify({ snapshots: payload.snapshots ?? [] }, null, 2),
-      },
+      ...buildLuieContainerTextEntries(payload, outputPath, {
+        containerLabel: LUIE_PACKAGE_CONTAINER_DIR,
+        containerVersion: LUIE_PACKAGE_VERSION,
+      }).map((entry) => ({
+        name: entry.name,
+        content: entry.content,
+      })),
     ];
-
-    for (const chapter of payload.chapters ?? []) {
-      if (!chapter.id) continue;
-      entries.push({
-        name: `${LUIE_MANUSCRIPT_DIR}/${chapter.id}${MARKDOWN_EXTENSION}`,
-        content: chapter.content ?? "",
-      });
-    }
-
-    if (payload.snapshots && payload.snapshots.length > 0) {
-      for (const snapshot of payload.snapshots) {
-        if (!snapshot.id) continue;
-        entries.push({
-          name: `${LUIE_SNAPSHOTS_DIR}/${snapshot.id}.snap`,
-          content: JSON.stringify(snapshot, null, 2),
-        });
-      }
-    }
 
     await buildZipFile(tempZip, (zip) => addEntriesToZip(zip, entries));
     await verifyLuieZipIntegrity(tempZip, logger);

@@ -1,6 +1,6 @@
 # Luie Container DoD
 
-> Status: Phase 8A complete, Phase 8B pending
+> Status: Phase 8A complete, Phase 8B complete, Phase 8C pending
 > Scope: `.luie` container evolution without breaking existing project behavior
 
 ## Philosophy
@@ -49,6 +49,17 @@ Phase 8A is the compatibility slice. It is done when:
 - No sqlite-backed `.luie` write path yet.
 - No automatic migration from package `.luie` to sqlite `.luie`.
 - No performance tuning beyond avoiding obviously bad write-amplification patterns.
+
+## Phase 8B DoD
+
+Phase 8B is the sqlite-container compatibility slice. It is done when:
+
+1. `sqlite-v2` `.luie` files can be read through the same entry interface as `package-v1`.
+2. Core import/export/analyze/sync flows do not need new container-specific branching.
+3. Writes preserve the existing container kind unless an explicit kind is requested.
+4. New sqlite-backed `.luie` writes do not create `.wal` or `.shm` sidecar files.
+5. There is still no forced migration of existing package-based `.luie` files.
+6. Tests prove both package-v1 and sqlite-v2 compatibility through the shared container seam.
 
 ## What Will Count As Failure
 

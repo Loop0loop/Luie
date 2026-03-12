@@ -8,6 +8,10 @@ import {
 import {
   writeLuiePackage,
 } from "./luiePackageWriter.js";
+import {
+  readLuieSqliteEntry,
+  writeLuieSqliteContainer,
+} from "./luieSqliteContainer.js";
 import type {
   LuiePackageExportData,
   LoggerLike,
@@ -125,15 +129,7 @@ export const readLuieContainerEntry = async (
   }
 
   if (probe.kind === "sqlite-v2") {
-    throw new ServiceError(
-      ErrorCode.FS_READ_FAILED,
-      "SQLite-backed .luie reading is not implemented yet",
-      {
-        packagePath: probe.normalizedPath,
-        entryPath,
-        containerKind: probe.kind,
-      },
-    );
+    return await readLuieSqliteEntry(probe.normalizedPath, entryPath);
   }
 
   throw new ServiceError(
@@ -157,7 +153,25 @@ export const writeLuieContainer = async (input: {
   kind: Exclude<LuieContainerKind, "unknown">;
 }> => {
   const normalizedPath = ensureLuieExtension(input.targetPath);
-  const kind = input.kind ?? "package-v1";
+  const probe = await probeLuieContainer(normalizedPath);
+  const kind =
+    input.kind ??
+    (() => {
+      if (!probe.exists) {
+        return "package-v1" as const;
+      }
+      if (probe.kind === "unknown") {
+        throw new ServiceError(
+          ErrorCode.FS_WRITE_FAILED,
+          "Unsupported .luie container format",
+          {
+            targetPath: probe.normalizedPath,
+            containerKind: probe.kind,
+          },
+        );
+      }
+      return probe.kind;
+    })();
 
   if (kind === "package-v1") {
     await writeLuiePackage(normalizedPath, input.payload, input.logger);
@@ -167,12 +181,13 @@ export const writeLuieContainer = async (input: {
     };
   }
 
-  throw new ServiceError(
-    ErrorCode.FS_WRITE_FAILED,
-    "SQLite-backed .luie writing is not implemented yet",
-    {
-      targetPath: normalizedPath,
-      containerKind: kind,
-    },
-  );
+  await writeLuieSqliteContainer({
+    targetPath: normalizedPath,
+    payload: input.payload,
+    logger: input.logger,
+  });
+  return {
+    normalizedPath,
+    kind,
+  };
 };

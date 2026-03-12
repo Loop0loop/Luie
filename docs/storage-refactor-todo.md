@@ -368,11 +368,20 @@ Done when:
 Current checkpoint:
 
 - Phase 8 will prefer `.luie-first` with a future sqlite-backed container, but functionality takes precedence over optimization claims
-- current slice is `Phase 8A`: freeze DoD, keep `package-v1` behavior intact, and add a container seam before any sqlite write path
+- Phase 8A is complete: DoD is frozen and the container seam shields core services from raw zip logic
+- Phase 8B is complete: `sqlite-v2` now uses the same entry contract, and writes preserve the existing container kind unless explicitly overridden
 - `docs/luie-container-dod.md` now defines the Phase 8 guardrails, DoD, non-goals, and explicit failure conditions
 - core `.luie` readers/writers now go through `LuieContainer`, so container-kind branching is no longer scattered across project/sync/analysis services
-- `LuieContainer` currently preserves `package-v1` behavior and only probes `sqlite-v2`; sqlite read/write is intentionally not enabled yet
-- regression tests now lock the compatibility slice so existing package-based `.luie` flows keep working before any sqlite migration begins
+- `LuieContainer` now supports both `package-v1` and `sqlite-v2` entry reads while keeping the package-style entry contract unchanged
+- explicit sqlite writes now create a single-file `.luie` without `.wal`/`.shm` sidecars, and existing sqlite containers stay sqlite on later exports
+- regression tests now lock both compatibility slices so package-based `.luie` flows and sqlite-backed `.luie` flows stay aligned
+
+Phase 8B next slice:
+
+- [x] Enable `sqlite-v2` entry reads through `LuieContainer`
+- [x] Make `LuieContainer` preserve existing container kind on writes
+- [x] Prove sqlite-backed `.luie` writes do not leak `.wal` or `.shm` sidecar files
+- [x] Keep new sqlite support behind explicit write choice or existing-kind preservation only
 
 Reference:
 
