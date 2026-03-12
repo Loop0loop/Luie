@@ -5,17 +5,40 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SNAPSHOT_BACKUP_DIR } from "../../../src/shared/constants/index.js";
 
 const mocked = vi.hoisted(() => {
+  const deleteMany = vi.fn(async () => ({ count: 0 }));
   const dbClient = {
+    character: {
+      deleteMany,
+    },
+    characterAppearance: {
+      deleteMany,
+    },
+    chapter: {
+      deleteMany,
+    },
     project: {
+      deleteMany,
       findMany: vi.fn(),
       findUnique: vi.fn(),
     },
+    projectSettings: {
+      deleteMany,
+    },
     snapshot: {
+      deleteMany,
       findMany: vi.fn(),
+    },
+    term: {
+      deleteMany,
+    },
+    termAppearance: {
+      deleteMany,
     },
   };
   const db = {
+    disconnect: vi.fn(async () => undefined),
     getClient: vi.fn(() => dbClient),
+    initialize: vi.fn(async () => undefined),
   };
 
   return {

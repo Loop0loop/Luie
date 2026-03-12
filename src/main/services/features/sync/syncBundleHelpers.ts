@@ -7,6 +7,7 @@ import {
 } from "./syncBundleCollector.js";
 import { buildSyncProjectPackagePayload } from "./syncBundleApplier.js";
 import type { SyncBundle } from "./syncMapper.js";
+import { hydrateProjectsWithAttachmentPaths } from "../../core/project/projectAttachmentStore.js";
 
 type LoggerLike = {
   warn: (message: string, details?: unknown) => void;
@@ -26,11 +27,17 @@ export const buildLocalBundleFromDatabase = async (input: {
       terms: true,
     },
   })) as Array<Record<string, unknown>>;
+  const hydratedProjectRows = await hydrateProjectsWithAttachmentPaths(
+    projectRows.map((projectRow) => ({
+      ...projectRow,
+      id: String(projectRow.id ?? ""),
+    })),
+  );
 
   return await buildLocalSyncBundle({
     userId: input.userId,
     pendingProjectDeletes: input.pendingProjectDeletes,
-    projectRows,
+    projectRows: hydratedProjectRows,
     logger: input.logger,
   });
 };

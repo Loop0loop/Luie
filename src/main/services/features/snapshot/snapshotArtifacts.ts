@@ -17,6 +17,10 @@ import { writeFileAtomic, readMaybeGzip } from "../../../utils/atomicWrite.js";
 import { promisify } from "node:util";
 import { gzip as gzipCallback } from "node:zlib";
 import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
+import {
+  getProjectAttachmentPath,
+  listProjectAttachmentEntries,
+} from "../../core/project/projectAttachmentStore.js";
 
 const logger = createLogger("SnapshotArtifacts");
 const gzip = promisify(gzipCallback);
@@ -159,9 +163,7 @@ const collectSnapFilesRecursive = async (rootDir: string, results: string[]): Pr
 
 const resolveArtifactRoots = async (): Promise<string[]> => {
   const roots = new Set<string>([path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR)]);
-  const projects = await db.getClient().project.findMany({
-    select: { id: true, title: true, projectPath: true },
-  }) as Array<{ id: string; title: string; projectPath?: string | null }>;
+  const projects = await listProjectAttachmentEntries();
 
   for (const project of projects) {
     if (!project.projectPath) continue;
@@ -261,15 +263,18 @@ export async function writeFullSnapshotArtifact(
     chapterId: input.chapterId,
   });
 
-  const project = (await db.getClient().project.findUnique({
-    where: { id: input.projectId },
-    include: {
-      settings: true,
-      chapters: { orderBy: { order: "asc" } },
-      characters: true,
-      terms: true,
-    },
-  })) as ProjectSnapshotRecord | null;
+  const [project, projectPath] = await Promise.all([
+    db.getClient().project.findUnique({
+      where: { id: input.projectId },
+      include: {
+        settings: true,
+        chapters: { orderBy: { order: "asc" } },
+        characters: true,
+        terms: true,
+      },
+    }) as Promise<ProjectSnapshotRecord | null>,
+    getProjectAttachmentPath(input.projectId),
+  ]);
 
   if (!project) {
     throw new ServiceError(ErrorCode.PROJECT_NOT_FOUND, "Project not found", {
@@ -277,7 +282,7 @@ export async function writeFullSnapshotArtifact(
     });
   }
 
-  if (!project.projectPath) {
+  if (!projectPath) {
     logger.warn("Project path missing for snapshot; skipping local package snapshot", {
       snapshotId,
       projectId: input.projectId,
@@ -296,7 +301,7 @@ export async function writeFullSnapshotArtifact(
         id: String(project.id),
         title: project.title,
         description: project.description,
-        projectPath: project.projectPath,
+        projectPath,
         createdAt: project.createdAt.toISOString(),
         updatedAt: project.updatedAt.toISOString(),
       },
@@ -347,9 +352,9 @@ export async function writeFullSnapshotArtifact(
   const safeProjectName = sanitizeName(project.title ?? "", String(project.id));
   let projectBaseDir: string | null = null;
 
-  if (project.projectPath) {
+  if (projectPath) {
     try {
-      projectBaseDir = resolveProjectBaseDir(project.projectPath);
+      projectBaseDir = resolveProjectBaseDir(projectPath);
       const localDir = resolveLocalSnapshotDir(projectBaseDir, safeProjectName);
       await fs.mkdir(localDir, { recursive: true });
       localPath = path.join(localDir, fileName);
@@ -358,7 +363,7 @@ export async function writeFullSnapshotArtifact(
       logger.warn("Skipping project-local snapshot artifact write for invalid projectPath", {
         snapshotId,
         projectId: project.id,
-        projectPath: project.projectPath,
+        projectPath,
         error,
       });
     }
@@ -379,7 +384,7 @@ export async function writeFullSnapshotArtifact(
   logger.info("Full snapshot saved", {
     snapshotId,
     projectId: project.id,
-    projectPath: project.projectPath,
+    projectPath,
     localPath,
     backupPath,
     projectBackupPath,
