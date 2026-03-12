@@ -1,6 +1,6 @@
 # Luie Container DoD
 
-> Status: Phase 8A complete, Phase 8B complete, Phase 8C pending
+> Status: Phase 8A complete, Phase 8B complete, Phase 8C complete, Phase 8D pending
 > Scope: `.luie` container evolution without breaking existing project behavior
 
 ## Philosophy
@@ -60,6 +60,16 @@ Phase 8B is the sqlite-container compatibility slice. It is done when:
 4. New sqlite-backed `.luie` writes do not create `.wal` or `.shm` sidecar files.
 5. There is still no forced migration of existing package-based `.luie` files.
 6. Tests prove both package-v1 and sqlite-v2 compatibility through the shared container seam.
+
+## Phase 8C DoD
+
+Phase 8C is the explicit-container-choice slice. It is done when:
+
+1. New `.luie` materialize flows can explicitly request `package-v1` or `sqlite-v2`.
+2. Backward-compatible defaults remain intact when no container kind is specified.
+3. Existing attached exports still preserve container kind without extra UI decisions.
+4. There is still no automatic migration of existing `.luie` files.
+5. Tests prove the explicit choice is forwarded from project materialize flows to container writes.
 
 ## What Will Count As Failure
 

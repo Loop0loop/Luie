@@ -370,10 +370,12 @@ Current checkpoint:
 - Phase 8 will prefer `.luie-first` with a future sqlite-backed container, but functionality takes precedence over optimization claims
 - Phase 8A is complete: DoD is frozen and the container seam shields core services from raw zip logic
 - Phase 8B is complete: `sqlite-v2` now uses the same entry contract, and writes preserve the existing container kind unless explicitly overridden
+- Phase 8C is complete: materialize flows can now explicitly choose `package-v1` or `sqlite-v2` without changing backward-compatible defaults
 - `docs/luie-container-dod.md` now defines the Phase 8 guardrails, DoD, non-goals, and explicit failure conditions
 - core `.luie` readers/writers now go through `LuieContainer`, so container-kind branching is no longer scattered across project/sync/analysis services
 - `LuieContainer` now supports both `package-v1` and `sqlite-v2` entry reads while keeping the package-style entry contract unchanged
 - explicit sqlite writes now create a single-file `.luie` without `.wal`/`.shm` sidecars, and existing sqlite containers stay sqlite on later exports
+- project materialize UI now exposes separate package/sqlite actions and forwards explicit container choice through IPC to the writer layer
 - regression tests now lock both compatibility slices so package-based `.luie` flows and sqlite-backed `.luie` flows stay aligned
 
 Phase 8B next slice:
@@ -382,6 +384,13 @@ Phase 8B next slice:
 - [x] Make `LuieContainer` preserve existing container kind on writes
 - [x] Prove sqlite-backed `.luie` writes do not leak `.wal` or `.shm` sidecar files
 - [x] Keep new sqlite support behind explicit write choice or existing-kind preservation only
+
+Phase 8C next slice:
+
+- [x] Add explicit `containerKind` choice to materialize flows
+- [x] Keep no-option defaults backward-compatible
+- [x] Expose explicit package/sqlite materialize actions in the project UI
+- [x] Test that explicit materialize choice reaches container writes
 
 Reference:
 

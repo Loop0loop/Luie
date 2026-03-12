@@ -158,4 +158,28 @@ describe("projectExportEngine", () => {
       expect.anything(),
     );
   });
+
+  it("forwards an explicit container kind to the container writer", async () => {
+    const logger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+    };
+
+    const exported = await exportProjectPackageWithOptions({
+      projectId: "project-1",
+      logger,
+      options: {
+        targetPath: "/tmp/project-1-sqlite.luie",
+        containerKind: "sqlite-v2",
+      },
+    });
+
+    expect(exported).toBe(true);
+    expect(mocked.writeLuieContainer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetPath: "/tmp/project-1-sqlite.luie",
+        kind: "sqlite-v2",
+      }),
+    );
+  });
 });

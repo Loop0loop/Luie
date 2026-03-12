@@ -207,4 +207,32 @@ describe("ProjectService package attachment flows", () => {
       attachmentStatus: "attached",
     });
   });
+
+  it("materializes detached runtime into a sqlite-backed .luie when requested", async () => {
+    const service = new ProjectService();
+    vi.spyOn(service, "getProject").mockResolvedValue({
+      id: "project-1",
+      title: "Project 1",
+      createdAt: new Date("2026-03-12T00:00:00.000Z"),
+      updatedAt: new Date("2026-03-12T00:00:00.000Z"),
+      projectPath: "/tmp/sqlite-target.luie",
+      attachmentStatus: "attached",
+      pathMissing: false,
+    });
+
+    await service.materializeProjectPackage("project-1", "/tmp/sqlite-target.luie", {
+      containerKind: "sqlite-v2",
+    });
+
+    expect(mocked.exportProjectPackageWithOptions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectId: "project-1",
+        options: {
+          targetPath: "/tmp/sqlite-target.luie",
+          worldSourcePath: "/tmp/current.luie",
+          containerKind: "sqlite-v2",
+        },
+      }),
+    );
+  });
 });

@@ -4,7 +4,7 @@ import { api } from "@shared/api";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useFloatingMenu } from "@renderer/shared/hooks/useFloatingMenu";
 import { useToast } from "@shared/ui/ToastContext";
-import type { Project, SyncStatus } from "@shared/types";
+import type { LuieWritableContainerKind, Project, SyncStatus } from "@shared/types";
 import {
     DEFAULT_PROJECT_FILENAME,
     LUIE_PACKAGE_EXTENSION_NO_DOT,
@@ -39,7 +39,10 @@ export interface ProjectSelectorActions {
     handleDeleteOrRemove: () => Promise<void>;
     handleRepairProjectPath: (project: Project) => Promise<void>;
     handleAttachProjectPackage: (project: Project) => Promise<void>;
-    handleMaterializeProjectPackage: (project: Project) => Promise<void>;
+    handleMaterializeProjectPackage: (
+        project: Project,
+        containerKind?: LuieWritableContainerKind,
+    ) => Promise<void>;
     handleSelectTemplate: (templateId: string, onSelectProject: (templateId: string, projectPath: string) => void) => Promise<void>;
     getProjectSyncBadge: (project: Project) => "synced" | "pending" | "localOnly" | "syncError";
 }
@@ -258,10 +261,17 @@ export function useProjectSelector(projects: Project[]): ProjectSelectorState & 
         });
     }, [attachProjectPackage, t]);
 
-    const handleMaterializeProjectPackage = useCallback(async (project: Project) => {
+    const handleMaterializeProjectPackage = useCallback(async (
+        project: Project,
+        containerKind: LuieWritableContainerKind = "package-v1",
+    ) => {
         try {
+            const dialogTitle =
+                containerKind === "sqlite-v2"
+                    ? t("settings.projectTemplate.dialog.materializeLuieSqliteTitle")
+                    : t("settings.projectTemplate.dialog.materializeLuiePackageTitle");
             const response = await api.fs.selectSaveLocation({
-                title: t("settings.projectTemplate.dialog.materializeLuieTitle"),
+                title: dialogTitle,
                 defaultPath: `${project.title || DEFAULT_PROJECT_FILENAME}`,
                 filters: [
                     { name: LUIE_PACKAGE_FILTER_NAME, extensions: [LUIE_PACKAGE_EXTENSION_NO_DOT] },
@@ -271,7 +281,9 @@ export function useProjectSelector(projects: Project[]): ProjectSelectorState & 
                 return;
             }
 
-            const materialized = await api.project.materializeLuie(project.id, response.data);
+            const materialized = await api.project.materializeLuie(project.id, response.data, {
+                containerKind,
+            });
             if (!materialized.success || !materialized.data) {
                 throw new Error(materialized.error?.message ?? "Failed to materialize .luie package");
             }
@@ -284,7 +296,12 @@ export function useProjectSelector(projects: Project[]): ProjectSelectorState & 
                 ),
             );
             await loadProjects();
-            showToast(t("settings.projectTemplate.toast.luieMaterialized"), "success");
+            showToast(
+                containerKind === "sqlite-v2"
+                    ? t("settings.projectTemplate.toast.luieMaterializedSqlite")
+                    : t("settings.projectTemplate.toast.luieMaterializedPackage"),
+                "success",
+            );
         } catch (error) {
             setLocalProjects(projects);
             showToast(

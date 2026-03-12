@@ -54,6 +54,14 @@ export const projectDeleteArgSchema = z.union([
   projectDeleteRequestSchema,
 ]);
 
+export const luieWritableContainerKindSchema = z.enum(["package-v1", "sqlite-v2"]);
+
+export const projectMaterializeLuieOptionsSchema = z
+  .object({
+    containerKind: luieWritableContainerKindSchema.optional(),
+  })
+  .optional();
+
 export const chapterCreateSchema = z.object({
   projectId: z.string().uuid("Invalid project ID"),
   title: z.string().min(1, "Title is required"),

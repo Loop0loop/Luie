@@ -9,6 +9,8 @@ export type ProjectAttachmentStatus =
   | "missing-attachment"
   | "invalid-attachment";
 
+export type LuieWritableContainerKind = "package-v1" | "sqlite-v2";
+
 export interface Project {
   id: string;
   title: string;

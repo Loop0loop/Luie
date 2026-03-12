@@ -10,7 +10,10 @@ import {
   LUIE_WORLD_SYNOPSIS_FILE,
   SNAPSHOT_FILE_KEEP_COUNT,
 } from "../../../../shared/constants/index.js";
-import type { ProjectExportRecord } from "../../../../shared/types/index.js";
+import type {
+  LuieWritableContainerKind,
+  ProjectExportRecord,
+} from "../../../../shared/types/index.js";
 import {
   readLuieContainerEntry,
   writeLuieContainer,
@@ -319,6 +322,7 @@ export const exportProjectPackageWithOptions = async (input: {
   options?: {
     targetPath?: string;
     worldSourcePath?: string | null;
+    containerKind?: LuieWritableContainerKind;
   };
 }): Promise<boolean> => {
   const project = await getProjectForExport(input.projectId);
@@ -392,6 +396,7 @@ export const exportProjectPackageWithOptions = async (input: {
 
   await writeLuieContainer({
     targetPath: exportPath,
+    kind: input.options?.containerKind,
     payload: {
       meta,
       chapters: exportChapters,

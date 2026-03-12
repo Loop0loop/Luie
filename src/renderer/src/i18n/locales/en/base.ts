@@ -288,6 +288,8 @@ export const enBase = {
         "repairPathTitle": "Reconnect .luie file",
         "attachLuieTitle": "Attach existing .luie",
         "materializeLuieTitle": "Create new .luie file",
+        "materializeLuiePackageTitle": "Create new .luie file (package)",
+        "materializeLuieSqliteTitle": "Create new .luie file (SQLite)",
         "renameTitle": "Rename project",
         "deleteTitle": "Delete project",
         "removeMissingTitle": "Remove from list"
@@ -301,6 +303,8 @@ export const enBase = {
         "repairPath": "Repair path",
         "attachLuie": "Attach .luie",
         "materializeLuie": "Create .luie",
+        "materializeLuiePackage": "Create .luie (package)",
+        "materializeLuieSqlite": "Create .luie (SQLite)",
         "removeMissing": "Remove from list",
         "rename": "Rename",
         "delete": "Delete"
@@ -337,6 +341,8 @@ export const enBase = {
         "luieAttached": ".luie file attached.",
         "luieAttachFailed": "Failed to attach .luie file.",
         "luieMaterialized": "Created and attached a new .luie file.",
+        "luieMaterializedPackage": "Created and attached a new package-based .luie file.",
+        "luieMaterializedSqlite": "Created and attached a new SQLite-backed .luie file.",
         "luieMaterializeFailed": "Failed to create .luie file."
       },
       "error": {

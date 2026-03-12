@@ -288,6 +288,8 @@ export const jaBase = {
         "repairPathTitle": ".luie ファイルを再接続",
         "attachLuieTitle": "既存の .luie を接続",
         "materializeLuieTitle": "新しい .luie ファイルを作成",
+        "materializeLuiePackageTitle": "新しい .luie ファイルを作成 (パッケージ)",
+        "materializeLuieSqliteTitle": "新しい .luie ファイルを作成 (SQLite)",
         "renameTitle": "プロジェクト名を変更",
         "deleteTitle": "プロジェクトを削除",
         "removeMissingTitle": "一覧から削除"
@@ -301,6 +303,8 @@ export const jaBase = {
         "repairPath": "パスを修復",
         "attachLuie": ".luie を接続",
         "materializeLuie": ".luie を作成",
+        "materializeLuiePackage": ".luie を作成 (パッケージ)",
+        "materializeLuieSqlite": ".luie を作成 (SQLite)",
         "removeMissing": "一覧から削除",
         "rename": "名前を変更",
         "delete": "削除"
@@ -337,6 +341,8 @@ export const jaBase = {
         "luieAttached": ".luie ファイルを接続しました。",
         "luieAttachFailed": ".luie の接続に失敗しました。",
         "luieMaterialized": "新しい .luie ファイルを作成して接続しました。",
+        "luieMaterializedPackage": "新しいパッケージ型 .luie ファイルを作成して接続しました。",
+        "luieMaterializedSqlite": "新しい SQLite 型 .luie ファイルを作成して接続しました。",
         "luieMaterializeFailed": ".luie ファイルの作成に失敗しました。"
       },
       "error": {

@@ -288,6 +288,8 @@ export const koBase = {
         "repairPathTitle": ".luie 파일 다시 연결",
         "attachLuieTitle": "기존 .luie 연결",
         "materializeLuieTitle": "새 .luie 파일 만들기",
+        "materializeLuiePackageTitle": "새 .luie 파일 만들기 (패키지)",
+        "materializeLuieSqliteTitle": "새 .luie 파일 만들기 (SQLite)",
         "renameTitle": "프로젝트 이름 수정",
         "deleteTitle": "프로젝트 삭제",
         "removeMissingTitle": "목록에서 제거"
@@ -301,6 +303,8 @@ export const koBase = {
         "repairPath": "경로 복구",
         "attachLuie": ".luie 연결",
         "materializeLuie": ".luie 생성",
+        "materializeLuiePackage": ".luie 생성 (패키지)",
+        "materializeLuieSqlite": ".luie 생성 (SQLite)",
         "removeMissing": "목록에서 제거",
         "rename": "이름 수정",
         "delete": "삭제"
@@ -337,6 +341,8 @@ export const koBase = {
         "luieAttached": ".luie 파일을 연결했습니다.",
         "luieAttachFailed": ".luie 연결에 실패했습니다.",
         "luieMaterialized": "새 .luie 파일을 만들고 연결했습니다.",
+        "luieMaterializedPackage": "새 패키지형 .luie 파일을 만들고 연결했습니다.",
+        "luieMaterializedSqlite": "새 SQLite형 .luie 파일을 만들고 연결했습니다.",
         "luieMaterializeFailed": ".luie 파일 생성에 실패했습니다."
       },
       "error": {

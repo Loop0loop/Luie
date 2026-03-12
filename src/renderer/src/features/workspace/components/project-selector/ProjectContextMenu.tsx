@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import type { Project } from "@shared/types";
+import type { LuieWritableContainerKind, Project } from "@shared/types";
 
 interface ProjectContextMenuProps {
     project: Project;
@@ -9,7 +9,10 @@ interface ProjectContextMenuProps {
     onOpenProject?: (project: Project) => void;
     onRepairPath: (project: Project) => void;
     onAttachLuie: (project: Project) => void;
-    onMaterializeLuie: (project: Project) => void;
+    onMaterializeLuie: (
+        project: Project,
+        containerKind: LuieWritableContainerKind,
+    ) => void;
     onRenameRequest: (project: Project) => void;
     onDeleteRequest: (project: Project) => void;
 }
@@ -75,15 +78,26 @@ export function ProjectContextMenu({
                 </div>
             )}
             {canMaterializeLuie && (
-                <div
-                    className="px-2.5 py-2.5 rounded-lg text-[13px] text-fg cursor-pointer select-none hover:bg-active"
-                    onClick={() => {
-                        closeMenu();
-                        onMaterializeLuie(project);
-                    }}
-                >
-                    {t("settings.projectTemplate.context.materializeLuie")}
-                </div>
+                <>
+                    <div
+                        className="px-2.5 py-2.5 rounded-lg text-[13px] text-fg cursor-pointer select-none hover:bg-active"
+                        onClick={() => {
+                            closeMenu();
+                            onMaterializeLuie(project, "package-v1");
+                        }}
+                    >
+                        {t("settings.projectTemplate.context.materializeLuiePackage")}
+                    </div>
+                    <div
+                        className="px-2.5 py-2.5 rounded-lg text-[13px] text-fg cursor-pointer select-none hover:bg-active"
+                        onClick={() => {
+                            closeMenu();
+                            onMaterializeLuie(project, "sqlite-v2");
+                        }}
+                    >
+                        {t("settings.projectTemplate.context.materializeLuieSqlite")}
+                    </div>
+                </>
             )}
             <div
                 className="px-2.5 py-2.5 rounded-lg text-[13px] text-fg cursor-pointer select-none hover:bg-active"

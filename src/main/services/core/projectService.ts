@@ -11,8 +11,9 @@ import {
   LUIE_PACKAGE_META_FILENAME,
 } from "../../../shared/constants/index.js";
 import type {
-  ProjectDeleteInput,
   ProjectCreateInput,
+  ProjectDeleteInput,
+  LuieWritableContainerKind,
   ProjectUpdateInput,
 } from "../../../shared/types/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
@@ -354,7 +355,13 @@ export class ProjectService {
     }
   }
 
-  async materializeProjectPackage(projectId: string, targetPath: string) {
+  async materializeProjectPackage(
+    projectId: string,
+    targetPath: string,
+    options?: {
+      containerKind?: LuieWritableContainerKind;
+    },
+  ) {
     try {
       const normalizedPath = normalizeLuiePackagePath(targetPath, "targetPath");
       const [existing, conflict, currentAttachmentPath] = await Promise.all([
@@ -389,6 +396,7 @@ export class ProjectService {
       const exported = await this.exportProjectPackageWithOptions(projectId, {
         targetPath: normalizedPath,
         worldSourcePath: currentAttachmentPath ?? null,
+        containerKind: options?.containerKind,
       });
       if (!exported) {
         throw new ServiceError(
@@ -405,6 +413,7 @@ export class ProjectService {
       logger.info("Project materialized into .luie package", {
         projectId,
         targetPath: normalizedPath,
+        containerKind: options?.containerKind ?? "package-v1",
       });
       return await this.getProjectWithAttachmentStatus(projectId);
     } catch (error) {
@@ -776,6 +785,7 @@ export class ProjectService {
     options?: {
       targetPath?: string;
       worldSourcePath?: string | null;
+      containerKind?: LuieWritableContainerKind;
     },
   ): Promise<boolean> {
     return await exportProjectPackageWithOptionsImpl({
