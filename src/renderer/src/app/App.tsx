@@ -19,6 +19,10 @@ import { appBootstrapStatusSchema } from "@shared/schemas/index.js";
 import type { AppBootstrapStatus, AppQuitPhasePayload } from "@shared/types/index.js";
 import { api } from "@shared/api";
 import {
+  getReadableLuieAttachmentPath,
+  isLuieAttachmentPath,
+} from "@shared/projectAttachment";
+import {
   captureUiModeIntegritySnapshot,
   getUiModeIntegrityViolations,
   type UiModeIntegrityUiState,
@@ -184,8 +188,8 @@ export default function App() {
     async (project: (typeof projects)[number]) => {
       try {
         let nextProject = project;
-        const projectPath = project.projectPath ?? "";
-        if (projectPath.toLowerCase().endsWith(".luie")) {
+        const projectPath = getReadableLuieAttachmentPath(project);
+        if (projectPath) {
           const approved = await api.fs.approveProjectPath(projectPath);
           if (approved.success && approved.data?.normalizedPath) {
             const normalizedPath = approved.data.normalizedPath;
@@ -251,6 +255,8 @@ export default function App() {
         setCurrentProject({
           ...imported.data.project,
           projectPath: normalizedPath,
+          attachmentStatus: isLuieAttachmentPath(normalizedPath) ? "attached" : imported.data.project.attachmentStatus,
+          pathMissing: false,
         });
         setView("editor");
         if (imported.data.recovery) {

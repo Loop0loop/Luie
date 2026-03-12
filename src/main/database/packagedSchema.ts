@@ -1,3 +1,6 @@
+// Packaged `.luie` bootstrap schema mirrors the canonical project surface.
+// `Project.projectPath` remains here only as a legacy compatibility field until
+// attachment metadata is fully extracted into app-local storage.
 export const PACKAGED_SCHEMA_REQUIRED_TABLES = [
   "Project",
   "ProjectSettings",
@@ -68,7 +71,9 @@ export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
 ];
 
 export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyArray<string>>> = {
-  Project: ["id", "title", "projectPath"],
+  // `projectPath` stays as a legacy compatibility column for now, but it is not
+  // a required canonical project field for bootstrap integrity checks.
+  Project: ["id", "title"],
   ProjectSettings: ["id", "projectId", "autoSave", "autoSaveInterval"],
   Chapter: ["id", "projectId", "order", "wordCount", "deletedAt"],
   Character: ["id", "projectId", "firstAppearance", "attributes"],

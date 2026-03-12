@@ -3,7 +3,7 @@ import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type GroupI
 import { Calendar } from "lucide-react";
 import EventDetailView from "@renderer/features/research/components/event/EventDetailView";
 import { useTranslation } from "react-i18next";
-import { EVENT_GROUP_COLORS } from "@shared/constants";
+
 import { useEventManager, type EventLike } from "@renderer/features/research/components/event/useEventManager";
 import { EventSidebarList } from "@renderer/features/research/components/event/EventSidebarList";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
@@ -127,10 +127,9 @@ function EventGallery({
             </div>
 
             {Object.entries(groupedEvents).map(([group, events]) => {
-                const themeColor = EVENT_GROUP_COLORS[group] || EVENT_GROUP_COLORS["Uncategorized"];
                 return (
                     <div key={group} className="mb-8">
-                        <div className="text-lg font-bold mb-4 pb-2 border-b-2 border-border" style={{ borderColor: themeColor, color: themeColor }}>
+                        <div className="text-lg font-bold mb-4 pb-2 border-b-2 text-accent border-b-accent">
                             {group}
                         </div>
 
@@ -141,8 +140,8 @@ function EventGallery({
                                     className="flex flex-col cursor-pointer hover:bg-surface-hover p-2 rounded transition-colors"
                                     onClick={() => onSelect(event.id)}
                                 >
-                                    <div className="w-full h-32 bg-surface flex items-center justify-center border-b border-border mb-2 rounded" style={{ borderColor: themeColor }}>
-                                        <Calendar size={40} color={themeColor} />
+                                    <div className="w-full h-32 bg-surface flex items-center justify-center border-b mb-2 rounded border-accent">
+                                        <Calendar size={40} className="text-accent" />
                                     </div>
                                     <div className="font-semibold text-sm mb-0.5">{event.name}</div>
                                     <div className="text-xs text-subtle">{event.description || t("event.noRole", "No Type")}</div>

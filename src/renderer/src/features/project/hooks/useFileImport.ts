@@ -12,7 +12,6 @@ import type { Project } from "@shared/types";
 import { api } from "@shared/api";
 import { i18n } from "@renderer/i18n";
 import {
-  LUIE_PACKAGE_EXTENSION,
   LUIE_PACKAGE_FORMAT,
   LUIE_PACKAGE_META_FILENAME,
   LUIE_MANUSCRIPT_DIR,
@@ -27,6 +26,7 @@ import {
   registerLuieImportFailure,
   type LuieImportRetryState,
 } from "./fileImportRetryPolicy";
+import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
 
 const LuieMetaSchema = z
   .object({
@@ -59,6 +59,7 @@ const WorldTermsSchema = z
   .passthrough();
 
 export function useFileImport(currentProject: Project | null) {
+  const luieAttachmentPath = getReadableLuieAttachmentPath(currentProject);
   const {
     items: chapters,
     isLoading: chaptersLoading,
@@ -124,7 +125,7 @@ export function useFileImport(currentProject: Project | null) {
 
   useEffect(() => {
     void (async () => {
-      if (!currentProject || !currentProject.projectPath) {
+      if (!currentProject || !luieAttachmentPath) {
         return;
       }
 
@@ -167,13 +168,7 @@ export function useFileImport(currentProject: Project | null) {
         return;
       }
 
-      const path = currentProject.projectPath;
-      if (!path.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
-        importedProjectIdRef.current = currentProject.id;
-        importRetryStateRef.current.delete(currentProject.id);
-        clearRetryTimer(currentProject.id);
-        return;
-      }
+      const path = luieAttachmentPath;
 
       const retryState = importRetryStateRef.current.get(currentProject.id);
       if (!canAttemptLuieImport(retryState)) {
@@ -464,6 +459,7 @@ export function useFileImport(currentProject: Project | null) {
     })();
   }, [
     currentProject,
+    luieAttachmentPath,
     chapters.length,
     characters.length,
     terms.length,

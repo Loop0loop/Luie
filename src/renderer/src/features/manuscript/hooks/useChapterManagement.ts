@@ -6,8 +6,8 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
-import { LUIE_PACKAGE_EXTENSION } from "@shared/constants";
 import { api } from "@shared/api";
+import { hasReadableLuieAttachment } from "@shared/projectAttachment";
 import {
   consumePendingChapterNavigation,
   onChapterNavigationRequest,
@@ -16,6 +16,7 @@ import {
 export function useChapterManagement() {
   const pendingChapterIdRef = useRef<string | null>(null);
   const currentProject = useProjectStore((state) => state.currentItem);
+  const hasLuieAttachment = hasReadableLuieAttachment(currentProject);
   const {
     items: chapters,
     currentItem: currentChapter,
@@ -234,13 +235,13 @@ export function useChapterManagement() {
         api.logger.warn("Auto snapshot failed", error);
       }
 
-      if (currentProject.projectPath?.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
+      if (hasLuieAttachment) {
         api.logger.info("Luie package export scheduled", {
           projectId: currentProject.id,
         });
       }
     },
-    [activeChapterId, updateChapter, currentProject, chapters],
+    [activeChapterId, updateChapter, currentProject, chapters, hasLuieAttachment],
   );
 
   const activeChapterTitle = activeChapter?.title || "";

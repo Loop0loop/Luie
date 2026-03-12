@@ -26,7 +26,8 @@ If these are not separated first, any schema split will repeat the same failure 
 - Local Prisma runtime models include `Event`, `Faction`, `WorldEntity`, `EntityRelation`.
 - `.luie` import/export supports those models through the world graph payload.
 - Supabase sync schema does not have first-class rows for them.
-- Sync currently carries only `projects`, `chapters`, `characters`, `terms`, `world_documents`, `memos`, `snapshots`, `tombstones`.
+- Sync repository currently fetches and upserts only `projects`, `chapters`, `characters`, `terms`, `world_documents`, `memos`, `tombstones`.
+- `SyncBundle` still has a `snapshots` lane in types and merge logic, but transport intentionally omits it today.
 
 Result:
 
@@ -56,16 +57,31 @@ Result:
 - detached synced projects lose durable edit semantics
 - what the user sees locally can diverge from what sync fetched
 
-### 4. UI status semantics are wrong
+### 4. UI status semantics are only partially repaired
 
-- `pathMissing` really means "this local absolute `.luie` path is not readable"
-- UI uses it like "the project/file is broken or missing"
-- synced-but-detached and genuinely missing-file states are conflated
+- `pathMissing` semantics have been replaced in the main project list flow
+- some renderer and feature flows still branch directly on `projectPath`
+- synced-but-detached, missing attachment, and corrupt package handling are still not consistently separated end to end
 
 Result:
 
-- template/project list is reporting the wrong problem
-- `(No path)` becomes a user-facing symptom of a deeper modeling bug
+- project list semantics are better than before, but the attachment model is still leaking through feature UX
+- `(No path)` was only one symptom of a deeper modeling bug
+
+## Current code checkpoint
+
+This is the actual state after the recent fixes.
+
+- `ProjectService.createProject()` and `updateProject()` now preserve `ServiceError` codes such as `VALIDATION_FAILED`.
+- attachment status has already been renamed in UI/service flows to `attached`, `detached`, `missing-attachment`, `invalid-attachment`
+- a dedicated attachment seam now exists and is already used by project CRUD, import/export, analysis, snapshot artifact handling, and sync package persistence
+- attachment metadata is still physically stored on `Project.projectPath`
+- renderer world storage still writes durable edits to `localStorage` when no `.luie` is attached
+- renderer world editors and `.luie` import flows now resolve usable attachment paths through shared attachment helpers instead of branching directly on raw `currentProject.projectPath`
+- sync local apply still only upserts `Project`, `Chapter`, `Character`, and `Term`
+- sync transport still does not carry first-class `Event`, `Faction`, `WorldEntity`, or `EntityRelation`
+- remote `world_documents` and `memos` still do not become durable local runtime state
+- packaged SQLite bootstrap no longer treats `Project.projectPath` as a required integrity column, but the legacy column still exists for runtime compatibility
 
 ## Non-negotiable design rules
 
@@ -175,88 +191,105 @@ Machine-local metadata only.
 
 ## Rebased phase plan
 
-## Phase 0. Reality audit and terminology freeze
+The new order below matches the code that already exists.
+The main point is: do not move physical schema first.
+Finish the runtime and sync seams first, then move storage.
 
-- [ ] Define storage states: `attached`, `detached`, `missing-attachment`, `invalid-attachment`, `corrupt-package`
-- [ ] Replace `pathMissing` semantics in service and UI language
-- [ ] Publish one source-of-truth matrix: canonical domain vs transport vs replica vs cache vs app-local
-- [ ] Mark older cache docs as outdated once the replacement is accepted
-- [ ] Freeze new work that adds durable `localStorage` writes
+## Phase 0. Contract and terminology freeze
+
+- [x] Replace `pathMissing` semantics with explicit attachment states
+- [x] Introduce a dedicated attachment seam for main-process file access
+- [x] Publish one final source-of-truth matrix: canonical domain vs transport vs replica vs cache vs app-local
+- [x] Freeze new work that adds durable `localStorage` writes for project content
+- [x] Decide the semantic role of `ProjectSettings`, `Snapshot`, `graph`, and `firstAppearance`
 
 Done when:
 
 - every status label has one meaning only
-- no doc claims the whole local DB is rebuildable cache
+- every user-visible concept has one declared semantic owner
 
-## Phase 1. Canonical contract freeze
+Reference:
 
-- [ ] Define the canonical domain inventory model by model
-- [ ] Decide the role of `ProjectSettings`: shared project setting vs device-local setting
-- [ ] Reclassify `Snapshot` as canonical user data everywhere
-- [ ] Review every `firstAppearance` field and classify it as authored or derived
-- [ ] Declare `graph` as transport/view data, not an independent canonical model
-- [ ] Define lossless transforms between canonical world models and `graph` payload
+- `/Users/user/Luie/docs/storage-contract.md`
 
-Done when:
+## Phase 1. Finish the attachment boundary
 
-- there is exactly one semantic source-of-truth for each user-visible concept
-- runtime tables and `graph` payload have a documented one-way or two-way transform
-
-## Phase 2. Detached-first runtime split
-
-- [x] Introduce a dedicated attachment access seam instead of letting feature code read/write `Project.projectPath` directly
-- [ ] Extract attachment metadata out of `Project`
-- [ ] Design `app.db` tables for `ProjectAttachment`, recent projects, and last-opened state
-- [ ] Design `replica.db` as durable local mirror of canonical domain
-- [ ] Move world document and memo persistence off renderer `localStorage`
-- [ ] Make detached project open/read/write use `replica.db`
+- [ ] Remove remaining feature logic that treats `Project.projectPath` as canonical project content
+- [ ] Stop `.luie` bootstrap and packaged schema from requiring `Project.projectPath`
+- [ ] Audit renderer and preload consumers that still branch directly on `currentProject.projectPath`
+- [ ] Keep all path validation and duplicate detection behind attachment-specific helpers
+- [ ] Document attachment states separately from project existence states
 
 Done when:
 
-- a synced-but-unattached project survives restart and remains editable
+- project content flows no longer depend on direct `projectPath` field access
+- attachment logic is isolated enough that physical storage can move later with minimal churn
+
+## Phase 2. Detached durable runtime
+
+- [ ] Introduce a durable local replica for world documents and memos
+- [ ] Remove renderer `localStorage` as the durable write path for `synopsis`, `plot`, `drawing`, `mindmap`, `scrap`, and scrap memos
+- [ ] Make detached project open/read/write operate on durable local storage
+- [ ] Define how runtime world tables hydrate from detached world document state
+- [ ] Prove that a synced-but-unattached project survives restart and remains editable
+
+Done when:
+
 - no canonical edit path depends on browser `localStorage`
+- detached projects behave like first-class local projects
 
-## Phase 3. Sync transport repair
+## Phase 3. Sync semantic closure
 
-- [ ] Remove the false expectation that `project_path` is portable sync data
-- [ ] Decide sync transport strategy for world graph semantics
-- [ ] Option A: add first-class sync entities for `Event`, `Faction`, `WorldEntity`, `EntityRelation`
-- [ ] Option B: keep `graph` as the sync transport but make hydrate/dehydrate to runtime tables deterministic and lossless
-- [ ] Persist remote `world_documents` into `replica.db`
-- [ ] Persist remote `memos` into `replica.db`
-- [ ] Make detached local edits collect/upload from `replica.db`, not `.luie`
-- [ ] Ensure tombstones and conflict rules cover the final canonical surface
+- [ ] Decide whether sync carries world semantics as first-class entities or as a deterministic `graph` transport
+- [ ] Make remote `world_documents` durable in the local runtime
+- [ ] Make remote `memos` durable in the local runtime
+- [ ] Make detached local edits upload from durable local runtime state instead of `.luie` only
+- [ ] Decide whether `snapshots` are part of sync transport or intentionally local-only
+- [ ] Extend tombstones and conflict rules to the final canonical surface
 
 Done when:
 
-- sync covers the full canonical domain semantics
-- detached projects round-trip through sync without relying on a local `.luie`
+- sync covers the full declared canonical domain
+- a detached project can round-trip through sync without relying on a local `.luie`
 
-## Phase 4. `.luie` reconciliation and materialization
+## Phase 4. Attachment metadata extraction
 
-- [ ] Make `.luie` export read from canonical domain, not ad hoc local fallbacks
-- [ ] Make `.luie` import hydrate the same canonical domain contract used by sync
+- [ ] Move attachment metadata out of `Project`
+- [ ] Design `app.db` records for `ProjectAttachment`, recent projects, and last-opened state
+- [ ] Remove `project_path` from Supabase sync expectations
+- [ ] Remove `Project.projectPath` from packaged `.luie` schema requirements
+- [ ] Write migration rules for existing local installs
+
+Done when:
+
+- attachment location is app-local metadata only
+- canonical project records are portable between devices and containers
+
+## Phase 5. `.luie` reconciliation and materialization
+
+- [ ] Make `.luie` import hydrate the same canonical contract used by detached runtime and sync
+- [ ] Make `.luie` export read from the canonical runtime surface, not ad hoc fallbacks
 - [ ] Define "attach existing `.luie`" flow
 - [ ] Define "materialize detached project into new `.luie`" flow
-- [ ] Separate missing attachment from corrupt package recovery
+- [ ] Separate missing attachment handling from corrupt package recovery
 
 Done when:
 
-- `.luie`, sync, and replica all describe the same canonical project content
-- users can attach or materialize without data shape changes
+- `.luie`, sync, and detached runtime all describe the same project content
+- users can attach or materialize without changing data shape
 
-## Phase 5. Cache isolation
+## Phase 6. Cache isolation
 
-- [ ] Move `CharacterAppearance` and `TermAppearance` into `cache.db`
+- [ ] Move `CharacterAppearance` and `TermAppearance` into cache-only storage
 - [ ] Define rebuild triggers and invalidation rules
 - [ ] Move analysis/search/FTS artifacts into cache-only storage
-- [ ] Prove `cache.db` can be deleted without losing user content
+- [ ] Prove cache deletion is safe
 
 Done when:
 
-- cache deletion is a safe maintenance operation
+- cache deletion never loses user-authored project data
 
-## Phase 6. Container evolution
+## Phase 7. Container evolution
 
 - [ ] Decide whether `.luie` stays package-based or becomes SQLite-backed
 - [ ] If `.luie` becomes SQLite-backed, keep the canonical contract unchanged
@@ -272,6 +305,7 @@ Done when:
 ### Contract / schema
 
 - [ ] `/Users/user/Luie/prisma/schema.prisma`
+- [ ] `/Users/user/Luie/src/main/database/packagedSchema.ts`
 - [ ] `/Users/user/Luie/supabase/migrations/20260219000000_luie_sync.sql`
 
 ### Sync
@@ -295,6 +329,9 @@ Done when:
 
 - [ ] `/Users/user/Luie/src/renderer/src/features/research/services/worldPackageStorage.ts`
 - [ ] `/Users/user/Luie/src/main/services/core/project/projectListStatus.ts`
+- [ ] `/Users/user/Luie/src/renderer/src/features/project/stores/projectStore.ts`
+- [ ] `/Users/user/Luie/src/renderer/src/features/project/hooks/projectTemplateInitialization.ts`
+- [ ] `/Users/user/Luie/src/renderer/src/features/project/hooks/useFileImport.ts`
 
 ## Open decisions
 
@@ -302,3 +339,4 @@ Done when:
 - [ ] Which `ProjectSettings` fields are truly project-canonical?
 - [ ] Are `firstAppearance` values authored or derived?
 - [ ] Should scrap memos remain a separate sync surface or be fully folded into `scrap` world document?
+- [ ] Are `snapshots` sync data or intentionally local-only recovery data?

@@ -3,7 +3,7 @@ import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type GroupI
 import { Shield } from "lucide-react";
 import FactionDetailView from "@renderer/features/research/components/faction/FactionDetailView";
 import { useTranslation } from "react-i18next";
-import { FACTION_GROUP_COLORS } from "@shared/constants";
+
 import { useFactionManager, type FactionLike } from "@renderer/features/research/components/faction/useFactionManager";
 import { FactionSidebarList } from "@renderer/features/research/components/faction/FactionSidebarList";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
@@ -127,10 +127,9 @@ function FactionGallery({
             </div>
 
             {Object.entries(groupedFactions).map(([group, factions]) => {
-                const themeColor = FACTION_GROUP_COLORS[group] || FACTION_GROUP_COLORS["Uncategorized"];
                 return (
                     <div key={group} className="mb-8">
-                        <div className="text-lg font-bold mb-4 pb-2 border-b-2 border-border" style={{ borderColor: themeColor, color: themeColor }}>
+                        <div className="text-lg font-bold mb-4 pb-2 border-b-2 text-accent border-b-accent">
                             {group}
                         </div>
 
@@ -141,8 +140,8 @@ function FactionGallery({
                                     className="flex flex-col cursor-pointer hover:bg-surface-hover p-2 rounded transition-colors"
                                     onClick={() => onSelect(faction.id)}
                                 >
-                                    <div className="w-full h-32 bg-surface flex items-center justify-center border-b border-border mb-2 rounded" style={{ borderColor: themeColor }}>
-                                        <Shield size={40} color={themeColor} />
+                                    <div className="w-full h-32 bg-surface flex items-center justify-center border-b mb-2 rounded border-accent">
+                                        <Shield size={40} className="text-accent" />
                                     </div>
                                     <div className="font-semibold text-sm mb-0.5">{faction.name}</div>
                                     <div className="text-xs text-subtle">{faction.description || t("faction.noRole", "No Type")}</div>

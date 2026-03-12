@@ -3,7 +3,7 @@ import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type GroupI
 import { User } from "lucide-react";
 import WikiDetailView from "@renderer/features/research/components/wiki/WikiDetailView";
 import { useTranslation } from "react-i18next";
-import { CHARACTER_GROUP_COLORS } from "@shared/constants";
+
 import { useCharacterManager, type CharacterLike } from "@renderer/features/research/components/character/useCharacterManager";
 import { CharacterSidebarList } from "@renderer/features/research/components/character/CharacterSidebarList";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
@@ -131,10 +131,9 @@ function CharacterGallery({
       </div>
 
       {Object.entries(groupedCharacters).map(([group, chars]) => {
-        const themeColor = CHARACTER_GROUP_COLORS[group] || CHARACTER_GROUP_COLORS["Uncategorized"];
         return (
           <div key={group} className="mb-8">
-            <div className="text-lg font-bold mb-4 pb-2 border-b-2 border-border" style={{ borderColor: themeColor, color: themeColor }}>
+            <div className="text-lg font-bold mb-4 pb-2 border-b-2 text-accent border-b-accent">
               {group}
             </div>
 
@@ -145,8 +144,8 @@ function CharacterGallery({
                   className="flex flex-col cursor-pointer hover:bg-surface-hover p-2 rounded transition-colors"
                   onClick={() => onSelect(char.id)}
                 >
-                  <div className="w-full h-32 bg-surface flex items-center justify-center border-b border-border mb-2 rounded" style={{ borderColor: themeColor }}>
-                    <User size={40} color={themeColor} />
+                  <div className="w-full h-32 bg-surface flex items-center justify-center border-b mb-2 rounded border-accent">
+                    <User size={40} className="text-accent" />
                   </div>
                   <div className="font-semibold text-sm mb-0.5">{char.name}</div>
                   <div className="text-xs text-subtle">{char.description || t("character.noRole")}</div>

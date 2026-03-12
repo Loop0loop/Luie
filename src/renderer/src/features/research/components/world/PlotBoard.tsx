@@ -4,6 +4,7 @@ import { Plus, X, Trash2, GripVertical } from "lucide-react";
 import { BufferedTextArea, BufferedInput } from "@shared/ui/BufferedInput";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { worldPackageStorage } from "@renderer/features/research/services/worldPackageStorage";
+import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
 
 interface PlotCard {
   id: string;
@@ -19,6 +20,7 @@ interface PlotColumn {
 export function PlotBoard() {
   const { t } = useTranslation();
   const currentProject = useProjectStore((state) => state.currentItem);
+  const luieAttachmentPath = getReadableLuieAttachmentPath(currentProject);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const defaultColumns = useMemo<PlotColumn[]>(
     () => [
@@ -55,7 +57,7 @@ export function PlotBoard() {
     void (async () => {
       const loaded = await worldPackageStorage.loadPlot(
         currentProject.id,
-        currentProject.projectPath,
+        luieAttachmentPath,
       );
       if (cancelled) return;
       setColumns(loaded.columns.length > 0 ? loaded.columns : defaultColumns);
@@ -65,14 +67,14 @@ export function PlotBoard() {
     return () => {
       cancelled = true;
     };
-  }, [currentProject?.id, currentProject?.projectPath, defaultColumns]);
+  }, [currentProject?.id, luieAttachmentPath, defaultColumns]);
 
   useEffect(() => {
     if (!currentProject?.id || !isHydrated) return;
     const timer = window.setTimeout(() => {
       void worldPackageStorage.savePlot(
         currentProject.id,
-        currentProject.projectPath,
+        luieAttachmentPath,
         { columns },
       );
     }, 250);
@@ -80,7 +82,7 @@ export function PlotBoard() {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [columns, currentProject?.id, currentProject?.projectPath, isHydrated]);
+  }, [columns, currentProject?.id, isHydrated, luieAttachmentPath]);
 
   useEffect(() => {
     const element = scrollContainerRef.current;

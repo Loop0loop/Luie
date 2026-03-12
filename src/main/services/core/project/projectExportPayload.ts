@@ -234,6 +234,8 @@ export const buildWorldScrapMemos = (
   };
 };
 
+// `graph` is a transport/view payload built from canonical world models.
+// It must not become an independent source-of-truth.
 export const buildWorldGraph = (project: ProjectExportRecord): WorldGraphData => {
   const nodes: WorldGraphData["nodes"] = [
     ...project.characters.map((character) => ({
@@ -332,4 +334,3 @@ export const buildProjectPackageMeta = (
     chapters: chapterMeta,
   };
 };
-

@@ -19,6 +19,7 @@ import { useTranslation } from "react-i18next";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { worldPackageStorage } from "@renderer/features/research/services/worldPackageStorage";
 import type { MindMapNodeData } from "@renderer/features/research/components/world/MindMapNodeData";
+import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
 
 const getCssNumber = (name: string, fallback: number) => {
   if (typeof window === "undefined") return fallback;
@@ -32,6 +33,7 @@ const getCssNumber = (name: string, fallback: number) => {
 export function useMindMapBoard() {
   const { t } = useTranslation();
   const currentProject = useProjectStore((state) => state.currentItem);
+  const luieAttachmentPath = getReadableLuieAttachmentPath(currentProject);
   const flowRef = useRef<ReactFlowInstance | null>(null);
   const rootX = getCssNumber("--world-mindmap-root-x", 300);
   const rootY = getCssNumber("--world-mindmap-root-y", 300);
@@ -106,7 +108,7 @@ export function useMindMapBoard() {
     void (async () => {
       const loaded = await worldPackageStorage.loadMindmap(
         currentProject.id,
-        currentProject.projectPath,
+        luieAttachmentPath,
       );
       if (cancelled) return;
       const loadedNodes = loaded.nodes as Node<MindMapNodeData>[];
@@ -121,7 +123,7 @@ export function useMindMapBoard() {
     };
   }, [
     currentProject?.id,
-    currentProject?.projectPath,
+    luieAttachmentPath,
     getDefaultNodes,
     setEdges,
     setNodes,
@@ -159,7 +161,7 @@ export function useMindMapBoard() {
 
       void worldPackageStorage.saveMindmap(
         currentProject.id,
-        currentProject.projectPath,
+        luieAttachmentPath,
         {
           nodes: serializedNodes,
           edges: serializedEdges,
@@ -170,7 +172,7 @@ export function useMindMapBoard() {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [currentProject?.id, currentProject?.projectPath, edges, nodes]);
+  }, [currentProject?.id, edges, luieAttachmentPath, nodes]);
 
   const onConnect = useCallback(
     (params: Connection) =>

@@ -32,7 +32,8 @@ model Project {
   entityRelations EntityRelation[]
 }
 
-// 프로젝트 설정
+// 프로젝트별 로컬 런타임 정책.
+// 현재 필드는 portable canonical content가 아니라 replica/app-local 성격이다.
 model ProjectSettings {
   id               String  @id @default(uuid())
   projectId        String  @unique
@@ -68,7 +69,7 @@ model Character {
   projectId       String
   name            String
   description     String?
-  firstAppearance String? // Chapter ID where character first appears
+  firstAppearance String? // User-visible metadata with optional auto-fill; not rebuildable cache
   attributes      String? // JSON field for flexible attributes
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -86,7 +87,7 @@ model Event {
   projectId       String
   name            String
   description     String?
-  firstAppearance String? // Chapter ID where event first appears
+  firstAppearance String? // User-visible metadata with optional auto-fill; not rebuildable cache
   attributes      String? // JSON field for flexible attributes
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -103,7 +104,7 @@ model Faction {
   projectId       String
   name            String
   description     String?
-  firstAppearance String? // Chapter ID where faction first appears
+  firstAppearance String? // User-visible metadata with optional auto-fill; not rebuildable cache
   attributes      String? // JSON field for flexible attributes
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -137,7 +138,7 @@ model Term {
   definition      String?
   category        String? // e.g., "location", "item", "concept"
   order           Int      @default(0)
-  firstAppearance String? // Chapter ID
+  firstAppearance String? // User-visible metadata with optional auto-fill; not rebuildable cache
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -163,6 +164,7 @@ model TermAppearance {
 }
 
 // 스냅샷 (버전 관리, canonical user data)
+// 캐시가 아니며 복구/히스토리 의미를 보존해야 한다.
 enum SnapshotType {
   AUTO
   MANUAL
@@ -195,7 +197,7 @@ model WorldEntity {
   type            String
   name            String
   description     String?
-  firstAppearance String?
+  firstAppearance String? // User-visible metadata with optional auto-fill; not rebuildable cache
   attributes      String?
   positionX       Float    @default(0)
   positionY       Float    @default(0)

@@ -1,12 +1,8 @@
+import type { Prisma } from "@prisma/client";
 import { db } from "../../../database/index.js";
 
 type ProjectAttachmentClient = {
-  project: {
-    findFirst: (args: unknown) => Promise<unknown>;
-    findMany: (args: unknown) => Promise<unknown>;
-    findUnique: (args: unknown) => Promise<unknown>;
-    update: (args: unknown) => Promise<unknown>;
-  };
+  project: Prisma.TransactionClient["project"];
 };
 
 export type ProjectAttachmentEntry = {

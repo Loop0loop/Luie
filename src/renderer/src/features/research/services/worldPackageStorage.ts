@@ -38,6 +38,9 @@ import {
 } from "@shared/logger";
 import type { ZodError } from "zod";
 
+// Legacy bridge only.
+// Detached durable project content must move to replica storage in Phase 2,
+// so new project-content localStorage persistence should not be added here.
 const WORLD_LOCAL_STORAGE_PREFIX = "luie:world:";
 const luieWriteQueue = new Map<string, Promise<void>>();
 

@@ -13,6 +13,7 @@ export interface Project {
   id: string;
   title: string;
   description?: string | null;
+  // Legacy attachment metadata. Not canonical project content.
   projectPath?: string | null;
   attachmentStatus?: ProjectAttachmentStatus;
   // Legacy compatibility flag. Prefer attachmentStatus for new code.

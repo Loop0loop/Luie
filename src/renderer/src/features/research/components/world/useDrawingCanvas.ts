@@ -7,6 +7,7 @@ import {
 } from "@renderer/features/research/services/worldPackageStorage";
 import type { WorldDrawingPath } from "@shared/types";
 import { useDialog } from "@shared/ui/useDialog";
+import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
 
 export function useDrawingCanvas({
   canvasRef,
@@ -16,6 +17,7 @@ export function useDrawingCanvas({
   const { t } = useTranslation();
   const dialog = useDialog();
   const currentProject = useProjectStore((state) => state.currentItem);
+  const luieAttachmentPath = getReadableLuieAttachmentPath(currentProject);
 
   const [tool, setTool] = useState<"pen" | "text" | "eraser" | "icon">(
     DEFAULT_WORLD_DRAWING.tool ?? "pen",
@@ -42,7 +44,7 @@ export function useDrawingCanvas({
     void (async () => {
       const loaded = await worldPackageStorage.loadDrawing(
         currentProject.id,
-        currentProject.projectPath,
+        luieAttachmentPath,
       );
       if (cancelled) return;
       setPaths(loaded.paths);
@@ -56,7 +58,7 @@ export function useDrawingCanvas({
     return () => {
       cancelled = true;
     };
-  }, [currentProject?.id, currentProject?.projectPath]);
+  }, [currentProject?.id, luieAttachmentPath]);
 
   useEffect(() => {
     if (!currentProject?.id) return;
@@ -64,7 +66,7 @@ export function useDrawingCanvas({
     const timer = window.setTimeout(() => {
       void worldPackageStorage.saveDrawing(
         currentProject.id,
-        currentProject.projectPath,
+        luieAttachmentPath,
         {
           paths,
           tool,
@@ -85,7 +87,7 @@ export function useDrawingCanvas({
     color,
     lineWidth,
     currentProject?.id,
-    currentProject?.projectPath,
+    luieAttachmentPath,
   ]);
 
   const getCoords = (e: React.PointerEvent) => {
