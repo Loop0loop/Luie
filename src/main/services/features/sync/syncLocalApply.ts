@@ -1,7 +1,19 @@
 import type { Prisma } from "@prisma/client";
 import { DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS } from "../../../../shared/constants/index.js";
+import { createLogger } from "../../../../shared/logger/index.js";
+import type { WorldScrapMemosData } from "../../../../shared/types/index.js";
 import type { SyncBundle } from "./syncMapper.js";
 import type { SyncChapterRecord } from "./syncMapper.js";
+import {
+  normalizeDrawingPayload,
+  normalizeGraphPayload,
+  normalizeMindmapPayload,
+  normalizePlotPayload,
+  normalizeScrapPayload,
+  normalizeSynopsisPayload,
+} from "./syncWorldDocNormalizer.js";
+
+const logger = createLogger("SyncLocalApply");
 
 export const collectDeletedProjectIds = (bundle: SyncBundle): Set<string> => {
   const deletedProjectIds = new Set<string>();
@@ -218,5 +230,200 @@ export const applyChapterTombstones = async (
         updatedAt: new Date(tombstone.updatedAt),
       },
     });
+  }
+};
+
+const sortByUpdatedAtDesc = <T extends { updatedAt: string }>(rows: T[]): T[] =>
+  [...rows].sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt));
+
+const buildWorldDocumentMap = (
+  worldDocuments: SyncBundle["worldDocuments"],
+  projectId: string,
+) => {
+  const active = new Map<
+    SyncBundle["worldDocuments"][number]["docType"],
+    SyncBundle["worldDocuments"][number]
+  >();
+  const deleted = new Set<SyncBundle["worldDocuments"][number]["docType"]>();
+
+  for (const doc of sortByUpdatedAtDesc(worldDocuments)) {
+    if (doc.projectId !== projectId) continue;
+    if (active.has(doc.docType) || deleted.has(doc.docType)) continue;
+    if (doc.deletedAt) {
+      deleted.add(doc.docType);
+      continue;
+    }
+    active.set(doc.docType, doc);
+  }
+
+  return { active, deleted };
+};
+
+const normalizeWorldDocumentPayload = (
+  projectId: string,
+  docType: SyncBundle["worldDocuments"][number]["docType"],
+  payload: unknown,
+  updatedAt: string,
+  memos: Array<{
+    id: string;
+    title: string;
+    content: string;
+    tags: string[];
+    updatedAt: string;
+  }>,
+) => {
+  switch (docType) {
+    case "synopsis":
+      return {
+        ...normalizeSynopsisPayload(projectId, payload, logger),
+        updatedAt,
+      };
+    case "plot":
+      return {
+        ...normalizePlotPayload(projectId, payload, logger),
+        updatedAt,
+      };
+    case "drawing":
+      return {
+        ...normalizeDrawingPayload(projectId, payload, logger),
+        updatedAt,
+      };
+    case "mindmap":
+      return {
+        ...normalizeMindmapPayload(projectId, payload, logger),
+        updatedAt,
+      };
+    case "graph":
+      return {
+        ...normalizeGraphPayload(projectId, payload, logger),
+        updatedAt,
+      };
+    case "scrap":
+      return normalizeScrapPayload(
+        projectId,
+        payload,
+        memos,
+        updatedAt,
+        logger,
+      );
+    default:
+      return payload;
+  }
+};
+
+export const applyReplicaWorldState = async (
+  prisma: Prisma.TransactionClient,
+  bundle: SyncBundle,
+  deletedProjectIds: Set<string>,
+): Promise<void> => {
+  const activeProjects = bundle.projects.filter(
+    (project) => !project.deletedAt && !deletedProjectIds.has(project.id),
+  );
+
+  for (const project of activeProjects) {
+    const { active: worldDocMap, deleted: deletedDocTypes } = buildWorldDocumentMap(
+      bundle.worldDocuments,
+      project.id,
+    );
+    const memos = bundle.memos
+      .filter((memo) => memo.projectId === project.id && !memo.deletedAt)
+      .map((memo) => ({
+        id: memo.id,
+        title: memo.title,
+        content: memo.content,
+        tags: memo.tags,
+        updatedAt: memo.updatedAt,
+      }));
+
+    for (const docType of deletedDocTypes) {
+      await prisma.worldDocument.deleteMany({
+        where: {
+          projectId: project.id,
+          docType,
+        },
+      });
+    }
+
+    for (const [docType, doc] of worldDocMap.entries()) {
+      if (docType === "scrap") {
+        continue;
+      }
+      const normalizedPayload = normalizeWorldDocumentPayload(
+        project.id,
+        docType,
+        doc.payload,
+        doc.updatedAt,
+        memos,
+      );
+      await prisma.worldDocument.upsert({
+        where: {
+          projectId_docType: {
+            projectId: project.id,
+            docType,
+          },
+        },
+        update: {
+          payload: JSON.stringify(normalizedPayload),
+        },
+        create: {
+          projectId: project.id,
+          docType,
+          payload: JSON.stringify(normalizedPayload),
+        },
+      });
+    }
+
+    const normalizedScrapPayload = normalizeScrapPayload(
+      project.id,
+      worldDocMap.get("scrap")?.payload,
+      memos,
+      project.updatedAt,
+      logger,
+    ) as unknown as WorldScrapMemosData;
+
+    if (worldDocMap.has("scrap") || memos.length > 0) {
+      await prisma.worldDocument.upsert({
+        where: {
+          projectId_docType: {
+            projectId: project.id,
+            docType: "scrap",
+          },
+        },
+        update: {
+          payload: JSON.stringify(normalizedScrapPayload),
+        },
+        create: {
+          projectId: project.id,
+          docType: "scrap",
+          payload: JSON.stringify(normalizedScrapPayload),
+        },
+      });
+    } else if (deletedDocTypes.has("scrap")) {
+      await prisma.worldDocument.deleteMany({
+        where: {
+          projectId: project.id,
+          docType: "scrap",
+        },
+      });
+    }
+
+    await prisma.scrapMemo.deleteMany({
+      where: { projectId: project.id },
+    });
+
+    if (normalizedScrapPayload.memos.length > 0) {
+      await prisma.scrapMemo.createMany({
+        data: normalizedScrapPayload.memos.map((memo, index) => ({
+          id: memo.id,
+          projectId: project.id,
+          title: memo.title,
+          content: memo.content,
+          tags: JSON.stringify(memo.tags),
+          sortOrder: index,
+          createdAt: new Date(memo.updatedAt),
+          updatedAt: new Date(memo.updatedAt),
+        })),
+      });
+    }
   }
 };

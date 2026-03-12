@@ -3,6 +3,7 @@ import type { LuiePackageExportData } from "../../io/luiePackageTypes.js";
 import { db } from "../../../database/index.js";
 import {
   applyChapterTombstones,
+  applyReplicaWorldState,
   applyProjectDeletes,
   collectDeletedProjectIds,
   upsertChapter,
@@ -100,6 +101,7 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
         deletedProjectIds,
       );
       await upsertTerms(tx, input.bundle.terms, deletedProjectIds);
+      await applyReplicaWorldState(tx, input.bundle, deletedProjectIds);
       await applyChapterTombstones(
         tx,
         input.bundle.tombstones,

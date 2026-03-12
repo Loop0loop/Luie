@@ -24,7 +24,13 @@ export const buildLocalBundleFromDatabase = async (input: {
     include: {
       chapters: true,
       characters: true,
+      scrapMemos: {
+        orderBy: [{ sortOrder: "asc" }, { updatedAt: "desc" }],
+      },
       terms: true,
+      worldDocuments: {
+        orderBy: { updatedAt: "desc" },
+      },
     },
   })) as Array<Record<string, unknown>>;
   const hydratedProjectRows = await hydrateProjectsWithAttachmentPaths(

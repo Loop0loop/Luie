@@ -79,6 +79,14 @@ const mocked = vi.hoisted(() => {
     entityRelation: {
       deleteMany: vi.fn(),
     },
+    worldDocument: {
+      upsert: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+    scrapMemo: {
+      createMany: vi.fn(),
+      deleteMany: vi.fn(),
+    },
   };
 
   return {
@@ -218,6 +226,10 @@ describe("SyncService auth hardening", () => {
     mocked.prisma.term.update.mockClear();
     mocked.prisma.term.create.mockClear();
     mocked.prisma.term.delete.mockClear();
+    mocked.prisma.worldDocument.upsert.mockClear();
+    mocked.prisma.worldDocument.deleteMany.mockClear();
+    mocked.prisma.scrapMemo.createMany.mockClear();
+    mocked.prisma.scrapMemo.deleteMany.mockClear();
     mocked.prisma.project.findMany.mockResolvedValue([]);
     mocked.prisma.project.findUnique.mockResolvedValue(null);
 
@@ -393,6 +405,198 @@ describe("SyncService auth hardening", () => {
     expect(
       mocked.syncSettings.projectLastSyncedAtByProjectId?.["project-1"],
     ).toBeTruthy();
+  });
+
+  it("pushes detached replica world documents and memos during sync", async () => {
+    const syncedUserId = "00000000-0000-0000-0000-000000000001";
+    mocked.syncSettings.connected = true;
+    mocked.syncSettings.autoSync = false;
+    mocked.syncSettings.userId = syncedUserId;
+    mocked.syncSettings.expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    mocked.syncSettings.accessTokenCipher = "cipher";
+    mocked.getAccessToken.mockReturnValue({ token: "access-token" });
+    mocked.getRefreshToken.mockReturnValue({ token: "refresh-token" });
+    mocked.prisma.project.findMany.mockResolvedValue([
+      {
+        id: "project-1",
+        title: "Project",
+        description: null,
+        createdAt: new Date("2026-02-22T00:00:00.000Z"),
+        updatedAt: new Date("2026-02-22T00:00:00.000Z"),
+        projectPath: null,
+        chapters: [],
+        characters: [],
+        terms: [],
+        worldDocuments: [
+          {
+            id: "wd-1",
+            docType: "synopsis",
+            payload: JSON.stringify({
+              synopsis: "local synopsis",
+              status: "working",
+              updatedAt: "2026-02-22T00:05:00.000Z",
+            }),
+            updatedAt: new Date("2026-02-22T00:05:00.000Z"),
+          },
+        ],
+        scrapMemos: [
+          {
+            id: "memo-1",
+            title: "Detached memo",
+            content: "body",
+            tags: JSON.stringify(["tag"]),
+            updatedAt: new Date("2026-02-22T00:06:00.000Z"),
+          },
+        ],
+      },
+    ]);
+    mocked.fetchBundle.mockResolvedValue({
+      projects: [],
+      chapters: [],
+      characters: [],
+      terms: [],
+      worldDocuments: [],
+      memos: [],
+      snapshots: [],
+      tombstones: [],
+    });
+    mocked.upsertBundle.mockResolvedValue(undefined);
+
+    const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
+    const service = new SyncService();
+    service.initialize();
+    const result = await service.runNow("manual");
+
+    expect(result.success).toBe(true);
+    const upsertPayload = mocked.upsertBundle.mock.calls[0]?.[1] as SyncBundle;
+    expect(upsertPayload.worldDocuments).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          projectId: "project-1",
+          docType: "synopsis",
+          payload: expect.objectContaining({
+            synopsis: "local synopsis",
+            status: "working",
+          }),
+        }),
+      ]),
+    );
+    expect(upsertPayload.memos).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "memo-1",
+          projectId: "project-1",
+          title: "Detached memo",
+          tags: ["tag"],
+        }),
+      ]),
+    );
+    expect(mocked.readLuieEntry).not.toHaveBeenCalled();
+  });
+
+  it("applies remote world documents and memos into replica storage before upload", async () => {
+    const syncedUserId = "00000000-0000-0000-0000-000000000001";
+    mocked.syncSettings.connected = true;
+    mocked.syncSettings.autoSync = false;
+    mocked.syncSettings.userId = syncedUserId;
+    mocked.syncSettings.expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    mocked.syncSettings.accessTokenCipher = "cipher";
+    mocked.getAccessToken.mockReturnValue({ token: "access-token" });
+    mocked.getRefreshToken.mockReturnValue({ token: "refresh-token" });
+    mocked.prisma.project.findMany.mockResolvedValue([]);
+    mocked.fetchBundle.mockResolvedValue({
+      projects: [
+        {
+          id: "project-1",
+          userId: syncedUserId,
+          title: "Remote project",
+          description: null,
+          createdAt: "2026-02-22T00:00:00.000Z",
+          updatedAt: "2026-02-22T00:00:00.000Z",
+        },
+      ],
+      chapters: [],
+      characters: [],
+      terms: [],
+      worldDocuments: [
+        {
+          id: "project-1:synopsis",
+          userId: syncedUserId,
+          projectId: "project-1",
+          docType: "synopsis",
+          payload: { synopsis: "remote synopsis", status: "draft" },
+          updatedAt: "2026-02-22T00:10:00.000Z",
+        },
+        {
+          id: "project-1:scrap",
+          userId: syncedUserId,
+          projectId: "project-1",
+          docType: "scrap",
+          payload: { memos: [] },
+          updatedAt: "2026-02-22T00:10:00.000Z",
+        },
+      ],
+      memos: [
+        {
+          id: "memo-1",
+          userId: syncedUserId,
+          projectId: "project-1",
+          title: "Remote memo",
+          content: "body",
+          tags: ["tag"],
+          updatedAt: "2026-02-22T00:11:00.000Z",
+        },
+      ],
+      snapshots: [],
+      tombstones: [],
+    });
+    mocked.upsertBundle.mockResolvedValue(undefined);
+
+    const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
+    const service = new SyncService();
+    service.initialize();
+    const result = await service.runNow("manual");
+
+    expect(result.success).toBe(true);
+    expect(mocked.prisma.worldDocument.upsert).toHaveBeenCalledWith({
+      where: {
+        projectId_docType: {
+          projectId: "project-1",
+          docType: "synopsis",
+        },
+      },
+      update: {
+        payload: JSON.stringify({
+          synopsis: "remote synopsis",
+          status: "draft",
+          updatedAt: "2026-02-22T00:10:00.000Z",
+        }),
+      },
+      create: {
+        projectId: "project-1",
+        docType: "synopsis",
+        payload: JSON.stringify({
+          synopsis: "remote synopsis",
+          status: "draft",
+          updatedAt: "2026-02-22T00:10:00.000Z",
+        }),
+      },
+    });
+    expect(mocked.prisma.scrapMemo.deleteMany).toHaveBeenCalledWith({
+      where: { projectId: "project-1" },
+    });
+    expect(mocked.prisma.scrapMemo.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          id: "memo-1",
+          projectId: "project-1",
+          title: "Remote memo",
+          content: "body",
+          tags: JSON.stringify(["tag"]),
+          sortOrder: 0,
+        }),
+      ],
+    });
   });
 
   it("surfaces unresolved conflicts and applies manual resolution on retry", async () => {

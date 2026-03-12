@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type GroupImperativeHandle } from "react-resizable-panels";
-import { Clock, Globe } from "lucide-react";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
@@ -19,6 +18,8 @@ import { WorldSidebar } from "./WorldSidebar";
 import { WorldInspector } from "./WorldInspector";
 import { WorldTimelinePanel } from "./WorldTimelinePanel";
 import { WorldMapPanel } from "./WorldMapPanel";
+import { WorldGraphActivityBar } from "./WorldGraphActivityBar";
+import { WorldGraphBottomPanel } from "./WorldGraphBottomPanel";
 import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -38,8 +39,6 @@ export function WorldGraphPanel() {
   const viewMode = useWorldBuildingStore((state) => state.viewMode);
   const isTimelineOpen = useWorldBuildingStore((state) => state.isTimelineOpen);
   const isMapOpen = useWorldBuildingStore((state) => state.isMapOpen);
-  const toggleTimeline = useWorldBuildingStore((state) => state.toggleTimeline);
-  const toggleMap = useWorldBuildingStore((state) => state.toggleMap);
   const filteredGraph = useFilteredGraph();
 
   const leftFeature = "worldGraphSidebar" as const;
@@ -99,9 +98,13 @@ export function WorldGraphPanel() {
   }, [currentProjectId, loadGraph]);
 
   return (
-    <div className="h-full overflow-hidden bg-app flex flex-col">
-      {/* Main Panel Layout */}
-      <div ref={containerRef} className="flex-1 min-h-0 flex overflow-hidden">
+    <div className="h-full w-full overflow-hidden bg-app flex flex-row">
+      {/* Internal Activity Bar for Graph Modes */}
+      <WorldGraphActivityBar />
+
+      <div className="flex-1 overflow-hidden bg-app flex flex-col">
+        {/* Main Panel Layout */}
+        <div ref={containerRef} className="flex-1 min-h-0 flex overflow-hidden">
         <PanelGroup
           groupRef={panelGroupRef}
           orientation="horizontal"
@@ -122,9 +125,11 @@ export function WorldGraphPanel() {
             <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border/40 group-hover:bg-accent group-data-[dragging]:bg-accent transition-colors" />
           </PanelResizeHandle>
 
-          <Panel id="world-graph-canvas" minSize={toPercentSize(28)} className="min-h-0">
-            <main className="relative h-full min-w-0 overflow-hidden">
-              {isLoading && (
+          <Panel id="world-graph-center-column" minSize={toPercentSize(28)} className="min-h-0 flex flex-col relative w-full h-full">
+            <PanelGroup id="world-graph-center-group" className="w-full h-full relative" orientation="vertical">
+              <Panel id="world-graph-canvas" minSize={toPercentSize(30)} className="min-h-0 relative">
+                <main className="relative h-full min-w-0 overflow-hidden">
+                  {isLoading && (
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-sm text-muted bg-app/70">
                   <span className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-accent" />
                   <p>{t("world.graph.loading")}</p>
@@ -155,39 +160,13 @@ export function WorldGraphPanel() {
                 <WorldMapPanel nodes={filteredGraph.nodes} edges={filteredGraph.edges} />
               </div>
 
-              {/* Floating toggle buttons — bottom-right corner of canvas */}
-              <div className="absolute bottom-4 right-4 z-20 flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={toggleMap}
-                  title={t("world.map.title", { defaultValue: "지도 뷰" })}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-xl border text-[11px] font-semibold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5",
-                    isMapOpen
-                      ? "bg-accent text-white border-accent"
-                      : "bg-panel/95 text-muted border-border/50 hover:text-fg hover:border-border",
-                  )}
-                >
-                  <Globe size={13} />
-                  {t("world.map.toggle", { defaultValue: "지도" })}
-                </button>
+                </main>
+              </Panel>
 
-                <button
-                  type="button"
-                  onClick={toggleTimeline}
-                  title={t("world.timeline.title", { defaultValue: "시간선" })}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-xl border text-[11px] font-semibold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5",
-                    isTimelineOpen
-                      ? "bg-accent text-white border-accent"
-                      : "bg-panel/95 text-muted border-border/50 hover:text-fg hover:border-border",
-                  )}
-                >
-                  <Clock size={13} />
-                  {t("world.timeline.toggle", { defaultValue: "시간선" })}
-                </button>
-              </div>
-            </main>
+              {/* Bottom Context Panel (Mentions, Consistency) */}
+              <WorldGraphBottomPanel />
+              
+            </PanelGroup>
           </Panel>
 
           <PanelResizeHandle className="group relative w-3 shrink-0 cursor-col-resize bg-transparent select-none touch-none">
@@ -218,6 +197,7 @@ export function WorldGraphPanel() {
         style={{ height: isTimelineOpen ? TIMELINE_PANEL_HEIGHT_PX : 0 }}
       >
         <WorldTimelinePanel nodes={filteredGraph.nodes} edges={filteredGraph.edges} />
+      </div>
       </div>
     </div>
   );

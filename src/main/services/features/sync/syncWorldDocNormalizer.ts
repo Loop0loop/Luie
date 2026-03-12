@@ -8,6 +8,7 @@ import {
   toWorldDrawingIcon,
   toWorldDrawingTool,
 } from "../../../../shared/world/worldDocumentCodec.js";
+import type { WorldScrapMemosData } from "../../../../shared/types/index.js";
 
 export type WorldDocumentType = "synopsis" | "plot" | "drawing" | "mindmap" | "graph" | "scrap";
 
@@ -184,25 +185,29 @@ export const normalizeScrapPayload = (
   fallbackMemos: ScrapFallbackMemo[],
   updatedAtFallback: string,
   logger: LoggerLike,
-): Record<string, unknown> => {
+): WorldScrapMemosData => {
+  const normalizedFallbackMemos = fallbackMemos.map((memo) => ({
+    id: memo.id,
+    title: memo.title,
+    content: memo.content,
+    tags: memo.tags,
+    updatedAt: memo.updatedAt,
+  }));
+
   const decoded = decodeWorldDocumentPayload(projectId, "scrap", payload, logger);
   if (!isRecord(decoded)) {
     return {
-      memos: fallbackMemos.map((memo) => ({
-        id: memo.id,
-        title: memo.title,
-        content: memo.content,
-        tags: memo.tags,
-        updatedAt: memo.updatedAt,
-      })),
+      memos: normalizedFallbackMemos,
       updatedAt: updatedAtFallback,
     };
   }
 
   const normalized = normalizeWorldScrapPayload(decoded);
   return {
-    memos: normalized.memos,
+    memos:
+      normalizedFallbackMemos.length > 0
+        ? normalizedFallbackMemos
+        : normalized.memos,
     updatedAt: typeof normalized.updatedAt === "string" ? normalized.updatedAt : updatedAtFallback,
   };
 };
-
