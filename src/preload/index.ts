@@ -258,6 +258,8 @@ type CoreMethodMap = {
   "project.get": RendererApi["project"]["get"];
   "project.getAll": RendererApi["project"]["getAll"];
   "project.markOpened": RendererApi["project"]["markOpened"];
+  "project.attachLuie": RendererApi["project"]["attachLuie"];
+  "project.materializeLuie": RendererApi["project"]["materializeLuie"];
   "chapter.get": RendererApi["chapter"]["get"];
   "chapter.getAll": RendererApi["chapter"]["getAll"];
   "chapter.update": RendererApi["chapter"]["update"];
@@ -453,6 +455,26 @@ const rendererApi = {
       safeInvokeCore("project.openLuie", IPC_CHANNELS.PROJECT_OPEN_LUIE, packagePath),
     markOpened: (id: string): ReturnType<RendererApi["project"]["markOpened"]> =>
       safeInvokeCore("project.markOpened", IPC_CHANNELS.PROJECT_MARK_OPENED, id),
+    attachLuie: (
+      projectId: string,
+      packagePath: string,
+    ): ReturnType<RendererApi["project"]["attachLuie"]> =>
+      safeInvokeCore(
+        "project.attachLuie",
+        IPC_CHANNELS.PROJECT_ATTACH_LUIE,
+        projectId,
+        packagePath,
+      ),
+    materializeLuie: (
+      projectId: string,
+      targetPath: string,
+    ): ReturnType<RendererApi["project"]["materializeLuie"]> =>
+      safeInvokeCore(
+        "project.materializeLuie",
+        IPC_CHANNELS.PROJECT_MATERIALIZE_LUIE,
+        projectId,
+        targetPath,
+      ),
   },
 
   // Chapter API

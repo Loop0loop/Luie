@@ -286,6 +286,8 @@ export const enBase = {
       "dialog": {
         "selectPath": "Select project save location",
         "repairPathTitle": "Reconnect .luie file",
+        "attachLuieTitle": "Attach existing .luie",
+        "materializeLuieTitle": "Create new .luie file",
         "renameTitle": "Rename project",
         "deleteTitle": "Delete project",
         "removeMissingTitle": "Remove from list"
@@ -297,6 +299,8 @@ export const enBase = {
       "context": {
         "open": "Open",
         "repairPath": "Repair path",
+        "attachLuie": "Attach .luie",
+        "materializeLuie": "Create .luie",
         "removeMissing": "Remove from list",
         "rename": "Rename",
         "delete": "Delete"
@@ -329,7 +333,11 @@ export const enBase = {
       "toast": {
         "pathMissingBlocked": "This project's local .luie attachment is unavailable. Repair the path first.",
         "pathRepaired": "Project path repaired.",
-        "pathRepairFailed": "Failed to repair project path."
+        "pathRepairFailed": "Failed to repair project path.",
+        "luieAttached": ".luie file attached.",
+        "luieAttachFailed": "Failed to attach .luie file.",
+        "luieMaterialized": "Created and attached a new .luie file.",
+        "luieMaterializeFailed": "Failed to create .luie file."
       },
       "error": {
         "notFound": "Project not found.",
@@ -379,6 +387,7 @@ export const enBase = {
     },
     "toast": {
       "recoveredFromDb": "The file was corrupted, so we restored it from local cache.",
+      "recoveredMissingPackage": "The original .luie file was missing, so we rebuilt a new package from local data.",
       "dbNewerSynced": "Local cache was newer, so the project file was updated.",
       "pathMissing": "The local .luie attachment is unavailable, so the project opened from local data.",
       "missingAttachment": "The attached .luie file is missing, so the project opened from local data.",

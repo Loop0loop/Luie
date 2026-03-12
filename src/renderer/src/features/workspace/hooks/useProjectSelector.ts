@@ -38,6 +38,8 @@ export interface ProjectSelectorActions {
     handleRename: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
     handleDeleteOrRemove: () => Promise<void>;
     handleRepairProjectPath: (project: Project) => Promise<void>;
+    handleAttachProjectPackage: (project: Project) => Promise<void>;
+    handleMaterializeProjectPackage: (project: Project) => Promise<void>;
     handleSelectTemplate: (templateId: string, onSelectProject: (templateId: string, projectPath: string) => void) => Promise<void>;
     getProjectSyncBadge: (project: Project) => "synced" | "pending" | "localOnly" | "syncError";
 }
@@ -195,47 +197,108 @@ export function useProjectSelector(projects: Project[]): ProjectSelectorState & 
         return updatedAt <= lastSyncedAt ? "synced" : "pending";
     }, [syncStatus]);
 
-    const handleRepairProjectPath = useCallback(async (project: Project) => {
+    const attachProjectPackage = useCallback(async (
+        project: Project,
+        options: {
+            dialogTitle: string;
+            successToast: string;
+            failureToast: string;
+        },
+    ) => {
         try {
             const response = await api.fs.selectFile({
-                title: t("settings.projectTemplate.dialog.repairPathTitle"),
+                title: options.dialogTitle,
                 filters: [{ name: LUIE_PACKAGE_FILTER_NAME, extensions: [LUIE_PACKAGE_EXTENSION_NO_DOT] }],
             });
             if (!response.success || !response.data) {
                 return;
             }
 
-            const projectPath = response.data;
-            const approved = await api.fs.approveProjectPath(projectPath);
-            if (!approved.success || !approved.data?.normalizedPath) {
-                throw new Error("Failed to approve repaired project path");
+            const attached = await api.project.attachLuie(project.id, response.data);
+            if (!attached.success || !attached.data) {
+                throw new Error(attached.error?.message ?? "Failed to attach .luie package");
             }
-            const normalizedPath = approved.data.normalizedPath;
             setLocalProjects((prev) =>
                 prev.map((p) =>
                     p.id === project.id
-                        ? {
-                            ...p,
-                            projectPath: normalizedPath,
-                            attachmentStatus: "attached",
-                            pathMissing: false,
-                        }
+                        ? attached.data!
                         : p,
                 ),
             );
-
-            await updateProject(project.id, undefined, undefined, normalizedPath);
             await loadProjects();
-            showToast(t("settings.projectTemplate.toast.pathRepaired"), "success");
+            showToast(options.successToast, "success");
         } catch (error) {
             setLocalProjects(projects);
-            showToast(t("settings.projectTemplate.toast.pathRepairFailed"), "error");
-            api.logger.error("Failed to repair project path", {
+            showToast(
+                error instanceof Error && error.message
+                    ? error.message
+                    : options.failureToast,
+                "error",
+            );
+            api.logger.error("Failed to attach project package", {
                 projectId: project.id,
                 error,
             });
         }
-    }, [loadProjects, projects, showToast, t, updateProject]);
+    }, [loadProjects, projects, showToast]);
+
+    const handleRepairProjectPath = useCallback(async (project: Project) => {
+        await attachProjectPackage(project, {
+            dialogTitle: t("settings.projectTemplate.dialog.repairPathTitle"),
+            successToast: t("settings.projectTemplate.toast.pathRepaired"),
+            failureToast: t("settings.projectTemplate.toast.pathRepairFailed"),
+        });
+    }, [attachProjectPackage, t]);
+
+    const handleAttachProjectPackage = useCallback(async (project: Project) => {
+        await attachProjectPackage(project, {
+            dialogTitle: t("settings.projectTemplate.dialog.attachLuieTitle"),
+            successToast: t("settings.projectTemplate.toast.luieAttached"),
+            failureToast: t("settings.projectTemplate.toast.luieAttachFailed"),
+        });
+    }, [attachProjectPackage, t]);
+
+    const handleMaterializeProjectPackage = useCallback(async (project: Project) => {
+        try {
+            const response = await api.fs.selectSaveLocation({
+                title: t("settings.projectTemplate.dialog.materializeLuieTitle"),
+                defaultPath: `${project.title || DEFAULT_PROJECT_FILENAME}`,
+                filters: [
+                    { name: LUIE_PACKAGE_FILTER_NAME, extensions: [LUIE_PACKAGE_EXTENSION_NO_DOT] },
+                ],
+            });
+            if (!response.success || !response.data) {
+                return;
+            }
+
+            const materialized = await api.project.materializeLuie(project.id, response.data);
+            if (!materialized.success || !materialized.data) {
+                throw new Error(materialized.error?.message ?? "Failed to materialize .luie package");
+            }
+
+            setLocalProjects((prev) =>
+                prev.map((p) =>
+                    p.id === project.id
+                        ? materialized.data!
+                        : p,
+                ),
+            );
+            await loadProjects();
+            showToast(t("settings.projectTemplate.toast.luieMaterialized"), "success");
+        } catch (error) {
+            setLocalProjects(projects);
+            showToast(
+                error instanceof Error && error.message
+                    ? error.message
+                    : t("settings.projectTemplate.toast.luieMaterializeFailed"),
+                "error",
+            );
+            api.logger.error("Failed to materialize project package", {
+                projectId: project.id,
+                error,
+            });
+        }
+    }, [loadProjects, projects, setLocalProjects, showToast, t]);
 
     const handleDeleteOrRemove = useCallback(async () => {
         setLocalProjects((prev) => prev.filter((p) => p.id !== deleteDialog.projectId));
@@ -312,6 +375,8 @@ export function useProjectSelector(projects: Project[]): ProjectSelectorState & 
         renameFormId,
         handleRename,
         handleRepairProjectPath,
+        handleAttachProjectPackage,
+        handleMaterializeProjectPackage,
         handleSelectTemplate,
         handleDeleteOrRemove,
         getProjectSyncBadge,

@@ -68,6 +68,8 @@ export default function ProjectTemplateSelector({
             closeMenu={closeMenu}
             onOpenProject={onOpenProject}
             onRepairPath={selectorState.handleRepairProjectPath}
+            onAttachLuie={selectorState.handleAttachProjectPackage}
+            onMaterializeLuie={selectorState.handleMaterializeProjectPackage}
             onRenameRequest={(project) => setRenameDialog({
               isOpen: true,
               projectId: project.id,

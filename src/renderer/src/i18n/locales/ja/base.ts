@@ -286,6 +286,8 @@ export const jaBase = {
       "dialog": {
         "selectPath": "プロジェクト保存先を選択",
         "repairPathTitle": ".luie ファイルを再接続",
+        "attachLuieTitle": "既存の .luie を接続",
+        "materializeLuieTitle": "新しい .luie ファイルを作成",
         "renameTitle": "プロジェクト名を変更",
         "deleteTitle": "プロジェクトを削除",
         "removeMissingTitle": "一覧から削除"
@@ -297,6 +299,8 @@ export const jaBase = {
       "context": {
         "open": "開く",
         "repairPath": "パスを修復",
+        "attachLuie": ".luie を接続",
+        "materializeLuie": ".luie を作成",
         "removeMissing": "一覧から削除",
         "rename": "名前を変更",
         "delete": "削除"
@@ -329,7 +333,11 @@ export const jaBase = {
       "toast": {
         "pathMissingBlocked": "ローカル .luie 接続を利用できないため開けません。先にパス修復を行ってください。",
         "pathRepaired": "プロジェクトのパスを修復しました。",
-        "pathRepairFailed": "プロジェクトのパス修復に失敗しました。"
+        "pathRepairFailed": "プロジェクトのパス修復に失敗しました。",
+        "luieAttached": ".luie ファイルを接続しました。",
+        "luieAttachFailed": ".luie の接続に失敗しました。",
+        "luieMaterialized": "新しい .luie ファイルを作成して接続しました。",
+        "luieMaterializeFailed": ".luie ファイルの作成に失敗しました。"
       },
       "error": {
         "notFound": "プロジェクトが見つかりません。",
@@ -379,6 +387,7 @@ export const jaBase = {
     },
     "toast": {
       "recoveredFromDb": "ファイルが破損していたため、ローカルキャッシュから復元しました。",
+      "recoveredMissingPackage": "元の .luie ファイルが見つからなかったため、ローカルデータから新しいパッケージを復元しました。",
       "dbNewerSynced": "ローカルキャッシュが新しいため、プロジェクトファイルを更新しました。",
       "pathMissing": "ローカル .luie 接続を利用できないため、ローカルデータで開きます。",
       "missingAttachment": "接続された .luie ファイルが見つからないため、ローカルデータで開きます。",

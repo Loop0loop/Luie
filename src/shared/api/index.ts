@@ -61,6 +61,8 @@ export type RendererApi = {
     delete: (input: string | { id: string; deleteFile?: boolean }) => Promise<IPCResponse<unknown>>;
     removeLocal: (id: string) => Promise<IPCResponse<unknown>>;
     markOpened: (id: string) => Promise<IPCResponse<{ projectId: string; lastOpenedAt: string }>>;
+    attachLuie: (projectId: string, packagePath: string) => Promise<IPCResponse<Project>>;
+    materializeLuie: (projectId: string, targetPath: string) => Promise<IPCResponse<Project>>;
   };
   chapter: {
     create: (input: {

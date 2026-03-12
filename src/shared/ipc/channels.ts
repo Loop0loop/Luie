@@ -13,6 +13,8 @@ export const IPC_CHANNELS = {
   PROJECT_REMOVE_LOCAL: "project:remove-local",
   PROJECT_OPEN_LUIE: "project:open-luie",
   PROJECT_MARK_OPENED: "project:mark-opened",
+  PROJECT_ATTACH_LUIE: "project:attach-luie",
+  PROJECT_MATERIALIZE_LUIE: "project:materialize-luie",
 
   // Chapter Channels
   CHAPTER_CREATE: "chapter:create",

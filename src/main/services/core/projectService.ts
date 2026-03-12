@@ -8,6 +8,7 @@ import {
   ErrorCode,
   DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
   PACKAGE_EXPORT_DEBOUNCE_MS,
+  LUIE_PACKAGE_META_FILENAME,
 } from "../../../shared/constants/index.js";
 import type {
   ProjectDeleteInput,
@@ -37,12 +38,15 @@ import {
 } from "./project/projectLocalStateStore.js";
 import {
   findProjectPathConflict,
+  normalizeLuiePackagePath,
   normalizeProjectPath,
   renameSnapshotDirectoryForProjectTitleChange,
 } from "./project/projectPathPolicy.js";
 import { collectDuplicateProjectPathGroups } from "./project/projectPathReconciliation.js";
 import { exportProjectPackageWithOptions as exportProjectPackageWithOptionsImpl } from "./project/projectExportEngine.js";
 import { openLuieProjectPackage } from "./project/projectImportOpen.js";
+import { LuieMetaSchema } from "./project/projectLuieSchemas.js";
+import { readLuieEntry } from "../../utils/luiePackage.js";
 
 const logger = createLogger("ProjectService");
 
@@ -202,6 +206,216 @@ export class ProjectService {
         ErrorCode.PROJECT_CREATE_FAILED,
         "Failed to open .luie package",
         { packagePath },
+        error,
+      );
+    }
+  }
+
+  private async getProjectWithAttachmentStatus(id: string) {
+    const project = await this.getProject(id);
+    const [enriched] = await withProjectPathStatus([project]);
+    return enriched ?? project;
+  }
+
+  private async readLuieMetaForAttachment(packagePath: string) {
+    let raw: string | null;
+    try {
+      raw = await readLuieEntry(packagePath, LUIE_PACKAGE_META_FILENAME, logger);
+    } catch (error) {
+      throw new ServiceError(
+        ErrorCode.FS_READ_FAILED,
+        "Failed to read .luie package meta",
+        { packagePath },
+        error,
+      );
+    }
+
+    if (!raw) {
+      throw new ServiceError(
+        ErrorCode.VALIDATION_FAILED,
+        "Selected .luie package is missing meta",
+        { packagePath },
+      );
+    }
+
+    let parsedJson: unknown;
+    try {
+      parsedJson = JSON.parse(raw);
+    } catch (error) {
+      throw new ServiceError(
+        ErrorCode.VALIDATION_FAILED,
+        "Selected .luie package has invalid meta JSON",
+        { packagePath },
+        error,
+      );
+    }
+
+    const parsed = LuieMetaSchema.safeParse(parsedJson);
+    if (!parsed.success) {
+      throw new ServiceError(
+        ErrorCode.VALIDATION_FAILED,
+        "Selected .luie package has invalid meta format",
+        {
+          packagePath,
+          issues: parsed.error.issues,
+        },
+      );
+    }
+
+    return parsed.data;
+  }
+
+  async attachProjectPackage(projectId: string, packagePath: string) {
+    try {
+      const normalizedPath = normalizeLuiePackagePath(packagePath, "packagePath");
+      const [existing, conflict, meta] = await Promise.all([
+        db.getClient().project.findUnique({
+          where: { id: projectId },
+          select: { id: true },
+        }),
+        findProjectPathConflict(normalizedPath, projectId),
+        this.readLuieMetaForAttachment(normalizedPath),
+      ]);
+
+      if (!existing?.id) {
+        throw new ServiceError(
+          ErrorCode.PROJECT_NOT_FOUND,
+          "Project not found",
+          { id: projectId },
+        );
+      }
+
+      if (conflict) {
+        throw new ServiceError(
+          ErrorCode.VALIDATION_FAILED,
+          "Project path is already registered",
+          {
+            projectId,
+            projectPath: normalizedPath,
+            conflictProjectId: conflict.id,
+          },
+        );
+      }
+
+      const metaProjectId =
+        typeof meta.projectId === "string" ? meta.projectId : undefined;
+      if (metaProjectId && metaProjectId !== projectId) {
+        throw new ServiceError(
+          ErrorCode.VALIDATION_FAILED,
+          "Selected .luie package belongs to a different project",
+          {
+            projectId,
+            packagePath: normalizedPath,
+            packageProjectId: metaProjectId,
+          },
+        );
+      }
+
+      const exported = await this.exportProjectPackageWithOptions(projectId, {
+        targetPath: normalizedPath,
+        worldSourcePath: normalizedPath,
+      });
+      if (!exported) {
+        throw new ServiceError(
+          ErrorCode.FS_WRITE_FAILED,
+          "Failed to attach .luie package",
+          {
+            projectId,
+            packagePath: normalizedPath,
+          },
+        );
+      }
+
+      await setProjectAttachmentPath(projectId, normalizedPath);
+      logger.info("Project attached to existing .luie package", {
+        projectId,
+        packagePath: normalizedPath,
+      });
+      return await this.getProjectWithAttachmentStatus(projectId);
+    } catch (error) {
+      logger.error("Failed to attach .luie package", {
+        projectId,
+        packagePath,
+        error,
+      });
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      throw new ServiceError(
+        ErrorCode.PROJECT_UPDATE_FAILED,
+        "Failed to attach .luie package",
+        { projectId, packagePath },
+        error,
+      );
+    }
+  }
+
+  async materializeProjectPackage(projectId: string, targetPath: string) {
+    try {
+      const normalizedPath = normalizeLuiePackagePath(targetPath, "targetPath");
+      const [existing, conflict, currentAttachmentPath] = await Promise.all([
+        db.getClient().project.findUnique({
+          where: { id: projectId },
+          select: { id: true },
+        }),
+        findProjectPathConflict(normalizedPath, projectId),
+        getProjectAttachmentPath(projectId),
+      ]);
+
+      if (!existing?.id) {
+        throw new ServiceError(
+          ErrorCode.PROJECT_NOT_FOUND,
+          "Project not found",
+          { id: projectId },
+        );
+      }
+
+      if (conflict) {
+        throw new ServiceError(
+          ErrorCode.VALIDATION_FAILED,
+          "Project path is already registered",
+          {
+            projectId,
+            projectPath: normalizedPath,
+            conflictProjectId: conflict.id,
+          },
+        );
+      }
+
+      const exported = await this.exportProjectPackageWithOptions(projectId, {
+        targetPath: normalizedPath,
+        worldSourcePath: currentAttachmentPath ?? null,
+      });
+      if (!exported) {
+        throw new ServiceError(
+          ErrorCode.FS_WRITE_FAILED,
+          "Failed to materialize .luie package",
+          {
+            projectId,
+            targetPath: normalizedPath,
+          },
+        );
+      }
+
+      await setProjectAttachmentPath(projectId, normalizedPath);
+      logger.info("Project materialized into .luie package", {
+        projectId,
+        targetPath: normalizedPath,
+      });
+      return await this.getProjectWithAttachmentStatus(projectId);
+    } catch (error) {
+      logger.error("Failed to materialize .luie package", {
+        projectId,
+        targetPath,
+        error,
+      });
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      throw new ServiceError(
+        ErrorCode.PROJECT_UPDATE_FAILED,
+        "Failed to materialize .luie package",
+        { projectId, targetPath },
         error,
       );
     }

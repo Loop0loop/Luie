@@ -8,6 +8,8 @@ interface ProjectContextMenuProps {
     closeMenu: () => void;
     onOpenProject?: (project: Project) => void;
     onRepairPath: (project: Project) => void;
+    onAttachLuie: (project: Project) => void;
+    onMaterializeLuie: (project: Project) => void;
     onRenameRequest: (project: Project) => void;
     onDeleteRequest: (project: Project) => void;
 }
@@ -19,11 +21,18 @@ export function ProjectContextMenu({
     closeMenu,
     onOpenProject,
     onRepairPath,
+    onAttachLuie,
+    onMaterializeLuie,
     onRenameRequest,
     onDeleteRequest,
 }: ProjectContextMenuProps) {
     const { t } = useTranslation();
     const canRepairAttachment =
+        project.attachmentStatus === "missing-attachment" ||
+        project.attachmentStatus === "invalid-attachment";
+    const canAttachLuie = project.attachmentStatus === "detached";
+    const canMaterializeLuie =
+        project.attachmentStatus === "detached" ||
         project.attachmentStatus === "missing-attachment" ||
         project.attachmentStatus === "invalid-attachment";
 
@@ -52,6 +61,28 @@ export function ProjectContextMenu({
                     }}
                 >
                     {t("settings.projectTemplate.context.repairPath")}
+                </div>
+            )}
+            {canAttachLuie && (
+                <div
+                    className="px-2.5 py-2.5 rounded-lg text-[13px] text-fg cursor-pointer select-none hover:bg-active"
+                    onClick={() => {
+                        closeMenu();
+                        onAttachLuie(project);
+                    }}
+                >
+                    {t("settings.projectTemplate.context.attachLuie")}
+                </div>
+            )}
+            {canMaterializeLuie && (
+                <div
+                    className="px-2.5 py-2.5 rounded-lg text-[13px] text-fg cursor-pointer select-none hover:bg-active"
+                    onClick={() => {
+                        closeMenu();
+                        onMaterializeLuie(project);
+                    }}
+                >
+                    {t("settings.projectTemplate.context.materializeLuie")}
                 </div>
             )}
             <div

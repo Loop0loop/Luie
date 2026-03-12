@@ -284,9 +284,9 @@ Current checkpoint:
 
 - [x] Make `.luie` import hydrate the same canonical contract used by detached runtime and sync
 - [x] Make `.luie` export read from the canonical runtime surface, not ad hoc fallbacks
-- [ ] Define "attach existing `.luie`" flow
-- [ ] Define "materialize detached project into new `.luie`" flow
-- [ ] Separate missing attachment handling from corrupt package recovery
+- [x] Define "attach existing `.luie`" flow
+- [x] Define "materialize detached project into new `.luie`" flow
+- [x] Separate missing attachment handling from corrupt package recovery
 
 Done when:
 
@@ -297,7 +297,8 @@ Current checkpoint:
 
 - `.luie` import now hydrates replica world documents and scrap memos in the same transaction that creates canonical project rows
 - `.luie` export now reads world documents from replica storage first and only falls back to package entries for missing docs
-- remaining work is flow design: explicit attach/materialize UX and clearer missing-vs-corrupt recovery handling
+- explicit attach existing `.luie` and materialize-to-new-`.luie` flows now exist as first-class project actions
+- recovery UX now distinguishes missing original package recovery from corrupt package recovery
 
 ## Phase 6. Cache isolation
 
