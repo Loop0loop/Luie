@@ -358,10 +358,25 @@ Phase 7 exit:
 - [ ] If `.luie` becomes SQLite-backed, keep the canonical contract unchanged
 - [ ] Design migration from current package layout
 - [ ] Preserve import/export compatibility for existing `.luie`
+- [x] Freeze Phase 8 DoD and guardrails before SQLite implementation
+- [x] Add `LuieContainer` abstraction so container-kind logic stops leaking across services
 
 Done when:
 
 - canonical semantics do not depend on the current container implementation
+
+Current checkpoint:
+
+- Phase 8 will prefer `.luie-first` with a future sqlite-backed container, but functionality takes precedence over optimization claims
+- current slice is `Phase 8A`: freeze DoD, keep `package-v1` behavior intact, and add a container seam before any sqlite write path
+- `docs/luie-container-dod.md` now defines the Phase 8 guardrails, DoD, non-goals, and explicit failure conditions
+- core `.luie` readers/writers now go through `LuieContainer`, so container-kind branching is no longer scattered across project/sync/analysis services
+- `LuieContainer` currently preserves `package-v1` behavior and only probes `sqlite-v2`; sqlite read/write is intentionally not enabled yet
+- regression tests now lock the compatibility slice so existing package-based `.luie` flows keep working before any sqlite migration begins
+
+Reference:
+
+- `/Users/user/Luie/docs/luie-container-dod.md`
 
 ## Immediate hotspots
 

@@ -7,7 +7,7 @@ import {
   MARKDOWN_EXTENSION,
 } from "../../../../shared/constants/index.js";
 import type { LuiePackageExportData } from "../../io/luiePackageTypes.js";
-import { writeLuiePackage } from "../../io/luiePackageWriter.js";
+import { writeLuieContainer } from "../../io/luieContainer.js";
 import { db } from "../../../database/index.js";
 import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
 import { projectService } from "../../core/projectService.js";
@@ -263,7 +263,11 @@ export const persistBundleToLuiePackages = async (input: {
     if (!payload) continue;
 
     try {
-      await writeLuiePackage(safeProjectPath, payload, logger);
+      await writeLuieContainer({
+        targetPath: safeProjectPath,
+        payload,
+        logger,
+      });
       persistedProjects.push({
         projectId: project.id,
         projectPath: safeProjectPath,

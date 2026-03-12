@@ -15,8 +15,8 @@ const mocked = vi.hoisted(() => {
   const hasPendingAuthFlow = vi.fn(() => false);
   const fetchBundle = vi.fn();
   const upsertBundle = vi.fn();
-  const writeLuiePackage = vi.fn();
-  const readLuieEntry = vi.fn();
+  const writeLuieContainer = vi.fn();
+  const readLuieContainerEntry = vi.fn();
   const openLuieProject = vi.fn();
 
   const prisma = {
@@ -105,8 +105,8 @@ const mocked = vi.hoisted(() => {
     hasPendingAuthFlow,
     fetchBundle,
     upsertBundle,
-    writeLuiePackage,
-    readLuieEntry,
+    writeLuieContainer,
+    readLuieContainerEntry,
     openLuieProject,
     prisma,
   };
@@ -118,12 +118,10 @@ vi.mock("electron", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/io/luiePackageWriter.js", () => ({
-  writeLuiePackage: (...args: unknown[]) => mocked.writeLuiePackage(...args),
-}));
-
-vi.mock("../../../src/main/utils/luiePackage.js", () => ({
-  readLuieEntry: (...args: unknown[]) => mocked.readLuieEntry(...args),
+vi.mock("../../../src/main/services/io/luieContainer.js", () => ({
+  writeLuieContainer: (...args: unknown[]) => mocked.writeLuieContainer(...args),
+  readLuieContainerEntry: (...args: unknown[]) =>
+    mocked.readLuieContainerEntry(...args),
 }));
 
 vi.mock("../../../src/main/database/index.js", () => ({
@@ -215,11 +213,11 @@ describe("SyncService auth hardening", () => {
     mocked.getRefreshToken.mockReturnValue({ token: null });
     mocked.fetchBundle.mockReset();
     mocked.upsertBundle.mockReset();
-    mocked.writeLuiePackage.mockReset();
-    mocked.readLuieEntry.mockReset();
+    mocked.writeLuieContainer.mockReset();
+    mocked.readLuieContainerEntry.mockReset();
     mocked.openLuieProject.mockReset();
-    mocked.writeLuiePackage.mockResolvedValue(undefined);
-    mocked.readLuieEntry.mockResolvedValue(null);
+    mocked.writeLuieContainer.mockResolvedValue(undefined);
+    mocked.readLuieContainerEntry.mockResolvedValue(null);
     mocked.openLuieProject.mockResolvedValue({ project: { id: "project-1" } });
     mocked.prisma.$transaction.mockClear();
     mocked.prisma.project.update.mockClear();
@@ -503,7 +501,7 @@ describe("SyncService auth hardening", () => {
         }),
       ]),
     );
-    expect(mocked.readLuieEntry).not.toHaveBeenCalled();
+    expect(mocked.readLuieContainerEntry).not.toHaveBeenCalled();
   });
 
   it("applies remote world documents and memos into replica storage before upload", async () => {
@@ -745,7 +743,7 @@ describe("SyncService auth hardening", () => {
       tombstones: [],
     });
     mocked.upsertBundle.mockResolvedValue(undefined);
-    mocked.writeLuiePackage.mockRejectedValue(new Error("disk full"));
+    mocked.writeLuieContainer.mockRejectedValue(new Error("disk full"));
 
     const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();
@@ -804,8 +802,8 @@ describe("SyncService auth hardening", () => {
     const result = await service.runNow("manual");
 
     expect(result.success).toBe(true);
-    expect(mocked.writeLuiePackage).not.toHaveBeenCalled();
-    expect(mocked.readLuieEntry).not.toHaveBeenCalled();
+    expect(mocked.writeLuieContainer).not.toHaveBeenCalled();
+    expect(mocked.readLuieContainerEntry).not.toHaveBeenCalled();
     expect(mocked.prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(mocked.upsertBundle).toHaveBeenCalledTimes(1);
   });
@@ -857,18 +855,20 @@ describe("SyncService auth hardening", () => {
 
     expect(result.success).toBe(false);
     expect(result.message).toContain("SYNC_DB_CACHE_APPLY_FAILED");
-    expect(mocked.writeLuiePackage).toHaveBeenCalledTimes(1);
+    expect(mocked.writeLuieContainer).toHaveBeenCalledTimes(1);
     expect(mocked.openLuieProject).toHaveBeenCalledWith("/tmp/project-1.luie");
     expect(mocked.upsertBundle).not.toHaveBeenCalled();
   });
 
   it("hydrates missing world docs from existing .luie payload during package build", async () => {
-    mocked.readLuieEntry.mockImplementation(async (_projectPath: string, entryPath: string) => {
+    mocked.readLuieContainerEntry.mockImplementation(
+      async (_projectPath: string, entryPath: string) => {
       if (entryPath === "world/synopsis.json") {
         return JSON.stringify({ synopsis: "kept synopsis", status: "working" });
       }
       return null;
-    });
+      },
+    );
 
     const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();
@@ -921,7 +921,7 @@ describe("SyncService auth hardening", () => {
   });
 
   it("normalizes malformed world document payloads before .luie package write", async () => {
-    mocked.readLuieEntry.mockResolvedValue(null);
+    mocked.readLuieContainerEntry.mockResolvedValue(null);
 
     const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();

@@ -37,15 +37,15 @@ model TermAppearance {
 }
 
 model ChapterSearchDocument {
-  chapterId     String   @id
-  projectId     String
-  title         String
-  synopsis      String?
-  searchText    String
-  wordCount     Int
-  chapterOrder  Int
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  chapterId    String   @id
+  projectId    String
+  title        String
+  synopsis     String?
+  searchText   String
+  wordCount    Int
+  chapterOrder Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([projectId])
   @@index([projectId, chapterOrder])

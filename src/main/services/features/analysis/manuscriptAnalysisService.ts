@@ -12,9 +12,9 @@ import {
   LUIE_MANUSCRIPT_DIR,
   MARKDOWN_EXTENSION,
 } from "../../../../shared/constants/index.js";
-import { readLuieEntry } from "../../../utils/luiePackage.js";
 import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
 import { getProjectAttachmentPath } from "../../core/project/projectAttachmentStore.js";
+import { readLuieContainerEntry } from "../../io/luieContainer.js";
 import {
   isAnalysisAbortError,
   runGeminiAnalysisStream,
@@ -144,8 +144,8 @@ export class ManuscriptAnalysisService {
     try {
       const safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
       const [metaRaw, chapterContent] = await Promise.all([
-        readLuieEntry(safeProjectPath, LUIE_PACKAGE_META_FILENAME, logger),
-        readLuieEntry(
+        readLuieContainerEntry(safeProjectPath, LUIE_PACKAGE_META_FILENAME, logger),
+        readLuieContainerEntry(
           safeProjectPath,
           `${LUIE_MANUSCRIPT_DIR}/${chapterId}${MARKDOWN_EXTENSION}`,
           logger,

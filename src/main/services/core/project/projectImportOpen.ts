@@ -18,8 +18,9 @@ import {
   LUIE_WORLD_TERMS_FILE,
 } from "../../../../shared/constants/index.js";
 import { ServiceError } from "../../../utils/serviceError.js";
-import { ensureLuieExtension, readLuieEntry } from "../../../utils/luiePackage.js";
+import { ensureLuieExtension } from "../../../utils/luiePackage.js";
 import type { LoggerLike as LuieWriterLogger } from "../../io/luiePackageTypes.js";
+import { readLuieContainerEntry } from "../../io/luieContainer.js";
 import { normalizeLuiePackagePath } from "./projectPathPolicy.js";
 import {
   LuieCharactersSchema,
@@ -140,7 +141,11 @@ const readMetaOrMarkCorrupt = async (
   }
 
   try {
-    const metaRaw = await readLuieEntry(resolvedPath, LUIE_PACKAGE_META_FILENAME, logger);
+    const metaRaw = await readLuieContainerEntry(
+      resolvedPath,
+      LUIE_PACKAGE_META_FILENAME,
+      logger,
+    );
     if (!metaRaw) {
       throw new Error("MISSING_META");
     }
@@ -228,15 +233,15 @@ const readLuieImportCollections = async (
     worldScrapMemosRaw,
     worldGraphRaw,
   ] = await Promise.all([
-    readLuieEntry(resolvedPath, charactersEntryPath, logger),
-    readLuieEntry(resolvedPath, termsEntryPath, logger),
-    readLuieEntry(resolvedPath, snapshotsEntryPath, logger),
-    readLuieEntry(resolvedPath, synopsisEntryPath, logger),
-    readLuieEntry(resolvedPath, plotEntryPath, logger),
-    readLuieEntry(resolvedPath, drawingEntryPath, logger),
-    readLuieEntry(resolvedPath, mindmapEntryPath, logger),
-    readLuieEntry(resolvedPath, memosEntryPath, logger),
-    readLuieEntry(resolvedPath, graphEntryPath, logger),
+    readLuieContainerEntry(resolvedPath, charactersEntryPath, logger),
+    readLuieContainerEntry(resolvedPath, termsEntryPath, logger),
+    readLuieContainerEntry(resolvedPath, snapshotsEntryPath, logger),
+    readLuieContainerEntry(resolvedPath, synopsisEntryPath, logger),
+    readLuieContainerEntry(resolvedPath, plotEntryPath, logger),
+    readLuieContainerEntry(resolvedPath, drawingEntryPath, logger),
+    readLuieContainerEntry(resolvedPath, mindmapEntryPath, logger),
+    readLuieContainerEntry(resolvedPath, memosEntryPath, logger),
+    readLuieContainerEntry(resolvedPath, graphEntryPath, logger),
   ]);
 
   const parsedCharacters = parseLuieDocumentOrThrow(charactersRaw, LuieCharactersSchema, {
@@ -418,7 +423,7 @@ export const openLuieProjectPackage = async (input: {
     resolvedProjectId,
     chaptersMeta,
     readChapterEntry: async (entryPath: string) =>
-      await readLuieEntry(resolvedPath, entryPath, input.logger),
+      await readLuieContainerEntry(resolvedPath, entryPath, input.logger),
   });
   const charactersForCreate = buildCharacterCreateRows(
     resolvedProjectId,

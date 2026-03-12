@@ -46,9 +46,9 @@ import { collectDuplicateProjectPathGroups } from "./project/projectPathReconcil
 import { exportProjectPackageWithOptions as exportProjectPackageWithOptionsImpl } from "./project/projectExportEngine.js";
 import { openLuieProjectPackage } from "./project/projectImportOpen.js";
 import { LuieMetaSchema } from "./project/projectLuieSchemas.js";
-import { readLuieEntry } from "../../utils/luiePackage.js";
 import { appearanceCacheService } from "../world/appearanceCacheService.js";
 import { chapterSearchCacheService } from "../features/chapterSearchCacheService.js";
+import { readLuieContainerEntry } from "../io/luieContainer.js";
 
 const logger = createLogger("ProjectService");
 
@@ -220,7 +220,11 @@ export class ProjectService {
   private async readLuieMetaForAttachment(packagePath: string) {
     let raw: string | null;
     try {
-      raw = await readLuieEntry(packagePath, LUIE_PACKAGE_META_FILENAME, logger);
+      raw = await readLuieContainerEntry(
+        packagePath,
+        LUIE_PACKAGE_META_FILENAME,
+        logger,
+      );
     } catch (error) {
       throw new ServiceError(
         ErrorCode.FS_READ_FAILED,

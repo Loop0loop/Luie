@@ -11,8 +11,10 @@ import {
   SNAPSHOT_FILE_KEEP_COUNT,
 } from "../../../../shared/constants/index.js";
 import type { ProjectExportRecord } from "../../../../shared/types/index.js";
-import { writeLuiePackage } from "../../io/luiePackageWriter.js";
-import { readLuieEntry } from "../../../utils/luiePackage.js";
+import {
+  readLuieContainerEntry,
+  writeLuieContainer,
+} from "../../io/luieContainer.js";
 import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
 import { settingsManager } from "../../../manager/settingsManager.js";
 import type { LoggerLike as LuieWriterLogger } from "../../io/luiePackageTypes.js";
@@ -162,7 +164,7 @@ const readWorldPayloadFromPackage = async (
   ): Promise<ReturnType<z.ZodType<T>["safeParse"]>> => {
     const entryPath = `${LUIE_WORLD_DIR}/${fileName}`;
     try {
-      const raw = await readLuieEntry(projectPath, entryPath, logger);
+      const raw = await readLuieContainerEntry(projectPath, entryPath, logger);
       if (typeof raw !== "string" || raw.trim().length === 0) {
         return schema.safeParse(null);
       }
@@ -388,9 +390,9 @@ export const exportProjectPackageWithOptions = async (input: {
     snapshotCount: snapshots.length,
   });
 
-  await writeLuiePackage(
-    exportPath,
-    {
+  await writeLuieContainer({
+    targetPath: exportPath,
+    payload: {
       meta,
       chapters: exportChapters,
       characters,
@@ -403,7 +405,7 @@ export const exportProjectPackageWithOptions = async (input: {
       graph,
       snapshots,
     },
-    input.logger,
-  );
+    logger: input.logger,
+  });
   return true;
 };

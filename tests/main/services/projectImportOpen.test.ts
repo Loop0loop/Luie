@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocked = vi.hoisted(() => {
   const access = vi.fn();
-  const readLuieEntry = vi.fn();
+  const readLuieContainerEntry = vi.fn();
   const findUnique = vi.fn();
   const findProjectByAttachmentPath = vi.fn();
   const setProjectAttachmentPath = vi.fn();
@@ -15,7 +15,7 @@ const mocked = vi.hoisted(() => {
 
   return {
     access,
-    readLuieEntry,
+    readLuieContainerEntry,
     findUnique,
     findProjectByAttachmentPath,
     setProjectAttachmentPath,
@@ -36,7 +36,11 @@ vi.mock("fs", () => ({
 
 vi.mock("../../../src/main/utils/luiePackage.js", () => ({
   ensureLuieExtension: (value: string) => value,
-  readLuieEntry: (...args: unknown[]) => mocked.readLuieEntry(...args),
+}));
+
+vi.mock("../../../src/main/services/io/luieContainer.js", () => ({
+  readLuieContainerEntry: (...args: unknown[]) =>
+    mocked.readLuieContainerEntry(...args),
 }));
 
 vi.mock("../../../src/main/database/index.js", () => ({
@@ -110,7 +114,7 @@ describe("projectImportOpen", () => {
       title: "Project 1",
       projectPath: "/tmp/project-1.luie",
     });
-    mocked.readLuieEntry.mockImplementation(async (_packagePath: string, entryPath: string) => {
+    mocked.readLuieContainerEntry.mockImplementation(async (_packagePath: string, entryPath: string) => {
       switch (entryPath) {
         case "meta.json":
           return JSON.stringify({

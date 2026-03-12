@@ -7,7 +7,7 @@ const mocked = vi.hoisted(() => ({
   findProjectPathConflict: vi.fn(),
   getProjectAttachmentPath: vi.fn(),
   setProjectAttachmentPath: vi.fn(),
-  readLuieEntry: vi.fn(),
+  readLuieContainerEntry: vi.fn(),
   withProjectPathStatus: vi.fn(async (projects: unknown[]) => projects),
   normalizeLuiePackagePath: vi.fn((value: string) => value),
 }));
@@ -82,7 +82,12 @@ vi.mock("../../../src/main/manager/settingsManager.js", () => ({
 }));
 
 vi.mock("../../../src/main/utils/luiePackage.js", () => ({
-  readLuieEntry: (...args: unknown[]) => mocked.readLuieEntry(...args),
+  ensureLuieExtension: (value: string) => value,
+}));
+
+vi.mock("../../../src/main/services/io/luieContainer.js", () => ({
+  readLuieContainerEntry: (...args: unknown[]) =>
+    mocked.readLuieContainerEntry(...args),
 }));
 
 import { ProjectService } from "../../../src/main/services/core/projectService.js";
@@ -95,7 +100,7 @@ describe("ProjectService package attachment flows", () => {
     mocked.getProjectAttachmentPath.mockResolvedValue("/tmp/current.luie");
     mocked.exportProjectPackageWithOptions.mockResolvedValue(true);
     mocked.setProjectAttachmentPath.mockResolvedValue(undefined);
-    mocked.readLuieEntry.mockResolvedValue(
+    mocked.readLuieContainerEntry.mockResolvedValue(
       JSON.stringify({
         format: "luie",
         version: 1,
@@ -122,7 +127,7 @@ describe("ProjectService package attachment flows", () => {
       "/tmp/attached.luie",
     );
 
-    expect(mocked.readLuieEntry).toHaveBeenCalledWith(
+    expect(mocked.readLuieContainerEntry).toHaveBeenCalledWith(
       "/tmp/attached.luie",
       LUIE_PACKAGE_META_FILENAME,
       expect.any(Object),
@@ -147,7 +152,7 @@ describe("ProjectService package attachment flows", () => {
   });
 
   it("rejects attach when selected .luie belongs to another project", async () => {
-    mocked.readLuieEntry.mockResolvedValue(
+    mocked.readLuieContainerEntry.mockResolvedValue(
       JSON.stringify({
         format: "luie",
         version: 1,

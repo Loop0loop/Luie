@@ -3,16 +3,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocked = vi.hoisted(() => {
   const projectFindUnique = vi.fn();
   const getProjectAttachmentPath = vi.fn();
-  const readLuieEntry = vi.fn();
-  const writeLuiePackage = vi.fn();
+  const readLuieContainerEntry = vi.fn();
+  const writeLuieContainer = vi.fn();
   const getDocument = vi.fn();
   const getScrapMemos = vi.fn();
 
   return {
     projectFindUnique,
     getProjectAttachmentPath,
-    readLuieEntry,
-    writeLuiePackage,
+    readLuieContainerEntry,
+    writeLuieContainer,
     getDocument,
     getScrapMemos,
   };
@@ -33,12 +33,10 @@ vi.mock("../../../src/main/services/core/project/projectAttachmentStore.js", () 
     mocked.getProjectAttachmentPath(...args),
 }));
 
-vi.mock("../../../src/main/utils/luiePackage.js", () => ({
-  readLuieEntry: (...args: unknown[]) => mocked.readLuieEntry(...args),
-}));
-
-vi.mock("../../../src/main/services/io/luiePackageWriter.js", () => ({
-  writeLuiePackage: (...args: unknown[]) => mocked.writeLuiePackage(...args),
+vi.mock("../../../src/main/services/io/luieContainer.js", () => ({
+  readLuieContainerEntry: (...args: unknown[]) =>
+    mocked.readLuieContainerEntry(...args),
+  writeLuieContainer: (...args: unknown[]) => mocked.writeLuieContainer(...args),
 }));
 
 vi.mock("../../../src/main/manager/settingsManager.js", () => ({
@@ -78,7 +76,7 @@ describe("projectExportEngine", () => {
       snapshots: [],
     });
     mocked.getProjectAttachmentPath.mockResolvedValue("/tmp/project-1.luie");
-    mocked.writeLuiePackage.mockResolvedValue(undefined);
+    mocked.writeLuieContainer.mockResolvedValue(undefined);
     mocked.getDocument.mockImplementation(async ({ docType }: { docType: string }) => {
       if (docType === "synopsis") {
         return {
@@ -100,7 +98,7 @@ describe("projectExportEngine", () => {
       found: false,
       data: null,
     });
-    mocked.readLuieEntry.mockImplementation(async (_projectPath: string, entryPath: string) => {
+    mocked.readLuieContainerEntry.mockImplementation(async (_projectPath: string, entryPath: string) => {
       if (entryPath === "world/plot-board.json") {
         return JSON.stringify({
           columns: [{ id: "plot-col", title: "Arc", cards: [] }],
@@ -135,8 +133,8 @@ describe("projectExportEngine", () => {
     });
 
     expect(exported).toBe(true);
-    expect(mocked.writeLuiePackage).toHaveBeenCalledTimes(1);
-    const payload = mocked.writeLuiePackage.mock.calls[0]?.[1] as
+    expect(mocked.writeLuieContainer).toHaveBeenCalledTimes(1);
+    const payload = mocked.writeLuieContainer.mock.calls[0]?.[0]?.payload as
       | {
           synopsis?: { synopsis?: string; status?: string };
           plot?: { columns?: Array<{ id: string }> };
@@ -154,7 +152,7 @@ describe("projectExportEngine", () => {
     expect(payload?.memos).toMatchObject({
       memos: [{ id: "memo-1" }],
     });
-    expect(mocked.readLuieEntry).not.toHaveBeenCalledWith(
+    expect(mocked.readLuieContainerEntry).not.toHaveBeenCalledWith(
       "/tmp/project-1.luie",
       "world/synopsis.json",
       expect.anything(),

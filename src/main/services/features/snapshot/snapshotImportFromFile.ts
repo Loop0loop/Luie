@@ -12,7 +12,7 @@ import {
   LUIE_PACKAGE_VERSION,
 } from "../../../../shared/constants/index.js";
 import { sanitizeName } from "../../../../shared/utils/sanitize.js";
-import { writeLuiePackage } from "../../io/luiePackageWriter.js";
+import { writeLuieContainer } from "../../io/luieContainer.js";
 import { readFullSnapshotArtifact } from "./snapshotArtifacts.js";
 
 type LoggerLike = {
@@ -220,9 +220,9 @@ export const importSnapshotFromFile = async (
   const meta = buildPackageMeta(created);
 
   try {
-    await writeLuiePackage(
-      projectPath,
-      {
+    await writeLuieContainer({
+      targetPath: projectPath,
+      payload: {
         meta,
         chapters: snapshot.data.chapters.map((chapter) => ({
           id: chapterIdMap.get(chapter.id) ?? chapter.id,
@@ -254,7 +254,7 @@ export const importSnapshotFromFile = async (
         snapshots: [],
       },
       logger,
-    );
+    });
   } catch (error) {
     await rollbackImportedProject(created.id, filePath, logger);
     throw error;

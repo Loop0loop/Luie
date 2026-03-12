@@ -15,10 +15,10 @@ import {
   parseWorldJsonSafely,
   toWorldUpdatedAt,
 } from "../../../../shared/world/worldDocumentCodec.js";
-import { readLuieEntry } from "../../../utils/luiePackage.js";
 import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
 import { createEmptySyncBundle, type SyncBundle } from "./syncMapper.js";
 import type { LoggerLike as LuieWriterLogger } from "../../io/luiePackageTypes.js";
+import { readLuieContainerEntry } from "../../io/luieContainer.js";
 
 type LoggerLike = LuieWriterLogger & {
   warn: (message: string, details?: unknown) => void;
@@ -225,7 +225,7 @@ const readWorldDocumentPayload = async (
   const entryPath = `${LUIE_WORLD_DIR}/${fileName}`;
   let raw: string | null;
   try {
-    raw = await readLuieEntry(projectPath, entryPath, logger);
+    raw = await readLuieContainerEntry(projectPath, entryPath, logger);
   } catch (error) {
     logger.warn("Failed to read .luie world document for sync; skipping doc", {
       projectPath,
