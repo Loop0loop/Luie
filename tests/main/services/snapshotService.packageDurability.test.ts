@@ -12,7 +12,11 @@ const mocked = vi.hoisted(() => ({
   chapterUpdate: vi.fn(),
   projectFindMany: vi.fn(),
   writeFullSnapshotArtifact: vi.fn(),
-  cleanupOrphanSnapshotArtifacts: vi.fn(async () => ({ scanned: 0, deleted: 0 })),
+  cleanupOrphanSnapshotArtifacts: vi.fn(async () => ({
+    scanned: 0,
+    deleted: 0,
+  })),
+  listSnapshotRestoreCandidates: vi.fn(async () => []),
   writeEmergencySnapshotFile: vi.fn(async () => undefined),
   importSnapshotFromFile: vi.fn(),
   ensureImmediatePackageExport: vi.fn(async () => undefined),
@@ -48,21 +52,33 @@ vi.mock("../../../src/main/services/core/projectService.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/features/snapshot/snapshotArtifacts.js", () => ({
-  writeFullSnapshotArtifact: (...args: unknown[]) =>
-    mocked.writeFullSnapshotArtifact(...args),
-  cleanupOrphanSnapshotArtifacts: (...args: unknown[]) =>
-    mocked.cleanupOrphanSnapshotArtifacts(...args),
-}));
+vi.mock(
+  "../../../src/main/services/features/snapshot/snapshotArtifacts.js",
+  () => ({
+    writeFullSnapshotArtifact: (...args: unknown[]) =>
+      mocked.writeFullSnapshotArtifact(...args),
+    cleanupOrphanSnapshotArtifacts: (...args: unknown[]) =>
+      mocked.cleanupOrphanSnapshotArtifacts(...args),
+    listSnapshotRestoreCandidates: (...args: unknown[]) =>
+      mocked.listSnapshotRestoreCandidates(...args),
+  }),
+);
 
-vi.mock("../../../src/main/services/features/snapshot/snapshotEmergencyFile.js", () => ({
-  writeEmergencySnapshotFile: (...args: unknown[]) =>
-    mocked.writeEmergencySnapshotFile(...args),
-}));
+vi.mock(
+  "../../../src/main/services/features/snapshot/snapshotEmergencyFile.js",
+  () => ({
+    writeEmergencySnapshotFile: (...args: unknown[]) =>
+      mocked.writeEmergencySnapshotFile(...args),
+  }),
+);
 
-vi.mock("../../../src/main/services/features/snapshot/snapshotImportFromFile.js", () => ({
-  importSnapshotFromFile: (...args: unknown[]) => mocked.importSnapshotFromFile(...args),
-}));
+vi.mock(
+  "../../../src/main/services/features/snapshot/snapshotImportFromFile.js",
+  () => ({
+    importSnapshotFromFile: (...args: unknown[]) =>
+      mocked.importSnapshotFromFile(...args),
+  }),
+);
 
 import { SnapshotService } from "../../../src/main/services/features/snapshot/snapshotService.js";
 
@@ -158,5 +174,30 @@ describe("SnapshotService package durability", () => {
       "project-1",
       "snapshot:prune",
     );
+  });
+
+  it("returns restore candidates with project and saved-time metadata", async () => {
+    mocked.listSnapshotRestoreCandidates.mockResolvedValueOnce([
+      {
+        snapshotId: "snapshot-restore-1",
+        projectId: "project-1",
+        projectTitle: "Recovered Draft",
+        chapterTitle: "Chapter 12",
+        savedAt: "2026-03-13T10:15:00.000Z",
+        excerpt: "Recovered paragraph preview",
+        filePath: "/tmp/recovered.snap",
+      },
+    ]);
+
+    const service = new SnapshotService();
+    const candidates = await service.listRestoreCandidates();
+
+    expect(candidates).toEqual([
+      expect.objectContaining({
+        projectTitle: "Recovered Draft",
+        savedAt: "2026-03-13T10:15:00.000Z",
+        filePath: "/tmp/recovered.snap",
+      }),
+    ]);
   });
 });

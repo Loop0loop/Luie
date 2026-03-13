@@ -169,6 +169,16 @@ export const snapshotCreateSchema = z.object({
   type: z.enum(["AUTO", "MANUAL"]).optional(),
 });
 
+export const snapshotRestoreCandidateSchema = z.object({
+  snapshotId: z.string().min(1),
+  projectId: z.string().min(1),
+  projectTitle: z.string().min(1),
+  chapterTitle: z.string().min(1).optional(),
+  savedAt: z.string().min(1),
+  excerpt: z.string().min(1).optional(),
+  filePath: basePathSchema,
+});
+
 export const searchQuerySchema = z.object({
   projectId: projectIdSchema,
   query: z.string().min(1, "Query is required"),

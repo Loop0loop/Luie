@@ -14,6 +14,7 @@ import { projectService } from "../../core/projectService.js";
 import { ServiceError } from "../../../utils/serviceError.js";
 import {
   cleanupOrphanSnapshotArtifacts,
+  listSnapshotRestoreCandidates,
   writeFullSnapshotArtifact,
 } from "./snapshotArtifacts.js";
 import { writeEmergencySnapshotFile } from "./snapshotEmergencyFile.js";
@@ -213,6 +214,20 @@ export class SnapshotService {
     }
   }
 
+  async listRestoreCandidates() {
+    try {
+      return await listSnapshotRestoreCandidates();
+    } catch (error) {
+      logger.error("Failed to list snapshot restore candidates", error);
+      throw new ServiceError(
+        ErrorCode.SNAPSHOT_RESTORE_FAILED,
+        "Failed to list snapshot restore candidates",
+        undefined,
+        error,
+      );
+    }
+  }
+
   async deleteSnapshot(id: string) {
     try {
       const snapshot = await db.getClient().snapshot.findUnique({
@@ -248,14 +263,12 @@ export class SnapshotService {
     try {
       const snapshot = (await db.getClient().snapshot.findUnique({
         where: { id: snapshotId },
-      })) as
-        | {
-            id: string;
-            projectId: string;
-            chapterId?: string | null;
-            content?: string | null;
-          }
-        | null;
+      })) as {
+        id: string;
+        projectId: string;
+        chapterId?: string | null;
+        content?: string | null;
+      } | null;
 
       if (!snapshot) {
         throw new ServiceError(
@@ -273,7 +286,8 @@ export class SnapshotService {
         );
       }
 
-      const nextContent = typeof snapshot.content === "string" ? snapshot.content : "";
+      const nextContent =
+        typeof snapshot.content === "string" ? snapshot.content : "";
 
       await db.getClient().chapter.update({
         where: { id: snapshot.chapterId },
@@ -402,9 +416,10 @@ export class SnapshotService {
       const dayBuckets = new Set<string>();
 
       for (const snap of snapshots) {
-        const createdAt = snap.createdAt instanceof Date
-          ? snap.createdAt
-          : new Date(String(snap.createdAt));
+        const createdAt =
+          snap.createdAt instanceof Date
+            ? snap.createdAt
+            : new Date(String(snap.createdAt));
         const age = now - createdAt.getTime();
 
         if (age < ONE_DAY) {
@@ -468,7 +483,9 @@ export class SnapshotService {
     });
 
     const results = await Promise.all(
-      projects.map((project: { id: string }) => this.pruneSnapshots(String(project.id))),
+      projects.map((project: { id: string }) =>
+        this.pruneSnapshots(String(project.id)),
+      ),
     );
 
     const deletedCount = results.reduce(

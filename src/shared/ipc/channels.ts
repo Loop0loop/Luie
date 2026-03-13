@@ -60,6 +60,7 @@ export const IPC_CHANNELS = {
   SNAPSHOT_GET_ALL: "snapshot:get-all",
   SNAPSHOT_GET_BY_PROJECT: "snapshot:get-by-project",
   SNAPSHOT_GET_BY_CHAPTER: "snapshot:get-by-chapter",
+  SNAPSHOT_LIST_RESTORE_CANDIDATES: "snapshot:list-restore-candidates",
   SNAPSHOT_RESTORE: "snapshot:restore",
   SNAPSHOT_DELETE: "snapshot:delete",
   SNAPSHOT_IMPORT_FILE: "snapshot:import-file",

@@ -103,6 +103,16 @@ export interface Snapshot {
   createdAt: string | Date;
 }
 
+export interface SnapshotRestoreCandidate {
+  snapshotId: string;
+  projectId: string;
+  projectTitle: string;
+  chapterTitle?: string;
+  savedAt: string;
+  excerpt?: string;
+  filePath: string;
+}
+
 export interface Note {
   id: string;
   projectId: string;

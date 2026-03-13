@@ -37,6 +37,7 @@ import {
   WORLD_GRAPH_NODE_MENU_HEIGHT_PX,
   WORLD_GRAPH_NODE_MENU_WIDTH_PX,
 } from "@shared/constants/worldGraphUI";
+import { parseEntityDraftText } from "@renderer/features/research/utils/entityDraftUtils";
 import { CustomEntityNode } from "./CustomEntityNode";
 import { DraftBlockNode } from "./DraftBlockNode";
 import { useWorldGraphLayout } from "@renderer/features/research/hooks/useWorldGraphLayout";
@@ -393,6 +394,47 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
     [selectEdge],
   );
 
+  const spawnDraftNode = useCallback((x: number, y: number, initialType?: string) => {
+    if (!activeProjectId) return;
+    
+    // Remove existing draft nodes if any to keep UI clean
+    setNodes((nds) => nds.filter((n) => n.type !== 'draft'));
+
+    const draftId = `draft-${Date.now()}`;
+    const draftNode: Node = {
+      id: draftId,
+      type: 'draft',
+      position: { x, y },
+      data: {
+        id: draftId,
+        initialValue: initialType ? `${initialType} ` : "",
+        onConvert: async (nodeId: string, text: string) => {
+          setNodes((nds) => nds.filter((n) => n.id !== nodeId));
+          
+          if (!text.trim() || !activeProjectId) return;
+          
+          const { name, entityType, subType } = parseEntityDraftText(text);
+          
+          try {
+            await createGraphNode({
+              projectId: activeProjectId,
+              entityType,
+              subType,
+              name,
+              positionX: x,
+              positionY: y,
+            });
+          } catch (err) {
+            console.error("Failed to create entity from draft", err);
+            showToast("엔티티 생성에 실패했습니다.", "error");
+          }
+        }
+      },
+    };
+
+    setNodes((nds) => nds.concat(draftNode));
+  }, [activeProjectId, createGraphNode, setNodes, showToast]);
+
   const onPaneDoubleClick = useCallback(
     (event: React.MouseEvent) => {
       event.preventDefault();
@@ -404,51 +446,11 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         y: event.clientY,
       });
 
-      const draftId = `draft-${Date.now()}`;
-      const draftNode: Node = {
-        id: draftId,
-        type: 'draft',
-        position,
-        data: {
-          id: draftId,
-          onConvert: async (id: string, text: string) => {
-            setNodes((nds) => nds.filter((n) => n.id !== id));
-            
-            if (!text.trim() || !activeProjectId) return;
-            
-            let entityType: WorldEntitySourceType = "Concept"; 
-            if (text.includes("인물") || text.includes("캐릭터")) entityType = "Character";
-            else if (text.includes("세력") || text.includes("조직")) entityType = "Faction";
-            else if (text.includes("장소") || text.includes("지역")) entityType = "Place";
-            else if (text.includes("아이템") || text.includes("물건")) entityType = "Item";
-            else if (text.includes("사건") || text.includes("이벤트")) entityType = "Event";
-            else if (text.includes("규칙") || text.includes("법칙")) entityType = "Rule";
-            else if (text.includes("설정")) entityType = "Term";
-            
-            const cleanText = text.replace(/(인물|캐릭터|세력|조직|장소|지역|아이템|물건|사건|이벤트|규칙|법칙|설정)/g, "").trim() || text.trim();
-            
-            try {
-              await createGraphNode({
-                projectId: activeProjectId,
-                entityType,
-                subType: entityType === "Place" || entityType === "Concept" || entityType === "Rule" ? entityType : undefined,
-                name: cleanText,
-                positionX: position.x,
-                positionY: position.y,
-              });
-            } catch (err) {
-              console.error("Failed to create entity from draft", err);
-              showToast("엔티티 생성에 실패했습니다.", "error");
-            }
-          }
-        },
-      };
-
-      setNodes((nds) => nds.concat(draftNode));
+      spawnDraftNode(position.x, position.y);
       setCreateMenu(null);
       setNodeMenu(null);
     },
-    [rfInstance, setNodes, activeProjectId, createGraphNode, showToast],
+    [rfInstance, spawnDraftNode],
   );
 
   const onFlowDoubleClick = useCallback(
@@ -708,53 +710,33 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
           onClick={() => {
             if (!rfInstance) return;
             const center = rfInstance.screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-            const draftId = `draft-${Date.now()}`;
-            const draftNode: Node = {
-              id: draftId,
-              type: 'draft',
-              position: center,
-              data: {
-                id: draftId,
-                onConvert: async (id: string, text: string) => {
-                  setNodes((nds) => nds.filter((n) => n.id !== id));
-                  if (!text.trim() || !activeProjectId) return;
-                  
-                  let entityType: WorldEntitySourceType = "Concept"; 
-                  if (text.includes("인물") || text.includes("캐릭터")) entityType = "Character";
-                  else if (text.includes("세력") || text.includes("조직")) entityType = "Faction";
-                  else if (text.includes("장소") || text.includes("지역")) entityType = "Place";
-                  else if (text.includes("아이템") || text.includes("물건")) entityType = "Item";
-                  else if (text.includes("사건") || text.includes("이벤트")) entityType = "Event";
-                  else if (text.includes("규칙") || text.includes("법칙")) entityType = "Rule";
-                  else if (text.includes("설정")) entityType = "Term";
-                  
-                  const cleanText = text.replace(/(인물|캐릭터|세력|조직|장소|지역|아이템|물건|사건|이벤트|규칙|법칙|설정)/g, "").trim() || text.trim();
-                  try {
-                    await createGraphNode({
-                      projectId: activeProjectId,
-                      entityType,
-                      subType: entityType === "Place" || entityType === "Concept" || entityType === "Rule" ? entityType : undefined,
-                      name: cleanText,
-                      positionX: center.x,
-                      positionY: center.y,
-                    });
-                  } catch (err) {}
-                }
-              },
-            };
-            setNodes((nds) => nds.concat(draftNode));
+            spawnDraftNode(center.x, center.y);
           }}
         >
           <PlusSquare size={16} />
           <span className="text-[11px] font-medium">블록 추가</span>
         </button>
         <div className="w-[1px] h-4 bg-border/60"></div>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-element hover:text-accent transition-all text-muted-foreground">
+        <button 
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-element hover:text-accent transition-all text-muted-foreground"
+          onClick={() => {
+            if (!rfInstance) return;
+            const center = rfInstance.screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+            spawnDraftNode(center.x, center.y, "타임");
+          }}
+        >
           <Clock size={16} />
           <span className="text-[11px] font-medium">타임 추가</span>
         </button>
         <div className="w-[1px] h-4 bg-border/60"></div>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-element hover:text-accent transition-all text-muted-foreground">
+        <button 
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-element hover:text-accent transition-all text-muted-foreground"
+          onClick={() => {
+            if (!rfInstance) return;
+            const center = rfInstance.screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+            spawnDraftNode(center.x, center.y, "아이디어");
+          }}
+        >
           <Lightbulb size={16} />
           <span className="text-[11px] font-medium">아이디어</span>
         </button>

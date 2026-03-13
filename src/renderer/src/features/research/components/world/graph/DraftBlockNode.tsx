@@ -8,20 +8,24 @@ export type DraftBlockNodeProps = {
   data: {
     onConvert: (id: string, text: string) => void;
     id: string;
+    initialValue?: string;
   };
   selected?: boolean;
 };
 
 export const DraftBlockNode = memo(({ data, selected }: DraftBlockNodeProps) => {
-  const { onConvert, id } = data;
-  const [text, setText] = useState("");
+  const { onConvert, id, initialValue = "" } = data;
+  const [text, setText] = useState(initialValue);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const isConverting = useRef(false);
   const { t } = useTranslation();
 
   useEffect(() => {
-    // Focus automatically
-    inputRef.current?.focus();
+    // Focus automatically and set cursor to end
+    if (inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.setSelectionRange(inputRef.current.value.length, inputRef.current.value.length);
+    }
   }, []);
 
   const handleConvert = () => {

@@ -98,6 +98,7 @@ const RETRYABLE_CHANNELS = new Set<string>([
   IPC_CHANNELS.TERM_GET_ALL,
   IPC_CHANNELS.SNAPSHOT_GET_ALL,
   IPC_CHANNELS.SNAPSHOT_GET_BY_CHAPTER,
+  IPC_CHANNELS.SNAPSHOT_LIST_RESTORE_CANDIDATES,
   IPC_CHANNELS.SEARCH,
   IPC_CHANNELS.SETTINGS_GET_ALL,
   IPC_CHANNELS.SETTINGS_GET_EDITOR,
@@ -274,6 +275,7 @@ type CoreMethodMap = {
   "chapter.getAll": RendererApi["chapter"]["getAll"];
   "chapter.update": RendererApi["chapter"]["update"];
   "snapshot.getByProject": RendererApi["snapshot"]["getByProject"];
+  "snapshot.listRestoreCandidates": RendererApi["snapshot"]["listRestoreCandidates"];
   "snapshot.importFromFile": RendererApi["snapshot"]["importFromFile"];
   "snapshot.restore": RendererApi["snapshot"]["restore"];
   "sync.getStatus": RendererApi["sync"]["getStatus"];
@@ -595,6 +597,13 @@ const rendererApi = {
         "snapshot.getByProject",
         IPC_CHANNELS.SNAPSHOT_GET_BY_PROJECT,
         projectId,
+      ),
+    listRestoreCandidates: (): ReturnType<
+      RendererApi["snapshot"]["listRestoreCandidates"]
+    > =>
+      safeInvokeCore(
+        "snapshot.listRestoreCandidates",
+        IPC_CHANNELS.SNAPSHOT_LIST_RESTORE_CANDIDATES,
       ),
     getAll: (projectId: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SNAPSHOT_GET_ALL, projectId),

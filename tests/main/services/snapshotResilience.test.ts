@@ -34,14 +34,15 @@ describe("Snapshot resilience", () => {
   it("creates autosave mirrors for 200..1000 chars and blocks empty overwrite", async () => {
     const { project } = await createProject("Mirror Project");
 
-    const chapters = [] as Array<{ id: string; len: number }>;
-    for (const len of [200, 400, 600, 800, 1000]) {
-      const chapter = await chapterService.createChapter({
-        projectId: project.id,
-        title: `Chapter ${len}`,
-      });
-      chapters.push({ id: chapter.id, len });
-    }
+    const chapters = await Promise.all(
+      [200, 400, 600, 800, 1000].map(async (len) => {
+        const chapter = await chapterService.createChapter({
+          projectId: project.id,
+          title: `Chapter ${len}`,
+        });
+        return { id: chapter.id, len };
+      }),
+    );
 
     autoSaveManager.setConfig(project.id, {
       enabled: true,
@@ -50,21 +51,27 @@ describe("Snapshot resilience", () => {
     });
 
     vi.useFakeTimers();
-    for (const ch of chapters) {
-      await autoSaveManager.triggerSave(ch.id, makeContent(ch.len), project.id);
-    }
+    await Promise.all(
+      chapters.map((ch) =>
+        autoSaveManager.triggerSave(ch.id, makeContent(ch.len), project.id),
+      ),
+    );
     await vi.runAllTimersAsync();
     vi.useRealTimers();
 
-    for (const ch of chapters) {
-      const latestPath = path.join(
-        app.getPath("userData"),
-        SNAPSHOT_MIRROR_DIR,
-        project.id,
-        ch.id,
-        "latest.snap",
-      );
-      const stat = await fs.stat(latestPath);
+    const stats = await Promise.all(
+      chapters.map(async (ch) => {
+        const latestPath = path.join(
+          app.getPath("userData"),
+          SNAPSHOT_MIRROR_DIR,
+          project.id,
+          ch.id,
+          "latest.snap",
+        );
+        return fs.stat(latestPath);
+      }),
+    );
+    for (const stat of stats) {
       expect(stat.isFile()).toBe(true);
     }
 
@@ -108,7 +115,9 @@ describe("Snapshot resilience", () => {
 
   it("enables WAL mode", async () => {
     const client = db.getClient() as {
-      $queryRawUnsafe?: (query: string) => Promise<Array<{ journal_mode?: string }>>;
+      $queryRawUnsafe?: (
+        query: string,
+      ) => Promise<Array<{ journal_mode?: string }>>;
       $executeRawUnsafe?: (query: string) => Promise<unknown>;
     };
 
@@ -169,13 +178,52 @@ describe("Snapshot resilience", () => {
     await Promise.all([...updatePromises, snapshotPromise]);
 
     const safeProjectName = "Race Project";
-    const backupDir = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR, safeProjectName);
-    const files = (await fs.readdir(backupDir)).filter((name) => name.endsWith(".snap"));
+    const backupDir = path.join(
+      app.getPath("userData"),
+      SNAPSHOT_BACKUP_DIR,
+      safeProjectName,
+    );
+    const files = (await fs.readdir(backupDir)).filter((name) =>
+      name.endsWith(".snap"),
+    );
     expect(files.length).toBeGreaterThan(0);
 
     const targetPath = path.join(backupDir, files.sort().pop() as string);
     const parsed = await readFullSnapshotArtifact(targetPath);
     expect(parsed.meta.projectId).toBe(project.id);
+  });
+
+  it("lists restore candidates with project and saved-time metadata", async () => {
+    const { project } = await createProject("Restore Candidate Project");
+    const chapter = await chapterService.createChapter({
+      projectId: project.id,
+      title: "Restore Chapter",
+    });
+    const content =
+      "이 문단은 복원 후보 목록에서 어떤 저장분인지 확인하기 위한 테스트 문장입니다.";
+
+    await snapshotService.createSnapshot({
+      projectId: project.id,
+      chapterId: chapter.id,
+      content,
+      description: "Restore candidate snapshot",
+    });
+
+    const candidates = await snapshotService.listRestoreCandidates();
+    const matches = candidates.filter(
+      (candidate) => candidate.projectId === project.id,
+    );
+
+    expect(matches).toHaveLength(1);
+    expect(matches[0]).toMatchObject({
+      projectTitle: "Restore Candidate Project",
+      chapterTitle: "Restore Chapter",
+    });
+    expect(matches[0]?.savedAt).toBeTruthy();
+    expect(matches[0]?.excerpt).toContain(
+      "어떤 저장분인지 확인하기 위한 테스트 문장",
+    );
+    await expect(fs.stat(matches[0]?.filePath as string)).resolves.toBeTruthy();
   });
 
   it("recreates snapshot folders after deletion", async () => {
@@ -214,15 +262,23 @@ describe("Snapshot resilience", () => {
       description: "Corrupt snapshot",
     });
 
-    const backupDir = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR, "Corrupt Project");
-    const files = (await fs.readdir(backupDir)).filter((name) => name.endsWith(".snap"));
+    const backupDir = path.join(
+      app.getPath("userData"),
+      SNAPSHOT_BACKUP_DIR,
+      "Corrupt Project",
+    );
+    const files = (await fs.readdir(backupDir)).filter((name) =>
+      name.endsWith(".snap"),
+    );
     const targetPath = path.join(backupDir, files.sort().pop() as string);
     const raw = await fs.readFile(targetPath);
 
     raw[raw.length - 5] = 0x00;
     await fs.writeFile(targetPath, raw);
 
-    await expect(snapshotService.importSnapshotFile(targetPath)).rejects.toBeTruthy();
+    await expect(
+      snapshotService.importSnapshotFile(targetPath),
+    ).rejects.toBeTruthy();
   });
 
   it("survives disk-full/permission errors during snapshot write", async () => {
@@ -234,7 +290,9 @@ describe("Snapshot resilience", () => {
 
     const writeSpy = vi
       .spyOn(fs, "writeFile")
-      .mockRejectedValueOnce(Object.assign(new Error("EACCES"), { code: "EACCES" }));
+      .mockRejectedValueOnce(
+        Object.assign(new Error("EACCES"), { code: "EACCES" }),
+      );
 
     await expect(
       snapshotService.createSnapshot({

@@ -449,7 +449,31 @@ export const koBase = {
         save: "저장",
         saving: "저장 중...",
         openLuie: ".luie 열기",
-        restoreSnapshot: "스냅샷 복원하기",
+        restore: "복원",
+      },
+      restoreDialog: {
+        title: "복원할 저장분 선택",
+        description:
+          "프로젝트 이름과 저장 시각을 보고 원하는 저장분을 고르세요. 확인 후 새 .luie로 바로 복원합니다.",
+        loading: "복원 가능한 저장분을 불러오는 중입니다...",
+        errorTitle: "복원 목록을 불러오지 못했습니다",
+        errorDescription: "잠시 후 다시 불러와 주세요.",
+        emptyTitle: "복원할 저장분이 없습니다",
+        emptyDescription: "이 기기에서 찾은 백업이 아직 없습니다.",
+        selectedLabel: "선택한 저장분",
+        projectLabel: "프로젝트",
+        savedAtLabel: "저장 시각",
+        chapterLabel: "기준 원고",
+        previewLabel: "미리보기",
+        noChapter: "원고 정보 없음",
+        noPreview: "미리볼 내용이 없습니다.",
+        prompt: "이 저장분을 새 .luie로 복원할까요?",
+        actions: {
+          refresh: "다시 불러오기",
+          close: "닫기",
+          restore: "이 저장분 복원",
+          restoring: "복원 중...",
+        },
       },
       toast: {
         pathMissingBlocked:
@@ -460,6 +484,8 @@ export const koBase = {
         luieAttachFailed: ".luie 연결에 실패했습니다.",
         luieMaterialized: "새 .luie 파일을 만들고 연결했습니다.",
         luieMaterializeFailed: ".luie 파일 생성에 실패했습니다.",
+        restoreCompleted: "복원된 .luie를 바로 열었습니다.",
+        restoreFailed: "복원에 실패했습니다.",
         legacyUnsupportedBlocked:
           "현재 앱은 구형 package .luie를 지원하지 않습니다.",
       },

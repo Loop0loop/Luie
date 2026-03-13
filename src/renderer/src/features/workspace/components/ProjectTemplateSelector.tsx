@@ -1,5 +1,6 @@
+import { useCallback, useEffect, useState } from "react";
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
-import type { Project } from "@shared/types";
+import type { Project, SnapshotRestoreCandidate } from "@shared/types";
 import { api } from "@shared/api";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@shared/ui/ToastContext";
@@ -9,13 +10,14 @@ import { RecentProjectsSection } from "./project-selector/RecentProjectsSection"
 import { ProjectContextMenu } from "./project-selector/ProjectContextMenu";
 import { TemplateGrid } from "./project-selector/TemplateGrid";
 import { ProjectActionDialogs } from "./project-selector/ProjectActionDialogs";
+import { RestoreBackupDialog } from "./project-selector/RestoreBackupDialog";
 
 interface ProjectTemplateSelectorProps {
   onSelectProject: (templateId: string, projectPath: string) => void;
   projects?: Project[];
   onOpenProject?: (project: Project) => void;
   onOpenLuieFile?: () => void;
-  onOpenSnapshotBackup?: () => void;
+  onRestoreBackup?: (filePath: string) => Promise<boolean> | boolean;
 }
 
 export default function ProjectTemplateSelector({
@@ -23,10 +25,20 @@ export default function ProjectTemplateSelector({
   projects = [],
   onOpenProject,
   onOpenLuieFile,
-  onOpenSnapshotBackup,
+  onRestoreBackup,
 }: ProjectTemplateSelectorProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
+  const [restoreCandidates, setRestoreCandidates] = useState<
+    SnapshotRestoreCandidate[]
+  >([]);
+  const [restoreCandidatesError, setRestoreCandidatesError] = useState<
+    string | null
+  >(null);
+  const [isRestoreCandidatesLoading, setIsRestoreCandidatesLoading] =
+    useState(false);
+  const [isRestoringBackup, setIsRestoringBackup] = useState(false);
   const selectorState = useProjectSelector(projects);
   const {
     activeCategory,
@@ -40,6 +52,58 @@ export default function ProjectTemplateSelector({
     setRenameDialog,
     setDeleteDialog,
   } = selectorState;
+
+  const loadRestoreCandidates = useCallback(async () => {
+    setIsRestoreCandidatesLoading(true);
+    setRestoreCandidatesError(null);
+    try {
+      const response = await api.snapshot.listRestoreCandidates();
+      if (!response.success || !response.data) {
+        setRestoreCandidates([]);
+        setRestoreCandidatesError(
+          response.error?.message ??
+            t("settings.projectTemplate.restoreDialog.errorDescription"),
+        );
+        return;
+      }
+      setRestoreCandidates(response.data);
+    } catch (error) {
+      api.logger.error("Failed to load restore candidates", error);
+      setRestoreCandidates([]);
+      setRestoreCandidatesError(
+        t("settings.projectTemplate.restoreDialog.errorDescription"),
+      );
+    } finally {
+      setIsRestoreCandidatesLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    if (!isRestoreDialogOpen) {
+      return;
+    }
+    void loadRestoreCandidates();
+  }, [isRestoreDialogOpen, loadRestoreCandidates]);
+
+  const handleRestoreCandidate = useCallback(
+    async (candidate: SnapshotRestoreCandidate) => {
+      if (!onRestoreBackup) {
+        return;
+      }
+      setIsRestoringBackup(true);
+      try {
+        const restored = await Promise.resolve(
+          onRestoreBackup(candidate.filePath),
+        );
+        if (restored) {
+          setIsRestoreDialogOpen(false);
+        }
+      } finally {
+        setIsRestoringBackup(false);
+      }
+    },
+    [onRestoreBackup],
+  );
 
   return (
     <div
@@ -56,43 +120,60 @@ export default function ProjectTemplateSelector({
       )}
 
       {/* Context Menu rendered at root level */}
-      {menuOpenId && (() => {
-        const p = localProjects.find((proj) => proj.id === menuOpenId);
-        if (!p) return null;
+      {menuOpenId &&
+        (() => {
+          const p = localProjects.find((proj) => proj.id === menuOpenId);
+          if (!p) return null;
 
-        return (
-          <ProjectContextMenu
-            project={p}
-            menuRef={menuRef}
-            menuPosition={menuPosition}
-            closeMenu={closeMenu}
-            onOpenProject={onOpenProject}
-            onRepairPath={selectorState.handleRepairProjectPath}
-            onAttachLuie={selectorState.handleAttachProjectPackage}
-            onMaterializeLuie={selectorState.handleMaterializeProjectPackage}
-            onRenameRequest={(project) => setRenameDialog({
-              isOpen: true,
-              projectId: project.id,
-              currentTitle: project.title,
-            })}
-            onDeleteRequest={(project) => setDeleteDialog({
-              isOpen: true,
-              projectId: project.id,
-              projectTitle: project.title,
-              mode:
-                project.attachmentStatus === "missing-attachment" ||
-                project.attachmentStatus === "invalid-attachment" ||
-                project.attachmentStatus === "unsupported-legacy-container"
-                  ? "removeMissing"
-                  : "delete",
-              deleteFile: false,
-            })}
-          />
-        );
-      })()}
+          return (
+            <ProjectContextMenu
+              project={p}
+              menuRef={menuRef}
+              menuPosition={menuPosition}
+              closeMenu={closeMenu}
+              onOpenProject={onOpenProject}
+              onRepairPath={selectorState.handleRepairProjectPath}
+              onAttachLuie={selectorState.handleAttachProjectPackage}
+              onMaterializeLuie={selectorState.handleMaterializeProjectPackage}
+              onRenameRequest={(project) =>
+                setRenameDialog({
+                  isOpen: true,
+                  projectId: project.id,
+                  currentTitle: project.title,
+                })
+              }
+              onDeleteRequest={(project) =>
+                setDeleteDialog({
+                  isOpen: true,
+                  projectId: project.id,
+                  projectTitle: project.title,
+                  mode:
+                    project.attachmentStatus === "missing-attachment" ||
+                    project.attachmentStatus === "invalid-attachment" ||
+                    project.attachmentStatus === "unsupported-legacy-container"
+                      ? "removeMissing"
+                      : "delete",
+                  deleteFile: false,
+                })
+              }
+            />
+          );
+        })()}
 
       {/* Custom Dialogs */}
       <ProjectActionDialogs state={selectorState} actions={selectorState} />
+      <RestoreBackupDialog
+        isOpen={isRestoreDialogOpen}
+        candidates={restoreCandidates}
+        isLoading={isRestoreCandidatesLoading}
+        isRestoring={isRestoringBackup}
+        error={restoreCandidatesError}
+        onClose={() => setIsRestoreDialogOpen(false)}
+        onRefresh={() => {
+          void loadRestoreCandidates();
+        }}
+        onRestore={handleRestoreCandidate}
+      />
 
       <div className="flex-1 flex h-[calc(100vh-32px)]">
         <ProjectCategorySidebar
@@ -107,7 +188,9 @@ export default function ProjectTemplateSelector({
             getProjectSyncBadge={selectorState.getProjectSyncBadge}
             onOpenProject={onOpenProject}
             onOpenLuieFile={onOpenLuieFile}
-            onOpenSnapshotBackup={onOpenSnapshotBackup}
+            onOpenRestoreDialog={() => {
+              setIsRestoreDialogOpen(true);
+            }}
             toggleMenuByElement={toggleMenuByElement}
             onConnectGoogle={async () => {
               try {
@@ -116,15 +199,32 @@ export default function ProjectTemplateSelector({
                 const response = await api.sync.connectGoogle();
                 if (response.success && response.data) {
                   selectorState.setSyncStatus(response.data);
-                  showToast(t("settings.sync.toast.connected", "Google 계정 연결이 완료되었습니다."), "success");
+                  showToast(
+                    t(
+                      "settings.sync.toast.connected",
+                      "Google 계정 연결이 완료되었습니다.",
+                    ),
+                    "success",
+                  );
                 } else {
                   api.logger.error("Failed to connect google", response.error);
-                  showToast(t("settings.sync.toast.connectFailed", "연결 실패: ") + " " + String(response.error), "error");
+                  showToast(
+                    t("settings.sync.toast.connectFailed", "연결 실패: ") +
+                      " " +
+                      String(response.error),
+                    "error",
+                  );
                 }
               } catch (error: unknown) {
-                const msg = error instanceof Error ? error.message : String(error);
+                const msg =
+                  error instanceof Error ? error.message : String(error);
                 api.logger.error("Error during connect google", error);
-                showToast(t("settings.sync.toast.connectFailed", "연결 실패: ") + " " + msg, "error");
+                showToast(
+                  t("settings.sync.toast.connectFailed", "연결 실패: ") +
+                    " " +
+                    msg,
+                  "error",
+                );
               }
             }}
             onDisconnectGoogle={async () => {
@@ -140,7 +240,9 @@ export default function ProjectTemplateSelector({
           />
           <TemplateGrid
             activeCategory={activeCategory}
-            onSelectTemplate={(tid) => selectorState.handleSelectTemplate(tid, onSelectProject)}
+            onSelectTemplate={(tid) =>
+              selectorState.handleSelectTemplate(tid, onSelectProject)
+            }
           />
         </div>
       </div>

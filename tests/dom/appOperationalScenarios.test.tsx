@@ -18,6 +18,10 @@ const mocked = vi.hoisted(() => {
     "bootstrap.quit": "Quit app",
     "project.toast.missingAttachment": "Open from local data",
     "project.toast.invalidAttachment": "Open from local data (invalid path)",
+    "settings.projectTemplate.actions.openLuie": "Open .luie",
+    "settings.projectTemplate.toast.restoreCompleted":
+      "Opened the restored .luie file.",
+    "settings.projectTemplate.toast.restoreFailed": "Restore failed.",
     loading: "Loading",
     "errorBoundary.title": "Unexpected error",
     "errorBoundary.description": "The app hit an unexpected error.",
@@ -44,17 +48,19 @@ const mocked = vi.hoisted(() => {
   };
 
   const projectInitState = {
-    currentProject: null as
-      | {
-          id: string;
-          title: string;
-          projectPath?: string | null;
-          attachmentStatus?: "attached" | "detached" | "missing-attachment" | "invalid-attachment";
-          pathMissing?: boolean;
-          createdAt: string;
-          updatedAt: string;
-        }
-      | null,
+    currentProject: null as {
+      id: string;
+      title: string;
+      projectPath?: string | null;
+      attachmentStatus?:
+        | "attached"
+        | "detached"
+        | "missing-attachment"
+        | "invalid-attachment";
+      pathMissing?: boolean;
+      createdAt: string;
+      updatedAt: string;
+    } | null,
   };
 
   const editorState = {
@@ -106,6 +112,7 @@ const mocked = vi.hoisted(() => {
     shortcutState,
     showToast: vi.fn(),
     setRecoveryState: vi.fn(),
+    projectTemplateProps: null as Record<string, unknown> | null,
     api,
   };
 });
@@ -132,9 +139,17 @@ vi.mock("@shared/api", () => ({
   api: mocked.api,
 }));
 
-vi.mock("@renderer/features/workspace/components/ProjectTemplateSelector", () => ({
-  default: () => <div data-testid="project-template-selector">Template selector</div>,
-}));
+vi.mock(
+  "@renderer/features/workspace/components/ProjectTemplateSelector",
+  () => ({
+    default: (props: Record<string, unknown>) => {
+      mocked.projectTemplateProps = props;
+      return (
+        <div data-testid="project-template-selector">Template selector</div>
+      );
+    },
+  }),
+);
 
 vi.mock("@renderer/features/workspace/components/EditorRoot", () => ({
   default: () => <div data-testid="editor-root">Editor root</div>,
@@ -191,9 +206,8 @@ vi.mock("@renderer/features/workspace/stores/uiStore", () => {
 });
 
 vi.mock("@renderer/features/project/stores/projectStore", () => ({
-  useProjectStore: (
-    selector: (state: typeof mocked.projectState) => unknown,
-  ) => selector(mocked.projectState),
+  useProjectStore: (selector: (state: typeof mocked.projectState) => unknown) =>
+    selector(mocked.projectState),
 }));
 
 vi.mock("@renderer/features/editor/stores/editorStore", () => {
@@ -245,8 +259,8 @@ const clickButtonByText = async (
   container: HTMLElement,
   label: string,
 ): Promise<void> => {
-  const button = Array.from(container.querySelectorAll("button")).find(
-    (item) => item.textContent?.includes(label),
+  const button = Array.from(container.querySelectorAll("button")).find((item) =>
+    item.textContent?.includes(label),
   );
   if (!button) {
     throw new Error(`Button not found: ${label}`);
@@ -280,6 +294,7 @@ describe("app operational scenarios", () => {
     mocked.projectState.setCurrentProject.mockReset();
     mocked.projectState.updateProject.mockReset();
     mocked.projectState.loadProjects.mockReset();
+    mocked.projectTemplateProps = null;
     mocked.api.project.markOpened.mockReset();
     mocked.api.project.markOpened.mockResolvedValue({
       success: true,
@@ -291,6 +306,10 @@ describe("app operational scenarios", () => {
     mocked.projectInitState.currentProject = null;
     mocked.uiState.setView.mockReset();
     mocked.showToast.mockReset();
+    mocked.api.fs.selectFile.mockReset();
+    mocked.api.fs.approveProjectPath.mockReset();
+    mocked.api.project.openLuie.mockReset();
+    mocked.api.snapshot.importFromFile.mockReset();
   });
 
   afterEach(() => {
@@ -369,8 +388,13 @@ describe("app operational scenarios", () => {
     mountedViews.push(view);
     await flushAsync();
 
-    expect(view.container.querySelector('[data-testid="editor-root"]')).not.toBeNull();
-    expect(mocked.showToast).toHaveBeenCalledWith("Open from local data", "info");
+    expect(
+      view.container.querySelector('[data-testid="editor-root"]'),
+    ).not.toBeNull();
+    expect(mocked.showToast).toHaveBeenCalledWith(
+      "Open from local data",
+      "info",
+    );
     expect(mocked.projectState.setCurrentProject).not.toHaveBeenCalled();
     expect(mocked.uiState.setView).not.toHaveBeenCalledWith("template");
   });
@@ -400,6 +424,72 @@ describe("app operational scenarios", () => {
     expect(mocked.projectState.loadProjects).toHaveBeenCalled();
   });
 
+  it("restores a backup into a .luie project from the template selector", async () => {
+    mocked.api.app.getBootstrapStatus.mockResolvedValue({
+      success: true,
+      data: {
+        isReady: true,
+      },
+    });
+    mocked.api.snapshot.importFromFile.mockResolvedValue({
+      success: true,
+      data: {
+        id: "project-restored",
+        title: "Recovered Draft",
+        projectPath: "/tmp/recovered.luie",
+        attachmentStatus: "detached",
+        pathMissing: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    });
+    mocked.api.fs.approveProjectPath.mockResolvedValue({
+      success: true,
+      data: {
+        normalizedPath: "/tmp/recovered-normalized.luie",
+      },
+    });
+
+    const view = mountView(<App />);
+    mountedViews.push(view);
+    await flushAsync();
+
+    await act(async () => {
+      const onRestoreBackup = mocked.projectTemplateProps?.onRestoreBackup as
+        | ((filePath: string) => Promise<boolean>)
+        | undefined;
+      await onRestoreBackup?.("/tmp/recovery-backup.snap");
+    });
+    await flushAsync();
+
+    expect(mocked.api.snapshot.importFromFile).toHaveBeenCalledWith(
+      "/tmp/recovery-backup.snap",
+    );
+    expect(mocked.projectState.loadProjects).toHaveBeenCalledTimes(1);
+    expect(mocked.api.fs.approveProjectPath).toHaveBeenCalledWith(
+      "/tmp/recovered.luie",
+    );
+    expect(mocked.projectState.updateProject).toHaveBeenCalledWith(
+      "project-restored",
+      undefined,
+      undefined,
+      "/tmp/recovered-normalized.luie",
+    );
+    expect(mocked.projectState.setCurrentProject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "project-restored",
+        projectPath: "/tmp/recovered-normalized.luie",
+        attachmentStatus: "attached",
+        pathMissing: false,
+      }),
+    );
+    expect(mocked.uiState.setView).toHaveBeenCalledWith("editor");
+    expect(mocked.showToast).toHaveBeenCalledWith(
+      "Opened the restored .luie file.",
+      "success",
+    );
+  });
+
   it("keeps outer UI alive when a feature boundary recovers from a crash", async () => {
     let shouldThrow = true;
 
@@ -422,7 +512,9 @@ describe("app operational scenarios", () => {
     await flushAsync();
 
     expect(view.container.textContent).toContain("Shell still mounted");
-    expect(view.container.textContent).toContain("Research 영역에서 오류가 발생했습니다");
+    expect(view.container.textContent).toContain(
+      "Research 영역에서 오류가 발생했습니다",
+    );
 
     shouldThrow = false;
     await clickButtonByText(view.container, "다시 시도");

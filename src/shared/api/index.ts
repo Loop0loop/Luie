@@ -10,6 +10,7 @@ import type {
   ProjectOpenResult,
   SearchResult,
   Snapshot,
+  SnapshotRestoreCandidate,
   Term,
   AppBootstrapStatus,
   AppUpdateCheckResult,
@@ -185,6 +186,9 @@ export type RendererApi = {
     getByProject: (projectId: string) => Promise<IPCResponse<Snapshot[]>>;
     getAll: (projectId: string) => Promise<IPCResponse<Snapshot[]>>;
     getByChapter: (chapterId: string) => Promise<IPCResponse<Snapshot[]>>;
+    listRestoreCandidates: () => Promise<
+      IPCResponse<SnapshotRestoreCandidate[]>
+    >;
     importFromFile: (filePath: string) => Promise<IPCResponse<Project>>;
     restore: (id: string) => Promise<IPCResponse<unknown>>;
     delete: (id: string) => Promise<IPCResponse<unknown>>;
@@ -299,9 +303,7 @@ export type RendererApi = {
         defaults: Record<string, string>;
       }>
     >;
-    setShortcuts: (settings: {
-      shortcuts: Record<string, string>;
-    }) => Promise<
+    setShortcuts: (settings: { shortcuts: Record<string, string> }) => Promise<
       IPCResponse<{
         shortcuts: Record<string, string>;
         defaults: Record<string, string>;

@@ -448,7 +448,31 @@ export const enBase = {
         save: "Save",
         saving: "Saving...",
         openLuie: "Open .luie",
-        restoreSnapshot: "Restore snapshot",
+        restore: "Restore",
+      },
+      restoreDialog: {
+        title: "Choose a saved version to restore",
+        description:
+          "Check the project name and save time first. After confirmation, Luie restores it as a new .luie file and opens it.",
+        loading: "Loading available saved versions...",
+        errorTitle: "Could not load the restore list",
+        errorDescription: "Please try loading it again in a moment.",
+        emptyTitle: "No saved versions were found",
+        emptyDescription: "Luie could not find any backup on this device yet.",
+        selectedLabel: "Selected saved version",
+        projectLabel: "Project",
+        savedAtLabel: "Saved at",
+        chapterLabel: "Reference chapter",
+        previewLabel: "Preview",
+        noChapter: "No chapter information",
+        noPreview: "No preview available.",
+        prompt: "Restore this saved version as a new .luie file?",
+        actions: {
+          refresh: "Refresh",
+          close: "Close",
+          restore: "Restore this version",
+          restoring: "Restoring...",
+        },
       },
       toast: {
         pathMissingBlocked:
@@ -459,6 +483,8 @@ export const enBase = {
         luieAttachFailed: "Failed to attach .luie file.",
         luieMaterialized: "Created and attached a new .luie file.",
         luieMaterializeFailed: "Failed to create .luie file.",
+        restoreCompleted: "Opened the restored .luie file.",
+        restoreFailed: "Restore failed.",
         legacyUnsupportedBlocked:
           "This app no longer supports legacy package .luie files.",
       },

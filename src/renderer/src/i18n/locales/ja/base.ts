@@ -451,7 +451,31 @@ export const jaBase = {
         save: "保存",
         saving: "保存中...",
         openLuie: ".luie を開く",
-        restoreSnapshot: "スナップショットを復元",
+        restore: "復元",
+      },
+      restoreDialog: {
+        title: "復元する保存分を選択",
+        description:
+          "プロジェクト名と保存時刻を見て選んでください。確認後、Luie が新しい .luie として復元して開きます。",
+        loading: "復元できる保存分を読み込んでいます...",
+        errorTitle: "復元一覧を読み込めませんでした",
+        errorDescription: "少し待ってからもう一度お試しください。",
+        emptyTitle: "復元できる保存分がありません",
+        emptyDescription: "この端末で見つかったバックアップはまだありません。",
+        selectedLabel: "選択した保存分",
+        projectLabel: "プロジェクト",
+        savedAtLabel: "保存時刻",
+        chapterLabel: "対象原稿",
+        previewLabel: "プレビュー",
+        noChapter: "原稿情報なし",
+        noPreview: "プレビューできる内容がありません。",
+        prompt: "この保存分を新しい .luie として復元しますか？",
+        actions: {
+          refresh: "再読み込み",
+          close: "閉じる",
+          restore: "この保存分を復元",
+          restoring: "復元中...",
+        },
       },
       toast: {
         pathMissingBlocked:
@@ -462,6 +486,8 @@ export const jaBase = {
         luieAttachFailed: ".luie の接続に失敗しました。",
         luieMaterialized: "新しい .luie ファイルを作成して接続しました。",
         luieMaterializeFailed: ".luie ファイルの作成に失敗しました。",
+        restoreCompleted: "復元した .luie をすぐに開きました。",
+        restoreFailed: "復元に失敗しました。",
         legacyUnsupportedBlocked:
           "このアプリは旧 package .luie をもうサポートしていません。",
       },

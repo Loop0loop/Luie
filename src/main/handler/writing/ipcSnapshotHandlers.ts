@@ -14,6 +14,7 @@ type SnapshotServiceLike = {
   createSnapshot: (input: SnapshotCreateInput) => Promise<unknown>;
   getSnapshotsByProject: (projectId: string) => Promise<unknown>;
   getSnapshotsByChapter: (chapterId: string) => Promise<unknown>;
+  listRestoreCandidates: () => Promise<unknown>;
   deleteSnapshot: (id: string) => Promise<unknown>;
   restoreSnapshot: (id: string) => Promise<unknown>;
   importSnapshotFile: (filePath: string) => Promise<unknown>;
@@ -29,28 +30,38 @@ export function registerSnapshotIPCHandlers(
       logTag: "SNAPSHOT_CREATE",
       failMessage: "Failed to create snapshot",
       argsSchema: z.tuple([snapshotCreateSchema]),
-      handler: (input: SnapshotCreateInput) => snapshotService.createSnapshot(input),
+      handler: (input: SnapshotCreateInput) =>
+        snapshotService.createSnapshot(input),
     },
     {
       channel: IPC_CHANNELS.SNAPSHOT_GET_BY_PROJECT,
       logTag: "SNAPSHOT_GET_BY_PROJECT",
       failMessage: "Failed to get snapshots by project",
       argsSchema: z.tuple([projectIdSchema]),
-      handler: (projectId: string) => snapshotService.getSnapshotsByProject(projectId),
+      handler: (projectId: string) =>
+        snapshotService.getSnapshotsByProject(projectId),
     },
     {
       channel: IPC_CHANNELS.SNAPSHOT_GET_ALL,
       logTag: "SNAPSHOT_GET_ALL",
       failMessage: "Failed to get snapshots",
       argsSchema: z.tuple([projectIdSchema]),
-      handler: (projectId: string) => snapshotService.getSnapshotsByProject(projectId),
+      handler: (projectId: string) =>
+        snapshotService.getSnapshotsByProject(projectId),
     },
     {
       channel: IPC_CHANNELS.SNAPSHOT_GET_BY_CHAPTER,
       logTag: "SNAPSHOT_GET_BY_CHAPTER",
       failMessage: "Failed to get snapshots by chapter",
       argsSchema: z.tuple([chapterIdSchema]),
-      handler: (chapterId: string) => snapshotService.getSnapshotsByChapter(chapterId),
+      handler: (chapterId: string) =>
+        snapshotService.getSnapshotsByChapter(chapterId),
+    },
+    {
+      channel: IPC_CHANNELS.SNAPSHOT_LIST_RESTORE_CANDIDATES,
+      logTag: "SNAPSHOT_LIST_RESTORE_CANDIDATES",
+      failMessage: "Failed to list restore candidates",
+      handler: () => snapshotService.listRestoreCandidates(),
     },
     {
       channel: IPC_CHANNELS.SNAPSHOT_DELETE,
@@ -71,7 +82,8 @@ export function registerSnapshotIPCHandlers(
       logTag: "SNAPSHOT_IMPORT_FILE",
       failMessage: "Failed to import snapshot file",
       argsSchema: z.tuple([z.string()]),
-      handler: (filePath: string) => snapshotService.importSnapshotFile(filePath),
+      handler: (filePath: string) =>
+        snapshotService.importSnapshotFile(filePath),
     },
   ]);
 }
