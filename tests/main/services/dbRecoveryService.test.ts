@@ -22,6 +22,7 @@ const mocked = vi.hoisted(() => {
   };
   const sqliteInstance = {
     pragma: vi.fn(),
+    prepare: vi.fn(),
     close: vi.fn(),
   };
   const BetterSqlite3 = vi.fn();
@@ -66,6 +67,7 @@ describe("DbRecoveryService", () => {
     mocked.cleanupClient.project.deleteMany.mockClear();
     mocked.cleanupClient.projectSettings.deleteMany.mockClear();
     mocked.sqliteInstance.pragma.mockReset();
+    mocked.sqliteInstance.prepare.mockReset();
     mocked.sqliteInstance.close.mockReset();
     mocked.BetterSqlite3.mockReset();
 
@@ -77,6 +79,14 @@ describe("DbRecoveryService", () => {
       if (query === "integrity_check") return [{ integrity_check: "ok" }];
       return [];
     });
+    mocked.sqliteInstance.prepare.mockImplementation(() => ({
+      get: () => ({
+        projectTitle: "Recovered Project",
+        chapterTitle: "Recovered Chapter",
+        chapterUpdatedAt: "2026-03-13T00:00:00.000Z",
+        excerpt: "Recovered text preview from wal content.",
+      }),
+    }));
     mocked.BetterSqlite3.mockImplementation(function MockDatabase() {
       return mocked.sqliteInstance;
     });
@@ -160,6 +170,12 @@ describe("DbRecoveryService", () => {
     expect(result.wal.exists).toBe(true);
     expect(result.shm.exists).toBe(true);
     expect(result.wal.sizeBytes).toBe(6);
+    expect(result.preview).toEqual({
+      projectTitle: "Recovered Project",
+      chapterTitle: "Recovered Chapter",
+      chapterUpdatedAt: "2026-03-13T00:00:00.000Z",
+      excerpt: "Recovered text preview from wal content.",
+    });
     expect(typeof result.checkedAt).toBe("string");
   });
 

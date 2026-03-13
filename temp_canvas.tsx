@@ -2,7 +2,6 @@
  * WorldGraphCanvas - React Flow 기반 세계관 그래프 캔버스
  */
 
-import { PlusSquare, Clock, Lightbulb } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactFlow, {
   Background,
@@ -16,7 +15,6 @@ import ReactFlow, {
   type ReactFlowInstance,
   BackgroundVariant,
   PanOnScrollMode,
-  SelectionMode,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { useTranslation } from "react-i18next";
@@ -38,12 +36,10 @@ import {
   WORLD_GRAPH_NODE_MENU_WIDTH_PX,
 } from "@shared/constants/worldGraphUI";
 import { CustomEntityNode } from "./CustomEntityNode";
-import { DraftBlockNode } from "./DraftBlockNode";
 import { useWorldGraphLayout } from "@renderer/features/research/hooks/useWorldGraphLayout";
 import { EditorSyncBus } from "@renderer/features/workspace/utils/EditorSyncBus";
 
 const nodeTypes = {
-  draft: DraftBlockNode,
   custom: CustomEntityNode,
 };
 
@@ -270,7 +266,6 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
       let isChanged = false;
       const prevById = new Map(prev.map((node) => [node.id, node] as const));
       const sourceRfNodesById = new Map(rfNodes.map((node) => [node.id, node] as const));
-      const draftNodes = prev.filter(n => n.type === "draft");
       const nextNodes = layoutedNodes.map((layoutNode: Node) => {
         const existing = prevById.get(layoutNode.id);
         const sourceRfNode = sourceRfNodesById.get(layoutNode.id);
@@ -325,8 +320,8 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         return existing;
       });
 
-      if (isChanged || prev.length !== (layoutedNodes.length + draftNodes.length)) {
-        return [...nextNodes, ...draftNodes];
+      if (isChanged || prev.length !== layoutedNodes.length) {
+        return nextNodes;
       }
       return prev;
     });
@@ -396,59 +391,22 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
   const onPaneDoubleClick = useCallback(
     (event: React.MouseEvent) => {
       event.preventDefault();
-      
-      if (!rfInstance) return;
-      
-      const position = rfInstance.screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
+      const position = getMenuPosition(
+        canvasRef.current,
+        event.clientX,
+        event.clientY,
+        WORLD_GRAPH_CREATE_MENU_WIDTH_PX,
+        WORLD_GRAPH_CREATE_MENU_HEIGHT_PX,
+      );
+      setCreateMenu({
+        left: position.left,
+        top: position.top,
+        flowX: event.clientX,
+        flowY: event.clientY,
       });
-
-      const draftId = `draft-${Date.now()}`;
-      const draftNode: Node = {
-        id: draftId,
-        type: 'draft',
-        position,
-        data: {
-          id: draftId,
-          onConvert: async (id: string, text: string) => {
-            setNodes((nds) => nds.filter((n) => n.id !== id));
-            
-            if (!text.trim() || !activeProjectId) return;
-            
-            let entityType: WorldEntitySourceType = "Concept"; 
-            if (text.includes("인물") || text.includes("캐릭터")) entityType = "Character";
-            else if (text.includes("세력") || text.includes("조직")) entityType = "Faction";
-            else if (text.includes("장소") || text.includes("지역")) entityType = "Place";
-            else if (text.includes("아이템") || text.includes("물건")) entityType = "Item";
-            else if (text.includes("사건") || text.includes("이벤트")) entityType = "Event";
-            else if (text.includes("규칙") || text.includes("법칙")) entityType = "Rule";
-            else if (text.includes("설정")) entityType = "Term";
-            
-            const cleanText = text.replace(/(인물|캐릭터|세력|조직|장소|지역|아이템|물건|사건|이벤트|규칙|법칙|설정)/g, "").trim() || text.trim();
-            
-            try {
-              await createGraphNode({
-                projectId: activeProjectId,
-                entityType,
-                subType: entityType === "Place" || entityType === "Concept" || entityType === "Rule" ? entityType : undefined,
-                name: cleanText,
-                positionX: position.x,
-                positionY: position.y,
-              });
-            } catch (err) {
-              console.error("Failed to create entity from draft", err);
-              showToast("엔티티 생성에 실패했습니다.", "error");
-            }
-          }
-        },
-      };
-
-      setNodes((nds) => nds.concat(draftNode));
-      setCreateMenu(null);
       setNodeMenu(null);
     },
-    [rfInstance, setNodes, activeProjectId, createGraphNode, showToast],
+    [],
   );
 
   const onFlowDoubleClick = useCallback(
@@ -623,10 +581,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         zoomOnScroll={false}
         zoomOnDoubleClick={false}
         preventScrolling={false}
-        selectionOnDrag={true}
-        panOnDrag={[1, 2]}
-        selectionMode={SelectionMode.Partial}
-        deleteKeyCode={["Backspace", "Delete"]}
+        deleteKeyCode={null}
         className="react-flow-premium"
         proOptions={{ hideAttribution: true }}
       >
@@ -700,65 +655,6 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
           </button>
         </div>
       )}
-
-      {/* Canvas Navbar (Obsidian style) */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5 px-3 py-1.5 bg-panel/90 backdrop-blur-md border border-border rounded-full shadow-lg">
-        <button
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-element hover:text-accent transition-all text-muted-foreground"
-          onClick={() => {
-            if (!rfInstance) return;
-            const center = rfInstance.screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-            const draftId = `draft-${Date.now()}`;
-            const draftNode: Node = {
-              id: draftId,
-              type: 'draft',
-              position: center,
-              data: {
-                id: draftId,
-                onConvert: async (id: string, text: string) => {
-                  setNodes((nds) => nds.filter((n) => n.id !== id));
-                  if (!text.trim() || !activeProjectId) return;
-                  
-                  let entityType: WorldEntitySourceType = "Concept"; 
-                  if (text.includes("인물") || text.includes("캐릭터")) entityType = "Character";
-                  else if (text.includes("세력") || text.includes("조직")) entityType = "Faction";
-                  else if (text.includes("장소") || text.includes("지역")) entityType = "Place";
-                  else if (text.includes("아이템") || text.includes("물건")) entityType = "Item";
-                  else if (text.includes("사건") || text.includes("이벤트")) entityType = "Event";
-                  else if (text.includes("규칙") || text.includes("법칙")) entityType = "Rule";
-                  else if (text.includes("설정")) entityType = "Term";
-                  
-                  const cleanText = text.replace(/(인물|캐릭터|세력|조직|장소|지역|아이템|물건|사건|이벤트|규칙|법칙|설정)/g, "").trim() || text.trim();
-                  try {
-                    await createGraphNode({
-                      projectId: activeProjectId,
-                      entityType,
-                      subType: entityType === "Place" || entityType === "Concept" || entityType === "Rule" ? entityType : undefined,
-                      name: cleanText,
-                      positionX: center.x,
-                      positionY: center.y,
-                    });
-                  } catch (err) {}
-                }
-              },
-            };
-            setNodes((nds) => nds.concat(draftNode));
-          }}
-        >
-          <PlusSquare size={16} />
-          <span className="text-[11px] font-medium">블록 추가</span>
-        </button>
-        <div className="w-[1px] h-4 bg-border/60"></div>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-element hover:text-accent transition-all text-muted-foreground">
-          <Clock size={16} />
-          <span className="text-[11px] font-medium">타임 추가</span>
-        </button>
-        <div className="w-[1px] h-4 bg-border/60"></div>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-element hover:text-accent transition-all text-muted-foreground">
-          <Lightbulb size={16} />
-          <span className="text-[11px] font-medium">아이디어</span>
-        </button>
-      </div>
     </div>
   );
 }

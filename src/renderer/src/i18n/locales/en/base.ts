@@ -270,6 +270,20 @@ export const enBase = {
         dbMissingDescription:
           "Luie needs the app database file to be present before it can attempt recovery.",
       },
+      dialog: {
+        checkingTitle: "Checking for recoverable recent saved changes",
+        checkingDescription:
+          "Luie is looking for the latest save trace left behind right before the app closed.",
+        readyTitle: "Unsaved writing can be brought back",
+        readyDescription:
+          "Luie found a save trace from right before the unexpected exit. If you recover now, Luie will restore that recent saved version for you.",
+        emptyTitle: "There is nothing to recover right now",
+        emptyDescription:
+          "Luie could not find a recent save trace to restore. You can check again if needed.",
+        blockedTitle: "The files needed for recovery are missing",
+        blockedDescription:
+          "Luie needs the target data file to be present before recovery can run.",
+      },
       scope: {
         currentProject: "Currently open manuscript",
         noOpenProject: "No manuscript is open",
@@ -281,9 +295,22 @@ export const enBase = {
         noProjects: "No local manuscript list is loaded right now.",
         moreProjects: "{{count}} more",
       },
+      summary: {
+        current: "Current manuscript",
+        currentSavedAt: "Current file saved at:",
+        recoverable: "Recoverable saved version",
+        backupSavedAt: "Recoverable version saved at:",
+        preview: "Preview of what will be restored",
+        projectChapter: "{{projectTitle}} · {{chapterTitle}}",
+        unknownBackup: "Recoverable saved version",
+      },
       actionTitle: "When you press recovery, Luie handles the difficult part",
       actionDescription:
         "You do not need to manage database files manually. Luie performs the following steps automatically and rolls back if needed.",
+      actions: {
+        ignore: "Ignore",
+        restore: "Restore from backup",
+      },
       resultTitle: "Last Run Result",
       resultBackupOnly: "Safety backup created",
       resultApplied: "Recovery attempt finished",

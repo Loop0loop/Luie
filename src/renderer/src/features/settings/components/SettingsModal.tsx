@@ -157,6 +157,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 recoveryScope={recoveryScope}
                 recoveryStatus={recoveryStatus}
                 recoveryStatusError={recoveryStatusError}
+                onDismiss={onClose}
                 onRefreshRecoveryStatus={handleRefreshRecoveryStatus}
                 onRunRecovery={handleRunRecovery}
               />

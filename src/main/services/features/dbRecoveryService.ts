@@ -15,6 +15,7 @@ import { db } from "../../database/index.js";
 const logger = createLogger("DbRecoveryService");
 const getRecoveryBackupRootDir = () =>
   path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR, "db-recovery");
+const RECOVERY_EXCERPT_MAX_LENGTH = 140;
 
 const toCheckpointRows = (
   value: unknown,
@@ -59,6 +60,23 @@ const toIntegrityRows = (value: unknown): string[] | undefined => {
   return rows.length > 0 ? rows : undefined;
 };
 
+const toExcerpt = (value: unknown): string | undefined => {
+  if (typeof value !== "string") return undefined;
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (normalized.length === 0) return undefined;
+  if (normalized.length <= RECOVERY_EXCERPT_MAX_LENGTH) {
+    return normalized;
+  }
+  return `${normalized.slice(0, RECOVERY_EXCERPT_MAX_LENGTH).trimEnd()}...`;
+};
+
+type RecoveryPreviewRow = {
+  projectTitle?: string;
+  chapterTitle?: string;
+  chapterUpdatedAt?: string;
+  excerpt?: string;
+};
+
 export class DbRecoveryService {
   async getRecoveryStatus(): Promise<DbRecoveryStatus> {
     const resolvedPath = db.getDatabasePath();
@@ -71,6 +89,10 @@ export class DbRecoveryService {
         this.readFileStatus(shmPath),
         this.getLatestBackupDir(),
       ]);
+    const preview =
+      databaseStatus.exists && walStatus.exists
+        ? await this.readLatestRecoveryPreview(resolvedPath)
+        : undefined;
 
     return {
       available: databaseStatus.exists && walStatus.exists,
@@ -85,6 +107,7 @@ export class DbRecoveryService {
       database: databaseStatus,
       wal: walStatus,
       shm: shmStatus,
+      preview,
     };
   }
 
@@ -277,6 +300,45 @@ export class DbRecoveryService {
         path: filePath,
         exists: false,
       };
+    }
+  }
+
+  private async readLatestRecoveryPreview(
+    dbPath: string,
+  ): Promise<DbRecoveryStatus["preview"] | undefined> {
+    let sqlite: Database.Database | null = null;
+    try {
+      sqlite = new Database(dbPath, { fileMustExist: true, readonly: true });
+      const row = sqlite
+        .prepare(
+          `SELECT
+             "Project"."title" AS projectTitle,
+             "Chapter"."title" AS chapterTitle,
+             "Chapter"."updatedAt" AS chapterUpdatedAt,
+             "Chapter"."content" AS excerpt
+           FROM "Chapter"
+           INNER JOIN "Project" ON "Project"."id" = "Chapter"."projectId"
+           WHERE "Chapter"."deletedAt" IS NULL
+           ORDER BY "Chapter"."updatedAt" DESC
+           LIMIT 1`,
+        )
+        .get() as RecoveryPreviewRow | undefined;
+
+      if (!row) {
+        return undefined;
+      }
+
+      return {
+        projectTitle: row.projectTitle,
+        chapterTitle: row.chapterTitle,
+        chapterUpdatedAt: row.chapterUpdatedAt,
+        excerpt: toExcerpt(row.excerpt),
+      };
+    } catch (error) {
+      logger.warn("Failed to read recovery preview", { error, dbPath });
+      return undefined;
+    } finally {
+      sqlite?.close();
     }
   }
 

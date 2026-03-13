@@ -271,6 +271,14 @@ export const dbRecoveryStatusSchema = z.object({
   database: dbRecoveryFileStatusSchema,
   wal: dbRecoveryFileStatusSchema,
   shm: dbRecoveryFileStatusSchema,
+  preview: z
+    .object({
+      projectTitle: z.string().optional(),
+      chapterTitle: z.string().optional(),
+      chapterUpdatedAt: z.string().optional(),
+      excerpt: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const dbRecoveryResultSchema = z.object({

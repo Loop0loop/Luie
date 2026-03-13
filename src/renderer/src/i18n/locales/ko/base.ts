@@ -271,6 +271,20 @@ export const koBase = {
         dbMissingDescription:
           "앱 데이터 파일을 먼저 확인해야 합니다. 이 상태에서는 복원을 진행하지 않습니다.",
       },
+      dialog: {
+        checkingTitle: "복원할 최근 저장분을 확인하고 있어요",
+        checkingDescription:
+          "Luie가 방금 종료 직전의 저장 흔적이 남아 있는지 살펴보고 있습니다.",
+        readyTitle: "저장되지 않은 원고를 되살릴 수 있습니다",
+        readyDescription:
+          "Luie가 비정상 종료 직전의 저장 흔적을 발견했습니다. 지금 복원하면 가장 최근에 남아 있던 저장분을 다시 붙입니다.",
+        emptyTitle: "지금 복원할 저장 흔적은 없습니다",
+        emptyDescription:
+          "현재는 되살릴 최근 저장 흔적을 찾지 못했습니다. 필요하면 다시 확인해 볼 수 있습니다.",
+        blockedTitle: "복원에 필요한 파일을 찾지 못했습니다",
+        blockedDescription:
+          "복원 대상 데이터 파일이 먼저 정상적으로 보여야 합니다. 이 상태에서는 복원을 진행하지 않습니다.",
+      },
       scope: {
         currentProject: "지금 열려 있는 원고",
         noOpenProject: "열려 있는 원고 없음",
@@ -282,9 +296,22 @@ export const koBase = {
         noProjects: "불러온 로컬 원고 목록이 없습니다.",
         moreProjects: "외 {{count}}개",
       },
+      summary: {
+        current: "현재 원고",
+        currentSavedAt: "현재 파일 기준 저장 시각:",
+        recoverable: "복원 가능 저장분",
+        backupSavedAt: "복원 가능 저장 시각:",
+        preview: "복원될 내용 미리보기",
+        projectChapter: "{{projectTitle}} · {{chapterTitle}}",
+        unknownBackup: "복원 가능한 저장분",
+      },
       actionTitle: "복원 버튼을 누르면 Luie가 자동으로 처리합니다",
       actionDescription:
         "어려운 작업은 Luie가 대신합니다. 아래 과정은 자동으로 진행되며, 문제가 생기면 원래 상태로 되돌립니다.",
+      actions: {
+        ignore: "무시하고 닫기",
+        restore: "백업본으로 복원",
+      },
       resultTitle: "방금 실행 결과",
       resultBackupOnly: "안전 백업 완료",
       resultApplied: "복원 시도 완료",

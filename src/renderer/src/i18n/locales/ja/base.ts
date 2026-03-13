@@ -272,6 +272,20 @@ export const jaBase = {
         dbMissingDescription:
           "復元を試す前に、アプリのデータベースファイルが存在している必要があります。",
       },
+      dialog: {
+        checkingTitle: "復元できる直近の保存内容を確認しています",
+        checkingDescription:
+          "Luie が異常終了の直前に残った保存痕跡を探しています。",
+        readyTitle: "未保存の原稿を戻せます",
+        readyDescription:
+          "Luie が異常終了の直前の保存痕跡を見つけました。今すぐ復元すれば、その直近の保存内容を戻せます。",
+        emptyTitle: "今は復元できる内容がありません",
+        emptyDescription:
+          "Luie は復元できる直近の保存痕跡を見つけられませんでした。必要ならもう一度確認できます。",
+        blockedTitle: "復元に必要なファイルが見つかりません",
+        blockedDescription:
+          "復元には対象データファイルが見えている必要があります。この状態では復元を実行しません。",
+      },
       scope: {
         currentProject: "現在開いている原稿",
         noOpenProject: "開いている原稿はありません",
@@ -283,9 +297,22 @@ export const jaBase = {
         noProjects: "ローカル原稿一覧はまだ読み込まれていません。",
         moreProjects: "ほか {{count}} 件",
       },
+      summary: {
+        current: "現在の原稿",
+        currentSavedAt: "現在のファイル保存時刻:",
+        recoverable: "復元できる保存内容",
+        backupSavedAt: "復元できる保存時刻:",
+        preview: "復元される内容のプレビュー",
+        projectChapter: "{{projectTitle}} · {{chapterTitle}}",
+        unknownBackup: "復元できる保存内容",
+      },
       actionTitle: "復元ボタンを押すと、難しい処理は Luie が行います",
       actionDescription:
         "データベースファイルを手作業で扱う必要はありません。Luie が自動で処理し、必要なら元に戻します。",
+      actions: {
+        ignore: "無視して閉じる",
+        restore: "バックアップから復元",
+      },
       resultTitle: "直前の実行結果",
       resultBackupOnly: "安全バックアップ完了",
       resultApplied: "復元処理の完了",

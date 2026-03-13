@@ -575,6 +575,12 @@ export interface DbRecoveryStatus {
   database: DbRecoveryFileStatus;
   wal: DbRecoveryFileStatus;
   shm: DbRecoveryFileStatus;
+  preview?: {
+    projectTitle?: string;
+    chapterTitle?: string;
+    chapterUpdatedAt?: string;
+    excerpt?: string;
+  };
 }
 
 export interface DbRecoveryResult {
