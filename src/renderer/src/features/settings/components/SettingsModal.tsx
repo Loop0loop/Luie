@@ -31,6 +31,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     isRecovering,
     isRecoveryStatusLoading,
     recoveryResult,
+    recoveryScope,
     recoveryStatus,
     recoveryStatusError,
     syncStatus,
@@ -153,6 +154,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 isRecovering={isRecovering}
                 isRecoveryStatusLoading={isRecoveryStatusLoading}
                 recoveryResult={recoveryResult}
+                recoveryScope={recoveryScope}
                 recoveryStatus={recoveryStatus}
                 recoveryStatusError={recoveryStatusError}
                 onRefreshRecoveryStatus={handleRefreshRecoveryStatus}

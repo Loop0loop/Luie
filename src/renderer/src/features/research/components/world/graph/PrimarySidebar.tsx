@@ -47,7 +47,7 @@ export function PrimarySidebar() {
   };
 
   return (
-    <div className="flex h-full w-[260px] flex-col bg-transparent  text-foreground transition-colors overflow-hidden">
+    <div className="flex h-full w-[260px] flex-col bg-sidebar text-foreground transition-colors overflow-hidden">
       
       {/* 
         Professional Header: 

@@ -226,38 +226,26 @@ export const koBase = {
     },
     recovery: {
       title: "파일 복원",
-      description:
-        "현재 앱 데이터베이스 옆의 .wal/.shm 파일 상태를 확인하고, WAL 내용을 메인 데이터베이스에 반영합니다.",
-      targetHint:
-        "대상 파일은 현재 앱이 사용하는 SQLite 파일과 같은 경로의 .wal/.shm 입니다. 실행 전 복원 백업이 생성됩니다.",
-      refresh: "상태 새로고침",
-      howItWorks: "복원 절차",
+      refresh: "다시 확인",
       steps: {
-        backup:
-          "현재 데이터베이스, .wal, .shm 파일을 Backups/db-recovery 아래에 먼저 복사합니다.",
-        applyWal:
-          "SQLite wal_checkpoint(FULL)로 .wal 내용을 데이터베이스 본문에 반영합니다.",
-        verify:
-          "integrity_check로 무결성을 검사하고 실패하면 방금 만든 백업으로 되돌립니다.",
+        safeTitle: "먼저 안전 복사본을 만듭니다",
+        safeDescription:
+          "현재 상태를 따로 저장해 두기 때문에 실패해도 원래 상태로 되돌릴 수 있습니다.",
+        restoreTitle: "최근 저장분을 되살립니다",
+        restoreDescription:
+          "앱 종료 직전 메인 파일에 아직 합쳐지지 않은 최근 저장 내용을 다시 붙입니다.",
+        rollbackTitle: "문제가 있으면 자동으로 되돌립니다",
+        rollbackDescription:
+          "검사에서 이상이 보이면 방금 만든 안전 복사본으로 자동 복구합니다.",
       },
-      dryRun: "백업만 만들기",
-      run: "복원 실행",
+      dryRun: "먼저 안전 백업만 만들기",
+      run: "최근 저장분 복원하기",
       running: "복원 중...",
-      success: "복원이 완료되었습니다.",
       failed: "복원 실행에 실패했습니다.",
       error: "복원 중 오류가 발생했습니다.",
-      statusAvailable: "복원 가능",
-      statusUnavailable: "복원 불가",
-      statusReasonReady: "현재 .wal 파일이 감지되어 복원을 실행할 수 있습니다.",
-      statusReasonWalMissing:
-        "현재 데이터베이스 옆에 .wal 파일이 없어 복원을 실행할 수 없습니다.",
-      statusReasonDbMissing:
-        "현재 데이터베이스 파일을 찾지 못했습니다. DB 초기화 상태를 먼저 확인해야 합니다.",
       lastChecked: "마지막 확인",
-      backupRoot: "복원 백업 루트",
-      latestBackup: "최근 복원 백업",
       unavailableHint:
-        "복원을 실행하려면 데이터베이스 파일 옆에 .wal 파일이 존재해야 합니다.",
+        "지금은 되살릴 최근 저장분이 보이지 않습니다. 보통 .wal 파일이 없을 때 이렇게 표시됩니다.",
       file: {
         database: "데이터베이스",
         wal: "WAL 로그",
@@ -265,21 +253,64 @@ export const koBase = {
         present: "파일 있음",
         missing: "파일 없음",
       },
-      resultTitle: "마지막 실행 결과",
-      resultBackupOnly: "백업만 생성",
-      resultApplied: "복원 실행 결과",
+      hero: {
+        checkingBadge: "확인 중",
+        checkingTitle: "복원할 최근 저장분을 확인하고 있습니다",
+        checkingDescription:
+          "잠시만 기다리면 Luie가 복원 가능한 저장 흔적이 남아 있는지 자동으로 확인합니다.",
+        readyBadge: "복원 가능",
+        readyTitle: "최근 저장분을 되살릴 수 있어요",
+        readyDescription:
+          "앱이 메인 파일에 아직 합치지 못한 최근 저장분을 찾았습니다. 아래 복원 버튼을 누르면 Luie가 자동으로 안전 복구를 시도합니다.",
+        emptyBadge: "지금은 복원할 내용 없음",
+        emptyTitle: "지금 복원할 최근 저장분이 보이지 않습니다",
+        emptyDescription:
+          "최근 저장 흔적(.wal)을 찾지 못했습니다. 지금은 복원 버튼을 눌러도 되살릴 내용이 없습니다.",
+        blockedBadge: "확인 필요",
+        dbMissingTitle: "복원 대상 파일을 찾지 못했습니다",
+        dbMissingDescription:
+          "앱 데이터 파일을 먼저 확인해야 합니다. 이 상태에서는 복원을 진행하지 않습니다.",
+      },
+      scope: {
+        currentProject: "지금 열려 있는 원고",
+        noOpenProject: "열려 있는 원고 없음",
+        library: "복원 대상",
+        projectCount: "로컬 원고 {{count}}개",
+        libraryDescription:
+          "이 기능은 현재 프로젝트 하나가 아니라, 이 기기에 저장된 Luie 로컬 보관함 전체를 대상으로 합니다.",
+        preview: "같이 확인되는 원고",
+        noProjects: "불러온 로컬 원고 목록이 없습니다.",
+        moreProjects: "외 {{count}}개",
+      },
+      actionTitle: "복원 버튼을 누르면 Luie가 자동으로 처리합니다",
+      actionDescription:
+        "어려운 작업은 Luie가 대신합니다. 아래 과정은 자동으로 진행되며, 문제가 생기면 원래 상태로 되돌립니다.",
+      resultTitle: "방금 실행 결과",
+      resultBackupOnly: "안전 백업 완료",
+      resultApplied: "복원 시도 완료",
+      technicalTitle: "기술 정보",
+      technicalDescription:
+        "경로, 파일 크기, 복원 백업 위치 같은 상세 정보를 보고 싶을 때만 열어 보세요.",
       fields: {
         path: "경로",
         size: "크기",
         updatedAt: "수정 시각",
         notFound: "파일 없음",
         backupDir: "생성된 백업",
+        backupRootDir: "백업 보관 위치",
+        latestBackupDir: "최근 생성된 백업",
         checkpoint: "체크포인트 결과",
         integrity: "무결성 검사",
       },
       messages: {
+        backupCreated:
+          "안전 백업을 만들었습니다. 이제 원하면 실제 복원을 진행할 수 있습니다.",
+        recoveryCompleted:
+          "최근 저장분 복원이 끝났습니다. Luie가 자동으로 무결성 검사까지 마쳤습니다.",
+        walMissing:
+          "지금은 되살릴 최근 저장분이 보이지 않습니다. 복원 가능한 .wal 파일을 찾지 못했습니다.",
         walBusy:
-          "다른 프로세스가 WAL을 잡고 있어 체크포인트를 완료하지 못했습니다. 앱을 재시작한 뒤 다시 시도해 주세요.",
+          "다른 프로세스가 아직 복원 파일을 사용 중입니다. Luie를 완전히 종료한 뒤 다시 시도해 주세요.",
         integrityFailed: "무결성 검사에서 오류가 발견되었습니다: {{detail}}",
         statusLoadFailed: "복원 상태를 불러오지 못했습니다.",
       },

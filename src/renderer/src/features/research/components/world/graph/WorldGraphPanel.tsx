@@ -165,7 +165,7 @@ export function WorldGraphPanel() {
                 {...resizeHandleProps}
                 className="group relative w-3 shrink-0 cursor-col-resize bg-transparent select-none touch-none"
               >
-                <div className="absolute inset-y-3 left-1/2 w-px -translate-x-1/2 rounded-full bg-border/10 transition-colors group-hover:bg-accent group-data-[dragging]:bg-accent" />
+                <div className="absolute inset-y-3 left-1/2 w-px -translate-x-1/2 rounded-full bg-transparent transition-colors group-hover:bg-accent/50 group-data-[dragging]:bg-accent" />
               </PanelResizeHandle>
             </>
           )}

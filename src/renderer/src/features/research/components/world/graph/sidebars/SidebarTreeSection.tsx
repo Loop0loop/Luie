@@ -119,7 +119,7 @@ export function TreeItem({
           "group flex w-full items-center gap-2 rounded-md py-[5px] text-left text-[13px] cursor-pointer outline-none transition-all duration-100",
           isActive
             ? "bg-accent text-accent-foreground font-medium shadow-[0_1px_2px_rgba(0,0,0,0.03)]" // In macOS/Linear, selected items often pop out slightly
-            : "text-foreground/80 font-normal hover:bg-muted/60 active:bg-muted"
+            : "text-foreground/80 font-normal hover:bg-surface active:bg-muted"
         )}
       >
         <div className="shrink-0 w-[14px] flex items-center justify-center">
@@ -152,7 +152,7 @@ export function TreeItem({
          <div className="mt-[2px] flex flex-col gap-[2px] relative">
            {/* Connecting line for folders (Subtle Mac style) */}
            <div 
-             className="absolute left-[20px] top-0 bottom-0 w-px bg-border/10 pointer-events-none" 
+             className="absolute left-[20px] top-0 bottom-0 w-px bg-transparent pointer-events-none" 
              style={{ left: `${paddingLeft + 14}px` }} 
            />
            {React.Children.map(children, child => {

@@ -225,38 +225,26 @@ export const enBase = {
     },
     recovery: {
       title: "File Recovery",
-      description:
-        "Inspect the current database-sidecar .wal/.shm files and apply WAL contents back into the main database.",
-      targetHint:
-        "This targets the SQLite file currently used by the app and its adjacent .wal/.shm files. A recovery backup is created first.",
-      refresh: "Refresh status",
-      howItWorks: "Recovery Flow",
+      refresh: "Check again",
       steps: {
-        backup:
-          "Copy the current database, .wal, and .shm files into Backups/db-recovery before making changes.",
-        applyWal:
-          "Run SQLite wal_checkpoint(FULL) to merge WAL contents into the main database file.",
-        verify:
-          "Run integrity_check, and if it fails, restore the files from the newly created backup.",
+        safeTitle: "Create a safe backup first",
+        safeDescription:
+          "The current state is copied aside first, so Luie can restore it if anything goes wrong.",
+        restoreTitle: "Bring back the latest saved changes",
+        restoreDescription:
+          "Luie applies recent saved changes that had not been merged into the main file yet.",
+        rollbackTitle: "Roll back automatically if there is a problem",
+        rollbackDescription:
+          "If the integrity check fails, Luie restores the backup automatically.",
       },
-      dryRun: "Create backup only",
-      run: "Run recovery",
+      dryRun: "Create a safety backup first",
+      run: "Recover recent saved changes",
       running: "Recovering...",
-      success: "Recovery completed.",
       failed: "Recovery failed.",
       error: "Recovery encountered an error.",
-      statusAvailable: "Recovery Ready",
-      statusUnavailable: "Recovery Unavailable",
-      statusReasonReady: "A .wal file is present, so WAL recovery can run.",
-      statusReasonWalMissing:
-        "No .wal file is present next to the current database, so recovery cannot run yet.",
-      statusReasonDbMissing:
-        "The current database file could not be found. Check database initialization first.",
       lastChecked: "Last checked",
-      backupRoot: "Recovery Backup Root",
-      latestBackup: "Latest Recovery Backup",
       unavailableHint:
-        "Recovery requires a .wal file next to the current database file.",
+        "There is no recent saved change to recover right now. This usually means no .wal file was found.",
       file: {
         database: "Database",
         wal: "WAL Log",
@@ -264,21 +252,64 @@ export const enBase = {
         present: "Present",
         missing: "Missing",
       },
+      hero: {
+        checkingBadge: "Checking",
+        checkingTitle: "Looking for recoverable recent saved changes",
+        checkingDescription:
+          "Luie is checking whether there is a recoverable save trace left behind.",
+        readyBadge: "Recovery available",
+        readyTitle: "Recent saved changes can be brought back",
+        readyDescription:
+          "Luie found recent saved changes that were not merged into the main file yet. Press the recovery button below and Luie will handle the recovery flow for you.",
+        emptyBadge: "Nothing to recover right now",
+        emptyTitle: "There is no recent saved change to recover right now",
+        emptyDescription:
+          "Luie could not find a recoverable .wal trace, so there is nothing to restore at the moment.",
+        blockedBadge: "Needs attention",
+        dbMissingTitle: "The recovery target file could not be found",
+        dbMissingDescription:
+          "Luie needs the app database file to be present before it can attempt recovery.",
+      },
+      scope: {
+        currentProject: "Currently open manuscript",
+        noOpenProject: "No manuscript is open",
+        library: "What this affects",
+        projectCount: "{{count}} local manuscripts",
+        libraryDescription:
+          "This recovery affects Luie's local library on this device, not just the currently open project.",
+        preview: "Manuscripts currently in that library",
+        noProjects: "No local manuscript list is loaded right now.",
+        moreProjects: "{{count}} more",
+      },
+      actionTitle: "When you press recovery, Luie handles the difficult part",
+      actionDescription:
+        "You do not need to manage database files manually. Luie performs the following steps automatically and rolls back if needed.",
       resultTitle: "Last Run Result",
-      resultBackupOnly: "Backup Only",
-      resultApplied: "Recovery Result",
+      resultBackupOnly: "Safety backup created",
+      resultApplied: "Recovery attempt finished",
+      technicalTitle: "Technical details",
+      technicalDescription:
+        "Open this only if you want to inspect file paths, file sizes, or backup locations.",
       fields: {
         path: "Path",
         size: "Size",
         updatedAt: "Updated",
         notFound: "Not found",
         backupDir: "Created backup",
+        backupRootDir: "Backup root location",
+        latestBackupDir: "Latest created backup",
         checkpoint: "Checkpoint output",
         integrity: "Integrity check",
       },
       messages: {
+        backupCreated:
+          "A safety backup was created. You can now choose to run the actual recovery.",
+        recoveryCompleted:
+          "Recovery finished. Luie also completed its integrity check.",
+        walMissing:
+          "There is no recoverable recent saved change right now. Luie could not find a usable .wal file.",
         walBusy:
-          "Another process is still holding the WAL, so checkpoint could not complete. Restart the app and try again.",
+          "Another process is still using the recovery files. Fully quit Luie and try again.",
         integrityFailed: "Integrity check reported a problem: {{detail}}",
         statusLoadFailed: "Failed to load recovery status.",
       },

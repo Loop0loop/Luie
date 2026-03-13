@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TFunction } from "i18next";
 import type {
   DbRecoveryResult,
@@ -6,6 +6,7 @@ import type {
 } from "@shared/types/index.js";
 import type { ToastContextType } from "@shared/ui/ToastContext";
 import { api } from "@shared/api";
+import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import {
   dbRecoveryResultSchema,
   dbRecoveryStatusSchema,
@@ -13,7 +14,26 @@ import {
 
 type ShowToast = ToastContextType["showToast"];
 
+interface RecoveryScopeSummary {
+  currentProjectTitle: string | null;
+  localProjectCount: number;
+  previewTitles: string[];
+  remainingProjectCount: number;
+}
+
 const formatRecoveryMessage = (t: TFunction, message: string) => {
+  if (message === "Backup created. Run recovery to apply WAL.") {
+    return t("settings.recovery.messages.backupCreated");
+  }
+
+  if (message === "Recovery completed successfully.") {
+    return t("settings.recovery.messages.recoveryCompleted");
+  }
+
+  if (message === "WAL file not found. Recovery is not available.") {
+    return t("settings.recovery.messages.walMissing");
+  }
+
   if (message.startsWith("DB_RECOVERY_WAL_BUSY")) {
     return t("settings.recovery.messages.walBusy");
   }
@@ -36,6 +56,8 @@ const buildFallbackResult = (
 });
 
 export function useSettingsRecovery(t: TFunction, showToast: ShowToast) {
+  const currentProject = useProjectStore((state) => state.currentProject);
+  const projects = useProjectStore((state) => state.projects);
   const mountedRef = useRef(true);
   const recoveryRunLockRef = useRef(false);
   const recoveryStatusRequestIdRef = useRef(0);
@@ -50,6 +72,27 @@ export function useSettingsRecovery(t: TFunction, showToast: ShowToast) {
   const [recoveryResult, setRecoveryResult] = useState<DbRecoveryResult | null>(
     null,
   );
+  const recoveryScope = useMemo<RecoveryScopeSummary>(() => {
+    const orderedProjects = [
+      ...(currentProject ? [currentProject] : []),
+      ...projects.filter((project) => project.id !== currentProject?.id),
+    ];
+    const previewTitles = orderedProjects
+      .map((project) => project.title?.trim())
+      .filter((title): title is string => Boolean(title))
+      .slice(0, 4);
+    const localProjectCount = Math.max(projects.length, currentProject ? 1 : 0);
+
+    return {
+      currentProjectTitle: currentProject?.title ?? null,
+      localProjectCount,
+      previewTitles,
+      remainingProjectCount: Math.max(
+        localProjectCount - previewTitles.length,
+        0,
+      ),
+    };
+  }, [currentProject, projects]);
 
   const refreshRecoveryStatus = useCallback(async () => {
     const requestId = recoveryStatusRequestIdRef.current + 1;
@@ -185,6 +228,7 @@ export function useSettingsRecovery(t: TFunction, showToast: ShowToast) {
     isRecovering,
     isRecoveryStatusLoading,
     recoveryResult,
+    recoveryScope,
     recoveryStatus,
     recoveryStatusError,
     refreshRecoveryStatus,

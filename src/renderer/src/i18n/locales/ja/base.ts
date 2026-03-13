@@ -227,39 +227,26 @@ export const jaBase = {
     },
     recovery: {
       title: "ファイル復元",
-      description:
-        "現在のデータベース横にある .wal/.shm ファイルの状態を確認し、WAL の内容をメインデータベースへ反映します。",
-      targetHint:
-        "対象はアプリが現在使用している SQLite ファイルと、その隣にある .wal/.shm ファイルです。実行前に復元バックアップを作成します。",
-      refresh: "状態を更新",
-      howItWorks: "復元手順",
+      refresh: "もう一度確認",
       steps: {
-        backup:
-          "現在のデータベース、.wal、.shm ファイルを Backups/db-recovery 配下へ先にコピーします。",
-        applyWal:
-          "SQLite の wal_checkpoint(FULL) を実行し、.wal の内容をメインデータベースへ反映します。",
-        verify:
-          "integrity_check で整合性を確認し、失敗した場合は直前に作成したバックアップへ戻します。",
+        safeTitle: "最初に安全なバックアップを作成します",
+        safeDescription:
+          "現在の状態を先に別保存するので、問題が起きても元に戻せます。",
+        restoreTitle: "直近の保存内容を戻します",
+        restoreDescription:
+          "メインファイルにまだ反映されていなかった直近の保存内容を Luie が戻します。",
+        rollbackTitle: "問題があれば自動で元に戻します",
+        rollbackDescription:
+          "整合性チェックに失敗した場合は、Luie が自動でバックアップを復元します。",
       },
-      dryRun: "バックアップのみ作成",
-      run: "復元を実行",
+      dryRun: "先に安全バックアップだけ作る",
+      run: "直近の保存内容を復元する",
       running: "復元中...",
-      success: "復元が完了しました。",
       failed: "復元の実行に失敗しました。",
       error: "復元中にエラーが発生しました。",
-      statusAvailable: "復元可能",
-      statusUnavailable: "復元不可",
-      statusReasonReady:
-        "現在 .wal ファイルが存在するため、WAL 復元を実行できます。",
-      statusReasonWalMissing:
-        "現在のデータベース横に .wal ファイルがないため、まだ復元を実行できません。",
-      statusReasonDbMissing:
-        "現在のデータベースファイルが見つかりません。先に DB 初期化状態を確認してください。",
       lastChecked: "最終確認",
-      backupRoot: "復元バックアップルート",
-      latestBackup: "最新の復元バックアップ",
       unavailableHint:
-        "復元を実行するには、現在のデータベースファイルの横に .wal ファイルが必要です。",
+        "今は復元できる直近の保存内容が見つかっていません。通常は .wal ファイルがないときにこの表示になります。",
       file: {
         database: "データベース",
         wal: "WAL ログ",
@@ -267,21 +254,64 @@ export const jaBase = {
         present: "あり",
         missing: "なし",
       },
-      resultTitle: "直近の実行結果",
-      resultBackupOnly: "バックアップのみ",
-      resultApplied: "復元実行結果",
+      hero: {
+        checkingBadge: "確認中",
+        checkingTitle: "復元できる直近の保存内容を確認しています",
+        checkingDescription:
+          "Luie が復元可能な保存痕跡が残っているかを自動で調べています。",
+        readyBadge: "復元可能",
+        readyTitle: "直近の保存内容を戻せます",
+        readyDescription:
+          "メインファイルへまだ反映されていない直近の保存内容が見つかりました。下の復元ボタンを押せば、Luie が安全に復元を試みます。",
+        emptyBadge: "今は復元するものがありません",
+        emptyTitle: "今は復元できる直近の保存内容が見つかっていません",
+        emptyDescription:
+          "復元可能な .wal の痕跡が見つからないため、今は戻せる内容がありません。",
+        blockedBadge: "確認が必要",
+        dbMissingTitle: "復元対象のファイルが見つかりません",
+        dbMissingDescription:
+          "復元を試す前に、アプリのデータベースファイルが存在している必要があります。",
+      },
+      scope: {
+        currentProject: "現在開いている原稿",
+        noOpenProject: "開いている原稿はありません",
+        library: "何が対象か",
+        projectCount: "ローカル原稿 {{count}} 件",
+        libraryDescription:
+          "この復元は現在のプロジェクトだけでなく、この端末上の Luie ローカル保管庫全体に影響します。",
+        preview: "その保管庫で確認できている原稿",
+        noProjects: "ローカル原稿一覧はまだ読み込まれていません。",
+        moreProjects: "ほか {{count}} 件",
+      },
+      actionTitle: "復元ボタンを押すと、難しい処理は Luie が行います",
+      actionDescription:
+        "データベースファイルを手作業で扱う必要はありません。Luie が自動で処理し、必要なら元に戻します。",
+      resultTitle: "直前の実行結果",
+      resultBackupOnly: "安全バックアップ完了",
+      resultApplied: "復元処理の完了",
+      technicalTitle: "技術情報",
+      technicalDescription:
+        "パス、ファイルサイズ、バックアップ保存先などの詳細を見たいときだけ開いてください。",
       fields: {
         path: "パス",
         size: "サイズ",
         updatedAt: "更新日時",
         notFound: "ファイルなし",
         backupDir: "作成したバックアップ",
+        backupRootDir: "バックアップ保存先",
+        latestBackupDir: "最近作成したバックアップ",
         checkpoint: "チェックポイント結果",
         integrity: "整合性チェック",
       },
       messages: {
+        backupCreated:
+          "安全バックアップを作成しました。必要ならこのまま実際の復元を実行できます。",
+        recoveryCompleted:
+          "復元が完了し、Luie が整合性チェックまで終えました。",
+        walMissing:
+          "今は復元できる直近の保存内容がありません。利用可能な .wal ファイルが見つかりませんでした。",
         walBusy:
-          "別プロセスが WAL を保持しているため、チェックポイントを完了できませんでした。アプリを再起動して再試行してください。",
+          "別のプロセスがまだ復元ファイルを使用しています。Luie を完全に終了してからもう一度試してください。",
         integrityFailed: "整合性チェックで問題が見つかりました: {{detail}}",
         statusLoadFailed: "復元状態の取得に失敗しました。",
       },
