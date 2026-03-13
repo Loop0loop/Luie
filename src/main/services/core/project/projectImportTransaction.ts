@@ -59,6 +59,53 @@ const parseDateInput = (value: unknown, fallback: Date): Date => {
   return Number.isNaN(parsed.getTime()) ? fallback : parsed;
 };
 
+const toValidTimestamp = (value: unknown): number | null => {
+  if (typeof value !== "string" || value.length === 0) {
+    return null;
+  }
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const resolveImportedAt = (input: {
+  meta: LuieMetaInput;
+  worldSynopsis?: ImportedWorldDocumentPayload;
+  worldPlot?: ImportedWorldDocumentPayload;
+  worldDrawing?: ImportedWorldDocumentPayload;
+  worldMindmap?: ImportedWorldDocumentPayload;
+  worldScrapMemos?: ImportedWorldDocumentPayload;
+  worldGraph?: ImportedWorldDocumentPayload;
+  snapshotsForCreate: SnapshotCreateRow[];
+}): Date => {
+  let latestTimestamp =
+    toValidTimestamp(input.meta.updatedAt) ??
+    toValidTimestamp(input.meta.createdAt) ??
+    Date.now();
+
+  const collectPayloadUpdatedAt = (payload: ImportedWorldDocumentPayload) => {
+    if (!payload || typeof payload !== "object") return;
+    const candidate = toValidTimestamp(
+      (payload as Record<string, unknown>).updatedAt,
+    );
+    if (candidate !== null) {
+      latestTimestamp = Math.max(latestTimestamp, candidate);
+    }
+  };
+
+  collectPayloadUpdatedAt(input.worldSynopsis);
+  collectPayloadUpdatedAt(input.worldPlot);
+  collectPayloadUpdatedAt(input.worldDrawing);
+  collectPayloadUpdatedAt(input.worldMindmap);
+  collectPayloadUpdatedAt(input.worldScrapMemos);
+  collectPayloadUpdatedAt(input.worldGraph);
+
+  for (const snapshot of input.snapshotsForCreate) {
+    latestTimestamp = Math.max(latestTimestamp, snapshot.createdAt.getTime());
+  }
+
+  return new Date(latestTimestamp);
+};
+
 const buildImportedWorldDocumentRows = (input: {
   projectId: string;
   importedAt: Date;
@@ -164,7 +211,16 @@ export const applyProjectImportTransaction = async (
     relationsForCreate,
     snapshotsForCreate,
   } = input;
-  const importedAt = parseDateInput(meta.updatedAt, new Date());
+  const importedAt = resolveImportedAt({
+    meta,
+    worldSynopsis,
+    worldPlot,
+    worldDrawing,
+    worldMindmap,
+    worldScrapMemos,
+    worldGraph,
+    snapshotsForCreate,
+  });
   const importedSynopsisText =
     worldSynopsis &&
     typeof worldSynopsis === "object" &&
@@ -208,7 +264,7 @@ export const applyProjectImportTransaction = async (
           importedSynopsisText ??
           undefined,
         createdAt: meta.createdAt ? new Date(meta.createdAt) : undefined,
-        updatedAt: meta.updatedAt ? new Date(meta.updatedAt) : undefined,
+        updatedAt: importedAt,
         settings: {
           create: {
             autoSave: true,

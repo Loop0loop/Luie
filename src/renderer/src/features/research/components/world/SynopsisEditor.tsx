@@ -8,9 +8,11 @@ import { Lock, Unlock, PenLine, FileText, Sparkles } from "lucide-react";
 import { worldPackageStorage } from "@renderer/features/research/services/worldPackageStorage";
 import type { WorldSynopsisData, WorldSynopsisStatus } from "@shared/types";
 import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
+import { useToast } from "@shared/ui/ToastContext";
 
 export function SynopsisEditor() {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const { currentItem: currentProject, update: updateProject } =
     useProjectStore(
       useShallow((state) => ({
@@ -61,11 +63,11 @@ export function SynopsisEditor() {
       logline,
       ...overrides,
     };
-    void worldPackageStorage.saveSynopsis(
-      currentProject.id,
-      luieAttachmentPath,
-      payload,
-    );
+    void worldPackageStorage
+      .saveSynopsis(currentProject.id, luieAttachmentPath, payload)
+      .catch(() => {
+        showToast(t("research.toast.worldSaveFailed"), "error");
+      });
   };
 
   if (!currentProject) return null;

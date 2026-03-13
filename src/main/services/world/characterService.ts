@@ -51,7 +51,7 @@ export class CharacterService {
         includeCharacters: true,
         includeTerms: false,
       });
-      await projectService.attemptImmediatePackageExport(
+      await projectService.ensureImmediatePackageExport(
         input.projectId,
         "character:create",
       );
@@ -137,7 +137,7 @@ export class CharacterService {
           includeTerms: false,
         });
       }
-      await projectService.attemptImmediatePackageExport(
+      await projectService.ensureImmediatePackageExport(
         String(character.projectId),
         "character:update",
       );
@@ -188,7 +188,7 @@ export class CharacterService {
 
       logger.info("Character deleted successfully", { characterId: id });
       if (projectId) {
-        await projectService.attemptImmediatePackageExport(
+        await projectService.ensureImmediatePackageExport(
           projectId,
           "character:delete",
         );
@@ -276,7 +276,7 @@ export class CharacterService {
         });
 
         logger.info("First appearance updated", { characterId, chapterId });
-        await projectService.attemptImmediatePackageExport(
+        await projectService.ensureImmediatePackageExport(
           String(character.projectId),
           "character:update-first-appearance",
         );

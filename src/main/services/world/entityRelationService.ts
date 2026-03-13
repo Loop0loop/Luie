@@ -116,7 +116,7 @@ export class EntityRelationService {
             const relation = await getWorldDbClient().entityRelation.create({ data });
 
             logger.info("Entity relation created", { relationId: relation.id });
-            await projectService.attemptImmediatePackageExport(
+            await projectService.ensureImmediatePackageExport(
                 input.projectId,
                 "entity-relation:create",
             );
@@ -197,7 +197,7 @@ export class EntityRelationService {
             });
 
             logger.info("Entity relation updated", { relationId: relation.id });
-            await projectService.attemptImmediatePackageExport(
+            await projectService.ensureImmediatePackageExport(
                 String(current.projectId),
                 "entity-relation:update",
             );
@@ -225,7 +225,7 @@ export class EntityRelationService {
         try {
             const deleted = await getWorldDbClient().entityRelation.delete({ where: { id } });
             logger.info("Entity relation deleted", { relationId: id });
-            await projectService.attemptImmediatePackageExport(
+            await projectService.ensureImmediatePackageExport(
                 String(deleted.projectId),
                 "entity-relation:delete",
             );
@@ -398,7 +398,7 @@ export class EntityRelationService {
             });
             removedRelations += result.count;
             if (result.count > 0) {
-                await projectService.attemptImmediatePackageExport(
+                await projectService.ensureImmediatePackageExport(
                     projectId,
                     "entity-relation:cleanup-orphans",
                 );

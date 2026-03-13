@@ -29,6 +29,7 @@ import {
   buildExportSnapshotData,
   buildExportTermData,
   buildProjectPackageMeta,
+  resolveProjectPackageUpdatedAt,
   buildWorldDrawing,
   buildWorldGraph,
   buildWorldMindmap,
@@ -379,7 +380,14 @@ export const exportProjectPackageWithOptions = async (input: {
     replicaWorld.memos.found ? replicaWorld.memos.parsed : parsedWorld.memos,
   );
   const graph = buildWorldGraph(project);
-  const meta = buildProjectPackageMeta(project, chapterMeta);
+  const metaUpdatedAt = resolveProjectPackageUpdatedAt(project, {
+    synopsis,
+    plot,
+    drawing,
+    mindmap,
+    memos,
+  });
+  const meta = buildProjectPackageMeta(project, chapterMeta, metaUpdatedAt);
 
   input.logger.info("Exporting .luie package", {
     projectId: input.projectId,

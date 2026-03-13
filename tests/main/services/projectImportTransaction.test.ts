@@ -205,4 +205,38 @@ describe("projectImportTransaction", () => {
       mocked.tx,
     );
   });
+
+  it("uses the freshest imported content timestamp for project.updatedAt", async () => {
+    await applyProjectImportTransaction({
+      resolvedProjectId: "project-1",
+      legacyProjectId: null,
+      existing: null,
+      meta: {
+        title: "Imported Project",
+        updatedAt: "2026-03-12T00:00:00.000Z",
+      },
+      worldSynopsis: {
+        synopsis: "Imported synopsis",
+        status: "working",
+        updatedAt: "2026-03-12T05:00:00.000Z",
+      },
+      resolvedPath: "/tmp/project-1.luie",
+      chaptersForCreate: [],
+      charactersForCreate: [],
+      termsForCreate: [],
+      factionsForCreate: [],
+      eventsForCreate: [],
+      worldEntitiesForCreate: [],
+      relationsForCreate: [],
+      snapshotsForCreate: [],
+    });
+
+    expect(mocked.projectCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          updatedAt: new Date("2026-03-12T05:00:00.000Z"),
+        }),
+      }),
+    );
+  });
 });

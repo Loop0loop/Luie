@@ -409,6 +409,17 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
     [],
   );
 
+  const onFlowDoubleClick = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      const target = event.target as HTMLElement | null;
+      if (!target?.closest(".react-flow__pane")) {
+        return;
+      }
+      onPaneDoubleClick(event);
+    },
+    [onPaneDoubleClick],
+  );
+
   const onPaneClick = useCallback(() => {
     setCreateMenu(null);
     setNodeMenu(null);
@@ -551,19 +562,19 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        nodesDraggable={false}
-        nodesConnectable={false}
+        nodesDraggable={true}
+        nodesConnectable={true}
         elementsSelectable={true}
         onNodeClick={onNodeClick}
         onNodeContextMenu={onNodeContextMenu}
         onEdgeClick={onEdgeClick}
         onPaneClick={onPaneClick}
-        onPaneDoubleClick={onPaneDoubleClick}
+        onDoubleClick={onFlowDoubleClick}
         onPaneContextMenu={onPaneContextMenu}
         onInit={setRfInstance}
-        fitView
+        fitView={nodes.length > 0}
         minZoom={0.1}
-        maxZoom={2}
+        maxZoom={3}
         panOnScroll
         panOnScrollMode={PanOnScrollMode.Free}
         zoomOnPinch
@@ -575,47 +586,43 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         proOptions={{ hideAttribution: true }}
       >
         <Background
-          variant={BackgroundVariant.Cross}
-          gap={24}
-          size={2}
-          color="var(--border-default)"
-          className="opacity-35"
+          variant={BackgroundVariant.Dots}
+          gap={20}
+          size={1.5}
+          color="#64748B"
+          className="opacity-30"
         />
       </ReactFlow>
 
       {isEmpty && !createMenu && (
         <div className="absolute inset-0 z-0 flex flex-col items-center justify-center pointer-events-none select-none text-muted">
-          <div className="h-16 w-16 mb-4 rounded-2xl bg-element/50 border border-border/40 flex items-center justify-center shadow-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-50"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-          </div>
-          <p className="text-sm font-medium text-fg/80 mb-1">{t("world.graph.ide.canvas.emptyTitle", "Graph Canvas")}</p>
-          <p className="text-xs opacity-70 mb-4">{t("world.graph.ide.canvas.emptyDesc", "Double-click anywhere to create a new entity.")}</p>
-          <div className="flex items-center gap-4 text-[11px] opacity-50">
-            <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 rounded-md bg-element border border-border/40">Drag</kbd> to pan</span>
-            <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 rounded-md bg-element border border-border/40">Scroll</kbd> to zoom</span>
-            <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 rounded-md bg-element border border-border/40">Double Click</kbd> to add</span>
+          <p className="text-sm font-medium text-fg/80 mb-2">Graph Canvas is empty</p>
+          <div className="flex items-center gap-3 bg-element/50 border border-border/40 px-4 py-2 rounded-lg text-xs opacity-80 backdrop-blur-md">
+            <span><kbd className="px-1.5 py-0.5 rounded bg-app border border-border/60">Double Click</kbd> to add note</span>
+            <div className="w-px h-3 bg-border/60" />
+            <span><kbd className="px-1.5 py-0.5 rounded bg-app border border-border/60">Drag</kbd> to pan</span>
           </div>
         </div>
       )}
 
       {createMenu && (
         <div
-          className="absolute z-20 min-w-48 rounded-lg border border-border bg-panel shadow-xl p-2"
+          className="absolute z-[100] w-48 rounded-xl border border-border shadow-2xl bg-panel/95 backdrop-blur-md p-1.5 animate-in fade-in zoom-in-95 duration-100"
           style={{
             left: createMenu!.left,
             top: createMenu!.top,
           }}
         >
-          <p className="px-2 pb-2 text-[11px] font-semibold text-muted">
-            {t("world.graph.canvas.addEntity")}
-          </p>
-          <div className="max-h-64 overflow-y-auto">
+          <div className="px-2 py-1.5 mb-1 border-b border-border/40">
+            <p className="text-[10px] font-bold tracking-wider text-muted uppercase">Create Entity</p>
+          </div>
+          <div className="flex flex-col gap-0.5 max-h-64 overflow-y-auto">
             {WORLD_ENTITY_TYPES.map((entityType) => (
               <button
                 key={entityType}
                 type="button"
                 onClick={() => void handleCreateNode(entityType)}
-                className="w-full text-left px-2 py-1.5 text-xs rounded-md hover:bg-element transition-colors"
+                className="w-full text-left px-2 py-1.5 text-xs rounded-md hover:bg-accent/10 hover:text-accent font-medium transition-colors"
               >
                 {t(`world.graph.entityTypes.${entityType}`, { defaultValue: entityType })}
               </button>

@@ -449,6 +449,10 @@ export const enBase = {
     },
     "tooltip": {
       "closePanel": "Close Panel"
+    },
+    "toast": {
+      "worldSaveFailed": "Failed to save world data to the .luie file.",
+      "memoSaveFailed": "Failed to save memos to the .luie file."
     }
   },
   "context": {

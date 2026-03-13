@@ -354,6 +354,17 @@ const saveReplicaDocument = async (
   return true;
 };
 
+const ensureReplicaDocumentSaved = async (
+  projectId: string,
+  docType: Exclude<ReplicaWorldDocumentType, "graph" | "scrap">,
+  payload: unknown,
+): Promise<void> => {
+  const persisted = await saveReplicaDocument(projectId, docType, payload);
+  if (!persisted) {
+    throw new Error(`Failed to save ${docType} world data to replica storage.`);
+  }
+};
+
 const loadReplicaScrapMemos = async (
   projectId: string,
 ): Promise<WorldScrapMemosData | null> => {
@@ -384,6 +395,42 @@ const saveReplicaScrapMemos = async (
     return false;
   }
   return true;
+};
+
+const ensureReplicaScrapMemosSaved = async (
+  projectId: string,
+  data: WorldScrapMemosData,
+): Promise<void> => {
+  const persisted = await saveReplicaScrapMemos(projectId, data);
+  if (!persisted) {
+    throw new Error("Failed to save scrap memos to replica storage.");
+  }
+};
+
+const ensureLuieWorldDocumentSaved = async (
+  projectId: string,
+  projectPath: string,
+  docType: Exclude<ReplicaWorldDocumentType, "graph">,
+  fileName: string,
+  payload: unknown,
+): Promise<void> => {
+  try {
+    await writeLuieJson(projectPath, fileName, payload);
+  } catch (error) {
+    await api.logger.warn("Failed to persist canonical .luie world data", {
+      projectId,
+      projectPath,
+      docType,
+      fileName,
+      error,
+    });
+    throw new Error(
+      `Failed to persist ${docType} world data to canonical .luie.`,
+      {
+        cause: error,
+      },
+    );
+  }
 };
 
 const migrateLegacyLocalDocument = async (
@@ -577,17 +624,17 @@ export const worldPackageStorage = {
   ): Promise<void> {
     if (!projectId) return;
     const payload = { ...data, updatedAt: new Date().toISOString() };
-    const persisted = await saveReplicaDocument(projectId, "synopsis", payload);
-    if (persisted) {
-      removeLocalStorageJson(projectId, "synopsis");
-    }
+    await ensureReplicaDocumentSaved(projectId, "synopsis", payload);
+    removeLocalStorageJson(projectId, "synopsis");
 
     if (isLuieProjectPath(projectPath)) {
-      try {
-        await writeLuieJson(projectPath, LUIE_WORLD_SYNOPSIS_FILE, payload);
-      } catch (error) {
-        await api.logger.warn("Failed to save synopsis world data", error);
-      }
+      await ensureLuieWorldDocumentSaved(
+        projectId,
+        projectPath,
+        "synopsis",
+        LUIE_WORLD_SYNOPSIS_FILE,
+        payload,
+      );
     }
   },
 
@@ -640,17 +687,17 @@ export const worldPackageStorage = {
       columns: data.columns,
       updatedAt: new Date().toISOString(),
     };
-    const persisted = await saveReplicaDocument(projectId, "plot", payload);
-    if (persisted) {
-      removeLocalStorageJson(projectId, "plot");
-    }
+    await ensureReplicaDocumentSaved(projectId, "plot", payload);
+    removeLocalStorageJson(projectId, "plot");
 
     if (isLuieProjectPath(projectPath)) {
-      try {
-        await writeLuieJson(projectPath, LUIE_WORLD_PLOT_FILE, payload);
-      } catch (error) {
-        await api.logger.warn("Failed to save plot world data", error);
-      }
+      await ensureLuieWorldDocumentSaved(
+        projectId,
+        projectPath,
+        "plot",
+        LUIE_WORLD_PLOT_FILE,
+        payload,
+      );
     }
   },
 
@@ -703,17 +750,17 @@ export const worldPackageStorage = {
       ...data,
       updatedAt: new Date().toISOString(),
     };
-    const persisted = await saveReplicaDocument(projectId, "drawing", payload);
-    if (persisted) {
-      removeLocalStorageJson(projectId, "drawing");
-    }
+    await ensureReplicaDocumentSaved(projectId, "drawing", payload);
+    removeLocalStorageJson(projectId, "drawing");
 
     if (isLuieProjectPath(projectPath)) {
-      try {
-        await writeLuieJson(projectPath, LUIE_WORLD_DRAWING_FILE, payload);
-      } catch (error) {
-        await api.logger.warn("Failed to save drawing world data", error);
-      }
+      await ensureLuieWorldDocumentSaved(
+        projectId,
+        projectPath,
+        "drawing",
+        LUIE_WORLD_DRAWING_FILE,
+        payload,
+      );
     }
   },
 
@@ -768,17 +815,17 @@ export const worldPackageStorage = {
       edges: data.edges,
       updatedAt: new Date().toISOString(),
     };
-    const persisted = await saveReplicaDocument(projectId, "mindmap", payload);
-    if (persisted) {
-      removeLocalStorageJson(projectId, "mindmap");
-    }
+    await ensureReplicaDocumentSaved(projectId, "mindmap", payload);
+    removeLocalStorageJson(projectId, "mindmap");
 
     if (isLuieProjectPath(projectPath)) {
-      try {
-        await writeLuieJson(projectPath, LUIE_WORLD_MINDMAP_FILE, payload);
-      } catch (error) {
-        await api.logger.warn("Failed to save mindmap world data", error);
-      }
+      await ensureLuieWorldDocumentSaved(
+        projectId,
+        projectPath,
+        "mindmap",
+        LUIE_WORLD_MINDMAP_FILE,
+        payload,
+      );
     }
   },
 
@@ -870,24 +917,20 @@ export const worldPackageStorage = {
           projectPath,
         },
       );
-      return;
+      throw new Error("Refused to persist invalid scrap memos payload.");
     }
 
-    const persisted = await saveReplicaScrapMemos(projectId, parsed.data);
-    if (persisted) {
-      removeLocalStorageJson(projectId, "scrap-memos");
-    }
+    await ensureReplicaScrapMemosSaved(projectId, parsed.data);
+    removeLocalStorageJson(projectId, "scrap-memos");
 
     if (isLuieProjectPath(projectPath)) {
-      try {
-        await writeLuieJson(
-          projectPath,
-          LUIE_WORLD_SCRAP_MEMOS_FILE,
-          parsed.data,
-        );
-      } catch (error) {
-        await api.logger.warn("Failed to save scrap memos world data", error);
-      }
+      await ensureLuieWorldDocumentSaved(
+        projectId,
+        projectPath,
+        "scrap",
+        LUIE_WORLD_SCRAP_MEMOS_FILE,
+        parsed.data,
+      );
     }
   },
 };

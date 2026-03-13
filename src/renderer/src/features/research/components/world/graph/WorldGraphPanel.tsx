@@ -1,6 +1,11 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type GroupImperativeHandle } from "react-resizable-panels";
+import {
+  Panel,
+  Group as PanelGroup,
+  Separator as PanelResizeHandle,
+  type GroupImperativeHandle,
+} from "react-resizable-panels";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
@@ -11,11 +16,12 @@ import {
   toPercentSize,
   toPxSize,
 } from "@shared/constants/sidebarSizing";
-import { useFilteredGraph, useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
+import {
+  useFilteredGraph,
+  useWorldBuildingStore,
+} from "@renderer/features/research/stores/worldBuildingStore";
 import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 import { WorldGraphCanvas } from "./WorldGraphCanvas";
-import { WorldTimelinePanel } from "./WorldTimelinePanel";
-import { WorldMapPanel } from "./WorldMapPanel";
 import { ActivityBar } from "./ActivityBar";
 import { PrimarySidebar } from "./PrimarySidebar";
 import { NoteMainView } from "./views/NoteMainView";
@@ -37,7 +43,6 @@ export function WorldGraphPanel() {
   // IDE Store
   const activeTab = useGraphIdeStore((state) => state.activeTab);
   const isSidebarOpen = useGraphIdeStore((state) => state.isSidebarOpen);
-  const setSidebarOpen = useGraphIdeStore((state) => state.setSidebarOpen);
 
   const feature = "worldGraphSidebar" as const;
   const config = getSidebarWidthConfig(feature);
@@ -46,7 +51,10 @@ export function WorldGraphPanel() {
     sidebarWidths[feature] || getSidebarDefaultWidth(feature),
   );
 
-  const onResize = useSidebarResizeCommit(feature, setSidebarWidth);
+  const { onResize, resizeHandleProps } = useSidebarResizeCommit(
+    feature,
+    setSidebarWidth,
+  );
   const requestedProjectIdRef = useRef<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const panelGroupRef = useRef<GroupImperativeHandle | null>(null);
@@ -54,14 +62,16 @@ export function WorldGraphPanel() {
   useFixedPixelPanelGroupLayout({
     containerRef,
     groupRef: panelGroupRef,
-    fixedPanels: isSidebarOpen ? [
-      {
-        id: "world-ide-sidebar",
-        widthPx: width,
-        minPx: config.minPx,
-        maxPx: config.maxPx,
-      },
-    ] : [],
+    fixedPanels: isSidebarOpen
+      ? [
+          {
+            id: "world-ide-sidebar",
+            widthPx: width,
+            minPx: config.minPx,
+            maxPx: config.maxPx,
+          },
+        ]
+      : [],
     flexPanelId: "world-ide-main",
     flexPanelMinPercent: 30,
   });
@@ -103,9 +113,19 @@ export function WorldGraphPanel() {
 
     switch (activeTab) {
       case "graph":
-        return <WorldGraphCanvas nodes={filteredGraph.nodes} edges={filteredGraph.edges} />;
+        return (
+          <WorldGraphCanvas
+            nodes={filteredGraph.nodes}
+            edges={filteredGraph.edges}
+          />
+        );
       case "timeline":
-        return <TimelineMainView nodes={filteredGraph.nodes} edges={filteredGraph.edges} />;
+        return (
+          <TimelineMainView
+            nodes={filteredGraph.nodes}
+            edges={filteredGraph.edges}
+          />
+        );
       case "note":
         return <NoteMainView />;
       case "entity":
@@ -118,14 +138,14 @@ export function WorldGraphPanel() {
   };
 
   return (
-    <div className="h-full w-full overflow-hidden bg-app flex flex-row">
+    <div className="flex h-full w-full flex-row overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0)),var(--bg-app)]">
       <ActivityBar />
 
-      <div ref={containerRef} className="flex-1 min-h-0 flex overflow-hidden">
+      <div ref={containerRef} className="flex min-h-0 flex-1 overflow-hidden">
         <PanelGroup
           groupRef={panelGroupRef}
           orientation="horizontal"
-          className="h-full! w-full!"
+          className="h-full! w-full! bg-transparent"
         >
           {isSidebarOpen && (
             <>
@@ -135,22 +155,28 @@ export function WorldGraphPanel() {
                 minSize={toPxSize(config.minPx)}
                 maxSize={toPxSize(config.maxPx)}
                 onResize={onResize}
-                onCollapse={() => setSidebarOpen(false)}
                 collapsible
                 className="min-h-0"
               >
                 <PrimarySidebar />
               </Panel>
 
-              <PanelResizeHandle className="group relative w-3 shrink-0 cursor-col-resize bg-transparent select-none touch-none">
-                <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border/40 group-hover:bg-accent group-data-[dragging]:bg-accent transition-colors" />
+              <PanelResizeHandle
+                {...resizeHandleProps}
+                className="group relative w-3 shrink-0 cursor-col-resize bg-transparent select-none touch-none"
+              >
+                <div className="absolute inset-y-3 left-1/2 w-px -translate-x-1/2 rounded-full bg-border/50 transition-colors group-hover:bg-accent group-data-[dragging]:bg-accent" />
               </PanelResizeHandle>
             </>
           )}
 
-          <Panel id="world-ide-main" minSize={toPercentSize(30)} className="min-h-0 relative">
-            <div className="flex flex-col h-full w-full">
-              <main className="relative flex-1 min-w-0 min-h-0 overflow-hidden">
+          <Panel
+            id="world-ide-main"
+            minSize={toPercentSize(30)}
+            className="min-h-0 relative"
+          >
+            <div className="flex h-full w-full flex-col">
+              <main className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
                 {renderMainViewContent()}
               </main>
             </div>

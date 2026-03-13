@@ -1,5 +1,8 @@
-import { Search, Plus, Filter, MoreHorizontal, FileText, Image as ImageIcon } from "lucide-react";
+import { Search, Plus, MapPin, Users, MoreHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@renderer/components/ui/button";
+import { Input } from "@renderer/components/ui/input";
+import { ScrollArea } from "@renderer/components/ui/scroll-area";
 
 const MOCK_ENTITIES = [
   { id: 1, name: "아르웬", type: "Character", tags: ["주연", "전사"], updatedAt: "2026-03-12" },
@@ -13,76 +16,66 @@ export function EntityMainView() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex h-full w-full flex-col bg-app">
-      {/* Header / Toolbar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 shrink-0">
-        <h2 className="text-sm font-semibold text-fg">Entity Database</h2>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted" />
-            <input
-              type="text"
-              placeholder="Search entities..."
-              className="w-64 rounded-md border border-border/60 bg-element pl-8 pr-3 py-1.5 text-xs text-fg placeholder:text-muted focus:border-accent focus:outline-none"
-            />
+    <div className="flex h-full flex-col bg-background/50">
+      {/* Header */}
+      <header className="flex items-center justify-between border-b px-8 py-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            {t("world.graph.entity.title", "엔티티 사전")}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            등장인물, 장소 등 작품의 설정 요소들을 모아봅니다.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="relative w-64">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input type="text" placeholder="엔티티 검색..." className="bg-background pl-9" />
           </div>
-          <button className="flex items-center gap-1.5 rounded-md border border-border/60 bg-element px-3 py-1.5 text-xs text-muted hover:bg-element-hover hover:text-fg transition-colors">
-            <Filter className="h-3.5 w-3.5" />
-            Filter
-          </button>
-          <button className="flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-fg hover:bg-accent/90 transition-colors">
-            <Plus className="h-3.5 w-3.5" />
-            New Entity
-          </button>
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" />
+            새 엔티티
+          </Button>
         </div>
-      </div>
+      </header>
 
-      {/* Main Content: Table View */}
-      <div className="flex-1 overflow-auto p-6">
-        <div className="rounded-lg border border-border/40 bg-element/20 overflow-hidden">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-border/40 bg-element/50 text-muted">
-              <tr>
-                <th className="px-4 py-3 font-medium">Name</th>
-                <th className="px-4 py-3 font-medium">Type</th>
-                <th className="px-4 py-3 font-medium">Tags</th>
-                <th className="px-4 py-3 font-medium">Last Modified</th>
-                <th className="px-4 py-3 font-medium w-[50px]"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/20 text-fg">
-              {MOCK_ENTITIES.map((entity) => (
-                <tr key={entity.id} className="hover:bg-element/50 transition-colors group cursor-pointer">
-                  <td className="px-4 py-3 font-medium flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-muted" />
-                    {entity.name}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center rounded-full bg-border/40 px-2 py-0.5 text-[11px] text-muted">
-                      {entity.type}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-1.5">
-                      {entity.tags.map((tag) => (
-                        <span key={tag} className="inline-flex items-center rounded text-muted border border-border px-1.5 py-0.5 text-[10px]">
-                          {tag}
-                        </span>
-                      ))}
+      {/* Grid Content */}
+      <ScrollArea className="flex-1 px-8 py-8">
+        <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {MOCK_ENTITIES.map((entity) => {
+            const isCharacter = entity.type === "Character";
+            return (
+              <div 
+                key={entity.id}
+                className="group flex flex-col justify-between rounded-xl border bg-card p-5 shadow-sm transition-all hover:border-primary/50 hover:shadow-md cursor-pointer"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
+                      {isCharacter ? <Users className="h-5 w-5" /> : <MapPin className="h-5 w-5" />}
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-muted text-xs">{entity.updatedAt}</td>
-                  <td className="px-4 py-3 text-right">
-                    <button className="p-1 rounded-md text-muted hover:bg-border/60 hover:text-fg opacity-0 group-hover:opacity-100 transition-all">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <div>
+                      <h3 className="font-semibold">{entity.name}</h3>
+                      <p className="text-xs text-muted-foreground">{entity.updatedAt}</p>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {entity.tags.map((tag) => (
+                    <span key={tag} className="inline-flex items-center rounded-md bg-secondary/50 px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
-      </div>
+      </ScrollArea>
     </div>
   );
 }

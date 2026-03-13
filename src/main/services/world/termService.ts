@@ -48,7 +48,7 @@ export class TermService {
         includeCharacters: false,
         includeTerms: true,
       });
-      await projectService.attemptImmediatePackageExport(
+      await projectService.ensureImmediatePackageExport(
         input.projectId,
         "term:create",
       );
@@ -127,7 +127,7 @@ export class TermService {
           includeTerms: true,
         });
       }
-      await projectService.attemptImmediatePackageExport(
+      await projectService.ensureImmediatePackageExport(
         String(term.projectId),
         "term:update",
       );
@@ -175,7 +175,7 @@ export class TermService {
 
       logger.info("Term deleted successfully", { termId: id });
       if (projectId) {
-        await projectService.attemptImmediatePackageExport(
+        await projectService.ensureImmediatePackageExport(
           projectId,
           "term:delete",
         );
@@ -256,7 +256,7 @@ export class TermService {
         });
 
         logger.info("First appearance updated", { termId, chapterId });
-        await projectService.attemptImmediatePackageExport(
+        await projectService.ensureImmediatePackageExport(
           String(term.projectId),
           "term:update-first-appearance",
         );

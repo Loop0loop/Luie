@@ -43,7 +43,7 @@ export class WorldEntityService {
             });
 
             logger.info("World entity created", { entityId: entity.id });
-            await projectService.attemptImmediatePackageExport(
+            await projectService.ensureImmediatePackageExport(
                 String(entity.projectId),
                 "world-entity:create",
             );
@@ -117,7 +117,7 @@ export class WorldEntityService {
             });
 
             logger.info("World entity updated", { entityId: entity.id });
-            await projectService.attemptImmediatePackageExport(
+            await projectService.ensureImmediatePackageExport(
                 String(entity.projectId),
                 "world-entity:update",
             );
@@ -148,7 +148,7 @@ export class WorldEntityService {
                 data: { positionX: input.positionX, positionY: input.positionY },
             });
 
-            await projectService.attemptImmediatePackageExport(
+            await projectService.ensureImmediatePackageExport(
                 String(entity.projectId),
                 "world-entity:update-position",
             );
@@ -176,7 +176,7 @@ export class WorldEntityService {
         try {
             const deleted = await getWorldDbClient().worldEntity.delete({ where: { id } });
             logger.info("World entity deleted", { entityId: id });
-            await projectService.attemptImmediatePackageExport(
+            await projectService.ensureImmediatePackageExport(
                 String(deleted.projectId),
                 "world-entity:delete",
             );

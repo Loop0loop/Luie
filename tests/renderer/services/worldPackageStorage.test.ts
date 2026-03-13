@@ -90,7 +90,7 @@ describe("worldPackageStorage", () => {
     memoryStorage.clear();
   });
 
-  it("logs warning when .luie world write returns ipc failure response", async () => {
+  it("rejects when attached .luie world write returns ipc failure response", async () => {
     const writeProjectFile = vi.fn().mockResolvedValue({
       success: false,
       error: {
@@ -112,16 +112,57 @@ describe("worldPackageStorage", () => {
     const { worldPackageStorage } =
       await import("../../../src/renderer/src/features/research/services/worldPackageStorage.js");
 
-    await worldPackageStorage.saveSynopsis("project-1", "/tmp/project-1.luie", {
-      synopsis: "hello",
-      status: "draft",
-    });
+    await expect(
+      worldPackageStorage.saveSynopsis("project-1", "/tmp/project-1.luie", {
+        synopsis: "hello",
+        status: "draft",
+      }),
+    ).rejects.toThrow("Failed to persist synopsis world data to canonical .luie.");
 
     expect(writeProjectFile).toHaveBeenCalledTimes(1);
     expect(warn).toHaveBeenCalledTimes(1);
-    const loggedError = warn.mock.calls[0]?.[1];
-    expect(loggedError).toBeInstanceOf(Error);
-    expect((loggedError as Error).message).toContain("LUIE_WRITE_FAILED");
+    expect(warn).toHaveBeenCalledWith(
+      "Failed to persist canonical .luie world data",
+      expect.objectContaining({
+        projectId: "project-1",
+        docType: "synopsis",
+        fileName: "synopsis.json",
+      }),
+    );
+  });
+
+  it("rejects when replica world persistence fails", async () => {
+    const writeProjectFile = vi.fn().mockResolvedValue({ success: true });
+    const warn = vi.fn().mockResolvedValue({ success: true });
+    const worldStorage = createWorldStorageApi({
+      setDocument: vi.fn().mockResolvedValue({
+        success: false,
+        error: {
+          code: "DB_WRITE_FAILED",
+          message: "db write failed",
+        },
+      }),
+    });
+
+    setWindowApi({
+      fs: {
+        readLuieEntry: vi.fn().mockResolvedValue({ success: true, data: null }),
+        writeProjectFile,
+      },
+      logger: { warn },
+      worldStorage,
+    });
+
+    const { worldPackageStorage } =
+      await import("../../../src/renderer/src/features/research/services/worldPackageStorage.js");
+
+    await expect(
+      worldPackageStorage.savePlot("project-1", "/tmp/project-1.luie", {
+        columns: [{ id: "col-1", title: "A", cards: [] }],
+      }),
+    ).rejects.toThrow("Failed to save plot world data to replica storage.");
+
+    expect(writeProjectFile).not.toHaveBeenCalled();
   });
 
   it("serializes concurrent writes for the same .luie package", async () => {
@@ -374,7 +415,7 @@ describe("worldPackageStorage", () => {
     expect(memoryStorage.getItem("luie:world:project-1:synopsis")).toBeNull();
   });
 
-  it("refuses to persist invalid scrap memo payloads", async () => {
+  it("rejects invalid scrap memo payloads", async () => {
     const writeProjectFile = vi.fn().mockResolvedValue({ success: true });
     const warn = vi.fn().mockResolvedValue({ success: true });
     const worldStorage = createWorldStorageApi();
@@ -403,11 +444,13 @@ describe("worldPackageStorage", () => {
       ],
     } as unknown as WorldScrapMemosData;
 
-    await worldPackageStorage.saveScrapMemos(
-      "project-1",
-      "/tmp/project-1.luie",
-      invalidPayload,
-    );
+    await expect(
+      worldPackageStorage.saveScrapMemos(
+        "project-1",
+        "/tmp/project-1.luie",
+        invalidPayload,
+      ),
+    ).rejects.toThrow("Refused to persist invalid scrap memos payload.");
 
     expect(writeProjectFile).not.toHaveBeenCalled();
     expect(memoryStorage.length).toBe(0);

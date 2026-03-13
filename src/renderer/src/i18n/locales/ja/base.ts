@@ -449,6 +449,10 @@ export const jaBase = {
     },
     "tooltip": {
       "closePanel": "パネルを閉じる"
+    },
+    "toast": {
+      "worldSaveFailed": "世界観データを .luie ファイルに保存できませんでした。",
+      "memoSaveFailed": "メモを .luie ファイルに保存できませんでした。"
     }
   },
   "context": {

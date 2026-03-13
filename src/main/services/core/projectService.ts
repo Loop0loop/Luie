@@ -770,6 +770,26 @@ export class ProjectService {
     }
   }
 
+  async ensureImmediatePackageExport(
+    projectId: string,
+    reason: string,
+  ): Promise<void> {
+    const result = await this.attemptImmediatePackageExport(projectId, reason);
+    if (!result.error) {
+      return;
+    }
+
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Failed to persist canonical .luie after mutation",
+      {
+        projectId,
+        reason,
+      },
+      result.error,
+    );
+  }
+
   async flushPendingExports(timeoutMs = 8_000): Promise<{
     total: number;
     flushed: number;

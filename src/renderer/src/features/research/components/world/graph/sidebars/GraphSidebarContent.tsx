@@ -1,51 +1,62 @@
-import { SidebarTreeSection, TreeItem } from "./SidebarTreeSection";
-import { Users, Calendar, MapPin, Flag, BookOpen, Link, ArrowRight, Activity, Globe, CheckSquare, Layers, Target, RotateCcw } from "lucide-react";
+import {
+  Users,
+  Calendar,
+  MapPin,
+  Flag,
+  BookOpen,
+  Link,
+  ArrowRight,
+  Activity,
+  Globe,
+  CheckSquare,
+  Layers,
+  Target,
+  RotateCcw,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@renderer/components/ui/button";
+import { SidebarTreeSection, TreeItem } from "./SidebarTreeSection";
 
 export function GraphSidebarContent() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto">
-        <SidebarTreeSection title={t("world.graph.ide.sidebar.entities", "Entities")}>
-          <TreeItem icon={<Users className="h-4 w-4" />} label="Characters" />
-          <TreeItem icon={<Calendar className="h-4 w-4" />} label="Events" />
-          <TreeItem icon={<MapPin className="h-4 w-4" />} label="Places" />
-          <TreeItem icon={<Flag className="h-4 w-4" />} label="Factions" />
-          <TreeItem icon={<BookOpen className="h-4 w-4" />} label="Rules" />
+    <div className="space-y-4">
+      <div className="space-y-1 mb-4">
+        <SidebarTreeSection title={t("world.graph.ide.sidebar.entities", "요소 목록")}>
+          <TreeItem icon={<Users className="w-4 h-4" />} label="인물" />
+          <TreeItem icon={<Calendar className="w-4 h-4" />} label="사건" />
+          <TreeItem icon={<MapPin className="w-4 h-4" />} label="장소" />
+          <TreeItem icon={<Flag className="w-4 h-4" />} label="세력" />
+          <TreeItem icon={<BookOpen className="w-4 h-4" />} label="설정" />
         </SidebarTreeSection>
 
-        <SidebarTreeSection title={t("world.graph.ide.sidebar.relations", "Relations")}>
-          <TreeItem icon={<Link className="h-4 w-4" />} label="belongs_to" />
-          <TreeItem icon={<ArrowRight className="h-4 w-4" />} label="causes" />
-          <TreeItem icon={<Activity className="h-4 w-4" />} label="controls" />
-          <TreeItem icon={<Globe className="h-4 w-4" />} label="located_in" />
+        <SidebarTreeSection title={t("world.graph.ide.sidebar.relations", "관계 구조")}>
+          <TreeItem icon={<Link className="w-4 h-4" />} label="소속" />
+          <TreeItem icon={<ArrowRight className="w-4 h-4" />} label="인과" />
+          <TreeItem icon={<Activity className="w-4 h-4" />} label="영향" />
+          <TreeItem icon={<Globe className="w-4 h-4" />} label="위치" />
         </SidebarTreeSection>
 
-        <SidebarTreeSection title={t("world.graph.ide.sidebar.filters", "Filters")}>
-          {/* Using CheckSquare as a placeholder for a checkbox UI */}
-          <TreeItem icon={<CheckSquare className="h-4 w-4" />} label="Character" isActive />
-          <TreeItem icon={<CheckSquare className="h-4 w-4" />} label="Event" isActive />
-          <TreeItem icon={<CheckSquare className="h-4 w-4" />} label="Place" isActive />
+        <SidebarTreeSection title={t("world.graph.ide.sidebar.filters", "필터")}>
+          <TreeItem icon={<CheckSquare className="w-4 h-4" />} label="인물 보기" isActive />
+          <TreeItem icon={<CheckSquare className="w-4 h-4" />} label="사건 보기" isActive />
+          <TreeItem icon={<CheckSquare className="w-4 h-4" />} label="장소 보기" isActive />
         </SidebarTreeSection>
       </div>
 
-      {/* Layout actions at the bottom */}
-      <div className="p-3 border-t border-border/40 shrink-0">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-muted px-1 mb-2 block">
-          {t("world.graph.ide.sidebar.layout", "Layout")}
-        </span>
-        <div className="flex flex-col gap-1.5">
-          <button className="flex items-center gap-2 px-2 py-1.5 text-[13px] text-muted hover:text-fg hover:bg-element rounded-md transition-colors text-left">
-            <Layers className="h-4 w-4" /> Auto Layout
-          </button>
-          <button className="flex items-center gap-2 px-2 py-1.5 text-[13px] text-muted hover:text-fg hover:bg-element rounded-md transition-colors text-left">
-            <Target className="h-4 w-4" /> Cluster
-          </button>
-          <button className="flex items-center gap-2 px-2 py-1.5 text-[13px] text-muted hover:text-fg hover:bg-element rounded-md transition-colors text-left">
-            <RotateCcw className="h-4 w-4" /> Reset
-          </button>
+      <div className="px-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2 px-1">정렬 도구</p>
+        <div className="flex flex-col gap-1">
+          <Button variant="ghost" className="justify-start gap-2 h-8 px-2 text-muted-foreground">
+            <Layers className="w-4 h-4" /> 자동 정렬
+          </Button>
+          <Button variant="ghost" className="justify-start gap-2 h-8 px-2 text-muted-foreground">
+            <Target className="w-4 h-4" /> 묶어서 보기
+          </Button>
+          <Button variant="ghost" className="justify-start gap-2 h-8 px-2 text-muted-foreground">
+            <RotateCcw className="w-4 h-4" /> 초기화
+          </Button>
         </div>
       </div>
     </div>

@@ -8,6 +8,7 @@ import {
   readLuieContainerEntry,
   writeLuieContainer,
 } from "../../../src/main/services/io/luieContainer.js";
+import { writeLuieSqliteEntry } from "../../../src/main/services/io/luieSqliteContainer.js";
 
 const logger = {
   info: () => undefined,
@@ -246,5 +247,55 @@ describe("luieContainer", () => {
     expect(probe.kind).toBe("sqlite-v2");
     expect(metaRaw).toContain('"title": "Second Write"');
     expect(chapterRaw).toBe("updated content");
+  });
+
+  it("refreshes meta.json updatedAt when writing a single sqlite .luie entry", async () => {
+    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-meta-"));
+    const packagePath = path.join(tempRoot, "meta-refresh.luie");
+
+    await writeLuieContainer({
+      targetPath: packagePath,
+      payload: {
+        meta: {
+          projectId: "project-4",
+          title: "Meta Refresh",
+          updatedAt: "2026-03-12T00:00:00.000Z",
+        },
+        chapters: [],
+        characters: [],
+        terms: [],
+        synopsis: { synopsis: "", status: "draft" },
+        plot: { columns: [] },
+        drawing: { paths: [] },
+        mindmap: { nodes: [], edges: [] },
+        memos: { memos: [] },
+        graph: { nodes: [], edges: [] },
+        snapshots: [],
+      },
+      logger,
+    });
+
+    await writeLuieSqliteEntry({
+      targetPath: packagePath,
+      entryPath: "world/synopsis.json",
+      content: JSON.stringify(
+        {
+          synopsis: "updated",
+          status: "working",
+          updatedAt: "2026-03-12T03:00:00.000Z",
+        },
+        null,
+        2,
+      ),
+      logger,
+    });
+
+    const metaRaw = await readLuieContainerEntry(packagePath, "meta.json", logger);
+    const meta = JSON.parse(metaRaw ?? "{}") as { updatedAt?: string };
+
+    expect(meta.updatedAt).toBeDefined();
+    expect(Date.parse(meta.updatedAt ?? "")).toBeGreaterThan(
+      Date.parse("2026-03-12T00:00:00.000Z"),
+    );
   });
 });

@@ -188,4 +188,50 @@ describe("projectExportEngine", () => {
       }),
     );
   });
+
+  it("sets meta.updatedAt from the latest exported canonical content timestamp", async () => {
+    mocked.projectFindUnique.mockResolvedValueOnce({
+      id: "project-1",
+      title: "Project 1",
+      description: null,
+      createdAt: new Date("2026-03-12T00:00:00.000Z"),
+      updatedAt: new Date("2026-03-12T00:00:00.000Z"),
+      chapters: [
+        {
+          id: "chapter-1",
+          title: "Chapter 1",
+          order: 0,
+          updatedAt: new Date("2026-03-12T01:00:00.000Z"),
+          content: "text",
+        },
+      ],
+      characters: [],
+      terms: [],
+      factions: [],
+      events: [],
+      worldEntities: [],
+      entityRelations: [],
+      snapshots: [],
+    });
+
+    const logger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+    };
+
+    await exportProjectPackageWithOptions({
+      projectId: "project-1",
+      logger,
+    });
+
+    expect(mocked.writeLuieContainer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          meta: expect.objectContaining({
+            updatedAt: "2026-03-12T02:00:00.000Z",
+          }),
+        }),
+      }),
+    );
+  });
 });

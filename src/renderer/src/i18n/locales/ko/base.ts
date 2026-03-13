@@ -449,6 +449,10 @@ export const koBase = {
     },
     "tooltip": {
       "closePanel": "Close Panel"
+    },
+    "toast": {
+      "worldSaveFailed": "세계관 데이터를 .luie 파일에 저장하지 못했습니다.",
+      "memoSaveFailed": "메모를 .luie 파일에 저장하지 못했습니다."
     }
   },
   "context": {

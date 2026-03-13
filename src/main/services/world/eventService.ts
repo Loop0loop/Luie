@@ -38,7 +38,7 @@ export class EventService {
             logger.info("Event created successfully", {
                 eventId: event.id,
             });
-            await projectService.attemptImmediatePackageExport(
+            await projectService.ensureImmediatePackageExport(
                 input.projectId,
                 "event:create",
             );
@@ -114,7 +114,7 @@ export class EventService {
             logger.info("Event updated successfully", {
                 eventId: event.id,
             });
-            await projectService.attemptImmediatePackageExport(
+            await projectService.ensureImmediatePackageExport(
                 String(event.projectId),
                 "event:update",
             );
@@ -164,7 +164,7 @@ export class EventService {
 
             logger.info("Event deleted successfully", { eventId: id });
             if (projectId) {
-                await projectService.attemptImmediatePackageExport(
+                await projectService.ensureImmediatePackageExport(
                     projectId,
                     "event:delete",
                 );

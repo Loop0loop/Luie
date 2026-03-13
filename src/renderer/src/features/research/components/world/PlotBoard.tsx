@@ -5,6 +5,7 @@ import { BufferedTextArea, BufferedInput } from "@shared/ui/BufferedInput";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { worldPackageStorage } from "@renderer/features/research/services/worldPackageStorage";
 import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
+import { useToast } from "@shared/ui/ToastContext";
 
 interface PlotCard {
   id: string;
@@ -19,6 +20,7 @@ interface PlotColumn {
 
 export function PlotBoard() {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const currentProject = useProjectStore((state) => state.currentItem);
   const luieAttachmentPath = getReadableLuieAttachmentPath(currentProject);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -72,17 +74,19 @@ export function PlotBoard() {
   useEffect(() => {
     if (!currentProject?.id || !isHydrated) return;
     const timer = window.setTimeout(() => {
-      void worldPackageStorage.savePlot(
-        currentProject.id,
-        luieAttachmentPath,
-        { columns },
-      );
+      void worldPackageStorage
+        .savePlot(currentProject.id, luieAttachmentPath, {
+          columns,
+        })
+        .catch(() => {
+          showToast(t("research.toast.worldSaveFailed"), "error");
+        });
     }, 250);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [columns, currentProject?.id, isHydrated, luieAttachmentPath]);
+  }, [columns, currentProject?.id, isHydrated, luieAttachmentPath, showToast, t]);
 
   useEffect(() => {
     const element = scrollContainerRef.current;

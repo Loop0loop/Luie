@@ -234,6 +234,74 @@ export const buildWorldScrapMemos = (
   };
 };
 
+const toTimestamp = (value: Date | string | undefined | null): number | null => {
+  if (!value) return null;
+  const parsed =
+    value instanceof Date ? value.getTime() : Date.parse(String(value));
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const collectLatestTimestamp = (
+  current: number,
+  value: Date | string | undefined | null,
+): number => {
+  const candidate = toTimestamp(value);
+  if (candidate === null) return current;
+  return Math.max(current, candidate);
+};
+
+export const resolveProjectPackageUpdatedAt = (
+  project: ProjectExportRecord,
+  world: {
+    synopsis: WorldSynopsisData;
+    plot: WorldPlotData;
+    drawing: WorldDrawingData;
+    mindmap: WorldMindmapData;
+    memos: WorldScrapMemosData;
+  },
+): string => {
+  let latestTimestamp =
+    toTimestamp(project.updatedAt) ??
+    toTimestamp(project.createdAt) ??
+    Date.now();
+
+  for (const chapter of project.chapters) {
+    latestTimestamp = collectLatestTimestamp(latestTimestamp, chapter.updatedAt);
+  }
+  for (const character of project.characters) {
+    latestTimestamp = collectLatestTimestamp(latestTimestamp, character.updatedAt);
+  }
+  for (const term of project.terms) {
+    latestTimestamp = collectLatestTimestamp(latestTimestamp, term.updatedAt);
+  }
+  for (const faction of project.factions) {
+    latestTimestamp = collectLatestTimestamp(latestTimestamp, faction.updatedAt);
+  }
+  for (const event of project.events) {
+    latestTimestamp = collectLatestTimestamp(latestTimestamp, event.updatedAt);
+  }
+  for (const worldEntity of project.worldEntities) {
+    latestTimestamp = collectLatestTimestamp(latestTimestamp, worldEntity.updatedAt);
+  }
+  for (const relation of project.entityRelations) {
+    latestTimestamp = collectLatestTimestamp(latestTimestamp, relation.updatedAt);
+  }
+  for (const snapshot of project.snapshots) {
+    latestTimestamp = collectLatestTimestamp(latestTimestamp, snapshot.createdAt);
+  }
+
+  latestTimestamp = collectLatestTimestamp(latestTimestamp, world.synopsis.updatedAt);
+  latestTimestamp = collectLatestTimestamp(latestTimestamp, world.plot.updatedAt);
+  latestTimestamp = collectLatestTimestamp(latestTimestamp, world.drawing.updatedAt);
+  latestTimestamp = collectLatestTimestamp(latestTimestamp, world.mindmap.updatedAt);
+  latestTimestamp = collectLatestTimestamp(latestTimestamp, world.memos.updatedAt);
+  for (const memo of world.memos.memos) {
+    latestTimestamp = collectLatestTimestamp(latestTimestamp, memo.updatedAt);
+  }
+
+  return new Date(latestTimestamp).toISOString();
+};
+
 // `graph` is a transport/view payload built from canonical world models.
 // It must not become an independent source-of-truth.
 export const buildWorldGraph = (project: ProjectExportRecord): WorldGraphData => {
@@ -321,6 +389,7 @@ export const buildWorldGraph = (project: ProjectExportRecord): WorldGraphData =>
 export const buildProjectPackageMeta = (
   project: ProjectExportRecord,
   chapterMeta: Array<{ id: string; title: string; order: number; file: string }>,
+  updatedAt?: string,
 ) => {
   return {
     format: LUIE_PACKAGE_FORMAT,
@@ -330,7 +399,10 @@ export const buildProjectPackageMeta = (
     title: project.title,
     description: project.description,
     createdAt: project.createdAt?.toISOString?.() ?? String(project.createdAt),
-    updatedAt: project.updatedAt?.toISOString?.() ?? String(project.updatedAt),
+    updatedAt:
+      typeof updatedAt === "string" && updatedAt.length > 0
+        ? updatedAt
+        : project.updatedAt?.toISOString?.() ?? String(project.updatedAt),
     chapters: chapterMeta,
   };
 };

@@ -1,8 +1,11 @@
 import * as fsp from "node:fs/promises";
+import path from "node:path";
 import Database from "better-sqlite3";
 import {
+  LUIE_PACKAGE_EXTENSION,
   LUIE_PACKAGE_CONTAINER_DIR,
   LUIE_PACKAGE_FORMAT,
+  LUIE_PACKAGE_META_FILENAME,
   LUIE_PACKAGE_VERSION,
 } from "../../../shared/constants/index.js";
 import { ErrorCode } from "../../../shared/constants/errorCode.js";
@@ -14,6 +17,10 @@ import {
   withPackageWriteLock,
 } from "./luiePackageWriter.js";
 import { buildLuieContainerTextEntries } from "./luieContainerEntries.js";
+import {
+  normalizeLuieMetaForWrite,
+  parseObjectJson,
+} from "./luiePackageIntegrity.js";
 import type {
   LuiePackageExportData,
   LoggerLike,
@@ -44,6 +51,11 @@ type SqliteContainerInfoRow = {
   format: string;
   container: string;
   version: number;
+};
+
+type SqliteContainerEntryRow = {
+  content: string;
+  createdAt: string;
 };
 
 const normalizeEntryPathOrThrow = (entryPath: string): string => {
@@ -98,6 +110,37 @@ const assertSupportedSqliteContainer = (
       },
     );
   }
+};
+
+const buildNormalizedMetaContent = (input: {
+  rawContent: string;
+  targetPath: string;
+  nowIso: string;
+}): string => {
+  const parsed = parseObjectJson(input.rawContent);
+  if (!parsed) {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Invalid .luie meta.json payload",
+      { packagePath: input.targetPath },
+    );
+  }
+
+  const normalizedMeta = normalizeLuieMetaForWrite(
+    {
+      ...parsed,
+      updatedAt: input.nowIso,
+    },
+    {
+      titleFallback: path.basename(input.targetPath, LUIE_PACKAGE_EXTENSION),
+      nowIso: input.nowIso,
+      createdAtFallback: input.nowIso,
+      containerLabel: LUIE_PACKAGE_CONTAINER_DIR,
+      containerVersion: LUIE_PACKAGE_VERSION,
+    },
+  );
+
+  return JSON.stringify(normalizedMeta, null, 2);
 };
 
 export const readLuieSqliteEntry = async (
@@ -221,6 +264,7 @@ export const writeLuieSqliteEntry = async (input: {
   logger: LoggerLike;
 }): Promise<void> => {
   const normalizedEntryPath = normalizeEntryPathOrThrow(input.entryPath);
+  const metaEntryPath = normalizeEntryPathOrThrow(LUIE_PACKAGE_META_FILENAME);
 
   await withPackageWriteLock(input.targetPath, async () => {
     const database = openSqliteContainer(input.targetPath, {
@@ -234,13 +278,48 @@ export const writeLuieSqliteEntry = async (input: {
       assertSupportedSqliteContainer(database, input.targetPath);
 
       const nowIso = new Date().toISOString();
-      database
+      const existingMetaRow = database
         .prepare(
-          `INSERT INTO "LuieContainerEntry" ("path", "content", "createdAt", "updatedAt")
-           VALUES (?, ?, ?, ?)
-           ON CONFLICT("path") DO UPDATE SET "content" = excluded."content", "updatedAt" = excluded."updatedAt"`,
+          `SELECT "content", "createdAt" FROM "LuieContainerEntry" WHERE "path" = ?`,
         )
-        .run(normalizedEntryPath, input.content, nowIso, nowIso);
+        .get(metaEntryPath) as SqliteContainerEntryRow | undefined;
+      if (!existingMetaRow && normalizedEntryPath !== metaEntryPath) {
+        throw new ServiceError(
+          ErrorCode.FS_WRITE_FAILED,
+          "Missing .luie meta.json entry",
+          {
+            packagePath: input.targetPath,
+            entryPath: normalizedEntryPath,
+          },
+        );
+      }
+
+      const writeEntry = database.prepare(
+        `INSERT INTO "LuieContainerEntry" ("path", "content", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT("path") DO UPDATE SET "content" = excluded."content", "updatedAt" = excluded."updatedAt"`,
+      );
+      const refreshedMetaContent = buildNormalizedMetaContent({
+        rawContent:
+          normalizedEntryPath === metaEntryPath
+            ? input.content
+            : (existingMetaRow?.content ?? ""),
+        targetPath: input.targetPath,
+        nowIso,
+      });
+      const entryContent =
+        normalizedEntryPath === metaEntryPath ? refreshedMetaContent : input.content;
+
+      writeEntry.run(normalizedEntryPath, entryContent, nowIso, nowIso);
+      if (normalizedEntryPath !== metaEntryPath) {
+        writeEntry.run(
+          metaEntryPath,
+          refreshedMetaContent,
+          existingMetaRow?.createdAt ?? nowIso,
+          nowIso,
+        );
+      }
+
       database
         .prepare(`UPDATE "LuieContainerInfo" SET "updatedAt" = ? WHERE "id" = 1`)
         .run(nowIso);

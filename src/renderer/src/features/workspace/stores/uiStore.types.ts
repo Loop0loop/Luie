@@ -92,14 +92,14 @@ export const DEFAULT_SCRIVENER_SECTIONS: ScrivenerSectionsState = {
 
 export type MainView = {
   type:
-    | "editor"
-    | "character"
-    | "event"
-    | "faction"
-    | "world"
-    | "memo"
-    | "trash"
-    | "analysis";
+  | "editor"
+  | "character"
+  | "event"
+  | "faction"
+  | "world"
+  | "memo"
+  | "trash"
+  | "analysis";
   id?: string;
 };
 

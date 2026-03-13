@@ -15,7 +15,7 @@ const mocked = vi.hoisted(() => ({
   cleanupOrphanSnapshotArtifacts: vi.fn(async () => ({ scanned: 0, deleted: 0 })),
   writeEmergencySnapshotFile: vi.fn(async () => undefined),
   importSnapshotFromFile: vi.fn(),
-  attemptImmediatePackageExport: vi.fn(async () => ({ exported: true })),
+  ensureImmediatePackageExport: vi.fn(async () => undefined),
 }));
 
 vi.mock("../../../src/main/database/index.js", () => ({
@@ -43,8 +43,8 @@ vi.mock("../../../src/main/database/index.js", () => ({
 
 vi.mock("../../../src/main/services/core/projectService.js", () => ({
   projectService: {
-    attemptImmediatePackageExport: (...args: unknown[]) =>
-      mocked.attemptImmediatePackageExport(...args),
+    ensureImmediatePackageExport: (...args: unknown[]) =>
+      mocked.ensureImmediatePackageExport(...args),
   },
 }));
 
@@ -100,27 +100,28 @@ describe("SnapshotService package durability", () => {
     });
 
     expect(created).toMatchObject({ id: "snapshot-1" });
-    expect(mocked.attemptImmediatePackageExport).toHaveBeenCalledWith(
+    expect(mocked.ensureImmediatePackageExport).toHaveBeenCalledWith(
       "project-1",
       "snapshot:create",
     );
   });
 
-  it("writes an emergency file when immediate export reports a retryable failure", async () => {
-    mocked.attemptImmediatePackageExport.mockResolvedValueOnce({
-      exported: false,
-      error: new Error("disk failure"),
-    });
+  it("fails snapshot creation and writes an emergency file when canonical .luie export fails", async () => {
+    mocked.ensureImmediatePackageExport.mockRejectedValueOnce(
+      new Error("disk failure"),
+    );
     const service = new SnapshotService();
 
-    const created = await service.createSnapshot({
-      projectId: "project-1",
-      chapterId: "chapter-1",
-      content: "hello",
-      description: "snapshot",
+    await expect(
+      service.createSnapshot({
+        projectId: "project-1",
+        chapterId: "chapter-1",
+        content: "hello",
+        description: "snapshot",
+      }),
+    ).rejects.toMatchObject({
+      code: "SNP_9001",
     });
-
-    expect(created).toMatchObject({ id: "snapshot-1" });
     expect(mocked.writeEmergencySnapshotFile).toHaveBeenCalledWith(
       expect.objectContaining({
         projectId: "project-1",
@@ -149,11 +150,11 @@ describe("SnapshotService package durability", () => {
     await service.restoreSnapshot("snapshot-1");
     await service.pruneSnapshots("project-1");
 
-    expect(mocked.attemptImmediatePackageExport).toHaveBeenCalledWith(
+    expect(mocked.ensureImmediatePackageExport).toHaveBeenCalledWith(
       "project-1",
       "snapshot:restore",
     );
-    expect(mocked.attemptImmediatePackageExport).toHaveBeenCalledWith(
+    expect(mocked.ensureImmediatePackageExport).toHaveBeenCalledWith(
       "project-1",
       "snapshot:prune",
     );

@@ -12,6 +12,7 @@ type MemoStore = {
   isLoading: boolean;
   isSaving: boolean;
   error: string | null;
+  saveError: string | null;
   loadNotes: (
     projectId: string,
     projectPath?: string | null,
@@ -51,9 +52,9 @@ export const useMemoStore = create<MemoStore>((set, get) => {
     if (!activeProjectId) return;
 
     set((state) =>
-      state.isSaving && state.error === null
+      state.isSaving && state.error === null && state.saveError === null
         ? state
-        : { isSaving: true, error: null },
+        : { isSaving: true, error: null, saveError: null },
     );
 
     try {
@@ -71,7 +72,7 @@ export const useMemoStore = create<MemoStore>((set, get) => {
         error: message,
       });
       if (get().activeProjectId === activeProjectId) {
-        set({ error: message });
+        set({ error: message, saveError: message });
       }
     } finally {
       if (get().activeProjectId === activeProjectId) {
@@ -99,6 +100,7 @@ export const useMemoStore = create<MemoStore>((set, get) => {
     isLoading: false,
     isSaving: false,
     error: null,
+    saveError: null,
     loadNotes: async (projectId, projectPath, fallbackNotes = []) => {
       clearSaveTimer();
 
@@ -110,6 +112,7 @@ export const useMemoStore = create<MemoStore>((set, get) => {
           isLoading: false,
           isSaving: false,
           error: null,
+          saveError: null,
         });
         return;
       }
@@ -119,6 +122,7 @@ export const useMemoStore = create<MemoStore>((set, get) => {
         activeProjectPath: projectPath ?? null,
         isLoading: true,
         error: null,
+        saveError: null,
       });
       const timer = createPerformanceTimer({
         scope: "memo-store",
@@ -146,6 +150,7 @@ export const useMemoStore = create<MemoStore>((set, get) => {
           isLoading: false,
           isSaving: false,
           error: null,
+          saveError: null,
         });
         timer.complete(api.logger, {
           projectId,
@@ -165,6 +170,7 @@ export const useMemoStore = create<MemoStore>((set, get) => {
           isLoading: false,
           isSaving: false,
           error: message,
+          saveError: null,
         });
         timer.fail(api.logger, error, {
           projectId,
@@ -192,6 +198,7 @@ export const useMemoStore = create<MemoStore>((set, get) => {
         return {
           notes: [...state.notes, nextNote],
           error: null,
+          saveError: null,
         };
       });
       if (!added) {
@@ -218,6 +225,7 @@ export const useMemoStore = create<MemoStore>((set, get) => {
           ? {
               notes: nextNotes,
               error: null,
+              saveError: null,
             }
           : state;
       });
@@ -235,6 +243,7 @@ export const useMemoStore = create<MemoStore>((set, get) => {
           ? {
               notes: nextNotes,
               error: null,
+              saveError: null,
             }
           : state;
       });
@@ -259,6 +268,7 @@ export const useMemoStore = create<MemoStore>((set, get) => {
         isLoading: false,
         isSaving: false,
         error: null,
+        saveError: null,
       });
     },
   };

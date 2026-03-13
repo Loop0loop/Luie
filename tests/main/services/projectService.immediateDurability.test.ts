@@ -41,4 +41,25 @@ describe("ProjectService immediate package durability", () => {
       "chapter:update:retry",
     );
   });
+
+  it("throws when strict immediate export is required and export fails", async () => {
+    const service = new ProjectService();
+    const diskError = new Error("disk failure");
+    vi.spyOn(service, "exportProjectPackageNow").mockRejectedValue(diskError);
+    const scheduleSpy = vi
+      .spyOn(service, "schedulePackageExport")
+      .mockImplementation(() => {});
+
+    await expect(
+      service.ensureImmediatePackageExport("project-1", "chapter:update"),
+    ).rejects.toMatchObject({
+      code: "FS_2002",
+      message: "Failed to persist canonical .luie after mutation",
+    });
+
+    expect(scheduleSpy).toHaveBeenCalledWith(
+      "project-1",
+      "chapter:update:retry",
+    );
+  });
 });

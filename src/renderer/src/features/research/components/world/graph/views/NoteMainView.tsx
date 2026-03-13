@@ -1,76 +1,71 @@
-import { Save, History, Type, Bold, Italic, List, AlignLeft, AlignCenter, MoreVertical } from "lucide-react";
+import { Save, Bold, Italic, List, AlignLeft, StickyNote } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@renderer/components/ui/button";
+import { ScrollArea } from "@renderer/components/ui/scroll-area";
+import { Separator } from "@renderer/components/ui/separator";
+
+const TOOLBAR_ITEMS = [
+  { icon: Bold, label: "굵게" },
+  { icon: Italic, label: "기울임" },
+  { icon: List, label: "목록" },
+  { icon: AlignLeft, label: "정렬" },
+];
 
 export function NoteMainView() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex h-full w-full flex-col bg-app">
-      {/* Document Header */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-border/40 shrink-0 bg-element/10">
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2 text-[11px] text-muted mb-1">
-            <span>Ideas</span>
-            <span className="text-border">/</span>
-            <span>마왕 과거 떡밥</span>
+    <div className="flex h-full flex-col bg-background/50">
+      {/* Header */}
+      <header className="flex items-center justify-between border-b px-8 py-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
+            <StickyNote className="h-5 w-5" />
           </div>
-          <input 
-            type="text" 
-            defaultValue="마왕 과거 떡밥" 
-            className="bg-transparent border-none text-lg font-bold text-fg focus:outline-none focus:ring-0 w-full"
-          />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              {t("world.graph.note.title", "아이디어 노트")}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              설정을 구상하다 떠오른 단편적인 생각들을 기록하세요.
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-muted mr-2">Last edited just now</span>
-          <button className="p-2 border border-border/60 rounded-md text-muted hover:bg-element hover:text-fg transition-colors">
-            <History className="h-4 w-4" />
-          </button>
-          <button className="flex items-center gap-1.5 bg-accent text-accent-fg px-3 py-1.5 rounded-md text-xs font-medium hover:bg-accent/90 transition-colors">
-            <Save className="h-3.5 w-3.5" />
-            Save
-          </button>
-          <button className="p-1.5 text-muted hover:text-fg">
-            <MoreVertical className="h-4 w-4" />
-          </button>
+          <Button className="gap-2">
+            <Save className="h-4 w-4" />
+            저장
+          </Button>
         </div>
+      </header>
+
+      {/* Toolbar */}
+      <div className="flex items-center gap-1 border-b px-8 py-2">
+        {TOOLBAR_ITEMS.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Button key={item.label} variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+              <Icon className="h-4 w-4" />
+              <span className="sr-only">{item.label}</span>
+            </Button>
+          );
+        })}
       </div>
 
-      {/* Formatting Toolbar */}
-      <div className="flex items-center gap-1 px-6 py-2 border-b border-border/40 bg-element/20 shrink-0">
-        <button className="p-1.5 rounded text-muted hover:bg-element hover:text-fg"><Type className="h-4 w-4" /></button>
-        <div className="w-px h-4 bg-border/60 mx-1" />
-        <button className="p-1.5 rounded text-muted hover:bg-element hover:text-fg"><Bold className="h-4 w-4" /></button>
-        <button className="p-1.5 rounded text-muted hover:bg-element hover:text-fg"><Italic className="h-4 w-4" /></button>
-        <div className="w-px h-4 bg-border/60 mx-1" />
-        <button className="p-1.5 rounded text-muted hover:bg-element hover:text-fg"><List className="h-4 w-4" /></button>
-        <button className="p-1.5 rounded text-muted hover:bg-element hover:text-fg"><AlignLeft className="h-4 w-4" /></button>
-        <button className="p-1.5 rounded text-muted hover:bg-element hover:text-fg"><AlignCenter className="h-4 w-4" /></button>
-      </div>
+      {/* Editor Area (Textarea or Editor stub) */}
+      <ScrollArea className="flex-1">
+        <div className="mx-auto max-w-4xl px-8 py-8">
+          <textarea
+            className="min-h-[500px] w-full resize-none bg-transparent text-lg leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none"
+            placeholder="새로운 아이디어를 입력하세요..."
+            defaultValue={`마왕의 과거 떡밥
 
-      {/* Editor Content Area */}
-      <div className="flex-1 overflow-auto p-8 flex justify-center">
-        <div className="w-full max-w-3xl">
-          <div 
-            className="w-full min-h-[500px] text-sm text-fg leading-relaxed focus:outline-none"
-            contentEditable
-            suppressContentEditableWarning
-          >
-            {/* Mock Content */}
-            <h1 className="text-2xl font-bold mb-4">마왕의 탄생 비화</h1>
-            <p className="mb-4 text-muted">
-              마왕은 원래 초대 국왕의 막역한 친우이자 대마법사였다. 
-              하지만 붉은 밤 사건 당시 어둠의 심연에 노출되면서...
-            </p>
-            <ul className="list-disc pl-5 mb-4 text-muted space-y-1">
-              <li>왕국의 역사서에는 반역자로 기록되어 있음</li>
-              <li>그러나 남부 기록 보관소의 이면지에는 그가 사람들을 지키기 위해 희생한 것으로 추정되는 단서가 있음</li>
-            </ul>
-            <p className="text-muted">
-              주인공 파티가 중반부에 이 사실을 알게 되었을 때 충격적인 전개를 유도할 수 있도록 복선을 배치해야 함.
-            </p>
-          </div>
+- 원래는 인간이었다는 설정 추가할 것
+- 왕국력 123년 이전의 사건과 연관이 있음
+- 주인공의 아버지와 안면이 있는 사이?`}
+          />
         </div>
-      </div>
+      </ScrollArea>
     </div>
   );
 }

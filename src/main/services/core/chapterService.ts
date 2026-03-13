@@ -162,7 +162,7 @@ export class ChapterService {
         wordCount: chapter.wordCount,
         order: chapter.order,
       });
-      await projectService.attemptImmediatePackageExport(
+      await projectService.ensureImmediatePackageExport(
         input.projectId,
         "chapter:create",
       );
@@ -262,7 +262,7 @@ export class ChapterService {
         wordCount: updatedChapter.wordCount,
         order: updatedChapter.order,
       });
-      await projectService.attemptImmediatePackageExport(
+      await projectService.ensureImmediatePackageExport(
         String((updatedChapter as { projectId: unknown }).projectId),
         "chapter:update",
       );
@@ -312,7 +312,7 @@ export class ChapterService {
 
       logger.info("Chapter soft-deleted successfully", { chapterId: id });
       if ((chapter as { projectId?: unknown })?.projectId) {
-        await projectService.attemptImmediatePackageExport(
+        await projectService.ensureImmediatePackageExport(
           String((chapter as { projectId: unknown }).projectId),
           "chapter:delete",
         );
@@ -383,7 +383,7 @@ export class ChapterService {
       });
 
       logger.info("Chapter restored successfully", { chapterId: id });
-      await projectService.attemptImmediatePackageExport(
+      await projectService.ensureImmediatePackageExport(
         String(current.projectId),
         "chapter:restore",
       );
@@ -427,7 +427,7 @@ export class ChapterService {
 
       logger.info("Chapter purged successfully", { chapterId: id });
       if ((chapter as { projectId?: unknown })?.projectId) {
-        await projectService.attemptImmediatePackageExport(
+        await projectService.ensureImmediatePackageExport(
           String((chapter as { projectId: unknown }).projectId),
           "chapter:purge",
         );
@@ -457,7 +457,7 @@ export class ChapterService {
 
       logger.info("Chapters reordered successfully", { projectId });
       await chapterSearchCacheService.rebuildProject(projectId);
-      await projectService.attemptImmediatePackageExport(
+      await projectService.ensureImmediatePackageExport(
         projectId,
         "chapter:reorder",
       );

@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type GroupImperativeHandle } from "react-resizable-panels";
+import {
+  Panel,
+  Group as PanelGroup,
+  Separator as PanelResizeHandle,
+  type GroupImperativeHandle,
+} from "react-resizable-panels";
 import { useShallow } from "zustand/react/shallow";
 import {
   STORAGE_KEY_MEMO_SIDEBAR_LAYOUT,
@@ -9,10 +14,18 @@ import { Tag } from "lucide-react";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useTranslation } from "react-i18next";
 import { useShortcutCommand } from "@renderer/features/workspace/hooks/useShortcutCommand";
-import { readLocalStorageJson, writeLocalStorageJson } from "@shared/utils/localStorage";
-import { useMemoManager, buildDefaultNotes, type Note } from "@renderer/features/research/components/memo/useMemoManager";
+import {
+  readLocalStorageJson,
+  writeLocalStorageJson,
+} from "@shared/utils/localStorage";
+import {
+  useMemoManager,
+  buildDefaultNotes,
+  type Note,
+} from "@renderer/features/research/components/memo/useMemoManager";
 import { MemoSidebarList } from "@renderer/features/research/components/memo/MemoSidebarList";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { useMemoStore } from "@renderer/features/research/stores/memoStore";
 import {
   clampSidebarWidth,
   getSidebarDefaultWidth,
@@ -23,6 +36,7 @@ import {
 import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
 import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
 import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
+import { useToast } from "@shared/ui/ToastContext";
 
 const MEMO_SIDEBAR_PANEL_ID = "memo-sidebar";
 const MEMO_CONTENT_PANEL_ID = "memo-content";
@@ -33,8 +47,13 @@ type MemoSidebarLayoutV3 = {
 };
 
 const readMemoSidebarWidthFromStorage = (): number | null => {
-  const v3 = readLocalStorageJson<MemoSidebarLayoutV3>(STORAGE_KEY_MEMO_SIDEBAR_LAYOUT);
-  if (typeof v3?.sidebarWidthPx === "number" && Number.isFinite(v3.sidebarWidthPx)) {
+  const v3 = readLocalStorageJson<MemoSidebarLayoutV3>(
+    STORAGE_KEY_MEMO_SIDEBAR_LAYOUT,
+  );
+  if (
+    typeof v3?.sidebarWidthPx === "number" &&
+    Number.isFinite(v3.sidebarWidthPx)
+  ) {
     return Math.round(v3.sidebarWidthPx);
   }
 
@@ -73,15 +92,18 @@ function MemoSectionInner({
   defaultNotes: Note[];
 }) {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const { sidebarWidths, setSidebarWidth } = useUIStore(
     useShallow((state) => ({
       sidebarWidths: state.sidebarWidths,
       setSidebarWidth: state.setSidebarWidth,
-    }))
+    })),
   );
 
   const sidebarFeature = "memoSidebar" as const;
   const sidebarConfig = getSidebarWidthConfig(sidebarFeature);
+  const saveError = useMemoStore((state) => state.saveError);
+  const lastSaveErrorRef = useRef<string | null>(null);
 
   const {
     activeNoteId,
@@ -108,22 +130,22 @@ function MemoSectionInner({
   const memoSidebarWidthPx = clampSidebarWidth(
     sidebarFeature,
     storedSidebarWidthPx ??
-    sidebarWidths[sidebarFeature] ??
-    getSidebarDefaultWidth(sidebarFeature),
+      sidebarWidths[sidebarFeature] ??
+      getSidebarDefaultWidth(sidebarFeature),
   );
 
   const commitMemoSidebarWidth = useCallback(
     (_feature: string, widthPx: number) => {
       setSidebarWidth(sidebarFeature, widthPx);
-      writeLocalStorageJson(STORAGE_KEY_MEMO_SIDEBAR_LAYOUT, { sidebarWidthPx: widthPx });
+      writeLocalStorageJson(STORAGE_KEY_MEMO_SIDEBAR_LAYOUT, {
+        sidebarWidthPx: widthPx,
+      });
     },
     [setSidebarWidth, sidebarFeature],
   );
 
-  const handleMemoSidebarResize = useSidebarResizeCommit(
-    sidebarFeature,
-    commitMemoSidebarWidth,
-  );
+  const { onResize: handleMemoSidebarResize, resizeHandleProps } =
+    useSidebarResizeCommit(sidebarFeature, commitMemoSidebarWidth);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const panelGroupRef = useRef<GroupImperativeHandle | null>(null);
 
@@ -147,6 +169,18 @@ function MemoSectionInner({
       handleAddNote();
     }
   });
+
+  useEffect(() => {
+    if (!saveError) {
+      lastSaveErrorRef.current = null;
+      return;
+    }
+    if (saveError === lastSaveErrorRef.current) {
+      return;
+    }
+    lastSaveErrorRef.current = saveError;
+    showToast(t("research.toast.memoSaveFailed"), "error");
+  }, [saveError, showToast, t]);
 
   return (
     <div ref={containerRef} className="flex flex-col h-full bg-sidebar/30">
@@ -175,10 +209,16 @@ function MemoSectionInner({
           />
         </Panel>
 
-        <PanelResizeHandle className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize flex flex-col items-center justify-center -my-4 z-10 relative">
-        </PanelResizeHandle>
+        <PanelResizeHandle
+          {...resizeHandleProps}
+          className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize flex flex-col items-center justify-center -my-4 z-10 relative"
+        ></PanelResizeHandle>
 
-        <Panel id={MEMO_CONTENT_PANEL_ID} minSize={toPercentSize(MEMO_CONTENT_MIN_SIZE_PERCENT)} className="min-w-0">
+        <Panel
+          id={MEMO_CONTENT_PANEL_ID}
+          minSize={toPercentSize(MEMO_CONTENT_MIN_SIZE_PERCENT)}
+          className="min-w-0"
+        >
           {activeNote ? (
             <div className="h-full flex flex-col bg-panel overflow-hidden">
               <div className="px-6 pt-3 flex items-center gap-2">
@@ -195,7 +235,9 @@ function MemoSectionInner({
                   placeholder={t("memo.placeholder.tags")}
                   value={activeNote.tags.join(", ")}
                   onChange={(e) => {
-                    const tags = e.target.value.split(",").map((tag) => tag.trim());
+                    const tags = e.target.value
+                      .split(",")
+                      .map((tag) => tag.trim());
                     updateActiveNote({ tags });
                   }}
                 />

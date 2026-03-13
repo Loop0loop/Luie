@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type * as MemoStoreModule from "../../../src/renderer/src/features/research/stores/memoStore.js";
 import { DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS } from "../../../src/shared/constants/index.js";
 
 const mocked = vi.hoisted(() => ({
@@ -17,9 +18,6 @@ vi.mock(
   }),
 );
 
-type MemoStoreModule =
-  typeof import("../../../src/renderer/src/features/research/stores/memoStore.js");
-
 const sampleNote = {
   id: "memo-1",
   title: "First memo",
@@ -29,7 +27,7 @@ const sampleNote = {
 };
 
 describe("memoStore", () => {
-  let memoStoreModule: MemoStoreModule;
+  let memoStoreModule: typeof MemoStoreModule;
 
   beforeEach(async () => {
     vi.useFakeTimers();
@@ -233,6 +231,29 @@ describe("memoStore", () => {
         projectId: "project-1",
         noteCount: 1,
       }),
+    );
+  });
+
+  it("records saveError when memo persistence fails", async () => {
+    mocked.storage.saveScrapMemos.mockRejectedValue(
+      new Error("Failed to persist scrap world data to canonical .luie."),
+    );
+
+    await memoStoreModule.useMemoStore
+      .getState()
+      .loadNotes("project-1", "/tmp/project-1.luie");
+
+    memoStoreModule.useMemoStore.getState().addNote("project-1", {
+      title: "Draft",
+      content: "Initial",
+      tags: [],
+    });
+
+    await vi.advanceTimersByTimeAsync(DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS);
+    await memoStoreModule.useMemoStore.getState().flushSave();
+
+    expect(memoStoreModule.useMemoStore.getState().saveError).toBe(
+      "Failed to persist scrap world data to canonical .luie.",
     );
   });
 });

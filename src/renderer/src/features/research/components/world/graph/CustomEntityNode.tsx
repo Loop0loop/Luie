@@ -36,35 +36,39 @@ export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps)
 
     return (
         <div className="group relative">
-            {/* 노드 본체 (Pill 형태) - Glassmorphism UI */}
+            {/* Obsidian Canvas Style Card */}
             <div
                 className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 backdrop-blur-md transition-colors duration-200 ease-out cursor-grab active:cursor-grabbing",
-                    isEventChainFocused ? "rounded-lg border-2" : "rounded-full border",
-                    isFreeform ? "bg-panel/40 shadow-none border-border/30 hover:bg-panel/80" : themeSpec.wrapper,
-                    selected && !isProtagonistSelected ? "ring-2 ring-accent ring-offset-1 ring-offset-app shadow-md scale-105" : "hover:-translate-y-0.5 hover:shadow-md",
-                    isProtagonistSelected && "ring-4 ring-accent/80 shadow-[0_0_40px_rgba(currentColor,0.4)] scale-110",
-                    isEventChainFocused && "scale-110 shadow-lg"
+                    "flex flex-col w-[160px] min-h-[64px] rounded-xl border bg-element/90 backdrop-blur-md shadow-sm transition-all duration-200 ease-out cursor-grab active:cursor-grabbing overflow-hidden",
+                    selected ? "border-accent ring-2 ring-accent/30 shadow-md" : "border-border/60 hover:border-accent/50 hover:shadow",
+                    isEventChainFocused && "scale-105 shadow-lg",
+                    isProtagonistSelected && "ring-4 ring-accent/80 shadow-[0_0_40px_rgba(currentColor,0.4)] scale-105",
+                    isFreeform && "border-dashed shadow-[0_10px_30px_rgba(37,99,235,0.10)]"
                 )}
                 style={{
                     transform: `scale(${baseScale})`,
                     transformOrigin: "center center",
                 }}
             >
-                <div className={cn("flex items-center justify-center p-1 rounded-full shrink-0 transition-colors pointer-events-none", isFreeform ? "text-muted" : themeSpec.text, isFreeform ? "bg-transparent" : themeSpec.iconBg)}>
-                    <Icon size={14} strokeWidth={isEventChainFocused ? 3 : 2.5} />
+                {/* File Header Tab */}
+                <div className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 border-b border-border/40",
+                    themeSpec.wrapper // Gives a subtle background tint based on type
+                )}>
+                    <div className={cn("p-0.5 rounded-sm shrink-0", themeSpec.iconBg, themeSpec.text)}>
+                        <Icon size={12} strokeWidth={2.5} />
+                    </div>
+                    <span className="font-semibold text-[10px] tracking-widest uppercase opacity-70">
+                        {subType}
+                    </span>
                 </div>
-                {!isFreeform && (
-                    <span className={cn("font-[600] text-[12.5px] whitespace-nowrap tracking-tight pr-1 pointer-events-none", themeSpec.text)}>
+                
+                {/* File Content Area */}
+                <div className="flex-1 p-3 flex items-start">
+                    <span className="font-medium text-sm text-fg leading-tight break-keep">
                         {label}
                     </span>
-                )}
-                {/* Fallback minimal label for Freeform on hover */}
-                {isFreeform && (
-                    <span className="font-[500] text-[11px] whitespace-nowrap tracking-tight absolute -bottom-5 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-panel/80 px-2 rounded-md border border-border/50 text-muted pointer-events-none">
-                        {label}
-                    </span>
-                )}
+                </div>
             </div>
 
             {/* Handles rendered after main div for z-index stacking */}

@@ -8,6 +8,7 @@ import {
 import type { WorldDrawingPath } from "@shared/types";
 import { useDialog } from "@shared/ui/useDialog";
 import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
+import { useToast } from "@shared/ui/ToastContext";
 
 export function useDrawingCanvas({
   canvasRef,
@@ -16,6 +17,7 @@ export function useDrawingCanvas({
 }) {
   const { t } = useTranslation();
   const dialog = useDialog();
+  const { showToast } = useToast();
   const currentProject = useProjectStore((state) => state.currentItem);
   const luieAttachmentPath = getReadableLuieAttachmentPath(currentProject);
 
@@ -64,17 +66,17 @@ export function useDrawingCanvas({
     if (!currentProject?.id) return;
     if (hydratedProjectIdRef.current !== currentProject.id) return;
     const timer = window.setTimeout(() => {
-      void worldPackageStorage.saveDrawing(
-        currentProject.id,
-        luieAttachmentPath,
-        {
+      void worldPackageStorage
+        .saveDrawing(currentProject.id, luieAttachmentPath, {
           paths,
           tool,
           iconType,
           color,
           lineWidth,
-        },
-      );
+        })
+        .catch(() => {
+          showToast(t("research.toast.worldSaveFailed"), "error");
+        });
     }, 300);
 
     return () => {
@@ -88,6 +90,8 @@ export function useDrawingCanvas({
     lineWidth,
     currentProject?.id,
     luieAttachmentPath,
+    showToast,
+    t,
   ]);
 
   const getCoords = (e: React.PointerEvent) => {
