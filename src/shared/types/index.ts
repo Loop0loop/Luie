@@ -459,7 +459,13 @@ export type FontPreset =
 export type EditorTheme = "light" | "dark" | "sepia";
 export type ThemeTemperature = "neutral" | "warm" | "cool";
 export type ThemeContrast = "soft" | "high";
-export type ThemeAccent = "blue" | "violet" | "green" | "amber" | "rose" | "slate";
+export type ThemeAccent =
+  | "blue"
+  | "violet"
+  | "green"
+  | "amber"
+  | "rose"
+  | "slate";
 export type ThemeTexture = boolean;
 export type WindowMenuBarMode = "hidden" | "visible";
 export type AppBootstrapStatus = {
@@ -551,8 +557,29 @@ export interface DbRecoveryCheckpoint {
   checkpointed: number;
 }
 
+export interface DbRecoveryFileStatus {
+  path: string;
+  exists: boolean;
+  sizeBytes?: number;
+  modifiedAt?: string;
+}
+
+export type DbRecoveryStatusReason = "ready" | "wal-missing" | "db-missing";
+
+export interface DbRecoveryStatus {
+  available: boolean;
+  reason: DbRecoveryStatusReason;
+  checkedAt: string;
+  backupRootDir: string;
+  latestBackupDir?: string;
+  database: DbRecoveryFileStatus;
+  wal: DbRecoveryFileStatus;
+  shm: DbRecoveryFileStatus;
+}
+
 export interface DbRecoveryResult {
   success: boolean;
+  dryRun: boolean;
   message: string;
   backupDir?: string;
   checkpoint?: DbRecoveryCheckpoint[];
@@ -715,7 +742,12 @@ export interface WindowBounds {
 
 export type WindowState = "maximized" | "normal";
 
-export type EditorUiMode = "default" | "docs" | "editor" | "scrivener" | "focus";
+export type EditorUiMode =
+  | "default"
+  | "docs"
+  | "editor"
+  | "scrivener"
+  | "focus";
 
 export interface EditorSettings {
   fontFamily: FontFamily;
@@ -919,7 +951,7 @@ export interface EntityRelationUpdateInput {
 export interface WorldGraphNode {
   id: string;
   entityType: WorldEntitySourceType; // "Character" | "Faction" | "Event" | "Term" | "WorldEntity"
-  subType?: WorldEntityType;          // Place / Concept / Rule / Item
+  subType?: WorldEntityType; // Place / Concept / Rule / Item
   name: string;
   description?: string | null;
   firstAppearance?: string | null;

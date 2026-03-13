@@ -1,40 +1,76 @@
 import {
-  Users,
   Search,
-  Filter,
   Plus,
+  Filter,
+  FileText,
+  User,
+  MapPin,
+  Flag,
+  BookOpen
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@renderer/components/ui/button";
-import { Input } from "@renderer/components/ui/input";
 import { SidebarTreeSection, TreeItem } from "./SidebarTreeSection";
 
 export function EntitySidebarContent() {
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-4">
-      <div className="px-2 pt-2">
-        <div className="relative">
-          <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="요소 검색..." className="pl-8 h-8 text-xs bg-muted/50 border-transparent focus:border-border" />
+    <div className="flex flex-col h-full bg-transparent">
+      
+      {/* 
+        Professional Search Bar
+        Like Linear / Craft - borderless, custom background, subtle placeholder.
+      */}
+      <div className="px-3 mb-4 mt-2">
+        <div className="relative flex items-center group">
+          <Search className="absolute left-2.5 h-[14px] w-[14px] text-muted-foreground/60 transition-colors group-focus-within:text-foreground/80" />
+          <input 
+            type="text"
+            placeholder={t("world.graph.ide.sidebar.search", "Search entities...")}
+            className="w-full bg-muted/60 hover:bg-muted/80 focus:bg-background border border-transparent focus:border-border/50 focus:ring-1 focus:ring-ring/20 rounded-md h-[28px] pl-8 pr-8 text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none transition-all"
+          />
+          {/* Mac style shortcut hint */}
+          <div className="absolute right-2 flex items-center justify-center h-4 px-1 rounded border border-border/40 bg-background/50 text-[9px] font-medium text-muted-foreground/60 pointer-events-none select-none">
+            ⌘K
+          </div>
         </div>
       </div>
 
-      <div className="space-y-1 mb-4">
-        <SidebarTreeSection title={t("world.graph.ide.sidebar.entities", "요소 목록")}>
-          <TreeItem icon={<Users className="w-4 h-4" />} label="주요 인물" isActive />
-          <TreeItem icon={<Users className="w-4 h-4" />} label="조연" />
-        </SidebarTreeSection>
-      </div>
+      <div className="flex-1 overflow-y-auto w-full">
+        <SidebarTreeSection 
+          title={t("world.graph.ide.sidebar.entities.main", "Entities")}
+          actionIcon={<Plus className="w-[14px] h-[14px]" />}
+        >
+          <TreeItem isFolder isOpen label="Characters (인물)">
+            <TreeItem icon={<User className="w-[15px] h-[15px] opacity-80" />} label="Protagonists" isActive meta="3" />
+            <TreeItem icon={<User className="w-[15px] h-[15px] opacity-80" />} label="Antagonists" />
+            <TreeItem icon={<User className="w-[15px] h-[15px] opacity-80" />} label="Supporting" />
+          </TreeItem>
+          
+          <TreeItem isFolder label="Locations (장소)">
+            <TreeItem icon={<MapPin className="w-[15px] h-[15px] opacity-80" />} label="Capital City" />
+            <TreeItem icon={<MapPin className="w-[15px] h-[15px] opacity-80" />} label="Mage's Tower" />
+          </TreeItem>
 
-      <div className="px-2 mt-4 space-y-1">
-        <Button variant="ghost" className="w-full justify-start gap-2 h-8 px-2 text-muted-foreground hover:text-foreground">
-          <Filter className="w-4 h-4" /> 속성 필터링
-        </Button>
-        <Button variant="ghost" className="w-full justify-start gap-2 h-8 px-2 text-primary hover:text-primary/90">
-          <Plus className="w-4 h-4" /> 새 요소 생성
-        </Button>
+          <TreeItem isFolder label="Factions (세력)">
+            <TreeItem icon={<Flag className="w-[15px] h-[15px] opacity-80" />} label="The Round Table" />
+            <TreeItem icon={<Flag className="w-[15px] h-[15px] opacity-80" />} label="Rebels" />
+          </TreeItem>
+          
+          <TreeItem isFolder label="Lore (설정)">
+            <TreeItem icon={<BookOpen className="w-[15px] h-[15px] opacity-80" />} label="Magic System" />
+            <TreeItem icon={<BookOpen className="w-[15px] h-[15px] opacity-80" />} label="Ancient History" />
+          </TreeItem>
+        </SidebarTreeSection>
+
+        <SidebarTreeSection 
+          title={t("world.graph.ide.sidebar.entities.drafts", "Drafts")}
+          defaultExpanded={false}
+          actionIcon={<Filter className="w-[14px] h-[14px]" />}
+        >
+          <TreeItem icon={<FileText className="w-[15px] h-[15px] opacity-80" />} label="Unnamed Mage" />
+          <TreeItem icon={<FileText className="w-[15px] h-[15px] opacity-80" />} label="Abandoned Temple" />
+        </SidebarTreeSection>
       </div>
     </div>
   );

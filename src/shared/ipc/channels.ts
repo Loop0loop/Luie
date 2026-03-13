@@ -110,6 +110,7 @@ export const IPC_CHANNELS = {
   SETTINGS_RESET: "settings:reset",
 
   // Recovery
+  RECOVERY_DB_STATUS: "recovery:db-status",
   RECOVERY_DB_RUN: "recovery:db-run",
 
   // Window

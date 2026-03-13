@@ -107,6 +107,7 @@ const RETRYABLE_CHANNELS = new Set<string>([
   IPC_CHANNELS.SETTINGS_GET_SHORTCUTS,
   IPC_CHANNELS.SETTINGS_GET_WINDOW_BOUNDS,
   IPC_CHANNELS.APP_GET_BOOTSTRAP_STATUS,
+  IPC_CHANNELS.RECOVERY_DB_STATUS,
   IPC_CHANNELS.SYNC_GET_STATUS,
   IPC_CHANNELS.SYNC_GET_RUNTIME_CONFIG,
   IPC_CHANNELS.STARTUP_GET_READINESS,
@@ -114,7 +115,10 @@ const RETRYABLE_CHANNELS = new Set<string>([
 
 const randomByteArray = (size: number): Uint8Array => {
   const bytes = new Uint8Array(size);
-  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.getRandomValues === "function"
+  ) {
     crypto.getRandomValues(bytes);
     return bytes;
   }
@@ -126,7 +130,9 @@ const randomByteArray = (size: number): Uint8Array => {
 };
 
 const getTimeoutMs = (channel: string) =>
-  LONG_TIMEOUT_CHANNELS.has(channel) ? IPC_LONG_TIMEOUT_MS : IPC_DEFAULT_TIMEOUT_MS;
+  LONG_TIMEOUT_CHANNELS.has(channel)
+    ? IPC_LONG_TIMEOUT_MS
+    : IPC_DEFAULT_TIMEOUT_MS;
 
 const getRequestId = () => {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -212,7 +218,10 @@ async function invokeWithTimeout<T>(
   return result;
 }
 
-async function safeInvoke<T = never>(channel: string, ...args: unknown[]): Promise<IPCResponse<T>> {
+async function safeInvoke<T = never>(
+  channel: string,
+  ...args: unknown[]
+): Promise<IPCResponse<T>> {
   const timeoutMs = getTimeoutMs(channel);
   const maxRetries = RETRYABLE_CHANNELS.has(channel) ? 1 : 0;
   let attempt = 0;
@@ -225,7 +234,8 @@ async function safeInvoke<T = never>(channel: string, ...args: unknown[]): Promi
     const code = response.error?.code;
     const shouldRetry =
       RETRYABLE_CHANNELS.has(channel) &&
-      (code === ErrorCode.IPC_TIMEOUT || code === ErrorCode.IPC_INVOKE_FAILED) &&
+      (code === ErrorCode.IPC_TIMEOUT ||
+        code === ErrorCode.IPC_INVOKE_FAILED) &&
       attempt <= maxRetries;
 
     if (!shouldRetry) {
@@ -295,6 +305,7 @@ type CoreMethodMap = {
   "settings.setShortcuts": RendererApi["settings"]["setShortcuts"];
   "settings.getWindowBounds": RendererApi["settings"]["getWindowBounds"];
   "settings.setWindowBounds": RendererApi["settings"]["setWindowBounds"];
+  "recovery.getStatus": RendererApi["recovery"]["getStatus"];
   "recovery.runDb": RendererApi["recovery"]["runDb"];
   "fs.readLuieEntry": RendererApi["fs"]["readLuieEntry"];
   "fs.selectFile": RendererApi["fs"]["selectFile"];
@@ -448,13 +459,26 @@ const rendererApi = {
       safeInvoke(IPC_CHANNELS.PROJECT_UPDATE, input),
     delete: (
       input: string | { id: string; deleteFile?: boolean },
-    ): Promise<IPCResponse<never>> => safeInvoke(IPC_CHANNELS.PROJECT_DELETE, input),
+    ): Promise<IPCResponse<never>> =>
+      safeInvoke(IPC_CHANNELS.PROJECT_DELETE, input),
     removeLocal: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.PROJECT_REMOVE_LOCAL, id),
-    openLuie: (packagePath: string): ReturnType<RendererApi["project"]["openLuie"]> =>
-      safeInvokeCore("project.openLuie", IPC_CHANNELS.PROJECT_OPEN_LUIE, packagePath),
-    markOpened: (id: string): ReturnType<RendererApi["project"]["markOpened"]> =>
-      safeInvokeCore("project.markOpened", IPC_CHANNELS.PROJECT_MARK_OPENED, id),
+    openLuie: (
+      packagePath: string,
+    ): ReturnType<RendererApi["project"]["openLuie"]> =>
+      safeInvokeCore(
+        "project.openLuie",
+        IPC_CHANNELS.PROJECT_OPEN_LUIE,
+        packagePath,
+      ),
+    markOpened: (
+      id: string,
+    ): ReturnType<RendererApi["project"]["markOpened"]> =>
+      safeInvokeCore(
+        "project.markOpened",
+        IPC_CHANNELS.PROJECT_MARK_OPENED,
+        id,
+      ),
     attachLuie: (
       projectId: string,
       packagePath: string,
@@ -497,7 +521,10 @@ const rendererApi = {
       safeInvoke(IPC_CHANNELS.CHAPTER_RESTORE, id),
     purge: (id: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.CHAPTER_PURGE, id),
-    reorder: (projectId: string, chapterIds: string[]): Promise<IPCResponse<never>> =>
+    reorder: (
+      projectId: string,
+      chapterIds: string[],
+    ): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.CHAPTER_REORDER, projectId, chapterIds),
   },
 
@@ -564,7 +591,11 @@ const rendererApi = {
     getByProject: (
       projectId: string,
     ): ReturnType<RendererApi["snapshot"]["getByProject"]> =>
-      safeInvokeCore("snapshot.getByProject", IPC_CHANNELS.SNAPSHOT_GET_BY_PROJECT, projectId),
+      safeInvokeCore(
+        "snapshot.getByProject",
+        IPC_CHANNELS.SNAPSHOT_GET_BY_PROJECT,
+        projectId,
+      ),
     getAll: (projectId: string): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SNAPSHOT_GET_ALL, projectId),
     getByChapter: (chapterId: string): Promise<IPCResponse<never>> =>
@@ -572,7 +603,11 @@ const rendererApi = {
     importFromFile: (
       filePath: string,
     ): ReturnType<RendererApi["snapshot"]["importFromFile"]> =>
-      safeInvokeCore("snapshot.importFromFile", IPC_CHANNELS.SNAPSHOT_IMPORT_FILE, filePath),
+      safeInvokeCore(
+        "snapshot.importFromFile",
+        IPC_CHANNELS.SNAPSHOT_IMPORT_FILE,
+        filePath,
+      ),
     restore: (id: string): ReturnType<RendererApi["snapshot"]["restore"]> =>
       safeInvokeCore("snapshot.restore", IPC_CHANNELS.SNAPSHOT_RESTORE, id),
     delete: (id: string): Promise<IPCResponse<never>> =>
@@ -592,7 +627,12 @@ const rendererApi = {
       projectPath: string,
       content: string,
     ): Promise<IPCResponse<never>> =>
-      safeInvoke(IPC_CHANNELS.FS_SAVE_PROJECT, projectName, projectPath, content),
+      safeInvoke(
+        IPC_CHANNELS.FS_SAVE_PROJECT,
+        projectName,
+        projectPath,
+        content,
+      ),
     selectDirectory: (): Promise<IPCResponse<string>> =>
       safeInvoke(IPC_CHANNELS.FS_SELECT_DIRECTORY),
     selectFile: (options?: {
@@ -608,15 +648,27 @@ const rendererApi = {
       defaultPath?: string;
       filters?: Array<{ name: string; extensions: string[] }>;
     }): ReturnType<RendererApi["fs"]["selectSaveLocation"]> =>
-      safeInvokeCore("fs.selectSaveLocation", IPC_CHANNELS.FS_SELECT_SAVE_LOCATION, options),
+      safeInvokeCore(
+        "fs.selectSaveLocation",
+        IPC_CHANNELS.FS_SELECT_SAVE_LOCATION,
+        options,
+      ),
     readFile: (filePath: string): Promise<IPCResponse<string>> =>
       safeInvoke(IPC_CHANNELS.FS_READ_FILE, filePath),
     readLuieEntry: (
       packagePath: string,
       entryPath: string,
     ): ReturnType<RendererApi["fs"]["readLuieEntry"]> =>
-      safeInvokeCore("fs.readLuieEntry", IPC_CHANNELS.FS_READ_LUIE_ENTRY, packagePath, entryPath),
-    writeFile: (filePath: string, content: string): Promise<IPCResponse<never>> =>
+      safeInvokeCore(
+        "fs.readLuieEntry",
+        IPC_CHANNELS.FS_READ_LUIE_ENTRY,
+        packagePath,
+        entryPath,
+      ),
+    writeFile: (
+      filePath: string,
+      content: string,
+    ): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.FS_WRITE_FILE, filePath, content),
 
     // .luie package directory helpers
@@ -630,7 +682,12 @@ const rendererApi = {
       relativePath: string,
       content: string,
     ): Promise<IPCResponse<{ path: string }>> =>
-      safeInvoke(IPC_CHANNELS.FS_WRITE_PROJECT_FILE, projectRoot, relativePath, content),
+      safeInvoke(
+        IPC_CHANNELS.FS_WRITE_PROJECT_FILE,
+        projectRoot,
+        relativePath,
+        content,
+      ),
     approveProjectPath: (
       projectPath: string,
     ): Promise<IPCResponse<{ approved: boolean; normalizedPath: string }>> =>
@@ -667,8 +724,13 @@ const rendererApi = {
     setDirty: (dirty: boolean): void => {
       rendererDirty = Boolean(dirty);
     },
-    onQuitPhase: (callback: (payload: AppQuitPhasePayload) => void): (() => void) => {
-      const listener = (_event: IpcRendererEvent, payload: AppQuitPhasePayload) => {
+    onQuitPhase: (
+      callback: (payload: AppQuitPhasePayload) => void,
+    ): (() => void) => {
+      const listener = (
+        _event: IpcRendererEvent,
+        payload: AppQuitPhasePayload,
+      ) => {
         callback(payload);
       };
       ipcRenderer.on(IPC_CHANNELS.APP_QUIT_PHASE, listener);
@@ -680,14 +742,22 @@ const rendererApi = {
 
   // Window API
   window: {
-    maximize: (): Promise<IPCResponse<never>> => safeInvoke(IPC_CHANNELS.WINDOW_MAXIMIZE),
-    close: (): Promise<IPCResponse<never>> => safeInvoke(IPC_CHANNELS.WINDOW_CLOSE),
+    maximize: (): Promise<IPCResponse<never>> =>
+      safeInvoke(IPC_CHANNELS.WINDOW_MAXIMIZE),
+    close: (): Promise<IPCResponse<never>> =>
+      safeInvoke(IPC_CHANNELS.WINDOW_CLOSE),
     toggleFullscreen: (): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.WINDOW_TOGGLE_FULLSCREEN),
     setFullscreen: (flag: boolean): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.WINDOW_SET_FULLSCREEN, flag),
-    openExport: (chapterId: string): ReturnType<RendererApi["window"]["openExport"]> =>
-      safeInvokeCore("window.openExport", IPC_CHANNELS.WINDOW_OPEN_EXPORT, chapterId),
+    openExport: (
+      chapterId: string,
+    ): ReturnType<RendererApi["window"]["openExport"]> =>
+      safeInvokeCore(
+        "window.openExport",
+        IPC_CHANNELS.WINDOW_OPEN_EXPORT,
+        chapterId,
+      ),
     openWorldGraph: (): ReturnType<RendererApi["window"]["openWorldGraph"]> =>
       safeInvoke(IPC_CHANNELS.WINDOW_OPEN_WORLD_GRAPH),
   },
@@ -705,15 +775,25 @@ const rendererApi = {
       safeInvokeCore("app.applyUpdate", IPC_CHANNELS.APP_APPLY_UPDATE),
     rollbackUpdate: (): ReturnType<RendererApi["app"]["rollbackUpdate"]> =>
       safeInvokeCore("app.rollbackUpdate", IPC_CHANNELS.APP_ROLLBACK_UPDATE),
-    getBootstrapStatus: (): ReturnType<RendererApi["app"]["getBootstrapStatus"]> =>
-      safeInvokeCore("app.getBootstrapStatus", IPC_CHANNELS.APP_GET_BOOTSTRAP_STATUS),
-    onBootstrapStatus: (callback: (status: AppBootstrapStatus) => void): (() => void) => {
+    getBootstrapStatus: (): ReturnType<
+      RendererApi["app"]["getBootstrapStatus"]
+    > =>
+      safeInvokeCore(
+        "app.getBootstrapStatus",
+        IPC_CHANNELS.APP_GET_BOOTSTRAP_STATUS,
+      ),
+    onBootstrapStatus: (
+      callback: (status: AppBootstrapStatus) => void,
+    ): (() => void) => {
       const listener = (_event: unknown, status: AppBootstrapStatus) => {
         callback(status);
       };
       ipcRenderer.on(IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED, listener);
       return () => {
-        ipcRenderer.removeListener(IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED, listener);
+        ipcRenderer.removeListener(
+          IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED,
+          listener,
+        );
       };
     },
     onUpdateState: (
@@ -724,7 +804,10 @@ const rendererApi = {
       };
       ipcRenderer.on(IPC_CHANNELS.APP_UPDATE_STATE_CHANGED, listener);
       return () => {
-        ipcRenderer.removeListener(IPC_CHANNELS.APP_UPDATE_STATE_CHANGED, listener);
+        ipcRenderer.removeListener(
+          IPC_CHANNELS.APP_UPDATE_STATE_CHANGED,
+          listener,
+        );
       };
     },
     quit: (): Promise<IPCResponse<never>> => safeInvoke(IPC_CHANNELS.APP_QUIT),
@@ -777,40 +860,77 @@ const rendererApi = {
     setEditor: (
       settings: Parameters<RendererApi["settings"]["setEditor"]>[0],
     ): ReturnType<RendererApi["settings"]["setEditor"]> =>
-      safeInvokeCore("settings.setEditor", IPC_CHANNELS.SETTINGS_SET_EDITOR, settings),
+      safeInvokeCore(
+        "settings.setEditor",
+        IPC_CHANNELS.SETTINGS_SET_EDITOR,
+        settings,
+      ),
     getAutoSave: (): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_GET_AUTO_SAVE),
     setAutoSave: (settings: unknown): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.SETTINGS_SET_AUTO_SAVE, settings),
     getLanguage: (): ReturnType<RendererApi["settings"]["getLanguage"]> =>
-      safeInvokeCore("settings.getLanguage", IPC_CHANNELS.SETTINGS_GET_LANGUAGE),
+      safeInvokeCore(
+        "settings.getLanguage",
+        IPC_CHANNELS.SETTINGS_GET_LANGUAGE,
+      ),
     setLanguage: (
       settings: Parameters<RendererApi["settings"]["setLanguage"]>[0],
     ): ReturnType<RendererApi["settings"]["setLanguage"]> =>
-      safeInvokeCore("settings.setLanguage", IPC_CHANNELS.SETTINGS_SET_LANGUAGE, settings),
+      safeInvokeCore(
+        "settings.setLanguage",
+        IPC_CHANNELS.SETTINGS_SET_LANGUAGE,
+        settings,
+      ),
     getMenuBarMode: (): ReturnType<RendererApi["settings"]["getMenuBarMode"]> =>
-      safeInvokeCore("settings.getMenuBarMode", IPC_CHANNELS.SETTINGS_GET_MENU_BAR_MODE),
+      safeInvokeCore(
+        "settings.getMenuBarMode",
+        IPC_CHANNELS.SETTINGS_GET_MENU_BAR_MODE,
+      ),
     setMenuBarMode: (
       settings: Parameters<RendererApi["settings"]["setMenuBarMode"]>[0],
     ): ReturnType<RendererApi["settings"]["setMenuBarMode"]> =>
-      safeInvokeCore("settings.setMenuBarMode", IPC_CHANNELS.SETTINGS_SET_MENU_BAR_MODE, settings),
+      safeInvokeCore(
+        "settings.setMenuBarMode",
+        IPC_CHANNELS.SETTINGS_SET_MENU_BAR_MODE,
+        settings,
+      ),
     getShortcuts: (): ReturnType<RendererApi["settings"]["getShortcuts"]> =>
-      safeInvokeCore("settings.getShortcuts", IPC_CHANNELS.SETTINGS_GET_SHORTCUTS),
+      safeInvokeCore(
+        "settings.getShortcuts",
+        IPC_CHANNELS.SETTINGS_GET_SHORTCUTS,
+      ),
     setShortcuts: (
       settings: Parameters<RendererApi["settings"]["setShortcuts"]>[0],
     ): ReturnType<RendererApi["settings"]["setShortcuts"]> =>
-      safeInvokeCore("settings.setShortcuts", IPC_CHANNELS.SETTINGS_SET_SHORTCUTS, settings),
-    getWindowBounds: (): ReturnType<RendererApi["settings"]["getWindowBounds"]> =>
-      safeInvokeCore("settings.getWindowBounds", IPC_CHANNELS.SETTINGS_GET_WINDOW_BOUNDS),
+      safeInvokeCore(
+        "settings.setShortcuts",
+        IPC_CHANNELS.SETTINGS_SET_SHORTCUTS,
+        settings,
+      ),
+    getWindowBounds: (): ReturnType<
+      RendererApi["settings"]["getWindowBounds"]
+    > =>
+      safeInvokeCore(
+        "settings.getWindowBounds",
+        IPC_CHANNELS.SETTINGS_GET_WINDOW_BOUNDS,
+      ),
     setWindowBounds: (
       bounds: Parameters<RendererApi["settings"]["setWindowBounds"]>[0],
     ): ReturnType<RendererApi["settings"]["setWindowBounds"]> =>
-      safeInvokeCore("settings.setWindowBounds", IPC_CHANNELS.SETTINGS_SET_WINDOW_BOUNDS, bounds),
-    reset: (): Promise<IPCResponse<never>> => safeInvoke(IPC_CHANNELS.SETTINGS_RESET),
+      safeInvokeCore(
+        "settings.setWindowBounds",
+        IPC_CHANNELS.SETTINGS_SET_WINDOW_BOUNDS,
+        bounds,
+      ),
+    reset: (): Promise<IPCResponse<never>> =>
+      safeInvoke(IPC_CHANNELS.SETTINGS_RESET),
   },
 
   // Recovery API
   recovery: {
+    getStatus: (): ReturnType<RendererApi["recovery"]["getStatus"]> =>
+      safeInvokeCore("recovery.getStatus", IPC_CHANNELS.RECOVERY_DB_STATUS),
     runDb: (
       options?: Parameters<RendererApi["recovery"]["runDb"]>[0],
     ): ReturnType<RendererApi["recovery"]["runDb"]> =>
@@ -832,11 +952,18 @@ const rendererApi = {
     ): ReturnType<RendererApi["sync"]["setAutoSync"]> =>
       safeInvokeCore("sync.setAutoSync", IPC_CHANNELS.SYNC_SET_AUTO, settings),
     getRuntimeConfig: (): ReturnType<RendererApi["sync"]["getRuntimeConfig"]> =>
-      safeInvokeCore("sync.getRuntimeConfig", IPC_CHANNELS.SYNC_GET_RUNTIME_CONFIG),
+      safeInvokeCore(
+        "sync.getRuntimeConfig",
+        IPC_CHANNELS.SYNC_GET_RUNTIME_CONFIG,
+      ),
     setRuntimeConfig: (
       settings: Parameters<RendererApi["sync"]["setRuntimeConfig"]>[0],
     ): ReturnType<RendererApi["sync"]["setRuntimeConfig"]> =>
-      safeInvokeCore("sync.setRuntimeConfig", IPC_CHANNELS.SYNC_SET_RUNTIME_CONFIG, settings),
+      safeInvokeCore(
+        "sync.setRuntimeConfig",
+        IPC_CHANNELS.SYNC_SET_RUNTIME_CONFIG,
+        settings,
+      ),
     validateRuntimeConfig: (
       settings: Parameters<RendererApi["sync"]["validateRuntimeConfig"]>[0],
     ): ReturnType<RendererApi["sync"]["validateRuntimeConfig"]> =>
@@ -862,7 +989,9 @@ const rendererApi = {
         ipcRenderer.removeListener(IPC_CHANNELS.SYNC_STATUS_CHANGED, listener);
       };
     },
-    onAuthResult: (callback: (result: SyncAuthResult) => void): (() => void) => {
+    onAuthResult: (
+      callback: (result: SyncAuthResult) => void,
+    ): (() => void) => {
       const listener = (_event: unknown, result: SyncAuthResult) => {
         callback(result);
       };
@@ -875,14 +1004,23 @@ const rendererApi = {
 
   startup: {
     getReadiness: (): ReturnType<RendererApi["startup"]["getReadiness"]> =>
-      safeInvokeCore("startup.getReadiness", IPC_CHANNELS.STARTUP_GET_READINESS),
+      safeInvokeCore(
+        "startup.getReadiness",
+        IPC_CHANNELS.STARTUP_GET_READINESS,
+      ),
     completeWizard: (): ReturnType<RendererApi["startup"]["completeWizard"]> =>
-      safeInvokeCore("startup.completeWizard", IPC_CHANNELS.STARTUP_COMPLETE_WIZARD),
+      safeInvokeCore(
+        "startup.completeWizard",
+        IPC_CHANNELS.STARTUP_COMPLETE_WIZARD,
+      ),
   },
 
   // Analysis API
   analysis: {
-    start: (chapterId: string, projectId: string): Promise<IPCResponse<never>> =>
+    start: (
+      chapterId: string,
+      projectId: string,
+    ): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.ANALYSIS_START, { chapterId, projectId }),
     stop: (): Promise<IPCResponse<never>> =>
       safeInvoke(IPC_CHANNELS.ANALYSIS_STOP),

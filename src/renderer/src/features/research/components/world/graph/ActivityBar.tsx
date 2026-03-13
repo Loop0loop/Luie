@@ -27,7 +27,7 @@ export function ActivityBar() {
   };
 
   return (
-    <aside className="relative z-10 flex w-12 shrink-0 flex-col items-center border-r bg-background py-3">
+    <aside className="relative z-10 flex w-16 shrink-0 flex-col items-center bg-transparent py-3">
       <div className="flex flex-1 flex-col items-center gap-2">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;

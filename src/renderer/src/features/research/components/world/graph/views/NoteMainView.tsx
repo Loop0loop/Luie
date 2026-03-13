@@ -2,7 +2,6 @@ import { Save, Bold, Italic, List, AlignLeft, StickyNote } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@renderer/components/ui/button";
 import { ScrollArea } from "@renderer/components/ui/scroll-area";
-import { Separator } from "@renderer/components/ui/separator";
 
 const TOOLBAR_ITEMS = [
   { icon: Bold, label: "굵게" },

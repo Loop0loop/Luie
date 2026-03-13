@@ -7,7 +7,7 @@ import { RecoveryTab } from "@renderer/features/settings/components/tabs/Recover
 import { ShortcutsTab } from "@renderer/features/settings/components/tabs/ShortcutsTab";
 import { SyncTab } from "@renderer/features/settings/components/tabs/SyncTab";
 import { SETTINGS_TABS } from "@renderer/features/settings/components/SettingsModalConfig";
-import { useSettingsManager } from '@renderer/features/settings/hooks/useSettingsManager';
+import { useSettingsManager } from "@renderer/features/settings/hooks/useSettingsManager";
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -29,7 +29,10 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     isMenuBarUpdating,
     isShortcutsUpdating,
     isRecovering,
-    recoveryMessage,
+    isRecoveryStatusLoading,
+    recoveryResult,
+    recoveryStatus,
+    recoveryStatusError,
     syncStatus,
     isSyncBusy,
     installing,
@@ -43,6 +46,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     getGroupIcon,
     optionalFonts,
     handleInstallFont,
+    handleRefreshRecoveryStatus,
     handleRunRecovery,
     handleConnectGoogle,
     handleReconnectGoogle,
@@ -72,17 +76,24 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
       >
         <div className="w-64 bg-sidebar border-r border-border flex flex-col pt-3">
           <div className="p-6 pb-4">
-            <h2 className="text-lg font-bold text-fg px-2">{t("settings.title")}</h2>
+            <h2 className="text-lg font-bold text-fg px-2">
+              {t("settings.title")}
+            </h2>
           </div>
           <nav className="flex-1 px-4 space-y-1">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? "bg-fg text-app shadow-md" : "text-muted hover:bg-surface-hover hover:text-fg"
-                  }`}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? "bg-fg text-app shadow-md"
+                    : "text-muted hover:bg-surface-hover hover:text-fg"
+                }`}
               >
-                <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? "text-app" : "text-subtle"}`} />
+                <tab.icon
+                  className={`w-4 h-4 ${activeTab === tab.id ? "text-app" : "text-subtle"}`}
+                />
                 {tab.label}
               </button>
             ))}
@@ -140,7 +151,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
               <RecoveryTab
                 t={t}
                 isRecovering={isRecovering}
-                recoveryMessage={recoveryMessage}
+                isRecoveryStatusLoading={isRecoveryStatusLoading}
+                recoveryResult={recoveryResult}
+                recoveryStatus={recoveryStatus}
+                recoveryStatusError={recoveryStatusError}
+                onRefreshRecoveryStatus={handleRefreshRecoveryStatus}
                 onRunRecovery={handleRunRecovery}
               />
             )}
@@ -159,7 +174,9 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
               />
             )}
 
-            {activeTab === "language" && <LanguageTab t={t} language={i18n.language} />}
+            {activeTab === "language" && (
+              <LanguageTab t={t} language={i18n.language} />
+            )}
           </div>
         </div>
       </div>

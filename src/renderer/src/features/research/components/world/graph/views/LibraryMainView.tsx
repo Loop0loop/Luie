@@ -1,4 +1,4 @@
-import { Search, FolderPlus, Upload, Image as ImageIcon, FileText, LayoutTemplate } from "lucide-react";
+import { Search, FolderPlus, Upload, Image as ImageIcon, LayoutTemplate } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@renderer/components/ui/button";
 import { Input } from "@renderer/components/ui/input";

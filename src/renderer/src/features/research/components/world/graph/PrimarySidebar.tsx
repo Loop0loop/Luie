@@ -1,5 +1,4 @@
 import { useTranslation } from "react-i18next";
-import { GitGraph, Clock, StickyNote, Database, Library } from "lucide-react";
 import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { GraphSidebarContent } from "./sidebars/GraphSidebarContent";
@@ -11,23 +10,23 @@ import { LibrarySidebarContent } from "./sidebars/LibrarySidebarContent";
 const TAB_META = {
   graph: {
     titleKey: "world.graph.ide.title.graph",
-    fallbackTitle: "그래프 뷰",
+    fallbackTitle: "Graph Workspace",
   },
   timeline: {
     titleKey: "world.graph.ide.title.timeline",
-    fallbackTitle: "타임라인",
+    fallbackTitle: "Timeline",
   },
   note: {
     titleKey: "world.graph.ide.title.note",
-    fallbackTitle: "노트",
+    fallbackTitle: "Notes & Docs",
   },
   entity: {
     titleKey: "world.graph.ide.title.entity",
-    fallbackTitle: "엔티티",
+    fallbackTitle: "Entities",
   },
   library: {
     titleKey: "world.graph.ide.title.library",
-    fallbackTitle: "라이브러리",
+    fallbackTitle: "Library",
   },
 } as const;
 
@@ -38,33 +37,31 @@ export function PrimarySidebar() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case "graph":
-        return <GraphSidebarContent />;
-      case "timeline":
-        return <TimelineSidebarContent />;
-      case "note":
-        return <NoteSidebarContent />;
-      case "entity":
-        return <EntitySidebarContent />;
-      case "library":
-        return <LibrarySidebarContent />;
-      default:
-        return null;
+      case "graph": return <GraphSidebarContent />;
+      case "timeline": return <TimelineSidebarContent />;
+      case "note": return <NoteSidebarContent />;
+      case "entity": return <EntitySidebarContent />;
+      case "library": return <LibrarySidebarContent />;
+      default: return null;
     }
   };
 
   return (
-    <div className="flex h-full w-full flex-col bg-background/50 border-r">
-      {/* Header - Simple and minimalistic like Obsidian */}
-      <div className="flex shrink-0 items-center px-4 py-3 h-[48px] border-b bg-transparent">
-        <h2 className="text-xs font-semibold tracking-wide text-foreground uppercase">
+    <div className="flex h-full w-[260px] flex-col bg-transparent  text-foreground transition-colors overflow-hidden">
+      
+      {/* 
+        Professional Header: 
+        A subtle un-bordered workspace title, clean, slight padding.
+      */}
+      <div className="flex shrink-0 items-center justify-between px-4 h-[44px] bg-transparent">
+        <h2 className="text-[13px] font-semibold text-foreground/90 tracking-tight cursor-default select-none">
           {t(tabMeta.titleKey, tabMeta.fallbackTitle)}
         </h2>
       </div>
 
-      {/* Content */}
+      {/* Content Area */}
       <ScrollArea className="flex-1">
-        <div className="px-2 py-3">
+        <div className="pb-8">
           {renderContent()}
         </div>
       </ScrollArea>

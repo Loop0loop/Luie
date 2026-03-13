@@ -72,7 +72,8 @@ describe("DbRecoveryService", () => {
     mocked.db.disconnect.mockResolvedValue(undefined);
     mocked.db.initialize.mockResolvedValue(undefined);
     mocked.sqliteInstance.pragma.mockImplementation((query: string) => {
-      if (query === "wal_checkpoint(FULL)") return [{ busy: 0, log: 0, checkpointed: 0 }];
+      if (query === "wal_checkpoint(FULL)")
+        return [{ busy: 0, log: 0, checkpointed: 0 }];
       if (query === "integrity_check") return [{ integrity_check: "ok" }];
       return [];
     });
@@ -98,17 +99,85 @@ describe("DbRecoveryService", () => {
     await fsp.writeFile(`${dbPath}-shm`, "shm-v1", "utf-8");
     mocked.db.getDatabasePath.mockReturnValue(dbPath);
 
-    const { DbRecoveryService } = await import(
-      "../../../src/main/services/features/dbRecoveryService.js"
-    );
+    const { DbRecoveryService } =
+      await import("../../../src/main/services/features/dbRecoveryService.js");
     const service = new DbRecoveryService();
 
     const result = await service.recoverFromWal();
     expect(result.success).toBe(true);
+    expect(result.dryRun).toBe(false);
     expect(mocked.db.disconnect).toHaveBeenCalledTimes(1);
     expect(mocked.db.initialize).toHaveBeenCalledTimes(1);
-    expect(mocked.BetterSqlite3).toHaveBeenCalledWith(dbPath, { fileMustExist: true });
+    expect(mocked.BetterSqlite3).toHaveBeenCalledWith(dbPath, {
+      fileMustExist: true,
+    });
     expect(mocked.sqliteInstance.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("creates a recovery backup without applying WAL during dry run", async () => {
+    const dbPath = path.join(tempRoot, "project.sqlite");
+    await fsp.writeFile(dbPath, "db-v1", "utf-8");
+    await fsp.writeFile(`${dbPath}-wal`, "wal-v1", "utf-8");
+    await fsp.writeFile(`${dbPath}-shm`, "shm-v1", "utf-8");
+    mocked.db.getDatabasePath.mockReturnValue(dbPath);
+
+    const { DbRecoveryService } =
+      await import("../../../src/main/services/features/dbRecoveryService.js");
+    const service = new DbRecoveryService();
+
+    const result = await service.recoverFromWal({ dryRun: true });
+    expect(result.success).toBe(true);
+    expect(result.dryRun).toBe(true);
+    expect(result.backupDir).toContain(path.join("Backups", "db-recovery"));
+    expect(mocked.db.disconnect).not.toHaveBeenCalled();
+    expect(mocked.db.initialize).not.toHaveBeenCalled();
+    expect(mocked.BetterSqlite3).not.toHaveBeenCalled();
+  });
+
+  it("reports current recovery status and latest backup directory", async () => {
+    const dbPath = path.join(tempRoot, "project.sqlite");
+    const backupRoot = path.join(tempRoot, "Backups", "db-recovery");
+    const latestBackupDir = path.join(backupRoot, "20260313010203000");
+    await fsp.writeFile(dbPath, "db-v1", "utf-8");
+    await fsp.writeFile(`${dbPath}-wal`, "wal-v1", "utf-8");
+    await fsp.writeFile(`${dbPath}-shm`, "shm-v1", "utf-8");
+    await fsp.mkdir(path.join(backupRoot, "20260312010203000"), {
+      recursive: true,
+    });
+    await fsp.mkdir(latestBackupDir, { recursive: true });
+    mocked.db.getDatabasePath.mockReturnValue(dbPath);
+
+    const { DbRecoveryService } =
+      await import("../../../src/main/services/features/dbRecoveryService.js");
+    const service = new DbRecoveryService();
+
+    const result = await service.getRecoveryStatus();
+    expect(result.available).toBe(true);
+    expect(result.reason).toBe("ready");
+    expect(result.backupRootDir).toBe(backupRoot);
+    expect(result.latestBackupDir).toBe(latestBackupDir);
+    expect(result.database.exists).toBe(true);
+    expect(result.wal.exists).toBe(true);
+    expect(result.shm.exists).toBe(true);
+    expect(result.wal.sizeBytes).toBe(6);
+    expect(typeof result.checkedAt).toBe("string");
+  });
+
+  it("reports wal-missing when the recovery sidecar file does not exist", async () => {
+    const dbPath = path.join(tempRoot, "project.sqlite");
+    await fsp.writeFile(dbPath, "db-v1", "utf-8");
+    mocked.db.getDatabasePath.mockReturnValue(dbPath);
+
+    const { DbRecoveryService } =
+      await import("../../../src/main/services/features/dbRecoveryService.js");
+    const service = new DbRecoveryService();
+
+    const result = await service.getRecoveryStatus();
+    expect(result.available).toBe(false);
+    expect(result.reason).toBe("wal-missing");
+    expect(result.database.exists).toBe(true);
+    expect(result.wal.exists).toBe(false);
+    expect(result.shm.exists).toBe(false);
   });
 
   it("restores sqlite backup files on recovery failure after disconnect", async () => {
@@ -130,13 +199,13 @@ describe("DbRecoveryService", () => {
       throw new Error("open failed");
     });
 
-    const { DbRecoveryService } = await import(
-      "../../../src/main/services/features/dbRecoveryService.js"
-    );
+    const { DbRecoveryService } =
+      await import("../../../src/main/services/features/dbRecoveryService.js");
     const service = new DbRecoveryService();
 
     const result = await service.recoverFromWal();
     expect(result.success).toBe(false);
+    expect(result.dryRun).toBe(false);
     expect(result.message).toContain("open failed");
     expect(await fsp.readFile(dbPath, "utf-8")).toBe("db-v1");
     expect(await fsp.readFile(walPath, "utf-8")).toBe("wal-v1");
@@ -159,19 +228,22 @@ describe("DbRecoveryService", () => {
       await fsp.writeFile(shmPath, "shm-corrupt", "utf-8");
     });
     mocked.sqliteInstance.pragma.mockImplementation((query: string) => {
-      if (query === "wal_checkpoint(FULL)") return [{ busy: 1, log: 10, checkpointed: 0 }];
+      if (query === "wal_checkpoint(FULL)")
+        return [{ busy: 1, log: 10, checkpointed: 0 }];
       if (query === "integrity_check") return [{ integrity_check: "ok" }];
       return [];
     });
 
-    const { DbRecoveryService } = await import(
-      "../../../src/main/services/features/dbRecoveryService.js"
-    );
+    const { DbRecoveryService } =
+      await import("../../../src/main/services/features/dbRecoveryService.js");
     const service = new DbRecoveryService();
 
     const result = await service.recoverFromWal();
     expect(result.success).toBe(false);
+    expect(result.dryRun).toBe(false);
     expect(result.message).toContain("DB_RECOVERY_WAL_BUSY");
+    expect(result.checkpoint).toEqual([{ busy: 1, log: 10, checkpointed: 0 }]);
+    expect(result.integrity).toEqual(["ok"]);
     expect(await fsp.readFile(dbPath, "utf-8")).toBe("db-v1");
     expect(await fsp.readFile(walPath, "utf-8")).toBe("wal-v1");
     expect(await fsp.readFile(shmPath, "utf-8")).toBe("shm-v1");
@@ -193,19 +265,23 @@ describe("DbRecoveryService", () => {
       await fsp.writeFile(shmPath, "shm-corrupt", "utf-8");
     });
     mocked.sqliteInstance.pragma.mockImplementation((query: string) => {
-      if (query === "wal_checkpoint(FULL)") return [{ busy: 0, log: 0, checkpointed: 0 }];
-      if (query === "integrity_check") return [{ integrity_check: "row 12 missing" }];
+      if (query === "wal_checkpoint(FULL)")
+        return [{ busy: 0, log: 0, checkpointed: 0 }];
+      if (query === "integrity_check")
+        return [{ integrity_check: "row 12 missing" }];
       return [];
     });
 
-    const { DbRecoveryService } = await import(
-      "../../../src/main/services/features/dbRecoveryService.js"
-    );
+    const { DbRecoveryService } =
+      await import("../../../src/main/services/features/dbRecoveryService.js");
     const service = new DbRecoveryService();
 
     const result = await service.recoverFromWal();
     expect(result.success).toBe(false);
+    expect(result.dryRun).toBe(false);
     expect(result.message).toContain("DB_RECOVERY_INTEGRITY_FAILED");
+    expect(result.checkpoint).toEqual([{ busy: 0, log: 0, checkpointed: 0 }]);
+    expect(result.integrity).toEqual(["row 12 missing"]);
     expect(await fsp.readFile(dbPath, "utf-8")).toBe("db-v1");
     expect(await fsp.readFile(walPath, "utf-8")).toBe("wal-v1");
     expect(await fsp.readFile(shmPath, "utf-8")).toBe("shm-v1");

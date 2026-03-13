@@ -255,8 +255,27 @@ export const dbRecoveryCheckpointSchema = z.object({
   checkpointed: z.number(),
 });
 
+export const dbRecoveryFileStatusSchema = z.object({
+  path: z.string(),
+  exists: z.boolean(),
+  sizeBytes: z.number().optional(),
+  modifiedAt: z.string().optional(),
+});
+
+export const dbRecoveryStatusSchema = z.object({
+  available: z.boolean(),
+  reason: z.enum(["ready", "wal-missing", "db-missing"]),
+  checkedAt: z.string(),
+  backupRootDir: z.string(),
+  latestBackupDir: z.string().optional(),
+  database: dbRecoveryFileStatusSchema,
+  wal: dbRecoveryFileStatusSchema,
+  shm: dbRecoveryFileStatusSchema,
+});
+
 export const dbRecoveryResultSchema = z.object({
   success: z.boolean(),
+  dryRun: z.boolean(),
   message: z.string(),
   backupDir: z.string().optional(),
   checkpoint: z.array(dbRecoveryCheckpointSchema).optional(),
@@ -525,7 +544,12 @@ const uiRegionsSchema = z.strictObject({
 });
 
 export const uiStorePersistedStateSchema = z.strictObject({
-  schemaVersion: z.number().int().positive().max(UI_STORE_SCHEMA_VERSION).optional(),
+  schemaVersion: z
+    .number()
+    .int()
+    .positive()
+    .max(UI_STORE_SCHEMA_VERSION)
+    .optional(),
   view: z.enum(["template", "editor", "corkboard", "outliner"]).optional(),
   contextTab: z.enum(["synopsis", "characters", "terms"]).optional(),
   worldTab: z

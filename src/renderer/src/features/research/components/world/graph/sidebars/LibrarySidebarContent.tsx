@@ -1,43 +1,50 @@
 import {
-  Library,
   Search,
   Plus,
-  Bookmark,
-  Archive,
+  
+  Link2,
+  Image,
+  Globe,
+  Youtube
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@renderer/components/ui/button";
-import { Input } from "@renderer/components/ui/input";
 import { SidebarTreeSection, TreeItem } from "./SidebarTreeSection";
 
 export function LibrarySidebarContent() {
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-4">
-      <div className="px-2 pt-2">
-        <div className="relative">
-          <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="자료 검색..." className="pl-8 h-8 text-xs bg-muted/50 border-transparent focus:border-border" />
+    <div className="flex flex-col h-full bg-transparent">
+      <div className="px-3 mb-4 mt-2">
+        <div className="relative flex items-center group">
+          <Search className="absolute left-2.5 h-[14px] w-[14px] text-muted-foreground/60 transition-colors group-focus-within:text-foreground/80" />
+          <input 
+            type="text"
+            placeholder={t("world.graph.ide.sidebar.search", "Search library...")}
+            className="w-full bg-muted/60 hover:bg-muted/80 focus:bg-background border border-transparent focus:border-border/50 focus:ring-1 focus:ring-ring/20 rounded-md h-[28px] pl-8 pr-8 text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none transition-all"
+          />
+          <div className="absolute right-2 flex items-center justify-center h-4 px-1 rounded border border-border/40 bg-background/50 text-[9px] font-medium text-muted-foreground/60 pointer-events-none select-none">
+            ⌘L
+          </div>
         </div>
       </div>
 
-      <div className="space-y-1 mb-4">
-        <SidebarTreeSection title={t("world.graph.ide.sidebar.library", "자료실")}>
-          <TreeItem icon={<Library className="w-4 h-4" />} label="고증 자료" isActive />
-          <TreeItem icon={<Library className="w-4 h-4" />} label="참고 이미지" />
+      <div className="flex-1 overflow-y-auto w-full">
+        <SidebarTreeSection 
+          title={t("world.graph.ide.sidebar.library.collections", "Collections")}
+          actionIcon={<Plus className="w-[14px] h-[14px]" />}
+        >
+          <TreeItem isFolder isOpen label="Reference Images">
+            <TreeItem icon={<Image className="w-[15px] h-[15px] opacity-80" />} label="Medieval Clothing" isActive />
+            <TreeItem icon={<Image className="w-[15px] h-[15px] opacity-80" />} label="Weapon Concept Art" />
+          </TreeItem>
+          
+          <TreeItem isFolder label="Web Links">
+            <TreeItem icon={<Globe className="w-[15px] h-[15px] opacity-80" />} label="Wiki: Holy Roman Empire" />
+            <TreeItem icon={<Youtube className="w-[15px] h-[15px] text-red-500/80" />} label="Hema Combat ref" />
+            <TreeItem icon={<Link2 className="w-[15px] h-[15px] opacity-80" />} label="Fantasy Name Generator" />
+          </TreeItem>
         </SidebarTreeSection>
-
-        <SidebarTreeSection title={t("world.graph.ide.sidebar.bookmarks", "즐겨찾기")}>
-          <TreeItem icon={<Bookmark className="w-4 h-4" />} label="핵심 설정 논문" />
-          <TreeItem icon={<Archive className="w-4 h-4" />} label="나중을 위한 아카이브" />
-        </SidebarTreeSection>
-      </div>
-
-      <div className="px-2 mt-4 space-y-1">
-        <Button variant="ghost" className="w-full justify-start gap-2 h-8 px-2 text-primary hover:text-primary/90">
-          <Plus className="w-4 h-4" /> 외부 자료 첨부
-        </Button>
       </div>
     </div>
   );

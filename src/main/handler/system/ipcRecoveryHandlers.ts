@@ -7,6 +7,15 @@ import { recoveryRunDbArgsSchema } from "../../../shared/schemas/index.js";
 export function registerRecoveryIPCHandlers(logger: LoggerLike): void {
   registerIpcHandlers(logger, [
     {
+      channel: IPC_CHANNELS.RECOVERY_DB_STATUS,
+      logTag: "RECOVERY_DB_STATUS",
+      failMessage: "Failed to read DB recovery status",
+      handler: async () => {
+        logger.info("RECOVERY_DB_STATUS");
+        return dbRecoveryService.getRecoveryStatus();
+      },
+    },
+    {
       channel: IPC_CHANNELS.RECOVERY_DB_RUN,
       logTag: "RECOVERY_DB_RUN",
       failMessage: "Failed to run DB recovery",
