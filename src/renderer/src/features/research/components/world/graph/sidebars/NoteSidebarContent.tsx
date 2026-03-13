@@ -1,64 +1,43 @@
-import {
-  Search,
-  Plus,
-  
-  FileText,
-  Pin,
-  Hash
-} from "lucide-react";
+import { Lightbulb, Globe, BookMarked, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { SidebarTreeSection, TreeItem } from "./SidebarTreeSection";
+
+const IDEAS = ["마왕 과거 떡밥", "왕국 몰락 원인"];
+const WORLD_NOTES = ["마법 시스템", "신화"];
+const PLOT_NOTES = ["시즌1 구조", "사건 전개"];
 
 export function NoteSidebarContent() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col h-full bg-transparent">
-      <div className="px-3 mb-4 mt-2">
-        <div className="relative flex items-center group">
-          <Search className="absolute left-2.5 h-[14px] w-[14px] text-muted-foreground/60 transition-colors group-focus-within:text-foreground/80" />
-          <input 
-            type="text"
-            placeholder={t("world.graph.ide.sidebar.search", "Search notes...")}
-            className="w-full bg-surface/50 hover:bg-surface focus:bg-surface border border-transparent focus:border-border/50 focus:ring-1 focus:ring-ring/20 rounded-md h-[28px] pl-8 pr-8 text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none transition-all"
-          />
-          <div className="absolute right-2 flex items-center justify-center h-4 px-1 rounded border border-border/40 bg-panel/50 text-[9px] font-medium text-muted-foreground/60 pointer-events-none select-none">
-            ⌘O
-          </div>
-        </div>
-      </div>
+    <div className="flex h-full flex-col overflow-y-auto">
+      <SidebarTreeSection
+        title={t("world.graph.ide.sidebar.notes.ideas", "Ideas")}
+        actionIcon={<Plus className="h-3.5 w-3.5" />}
+      >
+        {IDEAS.map((label) => (
+          <TreeItem key={label} icon={<Lightbulb className="h-[14px] w-[14px] text-yellow-400/70" />} label={label} />
+        ))}
+      </SidebarTreeSection>
 
-      <div className="flex-1 overflow-y-auto w-full">
-        <SidebarTreeSection 
-          title={t("world.graph.ide.sidebar.notes.pinned", "Pinned (고정됨)")}
-        >
-          <TreeItem icon={<Pin className="w-[15px] h-[15px] opacity-80" />} label="World Rules" />
-          <TreeItem icon={<Pin className="w-[15px] h-[15px] opacity-80" />} label="Main Char Sheet" isActive />
-        </SidebarTreeSection>
+      <SidebarTreeSection
+        title={t("world.graph.ide.sidebar.notes.world", "World Notes")}
+        actionIcon={<Plus className="h-3.5 w-3.5" />}
+      >
+        {WORLD_NOTES.map((label) => (
+          <TreeItem key={label} icon={<Globe className="h-[14px] w-[14px] text-sky-400/70" />} label={label} />
+        ))}
+      </SidebarTreeSection>
 
-        <SidebarTreeSection 
-          title={t("world.graph.ide.sidebar.notes.folders", "Notes (노트)")}
-          actionIcon={<Plus className="w-[14px] h-[14px]" />}
-        >
-          <TreeItem isFolder isOpen label="Idea Drafts">
-            <TreeItem icon={<FileText className="w-[15px] h-[15px] opacity-80" />} label="Ending Variations" />
-            <TreeItem icon={<FileText className="w-[15px] h-[15px] opacity-80" />} label="Dialogue Snippets" />
-          </TreeItem>
-          <TreeItem isFolder label="Story Logic">
-            <TreeItem icon={<FileText className="w-[15px] h-[15px] opacity-80" />} label="Act 2 Pacing" />
-            <TreeItem icon={<FileText className="w-[15px] h-[15px] opacity-80" />} label="Foreshadowing Setup" />
-          </TreeItem>
-        </SidebarTreeSection>
-
-        <SidebarTreeSection 
-          title={t("world.graph.ide.sidebar.notes.tags", "Tags (태그)")}
-          defaultExpanded={false}
-        >
-          <TreeItem icon={<Hash className="w-[15px] h-[15px] text-muted-foreground/60" />} label="important" meta="12" />
-          <TreeItem icon={<Hash className="w-[15px] h-[15px] text-muted-foreground/60" />} label="review_needed" meta="5" />
-          <TreeItem icon={<Hash className="w-[15px] h-[15px] text-muted-foreground/60" />} label="scrapped" meta="2" />
-        </SidebarTreeSection>
-      </div>
+      <SidebarTreeSection
+        title={t("world.graph.ide.sidebar.notes.plot", "Plot Notes")}
+        actionIcon={<Plus className="h-3.5 w-3.5" />}
+        defaultExpanded={false}
+      >
+        {PLOT_NOTES.map((label) => (
+          <TreeItem key={label} icon={<BookMarked className="h-[14px] w-[14px] text-rose-400/70" />} label={label} />
+        ))}
+      </SidebarTreeSection>
     </div>
   );
 }

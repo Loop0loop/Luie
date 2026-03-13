@@ -5,41 +5,39 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactFlow, {
   Background,
-  MarkerType,
+  MiniMap,
   useEdgesState,
   useNodesState,
-  type Edge,
   type EdgeMouseHandler,
   type Node,
   type NodeMouseHandler,
   type ReactFlowInstance,
   BackgroundVariant,
   PanOnScrollMode,
+  SelectionMode,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@shared/ui/ToastContext";
 import { useDialog } from "@shared/ui/useDialog";
-import { WORLD_ENTITY_TYPES, RELATION_COLORS } from "@shared/constants/world";
-import {
-} from "@shared/constants/worldRelationRules";
 import type { EntityRelation, WorldEntitySourceType, WorldGraphNode } from "@shared/types";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
+import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 import {
   WORLD_GRAPH_CREATE_MENU_HEIGHT_PX,
   WORLD_GRAPH_CREATE_MENU_WIDTH_PX,
-  WORLD_GRAPH_FALLBACK_COLUMNS,
-  WORLD_GRAPH_FALLBACK_X_STEP_PX,
-  WORLD_GRAPH_FALLBACK_Y_STEP_PX,
-  WORLD_GRAPH_MENU_MARGIN_PX,
+  WORLD_GRAPH_MINIMAP_COLORS,
   WORLD_GRAPH_NODE_MENU_HEIGHT_PX,
   WORLD_GRAPH_NODE_MENU_WIDTH_PX,
 } from "@shared/constants/worldGraphUI";
-import { CustomEntityNode } from "./CustomEntityNode";
+import { parseEntityDraftText } from "@renderer/features/research/utils/entityDraftUtils";
+import { CustomEntityNode } from "../CustomEntityNode";
+import { DraftBlockNode } from "../DraftBlockNode";
 import { useWorldGraphLayout } from "@renderer/features/research/hooks/useWorldGraphLayout";
 import { EditorSyncBus } from "@renderer/features/workspace/utils/EditorSyncBus";
 
 const nodeTypes = {
+  draft: DraftBlockNode,
   custom: CustomEntityNode,
 };
 
@@ -61,149 +59,41 @@ type NodeMenuState = {
   top: number;
 };
 
-const clamp = (value: number, min: number, max: number): number =>
-  Math.min(max, Math.max(min, value));
+import { getMenuPosition, toRFNode, toRFEdge } from "@renderer/features/research/utils/worldGraphUtils";
+import { WorldGraphCreateMenu } from "../WorldGraphCreateMenu";
+import { WorldGraphNodeMenu } from "./WorldGraphNodeMenu";
+import { WorldGraphNavbar } from "../WorldGraphNavbar";
 
-const hashText = (value: string): number => {
-  let hash = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    hash = (hash << 5) - hash + value.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-};
+const CLUSTER_NODE_W = 220;
+const CLUSTER_NODE_H = 120;
+const CLUSTER_COLS = 3;
+const CLUSTER_GAP_X = 300;
+const CLUSTER_GAP_Y = 60;
 
-const getMenuPosition = (
-  container: HTMLDivElement | null,
-  clientX: number,
-  clientY: number,
-  width: number,
-  height: number,
-): { left: number; top: number } => {
-  if (!container) {
-    return { left: clientX, top: clientY };
-  }
+function computeClusterPositions(nodes: Node[]): Record<string, { x: number; y: number }> {
+  const groups = new Map<string, Node[]>();
+  nodes
+    .filter((n) => n.type !== "draft")
+    .forEach((node) => {
+      const key = (node.data?.subType ?? node.data?.entityType ?? "Unknown") as string;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(node);
+    });
 
-  const rect = container.getBoundingClientRect();
-  const localLeft = clientX - rect.left;
-  const localTop = clientY - rect.top;
-  const maxLeft = Math.max(WORLD_GRAPH_MENU_MARGIN_PX, rect.width - width - WORLD_GRAPH_MENU_MARGIN_PX);
-  const maxTop = Math.max(WORLD_GRAPH_MENU_MARGIN_PX, rect.height - height - WORLD_GRAPH_MENU_MARGIN_PX);
-
-  return {
-    left: clamp(localLeft, WORLD_GRAPH_MENU_MARGIN_PX, maxLeft),
-    top: clamp(localTop, WORLD_GRAPH_MENU_MARGIN_PX, maxTop),
-  };
-};
-
-const readAttributePosition = (
-  attributes: WorldGraphNode["attributes"],
-): { x: number; y: number } | null => {
-  if (!attributes || typeof attributes !== "object" || Array.isArray(attributes)) {
-    return null;
-  }
-  const graphPosition = (attributes as Record<string, unknown>).graphPosition;
-  if (!graphPosition || typeof graphPosition !== "object" || Array.isArray(graphPosition)) {
-    return null;
-  }
-  const x = (graphPosition as Record<string, unknown>).x;
-  const y = (graphPosition as Record<string, unknown>).y;
-  if (typeof x !== "number" || !Number.isFinite(x) || typeof y !== "number" || !Number.isFinite(y)) {
-    return null;
-  }
-  return { x, y };
-};
-
-const getFallbackPosition = (nodeId: string, index: number): { x: number; y: number } => {
-  const hash = hashText(nodeId);
-  const col = hash % WORLD_GRAPH_FALLBACK_COLUMNS;
-  const row = Math.floor(index / WORLD_GRAPH_FALLBACK_COLUMNS);
-  const waveOffsetX = row % 2 === 0 ? 0 : 90;
-  const jitterX = (hash % 7) * 14 - 42;
-  const jitterY = (Math.floor(hash / 7) % 7) * 12 - 36;
-  return {
-    x: col * WORLD_GRAPH_FALLBACK_X_STEP_PX + waveOffsetX + jitterX,
-    y: row * WORLD_GRAPH_FALLBACK_Y_STEP_PX + jitterY,
-  };
-};
-
-const resolveEdgeHandles = (
-  sourceNode: Node | undefined,
-  targetNode: Node | undefined,
-): { sourceHandle?: string; targetHandle?: string } => {
-  if (!sourceNode || !targetNode) {
-    return {};
-  }
-
-  const dx = targetNode.position.x - sourceNode.position.x;
-  const dy = targetNode.position.y - sourceNode.position.y;
-
-  if (Math.abs(dx) >= Math.abs(dy)) {
-    return dx >= 0
-      ? { sourceHandle: "right", targetHandle: "left" }
-      : { sourceHandle: "left", targetHandle: "right" };
-  }
-
-  return dy >= 0
-    ? { sourceHandle: "bottom", targetHandle: "top" }
-    : { sourceHandle: "top", targetHandle: "bottom" };
-};
-
-function toRFNode(
-  graphNode: WorldGraphNode,
-  index: number,
-  selectedNodeId: string | null,
-): Node {
-  const subType = graphNode.subType ?? graphNode.entityType;
-  const importance = (graphNode.attributes?.importance ?? 3) as number;
-  const explicitPosition =
-    graphNode.positionX !== 0 || graphNode.positionY !== 0
-      ? { x: graphNode.positionX, y: graphNode.positionY }
-      : null;
-  const attributePosition = readAttributePosition(graphNode.attributes);
-  const fallbackPosition = getFallbackPosition(graphNode.id, index);
-
-  return {
-    id: graphNode.id,
-    position: explicitPosition ?? attributePosition ?? fallbackPosition,
-    data: {
-      label: graphNode.name,
-      subType,
-      importance,
-      entityType: graphNode.entityType,
-    },
-    selected: selectedNodeId === graphNode.id,
-    type: "custom",
-  };
-}
-
-function toRFEdge(
-  relation: EntityRelation,
-  translate: (key: string, fallback: string) => string,
-  nodeById: Map<string, Node>,
-): Edge {
-  const color = RELATION_COLORS[relation.relation] ?? "#94a3b8";
-  const { sourceHandle, targetHandle } = resolveEdgeHandles(
-    nodeById.get(relation.sourceId),
-    nodeById.get(relation.targetId),
-  );
-
-  const isAnimated = relation.relation === "causes" || relation.relation === "controls";
-
-  return {
-    id: relation.id,
-    source: relation.sourceId,
-    target: relation.targetId,
-    sourceHandle,
-    targetHandle,
-    type: "smoothstep",
-    label: translate(`world.graph.relationTypes.${relation.relation}`, relation.relation),
-    labelStyle: { fontSize: 10, fill: "#94a3b8", fontWeight: 500 },
-    labelBgStyle: { fill: "transparent" },
-    style: { stroke: color, strokeWidth: 2 },
-    animated: isAnimated,
-    markerEnd: { type: MarkerType.ArrowClosed, color },
-  };
+  const result: Record<string, { x: number; y: number }> = {};
+  let groupX = 0;
+  groups.forEach((groupNodes) => {
+    groupNodes.forEach((node, i) => {
+      const col = i % CLUSTER_COLS;
+      const row = Math.floor(i / CLUSTER_COLS);
+      result[node.id] = {
+        x: groupX + col * CLUSTER_NODE_W,
+        y: row * (CLUSTER_NODE_H + CLUSTER_GAP_Y),
+      };
+    });
+    groupX += CLUSTER_COLS * CLUSTER_NODE_W + CLUSTER_GAP_X;
+  });
+  return result;
 }
 
 export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: WorldGraphCanvasProps) {
@@ -221,6 +111,9 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
   const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
   const [createMenu, setCreateMenu] = useState<CreateMenuState | null>(null);
   const [nodeMenu, setNodeMenu] = useState<NodeMenuState | null>(null);
+
+  const layoutTrigger = useGraphIdeStore((state) => state.layoutTrigger);
+  const prevTriggerVersionRef = useRef<number>(0);
 
   const rfNodes = useMemo(
     () => graphNodes.map((node, index) => toRFNode(node, index, selectedNodeId)),
@@ -266,6 +159,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
       let isChanged = false;
       const prevById = new Map(prev.map((node) => [node.id, node] as const));
       const sourceRfNodesById = new Map(rfNodes.map((node) => [node.id, node] as const));
+      const draftNodes = prev.filter(n => n.type === "draft");
       const nextNodes = layoutedNodes.map((layoutNode: Node) => {
         const existing = prevById.get(layoutNode.id);
         const sourceRfNode = sourceRfNodesById.get(layoutNode.id);
@@ -320,8 +214,8 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         return existing;
       });
 
-      if (isChanged || prev.length !== layoutedNodes.length) {
-        return nextNodes;
+      if (isChanged || prev.length !== (layoutedNodes.length + draftNodes.length)) {
+        return [...nextNodes, ...draftNodes];
       }
       return prev;
     });
@@ -357,6 +251,31 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
     return () => EditorSyncBus.off("FOCUS_ENTITY", handleFocus);
   }, [rfInstance, selectNode]);
 
+  // Layout Trigger (from sidebar buttons)
+  useEffect(() => {
+    if (!layoutTrigger || layoutTrigger.version === prevTriggerVersionRef.current) return;
+    prevTriggerVersionRef.current = layoutTrigger.version;
+
+    if (!rfInstance) return;
+
+    if (layoutTrigger.mode === "reset") {
+      rfInstance.fitView({ duration: 500, padding: 0.15 });
+    } else if (layoutTrigger.mode === "auto") {
+      setNodes(layoutedNodes);
+      setTimeout(() => rfInstance.fitView({ duration: 400, padding: 0.15 }), 60);
+    } else if (layoutTrigger.mode === "cluster") {
+      const clusterPos = computeClusterPositions(nodes);
+      setNodes((prev) =>
+        prev.map((n) => ({
+          ...n,
+          position: clusterPos[n.id] ?? n.position,
+        })),
+      );
+      setTimeout(() => rfInstance.fitView({ duration: 400, padding: 0.15 }), 60);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layoutTrigger, rfInstance]);
+
   const onNodeContextMenu: NodeMouseHandler = useCallback(
     (event, node) => {
       event.preventDefault();
@@ -388,25 +307,89 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
     [selectEdge],
   );
 
+  const spawnDraftNode = useCallback((x: number, y: number, initialType?: string) => {
+    if (!activeProjectId) return;
+    
+    // Remove existing draft nodes if any to keep UI clean
+    setNodes((nds) => nds.filter((n) => n.type !== 'draft'));
+
+    const draftId = `draft-${Date.now()}`;
+    const draftNode: Node = {
+      id: draftId,
+      type: 'draft',
+      position: { x, y },
+      data: {
+        id: draftId,
+        initialValue: initialType ? `${initialType} ` : "",
+        onConvert: async (nodeId: string, text: string) => {
+          setNodes((nds) => nds.filter((n) => n.id !== nodeId));
+          
+          if (!text.trim() || !activeProjectId) return;
+          
+          const { name, entityType, subType } = parseEntityDraftText(text);
+          
+          try {
+            await createGraphNode({
+              projectId: activeProjectId,
+              entityType,
+              subType,
+              name,
+              positionX: x,
+              positionY: y,
+            });
+          } catch (err) {
+            // ignore error
+            showToast("엔티티 생성에 실패했습니다.", "error");
+          }
+        }
+      },
+    };
+
+    setNodes((nds) => nds.concat(draftNode));
+  }, [activeProjectId, createGraphNode, setNodes, showToast]);
+
+  // Quick create: places a named entity instantly at viewport center
+  const handleCreateEntityAtCenter = useCallback(
+    async (entityType: WorldEntitySourceType) => {
+      if (!rfInstance || !activeProjectId) return;
+      const viewport = rfInstance.getViewport();
+      const canvasEl = canvasRef.current;
+      const cx = canvasEl ? canvasEl.clientWidth / 2 : window.innerWidth / 2;
+      const cy = canvasEl ? canvasEl.clientHeight / 2 : window.innerHeight / 2;
+      const center = rfInstance.screenToFlowPosition({ x: cx, y: cy });
+      const defaultNames: Record<WorldEntitySourceType, string> = {
+        Character: "새 캐릭터", Event: "새 사건", Place: "새 장소",
+        Faction: "새 세력", Concept: "새 개념", Rule: "새 규칙",
+        Item: "새 아이템", Term: "새 용어", WorldEntity: "새 엔티티",
+      };
+      await createGraphNode({
+        projectId: activeProjectId,
+        entityType,
+        name: defaultNames[entityType] ?? `새 ${entityType}`,
+        positionX: center.x + (Math.random() - 0.5) * 80,
+        positionY: center.y + (Math.random() - 0.5) * 80,
+      });
+      void viewport; // keep viewport ref
+    },
+    [rfInstance, activeProjectId, createGraphNode],
+  );
+
   const onPaneDoubleClick = useCallback(
     (event: React.MouseEvent) => {
       event.preventDefault();
-      const position = getMenuPosition(
-        canvasRef.current,
-        event.clientX,
-        event.clientY,
-        WORLD_GRAPH_CREATE_MENU_WIDTH_PX,
-        WORLD_GRAPH_CREATE_MENU_HEIGHT_PX,
-      );
-      setCreateMenu({
-        left: position.left,
-        top: position.top,
-        flowX: event.clientX,
-        flowY: event.clientY,
+      
+      if (!rfInstance) return;
+      
+      const position = rfInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
       });
+
+      spawnDraftNode(position.x, position.y);
+      setCreateMenu(null);
       setNodeMenu(null);
     },
-    [],
+    [rfInstance, spawnDraftNode],
   );
 
   const onFlowDoubleClick = useCallback(
@@ -581,80 +564,120 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         zoomOnScroll={false}
         zoomOnDoubleClick={false}
         preventScrolling={false}
-        deleteKeyCode={null}
+        selectionOnDrag={true}
+        panOnDrag={[1, 2]}
+        selectionMode={SelectionMode.Partial}
+        deleteKeyCode={["Backspace", "Delete"]}
         className="react-flow-premium"
         proOptions={{ hideAttribution: true }}
       >
         <Background
           variant={BackgroundVariant.Dots}
-          gap={20}
-          size={1.5}
+          gap={24}
+          size={1}
           color="#64748B"
-          className="opacity-30"
+          className="opacity-[0.18]"
+        />
+        <MiniMap
+          nodeColor={(node) => {
+            const subType = (node.data?.subType ?? node.data?.entityType ?? "WorldEntity") as string;
+            return WORLD_GRAPH_MINIMAP_COLORS[subType] ?? "#94a3b8";
+          }}
+          maskColor="rgba(0,0,0,0.25)"
+          style={{
+            bottom: 88,
+            right: 16,
+            width: 140,
+            height: 90,
+            borderRadius: 10,
+            border: "1px solid rgba(255,255,255,0.08)",
+            background: "rgba(13,13,15,0.80)",
+          }}
         />
       </ReactFlow>
 
       {isEmpty && !createMenu && (
-        <div className="absolute inset-0 z-0 flex flex-col items-center justify-center pointer-events-none select-none text-muted">
-          <p className="text-sm font-medium text-fg/80 mb-2">Graph Canvas is empty</p>
-          <div className="flex items-center gap-3 bg-element/50 border border-border/40 px-4 py-2 rounded-lg text-xs opacity-80 backdrop-blur-md">
-            <span><kbd className="px-1.5 py-0.5 rounded bg-app border border-border/60">Double Click</kbd> to add note</span>
-            <div className="w-px h-3 bg-border/60" />
-            <span><kbd className="px-1.5 py-0.5 rounded bg-app border border-border/60">Drag</kbd> to pan</span>
+        <div className="pointer-events-none absolute inset-0 z-0 flex select-none flex-col items-center justify-center gap-6">
+          {/* Ghost node preview */}
+          <div className="flex items-end gap-3 opacity-[0.08]">
+            {[
+              { w: 140, h: 72, c: "#818cf8" },
+              { w: 160, h: 88, c: "#fb7185" },
+              { w: 130, h: 66, c: "#34d399" },
+            ].map(({ w, h, c }, i) => (
+              <div
+                key={i}
+                className="rounded-xl border"
+                style={{ width: w, height: h, borderColor: c, borderTopWidth: 3, borderTopColor: c }}
+              />
+            ))}
+          </div>
+
+          <div className="text-center">
+            <p className="mb-1.5 text-[15px] font-semibold text-fg/50">
+              세계관을 시각화하세요
+            </p>
+            <p className="text-[12px] text-muted-foreground/40">
+              캐릭터, 장소, 사건을 추가하고 연결해 이야기 구조를 한눈에 파악하세요
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 rounded-xl border border-border/30 bg-element/30 px-4 py-2 text-[11px] text-muted-foreground/50 backdrop-blur-md">
+            <span>
+              <kbd className="rounded border border-border/50 bg-app/60 px-1.5 py-0.5 text-[10px]">더블클릭</kbd>{" "}
+              빈 블록
+            </span>
+            <div className="h-3 w-px bg-border/40" />
+            <span>
+              <kbd className="rounded border border-border/50 bg-app/60 px-1.5 py-0.5 text-[10px]">우클릭</kbd>{" "}
+              엔티티 생성
+            </span>
+            <div className="h-3 w-px bg-border/40" />
+            <span>
+              <kbd className="rounded border border-border/50 bg-app/60 px-1.5 py-0.5 text-[10px]">드래그</kbd>{" "}
+              이동
+            </span>
           </div>
         </div>
       )}
 
       {createMenu && (
-        <div
-          className="absolute z-[100] w-48 rounded-xl border border-border shadow-2xl bg-panel/95 backdrop-blur-md p-1.5 animate-in fade-in zoom-in-95 duration-100"
-          style={{
-            left: createMenu!.left,
-            top: createMenu!.top,
-          }}
-        >
-          <div className="px-2 py-1.5 mb-1 border-b border-border/40">
-            <p className="text-[10px] font-bold tracking-wider text-muted uppercase">Create Entity</p>
-          </div>
-          <div className="flex flex-col gap-0.5 max-h-64 overflow-y-auto">
-            {WORLD_ENTITY_TYPES.map((entityType) => (
-              <button
-                key={entityType}
-                type="button"
-                onClick={() => void handleCreateNode(entityType)}
-                className="w-full text-left px-2 py-1.5 text-xs rounded-md hover:bg-accent/10 hover:text-accent font-medium transition-colors"
-              >
-                {t(`world.graph.entityTypes.${entityType}`, { defaultValue: entityType })}
-              </button>
-            ))}
-          </div>
-        </div>
+        <WorldGraphCreateMenu 
+          left={createMenu.left}
+          top={createMenu.top}
+          onCreate={(type) => { void handleCreateNode(type); }}
+        />
       )}
 
       {nodeMenu && (
-        <div
-          className="absolute z-20 w-[180px] rounded-lg border border-border bg-panel shadow-xl p-2"
-          style={{
-            left: nodeMenu!.left,
-            top: nodeMenu!.top,
+        <WorldGraphNodeMenu
+          left={nodeMenu.left}
+          top={nodeMenu.top}
+          onFocus={handleFocusNode}
+          onDelete={() => { void handleDeleteNode(); }}
+          onJumpToMention={() => {
+            if (!nodeMenu) return;
+            EditorSyncBus.emit("JUMP_TO_MENTION", { entityId: nodeMenu.nodeId });
+            setNodeMenu(null);
           }}
-        >
-          <button
-            type="button"
-            onClick={handleFocusNode}
-            className="w-full text-left px-2 py-1.5 text-xs rounded-md hover:bg-element transition-colors text-fg"
-          >
-            {t("world.graph.canvas.focusNode")}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleDeleteNode()}
-            className="w-full text-left px-2 py-1.5 text-xs rounded-md hover:bg-destructive/15 transition-colors text-destructive"
-          >
-            {t("world.graph.canvas.deleteNode")}
-          </button>
-        </div>
+        />
       )}
+
+      {/* Canvas Navbar (Obsidian style) */}
+      <WorldGraphNavbar
+        onSpawnDraft={(type) => {
+          if (!rfInstance) return;
+          const canvasEl = canvasRef.current;
+          const cx = canvasEl ? canvasEl.clientWidth / 2 : window.innerWidth / 2;
+          const cy = canvasEl ? canvasEl.clientHeight / 2 : window.innerHeight / 2;
+          const center = rfInstance.screenToFlowPosition({ x: cx, y: cy });
+          spawnDraftNode(center.x, center.y, type);
+        }}
+        onCreateEntity={(entityType) => { void handleCreateEntityAtCenter(entityType); }}
+        onFitView={() => rfInstance?.fitView({ duration: 450, padding: 0.15 })}
+        onZoomIn={() => rfInstance?.zoomIn({ duration: 200 })}
+        onZoomOut={() => rfInstance?.zoomOut({ duration: 200 })}
+      />
     </div>
   );
 }

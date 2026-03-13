@@ -1,15 +1,14 @@
 import { useTranslation } from "react-i18next";
-import { Network, Clock, FileText, Database, Library, Settings } from "lucide-react";
+import { Network, Clock, StickyNote, Users, Archive, Settings } from "lucide-react";
 import { useGraphIdeStore, type GraphIdeTab } from "@renderer/features/research/stores/graphIdeStore";
-import { Button } from "@renderer/components/ui/button";
 import { cn } from "@renderer/lib/utils";
 
-const NAV_ITEMS: { id: GraphIdeTab; icon: React.ElementType; labelKey: string }[] = [
-  { id: "graph", icon: Network, labelKey: "world.graph.ide.graph" },
-  { id: "timeline", icon: Clock, labelKey: "world.graph.ide.timeline" },
-  { id: "note", icon: FileText, labelKey: "world.graph.ide.note" },
-  { id: "entity", icon: Database, labelKey: "world.graph.ide.entity" },
-  { id: "library", icon: Library, labelKey: "world.graph.ide.library" },
+const NAV_ITEMS: { id: GraphIdeTab; icon: React.ElementType; label: string; labelKey: string }[] = [
+  { id: "graph",    icon: Network,    label: "Graph",    labelKey: "world.graph.ide.graph" },
+  { id: "timeline", icon: Clock,      label: "Timeline", labelKey: "world.graph.ide.timeline" },
+  { id: "note",     icon: StickyNote, label: "Notes",    labelKey: "world.graph.ide.note" },
+  { id: "entity",   icon: Users,      label: "Entity",   labelKey: "world.graph.ide.entity" },
+  { id: "library",  icon: Archive,    label: "Library",  labelKey: "world.graph.ide.library" },
 ];
 
 export function ActivityBar() {
@@ -27,41 +26,59 @@ export function ActivityBar() {
   };
 
   return (
-    <aside className="relative z-10 flex w-14 shrink-0 flex-col items-center bg-sidebar py-3">
-      <div className="flex flex-1 flex-col items-center gap-2">
+    <aside className="relative z-10 flex w-[52px] shrink-0 flex-col items-center border-r border-border/30 bg-sidebar py-2">
+      <div className="flex flex-1 flex-col items-center gap-0.5 w-full px-1.5">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
 
           return (
-            <Button
+            <button
               key={item.id}
               type="button"
               onClick={() => handleNavClick(item.id)}
-              title={t(item.labelKey, item.id)}
-              variant="ghost"
-              size="icon"
+              title={t(item.labelKey, item.label)}
               className={cn(
-                "h-9 w-9 rounded-lg text-muted-foreground hover:bg-surface-hover hover:text-foreground transition-all duration-200",
-                isActive && "bg-surface text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.1)] ring-1 ring-border/10"
+                "relative flex w-full flex-col items-center gap-0.5 rounded-lg py-2 px-1 transition-all duration-150 outline-none",
+                isActive
+                  ? "text-fg"
+                  : "text-muted-foreground/50 hover:text-muted-foreground hover:bg-element/60",
               )}
             >
-              <Icon strokeWidth={isActive ? 2.5 : 2} className={cn("h-[18px] w-[18px]", isActive && "text-foreground")} />
-            </Button>
+              {isActive && (
+                <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-accent" />
+              )}
+              {isActive && (
+                <span className="absolute inset-0 rounded-lg bg-accent/10" />
+              )}
+              <Icon
+                strokeWidth={isActive ? 2 : 1.8}
+                className={cn(
+                  "relative h-[17px] w-[17px] transition-colors",
+                  isActive ? "text-accent" : "text-current",
+                )}
+              />
+              <span
+                className={cn(
+                  "relative text-[9px] font-medium leading-none tracking-wide",
+                  isActive ? "text-accent" : "text-current",
+                )}
+              >
+                {t(item.labelKey, item.label)}
+              </span>
+            </button>
           );
         })}
       </div>
 
-      <div className="mt-auto flex flex-col items-center gap-2">
-        <Button
+      <div className="flex flex-col items-center w-full px-1.5 pb-1">
+        <button
           type="button"
-          variant="ghost"
-          size="icon"
           title={t("world.graph.ide.settings", "Settings")}
-          className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-surface-hover hover:text-foreground transition-all duration-200"
+          className="flex w-full flex-col items-center gap-0.5 rounded-lg py-2 px-1 text-muted-foreground/40 hover:text-muted-foreground hover:bg-element/60 transition-all duration-150 outline-none"
         >
-          <Settings strokeWidth={1.5} className="h-[18px] w-[18px]" />
-        </Button>
+          <Settings strokeWidth={1.6} className="h-[16px] w-[16px]" />
+        </button>
       </div>
     </aside>
   );

@@ -22,12 +22,12 @@ import {
 } from "@renderer/features/research/stores/worldBuildingStore";
 import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 import { WorldGraphCanvas } from "./WorldGraphCanvas";
-import { ActivityBar } from "./ActivityBar";
-import { PrimarySidebar } from "./PrimarySidebar";
-import { NoteMainView } from "./views/NoteMainView";
-import { EntityMainView } from "./views/EntityMainView";
-import { LibraryMainView } from "./views/LibraryMainView";
-import { TimelineMainView } from "./views/TimelineMainView";
+import { ActivityBar } from "../ActivityBar";
+import { PrimarySidebar } from "../PrimarySidebar";
+import { NoteMainView } from "../views/NoteMainView";
+import { EntityMainView } from "../views/EntityMainView";
+import { LibraryMainView } from "../views/LibraryMainView";
+import { TimelineMainView } from "../views/TimelineMainView";
 import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
 
 export function WorldGraphPanel() {

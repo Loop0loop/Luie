@@ -1,59 +1,87 @@
-import {
-  Search,
-  Plus,
-  
-  FileText,
-  CalendarDays,
-  Clock,
-} from "lucide-react";
+import { useMemo } from "react";
+import { CalendarDays, Users, Layers } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { SidebarTreeSection, TreeItem } from "./SidebarTreeSection";
+import { cn } from "@renderer/lib/utils";
+import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
+import { SidebarTreeSection } from "./SidebarTreeSection";
 
 export function TimelineSidebarContent() {
   const { t } = useTranslation();
 
+  const graphData = useWorldBuildingStore((s) => s.graphData);
+  const selectedNodeId = useWorldBuildingStore((s) => s.selectedNodeId);
+  const selectNode = useWorldBuildingStore((s) => s.selectNode);
+
+  const { events, characters } = useMemo(() => {
+    const nodes = graphData?.nodes ?? [];
+    return {
+      events: nodes.filter((n) => n.entityType === "Event"),
+      characters: nodes.filter((n) => n.entityType === "Character"),
+    };
+  }, [graphData]);
+
+  const renderNodeItem = (node: (typeof events)[0]) => {
+    const isActive = selectedNodeId === node.id;
+    return (
+      <button
+        key={node.id}
+        type="button"
+        onClick={() => selectNode(node.id)}
+        className={cn(
+          "flex w-full items-center gap-2 rounded-md px-2 py-[5px] text-left text-[12px] transition-all",
+          isActive
+            ? "bg-accent/10 text-accent font-medium"
+            : "text-fg/80 hover:bg-element/80",
+        )}
+      >
+        <span className="flex-1 truncate">{node.name}</span>
+      </button>
+    );
+  };
+
   return (
-    <div className="flex flex-col h-full bg-transparent">
-      <div className="px-3 mb-4 mt-2">
-        <div className="relative flex items-center group">
-          <Search className="absolute left-2.5 h-[14px] w-[14px] text-muted-foreground/60 transition-colors group-focus-within:text-foreground/80" />
-          <input 
-            type="text"
-            placeholder={t("world.graph.ide.sidebar.search", "Search timeline...")}
-            className="w-full bg-surface/50 hover:bg-surface focus:bg-surface border border-transparent focus:border-border/50 focus:ring-1 focus:ring-ring/20 rounded-md h-[28px] pl-8 pr-8 text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none transition-all"
-          />
-          <div className="absolute right-2 flex items-center justify-center h-4 px-1 rounded border border-border/40 bg-panel/50 text-[9px] font-medium text-muted-foreground/60 pointer-events-none select-none">
-            ⌘D
-          </div>
-        </div>
-      </div>
+    <div className="flex h-full flex-col overflow-y-auto">
+      {/* Events */}
+      <SidebarTreeSection
+        title={t("world.graph.ide.sidebar.timeline.events", "Events")}
+        actionIcon={<CalendarDays className="h-3.5 w-3.5" />}
+      >
+        {events.length === 0 ? (
+          <p className="px-2 py-1.5 text-[11px] text-muted-foreground/50">사건이 없습니다</p>
+        ) : (
+          events.map(renderNodeItem)
+        )}
+      </SidebarTreeSection>
 
-      <div className="flex-1 overflow-y-auto w-full">
-        <SidebarTreeSection 
-          title={t("world.graph.ide.sidebar.events.main", "Main Plot (주요 사건)")}
-          actionIcon={<Plus className="w-[14px] h-[14px]" />}
-        >
-          <TreeItem isFolder isOpen label="Act 1 (발단)">
-            <TreeItem icon={<CalendarDays className="w-[15px] h-[15px] opacity-80" />} label="Village Attack" isActive />
-            <TreeItem icon={<CalendarDays className="w-[15px] h-[15px] opacity-80" />} label="Meeting the Party" />
-          </TreeItem>
-          <TreeItem isFolder label="Act 2 (전개)">
-            <TreeItem icon={<CalendarDays className="w-[15px] h-[15px] opacity-80" />} label="First Dungeon" />
-            <TreeItem icon={<CalendarDays className="w-[15px] h-[15px] opacity-80" />} label="The Betrayal" />
-          </TreeItem>
-        </SidebarTreeSection>
+      {/* Characters */}
+      <SidebarTreeSection
+        title={t("world.graph.ide.sidebar.timeline.characters", "Characters")}
+        actionIcon={<Users className="h-3.5 w-3.5" />}
+        defaultExpanded={false}
+      >
+        {characters.length === 0 ? (
+          <p className="px-2 py-1.5 text-[11px] text-muted-foreground/50">캐릭터가 없습니다</p>
+        ) : (
+          characters.map(renderNodeItem)
+        )}
+      </SidebarTreeSection>
 
-        <SidebarTreeSection 
-          title={t("world.graph.ide.sidebar.events.sub", "Sub Plots (서브 플롯)")}
-          defaultExpanded={false}
-          actionIcon={<Plus className="w-[14px] h-[14px]" />}
-        >
-          <TreeItem isFolder label="Flashbacks">
-            <TreeItem icon={<Clock className="w-[15px] h-[15px] opacity-80" />} label="Master's Death" />
-          </TreeItem>
-          <TreeItem icon={<FileText className="w-[15px] h-[15px] opacity-80" />} label="Sword Origins" />
-        </SidebarTreeSection>
-      </div>
+      {/* Era - Static placeholder */}
+      <SidebarTreeSection
+        title={t("world.graph.ide.sidebar.timeline.era", "Era")}
+        actionIcon={<Layers className="h-3.5 w-3.5" />}
+        defaultExpanded={false}
+      >
+        {["고대", "왕국 시대", "현재"].map((era) => (
+          <button
+            key={era}
+            type="button"
+            className="flex w-full items-center gap-2 rounded-md px-2 py-[5px] text-left text-[12px] text-fg/60 transition-all hover:bg-element/80 hover:text-fg"
+          >
+            <span className="flex-1 truncate">{era}</span>
+          </button>
+        ))}
+      </SidebarTreeSection>
     </div>
   );
 }

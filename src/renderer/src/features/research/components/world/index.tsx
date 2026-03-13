@@ -9,7 +9,7 @@ import { SynopsisEditor } from "@renderer/features/research/components/world/Syn
 import { MindMapBoard } from "@renderer/features/research/components/world/MindMapBoard";
 import { DrawingCanvas } from "@renderer/features/research/components/world/DrawingCanvas";
 import { PlotBoard } from "@renderer/features/research/components/world/PlotBoard";
-import { WorldGraphPanel } from "@renderer/features/research/components/world/graph/WorldGraphPanel";
+import { WorldGraphPanel } from "@renderer/features/research/components/world/graph/canvas/WorldGraphPanel";
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
 
 interface WorldSectionProps {

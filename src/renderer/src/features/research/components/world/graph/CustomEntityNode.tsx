@@ -1,108 +1,149 @@
 import { memo } from "react";
 import { Handle, Position } from "reactflow";
-import { cn } from "@shared/types/utils";
-import { WORLD_GRAPH_ICON_MAP, WORLD_GRAPH_NODE_THEMES } from "@shared/constants/worldGraphUI";
-
-const NODE_CONFIG = {
-    SCALE_MULTIPLIER: 0.1,
-    BASE_IMPORTANCE: 3,
-    DEFAULT_IMPORTANCE: 3,
-};
-
-const HANDLE_STYLES =
-    "w-2.5 h-2.5 bg-blue-500 border-2 border-white shadow-sm transition-all hover:scale-125 focus:ring-2 focus:ring-blue-500/50 z-10 opacity-0 group-hover:opacity-100 !min-w-[10px] !min-h-[10px]";
+import { cn } from "@renderer/lib/utils";
+import { WORLD_GRAPH_ICON_MAP, WORLD_GRAPH_MINIMAP_COLORS } from "@shared/constants/worldGraphUI";
 
 type CustomEntityNodeProps = {
-    data: {
-        label: string;
-        subType: string;
-        importance?: number;
-        viewMode?: "standard" | "protagonist" | "event-chain" | "freeform";
-    };
-    selected?: boolean;
+  data: {
+    label: string;
+    subType: string;
+    entityType: string;
+    importance?: number;
+    description?: string | null;
+    firstAppearance?: string | null;
+    tags?: string[];
+  };
+  selected?: boolean;
 };
 
 export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps) => {
-    const { label, subType, importance = NODE_CONFIG.DEFAULT_IMPORTANCE, viewMode = "standard" } = data;
-    const themeSpec = WORLD_GRAPH_NODE_THEMES[subType] ?? WORLD_GRAPH_NODE_THEMES["WorldEntity"];
-    const Icon = WORLD_GRAPH_ICON_MAP[subType] ?? WORLD_GRAPH_ICON_MAP["WorldEntity"];
+  const {
+    label,
+    subType,
+    importance = 3,
+    description,
+    firstAppearance,
+    tags,
+  } = data;
 
-    const baseScale = 1 + (importance - NODE_CONFIG.BASE_IMPORTANCE) * NODE_CONFIG.SCALE_MULTIPLIER;
+  const Icon = WORLD_GRAPH_ICON_MAP[subType] ?? WORLD_GRAPH_ICON_MAP["WorldEntity"];
+  const accent = WORLD_GRAPH_MINIMAP_COLORS[subType] ?? "#94a3b8";
 
-    // Mode-specific styles
-    const isEventChainFocused = viewMode === "event-chain" && subType === "Event";
-    const isProtagonistSelected = viewMode === "protagonist" && selected;
-    const isFreeform = viewMode === "freeform";
+  const importanceLevel = Math.max(1, Math.min(5, importance));
+  const hasFooter = firstAppearance || (tags && tags.length > 0);
 
-    return (
-        <div className="group relative">
-            {/* Obsidian Canvas Style Card */}
-            <div
-                className={cn(
-                    "flex flex-col w-[160px] min-h-[64px] rounded-xl border bg-element/90 backdrop-blur-md shadow-sm transition-all duration-200 ease-out cursor-grab active:cursor-grabbing overflow-hidden",
-                    selected ? "border-accent ring-2 ring-accent/30 shadow-md" : "border-border/60 hover:border-accent/50 hover:shadow",
-                    isEventChainFocused && "scale-105 shadow-lg",
-                    isProtagonistSelected && "ring-4 ring-accent/80 shadow-[0_0_40px_rgba(currentColor,0.4)] scale-105",
-                    isFreeform && "border-dashed shadow-[0_10px_30px_rgba(37,99,235,0.10)]"
-                )}
-                style={{
-                    transform: `scale(${baseScale})`,
-                    transformOrigin: "center center",
-                }}
-            >
-                {/* File Header Tab */}
-                <div className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 border-b border-border/40",
-                    themeSpec.wrapper // Gives a subtle background tint based on type
-                )}>
-                    <div className={cn("p-0.5 rounded-sm shrink-0", themeSpec.iconBg, themeSpec.text)}>
-                        <Icon size={12} strokeWidth={2.5} />
-                    </div>
-                    <span className="font-semibold text-[10px] tracking-widest uppercase opacity-70">
-                        {subType}
-                    </span>
-                </div>
-                
-                {/* File Content Area */}
-                <div className="flex-1 p-3 flex items-start">
-                    <span className="font-medium text-sm text-fg leading-tight break-keep">
-                        {label}
-                    </span>
-                </div>
-            </div>
+  // styled handle class (colored by entity type)
+  const handleCls =
+    "!h-3 !w-3 !rounded-full !border-2 !border-[var(--bg-element,#1a1a1e)] !shadow-sm transition-all opacity-0 group-hover:opacity-100 hover:!scale-125 hover:opacity-100";
 
-            {/* Handles rendered after main div for z-index stacking */}
-            <Handle
-                type="target"
-                position={Position.Top}
-                className={cn(HANDLE_STYLES, "opacity-0 group-hover:opacity-100 -mt-1")}
-                id="top"
-                isConnectable={true}
-            />
-            <Handle
-                type="source"
-                position={Position.Bottom}
-                className={cn(HANDLE_STYLES, "opacity-0 group-hover:opacity-100 -mb-1")}
-                id="bottom"
-                isConnectable={true}
-            />
-            <Handle
-                type="target"
-                position={Position.Left}
-                className={cn(HANDLE_STYLES, "opacity-0 group-hover:opacity-100 -ml-1")}
-                id="left"
-                isConnectable={true}
-            />
-            <Handle
-                type="source"
-                position={Position.Right}
-                className={cn(HANDLE_STYLES, "opacity-0 group-hover:opacity-100 -mr-1")}
-                id="right"
-                isConnectable={true}
-            />
+  return (
+    <div className="group relative">
+      {/* Card */}
+      <div
+        className={cn(
+          "flex w-[220px] flex-col overflow-hidden rounded-xl border bg-element/95 shadow-sm",
+          "cursor-grab active:cursor-grabbing transition-all duration-200",
+          selected
+            ? "shadow-lg"
+            : "border-border/40 hover:border-border/70 hover:shadow-md",
+        )}
+        style={
+          selected
+            ? {
+                borderColor: accent,
+                boxShadow: `0 0 0 2px ${accent}35, 0 8px 24px ${accent}18`,
+              }
+            : undefined
+        }
+      >
+        {/* Accent top strip — entity type color */}
+        <div className="h-[3px] w-full shrink-0" style={{ backgroundColor: accent }} />
 
+        {/* Type header */}
+        <div className="flex items-center gap-1.5 px-3 pt-2 pb-1">
+          <Icon size={11} strokeWidth={2.5} style={{ color: accent }} className="shrink-0" />
+          <span
+            className="text-[9.5px] font-bold tracking-[0.12em] uppercase select-none"
+            style={{ color: accent }}
+          >
+            {subType}
+          </span>
+          {/* Importance indicator */}
+          {importanceLevel >= 5 && (
+            <span className="ml-auto select-none text-[9px] text-yellow-400/90">★★★</span>
+          )}
+          {importanceLevel === 4 && (
+            <span className="ml-auto select-none text-[9px] text-yellow-400/70">★★</span>
+          )}
         </div>
-    );
+
+        {/* Name + Description */}
+        <div className="px-3 pb-2.5 pt-0.5">
+          <span className="block break-keep text-[13.5px] font-semibold leading-snug text-fg">
+            {label}
+          </span>
+          {description && (
+            <span className="mt-1 block line-clamp-2 text-[11px] leading-relaxed text-muted-foreground/65">
+              {description}
+            </span>
+          )}
+        </div>
+
+        {/* Footer: firstAppearance + tags */}
+        {hasFooter && (
+          <div className="flex items-center gap-2 border-t border-border/20 px-3 py-1.5">
+            {firstAppearance && (
+              <span className="truncate text-[10px] text-muted-foreground/50">
+                {firstAppearance}
+              </span>
+            )}
+            {tags?.slice(0, 2).map((tag) => (
+              <span
+                key={tag}
+                className="shrink-0 rounded-full border border-border/30 bg-app/40 px-1.5 py-px text-[9px] text-muted-foreground/55"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Handles — all colored by entity type */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="top"
+        className={handleCls}
+        style={{ background: accent }}
+        isConnectable
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="bottom"
+        className={handleCls}
+        style={{ background: accent }}
+        isConnectable
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="left"
+        className={handleCls}
+        style={{ background: accent }}
+        isConnectable
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
+        className={handleCls}
+        style={{ background: accent }}
+        isConnectable
+      />
+    </div>
+  );
 });
 
 CustomEntityNode.displayName = "CustomEntityNode";
