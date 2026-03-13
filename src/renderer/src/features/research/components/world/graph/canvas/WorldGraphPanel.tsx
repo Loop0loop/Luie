@@ -133,7 +133,7 @@ export function WorldGraphPanel() {
       case "note":
         return <NoteMainView />;
       case "entity":
-        return <EntityMainView />;
+        return <EntityMainView nodes={filteredGraph.nodes} />;
       case "library":
         return <LibraryMainView />;
       default:

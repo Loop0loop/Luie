@@ -9,6 +9,7 @@ import { useDialog } from "@shared/ui/useDialog";
 import { SUPPORTED_LANGUAGES, i18n } from "@renderer/i18n";
 import { CHARACTER_TEMPLATES } from "@shared/constants";
 import { useShallow } from "zustand/react/shallow";
+import { parseStructuredAttributes } from "@renderer/features/research/utils/parseStructuredAttributes";
 
 
 // Types for Dynamic Customization
@@ -48,9 +49,7 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
 
   const attributes = useMemo(() => {
     if (!character) return {};
-    return typeof character.attributes === "string"
-      ? JSON.parse(character.attributes)
-      : (character.attributes || {});
+    return parseStructuredAttributes(character.attributes);
   }, [character]);
 
   const currentTemplate = useMemo(() => {
@@ -104,7 +103,7 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
   }, [attributes.sections, defaultLabelById, defaultLabelSet, defaultSectionLabels]);
 
   const customFields: CustomField[] = useMemo(() => {
-    return attributes.customFields || [];
+    return (attributes.customFields as CustomField[]) || [];
   }, [attributes.customFields]);
 
   if (!character) {
@@ -234,7 +233,7 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
                 key={sec.id}
                 id={sec.id}
                 label={sec.label}
-                content={attributes[sec.id]}
+                content={(attributes[sec.id] as string) || ""}
                 onRename={(val) => renameSection(sec.id, val)}
                 onUpdateContent={(val) => handleAttrUpdate(sec.id, val)}
                 onDelete={() => deleteSection(sec.id)}
@@ -277,7 +276,7 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
                       : undefined;
                 return {
                   label,
-                  value: attributes[field.key],
+                  value: attributes[field.key] as string | undefined,
                   placeholder,
                   type: field.type,
                   options,

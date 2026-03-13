@@ -117,9 +117,19 @@ export const useMemoStore = create<MemoStore>((set, get) => {
         return;
       }
 
+      const normalizedProjectPath = projectPath ?? null;
+      const currentState = get();
+      if (
+        currentState.activeProjectId === projectId &&
+        currentState.activeProjectPath === normalizedProjectPath &&
+        !currentState.isLoading
+      ) {
+        return;
+      }
+
       set({
         activeProjectId: projectId,
-        activeProjectPath: projectPath ?? null,
+        activeProjectPath: normalizedProjectPath,
         isLoading: true,
         error: null,
         saveError: null,
@@ -145,7 +155,7 @@ export const useMemoStore = create<MemoStore>((set, get) => {
             : cloneNotes(fallbackNotes);
         set({
           activeProjectId: projectId,
-          activeProjectPath: projectPath ?? null,
+          activeProjectPath: normalizedProjectPath,
           notes: nextNotes,
           isLoading: false,
           isSaving: false,
@@ -165,7 +175,7 @@ export const useMemoStore = create<MemoStore>((set, get) => {
         if (get().activeProjectId !== projectId) return;
         set({
           activeProjectId: projectId,
-          activeProjectPath: projectPath ?? null,
+          activeProjectPath: normalizedProjectPath,
           notes: cloneNotes(fallbackNotes),
           isLoading: false,
           isSaving: false,

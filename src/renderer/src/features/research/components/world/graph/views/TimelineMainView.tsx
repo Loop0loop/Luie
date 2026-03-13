@@ -7,6 +7,7 @@ import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import type { EntityRelation, WorldGraphNode } from "@shared/types";
+import { syncGraphEntitySelectionToWorkspace } from "../utils/graphEntitySync";
 import { buildTimelineEntries } from "../utils/worldGraphIdeViewModels";
 
 interface TimelineMainViewProps {
@@ -22,6 +23,10 @@ export function TimelineMainView({ nodes = [] }: TimelineMainViewProps) {
   const createGraphNode = useWorldBuildingStore((state) => state.createGraphNode);
   const selectNode = useWorldBuildingStore((state) => state.selectNode);
   const setActiveTab = useGraphIdeStore((state) => state.setActiveTab);
+  const nodeById = useMemo(
+    () => new Map(nodes.map((node) => [node.id, node] as const)),
+    [nodes],
+  );
 
   const entries = useMemo(
     () => buildTimelineEntries(nodes, deferredQuery),
@@ -48,6 +53,10 @@ export function TimelineMainView({ nodes = [] }: TimelineMainViewProps) {
 
   const handleOpenEvent = (nodeId: string) => {
     selectNode(nodeId);
+    const node = nodeById.get(nodeId);
+    if (node) {
+      syncGraphEntitySelectionToWorkspace(node);
+    }
     setActiveTab("graph");
   };
 

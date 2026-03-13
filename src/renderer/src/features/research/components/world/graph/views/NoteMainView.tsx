@@ -6,6 +6,7 @@ import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 import { useMemoStore } from "@renderer/features/research/stores/memoStore";
+import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
 
 export function NoteMainView() {
@@ -22,14 +23,18 @@ export function NoteMainView() {
   const flushSave = useMemoStore((state) => state.flushSave);
   const selectedNoteId = useGraphIdeStore((state) => state.selectedNoteId);
   const setSelectedNoteId = useGraphIdeStore((state) => state.setSelectedNoteId);
+  const mainView = useUIStore((state) => state.mainView);
+  const setMainView = useUIStore((state) => state.setMainView);
 
   useEffect(() => {
     if (!currentProject?.id) {
-      setSelectedNoteId(null);
+      if (selectedNoteId !== null) {
+        setSelectedNoteId(null);
+      }
       return;
     }
     void loadNotes(currentProject.id, projectPath, []);
-  }, [currentProject?.id, loadNotes, projectPath, setSelectedNoteId]);
+  }, [currentProject?.id, loadNotes, projectPath, selectedNoteId, setSelectedNoteId]);
 
   const activeNote = useMemo(() => {
     if (selectedNoteId) {
@@ -49,6 +54,27 @@ export function NoteMainView() {
     setSelectedNoteId(nextNoteId);
   }, [activeNote?.id, selectedNoteId, setSelectedNoteId]);
 
+  useEffect(() => {
+    const editorNoteId =
+      mainView.type === "memo" && mainView.id ? mainView.id : null;
+    if (!editorNoteId || editorNoteId === selectedNoteId) {
+      return;
+    }
+    if (notes.some((note) => note.id === editorNoteId)) {
+      setSelectedNoteId(editorNoteId);
+    }
+  }, [mainView, notes, selectedNoteId, setSelectedNoteId]);
+
+  useEffect(() => {
+    const nextNoteId = activeNote?.id ?? null;
+    const currentEditorNoteId =
+      mainView.type === "memo" && mainView.id ? mainView.id : null;
+    if (!nextNoteId || currentEditorNoteId === nextNoteId) {
+      return;
+    }
+    setMainView({ type: "memo", id: nextNoteId });
+  }, [activeNote?.id, mainView, setMainView]);
+
   const handleCreateNote = () => {
     if (!currentProject?.id) {
       return;
@@ -60,6 +86,7 @@ export function NoteMainView() {
     });
     if (created?.id) {
       setSelectedNoteId(created.id);
+      setMainView({ type: "memo", id: created.id });
     }
   };
 

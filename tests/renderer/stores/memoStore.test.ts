@@ -79,6 +79,21 @@ describe("memoStore", () => {
     expect(state.isLoading).toBe(false);
   });
 
+  it("does not reload the same project memo payload on tab remount", async () => {
+    mocked.storage.loadScrapMemos.mockResolvedValueOnce({
+      memos: [sampleNote],
+    });
+
+    await memoStoreModule.useMemoStore
+      .getState()
+      .loadNotes("project-1", "/tmp/project-1.luie");
+    await memoStoreModule.useMemoStore
+      .getState()
+      .loadNotes("project-1", "/tmp/project-1.luie");
+
+    expect(mocked.storage.loadScrapMemos).toHaveBeenCalledTimes(1);
+  });
+
   it("adds, updates, deletes, and persists notes for the active project only", async () => {
     await memoStoreModule.useMemoStore
       .getState()

@@ -22,7 +22,7 @@ import "reactflow/dist/style.css";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@shared/ui/ToastContext";
 import { useDialog } from "@shared/ui/useDialog";
-import type { EntityRelation, WorldEntitySourceType, WorldGraphNode } from "@shared/types";
+import type { EntityRelation, WorldEntitySourceType, WorldEntityType, WorldGraphNode } from "@shared/types";
 import { getDefaultRelationForPair } from "@shared/constants/worldRelationRules";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
@@ -43,6 +43,8 @@ import { WorldGraphCreateMenu } from "../WorldGraphCreateMenu";
 import { WorldGraphNodeMenu } from "./WorldGraphNodeMenu";
 import { WorldGraphFloatingToolbar } from "./WorldGraphFloatingToolbar";
 import { Panel } from "reactflow";
+import { CustomEdge } from "../CustomEdge";
+import { CanvasCommandPalette, type PaletteMode } from "./CanvasCommandPalette";
 import {
   isEditableWorldGraphTarget,
   resolveWorldGraphDeleteTarget,
@@ -51,6 +53,10 @@ import {
 const nodeTypes = {
   draft: DraftBlockNode,
   custom: CustomEntityNode,
+};
+
+const edgeTypes = {
+  customEdge: CustomEdge,
 };
 
 interface WorldGraphCanvasProps {
@@ -124,6 +130,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
   const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
   const [createMenu, setCreateMenu] = useState<CreateMenuState | null>(null);
   const [nodeMenu, setNodeMenu] = useState<NodeMenuState | null>(null);
+  const [paletteMode, setPaletteMode] = useState<PaletteMode | null>(null);
 
   const layoutTrigger = useGraphIdeStore((state) => state.layoutTrigger);
   const prevTriggerVersionRef = useRef<number>(0);
@@ -389,23 +396,65 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
   }, [activeProjectId, createGraphNode, removeDraftNode, setNodes, showToast, t]);
 
   useEffect(() => {
-    const handleSpawnDraft = (payload: { entityType?: WorldEntitySourceType; position?: { x: number; y: number } }) => {
+    const handleSpawnDraft = async (payload: { entityType?: WorldEntitySourceType; instant?: boolean; position?: { x: number; y: number } }) => {
       if (!rfInstance) return;
-      if (payload.position) {
-        spawnDraftNode(payload.position.x, payload.position.y, payload.entityType);
-      } else if (canvasRef.current) {
-        const cx = canvasRef.current.clientWidth / 2;
-        const cy = canvasRef.current.clientHeight / 2;
-        const centerPos = rfInstance.screenToFlowPosition({ x: cx, y: cy });
-        centerPos.x += (Math.random() - 0.5) * 40;
-        centerPos.y += (Math.random() - 0.5) * 40;
-        spawnDraftNode(centerPos.x, centerPos.y, payload.entityType);
+      let pos = payload.position;
+      
+      if (!pos) {
+        if (canvasRef.current) {
+          const cx = canvasRef.current.clientWidth / 2;
+          const cy = canvasRef.current.clientHeight / 2;
+          pos = rfInstance.screenToFlowPosition({ x: cx, y: cy });
+          pos.x += (Math.random() - 0.5) * 40;
+          pos.y += (Math.random() - 0.5) * 40;
+        } else {
+          pos = { x: 0, y: 0 };
+        }
+      }
+
+      if (payload.instant && activeProjectId) {
+        let defaultName = "새로운 엔티티";
+        let subType: WorldEntityType | undefined = undefined;
+        let finalEntityType = payload.entityType ?? "Concept";
+        
+        if (payload.entityType === "Event") {
+          defaultName = "새로운 시간";
+          finalEntityType = "Event";
+          subType = undefined;
+        } else if (payload.entityType === "Concept") { // Note case (Concept)
+          defaultName = "새로운 노트";
+          finalEntityType = "Concept";
+          subType = undefined; // Note isn't a strict WorldEntityType yet, handled by attributes or other logic if needed
+        }
+        
+        try {
+          await createGraphNode({
+            projectId: activeProjectId,
+            entityType: finalEntityType,
+            subType,
+            name: defaultName,
+            positionX: pos.x,
+            positionY: pos.y,
+          });
+        } catch {
+          showToast(t("world.graph.canvas.createFailed"), "error");
+        }
+      } else {
+        spawnDraftNode(pos.x, pos.y, payload.entityType);
       }
     };
 
+    const handleOpenPalette = (payload: { mode: "Event" | "Note" }) => {
+      setPaletteMode(payload.mode);
+    };
+
     EditorSyncBus.on("SPAWN_GRAPH_DRAFT_NODE", handleSpawnDraft);
-    return () => EditorSyncBus.off("SPAWN_GRAPH_DRAFT_NODE", handleSpawnDraft);
-  }, [rfInstance, spawnDraftNode]);
+    EditorSyncBus.on("OPEN_COMMAND_PALETTE", handleOpenPalette);
+    return () => {
+      EditorSyncBus.off("SPAWN_GRAPH_DRAFT_NODE", handleSpawnDraft);
+      EditorSyncBus.off("OPEN_COMMAND_PALETTE", handleOpenPalette);
+    };
+  }, [rfInstance, spawnDraftNode, activeProjectId, createGraphNode, showToast, t]);
 
   const onPaneDoubleClick = useCallback(
     (event: React.MouseEvent) => {
@@ -768,6 +817,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         nodes={styledNodes}
         edges={styledEdges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodesDelete={handleNodesDelete}
@@ -827,6 +877,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         <Panel position="top-right" className="m-4">
           <WorldGraphFloatingToolbar />
         </Panel>
+        {paletteMode && <CanvasCommandPalette mode={paletteMode} onClose={() => setPaletteMode(null)} />}
       </ReactFlow>
 
       {isEmpty && !createMenu && (

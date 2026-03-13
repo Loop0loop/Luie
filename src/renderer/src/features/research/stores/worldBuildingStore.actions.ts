@@ -29,6 +29,10 @@ import {
   deleteGraphNodeByType,
   updateGraphNodeFromInput,
 } from "./worldBuildingStore.mutations";
+import {
+  clearGraphBackedSelection,
+  syncGraphBackedStore,
+} from "@renderer/features/research/components/world/graph/utils/graphEntitySync";
 import type {
   UpdateGraphNodeInput,
   WorldBuildingState,
@@ -154,6 +158,7 @@ export function createWorldBuildingActions(
           selectedEdgeId: null,
         };
       });
+      await syncGraphBackedStore(nextNode.entityType, projectId);
       await persistGraphDocument(projectId, get().graphData);
 
       return nextNode;
@@ -169,6 +174,10 @@ export function createWorldBuildingActions(
       set((state) => ({
         graphData: replaceNodeInGraph(state.graphData, updatedNode),
       }));
+      const projectId = get().activeProjectId;
+      if (projectId) {
+        await syncGraphBackedStore(updatedNode.entityType, projectId);
+      }
       await persistActiveGraphDocument();
     },
 
@@ -208,6 +217,8 @@ export function createWorldBuildingActions(
         graphData: removeNodeFromGraph(state.graphData, id),
         selectedNodeId: state.selectedNodeId === id ? null : state.selectedNodeId,
       }));
+      clearGraphBackedSelection(current.entityType, id);
+      await syncGraphBackedStore(current.entityType, projectId);
       await persistGraphDocument(projectId, get().graphData);
     },
 

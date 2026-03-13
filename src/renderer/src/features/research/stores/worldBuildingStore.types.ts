@@ -53,6 +53,7 @@ export type CreateGraphNodeInput = {
   positionX?: number;
   positionY?: number;
   subType?: WorldEntityType;
+  attributes?: Record<string, unknown>;
 };
 
 export type UpdateGraphNodeInput = {

@@ -48,6 +48,19 @@ export function useEventManager(t: TFunction) {
         }
     }, [currentProject, loadEvents]);
 
+    useEffect(() => {
+        if (!selectedEventId) {
+            return;
+        }
+        if ((events as EventLike[]).some((item) => item.id === selectedEventId)) {
+            return;
+        }
+        const clearTimer = window.setTimeout(() => {
+            setSelectedEventId(null);
+        }, 0);
+        return () => window.clearTimeout(clearTimer);
+    }, [events, selectedEventId]);
+
     const handleAddEvent = async () => {
         if (currentProject) {
             const newEvt = await createEvent({

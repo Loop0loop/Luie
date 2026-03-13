@@ -48,6 +48,19 @@ export function useFactionManager(t: TFunction) {
         }
     }, [currentProject, loadFactions]);
 
+    useEffect(() => {
+        if (!selectedFactionId) {
+            return;
+        }
+        if ((factions as FactionLike[]).some((item) => item.id === selectedFactionId)) {
+            return;
+        }
+        const clearTimer = window.setTimeout(() => {
+            setSelectedFactionId(null);
+        }, 0);
+        return () => window.clearTimeout(clearTimer);
+    }, [factions, selectedFactionId]);
+
     const handleAddFaction = async () => {
         if (currentProject) {
             const newFac = await createFaction({

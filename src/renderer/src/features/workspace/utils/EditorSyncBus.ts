@@ -1,11 +1,12 @@
 import type { WorldEntitySourceType } from "@shared/types";
 
-type AppEventType = "FOCUS_ENTITY" | "JUMP_TO_MENTION" | "SPAWN_GRAPH_DRAFT_NODE";
+type AppEventType = "FOCUS_ENTITY" | "JUMP_TO_MENTION" | "SPAWN_GRAPH_DRAFT_NODE" | "OPEN_COMMAND_PALETTE";
 
 type EventPayloads = {
     FOCUS_ENTITY: { entityId: string };
     JUMP_TO_MENTION: { entityId: string };
-    SPAWN_GRAPH_DRAFT_NODE: { entityType?: WorldEntitySourceType; position?: { x: number; y: number } };
+    SPAWN_GRAPH_DRAFT_NODE: { entityType?: WorldEntitySourceType; instant?: boolean; position?: { x: number; y: number } };
+    OPEN_COMMAND_PALETTE: { mode: "Event" | "Note" };
 };
 
 type EventCallback<T extends AppEventType> = (payload: EventPayloads[T]) => void;

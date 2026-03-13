@@ -28,6 +28,10 @@ export async function createGraphNodeFromInput(
         projectId,
         name,
         description: input.description,
+        attributes:
+          input.attributes && typeof input.attributes === "object"
+            ? { templateId: "basic", ...input.attributes }
+            : { templateId: "basic" },
       });
       return response.success && response.data
         ? withNodePosition(toCharacterNode(response.data), positionX, positionY)

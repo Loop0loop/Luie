@@ -8,6 +8,7 @@ import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeSto
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { WORLD_GRAPH_ICON_MAP, WORLD_GRAPH_MINIMAP_COLORS } from "@shared/constants/worldGraphUI";
 import type { WorldGraphNode } from "@shared/types";
+import { syncGraphEntitySelectionToWorkspace } from "../utils/graphEntitySync";
 import { buildEntityCatalogEntries } from "../utils/worldGraphIdeViewModels";
 
 interface EntityMainViewProps {
@@ -20,6 +21,10 @@ export function EntityMainView({ nodes = [] }: EntityMainViewProps) {
   const deferredQuery = useDeferredValue(query);
   const selectNode = useWorldBuildingStore((state) => state.selectNode);
   const setActiveTab = useGraphIdeStore((state) => state.setActiveTab);
+  const nodeById = useMemo(
+    () => new Map(nodes.map((node) => [node.id, node] as const)),
+    [nodes],
+  );
 
   const entries = useMemo(
     () => buildEntityCatalogEntries(nodes, deferredQuery),
@@ -28,6 +33,10 @@ export function EntityMainView({ nodes = [] }: EntityMainViewProps) {
 
   const handleOpenNode = (nodeId: string) => {
     selectNode(nodeId);
+    const node = nodeById.get(nodeId);
+    if (node) {
+      syncGraphEntitySelectionToWorkspace(node);
+    }
     setActiveTab("graph");
   };
 

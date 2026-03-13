@@ -5,6 +5,7 @@ import { Input } from "@renderer/components/ui/input";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 import { useMemoStore } from "@renderer/features/research/stores/memoStore";
+import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { SidebarTreeSection, TreeItem } from "./SidebarTreeSection";
 
 export function NoteSidebarContent() {
@@ -17,6 +18,7 @@ export function NoteSidebarContent() {
   const setSelectedNoteId = useGraphIdeStore((state) => state.setSelectedNoteId);
   const noteSearchQuery = useGraphIdeStore((state) => state.noteSearchQuery);
   const setNoteSearchQuery = useGraphIdeStore((state) => state.setNoteSearchQuery);
+  const setMainView = useUIStore((state) => state.setMainView);
   const deferredSearchQuery = useDeferredValue(noteSearchQuery);
 
   const filteredNotes = useMemo(() => {
@@ -45,6 +47,7 @@ export function NoteSidebarContent() {
     });
     if (created?.id) {
       setSelectedNoteId(created.id);
+      setMainView({ type: "memo", id: created.id });
     }
   };
 
@@ -88,7 +91,10 @@ export function NoteSidebarContent() {
             <button
               key={note.id}
               type="button"
-              onClick={() => setSelectedNoteId(note.id)}
+              onClick={() => {
+                setSelectedNoteId(note.id);
+                setMainView({ type: "memo", id: note.id });
+              }}
               className={`flex w-full items-center gap-2 rounded-md px-2 py-[5px] text-left text-[12px] transition-all ${
                 selectedNoteId === note.id
                   ? "bg-accent/10 font-medium text-accent"
