@@ -16,7 +16,7 @@ export function LibraryMainView() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex h-full flex-col bg-background/50">
+    <div className="flex h-full flex-col bg-transparent">
       {/* Header */}
       <header className="flex items-center justify-between border-b px-8 py-6">
         <div>

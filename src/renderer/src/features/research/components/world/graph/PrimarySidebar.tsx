@@ -53,8 +53,8 @@ export function PrimarySidebar() {
         Professional Header: 
         A subtle un-bordered workspace title, clean, slight padding.
       */}
-      <div className="flex shrink-0 items-center justify-between px-4 h-[44px] bg-transparent">
-        <h2 className="text-[13px] font-semibold text-foreground/90 tracking-tight cursor-default select-none">
+      <div className="flex shrink-0 items-center justify-between px-4 h-[48px] bg-transparent">
+        <h2 className="text-[12px] font-medium uppercase tracking-wider text-muted-foreground/80 cursor-default select-none">
           {t(tabMeta.titleKey, tabMeta.fallbackTitle)}
         </h2>
       </div>

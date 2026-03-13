@@ -42,11 +42,11 @@ export function ActivityBar() {
               variant="ghost"
               size="icon"
               className={cn(
-                "h-9 w-9 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                isActive && "bg-accent text-accent-foreground"
+                "h-9 w-9 rounded-lg text-muted-foreground hover:bg-surface-hover hover:text-foreground transition-all duration-200",
+                isActive && "bg-surface text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.1)] ring-1 ring-border/10"
               )}
             >
-              <Icon strokeWidth={isActive ? 2.5 : 2} className="h-5 w-5" />
+              <Icon strokeWidth={isActive ? 2.5 : 2} className={cn("h-[18px] w-[18px]", isActive && "text-foreground")} />
             </Button>
           );
         })}
@@ -58,9 +58,9 @@ export function ActivityBar() {
           variant="ghost"
           size="icon"
           title={t("world.graph.ide.settings", "Settings")}
-          className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-surface-hover hover:text-foreground transition-all duration-200"
         >
-          <Settings strokeWidth={2} className="h-5 w-5" />
+          <Settings strokeWidth={1.5} className="h-[18px] w-[18px]" />
         </Button>
       </div>
     </aside>

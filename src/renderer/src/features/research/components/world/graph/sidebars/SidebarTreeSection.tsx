@@ -37,7 +37,7 @@ export function SidebarTreeSection({
               isOpen && "rotate-90"
             )} 
           />
-          <span className="text-[11px] font-semibold uppercase tracking-[0.03em] text-muted-foreground/80 select-none group-hover:text-foreground/80 transition-colors">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 select-none group-hover:text-foreground/80 transition-colors">
             {title}
           </span>
         </CollapsibleTrigger>
@@ -47,7 +47,7 @@ export function SidebarTreeSection({
               e.stopPropagation();
               onAction?.(e);
             }}
-            className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-muted/80 rounded-[4px] text-muted-foreground hover:text-foreground transition-all duration-150"
+            className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-surface-hover rounded-[4px] text-muted-foreground/60 hover:text-foreground transition-all duration-150"
           >
             {actionIcon}
           </button>
@@ -118,8 +118,8 @@ export function TreeItem({
         className={cn(
           "group flex w-full items-center gap-2 rounded-md py-[5px] text-left text-[13px] cursor-pointer outline-none transition-all duration-100",
           isActive
-            ? "bg-accent text-accent-foreground font-medium shadow-[0_1px_2px_rgba(0,0,0,0.03)]" // In macOS/Linear, selected items often pop out slightly
-            : "text-foreground/80 font-normal hover:bg-surface active:bg-muted"
+            ? "bg-accent/10 text-accent font-medium" // Subtler active state instead of full stark blue background
+            : "text-foreground/80 font-normal hover:bg-surface-hover active:bg-active"
         )}
       >
         <div className="shrink-0 w-[14px] flex items-center justify-center">

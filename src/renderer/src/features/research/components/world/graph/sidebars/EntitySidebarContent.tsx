@@ -27,10 +27,10 @@ export function EntitySidebarContent() {
           <input 
             type="text"
             placeholder={t("world.graph.ide.sidebar.search", "Search entities...")}
-            className="w-full bg-surface hover:bg-muted/80 focus:bg-background border border-transparent focus:border-border/50 focus:ring-1 focus:ring-ring/20 rounded-md h-[28px] pl-8 pr-8 text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none transition-all"
+            className="w-full bg-surface/50 hover:bg-surface focus:bg-surface border border-transparent focus:border-border/50 focus:ring-1 focus:ring-ring/20 rounded-md h-[28px] pl-8 pr-8 text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none transition-all"
           />
           {/* Mac style shortcut hint */}
-          <div className="absolute right-2 flex items-center justify-center h-4 px-1 rounded border border-border/40 bg-background/50 text-[9px] font-medium text-muted-foreground/60 pointer-events-none select-none">
+          <div className="absolute right-2 flex items-center justify-center h-4 px-1 rounded border border-border/40 bg-panel/50 text-[9px] font-medium text-muted-foreground/60 pointer-events-none select-none">
             ⌘K
           </div>
         </div>

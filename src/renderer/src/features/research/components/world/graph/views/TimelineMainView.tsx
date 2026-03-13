@@ -21,7 +21,7 @@ export function TimelineMainView(_props: TimelineMainViewProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="flex h-full flex-col bg-background/50">
+    <div className="flex h-full flex-col bg-transparent">
       {/* Header 영역 - 작가들이 직관적으로 볼 수 있게 심플하게 구성 */}
       <header className="flex items-center justify-between border-b px-8 py-6">
         <div>
