@@ -329,7 +329,15 @@ function Editor({
             }}
             data-testid="editor-content"
           >
-            <EditorContent editor={editor} className="tiptap flex-1 flex flex-col outline-none h-full" />
+            <EditorContent
+              editor={editor}
+              className={cn(
+                "tiptap w-full outline-none",
+                scrollable || isMobileView
+                  ? "flex h-full flex-1 flex-col"
+                  : "block h-auto",
+              )}
+            />
           </div>
         </div>
       </div>
