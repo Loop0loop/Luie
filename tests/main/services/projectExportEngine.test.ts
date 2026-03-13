@@ -234,4 +234,96 @@ describe("projectExportEngine", () => {
       }),
     );
   });
+
+  it("overlays replica graph layout into exported .luie graph payload", async () => {
+    mocked.projectFindUnique.mockResolvedValueOnce({
+      id: "project-1",
+      title: "Project 1",
+      description: null,
+      createdAt: new Date("2026-03-12T00:00:00.000Z"),
+      updatedAt: new Date("2026-03-12T00:00:00.000Z"),
+      chapters: [],
+      characters: [
+        {
+          id: "character-1",
+          name: "Alice",
+          description: null,
+          firstAppearance: null,
+          attributes: null,
+          createdAt: new Date("2026-03-12T00:00:00.000Z"),
+          updatedAt: new Date("2026-03-12T00:00:00.000Z"),
+        },
+      ],
+      terms: [],
+      factions: [],
+      events: [],
+      worldEntities: [],
+      entityRelations: [],
+      snapshots: [],
+    });
+    mocked.getDocument.mockImplementation(async ({ docType }: { docType: string }) => {
+      if (docType === "synopsis") {
+        return {
+          found: true,
+          payload: {
+            synopsis: "replica synopsis",
+            status: "working",
+            updatedAt: "2026-03-12T01:00:00.000Z",
+          },
+        };
+      }
+      if (docType === "graph") {
+        return {
+          found: true,
+          payload: {
+            nodes: [
+              {
+                id: "character-1",
+                entityType: "Character",
+                name: "Alice",
+                positionX: 640,
+                positionY: 320,
+              },
+            ],
+            edges: [],
+            updatedAt: "2026-03-12T03:00:00.000Z",
+          },
+        };
+      }
+
+      return {
+        found: false,
+        payload: null,
+      };
+    });
+
+    const logger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+    };
+
+    await exportProjectPackageWithOptions({
+      projectId: "project-1",
+      logger,
+    });
+
+    expect(mocked.writeLuieContainer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          graph: expect.objectContaining({
+            nodes: [
+              expect.objectContaining({
+                id: "character-1",
+                positionX: 640,
+                positionY: 320,
+              }),
+            ],
+          }),
+          meta: expect.objectContaining({
+            updatedAt: "2026-03-12T03:00:00.000Z",
+          }),
+        }),
+      }),
+    );
+  });
 });

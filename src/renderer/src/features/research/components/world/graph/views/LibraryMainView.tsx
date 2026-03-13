@@ -1,69 +1,123 @@
-import { Search, FolderPlus, Upload, Image as ImageIcon, LayoutTemplate } from "lucide-react";
+import { Archive, ArrowRight, BookOpenText, Boxes, CalendarRange, LibraryBig, Map, Network, NotebookPen, Route } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@renderer/components/ui/button";
-import { Input } from "@renderer/components/ui/input";
 import { ScrollArea } from "@renderer/components/ui/scroll-area";
+import { useProjectStore } from "@renderer/features/project/stores/projectStore";
+import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
+import { useWorldLibrarySummary } from "../hooks/useWorldLibrarySummary";
+import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
+import type { LibrarySummaryEntryId } from "../utils/worldGraphIdeViewModels";
 
-const MOCK_FILES = [
-  { id: 1, type: "template", title: "Character Template", desc: "기본 인물 설정", icon: LayoutTemplate },
-  { id: 2, type: "template", title: "Faction Template", desc: "세력/집단 설정", icon: LayoutTemplate },
-  { id: 3, type: "image", title: "중세 의상 레퍼런스", desc: "1920x1080 • 1.2MB", icon: ImageIcon },
-  { id: 4, type: "image", title: "고딕 건축 양식", desc: "1080x1080 • 800KB", icon: ImageIcon },
-  { id: 5, type: "image", title: "양손검 형태 모음", desc: "2048x1080 • 2.1MB", icon: ImageIcon },
-];
+const ENTRY_ICONS: Record<LibrarySummaryEntryId, typeof Network> = {
+  graph: Network,
+  timeline: CalendarRange,
+  notes: NotebookPen,
+  entity: Boxes,
+  synopsis: BookOpenText,
+  plot: Route,
+  drawing: Map,
+  mindmap: LibraryBig,
+};
 
 export function LibraryMainView() {
   const { t } = useTranslation();
+  const currentProject = useProjectStore((state) => state.currentItem);
+  const setActiveTab = useGraphIdeStore((state) => state.setActiveTab);
+  const setWorldTab = useUIStore((state) => state.setWorldTab);
+  const { entries, error, isLoading } = useWorldLibrarySummary();
+  const attachmentPath = getReadableLuieAttachmentPath(currentProject);
+
+  const handleOpenEntry = (entryId: LibrarySummaryEntryId) => {
+    switch (entryId) {
+      case "graph":
+      case "timeline":
+      case "entity":
+        setActiveTab(entryId);
+        return;
+      case "notes":
+        setActiveTab("note");
+        return;
+      case "synopsis":
+      case "plot":
+      case "drawing":
+      case "mindmap":
+        setWorldTab(entryId);
+        return;
+    }
+  };
 
   return (
     <div className="flex h-full flex-col bg-transparent">
-      {/* Header */}
       <header className="flex items-center justify-between border-b px-8 py-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             {t("world.graph.library.title", "라이브러리")}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            집필에 필요한 이미지 레퍼런스와 설정 템플릿을 관리하세요.
+            현재 프로젝트에 실제로 저장된 그래프/문서만 보여줍니다.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input type="text" placeholder="자료 검색..." className="bg-background pl-9" />
-          </div>
-          <Button variant="outline" className="gap-2">
-            <FolderPlus className="h-4 w-4" />
-            새 폴더
-          </Button>
-          <Button className="gap-2">
-            <Upload className="h-4 w-4" />
-            업로드
-          </Button>
+        <div className="rounded-xl border bg-card px-4 py-3 text-sm text-muted-foreground">
+          <p className="font-medium text-foreground">
+            {currentProject?.title ?? t("world.graph.library.noProject", "프로젝트 없음")}
+          </p>
+          <p className="mt-1">
+            {attachmentPath
+              ? t("world.graph.library.attachment", { defaultValue: `.luie 첨부: ${attachmentPath}` })
+              : t("world.graph.library.replicaOnly", "현재 기기 저장소 기준으로 표시 중")}
+          </p>
         </div>
       </header>
 
-      {/* Grid Content */}
       <ScrollArea className="flex-1 px-8 py-8">
-        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
-          {MOCK_FILES.map((file) => {
-            const Icon = file.icon;
-            return (
-              <div 
-                key={file.id} 
-                className="group flex cursor-pointer flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-all hover:border-primary/50 hover:shadow-md"
-              >
-                <div className="flex aspect-video w-full items-center justify-center bg-secondary/50 transition-colors group-hover:bg-secondary">
-                  <Icon className="h-10 w-10 text-muted-foreground/50 transition-colors group-hover:text-primary/70" />
-                </div>
-                <div className="p-4">
-                  <h3 className="truncate font-semibold leading-none">{file.title}</h3>
-                  <p className="mt-2 text-xs text-muted-foreground">{file.desc}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {isLoading ? (
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+            {t("world.graph.library.loading", "문서 상태를 불러오는 중입니다...")}
+          </div>
+        ) : error ? (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-6 py-4 text-sm text-destructive">
+            {error}
+          </div>
+        ) : (
+          <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {entries.map((entry) => {
+              const Icon = ENTRY_ICONS[entry.id] ?? Archive;
+              return (
+                <button
+                  key={entry.id}
+                  type="button"
+                  onClick={() => handleOpenEntry(entry.id)}
+                  className="group flex flex-col rounded-2xl border bg-card p-5 text-left shadow-sm transition-all hover:border-accent/40 hover:bg-accent/5 hover:shadow-md"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-secondary text-secondary-foreground">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">{entry.title}</h3>
+                        <p className="mt-1 text-xs text-muted-foreground">{entry.badge}</p>
+                      </div>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
+                  </div>
+
+                  <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                    {entry.description}
+                  </p>
+
+                  <div className="mt-5 border-t border-border/60 pt-3 text-xs text-muted-foreground">
+                    {entry.updatedAt
+                      ? t("world.graph.library.updatedAt", {
+                          defaultValue: `최근 갱신: ${entry.updatedAt}`,
+                        })
+                      : t("world.graph.library.openHint", "클릭하면 해당 작업 공간으로 이동합니다.")}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </ScrollArea>
     </div>
   );

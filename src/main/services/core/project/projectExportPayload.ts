@@ -258,6 +258,7 @@ export const resolveProjectPackageUpdatedAt = (
     drawing: WorldDrawingData;
     mindmap: WorldMindmapData;
     memos: WorldScrapMemosData;
+    graphUpdatedAt?: string;
   },
 ): string => {
   let latestTimestamp =
@@ -295,6 +296,7 @@ export const resolveProjectPackageUpdatedAt = (
   latestTimestamp = collectLatestTimestamp(latestTimestamp, world.drawing.updatedAt);
   latestTimestamp = collectLatestTimestamp(latestTimestamp, world.mindmap.updatedAt);
   latestTimestamp = collectLatestTimestamp(latestTimestamp, world.memos.updatedAt);
+  latestTimestamp = collectLatestTimestamp(latestTimestamp, world.graphUpdatedAt);
   for (const memo of world.memos.memos) {
     latestTimestamp = collectLatestTimestamp(latestTimestamp, memo.updatedAt);
   }

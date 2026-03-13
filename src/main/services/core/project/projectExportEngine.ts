@@ -4,6 +4,7 @@ import {
   LUIE_PACKAGE_EXTENSION,
   LUIE_WORLD_DIR,
   LUIE_WORLD_DRAWING_FILE,
+  LUIE_WORLD_GRAPH_FILE,
   LUIE_WORLD_MINDMAP_FILE,
   LUIE_WORLD_PLOT_FILE,
   LUIE_WORLD_SCRAP_MEMOS_FILE,
@@ -13,6 +14,7 @@ import {
 import type {
   ProjectExportRecord,
 } from "../../../../shared/types/index.js";
+import { mergeWorldGraphLayout } from "../../../../shared/world/worldGraphDocument.js";
 import {
   readLuieContainerEntry,
   writeLuieContainer,
@@ -39,6 +41,7 @@ import {
 } from "./projectExportPayload.js";
 import {
   LuieWorldDrawingSchema,
+  LuieWorldGraphSchema,
   LuieWorldMindmapSchema,
   LuieWorldPlotSchema,
   LuieWorldScrapMemosSchema,
@@ -56,6 +59,7 @@ type ParsedWorldPayload = {
   drawing: ReturnType<typeof LuieWorldDrawingSchema.safeParse>;
   mindmap: ReturnType<typeof LuieWorldMindmapSchema.safeParse>;
   memos: ReturnType<typeof LuieWorldScrapMemosSchema.safeParse>;
+  graph: ReturnType<typeof LuieWorldGraphSchema.safeParse>;
 };
 
 type ReplicaParsedWorldPayload = {
@@ -101,6 +105,7 @@ const createEmptyParsedWorldPayload = (): ParsedWorldPayload => ({
   drawing: LuieWorldDrawingSchema.safeParse(null),
   mindmap: LuieWorldMindmapSchema.safeParse(null),
   memos: LuieWorldScrapMemosSchema.safeParse(null),
+  graph: LuieWorldGraphSchema.safeParse(null),
 });
 
 const getProjectForExport = async (projectId: string): Promise<ProjectExportRecord | null> => {
@@ -157,7 +162,7 @@ const readWorldPayloadFromPackage = async (
   }
 
   const selectedDocTypes = new Set<keyof ParsedWorldPayload>(
-    docTypes ?? ["synopsis", "plot", "drawing", "mindmap", "memos"],
+    docTypes ?? ["synopsis", "plot", "drawing", "mindmap", "memos", "graph"],
   );
 
   const readWorldDocument = async <T>(
@@ -200,7 +205,7 @@ const readWorldPayloadFromPackage = async (
     }
   };
 
-  const [synopsis, plot, drawing, mindmap, memos] = await Promise.all([
+  const [synopsis, plot, drawing, mindmap, memos, graph] = await Promise.all([
     selectedDocTypes.has("synopsis")
       ? readWorldDocument(
           LUIE_WORLD_SYNOPSIS_FILE,
@@ -224,6 +229,9 @@ const readWorldPayloadFromPackage = async (
           "scrap-memos",
         )
       : Promise.resolve(LuieWorldScrapMemosSchema.safeParse(null)),
+    selectedDocTypes.has("graph")
+      ? readWorldDocument(LUIE_WORLD_GRAPH_FILE, LuieWorldGraphSchema, "graph")
+      : Promise.resolve(LuieWorldGraphSchema.safeParse(null)),
   ]);
 
   return {
@@ -232,6 +240,7 @@ const readWorldPayloadFromPackage = async (
     drawing,
     mindmap,
     memos,
+    graph,
   };
 };
 
@@ -239,12 +248,13 @@ const readWorldPayloadFromReplica = async (
   projectId: string,
   logger: LoggerLike,
 ): Promise<ReplicaParsedWorldPayload> => {
-  const [synopsis, plot, drawing, mindmap, memos] = await Promise.all([
+  const [synopsis, plot, drawing, mindmap, memos, graph] = await Promise.all([
     worldReplicaService.getDocument({ projectId, docType: "synopsis" }),
     worldReplicaService.getDocument({ projectId, docType: "plot" }),
     worldReplicaService.getDocument({ projectId, docType: "drawing" }),
     worldReplicaService.getDocument({ projectId, docType: "mindmap" }),
     worldReplicaService.getScrapMemos(projectId),
+    worldReplicaService.getDocument({ projectId, docType: "graph" }),
   ]);
 
   return {
@@ -313,6 +323,19 @@ const readWorldPayloadFromReplica = async (
         logger,
       ),
     },
+    graph: {
+      found: graph.found,
+      parsed: safeParseWorldPayloadForExport(
+        graph.payload,
+        LuieWorldGraphSchema,
+        {
+          source: "replica",
+          projectId,
+          label: "graph",
+        },
+        logger,
+      ),
+    },
   };
 };
 
@@ -351,6 +374,7 @@ export const exportProjectPackageWithOptions = async (input: {
     "drawing",
     "mindmap",
     "memos",
+    "graph",
   ] as Array<keyof ParsedWorldPayload>).filter(
     (docType) => !replicaWorld[docType].found,
   );
@@ -379,13 +403,18 @@ export const exportProjectPackageWithOptions = async (input: {
   const memos = buildWorldScrapMemos(
     replicaWorld.memos.found ? replicaWorld.memos.parsed : parsedWorld.memos,
   );
-  const graph = buildWorldGraph(project);
+  const graphLayout =
+    replicaWorld.graph.found ? replicaWorld.graph.parsed : parsedWorld.graph;
+  const graph = graphLayout.success
+    ? mergeWorldGraphLayout(buildWorldGraph(project), graphLayout.data)
+    : buildWorldGraph(project);
   const metaUpdatedAt = resolveProjectPackageUpdatedAt(project, {
     synopsis,
     plot,
     drawing,
     mindmap,
     memos,
+    graphUpdatedAt: graphLayout.success ? graphLayout.data.updatedAt : undefined,
   });
   const meta = buildProjectPackageMeta(project, chapterMeta, metaUpdatedAt);
 

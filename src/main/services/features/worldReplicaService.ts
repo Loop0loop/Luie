@@ -9,6 +9,7 @@ import type {
 } from "../../../shared/types/index.js";
 import { db } from "../../database/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
+import { projectService } from "../core/projectService.js";
 
 const logger = createLogger("WorldReplicaService");
 
@@ -109,6 +110,20 @@ export class WorldReplicaService {
           payload: toJsonString(input.payload),
         },
       });
+
+      if (input.docType === "graph") {
+        try {
+          await projectService.ensureImmediatePackageExport(
+            input.projectId,
+            "world-document:graph",
+          );
+        } catch (error) {
+          logger.warn("Failed to export .luie after graph document save", {
+            projectId: input.projectId,
+            error,
+          });
+        }
+      }
     } catch (error) {
       logger.error("Failed to save replica world document", {
         ...input,

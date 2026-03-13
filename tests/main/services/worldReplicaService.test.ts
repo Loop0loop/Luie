@@ -29,6 +29,7 @@ const mocked = vi.hoisted(() => {
     transaction: vi.fn(async (callback: (client: typeof transactionClient) => unknown) =>
       await callback(transactionClient),
     ),
+    ensureImmediatePackageExport: vi.fn(async () => undefined),
   };
 });
 
@@ -48,6 +49,13 @@ vi.mock("../../../src/main/database/index.js", () => ({
       },
       $transaction: mocked.transaction,
     }),
+  },
+}));
+
+vi.mock("../../../src/main/services/core/projectService.js", () => ({
+  projectService: {
+    ensureImmediatePackageExport: (...args: unknown[]) =>
+      mocked.ensureImmediatePackageExport(...args),
   },
 }));
 
@@ -196,5 +204,30 @@ describe("worldReplicaService", () => {
         }),
       ],
     });
+  });
+
+  it("triggers package export when the graph document is updated", async () => {
+    await worldReplicaService.setDocument({
+      projectId: "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
+      docType: "graph",
+      payload: {
+        nodes: [
+          {
+            id: "character-1",
+            entityType: "Character",
+            name: "Alice",
+            positionX: 120,
+            positionY: 240,
+          },
+        ],
+        edges: [],
+        updatedAt: "2026-03-13T09:00:00.000Z",
+      },
+    });
+
+    expect(mocked.ensureImmediatePackageExport).toHaveBeenCalledWith(
+      "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
+      "world-document:graph",
+    );
   });
 });

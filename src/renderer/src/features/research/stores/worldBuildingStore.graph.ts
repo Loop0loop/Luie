@@ -15,6 +15,7 @@ import type {
   WorldGraphData,
   WorldGraphNode,
 } from "@shared/types";
+import { applyGraphNodePosition } from "@shared/world/worldGraphDocument";
 import { type WorldFilter } from "./worldBuildingStore.types";
 
 export const parseNodeAttributes = (
@@ -97,6 +98,12 @@ export const toWorldEntityNode = (item: WorldEntity): WorldGraphNode => {
   };
 };
 
+export const withNodePosition = (
+  node: WorldGraphNode,
+  positionX: number,
+  positionY: number,
+): WorldGraphNode => applyGraphNodePosition(node, positionX, positionY);
+
 export const resolveWorldEntityType = (
   entityType: WorldEntitySourceType,
   subType?: WorldEntityType,
@@ -149,7 +156,7 @@ export const updateNodePositionInGraph = (
   return {
     ...graphData,
     nodes: graphData.nodes.map((node) =>
-      node.id === id ? { ...node, positionX, positionY } : node,
+      node.id === id ? withNodePosition(node, positionX, positionY) : node,
     ),
   };
 };

@@ -2,10 +2,15 @@ import { api } from "@shared/api";
 import type {
   EntityRelationCreateInput,
   EntityRelationUpdateInput,
+  WorldGraphData,
   WorldEntityCreateInput,
   WorldEntityUpdateInput,
   WorldEntityUpdatePositionInput,
 } from "@shared/types";
+import {
+  buildWorldGraphDocument,
+  mergeWorldGraphLayout,
+} from "@shared/world/worldGraphDocument";
 import {
   appendNodeToGraph,
   appendRelationToGraph,
@@ -45,6 +50,7 @@ type WorldBuildingActions = Pick<
   | "selectEdge"
   | "createGraphNode"
   | "updateGraphNode"
+  | "updateGraphNodePosition"
   | "updateWorldEntityPosition"
   | "deleteGraphNode"
   | "createWorldEntity"
@@ -62,21 +68,60 @@ function updateGraphNodeSelection(input: UpdateGraphNodeInput) {
   };
 }
 
+const persistGraphDocument = async (
+  projectId: string,
+  graphData: WorldGraphData | null,
+): Promise<void> => {
+  if (!graphData) return;
+
+  const response = await api.worldStorage.setDocument({
+    projectId,
+    docType: "graph",
+    payload: buildWorldGraphDocument(graphData),
+  });
+
+  if (!response.success) {
+    await api.logger.warn("Failed to save world graph document", {
+      projectId,
+      error: response.error,
+    });
+  }
+};
+
 export function createWorldBuildingActions(
   set: StoreSetter<WorldBuildingState>,
   get: StoreGetter<WorldBuildingState>,
 ): WorldBuildingActions {
+  const persistActiveGraphDocument = async (): Promise<void> => {
+    const projectId = get().activeProjectId;
+    if (!projectId) return;
+    await persistGraphDocument(projectId, get().graphData);
+  };
+
   return {
     loadGraph: async (projectId) => {
       set({ isLoading: true, error: null, activeProjectId: projectId });
       try {
-        const response = await api.worldGraph.get(projectId);
-        if (!response.success || !response.data) {
-          throw new Error(response.error?.message ?? "Graph load failed");
+        const [graphResponse, graphReplicaResponse] = await Promise.all([
+          api.worldGraph.get(projectId),
+          api.worldStorage.getDocument({ projectId, docType: "graph" }),
+        ]);
+
+        if (!graphResponse.success || !graphResponse.data) {
+          throw new Error(graphResponse.error?.message ?? "Graph load failed");
         }
 
+        const replicaPayload =
+          graphReplicaResponse.success && graphReplicaResponse.data?.found
+            ? graphReplicaResponse.data.payload
+            : null;
+        const mergedGraph = mergeWorldGraphLayout(
+          graphResponse.data,
+          replicaPayload,
+        );
+
         set({
-          graphData: response.data,
+          graphData: mergedGraph,
           isLoading: false,
           selectedNodeId: null,
           selectedEdgeId: null,
@@ -109,6 +154,7 @@ export function createWorldBuildingActions(
           selectedEdgeId: null,
         };
       });
+      await persistGraphDocument(projectId, get().graphData);
 
       return nextNode;
     },
@@ -123,11 +169,13 @@ export function createWorldBuildingActions(
       set((state) => ({
         graphData: replaceNodeInGraph(state.graphData, updatedNode),
       }));
+      await persistActiveGraphDocument();
     },
 
-    updateWorldEntityPosition: async (input: WorldEntityUpdatePositionInput) => {
+    updateGraphNodePosition: async (input: WorldEntityUpdatePositionInput) => {
       const current = get().graphData?.nodes.find((node) => node.id === input.id);
-      if (!current || !isWorldEntityBackedType(current.entityType)) return;
+      const projectId = get().activeProjectId;
+      if (!current || !projectId) return;
 
       set((state) => ({
         graphData: updateNodePositionInGraph(
@@ -138,12 +186,20 @@ export function createWorldBuildingActions(
         ),
       }));
 
-      await api.worldEntity.updatePosition(input);
+      if (isWorldEntityBackedType(current.entityType)) {
+        await api.worldEntity.updatePosition(input);
+      }
+      await persistGraphDocument(projectId, get().graphData);
+    },
+
+    updateWorldEntityPosition: async (input: WorldEntityUpdatePositionInput) => {
+      await get().updateGraphNodePosition(input);
     },
 
     deleteGraphNode: async (id) => {
       const current = get().graphData?.nodes.find((node) => node.id === id);
-      if (!current) return;
+      const projectId = get().activeProjectId;
+      if (!current || !projectId) return;
 
       const deleted = await deleteGraphNodeByType(current);
       if (!deleted) return;
@@ -152,6 +208,7 @@ export function createWorldBuildingActions(
         graphData: removeNodeFromGraph(state.graphData, id),
         selectedNodeId: state.selectedNodeId === id ? null : state.selectedNodeId,
       }));
+      await persistGraphDocument(projectId, get().graphData);
     },
 
     createWorldEntity: async (input: WorldEntityCreateInput) =>
@@ -212,6 +269,7 @@ export function createWorldBuildingActions(
       set((state) => ({
         graphData: appendRelationToGraph(state.graphData, createdRelation),
       }));
+      await persistGraphDocument(resolvedProjectId, get().graphData);
       return createdRelation;
     },
 
@@ -223,17 +281,20 @@ export function createWorldBuildingActions(
       set((state) => ({
         graphData: replaceRelationInGraph(state.graphData, updatedRelation),
       }));
+      await persistActiveGraphDocument();
       return true;
     },
 
     deleteRelation: async (id: string) => {
+      const projectId = get().activeProjectId;
       const response = await api.entityRelation.delete(id);
-      if (!response.success) return false;
+      if (!response.success || !projectId) return false;
 
       set((state) => ({
         graphData: removeRelationFromGraph(state.graphData, id),
         selectedEdgeId: state.selectedEdgeId === id ? null : state.selectedEdgeId,
       }));
+      await persistGraphDocument(projectId, get().graphData);
       return true;
     },
   };

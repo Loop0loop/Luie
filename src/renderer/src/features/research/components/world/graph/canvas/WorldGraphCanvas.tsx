@@ -5,11 +5,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactFlow, {
   Background,
+  type Connection,
   MiniMap,
   useEdgesState,
   useNodesState,
   type EdgeMouseHandler,
   type Node,
+  type NodeDragHandler,
   type NodeMouseHandler,
   type ReactFlowInstance,
   BackgroundVariant,
@@ -21,6 +23,7 @@ import { useTranslation } from "react-i18next";
 import { useToast } from "@shared/ui/ToastContext";
 import { useDialog } from "@shared/ui/useDialog";
 import type { EntityRelation, WorldEntitySourceType, WorldGraphNode } from "@shared/types";
+import { getDefaultRelationForPair } from "@shared/constants/worldRelationRules";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 import {
@@ -35,6 +38,15 @@ import { CustomEntityNode } from "../CustomEntityNode";
 import { DraftBlockNode } from "../DraftBlockNode";
 import { useWorldGraphLayout } from "@renderer/features/research/hooks/useWorldGraphLayout";
 import { EditorSyncBus } from "@renderer/features/workspace/utils/EditorSyncBus";
+import { getMenuPosition, toRFNode, toRFEdge } from "@renderer/features/research/utils/worldGraphUtils";
+import { WorldGraphCreateMenu } from "../WorldGraphCreateMenu";
+import { WorldGraphNodeMenu } from "./WorldGraphNodeMenu";
+import { WorldGraphFloatingToolbar } from "./WorldGraphFloatingToolbar";
+import { Panel } from "reactflow";
+import {
+  isEditableWorldGraphTarget,
+  resolveWorldGraphDeleteTarget,
+} from "./worldGraphCanvasKeyboard";
 
 const nodeTypes = {
   draft: DraftBlockNode,
@@ -58,11 +70,6 @@ type NodeMenuState = {
   left: number;
   top: number;
 };
-
-import { getMenuPosition, toRFNode, toRFEdge } from "@renderer/features/research/utils/worldGraphUtils";
-import { WorldGraphCreateMenu } from "../WorldGraphCreateMenu";
-import { WorldGraphNodeMenu } from "./WorldGraphNodeMenu";
-import { WorldGraphNavbar } from "../WorldGraphNavbar";
 
 const CLUSTER_NODE_W = 220;
 const CLUSTER_NODE_H = 120;
@@ -101,11 +108,17 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
   const { showToast } = useToast();
   const dialog = useDialog();
   const selectedNodeId = useWorldBuildingStore((state) => state.selectedNodeId);
+  const selectedEdgeId = useWorldBuildingStore((state) => state.selectedEdgeId);
   const activeProjectId = useWorldBuildingStore((state) => state.activeProjectId);
   const selectNode = useWorldBuildingStore((state) => state.selectNode);
   const selectEdge = useWorldBuildingStore((state) => state.selectEdge);
   const createGraphNode = useWorldBuildingStore((state) => state.createGraphNode);
+  const createRelation = useWorldBuildingStore((state) => state.createRelation);
   const deleteGraphNode = useWorldBuildingStore((state) => state.deleteGraphNode);
+  const deleteRelation = useWorldBuildingStore((state) => state.deleteRelation);
+  const updateGraphNodePosition = useWorldBuildingStore(
+    (state) => state.updateGraphNodePosition,
+  );
 
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
@@ -125,6 +138,10 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
     const nodeById = new Map(rfNodes.map((node) => [node.id, node] as const));
     return graphEdges.map((edge) => toRFEdge(edge, translate, nodeById));
   }, [graphEdges, i18n, rfNodes]);
+  const graphNodeById = useMemo(
+    () => new Map(graphNodes.map((node) => [node.id, node] as const)),
+    [graphNodes],
+  );
 
   const { layoutedNodes, layoutedEdges } = useWorldGraphLayout({
     nodes: rfNodes,
@@ -133,6 +150,16 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
 
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutedEdges);
+
+  const removeDraftNode = useCallback(
+    (nodeId: string) => {
+      setNodes((currentNodes) => currentNodes.filter((node) => node.id !== nodeId));
+      if (selectedNodeId === nodeId) {
+        selectNode(null);
+      }
+    },
+    [selectNode, selectedNodeId, setNodes],
+  );
 
   useEffect(() => {
     setEdges((prev) => {
@@ -230,8 +257,9 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
       setNodeMenu(null);
       selectNode(node.id);
 
-      // Notify editor to jump to mention
-      EditorSyncBus.emit("JUMP_TO_MENTION", { entityId: node.id });
+      if (node.type !== "draft") {
+        EditorSyncBus.emit("JUMP_TO_MENTION", { entityId: node.id });
+      }
     },
     [selectNode],
   );
@@ -307,72 +335,77 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
     [selectEdge],
   );
 
-  const spawnDraftNode = useCallback((x: number, y: number, initialType?: string) => {
+  const spawnDraftNode = useCallback((x: number, y: number, initialType?: WorldEntitySourceType) => {
     if (!activeProjectId) return;
-    
-    // Remove existing draft nodes if any to keep UI clean
-    setNodes((nds) => nds.filter((n) => n.type !== 'draft'));
+
+    setNodes((nds) => nds.filter((n) => n.type !== "draft"));
 
     const draftId = `draft-${Date.now()}`;
     const draftNode: Node = {
       id: draftId,
-      type: 'draft',
+      type: "draft",
       position: { x, y },
       data: {
         id: draftId,
-        initialValue: initialType ? `${initialType} ` : "",
-        onConvert: async (nodeId: string, text: string) => {
-          setNodes((nds) => nds.filter((n) => n.id !== nodeId));
-          
-          if (!text.trim() || !activeProjectId) return;
-          
-          const { name, entityType, subType } = parseEntityDraftText(text);
-          
+        initialValue: "",
+        initialEntityType:
+          initialType && initialType !== "WorldEntity" ? initialType : "Concept",
+        onConvert: async (
+          nodeId: string,
+          payload: { text: string; entityType: WorldEntitySourceType },
+        ) => {
+          removeDraftNode(nodeId);
+
+          if (!payload.text.trim() || !activeProjectId) return;
+
+          const { name, description } = parseEntityDraftText(payload.text);
+          const entityType = payload.entityType;
+          const subType =
+            entityType === "Place" ||
+            entityType === "Concept" ||
+            entityType === "Rule" ||
+            entityType === "Item"
+              ? entityType
+              : undefined;
+
           try {
             await createGraphNode({
               projectId: activeProjectId,
               entityType,
               subType,
               name,
+              description,
               positionX: x,
               positionY: y,
             });
-          } catch (err) {
-            // ignore error
-            showToast("엔티티 생성에 실패했습니다.", "error");
+          } catch {
+            showToast(t("world.graph.canvas.createFailed"), "error");
           }
-        }
+        },
       },
     };
 
     setNodes((nds) => nds.concat(draftNode));
-  }, [activeProjectId, createGraphNode, setNodes, showToast]);
+  }, [activeProjectId, createGraphNode, removeDraftNode, setNodes, showToast, t]);
 
-  // Quick create: places a named entity instantly at viewport center
-  const handleCreateEntityAtCenter = useCallback(
-    async (entityType: WorldEntitySourceType) => {
-      if (!rfInstance || !activeProjectId) return;
-      const viewport = rfInstance.getViewport();
-      const canvasEl = canvasRef.current;
-      const cx = canvasEl ? canvasEl.clientWidth / 2 : window.innerWidth / 2;
-      const cy = canvasEl ? canvasEl.clientHeight / 2 : window.innerHeight / 2;
-      const center = rfInstance.screenToFlowPosition({ x: cx, y: cy });
-      const defaultNames: Record<WorldEntitySourceType, string> = {
-        Character: "새 캐릭터", Event: "새 사건", Place: "새 장소",
-        Faction: "새 세력", Concept: "새 개념", Rule: "새 규칙",
-        Item: "새 아이템", Term: "새 용어", WorldEntity: "새 엔티티",
-      };
-      await createGraphNode({
-        projectId: activeProjectId,
-        entityType,
-        name: defaultNames[entityType] ?? `새 ${entityType}`,
-        positionX: center.x + (Math.random() - 0.5) * 80,
-        positionY: center.y + (Math.random() - 0.5) * 80,
-      });
-      void viewport; // keep viewport ref
-    },
-    [rfInstance, activeProjectId, createGraphNode],
-  );
+  useEffect(() => {
+    const handleSpawnDraft = (payload: { entityType?: WorldEntitySourceType; position?: { x: number; y: number } }) => {
+      if (!rfInstance) return;
+      if (payload.position) {
+        spawnDraftNode(payload.position.x, payload.position.y, payload.entityType);
+      } else if (canvasRef.current) {
+        const cx = canvasRef.current.clientWidth / 2;
+        const cy = canvasRef.current.clientHeight / 2;
+        const centerPos = rfInstance.screenToFlowPosition({ x: cx, y: cy });
+        centerPos.x += (Math.random() - 0.5) * 40;
+        centerPos.y += (Math.random() - 0.5) * 40;
+        spawnDraftNode(centerPos.x, centerPos.y, payload.entityType);
+      }
+    };
+
+    EditorSyncBus.on("SPAWN_GRAPH_DRAFT_NODE", handleSpawnDraft);
+    return () => EditorSyncBus.off("SPAWN_GRAPH_DRAFT_NODE", handleSpawnDraft);
+  }, [rfInstance, spawnDraftNode]);
 
   const onPaneDoubleClick = useCallback(
     (event: React.MouseEvent) => {
@@ -461,6 +494,187 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
     [activeProjectId, createGraphNode, createMenu, showToast, t],
   );
 
+  const handleConnect = useCallback(
+    async (connection: Connection) => {
+      if (
+        !activeProjectId ||
+        !connection.source ||
+        !connection.target ||
+        connection.source === connection.target
+      ) {
+        return;
+      }
+
+      const sourceNode = graphNodeById.get(connection.source);
+      const targetNode = graphNodeById.get(connection.target);
+      if (!sourceNode || !targetNode) {
+        return;
+      }
+
+      const relation =
+        getDefaultRelationForPair(sourceNode.entityType, targetNode.entityType) ??
+        "belongs_to";
+      const created = await createRelation({
+        projectId: activeProjectId,
+        sourceId: sourceNode.id,
+        sourceType: sourceNode.entityType,
+        targetId: targetNode.id,
+        targetType: targetNode.entityType,
+        relation,
+      });
+
+      if (!created) {
+        showToast(t("world.graph.canvas.invalidRelation"), "error");
+      }
+    },
+    [activeProjectId, createRelation, graphNodeById, showToast, t],
+  );
+
+  const handleNodeDragStop: NodeDragHandler = useCallback(
+    (_, node) => {
+      if (node.type === "draft") {
+        return;
+      }
+      void updateGraphNodePosition({
+        id: node.id,
+        positionX: node.position.x,
+        positionY: node.position.y,
+      });
+    },
+    [updateGraphNodePosition],
+  );
+
+  const handleSelectionChange = useCallback(
+    (selection: { nodes: Node[]; edges: { id: string }[] }) => {
+      const nextNode = selection.nodes.find((node) => node.type !== "draft") ?? selection.nodes[0];
+      if (nextNode) {
+        selectNode(nextNode.id);
+        return;
+      }
+
+      const nextEdge = selection.edges[0];
+      if (nextEdge) {
+        selectEdge(nextEdge.id);
+        return;
+      }
+
+      selectNode(null);
+      selectEdge(null);
+    },
+    [selectEdge, selectNode],
+  );
+
+  const handleNodesDelete = useCallback(
+    (deletedNodes: Node[]) => {
+      deletedNodes.forEach((node) => {
+        if (node.type === "draft") {
+          removeDraftNode(node.id);
+          return;
+        }
+        if (graphNodeById.has(node.id)) {
+          void deleteGraphNode(node.id);
+        }
+      });
+    },
+    [deleteGraphNode, graphNodeById, removeDraftNode],
+  );
+
+  const handleEdgesDelete = useCallback(
+    (deletedEdges: { id: string }[]) => {
+      deletedEdges.forEach((edge) => {
+        void deleteRelation(edge.id);
+      });
+    },
+    [deleteRelation],
+  );
+
+  const handleKeyboardDelete = useCallback(() => {
+    const deleteTarget = resolveWorldGraphDeleteTarget({
+      selectedNodeId,
+      selectedEdgeId,
+      localNodes: nodes,
+      persistedNodeIds: new Set(graphNodeById.keys()),
+    });
+
+    if (!deleteTarget) {
+      selectNode(null);
+      selectEdge(null);
+      return;
+    }
+
+    setCreateMenu(null);
+    setNodeMenu(null);
+
+    if (deleteTarget.kind === "draft-node") {
+      removeDraftNode(deleteTarget.id);
+      return;
+    }
+
+    if (deleteTarget.kind === "graph-node") {
+      void deleteGraphNode(deleteTarget.id);
+      return;
+    }
+
+    void deleteRelation(deleteTarget.id);
+  }, [
+    deleteGraphNode,
+    deleteRelation,
+    graphNodeById,
+    nodes,
+    removeDraftNode,
+    selectEdge,
+    selectNode,
+    selectedEdgeId,
+    selectedNodeId,
+  ]);
+
+  const handleCanvasMouseDownCapture = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if (isEditableWorldGraphTarget(event.target)) {
+        return;
+      }
+      canvasRef.current?.focus();
+    },
+    [],
+  );
+
+  const handleCanvasKeyDownCapture = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key !== "Backspace" && event.key !== "Delete") {
+        return;
+      }
+
+      if (event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+
+      if (isEditableWorldGraphTarget(event.target)) {
+        return;
+      }
+
+      const deleteTarget = resolveWorldGraphDeleteTarget({
+        selectedNodeId,
+        selectedEdgeId,
+        localNodes: nodes,
+        persistedNodeIds: new Set(graphNodeById.keys()),
+      });
+      if (!deleteTarget) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      handleKeyboardDelete();
+    },
+    [
+      graphNodeById,
+      handleKeyboardDelete,
+      nodes,
+      selectedEdgeId,
+      selectedNodeId,
+    ],
+  );
+
   const adjacentNodeIds = useMemo(() => {
     if (!selectedNodeId) return new Set<string>();
     const adjacent = new Set<string>();
@@ -520,6 +734,10 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
     if (!nodeMenu) return;
     const targetNode = graphNodes.find((node) => node.id === nodeMenu.nodeId);
     if (!targetNode) {
+      const draftNode = nodes.find((node) => node.id === nodeMenu.nodeId);
+      if (draftNode?.type === "draft") {
+        removeDraftNode(draftNode.id);
+      }
       setNodeMenu(null);
       return;
     }
@@ -533,23 +751,35 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
     if (!confirmed) return;
     setNodeMenu(null);
     await deleteGraphNode(targetNode.id);
-  }, [deleteGraphNode, dialog, graphNodes, nodeMenu, t]);
+  }, [deleteGraphNode, dialog, graphNodes, nodeMenu, nodes, removeDraftNode, t]);
 
   const isEmpty = graphNodes.length === 0;
 
   return (
-    <div ref={canvasRef} style={{ width: "100%", height: "100%" }} className="bg-app relative">
+    <div
+      ref={canvasRef}
+      tabIndex={0}
+      style={{ width: "100%", height: "100%" }}
+      className="bg-app relative outline-none"
+      onMouseDownCapture={handleCanvasMouseDownCapture}
+      onKeyDownCapture={handleCanvasKeyDownCapture}
+    >
       <ReactFlow
         nodes={styledNodes}
         edges={styledEdges}
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodesDelete={handleNodesDelete}
+        onEdgesDelete={handleEdgesDelete}
+        onSelectionChange={handleSelectionChange}
         nodesDraggable={true}
         nodesConnectable={true}
         elementsSelectable={true}
+        onConnect={handleConnect}
         onNodeClick={onNodeClick}
         onNodeContextMenu={onNodeContextMenu}
+        onNodeDragStop={handleNodeDragStop}
         onEdgeClick={onEdgeClick}
         onPaneClick={onPaneClick}
         onDoubleClick={onFlowDoubleClick}
@@ -567,7 +797,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         selectionOnDrag={true}
         panOnDrag={[1, 2]}
         selectionMode={SelectionMode.Partial}
-        deleteKeyCode={["Backspace", "Delete"]}
+        deleteKeyCode={null}
         className="react-flow-premium"
         proOptions={{ hideAttribution: true }}
       >
@@ -594,6 +824,9 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
             background: "rgba(13,13,15,0.80)",
           }}
         />
+        <Panel position="top-right" className="m-4">
+          <WorldGraphFloatingToolbar />
+        </Panel>
       </ReactFlow>
 
       {isEmpty && !createMenu && (
@@ -662,22 +895,6 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
           }}
         />
       )}
-
-      {/* Canvas Navbar (Obsidian style) */}
-      <WorldGraphNavbar
-        onSpawnDraft={(type) => {
-          if (!rfInstance) return;
-          const canvasEl = canvasRef.current;
-          const cx = canvasEl ? canvasEl.clientWidth / 2 : window.innerWidth / 2;
-          const cy = canvasEl ? canvasEl.clientHeight / 2 : window.innerHeight / 2;
-          const center = rfInstance.screenToFlowPosition({ x: cx, y: cy });
-          spawnDraftNode(center.x, center.y, type);
-        }}
-        onCreateEntity={(entityType) => { void handleCreateEntityAtCenter(entityType); }}
-        onFitView={() => rfInstance?.fitView({ duration: 450, padding: 0.15 })}
-        onZoomIn={() => rfInstance?.zoomIn({ duration: 200 })}
-        onZoomOut={() => rfInstance?.zoomOut({ duration: 200 })}
-      />
     </div>
   );
 }

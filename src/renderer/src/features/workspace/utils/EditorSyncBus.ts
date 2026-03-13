@@ -1,8 +1,11 @@
-type AppEventType = "FOCUS_ENTITY" | "JUMP_TO_MENTION";
+import type { WorldEntitySourceType } from "@shared/types";
+
+type AppEventType = "FOCUS_ENTITY" | "JUMP_TO_MENTION" | "SPAWN_GRAPH_DRAFT_NODE";
 
 type EventPayloads = {
     FOCUS_ENTITY: { entityId: string };
     JUMP_TO_MENTION: { entityId: string };
+    SPAWN_GRAPH_DRAFT_NODE: { entityType?: WorldEntitySourceType; position?: { x: number; y: number } };
 };
 
 type EventCallback<T extends AppEventType> = (payload: EventPayloads[T]) => void;

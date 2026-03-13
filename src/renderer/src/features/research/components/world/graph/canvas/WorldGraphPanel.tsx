@@ -24,11 +24,13 @@ import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeSto
 import { WorldGraphCanvas } from "./WorldGraphCanvas";
 import { ActivityBar } from "../ActivityBar";
 import { PrimarySidebar } from "../PrimarySidebar";
-import { NoteMainView } from "../views/NoteMainView";
-import { EntityMainView } from "../views/EntityMainView";
-import { LibraryMainView } from "../views/LibraryMainView";
-import { TimelineMainView } from "../views/TimelineMainView";
+import { EntityInspectorPanel } from "../sidebars/EntityInspectorPanel";
+import { NoteMainView } from "@renderer/features/research/components/world/graph/views/NoteMainView";
+import { EntityMainView } from "@renderer/features/research/components/world/graph/views/EntityMainView";
+import { LibraryMainView } from "@renderer/features/research/components/world/graph/views/LibraryMainView";
+import { TimelineMainView } from "@renderer/features/research/components/world/graph/views/TimelineMainView";
 import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
+import { WorldGraphNavbar } from "../WorldGraphNavbar";
 
 export function WorldGraphPanel() {
   const { t } = useTranslation();
@@ -39,6 +41,8 @@ export function WorldGraphPanel() {
   const isLoading = useWorldBuildingStore((state) => state.isLoading);
   const error = useWorldBuildingStore((state) => state.error);
   const filteredGraph = useFilteredGraph();
+  const selectedNodeId = useWorldBuildingStore((state) => state.selectedNodeId);
+  const selectedEdgeId = useWorldBuildingStore((state) => state.selectedEdgeId);
 
   // IDE Store
   const activeTab = useGraphIdeStore((state) => state.activeTab);
@@ -176,9 +180,27 @@ export function WorldGraphPanel() {
             <div className="flex h-full w-full flex-col">
               <main className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
                 {renderMainViewContent()}
+                <WorldGraphNavbar />
               </main>
             </div>
           </Panel>
+
+          {(selectedNodeId || selectedEdgeId) && (
+            <>
+              <PanelResizeHandle
+                className="relative flex w-px shrink-0 cursor-col-resize items-center justify-center bg-border/20 hover:bg-accent/40 active:bg-accent transition-colors"
+              />
+              <Panel
+                id="world-ide-inspector"
+                defaultSize={toPxSize(300)}
+                minSize={toPxSize(250)}
+                maxSize={toPxSize(500)}
+                className="min-h-0 bg-panel border-l border-border/40"
+              >
+                <EntityInspectorPanel />
+              </Panel>
+            </>
+          )}
         </PanelGroup>
       </div>
     </div>

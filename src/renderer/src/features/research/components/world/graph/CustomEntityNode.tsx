@@ -20,7 +20,7 @@ export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps)
   const {
     label,
     subType,
-    importance = 3,
+    entityType,
     description,
     firstAppearance,
     tags,
@@ -29,93 +29,126 @@ export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps)
   const Icon = WORLD_GRAPH_ICON_MAP[subType] ?? WORLD_GRAPH_ICON_MAP["WorldEntity"];
   const accent = WORLD_GRAPH_MINIMAP_COLORS[subType] ?? "#94a3b8";
 
-  const importanceLevel = Math.max(1, Math.min(5, importance));
   const hasFooter = firstAppearance || (tags && tags.length > 0);
 
-  // styled handle class (colored by entity type)
+  // styled handle class - minimal dots for block look
   const handleCls =
-    "!h-3 !w-3 !rounded-full !border-2 !border-[var(--bg-element,#1a1a1e)] !shadow-sm transition-all opacity-0 group-hover:opacity-100 hover:!scale-125 hover:opacity-100";
+    "!h-2.5 !w-2.5 !rounded-full !border-2 !border-background !bg-muted-foreground/30 !shadow-sm transition-all opacity-0 group-hover:opacity-100 hover:!bg-accent hover:!scale-125";
 
-  return (
-    <div className="group relative">
-      {/* Card */}
-      <div
-        className={cn(
-          "flex w-[220px] flex-col overflow-hidden rounded-xl border bg-element/95 shadow-sm",
-          "cursor-grab active:cursor-grabbing transition-all duration-200",
-          selected
-            ? "shadow-lg"
-            : "border-border/40 hover:border-border/70 hover:shadow-md",
-        )}
-        style={
-          selected
-            ? {
-                borderColor: accent,
-                boxShadow: `0 0 0 2px ${accent}35, 0 8px 24px ${accent}18`,
-              }
-            : undefined
-        }
-      >
-        {/* Accent top strip — entity type color */}
-        <div className="h-[3px] w-full shrink-0" style={{ backgroundColor: accent }} />
-
-        {/* Type header */}
-        <div className="flex items-center gap-1.5 px-3 pt-2 pb-1">
-          <Icon size={11} strokeWidth={2.5} style={{ color: accent }} className="shrink-0" />
-          <span
-            className="text-[9.5px] font-bold tracking-[0.12em] uppercase select-none"
-            style={{ color: accent }}
-          >
-            {subType}
-          </span>
-          {/* Importance indicator */}
-          {importanceLevel >= 5 && (
-            <span className="ml-auto select-none text-[9px] text-yellow-400/90">★★★</span>
-          )}
-          {importanceLevel === 4 && (
-            <span className="ml-auto select-none text-[9px] text-yellow-400/70">★★</span>
-          )}
+  // Character UI: User icon, perhaps a placeholder for portrait, simple stats look
+  const renderCharacter = () => (
+    <div className="flex items-start gap-3 p-3">
+      <div className="mt-0.5 shrink-0 rounded-full h-8 w-8 flex items-center justify-center border border-border/50 shadow-inner overflow-hidden" style={{ backgroundColor: `${accent}15` }}>
+        <Icon size={16} style={{ color: accent }} />
+      </div>
+      <div className="flex flex-col gap-1 min-w-0 flex-1">
+        <span className="text-[13px] font-bold tracking-tight leading-none text-foreground break-words pb-0.5">
+          {label}
+        </span>
+        <div className="flex items-center gap-1.5 opacity-80">
+          <span className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: accent }}>{subType}</span>
+          {tags?.slice(0, 1).map((tag) => (
+            <span key={tag} className="text-[9px] text-muted-foreground">· {tag}</span>
+          ))}
         </div>
+        {description && (
+          <span className="text-[11px] leading-snug text-muted-foreground line-clamp-2 mt-1 border-l-2 pl-2 border-border/60">
+            {description}
+          </span>
+        )}
+      </div>
+    </div>
+  );
 
-        {/* Name + Description */}
-        <div className="px-3 pb-2.5 pt-0.5">
-          <span className="block break-keep text-[13.5px] font-semibold leading-snug text-fg">
+  // Event UI: Date focus, timeline aesthetic
+  const renderEvent = () => (
+    <div className="flex flex-col p-3 gap-2">
+      <div className="flex justify-between items-start gap-2">
+        <span className="text-[13px] font-semibold leading-tight text-foreground break-words flex-1">
+          {label}
+        </span>
+        <div className="shrink-0 rounded px-1.5 py-0.5 pb-px border border-border/40" style={{ backgroundColor: `${accent}10`, color: accent }}>
+          <span className="text-[9px] font-bold uppercase tracking-widest">{subType}</span>
+        </div>
+      </div>
+      {firstAppearance && (
+        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/80 font-medium">
+          <Icon size={12} />
+          <span>{firstAppearance}</span>
+        </div>
+      )}
+      {description && (
+        <span className="text-[11px] leading-snug text-muted-foreground line-clamp-2 mt-0.5">
+          {description}
+        </span>
+      )}
+    </div>
+  );
+
+  // Concept/Place/Default UI: Hierarchical or academic look
+  const renderDefault = () => (
+    <div className="flex items-start gap-2.5 p-3">
+      <div className="mt-0.5 shrink-0">
+        <Icon size={14} style={{ color: accent }} />
+      </div>
+      <div className="flex flex-col gap-1 min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] font-medium leading-none text-foreground break-words">
             {label}
           </span>
-          {description && (
-            <span className="mt-1 block line-clamp-2 text-[11px] leading-relaxed text-muted-foreground/65">
-              {description}
-            </span>
-          )}
+          <span className="text-[8px] font-mono border rounded px-1 bg-muted/40 text-muted-foreground opacity-70 uppercase">
+            {subType}
+          </span>
         </div>
-
-        {/* Footer: firstAppearance + tags */}
+        {description && (
+          <span className="text-[11px] leading-snug text-muted-foreground line-clamp-2 mt-1">
+            {description}
+          </span>
+        )}
+        
         {hasFooter && (
-          <div className="flex items-center gap-2 border-t border-border/20 px-3 py-1.5">
-            {firstAppearance && (
-              <span className="truncate text-[10px] text-muted-foreground/50">
-                {firstAppearance}
-              </span>
-            )}
-            {tags?.slice(0, 2).map((tag) => (
+          <div className="mt-1.5 flex flex-wrap items-center gap-1">
+            {tags?.slice(0, 3).map((tag) => (
               <span
                 key={tag}
-                className="shrink-0 rounded-full border border-border/30 bg-app/40 px-1.5 py-px text-[9px] text-muted-foreground/55"
+                className="rounded bg-background border border-border/40 px-1 py-0.5 text-[9px] font-medium text-muted-foreground/80"
               >
-                {tag}
+                #{tag}
               </span>
             ))}
           </div>
         )}
       </div>
+    </div>
+  );
 
-      {/* Handles — all colored by entity type */}
+  const renderContent = () => {
+    switch (entityType) {
+      case "Character": return renderCharacter();
+      case "Event": return renderEvent();
+      default: return renderDefault();
+    }
+  };
+
+  return (
+    <div className="group relative">
+      <div
+        className={cn(
+          "flex min-w-[170px] max-w-[280px] flex-col overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition-all duration-200",
+          selected
+            ? "border-accent ring-1 ring-accent/20 shadow-md"
+            : "border-border hover:border-border-hover/80 hover:shadow-md"
+        )}
+        style={selected ? { borderColor: accent, boxShadow: `0 0 0 1px ${accent}30, 0 4px 12px ${accent}10` } : {}}
+      >
+        {renderContent()}
+      </div>
+
       <Handle
         type="target"
         position={Position.Top}
         id="top"
         className={handleCls}
-        style={{ background: accent }}
         isConnectable
       />
       <Handle
@@ -123,7 +156,6 @@ export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps)
         position={Position.Bottom}
         id="bottom"
         className={handleCls}
-        style={{ background: accent }}
         isConnectable
       />
       <Handle
@@ -131,7 +163,6 @@ export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps)
         position={Position.Left}
         id="left"
         className={handleCls}
-        style={{ background: accent }}
         isConnectable
       />
       <Handle
@@ -139,7 +170,6 @@ export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps)
         position={Position.Right}
         id="right"
         className={handleCls}
-        style={{ background: accent }}
         isConnectable
       />
     </div>

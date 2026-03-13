@@ -3,19 +3,37 @@ import { Handle, Position } from "reactflow";
 import { useTranslation } from "react-i18next";
 import { cn } from "@renderer/lib/utils";
 import { Sparkles } from "lucide-react";
+import { WORLD_ENTITY_TYPES } from "@shared/constants/world";
+import type { WorldEntitySourceType } from "@shared/types";
+
+type DraftEntityType = (typeof WORLD_ENTITY_TYPES)[number];
 
 export type DraftBlockNodeProps = {
   data: {
-    onConvert: (id: string, text: string) => void;
+    onConvert: (
+      id: string,
+      payload: {
+        text: string;
+        entityType: DraftEntityType;
+      },
+    ) => void;
     id: string;
     initialValue?: string;
+    initialEntityType?: DraftEntityType;
   };
   selected?: boolean;
 };
 
 export const DraftBlockNode = memo(({ data, selected }: DraftBlockNodeProps) => {
-  const { onConvert, id, initialValue = "" } = data;
+  const {
+    onConvert,
+    id,
+    initialValue = "",
+    initialEntityType = "Concept",
+  } = data;
   const [text, setText] = useState(initialValue);
+  const [entityType, setEntityType] = useState<DraftEntityType>(initialEntityType);
+  const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const isConverting = useRef(false);
   const { t } = useTranslation();
@@ -31,16 +49,11 @@ export const DraftBlockNode = memo(({ data, selected }: DraftBlockNodeProps) => 
   const handleConvert = () => {
     if (isConverting.current) return;
     const trimmed = text.trim();
-    if (trimmed) {
-      isConverting.current = true;
-      onConvert(id, trimmed);
-    } else {
-      // If empty and blurred, maybe we just want to remove it?
-      // but without text, onConvert handles empty text by removing node if we pass it, 
-      // but let's pass it empty anyway to let canvas remove it.
-      isConverting.current = true;
-      onConvert(id, "");
-    }
+    isConverting.current = true;
+    onConvert(id, {
+      text: trimmed,
+      entityType,
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -51,32 +64,61 @@ export const DraftBlockNode = memo(({ data, selected }: DraftBlockNodeProps) => 
     }
   };
 
-  const handleBlur = () => {
+  const isFocusMovingInsideBlock = (nextTarget: EventTarget | null) => {
+    return nextTarget instanceof Node && Boolean(rootRef.current?.contains(nextTarget));
+  };
+
+  const handleTextareaBlur = (event: React.FocusEvent<HTMLTextAreaElement>) => {
+    if (isFocusMovingInsideBlock(event.relatedTarget)) {
+      return;
+    }
+    handleConvert();
+  };
+
+  const handleTypeBlur = (event: React.FocusEvent<HTMLSelectElement>) => {
+    if (isFocusMovingInsideBlock(event.relatedTarget)) {
+      return;
+    }
     handleConvert();
   };
 
   return (
-    <div className="group relative min-w-[240px]">
+    <div ref={rootRef} className="group relative min-w-[160px] max-w-[280px]">
       <div
         className={cn(
-          "flex flex-col bg-surface border rounded-[10px] overflow-hidden shadow-sm transition-all duration-200",
-          selected ? "border-accent ring-1 ring-accent/20" : "border-border hover:border-border-hover/80"
+          "flex flex-col bg-card text-card-foreground border rounded-lg overflow-hidden shadow-sm transition-all duration-200",
+          selected ? "border-accent ring-1 ring-accent/20 shadow-md" : "border-border hover:border-border-hover/80"
         )}
       >
-        <div className="px-3 py-2 bg-surface">
+        <div className="px-3 py-2 bg-transparent">
           <textarea
             ref={inputRef}
-            className="w-full bg-transparent border-none outline-none resize-none text-[13px] text-foreground placeholder:text-muted-foreground/50 leading-relaxed min-h-[40px]"
-            placeholder={t("world.graph.ide.draftPlaceholder", "캐릭터, 장소 등을 입력하세요...")}
+            className="w-full bg-transparent border-none outline-none resize-none text-[13px] font-medium text-foreground placeholder:text-muted-foreground/50 leading-snug min-h-[40px]"
+            placeholder={t("world.graph.ide.draftPlaceholder", "블록 제목 입력...")}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            onBlur={handleBlur}
+            onBlur={handleTextareaBlur}
           />
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/20 border-t border-border/50 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/30 border-t border-border/50 text-[10px] text-muted-foreground">
           <Sparkles className="w-3 h-3 text-accent" />
-          <span>Enter를 누르면 자동으로 엔티티가 파악되어 생성됩니다.</span>
+          <select
+            value={entityType}
+            onChange={(event) =>
+              setEntityType(event.target.value as WorldEntitySourceType as DraftEntityType)
+            }
+            onMouseDown={(event) => event.stopPropagation()}
+            onBlur={handleTypeBlur}
+            className="h-6 min-w-0 flex-1 rounded border border-border/50 bg-background/80 px-2 text-[10px] text-foreground outline-none"
+          >
+            {WORLD_ENTITY_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {t(`world.graph.entityTypes.${type}`, { defaultValue: type })}
+              </option>
+            ))}
+          </select>
+          <span className="shrink-0">Enter</span>
         </div>
       </div>
       <Handle type="target" position={Position.Top} className="opacity-0 pointer-events-none" />

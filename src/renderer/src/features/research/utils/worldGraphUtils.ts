@@ -152,7 +152,7 @@ export function toRFEdge(
     target: relation.targetId,
     sourceHandle,
     targetHandle,
-    type: "smoothstep",
+    type: "default", // default is bezier
     label: translate(`world.graph.relationTypes.${relation.relation}`, relation.relation),
     labelStyle: { fontSize: 10, fill: color, fontWeight: 600 },
     labelBgStyle: { fill: "var(--bg-app, #0d0d0f)", fillOpacity: 0.85, rx: 4 },

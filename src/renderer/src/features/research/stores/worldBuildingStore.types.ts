@@ -82,6 +82,9 @@ export interface WorldBuildingState {
 
   createGraphNode: (input: CreateGraphNodeInput) => Promise<WorldGraphNode | null>;
   updateGraphNode: (input: UpdateGraphNodeInput) => Promise<void>;
+  updateGraphNodePosition: (
+    input: WorldEntityUpdatePositionInput,
+  ) => Promise<void>;
   updateWorldEntityPosition: (input: WorldEntityUpdatePositionInput) => Promise<void>;
   deleteGraphNode: (id: string) => Promise<void>;
   createWorldEntity: (input: WorldEntityCreateInput) => Promise<WorldGraphNode | null>;
