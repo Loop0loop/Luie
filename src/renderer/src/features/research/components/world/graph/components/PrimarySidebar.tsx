@@ -1,11 +1,11 @@
 import { useTranslation } from "react-i18next";
 import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 import { ScrollArea } from "@renderer/components/ui/scroll-area";
-import { GraphSidebarContent } from "./sidebars/GraphSidebarContent";
-import { TimelineSidebarContent } from "./sidebars/TimelineSidebarContent";
-import { NoteSidebarContent } from "./sidebars/NoteSidebarContent";
-import { EntitySidebarContent } from "./sidebars/EntitySidebarContent";
-import { LibrarySidebarContent } from "./sidebars/LibrarySidebarContent";
+import { GraphSidebarContent } from "../sidebars/GraphSidebarContent";
+import { TimelineSidebarContent } from "../sidebars/TimelineSidebarContent";
+import { NoteSidebarContent } from "../sidebars/NoteSidebarContent";
+import { EntitySidebarContent } from "../sidebars/EntitySidebarContent";
+import { LibrarySidebarContent } from "../sidebars/LibrarySidebarContent";
 
 const TAB_META = {
   graph: {

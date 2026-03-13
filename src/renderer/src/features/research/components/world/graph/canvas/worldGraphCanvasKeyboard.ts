@@ -6,10 +6,15 @@ export type WorldGraphDeleteTarget =
   | { kind: "edge"; id: string };
 
 type ResolveWorldGraphDeleteTargetInput = {
-  selectedNodeId: string | null;
-  selectedEdgeId: string | null;
+  selectedNodeIds: string[];
+  selectedEdgeIds: string[];
   localNodes: Node[];
   persistedNodeIds: Set<string>;
+};
+
+export type WorldGraphSelectionSnapshot = {
+  selectedNodeIds: string[];
+  selectedEdgeIds: string[];
 };
 
 export function isEditableWorldGraphTarget(target: EventTarget | null): boolean {
@@ -43,12 +48,12 @@ export function isEditableWorldGraphTarget(target: EventTarget | null): boolean 
 }
 
 export function resolveWorldGraphDeleteTarget({
-  selectedNodeId,
-  selectedEdgeId,
+  selectedNodeIds,
+  selectedEdgeIds,
   localNodes,
   persistedNodeIds,
 }: ResolveWorldGraphDeleteTargetInput): WorldGraphDeleteTarget | null {
-  if (selectedNodeId) {
+  for (const selectedNodeId of selectedNodeIds) {
     const selectedDraftNode = localNodes.find(
       (node) => node.id === selectedNodeId && node.type === "draft",
     );
@@ -61,9 +66,37 @@ export function resolveWorldGraphDeleteTarget({
     }
   }
 
+  const selectedEdgeId = selectedEdgeIds[0];
   if (selectedEdgeId) {
     return { kind: "edge", id: selectedEdgeId };
   }
 
   return null;
+}
+
+export function collectWorldGraphSelectionSnapshot(input: {
+  localNodes: Node[];
+  localEdges: Array<{ id: string; selected?: boolean | null }>;
+  selectedNodeId: string | null;
+  selectedEdgeId: string | null;
+}): WorldGraphSelectionSnapshot {
+  const selectedNodeIds = input.localNodes
+    .filter((node) => Boolean(node.selected))
+    .map((node) => node.id);
+  const selectedEdgeIds = input.localEdges
+    .filter((edge) => Boolean(edge.selected))
+    .map((edge) => edge.id);
+
+  if (selectedNodeIds.length === 0 && input.selectedNodeId) {
+    selectedNodeIds.push(input.selectedNodeId);
+  }
+
+  if (selectedEdgeIds.length === 0 && input.selectedEdgeId) {
+    selectedEdgeIds.push(input.selectedEdgeId);
+  }
+
+  return {
+    selectedNodeIds,
+    selectedEdgeIds,
+  };
 }

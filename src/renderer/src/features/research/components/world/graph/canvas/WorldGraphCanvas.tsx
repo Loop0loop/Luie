@@ -34,18 +34,21 @@ import {
   WORLD_GRAPH_NODE_MENU_WIDTH_PX,
 } from "@shared/constants/worldGraphUI";
 import { parseEntityDraftText } from "@renderer/features/research/utils/entityDraftUtils";
-import { CustomEntityNode } from "../CustomEntityNode";
-import { DraftBlockNode } from "../DraftBlockNode";
+import { CustomEntityNode } from "../components/CustomEntityNode";
+import { DraftBlockNode } from "../components/DraftBlockNode";
 import { useWorldGraphLayout } from "@renderer/features/research/hooks/useWorldGraphLayout";
 import { EditorSyncBus } from "@renderer/features/workspace/utils/EditorSyncBus";
 import { getMenuPosition, toRFNode, toRFEdge } from "@renderer/features/research/utils/worldGraphUtils";
-import { WorldGraphCreateMenu } from "../WorldGraphCreateMenu";
+import { WorldGraphCreateMenu } from "../components/WorldGraphCreateMenu";
 import { WorldGraphNodeMenu } from "./WorldGraphNodeMenu";
 import { WorldGraphFloatingToolbar } from "./WorldGraphFloatingToolbar";
 import { Panel } from "reactflow";
-import { CustomEdge } from "../CustomEdge";
+import { CustomEdge } from "../components/CustomEdge";
+import { useSmartSnap } from "../hooks/useSmartSnap";
+import { SmartSnapLines } from "../components/SmartSnapLines";
 import { CanvasCommandPalette, type PaletteMode } from "./CanvasCommandPalette";
 import {
+  collectWorldGraphSelectionSnapshot,
   isEditableWorldGraphTarget,
   resolveWorldGraphDeleteTarget,
 } from "./worldGraphCanvasKeyboard";
@@ -157,6 +160,9 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
 
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutedEdges);
+
+  // Hook up Smart Snapping
+  const { snapLines, handleNodeDrag: onSmartNodeDrag, handleNodeDragStop: onSmartNodeDragStop } = useSmartSnap(nodes);
 
   const removeDraftNode = useCallback(
     (nodeId: string) => {
@@ -581,6 +587,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
 
   const handleNodeDragStop: NodeDragHandler = useCallback(
     (_, node) => {
+      onSmartNodeDragStop();
       if (node.type === "draft") {
         return;
       }
@@ -637,44 +644,78 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
     [deleteRelation],
   );
 
-  const handleKeyboardDelete = useCallback(() => {
-    const deleteTarget = resolveWorldGraphDeleteTarget({
+  const handleDeleteSelection = useCallback(async () => {
+    const selection = collectWorldGraphSelectionSnapshot({
+      localNodes: nodes,
+      localEdges: edges,
       selectedNodeId,
       selectedEdgeId,
-      localNodes: nodes,
-      persistedNodeIds: new Set(graphNodeById.keys()),
     });
 
-    if (!deleteTarget) {
-      selectNode(null);
-      selectEdge(null);
+    const selectedDraftNodes = nodes.filter(
+      (node) =>
+        node.type === "draft" && selection.selectedNodeIds.includes(node.id),
+    );
+    const selectedGraphNodes = graphNodes.filter((node) =>
+      selection.selectedNodeIds.includes(node.id),
+    );
+    const selectedRelations = graphEdges.filter((edge) =>
+      selection.selectedEdgeIds.includes(edge.id),
+    );
+
+    const entityCount = selectedDraftNodes.length + selectedGraphNodes.length;
+    const relationCount = selectedRelations.length;
+
+    if (entityCount === 0 && relationCount === 0) {
+      return;
+    }
+
+    const confirmed = await dialog.confirm({
+      title: t("world.graph.canvas.deleteNode"),
+      message:
+        entityCount > 0
+          ? t("world.graph.canvas.deleteEntityConfirm", {
+              name:
+                entityCount === 1
+                  ? selectedGraphNodes[0]?.name ??
+                    t("world.graph.canvas.entityFallbackName", "선택한 엔티티")
+                  : t("world.graph.canvas.multipleEntities", {
+                      defaultValue: `${entityCount}개 엔티티`,
+                    }),
+            })
+          : t("world.graph.canvas.deleteRelationConfirm", {
+              defaultValue: `${relationCount}개 연결을 삭제할까요?`,
+            }),
+      isDestructive: true,
+    });
+    if (!confirmed) {
       return;
     }
 
     setCreateMenu(null);
     setNodeMenu(null);
 
-    if (deleteTarget.kind === "draft-node") {
-      removeDraftNode(deleteTarget.id);
-      return;
-    }
-
-    if (deleteTarget.kind === "graph-node") {
-      void deleteGraphNode(deleteTarget.id);
-      return;
-    }
-
-    void deleteRelation(deleteTarget.id);
+    selectedDraftNodes.forEach((draftNode) => {
+      removeDraftNode(draftNode.id);
+    });
+    await Promise.all(
+      selectedGraphNodes.map(async (graphNode) => deleteGraphNode(graphNode.id)),
+    );
+    await Promise.all(
+      selectedRelations.map(async (edge) => deleteRelation(edge.id)),
+    );
   }, [
     deleteGraphNode,
     deleteRelation,
-    graphNodeById,
+    dialog,
+    edges,
+    graphEdges,
+    graphNodes,
     nodes,
     removeDraftNode,
-    selectEdge,
-    selectNode,
     selectedEdgeId,
     selectedNodeId,
+    t,
   ]);
 
   const handleCanvasMouseDownCapture = useCallback(
@@ -689,6 +730,32 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
 
   const handleCanvasKeyDownCapture = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "a") {
+        if (isEditableWorldGraphTarget(event.target)) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        setNodes((currentNodes) =>
+          currentNodes.map((node) => ({
+            ...node,
+            selected: true,
+          })),
+        );
+        setEdges((currentEdges) =>
+          currentEdges.map((edge) => ({
+            ...edge,
+            selected: false,
+          })),
+        );
+
+        selectEdge(null);
+        selectNode(nodes[0]?.id ?? null);
+        return;
+      }
+
       if (event.key !== "Backspace" && event.key !== "Delete") {
         return;
       }
@@ -701,9 +768,15 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         return;
       }
 
-      const deleteTarget = resolveWorldGraphDeleteTarget({
+      const selection = collectWorldGraphSelectionSnapshot({
+        localNodes: nodes,
+        localEdges: edges,
         selectedNodeId,
         selectedEdgeId,
+      });
+      const deleteTarget = resolveWorldGraphDeleteTarget({
+        selectedNodeIds: selection.selectedNodeIds,
+        selectedEdgeIds: selection.selectedEdgeIds,
         localNodes: nodes,
         persistedNodeIds: new Set(graphNodeById.keys()),
       });
@@ -713,12 +786,17 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
 
       event.preventDefault();
       event.stopPropagation();
-      handleKeyboardDelete();
+      void handleDeleteSelection();
     },
     [
+      edges,
       graphNodeById,
-      handleKeyboardDelete,
+      handleDeleteSelection,
       nodes,
+      selectEdge,
+      selectNode,
+      setEdges,
+      setNodes,
       selectedEdgeId,
       selectedNodeId,
     ],
@@ -829,6 +907,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         onConnect={handleConnect}
         onNodeClick={onNodeClick}
         onNodeContextMenu={onNodeContextMenu}
+        onNodeDrag={onSmartNodeDrag}
         onNodeDragStop={handleNodeDragStop}
         onEdgeClick={onEdgeClick}
         onPaneClick={onPaneClick}
@@ -847,6 +926,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         selectionOnDrag={true}
         panOnDrag={[1, 2]}
         selectionMode={SelectionMode.Partial}
+        multiSelectionKeyCode={["Meta", "Control"]}
         deleteKeyCode={null}
         className="react-flow-premium"
         proOptions={{ hideAttribution: true }}
@@ -877,6 +957,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         <Panel position="top-right" className="m-4">
           <WorldGraphFloatingToolbar />
         </Panel>
+        <SmartSnapLines lines={snapLines} />
         {paletteMode && <CanvasCommandPalette mode={paletteMode} onClose={() => setPaletteMode(null)} />}
       </ReactFlow>
 

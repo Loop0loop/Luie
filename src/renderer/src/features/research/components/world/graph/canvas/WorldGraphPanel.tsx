@@ -22,15 +22,15 @@ import {
 } from "@renderer/features/research/stores/worldBuildingStore";
 import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 import { WorldGraphCanvas } from "./WorldGraphCanvas";
-import { ActivityBar } from "../ActivityBar";
-import { PrimarySidebar } from "../PrimarySidebar";
+import { ActivityBar } from "../components/ActivityBar";
+import { PrimarySidebar } from "../components/PrimarySidebar";
 import { EntityInspectorPanel } from "../sidebars/EntityInspectorPanel";
 import { NoteMainView } from "@renderer/features/research/components/world/graph/views/NoteMainView";
 import { EntityMainView } from "@renderer/features/research/components/world/graph/views/EntityMainView";
 import { LibraryMainView } from "@renderer/features/research/components/world/graph/views/LibraryMainView";
 import { TimelineMainView } from "@renderer/features/research/components/world/graph/views/TimelineMainView";
 import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
-import { WorldGraphNavbar } from "../WorldGraphNavbar";
+import { WorldGraphNavbar } from "../components/WorldGraphNavbar";
 
 export function WorldGraphPanel() {
   const { t } = useTranslation();

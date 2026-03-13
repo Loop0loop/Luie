@@ -3,6 +3,7 @@
 import type { Node } from "reactflow";
 import { describe, expect, it } from "vitest";
 import {
+  collectWorldGraphSelectionSnapshot,
   isEditableWorldGraphTarget,
   resolveWorldGraphDeleteTarget,
 } from "../../src/renderer/src/features/research/components/world/graph/canvas/worldGraphCanvasKeyboard.js";
@@ -34,8 +35,8 @@ describe("worldGraphCanvasKeyboard", () => {
 
     expect(
       resolveWorldGraphDeleteTarget({
-        selectedNodeId: "draft-1",
-        selectedEdgeId: "edge-1",
+        selectedNodeIds: ["draft-1"],
+        selectedEdgeIds: ["edge-1"],
         localNodes,
         persistedNodeIds: new Set(["node-1"]),
       }),
@@ -48,8 +49,8 @@ describe("worldGraphCanvasKeyboard", () => {
   it("falls back to persisted nodes and then edges", () => {
     expect(
       resolveWorldGraphDeleteTarget({
-        selectedNodeId: "node-1",
-        selectedEdgeId: "edge-1",
+        selectedNodeIds: ["node-1"],
+        selectedEdgeIds: ["edge-1"],
         localNodes: [],
         persistedNodeIds: new Set(["node-1"]),
       }),
@@ -60,14 +61,48 @@ describe("worldGraphCanvasKeyboard", () => {
 
     expect(
       resolveWorldGraphDeleteTarget({
-        selectedNodeId: null,
-        selectedEdgeId: "edge-1",
+        selectedNodeIds: [],
+        selectedEdgeIds: ["edge-1"],
         localNodes: [],
         persistedNodeIds: new Set(["node-1"]),
       }),
     ).toEqual({
       kind: "edge",
       id: "edge-1",
+    });
+  });
+
+  it("collects selected nodes and edges from local React Flow state", () => {
+    const localNodes = [
+      {
+        id: "node-1",
+        type: "custom",
+        selected: true,
+        position: { x: 0, y: 0 },
+        data: {},
+      },
+      {
+        id: "draft-1",
+        type: "draft",
+        selected: true,
+        position: { x: 40, y: 20 },
+        data: {},
+      },
+    ] satisfies Node[];
+
+    expect(
+      collectWorldGraphSelectionSnapshot({
+        localNodes,
+        localEdges: [
+          { id: "edge-1", selected: true },
+          { id: "edge-2", selected: false },
+        ],
+        selectedNodeId: null,
+        selectedEdgeId: null,
+      }),
+    ).toEqual({
+      selectedNodeIds: ["node-1", "draft-1"],
+      selectedEdgeIds: ["edge-1"],
     });
   });
 });
