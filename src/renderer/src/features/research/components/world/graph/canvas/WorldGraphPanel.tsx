@@ -24,7 +24,6 @@ import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeSto
 import { WorldGraphCanvas } from "./WorldGraphCanvas";
 import { ActivityBar } from "../components/ActivityBar";
 import { PrimarySidebar } from "../components/PrimarySidebar";
-import { EntityInspectorPanel } from "../sidebars/EntityInspectorPanel";
 import { NoteMainView } from "@renderer/features/research/components/world/graph/views/NoteMainView";
 import { EntityMainView } from "@renderer/features/research/components/world/graph/views/EntityMainView";
 import { LibraryMainView } from "@renderer/features/research/components/world/graph/views/LibraryMainView";
@@ -41,8 +40,6 @@ export function WorldGraphPanel() {
   const isLoading = useWorldBuildingStore((state) => state.isLoading);
   const error = useWorldBuildingStore((state) => state.error);
   const filteredGraph = useFilteredGraph();
-  const selectedNodeId = useWorldBuildingStore((state) => state.selectedNodeId);
-  const selectedEdgeId = useWorldBuildingStore((state) => state.selectedEdgeId);
 
   // IDE Store
   const activeTab = useGraphIdeStore((state) => state.activeTab);
@@ -184,23 +181,6 @@ export function WorldGraphPanel() {
               </main>
             </div>
           </Panel>
-
-          {(selectedNodeId || selectedEdgeId) && (
-            <>
-              <PanelResizeHandle
-                className="relative flex w-px shrink-0 cursor-col-resize items-center justify-center bg-border/20 hover:bg-accent/40 active:bg-accent transition-colors"
-              />
-              <Panel
-                id="world-ide-inspector"
-                defaultSize={toPxSize(300)}
-                minSize={toPxSize(250)}
-                maxSize={toPxSize(500)}
-                className="min-h-0 bg-panel border-l border-border/40"
-              >
-                <EntityInspectorPanel />
-              </Panel>
-            </>
-          )}
         </PanelGroup>
       </div>
     </div>

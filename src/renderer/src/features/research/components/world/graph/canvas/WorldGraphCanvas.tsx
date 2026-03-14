@@ -6,7 +6,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   type Connection,
-  MiniMap,
   type EdgeMouseHandler,
   type Node,
   type NodeDragHandler,
@@ -489,19 +488,6 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         proOptions={{ hideAttribution: true }}
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#64748B" className="opacity-[0.18]" />
-        <MiniMap
-          nodeColor={(node) => WORLD_GRAPH_MINIMAP_COLORS[(node.data?.subType ?? node.data?.entityType ?? "WorldEntity") as string] ?? "#94a3b8"}
-          maskColor="rgba(0,0,0,0.25)"
-          style={{
-            bottom: 88,
-            right: 16,
-            width: 140,
-            height: 90,
-            borderRadius: 10,
-            border: "1px solid rgba(255,255,255,0.08)",
-            background: "rgba(13,13,15,0.80)",
-          }}
-        />
         <Panel position="top-right" className="m-4">
           <WorldGraphFloatingToolbar />
         </Panel>

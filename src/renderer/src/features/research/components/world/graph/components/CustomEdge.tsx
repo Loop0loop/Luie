@@ -38,6 +38,8 @@ export const CustomEdge = memo(({
   const updateRelation = useWorldBuildingStore((state) => state.updateRelation);
   const deleteRelation = useWorldBuildingStore((state) => state.deleteRelation);
   const selectEdge = useWorldBuildingStore((state) => state.selectEdge);
+  const selectedEdgeId = useWorldBuildingStore((state) => state.selectedEdgeId);
+  const isSelected = selected || selectedEdgeId === id;
 
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -92,7 +94,7 @@ export const CustomEdge = memo(({
   const edgeStyle = {
     ...style,
     stroke: customColor,
-    strokeWidth: selected ? 3 : 2,
+    strokeWidth: isSelected ? 3 : 2,
     opacity: 1, // disabled dimming for unselected
     transition: 'all 0.2s ease',
   };
@@ -128,11 +130,11 @@ export const CustomEdge = memo(({
         setIsColorPickerOpen(false);
       }
     };
-    if (isColorPickerOpen || selected) {
+    if (isColorPickerOpen || isSelected) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isColorPickerOpen, selected, isEditing]);
+  }, [isColorPickerOpen, isSelected, isEditing]);
 
   // Auto focus input
   useEffect(() => {
@@ -168,7 +170,7 @@ export const CustomEdge = memo(({
           className="absolute pointer-events-auto flex justify-center items-center"
           style={{
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-            zIndex: selected ? 50 : 10,
+            zIndex: isSelected ? 50 : 10,
           }}
           onDoubleClick={onEdgeDoubleClick}
           onClick={(e) => { 
@@ -199,7 +201,7 @@ export const CustomEdge = memo(({
             <div
               className={cn(
                 "rounded-md text-[10px] font-semibold transition-all px-2 py-1 shadow-sm border cursor-pointer max-w-[150px] text-center wrap-break-word",
-                selected ? "ring-2 ring-accent/40 shadow-md border-border/50 bg-background/95" : "border-transparent bg-[var(--bg-app)]/80 hover:bg-background"
+                isSelected ? "ring-2 ring-accent/40 shadow-md border-border/50 bg-background/95" : "border-transparent bg-[var(--bg-app)]/80 hover:bg-background"
               )}
               style={{
                 color: customColor,
@@ -210,7 +212,7 @@ export const CustomEdge = memo(({
           )}
         </div>
 
-        {selected && selectedEdge && !isEditing && (
+        {isSelected && selectedEdge && !isEditing && (
           <div
             className="absolute z-50 flex items-center justify-center gap-1 rounded-full border border-border/60 bg-popover/95 p-1.5 text-popover-foreground shadow-xl backdrop-blur-md animate-in! !fade-in !zoom-in-95 pointer-events-auto"
             style={{
