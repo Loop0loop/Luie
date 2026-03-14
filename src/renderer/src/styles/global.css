@@ -484,3 +484,11 @@ button {
   background: var(--border-active);
   border-radius: 3px;
 }
+
+/* Force no dimming on unselected nodes and edges to improve visibility during drag selection */
+.react-flow__node {
+  opacity: 1 !important;
+}
+.react-flow__edge {
+  opacity: 1 !important;
+}

@@ -11,8 +11,10 @@ import type {
   TermUpdateInput,
   TermAppearanceInput,
 } from "../../../shared/types/index.js";
+import { rebuildProjectKeywordAppearances } from "../core/chapterKeywords.js";
 import { projectService } from "../core/projectService.js";
 import { ServiceError } from "../../utils/serviceError.js";
+import { appearanceCacheService } from "./appearanceCacheService.js";
 
 const logger = createLogger("TermService");
 
@@ -42,7 +44,14 @@ export class TermService {
       });
 
       logger.info("Term created successfully", { termId: term.id });
-      projectService.schedulePackageExport(input.projectId, "term:create");
+      await rebuildProjectKeywordAppearances(input.projectId, {
+        includeCharacters: false,
+        includeTerms: true,
+      });
+      await projectService.ensureImmediatePackageExport(
+        input.projectId,
+        "term:create",
+      );
       return term;
     } catch (error) {
       logger.error("Failed to create term", error);
@@ -59,18 +68,17 @@ export class TermService {
     try {
       const term = await db.getClient().term.findUnique({
         where: { id },
-        include: {
-          appearances: {
-            orderBy: { createdAt: "asc" },
-          },
-        },
       });
 
       if (!term) {
         throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", { id });
       }
 
-      return term;
+      const appearances = await appearanceCacheService.getTermAppearancesByEntity(id);
+      return {
+        ...term,
+        appearances,
+      };
     } catch (error) {
       logger.error("Failed to get term", error);
       throw error;
@@ -113,7 +121,16 @@ export class TermService {
       });
 
       logger.info("Term updated successfully", { termId: term.id });
-      projectService.schedulePackageExport(String(term.projectId), "term:update");
+      if (input.term !== undefined) {
+        await rebuildProjectKeywordAppearances(String(term.projectId), {
+          includeCharacters: false,
+          includeTerms: true,
+        });
+      }
+      await projectService.ensureImmediatePackageExport(
+        String(term.projectId),
+        "term:update",
+      );
       return term;
     } catch (error) {
       logger.error("Failed to update term", error);
@@ -154,10 +171,14 @@ export class TermService {
         }
         await tx.term.deleteMany({ where: { id } });
       });
+      await appearanceCacheService.clearTermEntity(id);
 
       logger.info("Term deleted successfully", { termId: id });
       if (projectId) {
-        projectService.schedulePackageExport(projectId, "term:delete");
+        await projectService.ensureImmediatePackageExport(
+          projectId,
+          "term:delete",
+        );
       }
       return { success: true };
     } catch (error) {
@@ -173,14 +194,7 @@ export class TermService {
 
   async recordAppearance(input: TermAppearanceInput) {
     try {
-      const appearance = await db.getClient().termAppearance.create({
-        data: {
-          termId: input.termId,
-          chapterId: input.chapterId,
-          position: input.position,
-          context: input.context,
-        },
-      });
+      const appearance = await appearanceCacheService.recordTermAppearance(input);
 
       logger.info("Term appearance recorded", {
         termId: input.termId,
@@ -201,15 +215,19 @@ export class TermService {
 
   async getAppearancesByChapter(chapterId: string) {
     try {
-      const appearances = await db.getClient().termAppearance.findMany({
-        where: { chapterId },
-        include: {
-          term: true,
-        },
-        orderBy: { position: "asc" },
+      const appearances = await appearanceCacheService.getTermAppearancesByChapter(
+        chapterId,
+      );
+      const termIds = Array.from(new Set(appearances.map((appearance) => appearance.termId)));
+      const terms = await db.getClient().term.findMany({
+        where: { id: { in: termIds } },
       });
+      const termById = new Map(terms.map((term) => [String(term.id), term]));
 
-      return appearances;
+      return appearances.map((appearance) => ({
+        ...appearance,
+        term: termById.get(appearance.termId) ?? null,
+      }));
     } catch (error) {
       logger.error("Failed to get appearances by chapter", error);
       throw new ServiceError(
@@ -238,6 +256,10 @@ export class TermService {
         });
 
         logger.info("First appearance updated", { termId, chapterId });
+        await projectService.ensureImmediatePackageExport(
+          String(term.projectId),
+          "term:update-first-appearance",
+        );
       }
     } catch (error) {
       logger.error("Failed to update first appearance", error);

@@ -15,12 +15,16 @@ export default function DataRecoveryBanner() {
 
     useEffect(() => {
         if (hasRecovered && !hasShownToastRef.current) {
-            showToast(t("project.toast.recoveredFromDb", "Project was successfully recovered from safety snapshot."), "info");
+            const toastMessage =
+                recoveryReason === "missing"
+                    ? t("project.toast.recoveredMissingPackage", "The original .luie file was missing, so we rebuilt a new package from local data.")
+                    : t("project.toast.recoveredFromDb", "Project was successfully recovered from safety snapshot.");
+            showToast(toastMessage, "info");
             hasShownToastRef.current = true;
         } else if (!hasRecovered) {
             hasShownToastRef.current = false;
         }
-    }, [hasRecovered, showToast, t]);
+    }, [hasRecovered, recoveryReason, showToast, t]);
 
     if (!hasRecovered) return null;
 
@@ -41,7 +45,9 @@ export default function DataRecoveryBanner() {
                     <span className="text-xs text-muted">
                         {recoveryReason === "corrupt"
                             ? t("workspace.recovery.corruptDesc", "The original file was corrupted. Luie used the latest backup.")
-                            : t("workspace.recovery.defaultDesc", "Luie safely restored your latest work after an unexpected exit.")}
+                            : recoveryReason === "missing"
+                                ? t("workspace.recovery.missingDesc", "The original .luie file was missing. Luie rebuilt a new package from local data.")
+                                : t("workspace.recovery.defaultDesc", "Luie safely restored your latest work after an unexpected exit.")}
                     </span>
                 </div>
             </div>

@@ -1,40 +1,71 @@
 import { useEffect } from "react";
 import type { Editor as TiptapEditor } from "@tiptap/react";
 
-export function useTypewriterScroll(editor: TiptapEditor | null, focusMode: boolean) {
-    useEffect(() => {
-        if (!focusMode || !editor) return;
+export function useTypewriterScroll(
+  editor: TiptapEditor | null,
+  enabled: boolean,
+) {
+  useEffect(() => {
+    if (!enabled || !editor) return;
 
-        const handleSelectionUpdate = () => {
-            const { selection } = editor.state;
-            const { empty } = selection;
+    let frameId = 0;
 
-            // Only scroll on carets to avoid jumping during selection
-            if (!empty) return;
+    const scheduleScroll = () => {
+      if (frameId !== 0) {
+        cancelAnimationFrame(frameId);
+      }
 
-            const dom = editor.view.dom;
-            if (document.activeElement !== dom) return;
+      frameId = requestAnimationFrame(() => {
+        const { selection } = editor.state;
+        if (!selection.empty) return;
 
-            const coords = editor.view.coordsAtPos(selection.from);
-            const viewportHeight = window.innerHeight;
+        const dom = editor.view.dom as HTMLElement;
+        const activeElement = document.activeElement;
+        if (activeElement !== dom && !dom.contains(activeElement)) {
+          return;
+        }
 
-            // Target: 40% from top
-            const targetTop = viewportHeight * 0.4;
+        const scrollContainer = dom.closest<HTMLElement>(
+          '[data-editor-scroll-container="true"]',
+        );
+        if (!scrollContainer) return;
 
-            // Current cursor top relative to viewport
-            const currentTop = coords.top;
+        const coords = editor.view.coordsAtPos(selection.from);
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const targetTop = containerRect.top + containerRect.height * 0.42;
+        const delta = coords.top - targetTop;
 
-            // Diff
-            const diff = currentTop - targetTop;
+        if (Math.abs(delta) <= 18) return;
 
-            if (Math.abs(diff) > 20) { // Threshold
-                window.scrollBy({ top: diff, behavior: "smooth" });
-            }
-        };
+        const maxScrollTop =
+          scrollContainer.scrollHeight - scrollContainer.clientHeight;
+        if (maxScrollTop <= 0) return;
 
-        editor.on("selectionUpdate", handleSelectionUpdate);
-        return () => {
-            editor.off("selectionUpdate", handleSelectionUpdate);
-        };
-    }, [editor, focusMode]);
+        const nextScrollTop = Math.min(
+          maxScrollTop,
+          Math.max(0, scrollContainer.scrollTop + delta),
+        );
+
+        if (Math.abs(nextScrollTop - scrollContainer.scrollTop) <= 1) {
+          return;
+        }
+
+        scrollContainer.scrollTo({
+          top: nextScrollTop,
+          behavior: "smooth",
+        });
+      });
+    };
+
+    editor.on("selectionUpdate", scheduleScroll);
+    editor.on("update", scheduleScroll);
+
+    return () => {
+      if (frameId !== 0) {
+        cancelAnimationFrame(frameId);
+      }
+      editor.off("selectionUpdate", scheduleScroll);
+      editor.off("update", scheduleScroll);
+    };
+  }, [editor, enabled]);
 }

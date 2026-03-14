@@ -12,6 +12,9 @@ export const IPC_CHANNELS = {
   PROJECT_DELETE: "project:delete",
   PROJECT_REMOVE_LOCAL: "project:remove-local",
   PROJECT_OPEN_LUIE: "project:open-luie",
+  PROJECT_MARK_OPENED: "project:mark-opened",
+  PROJECT_ATTACH_LUIE: "project:attach-luie",
+  PROJECT_MATERIALIZE_LUIE: "project:materialize-luie",
 
   // Chapter Channels
   CHAPTER_CREATE: "chapter:create",
@@ -57,6 +60,7 @@ export const IPC_CHANNELS = {
   SNAPSHOT_GET_ALL: "snapshot:get-all",
   SNAPSHOT_GET_BY_PROJECT: "snapshot:get-by-project",
   SNAPSHOT_GET_BY_CHAPTER: "snapshot:get-by-chapter",
+  SNAPSHOT_LIST_RESTORE_CANDIDATES: "snapshot:list-restore-candidates",
   SNAPSHOT_RESTORE: "snapshot:restore",
   SNAPSHOT_DELETE: "snapshot:delete",
   SNAPSHOT_IMPORT_FILE: "snapshot:import-file",
@@ -107,6 +111,7 @@ export const IPC_CHANNELS = {
   SETTINGS_RESET: "settings:reset",
 
   // Recovery
+  RECOVERY_DB_STATUS: "recovery:db-status",
   RECOVERY_DB_RUN: "recovery:db-run",
 
   // Window
@@ -178,6 +183,22 @@ export const IPC_CHANNELS = {
   // World Graph
   WORLD_GRAPH_GET: "world:getGraph",
   WORLD_GRAPH_GET_MENTIONS: "world:getMentions",
+
+  WORLD_GRAPH_HAPTIC_FEEDBACK: "world-graph:haptic-feedback",
+
+  // World replica storage
+  WORLD_STORAGE_GET_DOCUMENT: "world-storage:get-document",
+  WORLD_STORAGE_SET_DOCUMENT: "world-storage:set-document",
+  WORLD_STORAGE_GET_SCRAP_MEMOS: "world-storage:get-scrap-memos",
+  WORLD_STORAGE_SET_SCRAP_MEMOS: "world-storage:set-scrap-memos",
+
+  // Graph plugins
+  PLUGIN_LIST_CATALOG: "plugin:list-catalog",
+  PLUGIN_LIST_INSTALLED: "plugin:list-installed",
+  PLUGIN_INSTALL: "plugin:install",
+  PLUGIN_UNINSTALL: "plugin:uninstall",
+  PLUGIN_GET_TEMPLATES: "plugin:get-templates",
+  PLUGIN_APPLY_TEMPLATE: "plugin:apply-template",
 } as const;
 
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

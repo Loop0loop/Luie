@@ -50,6 +50,19 @@ export function useCharacterManager(t: TFunction) {
         }
     }, [currentProject, loadCharacters]);
 
+    useEffect(() => {
+        if (!selectedCharacterId) {
+            return;
+        }
+        if ((characters as CharacterLike[]).some((item) => item.id === selectedCharacterId)) {
+            return;
+        }
+        const clearTimer = window.setTimeout(() => {
+            setSelectedCharacterId(null);
+        }, 0);
+        return () => window.clearTimeout(clearTimer);
+    }, [characters, selectedCharacterId]);
+
     const handleAddCharacter = async (templateId: string = "basic") => {
         if (currentProject) {
             const template = CHARACTER_TEMPLATES.find((t) => t.id === templateId) || CHARACTER_TEMPLATES[0];

@@ -19,6 +19,8 @@ import { useTranslation } from "react-i18next";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { worldPackageStorage } from "@renderer/features/research/services/worldPackageStorage";
 import type { MindMapNodeData } from "@renderer/features/research/components/world/MindMapNodeData";
+import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
+import { useToast } from "@shared/ui/ToastContext";
 
 const getCssNumber = (name: string, fallback: number) => {
   if (typeof window === "undefined") return fallback;
@@ -31,7 +33,9 @@ const getCssNumber = (name: string, fallback: number) => {
 
 export function useMindMapBoard() {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const currentProject = useProjectStore((state) => state.currentItem);
+  const luieAttachmentPath = getReadableLuieAttachmentPath(currentProject);
   const flowRef = useRef<ReactFlowInstance | null>(null);
   const rootX = getCssNumber("--world-mindmap-root-x", 300);
   const rootY = getCssNumber("--world-mindmap-root-y", 300);
@@ -106,7 +110,7 @@ export function useMindMapBoard() {
     void (async () => {
       const loaded = await worldPackageStorage.loadMindmap(
         currentProject.id,
-        currentProject.projectPath,
+        luieAttachmentPath,
       );
       if (cancelled) return;
       const loadedNodes = loaded.nodes as Node<MindMapNodeData>[];
@@ -121,7 +125,7 @@ export function useMindMapBoard() {
     };
   }, [
     currentProject?.id,
-    currentProject?.projectPath,
+    luieAttachmentPath,
     getDefaultNodes,
     setEdges,
     setNodes,
@@ -157,20 +161,20 @@ export function useMindMapBoard() {
         type: edge.type,
       }));
 
-      void worldPackageStorage.saveMindmap(
-        currentProject.id,
-        currentProject.projectPath,
-        {
+      void worldPackageStorage
+        .saveMindmap(currentProject.id, luieAttachmentPath, {
           nodes: serializedNodes,
           edges: serializedEdges,
-        },
-      );
+        })
+        .catch(() => {
+          showToast(t("research.toast.worldSaveFailed"), "error");
+        });
     }, 1000);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [currentProject?.id, currentProject?.projectPath, edges, nodes]);
+  }, [currentProject?.id, edges, luieAttachmentPath, nodes, showToast, t]);
 
   const onConnect = useCallback(
     (params: Connection) =>

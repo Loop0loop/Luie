@@ -12,7 +12,6 @@ export type {
   UpdateGraphNodeInput,
   WorldBuildingState,
   WorldFilter,
-  WorldViewMode,
 } from "./worldBuildingStore.types";
 
 export const useWorldBuildingStore = create<WorldBuildingState>((set, get) => ({

@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/@prisma-cache/client"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// Rebuildable appearance/search cache only.
+model CharacterAppearance {
+  id          String   @id @default(uuid())
+  projectId   String
+  characterId String
+  chapterId   String
+  position    Int
+  context     String?
+  createdAt   DateTime @default(now())
+
+  @@unique([characterId, chapterId, position])
+  @@index([projectId, chapterId])
+  @@index([projectId, characterId, chapterId])
+}
+
+model TermAppearance {
+  id        String   @id @default(uuid())
+  projectId String
+  termId    String
+  chapterId String
+  position  Int
+  context   String?
+  createdAt DateTime @default(now())
+
+  @@unique([termId, chapterId, position])
+  @@index([projectId, chapterId])
+  @@index([projectId, termId, chapterId])
+}
+
+model ChapterSearchDocument {
+  chapterId    String   @id
+  projectId    String
+  title        String
+  synopsis     String?
+  searchText   String
+  wordCount    Int
+  chapterOrder Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([projectId, chapterOrder])
+}

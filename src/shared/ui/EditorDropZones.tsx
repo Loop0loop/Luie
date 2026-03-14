@@ -1,5 +1,5 @@
 import { useDndMonitor } from "@dnd-kit/core";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { DroppableZone } from "@shared/ui/DroppableZone";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 
@@ -8,19 +8,32 @@ export function EditorDropZones() {
   const isDocsLikeMode = uiMode === "docs" || uiMode === "editor";
   const [isDragging, setIsDragging] = useState(false);
   const [activeDropZone, setActiveDropZone] = useState<string | null>(null);
+  const activeDropZoneRef = useRef<string | null>(null);
+
+  const syncActiveDropZone = (nextDropZone: string | null) => {
+    if (activeDropZoneRef.current === nextDropZone) {
+      return;
+    }
+
+    activeDropZoneRef.current = nextDropZone;
+    setActiveDropZone(nextDropZone);
+  };
 
   useDndMonitor({
-    onDragStart: () => setIsDragging(true),
+    onDragStart: () => {
+      setIsDragging(true);
+      syncActiveDropZone(null);
+    },
     onDragOver: (event) => {
-      setActiveDropZone(event.over?.id ? String(event.over.id) : null);
+      syncActiveDropZone(event.over?.id ? String(event.over.id) : null);
     },
     onDragEnd: () => {
       setIsDragging(false);
-      setActiveDropZone(null);
+      syncActiveDropZone(null);
     },
     onDragCancel: () => {
       setIsDragging(false);
-      setActiveDropZone(null);
+      syncActiveDropZone(null);
     },
   });
 

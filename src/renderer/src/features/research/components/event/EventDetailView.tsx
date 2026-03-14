@@ -7,6 +7,7 @@ import { Infobox } from "@renderer/features/research/components/wiki/Infobox";
 import { WikiSection } from "@renderer/features/research/components/wiki/WikiSection";
 import { useDialog } from "@shared/ui/useDialog";
 import { useShallow } from "zustand/react/shallow";
+import { parseStructuredAttributes } from "@renderer/features/research/utils/parseStructuredAttributes";
 
 type WikiSectionData = {
     id: string;
@@ -44,9 +45,7 @@ export default function EventDetailView({ eventId }: EventDetailViewProps) {
 
     const attributes = useMemo(() => {
         if (!eventObj) return {};
-        return typeof eventObj.attributes === "string"
-            ? JSON.parse(eventObj.attributes)
-            : (eventObj.attributes || {});
+        return parseStructuredAttributes(eventObj.attributes);
     }, [eventObj]);
 
     const defaultSectionLabels = useMemo(() => {
@@ -73,7 +72,7 @@ export default function EventDetailView({ eventId }: EventDetailViewProps) {
     }, [attributes.sections, defaultSectionLabels]);
 
     const customFields: CustomField[] = useMemo(() => {
-        return attributes.customFields || [];
+        return (attributes.customFields as CustomField[]) || [];
     }, [attributes.customFields]);
 
     if (!eventObj) {
@@ -192,7 +191,7 @@ export default function EventDetailView({ eventId }: EventDetailViewProps) {
                                 key={sec.id}
                                 id={sec.id}
                                 label={sec.label}
-                                content={attributes[sec.id]}
+                                content={(attributes[sec.id] as string) || ""}
                                 onRename={(val) => renameSection(sec.id, val)}
                                 onUpdateContent={(val) => handleAttrUpdate(sec.id, val)}
                                 onDelete={() => deleteSection(sec.id)}
@@ -216,7 +215,7 @@ export default function EventDetailView({ eventId }: EventDetailViewProps) {
                             rows={customFields.map(field => {
                                 return {
                                     label: field.label,
-                                    value: attributes[field.key],
+                                    value: attributes[field.key] as string | undefined,
                                     placeholder: field.placeholder,
                                     type: field.type,
                                     options: field.options,

@@ -33,9 +33,13 @@ export const convertHtmlToParagraphs = (
   html: string,
   title: string,
   secPrXml?: string,
+  layout?: {
+    contentWidth: number;
+  },
 ): string => {
   const paragraphs: string[] = [];
   let paraId = Math.floor(Math.random() * 4000000000);
+  const horzSize = Math.max(12000, Math.round(layout?.contentWidth ?? 42520));
 
   const firstParaId = paraId++;
   if (secPrXml) {
@@ -50,7 +54,7 @@ export const convertHtmlToParagraphs = (
       <hp:t>${escapeXml(title)}</hp:t>
     </hp:run>
     <hp:linesegarray>
-      <hp:lineseg textpos="0" vertpos="0" vertsize="1600" textheight="1000" baseline="1280" spacing="0" horzpos="0" horzsize="42520" flags="0"/>
+      <hp:lineseg textpos="0" vertpos="0" vertsize="1600" textheight="1000" baseline="1280" spacing="0" horzpos="0" horzsize="${horzSize}" flags="0"/>
     </hp:linesegarray>
   </hp:p>`);
   } else {
@@ -59,7 +63,7 @@ export const convertHtmlToParagraphs = (
       <hp:t>${escapeXml(title)}</hp:t>
     </hp:run>
     <hp:linesegarray>
-      <hp:lineseg textpos="0" vertpos="0" vertsize="1600" textheight="1000" baseline="1280" spacing="0" horzpos="0" horzsize="42520" flags="0"/>
+      <hp:lineseg textpos="0" vertpos="0" vertsize="1600" textheight="1000" baseline="1280" spacing="0" horzpos="0" horzsize="${horzSize}" flags="0"/>
     </hp:linesegarray>
   </hp:p>`);
   }
@@ -69,7 +73,7 @@ export const convertHtmlToParagraphs = (
       <hp:t></hp:t>
     </hp:run>
     <hp:linesegarray>
-      <hp:lineseg textpos="0" vertpos="0" vertsize="1600" textheight="1000" baseline="1280" spacing="0" horzpos="0" horzsize="42520" flags="0"/>
+      <hp:lineseg textpos="0" vertpos="0" vertsize="1600" textheight="1000" baseline="1280" spacing="0" horzpos="0" horzsize="${horzSize}" flags="0"/>
     </hp:linesegarray>
   </hp:p>`);
 
@@ -84,7 +88,7 @@ export const convertHtmlToParagraphs = (
       <hp:t>${escapeXml(line)}</hp:t>
     </hp:run>
     <hp:linesegarray>
-      <hp:lineseg textpos="0" vertpos="0" vertsize="1600" textheight="1000" baseline="1280" spacing="0" horzpos="0" horzsize="42520" flags="0"/>
+      <hp:lineseg textpos="0" vertpos="0" vertsize="1600" textheight="1000" baseline="1280" spacing="0" horzpos="0" horzsize="${horzSize}" flags="0"/>
     </hp:linesegarray>
   </hp:p>`);
   }

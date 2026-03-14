@@ -17,11 +17,14 @@ import { z } from "zod";
 type ProjectServiceLike = {
   createProject: (input: ProjectCreateInput) => Promise<unknown>;
   openLuieProject: (packagePath: string) => Promise<unknown>;
+  attachProjectPackage: (projectId: string, packagePath: string) => Promise<unknown>;
+  materializeProjectPackage: (projectId: string, targetPath: string) => Promise<unknown>;
   getProject: (id: string) => Promise<unknown>;
   getAllProjects: () => Promise<unknown>;
   updateProject: (input: ProjectUpdateInput) => Promise<unknown>;
   deleteProject: (input: string | ProjectDeleteInput) => Promise<unknown>;
   removeProjectFromList: (id: string) => Promise<unknown>;
+  markProjectOpened: (id: string) => Promise<unknown>;
 };
 
 export function registerProjectIPCHandlers(
@@ -42,6 +45,25 @@ export function registerProjectIPCHandlers(
       failMessage: "Failed to open .luie package",
       argsSchema: z.tuple([z.string()]),
       handler: (packagePath: string) => projectService.openLuieProject(packagePath),
+    },
+    {
+      channel: IPC_CHANNELS.PROJECT_ATTACH_LUIE,
+      logTag: "PROJECT_ATTACH_LUIE",
+      failMessage: "Failed to attach .luie package",
+      argsSchema: z.tuple([projectIdSchema, z.string().min(1)]),
+      handler: (projectId: string, packagePath: string) =>
+        projectService.attachProjectPackage(projectId, packagePath),
+    },
+    {
+      channel: IPC_CHANNELS.PROJECT_MATERIALIZE_LUIE,
+      logTag: "PROJECT_MATERIALIZE_LUIE",
+      failMessage: "Failed to materialize .luie package",
+      argsSchema: z.tuple([
+        projectIdSchema,
+        z.string().min(1),
+      ]),
+      handler: (projectId: string, targetPath: string) =>
+        projectService.materializeProjectPackage(projectId, targetPath),
     },
     {
       channel: IPC_CHANNELS.PROJECT_GET,
@@ -76,6 +98,13 @@ export function registerProjectIPCHandlers(
       failMessage: "Failed to remove project from list",
       argsSchema: z.tuple([projectIdSchema]),
       handler: (id: string) => projectService.removeProjectFromList(id),
+    },
+    {
+      channel: IPC_CHANNELS.PROJECT_MARK_OPENED,
+      logTag: "PROJECT_MARK_OPENED",
+      failMessage: "Failed to update project local state",
+      argsSchema: z.tuple([projectIdSchema]),
+      handler: (id: string) => projectService.markProjectOpened(id),
     },
   ]);
 }

@@ -3,12 +3,13 @@ import { useTranslation } from "react-i18next";
 import { User } from "lucide-react";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { BufferedInput } from "@shared/ui/BufferedInput";
-import { Infobox } from "@renderer/features/research/components/wiki/Infobox"; 
-import { WikiSection } from "@renderer/features/research/components/wiki/WikiSection"; 
+import { Infobox } from "@renderer/features/research/components/wiki/Infobox";
+import { WikiSection } from "@renderer/features/research/components/wiki/WikiSection";
 import { useDialog } from "@shared/ui/useDialog";
 import { SUPPORTED_LANGUAGES, i18n } from "@renderer/i18n";
 import { CHARACTER_TEMPLATES } from "@shared/constants";
 import { useShallow } from "zustand/react/shallow";
+import { parseStructuredAttributes } from "@renderer/features/research/utils/parseStructuredAttributes";
 
 
 // Types for Dynamic Customization
@@ -48,11 +49,9 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
 
   const attributes = useMemo(() => {
     if (!character) return {};
-    return typeof character.attributes === "string" 
-      ? JSON.parse(character.attributes) 
-      : (character.attributes || {});
+    return parseStructuredAttributes(character.attributes);
   }, [character]);
-  
+
   const currentTemplate = useMemo(() => {
     const templateId = attributes.templateId || "basic";
     return CHARACTER_TEMPLATES.find(t => t.id === templateId) || CHARACTER_TEMPLATES[0];
@@ -83,7 +82,7 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
     });
     return labels;
   }, []);
-  
+
   const sections: WikiSectionData[] = useMemo(() => {
     if (attributes.sections) {
       return (attributes.sections as WikiSectionData[]).map((section) => {
@@ -104,15 +103,15 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
   }, [attributes.sections, defaultLabelById, defaultLabelSet, defaultSectionLabels]);
 
   const customFields: CustomField[] = useMemo(() => {
-    return attributes.customFields || [];
+    return (attributes.customFields as CustomField[]) || [];
   }, [attributes.customFields]);
 
   if (!character) {
-      return (
-          <div className="flex items-center justify-center h-full text-muted">
-              {t("character.noSelection")}
-          </div>
-      );
+    return (
+      <div className="flex items-center justify-center h-full text-muted">
+        {t("character.noSelection")}
+      </div>
+    );
   }
 
   const handleUpdate = (field: string, value: string) => {
@@ -133,7 +132,7 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
     ];
     handleAttrUpdate("sections", newSections);
   };
-  
+
   const renameSection = (id: string, newLabel: string) => {
     const newSections = sections.map(s => s.id === id ? { ...s, label: newLabel } : s);
     handleAttrUpdate("sections", newSections);
@@ -192,21 +191,21 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
     <div className="flex-1 overflow-auto p-8 sm:p-6 flex flex-col gap-6 bg-panel text-fg min-w-0">
       {/* 1. AUTHENTIC NAMUWIKI HEADER */}
       <div className="border-b-2 border-(--namu-border) pb-4 mb-6 flex flex-col gap-3">
-        <BufferedInput 
+        <BufferedInput
           className="text-3xl font-extrabold text-fg leading-tight border-none bg-transparent w-full focus:outline-none"
-          value={character.name} 
+          value={character.name}
           onSave={(val) => handleUpdate("name", val)}
         />
         <div className="text-[13px] text-muted bg-surface border border-border px-3 py-1.5 rounded self-start flex items-center gap-2">
           <span className="font-bold">{t("character.classificationLabel")}</span>
           <span className="text-(--namu-link) cursor-pointer hover:underline">{t(currentTemplate.nameKey)}</span>
-           <span className="text-border">|</span>
-          <BufferedInput 
-              className="inline w-auto font-semibold text-(--namu-link) bg-transparent border-none p-1 focus:outline-none focus:bg-active rounded-sm" 
-              value={character.description || ""}
-              placeholder={t("character.uncategorized")}
-              onSave={(val) => handleUpdate("description", val)} 
-           />
+          <span className="text-border">|</span>
+          <BufferedInput
+            className="inline w-auto font-semibold text-(--namu-link) bg-transparent border-none p-1 focus:outline-none focus:bg-active rounded-sm"
+            value={character.description || ""}
+            placeholder={t("character.uncategorized")}
+            onSave={(val) => handleUpdate("description", val)}
+          />
         </div>
       </div>
 
@@ -215,83 +214,83 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
         <div className="flex flex-col @min-[700px]:flex-row gap-8 items-start min-h-0">
           {/* LEFT: Content & TOC */}
           <div className="flex-1 flex flex-col gap-8 min-w-75 w-full @min-[700px]:order-1 order-2">
-          
-          {/* TOC (Inline) */}
-          <div className="bg-(--namu-table-bg) border border-(--namu-border) p-4 inline-block min-w-50 rounded">
-            <div className="font-bold text-center mb-3 text-fg text-sm">{t("character.tocLabel")}</div>
-            <div className="flex flex-col gap-1.5 text-sm">
-               {sections.map(sec => (
-                 <a key={sec.id} className="text-(--namu-link) no-underline cursor-pointer hover:underline" href={`#${sec.id}`}>
-                   {sec.label}
-                 </a>
-               ))}
-            </div>
-          </div>
 
-          {/* Sections */}
-          {sections.map(sec => (
-            <WikiSection 
+            {/* TOC (Inline) */}
+            <div className="bg-(--namu-table-bg) border border-(--namu-border) p-4 inline-block min-w-50 rounded">
+              <div className="font-bold text-center mb-3 text-fg text-sm">{t("character.tocLabel")}</div>
+              <div className="flex flex-col gap-1.5 text-sm">
+                {sections.map(sec => (
+                  <a key={sec.id} className="text-(--namu-link) no-underline cursor-pointer hover:underline" href={`#${sec.id}`}>
+                    {sec.label}
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* Sections */}
+            {sections.map(sec => (
+              <WikiSection
                 key={sec.id}
                 id={sec.id}
                 label={sec.label}
-                content={attributes[sec.id]}
+                content={(attributes[sec.id] as string) || ""}
                 onRename={(val) => renameSection(sec.id, val)}
                 onUpdateContent={(val) => handleAttrUpdate(sec.id, val)}
                 onDelete={() => deleteSection(sec.id)}
+              />
+            ))}
+
+            {/* Add Section Button */}
+            <button
+              type="button"
+              onClick={addSection}
+              className="p-3 border-2 border-dashed border-border rounded-lg text-center text-subtle cursor-pointer mt-4 w-full bg-transparent hover:text-fg hover:border-fg transition-colors"
+            >
+              {t("character.addSection")}
+            </button>
+
+          </div>
+
+
+          {/* RIGHT: Authentic Infobox */}
+          {/* Use order-first on mobile (default) to put it on top, order-last on Desktop to put it on right */}
+          <div className="w-full @min-[700px]:w-[320px] shrink-0 @min-[700px]:order-2 order-1">
+            <Infobox
+              title={character.name}
+              image={<User size={80} color="var(--border-active)" />}
+              rows={allInfoboxFields.map(field => {
+                const isCustom = customFields.some(cf => cf.key === field.key);
+                const isTemplateField = "labelKey" in field;
+                const label = isTemplateField ? t(field.labelKey) : field.label;
+                const placeholder =
+                  isTemplateField && field.placeholderKey
+                    ? t(field.placeholderKey)
+                    : "placeholder" in field
+                      ? field.placeholder
+                      : undefined;
+                const options =
+                  isTemplateField && field.optionKeys
+                    ? field.optionKeys.map((key) => t(key))
+                    : "options" in field
+                      ? field.options
+                      : undefined;
+                return {
+                  label,
+                  value: attributes[field.key] as string | undefined,
+                  placeholder,
+                  type: field.type,
+                  options,
+                  isCustom,
+                  onSave: (v) => handleAttrUpdate(field.key, v),
+                  onLabelSave: isCustom ? (v) => updateCustomFieldLabel(field.key, v) : undefined,
+                  onDelete: isCustom ? () => deleteCustomField(field.key) : undefined
+                };
+              })}
+              onAddField={addCustomField}
             />
-          ))}
-
-          {/* Add Section Button */}
-          <button 
-             type="button"
-             onClick={addSection}
-             className="p-3 border-2 border-dashed border-border rounded-lg text-center text-subtle cursor-pointer mt-4 w-full bg-transparent hover:text-fg hover:border-fg transition-colors"
-          >
-             {t("character.addSection")}
-          </button>
-
-        </div>
-
-
-        {/* RIGHT: Authentic Infobox */}
-        {/* Use order-first on mobile (default) to put it on top, order-last on Desktop to put it on right */}
-        <div className="w-full @min-[700px]:w-[320px] shrink-0 @min-[700px]:order-2 order-1">
-            <Infobox 
-                title={character.name}
-                image={<User size={80} color="var(--border-active)" />}
-                rows={allInfoboxFields.map(field => {
-                    const isCustom = customFields.some(cf => cf.key === field.key);
-                  const isTemplateField = "labelKey" in field;
-                  const label = isTemplateField ? t(field.labelKey) : field.label;
-                  const placeholder =
-                    isTemplateField && field.placeholderKey
-                      ? t(field.placeholderKey)
-                      : "placeholder" in field
-                        ? field.placeholder
-                        : undefined;
-                  const options =
-                    isTemplateField && field.optionKeys
-                      ? field.optionKeys.map((key) => t(key))
-                      : "options" in field
-                        ? field.options
-                        : undefined;
-                    return {
-                    label,
-                        value: attributes[field.key],
-                    placeholder,
-                        type: field.type,
-                    options,
-                        isCustom,
-                        onSave: (v) => handleAttrUpdate(field.key, v),
-                        onLabelSave: isCustom ? (v) => updateCustomFieldLabel(field.key, v) : undefined,
-                        onDelete: isCustom ? () => deleteCustomField(field.key) : undefined
-                    };
-                })}
-                onAddField={addCustomField}
-            />
+          </div>
         </div>
       </div>
-    </div>
 
 
     </div>

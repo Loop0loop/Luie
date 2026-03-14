@@ -3,6 +3,7 @@ import type { BrowserWindow } from "electron";
 import { windowManager } from "../manager/index.js";
 import { autoSaveManager } from "../manager/autoSaveManager.js";
 import { db } from "../database/index.js";
+import { cacheDb } from "../database/cacheDb.js";
 import { projectService } from "../services/core/projectService.js";
 import { snapshotService } from "../services/features/snapshot/snapshotService.js";
 import { IPC_CHANNELS } from "../../shared/ipc/channels.js";
@@ -216,6 +217,11 @@ export const registerShutdownHandlers = (logger: Logger): void => {
         await db.disconnect();
       } catch (error) {
         logger.warn("DB disconnect failed during quit", error);
+      }
+      try {
+        await cacheDb.disconnect();
+      } catch (error) {
+        logger.warn("Cache DB disconnect failed during quit", error);
       }
 
       sendQuitPhase(mainWindow, "completed", "안전하게 종료합니다.");

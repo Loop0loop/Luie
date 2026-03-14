@@ -29,6 +29,7 @@ import {
 } from "./hwpxStaticXmlTemplates.js";
 
 const MM_TO_HWPUNIT = 283.465;
+const PAGE_BORDER_OFFSET_HWPUNIT = 1417;
 
 const PAPER_SIZES_HWPUNIT = {
   A4: { width: 59528, height: 84188 },
@@ -169,7 +170,14 @@ export class HwpxExportService {
     const marginRight = Math.round(options.marginRight * MM_TO_HWPUNIT);
     const marginTop = Math.round(options.marginTop * MM_TO_HWPUNIT);
     const marginBottom = Math.round(options.marginBottom * MM_TO_HWPUNIT);
-    const paragraphs = convertHtmlToParagraphs(options.content, options.title);
+    const contentWidth = this.resolveContentWidth(
+      paperSize,
+      marginLeft,
+      marginRight,
+    );
+    const paragraphs = convertHtmlToParagraphs(options.content, options.title, undefined, {
+      contentWidth,
+    });
 
     let updated = xml;
 
@@ -262,6 +270,11 @@ export class HwpxExportService {
     const marginRight = Math.round(options.marginRight * MM_TO_HWPUNIT);
     const marginTop = Math.round(options.marginTop * MM_TO_HWPUNIT);
     const marginBottom = Math.round(options.marginBottom * MM_TO_HWPUNIT);
+    const contentWidth = this.resolveContentWidth(
+      paperSize,
+      marginLeft,
+      marginRight,
+    );
 
     const secPrXml = `<hp:secPr id="" textDirection="HORIZONTAL" textVerticalWidthHead="0" spaceColumns="283" tabStop="4252">
       <hp:grid lineGrid="0" charGrid="0" wonggojiFormat="0"/>
@@ -278,7 +291,9 @@ export class HwpxExportService {
       </hp:pageBorderFill>
     </hp:secPr>`;
 
-    const paragraphs = convertHtmlToParagraphs(options.content, options.title, secPrXml);
+    const paragraphs = convertHtmlToParagraphs(options.content, options.title, secPrXml, {
+      contentWidth,
+    });
 
     const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <hs:sec xmlns:hs="http://www.hancom.co.kr/hwpml/2011/section" 
@@ -293,6 +308,20 @@ ${paragraphs}
   private generateContentHpf(_options: Required<ExportOptions>): string {
     const date = new Date().toISOString();
     return this.compressXml(buildHwpxContentHpfXml(date));
+  }
+
+  private resolveContentWidth(
+    paperSize: { width: number; height: number },
+    marginLeft: number,
+    marginRight: number,
+  ): number {
+    return Math.max(
+      12000,
+      paperSize.width -
+        marginLeft -
+        marginRight -
+        PAGE_BORDER_OFFSET_HWPUNIT * 2,
+    );
   }
 }
 

@@ -25,6 +25,10 @@ prisma/migrations/
 prisma/dev.db-wal
 prisma/dev.db-shm
 prisma/.tmp
+plugin/installed/*
+!plugin/installed/index.json
+dev-cache.db-shm
+dev-cache.db-wal
 
 
 
@@ -63,3 +67,5 @@ coverage/
 
 # .txt
 text.txt
+
+native/haptics/build/Release/

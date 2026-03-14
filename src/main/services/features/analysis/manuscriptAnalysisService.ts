@@ -12,8 +12,9 @@ import {
   LUIE_MANUSCRIPT_DIR,
   MARKDOWN_EXTENSION,
 } from "../../../../shared/constants/index.js";
-import { readLuieEntry } from "../../../utils/luiePackage.js";
 import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
+import { getProjectAttachmentPath } from "../../core/project/projectAttachmentStore.js";
+import { readLuieContainerEntry } from "../../io/luieContainer.js";
 import {
   isAnalysisAbortError,
   runGeminiAnalysisStream,
@@ -143,8 +144,8 @@ export class ManuscriptAnalysisService {
     try {
       const safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
       const [metaRaw, chapterContent] = await Promise.all([
-        readLuieEntry(safeProjectPath, LUIE_PACKAGE_META_FILENAME, logger),
-        readLuieEntry(
+        readLuieContainerEntry(safeProjectPath, LUIE_PACKAGE_META_FILENAME, logger),
+        readLuieContainerEntry(
           safeProjectPath,
           `${LUIE_MANUSCRIPT_DIR}/${chapterId}${MARKDOWN_EXTENSION}`,
           logger,
@@ -213,33 +214,32 @@ export class ManuscriptAnalysisService {
     chapterId: string,
     projectId: string,
   ): Promise<AnalysisSourcePayload> {
-    const project = await db.getClient().project.findUnique({
-      where: { id: projectId },
-      select: {
-        projectPath: true,
-        characters: {
-          select: {
-            name: true,
-            description: true,
+    const [project, projectPath] = await Promise.all([
+      db.getClient().project.findUnique({
+        where: { id: projectId },
+        select: {
+          characters: {
+            select: {
+              name: true,
+              description: true,
+            },
+          },
+          terms: {
+            orderBy: { order: "asc" },
+            select: {
+              term: true,
+              definition: true,
+              category: true,
+            },
           },
         },
-        terms: {
-          orderBy: { order: "asc" },
-          select: {
-            term: true,
-            definition: true,
-            category: true,
-          },
-        },
-      },
-    });
+      }),
+      getProjectAttachmentPath(projectId),
+    ]);
 
     if (!project) {
       throw new Error("Project not found");
     }
-
-    const projectPath =
-      typeof project.projectPath === "string" ? project.projectPath : null;
 
     const luieChapter = await this.loadChapterFromLuie(chapterId, projectPath);
     if (luieChapter) {

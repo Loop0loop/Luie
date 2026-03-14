@@ -7,9 +7,12 @@ import { cn } from "@shared/types/utils";
 import { Lock, Unlock, PenLine, FileText, Sparkles } from "lucide-react";
 import { worldPackageStorage } from "@renderer/features/research/services/worldPackageStorage";
 import type { WorldSynopsisData, WorldSynopsisStatus } from "@shared/types";
+import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
+import { useToast } from "@shared/ui/ToastContext";
 
 export function SynopsisEditor() {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const { currentItem: currentProject, update: updateProject } =
     useProjectStore(
       useShallow((state) => ({
@@ -17,6 +20,7 @@ export function SynopsisEditor() {
         update: state.update,
       })),
     );
+  const luieAttachmentPath = getReadableLuieAttachmentPath(currentProject);
   const [status, setStatus] = useState<WorldSynopsisStatus>("draft");
   const [isFocused, setIsFocused] = useState(false);
   const [genre, setGenre] = useState("");
@@ -30,7 +34,7 @@ export function SynopsisEditor() {
     void (async () => {
       const loaded = await worldPackageStorage.loadSynopsis(
         currentProject.id,
-        currentProject.projectPath,
+        luieAttachmentPath,
         currentProject.description ?? "",
       );
       if (cancelled) return;
@@ -45,7 +49,7 @@ export function SynopsisEditor() {
     };
   }, [
     currentProject?.id,
-    currentProject?.projectPath,
+    luieAttachmentPath,
     currentProject?.description,
   ]);
 
@@ -59,11 +63,11 @@ export function SynopsisEditor() {
       logline,
       ...overrides,
     };
-    void worldPackageStorage.saveSynopsis(
-      currentProject.id,
-      currentProject.projectPath,
-      payload,
-    );
+    void worldPackageStorage
+      .saveSynopsis(currentProject.id, luieAttachmentPath, payload)
+      .catch(() => {
+        showToast(t("research.toast.worldSaveFailed"), "error");
+      });
   };
 
   if (!currentProject) return null;

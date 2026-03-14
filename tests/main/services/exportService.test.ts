@@ -6,6 +6,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { promises as fs } from "fs";
 import path from "path";
+import JSZip from "jszip";
 import { ExportService, type ExportOptions } from "../../../src/main/services/features/exportService";
 
 describe("ExportService", () => {
@@ -22,9 +23,7 @@ describe("ExportService", () => {
     // Clean up test files
     try {
       const files = await fs.readdir(testOutputDir);    
-      for (const file of files) {
-        await fs.unlink(path.join(testOutputDir, file));
-      }
+      await Promise.all(files.map((file) => fs.unlink(path.join(testOutputDir, file))));
       await fs.rmdir(testOutputDir);
     } catch {
       // Ignore cleanup errors
@@ -236,6 +235,40 @@ describe("ExportService", () => {
       const result = await exportService.export(options);
       
       expect(result.success).toBe(true);
+    });
+
+    it("should encode A4 page metrics into generated HWPX", async () => {
+      const outputPath = path.join(testOutputDir, "test-korean-a4.hwpx");
+      const options: ExportOptions = {
+        projectId: "test-project-id",
+        chapterId: "test-chapter-id",
+        title: "A4 한글 원고",
+        content: "<p>첫 문단입니다.</p><p>둘째 문단입니다.</p>",
+        format: "HWPX",
+        paperSize: "A4",
+        marginTop: 20,
+        marginBottom: 15,
+        marginLeft: 20,
+        marginRight: 20,
+        outputPath,
+      };
+
+      const result = await exportService.export(options);
+
+      expect(result.success).toBe(true);
+
+      const buffer = await fs.readFile(outputPath);
+      const zip = await JSZip.loadAsync(buffer);
+      const sectionXml = await zip.file("Contents/section0.xml")?.async("string");
+
+      expect(sectionXml).toBeTruthy();
+      expect(sectionXml).toContain('width="59528"');
+      expect(sectionXml).toContain('height="84188"');
+      expect(sectionXml).toContain('left="5669"');
+      expect(sectionXml).toContain('right="5669"');
+      expect(sectionXml).toContain('top="5669"');
+      expect(sectionXml).toContain('bottom="4252"');
+      expect(sectionXml).toContain('horzsize="45356"');
     });
     
     it("should automatically add .hwpx extension", async () => {

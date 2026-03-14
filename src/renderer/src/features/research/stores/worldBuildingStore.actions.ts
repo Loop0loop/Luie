@@ -2,16 +2,19 @@ import { api } from "@shared/api";
 import type {
   EntityRelationCreateInput,
   EntityRelationUpdateInput,
+  WorldGraphData,
   WorldEntityCreateInput,
   WorldEntityUpdateInput,
   WorldEntityUpdatePositionInput,
 } from "@shared/types";
 import {
+  buildWorldGraphDocument,
+  mergeWorldGraphLayout,
+} from "@shared/world/worldGraphDocument";
+import {
   appendNodeToGraph,
   appendRelationToGraph,
-  getFilterForViewMode,
   getResolvedRelationKind,
-  getSuggestedModeForNodes,
   isValidRelationForPair,
   isWorldEntityBackedType,
   removeNodeFromGraph,
@@ -26,6 +29,10 @@ import {
   deleteGraphNodeByType,
   updateGraphNodeFromInput,
 } from "./worldBuildingStore.mutations";
+import {
+  clearGraphBackedSelection,
+  syncGraphBackedStore,
+} from "@renderer/features/research/components/world/graph/utils/graphEntitySync";
 import type {
   UpdateGraphNodeInput,
   WorldBuildingState,
@@ -40,16 +47,14 @@ type StoreGetter<T> = () => T;
 type WorldBuildingActions = Pick<
   WorldBuildingState,
   | "loadGraph"
-  | "setViewMode"
+  | "setMainView"
   | "setFilter"
   | "resetFilter"
   | "selectNode"
   | "selectEdge"
-  | "dismissSuggestion"
-  | "toggleTimeline"
-  | "toggleMap"
   | "createGraphNode"
   | "updateGraphNode"
+  | "updateGraphNodePosition"
   | "updateWorldEntityPosition"
   | "deleteGraphNode"
   | "createWorldEntity"
@@ -67,57 +72,76 @@ function updateGraphNodeSelection(input: UpdateGraphNodeInput) {
   };
 }
 
+const persistGraphDocument = async (
+  projectId: string,
+  graphData: WorldGraphData | null,
+): Promise<void> => {
+  if (!graphData) return;
+
+  const response = await api.worldStorage.setDocument({
+    projectId,
+    docType: "graph",
+    payload: buildWorldGraphDocument(graphData),
+  });
+
+  if (!response.success) {
+    await api.logger.warn("Failed to save world graph document", {
+      projectId,
+      error: response.error,
+    });
+  }
+};
+
 export function createWorldBuildingActions(
   set: StoreSetter<WorldBuildingState>,
   get: StoreGetter<WorldBuildingState>,
 ): WorldBuildingActions {
+  const persistActiveGraphDocument = async (): Promise<void> => {
+    const projectId = get().activeProjectId;
+    if (!projectId) return;
+    await persistGraphDocument(projectId, get().graphData);
+  };
+
   return {
     loadGraph: async (projectId) => {
       set({ isLoading: true, error: null, activeProjectId: projectId });
       try {
-        const response = await api.worldGraph.get(projectId);
-        if (!response.success || !response.data) {
-          throw new Error(response.error?.message ?? "Graph load failed");
+        const [graphResponse, graphReplicaResponse] = await Promise.all([
+          api.worldGraph.get(projectId),
+          api.worldStorage.getDocument({ projectId, docType: "graph" }),
+        ]);
+
+        if (!graphResponse.success || !graphResponse.data) {
+          throw new Error(graphResponse.error?.message ?? "Graph load failed");
         }
 
-        const suggestedMode =
-          response.data.nodes.length > 0 &&
-          response.data.nodes.filter((node) => node.entityType === "Event").length /
-            response.data.nodes.length >=
-            0.4 &&
-          get().viewMode === "standard"
-            ? "event-chain"
+        const replicaPayload =
+          graphReplicaResponse.success && graphReplicaResponse.data?.found
+            ? graphReplicaResponse.data.payload
             : null;
+        const mergedGraph = mergeWorldGraphLayout(
+          graphResponse.data,
+          replicaPayload,
+        );
 
         set({
-          graphData: response.data,
+          graphData: mergedGraph,
           isLoading: false,
           selectedNodeId: null,
           selectedEdgeId: null,
-          suggestedMode,
         });
       } catch (error) {
         set({ error: String(error), isLoading: false });
       }
     },
 
-    setViewMode: (mode) => {
-      set((state) => ({
-        viewMode: mode,
-        suggestedMode: null,
-        filter: getFilterForViewMode(mode, state.filter),
-      }));
-    },
+    setMainView: (view) => set({ mainView: view }),
 
     setFilter: (filter) =>
       set((state) => ({ filter: { ...state.filter, ...filter } })),
     resetFilter: () => set({ filter: DEFAULT_FILTER }),
-    selectNode: (nodeId) => set({ selectedNodeId: nodeId, selectedEdgeId: null }),
-    selectEdge: (edgeId) => set({ selectedEdgeId: edgeId, selectedNodeId: null }),
-    dismissSuggestion: () => set({ suggestedMode: null }),
-    toggleTimeline: () =>
-      set((state) => ({ isTimelineOpen: !state.isTimelineOpen })),
-    toggleMap: () => set((state) => ({ isMapOpen: !state.isMapOpen })),
+    selectNode: (nodeId: string | null) => set({ selectedNodeId: nodeId, selectedEdgeId: null }),
+    selectEdge: (edgeId: string | null) => set({ selectedEdgeId: edgeId, selectedNodeId: null }),
 
     createGraphNode: async (input) => {
       const projectId = input.projectId || get().activeProjectId;
@@ -132,13 +156,10 @@ export function createWorldBuildingActions(
           graphData: nextGraph,
           selectedNodeId: nextNode.id,
           selectedEdgeId: null,
-          suggestedMode: getSuggestedModeForNodes(
-            nextGraph.nodes,
-            state.viewMode,
-            state.suggestedMode,
-          ),
         };
       });
+      await syncGraphBackedStore(nextNode.entityType, projectId);
+      await persistGraphDocument(projectId, get().graphData);
 
       return nextNode;
     },
@@ -153,11 +174,17 @@ export function createWorldBuildingActions(
       set((state) => ({
         graphData: replaceNodeInGraph(state.graphData, updatedNode),
       }));
+      const projectId = get().activeProjectId;
+      if (projectId) {
+        await syncGraphBackedStore(updatedNode.entityType, projectId);
+      }
+      await persistActiveGraphDocument();
     },
 
-    updateWorldEntityPosition: async (input: WorldEntityUpdatePositionInput) => {
+    updateGraphNodePosition: async (input: WorldEntityUpdatePositionInput) => {
       const current = get().graphData?.nodes.find((node) => node.id === input.id);
-      if (!current || !isWorldEntityBackedType(current.entityType)) return;
+      const projectId = get().activeProjectId;
+      if (!current || !projectId) return;
 
       set((state) => ({
         graphData: updateNodePositionInGraph(
@@ -168,20 +195,32 @@ export function createWorldBuildingActions(
         ),
       }));
 
-      await api.worldEntity.updatePosition(input);
+      if (isWorldEntityBackedType(current.entityType)) {
+        await api.worldEntity.updatePosition(input);
+      }
+      await persistGraphDocument(projectId, get().graphData);
+    },
+
+    updateWorldEntityPosition: async (input: WorldEntityUpdatePositionInput) => {
+      await get().updateGraphNodePosition(input);
     },
 
     deleteGraphNode: async (id) => {
       const current = get().graphData?.nodes.find((node) => node.id === id);
-      if (!current) return;
+      const projectId = get().activeProjectId;
+      if (!current || !projectId) return false;
 
       const deleted = await deleteGraphNodeByType(current);
-      if (!deleted) return;
+      if (!deleted) return false;
 
       set((state) => ({
         graphData: removeNodeFromGraph(state.graphData, id),
         selectedNodeId: state.selectedNodeId === id ? null : state.selectedNodeId,
       }));
+      clearGraphBackedSelection(current.entityType, id);
+      await syncGraphBackedStore(current.entityType, projectId);
+      await persistGraphDocument(projectId, get().graphData);
+      return true;
     },
 
     createWorldEntity: async (input: WorldEntityCreateInput) =>
@@ -209,9 +248,7 @@ export function createWorldBuildingActions(
       });
     },
 
-    deleteWorldEntity: async (id) => {
-      await get().deleteGraphNode(id);
-    },
+    deleteWorldEntity: async (id) => get().deleteGraphNode(id),
 
     createRelation: async (input: EntityRelationCreateInput) => {
       const resolvedProjectId = input.projectId || get().activeProjectId;
@@ -242,6 +279,7 @@ export function createWorldBuildingActions(
       set((state) => ({
         graphData: appendRelationToGraph(state.graphData, createdRelation),
       }));
+      await persistGraphDocument(resolvedProjectId, get().graphData);
       return createdRelation;
     },
 
@@ -253,17 +291,20 @@ export function createWorldBuildingActions(
       set((state) => ({
         graphData: replaceRelationInGraph(state.graphData, updatedRelation),
       }));
+      await persistActiveGraphDocument();
       return true;
     },
 
     deleteRelation: async (id: string) => {
+      const projectId = get().activeProjectId;
       const response = await api.entityRelation.delete(id);
-      if (!response.success) return false;
+      if (!response.success || !projectId) return false;
 
       set((state) => ({
         graphData: removeRelationFromGraph(state.graphData, id),
         selectedEdgeId: state.selectedEdgeId === id ? null : state.selectedEdgeId,
       }));
+      await persistGraphDocument(projectId, get().graphData);
       return true;
     },
   };

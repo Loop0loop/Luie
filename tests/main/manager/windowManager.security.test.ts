@@ -7,6 +7,7 @@ type BrowserWindowOptionsLike = {
     contextIsolation?: boolean;
     nodeIntegration?: boolean;
     sandbox?: boolean;
+    spellcheck?: boolean;
   };
 };
 
@@ -26,6 +27,9 @@ class MockBrowserWindow {
 
   public readonly webContents = {
     openDevTools: vi.fn(),
+    session: {
+      setSpellCheckerEnabled: vi.fn(),
+    },
   };
 
   private readonly listeners = new Map<string, Array<() => void>>();
@@ -127,6 +131,9 @@ vi.mock("electron-window-state", () => ({
 vi.mock("../../../src/main/manager/settingsManager.js", () => ({
   settingsManager: {
     getMenuBarMode: () => "visible",
+    getEditorSettings: () => ({
+      spellcheckEnabled: true,
+    }),
   },
 }));
 
@@ -150,6 +157,7 @@ describe("WindowManager security webPreferences", () => {
     expect(webPreferences?.sandbox).toBe(true);
     expect(webPreferences?.contextIsolation).toBe(true);
     expect(webPreferences?.nodeIntegration).toBe(false);
+    expect(webPreferences?.spellcheck).toBe(true);
     expect(webPreferences?.preload).toMatch(/preload[\\/]+index\.cjs$/);
   });
 
@@ -163,6 +171,7 @@ describe("WindowManager security webPreferences", () => {
     expect(webPreferences?.sandbox).toBe(true);
     expect(webPreferences?.contextIsolation).toBe(true);
     expect(webPreferences?.nodeIntegration).toBe(false);
+    expect(webPreferences?.spellcheck).toBe(true);
     expect(webPreferences?.preload).toMatch(/preload[\\/]+index\.cjs$/);
   });
 });

@@ -42,7 +42,7 @@ export function WikiSection({
         </div>
       </div>
       <BufferedTextArea
-        className="w-full min-h-30 leading-relaxed p-3 border border-border rounded bg-surface text-fg resize-y focus:outline-2 focus:outline-(--namu-blue) focus:border-transparent font-sans"
+        className="w-full min-h-30 leading-relaxed p-3 border border-border rounded bg-surface text-fg resize-y focus:outline-2 focus:outline-accent focus:border-transparent font-sans"
         value={content || ""}
         placeholder={t("character.wiki.sectionPlaceholder")}
         onSave={onUpdateContent}

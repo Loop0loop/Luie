@@ -1,11 +1,24 @@
+[data-editor-scroll-container="true"] {
+    scroll-padding-top: 42vh;
+    scroll-padding-bottom: 42vh;
+}
+
 /* Editor Content Styles */
 
 /* Base ProseMirror */
 .tiptap .ProseMirror {
     outline: none;
     flex: 1;
-    height: 100%;
+    min-height: 100%;
+    height: auto;
+    width: 100%;
     color: var(--editor-text, var(--text-primary));
+}
+
+.tiptap .ProseMirror::after {
+    content: "";
+    display: block;
+    height: var(--editor-typewriter-tail-space, 42vh);
 }
   
 .tiptap .ProseMirror p.is-editor-empty:first-child::before {

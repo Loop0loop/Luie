@@ -8,21 +8,30 @@ import {
   LUIE_PACKAGE_META_FILENAME,
   LUIE_SNAPSHOTS_DIR,
   LUIE_WORLD_CHARACTERS_FILE,
+  LUIE_WORLD_DRAWING_FILE,
   LUIE_WORLD_DIR,
   LUIE_WORLD_GRAPH_FILE,
+  LUIE_WORLD_MINDMAP_FILE,
+  LUIE_WORLD_PLOT_FILE,
+  LUIE_WORLD_SCRAP_MEMOS_FILE,
   LUIE_WORLD_SYNOPSIS_FILE,
   LUIE_WORLD_TERMS_FILE,
 } from "../../../../shared/constants/index.js";
 import { ServiceError } from "../../../utils/serviceError.js";
-import { ensureLuieExtension, readLuieEntry } from "../../../utils/luiePackage.js";
+import { ensureLuieExtension } from "../../../utils/luiePackage.js";
 import type { LoggerLike as LuieWriterLogger } from "../../io/luiePackageTypes.js";
+import { readLuieContainerEntry } from "../../io/luieContainer.js";
 import { normalizeLuiePackagePath } from "./projectPathPolicy.js";
 import {
   LuieCharactersSchema,
   LuieMetaSchema,
   LuieSnapshotsSchema,
   LuieTermsSchema,
+  LuieWorldDrawingSchema,
   LuieWorldGraphSchema,
+  LuieWorldMindmapSchema,
+  LuieWorldPlotSchema,
+  LuieWorldScrapMemosSchema,
   LuieWorldSynopsisSchema,
 } from "./projectLuieSchemas.js";
 import {
@@ -33,6 +42,10 @@ import {
 } from "./projectImportCodec.js";
 import { buildGraphCreateRows } from "./projectImportGraph.js";
 import { applyProjectImportTransaction } from "./projectImportTransaction.js";
+import {
+  findProjectByAttachmentPath,
+  setProjectAttachmentPath,
+} from "./projectAttachmentStore.js";
 
 type LoggerLike = LuieWriterLogger & {
   info: (message: string, details?: unknown) => void;
@@ -50,7 +63,11 @@ type LuieImportCollections = {
   characters: Array<Record<string, unknown>>;
   terms: Array<Record<string, unknown>>;
   snapshots: Array<NonNullable<z.infer<typeof LuieSnapshotsSchema>["snapshots"]>[number]>;
-  worldSynopsis?: string;
+  synopsis?: z.infer<typeof LuieWorldSynopsisSchema>;
+  plot?: z.infer<typeof LuieWorldPlotSchema>;
+  drawing?: z.infer<typeof LuieWorldDrawingSchema>;
+  mindmap?: z.infer<typeof LuieWorldMindmapSchema>;
+  memos?: z.infer<typeof LuieWorldScrapMemosSchema>;
   graph?: z.infer<typeof LuieWorldGraphSchema>;
 };
 
@@ -99,10 +116,14 @@ const parseLuieDocumentOrThrow = <T>(
 };
 
 const findProjectByPath = async (resolvedPath: string): Promise<ExistingProjectLookup> => {
-  return (await db.getClient().project.findFirst({
-    where: { projectPath: resolvedPath },
-    select: { id: true, updatedAt: true },
-  })) as ExistingProjectLookup;
+  const project = await findProjectByAttachmentPath(resolvedPath);
+  if (!project) {
+    return null;
+  }
+  return {
+    id: project.id,
+    updatedAt: project.updatedAt,
+  };
 };
 
 const readMetaOrMarkCorrupt = async (
@@ -120,7 +141,11 @@ const readMetaOrMarkCorrupt = async (
   }
 
   try {
-    const metaRaw = await readLuieEntry(resolvedPath, LUIE_PACKAGE_META_FILENAME, logger);
+    const metaRaw = await readLuieContainerEntry(
+      resolvedPath,
+      LUIE_PACKAGE_META_FILENAME,
+      logger,
+    );
     if (!metaRaw) {
       throw new Error("MISSING_META");
     }
@@ -130,6 +155,12 @@ const readMetaOrMarkCorrupt = async (
     }
     return { meta: parsedMeta.data, luieCorrupted: false };
   } catch (error) {
+    if (
+      error instanceof ServiceError &&
+      error.code === ErrorCode.LUIE_LEGACY_FORMAT_UNSUPPORTED
+    ) {
+      throw error;
+    }
     logger.warn("Failed to read .luie meta; treating as corrupted", {
       packagePath: resolvedPath,
       error,
@@ -191,14 +222,32 @@ const readLuieImportCollections = async (
   const termsEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`;
   const snapshotsEntryPath = `${LUIE_SNAPSHOTS_DIR}/index.json`;
   const synopsisEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_SYNOPSIS_FILE}`;
+  const plotEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_PLOT_FILE}`;
+  const drawingEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_DRAWING_FILE}`;
+  const mindmapEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_MINDMAP_FILE}`;
+  const memosEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_SCRAP_MEMOS_FILE}`;
   const graphEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_GRAPH_FILE}`;
 
-  const [charactersRaw, termsRaw, snapshotsRaw, worldSynopsisRaw, worldGraphRaw] = await Promise.all([
-    readLuieEntry(resolvedPath, charactersEntryPath, logger),
-    readLuieEntry(resolvedPath, termsEntryPath, logger),
-    readLuieEntry(resolvedPath, snapshotsEntryPath, logger),
-    readLuieEntry(resolvedPath, synopsisEntryPath, logger),
-    readLuieEntry(resolvedPath, graphEntryPath, logger),
+  const [
+    charactersRaw,
+    termsRaw,
+    snapshotsRaw,
+    worldSynopsisRaw,
+    worldPlotRaw,
+    worldDrawingRaw,
+    worldMindmapRaw,
+    worldScrapMemosRaw,
+    worldGraphRaw,
+  ] = await Promise.all([
+    readLuieContainerEntry(resolvedPath, charactersEntryPath, logger),
+    readLuieContainerEntry(resolvedPath, termsEntryPath, logger),
+    readLuieContainerEntry(resolvedPath, snapshotsEntryPath, logger),
+    readLuieContainerEntry(resolvedPath, synopsisEntryPath, logger),
+    readLuieContainerEntry(resolvedPath, plotEntryPath, logger),
+    readLuieContainerEntry(resolvedPath, drawingEntryPath, logger),
+    readLuieContainerEntry(resolvedPath, mindmapEntryPath, logger),
+    readLuieContainerEntry(resolvedPath, memosEntryPath, logger),
+    readLuieContainerEntry(resolvedPath, graphEntryPath, logger),
   ]);
 
   const parsedCharacters = parseLuieDocumentOrThrow(charactersRaw, LuieCharactersSchema, {
@@ -225,6 +274,38 @@ const readLuieImportCollections = async (
       label: "world synopsis",
     },
   );
+  const parsedWorldPlot = parseLuieDocumentOrThrow(worldPlotRaw, LuieWorldPlotSchema, {
+    packagePath: resolvedPath,
+    entryPath: plotEntryPath,
+    label: "world plot",
+  });
+  const parsedWorldDrawing = parseLuieDocumentOrThrow(
+    worldDrawingRaw,
+    LuieWorldDrawingSchema,
+    {
+      packagePath: resolvedPath,
+      entryPath: drawingEntryPath,
+      label: "world drawing",
+    },
+  );
+  const parsedWorldMindmap = parseLuieDocumentOrThrow(
+    worldMindmapRaw,
+    LuieWorldMindmapSchema,
+    {
+      packagePath: resolvedPath,
+      entryPath: mindmapEntryPath,
+      label: "world mindmap",
+    },
+  );
+  const parsedWorldScrapMemos = parseLuieDocumentOrThrow(
+    worldScrapMemosRaw,
+    LuieWorldScrapMemosSchema,
+    {
+      packagePath: resolvedPath,
+      entryPath: memosEntryPath,
+      label: "world scrap memos",
+    },
+  );
   const parsedGraph = parseLuieDocumentOrThrow(worldGraphRaw, LuieWorldGraphSchema, {
     packagePath: resolvedPath,
     entryPath: graphEntryPath,
@@ -235,11 +316,48 @@ const readLuieImportCollections = async (
     characters: parsedCharacters?.characters ?? [],
     terms: parsedTerms?.terms ?? [],
     snapshots: parsedSnapshots?.snapshots ?? [],
-    worldSynopsis:
-      parsedWorldSynopsis &&
-      typeof parsedWorldSynopsis.synopsis === "string"
-        ? parsedWorldSynopsis.synopsis
-        : undefined,
+    synopsis: parsedWorldSynopsis
+      ? {
+          synopsis:
+            typeof parsedWorldSynopsis.synopsis === "string"
+              ? parsedWorldSynopsis.synopsis
+              : "",
+          status: parsedWorldSynopsis.status,
+          genre: parsedWorldSynopsis.genre,
+          targetAudience: parsedWorldSynopsis.targetAudience,
+          logline: parsedWorldSynopsis.logline,
+          updatedAt: parsedWorldSynopsis.updatedAt,
+        }
+      : undefined,
+    plot: parsedWorldPlot
+      ? {
+          columns: parsedWorldPlot.columns ?? [],
+          updatedAt: parsedWorldPlot.updatedAt,
+        }
+      : undefined,
+    drawing: parsedWorldDrawing
+      ? {
+          paths: parsedWorldDrawing.paths ?? [],
+          tool: parsedWorldDrawing.tool,
+          iconType: parsedWorldDrawing.iconType,
+          color: parsedWorldDrawing.color,
+          lineWidth: parsedWorldDrawing.lineWidth,
+          updatedAt: parsedWorldDrawing.updatedAt,
+        }
+      : undefined,
+    mindmap: parsedWorldMindmap
+      ? {
+          nodes: parsedWorldMindmap.nodes ?? [],
+          edges: parsedWorldMindmap.edges ?? [],
+          updatedAt: parsedWorldMindmap.updatedAt,
+        }
+      : undefined,
+    memos: parsedWorldScrapMemos
+      ? {
+          memos: parsedWorldScrapMemos.memos ?? [],
+          updatedAt: parsedWorldScrapMemos.updatedAt,
+        }
+      : undefined,
     graph: parsedGraph
       ? {
           nodes: parsedGraph.nodes ?? [],
@@ -280,10 +398,7 @@ export const openLuieProjectPackage = async (input: {
         { packagePath: resolvedPath, recoveryPath },
       );
     }
-    await db.getClient().project.update({
-      where: { id: existingByPath.id },
-      data: { projectPath: recoveryPath },
-    });
+    await setProjectAttachmentPath(existingByPath.id, recoveryPath);
     const project = await input.getProjectById(existingByPath.id);
     return {
       project,
@@ -314,7 +429,7 @@ export const openLuieProjectPackage = async (input: {
     resolvedProjectId,
     chaptersMeta,
     readChapterEntry: async (entryPath: string) =>
-      await readLuieEntry(resolvedPath, entryPath, input.logger),
+      await readLuieContainerEntry(resolvedPath, entryPath, input.logger),
   });
   const charactersForCreate = buildCharacterCreateRows(
     resolvedProjectId,
@@ -339,7 +454,12 @@ export const openLuieProjectPackage = async (input: {
     legacyProjectId,
     existing,
     meta,
-    worldSynopsis: collections.worldSynopsis,
+    worldSynopsis: collections.synopsis,
+    worldPlot: collections.plot,
+    worldDrawing: collections.drawing,
+    worldMindmap: collections.mindmap,
+    worldScrapMemos: collections.memos,
+    worldGraph: collections.graph,
     resolvedPath,
     chaptersForCreate,
     charactersForCreate: graphRows.charactersForCreate,
@@ -363,5 +483,8 @@ export const openLuieProjectPackage = async (input: {
     snapshotCount: snapshotsForCreate.length,
   });
 
-  return { project: created, conflict: "luie-newer" as const };
+  return {
+    project: await input.getProjectById(created.id),
+    conflict: "luie-newer" as const,
+  };
 };

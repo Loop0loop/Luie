@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocked = vi.hoisted(() => ({
   projectFindUnique: vi.fn(),
   chapterFindFirst: vi.fn(),
-  readLuieEntry: vi.fn(),
+  getProjectAttachmentPath: vi.fn(),
+  readLuieContainerEntry: vi.fn(),
   buildAnalysisContext: vi.fn(),
   runGeminiAnalysisStream: vi.fn(),
   deleteMany: vi.fn(async () => ({ count: 0 })),
@@ -46,8 +47,12 @@ vi.mock("../../../src/main/database/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/utils/luiePackage.js", () => ({
-  readLuieEntry: mocked.readLuieEntry,
+vi.mock("../../../src/main/services/io/luieContainer.js", () => ({
+  readLuieContainerEntry: mocked.readLuieContainerEntry,
+}));
+
+vi.mock("../../../src/main/services/core/project/projectAttachmentStore.js", () => ({
+  getProjectAttachmentPath: mocked.getProjectAttachmentPath,
 }));
 
 vi.mock("../../../src/main/core/manuscriptAnalyzer.js", () => ({
@@ -82,16 +87,16 @@ describe("ManuscriptAnalysisService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocked.projectFindUnique.mockResolvedValue({
-      projectPath: "/tmp/test-project.luie",
       characters: [],
       terms: [],
     });
+    mocked.getProjectAttachmentPath.mockResolvedValue("/tmp/test-project.luie");
     mocked.chapterFindFirst.mockResolvedValue({
       id: "chapter-1",
       title: "Chapter 1",
       content: "# chapter content",
     });
-    mocked.readLuieEntry.mockImplementation(async (_projectPath: string, entryPath: string) => {
+    mocked.readLuieContainerEntry.mockImplementation(async (_projectPath: string, entryPath: string) => {
       if (entryPath === "meta.json") {
         return JSON.stringify({
           chapters: [{ id: "chapter-1", title: "Chapter 1" }],
@@ -141,10 +146,10 @@ describe("ManuscriptAnalysisService", () => {
 
   it("falls back to DB chapter content when .luie package is unavailable", async () => {
     mocked.projectFindUnique.mockResolvedValue({
-      projectPath: null,
       characters: [{ name: "Alice", description: "Hero" }],
       terms: [{ term: "Arcology", definition: "Mega city", category: "place" }],
     });
+    mocked.getProjectAttachmentPath.mockResolvedValue(null);
     mocked.chapterFindFirst.mockResolvedValue({
       id: "chapter-1",
       title: "DB Chapter",
@@ -171,7 +176,7 @@ describe("ManuscriptAnalysisService", () => {
       [{ name: "Alice", description: "Hero" }],
       [{ term: "Arcology", definition: "Mega city", category: "place" }],
     );
-    expect(mocked.readLuieEntry).not.toHaveBeenCalled();
+    expect(mocked.readLuieContainerEntry).not.toHaveBeenCalled();
   });
 
   it("aborts the active run when stopAnalysis is called", async () => {

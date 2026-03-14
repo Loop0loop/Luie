@@ -2,10 +2,148 @@ import { createLogger } from "../../../shared/logger/index.js";
 import { SEARCH_CONTEXT_RADIUS } from "../../../shared/constants/index.js";
 import { db } from "../../database/index.js";
 import { keywordExtractor } from "../../core/keywordExtractor.js";
-import { characterService } from "../world/characterService.js";
-import { termService } from "../world/termService.js";
+import { appearanceCacheService } from "../world/appearanceCacheService.js";
+import { projectService } from "./projectService.js";
 
 const logger = createLogger("ChapterKeywords");
+
+type TrackKeywordAppearanceOptions = {
+  clearExisting?: boolean;
+  includeCharacters?: boolean;
+  includeTerms?: boolean;
+};
+
+async function updateCharacterFirstAppearance(
+  characterId: string,
+  chapterId: string,
+): Promise<void> {
+  const character = await db.getClient().character.findUnique({
+    where: { id: characterId },
+    select: {
+      projectId: true,
+      firstAppearance: true,
+    },
+  });
+  if (!character?.projectId || character.firstAppearance) return;
+
+  await db.getClient().character.update({
+    where: { id: characterId },
+    data: { firstAppearance: chapterId },
+  });
+  await projectService.attemptImmediatePackageExport(
+    String(character.projectId),
+    "character:update-first-appearance",
+  );
+}
+
+async function updateTermFirstAppearance(termId: string, chapterId: string): Promise<void> {
+  const term = await db.getClient().term.findUnique({
+    where: { id: termId },
+    select: {
+      projectId: true,
+      firstAppearance: true,
+    },
+  });
+  if (!term?.projectId || term.firstAppearance) return;
+
+  await db.getClient().term.update({
+    where: { id: termId },
+    data: { firstAppearance: chapterId },
+  });
+  await projectService.attemptImmediatePackageExport(
+    String(term.projectId),
+    "term:update-first-appearance",
+  );
+}
+
+async function trackKeywordAppearancesInternal(
+  chapterId: string,
+  content: string,
+  projectId: string,
+  options?: TrackKeywordAppearanceOptions,
+) {
+  const includeCharacters = options?.includeCharacters ?? true;
+  const includeTerms = options?.includeTerms ?? true;
+
+  if (options?.clearExisting !== false) {
+    if (includeCharacters && includeTerms) {
+      await appearanceCacheService.clearChapter(chapterId);
+    } else if (includeCharacters) {
+      await appearanceCacheService.clearCharacterChapter(chapterId);
+    } else if (includeTerms) {
+      await appearanceCacheService.clearTermChapter(chapterId);
+    }
+  }
+
+  const [characters, terms] = await Promise.all([
+    includeCharacters
+      ? db.getClient().character.findMany({
+          where: { projectId },
+          select: { id: true, name: true },
+        })
+      : Promise.resolve([]),
+    includeTerms
+      ? db.getClient().term.findMany({
+          where: { projectId },
+          select: { id: true, term: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const typedCharacters = characters as Array<{ id: string; name: string }>;
+  const typedTerms = terms as Array<{ id: string; term: string }>;
+
+  keywordExtractor.setKnownCharacters(
+    typedCharacters.map((character) => character.name),
+  );
+  keywordExtractor.setKnownTerms(typedTerms.map((term) => term.term));
+
+  const keywords = keywordExtractor.extractFromText(content);
+
+  if (includeCharacters) {
+    for (const keyword of keywords.filter((entry) => entry.type === "character")) {
+      const character = typedCharacters.find((entry) => entry.name === keyword.text);
+      if (!character) continue;
+
+      await appearanceCacheService.recordCharacterAppearance({
+        characterId: String(character.id),
+        projectId,
+        chapterId,
+        position: keyword.position,
+        context: extractContext(content, keyword.position, SEARCH_CONTEXT_RADIUS),
+      });
+
+      await updateCharacterFirstAppearance(String(character.id), chapterId);
+    }
+  }
+
+  if (includeTerms) {
+    for (const keyword of keywords.filter((entry) => entry.type === "term")) {
+      const term = typedTerms.find((entry) => entry.term === keyword.text);
+      if (!term) continue;
+
+      await appearanceCacheService.recordTermAppearance({
+        termId: String(term.id),
+        projectId,
+        chapterId,
+        position: keyword.position,
+        context: extractContext(content, keyword.position, SEARCH_CONTEXT_RADIUS),
+      });
+
+      await updateTermFirstAppearance(String(term.id), chapterId);
+    }
+  }
+
+  logger.info("Keyword tracking completed", {
+    chapterId,
+    characterCount: includeCharacters
+      ? keywords.filter((entry) => entry.type === "character").length
+      : 0,
+    termCount: includeTerms
+      ? keywords.filter((entry) => entry.type === "term").length
+      : 0,
+  });
+}
 
 export async function trackKeywordAppearances(
   chapterId: string,
@@ -13,59 +151,66 @@ export async function trackKeywordAppearances(
   projectId: string,
 ) {
   try {
-    const characters = (await db.getClient().character.findMany({
-      where: { projectId },
-      select: { id: true, name: true },
-    })) as Array<{ id: string; name: string }>;
-
-    const terms = (await db.getClient().term.findMany({
-      where: { projectId },
-      select: { id: true, term: true },
-    })) as Array<{ id: string; term: string }>;
-
-    const characterNames = characters.map((c: { name: string }) => c.name);
-    const termNames = terms.map((t: { term: string }) => t.term);
-
-    keywordExtractor.setKnownCharacters(characterNames);
-    keywordExtractor.setKnownTerms(termNames);
-
-    const keywords = keywordExtractor.extractFromText(content);
-
-    for (const keyword of keywords.filter((k) => k.type === "character")) {
-      const character = characters.find((c) => c.name === keyword.text);
-      if (character) {
-        await characterService.recordAppearance({
-          characterId: String(character.id),
-          chapterId,
-          position: keyword.position,
-          context: extractContext(content, keyword.position, SEARCH_CONTEXT_RADIUS),
-        });
-
-        await characterService.updateFirstAppearance(String(character.id), chapterId);
-      }
-    }
-
-    for (const keyword of keywords.filter((k) => k.type === "term")) {
-      const term = terms.find((t) => t.term === keyword.text);
-      if (term) {
-        await termService.recordAppearance({
-          termId: String(term.id),
-          chapterId,
-          position: keyword.position,
-          context: extractContext(content, keyword.position, SEARCH_CONTEXT_RADIUS),
-        });
-
-        await termService.updateFirstAppearance(String(term.id), chapterId);
-      }
-    }
-
-    logger.info("Keyword tracking completed", {
-      chapterId,
-      characterCount: keywords.filter((k) => k.type === "character").length,
-      termCount: keywords.filter((k) => k.type === "term").length,
+    await trackKeywordAppearancesInternal(chapterId, content, projectId, {
+      clearExisting: true,
+      includeCharacters: true,
+      includeTerms: true,
     });
   } catch (error) {
     logger.error("Failed to track keyword appearances", error);
+  }
+}
+
+export async function rebuildProjectKeywordAppearances(
+  projectId: string,
+  options?: {
+    includeCharacters?: boolean;
+    includeTerms?: boolean;
+  },
+) {
+  const includeCharacters = options?.includeCharacters ?? true;
+  const includeTerms = options?.includeTerms ?? true;
+
+  try {
+    if (includeCharacters && includeTerms) {
+      await appearanceCacheService.clearProject(projectId);
+    } else if (includeCharacters) {
+      await appearanceCacheService.clearCharacterProject(projectId);
+    } else if (includeTerms) {
+      await appearanceCacheService.clearTermProject(projectId);
+    }
+
+    const chapters = (await db.getClient().chapter.findMany({
+      where: {
+        projectId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        content: true,
+      },
+      orderBy: { order: "asc" },
+    })) as Array<{ id: string; content: string }>;
+
+    for (const chapter of chapters) {
+      await trackKeywordAppearancesInternal(
+        chapter.id,
+        chapter.content,
+        projectId,
+        {
+          clearExisting: false,
+          includeCharacters,
+          includeTerms,
+        },
+      );
+    }
+  } catch (error) {
+    logger.error("Failed to rebuild project keyword appearances", {
+      projectId,
+      includeCharacters,
+      includeTerms,
+      error,
+    });
   }
 }
 

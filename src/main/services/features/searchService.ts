@@ -7,6 +7,7 @@ import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import type { SearchQuery } from "../../../shared/types/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
+import { chapterSearchCacheService } from "./chapterSearchCacheService.js";
 
 const logger = createLogger("SearchService");
 
@@ -79,33 +80,21 @@ export class SearchService {
       }
 
       if (input.type === "all") {
-        const chapters = (await db.getClient().chapter.findMany({
-          where: {
-            projectId: input.projectId,
-            OR: [
-              { title: { contains: input.query } },
-              { content: { contains: input.query } },
-              { synopsis: { contains: input.query } },
-            ],
-          },
-          take: 5,
-        })) as Array<{
-          id: string;
-          title: string;
-          synopsis?: string | null;
-          wordCount?: number | null;
-          order: number;
-        }>;
+        const chapters = await chapterSearchCacheService.searchProjectChapters(
+          input.projectId,
+          input.query,
+          5,
+        );
 
         chapters.forEach((chapter) => {
           results.push({
             type: "chapter",
-            id: chapter.id,
+            id: chapter.chapterId,
             title: chapter.title,
             description: chapter.synopsis ?? undefined,
             metadata: {
               wordCount: chapter.wordCount,
-              order: chapter.order,
+              order: chapter.chapterOrder,
             },
           });
         });

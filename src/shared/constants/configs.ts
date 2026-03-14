@@ -27,6 +27,7 @@ export const APP_VERSION = readBuildConstant(
 )
 
 export const DB_NAME = 'luie.db'
+export const CACHE_DB_NAME = 'luie-cache.db'
 export const AUTO_SAVE_INTERVAL = 30000 // 30 seconds
 export const DEFAULT_AUTO_SAVE_INTERVAL_MS = AUTO_SAVE_INTERVAL
 export const DEFAULT_AUTO_SAVE_DEBOUNCE_MS = 1000

@@ -1,10 +1,18 @@
 import { useRef } from "react";
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type GroupImperativeHandle } from "react-resizable-panels";
+import {
+  Panel,
+  Group as PanelGroup,
+  Separator as PanelResizeHandle,
+  type GroupImperativeHandle,
+} from "react-resizable-panels";
 import { User } from "lucide-react";
 import WikiDetailView from "@renderer/features/research/components/wiki/WikiDetailView";
 import { useTranslation } from "react-i18next";
-import { CHARACTER_GROUP_COLORS } from "@shared/constants";
-import { useCharacterManager, type CharacterLike } from "@renderer/features/research/components/character/useCharacterManager";
+
+import {
+  useCharacterManager,
+  type CharacterLike,
+} from "@renderer/features/research/components/character/useCharacterManager";
 import { CharacterSidebarList } from "@renderer/features/research/components/character/CharacterSidebarList";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useShallow } from "zustand/react/shallow";
@@ -24,7 +32,7 @@ export default function CharacterManager() {
     useShallow((state) => ({
       sidebarWidths: state.sidebarWidths,
       setSidebarWidth: state.setSidebarWidth,
-    }))
+    })),
   );
   const sidebarFeature = "characterSidebar" as const;
   const sidebarConfig = getSidebarWidthConfig(sidebarFeature);
@@ -32,7 +40,8 @@ export default function CharacterManager() {
     sidebarFeature,
     sidebarWidths[sidebarFeature] || getSidebarDefaultWidth(sidebarFeature),
   );
-  const handleSidebarResize = useSidebarResizeCommit(sidebarFeature, setSidebarWidth);
+  const { onResize: handleSidebarResize, resizeHandleProps } =
+    useSidebarResizeCommit(sidebarFeature, setSidebarWidth);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const panelGroupRef = useRef<GroupImperativeHandle | null>(null);
 
@@ -62,7 +71,10 @@ export default function CharacterManager() {
   } = useCharacterManager(t);
 
   return (
-    <div ref={containerRef} className="flex w-full h-full bg-canvas overflow-hidden">
+    <div
+      ref={containerRef}
+      className="flex w-full h-full bg-canvas overflow-hidden"
+    >
       <PanelGroup
         groupRef={panelGroupRef}
         orientation="horizontal"
@@ -89,8 +101,10 @@ export default function CharacterManager() {
         </Panel>
 
         {/* Resizer Handle */}
-        <PanelResizeHandle className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative">
-        </PanelResizeHandle>
+        <PanelResizeHandle
+          {...resizeHandleProps}
+          className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative"
+        ></PanelResizeHandle>
 
         {/* RIGHT MAIN - Wiki View */}
         <Panel id="main" minSize={toPercentSize(20)}>
@@ -116,7 +130,7 @@ export default function CharacterManager() {
 // Sub-component: Gallery View
 function CharacterGallery({
   groupedCharacters,
-  onSelect
+  onSelect,
 }: {
   groupedCharacters: Record<string, CharacterLike[]>;
   onSelect: (id: string) => void;
@@ -131,25 +145,28 @@ function CharacterGallery({
       </div>
 
       {Object.entries(groupedCharacters).map(([group, chars]) => {
-        const themeColor = CHARACTER_GROUP_COLORS[group] || CHARACTER_GROUP_COLORS["Uncategorized"];
         return (
           <div key={group} className="mb-8">
-            <div className="text-lg font-bold mb-4 pb-2 border-b-2 border-border" style={{ borderColor: themeColor, color: themeColor }}>
+            <div className="text-lg font-bold mb-4 pb-2 border-b-2 text-accent border-b-accent">
               {group}
             </div>
 
             <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-6">
-              {chars.map(char => (
+              {chars.map((char) => (
                 <div
                   key={char.id}
                   className="flex flex-col cursor-pointer hover:bg-surface-hover p-2 rounded transition-colors"
                   onClick={() => onSelect(char.id)}
                 >
-                  <div className="w-full h-32 bg-surface flex items-center justify-center border-b border-border mb-2 rounded" style={{ borderColor: themeColor }}>
-                    <User size={40} color={themeColor} />
+                  <div className="w-full h-32 bg-surface flex items-center justify-center border-b mb-2 rounded border-accent">
+                    <User size={40} className="text-accent" />
                   </div>
-                  <div className="font-semibold text-sm mb-0.5">{char.name}</div>
-                  <div className="text-xs text-subtle">{char.description || t("character.noRole")}</div>
+                  <div className="font-semibold text-sm mb-0.5">
+                    {char.name}
+                  </div>
+                  <div className="text-xs text-subtle">
+                    {char.description || t("character.noRole")}
+                  </div>
                 </div>
               ))}
             </div>

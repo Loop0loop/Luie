@@ -16,11 +16,13 @@ model Project {
   id          String   @id @default(uuid())
   title       String
   description String?
-  projectPath String? // 프로젝트 저장 경로
+  projectPath String? // 레거시 로컬 attachment 경로 (canonical 아님)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
+  attachment      ProjectAttachment?
+  localState      ProjectLocalState?
   chapters        Chapter[]
   characters      Character[]
   terms           Term[]
@@ -30,9 +32,34 @@ model Project {
   settings        ProjectSettings?
   worldEntities   WorldEntity[]
   entityRelations EntityRelation[]
+  worldDocuments  WorldDocument[]
+  scrapMemos      ScrapMemo[]
 }
 
-// 프로젝트 설정
+// 앱 로컬 attachment metadata.
+// canonical project content가 아니라 현재 기기에서 어떤 .luie에 연결됐는지 표현한다.
+model ProjectAttachment {
+  projectId   String   @id
+  projectPath String?  @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// 앱 로컬 프로젝트 상태.
+// 최근 프로젝트 정렬과 마지막 열기 시각처럼 기기 의존 메타데이터만 저장한다.
+model ProjectLocalState {
+  projectId     String    @id
+  lastOpenedAt  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// 프로젝트별 로컬 런타임 정책.
+// 현재 필드는 portable canonical content가 아니라 replica/app-local 성격이다.
 model ProjectSettings {
   id               String  @id @default(uuid())
   projectId        String  @unique
@@ -68,14 +95,13 @@ model Character {
   projectId       String
   name            String
   description     String?
-  firstAppearance String? // Chapter ID where character first appears
+  firstAppearance String? // User-visible metadata with optional auto-fill; not rebuildable cache
   attributes      String? // JSON field for flexible attributes
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   // Relations
-  project     Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  appearances CharacterAppearance[]
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, name])
 }
@@ -86,7 +112,7 @@ model Event {
   projectId       String
   name            String
   description     String?
-  firstAppearance String? // Chapter ID where event first appears
+  firstAppearance String? // User-visible metadata with optional auto-fill; not rebuildable cache
   attributes      String? // JSON field for flexible attributes
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -103,7 +129,7 @@ model Faction {
   projectId       String
   name            String
   description     String?
-  firstAppearance String? // Chapter ID where faction first appears
+  firstAppearance String? // User-visible metadata with optional auto-fill; not rebuildable cache
   attributes      String? // JSON field for flexible attributes
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -114,19 +140,38 @@ model Faction {
   @@index([projectId, name])
 }
 
-// Cache models (rebuildable, non-canonical)
-// 캐릭터 등장 추적
-model CharacterAppearance {
-  id          String   @id @default(uuid())
-  characterId String
-  chapterId   String
-  position    Int // Position in text where character appears
-  context     String? // Surrounding text for context
-  createdAt   DateTime @default(now())
+// Detached/synced 프로젝트가 .luie attachment 없이도 편집될 수 있도록
+// world 문서를 로컬 replica DB에 보관한다.
+model WorldDocument {
+  id        String   @id @default(uuid())
+  projectId String
+  docType   String
+  payload   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  @@index([characterId, chapterId])
+  @@unique([projectId, docType])
+  @@index([projectId, updatedAt])
+}
+
+// Scrap memo는 sync/materialize를 위해 개별 row도 유지한다.
+// `.luie` payload와 replica row는 함께 갱신된다.
+model ScrapMemo {
+  id        String   @id
+  projectId String
+  title     String
+  content   String
+  tags      String   @default("[]") // JSON array
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, sortOrder])
+  @@index([projectId, updatedAt])
 }
 
 // 고유명사 사전
@@ -137,32 +182,18 @@ model Term {
   definition      String?
   category        String? // e.g., "location", "item", "concept"
   order           Int      @default(0)
-  firstAppearance String? // Chapter ID
+  firstAppearance String? // User-visible metadata with optional auto-fill; not rebuildable cache
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   // Relations
-  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  appearances TermAppearance[]
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, term])
 }
 
-// 고유명사 등장 추적
-model TermAppearance {
-  id        String   @id @default(uuid())
-  termId    String
-  chapterId String
-  position  Int
-  context   String?
-  createdAt DateTime @default(now())
-
-  term Term @relation(fields: [termId], references: [id], onDelete: Cascade)
-
-  @@index([termId, chapterId])
-}
-
-// 스냅샷 (버전 관리, cache)
+// 스냅샷 (버전 관리, canonical user data)
+// 캐시가 아니며 복구/히스토리 의미를 보존해야 한다.
 enum SnapshotType {
   AUTO
   MANUAL
@@ -195,7 +226,7 @@ model WorldEntity {
   type            String
   name            String
   description     String?
-  firstAppearance String?
+  firstAppearance String? // User-visible metadata with optional auto-fill; not rebuildable cache
   attributes      String?
   positionX       Float    @default(0)
   positionY       Float    @default(0)

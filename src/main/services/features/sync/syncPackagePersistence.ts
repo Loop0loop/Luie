@@ -7,10 +7,11 @@ import {
   MARKDOWN_EXTENSION,
 } from "../../../../shared/constants/index.js";
 import type { LuiePackageExportData } from "../../io/luiePackageTypes.js";
-import { writeLuiePackage } from "../../io/luiePackageWriter.js";
+import { writeLuieContainer } from "../../io/luieContainer.js";
 import { db } from "../../../database/index.js";
 import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
 import { projectService } from "../../core/projectService.js";
+import { getProjectAttachmentPath } from "../../core/project/projectAttachmentStore.js";
 import type { SyncBundle } from "./syncMapper.js";
 import type { WorldDocumentType } from "./syncWorldDocNormalizer.js";
 import {
@@ -209,37 +210,44 @@ export const persistBundleToLuiePackages = async (input: {
   const failedProjects: string[] = [];
   const persistedProjects: PersistedLuiePackage[] = [];
   for (const project of bundle.projects) {
-    const localProject = await db.getClient().project.findUnique({
-      where: { id: project.id },
-      select: {
-        projectPath: true,
-        snapshots: {
-          orderBy: { createdAt: "desc" },
-          select: {
-            id: true,
-            chapterId: true,
-            content: true,
-            description: true,
-            createdAt: true,
+    const [localProject, projectPath] = await Promise.all([
+      db.getClient().project.findUnique({
+        where: { id: project.id },
+        select: {
+          snapshots: {
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              chapterId: true,
+              content: true,
+              description: true,
+              createdAt: true,
+            },
           },
         },
-      },
-    }) as {
-      projectPath?: string | null;
-      snapshots?: SnapshotRecord[];
-    } | null;
+      }) as Promise<{
+        snapshots?: SnapshotRecord[];
+      } | null>,
+      getProjectAttachmentPath(project.id),
+    ]);
 
-    const projectPath = toNullableString(localProject?.projectPath);
-    if (!projectPath || !projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
+    const normalizedProjectPath = toNullableString(projectPath);
+    if (
+      !normalizedProjectPath ||
+      !normalizedProjectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)
+    ) {
       continue;
     }
     let safeProjectPath: string;
     try {
-      safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
+      safeProjectPath = ensureSafeAbsolutePath(
+        normalizedProjectPath,
+        "projectPath",
+      );
     } catch (error) {
       logger.warn("Skipping .luie persistence for invalid projectPath", {
         projectId: project.id,
-        projectPath,
+        projectPath: normalizedProjectPath,
         error,
       });
       continue;
@@ -255,7 +263,11 @@ export const persistBundleToLuiePackages = async (input: {
     if (!payload) continue;
 
     try {
-      await writeLuiePackage(safeProjectPath, payload, logger);
+      await writeLuieContainer({
+        targetPath: safeProjectPath,
+        payload,
+        logger,
+      });
       persistedProjects.push({
         projectId: project.id,
         projectPath: safeProjectPath,

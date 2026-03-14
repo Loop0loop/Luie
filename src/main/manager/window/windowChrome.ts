@@ -86,11 +86,13 @@ export const applyWindowMenuBarMode = (
 
 export const createSecureWebPreferences = (
   preloadPath: string,
+  spellcheckEnabled = true,
 ): BrowserWindowConstructorOptions["webPreferences"] => ({
   preload: preloadPath,
   contextIsolation: true,
   nodeIntegration: false,
   sandbox: true,
+  spellcheck: spellcheckEnabled,
 })
 
 export const withWindowIcon = (

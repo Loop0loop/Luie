@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { type TFunction } from "i18next";
 import { Home, Plus, LayoutTemplate, ChevronDown, ChevronRight } from "lucide-react";
-import { CHARACTER_TEMPLATES, CHARACTER_GROUP_COLORS } from "@shared/constants";
+import { CHARACTER_TEMPLATES } from "@shared/constants";
 import { cn } from "@shared/types/utils";
 import { Modal } from "@shared/ui/Modal";
 import type { CharacterLike } from "@renderer/features/research/components/character/useCharacterManager";
@@ -27,7 +27,7 @@ export function CharacterSidebarList({
 }: CharacterSidebarListProps) {
     return (
         <div className="flex flex-col h-full bg-sidebar border-r border-border overflow-y-auto">
-            <div className="px-4 py-3 bg-(--namu-blue) text-white font-bold flex justify-between items-center shrink-0">
+            <div className="px-4 py-3 bg-accent text-white font-bold flex justify-between items-center shrink-0">
                 <button
                     className="flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity bg-transparent border-none p-1 text-white cursor-pointer"
                     onClick={() => setSelectedCharacterId(null)}
@@ -74,7 +74,6 @@ export function CharacterSidebarList({
                         key={group}
                         t={t}
                         title={group}
-                        color={CHARACTER_GROUP_COLORS[group] || CHARACTER_GROUP_COLORS["Uncategorized"]}
                         characters={chars}
                         selectedId={selectedCharacterId}
                         onSelect={setSelectedCharacterId}
@@ -88,14 +87,12 @@ export function CharacterSidebarList({
 function CharacterGroup({
     t,
     title,
-    color,
     characters,
     selectedId,
     onSelect
 }: {
     t: TFunction;
     title: string;
-    color: string;
     characters: CharacterLike[];
     selectedId: string | null;
     onSelect: (id: string) => void;
@@ -105,9 +102,8 @@ function CharacterGroup({
     return (
         <div>
             <div
-                className="px-4 py-2 text-xs font-bold text-muted bg-surface border-b border-border cursor-pointer flex items-center gap-2 select-none"
+                className="px-4 py-2 text-xs font-bold text-muted bg-surface border-b border-border cursor-pointer flex items-center gap-2 select-none border-l-[4px] border-l-accent"
                 onClick={() => setIsOpen(!isOpen)}
-                style={{ borderLeft: `4px solid ${color}` }}
             >
                 {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                 <span>{title} ({characters.length})</span>
@@ -120,10 +116,9 @@ function CharacterGroup({
                             key={char.id}
                             className={cn(
                                 "px-4 py-2.5 border-b border-border cursor-pointer text-sm text-fg flex flex-col transition-colors hover:bg-surface-hover",
-                                selectedId === char.id && "bg-(--namu-hover-bg) border-l-[3px] text-(--namu-blue)"
+                                selectedId === char.id && "bg-(--namu-hover-bg) border-l-[3px] border-l-accent text-accent"
                             )}
                             onClick={() => onSelect(char.id)}
-                            style={selectedId === char.id ? { borderLeftColor: color } : {}}
                         >
                             <span className="font-semibold mb-0.5">{char.name}</span>
                             <span className="text-[11px] text-subtle">{char.description || t("character.noRole")}</span>

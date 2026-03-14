@@ -1,517 +1,698 @@
 export const jaBase = {
-  "home": "ホーム",
-  "share": "共有",
-  "loading": "読み込み中...",
-  "back": "戻る",
-  "delete": "削除",
-  "undo": "元に戻す",
-  "clear": "クリア",
-  "exit": "終了",
-  "menu": {
-    "file": "ファイル",
-    "edit": "編集",
-    "view": "表示",
-    "insert": "挿入",
-    "format": "書式",
-    "tools": "ツール",
-    "extensions": "拡張機能",
-    "help": "ヘルプ",
-    "link": "リンク",
-    "image": "画像"
+  home: "ホーム",
+  share: "共有",
+  loading: "読み込み中...",
+  back: "戻る",
+  delete: "削除",
+  undo: "元に戻す",
+  clear: "クリア",
+  exit: "終了",
+  menu: {
+    file: "ファイル",
+    edit: "編集",
+    view: "表示",
+    insert: "挿入",
+    format: "書式",
+    tools: "ツール",
+    extensions: "拡張機能",
+    help: "ヘルプ",
+    link: "リンク",
+    image: "画像",
   },
-  "settings": {
-    "title": "画面設定",
-    "sidebar": {
-      "section": {
-        "manuscript": "原稿",
-        "research": "リサーチ",
-        "snapshot": "スナップショット",
-        "trash": "ゴミ箱"
+  settings: {
+    title: "画面設定",
+    sidebar: {
+      section: {
+        manuscript: "原稿",
+        research: "リサーチ",
+        snapshot: "スナップショット",
+        trash: "ゴミ箱",
       },
-      "item": {
-        "characters": "登場人物",
-        "world": "世界観",
-        "scrap": "資料スクラップ",
-        "analysis": "分析"
+      item: {
+        characters: "登場人物",
+        world: "世界観",
+        scrap: "資料スクラップ",
+        analysis: "分析",
       },
-      "addChapter": "新しい章を追加",
-      "snapshotEmpty": "選択された章がないか、スナップショットがありません。",
-      "trashEmpty": "ゴミ箱は空です。",
-      "tooltip": {
-        "refresh": "更新"
+      addChapter: "新しい章を追加",
+      snapshotEmpty: "選択された章がないか、スナップショットがありません。",
+      trashEmpty: "ゴミ箱は空です。",
+      tooltip: {
+        refresh: "更新",
       },
-      "editor": "フォント (Editor)",
-      "appearance": "テーマ (Appearance)",
-      "features": "機能 (Features)",
-      "shortcuts": "ショートカット (Shortcuts)",
-      "recovery": "ファイル復元 (File Recovery)",
-      "sync": "同期 (Sync)",
-      "language": "言語 (Language)"
+      editor: "フォント (Editor)",
+      appearance: "テーマ (Appearance)",
+      features: "機能 (Features)",
+      shortcuts: "ショートカット (Shortcuts)",
+      recovery: "ファイル復元 (File Recovery)",
+      sync: "同期 (Sync)",
+      language: "言語 (Language)",
     },
-    "section": {
-      "font": "フォント (Font)",
-      "optionalFonts": "オプションフォント",
-      "fontSize": "文字サイズ",
-      "lineHeight": "行間",
-      "theme": "テーマ (Theme)",
-      "uiMode": "UIモード (Laboratory)",
-      "language": "言語",
-      "menuBar": "メニューバー"
+    section: {
+      font: "フォント (Font)",
+      optionalFonts: "オプションフォント",
+      spellcheck: "スペルチェック",
+      fontSize: "文字サイズ",
+      lineHeight: "行間",
+      theme: "テーマ (Theme)",
+      uiMode: "UIモード (Laboratory)",
+      language: "言語",
+      menuBar: "メニューバー",
     },
-    "uiMode": {
-      "description": "エディタのツールバーとレイアウトを馴染みのあるスタイルに変更します。",
-      "default": "デフォルト",
-      "docs": "Google Docs スタイル",
-      "editor": "エディターモード",
-      "scrivener": "Scrivener スタイル"
+    uiMode: {
+      description:
+        "エディタのツールバーとレイアウトを馴染みのあるスタイルに変更します。",
+      default: "デフォルト",
+      docs: "Google Docs スタイル",
+      editor: "エディターモード",
+      scrivener: "Scrivener スタイル",
     },
-    "menuBar": {
-      "description": "macOS では「隠す」を選ぶと没入型フルスクリーンに切り替わります。",
-      "hide": "メニューバーを隠す",
-      "show": "メニューバーを表示",
-      "applyHint": "変更は即時反映されます。（隠す: フルスクリーン / 表示: 通常ウィンドウ）",
-      "applyFailed": "メニューバー表示モードの適用に失敗しました。再試行してください。"
+    menuBar: {
+      description:
+        "macOS では「隠す」を選ぶと没入型フルスクリーンに切り替わります。",
+      hide: "メニューバーを隠す",
+      show: "メニューバーを表示",
+      applyHint:
+        "変更は即時反映されます。（隠す: フルスクリーン / 表示: 通常ウィンドウ）",
+      applyFailed:
+        "メニューバー表示モードの適用に失敗しました。再試行してください。",
     },
-    "appearance": {
-      "baseTheme": {
-        "title": "ベーステーマ",
-        "description": "画面全体の明るさと基調トーンを選択します。"
+    appearance: {
+      baseTheme: {
+        title: "ベーステーマ",
+        description: "画面全体の明るさと基調トーンを選択します。",
       },
-      "accent": {
-        "title": "アクセントカラー",
-        "description": "主要アクションや強調要素の色を選択します。"
+      accent: {
+        title: "アクセントカラー",
+        description: "主要アクションや強調要素の色を選択します。",
       },
-      "texture": {
-        "title": "紙の質感",
-        "description": "背景に微細な紙ノイズを加えます。",
-        "on": "オン",
-        "off": "オフ"
+      texture: {
+        title: "紙の質感",
+        description: "背景に微細な紙ノイズを加えます。",
+        on: "オン",
+        off: "オフ",
       },
-      "contrast": {
-        "title": "コントラスト",
-        "description": "画面の視認性を調整します。",
-        "soft": "ソフト",
-        "high": "ハイ"
+      contrast: {
+        title: "コントラスト",
+        description: "画面の視認性を調整します。",
+        soft: "ソフト",
+        high: "ハイ",
       },
-      "atmosphere": {
-        "title": "雰囲気",
-        "description": "執筆スタイルに合う色温度を選択します。",
-        "cool": {
-          "title": "クール",
-          "description": "集中 / 分析 / 理性的"
+      atmosphere: {
+        title: "雰囲気",
+        description: "執筆スタイルに合う色温度を選択します。",
+        cool: {
+          title: "クール",
+          description: "集中 / 分析 / 理性的",
         },
-        "neutral": {
-          "title": "ニュートラル",
-          "description": "標準 / クリーン"
+        neutral: {
+          title: "ニュートラル",
+          description: "標準 / クリーン",
         },
-        "warm": {
-          "title": "ウォーム",
-          "description": "物語 / 感情 / 快適"
-        }
-      }
+        warm: {
+          title: "ウォーム",
+          description: "物語 / 感情 / 快適",
+        },
+      },
     },
-    "view": {
-      "pc": "PC",
-      "mobile": "モバイル"
+    view: {
+      pc: "PC",
+      mobile: "モバイル",
     },
-    "font": {
-      "serif": "明朝体",
-      "sans": "ゴシック体 (Inter + Noto Sans KR/JP)",
-      "mono": "モノ",
-      "helper": {
-        "primary": "内蔵: Inter Variable + Noto Sans KR/JP (多言語フォールバック)",
-        "optional": "インストール済みフォントのみ適用されます。未インストールの場合は既定フォントにフォールバックします。"
-      }
+    font: {
+      serif: "明朝体",
+      sans: "ゴシック体 (Inter + Noto Sans KR/JP)",
+      mono: "モノ",
+      helper: {
+        primary:
+          "内蔵: Inter Variable + Noto Sans KR/JP (多言語フォールバック)",
+        optional:
+          "インストール済みフォントのみ適用されます。未インストールの場合は既定フォントにフォールバックします。",
+      },
     },
-    "optionalFonts": {
-      "lora": "Lora (Serif)",
-      "bitter": "Bitter (Serif)",
-      "sourceSerif": "Source Serif 4",
-      "montserrat": "Montserrat (Sans)",
-      "nunitoSans": "Nunito Sans",
-      "victorMono": "Victor Mono",
-      "action": {
-        "installing": "インストール中",
-        "install": "インストール",
-        "apply": "適用",
-        "active": "使用中"
-      }
+    optionalFonts: {
+      lora: "Lora (Serif)",
+      bitter: "Bitter (Serif)",
+      sourceSerif: "Source Serif 4",
+      montserrat: "Montserrat (Sans)",
+      nunitoSans: "Nunito Sans",
+      victorMono: "Victor Mono",
+      action: {
+        installing: "インストール中",
+        install: "インストール",
+        apply: "適用",
+        active: "使用中",
+      },
     },
-    "theme": {
-      "light": "Light",
-      "sepia": "Sepia",
-      "dark": "Dark"
+    spellcheck: {
+      description: "Electron 内蔵のスペルチェック下線と候補表示を切り替えます。",
+      on: "オン",
+      off: "オフ",
     },
-    "sampleText": "Ag",
-    "language": {
-      "helper": "アプリ全体の言語を変更します。",
-      "options": {
-        "ko": "韓国語",
-        "en": "英語",
-        "ja": "日本語"
-      }
+    theme: {
+      light: "Light",
+      sepia: "Sepia",
+      dark: "Dark",
     },
-    "placeholder": "準備中の機能です。",
-    "shortcuts": {
-      "title": "ショートカット",
-      "action": "操作",
-      "key": "キー",
-      "reset": "既定に戻す",
-      "openSettings": "設定を開く",
-      "closeWindow": "ウィンドウを閉じる",
-      "quitApp": "アプリを終了",
-      "newChapter": "新しい回を作成",
-      "saveChapter": "現在の回を保存",
-      "deleteChapter": "現在の章を削除",
-      "openChapter1": "第1章を開く",
-      "openChapter2": "第2章を開く",
-      "openChapter3": "第3章を開く",
-      "openChapter4": "第4章を開く",
-      "openChapter5": "第5章を開く",
-      "openChapter6": "第6章を開く",
-      "openChapter7": "第7章を開く",
-      "openChapter8": "第8章を開く",
-      "openChapter9": "第9章を開く",
-      "openChapter10": "第10章を開く",
-      "toggleSidebar": "サイドバーを切替",
-      "openSidebar": "サイドバーを開く",
-      "closeSidebar": "サイドバーを閉じる",
-      "toggleContext": "コンテキストパネルを切替",
-      "openContext": "コンテキストパネルを開く",
-      "closeContext": "コンテキストパネルを閉じる",
-      "toggleBinder": "バインダーを開く/閉じる",
-      "openSnapshotSection": "スナップショットを開く",
-      "openTrashSection": "ゴミ箱を開く",
-      "renameProject": "プロジェクト名を変更",
-      "openCharacter": "キャラクターを開く",
-      "openWorld": "世界観を開く",
-      "openScrap": "スクラップを開く",
-      "openAnalysis": "分析を開く",
-      "openCharacterLeft": "キャラクターを左に開く",
-      "openWorldLeft": "世界観を左に開く",
-      "openScrapLeft": "スクラップを左に開く",
-      "openAnalysisLeft": "分析を左に開く",
-      "openCharacterTemplate": "キャラクター作成を開く",
-      "worldTabSynopsis": "あらすじへ移動",
-      "worldTabTerms": "用語へ移動",
-      "worldTabMindmap": "マインドマップへ移動",
-      "worldTabDrawing": "ドローイングへ移動",
-      "worldTabPlot": "プロットボードへ移動",
-      "worldTabGraph": "ワールドグラフへ移動",
-      "addWorldTerm": "世界観用語を作成",
-      "addScrapMemo": "スクラップメモを作成",
-      "openExportPreview": "書き出しプレビューを開く",
-      "openExportWindow": "クイック書き出し",
-      "openEditorRight": "章を右に開く",
-      "openEditorLeft": "章を左に開く",
-      "swapSplitSides": "左右ペインを入れ替え",
-      "editorFontIncrease": "文字サイズを大きく",
-      "editorFontDecrease": "文字サイズを小さく",
-      "toggleFullscreen": "全画面切替",
-      "group": {
-        "app": "アプリ",
-        "file": "原稿",
-        "view": "表示",
-        "research": "リサーチ",
-        "editor": "エディタ",
-        "other": "その他"
+    sampleText: "Ag",
+    language: {
+      helper: "アプリ全体の言語を変更します。",
+      options: {
+        ko: "韓国語",
+        en: "英語",
+        ja: "日本語",
       },
-      "saveFailed": "ショートカットの保存に失敗しました。",
-      "resetFailed": "ショートカットの初期化に失敗しました。"
     },
-    "recovery": {
-      "title": "ファイル復元",
-      "description": "WAL ログを使って破損したデータベースを復元します。実行前にバックアップを作成します。",
-      "dryRun": "バックアップのみ作成",
-      "run": "復元を実行",
-      "running": "復元中...",
-      "success": "復元が完了しました。",
-      "failed": "復元の実行に失敗しました。",
-      "error": "復元中にエラーが発生しました。"
+    placeholder: "準備中の機能です。",
+    shortcuts: {
+      title: "ショートカット",
+      action: "操作",
+      key: "キー",
+      reset: "既定に戻す",
+      openSettings: "設定を開く",
+      closeWindow: "ウィンドウを閉じる",
+      quitApp: "アプリを終了",
+      newChapter: "新しい回を作成",
+      saveChapter: "現在の回を保存",
+      deleteChapter: "現在の章を削除",
+      openChapter1: "第1章を開く",
+      openChapter2: "第2章を開く",
+      openChapter3: "第3章を開く",
+      openChapter4: "第4章を開く",
+      openChapter5: "第5章を開く",
+      openChapter6: "第6章を開く",
+      openChapter7: "第7章を開く",
+      openChapter8: "第8章を開く",
+      openChapter9: "第9章を開く",
+      openChapter10: "第10章を開く",
+      toggleSidebar: "サイドバーを切替",
+      openSidebar: "サイドバーを開く",
+      closeSidebar: "サイドバーを閉じる",
+      toggleContext: "コンテキストパネルを切替",
+      openContext: "コンテキストパネルを開く",
+      closeContext: "コンテキストパネルを閉じる",
+      toggleBinder: "バインダーを開く/閉じる",
+      openSnapshotSection: "スナップショットを開く",
+      openTrashSection: "ゴミ箱を開く",
+      renameProject: "プロジェクト名を変更",
+      openCharacter: "キャラクターを開く",
+      openWorld: "世界観を開く",
+      openScrap: "スクラップを開く",
+      openAnalysis: "分析を開く",
+      openCharacterLeft: "キャラクターを左に開く",
+      openWorldLeft: "世界観を左に開く",
+      openScrapLeft: "スクラップを左に開く",
+      openAnalysisLeft: "分析を左に開く",
+      openCharacterTemplate: "キャラクター作成を開く",
+      worldTabSynopsis: "あらすじへ移動",
+      worldTabTerms: "用語へ移動",
+      worldTabMindmap: "マインドマップへ移動",
+      worldTabDrawing: "ドローイングへ移動",
+      worldTabPlot: "プロットボードへ移動",
+      worldTabGraph: "ワールドグラフへ移動",
+      addWorldTerm: "世界観用語を作成",
+      addScrapMemo: "スクラップメモを作成",
+      openExportPreview: "書き出しプレビューを開く",
+      openExportWindow: "クイック書き出し",
+      openEditorRight: "章を右に開く",
+      openEditorLeft: "章を左に開く",
+      swapSplitSides: "左右ペインを入れ替え",
+      editorFontIncrease: "文字サイズを大きく",
+      editorFontDecrease: "文字サイズを小さく",
+      toggleFullscreen: "全画面切替",
+      group: {
+        app: "アプリ",
+        file: "原稿",
+        view: "表示",
+        research: "リサーチ",
+        editor: "エディタ",
+        other: "その他",
+      },
+      saveFailed: "ショートカットの保存に失敗しました。",
+      resetFailed: "ショートカットの初期化に失敗しました。",
     },
-    "sync": {
-      "title": "同期と連携",
-      "description": "Google アカウントを接続し、Supabase とプロジェクトデータを同期します。",
-      "connected": "接続済み",
-      "disconnected": "未接続",
-      "fields": {
-        "connection": "接続状態",
-        "email": "接続アカウント",
-        "lastSyncedAt": "最終同期",
-        "mode": "状態",
-        "autoSync": "自動同期"
+    recovery: {
+      title: "ファイル復元",
+      refresh: "もう一度確認",
+      steps: {
+        safeTitle: "最初に安全なバックアップを作成します",
+        safeDescription:
+          "現在の状態を先に別保存するので、問題が起きても元に戻せます。",
+        restoreTitle: "直近の保存内容を戻します",
+        restoreDescription:
+          "メインファイルにまだ反映されていなかった直近の保存内容を Luie が戻します。",
+        rollbackTitle: "問題があれば自動で元に戻します",
+        rollbackDescription:
+          "整合性チェックに失敗した場合は、Luie が自動でバックアップを復元します。",
       },
-      "status": {
-        "idle": "待機",
-        "connecting": "接続中",
-        "syncing": "同期中",
-        "error": "エラー"
+      dryRun: "先に安全バックアップだけ作る",
+      run: "直近の保存内容を復元する",
+      running: "復元中...",
+      failed: "復元の実行に失敗しました。",
+      error: "復元中にエラーが発生しました。",
+      lastChecked: "最終確認",
+      unavailableHint:
+        "今は復元できる直近の保存内容が見つかっていません。通常は .wal ファイルがないときにこの表示になります。",
+      file: {
+        database: "データベース",
+        wal: "WAL ログ",
+        shm: "共有メモリ",
+        present: "あり",
+        missing: "なし",
       },
-      "actions": {
-        "connectGoogle": "Google 接続",
-        "reconnectGoogle": "再ログイン",
-        "disconnect": "接続解除",
-        "syncNow": "今すぐ同期"
+      hero: {
+        checkingBadge: "確認中",
+        checkingTitle: "復元できる直近の保存内容を確認しています",
+        checkingDescription:
+          "Luie が復元可能な保存痕跡が残っているかを自動で調べています。",
+        readyBadge: "復元可能",
+        readyTitle: "直近の保存内容を戻せます",
+        readyDescription:
+          "メインファイルへまだ反映されていない直近の保存内容が見つかりました。下の復元ボタンを押せば、Luie が安全に復元を試みます。",
+        emptyBadge: "今は復元するものがありません",
+        emptyTitle: "今は復元できる直近の保存内容が見つかっていません",
+        emptyDescription:
+          "復元可能な .wal の痕跡が見つからないため、今は戻せる内容がありません。",
+        blockedBadge: "確認が必要",
+        dbMissingTitle: "復元対象のファイルが見つかりません",
+        dbMissingDescription:
+          "復元を試す前に、アプリのデータベースファイルが存在している必要があります。",
       },
-      "conflicts": "競合: 合計 {{total}} 件（原稿 {{chapters}} / スクラップ {{memos}}）",
-      "toast": {
-        "connectStarted": "ブラウザで Google ログインを完了してください。",
-        "connected": "Google アカウントの接続が完了しました。",
-        "connectFailed": "Google 接続に失敗しました。",
-        "staleCallback": "このログインコールバックは既に処理済みです。現在の接続状態を維持します。",
-        "stateMismatch": "OAuth state の検証に失敗しました。再度ログインしてください。",
-        "callbackExpired": "ログイン要求の有効期限が切れました。再度ログインしてください。",
-        "disconnectFailed": "接続解除に失敗しました。",
-        "disconnected": "接続を解除しました。",
-        "syncFailed": "同期に失敗しました。",
-        "synced": "同期が完了しました。",
-        "autoSyncFailed": "自動同期設定の更新に失敗しました。"
-      }
+      dialog: {
+        checkingTitle: "復元できる直近の保存内容を確認しています",
+        checkingDescription:
+          "Luie が異常終了の直前に残った保存痕跡を探しています。",
+        readyTitle: "未保存の原稿を戻せます",
+        readyDescription:
+          "Luie が異常終了の直前の保存痕跡を見つけました。今すぐ復元すれば、その直近の保存内容を戻せます。",
+        emptyTitle: "今は復元できる内容がありません",
+        emptyDescription:
+          "Luie は復元できる直近の保存痕跡を見つけられませんでした。必要ならもう一度確認できます。",
+        blockedTitle: "復元に必要なファイルが見つかりません",
+        blockedDescription:
+          "復元には対象データファイルが見えている必要があります。この状態では復元を実行しません。",
+      },
+      scope: {
+        currentProject: "現在開いている原稿",
+        noOpenProject: "開いている原稿はありません",
+        library: "何が対象か",
+        projectCount: "ローカル原稿 {{count}} 件",
+        libraryDescription:
+          "この復元は現在のプロジェクトだけでなく、この端末上の Luie ローカル保管庫全体に影響します。",
+        preview: "その保管庫で確認できている原稿",
+        noProjects: "ローカル原稿一覧はまだ読み込まれていません。",
+        moreProjects: "ほか {{count}} 件",
+      },
+      summary: {
+        current: "現在の原稿",
+        currentSavedAt: "現在のファイル保存時刻:",
+        recoverable: "復元できる保存内容",
+        backupSavedAt: "復元できる保存時刻:",
+        preview: "復元される内容のプレビュー",
+        projectChapter: "{{projectTitle}} · {{chapterTitle}}",
+        unknownBackup: "復元できる保存内容",
+      },
+      actionTitle: "復元ボタンを押すと、難しい処理は Luie が行います",
+      actionDescription:
+        "データベースファイルを手作業で扱う必要はありません。Luie が自動で処理し、必要なら元に戻します。",
+      actions: {
+        ignore: "無視して閉じる",
+        restore: "バックアップから復元",
+      },
+      resultTitle: "直前の実行結果",
+      resultBackupOnly: "安全バックアップ完了",
+      resultApplied: "復元処理の完了",
+      technicalTitle: "技術情報",
+      technicalDescription:
+        "パス、ファイルサイズ、バックアップ保存先などの詳細を見たいときだけ開いてください。",
+      fields: {
+        path: "パス",
+        size: "サイズ",
+        updatedAt: "更新日時",
+        notFound: "ファイルなし",
+        backupDir: "作成したバックアップ",
+        backupRootDir: "バックアップ保存先",
+        latestBackupDir: "最近作成したバックアップ",
+        checkpoint: "チェックポイント結果",
+        integrity: "整合性チェック",
+      },
+      messages: {
+        backupCreated:
+          "安全バックアップを作成しました。必要ならこのまま実際の復元を実行できます。",
+        recoveryCompleted:
+          "復元が完了し、Luie が整合性チェックまで終えました。",
+        walMissing:
+          "今は復元できる直近の保存内容がありません。利用可能な .wal ファイルが見つかりませんでした。",
+        walBusy:
+          "別のプロセスがまだ復元ファイルを使用しています。Luie を完全に終了してからもう一度試してください。",
+        integrityFailed: "整合性チェックで問題が見つかりました: {{detail}}",
+        statusLoadFailed: "復元状態の取得に失敗しました。",
+      },
     },
-    "projectTemplate": {
-      "sidebarTitle": "Start New Project",
-      "recentTitle": "Recent Projects",
-      "category": {
-        "all": "全テンプレート (All)",
-        "novel": "小説 (Novel)",
-        "script": "シナリオ/台本 (Script)",
-        "general": "一般 (General)"
+    sync: {
+      title: "同期と連携",
+      description:
+        "Google アカウントを接続し、Supabase とプロジェクトデータを同期します。",
+      connected: "接続済み",
+      disconnected: "未接続",
+      fields: {
+        connection: "接続状態",
+        email: "接続アカウント",
+        lastSyncedAt: "最終同期",
+        mode: "状態",
+        autoSync: "自動同期",
       },
-      "title": {
-        "blank": "空のプロジェクト (Blank)",
-        "webNovel": "Web Novel Standard",
-        "screenplay": "Screenplay",
-        "essay": "Essay"
+      status: {
+        idle: "待機",
+        connecting: "接続中",
+        syncing: "同期中",
+        error: "エラー",
       },
-      "dialog": {
-        "selectPath": "プロジェクト保存先を選択",
-        "repairPathTitle": ".luie ファイルを再接続",
-        "renameTitle": "プロジェクト名を変更",
-        "deleteTitle": "プロジェクトを削除",
-        "removeMissingTitle": "一覧から削除"
+      actions: {
+        connectGoogle: "Google 接続",
+        reconnectGoogle: "再ログイン",
+        disconnect: "接続解除",
+        syncNow: "今すぐ同期",
       },
-      "filter": {
-        "markdown": "Markdown",
-        "text": "Text"
+      conflicts:
+        "競合: 合計 {{total}} 件（原稿 {{chapters}} / スクラップ {{memos}}）",
+      toast: {
+        connectStarted: "ブラウザで Google ログインを完了してください。",
+        connected: "Google アカウントの接続が完了しました。",
+        connectFailed: "Google 接続に失敗しました。",
+        staleCallback:
+          "このログインコールバックは既に処理済みです。現在の接続状態を維持します。",
+        stateMismatch:
+          "OAuth state の検証に失敗しました。再度ログインしてください。",
+        callbackExpired:
+          "ログイン要求の有効期限が切れました。再度ログインしてください。",
+        disconnectFailed: "接続解除に失敗しました。",
+        disconnected: "接続を解除しました。",
+        syncFailed: "同期に失敗しました。",
+        synced: "同期が完了しました。",
+        autoSyncFailed: "自動同期設定の更新に失敗しました。",
       },
-      "context": {
-        "open": "開く",
-        "repairPath": "パスを修復",
-        "removeMissing": "一覧から削除",
-        "rename": "名前を変更",
-        "delete": "削除"
+    },
+    projectTemplate: {
+      sidebarTitle: "Start New Project",
+      recentTitle: "Recent Projects",
+      category: {
+        all: "全テンプレート (All)",
+        novel: "小説 (Novel)",
+        script: "シナリオ/台本 (Script)",
+        general: "一般 (General)",
       },
-      "deleteConfirm": "\"{title}\" を削除しますか？この操作は取り消せません。",
-      "deleteFileOption": "ディスク上の .luie ファイルも削除する",
-      "deleteConfirmLabel": "削除",
-      "removeMissingConfirm": "\"{title}\" を一覧から削除しますか？",
-      "removeMissingConfirmLabel": "削除",
-      "emptyPath": "(No path)",
-      "pathMissingBadge": "ファイルなし",
-      "pathMissingDescription": ".luie ファイルが見つかりません",
-      "sync": {
-        "synced": "同期済み",
-        "pending": "同期待ち",
-        "localOnly": "ローカルのみ",
-        "syncError": "同期エラー"
+      title: {
+        blank: "空のプロジェクト (Blank)",
+        webNovel: "Web Novel Standard",
+        screenplay: "Screenplay",
+        essay: "Essay",
       },
-      "actions": {
-        "cancel": "キャンセル",
-        "save": "保存",
-        "saving": "保存中...",
-        "openLuie": ".luie を開く",
-        "restoreSnapshot": "スナップショットを復元"
+      dialog: {
+        selectPath: "プロジェクト保存先を選択",
+        repairPathTitle: ".luie ファイルを再接続",
+        attachLuieTitle: "既存の .luie を接続",
+        materializeLuieTitle: "新しい .luie ファイルを作成",
+        renameTitle: "プロジェクト名を変更",
+        deleteTitle: "プロジェクトを削除",
+        removeMissingTitle: "一覧から削除",
       },
-      "toast": {
-        "pathMissingBlocked": ".luie ファイルが見つからないため開けません。先にパス修復を行ってください。",
-        "pathRepaired": "プロジェクトのパスを修復しました。",
-        "pathRepairFailed": "プロジェクトのパス修復に失敗しました。"
+      filter: {
+        markdown: "Markdown",
+        text: "Text",
       },
-      "error": {
-        "notFound": "プロジェクトが見つかりません。",
-        "nameRequired": "プロジェクト名を入力してください。",
-        "renameFailed": "プロジェクト名の変更に失敗しました。"
+      context: {
+        open: "開く",
+        repairPath: "パスを修復",
+        attachLuie: ".luie を接続",
+        materializeLuie: ".luie を作成",
+        removeMissing: "一覧から削除",
+        rename: "名前を変更",
+        delete: "削除",
       },
-      "preview": {
-        "standardFormat": "Standard Format",
-        "chapterOne": "Chapter 1",
-        "script": {
-          "int": "INT.",
-          "day": "DAY",
-          "character": "CHARACTER",
-          "direction": "(pointing)",
-          "dialogue": "This is the dialogue.",
-          "another": "ANOTHER",
-          "anotherLine": "Looks visible enough."
-        }
-      }
-    }
+      deleteConfirm: '"{title}" を削除しますか？この操作は取り消せません。',
+      deleteFileOption: "ディスク上の .luie ファイルも削除する",
+      deleteConfirmLabel: "削除",
+      removeMissingConfirm: '"{title}" を一覧から削除しますか？',
+      removeMissingConfirmLabel: "削除",
+      emptyPath: "ローカル接続なし",
+      detachedBadge: "未接続",
+      detachedDescription: "この端末にはローカル .luie 接続がありません",
+      missingAttachmentBadge: "ファイルなし",
+      missingAttachmentDescription: "接続された .luie ファイルが見つかりません",
+      invalidAttachmentBadge: "パス異常",
+      invalidAttachmentDescription:
+        "接続された .luie パスがこの端末では無効です",
+      unsupportedLegacyBadge: "旧形式",
+      unsupportedLegacyDescription:
+        "このアプリは旧 package .luie をもうサポートしていません",
+      sync: {
+        synced: "同期済み",
+        pending: "同期待ち",
+        localOnly: "ローカルのみ",
+        syncError: "同期エラー",
+      },
+      actions: {
+        cancel: "キャンセル",
+        save: "保存",
+        saving: "保存中...",
+        openLuie: ".luie を開く",
+        restore: "復元",
+      },
+      restoreDialog: {
+        title: "復元する保存分を選択",
+        description:
+          "プロジェクト名と保存時刻を見て選んでください。確認後、Luie が新しい .luie として復元して開きます。",
+        loading: "復元できる保存分を読み込んでいます...",
+        errorTitle: "復元一覧を読み込めませんでした",
+        errorDescription: "少し待ってからもう一度お試しください。",
+        emptyTitle: "復元できる保存分がありません",
+        emptyDescription: "この端末で見つかったバックアップはまだありません。",
+        selectedLabel: "選択した保存分",
+        projectLabel: "プロジェクト",
+        savedAtLabel: "保存時刻",
+        chapterLabel: "対象原稿",
+        previewLabel: "プレビュー",
+        noChapter: "原稿情報なし",
+        noPreview: "プレビューできる内容がありません。",
+        prompt: "この保存分を新しい .luie として復元しますか？",
+        actions: {
+          refresh: "再読み込み",
+          close: "閉じる",
+          restore: "この保存分を復元",
+          restoring: "復元中...",
+        },
+      },
+      toast: {
+        pathMissingBlocked:
+          "ローカル .luie 接続を利用できないため開けません。先にパス修復を行ってください。",
+        pathRepaired: "プロジェクトのパスを修復しました。",
+        pathRepairFailed: "プロジェクトのパス修復に失敗しました。",
+        luieAttached: ".luie ファイルを接続しました。",
+        luieAttachFailed: ".luie の接続に失敗しました。",
+        luieMaterialized: "新しい .luie ファイルを作成して接続しました。",
+        luieMaterializeFailed: ".luie ファイルの作成に失敗しました。",
+        restoreCompleted: "復元した .luie をすぐに開きました。",
+        restoreFailed: "復元に失敗しました。",
+        legacyUnsupportedBlocked:
+          "このアプリは旧 package .luie をもうサポートしていません。",
+      },
+      error: {
+        notFound: "プロジェクトが見つかりません。",
+        nameRequired: "プロジェクト名を入力してください。",
+        renameFailed: "プロジェクト名の変更に失敗しました。",
+      },
+      preview: {
+        standardFormat: "Standard Format",
+        chapterOne: "Chapter 1",
+        script: {
+          int: "INT.",
+          day: "DAY",
+          character: "CHARACTER",
+          direction: "(pointing)",
+          dialogue: "This is the dialogue.",
+          another: "ANOTHER",
+          anotherLine: "Looks visible enough.",
+        },
+      },
+    },
   },
-  "ui": {
-    "modal": {
-      "confirm": "確認",
-      "cancel": "キャンセル"
-    }
+  ui: {
+    modal: {
+      confirm: "確認",
+      cancel: "キャンセル",
+    },
   },
-  "bootstrap": {
-    "fetchFailed": "アプリ起動状態の取得に失敗しました。",
-    "initializing": "ワークスペースを初期化しています...",
-    "retry": "再試行",
-    "quit": "終了",
-    "deleteManuscriptConfirm": "この原稿を削除しますか？"
+  bootstrap: {
+    fetchFailed: "アプリ起動状態の取得に失敗しました。",
+    initializing: "ワークスペースを初期化しています...",
+    retry: "再試行",
+    quit: "終了",
+    deleteManuscriptConfirm: "この原稿を削除しますか？",
   },
-  "errorBoundary": {
-    "title": "アプリの起動に失敗しました。",
-    "description": "アプリを再起動してください。",
-    "reload": "アプリを再読み込み"
+  errorBoundary: {
+    title: "アプリの起動に失敗しました。",
+    description: "アプリを再起動してください。",
+    reload: "アプリを再読み込み",
   },
-  "project": {
-    "defaults": {
-      "projectTitle": "無題のプロジェクト",
-      "newProjectTitle": "新規プロジェクト",
-      "chapterTitle": "第1章",
-      "untitled": "無題",
-      "noteTitle": "新しいメモ"
+  project: {
+    defaults: {
+      projectTitle: "無題のプロジェクト",
+      newProjectTitle: "新規プロジェクト",
+      chapterTitle: "第1章",
+      untitled: "無題",
+      noteTitle: "新しいメモ",
     },
-    "toast": {
-      "recoveredFromDb": "ファイルが破損していたため、ローカルキャッシュから復元しました。",
-      "dbNewerSynced": "ローカルキャッシュが新しいため、プロジェクトファイルを更新しました。",
-      "pathMissing": ".luie ファイルが見つからないため、ローカルデータで開きます。"
+    toast: {
+      recoveredFromDb:
+        "ファイルが破損していたため、ローカルキャッシュから復元しました。",
+      recoveredMissingPackage:
+        "元の .luie ファイルが見つからなかったため、ローカルデータから新しいパッケージを復元しました。",
+      dbNewerSynced:
+        "ローカルキャッシュが新しいため、プロジェクトファイルを更新しました。",
+      pathMissing:
+        "ローカル .luie 接続を利用できないため、ローカルデータで開きます。",
+      missingAttachment:
+        "接続された .luie ファイルが見つからないため、ローカルデータで開きます。",
+      invalidAttachment:
+        "接続された .luie パスが無効なため、ローカルデータで開きます。",
+      legacyUnsupportedAttachment:
+        "このアプリは旧 package .luie をもうサポートしていません。",
     },
-    "templateDescription": "{templateId} テンプレートで作成"
+    templateDescription: "{templateId} テンプレートで作成",
   },
-  "sidebar": {
-    "title": "PROJECT BINDER",
-    "menu": {
-      "openBelow": "下に開く",
-      "openRight": "右に開く",
-      "rename": "名前を変更",
-      "duplicate": "複製",
-      "delete": "削除"
+  sidebar: {
+    title: "PROJECT BINDER",
+    menu: {
+      openBelow: "下に開く",
+      openRight: "右に開く",
+      rename: "名前を変更",
+      duplicate: "複製",
+      delete: "削除",
     },
-    "defaultProjectTitle": "プロジェクト",
-    "binderTitle": "PROJECT BINDER",
-    "section": {
-      "manuscript": "原稿",
-      "research": "リサーチ",
-      "trash": "ゴミ箱",
-      "snapshot": "スナップショット"
+    defaultProjectTitle: "プロジェクト",
+    binderTitle: "PROJECT BINDER",
+    section: {
+      manuscript: "原稿",
+      research: "リサーチ",
+      trash: "ゴミ箱",
+      snapshot: "スナップショット",
     },
-    "item": {
-      "characters": "登場人物",
-      "world": "世界観",
-      "scrap": "資料スクラップ",
-      "synopsis": "あらすじ"
+    item: {
+      characters: "登場人物",
+      world: "世界観",
+      scrap: "資料スクラップ",
+      synopsis: "あらすじ",
     },
-    "action": {
-      "new": "新しい章を追加"
+    action: {
+      new: "新しい章を追加",
     },
-    "addChapter": "新しい章を追加...",
-    "trashEmpty": "空です",
-    "snapshotEmpty": "章を選択してください。",
-    "settingsLabel": "設定",
-    "prompt": {
-      "renameTitle": "新しいタイトル",
-      "renameProject": "プロジェクト名を入力してください。",
-      "deleteConfirm": "本当に削除しますか？"
+    addChapter: "新しい章を追加...",
+    trashEmpty: "空です",
+    snapshotEmpty: "章を選択してください。",
+    settingsLabel: "設定",
+    prompt: {
+      renameTitle: "新しいタイトル",
+      renameProject: "プロジェクト名を入力してください。",
+      deleteConfirm: "本当に削除しますか？",
     },
-    "tooltip": {
-      "renameProject": "プロジェクト名を変更",
-      "refresh": "更新"
-    }
+    tooltip: {
+      renameProject: "プロジェクト名を変更",
+      refresh: "更新",
+    },
   },
-  "research": {
-    "title": {
-      "characters": "Characters",
-      "world": "World",
-      "scrap": "Scrap",
-      "analysis": "分析",
-      "default": "Research"
+  research: {
+    title: {
+      characters: "Characters",
+      world: "World",
+      scrap: "Scrap",
+      analysis: "分析",
+      default: "Research",
     },
-    "tooltip": {
-      "closePanel": "パネルを閉じる"
-    }
+    tooltip: {
+      closePanel: "パネルを閉じる",
+    },
+    toast: {
+      worldSaveFailed: "世界観データを .luie ファイルに保存できませんでした。",
+      memoSaveFailed: "メモを .luie ファイルに保存できませんでした。",
+    },
   },
-  "context": {
-    "tab": {
-      "synopsis": "あらすじ",
-      "characters": "キャラクター",
-      "terms": "用語"
+  context: {
+    tab: {
+      synopsis: "あらすじ",
+      characters: "キャラクター",
+      terms: "用語",
     },
-    "synopsisHeader": "プロジェクト概要",
-    "detail": {
-      "description": "説明",
-      "category": "カテゴリ"
+    synopsisHeader: "プロジェクト概要",
+    detail: {
+      description: "説明",
+      category: "カテゴリ",
     },
-    "placeholder": {
-      "search": "検索...",
-      "synopsis": "ここにあらすじを書いてください..."
-    }
+    placeholder: {
+      search: "検索...",
+      synopsis: "ここにあらすじを書いてください...",
+    },
   },
-  "memo": {
-    "sectionTitle": "MEMOS",
-    "empty": "メモを選択してください",
-    "placeholder": {
-      "search": "検索...",
-      "tags": "タグを追加（カンマ区切り）...",
-      "title": "タイトル",
-      "body": "メモを入力してください..."
+  memo: {
+    sectionTitle: "MEMOS",
+    empty: "メモを選択してください",
+    placeholder: {
+      search: "検索...",
+      tags: "タグを追加（カンマ区切り）...",
+      title: "タイトル",
+      body: "メモを入力してください...",
     },
-    "defaultNotes": [
+    defaultNotes: [
       {
-        "id": "1",
-        "title": "参考資料: 中世衣装",
-        "content": "リンク: https://wiki...\n\n中世の貴族衣装は思った以上に華やかだった...",
-        "tags": [
-          "資料",
-          "衣装"
-        ]
+        id: "1",
+        title: "参考資料: 中世衣装",
+        content:
+          "リンク: https://wiki...\n\n中世の貴族衣装は思った以上に華やかだった...",
+        tags: ["資料", "衣装"],
       },
       {
-        "id": "2",
-        "title": "アイデアの断片",
-        "content": "- 主人公が実は悪役だったら？\n- ループ前の記憶が歪んでいたら？",
-        "tags": [
-          "アイデア",
-          "プロット"
-        ]
-      }
-    ]
+        id: "2",
+        title: "アイデアの断片",
+        content:
+          "- 主人公が実は悪役だったら？\n- ループ前の記憶が歪んでいたら？",
+        tags: ["アイデア", "プロット"],
+      },
+    ],
   },
-  "editor": {
-    "layoutTitle": "Luie Editor",
-    "selectTabPrompt": "← タブを選択してください",
-    "placeholder": {
-      "title": "無題",
-      "body": "書き始めてください... ('/' でコマンドを表示)"
+  editor: {
+    layoutTitle: "Luie Editor",
+    selectTabPrompt: "← タブを選択してください",
+    placeholder: {
+      title: "無題",
+      body: "書き始めてください... ('/' でコマンドを表示)",
     },
-    "status": {
-      "saving": "保存中...",
-      "saved": "保存済み",
-      "error": "未保存",
-      "charLabel": "文字",
-      "wordLabel": "単語",
-      "separator": " · "
+    status: {
+      saving: "保存中...",
+      saved: "保存済み",
+      error: "未保存",
+      charLabel: "文字",
+      wordLabel: "単語",
+      separator: " · ",
     },
-    "actions": {
-      "quickExport": "クイック書き出し",
-      "quickExportTitle": "クイック書き出し"
+    actions: {
+      quickExport: "クイック書き出し",
+      quickExportTitle: "クイック書き出し",
     },
-    "errors": {
-      "exportNoChapter": "書き出す前に章を選択してください。",
-      "exportOpenFailed": "書き出しウィンドウを開けません。"
-    }
+    errors: {
+      exportNoChapter: "書き出す前に章を選択してください。",
+      exportOpenFailed: "書き出しウィンドウを開けません。",
+    },
   },
-  "startupWizard": {
-    "title": "ワークスペースを初期化しています...",
-    "subtitle": "必要な構成を確認しています。しばらくお待ちください。",
-    "status": {
-      "configuring": "ワークスペースを初期化しています...",
-      "launching": "ワークスペースを初期化しています...",
-      "failed": "起動準備に失敗しました。"
+  startupWizard: {
+    title: "ワークスペースを初期化しています...",
+    subtitle: "必要な構成を確認しています。しばらくお待ちください。",
+    status: {
+      configuring: "ワークスペースを初期化しています...",
+      launching: "ワークスペースを初期化しています...",
+      failed: "起動準備に失敗しました。",
     },
-    "actions": {
-      "retry": "再試行"
-    }
-  }
+    actions: {
+      retry: "再試行",
+    },
+  },
 } as const;

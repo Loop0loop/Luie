@@ -3,11 +3,24 @@
  */
 
 // Model Types (Renderer-safe)
+export type ProjectAttachmentStatus =
+  | "attached"
+  | "detached"
+  | "missing-attachment"
+  | "invalid-attachment"
+  | "unsupported-legacy-container";
+
 export interface Project {
   id: string;
   title: string;
   description?: string | null;
+  // Legacy attachment metadata. Not canonical project content.
   projectPath?: string | null;
+  // App-local metadata for recent/opened ordering.
+  lastOpenedAt?: string | Date | null;
+  attachmentStatus?: ProjectAttachmentStatus;
+  attachmentContainerKind?: "sqlite-v2" | "legacy-package" | "unknown" | null;
+  // Legacy compatibility flag. Prefer attachmentStatus for new code.
   pathMissing?: boolean;
   createdAt: string | Date;
   updatedAt: string | Date;
@@ -88,6 +101,16 @@ export interface Snapshot {
   type?: "AUTO" | "MANUAL";
   description?: string | null;
   createdAt: string | Date;
+}
+
+export interface SnapshotRestoreCandidate {
+  snapshotId: string;
+  projectId: string;
+  projectTitle: string;
+  chapterTitle?: string;
+  savedAt: string;
+  excerpt?: string;
+  filePath: string;
 }
 
 export interface Note {
@@ -191,6 +214,25 @@ export interface WorldScrapMemosData {
   schemaVersion?: number;
   memos: ScrapMemo[];
   updatedAt?: string;
+}
+
+export type ReplicaWorldDocumentType =
+  | "synopsis"
+  | "plot"
+  | "drawing"
+  | "mindmap"
+  | "graph"
+  | "scrap";
+
+export interface WorldReplicaDocumentResult {
+  found: boolean;
+  payload: unknown | null;
+  updatedAt?: string;
+}
+
+export interface WorldReplicaScrapMemosResult {
+  found: boolean;
+  data: WorldScrapMemosData | null;
 }
 
 // Export/Package Types
@@ -320,6 +362,7 @@ export interface CharacterUpdateInput {
 }
 
 export interface CharacterAppearanceInput {
+  projectId: string;
   characterId: string;
   chapterId: string;
   position: number;
@@ -346,6 +389,7 @@ export interface TermUpdateInput {
 }
 
 export interface TermAppearanceInput {
+  projectId: string;
   termId: string;
   chapterId: string;
   position: number;
@@ -425,7 +469,13 @@ export type FontPreset =
 export type EditorTheme = "light" | "dark" | "sepia";
 export type ThemeTemperature = "neutral" | "warm" | "cool";
 export type ThemeContrast = "soft" | "high";
-export type ThemeAccent = "blue" | "violet" | "green" | "amber" | "rose" | "slate";
+export type ThemeAccent =
+  | "blue"
+  | "violet"
+  | "green"
+  | "amber"
+  | "rose"
+  | "slate";
 export type ThemeTexture = boolean;
 export type WindowMenuBarMode = "hidden" | "visible";
 export type AppBootstrapStatus = {
@@ -517,8 +567,35 @@ export interface DbRecoveryCheckpoint {
   checkpointed: number;
 }
 
+export interface DbRecoveryFileStatus {
+  path: string;
+  exists: boolean;
+  sizeBytes?: number;
+  modifiedAt?: string;
+}
+
+export type DbRecoveryStatusReason = "ready" | "wal-missing" | "db-missing";
+
+export interface DbRecoveryStatus {
+  available: boolean;
+  reason: DbRecoveryStatusReason;
+  checkedAt: string;
+  backupRootDir: string;
+  latestBackupDir?: string;
+  database: DbRecoveryFileStatus;
+  wal: DbRecoveryFileStatus;
+  shm: DbRecoveryFileStatus;
+  preview?: {
+    projectTitle?: string;
+    chapterTitle?: string;
+    chapterUpdatedAt?: string;
+    excerpt?: string;
+  };
+}
+
 export interface DbRecoveryResult {
   success: boolean;
+  dryRun: boolean;
   message: string;
   backupDir?: string;
   checkpoint?: DbRecoveryCheckpoint[];
@@ -681,7 +758,12 @@ export interface WindowBounds {
 
 export type WindowState = "maximized" | "normal";
 
-export type EditorUiMode = "default" | "docs" | "editor" | "scrivener" | "focus";
+export type EditorUiMode =
+  | "default"
+  | "docs"
+  | "editor"
+  | "scrivener"
+  | "focus";
 
 export interface EditorSettings {
   fontFamily: FontFamily;
@@ -689,6 +771,7 @@ export interface EditorSettings {
   fontSize: number;
   lineHeight: number;
   maxWidth: number;
+  spellcheckEnabled: boolean;
   theme: EditorTheme;
   themeTemp: "neutral" | "warm" | "cool";
   themeContrast: "soft" | "high";
@@ -702,6 +785,7 @@ export interface AppSettings {
   editor: EditorSettings;
   language?: "ko" | "en" | "ja";
   shortcuts?: ShortcutMap;
+  // Legacy machine-local path hint. New recent/opened state lives in ProjectLocalState.
   lastProjectPath?: string;
   autoSaveEnabled: boolean;
   autoSaveInterval: number;
@@ -884,7 +968,7 @@ export interface EntityRelationUpdateInput {
 export interface WorldGraphNode {
   id: string;
   entityType: WorldEntitySourceType; // "Character" | "Faction" | "Event" | "Term" | "WorldEntity"
-  subType?: WorldEntityType;          // Place / Concept / Rule / Item
+  subType?: WorldEntityType; // Place / Concept / Rule / Item
   name: string;
   description?: string | null;
   firstAppearance?: string | null;
@@ -911,4 +995,79 @@ export interface WorldGraphMention {
   position: number | null;
   context?: string;
   source: "appearance" | "content-match";
+}
+
+export type GraphPluginKind = "graph-template-bundle";
+export type GraphPluginInstallStatus = "installed";
+
+export interface GraphTemplateManifest {
+  id: string;
+  title: string;
+  summary: string;
+  thumbnail: string;
+  graphEntry: string;
+  tags: string[];
+}
+
+export interface GraphPluginManifest {
+  id: string;
+  name: string;
+  version: string;
+  apiVersion: string;
+  kind: GraphPluginKind;
+  description: string;
+  author: string;
+  templates: GraphTemplateManifest[];
+}
+
+export interface GraphPluginCatalogItem {
+  pluginId: string;
+  version: string;
+  name: string;
+  summary: string;
+  releaseTag: string;
+  assetUrl: string;
+  sha256: string;
+  size: number;
+  minAppVersion: string;
+  apiVersion: string;
+}
+
+export interface InstalledGraphPlugin {
+  pluginId: string;
+  version: string;
+  name: string;
+  description: string;
+  author: string;
+  apiVersion: string;
+  kind: GraphPluginKind;
+  installedAt: string;
+  source: {
+    assetUrl: string;
+    sha256: string;
+  };
+  status: GraphPluginInstallStatus;
+}
+
+export interface GraphPluginTemplateRef {
+  pluginId: string;
+  pluginName: string;
+  pluginVersion: string;
+  pluginDescription: string;
+  pluginAuthor: string;
+  template: GraphTemplateManifest;
+}
+
+export interface GraphPluginInstallResult {
+  pluginId: string;
+  version: string;
+  installedAt: string;
+  status: GraphPluginInstallStatus;
+  alreadyInstalled: boolean;
+}
+
+export interface GraphPluginApplyTemplateInput {
+  pluginId: string;
+  templateId: string;
+  projectId: string;
 }

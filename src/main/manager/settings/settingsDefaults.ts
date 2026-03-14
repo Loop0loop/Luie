@@ -138,6 +138,7 @@ export const getDefaultSettings = (): AppSettings => ({
     fontSize: DEFAULT_EDITOR_FONT_SIZE,
     lineHeight: DEFAULT_EDITOR_LINE_HEIGHT,
     maxWidth: DEFAULT_EDITOR_MAX_WIDTH,
+    spellcheckEnabled: true,
     theme: nativeTheme.shouldUseDarkColors ? "dark" : "light",
     themeTemp: DEFAULT_EDITOR_THEME_TEMP,
     themeContrast: DEFAULT_EDITOR_THEME_CONTRAST,

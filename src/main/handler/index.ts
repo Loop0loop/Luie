@@ -13,6 +13,8 @@ import {
 	worldEntityService,
 	entityRelationService,
 	worldMentionService,
+	worldReplicaService,
+	graphPluginService,
 } from "../services/index.js";
 import { registerProjectHandlers } from "./project/index.js";
 import { registerSearchHandlers } from "./search/index.js";
@@ -39,6 +41,7 @@ export function registerAllIPCHandlers(): void {
 		worldEntityService,
 		entityRelationService,
 		worldMentionService,
+		worldReplicaService,
 	});
 
 	registerWritingHandlers({
@@ -52,7 +55,10 @@ export function registerAllIPCHandlers(): void {
 		searchService,
 	});
 
-	registerSystemHandlers({ logger });
+	registerSystemHandlers({
+		logger,
+		graphPluginService,
+	});
 
 	registerAnalysisHandlers({
 		logger,

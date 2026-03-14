@@ -15,8 +15,8 @@ const mocked = vi.hoisted(() => {
   const hasPendingAuthFlow = vi.fn(() => false);
   const fetchBundle = vi.fn();
   const upsertBundle = vi.fn();
-  const writeLuiePackage = vi.fn();
-  const readLuieEntry = vi.fn();
+  const writeLuieContainer = vi.fn();
+  const readLuieContainerEntry = vi.fn();
   const openLuieProject = vi.fn();
 
   const prisma = {
@@ -32,6 +32,13 @@ const mocked = vi.hoisted(() => {
       update: vi.fn(),
       create: vi.fn(),
       delete: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+    projectAttachment: {
+      findMany: vi.fn(async () => []),
+      findUnique: vi.fn(async () => null),
+      findFirst: vi.fn(async () => null),
+      upsert: vi.fn(),
       deleteMany: vi.fn(),
     },
     chapter: {
@@ -79,6 +86,14 @@ const mocked = vi.hoisted(() => {
     entityRelation: {
       deleteMany: vi.fn(),
     },
+    worldDocument: {
+      upsert: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+    scrapMemo: {
+      createMany: vi.fn(),
+      deleteMany: vi.fn(),
+    },
   };
 
   return {
@@ -90,8 +105,8 @@ const mocked = vi.hoisted(() => {
     hasPendingAuthFlow,
     fetchBundle,
     upsertBundle,
-    writeLuiePackage,
-    readLuieEntry,
+    writeLuieContainer,
+    readLuieContainerEntry,
     openLuieProject,
     prisma,
   };
@@ -103,12 +118,10 @@ vi.mock("electron", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/io/luiePackageWriter.js", () => ({
-  writeLuiePackage: (...args: unknown[]) => mocked.writeLuiePackage(...args),
-}));
-
-vi.mock("../../../src/main/utils/luiePackage.js", () => ({
-  readLuieEntry: (...args: unknown[]) => mocked.readLuieEntry(...args),
+vi.mock("../../../src/main/services/io/luieContainer.js", () => ({
+  writeLuieContainer: (...args: unknown[]) => mocked.writeLuieContainer(...args),
+  readLuieContainerEntry: (...args: unknown[]) =>
+    mocked.readLuieContainerEntry(...args),
 }));
 
 vi.mock("../../../src/main/database/index.js", () => ({
@@ -200,16 +213,21 @@ describe("SyncService auth hardening", () => {
     mocked.getRefreshToken.mockReturnValue({ token: null });
     mocked.fetchBundle.mockReset();
     mocked.upsertBundle.mockReset();
-    mocked.writeLuiePackage.mockReset();
-    mocked.readLuieEntry.mockReset();
+    mocked.writeLuieContainer.mockReset();
+    mocked.readLuieContainerEntry.mockReset();
     mocked.openLuieProject.mockReset();
-    mocked.writeLuiePackage.mockResolvedValue(undefined);
-    mocked.readLuieEntry.mockResolvedValue(null);
+    mocked.writeLuieContainer.mockResolvedValue(undefined);
+    mocked.readLuieContainerEntry.mockResolvedValue(null);
     mocked.openLuieProject.mockResolvedValue({ project: { id: "project-1" } });
     mocked.prisma.$transaction.mockClear();
     mocked.prisma.project.update.mockClear();
     mocked.prisma.project.create.mockClear();
     mocked.prisma.project.delete.mockClear();
+    mocked.prisma.projectAttachment.findMany.mockClear();
+    mocked.prisma.projectAttachment.findUnique.mockClear();
+    mocked.prisma.projectAttachment.findFirst.mockClear();
+    mocked.prisma.projectAttachment.upsert.mockClear();
+    mocked.prisma.projectAttachment.deleteMany.mockClear();
     mocked.prisma.chapter.update.mockClear();
     mocked.prisma.chapter.create.mockClear();
     mocked.prisma.character.update.mockClear();
@@ -218,6 +236,10 @@ describe("SyncService auth hardening", () => {
     mocked.prisma.term.update.mockClear();
     mocked.prisma.term.create.mockClear();
     mocked.prisma.term.delete.mockClear();
+    mocked.prisma.worldDocument.upsert.mockClear();
+    mocked.prisma.worldDocument.deleteMany.mockClear();
+    mocked.prisma.scrapMemo.createMany.mockClear();
+    mocked.prisma.scrapMemo.deleteMany.mockClear();
     mocked.prisma.project.findMany.mockResolvedValue([]);
     mocked.prisma.project.findUnique.mockResolvedValue(null);
 
@@ -395,6 +417,198 @@ describe("SyncService auth hardening", () => {
     ).toBeTruthy();
   });
 
+  it("pushes detached replica world documents and memos during sync", async () => {
+    const syncedUserId = "00000000-0000-0000-0000-000000000001";
+    mocked.syncSettings.connected = true;
+    mocked.syncSettings.autoSync = false;
+    mocked.syncSettings.userId = syncedUserId;
+    mocked.syncSettings.expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    mocked.syncSettings.accessTokenCipher = "cipher";
+    mocked.getAccessToken.mockReturnValue({ token: "access-token" });
+    mocked.getRefreshToken.mockReturnValue({ token: "refresh-token" });
+    mocked.prisma.project.findMany.mockResolvedValue([
+      {
+        id: "project-1",
+        title: "Project",
+        description: null,
+        createdAt: new Date("2026-02-22T00:00:00.000Z"),
+        updatedAt: new Date("2026-02-22T00:00:00.000Z"),
+        projectPath: null,
+        chapters: [],
+        characters: [],
+        terms: [],
+        worldDocuments: [
+          {
+            id: "wd-1",
+            docType: "synopsis",
+            payload: JSON.stringify({
+              synopsis: "local synopsis",
+              status: "working",
+              updatedAt: "2026-02-22T00:05:00.000Z",
+            }),
+            updatedAt: new Date("2026-02-22T00:05:00.000Z"),
+          },
+        ],
+        scrapMemos: [
+          {
+            id: "memo-1",
+            title: "Detached memo",
+            content: "body",
+            tags: JSON.stringify(["tag"]),
+            updatedAt: new Date("2026-02-22T00:06:00.000Z"),
+          },
+        ],
+      },
+    ]);
+    mocked.fetchBundle.mockResolvedValue({
+      projects: [],
+      chapters: [],
+      characters: [],
+      terms: [],
+      worldDocuments: [],
+      memos: [],
+      snapshots: [],
+      tombstones: [],
+    });
+    mocked.upsertBundle.mockResolvedValue(undefined);
+
+    const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
+    const service = new SyncService();
+    service.initialize();
+    const result = await service.runNow("manual");
+
+    expect(result.success).toBe(true);
+    const upsertPayload = mocked.upsertBundle.mock.calls[0]?.[1] as SyncBundle;
+    expect(upsertPayload.worldDocuments).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          projectId: "project-1",
+          docType: "synopsis",
+          payload: expect.objectContaining({
+            synopsis: "local synopsis",
+            status: "working",
+          }),
+        }),
+      ]),
+    );
+    expect(upsertPayload.memos).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "memo-1",
+          projectId: "project-1",
+          title: "Detached memo",
+          tags: ["tag"],
+        }),
+      ]),
+    );
+    expect(mocked.readLuieContainerEntry).not.toHaveBeenCalled();
+  });
+
+  it("applies remote world documents and memos into replica storage before upload", async () => {
+    const syncedUserId = "00000000-0000-0000-0000-000000000001";
+    mocked.syncSettings.connected = true;
+    mocked.syncSettings.autoSync = false;
+    mocked.syncSettings.userId = syncedUserId;
+    mocked.syncSettings.expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    mocked.syncSettings.accessTokenCipher = "cipher";
+    mocked.getAccessToken.mockReturnValue({ token: "access-token" });
+    mocked.getRefreshToken.mockReturnValue({ token: "refresh-token" });
+    mocked.prisma.project.findMany.mockResolvedValue([]);
+    mocked.fetchBundle.mockResolvedValue({
+      projects: [
+        {
+          id: "project-1",
+          userId: syncedUserId,
+          title: "Remote project",
+          description: null,
+          createdAt: "2026-02-22T00:00:00.000Z",
+          updatedAt: "2026-02-22T00:00:00.000Z",
+        },
+      ],
+      chapters: [],
+      characters: [],
+      terms: [],
+      worldDocuments: [
+        {
+          id: "project-1:synopsis",
+          userId: syncedUserId,
+          projectId: "project-1",
+          docType: "synopsis",
+          payload: { synopsis: "remote synopsis", status: "draft" },
+          updatedAt: "2026-02-22T00:10:00.000Z",
+        },
+        {
+          id: "project-1:scrap",
+          userId: syncedUserId,
+          projectId: "project-1",
+          docType: "scrap",
+          payload: { memos: [] },
+          updatedAt: "2026-02-22T00:10:00.000Z",
+        },
+      ],
+      memos: [
+        {
+          id: "memo-1",
+          userId: syncedUserId,
+          projectId: "project-1",
+          title: "Remote memo",
+          content: "body",
+          tags: ["tag"],
+          updatedAt: "2026-02-22T00:11:00.000Z",
+        },
+      ],
+      snapshots: [],
+      tombstones: [],
+    });
+    mocked.upsertBundle.mockResolvedValue(undefined);
+
+    const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
+    const service = new SyncService();
+    service.initialize();
+    const result = await service.runNow("manual");
+
+    expect(result.success).toBe(true);
+    expect(mocked.prisma.worldDocument.upsert).toHaveBeenCalledWith({
+      where: {
+        projectId_docType: {
+          projectId: "project-1",
+          docType: "synopsis",
+        },
+      },
+      update: {
+        payload: JSON.stringify({
+          synopsis: "remote synopsis",
+          status: "draft",
+          updatedAt: "2026-02-22T00:10:00.000Z",
+        }),
+      },
+      create: {
+        projectId: "project-1",
+        docType: "synopsis",
+        payload: JSON.stringify({
+          synopsis: "remote synopsis",
+          status: "draft",
+          updatedAt: "2026-02-22T00:10:00.000Z",
+        }),
+      },
+    });
+    expect(mocked.prisma.scrapMemo.deleteMany).toHaveBeenCalledWith({
+      where: { projectId: "project-1" },
+    });
+    expect(mocked.prisma.scrapMemo.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          id: "memo-1",
+          projectId: "project-1",
+          title: "Remote memo",
+          content: "body",
+          tags: JSON.stringify(["tag"]),
+          sortOrder: 0,
+        }),
+      ],
+    });
+  });
+
   it("surfaces unresolved conflicts and applies manual resolution on retry", async () => {
     const syncedUserId = "00000000-0000-0000-0000-000000000001";
     mocked.syncSettings.connected = true;
@@ -529,7 +743,7 @@ describe("SyncService auth hardening", () => {
       tombstones: [],
     });
     mocked.upsertBundle.mockResolvedValue(undefined);
-    mocked.writeLuiePackage.mockRejectedValue(new Error("disk full"));
+    mocked.writeLuieContainer.mockRejectedValue(new Error("disk full"));
 
     const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();
@@ -588,8 +802,8 @@ describe("SyncService auth hardening", () => {
     const result = await service.runNow("manual");
 
     expect(result.success).toBe(true);
-    expect(mocked.writeLuiePackage).not.toHaveBeenCalled();
-    expect(mocked.readLuieEntry).not.toHaveBeenCalled();
+    expect(mocked.writeLuieContainer).not.toHaveBeenCalled();
+    expect(mocked.readLuieContainerEntry).not.toHaveBeenCalled();
     expect(mocked.prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(mocked.upsertBundle).toHaveBeenCalledTimes(1);
   });
@@ -641,18 +855,20 @@ describe("SyncService auth hardening", () => {
 
     expect(result.success).toBe(false);
     expect(result.message).toContain("SYNC_DB_CACHE_APPLY_FAILED");
-    expect(mocked.writeLuiePackage).toHaveBeenCalledTimes(1);
+    expect(mocked.writeLuieContainer).toHaveBeenCalledTimes(1);
     expect(mocked.openLuieProject).toHaveBeenCalledWith("/tmp/project-1.luie");
     expect(mocked.upsertBundle).not.toHaveBeenCalled();
   });
 
   it("hydrates missing world docs from existing .luie payload during package build", async () => {
-    mocked.readLuieEntry.mockImplementation(async (_projectPath: string, entryPath: string) => {
+    mocked.readLuieContainerEntry.mockImplementation(
+      async (_projectPath: string, entryPath: string) => {
       if (entryPath === "world/synopsis.json") {
         return JSON.stringify({ synopsis: "kept synopsis", status: "working" });
       }
       return null;
-    });
+      },
+    );
 
     const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();
@@ -705,7 +921,7 @@ describe("SyncService auth hardening", () => {
   });
 
   it("normalizes malformed world document payloads before .luie package write", async () => {
-    mocked.readLuieEntry.mockResolvedValue(null);
+    mocked.readLuieContainerEntry.mockResolvedValue(null);
 
     const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();

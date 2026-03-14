@@ -146,6 +146,7 @@ export const autoSaveArgsSchema = z.tuple([
 ]);
 
 export const characterAppearanceSchema = z.object({
+  projectId: projectIdSchema,
   characterId: characterIdSchema,
   chapterId: chapterIdSchema,
   position: z.number().int().nonnegative(),
@@ -153,6 +154,7 @@ export const characterAppearanceSchema = z.object({
 });
 
 export const termAppearanceSchema = z.object({
+  projectId: projectIdSchema,
   termId: termIdSchema,
   chapterId: chapterIdSchema,
   position: z.number().int().nonnegative(),
@@ -165,6 +167,16 @@ export const snapshotCreateSchema = z.object({
   content: z.string(),
   description: z.string().optional(),
   type: z.enum(["AUTO", "MANUAL"]).optional(),
+});
+
+export const snapshotRestoreCandidateSchema = z.object({
+  snapshotId: z.string().min(1),
+  projectId: z.string().min(1),
+  projectTitle: z.string().min(1),
+  chapterTitle: z.string().min(1).optional(),
+  savedAt: z.string().min(1),
+  excerpt: z.string().min(1).optional(),
+  filePath: basePathSchema,
 });
 
 export const searchQuerySchema = z.object({
@@ -253,8 +265,35 @@ export const dbRecoveryCheckpointSchema = z.object({
   checkpointed: z.number(),
 });
 
+export const dbRecoveryFileStatusSchema = z.object({
+  path: z.string(),
+  exists: z.boolean(),
+  sizeBytes: z.number().optional(),
+  modifiedAt: z.string().optional(),
+});
+
+export const dbRecoveryStatusSchema = z.object({
+  available: z.boolean(),
+  reason: z.enum(["ready", "wal-missing", "db-missing"]),
+  checkedAt: z.string(),
+  backupRootDir: z.string(),
+  latestBackupDir: z.string().optional(),
+  database: dbRecoveryFileStatusSchema,
+  wal: dbRecoveryFileStatusSchema,
+  shm: dbRecoveryFileStatusSchema,
+  preview: z
+    .object({
+      projectTitle: z.string().optional(),
+      chapterTitle: z.string().optional(),
+      chapterUpdatedAt: z.string().optional(),
+      excerpt: z.string().optional(),
+    })
+    .optional(),
+});
+
 export const dbRecoveryResultSchema = z.object({
   success: z.boolean(),
+  dryRun: z.boolean(),
   message: z.string(),
   backupDir: z.string().optional(),
   checkpoint: z.array(dbRecoveryCheckpointSchema).optional(),
@@ -430,6 +469,7 @@ export const editorSettingsSchema = z.strictObject({
   fontSize: z.number().int().positive(),
   lineHeight: z.number().positive(),
   maxWidth: z.number().int().positive(),
+  spellcheckEnabled: z.boolean().optional().default(true),
   theme: z.enum(["light", "dark", "sepia"]),
   themeTemp: z.enum(["neutral", "warm", "cool"]).optional().default("neutral"),
   themeContrast: z.enum(["soft", "high"]).optional().default("soft"),
@@ -523,7 +563,12 @@ const uiRegionsSchema = z.strictObject({
 });
 
 export const uiStorePersistedStateSchema = z.strictObject({
-  schemaVersion: z.number().int().positive().max(UI_STORE_SCHEMA_VERSION).optional(),
+  schemaVersion: z
+    .number()
+    .int()
+    .positive()
+    .max(UI_STORE_SCHEMA_VERSION)
+    .optional(),
   view: z.enum(["template", "editor", "corkboard", "outliner"]).optional(),
   contextTab: z.enum(["synopsis", "characters", "terms"]).optional(),
   worldTab: z
@@ -587,6 +632,35 @@ export const worldScrapMemosDataSchema = z.strictObject({
     .optional(),
   memos: z.array(scrapMemoSchema),
   updatedAt: z.string().optional(),
+});
+
+export const replicaWorldDocumentTypeSchema = z.enum([
+  "synopsis",
+  "plot",
+  "drawing",
+  "mindmap",
+  "graph",
+  "scrap",
+]);
+
+export const worldReplicaDocumentGetSchema = z.strictObject({
+  projectId: projectIdSchema,
+  docType: replicaWorldDocumentTypeSchema,
+});
+
+export const worldReplicaDocumentSetSchema = z.strictObject({
+  projectId: projectIdSchema,
+  docType: replicaWorldDocumentTypeSchema,
+  payload: z.unknown(),
+});
+
+export const worldReplicaScrapMemosGetSchema = z.strictObject({
+  projectId: projectIdSchema,
+});
+
+export const worldReplicaScrapMemosSetSchema = z.strictObject({
+  projectId: projectIdSchema,
+  data: worldScrapMemosDataSchema,
 });
 
 export type UiStorePersistedState = z.infer<typeof uiStorePersistedStateSchema>;
@@ -690,3 +764,125 @@ export const worldGraphMentionsQuerySchema = z.object({
   entityType: entityRelationTypeSchema,
   limit: z.number().int().positive().max(500).optional(),
 });
+
+const GRAPH_PLUGIN_ALLOWED_MANIFEST_KEYS = new Set([
+  "id",
+  "name",
+  "version",
+  "apiVersion",
+  "kind",
+  "description",
+  "author",
+  "templates",
+]);
+
+const GRAPH_PLUGIN_BLOCKED_MANIFEST_KEYS = new Set([
+  "main",
+  "entry",
+  "entrypoint",
+  "renderer",
+  "background",
+  "preload",
+  "scripts",
+  "permissions",
+]);
+
+const graphPluginVersionSchema = z.string().min(1).max(64);
+
+export const graphTemplateManifestSchema = z
+  .object({
+    id: z.string().min(1).max(128),
+    title: z.string().min(1).max(200),
+    summary: z.string().min(1).max(2000),
+    thumbnail: z.string().max(PATH_MAX_LENGTH),
+    graphEntry: z.string().min(1).max(PATH_MAX_LENGTH),
+    tags: z.array(z.string().min(1).max(64)).max(32),
+  })
+  .strict();
+
+export const graphPluginManifestSchema = z
+  .object({
+    id: z.string().min(1).max(128),
+    name: z.string().min(1).max(200),
+    version: graphPluginVersionSchema,
+    apiVersion: graphPluginVersionSchema,
+    kind: z.literal("graph-template-bundle"),
+    description: z.string().min(1).max(4000),
+    author: z.string().min(1).max(200),
+    templates: z.array(graphTemplateManifestSchema).min(1).max(100),
+  })
+  .passthrough()
+  .superRefine((value, ctx) => {
+    for (const key of Object.keys(value)) {
+      if (GRAPH_PLUGIN_ALLOWED_MANIFEST_KEYS.has(key)) {
+        continue;
+      }
+
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: GRAPH_PLUGIN_BLOCKED_MANIFEST_KEYS.has(key)
+          ? `Executable manifest field is not allowed in V1: ${key}`
+          : `Unknown manifest field is not allowed: ${key}`,
+        path: [key],
+      });
+    }
+  })
+  .transform((value) => ({
+    id: value.id,
+    name: value.name,
+    version: value.version,
+    apiVersion: value.apiVersion,
+    kind: value.kind,
+    description: value.description,
+    author: value.author,
+    templates: value.templates,
+  }));
+
+export const graphPluginCatalogItemSchema = z.strictObject({
+  pluginId: z.string().min(1).max(128),
+  version: graphPluginVersionSchema,
+  name: z.string().min(1).max(200),
+  summary: z.string().min(1).max(2000),
+  releaseTag: z.string().min(1).max(200),
+  assetUrl: z.string().url(),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/i, "Invalid sha256"),
+  size: z.number().int().positive().max(1024 * 1024 * 1024),
+  minAppVersion: graphPluginVersionSchema,
+  apiVersion: graphPluginVersionSchema,
+});
+
+export const installedGraphPluginSchema = z.strictObject({
+  pluginId: z.string().min(1).max(128),
+  version: graphPluginVersionSchema,
+  name: z.string().min(1).max(200),
+  description: z.string().min(1).max(4000),
+  author: z.string().min(1).max(200),
+  apiVersion: graphPluginVersionSchema,
+  kind: z.literal("graph-template-bundle"),
+  installedAt: z.string().min(1),
+  source: z.strictObject({
+    assetUrl: z.string().url(),
+    sha256: z.string().regex(/^[a-f0-9]{64}$/i, "Invalid sha256"),
+  }),
+  status: z.literal("installed"),
+});
+
+export const installedGraphPluginIndexSchema = z.array(
+  installedGraphPluginSchema,
+);
+
+export const graphPluginApplyTemplateSchema = z.strictObject({
+  pluginId: z.string().min(1).max(128),
+  templateId: z.string().min(1).max(128),
+  projectId: projectIdSchema,
+});
+
+export const graphPluginInstallArgsSchema = z.tuple([
+  z.string().min(1).max(128),
+]);
+export const graphPluginUninstallArgsSchema = z.tuple([
+  z.string().min(1).max(128),
+]);
+export const graphPluginApplyTemplateArgsSchema = z.tuple([
+  graphPluginApplyTemplateSchema,
+]);

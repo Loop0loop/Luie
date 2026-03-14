@@ -11,7 +11,7 @@ import {
   MARKDOWN_EXTENSION,
 } from "../../../shared/constants/index.js";
 import { SNAPSHOT_BACKUP_DIR } from "../../../shared/constants/paths.js";
-import { readLuieEntry } from "../../utils/luiePackage.js";
+import { readLuieContainerEntry } from "../../services/io/luieContainer.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
 import {
@@ -180,13 +180,13 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
     {
       channel: IPC_CHANNELS.FS_SELECT_SNAPSHOT_BACKUP,
       logTag: "FS_SELECT_SNAPSHOT_BACKUP",
-      failMessage: "Failed to select snapshot backup",
+      failMessage: "Failed to select restore backup",
       handler: async () => {
         const backupDir = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR);
         const result = await dialog.showOpenDialog({
-          title: "스냅샷 복원하기",
+          title: "복원할 백업 선택",
           defaultPath: backupDir,
-          filters: [{ name: "Snapshot", extensions: ["snap"] }],
+          filters: [{ name: "Luie 백업", extensions: ["snap"] }],
           properties: ["openFile"],
         });
         const selectedPath = resolveOpenDialogPath(result);
@@ -245,7 +245,7 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
           permission: "package",
         });
         assertLuiePackagePath(safePackagePath, "packagePath");
-        return readLuieEntry(
+        return readLuieContainerEntry(
           safePackagePath,
           entryPath,
           logger,

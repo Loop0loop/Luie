@@ -1,0 +1,111 @@
+{
+  "nodes": [
+    {
+      "id": "6c9366f7-77d9-4f3b-a93c-b8b0bc0bb001",
+      "entityType": "Place",
+      "subType": "Place",
+      "name": "Capital City",
+      "description": "Administrative and symbolic center of the kingdom.",
+      "attributes": {
+        "region": "Central Plains",
+        "importance": 5,
+        "tags": [
+          "capital",
+          "power"
+        ]
+      },
+      "positionX": -180,
+      "positionY": -20
+    },
+    {
+      "id": "0f7ab4c5-d5c4-4777-a11b-0f58e39d9c13",
+      "entityType": "Concept",
+      "subType": "Concept",
+      "name": "Royal Authority",
+      "description": "The institution that legitimizes succession and command.",
+      "attributes": {
+        "importance": 4,
+        "tags": [
+          "institution",
+          "crown"
+        ]
+      },
+      "positionX": 20,
+      "positionY": -150
+    },
+    {
+      "id": "8c381f6b-d927-49e9-8c5c-9069a9a17e9f",
+      "entityType": "Rule",
+      "subType": "Rule",
+      "name": "Succession Law",
+      "description": "Defines who can inherit the throne and under which conditions.",
+      "attributes": {
+        "importance": 4,
+        "tags": [
+          "law",
+          "inheritance"
+        ]
+      },
+      "positionX": 210,
+      "positionY": -10
+    },
+    {
+      "id": "f4bfec10-84ce-41d8-a0ec-593fb9967a06",
+      "entityType": "Item",
+      "subType": "Item",
+      "name": "Crown Relic",
+      "description": "A national symbol tied to coronation and legitimacy.",
+      "attributes": {
+        "importance": 3,
+        "tags": [
+          "artifact",
+          "symbol"
+        ]
+      },
+      "positionX": 10,
+      "positionY": 150
+    }
+  ],
+  "edges": [
+    {
+      "id": "0fd0c4a6-3c57-4f18-a24c-e7ef470a4aa1",
+      "sourceId": "0f7ab4c5-d5c4-4777-a11b-0f58e39d9c13",
+      "sourceType": "Concept",
+      "targetId": "6c9366f7-77d9-4f3b-a93c-b8b0bc0bb001",
+      "targetType": "Place",
+      "relation": "controls",
+      "attributes": {
+        "weight": "primary"
+      },
+      "createdAt": "2026-03-15T00:00:00.000Z",
+      "updatedAt": "2026-03-15T00:00:00.000Z"
+    },
+    {
+      "id": "fe262423-dc53-4f63-b759-684730b5f659",
+      "sourceId": "8c381f6b-d927-49e9-8c5c-9069a9a17e9f",
+      "sourceType": "Rule",
+      "targetId": "0f7ab4c5-d5c4-4777-a11b-0f58e39d9c13",
+      "targetType": "Concept",
+      "relation": "belongs_to",
+      "attributes": {
+        "weight": "constitutional"
+      },
+      "createdAt": "2026-03-15T00:00:00.000Z",
+      "updatedAt": "2026-03-15T00:00:00.000Z"
+    },
+    {
+      "id": "d69d398a-2d5e-4ef4-a849-296b6ff7b0a8",
+      "sourceId": "f4bfec10-84ce-41d8-a0ec-593fb9967a06",
+      "sourceType": "Item",
+      "targetId": "0f7ab4c5-d5c4-4777-a11b-0f58e39d9c13",
+      "targetType": "Concept",
+      "relation": "belongs_to",
+      "attributes": {
+        "weight": "symbolic"
+      },
+      "createdAt": "2026-03-15T00:00:00.000Z",
+      "updatedAt": "2026-03-15T00:00:00.000Z"
+    }
+  ],
+  "updatedAt": "2026-03-15T00:00:00.000Z"
+}

@@ -1,4 +1,4 @@
-export type ProjectExportRun = (projectId: string) => Promise<void>;
+export type ProjectExportRun = (projectId: string) => Promise<boolean>;
 
 export type ProjectExportQueueFlushResult = {
   total: number;
@@ -15,7 +15,7 @@ type QueueLogger = {
 
 type ProjectExportState = {
   timer: NodeJS.Timeout | null;
-  inFlight: Promise<void> | null;
+  inFlight: Promise<boolean> | null;
   dirty: boolean;
 };
 
@@ -68,18 +68,27 @@ export class ProjectExportQueue {
     }, this.debounceMs);
   }
 
-  private async runLoop(projectId: string, reason?: string): Promise<void> {
+  async runNow(projectId: string, reason?: string): Promise<boolean> {
+    const state = this.getOrCreate(projectId);
+    state.dirty = true;
+    this.clearTimer(state);
+    return await this.runLoop(projectId, reason ?? "immediate");
+  }
+
+  private async runLoop(projectId: string, reason?: string): Promise<boolean> {
     const state = this.getOrCreate(projectId);
     if (state.inFlight) {
       state.dirty = true;
       return state.inFlight;
     }
 
-    const execute = async (): Promise<void> => {
+    const execute = async (): Promise<boolean> => {
+      let exported = false;
       while (state.dirty) {
         state.dirty = false;
-        await this.runExport(projectId);
+        exported = await this.runExport(projectId);
       }
+      return exported;
     };
 
     const task = execute()

@@ -14,6 +14,7 @@ import { projectService } from "../../core/projectService.js";
 import { ServiceError } from "../../../utils/serviceError.js";
 import {
   cleanupOrphanSnapshotArtifacts,
+  listSnapshotRestoreCandidates,
   writeFullSnapshotArtifact,
 } from "./snapshotArtifacts.js";
 import { writeEmergencySnapshotFile } from "./snapshotEmergencyFile.js";
@@ -26,6 +27,21 @@ const ORPHAN_CLEANUP_MIN_AGE_MS = 10_000;
 export class SnapshotService {
   private orphanArtifactIds = new Set<string>();
   private orphanCleanupTimer: NodeJS.Timeout | null = null;
+
+  private async ensureImmediatePackageExport(input: {
+    projectId: string;
+    reason:
+      | "snapshot:create"
+      | "snapshot:delete"
+      | "snapshot:restore"
+      | "snapshot:delete-old"
+      | "snapshot:prune";
+  }): Promise<void> {
+    await projectService.ensureImmediatePackageExport(
+      input.projectId,
+      input.reason,
+    );
+  }
 
   private scheduleOrphanArtifactCleanup(): void {
     if (this.orphanCleanupTimer) return;
@@ -110,7 +126,10 @@ export class SnapshotService {
       });
 
       logger.info("Snapshot created successfully", { snapshotId: snapshot.id });
-      projectService.schedulePackageExport(input.projectId, "snapshot:create");
+      await this.ensureImmediatePackageExport({
+        projectId: input.projectId,
+        reason: "snapshot:create",
+      });
       this.scheduleOrphanArtifactCleanup();
       return snapshot;
     } catch (error) {
@@ -195,6 +214,20 @@ export class SnapshotService {
     }
   }
 
+  async listRestoreCandidates() {
+    try {
+      return await listSnapshotRestoreCandidates();
+    } catch (error) {
+      logger.error("Failed to list snapshot restore candidates", error);
+      throw new ServiceError(
+        ErrorCode.SNAPSHOT_RESTORE_FAILED,
+        "Failed to list snapshot restore candidates",
+        undefined,
+        error,
+      );
+    }
+  }
+
   async deleteSnapshot(id: string) {
     try {
       const snapshot = await db.getClient().snapshot.findUnique({
@@ -209,10 +242,10 @@ export class SnapshotService {
 
       logger.info("Snapshot deleted successfully", { snapshotId: id });
       if ((snapshot as { projectId?: unknown })?.projectId) {
-        projectService.schedulePackageExport(
-          String((snapshot as { projectId: unknown }).projectId),
-          "snapshot:delete",
-        );
+        await this.ensureImmediatePackageExport({
+          projectId: String((snapshot as { projectId: unknown }).projectId),
+          reason: "snapshot:delete",
+        });
       }
       return { success: true };
     } catch (error) {
@@ -230,14 +263,12 @@ export class SnapshotService {
     try {
       const snapshot = (await db.getClient().snapshot.findUnique({
         where: { id: snapshotId },
-      })) as
-        | {
-            id: string;
-            projectId: string;
-            chapterId?: string | null;
-            content?: string | null;
-          }
-        | null;
+      })) as {
+        id: string;
+        projectId: string;
+        chapterId?: string | null;
+        content?: string | null;
+      } | null;
 
       if (!snapshot) {
         throw new ServiceError(
@@ -255,7 +286,8 @@ export class SnapshotService {
         );
       }
 
-      const nextContent = typeof snapshot.content === "string" ? snapshot.content : "";
+      const nextContent =
+        typeof snapshot.content === "string" ? snapshot.content : "";
 
       await db.getClient().chapter.update({
         where: { id: snapshot.chapterId },
@@ -270,7 +302,10 @@ export class SnapshotService {
         chapterId: snapshot.chapterId,
       });
 
-      projectService.schedulePackageExport(String(snapshot.projectId), "snapshot:restore");
+      await this.ensureImmediatePackageExport({
+        projectId: String(snapshot.projectId),
+        reason: "snapshot:restore",
+      });
 
       return {
         success: true,
@@ -342,6 +377,11 @@ export class SnapshotService {
         deletedCount: toDelete.length,
       });
 
+      await this.ensureImmediatePackageExport({
+        projectId,
+        reason: "snapshot:delete-old",
+      });
+
       return { success: true, deletedCount: toDelete.length };
     } catch (error) {
       logger.error("Failed to delete old snapshots", error);
@@ -376,9 +416,10 @@ export class SnapshotService {
       const dayBuckets = new Set<string>();
 
       for (const snap of snapshots) {
-        const createdAt = snap.createdAt instanceof Date
-          ? snap.createdAt
-          : new Date(String(snap.createdAt));
+        const createdAt =
+          snap.createdAt instanceof Date
+            ? snap.createdAt
+            : new Date(String(snap.createdAt));
         const age = now - createdAt.getTime();
 
         if (age < ONE_DAY) {
@@ -419,6 +460,11 @@ export class SnapshotService {
         deletedCount: toDelete.length,
       });
 
+      await this.ensureImmediatePackageExport({
+        projectId,
+        reason: "snapshot:prune",
+      });
+
       return { success: true, deletedCount: toDelete.length };
     } catch (error) {
       logger.error("Failed to prune snapshots", error);
@@ -437,7 +483,9 @@ export class SnapshotService {
     });
 
     const results = await Promise.all(
-      projects.map((project: { id: string }) => this.pruneSnapshots(String(project.id))),
+      projects.map((project: { id: string }) =>
+        this.pruneSnapshots(String(project.id)),
+      ),
     );
 
     const deletedCount = results.reduce(

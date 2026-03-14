@@ -58,7 +58,10 @@ export function GoogleDocsEditorColumn({
             className="relative flex min-w-0 flex-col bg-transparent"
           >
             <EditorDropZones />
-            <main className="custom-scrollbar relative flex flex-1 flex-col items-center overflow-y-auto bg-sidebar">
+            <main
+              className="custom-scrollbar relative flex flex-1 flex-col items-center overflow-y-auto bg-sidebar"
+              data-editor-scroll-container="true"
+            >
               <div className="sticky top-0 z-30 flex w-full shrink-0 justify-center bg-sidebar/95 pb-2 pt-4 select-none backdrop-blur-sm">
                 <div className="border border-border bg-background shadow-sm">
                   <EditorRuler onMarginsChange={setPageMargins} />

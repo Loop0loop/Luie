@@ -1,13 +1,11 @@
-import React, { useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import {
   DndContext,
   DragOverlay,
   useSensor,
   useSensors,
-  MouseSensor,
-  TouchSensor,
+  PointerSensor,
   pointerWithin,
-  defaultDropAnimationSideEffects,
   type DragStartEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
@@ -35,17 +33,21 @@ export function GlobalDragContext({ children, onDropToCenter, onDropToSplit }: G
   const [activeDragItem, setActiveDragItem] = useState<DragData | null>(null);
 
   const sensors = useSensors(
-    useSensor(MouseSensor, {
+    useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 10,
+        distance: 4,
       },
     }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 250,
-        tolerance: 5,
-      },
-    })
+  );
+
+  const overlay = useMemo(
+    () =>
+      activeDragItem ? (
+        <div className="pointer-events-none z-9999 flex w-max items-center gap-2 rounded-lg border border-accent/50 bg-panel/95 p-2 text-sm font-medium opacity-95 shadow-xl will-change-transform [transform:translate3d(0,0,0)]">
+          <span>{activeDragItem.title}</span>
+        </div>
+      ) : null,
+    [activeDragItem],
   );
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -88,13 +90,7 @@ export function GlobalDragContext({ children, onDropToCenter, onDropToSplit }: G
     >
       {children}
       {createPortal(
-        <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({}) }}>
-          {activeDragItem ? (
-            <div className="bg-panel border border-accent/50 shadow-xl rounded-lg p-2 flex items-center gap-2 opacity-90 cursor-grabbing z-9999 w-max pointer-events-none">
-              <span className="text-sm font-medium">{activeDragItem.title}</span>
-            </div>
-          ) : null}
-        </DragOverlay>,
+        <DragOverlay dropAnimation={null}>{overlay}</DragOverlay>,
         document.body
       )}
     </DndContext>

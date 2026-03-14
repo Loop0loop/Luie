@@ -13,9 +13,11 @@ import { autoExtractService } from "../features/autoExtract/autoExtractService.j
 import { autoSaveManager } from "../../manager/autoSaveManager.js";
 import { projectService } from "./projectService.js";
 import { ServiceError } from "../../utils/serviceError.js";
+import { appearanceCacheService } from "../world/appearanceCacheService.js";
 import { trackKeywordAppearances } from "./chapterKeywords.js";
 import { sanitizeName } from "../../../shared/utils/sanitize.js";
 import { isTestEnv } from "../../utils/environment.js";
+import { chapterSearchCacheService } from "../features/chapterSearchCacheService.js";
 
 const logger = createLogger("ChapterService");
 
@@ -151,7 +153,19 @@ export class ChapterService {
       });
 
       logger.info("Chapter created successfully", { chapterId: chapter.id });
-      projectService.schedulePackageExport(input.projectId, "chapter:create");
+      await chapterSearchCacheService.upsertChapter({
+        chapterId: String(chapter.id),
+        projectId: String(chapter.projectId),
+        title: chapter.title,
+        synopsis: chapter.synopsis ?? null,
+        content: chapter.content,
+        wordCount: chapter.wordCount,
+        order: chapter.order,
+      });
+      await projectService.ensureImmediatePackageExport(
+        input.projectId,
+        "chapter:create",
+      );
       return chapter;
     } catch (error) {
       logger.error("Failed to create chapter", error);
@@ -239,7 +253,16 @@ export class ChapterService {
       logger.info("Chapter updated successfully", {
         chapterId: updatedChapter.id,
       });
-      projectService.schedulePackageExport(
+      await chapterSearchCacheService.upsertChapter({
+        chapterId: String(updatedChapter.id),
+        projectId: String((updatedChapter as { projectId: unknown }).projectId),
+        title: updatedChapter.title,
+        synopsis: updatedChapter.synopsis ?? null,
+        content: updatedChapter.content,
+        wordCount: updatedChapter.wordCount,
+        order: updatedChapter.order,
+      });
+      await projectService.ensureImmediatePackageExport(
         String((updatedChapter as { projectId: unknown }).projectId),
         "chapter:update",
       );
@@ -284,10 +307,12 @@ export class ChapterService {
           id,
         );
       }
+      await appearanceCacheService.clearChapter(id);
+      await chapterSearchCacheService.clearChapter(id);
 
       logger.info("Chapter soft-deleted successfully", { chapterId: id });
       if ((chapter as { projectId?: unknown })?.projectId) {
-        projectService.schedulePackageExport(
+        await projectService.ensureImmediatePackageExport(
           String((chapter as { projectId: unknown }).projectId),
           "chapter:delete",
         );
@@ -325,7 +350,7 @@ export class ChapterService {
     try {
       const current = await db.getClient().chapter.findUnique({
         where: { id },
-        select: { projectId: true },
+        select: { projectId: true, content: true },
       });
 
       if (!current?.projectId) {
@@ -342,9 +367,26 @@ export class ChapterService {
           deletedAt: null,
         },
       });
+      await trackKeywordAppearances(
+        id,
+        String(current.content ?? ""),
+        String(current.projectId),
+      );
+      await chapterSearchCacheService.upsertChapter({
+        chapterId: String(restored.id),
+        projectId: String(current.projectId),
+        title: restored.title,
+        synopsis: restored.synopsis ?? null,
+        content: restored.content,
+        wordCount: restored.wordCount,
+        order: restored.order,
+      });
 
       logger.info("Chapter restored successfully", { chapterId: id });
-      projectService.schedulePackageExport(String(current.projectId), "chapter:restore");
+      await projectService.ensureImmediatePackageExport(
+        String(current.projectId),
+        "chapter:restore",
+      );
       return restored;
     } catch (error) {
       logger.error("Failed to restore chapter", error);
@@ -373,6 +415,8 @@ export class ChapterService {
       });
 
       await db.getClient().chapter.delete({ where: { id } });
+      await appearanceCacheService.clearChapter(id);
+      await chapterSearchCacheService.clearChapter(id);
 
       if ((chapter as { projectId?: unknown })?.projectId) {
         await autoSaveManager.forgetChapter(
@@ -383,7 +427,7 @@ export class ChapterService {
 
       logger.info("Chapter purged successfully", { chapterId: id });
       if ((chapter as { projectId?: unknown })?.projectId) {
-        projectService.schedulePackageExport(
+        await projectService.ensureImmediatePackageExport(
           String((chapter as { projectId: unknown }).projectId),
           "chapter:purge",
         );
@@ -412,7 +456,11 @@ export class ChapterService {
       );
 
       logger.info("Chapters reordered successfully", { projectId });
-      projectService.schedulePackageExport(projectId, "chapter:reorder");
+      await chapterSearchCacheService.rebuildProject(projectId);
+      await projectService.ensureImmediatePackageExport(
+        projectId,
+        "chapter:reorder",
+      );
       return { success: true };
     } catch (error) {
       logger.error("Failed to reorder chapters", error);

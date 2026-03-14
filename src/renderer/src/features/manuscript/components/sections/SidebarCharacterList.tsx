@@ -12,7 +12,7 @@ import { useCharacterStore } from "@renderer/features/research/stores/characterS
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { cn } from "@shared/types/utils";
-import { CHARACTER_GROUP_COLORS, CHARACTER_TEMPLATES } from "@shared/constants";
+import { CHARACTER_TEMPLATES } from "@shared/constants";
 import { Modal } from "@shared/ui/Modal";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 
@@ -113,10 +113,6 @@ export default function SidebarCharacterList({
           <CharacterGroup
             key={group}
             title={group}
-            color={
-              CHARACTER_GROUP_COLORS[group] ||
-              CHARACTER_GROUP_COLORS["Uncategorized"]
-            }
             characters={chars}
             selectedId={selectedCharacterId}
             onSelect={handleSelect}
@@ -157,13 +153,11 @@ export default function SidebarCharacterList({
 
 function CharacterGroup({
   title,
-  color,
   characters,
   selectedId,
   onSelect,
 }: {
   title: string;
-  color: string;
   characters: CharacterLike[];
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -182,8 +176,7 @@ function CharacterGroup({
           <ChevronRight className="w-3 h-3" />
         )}
         <div
-          className="w-2 h-2 rounded-full"
-          style={{ backgroundColor: color }}
+          className="w-2 h-2 rounded-full bg-accent"
         />
         <span className="truncate">{title}</span>
         <span className="ml-auto text-[10px] opacity-70">

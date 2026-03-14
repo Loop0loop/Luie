@@ -10,6 +10,7 @@ import type {
   ProjectOpenResult,
   SearchResult,
   Snapshot,
+  SnapshotRestoreCandidate,
   Term,
   AppBootstrapStatus,
   AppUpdateCheckResult,
@@ -18,6 +19,7 @@ import type {
   AppUpdateApplyResult,
   AppUpdateRollbackResult,
   DbRecoveryResult,
+  DbRecoveryStatus,
   AppQuitPhasePayload,
   WindowMenuBarMode,
   SyncRunResult,
@@ -36,6 +38,15 @@ import type {
   EntityRelationUpdateInput,
   WorldGraphMention,
   WorldGraphMentionsQuery,
+  ReplicaWorldDocumentType,
+  WorldReplicaDocumentResult,
+  WorldReplicaScrapMemosResult,
+  WorldScrapMemosData,
+  GraphPluginApplyTemplateInput,
+  GraphPluginCatalogItem,
+  GraphPluginInstallResult,
+  GraphPluginTemplateRef,
+  InstalledGraphPlugin,
 } from "@shared/types/index.js";
 
 export type RendererApi = {
@@ -54,8 +65,21 @@ export type RendererApi = {
       description?: string;
       projectPath?: string;
     }) => Promise<IPCResponse<Project>>;
-    delete: (input: string | { id: string; deleteFile?: boolean }) => Promise<IPCResponse<unknown>>;
+    delete: (
+      input: string | { id: string; deleteFile?: boolean },
+    ) => Promise<IPCResponse<unknown>>;
     removeLocal: (id: string) => Promise<IPCResponse<unknown>>;
+    markOpened: (
+      id: string,
+    ) => Promise<IPCResponse<{ projectId: string; lastOpenedAt: string }>>;
+    attachLuie: (
+      projectId: string,
+      packagePath: string,
+    ) => Promise<IPCResponse<Project>>;
+    materializeLuie: (
+      projectId: string,
+      targetPath: string,
+    ) => Promise<IPCResponse<Project>>;
   };
   chapter: {
     create: (input: {
@@ -75,7 +99,10 @@ export type RendererApi = {
     delete: (id: string) => Promise<IPCResponse<unknown>>;
     restore: (id: string) => Promise<IPCResponse<Chapter>>;
     purge: (id: string) => Promise<IPCResponse<unknown>>;
-    reorder: (projectId: string, chapterIds: string[]) => Promise<IPCResponse<unknown>>;
+    reorder: (
+      projectId: string,
+      chapterIds: string[],
+    ) => Promise<IPCResponse<unknown>>;
   };
   character: {
     create: (input: {
@@ -164,6 +191,9 @@ export type RendererApi = {
     getByProject: (projectId: string) => Promise<IPCResponse<Snapshot[]>>;
     getAll: (projectId: string) => Promise<IPCResponse<Snapshot[]>>;
     getByChapter: (chapterId: string) => Promise<IPCResponse<Snapshot[]>>;
+    listRestoreCandidates: () => Promise<
+      IPCResponse<SnapshotRestoreCandidate[]>
+    >;
     importFromFile: (filePath: string) => Promise<IPCResponse<Project>>;
     restore: (id: string) => Promise<IPCResponse<unknown>>;
     delete: (id: string) => Promise<IPCResponse<unknown>>;
@@ -196,7 +226,11 @@ export type RendererApi = {
     >;
   };
   fs: {
-    saveProject: (projectName: string, projectPath: string, content: string) => Promise<IPCResponse<unknown>>;
+    saveProject: (
+      projectName: string,
+      projectPath: string,
+      content: string,
+    ) => Promise<IPCResponse<unknown>>;
     selectDirectory: () => Promise<IPCResponse<string>>;
     selectFile: (options?: {
       filters?: { name: string; extensions: string[] }[];
@@ -210,49 +244,109 @@ export type RendererApi = {
       title?: string;
     }) => Promise<IPCResponse<string>>;
     readFile: (filePath: string) => Promise<IPCResponse<string>>;
-    readLuieEntry: (packagePath: string, entryPath: string) => Promise<IPCResponse<string | null>>;
-    writeFile: (filePath: string, content: string) => Promise<IPCResponse<unknown>>;
-    createLuiePackage: (packagePath: string, meta: unknown) => Promise<IPCResponse<{ path: string }>>;
-    writeProjectFile: (projectRoot: string, relativePath: string, content: string) => Promise<IPCResponse<{ path: string }>>;
-    approveProjectPath: (projectPath: string) => Promise<IPCResponse<{ approved: boolean; normalizedPath: string }>>;
+    readLuieEntry: (
+      packagePath: string,
+      entryPath: string,
+    ) => Promise<IPCResponse<string | null>>;
+    writeFile: (
+      filePath: string,
+      content: string,
+    ) => Promise<IPCResponse<unknown>>;
+    createLuiePackage: (
+      packagePath: string,
+      meta: unknown,
+    ) => Promise<IPCResponse<{ path: string }>>;
+    writeProjectFile: (
+      projectRoot: string,
+      relativePath: string,
+      content: string,
+    ) => Promise<IPCResponse<{ path: string }>>;
+    approveProjectPath: (
+      projectPath: string,
+    ) => Promise<IPCResponse<{ approved: boolean; normalizedPath: string }>>;
   };
   search: (query: {
     projectId: string;
     query: string;
     type?: "all" | "character" | "term";
   }) => Promise<IPCResponse<SearchResult[]>>;
-  autoSave: (chapterId: string, content: string, projectId: string) => Promise<IPCResponse<unknown>>;
+  autoSave: (
+    chapterId: string,
+    content: string,
+    projectId: string,
+  ) => Promise<IPCResponse<unknown>>;
   lifecycle: {
     setDirty: (dirty: boolean) => void;
-    onQuitPhase: (callback: (payload: AppQuitPhasePayload) => void) => () => void;
+    onQuitPhase: (
+      callback: (payload: AppQuitPhasePayload) => void,
+    ) => () => void;
   };
   settings: {
     getAll: () => Promise<IPCResponse<AppSettings>>;
     getEditor: () => Promise<IPCResponse<EditorSettings>>;
-    setEditor: (settings: EditorSettings) => Promise<IPCResponse<EditorSettings>>;
-    getAutoSave: () => Promise<IPCResponse<{ enabled: boolean; interval: number }>>;
-    setAutoSave: (settings: { enabled?: boolean; interval?: number }) => Promise<IPCResponse<{ enabled: boolean; interval: number }>>;
+    setEditor: (
+      settings: EditorSettings,
+    ) => Promise<IPCResponse<EditorSettings>>;
+    getAutoSave: () => Promise<
+      IPCResponse<{ enabled: boolean; interval: number }>
+    >;
+    setAutoSave: (settings: {
+      enabled?: boolean;
+      interval?: number;
+    }) => Promise<IPCResponse<{ enabled: boolean; interval: number }>>;
     getLanguage: () => Promise<IPCResponse<{ language: "ko" | "en" | "ja" }>>;
-    setLanguage: (settings: { language: "ko" | "en" | "ja" }) => Promise<IPCResponse<{ language: "ko" | "en" | "ja" }>>;
+    setLanguage: (settings: {
+      language: "ko" | "en" | "ja";
+    }) => Promise<IPCResponse<{ language: "ko" | "en" | "ja" }>>;
     getMenuBarMode: () => Promise<IPCResponse<{ mode: WindowMenuBarMode }>>;
-    setMenuBarMode: (settings: { mode: WindowMenuBarMode }) => Promise<IPCResponse<{ mode: WindowMenuBarMode }>>;
-    getShortcuts: () => Promise<IPCResponse<{ shortcuts: Record<string, string>; defaults: Record<string, string> }>>;
-    setShortcuts: (settings: { shortcuts: Record<string, string> }) => Promise<IPCResponse<{ shortcuts: Record<string, string>; defaults: Record<string, string> }>>;
-    getWindowBounds: () => Promise<IPCResponse<{ width: number; height: number; x: number; y: number } | undefined>>;
-    setWindowBounds: (bounds: { width: number; height: number; x: number; y: number }) => Promise<IPCResponse<{ width: number; height: number; x: number; y: number }>>;
+    setMenuBarMode: (settings: {
+      mode: WindowMenuBarMode;
+    }) => Promise<IPCResponse<{ mode: WindowMenuBarMode }>>;
+    getShortcuts: () => Promise<
+      IPCResponse<{
+        shortcuts: Record<string, string>;
+        defaults: Record<string, string>;
+      }>
+    >;
+    setShortcuts: (settings: { shortcuts: Record<string, string> }) => Promise<
+      IPCResponse<{
+        shortcuts: Record<string, string>;
+        defaults: Record<string, string>;
+      }>
+    >;
+    getWindowBounds: () => Promise<
+      IPCResponse<
+        { width: number; height: number; x: number; y: number } | undefined
+      >
+    >;
+    setWindowBounds: (bounds: {
+      width: number;
+      height: number;
+      x: number;
+      y: number;
+    }) => Promise<
+      IPCResponse<{ width: number; height: number; x: number; y: number }>
+    >;
     reset: () => Promise<IPCResponse<AppSettings>>;
   };
   recovery: {
-    runDb: (options?: { dryRun?: boolean }) => Promise<IPCResponse<DbRecoveryResult>>;
+    getStatus: () => Promise<IPCResponse<DbRecoveryStatus>>;
+    runDb: (options?: {
+      dryRun?: boolean;
+    }) => Promise<IPCResponse<DbRecoveryResult>>;
   };
   sync: {
     getStatus: () => Promise<IPCResponse<SyncStatus>>;
     connectGoogle: () => Promise<IPCResponse<SyncStatus>>;
     disconnect: () => Promise<IPCResponse<SyncStatus>>;
     runNow: () => Promise<IPCResponse<SyncRunResult>>;
-    setAutoSync: (settings: { enabled: boolean }) => Promise<IPCResponse<SyncStatus>>;
+    setAutoSync: (settings: {
+      enabled: boolean;
+    }) => Promise<IPCResponse<SyncStatus>>;
     getRuntimeConfig: () => Promise<IPCResponse<RuntimeSupabaseConfigView>>;
-    setRuntimeConfig: (settings: RuntimeSupabaseConfig) => Promise<IPCResponse<RuntimeSupabaseConfigView>>;
+    setRuntimeConfig: (
+      settings: RuntimeSupabaseConfig,
+    ) => Promise<IPCResponse<RuntimeSupabaseConfigView>>;
     validateRuntimeConfig: (settings: RuntimeSupabaseConfig) => Promise<
       IPCResponse<{
         valid: boolean;
@@ -262,7 +356,11 @@ export type RendererApi = {
     >;
     onStatusChanged: (callback: (status: SyncStatus) => void) => () => void;
     onAuthResult: (callback: (result: SyncAuthResult) => void) => () => void;
-    resolveConflict: (resolution: { type: "chapter" | "memo"; id: string; resolution: "local" | "remote" }) => Promise<IPCResponse<void>>;
+    resolveConflict: (resolution: {
+      type: "chapter" | "memo";
+      id: string;
+      resolution: "local" | "remote";
+    }) => Promise<IPCResponse<void>>;
   };
   startup: {
     getReadiness: () => Promise<IPCResponse<StartupReadiness>>;
@@ -276,7 +374,9 @@ export type RendererApi = {
     applyUpdate: () => Promise<IPCResponse<AppUpdateApplyResult>>;
     rollbackUpdate: () => Promise<IPCResponse<AppUpdateRollbackResult>>;
     getBootstrapStatus: () => Promise<IPCResponse<AppBootstrapStatus>>;
-    onBootstrapStatus: (callback: (status: AppBootstrapStatus) => void) => () => void;
+    onBootstrapStatus: (
+      callback: (status: AppBootstrapStatus) => void,
+    ) => () => void;
     onUpdateState: (callback: (status: AppUpdateState) => void) => () => void;
     quit: () => Promise<IPCResponse<unknown>>;
   };
@@ -286,6 +386,8 @@ export type RendererApi = {
     toggleFullscreen: () => Promise<IPCResponse<unknown>>;
     setFullscreen: (flag: boolean) => Promise<IPCResponse<unknown>>;
     openExport: (chapterId: string) => Promise<IPCResponse<boolean>>;
+    hapticFeedback: () => Promise<IPCResponse<unknown>>;
+
     openWorldGraph: () => Promise<IPCResponse<unknown>>;
   };
   logger: {
@@ -295,29 +397,74 @@ export type RendererApi = {
     error: (message: string, data?: unknown) => Promise<IPCResponse<unknown>>;
   };
   analysis: {
-    start: (chapterId: string, projectId: string) => Promise<IPCResponse<unknown>>;
+    start: (
+      chapterId: string,
+      projectId: string,
+    ) => Promise<IPCResponse<unknown>>;
     stop: () => Promise<IPCResponse<unknown>>;
     clear: () => Promise<IPCResponse<unknown>>;
     onStream: (callback: (data: unknown) => void) => () => void;
     onError: (callback: (error: unknown) => void) => () => void;
   };
   worldEntity: {
-    create: (input: WorldEntityCreateInput) => Promise<IPCResponse<WorldEntity>>;
+    create: (
+      input: WorldEntityCreateInput,
+    ) => Promise<IPCResponse<WorldEntity>>;
     get: (id: string) => Promise<IPCResponse<WorldEntity>>;
     getAll: (projectId: string) => Promise<IPCResponse<WorldEntity[]>>;
-    update: (input: WorldEntityUpdateInput) => Promise<IPCResponse<WorldEntity>>;
-    updatePosition: (input: WorldEntityUpdatePositionInput) => Promise<IPCResponse<WorldEntity>>;
+    update: (
+      input: WorldEntityUpdateInput,
+    ) => Promise<IPCResponse<WorldEntity>>;
+    updatePosition: (
+      input: WorldEntityUpdatePositionInput,
+    ) => Promise<IPCResponse<WorldEntity>>;
     delete: (id: string) => Promise<IPCResponse<unknown>>;
   };
   entityRelation: {
-    create: (input: EntityRelationCreateInput) => Promise<IPCResponse<EntityRelation>>;
+    create: (
+      input: EntityRelationCreateInput,
+    ) => Promise<IPCResponse<EntityRelation>>;
     getAll: (projectId: string) => Promise<IPCResponse<EntityRelation[]>>;
-    update: (input: EntityRelationUpdateInput) => Promise<IPCResponse<EntityRelation>>;
+    update: (
+      input: EntityRelationUpdateInput,
+    ) => Promise<IPCResponse<EntityRelation>>;
     delete: (id: string) => Promise<IPCResponse<unknown>>;
   };
   worldGraph: {
     get: (projectId: string) => Promise<IPCResponse<WorldGraphData>>;
-    getMentions: (query: WorldGraphMentionsQuery) => Promise<IPCResponse<WorldGraphMention[]>>;
+    getMentions: (
+      query: WorldGraphMentionsQuery,
+    ) => Promise<IPCResponse<WorldGraphMention[]>>;
+  };
+  worldStorage: {
+    getDocument: (input: {
+      projectId: string;
+      docType: ReplicaWorldDocumentType;
+    }) => Promise<IPCResponse<WorldReplicaDocumentResult>>;
+    setDocument: (input: {
+      projectId: string;
+      docType: ReplicaWorldDocumentType;
+      payload: unknown;
+    }) => Promise<IPCResponse<unknown>>;
+    getScrapMemos: (
+      projectId: string,
+    ) => Promise<IPCResponse<WorldReplicaScrapMemosResult>>;
+    setScrapMemos: (input: {
+      projectId: string;
+      data: WorldScrapMemosData;
+    }) => Promise<IPCResponse<unknown>>;
+  };
+  plugin: {
+    listCatalog: () => Promise<IPCResponse<GraphPluginCatalogItem[]>>;
+    listInstalled: () => Promise<IPCResponse<InstalledGraphPlugin[]>>;
+    install: (
+      pluginId: string,
+    ) => Promise<IPCResponse<GraphPluginInstallResult>>;
+    uninstall: (pluginId: string) => Promise<IPCResponse<unknown>>;
+    getTemplates: () => Promise<IPCResponse<GraphPluginTemplateRef[]>>;
+    applyTemplate: (
+      input: GraphPluginApplyTemplateInput,
+    ) => Promise<IPCResponse<unknown>>;
   };
 };
 
@@ -379,7 +526,7 @@ const markPreloadUnavailable = (): void => {
 };
 
 const createDeferredApiNode = (path: string[]): unknown =>
-  new Proxy(function deferredApiMethod() { }, {
+  new Proxy(function deferredApiMethod() {}, {
     get: (_target, prop) => {
       if (prop === "then") {
         return undefined;

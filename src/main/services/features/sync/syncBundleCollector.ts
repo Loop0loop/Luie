@@ -11,32 +11,20 @@ import {
 } from "../../../../shared/constants/index.js";
 import type { SyncPendingProjectDelete } from "../../../../shared/types/index.js";
 import {
-  isRecord,
   normalizeWorldScrapPayload,
   parseWorldJsonSafely,
   toWorldUpdatedAt,
 } from "../../../../shared/world/worldDocumentCodec.js";
-import { readLuieEntry } from "../../../utils/luiePackage.js";
 import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
 import { createEmptySyncBundle, type SyncBundle } from "./syncMapper.js";
 import type { LoggerLike as LuieWriterLogger } from "../../io/luiePackageTypes.js";
+import { readLuieContainerEntry } from "../../io/luieContainer.js";
 
 type LoggerLike = LuieWriterLogger & {
   warn: (message: string, details?: unknown) => void;
 };
 
 type WorldDocumentType = SyncBundle["worldDocuments"][number]["docType"];
-
-const WORLD_DOCUMENT_FILES: Array<{
-  docType: "synopsis" | "plot" | "drawing" | "mindmap" | "graph";
-  fileName: string;
-}> = [
-  { docType: "synopsis", fileName: LUIE_WORLD_SYNOPSIS_FILE },
-  { docType: "plot", fileName: LUIE_WORLD_PLOT_FILE },
-  { docType: "drawing", fileName: LUIE_WORLD_DRAWING_FILE },
-  { docType: "mindmap", fileName: LUIE_WORLD_MINDMAP_FILE },
-  { docType: "graph", fileName: LUIE_WORLD_GRAPH_FILE },
-];
 
 const WORLD_DOCUMENT_FILE_BY_TYPE: Record<WorldDocumentType, string> = {
   synopsis: LUIE_WORLD_SYNOPSIS_FILE,
@@ -70,6 +58,14 @@ const toNullableString = (value: unknown): string | null =>
 
 const toNumber = (value: unknown, fallback = 0): number =>
   typeof value === "number" && Number.isFinite(value) ? value : fallback;
+
+const toStringArray = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+
+const isWorldDocumentType = (value: string): value is WorldDocumentType =>
+  WORLD_DOCUMENT_TYPES.includes(value as WorldDocumentType);
 
 const appendProjectRecord = (
   bundle: SyncBundle,
@@ -229,7 +225,7 @@ const readWorldDocumentPayload = async (
   const entryPath = `${LUIE_WORLD_DIR}/${fileName}`;
   let raw: string | null;
   try {
-    raw = await readLuieEntry(projectPath, entryPath, logger);
+    raw = await readLuieContainerEntry(projectPath, entryPath, logger);
   } catch (error) {
     logger.warn("Failed to read .luie world document for sync; skipping doc", {
       projectPath,
@@ -278,53 +274,66 @@ const appendScrapMemos = (
   }
 };
 
-const collectWorldDocuments = async (input: {
-  bundle: SyncBundle;
-  userId: string;
-  projectId: string;
-  projectPath: string;
-  updatedAtFallback: string;
-  logger: LoggerLike;
-}): Promise<void> => {
-  for (const descriptor of WORLD_DOCUMENT_FILES) {
-    const payload = await readWorldDocumentPayload(
-      input.projectPath,
-      descriptor.docType,
-      input.logger,
-    );
-    if (!payload) continue;
-    addWorldDocumentRecord(
-      input.bundle,
-      input.userId,
-      input.projectId,
-      descriptor.docType,
-      payload,
-      input.updatedAtFallback,
-    );
+const collectReplicaWorldDocuments = (
+  projectRow: Record<string, unknown>,
+  projectId: string,
+  logger: LoggerLike,
+): Map<WorldDocumentType, unknown> => {
+  const collected = new Map<WorldDocumentType, unknown>();
+  const rows = Array.isArray(projectRow.worldDocuments)
+    ? (projectRow.worldDocuments as Array<Record<string, unknown>>)
+    : [];
+
+  for (const row of rows) {
+    const docType = toNullableString(row.docType);
+    if (!docType || !isWorldDocumentType(docType) || collected.has(docType)) {
+      continue;
+    }
+
+    const rawPayload = toNullableString(row.payload);
+    if (!rawPayload) continue;
+
+    const parsed = parseWorldJsonSafely(rawPayload);
+    if (parsed === null) {
+      logger.warn("Skipping invalid replica world document payload during sync collect", {
+        projectId,
+        docType,
+      });
+      continue;
+    }
+
+    collected.set(docType, parsed);
   }
 
-  const scrapPayload = await readWorldDocumentPayload(
-    input.projectPath,
-    "scrap",
-    input.logger,
-  );
-  if (!isRecord(scrapPayload)) return;
+  return collected;
+};
 
-  addWorldDocumentRecord(
-    input.bundle,
-    input.userId,
-    input.projectId,
-    "scrap",
-    scrapPayload,
-    input.updatedAtFallback,
-  );
-  appendScrapMemos(
-    input.bundle,
-    input.userId,
-    input.projectId,
-    scrapPayload,
-    input.updatedAtFallback,
-  );
+const appendReplicaScrapMemoRecords = (
+  bundle: SyncBundle,
+  userId: string,
+  projectId: string,
+  projectRow: Record<string, unknown>,
+): boolean => {
+  const rows = Array.isArray(projectRow.scrapMemos)
+    ? (projectRow.scrapMemos as Array<Record<string, unknown>>)
+    : [];
+  if (rows.length === 0) return false;
+
+  for (const row of rows) {
+    const memoId = toNullableString(row.id);
+    if (!memoId) continue;
+    bundle.memos.push({
+      id: memoId,
+      userId,
+      projectId,
+      title: toNullableString(row.title) ?? "Memo",
+      content: toNullableString(row.content) ?? "",
+      tags: toStringArray(parseWorldJsonSafely(toNullableString(row.tags))),
+      updatedAt: toIsoString(row.updatedAt),
+    });
+  }
+
+  return bundle.memos.some((memo) => memo.projectId === projectId);
 };
 
 const collectProjectBundleData = async (
@@ -362,6 +371,12 @@ const collectProjectBundleData = async (
       : [],
   );
 
+  const worldDocsByType = collectReplicaWorldDocuments(
+    projectRow,
+    projectId,
+    logger,
+  );
+
   if (
     projectPath &&
     projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)
@@ -371,20 +386,47 @@ const collectProjectBundleData = async (
         projectPath,
         "projectPath",
       );
-      await collectWorldDocuments({
-        bundle,
-        userId,
-        projectId,
-        projectPath: safeProjectPath,
-        updatedAtFallback: projectUpdatedAt,
+      await hydrateMissingWorldDocsFromPackage(
+        worldDocsByType,
+        safeProjectPath,
         logger,
-      });
+      );
     } catch (error) {
       logger.warn("Skipping sync world document read for invalid projectPath", {
         projectId,
         projectPath,
         error,
       });
+    }
+  }
+
+  for (const [docType, payload] of worldDocsByType.entries()) {
+    addWorldDocumentRecord(
+      bundle,
+      userId,
+      projectId,
+      docType,
+      payload,
+      projectUpdatedAt,
+    );
+  }
+
+  const hasReplicaMemos = appendReplicaScrapMemoRecords(
+    bundle,
+    userId,
+    projectId,
+    projectRow,
+  );
+  if (!hasReplicaMemos) {
+    const scrapPayload = worldDocsByType.get("scrap");
+    if (scrapPayload) {
+      appendScrapMemos(
+        bundle,
+        userId,
+        projectId,
+        scrapPayload,
+        projectUpdatedAt,
+      );
     }
   }
 };

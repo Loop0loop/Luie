@@ -1,517 +1,694 @@
 export const koBase = {
-  "home": "홈",
-  "share": "공유",
-  "loading": "로딩 중...",
-  "back": "뒤로",
-  "delete": "삭제",
-  "undo": "실행 취소",
-  "clear": "지우기",
-  "exit": "나가기",
-  "menu": {
-    "file": "파일",
-    "edit": "편집",
-    "view": "보기",
-    "insert": "삽입",
-    "format": "서식",
-    "tools": "도구",
-    "extensions": "확장 프로그램",
-    "help": "도움말",
-    "link": "링크",
-    "image": "이미지"
+  home: "홈",
+  share: "공유",
+  loading: "로딩 중...",
+  back: "뒤로",
+  delete: "삭제",
+  undo: "실행 취소",
+  clear: "지우기",
+  exit: "나가기",
+  menu: {
+    file: "파일",
+    edit: "편집",
+    view: "보기",
+    insert: "삽입",
+    format: "서식",
+    tools: "도구",
+    extensions: "확장 프로그램",
+    help: "도움말",
+    link: "링크",
+    image: "이미지",
   },
-  "settings": {
-    "title": "화면 설정",
-    "sidebar": {
-      "section": {
-        "manuscript": "원고",
-        "research": "연구",
-        "snapshot": "스냅샷",
-        "trash": "휴지통"
+  settings: {
+    title: "화면 설정",
+    sidebar: {
+      section: {
+        manuscript: "원고",
+        research: "연구",
+        snapshot: "스냅샷",
+        trash: "휴지통",
       },
-      "item": {
-        "characters": "인물",
-        "world": "세계관",
-        "scrap": "스크랩",
-        "analysis": "분석"
+      item: {
+        characters: "인물",
+        world: "세계관",
+        scrap: "스크랩",
+        analysis: "분석",
       },
-      "addChapter": "새 챕터 추가",
-      "snapshotEmpty": "선택된 챕터가 없거나 스냅샷이 없습니다.",
-      "trashEmpty": "휴지통이 비어있습니다.",
-      "tooltip": {
-        "refresh": "새로고침"
+      addChapter: "새 챕터 추가",
+      snapshotEmpty: "선택된 챕터가 없거나 스냅샷이 없습니다.",
+      trashEmpty: "휴지통이 비어있습니다.",
+      tooltip: {
+        refresh: "새로고침",
       },
-      "editor": "글꼴 (Editor)",
-      "appearance": "테마 (Appearance)",
-      "features": "기능 (Features)",
-      "shortcuts": "단축키 (Shortcuts)",
-      "recovery": "파일 복원 (File Recovery)",
-      "sync": "동기화 (Sync)",
-      "language": "언어 (Language)"
+      editor: "글꼴 (Editor)",
+      appearance: "테마 (Appearance)",
+      features: "기능 (Features)",
+      shortcuts: "단축키 (Shortcuts)",
+      recovery: "파일 복원 (File Recovery)",
+      sync: "동기화 (Sync)",
+      language: "언어 (Language)",
     },
-    "section": {
-      "font": "글꼴 (Font)",
-      "optionalFonts": "옵션 폰트 (선택 설치)",
-      "fontSize": "글자 크기",
-      "lineHeight": "줄 간격",
-      "theme": "테마 (Theme)",
-      "uiMode": "UI 모드 (Laboratory)",
-      "language": "언어",
-      "menuBar": "메뉴바"
+    section: {
+      font: "글꼴 (Font)",
+      optionalFonts: "옵션 폰트 (선택 설치)",
+      spellcheck: "맞춤법 검사",
+      fontSize: "글자 크기",
+      lineHeight: "줄 간격",
+      theme: "테마 (Theme)",
+      uiMode: "UI 모드 (Laboratory)",
+      language: "언어",
+      menuBar: "메뉴바",
     },
-    "uiMode": {
-      "description": "에디터의 도구 모음과 레이아웃을 익숙한 스타일로 변경합니다.",
-      "default": "기본 (Default)",
-      "docs": "Google Docs 스타일",
-      "editor": "에디터 모드",
-      "scrivener": "Scrivener 스타일"
+    uiMode: {
+      description:
+        "에디터의 도구 모음과 레이아웃을 익숙한 스타일로 변경합니다.",
+      default: "기본 (Default)",
+      docs: "Google Docs 스타일",
+      editor: "에디터 모드",
+      scrivener: "Scrivener 스타일",
     },
-    "menuBar": {
-      "description": "macOS에서는 가리기를 선택하면 전체화면(immersive)으로 전환됩니다.",
-      "hide": "메뉴바 가리기",
-      "show": "메뉴바 보이기",
-      "applyHint": "변경 사항은 즉시 적용됩니다. (가리기: 전체화면, 보이기: 일반창)",
-      "applyFailed": "메뉴바 표시 방식을 적용하지 못했습니다. 다시 시도해주세요."
+    menuBar: {
+      description:
+        "macOS에서는 가리기를 선택하면 전체화면(immersive)으로 전환됩니다.",
+      hide: "메뉴바 가리기",
+      show: "메뉴바 보이기",
+      applyHint:
+        "변경 사항은 즉시 적용됩니다. (가리기: 전체화면, 보이기: 일반창)",
+      applyFailed: "메뉴바 표시 방식을 적용하지 못했습니다. 다시 시도해주세요.",
     },
-    "appearance": {
-      "baseTheme": {
-        "title": "테마 모드 (Base Theme)",
-        "description": "기본적인 밝기를 선택합니다."
+    appearance: {
+      baseTheme: {
+        title: "테마 모드 (Base Theme)",
+        description: "기본적인 밝기를 선택합니다.",
       },
-      "accent": {
-        "title": "강조 색상 (Accent Color)",
-        "description": "버튼과 강조 요소의 색상을 선택하세요."
+      accent: {
+        title: "강조 색상 (Accent Color)",
+        description: "버튼과 강조 요소의 색상을 선택하세요.",
       },
-      "texture": {
-        "title": "종이 질감 (Texture)",
-        "description": "화면에 미세한 노이즈를 추가하여 종이 질감을 냅니다.",
-        "on": "켜짐 (On)",
-        "off": "꺼짐 (Off)"
+      texture: {
+        title: "종이 질감 (Texture)",
+        description: "화면에 미세한 노이즈를 추가하여 종이 질감을 냅니다.",
+        on: "켜짐 (On)",
+        off: "꺼짐 (Off)",
       },
-      "contrast": {
-        "title": "대비 (Contrast)",
-        "description": "화면의 선명도를 조절합니다.",
-        "soft": "Soft",
-        "high": "High"
+      contrast: {
+        title: "대비 (Contrast)",
+        description: "화면의 선명도를 조절합니다.",
+        soft: "Soft",
+        high: "High",
       },
-      "atmosphere": {
-        "title": "분위기 (Atmosphere)",
-        "description": "작업 목적에 맞는 색온도를 선택하세요.",
-        "cool": {
-          "title": "차가움 (Cool)",
-          "description": "집중 / 분석 / 이성적"
+      atmosphere: {
+        title: "분위기 (Atmosphere)",
+        description: "작업 목적에 맞는 색온도를 선택하세요.",
+        cool: {
+          title: "차가움 (Cool)",
+          description: "집중 / 분석 / 이성적",
         },
-        "neutral": {
-          "title": "중립 (Neutral)",
-          "description": "기본 / 깔끔함"
+        neutral: {
+          title: "중립 (Neutral)",
+          description: "기본 / 깔끔함",
         },
-        "warm": {
-          "title": "따뜻함 (Warm)",
-          "description": "서사 / 감정 / 편안함"
-        }
-      }
+        warm: {
+          title: "따뜻함 (Warm)",
+          description: "서사 / 감정 / 편안함",
+        },
+      },
     },
-    "view": {
-      "pc": "PC",
-      "mobile": "모바일"
+    view: {
+      pc: "PC",
+      mobile: "모바일",
     },
-    "font": {
-      "serif": "명조체",
-      "sans": "고딕체 (Inter + Noto Sans KR/JP)",
-      "mono": "모노",
-      "helper": {
-        "primary": "기본 내장: Inter Variable + Noto Sans KR/JP (다국어 기본 폴백)",
-        "optional": "설치된 폰트만 적용됩니다. 설치하지 않으면 기본 폰트로 자동 폴백됩니다."
-      }
+    font: {
+      serif: "명조체",
+      sans: "고딕체 (Inter + Noto Sans KR/JP)",
+      mono: "모노",
+      helper: {
+        primary:
+          "기본 내장: Inter Variable + Noto Sans KR/JP (다국어 기본 폴백)",
+        optional:
+          "설치된 폰트만 적용됩니다. 설치하지 않으면 기본 폰트로 자동 폴백됩니다.",
+      },
     },
-    "optionalFonts": {
-      "lora": "Lora (Serif)",
-      "bitter": "Bitter (Serif)",
-      "sourceSerif": "Source Serif 4",
-      "montserrat": "Montserrat (Sans)",
-      "nunitoSans": "Nunito Sans",
-      "victorMono": "Victor Mono",
-      "action": {
-        "installing": "설치 중",
-        "install": "설치",
-        "apply": "적용",
-        "active": "사용 중"
-      }
+    optionalFonts: {
+      lora: "Lora (Serif)",
+      bitter: "Bitter (Serif)",
+      sourceSerif: "Source Serif 4",
+      montserrat: "Montserrat (Sans)",
+      nunitoSans: "Nunito Sans",
+      victorMono: "Victor Mono",
+      action: {
+        installing: "설치 중",
+        install: "설치",
+        apply: "적용",
+        active: "사용 중",
+      },
     },
-    "theme": {
-      "light": "Light",
-      "sepia": "Sepia",
-      "dark": "Dark"
+    spellcheck: {
+      description: "Electron 내장 맞춤법 검사 밑줄과 제안을 켜거나 끕니다.",
+      on: "켜짐",
+      off: "꺼짐",
     },
-    "sampleText": "Ag",
-    "language": {
-      "helper": "앱 전체 언어를 변경합니다.",
-      "options": {
-        "ko": "한국어",
-        "en": "영어",
-        "ja": "일본어"
-      }
+    theme: {
+      light: "Light",
+      sepia: "Sepia",
+      dark: "Dark",
     },
-    "placeholder": "준비 중인 기능입니다.",
-    "shortcuts": {
-      "title": "단축키",
-      "action": "동작",
-      "key": "키",
-      "reset": "기본값으로 복원",
-      "openSettings": "설정 열기",
-      "closeWindow": "앱 창 닫기",
-      "quitApp": "앱 종료",
-      "newChapter": "새 회차 만들기",
-      "saveChapter": "현재 회차 저장",
-      "deleteChapter": "현재 원고 삭제",
-      "openChapter1": "원고 1 열기",
-      "openChapter2": "원고 2 열기",
-      "openChapter3": "원고 3 열기",
-      "openChapter4": "원고 4 열기",
-      "openChapter5": "원고 5 열기",
-      "openChapter6": "원고 6 열기",
-      "openChapter7": "원고 7 열기",
-      "openChapter8": "원고 8 열기",
-      "openChapter9": "원고 9 열기",
-      "openChapter10": "원고 10 열기",
-      "toggleSidebar": "사이드바 토글",
-      "openSidebar": "사이드바 열기",
-      "closeSidebar": "사이드바 닫기",
-      "toggleContext": "컨텍스트 패널 토글",
-      "openContext": "컨텍스트 패널 열기",
-      "closeContext": "컨텍스트 패널 닫기",
-      "toggleBinder": "바인더 창 열기/닫기",
-      "openSnapshotSection": "스냅샷 섹션 열기",
-      "openTrashSection": "휴지통 섹션 열기",
-      "renameProject": "프로젝트 이름 바꾸기",
-      "openCharacter": "캐릭터 창 열기",
-      "openWorld": "세계관 열기",
-      "openScrap": "자료 스크랩 열기",
-      "openAnalysis": "분석 창 열기",
-      "openCharacterLeft": "캐릭터 왼쪽에 열기",
-      "openWorldLeft": "세계관 왼쪽에 열기",
-      "openScrapLeft": "자료 스크랩 왼쪽에 열기",
-      "openAnalysisLeft": "분석 왼쪽에 열기",
-      "openCharacterTemplate": "캐릭터 만드는 창 열기",
-      "worldTabSynopsis": "시놉시스로 가기",
-      "worldTabTerms": "세계관 용어로 가기",
-      "worldTabMindmap": "마인드맵으로 가기",
-      "worldTabDrawing": "맵 드로잉으로 가기",
-      "worldTabPlot": "플롯 보드로 가기",
-      "worldTabGraph": "세계관 그래프로 가기",
-      "addWorldTerm": "세계관 용어 만들기",
-      "addScrapMemo": "자료 스크랩 메모 만들기",
-      "openExportPreview": "원고 내보내기",
-      "openExportWindow": "빠른 내보내기",
-      "openEditorRight": "원고 오른쪽에 열기",
-      "openEditorLeft": "원고 왼쪽에 열기",
-      "swapSplitSides": "좌우 패널 바꾸기",
-      "editorFontIncrease": "에디터 글자 크기 늘리기",
-      "editorFontDecrease": "에디터 글자 크기 줄이기",
-      "toggleFullscreen": "전체화면 토글",
-      "group": {
-        "app": "앱 (App)",
-        "file": "원고 (Manuscript)",
-        "view": "보기 (View)",
-        "research": "연구 (Research)",
-        "editor": "에디터 (Editor)",
-        "other": "기타 (Other)"
+    sampleText: "Ag",
+    language: {
+      helper: "앱 전체 언어를 변경합니다.",
+      options: {
+        ko: "한국어",
+        en: "영어",
+        ja: "일본어",
       },
-      "saveFailed": "단축키 저장에 실패했습니다.",
-      "resetFailed": "단축키 초기화에 실패했습니다."
     },
-    "recovery": {
-      "title": "파일 복원",
-      "description": "WAL 로그를 이용해 손상된 데이터베이스를 복원합니다. 실행 전 백업이 생성됩니다.",
-      "dryRun": "백업만 만들기",
-      "run": "복원 실행",
-      "running": "복원 중...",
-      "success": "복원이 완료되었습니다.",
-      "failed": "복원 실행에 실패했습니다.",
-      "error": "복원 중 오류가 발생했습니다."
+    placeholder: "준비 중인 기능입니다.",
+    shortcuts: {
+      title: "단축키",
+      action: "동작",
+      key: "키",
+      reset: "기본값으로 복원",
+      openSettings: "설정 열기",
+      closeWindow: "앱 창 닫기",
+      quitApp: "앱 종료",
+      newChapter: "새 회차 만들기",
+      saveChapter: "현재 회차 저장",
+      deleteChapter: "현재 원고 삭제",
+      openChapter1: "원고 1 열기",
+      openChapter2: "원고 2 열기",
+      openChapter3: "원고 3 열기",
+      openChapter4: "원고 4 열기",
+      openChapter5: "원고 5 열기",
+      openChapter6: "원고 6 열기",
+      openChapter7: "원고 7 열기",
+      openChapter8: "원고 8 열기",
+      openChapter9: "원고 9 열기",
+      openChapter10: "원고 10 열기",
+      toggleSidebar: "사이드바 토글",
+      openSidebar: "사이드바 열기",
+      closeSidebar: "사이드바 닫기",
+      toggleContext: "컨텍스트 패널 토글",
+      openContext: "컨텍스트 패널 열기",
+      closeContext: "컨텍스트 패널 닫기",
+      toggleBinder: "바인더 창 열기/닫기",
+      openSnapshotSection: "스냅샷 섹션 열기",
+      openTrashSection: "휴지통 섹션 열기",
+      renameProject: "프로젝트 이름 바꾸기",
+      openCharacter: "캐릭터 창 열기",
+      openWorld: "세계관 열기",
+      openScrap: "자료 스크랩 열기",
+      openAnalysis: "분석 창 열기",
+      openCharacterLeft: "캐릭터 왼쪽에 열기",
+      openWorldLeft: "세계관 왼쪽에 열기",
+      openScrapLeft: "자료 스크랩 왼쪽에 열기",
+      openAnalysisLeft: "분석 왼쪽에 열기",
+      openCharacterTemplate: "캐릭터 만드는 창 열기",
+      worldTabSynopsis: "시놉시스로 가기",
+      worldTabTerms: "세계관 용어로 가기",
+      worldTabMindmap: "마인드맵으로 가기",
+      worldTabDrawing: "맵 드로잉으로 가기",
+      worldTabPlot: "플롯 보드로 가기",
+      worldTabGraph: "세계관 그래프로 가기",
+      addWorldTerm: "세계관 용어 만들기",
+      addScrapMemo: "자료 스크랩 메모 만들기",
+      openExportPreview: "원고 내보내기",
+      openExportWindow: "빠른 내보내기",
+      openEditorRight: "원고 오른쪽에 열기",
+      openEditorLeft: "원고 왼쪽에 열기",
+      swapSplitSides: "좌우 패널 바꾸기",
+      editorFontIncrease: "에디터 글자 크기 늘리기",
+      editorFontDecrease: "에디터 글자 크기 줄이기",
+      toggleFullscreen: "전체화면 토글",
+      group: {
+        app: "앱 (App)",
+        file: "원고 (Manuscript)",
+        view: "보기 (View)",
+        research: "연구 (Research)",
+        editor: "에디터 (Editor)",
+        other: "기타 (Other)",
+      },
+      saveFailed: "단축키 저장에 실패했습니다.",
+      resetFailed: "단축키 초기화에 실패했습니다.",
     },
-    "sync": {
-      "title": "동기화 및 연결",
-      "description": "Google 계정을 연결하고 Supabase와 프로젝트 데이터를 동기화합니다.",
-      "connected": "연결됨",
-      "disconnected": "연결 안 됨",
-      "fields": {
-        "connection": "연결 상태",
-        "email": "연결 계정",
-        "lastSyncedAt": "마지막 동기화",
-        "mode": "진행 상태",
-        "autoSync": "자동 동기화"
+    recovery: {
+      title: "파일 복원",
+      refresh: "다시 확인",
+      steps: {
+        safeTitle: "먼저 안전 복사본을 만듭니다",
+        safeDescription:
+          "현재 상태를 따로 저장해 두기 때문에 실패해도 원래 상태로 되돌릴 수 있습니다.",
+        restoreTitle: "최근 저장분을 되살립니다",
+        restoreDescription:
+          "앱 종료 직전 메인 파일에 아직 합쳐지지 않은 최근 저장 내용을 다시 붙입니다.",
+        rollbackTitle: "문제가 있으면 자동으로 되돌립니다",
+        rollbackDescription:
+          "검사에서 이상이 보이면 방금 만든 안전 복사본으로 자동 복구합니다.",
       },
-      "status": {
-        "idle": "대기",
-        "connecting": "연결 중",
-        "syncing": "동기화 중",
-        "error": "오류"
+      dryRun: "먼저 안전 백업만 만들기",
+      run: "최근 저장분 복원하기",
+      running: "복원 중...",
+      failed: "복원 실행에 실패했습니다.",
+      error: "복원 중 오류가 발생했습니다.",
+      lastChecked: "마지막 확인",
+      unavailableHint:
+        "지금은 되살릴 최근 저장분이 보이지 않습니다. 보통 .wal 파일이 없을 때 이렇게 표시됩니다.",
+      file: {
+        database: "데이터베이스",
+        wal: "WAL 로그",
+        shm: "공유 메모리",
+        present: "파일 있음",
+        missing: "파일 없음",
       },
-      "actions": {
-        "connectGoogle": "Google 연결",
-        "reconnectGoogle": "다시 로그인",
-        "disconnect": "연결 해제",
-        "syncNow": "지금 동기화"
+      hero: {
+        checkingBadge: "확인 중",
+        checkingTitle: "복원할 최근 저장분을 확인하고 있습니다",
+        checkingDescription:
+          "잠시만 기다리면 Luie가 복원 가능한 저장 흔적이 남아 있는지 자동으로 확인합니다.",
+        readyBadge: "복원 가능",
+        readyTitle: "최근 저장분을 되살릴 수 있어요",
+        readyDescription:
+          "앱이 메인 파일에 아직 합치지 못한 최근 저장분을 찾았습니다. 아래 복원 버튼을 누르면 Luie가 자동으로 안전 복구를 시도합니다.",
+        emptyBadge: "지금은 복원할 내용 없음",
+        emptyTitle: "지금 복원할 최근 저장분이 보이지 않습니다",
+        emptyDescription:
+          "최근 저장 흔적(.wal)을 찾지 못했습니다. 지금은 복원 버튼을 눌러도 되살릴 내용이 없습니다.",
+        blockedBadge: "확인 필요",
+        dbMissingTitle: "복원 대상 파일을 찾지 못했습니다",
+        dbMissingDescription:
+          "앱 데이터 파일을 먼저 확인해야 합니다. 이 상태에서는 복원을 진행하지 않습니다.",
       },
-      "conflicts": "충돌: 총 {{total}}건 (원고 {{chapters}} / 스크랩 {{memos}})",
-      "toast": {
-        "connectStarted": "브라우저에서 Google 로그인을 완료해 주세요.",
-        "connected": "Google 계정 연결이 완료되었습니다.",
-        "connectFailed": "Google 연결에 실패했습니다.",
-        "staleCallback": "이미 처리된 로그인 콜백입니다. 현재 연결 상태를 유지합니다.",
-        "stateMismatch": "로그인 보안 검증(state)이 일치하지 않았습니다. 다시 로그인해 주세요.",
-        "callbackExpired": "로그인 요청이 만료되었습니다. 다시 로그인해 주세요.",
-        "disconnectFailed": "연결 해제에 실패했습니다.",
-        "disconnected": "연결이 해제되었습니다.",
-        "syncFailed": "동기화에 실패했습니다.",
-        "synced": "동기화가 완료되었습니다.",
-        "autoSyncFailed": "자동 동기화 설정 변경에 실패했습니다."
-      }
+      dialog: {
+        checkingTitle: "복원할 최근 저장분을 확인하고 있어요",
+        checkingDescription:
+          "Luie가 방금 종료 직전의 저장 흔적이 남아 있는지 살펴보고 있습니다.",
+        readyTitle: "저장되지 않은 원고를 되살릴 수 있습니다",
+        readyDescription:
+          "Luie가 비정상 종료 직전의 저장 흔적을 발견했습니다. 지금 복원하면 가장 최근에 남아 있던 저장분을 다시 붙입니다.",
+        emptyTitle: "지금 복원할 저장 흔적은 없습니다",
+        emptyDescription:
+          "현재는 되살릴 최근 저장 흔적을 찾지 못했습니다. 필요하면 다시 확인해 볼 수 있습니다.",
+        blockedTitle: "복원에 필요한 파일을 찾지 못했습니다",
+        blockedDescription:
+          "복원 대상 데이터 파일이 먼저 정상적으로 보여야 합니다. 이 상태에서는 복원을 진행하지 않습니다.",
+      },
+      scope: {
+        currentProject: "지금 열려 있는 원고",
+        noOpenProject: "열려 있는 원고 없음",
+        library: "복원 대상",
+        projectCount: "로컬 원고 {{count}}개",
+        libraryDescription:
+          "이 기능은 현재 프로젝트 하나가 아니라, 이 기기에 저장된 Luie 로컬 보관함 전체를 대상으로 합니다.",
+        preview: "같이 확인되는 원고",
+        noProjects: "불러온 로컬 원고 목록이 없습니다.",
+        moreProjects: "외 {{count}}개",
+      },
+      summary: {
+        current: "현재 원고",
+        currentSavedAt: "현재 파일 기준 저장 시각:",
+        recoverable: "복원 가능 저장분",
+        backupSavedAt: "복원 가능 저장 시각:",
+        preview: "복원될 내용 미리보기",
+        projectChapter: "{{projectTitle}} · {{chapterTitle}}",
+        unknownBackup: "복원 가능한 저장분",
+      },
+      actionTitle: "복원 버튼을 누르면 Luie가 자동으로 처리합니다",
+      actionDescription:
+        "어려운 작업은 Luie가 대신합니다. 아래 과정은 자동으로 진행되며, 문제가 생기면 원래 상태로 되돌립니다.",
+      actions: {
+        ignore: "무시하고 닫기",
+        restore: "백업본으로 복원",
+      },
+      resultTitle: "방금 실행 결과",
+      resultBackupOnly: "안전 백업 완료",
+      resultApplied: "복원 시도 완료",
+      technicalTitle: "기술 정보",
+      technicalDescription:
+        "경로, 파일 크기, 복원 백업 위치 같은 상세 정보를 보고 싶을 때만 열어 보세요.",
+      fields: {
+        path: "경로",
+        size: "크기",
+        updatedAt: "수정 시각",
+        notFound: "파일 없음",
+        backupDir: "생성된 백업",
+        backupRootDir: "백업 보관 위치",
+        latestBackupDir: "최근 생성된 백업",
+        checkpoint: "체크포인트 결과",
+        integrity: "무결성 검사",
+      },
+      messages: {
+        backupCreated:
+          "안전 백업을 만들었습니다. 이제 원하면 실제 복원을 진행할 수 있습니다.",
+        recoveryCompleted:
+          "최근 저장분 복원이 끝났습니다. Luie가 자동으로 무결성 검사까지 마쳤습니다.",
+        walMissing:
+          "지금은 되살릴 최근 저장분이 보이지 않습니다. 복원 가능한 .wal 파일을 찾지 못했습니다.",
+        walBusy:
+          "다른 프로세스가 아직 복원 파일을 사용 중입니다. Luie를 완전히 종료한 뒤 다시 시도해 주세요.",
+        integrityFailed: "무결성 검사에서 오류가 발견되었습니다: {{detail}}",
+        statusLoadFailed: "복원 상태를 불러오지 못했습니다.",
+      },
     },
-    "projectTemplate": {
-      "sidebarTitle": "Start New Project",
-      "recentTitle": "Recent Projects",
-      "category": {
-        "all": "전체 템플릿 (All)",
-        "novel": "소설 (Novel)",
-        "script": "시나리오/대본 (Script)",
-        "general": "일반 (General)"
+    sync: {
+      title: "동기화 및 연결",
+      description:
+        "Google 계정을 연결하고 Supabase와 프로젝트 데이터를 동기화합니다.",
+      connected: "연결됨",
+      disconnected: "연결 안 됨",
+      fields: {
+        connection: "연결 상태",
+        email: "연결 계정",
+        lastSyncedAt: "마지막 동기화",
+        mode: "진행 상태",
+        autoSync: "자동 동기화",
       },
-      "title": {
-        "blank": "빈 프로젝트 (Blank)",
-        "webNovel": "웹소설 표준 (Web Novel)",
-        "screenplay": "드라마 대본 (Screenplay)",
-        "essay": "에세이/수필 (Essay)"
+      status: {
+        idle: "대기",
+        connecting: "연결 중",
+        syncing: "동기화 중",
+        error: "오류",
       },
-      "dialog": {
-        "selectPath": "프로젝트 저장 위치 선택",
-        "repairPathTitle": ".luie 파일 다시 연결",
-        "renameTitle": "프로젝트 이름 수정",
-        "deleteTitle": "프로젝트 삭제",
-        "removeMissingTitle": "목록에서 제거"
+      actions: {
+        connectGoogle: "Google 연결",
+        reconnectGoogle: "다시 로그인",
+        disconnect: "연결 해제",
+        syncNow: "지금 동기화",
       },
-      "filter": {
-        "markdown": "Markdown",
-        "text": "Text"
+      conflicts: "충돌: 총 {{total}}건 (원고 {{chapters}} / 스크랩 {{memos}})",
+      toast: {
+        connectStarted: "브라우저에서 Google 로그인을 완료해 주세요.",
+        connected: "Google 계정 연결이 완료되었습니다.",
+        connectFailed: "Google 연결에 실패했습니다.",
+        staleCallback:
+          "이미 처리된 로그인 콜백입니다. 현재 연결 상태를 유지합니다.",
+        stateMismatch:
+          "로그인 보안 검증(state)이 일치하지 않았습니다. 다시 로그인해 주세요.",
+        callbackExpired: "로그인 요청이 만료되었습니다. 다시 로그인해 주세요.",
+        disconnectFailed: "연결 해제에 실패했습니다.",
+        disconnected: "연결이 해제되었습니다.",
+        syncFailed: "동기화에 실패했습니다.",
+        synced: "동기화가 완료되었습니다.",
+        autoSyncFailed: "자동 동기화 설정 변경에 실패했습니다.",
       },
-      "context": {
-        "open": "열기",
-        "repairPath": "경로 복구",
-        "removeMissing": "목록에서 제거",
-        "rename": "이름 수정",
-        "delete": "삭제"
+    },
+    projectTemplate: {
+      sidebarTitle: "Start New Project",
+      recentTitle: "Recent Projects",
+      category: {
+        all: "전체 템플릿 (All)",
+        novel: "소설 (Novel)",
+        script: "시나리오/대본 (Script)",
+        general: "일반 (General)",
       },
-      "deleteConfirm": "정말로 \"{title}\" 프로젝트를 삭제할까요? 이 작업은 되돌릴 수 없습니다.",
-      "deleteFileOption": "디스크의 .luie 파일도 삭제",
-      "deleteConfirmLabel": "삭제",
-      "removeMissingConfirm": "\"{title}\" 항목을 목록에서 제거할까요?",
-      "removeMissingConfirmLabel": "제거",
-      "emptyPath": "(No path)",
-      "pathMissingBadge": "파일 없음",
-      "pathMissingDescription": ".luie 파일을 찾을 수 없음",
-      "sync": {
-        "synced": "동기화됨",
-        "pending": "동기화 대기",
-        "localOnly": "로컬 전용",
-        "syncError": "동기화 오류"
+      title: {
+        blank: "빈 프로젝트 (Blank)",
+        webNovel: "웹소설 표준 (Web Novel)",
+        screenplay: "드라마 대본 (Screenplay)",
+        essay: "에세이/수필 (Essay)",
       },
-      "actions": {
-        "cancel": "취소",
-        "save": "저장",
-        "saving": "저장 중...",
-        "openLuie": ".luie 열기",
-        "restoreSnapshot": "스냅샷 복원하기"
+      dialog: {
+        selectPath: "프로젝트 저장 위치 선택",
+        repairPathTitle: ".luie 파일 다시 연결",
+        attachLuieTitle: "기존 .luie 연결",
+        materializeLuieTitle: "새 .luie 파일 만들기",
+        renameTitle: "프로젝트 이름 수정",
+        deleteTitle: "프로젝트 삭제",
+        removeMissingTitle: "목록에서 제거",
       },
-      "toast": {
-        "pathMissingBlocked": ".luie 파일이 없어 바로 열 수 없습니다. 경로 복구를 먼저 진행해 주세요.",
-        "pathRepaired": "프로젝트 경로를 복구했습니다.",
-        "pathRepairFailed": "프로젝트 경로 복구에 실패했습니다."
+      filter: {
+        markdown: "Markdown",
+        text: "Text",
       },
-      "error": {
-        "notFound": "프로젝트를 찾을 수 없습니다.",
-        "nameRequired": "프로젝트 이름을 입력해주세요.",
-        "renameFailed": "프로젝트 이름 변경에 실패했습니다."
+      context: {
+        open: "열기",
+        repairPath: "경로 복구",
+        attachLuie: ".luie 연결",
+        materializeLuie: ".luie 생성",
+        removeMissing: "목록에서 제거",
+        rename: "이름 수정",
+        delete: "삭제",
       },
-      "preview": {
-        "standardFormat": "Standard Format",
-        "chapterOne": "Chapter 1",
-        "script": {
-          "int": "INT.",
-          "day": "DAY",
-          "character": "CHARACTER",
-          "direction": "(pointing)",
-          "dialogue": "This is the dialogue.",
-          "another": "ANOTHER",
-          "anotherLine": "Looks visible enough."
-        }
-      }
-    }
+      deleteConfirm:
+        '정말로 "{title}" 프로젝트를 삭제할까요? 이 작업은 되돌릴 수 없습니다.',
+      deleteFileOption: "디스크의 .luie 파일도 삭제",
+      deleteConfirmLabel: "삭제",
+      removeMissingConfirm: '"{title}" 항목을 목록에서 제거할까요?',
+      removeMissingConfirmLabel: "제거",
+      emptyPath: "로컬 연결 없음",
+      detachedBadge: "연결 안 됨",
+      detachedDescription: "이 기기에 연결된 로컬 .luie 파일이 없습니다",
+      missingAttachmentBadge: "파일 없음",
+      missingAttachmentDescription: "연결된 .luie 파일을 찾을 수 없습니다",
+      invalidAttachmentBadge: "경로 오류",
+      invalidAttachmentDescription:
+        "연결된 .luie 경로가 이 기기에서 유효하지 않습니다",
+      unsupportedLegacyBadge: "구형 형식",
+      unsupportedLegacyDescription:
+        "이 앱은 구형 package .luie를 더 이상 지원하지 않습니다",
+      sync: {
+        synced: "동기화됨",
+        pending: "동기화 대기",
+        localOnly: "로컬 전용",
+        syncError: "동기화 오류",
+      },
+      actions: {
+        cancel: "취소",
+        save: "저장",
+        saving: "저장 중...",
+        openLuie: ".luie 열기",
+        restore: "복원",
+      },
+      restoreDialog: {
+        title: "복원할 저장분 선택",
+        description:
+          "프로젝트 이름과 저장 시각을 보고 원하는 저장분을 고르세요. 확인 후 새 .luie로 바로 복원합니다.",
+        loading: "복원 가능한 저장분을 불러오는 중입니다...",
+        errorTitle: "복원 목록을 불러오지 못했습니다",
+        errorDescription: "잠시 후 다시 불러와 주세요.",
+        emptyTitle: "복원할 저장분이 없습니다",
+        emptyDescription: "이 기기에서 찾은 백업이 아직 없습니다.",
+        selectedLabel: "선택한 저장분",
+        projectLabel: "프로젝트",
+        savedAtLabel: "저장 시각",
+        chapterLabel: "기준 원고",
+        previewLabel: "미리보기",
+        noChapter: "원고 정보 없음",
+        noPreview: "미리볼 내용이 없습니다.",
+        prompt: "이 저장분을 새 .luie로 복원할까요?",
+        actions: {
+          refresh: "다시 불러오기",
+          close: "닫기",
+          restore: "이 저장분 복원",
+          restoring: "복원 중...",
+        },
+      },
+      toast: {
+        pathMissingBlocked:
+          "로컬 .luie 연결을 사용할 수 없어 바로 열 수 없습니다. 경로 복구를 먼저 진행해 주세요.",
+        pathRepaired: "프로젝트 경로를 복구했습니다.",
+        pathRepairFailed: "프로젝트 경로 복구에 실패했습니다.",
+        luieAttached: ".luie 파일을 연결했습니다.",
+        luieAttachFailed: ".luie 연결에 실패했습니다.",
+        luieMaterialized: "새 .luie 파일을 만들고 연결했습니다.",
+        luieMaterializeFailed: ".luie 파일 생성에 실패했습니다.",
+        restoreCompleted: "복원된 .luie를 바로 열었습니다.",
+        restoreFailed: "복원에 실패했습니다.",
+        legacyUnsupportedBlocked:
+          "현재 앱은 구형 package .luie를 지원하지 않습니다.",
+      },
+      error: {
+        notFound: "프로젝트를 찾을 수 없습니다.",
+        nameRequired: "프로젝트 이름을 입력해주세요.",
+        renameFailed: "프로젝트 이름 변경에 실패했습니다.",
+      },
+      preview: {
+        standardFormat: "Standard Format",
+        chapterOne: "Chapter 1",
+        script: {
+          int: "INT.",
+          day: "DAY",
+          character: "CHARACTER",
+          direction: "(pointing)",
+          dialogue: "This is the dialogue.",
+          another: "ANOTHER",
+          anotherLine: "Looks visible enough.",
+        },
+      },
+    },
   },
-  "ui": {
-    "modal": {
-      "confirm": "확인",
-      "cancel": "취소"
-    }
+  ui: {
+    modal: {
+      confirm: "확인",
+      cancel: "취소",
+    },
   },
-  "bootstrap": {
-    "fetchFailed": "앱 시작 상태를 불러오지 못했습니다.",
-    "initializing": "작업 공간을 초기화하는 중입니다...",
-    "retry": "다시 시도",
-    "quit": "종료",
-    "deleteManuscriptConfirm": "이 원고를 삭제할까요?"
+  bootstrap: {
+    fetchFailed: "앱 시작 상태를 불러오지 못했습니다.",
+    initializing: "작업 공간을 초기화하는 중입니다...",
+    retry: "다시 시도",
+    quit: "종료",
+    deleteManuscriptConfirm: "이 원고를 삭제할까요?",
   },
-  "errorBoundary": {
-    "title": "앱 구동에 실패하였습니다.",
-    "description": "앱을 재실행 해주세요.",
-    "reload": "애플리케이션 다시 불러오기"
+  errorBoundary: {
+    title: "앱 구동에 실패하였습니다.",
+    description: "앱을 재실행 해주세요.",
+    reload: "애플리케이션 다시 불러오기",
   },
-  "project": {
-    "defaults": {
-      "projectTitle": "제목 없는 프로젝트",
-      "newProjectTitle": "새 프로젝트",
-      "chapterTitle": "챕터 1",
-      "untitled": "제목 없음",
-      "noteTitle": "새로운 메모"
+  project: {
+    defaults: {
+      projectTitle: "제목 없는 프로젝트",
+      newProjectTitle: "새 프로젝트",
+      chapterTitle: "챕터 1",
+      untitled: "제목 없음",
+      noteTitle: "새로운 메모",
     },
-    "toast": {
-      "recoveredFromDb": "파일이 손상되어 로컬 캐시에서 복구했습니다.",
-      "dbNewerSynced": "로컬 캐시가 최신이라 프로젝트 파일을 갱신했습니다.",
-      "pathMissing": ".luie 파일이 없어 로컬 데이터로 프로젝트를 엽니다."
+    toast: {
+      recoveredFromDb: "파일이 손상되어 로컬 캐시에서 복구했습니다.",
+      recoveredMissingPackage:
+        "원본 .luie 파일을 찾을 수 없어 로컬 데이터로 새 파일을 복구했습니다.",
+      dbNewerSynced: "로컬 캐시가 최신이라 프로젝트 파일을 갱신했습니다.",
+      pathMissing:
+        "로컬 .luie 연결을 사용할 수 없어 로컬 데이터로 프로젝트를 엽니다.",
+      missingAttachment:
+        "연결된 .luie 파일을 찾을 수 없어 로컬 데이터로 프로젝트를 엽니다.",
+      invalidAttachment:
+        "연결된 .luie 경로가 유효하지 않아 로컬 데이터로 프로젝트를 엽니다.",
+      legacyUnsupportedAttachment:
+        "현재 앱은 구형 package .luie를 지원하지 않습니다.",
     },
-    "templateDescription": "{templateId} 템플릿으로 생성됨"
+    templateDescription: "{templateId} 템플릿으로 생성됨",
   },
-  "sidebar": {
-    "title": "PROJECT BINDER",
-    "menu": {
-      "openBelow": "아래에 열기",
-      "openRight": "오른쪽에 열기",
-      "rename": "이름 수정하기",
-      "duplicate": "복제하기",
-      "delete": "삭제하기"
+  sidebar: {
+    title: "PROJECT BINDER",
+    menu: {
+      openBelow: "아래에 열기",
+      openRight: "오른쪽에 열기",
+      rename: "이름 수정하기",
+      duplicate: "복제하기",
+      delete: "삭제하기",
     },
-    "defaultProjectTitle": "프로젝트",
-    "binderTitle": "PROJECT BINDER",
-    "section": {
-      "manuscript": "원고 (Manuscript)",
-      "research": "연구 (Research)",
-      "trash": "휴지통 (Trash)",
-      "snapshot": "스냅샷 (History)"
+    defaultProjectTitle: "프로젝트",
+    binderTitle: "PROJECT BINDER",
+    section: {
+      manuscript: "원고 (Manuscript)",
+      research: "연구 (Research)",
+      trash: "휴지통 (Trash)",
+      snapshot: "스냅샷 (History)",
     },
-    "item": {
-      "characters": "등장인물 (Characters)",
-      "world": "세계관 (World)",
-      "scrap": "자료 스크랩",
-      "synopsis": "시놉시스 (Synopsis)"
+    item: {
+      characters: "등장인물 (Characters)",
+      world: "세계관 (World)",
+      scrap: "자료 스크랩",
+      synopsis: "시놉시스 (Synopsis)",
     },
-    "action": {
-      "new": "새 회차 추가"
+    action: {
+      new: "새 회차 추가",
     },
-    "addChapter": "새 회차 추가...",
-    "trashEmpty": "비어 있음",
-    "snapshotEmpty": "챕터를 선택해주세요.",
-    "settingsLabel": "설정 (Settings)",
-    "prompt": {
-      "renameTitle": "새 제목",
-      "renameProject": "프로젝트 이름을 입력해주세요.",
-      "deleteConfirm": "정말로 삭제하시겠습니까?"
+    addChapter: "새 회차 추가...",
+    trashEmpty: "비어 있음",
+    snapshotEmpty: "챕터를 선택해주세요.",
+    settingsLabel: "설정 (Settings)",
+    prompt: {
+      renameTitle: "새 제목",
+      renameProject: "프로젝트 이름을 입력해주세요.",
+      deleteConfirm: "정말로 삭제하시겠습니까?",
     },
-    "tooltip": {
-      "renameProject": "프로젝트 이름 수정",
-      "refresh": "새로고침"
-    }
+    tooltip: {
+      renameProject: "프로젝트 이름 수정",
+      refresh: "새로고침",
+    },
   },
-  "research": {
-    "title": {
-      "characters": "Characters",
-      "world": "World",
-      "scrap": "Scrap",
-      "analysis": "분석",
-      "default": "Research"
+  research: {
+    title: {
+      characters: "Characters",
+      world: "World",
+      scrap: "Scrap",
+      analysis: "분석",
+      default: "Research",
     },
-    "tooltip": {
-      "closePanel": "Close Panel"
-    }
+    tooltip: {
+      closePanel: "Close Panel",
+    },
+    toast: {
+      worldSaveFailed: "세계관 데이터를 .luie 파일에 저장하지 못했습니다.",
+      memoSaveFailed: "메모를 .luie 파일에 저장하지 못했습니다.",
+    },
   },
-  "context": {
-    "tab": {
-      "synopsis": "시놉시스",
-      "characters": "캐릭터",
-      "terms": "고유명사"
+  context: {
+    tab: {
+      synopsis: "시놉시스",
+      characters: "캐릭터",
+      terms: "고유명사",
     },
-    "synopsisHeader": "작품 개요 (Synopsis)",
-    "detail": {
-      "description": "Description",
-      "category": "Category"
+    synopsisHeader: "작품 개요 (Synopsis)",
+    detail: {
+      description: "Description",
+      category: "Category",
     },
-    "placeholder": {
-      "search": "통합 검색...",
-      "synopsis": "여기에 시놉시스를 작성하세요..."
-    }
+    placeholder: {
+      search: "통합 검색...",
+      synopsis: "여기에 시놉시스를 작성하세요...",
+    },
   },
-  "memo": {
-    "sectionTitle": "MEMOS",
-    "empty": "Select a note to view",
-    "placeholder": {
-      "search": "Search...",
-      "tags": "Add tags (comma separated)...",
-      "title": "Title",
-      "body": "Start typing your memo..."
+  memo: {
+    sectionTitle: "MEMOS",
+    empty: "Select a note to view",
+    placeholder: {
+      search: "Search...",
+      tags: "Add tags (comma separated)...",
+      title: "Title",
+      body: "Start typing your memo...",
     },
-    "defaultNotes": [
+    defaultNotes: [
       {
-        "id": "1",
-        "title": "참고자료: 중세 복식",
-        "content": "링크: https://wiki...\n\n중세 귀족들의 의상은 생각보다 화려했다...",
-        "tags": [
-          "자료",
-          "의상"
-        ]
+        id: "1",
+        title: "참고자료: 중세 복식",
+        content:
+          "링크: https://wiki...\n\n중세 귀족들의 의상은 생각보다 화려했다...",
+        tags: ["자료", "의상"],
       },
       {
-        "id": "2",
-        "title": "아이디어 파편",
-        "content": "- 주인공이 사실은 악역이었다면?\n- 회귀 전의 기억이 왜곡된 것이라면?",
-        "tags": [
-          "아이디어",
-          "플롯"
-        ]
-      }
-    ]
+        id: "2",
+        title: "아이디어 파편",
+        content:
+          "- 주인공이 사실은 악역이었다면?\n- 회귀 전의 기억이 왜곡된 것이라면?",
+        tags: ["아이디어", "플롯"],
+      },
+    ],
   },
-  "editor": {
-    "layoutTitle": "Luie Editor",
-    "selectTabPrompt": "← 탭을 선택하세요",
-    "placeholder": {
-      "title": "제목 없음",
-      "body": "내용을 입력하세요... ('/'를 입력하여 명령어 확인)"
+  editor: {
+    layoutTitle: "Luie Editor",
+    selectTabPrompt: "← 탭을 선택하세요",
+    placeholder: {
+      title: "제목 없음",
+      body: "내용을 입력하세요... ('/'를 입력하여 명령어 확인)",
     },
-    "status": {
-      "saving": "저장 중...",
-      "saved": "저장 완료",
-      "error": "저장 실패",
-      "charLabel": "글자",
-      "wordLabel": "단어",
-      "separator": " · "
+    status: {
+      saving: "저장 중...",
+      saved: "저장 완료",
+      error: "저장 실패",
+      charLabel: "글자",
+      wordLabel: "단어",
+      separator: " · ",
     },
-    "actions": {
-      "quickExport": "빠른 내보내기",
-      "quickExportTitle": "빠른 내보내기"
+    actions: {
+      quickExport: "빠른 내보내기",
+      quickExportTitle: "빠른 내보내기",
     },
-    "errors": {
-      "exportNoChapter": "챕터를 선택한 뒤 내보내기를 실행하세요.",
-      "exportOpenFailed": "내보내기 창을 열 수 없습니다."
-    }
+    errors: {
+      exportNoChapter: "챕터를 선택한 뒤 내보내기를 실행하세요.",
+      exportOpenFailed: "내보내기 창을 열 수 없습니다.",
+    },
   },
-  "startupWizard": {
-    "title": "작업 공간을 초기화하는 중입니다...",
-    "subtitle": "필수 구성을 확인하고 있어요. 잠시만 기다려 주세요.",
-    "status": {
-      "configuring": "작업 공간을 초기화하는 중입니다...",
-      "launching": "작업 공간을 초기화하는 중입니다...",
-      "failed": "시작 구성에 실패했습니다."
+  startupWizard: {
+    title: "작업 공간을 초기화하는 중입니다...",
+    subtitle: "필수 구성을 확인하고 있어요. 잠시만 기다려 주세요.",
+    status: {
+      configuring: "작업 공간을 초기화하는 중입니다...",
+      launching: "작업 공간을 초기화하는 중입니다...",
+      failed: "시작 구성에 실패했습니다.",
     },
-    "actions": {
-      "retry": "다시 시도"
-    }
-  }
+    actions: {
+      retry: "다시 시도",
+    },
+  },
 } as const;

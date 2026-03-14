@@ -4,15 +4,27 @@ import { app } from "electron";
 import Database from "better-sqlite3";
 import { createLogger } from "../../../shared/logger/index.js";
 import { SNAPSHOT_BACKUP_DIR } from "../../../shared/constants/paths.js";
-import type { DbRecoveryCheckpoint, DbRecoveryResult } from "../../../shared/types/index.js";
+import type {
+  DbRecoveryCheckpoint,
+  DbRecoveryFileStatus,
+  DbRecoveryResult,
+  DbRecoveryStatus,
+} from "../../../shared/types/index.js";
 import { db } from "../../database/index.js";
 
 const logger = createLogger("DbRecoveryService");
+const getRecoveryBackupRootDir = () =>
+  path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR, "db-recovery");
+const RECOVERY_EXCERPT_MAX_LENGTH = 140;
 
-const toCheckpointRows = (value: unknown): DbRecoveryCheckpoint[] | undefined => {
+const toCheckpointRows = (
+  value: unknown,
+): DbRecoveryCheckpoint[] | undefined => {
   if (!Array.isArray(value)) return undefined;
   const rows = value
-    .filter((entry): entry is Record<string, unknown> => Boolean(entry && typeof entry === "object"))
+    .filter((entry): entry is Record<string, unknown> =>
+      Boolean(entry && typeof entry === "object"),
+    )
     .map((entry) => ({
       busy:
         typeof entry.busy === "number" && Number.isFinite(entry.busy)
@@ -23,7 +35,8 @@ const toCheckpointRows = (value: unknown): DbRecoveryCheckpoint[] | undefined =>
           ? entry.log
           : 0,
       checkpointed:
-        typeof entry.checkpointed === "number" && Number.isFinite(entry.checkpointed)
+        typeof entry.checkpointed === "number" &&
+        Number.isFinite(entry.checkpointed)
           ? entry.checkpointed
           : 0,
     }));
@@ -41,15 +54,72 @@ const toIntegrityRows = (value: unknown): string[] | undefined => {
       }
       return null;
     })
-    .filter((entry): entry is string => typeof entry === "string" && entry.length > 0);
+    .filter(
+      (entry): entry is string => typeof entry === "string" && entry.length > 0,
+    );
   return rows.length > 0 ? rows : undefined;
 };
 
+const toExcerpt = (value: unknown): string | undefined => {
+  if (typeof value !== "string") return undefined;
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (normalized.length === 0) return undefined;
+  if (normalized.length <= RECOVERY_EXCERPT_MAX_LENGTH) {
+    return normalized;
+  }
+  return `${normalized.slice(0, RECOVERY_EXCERPT_MAX_LENGTH).trimEnd()}...`;
+};
+
+type RecoveryPreviewRow = {
+  projectTitle?: string;
+  chapterTitle?: string;
+  chapterUpdatedAt?: string;
+  excerpt?: string;
+};
+
 export class DbRecoveryService {
-  async recoverFromWal(options?: { dryRun?: boolean }): Promise<DbRecoveryResult> {
+  async getRecoveryStatus(): Promise<DbRecoveryStatus> {
+    const resolvedPath = db.getDatabasePath();
+    const walPath = `${resolvedPath}-wal`;
+    const shmPath = `${resolvedPath}-shm`;
+    const [databaseStatus, walStatus, shmStatus, latestBackupDir] =
+      await Promise.all([
+        this.readFileStatus(resolvedPath),
+        this.readFileStatus(walPath),
+        this.readFileStatus(shmPath),
+        this.getLatestBackupDir(),
+      ]);
+    const preview =
+      databaseStatus.exists && walStatus.exists
+        ? await this.readLatestRecoveryPreview(resolvedPath)
+        : undefined;
+
+    return {
+      available: databaseStatus.exists && walStatus.exists,
+      reason: !databaseStatus.exists
+        ? "db-missing"
+        : walStatus.exists
+          ? "ready"
+          : "wal-missing",
+      checkedAt: new Date().toISOString(),
+      backupRootDir: this.getBackupRootDir(),
+      latestBackupDir,
+      database: databaseStatus,
+      wal: walStatus,
+      shm: shmStatus,
+      preview,
+    };
+  }
+
+  async recoverFromWal(options?: {
+    dryRun?: boolean;
+  }): Promise<DbRecoveryResult> {
     let backupDir: string | undefined;
     let dbPath: string | null = null;
     let disconnected = false;
+    let checkpointRows: DbRecoveryCheckpoint[] | undefined;
+    let integrityRows: string[] | undefined;
+    const dryRun = Boolean(options?.dryRun);
     try {
       const resolvedPath = db.getDatabasePath();
       dbPath = resolvedPath;
@@ -60,15 +130,17 @@ export class DbRecoveryService {
       if (!walExists) {
         return {
           success: false,
+          dryRun,
           message: "WAL file not found. Recovery is not available.",
         };
       }
 
       backupDir = await this.createBackup(resolvedPath, walPath, shmPath);
 
-      if (options?.dryRun) {
+      if (dryRun) {
         return {
           success: true,
+          dryRun,
           message: "Backup created. Run recovery to apply WAL.",
           backupDir,
         };
@@ -87,11 +159,13 @@ export class DbRecoveryService {
         sqlite.close();
       }
 
-      const checkpointRows = toCheckpointRows(checkpoint);
-      const integrityRows = toIntegrityRows(integrity);
+      checkpointRows = toCheckpointRows(checkpoint);
+      integrityRows = toIntegrityRows(integrity);
       const busyRows = (checkpointRows ?? []).filter((row) => row.busy > 0);
       if (busyRows.length > 0) {
-        throw new Error(`DB_RECOVERY_WAL_BUSY:${busyRows.map((row) => row.busy).join(",")}`);
+        throw new Error(
+          `DB_RECOVERY_WAL_BUSY:${busyRows.map((row) => row.busy).join(",")}`,
+        );
       }
       const integrityFailures = (integrityRows ?? []).filter(
         (row) => row.trim().toLowerCase() !== "ok",
@@ -107,6 +181,7 @@ export class DbRecoveryService {
 
       return {
         success: true,
+        dryRun,
         message: "Recovery completed successfully.",
         backupDir,
         checkpoint: checkpointRows,
@@ -121,23 +196,33 @@ export class DbRecoveryService {
         try {
           await db.initialize();
         } catch (reinitializeError) {
-          logger.error("Failed to reinitialize database after recovery failure", {
-            reinitializeError,
-            dbPath,
-          });
+          logger.error(
+            "Failed to reinitialize database after recovery failure",
+            {
+              reinitializeError,
+              dbPath,
+            },
+          );
         }
       }
       return {
         success: false,
+        dryRun,
         message: error instanceof Error ? error.message : String(error),
         backupDir,
+        checkpoint: checkpointRows,
+        integrity: integrityRows,
       };
     }
   }
 
-  private async createBackup(dbPath: string, walPath: string, shmPath: string): Promise<string> {
+  private async createBackup(
+    dbPath: string,
+    walPath: string,
+    shmPath: string,
+  ): Promise<string> {
     const timestamp = new Date().toISOString().replace(/[^0-9]/g, "");
-    const backupDir = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR, "db-recovery", timestamp);
+    const backupDir = path.join(this.getBackupRootDir(), timestamp);
     await fs.mkdir(backupDir, { recursive: true });
 
     await fs.copyFile(dbPath, path.join(backupDir, path.basename(dbPath)));
@@ -150,7 +235,10 @@ export class DbRecoveryService {
     return backupDir;
   }
 
-  private async restoreBackup(backupDir: string, dbPath: string): Promise<void> {
+  private async restoreBackup(
+    backupDir: string,
+    dbPath: string,
+  ): Promise<void> {
     try {
       const dbFile = path.basename(dbPath);
       const walFile = path.basename(`${dbPath}-wal`);
@@ -173,6 +261,84 @@ export class DbRecoveryService {
       }
     } catch (error) {
       logger.warn("Failed to restore backup", { error });
+    }
+  }
+
+  private getBackupRootDir(): string {
+    return getRecoveryBackupRootDir();
+  }
+
+  private async getLatestBackupDir(): Promise<string | undefined> {
+    try {
+      const entries = await fs.readdir(this.getBackupRootDir(), {
+        withFileTypes: true,
+      });
+      const latest = entries
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name)
+        .sort((left, right) => right.localeCompare(left))[0];
+
+      return latest ? path.join(this.getBackupRootDir(), latest) : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private async readFileStatus(
+    filePath: string,
+  ): Promise<DbRecoveryFileStatus> {
+    try {
+      const stats = await fs.stat(filePath);
+      return {
+        path: filePath,
+        exists: true,
+        sizeBytes: stats.size,
+        modifiedAt: stats.mtime.toISOString(),
+      };
+    } catch {
+      return {
+        path: filePath,
+        exists: false,
+      };
+    }
+  }
+
+  private async readLatestRecoveryPreview(
+    dbPath: string,
+  ): Promise<DbRecoveryStatus["preview"] | undefined> {
+    let sqlite: Database.Database | null = null;
+    try {
+      sqlite = new Database(dbPath, { fileMustExist: true, readonly: true });
+      const row = sqlite
+        .prepare(
+          `SELECT
+             "Project"."title" AS projectTitle,
+             "Chapter"."title" AS chapterTitle,
+             "Chapter"."updatedAt" AS chapterUpdatedAt,
+             "Chapter"."content" AS excerpt
+           FROM "Chapter"
+           INNER JOIN "Project" ON "Project"."id" = "Chapter"."projectId"
+           WHERE "Chapter"."deletedAt" IS NULL
+           ORDER BY "Chapter"."updatedAt" DESC
+           LIMIT 1`,
+        )
+        .get() as RecoveryPreviewRow | undefined;
+
+      if (!row) {
+        return undefined;
+      }
+
+      return {
+        projectTitle: row.projectTitle,
+        chapterTitle: row.chapterTitle,
+        chapterUpdatedAt: row.chapterUpdatedAt,
+        excerpt: toExcerpt(row.excerpt),
+      };
+    } catch (error) {
+      logger.warn("Failed to read recovery preview", { error, dbPath });
+      return undefined;
+    } finally {
+      sqlite?.close();
     }
   }
 

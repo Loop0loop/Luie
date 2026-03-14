@@ -17,11 +17,16 @@ import { writeFileAtomic, readMaybeGzip } from "../../../utils/atomicWrite.js";
 import { promisify } from "node:util";
 import { gzip as gzipCallback } from "node:zlib";
 import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
+import {
+  getProjectAttachmentPath,
+  listProjectAttachmentEntries,
+} from "../../core/project/projectAttachmentStore.js";
+import type { SnapshotRestoreCandidate } from "../../../../shared/types/index.js";
 
 const logger = createLogger("SnapshotArtifacts");
 const gzip = promisify(gzipCallback);
 const SNAPSHOT_ARTIFACT_ID_PATTERN = /-([0-9a-fA-F-]{36})\.snap$/;
-
+const RESTORE_EXCERPT_MAX_LENGTH = 160;
 
 type FullSnapshotData = {
   meta: {
@@ -75,11 +80,23 @@ type FullSnapshotData = {
   };
 };
 
-export async function readFullSnapshotArtifact(filePath: string): Promise<FullSnapshotData> {
+export async function readFullSnapshotArtifact(
+  filePath: string,
+): Promise<FullSnapshotData> {
   const raw = await readMaybeGzip(filePath);
   const payload = JSON.parse(raw);
   return payload as FullSnapshotData;
 }
+
+const toExcerpt = (value: string | null | undefined): string | undefined => {
+  if (typeof value !== "string") return undefined;
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (normalized.length === 0) return undefined;
+  if (normalized.length <= RESTORE_EXCERPT_MAX_LENGTH) {
+    return normalized;
+  }
+  return `${normalized.slice(0, RESTORE_EXCERPT_MAX_LENGTH).trimEnd()}...`;
+};
 
 type ProjectSnapshotRecord = {
   id: string;
@@ -123,26 +140,36 @@ function resolveProjectBaseDir(projectPath: string) {
   const normalized = ensureSafeAbsolutePath(projectPath, "projectPath");
   const normalizedLower = normalized.toLowerCase();
   const extLower = LUIE_PACKAGE_EXTENSION.toLowerCase();
-  return normalizedLower.endsWith(extLower) ? path.dirname(normalized) : normalized;
+  return normalizedLower.endsWith(extLower)
+    ? path.dirname(normalized)
+    : normalized;
 }
 
 function resolveLocalSnapshotDir(baseDir: string, projectName: string) {
   return path.join(baseDir, ".luie", LUIE_SNAPSHOTS_DIR, projectName);
 }
 
-const extractSnapshotIdFromArtifactPath = (artifactPath: string): string | null => {
+const extractSnapshotIdFromArtifactPath = (
+  artifactPath: string,
+): string | null => {
   const match = path.basename(artifactPath).match(SNAPSHOT_ARTIFACT_ID_PATTERN);
   return match?.[1] ?? null;
 };
 
-const collectSnapFilesRecursive = async (rootDir: string, results: string[]): Promise<void> => {
+const collectSnapFilesRecursive = async (
+  rootDir: string,
+  results: string[],
+): Promise<void> => {
   let entries: Dirent[];
   try {
     entries = await fs.readdir(rootDir, { withFileTypes: true });
   } catch (error) {
     const fsError = error as NodeJS.ErrnoException;
     if (fsError?.code === "ENOENT") return;
-    logger.warn("Failed to read snapshot artifact directory", { rootDir, error });
+    logger.warn("Failed to read snapshot artifact directory", {
+      rootDir,
+      error,
+    });
     return;
   }
 
@@ -158,14 +185,17 @@ const collectSnapFilesRecursive = async (rootDir: string, results: string[]): Pr
 };
 
 const resolveArtifactRoots = async (): Promise<string[]> => {
-  const roots = new Set<string>([path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR)]);
-  const projects = await db.getClient().project.findMany({
-    select: { id: true, title: true, projectPath: true },
-  }) as Array<{ id: string; title: string; projectPath?: string | null }>;
+  const roots = new Set<string>([
+    path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR),
+  ]);
+  const projects = await listProjectAttachmentEntries();
 
   for (const project of projects) {
     if (!project.projectPath) continue;
-    const safeProjectName = sanitizeName(project.title ?? "", String(project.id));
+    const safeProjectName = sanitizeName(
+      project.title ?? "",
+      String(project.id),
+    );
     try {
       const projectBaseDir = resolveProjectBaseDir(project.projectPath);
       roots.add(resolveLocalSnapshotDir(projectBaseDir, safeProjectName));
@@ -181,6 +211,89 @@ const resolveArtifactRoots = async (): Promise<string[]> => {
 
   return Array.from(roots);
 };
+
+const resolveRestorePreview = (payload: FullSnapshotData) => {
+  const focusChapterId = payload.data.focus?.chapterId ?? null;
+  const orderedChapters = [...payload.data.chapters].sort(
+    (left, right) =>
+      new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
+  );
+  const chapter =
+    orderedChapters.find((entry) => entry.id === focusChapterId) ??
+    orderedChapters[0];
+  const excerpt = toExcerpt(payload.data.focus?.content ?? chapter?.content);
+
+  return {
+    chapterTitle: chapter?.title,
+    excerpt,
+  };
+};
+
+const getArtifactPriority = (artifactPath: string): number => {
+  const appBackupRoot = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR);
+  if (artifactPath.startsWith(appBackupRoot)) {
+    return 3;
+  }
+  if (artifactPath.includes(`${path.sep}.luie${path.sep}`)) {
+    return 1;
+  }
+  return 2;
+};
+
+export async function listSnapshotRestoreCandidates(): Promise<
+  SnapshotRestoreCandidate[]
+> {
+  const roots = await resolveArtifactRoots();
+  const artifactPaths: string[] = [];
+
+  for (const root of roots) {
+    await collectSnapFilesRecursive(root, artifactPaths);
+  }
+
+  const deduped = new Map<
+    string,
+    SnapshotRestoreCandidate & { priority: number }
+  >();
+
+  for (const artifactPath of artifactPaths) {
+    try {
+      const payload = await readFullSnapshotArtifact(artifactPath);
+      const { chapterTitle, excerpt } = resolveRestorePreview(payload);
+      const candidate = {
+        snapshotId: payload.meta.snapshotId,
+        projectId: payload.meta.projectId,
+        projectTitle: payload.data.project.title || "Recovered draft",
+        chapterTitle,
+        savedAt: payload.meta.timestamp,
+        excerpt,
+        filePath: artifactPath,
+        priority: getArtifactPriority(artifactPath),
+      };
+      const existing = deduped.get(candidate.snapshotId);
+      if (
+        !existing ||
+        candidate.priority > existing.priority ||
+        (candidate.priority === existing.priority &&
+          new Date(candidate.savedAt).getTime() >
+            new Date(existing.savedAt).getTime())
+      ) {
+        deduped.set(candidate.snapshotId, candidate);
+      }
+    } catch (error) {
+      logger.warn("Skipping unreadable snapshot restore candidate", {
+        artifactPath,
+        error,
+      });
+    }
+  }
+
+  return Array.from(deduped.values())
+    .sort(
+      (left, right) =>
+        new Date(right.savedAt).getTime() - new Date(left.savedAt).getTime(),
+    )
+    .map(({ priority: _priority, ...candidate }) => candidate);
+}
 
 export async function cleanupOrphanSnapshotArtifacts(options?: {
   snapshotIds?: string[];
@@ -198,12 +311,12 @@ export async function cleanupOrphanSnapshotArtifacts(options?: {
 
   const persistedSnapshots = targetIds
     ? await db.getClient().snapshot.findMany({
-      where: { id: { in: Array.from(targetIds) } },
-      select: { id: true },
-    })
+        where: { id: { in: Array.from(targetIds) } },
+        select: { id: true },
+      })
     : await db.getClient().snapshot.findMany({
-      select: { id: true },
-    });
+        select: { id: true },
+      });
   const persistedSnapshotIds = new Set(
     persistedSnapshots.map((snapshot: { id: string }) => snapshot.id),
   );
@@ -261,15 +374,18 @@ export async function writeFullSnapshotArtifact(
     chapterId: input.chapterId,
   });
 
-  const project = (await db.getClient().project.findUnique({
-    where: { id: input.projectId },
-    include: {
-      settings: true,
-      chapters: { orderBy: { order: "asc" } },
-      characters: true,
-      terms: true,
-    },
-  })) as ProjectSnapshotRecord | null;
+  const [project, projectPath] = await Promise.all([
+    db.getClient().project.findUnique({
+      where: { id: input.projectId },
+      include: {
+        settings: true,
+        chapters: { orderBy: { order: "asc" } },
+        characters: true,
+        terms: true,
+      },
+    }) as Promise<ProjectSnapshotRecord | null>,
+    getProjectAttachmentPath(input.projectId),
+  ]);
 
   if (!project) {
     throw new ServiceError(ErrorCode.PROJECT_NOT_FOUND, "Project not found", {
@@ -277,11 +393,14 @@ export async function writeFullSnapshotArtifact(
     });
   }
 
-  if (!project.projectPath) {
-    logger.warn("Project path missing for snapshot; skipping local package snapshot", {
-      snapshotId,
-      projectId: input.projectId,
-    });
+  if (!projectPath) {
+    logger.warn(
+      "Project path missing for snapshot; skipping local package snapshot",
+      {
+        snapshotId,
+        projectId: input.projectId,
+      },
+    );
   }
 
   const snapshotData: FullSnapshotData = {
@@ -296,7 +415,7 @@ export async function writeFullSnapshotArtifact(
         id: String(project.id),
         title: project.title,
         description: project.description,
-        projectPath: project.projectPath,
+        projectPath,
         createdAt: project.createdAt.toISOString(),
         updatedAt: project.updatedAt.toISOString(),
       },
@@ -347,30 +466,40 @@ export async function writeFullSnapshotArtifact(
   const safeProjectName = sanitizeName(project.title ?? "", String(project.id));
   let projectBaseDir: string | null = null;
 
-  if (project.projectPath) {
+  if (projectPath) {
     try {
-      projectBaseDir = resolveProjectBaseDir(project.projectPath);
+      projectBaseDir = resolveProjectBaseDir(projectPath);
       const localDir = resolveLocalSnapshotDir(projectBaseDir, safeProjectName);
       await fs.mkdir(localDir, { recursive: true });
       localPath = path.join(localDir, fileName);
       await writeFileAtomic(localPath, buffer);
     } catch (error) {
-      logger.warn("Skipping project-local snapshot artifact write for invalid projectPath", {
-        snapshotId,
-        projectId: project.id,
-        projectPath: project.projectPath,
-        error,
-      });
+      logger.warn(
+        "Skipping project-local snapshot artifact write for invalid projectPath",
+        {
+          snapshotId,
+          projectId: project.id,
+          projectPath,
+          error,
+        },
+      );
     }
   }
 
-  const backupDir = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR, safeProjectName);
+  const backupDir = path.join(
+    app.getPath("userData"),
+    SNAPSHOT_BACKUP_DIR,
+    safeProjectName,
+  );
   await fs.mkdir(backupDir, { recursive: true });
   const backupPath = path.join(backupDir, fileName);
   await writeFileAtomic(backupPath, buffer);
 
   if (projectBaseDir) {
-    const projectBackupDir = path.join(projectBaseDir, `backup${safeProjectName}`);
+    const projectBackupDir = path.join(
+      projectBaseDir,
+      `backup${safeProjectName}`,
+    );
     await fs.mkdir(projectBackupDir, { recursive: true });
     projectBackupPath = path.join(projectBackupDir, fileName);
     await writeFileAtomic(projectBackupPath, buffer);
@@ -379,7 +508,7 @@ export async function writeFullSnapshotArtifact(
   logger.info("Full snapshot saved", {
     snapshotId,
     projectId: project.id,
-    projectPath: project.projectPath,
+    projectPath,
     localPath,
     backupPath,
     projectBackupPath,
