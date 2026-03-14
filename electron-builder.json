@@ -48,6 +48,10 @@
     {
       "from": "build/icons/icon.png",
       "to": "icon.png"
+    },
+    {
+      "from": "native/haptics/build/Release/luie_haptics.node",
+      "to": "native/haptics/build/Release/luie_haptics.node"
     }
   ],
   "publish": [

@@ -162,7 +162,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutedEdges);
 
   // Hook up Smart Snapping
-  const { snapLines, handleNodeDrag: onSmartNodeDrag, handleNodeDragStop: onSmartNodeDragStop } = useSmartSnap(nodes);
+  const { snapLines, snapGaps, handleNodeDrag: onSmartNodeDrag, handleNodeDragStop: onSmartNodeDragStop } = useSmartSnap(nodes);
 
   const removeDraftNode = useCallback(
     (nodeId: string) => {
@@ -957,7 +957,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         <Panel position="top-right" className="m-4">
           <WorldGraphFloatingToolbar />
         </Panel>
-        <SmartSnapLines lines={snapLines} />
+        <SmartSnapLines lines={snapLines} gaps={snapGaps} />
         {paletteMode && <CanvasCommandPalette mode={paletteMode} onClose={() => setPaletteMode(null)} />}
       </ReactFlow>
 

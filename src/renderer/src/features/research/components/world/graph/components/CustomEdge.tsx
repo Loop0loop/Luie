@@ -140,7 +140,7 @@ export const CustomEdge = memo(({
       {selected && selectedEdge && (
         <EdgeLabelRenderer>
           <div
-            className="absolute z-50 flex items-center justify-center gap-1 rounded-full border border-border/60 bg-popover/90 p-1.5 text-popover-foreground shadow-xl backdrop-blur-md !animate-in !fade-in !zoom-in-95 data-[state=closed]:!animate-out data-[state=closed]:!fade-out data-[state=closed]:!zoom-out-95 pointer-events-auto transition-all"
+            className="absolute z-50 flex items-center justify-center gap-1 rounded-full border border-border/60 bg-popover/90 p-1.5 text-popover-foreground shadow-xl backdrop-blur-md animate-in! !fade-in !zoom-in-95 data-[state=closed]:animate-out! data-[state=closed]:!fade-out data-[state=closed]:!zoom-out-95 pointer-events-auto transition-all"
             style={{
               transform: `translate(-50%, -100%) translate(${labelX}px, ${labelY - 15}px)`,
             }}
@@ -165,7 +165,7 @@ export const CustomEdge = memo(({
               </button>
 
               {isRelationPickerOpen && (
-                <div className="absolute top-10 left-1/2 -translate-x-1/2 bg-popover/95 backdrop-blur-md border border-border shadow-2xl rounded-xl p-1.5 z-[100] flex flex-col gap-1 min-w-[140px] animate-in slide-in-from-top-2">
+                <div className="absolute top-10 left-1/2 -translate-x-1/2 bg-popover/95 backdrop-blur-md border border-border shadow-2xl rounded-xl p-1.5 z-100 flex flex-col gap-1 min-w-35 animate-in slide-in-from-top-2">
                   <span className="text-[10px] font-bold text-muted-foreground px-2 py-1 uppercase tracking-wider">관계 변경</span>
                   <div className="flex flex-col max-h-48 overflow-y-auto w-full no-scrollbar pb-1">
                     {Object.entries(RELATION_COLORS).map(([rel, color]) => (

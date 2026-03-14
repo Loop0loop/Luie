@@ -42,7 +42,7 @@ export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps)
         <Icon size={16} style={{ color: accent }} />
       </div>
       <div className="flex flex-col gap-1 min-w-0 flex-1">
-        <span className="text-[13px] font-bold tracking-tight leading-none text-foreground break-words pb-0.5">
+        <span className="text-[13px] font-bold tracking-tight leading-none text-foreground wrap-break-word pb-0.5">
           {label}
         </span>
         <div className="flex items-center gap-1.5 opacity-80">
@@ -64,7 +64,7 @@ export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps)
   const renderEvent = () => (
     <div className="flex flex-col p-3 gap-2">
       <div className="flex justify-between items-start gap-2">
-        <span className="text-[13px] font-semibold leading-tight text-foreground break-words flex-1">
+        <span className="text-[13px] font-semibold leading-tight text-foreground wrap-break-word flex-1">
           {label}
         </span>
         <div className="shrink-0 rounded px-1.5 py-0.5 pb-px border border-border/40" style={{ backgroundColor: `${accent}10`, color: accent }}>
@@ -93,7 +93,7 @@ export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps)
       </div>
       <div className="flex flex-col gap-1 min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-[13px] font-medium leading-none text-foreground break-words">
+          <span className="text-[13px] font-medium leading-none text-foreground wrap-break-word">
             {label}
           </span>
           <span className="text-[8px] font-mono border rounded px-1 bg-muted/40 text-muted-foreground opacity-70 uppercase">
@@ -134,7 +134,7 @@ export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps)
     <div className="group relative">
       <div
         className={cn(
-          "flex min-w-[170px] max-w-[280px] flex-col overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition-all duration-200",
+          "flex min-w-42.5 max-w-70 flex-col overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition-all duration-200",
           selected
             ? "border-accent ring-1 ring-accent/20 shadow-md"
             : "border-border hover:border-border-hover/80 hover:shadow-md"

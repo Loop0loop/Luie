@@ -14,7 +14,7 @@ export function WorldGraphCreateMenu({ left, top, onCreate }: WorldGraphCreateMe
 
   return (
     <div
-      className="absolute z-[100] w-52 rounded-xl border border-border/50 bg-panel/98 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-100"
+      className="absolute z-100 w-52 rounded-xl border border-border/50 bg-panel/98 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-100"
       style={{ left, top }}
     >
       <div className="border-b border-border/30 px-3 py-2">

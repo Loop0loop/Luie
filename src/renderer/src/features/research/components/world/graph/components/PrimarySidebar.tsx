@@ -47,13 +47,13 @@ export function PrimarySidebar() {
   };
 
   return (
-    <div className="flex h-full w-[260px] flex-col bg-sidebar text-foreground transition-colors overflow-hidden">
+    <div className="flex h-full w-65 flex-col bg-sidebar text-foreground transition-colors overflow-hidden">
       
       {/* 
         Professional Header: 
         A subtle un-bordered workspace title, clean, slight padding.
       */}
-      <div className="flex shrink-0 items-center justify-between px-4 h-[48px] bg-transparent">
+      <div className="flex shrink-0 items-center justify-between px-4 h-12 bg-transparent">
         <h2 className="text-[12px] font-medium uppercase tracking-wider text-muted-foreground/80 cursor-default select-none">
           {t(tabMeta.titleKey, tabMeta.fallbackTitle)}
         </h2>

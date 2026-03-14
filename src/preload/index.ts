@@ -767,6 +767,9 @@ const rendererApi = {
         IPC_CHANNELS.WINDOW_OPEN_EXPORT,
         chapterId,
       ),
+    hapticFeedback: (): Promise<IPCResponse<never>> =>
+      safeInvoke(IPC_CHANNELS.WORLD_GRAPH_HAPTIC_FEEDBACK),
+
     openWorldGraph: (): ReturnType<RendererApi["window"]["openWorldGraph"]> =>
       safeInvoke(IPC_CHANNELS.WINDOW_OPEN_WORLD_GRAPH),
   },

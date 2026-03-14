@@ -184,6 +184,8 @@ export const IPC_CHANNELS = {
   WORLD_GRAPH_GET: "world:getGraph",
   WORLD_GRAPH_GET_MENTIONS: "world:getMentions",
 
+  WORLD_GRAPH_HAPTIC_FEEDBACK: "world-graph:haptic-feedback",
+
   // World replica storage
   WORLD_STORAGE_GET_DOCUMENT: "world-storage:get-document",
   WORLD_STORAGE_SET_DOCUMENT: "world-storage:set-document",
