@@ -1,10 +1,24 @@
 import { memo, useState, useCallback, useRef, useEffect } from "react";
 import { type EdgeProps, getBezierPath, BaseEdge, EdgeLabelRenderer } from "reactflow";
 import { useTranslation } from "react-i18next";
-import { Trash2, ArrowRight, ArrowLeftRight, Minus } from "lucide-react";
+import { Trash2, ArrowRight, ArrowLeftRight, Minus, Palette, Edit2 } from "lucide-react";
 import { useFilteredGraph, useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { RELATION_COLORS } from "@shared/constants/world";
 import type { RelationKind } from "@shared/types";
+import { cn } from "@renderer/lib/utils";
+
+const EDGE_COLORS = [
+  "#94a3b8", // slaty
+  "#ef4444", // red
+  "#f97316", // orange
+  "#eab308", // yellow
+  "#22c55e", // green
+  "#06b6d4", // cyan
+  "#3b82f6", // blue
+  "#6366f1", // indigo
+  "#a855f7", // purple
+  "#ec4899", // pink
+];
 
 export const CustomEdge = memo(({
   id,
@@ -17,9 +31,6 @@ export const CustomEdge = memo(({
   style,
   markerEnd,
   label,
-  labelStyle,
-  labelBgStyle,
-  labelBgPadding,
   selected,
 }: EdgeProps) => {
   const { t } = useTranslation();
@@ -28,8 +39,12 @@ export const CustomEdge = memo(({
   const deleteRelation = useWorldBuildingStore((state) => state.deleteRelation);
   const selectEdge = useWorldBuildingStore((state) => state.selectEdge);
 
-  const [isRelationPickerOpen, setIsRelationPickerOpen] = useState(false);
+  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState("");
+  
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
@@ -44,8 +59,11 @@ export const CustomEdge = memo(({
   const attributes = (selectedEdge?.attributes as Record<string, unknown>) || {};
   const direction = (attributes?.direction as string) || "unidirectional";
   
-  // Use custom color or fallback to relation default color
-  const customColor = (attributes?.color as string) || RELATION_COLORS[selectedEdge?.relation as RelationKind] || "#c7d2fe";
+  const customColor = (attributes?.color as string) || RELATION_COLORS[selectedEdge?.relation as RelationKind] || "#94a3b8";
+  
+  // If user typed a custom label, use it. Otherwise, use default rel enum translation
+  const rawLabelStr = typeof label === "string" ? label : "";
+  const labelText = (attributes?.label as string) || rawLabelStr || (selectedEdge ? t(`world.graph.relationTypes.${selectedEdge.relation}`, { defaultValue: selectedEdge.relation }) : "");
 
   const handleUpdateAttribute = useCallback((key: string, value: string) => {
     if (!selectedEdge) return;
@@ -75,29 +93,54 @@ export const CustomEdge = memo(({
     ...style,
     stroke: customColor,
     strokeWidth: selected ? 3 : 2,
-    opacity: selected ? 1 : 0.7,
+    opacity: 1, // disabled dimming for unselected
     transition: 'all 0.2s ease',
   };
 
+  const onStartEditing = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setEditValue(labelText);
+    selectEdge(id);
+    setIsEditing(true);
+    setIsColorPickerOpen(false);
+  }, [labelText, id, selectEdge]);
+
+  const onSaveEdit = useCallback(() => {
+    setIsEditing(false);
+    if (editValue.trim() !== "") {
+      handleUpdateAttribute("label", editValue.trim());
+    } else {
+      handleUpdateAttribute("label", "");
+    }
+  }, [editValue, handleUpdateAttribute]);
+
   const onEdgeDoubleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsRelationPickerOpen(true);
-    // Auto select on double click to show the toolbar as well
-    selectEdge(id);
-  }, [id, selectEdge]);
+    onStartEditing(e);
+  }, [onStartEditing]);
 
   // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Allow clicks in the text input while editing
+      if (isEditing) return;
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsRelationPickerOpen(false);
+        setIsColorPickerOpen(false);
       }
     };
-    if (isRelationPickerOpen) {
+    if (isColorPickerOpen || selected) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isRelationPickerOpen]);
+  }, [isColorPickerOpen, selected, isEditing]);
+
+  // Auto focus input
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
 
   return (
     <>
@@ -114,93 +157,128 @@ export const CustomEdge = memo(({
         d={edgePath}
         fill="none"
         strokeOpacity={0}
-        strokeWidth={20}
-        className="react-flow__edge-interaction"
+        strokeWidth={24}
+        className="react-flow__edge-interaction cursor-pointer"
         onDoubleClick={onEdgeDoubleClick}
+        onClick={(e) => { e.stopPropagation(); selectEdge(id); setIsColorPickerOpen(false); }}
       />
       
-      {label && !selected && (
-        <EdgeLabelRenderer>
-          <div
-            className="absolute rounded-md pointer-events-none text-[10px] font-semibold transition-opacity"
-            style={{
-              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-              color: (labelStyle?.fill as string) ?? "inherit",
-              backgroundColor: (labelBgStyle?.fill as string) ?? "var(--bg-app)",
-              padding: labelBgPadding ? `${labelBgPadding[0]}px ${labelBgPadding[1]}px` : "4px 6px",
-              opacity: 0.85,
-              zIndex: 10,
-            }}
-          >
-            {label}
-          </div>
-        </EdgeLabelRenderer>
-      )}
+      <EdgeLabelRenderer>
+        <div
+          className="absolute pointer-events-auto flex justify-center items-center"
+          style={{
+            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+            zIndex: selected ? 50 : 10,
+          }}
+          onDoubleClick={onEdgeDoubleClick}
+          onClick={(e) => { 
+            if (!isEditing) {
+              e.stopPropagation(); 
+              selectEdge(id); 
+              setIsColorPickerOpen(false);
+            }
+          }}
+        >
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") onSaveEdit();
+                if (e.key === "Escape") {
+                  setIsEditing(false);
+                  setEditValue(labelText);
+                }
+              }}
+              onBlur={onSaveEdit}
+              className="px-2 py-1 text-[11px] font-bold text-center rounded-lg border-2 border-accent bg-background shadow-md outline-none min-w-[80px] max-w-[200px]"
+              style={{ color: customColor }}
+            />
+          ) : (
+            <div
+              className={cn(
+                "rounded-md text-[10px] font-semibold transition-all px-2 py-1 shadow-sm border cursor-pointer max-w-[150px] text-center wrap-break-word",
+                selected ? "ring-2 ring-accent/40 shadow-md border-border/50 bg-background/95" : "border-transparent bg-[var(--bg-app)]/80 hover:bg-background"
+              )}
+              style={{
+                color: customColor,
+              }}
+            >
+              {labelText}
+            </div>
+          )}
+        </div>
 
-      {selected && selectedEdge && (
-        <EdgeLabelRenderer>
+        {selected && selectedEdge && !isEditing && (
           <div
-            className="absolute z-50 flex items-center justify-center gap-1 rounded-full border border-border/60 bg-popover/90 p-1.5 text-popover-foreground shadow-xl backdrop-blur-md animate-in! !fade-in !zoom-in-95 data-[state=closed]:animate-out! data-[state=closed]:!fade-out data-[state=closed]:!zoom-out-95 pointer-events-auto transition-all"
+            className="absolute z-50 flex items-center justify-center gap-1 rounded-full border border-border/60 bg-popover/95 p-1.5 text-popover-foreground shadow-xl backdrop-blur-md animate-in! !fade-in !zoom-in-95 pointer-events-auto"
             style={{
-              transform: `translate(-50%, -100%) translate(${labelX}px, ${labelY - 15}px)`,
+              transform: `translate(-50%, 0) translate(${labelX}px, ${labelY + 15}px)`,
             }}
-            onClick={(e) => {
-              e.stopPropagation();
-              // Keep showing when clicked inside
-            }}
+            onClick={(e) => e.stopPropagation()}
             onDoubleClick={(e) => e.stopPropagation()}
             ref={dropdownRef}
           >
-            {/* Color/Relation Picker Toggle */}
+            {/* Color Picker Toggle */}
             <div className="relative">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setIsRelationPickerOpen(!isRelationPickerOpen);
+                  setIsColorPickerOpen(!isColorPickerOpen);
                 }}
                 className="flex items-center justify-center p-1.5 rounded-full hover:bg-accent/80 hover:text-accent-foreground transition-all group"
-                title="관계 및 색상 변경"
+                title="색상 변경 (Color)"
               >
-                <div className="w-4 h-4 rounded-full shadow-sm border border-border/50 ring-1 ring-background" style={{ backgroundColor: customColor }} />
+                <Palette size={14} strokeWidth={2.5} style={{ color: customColor }} />
               </button>
 
-              {isRelationPickerOpen && (
-                <div className="absolute top-10 left-1/2 -translate-x-1/2 bg-popover/95 backdrop-blur-md border border-border shadow-2xl rounded-xl p-1.5 z-100 flex flex-col gap-1 min-w-35 animate-in slide-in-from-top-2">
-                  <span className="text-[10px] font-bold text-muted-foreground px-2 py-1 uppercase tracking-wider">관계 변경</span>
-                  <div className="flex flex-col max-h-48 overflow-y-auto w-full no-scrollbar pb-1">
-                    {Object.entries(RELATION_COLORS).map(([rel, color]) => (
-                      <button
-                        key={rel}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          updateRelation({ id: selectedEdge.id, relation: rel as RelationKind, attributes: { ...attributes, color } });
-                          setIsRelationPickerOpen(false);
-                        }}
-                        className={`flex items-center gap-2.5 text-xs px-2.5 py-2 text-left rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors ${selectedEdge.relation === rel ? "bg-accent text-accent-foreground" : "text-muted-foreground"}`}
-                      >
-                         <div className="w-3 h-3 rounded-full border border-border/50 shrink-0 shadow-sm" style={{ backgroundColor: color }} />
-                         <span className="truncate font-medium">{t(`world.graph.relationTypes.${rel}`, rel)}</span>
-                      </button>
-                    ))}
-                  </div>
+              {isColorPickerOpen && (
+                <div className="absolute top-10 left-1/2 -translate-x-1/2 bg-popover/95 backdrop-blur-md border border-border shadow-2xl rounded-xl p-2 z-[100] grid grid-cols-5 gap-1.5 min-w-[120px] animate-in slide-in-from-top-2">
+                  {EDGE_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUpdateAttribute("color", color);
+                        setIsColorPickerOpen(false);
+                      }}
+                      className={cn(
+                        "w-5 h-5 rounded-full border border-border/50 shadow-sm transition-transform hover:scale-110",
+                        customColor === color && "ring-2 ring-foreground scale-110"
+                      )}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
                 </div>
               )}
             </div>
 
-            <div className="w-px h-4 bg-border/60 mx-1" />
+            <div className="w-px h-4 bg-border/60 mx-0.5" />
 
             {/* Direction Toggle */}
             <button
               onClick={cycleDirection}
               className="flex items-center justify-center p-1.5 rounded-full hover:bg-accent/80 hover:text-accent-foreground transition-all text-muted-foreground"
-              title="선 방향 변경"
+              title="결합 방향 (Direction)"
             >
-              {direction === "unidirectional" && <ArrowRight size={16} strokeWidth={2.5} />}
-              {direction === "bidirectional" && <ArrowLeftRight size={16} strokeWidth={2.5} />}
-              {direction === "nondirectional" && <Minus size={16} strokeWidth={2.5} />}
+              {direction === "unidirectional" && <ArrowRight size={14} strokeWidth={2.5} />}
+              {direction === "bidirectional" && <ArrowLeftRight size={14} strokeWidth={2.5} />}
+              {direction === "nondirectional" && <Minus size={14} strokeWidth={2.5} />}
             </button>
 
-            <div className="w-px h-4 bg-border/60 mx-1" />
+            <div className="w-px h-4 bg-border/60 mx-0.5" />
+
+            {/* Edit Label Toggle */}
+            <button
+              onClick={onStartEditing}
+              className="flex items-center justify-center p-1.5 rounded-full hover:bg-accent/80 hover:text-accent-foreground transition-all text-muted-foreground"
+              title="관계명 수정 (Edit)"
+            >
+              <Edit2 size={14} strokeWidth={2.5} />
+            </button>
+
+            <div className="w-px h-4 bg-border/60 mx-0.5" />
 
             {/* Delete button */}
             <button
@@ -210,13 +288,13 @@ export const CustomEdge = memo(({
                 selectEdge(null);
               }}
               className="flex items-center justify-center p-1.5 rounded-full hover:bg-destructive/10 text-destructive/80 hover:text-destructive transition-all"
-              title="관계 삭제"
+              title="관계 삭제 (Delete)"
             >
-              <Trash2 size={16} strokeWidth={2.5} />
+              <Trash2 size={14} strokeWidth={2.5} />
             </button>
           </div>
-        </EdgeLabelRenderer>
-      )}
+        )}
+      </EdgeLabelRenderer>
     </>
   );
 });
