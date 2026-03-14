@@ -7,6 +7,8 @@ import type {
   InstalledGraphPlugin,
 } from "@shared/types";
 
+let graphPluginLoadPromise: Promise<void> | null = null;
+
 type ActionResult = {
   success: boolean;
   error?: string;
@@ -39,47 +41,61 @@ export const useGraphPluginStore = create<GraphPluginStoreState>((set, get) => (
   uninstallingPluginId: null,
   applyingTemplateKey: null,
   loadData: async (force = false) => {
-    if (get().isLoading) return;
-    if (get().hasLoaded && !force) return;
+    if (!force && get().hasLoaded) return;
+    if (graphPluginLoadPromise) {
+      await graphPluginLoadPromise;
+      if (!force) {
+        return;
+      }
+    }
 
     set({ isLoading: true, error: null });
-    try {
-      const [catalogResponse, installedResponse, templatesResponse] =
-        await Promise.all([
-          api.plugin.listCatalog(),
-          api.plugin.listInstalled(),
-          api.plugin.getTemplates(),
-        ]);
+    const request = (async () => {
+      try {
+        const [catalogResponse, installedResponse, templatesResponse] =
+          await Promise.all([
+            api.plugin.listCatalog(),
+            api.plugin.listInstalled(),
+            api.plugin.getTemplates(),
+          ]);
 
-      if (!catalogResponse.success) {
-        throw new Error(catalogResponse.error?.message ?? "Failed to load plugin catalog");
-      }
-      if (!installedResponse.success) {
-        throw new Error(
-          installedResponse.error?.message ?? "Failed to load installed plugins",
-        );
-      }
-      if (!templatesResponse.success) {
-        throw new Error(
-          templatesResponse.error?.message ?? "Failed to load plugin templates",
-        );
-      }
+        if (!catalogResponse.success) {
+          throw new Error(catalogResponse.error?.message ?? "Failed to load plugin catalog");
+        }
+        if (!installedResponse.success) {
+          throw new Error(
+            installedResponse.error?.message ?? "Failed to load installed plugins",
+          );
+        }
+        if (!templatesResponse.success) {
+          throw new Error(
+            templatesResponse.error?.message ?? "Failed to load plugin templates",
+          );
+        }
 
-      set({
-        catalog: catalogResponse.data ?? [],
-        installed: installedResponse.data ?? [],
-        templates: templatesResponse.data ?? [],
-        error: null,
-        hasLoaded: true,
-        isLoading: false,
-      });
-    } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : String(error),
-        hasLoaded: true,
-        isLoading: false,
-      });
-    }
+        set({
+          catalog: catalogResponse.data ?? [],
+          installed: installedResponse.data ?? [],
+          templates: templatesResponse.data ?? [],
+          error: null,
+          hasLoaded: true,
+          isLoading: false,
+        });
+      } catch (error) {
+        set({
+          error: error instanceof Error ? error.message : String(error),
+          hasLoaded: true,
+          isLoading: false,
+        });
+      }
+    })();
+
+    graphPluginLoadPromise = request.finally(() => {
+      if (graphPluginLoadPromise === request) {
+        graphPluginLoadPromise = null;
+      }
+    });
+    await graphPluginLoadPromise;
   },
   installPlugin: async (pluginId) => {
     set({ installingPluginId: pluginId, error: null });

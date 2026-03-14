@@ -1,12 +1,12 @@
 import { Archive, BookOpenText, Boxes, CalendarRange, LibraryBig, Map, Network, NotebookPen, Route } from "lucide-react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
-import { useGraphPluginStore } from "@renderer/features/research/stores/graphPluginStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { SidebarTreeSection, TreeItem } from "./SidebarTreeSection";
 import { useWorldLibrarySummary } from "../hooks/useWorldLibrarySummary";
 import type { LibrarySummaryEntryId } from "../utils/worldGraphIdeViewModels";
-import { useEffect } from "react";
+import { useGraphPluginLibraryData } from "../views/plugin/useGraphPluginLibraryData";
 
 const ENTRY_ICONS: Record<LibrarySummaryEntryId, typeof Network> = {
   graph: Network,
@@ -24,14 +24,10 @@ export function LibrarySidebarContent() {
   const setActiveTab = useGraphIdeStore((state) => state.setActiveTab);
   const setWorldTab = useUIStore((state) => state.setWorldTab);
   const { entries, error, isLoading } = useWorldLibrarySummary();
-  const loadPlugins = useGraphPluginStore((state) => state.loadData);
-  const installed = useGraphPluginStore((state) => state.installed);
-  const templates = useGraphPluginStore((state) => state.templates);
-  const pluginError = useGraphPluginStore((state) => state.error);
-
-  useEffect(() => {
-    void loadPlugins();
-  }, [loadPlugins]);
+  const activeTab = useGraphIdeStore((state) => state.activeTab);
+  const { installed, templates, error: pluginError } = useGraphPluginLibraryData({
+    enabled: activeTab === "library",
+  });
 
   const handleOpenEntry = (entryId: LibrarySummaryEntryId) => {
     switch (entryId) {
@@ -63,6 +59,11 @@ export function LibrarySidebarContent() {
     entry.id === "plot" ||
     entry.id === "drawing" ||
     entry.id === "mindmap",
+  );
+
+  const pluginSummaryLabel = useMemo(
+    () => `Bundles · ${installed.length} / Templates · ${templates.length}`,
+    [installed.length, templates.length],
   );
 
   const renderEntry = (entry: (typeof entries)[number]) => {
@@ -113,11 +114,7 @@ export function LibrarySidebarContent() {
           <>
             <TreeItem
               icon={<Archive className="h-[14px] w-[14px] text-indigo-400/70" />}
-              label={`Installed · ${installed.length}`}
-            />
-            <TreeItem
-              icon={<Archive className="h-[14px] w-[14px] text-indigo-400/70" />}
-              label={`Templates · ${templates.length}`}
+              label={pluginSummaryLabel}
             />
           </>
         )}

@@ -1,1 +1,0 @@
-cmd_Release/luie_haptics.node := c++ -bundle -framework AppKit -undefined dynamic_lookup -Wl,-search_paths_first -mmacosx-version-min=11.0 -arch arm64 -L./Release -stdlib=libc++  -o Release/luie_haptics.node Release/obj.target/luie_haptics/src/haptic.o 
