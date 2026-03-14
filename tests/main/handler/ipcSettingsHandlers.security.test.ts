@@ -13,6 +13,7 @@ const mocked = vi.hoisted(() => {
       fontSize: 16,
       lineHeight: 1.5,
       maxWidth: 700,
+      spellcheckEnabled: true,
       theme: "light",
       themeTemp: "neutral",
       themeContrast: "soft",
@@ -72,6 +73,13 @@ const mocked = vi.hoisted(() => {
 });
 
 vi.mock("electron", () => ({
+  app: {
+    isPackaged: false,
+    getPath: () => process.cwd(),
+  },
+  nativeTheme: {
+    shouldUseDarkColors: false,
+  },
   ipcMain: {
     handle: vi.fn(
       (
@@ -90,6 +98,12 @@ vi.mock("../../../src/main/manager/settingsManager.js", () => ({
 
 vi.mock("../../../src/main/lifecycle/menu.js", () => ({
   applyApplicationMenu: vi.fn(),
+}));
+
+vi.mock("../../../src/main/manager/windowManager.js", () => ({
+  windowManager: {
+    applySpellCheckSettingToAllWindows: vi.fn(),
+  },
 }));
 
 describe("ipcSettingsHandlers security", () => {

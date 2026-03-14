@@ -3,6 +3,7 @@
  */
 
 import { createLogger } from "../../../shared/logger/index.js";
+import type { Prisma } from "@prisma/client";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import type {
     WorldEntityCreateInput,
@@ -174,12 +175,37 @@ export class WorldEntityService {
 
     async deleteWorldEntity(id: string) {
         try {
-            const deleted = await getWorldDbClient().worldEntity.delete({ where: { id } });
+            const entity = await getWorldDbClient().worldEntity.findUnique({
+                where: { id },
+                select: { projectId: true },
+            });
+
+            const projectId = entity?.projectId ? String(entity.projectId) : null;
+
+            await getWorldDbClient().$transaction(async (tx: Prisma.TransactionClient) => {
+                if (projectId) {
+                    await tx.entityRelation.deleteMany({
+                        where: {
+                            projectId,
+                            OR: [
+                                { sourceId: id },
+                                { targetId: id },
+                                { sourceWorldEntityId: id },
+                                { targetWorldEntityId: id },
+                            ],
+                        },
+                    });
+                }
+                await tx.worldEntity.deleteMany({ where: { id } });
+            });
+
             logger.info("World entity deleted", { entityId: id });
-            await projectService.ensureImmediatePackageExport(
-                String(deleted.projectId),
-                "world-entity:delete",
-            );
+            if (projectId) {
+                await projectService.ensureImmediatePackageExport(
+                    projectId,
+                    "world-entity:delete",
+                );
+            }
             return { success: true };
         } catch (error) {
             logger.error("Failed to delete world entity", error);

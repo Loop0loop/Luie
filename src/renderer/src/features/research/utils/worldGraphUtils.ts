@@ -138,13 +138,16 @@ export function toRFEdge(
   translate: (key: string, fallback: string) => string,
   nodeById: Map<string, Node>,
 ): Edge {
-  const color = RELATION_COLORS[relation.relation] ?? "#94a3b8";
+  const customColor = (relation.attributes as Record<string, unknown>)?.color as string | undefined;
+  const color = customColor || RELATION_COLORS[relation.relation] || "#94a3b8";
+  
   const { sourceHandle, targetHandle } = resolveEdgeHandles(
     nodeById.get(relation.sourceId),
     nodeById.get(relation.targetId),
   );
 
   const isAnimated = relation.relation === "causes" || relation.relation === "controls";
+  const customLabel = (relation.attributes as Record<string, unknown>)?.label as string | undefined;
 
   return {
     id: relation.id,
@@ -153,7 +156,7 @@ export function toRFEdge(
     sourceHandle,
     targetHandle,
     type: "customEdge",
-    label: translate(`world.graph.relationTypes.${relation.relation}`, relation.relation),
+    label: customLabel || translate(`world.graph.relationTypes.${relation.relation}`, relation.relation),
     labelStyle: { fontSize: 10, fill: color, fontWeight: 600 },
     labelBgStyle: { fill: "var(--bg-app, #0d0d0f)", fillOpacity: 0.85, rx: 4 },
     labelBgPadding: [4, 6] as [number, number],

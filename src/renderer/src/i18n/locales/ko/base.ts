@@ -51,6 +51,7 @@ export const koBase = {
     section: {
       font: "글꼴 (Font)",
       optionalFonts: "옵션 폰트 (선택 설치)",
+      spellcheck: "맞춤법 검사",
       fontSize: "글자 크기",
       lineHeight: "줄 간격",
       theme: "테마 (Theme)",
@@ -141,6 +142,11 @@ export const koBase = {
         apply: "적용",
         active: "사용 중",
       },
+    },
+    spellcheck: {
+      description: "Electron 내장 맞춤법 검사 밑줄과 제안을 켜거나 끕니다.",
+      on: "켜짐",
+      off: "꺼짐",
     },
     theme: {
       light: "Light",

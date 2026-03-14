@@ -55,6 +55,8 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       handler: async (settings: EditorSettings) => {
         const settingsManager = await loadSettingsManager();
         settingsManager.setEditorSettings(settings);
+        const { windowManager } = await import("../../manager/windowManager.js");
+        windowManager.applySpellCheckSettingToAllWindows();
         return settingsManager.getEditorSettings();
       },
     },
@@ -181,6 +183,8 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       handler: async () => {
         const settingsManager = await loadSettingsManager();
         settingsManager.resetToDefaults();
+        const { windowManager } = await import("../../manager/windowManager.js");
+        windowManager.applySpellCheckSettingToAllWindows();
         return settingsManager.getAllForRenderer();
       },
     },

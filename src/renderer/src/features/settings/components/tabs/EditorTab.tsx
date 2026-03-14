@@ -4,17 +4,19 @@ import type { TFunction } from "i18next";
 import type { FontPreset } from "@renderer/features/editor/stores/editorStore";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useShallow } from "zustand/react/shallow";
-import { EDITOR_FONT_FAMILIES } from '@shared/constants/configs';
-import type { OptionalFontOption } from "@renderer/features/settings/components/tabs/types"; interface EditorTabProps {
-    t: TFunction;
-    localFontSize: number;
-    localLineHeight: number;
-    optionalFonts: OptionalFontOption[];
-    installed: Record<string, boolean>;
-    installing: Record<string, boolean>;
-    onSetLocalFontSize: (value: number) => void;
-    onSetLocalLineHeight: (value: number) => void;
-    onInstallFont: (preset: FontPreset, pkg: string) => void;
+import { EDITOR_FONT_FAMILIES } from "@shared/constants/configs";
+import type { OptionalFontOption } from "@renderer/features/settings/components/tabs/types";
+
+interface EditorTabProps {
+  t: TFunction;
+  localFontSize: number;
+  localLineHeight: number;
+  optionalFonts: OptionalFontOption[];
+  installed: Record<string, boolean>;
+  installing: Record<string, boolean>;
+  onSetLocalFontSize: (value: number) => void;
+  onSetLocalLineHeight: (value: number) => void;
+  onInstallFont: (preset: FontPreset, pkg: string) => void;
 }
 
 export const EditorTab = memo(function EditorTab({
@@ -28,13 +30,19 @@ export const EditorTab = memo(function EditorTab({
     onSetLocalLineHeight,
     onInstallFont,
 }: EditorTabProps) {
-    const { fontFamily, fontPreset, updateSettings: onApplySettings } = useEditorStore(
-        useShallow((state) => ({
-            fontFamily: state.fontFamily,
-            fontPreset: state.fontPreset,
-            updateSettings: state.updateSettings,
-        }))
-    );
+  const {
+    fontFamily,
+    fontPreset,
+    spellcheckEnabled,
+    updateSettings: onApplySettings,
+  } = useEditorStore(
+    useShallow((state) => ({
+      fontFamily: state.fontFamily,
+      fontPreset: state.fontPreset,
+      spellcheckEnabled: state.spellcheckEnabled,
+      updateSettings: state.updateSettings,
+    })),
+  );
 
     return (
         <div className="space-y-8 max-w-2xl">
@@ -117,6 +125,30 @@ export const EditorTab = memo(function EditorTab({
                     })}
                 </div>
             </div>
+
+            <div className="h-px bg-border my-6" />
+
+            <section className="space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                    <div>
+                        <h3 className="text-base font-semibold text-fg">{t("settings.section.spellcheck")}</h3>
+                        <p className="mt-1 text-sm text-muted">{t("settings.spellcheck.description")}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => onApplySettings({ spellcheckEnabled: !spellcheckEnabled })}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${spellcheckEnabled ? "bg-accent" : "bg-border"}`}
+                        >
+                            <span
+                                className={`${spellcheckEnabled ? "translate-x-6" : "translate-x-1"} inline-block h-4 w-4 transform rounded-full bg-surface shadow-sm transition-transform`}
+                            />
+                        </button>
+                        <span className="w-12 text-right text-sm font-medium text-fg">
+                            {spellcheckEnabled ? t("settings.spellcheck.on") : t("settings.spellcheck.off")}
+                        </span>
+                    </div>
+                </div>
+            </section>
 
             <div className="h-px bg-border my-6" />
 

@@ -41,19 +41,39 @@ class WindowManager {
     return settingsManager.getMenuBarMode()
   }
 
+  private isSpellcheckEnabled() {
+    return settingsManager.getEditorSettings().spellcheckEnabled ?? true
+  }
+
   private applyMenuBarMode(win: BrowserWindow) {
     applyWindowMenuBarMode(win, this.getMenuBarMode())
+  }
+
+  private applySpellCheckerSetting(win: BrowserWindow) {
+    const session = win.webContents?.session
+    if (
+      !session ||
+      typeof session.setSpellCheckerEnabled !== "function"
+    ) {
+      return
+    }
+    session.setSpellCheckerEnabled(this.isSpellcheckEnabled())
   }
 
   private createBrowserWindow(
     options: BrowserWindowConstructorOptions,
   ): BrowserWindow {
-    return new BrowserWindow({
+    const browserWindow = new BrowserWindow({
       ...options,
       webPreferences:
         options.webPreferences ??
-        createSecureWebPreferences(join(__dirname, "../preload/index.cjs")),
+        createSecureWebPreferences(
+          join(__dirname, "../preload/index.cjs"),
+          this.isSpellcheckEnabled(),
+        ),
     })
+    this.applySpellCheckerSetting(browserWindow)
+    return browserWindow
   }
 
   private attachWindowClosedLogger(
@@ -374,6 +394,15 @@ class WindowManager {
     for (const win of windows) {
       if (!win.isDestroyed()) {
         this.applyMenuBarMode(win)
+      }
+    }
+  }
+
+  applySpellCheckSettingToAllWindows(): void {
+    const windows = BrowserWindow.getAllWindows()
+    for (const win of windows) {
+      if (!win.isDestroyed()) {
+        this.applySpellCheckerSetting(win)
       }
     }
   }

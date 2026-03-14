@@ -208,10 +208,10 @@ export function createWorldBuildingActions(
     deleteGraphNode: async (id) => {
       const current = get().graphData?.nodes.find((node) => node.id === id);
       const projectId = get().activeProjectId;
-      if (!current || !projectId) return;
+      if (!current || !projectId) return false;
 
       const deleted = await deleteGraphNodeByType(current);
-      if (!deleted) return;
+      if (!deleted) return false;
 
       set((state) => ({
         graphData: removeNodeFromGraph(state.graphData, id),
@@ -220,6 +220,7 @@ export function createWorldBuildingActions(
       clearGraphBackedSelection(current.entityType, id);
       await syncGraphBackedStore(current.entityType, projectId);
       await persistGraphDocument(projectId, get().graphData);
+      return true;
     },
 
     createWorldEntity: async (input: WorldEntityCreateInput) =>
@@ -247,9 +248,7 @@ export function createWorldBuildingActions(
       });
     },
 
-    deleteWorldEntity: async (id) => {
-      await get().deleteGraphNode(id);
-    },
+    deleteWorldEntity: async (id) => get().deleteGraphNode(id),
 
     createRelation: async (input: EntityRelationCreateInput) => {
       const resolvedProjectId = input.projectId || get().activeProjectId;

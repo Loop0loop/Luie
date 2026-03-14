@@ -246,7 +246,10 @@ export default function ScrivenerLayout({
                       {renderMainContent()}
                     </div>
                   ) : (
-                    <div className="h-full w-full overflow-y-auto custom-scrollbar p-8 bg-panel text-fg">
+                    <div
+                      className="h-full w-full overflow-y-auto custom-scrollbar p-8 bg-panel text-fg"
+                      data-editor-scroll-container="true"
+                    >
                       <div className="max-w-3xl mx-auto min-h-[500px]">
                         {renderMainContent()}
                       </div>

@@ -158,7 +158,7 @@ function Editor({
     [extensions, fontFamilyCss, fontSize, lineHeight],
   );
 
-  useTypewriterScroll(editor, focusMode);
+  useTypewriterScroll(editor, !readOnly);
 
   useEffect(() => {
     if (onEditorReady) {
@@ -281,7 +281,13 @@ function Editor({
       )}
 
       {/* Conditionally Scrollable Wrapper */}
-      <div className={cn("flex-1 flex flex-col min-h-0", scrollable ? "overflow-y-auto px-10 py-5" : "")}>
+      <div
+        className={cn(
+          "flex-1 flex flex-col min-h-0",
+          scrollable ? "overflow-y-auto px-10 py-5" : "",
+        )}
+        data-editor-scroll-container={scrollable ? "true" : undefined}
+      >
         <div
           className={cn(
             "w-full flex flex-col flex-1 min-h-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] bg-transparent border-none shadow-none m-0",

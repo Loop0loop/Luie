@@ -51,6 +51,7 @@ export const enBase = {
     section: {
       font: "Font",
       optionalFonts: "Optional Fonts",
+      spellcheck: "Spell Check",
       fontSize: "Font Size",
       lineHeight: "Line Height",
       theme: "Theme",
@@ -140,6 +141,11 @@ export const enBase = {
         apply: "Apply",
         active: "Active",
       },
+    },
+    spellcheck: {
+      description: "Turn Electron's built-in spellcheck underlines and suggestions on or off.",
+      on: "On",
+      off: "Off",
     },
     theme: {
       light: "Light",

@@ -51,6 +51,7 @@ export const jaBase = {
     section: {
       font: "フォント (Font)",
       optionalFonts: "オプションフォント",
+      spellcheck: "スペルチェック",
       fontSize: "文字サイズ",
       lineHeight: "行間",
       theme: "テーマ (Theme)",
@@ -142,6 +143,11 @@ export const jaBase = {
         apply: "適用",
         active: "使用中",
       },
+    },
+    spellcheck: {
+      description: "Electron 内蔵のスペルチェック下線と候補表示を切り替えます。",
+      on: "オン",
+      off: "オフ",
     },
     theme: {
       light: "Light",

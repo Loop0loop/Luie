@@ -87,10 +87,10 @@ export interface WorldBuildingState {
     input: WorldEntityUpdatePositionInput,
   ) => Promise<void>;
   updateWorldEntityPosition: (input: WorldEntityUpdatePositionInput) => Promise<void>;
-  deleteGraphNode: (id: string) => Promise<void>;
+  deleteGraphNode: (id: string) => Promise<boolean>;
   createWorldEntity: (input: WorldEntityCreateInput) => Promise<WorldGraphNode | null>;
   updateWorldEntity: (input: WorldEntityUpdateInput) => Promise<void>;
-  deleteWorldEntity: (id: string) => Promise<void>;
+  deleteWorldEntity: (id: string) => Promise<boolean>;
   createRelation: (input: EntityRelationCreateInput) => Promise<EntityRelation | null>;
   updateRelation: (input: EntityRelationUpdateInput) => Promise<boolean>;
   deleteRelation: (id: string) => Promise<boolean>;

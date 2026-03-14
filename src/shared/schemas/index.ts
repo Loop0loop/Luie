@@ -469,6 +469,7 @@ export const editorSettingsSchema = z.strictObject({
   fontSize: z.number().int().positive(),
   lineHeight: z.number().positive(),
   maxWidth: z.number().int().positive(),
+  spellcheckEnabled: z.boolean().optional().default(true),
   theme: z.enum(["light", "dark", "sepia"]),
   themeTemp: z.enum(["neutral", "warm", "cool"]).optional().default("neutral"),
   themeContrast: z.enum(["soft", "high"]).optional().default("soft"),

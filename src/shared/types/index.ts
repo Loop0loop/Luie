@@ -771,6 +771,7 @@ export interface EditorSettings {
   fontSize: number;
   lineHeight: number;
   maxWidth: number;
+  spellcheckEnabled: boolean;
   theme: EditorTheme;
   themeTemp: "neutral" | "warm" | "cool";
   themeContrast: "soft" | "high";

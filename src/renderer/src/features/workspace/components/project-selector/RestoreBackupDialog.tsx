@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { memo, useDeferredValue, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@shared/ui/Modal";
 import type { SnapshotRestoreCandidate } from "@shared/types";
@@ -21,6 +21,43 @@ const formatDateTime = (value?: string) => {
   return parsed.toLocaleString();
 };
 
+type RestoreCandidateListItemProps = {
+  candidate: SnapshotRestoreCandidate;
+  isSelected: boolean;
+  onSelect: (snapshotId: string) => void;
+};
+
+const RestoreCandidateListItem = memo(function RestoreCandidateListItem({
+  candidate,
+  isSelected,
+  onSelect,
+}: RestoreCandidateListItemProps) {
+  return (
+    <button
+      type="button"
+      data-testid={`restore-candidate-${candidate.snapshotId}`}
+      className={`w-full rounded-lg border px-4 py-3 text-left transition-colors ${
+        isSelected
+          ? "border-accent bg-accent/10"
+          : "border-border bg-surface hover:bg-surface-hover"
+      }`}
+      onClick={() => onSelect(candidate.snapshotId)}
+    >
+      <div className="text-sm font-semibold text-fg">
+        {candidate.projectTitle}
+      </div>
+      <div className="mt-1 text-xs text-muted">
+        {formatDateTime(candidate.savedAt)}
+      </div>
+      {candidate.chapterTitle ? (
+        <div className="mt-2 truncate text-xs text-subtle">
+          {candidate.chapterTitle}
+        </div>
+      ) : null}
+    </button>
+  );
+});
+
 export function RestoreBackupDialog({
   isOpen,
   candidates,
@@ -35,6 +72,7 @@ export function RestoreBackupDialog({
   const [userSelectedSnapshotId, setUserSelectedSnapshotId] = useState<
     string | null
   >(null);
+  const deferredCandidates = useDeferredValue(candidates);
   const selectedSnapshotId = useMemo(() => {
     if (!isOpen) {
       return null;
@@ -132,42 +170,14 @@ export function RestoreBackupDialog({
         ) : (
           <div className="grid gap-4 md:grid-cols-[320px,1fr]">
             <div className="max-h-[440px] overflow-y-auto pr-1 space-y-2">
-              {candidates.map((candidate) => {
-                const isSelected =
-                  candidate.snapshotId === selectedCandidate?.snapshotId;
-                return (
-                  <button
-                    key={candidate.snapshotId}
-                    type="button"
-                    data-testid={`restore-candidate-${candidate.snapshotId}`}
-                    className={`w-full rounded-lg border px-4 py-3 text-left transition-colors ${
-                      isSelected
-                        ? "border-accent bg-accent/10"
-                        : "border-border bg-surface hover:bg-surface-hover"
-                    }`}
-                    onClick={() =>
-                      setUserSelectedSnapshotId(candidate.snapshotId)
-                    }
-                  >
-                    <div className="text-sm font-semibold text-fg">
-                      {candidate.projectTitle}
-                    </div>
-                    <div className="mt-1 text-xs text-muted">
-                      {formatDateTime(candidate.savedAt)}
-                    </div>
-                    {candidate.chapterTitle ? (
-                      <div className="mt-2 text-xs text-subtle">
-                        {candidate.chapterTitle}
-                      </div>
-                    ) : null}
-                    {candidate.excerpt ? (
-                      <p className="mt-2 mb-0 text-xs leading-5 text-muted line-clamp-3">
-                        {candidate.excerpt}
-                      </p>
-                    ) : null}
-                  </button>
-                );
-              })}
+              {deferredCandidates.map((candidate) => (
+                <RestoreCandidateListItem
+                  key={candidate.snapshotId}
+                  candidate={candidate}
+                  isSelected={candidate.snapshotId === selectedCandidate?.snapshotId}
+                  onSelect={setUserSelectedSnapshotId}
+                />
+              ))}
             </div>
 
             <div className="rounded-lg border border-border bg-surface p-4">
