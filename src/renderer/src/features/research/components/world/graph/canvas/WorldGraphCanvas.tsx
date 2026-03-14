@@ -2,13 +2,11 @@
  * WorldGraphCanvas - React Flow 기반 세계관 그래프 캔버스
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   type Connection,
   MiniMap,
-  useEdgesState,
-  useNodesState,
   type EdgeMouseHandler,
   type Node,
   type NodeDragHandler,
@@ -17,12 +15,13 @@ import ReactFlow, {
   BackgroundVariant,
   PanOnScrollMode,
   SelectionMode,
+  Panel,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@shared/ui/ToastContext";
 import { useDialog } from "@shared/ui/useDialog";
-import type { EntityRelation, WorldEntitySourceType, WorldEntityType, WorldGraphNode } from "@shared/types";
+import type { EntityRelation, WorldEntitySourceType, WorldGraphNode } from "@shared/types";
 import { getDefaultRelationForPair } from "@shared/constants/worldRelationRules";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
@@ -33,26 +32,24 @@ import {
   WORLD_GRAPH_NODE_MENU_HEIGHT_PX,
   WORLD_GRAPH_NODE_MENU_WIDTH_PX,
 } from "@shared/constants/worldGraphUI";
-import { parseEntityDraftText } from "@renderer/features/research/utils/entityDraftUtils";
 import { CustomEntityNode } from "../components/CustomEntityNode";
 import { DraftBlockNode } from "../components/DraftBlockNode";
-import { useWorldGraphLayout } from "@renderer/features/research/hooks/useWorldGraphLayout";
 import { EditorSyncBus } from "@renderer/features/workspace/utils/EditorSyncBus";
-import { getMenuPosition, toRFNode, toRFEdge } from "@renderer/features/research/utils/worldGraphUtils";
+import { getMenuPosition } from "@renderer/features/research/utils/worldGraphUtils";
 import { WorldGraphCreateMenu } from "../components/WorldGraphCreateMenu";
 import { WorldGraphNodeMenu } from "./WorldGraphNodeMenu";
 import { WorldGraphFloatingToolbar } from "./WorldGraphFloatingToolbar";
-import { Panel } from "reactflow";
 import { CustomEdge } from "../components/CustomEdge";
 import { useSmartSnap } from "../hooks/useSmartSnap";
 import { SmartSnapLines } from "../components/SmartSnapLines";
 import { CanvasCommandPalette, type PaletteMode } from "./CanvasCommandPalette";
-import {
-  collectWorldGraphSelectionSnapshot,
-  isEditableWorldGraphTarget,
-  resolveWorldGraphDeleteTarget,
-} from "./worldGraphCanvasKeyboard";
+import { isEditableWorldGraphTarget } from "./worldGraphCanvasKeyboard";
+
+// Hooks & Utils
 import { computeClusterPositions } from "./utils/clusterUtils";
+import { useCanvasState } from "./hooks/useCanvasState";
+import { useCanvasDelete } from "./hooks/useCanvasDelete";
+import { useCanvasSync } from "./hooks/useCanvasSync";
 
 const nodeTypes = {
   draft: DraftBlockNode,
@@ -82,9 +79,10 @@ type NodeMenuState = {
 };
 
 export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: WorldGraphCanvasProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const dialog = useDialog();
+  
   const selectedNodeId = useWorldBuildingStore((state) => state.selectedNodeId);
   const selectedEdgeId = useWorldBuildingStore((state) => state.selectedEdgeId);
   const activeProjectId = useWorldBuildingStore((state) => state.activeProjectId);
@@ -92,89 +90,29 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
   const selectEdge = useWorldBuildingStore((state) => state.selectEdge);
   const createGraphNode = useWorldBuildingStore((state) => state.createGraphNode);
   const createRelation = useWorldBuildingStore((state) => state.createRelation);
-  const deleteGraphNode = useWorldBuildingStore((state) => state.deleteGraphNode);
-  const deleteRelation = useWorldBuildingStore((state) => state.deleteRelation);
-  const updateGraphNodePosition = useWorldBuildingStore(
-    (state) => state.updateGraphNodePosition,
-  );
+  const updateGraphNodePosition = useWorldBuildingStore((state) => state.updateGraphNodePosition);
 
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
   const [createMenu, setCreateMenu] = useState<CreateMenuState | null>(null);
   const [nodeMenu, setNodeMenu] = useState<NodeMenuState | null>(null);
   const [paletteMode, setPaletteMode] = useState<PaletteMode | null>(null);
-  const [optimisticDeletedNodeIds, setOptimisticDeletedNodeIds] = useState<
-    Set<string>
-  >(() => new Set());
-  const [optimisticDeletedEdgeIds, setOptimisticDeletedEdgeIds] = useState<
-    Set<string>
-  >(() => new Set());
 
-  const layoutTrigger = useGraphIdeStore((state) => state.layoutTrigger);
-  const prevTriggerVersionRef = useRef<number>(0);
+  // --- 1. State Management ---
+  const {
+    nodes,
+    setNodes,
+    onNodesChange,
+    edges,
+    setEdges,
+    onEdgesChange,
+    layoutedNodes,
+    graphNodeById,
+    setOptimisticDeletedNodeIds,
+    setOptimisticDeletedEdgeIds,
+  } = useCanvasState({ graphNodes, graphEdges, selectedNodeId });
 
-  const visibleGraphNodes = useMemo(
-    () =>
-      graphNodes.filter((node) => !optimisticDeletedNodeIds.has(node.id)),
-    [graphNodes, optimisticDeletedNodeIds],
-  );
-  const visibleGraphEdges = useMemo(
-    () =>
-      graphEdges.filter(
-        (edge) =>
-          !optimisticDeletedEdgeIds.has(edge.id) &&
-          !optimisticDeletedNodeIds.has(edge.sourceId) &&
-          !optimisticDeletedNodeIds.has(edge.targetId),
-      ),
-    [graphEdges, optimisticDeletedEdgeIds, optimisticDeletedNodeIds],
-  );
-  const rfNodes = useMemo(
-    () =>
-      visibleGraphNodes.map((node, index) => toRFNode(node, index, selectedNodeId)),
-    [selectedNodeId, visibleGraphNodes],
-  );
-  const rfEdges = useMemo(() => {
-    const translate = (key: string, fallback: string) =>
-      i18n.t(key, { defaultValue: fallback });
-    const nodeById = new Map(rfNodes.map((node) => [node.id, node] as const));
-    return visibleGraphEdges.map((edge) => toRFEdge(edge, translate, nodeById));
-  }, [i18n, rfNodes, visibleGraphEdges]);
-  const graphNodeById = useMemo(
-    () => new Map(visibleGraphNodes.map((node) => [node.id, node] as const)),
-    [visibleGraphNodes],
-  );
-
-  const { layoutedNodes, layoutedEdges } = useWorldGraphLayout({
-    nodes: rfNodes,
-    edges: rfEdges,
-  });
-
-  const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(layoutedEdges);
-
-  useEffect(() => {
-    setOptimisticDeletedNodeIds((current) => {
-      if (current.size === 0) return current;
-      const next = new Set(
-        [...current].filter((id) => graphNodes.some((node) => node.id === id)),
-      );
-      return next.size === current.size ? current : next;
-    });
-  }, [graphNodes]);
-
-  useEffect(() => {
-    setOptimisticDeletedEdgeIds((current) => {
-      if (current.size === 0) return current;
-      const next = new Set(
-        [...current].filter((id) => graphEdges.some((edge) => edge.id === id)),
-      );
-      return next.size === current.size ? current : next;
-    });
-  }, [graphEdges]);
-
-  // Hook up Smart Snapping
-  const { snapLines, snapGaps, handleNodeDrag: onSmartNodeDrag, handleNodeDragStop: onSmartNodeDragStop } = useSmartSnap(nodes);
-
+  // Useful callbacks
   const removeDraftNode = useCallback(
     (nodeId: string) => {
       setNodes((currentNodes) => currentNodes.filter((node) => node.id !== nodeId));
@@ -185,129 +123,44 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
     [selectNode, selectedNodeId, setNodes],
   );
 
-  useEffect(() => {
-    setEdges((prev) => {
-      if (
-        prev.length === layoutedEdges.length &&
-        prev.every((edge, index) => {
-          const next = layoutedEdges[index];
-          return edge.id === next.id && edge.label === next.label && edge.source === next.source && edge.target === next.target;
-        })
-      ) {
-        return prev;
-      }
-      return layoutedEdges;
-    });
-  }, [layoutedEdges, setEdges]);
+  const clearMenus = useCallback(() => {
+    setCreateMenu(null);
+    setNodeMenu(null);
+  }, []);
 
-  // Fix: Smart Node Synchronization
-  // Keeps local node position while user drags, but accepts programmatic Layout updates
-  const lastStorePositions = useRef<Record<string, { x: number; y: number }>>({});
+  // --- 2. Feature Hooks ---
+  const { snapLines, snapGaps, handleNodeDrag: onSmartNodeDrag, handleNodeDragStop: onSmartNodeDragStop } = useSmartSnap(nodes);
 
+  const { runNodeDelete, handleDeleteSelection, runRelationDelete } = useCanvasDelete({
+    nodes,
+    edges,
+    graphNodes,
+    graphEdges,
+    selectedNodeId,
+    selectedEdgeId,
+    removeDraftNode,
+    setOptimisticDeletedNodeIds,
+    setOptimisticDeletedEdgeIds,
+    onBeforeDelete: clearMenus,
+  });
 
-  useEffect(() => {
-    setNodes((prev) => {
-      let isChanged = false;
-      const prevById = new Map(prev.map((node) => [node.id, node] as const));
-      const sourceRfNodesById = new Map(rfNodes.map((node) => [node.id, node] as const));
-      const draftNodes = prev.filter(n => n.type === "draft");
-      const nextNodes = layoutedNodes.map((layoutNode: Node) => {
-        const existing = prevById.get(layoutNode.id);
-        const sourceRfNode = sourceRfNodesById.get(layoutNode.id);
-        const lastPos = lastStorePositions.current[layoutNode.id];
+  const { spawnDraftNode } = useCanvasSync({
+    activeProjectId,
+    canvasRef,
+    rfInstance,
+    setNodes,
+    removeDraftNode,
+    selectNode,
+    setPaletteMode,
+  });
 
-        // Remember the DB position so we know if it externally changed
-        // We use sourceRfNode.position (DB) for external change tracking, not the layout position
-        if (sourceRfNode) {
-          lastStorePositions.current[layoutNode.id] = { x: sourceRfNode.position.x, y: sourceRfNode.position.y };
-        }
+  // --- 3. Layout Trigger ---
+  const layoutTrigger = useGraphIdeStore((state) => state.layoutTrigger);
+  const prevTriggerVersionRef = useRef<number>(0);
 
-        if (!existing) {
-          isChanged = true;
-          return layoutNode;
-        }
-
-        const dbPosChanged =
-          lastPos &&
-          sourceRfNode &&
-          (lastPos.x !== sourceRfNode.position.x || lastPos.y !== sourceRfNode.position.y);
-
-        const didModeSwitched = false;
-
-        let newPos = existing.position;
-
-        // Only override position if:
-        // 1. DB explicitly changed position (another device/sync)
-        // 2. User just switched viewMode (triggers auto-layout recalculation)
-        if (!existing.dragging && dbPosChanged) {
-          newPos = sourceRfNode!.position; // Use DB position on external changes
-        } else if (!existing.dragging && didModeSwitched) {
-          newPos = layoutNode.position; // Use layout position only on mode switch
-        }
-
-        const needsUpdate =
-          existing.position.x !== newPos.x ||
-          existing.position.y !== newPos.y ||
-          existing.selected !== layoutNode.selected ||
-          existing.data?.label !== layoutNode.data?.label ||
-          existing.data?.subType !== layoutNode.data?.subType ||
-          existing.data?.importance !== layoutNode.data?.importance;
-
-        if (needsUpdate) {
-          isChanged = true;
-          return {
-            ...existing,
-            data: layoutNode.data,
-            selected: layoutNode.selected,
-            position: newPos,
-          };
-        }
-        return existing;
-      });
-
-      if (isChanged || prev.length !== (layoutedNodes.length + draftNodes.length)) {
-        return [...nextNodes, ...draftNodes];
-      }
-      return prev;
-    });
-
-  }, [layoutedNodes, rfNodes, setNodes]);
-
-
-
-  const onNodeClick: NodeMouseHandler = useCallback(
-    (_, node) => {
-      setCreateMenu(null);
-      setNodeMenu(null);
-      selectNode(node.id);
-
-      if (node.type !== "draft") {
-        EditorSyncBus.emit("JUMP_TO_MENTION", { entityId: node.id });
-      }
-    },
-    [selectNode],
-  );
-
-  // Sync with Editor
-  useEffect(() => {
-    const handleFocus = (payload: { entityId: string }) => {
-      selectNode(payload.entityId);
-      if (rfInstance) {
-        const node = rfInstance.getNode(payload.entityId);
-        if (node) {
-          rfInstance.setCenter(node.position.x, node.position.y, { duration: 800, zoom: 1.2 });
-        }
-      }
-    };
-    EditorSyncBus.on("FOCUS_ENTITY", handleFocus);
-    return () => EditorSyncBus.off("FOCUS_ENTITY", handleFocus);
-  }, [rfInstance, selectNode]);
-
-  // Layout Trigger (from sidebar buttons)
   useEffect(() => {
     if (!layoutTrigger || layoutTrigger.version === prevTriggerVersionRef.current) return;
     prevTriggerVersionRef.current = layoutTrigger.version;
-
     if (!rfInstance) return;
 
     if (layoutTrigger.mode === "reset") {
@@ -325,8 +178,35 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
       );
       setTimeout(() => rfInstance.fitView({ duration: 400, padding: 0.15 }), 60);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [layoutTrigger, rfInstance]);
+  }, [layoutTrigger, rfInstance, layoutedNodes, nodes, setNodes]);
+
+  // Fit View on Project Change
+  const fitViewProjectIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!activeProjectId) {
+      fitViewProjectIdRef.current = null;
+      return;
+    }
+    if (!rfInstance || nodes.length === 0) return;
+    if (fitViewProjectIdRef.current === activeProjectId) return;
+
+    fitViewProjectIdRef.current = activeProjectId;
+    requestAnimationFrame(() => {
+      rfInstance.fitView({ duration: 350, padding: 0.15 });
+    });
+  }, [activeProjectId, nodes.length, rfInstance]);
+
+  // --- 4. Event Handlers ---
+  const onNodeClick: NodeMouseHandler = useCallback(
+    (_, node) => {
+      clearMenus();
+      selectNode(node.id);
+      if (node.type !== "draft") {
+        EditorSyncBus.emit("JUMP_TO_MENTION", { entityId: node.id });
+      }
+    },
+    [selectNode, clearMenus],
+  );
 
   const onNodeContextMenu: NodeMouseHandler = useCallback(
     (event, node) => {
@@ -341,182 +221,50 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
       );
       setCreateMenu(null);
       selectNode(node.id);
-      setNodeMenu({
-        nodeId: node.id,
-        left,
-        top,
-      });
+      setNodeMenu({ nodeId: node.id, left, top });
     },
     [selectNode],
   );
 
   const onEdgeClick: EdgeMouseHandler = useCallback(
     (_, edge) => {
-      setCreateMenu(null);
-      setNodeMenu(null);
+      clearMenus();
       selectEdge(edge.id);
     },
-    [selectEdge],
+    [selectEdge, clearMenus],
   );
-
-  const spawnDraftNode = useCallback((x: number, y: number, initialType?: WorldEntitySourceType) => {
-    if (!activeProjectId) return;
-
-    setNodes((nds) => nds.filter((n) => n.type !== "draft"));
-
-    const draftId = `draft-${Date.now()}`;
-    const draftNode: Node = {
-      id: draftId,
-      type: "draft",
-      position: { x, y },
-      data: {
-        id: draftId,
-        initialValue: "",
-        initialEntityType:
-          initialType && initialType !== "WorldEntity" ? initialType : "Concept",
-        onConvert: async (
-          nodeId: string,
-          payload: { text: string; entityType: WorldEntitySourceType },
-        ) => {
-          removeDraftNode(nodeId);
-
-          if (!payload.text.trim() || !activeProjectId) return;
-
-          const { name, description } = parseEntityDraftText(payload.text);
-          const entityType = payload.entityType;
-          const subType =
-            entityType === "Place" ||
-            entityType === "Concept" ||
-            entityType === "Rule" ||
-            entityType === "Item"
-              ? entityType
-              : undefined;
-
-          try {
-            await createGraphNode({
-              projectId: activeProjectId,
-              entityType,
-              subType,
-              name,
-              description,
-              positionX: x,
-              positionY: y,
-            });
-          } catch {
-            showToast(t("world.graph.canvas.createFailed"), "error");
-          }
-        },
-      },
-    };
-
-    setNodes((nds) => nds.concat(draftNode));
-  }, [activeProjectId, createGraphNode, removeDraftNode, setNodes, showToast, t]);
-
-  useEffect(() => {
-    const handleSpawnDraft = async (payload: { entityType?: WorldEntitySourceType; instant?: boolean; position?: { x: number; y: number } }) => {
-      if (!rfInstance) return;
-      let pos = payload.position;
-      
-      if (!pos) {
-        if (canvasRef.current) {
-          const cx = canvasRef.current.clientWidth / 2;
-          const cy = canvasRef.current.clientHeight / 2;
-          pos = rfInstance.screenToFlowPosition({ x: cx, y: cy });
-          pos.x += (Math.random() - 0.5) * 40;
-          pos.y += (Math.random() - 0.5) * 40;
-        } else {
-          pos = { x: 0, y: 0 };
-        }
-      }
-
-      if (payload.instant && activeProjectId) {
-        let defaultName = "새로운 엔티티";
-        let subType: WorldEntityType | undefined = undefined;
-        let finalEntityType = payload.entityType ?? "Concept";
-        
-        if (payload.entityType === "Event") {
-          defaultName = "새로운 시간";
-          finalEntityType = "Event";
-          subType = undefined;
-        } else if (payload.entityType === "Concept") { // Note case (Concept)
-          defaultName = "새로운 노트";
-          finalEntityType = "Concept";
-          subType = undefined; // Note isn't a strict WorldEntityType yet, handled by attributes or other logic if needed
-        }
-        
-        try {
-          await createGraphNode({
-            projectId: activeProjectId,
-            entityType: finalEntityType,
-            subType,
-            name: defaultName,
-            positionX: pos.x,
-            positionY: pos.y,
-          });
-        } catch {
-          showToast(t("world.graph.canvas.createFailed"), "error");
-        }
-      } else {
-        spawnDraftNode(pos.x, pos.y, payload.entityType);
-      }
-    };
-
-    const handleOpenPalette = (payload: { mode: "Event" | "Note" }) => {
-      setPaletteMode(payload.mode);
-    };
-
-    EditorSyncBus.on("SPAWN_GRAPH_DRAFT_NODE", handleSpawnDraft);
-    EditorSyncBus.on("OPEN_COMMAND_PALETTE", handleOpenPalette);
-    return () => {
-      EditorSyncBus.off("SPAWN_GRAPH_DRAFT_NODE", handleSpawnDraft);
-      EditorSyncBus.off("OPEN_COMMAND_PALETTE", handleOpenPalette);
-    };
-  }, [rfInstance, spawnDraftNode, activeProjectId, createGraphNode, showToast, t]);
 
   const onPaneDoubleClick = useCallback(
     (event: React.MouseEvent) => {
       event.preventDefault();
-      
       if (!rfInstance) return;
-      
-      const position = rfInstance.screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
-      });
-
+      const position = rfInstance.screenToFlowPosition({ x: event.clientX, y: event.clientY });
       spawnDraftNode(position.x, position.y);
-      setCreateMenu(null);
-      setNodeMenu(null);
+      clearMenus();
     },
-    [rfInstance, spawnDraftNode],
+    [rfInstance, spawnDraftNode, clearMenus],
   );
 
   const onFlowDoubleClick = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
       const target = event.target as HTMLElement | null;
-      if (!target?.closest(".react-flow__pane")) {
-        return;
-      }
+      if (!target?.closest(".react-flow__pane")) return;
       onPaneDoubleClick(event);
     },
     [onPaneDoubleClick],
   );
 
   const onPaneClick = useCallback(() => {
-    setCreateMenu(null);
-    setNodeMenu(null);
+    clearMenus();
     selectNode(null);
     selectEdge(null);
-  }, [selectNode, selectEdge]);
+  }, [selectNode, selectEdge, clearMenus]);
 
   const onPaneContextMenu = useCallback(
     (event: React.MouseEvent) => {
       event.preventDefault();
       if (!activeProjectId || !rfInstance) return;
-      const position = rfInstance.screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
-      });
+      const position = rfInstance.screenToFlowPosition({ x: event.clientX, y: event.clientY });
       const menuPosition = getMenuPosition(
         canvasRef.current,
         event.clientX,
@@ -524,12 +272,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         WORLD_GRAPH_CREATE_MENU_WIDTH_PX,
         WORLD_GRAPH_CREATE_MENU_HEIGHT_PX,
       );
-      setCreateMenu({
-        flowX: position.x,
-        flowY: position.y,
-        left: menuPosition.left,
-        top: menuPosition.top,
-      });
+      setCreateMenu({ flowX: position.x, flowY: position.y, left: menuPosition.left, top: menuPosition.top });
       setNodeMenu(null);
     },
     [activeProjectId, rfInstance],
@@ -543,10 +286,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         projectId: activeProjectId,
         entityType,
         subType:
-          entityType === "Place" ||
-            entityType === "Concept" ||
-            entityType === "Rule" ||
-            entityType === "Item"
+          entityType === "Place" || entityType === "Concept" || entityType === "Rule" || entityType === "Item"
             ? entityType
             : undefined,
         name: t("world.graph.canvas.newEntityName", { type: t(`world.graph.entityTypes.${entityType}`, { defaultValue: entityType }) }),
@@ -562,24 +302,15 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
 
   const handleConnect = useCallback(
     async (connection: Connection) => {
-      if (
-        !activeProjectId ||
-        !connection.source ||
-        !connection.target ||
-        connection.source === connection.target
-      ) {
+      if (!activeProjectId || !connection.source || !connection.target || connection.source === connection.target) {
         return;
       }
 
       const sourceNode = graphNodeById.get(connection.source);
       const targetNode = graphNodeById.get(connection.target);
-      if (!sourceNode || !targetNode) {
-        return;
-      }
+      if (!sourceNode || !targetNode) return;
 
-      const relation =
-        getDefaultRelationForPair(sourceNode.entityType, targetNode.entityType) ??
-        "belongs_to";
+      const relation = getDefaultRelationForPair(sourceNode.entityType, targetNode.entityType) ?? "belongs_to";
       const created = await createRelation({
         projectId: activeProjectId,
         sourceId: sourceNode.id,
@@ -599,9 +330,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
   const handleNodeDragStop: NodeDragHandler = useCallback(
     (_, node) => {
       onSmartNodeDragStop();
-      if (node.type === "draft") {
-        return;
-      }
+      if (node.type === "draft") return;
       void updateGraphNodePosition({
         id: node.id,
         positionX: node.position.x,
@@ -611,64 +340,6 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
     [onSmartNodeDragStop, updateGraphNodePosition],
   );
 
-  const fitViewProjectIdRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!activeProjectId) {
-      fitViewProjectIdRef.current = null;
-      return;
-    }
-    if (!rfInstance || nodes.length === 0) {
-      return;
-    }
-    if (fitViewProjectIdRef.current === activeProjectId) {
-      return;
-    }
-
-    fitViewProjectIdRef.current = activeProjectId;
-    requestAnimationFrame(() => {
-      rfInstance.fitView({ duration: 350, padding: 0.15 });
-    });
-  }, [activeProjectId, nodes.length, rfInstance]);
-
-  const runNodeDelete = useCallback(
-    async (nodeId: string) => {
-      setOptimisticDeletedNodeIds((current) => new Set(current).add(nodeId));
-      const deleted = await deleteGraphNode(nodeId);
-      if (deleted) {
-        return true;
-      }
-
-      setOptimisticDeletedNodeIds((current) => {
-        const next = new Set(current);
-        next.delete(nodeId);
-        return next;
-      });
-      showToast(t("world.graph.canvas.deleteFailed", "삭제하지 못했습니다."), "error");
-      return false;
-    },
-    [deleteGraphNode, showToast, t],
-  );
-
-  const runRelationDelete = useCallback(
-    async (edgeId: string) => {
-      setOptimisticDeletedEdgeIds((current) => new Set(current).add(edgeId));
-      const deleted = await deleteRelation(edgeId);
-      if (deleted) {
-        return true;
-      }
-
-      setOptimisticDeletedEdgeIds((current) => {
-        const next = new Set(current);
-        next.delete(edgeId);
-        return next;
-      });
-      showToast(t("world.graph.canvas.deleteFailed", "삭제하지 못했습니다."), "error");
-      return false;
-    },
-    [deleteRelation, showToast, t],
-  );
-
   const handleSelectionChange = useCallback(
     (selection: { nodes: Node[]; edges: { id: string }[] }) => {
       const nextNode = selection.nodes.find((node) => node.type !== "draft") ?? selection.nodes[0];
@@ -676,13 +347,11 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         selectNode(nextNode.id);
         return;
       }
-
       const nextEdge = selection.edges[0];
       if (nextEdge) {
         selectEdge(nextEdge.id);
         return;
       }
-
       selectNode(null);
       selectEdge(null);
     },
@@ -713,195 +382,34 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
     [runRelationDelete],
   );
 
-  const handleDeleteSelection = useCallback(async () => {
-    const selection = collectWorldGraphSelectionSnapshot({
-      localNodes: nodes,
-      localEdges: edges,
-      selectedNodeId,
-      selectedEdgeId,
-    });
-
-    const selectedDraftNodes = nodes.filter(
-      (node) =>
-        node.type === "draft" && selection.selectedNodeIds.includes(node.id),
-    );
-    const selectedGraphNodes = graphNodes.filter((node) =>
-      selection.selectedNodeIds.includes(node.id),
-    );
-    const selectedRelations = graphEdges.filter((edge) =>
-      selection.selectedEdgeIds.includes(edge.id),
-    );
-
-    const entityCount = selectedDraftNodes.length + selectedGraphNodes.length;
-    const relationCount = selectedRelations.length;
-
-    if (entityCount === 0 && relationCount === 0) {
-      return;
-    }
-
-    const confirmed = await dialog.confirm({
-      title: t("world.graph.canvas.deleteNode"),
-      message:
-        entityCount > 0
-          ? t("world.graph.canvas.deleteEntityConfirm", {
-              name:
-                entityCount === 1
-                  ? selectedGraphNodes[0]?.name ??
-                    t("world.graph.canvas.entityFallbackName", "선택한 엔티티")
-                  : t("world.graph.canvas.multipleEntities", {
-                      defaultValue: `${entityCount}개 엔티티`,
-                    }),
-            })
-          : t("world.graph.canvas.deleteRelationConfirm", {
-              defaultValue: `${relationCount}개 연결을 삭제할까요?`,
-            }),
-      isDestructive: true,
-    });
-    if (!confirmed) {
-      return;
-    }
-
-    setCreateMenu(null);
-    setNodeMenu(null);
-
-    selectedDraftNodes.forEach((draftNode) => {
-      removeDraftNode(draftNode.id);
-    });
-    await Promise.all(
-      selectedGraphNodes.map(async (graphNode) => runNodeDelete(graphNode.id)),
-    );
-    await Promise.all(
-      selectedRelations.map(async (edge) => runRelationDelete(edge.id)),
-    );
-  }, [
-    dialog,
-    edges,
-    graphEdges,
-    graphNodes,
-    nodes,
-    removeDraftNode,
-    runNodeDelete,
-    runRelationDelete,
-    selectedEdgeId,
-    selectedNodeId,
-    t,
-  ]);
-
-  const handleCanvasMouseDownCapture = useCallback(
-    (event: React.MouseEvent<HTMLDivElement>) => {
-      if (isEditableWorldGraphTarget(event.target)) {
-        return;
-      }
-      canvasRef.current?.focus();
-    },
-    [],
-  );
+  const handleCanvasMouseDownCapture = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (isEditableWorldGraphTarget(event.target)) return;
+    canvasRef.current?.focus();
+  }, []);
 
   const handleCanvasKeyDownCapture = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "a") {
-        if (isEditableWorldGraphTarget(event.target)) {
-          return;
-        }
-
+        if (isEditableWorldGraphTarget(event.target)) return;
         event.preventDefault();
         event.stopPropagation();
-
-        setNodes((currentNodes) =>
-          currentNodes.map((node) => ({
-            ...node,
-            selected: true,
-          })),
-        );
-        setEdges((currentEdges) =>
-          currentEdges.map((edge) => ({
-            ...edge,
-            selected: false,
-          })),
-        );
-
+        setNodes((currentNodes) => currentNodes.map((node) => ({ ...node, selected: true })));
+        setEdges((currentEdges) => currentEdges.map((edge) => ({ ...edge, selected: false })));
         selectEdge(null);
         selectNode(nodes[0]?.id ?? null);
         return;
       }
 
-      if (event.key !== "Backspace" && event.key !== "Delete") {
-        return;
-      }
-
-      if (event.metaKey || event.ctrlKey || event.altKey) {
-        return;
-      }
-
-      if (isEditableWorldGraphTarget(event.target)) {
-        return;
-      }
-
-      const selection = collectWorldGraphSelectionSnapshot({
-        localNodes: nodes,
-        localEdges: edges,
-        selectedNodeId,
-        selectedEdgeId,
-      });
-      const deleteTarget = resolveWorldGraphDeleteTarget({
-        selectedNodeIds: selection.selectedNodeIds,
-        selectedEdgeIds: selection.selectedEdgeIds,
-        localNodes: nodes,
-        persistedNodeIds: new Set(graphNodeById.keys()),
-      });
-      if (!deleteTarget) {
-        return;
-      }
+      if (event.key !== "Backspace" && event.key !== "Delete") return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (isEditableWorldGraphTarget(event.target)) return;
 
       event.preventDefault();
       event.stopPropagation();
       void handleDeleteSelection();
     },
-    [
-      edges,
-      graphNodeById,
-      handleDeleteSelection,
-      nodes,
-      selectEdge,
-      selectNode,
-      setEdges,
-      setNodes,
-      selectedEdgeId,
-      selectedNodeId,
-    ],
+    [setNodes, setEdges, selectEdge, selectNode, nodes, handleDeleteSelection],
   );
-
-  const styledNodes = useMemo(() => {
-    return nodes.map((node) => {
-      const opacity = 1;
-
-      // Dimming on selection removed per user request
-
-      if (opacity === 1 && !node.style?.opacity) return node;
-
-      return {
-        ...node,
-        style: { ...node.style, opacity },
-      };
-    });
-  }, [nodes]);
-
-  const styledEdges = useMemo(() => {
-    return edges.map((edge) => {
-      const opacity = 1;
-      const label = edge.label;
-
-      // Dimming on selection removed per user request
-
-      if (opacity === 1 && label === edge.label && !edge.style?.opacity) return edge;
-
-      return {
-        ...edge,
-        label,
-        style: { ...edge.style, opacity },
-      };
-    });
-  }, [edges]);
 
   const handleFocusNode = useCallback(() => {
     if (!nodeMenu) return;
@@ -922,9 +430,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
     }
     const confirmed = await dialog.confirm({
       title: t("world.graph.canvas.deleteNode"),
-      message: t("world.graph.canvas.deleteEntityConfirm", {
-        name: targetNode.name,
-      }),
+      message: t("world.graph.canvas.deleteEntityConfirm", { name: targetNode.name }),
       isDestructive: true,
     });
     if (!confirmed) return;
@@ -944,8 +450,8 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
       onKeyDownCapture={handleCanvasKeyDownCapture}
     >
       <ReactFlow
-        nodes={styledNodes}
-        edges={styledEdges}
+        nodes={nodes}
+        edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
@@ -982,18 +488,9 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         className="react-flow-premium"
         proOptions={{ hideAttribution: true }}
       >
-        <Background
-          variant={BackgroundVariant.Dots}
-          gap={24}
-          size={1}
-          color="#64748B"
-          className="opacity-[0.18]"
-        />
+        <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#64748B" className="opacity-[0.18]" />
         <MiniMap
-          nodeColor={(node) => {
-            const subType = (node.data?.subType ?? node.data?.entityType ?? "WorldEntity") as string;
-            return WORLD_GRAPH_MINIMAP_COLORS[subType] ?? "#94a3b8";
-          }}
+          nodeColor={(node) => WORLD_GRAPH_MINIMAP_COLORS[(node.data?.subType ?? node.data?.entityType ?? "WorldEntity") as string] ?? "#94a3b8"}
           maskColor="rgba(0,0,0,0.25)"
           style={{
             bottom: 88,
@@ -1014,51 +511,24 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
 
       {isEmpty && !createMenu && (
         <div className="pointer-events-none absolute inset-0 z-0 flex select-none flex-col items-center justify-center gap-6">
-          {/* Ghost node preview */}
           <div className="flex items-end gap-3 opacity-[0.08]">
             {[
               { w: 140, h: 72, c: "#818cf8" },
               { w: 160, h: 88, c: "#fb7185" },
               { w: 130, h: 66, c: "#34d399" },
             ].map(({ w, h, c }, i) => (
-              <div
-                key={i}
-                className="rounded-xl border"
-                style={{ width: w, height: h, borderColor: c, borderTopWidth: 3, borderTopColor: c }}
-              />
+              <div key={i} className="rounded-xl border" style={{ width: w, height: h, borderColor: c, borderTopWidth: 3, borderTopColor: c }} />
             ))}
           </div>
-
           <div className="text-center">
-            <p className="mb-1.5 text-[15px] font-semibold text-fg/50">
-              세계관을 시각화하세요
-            </p>
-            <p className="text-[12px] text-muted-foreground/40">
-              캐릭터, 장소, 사건을 추가하고 연결해 이야기 구조를 한눈에 파악하세요
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 rounded-xl border border-border/30 bg-element/30 px-4 py-2 text-[11px] text-muted-foreground/50 backdrop-blur-md">
-            <span>
-              <kbd className="rounded border border-border/50 bg-app/60 px-1.5 py-0.5 text-[10px]">더블클릭</kbd>{" "}
-              빈 블록
-            </span>
-            <div className="h-3 w-px bg-border/40" />
-            <span>
-              <kbd className="rounded border border-border/50 bg-app/60 px-1.5 py-0.5 text-[10px]">우클릭</kbd>{" "}
-              엔티티 생성
-            </span>
-            <div className="h-3 w-px bg-border/40" />
-            <span>
-              <kbd className="rounded border border-border/50 bg-app/60 px-1.5 py-0.5 text-[10px]">드래그</kbd>{" "}
-              이동
-            </span>
+            <p className="mb-1.5 text-[15px] font-semibold text-fg/50">세계관을 시각화하세요</p>
+            <p className="text-[12px] text-muted-foreground/40">캐릭터, 장소, 사건을 추가하고 연결해 이야기 구조를 한눈에 파악하세요</p>
           </div>
         </div>
       )}
 
       {createMenu && (
-        <WorldGraphCreateMenu 
+        <WorldGraphCreateMenu
           left={createMenu.left}
           top={createMenu.top}
           onCreate={(type) => { void handleCreateNode(type); }}
