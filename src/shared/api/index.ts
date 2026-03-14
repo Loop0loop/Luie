@@ -42,6 +42,11 @@ import type {
   WorldReplicaDocumentResult,
   WorldReplicaScrapMemosResult,
   WorldScrapMemosData,
+  GraphPluginApplyTemplateInput,
+  GraphPluginCatalogItem,
+  GraphPluginInstallResult,
+  GraphPluginTemplateRef,
+  InstalledGraphPlugin,
 } from "@shared/types/index.js";
 
 export type RendererApi = {
@@ -448,6 +453,18 @@ export type RendererApi = {
       projectId: string;
       data: WorldScrapMemosData;
     }) => Promise<IPCResponse<unknown>>;
+  };
+  plugin: {
+    listCatalog: () => Promise<IPCResponse<GraphPluginCatalogItem[]>>;
+    listInstalled: () => Promise<IPCResponse<InstalledGraphPlugin[]>>;
+    install: (
+      pluginId: string,
+    ) => Promise<IPCResponse<GraphPluginInstallResult>>;
+    uninstall: (pluginId: string) => Promise<IPCResponse<unknown>>;
+    getTemplates: () => Promise<IPCResponse<GraphPluginTemplateRef[]>>;
+    applyTemplate: (
+      input: GraphPluginApplyTemplateInput,
+    ) => Promise<IPCResponse<unknown>>;
   };
 };
 

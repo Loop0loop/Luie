@@ -7,6 +7,7 @@ import { useWorldLibrarySummary } from "../hooks/useWorldLibrarySummary";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
 import type { LibrarySummaryEntryId } from "../utils/worldGraphIdeViewModels";
+import { GraphPluginLibraryPanel } from "./GraphPluginLibraryPanel";
 
 const ENTRY_ICONS: Record<LibrarySummaryEntryId, typeof Network> = {
   graph: Network,
@@ -79,43 +80,47 @@ export function LibraryMainView() {
             {error}
           </div>
         ) : (
-          <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {entries.map((entry) => {
-              const Icon = ENTRY_ICONS[entry.id] ?? Archive;
-              return (
-                <button
-                  key={entry.id}
-                  type="button"
-                  onClick={() => handleOpenEntry(entry.id)}
-                  className="group flex flex-col rounded-2xl border bg-card p-5 text-left shadow-sm transition-all hover:border-accent/40 hover:bg-accent/5 hover:shadow-md"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-secondary text-secondary-foreground">
-                        <Icon className="h-5 w-5" />
+          <div className="mx-auto max-w-6xl space-y-10">
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {entries.map((entry) => {
+                const Icon = ENTRY_ICONS[entry.id] ?? Archive;
+                return (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    onClick={() => handleOpenEntry(entry.id)}
+                    className="group flex flex-col rounded-2xl border bg-card p-5 text-left shadow-sm transition-all hover:border-accent/40 hover:bg-accent/5 hover:shadow-md"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-secondary text-secondary-foreground">
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">{entry.title}</h3>
+                          <p className="mt-1 text-xs text-muted-foreground">{entry.badge}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-semibold">{entry.title}</h3>
-                        <p className="mt-1 text-xs text-muted-foreground">{entry.badge}</p>
-                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
                     </div>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
-                  </div>
 
-                  <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                    {entry.description}
-                  </p>
+                    <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                      {entry.description}
+                    </p>
 
-                  <div className="mt-5 border-t border-border/60 pt-3 text-xs text-muted-foreground">
-                    {entry.updatedAt
-                      ? t("world.graph.library.updatedAt", {
-                          defaultValue: `최근 갱신: ${entry.updatedAt}`,
-                        })
-                      : t("world.graph.library.openHint", "클릭하면 해당 작업 공간으로 이동합니다.")}
-                  </div>
-                </button>
-              );
-            })}
+                    <div className="mt-5 border-t border-border/60 pt-3 text-xs text-muted-foreground">
+                      {entry.updatedAt
+                        ? t("world.graph.library.updatedAt", {
+                            defaultValue: `최근 갱신: ${entry.updatedAt}`,
+                          })
+                        : t("world.graph.library.openHint", "클릭하면 해당 작업 공간으로 이동합니다.")}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <GraphPluginLibraryPanel projectId={currentProject?.id ?? null} />
           </div>
         )}
       </ScrollArea>

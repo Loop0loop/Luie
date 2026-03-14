@@ -5,40 +5,38 @@ import {
   ZoomIn, 
   RotateCcw, 
   Maximize, 
-  ZoomOut, 
-  Undo, 
-  Redo, 
+  ZoomOut,
+  LayoutGrid,
   HelpCircle 
 } from "lucide-react";
 import { Button } from "@renderer/components/ui/button";
 import { Separator } from "@renderer/components/ui/separator";
 import { useToast } from "@shared/ui/ToastContext";
+import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 
 export function WorldGraphFloatingToolbar() {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
   const { showToast } = useToast();
+  const triggerLayout = useGraphIdeStore(s => s.triggerLayout);
+  const toggleSidebar = useGraphIdeStore(s => s.toggleSidebar);
 
   const handleRefresh = useCallback(() => {
-    // Usually fitView or reload graph. We'll simply fit view for now as a "refresh" position
     fitView({ duration: 400, padding: 0.15 });
-    showToast("뷰가 초기화되었습니다.", "success");
+    showToast("뷰가 중앙으로 정렬되었습니다.", "success");
   }, [fitView, showToast]);
-
-  const handleUndo = useCallback(() => {
-    showToast("실행 취소(Undo)는 현재 지원되지 않습니다.", "info");
-  }, [showToast]);
-
-  const handleRedo = useCallback(() => {
-    showToast("다시 실행(Redo)은 현재 지원되지 않습니다.", "info");
-  }, [showToast]);
+  
+  const handleAutoLayout = useCallback(() => {
+    triggerLayout("auto");
+    showToast("그래프를 자동 정렬했습니다.", "success");
+  }, [triggerLayout, showToast]);
 
   const handleHelp = useCallback(() => {
-    showToast("도움말: 캔버스를 더블 클릭하여 새 블록을 추가하세요.", "info");
+    showToast("캔버스를 우클릭하여 커스텀 블록을 만들고, 더블 클릭으로 이름을 변경하세요!", "info");
   }, [showToast]);
 
   const handleSettings = useCallback(() => {
-    showToast("설정 패널을 엽니다.", "info");
-  }, [showToast]);
+    toggleSidebar();
+  }, [toggleSidebar]);
 
   return (
     <div className="absolute top-4 right-4 z-50 flex flex-col items-center gap-1 rounded-xl border border-border/40 bg-panel/95 p-1.5 shadow-xl ring-1 ring-black/5 backdrop-blur-md">
@@ -47,7 +45,7 @@ export function WorldGraphFloatingToolbar() {
         size="icon"
         className="h-8 w-8 text-muted-foreground hover:bg-element hover:text-fg"
         onClick={handleSettings}
-        title="설정"
+        title="사이드바 토글"
       >
         <Settings size={16} />
       </Button>
@@ -62,16 +60,6 @@ export function WorldGraphFloatingToolbar() {
         title="확대"
       >
         <ZoomIn size={16} />
-      </Button>
-
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8 text-muted-foreground hover:bg-element hover:text-fg"
-        onClick={handleRefresh}
-        title="초기화"
-      >
-        <RotateCcw size={16} />
       </Button>
 
       <Button
@@ -100,20 +88,20 @@ export function WorldGraphFloatingToolbar() {
         variant="ghost"
         size="icon"
         className="h-8 w-8 text-muted-foreground hover:bg-element hover:text-fg"
-        onClick={handleUndo}
-        title="실행 취소"
+        onClick={handleAutoLayout}
+        title="자동 정렬"
       >
-        <Undo size={16} />
+        <LayoutGrid size={16} />
       </Button>
 
       <Button
         variant="ghost"
         size="icon"
         className="h-8 w-8 text-muted-foreground hover:bg-element hover:text-fg"
-        onClick={handleRedo}
-        title="다시 실행"
+        onClick={handleRefresh}
+        title="중앙 맞춤"
       >
-        <Redo size={16} />
+        <RotateCcw size={16} />
       </Button>
 
       <Separator orientation="horizontal" className="my-0.5 w-6 bg-border/40" />

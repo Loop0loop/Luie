@@ -764,3 +764,125 @@ export const worldGraphMentionsQuerySchema = z.object({
   entityType: entityRelationTypeSchema,
   limit: z.number().int().positive().max(500).optional(),
 });
+
+const GRAPH_PLUGIN_ALLOWED_MANIFEST_KEYS = new Set([
+  "id",
+  "name",
+  "version",
+  "apiVersion",
+  "kind",
+  "description",
+  "author",
+  "templates",
+]);
+
+const GRAPH_PLUGIN_BLOCKED_MANIFEST_KEYS = new Set([
+  "main",
+  "entry",
+  "entrypoint",
+  "renderer",
+  "background",
+  "preload",
+  "scripts",
+  "permissions",
+]);
+
+const graphPluginVersionSchema = z.string().min(1).max(64);
+
+export const graphTemplateManifestSchema = z
+  .object({
+    id: z.string().min(1).max(128),
+    title: z.string().min(1).max(200),
+    summary: z.string().min(1).max(2000),
+    thumbnail: z.string().max(PATH_MAX_LENGTH),
+    graphEntry: z.string().min(1).max(PATH_MAX_LENGTH),
+    tags: z.array(z.string().min(1).max(64)).max(32),
+  })
+  .strict();
+
+export const graphPluginManifestSchema = z
+  .object({
+    id: z.string().min(1).max(128),
+    name: z.string().min(1).max(200),
+    version: graphPluginVersionSchema,
+    apiVersion: graphPluginVersionSchema,
+    kind: z.literal("graph-template-bundle"),
+    description: z.string().min(1).max(4000),
+    author: z.string().min(1).max(200),
+    templates: z.array(graphTemplateManifestSchema).min(1).max(100),
+  })
+  .passthrough()
+  .superRefine((value, ctx) => {
+    for (const key of Object.keys(value)) {
+      if (GRAPH_PLUGIN_ALLOWED_MANIFEST_KEYS.has(key)) {
+        continue;
+      }
+
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: GRAPH_PLUGIN_BLOCKED_MANIFEST_KEYS.has(key)
+          ? `Executable manifest field is not allowed in V1: ${key}`
+          : `Unknown manifest field is not allowed: ${key}`,
+        path: [key],
+      });
+    }
+  })
+  .transform((value) => ({
+    id: value.id,
+    name: value.name,
+    version: value.version,
+    apiVersion: value.apiVersion,
+    kind: value.kind,
+    description: value.description,
+    author: value.author,
+    templates: value.templates,
+  }));
+
+export const graphPluginCatalogItemSchema = z.strictObject({
+  pluginId: z.string().min(1).max(128),
+  version: graphPluginVersionSchema,
+  name: z.string().min(1).max(200),
+  summary: z.string().min(1).max(2000),
+  releaseTag: z.string().min(1).max(200),
+  assetUrl: z.string().url(),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/i, "Invalid sha256"),
+  size: z.number().int().positive().max(1024 * 1024 * 1024),
+  minAppVersion: graphPluginVersionSchema,
+  apiVersion: graphPluginVersionSchema,
+});
+
+export const installedGraphPluginSchema = z.strictObject({
+  pluginId: z.string().min(1).max(128),
+  version: graphPluginVersionSchema,
+  name: z.string().min(1).max(200),
+  description: z.string().min(1).max(4000),
+  author: z.string().min(1).max(200),
+  apiVersion: graphPluginVersionSchema,
+  kind: z.literal("graph-template-bundle"),
+  installedAt: z.string().min(1),
+  source: z.strictObject({
+    assetUrl: z.string().url(),
+    sha256: z.string().regex(/^[a-f0-9]{64}$/i, "Invalid sha256"),
+  }),
+  status: z.literal("installed"),
+});
+
+export const installedGraphPluginIndexSchema = z.array(
+  installedGraphPluginSchema,
+);
+
+export const graphPluginApplyTemplateSchema = z.strictObject({
+  pluginId: z.string().min(1).max(128),
+  templateId: z.string().min(1).max(128),
+  projectId: projectIdSchema,
+});
+
+export const graphPluginInstallArgsSchema = z.tuple([
+  z.string().min(1).max(128),
+]);
+export const graphPluginUninstallArgsSchema = z.tuple([
+  z.string().min(1).max(128),
+]);
+export const graphPluginApplyTemplateArgsSchema = z.tuple([
+  graphPluginApplyTemplateSchema,
+]);

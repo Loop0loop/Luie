@@ -27,7 +27,6 @@ import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeSto
 import {
   WORLD_GRAPH_CREATE_MENU_HEIGHT_PX,
   WORLD_GRAPH_CREATE_MENU_WIDTH_PX,
-  WORLD_GRAPH_MINIMAP_COLORS,
   WORLD_GRAPH_NODE_MENU_HEIGHT_PX,
   WORLD_GRAPH_NODE_MENU_WIDTH_PX,
 } from "@shared/constants/worldGraphUI";
@@ -278,17 +277,18 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
   );
 
   const handleCreateNode = useCallback(
-    async (entityType: WorldEntitySourceType) => {
+    async (entityType: WorldEntitySourceType, customName?: string, customSubType?: string) => {
       if (!activeProjectId || !createMenu) return;
       setCreateMenu(null);
       const created = await createGraphNode({
         projectId: activeProjectId,
         entityType,
-        subType:
+        subType: (customSubType as any) || (
           entityType === "Place" || entityType === "Concept" || entityType === "Rule" || entityType === "Item"
             ? entityType
-            : undefined,
-        name: t("world.graph.canvas.newEntityName", { type: t(`world.graph.entityTypes.${entityType}`, { defaultValue: entityType }) }),
+            : undefined
+        ),
+        name: customName || t("world.graph.canvas.newEntityName", { type: t(`world.graph.entityTypes.${entityType}`, { defaultValue: entityType }) }),
         positionX: createMenu.flowX,
         positionY: createMenu.flowY,
       });
@@ -517,7 +517,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         <WorldGraphCreateMenu
           left={createMenu.left}
           top={createMenu.top}
-          onCreate={(type) => { void handleCreateNode(type); }}
+          onCreate={(type, name, subType) => { void handleCreateNode(type, name, subType); }}
         />
       )}
 

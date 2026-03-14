@@ -1,10 +1,12 @@
 import { Archive, BookOpenText, Boxes, CalendarRange, LibraryBig, Map, Network, NotebookPen, Route } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
+import { useGraphPluginStore } from "@renderer/features/research/stores/graphPluginStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { SidebarTreeSection, TreeItem } from "./SidebarTreeSection";
 import { useWorldLibrarySummary } from "../hooks/useWorldLibrarySummary";
 import type { LibrarySummaryEntryId } from "../utils/worldGraphIdeViewModels";
+import { useEffect } from "react";
 
 const ENTRY_ICONS: Record<LibrarySummaryEntryId, typeof Network> = {
   graph: Network,
@@ -22,6 +24,14 @@ export function LibrarySidebarContent() {
   const setActiveTab = useGraphIdeStore((state) => state.setActiveTab);
   const setWorldTab = useUIStore((state) => state.setWorldTab);
   const { entries, error, isLoading } = useWorldLibrarySummary();
+  const loadPlugins = useGraphPluginStore((state) => state.loadData);
+  const installed = useGraphPluginStore((state) => state.installed);
+  const templates = useGraphPluginStore((state) => state.templates);
+  const pluginError = useGraphPluginStore((state) => state.error);
+
+  useEffect(() => {
+    void loadPlugins();
+  }, [loadPlugins]);
 
   const handleOpenEntry = (entryId: LibrarySummaryEntryId) => {
     switch (entryId) {
@@ -90,6 +100,26 @@ export function LibrarySidebarContent() {
           <p className="px-2 py-1.5 text-[11px] text-destructive/80">{error}</p>
         ) : isLoading ? null : (
           documentEntries.map(renderEntry)
+        )}
+      </SidebarTreeSection>
+
+      <SidebarTreeSection
+        title="Plugins"
+        actionIcon={<LibraryBig className="h-3.5 w-3.5" />}
+      >
+        {pluginError ? (
+          <p className="px-2 py-1.5 text-[11px] text-destructive/80">{pluginError}</p>
+        ) : (
+          <>
+            <TreeItem
+              icon={<Archive className="h-[14px] w-[14px] text-indigo-400/70" />}
+              label={`Installed · ${installed.length}`}
+            />
+            <TreeItem
+              icon={<Archive className="h-[14px] w-[14px] text-indigo-400/70" />}
+              label={`Templates · ${templates.length}`}
+            />
+          </>
         )}
       </SidebarTreeSection>
     </div>

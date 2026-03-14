@@ -191,6 +191,14 @@ export const IPC_CHANNELS = {
   WORLD_STORAGE_SET_DOCUMENT: "world-storage:set-document",
   WORLD_STORAGE_GET_SCRAP_MEMOS: "world-storage:get-scrap-memos",
   WORLD_STORAGE_SET_SCRAP_MEMOS: "world-storage:set-scrap-memos",
+
+  // Graph plugins
+  PLUGIN_LIST_CATALOG: "plugin:list-catalog",
+  PLUGIN_LIST_INSTALLED: "plugin:list-installed",
+  PLUGIN_INSTALL: "plugin:install",
+  PLUGIN_UNINSTALL: "plugin:uninstall",
+  PLUGIN_GET_TEMPLATES: "plugin:get-templates",
+  PLUGIN_APPLY_TEMPLATE: "plugin:apply-template",
 } as const;
 
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

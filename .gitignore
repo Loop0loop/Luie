@@ -25,6 +25,8 @@ prisma/migrations/
 prisma/dev.db-wal
 prisma/dev.db-shm
 prisma/.tmp
+plugin/installed/*
+!plugin/installed/index.json
 
 
 

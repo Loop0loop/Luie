@@ -30,6 +30,7 @@ import { LibraryMainView } from "@renderer/features/research/components/world/gr
 import { TimelineMainView } from "@renderer/features/research/components/world/graph/views/TimelineMainView";
 import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
 import { WorldGraphNavbar } from "../components/WorldGraphNavbar";
+import { EntityInspectorPanel } from "../sidebars/EntityInspectorPanel";
 
 export function WorldGraphPanel() {
   const { t } = useTranslation();
@@ -44,6 +45,7 @@ export function WorldGraphPanel() {
   // IDE Store
   const activeTab = useGraphIdeStore((state) => state.activeTab);
   const isSidebarOpen = useGraphIdeStore((state) => state.isSidebarOpen);
+  const selectedNodeId = useWorldBuildingStore(s => s.selectedNodeId);
 
   const feature = "worldGraphSidebar" as const;
   const config = getSidebarWidthConfig(feature);
@@ -181,6 +183,19 @@ export function WorldGraphPanel() {
               </main>
             </div>
           </Panel>
+          {selectedNodeId && activeTab === "graph" && (
+            <>
+              <PanelResizeHandle className="relative flex w-px shrink-0 cursor-col-resize items-center justify-center bg-border/20 hover:bg-accent/40 active:bg-accent transition-colors" />
+              <Panel
+                id="world-ide-inspector"
+                defaultSize={25}
+                minSize={20}
+                maxSize={40}
+              >
+                <EntityInspectorPanel />
+              </Panel>
+            </>
+          )}
         </PanelGroup>
       </div>
     </div>

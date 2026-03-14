@@ -112,6 +112,9 @@ const RETRYABLE_CHANNELS = new Set<string>([
   IPC_CHANNELS.SYNC_GET_STATUS,
   IPC_CHANNELS.SYNC_GET_RUNTIME_CONFIG,
   IPC_CHANNELS.STARTUP_GET_READINESS,
+  IPC_CHANNELS.PLUGIN_LIST_CATALOG,
+  IPC_CHANNELS.PLUGIN_LIST_INSTALLED,
+  IPC_CHANNELS.PLUGIN_GET_TEMPLATES,
 ]);
 
 const randomByteArray = (size: number): Uint8Array => {
@@ -1112,6 +1115,26 @@ const rendererApi = {
       input: Parameters<RendererApi["worldStorage"]["setScrapMemos"]>[0],
     ): ReturnType<RendererApi["worldStorage"]["setScrapMemos"]> =>
       safeInvoke(IPC_CHANNELS.WORLD_STORAGE_SET_SCRAP_MEMOS, input),
+  },
+  plugin: {
+    listCatalog: (): ReturnType<RendererApi["plugin"]["listCatalog"]> =>
+      safeInvoke(IPC_CHANNELS.PLUGIN_LIST_CATALOG),
+    listInstalled: (): ReturnType<RendererApi["plugin"]["listInstalled"]> =>
+      safeInvoke(IPC_CHANNELS.PLUGIN_LIST_INSTALLED),
+    install: (
+      pluginId: Parameters<RendererApi["plugin"]["install"]>[0],
+    ): ReturnType<RendererApi["plugin"]["install"]> =>
+      safeInvoke(IPC_CHANNELS.PLUGIN_INSTALL, pluginId),
+    uninstall: (
+      pluginId: Parameters<RendererApi["plugin"]["uninstall"]>[0],
+    ): ReturnType<RendererApi["plugin"]["uninstall"]> =>
+      safeInvoke(IPC_CHANNELS.PLUGIN_UNINSTALL, pluginId),
+    getTemplates: (): ReturnType<RendererApi["plugin"]["getTemplates"]> =>
+      safeInvoke(IPC_CHANNELS.PLUGIN_GET_TEMPLATES),
+    applyTemplate: (
+      input: Parameters<RendererApi["plugin"]["applyTemplate"]>[0],
+    ): ReturnType<RendererApi["plugin"]["applyTemplate"]> =>
+      safeInvoke(IPC_CHANNELS.PLUGIN_APPLY_TEMPLATE, input),
   },
 } satisfies RendererApi;
 

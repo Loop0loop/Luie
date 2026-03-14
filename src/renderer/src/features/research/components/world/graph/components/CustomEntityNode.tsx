@@ -1,9 +1,11 @@
-import { memo } from "react";
+import { memo, useState, useEffect } from "react";
 import { Handle, Position } from "reactflow";
 import { cn } from "@renderer/lib/utils";
 import { WORLD_GRAPH_ICON_MAP, WORLD_GRAPH_MINIMAP_COLORS } from "@shared/constants/worldGraphUI";
+import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 
 type CustomEntityNodeProps = {
+  id: string;
   data: {
     label: string;
     subType: string;
@@ -16,7 +18,7 @@ type CustomEntityNodeProps = {
   selected?: boolean;
 };
 
-export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps) => {
+export const CustomEntityNode = memo(({ id, data, selected }: CustomEntityNodeProps) => {
   const {
     label,
     subType,
@@ -25,6 +27,30 @@ export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps)
     firstAppearance,
     tags,
   } = data;
+
+  const updateGraphNode = useWorldBuildingStore((state) => state.updateGraphNode);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editLabel, setEditLabel] = useState(label);
+
+  useEffect(() => {
+    setEditLabel(label);
+  }, [label]);
+
+  const handleSave = () => {
+    setIsEditing(false);
+    if (editLabel !== label) {
+      void updateGraphNode({ id, entityType: entityType as any, name: editLabel });
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSave();
+    } else if (e.key === "Escape") {
+      setIsEditing(false);
+      setEditLabel(label);
+    }
+  };
 
   const Icon = WORLD_GRAPH_ICON_MAP[subType] ?? WORLD_GRAPH_ICON_MAP["WorldEntity"];
   const accent = WORLD_GRAPH_MINIMAP_COLORS[subType] ?? "#94a3b8";
@@ -42,9 +68,20 @@ export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps)
         <Icon size={16} style={{ color: accent }} />
       </div>
       <div className="flex flex-col gap-1 min-w-0 flex-1">
-        <span className="text-[13px] font-bold tracking-tight leading-none text-foreground wrap-break-word pb-0.5">
-          {label}
-        </span>
+        {isEditing ? (
+          <input
+            autoFocus
+            value={editLabel}
+            onChange={(e) => setEditLabel(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={handleKeyDown}
+            className="text-[13px] font-bold tracking-tight leading-none text-foreground wrap-break-word pb-0.5 bg-background border border-accent rounded outline-none px-1"
+          />
+        ) : (
+          <span className="text-[13px] font-bold tracking-tight leading-none text-foreground wrap-break-word pb-0.5" onDoubleClick={() => setIsEditing(true)}>
+            {label}
+          </span>
+        )}
         <div className="flex items-center gap-1.5 opacity-80">
           <span className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: accent }}>{subType}</span>
           {tags?.slice(0, 1).map((tag) => (
@@ -64,9 +101,20 @@ export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps)
   const renderEvent = () => (
     <div className="flex flex-col p-3 gap-2">
       <div className="flex justify-between items-start gap-2">
-        <span className="text-[13px] font-semibold leading-tight text-foreground wrap-break-word flex-1">
-          {label}
-        </span>
+        {isEditing ? (
+          <input
+            autoFocus
+            value={editLabel}
+            onChange={(e) => setEditLabel(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={handleKeyDown}
+            className="text-[13px] font-semibold leading-tight text-foreground wrap-break-word flex-1 bg-background border border-accent rounded outline-none px-1"
+          />
+        ) : (
+          <span className="text-[13px] font-semibold leading-tight text-foreground wrap-break-word flex-1" onDoubleClick={() => setIsEditing(true)}>
+            {label}
+          </span>
+        )}
         <div className="shrink-0 rounded px-1.5 py-0.5 pb-px border border-border/40" style={{ backgroundColor: `${accent}10`, color: accent }}>
           <span className="text-[9px] font-bold uppercase tracking-widest">{subType}</span>
         </div>
@@ -93,9 +141,20 @@ export const CustomEntityNode = memo(({ data, selected }: CustomEntityNodeProps)
       </div>
       <div className="flex flex-col gap-1 min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-[13px] font-medium leading-none text-foreground wrap-break-word">
-            {label}
-          </span>
+          {isEditing ? (
+            <input
+              autoFocus
+              value={editLabel}
+              onChange={(e) => setEditLabel(e.target.value)}
+              onBlur={handleSave}
+              onKeyDown={handleKeyDown}
+              className="text-[13px] font-medium leading-none text-foreground wrap-break-word bg-background border border-accent rounded outline-none px-1 py-0.5"
+            />
+          ) : (
+            <span className="text-[13px] font-medium leading-none text-foreground wrap-break-word" onDoubleClick={() => setIsEditing(true)}>
+              {label}
+            </span>
+          )}
           <span className="text-[8px] font-mono border rounded px-1 bg-muted/40 text-muted-foreground opacity-70 uppercase">
             {subType}
           </span>

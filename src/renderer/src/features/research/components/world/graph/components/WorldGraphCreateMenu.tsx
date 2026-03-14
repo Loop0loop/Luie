@@ -1,51 +1,49 @@
-import { useTranslation } from "react-i18next";
-import { WORLD_ENTITY_TYPES } from "@shared/constants/world";
-import { WORLD_GRAPH_ICON_MAP, WORLD_GRAPH_MINIMAP_COLORS } from "@shared/constants/worldGraphUI";
+import { useState, useRef, useEffect } from "react";
+import { Sparkles } from "lucide-react";
 import type { WorldEntitySourceType } from "@shared/types";
 
 interface WorldGraphCreateMenuProps {
   left: number;
   top: number;
-  onCreate: (entityType: WorldEntitySourceType) => void;
+  onCreate: (entityType: WorldEntitySourceType, name?: string, subType?: string) => void;
 }
 
 export function WorldGraphCreateMenu({ left, top, onCreate }: WorldGraphCreateMenuProps) {
-  const { t } = useTranslation();
+  const [name, setName] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const handleCreate = () => {
+    if (!name.trim()) return;
+    onCreate("Concept", name.trim(), "엔티티");
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleCreate();
+    }
+  };
 
   return (
     <div
-      className="absolute z-100 w-52 rounded-xl border border-border/50 bg-panel/98 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-100"
-      style={{ left, top }}
+      className="absolute z-[100] flex items-center gap-2.5 rounded-xl border border-border/50 bg-card/95 px-3 py-2.5 shadow-lg backdrop-blur-sm animate-in fade-in zoom-in-95 duration-100"
+      style={{ left, top, width: 260 }}
     >
-      <div className="border-b border-border/30 px-3 py-2">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
-          엔티티 생성
-        </p>
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent/15 text-accent">
+        <Sparkles size={14} />
       </div>
-      <div className="flex flex-col p-1.5">
-        {WORLD_ENTITY_TYPES.map((entityType) => {
-          const Icon = WORLD_GRAPH_ICON_MAP[entityType] ?? WORLD_GRAPH_ICON_MAP["WorldEntity"];
-          const color = WORLD_GRAPH_MINIMAP_COLORS[entityType] ?? "#94a3b8";
-          return (
-            <button
-              key={entityType}
-              type="button"
-              onClick={() => onCreate(entityType)}
-              className="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-all hover:bg-element"
-            >
-              <span
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
-                style={{ backgroundColor: `${color}18` }}
-              >
-                <Icon size={12} strokeWidth={2.5} style={{ color }} />
-              </span>
-              <span className="text-[12px] font-medium text-fg/80 group-hover:text-fg">
-                {t(`world.graph.entityTypes.${entityType}`, { defaultValue: entityType })}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      <input
+        ref={inputRef}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={onKeyDown}
+        placeholder="블록 이름을 입력하고 Enter↵"
+        className="flex-1 bg-transparent text-[13px] font-medium text-foreground outline-none placeholder:text-muted-foreground/50 placeholder:font-normal"
+      />
     </div>
   );
 }

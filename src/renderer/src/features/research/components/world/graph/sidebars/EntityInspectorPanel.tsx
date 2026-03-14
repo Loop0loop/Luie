@@ -1,152 +1,169 @@
-import { memo } from "react";
+import { memo, useState, useEffect } from "react";
+import { BookOpen } from "lucide-react";
 import { useWorldBuildingStore, useFilteredGraph } from "@renderer/features/research/stores/worldBuildingStore";
 import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { WORLD_GRAPH_ICON_MAP } from "@shared/constants/worldGraphUI";
 
 export const EntityInspectorPanel = memo(() => {
   const selectedNodeId = useWorldBuildingStore((state) => state.selectedNodeId);
+  const updateGraphNode = useWorldBuildingStore((state) => state.updateGraphNode);
   const { nodes } = useFilteredGraph();
   
   const selectedNode = selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) : null;
+  const [descEdit, setDescEdit] = useState(selectedNode?.description || "");
+  const [isEditingDesc, setIsEditingDesc] = useState(false);
+
+  useEffect(() => {
+    setDescEdit(selectedNode?.description || "");
+    setIsEditingDesc(false);
+  }, [selectedNode?.id, selectedNode?.description]);
+
   if (!selectedNode) {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center bg-panel/50 text-sm text-muted-foreground">
-        <p>선택된 요소가 없습니다.</p>
+        <BookOpen size={24} className="mb-2 opacity-50" />
+        <p>엔티티를 선택하면 위키 정보가 표시됩니다.</p>
       </div>
     );
   }
 
-  const { name, description, entityType, subType } = selectedNode;
-  const Icon = WORLD_GRAPH_ICON_MAP[subType ?? entityType] ?? WORLD_GRAPH_ICON_MAP["WorldEntity"];
+  const { id, name, entityType, subType } = selectedNode;
+  const typeLabel = subType || entityType || "Entity";
+  const Icon = WORLD_GRAPH_ICON_MAP[typeLabel] ?? WORLD_GRAPH_ICON_MAP["WorldEntity"];
+
+  const [nameEdit, setNameEdit] = useState(name);
+  const [typeEdit, setTypeEdit] = useState<string>(typeLabel);
+
+  useEffect(() => {
+    setNameEdit(name);
+    setTypeEdit(typeLabel);
+  }, [id, name, typeLabel]);
+
+  const handleNameSave = () => {
+    if (nameEdit !== name) {
+      void updateGraphNode({ id, entityType: entityType as any, name: nameEdit });
+    }
+  };
+
+  const handleTypeSave = () => {
+    if (typeEdit !== typeLabel) {
+      void updateGraphNode({ id, entityType: entityType as any, subType: typeEdit as any });
+    }
+  };
+
+  const handleDescSave = () => {
+    setIsEditingDesc(false);
+    if (descEdit !== selectedNode.description) {
+      void updateGraphNode({
+        id,
+        entityType: entityType as any,
+        description: descEdit
+      });
+    }
+  };
 
   return (
-    <div className="flex h-full w-full flex-col bg-panel border-l border-border/40 overflow-hidden">
-      <div className="flex flex-col gap-3 p-4 shrink-0 bg-background/50 border-b border-border/40">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Icon size={16} />
-          <span className="text-xs font-semibold tracking-wider uppercase opacity-80">{subType ?? entityType}</span>
+    <div className="flex h-full w-full flex-col bg-card border-l border-border/40 overflow-hidden font-sans">
+      <div className="flex flex-col gap-1 px-5 pt-6 pb-4 shrink-0 bg-card border-b border-border/40">
+        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+          <Icon size={14} className="text-accent" />
+          <input
+            value={typeEdit}
+            onChange={(e) => setTypeEdit(e.target.value)}
+            onBlur={handleTypeSave}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
+            className="text-[10px] font-bold tracking-widest uppercase text-accent/80 bg-transparent outline-none border-none p-0 w-32 focus:ring-1 focus:ring-accent-foreground/20 rounded"
+            placeholder="분류 타입"
+          />
         </div>
-        <h2 className="text-xl font-bold text-foreground leading-tight tracking-tight break-keep">
-          {name}
-        </h2>
+        <input
+          value={nameEdit}
+          onChange={(e) => setNameEdit(e.target.value)}
+          onBlur={handleNameSave}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
+          className="text-2xl font-extrabold text-foreground leading-tight tracking-tight break-keep bg-transparent outline-none border-none p-0 w-full focus:ring-1 focus:ring-accent-foreground/20 rounded"
+          placeholder="엔티티 이름"
+        />
       </div>
 
-      <ScrollArea className="flex-1 p-4">
-        <div className="flex flex-col gap-8 pb-8">
-          
-          {/* 1. 기본 정보 (Basic Info) */}
-          <section className="flex flex-col gap-2">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest border-b border-border/40 pb-1">1. 기본 정보</h3>
-            <div className="text-sm mt-1">
-              {description ? (
-                <p className="leading-relaxed text-foreground/90 whitespace-pre-wrap">{description}</p>
+      <ScrollArea className="flex-1 px-5 py-6 bg-background/30">
+        <div className="flex flex-col gap-6 pb-8 max-w-prose">
+          <section className="flex flex-col gap-3">
+            <div className="flex items-center justify-between border-b border-border/60 pb-1.5">
+              <h2 className="text-lg font-semibold text-foreground tracking-tight">개요</h2>
+              {!isEditingDesc && (
+                <button 
+                  onClick={() => setIsEditingDesc(true)}
+                  className="text-xs text-muted-foreground hover:text-accent transition-colors"
+                >
+                  편집
+                </button>
+              )}
+            </div>
+            
+            <div className="text-[14px] leading-relaxed">
+              {isEditingDesc ? (
+                <div className="flex flex-col gap-2">
+                  <textarea
+                    value={descEdit}
+                    onChange={(e) => setDescEdit(e.target.value)}
+                    className="w-full min-h-[120px] rounded-md border border-accent/50 bg-background p-2.5 outline-none focus:border-accent resize-y"
+                    placeholder="위키 내용을 작성하세요..."
+                    autoFocus
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button 
+                      onClick={() => setIsEditingDesc(false)}
+                      className="text-xs px-2 py-1 rounded hover:bg-muted"
+                    >
+                      취소
+                    </button>
+                    <button 
+                      onClick={handleDescSave}
+                      className="text-xs px-2 py-1 rounded bg-accent text-accent-foreground hover:bg-accent/90 font-medium"
+                    >
+                      저장
+                    </button>
+                  </div>
+                </div>
+              ) : descEdit ? (
+                <div 
+                  className="whitespace-pre-wrap text-foreground/90 font-serif"
+                  onDoubleClick={() => setIsEditingDesc(true)}
+                >
+                  {descEdit}
+                </div>
               ) : (
-                <p className="italic text-muted-foreground/60">설명이 없습니다.</p>
+                <p 
+                  className="italic text-muted-foreground/50 cursor-pointer hover:text-muted-foreground/80 transition-colors"
+                  onClick={() => setIsEditingDesc(true)}
+                >
+                  위키 내용이 없습니다. 클릭하여 작성하세요.
+                </p>
               )}
             </div>
           </section>
 
-          {/* 2. 속성 편집 (Attributes) */}
-          <section className="flex flex-col gap-2">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest border-b border-border/40 pb-1">2. 속성 (Attributes)</h3>
-            <div className="rounded-md border border-border/40 bg-background/50 p-3 text-sm mt-1 flex flex-col gap-2">
-              <div className="grid grid-cols-[80px_1fr] items-center gap-2 text-muted-foreground">
-                <span className="text-xs text-muted-foreground/80">타입</span>
-                <span className="font-medium text-foreground">{entityType} {subType && `(${subType})`}</span>
+          <section className="flex flex-col gap-3 mt-4">
+            <h2 className="text-lg font-semibold text-foreground tracking-tight border-b border-border/60 pb-1.5">속성 정보</h2>
+            <div className="rounded-lg border border-border/40 bg-card p-4 text-sm flex flex-col gap-3 shadow-sm">
+              <div className="flex items-start gap-4">
+                <span className="text-xs font-medium text-muted-foreground w-16 shrink-0 pt-0.5">고유 ID</span>
+                <span className="font-mono text-[11px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded break-all">{id}</span>
               </div>
-              
-              {/* Importance */}
-              <div className="grid grid-cols-[80px_1fr] items-center gap-2 text-muted-foreground">
-                <span className="text-xs text-muted-foreground/80">중요도</span>
-                <span className="font-medium text-foreground">
-                  {typeof selectedNode.attributes === "object" && selectedNode.attributes && "importance" in selectedNode.attributes 
-                    ? String((selectedNode.attributes as Record<string, unknown>).importance) 
-                    : "보통"}
-                </span>
+              <div className="flex items-center gap-4">
+                <span className="text-xs font-medium text-muted-foreground w-16 shrink-0">분류</span>
+                <input
+                  value={typeEdit}
+                  onChange={(e) => setTypeEdit(e.target.value)}
+                  onBlur={handleTypeSave}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
+                  className="font-medium text-foreground text-[13px] bg-transparent outline-none border-b border-transparent focus:border-accent w-full p-0"
+                  placeholder="분류 타입"
+                />
               </div>
-
-              {/* Entity Type Specific Fields */}
-              {entityType === "Character" && (
-                <>
-                  <div className="grid grid-cols-[80px_1fr] items-center gap-2 text-muted-foreground">
-                    <span className="text-xs text-muted-foreground/80">나이</span>
-                    <span className="font-medium text-foreground">{String((selectedNode.attributes as Record<string, unknown>)?.age || "알 수 없음")}</span>
-                  </div>
-                  <div className="grid grid-cols-[80px_1fr] items-center gap-2 text-muted-foreground">
-                    <span className="text-xs text-muted-foreground/80">역할</span>
-                    <span className="font-medium text-foreground">{String((selectedNode.attributes as Record<string, unknown>)?.role || "미정")}</span>
-                  </div>
-                </>
-              )}
-
-              {entityType === "Event" && (
-                <>
-                  <div className="grid grid-cols-[80px_1fr] items-center gap-2 text-muted-foreground">
-                    <span className="text-xs text-muted-foreground/80">발생 시점</span>
-                    <span className="font-medium text-foreground">{String((selectedNode.attributes as Record<string, unknown>)?.time || "미정")}</span>
-                  </div>
-                </>
-              )}
-
-              {entityType === "Place" && (
-                <>
-                  <div className="grid grid-cols-[80px_1fr] items-center gap-2 text-muted-foreground">
-                    <span className="text-xs text-muted-foreground/80">위치</span>
-                    <span className="font-medium text-foreground">{String((selectedNode.attributes as Record<string, unknown>)?.region || "알 수 없음")}</span>
-                  </div>
-                </>
-              )}
             </div>
           </section>
-
-          {/* 3. 관계 설정 (Relations) */}
-          <section className="flex flex-col gap-2">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest border-b border-border/40 pb-1">3. 관계 (Relations)</h3>
-            <div className="text-sm mt-1 text-muted-foreground/80 italic">
-              관계선은 캔버스에서 직접 클릭하여 수정할 수 있습니다.
-            </div>
-          </section>
-
-          {/* 4. 타임라인 (Timeline) */}
-          <section className="flex flex-col gap-2">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest border-b border-border/40 pb-1">4. 타임라인</h3>
-            <div className="text-sm mt-1 text-muted-foreground/80 italic">
-              관련 사건 및 시간 순서 정보가 올 예정입니다.
-            </div>
-          </section>
-
-          {/* 5. 메모 및 스크랩 (Notes/Scrap) */}
-          <section className="flex flex-col gap-2">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest border-b border-border/40 pb-1">5. 메모/스크랩</h3>
-            <div className="text-sm mt-1 text-muted-foreground/80 italic">
-              해당 엔티티와 연결된 노트 리스트가 표시됩니다.
-            </div>
-          </section>
-
-          {/* 6. 파일/미디어 첨부 (Attachments) */}
-          <section className="flex flex-col gap-2">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest border-b border-border/40 pb-1">6. 첨부파일</h3>
-            <div className="text-sm mt-1 text-muted-foreground/80 italic">
-              첨부된 이미지나 미디어가 없습니다.
-            </div>
-          </section>
-
-          {/* 7. 상태 및 중요도 (Status/Importance) */}
-          <section className="flex flex-col gap-2">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest border-b border-border/40 pb-1">7. 상태/중요도</h3>
-            <div className="text-sm mt-1 text-muted-foreground/80 italic">
-              집필 상태 및 비중 정보 패널
-            </div>
-          </section>
-
-          {/* 8. 추가 기능 (Advanced) */}
-          <section className="flex flex-col gap-2">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest border-b border-border/40 pb-1">8. 고급 추가 기능</h3>
-            <div className="mt-2 text-sm text-muted-foreground/80 italic">
-              엔티티 삭제 등 고급 동작 지원
-            </div>
-          </section>
-
         </div>
       </ScrollArea>
     </div>

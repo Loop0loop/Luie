@@ -996,3 +996,78 @@ export interface WorldGraphMention {
   context?: string;
   source: "appearance" | "content-match";
 }
+
+export type GraphPluginKind = "graph-template-bundle";
+export type GraphPluginInstallStatus = "installed";
+
+export interface GraphTemplateManifest {
+  id: string;
+  title: string;
+  summary: string;
+  thumbnail: string;
+  graphEntry: string;
+  tags: string[];
+}
+
+export interface GraphPluginManifest {
+  id: string;
+  name: string;
+  version: string;
+  apiVersion: string;
+  kind: GraphPluginKind;
+  description: string;
+  author: string;
+  templates: GraphTemplateManifest[];
+}
+
+export interface GraphPluginCatalogItem {
+  pluginId: string;
+  version: string;
+  name: string;
+  summary: string;
+  releaseTag: string;
+  assetUrl: string;
+  sha256: string;
+  size: number;
+  minAppVersion: string;
+  apiVersion: string;
+}
+
+export interface InstalledGraphPlugin {
+  pluginId: string;
+  version: string;
+  name: string;
+  description: string;
+  author: string;
+  apiVersion: string;
+  kind: GraphPluginKind;
+  installedAt: string;
+  source: {
+    assetUrl: string;
+    sha256: string;
+  };
+  status: GraphPluginInstallStatus;
+}
+
+export interface GraphPluginTemplateRef {
+  pluginId: string;
+  pluginName: string;
+  pluginVersion: string;
+  pluginDescription: string;
+  pluginAuthor: string;
+  template: GraphTemplateManifest;
+}
+
+export interface GraphPluginInstallResult {
+  pluginId: string;
+  version: string;
+  installedAt: string;
+  status: GraphPluginInstallStatus;
+  alreadyInstalled: boolean;
+}
+
+export interface GraphPluginApplyTemplateInput {
+  pluginId: string;
+  templateId: string;
+  projectId: string;
+}
