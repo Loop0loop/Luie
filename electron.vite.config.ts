@@ -27,7 +27,6 @@ const sharedDefine = {
 };
 
 const isNodeModule = (id: string): boolean => id.includes("/node_modules/");
-
 const rendererManualChunks = (id: string): string | undefined => {
   if (isNodeModule(id)) {
     if (
@@ -131,6 +130,7 @@ export default defineConfig({
       emptyOutDir: true,
       minify: isDebugProfileBuild ? false : "esbuild",
       cssCodeSplit: true,
+      chunkSizeWarningLimit: 400,
       rollupOptions: {
         input: {
           index: resolve("src/renderer/index.html"),

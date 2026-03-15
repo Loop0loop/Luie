@@ -77,6 +77,15 @@ export default {
         toast: "9100",
         tooltip: "9200",
       },
+      keyframes: {
+        flow: {
+          '0%': { strokeDashoffset: '20' },
+          '100%': { strokeDashoffset: '0' },
+        },
+      },
+      animation: {
+        flow: 'flow 1.5s linear infinite',
+      },
     },
   },
   plugins: [],

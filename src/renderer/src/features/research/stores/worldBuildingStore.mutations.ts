@@ -73,6 +73,7 @@ export async function createGraphNodeFromInput(
         type: resolveWorldEntityType(input.entityType, input.subType),
         name,
         description: input.description,
+        attributes: input.attributes,
         positionX,
         positionY,
       });

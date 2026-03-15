@@ -23,7 +23,38 @@ export type LibrarySummaryEntryId =
   | "graph"
   | "timeline"
   | "notes"
-  | "entity";
+  | "entity"
+  | "plot";
+
+export type LibrarySummaryEntry = {
+  id: LibrarySummaryEntryId;
+  title: string;
+  badge: string;
+  description: string;
+};
+
+type LibrarySummaryInput = {
+  drawing?: {
+    paths?: Array<unknown>;
+  } | null;
+  graphNodes?: WorldGraphNode[];
+  graphEdgesCount?: number;
+  mindmap?: {
+    nodes?: Array<unknown>;
+    edges?: Array<unknown>;
+  } | null;
+  plot?: {
+    columns?: Array<{
+      cards?: Array<unknown>;
+    }>;
+  } | null;
+  scrap?: {
+    memos?: Array<unknown>;
+  } | null;
+  synopsis?: {
+    synopsis?: string | null;
+  } | null;
+};
 
 const FALLBACK_TIMELINE_LABEL = "시점 미정";
 
@@ -125,4 +156,76 @@ export const buildEntityCatalogEntries = (
         : entry.searchText.includes(normalizedQuery),
     )
     .sort((left, right) => left.name.localeCompare(right.name, "ko"));
+};
+
+export const buildLibrarySummaryEntries = (
+  input: LibrarySummaryInput,
+): LibrarySummaryEntry[] => {
+  const graphNodes = input.graphNodes ?? [];
+  const memoCount = input.scrap?.memos?.length ?? 0;
+  const plotBeatCount =
+    input.plot?.columns?.reduce(
+      (count, column) => count + (column.cards?.length ?? 0),
+      0,
+    ) ?? 0;
+  const timelineCount = graphNodes.filter(
+    (node) => node.entityType === "Event",
+  ).length;
+  const entityCount = graphNodes.filter(
+    (node) => node.entityType !== "Event",
+  ).length;
+  const graphEdgeCount = input.graphEdgesCount ?? 0;
+  const graphDescription =
+    graphNodes.length > 0 || graphEdgeCount > 0
+      ? `${graphNodes.length}개 노드, ${graphEdgeCount}개 관계`
+      : "저장된 그래프가 없습니다";
+  const timelineDescription =
+    timelineCount > 0
+      ? `${timelineCount}개 사건이 정렬 가능합니다`
+      : "아직 사건 노드가 없습니다";
+  const notesDescription =
+    memoCount > 0
+      ? `${memoCount}개 노트가 저장되어 있습니다`
+      : "아직 저장된 노트가 없습니다";
+  const entityDescription =
+    entityCount > 0
+      ? `${entityCount}개 엔티티가 정리되어 있습니다`
+      : "아직 저장된 엔티티가 없습니다";
+  const plotDescription =
+    plotBeatCount > 0
+      ? `${plotBeatCount}개 비트가 플롯 보드에 있습니다`
+      : "플롯 보드가 비어 있습니다";
+
+  return [
+    {
+      id: "graph",
+      title: "그래프",
+      badge: `${graphNodes.length}개`,
+      description: graphDescription,
+    },
+    {
+      id: "timeline",
+      title: "타임라인",
+      badge: `${timelineCount}개`,
+      description: timelineDescription,
+    },
+    {
+      id: "notes",
+      title: "노트",
+      badge: `${memoCount}개`,
+      description: notesDescription,
+    },
+    {
+      id: "entity",
+      title: "엔티티",
+      badge: `${entityCount}개`,
+      description: entityDescription,
+    },
+    {
+      id: "plot",
+      title: "플롯",
+      badge: `${plotBeatCount}개`,
+      description: plotDescription,
+    },
+  ];
 };

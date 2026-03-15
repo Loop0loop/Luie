@@ -24,7 +24,13 @@ export const CanvasCommandPalette = memo(({ mode, onClose }: CanvasCommandPalett
       allNodes.filter((node) => {
         if (mode === "Event") return node.entityType === "Event";
         if (mode === "Note") {
-          return node.entityType === "Concept" && String(node.subType) === "Note";
+          const isNoteBySubtype = String(node.subType) === "Note";
+          const isNoteByAttribute =
+            node.attributes &&
+            typeof node.attributes === "object" &&
+            !Array.isArray(node.attributes) &&
+            (node.attributes as Record<string, unknown>).uiVariant === "note";
+          return node.entityType === "Concept" && (isNoteBySubtype || isNoteByAttribute);
         }
         return false;
       }),

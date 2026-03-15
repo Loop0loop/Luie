@@ -49,13 +49,19 @@ import { useCanvasState } from "./hooks/useCanvasState";
 import { useCanvasDelete } from "./hooks/useCanvasDelete";
 import { useCanvasSync } from "./hooks/useCanvasSync";
 
+// Timeline
+import { TimelineNode } from "../components/TimelineNode";
+import { TimelineEdge } from "../components/TimelineEdge";
+
 const nodeTypes = {
   draft: DraftBlockNode,
   custom: CustomEntityNode,
+  timeline: TimelineNode, // Yggdrasil 타임라인 노드 등록
 };
 
 const edgeTypes = {
   customEdge: CustomEdge,
+  timelineEdge: TimelineEdge, // 타임라인 특화 분기선 등록
 };
 
 const WORLD_SUBTYPES = ["Place", "Concept", "Rule", "Item"] as const;
@@ -285,8 +291,11 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
     async (entityType: WorldEntitySourceType, customName?: string, customSubType?: string) => {
       if (!activeProjectId || !createMenu) return;
       setCreateMenu(null);
+      const isNoteRequest = entityType === "Concept" && customSubType === "Note";
       const resolvedSubType =
-        customSubType &&
+        isNoteRequest
+          ? "Concept"
+          : customSubType &&
         WORLD_SUBTYPES.includes(
           customSubType as (typeof WORLD_SUBTYPES)[number],
         )
@@ -301,6 +310,12 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
         projectId: activeProjectId,
         entityType,
         subType: resolvedSubType,
+        attributes: isNoteRequest
+          ? {
+              uiVariant: "note",
+              tags: ["노트"],
+            }
+          : undefined,
         name: customName || t("world.graph.canvas.newEntityName", { type: t(`world.graph.entityTypes.${entityType}`, { defaultValue: entityType }) }),
         positionX: createMenu.flowX,
         positionY: createMenu.flowY,

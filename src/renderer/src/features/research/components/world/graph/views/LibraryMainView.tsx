@@ -1,115 +1,76 @@
 import { useTranslation } from "react-i18next";
-import { Search, PackageOpen } from "lucide-react";
+import { Archive, Network, PackageOpen } from "lucide-react";
 import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
-import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
 import { GraphPluginLibraryPanel } from "./GraphPluginLibraryPanel";
-import { PlaceholderPluginPanel } from "./PlaceholderPluginPanel";
 
 export function LibraryMainView() {
   const { t } = useTranslation();
   const currentProject = useProjectStore((state) => state.currentItem);
-  const activeLibraryTab = useGraphIdeStore((state) => state.activeLibraryTab);
-  const activeLibrarySection = useGraphIdeStore((state) => state.activeLibrarySection);
-  const setActiveLibrarySection = useGraphIdeStore((state) => state.setActiveLibrarySection);
   const attachmentPath = getReadableLuieAttachmentPath(currentProject);
 
-  const getThemeVars = () => {
-    switch (activeLibraryTab) {
-      case "graph":
-        return {
-          gradient: "bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))]",
-          text: "text-indigo-400"
-        };
-      case "timeline":
-        return {
-          gradient: "bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(56,189,248,0.15),rgba(255,255,255,0))]",
-          text: "text-sky-400"
-        };
-      case "note":
-        return {
-          gradient: "bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(52,211,153,0.15),rgba(255,255,255,0))]",
-          text: "text-emerald-400"
-        };
-      case "entity":
-        return {
-          gradient: "bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(251,113,133,0.15),rgba(255,255,255,0))]",
-          text: "text-rose-400"
-        };
-      default:
-        return { gradient: "", text: "" };
-    }
-  };
-
-  const theme = getThemeVars();
-
   return (
-    <div className={`flex h-full flex-col overflow-hidden relative ${theme.gradient} transition-colors duration-500`}>
-      {/* Decorative Grid Overlay for depth */}
-      <div className="absolute inset-0 bg-[url('https://api.system/assets/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] opacity-[0.02] pointer-events-none" />
+    <div className="relative flex h-full flex-col overflow-hidden bg-[#0A0A0A] text-foreground">
+      {/* Background gradients for premium feel */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.04),transparent_50%)]" />
 
-      <header className="relative flex shrink-0 flex-col gap-6 border-b border-white/5 px-8 pt-6 pb-0 z-10 backdrop-blur-md bg-background/40 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.5)]">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold tracking-tight text-foreground drop-shadow-sm">
-                {t("world.graph.library.title", "라이브러리")}
-              </h1>
-              <div className={`rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium uppercase tracking-widest shadow-inner ${theme.text}`}>
-                {activeLibraryTab} MODULES
-              </div>
+      <header className="relative z-10 shrink-0 border-b border-white/5 bg-[#0A0A0A]/80 px-10 py-10 backdrop-blur-xl">
+        <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between max-w-[1400px] mx-auto w-full">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.15em] text-sky-400">
+              <Archive className="h-3.5 w-3.5" />
+              Graph Plugin Library
             </div>
-            <p className="mt-2 text-sm text-muted-foreground/80">
-              모듈을 탐색하고 설치하여 월드 환경을 확장하세요.
-            </p>
+            <h1 className="mt-5 text-4xl font-bold tracking-tight text-white drop-shadow-sm">
+              {t("world.graph.library.title", "라이브러리")}
+            </h1>
+            <div className="mt-4 space-y-1.5 text-[15px] leading-relaxed text-muted-foreground/80 font-medium">
+              <p>GitHub 릴리스 번들을 설치하고 월드 그래프 템플릿을 현재 프로젝트에 적용합니다.</p>
+              <p>설치 범위는 앱 전역이며 적용 시 현재 그래프 레이아웃을 교체합니다.</p>
+            </div>
           </div>
-          <div className="rounded-[14px] border border-white/10 bg-black/20 px-4 py-3 text-sm text-muted-foreground shadow-inner backdrop-blur-md">
-            <p className="font-medium text-foreground drop-shadow-sm">
-              {currentProject?.title ?? t("world.graph.library.noProject", "프로젝트 없음")}
-            </p>
-            <p className="mt-1 opacity-80 text-[12px]">
-              {attachmentPath
-                ? t("world.graph.library.attachment", { defaultValue: `.luie 첨부: ${attachmentPath}` })
-                : t("world.graph.library.replicaOnly", "현재 기기 저장소 기준으로 표시 중")}
-            </p>
+          <div className="grid gap-4 sm:grid-cols-2 xl:min-w-[34rem] self-start mt-2 xl:mt-0 relative">
+            {/* Action buttons (mockup shows them floating above/near the widgets) */}
+            <div className="absolute -top-12 right-0 flex gap-2 hidden xl:flex">
+                <button className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10 transition-colors">설정</button>
+                <button className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10 transition-colors">사용법</button>
+            </div>
+            
+            <div className="rounded-[16px] border border-white/5 bg-white/[0.02] px-5 py-5 shadow-sm transition-colors hover:border-white/10 hover:bg-white/[0.04]">
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.1em] text-sky-400">
+                <Network className="h-3.5 w-3.5" />
+                Active Project
+              </div>
+              <p className="mt-4 truncate text-[17px] font-semibold text-white drop-shadow-sm">
+                {currentProject?.title ?? t("world.graph.library.noProject", "프로젝트 없음")}
+              </p>
+              <p className="border-t border-white/5 pt-3 mt-3 text-[12px] leading-relaxed text-muted-foreground/70">
+                {attachmentPath
+                  ? `.luie 첨부:\n${attachmentPath}`
+                  : t("world.graph.library.replicaOnly", "현재 기기 저장소 기준으로 표시 중")}
+              </p>
+            </div>
+            <div className="rounded-[16px] border border-white/5 bg-white/[0.02] px-5 py-5 shadow-sm transition-colors hover:border-white/10 hover:bg-white/[0.04]">
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.1em] text-fuchsia-400">
+                <PackageOpen className="h-3.5 w-3.5" />
+                Install Scope
+              </div>
+              <p className="mt-4 text-[17px] font-semibold text-white drop-shadow-sm">
+                앱 전역 설치
+              </p>
+              <p className="border-t border-white/5 pt-3 mt-3 text-[12px] leading-relaxed text-muted-foreground/70">
+                설치된 플러그인은 다른 프로젝트에서도 바로 사용할 수 있습니다.
+              </p>
+            </div>
           </div>
-        </div>
-
-        {/* Tab Controller for Browse / Installed */}
-        <div className="flex items-center gap-1 rounded-t-xl bg-black/20 p-1.5 w-max border-x border-t border-white/5 backdrop-blur-md -mb-[1px]">
-          <button
-            onClick={() => setActiveLibrarySection("browse")}
-            className={`relative flex items-center gap-2 rounded-lg px-6 py-2 text-[13px] font-semibold transition-all duration-300 ${
-              activeLibrarySection === "browse"
-                ? "bg-white/10 text-white shadow-sm ring-1 ring-white/10"
-                : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-            }`}
-          >
-            <Search className={`h-4 w-4 ${activeLibrarySection === "browse" ? theme.text : "opacity-70"}`} />
-            탐색 (Browse)
-          </button>
-          <button
-            onClick={() => setActiveLibrarySection("installed")}
-            className={`relative flex items-center gap-2 rounded-lg px-6 py-2 text-[13px] font-semibold transition-all duration-300 ${
-              activeLibrarySection === "installed"
-                ? "bg-white/10 text-white shadow-sm ring-1 ring-white/10"
-                : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-            }`}
-          >
-            <PackageOpen className={`h-4 w-4 ${activeLibrarySection === "installed" ? theme.text : "opacity-70"}`} />
-            설치됨 (Installed)
-          </button>
         </div>
       </header>
 
-      <ScrollArea className="relative flex-1 px-8 py-8 z-10" style={{ height: "100%" }}>
-        <div className="mx-auto max-w-5xl space-y-8 pb-16">
-          {activeLibraryTab === "graph" ? (
-            <GraphPluginLibraryPanel projectId={currentProject?.id ?? null} />
-          ) : (
-            <PlaceholderPluginPanel activeTab={activeLibraryTab} activeSection={activeLibrarySection} />
-          )}
+      <ScrollArea className="relative z-10 flex-1">
+        {/* Added a max-width and centered the container */}
+        <div className="mx-auto w-full max-w-[1400px] px-10 py-10 relative">
+          <GraphPluginLibraryPanel projectId={currentProject?.id ?? null} />
         </div>
       </ScrollArea>
     </div>

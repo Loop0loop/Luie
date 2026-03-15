@@ -15,18 +15,22 @@ export function GraphPluginCatalogSection({
   onInstall,
 }: GraphPluginCatalogSectionProps) {
   return (
-    <section className="rounded-[16px] border border-white/10 bg-black/20 backdrop-blur-md p-6 shadow-xl">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <section className="rounded-[24px] border border-white/5 bg-white/[0.02] p-8 shadow-2xl backdrop-blur-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div className="space-y-1.5">
-          <div className="flex items-center gap-2 text-[15px] font-semibold text-foreground drop-shadow-sm">
-            <Download className="h-5 w-5 text-sky-400" />
-            Extension Catalog
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/20 text-blue-400">
+              <Download className="h-4 w-4" />
+            </div>
+            <h2 className="text-xl font-bold tracking-tight text-white drop-shadow-sm">
+              확장 프로그램 카탈로그 (Extension Catalog)
+            </h2>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[13px] text-muted-foreground/80 mt-2">
             GitHub release 자산에서 내려받을 수 있는 플러그인 번들입니다.
           </p>
         </div>
-        <div className="rounded-full bg-sky-500/10 border border-white/5 px-3 py-1 text-[11px] font-medium text-sky-400 shadow-inner">
+        <div className="rounded-full bg-blue-500/10 border border-white/5 px-4 py-1.5 text-[12px] font-semibold text-blue-400 shadow-inner">
           {availablePlugins.length} Available
         </div>
       </div>
@@ -80,9 +84,9 @@ export function GraphPluginCatalogSection({
                 type="button"
                 disabled={isLoading || installingPluginId === plugin.pluginId}
                 onClick={() => onInstall(plugin.pluginId)}
-                className="shrink-0 flex items-center gap-1.5 rounded-md bg-sky-500/20 border border-sky-500/30 px-4 py-1.5 text-[11px] font-semibold text-sky-300 shadow-inner transition-all hover:bg-sky-500 hover:text-white disabled:pointer-events-none disabled:opacity-50"
+                className="shrink-0 flex items-center gap-2 rounded-xl bg-white/[0.05] border border-white/10 px-5 py-2.5 text-[13px] font-semibold text-white shadow-sm transition-all hover:bg-white/[0.08] hover:border-white/20 disabled:pointer-events-none disabled:opacity-50"
               >
-                <Download className="h-3.5 w-3.5" />
+                <Download className="h-4 w-4 opacity-70" />
                 {installingPluginId === plugin.pluginId ? "Installing..." : "Install"}
               </button>
             </article>

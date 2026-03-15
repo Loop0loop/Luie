@@ -27,14 +27,18 @@ export function NoteMainView() {
   const setMainView = useUIStore((state) => state.setMainView);
 
   useEffect(() => {
+    if (currentProject?.id || selectedNoteId === null) {
+      return;
+    }
+    setSelectedNoteId(null);
+  }, [currentProject?.id, selectedNoteId, setSelectedNoteId]);
+
+  useEffect(() => {
     if (!currentProject?.id) {
-      if (selectedNoteId !== null) {
-        setSelectedNoteId(null);
-      }
       return;
     }
     void loadNotes(currentProject.id, projectPath, []);
-  }, [currentProject?.id, loadNotes, projectPath, selectedNoteId, setSelectedNoteId]);
+  }, [currentProject?.id, loadNotes, projectPath]);
 
   const activeNote = useMemo(() => {
     if (selectedNoteId) {

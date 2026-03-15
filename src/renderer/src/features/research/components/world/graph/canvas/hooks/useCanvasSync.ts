@@ -109,15 +109,23 @@ export function useCanvasSync({
         let defaultName = "새로운 엔티티";
         let subType: WorldEntityType | undefined = undefined;
         let finalEntityType = payload.entityType ?? "Concept";
+        let attributes: Record<string, unknown> | undefined;
 
         if (payload.entityType === "Event") {
           defaultName = "새로운 시간";
           finalEntityType = "Event";
           subType = undefined;
         } else if (payload.entityType === "Concept") {
-          defaultName = payload.subType === "Note" ? "새로운 노트" : "새로운 엔티티";
+          const isNoteRequest = payload.subType === "Note";
+          defaultName = isNoteRequest ? "새로운 노트" : "새로운 엔티티";
           finalEntityType = "Concept";
-          subType = payload.subType as WorldEntityType | undefined;
+          subType = "Concept";
+          if (isNoteRequest) {
+            attributes = {
+              uiVariant: "note",
+              tags: ["노트"],
+            };
+          }
         }
 
         try {
@@ -125,6 +133,7 @@ export function useCanvasSync({
             projectId: activeProjectId,
             entityType: finalEntityType,
             subType,
+            attributes,
             name: defaultName,
             positionX: pos.x,
             positionY: pos.y,

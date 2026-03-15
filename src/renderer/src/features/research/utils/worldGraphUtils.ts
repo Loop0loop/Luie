@@ -91,15 +91,31 @@ export const resolveEdgeHandles = (
   const dx = targetNode.position.x - sourceNode.position.x;
   const dy = targetNode.position.y - sourceNode.position.y;
 
+  // TimelineNode일 경우 전용 Handle ID(`timeline-*`, `branch-*`)를 사용하도록 분기
+  const isTargetTimeline = targetNode.type === "timeline";
+  const isSourceTimeline = sourceNode.type === "timeline";
+
   if (Math.abs(dx) >= Math.abs(dy)) {
     return dx >= 0
-      ? { sourceHandle: "right", targetHandle: "left" }
-      : { sourceHandle: "left", targetHandle: "right" };
+      ? { 
+          sourceHandle: isSourceTimeline ? "timeline-next" : "right", 
+          targetHandle: isTargetTimeline ? "timeline-prev" : "left" 
+        }
+      : { 
+          sourceHandle: isSourceTimeline ? "timeline-prev" : "left", 
+          targetHandle: isTargetTimeline ? "timeline-next" : "right" 
+        };
   }
 
   return dy >= 0
-    ? { sourceHandle: "bottom", targetHandle: "top" }
-    : { sourceHandle: "top", targetHandle: "bottom" };
+    ? { 
+        sourceHandle: isSourceTimeline ? "branch-bottom" : "bottom", 
+        targetHandle: isTargetTimeline ? "branch-in-top" : "top" 
+      }
+    : { 
+        sourceHandle: isSourceTimeline ? "branch-top" : "top", 
+        targetHandle: isTargetTimeline ? "branch-in-bottom" : "bottom" 
+      };
 };
 
 export function toRFNode(
@@ -108,6 +124,14 @@ export function toRFNode(
   selectedNodeId: string | null,
 ): Node {
   const subType = graphNode.subType ?? graphNode.entityType;
+  const subTypeLabel = typeof graphNode.subType === "string" ? graphNode.subType : "";
+  const isNoteVariant =
+    graphNode.entityType === "Concept" &&
+    ((subTypeLabel as string) === "Note" ||
+      (graphNode.attributes &&
+        typeof graphNode.attributes === "object" &&
+        !Array.isArray(graphNode.attributes) &&
+        (graphNode.attributes as Record<string, unknown>).uiVariant === "note"));
   const importance = (graphNode.attributes?.importance ?? 3) as number;
   const explicitPosition =
     graphNode.positionX !== 0 || graphNode.positionY !== 0
@@ -124,12 +148,16 @@ export function toRFNode(
       subType,
       importance,
       entityType: graphNode.entityType,
+      isNote: isNoteVariant,
       description: graphNode.description ?? null,
       firstAppearance: graphNode.firstAppearance ?? null,
       tags: (graphNode.attributes?.tags as string[] | undefined) ?? [],
+      // TimelineNode를 위한 엔티티 연결 데이터 예시 (차후 고도화 필요)
+      connectedEntities: (graphNode.attributes?.connectedEntities as Array<{id: string, name: string, type: string}>) || [],
+      date: (graphNode.attributes?.date as string) || undefined,
     },
     selected: selectedNodeId === graphNode.id,
-    type: "custom",
+    type: graphNode.entityType === "Event" ? "timeline" : "custom",
   };
 }
 
@@ -170,19 +198,24 @@ export function toRFEdge(
   const isAnimated = relation.relation === "causes" || relation.relation === "controls";
   const customLabel = (relation.attributes as Record<string, unknown>)?.label as string | undefined;
 
+  // 두 노드가 모두 Event(Timeline) 타입일 경우 타임라인 특화 엣지 사용
+  const isTimelineConnection = 
+    sourceNode.data?.entityType === "Event" && 
+    targetNode.data?.entityType === "Event";
+
   return {
     id: relation.id,
     source: relation.sourceId,
     target: relation.targetId,
     sourceHandle,
     targetHandle,
-    type: "customEdge",
+    type: isTimelineConnection ? "timelineEdge" : "customEdge",
+    animated: isTimelineConnection ? true : isAnimated,
     label: customLabel || translate(`world.graph.relationTypes.${relation.relation}`, relation.relation),
     labelStyle: { fontSize: 10, fill: color, fontWeight: 600 },
     labelBgStyle: { fill: "var(--bg-app, #0d0d0f)", fillOpacity: 0.85, rx: 4 },
     labelBgPadding: [4, 6] as [number, number],
     style: { stroke: color, strokeWidth: 2 },
-    animated: isAnimated,
     markerEnd: { type: MarkerType.ArrowClosed, color },
   };
 }

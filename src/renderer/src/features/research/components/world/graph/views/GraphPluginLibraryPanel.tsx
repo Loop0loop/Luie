@@ -3,6 +3,7 @@ import { useToast } from "@shared/ui/ToastContext";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { GraphPluginCatalogSection } from "./plugin/GraphPluginCatalogSection";
 import { GraphPluginInstalledSection } from "./plugin/GraphPluginInstalledSection";
+import { GraphPluginRecommendedSection } from "./plugin/GraphPluginRecommendedSection";
 import { useGraphPluginLibraryData } from "./plugin/useGraphPluginLibraryData";
 
 type GraphPluginLibraryPanelProps = {
@@ -96,14 +97,30 @@ export function GraphPluginLibraryPanel({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       {error ? (
-        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 px-5 py-4 text-sm text-destructive">
+        <div className="rounded-[16px] border border-destructive/30 bg-destructive/5 px-6 py-5 text-[14px] text-destructive shadow-sm">
           {error}
         </div>
       ) : null}
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr),minmax(320px,0.9fr)]">
+      <div className="flex flex-col gap-10">
+        <GraphPluginRecommendedSection
+          catalog={catalog}
+          installed={installed}
+          installingPluginId={installingPluginId}
+          onInstall={(pluginId) => { void handleInstall(pluginId); }}
+        />
+        
+        <GraphPluginCatalogSection
+          availablePlugins={availablePlugins}
+          installingPluginId={installingPluginId}
+          isLoading={isLoading}
+          onInstall={(pluginId) => {
+            void handleInstall(pluginId);
+          }}
+        />
+
         <GraphPluginInstalledSection
           applyingTemplateKey={applyingTemplateKey}
           installed={installed}
@@ -114,14 +131,6 @@ export function GraphPluginLibraryPanel({
           }}
           onUninstall={(pluginId, pluginName) => {
             void handleUninstall(pluginId, pluginName);
-          }}
-        />
-        <GraphPluginCatalogSection
-          availablePlugins={availablePlugins}
-          installingPluginId={installingPluginId}
-          isLoading={isLoading}
-          onInstall={(pluginId) => {
-            void handleInstall(pluginId);
           }}
         />
       </div>

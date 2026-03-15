@@ -8,12 +8,6 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 
-import ProjectTemplateSelector from "@renderer/features/workspace/components/ProjectTemplateSelector";
-import EditorRoot from "@renderer/features/workspace/components/EditorRoot";
-import OAuthResultPage from "@renderer/features/auth/components/OAuthResultPage";
-import WorldSection from "@renderer/features/research/components/WorldSection";
-import StartupWizard from "@renderer/features/startup/components/StartupWizard";
-
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
@@ -46,6 +40,21 @@ import {
 
 const ExportWindow = lazy(
   () => import("@renderer/features/export/components/ExportWindow"),
+);
+const ProjectTemplateSelector = lazy(
+  () => import("@renderer/features/workspace/components/ProjectTemplateSelector"),
+);
+const EditorRoot = lazy(
+  () => import("@renderer/features/workspace/components/EditorRoot"),
+);
+const OAuthResultPage = lazy(
+  () => import("@renderer/features/auth/components/OAuthResultPage"),
+);
+const WorldSection = lazy(
+  () => import("@renderer/features/research/components/WorldSection"),
+);
+const StartupWizard = lazy(
+  () => import("@renderer/features/startup/components/StartupWizard"),
 );
 
 const parseBootstrapStatus = (value: unknown): AppBootstrapStatus | null => {
@@ -407,6 +416,11 @@ export default function App() {
     quitPhase.phase !== "completed";
 
   const quitOverlayMessage = quitPhase?.message ?? t("bootstrap.initializing");
+  const appScreenFallback = (
+    <div className="flex h-screen items-center justify-center bg-app text-fg">
+      {t("loading")}
+    </div>
+  );
 
   const quitOverlay = shouldBlockUiForQuit ? (
     <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center px-6">
@@ -437,7 +451,9 @@ export default function App() {
   if (windowMode === "oauth-result") {
     return (
       <>
-        <OAuthResultPage />
+        <Suspense fallback={appScreenFallback}>
+          <OAuthResultPage />
+        </Suspense>
         {quitOverlay}
       </>
     );
@@ -447,11 +463,7 @@ export default function App() {
     return (
       <>
         <Suspense
-          fallback={
-            <div className="flex items-center justify-center h-screen bg-app text-fg">
-              {t("loading")}
-            </div>
-          }
+          fallback={appScreenFallback}
         >
           <div className="w-screen h-screen bg-app overflow-hidden">
             <WorldSection
@@ -476,7 +488,9 @@ export default function App() {
   if (windowMode === "startup-wizard") {
     return (
       <>
-        <StartupWizard />
+        <Suspense fallback={appScreenFallback}>
+          <StartupWizard />
+        </Suspense>
         {quitOverlay}
       </>
     );
@@ -537,15 +551,17 @@ export default function App() {
   if (view === "template" || !currentProject) {
     return (
       <>
-        <ProjectTemplateSelector
-          onSelectProject={handleSelectProject}
-          projects={projects}
-          onOpenProject={(project) => {
-            void handleOpenExistingProject(project);
-          }}
-          onOpenLuieFile={handleOpenLuieFile}
-          onRestoreBackup={handleRestoreBackup}
-        />
+        <Suspense fallback={appScreenFallback}>
+          <ProjectTemplateSelector
+            onSelectProject={handleSelectProject}
+            projects={projects}
+            onOpenProject={(project) => {
+              void handleOpenExistingProject(project);
+            }}
+            onOpenLuieFile={handleOpenLuieFile}
+            onRestoreBackup={handleRestoreBackup}
+          />
+        </Suspense>
         {quitOverlay}
       </>
     );
@@ -553,7 +569,9 @@ export default function App() {
 
   return (
     <>
-      <EditorRoot />
+      <Suspense fallback={appScreenFallback}>
+        <EditorRoot />
+      </Suspense>
       {quitOverlay}
     </>
   );

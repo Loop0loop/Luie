@@ -19,23 +19,27 @@ export function GraphPluginInstalledSection({
   onUninstall,
 }: GraphPluginInstalledSectionProps) {
   return (
-    <section className="rounded-[16px] border border-white/10 bg-black/20 backdrop-blur-md p-6 shadow-xl">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <section className="rounded-[24px] border border-white/5 bg-white/[0.02] p-8 shadow-2xl backdrop-blur-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div className="space-y-1.5">
-          <div className="flex items-center gap-2 text-[15px] font-semibold text-foreground drop-shadow-sm">
-            <PackageOpen className="h-5 w-5 text-indigo-400" />
-            Installed Extensions
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-400">
+              <PackageOpen className="h-4 w-4" />
+            </div>
+            <h2 className="text-xl font-bold tracking-tight text-white drop-shadow-sm">
+              Installed Extensions
+            </h2>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[13px] text-muted-foreground/80 mt-2">
             설치된 번들에서 템플릿을 선택해 현재 그래프에 바로 적용합니다.
           </p>
         </div>
-        <div className="rounded-full bg-indigo-500/10 border border-white/5 px-3 py-1 text-[11px] font-medium text-indigo-400 shadow-inner">
+        <div className="rounded-full bg-indigo-500/10 border border-white/5 px-4 py-1.5 text-[12px] font-semibold text-indigo-400 shadow-inner">
           {installed.length} Active
         </div>
       </div>
 
-      <div className="mt-6 space-y-4">
+      <div className="space-y-4">
         {installed.length === 0 ? (
           <div className="rounded-xl border border-dashed border-white/10 bg-black/10 px-4 py-8 text-center text-sm text-muted-foreground transition-colors hover:bg-black/20">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl border border-white/5 bg-gradient-to-b from-white/5 to-transparent shadow-inner text-indigo-400">

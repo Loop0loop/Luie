@@ -2,7 +2,6 @@ import { memo, useState } from "react";
 import { BookOpen } from "lucide-react";
 import type { WorldGraphNode } from "@shared/types";
 import { useWorldBuildingStore, useFilteredGraph } from "@renderer/features/research/stores/worldBuildingStore";
-import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { WORLD_GRAPH_ICON_MAP } from "@shared/constants/worldGraphUI";
 
 type InspectorContentProps = {
@@ -68,8 +67,8 @@ function InspectorContent({ node, onUpdate }: InspectorContentProps) {
         />
       </div>
 
-      <ScrollArea className="flex-1 px-5 py-6 bg-background/30">
-        <div className="flex flex-col gap-6 pb-8 max-w-prose">
+      <div className="flex-1 overflow-y-auto bg-background/30 px-5 py-6">
+        <div className="flex max-w-prose flex-col gap-6 pb-8">
           <section className="flex flex-col gap-3">
             <div className="flex items-center justify-between border-b border-border/60 pb-1.5">
               <h2 className="text-lg font-semibold text-foreground tracking-tight">개요</h2>
@@ -150,7 +149,7 @@ function InspectorContent({ node, onUpdate }: InspectorContentProps) {
             </div>
           </section>
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
