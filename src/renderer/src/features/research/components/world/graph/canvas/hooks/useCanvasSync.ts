@@ -112,7 +112,7 @@ export function useCanvasSync({
         let attributes: Record<string, unknown> | undefined;
 
         if (payload.entityType === "Event") {
-          defaultName = "새로운 시간";
+          defaultName = "새 사건";
           finalEntityType = "Event";
           subType = undefined;
         } else if (payload.entityType === "Concept") {

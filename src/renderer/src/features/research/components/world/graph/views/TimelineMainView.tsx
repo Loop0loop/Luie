@@ -7,6 +7,7 @@ import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import type { EntityRelation, WorldGraphNode } from "@shared/types";
+import { useToast } from "@shared/ui/ToastContext";
 import { syncGraphEntitySelectionToWorkspace } from "../utils/graphEntitySync";
 import { buildTimelineEntries } from "../utils/worldGraphIdeViewModels";
 
@@ -17,6 +18,7 @@ interface TimelineMainViewProps {
 
 export function TimelineMainView({ nodes = [] }: TimelineMainViewProps) {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const activeProjectId = useWorldBuildingStore((state) => state.activeProjectId);
@@ -44,10 +46,15 @@ export function TimelineMainView({ nodes = [] }: TimelineMainViewProps) {
     });
 
     if (!created) {
+      showToast(
+        t("world.graph.timeline.createFailed", "새 사건을 만들지 못했습니다."),
+        "error",
+      );
       return;
     }
 
     selectNode(created.id);
+    syncGraphEntitySelectionToWorkspace(created);
     setActiveTab("graph");
   };
 

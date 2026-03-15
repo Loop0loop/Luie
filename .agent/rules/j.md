@@ -3,7 +3,7 @@ trigger: always_on
 ---
 
 # Package
-use pnpm not npm
+use bun not npm
 
 # Prompot Language
 Always answer in Korean

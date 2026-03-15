@@ -113,12 +113,12 @@ export const CustomEntityNode = memo(({ id, data, selected }: CustomEntityNodePr
         </div>
 
         <div className={cn("flex-1 flex flex-col gap-1.5 rounded-lg border bg-[#1c1c1c]/90 backdrop-blur-sm border-[#363636] p-4 shadow-lg", selected ? "border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.15)]" : "hover:border-[#4a4a4a]")}>
-          <span className="text-[10px] text-blue-400/80 font-bold tracking-widest uppercase mb-0.5">Branch Point</span>
+          <span className="text-[10px] text-blue-400/80 font-bold tracking-widest uppercase mb-0.5">Timeline Event</span>
           {isEditing ? (
             <input autoFocus value={editLabel} onChange={(e) => setEditLabel(e.target.value)} onBlur={handleSave} onKeyDown={handleKeyDown} className="w-full text-[16px] font-semibold text-[#f0f0f0] bg-transparent outline-none" placeholder="사건 / 분기명" />
           ) : (
             <div className="text-[16px] font-semibold text-[#f0f0f0] cursor-text break-words tracking-wide" onDoubleClick={() => setIsEditing(true)}>
-              {label || "새로운 분기"}
+              {label || "새 사건"}
             </div>
           )}
           {description && <div className="mt-1.5 text-[13px] text-[#999] line-clamp-3 leading-relaxed">{description}</div>}

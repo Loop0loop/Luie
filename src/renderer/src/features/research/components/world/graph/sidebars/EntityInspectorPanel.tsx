@@ -12,6 +12,8 @@ type InspectorContentProps = {
 function InspectorContent({ node, onUpdate }: InspectorContentProps) {
   const { id, name, entityType, subType } = node;
   const typeLabel = subType || entityType || "Entity";
+  const displayTypeLabel = entityType === "Event" ? "사건" : typeLabel;
+  const isTypeEditable = WORLD_SUBTYPES.includes(typeLabel as (typeof WORLD_SUBTYPES)[number]);
   const Icon = WORLD_GRAPH_ICON_MAP[typeLabel] ?? WORLD_GRAPH_ICON_MAP.WorldEntity;
   const [descEdit, setDescEdit] = useState(node.description || "");
   const [isEditingDesc, setIsEditingDesc] = useState(false);
@@ -25,13 +27,14 @@ function InspectorContent({ node, onUpdate }: InspectorContentProps) {
   };
 
   const handleTypeSave = () => {
-    if (typeEdit !== typeLabel) {
+    if (!isTypeEditable || typeEdit === typeLabel) {
+      return;
+    }
+    if (WORLD_SUBTYPES.includes(typeEdit as (typeof WORLD_SUBTYPES)[number])) {
       void onUpdate({
         id,
         entityType,
-        subType: WORLD_SUBTYPES.includes(typeEdit as (typeof WORLD_SUBTYPES)[number])
-          ? (typeEdit as (typeof WORLD_SUBTYPES)[number])
-          : undefined,
+        subType: typeEdit as (typeof WORLD_SUBTYPES)[number],
       });
     }
   };
@@ -48,14 +51,20 @@ function InspectorContent({ node, onUpdate }: InspectorContentProps) {
       <div className="flex flex-col gap-1 px-5 pt-6 pb-4 shrink-0 bg-card border-b border-border/40">
         <div className="flex items-center gap-2 text-muted-foreground mb-1">
           <Icon size={14} className="text-accent" />
-          <input
-            value={typeEdit}
-            onChange={(e) => setTypeEdit(e.target.value)}
-            onBlur={handleTypeSave}
-            onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
-            className="text-[10px] font-bold tracking-widest uppercase text-accent/80 bg-transparent outline-none border-none p-0 w-32 focus:ring-1 focus:ring-accent-foreground/20 rounded"
-            placeholder="분류 타입"
-          />
+          {isTypeEditable ? (
+            <input
+              value={typeEdit}
+              onChange={(e) => setTypeEdit(e.target.value)}
+              onBlur={handleTypeSave}
+              onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+              className="text-[10px] font-bold tracking-widest uppercase text-accent/80 bg-transparent outline-none border-none p-0 w-32 focus:ring-1 focus:ring-accent-foreground/20 rounded"
+              placeholder="분류 타입"
+            />
+          ) : (
+            <span className="text-[10px] font-bold tracking-widest uppercase text-accent/80">
+              {displayTypeLabel}
+            </span>
+          )}
         </div>
         <input
           value={nameEdit}
@@ -137,14 +146,20 @@ function InspectorContent({ node, onUpdate }: InspectorContentProps) {
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-xs font-medium text-muted-foreground w-16 shrink-0">분류</span>
-                <input
-                  value={typeEdit}
-                  onChange={(e) => setTypeEdit(e.target.value)}
-                  onBlur={handleTypeSave}
-                  onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
-                  className="font-medium text-foreground text-[13px] bg-transparent outline-none border-b border-transparent focus:border-accent w-full p-0"
-                  placeholder="분류 타입"
-                />
+                {isTypeEditable ? (
+                  <input
+                    value={typeEdit}
+                    onChange={(e) => setTypeEdit(e.target.value)}
+                    onBlur={handleTypeSave}
+                    onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+                    className="font-medium text-foreground text-[13px] bg-transparent outline-none border-b border-transparent focus:border-accent w-full p-0"
+                    placeholder="분류 타입"
+                  />
+                ) : (
+                  <span className="font-medium text-foreground text-[13px]">
+                    {displayTypeLabel}
+                  </span>
+                )}
               </div>
             </div>
           </section>

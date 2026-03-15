@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Panel,
@@ -9,6 +9,7 @@ import {
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
+import { buildPanelGroupCompositionKey } from "@renderer/features/workspace/utils/panelGroupLayout";
 import {
   clampSidebarWidth,
   getSidebarDefaultWidth,
@@ -44,7 +45,8 @@ export function WorldGraphPanel() {
   // IDE Store
   const activeTab = useGraphIdeStore((state) => state.activeTab);
   const isSidebarOpen = useGraphIdeStore((state) => state.isSidebarOpen);
-  const selectedNodeId = useWorldBuildingStore(s => s.selectedNodeId);
+  const selectedNodeId = useWorldBuildingStore((state) => state.selectedNodeId);
+  const selectNode = useWorldBuildingStore((state) => state.selectNode);
 
   const feature = "worldGraphSidebar" as const;
   const config = getSidebarWidthConfig(feature);
@@ -71,6 +73,16 @@ export function WorldGraphPanel() {
     "worldGraphInspector",
     setSidebarWidth,
   );
+  const showInspector = activeTab === "graph" && Boolean(selectedNodeId);
+  const panelCompositionKey = useMemo(
+    () =>
+      buildPanelGroupCompositionKey("world-graph", [
+        isSidebarOpen ? "world-ide-sidebar" : "",
+        "world-ide-main",
+        showInspector ? "world-ide-inspector" : "",
+      ]),
+    [isSidebarOpen, showInspector],
+  );
 
 
   useEffect(() => {
@@ -88,6 +100,13 @@ export function WorldGraphPanel() {
       }
     });
   }, [currentProjectId, loadGraph]);
+
+  useEffect(() => {
+    if (activeTab === "graph" || selectedNodeId === null) {
+      return;
+    }
+    selectNode(null);
+  }, [activeTab, selectNode, selectedNodeId]);
 
   const renderMainViewContent = () => {
     if (isLoading) {
@@ -140,6 +159,7 @@ export function WorldGraphPanel() {
 
       <div ref={containerRef} className="flex min-h-0 flex-1 overflow-hidden">
         <PanelGroup
+          key={panelCompositionKey}
           groupRef={panelGroupRef}
           orientation="horizontal"
           className="h-full! w-full! bg-transparent"
@@ -177,7 +197,7 @@ export function WorldGraphPanel() {
               </main>
             </div>
           </Panel>
-          {selectedNodeId && activeTab === "graph" && (
+          {showInspector && (
             <>
               <PanelResizeHandle 
                 {...inspectorResizeHandleProps}
