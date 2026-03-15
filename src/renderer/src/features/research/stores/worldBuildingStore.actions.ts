@@ -49,6 +49,7 @@ type WorldBuildingActions = Pick<
   | "createGraphNode"
   | "updateGraphNode"
   | "updateGraphNodePosition"
+  | "updateGraphNodePositionsBatch"
   | "updateWorldEntityPosition"
   | "deleteGraphNode"
   | "createWorldEntity"
@@ -180,6 +181,48 @@ export function createWorldBuildingActions(
       if (isWorldEntityBackedType(current.entityType)) {
         await api.worldEntity.updatePosition(input);
       }
+      await persistGraphDocument(projectId, get().graphData);
+    },
+
+    updateGraphNodePositionsBatch: async (inputs: WorldEntityUpdatePositionInput[]) => {
+      if (inputs.length === 0) return;
+
+      const projectId = get().activeProjectId;
+      const graphData = get().graphData;
+      if (!projectId || !graphData) return;
+
+      const nodesById = new Map(graphData.nodes.map((node) => [node.id, node]));
+      const normalizedInputs = inputs.filter((input) => {
+        const current = nodesById.get(input.id);
+        return current !== undefined;
+      });
+      if (normalizedInputs.length === 0) return;
+
+      set((state) => {
+        let nextGraph = state.graphData;
+        normalizedInputs.forEach((input) => {
+          nextGraph = updateNodePositionInGraph(
+            nextGraph,
+            input.id,
+            input.positionX,
+            input.positionY,
+          );
+        });
+        return {
+          graphData: nextGraph,
+        };
+      });
+
+      await Promise.all(
+        normalizedInputs.map(async (input) => {
+          const current = nodesById.get(input.id);
+          if (!current || !isWorldEntityBackedType(current.entityType)) {
+            return;
+          }
+          await api.worldEntity.updatePosition(input);
+        }),
+      );
+
       await persistGraphDocument(projectId, get().graphData);
     },
 

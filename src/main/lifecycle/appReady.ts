@@ -112,11 +112,14 @@ const runDeferredStartupMaintenance = async (logger: Logger): Promise<void> => {
   }
 
   try {
-    const { entityRelationService } = await import(
-      "../services/world/entityRelationService.js"
-    );
-    await entityRelationService.cleanupOrphanRelationsAcrossProjects({ dryRun: true });
-    await entityRelationService.cleanupOrphanRelationsAcrossProjects({ dryRun: false });
+    const { entityRelationService } =
+      await import("../services/world/entityRelationService.js");
+    await entityRelationService.cleanupOrphanRelationsAcrossProjects({
+      dryRun: true,
+    });
+    await entityRelationService.cleanupOrphanRelationsAcrossProjects({
+      dryRun: false,
+    });
   } catch (error) {
     logger.warn("Entity relation orphan cleanup skipped", error);
   }
@@ -126,7 +129,10 @@ const runDeferredStartupMaintenance = async (logger: Logger): Promise<void> => {
   });
 };
 
-export const registerAppReady = (logger: Logger, options: AppReadyOptions = {}): void => {
+export const registerAppReady = (
+  logger: Logger,
+  options: AppReadyOptions = {},
+): void => {
   const startupStartedAtMs = options.startupStartedAtMs ?? Date.now();
 
   app.whenReady().then(async () => {
@@ -231,14 +237,16 @@ export const registerAppReady = (logger: Logger, options: AppReadyOptions = {}):
     };
 
     if (isDev) {
-      session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
-        callback({
-          requestHeaders: {
-            ...details.requestHeaders,
-            Origin: "http://localhost:5173",
-          },
-        });
-      });
+      session.defaultSession.webRequest.onBeforeSendHeaders(
+        (details, callback) => {
+          callback({
+            requestHeaders: {
+              ...details.requestHeaders,
+              Origin: "http://localhost:5173",
+            },
+          });
+        },
+      );
     }
 
     session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
@@ -270,7 +278,13 @@ export const registerAppReady = (logger: Logger, options: AppReadyOptions = {}):
     app.on("web-contents-created", (_event, webContents) => {
       webContents.on(
         "did-fail-load",
-        (_loadEvent, errorCode, errorDescription, validatedURL, isMainFrame) => {
+        (
+          _loadEvent,
+          errorCode,
+          errorDescription,
+          validatedURL,
+          isMainFrame,
+        ) => {
           logger.error("Renderer failed to load", {
             errorCode,
             errorDescription,
@@ -297,14 +311,14 @@ export const registerAppReady = (logger: Logger, options: AppReadyOptions = {}):
       });
       webContents.on("console-message", (consoleEvent) => {
         const { level, message, lineNumber, sourceId } = consoleEvent;
-        if (
-          message === "ResizeObserver loop completed with undelivered notifications." ||
-          message === "ResizeObserver loop limit exceeded"
-        ) {
-          return;
-        }
         const severity =
-          level === "error" ? 3 : level === "warning" ? 2 : level === "info" ? 1 : 0;
+          level === "error"
+            ? 3
+            : level === "warning"
+              ? 2
+              : level === "info"
+                ? 1
+                : 0;
         if (severity < 2) return;
         logger.warn("Renderer console message", {
           level,
@@ -314,7 +328,11 @@ export const registerAppReady = (logger: Logger, options: AppReadyOptions = {}):
         });
       });
       webContents.on("render-process-gone", (_goneEvent, details) => {
-        void handleRendererCrash(logger, webContents, details.reason === "killed");
+        void handleRendererCrash(
+          logger,
+          webContents,
+          details.reason === "killed",
+        );
       });
     });
 

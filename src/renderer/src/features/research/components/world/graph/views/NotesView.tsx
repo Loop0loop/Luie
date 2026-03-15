@@ -60,63 +60,72 @@ export function NotesView({
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-[#0f1319]">
-      <div className="mx-auto flex max-w-4xl flex-col px-10 py-10">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <Card className="flex-1 border-white/10 bg-[#161a21]">
-            <CardContent className="flex flex-wrap items-center gap-2 pt-4">
-            <span className="text-xs text-fg/45">태그</span>
-            <Input
-              value={activeNote.tags.join(", ")}
-              onChange={(event) =>
-                onUpdateNote(activeNote.id, {
-                  tags: event.target.value
-                    .split(",")
-                    .map((tag) => tag.trim())
-                    .filter(Boolean),
-                })
-              }
-              className="min-w-[240px] flex-1 border-0 bg-transparent shadow-none ring-0 focus-visible:ring-0"
-              placeholder="예: 떡밥, 시즌1, 설정"
-            />
-            </CardContent>
-          </Card>
-
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={onSaveNow}
-              size="sm"
-              variant="secondary"
-            >
-              {notesSaving ? "저장 중..." : "지금 저장"}
-            </Button>
-            <Button
-              onClick={() => onDeleteNote(activeNote.id)}
-              size="sm"
-              variant="destructive"
-            >
-              삭제
-            </Button>
-          </div>
+    <div className="h-full overflow-y-auto bg-[#0f1319] px-8 py-8">
+      <div className="mx-auto max-w-3xl">
+        <div className="mb-4 flex items-center justify-end gap-2">
+          <Button
+            onClick={onSaveNow}
+            size="sm"
+            variant="secondary"
+          >
+            {notesSaving ? "저장 중..." : "지금 저장"}
+          </Button>
+          <Button
+            onClick={() => onDeleteNote(activeNote.id)}
+            size="sm"
+            variant="destructive"
+          >
+            삭제
+          </Button>
         </div>
 
-        <Input
-          value={activeNote.title}
-          onChange={(event) =>
-            onUpdateNote(activeNote.id, { title: event.target.value })
-          }
-          className="h-auto border-0 bg-transparent px-0 pb-4 text-4xl font-semibold tracking-tight text-fg shadow-none ring-0 focus-visible:ring-0"
-          placeholder="노트 제목"
-        />
+        <Card className="border-white/10 bg-[#161a21] shadow-[0_24px_70px_rgba(0,0,0,0.38)]">
+          <CardContent className="space-y-6 pt-8">
+            <div className="space-y-3 text-center">
+              <p className="text-[11px] uppercase tracking-[0.26em] text-fg/42">
+                Note
+              </p>
+              <Input
+                value={activeNote.title}
+                onChange={(event) =>
+                  onUpdateNote(activeNote.id, { title: event.target.value })
+                }
+                className="mx-auto h-auto max-w-xl border-0 bg-transparent px-0 text-center text-2xl font-semibold tracking-tight text-fg shadow-none ring-0 focus-visible:ring-0"
+                placeholder="노트 제목"
+              />
+            </div>
 
-        <textarea
-          value={activeNote.content}
-          onChange={(event) =>
-            onUpdateNote(activeNote.id, { content: event.target.value })
-          }
-          className="min-h-[560px] w-full resize-none border-none bg-transparent text-base leading-8 text-fg/85 outline-none"
-          placeholder="설정, 메모, 장면 아이디어를 자유롭게 적으세요."
-        />
+            <div className="mx-auto max-w-xl">
+              <p className="mb-2 text-center text-[11px] uppercase tracking-[0.24em] text-fg/42">
+                Tags
+              </p>
+              <Input
+                value={activeNote.tags.join(", ")}
+                onChange={(event) =>
+                  onUpdateNote(activeNote.id, {
+                    tags: event.target.value
+                      .split(",")
+                      .map((tag) => tag.trim())
+                      .filter(Boolean),
+                  })
+                }
+                className="h-10 border-white/10 bg-[#0e1218] text-center"
+                placeholder="예: 떡밥, 시즌1, 설정"
+              />
+            </div>
+
+            <div className="rounded-[28px] border border-white/8 bg-[#0f1319] p-5">
+              <textarea
+                value={activeNote.content}
+                onChange={(event) =>
+                  onUpdateNote(activeNote.id, { content: event.target.value })
+                }
+                className="min-h-[560px] w-full resize-none border-none bg-transparent text-base leading-8 text-fg/85 outline-none"
+                placeholder="설정, 메모, 장면 아이디어를 자유롭게 적으세요."
+              />
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -1,13 +1,19 @@
 import type { NodeProps } from "reactflow";
 import { Handle, Position } from "reactflow";
 import { Badge } from "@renderer/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@renderer/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@renderer/components/ui/card";
 import { ENTITY_TYPE_COLORS } from "../constants";
 
 export type CanvasGraphNodeData = {
   label: string;
   entityType: string;
   description: string;
+  isActive: boolean;
   relationCount: number;
   subType?: string;
 };
@@ -16,7 +22,8 @@ export function CanvasGraphNodeCard({
   data,
   selected,
 }: NodeProps<CanvasGraphNodeData>) {
-  const tone = ENTITY_TYPE_COLORS[data.entityType as keyof typeof ENTITY_TYPE_COLORS];
+  const tone =
+    ENTITY_TYPE_COLORS[data.entityType as keyof typeof ENTITY_TYPE_COLORS];
 
   return (
     <div className="group relative">
@@ -29,7 +36,9 @@ export function CanvasGraphNodeCard({
         size="sm"
         className={[
           "w-[240px] border border-white/10 bg-[#191d24]/95 text-left shadow-[0_18px_60px_rgba(0,0,0,0.35)] backdrop-blur",
-          selected ? "ring-2 ring-sky-300/45" : "hover:border-white/20",
+          selected || data.isActive
+            ? "ring-2 ring-sky-300/45"
+            : "hover:border-white/20",
           tone?.card ?? "",
         ].join(" ")}
       >

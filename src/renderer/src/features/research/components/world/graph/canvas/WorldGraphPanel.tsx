@@ -8,6 +8,7 @@ import { useWorldBuildingStore } from "@renderer/features/research/stores/worldB
 import { GRAPH_TAB_ITEMS } from "../constants";
 import { useWorldGraphWorkspace } from "../hooks/useWorldGraphWorkspace";
 import type { GraphSurfaceTab } from "../types";
+import { buildCanvasAutoLayout } from "../utils/canvasAutoLayout";
 import { GraphActiveSidebar } from "../components/GraphActiveSidebar";
 import { GraphIconSidebar } from "../components/GraphIconSidebar";
 import { CanvasView } from "../views/CanvasView";
@@ -53,6 +54,7 @@ export function WorldGraphPanel() {
   const createGraphNode = useWorldBuildingStore((state) => state.createGraphNode);
   const updateGraphNode = useWorldBuildingStore((state) => state.updateGraphNode);
   const updateGraphNodePosition = useWorldBuildingStore((state) => state.updateGraphNodePosition);
+  const updateGraphNodePositionsBatch = useWorldBuildingStore((state) => state.updateGraphNodePositionsBatch);
   const loadGraph = useWorldBuildingStore((state) => state.loadGraph);
 
   const addNote = useMemoStore((state) => state.addNote);
@@ -138,6 +140,14 @@ export function WorldGraphPanel() {
     [createGraphNode, graphNodes.length, projectId],
   );
 
+  const handleCreateCanvasBlock = useCallback(() => {
+    void handleCreatePreset("Concept", "Concept");
+  }, [handleCreatePreset]);
+
+  const handleCreateTimelineEvent = useCallback(() => {
+    void handleCreatePreset("Event");
+  }, [handleCreatePreset]);
+
   const handleSaveNode = useCallback(
     async (input: { name: string; description: string }) => {
       if (!selectedNode) {
@@ -213,6 +223,17 @@ export function WorldGraphPanel() {
     [applyTemplate, loadGraph, loadPluginData, projectId],
   );
 
+  const handleAutoArrange = useCallback(async () => {
+    const nextLayout = buildCanvasAutoLayout(graphNodes, graphEdges);
+    await updateGraphNodePositionsBatch(
+      nextLayout.map((entry) => ({
+        id: entry.id,
+        positionX: entry.positionX,
+        positionY: entry.positionY,
+      })),
+    );
+  }, [graphEdges, graphNodes, updateGraphNodePositionsBatch]);
+
   return (
     <div className="flex h-full min-h-0 bg-[#0b0e13] text-fg">
       <GraphIconSidebar
@@ -227,6 +248,7 @@ export function WorldGraphPanel() {
           activeTab={activeTab}
           currentProjectTitle={currentProjectTitle}
           nodes={graphNodes}
+          edges={graphEdges}
           timelineNodes={timelineNodes}
           notes={notes}
           selectedNode={selectedNode}
@@ -236,6 +258,7 @@ export function WorldGraphPanel() {
           onSaveNode={handleSaveNode}
           onSelectNote={setSelectedNoteId}
           onCreateNote={handleCreateNote}
+          onAutoArrange={handleAutoArrange}
           pluginSummary={{
             catalogCount: catalog.length,
             installedCount: installed.length,
@@ -300,6 +323,9 @@ export function WorldGraphPanel() {
                 edges={graphEdges}
                 selectedNodeId={effectiveSelectedNodeId}
                 onSelectNode={setSelectedNodeId}
+                onCreateBlock={handleCreateCanvasBlock}
+                onCreateTimelineEvent={handleCreateTimelineEvent}
+                onCreateNote={handleCreateNote}
                 onNodePositionCommit={({ id, x, y }) => {
                   void updateGraphNodePosition({
                     id,

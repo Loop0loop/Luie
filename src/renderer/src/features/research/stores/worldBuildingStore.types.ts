@@ -51,6 +51,9 @@ export interface WorldBuildingState {
   updateGraphNodePosition: (
     input: WorldEntityUpdatePositionInput,
   ) => Promise<void>;
+  updateGraphNodePositionsBatch: (
+    inputs: WorldEntityUpdatePositionInput[],
+  ) => Promise<void>;
   updateWorldEntityPosition: (input: WorldEntityUpdatePositionInput) => Promise<void>;
   deleteGraphNode: (id: string) => Promise<boolean>;
   createWorldEntity: (input: WorldEntityCreateInput) => Promise<WorldGraphNode | null>;

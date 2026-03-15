@@ -1,20 +1,26 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ReactFlow, {
+  addEdge,
+  applyEdgeChanges,
+  applyNodeChanges,
   Background,
   BackgroundVariant,
   ReactFlowProvider,
   SelectionMode,
+  type Connection,
+  type EdgeChange,
   type Edge,
+  type NodeChange,
   type Node,
   useReactFlow,
-  useEdgesState,
-  useNodesState,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import type { EntityRelation, WorldGraphNode } from "@shared/types";
 import { Badge } from "@renderer/components/ui/badge";
 import { Button } from "@renderer/components/ui/button";
 import { Card, CardContent } from "@renderer/components/ui/card";
+import { CanvasTimelinePalette } from "../components/CanvasTimelinePalette";
+import { CanvasToolbar } from "../components/CanvasToolbar";
 import { CanvasGraphNodeCard, type CanvasGraphNodeData } from "../components/CanvasGraphNodeCard";
 
 type CanvasViewProps = {
@@ -23,6 +29,9 @@ type CanvasViewProps = {
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string | null) => void;
   onNodePositionCommit?: (input: { id: string; x: number; y: number }) => void;
+  onCreateBlock: () => void;
+  onCreateTimelineEvent: () => void;
+  onCreateNote: () => void;
 };
 
 function readPosition(node: WorldGraphNode, index: number) {
@@ -40,23 +49,6 @@ function readPosition(node: WorldGraphNode, index: number) {
         : 120 + fallbackRow * 220,
   };
 }
-
-const buildGraphSignature = (
-  nodes: WorldGraphNode[],
-  edges: EntityRelation[],
-) =>
-  JSON.stringify({
-    nodes: nodes.map((node) => [
-      node.id,
-      node.name,
-      node.description,
-      node.entityType,
-      node.subType,
-      node.positionX,
-      node.positionY,
-    ]),
-    edges: edges.map((edge) => [edge.id, edge.sourceId, edge.targetId, edge.relation]),
-  });
 
 const buildFlowNodes = (
   nodes: WorldGraphNode[],
@@ -102,26 +94,101 @@ const buildFlowEdges = (edges: EntityRelation[]): Edge[] =>
     },
   }));
 
+function mergeIncomingNodes(
+  currentNodes: Node<CanvasGraphNodeData>[],
+  incomingNodes: Node<CanvasGraphNodeData>[],
+  lockedNodeId: string | null,
+): Node<CanvasGraphNodeData>[] {
+  const currentById = new Map(currentNodes.map((node) => [node.id, node]));
+
+  return incomingNodes.map((incomingNode) => {
+    const currentNode = currentById.get(incomingNode.id);
+    if (!currentNode || incomingNode.id === lockedNodeId) {
+      return incomingNode;
+    }
+    return {
+      ...incomingNode,
+      position: currentNode.position,
+      selected: currentNode.selected,
+    };
+  });
+}
+
 function CanvasFlowSurface({
-  initialNodes,
-  initialEdges,
+  graphNodes,
+  graphEdges,
+  timelineNodes,
+  selectedNodeId,
   onSelectNode,
   onNodePositionCommit,
+  onCreateBlock,
+  onCreateTimelineEvent,
+  onCreateNote,
   summary,
 }: {
-  initialNodes: Node<CanvasGraphNodeData>[];
-  initialEdges: Edge[];
+  graphNodes: Node<CanvasGraphNodeData>[];
+  graphEdges: Edge[];
+  timelineNodes: WorldGraphNode[];
+  selectedNodeId: string | null;
   onSelectNode: (nodeId: string | null) => void;
   onNodePositionCommit?: (input: { id: string; x: number; y: number }) => void;
+  onCreateBlock: () => void;
+  onCreateTimelineEvent: () => void;
+  onCreateNote: () => void;
   summary: {
     nodeCount: number;
     edgeCount: number;
     hasSelection: boolean;
   };
 }) {
-  const [nodes, , onNodesChange] = useNodesState(initialNodes);
-  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes] = useState<Node<CanvasGraphNodeData>[]>(graphNodes);
+  const [edges, setEdges] = useState<Edge[]>(graphEdges);
+  const [timelinePaletteOpen, setTimelinePaletteOpen] = useState(false);
+  const draggingNodeIdRef = useRef<string | null>(null);
   const reactFlow = useReactFlow<CanvasGraphNodeData>();
+
+  useEffect(() => {
+    setNodes((currentNodes) =>
+      mergeIncomingNodes(currentNodes, graphNodes, draggingNodeIdRef.current),
+    );
+  }, [graphNodes]);
+
+  useEffect(() => {
+    setEdges(graphEdges);
+  }, [graphEdges]);
+
+  useEffect(() => {
+    setNodes((currentNodes) =>
+      currentNodes.map((node) => ({
+        ...node,
+        selected: node.id === selectedNodeId,
+      })),
+    );
+  }, [selectedNodeId]);
+
+  const handleNodesChange = (changes: NodeChange[]) => {
+    setNodes((currentNodes) => applyNodeChanges(changes, currentNodes));
+  };
+
+  const handleEdgesChange = (changes: EdgeChange[]) => {
+    setEdges((currentEdges) => applyEdgeChanges(changes, currentEdges));
+  };
+
+  const handleConnect = (connection: Connection) => {
+    setEdges((currentEdges) =>
+      addEdge(
+        {
+          ...connection,
+          type: "smoothstep",
+          style: {
+            stroke: "rgba(255,255,255,0.18)",
+            strokeWidth: 1.6,
+          },
+        },
+        currentEdges,
+      ),
+    );
+  };
 
   return (
     <div className="absolute inset-0">
@@ -133,11 +200,16 @@ function CanvasFlowSurface({
         maxZoom={1.6}
         defaultViewport={{ x: 0, y: 0, zoom: 0.9 }}
         proOptions={{ hideAttribution: true }}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
+        onNodesChange={handleNodesChange}
+        onEdgesChange={handleEdgesChange}
+        onConnect={handleConnect}
         onNodeClick={(_, node) => onSelectNode(node.id)}
         onPaneClick={() => onSelectNode(null)}
+        onNodeDragStart={(_, node) => {
+          draggingNodeIdRef.current = node.id;
+        }}
         onNodeDragStop={(_, node) => {
+          draggingNodeIdRef.current = null;
           onNodePositionCommit?.({
             id: node.id,
             x: node.position.x,
@@ -206,6 +278,50 @@ function CanvasFlowSurface({
           </CardContent>
         </Card>
       </div>
+
+      <div className="pointer-events-none absolute right-5 top-5 z-10 flex flex-col gap-2">
+        <Button
+          type="button"
+          size="icon"
+          variant="outline"
+          className="pointer-events-auto h-11 w-11 rounded-xl border-white/10 bg-[#171b22]/90"
+          onClick={onCreateBlock}
+          title="블럭 추가"
+        >
+          +
+        </Button>
+        <Button
+          type="button"
+          size="icon"
+          variant="outline"
+          className="pointer-events-auto h-11 w-11 rounded-xl border-white/10 bg-[#171b22]/90"
+          onClick={() => {
+            setTimelinePaletteOpen(true);
+          }}
+          title="타임라인 팔레트"
+        >
+          T
+        </Button>
+      </div>
+
+      <CanvasToolbar
+        onCreateBlock={onCreateBlock}
+        onOpenTimelinePalette={() => setTimelinePaletteOpen(true)}
+        onCreateNote={onCreateNote}
+      />
+
+      <CanvasTimelinePalette
+        open={timelinePaletteOpen}
+        events={timelineNodes}
+        onClose={() => setTimelinePaletteOpen(false)}
+        onCreateEvent={() => {
+          onCreateTimelineEvent();
+          setTimelinePaletteOpen(false);
+        }}
+        onPickEvent={(nodeId) => {
+          onSelectNode(nodeId);
+        }}
+      />
     </div>
   );
 }
@@ -216,11 +332,10 @@ export function CanvasView({
   selectedNodeId,
   onSelectNode,
   onNodePositionCommit,
+  onCreateBlock,
+  onCreateTimelineEvent,
+  onCreateNote,
 }: CanvasViewProps) {
-  const graphSignature = useMemo(
-    () => buildGraphSignature(nodes, edges),
-    [edges, nodes],
-  );
   const flowNodes = useMemo(
     () => buildFlowNodes(nodes, edges),
     [edges, nodes],
@@ -231,11 +346,15 @@ export function CanvasView({
     <div className="relative h-full bg-[#0f1319]">
       <ReactFlowProvider>
         <CanvasFlowSurface
-          key={graphSignature}
-          initialNodes={flowNodes}
-          initialEdges={flowEdges}
+          graphNodes={flowNodes}
+          graphEdges={flowEdges}
+          timelineNodes={nodes.filter((node) => node.entityType === "Event")}
+          selectedNodeId={selectedNodeId}
           onSelectNode={onSelectNode}
           onNodePositionCommit={onNodePositionCommit}
+          onCreateBlock={onCreateBlock}
+          onCreateTimelineEvent={onCreateTimelineEvent}
+          onCreateNote={onCreateNote}
           summary={{
             nodeCount: nodes.length,
             edgeCount: edges.length,

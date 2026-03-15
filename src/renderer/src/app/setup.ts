@@ -15,41 +15,35 @@ import { api } from "@shared/api";
  * of silently disappearing. This runs once when the renderer boots.
  */
 function setupUnhandledRejectionHandler(): void {
-  window.addEventListener("unhandledrejection", (event: PromiseRejectionEvent) => {
-    const reason = event.reason as unknown;
-    const message =
-      reason instanceof Error
-        ? reason.message
-        : typeof reason === "string"
-          ? reason
-          : "Unknown unhandled rejection";
+  window.addEventListener(
+    "unhandledrejection",
+    (event: PromiseRejectionEvent) => {
+      const reason = event.reason as unknown;
+      const message =
+        reason instanceof Error
+          ? reason.message
+          : typeof reason === "string"
+            ? reason
+            : "Unknown unhandled rejection";
 
-    api?.logger?.error("[renderer] Unhandled Promise rejection", {
-      message,
-      stack: reason instanceof Error ? reason.stack : undefined,
-    });
-
-    if (import.meta.env.DEV) {
-      void api?.logger?.warn?.("[renderer] Unhandled Promise rejection (dev)", {
-        reason:
-          reason instanceof Error
-            ? { message: reason.message, stack: reason.stack }
-            : reason,
+      api?.logger?.error("[renderer] Unhandled Promise rejection", {
+        message,
+        stack: reason instanceof Error ? reason.stack : undefined,
       });
-    }
-  });
-}
 
-function setupResizeObserverWarningFilter(): void {
-  window.addEventListener("error", (event: ErrorEvent) => {
-    if (
-      event.message === "ResizeObserver loop completed with undelivered notifications." ||
-      event.message === "ResizeObserver loop limit exceeded"
-    ) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-    }
-  });
+      if (import.meta.env.DEV) {
+        void api?.logger?.warn?.(
+          "[renderer] Unhandled Promise rejection (dev)",
+          {
+            reason:
+              reason instanceof Error
+                ? { message: reason.message, stack: reason.stack }
+                : reason,
+          },
+        );
+      }
+    },
+  );
 }
 
 type ThemeSeed = Pick<
@@ -85,7 +79,6 @@ const toThemeSeed = (settings: EditorSettings): ThemeSeed => ({
 export const setupRenderer = async (): Promise<void> => {
   // ✅ Register global rejection handler before anything else
   setupUnhandledRejectionHandler();
-  setupResizeObserverWarningFilter();
 
   applyThemeSeed(DEFAULT_THEME_SEED);
 
