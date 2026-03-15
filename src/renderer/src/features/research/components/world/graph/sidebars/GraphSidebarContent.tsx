@@ -2,42 +2,44 @@ import { useMemo, useCallback, useState } from "react";
 import { CircleDashed, Search, LayoutGrid, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@renderer/lib/utils";
-import {
-  useFilteredGraph,
-  useWorldBuildingStore,
-} from "@renderer/features/research/stores/worldBuildingStore";
-import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 import { SidebarTreeSection } from "./SidebarTreeSection";
 import type { RelationKind } from "@shared/types";
 import { WORLD_GRAPH_ICON_MAP, WORLD_GRAPH_MINIMAP_COLORS } from "@shared/constants/worldGraphUI";
+import { useWorldGraphScene } from "../scene/useWorldGraphScene";
+import { useGraphVisibility } from "../scene/useGraphVisibility";
+import { useWorldGraphUiStore } from "@renderer/features/research/stores/worldGraphUiStore";
 
 export function GraphSidebarContent() {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
-
-  const filteredGraph = useFilteredGraph();
-  const filter = useWorldBuildingStore((s) => s.filter);
-  const setFilter = useWorldBuildingStore((s) => s.setFilter);
-  const triggerLayout = useGraphIdeStore((s) => s.triggerLayout);
+  const scene = useWorldGraphScene();
+  const triggerLayout = useWorldGraphUiStore((s) => s.triggerLayout);
+  const {
+    visibilityFilter,
+    setGraphSearchQuery,
+    toggleEntityTypeFilter,
+    toggleRelationKindFilter,
+    showAllCanvasElements,
+  } = useGraphVisibility();
 
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const val = e.target.value;
       setSearch(val);
-      setFilter({ searchQuery: val });
+      setGraphSearchQuery(val);
     },
-    [setFilter],
+    [setGraphSearchQuery],
   );
 
   const { visibleEntityTypes, visibleRelations } = useMemo(() => {
     const typeCounts = new Map<string, number>();
-    filteredGraph.nodes.forEach((node) => {
+    scene.visibleNodes.forEach((node) => {
       const type = node.subType || node.entityType || "Entity";
       typeCounts.set(type, (typeCounts.get(type) || 0) + 1);
     });
 
     const relCounts = new Map<string, number>();
-    filteredGraph.edges.forEach((edge) => {
+    scene.visibleEdges.forEach((edge) => {
       const kind = edge.relation || "연결됨";
       relCounts.set(kind, (relCounts.get(kind) || 0) + 1);
     });
@@ -46,27 +48,7 @@ export function GraphSidebarContent() {
       visibleEntityTypes: Array.from(typeCounts.entries()).map(([type, count]) => ({ type, count })),
       visibleRelations: Array.from(relCounts.entries()).map(([kind, count]) => ({ kind, count }))
     };
-  }, [filteredGraph.edges, filteredGraph.nodes]);
-
-  const toggleEntityType = useCallback(
-    (type: string) => {
-      const next = filter.entityTypes.includes(type)
-        ? filter.entityTypes.filter((e) => e !== type)
-        : [...filter.entityTypes, type];
-      setFilter({ entityTypes: next });
-    },
-    [filter.entityTypes, setFilter],
-  );
-
-  const toggleRelation = useCallback(
-    (kind: string) => {
-      const next = filter.relationKinds.includes(kind as RelationKind)
-        ? filter.relationKinds.filter((k) => k !== kind)
-        : [...filter.relationKinds, kind as RelationKind];
-      setFilter({ relationKinds: next });
-    },
-    [filter.relationKinds, setFilter],
-  );
+  }, [scene.visibleEdges, scene.visibleNodes]);
 
   return (
     <div className="flex h-full flex-col">
@@ -89,14 +71,14 @@ export function GraphSidebarContent() {
             <p className="px-2 py-2 text-[11px] text-muted-foreground/50">표시할 노드가 없습니다</p>
           ) : (
             visibleEntityTypes.map(({ type, count }) => {
-              const isOn = filter.entityTypes.includes(type);
+              const isOn = visibilityFilter.entityTypes.includes(type);
               const color = WORLD_GRAPH_MINIMAP_COLORS[type] ?? "#94a3b8";
               const Icon = WORLD_GRAPH_ICON_MAP[type] ?? CircleDashed;
               return (
                 <button
                   key={type}
                   type="button"
-                  onClick={() => toggleEntityType(type)}
+                  onClick={() => toggleEntityTypeFilter(type)}
                   className={cn(
                     "group flex w-full items-center gap-2 rounded-md px-2 py-[5px] text-[12px] transition-all",
                     isOn ? "text-fg hover:bg-element/80" : "opacity-35 hover:opacity-60",
@@ -123,12 +105,12 @@ export function GraphSidebarContent() {
             <p className="px-2 py-2 text-[11px] text-muted-foreground/50">연결이 없습니다</p>
           ) : (
             visibleRelations.map(({ kind, count }) => {
-              const isOn = filter.relationKinds.includes(kind as RelationKind);
+              const isOn = visibilityFilter.relationKinds.includes(kind as RelationKind);
               return (
                 <button
                   key={kind}
                   type="button"
-                  onClick={() => toggleRelation(kind)}
+                  onClick={() => toggleRelationKindFilter(kind as RelationKind)}
                   className={cn(
                     "group flex w-full items-center gap-2 rounded-md px-2 py-[5px] text-[12px] transition-all",
                     isOn ? "text-fg hover:bg-element/80" : "opacity-35 hover:opacity-60",
@@ -154,7 +136,10 @@ export function GraphSidebarContent() {
       <div className="flex shrink-0 items-center justify-between border-t border-border/40 p-3 bg-element/30">
         <button
           type="button"
-          onClick={() => triggerLayout("auto")}
+          onClick={() => {
+            showAllCanvasElements();
+            triggerLayout("auto");
+          }}
           className="flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] font-medium text-muted-foreground transition-all hover:bg-element hover:text-fg"
         >
           <LayoutGrid size={12} />
@@ -163,7 +148,7 @@ export function GraphSidebarContent() {
         <div className="h-4 w-px bg-border/50 mx-2" />
         <button
           type="button"
-          onClick={() => triggerLayout("auto")}
+          onClick={() => triggerLayout("reset")}
           className="flex shrink-0 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] font-medium text-muted-foreground transition-all hover:bg-element hover:text-fg"
           title={t("world.graph.ide.sidebar.refresh", "새로고침")}
         >

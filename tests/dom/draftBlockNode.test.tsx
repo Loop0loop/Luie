@@ -4,7 +4,7 @@ import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { ReactFlowProvider } from "reactflow";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DraftBlockNode } from "../../src/renderer/src/features/research/components/world/graph/DraftBlockNode.js";
+import { DraftBlockNode } from "../../src/renderer/src/features/research/components/world/graph/components/DraftBlockNode.js";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -51,7 +51,7 @@ describe("DraftBlockNode", () => {
     document.body.innerHTML = "";
   });
 
-  it("submits the user-selected entity type with the block text", () => {
+  it("submits the initial entity type with the block text", () => {
     const onConvert = vi.fn();
     const view = mountView(
       <ReactFlowProvider>
@@ -68,9 +68,7 @@ describe("DraftBlockNode", () => {
     mountedViews.push(view);
 
     const textarea = view.container.querySelector("textarea");
-    const select = view.container.querySelector("select");
     expect(textarea).not.toBeNull();
-    expect(select).not.toBeNull();
 
     act(() => {
       (textarea as HTMLTextAreaElement).value = "황실 의회";
@@ -80,8 +78,6 @@ describe("DraftBlockNode", () => {
           data: "황실 의회",
         }),
       );
-      (select as HTMLSelectElement).value = "Faction";
-      select!.dispatchEvent(new Event("change", { bubbles: true }));
       textarea!.dispatchEvent(
         new KeyboardEvent("keydown", {
           key: "Enter",
@@ -92,11 +88,11 @@ describe("DraftBlockNode", () => {
 
     expect(onConvert).toHaveBeenCalledWith("draft-1", {
       text: "황실 의회",
-      entityType: "Faction",
+      entityType: "Concept",
     });
   });
 
-  it("does not auto-convert while focus moves from the text field to the type selector", () => {
+  it("does not auto-convert until focus leaves the draft block", () => {
     const onConvert = vi.fn();
     const view = mountView(
       <ReactFlowProvider>
@@ -113,27 +109,24 @@ describe("DraftBlockNode", () => {
     mountedViews.push(view);
 
     const textarea = view.container.querySelector("textarea");
-    const select = view.container.querySelector("select");
     expect(textarea).not.toBeNull();
-    expect(select).not.toBeNull();
+
+    const siblingButton = document.createElement("button");
+    view.container.appendChild(siblingButton);
 
     act(() => {
       textarea!.focus();
-      (select as HTMLSelectElement).focus();
     });
 
     expect(onConvert).not.toHaveBeenCalled();
 
     act(() => {
-      (select as HTMLSelectElement).value = "Faction";
-      select!.dispatchEvent(new Event("change", { bubbles: true }));
-      document.body.tabIndex = -1;
-      document.body.focus();
+      siblingButton.focus();
     });
 
     expect(onConvert).toHaveBeenCalledWith("draft-2", {
       text: "황실 의회",
-      entityType: "Faction",
+      entityType: "Concept",
     });
   });
 });

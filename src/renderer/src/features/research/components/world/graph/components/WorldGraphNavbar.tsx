@@ -3,11 +3,10 @@ import { cn } from "@renderer/lib/utils";
 import { LayoutGrid, Clock, FileText } from "lucide-react";
 import { EditorSyncBus } from "@renderer/features/workspace/utils/EditorSyncBus";
 import type { WorldEntitySourceType } from "@shared/types";
-
-import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
+import { useWorldGraphUiStore } from "@renderer/features/research/stores/worldGraphUiStore";
 
 export function WorldGraphNavbar() {
-  const activeTab = useGraphIdeStore((state) => state.activeTab);
+  const activeTab = useWorldGraphUiStore((state) => state.activeTab);
 
   const handleAction = useCallback((id: string, type: WorldEntitySourceType) => {
     if (id === "world") {

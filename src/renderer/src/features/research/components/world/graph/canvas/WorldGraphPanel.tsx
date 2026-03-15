@@ -17,11 +17,8 @@ import {
   toPercentSize,
   toPxSize,
 } from "@shared/constants/sidebarSizing";
-import {
-  useFilteredGraph,
-  useWorldBuildingStore,
-} from "@renderer/features/research/stores/worldBuildingStore";
-import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
+import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
+import { useWorldGraphUiStore } from "@renderer/features/research/stores/worldGraphUiStore";
 import { WorldGraphCanvas } from "./WorldGraphCanvas";
 import { ActivityBar } from "../components/ActivityBar";
 import { PrimarySidebar } from "../components/PrimarySidebar";
@@ -31,6 +28,7 @@ import { LibraryMainView } from "@renderer/features/research/components/world/gr
 import { TimelineMainView } from "@renderer/features/research/components/world/graph/views/TimelineMainView";
 import { WorldGraphNavbar } from "../components/WorldGraphNavbar";
 import { EntityInspectorPanel } from "../sidebars/EntityInspectorPanel";
+import { useWorldGraphScene } from "../scene/useWorldGraphScene";
 
 export function WorldGraphPanel() {
   const { t } = useTranslation();
@@ -40,12 +38,11 @@ export function WorldGraphPanel() {
   const loadGraph = useWorldBuildingStore((state) => state.loadGraph);
   const isLoading = useWorldBuildingStore((state) => state.isLoading);
   const error = useWorldBuildingStore((state) => state.error);
-  const filteredGraph = useFilteredGraph();
+  const scene = useWorldGraphScene();
 
-  // IDE Store
-  const activeTab = useGraphIdeStore((state) => state.activeTab);
-  const isSidebarOpen = useGraphIdeStore((state) => state.isSidebarOpen);
-  const selectedNodeId = useWorldBuildingStore((state) => state.selectedNodeId);
+  const activeTab = useWorldGraphUiStore((state) => state.activeTab);
+  const isSidebarOpen = useWorldGraphUiStore((state) => state.isSidebarOpen);
+  const selectedNodeId = useWorldGraphUiStore((state) => state.selectedNodeId);
 
   const feature = "worldGraphSidebar" as const;
   const config = getSidebarWidthConfig(feature);
@@ -72,7 +69,10 @@ export function WorldGraphPanel() {
     "worldGraphInspector",
     setSidebarWidth,
   );
-  const showInspector = activeTab === "graph" && Boolean(selectedNodeId);
+  const showInspector =
+    activeTab === "graph" &&
+    Boolean(selectedNodeId) &&
+    scene.selectedNode !== null;
   const panelCompositionKey = useMemo(
     () =>
       buildPanelGroupCompositionKey("world-graph", [
@@ -123,21 +123,21 @@ export function WorldGraphPanel() {
       case "graph":
         return (
           <WorldGraphCanvas
-            nodes={filteredGraph.nodes}
-            edges={filteredGraph.edges}
+            nodes={scene.visibleGraph.nodes}
+            edges={scene.visibleGraph.edges}
           />
         );
       case "timeline":
         return (
           <TimelineMainView
-            nodes={filteredGraph.nodes}
-            edges={filteredGraph.edges}
+            nodes={scene.allNodes}
+            edges={scene.allEdges}
           />
         );
       case "note":
         return <NoteMainView />;
       case "entity":
-        return <EntityMainView nodes={filteredGraph.nodes} />;
+        return <EntityMainView nodes={scene.allNodes} />;
       case "library":
         return <LibraryMainView />;
       default:

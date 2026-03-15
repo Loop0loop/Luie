@@ -2,27 +2,19 @@ import { useCallback, useMemo } from "react";
 import { GitBranchPlus, GitCommitHorizontal, Link2, PlusCircle, CalendarDays, Users, Layers, Activity } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@renderer/lib/utils";
-import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
-import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
-import { EditorSyncBus } from "@renderer/features/workspace/utils/EditorSyncBus";
 import { SidebarTreeSection } from "./SidebarTreeSection";
-import { useToast } from "@shared/ui/ToastContext";
-import { buildTimelineEntries } from "../utils/worldGraphIdeViewModels";
-import { syncGraphEntitySelectionToWorkspace } from "../utils/graphEntitySync";
+import { useWorldGraphScene } from "../scene/useWorldGraphScene";
+import { useWorldGraphSelection } from "../scene/useWorldGraphSelection";
+import { useTimelineActions } from "../scene/useTimelineActions";
 
 export function TimelineSidebarContent() {
   const { t } = useTranslation();
-  const { showToast } = useToast();
-
-  const graphData = useWorldBuildingStore((s) => s.graphData);
-  const activeProjectId = useWorldBuildingStore((s) => s.activeProjectId);
-  const selectedNodeId = useWorldBuildingStore((s) => s.selectedNodeId);
-  const selectNode = useWorldBuildingStore((s) => s.selectNode);
-  const createGraphNode = useWorldBuildingStore((s) => s.createGraphNode);
-  const createRelation = useWorldBuildingStore((s) => s.createRelation);
+  const scene = useWorldGraphScene();
+  const { selectedNodeId, selectNode } = useWorldGraphSelection();
+  const { createRootEvent, createBranchEvent, openEntityLinkPalette } = useTimelineActions();
   const { events, characters, eras, totalConnectedEntities } = useMemo(() => {
-    const nodes = graphData?.nodes ?? [];
-    const timelineEntries = buildTimelineEntries(nodes, "");
+    const nodes = scene.allNodes;
+    const timelineEntries = scene.timelineEntries;
     
     // 타임라인 내에 엔티티가 얼마나 연결되어 있는지 통계 추산 로직
     const eventsArray = nodes.filter((n) => n.entityType === "Event");
@@ -37,70 +29,22 @@ export function TimelineSidebarContent() {
       eras: Array.from(new Set(timelineEntries.map((entry) => entry.dateLabel))),
       totalConnectedEntities: connectedEntitiesCount,
     };
-  }, [graphData]);
+  }, [scene.allNodes, scene.timelineEntries]);
 
-  const handleCreateRoot = async () => {
-    if (!activeProjectId) return;
-    const created = await createGraphNode({
-      projectId: activeProjectId,
-      entityType: "Event",
-      name: t("world.graph.timeline.newEvent", "새 사건"),
-      positionX: 120,
-      positionY: 120,
-    });
-    if (!created) {
-      showToast("새 사건을 만들지 못했습니다.", "error");
-      return;
-    }
-    selectNode(created.id);
-  };
+  const handleCreateRoot = () => void createRootEvent();
 
-  const handleCreateBranch = async () => {
-    if (!activeProjectId || !selectedNodeId) return;
-    const current = (graphData?.nodes ?? []).find((node) => node.id === selectedNodeId);
-    if (!current) return;
-    const created = await createGraphNode({
-      projectId: activeProjectId,
-      entityType: "Event",
-      name: t("world.graph.timeline.branchEvent", "새 분기 사건"),
-      positionX: (current.positionX ?? 0) + 220,
-      positionY: (current.positionY ?? 0) + 120,
-    });
-    if (!created) {
-      showToast("분기 사건을 만들지 못했습니다.", "error");
-      return;
-    }
-    const relationCreated = await createRelation({
-      projectId: activeProjectId,
-      sourceId: current.id,
-      sourceType: current.entityType,
-      targetId: created.id,
-      targetType: created.entityType,
-      relation: "causes",
-    });
-    if (!relationCreated) {
-      showToast("분기 연결을 만들지 못했습니다.", "error");
-    }
-    selectNode(created.id);
-  };
+  const handleCreateBranch = () => void createBranchEvent();
 
   const handleLinkEntity = useCallback(() => {
     if (!selectedNodeId) return;
-    useGraphIdeStore.getState().setActiveTab("graph");
-    requestAnimationFrame(() => {
-      EditorSyncBus.emit("OPEN_COMMAND_PALETTE", { mode: "Event" });
-    });
-  }, [selectedNodeId]);
+    openEntityLinkPalette();
+  }, [openEntityLinkPalette, selectedNodeId]);
 
   const handleSelectTimelineNode = useCallback(
     (nodeId: string) => {
       selectNode(nodeId);
-      const node = (graphData?.nodes ?? []).find((entry) => entry.id === nodeId);
-      if (node) {
-        syncGraphEntitySelectionToWorkspace(node);
-      }
     },
-    [graphData?.nodes, selectNode],
+    [selectNode],
   );
 
   const renderNodeItem = (node: (typeof events)[0]) => {

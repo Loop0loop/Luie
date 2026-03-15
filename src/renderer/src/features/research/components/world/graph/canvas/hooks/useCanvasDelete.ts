@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { type Node } from "reactflow";
+import { type Edge, type Node } from "reactflow";
 import { useDialog } from "@shared/ui/useDialog";
 import { useToast } from "@shared/ui/ToastContext";
 import type { EntityRelation, WorldGraphNode } from "@shared/types";
@@ -9,7 +9,7 @@ import { collectWorldGraphSelectionSnapshot } from "../worldGraphCanvasKeyboard"
 
 interface UseCanvasDeleteProps {
   nodes: Node[];
-  edges: any[];
+  edges: Edge[];
   graphNodes: WorldGraphNode[];
   graphEdges: EntityRelation[];
   selectedNodeId: string | null;

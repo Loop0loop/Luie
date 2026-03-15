@@ -2,8 +2,9 @@ import { memo, startTransition, useDeferredValue, useEffect, useMemo, useState }
 import { Command } from "cmdk";
 import { useReactFlow } from "reactflow";
 import { Plus, Search, Clock, StickyNote } from "lucide-react";
-import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { EditorSyncBus } from "@renderer/features/workspace/utils/EditorSyncBus";
+import { useWorldGraphScene } from "../scene/useWorldGraphScene";
+import { useWorldGraphUiStore } from "@renderer/features/research/stores/worldGraphUiStore";
 
 export type PaletteMode = "Event" | "Note";
 
@@ -15,13 +16,13 @@ interface CanvasCommandPaletteProps {
 export const CanvasCommandPalette = memo(({ mode, onClose }: CanvasCommandPaletteProps) => {
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
-  const allNodes = useWorldBuildingStore((state) => state.graphData?.nodes ?? []);
-  const selectNode = useWorldBuildingStore((state) => state.selectNode);
+  const scene = useWorldGraphScene();
+  const selectNode = useWorldGraphUiStore((state) => state.selectNode);
   const reactFlow = useReactFlow();
 
   const targetNodes = useMemo(
     () =>
-      allNodes.filter((node) => {
+      scene.allNodes.filter((node) => {
         if (mode === "Event") return node.entityType === "Event";
         if (mode === "Note") {
           const isNoteBySubtype = String(node.subType) === "Note";
@@ -34,7 +35,7 @@ export const CanvasCommandPalette = memo(({ mode, onClose }: CanvasCommandPalett
         }
         return false;
       }),
-    [allNodes, mode],
+    [mode, scene.allNodes],
   );
 
   const filteredNodes = useMemo(() => {

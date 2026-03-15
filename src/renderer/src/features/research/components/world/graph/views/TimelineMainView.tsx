@@ -3,12 +3,11 @@ import { useTranslation } from "react-i18next";
 import { CalendarDays, Plus, Search } from "lucide-react";
 import { Button } from "@renderer/components/ui/button";
 import { Input } from "@renderer/components/ui/input";
-import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
-import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import type { EntityRelation, WorldGraphNode } from "@shared/types";
 import { useToast } from "@shared/ui/ToastContext";
-import { syncGraphEntitySelectionToWorkspace } from "../utils/graphEntitySync";
 import { buildTimelineEntries } from "../utils/worldGraphIdeViewModels";
+import { useTimelineActions } from "../scene/useTimelineActions";
+import { useWorldGraphSelection } from "../scene/useWorldGraphSelection";
 
 interface TimelineMainViewProps {
   nodes?: WorldGraphNode[];
@@ -20,12 +19,8 @@ export function TimelineMainView({ nodes = [] }: TimelineMainViewProps) {
   const { showToast } = useToast();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const activeProjectId = useWorldBuildingStore((state) => state.activeProjectId);
-  const createGraphNode = useWorldBuildingStore((state) => state.createGraphNode);
-  const nodeById = useMemo(
-    () => new Map(nodes.map((node) => [node.id, node] as const)),
-    [nodes],
-  );
+  const { createRootEvent } = useTimelineActions();
+  const { selectNode } = useWorldGraphSelection();
 
   const entries = useMemo(
     () => buildTimelineEntries(nodes, deferredQuery),
@@ -33,14 +28,7 @@ export function TimelineMainView({ nodes = [] }: TimelineMainViewProps) {
   );
 
   const handleCreateEvent = async () => {
-    if (!activeProjectId) return;
-    const created = await createGraphNode({
-      projectId: activeProjectId,
-      entityType: "Event",
-      name: t("world.graph.timeline.newEvent", "새 사건"),
-      positionX: 120,
-      positionY: 120,
-    });
+    const created = await createRootEvent();
 
     if (!created) {
       showToast(
@@ -57,12 +45,7 @@ export function TimelineMainView({ nodes = [] }: TimelineMainViewProps) {
   };
 
   const handleOpenEvent = (nodeId: string) => {
-    useWorldBuildingStore.getState().selectNode(nodeId);
-    const node = nodeById.get(nodeId);
-    if (node) {
-      syncGraphEntitySelectionToWorkspace(node);
-    }
-    useGraphIdeStore.getState().setActiveTab("graph");
+    selectNode(nodeId);
   };
 
   return (

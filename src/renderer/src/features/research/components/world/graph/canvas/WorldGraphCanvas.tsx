@@ -23,7 +23,7 @@ import { useDialog } from "@shared/ui/useDialog";
 import type { EntityRelation, WorldEntitySourceType, WorldGraphNode } from "@shared/types";
 import { getDefaultRelationForPair } from "@shared/constants/worldRelationRules";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
-import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
+import { useWorldGraphUiStore } from "@renderer/features/research/stores/worldGraphUiStore";
 import {
   WORLD_GRAPH_CREATE_MENU_HEIGHT_PX,
   WORLD_GRAPH_CREATE_MENU_WIDTH_PX,
@@ -89,14 +89,15 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
   const { showToast } = useToast();
   const dialog = useDialog();
   
-  const selectedNodeId = useWorldBuildingStore((state) => state.selectedNodeId);
-  const selectedEdgeId = useWorldBuildingStore((state) => state.selectedEdgeId);
   const activeProjectId = useWorldBuildingStore((state) => state.activeProjectId);
-  const selectNode = useWorldBuildingStore((state) => state.selectNode);
-  const selectEdge = useWorldBuildingStore((state) => state.selectEdge);
   const createGraphNode = useWorldBuildingStore((state) => state.createGraphNode);
   const createRelation = useWorldBuildingStore((state) => state.createRelation);
   const updateGraphNodePosition = useWorldBuildingStore((state) => state.updateGraphNodePosition);
+  const selectedNodeId = useWorldGraphUiStore((state) => state.selectedNodeId);
+  const selectedEdgeId = useWorldGraphUiStore((state) => state.selectedEdgeId);
+  const selectNode = useWorldGraphUiStore((state) => state.selectNode);
+  const selectEdge = useWorldGraphUiStore((state) => state.selectEdge);
+  const clearSelection = useWorldGraphUiStore((state) => state.clearSelection);
 
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
@@ -164,7 +165,7 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
   });
 
   // --- 3. Layout Trigger ---
-  const layoutTrigger = useGraphIdeStore((state) => state.layoutTrigger);
+  const layoutTrigger = useWorldGraphUiStore((state) => state.layoutTrigger);
   const prevTriggerVersionRef = useRef<number>(0);
 
   useEffect(() => {
@@ -210,9 +211,6 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
     (_, node) => {
       clearMenus();
       selectNode(node.id);
-      if (node.type !== "draft") {
-        EditorSyncBus.emit("JUMP_TO_MENTION", { entityId: node.id });
-      }
     },
     [selectNode, clearMenus],
   );
@@ -265,9 +263,8 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
 
   const onPaneClick = useCallback(() => {
     clearMenus();
-    selectNode(null);
-    selectEdge(null);
-  }, [selectNode, selectEdge, clearMenus]);
+    clearSelection();
+  }, [clearSelection, clearMenus]);
 
   const onPaneContextMenu = useCallback(
     (event: React.MouseEvent) => {

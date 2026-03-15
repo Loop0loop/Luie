@@ -45,6 +45,15 @@ export const CustomEntityNode = memo(({ id, data, selected }: CustomEntityNodePr
     }
   };
 
+  const stopCanvasInteraction = (
+    event:
+      | React.MouseEvent<HTMLElement>
+      | React.PointerEvent<HTMLElement>
+      | KeyboardEvent<HTMLInputElement>,
+  ) => {
+    event.stopPropagation();
+  };
+
   const isNote = Boolean(data.isNote) || (entityType === "Concept" && subType === "Note");
   const isEvent = entityType === "Event";
   
@@ -79,7 +88,7 @@ export const CustomEntityNode = memo(({ id, data, selected }: CustomEntityNodePr
         <div className="flex flex-col">
           <div className="flex flex-col gap-2.5 mb-4">
             {isEditing ? (
-              <input autoFocus value={editLabel} onChange={(e) => setEditLabel(e.target.value)} onBlur={handleSave} onKeyDown={handleKeyDown} className="w-full text-[20px] font-bold text-[#e8e8e8] bg-transparent outline-none" placeholder="노트 제목" />
+              <input autoFocus value={editLabel} onChange={(e) => setEditLabel(e.target.value)} onBlur={handleSave} onKeyDown={(e) => { stopCanvasInteraction(e); handleKeyDown(e); }} onMouseDown={stopCanvasInteraction} onPointerDown={stopCanvasInteraction} className="nodrag nopan nowheel w-full bg-transparent text-[20px] font-bold text-[#e8e8e8] outline-none" placeholder="노트 제목" />
             ) : (
               <div className="text-[20px] font-bold text-[#e8e8e8] leading-snug cursor-text break-words tracking-tight" onDoubleClick={() => setIsEditing(true)}>
                 {label || "빈 노트"}
@@ -119,7 +128,7 @@ export const CustomEntityNode = memo(({ id, data, selected }: CustomEntityNodePr
         <div className={cn("flex-1 flex flex-col gap-1.5 rounded-lg border bg-[#1c1c1c]/90 backdrop-blur-sm border-[#363636] p-4 shadow-lg", selected ? "border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.15)]" : "hover:border-[#4a4a4a]")}>
           <span className="text-[10px] text-blue-400/80 font-bold tracking-widest uppercase mb-0.5">Timeline Event</span>
           {isEditing ? (
-            <input autoFocus value={editLabel} onChange={(e) => setEditLabel(e.target.value)} onBlur={handleSave} onKeyDown={handleKeyDown} className="w-full text-[16px] font-semibold text-[#f0f0f0] bg-transparent outline-none" placeholder="사건 / 분기명" />
+            <input autoFocus value={editLabel} onChange={(e) => setEditLabel(e.target.value)} onBlur={handleSave} onKeyDown={(e) => { stopCanvasInteraction(e); handleKeyDown(e); }} onMouseDown={stopCanvasInteraction} onPointerDown={stopCanvasInteraction} className="nodrag nopan nowheel w-full bg-transparent text-[16px] font-semibold text-[#f0f0f0] outline-none" placeholder="사건 / 분기명" />
           ) : (
             <div className="text-[16px] font-semibold text-[#f0f0f0] cursor-text break-words tracking-wide" onDoubleClick={() => setIsEditing(true)}>
               {label || "새 사건"}
@@ -134,7 +143,7 @@ export const CustomEntityNode = memo(({ id, data, selected }: CustomEntityNodePr
   return (
     <div onDoubleClick={(e) => e.stopPropagation()} className={cn("group relative flex flex-col min-w-[80px] max-w-[250px] rounded-lg border bg-[#1c1c1c] border-[#363636] px-5 py-3 transition-colors shadow-sm", selected ? "border-[#666]" : "hover:border-[#4a4a4a]")}>
       {isEditing ? (
-        <input autoFocus value={editLabel} onChange={(e) => setEditLabel(e.target.value)} onBlur={handleSave} onKeyDown={handleKeyDown} className="w-full text-[14px] text-[#e3e3e3] bg-transparent outline-none text-center" placeholder="엔티티 이름" />
+        <input autoFocus value={editLabel} onChange={(e) => setEditLabel(e.target.value)} onBlur={handleSave} onKeyDown={(e) => { stopCanvasInteraction(e); handleKeyDown(e); }} onMouseDown={stopCanvasInteraction} onPointerDown={stopCanvasInteraction} className="nodrag nopan nowheel w-full bg-transparent text-center text-[14px] text-[#e3e3e3] outline-none" placeholder="엔티티 이름" />
       ) : (
         <div className="text-[14px] text-[#e3e3e3] truncate cursor-text text-center" onDoubleClick={() => setIsEditing(true)}>
           {label || "무명의 엔티티"}

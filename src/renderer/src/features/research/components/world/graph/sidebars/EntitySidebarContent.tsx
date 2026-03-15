@@ -2,22 +2,21 @@ import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@renderer/lib/utils";
-import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { WORLD_GRAPH_ICON_MAP, WORLD_GRAPH_MINIMAP_COLORS } from "@shared/constants/worldGraphUI";
 import { SidebarTreeSection } from "./SidebarTreeSection";
+import { useWorldGraphScene } from "../scene/useWorldGraphScene";
+import { useWorldGraphSelection } from "../scene/useWorldGraphSelection";
 
 const DISPLAY_ORDER = ["Character", "Place", "Faction", "Event", "Concept", "Rule", "Item", "Term", "WorldEntity"] as const;
 
 export function EntitySidebarContent() {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
-
-  const graphData = useWorldBuildingStore((s) => s.graphData);
-  const selectedNodeId = useWorldBuildingStore((s) => s.selectedNodeId);
-  const selectNode = useWorldBuildingStore((s) => s.selectNode);
+  const scene = useWorldGraphScene();
+  const { selectedNodeId, selectNode } = useWorldGraphSelection();
 
   const grouped = useMemo(() => {
-    const nodes = graphData?.nodes ?? [];
+    const nodes = scene.allNodes;
     const q = search.trim().toLowerCase();
     const filtered = q
       ? nodes.filter((n) => n.name.toLowerCase().includes(q))
@@ -30,7 +29,7 @@ export function EntitySidebarContent() {
       groups[key].push(node);
     });
     return groups;
-  }, [graphData, search]);
+  }, [scene.allNodes, search]);
 
   const orderedKeys = useMemo(
     () =>
@@ -58,7 +57,7 @@ export function EntitySidebarContent() {
         {orderedKeys.length === 0 ? (
           <div className="px-4 py-8 text-center">
             <p className="text-[12px] text-muted-foreground/50">
-              {graphData ? "엔티티가 없습니다" : "로딩 중..."}
+              {scene.graphData.nodes.length > 0 ? "엔티티가 없습니다" : "로딩 중..."}
             </p>
           </div>
         ) : (

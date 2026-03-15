@@ -73,8 +73,17 @@ export const DraftBlockNode = memo(({ data, selected }: DraftBlockNodeProps) => 
     handleConvert();
   };
 
+  const stopCanvasInteraction = (
+    event:
+      | React.MouseEvent<HTMLElement>
+      | React.PointerEvent<HTMLElement>
+      | React.KeyboardEvent<HTMLElement>,
+  ) => {
+    event.stopPropagation();
+  };
+
   return (
-    <div ref={rootRef} className="group relative">
+    <div ref={rootRef} className="group nodrag nopan nowheel relative">
       {entityType === "Event" ? (
         // Timeline Draft UI
         <div className="relative flex flex-col items-center justify-center group w-14 h-14">
@@ -84,10 +93,10 @@ export const DraftBlockNode = memo(({ data, selected }: DraftBlockNodeProps) => 
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-primary/20 blur-xl pointer-events-none -z-10" />
           
           {/* 입력 폼 (Timeline 스타일) */}
-          <div className="absolute top-[calc(100%+12px)] flex flex-col p-2.5 rounded-lg border min-w-[200px] bg-background/90 backdrop-blur-md shadow-[0_4px_25px_hsl(var(--primary)/0.2)] border-primary">
+          <div className="absolute top-[calc(100%+12px)] flex flex-col rounded-lg border border-primary bg-background/90 p-2.5 shadow-[0_4px_25px_hsl(var(--primary)/0.2)] backdrop-blur-md min-w-[200px]">
             <textarea
               ref={inputRef}
-              className="w-full bg-transparent border-b border-primary outline-none resize-none text-[13px] font-bold text-foreground placeholder:text-muted-foreground/40 min-h-[24px] overflow-hidden"
+              className="nodrag nopan nowheel min-h-[24px] w-full resize-none overflow-hidden border-b border-primary bg-transparent text-[13px] font-bold text-foreground outline-none placeholder:text-muted-foreground/40"
               placeholder="타임라인 사건 입력..."
               value={text}
               onChange={(e) => {
@@ -99,6 +108,8 @@ export const DraftBlockNode = memo(({ data, selected }: DraftBlockNodeProps) => 
               }}
               onKeyDown={handleKeyDown}
               onBlur={handleTextareaBlur}
+              onMouseDown={stopCanvasInteraction}
+              onPointerDown={stopCanvasInteraction}
               autoFocus
             />
           </div>
@@ -117,7 +128,7 @@ export const DraftBlockNode = memo(({ data, selected }: DraftBlockNodeProps) => 
             <div className="px-5 py-4 bg-transparent">
               <textarea
                 ref={inputRef}
-                className="w-full bg-transparent border-none outline-none resize-none text-[15px] font-semibold text-foreground placeholder:text-muted-foreground/40 leading-relaxed min-h-[48px] overflow-hidden"
+                className="nodrag nopan nowheel min-h-[48px] w-full resize-none overflow-hidden border-none bg-transparent text-[15px] font-semibold leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/40"
                 placeholder={t("world.graph.ide.draftPlaceholder", "블록 내용 입력...")}
                 value={text}
                 onChange={(e) => {
@@ -129,6 +140,8 @@ export const DraftBlockNode = memo(({ data, selected }: DraftBlockNodeProps) => 
                 }}
                 onKeyDown={handleKeyDown}
                 onBlur={handleTextareaBlur}
+                onMouseDown={stopCanvasInteraction}
+                onPointerDown={stopCanvasInteraction}
               />
             </div>
           </div>

@@ -1,11 +1,13 @@
-import { memo, useState, useCallback, useRef, useEffect } from "react";
+import { memo, useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { type EdgeProps, getBezierPath, BaseEdge, EdgeLabelRenderer } from "reactflow";
 import { useTranslation } from "react-i18next";
 import { Trash2, ArrowRight, ArrowLeftRight, Minus, Palette, Edit2 } from "lucide-react";
-import { useFilteredGraph, useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
+import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { RELATION_COLORS } from "@shared/constants/world";
 import type { RelationKind } from "@shared/types";
 import { cn } from "@renderer/lib/utils";
+import { useWorldGraphScene } from "../scene/useWorldGraphScene";
+import { useWorldGraphUiStore } from "@renderer/features/research/stores/worldGraphUiStore";
 
 const EDGE_COLORS = [
   "#94a3b8", // slaty
@@ -34,11 +36,11 @@ export const CustomEdge = memo(({
   selected,
 }: EdgeProps) => {
   const { t } = useTranslation();
-  const { edges } = useFilteredGraph();
+  const scene = useWorldGraphScene();
   const updateRelation = useWorldBuildingStore((state) => state.updateRelation);
   const deleteRelation = useWorldBuildingStore((state) => state.deleteRelation);
-  const selectEdge = useWorldBuildingStore((state) => state.selectEdge);
-  const selectedEdgeId = useWorldBuildingStore((state) => state.selectedEdgeId);
+  const selectEdge = useWorldGraphUiStore((state) => state.selectEdge);
+  const selectedEdgeId = useWorldGraphUiStore((state) => state.selectedEdgeId);
   const isSelected = selected || selectedEdgeId === id;
 
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
@@ -57,8 +59,11 @@ export const CustomEdge = memo(({
     targetPosition,
   });
 
-  const selectedEdge = edges.find((e) => e.id === id);
-  const attributes = (selectedEdge?.attributes as Record<string, unknown>) || {};
+  const selectedEdge = scene.edgeById.get(id);
+  const attributes = useMemo(
+    () => (selectedEdge?.attributes as Record<string, unknown>) || {},
+    [selectedEdge?.attributes],
+  );
   const direction = (attributes?.direction as string) || "unidirectional";
   
   const customColor = (attributes?.color as string) || RELATION_COLORS[selectedEdge?.relation as RelationKind] || "#94a3b8";

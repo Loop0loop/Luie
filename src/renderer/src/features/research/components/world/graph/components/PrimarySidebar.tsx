@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
-import { ScrollArea } from "@renderer/components/ui/scroll-area";
+import { useWorldGraphUiStore } from "@renderer/features/research/stores/worldGraphUiStore";
 import { GraphSidebarContent } from "../sidebars/GraphSidebarContent";
 import { TimelineSidebarContent } from "../sidebars/TimelineSidebarContent";
 import { NoteSidebarContent } from "../sidebars/NoteSidebarContent";
@@ -17,7 +16,7 @@ const TAB_META = {
 
 export function PrimarySidebar() {
   const { t } = useTranslation();
-  const activeTab = useGraphIdeStore((state) => state.activeTab);
+  const activeTab = useWorldGraphUiStore((state) => state.activeTab);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -39,11 +38,9 @@ export function PrimarySidebar() {
         </h2>
       </div>
 
-      <ScrollArea className="flex-1 w-full mx-auto">
-        <div className="py-2 w-full max-w-full">
-          {renderContent()}
-        </div>
-      </ScrollArea>
+      <div className="flex-1 overflow-y-auto">
+        <div className="w-full max-w-full py-2">{renderContent()}</div>
+      </div>
     </div>
   );
 }

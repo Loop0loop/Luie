@@ -1,8 +1,9 @@
 import { memo, useState } from "react";
 import { BookOpen } from "lucide-react";
 import type { WorldGraphNode } from "@shared/types";
-import { useWorldBuildingStore, useFilteredGraph } from "@renderer/features/research/stores/worldBuildingStore";
+import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { WORLD_GRAPH_ICON_MAP } from "@shared/constants/worldGraphUI";
+import { useWorldGraphScene } from "../scene/useWorldGraphScene";
 
 type InspectorContentProps = {
   node: WorldGraphNode;
@@ -170,10 +171,9 @@ function InspectorContent({ node, onUpdate }: InspectorContentProps) {
 }
 
 export const EntityInspectorPanel = memo(() => {
-  const selectedNodeId = useWorldBuildingStore((state) => state.selectedNodeId);
   const updateGraphNode = useWorldBuildingStore((state) => state.updateGraphNode);
-  const { nodes } = useFilteredGraph();
-  const selectedNode = selectedNodeId ? nodes.find((node) => node.id === selectedNodeId) : null;
+  const scene = useWorldGraphScene();
+  const selectedNode = scene.selectedNode;
 
   if (!selectedNode) {
     return (

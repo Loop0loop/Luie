@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Network, Clock, StickyNote, Users, Archive, Settings } from "lucide-react";
-import { useGraphIdeStore, type GraphIdeTab } from "@renderer/features/research/stores/graphIdeStore";
+import { useWorldGraphUiStore, type GraphIdeTab } from "@renderer/features/research/stores/worldGraphUiStore";
 import { cn } from "@renderer/lib/utils";
 
 const NAV_ITEMS: { id: GraphIdeTab; icon: React.ElementType; label: string; labelKey: string }[] = [
@@ -13,9 +13,9 @@ const NAV_ITEMS: { id: GraphIdeTab; icon: React.ElementType; label: string; labe
 
 export function ActivityBar() {
   const { t } = useTranslation();
-  const activeTab = useGraphIdeStore((state) => state.activeTab);
-  const setActiveTab = useGraphIdeStore((state) => state.setActiveTab);
-  const toggleSidebar = useGraphIdeStore((state) => state.toggleSidebar);
+  const activeTab = useWorldGraphUiStore((state) => state.activeTab);
+  const setActiveTab = useWorldGraphUiStore((state) => state.setActiveTab);
+  const toggleSidebar = useWorldGraphUiStore((state) => state.toggleSidebar);
 
   const handleNavClick = (id: GraphIdeTab) => {
     if (activeTab === id) {

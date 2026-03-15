@@ -12,13 +12,13 @@ import {
 import { Button } from "@renderer/components/ui/button";
 import { Separator } from "@renderer/components/ui/separator";
 import { useToast } from "@shared/ui/ToastContext";
-import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
+import { useWorldGraphUiStore } from "@renderer/features/research/stores/worldGraphUiStore";
 
 export function WorldGraphFloatingToolbar() {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
   const { showToast } = useToast();
-  const triggerLayout = useGraphIdeStore(s => s.triggerLayout);
-  const toggleSidebar = useGraphIdeStore(s => s.toggleSidebar);
+  const triggerLayout = useWorldGraphUiStore((s) => s.triggerLayout);
+  const toggleSidebar = useWorldGraphUiStore((s) => s.toggleSidebar);
 
   const handleRefresh = useCallback(() => {
     fitView({ duration: 400, padding: 0.15 });
