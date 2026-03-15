@@ -8,7 +8,6 @@ import { useWorldBuildingStore } from "@renderer/features/research/stores/worldB
 import { GRAPH_TAB_ITEMS } from "../constants";
 import { useWorldGraphWorkspace } from "../hooks/useWorldGraphWorkspace";
 import type { GraphSurfaceTab } from "../types";
-import { buildCanvasAutoLayout } from "../utils/canvasAutoLayout";
 import { GraphActiveSidebar } from "../components/GraphActiveSidebar";
 import { GraphIconSidebar } from "../components/GraphIconSidebar";
 import { CanvasView } from "../views/CanvasView";
@@ -51,10 +50,15 @@ export function WorldGraphPanel() {
     pluginError,
   } = useWorldGraphWorkspace();
 
-  const createGraphNode = useWorldBuildingStore((state) => state.createGraphNode);
-  const updateGraphNode = useWorldBuildingStore((state) => state.updateGraphNode);
-  const updateGraphNodePosition = useWorldBuildingStore((state) => state.updateGraphNodePosition);
-  const updateGraphNodePositionsBatch = useWorldBuildingStore((state) => state.updateGraphNodePositionsBatch);
+  const createGraphNode = useWorldBuildingStore(
+    (state) => state.createGraphNode,
+  );
+  const updateGraphNode = useWorldBuildingStore(
+    (state) => state.updateGraphNode,
+  );
+  const updateGraphNodePosition = useWorldBuildingStore(
+    (state) => state.updateGraphNodePosition,
+  );
   const loadGraph = useWorldBuildingStore((state) => state.loadGraph);
 
   const addNote = useMemoStore((state) => state.addNote);
@@ -66,9 +70,15 @@ export function WorldGraphPanel() {
   const uninstallPlugin = useGraphPluginStore((state) => state.uninstallPlugin);
   const applyTemplate = useGraphPluginStore((state) => state.applyTemplate);
   const loadPluginData = useGraphPluginStore((state) => state.loadData);
-  const installingPluginId = useGraphPluginStore((state) => state.installingPluginId);
-  const uninstallingPluginId = useGraphPluginStore((state) => state.uninstallingPluginId);
-  const applyingTemplateKey = useGraphPluginStore((state) => state.applyingTemplateKey);
+  const installingPluginId = useGraphPluginStore(
+    (state) => state.installingPluginId,
+  );
+  const uninstallingPluginId = useGraphPluginStore(
+    (state) => state.uninstallingPluginId,
+  );
+  const applyingTemplateKey = useGraphPluginStore(
+    (state) => state.applyingTemplateKey,
+  );
 
   const [activeTab, setActiveTab] = useState<GraphSurfaceTab>("canvas");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -78,15 +88,16 @@ export function WorldGraphPanel() {
   const effectiveSelectedNodeId =
     selectedNodeId && graphNodes.some((node) => node.id === selectedNodeId)
       ? selectedNodeId
-      : graphNodes[0]?.id ?? null;
+      : (graphNodes[0]?.id ?? null);
 
   const effectiveSelectedNoteId =
     selectedNoteId && notes.some((note) => note.id === selectedNoteId)
       ? selectedNoteId
-      : notes[0]?.id ?? null;
+      : (notes[0]?.id ?? null);
 
   const selectedNode = useMemo(
-    () => graphNodes.find((node) => node.id === effectiveSelectedNodeId) ?? null,
+    () =>
+      graphNodes.find((node) => node.id === effectiveSelectedNodeId) ?? null,
     [effectiveSelectedNodeId, graphNodes],
   );
 
@@ -223,17 +234,6 @@ export function WorldGraphPanel() {
     [applyTemplate, loadGraph, loadPluginData, projectId],
   );
 
-  const handleAutoArrange = useCallback(async () => {
-    const nextLayout = buildCanvasAutoLayout(graphNodes, graphEdges);
-    await updateGraphNodePositionsBatch(
-      nextLayout.map((entry) => ({
-        id: entry.id,
-        positionX: entry.positionX,
-        positionY: entry.positionY,
-      })),
-    );
-  }, [graphEdges, graphNodes, updateGraphNodePositionsBatch]);
-
   return (
     <div className="flex h-full min-h-0 bg-[#0b0e13] text-fg">
       <GraphIconSidebar
@@ -248,7 +248,6 @@ export function WorldGraphPanel() {
           activeTab={activeTab}
           currentProjectTitle={currentProjectTitle}
           nodes={graphNodes}
-          edges={graphEdges}
           timelineNodes={timelineNodes}
           notes={notes}
           selectedNode={selectedNode}
@@ -258,7 +257,6 @@ export function WorldGraphPanel() {
           onSaveNode={handleSaveNode}
           onSelectNote={setSelectedNoteId}
           onCreateNote={handleCreateNote}
-          onAutoArrange={handleAutoArrange}
           pluginSummary={{
             catalogCount: catalog.length,
             installedCount: installed.length,
@@ -282,9 +280,7 @@ export function WorldGraphPanel() {
               <h1 className="text-lg font-semibold text-fg">
                 {currentProjectTitle}
               </h1>
-              <Badge variant="outline">
-                {activeTabMeta?.label}
-              </Badge>
+              <Badge variant="outline">{activeTabMeta?.label}</Badge>
               <Badge variant="secondary">{graphNodes.length} nodes</Badge>
             </div>
           </div>

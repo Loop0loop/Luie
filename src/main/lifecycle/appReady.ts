@@ -49,6 +49,9 @@ const resolveCspPolicy = (isDev: boolean): string | null => {
 };
 
 const isFileUrl = (url: string): boolean => url.startsWith("file://");
+const isResizeObserverNoise = (message: string): boolean =>
+  message.includes("ResizeObserver loop completed with undelivered notifications") ||
+  message.includes("ResizeObserver loop limit exceeded");
 
 const handleRendererCrash = async (
   logger: Logger,
@@ -311,6 +314,9 @@ export const registerAppReady = (
       });
       webContents.on("console-message", (consoleEvent) => {
         const { level, message, lineNumber, sourceId } = consoleEvent;
+        if (typeof message === "string" && isResizeObserverNoise(message)) {
+          return;
+        }
         const severity =
           level === "error"
             ? 3

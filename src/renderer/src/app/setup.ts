@@ -46,6 +46,27 @@ function setupUnhandledRejectionHandler(): void {
   );
 }
 
+const isResizeObserverNoise = (message: string): boolean =>
+  message.includes("ResizeObserver loop completed with undelivered notifications") ||
+  message.includes("ResizeObserver loop limit exceeded");
+
+function setupResizeObserverWarningFilter(): void {
+  window.addEventListener(
+    "error",
+    (event) => {
+      const errorEvent = event as ErrorEvent;
+      if (
+        typeof errorEvent.message === "string" &&
+        isResizeObserverNoise(errorEvent.message)
+      ) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    },
+    true,
+  );
+}
+
 type ThemeSeed = Pick<
   EditorSettings,
   "theme" | "themeTemp" | "themeContrast" | "themeAccent" | "themeTexture"
@@ -79,6 +100,7 @@ const toThemeSeed = (settings: EditorSettings): ThemeSeed => ({
 export const setupRenderer = async (): Promise<void> => {
   // ✅ Register global rejection handler before anything else
   setupUnhandledRejectionHandler();
+  setupResizeObserverWarningFilter();
 
   applyThemeSeed(DEFAULT_THEME_SEED);
 

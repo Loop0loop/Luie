@@ -21,7 +21,12 @@ import { Button } from "@renderer/components/ui/button";
 import { Card, CardContent } from "@renderer/components/ui/card";
 import { CanvasTimelinePalette } from "../components/CanvasTimelinePalette";
 import { CanvasToolbar } from "../components/CanvasToolbar";
-import { CanvasGraphNodeCard, type CanvasGraphNodeData } from "../components/CanvasGraphNodeCard";
+import {
+  CanvasGraphNodeCard,
+  type CanvasGraphNodeData,
+} from "../components/CanvasGraphNodeCard";
+
+const CANVAS_NODE_TYPES = { "obsidian-card": CanvasGraphNodeCard } as const;
 
 type CanvasViewProps = {
   nodes: WorldGraphNode[];
@@ -56,8 +61,14 @@ const buildFlowNodes = (
 ): Node<CanvasGraphNodeData>[] => {
   const relationCountByNodeId = new Map<string, number>();
   edges.forEach((edge) => {
-    relationCountByNodeId.set(edge.sourceId, (relationCountByNodeId.get(edge.sourceId) ?? 0) + 1);
-    relationCountByNodeId.set(edge.targetId, (relationCountByNodeId.get(edge.targetId) ?? 0) + 1);
+    relationCountByNodeId.set(
+      edge.sourceId,
+      (relationCountByNodeId.get(edge.sourceId) ?? 0) + 1,
+    );
+    relationCountByNodeId.set(
+      edge.targetId,
+      (relationCountByNodeId.get(edge.targetId) ?? 0) + 1,
+    );
   });
 
   return nodes.map((node, index) => ({
@@ -144,6 +155,7 @@ function CanvasFlowSurface({
   const [nodes, setNodes] = useState<Node<CanvasGraphNodeData>[]>(graphNodes);
   const [edges, setEdges] = useState<Edge[]>(graphEdges);
   const [timelinePaletteOpen, setTimelinePaletteOpen] = useState(false);
+  const [isHudVisible, setIsHudVisible] = useState(true);
   const draggingNodeIdRef = useRef<string | null>(null);
   const reactFlow = useReactFlow<CanvasGraphNodeData>();
 
@@ -159,10 +171,17 @@ function CanvasFlowSurface({
 
   useEffect(() => {
     setNodes((currentNodes) =>
-      currentNodes.map((node) => ({
-        ...node,
-        selected: node.id === selectedNodeId,
-      })),
+      {
+        const activeNodeId =
+          currentNodes.find((node) => node.selected)?.id ?? null;
+        if (activeNodeId === selectedNodeId) {
+          return currentNodes;
+        }
+        return currentNodes.map((node) => ({
+          ...node,
+          selected: node.id === selectedNodeId,
+        }));
+      },
     );
   }, [selectedNodeId]);
 
@@ -195,7 +214,7 @@ function CanvasFlowSurface({
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        nodeTypes={{ "obsidian-card": CanvasGraphNodeCard }}
+        nodeTypes={CANVAS_NODE_TYPES}
         minZoom={0.45}
         maxZoom={1.6}
         defaultViewport={{ x: 0, y: 0, zoom: 0.9 }}
@@ -203,8 +222,14 @@ function CanvasFlowSurface({
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
         onConnect={handleConnect}
-        onNodeClick={(_, node) => onSelectNode(node.id)}
-        onPaneClick={() => onSelectNode(null)}
+        onNodeClick={(_, node) => {
+          setIsHudVisible(false);
+          onSelectNode(node.id);
+        }}
+        onPaneClick={() => {
+          setIsHudVisible(false);
+          onSelectNode(null);
+        }}
         onNodeDragStart={(_, node) => {
           draggingNodeIdRef.current = node.id;
         }}
@@ -216,12 +241,13 @@ function CanvasFlowSurface({
             y: node.position.y,
           });
         }}
-        panOnDrag
+        panOnDrag={[1]}
         panOnScroll
         selectionOnDrag
         selectionMode={SelectionMode.Partial}
         onlyRenderVisibleElements
         zoomOnDoubleClick={false}
+        selectNodesOnDrag={false}
         className="bg-[#0f1319]"
       >
         <Background
@@ -232,52 +258,62 @@ function CanvasFlowSurface({
         />
       </ReactFlow>
 
-      <div className="pointer-events-none absolute left-5 top-5 z-10">
-        <Card className="w-[320px] border-white/10 bg-[#171b22]/90 text-fg shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur">
-          <CardContent className="space-y-3 pt-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.24em] text-fg/45">
-                  Canvas
-                </p>
-                <p className="mt-1 text-sm font-semibold text-fg">
-                  Obsidian-style graph board
-                </p>
+      {isHudVisible ? (
+        <div className="pointer-events-none absolute left-5 top-5 z-10">
+          <Card className="w-[280px] border-white/10 bg-[#171b22]/88 text-fg shadow-[0_16px_38px_rgba(0,0,0,0.28)]">
+            <CardContent className="space-y-3 pt-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-fg/45">
+                    Canvas
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-fg">
+                    {summary.nodeCount} cards / {summary.edgeCount} links
+                  </p>
+                </div>
+                <Badge variant="outline">
+                  {summary.hasSelection ? "selection" : "idle"}
+                </Badge>
               </div>
-              <Badge variant="outline">{summary.nodeCount} cards</Badge>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">{summary.edgeCount} links</Badge>
-              <Badge variant="outline">
-                {summary.hasSelection ? "selection active" : "no selection"}
-              </Badge>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                className="pointer-events-auto"
-                onClick={() => onSelectNode(null)}
-              >
-                선택 해제
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="pointer-events-auto"
-                onClick={() => {
-                  void reactFlow.fitView({
-                    padding: 0.24,
-                    duration: 0,
-                  });
-                }}
-              >
-                뷰 정리
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="pointer-events-auto"
+                  onClick={() => onSelectNode(null)}
+                >
+                  선택 해제
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="pointer-events-auto"
+                  onClick={() => {
+                    void reactFlow.fitView({
+                      padding: 0.24,
+                      duration: 0,
+                    });
+                  }}
+                >
+                  뷰 정리
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <div className="pointer-events-none absolute left-5 top-5 z-10">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="pointer-events-auto border-white/10 bg-[#171b22]/88"
+            onClick={() => setIsHudVisible(true)}
+          >
+            HUD
+          </Button>
+        </div>
+      )}
 
       <div className="pointer-events-none absolute right-5 top-5 z-10 flex flex-col gap-2">
         <Button
