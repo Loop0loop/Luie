@@ -14,9 +14,10 @@ const parseProjectRef = (...candidates) => {
     if (!raw) continue;
 
     try {
-      const host = raw.startsWith("http://") || raw.startsWith("https://")
-        ? new URL(raw).hostname
-        : raw;
+      const host =
+        raw.startsWith("http://") || raw.startsWith("https://")
+          ? new URL(raw).hostname
+          : raw;
       const normalized = host.replace(/\/.*$/, "").replace(/^https?:\/\//i, "");
       if (normalized.endsWith(".supabase.co")) {
         const ref = normalized.slice(0, -".supabase.co".length);
@@ -40,12 +41,15 @@ const projectRef = parseProjectRef(
 const openAiApiKey = process.env.OPENAI_API_KEY?.trim() ?? "";
 
 const runSupabase = (args) => {
-  const result = spawnSync("pnpm", ["exec", "supabase", ...args], {
+  const result = spawnSync("bun", ["x", "supabase", ...args], {
     stdio: "inherit",
     env: process.env,
   });
   if (result.error) {
-    console.error("[supabase-openai] failed to run Supabase CLI:", result.error.message);
+    console.error(
+      "[supabase-openai] failed to run Supabase CLI:",
+      result.error.message,
+    );
     process.exit(1);
   }
   return result.status ?? 1;
@@ -75,7 +79,9 @@ switch (action) {
     }
     const tmpDir = mkdtempSync(join(tmpdir(), "luie-supabase-secret-"));
     const envFilePath = join(tmpDir, "openai.env");
-    writeFileSync(envFilePath, `OPENAI_API_KEY=${openAiApiKey}\n`, { mode: 0o600 });
+    writeFileSync(envFilePath, `OPENAI_API_KEY=${openAiApiKey}\n`, {
+      mode: 0o600,
+    });
     try {
       process.exit(
         runSupabase([
@@ -93,13 +99,23 @@ switch (action) {
   }
   case "deploy": {
     requireProjectRef();
-    process.exit(runSupabase(["functions", "deploy", "openai-proxy", "--project-ref", projectRef]));
+    process.exit(
+      runSupabase([
+        "functions",
+        "deploy",
+        "openai-proxy",
+        "--project-ref",
+        projectRef,
+      ]),
+    );
   }
   case "serve": {
     process.exit(runSupabase(["functions", "serve", "openai-proxy"]));
   }
   default: {
-    console.error("Usage: node scripts/supabase-openai.mjs <link|set-secret|deploy|serve>");
+    console.error(
+      "Usage: node scripts/supabase-openai.mjs <link|set-secret|deploy|serve>",
+    );
     process.exit(1);
   }
 }

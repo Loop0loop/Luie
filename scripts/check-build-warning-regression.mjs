@@ -17,8 +17,8 @@ const WARNING_SUFFIX =
 const WINDOWS_ABSOLUTE_PATH_RE = /^[A-Za-z]:[\\/]/;
 
 const runBuild = async () => {
-  const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-  const child = spawn(pnpmCommand, ["-s", "build"], {
+  const bunCommand = process.platform === "win32" ? "bun.exe" : "bun";
+  const child = spawn(bunCommand, ["-s", "build"], {
     cwd: process.cwd(),
     stdio: ["ignore", "pipe", "pipe"],
     env: process.env,
@@ -222,7 +222,11 @@ const writeBaseline = async (warnings) => {
     updatedAt: new Date().toISOString(),
     warnings,
   };
-  await writeFile(BASELINE_PATH, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+  await writeFile(
+    BASELINE_PATH,
+    `${JSON.stringify(payload, null, 2)}\n`,
+    "utf8",
+  );
 };
 
 const diffWarnings = (baseline, current) => {
@@ -233,8 +237,12 @@ const diffWarnings = (baseline, current) => {
     current.map((warning) => [buildWarningKey(warning), warning]),
   );
 
-  const added = current.filter((warning) => !baselineMap.has(buildWarningKey(warning)));
-  const removed = baseline.filter((warning) => !currentMap.has(buildWarningKey(warning)));
+  const added = current.filter(
+    (warning) => !baselineMap.has(buildWarningKey(warning)),
+  );
+  const removed = baseline.filter(
+    (warning) => !currentMap.has(buildWarningKey(warning)),
+  );
 
   return { added, removed };
 };
@@ -267,7 +275,9 @@ export const checkBuildWarningRegression = async ({
   const { added, removed } = diffWarnings(baselineWarnings, currentWarnings);
 
   if (added.length > 0) {
-    console.error("[check-build-warning-regression] new build warnings detected:");
+    console.error(
+      "[check-build-warning-regression] new build warnings detected:",
+    );
     added.forEach((warning) => console.error(`- ${formatWarning(warning)}`));
     return { exitCode: 1 };
   }

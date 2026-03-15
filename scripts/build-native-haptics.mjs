@@ -42,7 +42,7 @@ const resolveNodeGypBin = () => {
   try {
     return require.resolve("node-gyp/bin/node-gyp.js");
   } catch {
-    // Fall through to pnpm store lookup.
+    // Fall through to .pnpm store lookup for compatibility.
   }
 
   if (existsSync(pnpmStoreDir)) {
@@ -71,7 +71,9 @@ const resolveNodeGypBin = () => {
 };
 
 const nodeGypBin = resolveNodeGypBin();
-console.log(`[build-native-haptics] using node-gyp: ${path.relative(repoRoot, nodeGypBin)}`);
+console.log(
+  `[build-native-haptics] using node-gyp: ${path.relative(repoRoot, nodeGypBin)}`,
+);
 
 const result = spawnSync(process.execPath, [nodeGypBin, "rebuild"], {
   cwd: addonDir,
@@ -88,7 +90,9 @@ if (result.status !== 0) {
 }
 
 if (!existsSync(releaseBinaryPath)) {
-  console.error("[build-native-haptics] build completed but output binary is missing");
+  console.error(
+    "[build-native-haptics] build completed but output binary is missing",
+  );
   process.exit(1);
 }
 

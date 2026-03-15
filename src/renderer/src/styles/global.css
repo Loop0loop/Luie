@@ -69,28 +69,28 @@
 
   /* === LIGHT THEME (Default) === */
   /* Backgrounds */
-  --bg-app: #ffffff;          /* Main Canvas */
-  --bg-sidebar: #f4f4f5;      /* Zinc-100 */
-  --bg-panel: #ffffff;        /* Panel matches app */
-  --bg-surface: #ffffff;      
+  --bg-app: #ffffff; /* Main Canvas */
+  --bg-sidebar: #f4f4f5; /* Zinc-100 */
+  --bg-panel: #ffffff; /* Panel matches app */
+  --bg-surface: #ffffff;
   --bg-surface-hover: rgba(0, 0, 0, 0.04); /* Vercel-style alpha hover */
-  --bg-element: #ffffff;      
-  --bg-element-hover: rgba(0, 0, 0, 0.04); 
-  --bg-active: rgba(0, 0, 0, 0.08);       /* Zinc-200 equivalent alpha */
+  --bg-element: #ffffff;
+  --bg-element-hover: rgba(0, 0, 0, 0.04);
+  --bg-active: rgba(0, 0, 0, 0.08); /* Zinc-200 equivalent alpha */
 
   /* Text */
-  --text-primary: #18181b;    /* Zinc-900 - Sharp, readable black */
-  --text-secondary: #71717a;  /* Zinc-500 - Clear secondary info */
-  --text-tertiary: #a1a1aa;   /* Zinc-400 - Placeholders */
-  --text-accent: #2563eb;     /* Blue-600 - Standard interaction blue */
+  --text-primary: #18181b; /* Zinc-900 - Sharp, readable black */
+  --text-secondary: #71717a; /* Zinc-500 - Clear secondary info */
+  --text-tertiary: #a1a1aa; /* Zinc-400 - Placeholders */
+  --text-accent: #2563eb; /* Blue-600 - Standard interaction blue */
   --text-on-accent: #ffffff;
 
   /* Semantic UI */
-  --accent-bg: #2563eb;       /* Blue-600 */
+  --accent-bg: #2563eb; /* Blue-600 */
   --accent-bg-hover: #1d4ed8; /* Blue-700 */
   --accent-fg: #ffffff;
-  --success-fg: #16a34a;      /* Green-600 */
-  --danger-fg: #ef4444;       /* Red-500 */
+  --success-fg: #16a34a; /* Green-600 */
+  --danger-fg: #ef4444; /* Red-500 */
 
   /* Aliases (legacy UI tokens) */
   --bg-primary: #ffffff;
@@ -99,12 +99,12 @@
   --bg-canvas: #ffffff;
   --accent-primary: #2563eb;
   --grid-line: #e5e7eb;
-  --danger-fg: #dc2626;       /* Red-600 */
+  --danger-fg: #dc2626; /* Red-600 */
 
   /* Borders */
-  --border-default: #e4e4e7;  /* Zinc-200 */
-  --border-active: #d4d4d8;   /* Zinc-300 */
-  --border-focus: #18181b;    /* Zinc-900 */
+  --border-default: #e4e4e7; /* Zinc-200 */
+  --border-active: #d4d4d8; /* Zinc-300 */
+  --border-focus: #18181b; /* Zinc-900 */
 
   /* Editor Specific (Can differ from UI) */
   --editor-bg: #ffffff;
@@ -121,7 +121,7 @@
   --context-panel-body-font-size: 13px;
   --context-panel-tag-font-size: 10px;
   --context-panel-section-margin-bottom: 8px;
-  
+
   --memo-search-icon-size: 12px;
   --memo-search-font-size: 12px;
   --memo-tag-font-size: 9px;
@@ -152,10 +152,10 @@
   --character-relation-margin-bottom: 8px;
 
   /* Namuwiki Theme Tokens (Light) */
-  --namu-blue: #00A2E8;
+  --namu-blue: #00a2e8;
   --namu-border: #cccccc;
   --namu-table-bg: #f5f5f5;
-  --namu-table-label: #00A2E8;
+  --namu-table-label: #00a2e8;
   --namu-hover-bg: #eef9fe;
   --namu-header-text: #ffffff;
   --namu-link: #0275d8;
@@ -166,10 +166,15 @@
   --editor-toolbar-mobile-icon-size: 14px;
 
   /* Typography */
-  --font-sans: "Inter Variable", "Inter", "Noto Sans KR Variable", "Noto Sans JP Variable", -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, sans-serif;
+  --font-sans:
+    "Inter Variable", "Inter", "Noto Sans KR Variable", -apple-system,
+    BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Hiragino Sans",
+    "Yu Gothic", "Meiryo", "Pretendard", "Segoe UI", Roboto, sans-serif;
   --font-serif: "Merriweather", "Noto Serif KR", serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+
   /* Backwards-compatible aliases */
   --bg-primary: var(--bg-app);
   --bg-secondary: var(--bg-element-hover);
@@ -179,7 +184,7 @@
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  
+
   --icon-size-xs: 12px;
   --icon-size-sm: 14px;
   --icon-size-md: 16px;
@@ -194,24 +199,24 @@
 /* === DARK THEME (Linear/Vercel Inspired) === */
 [data-theme="dark"] {
   /* Backgrounds */
-  --bg-app: #09090b;          /* Deepest Zinc (Main Canvas) */
-  --bg-sidebar: #09090b;      /* Same as app for clean look */
-  --bg-panel: #18181b;        /* Surface Color (Opaque) */
-  --bg-surface: #18181b;      /* Added missing token for Modals/Cards */
-  --bg-panel-header: #18181b; 
-  --bg-element: #27272a;      /* Zinc-800 */
+  --bg-app: #09090b; /* Deepest Zinc (Main Canvas) */
+  --bg-sidebar: #09090b; /* Same as app for clean look */
+  --bg-panel: #18181b; /* Surface Color (Opaque) */
+  --bg-surface: #18181b; /* Added missing token for Modals/Cards */
+  --bg-panel-header: #18181b;
+  --bg-element: #27272a; /* Zinc-800 */
   --bg-element-hover: rgba(255, 255, 255, 0.08);
   --bg-active: rgba(255, 255, 255, 0.12);
-  
+
   /* Text */
-  --text-primary: #ededed;    /* High contrast white-ish */
-  --text-secondary: #a1a1aa;  /* Zinc-400 */
-  --text-tertiary: #52525b;   /* Zinc-600 */
-  --text-accent: #60a5fa;     /* Blue-400 */
+  --text-primary: #ededed; /* High contrast white-ish */
+  --text-secondary: #a1a1aa; /* Zinc-400 */
+  --text-tertiary: #52525b; /* Zinc-600 */
+  --text-accent: #60a5fa; /* Blue-400 */
   --text-on-accent: #ffffff;
 
   /* Semantic UI */
-  --accent-bg: #2563eb;       /* Blue-600 (Slightly deeper for better contrast on dark) */
+  --accent-bg: #2563eb; /* Blue-600 (Slightly deeper for better contrast on dark) */
   --accent-bg-hover: #3b82f6; /* Blue-500 */
   --accent-fg: #ffffff;
   --success-fg: #22c55e;
@@ -250,21 +255,21 @@
 /* === SEPIA THEME (Writer Focused) === */
 [data-theme="sepia"] {
   /* Backgrounds */
-  --bg-app: #fbf0d9;          /* Warm Paper */
-  --bg-sidebar: #f5e6cc;      /* Slightly darker paper */
-  --bg-panel: #fbf0d9;        /* Panel matches app */
-  --bg-surface: #fffefb;      /* Card/Input background */
+  --bg-app: #fbf0d9; /* Warm Paper */
+  --bg-sidebar: #f5e6cc; /* Slightly darker paper */
+  --bg-panel: #fbf0d9; /* Panel matches app */
+  --bg-surface: #fffefb; /* Card/Input background */
   --bg-surface-hover: rgba(95, 75, 50, 0.05); /* Sepia alpha hover */
   --bg-element: #fffefb;
   --bg-element-hover: rgba(95, 75, 50, 0.05);
   --bg-active: rgba(95, 75, 50, 0.1);
 
   /* Text */
-  --text-primary: #5f4b32;    /* Dark brown */
+  --text-primary: #5f4b32; /* Dark brown */
   --text-secondary: #8c7b66;
   --text-tertiary: #b8aa9c;
-  --text-accent: #cc7832;     /* Warm Orange/Brown */
-  
+  --text-accent: #cc7832; /* Warm Orange/Brown */
+
   /* Borders */
   --border-default: #e6dac6;
   --border-active: #dcc8ae;
@@ -292,7 +297,7 @@
   --editor-selection: #e6dcc6;
 
   /* Namuwiki Theme Tokens (Sepia) */
-  --namu-blue: #cc7832;       /* Earthy Orange/Brown to match Sepia */
+  --namu-blue: #cc7832; /* Earthy Orange/Brown to match Sepia */
   --namu-border: #dcc8ae;
   --namu-table-bg: #efe4cb;
   --namu-table-label: #5f4b32;
@@ -317,7 +322,7 @@
 }
 [data-theme="sepia"][data-temp="warm"] {
   /* Sepia is already warm, just deepen it slightly */
-  --bg-app: #f5ebd6; 
+  --bg-app: #f5ebd6;
 }
 
 /* Cool (Analysis / Focus) */
@@ -426,8 +431,12 @@ body {
   text-rendering: optimizeLegibility;
   font-kerning: normal;
   font-optical-sizing: auto;
-  font-feature-settings: "liga" 1, "calt" 1;
-  transition: background-color 0.2s, color 0.2s;
+  font-feature-settings:
+    "liga" 1,
+    "calt" 1;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
   overflow: hidden; /* App-like behavior */
 }
 

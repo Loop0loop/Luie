@@ -18,10 +18,15 @@ const ALLOWED_PREFIXES = [
   "https://",
 ];
 
-const SEMVER_EXACT_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z-.]+)?(?:\+[0-9A-Za-z-.]+)?$/;
+const SEMVER_EXACT_PATTERN =
+  /^\d+\.\d+\.\d+(?:-[0-9A-Za-z-.]+)?(?:\+[0-9A-Za-z-.]+)?$/;
 const RANGE_TOKEN_PATTERN = /[\^~*><=|]/;
-const CHECK_FIELDS = ["dependencies", "devDependencies", "optionalDependencies"];
-const REQUIRED_PACKAGE_MANAGER = "pnpm@10.30.3";
+const CHECK_FIELDS = [
+  "dependencies",
+  "devDependencies",
+  "optionalDependencies",
+];
+const REQUIRED_PACKAGE_MANAGER = "bun@1.3.10";
 
 const pkg = JSON.parse(await fs.readFile(packageJsonPath, "utf8"));
 const findings = [];
@@ -39,7 +44,9 @@ for (const field of CHECK_FIELDS) {
       findings.push(`${field}.${name} uses non-pinned range "${normalized}"`);
       continue;
     }
-    findings.push(`${field}.${name} has unsupported version format "${normalized}"`);
+    findings.push(
+      `${field}.${name} has unsupported version format "${normalized}"`,
+    );
   }
 }
 

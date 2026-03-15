@@ -1,17 +1,18 @@
 import type { SupportedLanguage } from "@renderer/i18n";
 
-type FontKey = "inter" | "noto-sans-kr" | "noto-sans-jp";
+type FontKey = "inter" | "noto-sans-kr";
 
 const FONT_LOADERS: Record<FontKey, () => Promise<unknown>> = {
   inter: () => import("@fontsource-variable/inter/index.css"),
   "noto-sans-kr": () => import("@fontsource-variable/noto-sans-kr/index.css"),
-  "noto-sans-jp": () => import("@fontsource-variable/noto-sans-jp/index.css"),
 };
 
 const loadedFonts = new Set<FontKey>();
 const pendingFonts = new Map<FontKey, Promise<void>>();
 
-const normalizeLanguage = (value: string | null | undefined): SupportedLanguage => {
+const normalizeLanguage = (
+  value: string | null | undefined,
+): SupportedLanguage => {
   if (!value) return "ko";
 
   const normalized = value.toLowerCase();
@@ -66,9 +67,8 @@ export const loadFontsForLanguage = async (
 
   if (language === "ko") {
     fontKeys.push("noto-sans-kr");
-  } else if (language === "ja") {
-    fontKeys.push("noto-sans-jp");
   }
+  // Japanese uses system fonts only - no bundled font loaded
 
   await Promise.all(fontKeys.map((fontKey) => loadFont(fontKey)));
 };
@@ -76,7 +76,10 @@ export const loadFontsForLanguage = async (
 type I18nLike = {
   language?: string;
   resolvedLanguage?: string;
-  on?: (eventName: "languageChanged", listener: (language: string) => void) => void;
+  on?: (
+    eventName: "languageChanged",
+    listener: (language: string) => void,
+  ) => void;
 };
 
 export const startRendererFontLoading = (

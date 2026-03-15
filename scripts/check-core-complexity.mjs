@@ -47,7 +47,7 @@ for (const rule of RULE_OVERRIDES) {
   args.push("--rule", rule);
 }
 
-const result = spawnSync("pnpm", args, {
+const result = spawnSync("bun", args, {
   cwd: process.cwd(),
   encoding: "utf8",
 });
