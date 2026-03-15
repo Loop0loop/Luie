@@ -23,6 +23,8 @@ export type SidebarWidthFeature =
   | "docsEditor"
   | "docsExport"
   | "editorCharacter"
+  | "editorEvent"
+  | "editorFaction"
   | "editorWorld"
   | "editorScrap"
   | "editorAnalysis"
@@ -67,7 +69,10 @@ const PANEL_WIDTH_CONFIG: SidebarWidthConfig = {
   defaultPx: 600,
 };
 
-export const SIDEBAR_WIDTH_CONFIG: Record<SidebarWidthFeature, SidebarWidthConfig> = {
+export const SIDEBAR_WIDTH_CONFIG: Record<
+  SidebarWidthFeature,
+  SidebarWidthConfig
+> = {
   mainSidebar: { ...PANEL_SIDEBAR_WIDTH_CONFIG },
   mainContext: { ...PANEL_WIDTH_CONFIG },
   docsBinder: { ...PANEL_SIDEBAR_WIDTH_CONFIG },
@@ -84,6 +89,8 @@ export const SIDEBAR_WIDTH_CONFIG: Record<SidebarWidthFeature, SidebarWidthConfi
   docsEditor: { ...PANEL_WIDTH_CONFIG },
   docsExport: { ...PANEL_WIDTH_CONFIG },
   editorCharacter: { ...PANEL_WIDTH_CONFIG },
+  editorEvent: { ...PANEL_WIDTH_CONFIG },
+  editorFaction: { ...PANEL_WIDTH_CONFIG },
   editorWorld: { ...PANEL_WIDTH_CONFIG },
   editorScrap: { ...PANEL_WIDTH_CONFIG },
   editorAnalysis: { ...PANEL_WIDTH_CONFIG },
@@ -124,24 +131,31 @@ const getNumeric = (value: unknown): number | null => {
 const clampNumber = (value: number, min: number, max: number): number =>
   Math.round(Math.min(max, Math.max(min, value)));
 
-export const isSidebarWidthFeature = (feature: string): feature is SidebarWidthFeature =>
-  feature in SIDEBAR_WIDTH_CONFIG;
+export const isSidebarWidthFeature = (
+  feature: string,
+): feature is SidebarWidthFeature => feature in SIDEBAR_WIDTH_CONFIG;
 
 export const getSidebarWidthConfig = (feature: string): SidebarWidthConfig =>
   isSidebarWidthFeature(feature)
     ? SIDEBAR_WIDTH_CONFIG[feature]
     : {
-      minPx: FALLBACK_MIN_PX,
-      maxPx: FALLBACK_MAX_PX,
-      defaultPx: FALLBACK_DEFAULT_PX,
-    };
+        minPx: FALLBACK_MIN_PX,
+        maxPx: FALLBACK_MAX_PX,
+        defaultPx: FALLBACK_DEFAULT_PX,
+      };
 
-export const clampSidebarWidth = (feature: SidebarWidthFeature, widthPx: number): number => {
+export const clampSidebarWidth = (
+  feature: SidebarWidthFeature,
+  widthPx: number,
+): number => {
   const config = SIDEBAR_WIDTH_CONFIG[feature];
   return clampNumber(widthPx, config.minPx, config.maxPx);
 };
 
-export const clampSidebarWidthForAnyFeature = (feature: string, widthPx: number): number => {
+export const clampSidebarWidthForAnyFeature = (
+  feature: string,
+  widthPx: number,
+): number => {
   const config = getSidebarWidthConfig(feature);
   return clampNumber(widthPx, config.minPx, config.maxPx);
 };
@@ -149,20 +163,22 @@ export const clampSidebarWidthForAnyFeature = (feature: string, widthPx: number)
 export const getSidebarDefaultWidth = (feature: SidebarWidthFeature): number =>
   SIDEBAR_WIDTH_CONFIG[feature].defaultPx;
 
-export const buildDefaultSidebarWidths = (): Record<SidebarWidthFeature, number> =>
+export const buildDefaultSidebarWidths = (): Record<
+  SidebarWidthFeature,
+  number
+> =>
   Object.fromEntries(
-    (Object.keys(SIDEBAR_WIDTH_CONFIG) as SidebarWidthFeature[]).map((feature) => [
-      feature,
-      SIDEBAR_WIDTH_CONFIG[feature].defaultPx,
-    ]),
+    (Object.keys(SIDEBAR_WIDTH_CONFIG) as SidebarWidthFeature[]).map(
+      (feature) => [feature, SIDEBAR_WIDTH_CONFIG[feature].defaultPx],
+    ),
   ) as Record<SidebarWidthFeature, number>;
 
 const SIDEBAR_WIDTH_SYNC_GROUPS: SidebarWidthFeature[][] = [
   ["mainSidebar", "docsBinder", "scrivenerBinder", "binder"],
   ["mainContext", "scrivenerInspector", "context", "inspector"],
   ["docsCharacter", "editorCharacter", "character"],
-  ["docsEvent", "event"],
-  ["docsFaction", "faction"],
+  ["docsEvent", "editorEvent", "event"],
+  ["docsFaction", "editorFaction", "faction"],
   ["docsWorld", "editorWorld", "world"],
   ["docsScrap", "editorScrap", "scrap"],
   ["docsAnalysis", "editorAnalysis", "analysis"],
@@ -210,14 +226,18 @@ const applyLegacyRightWidthMigration = (
     if (legacyWidth === null) return;
 
     targetKeys.forEach((targetKey) => {
-      if (normalizeSidebarWidthInput(targetKey, input[targetKey]) !== null) return;
-      normalized[targetKey] = clampSidebarWidthForAnyFeature(targetKey, legacyWidth);
+      if (normalizeSidebarWidthInput(targetKey, input[targetKey]) !== null)
+        return;
+      normalized[targetKey] = clampSidebarWidthForAnyFeature(
+        targetKey,
+        legacyWidth,
+      );
     });
   };
 
   copyLegacyWidthIfMissing("character", ["docsCharacter", "editorCharacter"]);
-  copyLegacyWidthIfMissing("event", ["docsEvent"]);
-  copyLegacyWidthIfMissing("faction", ["docsFaction"]);
+  copyLegacyWidthIfMissing("event", ["docsEvent", "editorEvent"]);
+  copyLegacyWidthIfMissing("faction", ["docsFaction", "editorFaction"]);
   copyLegacyWidthIfMissing("world", ["docsWorld", "editorWorld"]);
   copyLegacyWidthIfMissing("scrap", ["docsScrap", "editorScrap"]);
   copyLegacyWidthIfMissing("analysis", ["docsAnalysis", "editorAnalysis"]);
@@ -247,27 +267,54 @@ export const normalizeSidebarWidthsWithMigrations = (
   const legacyBinder = normalizeSidebarWidthInput("binder", input.binder);
   if (legacyBinder !== null) {
     if (normalizeSidebarWidthInput("mainSidebar", input.mainSidebar) === null) {
-      normalized.mainSidebar = clampSidebarWidthForAnyFeature("mainSidebar", legacyBinder);
+      normalized.mainSidebar = clampSidebarWidthForAnyFeature(
+        "mainSidebar",
+        legacyBinder,
+      );
     }
     if (normalizeSidebarWidthInput("docsBinder", input.docsBinder) === null) {
-      normalized.docsBinder = clampSidebarWidthForAnyFeature("docsBinder", legacyBinder);
+      normalized.docsBinder = clampSidebarWidthForAnyFeature(
+        "docsBinder",
+        legacyBinder,
+      );
     }
-    if (normalizeSidebarWidthInput("scrivenerBinder", input.scrivenerBinder) === null) {
-      normalized.scrivenerBinder = clampSidebarWidthForAnyFeature("scrivenerBinder", legacyBinder);
+    if (
+      normalizeSidebarWidthInput("scrivenerBinder", input.scrivenerBinder) ===
+      null
+    ) {
+      normalized.scrivenerBinder = clampSidebarWidthForAnyFeature(
+        "scrivenerBinder",
+        legacyBinder,
+      );
     }
   }
 
   const legacyContext = normalizeSidebarWidthInput("context", input.context);
-  if (legacyContext !== null && normalizeSidebarWidthInput("mainContext", input.mainContext) === null) {
-    normalized.mainContext = clampSidebarWidthForAnyFeature("mainContext", legacyContext);
+  if (
+    legacyContext !== null &&
+    normalizeSidebarWidthInput("mainContext", input.mainContext) === null
+  ) {
+    normalized.mainContext = clampSidebarWidthForAnyFeature(
+      "mainContext",
+      legacyContext,
+    );
   }
 
-  const legacyInspector = normalizeSidebarWidthInput("inspector", input.inspector);
+  const legacyInspector = normalizeSidebarWidthInput(
+    "inspector",
+    input.inspector,
+  );
   if (
     legacyInspector !== null &&
-    normalizeSidebarWidthInput("scrivenerInspector", input.scrivenerInspector) === null
+    normalizeSidebarWidthInput(
+      "scrivenerInspector",
+      input.scrivenerInspector,
+    ) === null
   ) {
-    normalized.scrivenerInspector = clampSidebarWidthForAnyFeature("scrivenerInspector", legacyInspector);
+    normalized.scrivenerInspector = clampSidebarWidthForAnyFeature(
+      "scrivenerInspector",
+      legacyInspector,
+    );
   }
 
   applyLegacyRightWidthMigration(input, normalized);

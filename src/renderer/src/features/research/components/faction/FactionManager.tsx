@@ -64,6 +64,7 @@ export default function FactionManager() {
     selectedFactionId,
     setSelectedFactionId,
     handleAddFaction,
+    handleViewAll,
     groupedFactions,
     selectedFaction,
   } = useFactionManager(t);
@@ -91,6 +92,7 @@ export default function FactionManager() {
             t={t}
             selectedFactionId={selectedFactionId}
             setSelectedFactionId={setSelectedFactionId}
+            onViewAll={handleViewAll}
             handleAddFaction={handleAddFaction}
             groupedFactions={groupedFactions}
           />

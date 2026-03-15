@@ -17,7 +17,8 @@ import type {
 } from "./uiStore.types";
 import { DEFAULT_SCRIVENER_SECTIONS } from "./uiStore.types";
 
-const DEFAULT_SIDEBAR_WIDTHS: Record<string, number> = buildDefaultSidebarWidths();
+const DEFAULT_SIDEBAR_WIDTHS: Record<string, number> =
+  buildDefaultSidebarWidths();
 
 export const RIGHT_PANEL_TABS = [
   "character",
@@ -32,7 +33,10 @@ export const RIGHT_PANEL_TABS = [
   "export",
 ] as const satisfies readonly RightPanelTab[];
 
-export const RIGHT_PANEL_TAB_FEATURE_MAP: Record<RightPanelTab, SidebarWidthFeature> = {
+export const RIGHT_PANEL_TAB_FEATURE_MAP: Record<
+  RightPanelTab,
+  SidebarWidthFeature
+> = {
   character: "docsCharacter",
   event: "docsEvent",
   faction: "docsFaction",
@@ -48,16 +52,20 @@ export const RIGHT_PANEL_TAB_FEATURE_MAP: Record<RightPanelTab, SidebarWidthFeat
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
-export const getRightPanelTabByFeature = (feature: string): RightPanelTab | null => {
+export const getRightPanelTabByFeature = (
+  feature: string,
+): RightPanelTab | null => {
   switch (feature) {
     case "docsCharacter":
     case "editorCharacter":
     case "character":
       return "character";
     case "docsEvent":
+    case "editorEvent":
     case "event":
       return "event";
     case "docsFaction":
+    case "editorFaction":
     case "faction":
       return "faction";
     case "docsWorld":
@@ -99,7 +107,9 @@ export const buildDefaultRightPanelWidths = (): Record<RightPanelTab, number> =>
     ]),
   ) as Record<RightPanelTab, number>;
 
-export const normalizeRightPanelTab = (value: unknown): RightPanelTab | null => {
+export const normalizeRightPanelTab = (
+  value: unknown,
+): RightPanelTab | null => {
   if (typeof value !== "string") return null;
   return RIGHT_PANEL_TABS.includes(value as RightPanelTab)
     ? (value as RightPanelTab)
@@ -116,7 +126,9 @@ export const buildRegionsFromLegacyState = (legacy: {
   sidebarWidths?: Record<string, number>;
   regions?: unknown;
 }): UIRegionsState => {
-  const normalizedSidebarWidths = normalizeSidebarWidthsWithMigrations(legacy.sidebarWidths);
+  const normalizedSidebarWidths = normalizeSidebarWidthsWithMigrations(
+    legacy.sidebarWidths,
+  );
   const defaultRightPanelWidths = buildDefaultRightPanelWidths();
   const fallbackActiveTab = normalizeRightPanelTab(legacy.docsRightTab);
   const persistedRegions = isRecord(legacy.regions) ? legacy.regions : null;
@@ -139,7 +151,9 @@ export const buildRegionsFromLegacyState = (legacy: {
 
   const widthByTab = { ...defaultRightPanelWidths };
   RIGHT_PANEL_TABS.forEach((tab) => {
-    const persistedWidth = persistedWidthByTab ? persistedWidthByTab[tab] : undefined;
+    const persistedWidth = persistedWidthByTab
+      ? persistedWidthByTab[tab]
+      : undefined;
     const normalizedPersistedWidth = normalizeSidebarWidthInput(
       RIGHT_PANEL_TAB_FEATURE_MAP[tab],
       persistedWidth,
@@ -170,7 +184,9 @@ export const buildRegionsFromLegacyState = (legacy: {
     legacyLeftWidth ??
     getSidebarDefaultWidth("mainSidebar");
 
-  const activeTabFromRegions = normalizeRightPanelTab(persistedRightPanel?.activeTab);
+  const activeTabFromRegions = normalizeRightPanelTab(
+    persistedRightPanel?.activeTab,
+  );
   const activeTab = activeTabFromRegions ?? fallbackActiveTab;
 
   const leftOpenFromRegions =
@@ -180,7 +196,9 @@ export const buildRegionsFromLegacyState = (legacy: {
       ? persistedRightPanel.open
       : undefined;
   const rightRailOpenFromRegions =
-    typeof persistedRightRail?.open === "boolean" ? persistedRightRail.open : undefined;
+    typeof persistedRightRail?.open === "boolean"
+      ? persistedRightRail.open
+      : undefined;
 
   return {
     leftSidebar: {
@@ -209,7 +227,9 @@ export const buildRegionsFromLegacyState = (legacy: {
     rightRail: {
       open:
         rightRailOpenFromRegions ??
-        (typeof legacy.isBinderBarOpen === "boolean" ? legacy.isBinderBarOpen : true),
+        (typeof legacy.isBinderBarOpen === "boolean"
+          ? legacy.isBinderBarOpen
+          : true),
     },
   };
 };

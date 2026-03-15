@@ -29,6 +29,7 @@ import { TimelineMainView } from "@renderer/features/research/components/world/g
 import { WorldGraphNavbar } from "../components/WorldGraphNavbar";
 import { EntityInspectorPanel } from "../sidebars/EntityInspectorPanel";
 import { useWorldGraphScene } from "../scene/useWorldGraphScene";
+import { useWorldGraphSceneLifecycle } from "../scene/useWorldGraphSceneLifecycle";
 
 export function WorldGraphPanel() {
   const { t } = useTranslation();
@@ -73,6 +74,7 @@ export function WorldGraphPanel() {
     activeTab === "graph" &&
     Boolean(selectedNodeId) &&
     scene.selectedNode !== null;
+  useWorldGraphSceneLifecycle(currentProjectId ?? null);
   const panelCompositionKey = useMemo(
     () =>
       buildPanelGroupCompositionKey("world-graph", [

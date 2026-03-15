@@ -1,6 +1,6 @@
 import { useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { User } from "lucide-react";
+import { Trash2, User } from "lucide-react";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { BufferedInput } from "@shared/ui/BufferedInput";
 import { Infobox } from "@renderer/features/research/components/wiki/Infobox";
@@ -10,7 +10,7 @@ import { SUPPORTED_LANGUAGES, i18n } from "@renderer/i18n";
 import { CHARACTER_TEMPLATES } from "@shared/constants";
 import { useShallow } from "zustand/react/shallow";
 import { parseStructuredAttributes } from "@renderer/features/research/utils/parseStructuredAttributes";
-
+import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 
 // Types for Dynamic Customization
 type WikiSectionData = {
@@ -33,13 +33,23 @@ interface WikiDetailViewProps {
 export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
   const { t } = useTranslation();
   const dialog = useDialog();
-  const { currentItem: character, updateCharacter, loadCharacter } = useCharacterStore(
+  const {
+    currentItem: character,
+    updateCharacter,
+    loadCharacter,
+    deleteCharacter,
+    setCurrent,
+  } = useCharacterStore(
     useShallow((state) => ({
       currentItem: state.currentItem,
       updateCharacter: state.updateCharacter,
       loadCharacter: state.loadCharacter,
+      deleteCharacter: state.deleteCharacter,
+      setCurrent: state.setCurrent,
     })),
   );
+  const mainView = useUIStore((state) => state.mainView);
+  const setMainView = useUIStore((state) => state.setMainView);
 
   useEffect(() => {
     if (characterId) {
@@ -54,7 +64,10 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
 
   const currentTemplate = useMemo(() => {
     const templateId = attributes.templateId || "basic";
-    return CHARACTER_TEMPLATES.find(t => t.id === templateId) || CHARACTER_TEMPLATES[0];
+    return (
+      CHARACTER_TEMPLATES.find((t) => t.id === templateId) ||
+      CHARACTER_TEMPLATES[0]
+    );
   }, [attributes.templateId]);
 
   const defaultSectionLabels = useMemo(() => {
@@ -75,9 +88,11 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
   const defaultLabelSet = useMemo(() => {
     const labels = new Set<string>();
     SUPPORTED_LANGUAGES.forEach((lang) => {
-      const bundle = i18n.getResourceBundle(lang, "common") as {
-        character?: { defaultSections?: string[] };
-      } | undefined;
+      const bundle = i18n.getResourceBundle(lang, "common") as
+        | {
+            character?: { defaultSections?: string[] };
+          }
+        | undefined;
       bundle?.character?.defaultSections?.forEach((label) => labels.add(label));
     });
     return labels;
@@ -100,7 +115,12 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
       { id: "relations", label: defaultSectionLabels[4] ?? "5" },
       { id: "notes", label: defaultSectionLabels[5] ?? "6" },
     ];
-  }, [attributes.sections, defaultLabelById, defaultLabelSet, defaultSectionLabels]);
+  }, [
+    attributes.sections,
+    defaultLabelById,
+    defaultLabelSet,
+    defaultSectionLabels,
+  ]);
 
   const customFields: CustomField[] = useMemo(() => {
     return (attributes.customFields as CustomField[]) || [];
@@ -128,13 +148,18 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
     const newId = `section_${Date.now()}`;
     const newSections = [
       ...sections,
-      { id: newId, label: `${sections.length + 1}. ${t("character.newSection")}` },
+      {
+        id: newId,
+        label: `${sections.length + 1}. ${t("character.newSection")}`,
+      },
     ];
     handleAttrUpdate("sections", newSections);
   };
 
   const renameSection = (id: string, newLabel: string) => {
-    const newSections = sections.map(s => s.id === id ? { ...s, label: newLabel } : s);
+    const newSections = sections.map((s) =>
+      s.id === id ? { ...s, label: newLabel } : s,
+    );
     handleAttrUpdate("sections", newSections);
   };
 
@@ -157,14 +182,16 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
     const newField: CustomField = {
       key: newKey,
       label: t("character.newFieldLabel"),
-      type: "text"
+      type: "text",
     };
     const newFields = [...customFields, newField];
     handleAttrUpdate("customFields", newFields);
   };
 
   const updateCustomFieldLabel = (key: string, newLabel: string) => {
-    const newFields = customFields.map(f => f.key === key ? { ...f, label: newLabel } : f);
+    const newFields = customFields.map((f) =>
+      f.key === key ? { ...f, label: newLabel } : f,
+    );
     handleAttrUpdate("customFields", newFields);
   };
 
@@ -181,24 +208,51 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
     })();
   };
 
+  const handleDeleteCharacter = () => {
+    void (async () => {
+      const confirmed = await dialog.confirm({
+        title: t("character.wiki.deleteCharacterTitle"),
+        message: t("character.deleteCharacterConfirm"),
+        isDestructive: true,
+      });
+      if (!confirmed) return;
+      await deleteCharacter(character.id);
+      setCurrent(null);
+      if (mainView.type === "character" && mainView.id === character.id) {
+        setMainView({ type: "editor" });
+      }
+    })();
+  };
+
   // Merge Base Fields + Custom Fields
-  const allInfoboxFields = [
-    ...currentTemplate.fields,
-    ...customFields
-  ];
+  const allInfoboxFields = [...currentTemplate.fields, ...customFields];
 
   return (
     <div className="flex-1 overflow-auto p-8 sm:p-6 flex flex-col gap-6 bg-panel text-fg min-w-0">
       {/* 1. AUTHENTIC NAMUWIKI HEADER */}
       <div className="border-b-2 border-(--namu-border) pb-4 mb-6 flex flex-col gap-3">
-        <BufferedInput
-          className="text-3xl font-extrabold text-fg leading-tight border-none bg-transparent w-full focus:outline-none"
-          value={character.name}
-          onSave={(val) => handleUpdate("name", val)}
-        />
+        <div className="flex items-start gap-3">
+          <BufferedInput
+            className="text-3xl font-extrabold text-fg leading-tight border-none bg-transparent w-full focus:outline-none"
+            value={character.name}
+            onSave={(val) => handleUpdate("name", val)}
+          />
+          <button
+            type="button"
+            onClick={handleDeleteCharacter}
+            className="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-destructive/10 hover:text-destructive"
+            title={t("character.wiki.deleteCharacterTitle")}
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
         <div className="text-[13px] text-muted bg-surface border border-border px-3 py-1.5 rounded self-start flex items-center gap-2">
-          <span className="font-bold">{t("character.classificationLabel")}</span>
-          <span className="text-(--namu-link) cursor-pointer hover:underline">{t(currentTemplate.nameKey)}</span>
+          <span className="font-bold">
+            {t("character.classificationLabel")}
+          </span>
+          <span className="text-(--namu-link) cursor-pointer hover:underline">
+            {t(currentTemplate.nameKey)}
+          </span>
           <span className="text-border">|</span>
           <BufferedInput
             className="inline w-auto font-semibold text-(--namu-link) bg-transparent border-none p-1 focus:outline-none focus:bg-active rounded-sm"
@@ -214,13 +268,18 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
         <div className="flex flex-col @min-[700px]:flex-row gap-8 items-start min-h-0">
           {/* LEFT: Content & TOC */}
           <div className="flex-1 flex flex-col gap-8 min-w-75 w-full @min-[700px]:order-1 order-2">
-
             {/* TOC (Inline) */}
             <div className="bg-(--namu-table-bg) border border-(--namu-border) p-4 inline-block min-w-50 rounded">
-              <div className="font-bold text-center mb-3 text-fg text-sm">{t("character.tocLabel")}</div>
+              <div className="font-bold text-center mb-3 text-fg text-sm">
+                {t("character.tocLabel")}
+              </div>
               <div className="flex flex-col gap-1.5 text-sm">
-                {sections.map(sec => (
-                  <a key={sec.id} className="text-(--namu-link) no-underline cursor-pointer hover:underline" href={`#${sec.id}`}>
+                {sections.map((sec) => (
+                  <a
+                    key={sec.id}
+                    className="text-(--namu-link) no-underline cursor-pointer hover:underline"
+                    href={`#${sec.id}`}
+                  >
                     {sec.label}
                   </a>
                 ))}
@@ -228,7 +287,7 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
             </div>
 
             {/* Sections */}
-            {sections.map(sec => (
+            {sections.map((sec) => (
               <WikiSection
                 key={sec.id}
                 id={sec.id}
@@ -248,9 +307,7 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
             >
               {t("character.addSection")}
             </button>
-
           </div>
-
 
           {/* RIGHT: Authentic Infobox */}
           {/* Use order-first on mobile (default) to put it on top, order-last on Desktop to put it on right */}
@@ -258,8 +315,10 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
             <Infobox
               title={character.name}
               image={<User size={80} color="var(--border-active)" />}
-              rows={allInfoboxFields.map(field => {
-                const isCustom = customFields.some(cf => cf.key === field.key);
+              rows={allInfoboxFields.map((field) => {
+                const isCustom = customFields.some(
+                  (cf) => cf.key === field.key,
+                );
                 const isTemplateField = "labelKey" in field;
                 const label = isTemplateField ? t(field.labelKey) : field.label;
                 const placeholder =
@@ -282,8 +341,12 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
                   options,
                   isCustom,
                   onSave: (v) => handleAttrUpdate(field.key, v),
-                  onLabelSave: isCustom ? (v) => updateCustomFieldLabel(field.key, v) : undefined,
-                  onDelete: isCustom ? () => deleteCustomField(field.key) : undefined
+                  onLabelSave: isCustom
+                    ? (v) => updateCustomFieldLabel(field.key, v)
+                    : undefined,
+                  onDelete: isCustom
+                    ? () => deleteCustomField(field.key)
+                    : undefined,
                 };
               })}
               onAddField={addCustomField}
@@ -291,8 +354,6 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
           </div>
         </div>
       </div>
-
-
     </div>
   );
 }

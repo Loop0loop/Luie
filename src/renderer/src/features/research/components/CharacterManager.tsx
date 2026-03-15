@@ -66,6 +66,7 @@ export default function CharacterManager() {
     isTemplateModalOpen,
     setIsTemplateModalOpen,
     handleAddCharacter,
+    handleViewAll,
     groupedCharacters,
     selectedChar,
   } = useCharacterManager(t);
@@ -93,6 +94,7 @@ export default function CharacterManager() {
             t={t}
             selectedCharacterId={selectedCharacterId}
             setSelectedCharacterId={setSelectedCharacterId}
+            onViewAll={handleViewAll}
             isTemplateModalOpen={isTemplateModalOpen}
             setIsTemplateModalOpen={setIsTemplateModalOpen}
             handleAddCharacter={handleAddCharacter}

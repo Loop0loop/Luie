@@ -5,7 +5,10 @@ import { useDialog } from "@shared/ui/useDialog";
 import { useToast } from "@shared/ui/ToastContext";
 import type { EntityRelation, WorldGraphNode } from "@shared/types";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
-import { collectWorldGraphSelectionSnapshot } from "../worldGraphCanvasKeyboard";
+import {
+  collectWorldGraphSelectionSnapshot,
+  isDefinedWorldGraphNode,
+} from "../worldGraphCanvasKeyboard";
 
 interface UseCanvasDeleteProps {
   nodes: Node[];
@@ -85,7 +88,10 @@ export function useCanvasDelete({
     });
 
     const selectedDraftNodes = nodes.filter(
-      (node) => node.type === "draft" && selection.selectedNodeIds.includes(node.id),
+      (node) =>
+        isDefinedWorldGraphNode(node) &&
+        node.type === "draft" &&
+        selection.selectedNodeIds.includes(node.id),
     );
     const selectedGraphNodes = graphNodes.filter((node) =>
       selection.selectedNodeIds.includes(node.id),

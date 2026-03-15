@@ -105,4 +105,28 @@ describe("worldGraphCanvasKeyboard", () => {
       selectedEdgeIds: ["edge-1"],
     });
   });
+
+  it("ignores undefined nodes and edges in selection snapshots", () => {
+    expect(
+      collectWorldGraphSelectionSnapshot({
+        localNodes: [
+          undefined,
+          null,
+          {
+            id: "node-1",
+            type: "custom",
+            selected: true,
+            position: { x: 0, y: 0 },
+            data: {},
+          },
+        ],
+        localEdges: [undefined, null, { id: "edge-1", selected: true }],
+        selectedNodeId: null,
+        selectedEdgeId: null,
+      }),
+    ).toEqual({
+      selectedNodeIds: ["node-1"],
+      selectedEdgeIds: ["edge-1"],
+    });
+  });
 });

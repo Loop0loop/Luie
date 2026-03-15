@@ -47,6 +47,8 @@ const PERSISTABLE_DOCS_TABS = new Set<Exclude<PersistedDocsRightTab, null>>([
 const DEFAULT_SCRIVENER_SECTIONS: ScrivenerSectionsState = {
   manuscript: true,
   characters: true,
+  events: false,
+  factions: false,
   world: false,
   scrap: false,
   snapshots: false,

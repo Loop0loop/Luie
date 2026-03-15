@@ -332,7 +332,7 @@ endif
 
 quiet_cmd_regen_makefile = ACTION Regenerating $@
 cmd_regen_makefile = cd $(srcdir); /Users/user/Luie/node_modules/node-gyp/gyp/gyp_main.py -fmake --ignore-environment "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=/Users/user/.nvm/versions/node/v22.22.0" "-Dnode_gyp_dir=/Users/user/Luie/node_modules/node-gyp" "-Dnode_lib_file=/Users/user/.nvm/versions/node/v22.22.0/$(Configuration)/node.lib" "-Dmodule_root_dir=/Users/user/Luie/native/haptics" "-Dnode_engine=v8" "--depth=." "-Goutput_dir=." "--generator-output=build" -I/Users/user/Luie/native/haptics/build/config.gypi -I/Users/user/Luie/node_modules/node-gyp/addon.gypi -I/Users/user/.nvm/versions/node/v22.22.0/include/node/common.gypi "--toplevel-dir=." binding.gyp
-Makefile: $(srcdir)/build/config.gypi $(srcdir)/binding.gyp $(srcdir)/../../../.nvm/versions/node/v22.22.0/include/node/common.gypi $(srcdir)/../../node_modules/node-gyp/addon.gypi
+Makefile: $(srcdir)/binding.gyp $(srcdir)/../../node_modules/node-gyp/addon.gypi $(srcdir)/../../../.nvm/versions/node/v22.22.0/include/node/common.gypi $(srcdir)/build/config.gypi
 	$(call do_cmd,regen_makefile)
 
 # "all" is a concatenation of the "all" targets from all the included

@@ -3,7 +3,7 @@ import { useEventStore } from "@renderer/features/research/stores/eventStore";
 import { useFactionStore } from "@renderer/features/research/stores/factionStore";
 import { useTermStore } from "@renderer/features/research/stores/termStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
-import type { WorldGraphNode, WorldEntitySourceType } from "@shared/types";
+import type { WorldEntitySourceType } from "@shared/types";
 
 export async function syncGraphBackedStore(
   entityType: WorldEntitySourceType,
@@ -72,44 +72,5 @@ export function clearGraphBackedSelection(entityType: WorldEntitySourceType, id:
     }
     default:
       return;
-  }
-}
-
-export function syncGraphEntitySelectionToWorkspace(node: WorldGraphNode): void {
-  const uiStore = useUIStore.getState();
-
-  switch (node.entityType) {
-    case "Character": {
-      const store = useCharacterStore.getState();
-      store.setCurrentCharacter(
-        store.items.find((item) => item.id === node.id) ?? null,
-      );
-      uiStore.setMainView({ type: "character", id: node.id });
-      return;
-    }
-    case "Event": {
-      const store = useEventStore.getState();
-      store.setCurrentEvent(store.items.find((item) => item.id === node.id) ?? null);
-      uiStore.setMainView({ type: "event", id: node.id });
-      return;
-    }
-    case "Faction": {
-      const store = useFactionStore.getState();
-      store.setCurrentFaction(
-        store.items.find((item) => item.id === node.id) ?? null,
-      );
-      uiStore.setMainView({ type: "faction", id: node.id });
-      return;
-    }
-    case "Term": {
-      const store = useTermStore.getState();
-      store.setCurrentTerm(store.items.find((item) => item.id === node.id) ?? null);
-      uiStore.setWorldTab("terms");
-      uiStore.setMainView({ type: "world", id: node.id });
-      return;
-    }
-    default:
-      uiStore.setWorldTab("graph");
-      uiStore.setMainView({ type: "world" });
   }
 }

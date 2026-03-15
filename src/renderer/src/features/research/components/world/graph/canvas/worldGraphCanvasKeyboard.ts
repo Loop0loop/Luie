@@ -8,7 +8,7 @@ export type WorldGraphDeleteTarget =
 type ResolveWorldGraphDeleteTargetInput = {
   selectedNodeIds: string[];
   selectedEdgeIds: string[];
-  localNodes: Node[];
+  localNodes: Array<Node | null | undefined>;
   persistedNodeIds: Set<string>;
 };
 
@@ -16,6 +16,22 @@ export type WorldGraphSelectionSnapshot = {
   selectedNodeIds: string[];
   selectedEdgeIds: string[];
 };
+
+export const isDefinedWorldGraphNode = (
+  node: Node | null | undefined,
+): node is Node =>
+  Boolean(
+    node &&
+      typeof node.id === "string" &&
+      node.id.length > 0 &&
+      typeof node.type === "string" &&
+      node.type.length > 0,
+  );
+
+const isDefinedSelectableEdge = (
+  edge: { id: string; selected?: boolean | null } | null | undefined,
+): edge is { id: string; selected?: boolean | null } =>
+  Boolean(edge && typeof edge.id === "string" && edge.id.length > 0);
 
 export function isEditableWorldGraphTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
@@ -55,7 +71,10 @@ export function resolveWorldGraphDeleteTarget({
 }: ResolveWorldGraphDeleteTargetInput): WorldGraphDeleteTarget | null {
   for (const selectedNodeId of selectedNodeIds) {
     const selectedDraftNode = localNodes.find(
-      (node) => node.id === selectedNodeId && node.type === "draft",
+      (node) =>
+        isDefinedWorldGraphNode(node) &&
+        node.id === selectedNodeId &&
+        node.type === "draft",
     );
     if (selectedDraftNode) {
       return { kind: "draft-node", id: selectedDraftNode.id };
@@ -75,16 +94,22 @@ export function resolveWorldGraphDeleteTarget({
 }
 
 export function collectWorldGraphSelectionSnapshot(input: {
-  localNodes: Node[];
-  localEdges: Array<{ id: string; selected?: boolean | null }>;
+  localNodes: Array<Node | null | undefined>;
+  localEdges: Array<{ id: string; selected?: boolean | null } | null | undefined>;
   selectedNodeId: string | null;
   selectedEdgeId: string | null;
 }): WorldGraphSelectionSnapshot {
   const selectedNodeIds = input.localNodes
-    .filter((node) => Boolean(node.selected))
+    .filter(
+      (node): node is Node =>
+        isDefinedWorldGraphNode(node) && Boolean(node.selected),
+    )
     .map((node) => node.id);
   const selectedEdgeIds = input.localEdges
-    .filter((edge) => Boolean(edge.selected))
+    .filter(
+      (edge): edge is { id: string; selected?: boolean | null } =>
+        isDefinedSelectableEdge(edge) && Boolean(edge.selected),
+    )
     .map((edge) => edge.id);
 
   if (selectedNodeIds.length === 0 && input.selectedNodeId) {

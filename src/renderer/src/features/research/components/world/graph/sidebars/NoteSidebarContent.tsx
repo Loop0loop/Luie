@@ -3,7 +3,7 @@ import { Lightbulb, Plus, Search, StickyNote } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Input } from "@renderer/components/ui/input";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
-import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
+import { useWorldGraphUiStore } from "@renderer/features/research/stores/worldGraphUiStore";
 import { useMemoStore } from "@renderer/features/research/stores/memoStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { SidebarTreeSection, TreeItem } from "./SidebarTreeSection";
@@ -14,10 +14,10 @@ export function NoteSidebarContent() {
   const notes = useMemoStore((state) => state.notes);
   const addNote = useMemoStore((state) => state.addNote);
   const activeMemoProjectId = useMemoStore((state) => state.activeProjectId);
-  const selectedNoteId = useGraphIdeStore((state) => state.selectedNoteId);
-  const setSelectedNoteId = useGraphIdeStore((state) => state.setSelectedNoteId);
-  const noteSearchQuery = useGraphIdeStore((state) => state.noteSearchQuery);
-  const setNoteSearchQuery = useGraphIdeStore((state) => state.setNoteSearchQuery);
+  const selectedNoteId = useWorldGraphUiStore((state) => state.selectedNoteId);
+  const setSelectedNoteId = useWorldGraphUiStore((state) => state.setSelectedNoteId);
+  const noteSearchQuery = useWorldGraphUiStore((state) => state.noteSearchQuery);
+  const setNoteSearchQuery = useWorldGraphUiStore((state) => state.setNoteSearchQuery);
   const setMainView = useUIStore((state) => state.setMainView);
   const deferredSearchQuery = useDeferredValue(noteSearchQuery);
 

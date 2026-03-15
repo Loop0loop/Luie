@@ -63,6 +63,14 @@ export function useBinderSidebarState() {
       getEditorLayoutPanelSurface("character"),
       setLayoutSurfaceRatio,
     ),
+    event: useLayoutSurfaceResizeCommit(
+      getEditorLayoutPanelSurface("event"),
+      setLayoutSurfaceRatio,
+    ),
+    faction: useLayoutSurfaceResizeCommit(
+      getEditorLayoutPanelSurface("faction"),
+      setLayoutSurfaceRatio,
+    ),
     world: useLayoutSurfaceResizeCommit(
       getEditorLayoutPanelSurface("world"),
       setLayoutSurfaceRatio,

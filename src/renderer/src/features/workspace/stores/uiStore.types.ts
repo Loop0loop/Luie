@@ -72,6 +72,8 @@ export interface ResizablePanelData {
 export type ScrivenerSectionId =
   | "manuscript"
   | "characters"
+  | "events"
+  | "factions"
   | "world"
   | "scrap"
   | "snapshots"
@@ -83,6 +85,8 @@ export type ScrivenerSectionsState = Record<ScrivenerSectionId, boolean>;
 export const DEFAULT_SCRIVENER_SECTIONS: ScrivenerSectionsState = {
   manuscript: true,
   characters: true,
+  events: false,
+  factions: false,
   world: false,
   scrap: false,
   snapshots: false,
@@ -92,14 +96,14 @@ export const DEFAULT_SCRIVENER_SECTIONS: ScrivenerSectionsState = {
 
 export type MainView = {
   type:
-  | "editor"
-  | "character"
-  | "event"
-  | "faction"
-  | "world"
-  | "memo"
-  | "trash"
-  | "analysis";
+    | "editor"
+    | "character"
+    | "event"
+    | "faction"
+    | "world"
+    | "memo"
+    | "trash"
+    | "analysis";
   id?: string;
 };
 
@@ -135,12 +139,18 @@ export interface UIStore {
   setBinderBarOpen: (isOpen: boolean) => void;
   setScrivenerSidebarOpen: (isOpen: boolean) => void;
   setScrivenerInspectorOpen: (isOpen: boolean) => void;
-  setScrivenerSectionOpen: (section: ScrivenerSectionId, isOpen: boolean) => void;
+  setScrivenerSectionOpen: (
+    section: ScrivenerSectionId,
+    isOpen: boolean,
+  ) => void;
   setScrivenerSections: (sections: Partial<ScrivenerSectionsState>) => void;
   setSidebarWidth: (feature: string, width: number) => void;
   setLayoutSurfaceRatio: (surface: LayoutSurfaceId, ratio: number) => void;
   setRegionOpen: (region: RegionId, open: boolean) => void;
-  setRegionWidth: (region: Exclude<RegionId, "rightRail">, width: number) => void;
+  setRegionWidth: (
+    region: Exclude<RegionId, "rightRail">,
+    width: number,
+  ) => void;
   openRightPanelTab: (tab: RightPanelTab) => void;
   closeRightPanel: () => void;
   toggleLeftSidebar: () => void;

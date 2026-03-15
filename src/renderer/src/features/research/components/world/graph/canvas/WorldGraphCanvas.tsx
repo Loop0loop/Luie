@@ -41,7 +41,10 @@ import { CustomEdge } from "../components/CustomEdge";
 import { useSmartSnap } from "../hooks/useSmartSnap";
 import { SmartSnapLines } from "../components/SmartSnapLines";
 import { CanvasCommandPalette, type PaletteMode } from "./CanvasCommandPalette";
-import { isEditableWorldGraphTarget } from "./worldGraphCanvasKeyboard";
+import {
+  isDefinedWorldGraphNode,
+  isEditableWorldGraphTarget,
+} from "./worldGraphCanvasKeyboard";
 
 // Hooks & Utils
 import { computeClusterPositions } from "./utils/clusterUtils";
@@ -353,6 +356,9 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
 
   const handleNodeDragStop: NodeDragHandler = useCallback(
     (_, node) => {
+      if (!isDefinedWorldGraphNode(node)) {
+        return;
+      }
       onSmartNodeDragStop();
       if (node.type === "draft") return;
       if (
@@ -374,13 +380,21 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
   );
 
   const handleSelectionChange = useCallback(
-    (selection: { nodes: Node[]; edges: { id: string }[] }) => {
-      const nextNode = selection.nodes.find((node) => node.type !== "draft") ?? selection.nodes[0];
+    (selection: {
+      nodes: Array<Node | null | undefined>;
+      edges: Array<{ id: string } | null | undefined>;
+    }) => {
+      const safeNodes = selection.nodes.filter(isDefinedWorldGraphNode);
+      const nextNode =
+        safeNodes.find((node) => node.type !== "draft") ?? safeNodes[0];
       if (nextNode) {
         selectNode(nextNode.id);
         return;
       }
-      const nextEdge = selection.edges[0];
+      const nextEdge = selection.edges.find(
+        (edge): edge is { id: string } =>
+          Boolean(edge && typeof edge.id === "string" && edge.id.length > 0),
+      );
       if (nextEdge) {
         selectEdge(nextEdge.id);
         return;
@@ -392,8 +406,8 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
   );
 
   const handleNodesDelete = useCallback(
-    (deletedNodes: Node[]) => {
-      deletedNodes.forEach((node) => {
+    (deletedNodes: Array<Node | null | undefined>) => {
+      deletedNodes.filter(isDefinedWorldGraphNode).forEach((node) => {
         if (node.type === "draft") {
           removeDraftNode(node.id);
           return;
@@ -407,8 +421,13 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
   );
 
   const handleEdgesDelete = useCallback(
-    (deletedEdges: { id: string }[]) => {
-      deletedEdges.forEach((edge) => {
+    (deletedEdges: Array<{ id: string } | null | undefined>) => {
+      deletedEdges
+        .filter(
+          (edge): edge is { id: string } =>
+            Boolean(edge && typeof edge.id === "string" && edge.id.length > 0),
+        )
+        .forEach((edge) => {
         void runRelationDelete(edge.id);
       });
     },
@@ -454,7 +473,9 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
     if (!nodeMenu) return;
     const targetNode = graphNodes.find((node) => node.id === nodeMenu.nodeId);
     if (!targetNode) {
-      const draftNode = nodes.find((node) => node.id === nodeMenu.nodeId);
+      const draftNode = nodes.find(
+        (node) => isDefinedWorldGraphNode(node) && node.id === nodeMenu.nodeId,
+      );
       if (draftNode?.type === "draft") {
         removeDraftNode(draftNode.id);
       }

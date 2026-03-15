@@ -37,7 +37,6 @@ import type {
   UpdateGraphNodeInput,
   WorldBuildingState,
 } from "./worldBuildingStore.types";
-import { DEFAULT_FILTER } from "./worldBuildingStore.types";
 
 type StoreSetter<T> = (
   partial: T | Partial<T> | ((state: T) => T | Partial<T>),
@@ -47,11 +46,6 @@ type StoreGetter<T> = () => T;
 type WorldBuildingActions = Pick<
   WorldBuildingState,
   | "loadGraph"
-  | "setMainView"
-  | "setFilter"
-  | "resetFilter"
-  | "selectNode"
-  | "selectEdge"
   | "createGraphNode"
   | "updateGraphNode"
   | "updateGraphNodePosition"
@@ -127,21 +121,11 @@ export function createWorldBuildingActions(
         set({
           graphData: mergedGraph,
           isLoading: false,
-          selectedNodeId: null,
-          selectedEdgeId: null,
         });
       } catch (error) {
         set({ error: String(error), isLoading: false });
       }
     },
-
-    setMainView: (view) => set({ mainView: view }),
-
-    setFilter: (filter) =>
-      set((state) => ({ filter: { ...state.filter, ...filter } })),
-    resetFilter: () => set({ filter: DEFAULT_FILTER }),
-    selectNode: (nodeId: string | null) => set({ selectedNodeId: nodeId, selectedEdgeId: null }),
-    selectEdge: (edgeId: string | null) => set({ selectedEdgeId: edgeId, selectedNodeId: null }),
 
     createGraphNode: async (input) => {
       const projectId = input.projectId || get().activeProjectId;
@@ -154,8 +138,6 @@ export function createWorldBuildingActions(
         const nextGraph = appendNodeToGraph(state.graphData, nextNode);
         return {
           graphData: nextGraph,
-          selectedNodeId: nextNode.id,
-          selectedEdgeId: null,
         };
       });
       await syncGraphBackedStore(nextNode.entityType, projectId);
@@ -215,7 +197,6 @@ export function createWorldBuildingActions(
 
       set((state) => ({
         graphData: removeNodeFromGraph(state.graphData, id),
-        selectedNodeId: state.selectedNodeId === id ? null : state.selectedNodeId,
       }));
       clearGraphBackedSelection(current.entityType, id);
       await syncGraphBackedStore(current.entityType, projectId);
@@ -302,7 +283,6 @@ export function createWorldBuildingActions(
 
       set((state) => ({
         graphData: removeRelationFromGraph(state.graphData, id),
-        selectedEdgeId: state.selectedEdgeId === id ? null : state.selectedEdgeId,
       }));
       await persistGraphDocument(projectId, get().graphData);
       return true;

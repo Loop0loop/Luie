@@ -6,108 +6,128 @@ import { CHARACTER_TEMPLATES } from "@shared/constants";
 import { useShallow } from "zustand/react/shallow";
 
 export type CharacterLike = {
-    id: string;
-    name: string;
-    description?: string | null;
-    attributes?: unknown;
+  id: string;
+  name: string;
+  description?: string | null;
+  attributes?: unknown;
 };
 
 export function useCharacterManager(t: TFunction) {
-    const currentProject = useProjectStore((state) => state.currentItem);
-    const {
-        items: characters,
-        currentItem: currentCharacterFromStore,
-        loadAll: loadCharacters,
-        create: createCharacter,
-        update: updateCharacter,
-    } = useCharacterStore(
-        useShallow((state) => ({
-            items: state.items,
-            currentItem: state.currentItem,
-            loadAll: state.loadAll,
-            create: state.create,
-            update: state.update,
-        })),
-    );
+  const currentProject = useProjectStore((state) => state.currentItem);
+  const {
+    items: characters,
+    currentItem: currentCharacterFromStore,
+    loadAll: loadCharacters,
+    create: createCharacter,
+    update: updateCharacter,
+    setCurrent: setCurrentCharacter,
+  } = useCharacterStore(
+    useShallow((state) => ({
+      items: state.items,
+      currentItem: state.currentItem,
+      loadAll: state.loadAll,
+      create: state.create,
+      update: state.update,
+      setCurrent: state.setCurrent,
+    })),
+  );
 
-    const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
-    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(
+    null,
+  );
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
-    // Sync with global store selection (e.g. from SmartLinkService)
-    useEffect(() => {
-        if (currentCharacterFromStore?.id && currentCharacterFromStore.id !== selectedCharacterId) {
-            const syncTimer = window.setTimeout(() => {
-                setSelectedCharacterId(currentCharacterFromStore.id);
-            }, 0);
-            return () => window.clearTimeout(syncTimer);
-        }
-        return undefined;
-    }, [currentCharacterFromStore, selectedCharacterId]);
+  // Sync with global store selection (e.g. from SmartLinkService)
+  useEffect(() => {
+    if (
+      currentCharacterFromStore?.id &&
+      currentCharacterFromStore.id !== selectedCharacterId
+    ) {
+      const syncTimer = window.setTimeout(() => {
+        setSelectedCharacterId(currentCharacterFromStore.id);
+      }, 0);
+      return () => window.clearTimeout(syncTimer);
+    }
+    return undefined;
+  }, [currentCharacterFromStore, selectedCharacterId]);
 
-    useEffect(() => {
-        if (currentProject) {
-            loadCharacters(currentProject.id);
-        }
-    }, [currentProject, loadCharacters]);
+  useEffect(() => {
+    if (currentProject) {
+      loadCharacters(currentProject.id);
+    }
+  }, [currentProject, loadCharacters]);
 
-    useEffect(() => {
-        if (!selectedCharacterId) {
-            return;
-        }
-        if ((characters as CharacterLike[]).some((item) => item.id === selectedCharacterId)) {
-            return;
-        }
-        const clearTimer = window.setTimeout(() => {
-            setSelectedCharacterId(null);
-        }, 0);
-        return () => window.clearTimeout(clearTimer);
-    }, [characters, selectedCharacterId]);
+  useEffect(() => {
+    if (!selectedCharacterId) {
+      return;
+    }
+    if (
+      (characters as CharacterLike[]).some(
+        (item) => item.id === selectedCharacterId,
+      )
+    ) {
+      return;
+    }
+    const clearTimer = window.setTimeout(() => {
+      setSelectedCharacterId(null);
+    }, 0);
+    return () => window.clearTimeout(clearTimer);
+  }, [characters, selectedCharacterId]);
 
-    const handleAddCharacter = async (templateId: string = "basic") => {
-        if (currentProject) {
-            const template = CHARACTER_TEMPLATES.find((t) => t.id === templateId) || CHARACTER_TEMPLATES[0];
+  const handleAddCharacter = async (templateId: string = "basic") => {
+    if (currentProject) {
+      const template =
+        CHARACTER_TEMPLATES.find((t) => t.id === templateId) ||
+        CHARACTER_TEMPLATES[0];
 
-            const newChar = await createCharacter({
-                projectId: currentProject.id,
-                name: t("character.defaults.name"),
-                description: t("character.uncategorized"),
-                attributes: { templateId: template.id } as Record<string, unknown>
-            });
-            if (newChar) {
-                setSelectedCharacterId(newChar.id);
-                setIsTemplateModalOpen(false);
-            }
-        }
-    };
+      const newChar = await createCharacter({
+        projectId: currentProject.id,
+        name: t("character.defaults.name"),
+        description: t("character.uncategorized"),
+        attributes: { templateId: template.id } as Record<string, unknown>,
+      });
+      if (newChar) {
+        setSelectedCharacterId(newChar.id);
+        setIsTemplateModalOpen(false);
+      }
+    }
+  };
 
-    // Grouping Logic
-    const groupedCharacters = useMemo(() => {
-        const groups: Record<string, CharacterLike[]> = {};
-        const list = characters as CharacterLike[];
+  const handleViewAll = () => {
+    setCurrentCharacter(null);
+    setSelectedCharacterId(null);
+  };
 
-        list.forEach(char => {
-            const group = char.description?.trim() || t("character.uncategorized");
-            if (!groups[group]) groups[group] = [];
-            groups[group].push(char);
-        });
+  // Grouping Logic
+  const groupedCharacters = useMemo(() => {
+    const groups: Record<string, CharacterLike[]> = {};
+    const list = characters as CharacterLike[];
 
-        return groups;
-    }, [characters, t]);
+    list.forEach((char) => {
+      const group = char.description?.trim() || t("character.uncategorized");
+      if (!groups[group]) groups[group] = [];
+      groups[group].push(char);
+    });
 
-    // Selected Character Data
-    const selectedChar = useMemo(() =>
-        (characters as CharacterLike[]).find(c => c.id === selectedCharacterId),
-        [characters, selectedCharacterId]
-    );
+    return groups;
+  }, [characters, t]);
 
-    return {
-        selectedCharacterId,
-        setSelectedCharacterId,
-        isTemplateModalOpen,
-        setIsTemplateModalOpen,
-        handleAddCharacter,
-        groupedCharacters,
-        selectedChar,
-        updateCharacter,
-    };
+  // Selected Character Data
+  const selectedChar = useMemo(
+    () =>
+      (characters as CharacterLike[]).find((c) => c.id === selectedCharacterId),
+    [characters, selectedCharacterId],
+  );
+
+  return {
+    selectedCharacterId,
+    setSelectedCharacterId,
+    isTemplateModalOpen,
+    setIsTemplateModalOpen,
+    handleAddCharacter,
+    handleViewAll,
+    groupedCharacters,
+    selectedChar,
+    updateCharacter,
+  };
 }

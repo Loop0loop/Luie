@@ -12,38 +12,12 @@ import type {
   WorldGraphNode,
 } from "@shared/types";
 
-export type WorldMainView = "graph" | "timeline" | "map";
-
 export interface WorldFilter {
   entityTypes: string[];
   relationKinds: RelationKind[];
   searchQuery: string;
   tags: string[];
 }
-
-export const DEFAULT_FILTER: WorldFilter = {
-  entityTypes: [
-    "Character",
-    "Faction",
-    "Event",
-    "Term",
-    "Place",
-    "Concept",
-    "Rule",
-    "Item",
-    "WorldEntity",
-  ],
-  relationKinds: [
-    "belongs_to",
-    "enemy_of",
-    "causes",
-    "controls",
-    "located_in",
-    "violates",
-  ],
-  searchQuery: "",
-  tags: [],
-};
 
 export type CreateGraphNodeInput = {
   projectId: string;
@@ -70,16 +44,7 @@ export interface WorldBuildingState {
   activeProjectId: string | null;
   isLoading: boolean;
   error: string | null;
-  mainView: WorldMainView;
-  filter: WorldFilter;
-  selectedNodeId: string | null;
-  selectedEdgeId: string | null;
   loadGraph: (projectId: string) => Promise<void>;
-  setMainView: (view: WorldMainView) => void;
-  setFilter: (filter: Partial<WorldFilter>) => void;
-  resetFilter: () => void;
-  selectNode: (nodeId: string | null) => void;
-  selectEdge: (edgeId: string | null) => void;
 
   createGraphNode: (input: CreateGraphNodeInput) => Promise<WorldGraphNode | null>;
   updateGraphNode: (input: UpdateGraphNodeInput) => Promise<void>;
@@ -101,18 +66,10 @@ export const INITIAL_WORLD_BUILDING_STATE = {
   activeProjectId: null,
   isLoading: false,
   error: null,
-  mainView: "graph",
-  filter: DEFAULT_FILTER,
-  selectedNodeId: null,
-  selectedEdgeId: null,
 } satisfies Pick<
   WorldBuildingState,
   | "graphData"
   | "activeProjectId"
   | "isLoading"
   | "error"
-  | "mainView"
-  | "filter"
-  | "selectedNodeId"
-  | "selectedEdgeId"
 >;

@@ -50,13 +50,17 @@ export function BinderSidebarPanelBody(props: {
       <div className="flex-1 overflow-hidden pt-4 h-full">
         <Suspense
           fallback={
-            <div className="p-4 text-sm text-muted">
-              {props.t("loading")}
-            </div>
+            <div className="p-4 text-sm text-muted">{props.t("loading")}</div>
           }
         >
           {props.activeTab === "character" && (
             <ResearchPanel activeTab="character" onClose={props.onClose} />
+          )}
+          {props.activeTab === "event" && (
+            <ResearchPanel activeTab="event" onClose={props.onClose} />
+          )}
+          {props.activeTab === "faction" && (
+            <ResearchPanel activeTab="faction" onClose={props.onClose} />
           )}
           {props.activeTab === "world" && (
             <WorldPanel onClose={props.onClose} />

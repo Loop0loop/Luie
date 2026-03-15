@@ -6,101 +6,108 @@ import { cn } from "@shared/types/utils";
 import type { FactionLike } from "@renderer/features/research/components/faction/useFactionManager";
 
 interface FactionSidebarListProps {
-    t: TFunction;
-    selectedFactionId: string | null;
-    setSelectedFactionId: (id: string | null) => void;
-    handleAddFaction: () => void;
-    groupedFactions: Record<string, FactionLike[]>;
+  t: TFunction;
+  selectedFactionId: string | null;
+  setSelectedFactionId: (id: string | null) => void;
+  onViewAll: () => void;
+  handleAddFaction: () => void;
+  groupedFactions: Record<string, FactionLike[]>;
 }
 
 export function FactionSidebarList({
-    t,
-    selectedFactionId,
-    setSelectedFactionId,
-    handleAddFaction,
-    groupedFactions,
+  t,
+  selectedFactionId,
+  setSelectedFactionId,
+  onViewAll,
+  handleAddFaction,
+  groupedFactions,
 }: FactionSidebarListProps) {
-    return (
-        <div className="flex flex-col h-full bg-sidebar border-r border-border overflow-y-auto">
-            <div className="px-4 py-3 bg-accent text-white font-bold flex justify-between items-center shrink-0">
-                <button
-                    className="flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity bg-transparent border-none p-1 text-white cursor-pointer"
-                    onClick={() => setSelectedFactionId(null)}
-                    title={t("faction.viewAllTitle", "View All")}
-                >
-                    <Home size={18} />
-                    <span style={{ marginLeft: 8, fontSize: 13, fontWeight: 700 }}>
-                        {t("faction.sectionTitle", "Factions")}
-                    </span>
-                </button>
+  return (
+    <div className="flex flex-col h-full bg-sidebar border-r border-border overflow-y-auto">
+      <div className="px-4 py-3 bg-accent text-white font-bold flex justify-between items-center shrink-0">
+        <button
+          className="flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity bg-transparent border-none p-1 text-white cursor-pointer"
+          onClick={onViewAll}
+          title={t("faction.viewAllTitle", "View All")}
+        >
+          <Home size={18} />
+          <span style={{ marginLeft: 8, fontSize: 13, fontWeight: 700 }}>
+            {t("faction.sectionTitle", "Factions")}
+          </span>
+        </button>
 
-                <button
-                    className="flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity bg-transparent border-none p-1 text-white cursor-pointer"
-                    onClick={() => handleAddFaction()}
-                    title={t("faction.addTitle", "Add Faction")}
-                >
-                    <Plus size={18} />
-                </button>
-            </div>
+        <button
+          className="flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity bg-transparent border-none p-1 text-white cursor-pointer"
+          onClick={() => handleAddFaction()}
+          title={t("faction.addTitle", "Add Faction")}
+        >
+          <Plus size={18} />
+        </button>
+      </div>
 
-            <div className="flex flex-col w-full overflow-y-auto">
-                {Object.entries(groupedFactions).map(([group, facs]) => (
-                    <FactionGroup
-                        key={group}
-                        t={t}
-                        title={group}
-                        factions={facs}
-                        selectedId={selectedFactionId}
-                        onSelect={setSelectedFactionId}
-                    />
-                ))}
-            </div>
-        </div>
-    );
+      <div className="flex flex-col w-full overflow-y-auto">
+        {Object.entries(groupedFactions).map(([group, facs]) => (
+          <FactionGroup
+            key={group}
+            t={t}
+            title={group}
+            factions={facs}
+            selectedId={selectedFactionId}
+            onSelect={setSelectedFactionId}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function FactionGroup({
-    t,
-    title,
-    factions,
-    selectedId,
-    onSelect
+  t,
+  title,
+  factions,
+  selectedId,
+  onSelect,
 }: {
-    t: TFunction;
-    title: string;
-    factions: FactionLike[];
-    selectedId: string | null;
-    onSelect: (id: string) => void;
+  t: TFunction;
+  title: string;
+  factions: FactionLike[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
 }) {
-    const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(true);
 
-    return (
-        <div>
+  return (
+    <div>
+      <div
+        className="px-4 py-2 text-xs font-bold text-muted bg-surface border-b border-border cursor-pointer flex items-center gap-2 select-none border-l-[4px] border-l-accent"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+        <span>
+          {title} ({factions.length})
+        </span>
+      </div>
+
+      {isOpen && (
+        <div className="flex flex-col">
+          {factions.map((fac) => (
             <div
-                className="px-4 py-2 text-xs font-bold text-muted bg-surface border-b border-border cursor-pointer flex items-center gap-2 select-none border-l-[4px] border-l-accent"
-                onClick={() => setIsOpen(!isOpen)}
+              key={fac.id}
+              className={cn(
+                "px-4 py-2.5 border-b border-border cursor-pointer text-sm text-fg flex flex-col transition-colors hover:bg-surface-hover",
+                selectedId === fac.id &&
+                  "bg-(--namu-hover-bg) border-l-[3px] border-l-accent text-accent",
+              )}
+              onClick={() => onSelect(fac.id)}
             >
-                {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                <span>{title} ({factions.length})</span>
+              <span className="font-semibold mb-0.5">{fac.name}</span>
+              <span className="text-[11px] text-subtle">
+                {fac.description || t("faction.noRole", "No Type")}
+              </span>
             </div>
-
-            {isOpen && (
-                <div className="flex flex-col">
-                    {factions.map(fac => (
-                        <div
-                            key={fac.id}
-                            className={cn(
-                                "px-4 py-2.5 border-b border-border cursor-pointer text-sm text-fg flex flex-col transition-colors hover:bg-surface-hover",
-                                selectedId === fac.id && "bg-(--namu-hover-bg) border-l-[3px] border-l-accent text-accent"
-                            )}
-                            onClick={() => onSelect(fac.id)}
-                        >
-                            <span className="font-semibold mb-0.5">{fac.name}</span>
-                            <span className="text-[11px] text-subtle">{fac.description || t("faction.noRole", "No Type")}</span>
-                        </div>
-                    ))}
-                </div>
-            )}
+          ))}
         </div>
-    );
+      )}
+    </div>
+  );
 }

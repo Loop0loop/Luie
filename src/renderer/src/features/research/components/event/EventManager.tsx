@@ -64,6 +64,7 @@ export default function EventManager() {
     selectedEventId,
     setSelectedEventId,
     handleAddEvent,
+    handleViewAll,
     groupedEvents,
     selectedEvent,
   } = useEventManager(t);
@@ -91,6 +92,7 @@ export default function EventManager() {
             t={t}
             selectedEventId={selectedEventId}
             setSelectedEventId={setSelectedEventId}
+            onViewAll={handleViewAll}
             handleAddEvent={handleAddEvent}
             groupedEvents={groupedEvents}
           />

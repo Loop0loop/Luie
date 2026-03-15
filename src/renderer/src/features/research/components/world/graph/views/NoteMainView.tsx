@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@renderer/components/ui/button";
 import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
-import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
+import { useWorldGraphUiStore } from "@renderer/features/research/stores/worldGraphUiStore";
 import { useMemoStore } from "@renderer/features/research/stores/memoStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
@@ -21,8 +21,8 @@ export function NoteMainView() {
   const updateNote = useMemoStore((state) => state.updateNote);
   const deleteNote = useMemoStore((state) => state.deleteNote);
   const flushSave = useMemoStore((state) => state.flushSave);
-  const selectedNoteId = useGraphIdeStore((state) => state.selectedNoteId);
-  const setSelectedNoteId = useGraphIdeStore((state) => state.setSelectedNoteId);
+  const selectedNoteId = useWorldGraphUiStore((state) => state.selectedNoteId);
+  const setSelectedNoteId = useWorldGraphUiStore((state) => state.setSelectedNoteId);
   const mainView = useUIStore((state) => state.mainView);
   const setMainView = useUIStore((state) => state.setMainView);
 

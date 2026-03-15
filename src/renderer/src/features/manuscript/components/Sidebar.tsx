@@ -26,9 +26,11 @@ import {
 } from "@renderer/features/manuscript/components/useSidebarLogic";
 
 const SnapshotList = lazy(() =>
-  import("@renderer/features/snapshot/components/SnapshotList").then((module) => ({
-    default: module.SnapshotList,
-  })),
+  import("@renderer/features/snapshot/components/SnapshotList").then(
+    (module) => ({
+      default: module.SnapshotList,
+    }),
+  ),
 );
 const TrashList = lazy(() =>
   import("@renderer/features/trash/components/TrashList").then((module) => ({
@@ -41,7 +43,9 @@ interface SidebarProps {
   currentProjectId?: string;
   onOpenSettings: () => void;
   onPrefetchSettings?: () => void;
-  onSelectResearchItem: (type: "character" | "world" | "scrap" | "analysis") => void;
+  onSelectResearchItem: (
+    type: "character" | "event" | "faction" | "world" | "scrap" | "analysis",
+  ) => void;
   onSplitView?: (type: "vertical" | "horizontal", contentId: string) => void;
 }
 
@@ -82,7 +86,8 @@ function Sidebar({
   const getItemKey = (index: number, item: SidebarItem): string => {
     if (item.type === "chapter") return item.chapter.id;
     if (item.type === "research-item") return `research-${item.id}`;
-    if (item.type === "trash-list") return `trash-${item.projectId}-${item.refreshKey}`;
+    if (item.type === "trash-list")
+      return `trash-${item.projectId}-${item.refreshKey}`;
     return `${item.type}-${index}`;
   };
 
@@ -108,7 +113,11 @@ function Sidebar({
       return (
         <DraggableItem
           id={`chapter-${chapter.id}`}
-          data={{ type: "chapter", id: chapter.id, title: chapter.title || "Untitled" }}
+          data={{
+            type: "chapter",
+            id: chapter.id,
+            title: chapter.title || "Untitled",
+          }}
         >
           <div
             className={cn(
@@ -181,6 +190,16 @@ function Sidebar({
           icon: <FolderOpen className="mr-2 text-muted icon-sm" />,
           hoverId: "res-char",
         },
+        event: {
+          label: t("research.title.events"),
+          icon: <FolderOpen className="mr-2 text-muted icon-sm" />,
+          hoverId: "res-event",
+        },
+        faction: {
+          label: t("research.title.factions"),
+          icon: <FolderOpen className="mr-2 text-muted icon-sm" />,
+          hoverId: "res-faction",
+        },
         world: {
           label: t("sidebar.item.world"),
           icon: <FolderOpen className="mr-2 text-muted icon-sm" />,
@@ -216,7 +235,8 @@ function Sidebar({
           >
             {meta.icon}
             <span>{meta.label}</span>
-            {(hoveredItemId === meta.hoverId || menuOpenId === meta.hoverId) && (
+            {(hoveredItemId === meta.hoverId ||
+              menuOpenId === meta.hoverId) && (
               <div
                 className="ml-auto p-0.5 rounded hover:bg-bg-active text-muted hover:text-fg"
                 onClick={(e) => handleMenuClick(e, meta.hoverId)}
@@ -249,7 +269,11 @@ function Sidebar({
     if (item.type === "snapshot-list") {
       return (
         <div className="h-60 border-b border-border">
-          <Suspense fallback={<div className="p-3 text-xs text-muted">{t("loading")}</div>}>
+          <Suspense
+            fallback={
+              <div className="p-3 text-xs text-muted">{t("loading")}</div>
+            }
+          >
             <SnapshotList chapterId={item.chapterId} />
           </Suspense>
         </div>
@@ -296,8 +320,15 @@ function Sidebar({
     if (item.type === "trash-list") {
       return (
         <div className="h-60 border-b border-border">
-          <Suspense fallback={<div className="p-3 text-xs text-muted">{t("loading")}</div>}>
-            <TrashList projectId={item.projectId} refreshKey={item.refreshKey} />
+          <Suspense
+            fallback={
+              <div className="p-3 text-xs text-muted">{t("loading")}</div>
+            }
+          >
+            <TrashList
+              projectId={item.projectId}
+              refreshKey={item.refreshKey}
+            />
           </Suspense>
         </div>
       );
@@ -333,13 +364,15 @@ function Sidebar({
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
             onClick={() => void handleAction("open_below", menuOpenId)}
           >
-            <ArrowDownFromLine className="icon-sm" /> {t("sidebar.menu.openBelow")}
+            <ArrowDownFromLine className="icon-sm" />{" "}
+            {t("sidebar.menu.openBelow")}
           </div>
           <div
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
             onClick={() => void handleAction("open_right", menuOpenId)}
           >
-            <ArrowRightFromLine className="icon-sm" /> {t("sidebar.menu.openRight")}
+            <ArrowRightFromLine className="icon-sm" />{" "}
+            {t("sidebar.menu.openRight")}
           </div>
           <div className="h-px bg-border my-1" />
           <div
@@ -378,7 +411,9 @@ function Sidebar({
             <Edit2 className="icon-xs" />
           </button>
         </div>
-        <div className="text-[11px] text-muted uppercase tracking-wider">{t("sidebar.binderTitle")}</div>
+        <div className="text-[11px] text-muted uppercase tracking-wider">
+          {t("sidebar.binderTitle")}
+        </div>
       </div>
 
       <div className="flex-1 min-h-0 py-3 [content-visibility:auto] overflow-y-auto">

@@ -28,6 +28,8 @@ export const DOCS_LAYOUT_PANEL_SURFACE_MAP = {
 
 export const EDITOR_LAYOUT_PANEL_SURFACE_MAP = {
   character: "editor.panel.character",
+  event: "editor.panel.event",
+  faction: "editor.panel.faction",
   world: "editor.panel.world",
   scrap: "editor.panel.scrap",
   analysis: "editor.panel.analysis",
@@ -35,7 +37,8 @@ export const EDITOR_LAYOUT_PANEL_SURFACE_MAP = {
   trash: "editor.panel.trash",
 } as const;
 
-export type DefaultLayoutPanelSurfaceKey = keyof typeof DEFAULT_LAYOUT_PANEL_SURFACE_MAP;
+export type DefaultLayoutPanelSurfaceKey =
+  keyof typeof DEFAULT_LAYOUT_PANEL_SURFACE_MAP;
 export type DocsLayoutPanelTab = keyof typeof DOCS_LAYOUT_PANEL_SURFACE_MAP;
 export type EditorLayoutPanelTab = keyof typeof EDITOR_LAYOUT_PANEL_SURFACE_MAP;
 
@@ -48,11 +51,7 @@ export type LayoutSurfaceId =
   | "scrivener.inspector"
   | (typeof EDITOR_LAYOUT_PANEL_SURFACE_MAP)[EditorLayoutPanelTab];
 
-export type LayoutSurfaceRole =
-  | "sidebar"
-  | "panel"
-  | "binder"
-  | "inspector";
+export type LayoutSurfaceRole = "sidebar" | "panel" | "binder" | "inspector";
 
 export type LayoutSurfaceConfig = {
   role: LayoutSurfaceRole;
@@ -96,7 +95,10 @@ const DEFAULT_INSPECTOR_CONFIG: LayoutSurfaceConfig = {
   maxPx: 760,
 };
 
-export const LAYOUT_SURFACE_CONFIG: Record<LayoutSurfaceId, LayoutSurfaceConfig> = {
+export const LAYOUT_SURFACE_CONFIG: Record<
+  LayoutSurfaceId,
+  LayoutSurfaceConfig
+> = {
   "default.sidebar": { ...DEFAULT_SIDEBAR_CONFIG },
   "default.panel": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 24 },
   "docs.sidebar": { ...DEFAULT_SIDEBAR_CONFIG, defaultRatio: 17 },
@@ -110,7 +112,12 @@ export const LAYOUT_SURFACE_CONFIG: Record<LayoutSurfaceId, LayoutSurfaceConfig>
   "docs.panel.trash": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 26 },
   "docs.panel.editor": { ...NESTED_MANAGER_PANEL_CONFIG, defaultRatio: 34 },
   "docs.panel.export": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 30 },
-  "editor.panel.character": { ...NESTED_MANAGER_PANEL_CONFIG, defaultRatio: 38 },
+  "editor.panel.character": {
+    ...NESTED_MANAGER_PANEL_CONFIG,
+    defaultRatio: 38,
+  },
+  "editor.panel.event": { ...NESTED_MANAGER_PANEL_CONFIG, defaultRatio: 38 },
+  "editor.panel.faction": { ...NESTED_MANAGER_PANEL_CONFIG, defaultRatio: 38 },
   "editor.panel.world": { ...NESTED_MANAGER_PANEL_CONFIG, defaultRatio: 38 },
   "editor.panel.scrap": { ...NESTED_MANAGER_PANEL_CONFIG, defaultRatio: 38 },
   "editor.panel.analysis": { ...NESTED_MANAGER_PANEL_CONFIG, defaultRatio: 38 },
@@ -135,6 +142,8 @@ const LEGACY_WIDTH_KEYS_BY_LAYOUT_SURFACE: Record<LayoutSurfaceId, string[]> = {
   "docs.panel.editor": ["docsEditor", "editor"],
   "docs.panel.export": ["docsExport", "export"],
   "editor.panel.character": ["editorCharacter", "character"],
+  "editor.panel.event": ["editorEvent", "event"],
+  "editor.panel.faction": ["editorFaction", "faction"],
   "editor.panel.world": ["editorWorld", "world"],
   "editor.panel.scrap": ["editorScrap", "scrap"],
   "editor.panel.analysis": ["editorAnalysis", "analysis"],
@@ -145,18 +154,22 @@ const LEGACY_WIDTH_KEYS_BY_LAYOUT_SURFACE: Record<LayoutSurfaceId, string[]> = {
 };
 
 const getViewportWidth = (): number =>
-  typeof window !== "undefined" && Number.isFinite(window.innerWidth) && window.innerWidth > 0
+  typeof window !== "undefined" &&
+  Number.isFinite(window.innerWidth) &&
+  window.innerWidth > 0
     ? window.innerWidth
     : 1440;
 
 export const isLayoutSurfaceId = (value: string): value is LayoutSurfaceId =>
   value in LAYOUT_SURFACE_CONFIG;
 
-export const getLayoutSurfaceConfig = (surface: LayoutSurfaceId): LayoutSurfaceConfig =>
-  LAYOUT_SURFACE_CONFIG[surface];
+export const getLayoutSurfaceConfig = (
+  surface: LayoutSurfaceId,
+): LayoutSurfaceConfig => LAYOUT_SURFACE_CONFIG[surface];
 
-export const getLayoutSurfaceDefaultRatio = (surface: LayoutSurfaceId): number =>
-  LAYOUT_SURFACE_CONFIG[surface].defaultRatio;
+export const getLayoutSurfaceDefaultRatio = (
+  surface: LayoutSurfaceId,
+): number => LAYOUT_SURFACE_CONFIG[surface].defaultRatio;
 
 export const clampLayoutSurfaceRatio = (
   _surface: LayoutSurfaceId,
@@ -181,7 +194,10 @@ export const normalizeLayoutSurfaceRatioInput = (
   return clampLayoutSurfaceRatio(surface, value);
 };
 
-export const buildDefaultLayoutSurfaceRatios = (): Record<LayoutSurfaceId, number> =>
+export const buildDefaultLayoutSurfaceRatios = (): Record<
+  LayoutSurfaceId,
+  number
+> =>
   Object.fromEntries(
     (Object.keys(LAYOUT_SURFACE_CONFIG) as LayoutSurfaceId[]).map((surface) => [
       surface,
@@ -196,9 +212,15 @@ const deriveLegacyLayoutSurfaceRatio = (
   if (!isRecord(legacySidebarWidths)) return null;
 
   for (const legacyKey of LEGACY_WIDTH_KEYS_BY_LAYOUT_SURFACE[surface]) {
-    const widthPx = normalizeSidebarWidthInput(legacyKey, legacySidebarWidths[legacyKey]);
+    const widthPx = normalizeSidebarWidthInput(
+      legacyKey,
+      legacySidebarWidths[legacyKey],
+    );
     if (widthPx === null) continue;
-    return clampLayoutSurfaceRatio(surface, (widthPx / getViewportWidth()) * 100);
+    return clampLayoutSurfaceRatio(
+      surface,
+      (widthPx / getViewportWidth()) * 100,
+    );
   }
 
   return null;
@@ -211,7 +233,9 @@ export const normalizeLayoutSurfaceRatiosWithMigrations = (
   const normalized = buildDefaultLayoutSurfaceRatios();
   const explicitInput = isRecord(input) ? input : null;
 
-  for (const surface of Object.keys(LAYOUT_SURFACE_CONFIG) as LayoutSurfaceId[]) {
+  for (const surface of Object.keys(
+    LAYOUT_SURFACE_CONFIG,
+  ) as LayoutSurfaceId[]) {
     const explicitRatio = explicitInput
       ? normalizeLayoutSurfaceRatioInput(surface, explicitInput[surface])
       : null;
@@ -220,7 +244,10 @@ export const normalizeLayoutSurfaceRatiosWithMigrations = (
       continue;
     }
 
-    const legacyRatio = deriveLegacyLayoutSurfaceRatio(surface, legacySidebarWidths);
+    const legacyRatio = deriveLegacyLayoutSurfaceRatio(
+      surface,
+      legacySidebarWidths,
+    );
     if (legacyRatio !== null) {
       normalized[surface] = legacyRatio;
     }
@@ -229,11 +256,13 @@ export const normalizeLayoutSurfaceRatiosWithMigrations = (
   return normalized;
 };
 
-export const getDocsLayoutPanelSurface = (tab: DocsLayoutPanelTab): LayoutSurfaceId =>
-  DOCS_LAYOUT_PANEL_SURFACE_MAP[tab];
+export const getDocsLayoutPanelSurface = (
+  tab: DocsLayoutPanelTab,
+): LayoutSurfaceId => DOCS_LAYOUT_PANEL_SURFACE_MAP[tab];
 
-export const getEditorLayoutPanelSurface = (tab: EditorLayoutPanelTab): LayoutSurfaceId =>
-  EDITOR_LAYOUT_PANEL_SURFACE_MAP[tab];
+export const getEditorLayoutPanelSurface = (
+  tab: EditorLayoutPanelTab,
+): LayoutSurfaceId => EDITOR_LAYOUT_PANEL_SURFACE_MAP[tab];
 
 export const toPanelPercentSize = (value: number): string =>
   `${clampLayoutSurfaceRatio("default.panel", value)}%`;
