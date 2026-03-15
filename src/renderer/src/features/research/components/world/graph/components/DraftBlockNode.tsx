@@ -77,14 +77,14 @@ export const DraftBlockNode = memo(({ data, selected }: DraftBlockNodeProps) => 
     <div ref={rootRef} className="group relative min-w-[200px] max-w-[320px]">
       <div
         className={cn(
-          "flex flex-col bg-card/95 backdrop-blur-sm text-card-foreground border border-border/60 rounded-md shadow-sm transition-all duration-200",
-          selected ? "border-accent/80 ring-1 ring-accent/30 shadow-md" : "hover:border-border-hover"
+          "flex flex-col bg-background/95 backdrop-blur-xl text-foreground border border-border/80 rounded-2xl shadow-lg ring-1 ring-black/5 transition-all duration-300",
+          selected ? "border-accent/80 ring-2 ring-accent/30 shadow-xl" : "hover:border-border-hover"
         )}
       >
-        <div className="px-4 py-3 bg-transparent">
+        <div className="px-5 py-4 bg-transparent">
           <textarea
             ref={inputRef}
-            className="w-full bg-transparent border-none outline-none resize-none text-[14px] font-medium text-foreground placeholder:text-muted-foreground/40 leading-relaxed min-h-[48px] overflow-hidden"
+            className="w-full bg-transparent border-none outline-none resize-none text-[15px] font-semibold text-foreground placeholder:text-muted-foreground/40 leading-relaxed min-h-[48px] overflow-hidden"
             placeholder={t("world.graph.ide.draftPlaceholder", "블록 내용 입력...")}
             value={text}
             onChange={(e) => {

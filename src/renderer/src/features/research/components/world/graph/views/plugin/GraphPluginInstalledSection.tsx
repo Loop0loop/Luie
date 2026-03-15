@@ -1,4 +1,4 @@
-import { PackageOpen } from "lucide-react";
+import { PackageOpen, Sparkles, Network } from "lucide-react";
 import type { GraphPluginTemplateRef, InstalledGraphPlugin } from "@shared/types";
 
 type GraphPluginInstalledSectionProps = {
@@ -19,26 +19,29 @@ export function GraphPluginInstalledSection({
   onUninstall,
 }: GraphPluginInstalledSectionProps) {
   return (
-    <section className="rounded-xl border bg-card/80 p-5 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <PackageOpen className="h-4 w-4 text-emerald-500" />
-            Installed Plugins
+    <section className="rounded-[16px] border border-white/10 bg-black/20 backdrop-blur-md p-6 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2 text-[15px] font-semibold text-foreground drop-shadow-sm">
+            <PackageOpen className="h-5 w-5 text-indigo-400" />
+            Installed Extensions
           </div>
           <p className="text-xs text-muted-foreground">
             설치된 번들에서 템플릿을 선택해 현재 그래프에 바로 적용합니다.
           </p>
         </div>
-        <div className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-500">
+        <div className="rounded-full bg-indigo-500/10 border border-white/5 px-3 py-1 text-[11px] font-medium text-indigo-400 shadow-inner">
           {installed.length} Active
         </div>
       </div>
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-6 space-y-4">
         {installed.length === 0 ? (
-          <div className="rounded-lg border border-dashed bg-muted/20 px-4 py-5 text-sm text-center text-muted-foreground">
-            아직 설치된 플러그인이 없습니다.
+          <div className="rounded-xl border border-dashed border-white/10 bg-black/10 px-4 py-8 text-center text-sm text-muted-foreground transition-colors hover:bg-black/20">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl border border-white/5 bg-gradient-to-b from-white/5 to-transparent shadow-inner text-indigo-400">
+              <PackageOpen className="h-5 w-5 opacity-40" />
+            </div>
+            아직 설치된 확장 프로그램이 없습니다.
           </div>
         ) : (
           installed.map((plugin) => {
@@ -48,34 +51,43 @@ export function GraphPluginInstalledSection({
             return (
               <article
                 key={`${plugin.pluginId}:${plugin.version}`}
-                className="group flex flex-col gap-3 rounded-lg border bg-background/50 p-4 transition-colors hover:bg-muted/30"
+                className="group flex flex-col gap-4 rounded-xl border border-white/5 bg-white/5 p-5 transition-all duration-300 hover:bg-white/10 hover:shadow-lg hover:border-white/10"
               >
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex flex-col space-y-1.5">
-                    <div className="flex items-center gap-2">
-                       <h4 className="text-sm font-medium leading-none">{plugin.name}</h4>
-                       <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground font-mono">v{plugin.version}</span>
-                       <span className="text-[11px] text-muted-foreground">{plugin.author}</span>
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-gradient-to-b from-indigo-500/20 to-transparent shadow-inner text-indigo-400">
+                      <Network className="h-6 w-6 opacity-80" />
                     </div>
-                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                      {plugin.description}
-                    </p>
+                    <div className="flex flex-col space-y-1.5">
+                      <div className="flex items-center gap-2">
+                         <h4 className="text-[15px] font-semibold leading-none tracking-tight drop-shadow-sm">{plugin.name}</h4>
+                         <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-white/80 font-mono shadow-inner border border-white/5">v{plugin.version}</span>
+                         <span className="text-[11px] text-muted-foreground/60">{plugin.author}</span>
+                      </div>
+                      <p className="text-[13px] text-muted-foreground/80 line-clamp-2 leading-relaxed">
+                        {plugin.description}
+                      </p>
+                    </div>
                   </div>
                   <button
                     type="button"
                     disabled={uninstallingPluginId === plugin.pluginId}
                     onClick={() => onUninstall(plugin.pluginId, plugin.name)}
-                    className="shrink-0 rounded-md border border-input bg-transparent px-2.5 py-1 text-[11px] font-medium transition-colors hover:bg-destructive hover:text-destructive-foreground disabled:pointer-events-none disabled:opacity-50"
+                    className="shrink-0 rounded-md border border-white/10 bg-black/20 px-3 py-1.5 text-[11px] font-medium text-foreground transition-all hover:bg-destructive hover:text-destructive-foreground hover:border-destructive/50 disabled:pointer-events-none disabled:opacity-50 shadow-inner"
                   >
-                    {uninstallingPluginId === plugin.pluginId ? "Removing..." : "Uninstall"}
+                    {uninstallingPluginId === plugin.pluginId ? "Removing" : "Uninstall"}
                   </button>
                 </div>
 
-                <div className="flex flex-col gap-2 mt-2">
-                  <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Templates</div>
+                <div className="flex flex-col gap-3 mt-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-3 w-3 text-indigo-400/70" />
+                    <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Included Templates</div>
+                  </div>
+                  
                   {pluginTemplates.length === 0 ? (
-                    <div className="rounded-md border border-dashed px-3 py-2 text-[11px] text-muted-foreground">
-                      적용 가능한 템플릿이 없습니다.
+                    <div className="rounded-lg border border-white/5 border-dashed bg-black/20 px-4 py-3 text-[12px] text-center text-muted-foreground/70">
+                      이 번들에는 적용 가능한 템플릿이 포함되어 있지 않습니다.
                     </div>
                   ) : (
                     <div className="grid gap-2">
@@ -84,23 +96,23 @@ export function GraphPluginInstalledSection({
                         return (
                           <div
                             key={templateKey}
-                            className="flex items-center justify-between gap-3 rounded-md border border-border/50 bg-background/50 px-3 py-2"
+                            className="flex items-center justify-between gap-4 rounded-lg border border-white/5 bg-black/20 px-4 py-3 transition-colors hover:bg-black/40"
                           >
-                            <div className="flex flex-col min-w-0">
+                            <div className="flex flex-col min-w-0 space-y-1">
                               <div className="flex items-center gap-2">
-                                <span className="text-xs font-medium text-foreground truncate">{entry.template.title}</span>
-                                <div className="flex flex-wrap gap-1">
+                                <span className="text-[13px] font-medium text-foreground truncate drop-shadow-sm">{entry.template.title}</span>
+                                <div className="flex flex-wrap gap-1.5">
                                   {entry.template.tags.slice(0, 2).map((tag) => (
-                                    <span key={tag} className="rounded bg-muted px-1 py-0 text-[9px] text-muted-foreground uppercase">
+                                    <span key={tag} className="rounded bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.5 text-[9px] text-indigo-300 font-medium uppercase tracking-wider">
                                       {tag}
                                     </span>
                                   ))}
                                   {entry.template.tags.length > 2 && (
-                                     <span className="rounded bg-muted px-1 py-0 text-[9px] text-muted-foreground">+{entry.template.tags.length - 2}</span>
+                                     <span className="rounded bg-white/10 border border-white/5 px-1.5 py-0.5 text-[9px] text-muted-foreground">+{entry.template.tags.length - 2}</span>
                                   )}
                                 </div>
                               </div>
-                              <span className="text-[11px] text-muted-foreground truncate">{entry.template.summary}</span>
+                              <span className="text-[11px] text-muted-foreground/80 truncate">{entry.template.summary}</span>
                             </div>
                             <button
                               type="button"
@@ -108,9 +120,9 @@ export function GraphPluginInstalledSection({
                               onClick={() =>
                                 onApply(entry.pluginId, entry.template.id, entry.template.title)
                               }
-                              className="shrink-0 rounded-md bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary hover:text-primary-foreground disabled:pointer-events-none disabled:opacity-50"
+                              className="shrink-0 rounded-md bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 text-[11px] font-medium text-indigo-300 shadow-inner transition-colors hover:bg-indigo-500 hover:text-white disabled:pointer-events-none disabled:opacity-50"
                             >
-                              {applyingTemplateKey === templateKey ? "Applying..." : "Apply"}
+                              {applyingTemplateKey === templateKey ? "Applying..." : "Apply Template"}
                             </button>
                           </div>
                         );

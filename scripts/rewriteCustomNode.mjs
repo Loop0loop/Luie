@@ -1,11 +1,13 @@
-import { memo, useState, useEffect } from "react";
+import fs from "fs";
+
+const content = `import { memo, useState, useEffect } from "react";
 import type { KeyboardEvent } from "react";
 import { Handle, Position } from "reactflow";
 import { cn } from "@renderer/lib/utils";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import type { WorldEntitySourceType } from "@shared/types";
 import { WORLD_GRAPH_MINIMAP_COLORS } from "@shared/constants/worldGraphUI";
-import { Clock, Box, User, MapPin, Sparkles, FileText } from "lucide-react";
+import { StickyNote, Clock, Box, User, MapPin, Sparkles, FileText } from "lucide-react";
 
 type CustomEntityNodeProps = {
   id: string;
@@ -78,8 +80,7 @@ export const CustomEntityNode = memo(({ id, data, selected }: CustomEntityNodePr
 
   if (isNote) {
     return (
-      <div onDoubleClick={(e) => e.stopPropagation()}
-      className={cn(
+      <div className={cn(
         "group relative min-w-[260px] max-w-[340px] rounded-bl-3xl rounded-tr-xl rounded-tl-sm rounded-br-sm border border-amber-500/30 bg-amber-50 dark:bg-[#282215] p-0 shadow-lg shadow-amber-900/5 transition-all duration-300",
         selected ? "ring-2 ring-amber-500/40 shadow-amber-500/20 scale-[1.02]" : "hover:shadow-xl hover:-translate-y-0.5"
       )}>
@@ -111,7 +112,7 @@ export const CustomEntityNode = memo(({ id, data, selected }: CustomEntityNodePr
 
   if (isEvent) {
     return (
-      <div onDoubleClick={(e) => e.stopPropagation()} className={cn("group relative flex items-center gap-3 min-w-[260px] max-w-[360px] transition-all duration-300", selected ? "scale-[1.02]" : "")}>
+      <div className={cn("group relative flex items-center gap-3 min-w-[260px] max-w-[360px] transition-all duration-300", selected ? "scale-[1.02]" : "")}>
         <Handles x />
         <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-[3px] bg-background z-10 transition-colors shadow-sm", selected ? "border-sky-500 shadow-sky-500/30" : "border-sky-500/60 group-hover:border-sky-400 group-hover:shadow-sky-400/20")}>
           {getEntityIcon(entityType, subType)}
@@ -137,7 +138,7 @@ export const CustomEntityNode = memo(({ id, data, selected }: CustomEntityNodePr
   }
 
   return (
-    <div onDoubleClick={(e) => e.stopPropagation()} className={cn("group relative flex flex-col min-w-[220px] max-w-[300px] rounded-2xl border bg-background/95 backdrop-blur-xl shadow-sm transition-all duration-300 overflow-hidden", selected ? "border-accent ring-2 ring-accent/20 shadow-lg shadow-accent/10 transform -translate-y-0.5" : "border-border/60 hover:border-accent/40 hover:shadow-md")}>
+    <div className={cn("group relative flex flex-col min-w-[220px] max-w-[300px] rounded-2xl border bg-background/95 backdrop-blur-xl shadow-sm transition-all duration-300 overflow-hidden", selected ? "border-accent ring-2 ring-accent/20 shadow-lg shadow-accent/10 transform -translate-y-0.5" : "border-border/60 hover:border-accent/40 hover:shadow-md")}>
       <div className="h-1.5 w-full opacity-90" style={{ backgroundColor: accentColor }} />
       <div className="p-4">
         <div className="flex items-center gap-3 mb-3">
@@ -165,3 +166,6 @@ export const CustomEntityNode = memo(({ id, data, selected }: CustomEntityNodePr
 });
 
 CustomEntityNode.displayName = "CustomEntityNode";
+`;
+fs.writeFileSync("/Users/user/Luie/src/renderer/src/features/research/components/world/graph/components/CustomEntityNode.tsx", content);
+console.log("Written file using script!");
