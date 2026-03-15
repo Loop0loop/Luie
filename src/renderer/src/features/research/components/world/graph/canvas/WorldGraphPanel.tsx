@@ -28,7 +28,6 @@ import { NoteMainView } from "@renderer/features/research/components/world/graph
 import { EntityMainView } from "@renderer/features/research/components/world/graph/views/EntityMainView";
 import { LibraryMainView } from "@renderer/features/research/components/world/graph/views/LibraryMainView";
 import { TimelineMainView } from "@renderer/features/research/components/world/graph/views/TimelineMainView";
-import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
 import { WorldGraphNavbar } from "../components/WorldGraphNavbar";
 import { EntityInspectorPanel } from "../sidebars/EntityInspectorPanel";
 
@@ -62,22 +61,17 @@ export function WorldGraphPanel() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const panelGroupRef = useRef<GroupImperativeHandle | null>(null);
 
-  useFixedPixelPanelGroupLayout({
-    containerRef,
-    groupRef: panelGroupRef,
-    fixedPanels: isSidebarOpen
-      ? [
-          {
-            id: "world-ide-sidebar",
-            widthPx: width,
-            minPx: config.minPx,
-            maxPx: config.maxPx,
-          },
-        ]
-      : [],
-    flexPanelId: "world-ide-main",
-    flexPanelMinPercent: 30,
-  });
+  const inspectorConfig = getSidebarWidthConfig("worldGraphInspector");
+  const inspectorWidth = clampSidebarWidth(
+    "worldGraphInspector",
+    sidebarWidths["worldGraphInspector"] || getSidebarDefaultWidth("worldGraphInspector"),
+  );
+  
+  const { onResize: onInspectorResize, resizeHandleProps: inspectorResizeHandleProps } = useSidebarResizeCommit(
+    "worldGraphInspector",
+    setSidebarWidth,
+  );
+
 
   useEffect(() => {
     if (!currentProjectId) {
@@ -173,7 +167,7 @@ export function WorldGraphPanel() {
 
           <Panel
             id="world-ide-main"
-            minSize={toPercentSize(30)}
+            minSize={toPercentSize(15)}
             className="min-h-0 relative"
           >
             <div className="flex h-full w-full flex-col">
@@ -185,12 +179,16 @@ export function WorldGraphPanel() {
           </Panel>
           {selectedNodeId && activeTab === "graph" && (
             <>
-              <PanelResizeHandle className="relative flex w-px shrink-0 cursor-col-resize items-center justify-center bg-border/20 hover:bg-accent/40 active:bg-accent transition-colors" />
+              <PanelResizeHandle 
+                {...inspectorResizeHandleProps}
+                className="relative flex w-px shrink-0 cursor-col-resize items-center justify-center bg-border/20 hover:bg-accent/40 active:bg-accent transition-colors" 
+              />
               <Panel
                 id="world-ide-inspector"
-                defaultSize={25}
-                minSize={20}
-                maxSize={40}
+                defaultSize={toPxSize(inspectorWidth)}
+                minSize={toPxSize(inspectorConfig.minPx)}
+                maxSize={toPxSize(inspectorConfig.maxPx)}
+                onResize={onInspectorResize}
               >
                 <EntityInspectorPanel />
               </Panel>

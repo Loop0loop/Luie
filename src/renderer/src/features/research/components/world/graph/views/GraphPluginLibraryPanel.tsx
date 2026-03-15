@@ -2,7 +2,6 @@ import { useDialog } from "@shared/ui/useDialog";
 import { useToast } from "@shared/ui/ToastContext";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { GraphPluginCatalogSection } from "./plugin/GraphPluginCatalogSection";
-import { GraphPluginHero } from "./plugin/GraphPluginHero";
 import { GraphPluginInstalledSection } from "./plugin/GraphPluginInstalledSection";
 import { useGraphPluginLibraryData } from "./plugin/useGraphPluginLibraryData";
 
@@ -35,10 +34,6 @@ export function GraphPluginLibraryPanel({
   const availablePlugins = catalog.filter(
     (plugin) => !installedIds.has(plugin.pluginId),
   );
-
-  const handleRefresh = () => {
-    void loadData(true);
-  };
 
   const handleInstall = async (pluginId: string) => {
     const result = await installPlugin(pluginId);
@@ -102,13 +97,6 @@ export function GraphPluginLibraryPanel({
 
   return (
     <div className="space-y-6">
-      <GraphPluginHero
-        availableCount={availablePlugins.length}
-        installedCount={installed.length}
-        templateCount={templates.length}
-        onRefresh={handleRefresh}
-      />
-
       {error ? (
         <div className="rounded-2xl border border-destructive/30 bg-destructive/5 px-5 py-4 text-sm text-destructive">
           {error}

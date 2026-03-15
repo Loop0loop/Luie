@@ -86,6 +86,7 @@ export function useCanvasSync({
   useEffect(() => {
     const handleSpawnDraft = async (payload: {
       entityType?: WorldEntitySourceType;
+      subType?: string;
       instant?: boolean;
       position?: { x: number; y: number };
     }) => {
@@ -114,9 +115,9 @@ export function useCanvasSync({
           finalEntityType = "Event";
           subType = undefined;
         } else if (payload.entityType === "Concept") {
-          defaultName = "새로운 노트";
+          defaultName = payload.subType === "Note" ? "새로운 노트" : "새로운 엔티티";
           finalEntityType = "Concept";
-          subType = undefined;
+          subType = payload.subType as WorldEntityType | undefined;
         }
 
         try {

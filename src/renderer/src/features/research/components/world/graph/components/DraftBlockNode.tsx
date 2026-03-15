@@ -2,9 +2,7 @@ import { memo, useEffect, useRef, useState } from "react";
 import { Handle, Position } from "reactflow";
 import { useTranslation } from "react-i18next";
 import { cn } from "@renderer/lib/utils";
-import { Sparkles } from "lucide-react";
-import { WORLD_ENTITY_TYPES } from "@shared/constants/world";
-import type { WorldEntitySourceType } from "@shared/types";
+import type { WORLD_ENTITY_TYPES } from "@shared/constants/world";
 
 type DraftEntityType = (typeof WORLD_ENTITY_TYPES)[number];
 
@@ -29,10 +27,10 @@ export const DraftBlockNode = memo(({ data, selected }: DraftBlockNodeProps) => 
     onConvert,
     id,
     initialValue = "",
-    initialEntityType = "Concept",
+    initialEntityType = "Character",
   } = data;
   const [text, setText] = useState(initialValue);
-  const [entityType, setEntityType] = useState<DraftEntityType>(initialEntityType);
+  const [entityType] = useState<DraftEntityType>(initialEntityType);
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const isConverting = useRef(false);
@@ -75,50 +73,31 @@ export const DraftBlockNode = memo(({ data, selected }: DraftBlockNodeProps) => 
     handleConvert();
   };
 
-  const handleTypeBlur = (event: React.FocusEvent<HTMLSelectElement>) => {
-    if (isFocusMovingInsideBlock(event.relatedTarget)) {
-      return;
-    }
-    handleConvert();
-  };
-
   return (
-    <div ref={rootRef} className="group relative min-w-[160px] max-w-[280px]">
+    <div ref={rootRef} className="group relative min-w-[200px] max-w-[320px]">
       <div
         className={cn(
-          "flex flex-col bg-card text-card-foreground border rounded-lg overflow-hidden shadow-sm transition-all duration-200",
-          selected ? "border-accent ring-1 ring-accent/20 shadow-md" : "border-border hover:border-border-hover/80"
+          "flex flex-col bg-card/95 backdrop-blur-sm text-card-foreground border border-border/60 rounded-md shadow-sm transition-all duration-200",
+          selected ? "border-accent/80 ring-1 ring-accent/30 shadow-md" : "hover:border-border-hover"
         )}
       >
-        <div className="px-3 py-2 bg-transparent">
+        <div className="px-4 py-3 bg-transparent">
           <textarea
             ref={inputRef}
-            className="w-full bg-transparent border-none outline-none resize-none text-[13px] font-medium text-foreground placeholder:text-muted-foreground/50 leading-snug min-h-[40px]"
-            placeholder={t("world.graph.ide.draftPlaceholder", "블록 제목 입력...")}
+            className="w-full bg-transparent border-none outline-none resize-none text-[14px] font-medium text-foreground placeholder:text-muted-foreground/40 leading-relaxed min-h-[48px] overflow-hidden"
+            placeholder={t("world.graph.ide.draftPlaceholder", "블록 내용 입력...")}
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              // auto resize logic
+              if (e.target) {
+                e.target.style.height = "auto";
+                e.target.style.height = `${e.target.scrollHeight}px`;
+              }
+            }}
             onKeyDown={handleKeyDown}
             onBlur={handleTextareaBlur}
           />
-        </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/30 border-t border-border/50 text-[10px] text-muted-foreground">
-          <Sparkles className="w-3 h-3 text-accent" />
-          <select
-            value={entityType}
-            onChange={(event) =>
-              setEntityType(event.target.value as WorldEntitySourceType as DraftEntityType)
-            }
-            onMouseDown={(event) => event.stopPropagation()}
-            onBlur={handleTypeBlur}
-            className="h-6 min-w-0 flex-1 rounded border border-border/50 bg-background/80 px-2 text-[10px] text-foreground outline-none"
-          >
-            {WORLD_ENTITY_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {t(`world.graph.entityTypes.${type}`, { defaultValue: type })}
-              </option>
-            ))}
-          </select>
-          <span className="shrink-0">Enter</span>
         </div>
       </div>
       <Handle type="target" position={Position.Top} className="opacity-0 pointer-events-none" />

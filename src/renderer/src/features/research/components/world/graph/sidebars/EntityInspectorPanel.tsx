@@ -1,64 +1,46 @@
-import { memo, useState, useEffect } from "react";
+import { memo, useState } from "react";
 import { BookOpen } from "lucide-react";
+import type { WorldGraphNode } from "@shared/types";
 import { useWorldBuildingStore, useFilteredGraph } from "@renderer/features/research/stores/worldBuildingStore";
 import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { WORLD_GRAPH_ICON_MAP } from "@shared/constants/worldGraphUI";
 
-export const EntityInspectorPanel = memo(() => {
-  const selectedNodeId = useWorldBuildingStore((state) => state.selectedNodeId);
-  const updateGraphNode = useWorldBuildingStore((state) => state.updateGraphNode);
-  const { nodes } = useFilteredGraph();
-  
-  const selectedNode = selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) : null;
-  const [descEdit, setDescEdit] = useState(selectedNode?.description || "");
-  const [isEditingDesc, setIsEditingDesc] = useState(false);
+type InspectorContentProps = {
+  node: WorldGraphNode;
+  onUpdate: ReturnType<typeof useWorldBuildingStore.getState>["updateGraphNode"];
+};
 
-  useEffect(() => {
-    setDescEdit(selectedNode?.description || "");
-    setIsEditingDesc(false);
-  }, [selectedNode?.id, selectedNode?.description]);
-
-  if (!selectedNode) {
-    return (
-      <div className="flex h-full w-full flex-col items-center justify-center bg-panel/50 text-sm text-muted-foreground">
-        <BookOpen size={24} className="mb-2 opacity-50" />
-        <p>엔티티를 선택하면 위키 정보가 표시됩니다.</p>
-      </div>
-    );
-  }
-
-  const { id, name, entityType, subType } = selectedNode;
+function InspectorContent({ node, onUpdate }: InspectorContentProps) {
+  const { id, name, entityType, subType } = node;
   const typeLabel = subType || entityType || "Entity";
-  const Icon = WORLD_GRAPH_ICON_MAP[typeLabel] ?? WORLD_GRAPH_ICON_MAP["WorldEntity"];
-
+  const Icon = WORLD_GRAPH_ICON_MAP[typeLabel] ?? WORLD_GRAPH_ICON_MAP.WorldEntity;
+  const [descEdit, setDescEdit] = useState(node.description || "");
+  const [isEditingDesc, setIsEditingDesc] = useState(false);
   const [nameEdit, setNameEdit] = useState(name);
   const [typeEdit, setTypeEdit] = useState<string>(typeLabel);
 
-  useEffect(() => {
-    setNameEdit(name);
-    setTypeEdit(typeLabel);
-  }, [id, name, typeLabel]);
-
   const handleNameSave = () => {
     if (nameEdit !== name) {
-      void updateGraphNode({ id, entityType: entityType as any, name: nameEdit });
+      void onUpdate({ id, entityType, name: nameEdit });
     }
   };
 
   const handleTypeSave = () => {
     if (typeEdit !== typeLabel) {
-      void updateGraphNode({ id, entityType: entityType as any, subType: typeEdit as any });
+      void onUpdate({
+        id,
+        entityType,
+        subType: WORLD_SUBTYPES.includes(typeEdit as (typeof WORLD_SUBTYPES)[number])
+          ? (typeEdit as (typeof WORLD_SUBTYPES)[number])
+          : undefined,
+      });
     }
   };
 
   const handleDescSave = () => {
     setIsEditingDesc(false);
-    if (descEdit !== selectedNode.description) {
-      void updateGraphNode({
-        id,
-        entityType: entityType as any,
-        description: descEdit
-      });
+    if (descEdit !== (node.description || "")) {
+      void onUpdate({ id, entityType, description: descEdit });
     }
   };
 
@@ -71,7 +53,7 @@ export const EntityInspectorPanel = memo(() => {
             value={typeEdit}
             onChange={(e) => setTypeEdit(e.target.value)}
             onBlur={handleTypeSave}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
+            onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
             className="text-[10px] font-bold tracking-widest uppercase text-accent/80 bg-transparent outline-none border-none p-0 w-32 focus:ring-1 focus:ring-accent-foreground/20 rounded"
             placeholder="분류 타입"
           />
@@ -80,7 +62,7 @@ export const EntityInspectorPanel = memo(() => {
           value={nameEdit}
           onChange={(e) => setNameEdit(e.target.value)}
           onBlur={handleNameSave}
-          onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
+          onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
           className="text-2xl font-extrabold text-foreground leading-tight tracking-tight break-keep bg-transparent outline-none border-none p-0 w-full focus:ring-1 focus:ring-accent-foreground/20 rounded"
           placeholder="엔티티 이름"
         />
@@ -91,16 +73,16 @@ export const EntityInspectorPanel = memo(() => {
           <section className="flex flex-col gap-3">
             <div className="flex items-center justify-between border-b border-border/60 pb-1.5">
               <h2 className="text-lg font-semibold text-foreground tracking-tight">개요</h2>
-              {!isEditingDesc && (
-                <button 
+              {!isEditingDesc ? (
+                <button
                   onClick={() => setIsEditingDesc(true)}
                   className="text-xs text-muted-foreground hover:text-accent transition-colors"
                 >
                   편집
                 </button>
-              )}
+              ) : null}
             </div>
-            
+
             <div className="text-[14px] leading-relaxed">
               {isEditingDesc ? (
                 <div className="flex flex-col gap-2">
@@ -112,13 +94,16 @@ export const EntityInspectorPanel = memo(() => {
                     autoFocus
                   />
                   <div className="flex justify-end gap-2">
-                    <button 
-                      onClick={() => setIsEditingDesc(false)}
+                    <button
+                      onClick={() => {
+                        setDescEdit(node.description || "");
+                        setIsEditingDesc(false);
+                      }}
                       className="text-xs px-2 py-1 rounded hover:bg-muted"
                     >
                       취소
                     </button>
-                    <button 
+                    <button
                       onClick={handleDescSave}
                       className="text-xs px-2 py-1 rounded bg-accent text-accent-foreground hover:bg-accent/90 font-medium"
                     >
@@ -127,14 +112,14 @@ export const EntityInspectorPanel = memo(() => {
                   </div>
                 </div>
               ) : descEdit ? (
-                <div 
+                <div
                   className="whitespace-pre-wrap text-foreground/90 font-serif"
                   onDoubleClick={() => setIsEditingDesc(true)}
                 >
                   {descEdit}
                 </div>
               ) : (
-                <p 
+                <p
                   className="italic text-muted-foreground/50 cursor-pointer hover:text-muted-foreground/80 transition-colors"
                   onClick={() => setIsEditingDesc(true)}
                 >
@@ -157,7 +142,7 @@ export const EntityInspectorPanel = memo(() => {
                   value={typeEdit}
                   onChange={(e) => setTypeEdit(e.target.value)}
                   onBlur={handleTypeSave}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
+                  onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
                   className="font-medium text-foreground text-[13px] bg-transparent outline-none border-b border-transparent focus:border-accent w-full p-0"
                   placeholder="분류 타입"
                 />
@@ -168,6 +153,25 @@ export const EntityInspectorPanel = memo(() => {
       </ScrollArea>
     </div>
   );
+}
+
+export const EntityInspectorPanel = memo(() => {
+  const selectedNodeId = useWorldBuildingStore((state) => state.selectedNodeId);
+  const updateGraphNode = useWorldBuildingStore((state) => state.updateGraphNode);
+  const { nodes } = useFilteredGraph();
+  const selectedNode = selectedNodeId ? nodes.find((node) => node.id === selectedNodeId) : null;
+
+  if (!selectedNode) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center bg-panel/50 text-sm text-muted-foreground">
+        <BookOpen size={24} className="mb-2 opacity-50" />
+        <p>엔티티를 선택하면 위키 정보가 표시됩니다.</p>
+      </div>
+    );
+  }
+
+  return <InspectorContent key={selectedNode.id} node={selectedNode} onUpdate={updateGraphNode} />;
 });
 
 EntityInspectorPanel.displayName = "EntityInspectorPanel";
+const WORLD_SUBTYPES = ["Place", "Concept", "Rule", "Item"] as const;

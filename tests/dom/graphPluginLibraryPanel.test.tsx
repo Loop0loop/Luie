@@ -223,7 +223,7 @@ describe("GraphPluginLibraryPanel", () => {
     await flushPromises();
 
     expect(view.container.textContent).toContain("Installed Plugins");
-    expect(view.container.textContent).toContain("Available Plugins");
+    expect(view.container.textContent).toContain("Catalog");
     expect(view.container.textContent).toContain("Foundation Graph");
 
     const installButton = Array.from(view.container.querySelectorAll("button")).find(

@@ -133,17 +133,38 @@ export function toRFNode(
   };
 }
 
+export const isRenderableRFNode = (node: Node | null | undefined): node is Node => {
+  if (!node || typeof node.id !== "string" || node.id.length === 0) {
+    return false;
+  }
+  const position = node.position;
+  return Boolean(
+    position &&
+      typeof position.x === "number" &&
+      Number.isFinite(position.x) &&
+      typeof position.y === "number" &&
+      Number.isFinite(position.y) &&
+      typeof node.type === "string" &&
+      node.type.length > 0,
+  );
+};
+
 export function toRFEdge(
   relation: EntityRelation,
   translate: (key: string, fallback: string) => string,
   nodeById: Map<string, Node>,
-): Edge {
+): Edge | null {
+  const sourceNode = nodeById.get(relation.sourceId);
+  const targetNode = nodeById.get(relation.targetId);
+  if (!sourceNode || !targetNode) {
+    return null;
+  }
   const customColor = (relation.attributes as Record<string, unknown>)?.color as string | undefined;
   const color = customColor || RELATION_COLORS[relation.relation] || "#94a3b8";
   
   const { sourceHandle, targetHandle } = resolveEdgeHandles(
-    nodeById.get(relation.sourceId),
-    nodeById.get(relation.targetId),
+    sourceNode,
+    targetNode,
   );
 
   const isAnimated = relation.relation === "causes" || relation.relation === "controls";

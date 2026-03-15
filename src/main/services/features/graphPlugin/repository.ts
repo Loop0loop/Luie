@@ -8,6 +8,7 @@ import { createServiceError, localCatalogItemSchema } from "./shared.js";
 import { ErrorCode } from "../../../../shared/constants/index.js";
 
 export const createGraphPluginPaths = (pluginRootDir: string) => ({
+  getPluginRoot: () => pluginRootDir,
   getRegistryPath: () => path.join(pluginRootDir, "registry", "catalog.json"),
   getInstalledRoot: () => path.join(pluginRootDir, "installed"),
   getInstalledIndexPath: () => path.join(pluginRootDir, "installed", "index.json"),

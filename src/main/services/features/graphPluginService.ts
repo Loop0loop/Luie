@@ -113,9 +113,8 @@ export class GraphPluginService {
 
     const archive = await downloadPluginArchive(
       this.fetchImpl,
-      path.dirname(this.paths.getRegistryPath()),
+      this.paths.getPluginRoot(),
       item,
-      process.env.NODE_ENV === "production",
     );
 
     const tempRoot = await prepareTempDirectory(this.paths.getTempRoot());

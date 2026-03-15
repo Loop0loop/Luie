@@ -191,6 +191,24 @@ describe("GraphPluginService", () => {
     expect(setDocument).not.toHaveBeenCalled();
   });
 
+  it("prefers the local dev archive before attempting a remote download", async () => {
+    await writeCatalog(tempDir);
+    const fetchImpl = vi.fn(async () => {
+      throw new Error("remote fetch should not run when dev archive exists");
+    });
+    const service = new serviceModule.GraphPluginService({
+      fetchImpl,
+      pluginRootDir: tempDir,
+      worldReplicaService: { setDocument: vi.fn(async () => undefined) },
+      applyGraphTemplate: vi.fn(async () => undefined),
+    });
+
+    const result = await service.install("foundation-graph");
+
+    expect(result.alreadyInstalled).toBe(false);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
   it("rejects archives with sha256 mismatches", async () => {
     await writeCatalog(tempDir, { sha256: "1".repeat(64) });
     const service = new serviceModule.GraphPluginService({

@@ -1,8 +1,7 @@
 import { create } from "zustand";
 
-export type GraphIdeTab = 'graph' | 'timeline' | 'note' | 'entity' | 'library';
-export type GraphLayoutMode = 'auto' | 'cluster' | 'reset';
-
+export type GraphIdeTab = "graph" | "timeline" | "note" | "entity" | "library";
+export type GraphLayoutMode = "auto" | "cluster" | "reset";
 interface GraphIdeLayoutState {
   activeTab: GraphIdeTab;
   noteSearchQuery: string;
@@ -18,8 +17,8 @@ interface GraphIdeLayoutState {
 }
 
 export const useGraphIdeStore = create<GraphIdeLayoutState>((set) => ({
-  activeTab: 'graph',
-  noteSearchQuery: '',
+  activeTab: "graph",
+  noteSearchQuery: "",
   selectedNoteId: null,
   isSidebarOpen: true,
   layoutTrigger: null,

@@ -67,10 +67,11 @@ interface TreeItemProps {
   icon?: ReactNode;
   label: string;
   meta?: ReactNode;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
   isActive?: boolean;
   isFolder?: boolean;
   isOpen?: boolean;
+  isExpanded?: boolean;
   children?: ReactNode;
   depth?: number;
 }
@@ -83,17 +84,18 @@ export function TreeItem({
   isActive, 
   isFolder, 
   isOpen, 
+  isExpanded,
   children,
   depth = 0 
 }: TreeItemProps) {
-  const [expanded, setExpanded] = useState(isOpen || false);
+  const [expanded, setExpanded] = useState(isExpanded ?? isOpen ?? false);
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isFolder) {
       setExpanded(!expanded);
     }
-    if (onClick) onClick();
+    if (onClick) onClick(e);
   };
 
   const renderIcon = () => {

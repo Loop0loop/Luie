@@ -43,6 +43,7 @@ export const CanvasCommandPalette = memo(({ mode, onClose }: CanvasCommandPalett
   const handleCreateNew = () => {
     EditorSyncBus.emit("SPAWN_GRAPH_DRAFT_NODE", {
       entityType: mode === "Event" ? "Event" : "Concept",
+      subType: mode === "Note" ? "Note" : undefined,
       instant: true,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);

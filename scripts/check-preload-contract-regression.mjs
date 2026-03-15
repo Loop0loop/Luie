@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, readdir, writeFile } from "node:fs/promises";
+import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-const PRELOAD_PATH = path.resolve(process.cwd(), "src/preload/index.ts");
+const PRELOAD_ROOT = path.resolve(process.cwd(), "src/preload");
 const BASELINE_PATH = path.resolve(
   process.cwd(),
   "docs/quality/preload-contract-baseline.json",
@@ -52,6 +53,47 @@ const escapeRegExp = (value) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const countMatches = (source, pattern) => (source.match(pattern) ?? []).length;
+
+const sortPaths = (items) =>
+  [...items].sort((left, right) => left.localeCompare(right));
+
+const collectPreloadFilesSync = (rootPath) => {
+  const entries = readdirSync(rootPath, { withFileTypes: true });
+  return sortPaths(
+    entries.flatMap((entry) => {
+      const entryPath = path.join(rootPath, entry.name);
+      if (entry.isDirectory()) {
+        return collectPreloadFilesSync(entryPath);
+      }
+      return entry.name.endsWith(".ts") ? [entryPath] : [];
+    }),
+  );
+};
+
+const collectPreloadFiles = async (rootPath) => {
+  const entries = await readdir(rootPath, { withFileTypes: true });
+  const nested = await Promise.all(
+    sortPaths(entries).map(async (entry) => {
+      const entryPath = path.join(rootPath, entry.name);
+      if (entry.isDirectory()) {
+        return await collectPreloadFiles(entryPath);
+      }
+      return entry.name.endsWith(".ts") ? [entryPath] : [];
+    }),
+  );
+  return nested.flat();
+};
+
+export const readPreloadSourceTreeSync = (rootPath = PRELOAD_ROOT) =>
+  collectPreloadFilesSync(rootPath)
+    .map((filePath) => readFileSync(filePath, "utf8"))
+    .join("\n\n");
+
+export const readPreloadSourceTree = async (rootPath = PRELOAD_ROOT) => {
+  const files = await collectPreloadFiles(rootPath);
+  const contents = await Promise.all(files.map((filePath) => readFile(filePath, "utf8")));
+  return contents.join("\n\n");
+};
 
 export const extractObjectBlock = (source, objectName) => {
   const marker = `${objectName}: {`;
@@ -113,7 +155,9 @@ const extractMethodDefinition = (objectBlock, methodName) => {
 };
 
 const hasSafeInvokeCore = (methodDefinition, coreMethodPath) =>
-  methodDefinition.includes(`safeInvokeCore("${coreMethodPath}"`);
+  new RegExp(`safeInvokeCore\\s*\\(\\s*"${escapeRegExp(coreMethodPath)}"`).test(
+    methodDefinition,
+  );
 
 const hasNeverReturnType = (methodDefinition) => {
   const signature = methodDefinition.split("=>")[0] ?? methodDefinition;
@@ -191,7 +235,7 @@ const writeBaseline = async ({ neverCount, unknownCount }) => {
 export const checkPreloadContractRegression = async ({
   shouldUpdateBaseline = false,
 } = {}) => {
-  const source = await readFile(PRELOAD_PATH, "utf8");
+  const source = await readPreloadSourceTree();
   const baseline = await readBaseline().catch(() => ({
     ...DEFAULT_LIMITS,
     coreMethods: [],

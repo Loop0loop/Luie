@@ -3,7 +3,11 @@ import { useEdgesState, useNodesState, type Node } from "reactflow";
 import { useTranslation } from "react-i18next";
 import type { EntityRelation, WorldGraphNode } from "@shared/types";
 import { useWorldGraphLayout } from "@renderer/features/research/hooks/useWorldGraphLayout";
-import { toRFNode, toRFEdge } from "@renderer/features/research/utils/worldGraphUtils";
+import {
+  isRenderableRFNode,
+  toRFEdge,
+  toRFNode,
+} from "@renderer/features/research/utils/worldGraphUtils";
 
 export function useCanvasState({
   graphNodes,
@@ -18,48 +22,72 @@ export function useCanvasState({
   const [optimisticDeletedNodeIds, setOptimisticDeletedNodeIds] = useState<Set<string>>(new Set());
   const [optimisticDeletedEdgeIds, setOptimisticDeletedEdgeIds] = useState<Set<string>>(new Set());
 
-  // Clean up optimistic deletes when the items vanish from DB
-  useEffect(() => {
-    setOptimisticDeletedNodeIds((current) => {
-      if (current.size === 0) return current;
-      const next = new Set([...current].filter((id) => graphNodes.some((node) => node.id === id)));
-      return next.size === current.size ? current : next;
-    });
-  }, [graphNodes]);
-
-  useEffect(() => {
-    setOptimisticDeletedEdgeIds((current) => {
-      if (current.size === 0) return current;
-      const next = new Set([...current].filter((id) => graphEdges.some((edge) => edge.id === id)));
-      return next.size === current.size ? current : next;
-    });
-  }, [graphEdges]);
+  const liveNodeIds = useMemo(
+    () => new Set(graphNodes.map((node) => node?.id).filter((id): id is string => typeof id === "string")),
+    [graphNodes],
+  );
+  const liveEdgeIds = useMemo(
+    () => new Set(graphEdges.map((edge) => edge?.id).filter((id): id is string => typeof id === "string")),
+    [graphEdges],
+  );
+  const effectiveDeletedNodeIds = useMemo(
+    () => new Set([...optimisticDeletedNodeIds].filter((id) => liveNodeIds.has(id))),
+    [liveNodeIds, optimisticDeletedNodeIds],
+  );
+  const effectiveDeletedEdgeIds = useMemo(
+    () => new Set([...optimisticDeletedEdgeIds].filter((id) => liveEdgeIds.has(id))),
+    [liveEdgeIds, optimisticDeletedEdgeIds],
+  );
 
   const visibleGraphNodes = useMemo(
-    () => graphNodes.filter((node) => !optimisticDeletedNodeIds.has(node.id)),
-    [graphNodes, optimisticDeletedNodeIds]
+    () =>
+      graphNodes.filter(
+        (node): node is WorldGraphNode =>
+          Boolean(
+              node &&
+              typeof node.id === "string" &&
+              node.id.length > 0 &&
+              typeof node.entityType === "string" &&
+              !effectiveDeletedNodeIds.has(node.id),
+          ),
+      ),
+    [effectiveDeletedNodeIds, graphNodes]
   );
   
   const visibleGraphEdges = useMemo(
     () =>
       graphEdges.filter(
-        (edge) =>
-          !optimisticDeletedEdgeIds.has(edge.id) &&
-          !optimisticDeletedNodeIds.has(edge.sourceId) &&
-          !optimisticDeletedNodeIds.has(edge.targetId)
+        (edge): edge is EntityRelation =>
+          Boolean(
+            edge &&
+              typeof edge.id === "string" &&
+              edge.id.length > 0 &&
+              typeof edge.sourceId === "string" &&
+              edge.sourceId.length > 0 &&
+              typeof edge.targetId === "string" &&
+              edge.targetId.length > 0 &&
+              !effectiveDeletedEdgeIds.has(edge.id) &&
+              !effectiveDeletedNodeIds.has(edge.sourceId) &&
+              !effectiveDeletedNodeIds.has(edge.targetId),
+          )
       ),
-    [graphEdges, optimisticDeletedEdgeIds, optimisticDeletedNodeIds]
+    [effectiveDeletedEdgeIds, effectiveDeletedNodeIds, graphEdges]
   );
 
   const rfNodes = useMemo(
-    () => visibleGraphNodes.map((node, index) => toRFNode(node, index, selectedNodeId)),
+    () =>
+      visibleGraphNodes
+        .map((node, index) => toRFNode(node, index, selectedNodeId))
+        .filter(isRenderableRFNode),
     [selectedNodeId, visibleGraphNodes]
   );
 
   const rfEdges = useMemo(() => {
     const translate = (key: string, fallback: string) => i18n.t(key, { defaultValue: fallback });
     const nodeById = new Map(rfNodes.map((node) => [node.id, node] as const));
-    return visibleGraphEdges.map((edge) => toRFEdge(edge, translate, nodeById));
+    return visibleGraphEdges
+      .map((edge) => toRFEdge(edge, translate, nodeById))
+      .filter((edge): edge is NonNullable<typeof edge> => edge !== null);
   }, [i18n, rfNodes, visibleGraphEdges]);
 
   const graphNodeById = useMemo(
@@ -98,7 +126,7 @@ export function useCanvasState({
       const prevById = new Map(prev.map((node) => [node.id, node] as const));
       const sourceRfNodesById = new Map(rfNodes.map((node) => [node.id, node] as const));
       const draftNodes = prev.filter(n => n.type === "draft");
-      const nextNodes = layoutedNodes.map((layoutNode: Node) => {
+      const nextNodes = layoutedNodes.filter(isRenderableRFNode).map((layoutNode: Node) => {
         const existing = prevById.get(layoutNode.id);
         const sourceRfNode = sourceRfNodesById.get(layoutNode.id);
         const lastPos = lastStorePositions.current[layoutNode.id];

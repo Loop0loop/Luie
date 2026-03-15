@@ -1,18 +1,18 @@
 import type { Dirent } from "node:fs";
 import path from "node:path";
-import yauzl from "yauzl";
+import type yauzl from "yauzl";
 import { z } from "zod";
 import { APP_VERSION, ErrorCode } from "../../../../shared/constants/index.js";
 import {
   graphPluginCatalogItemSchema,
-  installedGraphPluginIndexSchema,
 } from "../../../../shared/schemas/index.js";
+import type { installedGraphPluginIndexSchema } from "../../../../shared/schemas/index.js";
 import type {
   GraphPluginCatalogItem,
   GraphPluginManifest,
 } from "../../../../shared/types/index.js";
-import { LuieWorldGraphSchema } from "../../core/project/projectLuieSchemas.js";
-import { worldReplicaService } from "../worldReplicaService.js";
+import type { LuieWorldGraphSchema } from "../../core/project/projectLuieSchemas.js";
+import type { worldReplicaService } from "../worldReplicaService.js";
 import { ServiceError } from "../../../utils/serviceError.js";
 
 export const GRAPH_PLUGIN_API_VERSION = "1.0.0";

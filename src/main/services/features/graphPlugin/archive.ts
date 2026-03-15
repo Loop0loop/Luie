@@ -23,17 +23,8 @@ export const downloadPluginArchive = async (
   fetchImpl: typeof fetch,
   pluginRootDir: string,
   item: LocalCatalogItem,
-  isPackaged: boolean,
 ): Promise<Buffer> => {
-  const localPath =
-    item.devAssetPath && !isPackaged
-      ? path.resolve(pluginRootDir, item.devAssetPath)
-      : item.assetUrl.startsWith("file://")
-        ? fileURLToPath(item.assetUrl)
-        : null;
-
-  if (localPath) {
-    const buffer = await fsp.readFile(localPath);
+  const validateArchiveIntegrity = (buffer: Buffer) => {
     if (buffer.byteLength > MAX_PLUGIN_ARCHIVE_BYTES) {
       throw createServiceError(
         ErrorCode.FS_READ_FAILED,
@@ -41,6 +32,46 @@ export const downloadPluginArchive = async (
         { pluginId: item.pluginId, size: buffer.byteLength },
       );
     }
+    if (item.size !== buffer.byteLength) {
+      throw createServiceError(
+        ErrorCode.VALIDATION_FAILED,
+        "Graph plugin archive size mismatch",
+        { pluginId: item.pluginId, expected: item.size, actual: buffer.byteLength },
+      );
+    }
+
+    const digest = createHash("sha256").update(buffer).digest("hex");
+    if (digest !== item.sha256) {
+      throw createServiceError(
+        ErrorCode.VALIDATION_FAILED,
+        "Graph plugin archive hash mismatch",
+        { pluginId: item.pluginId, expected: item.sha256, actual: digest },
+      );
+    }
+  };
+
+  const localCandidates = [
+    item.devAssetPath ? path.resolve(pluginRootDir, item.devAssetPath) : null,
+    item.assetUrl.startsWith("file://") ? fileURLToPath(item.assetUrl) : null,
+  ].filter((candidate): candidate is string => Boolean(candidate));
+
+  const localPath =
+    (
+      await Promise.all(
+        localCandidates.map(async (candidate) => {
+          try {
+            await fsp.access(candidate);
+            return candidate;
+          } catch {
+            return null;
+          }
+        }),
+      )
+    ).find((candidate): candidate is string => candidate !== null) ?? null;
+
+  if (localPath) {
+    const buffer = await fsp.readFile(localPath);
+    validateArchiveIntegrity(buffer);
     return buffer;
   }
 
@@ -62,30 +93,7 @@ export const downloadPluginArchive = async (
   }
 
   const raw = Buffer.from(await response.arrayBuffer());
-  if (raw.byteLength > MAX_PLUGIN_ARCHIVE_BYTES) {
-    throw createServiceError(
-      ErrorCode.FS_READ_FAILED,
-      "Graph plugin archive is too large",
-      { pluginId: item.pluginId, size: raw.byteLength },
-    );
-  }
-  if (item.size !== raw.byteLength) {
-    throw createServiceError(
-      ErrorCode.VALIDATION_FAILED,
-      "Graph plugin archive size mismatch",
-      { pluginId: item.pluginId, expected: item.size, actual: raw.byteLength },
-    );
-  }
-
-  const digest = createHash("sha256").update(raw).digest("hex");
-  if (digest !== item.sha256) {
-    throw createServiceError(
-      ErrorCode.VALIDATION_FAILED,
-      "Graph plugin archive hash mismatch",
-      { pluginId: item.pluginId, expected: item.sha256, actual: digest },
-    );
-  }
-
+  validateArchiveIntegrity(raw);
   return raw;
 };
 

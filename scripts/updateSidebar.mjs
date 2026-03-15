@@ -1,4 +1,6 @@
-import { useTranslation } from "react-i18next";
+import fs from 'fs';
+
+const content = `import { useTranslation } from "react-i18next";
 import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { GraphSidebarContent } from "../sidebars/GraphSidebarContent";
@@ -47,3 +49,7 @@ export function PrimarySidebar() {
     </div>
   );
 }
+`;
+
+fs.writeFileSync('/Users/user/Luie/src/renderer/src/features/research/components/world/graph/components/PrimarySidebar.tsx', content);
+console.log('writeFileSync completed!');

@@ -1,6 +1,8 @@
-import { useCallback } from "react";
+import fs from "fs";
+
+const content = `import { useCallback } from "react";
 import { cn } from "@renderer/lib/utils";
-import { LayoutGrid, Clock, FileText } from "lucide-react";
+import { LayoutGrid, Clock, FileText, Plus } from "lucide-react";
 import { EditorSyncBus } from "@renderer/features/workspace/utils/EditorSyncBus";
 import type { WorldEntitySourceType } from "@shared/types";
 
@@ -60,3 +62,6 @@ export function WorldGraphNavbar() {
     </div>
   );
 }
+`;
+fs.writeFileSync("/Users/user/Luie/src/renderer/src/features/research/components/world/graph/components/WorldGraphNavbar.tsx", content);
+console.log("Written successfully");

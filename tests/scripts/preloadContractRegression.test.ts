@@ -1,16 +1,11 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   analyzePreloadContract,
   CORE_METHODS,
+  readPreloadSourceTreeSync,
 } from "../../scripts/check-preload-contract-regression.mjs";
 
-const preloadSourcePath = path.resolve(
-  process.cwd(),
-  "src/preload/index.ts",
-);
-const preloadSource = readFileSync(preloadSourcePath, "utf8");
+const preloadSource = readPreloadSourceTreeSync();
 
 describe("preload contract regression analyzer", () => {
   it("passes for current preload source with non-regressive limits", () => {
@@ -39,8 +34,8 @@ describe("preload contract regression analyzer", () => {
 
   it("detects core method typed as IPCResponse<never>", () => {
     const mutatedSource = preloadSource.replace(
-      'ReturnType<RendererApi["project"]["get"]>',
-      "Promise<IPCResponse<never>>",
+      'get: (id) => safeInvokeCore("project.get", IPC_CHANNELS.PROJECT_GET, id),',
+      'get: (id): Promise<IPCResponse<never>> => safeInvokeCore("project.get", IPC_CHANNELS.PROJECT_GET, id),',
     );
 
     const analysis = analyzePreloadContract(mutatedSource, {

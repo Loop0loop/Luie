@@ -280,17 +280,29 @@ async function flushLogs() {
 const createLoggerApi = (): RendererApi["logger"] => ({
   debug: (message, data) => {
     logQueue.push({ level: "debug", message, data: sanitizeForIpc(data) });
-    logQueue.length >= LOG_BATCH_SIZE ? void flushLogs() : scheduleLogFlush();
+    if (logQueue.length >= LOG_BATCH_SIZE) {
+      void flushLogs();
+    } else {
+      scheduleLogFlush();
+    }
     return Promise.resolve({ success: true } as IPCResponse<never>);
   },
   info: (message, data) => {
     logQueue.push({ level: "info", message, data: sanitizeForIpc(data) });
-    logQueue.length >= LOG_BATCH_SIZE ? void flushLogs() : scheduleLogFlush();
+    if (logQueue.length >= LOG_BATCH_SIZE) {
+      void flushLogs();
+    } else {
+      scheduleLogFlush();
+    }
     return Promise.resolve({ success: true } as IPCResponse<never>);
   },
   warn: (message, data) => {
     logQueue.push({ level: "warn", message, data: sanitizeForIpc(data) });
-    logQueue.length >= LOG_BATCH_SIZE ? void flushLogs() : scheduleLogFlush();
+    if (logQueue.length >= LOG_BATCH_SIZE) {
+      void flushLogs();
+    } else {
+      scheduleLogFlush();
+    }
     return Promise.resolve({ success: true } as IPCResponse<never>);
   },
   error: (message, data) => {
