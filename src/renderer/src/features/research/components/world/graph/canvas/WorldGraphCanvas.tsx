@@ -358,6 +358,15 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
     (_, node) => {
       onSmartNodeDragStop();
       if (node.type === "draft") return;
+      if (
+        !node.position ||
+        typeof node.position.x !== "number" ||
+        !Number.isFinite(node.position.x) ||
+        typeof node.position.y !== "number" ||
+        !Number.isFinite(node.position.y)
+      ) {
+        return;
+      }
       void updateGraphNodePosition({
         id: node.id,
         positionX: node.position.x,

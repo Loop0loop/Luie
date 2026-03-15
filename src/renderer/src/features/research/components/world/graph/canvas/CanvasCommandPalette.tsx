@@ -72,7 +72,13 @@ export const CanvasCommandPalette = memo(({ mode, onClose }: CanvasCommandPalett
     
     // Pan to node
     const node = reactFlow.getNode(nodeId);
-    if (node) {
+    if (
+      node?.position &&
+      typeof node.position.x === "number" &&
+      Number.isFinite(node.position.x) &&
+      typeof node.position.y === "number" &&
+      Number.isFinite(node.position.y)
+    ) {
       reactFlow.setCenter(node.position.x, node.position.y, { zoom: 1.2, duration: 800 });
     }
     

@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { CalendarDays, Plus, Search } from "lucide-react";
 import { Button } from "@renderer/components/ui/button";
 import { Input } from "@renderer/components/ui/input";
-import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import type { EntityRelation, WorldGraphNode } from "@shared/types";
@@ -23,8 +22,6 @@ export function TimelineMainView({ nodes = [] }: TimelineMainViewProps) {
   const deferredQuery = useDeferredValue(query);
   const activeProjectId = useWorldBuildingStore((state) => state.activeProjectId);
   const createGraphNode = useWorldBuildingStore((state) => state.createGraphNode);
-  const selectNode = useWorldBuildingStore((state) => state.selectNode);
-  const setActiveTab = useGraphIdeStore((state) => state.setActiveTab);
   const nodeById = useMemo(
     () => new Map(nodes.map((node) => [node.id, node] as const)),
     [nodes],
@@ -53,18 +50,19 @@ export function TimelineMainView({ nodes = [] }: TimelineMainViewProps) {
       return;
     }
 
-    selectNode(created.id);
-    syncGraphEntitySelectionToWorkspace(created);
-    setActiveTab("graph");
+    showToast(
+      t("world.graph.timeline.createSuccess", "새 사건을 만들었습니다."),
+      "success",
+    );
   };
 
   const handleOpenEvent = (nodeId: string) => {
-    selectNode(nodeId);
+    useWorldBuildingStore.getState().selectNode(nodeId);
     const node = nodeById.get(nodeId);
     if (node) {
       syncGraphEntitySelectionToWorkspace(node);
     }
-    setActiveTab("graph");
+    useGraphIdeStore.getState().setActiveTab("graph");
   };
 
   return (
@@ -96,7 +94,7 @@ export function TimelineMainView({ nodes = [] }: TimelineMainViewProps) {
         </div>
       </header>
 
-      <ScrollArea className="flex-1 px-8 py-8">
+      <div className="flex-1 overflow-y-auto px-8 py-8">
         <div className="mx-auto max-w-3xl">
           {entries.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border/60 bg-card/40 px-6 py-12 text-center">
@@ -150,7 +148,7 @@ export function TimelineMainView({ nodes = [] }: TimelineMainViewProps) {
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }

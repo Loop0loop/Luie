@@ -13,7 +13,7 @@ export function WorldGraphNavbar() {
     if (id === "world") {
       EditorSyncBus.emit("SPAWN_GRAPH_DRAFT_NODE", { entityType: type, instant: false });
     } else if (id === "time") {
-      EditorSyncBus.emit("OPEN_COMMAND_PALETTE", { mode: "Event" });
+      EditorSyncBus.emit("SPAWN_GRAPH_DRAFT_NODE", { entityType: "Event", instant: false });
     } else if (id === "note") {
       EditorSyncBus.emit("OPEN_COMMAND_PALETTE", { mode: "Note" });
     }

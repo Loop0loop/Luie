@@ -23,6 +23,18 @@ export interface SnapGap {
 
 const SNAP_THRESHOLD = 6; // pixels
 
+const hasFinitePosition = (
+  node: Node | null | undefined,
+): node is Node & { position: { x: number; y: number } } =>
+  Boolean(
+    node &&
+      node.position &&
+      typeof node.position.x === "number" &&
+      Number.isFinite(node.position.x) &&
+      typeof node.position.y === "number" &&
+      Number.isFinite(node.position.y),
+  );
+
 const triggerHapticFeedback = () => {
   if (typeof navigator !== "undefined" && navigator.vibrate) {
     navigator.vibrate(5);
@@ -101,6 +113,9 @@ export const useSmartSnap = (
     setNodes((currentNodes) => {
       let changed = false;
       const nextNodes = currentNodes.map((node) => {
+        if (!hasFinitePosition(node)) {
+          return node;
+        }
         if (node.id !== pending.id) {
           return node;
         }
@@ -136,6 +151,9 @@ export const useSmartSnap = (
 
   const handleNodeDrag = useCallback(
     (_: React.MouseEvent, draggedNode: Node) => {
+      if (!hasFinitePosition(draggedNode)) {
+        return;
+      }
       let newX = draggedNode.position.x;
       let newY = draggedNode.position.y;
       
@@ -148,6 +166,7 @@ export const useSmartSnap = (
       const gaps: SnapGap[] = [];
       const otherNodes = nodesRef.current.filter(
         (node) =>
+          hasFinitePosition(node) &&
           node.id !== draggedNode.id &&
           node.width &&
           node.height &&
@@ -211,7 +230,7 @@ export const useSmartSnap = (
 
       // --- 2. Intelligent Gap Distances (Figma-like Equal Spacing) ---
       // X-Axis Gaps
-      const yBandNodes = otherNodes.filter(n => Math.abs((n.position.y + n.height! / 2) - (newY + height / 2)) < 50);
+      const yBandNodes = otherNodes.filter((n) => Math.abs((n.position.y + n.height! / 2) - (newY + height / 2)) < 50);
       if (yBandNodes.length >= 2) {
         yBandNodes.sort((a,b) => a.position.x - b.position.x);
         for (let i = 0; i < yBandNodes.length - 1; i++) {
@@ -238,7 +257,7 @@ export const useSmartSnap = (
       }
 
       // Y-Axis Gaps
-      const xBandNodes = otherNodes.filter(n => Math.abs((n.position.x + n.width! / 2) - (newX + width / 2)) < 50);
+      const xBandNodes = otherNodes.filter((n) => Math.abs((n.position.x + n.width! / 2) - (newX + width / 2)) < 50);
       if (xBandNodes.length >= 2) {
         xBandNodes.sort((a,b) => a.position.y - b.position.y);
         for (let i = 0; i < xBandNodes.length - 1; i++) {

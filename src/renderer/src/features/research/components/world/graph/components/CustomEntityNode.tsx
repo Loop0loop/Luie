@@ -52,14 +52,18 @@ export const CustomEntityNode = memo(({ id, data, selected }: CustomEntityNodePr
     <>
       {y && (
         <>
-          <Handle type="target" position={Position.Top} className="opacity-0 group-hover:opacity-100 transition-opacity h-2.5! w-2.5! border-2! border-background! bg-muted-foreground!" />
-          <Handle type="source" position={Position.Bottom} className="opacity-0 group-hover:opacity-100 transition-opacity h-2.5! w-2.5! border-2! border-background! bg-muted-foreground!" />
+          <Handle type="target" id="target-top" position={Position.Top} className="opacity-0 group-hover:opacity-100 transition-opacity h-2.5! w-2.5! border-2! border-background! bg-muted-foreground!" />
+          <Handle type="source" id="source-top" position={Position.Top} className="opacity-0 group-hover:opacity-100 transition-opacity h-2.5! w-2.5! border-2! border-background! bg-muted-foreground! translate-y-[7px]" />
+          <Handle type="target" id="target-bottom" position={Position.Bottom} className="opacity-0 group-hover:opacity-100 transition-opacity h-2.5! w-2.5! border-2! border-background! bg-muted-foreground! -translate-y-[7px]" />
+          <Handle type="source" id="source-bottom" position={Position.Bottom} className="opacity-0 group-hover:opacity-100 transition-opacity h-2.5! w-2.5! border-2! border-background! bg-muted-foreground!" />
         </>
       )}
       {x && (
         <>
-          <Handle type="target" id="left" position={Position.Left} className="opacity-0 group-hover:opacity-100 transition-opacity h-2.5! w-2.5! border-2! border-background! bg-muted-foreground!" />
-          <Handle type="source" id="right" position={Position.Right} className="opacity-0 group-hover:opacity-100 transition-opacity h-2.5! w-2.5! border-2! border-background! bg-muted-foreground!" />
+          <Handle type="target" id="target-left" position={Position.Left} className="opacity-0 group-hover:opacity-100 transition-opacity h-2.5! w-2.5! border-2! border-background! bg-muted-foreground!" />
+          <Handle type="source" id="source-left" position={Position.Left} className="opacity-0 group-hover:opacity-100 transition-opacity h-2.5! w-2.5! border-2! border-background! bg-muted-foreground! translate-x-[7px]" />
+          <Handle type="target" id="target-right" position={Position.Right} className="opacity-0 group-hover:opacity-100 transition-opacity h-2.5! w-2.5! border-2! border-background! bg-muted-foreground! -translate-x-[7px]" />
+          <Handle type="source" id="source-right" position={Position.Right} className="opacity-0 group-hover:opacity-100 transition-opacity h-2.5! w-2.5! border-2! border-background! bg-muted-foreground!" />
         </>
       )}
     </>

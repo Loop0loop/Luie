@@ -122,10 +122,14 @@ export function useCanvasState({
   const lastStorePositions = useRef<Record<string, { x: number; y: number }>>({});
   useEffect(() => {
     setNodes((prev) => {
+      const safePrev = prev.filter(
+        (node): node is Node =>
+          Boolean(node && typeof node.id === "string" && node.id.length > 0),
+      );
       let isChanged = false;
-      const prevById = new Map(prev.map((node) => [node.id, node] as const));
+      const prevById = new Map(safePrev.map((node) => [node.id, node] as const));
       const sourceRfNodesById = new Map(rfNodes.map((node) => [node.id, node] as const));
-      const draftNodes = prev.filter(n => n.type === "draft");
+      const draftNodes = safePrev.filter((node) => node.type === "draft");
       const nextNodes = layoutedNodes.filter(isRenderableRFNode).map((layoutNode: Node) => {
         const existing = prevById.get(layoutNode.id);
         const sourceRfNode = sourceRfNodesById.get(layoutNode.id);
@@ -139,6 +143,10 @@ export function useCanvasState({
           isChanged = true;
           return layoutNode;
         }
+        if (!existing.position || typeof existing.position.x !== "number" || typeof existing.position.y !== "number") {
+          isChanged = true;
+          return layoutNode;
+        }
 
         const dbPosChanged =
           lastPos &&
@@ -149,6 +157,16 @@ export function useCanvasState({
 
         if (!existing.dragging && dbPosChanged) {
           newPos = sourceRfNode!.position; 
+        }
+        if (
+          !newPos ||
+          typeof newPos.x !== "number" ||
+          !Number.isFinite(newPos.x) ||
+          typeof newPos.y !== "number" ||
+          !Number.isFinite(newPos.y)
+        ) {
+          isChanged = true;
+          return layoutNode;
         }
 
         const needsUpdate =
@@ -171,10 +189,10 @@ export function useCanvasState({
         return existing;
       });
 
-      if (isChanged || prev.length !== (layoutedNodes.length + draftNodes.length)) {
+      if (isChanged || safePrev.length !== (layoutedNodes.length + draftNodes.length)) {
         return [...nextNodes, ...draftNodes];
       }
-      return prev;
+      return safePrev;
     });
   }, [layoutedNodes, rfNodes, setNodes]);
 

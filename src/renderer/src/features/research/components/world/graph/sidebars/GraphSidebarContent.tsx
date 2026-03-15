@@ -2,7 +2,10 @@ import { useMemo, useCallback, useState } from "react";
 import { CircleDashed, Search, LayoutGrid, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@renderer/lib/utils";
-import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
+import {
+  useFilteredGraph,
+  useWorldBuildingStore,
+} from "@renderer/features/research/stores/worldBuildingStore";
 import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 import { SidebarTreeSection } from "./SidebarTreeSection";
 import type { RelationKind } from "@shared/types";
@@ -12,7 +15,7 @@ export function GraphSidebarContent() {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
 
-  const graphData = useWorldBuildingStore((s) => s.graphData);
+  const filteredGraph = useFilteredGraph();
   const filter = useWorldBuildingStore((s) => s.filter);
   const setFilter = useWorldBuildingStore((s) => s.setFilter);
   const triggerLayout = useGraphIdeStore((s) => s.triggerLayout);
@@ -27,22 +30,14 @@ export function GraphSidebarContent() {
   );
 
   const { visibleEntityTypes, visibleRelations } = useMemo(() => {
-    const connectedNodeIds = new Set<string>();
-    graphData?.edges.forEach(e => {
-      connectedNodeIds.add(e.sourceId);
-      connectedNodeIds.add(e.targetId);
-    });
-
     const typeCounts = new Map<string, number>();
-    graphData?.nodes.forEach(node => {
-      // Only include entities that have relationships as requested
-      if (!connectedNodeIds.has(node.id)) return;
+    filteredGraph.nodes.forEach((node) => {
       const type = node.subType || node.entityType || "Entity";
       typeCounts.set(type, (typeCounts.get(type) || 0) + 1);
     });
 
     const relCounts = new Map<string, number>();
-    graphData?.edges.forEach(edge => {
+    filteredGraph.edges.forEach((edge) => {
       const kind = edge.relation || "연결됨";
       relCounts.set(kind, (relCounts.get(kind) || 0) + 1);
     });
@@ -51,7 +46,7 @@ export function GraphSidebarContent() {
       visibleEntityTypes: Array.from(typeCounts.entries()).map(([type, count]) => ({ type, count })),
       visibleRelations: Array.from(relCounts.entries()).map(([kind, count]) => ({ kind, count }))
     };
-  }, [graphData]);
+  }, [filteredGraph.edges, filteredGraph.nodes]);
 
   const toggleEntityType = useCallback(
     (type: string) => {
@@ -91,7 +86,7 @@ export function GraphSidebarContent() {
       <div className="flex-1 overflow-y-auto">
         <SidebarTreeSection title={t("world.graph.ide.sidebar.nodes", "Entities")}>
           {visibleEntityTypes.length === 0 ? (
-            <p className="px-2 py-2 text-[11px] text-muted-foreground/50">관계가 있는 노드가 없습니다</p>
+            <p className="px-2 py-2 text-[11px] text-muted-foreground/50">표시할 노드가 없습니다</p>
           ) : (
             visibleEntityTypes.map(({ type, count }) => {
               const isOn = filter.entityTypes.includes(type);

@@ -46,7 +46,6 @@ export function WorldGraphPanel() {
   const activeTab = useGraphIdeStore((state) => state.activeTab);
   const isSidebarOpen = useGraphIdeStore((state) => state.isSidebarOpen);
   const selectedNodeId = useWorldBuildingStore((state) => state.selectedNodeId);
-  const selectNode = useWorldBuildingStore((state) => state.selectNode);
 
   const feature = "worldGraphSidebar" as const;
   const config = getSidebarWidthConfig(feature);
@@ -100,13 +99,6 @@ export function WorldGraphPanel() {
       }
     });
   }, [currentProjectId, loadGraph]);
-
-  useEffect(() => {
-    if (activeTab === "graph" || selectedNodeId === null) {
-      return;
-    }
-    selectNode(null);
-  }, [activeTab, selectNode, selectedNodeId]);
 
   const renderMainViewContent = () => {
     if (isLoading) {

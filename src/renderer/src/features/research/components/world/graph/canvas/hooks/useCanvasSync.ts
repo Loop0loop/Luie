@@ -30,6 +30,16 @@ export function useCanvasSync({
   const { showToast } = useToast();
   const createGraphNode = useWorldBuildingStore((state) => state.createGraphNode);
 
+  const hasFinitePosition = (node: Node | null | undefined): node is Node & { position: { x: number; y: number } } =>
+    Boolean(
+      node &&
+        node.position &&
+        typeof node.position.x === "number" &&
+        Number.isFinite(node.position.x) &&
+        typeof node.position.y === "number" &&
+        Number.isFinite(node.position.y),
+    );
+
   const spawnDraftNode = useCallback(
     (x: number, y: number, initialType?: WorldEntitySourceType) => {
       if (!activeProjectId) return;
@@ -154,7 +164,7 @@ export function useCanvasSync({
       selectNode(payload.entityId);
       if (rfInstance) {
         const node = rfInstance.getNode(payload.entityId);
-        if (node) {
+        if (hasFinitePosition(node)) {
           rfInstance.setCenter(node.position.x, node.position.y, { duration: 800, zoom: 1.2 });
         }
       }

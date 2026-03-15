@@ -9,7 +9,19 @@ export const CLUSTER_GAP_Y = 60;
 export function computeClusterPositions(nodes: Node[]): Record<string, { x: number; y: number }> {
   const groups = new Map<string, Node[]>();
   nodes
-    .filter((n) => n.type !== "draft")
+    .filter(
+      (n) =>
+        Boolean(
+          n &&
+            typeof n.id === "string" &&
+            n.type !== "draft" &&
+            n.position &&
+            typeof n.position.x === "number" &&
+            Number.isFinite(n.position.x) &&
+            typeof n.position.y === "number" &&
+            Number.isFinite(n.position.y),
+        ),
+    )
     .forEach((node) => {
       const key = (node.data?.subType ?? node.data?.entityType ?? "Unknown") as string;
       if (!groups.has(key)) groups.set(key, []);

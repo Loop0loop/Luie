@@ -1,19 +1,25 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { GitBranchPlus, GitCommitHorizontal, Link2, PlusCircle, CalendarDays, Users, Layers, Activity } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@renderer/lib/utils";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
+import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 import { EditorSyncBus } from "@renderer/features/workspace/utils/EditorSyncBus";
 import { SidebarTreeSection } from "./SidebarTreeSection";
+import { useToast } from "@shared/ui/ToastContext";
 import { buildTimelineEntries } from "../utils/worldGraphIdeViewModels";
+import { syncGraphEntitySelectionToWorkspace } from "../utils/graphEntitySync";
 
 export function TimelineSidebarContent() {
   const { t } = useTranslation();
+  const { showToast } = useToast();
 
   const graphData = useWorldBuildingStore((s) => s.graphData);
+  const activeProjectId = useWorldBuildingStore((s) => s.activeProjectId);
   const selectedNodeId = useWorldBuildingStore((s) => s.selectedNodeId);
   const selectNode = useWorldBuildingStore((s) => s.selectNode);
-
+  const createGraphNode = useWorldBuildingStore((s) => s.createGraphNode);
+  const createRelation = useWorldBuildingStore((s) => s.createRelation);
   const { events, characters, eras, totalConnectedEntities } = useMemo(() => {
     const nodes = graphData?.nodes ?? [];
     const timelineEntries = buildTimelineEntries(nodes, "");
@@ -33,18 +39,69 @@ export function TimelineSidebarContent() {
     };
   }, [graphData]);
 
-  const handleCreateRoot = () => {
-    EditorSyncBus.emit("SPAWN_GRAPH_DRAFT_NODE", { entityType: "Event", instant: false });
+  const handleCreateRoot = async () => {
+    if (!activeProjectId) return;
+    const created = await createGraphNode({
+      projectId: activeProjectId,
+      entityType: "Event",
+      name: t("world.graph.timeline.newEvent", "새 사건"),
+      positionX: 120,
+      positionY: 120,
+    });
+    if (!created) {
+      showToast("새 사건을 만들지 못했습니다.", "error");
+      return;
+    }
+    selectNode(created.id);
   };
 
-  const handleCreateBranch = () => {
-    // 분기 추가: 현재는 단순 이벤트 생성으로 매핑하나, 추후 선택된 노드 밑에 타겟 드래프트 노드를 스폰하도록 확장 가능
-    EditorSyncBus.emit("SPAWN_GRAPH_DRAFT_NODE", { entityType: "Event", instant: false });
+  const handleCreateBranch = async () => {
+    if (!activeProjectId || !selectedNodeId) return;
+    const current = (graphData?.nodes ?? []).find((node) => node.id === selectedNodeId);
+    if (!current) return;
+    const created = await createGraphNode({
+      projectId: activeProjectId,
+      entityType: "Event",
+      name: t("world.graph.timeline.branchEvent", "새 분기 사건"),
+      positionX: (current.positionX ?? 0) + 220,
+      positionY: (current.positionY ?? 0) + 120,
+    });
+    if (!created) {
+      showToast("분기 사건을 만들지 못했습니다.", "error");
+      return;
+    }
+    const relationCreated = await createRelation({
+      projectId: activeProjectId,
+      sourceId: current.id,
+      sourceType: current.entityType,
+      targetId: created.id,
+      targetType: created.entityType,
+      relation: "causes",
+    });
+    if (!relationCreated) {
+      showToast("분기 연결을 만들지 못했습니다.", "error");
+    }
+    selectNode(created.id);
   };
 
-  const handleLinkEntity = () => {
-    EditorSyncBus.emit("OPEN_COMMAND_PALETTE", { mode: "Event" });
-  };
+  const handleLinkEntity = useCallback(() => {
+    if (!selectedNodeId) return;
+    useGraphIdeStore.getState().setActiveTab("graph");
+    requestAnimationFrame(() => {
+      EditorSyncBus.emit("OPEN_COMMAND_PALETTE", { mode: "Event" });
+    });
+  }, [selectedNodeId]);
+
+  const handleSelectTimelineNode = useCallback(
+    (nodeId: string) => {
+      selectNode(nodeId);
+      const node = (graphData?.nodes ?? []).find((entry) => entry.id === nodeId);
+      if (node) {
+        syncGraphEntitySelectionToWorkspace(node);
+      }
+    },
+    [graphData?.nodes, selectNode],
+  );
 
   const renderNodeItem = (node: (typeof events)[0]) => {
     const isActive = selectedNodeId === node.id;
@@ -52,7 +109,7 @@ export function TimelineSidebarContent() {
       <button
         key={node.id}
         type="button"
-        onClick={() => selectNode(node.id)}
+        onClick={() => handleSelectTimelineNode(node.id)}
         className={cn(
           "flex w-full items-center gap-2 rounded-md px-2 py-[5px] text-left text-[12px] transition-all",
           isActive

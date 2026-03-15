@@ -84,7 +84,16 @@ export const resolveEdgeHandles = (
   sourceNode: Node | undefined,
   targetNode: Node | undefined,
 ): { sourceHandle?: string; targetHandle?: string } => {
-  if (!sourceNode || !targetNode) {
+  if (
+    !sourceNode ||
+    !targetNode ||
+    !sourceNode.position ||
+    !targetNode.position ||
+    typeof sourceNode.position.x !== "number" ||
+    typeof sourceNode.position.y !== "number" ||
+    typeof targetNode.position.x !== "number" ||
+    typeof targetNode.position.y !== "number"
+  ) {
     return {};
   }
 
@@ -95,26 +104,46 @@ export const resolveEdgeHandles = (
   const isTargetTimeline = targetNode.type === "timeline";
   const isSourceTimeline = sourceNode.type === "timeline";
 
+  const resolveSourceHandle = (handle: "left" | "right" | "top" | "bottom") => {
+    if (isSourceTimeline) {
+      if (handle === "left") return "source-timeline-prev";
+      if (handle === "right") return "source-timeline-next";
+      if (handle === "top") return "source-branch-top";
+      return "source-branch-bottom";
+    }
+    return `source-${handle}`;
+  };
+
+  const resolveTargetHandle = (handle: "left" | "right" | "top" | "bottom") => {
+    if (isTargetTimeline) {
+      if (handle === "left") return "target-timeline-prev";
+      if (handle === "right") return "target-timeline-next";
+      if (handle === "top") return "target-branch-in-top";
+      return "target-branch-in-bottom";
+    }
+    return `target-${handle}`;
+  };
+
   if (Math.abs(dx) >= Math.abs(dy)) {
     return dx >= 0
-      ? { 
-          sourceHandle: isSourceTimeline ? "timeline-next" : "right", 
-          targetHandle: isTargetTimeline ? "timeline-prev" : "left" 
+      ? {
+          sourceHandle: resolveSourceHandle("right"),
+          targetHandle: resolveTargetHandle("left"),
         }
-      : { 
-          sourceHandle: isSourceTimeline ? "timeline-prev" : "left", 
-          targetHandle: isTargetTimeline ? "timeline-next" : "right" 
+      : {
+          sourceHandle: resolveSourceHandle("left"),
+          targetHandle: resolveTargetHandle("right"),
         };
   }
 
   return dy >= 0
-    ? { 
-        sourceHandle: isSourceTimeline ? "branch-bottom" : "bottom", 
-        targetHandle: isTargetTimeline ? "branch-in-top" : "top" 
+    ? {
+        sourceHandle: resolveSourceHandle("bottom"),
+        targetHandle: resolveTargetHandle("top"),
       }
-    : { 
-        sourceHandle: isSourceTimeline ? "branch-top" : "top", 
-        targetHandle: isTargetTimeline ? "branch-in-bottom" : "bottom" 
+    : {
+        sourceHandle: resolveSourceHandle("top"),
+        targetHandle: resolveTargetHandle("bottom"),
       };
 };
 
@@ -184,7 +213,7 @@ export function toRFEdge(
 ): Edge | null {
   const sourceNode = nodeById.get(relation.sourceId);
   const targetNode = nodeById.get(relation.targetId);
-  if (!sourceNode || !targetNode) {
+  if (!isRenderableRFNode(sourceNode) || !isRenderableRFNode(targetNode)) {
     return null;
   }
   const customColor = (relation.attributes as Record<string, unknown>)?.color as string | undefined;
