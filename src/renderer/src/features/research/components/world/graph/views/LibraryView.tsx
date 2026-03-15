@@ -4,6 +4,10 @@ import type {
   InstalledGraphPlugin,
   GraphPluginCatalogItem,
 } from "@shared/types";
+import { Badge } from "@renderer/components/ui/badge";
+import { Button } from "@renderer/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@renderer/components/ui/card";
+import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { GRAPH_PLUGIN_EMPTY_ICON } from "../constants";
 
 type LibraryViewProps = {
@@ -51,8 +55,8 @@ export function LibraryView({
   }, [templates]);
 
   return (
-    <div className="h-full overflow-y-auto bg-[#0f1319] px-8 py-8">
-      <div className="mx-auto max-w-6xl space-y-8">
+    <ScrollArea className="h-full bg-[#0f1319]">
+      <div className="mx-auto max-w-6xl space-y-8 px-8 py-8">
         {error ? (
           <div className="rounded-[24px] border border-red-400/20 bg-red-500/10 px-5 py-4 text-sm text-red-200">
             {error}
@@ -74,27 +78,30 @@ export function LibraryView({
           ) : (
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
               {installed.map((plugin) => (
-                <div
+                <Card
                   key={plugin.pluginId}
-                  className="rounded-[24px] border border-border/60 bg-[#161a21] p-5"
+                  className="rounded-[24px] border border-border/60 bg-[#161a21]"
                 >
+                  <CardHeader>
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-lg font-semibold text-fg">{plugin.name}</p>
+                      <CardTitle className="text-lg text-fg">{plugin.name}</CardTitle>
                       <p className="mt-1 text-sm text-fg/55">
                         {plugin.description || plugin.pluginId}
                       </p>
                     </div>
-                    <button
+                    <Button
                       type="button"
+                      size="sm"
+                      variant="outline"
                       onClick={() => void onUninstall(plugin.pluginId)}
-                      className="rounded-xl border border-border/60 bg-white/10 px-3 py-2 text-sm text-fg transition hover:bg-white/15"
                     >
                       {uninstallingPluginId === plugin.pluginId ? "제거 중..." : "제거"}
-                    </button>
+                    </Button>
                   </div>
+                  </CardHeader>
 
-                  <div className="mt-4 space-y-2">
+                  <CardContent className="space-y-2">
                     {(templatesByPluginId.get(plugin.pluginId) ?? []).map((template) => {
                       const templateKey = `${template.pluginId}:${template.template.id}`;
 
@@ -112,8 +119,10 @@ export function LibraryView({
                                 {template.template.summary}
                               </p>
                             </div>
-                            <button
+                            <Button
                               type="button"
+                              size="sm"
+                              variant="secondary"
                               disabled={!currentProjectId}
                               onClick={() =>
                                 void onApplyTemplate(
@@ -121,16 +130,15 @@ export function LibraryView({
                                   template.template.id,
                                 )
                               }
-                              className="rounded-xl border border-border/60 bg-white/10 px-3 py-2 text-sm text-fg transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               {applyingTemplateKey === templateKey ? "적용 중..." : "적용"}
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       );
                     })}
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
@@ -153,10 +161,11 @@ export function LibraryView({
               {available.map((plugin) => {
                 const Icon = GRAPH_PLUGIN_EMPTY_ICON;
                 return (
-                  <div
+                  <Card
                     key={plugin.pluginId}
-                    className="rounded-[24px] border border-border/60 bg-[#161a21] p-5"
+                    className="rounded-[24px] border border-border/60 bg-[#161a21]"
                   >
+                    <CardContent className="pt-4">
                     <div className="flex items-start gap-4">
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-border/60 bg-white/5 text-fg/70">
                         <Icon className="h-5 w-5" />
@@ -165,27 +174,29 @@ export function LibraryView({
                         <p className="text-lg font-semibold text-fg">{plugin.name}</p>
                         <p className="mt-1 text-sm text-fg/55">{plugin.summary}</p>
                         <div className="mt-4 flex items-center justify-between gap-3">
-                          <div className="flex flex-wrap gap-2 text-[11px] text-fg/45">
-                            <span>v{plugin.version}</span>
-                            <span>{plugin.releaseTag}</span>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant="outline">v{plugin.version}</Badge>
+                            <Badge variant="outline">{plugin.releaseTag}</Badge>
                           </div>
-                          <button
+                          <Button
                             type="button"
+                            size="sm"
+                            variant="secondary"
                             onClick={() => void onInstall(plugin.pluginId)}
-                            className="rounded-xl border border-border/60 bg-white/10 px-3 py-2 text-sm text-fg transition hover:bg-white/15"
                           >
                             {installingPluginId === plugin.pluginId ? "설치 중..." : "설치"}
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 );
               })}
             </div>
           )}
         </section>
       </div>
-    </div>
+    </ScrollArea>
   );
 }

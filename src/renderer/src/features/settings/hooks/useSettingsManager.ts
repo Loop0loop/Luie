@@ -13,7 +13,7 @@ export function useSettingsManager() {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<SettingsTabId>("appearance");
 
-  const editorPreferences = useSettingsEditorPreferences(t);
+  const editorPreferences = useSettingsEditorPreferences();
   const menuBarSettings = useSettingsMenuBar(t, showToast);
   const shortcutSettings = useSettingsShortcuts(activeTab, t, showToast);
   const recoverySettings = useSettingsRecovery(t, showToast);

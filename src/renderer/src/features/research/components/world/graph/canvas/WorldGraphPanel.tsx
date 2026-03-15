@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { RefreshCcw } from "lucide-react";
+import { Badge } from "@renderer/components/ui/badge";
+import { Button } from "@renderer/components/ui/button";
 import { useGraphPluginStore } from "@renderer/features/research/stores/graphPluginStore";
 import { useMemoStore } from "@renderer/features/research/stores/memoStore";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
@@ -50,6 +52,7 @@ export function WorldGraphPanel() {
 
   const createGraphNode = useWorldBuildingStore((state) => state.createGraphNode);
   const updateGraphNode = useWorldBuildingStore((state) => state.updateGraphNode);
+  const updateGraphNodePosition = useWorldBuildingStore((state) => state.updateGraphNodePosition);
   const loadGraph = useWorldBuildingStore((state) => state.loadGraph);
 
   const addNote = useMemoStore((state) => state.addNote);
@@ -256,25 +259,27 @@ export function WorldGraphPanel() {
               <h1 className="text-lg font-semibold text-fg">
                 {currentProjectTitle}
               </h1>
-              <span className="rounded-full border border-border/60 px-2 py-1 text-[11px] text-fg/55">
+              <Badge variant="outline">
                 {activeTabMeta?.label}
-              </span>
+              </Badge>
+              <Badge variant="secondary">{graphNodes.length} nodes</Badge>
             </div>
           </div>
 
-          <button
+          <Button
             type="button"
+            size="sm"
+            variant="outline"
             onClick={() => {
               if (!projectId) {
                 return;
               }
               void loadGraph(projectId);
             }}
-            className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-white/10 px-3 py-2 text-sm text-fg transition hover:bg-white/15"
           >
             <RefreshCcw className="h-4 w-4" />
             새로고침
-          </button>
+          </Button>
         </header>
 
         {graphError ? (
@@ -295,6 +300,13 @@ export function WorldGraphPanel() {
                 edges={graphEdges}
                 selectedNodeId={effectiveSelectedNodeId}
                 onSelectNode={setSelectedNodeId}
+                onNodePositionCommit={({ id, x, y }) => {
+                  void updateGraphNodePosition({
+                    id,
+                    positionX: x,
+                    positionY: y,
+                  });
+                }}
               />
             ) : null}
 

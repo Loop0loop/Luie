@@ -1,4 +1,8 @@
 import type { ScrapMemo } from "@shared/types";
+import { Button } from "@renderer/components/ui/button";
+import { Card, CardContent } from "@renderer/components/ui/card";
+import { Input } from "@renderer/components/ui/input";
+import { ScrollArea } from "@renderer/components/ui/scroll-area";
 
 type NotesViewProps = {
   currentProjectId: string | null;
@@ -57,12 +61,13 @@ export function NotesView({
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-[#0f1319]">
+    <ScrollArea className="h-full bg-[#0f1319]">
       <div className="mx-auto flex max-w-4xl flex-col px-10 py-10">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <div className="flex flex-1 flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-[#161a21] px-4 py-3">
+          <Card className="flex-1 border-white/10 bg-[#161a21]">
+            <CardContent className="flex flex-wrap items-center gap-2 pt-4">
             <span className="text-xs text-fg/45">태그</span>
-            <input
+            <Input
               value={activeNote.tags.join(", ")}
               onChange={(event) =>
                 onUpdateNote(activeNote.id, {
@@ -72,35 +77,36 @@ export function NotesView({
                     .filter(Boolean),
                 })
               }
-              className="min-w-[240px] flex-1 bg-transparent text-sm text-fg outline-none"
+              className="min-w-[240px] flex-1 border-0 bg-transparent shadow-none ring-0 focus-visible:ring-0"
               placeholder="예: 떡밥, 시즌1, 설정"
             />
-          </div>
+            </CardContent>
+          </Card>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
+            <Button
               onClick={onSaveNow}
-              className="rounded-xl border border-border/60 bg-white/10 px-4 py-2 text-sm text-fg transition hover:bg-white/15"
+              size="sm"
+              variant="secondary"
             >
               {notesSaving ? "저장 중..." : "지금 저장"}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
               onClick={() => onDeleteNote(activeNote.id)}
-              className="rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-2 text-sm text-red-200 transition hover:bg-red-500/15"
+              size="sm"
+              variant="destructive"
             >
               삭제
-            </button>
+            </Button>
           </div>
         </div>
 
-        <input
+        <Input
           value={activeNote.title}
           onChange={(event) =>
             onUpdateNote(activeNote.id, { title: event.target.value })
           }
-          className="border-none bg-transparent pb-4 text-4xl font-semibold tracking-tight text-fg outline-none"
+          className="h-auto border-0 bg-transparent px-0 pb-4 text-4xl font-semibold tracking-tight text-fg shadow-none ring-0 focus-visible:ring-0"
           placeholder="노트 제목"
         />
 
@@ -113,6 +119,6 @@ export function NotesView({
           placeholder="설정, 메모, 장면 아이디어를 자유롭게 적으세요."
         />
       </div>
-    </div>
+    </ScrollArea>
   );
 }

@@ -1,4 +1,7 @@
 import type { WorldGraphNode } from "@shared/types";
+import { Badge } from "@renderer/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@renderer/components/ui/card";
+import { ScrollArea } from "@renderer/components/ui/scroll-area";
 
 type TimelineViewProps = {
   events: WorldGraphNode[];
@@ -29,7 +32,8 @@ export function TimelineView({
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-[#0f1319] px-10 py-10">
+    <ScrollArea className="h-full bg-[#0f1319]">
+    <div className="px-10 py-10">
       <div className="relative mx-auto max-w-4xl">
         <div className="absolute left-[22px] top-0 h-full w-px bg-white/10" />
         <div className="space-y-5">
@@ -54,29 +58,32 @@ export function TimelineView({
                   {events.indexOf(event) + 1}
                 </span>
 
-                <div
+                <Card
                   className={[
-                    "flex-1 rounded-[24px] border px-5 py-5 transition",
+                    "flex-1 rounded-[24px] border transition",
                     active
                       ? "border-amber-300/35 bg-amber-500/10"
                       : "border-border/60 bg-[#161a21] hover:bg-white/5",
                   ].join(" ")}
                 >
+                  <CardHeader className="pb-0">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-lg font-semibold text-fg">{event.name}</p>
-                    <span className="rounded-full border border-border/60 px-2 py-1 text-[11px] text-fg/55">
-                      {readEventDate(event)}
-                    </span>
+                    <CardTitle className="text-lg text-fg">{event.name}</CardTitle>
+                    <Badge variant="outline">{readEventDate(event)}</Badge>
                   </div>
+                  </CardHeader>
+                  <CardContent>
                   <p className="mt-3 text-sm leading-7 text-fg/62">
                     {event.description?.trim() || "설명이 아직 없습니다."}
                   </p>
-                </div>
+                  </CardContent>
+                </Card>
               </button>
             );
           })}
         </div>
       </div>
     </div>
+    </ScrollArea>
   );
 }

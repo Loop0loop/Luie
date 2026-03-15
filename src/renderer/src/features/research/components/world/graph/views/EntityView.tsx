@@ -1,4 +1,7 @@
 import type { WorldGraphNode } from "@shared/types";
+import { Badge } from "@renderer/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@renderer/components/ui/card";
+import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { ENTITY_TYPE_COLORS } from "../constants";
 
 type EntityViewProps = {
@@ -13,7 +16,8 @@ export function EntityView({
   onSelectNode,
 }: EntityViewProps) {
   return (
-    <div className="h-full overflow-y-auto bg-[#0f1319] px-8 py-8">
+    <ScrollArea className="h-full bg-[#0f1319]">
+    <div className="px-8 py-8">
       {nodes.length === 0 ? (
         <div className="flex h-full items-center justify-center">
           <div className="rounded-[24px] border border-dashed border-border/60 bg-white/5 px-6 py-8 text-sm text-fg/65">
@@ -31,34 +35,38 @@ export function EntityView({
                 key={node.id}
                 type="button"
                 onClick={() => onSelectNode(node.id)}
-                className={[
-                  "rounded-[24px] border p-5 text-left transition",
-                  tone.card,
-                  active ? "ring-2 ring-white/35" : "hover:-translate-y-0.5",
-                ].join(" ")}
+                className="text-left"
               >
-                <div className="flex items-center justify-between gap-3">
-                  <span
-                    className={[
-                      "rounded-full border px-2 py-1 text-[11px]",
-                      tone.chip,
-                    ].join(" ")}
-                  >
-                    {node.entityType}
-                  </span>
-                  <span className="text-[11px] text-fg/45">
-                    {node.subType ?? "기본"}
-                  </span>
-                </div>
-                <p className="mt-4 text-lg font-semibold text-fg">{node.name}</p>
-                <p className="mt-2 line-clamp-4 text-sm leading-7 text-fg/62">
-                  {node.description?.trim() || "설명이 아직 없습니다."}
-                </p>
+                <Card
+                  className={[
+                    "rounded-[24px] border text-left transition",
+                    tone.card,
+                    active ? "ring-2 ring-white/35" : "hover:-translate-y-0.5",
+                  ].join(" ")}
+                >
+                  <CardHeader className="pb-0">
+                    <div className="flex items-center justify-between gap-3">
+                      <Badge variant="outline" className={tone.chip}>
+                        {node.entityType}
+                      </Badge>
+                      <span className="text-[11px] text-fg/45">
+                        {node.subType ?? "기본"}
+                      </span>
+                    </div>
+                    <CardTitle className="text-lg text-fg">{node.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="line-clamp-4 text-sm leading-7 text-fg/62">
+                      {node.description?.trim() || "설명이 아직 없습니다."}
+                    </p>
+                  </CardContent>
+                </Card>
               </button>
             );
           })}
         </div>
       )}
     </div>
+    </ScrollArea>
   );
 }

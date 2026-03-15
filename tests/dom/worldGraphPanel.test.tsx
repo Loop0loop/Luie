@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { act } from "react";
+import type { ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WorldGraphPanel } from "../../src/renderer/src/features/research/components/world/graph/canvas/WorldGraphPanel.js";
@@ -8,6 +9,30 @@ import { useProjectStore } from "../../src/renderer/src/features/project/stores/
 import { useWorldBuildingStore } from "../../src/renderer/src/features/research/stores/worldBuildingStore.js";
 import { useMemoStore } from "../../src/renderer/src/features/research/stores/memoStore.js";
 import { useGraphPluginStore } from "../../src/renderer/src/features/research/stores/graphPluginStore.js";
+
+vi.mock("reactflow", () => ({
+  Handle: () => null,
+  Position: {
+    Top: "top",
+    Bottom: "bottom",
+  },
+  SelectionMode: {
+    Partial: "partial",
+  },
+  BackgroundVariant: {
+    Dots: "dots",
+  },
+  Background: () => null,
+  Controls: () => null,
+  MiniMap: () => null,
+  Panel: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  ReactFlowProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
+  useNodesState: (initialNodes: unknown) => [initialNodes, vi.fn(), vi.fn()],
+  useEdgesState: (initialEdges: unknown) => [initialEdges, vi.fn(), vi.fn()],
+  default: ({ children }: { children?: React.ReactNode }) => (
+    <div data-testid="reactflow">{children}</div>
+  ),
+}));
 
 type ResettableStore = {
   getInitialState: () => unknown;
@@ -136,7 +161,8 @@ describe("WorldGraphPanel", () => {
     });
 
     expect(container.textContent).toContain("Test Project");
-    expect(container.textContent).toContain("Hero");
+    expect(container.textContent).toContain("선택된 엔티티");
+    expect(container.textContent).toContain("Lead character");
 
     const noteButton = Array.from(container.querySelectorAll("button")).find(
       (button) => button.textContent?.trim() === "노트",

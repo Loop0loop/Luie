@@ -1,19 +1,13 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { initI18n } from "@renderer/i18n";
-import { startRendererFontLoading } from "@renderer/app/fontLoader";
 import { setupRenderer } from "@renderer/app/setup";
 import App from "@renderer/app/App";
 import { GlobalErrorBoundary } from "@renderer/shared/error-boundaries/GlobalErrorBoundary";
 import { ToastProvider } from "@shared/ui/Toast";
 import { DialogProvider } from "@shared/ui/DialogProvider";
-import {
-  OBSERVABILITY_EVENT_SCHEMA_VERSION,
-} from "@shared/constants";
-import {
-  createPerformanceTimer,
-  emitOperationalLog,
-} from "@shared/logger";
+import { OBSERVABILITY_EVENT_SCHEMA_VERSION } from "@shared/constants";
+import { createPerformanceTimer, emitOperationalLog } from "@shared/logger";
 import "@renderer/styles/global.css";
 
 const rendererStartupStartedAt = performance.now();
@@ -32,7 +26,8 @@ const logStartup = (message: string, data?: Record<string, unknown>) => {
   });
 };
 
-const elapsedMs = () => Number((performance.now() - rendererStartupStartedAt).toFixed(1));
+const elapsedMs = () =>
+  Number((performance.now() - rendererStartupStartedAt).toFixed(1));
 
 const runBackgroundTask = (label: string, task: () => Promise<unknown>) => {
   const timer = createPerformanceTimer({
@@ -61,10 +56,8 @@ root.render(
         </DialogProvider>
       </ToastProvider>
     </GlobalErrorBoundary>
-  </React.StrictMode>
+  </React.StrictMode>,
 );
-
-startRendererFontLoading(i18nPromise);
 
 logStartup("Renderer root mounted", { elapsedMs: elapsedMs() });
 

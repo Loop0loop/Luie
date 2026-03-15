@@ -50,7 +50,8 @@ export const koBase = {
     },
     section: {
       font: "글꼴 (Font)",
-      optionalFonts: "옵션 폰트 (선택 설치)",
+      optionalFont: "번들 폰트 (선택)",
+      customFont: "사용자 폰트",
       spellcheck: "맞춤법 검사",
       fontSize: "글자 크기",
       lineHeight: "줄 간격",
@@ -58,6 +59,12 @@ export const koBase = {
       uiMode: "UI 모드 (Laboratory)",
       language: "언어",
       menuBar: "메뉴바",
+    },
+    customFont: {
+      description: "시스템에 설치된 폰트의 font-family 이름을 입력하세요.",
+      placeholder: '예: "Noto Sans KR", "프리텐다드"',
+      apply: "적용",
+      active: "사용 중",
     },
     uiMode: {
       description:

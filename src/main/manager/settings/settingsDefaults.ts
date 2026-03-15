@@ -11,7 +11,6 @@ import {
   DEFAULT_AUTO_SAVE_ENABLED,
   DEFAULT_AUTO_SAVE_INTERVAL_MS,
   DEFAULT_EDITOR_FONT_FAMILY,
-  DEFAULT_EDITOR_FONT_PRESET,
   DEFAULT_EDITOR_FONT_SIZE,
   DEFAULT_EDITOR_LINE_HEIGHT,
   DEFAULT_EDITOR_MAX_WIDTH,
@@ -134,7 +133,7 @@ export const normalizeRuntimeSupabaseConfig = (
 export const getDefaultSettings = (): AppSettings => ({
   editor: {
     fontFamily: DEFAULT_EDITOR_FONT_FAMILY,
-    fontPreset: DEFAULT_EDITOR_FONT_PRESET,
+    fontPreset: undefined,
     fontSize: DEFAULT_EDITOR_FONT_SIZE,
     lineHeight: DEFAULT_EDITOR_LINE_HEIGHT,
     maxWidth: DEFAULT_EDITOR_MAX_WIDTH,

@@ -36,8 +36,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     recoveryStatusError,
     syncStatus,
     isSyncBusy,
-    installing,
-    installed,
     isMacOS,
     handleCommitShortcuts,
     handleResetShortcuts,
@@ -45,8 +43,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     shortcutGroups,
     getGroupLabel,
     getGroupIcon,
-    optionalFonts,
-    handleInstallFont,
     handleRefreshRecoveryStatus,
     handleRunRecovery,
     handleConnectGoogle,
@@ -125,12 +121,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 t={t}
                 localFontSize={localFontSize}
                 localLineHeight={localLineHeight}
-                optionalFonts={optionalFonts}
-                installed={installed}
-                installing={installing}
                 onSetLocalFontSize={setLocalFontSize}
                 onSetLocalLineHeight={setLocalLineHeight}
-                onInstallFont={handleInstallFont}
               />
             )}
 

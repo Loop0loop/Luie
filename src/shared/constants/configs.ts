@@ -2,158 +2,147 @@
  * Application config constants
  */
 
-const DEFAULT_APP_NAME = 'Luie'
-const DEFAULT_APP_VERSION = '0.1.0'
+const DEFAULT_APP_NAME = "Luie";
+const DEFAULT_APP_VERSION = "0.1.0";
 
 const readBuildConstant = (value: unknown, fallback: string) => {
-  if (typeof value === 'string' && value.trim().length > 0) {
-    return value
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value;
   }
-  return fallback
-}
+  return fallback;
+};
 
 export const APP_NAME = readBuildConstant(
-  typeof __APP_NAME__ !== 'undefined' ? __APP_NAME__ : undefined,
+  typeof __APP_NAME__ !== "undefined" ? __APP_NAME__ : undefined,
   DEFAULT_APP_NAME,
-)
+);
 
 export const APP_VERSION = readBuildConstant(
-  typeof __APP_VERSION__ !== 'undefined'
+  typeof __APP_VERSION__ !== "undefined"
     ? __APP_VERSION__
-    : typeof process !== 'undefined'
+    : typeof process !== "undefined"
       ? process.env?.npm_package_version
       : undefined,
   DEFAULT_APP_VERSION,
-)
+);
 
-export const DB_NAME = 'luie.db'
-export const CACHE_DB_NAME = 'luie-cache.db'
-export const AUTO_SAVE_INTERVAL = 30000 // 30 seconds
-export const DEFAULT_AUTO_SAVE_INTERVAL_MS = AUTO_SAVE_INTERVAL
-export const DEFAULT_AUTO_SAVE_DEBOUNCE_MS = 1000
-export const AUTO_SAVE_FLUSH_MS = 300
-export const DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS = 30
-export const DEFAULT_AUTO_SAVE_ENABLED = true
-export const AUTO_SAVE_STALE_THRESHOLD_MS = 5 * 60 * 1000
-export const AUTO_SAVE_CLEANUP_INTERVAL_MS = 60 * 1000
-export const AUTO_SAVE_STATUS_RESET_MS = 2000
+export const DB_NAME = "luie.db";
+export const CACHE_DB_NAME = "luie-cache.db";
+export const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
+export const DEFAULT_AUTO_SAVE_INTERVAL_MS = AUTO_SAVE_INTERVAL;
+export const DEFAULT_AUTO_SAVE_DEBOUNCE_MS = 1000;
+export const AUTO_SAVE_FLUSH_MS = 300;
+export const DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS = 30;
+export const DEFAULT_AUTO_SAVE_ENABLED = true;
+export const AUTO_SAVE_STALE_THRESHOLD_MS = 5 * 60 * 1000;
+export const AUTO_SAVE_CLEANUP_INTERVAL_MS = 60 * 1000;
+export const AUTO_SAVE_STATUS_RESET_MS = 2000;
 
 // Emergency / quit-time snapshot constants
-export const EMERGENCY_SNAPSHOT_MAX_LENGTH = 200
-export const EMERGENCY_SNAPSHOT_INTERVAL_MS = 5_000
-export const QUIT_RENDERER_FLUSH_TIMEOUT_MS = 3_000
-export const QUIT_SAVE_TIMEOUT_MS = 10_000
-export const QUIT_EXPORT_SOFT_TIMEOUT_MS = 8_000
-export const QUIT_EXPORT_HARD_TIMEOUT_MS = 20_000
+export const EMERGENCY_SNAPSHOT_MAX_LENGTH = 200;
+export const EMERGENCY_SNAPSHOT_INTERVAL_MS = 5_000;
+export const QUIT_RENDERER_FLUSH_TIMEOUT_MS = 3_000;
+export const QUIT_SAVE_TIMEOUT_MS = 10_000;
+export const QUIT_EXPORT_SOFT_TIMEOUT_MS = 8_000;
+export const QUIT_EXPORT_HARD_TIMEOUT_MS = 20_000;
 
-export const LOG_BATCH_SIZE = 20
-export const LOG_FLUSH_MS = 500
+export const LOG_BATCH_SIZE = 20;
+export const LOG_FLUSH_MS = 500;
 
-export const IPC_DEFAULT_TIMEOUT_MS = 15000
-export const IPC_LONG_TIMEOUT_MS = 60000
+export const IPC_DEFAULT_TIMEOUT_MS = 15000;
+export const IPC_LONG_TIMEOUT_MS = 60000;
 
-export const MIN_CHAPTER_TITLE_LENGTH = 1
-export const MAX_CHAPTER_TITLE_LENGTH = 200
+export const MIN_CHAPTER_TITLE_LENGTH = 1;
+export const MAX_CHAPTER_TITLE_LENGTH = 200;
 
-export const SNAPSHOT_MAX_COUNT = 2000 // Maximum number of snapshots per project
-export const SNAPSHOT_INTERVAL_MS = 60 * 1000
-export const SNAPSHOT_KEEP_COUNT = 2000
-export const SNAPSHOT_FILE_KEEP_COUNT = 50
-export const DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT = 2000
-export const SNAPSHOT_MIN_CONTENT_LENGTH = 1
-export const SNAPSHOT_MIN_CHANGE_RATIO = 0.0
-export const SNAPSHOT_MIN_CHANGE_ABSOLUTE = 30
-export const SEARCH_CONTEXT_RADIUS = 50
-export const AUTO_EXTRACT_DEBOUNCE_MS = 2000
-export const PACKAGE_EXPORT_DEBOUNCE_MS = 5000
-export const EDITOR_STYLE_APPLY_DEBOUNCE_MS = 300
-export const EDITOR_AUTOSAVE_DEBOUNCE_MS = 2000
-export const DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS = 500
-export const RESIZABLE_PANE_MIN_RIGHT_WIDTH = 300
-export const RESIZABLE_PANE_MAX_RIGHT_WIDTH = 800
-export const RESIZABLE_PANE_DEFAULT_RIGHT_WIDTH = 400
+export const SNAPSHOT_MAX_COUNT = 2000; // Maximum number of snapshots per project
+export const SNAPSHOT_INTERVAL_MS = 60 * 1000;
+export const SNAPSHOT_KEEP_COUNT = 2000;
+export const SNAPSHOT_FILE_KEEP_COUNT = 50;
+export const DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT = 2000;
+export const SNAPSHOT_MIN_CONTENT_LENGTH = 1;
+export const SNAPSHOT_MIN_CHANGE_RATIO = 0.0;
+export const SNAPSHOT_MIN_CHANGE_ABSOLUTE = 30;
+export const SEARCH_CONTEXT_RADIUS = 50;
+export const AUTO_EXTRACT_DEBOUNCE_MS = 2000;
+export const PACKAGE_EXPORT_DEBOUNCE_MS = 5000;
+export const EDITOR_STYLE_APPLY_DEBOUNCE_MS = 300;
+export const EDITOR_AUTOSAVE_DEBOUNCE_MS = 2000;
+export const DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS = 500;
+export const RESIZABLE_PANE_MIN_RIGHT_WIDTH = 300;
+export const RESIZABLE_PANE_MAX_RIGHT_WIDTH = 800;
+export const RESIZABLE_PANE_DEFAULT_RIGHT_WIDTH = 400;
 
-export const WINDOW_DEFAULT_WIDTH = 1400
-export const WINDOW_DEFAULT_HEIGHT = 900
-export const WINDOW_MIN_WIDTH = 1000
-export const WINDOW_MIN_HEIGHT = 600
-export const WINDOW_TRAFFIC_LIGHT_X = 16
-export const WINDOW_TRAFFIC_LIGHT_Y = 16
+export const WINDOW_DEFAULT_WIDTH = 1400;
+export const WINDOW_DEFAULT_HEIGHT = 900;
+export const WINDOW_MIN_WIDTH = 1000;
+export const WINDOW_MIN_HEIGHT = 600;
+export const WINDOW_TRAFFIC_LIGHT_X = 16;
+export const WINDOW_TRAFFIC_LIGHT_Y = 16;
 
-export const DEV_SERVER_URL = 'http://localhost:5173'
+export const DEV_SERVER_URL = "http://localhost:5173";
 
-export const DEFAULT_UI_VIEW = 'template'
-export const DEFAULT_UI_CONTEXT_TAB = 'synopsis'
-export const DEFAULT_UI_RESEARCH_TAB = 'character'
-export const DEFAULT_UI_RIGHT_PANEL_TYPE = 'research'
-export const DEFAULT_UI_SPLIT_RATIO = 0.62
-export const DEFAULT_UI_SPLIT_VIEW_ENABLED = false
-export const DEFAULT_UI_SIDEBAR_OPEN = true
-export const DEFAULT_UI_CONTEXT_OPEN = false
+export const DEFAULT_UI_VIEW = "template";
+export const DEFAULT_UI_CONTEXT_TAB = "synopsis";
+export const DEFAULT_UI_RESEARCH_TAB = "character";
+export const DEFAULT_UI_RIGHT_PANEL_TYPE = "research";
+export const DEFAULT_UI_SPLIT_RATIO = 0.62;
+export const DEFAULT_UI_SPLIT_VIEW_ENABLED = false;
+export const DEFAULT_UI_SIDEBAR_OPEN = true;
+export const DEFAULT_UI_CONTEXT_OPEN = false;
 
-export const SUGGESTION_MAX_ITEMS = 10
-export const SUGGESTION_POPUP_Z_INDEX = 1000
+export const SUGGESTION_MAX_ITEMS = 10;
+export const SUGGESTION_POPUP_Z_INDEX = 1000;
 
-export const DEFAULT_EDITOR_FONT_FAMILY = "sans";
-export const DEFAULT_EDITOR_FONT_PRESET = "inter";
+export const DEFAULT_EDITOR_FONT_FAMILY = "system-ui" as const;
 export const DEFAULT_EDITOR_FONT_SIZE = 16;
 export const DEFAULT_EDITOR_LINE_HEIGHT = 1.6;
 export const DEFAULT_EDITOR_MAX_WIDTH = 800;
-export const DEFAULT_EDITOR_THEME = "light";
-export const DEFAULT_EDITOR_THEME_TEMP = "neutral";
-export const DEFAULT_EDITOR_THEME_CONTRAST = "soft";
-export const DEFAULT_EDITOR_THEME_ACCENT = "blue";
-export const DEFAULT_EDITOR_THEME_TEXTURE = true;
+export const DEFAULT_EDITOR_THEME = "light" as const;
+export const DEFAULT_EDITOR_THEME_TEMP = "neutral" as const;
+export const DEFAULT_EDITOR_THEME_CONTRAST = "soft" as const;
+export const DEFAULT_EDITOR_THEME_ACCENT = "blue" as const;
+export const DEFAULT_EDITOR_THEME_TEXTURE = true as const;
 
-export const EDITOR_TOOLBAR_FONT_STEP = 1
-export const EDITOR_TOOLBAR_FONT_MIN = 10
+export const EDITOR_TOOLBAR_FONT_STEP = 1;
+export const EDITOR_TOOLBAR_FONT_MIN = 10;
 
 // Editor layout/ruler geometry
-export const INCH_PX = 96
-export const EDITOR_A4_PAGE_WIDTH_PX = 794
-export const EDITOR_A4_PAGE_HEIGHT_PX = 1123
-export const EDITOR_RULER_HEIGHT_PX = 24
-export const EDITOR_RULER_DEFAULT_MARGIN_LEFT_PX = INCH_PX
-export const EDITOR_RULER_DEFAULT_MARGIN_RIGHT_PX = INCH_PX
-export const EDITOR_PAGE_VERTICAL_PADDING_PX = INCH_PX
-export const EDITOR_RULER_MIN_MARGIN_PX = 24
-export const EDITOR_RULER_MIN_BODY_WIDTH_PX = 200
-export const EDITOR_WINDOW_BAR_HEIGHT_PX = 40
+export const INCH_PX = 96;
+export const EDITOR_A4_PAGE_WIDTH_PX = 794;
+export const EDITOR_A4_PAGE_HEIGHT_PX = 1123;
+export const EDITOR_RULER_HEIGHT_PX = 24;
+export const EDITOR_RULER_DEFAULT_MARGIN_LEFT_PX = INCH_PX;
+export const EDITOR_RULER_DEFAULT_MARGIN_RIGHT_PX = INCH_PX;
+export const EDITOR_PAGE_VERTICAL_PADDING_PX = INCH_PX;
+export const EDITOR_RULER_MIN_MARGIN_PX = 24;
+export const EDITOR_RULER_MIN_BODY_WIDTH_PX = 200;
+export const EDITOR_WINDOW_BAR_HEIGHT_PX = 40;
 
 // Interaction timings
-export const SIDEBAR_RESIZE_COMMIT_IDLE_MS = 140
-export const TERM_DRAG_COMMIT_TIMEOUT_MS = 8000
+export const SIDEBAR_RESIZE_COMMIT_IDLE_MS = 140;
+export const TERM_DRAG_COMMIT_TIMEOUT_MS = 8000;
 
-export const EDITOR_FONT_FAMILIES = ['serif', 'sans', 'mono'] as const
-export const EDITOR_FONT_PRESETS = [
-	'default',
-	'lora',
-	'bitter',
-	'source-serif',
-	'montserrat',
-	'nunito-sans',
-	'victor-mono',
-] as const
-export const EDITOR_THEMES = ['light', 'dark', 'sepia'] as const
+export const EDITOR_THEMES = ["light", "dark", "sepia"] as const;
 
 // Character Group Colors (Obsiwiki style)
 export const CHARACTER_GROUP_COLORS: Record<string, string> = {
-	Main: "#F59E0B", // Gold
-	Support: "#8B5CF6", // Purple
-	Villain: "#EF4444", // Red
-	Extra: "#6B7280", // Gray
-	Uncategorized: "#10B981", // Green
-}
+  Main: "#F59E0B", // Gold
+  Support: "#8B5CF6", // Purple
+  Villain: "#EF4444", // Red
+  Extra: "#6B7280", // Gray
+  Uncategorized: "#10B981", // Green
+};
 
 export const EVENT_GROUP_COLORS: Record<string, string> = {
-	"Main Event": "#EF4444", // Red
-	"Background Info": "#8B5CF6", // Purple
-	"Uncategorized": "#10B981", // Green
-}
+  "Main Event": "#EF4444", // Red
+  "Background Info": "#8B5CF6", // Purple
+  Uncategorized: "#10B981", // Green
+};
 
 export const FACTION_GROUP_COLORS: Record<string, string> = {
-	"Kingdom": "#F59E0B", // Gold
-	"Guild": "#8B5CF6", // Purple
-	"Cult": "#EF4444", // Red
-	"Uncategorized": "#10B981", // Green
-}
+  Kingdom: "#F59E0B", // Gold
+  Guild: "#8B5CF6", // Purple
+  Cult: "#EF4444", // Red
+  Uncategorized: "#10B981", // Green
+};

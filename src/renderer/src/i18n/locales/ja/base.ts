@@ -50,7 +50,8 @@ export const jaBase = {
     },
     section: {
       font: "フォント (Font)",
-      optionalFonts: "オプションフォント",
+      optionalFont: "バンドルフォント (オプション)",
+      customFont: "カスタムフォント",
       spellcheck: "スペルチェック",
       fontSize: "文字サイズ",
       lineHeight: "行間",
@@ -58,6 +59,13 @@ export const jaBase = {
       uiMode: "UIモード (Laboratory)",
       language: "言語",
       menuBar: "メニューバー",
+    },
+    customFont: {
+      description:
+        "システムにインストールされたフォントのfont-family名を入力してください。",
+      placeholder: '例: "Noto Sans JP", "ヒラギノ角ゴ ProN"',
+      apply: "適用",
+      active: "使用中",
     },
     uiMode: {
       description:
@@ -145,7 +153,8 @@ export const jaBase = {
       },
     },
     spellcheck: {
-      description: "Electron 内蔵のスペルチェック下線と候補表示を切り替えます。",
+      description:
+        "Electron 内蔵のスペルチェック下線と候補表示を切り替えます。",
       on: "オン",
       off: "オフ",
     },

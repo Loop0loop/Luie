@@ -50,7 +50,8 @@ export const enBase = {
     },
     section: {
       font: "Font",
-      optionalFonts: "Optional Fonts",
+      optionalFont: "Optional Bundled Font",
+      customFont: "Custom Font",
       spellcheck: "Spell Check",
       fontSize: "Font Size",
       lineHeight: "Line Height",
@@ -58,6 +59,13 @@ export const enBase = {
       uiMode: "UI Mode (Laboratory)",
       language: "Language",
       menuBar: "Menu Bar",
+    },
+    customFont: {
+      description:
+        "Enter the font-family name of a font installed on your system.",
+      placeholder: 'e.g., "Noto Sans KR", "Pretendard"',
+      apply: "Apply",
+      active: "Active",
     },
     uiMode: {
       description: "Change the editor toolbar and layout to a familiar style.",
@@ -143,7 +151,8 @@ export const enBase = {
       },
     },
     spellcheck: {
-      description: "Turn Electron's built-in spellcheck underlines and suggestions on or off.",
+      description:
+        "Turn Electron's built-in spellcheck underlines and suggestions on or off.",
       on: "On",
       off: "Off",
     },

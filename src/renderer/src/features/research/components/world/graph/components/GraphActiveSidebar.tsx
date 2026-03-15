@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { Plus, Save } from "lucide-react";
 import type { ScrapMemo, WorldGraphNode } from "@shared/types";
+import { Badge } from "@renderer/components/ui/badge";
+import { Button } from "@renderer/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@renderer/components/ui/card";
+import { Input } from "@renderer/components/ui/input";
+import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { GRAPH_CREATE_PRESETS, GRAPH_TAB_ITEMS } from "../constants";
 import type { GraphSurfaceTab } from "../types";
 
@@ -46,21 +51,21 @@ function EntityEditor({
   }
 
   return (
-    <div className="space-y-3 rounded-2xl border border-border/60 bg-white/5 p-4">
+      <div className="space-y-3 rounded-2xl border border-border/60 bg-white/5 p-4">
       <div>
         <p className="mb-2 text-[11px] uppercase tracking-[0.24em] text-fg/45">
           선택된 엔티티
         </p>
-        <span className="rounded-full border border-border/60 px-2 py-1 text-[11px] text-fg/70">
+        <Badge variant="outline">
           {node.entityType}
-        </span>
+        </Badge>
       </div>
       <label className="block">
         <span className="mb-2 block text-xs text-fg/55">이름</span>
-        <input
+        <Input
           value={name}
           onChange={(event) => setName(event.target.value)}
-          className="w-full rounded-xl border border-border/60 bg-[#0d1015] px-3 py-2 text-sm text-fg outline-none ring-0"
+          className="border-border/60 bg-[#0d1015]"
         />
       </label>
       <label className="block">
@@ -71,14 +76,15 @@ function EntityEditor({
           className="min-h-[120px] w-full rounded-xl border border-border/60 bg-[#0d1015] px-3 py-2 text-sm text-fg outline-none ring-0"
         />
       </label>
-      <button
+      <Button
         type="button"
+        size="sm"
+        variant="secondary"
         onClick={() => onSave({ name, description })}
-        className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-white/10 px-3 py-2 text-sm text-fg transition hover:bg-white/15"
       >
         <Save className="h-4 w-4" />
         저장
-      </button>
+      </Button>
     </div>
   );
 }
@@ -110,26 +116,28 @@ export function GraphActiveSidebar({
         <p className="mt-2 text-sm text-fg/60">{activeMeta?.description}</p>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <ScrollArea className="flex-1">
+      <div className="space-y-4 px-4 py-4">
         {activeTab === "canvas" ? (
           <div className="space-y-5">
-            <div>
-              <p className="mb-3 text-[11px] uppercase tracking-[0.24em] text-fg/45">
-                빠른 생성
-              </p>
-              <div className="grid grid-cols-2 gap-2">
+            <Card className="border-white/10 bg-white/5">
+              <CardHeader>
+                <CardTitle className="text-sm">빠른 생성</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-2 gap-2">
                 {GRAPH_CREATE_PRESETS.map((preset) => (
-                  <button
+                  <Button
                     key={`${preset.entityType}:${preset.subType ?? "base"}`}
                     type="button"
+                    size="sm"
+                    variant="outline"
                     onClick={() => onCreatePreset(preset.entityType, preset.subType)}
-                    className="rounded-2xl border border-border/60 bg-white/5 px-3 py-3 text-left text-sm text-fg transition hover:bg-white/10"
                   >
                     {preset.label}
-                  </button>
+                  </Button>
                 ))}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             <EntityEditor
               key={selectedNode?.id ?? "empty-node-editor"}
@@ -141,14 +149,15 @@ export function GraphActiveSidebar({
 
         {activeTab === "timeline" ? (
           <div className="space-y-4">
-            <button
+            <Button
               type="button"
+              size="sm"
+              variant="secondary"
               onClick={() => onCreatePreset("Event")}
-              className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-white/10 px-3 py-2 text-sm text-fg transition hover:bg-white/15"
             >
               <Plus className="h-4 w-4" />
               새 사건
-            </button>
+            </Button>
             <div className="space-y-2">
               {timelineNodes.map((node) => (
                 <button
@@ -179,14 +188,15 @@ export function GraphActiveSidebar({
 
         {activeTab === "notes" ? (
           <div className="space-y-4">
-            <button
+            <Button
               type="button"
+              size="sm"
+              variant="secondary"
               onClick={onCreateNote}
-              className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-white/10 px-3 py-2 text-sm text-fg transition hover:bg-white/15"
             >
               <Plus className="h-4 w-4" />
               새 노트
-            </button>
+            </Button>
             <div className="space-y-2">
               {notes.map((note) => (
                 <button
@@ -251,32 +261,39 @@ export function GraphActiveSidebar({
         {activeTab === "library" ? (
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-2xl border border-border/60 bg-white/5 px-3 py-3">
+              <Card className="border-white/10 bg-white/5">
+                <CardContent className="px-3 pt-4">
                 <p className="text-[11px] text-fg/45">설치</p>
                 <p className="mt-1 text-lg font-semibold text-fg">
                   {pluginSummary.installedCount}
                 </p>
-              </div>
-              <div className="rounded-2xl border border-border/60 bg-white/5 px-3 py-3">
+                </CardContent>
+              </Card>
+              <Card className="border-white/10 bg-white/5">
+                <CardContent className="px-3 pt-4">
                 <p className="text-[11px] text-fg/45">카탈로그</p>
                 <p className="mt-1 text-lg font-semibold text-fg">
                   {pluginSummary.catalogCount}
                 </p>
-              </div>
-              <div className="rounded-2xl border border-border/60 bg-white/5 px-3 py-3">
+                </CardContent>
+              </Card>
+              <Card className="border-white/10 bg-white/5">
+                <CardContent className="px-3 pt-4">
                 <p className="text-[11px] text-fg/45">템플릿</p>
                 <p className="mt-1 text-lg font-semibold text-fg">
                   {pluginSummary.templateCount}
                 </p>
-              </div>
+                </CardContent>
+              </Card>
             </div>
-            <button
+            <Button
               type="button"
+              size="sm"
+              variant="outline"
               onClick={pluginSummary.onReload}
-              className="rounded-xl border border-border/60 bg-white/10 px-3 py-2 text-sm text-fg transition hover:bg-white/15"
             >
               {pluginSummary.isLoading ? "불러오는 중..." : "플러그인 새로고침"}
-            </button>
+            </Button>
             {pluginSummary.error ? (
               <div className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-4 text-sm text-red-200">
                 {pluginSummary.error}
@@ -285,6 +302,7 @@ export function GraphActiveSidebar({
           </div>
         ) : null}
       </div>
+      </ScrollArea>
     </aside>
   );
 }

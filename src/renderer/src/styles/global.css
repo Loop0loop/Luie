@@ -167,10 +167,10 @@
 
   /* Typography */
   --font-sans:
-    "Inter Variable", "Inter", "Noto Sans KR Variable", -apple-system,
-    BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Hiragino Sans",
-    "Yu Gothic", "Meiryo", "Pretendard", "Segoe UI", Roboto, sans-serif;
-  --font-serif: "Merriweather", "Noto Serif KR", serif;
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --font-serif:
+    "Merriweather", Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     "Courier New", monospace;
