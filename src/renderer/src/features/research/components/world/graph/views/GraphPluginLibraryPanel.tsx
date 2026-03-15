@@ -1,7 +1,6 @@
 import { useDialog } from "@shared/ui/useDialog";
 import { useToast } from "@shared/ui/ToastContext";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
-import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
 import { GraphPluginCatalogSection } from "./plugin/GraphPluginCatalogSection";
 import { GraphPluginInstalledSection } from "./plugin/GraphPluginInstalledSection";
 import { useGraphPluginLibraryData } from "./plugin/useGraphPluginLibraryData";
@@ -96,8 +95,6 @@ export function GraphPluginLibraryPanel({
     showToast("그래프 템플릿을 적용했습니다.", "success");
   };
 
-  const activeLibrarySection = useGraphIdeStore((state) => state.activeLibrarySection);
-
   return (
     <div className="space-y-6">
       {error ? (
@@ -106,30 +103,27 @@ export function GraphPluginLibraryPanel({
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-5">
-        {activeLibrarySection === "installed" ? (
-          <GraphPluginInstalledSection
-            applyingTemplateKey={applyingTemplateKey}
-            installed={installed}
-            templates={templates}
-            uninstallingPluginId={uninstallingPluginId}
-            onApply={(pluginId, templateId, title) => {
-              void handleApply(pluginId, templateId, title);
-            }}
-            onUninstall={(pluginId, pluginName) => {
-              void handleUninstall(pluginId, pluginName);
-            }}
-          />
-        ) : (
-          <GraphPluginCatalogSection
-            availablePlugins={availablePlugins}
-            installingPluginId={installingPluginId}
-            isLoading={isLoading}
-            onInstall={(pluginId) => {
-              void handleInstall(pluginId);
-            }}
-          />
-        )}
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr),minmax(320px,0.9fr)]">
+        <GraphPluginInstalledSection
+          applyingTemplateKey={applyingTemplateKey}
+          installed={installed}
+          templates={templates}
+          uninstallingPluginId={uninstallingPluginId}
+          onApply={(pluginId, templateId, title) => {
+            void handleApply(pluginId, templateId, title);
+          }}
+          onUninstall={(pluginId, pluginName) => {
+            void handleUninstall(pluginId, pluginName);
+          }}
+        />
+        <GraphPluginCatalogSection
+          availablePlugins={availablePlugins}
+          installingPluginId={installingPluginId}
+          isLoading={isLoading}
+          onInstall={(pluginId) => {
+            void handleInstall(pluginId);
+          }}
+        />
       </div>
     </div>
   );

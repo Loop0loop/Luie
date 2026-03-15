@@ -222,7 +222,7 @@ describe("GraphPluginLibraryPanel", () => {
 
     await flushPromises();
 
-    expect(view.container.textContent).toContain("Installed Plugins");
+    expect(view.container.textContent).toContain("Installed");
     expect(view.container.textContent).toContain("Catalog");
     expect(view.container.textContent).toContain("Foundation Graph");
 

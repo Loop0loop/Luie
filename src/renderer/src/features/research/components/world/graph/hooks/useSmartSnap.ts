@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { type Node } from "reactflow";
 
 export type SnapLineType = "x" | "y" | "center-x" | "center-y";
@@ -27,16 +27,112 @@ const triggerHapticFeedback = () => {
   if (typeof navigator !== "undefined" && navigator.vibrate) {
     navigator.vibrate(5);
   }
-  if (typeof window !== "undefined" && (window as any).api?.window?.hapticFeedback) {
+  const appApi =
+    typeof window !== "undefined"
+      ? (window as Window & {
+          api?: {
+            window?: {
+              hapticFeedback?: () => void;
+            };
+          };
+        }).api
+      : undefined;
+  if (appApi?.window?.hapticFeedback) {
     try {
-      (window as any).api.window.hapticFeedback();
-    } catch {}
+      appApi.window.hapticFeedback();
+    } catch {
+      return;
+    }
   }
 };
 
-export const useSmartSnap = (nodes: Node[]) => {
+const areSnapLinesEqual = (left: SnapLine[], right: SnapLine[]) =>
+  left.length === right.length &&
+  left.every((item, index) => {
+    const candidate = right[index];
+    return (
+      item.id === candidate?.id &&
+      item.type === candidate.type &&
+      item.value === candidate.value &&
+      item.start === candidate.start &&
+      item.end === candidate.end
+    );
+  });
+
+const areSnapGapsEqual = (left: SnapGap[], right: SnapGap[]) =>
+  left.length === right.length &&
+  left.every((item, index) => {
+    const candidate = right[index];
+    return (
+      item.id === candidate?.id &&
+      item.axis === candidate.axis &&
+      item.gapValue === candidate.gapValue &&
+      item.startX === candidate.startX &&
+      item.startY === candidate.startY &&
+      item.endX === candidate.endX &&
+      item.endY === candidate.endY
+    );
+  });
+
+export const useSmartSnap = (
+  nodes: Node[],
+  setNodes: React.Dispatch<React.SetStateAction<Node[]>>,
+) => {
   const [snapLines, setSnapLines] = useState<SnapLine[]>([]);
   const [snapGaps, setSnapGaps] = useState<SnapGap[]>([]);
+  const nodesRef = useRef(nodes);
+  const animationFrameRef = useRef<number | null>(null);
+  const pendingPositionRef = useRef<{ id: string; x: number; y: number } | null>(null);
+  const lastFeedbackSignatureRef = useRef("");
+
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
+
+  const flushDraggedPosition = useCallback(() => {
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    const pending = pendingPositionRef.current;
+    pendingPositionRef.current = null;
+    if (!pending) return;
+
+    setNodes((currentNodes) => {
+      let changed = false;
+      const nextNodes = currentNodes.map((node) => {
+        if (node.id !== pending.id) {
+          return node;
+        }
+        if (node.position.x === pending.x && node.position.y === pending.y) {
+          return node;
+        }
+        changed = true;
+        return {
+          ...node,
+          position: { x: pending.x, y: pending.y },
+        };
+      });
+      return changed ? nextNodes : currentNodes;
+    });
+  }, [setNodes]);
+
+  const scheduleDraggedPositionFlush = useCallback(() => {
+    if (animationFrameRef.current !== null) return;
+    animationFrameRef.current = requestAnimationFrame(() => {
+      animationFrameRef.current = null;
+      flushDraggedPosition();
+    });
+  }, [flushDraggedPosition]);
+
+  useEffect(
+    () => () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    },
+    [],
+  );
 
   const handleNodeDrag = useCallback(
     (_: React.MouseEvent, draggedNode: Node) => {
@@ -50,7 +146,13 @@ export const useSmartSnap = (nodes: Node[]) => {
 
       const lines: SnapLine[] = [];
       const gaps: SnapGap[] = [];
-      const otherNodes = nodes.filter(n => n.id !== draggedNode.id && n.width && n.height && !n.hidden);
+      const otherNodes = nodesRef.current.filter(
+        (node) =>
+          node.id !== draggedNode.id &&
+          node.width &&
+          node.height &&
+          !node.hidden,
+      );
 
       // --- 1. Basic Alignments (Edges & Center) ---
       for (const node of otherNodes) {
@@ -162,28 +264,34 @@ export const useSmartSnap = (nodes: Node[]) => {
         }
       }
 
-      if ((snapped && snapLines.length === 0 && gaps.length === 0) || (snapped && lines.length > snapLines.length) || (snapped && gaps.length > snapGaps.length)) {
+      const nextFeedbackSignature = `${draggedNode.id}:${lines.map((line) => line.id).join("|")}:${gaps.map((gap) => gap.id).join("|")}`;
+      if (snapped && nextFeedbackSignature !== lastFeedbackSignatureRef.current) {
         triggerHapticFeedback();
+        lastFeedbackSignatureRef.current = nextFeedbackSignature;
       }
 
-      setSnapLines(lines);
-      setSnapGaps(gaps); 
-      
+      setSnapLines((current) => (areSnapLinesEqual(current, lines) ? current : lines));
+      setSnapGaps((current) => (areSnapGapsEqual(current, gaps) ? current : gaps));
+
       draggedNode.position.x = newX;
       draggedNode.position.y = newY;
+      pendingPositionRef.current = { id: draggedNode.id, x: newX, y: newY };
+      scheduleDraggedPositionFlush();
     },
-    [nodes, snapLines.length, snapGaps.length]
+    [scheduleDraggedPositionFlush],
   );
 
   const handleNodeDragStop = useCallback(() => {
-    setSnapLines(lines => lines.length > 0 ? [] : lines);
-    setSnapGaps(gaps => gaps.length > 0 ? [] : gaps);
-  }, []);
+    flushDraggedPosition();
+    lastFeedbackSignatureRef.current = "";
+    setSnapLines((lines) => (lines.length > 0 ? [] : lines));
+    setSnapGaps((gaps) => (gaps.length > 0 ? [] : gaps));
+  }, [flushDraggedPosition]);
 
   return {
     snapLines,
     snapGaps,
     handleNodeDrag,
-    handleNodeDragStop
+    handleNodeDragStop,
   };
 };

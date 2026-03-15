@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from "react";
+import { memo, startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Command } from "cmdk";
 import { useReactFlow } from "reactflow";
 import { Plus, Search, Clock, StickyNote } from "lucide-react";
@@ -14,20 +14,32 @@ interface CanvasCommandPaletteProps {
 
 export const CanvasCommandPalette = memo(({ mode, onClose }: CanvasCommandPaletteProps) => {
   const [search, setSearch] = useState("");
-  const allNodes = useWorldBuildingStore((state) => state.graphData?.nodes || []);
+  const deferredSearch = useDeferredValue(search);
+  const allNodes = useWorldBuildingStore((state) => state.graphData?.nodes ?? []);
   const selectNode = useWorldBuildingStore((state) => state.selectNode);
   const reactFlow = useReactFlow();
 
-  // Filter nodes based on mode
-  const targetNodes = allNodes.filter((node) => {
-    if (mode === "Event") return node.entityType === "Event";
-    if (mode === "Note") return node.entityType === "Concept" && String(node.subType) === "Note";
-    return false;
-  });
-
-  const filteredNodes = targetNodes.filter((node) => 
-    node.name.toLowerCase().includes(search.toLowerCase())
+  const targetNodes = useMemo(
+    () =>
+      allNodes.filter((node) => {
+        if (mode === "Event") return node.entityType === "Event";
+        if (mode === "Note") {
+          return node.entityType === "Concept" && String(node.subType) === "Note";
+        }
+        return false;
+      }),
+    [allNodes, mode],
   );
+
+  const filteredNodes = useMemo(() => {
+    const normalizedSearch = deferredSearch.trim().toLowerCase();
+    if (!normalizedSearch) {
+      return targetNodes;
+    }
+    return targetNodes.filter((node) =>
+      node.name.toLowerCase().includes(normalizedSearch),
+    );
+  }, [deferredSearch, targetNodes]);
 
   // Focus input automatically
   useEffect(() => {
@@ -45,8 +57,7 @@ export const CanvasCommandPalette = memo(({ mode, onClose }: CanvasCommandPalett
       entityType: mode === "Event" ? "Event" : "Concept",
       subType: mode === "Note" ? "Note" : undefined,
       instant: true,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
+    });
     onClose();
   };
 
@@ -80,7 +91,11 @@ export const CanvasCommandPalette = memo(({ mode, onClose }: CanvasCommandPalett
             <Command.Input
               autoFocus
               value={search}
-              onValueChange={setSearch}
+              onValueChange={(value) => {
+                startTransition(() => {
+                  setSearch(value);
+                });
+              }}
               placeholder={`${mode === "Event" ? "시간/사건" : "노트"} 검색 또는 생성...`}
               className="flex h-12 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
             />

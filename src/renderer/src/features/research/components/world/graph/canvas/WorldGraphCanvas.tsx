@@ -58,6 +58,8 @@ const edgeTypes = {
   customEdge: CustomEdge,
 };
 
+const WORLD_SUBTYPES = ["Place", "Concept", "Rule", "Item"] as const;
+
 interface WorldGraphCanvasProps {
   nodes: WorldGraphNode[];
   edges: EntityRelation[];
@@ -127,7 +129,10 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
   }, []);
 
   // --- 2. Feature Hooks ---
-  const { snapLines, snapGaps, handleNodeDrag: onSmartNodeDrag, handleNodeDragStop: onSmartNodeDragStop } = useSmartSnap(nodes);
+  const { snapLines, snapGaps, handleNodeDrag: onSmartNodeDrag, handleNodeDragStop: onSmartNodeDragStop } = useSmartSnap(
+    nodes,
+    setNodes,
+  );
 
   const { runNodeDelete, handleDeleteSelection, runRelationDelete } = useCanvasDelete({
     nodes,
@@ -280,14 +285,22 @@ export function WorldGraphCanvas({ nodes: graphNodes, edges: graphEdges }: World
     async (entityType: WorldEntitySourceType, customName?: string, customSubType?: string) => {
       if (!activeProjectId || !createMenu) return;
       setCreateMenu(null);
+      const resolvedSubType =
+        customSubType &&
+        WORLD_SUBTYPES.includes(
+          customSubType as (typeof WORLD_SUBTYPES)[number],
+        )
+          ? (customSubType as (typeof WORLD_SUBTYPES)[number])
+          : entityType === "Place" ||
+              entityType === "Concept" ||
+              entityType === "Rule" ||
+              entityType === "Item"
+            ? entityType
+            : undefined;
       const created = await createGraphNode({
         projectId: activeProjectId,
         entityType,
-        subType: (customSubType as any) || (
-          entityType === "Place" || entityType === "Concept" || entityType === "Rule" || entityType === "Item"
-            ? entityType
-            : undefined
-        ),
+        subType: resolvedSubType,
         name: customName || t("world.graph.canvas.newEntityName", { type: t(`world.graph.entityTypes.${entityType}`, { defaultValue: entityType }) }),
         positionX: createMenu.flowX,
         positionY: createMenu.flowY,

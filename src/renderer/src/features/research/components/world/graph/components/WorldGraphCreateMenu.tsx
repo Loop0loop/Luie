@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
 import type { WorldEntitySourceType } from "@shared/types";
 
@@ -8,7 +8,11 @@ interface WorldGraphCreateMenuProps {
   onCreate: (entityType: WorldEntitySourceType, name?: string, subType?: string) => void;
 }
 
-export function WorldGraphCreateMenu({ left, top, onCreate }: WorldGraphCreateMenuProps) {
+export const WorldGraphCreateMenu = memo(function WorldGraphCreateMenu({
+  left,
+  top,
+  onCreate,
+}: WorldGraphCreateMenuProps) {
   const [name, setName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -46,4 +50,4 @@ export function WorldGraphCreateMenu({ left, top, onCreate }: WorldGraphCreateMe
       />
     </div>
   );
-}
+});

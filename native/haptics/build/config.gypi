@@ -497,14 +497,7 @@
     "xcode_version": "16.0",
     "nodedir": "/Users/user/.nvm/versions/node/v22.22.0",
     "standalone_static_library": 1,
-    "npm_globalconfig": "/Users/user/Library/pnpm/.tools/@pnpm+exe/10.30.3_tmp_26822_0/node_modules/@pnpm/etc/npmrc",
-    "registry": "https://registry.npmjs.org/",
-    "globalconfig": "/Users/user/Library/Preferences/pnpm/rc",
-    "frozen_lockfile": "",
-    "verify_deps_before_run": "false",
-    "engine_strict": "true",
-    "_jsr_registry": "https://npm.jsr.io/",
-    "save_exact": "true",
-    "user_agent": "pnpm/10.30.3 npm/? node/v20.11.1 darwin arm64"
+    "local_prefix": "/Users/user/Luie",
+    "user_agent": "bun/1.3.10 npm/? node/v24.3.0 darwin arm64"
   }
 }

@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { Search, PackageOpen } from "lucide-react";
 import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useGraphIdeStore } from "@renderer/features/research/stores/graphIdeStore";
@@ -11,6 +12,7 @@ export function LibraryMainView() {
   const currentProject = useProjectStore((state) => state.currentItem);
   const activeLibraryTab = useGraphIdeStore((state) => state.activeLibraryTab);
   const activeLibrarySection = useGraphIdeStore((state) => state.activeLibrarySection);
+  const setActiveLibrarySection = useGraphIdeStore((state) => state.setActiveLibrarySection);
   const attachmentPath = getReadableLuieAttachmentPath(currentProject);
 
   const getThemeVars = () => {
@@ -47,29 +49,57 @@ export function LibraryMainView() {
       {/* Decorative Grid Overlay for depth */}
       <div className="absolute inset-0 bg-[url('https://api.system/assets/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] opacity-[0.02] pointer-events-none" />
 
-      <header className="relative flex shrink-0 items-center justify-between border-b border-white/5 px-8 py-6 z-10 backdrop-blur-md bg-background/40 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.5)]">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground drop-shadow-sm">
-              {t("world.graph.library.title", "라이브러리")}
-            </h1>
-            <div className={`rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium uppercase tracking-widest shadow-inner ${theme.text}`}>
-              {activeLibraryTab} MODULES
+      <header className="relative flex shrink-0 flex-col gap-6 border-b border-white/5 px-8 pt-6 pb-0 z-10 backdrop-blur-md bg-background/40 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.5)]">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground drop-shadow-sm">
+                {t("world.graph.library.title", "라이브러리")}
+              </h1>
+              <div className={`rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium uppercase tracking-widest shadow-inner ${theme.text}`}>
+                {activeLibraryTab} MODULES
+              </div>
             </div>
+            <p className="mt-2 text-sm text-muted-foreground/80">
+              모듈을 탐색하고 설치하여 월드 환경을 확장하세요.
+            </p>
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            모듈을 탐색하고 설치하여 월드 환경을 확장하세요.
-          </p>
+          <div className="rounded-[14px] border border-white/10 bg-black/20 px-4 py-3 text-sm text-muted-foreground shadow-inner backdrop-blur-md">
+            <p className="font-medium text-foreground drop-shadow-sm">
+              {currentProject?.title ?? t("world.graph.library.noProject", "프로젝트 없음")}
+            </p>
+            <p className="mt-1 opacity-80 text-[12px]">
+              {attachmentPath
+                ? t("world.graph.library.attachment", { defaultValue: `.luie 첨부: ${attachmentPath}` })
+                : t("world.graph.library.replicaOnly", "현재 기기 저장소 기준으로 표시 중")}
+            </p>
+          </div>
         </div>
-        <div className="rounded-[14px] border border-white/10 bg-black/20 px-4 py-3 text-sm text-muted-foreground shadow-inner backdrop-blur-md">
-          <p className="font-medium text-foreground drop-shadow-sm">
-            {currentProject?.title ?? t("world.graph.library.noProject", "프로젝트 없음")}
-          </p>
-          <p className="mt-1 opacity-80">
-            {attachmentPath
-              ? t("world.graph.library.attachment", { defaultValue: `.luie 첨부: ${attachmentPath}` })
-              : t("world.graph.library.replicaOnly", "현재 기기 저장소 기준으로 표시 중")}
-          </p>
+
+        {/* Tab Controller for Browse / Installed */}
+        <div className="flex items-center gap-1 rounded-t-xl bg-black/20 p-1.5 w-max border-x border-t border-white/5 backdrop-blur-md -mb-[1px]">
+          <button
+            onClick={() => setActiveLibrarySection("browse")}
+            className={`relative flex items-center gap-2 rounded-lg px-6 py-2 text-[13px] font-semibold transition-all duration-300 ${
+              activeLibrarySection === "browse"
+                ? "bg-white/10 text-white shadow-sm ring-1 ring-white/10"
+                : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+            }`}
+          >
+            <Search className={`h-4 w-4 ${activeLibrarySection === "browse" ? theme.text : "opacity-70"}`} />
+            탐색 (Browse)
+          </button>
+          <button
+            onClick={() => setActiveLibrarySection("installed")}
+            className={`relative flex items-center gap-2 rounded-lg px-6 py-2 text-[13px] font-semibold transition-all duration-300 ${
+              activeLibrarySection === "installed"
+                ? "bg-white/10 text-white shadow-sm ring-1 ring-white/10"
+                : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+            }`}
+          >
+            <PackageOpen className={`h-4 w-4 ${activeLibrarySection === "installed" ? theme.text : "opacity-70"}`} />
+            설치됨 (Installed)
+          </button>
         </div>
       </header>
 
