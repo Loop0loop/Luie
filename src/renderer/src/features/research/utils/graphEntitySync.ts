@@ -3,7 +3,7 @@ import { useEventStore } from "@renderer/features/research/stores/eventStore";
 import { useFactionStore } from "@renderer/features/research/stores/factionStore";
 import { useTermStore } from "@renderer/features/research/stores/termStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
-import type { WorldEntitySourceType } from "@shared/types";
+import type { WorldEntitySourceType, WorldGraphNode } from "@shared/types";
 
 export async function syncGraphBackedStore(
   entityType: WorldEntitySourceType,
@@ -27,8 +27,12 @@ export async function syncGraphBackedStore(
   }
 }
 
-export function clearGraphBackedSelection(entityType: WorldEntitySourceType, id: string): void {
+export function clearGraphBackedSelection(
+  entityType: WorldEntitySourceType,
+  id: string,
+): void {
   const uiStore = useUIStore.getState();
+
   switch (entityType) {
     case "Character": {
       const store = useCharacterStore.getState();
@@ -67,6 +71,59 @@ export function clearGraphBackedSelection(entityType: WorldEntitySourceType, id:
       }
       if (uiStore.mainView.type === "world" && uiStore.mainView.id === id) {
         uiStore.setMainView({ type: "world" });
+      }
+      return;
+    }
+    default:
+      return;
+  }
+}
+
+export function syncGraphEntitySelectionToWorkspace(node: Pick<
+  WorldGraphNode,
+  "id" | "entityType" | "name"
+>): void {
+  const uiStore = useUIStore.getState();
+
+  switch (node.entityType) {
+    case "Character": {
+      const character = useCharacterStore
+        .getState()
+        .items.find((item) => item.id === node.id);
+      if (character) {
+        useCharacterStore.getState().setCurrentCharacter(character);
+        uiStore.setMainView({ type: "character", id: node.id });
+      }
+      return;
+    }
+    case "Event": {
+      const event = useEventStore
+        .getState()
+        .items.find((item) => item.id === node.id);
+      if (event) {
+        useEventStore.getState().setCurrentEvent(event);
+        uiStore.setMainView({ type: "event", id: node.id });
+      }
+      return;
+    }
+    case "Faction": {
+      const faction = useFactionStore
+        .getState()
+        .items.find((item) => item.id === node.id);
+      if (faction) {
+        useFactionStore.getState().setCurrentFaction(faction);
+        uiStore.setMainView({ type: "faction", id: node.id });
+      }
+      return;
+    }
+    case "Term": {
+      const term = useTermStore
+        .getState()
+        .items.find((item) => item.id === node.id);
+      if (term) {
+        useTermStore.getState().setCurrentTerm(term);
+        uiStore.setWorldTab("terms");
+        uiStore.setMainView({ type: "world", id: node.id });
       }
       return;
     }

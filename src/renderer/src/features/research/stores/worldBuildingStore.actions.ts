@@ -32,7 +32,7 @@ import {
 import {
   clearGraphBackedSelection,
   syncGraphBackedStore,
-} from "@renderer/features/research/components/world/graph/utils/graphEntitySync";
+} from "@renderer/features/research/utils/graphEntitySync";
 import type {
   UpdateGraphNodeInput,
   WorldBuildingState,

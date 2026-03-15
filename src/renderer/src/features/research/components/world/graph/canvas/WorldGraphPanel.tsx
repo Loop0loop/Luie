@@ -1,215 +1,353 @@
-import { useEffect, useMemo, useRef } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  Panel,
-  Group as PanelGroup,
-  Separator as PanelResizeHandle,
-  type GroupImperativeHandle,
-} from "react-resizable-panels";
-import { useProjectStore } from "@renderer/features/project/stores/projectStore";
-import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
-import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
-import { buildPanelGroupCompositionKey } from "@renderer/features/workspace/utils/panelGroupLayout";
-import {
-  clampSidebarWidth,
-  getSidebarDefaultWidth,
-  getSidebarWidthConfig,
-  toPercentSize,
-  toPxSize,
-} from "@shared/constants/sidebarSizing";
+import { useCallback, useMemo, useState } from "react";
+import { RefreshCcw } from "lucide-react";
+import { useGraphPluginStore } from "@renderer/features/research/stores/graphPluginStore";
+import { useMemoStore } from "@renderer/features/research/stores/memoStore";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
-import { useWorldGraphUiStore } from "@renderer/features/research/stores/worldGraphUiStore";
-import { WorldGraphCanvas } from "./WorldGraphCanvas";
-import { ActivityBar } from "../components/ActivityBar";
-import { PrimarySidebar } from "../components/PrimarySidebar";
-import { NoteMainView } from "@renderer/features/research/components/world/graph/views/NoteMainView";
-import { EntityMainView } from "@renderer/features/research/components/world/graph/views/EntityMainView";
-import { LibraryMainView } from "@renderer/features/research/components/world/graph/views/LibraryMainView";
-import { TimelineMainView } from "@renderer/features/research/components/world/graph/views/TimelineMainView";
-import { WorldGraphNavbar } from "../components/WorldGraphNavbar";
-import { EntityInspectorPanel } from "../sidebars/EntityInspectorPanel";
-import { useWorldGraphScene } from "../scene/useWorldGraphScene";
-import { useWorldGraphSceneLifecycle } from "../scene/useWorldGraphSceneLifecycle";
+import { GRAPH_TAB_ITEMS } from "../constants";
+import { useWorldGraphWorkspace } from "../hooks/useWorldGraphWorkspace";
+import type { GraphSurfaceTab } from "../types";
+import { GraphActiveSidebar } from "../components/GraphActiveSidebar";
+import { GraphIconSidebar } from "../components/GraphIconSidebar";
+import { CanvasView } from "../views/CanvasView";
+import { TimelineView } from "../views/TimelineView";
+import { NotesView } from "../views/NotesView";
+import { EntityView } from "../views/EntityView";
+import { LibraryView } from "../views/LibraryView";
+
+const buildNodeName = (entityType: string) => {
+  switch (entityType) {
+    case "Character":
+      return "새 인물";
+    case "Event":
+      return "새 사건";
+    case "Place":
+      return "새 장소";
+    case "Concept":
+      return "새 개념";
+    default:
+      return "새 엔티티";
+  }
+};
 
 export function WorldGraphPanel() {
-  const { t } = useTranslation();
-  const currentProjectId = useProjectStore((state) => state.currentProject?.id);
-  const sidebarWidths = useUIStore((state) => state.sidebarWidths);
-  const setSidebarWidth = useUIStore((state) => state.setSidebarWidth);
+  const {
+    projectId,
+    graphNodes,
+    graphEdges,
+    timelineNodes,
+    notes,
+    notesLoading,
+    notesSaving,
+    graphLoading,
+    graphError,
+    currentProjectTitle,
+    catalog,
+    installed,
+    templates,
+    pluginsLoading,
+    pluginError,
+  } = useWorldGraphWorkspace();
+
+  const createGraphNode = useWorldBuildingStore((state) => state.createGraphNode);
+  const updateGraphNode = useWorldBuildingStore((state) => state.updateGraphNode);
   const loadGraph = useWorldBuildingStore((state) => state.loadGraph);
-  const isLoading = useWorldBuildingStore((state) => state.isLoading);
-  const error = useWorldBuildingStore((state) => state.error);
-  const scene = useWorldGraphScene();
 
-  const activeTab = useWorldGraphUiStore((state) => state.activeTab);
-  const isSidebarOpen = useWorldGraphUiStore((state) => state.isSidebarOpen);
-  const selectedNodeId = useWorldGraphUiStore((state) => state.selectedNodeId);
+  const addNote = useMemoStore((state) => state.addNote);
+  const updateNote = useMemoStore((state) => state.updateNote);
+  const deleteNote = useMemoStore((state) => state.deleteNote);
+  const flushSave = useMemoStore((state) => state.flushSave);
 
-  const feature = "worldGraphSidebar" as const;
-  const config = getSidebarWidthConfig(feature);
-  const width = clampSidebarWidth(
-    feature,
-    sidebarWidths[feature] || getSidebarDefaultWidth(feature),
+  const installPlugin = useGraphPluginStore((state) => state.installPlugin);
+  const uninstallPlugin = useGraphPluginStore((state) => state.uninstallPlugin);
+  const applyTemplate = useGraphPluginStore((state) => state.applyTemplate);
+  const loadPluginData = useGraphPluginStore((state) => state.loadData);
+  const installingPluginId = useGraphPluginStore((state) => state.installingPluginId);
+  const uninstallingPluginId = useGraphPluginStore((state) => state.uninstallingPluginId);
+  const applyingTemplateKey = useGraphPluginStore((state) => state.applyingTemplateKey);
+
+  const [activeTab, setActiveTab] = useState<GraphSurfaceTab>("canvas");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+
+  const effectiveSelectedNodeId =
+    selectedNodeId && graphNodes.some((node) => node.id === selectedNodeId)
+      ? selectedNodeId
+      : graphNodes[0]?.id ?? null;
+
+  const effectiveSelectedNoteId =
+    selectedNoteId && notes.some((note) => note.id === selectedNoteId)
+      ? selectedNoteId
+      : notes[0]?.id ?? null;
+
+  const selectedNode = useMemo(
+    () => graphNodes.find((node) => node.id === effectiveSelectedNodeId) ?? null,
+    [effectiveSelectedNodeId, graphNodes],
   );
 
-  const { onResize, resizeHandleProps } = useSidebarResizeCommit(
-    feature,
-    setSidebarWidth,
-  );
-  const requestedProjectIdRef = useRef<string | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const panelGroupRef = useRef<GroupImperativeHandle | null>(null);
-
-  const inspectorConfig = getSidebarWidthConfig("worldGraphInspector");
-  const inspectorWidth = clampSidebarWidth(
-    "worldGraphInspector",
-    sidebarWidths["worldGraphInspector"] || getSidebarDefaultWidth("worldGraphInspector"),
-  );
-  
-  const { onResize: onInspectorResize, resizeHandleProps: inspectorResizeHandleProps } = useSidebarResizeCommit(
-    "worldGraphInspector",
-    setSidebarWidth,
-  );
-  const showInspector =
-    activeTab === "graph" &&
-    Boolean(selectedNodeId) &&
-    scene.selectedNode !== null;
-  useWorldGraphSceneLifecycle(currentProjectId ?? null);
-  const panelCompositionKey = useMemo(
-    () =>
-      buildPanelGroupCompositionKey("world-graph", [
-        isSidebarOpen ? "world-ide-sidebar" : "",
-        "world-ide-main",
-        showInspector ? "world-ide-inspector" : "",
-      ]),
-    [isSidebarOpen, showInspector],
+  const activeNote = useMemo(
+    () => notes.find((note) => note.id === effectiveSelectedNoteId) ?? null,
+    [effectiveSelectedNoteId, notes],
   );
 
+  const activeTabMeta = GRAPH_TAB_ITEMS.find((item) => item.id === activeTab);
 
-  useEffect(() => {
-    if (!currentProjectId) {
-      requestedProjectIdRef.current = null;
-      return;
-    }
-    if (requestedProjectIdRef.current === currentProjectId) {
-      return;
-    }
-    requestedProjectIdRef.current = currentProjectId;
-    void loadGraph(currentProjectId).catch(() => {
-      if (requestedProjectIdRef.current === currentProjectId) {
-        requestedProjectIdRef.current = null;
+  const handleSelectTab = useCallback((nextTab: GraphSurfaceTab) => {
+    setActiveTab((current) => {
+      if (current === nextTab) {
+        setIsSidebarOpen((open) => !open);
+        return current;
       }
+      setIsSidebarOpen(true);
+      return nextTab;
     });
-  }, [currentProjectId, loadGraph]);
+  }, []);
 
-  const renderMainViewContent = () => {
-    if (isLoading) {
-      return (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-sm text-muted bg-app/70">
-          <span className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-accent" />
-          <p>{t("world.graph.loading")}</p>
-        </div>
-      );
-    }
-    if (error) {
-      return (
-        <div className="absolute inset-0 z-10 flex items-center justify-center text-sm text-destructive">
-          <p>
-            {t("world.graph.errorPrefix")}: {error}
-          </p>
-        </div>
-      );
+  const handleCreatePreset = useCallback(
+    async (
+      entityType: Parameters<typeof createGraphNode>[0]["entityType"],
+      subType?: Parameters<typeof createGraphNode>[0]["subType"],
+    ) => {
+      if (!projectId) {
+        return;
+      }
+
+      const created = await createGraphNode({
+        projectId,
+        entityType,
+        subType,
+        name: buildNodeName(entityType),
+        positionX: 140 + graphNodes.length * 32,
+        positionY: 140 + graphNodes.length * 24,
+      });
+
+      if (!created) {
+        return;
+      }
+
+      setSelectedNodeId(created.id);
+      if (entityType === "Event") {
+        setActiveTab("timeline");
+        return;
+      }
+      setActiveTab("canvas");
+    },
+    [createGraphNode, graphNodes.length, projectId],
+  );
+
+  const handleSaveNode = useCallback(
+    async (input: { name: string; description: string }) => {
+      if (!selectedNode) {
+        return;
+      }
+
+      await updateGraphNode({
+        id: selectedNode.id,
+        entityType: selectedNode.entityType,
+        name: input.name.trim() || selectedNode.name,
+        description: input.description,
+        subType: selectedNode.subType,
+      });
+    },
+    [selectedNode, updateGraphNode],
+  );
+
+  const handleCreateNote = useCallback(() => {
+    if (!projectId) {
+      return;
     }
 
-    switch (activeTab) {
-      case "graph":
-        return (
-          <WorldGraphCanvas
-            nodes={scene.visibleGraph.nodes}
-            edges={scene.visibleGraph.edges}
-          />
-        );
-      case "timeline":
-        return (
-          <TimelineMainView
-            nodes={scene.allNodes}
-            edges={scene.allEdges}
-          />
-        );
-      case "note":
-        return <NoteMainView />;
-      case "entity":
-        return <EntityMainView nodes={scene.allNodes} />;
-      case "library":
-        return <LibraryMainView />;
-      default:
-        return null;
+    const created = addNote(projectId, {
+      title: "새 스크랩",
+      content: "",
+      tags: [],
+    });
+
+    if (!created) {
+      return;
     }
-  };
+
+    setSelectedNoteId(created.id);
+    setActiveTab("notes");
+  }, [addNote, projectId]);
+
+  const handleDeleteNote = useCallback(
+    (noteId: string) => {
+      deleteNote(noteId);
+      setSelectedNoteId((current) => (current === noteId ? null : current));
+    },
+    [deleteNote],
+  );
+
+  const handleInstallPlugin = useCallback(
+    async (pluginId: string) => {
+      await installPlugin(pluginId);
+    },
+    [installPlugin],
+  );
+
+  const handleUninstallPlugin = useCallback(
+    async (pluginId: string) => {
+      await uninstallPlugin(pluginId);
+    },
+    [uninstallPlugin],
+  );
+
+  const handleApplyTemplate = useCallback(
+    async (pluginId: string, templateId: string) => {
+      if (!projectId) {
+        return;
+      }
+
+      const result = await applyTemplate({ pluginId, templateId, projectId });
+      if (!result.success) {
+        return;
+      }
+
+      await loadGraph(projectId);
+      await loadPluginData(true);
+    },
+    [applyTemplate, loadGraph, loadPluginData, projectId],
+  );
 
   return (
-    <div className="flex h-full w-full flex-row overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0)),var(--bg-app)]">
-      <ActivityBar />
+    <div className="flex h-full min-h-0 bg-[#0b0e13] text-fg">
+      <GraphIconSidebar
+        activeTab={activeTab}
+        isSidebarOpen={isSidebarOpen}
+        onSelectTab={handleSelectTab}
+        onToggleSidebar={() => setIsSidebarOpen((open) => !open)}
+      />
 
-      <div ref={containerRef} className="flex min-h-0 flex-1 overflow-hidden">
-        <PanelGroup
-          key={panelCompositionKey}
-          groupRef={panelGroupRef}
-          orientation="horizontal"
-          className="h-full! w-full! bg-transparent"
-        >
-          {isSidebarOpen && (
-            <>
-              <Panel
-                id="world-ide-sidebar"
-                defaultSize={toPxSize(width)}
-                minSize={toPxSize(config.minPx)}
-                maxSize={toPxSize(config.maxPx)}
-                onResize={onResize}
-                collapsible
-                className="min-h-0"
-              >
-                <PrimarySidebar />
-              </Panel>
+      {isSidebarOpen ? (
+        <GraphActiveSidebar
+          activeTab={activeTab}
+          currentProjectTitle={currentProjectTitle}
+          nodes={graphNodes}
+          timelineNodes={timelineNodes}
+          notes={notes}
+          selectedNode={selectedNode}
+          selectedNoteId={effectiveSelectedNoteId}
+          onCreatePreset={handleCreatePreset}
+          onSelectNode={setSelectedNodeId}
+          onSaveNode={handleSaveNode}
+          onSelectNote={setSelectedNoteId}
+          onCreateNote={handleCreateNote}
+          pluginSummary={{
+            catalogCount: catalog.length,
+            installedCount: installed.length,
+            templateCount: templates.length,
+            isLoading: pluginsLoading,
+            error: pluginError,
+            onReload: () => {
+              void loadPluginData(true);
+            },
+          }}
+        />
+      ) : null}
 
-              <PanelResizeHandle
-                {...resizeHandleProps}
-                className="relative flex w-px shrink-0 cursor-col-resize items-center justify-center bg-border/20 hover:bg-accent/40 active:bg-accent transition-colors"
-              />
-            </>
-          )}
-
-          <Panel
-            id="world-ide-main"
-            minSize={toPercentSize(15)}
-            className="min-h-0 relative"
-          >
-            <div className="flex h-full w-full flex-col">
-              <main className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
-                {renderMainViewContent()}
-                <WorldGraphNavbar />
-              </main>
+      <section className="flex min-w-0 flex-1 flex-col">
+        <header className="flex shrink-0 items-center justify-between border-b border-border/60 bg-[#11151c] px-5 py-4">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.24em] text-fg/45">
+              World Graph
+            </p>
+            <div className="mt-1 flex items-center gap-3">
+              <h1 className="text-lg font-semibold text-fg">
+                {currentProjectTitle}
+              </h1>
+              <span className="rounded-full border border-border/60 px-2 py-1 text-[11px] text-fg/55">
+                {activeTabMeta?.label}
+              </span>
             </div>
-          </Panel>
-          {showInspector && (
-            <>
-              <PanelResizeHandle 
-                {...inspectorResizeHandleProps}
-                className="relative flex w-px shrink-0 cursor-col-resize items-center justify-center bg-border/20 hover:bg-accent/40 active:bg-accent transition-colors" 
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (!projectId) {
+                return;
+              }
+              void loadGraph(projectId);
+            }}
+            className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-white/10 px-3 py-2 text-sm text-fg transition hover:bg-white/15"
+          >
+            <RefreshCcw className="h-4 w-4" />
+            새로고침
+          </button>
+        </header>
+
+        {graphError ? (
+          <div className="border-b border-red-400/20 bg-red-500/10 px-5 py-3 text-sm text-red-200">
+            {graphError}
+          </div>
+        ) : null}
+
+        {graphLoading && activeTab !== "notes" && activeTab !== "library" ? (
+          <div className="flex flex-1 items-center justify-center text-sm text-fg/65">
+            그래프 데이터를 불러오는 중입니다...
+          </div>
+        ) : (
+          <div className="min-h-0 flex-1">
+            {activeTab === "canvas" ? (
+              <CanvasView
+                nodes={graphNodes}
+                edges={graphEdges}
+                selectedNodeId={effectiveSelectedNodeId}
+                onSelectNode={setSelectedNodeId}
               />
-              <Panel
-                id="world-ide-inspector"
-                defaultSize={toPxSize(inspectorWidth)}
-                minSize={toPxSize(inspectorConfig.minPx)}
-                maxSize={toPxSize(inspectorConfig.maxPx)}
-                onResize={onInspectorResize}
-              >
-                <EntityInspectorPanel />
-              </Panel>
-            </>
-          )}
-        </PanelGroup>
-      </div>
+            ) : null}
+
+            {activeTab === "timeline" ? (
+              <TimelineView
+                events={timelineNodes}
+                selectedNodeId={effectiveSelectedNodeId}
+                onSelectNode={setSelectedNodeId}
+              />
+            ) : null}
+
+            {activeTab === "notes" ? (
+              <NotesView
+                currentProjectId={projectId}
+                notesLoading={notesLoading}
+                notesSaving={notesSaving}
+                activeNote={activeNote}
+                onCreateNote={handleCreateNote}
+                onUpdateNote={updateNote}
+                onDeleteNote={handleDeleteNote}
+                onSaveNow={() => {
+                  void flushSave();
+                }}
+              />
+            ) : null}
+
+            {activeTab === "entity" ? (
+              <EntityView
+                nodes={graphNodes}
+                selectedNodeId={effectiveSelectedNodeId}
+                onSelectNode={setSelectedNodeId}
+              />
+            ) : null}
+
+            {activeTab === "library" ? (
+              <LibraryView
+                currentProjectId={projectId}
+                catalog={catalog}
+                installed={installed}
+                templates={templates}
+                isLoading={pluginsLoading}
+                error={pluginError}
+                installingPluginId={installingPluginId}
+                uninstallingPluginId={uninstallingPluginId}
+                applyingTemplateKey={applyingTemplateKey}
+                onInstall={handleInstallPlugin}
+                onUninstall={handleUninstallPlugin}
+                onApplyTemplate={handleApplyTemplate}
+              />
+            ) : null}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

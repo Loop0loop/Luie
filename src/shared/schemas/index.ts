@@ -454,18 +454,26 @@ export const syncResolveConflictArgsSchema = z.tuple([
 ]);
 
 export const editorSettingsSchema = z.strictObject({
-  fontFamily: z.enum(["serif", "sans", "mono"]),
+  fontFamily: z.enum(["system-ui", "serif", "mono"]),
   fontPreset: z
-    .enum([
-      "inter",
-      "lora",
-      "bitter",
-      "source-serif",
-      "montserrat",
-      "nunito-sans",
-      "victor-mono",
-    ])
-    .optional(),
+    .enum(["inter"])
+    .optional()
+    .transform((val) => {
+      // Normalize legacy presets to undefined so they don't break validation
+      const legacyPresets = [
+        "lora",
+        "bitter",
+        "source-serif",
+        "montserrat",
+        "nunito-sans",
+        "victor-mono",
+      ];
+      if (val && legacyPresets.includes(val)) {
+        return undefined;
+      }
+      return val;
+    }),
+  customFontFamily: z.string().max(200).optional(),
   fontSize: z.number().int().positive(),
   lineHeight: z.number().positive(),
   maxWidth: z.number().int().positive(),
@@ -846,7 +854,11 @@ export const graphPluginCatalogItemSchema = z.strictObject({
   releaseTag: z.string().min(1).max(200),
   assetUrl: z.string().url(),
   sha256: z.string().regex(/^[a-f0-9]{64}$/i, "Invalid sha256"),
-  size: z.number().int().positive().max(1024 * 1024 * 1024),
+  size: z
+    .number()
+    .int()
+    .positive()
+    .max(1024 * 1024 * 1024),
   minAppVersion: graphPluginVersionSchema,
   apiVersion: graphPluginVersionSchema,
 });

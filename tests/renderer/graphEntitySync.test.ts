@@ -6,7 +6,7 @@ import { useTermStore } from "../../src/renderer/src/features/research/stores/te
 import {
   clearGraphBackedSelection,
   syncGraphEntitySelectionToWorkspace,
-} from "../../src/renderer/src/features/research/components/world/graph/utils/graphEntitySync.js";
+} from "../../src/renderer/src/features/research/utils/graphEntitySync.js";
 import { useUIStore } from "../../src/renderer/src/features/workspace/stores/uiStore.js";
 
 type ResettableStore = {

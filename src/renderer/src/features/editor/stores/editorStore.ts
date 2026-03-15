@@ -12,8 +12,6 @@ import type {
 } from "@shared/types";
 export type { EditorSettings, EditorTheme, FontFamily, FontPreset };
 import {
-  DEFAULT_EDITOR_FONT_FAMILY,
-  DEFAULT_EDITOR_FONT_PRESET,
   DEFAULT_EDITOR_FONT_SIZE,
   DEFAULT_EDITOR_LINE_HEIGHT,
   DEFAULT_EDITOR_MAX_WIDTH,
@@ -34,12 +32,12 @@ interface EditorStore extends EditorSettings {
   setFontFamily: (fontFamily: FontFamily) => Promise<void>;
   setUiMode: (mode: EditorUiMode) => Promise<void>;
   resetSettings: () => Promise<void>;
-
 }
 
 const DEFAULT_SETTINGS: EditorSettings = {
-  fontFamily: DEFAULT_EDITOR_FONT_FAMILY,
-  fontPreset: DEFAULT_EDITOR_FONT_PRESET,
+  fontFamily: "system-ui",
+  fontPreset: undefined,
+  customFontFamily: undefined,
   fontSize: DEFAULT_EDITOR_FONT_SIZE,
   lineHeight: DEFAULT_EDITOR_LINE_HEIGHT,
   maxWidth: DEFAULT_EDITOR_MAX_WIDTH,
@@ -75,6 +73,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
     const updated: EditorSettings = {
       fontFamily: current.fontFamily,
       fontPreset: current.fontPreset,
+      customFontFamily: current.customFontFamily,
       fontSize: current.fontSize,
       lineHeight: current.lineHeight,
       maxWidth: current.maxWidth,

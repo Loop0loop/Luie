@@ -455,16 +455,9 @@ export interface SearchResult {
 }
 
 // Settings Types
-export type FontFamily = "serif" | "sans" | "mono";
+export type FontFamily = "system-ui" | "serif" | "mono";
 
-export type FontPreset =
-  | "inter"
-  | "lora"
-  | "bitter"
-  | "source-serif"
-  | "montserrat"
-  | "nunito-sans"
-  | "victor-mono";
+export type FontPreset = "inter";
 
 export type EditorTheme = "light" | "dark" | "sepia";
 export type ThemeTemperature = "neutral" | "warm" | "cool";
@@ -768,6 +761,7 @@ export type EditorUiMode =
 export interface EditorSettings {
   fontFamily: FontFamily;
   fontPreset?: FontPreset;
+  customFontFamily?: string;
   fontSize: number;
   lineHeight: number;
   maxWidth: number;
