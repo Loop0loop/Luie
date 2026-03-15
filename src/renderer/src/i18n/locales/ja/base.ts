@@ -128,26 +128,21 @@ export const jaBase = {
       mobile: "モバイル",
     },
     font: {
+      systemUi: "システムUI",
       serif: "明朝体",
-      sans: "ゴシック体 (Inter + Noto Sans KR/JP)",
       mono: "モノ",
       helper: {
         primary:
-          "内蔵: Inter Variable + Noto Sans KR/JP (多言語フォールバック)",
+          "既定ではシステムフォントを使用します。Inter は選択可能な内蔵フォントです。",
         optional:
           "インストール済みフォントのみ適用されます。未インストールの場合は既定フォントにフォールバックします。",
       },
     },
-    optionalFonts: {
-      lora: "Lora (Serif)",
-      bitter: "Bitter (Serif)",
-      sourceSerif: "Source Serif 4",
-      montserrat: "Montserrat (Sans)",
-      nunitoSans: "Nunito Sans",
-      victorMono: "Victor Mono",
+    optionalFont: {
+      inter: "Inter Variable",
       action: {
-        installing: "インストール中",
-        install: "インストール",
+        installing: "読込中",
+        install: "Inter を使用",
         apply: "適用",
         active: "使用中",
       },

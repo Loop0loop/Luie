@@ -297,6 +297,12 @@ export const registerAppReady = (logger: Logger, options: AppReadyOptions = {}):
       });
       webContents.on("console-message", (consoleEvent) => {
         const { level, message, lineNumber, sourceId } = consoleEvent;
+        if (
+          message === "ResizeObserver loop completed with undelivered notifications." ||
+          message === "ResizeObserver loop limit exceeded"
+        ) {
+          return;
+        }
         const severity =
           level === "error" ? 3 : level === "warning" ? 2 : level === "info" ? 1 : 0;
         if (severity < 2) return;

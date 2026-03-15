@@ -2,7 +2,6 @@ import type { ScrapMemo } from "@shared/types";
 import { Button } from "@renderer/components/ui/button";
 import { Card, CardContent } from "@renderer/components/ui/card";
 import { Input } from "@renderer/components/ui/input";
-import { ScrollArea } from "@renderer/components/ui/scroll-area";
 
 type NotesViewProps = {
   currentProjectId: string | null;
@@ -61,7 +60,7 @@ export function NotesView({
   }
 
   return (
-    <ScrollArea className="h-full bg-[#0f1319]">
+    <div className="h-full overflow-y-auto bg-[#0f1319]">
       <div className="mx-auto flex max-w-4xl flex-col px-10 py-10">
         <div className="mb-4 flex items-center justify-between gap-3">
           <Card className="flex-1 border-white/10 bg-[#161a21]">
@@ -119,6 +118,6 @@ export function NotesView({
           placeholder="설정, 메모, 장면 아이디어를 자유롭게 적으세요."
         />
       </div>
-    </ScrollArea>
+    </div>
   );
 }

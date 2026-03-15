@@ -40,6 +40,18 @@ function setupUnhandledRejectionHandler(): void {
   });
 }
 
+function setupResizeObserverWarningFilter(): void {
+  window.addEventListener("error", (event: ErrorEvent) => {
+    if (
+      event.message === "ResizeObserver loop completed with undelivered notifications." ||
+      event.message === "ResizeObserver loop limit exceeded"
+    ) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  });
+}
+
 type ThemeSeed = Pick<
   EditorSettings,
   "theme" | "themeTemp" | "themeContrast" | "themeAccent" | "themeTexture"
@@ -73,6 +85,7 @@ const toThemeSeed = (settings: EditorSettings): ThemeSeed => ({
 export const setupRenderer = async (): Promise<void> => {
   // ✅ Register global rejection handler before anything else
   setupUnhandledRejectionHandler();
+  setupResizeObserverWarningFilter();
 
   applyThemeSeed(DEFAULT_THEME_SEED);
 

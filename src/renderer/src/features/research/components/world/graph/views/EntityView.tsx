@@ -1,7 +1,6 @@
 import type { WorldGraphNode } from "@shared/types";
 import { Badge } from "@renderer/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@renderer/components/ui/card";
-import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { ENTITY_TYPE_COLORS } from "../constants";
 
 type EntityViewProps = {
@@ -16,8 +15,7 @@ export function EntityView({
   onSelectNode,
 }: EntityViewProps) {
   return (
-    <ScrollArea className="h-full bg-[#0f1319]">
-    <div className="px-8 py-8">
+    <div className="h-full overflow-y-auto bg-[#0f1319] px-8 py-8">
       {nodes.length === 0 ? (
         <div className="flex h-full items-center justify-center">
           <div className="rounded-[24px] border border-dashed border-border/60 bg-white/5 px-6 py-8 text-sm text-fg/65">
@@ -67,6 +65,5 @@ export function EntityView({
         </div>
       )}
     </div>
-    </ScrollArea>
   );
 }

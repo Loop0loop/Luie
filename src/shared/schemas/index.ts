@@ -456,10 +456,10 @@ export const syncResolveConflictArgsSchema = z.tuple([
 export const editorSettingsSchema = z.strictObject({
   fontFamily: z.enum(["system-ui", "serif", "mono"]),
   fontPreset: z
-    .enum(["inter"])
+    .string()
     .optional()
     .transform((val) => {
-      // Normalize legacy presets to undefined so they don't break validation
+      if (!val) return undefined;
       const legacyPresets = [
         "lora",
         "bitter",
@@ -468,11 +468,12 @@ export const editorSettingsSchema = z.strictObject({
         "nunito-sans",
         "victor-mono",
       ];
-      if (val && legacyPresets.includes(val)) {
+      if (legacyPresets.includes(val)) {
         return undefined;
       }
-      return val;
-    }),
+      return val === "inter" ? "inter" : undefined;
+    })
+    .pipe(z.enum(["inter"]).optional()),
   customFontFamily: z.string().max(200).optional(),
   fontSize: z.number().int().positive(),
   lineHeight: z.number().positive(),

@@ -126,26 +126,21 @@ export const koBase = {
       mobile: "모바일",
     },
     font: {
+      systemUi: "시스템 UI",
       serif: "명조체",
-      sans: "고딕체 (Inter + Noto Sans KR/JP)",
       mono: "모노",
       helper: {
         primary:
-          "기본 내장: Inter Variable + Noto Sans KR/JP (다국어 기본 폴백)",
+          "기본적으로 시스템 폰트를 사용합니다. Inter는 선택 가능한 내장 폰트입니다.",
         optional:
           "설치된 폰트만 적용됩니다. 설치하지 않으면 기본 폰트로 자동 폴백됩니다.",
       },
     },
-    optionalFonts: {
-      lora: "Lora (Serif)",
-      bitter: "Bitter (Serif)",
-      sourceSerif: "Source Serif 4",
-      montserrat: "Montserrat (Sans)",
-      nunitoSans: "Nunito Sans",
-      victorMono: "Victor Mono",
+    optionalFont: {
+      inter: "Inter Variable",
       action: {
-        installing: "설치 중",
-        install: "설치",
+        installing: "로딩 중",
+        install: "Inter 사용",
         apply: "적용",
         active: "사용 중",
       },

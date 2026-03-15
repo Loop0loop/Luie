@@ -7,7 +7,6 @@ import type {
 import { Badge } from "@renderer/components/ui/badge";
 import { Button } from "@renderer/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@renderer/components/ui/card";
-import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { GRAPH_PLUGIN_EMPTY_ICON } from "../constants";
 
 type LibraryViewProps = {
@@ -55,7 +54,7 @@ export function LibraryView({
   }, [templates]);
 
   return (
-    <ScrollArea className="h-full bg-[#0f1319]">
+    <div className="h-full overflow-y-auto bg-[#0f1319]">
       <div className="mx-auto max-w-6xl space-y-8 px-8 py-8">
         {error ? (
           <div className="rounded-[24px] border border-red-400/20 bg-red-500/10 px-5 py-4 text-sm text-red-200">
@@ -197,6 +196,6 @@ export function LibraryView({
           )}
         </section>
       </div>
-    </ScrollArea>
+    </div>
   );
 }

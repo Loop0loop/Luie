@@ -5,7 +5,6 @@ import { Badge } from "@renderer/components/ui/badge";
 import { Button } from "@renderer/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@renderer/components/ui/card";
 import { Input } from "@renderer/components/ui/input";
-import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { GRAPH_CREATE_PRESETS, GRAPH_TAB_ITEMS } from "../constants";
 import type { GraphSurfaceTab } from "../types";
 
@@ -116,7 +115,7 @@ export function GraphActiveSidebar({
         <p className="mt-2 text-sm text-fg/60">{activeMeta?.description}</p>
       </div>
 
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto">
       <div className="space-y-4 px-4 py-4">
         {activeTab === "canvas" ? (
           <div className="space-y-5">
@@ -302,7 +301,7 @@ export function GraphActiveSidebar({
           </div>
         ) : null}
       </div>
-      </ScrollArea>
+      </div>
     </aside>
   );
 }

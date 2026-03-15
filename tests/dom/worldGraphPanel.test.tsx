@@ -29,7 +29,10 @@ vi.mock("reactflow", () => ({
   ReactFlowProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
   useNodesState: (initialNodes: unknown) => [initialNodes, vi.fn(), vi.fn()],
   useEdgesState: (initialEdges: unknown) => [initialEdges, vi.fn(), vi.fn()],
-  default: ({ children }: { children?: React.ReactNode }) => (
+  useReactFlow: () => ({
+    fitView: vi.fn(),
+  }),
+  default: ({ children }: { children?: ReactNode }) => (
     <div data-testid="reactflow">{children}</div>
   ),
 }));

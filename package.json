@@ -13,6 +13,7 @@
     "dev": "electron-vite",
     "prebuild": "bun build:native:haptics",
     "out": "electron-vite build",
+    "build": "electron-vite build",
     "build:debug-profile": "LUIE_DEBUG_PROFILE=1 electron-vite build",
     "prepreview": "bun rebuild:electron && bun build:native:haptics",
     "preview": "electron-vite preview",

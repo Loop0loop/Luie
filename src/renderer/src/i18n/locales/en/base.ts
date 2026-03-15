@@ -126,26 +126,21 @@ export const enBase = {
       mobile: "Mobile",
     },
     font: {
+      systemUi: "System UI",
       serif: "Serif",
-      sans: "Sans (Inter + Noto Sans KR/JP)",
       mono: "Mono",
       helper: {
         primary:
-          "Built-in: Inter Variable + Noto Sans KR/JP (multilingual fallback)",
+          "System fonts are used by default. Inter is available as an optional bundled font.",
         optional:
           "Only installed fonts can be applied. Otherwise, fallback fonts are used.",
       },
     },
-    optionalFonts: {
-      lora: "Lora (Serif)",
-      bitter: "Bitter (Serif)",
-      sourceSerif: "Source Serif 4",
-      montserrat: "Montserrat (Sans)",
-      nunitoSans: "Nunito Sans",
-      victorMono: "Victor Mono",
+    optionalFont: {
+      inter: "Inter Variable",
       action: {
-        installing: "Installing",
-        install: "Install",
+        installing: "Loading",
+        install: "Use Inter",
         apply: "Apply",
         active: "Active",
       },

@@ -1,14 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
-  Controls,
-  MiniMap,
   ReactFlowProvider,
   SelectionMode,
   type Edge,
   type Node,
-  type Viewport,
+  useReactFlow,
   useEdgesState,
   useNodesState,
 } from "reactflow";
@@ -46,10 +44,8 @@ function readPosition(node: WorldGraphNode, index: number) {
 const buildGraphSignature = (
   nodes: WorldGraphNode[],
   edges: EntityRelation[],
-  selectedNodeId: string | null,
 ) =>
   JSON.stringify({
-    selectedNodeId,
     nodes: nodes.map((node) => [
       node.id,
       node.name,
@@ -65,7 +61,6 @@ const buildGraphSignature = (
 const buildFlowNodes = (
   nodes: WorldGraphNode[],
   edges: EntityRelation[],
-  selectedNodeId: string | null,
 ): Node<CanvasGraphNodeData>[] => {
   const relationCountByNodeId = new Map<string, number>();
   edges.forEach((edge) => {
@@ -82,7 +77,6 @@ const buildFlowNodes = (
       label: node.name,
       entityType: node.entityType,
       description: node.description?.trim() ?? "",
-      isActive: selectedNodeId === node.id,
       relationCount: relationCountByNodeId.get(node.id) ?? 0,
       subType: node.subType,
     },
@@ -111,103 +105,60 @@ const buildFlowEdges = (edges: EntityRelation[]): Edge[] =>
 function CanvasFlowSurface({
   initialNodes,
   initialEdges,
-  initialViewport,
   onSelectNode,
-  onViewportChange,
   onNodePositionCommit,
+  summary,
 }: {
   initialNodes: Node<CanvasGraphNodeData>[];
   initialEdges: Edge[];
-  initialViewport: Viewport;
   onSelectNode: (nodeId: string | null) => void;
-  onViewportChange: (viewport: Viewport) => void;
   onNodePositionCommit?: (input: { id: string; x: number; y: number }) => void;
+  summary: {
+    nodeCount: number;
+    edgeCount: number;
+    hasSelection: boolean;
+  };
 }) {
   const [nodes, , onNodesChange] = useNodesState(initialNodes);
   const [edges, , onEdgesChange] = useEdgesState(initialEdges);
+  const reactFlow = useReactFlow<CanvasGraphNodeData>();
 
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      nodeTypes={{ "obsidian-card": CanvasGraphNodeCard }}
-      defaultViewport={initialViewport}
-      minZoom={0.3}
-      maxZoom={1.8}
-      fitView
-      fitViewOptions={{ padding: 0.18, includeHiddenNodes: false }}
-      proOptions={{ hideAttribution: true }}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      onNodeClick={(_, node) => onSelectNode(node.id)}
-      onPaneClick={() => onSelectNode(null)}
-      onMoveEnd={(_, viewport) => onViewportChange(viewport)}
-      onNodeDragStop={(_, node) => {
-        onNodePositionCommit?.({
-          id: node.id,
-          x: node.position.x,
-          y: node.position.y,
-        });
-      }}
-      panOnDrag
-      panOnScroll
-      selectionOnDrag
-      selectionMode={SelectionMode.Partial}
-      className="bg-[#0f1319]"
-    >
-      <Background
-        color="rgba(255,255,255,0.08)"
-        gap={28}
-        size={1}
-        variant={BackgroundVariant.Dots}
-      />
-      <MiniMap
-        pannable
-        zoomable
-        className="!rounded-xl !border !border-white/10 !bg-[#171b22]"
-        nodeColor={(node) =>
-          node.data?.isActive ? "rgba(125, 211, 252, 0.8)" : "rgba(255,255,255,0.32)"
-        }
-      />
-      <Controls
-        className="!overflow-hidden !rounded-xl !border !border-white/10 !bg-[#171b22] [&>button]:!border-white/10 [&>button]:!bg-transparent [&>button]:!text-white/70"
-        showInteractive={false}
-      />
-    </ReactFlow>
-  );
-}
-
-export function CanvasView({
-  nodes,
-  edges,
-  selectedNodeId,
-  onSelectNode,
-  onNodePositionCommit,
-}: CanvasViewProps) {
-  const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, zoom: 0.85 });
-  const graphSignature = useMemo(
-    () => buildGraphSignature(nodes, edges, selectedNodeId),
-    [edges, nodes, selectedNodeId],
-  );
-  const flowNodes = useMemo(
-    () => buildFlowNodes(nodes, edges, selectedNodeId),
-    [edges, nodes, selectedNodeId],
-  );
-  const flowEdges = useMemo(() => buildFlowEdges(edges), [edges]);
-
-  return (
-    <div className="relative h-full bg-[#0f1319]">
-      <ReactFlowProvider>
-        <CanvasFlowSurface
-          key={graphSignature}
-          initialNodes={flowNodes}
-          initialEdges={flowEdges}
-          initialViewport={viewport}
-          onSelectNode={onSelectNode}
-          onViewportChange={setViewport}
-          onNodePositionCommit={onNodePositionCommit}
+    <div className="absolute inset-0">
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={{ "obsidian-card": CanvasGraphNodeCard }}
+        minZoom={0.45}
+        maxZoom={1.6}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.9 }}
+        proOptions={{ hideAttribution: true }}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onNodeClick={(_, node) => onSelectNode(node.id)}
+        onPaneClick={() => onSelectNode(null)}
+        onNodeDragStop={(_, node) => {
+          onNodePositionCommit?.({
+            id: node.id,
+            x: node.position.x,
+            y: node.position.y,
+          });
+        }}
+        panOnDrag
+        panOnScroll
+        selectionOnDrag
+        selectionMode={SelectionMode.Partial}
+        onlyRenderVisibleElements
+        zoomOnDoubleClick={false}
+        className="bg-[#0f1319]"
+      >
+        <Background
+          color="rgba(255,255,255,0.08)"
+          gap={28}
+          size={1}
+          variant={BackgroundVariant.Dots}
         />
-      </ReactFlowProvider>
+      </ReactFlow>
 
       <div className="pointer-events-none absolute left-5 top-5 z-10">
         <Card className="w-[320px] border-white/10 bg-[#171b22]/90 text-fg shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur">
@@ -221,12 +172,12 @@ export function CanvasView({
                   Obsidian-style graph board
                 </p>
               </div>
-              <Badge variant="outline">{nodes.length} cards</Badge>
+              <Badge variant="outline">{summary.nodeCount} cards</Badge>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">{edges.length} links</Badge>
+              <Badge variant="secondary">{summary.edgeCount} links</Badge>
               <Badge variant="outline">
-                {selectedNodeId ? "selection active" : "no selection"}
+                {summary.hasSelection ? "selection active" : "no selection"}
               </Badge>
             </div>
             <div className="flex gap-2">
@@ -242,14 +193,56 @@ export function CanvasView({
                 size="sm"
                 variant="outline"
                 className="pointer-events-auto"
-                onClick={() => setViewport({ x: 0, y: 0, zoom: 0.85 })}
+                onClick={() => {
+                  void reactFlow.fitView({
+                    padding: 0.24,
+                    duration: 0,
+                  });
+                }}
               >
-                뷰 초기화
+                뷰 정리
               </Button>
             </div>
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+export function CanvasView({
+  nodes,
+  edges,
+  selectedNodeId,
+  onSelectNode,
+  onNodePositionCommit,
+}: CanvasViewProps) {
+  const graphSignature = useMemo(
+    () => buildGraphSignature(nodes, edges),
+    [edges, nodes],
+  );
+  const flowNodes = useMemo(
+    () => buildFlowNodes(nodes, edges),
+    [edges, nodes],
+  );
+  const flowEdges = useMemo(() => buildFlowEdges(edges), [edges]);
+
+  return (
+    <div className="relative h-full bg-[#0f1319]">
+      <ReactFlowProvider>
+        <CanvasFlowSurface
+          key={graphSignature}
+          initialNodes={flowNodes}
+          initialEdges={flowEdges}
+          onSelectNode={onSelectNode}
+          onNodePositionCommit={onNodePositionCommit}
+          summary={{
+            nodeCount: nodes.length,
+            edgeCount: edges.length,
+            hasSelection: Boolean(selectedNodeId),
+          }}
+        />
+      </ReactFlowProvider>
 
       {nodes.length === 0 ? (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-8">
