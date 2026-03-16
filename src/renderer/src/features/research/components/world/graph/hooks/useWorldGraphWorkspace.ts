@@ -1,12 +1,17 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useGraphPluginStore } from "@renderer/features/research/stores/graphPluginStore";
 import { useMemoStore } from "@renderer/features/research/stores/memoStore";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
+import { useWorldGraphLoader } from "./useWorldGraphLoader";
 
 const readEventDate = (attributes: unknown): string | null => {
-  if (!attributes || typeof attributes !== "object" || Array.isArray(attributes)) {
+  if (
+    !attributes ||
+    typeof attributes !== "object" ||
+    Array.isArray(attributes)
+  ) {
     return null;
   }
 
@@ -18,58 +23,27 @@ const readEventDate = (attributes: unknown): string | null => {
 };
 
 export function useWorldGraphWorkspace() {
+  useWorldGraphLoader();
+
   const currentProject = useProjectStore((state) => state.currentItem);
   const attachmentPath = getReadableLuieAttachmentPath(currentProject);
 
-  const activeProjectId = useWorldBuildingStore((state) => state.activeProjectId);
+  const activeProjectId = useWorldBuildingStore(
+    (state) => state.activeProjectId,
+  );
   const storedGraphData = useWorldBuildingStore((state) => state.graphData);
   const graphLoading = useWorldBuildingStore((state) => state.isLoading);
   const graphError = useWorldBuildingStore((state) => state.error);
-  const loadGraph = useWorldBuildingStore((state) => state.loadGraph);
 
   const notes = useMemoStore((state) => state.notes);
   const notesLoading = useMemoStore((state) => state.isLoading);
   const notesSaving = useMemoStore((state) => state.isSaving);
-  const loadNotes = useMemoStore((state) => state.loadNotes);
-  const resetNotes = useMemoStore((state) => state.reset);
 
   const catalog = useGraphPluginStore((state) => state.catalog);
   const installed = useGraphPluginStore((state) => state.installed);
   const templates = useGraphPluginStore((state) => state.templates);
   const pluginsLoading = useGraphPluginStore((state) => state.isLoading);
   const pluginError = useGraphPluginStore((state) => state.error);
-  const loadPluginData = useGraphPluginStore((state) => state.loadData);
-
-  const graphRequestRef = useRef<string | null>(null);
-  const notesRequestRef = useRef<string | null>(null);
-  const pluginLoadedRef = useRef(false);
-
-  useEffect(() => {
-    const projectId = currentProject?.id ?? null;
-    if (!projectId) {
-      graphRequestRef.current = null;
-      resetNotes();
-      return;
-    }
-
-    if (graphRequestRef.current !== projectId) {
-      graphRequestRef.current = projectId;
-      void loadGraph(projectId);
-    }
-
-    if (notesRequestRef.current !== projectId) {
-      notesRequestRef.current = projectId;
-      void loadNotes(projectId, attachmentPath, []);
-    }
-  }, [attachmentPath, currentProject?.id, loadGraph, loadNotes, resetNotes]);
-
-  useEffect(() => {
-    if (pluginLoadedRef.current) {
-      return;
-    }
-    pluginLoadedRef.current = true;
-    void loadPluginData();
-  }, [loadPluginData]);
 
   const graphData =
     activeProjectId === currentProject?.id ? storedGraphData : null;

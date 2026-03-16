@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useUIStore, type WorldTab } from "@renderer/features/workspace/stores/uiStore";
+import {
+  useUIStore,
+  type WorldTab,
+} from "@renderer/features/workspace/stores/uiStore";
 
 import TabButton from "@shared/ui/TabButton";
 
@@ -9,7 +12,7 @@ import { SynopsisEditor } from "@renderer/features/research/components/world/Syn
 import { MindMapBoard } from "@renderer/features/research/components/world/MindMapBoard";
 import { DrawingCanvas } from "@renderer/features/research/components/world/DrawingCanvas";
 import { PlotBoard } from "@renderer/features/research/components/world/PlotBoard";
-import { WorldGraphPanel } from "@renderer/features/research/components/world/graph/canvas/WorldGraphPanel";
+import { WorldGraphPanel } from "@renderer/features/research/components/world/graph/WorldGraphPanel";
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
 
 interface WorldSectionProps {
@@ -28,9 +31,6 @@ const WORLD_TAB_ITEMS: Array<{ key: WorldTab; labelKey: string }> = [
   { key: "plot", labelKey: "world.tab.plot" },
   { key: "graph", labelKey: "world.tab.graph" },
 ];
-
-
-
 
 export default function WorldSection({
   worldId,
@@ -100,7 +100,9 @@ export default function WorldSection({
       */}
       {graphOnly && (
         <div className="flex w-full items-center justify-between gap-2 shrink-0 border-b border-border/40 bg-element/30 px-3 py-2 text-muted backdrop-blur-md">
-          <div className="flex min-w-0 items-center gap-2 pl-16"> {/* pl-16 avoid macOS traffic lights */}
+          <div className="flex min-w-0 items-center gap-2 pl-16">
+            {" "}
+            {/* pl-16 avoid macOS traffic lights */}
             <button
               type="button"
               onClick={handleBack}
@@ -171,7 +173,9 @@ export default function WorldSection({
         <div className="absolute inset-0 z-40 bg-black/40 backdrop-blur-sm flex items-center justify-center p-6">
           <div className="w-full max-w-xl rounded-xl border border-border bg-panel p-5 shadow-xl">
             <div className="flex items-center justify-between gap-3 mb-4">
-              <h2 className="text-base font-semibold text-fg">{t("world.graph.menu.helpTitle")}</h2>
+              <h2 className="text-base font-semibold text-fg">
+                {t("world.graph.menu.helpTitle")}
+              </h2>
               <button
                 type="button"
                 onClick={() => setIsGuideOpen(false)}
