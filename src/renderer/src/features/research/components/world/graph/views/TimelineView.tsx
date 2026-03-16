@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@renderer/components/u
 type TimelineViewProps = {
   events: WorldGraphNode[];
   selectedNodeId: string | null;
-  onSelectNode: (nodeId: string) => void;
+  onSelectNode: (nodeId: string | null) => void;
 };
 
 const readEventDate = (node: WorldGraphNode): string =>

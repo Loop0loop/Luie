@@ -1,12 +1,10 @@
 import type { WorldGraphNode } from "@shared/types";
-import { Badge } from "@renderer/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@renderer/components/ui/card";
-import { ENTITY_TYPE_COLORS } from "../constants";
 
 type EntityViewProps = {
   nodes: WorldGraphNode[];
   selectedNodeId: string | null;
-  onSelectNode: (nodeId: string) => void;
+  onSelectNode: (nodeId: string | null) => void;
 };
 
 export function EntityView({
@@ -25,7 +23,6 @@ export function EntityView({
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {nodes.map((node) => {
-            const tone = ENTITY_TYPE_COLORS[node.entityType];
             const active = node.id === selectedNodeId;
 
             return (
@@ -37,18 +34,19 @@ export function EntityView({
               >
                 <Card
                   className={[
-                    "rounded-[24px] border text-left transition",
-                    tone.card,
-                    active ? "ring-2 ring-white/35" : "hover:-translate-y-0.5",
+                    "rounded-[24px] border bg-[linear-gradient(180deg,rgba(20,24,31,0.94)_0%,rgba(13,17,22,0.98)_100%)] text-left transition",
+                    active
+                      ? "border-cyan-300/40 shadow-[0_18px_38px_rgba(0,0,0,0.3)] ring-1 ring-cyan-200/30"
+                      : "border-white/8 hover:-translate-y-0.5 hover:border-white/14",
                   ].join(" ")}
                 >
                   <CardHeader className="pb-0">
                     <div className="flex items-center justify-between gap-3">
-                      <Badge variant="outline" className={tone.chip}>
-                        {node.entityType}
-                      </Badge>
+                      <span className="text-[11px] uppercase tracking-[0.2em] text-fg/38">
+                        linked
+                      </span>
                       <span className="text-[11px] text-fg/45">
-                        {node.subType ?? "기본"}
+                        {node.subType ?? "Canvas"}
                       </span>
                     </div>
                     <CardTitle className="text-lg text-fg">{node.name}</CardTitle>

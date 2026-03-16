@@ -79,17 +79,23 @@ export function clearGraphBackedSelection(
   }
 }
 
-export function syncGraphEntitySelectionToWorkspace(node: Pick<
+export async function syncGraphEntitySelectionToWorkspace(node: Pick<
   WorldGraphNode,
   "id" | "entityType" | "name"
->): void {
+>): Promise<void> {
   const uiStore = useUIStore.getState();
 
   switch (node.entityType) {
     case "Character": {
-      const character = useCharacterStore
-        .getState()
-        .items.find((item) => item.id === node.id);
+      const characterStore = useCharacterStore.getState();
+      let character = characterStore.items.find((item) => item.id === node.id);
+      if (!character) {
+        await characterStore.loadCharacter(node.id);
+        const refreshedStore = useCharacterStore.getState();
+        character =
+          refreshedStore.currentCharacter ??
+          refreshedStore.items.find((item) => item.id === node.id);
+      }
       if (character) {
         useCharacterStore.getState().setCurrentCharacter(character);
         uiStore.setMainView({ type: "character", id: node.id });
@@ -97,9 +103,15 @@ export function syncGraphEntitySelectionToWorkspace(node: Pick<
       return;
     }
     case "Event": {
-      const event = useEventStore
-        .getState()
-        .items.find((item) => item.id === node.id);
+      const eventStore = useEventStore.getState();
+      let event = eventStore.items.find((item) => item.id === node.id);
+      if (!event) {
+        await eventStore.loadEvent(node.id);
+        const refreshedStore = useEventStore.getState();
+        event =
+          refreshedStore.currentEvent ??
+          refreshedStore.items.find((item) => item.id === node.id);
+      }
       if (event) {
         useEventStore.getState().setCurrentEvent(event);
         uiStore.setMainView({ type: "event", id: node.id });
@@ -107,9 +119,15 @@ export function syncGraphEntitySelectionToWorkspace(node: Pick<
       return;
     }
     case "Faction": {
-      const faction = useFactionStore
-        .getState()
-        .items.find((item) => item.id === node.id);
+      const factionStore = useFactionStore.getState();
+      let faction = factionStore.items.find((item) => item.id === node.id);
+      if (!faction) {
+        await factionStore.loadFaction(node.id);
+        const refreshedStore = useFactionStore.getState();
+        faction =
+          refreshedStore.currentFaction ??
+          refreshedStore.items.find((item) => item.id === node.id);
+      }
       if (faction) {
         useFactionStore.getState().setCurrentFaction(faction);
         uiStore.setMainView({ type: "faction", id: node.id });
@@ -117,9 +135,15 @@ export function syncGraphEntitySelectionToWorkspace(node: Pick<
       return;
     }
     case "Term": {
-      const term = useTermStore
-        .getState()
-        .items.find((item) => item.id === node.id);
+      const termStore = useTermStore.getState();
+      let term = termStore.items.find((item) => item.id === node.id);
+      if (!term) {
+        await termStore.loadTerm(node.id);
+        const refreshedStore = useTermStore.getState();
+        term =
+          refreshedStore.currentTerm ??
+          refreshedStore.items.find((item) => item.id === node.id);
+      }
       if (term) {
         useTermStore.getState().setCurrentTerm(term);
         uiStore.setWorldTab("terms");

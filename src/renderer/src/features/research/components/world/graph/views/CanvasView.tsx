@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReactFlow, {
-  addEdge,
   applyEdgeChanges,
   applyNodeChanges,
   Background,
@@ -26,6 +25,7 @@ import {
   CANVAS_EDGE_TYPES,
   CANVAS_NODE_TYPES,
 } from "../components/canvasFlowTypes";
+import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
 
 type CanvasViewProps = {
   nodes: WorldGraphNode[];
@@ -33,9 +33,20 @@ type CanvasViewProps = {
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string | null) => void;
   onNodePositionCommit?: (input: { id: string; x: number; y: number }) => void;
+  onDeleteNode?: (nodeId: string) => void;
+  onCreateRelation?: (input: { sourceId: string; targetId: string }) => Promise<void>;
+  onDeleteRelation?: (relationId: string) => Promise<void>;
   onCreateBlock: () => void;
   onCreateTimelineEvent: () => void;
   onCreateNote: () => void;
+};
+
+type CanvasEdgeData = {
+  palette: {
+    stroke: string;
+    selectedStroke: string;
+    glow: string;
+  };
 };
 
 function readPosition(node: WorldGraphNode, index: number) {
@@ -54,9 +65,88 @@ function readPosition(node: WorldGraphNode, index: number) {
   };
 }
 
+function readNodeMetaLabel(node: WorldGraphNode): string {
+  const attributes =
+    node.attributes && typeof node.attributes === "object" && !Array.isArray(node.attributes)
+      ? (node.attributes as Record<string, unknown>)
+      : null;
+
+  if (node.entityType === "Event") {
+    const eventDate = attributes?.date ?? attributes?.time;
+    if (typeof eventDate === "string" && eventDate.trim().length > 0) {
+      return eventDate;
+    }
+    return "Timeline";
+  }
+
+  if (node.entityType === "Term") {
+    const firstTag = Array.isArray(attributes?.tags)
+      ? attributes.tags.find((value) => typeof value === "string" && value.trim().length > 0)
+      : null;
+    if (typeof firstTag === "string") {
+      return `#${firstTag}`;
+    }
+    return "Reference";
+  }
+
+  if (typeof node.firstAppearance === "string" && node.firstAppearance.trim().length > 0) {
+    return node.firstAppearance.trim();
+  }
+
+  return "Canvas";
+}
+
+function buildEdgeStyle(
+  palette: CanvasEdgeData["palette"],
+  selected: boolean,
+) {
+  const stroke = selected ? palette.selectedStroke : palette.stroke;
+
+  return {
+    style: {
+      stroke,
+      strokeWidth: selected ? 2.35 : 1.8,
+      filter: selected ? `drop-shadow(0 0 10px ${palette.glow})` : undefined,
+    },
+    labelStyle: {
+      fill: selected ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.52)",
+      fontSize: 11,
+      fontWeight: 600,
+      letterSpacing: "0.06em",
+    },
+    labelBgStyle: {
+      fill: "rgba(11,14,19,0.92)",
+      stroke,
+      strokeWidth: 1,
+    },
+  };
+}
+
+function decorateEdges(
+  edges: Edge<CanvasEdgeData>[],
+  selectedEdgeId: string | null,
+): Edge<CanvasEdgeData>[] {
+  return edges.map((edge) => {
+    const palette =
+      edge.data?.palette ?? {
+        stroke: "rgba(255,255,255,0.22)",
+        selectedStroke: "rgba(255,255,255,0.95)",
+        glow: "rgba(255,255,255,0.18)",
+      };
+    const selected = edge.id === selectedEdgeId;
+
+    return {
+      ...edge,
+      selected,
+      ...buildEdgeStyle(palette, selected),
+    };
+  });
+}
+
 const buildFlowNodes = (
   nodes: WorldGraphNode[],
   edges: EntityRelation[],
+  onDeleteNode?: (nodeId: string) => void,
 ): Node<CanvasGraphNodeData>[] => {
   const relationCountByNodeId = new Map<string, number>();
   edges.forEach((edge) => {
@@ -80,29 +170,45 @@ const buildFlowNodes = (
       entityType: node.entityType,
       description: node.description?.trim() ?? "",
       relationCount: relationCountByNodeId.get(node.id) ?? 0,
+      metaLabel: readNodeMetaLabel(node),
       subType: node.subType,
+      onDelete: onDeleteNode,
     },
   }));
 };
 
-const buildFlowEdges = (edges: EntityRelation[]): Edge[] =>
-  edges.map((edge) => ({
-    id: edge.id,
-    source: edge.sourceId,
-    target: edge.targetId,
-    label: edge.relation,
-    animated: false,
-    type: "smoothstep",
-    style: {
-      stroke: "rgba(255,255,255,0.18)",
-      strokeWidth: 1.6,
-    },
-    labelStyle: {
-      fill: "rgba(255,255,255,0.46)",
-      fontSize: 11,
-      fontWeight: 500,
-    },
-  }));
+const buildFlowEdges = (
+  edges: EntityRelation[],
+  nodes: WorldGraphNode[],
+): Edge<CanvasEdgeData>[] => {
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
+
+  return edges.map((edge) => {
+    const sourceNode = nodesById.get(edge.sourceId);
+    const sourceTheme = sourceNode
+      ? ENTITY_TYPE_CANVAS_THEME[sourceNode.entityType]
+      : ENTITY_TYPE_CANVAS_THEME.WorldEntity;
+    const palette = {
+      stroke: sourceTheme.edge,
+      selectedStroke: sourceTheme.selectedEdge,
+      glow: sourceTheme.glow,
+    };
+
+    return {
+      id: edge.id,
+      source: edge.sourceId,
+      target: edge.targetId,
+      label: edge.relation.replaceAll("_", " "),
+      animated: false,
+      type: "smoothstep",
+      data: { palette },
+      interactionWidth: 28,
+      labelBgPadding: [10, 4],
+      labelBgBorderRadius: 999,
+      ...buildEdgeStyle(palette, false),
+    };
+  });
+};
 
 function mergeIncomingNodes(
   currentNodes: Node<CanvasGraphNodeData>[],
@@ -131,17 +237,23 @@ function CanvasFlowSurface({
   selectedNodeId,
   onSelectNode,
   onNodePositionCommit,
+  onDeleteNode,
+  onCreateRelation,
+  onDeleteRelation,
   onCreateBlock,
   onCreateTimelineEvent,
   onCreateNote,
   summary,
 }: {
   graphNodes: Node<CanvasGraphNodeData>[];
-  graphEdges: Edge[];
+  graphEdges: Edge<CanvasEdgeData>[];
   timelineNodes: WorldGraphNode[];
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string | null) => void;
   onNodePositionCommit?: (input: { id: string; x: number; y: number }) => void;
+  onDeleteNode?: (nodeId: string) => void;
+  onCreateRelation?: (input: { sourceId: string; targetId: string }) => Promise<void>;
+  onDeleteRelation?: (relationId: string) => Promise<void>;
   onCreateBlock: () => void;
   onCreateTimelineEvent: () => void;
   onCreateNote: () => void;
@@ -152,7 +264,8 @@ function CanvasFlowSurface({
   };
 }) {
   const [nodes, setNodes] = useState<Node<CanvasGraphNodeData>[]>(graphNodes);
-  const [edges, setEdges] = useState<Edge[]>(graphEdges);
+  const [edges, setEdges] = useState<Edge<CanvasEdgeData>[]>(graphEdges);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [timelinePaletteOpen, setTimelinePaletteOpen] = useState(false);
   const [isHudVisible, setIsHudVisible] = useState(true);
   const draggingNodeIdRef = useRef<string | null>(null);
@@ -165,23 +278,27 @@ function CanvasFlowSurface({
   }, [graphNodes]);
 
   useEffect(() => {
-    setEdges(graphEdges);
-  }, [graphEdges]);
+    setEdges(decorateEdges(graphEdges, selectedEdgeId));
+  }, [graphEdges, selectedEdgeId]);
 
   useEffect(() => {
-    setNodes((currentNodes) =>
-      {
-        const activeNodeId =
-          currentNodes.find((node) => node.selected)?.id ?? null;
-        if (activeNodeId === selectedNodeId) {
-          return currentNodes;
-        }
-        return currentNodes.map((node) => ({
-          ...node,
-          selected: node.id === selectedNodeId,
-        }));
-      },
-    );
+    setNodes((currentNodes) => {
+      const activeNodeId =
+        currentNodes.find((node) => node.selected)?.id ?? null;
+      if (activeNodeId === selectedNodeId) {
+        return currentNodes;
+      }
+      return currentNodes.map((node) => ({
+        ...node,
+        selected: node.id === selectedNodeId,
+      }));
+    });
+  }, [selectedNodeId]);
+
+  useEffect(() => {
+    if (selectedNodeId) {
+      setSelectedEdgeId(null);
+    }
   }, [selectedNodeId]);
 
   const handleNodesChange = (changes: NodeChange[]) => {
@@ -189,23 +306,26 @@ function CanvasFlowSurface({
   };
 
   const handleEdgesChange = (changes: EdgeChange[]) => {
-    setEdges((currentEdges) => applyEdgeChanges(changes, currentEdges));
+    setEdges((currentEdges) =>
+      decorateEdges(applyEdgeChanges(changes, currentEdges), selectedEdgeId),
+    );
+
+    const selectedChange = [...changes].reverse().find(
+      (change) => change.type === "select",
+    );
+    if (selectedChange?.type === "select") {
+      setSelectedEdgeId(selectedChange.selected ? selectedChange.id : null);
+    }
   };
 
   const handleConnect = (connection: Connection) => {
-    setEdges((currentEdges) =>
-      addEdge(
-        {
-          ...connection,
-          type: "smoothstep",
-          style: {
-            stroke: "rgba(255,255,255,0.18)",
-            strokeWidth: 1.6,
-          },
-        },
-        currentEdges,
-      ),
-    );
+    if (!connection.source || !connection.target || !onCreateRelation) {
+      return;
+    }
+    void onCreateRelation({
+      sourceId: connection.source,
+      targetId: connection.target,
+    });
   };
 
   return (
@@ -224,11 +344,29 @@ function CanvasFlowSurface({
         onConnect={handleConnect}
         onNodeClick={(_, node) => {
           setIsHudVisible(false);
+          setSelectedEdgeId(null);
           onSelectNode(node.id);
+        }}
+        onEdgeClick={(_, edge) => {
+          setIsHudVisible(false);
+          setSelectedEdgeId(edge.id);
+          onSelectNode(null);
         }}
         onPaneClick={() => {
           setIsHudVisible(false);
+          setSelectedEdgeId(null);
           onSelectNode(null);
+        }}
+        onNodesDelete={(deletedNodes) => {
+          deletedNodes.forEach((node) => {
+            onDeleteNode?.(node.id);
+          });
+          setSelectedEdgeId(null);
+        }}
+        onEdgesDelete={(deletedEdges) => {
+          deletedEdges.forEach((edge) => {
+            void onDeleteRelation?.(edge.id);
+          });
         }}
         onNodeDragStart={(_, node) => {
           draggingNodeIdRef.current = node.id;
@@ -241,18 +379,20 @@ function CanvasFlowSurface({
             y: node.position.y,
           });
         }}
-        panOnDrag={[1]}
+        deleteKeyCode={["Backspace", "Delete"]}
+        panOnDrag={[2]}
         panOnScroll
         selectionOnDrag
         selectionMode={SelectionMode.Partial}
         onlyRenderVisibleElements
         zoomOnDoubleClick={false}
         selectNodesOnDrag={false}
+        nodesConnectable
         className="bg-[#0f1319]"
       >
         <Background
-          color="rgba(255,255,255,0.08)"
-          gap={28}
+          color="rgba(255,255,255,0.06)"
+          gap={30}
           size={1}
           variant={BackgroundVariant.Dots}
         />
@@ -272,7 +412,7 @@ function CanvasFlowSurface({
                   </p>
                 </div>
                 <Badge variant="outline">
-                  {summary.hasSelection ? "selection" : "idle"}
+                  {selectedEdgeId ? "relation" : summary.hasSelection ? "selection" : "idle"}
                 </Badge>
               </div>
               <div className="flex gap-2">
@@ -368,15 +508,18 @@ export function CanvasView({
   selectedNodeId,
   onSelectNode,
   onNodePositionCommit,
+  onDeleteNode,
+  onCreateRelation,
+  onDeleteRelation,
   onCreateBlock,
   onCreateTimelineEvent,
   onCreateNote,
 }: CanvasViewProps) {
   const flowNodes = useMemo(
-    () => buildFlowNodes(nodes, edges),
-    [edges, nodes],
+    () => buildFlowNodes(nodes, edges, onDeleteNode),
+    [edges, nodes, onDeleteNode],
   );
-  const flowEdges = useMemo(() => buildFlowEdges(edges), [edges]);
+  const flowEdges = useMemo(() => buildFlowEdges(edges, nodes), [edges, nodes]);
   const timelineNodes = useMemo(
     () => nodes.filter((node) => node.entityType === "Event"),
     [nodes],
@@ -400,6 +543,9 @@ export function CanvasView({
           selectedNodeId={selectedNodeId}
           onSelectNode={onSelectNode}
           onNodePositionCommit={onNodePositionCommit}
+          onDeleteNode={onDeleteNode}
+          onCreateRelation={onCreateRelation}
+          onDeleteRelation={onDeleteRelation}
           onCreateBlock={onCreateBlock}
           onCreateTimelineEvent={onCreateTimelineEvent}
           onCreateNote={onCreateNote}

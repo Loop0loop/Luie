@@ -1,14 +1,17 @@
-import { useWorldGraphWorkspace } from "../hooks/useWorldGraphWorkspace";
+import type { WorldGraphNode } from "@shared/types";
 import { EntityView } from "../views/EntityView";
 
 type EntityTabProps = {
+  graphNodes: WorldGraphNode[];
   selectedNodeId: string | null;
-  onSelectNode: (nodeId: string) => void;
+  onSelectNode: (nodeId: string | null) => void;
 };
 
-export function EntityTab({ selectedNodeId, onSelectNode }: EntityTabProps) {
-  const { graphNodes } = useWorldGraphWorkspace();
-
+export function EntityTab({
+  graphNodes,
+  selectedNodeId,
+  onSelectNode,
+}: EntityTabProps) {
   return (
     <EntityView
       nodes={graphNodes}

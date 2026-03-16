@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { RefreshCcw } from "lucide-react";
 import { Badge } from "@renderer/components/ui/badge";
 import { Button } from "@renderer/components/ui/button";
@@ -15,6 +15,7 @@ import { NotesTab } from "./tabs/NotesTab";
 import { LibraryTab } from "./tabs/LibraryTab";
 import { TimelineTab } from "./tabs/TimelineTab";
 import { EntityTab } from "./tabs/EntityTab";
+import { syncGraphEntitySelectionToWorkspace } from "@renderer/features/research/utils/graphEntitySync";
 
 export function WorldGraphPanel() {
   const {
@@ -93,12 +94,41 @@ export function WorldGraphPanel() {
     [],
   );
 
-  const { selectedNode, handleCreatePreset, handleSaveNode } =
+  const handleSelectNode = useCallback(
+    (nodeId: string | null) => {
+      setSelectedNodeId(nodeId);
+      if (!nodeId) return;
+
+      const node = graphNodes.find((item) => item.id === nodeId);
+      if (!node) return;
+
+      void syncGraphEntitySelectionToWorkspace({
+        id: node.id,
+        entityType: node.entityType,
+        name: node.name,
+      });
+    },
+    [graphNodes],
+  );
+
+  useEffect(() => {
+    if (!selectedNodeId) return;
+    const node = graphNodes.find((item) => item.id === selectedNodeId);
+    if (!node) return;
+
+    void syncGraphEntitySelectionToWorkspace({
+      id: node.id,
+      entityType: node.entityType,
+      name: node.name,
+    });
+  }, [graphNodes, selectedNodeId]);
+
+  const { selectedNode, handleCreatePreset, handleSaveNode, handleDeleteNode } =
     useCanvasTabSidebar({
       projectId,
       graphNodes,
       selectedNodeId,
-      onSelectNode: setSelectedNodeId,
+      onSelectNode: handleSelectNode,
       onCreatedEntity: handleCreatedEntity,
     });
 
@@ -123,8 +153,9 @@ export function WorldGraphPanel() {
           selectedNode={selectedNode}
           selectedNoteId={effectiveSelectedNoteId}
           onCreatePreset={handleCreatePreset}
-          onSelectNode={setSelectedNodeId}
+          onSelectNode={handleSelectNode}
           onSaveNode={handleSaveNode}
+          onDeleteNode={handleDeleteNode}
           onSelectNote={setSelectedNoteId}
           onCreateNote={handleCreateNote}
           pluginSummary={{
@@ -187,7 +218,7 @@ export function WorldGraphPanel() {
                 graphNodes={graphNodes}
                 graphEdges={graphEdges}
                 selectedNodeId={selectedNodeId}
-                onSelectNode={setSelectedNodeId}
+                onSelectNode={handleSelectNode}
                 onCreateNote={handleCreateNote}
                 onCreatedEntity={handleCreatedEntity}
               />
@@ -195,8 +226,9 @@ export function WorldGraphPanel() {
 
             {activeTab === "timeline" ? (
               <TimelineTab
+                timelineNodes={timelineNodes}
                 selectedNodeId={selectedNodeId}
-                onSelectNode={setSelectedNodeId}
+                onSelectNode={handleSelectNode}
               />
             ) : null}
 
@@ -210,8 +242,9 @@ export function WorldGraphPanel() {
 
             {activeTab === "entity" ? (
               <EntityTab
+                graphNodes={graphNodes}
                 selectedNodeId={selectedNodeId}
-                onSelectNode={setSelectedNodeId}
+                onSelectNode={handleSelectNode}
               />
             ) : null}
 

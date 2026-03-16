@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Plus, Save } from "lucide-react";
+import { Plus, Save, Trash2 } from "lucide-react";
 import type { ScrapMemo, WorldGraphNode } from "@shared/types";
-import { Badge } from "@renderer/components/ui/badge";
 import { Button } from "@renderer/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@renderer/components/ui/card";
 import { Input } from "@renderer/components/ui/input";
@@ -19,6 +18,7 @@ type GraphActiveSidebarProps = {
   onCreatePreset: (entityType: WorldGraphNode["entityType"], subType?: WorldGraphNode["subType"]) => void;
   onSelectNode: (nodeId: string) => void;
   onSaveNode: (input: { name: string; description: string }) => void;
+  onDeleteNode: () => void;
   onSelectNote: (noteId: string) => void;
   onCreateNote: () => void;
   pluginSummary: {
@@ -34,9 +34,11 @@ type GraphActiveSidebarProps = {
 function EntityEditor({
   node,
   onSave,
+  onDelete,
 }: {
   node: WorldGraphNode | null;
   onSave: (input: { name: string; description: string }) => void;
+  onDelete: () => void;
 }) {
   const [name, setName] = useState(node?.name ?? "");
   const [description, setDescription] = useState(node?.description ?? "");
@@ -50,14 +52,26 @@ function EntityEditor({
   }
 
   return (
-      <div className="space-y-3 rounded-2xl border border-border/60 bg-white/5 p-4">
-      <div>
-        <p className="mb-2 text-[11px] uppercase tracking-[0.24em] text-fg/45">
+    <div className="space-y-4 rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,24,31,0.96)_0%,rgba(14,17,23,0.98)_100%)] p-4 shadow-[0_18px_42px_rgba(0,0,0,0.26)]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="mb-2 text-[11px] uppercase tracking-[0.24em] text-fg/45">
           선택된 엔티티
-        </p>
-        <Badge variant="outline">
-          {node.entityType}
-        </Badge>
+          </p>
+          <p className="text-sm text-fg/65">
+            캔버스와 에디터에 동일하게 반영됩니다.
+          </p>
+        </div>
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="ghost"
+          className="rounded-full text-fg/50 hover:bg-white/8 hover:text-red-200"
+          onClick={onDelete}
+          title="엔티티 삭제"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
       </div>
       <label className="block">
         <span className="mb-2 block text-xs text-fg/55">이름</span>
@@ -79,6 +93,7 @@ function EntityEditor({
         type="button"
         size="sm"
         variant="secondary"
+        className="w-full"
         onClick={() => onSave({ name, description })}
       >
         <Save className="h-4 w-4" />
@@ -99,6 +114,7 @@ export function GraphActiveSidebar({
   onCreatePreset,
   onSelectNode,
   onSaveNode,
+  onDeleteNode,
   onSelectNote,
   onCreateNote,
   pluginSummary,
@@ -119,7 +135,7 @@ export function GraphActiveSidebar({
       <div className="space-y-4 px-4 py-4">
         {activeTab === "canvas" ? (
           <div className="space-y-5">
-            <Card className="border-white/10 bg-white/5">
+            <Card className="border-white/10 bg-[linear-gradient(180deg,rgba(20,24,31,0.94)_0%,rgba(14,17,23,0.96)_100%)]">
               <CardHeader>
                 <CardTitle className="text-sm">빠른 생성</CardTitle>
               </CardHeader>
@@ -142,6 +158,7 @@ export function GraphActiveSidebar({
               key={selectedNode?.id ?? "empty-node-editor"}
               node={selectedNode}
               onSave={onSaveNode}
+              onDelete={onDeleteNode}
             />
           </div>
         ) : null}
@@ -164,10 +181,10 @@ export function GraphActiveSidebar({
                   type="button"
                   onClick={() => onSelectNode(node.id)}
                   className={[
-                    "w-full rounded-2xl border px-3 py-3 text-left transition",
+                    "w-full rounded-[22px] border px-4 py-3 text-left transition",
                     selectedNode?.id === node.id
-                      ? "border-amber-400/40 bg-amber-500/10 text-fg"
-                      : "border-border/60 bg-white/5 text-fg/80 hover:bg-white/10",
+                      ? "border-amber-300/40 bg-amber-500/10 text-fg shadow-[0_14px_28px_rgba(0,0,0,0.22)]"
+                      : "border-white/8 bg-white/5 text-fg/80 hover:border-white/16 hover:bg-white/8",
                   ].join(" ")}
                 >
                   <p className="text-sm font-medium">{node.name}</p>
@@ -203,10 +220,10 @@ export function GraphActiveSidebar({
                   type="button"
                   onClick={() => onSelectNote(note.id)}
                   className={[
-                    "w-full rounded-2xl border px-3 py-3 text-left transition",
+                    "w-full rounded-[22px] border px-4 py-3 text-left transition",
                     selectedNoteId === note.id
-                      ? "border-orange-400/40 bg-orange-500/10 text-fg"
-                      : "border-border/60 bg-white/5 text-fg/80 hover:bg-white/10",
+                      ? "border-orange-300/40 bg-orange-500/10 text-fg shadow-[0_14px_28px_rgba(0,0,0,0.22)]"
+                      : "border-white/8 bg-white/5 text-fg/80 hover:border-white/16 hover:bg-white/8",
                   ].join(" ")}
                 >
                   <p className="truncate text-sm font-medium">{note.title || "제목 없음"}</p>
@@ -228,20 +245,20 @@ export function GraphActiveSidebar({
           <div className="space-y-2">
             {nodes.map((node) => (
               <button
-                key={node.id}
-                type="button"
-                onClick={() => onSelectNode(node.id)}
-                className={[
-                  "w-full rounded-2xl border px-3 py-3 text-left transition",
-                  selectedNode?.id === node.id
-                    ? "border-cyan-400/40 bg-cyan-500/10 text-fg"
-                    : "border-border/60 bg-white/5 text-fg/80 hover:bg-white/10",
+                  key={node.id}
+                  type="button"
+                  onClick={() => onSelectNode(node.id)}
+                  className={[
+                    "w-full rounded-[22px] border px-4 py-3 text-left transition",
+                    selectedNode?.id === node.id
+                      ? "border-cyan-300/40 bg-cyan-500/10 text-fg shadow-[0_14px_28px_rgba(0,0,0,0.22)]"
+                      : "border-white/8 bg-white/5 text-fg/80 hover:border-white/16 hover:bg-white/8",
                 ].join(" ")}
               >
                 <div className="flex items-center justify-between gap-3">
                   <p className="truncate text-sm font-medium">{node.name}</p>
-                  <span className="rounded-full border border-border/60 px-2 py-0.5 text-[11px] text-fg/55">
-                    {node.entityType}
+                  <span className="text-[11px] uppercase tracking-[0.2em] text-fg/38">
+                    linked
                   </span>
                 </div>
                 <p className="mt-1 truncate text-xs text-fg/55">

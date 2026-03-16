@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from "react";
+import { getDefaultRelationForPair } from "@shared/constants/worldRelationRules";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { CanvasView } from "../views/CanvasView";
 import type { EntityRelation, WorldGraphNode } from "@shared/types";
@@ -43,6 +44,9 @@ export function CanvasTab({
   const updateGraphNodePosition = useWorldBuildingStore(
     (state) => state.updateGraphNodePosition,
   );
+  const deleteGraphNode = useWorldBuildingStore((state) => state.deleteGraphNode);
+  const createRelation = useWorldBuildingStore((state) => state.createRelation);
+  const deleteRelation = useWorldBuildingStore((state) => state.deleteRelation);
 
   const effectiveSelectedNodeId =
     selectedNodeId && graphNodes.some((node) => node.id === selectedNodeId)
@@ -87,12 +91,55 @@ export function CanvasTab({
     void handleCreatePreset("Event");
   }, [handleCreatePreset]);
 
+  const handleDeleteNode = useCallback(
+    async (nodeId: string) => {
+      const deleted = await deleteGraphNode(nodeId);
+      if (deleted && selectedNodeId === nodeId) {
+        onSelectNode(null);
+      }
+    },
+    [deleteGraphNode, onSelectNode, selectedNodeId],
+  );
+
+  const handleCreateRelation = useCallback(
+    async ({ sourceId, targetId }: { sourceId: string; targetId: string }) => {
+      if (!projectId || sourceId === targetId) return;
+
+      const sourceNode = graphNodes.find((node) => node.id === sourceId);
+      const targetNode = graphNodes.find((node) => node.id === targetId);
+      if (!sourceNode || !targetNode) return;
+
+      await createRelation({
+        projectId,
+        sourceId,
+        sourceType: sourceNode.entityType,
+        targetId,
+        targetType: targetNode.entityType,
+        relation: getDefaultRelationForPair(
+          sourceNode.entityType,
+          targetNode.entityType,
+        ),
+      });
+    },
+    [createRelation, graphNodes, projectId],
+  );
+
+  const handleDeleteRelation = useCallback(
+    async (relationId: string) => {
+      await deleteRelation(relationId);
+    },
+    [deleteRelation],
+  );
+
   return (
     <CanvasView
       nodes={graphNodes}
       edges={graphEdges}
       selectedNodeId={effectiveSelectedNodeId}
       onSelectNode={onSelectNode}
+      onDeleteNode={handleDeleteNode}
+      onCreateRelation={handleCreateRelation}
+      onDeleteRelation={handleDeleteRelation}
       onCreateBlock={handleCreateCanvasBlock}
       onCreateTimelineEvent={handleCreateTimelineEvent}
       onCreateNote={onCreateNote}
@@ -122,6 +169,7 @@ export function useCanvasTabSidebar({
   const updateGraphNode = useWorldBuildingStore(
     (state) => state.updateGraphNode,
   );
+  const deleteGraphNode = useWorldBuildingStore((state) => state.deleteGraphNode);
 
   const effectiveSelectedNodeId =
     selectedNodeId && graphNodes.some((node) => node.id === selectedNodeId)
@@ -179,5 +227,14 @@ export function useCanvasTabSidebar({
     [selectedNode, updateGraphNode],
   );
 
-  return { selectedNode, handleCreatePreset, handleSaveNode };
+  const handleDeleteNode = useCallback(async () => {
+    if (!selectedNode) return;
+
+    const deleted = await deleteGraphNode(selectedNode.id);
+    if (deleted) {
+      onSelectNode(null);
+    }
+  }, [deleteGraphNode, onSelectNode, selectedNode]);
+
+  return { selectedNode, handleCreatePreset, handleSaveNode, handleDeleteNode };
 }
