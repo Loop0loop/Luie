@@ -7,10 +7,15 @@ import * as fs from "fs/promises";
 import path from "path";
 import { db } from "../../database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
-import { ErrorCode, SNAPSHOT_BACKUP_DIR } from "../../../shared/constants/index.js";
-import type { ChapterCreateInput, ChapterUpdateInput } from "../../../shared/types/index.js";
+import {
+  ErrorCode,
+  SNAPSHOT_BACKUP_DIR,
+} from "../../../shared/constants/index.js";
+import type {
+  ChapterCreateInput,
+  ChapterUpdateInput,
+} from "../../../shared/types/index.js";
 import { autoExtractService } from "../features/autoExtract/autoExtractService.js";
-import { autoSaveManager } from "../../manager/autoSaveManager.js";
 import { projectService } from "./projectService.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import { appearanceCacheService } from "../world/appearanceCacheService.js";
@@ -20,6 +25,9 @@ import { isTestEnv } from "../../utils/environment.js";
 import { chapterSearchCacheService } from "../features/chapterSearchCacheService.js";
 
 const logger = createLogger("ChapterService");
+
+const loadAutoSaveManager = async () =>
+  (await import("../../manager/autoSaveManager.js")).autoSaveManager;
 
 function isPrismaNotFoundError(error: unknown): boolean {
   return (
@@ -31,7 +39,9 @@ function isPrismaNotFoundError(error: unknown): boolean {
 }
 
 export class ChapterService {
-  private async resolveProjectTitle(projectId: string | undefined): Promise<string> {
+  private async resolveProjectTitle(
+    projectId: string | undefined,
+  ): Promise<string> {
     if (!projectId) return "Unknown";
     const project = await db.getClient().project.findUnique({
       where: { id: projectId },
@@ -59,7 +69,10 @@ export class ChapterService {
     );
     await fs.mkdir(dumpDir, { recursive: true });
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const dumpPath = path.join(dumpDir, `${input.filePrefix}-${input.chapterId}-${timestamp}.txt`);
+    const dumpPath = path.join(
+      dumpDir,
+      `${input.filePrefix}-${input.chapterId}-${timestamp}.txt`,
+    );
     await fs.writeFile(dumpPath, input.content, "utf8");
     return dumpPath;
   }
@@ -71,10 +84,12 @@ export class ChapterService {
   ): Promise<void> {
     if (input.content === undefined) return;
 
-    const oldContent = typeof current?.content === "string" ? current.content : "";
+    const oldContent =
+      typeof current?.content === "string" ? current.content : "";
     const oldLen = oldContent.length;
     const newLen = input.content.length;
-    const projectId = typeof current?.projectId === "string" ? current.projectId : undefined;
+    const projectId =
+      typeof current?.projectId === "string" ? current.projectId : undefined;
 
     if (oldLen > 0 && newLen === 0) {
       const dumpPath = await this.writeSuspiciousContentDump({
@@ -83,7 +98,11 @@ export class ChapterService {
         filePrefix: "dump-empty",
         content: oldContent,
       });
-      logger.warn("Empty content save blocked.", { chapterId: input.id, oldLen, dumpPath });
+      logger.warn("Empty content save blocked.", {
+        chapterId: input.id,
+        oldLen,
+        dumpPath,
+      });
       throw new ServiceError(
         ErrorCode.VALIDATION_FAILED,
         "Empty content save blocked",
@@ -302,6 +321,7 @@ export class ChapterService {
       });
 
       if ((chapter as { projectId?: unknown })?.projectId) {
+        const autoSaveManager = await loadAutoSaveManager();
         await autoSaveManager.forgetChapter(
           String((chapter as { projectId: unknown }).projectId),
           id,
@@ -419,6 +439,7 @@ export class ChapterService {
       await chapterSearchCacheService.clearChapter(id);
 
       if ((chapter as { projectId?: unknown })?.projectId) {
+        const autoSaveManager = await loadAutoSaveManager();
         await autoSaveManager.forgetChapter(
           String((chapter as { projectId: unknown }).projectId),
           id,

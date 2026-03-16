@@ -4,7 +4,7 @@ import { act } from "react";
 import type { ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { WorldGraphPanel } from "../../src/renderer/src/features/research/components/world/graph/canvas/WorldGraphPanel.js";
+import { WorldGraphPanel } from "../../src/renderer/src/features/research/components/world/graph/WorldGraphPanel.js";
 import { useProjectStore } from "../../src/renderer/src/features/project/stores/projectStore.js";
 import { useWorldBuildingStore } from "../../src/renderer/src/features/research/stores/worldBuildingStore.js";
 import { useMemoStore } from "../../src/renderer/src/features/research/stores/memoStore.js";

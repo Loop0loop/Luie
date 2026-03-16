@@ -7,43 +7,79 @@
   },
   "files": [
     "out/**/*",
-    "package.json"
+    "package.json",
+    "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme,AUTHORS,LICENSE,LICENSE.*,LICENCE,LICENCE.*,docs,doc,example,examples,test,tests,__tests__,coverage,src,.github}/**"
   ],
   "extraResources": [
     {
       "from": "node_modules/.prisma",
       "to": "node_modules/.prisma",
       "filter": [
-        "**/*"
+        "client/index.js",
+        "client/default.js",
+        "client/package.json",
+        "client/index.d.ts",
+        "client/default.d.ts",
+        "client/schema.prisma",
+        "client/query_compiler_fast_bg.js",
+        "client/query_compiler_fast_bg.wasm",
+        "client/query_compiler_fast_bg.wasm-base64.js",
+        "client/wasm-edge-light-loader.mjs",
+        "client/wasm-worker-loader.mjs"
       ]
     },
     {
       "from": "node_modules/@prisma/client",
       "to": "node_modules/@prisma/client",
       "filter": [
-        "**/*"
+        "default.js",
+        "default.d.ts",
+        "index.js",
+        "index.d.ts",
+        "index-browser.js",
+        "edge.js",
+        "edge.d.ts",
+        "extension.js",
+        "extension.d.ts",
+        "package.json",
+        "runtime/client.js",
+        "runtime/client.mjs",
+        "runtime/client.d.ts",
+        "runtime/client.d.mts",
+        "runtime/index-browser.js",
+        "runtime/index-browser.mjs",
+        "runtime/index-browser.d.ts",
+        "runtime/index-browser.d.mts",
+        "runtime/wasm-compiler-edge.js",
+        "runtime/wasm-compiler-edge.mjs",
+        "runtime/wasm-compiler-edge.d.ts",
+        "runtime/query_compiler_fast_bg.sqlite.js",
+        "runtime/query_compiler_fast_bg.sqlite.mjs",
+        "runtime/query_compiler_fast_bg.sqlite.wasm-base64.js",
+        "runtime/query_compiler_small_bg.sqlite.js",
+        "runtime/query_compiler_small_bg.sqlite.mjs",
+        "runtime/query_compiler_small_bg.sqlite.wasm-base64.js"
       ]
     },
     {
       "from": "node_modules/@prisma/client-runtime-utils",
       "to": "node_modules/@prisma/client-runtime-utils",
-      "filter": [
-        "**/*"
-      ]
+      "filter": ["**/*"]
+    },
+    {
+      "from": "node_modules/@prisma-cache/client",
+      "to": "node_modules/@prisma-cache/client",
+      "filter": ["**/*"]
     },
     {
       "from": "node_modules/bindings",
       "to": "node_modules/bindings",
-      "filter": [
-        "**/*"
-      ]
+      "filter": ["**/*"]
     },
     {
       "from": "node_modules/file-uri-to-path",
       "to": "node_modules/file-uri-to-path",
-      "filter": [
-        "**/*"
-      ]
+      "filter": ["**/*"]
     },
     {
       "from": "build/icons/icon.png",
@@ -66,18 +102,12 @@
     "category": "public.app-category.productivity",
     "icon": "build/icons/icon.icns",
     "artifactName": "Luie-${version}-${arch}.${ext}",
-    "target": [
-      "dmg",
-      "zip"
-    ]
+    "target": ["dmg", "zip"]
   },
   "win": {
     "icon": "build/icons/icon.ico",
     "executableName": "Luie",
-    "target": [
-      "nsis-web",
-      "portable"
-    ]
+    "target": ["nsis-web", "portable"]
   },
   "nsis": {
     "oneClick": true,
@@ -103,9 +133,6 @@
   "linux": {
     "icon": "build/icons/icon.png",
     "artifactName": "Luie-${version}-${arch}.${ext}",
-    "target": [
-      "AppImage",
-      "deb"
-    ]
+    "target": ["AppImage", "deb"]
   }
 }

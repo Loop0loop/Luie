@@ -7,7 +7,7 @@ describe("appearance cache isolation boundary", () => {
     const root = process.cwd();
     const [mainSchema, cacheSchema, packagedSchema, cachePackagedSchema, packageJson] = await Promise.all([
       fs.readFile(path.join(root, "prisma", "schema.prisma"), "utf8"),
-      fs.readFile(path.join(root, "prisma", "cache", "schema.prisma"), "utf8"),
+      fs.readFile(path.join(root, "prisma-cache", "schema.prisma"), "utf8"),
       fs.readFile(
         path.join(root, "src", "main", "database", "packagedSchema.ts"),
         "utf8",
@@ -28,6 +28,6 @@ describe("appearance cache isolation boundary", () => {
     expect(packagedSchema).not.toContain('"CharacterAppearance"');
     expect(packagedSchema).not.toContain('"TermAppearance"');
     expect(cachePackagedSchema).toContain('CREATE VIRTUAL TABLE IF NOT EXISTS "ChapterSearchDocumentFts"');
-    expect(packageJson).toContain("prisma generate --schema=prisma/cache/schema.prisma");
+    expect(packageJson).toContain("prisma generate --schema=prisma-cache/schema.prisma");
   });
 });

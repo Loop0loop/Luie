@@ -14,6 +14,7 @@ import {
 } from "../../../shared/schemas/index.js";
 import { z } from "zod";
 import type { LoggerLike } from "../core/types.js";
+import { ensureBootstrapReady } from "../../lifecycle/bootstrap.js";
 
 type EntityRelationServiceLike = {
     createRelation: (input: EntityRelationCreateInput) => Promise<unknown>;
@@ -69,16 +70,20 @@ export function registerEntityRelationIPCHandlers(
             logTag: "WORLD_GRAPH_GET",
             failMessage: "Failed to get world graph",
             argsSchema: z.tuple([projectIdSchema]),
-            handler: (projectId: string) =>
-                entityRelationService.getWorldGraph(projectId),
+            handler: async (projectId: string) => {
+                await ensureBootstrapReady();
+                return entityRelationService.getWorldGraph(projectId);
+            },
         },
         {
             channel: IPC_CHANNELS.WORLD_GRAPH_GET_MENTIONS,
             logTag: "WORLD_GRAPH_GET_MENTIONS",
             failMessage: "Failed to get world graph mentions",
             argsSchema: z.tuple([worldGraphMentionsQuerySchema]),
-            handler: (query: WorldGraphMentionsQuery) =>
-                worldMentionService.getMentions(query),
+            handler: async (query: WorldGraphMentionsQuery) => {
+                await ensureBootstrapReady();
+                return worldMentionService.getMentions(query);
+            },
         },
     ]);
 }

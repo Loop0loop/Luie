@@ -26,6 +26,7 @@ import type {
 } from "./databaseTypes.js";
 
 const logger = createLogger("DatabaseService");
+const RUNTIME_DB_ENV_KEY = "LUIE_RUNTIME_DATABASE_URL";
 
 class DatabaseService {
   private static instance: DatabaseService;
@@ -129,7 +130,9 @@ class DatabaseService {
     const isPackaged = isProdEnv();
     const userDataPath = app.getPath("userData");
     const isTest = isTestEnv();
-    const envDb = process.env.DATABASE_URL;
+    const envDb = isTestEnv()
+      ? process.env.DATABASE_URL
+      : process.env[RUNTIME_DB_ENV_KEY];
     const hasEnvDb = Boolean(envDb);
 
     let dbPath: string;
@@ -143,11 +146,13 @@ class DatabaseService {
       dbPath = ensureSafeAbsolutePath(path.join(userDataPath, DB_NAME), "dbPath");
       datasourceUrl = `file:${dbPath}`;
     } else {
-      dbPath = ensureSafeAbsolutePath(path.join(process.cwd(), "prisma", "dev.db"), "dbPath");
+      dbPath = ensureSafeAbsolutePath(path.join(process.cwd(), "prisma", "app-dev.db"), "dbPath");
       datasourceUrl = `file:${dbPath}`;
     }
-
-    process.env.DATABASE_URL = datasourceUrl;
+    process.env[RUNTIME_DB_ENV_KEY] = datasourceUrl;
+    if (isTest) {
+      process.env.DATABASE_URL = datasourceUrl;
+    }
 
     await fs.mkdir(userDataPath, { recursive: true });
     await fs.mkdir(path.dirname(dbPath), { recursive: true });

@@ -42,11 +42,16 @@ const parseDateInput = (value: string | undefined, fallback: Date): Date => {
 };
 
 export class WorldReplicaService {
+  private async ensureDbReady(): Promise<void> {
+    await db.initialize();
+  }
+
   async getDocument(input: {
     projectId: string;
     docType: ReplicaWorldDocumentType;
   }): Promise<WorldReplicaDocumentResult> {
     try {
+      await this.ensureDbReady();
       const row = await db.getClient().worldDocument.findUnique({
         where: {
           projectId_docType: {
@@ -94,6 +99,7 @@ export class WorldReplicaService {
     payload: unknown;
   }): Promise<void> {
     try {
+      await this.ensureDbReady();
       await db.getClient().worldDocument.upsert({
         where: {
           projectId_docType: {
@@ -140,6 +146,7 @@ export class WorldReplicaService {
 
   async getScrapMemos(projectId: string): Promise<WorldReplicaScrapMemosResult> {
     try {
+      await this.ensureDbReady();
       const [documentRow, memoRows] = await Promise.all([
         db.getClient().worldDocument.findUnique({
           where: {
@@ -222,6 +229,7 @@ export class WorldReplicaService {
     data: WorldScrapMemosData;
   }): Promise<void> {
     try {
+      await this.ensureDbReady();
       const payload: WorldScrapMemosData = {
         schemaVersion:
           input.data.schemaVersion ?? WORLD_SCRAP_MEMOS_SCHEMA_VERSION,

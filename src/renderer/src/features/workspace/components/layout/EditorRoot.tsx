@@ -1,20 +1,21 @@
-import { useState, lazy, Suspense, useCallback, useMemo, useEffect } from "react";
+import {
+  useState,
+  lazy,
+  Suspense,
+  useCallback,
+  useMemo,
+  useEffect,
+} from "react";
 import { type Editor as TiptapEditor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
-import MainLayout from "@renderer/features/workspace/components/layout/MainLayout";
-import GoogleDocsLayout from "@renderer/features/workspace/components/layout/GoogleDocsLayout";
-import FocusLayout from "@renderer/features/workspace/components/layout/FocusLayout";
-import EditorLayout from "@renderer/features/workspace/components/layout/EditorLayout";
-import Sidebar from "@renderer/features/manuscript/components/Sidebar";
-import DocsSidebar from "@renderer/features/manuscript/components/DocsSidebar";
 import Editor from "@renderer/features/editor/components/Editor";
 import { SmartLinkTooltip } from "@renderer/features/editor/components/SmartLinkTooltip";
-import ContextPanel from "@renderer/features/workspace/components/panels/ContextPanel";
-import ScrivenerLayout from "@renderer/features/workspace/components/layout/ScrivenerLayout";
-import ScrivenerSidebar from "@renderer/features/manuscript/components/ScrivenerSidebar";
 
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
-import { useUIStore, type DocsRightTab } from "@renderer/features/workspace/stores/uiStore";
+import {
+  useUIStore,
+  type DocsRightTab,
+} from "@renderer/features/workspace/stores/uiStore";
 import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useEditorStatsStore } from "@renderer/features/editor/stores/editorStatsStore";
@@ -31,378 +32,465 @@ import { GlobalDragContext } from "@shared/ui/GlobalDragContext";
 import { useEditorRootShortcuts } from "@renderer/features/workspace/components/useEditorRootShortcuts";
 import { FeatureErrorBoundary } from "@renderer/shared/error-boundaries/FeatureErrorBoundary";
 
-const SettingsModal = lazy(() => import("@renderer/features/settings/components/SettingsModal"));
-import { WorkspacePanels } from "@renderer/features/workspace/components/panels/WorkspacePanels";
-import DataRecoveryBanner from "@renderer/features/workspace/components/banner/DataRecoveryBanner";
-import UpdaterNotification from "@renderer/features/workspace/components/UpdaterNotification";
-import { OfflineBanner } from "@renderer/features/workspace/components/banner/OfflineBanner";
+const SettingsModal = lazy(
+  () => import("@renderer/features/settings/components/SettingsModal"),
+);
+const MainLayout = lazy(
+  () => import("@renderer/features/workspace/components/layout/MainLayout"),
+);
+const GoogleDocsLayout = lazy(
+  () =>
+    import("@renderer/features/workspace/components/layout/GoogleDocsLayout"),
+);
+const FocusLayout = lazy(
+  () => import("@renderer/features/workspace/components/layout/FocusLayout"),
+);
+const EditorLayout = lazy(
+  () => import("@renderer/features/workspace/components/layout/EditorLayout"),
+);
+const ScrivenerLayout = lazy(
+  () =>
+    import("@renderer/features/workspace/components/layout/ScrivenerLayout"),
+);
+const Sidebar = lazy(
+  () => import("@renderer/features/manuscript/components/Sidebar"),
+);
+const DocsSidebar = lazy(
+  () => import("@renderer/features/manuscript/components/DocsSidebar"),
+);
+const ScrivenerSidebar = lazy(
+  () => import("@renderer/features/manuscript/components/ScrivenerSidebar"),
+);
+const ContextPanel = lazy(
+  () => import("@renderer/features/workspace/components/panels/ContextPanel"),
+);
+const WorkspacePanels = lazy(() =>
+  import("@renderer/features/workspace/components/panels/WorkspacePanels").then(
+    (module) => ({
+      default: module.WorkspacePanels,
+    }),
+  ),
+);
+const DataRecoveryBanner = lazy(
+  () =>
+    import("@renderer/features/workspace/components/banner/DataRecoveryBanner"),
+);
+const UpdaterNotification = lazy(
+  () => import("@renderer/features/workspace/components/UpdaterNotification"),
+);
+const OfflineBanner = lazy(() =>
+  import("@renderer/features/workspace/components/banner/OfflineBanner").then(
+    (module) => ({
+      default: module.OfflineBanner,
+    }),
+  ),
+);
+
+const layoutFallback = <div className="h-full w-full bg-app" />;
 
 export default function EditorRoot() {
-    const { t } = useTranslation();
-    const dialog = useDialog();
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const { t } = useTranslation();
+  const dialog = useDialog();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-    const uiMode = useEditorStore((state) => state.uiMode);
-    const setUiMode = useEditorStore((state) => state.setUiMode);
-    const fontSize = useEditorStore((state) => state.fontSize);
-    const setFontSize = useEditorStore((state) => state.setFontSize);
+  const uiMode = useEditorStore((state) => state.uiMode);
+  const setUiMode = useEditorStore((state) => state.setUiMode);
+  const fontSize = useEditorStore((state) => state.fontSize);
+  const setFontSize = useEditorStore((state) => state.setFontSize);
 
-    const wordCount = useEditorStatsStore((state) => state.wordCount);
-    const isDocsMode = uiMode === "docs";
+  const wordCount = useEditorStatsStore((state) => state.wordCount);
+  const isDocsMode = uiMode === "docs";
 
-    const {
+  const {
+    isSidebarOpen,
+    isContextOpen,
+    setSidebarOpen,
+    setContextOpen,
+    toggleLeftSidebar,
+    setWorldTab,
+    docsRightTab,
+    setDocsRightTab,
+    openRightPanelTab,
+    closeRightPanel,
+    isManuscriptMenuOpen,
+  } = useUIStore(
+    useShallow((state) => ({
+      isSidebarOpen: state.isSidebarOpen,
+      isContextOpen: state.isContextOpen,
+      setSidebarOpen: state.setSidebarOpen,
+      setContextOpen: state.setContextOpen,
+      toggleLeftSidebar: state.toggleLeftSidebar,
+      setWorldTab: state.setWorldTab,
+      docsRightTab: state.docsRightTab,
+      setDocsRightTab: state.setDocsRightTab,
+      openRightPanelTab: state.openRightPanelTab,
+      closeRightPanel: state.closeRightPanel,
+      isManuscriptMenuOpen: state.isManuscriptMenuOpen,
+    })),
+  );
+  const currentProject = useProjectStore((state) => state.currentProject);
+  const updateProject = useProjectStore((state) => state.updateProject);
+
+  useProjectLayoutPersistence(currentProject?.id ?? null, uiMode);
+
+  const {
+    chapters,
+    activeChapterId,
+    content,
+    activeChapterTitle,
+    handleSelectChapter,
+    handleAddChapter,
+    handleRenameChapter,
+    handleDeleteChapter,
+    handleSave,
+  } = useChapterManagement();
+
+  const activeChapter = useMemo(
+    () => chapters.find((c) => c.id === activeChapterId),
+    [chapters, activeChapterId],
+  );
+
+  const [docEditor, setDocEditor] = useState<TiptapEditor | null>(null);
+
+  const setMainView = useUIStore((state) => state.setMainView);
+
+  const openChapterByIndex = useCallback(
+    (index: number) => {
+      if (index < 0 || index >= chapters.length) return;
+      const target = chapters[index];
+      if (target?.id) {
+        handleSelectChapter(target.id);
+      }
+    },
+    [chapters, handleSelectChapter],
+  );
+
+  const handleDeleteActiveChapter = useCallback(async () => {
+    if (!isManuscriptMenuOpen) return;
+    if (!activeChapterId) return;
+    const confirmed = await dialog.confirm({
+      title: t("sidebar.menu.delete"),
+      message: t("bootstrap.deleteManuscriptConfirm"),
+      isDestructive: true,
+    });
+    if (!confirmed) return;
+    await handleDeleteChapter(activeChapterId);
+  }, [activeChapterId, dialog, handleDeleteChapter, isManuscriptMenuOpen, t]);
+
+  const {
+    panels,
+    contextTab,
+    setContextTab,
+    addPanel,
+    removePanel,
+    handleSelectResearchItem,
+    handleSplitView,
+    handleOpenExport,
+  } = useSplitView();
+  const additionalPanelIds = useMemo(
+    () => panels.map((panel) => panel.id),
+    [panels],
+  );
+
+  const handleSelectChapterWithView = useCallback(
+    (id: string) => {
+      handleSelectChapter(id);
+    },
+    [handleSelectChapter],
+  );
+
+  const { handleDropToCenter, handleDropToSplit } = useWorkspaceDropHandlers({
+    uiMode,
+    handleSelectChapter: handleSelectChapterWithView,
+    handleSelectResearchItem,
+    setMainView,
+    setWorldTab,
+    addPanel,
+  });
+
+  const openDocsRightTab = useCallback((tab: Exclude<DocsRightTab, null>) => {
+    openDocsPanelTab(tab);
+  }, []);
+
+  const layoutModeActions = useMemo(
+    () =>
+      createLayoutModeActions({
+        isDocsMode,
         isSidebarOpen,
         isContextOpen,
-        setSidebarOpen,
-        setContextOpen,
-        toggleLeftSidebar,
-        setWorldTab,
         docsRightTab,
-        setDocsRightTab,
+        activeChapterId: activeChapterId ?? null,
+        openDocsRightTab,
         openRightPanelTab,
         closeRightPanel,
-        isManuscriptMenuOpen,
-    } = useUIStore(
-        useShallow((state) => ({
-            isSidebarOpen: state.isSidebarOpen,
-            isContextOpen: state.isContextOpen,
-            setSidebarOpen: state.setSidebarOpen,
-            setContextOpen: state.setContextOpen,
-            toggleLeftSidebar: state.toggleLeftSidebar,
-            setWorldTab: state.setWorldTab,
-            docsRightTab: state.docsRightTab,
-            setDocsRightTab: state.setDocsRightTab,
-            openRightPanelTab: state.openRightPanelTab,
-            closeRightPanel: state.closeRightPanel,
-            isManuscriptMenuOpen: state.isManuscriptMenuOpen,
-        }))
-    );
-    const currentProject = useProjectStore((state) => state.currentProject);
-    const updateProject = useProjectStore((state) => state.updateProject);
-
-    useProjectLayoutPersistence(currentProject?.id ?? null, uiMode);
-
-    const {
-        chapters,
-        activeChapterId,
-        content,
-        activeChapterTitle,
-        handleSelectChapter,
-        handleAddChapter,
-        handleRenameChapter,
-        handleDeleteChapter,
-        handleSave,
-    } = useChapterManagement();
-
-    const activeChapter = useMemo(() =>
-        chapters.find((c) => c.id === activeChapterId),
-        [chapters, activeChapterId]
-    );
-
-    const [docEditor, setDocEditor] = useState<TiptapEditor | null>(null);
-
-    const setMainView = useUIStore((state) => state.setMainView);
-
-    const openChapterByIndex = useCallback(
-        (index: number) => {
-            if (index < 0 || index >= chapters.length) return;
-            const target = chapters[index];
-            if (target?.id) {
-                handleSelectChapter(target.id);
-            }
-        },
-        [chapters, handleSelectChapter],
-    );
-
-    const handleDeleteActiveChapter = useCallback(async () => {
-        if (!isManuscriptMenuOpen) return;
-        if (!activeChapterId) return;
-        const confirmed = await dialog.confirm({
-            title: t("sidebar.menu.delete"),
-            message: t("bootstrap.deleteManuscriptConfirm"),
-            isDestructive: true,
-        });
-        if (!confirmed) return;
-        await handleDeleteChapter(activeChapterId);
-    }, [activeChapterId, dialog, handleDeleteChapter, isManuscriptMenuOpen, t]);
-
-    const {
-        panels,
-        contextTab,
-        setContextTab,
-        addPanel,
-        removePanel,
-        handleSelectResearchItem,
-        handleSplitView,
-        handleOpenExport,
-    } = useSplitView();
-    const additionalPanelIds = useMemo(
-        () => panels.map((panel) => panel.id),
-        [panels],
-    );
-
-    const handleSelectChapterWithView = useCallback((id: string) => {
-        handleSelectChapter(id);
-    }, [handleSelectChapter]);
-
-    const { handleDropToCenter, handleDropToSplit } = useWorkspaceDropHandlers({
-        uiMode,
-        handleSelectChapter: handleSelectChapterWithView,
-        handleSelectResearchItem,
-        setMainView,
-        setWorldTab,
-        addPanel,
-    });
-
-    const openDocsRightTab = useCallback((tab: Exclude<DocsRightTab, null>) => {
-        openDocsPanelTab(tab);
-    }, []);
-
-    const layoutModeActions = useMemo(
-        () =>
-            createLayoutModeActions({
-                isDocsMode,
-                isSidebarOpen,
-                isContextOpen,
-                docsRightTab,
-                activeChapterId: activeChapterId ?? null,
-                openDocsRightTab,
-                openRightPanelTab,
-                closeRightPanel,
-                toggleLeftSidebar,
-                setDocsRightTab,
-                setContextOpen,
-                setSidebarOpen,
-                addPanel,
-                handleSelectResearchItem,
-                handleOpenExport,
-                onToggleManuscriptLegacy: () =>
-                    emitShortcutCommand({ type: "sidebar.section.toggle", section: "manuscript" }),
-                onOpenSidebarSectionLegacy: (section: "snapshot" | "trash") =>
-                    emitShortcutCommand({ type: "sidebar.section.open", section }),
-            }),
-        [
-            activeChapterId,
-            docsRightTab,
-            isDocsMode,
-            isSidebarOpen,
-            isContextOpen,
-            openDocsRightTab,
-            openRightPanelTab,
-            closeRightPanel,
-            toggleLeftSidebar,
-            setDocsRightTab,
-            setContextOpen,
-            setSidebarOpen,
-            addPanel,
-            handleSelectResearchItem,
-            handleOpenExport,
-        ],
-    );
-
-    const handleQuickExport = useCallback(() => {
-        void openQuickExportEntry({
-            chapterId: activeChapterId,
-            t,
-            toast: dialog.toast,
-        });
-    }, [activeChapterId, dialog.toast, t]);
-
-    const handleOpenWorldGraph = useCallback(() => {
-        setWorldTab("graph");
-        window.location.hash = "#world-graph";
-    }, [setWorldTab]);
-
-    const handleRenameProject = useCallback(async () => {
-        if (!currentProject?.id) return;
-
-        const nextTitle = (
-            await dialog.prompt({
-                title: t("sidebar.tooltip.renameProject"),
-                message: t("sidebar.prompt.renameProject"),
-                defaultValue: currentProject.title ?? "",
-                placeholder: t("sidebar.prompt.renameProject"),
-            })
-        )?.trim();
-
-        if (!nextTitle || nextTitle === currentProject.title) return;
-        await updateProject(currentProject.id, nextTitle);
-    }, [currentProject, dialog, t, updateProject]);
-
-    useEditorRootShortcuts({
-        setIsSettingsOpen,
-        handleAddChapter,
-        handleSave,
-        handleDeleteActiveChapter,
-        openChapterByIndex,
-        handleRenameProject,
-        handleQuickExport,
+        toggleLeftSidebar,
+        setDocsRightTab,
+        setContextOpen,
         setSidebarOpen,
-        isSidebarOpen,
-        layoutModeActions,
-        setWorldTab,
-        setFontSize,
-        fontSize,
-        setUiMode,
-        uiMode,
-        activeChapterTitle,
-        content,
+        addPanel,
+        handleSelectResearchItem,
+        handleOpenExport,
+        onToggleManuscriptLegacy: () =>
+          emitShortcutCommand({
+            type: "sidebar.section.toggle",
+            section: "manuscript",
+          }),
+        onOpenSidebarSectionLegacy: (section: "snapshot" | "trash") =>
+          emitShortcutCommand({ type: "sidebar.section.open", section }),
+      }),
+    [
+      activeChapterId,
+      docsRightTab,
+      isDocsMode,
+      isSidebarOpen,
+      isContextOpen,
+      openDocsRightTab,
+      openRightPanelTab,
+      closeRightPanel,
+      toggleLeftSidebar,
+      setDocsRightTab,
+      setContextOpen,
+      setSidebarOpen,
+      addPanel,
+      handleSelectResearchItem,
+      handleOpenExport,
+    ],
+  );
+
+  const handleQuickExport = useCallback(() => {
+    void openQuickExportEntry({
+      chapterId: activeChapterId,
+      t,
+      toast: dialog.toast,
     });
+  }, [activeChapterId, dialog.toast, t]);
 
-    const prefetchSettings = useCallback(() => {
-        void import("@renderer/features/settings/components/SettingsModal");
-    }, []);
+  const handleOpenWorldGraph = useCallback(() => {
+    setWorldTab("graph");
+    window.location.hash = "#world-graph";
+  }, [setWorldTab]);
 
-    useEffect(() => {
-        const handleOpenSettings = () => {
-            setIsSettingsOpen(true);
-        };
-        window.addEventListener("luie:open-settings", handleOpenSettings);
-        return () => {
-            window.removeEventListener("luie:open-settings", handleOpenSettings);
-        };
-    }, []);
+  const handleRenameProject = useCallback(async () => {
+    if (!currentProject?.id) return;
 
-    if (uiMode === "focus") {
-        return (
-            <>
-                <FocusLayout activeChapterTitle={activeChapterTitle} wordCount={wordCount}>
-                    <FeatureErrorBoundary featureName="Editor">
-                        <Editor
-                            key={activeChapterId ?? "focus-editor"}
-                            chapterId={activeChapterId ?? undefined}
-                            initialTitle={activeChapterTitle}
-                            initialContent={content}
-                            onSave={handleSave}
-                            focusMode={true}
-                            hideToolbar={true}
-                            hideFooter={true}
-                            hideTitle={true}
-                            scrollable={true}
-                        />
-                    </FeatureErrorBoundary>
-                </FocusLayout>
-                <SmartLinkTooltip />
-            </>
-        );
-    }
+    const nextTitle = (
+      await dialog.prompt({
+        title: t("sidebar.tooltip.renameProject"),
+        message: t("sidebar.prompt.renameProject"),
+        defaultValue: currentProject.title ?? "",
+        placeholder: t("sidebar.prompt.renameProject"),
+      })
+    )?.trim();
 
-    const sharedEditor = (
-        <FeatureErrorBoundary featureName="Editor">
-            <Editor
-                key={activeChapterId}
-                initialTitle={activeChapter ? activeChapter.title : ""}
-                initialContent={activeChapter ? activeChapter.content : ""}
+    if (!nextTitle || nextTitle === currentProject.title) return;
+    await updateProject(currentProject.id, nextTitle);
+  }, [currentProject, dialog, t, updateProject]);
+
+  useEditorRootShortcuts({
+    setIsSettingsOpen,
+    handleAddChapter,
+    handleSave,
+    handleDeleteActiveChapter,
+    openChapterByIndex,
+    handleRenameProject,
+    handleQuickExport,
+    setSidebarOpen,
+    isSidebarOpen,
+    layoutModeActions,
+    setWorldTab,
+    setFontSize,
+    fontSize,
+    setUiMode,
+    uiMode,
+    activeChapterTitle,
+    content,
+  });
+
+  const prefetchSettings = useCallback(() => {
+    void import("@renderer/features/settings/components/SettingsModal");
+  }, []);
+
+  useEffect(() => {
+    const handleOpenSettings = () => {
+      setIsSettingsOpen(true);
+    };
+    window.addEventListener("luie:open-settings", handleOpenSettings);
+    return () => {
+      window.removeEventListener("luie:open-settings", handleOpenSettings);
+    };
+  }, []);
+
+  if (uiMode === "focus") {
+    return (
+      <Suspense fallback={layoutFallback}>
+        <>
+          <FocusLayout
+            activeChapterTitle={activeChapterTitle}
+            wordCount={wordCount}
+          >
+            <FeatureErrorBoundary featureName="Editor">
+              <Editor
+                key={activeChapterId ?? "focus-editor"}
+                chapterId={activeChapterId ?? undefined}
+                initialTitle={activeChapterTitle}
+                initialContent={content}
                 onSave={handleSave}
-                readOnly={!activeChapterId}
-                chapterId={activeChapterId || undefined}
-                onOpenWorldGraph={handleOpenWorldGraph}
-                hideToolbar={uiMode === "docs" || uiMode === "scrivener" || uiMode === "editor"}
+                focusMode={true}
+                hideToolbar={true}
                 hideFooter={true}
-                hideTitle={uiMode === "docs" || uiMode === "scrivener" || uiMode === "editor"}
-                scrollable={uiMode === "scrivener" || uiMode === "default"}
-                onEditorReady={setDocEditor}
-            />
-        </FeatureErrorBoundary>
+                hideTitle={true}
+                scrollable={true}
+              />
+            </FeatureErrorBoundary>
+          </FocusLayout>
+          <SmartLinkTooltip />
+        </>
+      </Suspense>
     );
-    const additionalPanelsComponent = (
-        <WorkspacePanels
-            panels={panels}
-            removePanel={removePanel}
-            chapters={chapters}
-            currentProjectId={currentProject?.id}
+  }
+
+  const sharedEditor = (
+    <FeatureErrorBoundary featureName="Editor">
+      <Editor
+        key={activeChapterId}
+        initialTitle={activeChapter ? activeChapter.title : ""}
+        initialContent={activeChapter ? activeChapter.content : ""}
+        onSave={handleSave}
+        readOnly={!activeChapterId}
+        chapterId={activeChapterId || undefined}
+        onOpenWorldGraph={handleOpenWorldGraph}
+        hideToolbar={
+          uiMode === "docs" || uiMode === "scrivener" || uiMode === "editor"
+        }
+        hideFooter={true}
+        hideTitle={
+          uiMode === "docs" || uiMode === "scrivener" || uiMode === "editor"
+        }
+        scrollable={uiMode === "scrivener" || uiMode === "default"}
+        onEditorReady={setDocEditor}
+      />
+    </FeatureErrorBoundary>
+  );
+  const additionalPanelsComponent = (
+    <Suspense fallback={null}>
+      <WorkspacePanels
+        panels={panels}
+        removePanel={removePanel}
+        chapters={chapters}
+        currentProjectId={currentProject?.id}
+        activeChapterId={activeChapterId ?? undefined}
+        activeChapterTitle={activeChapterTitle}
+        onSave={handleSave}
+      />
+    </Suspense>
+  );
+
+  return (
+    <GlobalDragContext
+      onDropToCenter={handleDropToCenter}
+      onDropToSplit={handleDropToSplit}
+    >
+      <Suspense fallback={null}>
+        <OfflineBanner />
+        <DataRecoveryBanner />
+        <UpdaterNotification />
+      </Suspense>
+      <Suspense fallback={layoutFallback}>
+        {uiMode === "docs" ? (
+          <GoogleDocsLayout
+            sidebar={
+              <Suspense fallback={null}>
+                <DocsSidebar />
+              </Suspense>
+            }
             activeChapterId={activeChapterId ?? undefined}
             activeChapterTitle={activeChapterTitle}
-            onSave={handleSave}
-        />
-    );
+            activeChapterContent={content}
+            currentProjectId={currentProject?.id}
+            editor={docEditor}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onRenameChapter={handleRenameChapter}
+            onSaveChapter={handleSave}
+            onOpenExport={handleQuickExport}
+            onOpenWorldGraph={handleOpenWorldGraph}
+            additionalPanels={additionalPanelsComponent}
+            additionalPanelIds={additionalPanelIds}
+          >
+            {sharedEditor}
+          </GoogleDocsLayout>
+        ) : uiMode === "editor" ? (
+          <EditorLayout
+            sidebar={
+              <Suspense fallback={null}>
+                <DocsSidebar />
+              </Suspense>
+            }
+            activeChapterId={activeChapterId ?? undefined}
+            activeChapterTitle={activeChapterTitle}
+            currentProjectId={currentProject?.id}
+            editor={docEditor}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenExport={handleQuickExport}
+            onRenameChapter={handleRenameChapter}
+            onSaveChapter={handleSave}
+            onOpenWorldGraph={handleOpenWorldGraph}
+            additionalPanels={additionalPanelsComponent}
+            additionalPanelIds={additionalPanelIds}
+          >
+            {sharedEditor}
+          </EditorLayout>
+        ) : uiMode === "scrivener" ? (
+          <ScrivenerLayout
+            sidebar={
+              <Suspense fallback={null}>
+                <ScrivenerSidebar />
+              </Suspense>
+            }
+            activeChapterId={activeChapterId ?? undefined}
+            activeChapterTitle={activeChapterTitle}
+            editor={docEditor}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenExport={handleQuickExport}
+            onOpenWorldGraph={handleOpenWorldGraph}
+            additionalPanels={additionalPanelsComponent}
+          >
+            {sharedEditor}
+          </ScrivenerLayout>
+        ) : (
+          <MainLayout
+            sidebar={
+              <Suspense fallback={null}>
+                <Sidebar
+                  onOpenSettings={() => setIsSettingsOpen(true)}
+                  onPrefetchSettings={prefetchSettings}
+                  onSelectResearchItem={handleSelectResearchItem}
+                  onSplitView={handleSplitView}
+                />
+              </Suspense>
+            }
+            contextPanel={
+              <Suspense fallback={null}>
+                <ContextPanel
+                  activeTab={contextTab}
+                  onTabChange={setContextTab}
+                />
+              </Suspense>
+            }
+            onOpenExport={handleQuickExport}
+            additionalPanels={additionalPanelsComponent}
+            additionalPanelIds={additionalPanelIds}
+          >
+            {sharedEditor}
+          </MainLayout>
+        )}
+      </Suspense>
 
-    return (
-        <GlobalDragContext onDropToCenter={handleDropToCenter} onDropToSplit={handleDropToSplit}>
-            <OfflineBanner />
-            <DataRecoveryBanner />
-            <UpdaterNotification />
-            {uiMode === 'docs' ? (
-                <GoogleDocsLayout
-                    sidebar={
-                        <DocsSidebar />
-                    }
-                    activeChapterId={activeChapterId ?? undefined}
-                    activeChapterTitle={activeChapterTitle}
-                    activeChapterContent={content}
-                    currentProjectId={currentProject?.id}
-                    editor={docEditor}
-                    onOpenSettings={() => setIsSettingsOpen(true)}
-                    onRenameChapter={handleRenameChapter}
-                    onSaveChapter={handleSave}
-                    onOpenExport={handleQuickExport}
-                    onOpenWorldGraph={handleOpenWorldGraph}
-                    additionalPanels={additionalPanelsComponent}
-                    additionalPanelIds={additionalPanelIds}
-                >
-                    {sharedEditor}
-                </GoogleDocsLayout>
-            ) : uiMode === "editor" ? (
-                <EditorLayout
-                    sidebar={
-                        <DocsSidebar />
-                    }
-                    activeChapterId={activeChapterId ?? undefined}
-                    activeChapterTitle={activeChapterTitle}
-                    currentProjectId={currentProject?.id}
-                    editor={docEditor}
-                    onOpenSettings={() => setIsSettingsOpen(true)}
-                    onOpenExport={handleQuickExport}
-                    onRenameChapter={handleRenameChapter}
-                    onSaveChapter={handleSave}
-                    onOpenWorldGraph={handleOpenWorldGraph}
-                    additionalPanels={additionalPanelsComponent}
-                    additionalPanelIds={additionalPanelIds}
-                >
-                    {sharedEditor}
-                </EditorLayout>
-            ) : uiMode === "scrivener" ? (
-                <ScrivenerLayout
-                    sidebar={
-                        <ScrivenerSidebar />
-                    }
-                    activeChapterId={activeChapterId ?? undefined}
-                    activeChapterTitle={activeChapterTitle}
-                    editor={docEditor}
-                    onOpenSettings={() => setIsSettingsOpen(true)}
-                    onOpenExport={handleQuickExport}
-                    onOpenWorldGraph={handleOpenWorldGraph}
-                    additionalPanels={additionalPanelsComponent}
-                >
-                    {sharedEditor}
-                </ScrivenerLayout>
-            ) : (
-                <MainLayout
-                    sidebar={
-                        <Sidebar
-                            onOpenSettings={() => setIsSettingsOpen(true)}
-                            onPrefetchSettings={prefetchSettings}
-                            onSelectResearchItem={handleSelectResearchItem}
-                            onSplitView={handleSplitView}
-                        />
-                    }
-                    contextPanel={
-                        <ContextPanel activeTab={contextTab} onTabChange={setContextTab} />
-                    }
-                    onOpenExport={handleQuickExport}
-                    additionalPanels={additionalPanelsComponent}
-                    additionalPanelIds={additionalPanelIds}
-                >
-                    {sharedEditor}
-                </MainLayout>
-            )}
-
-            {isSettingsOpen && (
-                <Suspense fallback={null}>
-                    <SettingsModal onClose={() => setIsSettingsOpen(false)} />
-                </Suspense>
-            )}
-            <SmartLinkTooltip isSettingsOpen={isSettingsOpen} />
-        </GlobalDragContext>
-    );
+      {isSettingsOpen && (
+        <Suspense fallback={null}>
+          <SettingsModal onClose={() => setIsSettingsOpen(false)} />
+        </Suspense>
+      )}
+      <SmartLinkTooltip isSettingsOpen={isSettingsOpen} />
+    </GlobalDragContext>
+  );
 }

@@ -1,9 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: ['selector', '[data-theme="dark"]'],
-  content: [
-    "./src/renderer/**/*.{js,ts,jsx,tsx}",
-  ],
+  darkMode: ["selector", '[data-theme="dark"]'],
+  content: ["./src/renderer/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
@@ -11,7 +9,6 @@ export default {
         canvas: "var(--bg-app)",
         sidebar: "var(--bg-sidebar)",
         panel: "var(--bg-panel)",
-        "panel-header": "var(--bg-panel-header)",
 
         // Element backgrounds
         surface: "var(--bg-element)",
@@ -77,16 +74,7 @@ export default {
         toast: "9100",
         tooltip: "9200",
       },
-      keyframes: {
-        flow: {
-          '0%': { strokeDashoffset: '20' },
-          '100%': { strokeDashoffset: '0' },
-        },
-      },
-      animation: {
-        flow: 'flow 1.5s linear infinite',
-      },
     },
   },
   plugins: [],
-}
+};

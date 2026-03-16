@@ -1,17 +1,58 @@
-import { useMemo } from "react";
+import { lazy, Suspense, useMemo } from "react";
 import { X } from "lucide-react";
-import { AppearanceTab } from "@renderer/features/settings/components/tabs/AppearanceTab";
-import { EditorTab } from "@renderer/features/settings/components/tabs/EditorTab";
-import { LanguageTab } from "@renderer/features/settings/components/tabs/LanguageTab";
-import { RecoveryTab } from "@renderer/features/settings/components/tabs/RecoveryTab";
-import { ShortcutsTab } from "@renderer/features/settings/components/tabs/ShortcutsTab";
-import { SyncTab } from "@renderer/features/settings/components/tabs/SyncTab";
 import { SETTINGS_TABS } from "@renderer/features/settings/components/SettingsModalConfig";
 import { useSettingsManager } from "@renderer/features/settings/hooks/useSettingsManager";
+
+const AppearanceTab = lazy(() =>
+  import("@renderer/features/settings/components/tabs/AppearanceTab").then(
+    (module) => ({
+      default: module.AppearanceTab,
+    }),
+  ),
+);
+const EditorTab = lazy(() =>
+  import("@renderer/features/settings/components/tabs/EditorTab").then(
+    (module) => ({
+      default: module.EditorTab,
+    }),
+  ),
+);
+const LanguageTab = lazy(() =>
+  import("@renderer/features/settings/components/tabs/LanguageTab").then(
+    (module) => ({
+      default: module.LanguageTab,
+    }),
+  ),
+);
+const RecoveryTab = lazy(() =>
+  import("@renderer/features/settings/components/tabs/RecoveryTab").then(
+    (module) => ({
+      default: module.RecoveryTab,
+    }),
+  ),
+);
+const ShortcutsTab = lazy(() =>
+  import("@renderer/features/settings/components/tabs/ShortcutsTab").then(
+    (module) => ({
+      default: module.ShortcutsTab,
+    }),
+  ),
+);
+const SyncTab = lazy(() =>
+  import("@renderer/features/settings/components/tabs/SyncTab").then(
+    (module) => ({
+      default: module.SyncTab,
+    }),
+  ),
+);
 
 interface SettingsModalProps {
   onClose: () => void;
 }
+
+const settingsTabFallback = (
+  <div className="min-h-[320px] animate-pulse rounded-xl bg-surface/60" />
+);
 
 export default function SettingsModal({ onClose }: SettingsModalProps) {
   const {
@@ -106,72 +147,74 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
           </button>
 
           <div className="flex-1 overflow-y-auto p-10 scrollbar-hide">
-            {activeTab === "appearance" && (
-              <AppearanceTab
-                t={t}
-                isMacOS={isMacOS}
-                menuBarMode={menuBarMode}
-                onMenuBarModeChange={handleMenuBarMode}
-                isMenuBarUpdating={isMenuBarUpdating}
-              />
-            )}
+            <Suspense fallback={settingsTabFallback}>
+              {activeTab === "appearance" && (
+                <AppearanceTab
+                  t={t}
+                  isMacOS={isMacOS}
+                  menuBarMode={menuBarMode}
+                  onMenuBarModeChange={handleMenuBarMode}
+                  isMenuBarUpdating={isMenuBarUpdating}
+                />
+              )}
 
-            {activeTab === "editor" && (
-              <EditorTab
-                t={t}
-                localFontSize={localFontSize}
-                localLineHeight={localLineHeight}
-                onSetLocalFontSize={setLocalFontSize}
-                onSetLocalLineHeight={setLocalLineHeight}
-              />
-            )}
+              {activeTab === "editor" && (
+                <EditorTab
+                  t={t}
+                  localFontSize={localFontSize}
+                  localLineHeight={localLineHeight}
+                  onSetLocalFontSize={setLocalFontSize}
+                  onSetLocalLineHeight={setLocalLineHeight}
+                />
+              )}
 
-            {activeTab === "shortcuts" && (
-              <ShortcutsTab
-                t={t}
-                shortcutGroups={shortcutGroups}
-                shortcutValues={shortcuts as Record<string, string>}
-                shortcutDefaults={shortcutDefaults as Record<string, string>}
-                isSaving={isShortcutsUpdating}
-                onCommitShortcuts={handleCommitShortcuts}
-                onResetShortcuts={handleResetShortcuts}
-                getShortcutGroupLabel={getGroupLabel}
-                getShortcutGroupIcon={getGroupIcon}
-              />
-            )}
+              {activeTab === "shortcuts" && (
+                <ShortcutsTab
+                  t={t}
+                  shortcutGroups={shortcutGroups}
+                  shortcutValues={shortcuts as Record<string, string>}
+                  shortcutDefaults={shortcutDefaults as Record<string, string>}
+                  isSaving={isShortcutsUpdating}
+                  onCommitShortcuts={handleCommitShortcuts}
+                  onResetShortcuts={handleResetShortcuts}
+                  getShortcutGroupLabel={getGroupLabel}
+                  getShortcutGroupIcon={getGroupIcon}
+                />
+              )}
 
-            {activeTab === "recovery" && (
-              <RecoveryTab
-                t={t}
-                isRecovering={isRecovering}
-                isRecoveryStatusLoading={isRecoveryStatusLoading}
-                recoveryResult={recoveryResult}
-                recoveryScope={recoveryScope}
-                recoveryStatus={recoveryStatus}
-                recoveryStatusError={recoveryStatusError}
-                onDismiss={onClose}
-                onRefreshRecoveryStatus={handleRefreshRecoveryStatus}
-                onRunRecovery={handleRunRecovery}
-              />
-            )}
+              {activeTab === "recovery" && (
+                <RecoveryTab
+                  t={t}
+                  isRecovering={isRecovering}
+                  isRecoveryStatusLoading={isRecoveryStatusLoading}
+                  recoveryResult={recoveryResult}
+                  recoveryScope={recoveryScope}
+                  recoveryStatus={recoveryStatus}
+                  recoveryStatusError={recoveryStatusError}
+                  onDismiss={onClose}
+                  onRefreshRecoveryStatus={handleRefreshRecoveryStatus}
+                  onRunRecovery={handleRunRecovery}
+                />
+              )}
 
-            {activeTab === "sync" && (
-              <SyncTab
-                t={t}
-                status={syncStatus}
-                isBusy={isSyncBusy}
-                onConnectGoogle={handleConnectGoogle}
-                onReconnectGoogle={handleReconnectGoogle}
-                onDisconnect={handleDisconnect}
-                onSyncNow={handleSyncNow}
-                onToggleAutoSync={handleToggleAutoSync}
-                onResolveConflict={handleResolveConflict}
-              />
-            )}
+              {activeTab === "sync" && (
+                <SyncTab
+                  t={t}
+                  status={syncStatus}
+                  isBusy={isSyncBusy}
+                  onConnectGoogle={handleConnectGoogle}
+                  onReconnectGoogle={handleReconnectGoogle}
+                  onDisconnect={handleDisconnect}
+                  onSyncNow={handleSyncNow}
+                  onToggleAutoSync={handleToggleAutoSync}
+                  onResolveConflict={handleResolveConflict}
+                />
+              )}
 
-            {activeTab === "language" && (
-              <LanguageTab t={t} language={i18n.language} />
-            )}
+              {activeTab === "language" && (
+                <LanguageTab t={t} language={i18n.language} />
+              )}
+            </Suspense>
           </div>
         </div>
       </div>

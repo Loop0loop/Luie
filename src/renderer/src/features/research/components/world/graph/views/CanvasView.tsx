@@ -21,12 +21,11 @@ import { Button } from "@renderer/components/ui/button";
 import { Card, CardContent } from "@renderer/components/ui/card";
 import { CanvasTimelinePalette } from "../components/CanvasTimelinePalette";
 import { CanvasToolbar } from "../components/CanvasToolbar";
+import type { CanvasGraphNodeData } from "../components/CanvasGraphNodeCard";
 import {
-  CanvasGraphNodeCard,
-  type CanvasGraphNodeData,
-} from "../components/CanvasGraphNodeCard";
-
-const CANVAS_NODE_TYPES = { "obsidian-card": CanvasGraphNodeCard } as const;
+  CANVAS_EDGE_TYPES,
+  CANVAS_NODE_TYPES,
+} from "../components/canvasFlowTypes";
 
 type CanvasViewProps = {
   nodes: WorldGraphNode[];
@@ -215,6 +214,7 @@ function CanvasFlowSurface({
         nodes={nodes}
         edges={edges}
         nodeTypes={CANVAS_NODE_TYPES}
+        edgeTypes={CANVAS_EDGE_TYPES}
         minZoom={0.45}
         maxZoom={1.6}
         defaultViewport={{ x: 0, y: 0, zoom: 0.9 }}
@@ -377,6 +377,18 @@ export function CanvasView({
     [edges, nodes],
   );
   const flowEdges = useMemo(() => buildFlowEdges(edges), [edges]);
+  const timelineNodes = useMemo(
+    () => nodes.filter((node) => node.entityType === "Event"),
+    [nodes],
+  );
+  const summary = useMemo(
+    () => ({
+      nodeCount: nodes.length,
+      edgeCount: edges.length,
+      hasSelection: Boolean(selectedNodeId),
+    }),
+    [edges.length, nodes.length, selectedNodeId],
+  );
 
   return (
     <div className="relative h-full bg-[#0f1319]">
@@ -384,18 +396,14 @@ export function CanvasView({
         <CanvasFlowSurface
           graphNodes={flowNodes}
           graphEdges={flowEdges}
-          timelineNodes={nodes.filter((node) => node.entityType === "Event")}
+          timelineNodes={timelineNodes}
           selectedNodeId={selectedNodeId}
           onSelectNode={onSelectNode}
           onNodePositionCommit={onNodePositionCommit}
           onCreateBlock={onCreateBlock}
           onCreateTimelineEvent={onCreateTimelineEvent}
           onCreateNote={onCreateNote}
-          summary={{
-            nodeCount: nodes.length,
-            edgeCount: edges.length,
-            hasSelection: Boolean(selectedNodeId),
-          }}
+          summary={summary}
         />
       </ReactFlowProvider>
 

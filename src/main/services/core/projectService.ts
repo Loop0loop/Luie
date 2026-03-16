@@ -43,14 +43,27 @@ import {
   renameSnapshotDirectoryForProjectTitleChange,
 } from "./project/projectPathPolicy.js";
 import { collectDuplicateProjectPathGroups } from "./project/projectPathReconciliation.js";
-import { exportProjectPackageWithOptions as exportProjectPackageWithOptionsImpl } from "./project/projectExportEngine.js";
-import { openLuieProjectPackage } from "./project/projectImportOpen.js";
-import { LuieMetaSchema } from "./project/projectLuieSchemas.js";
-import { appearanceCacheService } from "../world/appearanceCacheService.js";
-import { chapterSearchCacheService } from "../features/chapterSearchCacheService.js";
-import { readLuieContainerEntry } from "../io/luieContainer.js";
 
 const logger = createLogger("ProjectService");
+
+const loadProjectExportEngine = async () =>
+  (await import("./project/projectExportEngine.js"))
+    .exportProjectPackageWithOptions;
+
+const loadProjectImportOpen = async () =>
+  (await import("./project/projectImportOpen.js")).openLuieProjectPackage;
+
+const loadProjectLuieSchemas = async () =>
+  import("./project/projectLuieSchemas.js");
+
+const loadAppearanceCacheService = async () =>
+  (await import("../world/appearanceCacheService.js")).appearanceCacheService;
+
+const loadChapterSearchCacheService = async () =>
+  (await import("../features/chapterSearchCacheService.js"))
+    .chapterSearchCacheService;
+
+const loadLuieContainer = async () => import("../io/luieContainer.js");
 
 export class ProjectService {
   private exportQueue = new ProjectExportQueue(
@@ -183,6 +196,7 @@ export class ProjectService {
 
   async openLuieProject(packagePath: string) {
     try {
+      const openLuieProjectPackage = await loadProjectImportOpen();
       return await openLuieProjectPackage({
         packagePath,
         logger,
@@ -217,6 +231,10 @@ export class ProjectService {
   }
 
   private async readLuieMetaForAttachment(packagePath: string) {
+    const [{ readLuieContainerEntry }, { LuieMetaSchema }] = await Promise.all([
+      loadLuieContainer(),
+      loadProjectLuieSchemas(),
+    ]);
     let raw: string | null;
     try {
       raw = await readLuieContainerEntry(
@@ -273,7 +291,10 @@ export class ProjectService {
 
   async attachProjectPackage(projectId: string, packagePath: string) {
     try {
-      const normalizedPath = normalizeLuiePackagePath(packagePath, "packagePath");
+      const normalizedPath = normalizeLuiePackagePath(
+        packagePath,
+        "packagePath",
+      );
       const [existing, conflict, meta] = await Promise.all([
         db.getClient().project.findUnique({
           where: { id: projectId },
@@ -356,10 +377,7 @@ export class ProjectService {
     }
   }
 
-  async materializeProjectPackage(
-    projectId: string,
-    targetPath: string,
-  ) {
+  async materializeProjectPackage(projectId: string, targetPath: string) {
     try {
       const normalizedPath = normalizeLuiePackagePath(targetPath, "targetPath");
       const [existing, conflict, currentAttachmentPath] = await Promise.all([
@@ -479,7 +497,8 @@ export class ProjectService {
         },
       });
 
-      const normalizedProjects = projects.map((project: {
+      const normalizedProjects = projects.map(
+        (project: {
           id: string;
           title: string;
           description: string | null;
@@ -489,12 +508,14 @@ export class ProjectService {
           ...project,
           id: String(project.id),
           description:
-            typeof project.description === "string" ? project.description : null,
-        }));
-
-      const projectsWithAttachments = await hydrateProjectsWithAttachmentPaths(
-        normalizedProjects,
+            typeof project.description === "string"
+              ? project.description
+              : null,
+        }),
       );
+
+      const projectsWithAttachments =
+        await hydrateProjectsWithAttachmentPaths(normalizedProjects);
       const projectsWithLocalState = await hydrateProjectsWithLocalState(
         projectsWithAttachments,
       );
@@ -640,6 +661,11 @@ export class ProjectService {
         where: { id: request.id },
       });
       try {
+        const [appearanceCacheService, chapterSearchCacheService] =
+          await Promise.all([
+            loadAppearanceCacheService(),
+            loadChapterSearchCacheService(),
+          ]);
         await Promise.all([
           appearanceCacheService.clearProject(request.id),
           chapterSearchCacheService.clearProject(request.id),
@@ -694,6 +720,11 @@ export class ProjectService {
         where: { id },
       });
       try {
+        const [appearanceCacheService, chapterSearchCacheService] =
+          await Promise.all([
+            loadAppearanceCacheService(),
+            loadChapterSearchCacheService(),
+          ]);
         await Promise.all([
           appearanceCacheService.clearProject(id),
           chapterSearchCacheService.clearProject(id),
@@ -739,7 +770,10 @@ export class ProjectService {
     this.exportQueue.schedule(projectId, reason);
   }
 
-  async exportProjectPackageNow(projectId: string, reason?: string): Promise<boolean> {
+  async exportProjectPackageNow(
+    projectId: string,
+    reason?: string,
+  ): Promise<boolean> {
     return await this.exportQueue.runNow(projectId, reason);
   }
 
@@ -806,6 +840,7 @@ export class ProjectService {
       worldSourcePath?: string | null;
     },
   ): Promise<boolean> {
+    const exportProjectPackageWithOptionsImpl = await loadProjectExportEngine();
     return await exportProjectPackageWithOptionsImpl({
       projectId,
       options,

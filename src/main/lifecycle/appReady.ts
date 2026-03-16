@@ -1,6 +1,5 @@
 import { app, BrowserWindow, session, dialog } from "electron";
 import type { WebContents } from "electron";
-import { autoSaveManager } from "../manager/autoSaveManager.js";
 import { settingsManager, windowManager } from "../manager/index.js";
 import { projectService } from "../services/core/projectService.js";
 import { snapshotService } from "../services/features/snapshot/snapshotService.js";
@@ -19,6 +18,9 @@ type AppReadyOptions = {
 
 const STARTUP_MAINTENANCE_DELAY_MS = 1500;
 const FIRST_RENDERER_FALLBACK_MS = 8000;
+
+const loadAutoSaveManager = async () =>
+  (await import("../manager/autoSaveManager.js")).autoSaveManager;
 
 const buildProdCspPolicy = () =>
   [
@@ -50,8 +52,13 @@ const resolveCspPolicy = (isDev: boolean): string | null => {
 
 const isFileUrl = (url: string): boolean => url.startsWith("file://");
 const isResizeObserverNoise = (message: string): boolean =>
-  message.includes("ResizeObserver loop completed with undelivered notifications") ||
-  message.includes("ResizeObserver loop limit exceeded");
+  message.includes(
+    "ResizeObserver loop completed with undelivered notifications",
+  ) || message.includes("ResizeObserver loop limit exceeded");
+const isReactFlowNodeTypesWarning = (message: string): boolean =>
+  message.includes(
+    "[React Flow]: It looks like you've created a new nodeTypes or edgeTypes object.",
+  );
 
 const handleRendererCrash = async (
   logger: Logger,
@@ -64,6 +71,7 @@ const handleRendererCrash = async (
   });
 
   try {
+    const autoSaveManager = await loadAutoSaveManager();
     await autoSaveManager.flushCritical();
     logger.info("Emergency save completed after crash");
   } catch (error) {
@@ -101,6 +109,7 @@ const runDeferredStartupMaintenance = async (logger: Logger): Promise<void> => {
   }
 
   try {
+    const autoSaveManager = await loadAutoSaveManager();
     await autoSaveManager.flushMirrorsToSnapshots("startup-recovery");
     void snapshotService.pruneSnapshotsAllProjects();
     void snapshotService.cleanupOrphanArtifacts("startup");
@@ -314,7 +323,11 @@ export const registerAppReady = (
       });
       webContents.on("console-message", (consoleEvent) => {
         const { level, message, lineNumber, sourceId } = consoleEvent;
-        if (typeof message === "string" && isResizeObserverNoise(message)) {
+        if (
+          typeof message === "string" &&
+          (isResizeObserverNoise(message) ||
+            isReactFlowNodeTypesWarning(message))
+        ) {
           return;
         }
         const severity =
@@ -344,7 +357,7 @@ export const registerAppReady = (
 
     const ipcRegistrationStartedAt = Date.now();
     const { registerIPCHandlers } = await import("../handler/index.js");
-    registerIPCHandlers();
+    await registerIPCHandlers();
     logger.info("Startup checkpoint: IPC handlers ready", {
       elapsedMs: Date.now() - ipcRegistrationStartedAt,
       startupElapsedMs: Date.now() - startupStartedAtMs,

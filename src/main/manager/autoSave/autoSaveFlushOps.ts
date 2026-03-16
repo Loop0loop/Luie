@@ -1,6 +1,11 @@
-import { chapterService } from "../../services/core/chapterService.js";
-import { snapshotService } from "../../services/features/snapshot/snapshotService.js";
 import { DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT } from "../../../shared/constants/index.js";
+
+const loadChapterService = async () =>
+  (await import("../../services/core/chapterService.js")).chapterService;
+
+const loadSnapshotService = async () =>
+  (await import("../../services/features/snapshot/snapshotService.js"))
+    .snapshotService;
 
 type LoggerLike = {
   info: (message: string, data?: unknown) => void;
@@ -26,6 +31,10 @@ export const createScheduledSnapshot = async (
   chapterId?: string,
 ): Promise<void> => {
   try {
+    const [chapterService, snapshotService] = await Promise.all([
+      loadChapterService(),
+      loadSnapshotService(),
+    ]);
     if (chapterId) {
       const chapter = await chapterService.getChapter(chapterId);
       const chapterData = chapter as { id?: unknown; content?: unknown };
@@ -44,7 +53,10 @@ export const createScheduledSnapshot = async (
       });
     }
 
-    await snapshotService.deleteOldSnapshots(projectId, DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT);
+    await snapshotService.deleteOldSnapshots(
+      projectId,
+      DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT,
+    );
     logger.info("Snapshot created", { projectId, chapterId });
   } catch (error) {
     logger.error("Failed to create snapshot", error);
@@ -86,6 +98,7 @@ export const flushCriticalPendingSaves = async (
 
   let mirrored = 0;
   let snapshots = 0;
+  const snapshotService = await loadSnapshotService();
 
   for (const entry of pending) {
     try {
@@ -113,4 +126,3 @@ export const flushCriticalPendingSaves = async (
   logger.info("Emergency flush completed", { mirrored, snapshots });
   return { mirrored, snapshots };
 };
-

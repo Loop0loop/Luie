@@ -10,6 +10,7 @@ const PROJECT_ROOT = process.cwd();
 const SRC_ROOT = path.join(PROJECT_ROOT, "src");
 const PACKAGE_JSON_PATH = path.join(PROJECT_ROOT, "package.json");
 const ALLOWED_INTERNAL_PREFIXES = ["@shared/", "@renderer/", "node:"];
+const ALLOWED_GENERATED_PACKAGES = new Set(["@prisma-cache/client"]);
 const SOURCE_FILE_PATTERN = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 const IMPORT_RE =
   /\bimport\s+(?:type\s+)?(?:[^"'()]*?\s+from\s+)?["']([^"']+)["']|\bimport\(\s*["']([^"']+)["']\s*\)|\brequire\(\s*["']([^"']+)["']\s*\)/g;
@@ -25,12 +26,11 @@ const RESOLVABLE_EXTENSIONS = [
 ];
 
 const BUILTIN_MODULES = new Set(
-  builtinModules
-    .flatMap((moduleName) =>
-      moduleName.startsWith("node:")
-        ? [moduleName, moduleName.slice(5)]
-        : [moduleName, `node:${moduleName}`],
-    ),
+  builtinModules.flatMap((moduleName) =>
+    moduleName.startsWith("node:")
+      ? [moduleName, moduleName.slice(5)]
+      : [moduleName, `node:${moduleName}`],
+  ),
 );
 
 const shouldSkipDir = (dirName) =>
@@ -74,7 +74,12 @@ const collectFiles = (dir, output = []) => {
 
 const normalizeAliasPath = (specifier) => {
   if (specifier.startsWith("@shared/")) {
-    return path.join(PROJECT_ROOT, "src", "shared", specifier.slice("@shared/".length));
+    return path.join(
+      PROJECT_ROOT,
+      "src",
+      "shared",
+      specifier.slice("@shared/".length),
+    );
   }
   if (specifier.startsWith("@renderer/")) {
     return path.join(
@@ -133,7 +138,9 @@ const resolveInternalImport = (sourceFile, specifier) => {
   }
   if (!basePath) return true;
 
-  return resolvePathCandidates(basePath).some((candidate) => fs.existsSync(candidate));
+  return resolvePathCandidates(basePath).some((candidate) =>
+    fs.existsSync(candidate),
+  );
 };
 
 export const extractImports = (content) => {
@@ -181,6 +188,10 @@ export const analyzeDependencyIntegrity = async () => {
 
       const packageName = toPackageName(specifier);
       if (BUILTIN_MODULES.has(packageName)) {
+        continue;
+      }
+
+      if (ALLOWED_GENERATED_PACKAGES.has(packageName)) {
         continue;
       }
 

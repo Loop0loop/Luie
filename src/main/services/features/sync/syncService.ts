@@ -7,25 +7,8 @@ import type {
   SyncStatus,
 } from "../../../../shared/types/index.js";
 import { settingsManager } from "../../../manager/settingsManager.js";
-import { syncAuthService } from "./syncAuthService.js";
 import type { SyncBundle } from "./syncMapper.js";
-import {
-  hydrateMissingWorldDocsFromPackage,
-} from "./syncBundleCollector.js";
-import {
-  withErrorProjectStates,
-} from "./syncStatusMachine.js";
-import { ensureSyncAccessToken } from "./syncAccessToken.js";
-import {
-  applyMergedBundleToLocalFirstLuie,
-} from "./syncBundleApplier.js";
-import { executeSyncRun } from "./syncRunExecutor.js";
-import { resolveStartupAuthFailure as resolveStartupAuthFailureImpl } from "./syncAuthStatus.js";
-import {
-  buildLocalBundleFromDatabase,
-  buildProjectPackagePayloadForSync,
-  countBundleRows,
-} from "./syncBundleHelpers.js";
+import { withErrorProjectStates } from "./syncStatusMachine.js";
 import {
   AUTO_SYNC_DEBOUNCE_MS,
   INITIAL_STATUS,
@@ -38,13 +21,37 @@ import {
 
 const logger = createLogger("SyncService");
 
+const loadSyncAuthService = async () =>
+  (await import("./syncAuthService.js")).syncAuthService;
+
+const loadResolveStartupAuthFailure = async () =>
+  (await import("./syncAuthStatus.js")).resolveStartupAuthFailure;
+
+const loadEnsureSyncAccessToken = async () =>
+  (await import("./syncAccessToken.js")).ensureSyncAccessToken;
+
+const loadExecuteSyncRun = async () =>
+  (await import("./syncRunExecutor.js")).executeSyncRun;
+
+const loadSyncBundleHelpers = async () =>
+  await import("./syncBundleHelpers.js");
+
+const loadApplyMergedBundleToLocalFirstLuie = async () =>
+  (await import("./syncBundleApplier.js")).applyMergedBundleToLocalFirstLuie;
+
+const loadHydrateMissingWorldDocsFromPackage = async () =>
+  (await import("./syncBundleCollector.js")).hydrateMissingWorldDocsFromPackage;
+
 export class SyncService {
   private status: SyncStatus = INITIAL_STATUS;
   private inFlightPromise: Promise<SyncRunResult> | null = null;
   private queuedRun = false;
   private autoSyncTimer: NodeJS.Timeout | null = null;
 
-  private applyAuthFailureState(message: string, lastRun?: SyncStatus["lastRun"]): void {
+  private applyAuthFailureState(
+    message: string,
+    lastRun?: SyncStatus["lastRun"],
+  ): void {
     const next = settingsManager.setSyncSettings({
       lastError: message,
     });
@@ -55,13 +62,26 @@ export class SyncService {
       degradedReason: message,
       inFlight: false,
       queued: false,
-      projectStateById: withErrorProjectStates(this.status.projectStateById, message),
+      projectStateById: withErrorProjectStates(
+        this.status.projectStateById,
+        message,
+      ),
       lastRun: lastRun ?? this.status.lastRun,
     });
   }
 
   initialize(): void {
+    this.status = toSyncStatusFromSettings(
+      settingsManager.getSyncSettings(),
+      this.status,
+    );
+    this.broadcastStatus();
+    void this.initializeAsync();
+  }
+
+  private async initializeAsync(): Promise<void> {
     const syncSettings = settingsManager.getSyncSettings();
+    const syncAuthService = await loadSyncAuthService();
     this.status = toSyncStatusFromSettings(syncSettings, this.status);
 
     if (!syncSettings.connected && syncAuthService.hasPendingAuthFlow()) {
@@ -72,7 +92,8 @@ export class SyncService {
     }
 
     if (syncSettings.connected) {
-      const fatalAuthError = resolveStartupAuthFailureImpl(
+      const resolveStartupAuthFailure = await loadResolveStartupAuthFailure();
+      const fatalAuthError = resolveStartupAuthFailure(
         syncSettings,
         isAuthFatalMessage,
       );
@@ -94,6 +115,8 @@ export class SyncService {
     if (this.status.mode === "connecting") {
       return this.status;
     }
+
+    const syncAuthService = await loadSyncAuthService();
 
     if (!syncAuthService.isConfigured()) {
       const message =
@@ -148,6 +171,7 @@ export class SyncService {
 
   async handleOAuthCallback(callbackUrl: string): Promise<void> {
     try {
+      const syncAuthService = await loadSyncAuthService();
       const session = await syncAuthService.completeOAuthCallback(callbackUrl);
       const current = settingsManager.getSyncSettings();
       const next = settingsManager.setSyncSettings({
@@ -272,16 +296,16 @@ export class SyncService {
       return this.inFlightPromise;
     }
 
-    const runPromise = this.executeRun(reason)
-      .finally(() => {
-        this.inFlightPromise = null;
-      });
+    const runPromise = this.executeRun(reason).finally(() => {
+      this.inFlightPromise = null;
+    });
 
     this.inFlightPromise = runPromise;
     return runPromise;
   }
 
   private async executeRun(reason: string): Promise<SyncRunResult> {
+    const executeSyncRun = await loadExecuteSyncRun();
     return await executeSyncRun({
       reason,
       getStatus: () => this.status,
@@ -294,9 +318,11 @@ export class SyncService {
       },
       normalizePendingProjectDeletes,
       toSyncStatusFromSettings,
-      ensureAccessToken: async (syncSettings) => await this.ensureAccessToken(syncSettings),
+      ensureAccessToken: async (syncSettings) =>
+        await this.ensureAccessToken(syncSettings),
       buildLocalBundle: async (userId) => await this.buildLocalBundle(userId),
-      applyMergedBundleToLocal: async (bundle) => await this.applyMergedBundleToLocal(bundle),
+      applyMergedBundleToLocal: async (bundle) =>
+        await this.applyMergedBundleToLocal(bundle),
       countBundleRows: (bundle) => this.countBundleRows(bundle),
       updateStatus: (next) => this.updateStatus(next),
       applyAuthFailureState: (message, lastRun) =>
@@ -310,6 +336,7 @@ export class SyncService {
   }
 
   private async ensureAccessToken(syncSettings: SyncSettings): Promise<string> {
+    const ensureSyncAccessToken = await loadEnsureSyncAccessToken();
     return await ensureSyncAccessToken({
       syncSettings,
       isAuthFatalMessage,
@@ -317,6 +344,7 @@ export class SyncService {
   }
 
   private async buildLocalBundle(userId: string): Promise<SyncBundle> {
+    const { buildLocalBundleFromDatabase } = await loadSyncBundleHelpers();
     return await buildLocalBundleFromDatabase({
       logger,
       pendingProjectDeletes: normalizePendingProjectDeletes(
@@ -338,6 +366,7 @@ export class SyncService {
       createdAt: Date;
     }>,
   ) {
+    const { buildProjectPackagePayloadForSync } = await loadSyncBundleHelpers();
     return await buildProjectPackagePayloadForSync({
       bundle,
       localSnapshots,
@@ -348,10 +377,18 @@ export class SyncService {
   }
 
   private async applyMergedBundleToLocal(bundle: SyncBundle): Promise<void> {
+    const applyMergedBundleToLocalFirstLuie =
+      await loadApplyMergedBundleToLocalFirstLuie();
+    const hydrateMissingWorldDocsFromPackage =
+      await loadHydrateMissingWorldDocsFromPackage();
     await applyMergedBundleToLocalFirstLuie({
       bundle,
       hydrateMissingWorldDocsFromPackage: async (worldDocs, projectPath) =>
-        await hydrateMissingWorldDocsFromPackage(worldDocs, projectPath, logger),
+        await hydrateMissingWorldDocsFromPackage(
+          worldDocs,
+          projectPath,
+          logger,
+        ),
       buildProjectPackagePayload: async (args) =>
         await this.buildProjectPackagePayload(
           args.bundle,
@@ -364,7 +401,16 @@ export class SyncService {
   }
 
   private countBundleRows(bundle: SyncBundle): number {
-    return countBundleRows(bundle);
+    return (
+      bundle.projects.length +
+      bundle.chapters.length +
+      bundle.characters.length +
+      bundle.terms.length +
+      bundle.worldDocuments.length +
+      bundle.memos.length +
+      bundle.snapshots.length +
+      bundle.tombstones.length
+    );
   }
 
   private updateStatus(next: Partial<SyncStatus>): void {

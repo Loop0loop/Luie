@@ -1,8 +1,6 @@
 import { app } from "electron";
 import { promises as fs } from "fs";
 import path from "path";
-import { db } from "../../database/index.js";
-import { snapshotService } from "../../services/features/snapshot/snapshotService.js";
 import { writeGzipAtomic, readMaybeGzip } from "../../utils/atomicWrite.js";
 import {
   SNAPSHOT_MIRROR_DIR,
@@ -34,7 +32,11 @@ export class AutoSaveMirrorStore {
     );
   }
 
-  async writeLatestMirror(projectId: string, chapterId: string, content: string): Promise<void> {
+  async writeLatestMirror(
+    projectId: string,
+    chapterId: string,
+    content: string,
+  ): Promise<void> {
     try {
       const baseDir = this.getMirrorBaseDir(projectId, chapterId);
       await fs.mkdir(baseDir, { recursive: true });
@@ -50,7 +52,11 @@ export class AutoSaveMirrorStore {
     }
   }
 
-  async writeTimestampedMirror(projectId: string, chapterId: string, content: string): Promise<void> {
+  async writeTimestampedMirror(
+    projectId: string,
+    chapterId: string,
+    content: string,
+  ): Promise<void> {
     try {
       const baseDir = this.getMirrorBaseDir(projectId, chapterId);
       await fs.mkdir(baseDir, { recursive: true });
@@ -68,9 +74,14 @@ export class AutoSaveMirrorStore {
       );
       if (files.length > SNAPSHOT_FILE_KEEP_COUNT) {
         const sorted = files.sort();
-        const toDelete = sorted.slice(0, files.length - SNAPSHOT_FILE_KEEP_COUNT);
+        const toDelete = sorted.slice(
+          0,
+          files.length - SNAPSHOT_FILE_KEEP_COUNT,
+        );
         await Promise.all(
-          toDelete.map((name) => fs.unlink(path.join(baseDir, name)).catch(() => undefined)),
+          toDelete.map((name) =>
+            fs.unlink(path.join(baseDir, name)).catch(() => undefined),
+          ),
         );
       }
     } catch (error) {
@@ -78,7 +89,13 @@ export class AutoSaveMirrorStore {
     }
   }
 
-  async flushMirrorsToSnapshots(reason: string): Promise<{ created: number; cleaned: number }> {
+  async flushMirrorsToSnapshots(
+    reason: string,
+  ): Promise<{ created: number; cleaned: number }> {
+    const [{ db }, { snapshotService }] = await Promise.all([
+      import("../../database/index.js"),
+      import("../../services/features/snapshot/snapshotService.js"),
+    ]);
     const mirrorFiles = await this.listLatestMirrorFiles();
     let created = 0;
     let cleaned = 0;
@@ -94,41 +111,57 @@ export class AutoSaveMirrorStore {
         });
 
         if (!chapter) {
-          this.logger.warn("Mirror snapshot skipped (missing chapter), cleaning up stale mirror", {
-            chapterId: payload.chapterId,
-            filePath,
-          });
+          this.logger.warn(
+            "Mirror snapshot skipped (missing chapter), cleaning up stale mirror",
+            {
+              chapterId: payload.chapterId,
+              filePath,
+            },
+          );
           await this.cleanStaleMirrorDir(filePath);
           cleaned += 1;
           continue;
         }
         const chapterDeletedAt = (chapter as { deletedAt?: unknown }).deletedAt;
         if (chapterDeletedAt !== null && chapterDeletedAt !== undefined) {
-          this.logger.info("Mirror snapshot skipped (chapter deleted), cleaning up", {
-            chapterId: payload.chapterId,
-            filePath,
-          });
+          this.logger.info(
+            "Mirror snapshot skipped (chapter deleted), cleaning up",
+            {
+              chapterId: payload.chapterId,
+              filePath,
+            },
+          );
           await this.cleanStaleMirrorDir(filePath);
           cleaned += 1;
           continue;
         }
 
-        if (String((chapter as { projectId: unknown }).projectId) !== payload.projectId) {
-          this.logger.warn("Mirror snapshot skipped (project mismatch), cleaning up", {
-            chapterId: payload.chapterId,
-            projectId: payload.projectId,
-            filePath,
-          });
+        if (
+          String((chapter as { projectId: unknown }).projectId) !==
+          payload.projectId
+        ) {
+          this.logger.warn(
+            "Mirror snapshot skipped (project mismatch), cleaning up",
+            {
+              chapterId: payload.chapterId,
+              projectId: payload.projectId,
+              filePath,
+            },
+          );
           await this.cleanStaleMirrorDir(filePath);
           cleaned += 1;
           continue;
         }
 
-        const latest = await snapshotService.getLatestSnapshot(payload.chapterId);
+        const latest = await snapshotService.getLatestSnapshot(
+          payload.chapterId,
+        );
         const latestAt = latest?.createdAt
           ? new Date(String(latest.createdAt)).getTime()
           : 0;
-        const mirrorAt = payload.updatedAt ? new Date(payload.updatedAt).getTime() : 0;
+        const mirrorAt = payload.updatedAt
+          ? new Date(payload.updatedAt).getTime()
+          : 0;
 
         if (mirrorAt && mirrorAt <= latestAt) {
           continue;
@@ -143,11 +176,18 @@ export class AutoSaveMirrorStore {
         });
         created += 1;
       } catch (error) {
-        this.logger.warn("Failed to flush mirror snapshot", { error, filePath });
+        this.logger.warn("Failed to flush mirror snapshot", {
+          error,
+          filePath,
+        });
       }
     }
 
-    this.logger.info("Mirror snapshot flush completed", { created, cleaned, reason });
+    this.logger.info("Mirror snapshot flush completed", {
+      created,
+      cleaned,
+      reason,
+    });
     return { created, cleaned };
   }
 
@@ -158,13 +198,20 @@ export class AutoSaveMirrorStore {
     try {
       const projectDirs = await fs.readdir(baseDir, { withFileTypes: true });
       for (const projectDir of projectDirs) {
-        if (!projectDir.isDirectory() || projectDir.name === "_emergency") continue;
+        if (!projectDir.isDirectory() || projectDir.name === "_emergency")
+          continue;
 
         const projectPath = path.join(baseDir, projectDir.name);
-        const chapterDirs = await fs.readdir(projectPath, { withFileTypes: true });
+        const chapterDirs = await fs.readdir(projectPath, {
+          withFileTypes: true,
+        });
         for (const chapterDir of chapterDirs) {
           if (!chapterDir.isDirectory()) continue;
-          const latestPath = path.join(projectPath, chapterDir.name, "latest.snap");
+          const latestPath = path.join(
+            projectPath,
+            chapterDir.name,
+            "latest.snap",
+          );
           try {
             await fs.stat(latestPath);
             results.push(latestPath);
@@ -184,12 +231,17 @@ export class AutoSaveMirrorStore {
     return results;
   }
 
-  private async readMirrorPayload(filePath: string): Promise<MirrorPayload | null> {
+  private async readMirrorPayload(
+    filePath: string,
+  ): Promise<MirrorPayload | null> {
     try {
       const raw = await readMaybeGzip(filePath);
       const payload = JSON.parse(raw) as Record<string, unknown>;
 
-      if (typeof payload.projectId !== "string" || typeof payload.chapterId !== "string") {
+      if (
+        typeof payload.projectId !== "string" ||
+        typeof payload.chapterId !== "string"
+      ) {
         return null;
       }
 
@@ -197,7 +249,8 @@ export class AutoSaveMirrorStore {
         projectId: payload.projectId,
         chapterId: payload.chapterId,
         content: typeof payload.content === "string" ? payload.content : "",
-        updatedAt: typeof payload.updatedAt === "string" ? payload.updatedAt : null,
+        updatedAt:
+          typeof payload.updatedAt === "string" ? payload.updatedAt : null,
       };
     } catch (error) {
       this.logger.warn("Failed to read mirror payload", { filePath, error });
@@ -210,12 +263,16 @@ export class AutoSaveMirrorStore {
       const dir = path.dirname(mirrorFilePath);
       const files = await fs.readdir(dir);
       await Promise.all(
-        files.map((name) => fs.unlink(path.join(dir, name)).catch(() => undefined)),
+        files.map((name) =>
+          fs.unlink(path.join(dir, name)).catch(() => undefined),
+        ),
       );
       await fs.rmdir(dir).catch(() => undefined);
     } catch (error) {
-      this.logger.warn("Failed to clean stale mirror directory", { mirrorFilePath, error });
+      this.logger.warn("Failed to clean stale mirror directory", {
+        mirrorFilePath,
+        error,
+      });
     }
   }
 }
-

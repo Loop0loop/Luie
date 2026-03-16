@@ -18,6 +18,7 @@ import { ensurePackagedCacheSqliteSchema } from "./cacheSchemaBootstrap.js";
 
 const logger = createLogger("CacheDatabaseService");
 const CACHE_ENV_KEY = "CACHE_DATABASE_URL";
+const RUNTIME_CACHE_ENV_KEY = "LUIE_RUNTIME_CACHE_DATABASE_URL";
 type CachePrismaClient = InstanceType<typeof CachePrismaClientCtor>;
 
 type PreparedCacheDatabaseContext = {
@@ -113,7 +114,9 @@ class CacheDatabaseService {
     const isPackaged = isProdEnv();
     const userDataPath = app.getPath("userData");
     const isTest = isTestEnv();
-    const envDb = process.env[CACHE_ENV_KEY];
+    const envDb = isTestEnv()
+      ? process.env[CACHE_ENV_KEY]
+      : process.env[RUNTIME_CACHE_ENV_KEY];
     const hasEnvDb = Boolean(envDb);
 
     let dbPath: string;
@@ -131,7 +134,7 @@ class CacheDatabaseService {
       datasourceUrl = `file:${dbPath}`;
     } else {
       dbPath = ensureSafeAbsolutePath(
-        path.join(process.cwd(), "prisma", "dev-cache.db"),
+        path.join(process.cwd(), "prisma", "app-dev-cache.db"),
         "cacheDbPath",
       );
       datasourceUrl = `file:${dbPath}`;
@@ -156,7 +159,7 @@ class CacheDatabaseService {
   private async applySchema(context: PreparedCacheDatabaseContext): Promise<void> {
     const dbExists = await pathExists(context.dbPath);
     const cwd = context.isPackaged ? process.resourcesPath : process.cwd();
-    const schemaPath = path.join(cwd, "prisma", "cache", "schema.prisma");
+    const schemaPath = path.join(cwd, "prisma-cache", "schema.prisma");
     const prismaPath = getPrismaBinPath(cwd);
     const commandEnv = {
       ...process.env,

@@ -1,20 +1,19 @@
 import { createLogger } from "../../shared/logger/index.js";
-import { autoSaveManager } from "../manager/autoSaveManager.js";
 import {
-	chapterService,
-	characterService,
-	eventService,
-	factionService,
-	projectService,
-	searchService,
-	snapshotService,
-	termService,
-	manuscriptAnalysisService,
-	worldEntityService,
-	entityRelationService,
-	worldMentionService,
-	worldReplicaService,
-	graphPluginService,
+  chapterService,
+  characterService,
+  eventService,
+  factionService,
+  projectService,
+  searchService,
+  snapshotService,
+  termService,
+  manuscriptAnalysisService,
+  worldEntityService,
+  entityRelationService,
+  worldMentionService,
+  worldReplicaService,
+  graphPluginService,
 } from "../services/index.js";
 import { registerProjectHandlers } from "./project/index.js";
 import { registerSearchHandlers } from "./search/index.js";
@@ -25,47 +24,50 @@ import { registerAnalysisHandlers } from "./analysis/index.js";
 
 const logger = createLogger("IPCHandler");
 
-export function registerAllIPCHandlers(): void {
-	registerProjectHandlers({
-		logger,
-		projectService,
-		chapterService,
-	});
+const loadAutoSaveManager = async () =>
+  (await import("../manager/autoSaveManager.js")).autoSaveManager;
 
-	registerWorldHandlers({
-		logger,
-		characterService,
-		termService,
-		eventService,
-		factionService,
-		worldEntityService,
-		entityRelationService,
-		worldMentionService,
-		worldReplicaService,
-	});
+export async function registerAllIPCHandlers(): Promise<void> {
+  registerProjectHandlers({
+    logger,
+    projectService,
+    chapterService,
+  });
 
-	registerWritingHandlers({
-		logger,
-		autoSaveManager,
-		snapshotService,
-	});
+  registerWorldHandlers({
+    logger,
+    characterService,
+    termService,
+    eventService,
+    factionService,
+    worldEntityService,
+    entityRelationService,
+    worldMentionService,
+    worldReplicaService,
+  });
 
-	registerSearchHandlers({
-		logger,
-		searchService,
-	});
+  registerWritingHandlers({
+    logger,
+    autoSaveManager: await loadAutoSaveManager(),
+    snapshotService,
+  });
 
-	registerSystemHandlers({
-		logger,
-		graphPluginService,
-	});
+  registerSearchHandlers({
+    logger,
+    searchService,
+  });
 
-	registerAnalysisHandlers({
-		logger,
-		manuscriptAnalysisService,
-	});
+  registerSystemHandlers({
+    logger,
+    graphPluginService,
+  });
 
-	logger.info("IPC handlers registered successfully");
+  registerAnalysisHandlers({
+    logger,
+    manuscriptAnalysisService,
+  });
+
+  logger.info("IPC handlers registered successfully");
 }
 
 // Backward compat

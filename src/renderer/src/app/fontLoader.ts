@@ -1,7 +1,7 @@
 type FontKey = "inter";
 
 const FONT_LOADERS: Record<FontKey, () => Promise<unknown>> = {
-  inter: () => import("@fontsource-variable/inter/index.css"),
+  inter: () => import("@renderer/styles/inter-subset.css"),
 };
 
 const loadedFonts = new Set<FontKey>();

@@ -1,7 +1,3 @@
-import { en } from "@renderer/i18n/locales/en";
-import { ja } from "@renderer/i18n/locales/ja";
-import { ko } from "@renderer/i18n/locales/ko";
-
 const COMMON_FEATURE_KEYS = [
   "toolbar",
   "textEditor",
@@ -24,7 +20,9 @@ type LocaleWithCommon = {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
-const normalizeCommonFeatureNamespaces = <T extends LocaleWithCommon>(locale: T): T => {
+const normalizeCommonFeatureNamespaces = <T extends LocaleWithCommon>(
+  locale: T,
+): T => {
   if (!isRecord(locale.common)) {
     return locale;
   }
@@ -48,8 +46,24 @@ const normalizeCommonFeatureNamespaces = <T extends LocaleWithCommon>(locale: T)
   };
 };
 
-export const resources = {
-  ko: normalizeCommonFeatureNamespaces(ko),
-  en: normalizeCommonFeatureNamespaces(en),
-  ja: normalizeCommonFeatureNamespaces(ja),
-} as const;
+export type LocaleResources = LocaleWithCommon;
+
+export const loadLocaleResources = async (
+  language: "ko" | "en" | "ja",
+): Promise<LocaleResources> => {
+  switch (language) {
+    case "en": {
+      const module = await import("@renderer/i18n/locales/en");
+      return normalizeCommonFeatureNamespaces(module.en);
+    }
+    case "ja": {
+      const module = await import("@renderer/i18n/locales/ja");
+      return normalizeCommonFeatureNamespaces(module.ja);
+    }
+    case "ko":
+    default: {
+      const module = await import("@renderer/i18n/locales/ko");
+      return normalizeCommonFeatureNamespaces(module.ko);
+    }
+  }
+};

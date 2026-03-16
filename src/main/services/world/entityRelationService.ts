@@ -22,7 +22,7 @@ import type {
 } from "../../../shared/types/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import { projectService } from "../core/projectService.js";
-import { getWorldDbClient } from "./characterService.js";
+import { db } from "../../database/index.js";
 
 const logger = createLogger("EntityRelationService");
 
@@ -87,6 +87,11 @@ function toEntityRelation(row: RawRow): EntityRelation {
 }
 
 export class EntityRelationService {
+    private async getClient() {
+        await db.initialize();
+        return db.getClient();
+    }
+
     async createRelation(input: EntityRelationCreateInput) {
         try {
             logger.info("Creating entity relation", input);
@@ -113,7 +118,8 @@ export class EntityRelationService {
             if (isWorldEntityBackedType(input.sourceType)) data.sourceWorldEntityId = input.sourceId;
             if (isWorldEntityBackedType(input.targetType)) data.targetWorldEntityId = input.targetId;
 
-            const relation = await getWorldDbClient().entityRelation.create({ data });
+            const client = await this.getClient();
+            const relation = await client.entityRelation.create({ data });
 
             logger.info("Entity relation created", { relationId: relation.id });
             await projectService.ensureImmediatePackageExport(
@@ -134,7 +140,8 @@ export class EntityRelationService {
 
     async getAllRelations(projectId: string) {
         try {
-            const relations = await getWorldDbClient().entityRelation.findMany({
+            const client = await this.getClient();
+            const relations = await client.entityRelation.findMany({
                 where: { projectId },
                 orderBy: { createdAt: "asc" },
             });
@@ -153,7 +160,8 @@ export class EntityRelationService {
 
     async updateRelation(input: EntityRelationUpdateInput) {
         try {
-            const current = await getWorldDbClient().entityRelation.findUnique({
+            const client = await this.getClient();
+            const current = await client.entityRelation.findUnique({
                 where: { id: input.id },
             });
             if (!current) {
@@ -191,7 +199,7 @@ export class EntityRelationService {
                 updateData.attributes = JSON.stringify(input.attributes);
             }
 
-            const relation = await getWorldDbClient().entityRelation.update({
+            const relation = await client.entityRelation.update({
                 where: { id: input.id },
                 data: updateData,
             });
@@ -223,7 +231,8 @@ export class EntityRelationService {
 
     async deleteRelation(id: string) {
         try {
-            const deleted = await getWorldDbClient().entityRelation.delete({ where: { id } });
+            const client = await this.getClient();
+            const deleted = await client.entityRelation.delete({ where: { id } });
             logger.info("Entity relation deleted", { relationId: id });
             await projectService.ensureImmediatePackageExport(
                 String(deleted.projectId),
@@ -247,13 +256,14 @@ export class EntityRelationService {
      */
     async getWorldGraph(projectId: string): Promise<WorldGraphData> {
         try {
+            const client = await this.getClient();
             const [characters, factions, events, terms, worldEntities, edges] = await Promise.all([
-                getWorldDbClient().character.findMany({ where: { projectId } }),
-                getWorldDbClient().faction.findMany({ where: { projectId } }),
-                getWorldDbClient().event.findMany({ where: { projectId } }),
-                getWorldDbClient().term.findMany({ where: { projectId } }),
-                getWorldDbClient().worldEntity.findMany({ where: { projectId } }),
-                getWorldDbClient().entityRelation.findMany({ where: { projectId } }),
+                client.character.findMany({ where: { projectId } }),
+                client.faction.findMany({ where: { projectId } }),
+                client.event.findMany({ where: { projectId } }),
+                client.term.findMany({ where: { projectId } }),
+                client.worldEntity.findMany({ where: { projectId } }),
+                client.entityRelation.findMany({ where: { projectId } }),
             ]);
 
             const nodes: WorldGraphNode[] = [
@@ -349,7 +359,8 @@ export class EntityRelationService {
         removedRelations: number;
     }> {
         const dryRun = options?.dryRun ?? false;
-        const projects = await getWorldDbClient().project.findMany({
+        const client = await this.getClient();
+        const projects = await client.project.findMany({
             select: { id: true },
         });
 
@@ -360,12 +371,12 @@ export class EntityRelationService {
         for (const project of projects) {
             const projectId = String(project.id);
             const [characters, factions, events, terms, worldEntities, relations] = await Promise.all([
-                getWorldDbClient().character.findMany({ where: { projectId }, select: { id: true } }),
-                getWorldDbClient().faction.findMany({ where: { projectId }, select: { id: true } }),
-                getWorldDbClient().event.findMany({ where: { projectId }, select: { id: true } }),
-                getWorldDbClient().term.findMany({ where: { projectId }, select: { id: true } }),
-                getWorldDbClient().worldEntity.findMany({ where: { projectId }, select: { id: true } }),
-                getWorldDbClient().entityRelation.findMany({
+                client.character.findMany({ where: { projectId }, select: { id: true } }),
+                client.faction.findMany({ where: { projectId }, select: { id: true } }),
+                client.event.findMany({ where: { projectId }, select: { id: true } }),
+                client.term.findMany({ where: { projectId }, select: { id: true } }),
+                client.worldEntity.findMany({ where: { projectId }, select: { id: true } }),
+                client.entityRelation.findMany({
                     where: { projectId },
                     select: { id: true, sourceId: true, targetId: true },
                 }),
@@ -390,7 +401,7 @@ export class EntityRelationService {
                 continue;
             }
 
-            const result = await getWorldDbClient().entityRelation.deleteMany({
+            const result = await client.entityRelation.deleteMany({
                 where: {
                     projectId,
                     id: { in: orphanIds },

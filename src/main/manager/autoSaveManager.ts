@@ -2,12 +2,9 @@
 
 import { EventEmitter } from "events";
 import { promises as fs } from "fs";
-import { chapterService } from "../services/core/chapterService.js";
-import { snapshotService } from "../services/features/snapshot/snapshotService.js";
 import { createLogger } from "../../shared/logger/index.js";
 import { ErrorCode } from "../../shared/constants/index.js";
 import { isServiceError } from "../utils/serviceError.js";
-import { db } from "../database/index.js";
 import {
   DEFAULT_AUTO_SAVE_DEBOUNCE_MS,
   DEFAULT_AUTO_SAVE_INTERVAL_MS,
@@ -35,6 +32,15 @@ import {
 
 const logger = createLogger("AutoSaveManager");
 
+const loadChapterService = async () =>
+  (await import("../services/core/chapterService.js")).chapterService;
+
+const loadSnapshotService = async () =>
+  (await import("../services/features/snapshot/snapshotService.js"))
+    .snapshotService;
+
+const loadDb = async () => (await import("../database/index.js")).db;
+
 export class AutoSaveManager extends EventEmitter {
   private static instance: AutoSaveManager;
 
@@ -54,7 +60,10 @@ export class AutoSaveManager extends EventEmitter {
   private snapshotQueue: SnapshotJob[] = [];
   private snapshotProcessing = false;
   private projectTaskQueue = new Map<string, Promise<void>>();
-  private criticalFlushPromise: Promise<{ mirrored: number; snapshots: number }> | null = null;
+  private criticalFlushPromise: Promise<{
+    mirrored: number;
+    snapshots: number;
+  }> | null = null;
   private readonly mirrorStore = new AutoSaveMirrorStore(logger);
 
   private constructor() {
@@ -112,7 +121,11 @@ export class AutoSaveManager extends EventEmitter {
       const baseDir = this.mirrorStore.getMirrorBaseDir(projectId, chapterId);
       await fs.rm(baseDir, { recursive: true, force: true });
     } catch (error) {
-      logger.warn("Failed to purge chapter mirrors", { projectId, chapterId, error });
+      logger.warn("Failed to purge chapter mirrors", {
+        projectId,
+        chapterId,
+        error,
+      });
     }
   }
 
@@ -146,6 +159,7 @@ export class AutoSaveManager extends EventEmitter {
       return;
     }
 
+    const db = await loadDb();
     const chapter = await db.getClient().chapter.findUnique({
       where: { id: chapterId },
       select: { projectId: true, deletedAt: true },
@@ -177,7 +191,11 @@ export class AutoSaveManager extends EventEmitter {
       maxLength: EMERGENCY_SNAPSHOT_MAX_LENGTH,
       minIntervalMs: EMERGENCY_SNAPSHOT_INTERVAL_MS,
       lastSnapshotAtByChapterKey: this.lastEmergencySnapshotAt,
-      writeTimestampedMirror: (targetProjectId, targetChapterId, targetContent) =>
+      writeTimestampedMirror: (
+        targetProjectId,
+        targetChapterId,
+        targetContent,
+      ) =>
         this.mirrorStore.writeTimestampedMirror(
           targetProjectId,
           targetChapterId,
@@ -209,6 +227,7 @@ export class AutoSaveManager extends EventEmitter {
     if (!pending) return;
 
     try {
+      const chapterService = await loadChapterService();
       await chapterService.updateChapter({
         id: pending.chapterId,
         content: pending.content,
@@ -220,19 +239,31 @@ export class AutoSaveManager extends EventEmitter {
       this.emit("saved", { chapterId });
 
       // Post-save: update mirror and maybe enqueue snapshot
-      await this.mirrorStore.writeLatestMirror(pending.projectId, pending.chapterId, pending.content);
-      this.maybeEnqueueSnapshot(pending.projectId, pending.chapterId, pending.content);
+      await this.mirrorStore.writeLatestMirror(
+        pending.projectId,
+        pending.chapterId,
+        pending.content,
+      );
+      this.maybeEnqueueSnapshot(
+        pending.projectId,
+        pending.chapterId,
+        pending.content,
+      );
 
       logger.info("Auto-save completed", { chapterId });
     } catch (error) {
       // Validation-blocked save: still create safety snapshot
       if (isServiceError(error) && error.code === ErrorCode.VALIDATION_FAILED) {
-        logger.warn("Auto-save blocked by validation; writing safety snapshot", {
-          chapterId,
-          error,
-        });
+        logger.warn(
+          "Auto-save blocked by validation; writing safety snapshot",
+          {
+            chapterId,
+            error,
+          },
+        );
 
         try {
+          const snapshotService = await loadSnapshotService();
           await this.mirrorStore.writeLatestMirror(
             pending.projectId,
             pending.chapterId,
@@ -250,7 +281,10 @@ export class AutoSaveManager extends EventEmitter {
             description: `Safety snapshot (블로킹된 저장) ${new Date().toLocaleString()}`,
           });
         } catch (mirrorError) {
-          logger.error("Failed to write safety snapshot after validation block", mirrorError);
+          logger.error(
+            "Failed to write safety snapshot after validation block",
+            mirrorError,
+          );
         }
 
         this.pendingSaves.delete(chapterId);
@@ -269,7 +303,11 @@ export class AutoSaveManager extends EventEmitter {
 
   // ─── Snapshot Scheduling (Time Machine style) ────────────────────────────
 
-  private maybeEnqueueSnapshot(projectId: string, chapterId: string, content: string) {
+  private maybeEnqueueSnapshot(
+    projectId: string,
+    chapterId: string,
+    content: string,
+  ) {
     const key = `${projectId}:${chapterId}`;
     const now = Date.now();
     const lastAt = this.lastSnapshotAt.get(key) ?? 0;
@@ -290,7 +328,11 @@ export class AutoSaveManager extends EventEmitter {
     if (lastLength > 0) {
       const diff = Math.abs(content.length - lastLength);
       const ratio = diff / lastLength;
-      if (ratio < SNAPSHOT_MIN_CHANGE_RATIO && diff < SNAPSHOT_MIN_CHANGE_ABSOLUTE) return;
+      if (
+        ratio < SNAPSHOT_MIN_CHANGE_RATIO &&
+        diff < SNAPSHOT_MIN_CHANGE_ABSOLUTE
+      )
+        return;
     }
 
     // Accept snapshot
@@ -305,7 +347,11 @@ export class AutoSaveManager extends EventEmitter {
         try {
           await processSnapshotJobs({
             jobs: this.snapshotQueue,
-            writeTimestampedMirror: (targetProjectId, targetChapterId, targetContent) =>
+            writeTimestampedMirror: (
+              targetProjectId,
+              targetChapterId,
+              targetContent,
+            ) =>
               this.mirrorStore.writeTimestampedMirror(
                 targetProjectId,
                 targetChapterId,
@@ -320,7 +366,10 @@ export class AutoSaveManager extends EventEmitter {
     }
   }
 
-  private enqueueProjectTask(projectId: string, task: () => Promise<void>): Promise<void> {
+  private enqueueProjectTask(
+    projectId: string,
+    task: () => Promise<void>,
+  ): Promise<void> {
     const previous = this.projectTaskQueue.get(projectId) ?? Promise.resolve();
     const next = previous.catch(() => undefined).then(task);
     const marker = next.finally(() => {
@@ -475,7 +524,9 @@ export class AutoSaveManager extends EventEmitter {
 
   private cleanupOldEntries() {
     const now = Date.now();
-    for (const [chapterId, timestamp] of Array.from(this.lastSaveAt.entries())) {
+    for (const [chapterId, timestamp] of Array.from(
+      this.lastSaveAt.entries(),
+    )) {
       if (now - timestamp > AUTO_SAVE_STALE_THRESHOLD_MS) {
         const timer = this.saveTimers.get(chapterId);
         if (timer) {

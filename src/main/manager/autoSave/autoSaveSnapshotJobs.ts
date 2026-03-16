@@ -1,5 +1,8 @@
-import { snapshotService } from "../../services/features/snapshot/snapshotService.js";
 import { SNAPSHOT_KEEP_COUNT } from "../../../shared/constants/index.js";
+
+const loadSnapshotService = async () =>
+  (await import("../../services/features/snapshot/snapshotService.js"))
+    .snapshotService;
 
 export type SnapshotJob = {
   projectId: string;
@@ -47,6 +50,7 @@ export const maybeCreateEmergencySnapshot = async (input: {
   lastSnapshotAtByChapterKey.set(key, now);
 
   try {
+    const snapshotService = await loadSnapshotService();
     await snapshotService.createSnapshot({
       projectId,
       chapterId,
@@ -55,7 +59,10 @@ export const maybeCreateEmergencySnapshot = async (input: {
     });
     await writeTimestampedMirror(projectId, chapterId, content);
   } catch (error) {
-    logger.warn("Failed to create emergency micro snapshot", { error, chapterId });
+    logger.warn("Failed to create emergency micro snapshot", {
+      error,
+      chapterId,
+    });
   }
 };
 
@@ -69,6 +76,7 @@ export const processSnapshotJobs = async (input: {
   logger: LoggerLike;
 }): Promise<void> => {
   const { jobs, writeTimestampedMirror, logger } = input;
+  const snapshotService = await loadSnapshotService();
   while (jobs.length > 0) {
     const job = jobs.shift();
     if (!job) continue;
@@ -80,11 +88,13 @@ export const processSnapshotJobs = async (input: {
         content: job.content,
         description: `자동 스냅샷 ${new Date().toLocaleString()}`,
       });
-      await snapshotService.deleteOldSnapshots(job.projectId, SNAPSHOT_KEEP_COUNT);
+      await snapshotService.deleteOldSnapshots(
+        job.projectId,
+        SNAPSHOT_KEEP_COUNT,
+      );
       await writeTimestampedMirror(job.projectId, job.chapterId, job.content);
     } catch (error) {
       logger.error("Failed to create snapshot", error);
     }
   }
 };
-
