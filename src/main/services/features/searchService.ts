@@ -7,7 +7,9 @@ import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import type { SearchQuery } from "../../../shared/types/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
-import { chapterSearchCacheService } from "./chapterSearchCacheService.js";
+
+const loadChapterSearchCacheService = async () =>
+  (await import("./chapterSearchCacheService.js")).chapterSearchCacheService;
 
 const logger = createLogger("SearchService");
 
@@ -80,6 +82,7 @@ export class SearchService {
       }
 
       if (input.type === "all") {
+        const chapterSearchCacheService = await loadChapterSearchCacheService();
         const chapters = await chapterSearchCacheService.searchProjectChapters(
           input.projectId,
           input.query,

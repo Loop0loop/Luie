@@ -5,16 +5,25 @@ import path from "node:path";
 import { app, safeStorage } from "electron";
 import { APP_DIR_NAME } from "../../../shared/constants/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
-import type { StartupCheck, StartupCheckKey, StartupReadiness } from "../../../shared/types/index.js";
+import type {
+  StartupCheck,
+  StartupCheckKey,
+  StartupReadiness,
+} from "../../../shared/types/index.js";
 import { db } from "../../database/index.js";
-import { cacheDb } from "../../database/cacheDb.js";
 import { settingsManager } from "../../manager/settingsManager.js";
-import { getSupabaseConfig, getSupabaseConfigSource } from "./sync/supabaseEnv.js";
+import {
+  getSupabaseConfig,
+  getSupabaseConfigSource,
+} from "./sync/supabaseEnv.js";
 import { syncAuthService } from "./sync/syncAuthService.js";
 
 const logger = createLogger("StartupReadinessService");
 
 const STARTUP_WIZARD_EVENT = "startup:wizard-completed";
+
+const loadCacheDb = async () =>
+  (await import("../../database/cacheDb.js")).cacheDb;
 
 const nowIso = (): string => new Date().toISOString();
 
@@ -36,7 +45,9 @@ class StartupReadinessService {
 
   async getReadiness(): Promise<StartupReadiness> {
     const checks = await this.runChecks();
-    const reasons = checks.filter((check) => check.blocking && !check.ok).map((check) => check.key);
+    const reasons = checks
+      .filter((check) => check.blocking && !check.ok)
+      .map((check) => check.key);
     const completedAt = settingsManager.getStartupSettings().completedAt;
     const mustRunWizard = !completedAt || reasons.length > 0;
     return {
@@ -58,7 +69,9 @@ class StartupReadinessService {
     return after;
   }
 
-  onWizardCompleted(listener: (readiness: StartupReadiness) => void): () => void {
+  onWizardCompleted(
+    listener: (readiness: StartupReadiness) => void,
+  ): () => void {
     this.events.on(STARTUP_WIZARD_EVENT, listener);
     return () => {
       this.events.off(STARTUP_WIZARD_EVENT, listener);
@@ -132,6 +145,7 @@ class StartupReadinessService {
 
   private async checkSqliteConnect(): Promise<StartupCheck> {
     try {
+      const cacheDb = await loadCacheDb();
       await Promise.all([db.initialize(), cacheDb.initialize()]);
       db.getClient();
       cacheDb.getClient();
@@ -143,8 +157,13 @@ class StartupReadinessService {
 
   private async checkSqliteWal(): Promise<StartupCheck> {
     try {
+      const cacheDb = await loadCacheDb();
       await Promise.all([db.initialize(), cacheDb.initialize()]);
-      return buildCheck("sqliteWal", true, "WAL mode enforced during DB initialization");
+      return buildCheck(
+        "sqliteWal",
+        true,
+        "WAL mode enforced during DB initialization",
+      );
     } catch (error) {
       return buildCheck("sqliteWal", false, this.toErrorMessage(error));
     }
@@ -167,7 +186,11 @@ class StartupReadinessService {
         source ? `resolved from ${source}` : "resolved",
       );
     } catch (error) {
-      return buildCheck("supabaseRuntimeConfig", false, this.toErrorMessage(error));
+      return buildCheck(
+        "supabaseRuntimeConfig",
+        false,
+        this.toErrorMessage(error),
+      );
     }
   }
 
@@ -215,13 +238,16 @@ class StartupReadinessService {
         );
       }
 
-      const edgeResponse = await fetch(`${supabaseConfig.url}/functions/v1/luieEnv`, {
-        method: "GET",
-        headers: {
-          apikey: supabaseConfig.anonKey,
-          Authorization: `Bearer ${access.token}`,
+      const edgeResponse = await fetch(
+        `${supabaseConfig.url}/functions/v1/luieEnv`,
+        {
+          method: "GET",
+          headers: {
+            apikey: supabaseConfig.anonKey,
+            Authorization: `Bearer ${access.token}`,
+          },
         },
-      });
+      );
       if (!edgeResponse.ok) {
         return buildCheck(
           "supabaseSession",
@@ -233,7 +259,10 @@ class StartupReadinessService {
 
       let edgePayload: { ok?: boolean; userId?: string } | null = null;
       try {
-        edgePayload = (await edgeResponse.json()) as { ok?: boolean; userId?: string };
+        edgePayload = (await edgeResponse.json()) as {
+          ok?: boolean;
+          userId?: string;
+        };
       } catch {
         edgePayload = null;
       }
@@ -255,7 +284,12 @@ class StartupReadinessService {
       );
     } catch (error) {
       logger.warn("Startup session check failed", { error });
-      return buildCheck("supabaseSession", false, this.toErrorMessage(error), false);
+      return buildCheck(
+        "supabaseSession",
+        false,
+        this.toErrorMessage(error),
+        false,
+      );
     }
   }
 

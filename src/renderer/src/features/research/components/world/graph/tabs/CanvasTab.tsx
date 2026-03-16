@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
-import { useWorldGraphWorkspace } from "../hooks/useWorldGraphWorkspace";
 import { CanvasView } from "../views/CanvasView";
+import type { EntityRelation, WorldGraphNode } from "@shared/types";
 
 const buildNodeName = (entityType: string) => {
   switch (entityType) {
@@ -19,6 +19,9 @@ const buildNodeName = (entityType: string) => {
 };
 
 type CanvasTabProps = {
+  projectId: string | null;
+  graphNodes: WorldGraphNode[];
+  graphEdges: EntityRelation[];
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string | null) => void;
   onCreateNote: () => void;
@@ -26,13 +29,14 @@ type CanvasTabProps = {
 };
 
 export function CanvasTab({
+  projectId,
+  graphNodes,
+  graphEdges,
   selectedNodeId,
   onSelectNode,
   onCreateNote,
   onCreatedEntity,
 }: CanvasTabProps) {
-  const { projectId, graphNodes, graphEdges } = useWorldGraphWorkspace();
-
   const createGraphNode = useWorldBuildingStore(
     (state) => state.createGraphNode,
   );
@@ -100,16 +104,18 @@ export function CanvasTab({
 }
 
 export function useCanvasTabSidebar({
+  projectId,
+  graphNodes,
   selectedNodeId,
   onSelectNode,
   onCreatedEntity,
 }: {
+  projectId: string | null;
+  graphNodes: WorldGraphNode[];
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string | null) => void;
   onCreatedEntity: (entityType: string, newNodeId: string) => void;
 }) {
-  const { projectId, graphNodes } = useWorldGraphWorkspace();
-
   const createGraphNode = useWorldBuildingStore(
     (state) => state.createGraphNode,
   );

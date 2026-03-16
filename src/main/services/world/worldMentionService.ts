@@ -8,7 +8,9 @@ import type {
 import { ServiceError } from "../../utils/serviceError.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import { getWorldDbClient } from "./characterService.js";
-import { appearanceCacheService } from "./appearanceCacheService.js";
+
+const loadAppearanceCacheService = async () =>
+  (await import("./appearanceCacheService.js")).appearanceCacheService;
 
 const logger = createLogger("WorldMentionService");
 const CONTEXT_RADIUS = 48;
@@ -110,21 +112,26 @@ export class WorldMentionService {
     }
 
     const client = getWorldDbClient();
-    const appearanceRows = (query.entityType === "Character"
-      ? await appearanceCacheService.getCharacterAppearancesByEntity(
-          query.entityId,
-          query.limit ?? DEFAULT_LIMIT,
-        )
-      : await appearanceCacheService.getTermAppearancesByEntity(
-          query.entityId,
-          query.limit ?? DEFAULT_LIMIT,
-        )) as AppearanceRow[];
+    const appearanceCacheService = await loadAppearanceCacheService();
+    const appearanceRows = (
+      query.entityType === "Character"
+        ? await appearanceCacheService.getCharacterAppearancesByEntity(
+            query.entityId,
+            query.limit ?? DEFAULT_LIMIT,
+          )
+        : await appearanceCacheService.getTermAppearancesByEntity(
+            query.entityId,
+            query.limit ?? DEFAULT_LIMIT,
+          )
+    ) as AppearanceRow[];
 
     if (appearanceRows.length === 0) {
       return [];
     }
 
-    const chapterIds = Array.from(new Set(appearanceRows.map((row) => row.chapterId)));
+    const chapterIds = Array.from(
+      new Set(appearanceRows.map((row) => row.chapterId)),
+    );
     const chapters = (await client.chapter.findMany({
       where: {
         id: { in: chapterIds },
@@ -134,7 +141,9 @@ export class WorldMentionService {
       select: { id: true, title: true },
     })) as Array<{ id: string; title: string }>;
 
-    const chapterById = new Map(chapters.map((chapter) => [chapter.id, chapter]));
+    const chapterById = new Map(
+      chapters.map((chapter) => [chapter.id, chapter]),
+    );
 
     return appearanceRows
       .map((row): WorldGraphMention | null => {
@@ -190,14 +199,19 @@ export class WorldMentionService {
     return mentions;
   }
 
-  async getMentions(query: WorldGraphMentionsQuery): Promise<WorldGraphMention[]> {
+  async getMentions(
+    query: WorldGraphMentionsQuery,
+  ): Promise<WorldGraphMention[]> {
     try {
       const appearanceMentions = await this.getAppearanceMentions(query);
       if (appearanceMentions.length > 0) {
         return appearanceMentions;
       }
 
-      const entityName = await this.getEntityName(query.entityType, query.entityId);
+      const entityName = await this.getEntityName(
+        query.entityType,
+        query.entityId,
+      );
       if (!entityName) {
         return [];
       }

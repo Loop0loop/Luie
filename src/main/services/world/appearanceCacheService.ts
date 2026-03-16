@@ -1,4 +1,10 @@
-import { cacheDb } from "../../database/cacheDb.js";
+const loadCacheDb = async () =>
+  (await import("../../database/cacheDb.js")).cacheDb;
+
+const getCacheClient = async () => {
+  const cacheDb = await loadCacheDb();
+  return cacheDb.getClient();
+};
 
 export type CachedCharacterAppearance = {
   id: string;
@@ -28,7 +34,8 @@ class AppearanceCacheService {
     position: number;
     context?: string;
   }): Promise<CachedCharacterAppearance> {
-    return await cacheDb.getClient().characterAppearance.create({
+    const client = await getCacheClient();
+    return await client.characterAppearance.create({
       data: {
         projectId: input.projectId,
         characterId: input.characterId,
@@ -46,7 +53,8 @@ class AppearanceCacheService {
     position: number;
     context?: string;
   }): Promise<CachedTermAppearance> {
-    return await cacheDb.getClient().termAppearance.create({
+    const client = await getCacheClient();
+    return await client.termAppearance.create({
       data: {
         projectId: input.projectId,
         termId: input.termId,
@@ -60,14 +68,18 @@ class AppearanceCacheService {
   async getCharacterAppearancesByChapter(
     chapterId: string,
   ): Promise<CachedCharacterAppearance[]> {
-    return await cacheDb.getClient().characterAppearance.findMany({
+    const client = await getCacheClient();
+    return await client.characterAppearance.findMany({
       where: { chapterId },
       orderBy: { position: "asc" },
     });
   }
 
-  async getTermAppearancesByChapter(chapterId: string): Promise<CachedTermAppearance[]> {
-    return await cacheDb.getClient().termAppearance.findMany({
+  async getTermAppearancesByChapter(
+    chapterId: string,
+  ): Promise<CachedTermAppearance[]> {
+    const client = await getCacheClient();
+    return await client.termAppearance.findMany({
       where: { chapterId },
       orderBy: { position: "asc" },
     });
@@ -77,7 +89,8 @@ class AppearanceCacheService {
     characterId: string,
     limit?: number,
   ): Promise<CachedCharacterAppearance[]> {
-    return await cacheDb.getClient().characterAppearance.findMany({
+    const client = await getCacheClient();
+    return await client.characterAppearance.findMany({
       where: { characterId },
       orderBy: { createdAt: "asc" },
       take: limit,
@@ -88,7 +101,8 @@ class AppearanceCacheService {
     termId: string,
     limit?: number,
   ): Promise<CachedTermAppearance[]> {
-    return await cacheDb.getClient().termAppearance.findMany({
+    const client = await getCacheClient();
+    return await client.termAppearance.findMany({
       where: { termId },
       orderBy: { createdAt: "asc" },
       take: limit,
@@ -96,59 +110,67 @@ class AppearanceCacheService {
   }
 
   async clearChapter(chapterId: string): Promise<void> {
+    const client = await getCacheClient();
     await Promise.all([
-      cacheDb.getClient().characterAppearance.deleteMany({
+      client.characterAppearance.deleteMany({
         where: { chapterId },
       }),
-      cacheDb.getClient().termAppearance.deleteMany({
+      client.termAppearance.deleteMany({
         where: { chapterId },
       }),
     ]);
   }
 
   async clearCharacterChapter(chapterId: string): Promise<void> {
-    await cacheDb.getClient().characterAppearance.deleteMany({
+    const client = await getCacheClient();
+    await client.characterAppearance.deleteMany({
       where: { chapterId },
     });
   }
 
   async clearTermChapter(chapterId: string): Promise<void> {
-    await cacheDb.getClient().termAppearance.deleteMany({
+    const client = await getCacheClient();
+    await client.termAppearance.deleteMany({
       where: { chapterId },
     });
   }
 
   async clearProject(projectId: string): Promise<void> {
+    const client = await getCacheClient();
     await Promise.all([
-      cacheDb.getClient().characterAppearance.deleteMany({
+      client.characterAppearance.deleteMany({
         where: { projectId },
       }),
-      cacheDb.getClient().termAppearance.deleteMany({
+      client.termAppearance.deleteMany({
         where: { projectId },
       }),
     ]);
   }
 
   async clearCharacterProject(projectId: string): Promise<void> {
-    await cacheDb.getClient().characterAppearance.deleteMany({
+    const client = await getCacheClient();
+    await client.characterAppearance.deleteMany({
       where: { projectId },
     });
   }
 
   async clearTermProject(projectId: string): Promise<void> {
-    await cacheDb.getClient().termAppearance.deleteMany({
+    const client = await getCacheClient();
+    await client.termAppearance.deleteMany({
       where: { projectId },
     });
   }
 
   async clearCharacterEntity(characterId: string): Promise<void> {
-    await cacheDb.getClient().characterAppearance.deleteMany({
+    const client = await getCacheClient();
+    await client.characterAppearance.deleteMany({
       where: { characterId },
     });
   }
 
   async clearTermEntity(termId: string): Promise<void> {
-    await cacheDb.getClient().termAppearance.deleteMany({
+    const client = await getCacheClient();
+    await client.termAppearance.deleteMany({
       where: { termId },
     });
   }

@@ -42,6 +42,8 @@ type StoreSetter<T> = (
   partial: T | Partial<T> | ((state: T) => T | Partial<T>),
 ) => void;
 type StoreGetter<T> = () => T;
+const GRAPH_LOAD_TIMEOUT_MS = 8000;
+const GRAPH_REPLICA_TIMEOUT_MS = 4000;
 
 type WorldBuildingActions = Pick<
   WorldBuildingState,
@@ -66,6 +68,28 @@ function updateGraphNodeSelection(input: UpdateGraphNodeInput) {
     return current ?? null;
   };
 }
+
+const withTimeout = async <T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  label: string,
+): Promise<T> =>
+  new Promise<T>((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        window.clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
 
 const persistGraphDocument = async (
   projectId: string,
@@ -101,17 +125,30 @@ export function createWorldBuildingActions(
     loadGraph: async (projectId) => {
       set({ isLoading: true, error: null, activeProjectId: projectId });
       try {
-        const [graphResponse, graphReplicaResponse] = await Promise.all([
+        const graphResponse = await withTimeout(
           api.worldGraph.get(projectId),
+          GRAPH_LOAD_TIMEOUT_MS,
+          "worldGraph.get",
+        );
+
+        const graphReplicaResponse = await withTimeout(
           api.worldStorage.getDocument({ projectId, docType: "graph" }),
-        ]);
+          GRAPH_REPLICA_TIMEOUT_MS,
+          "worldStorage.getDocument",
+        ).catch(async (error) => {
+          await api.logger.warn("Falling back to base graph without replica document", {
+            projectId,
+            error: String(error),
+          });
+          return null;
+        });
 
         if (!graphResponse.success || !graphResponse.data) {
           throw new Error(graphResponse.error?.message ?? "Graph load failed");
         }
 
         const replicaPayload =
-          graphReplicaResponse.success && graphReplicaResponse.data?.found
+          graphReplicaResponse?.success && graphReplicaResponse.data?.found
             ? graphReplicaResponse.data.payload
             : null;
         const mergedGraph = mergeWorldGraphLayout(

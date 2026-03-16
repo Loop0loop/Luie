@@ -31,6 +31,7 @@ export function useLayoutPersist(entries: LayoutPersistEntry[]) {
     const isHandlingLayoutRef = useRef(false);
     const pendingCommitRef = useRef(new Map<LayoutSurfaceId, number>());
     const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const warnedEntriesRef = useRef(new Set<string>());
 
     useEffect(() => {
         entriesRef.current = entries;
@@ -74,19 +75,26 @@ export function useLayoutPersist(entries: LayoutPersistEntry[]) {
             isHandlingLayoutRef.current = true;
             try {
                 const nowMs = Date.now();
-                for (const entry of entriesRef.current) {
+                for (const [index, entry] of entriesRef.current.entries()) {
                     const nextRatio = normalizeLayoutSurfaceRatioInput(
                         entry.surface,
-                        layout[entry.id],
+                        layout[index],
                     );
                     if (nextRatio === null) {
-                        logger.warn(`[useLayoutPersist] Invalid layout ratio`, {
-                            entryId: entry.id,
-                            surface: entry.surface,
-                            layoutValue: layout[entry.id],
-                        });
+                        const warningKey = `${entry.surface}:${entry.id}`;
+                        if (!warnedEntriesRef.current.has(warningKey)) {
+                            warnedEntriesRef.current.add(warningKey);
+                            logger.warn(`[useLayoutPersist] Invalid layout ratio`, {
+                                entryId: entry.id,
+                                entryIndex: index,
+                                surface: entry.surface,
+                                layoutValue: layout[index],
+                                layout,
+                            });
+                        }
                         continue;
                     }
+                    warnedEntriesRef.current.delete(`${entry.surface}:${entry.id}`);
 
                     const previousCommit = lastCommitRef.current.get(entry.surface);
                     if (

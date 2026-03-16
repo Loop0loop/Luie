@@ -2,8 +2,10 @@ import { createLogger } from "../../../shared/logger/index.js";
 import { SEARCH_CONTEXT_RADIUS } from "../../../shared/constants/index.js";
 import { db } from "../../database/index.js";
 import { keywordExtractor } from "../../core/keywordExtractor.js";
-import { appearanceCacheService } from "../world/appearanceCacheService.js";
 import { projectService } from "./projectService.js";
+
+const loadAppearanceCacheService = async () =>
+  (await import("../world/appearanceCacheService.js")).appearanceCacheService;
 
 const logger = createLogger("ChapterKeywords");
 
@@ -36,7 +38,10 @@ async function updateCharacterFirstAppearance(
   );
 }
 
-async function updateTermFirstAppearance(termId: string, chapterId: string): Promise<void> {
+async function updateTermFirstAppearance(
+  termId: string,
+  chapterId: string,
+): Promise<void> {
   const term = await db.getClient().term.findUnique({
     where: { id: termId },
     select: {
@@ -66,6 +71,7 @@ async function trackKeywordAppearancesInternal(
   const includeTerms = options?.includeTerms ?? true;
 
   if (options?.clearExisting !== false) {
+    const appearanceCacheService = await loadAppearanceCacheService();
     if (includeCharacters && includeTerms) {
       await appearanceCacheService.clearChapter(chapterId);
     } else if (includeCharacters) {
@@ -101,8 +107,13 @@ async function trackKeywordAppearancesInternal(
   const keywords = keywordExtractor.extractFromText(content);
 
   if (includeCharacters) {
-    for (const keyword of keywords.filter((entry) => entry.type === "character")) {
-      const character = typedCharacters.find((entry) => entry.name === keyword.text);
+    const appearanceCacheService = await loadAppearanceCacheService();
+    for (const keyword of keywords.filter(
+      (entry) => entry.type === "character",
+    )) {
+      const character = typedCharacters.find(
+        (entry) => entry.name === keyword.text,
+      );
       if (!character) continue;
 
       await appearanceCacheService.recordCharacterAppearance({
@@ -110,7 +121,11 @@ async function trackKeywordAppearancesInternal(
         projectId,
         chapterId,
         position: keyword.position,
-        context: extractContext(content, keyword.position, SEARCH_CONTEXT_RADIUS),
+        context: extractContext(
+          content,
+          keyword.position,
+          SEARCH_CONTEXT_RADIUS,
+        ),
       });
 
       await updateCharacterFirstAppearance(String(character.id), chapterId);
@@ -118,6 +133,7 @@ async function trackKeywordAppearancesInternal(
   }
 
   if (includeTerms) {
+    const appearanceCacheService = await loadAppearanceCacheService();
     for (const keyword of keywords.filter((entry) => entry.type === "term")) {
       const term = typedTerms.find((entry) => entry.term === keyword.text);
       if (!term) continue;
@@ -127,7 +143,11 @@ async function trackKeywordAppearancesInternal(
         projectId,
         chapterId,
         position: keyword.position,
-        context: extractContext(content, keyword.position, SEARCH_CONTEXT_RADIUS),
+        context: extractContext(
+          content,
+          keyword.position,
+          SEARCH_CONTEXT_RADIUS,
+        ),
       });
 
       await updateTermFirstAppearance(String(term.id), chapterId);
@@ -172,6 +192,7 @@ export async function rebuildProjectKeywordAppearances(
   const includeTerms = options?.includeTerms ?? true;
 
   try {
+    const appearanceCacheService = await loadAppearanceCacheService();
     if (includeCharacters && includeTerms) {
       await appearanceCacheService.clearProject(projectId);
     } else if (includeCharacters) {
@@ -214,7 +235,11 @@ export async function rebuildProjectKeywordAppearances(
   }
 }
 
-export function extractContext(text: string, position: number, length: number): string {
+export function extractContext(
+  text: string,
+  position: number,
+  length: number,
+): string {
   const start = Math.max(0, position - length);
   const end = Math.min(text.length, position + length);
   return text.substring(start, end);

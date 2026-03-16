@@ -1,6 +1,13 @@
-import { cacheDb } from "../../database/cacheDb.js";
 import { db } from "../../database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
+
+const loadCacheDb = async () =>
+  (await import("../../database/cacheDb.js")).cacheDb;
+
+const getCacheClient = async () => {
+  const cacheDb = await loadCacheDb();
+  return cacheDb.getClient();
+};
 
 export type CachedChapterSearchDocument = {
   chapterId: string;
@@ -59,11 +66,12 @@ class ChapterSearchCacheService {
     searchText: string;
   }): Promise<void> {
     try {
-      await cacheDb.getClient().$executeRawUnsafe(
+      const client = await getCacheClient();
+      await client.$executeRawUnsafe(
         'DELETE FROM "ChapterSearchDocumentFts" WHERE "chapterId" = ?;',
         input.chapterId,
       );
-      await cacheDb.getClient().$executeRawUnsafe(
+      await client.$executeRawUnsafe(
         'INSERT INTO "ChapterSearchDocumentFts" ("chapterId", "projectId", "title", "synopsis", "searchText") VALUES (?, ?, ?, ?, ?);',
         input.chapterId,
         input.projectId,
@@ -72,41 +80,56 @@ class ChapterSearchCacheService {
         input.searchText,
       );
     } catch (error) {
-      this.logFtsUnavailable("Chapter search FTS sync unavailable; keeping projection fallback", error);
+      this.logFtsUnavailable(
+        "Chapter search FTS sync unavailable; keeping projection fallback",
+        error,
+      );
     }
   }
 
   private async clearFtsByChapter(chapterId: string): Promise<void> {
     try {
-      await cacheDb.getClient().$executeRawUnsafe(
+      const client = await getCacheClient();
+      await client.$executeRawUnsafe(
         'DELETE FROM "ChapterSearchDocumentFts" WHERE "chapterId" = ?;',
         chapterId,
       );
     } catch (error) {
-      this.logFtsUnavailable("Chapter search FTS clear unavailable; keeping projection fallback", error);
+      this.logFtsUnavailable(
+        "Chapter search FTS clear unavailable; keeping projection fallback",
+        error,
+      );
     }
   }
 
   private async clearFtsByProject(projectId: string): Promise<void> {
     try {
-      await cacheDb.getClient().$executeRawUnsafe(
+      const client = await getCacheClient();
+      await client.$executeRawUnsafe(
         'DELETE FROM "ChapterSearchDocumentFts" WHERE "projectId" = ?;',
         projectId,
       );
     } catch (error) {
-      this.logFtsUnavailable("Chapter search FTS project clear unavailable; keeping projection fallback", error);
+      this.logFtsUnavailable(
+        "Chapter search FTS project clear unavailable; keeping projection fallback",
+        error,
+      );
     }
   }
 
   private async countProjectFtsRows(projectId: string): Promise<number | null> {
     try {
-      const rows = await cacheDb.getClient().$queryRawUnsafe<Array<{ count: unknown }>>(
+      const client = await getCacheClient();
+      const rows = await client.$queryRawUnsafe<Array<{ count: unknown }>>(
         'SELECT COUNT(*) as count FROM "ChapterSearchDocumentFts" WHERE "projectId" = ?;',
         projectId,
       );
       return toSafeNumber(rows[0]?.count);
     } catch (error) {
-      this.logFtsUnavailable("Chapter search FTS count unavailable; keeping projection fallback", error);
+      this.logFtsUnavailable(
+        "Chapter search FTS count unavailable; keeping projection fallback",
+        error,
+      );
       return null;
     }
   }
@@ -117,7 +140,8 @@ class ChapterSearchCacheService {
     limit: number,
   ): Promise<CachedChapterSearchDocument[]> {
     try {
-      const rows = await cacheDb.getClient().$queryRawUnsafe<Array<{ chapterId: string }>>(
+      const client = await getCacheClient();
+      const rows = await client.$queryRawUnsafe<Array<{ chapterId: string }>>(
         'SELECT "chapterId" FROM "ChapterSearchDocumentFts" WHERE "projectId" = ? AND "ChapterSearchDocumentFts" MATCH ? ORDER BY bm25("ChapterSearchDocumentFts"), "chapterId" LIMIT ?;',
         projectId,
         buildFtsQuery(query),
@@ -129,7 +153,7 @@ class ChapterSearchCacheService {
       }
 
       const chapterIds = rows.map((row) => row.chapterId);
-      const documents = await cacheDb.getClient().chapterSearchDocument.findMany({
+      const documents = await client.chapterSearchDocument.findMany({
         where: {
           chapterId: {
             in: chapterIds,
@@ -142,9 +166,14 @@ class ChapterSearchCacheService {
 
       return chapterIds
         .map((chapterId) => documentMap.get(chapterId))
-        .filter((document): document is CachedChapterSearchDocument => Boolean(document));
+        .filter((document): document is CachedChapterSearchDocument =>
+          Boolean(document),
+        );
     } catch (error) {
-      this.logFtsUnavailable("Chapter search FTS query unavailable; falling back to projection search", error);
+      this.logFtsUnavailable(
+        "Chapter search FTS query unavailable; falling back to projection search",
+        error,
+      );
       return [];
     }
   }
@@ -154,15 +183,13 @@ class ChapterSearchCacheService {
     query: string,
     limit: number,
   ): Promise<CachedChapterSearchDocument[]> {
-    return await cacheDb.getClient().chapterSearchDocument.findMany({
+    const client = await getCacheClient();
+    return await client.chapterSearchDocument.findMany({
       where: {
         projectId,
         searchText: { contains: query },
       },
-      orderBy: [
-        { chapterOrder: "asc" },
-        { updatedAt: "desc" },
-      ],
+      orderBy: [{ chapterOrder: "asc" }, { updatedAt: "desc" }],
       take: limit,
     });
   }
@@ -177,7 +204,8 @@ class ChapterSearchCacheService {
     order: number;
   }): Promise<CachedChapterSearchDocument> {
     const searchText = buildSearchText(input);
-    const document = await cacheDb.getClient().chapterSearchDocument.upsert({
+    const client = await getCacheClient();
+    const document = await client.chapterSearchDocument.upsert({
       where: { chapterId: input.chapterId },
       create: {
         chapterId: input.chapterId,
@@ -228,12 +256,17 @@ class ChapterSearchCacheService {
       return ftsResults;
     }
 
-    return await this.searchProjectChaptersFallback(projectId, normalizedQuery, limit);
+    return await this.searchProjectChaptersFallback(
+      projectId,
+      normalizedQuery,
+      limit,
+    );
   }
 
   async clearChapter(chapterId: string): Promise<void> {
+    const client = await getCacheClient();
     await Promise.all([
-      cacheDb.getClient().chapterSearchDocument.deleteMany({
+      client.chapterSearchDocument.deleteMany({
         where: { chapterId },
       }),
       this.clearFtsByChapter(chapterId),
@@ -241,8 +274,9 @@ class ChapterSearchCacheService {
   }
 
   async clearProject(projectId: string): Promise<void> {
+    const client = await getCacheClient();
     await Promise.all([
-      cacheDb.getClient().chapterSearchDocument.deleteMany({
+      client.chapterSearchDocument.deleteMany({
         where: { projectId },
       }),
       this.clearFtsByProject(projectId),
@@ -254,8 +288,9 @@ class ChapterSearchCacheService {
   }
 
   async ensureProjectHydrated(projectId: string): Promise<void> {
+    const client = await getCacheClient();
     const [cacheCount, chapterCount, ftsCount] = await Promise.all([
-      cacheDb.getClient().chapterSearchDocument.count({
+      client.chapterSearchDocument.count({
         where: { projectId },
       }),
       db.getClient().chapter.count({
@@ -283,6 +318,7 @@ class ChapterSearchCacheService {
   }
 
   async rebuildProject(projectId: string): Promise<void> {
+    const client = await getCacheClient();
     const chapters = (await db.getClient().chapter.findMany({
       where: {
         projectId,
@@ -312,7 +348,7 @@ class ChapterSearchCacheService {
       return;
     }
 
-    await cacheDb.getClient().chapterSearchDocument.createMany({
+    await client.chapterSearchDocument.createMany({
       data: chapters.map((chapter) => ({
         chapterId: chapter.id,
         projectId,

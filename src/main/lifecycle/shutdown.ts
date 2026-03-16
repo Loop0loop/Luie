@@ -2,7 +2,6 @@ import { app, ipcMain, dialog } from "electron";
 import type { BrowserWindow } from "electron";
 import { windowManager } from "../manager/index.js";
 import { db } from "../database/index.js";
-import { cacheDb } from "../database/cacheDb.js";
 import { projectService } from "../services/core/projectService.js";
 import { snapshotService } from "../services/features/snapshot/snapshotService.js";
 import { IPC_CHANNELS } from "../../shared/ipc/channels.js";
@@ -19,6 +18,9 @@ type Logger = ReturnType<typeof createLogger>;
 
 const loadAutoSaveManager = async () =>
   (await import("../manager/autoSaveManager.js")).autoSaveManager;
+
+const loadCacheDb = async () =>
+  (await import("../database/cacheDb.js")).cacheDb;
 
 const sendQuitPhase = (
   targetWindow: BrowserWindow | null,
@@ -255,6 +257,7 @@ export const registerShutdownHandlers = (logger: Logger): void => {
         logger.warn("DB disconnect failed during quit", error);
       }
       try {
+        const cacheDb = await loadCacheDb();
         await cacheDb.disconnect();
       } catch (error) {
         logger.warn("Cache DB disconnect failed during quit", error);

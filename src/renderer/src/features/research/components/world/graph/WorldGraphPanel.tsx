@@ -20,6 +20,7 @@ export function WorldGraphPanel() {
   const {
     projectId,
     graphNodes,
+    graphEdges,
     timelineNodes,
     notes,
     graphLoading,
@@ -94,6 +95,8 @@ export function WorldGraphPanel() {
 
   const { selectedNode, handleCreatePreset, handleSaveNode } =
     useCanvasTabSidebar({
+      projectId,
+      graphNodes,
       selectedNodeId,
       onSelectNode: setSelectedNodeId,
       onCreatedEntity: handleCreatedEntity,
@@ -180,6 +183,9 @@ export function WorldGraphPanel() {
           <div className="min-h-0 flex-1">
             {activeTab === "canvas" ? (
               <CanvasTab
+                projectId={projectId}
+                graphNodes={graphNodes}
+                graphEdges={graphEdges}
                 selectedNodeId={selectedNodeId}
                 onSelectNode={setSelectedNodeId}
                 onCreateNote={handleCreateNote}

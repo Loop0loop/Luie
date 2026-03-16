@@ -14,7 +14,9 @@ import type {
 import { rebuildProjectKeywordAppearances } from "../core/chapterKeywords.js";
 import { projectService } from "../core/projectService.js";
 import { ServiceError } from "../../utils/serviceError.js";
-import { appearanceCacheService } from "./appearanceCacheService.js";
+
+const loadAppearanceCacheService = async () =>
+  (await import("./appearanceCacheService.js")).appearanceCacheService;
 
 const logger = createLogger("TermService");
 
@@ -71,10 +73,14 @@ export class TermService {
       });
 
       if (!term) {
-        throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", { id });
+        throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
+          id,
+        });
       }
 
-      const appearances = await appearanceCacheService.getTermAppearancesByEntity(id);
+      const appearanceCacheService = await loadAppearanceCacheService();
+      const appearances =
+        await appearanceCacheService.getTermAppearancesByEntity(id);
       return {
         ...term,
         appearances,
@@ -109,7 +115,8 @@ export class TermService {
       const updateData: Record<string, unknown> = {};
 
       if (input.term !== undefined) updateData.term = input.term;
-      if (input.definition !== undefined) updateData.definition = input.definition;
+      if (input.definition !== undefined)
+        updateData.definition = input.definition;
       if (input.category !== undefined) updateData.category = input.category;
       if (input.order !== undefined) updateData.order = input.order;
       if (input.firstAppearance !== undefined)
@@ -160,17 +167,20 @@ export class TermService {
 
       const projectId = term?.projectId ? String(term.projectId) : null;
 
-      await db.getClient().$transaction(async (tx: Prisma.TransactionClient) => {
-        if (projectId) {
-          await tx.entityRelation.deleteMany({
-            where: {
-              projectId,
-              OR: [{ sourceId: id }, { targetId: id }],
-            },
-          });
-        }
-        await tx.term.deleteMany({ where: { id } });
-      });
+      await db
+        .getClient()
+        .$transaction(async (tx: Prisma.TransactionClient) => {
+          if (projectId) {
+            await tx.entityRelation.deleteMany({
+              where: {
+                projectId,
+                OR: [{ sourceId: id }, { targetId: id }],
+              },
+            });
+          }
+          await tx.term.deleteMany({ where: { id } });
+        });
+      const appearanceCacheService = await loadAppearanceCacheService();
       await appearanceCacheService.clearTermEntity(id);
 
       logger.info("Term deleted successfully", { termId: id });
@@ -194,7 +204,9 @@ export class TermService {
 
   async recordAppearance(input: TermAppearanceInput) {
     try {
-      const appearance = await appearanceCacheService.recordTermAppearance(input);
+      const appearanceCacheService = await loadAppearanceCacheService();
+      const appearance =
+        await appearanceCacheService.recordTermAppearance(input);
 
       logger.info("Term appearance recorded", {
         termId: input.termId,
@@ -215,10 +227,12 @@ export class TermService {
 
   async getAppearancesByChapter(chapterId: string) {
     try {
-      const appearances = await appearanceCacheService.getTermAppearancesByChapter(
-        chapterId,
+      const appearanceCacheService = await loadAppearanceCacheService();
+      const appearances =
+        await appearanceCacheService.getTermAppearancesByChapter(chapterId);
+      const termIds = Array.from(
+        new Set(appearances.map((appearance) => appearance.termId)),
       );
-      const termIds = Array.from(new Set(appearances.map((appearance) => appearance.termId)));
       const terms = await db.getClient().term.findMany({
         where: { id: { in: termIds } },
       });
@@ -246,7 +260,9 @@ export class TermService {
       });
 
       if (!term) {
-        throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", { termId });
+        throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
+          termId,
+        });
       }
 
       if (!term.firstAppearance) {
@@ -277,7 +293,10 @@ export class TermService {
       const terms = await db.getClient().term.findMany({
         where: {
           projectId,
-          OR: [{ term: { contains: query } }, { definition: { contains: query } }],
+          OR: [
+            { term: { contains: query } },
+            { definition: { contains: query } },
+          ],
         },
         orderBy: { term: "asc" },
       });

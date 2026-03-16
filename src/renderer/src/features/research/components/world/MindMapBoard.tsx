@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import type { Node, NodeProps } from "reactflow";
 import ReactFlow, { Background, Handle, Position, useReactFlow } from "reactflow";
 import "reactflow/dist/style.css";
@@ -129,9 +129,9 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
   );
 };
 
-export function MindMapBoard() {
-  const nodeTypes = useMemo(() => ({ character: CharacterNode }), []);
+const MINDMAP_NODE_TYPES = Object.freeze({ character: CharacterNode });
 
+export function MindMapBoard() {
   const {
     t,
     flowRef,
@@ -186,7 +186,7 @@ export function MindMapBoard() {
         onConnect={onConnect}
         onNodeClick={onNodeClick}
         onPaneClick={() => setSelectedNodeId(null)}
-        nodeTypes={nodeTypes}
+        nodeTypes={MINDMAP_NODE_TYPES}
         fitView
         onInit={(instance) => {
           flowRef.current = instance;

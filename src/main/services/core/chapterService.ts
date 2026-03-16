@@ -18,16 +18,21 @@ import type {
 import { autoExtractService } from "../features/autoExtract/autoExtractService.js";
 import { projectService } from "./projectService.js";
 import { ServiceError } from "../../utils/serviceError.js";
-import { appearanceCacheService } from "../world/appearanceCacheService.js";
 import { trackKeywordAppearances } from "./chapterKeywords.js";
 import { sanitizeName } from "../../../shared/utils/sanitize.js";
 import { isTestEnv } from "../../utils/environment.js";
-import { chapterSearchCacheService } from "../features/chapterSearchCacheService.js";
 
 const logger = createLogger("ChapterService");
 
 const loadAutoSaveManager = async () =>
   (await import("../../manager/autoSaveManager.js")).autoSaveManager;
+
+const loadAppearanceCacheService = async () =>
+  (await import("../world/appearanceCacheService.js")).appearanceCacheService;
+
+const loadChapterSearchCacheService = async () =>
+  (await import("../features/chapterSearchCacheService.js"))
+    .chapterSearchCacheService;
 
 function isPrismaNotFoundError(error: unknown): boolean {
   return (
@@ -172,6 +177,7 @@ export class ChapterService {
       });
 
       logger.info("Chapter created successfully", { chapterId: chapter.id });
+      const chapterSearchCacheService = await loadChapterSearchCacheService();
       await chapterSearchCacheService.upsertChapter({
         chapterId: String(chapter.id),
         projectId: String(chapter.projectId),
@@ -272,6 +278,7 @@ export class ChapterService {
       logger.info("Chapter updated successfully", {
         chapterId: updatedChapter.id,
       });
+      const chapterSearchCacheService = await loadChapterSearchCacheService();
       await chapterSearchCacheService.upsertChapter({
         chapterId: String(updatedChapter.id),
         projectId: String((updatedChapter as { projectId: unknown }).projectId),
@@ -327,6 +334,11 @@ export class ChapterService {
           id,
         );
       }
+      const [appearanceCacheService, chapterSearchCacheService] =
+        await Promise.all([
+          loadAppearanceCacheService(),
+          loadChapterSearchCacheService(),
+        ]);
       await appearanceCacheService.clearChapter(id);
       await chapterSearchCacheService.clearChapter(id);
 
@@ -392,6 +404,7 @@ export class ChapterService {
         String(current.content ?? ""),
         String(current.projectId),
       );
+      const chapterSearchCacheService = await loadChapterSearchCacheService();
       await chapterSearchCacheService.upsertChapter({
         chapterId: String(restored.id),
         projectId: String(current.projectId),
@@ -435,6 +448,11 @@ export class ChapterService {
       });
 
       await db.getClient().chapter.delete({ where: { id } });
+      const [appearanceCacheService, chapterSearchCacheService] =
+        await Promise.all([
+          loadAppearanceCacheService(),
+          loadChapterSearchCacheService(),
+        ]);
       await appearanceCacheService.clearChapter(id);
       await chapterSearchCacheService.clearChapter(id);
 
@@ -477,6 +495,7 @@ export class ChapterService {
       );
 
       logger.info("Chapters reordered successfully", { projectId });
+      const chapterSearchCacheService = await loadChapterSearchCacheService();
       await chapterSearchCacheService.rebuildProject(projectId);
       await projectService.ensureImmediatePackageExport(
         projectId,

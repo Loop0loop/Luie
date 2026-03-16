@@ -8,7 +8,7 @@
   "files": [
     "out/**/*",
     "package.json",
-    "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme,AUTHORS,LICENSE,LICENSE.*,LICENCE,LICENCE.*,docs,doc,example,examples,test,tests,__tests__,coverage,src,.github}/**"
+    "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme,AUTHORS,LICENSE,LICENSE.*,LICENCE,LICENCE.*,docs,doc,example,examples,test,tests,__tests__,coverage,.github}/**"
   ],
   "extraResources": [
     {

@@ -173,6 +173,14 @@ export default function App() {
   }, [currentProject?.id, loadProjects]);
 
   useEffect(() => {
+    if (windowMode !== "world-graph") return;
+    if (currentProject) return;
+    if (projects.length === 0) return;
+
+    setCurrentProject(projects[0] ?? null);
+  }, [currentProject, projects, setCurrentProject, windowMode]);
+
+  useEffect(() => {
     const unsubscribe = api.lifecycle.onQuitPhase((payload) => {
       if (!payload || typeof payload !== "object") return;
       const next = payload as Partial<AppQuitPhasePayload>;

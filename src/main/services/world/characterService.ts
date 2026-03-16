@@ -14,7 +14,9 @@ import type {
 import { rebuildProjectKeywordAppearances } from "../core/chapterKeywords.js";
 import { projectService } from "../core/projectService.js";
 import { ServiceError } from "../../utils/serviceError.js";
-import { appearanceCacheService } from "./appearanceCacheService.js";
+
+const loadAppearanceCacheService = async () =>
+  (await import("./appearanceCacheService.js")).appearanceCacheService;
 
 const logger = createLogger("CharacterService");
 
@@ -40,7 +42,9 @@ export class CharacterService {
           name: input.name,
           description: input.description,
           firstAppearance: input.firstAppearance,
-          attributes: input.attributes ? JSON.stringify(input.attributes) : null,
+          attributes: input.attributes
+            ? JSON.stringify(input.attributes)
+            : null,
         },
       });
 
@@ -81,7 +85,9 @@ export class CharacterService {
         );
       }
 
-      const appearances = await appearanceCacheService.getCharacterAppearancesByEntity(id);
+      const appearanceCacheService = await loadAppearanceCacheService();
+      const appearances =
+        await appearanceCacheService.getCharacterAppearancesByEntity(id);
       return {
         ...character,
         appearances,
@@ -116,7 +122,8 @@ export class CharacterService {
       const updateData: Record<string, unknown> = {};
 
       if (input.name !== undefined) updateData.name = input.name;
-      if (input.description !== undefined) updateData.description = input.description;
+      if (input.description !== undefined)
+        updateData.description = input.description;
       if (input.firstAppearance !== undefined)
         updateData.firstAppearance = input.firstAppearance;
       if (input.attributes !== undefined) {
@@ -168,22 +175,24 @@ export class CharacterService {
         select: { projectId: true },
       });
 
-      const projectId =
-        (character as { projectId?: unknown })?.projectId
-          ? String((character as { projectId: unknown }).projectId)
-          : null;
+      const projectId = (character as { projectId?: unknown })?.projectId
+        ? String((character as { projectId: unknown }).projectId)
+        : null;
 
-      await db.getClient().$transaction(async (tx: Prisma.TransactionClient) => {
-        if (projectId) {
-          await tx.entityRelation.deleteMany({
-            where: {
-              projectId,
-              OR: [{ sourceId: id }, { targetId: id }],
-            },
-          });
-        }
-        await tx.character.deleteMany({ where: { id } });
-      });
+      await db
+        .getClient()
+        .$transaction(async (tx: Prisma.TransactionClient) => {
+          if (projectId) {
+            await tx.entityRelation.deleteMany({
+              where: {
+                projectId,
+                OR: [{ sourceId: id }, { targetId: id }],
+              },
+            });
+          }
+          await tx.character.deleteMany({ where: { id } });
+        });
+      const appearanceCacheService = await loadAppearanceCacheService();
       await appearanceCacheService.clearCharacterEntity(id);
 
       logger.info("Character deleted successfully", { characterId: id });
@@ -207,7 +216,9 @@ export class CharacterService {
 
   async recordAppearance(input: CharacterAppearanceInput) {
     try {
-      const appearance = await appearanceCacheService.recordCharacterAppearance(input);
+      const appearanceCacheService = await loadAppearanceCacheService();
+      const appearance =
+        await appearanceCacheService.recordCharacterAppearance(input);
 
       logger.info("Character appearance recorded", {
         characterId: input.characterId,
@@ -228,8 +239,11 @@ export class CharacterService {
 
   async getAppearancesByChapter(chapterId: string) {
     try {
+      const appearanceCacheService = await loadAppearanceCacheService();
       const appearances =
-        await appearanceCacheService.getCharacterAppearancesByChapter(chapterId);
+        await appearanceCacheService.getCharacterAppearancesByChapter(
+          chapterId,
+        );
       const characterIds = Array.from(
         new Set(appearances.map((appearance) => appearance.characterId)),
       );
@@ -297,7 +311,10 @@ export class CharacterService {
       const characters = await db.getClient().character.findMany({
         where: {
           projectId,
-          OR: [{ name: { contains: query } }, { description: { contains: query } }],
+          OR: [
+            { name: { contains: query } },
+            { description: { contains: query } },
+          ],
         },
         orderBy: { name: "asc" },
       });
