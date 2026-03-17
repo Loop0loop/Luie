@@ -141,7 +141,7 @@ function CanvasGraphNodeCardInner({
         <span className="text-[14px] font-semibold leading-snug text-fg/92">
           {data.label}
         </span>
-        {data.relationCount > 0 && (
+        {data.relationCount !== undefined && data.relationCount > 0 && (
           <span className="mt-0.5 self-start rounded-full border border-white/8 px-1.5 py-px text-[10px] text-fg/38">
             {data.relationCount} links
           </span>

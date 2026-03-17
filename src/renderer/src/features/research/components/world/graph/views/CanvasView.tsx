@@ -101,7 +101,6 @@ const buildFlowNodes = (
 
 const buildFlowEdges = (
   edges: EntityRelation[],
-  nodes: WorldGraphNode[],
   onDeleteRelation?: (id: string) => void,
 ): Edge<CanvasGraphEdgeData>[] => {
   const palette = {
@@ -653,8 +652,8 @@ export function CanvasView({
     [nodes, onDeleteNode, onAddTimelineBranch],
   );
   const flowEdges = useMemo(
-    () => buildFlowEdges(edges, nodes, (id) => void onDeleteRelation?.(id)),
-    [edges, nodes, onDeleteRelation],
+    () => buildFlowEdges(edges, (id) => void onDeleteRelation?.(id)),
+    [edges, onDeleteRelation],
   );
   const timelineNodes = useMemo(
     () => nodes.filter((node) => node.entityType === "Event"),

@@ -91,10 +91,6 @@ export function CanvasTab({
     void handleCreatePreset("Concept", "Concept");
   }, [handleCreatePreset]);
 
-  const handleCreateTimelineEvent = useCallback(() => {
-    void handleCreatePreset("Event");
-  }, [handleCreatePreset]);
-
   const handleDeleteNode = useCallback(
     async (nodeId: string) => {
       const deleted = await deleteGraphNode(nodeId);
@@ -176,7 +172,6 @@ export function CanvasTab({
       onCreateRelation={handleCreateRelation}
       onDeleteRelation={handleDeleteRelation}
       onCreateBlock={handleCreateCanvasBlock}
-      onCreateTimelineEvent={handleCreateTimelineEvent}
       onAddTimelineBranch={handleAddTimelineBranch}
       onCreateNote={onCreateNote}
       onNodePositionCommit={({ id, x, y }) => {
