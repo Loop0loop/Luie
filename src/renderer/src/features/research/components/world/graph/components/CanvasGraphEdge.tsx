@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { ArrowRightLeft, Edit2, Palette, Trash2, Type } from "lucide-react";
 import type { EdgeProps } from "reactflow";
-import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath } from "reactflow";
+import { BaseEdge, EdgeLabelRenderer, getBezierPath } from "reactflow";
 import { Button } from "@renderer/components/ui/button";
 
 export type CanvasGraphEdgeData = {
@@ -31,14 +31,14 @@ function CanvasGraphEdgeInner({
   selected,
   label,
 }: EdgeProps<CanvasGraphEdgeData>) {
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
+  const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
     sourcePosition,
     targetX,
     targetY,
     targetPosition,
-    borderRadius: 24,
+    curvature: 0.4,
   });
 
   const palette = data?.palette ?? {

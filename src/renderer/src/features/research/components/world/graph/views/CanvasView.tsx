@@ -1,4 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Maximize2,
+  Minus,
+  Plus,
+  RotateCcw,
+  RotateCw,
+  Settings,
+  HelpCircle,
+  RefreshCw,
+} from "lucide-react";
 import ReactFlow, {
   applyEdgeChanges,
   applyNodeChanges,
@@ -105,7 +115,7 @@ function readNodeMetaLabel(node: WorldGraphNode): string {
     return node.firstAppearance.trim();
   }
 
-  return "Canvas";
+  return "";
 }
 
 function decorateEdges(
@@ -275,6 +285,8 @@ function CanvasFlowSurface({
   const [isHudVisible, setIsHudVisible] = useState(true);
   const draggingNodeIdRef = useRef<string | null>(null);
   const reactFlow = useReactFlow<AnyCanvasNodeData>();
+  const historyRef = useRef<Node<AnyCanvasNodeData>[][]>([]);
+  const historyIndexRef = useRef(-1);
 
   useEffect(() => {
     setNodes((currentNodes) =>
@@ -338,6 +350,33 @@ function CanvasFlowSurface({
     };
   }, [reactFlow]);
 
+  const pushHistory = useCallback((snapshot: Node<AnyCanvasNodeData>[]) => {
+    historyRef.current = historyRef.current.slice(
+      0,
+      historyIndexRef.current + 1,
+    );
+    historyRef.current.push(snapshot);
+    if (historyRef.current.length > 50) {
+      historyRef.current.shift();
+    } else {
+      historyIndexRef.current += 1;
+    }
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    if (historyIndexRef.current <= 0) return;
+    historyIndexRef.current -= 1;
+    const snapshot = historyRef.current[historyIndexRef.current];
+    if (snapshot) setNodes(snapshot);
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    if (historyIndexRef.current >= historyRef.current.length - 1) return;
+    historyIndexRef.current += 1;
+    const snapshot = historyRef.current[historyIndexRef.current];
+    if (snapshot) setNodes(snapshot);
+  }, []);
+
   const handleDeleteLocalNode = useCallback((id: string) => {
     setNodes((current) => current.filter((n) => n.id !== id));
   }, []);
@@ -376,8 +415,17 @@ function CanvasFlowSurface({
         onDataChange: handleMemoDataChange,
       },
     };
-    setNodes((current) => [...current, newNode]);
-  }, [getViewportCenter, handleDeleteLocalNode, handleMemoDataChange]);
+    setNodes((current) => {
+      const next = [...current, newNode];
+      pushHistory(next);
+      return next;
+    });
+  }, [
+    getViewportCenter,
+    handleDeleteLocalNode,
+    handleMemoDataChange,
+    pushHistory,
+  ]);
 
   const handlePickTimelineEvent = useCallback(
     (nodeId: string) => {
@@ -413,7 +461,13 @@ function CanvasFlowSurface({
       setNodes((current) => [...current, newNode]);
       onSelectNode(null);
     },
-    [timelineNodes, getViewportCenter, handleDeleteLocalNode, onSelectNode],
+    [
+      timelineNodes,
+      getViewportCenter,
+      handleDeleteLocalNode,
+      onSelectNode,
+      pushHistory,
+    ],
   );
 
   const handleCreateTimelineBlock = useCallback(() => {
@@ -431,9 +485,18 @@ function CanvasFlowSurface({
         onDelete: handleDeleteLocalNode,
       },
     };
-    setNodes((current) => [...current, newNode]);
+    setNodes((current) => {
+      const next = [...current, newNode];
+      pushHistory(next);
+      return next;
+    });
     onCreateTimelineEvent();
-  }, [getViewportCenter, handleDeleteLocalNode, onCreateTimelineEvent]);
+  }, [
+    getViewportCenter,
+    handleDeleteLocalNode,
+    onCreateTimelineEvent,
+    pushHistory,
+  ]);
 
   const handleNodesChange = (changes: NodeChange[]) => {
     setNodes((currentNodes) => applyNodeChanges(changes, currentNodes));
@@ -598,29 +661,84 @@ function CanvasFlowSurface({
         </div>
       )}
 
-      <div className="pointer-events-none absolute right-5 top-5 z-10 flex flex-col gap-2">
-        <Button
-          type="button"
-          size="icon"
-          variant="outline"
-          className="pointer-events-auto h-11 w-11 rounded-xl border-white/10 bg-[#171b22]/90"
-          onClick={onCreateBlock}
-          title="블럭 추가"
-        >
-          +
-        </Button>
-        <Button
-          type="button"
-          size="icon"
-          variant="outline"
-          className="pointer-events-auto h-11 w-11 rounded-xl border-white/10 bg-[#171b22]/90"
-          onClick={() => {
-            setTimelinePaletteOpen(true);
-          }}
-          title="타임라인 팔레트"
-        >
-          T
-        </Button>
+      <div className="pointer-events-none absolute right-4 top-1/2 z-10 -translate-y-1/2">
+        <div className="pointer-events-auto flex flex-col rounded-2xl border border-white/8 bg-[#13171e]/90 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur overflow-hidden">
+          <button
+            type="button"
+            className="flex h-11 w-11 items-center justify-center text-fg/45 transition-colors hover:bg-white/6 hover:text-fg/80"
+            title="설정"
+          >
+            <Settings className="h-[18px] w-[18px]" />
+          </button>
+
+          <div className="mx-2.5 h-px bg-white/8" />
+
+          <button
+            type="button"
+            className="flex h-11 w-11 items-center justify-center text-fg/45 transition-colors hover:bg-white/6 hover:text-fg/80"
+            title="블럭 추가"
+            onClick={onCreateBlock}
+          >
+            <Plus className="h-[18px] w-[18px]" />
+          </button>
+          <button
+            type="button"
+            className="flex h-11 w-11 items-center justify-center text-fg/45 transition-colors hover:bg-white/6 hover:text-fg/80"
+            title="뷰 맞추기"
+            onClick={() =>
+              void reactFlow.fitView({ padding: 0.24, duration: 300 })
+            }
+          >
+            <RefreshCw className="h-[18px] w-[18px]" />
+          </button>
+          <button
+            type="button"
+            className="flex h-11 w-11 items-center justify-center text-fg/45 transition-colors hover:bg-white/6 hover:text-fg/80"
+            title="전체화면 뷰"
+            onClick={() =>
+              void reactFlow.fitView({ padding: 0.05, duration: 300 })
+            }
+          >
+            <Maximize2 className="h-[17px] w-[17px]" />
+          </button>
+          <button
+            type="button"
+            className="flex h-11 w-11 items-center justify-center text-fg/45 transition-colors hover:bg-white/6 hover:text-fg/80"
+            title="줌 아웃"
+            onClick={() => void reactFlow.zoomOut({ duration: 200 })}
+          >
+            <Minus className="h-[18px] w-[18px]" />
+          </button>
+
+          <div className="mx-2.5 h-px bg-white/8" />
+
+          <button
+            type="button"
+            className="flex h-11 w-11 items-center justify-center text-fg/45 transition-colors hover:bg-white/6 hover:text-fg/80"
+            title="실행 취소"
+            onClick={handleUndo}
+          >
+            <RotateCcw className="h-[17px] w-[17px]" />
+          </button>
+          <button
+            type="button"
+            className="flex h-11 w-11 items-center justify-center text-fg/45 transition-colors hover:bg-white/6 hover:text-fg/80"
+            title="다시 실행"
+            onClick={handleRedo}
+          >
+            <RotateCw className="h-[17px] w-[17px]" />
+          </button>
+
+          <div className="mx-2.5 h-px bg-white/8" />
+
+          <button
+            type="button"
+            className="flex h-11 w-11 items-center justify-center text-fg/45 transition-colors hover:bg-white/6 hover:text-fg/80"
+            title="도움말"
+          >
+            <HelpCircle className="h-[17px] w-[17px]" />
+          </button>
+        </div>
       </div>
 
       <CanvasToolbar

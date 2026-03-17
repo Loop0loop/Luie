@@ -128,12 +128,14 @@ function CanvasGraphNodeCardInner({
             : `0 2px 8px rgba(0,0,0,0.18)`,
         }}
       >
-        <span
-          className="text-[10px] font-medium uppercase tracking-[0.18em]"
-          style={{ color: theme.accent, opacity: 0.72 }}
-        >
-          {data.metaLabel}
-        </span>
+        {data.metaLabel && (
+          <span
+            className="text-[10px] font-medium uppercase tracking-[0.18em]"
+            style={{ color: theme.accent, opacity: 0.72 }}
+          >
+            {data.metaLabel}
+          </span>
+        )}
         <span className="text-[14px] font-semibold leading-snug text-fg/92">
           {data.label}
         </span>
