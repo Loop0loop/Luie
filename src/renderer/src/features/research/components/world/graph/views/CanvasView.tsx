@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactFlow, {
   applyEdgeChanges,
   applyNodeChanges,
@@ -6,6 +6,7 @@ import ReactFlow, {
   BackgroundVariant,
   ReactFlowProvider,
   SelectionMode,
+  ConnectionMode,
   type Connection,
   type EdgeChange,
   type Edge,
@@ -21,11 +22,19 @@ import { Card, CardContent } from "@renderer/components/ui/card";
 import { CanvasTimelinePalette } from "../components/CanvasTimelinePalette";
 import { CanvasToolbar } from "../components/CanvasToolbar";
 import type { CanvasGraphNodeData } from "../components/CanvasGraphNodeCard";
+import type { CanvasGraphEdgeData } from "../components/CanvasGraphEdge";
+import type { CanvasTimelineBlockData } from "../components/CanvasTimelineBlockNode";
+import type { CanvasMemoBlockData } from "../components/CanvasMemoBlockNode";
 import {
   CANVAS_EDGE_TYPES,
   CANVAS_NODE_TYPES,
 } from "../components/canvasFlowTypes";
 import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
+
+type AnyCanvasNodeData =
+  | CanvasGraphNodeData
+  | CanvasTimelineBlockData
+  | CanvasMemoBlockData;
 
 type CanvasViewProps = {
   nodes: WorldGraphNode[];
@@ -43,14 +52,6 @@ type CanvasViewProps = {
   onCreateBlock: () => void;
   onCreateTimelineEvent: () => void;
   onCreateNote: () => void;
-};
-
-type CanvasEdgeData = {
-  palette: {
-    stroke: string;
-    selectedStroke: string;
-    glow: string;
-  };
 };
 
 function readPosition(node: WorldGraphNode, index: number) {
@@ -107,45 +108,15 @@ function readNodeMetaLabel(node: WorldGraphNode): string {
   return "Canvas";
 }
 
-function buildEdgeStyle(palette: CanvasEdgeData["palette"], selected: boolean) {
-  const stroke = selected ? palette.selectedStroke : palette.stroke;
-
-  return {
-    style: {
-      stroke,
-      strokeWidth: selected ? 2.35 : 1.8,
-      filter: selected ? `drop-shadow(0 0 10px ${palette.glow})` : undefined,
-    },
-    labelStyle: {
-      fill: selected ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.52)",
-      fontSize: 11,
-      fontWeight: 600,
-      letterSpacing: "0.06em",
-    },
-    labelBgStyle: {
-      fill: "rgba(11,14,19,0.92)",
-      stroke,
-      strokeWidth: 1,
-    },
-  };
-}
-
 function decorateEdges(
-  edges: Edge<CanvasEdgeData>[],
+  edges: Edge<CanvasGraphEdgeData>[],
   selectedEdgeId: string | null,
-): Edge<CanvasEdgeData>[] {
+): Edge<CanvasGraphEdgeData>[] {
   return edges.map((edge) => {
-    const palette = edge.data?.palette ?? {
-      stroke: "rgba(255,255,255,0.22)",
-      selectedStroke: "rgba(255,255,255,0.95)",
-      glow: "rgba(255,255,255,0.18)",
-    };
     const selected = edge.id === selectedEdgeId;
-
     return {
       ...edge,
       selected,
-      ...buildEdgeStyle(palette, selected),
     };
   });
 }
@@ -180,6 +151,9 @@ const buildFlowNodes = (
       metaLabel: readNodeMetaLabel(node),
       subType: node.subType,
       onDelete: onDeleteNode,
+      onChangeColor: undefined,
+      onOpenEntity: undefined,
+      onEdit: undefined,
     },
   }));
 };
@@ -187,7 +161,8 @@ const buildFlowNodes = (
 const buildFlowEdges = (
   edges: EntityRelation[],
   nodes: WorldGraphNode[],
-): Edge<CanvasEdgeData>[] => {
+  onDeleteRelation?: (id: string) => void,
+): Edge<CanvasGraphEdgeData>[] => {
   const nodesById = new Map(nodes.map((node) => [node.id, node]));
 
   return edges.map((edge) => {
@@ -207,34 +182,54 @@ const buildFlowEdges = (
       target: edge.targetId,
       label: edge.relation.replaceAll("_", " "),
       animated: false,
-      type: "smoothstep",
-      data: { palette },
+      type: "canvas-edge",
+      data: {
+        palette,
+        onDelete: onDeleteRelation,
+        onChangeColor: undefined,
+        onChangeDirection: undefined,
+        onEditRelation: undefined,
+        onEdit: undefined,
+      },
       interactionWidth: 28,
       labelBgPadding: [10, 4],
       labelBgBorderRadius: 999,
-      ...buildEdgeStyle(palette, false),
     };
   });
 };
 
 function mergeIncomingNodes(
-  currentNodes: Node<CanvasGraphNodeData>[],
+  currentNodes: Node<AnyCanvasNodeData>[],
   incomingNodes: Node<CanvasGraphNodeData>[],
   lockedNodeId: string | null,
-): Node<CanvasGraphNodeData>[] {
+): Node<AnyCanvasNodeData>[] {
   const currentById = new Map(currentNodes.map((node) => [node.id, node]));
+  const incomingIds = new Set(incomingNodes.map((n) => n.id));
 
-  return incomingNodes.map((incomingNode) => {
+  const localNodes = currentNodes.filter(
+    (n) => n.type === "canvas-timeline" || n.type === "canvas-memo",
+  );
+
+  const merged = incomingNodes.map((incomingNode) => {
     const currentNode = currentById.get(incomingNode.id);
     if (!currentNode || incomingNode.id === lockedNodeId) {
-      return incomingNode;
+      return incomingNode as Node<AnyCanvasNodeData>;
     }
     return {
       ...incomingNode,
       position: currentNode.position,
       selected: currentNode.selected,
-    };
+    } as Node<AnyCanvasNodeData>;
   });
+
+  const preservedLocals = localNodes.filter((n) => !incomingIds.has(n.id));
+  return [...merged, ...preservedLocals];
+}
+
+let localNodeCounter = 0;
+function generateLocalId(prefix: string) {
+  localNodeCounter += 1;
+  return `${prefix}-${Date.now()}-${localNodeCounter}`;
 }
 
 function CanvasFlowSurface({
@@ -250,11 +245,10 @@ function CanvasFlowSurface({
   onDeleteRelation,
   onCreateBlock,
   onCreateTimelineEvent,
-  onCreateNote,
   summary,
 }: {
   graphNodes: Node<CanvasGraphNodeData>[];
-  graphEdges: Edge<CanvasEdgeData>[];
+  graphEdges: Edge<CanvasGraphEdgeData>[];
   timelineNodes: WorldGraphNode[];
   selectedNodeId: string | null;
   autoLayoutTrigger: number;
@@ -268,20 +262,19 @@ function CanvasFlowSurface({
   onDeleteRelation?: (relationId: string) => Promise<void>;
   onCreateBlock: () => void;
   onCreateTimelineEvent: () => void;
-  onCreateNote: () => void;
   summary: {
     nodeCount: number;
     edgeCount: number;
     hasSelection: boolean;
   };
 }) {
-  const [nodes, setNodes] = useState<Node<CanvasGraphNodeData>[]>(graphNodes);
-  const [edges, setEdges] = useState<Edge<CanvasEdgeData>[]>(graphEdges);
+  const [nodes, setNodes] = useState<Node<AnyCanvasNodeData>[]>(graphNodes);
+  const [edges, setEdges] = useState<Edge<CanvasGraphEdgeData>[]>(graphEdges);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [timelinePaletteOpen, setTimelinePaletteOpen] = useState(false);
   const [isHudVisible, setIsHudVisible] = useState(true);
   const draggingNodeIdRef = useRef<string | null>(null);
-  const reactFlow = useReactFlow<CanvasGraphNodeData>();
+  const reactFlow = useReactFlow<AnyCanvasNodeData>();
 
   useEffect(() => {
     setNodes((currentNodes) =>
@@ -333,6 +326,114 @@ function CanvasFlowSurface({
       void reactFlow.fitView({ padding: 0.24, duration: 300 });
     }, 50);
   }, [autoLayoutTrigger, reactFlow]);
+
+  const getViewportCenter = useCallback(() => {
+    const { x, y, zoom } = reactFlow.getViewport();
+    const el = document.querySelector(".react-flow");
+    const width = el?.clientWidth ?? 800;
+    const height = el?.clientHeight ?? 600;
+    return {
+      x: (-x + width / 2) / zoom - 140,
+      y: (-y + height / 2) / zoom - 60,
+    };
+  }, [reactFlow]);
+
+  const handleDeleteLocalNode = useCallback((id: string) => {
+    setNodes((current) => current.filter((n) => n.id !== id));
+  }, []);
+
+  const handleMemoDataChange = useCallback(
+    (
+      id: string,
+      patch: Partial<Omit<CanvasMemoBlockData, "onDelete" | "onDataChange">>,
+    ) => {
+      setNodes((current) =>
+        current.map((n) => {
+          if (n.id !== id || n.type !== "canvas-memo") return n;
+          return {
+            ...n,
+            data: { ...(n.data as CanvasMemoBlockData), ...patch },
+          };
+        }),
+      );
+    },
+    [],
+  );
+
+  const handleCreateMemo = useCallback(() => {
+    const position = getViewportCenter();
+    const id = generateLocalId("memo");
+    const newNode: Node<CanvasMemoBlockData> = {
+      id,
+      type: "canvas-memo",
+      position,
+      draggable: true,
+      data: {
+        title: "",
+        tags: [],
+        body: "",
+        onDelete: handleDeleteLocalNode,
+        onDataChange: handleMemoDataChange,
+      },
+    };
+    setNodes((current) => [...current, newNode]);
+  }, [getViewportCenter, handleDeleteLocalNode, handleMemoDataChange]);
+
+  const handlePickTimelineEvent = useCallback(
+    (nodeId: string) => {
+      const source = timelineNodes.find((n) => n.id === nodeId);
+      if (!source) return;
+      const position = getViewportCenter();
+      const id = generateLocalId("timeline");
+      const attrs =
+        source.attributes &&
+        typeof source.attributes === "object" &&
+        !Array.isArray(source.attributes)
+          ? (source.attributes as Record<string, unknown>)
+          : null;
+      const date =
+        typeof attrs?.date === "string"
+          ? attrs.date
+          : typeof attrs?.time === "string"
+            ? attrs.time
+            : undefined;
+
+      const newNode: Node<CanvasTimelineBlockData> = {
+        id,
+        type: "canvas-timeline",
+        position,
+        draggable: true,
+        data: {
+          label: source.name,
+          date,
+          description: source.description?.trim() ?? undefined,
+          onDelete: handleDeleteLocalNode,
+        },
+      };
+      setNodes((current) => [...current, newNode]);
+      onSelectNode(null);
+    },
+    [timelineNodes, getViewportCenter, handleDeleteLocalNode, onSelectNode],
+  );
+
+  const handleCreateTimelineBlock = useCallback(() => {
+    const position = getViewportCenter();
+    const id = generateLocalId("timeline");
+    const newNode: Node<CanvasTimelineBlockData> = {
+      id,
+      type: "canvas-timeline",
+      position,
+      draggable: true,
+      data: {
+        label: "새 타임라인",
+        date: undefined,
+        description: undefined,
+        onDelete: handleDeleteLocalNode,
+      },
+    };
+    setNodes((current) => [...current, newNode]);
+    onCreateTimelineEvent();
+  }, [getViewportCenter, handleDeleteLocalNode, onCreateTimelineEvent]);
 
   const handleNodesChange = (changes: NodeChange[]) => {
     setNodes((currentNodes) => applyNodeChanges(changes, currentNodes));
@@ -392,7 +493,9 @@ function CanvasFlowSurface({
         }}
         onNodesDelete={(deletedNodes) => {
           deletedNodes.forEach((node) => {
-            onDeleteNode?.(node.id);
+            if (node.type === "obsidian-card") {
+              onDeleteNode?.(node.id);
+            }
           });
           setSelectedEdgeId(null);
         }}
@@ -406,11 +509,13 @@ function CanvasFlowSurface({
         }}
         onNodeDragStop={(_, node) => {
           draggingNodeIdRef.current = null;
-          onNodePositionCommit?.({
-            id: node.id,
-            x: node.position.x,
-            y: node.position.y,
-          });
+          if (node.type === "obsidian-card") {
+            onNodePositionCommit?.({
+              id: node.id,
+              x: node.position.x,
+              y: node.position.y,
+            });
+          }
         }}
         deleteKeyCode={["Backspace", "Delete"]}
         panOnDrag={[2]}
@@ -421,6 +526,7 @@ function CanvasFlowSurface({
         zoomOnDoubleClick={false}
         selectNodesOnDrag={false}
         nodesConnectable
+        connectionMode={ConnectionMode.Loose}
         className="bg-[#0f1319]"
       >
         <Background
@@ -520,7 +626,7 @@ function CanvasFlowSurface({
       <CanvasToolbar
         onCreateBlock={onCreateBlock}
         onOpenTimelinePalette={() => setTimelinePaletteOpen(true)}
-        onCreateNote={onCreateNote}
+        onCreateNote={handleCreateMemo}
       />
 
       <CanvasTimelinePalette
@@ -528,11 +634,12 @@ function CanvasFlowSurface({
         events={timelineNodes}
         onClose={() => setTimelinePaletteOpen(false)}
         onCreateEvent={() => {
-          onCreateTimelineEvent();
+          handleCreateTimelineBlock();
           setTimelinePaletteOpen(false);
         }}
         onPickEvent={(nodeId) => {
-          onSelectNode(nodeId);
+          handlePickTimelineEvent(nodeId);
+          setTimelinePaletteOpen(false);
         }}
       />
     </div>
@@ -551,13 +658,16 @@ export function CanvasView({
   onDeleteRelation,
   onCreateBlock,
   onCreateTimelineEvent,
-  onCreateNote,
+  onCreateNote: _onCreateNote,
 }: CanvasViewProps) {
   const flowNodes = useMemo(
     () => buildFlowNodes(nodes, edges, onDeleteNode),
     [edges, nodes, onDeleteNode],
   );
-  const flowEdges = useMemo(() => buildFlowEdges(edges, nodes), [edges, nodes]);
+  const flowEdges = useMemo(
+    () => buildFlowEdges(edges, nodes, (id) => void onDeleteRelation?.(id)),
+    [edges, nodes, onDeleteRelation],
+  );
   const timelineNodes = useMemo(
     () => nodes.filter((node) => node.entityType === "Event"),
     [nodes],
@@ -587,7 +697,6 @@ export function CanvasView({
           onDeleteRelation={onDeleteRelation}
           onCreateBlock={onCreateBlock}
           onCreateTimelineEvent={onCreateTimelineEvent}
-          onCreateNote={onCreateNote}
           summary={summary}
         />
       </ReactFlowProvider>

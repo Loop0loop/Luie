@@ -1,25 +1,78 @@
-import Database from "better-sqlite3";
+import { createRequire } from "node:module";
 import {
   CACHE_PACKAGED_SCHEMA_BOOTSTRAP_SQL,
   CACHE_PACKAGED_SCHEMA_COLUMN_PATCHES,
   CACHE_PACKAGED_SCHEMA_FTS_BOOTSTRAP_SQL,
   CACHE_PACKAGED_SCHEMA_OPTIONAL_FTS_COLUMNS,
+  CACHE_PACKAGED_SCHEMA_OPTIONAL_FTS_SHADOW_TABLES,
   CACHE_PACKAGED_SCHEMA_OPTIONAL_FTS_TABLES,
   CACHE_PACKAGED_SCHEMA_REQUIRED_COLUMNS,
   CACHE_PACKAGED_SCHEMA_REQUIRED_TABLES,
 } from "./cachePackagedSchema.js";
+
+const require = createRequire(import.meta.url);
 
 type LoggerLike = {
   info: (message: string, meta?: Record<string, unknown>) => void;
   warn: (message: string, meta?: Record<string, unknown>) => void;
 };
 
+type SqliteStatementLike = {
+  get: (params?: unknown) => unknown;
+  all: (params?: unknown) => unknown[];
+};
+
+type SqliteDatabaseLike = {
+  exec: (sql: string) => void;
+  prepare: (sql: string) => SqliteStatementLike;
+  close: () => void;
+};
+
+function openSqliteDatabase(dbPath: string): SqliteDatabaseLike {
+  try {
+    const BetterSqlite3 = require("better-sqlite3") as new (
+      path: string,
+    ) => {
+      exec: (sql: string) => void;
+      prepare: (sql: string) => {
+        get: (params?: unknown) => unknown;
+        all: (params?: unknown) => unknown[];
+      };
+      close: () => void;
+      pragma: (sql: string) => unknown;
+    };
+    const database = new BetterSqlite3(dbPath);
+    return {
+      exec: (sql) => database.exec(sql),
+      prepare: (sql) => database.prepare(sql),
+      close: () => database.close(),
+    };
+  } catch {
+    const { DatabaseSync } = require("node:sqlite") as {
+      DatabaseSync: new (path: string) => {
+        exec: (sql: string) => void;
+        prepare: (sql: string) => {
+          get: (params?: unknown) => unknown;
+          all: (params?: unknown) => unknown[];
+        };
+        close: () => void;
+      };
+    };
+    const database = new DatabaseSync(dbPath);
+    return {
+      exec: (sql) => database.exec(sql),
+      prepare: (sql) => database.prepare(sql),
+      close: () => database.close(),
+    };
+  }
+}
+
 function escapeSqlIdentifier(value: string): string {
   return value.replaceAll('"', '""');
 }
 
 function sqliteTableExists(
-  database: InstanceType<typeof Database>,
+  database: SqliteDatabaseLike,
   tableName: string,
 ): boolean {
   const row = database
@@ -31,7 +84,7 @@ function sqliteTableExists(
 }
 
 function sqliteTableHasColumn(
-  database: InstanceType<typeof Database>,
+  database: SqliteDatabaseLike,
   tableName: string,
   columnName: string,
 ): boolean {
@@ -42,14 +95,54 @@ function sqliteTableHasColumn(
   return rows.some((row) => row.name === columnName);
 }
 
+export function dropPackagedCacheOptionalFtsArtifacts(
+  dbPath: string,
+  logger: LoggerLike,
+): void {
+  const database = openSqliteDatabase(dbPath);
+
+  try {
+    database.exec("PRAGMA trusted_schema = ON;");
+
+    const droppedTables = new Set<string>();
+
+    for (const tableName of CACHE_PACKAGED_SCHEMA_OPTIONAL_FTS_TABLES) {
+      if (!sqliteTableExists(database, tableName)) continue;
+      const escapedTableName = escapeSqlIdentifier(tableName);
+      database.exec(`DROP TABLE IF EXISTS "${escapedTableName}";`);
+      droppedTables.add(tableName);
+    }
+
+    for (const shadowTables of Object.values(
+      CACHE_PACKAGED_SCHEMA_OPTIONAL_FTS_SHADOW_TABLES,
+    )) {
+      for (const shadowTableName of shadowTables) {
+        if (!sqliteTableExists(database, shadowTableName)) continue;
+        const escapedTableName = escapeSqlIdentifier(shadowTableName);
+        database.exec(`DROP TABLE IF EXISTS "${escapedTableName}";`);
+        droppedTables.add(shadowTableName);
+      }
+    }
+
+    if (droppedTables.size > 0) {
+      logger.info("Dropped unmanaged cache FTS artifacts before Prisma schema push", {
+        dbPath,
+        droppedTables: Array.from(droppedTables),
+      });
+    }
+  } finally {
+    database.close();
+  }
+}
+
 export function ensurePackagedCacheSqliteSchema(
   dbPath: string,
   logger: LoggerLike,
 ): void {
-  const database = new Database(dbPath);
+  const database = openSqliteDatabase(dbPath);
 
   try {
-    database.pragma("journal_mode = WAL");
+    database.exec("PRAGMA journal_mode = WAL;");
     database.exec(CACHE_PACKAGED_SCHEMA_BOOTSTRAP_SQL);
 
     let optionalFtsEnabled = true;

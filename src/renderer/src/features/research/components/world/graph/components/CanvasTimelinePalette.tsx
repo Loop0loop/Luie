@@ -1,10 +1,6 @@
-import { useMemo, useState } from "react";
-import { Clock3, GitBranchPlus, Search, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Clock3, GitBranchPlus, Search } from "lucide-react";
 import type { WorldGraphNode } from "@shared/types";
-import { Badge } from "@renderer/components/ui/badge";
-import { Button } from "@renderer/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@renderer/components/ui/card";
-import { Input } from "@renderer/components/ui/input";
 
 type CanvasTimelinePaletteProps = {
   events: WorldGraphNode[];
@@ -29,12 +25,13 @@ export function CanvasTimelinePalette({
   onPickEvent,
 }: CanvasTimelinePaletteProps) {
   const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const filteredEvents = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    if (normalized.length === 0) {
-      return events;
-    }
+    if (normalized.length === 0) return events;
     return events.filter((event) => {
       const haystack = [
         event.name,
@@ -47,80 +44,260 @@ export function CanvasTimelinePalette({
     });
   }, [events, query]);
 
-  if (!open) {
-    return null;
-  }
+  const totalItems = filteredEvents.length + 1;
+
+  useEffect(() => {
+    if (open) {
+      setQuery("");
+      setActiveIndex(0);
+      setTimeout(() => inputRef.current?.focus(), 0);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [query]);
+
+  useEffect(() => {
+    if (!listRef.current) return;
+    const activeEl =
+      listRef.current.querySelector<HTMLElement>(`[data-active="true"]`);
+    activeEl?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      onClose();
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev + 1) % totalItems);
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev - 1 + totalItems) % totalItems);
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (activeIndex === filteredEvents.length) {
+        onCreateEvent();
+        onClose();
+      } else {
+        const event = filteredEvents[activeIndex];
+        if (event) {
+          onPickEvent(event.id);
+          onClose();
+        }
+      }
+    }
+  };
+
+  if (!open) return null;
 
   return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#07090d]/60 px-6 backdrop-blur-sm">
-      <Card className="w-full max-w-3xl border-white/10 bg-[#12161d]/96 text-fg shadow-[0_26px_80px_rgba(0,0,0,0.45)]">
-        <CardHeader className="border-b border-white/6">
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-fg/55">
-                <Sparkles className="h-4 w-4" />
-                <span className="text-[11px] uppercase tracking-[0.24em]">
-                  Worldline Palette
-                </span>
-              </div>
-              <CardTitle className="text-xl text-fg">
-                타임라인 사건을 새 블럭으로 꺼내기
-              </CardTitle>
-            </div>
-            <Button type="button" variant="ghost" onClick={onClose}>
-              닫기
-            </Button>
-          </div>
-          <div className="mt-4 flex gap-3">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg/40" />
-              <Input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                className="h-11 border-white/10 bg-[#0e1218] pl-9"
-                placeholder="사건, 설명, 날짜 검색"
-              />
-            </div>
-            <Button type="button" variant="secondary" onClick={onCreateEvent}>
-              <GitBranchPlus className="h-4 w-4" />
-              새 사건
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="max-h-[460px] overflow-y-auto py-4">
-          <div className="space-y-3">
-            {filteredEvents.map((event) => (
+    <div
+      className="absolute inset-0 z-30 flex justify-center pt-[72px]"
+      style={{ background: "rgba(7,9,13,0.55)", backdropFilter: "blur(4px)" }}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className="w-full max-w-[580px] overflow-hidden rounded-xl shadow-[0_32px_80px_rgba(0,0,0,0.55)]"
+        style={{
+          background: "rgba(18,21,28,0.98)",
+          border: "1px solid rgba(255,255,255,0.09)",
+        }}
+        onKeyDown={handleKeyDown}
+      >
+        <div
+          className="flex items-center gap-3 px-4"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}
+        >
+          <Search className="h-4 w-4 shrink-0 text-fg/38" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="사건 검색 또는 새 타임라인 블럭 생성..."
+            className="w-full bg-transparent py-4 text-[14px] text-fg placeholder:text-fg/30 focus:outline-none"
+          />
+          <kbd className="shrink-0 rounded border border-white/12 px-1.5 py-0.5 text-[10px] text-fg/30">
+            ESC
+          </kbd>
+        </div>
+
+        <div ref={listRef} className="max-h-[400px] overflow-y-auto py-1.5">
+          {filteredEvents.length === 0 && query.trim().length > 0 && (
+            <p className="px-4 py-3 text-[12px] text-fg/35">
+              "{query}" 에 해당하는 사건이 없습니다.
+            </p>
+          )}
+
+          {filteredEvents.map((event, index) => {
+            const isActive = index === activeIndex;
+            return (
               <button
                 key={event.id}
                 type="button"
+                data-active={isActive ? "true" : undefined}
                 onClick={() => {
                   onPickEvent(event.id);
                   onClose();
                 }}
-                className="w-full rounded-2xl border border-white/8 bg-white/5 px-4 py-4 text-left transition hover:border-cyan-300/25 hover:bg-cyan-500/8"
+                onMouseEnter={() => setActiveIndex(index)}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-none"
+                style={{
+                  background: isActive
+                    ? "rgba(255,255,255,0.07)"
+                    : "transparent",
+                }}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Clock3 className="h-4 w-4 text-cyan-200/70" />
-                      <p className="text-base font-semibold text-fg">{event.name}</p>
-                    </div>
-                    <p className="mt-2 text-sm leading-6 text-fg/62">
-                      {event.description?.trim() || "세계선 분기 설명을 추가할 수 있습니다."}
-                    </p>
-                  </div>
-                  <Badge variant="outline">{readEventDate(event)}</Badge>
+                <div
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
+                  style={{
+                    background: isActive
+                      ? "rgba(243,200,107,0.15)"
+                      : "rgba(255,255,255,0.05)",
+                  }}
+                >
+                  <Clock3
+                    className="h-3.5 w-3.5"
+                    style={{
+                      color: isActive ? "#f3c86b" : "rgba(255,255,255,0.4)",
+                    }}
+                  />
                 </div>
+                <div className="min-w-0 flex-1">
+                  <p
+                    className="truncate text-[13px] font-medium"
+                    style={{
+                      color: isActive
+                        ? "rgba(255,255,255,0.95)"
+                        : "rgba(255,255,255,0.75)",
+                    }}
+                  >
+                    {event.name}
+                  </p>
+                  {event.description && (
+                    <p className="truncate text-[11px] text-fg/38">
+                      {event.description}
+                    </p>
+                  )}
+                </div>
+                <span
+                  className="shrink-0 text-[11px]"
+                  style={{
+                    color: isActive
+                      ? "rgba(243,200,107,0.7)"
+                      : "rgba(255,255,255,0.25)",
+                  }}
+                >
+                  {readEventDate(event)}
+                </span>
               </button>
-            ))}
-            {filteredEvents.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 px-5 py-8 text-center text-sm text-fg/62">
-                검색 결과가 없습니다. 새 사건을 만든 뒤 다시 가져오면 됩니다.
-              </div>
-            ) : null}
+            );
+          })}
+
+          <div
+            style={{
+              borderTop:
+                filteredEvents.length > 0
+                  ? "1px solid rgba(255,255,255,0.06)"
+                  : "none",
+            }}
+            className="pt-1"
+          >
+            {(() => {
+              const isActive = activeIndex === filteredEvents.length;
+              return (
+                <button
+                  type="button"
+                  data-active={isActive ? "true" : undefined}
+                  onClick={() => {
+                    onCreateEvent();
+                    onClose();
+                  }}
+                  onMouseEnter={() => setActiveIndex(filteredEvents.length)}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left"
+                  style={{
+                    background: isActive
+                      ? "rgba(255,255,255,0.07)"
+                      : "transparent",
+                  }}
+                >
+                  <div
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
+                    style={{
+                      background: isActive
+                        ? "rgba(119,185,255,0.15)"
+                        : "rgba(255,255,255,0.05)",
+                    }}
+                  >
+                    <GitBranchPlus
+                      className="h-3.5 w-3.5"
+                      style={{
+                        color: isActive ? "#77b9ff" : "rgba(255,255,255,0.4)",
+                      }}
+                    />
+                  </div>
+                  <p
+                    className="text-[13px] font-medium"
+                    style={{
+                      color: isActive
+                        ? "rgba(255,255,255,0.95)"
+                        : "rgba(255,255,255,0.55)",
+                    }}
+                  >
+                    새 타임라인 블럭 생성
+                  </p>
+                  <kbd
+                    className="ml-auto shrink-0 rounded border px-1.5 py-0.5 text-[10px]"
+                    style={{
+                      borderColor: isActive
+                        ? "rgba(255,255,255,0.18)"
+                        : "rgba(255,255,255,0.08)",
+                      color: isActive
+                        ? "rgba(255,255,255,0.45)"
+                        : "rgba(255,255,255,0.22)",
+                    }}
+                  >
+                    ↵
+                  </kbd>
+                </button>
+              );
+            })()}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        <div
+          className="flex items-center gap-4 px-4 py-2"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          <span className="flex items-center gap-1 text-[11px] text-fg/28">
+            <kbd className="rounded border border-white/10 px-1 py-px text-[9px]">
+              ↑↓
+            </kbd>
+            이동
+          </span>
+          <span className="flex items-center gap-1 text-[11px] text-fg/28">
+            <kbd className="rounded border border-white/10 px-1 py-px text-[9px]">
+              ↵
+            </kbd>
+            선택
+          </span>
+          <span className="flex items-center gap-1 text-[11px] text-fg/28">
+            <kbd className="rounded border border-white/10 px-1 py-px text-[9px]">
+              ESC
+            </kbd>
+            닫기
+          </span>
+        </div>
+      </div>
     </div>
   );
 }

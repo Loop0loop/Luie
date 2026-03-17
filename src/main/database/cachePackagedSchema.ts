@@ -8,6 +8,18 @@ export const CACHE_PACKAGED_SCHEMA_OPTIONAL_FTS_TABLES = [
   "ChapterSearchDocumentFts",
 ] as const;
 
+export const CACHE_PACKAGED_SCHEMA_OPTIONAL_FTS_SHADOW_TABLES: Readonly<
+  Record<string, ReadonlyArray<string>>
+> = {
+  ChapterSearchDocumentFts: [
+    "ChapterSearchDocumentFts_data",
+    "ChapterSearchDocumentFts_idx",
+    "ChapterSearchDocumentFts_content",
+    "ChapterSearchDocumentFts_docsize",
+    "ChapterSearchDocumentFts_config",
+  ],
+};
+
 type ColumnPatch = {
   table: string;
   column: string;

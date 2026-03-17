@@ -14,7 +14,10 @@ import {
   resolveSqliteDatasourceFromEnv,
   runPrismaCommand,
 } from "./databaseRuntime.js";
-import { ensurePackagedCacheSqliteSchema } from "./cacheSchemaBootstrap.js";
+import {
+  dropPackagedCacheOptionalFtsArtifacts,
+  ensurePackagedCacheSqliteSchema,
+} from "./cacheSchemaBootstrap.js";
 
 const logger = createLogger("CacheDatabaseService");
 const CACHE_ENV_KEY = "CACHE_DATABASE_URL";
@@ -180,6 +183,9 @@ class CacheDatabaseService {
 
       if ((await pathExists(schemaPath)) && (await pathExists(prismaPath))) {
         try {
+          if (dbExists) {
+            dropPackagedCacheOptionalFtsArtifacts(context.dbPath, logger);
+          }
           await runPrismaCommand(
             prismaPath,
             ["db", "push", "--accept-data-loss", `--schema=${schemaPath}`],
@@ -208,6 +214,9 @@ class CacheDatabaseService {
     });
 
     try {
+      if (dbExists) {
+        dropPackagedCacheOptionalFtsArtifacts(context.dbPath, logger);
+      }
       await runPrismaCommand(
         prismaPath,
         ["db", "push", "--accept-data-loss", `--schema=${schemaPath}`],
