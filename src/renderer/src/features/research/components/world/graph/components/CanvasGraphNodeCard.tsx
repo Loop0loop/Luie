@@ -9,13 +9,15 @@ export type CanvasGraphNodeData = {
   label: string;
   entityType: string;
   description: string;
-  relationCount: number;
-  metaLabel: string;
+  relationCount?: number;
+  metaLabel?: string;
   subType?: string;
+  date?: string;
   onDelete?: (id: string) => void;
   onEdit?: (id: string) => void;
   onChangeColor?: (id: string) => void;
   onOpenEntity?: (id: string) => void;
+  onAddBranch?: (id: string) => void;
 };
 
 function CanvasGraphNodeCardInner({

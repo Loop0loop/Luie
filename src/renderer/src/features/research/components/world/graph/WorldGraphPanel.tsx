@@ -122,12 +122,9 @@ export function WorldGraphPanel() {
   );
 
   const handleCreatedEntity = useCallback(
-    (entityType: string, _newNodeId: string) => {
-      if (entityType === "Event") {
-        setActiveTab("timeline");
-      } else {
-        setActiveTab("canvas");
-      }
+    (_entityType: string, _newNodeId: string) => {
+      // Stay on current tab or default to canvas
+      setActiveTab((current) => current || "canvas");
     },
     [],
   );

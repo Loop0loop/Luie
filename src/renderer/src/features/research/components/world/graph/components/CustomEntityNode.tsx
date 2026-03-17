@@ -81,7 +81,7 @@ export const CustomEntityNode = memo(({ id, data, selected }: CustomEntityNodePr
           />
         ) : (
           <div className="text-[14px] font-medium leading-relaxed break-words cursor-text" onDoubleClick={() => setIsEditing(true)}>
-            {label || "Untilted"}
+            {label || "Untitled"}
           </div>
         )}
         {description && <div className="mt-2 text-[12px] text-fg/50 line-clamp-3 leading-snug">{description}</div>}

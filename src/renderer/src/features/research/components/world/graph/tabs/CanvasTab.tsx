@@ -135,6 +135,36 @@ export function CanvasTab({
     [deleteRelation],
   );
 
+  const handleAddTimelineBranch = useCallback(
+    async (sourceNodeId: string) => {
+      if (!projectId) return;
+      const sourceNode = graphNodes.find((n) => n.id === sourceNodeId);
+      if (!sourceNode) return;
+
+      const created = await createGraphNode({
+        projectId,
+        entityType: "Event",
+        name: "새 분계점",
+        positionX: (sourceNode.positionX || 0) + 300,
+        positionY: sourceNode.positionY || 0,
+      });
+
+      if (!created) return;
+
+      await createRelation({
+        projectId,
+        sourceId: sourceNodeId,
+        sourceType: sourceNode.entityType,
+        targetId: created.id,
+        targetType: "Event",
+        relation: "causes",
+      });
+
+      onSelectNode(created.id);
+    },
+    [createGraphNode, createRelation, graphNodes, projectId, onSelectNode],
+  );
+
   return (
     <CanvasView
       nodes={graphNodes}
@@ -147,6 +177,7 @@ export function CanvasTab({
       onDeleteRelation={handleDeleteRelation}
       onCreateBlock={handleCreateCanvasBlock}
       onCreateTimelineEvent={handleCreateTimelineEvent}
+      onAddTimelineBranch={handleAddTimelineBranch}
       onCreateNote={onCreateNote}
       onNodePositionCommit={({ id, x, y }) => {
         void updateGraphNodePosition({ id, positionX: x, positionY: y });

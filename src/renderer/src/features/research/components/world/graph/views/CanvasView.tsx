@@ -51,13 +51,10 @@ type CanvasViewProps = {
   onSelectNode: (nodeId: string | null) => void;
   onNodePositionCommit?: (input: { id: string; x: number; y: number }) => void;
   onDeleteNode?: (nodeId: string) => void;
-  onCreateRelation?: (input: {
-    sourceId: string;
-    targetId: string;
-  }) => Promise<void>;
+  onCreateRelation?: (input: { sourceId: string; targetId: string }) => Promise<void>;
   onDeleteRelation?: (relationId: string) => Promise<void>;
   onCreateBlock: () => void;
-  onCreateTimelineEvent: () => void;
+  onAddTimelineBranch?: (sourceNodeId: string) => void;
   onCreateNote: () => void;
 };
 
@@ -75,37 +72,29 @@ function decorateEdges(
   edges: Edge<CanvasGraphEdgeData>[],
   selectedEdgeId: string | null,
 ): Edge<CanvasGraphEdgeData>[] {
-  return edges.map((edge) => {
-    const selected = edge.id === selectedEdgeId;
-    return {
-      ...edge,
-      selected,
-    };
-  });
+  return edges.map((edge) => ({
+    ...edge,
+    selected: edge.id === selectedEdgeId,
+  }));
 }
 
 const buildFlowNodes = (
   nodes: WorldGraphNode[],
-  edges: EntityRelation[],
   onDeleteNode?: (nodeId: string) => void,
+  onAddTimelineBranch?: (sourceNodeId: string) => void,
 ): Node<CanvasGraphNodeData>[] => {
-  const relationCountByNodeId = new Map<string, number>();
-  edges.forEach((edge) => {
-    relationCountByNodeId.set(edge.sourceId, (relationCountByNodeId.get(edge.sourceId) ?? 0) + 1);
-    relationCountByNodeId.set(edge.targetId, (relationCountByNodeId.get(edge.targetId) ?? 0) + 1);
-  });
-
   return nodes.map((node, index) => ({
     id: node.id,
-    type: "custom-entity",
+    type: node.entityType === "Event" ? "canvas-timeline" : "custom-entity",
     draggable: true,
     position: readPosition(node, index),
     data: {
       label: node.name,
       entityType: node.entityType,
       description: node.description?.trim() || "",
-      relationCount: relationCountByNodeId.get(node.id) ?? 0,
+      date: (node.attributes as any)?.date || (node.attributes as any)?.time,
       onDelete: onDeleteNode,
+      onAddBranch: onAddTimelineBranch,
     },
   }));
 };
@@ -181,7 +170,6 @@ function CanvasFlowSurface({
   onCreateRelation,
   onDeleteRelation,
   onCreateBlock,
-  onCreateTimelineEvent,
   summary,
 }: {
   graphNodes: Node<CanvasGraphNodeData>[];
@@ -198,7 +186,6 @@ function CanvasFlowSurface({
   }) => Promise<void>;
   onDeleteRelation?: (relationId: string) => Promise<void>;
   onCreateBlock: () => void;
-  onCreateTimelineEvent: () => void;
   summary: {
     nodeCount: number;
     edgeCount: number;
@@ -417,11 +404,9 @@ function CanvasFlowSurface({
       pushHistory(next);
       return next;
     });
-    onCreateTimelineEvent();
   }, [
     getViewportCenter,
     handleDeleteLocalNode,
-    onCreateTimelineEvent,
     pushHistory,
   ]);
 
@@ -660,12 +645,12 @@ export function CanvasView({
   onCreateRelation,
   onDeleteRelation,
   onCreateBlock,
-  onCreateTimelineEvent,
+  onAddTimelineBranch,
   onCreateNote: _onCreateNote,
 }: CanvasViewProps) {
   const flowNodes = useMemo(
-    () => buildFlowNodes(nodes, edges, onDeleteNode),
-    [edges, nodes, onDeleteNode],
+    () => buildFlowNodes(nodes, onDeleteNode, onAddTimelineBranch),
+    [nodes, onDeleteNode, onAddTimelineBranch],
   );
   const flowEdges = useMemo(
     () => buildFlowEdges(edges, nodes, (id) => void onDeleteRelation?.(id)),
@@ -699,7 +684,6 @@ export function CanvasView({
           onCreateRelation={onCreateRelation}
           onDeleteRelation={onDeleteRelation}
           onCreateBlock={onCreateBlock}
-          onCreateTimelineEvent={onCreateTimelineEvent}
           summary={summary}
         />
       </ReactFlowProvider>

@@ -1,180 +1,74 @@
 import { memo } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, GitBranch } from "lucide-react";
 import type { NodeProps } from "reactflow";
 import { Handle, Position, NodeToolbar } from "reactflow";
 import { Button } from "@renderer/components/ui/button";
+import { cn } from "@renderer/lib/utils";
 
 export type CanvasTimelineBlockData = {
   label: string;
   date?: string;
   description?: string;
   onDelete?: (id: string) => void;
+  onAddBranch?: (id: string) => void;
 };
 
-/**
- * 평행세계 분기점 스타일 타임라인 노드.
- *
- * 구조:
- *   ─── ● ───
- *       │
- *   [컨텐츠]
- *
- * 좌우(Left/Right)로 타임라인 축이 지나가고,
- * 위아래(Top/Bottom)로 분기 연결을 허용한다.
- * 중앙 점(●)이 분기점 역할을 시각적으로 표현한다.
- */
-function CanvasTimelineBlockNodeInner({
-  id,
-  data,
-  selected,
-}: NodeProps<CanvasTimelineBlockData>) {
-  const accentColor = selected
-    ? "rgba(243,200,107,1)"
-    : "rgba(243,200,107,0.72)";
-  const lineColor = selected
-    ? "rgba(243,200,107,0.55)"
-    : "rgba(243,200,107,0.22)";
-  const cardBg = selected ? "rgba(243,200,107,0.06)" : "rgba(17,20,27,0.82)";
-  const cardBorder = selected
-    ? "rgba(243,200,107,0.45)"
-    : "rgba(255,255,255,0.09)";
+export const CanvasTimelineBlockNode = memo(({ id, data, selected }: NodeProps<CanvasTimelineBlockData>) => {
+  const { label, date, description, onDelete, onAddBranch } = data;
 
   return (
-    <div className="group relative flex flex-col items-center cursor-grab active:cursor-grabbing">
-      <NodeToolbar isVisible={selected} position={Position.Top} offset={52}>
-        <div className="flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#11151c]/95 p-1 shadow-xl backdrop-blur-md">
+    <div className="group relative flex flex-col items-center">
+      <NodeToolbar isVisible={selected} position={Position.Top} offset={8}>
+        <div className="flex gap-1 rounded-md border border-white/10 bg-[#0b0e13]/95 p-1 shadow-xl backdrop-blur-md">
           <Button
-            type="button"
             size="icon-xs"
             variant="ghost"
-            className="h-7 w-7 rounded-md text-fg/60 hover:bg-white/8 hover:text-red-400"
-            onClick={(e) => {
-              e.stopPropagation();
-              data.onDelete?.(id);
-            }}
+            className="h-7 w-7 text-fg/50 hover:bg-white/5 hover:text-red-400"
+            onClick={(e) => { e.stopPropagation(); onDelete?.(id); }}
             title="삭제"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
+          <Button
+            size="icon-xs"
+            variant="ghost"
+            className="h-7 w-7 text-fg/50 hover:bg-white/5 hover:text-[#f3c86b]"
+            onClick={(e) => { e.stopPropagation(); onAddBranch?.(id); }}
+            title="분계점 추가"
+          >
+            <GitBranch className="h-3.5 w-3.5" />
+          </Button>
         </div>
       </NodeToolbar>
 
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="left"
-        style={{
-          background: accentColor,
-          top: "18px",
-          width: 8,
-          height: 8,
-          border: "none",
-          opacity: 0,
-          transition: "opacity 0.15s",
-        }}
-        className="group-hover:!opacity-100"
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="right"
-        style={{
-          background: accentColor,
-          top: "18px",
-          width: 8,
-          height: 8,
-          border: "none",
-          opacity: 0,
-          transition: "opacity 0.15s",
-        }}
-        className="group-hover:!opacity-100"
-      />
-      <Handle
-        type="target"
-        position={Position.Top}
-        id="top"
-        style={{
-          background: accentColor,
-          width: 8,
-          height: 8,
-          border: "none",
-          opacity: 0,
-          transition: "opacity 0.15s",
-        }}
-        className="group-hover:!opacity-100"
-      />
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        id="bottom"
-        style={{
-          background: accentColor,
-          width: 8,
-          height: 8,
-          border: "none",
-          opacity: 0,
-          transition: "opacity 0.15s",
-        }}
-        className="group-hover:!opacity-100"
-      />
+      {/* Timeline Axis Handles */}
+      <Handle type="target" position={Position.Left} className="!opacity-0 group-hover:!opacity-100 !bg-[#f3c86b] !border-none !w-2.5 !h-2.5" />
+      <Handle type="source" position={Position.Right} className="!opacity-0 group-hover:!opacity-100 !bg-[#f3c86b] !border-none !w-2.5 !h-2.5" />
+      <Handle type="target" position={Position.Top} id="t" className="!opacity-0 group-hover:!opacity-100 !bg-[#f3c86b]/60 !border-none !w-2 !h-2" />
+      <Handle type="source" position={Position.Bottom} id="b" className="!opacity-0 group-hover:!opacity-100 !bg-[#f3c86b]/60 !border-none !w-2 !h-2" />
 
-      <div className="relative flex w-full items-center" style={{ height: 36 }}>
-        <div
-          className="flex-1 transition-all"
-          style={{ height: 1.5, background: lineColor }}
-        />
-        <div
-          className="relative z-10 shrink-0 rounded-full transition-all"
-          style={{
-            width: selected ? 14 : 10,
-            height: selected ? 14 : 10,
-            background: accentColor,
-            boxShadow: selected
-              ? `0 0 0 4px rgba(243,200,107,0.15), 0 0 16px rgba(243,200,107,0.35)`
-              : `0 0 0 2px rgba(243,200,107,0.1)`,
-          }}
-        />
-        <div
-          className="flex-1 transition-all"
-          style={{ height: 1.5, background: lineColor }}
-        />
+      {/* Branching Point UI */}
+      <div className="relative flex w-full items-center justify-center h-8 px-4">
+        <div className="absolute inset-x-0 h-px bg-[#f3c86b]/20" />
+        <div className={cn(
+          "z-10 rounded-full transition-all duration-300",
+          selected ? "w-3.5 h-3.5 bg-[#f3c86b] shadow-[0_0_12px_#f3c86b66]" : "w-2.5 h-2.5 bg-[#f3c86b]/60 hover:bg-[#f3c86b]"
+        )} />
       </div>
 
-      <div
-        className="transition-all"
-        style={{ width: 1.5, height: 12, background: lineColor }}
-      />
+      <div className="h-3 w-px bg-[#f3c86b]/20" />
 
-      <div
-        className="flex min-w-[200px] max-w-[300px] flex-col rounded-xl border px-4 py-3 transition-all"
-        style={{
-          background: cardBg,
-          borderColor: cardBorder,
-          boxShadow: selected
-            ? `0 0 0 1px rgba(243,200,107,0.18), 0 8px 24px rgba(0,0,0,0.32)`
-            : `0 2px 12px rgba(0,0,0,0.22)`,
-          backdropFilter: "blur(8px)",
-        }}
-      >
-        {data.date && (
-          <span
-            className="mb-1 text-[10px] font-medium uppercase tracking-[0.18em]"
-            style={{ color: "rgba(243,200,107,0.6)" }}
-          >
-            {data.date}
-          </span>
-        )}
-        <span className="text-[13px] font-semibold leading-snug text-fg/90">
-          {data.label}
-        </span>
-        {data.description && (
-          <span className="mt-1.5 text-[11px] leading-relaxed text-fg/45">
-            {data.description}
-          </span>
-        )}
+      {/* Info Card */}
+      <div className={cn(
+        "flex min-w-[180px] max-w-[280px] flex-col rounded-lg border bg-[#1a1d23]/90 px-4 py-3 shadow-sm backdrop-blur-md transition-all",
+        selected ? "border-[#f3c86b]/60 ring-1 ring-[#f3c86b]/20" : "border-white/10 hover:border-white/20"
+      )}>
+        {date && <span className="mb-0.5 text-[9px] uppercase tracking-widest text-[#f3c86b]/60">{date}</span>}
+        <span className="text-[13px] font-medium leading-relaxed text-fg/90">{label}</span>
+        {description && <span className="mt-1.5 text-[11px] leading-snug text-fg/40 line-clamp-2">{description}</span>}
       </div>
     </div>
   );
-}
+});
 
-export const CanvasTimelineBlockNode = memo(CanvasTimelineBlockNodeInner);
+CanvasTimelineBlockNode.displayName = "CanvasTimelineBlockNode";
