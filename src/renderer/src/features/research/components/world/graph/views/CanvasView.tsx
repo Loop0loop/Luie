@@ -5,8 +5,6 @@ import {
   Plus,
   RotateCcw,
   RotateCw,
-  Settings,
-  HelpCircle,
   RefreshCw,
 } from "lucide-react";
 import ReactFlow, {
@@ -39,7 +37,6 @@ import {
   CANVAS_EDGE_TYPES,
   CANVAS_NODE_TYPES,
 } from "../components/canvasFlowTypes";
-import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
 
 type AnyCanvasNodeData =
   | CanvasGraphNodeData
@@ -69,53 +66,9 @@ function readPosition(node: WorldGraphNode, index: number) {
   const fallbackRow = Math.floor(index / 4);
 
   return {
-    x:
-      Number.isFinite(node.positionX) && node.positionX !== 0
-        ? node.positionX
-        : 120 + fallbackColumn * 280,
-    y:
-      Number.isFinite(node.positionY) && node.positionY !== 0
-        ? node.positionY
-        : 120 + fallbackRow * 220,
+    x: Number.isFinite(node.positionX) && node.positionX !== 0 ? node.positionX : 120 + fallbackColumn * 280,
+    y: Number.isFinite(node.positionY) && node.positionY !== 0 ? node.positionY : 120 + fallbackRow * 220,
   };
-}
-
-function readNodeMetaLabel(node: WorldGraphNode): string {
-  const attributes =
-    node.attributes &&
-    typeof node.attributes === "object" &&
-    !Array.isArray(node.attributes)
-      ? (node.attributes as Record<string, unknown>)
-      : null;
-
-  if (node.entityType === "Event") {
-    const eventDate = attributes?.date ?? attributes?.time;
-    if (typeof eventDate === "string" && eventDate.trim().length > 0) {
-      return eventDate;
-    }
-    return "Timeline";
-  }
-
-  if (node.entityType === "Term") {
-    const firstTag = Array.isArray(attributes?.tags)
-      ? attributes.tags.find(
-          (value) => typeof value === "string" && value.trim().length > 0,
-        )
-      : null;
-    if (typeof firstTag === "string") {
-      return `#${firstTag}`;
-    }
-    return "Reference";
-  }
-
-  if (
-    typeof node.firstAppearance === "string" &&
-    node.firstAppearance.trim().length > 0
-  ) {
-    return node.firstAppearance.trim();
-  }
-
-  return "";
 }
 
 function decorateEdges(
@@ -138,32 +91,21 @@ const buildFlowNodes = (
 ): Node<CanvasGraphNodeData>[] => {
   const relationCountByNodeId = new Map<string, number>();
   edges.forEach((edge) => {
-    relationCountByNodeId.set(
-      edge.sourceId,
-      (relationCountByNodeId.get(edge.sourceId) ?? 0) + 1,
-    );
-    relationCountByNodeId.set(
-      edge.targetId,
-      (relationCountByNodeId.get(edge.targetId) ?? 0) + 1,
-    );
+    relationCountByNodeId.set(edge.sourceId, (relationCountByNodeId.get(edge.sourceId) ?? 0) + 1);
+    relationCountByNodeId.set(edge.targetId, (relationCountByNodeId.get(edge.targetId) ?? 0) + 1);
   });
 
   return nodes.map((node, index) => ({
     id: node.id,
-    type: "obsidian-card",
+    type: "custom-entity",
     draggable: true,
     position: readPosition(node, index),
     data: {
       label: node.name,
       entityType: node.entityType,
-      description: node.description?.trim() ?? "",
+      description: node.description?.trim() || "",
       relationCount: relationCountByNodeId.get(node.id) ?? 0,
-      metaLabel: readNodeMetaLabel(node),
-      subType: node.subType,
       onDelete: onDeleteNode,
-      onChangeColor: undefined,
-      onOpenEntity: undefined,
-      onEdit: undefined,
     },
   }));
 };
@@ -173,39 +115,24 @@ const buildFlowEdges = (
   nodes: WorldGraphNode[],
   onDeleteRelation?: (id: string) => void,
 ): Edge<CanvasGraphEdgeData>[] => {
-  const nodesById = new Map(nodes.map((node) => [node.id, node]));
+  const palette = {
+    stroke: "rgba(255,255,255,0.15)",
+    selectedStroke: "rgba(255,255,255,0.6)",
+    glow: "rgba(255,255,255,0.05)",
+  };
 
-  return edges.map((edge) => {
-    const sourceNode = nodesById.get(edge.sourceId);
-    const sourceTheme = sourceNode
-      ? ENTITY_TYPE_CANVAS_THEME[sourceNode.entityType]
-      : ENTITY_TYPE_CANVAS_THEME.WorldEntity;
-    const palette = {
-      stroke: sourceTheme.edge,
-      selectedStroke: sourceTheme.selectedEdge,
-      glow: sourceTheme.glow,
-    };
-
-    return {
-      id: edge.id,
-      source: edge.sourceId,
-      target: edge.targetId,
-      label: edge.relation.replaceAll("_", " "),
-      animated: false,
-      type: "canvas-edge",
-      data: {
-        palette,
-        onDelete: onDeleteRelation,
-        onChangeColor: undefined,
-        onChangeDirection: undefined,
-        onEditRelation: undefined,
-        onEdit: undefined,
-      },
-      interactionWidth: 28,
-      labelBgPadding: [10, 4],
-      labelBgBorderRadius: 999,
-    };
-  });
+  return edges.map((edge) => ({
+    id: edge.id,
+    source: edge.sourceId,
+    target: edge.targetId,
+    label: edge.relation.replaceAll("_", " "),
+    type: "canvas-edge",
+    data: {
+      palette,
+      onDelete: onDeleteRelation,
+    },
+    interactionWidth: 28,
+  }));
 };
 
 function mergeIncomingNodes(
@@ -556,7 +483,7 @@ function CanvasFlowSurface({
         }}
         onNodesDelete={(deletedNodes) => {
           deletedNodes.forEach((node) => {
-            if (node.type === "obsidian-card") {
+            if (node.type === "custom-entity") {
               onDeleteNode?.(node.id);
             }
           });
@@ -572,7 +499,7 @@ function CanvasFlowSurface({
         }}
         onNodeDragStop={(_, node) => {
           draggingNodeIdRef.current = null;
-          if (node.type === "obsidian-card") {
+          if (node.type === "custom-entity") {
             onNodePositionCommit?.({
               id: node.id,
               x: node.position.x,
@@ -661,83 +588,41 @@ function CanvasFlowSurface({
         </div>
       )}
 
-      <div className="pointer-events-none absolute right-4 top-1/2 z-10 -translate-y-1/2">
-        <div className="pointer-events-auto flex flex-col rounded-2xl border border-white/8 bg-[#13171e]/90 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur overflow-hidden">
-          <button
-            type="button"
-            className="flex h-11 w-11 items-center justify-center text-fg/45 transition-colors hover:bg-white/6 hover:text-fg/80"
-            title="설정"
-          >
-            <Settings className="h-[18px] w-[18px]" />
-          </button>
+      <div className="pointer-events-none absolute right-4 top-24 z-10 flex flex-col gap-3">
+        <div className="pointer-events-auto flex flex-col rounded-xl border border-white/8 bg-[#13171e]/90 shadow-xl backdrop-blur overflow-hidden">
+          {[
+            { icon: Plus, title: "줌 인", onClick: () => void reactFlow.zoomIn({ duration: 200 }) },
+            { icon: Minus, title: "줌 아웃", onClick: () => void reactFlow.zoomOut({ duration: 200 }) },
+            { icon: RefreshCw, title: "뷰 맞추기", onClick: () => void reactFlow.fitView({ padding: 0.24, duration: 300 }) },
+            { icon: Maximize2, title: "전체 화면", onClick: () => void reactFlow.fitView({ padding: 0.05, duration: 300 }) }
+          ].map((ctrl, i) => (
+            <button
+              key={i}
+              type="button"
+              className="flex h-10 w-10 items-center justify-center text-fg/45 transition-colors hover:bg-white/5 hover:text-fg/80 border-b border-white/5 last:border-0"
+              title={ctrl.title}
+              onClick={ctrl.onClick}
+            >
+              <ctrl.icon className="h-[18px] w-[18px]" />
+            </button>
+          ))}
+        </div>
 
-          <div className="mx-2.5 h-px bg-white/8" />
-
-          <button
-            type="button"
-            className="flex h-11 w-11 items-center justify-center text-fg/45 transition-colors hover:bg-white/6 hover:text-fg/80"
-            title="블럭 추가"
-            onClick={onCreateBlock}
-          >
-            <Plus className="h-[18px] w-[18px]" />
-          </button>
-          <button
-            type="button"
-            className="flex h-11 w-11 items-center justify-center text-fg/45 transition-colors hover:bg-white/6 hover:text-fg/80"
-            title="뷰 맞추기"
-            onClick={() =>
-              void reactFlow.fitView({ padding: 0.24, duration: 300 })
-            }
-          >
-            <RefreshCw className="h-[18px] w-[18px]" />
-          </button>
-          <button
-            type="button"
-            className="flex h-11 w-11 items-center justify-center text-fg/45 transition-colors hover:bg-white/6 hover:text-fg/80"
-            title="전체화면 뷰"
-            onClick={() =>
-              void reactFlow.fitView({ padding: 0.05, duration: 300 })
-            }
-          >
-            <Maximize2 className="h-[17px] w-[17px]" />
-          </button>
-          <button
-            type="button"
-            className="flex h-11 w-11 items-center justify-center text-fg/45 transition-colors hover:bg-white/6 hover:text-fg/80"
-            title="줌 아웃"
-            onClick={() => void reactFlow.zoomOut({ duration: 200 })}
-          >
-            <Minus className="h-[18px] w-[18px]" />
-          </button>
-
-          <div className="mx-2.5 h-px bg-white/8" />
-
-          <button
-            type="button"
-            className="flex h-11 w-11 items-center justify-center text-fg/45 transition-colors hover:bg-white/6 hover:text-fg/80"
-            title="실행 취소"
-            onClick={handleUndo}
-          >
-            <RotateCcw className="h-[17px] w-[17px]" />
-          </button>
-          <button
-            type="button"
-            className="flex h-11 w-11 items-center justify-center text-fg/45 transition-colors hover:bg-white/6 hover:text-fg/80"
-            title="다시 실행"
-            onClick={handleRedo}
-          >
-            <RotateCw className="h-[17px] w-[17px]" />
-          </button>
-
-          <div className="mx-2.5 h-px bg-white/8" />
-
-          <button
-            type="button"
-            className="flex h-11 w-11 items-center justify-center text-fg/45 transition-colors hover:bg-white/6 hover:text-fg/80"
-            title="도움말"
-          >
-            <HelpCircle className="h-[17px] w-[17px]" />
-          </button>
+        <div className="pointer-events-auto flex flex-col rounded-xl border border-white/8 bg-[#13171e]/90 shadow-xl backdrop-blur overflow-hidden">
+          {[
+            { icon: RotateCcw, title: "실행 취소", onClick: handleUndo },
+            { icon: RotateCw, title: "다시 실행", onClick: handleRedo }
+          ].map((ctrl, i) => (
+            <button
+              key={i}
+              type="button"
+              className="flex h-10 w-10 items-center justify-center text-fg/45 transition-colors hover:bg-white/5 hover:text-fg/80 border-b border-white/5 last:border-0"
+              title={ctrl.title}
+              onClick={ctrl.onClick}
+            >
+              <ctrl.icon className="h-[17px] w-[17px]" />
+            </button>
+          ))}
         </div>
       </div>
 
