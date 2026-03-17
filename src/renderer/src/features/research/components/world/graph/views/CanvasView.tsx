@@ -31,10 +31,14 @@ type CanvasViewProps = {
   nodes: WorldGraphNode[];
   edges: EntityRelation[];
   selectedNodeId: string | null;
+  autoLayoutTrigger: number;
   onSelectNode: (nodeId: string | null) => void;
   onNodePositionCommit?: (input: { id: string; x: number; y: number }) => void;
   onDeleteNode?: (nodeId: string) => void;
-  onCreateRelation?: (input: { sourceId: string; targetId: string }) => Promise<void>;
+  onCreateRelation?: (input: {
+    sourceId: string;
+    targetId: string;
+  }) => Promise<void>;
   onDeleteRelation?: (relationId: string) => Promise<void>;
   onCreateBlock: () => void;
   onCreateTimelineEvent: () => void;
@@ -67,7 +71,9 @@ function readPosition(node: WorldGraphNode, index: number) {
 
 function readNodeMetaLabel(node: WorldGraphNode): string {
   const attributes =
-    node.attributes && typeof node.attributes === "object" && !Array.isArray(node.attributes)
+    node.attributes &&
+    typeof node.attributes === "object" &&
+    !Array.isArray(node.attributes)
       ? (node.attributes as Record<string, unknown>)
       : null;
 
@@ -81,7 +87,9 @@ function readNodeMetaLabel(node: WorldGraphNode): string {
 
   if (node.entityType === "Term") {
     const firstTag = Array.isArray(attributes?.tags)
-      ? attributes.tags.find((value) => typeof value === "string" && value.trim().length > 0)
+      ? attributes.tags.find(
+          (value) => typeof value === "string" && value.trim().length > 0,
+        )
       : null;
     if (typeof firstTag === "string") {
       return `#${firstTag}`;
@@ -89,17 +97,17 @@ function readNodeMetaLabel(node: WorldGraphNode): string {
     return "Reference";
   }
 
-  if (typeof node.firstAppearance === "string" && node.firstAppearance.trim().length > 0) {
+  if (
+    typeof node.firstAppearance === "string" &&
+    node.firstAppearance.trim().length > 0
+  ) {
     return node.firstAppearance.trim();
   }
 
   return "Canvas";
 }
 
-function buildEdgeStyle(
-  palette: CanvasEdgeData["palette"],
-  selected: boolean,
-) {
+function buildEdgeStyle(palette: CanvasEdgeData["palette"], selected: boolean) {
   const stroke = selected ? palette.selectedStroke : palette.stroke;
 
   return {
@@ -127,12 +135,11 @@ function decorateEdges(
   selectedEdgeId: string | null,
 ): Edge<CanvasEdgeData>[] {
   return edges.map((edge) => {
-    const palette =
-      edge.data?.palette ?? {
-        stroke: "rgba(255,255,255,0.22)",
-        selectedStroke: "rgba(255,255,255,0.95)",
-        glow: "rgba(255,255,255,0.18)",
-      };
+    const palette = edge.data?.palette ?? {
+      stroke: "rgba(255,255,255,0.22)",
+      selectedStroke: "rgba(255,255,255,0.95)",
+      glow: "rgba(255,255,255,0.18)",
+    };
     const selected = edge.id === selectedEdgeId;
 
     return {
@@ -235,6 +242,7 @@ function CanvasFlowSurface({
   graphEdges,
   timelineNodes,
   selectedNodeId,
+  autoLayoutTrigger,
   onSelectNode,
   onNodePositionCommit,
   onDeleteNode,
@@ -249,10 +257,14 @@ function CanvasFlowSurface({
   graphEdges: Edge<CanvasEdgeData>[];
   timelineNodes: WorldGraphNode[];
   selectedNodeId: string | null;
+  autoLayoutTrigger: number;
   onSelectNode: (nodeId: string | null) => void;
   onNodePositionCommit?: (input: { id: string; x: number; y: number }) => void;
   onDeleteNode?: (nodeId: string) => void;
-  onCreateRelation?: (input: { sourceId: string; targetId: string }) => Promise<void>;
+  onCreateRelation?: (input: {
+    sourceId: string;
+    targetId: string;
+  }) => Promise<void>;
   onDeleteRelation?: (relationId: string) => Promise<void>;
   onCreateBlock: () => void;
   onCreateTimelineEvent: () => void;
@@ -301,6 +313,27 @@ function CanvasFlowSurface({
     }
   }, [selectedNodeId]);
 
+  useEffect(() => {
+    if (autoLayoutTrigger === 0) return;
+    const COLS = 4;
+    const COL_GAP = 280;
+    const ROW_GAP = 220;
+    const OFFSET_X = 120;
+    const OFFSET_Y = 120;
+    setNodes((currentNodes) =>
+      currentNodes.map((node, i) => ({
+        ...node,
+        position: {
+          x: OFFSET_X + (i % COLS) * COL_GAP,
+          y: OFFSET_Y + Math.floor(i / COLS) * ROW_GAP,
+        },
+      })),
+    );
+    setTimeout(() => {
+      void reactFlow.fitView({ padding: 0.24, duration: 300 });
+    }, 50);
+  }, [autoLayoutTrigger, reactFlow]);
+
   const handleNodesChange = (changes: NodeChange[]) => {
     setNodes((currentNodes) => applyNodeChanges(changes, currentNodes));
   };
@@ -310,9 +343,9 @@ function CanvasFlowSurface({
       decorateEdges(applyEdgeChanges(changes, currentEdges), selectedEdgeId),
     );
 
-    const selectedChange = [...changes].reverse().find(
-      (change) => change.type === "select",
-    );
+    const selectedChange = [...changes]
+      .reverse()
+      .find((change) => change.type === "select");
     if (selectedChange?.type === "select") {
       setSelectedEdgeId(selectedChange.selected ? selectedChange.id : null);
     }
@@ -412,7 +445,11 @@ function CanvasFlowSurface({
                   </p>
                 </div>
                 <Badge variant="outline">
-                  {selectedEdgeId ? "relation" : summary.hasSelection ? "selection" : "idle"}
+                  {selectedEdgeId
+                    ? "relation"
+                    : summary.hasSelection
+                      ? "selection"
+                      : "idle"}
                 </Badge>
               </div>
               <div className="flex gap-2">
@@ -506,6 +543,7 @@ export function CanvasView({
   nodes,
   edges,
   selectedNodeId,
+  autoLayoutTrigger,
   onSelectNode,
   onNodePositionCommit,
   onDeleteNode,
@@ -541,6 +579,7 @@ export function CanvasView({
           graphEdges={flowEdges}
           timelineNodes={timelineNodes}
           selectedNodeId={selectedNodeId}
+          autoLayoutTrigger={autoLayoutTrigger}
           onSelectNode={onSelectNode}
           onNodePositionCommit={onNodePositionCommit}
           onDeleteNode={onDeleteNode}

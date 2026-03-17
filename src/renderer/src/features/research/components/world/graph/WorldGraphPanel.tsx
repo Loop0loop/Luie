@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RefreshCcw } from "lucide-react";
 import { Badge } from "@renderer/components/ui/badge";
 import { Button } from "@renderer/components/ui/button";
@@ -43,6 +43,44 @@ export function WorldGraphPanel() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const [autoLayoutTrigger, setAutoLayoutTrigger] = useState(0);
+
+  const SIDEBAR_MIN_WIDTH = 220;
+  const SIDEBAR_MAX_WIDTH = 520;
+  const SIDEBAR_DEFAULT_WIDTH = 320;
+  const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT_WIDTH);
+  const isResizingRef = useRef(false);
+  const resizeStartXRef = useRef(0);
+  const resizeStartWidthRef = useRef(SIDEBAR_DEFAULT_WIDTH);
+
+  const handleResizeMouseDown = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      isResizingRef.current = true;
+      resizeStartXRef.current = event.clientX;
+      resizeStartWidthRef.current = sidebarWidth;
+
+      const onMouseMove = (moveEvent: MouseEvent) => {
+        if (!isResizingRef.current) return;
+        const delta = moveEvent.clientX - resizeStartXRef.current;
+        const nextWidth = Math.min(
+          SIDEBAR_MAX_WIDTH,
+          Math.max(SIDEBAR_MIN_WIDTH, resizeStartWidthRef.current + delta),
+        );
+        setSidebarWidth(nextWidth);
+      };
+
+      const onMouseUp = () => {
+        isResizingRef.current = false;
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+      };
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+    },
+    [sidebarWidth],
+  );
 
   const effectiveSelectedNoteId =
     selectedNoteId && notes.some((note) => note.id === selectedNoteId)
@@ -144,31 +182,43 @@ export function WorldGraphPanel() {
       />
 
       {isSidebarOpen ? (
-        <GraphActiveSidebar
-          activeTab={activeTab}
-          currentProjectTitle={currentProjectTitle}
-          nodes={graphNodes}
-          timelineNodes={timelineNodes}
-          notes={notes}
-          selectedNode={selectedNode}
-          selectedNoteId={effectiveSelectedNoteId}
-          onCreatePreset={handleCreatePreset}
-          onSelectNode={handleSelectNode}
-          onSaveNode={handleSaveNode}
-          onDeleteNode={handleDeleteNode}
-          onSelectNote={setSelectedNoteId}
-          onCreateNote={handleCreateNote}
-          pluginSummary={{
-            catalogCount: catalog.length,
-            installedCount: installed.length,
-            templateCount: templates.length,
-            isLoading: pluginsLoading,
-            error: pluginError,
-            onReload: () => {
-              void loadPluginData(true);
-            },
-          }}
-        />
+        <div
+          className="relative flex h-full shrink-0 flex-col"
+          style={{ width: sidebarWidth }}
+        >
+          <GraphActiveSidebar
+            activeTab={activeTab}
+            currentProjectTitle={currentProjectTitle}
+            nodes={graphNodes}
+            edges={graphEdges}
+            timelineNodes={timelineNodes}
+            notes={notes}
+            selectedNode={selectedNode}
+            selectedNoteId={effectiveSelectedNoteId}
+            onClose={() => setIsSidebarOpen(false)}
+            onCreatePreset={handleCreatePreset}
+            onSelectNode={handleSelectNode}
+            onSaveNode={handleSaveNode}
+            onDeleteNode={handleDeleteNode}
+            onSelectNote={setSelectedNoteId}
+            onCreateNote={handleCreateNote}
+            onAutoLayout={() => setAutoLayoutTrigger((n) => n + 1)}
+            pluginSummary={{
+              catalogCount: catalog.length,
+              installedCount: installed.length,
+              templateCount: templates.length,
+              isLoading: pluginsLoading,
+              error: pluginError,
+              onReload: () => {
+                void loadPluginData(true);
+              },
+            }}
+          />
+          <div
+            className="absolute right-0 top-0 z-10 h-full w-1 cursor-col-resize hover:bg-white/20 active:bg-white/30"
+            onMouseDown={handleResizeMouseDown}
+          />
+        </div>
       ) : null}
 
       <section className="flex min-w-0 flex-1 flex-col">
@@ -221,6 +271,7 @@ export function WorldGraphPanel() {
                 onSelectNode={handleSelectNode}
                 onCreateNote={handleCreateNote}
                 onCreatedEntity={handleCreatedEntity}
+                autoLayoutTrigger={autoLayoutTrigger}
               />
             ) : null}
 

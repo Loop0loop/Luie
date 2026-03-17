@@ -24,6 +24,7 @@ type CanvasTabProps = {
   graphNodes: WorldGraphNode[];
   graphEdges: EntityRelation[];
   selectedNodeId: string | null;
+  autoLayoutTrigger: number;
   onSelectNode: (nodeId: string | null) => void;
   onCreateNote: () => void;
   onCreatedEntity: (entityType: string, newNodeId: string) => void;
@@ -34,6 +35,7 @@ export function CanvasTab({
   graphNodes,
   graphEdges,
   selectedNodeId,
+  autoLayoutTrigger,
   onSelectNode,
   onCreateNote,
   onCreatedEntity,
@@ -44,7 +46,9 @@ export function CanvasTab({
   const updateGraphNodePosition = useWorldBuildingStore(
     (state) => state.updateGraphNodePosition,
   );
-  const deleteGraphNode = useWorldBuildingStore((state) => state.deleteGraphNode);
+  const deleteGraphNode = useWorldBuildingStore(
+    (state) => state.deleteGraphNode,
+  );
   const createRelation = useWorldBuildingStore((state) => state.createRelation);
   const deleteRelation = useWorldBuildingStore((state) => state.deleteRelation);
 
@@ -136,6 +140,7 @@ export function CanvasTab({
       nodes={graphNodes}
       edges={graphEdges}
       selectedNodeId={effectiveSelectedNodeId}
+      autoLayoutTrigger={autoLayoutTrigger}
       onSelectNode={onSelectNode}
       onDeleteNode={handleDeleteNode}
       onCreateRelation={handleCreateRelation}
@@ -169,7 +174,9 @@ export function useCanvasTabSidebar({
   const updateGraphNode = useWorldBuildingStore(
     (state) => state.updateGraphNode,
   );
-  const deleteGraphNode = useWorldBuildingStore((state) => state.deleteGraphNode);
+  const deleteGraphNode = useWorldBuildingStore(
+    (state) => state.deleteGraphNode,
+  );
 
   const effectiveSelectedNodeId =
     selectedNodeId && graphNodes.some((node) => node.id === selectedNodeId)
