@@ -135,10 +135,24 @@ const normalizeCanvasEdges = (value: unknown): WorldGraphCanvasEdge[] => {
       continue;
     }
 
+    const normalizeHandleId = (handle: unknown): string | undefined => {
+      if (typeof handle !== "string") {
+        return undefined;
+      }
+
+      if (/(?:^|-)\w+-(?:t|b)-(?:in|out)$/.test(handle)) {
+        return undefined;
+      }
+
+      return handle;
+    };
+
     edges.push({
       id: item.id,
       sourceId: item.sourceId,
+      sourceHandle: normalizeHandleId(item.sourceHandle),
       targetId: item.targetId,
+      targetHandle: normalizeHandleId(item.targetHandle),
       relation: typeof item.relation === "string" ? item.relation : "related",
       color: typeof item.color === "string" ? item.color : undefined,
       direction: normalizeCanvasEdgeDirection(item.direction),

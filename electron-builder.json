@@ -8,8 +8,23 @@
   "files": [
     "out/**/*",
     "package.json",
-    "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme,AUTHORS,LICENSE,LICENSE.*,LICENCE,LICENCE.*,docs,doc,example,examples,test,tests,__tests__,coverage,.github}/**"
+    "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme,AUTHORS,LICENSE,LICENSE.*,LICENCE,LICENCE.*,docs,doc,example,examples,test,tests,__tests__,coverage,.github}/**",
+    "!**/node_modules/**/*.map",
+    "!**/node_modules/**/*.d.ts",
+    "!**/node_modules/**/*.d.mts",
+    "!**/node_modules/better-sqlite3/deps/**",
+    "!**/node_modules/@prisma/client/generator-build/**",
+    "!**/node_modules/@prisma/client/scripts/**",
+    "!**/node_modules/@prisma/client/runtime/query_compiler_fast_bg.cockroachdb.*",
+    "!**/node_modules/@prisma/client/runtime/query_compiler_fast_bg.mysql.*",
+    "!**/node_modules/@prisma/client/runtime/query_compiler_fast_bg.postgresql.*",
+    "!**/node_modules/@prisma/client/runtime/query_compiler_fast_bg.sqlserver.*",
+    "!**/node_modules/@prisma/client/runtime/query_compiler_small_bg.cockroachdb.*",
+    "!**/node_modules/@prisma/client/runtime/query_compiler_small_bg.mysql.*",
+    "!**/node_modules/@prisma/client/runtime/query_compiler_small_bg.postgresql.*",
+    "!**/node_modules/@prisma/client/runtime/query_compiler_small_bg.sqlserver.*"
   ],
+  "electronLanguages": ["en", "ko", "ja"],
   "extraResources": [
     {
       "from": "node_modules/.prisma",
@@ -18,8 +33,6 @@
         "client/index.js",
         "client/default.js",
         "client/package.json",
-        "client/index.d.ts",
-        "client/default.d.ts",
         "client/schema.prisma",
         "client/query_compiler_fast_bg.js",
         "client/query_compiler_fast_bg.wasm",
@@ -33,43 +46,42 @@
       "to": "node_modules/@prisma/client",
       "filter": [
         "default.js",
-        "default.d.ts",
         "index.js",
-        "index.d.ts",
-        "index-browser.js",
-        "edge.js",
-        "edge.d.ts",
-        "extension.js",
-        "extension.d.ts",
         "package.json",
         "runtime/client.js",
-        "runtime/client.mjs",
-        "runtime/client.d.ts",
-        "runtime/client.d.mts",
         "runtime/index-browser.js",
-        "runtime/index-browser.mjs",
-        "runtime/index-browser.d.ts",
-        "runtime/index-browser.d.mts",
         "runtime/wasm-compiler-edge.js",
-        "runtime/wasm-compiler-edge.mjs",
-        "runtime/wasm-compiler-edge.d.ts",
         "runtime/query_compiler_fast_bg.sqlite.js",
-        "runtime/query_compiler_fast_bg.sqlite.mjs",
         "runtime/query_compiler_fast_bg.sqlite.wasm-base64.js",
         "runtime/query_compiler_small_bg.sqlite.js",
-        "runtime/query_compiler_small_bg.sqlite.mjs",
         "runtime/query_compiler_small_bg.sqlite.wasm-base64.js"
       ]
     },
     {
       "from": "node_modules/@prisma/client-runtime-utils",
       "to": "node_modules/@prisma/client-runtime-utils",
-      "filter": ["**/*"]
+      "filter": [
+        "package.json",
+        "dist/index.js"
+      ]
     },
     {
       "from": "node_modules/@prisma-cache/client",
       "to": "node_modules/@prisma-cache/client",
-      "filter": ["**/*"]
+      "filter": [
+        "default.js",
+        "index.js",
+        "package.json",
+        "schema.prisma",
+        "query_compiler_fast_bg.js",
+        "query_compiler_fast_bg.wasm",
+        "query_compiler_fast_bg.wasm-base64.js",
+        "wasm-edge-light-loader.mjs",
+        "wasm-worker-loader.mjs",
+        "runtime/client.js",
+        "runtime/index-browser.js",
+        "runtime/wasm-compiler-edge.js"
+      ]
     },
     {
       "from": "node_modules/bindings",

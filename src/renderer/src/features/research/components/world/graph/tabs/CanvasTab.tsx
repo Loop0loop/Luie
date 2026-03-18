@@ -32,7 +32,6 @@ type CanvasTabProps = {
   selectedNodeId: string | null;
   autoLayoutTrigger: number;
   onSelectNode: (nodeId: string | null) => void;
-  onCreateNote: () => void;
   onCreatedEntity: (entityType: string, newNodeId: string) => void;
 };
 
@@ -45,7 +44,6 @@ export function CanvasTab({
   selectedNodeId,
   autoLayoutTrigger,
   onSelectNode,
-  onCreateNote,
   onCreatedEntity,
 }: CanvasTabProps) {
   const createGraphNode = useWorldBuildingStore(
@@ -75,6 +73,7 @@ export function CanvasTab({
     async (
       entityType: Parameters<typeof createGraphNode>[0]["entityType"],
       subType?: Parameters<typeof createGraphNode>[0]["subType"],
+      position?: { x: number; y: number },
     ) => {
       if (!projectId) return;
 
@@ -83,8 +82,8 @@ export function CanvasTab({
         entityType,
         subType,
         name: buildNodeName(entityType),
-        positionX: 140 + graphNodes.length * 32,
-        positionY: 140 + graphNodes.length * 24,
+        positionX: position?.x ?? 140 + graphNodes.length * 32,
+        positionY: position?.y ?? 140 + graphNodes.length * 24,
       });
 
       if (!created) return;
@@ -101,9 +100,12 @@ export function CanvasTab({
     ],
   );
 
-  const handleCreateCanvasBlock = useCallback(() => {
-    void handleCreatePreset("Concept", "Concept");
-  }, [handleCreatePreset]);
+  const handleCreateCanvasBlock = useCallback(
+    (position?: { x: number; y: number }) => {
+      void handleCreatePreset("Concept", "Concept", position);
+    },
+    [handleCreatePreset],
+  );
 
   const handleDeleteNode = useCallback(
     async (nodeId: string) => {
@@ -123,7 +125,17 @@ export function CanvasTab({
   );
 
   const handleCreateCanvasRelation = useCallback(
-    async ({ sourceId, targetId }: { sourceId: string; targetId: string }) => {
+    async ({
+      sourceId,
+      targetId,
+      sourceHandle,
+      targetHandle,
+    }: {
+      sourceId: string;
+      targetId: string;
+      sourceHandle?: string | null;
+      targetHandle?: string | null;
+    }) => {
       if (sourceId === targetId) return;
 
       const nextEdge: WorldGraphCanvasEdge = {
@@ -132,7 +144,9 @@ export function CanvasTab({
             ? crypto.randomUUID()
             : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
         sourceId,
+        sourceHandle: sourceHandle ?? undefined,
         targetId,
+        targetHandle: targetHandle ?? undefined,
         relation: "related",
         direction: "unidirectional",
       };
@@ -186,7 +200,6 @@ export function CanvasTab({
       onDeleteRelation={handleDeleteRelation}
       onCreateBlock={handleCreateCanvasBlock}
       onAddTimelineBranch={handleAddTimelineBranch}
-      onCreateNote={onCreateNote}
       onCanvasBlocksCommit={(blocks) => {
         void setGraphCanvasBlocks(blocks);
       }}

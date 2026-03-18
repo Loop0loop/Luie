@@ -1000,7 +1000,9 @@ export type WorldGraphCanvasEdgeDirection =
 export interface WorldGraphCanvasEdge {
   id: string;
   sourceId: string;
+  sourceHandle?: string;
   targetId: string;
+  targetHandle?: string;
   relation: string;
   color?: string;
   direction?: WorldGraphCanvasEdgeDirection;

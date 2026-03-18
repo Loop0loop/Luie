@@ -25,6 +25,7 @@ const sharedDefine = {
   __APP_VERSION__: JSON.stringify(appVersion),
   __APP_NAME__: JSON.stringify(appName),
 };
+const mainExternal = [/^@prisma-cache\/client(?:\/.*)?$/];
 
 const isNodeModule = (id: string): boolean => id.includes("/node_modules/");
 const rendererManualChunks = (id: string): string | undefined => {
@@ -91,8 +92,9 @@ export default defineConfig({
       // V8 bytecode compilation for source code protection
       // Note: bytecode feature requires electron-vite@2.0.0+
       rollupOptions: {
+        external: mainExternal,
         output: {
-          format: 'es',
+          format: "es",
         },
       },
     },

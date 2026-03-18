@@ -93,29 +93,67 @@ function CanvasGraphNodeCardInner({
       <Handle
         type="target"
         position={Position.Top}
-        id="top"
-        className="!h-2 !w-2 !border-0 opacity-0 transition-opacity group-hover:opacity-100"
+        id="top-in"
+        className={
+          selected
+            ? "!h-2 !w-2 !border-0 opacity-100 pointer-events-auto"
+            : "!h-2 !w-2 !border-0 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
+        }
+        style={{ background: theme.handle }}
+      />
+      <Handle
+        type="source"
+        position={Position.Top}
+        id="top-out"
+        className={
+          selected
+            ? "!h-2 !w-2 !border-0 opacity-100 pointer-events-auto"
+            : "!h-2 !w-2 !border-0 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
+        }
+        style={{ background: theme.handle }}
+      />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="bottom-in"
+        className={
+          selected
+            ? "!h-2 !w-2 !border-0 opacity-100 pointer-events-auto"
+            : "!h-2 !w-2 !border-0 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
+        }
         style={{ background: theme.handle }}
       />
       <Handle
         type="source"
         position={Position.Bottom}
-        id="bottom"
-        className="!h-2 !w-2 !border-0 opacity-0 transition-opacity group-hover:opacity-100"
+        id="bottom-out"
+        className={
+          selected
+            ? "!h-2 !w-2 !border-0 opacity-100 pointer-events-auto"
+            : "!h-2 !w-2 !border-0 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
+        }
         style={{ background: theme.handle }}
       />
       <Handle
         type="target"
         position={Position.Left}
-        id="left"
-        className="!h-2 !w-2 !border-0 opacity-0 transition-opacity group-hover:opacity-100"
+        id="left-in"
+        className={
+          selected
+            ? "!h-2 !w-2 !border-0 opacity-100 pointer-events-auto"
+            : "!h-2 !w-2 !border-0 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
+        }
         style={{ background: theme.handle }}
       />
       <Handle
         type="source"
         position={Position.Right}
-        id="right"
-        className="!h-2 !w-2 !border-0 opacity-0 transition-opacity group-hover:opacity-100"
+        id="right-out"
+        className={
+          selected
+            ? "!h-2 !w-2 !border-0 opacity-100 pointer-events-auto"
+            : "!h-2 !w-2 !border-0 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
+        }
         style={{ background: theme.handle }}
       />
 

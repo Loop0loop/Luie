@@ -12,15 +12,16 @@ import ReactFlow, {
   applyNodeChanges,
   Background,
   BackgroundVariant,
-  ConnectionMode,
   MarkerType,
   ReactFlowProvider,
   SelectionMode,
   type Connection,
+  type ConnectionMode,
   type EdgeChange,
   type Edge,
   type NodeChange,
   type Node,
+  type XYPosition,
   useReactFlow,
 } from "reactflow";
 import "reactflow/dist/style.css";
@@ -65,6 +66,41 @@ const CANVAS_EDGE_COLORS = [
   "#34d399",
   "#f97316",
 ] as const;
+
+const readNodeDate = (
+  attributes: WorldGraphNode["attributes"],
+): string | undefined => {
+  if (
+    !attributes ||
+    typeof attributes !== "object" ||
+    Array.isArray(attributes)
+  ) {
+    return undefined;
+  }
+
+  const record = attributes as Record<string, unknown>;
+  const date = record.date;
+  if (typeof date === "string" && date.trim().length > 0) {
+    return date;
+  }
+
+  const time = record.time;
+  return typeof time === "string" && time.trim().length > 0 ? time : undefined;
+};
+
+const isTimelineInternalHandle = (handleId?: string | null): boolean => {
+  if (!handleId) {
+    return false;
+  }
+  return /-(?:t|b)-(?:in|out)$/.test(handleId);
+};
+
+const isTimelineRootHandle = (handleId?: string | null): boolean => {
+  if (!handleId) {
+    return true;
+  }
+  return /^root-(?:top|bottom|left|right)-(?:source|target)$/.test(handleId);
+};
 
 const isCanvasLocalNodeType = (
   nodeType: string | undefined,
@@ -240,11 +276,12 @@ interface CanvasViewProps {
   onCreateCanvasRelation?: (input: {
     sourceId: string;
     targetId: string;
+    sourceHandle?: string | null;
+    targetHandle?: string | null;
   }) => Promise<void>;
   onDeleteRelation?: (relationId: string) => Promise<void>;
-  onCreateBlock: () => void;
+  onCreateBlock: (position?: { x: number; y: number }) => void;
   onAddTimelineBranch?: (sourceNodeId: string) => void;
-  onCreateNote: () => void;
 }
 
 function readPosition(node: WorldGraphNode, index: number) {
@@ -282,7 +319,7 @@ const buildFlowNodes = (
 ): Node<CanvasGraphNodeData>[] => {
   return nodes.map((node, index) => ({
     id: node.id,
-    type: node.entityType === "Event" ? "canvas-timeline" : "custom-entity",
+    type: "custom-entity",
     draggable: true,
     position: readPosition(node, index),
     data: {
@@ -295,7 +332,7 @@ const buildFlowNodes = (
               | undefined)
           : undefined,
       description: node.description?.trim() || "",
-      date: (node.attributes as any)?.date || (node.attributes as any)?.time,
+      date: readNodeDate(node.attributes),
       onDelete: onDeleteNode,
       onChangeColor: onNodeColorChange,
       onEdit: onNodeEdit,
@@ -355,7 +392,9 @@ const buildFlowEdges = (
     return {
       id: `canvas:${edge.id}`,
       source: edge.sourceId,
+      sourceHandle: edge.sourceHandle,
       target: edge.targetId,
+      targetHandle: edge.targetHandle,
       label: edge.relation,
       type: "canvas-edge",
       data: {
@@ -488,7 +527,6 @@ function CanvasFlowSurface({
   graphNodes,
   graphEdges,
   canvasBlocks,
-  canvasEdges: _canvasEdges,
   timelineNodes,
   selectedNodeId,
   autoLayoutTrigger,
@@ -502,7 +540,6 @@ function CanvasFlowSurface({
   graphNodes: Node<CanvasGraphNodeData>[];
   graphEdges: Edge<CanvasGraphEdgeData>[];
   canvasBlocks: WorldGraphCanvasBlock[];
-  canvasEdges: WorldGraphCanvasEdge[];
   timelineNodes: WorldGraphNode[];
   selectedNodeId: string | null;
   autoLayoutTrigger: number;
@@ -513,13 +550,16 @@ function CanvasFlowSurface({
   onConnectNodes?: (input: {
     sourceId: string;
     targetId: string;
+    sourceHandle?: string | null;
+    targetHandle?: string | null;
   }) => Promise<void>;
-  onCreateBlock: () => void;
+  onCreateBlock: (position?: { x: number; y: number }) => void;
 }) {
   const [nodes, setNodes] = useState<Node<AnyCanvasNodeData>[]>(graphNodes);
   const [edges, setEdges] = useState<Edge<CanvasGraphEdgeData>[]>(graphEdges);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [timelinePaletteOpen, setTimelinePaletteOpen] = useState(false);
+  const pointerPlacementRef = useRef<{ x: number; y: number } | null>(null);
   const [guideLines, setGuideLines] = useState<{
     x: number | null;
     y: number | null;
@@ -777,7 +817,11 @@ function CanvasFlowSurface({
   }, [autoLayoutTrigger, reactFlow]);
 
   const getViewportCenter = useCallback(() => {
-    const { x, y, zoom } = reactFlow.getViewport();
+    const viewportReader = reactFlow.getViewport;
+    const { x, y, zoom } =
+      typeof viewportReader === "function"
+        ? viewportReader()
+        : { x: 0, y: 0, zoom: 1 };
     const el = document.querySelector(".react-flow");
     const width = el?.clientWidth ?? 800;
     const height = el?.clientHeight ?? 600;
@@ -786,6 +830,20 @@ function CanvasFlowSurface({
       y: (-y + height / 2) / zoom - 60,
     };
   }, [reactFlow]);
+
+  const resolvePlacementPosition = useCallback((): XYPosition => {
+    const screen = pointerPlacementRef.current;
+    if (!screen) {
+      return getViewportCenter();
+    }
+
+    const project = reactFlow.screenToFlowPosition;
+    if (typeof project === "function") {
+      return project(screen);
+    }
+
+    return screen;
+  }, [getViewportCenter, reactFlow]);
 
   const pushHistory = useCallback((snapshot: Node<AnyCanvasNodeData>[]) => {
     historyRef.current = historyRef.current.slice(
@@ -846,7 +904,7 @@ function CanvasFlowSurface({
   );
 
   const handleCreateMemo = useCallback(() => {
-    const position = getViewportCenter();
+    const position = resolvePlacementPosition();
     const id = generateLocalId("memo");
     const newNode: Node<CanvasMemoBlockData> = {
       id,
@@ -871,11 +929,11 @@ function CanvasFlowSurface({
     });
   }, [
     commitCanvasBlocks,
-    getViewportCenter,
     handleCycleCanvasBlockColor,
     handleDeleteLocalNode,
     handleMemoDataChange,
     pushHistory,
+    resolvePlacementPosition,
   ]);
 
   const handleUpdateTimelineSequence = useCallback(
@@ -922,7 +980,7 @@ function CanvasFlowSurface({
     (nodeId: string) => {
       const source = timelineNodes.find((n) => n.id === nodeId);
       if (!source) return;
-      const position = getViewportCenter();
+      const position = resolvePlacementPosition();
       const id = generateLocalId("timeline");
 
       const newNode: Node<CanvasTimelineBlockData> = {
@@ -959,7 +1017,7 @@ function CanvasFlowSurface({
     },
     [
       timelineNodes,
-      getViewportCenter,
+      resolvePlacementPosition,
       handleDeleteLocalNode,
       handleCycleCanvasBlockColor,
       handleUpdateTimelineMeta,
@@ -969,7 +1027,7 @@ function CanvasFlowSurface({
   );
 
   const handleCreateTimelineBlock = useCallback(() => {
-    const position = getViewportCenter();
+    const position = resolvePlacementPosition();
     const id = generateLocalId("timeline");
     const newNode: Node<CanvasTimelineBlockData> = {
       id,
@@ -1004,12 +1062,12 @@ function CanvasFlowSurface({
     });
   }, [
     commitCanvasBlocks,
-    getViewportCenter,
     handleCycleCanvasBlockColor,
     handleDeleteLocalNode,
     handleUpdateTimelineMeta,
     handleUpdateTimelineSequence,
     pushHistory,
+    resolvePlacementPosition,
   ]);
 
   const handleNodesChange = (changes: NodeChange[]) =>
@@ -1032,6 +1090,8 @@ function CanvasFlowSurface({
     void onConnectNodes({
       sourceId: connection.source,
       targetId: connection.target,
+      sourceHandle: connection.sourceHandle,
+      targetHandle: connection.targetHandle,
     });
   };
 
@@ -1045,20 +1105,82 @@ function CanvasFlowSurface({
         return false;
       }
 
+      const sourceNode = nodes.find((node) => node.id === connection.source);
+      const targetNode = nodes.find((node) => node.id === connection.target);
+
+      if (!sourceNode || !targetNode) {
+        return false;
+      }
+
+      if (
+        (sourceNode.type === "canvas-timeline" &&
+          (isTimelineInternalHandle(connection.sourceHandle) ||
+            !isTimelineRootHandle(connection.sourceHandle))) ||
+        (targetNode.type === "canvas-timeline" &&
+          (isTimelineInternalHandle(connection.targetHandle) ||
+            !isTimelineRootHandle(connection.targetHandle)))
+      ) {
+        return false;
+      }
+
       return !edges.some((edge) => {
         const sameForward =
           edge.source === connection.source &&
-          edge.target === connection.target;
+          edge.target === connection.target &&
+          (edge.sourceHandle ?? null) === (connection.sourceHandle ?? null) &&
+          (edge.targetHandle ?? null) === (connection.targetHandle ?? null);
         const sameReverse =
           edge.source === connection.target &&
-          edge.target === connection.source;
+          edge.target === connection.source &&
+          (edge.sourceHandle ?? null) === (connection.targetHandle ?? null) &&
+          (edge.targetHandle ?? null) === (connection.sourceHandle ?? null);
         return sameForward || sameReverse;
       });
     },
-    [edges],
+    [edges, nodes],
   );
 
-  const viewport = reactFlow.getViewport();
+  const viewportReader = reactFlow.getViewport;
+  const viewport =
+    typeof viewportReader === "function"
+      ? viewportReader()
+      : { x: 0, y: 0, zoom: 1 };
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isTyping =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable;
+
+      if (isTyping) {
+        return;
+      }
+
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "0") {
+        event.preventDefault();
+        void reactFlow.fitView({ padding: 0.2, duration: 220 });
+        return;
+      }
+
+      if ((event.metaKey || event.ctrlKey) && event.key === "=") {
+        event.preventDefault();
+        void reactFlow.zoomIn({ duration: 180 });
+        return;
+      }
+
+      if ((event.metaKey || event.ctrlKey) && event.key === "-") {
+        event.preventDefault();
+        void reactFlow.zoomOut({ duration: 180 });
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => {
+      window.removeEventListener("keydown", handler);
+    };
+  }, [reactFlow]);
   const guideScreenX =
     guideLines.x === null ? null : guideLines.x * viewport.zoom + viewport.x;
   const guideScreenY =
@@ -1086,6 +1208,14 @@ function CanvasFlowSurface({
           }
           onSelectNode(node.id);
         }}
+        onMoveStart={() => {
+          dragConsumedClickRef.current = true;
+        }}
+        onMoveEnd={() => {
+          window.setTimeout(() => {
+            dragConsumedClickRef.current = false;
+          }, 0);
+        }}
         onEdgeClick={(_, edge) => {
           setSelectedEdgeId(edge.id);
           onSelectNode(null);
@@ -1093,6 +1223,12 @@ function CanvasFlowSurface({
         onPaneClick={() => {
           setSelectedEdgeId(null);
           onSelectNode(null);
+        }}
+        onPaneMouseMove={(event) => {
+          pointerPlacementRef.current = {
+            x: event.clientX,
+            y: event.clientY,
+          };
         }}
         onNodesDelete={(deletedNodes) => {
           deletedNodes.forEach((node) => {
@@ -1205,13 +1341,16 @@ function CanvasFlowSurface({
           }, 0);
         }}
         deleteKeyCode={["Backspace", "Delete"]}
-        panOnDrag={[2]}
-        panOnScroll
+        selectionKeyCode="Shift"
+        multiSelectionKeyCode={["Meta", "Control"]}
+        panOnDrag={true}
+        panOnScroll={false}
+        zoomOnScroll
         selectionOnDrag={false}
         selectNodesOnDrag={false}
         selectionMode={SelectionMode.Partial}
         onlyRenderVisibleElements
-        connectionMode={ConnectionMode.Loose}
+        connectionMode={"loose" as ConnectionMode}
         className="bg-[#0f1319]"
       >
         <Background
@@ -1291,7 +1430,7 @@ function CanvasFlowSurface({
       </div>
 
       <CanvasToolbar
-        onCreateBlock={onCreateBlock}
+        onCreateBlock={() => onCreateBlock(resolvePlacementPosition())}
         onOpenTimelinePalette={() => setTimelinePaletteOpen(true)}
         onCreateNote={handleCreateMemo}
       />
@@ -1329,7 +1468,6 @@ export function CanvasView({
   onDeleteRelation,
   onCreateBlock,
   onAddTimelineBranch,
-  onCreateNote: _onCreateNote,
 }: CanvasViewProps) {
   const handleCycleGraphNodeColor = useCallback(
     (nodeId: string) => {
@@ -1552,22 +1690,50 @@ export function CanvasView({
   );
 
   const handleConnectNodes = useCallback(
-    async ({ sourceId, targetId }: { sourceId: string; targetId: string }) => {
+    async ({
+      sourceId,
+      targetId,
+      sourceHandle,
+      targetHandle,
+    }: {
+      sourceId: string;
+      targetId: string;
+      sourceHandle?: string | null;
+      targetHandle?: string | null;
+    }) => {
       if (sourceId === targetId) {
         return;
       }
 
-      const existing = canvasEdges.some(
-        (edge) =>
-          (edge.sourceId === sourceId && edge.targetId === targetId) ||
-          (edge.sourceId === targetId && edge.targetId === sourceId),
-      );
+      const normalize = (value?: string | null) => value ?? null;
+      const sourceKey = normalize(sourceHandle);
+      const targetKey = normalize(targetHandle);
+      const existing = canvasEdges.some((edge) => {
+        const edgeSourceKey = normalize(edge.sourceHandle);
+        const edgeTargetKey = normalize(edge.targetHandle);
+        const sameForward =
+          edge.sourceId === sourceId &&
+          edge.targetId === targetId &&
+          edgeSourceKey === sourceKey &&
+          edgeTargetKey === targetKey;
+        const sameReverse =
+          edge.sourceId === targetId &&
+          edge.targetId === sourceId &&
+          edgeSourceKey === targetKey &&
+          edgeTargetKey === sourceKey;
+        return sameForward || sameReverse;
+      });
       if (existing) {
         return;
       }
 
       if (onCreateCanvasRelation) {
-        await onCreateCanvasRelation({ sourceId, targetId });
+        await onCreateCanvasRelation({
+          sourceId,
+          targetId,
+          sourceHandle,
+          targetHandle,
+        });
       }
     },
     [canvasEdges, onCreateCanvasRelation],
@@ -1584,7 +1750,6 @@ export function CanvasView({
           graphNodes={flowNodes}
           graphEdges={flowEdges}
           canvasBlocks={canvasBlocks}
-          canvasEdges={canvasEdges}
           onConnectNodes={handleConnectNodes}
           timelineNodes={timelineNodes}
           selectedNodeId={selectedNodeId}

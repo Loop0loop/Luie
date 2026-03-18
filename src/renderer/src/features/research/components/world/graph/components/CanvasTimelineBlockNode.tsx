@@ -189,15 +189,16 @@ export const CanvasTimelineBlockNode = memo(
 
         {(
           [
-            Position.Top,
-            Position.Bottom,
-            Position.Left,
-            Position.Right,
+            { position: Position.Top, axis: "top" },
+            { position: Position.Bottom, axis: "bottom" },
+            { position: Position.Left, axis: "left" },
+            { position: Position.Right, axis: "right" },
           ] as const
-        ).map((position) => (
-          <span key={`${id}-${position}-handles`}>
+        ).map(({ position, axis }) => (
+          <span key={`${id}-${axis}-root-handles`}>
             <Handle
-              key={`${id}-${position}-source`}
+              key={`${id}-${axis}-root-source`}
+              id={`root-${axis}-source`}
               type="source"
               position={position}
               className={cn(
@@ -209,7 +210,8 @@ export const CanvasTimelineBlockNode = memo(
               style={{ background: data.color ?? "#f59e0b" }}
             />
             <Handle
-              key={`${id}-${position}-target`}
+              key={`${id}-${axis}-root-target`}
+              id={`root-${axis}-target`}
               type="target"
               position={position}
               className={cn(
@@ -517,59 +519,13 @@ const InternalNodeCard = ({
           ref={textareaRef}
           value={node.content}
           onChange={(e) => onChange(e.target.value)}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
           placeholder="사건 기록..."
           rows={1}
           className={cn(
             "nodrag nopan w-full text-[13px] font-bold bg-transparent outline-none resize-none overflow-hidden text-foreground/90 placeholder:text-foreground/20",
             node.isHeld && "line-through opacity-50",
-          )}
-        />
-
-        {/* Top Handle */}
-        <Handle
-          type="target"
-          position={Position.Top}
-          id={`${node.id}-t-in`}
-          className={cn(
-            "!-top-1.5 !w-3 !h-3 !bg-amber-500 !border-2 !border-[#1c2128] transition-all shadow-glow hover:!scale-150 hover:!bg-amber-400 pointer-events-none group-hover/card:pointer-events-auto",
-            isActive
-              ? "!opacity-100"
-              : "!opacity-0 group-hover/card:!opacity-100",
-          )}
-        />
-        <Handle
-          type="source"
-          position={Position.Top}
-          id={`${node.id}-t-out`}
-          className={cn(
-            "!-top-1.5 !w-3 !h-3 !bg-amber-500 !border-2 !border-[#1c2128] transition-all shadow-glow hover:!scale-150 hover:!bg-amber-400 pointer-events-none group-hover/card:pointer-events-auto",
-            isActive
-              ? "!opacity-100"
-              : "!opacity-0 group-hover/card:!opacity-100",
-          )}
-        />
-
-        {/* Bottom Handle */}
-        <Handle
-          type="target"
-          position={Position.Bottom}
-          id={`${node.id}-b-in`}
-          className={cn(
-            "!-bottom-1.5 !w-3 !h-3 !bg-amber-500 !border-2 !border-[#1c2128] transition-all shadow-glow hover:!scale-150 hover:!bg-amber-400 pointer-events-none group-hover/card:pointer-events-auto",
-            isActive
-              ? "!opacity-100"
-              : "!opacity-0 group-hover/card:!opacity-100",
-          )}
-        />
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          id={`${node.id}-b-out`}
-          className={cn(
-            "!-bottom-1.5 !w-3 !h-3 !bg-amber-500 !border-2 !border-[#1c2128] transition-all shadow-glow hover:!scale-150 hover:!bg-amber-400 pointer-events-none group-hover/card:pointer-events-auto",
-            isActive
-              ? "!opacity-100"
-              : "!opacity-0 group-hover/card:!opacity-100",
           )}
         />
       </div>

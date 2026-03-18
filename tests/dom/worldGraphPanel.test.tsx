@@ -19,6 +19,9 @@ vi.mock("reactflow", () => ({
   SelectionMode: {
     Partial: "partial",
   },
+  ConnectionMode: {
+    Loose: "loose",
+  },
   BackgroundVariant: {
     Dots: "dots",
   },
@@ -31,6 +34,8 @@ vi.mock("reactflow", () => ({
   useEdgesState: (initialEdges: unknown) => [initialEdges, vi.fn(), vi.fn()],
   useReactFlow: () => ({
     fitView: vi.fn(),
+    getViewport: () => ({ x: 0, y: 0, zoom: 1 }),
+    screenToFlowPosition: ({ x, y }: { x: number; y: number }) => ({ x, y }),
   }),
   default: ({ children }: { children?: ReactNode }) => (
     <div data-testid="reactflow">{children}</div>
@@ -176,9 +181,9 @@ describe("WorldGraphPanel", () => {
     });
     expect(container.textContent).toContain("Plot hook");
 
-    const timelineButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent?.trim() === "타임라인",
-    );
+    const timelineButton = Array.from(
+      container.querySelectorAll("button"),
+    ).find((button) => button.textContent?.trim() === "타임라인");
     expect(timelineButton).toBeTruthy();
     act(() => {
       timelineButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));

@@ -1,7 +1,8 @@
 import * as fs from "node:fs/promises";
+import { createRequire } from "node:module";
 import * as path from "node:path";
 import { app } from "electron";
-import { PrismaClient as CachePrismaClientCtor } from "@prisma-cache/client";
+import type { PrismaClient as GeneratedCachePrismaClient } from "@prisma-cache/client";
 import { CACHE_DB_NAME } from "../../shared/constants/index.js";
 import { createLogger } from "../../shared/logger/index.js";
 import { isProdEnv, isTestEnv } from "../utils/environment.js";
@@ -19,10 +20,30 @@ import {
   ensurePackagedCacheSqliteSchema,
 } from "./cacheSchemaBootstrap.js";
 
+const require = createRequire(import.meta.url);
 const logger = createLogger("CacheDatabaseService");
 const CACHE_ENV_KEY = "CACHE_DATABASE_URL";
 const RUNTIME_CACHE_ENV_KEY = "LUIE_RUNTIME_CACHE_DATABASE_URL";
-type CachePrismaClient = InstanceType<typeof CachePrismaClientCtor>;
+type CachePrismaClientCtor = typeof import("@prisma-cache/client")["PrismaClient"];
+type CachePrismaClient = GeneratedCachePrismaClient;
+
+let cachePrismaClientCtor: CachePrismaClientCtor | null = null;
+
+const loadCachePrismaClientCtor = (): CachePrismaClientCtor => {
+  if (cachePrismaClientCtor) {
+    return cachePrismaClientCtor;
+  }
+
+  const moduleExports = require("@prisma-cache/client") as typeof import(
+    "@prisma-cache/client"
+  );
+  if (typeof moduleExports.PrismaClient !== "function") {
+    throw new Error("Prisma cache client constructor is unavailable");
+  }
+
+  cachePrismaClientCtor = moduleExports.PrismaClient;
+  return cachePrismaClientCtor;
+};
 
 type PreparedCacheDatabaseContext = {
   dbPath: string;
@@ -88,6 +109,8 @@ class CacheDatabaseService {
   private createPrismaClient(
     context: PreparedCacheDatabaseContext,
   ): CachePrismaClient {
+    const CachePrismaClientCtor = loadCachePrismaClientCtor();
+
     try {
       const PrismaBetterSqlite3 = loadPrismaBetterSqlite3();
       const adapter = new PrismaBetterSqlite3({

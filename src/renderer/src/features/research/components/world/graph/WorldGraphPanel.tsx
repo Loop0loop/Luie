@@ -270,7 +270,6 @@ export function WorldGraphPanel() {
                 graphCanvasEdges={graphCanvasEdges}
                 selectedNodeId={selectedNodeId}
                 onSelectNode={handleSelectNode}
-                onCreateNote={handleCreateNote}
                 onCreatedEntity={handleCreatedEntity}
                 autoLayoutTrigger={autoLayoutTrigger}
               />
