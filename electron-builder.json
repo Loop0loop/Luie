@@ -13,6 +13,8 @@
     "!**/node_modules/**/*.d.ts",
     "!**/node_modules/**/*.d.mts",
     "!**/node_modules/better-sqlite3/deps/**",
+    "!**/node_modules/@prisma/client/**",
+    "!**/node_modules/@prisma/client-runtime-utils/**",
     "!**/node_modules/@prisma/client/generator-build/**",
     "!**/node_modules/@prisma/client/scripts/**",
     "!**/node_modules/@prisma/client/runtime/query_compiler_fast_bg.cockroachdb.*",
@@ -114,7 +116,14 @@
     "category": "public.app-category.productivity",
     "icon": "build/icons/icon.icns",
     "artifactName": "Luie-${version}-${arch}.${ext}",
-    "target": ["dmg", "zip"]
+    "target": ["dmg", "pkg", "zip"]
+  },
+  "dmg": {
+    "artifactName": "Luie-${version}-${arch}.${ext}"
+  },
+  "pkg": {
+    "artifactName": "Luie-${version}-${arch}.${ext}",
+    "installLocation": "/Applications"
   },
   "win": {
     "icon": "build/icons/icon.ico",

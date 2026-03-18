@@ -30,7 +30,6 @@ import type {
   EntityRelation,
   WorldGraphCanvasBlock,
   WorldGraphCanvasEdge,
-  WorldGraphCanvasEdgeDirection,
   WorldGraphCanvasMemoBlockData,
   WorldGraphCanvasTimelineBlockData,
   WorldGraphNode,
@@ -58,7 +57,7 @@ type AnyCanvasNodeData =
 const SMART_GUIDE_SNAP_PX = 10;
 const DEFAULT_NODE_WIDTH = 220;
 const DEFAULT_NODE_HEIGHT = 120;
-const CANVAS_EDGE_COLORS = [
+export const CANVAS_EDGE_COLORS = [
   "#f59e0b",
   "#22d3ee",
   "#a78bfa",
@@ -79,12 +78,12 @@ const readNodeDate = (
   }
 
   const record = attributes as Record<string, unknown>;
-  const date = record.date;
+  const date = record["date"];
   if (typeof date === "string" && date.trim().length > 0) {
     return date;
   }
 
-  const time = record.time;
+  const time = record["time"];
   return typeof time === "string" && time.trim().length > 0 ? time : undefined;
 };
 
@@ -93,13 +92,6 @@ const isTimelineInternalHandle = (handleId?: string | null): boolean => {
     return false;
   }
   return /-(?:t|b)-(?:in|out)$/.test(handleId);
-};
-
-const isTimelineRootHandle = (handleId?: string | null): boolean => {
-  if (!handleId) {
-    return true;
-  }
-  return /^root-(?:top|bottom|left|right)-(?:source|target)$/.test(handleId);
 };
 
 const isCanvasLocalNodeType = (
@@ -327,7 +319,7 @@ const buildFlowNodes = (
       entityType: node.entityType,
       color:
         node.attributes && typeof node.attributes === "object"
-          ? ((node.attributes as Record<string, unknown>).canvasColor as
+          ? ((node.attributes as Record<string, unknown>)["canvasColor"] as
               | string
               | undefined)
           : undefined,
@@ -347,8 +339,11 @@ const buildFlowEdges = (
   handlers: {
     onDeleteRelation?: (id: string) => void;
     onDeleteCanvasEdge?: (id: string) => void;
-    onChangeCanvasEdgeColor?: (id: string) => void;
-    onChangeCanvasEdgeDirection?: (id: string) => void;
+    onChangeCanvasEdgeColor?: (id: string, color: string) => void;
+    onChangeCanvasEdgeDirection?: (
+      id: string,
+      direction: "unidirectional" | "bidirectional" | "none",
+    ) => void;
     onEditCanvasEdgeRelation?: (id: string) => void;
     onUpdateCanvasEdge?: (id: string) => void;
     onZoomEdge?: (id: string) => void;
@@ -400,9 +395,12 @@ const buildFlowEdges = (
       data: {
         palette,
         onDelete: () => handlers.onDeleteCanvasEdge?.(edge.id),
-        onChangeColor: () => handlers.onChangeCanvasEdgeColor?.(edge.id),
-        onChangeDirection: () =>
-          handlers.onChangeCanvasEdgeDirection?.(edge.id),
+        onChangeColor: (_id: string, color: string) =>
+          handlers.onChangeCanvasEdgeColor?.(edge.id, color),
+        onChangeDirection: (
+          _id: string,
+          direction: "unidirectional" | "bidirectional" | "none",
+        ) => handlers.onChangeCanvasEdgeDirection?.(edge.id, direction),
         onEditRelation: () => handlers.onEditCanvasEdgeRelation?.(edge.id),
         onEdit: () => handlers.onUpdateCanvasEdge?.(edge.id),
         onZoom: () => handlers.onZoomEdge?.(`canvas:${edge.id}`),
@@ -1112,13 +1110,13 @@ function CanvasFlowSurface({
         return false;
       }
 
+      // Timeline internal handle restrictions have been relaxed to allow individual node connections
+      // Only block connections if they explicitly target internal sequence logic handles (if any)
       if (
         (sourceNode.type === "canvas-timeline" &&
-          (isTimelineInternalHandle(connection.sourceHandle) ||
-            !isTimelineRootHandle(connection.sourceHandle))) ||
+          isTimelineInternalHandle(connection.sourceHandle)) ||
         (targetNode.type === "canvas-timeline" &&
-          (isTimelineInternalHandle(connection.targetHandle) ||
-            !isTimelineRootHandle(connection.targetHandle)))
+          isTimelineInternalHandle(connection.targetHandle))
       ) {
         return false;
       }
@@ -1188,6 +1186,22 @@ function CanvasFlowSurface({
 
   return (
     <div className="absolute inset-0">
+      <style>
+        {`
+          .react-flow__pane {
+            cursor: default !important;
+          }
+          .react-flow__pane.dragging {
+            cursor: grabbing !important;
+          }
+          .react-flow__node {
+            cursor: default !important;
+          }
+          .react-flow__handle {
+            cursor: crosshair !important;
+          }
+        `}
+      </style>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -1343,14 +1357,14 @@ function CanvasFlowSurface({
         deleteKeyCode={["Backspace", "Delete"]}
         selectionKeyCode="Shift"
         multiSelectionKeyCode={["Meta", "Control"]}
-        panOnDrag={true}
-        panOnScroll={false}
-        zoomOnScroll
-        selectionOnDrag={false}
-        selectNodesOnDrag={false}
+        panOnScroll={true}
+        zoomOnScroll={false}
+        panOnDrag={[1, 2]}
+        selectionOnDrag={true}
         selectionMode={SelectionMode.Partial}
         onlyRenderVisibleElements
         connectionMode={"loose" as ConnectionMode}
+        style={{ cursor: "default" }}
         className="bg-[#0f1319]"
       >
         <Background
@@ -1485,8 +1499,8 @@ export function CanvasView({
           ? (node.attributes as Record<string, unknown>)
           : {};
       const current =
-        typeof attributes.canvasColor === "string"
-          ? attributes.canvasColor
+        typeof attributes["canvasColor"] === "string"
+          ? (attributes["canvasColor"] as string)
           : CANVAS_EDGE_COLORS[0];
       const index = CANVAS_EDGE_COLORS.indexOf(
         current as (typeof CANVAS_EDGE_COLORS)[number],
@@ -1498,7 +1512,7 @@ export function CanvasView({
 
       const payload = {
         ...attributes,
-        canvasColor: nextColor,
+        ["canvasColor"]: nextColor,
       };
 
       void api.worldEntity.update({
@@ -1548,21 +1562,12 @@ export function CanvasView({
     [canvasEdges, commitCanvasEdges],
   );
 
-  const handleCycleCanvasEdgeColor = useCallback(
-    (edgeId: string) => {
+  const handleChangeCanvasEdgeColor = useCallback(
+    (edgeId: string, nextColor: string) => {
       const nextEdges = canvasEdges.map((edge) => {
         if (edge.id !== edgeId) {
           return edge;
         }
-
-        const current = edge.color ?? CANVAS_EDGE_COLORS[0];
-        const colorIndex = CANVAS_EDGE_COLORS.indexOf(
-          current as (typeof CANVAS_EDGE_COLORS)[number],
-        );
-        const nextColor =
-          CANVAS_EDGE_COLORS[
-            (Math.max(0, colorIndex) + 1) % CANVAS_EDGE_COLORS.length
-          ];
 
         return {
           ...edge,
@@ -1575,21 +1580,12 @@ export function CanvasView({
     [canvasEdges, commitCanvasEdges],
   );
 
-  const handleCycleCanvasEdgeDirection = useCallback(
-    (edgeId: string) => {
+  const handleChangeCanvasEdgeDirection = useCallback(
+    (edgeId: string, nextDirection: "unidirectional" | "bidirectional" | "none") => {
       const nextEdges = canvasEdges.map((edge) => {
         if (edge.id !== edgeId) {
           return edge;
         }
-
-        const current: WorldGraphCanvasEdgeDirection =
-          edge.direction ?? "unidirectional";
-        const nextDirection: WorldGraphCanvasEdgeDirection =
-          current === "unidirectional"
-            ? "bidirectional"
-            : current === "bidirectional"
-              ? "none"
-              : "unidirectional";
 
         return {
           ...edge,
@@ -1672,16 +1668,16 @@ export function CanvasView({
       buildFlowEdges(edges, canvasEdges, {
         onDeleteRelation: (id) => void onDeleteRelation?.(id),
         onDeleteCanvasEdge: handleDeleteCanvasEdge,
-        onChangeCanvasEdgeColor: handleCycleCanvasEdgeColor,
-        onChangeCanvasEdgeDirection: handleCycleCanvasEdgeDirection,
+        onChangeCanvasEdgeColor: handleChangeCanvasEdgeColor,
+        onChangeCanvasEdgeDirection: handleChangeCanvasEdgeDirection,
         onEditCanvasEdgeRelation: handleEditCanvasEdgeRelation,
         onUpdateCanvasEdge: handleUpdateCanvasEdge,
       }),
     [
       canvasEdges,
       edges,
-      handleCycleCanvasEdgeColor,
-      handleCycleCanvasEdgeDirection,
+      handleChangeCanvasEdgeColor,
+      handleChangeCanvasEdgeDirection,
       handleDeleteCanvasEdge,
       handleEditCanvasEdgeRelation,
       handleUpdateCanvasEdge,

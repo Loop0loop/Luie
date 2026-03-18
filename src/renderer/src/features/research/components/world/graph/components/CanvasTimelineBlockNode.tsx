@@ -165,17 +165,6 @@ export const CanvasTimelineBlockNode = memo(
 
     return (
       <div className="relative flex flex-col items-start p-4 bg-transparent">
-        <div className="mb-3 w-full max-w-[320px] rounded-xl border border-white/10 bg-[#11151c]/90 px-3 py-2 backdrop-blur">
-          <input
-            value={data.label ?? ""}
-            onChange={(event) => {
-              data.onDataChange?.(id, { label: event.target.value });
-            }}
-            placeholder="타임라인 제목"
-            className="nodrag nopan w-full bg-transparent text-[13px] font-semibold text-fg/90 placeholder:text-fg/30 focus:outline-none"
-          />
-        </div>
-
         <SequenceRender
           sequence={sequence}
           isMainTrack={true}
@@ -186,44 +175,6 @@ export const CanvasTimelineBlockNode = memo(
           onChangeColor={() => data.onChangeColor?.(id)}
           onZoom={handleZoom}
         />
-
-        {(
-          [
-            { position: Position.Top, axis: "top" },
-            { position: Position.Bottom, axis: "bottom" },
-            { position: Position.Left, axis: "left" },
-            { position: Position.Right, axis: "right" },
-          ] as const
-        ).map(({ position, axis }) => (
-          <span key={`${id}-${axis}-root-handles`}>
-            <Handle
-              key={`${id}-${axis}-root-source`}
-              id={`root-${axis}-source`}
-              type="source"
-              position={position}
-              className={cn(
-                "!h-2.5 !w-2.5 !border-0 transition-opacity",
-                selected
-                  ? "opacity-100 pointer-events-auto"
-                  : "opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto",
-              )}
-              style={{ background: data.color ?? "#f59e0b" }}
-            />
-            <Handle
-              key={`${id}-${axis}-root-target`}
-              id={`root-${axis}-target`}
-              type="target"
-              position={position}
-              className={cn(
-                "!h-2.5 !w-2.5 !border-0 transition-opacity",
-                selected
-                  ? "opacity-100 pointer-events-auto"
-                  : "opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto",
-              )}
-              style={{ background: data.color ?? "#f59e0b" }}
-            />
-          </span>
-        ))}
       </div>
     );
   },
@@ -519,16 +470,51 @@ const InternalNodeCard = ({
           ref={textareaRef}
           value={node.content}
           onChange={(e) => onChange(e.target.value)}
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
           placeholder="사건 기록..."
           rows={1}
           className={cn(
-            "nodrag nopan w-full text-[13px] font-bold bg-transparent outline-none resize-none overflow-hidden text-foreground/90 placeholder:text-foreground/20",
+            "w-full text-[13px] font-bold bg-transparent outline-none resize-none overflow-hidden text-foreground/90 placeholder:text-foreground/20",
             node.isHeld && "line-through opacity-50",
           )}
         />
       </div>
+
+      {/* Internal Node Handles */}
+      {(
+        [
+          { position: Position.Top, axis: "top" },
+          { position: Position.Bottom, axis: "bottom" },
+          { position: Position.Left, axis: "left" },
+          { position: Position.Right, axis: "right" },
+        ] as const
+      ).map(({ position, axis }) => (
+        <span key={`${node.id}-${axis}-handles`}>
+          <Handle
+            id={`${node.id}-${axis}-source`}
+            type="source"
+            position={position}
+            className={cn(
+              "!h-2.5 !w-2.5 !border-0 transition-opacity",
+              isActive
+                ? "opacity-100 pointer-events-auto"
+                : "opacity-0 group-hover/card:opacity-100 pointer-events-none group-hover/card:pointer-events-auto",
+            )}
+            style={{ background: "#f59e0b" }}
+          />
+          <Handle
+            id={`${node.id}-${axis}-target`}
+            type="target"
+            position={position}
+            className={cn(
+              "!h-2.5 !w-2.5 !border-0 transition-opacity",
+              isActive
+                ? "opacity-100 pointer-events-auto"
+                : "opacity-0 group-hover/card:opacity-100 pointer-events-none group-hover/card:pointer-events-auto",
+            )}
+            style={{ background: "#f59e0b" }}
+          />
+        </span>
+      ))}
     </div>
   );
 };

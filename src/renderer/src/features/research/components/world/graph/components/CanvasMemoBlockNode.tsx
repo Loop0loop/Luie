@@ -43,7 +43,7 @@ function CanvasMemoBlockNodeInner({
   );
 
   return (
-    <div className="group relative cursor-grab active:cursor-grabbing">
+    <div className="group relative cursor-default">
       <NodeToolbar isVisible={selected} position={Position.Top} offset={8}>
         <div className="flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#11151c]/95 p-1 shadow-xl backdrop-blur-md">
           <Button
@@ -163,7 +163,7 @@ function CanvasMemoBlockNodeInner({
             value={data.title}
             onChange={(e) => data.onDataChange?.(id, { title: e.target.value })}
             placeholder="제목 없음"
-            className="nodrag w-full bg-transparent text-[14px] font-semibold text-fg/90 placeholder:text-fg/28 focus:outline-none"
+            className="w-full bg-transparent text-[14px] font-semibold text-fg/90 placeholder:text-fg/28 focus:outline-none"
           />
         </div>
 
@@ -200,7 +200,7 @@ function CanvasMemoBlockNodeInner({
               }}
               onBlur={commitTagInput}
               placeholder="태그 추가..."
-              className="nodrag min-w-[64px] flex-1 bg-transparent text-[11px] text-fg/65 placeholder:text-fg/25 focus:outline-none"
+              className="min-w-[64px] flex-1 bg-transparent text-[11px] text-fg/65 placeholder:text-fg/25 focus:outline-none"
             />
           </div>
         </div>
@@ -211,7 +211,7 @@ function CanvasMemoBlockNodeInner({
             onChange={(e) => data.onDataChange?.(id, { body: e.target.value })}
             placeholder="메모를 입력하세요..."
             rows={4}
-            className="nodrag w-full resize-none bg-transparent text-[12px] leading-relaxed text-fg/65 placeholder:text-fg/25 focus:outline-none"
+            className="w-full resize-none bg-transparent text-[12px] leading-relaxed text-fg/65 placeholder:text-fg/25 focus:outline-none"
           />
         </div>
       </div>

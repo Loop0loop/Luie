@@ -32,7 +32,7 @@ function CanvasGraphNodeCardInner({
     ] ?? ENTITY_TYPE_CANVAS_THEME.WorldEntity;
 
   return (
-    <div className="group relative cursor-grab active:cursor-grabbing">
+    <div className="group relative cursor-default">
       <NodeToolbar isVisible={selected} position={Position.Top} offset={8}>
         <div className="flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#11151c]/95 p-1 shadow-xl backdrop-blur-md">
           <Button
