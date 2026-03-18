@@ -7,7 +7,7 @@ import type { WorldEntitySourceType } from "@shared/types";
 import { Trash2, Search, Edit2 } from "lucide-react";
 import { Button } from "@renderer/components/ui/button";
 
-type CustomEntityNodeProps = {
+interface CustomEntityNodeProps {
   id: string;
   data: {
     label: string;
@@ -17,8 +17,12 @@ type CustomEntityNodeProps = {
     onOpenEntity?: (id: string) => void;
   };
   selected?: boolean;
-};
+}
 
+/**
+ * Custom Entity Node - Boardmix/Obsidian Inspired
+ * A minimalist card for all world entities.
+ */
 export const CustomEntityNode = memo(({ id, data, selected }: CustomEntityNodeProps) => {
   const { label, entityType, description, onDelete, onOpenEntity } = data;
   const updateGraphNode = useWorldBuildingStore((state) => state.updateGraphNode);
@@ -45,31 +49,31 @@ export const CustomEntityNode = memo(({ id, data, selected }: CustomEntityNodePr
 
   return (
     <div className={cn(
-      "group relative flex flex-col min-w-[180px] max-w-[320px] rounded-lg border bg-[#1a1d23] text-fg shadow-sm transition-all duration-200",
-      selected ? "border-primary/60 ring-1 ring-primary/30" : "border-white/10 hover:border-white/20"
+      "group relative flex flex-col min-w-[200px] max-w-[320px] rounded-2xl border bg-secondary/40 backdrop-blur-xl shadow-sm transition-all duration-300",
+      selected ? "border-amber-500 ring-4 ring-amber-500/5 bg-secondary shadow-2xl scale-[1.02]" : "border-white/5 hover:border-white/10 hover:bg-secondary/60"
     )}>
-      <NodeToolbar isVisible={selected} position={Position.Top} offset={8}>
-        <div className="flex gap-1 rounded-md border border-white/10 bg-[#0b0e13]/95 p-1 shadow-xl backdrop-blur-md">
+      <NodeToolbar isVisible={selected} position={Position.Top} offset={12}>
+        <div className="flex gap-1 p-1 rounded-xl border border-white/10 bg-popover/95 shadow-2xl backdrop-blur-md">
           {[
-            { icon: Search, title: "자세히", onClick: onOpenEntity },
-            { icon: Edit2, title: "수정", onClick: () => setIsEditing(true) },
-            { icon: Trash2, title: "삭제", onClick: onDelete, color: "hover:text-red-400" }
+            { icon: Search, title: "View Details", onClick: onOpenEntity },
+            { icon: Edit2, title: "Rename", onClick: () => setIsEditing(true) },
+            { icon: Trash2, title: "Delete", onClick: onDelete, color: "hover:text-destructive hover:bg-destructive/10" }
           ].map((action, i) => (
             <Button
               key={i}
               size="icon-xs"
               variant="ghost"
-              className={cn("h-7 w-7 text-fg/50 hover:bg-white/5", action.color)}
+              className={cn("h-8 w-8 text-muted-foreground", action.color)}
               onClick={(e) => { e.stopPropagation(); action.onClick?.(id); }}
               title={action.title}
             >
-              <action.icon className="h-3.5 w-3.5" />
+              <action.icon className="h-4 w-4" />
             </Button>
           ))}
         </div>
       </NodeToolbar>
 
-      <div className="p-4">
+      <div className="p-5 space-y-2">
         {isEditing ? (
           <input
             autoFocus
@@ -77,20 +81,26 @@ export const CustomEntityNode = memo(({ id, data, selected }: CustomEntityNodePr
             onChange={(e) => setEditLabel(e.target.value)}
             onBlur={handleSave}
             onKeyDown={handleKeyDown}
-            className="w-full bg-transparent text-[14px] font-medium outline-none border-b border-primary/50 pb-0.5"
+            className="w-full bg-transparent text-[15px] font-black tracking-tight text-foreground outline-none border-b-2 border-amber-500 pb-1"
           />
         ) : (
-          <div className="text-[14px] font-medium leading-relaxed break-words cursor-text" onDoubleClick={() => setIsEditing(true)}>
-            {label || "Untitled"}
+          <div className="text-[15px] font-black tracking-tight text-foreground/90 leading-tight break-words cursor-text" onDoubleClick={() => setIsEditing(true)}>
+            {label || "Untitled Entity"}
           </div>
         )}
-        {description && <div className="mt-2 text-[12px] text-fg/50 line-clamp-3 leading-snug">{description}</div>}
+        
+        {description && (
+          <div className="text-[12px] text-muted-foreground leading-relaxed line-clamp-3">
+            {description}
+          </div>
+        )}
       </div>
 
-      <Handle type="target" position={Position.Top} className="!opacity-0 group-hover:!opacity-100 !bg-primary/50 !border-none !w-2 !h-2" />
-      <Handle type="source" position={Position.Bottom} className="!opacity-0 group-hover:!opacity-100 !bg-primary/50 !border-none !w-2 !h-2" />
-      <Handle type="target" position={Position.Left} id="l" className="!opacity-0 group-hover:!opacity-100 !bg-primary/50 !border-none !w-2 !h-2" />
-      <Handle type="source" position={Position.Right} id="r" className="!opacity-0 group-hover:!opacity-100 !bg-primary/50 !border-none !w-2 !h-2" />
+      {/* Connection Handles - Minimalist Style */}
+      <Handle type="target" position={Position.Top} className="!opacity-0 group-hover:!opacity-100 !bg-amber-500 !border-none !w-2.5 !h-2.5" />
+      <Handle type="source" position={Position.Bottom} className="!opacity-0 group-hover:!opacity-100 !bg-amber-500 !border-none !w-2.5 !h-2.5" />
+      <Handle type="target" position={Position.Left} id="l" className="!opacity-0 group-hover:!opacity-100 !bg-amber-500 !border-none !w-2.5 !h-2.5" />
+      <Handle type="source" position={Position.Right} id="r" className="!opacity-0 group-hover:!opacity-100 !bg-amber-500 !border-none !w-2.5 !h-2.5" />
     </div>
   );
 });

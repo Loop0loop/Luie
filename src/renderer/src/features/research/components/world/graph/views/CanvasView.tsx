@@ -24,6 +24,7 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import type { EntityRelation, WorldGraphNode } from "@shared/types";
+import { cn } from "@renderer/lib/utils";
 import { Badge } from "@renderer/components/ui/badge";
 import { Button } from "@renderer/components/ui/button";
 import { Card, CardContent } from "@renderer/components/ui/card";
@@ -31,7 +32,10 @@ import { CanvasTimelinePalette } from "../components/CanvasTimelinePalette";
 import { CanvasToolbar } from "../components/CanvasToolbar";
 import type { CanvasGraphNodeData } from "../components/CanvasGraphNodeCard";
 import type { CanvasGraphEdgeData } from "../components/CanvasGraphEdge";
-import type { CanvasTimelineBlockData } from "../components/CanvasTimelineBlockNode";
+import {
+  CanvasTimelineBlockData,
+  TimelineSequenceNode,
+} from "../components/CanvasTimelineBlockNode";
 import type { CanvasMemoBlockData } from "../components/CanvasMemoBlockNode";
 import {
   CANVAS_EDGE_TYPES,
@@ -43,7 +47,7 @@ type AnyCanvasNodeData =
   | CanvasTimelineBlockData
   | CanvasMemoBlockData;
 
-type CanvasViewProps = {
+interface CanvasViewProps {
   nodes: WorldGraphNode[];
   edges: EntityRelation[];
   selectedNodeId: string | null;
@@ -56,7 +60,7 @@ type CanvasViewProps = {
   onCreateBlock: () => void;
   onAddTimelineBranch?: (sourceNodeId: string) => void;
   onCreateNote: () => void;
-};
+}
 
 function readPosition(node: WorldGraphNode, index: number) {
   const fallbackColumn = index % 4;
@@ -104,9 +108,9 @@ const buildFlowEdges = (
   onDeleteRelation?: (id: string) => void,
 ): Edge<CanvasGraphEdgeData>[] => {
   const palette = {
-    stroke: "rgba(255,255,255,0.15)",
-    selectedStroke: "rgba(255,255,255,0.6)",
-    glow: "rgba(255,255,255,0.05)",
+    stroke: "rgba(255,255,255,0.12)",
+    selectedStroke: "#f59e0b",
+    glow: "rgba(245,158,11,0.1)",
   };
 
   return edges.map((edge) => ({
@@ -119,7 +123,7 @@ const buildFlowEdges = (
       palette,
       onDelete: onDeleteRelation,
     },
-    interactionWidth: 28,
+    interactionWidth: 20,
   }));
 };
 
@@ -213,11 +217,8 @@ function CanvasFlowSurface({
 
   useEffect(() => {
     setNodes((currentNodes) => {
-      const activeNodeId =
-        currentNodes.find((node) => node.selected)?.id ?? null;
-      if (activeNodeId === selectedNodeId) {
-        return currentNodes;
-      }
+      const activeNodeId = currentNodes.find((node) => node.selected)?.id ?? null;
+      if (activeNodeId === selectedNodeId) return currentNodes;
       return currentNodes.map((node) => ({
         ...node,
         selected: node.id === selectedNodeId,
@@ -226,9 +227,7 @@ function CanvasFlowSurface({
   }, [selectedNodeId]);
 
   useEffect(() => {
-    if (selectedNodeId) {
-      setSelectedEdgeId(null);
-    }
+    if (selectedNodeId) setSelectedEdgeId(null);
   }, [selectedNodeId]);
 
   useEffect(() => {
@@ -264,10 +263,7 @@ function CanvasFlowSurface({
   }, [reactFlow]);
 
   const pushHistory = useCallback((snapshot: Node<AnyCanvasNodeData>[]) => {
-    historyRef.current = historyRef.current.slice(
-      0,
-      historyIndexRef.current + 1,
-    );
+    historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1);
     historyRef.current.push(snapshot);
     if (historyRef.current.length > 50) {
       historyRef.current.shift();
@@ -294,23 +290,14 @@ function CanvasFlowSurface({
     setNodes((current) => current.filter((n) => n.id !== id));
   }, []);
 
-  const handleMemoDataChange = useCallback(
-    (
-      id: string,
-      patch: Partial<Omit<CanvasMemoBlockData, "onDelete" | "onDataChange">>,
-    ) => {
-      setNodes((current) =>
-        current.map((n) => {
-          if (n.id !== id || n.type !== "canvas-memo") return n;
-          return {
-            ...n,
-            data: { ...(n.data as CanvasMemoBlockData), ...patch },
-          };
-        }),
-      );
-    },
-    [],
-  );
+  const handleMemoDataChange = useCallback((id: string, patch: Partial<Omit<CanvasMemoBlockData, "onDelete" | "onDataChange">>) => {
+    setNodes((current) =>
+      current.map((n) => {
+        if (n.id !== id || n.type !== "canvas-memo") return n;
+        return { ...n, data: { ...(n.data as CanvasMemoBlockData), ...patch } };
+      }),
+    );
+  }, []);
 
   const handleCreateMemo = useCallback(() => {
     const position = getViewportCenter();
@@ -333,55 +320,36 @@ function CanvasFlowSurface({
       pushHistory(next);
       return next;
     });
-  }, [
-    getViewportCenter,
-    handleDeleteLocalNode,
-    handleMemoDataChange,
-    pushHistory,
-  ]);
+  }, [getViewportCenter, handleDeleteLocalNode, handleMemoDataChange, pushHistory]);
 
-  const handlePickTimelineEvent = useCallback(
-    (nodeId: string) => {
-      const source = timelineNodes.find((n) => n.id === nodeId);
-      if (!source) return;
-      const position = getViewportCenter();
-      const id = generateLocalId("timeline");
-      const attrs =
-        source.attributes &&
-        typeof source.attributes === "object" &&
-        !Array.isArray(source.attributes)
-          ? (source.attributes as Record<string, unknown>)
-          : null;
-      const date =
-        typeof attrs?.date === "string"
-          ? attrs.date
-          : typeof attrs?.time === "string"
-            ? attrs.time
-            : undefined;
+  const handleUpdateTimelineSequence = useCallback((nodeId: string, nextSequence: TimelineSequenceNode[]) => {
+    setNodes((current) => current.map(node => {
+      if (node.id !== nodeId || node.type !== "canvas-timeline") return node;
+      return { ...node, data: { ...node.data, sequence: nextSequence } };
+    }));
+  }, []);
 
-      const newNode: Node<CanvasTimelineBlockData> = {
-        id,
-        type: "canvas-timeline",
-        position,
-        draggable: true,
-        data: {
-          label: source.name,
-          date,
-          description: source.description?.trim() ?? undefined,
-          onDelete: handleDeleteLocalNode,
-        },
-      };
-      setNodes((current) => [...current, newNode]);
-      onSelectNode(null);
-    },
-    [
-      timelineNodes,
-      getViewportCenter,
-      handleDeleteLocalNode,
-      onSelectNode,
-      pushHistory,
-    ],
-  );
+  const handlePickTimelineEvent = useCallback((nodeId: string) => {
+    const source = timelineNodes.find((n) => n.id === nodeId);
+    if (!source) return;
+    const position = getViewportCenter();
+    const id = generateLocalId("timeline");
+    
+    const newNode: Node<CanvasTimelineBlockData> = {
+      id,
+      type: "canvas-timeline",
+      position,
+      draggable: true,
+      data: {
+        label: source.name,
+        sequence: [{ id: `seq-${Date.now()}`, content: source.name, isHeld: false, topBranches: [], bottomBranches: [] }],
+        onDelete: handleDeleteLocalNode,
+        onUpdateSequence: handleUpdateTimelineSequence,
+      },
+    };
+    setNodes((current) => [...current, newNode]);
+    onSelectNode(null);
+  }, [timelineNodes, getViewportCenter, handleDeleteLocalNode, handleUpdateTimelineSequence, onSelectNode]);
 
   const handleCreateTimelineBlock = useCallback(() => {
     const position = getViewportCenter();
@@ -393,9 +361,9 @@ function CanvasFlowSurface({
       draggable: true,
       data: {
         label: "새 타임라인",
-        date: undefined,
-        description: undefined,
+        sequence: [{ id: `seq-${Date.now()}`, content: "여정의 시작", isHeld: false, topBranches: [], bottomBranches: [] }],
         onDelete: handleDeleteLocalNode,
+        onUpdateSequence: handleUpdateTimelineSequence,
       },
     };
     setNodes((current) => {
@@ -403,37 +371,21 @@ function CanvasFlowSurface({
       pushHistory(next);
       return next;
     });
-  }, [
-    getViewportCenter,
-    handleDeleteLocalNode,
-    pushHistory,
-  ]);
+  }, [getViewportCenter, handleDeleteLocalNode, handleUpdateTimelineSequence, pushHistory]);
 
-  const handleNodesChange = (changes: NodeChange[]) => {
-    setNodes((currentNodes) => applyNodeChanges(changes, currentNodes));
-  };
+  const handleNodesChange = (changes: NodeChange[]) => setNodes((currentNodes) => applyNodeChanges(changes, currentNodes));
 
   const handleEdgesChange = (changes: EdgeChange[]) => {
-    setEdges((currentEdges) =>
-      decorateEdges(applyEdgeChanges(changes, currentEdges), selectedEdgeId),
-    );
-
-    const selectedChange = [...changes]
-      .reverse()
-      .find((change) => change.type === "select");
+    setEdges((currentEdges) => decorateEdges(applyEdgeChanges(changes, currentEdges), selectedEdgeId));
+    const selectedChange = [...changes].reverse().find((change) => change.type === "select");
     if (selectedChange?.type === "select") {
       setSelectedEdgeId(selectedChange.selected ? selectedChange.id : null);
     }
   };
 
   const handleConnect = (connection: Connection) => {
-    if (!connection.source || !connection.target || !onCreateRelation) {
-      return;
-    }
-    void onCreateRelation({
-      sourceId: connection.source,
-      targetId: connection.target,
-    });
+    if (!connection.source || !connection.target || !onCreateRelation) return;
+    void onCreateRelation({ sourceId: connection.source, targetId: connection.target });
   };
 
   return (
@@ -443,16 +395,15 @@ function CanvasFlowSurface({
         edges={edges}
         nodeTypes={CANVAS_NODE_TYPES}
         edgeTypes={CANVAS_EDGE_TYPES}
-        minZoom={0.45}
-        maxZoom={1.6}
-        defaultViewport={{ x: 0, y: 0, zoom: 0.9 }}
+        minZoom={0.4}
+        maxZoom={2}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.85 }}
         proOptions={{ hideAttribution: true }}
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
         onConnect={handleConnect}
         onNodeClick={(_, node) => {
           setIsHudVisible(false);
-          setSelectedEdgeId(null);
           onSelectNode(node.id);
         }}
         onEdgeClick={(_, edge) => {
@@ -467,28 +418,18 @@ function CanvasFlowSurface({
         }}
         onNodesDelete={(deletedNodes) => {
           deletedNodes.forEach((node) => {
-            if (node.type === "custom-entity") {
-              onDeleteNode?.(node.id);
-            }
+            if (node.type === "custom-entity") onDeleteNode?.(node.id);
           });
           setSelectedEdgeId(null);
         }}
         onEdgesDelete={(deletedEdges) => {
-          deletedEdges.forEach((edge) => {
-            void onDeleteRelation?.(edge.id);
-          });
+          deletedEdges.forEach((edge) => void onDeleteRelation?.(edge.id));
         }}
-        onNodeDragStart={(_, node) => {
-          draggingNodeIdRef.current = node.id;
-        }}
+        onNodeDragStart={(_, node) => { draggingNodeIdRef.current = node.id; }}
         onNodeDragStop={(_, node) => {
           draggingNodeIdRef.current = null;
           if (node.type === "custom-entity") {
-            onNodePositionCommit?.({
-              id: node.id,
-              x: node.position.x,
-              y: node.position.y,
-            });
+            onNodePositionCommit?.({ id: node.id, x: node.position.x, y: node.position.y });
           }
         }}
         deleteKeyCode={["Backspace", "Delete"]}
@@ -496,138 +437,86 @@ function CanvasFlowSurface({
         panOnScroll
         selectionOnDrag
         selectionMode={SelectionMode.Partial}
-        onlyRenderVisibleElements
-        zoomOnDoubleClick={false}
-        selectNodesOnDrag={false}
-        nodesConnectable
         connectionMode={ConnectionMode.Loose}
         className="bg-[#0f1319]"
       >
-        <Background
-          color="rgba(255,255,255,0.06)"
-          gap={30}
-          size={1}
-          variant={BackgroundVariant.Dots}
-        />
+        <Background color="rgba(255,255,255,0.04)" gap={32} size={1} variant={BackgroundVariant.Dots} />
       </ReactFlow>
 
-      {isHudVisible ? (
-        <div className="pointer-events-none absolute left-5 top-5 z-10">
-          <Card className="w-[280px] border-white/10 bg-[#171b22]/88 text-fg shadow-[0_16px_38px_rgba(0,0,0,0.28)]">
-            <CardContent className="space-y-3 pt-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-fg/45">
-                    Canvas
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-fg">
-                    {summary.nodeCount} cards / {summary.edgeCount} links
-                  </p>
-                </div>
-                <Badge variant="outline">
-                  {selectedEdgeId
-                    ? "relation"
-                    : summary.hasSelection
-                      ? "selection"
-                      : "idle"}
-                </Badge>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="pointer-events-auto"
-                  onClick={() => onSelectNode(null)}
-                >
-                  선택 해제
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="pointer-events-auto"
-                  onClick={() => {
-                    void reactFlow.fitView({
-                      padding: 0.24,
-                      duration: 0,
-                    });
-                  }}
-                >
-                  뷰 정리
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : (
-        <div className="pointer-events-none absolute left-5 top-5 z-10">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="pointer-events-auto border-white/10 bg-[#171b22]/88"
-            onClick={() => setIsHudVisible(true)}
-          >
-            HUD
-          </Button>
-        </div>
-      )}
+      {/* HUD - VS Code Inspired */}
+      <div className={cn(
+        "absolute left-6 top-6 z-10 transition-all duration-300",
+        !isHudVisible && "opacity-0 pointer-events-none -translate-y-2"
+      )}>
+        <Card className="w-64 border-white/5 bg-background/80 shadow-2xl backdrop-blur-xl">
+          <CardContent className="p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-500 border-amber-500/20">
+                Explorer
+              </Badge>
+              <span className="text-[10px] text-muted-foreground font-medium">
+                {summary.nodeCount} nodes / {summary.edgeCount} links
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="secondary" className="flex-1 h-8 text-xs font-bold" onClick={() => onSelectNode(null)}>
+                Clear Selection
+              </Button>
+              <Button size="sm" variant="outline" className="flex-1 h-8 text-xs font-bold border-white/10" onClick={() => void reactFlow.fitView({ padding: 0.2 })}>
+                Reset View
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      <div className="pointer-events-none absolute right-4 top-24 z-10 flex flex-col gap-3">
-        <div className="pointer-events-auto flex flex-col rounded-xl border border-white/8 bg-[#13171e]/90 shadow-xl backdrop-blur overflow-hidden">
+      {/* Control Bar - High Quality Minimalist */}
+      <div className="absolute right-6 top-6 z-10 flex flex-col gap-3">
+        <div className="flex flex-col overflow-hidden border border-white/10 rounded-xl bg-background/80 shadow-2xl backdrop-blur-xl">
           {[
-            { icon: Plus, title: "줌 인", onClick: () => void reactFlow.zoomIn({ duration: 200 }) },
-            { icon: Minus, title: "줌 아웃", onClick: () => void reactFlow.zoomOut({ duration: 200 }) },
-            { icon: RefreshCw, title: "뷰 맞추기", onClick: () => void reactFlow.fitView({ padding: 0.24, duration: 300 }) },
-            { icon: Maximize2, title: "전체 화면", onClick: () => void reactFlow.fitView({ padding: 0.05, duration: 300 }) }
+            { icon: Plus, title: "Zoom In", onClick: () => void reactFlow.zoomIn() },
+            { icon: Minus, title: "Zoom Out", onClick: () => void reactFlow.zoomOut() },
+            { icon: RefreshCw, title: "Fit View", onClick: () => void reactFlow.fitView({ padding: 0.2 }) },
+            { icon: Maximize2, title: "Full Screen", onClick: () => void reactFlow.fitView({ padding: 0.05 }) }
           ].map((ctrl, i) => (
             <button
               key={i}
               type="button"
-              className="flex h-10 w-10 items-center justify-center text-fg/45 transition-colors hover:bg-white/5 hover:text-fg/80 border-b border-white/5 last:border-0"
+              className="flex items-center justify-center w-10 h-10 transition-colors border-b last:border-0 border-white/5 text-muted-foreground hover:text-foreground hover:bg-white/5"
               title={ctrl.title}
               onClick={ctrl.onClick}
             >
-              <ctrl.icon className="h-[18px] w-[18px]" />
+              <ctrl.icon className="w-4 h-4" />
             </button>
           ))}
         </div>
 
-        <div className="pointer-events-auto flex flex-col rounded-xl border border-white/8 bg-[#13171e]/90 shadow-xl backdrop-blur overflow-hidden">
+        <div className="flex flex-col overflow-hidden border border-white/10 rounded-xl bg-background/80 shadow-2xl backdrop-blur-xl">
           {[
-            { icon: RotateCcw, title: "실행 취소", onClick: handleUndo },
-            { icon: RotateCw, title: "다시 실행", onClick: handleRedo }
+            { icon: RotateCcw, title: "Undo", onClick: handleUndo },
+            { icon: RotateCw, title: "Redo", onClick: handleRedo }
           ].map((ctrl, i) => (
             <button
               key={i}
               type="button"
-              className="flex h-10 w-10 items-center justify-center text-fg/45 transition-colors hover:bg-white/5 hover:text-fg/80 border-b border-white/5 last:border-0"
+              className="flex items-center justify-center w-10 h-10 transition-colors border-b last:border-0 border-white/5 text-muted-foreground hover:text-foreground hover:bg-white/5"
               title={ctrl.title}
               onClick={ctrl.onClick}
             >
-              <ctrl.icon className="h-[17px] w-[17px]" />
+              <ctrl.icon className="w-4 h-4" />
             </button>
           ))}
         </div>
       </div>
 
-      <CanvasToolbar
-        onCreateBlock={onCreateBlock}
-        onOpenTimelinePalette={() => setTimelinePaletteOpen(true)}
-        onCreateNote={handleCreateMemo}
-      />
+      <CanvasToolbar onCreateBlock={onCreateBlock} onOpenTimelinePalette={() => setTimelinePaletteOpen(true)} onCreateNote={handleCreateMemo} />
 
       <CanvasTimelinePalette
         open={timelinePaletteOpen}
         events={timelineNodes}
         onClose={() => setTimelinePaletteOpen(false)}
-        onCreateEvent={() => {
-          handleCreateTimelineBlock();
-          setTimelinePaletteOpen(false);
-        }}
-        onPickEvent={(nodeId) => {
-          handlePickTimelineEvent(nodeId);
-          setTimelinePaletteOpen(false);
-        }}
+        onCreateEvent={() => { handleCreateTimelineBlock(); setTimelinePaletteOpen(false); }}
+        onPickEvent={(nodeId) => { handlePickTimelineEvent(nodeId); setTimelinePaletteOpen(false); }}
       />
     </div>
   );
@@ -647,26 +536,14 @@ export function CanvasView({
   onAddTimelineBranch,
   onCreateNote: _onCreateNote,
 }: CanvasViewProps) {
-  const flowNodes = useMemo(
-    () => buildFlowNodes(nodes, onDeleteNode, onAddTimelineBranch),
-    [nodes, onDeleteNode, onAddTimelineBranch],
-  );
-  const flowEdges = useMemo(
-    () => buildFlowEdges(edges, (id) => void onDeleteRelation?.(id)),
-    [edges, onDeleteRelation],
-  );
-  const timelineNodes = useMemo(
-    () => nodes.filter((node) => node.entityType === "Event"),
-    [nodes],
-  );
-  const summary = useMemo(
-    () => ({
-      nodeCount: nodes.length,
-      edgeCount: edges.length,
-      hasSelection: Boolean(selectedNodeId),
-    }),
-    [edges.length, nodes.length, selectedNodeId],
-  );
+  const flowNodes = useMemo(() => buildFlowNodes(nodes, onDeleteNode, onAddTimelineBranch), [nodes, onDeleteNode, onAddTimelineBranch]);
+  const flowEdges = useMemo(() => buildFlowEdges(edges, (id) => void onDeleteRelation?.(id)), [edges, onDeleteRelation]);
+  const timelineNodes = useMemo(() => nodes.filter((node) => node.entityType === "Event"), [nodes]);
+  const summary = useMemo(() => ({
+    nodeCount: nodes.length,
+    edgeCount: edges.length,
+    hasSelection: Boolean(selectedNodeId),
+  }), [edges.length, nodes.length, selectedNodeId]);
 
   return (
     <div className="relative h-full bg-[#0f1319]">
@@ -687,18 +564,18 @@ export function CanvasView({
         />
       </ReactFlowProvider>
 
-      {nodes.length === 0 ? (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-8">
-          <Card className="max-w-xl border-dashed border-white/10 bg-[#171b22]/90 text-center shadow-[0_18px_60px_rgba(0,0,0,0.35)] backdrop-blur">
-            <CardContent className="space-y-3 pt-4">
-              <p className="text-lg font-semibold text-fg">Canvas is empty</p>
-              <p className="text-sm leading-7 text-fg/65">
-                엔티티를 추가하면 Obsidian 스타일 카드 보드가 여기서 시작됩니다.
+      {nodes.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center p-8 pointer-events-none">
+          <Card className="max-w-md text-center border-dashed border-white/10 bg-background/60 backdrop-blur-xl shadow-2xl">
+            <CardContent className="pt-6 space-y-4">
+              <p className="text-xl font-black tracking-tight text-foreground/80">Canvas is Ready</p>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Add your first entity to start building your world.
               </p>
             </CardContent>
           </Card>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
