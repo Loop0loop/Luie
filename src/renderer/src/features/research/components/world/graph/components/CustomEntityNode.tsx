@@ -96,11 +96,24 @@ export const CustomEntityNode = memo(({ id, data, selected }: CustomEntityNodePr
         )}
       </div>
 
-      {/* Connection Handles - Minimalist Style */}
-      <Handle type="target" position={Position.Top} className="!opacity-0 group-hover:!opacity-100 !bg-amber-500 !border-none !w-2.5 !h-2.5" />
-      <Handle type="source" position={Position.Bottom} className="!opacity-0 group-hover:!opacity-100 !bg-amber-500 !border-none !w-2.5 !h-2.5" />
-      <Handle type="target" position={Position.Left} id="l" className="!opacity-0 group-hover:!opacity-100 !bg-amber-500 !border-none !w-2.5 !h-2.5" />
-      <Handle type="source" position={Position.Right} id="r" className="!opacity-0 group-hover:!opacity-100 !bg-amber-500 !border-none !w-2.5 !h-2.5" />
+      {/* Connection Handles - Visible on select or hover */}
+      {[
+        { id: "t", pos: Position.Top },
+        { id: "b", pos: Position.Bottom },
+        { id: "l", pos: Position.Left },
+        { id: "r", pos: Position.Right }
+      ].map((h) => (
+        <Handle
+          key={h.id}
+          type="source" // Loose mode handles both
+          position={h.pos}
+          id={h.id}
+          className={cn(
+            "!w-3 !h-3 !bg-amber-500 !border-2 !border-[#1c2128] transition-all hover:!scale-150 hover:!bg-amber-400",
+            selected ? "!opacity-100" : "!opacity-0 group-hover:!opacity-100"
+          )}
+        />
+      ))}
     </div>
   );
 });

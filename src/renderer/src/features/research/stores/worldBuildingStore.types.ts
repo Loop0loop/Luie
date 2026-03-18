@@ -8,6 +8,7 @@ import type {
   WorldEntityType,
   WorldEntityUpdateInput,
   WorldEntityUpdatePositionInput,
+  WorldGraphCanvasBlock,
   WorldGraphData,
   WorldGraphNode,
 } from "@shared/types";
@@ -46,7 +47,9 @@ export interface WorldBuildingState {
   error: string | null;
   loadGraph: (projectId: string) => Promise<void>;
 
-  createGraphNode: (input: CreateGraphNodeInput) => Promise<WorldGraphNode | null>;
+  createGraphNode: (
+    input: CreateGraphNodeInput,
+  ) => Promise<WorldGraphNode | null>;
   updateGraphNode: (input: UpdateGraphNodeInput) => Promise<void>;
   updateGraphNodePosition: (
     input: WorldEntityUpdatePositionInput,
@@ -54,14 +57,21 @@ export interface WorldBuildingState {
   updateGraphNodePositionsBatch: (
     inputs: WorldEntityUpdatePositionInput[],
   ) => Promise<void>;
-  updateWorldEntityPosition: (input: WorldEntityUpdatePositionInput) => Promise<void>;
+  updateWorldEntityPosition: (
+    input: WorldEntityUpdatePositionInput,
+  ) => Promise<void>;
   deleteGraphNode: (id: string) => Promise<boolean>;
-  createWorldEntity: (input: WorldEntityCreateInput) => Promise<WorldGraphNode | null>;
+  createWorldEntity: (
+    input: WorldEntityCreateInput,
+  ) => Promise<WorldGraphNode | null>;
   updateWorldEntity: (input: WorldEntityUpdateInput) => Promise<void>;
   deleteWorldEntity: (id: string) => Promise<boolean>;
-  createRelation: (input: EntityRelationCreateInput) => Promise<EntityRelation | null>;
+  createRelation: (
+    input: EntityRelationCreateInput,
+  ) => Promise<EntityRelation | null>;
   updateRelation: (input: EntityRelationUpdateInput) => Promise<boolean>;
   deleteRelation: (id: string) => Promise<boolean>;
+  setGraphCanvasBlocks: (blocks: WorldGraphCanvasBlock[]) => Promise<void>;
 }
 
 export const INITIAL_WORLD_BUILDING_STATE = {
@@ -71,8 +81,5 @@ export const INITIAL_WORLD_BUILDING_STATE = {
   error: null,
 } satisfies Pick<
   WorldBuildingState,
-  | "graphData"
-  | "activeProjectId"
-  | "isLoading"
-  | "error"
+  "graphData" | "activeProjectId" | "isLoading" | "error"
 >;

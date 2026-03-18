@@ -971,9 +971,45 @@ export interface WorldGraphNode {
   positionY: number;
 }
 
+export interface WorldGraphCanvasTimelineSequenceNode {
+  id: string;
+  content: string;
+  isHeld: boolean;
+  topBranches: WorldGraphCanvasTimelineSequenceNode[][];
+  bottomBranches: WorldGraphCanvasTimelineSequenceNode[][];
+}
+
+export interface WorldGraphCanvasTimelineBlockData {
+  label: string;
+  sequence: WorldGraphCanvasTimelineSequenceNode[];
+}
+
+export interface WorldGraphCanvasMemoBlockData {
+  title: string;
+  tags: string[];
+  body: string;
+}
+
+export type WorldGraphCanvasBlock =
+  | {
+      id: string;
+      type: "timeline";
+      positionX: number;
+      positionY: number;
+      data: WorldGraphCanvasTimelineBlockData;
+    }
+  | {
+      id: string;
+      type: "memo";
+      positionX: number;
+      positionY: number;
+      data: WorldGraphCanvasMemoBlockData;
+    };
+
 export interface WorldGraphData {
   nodes: WorldGraphNode[];
   edges: EntityRelation[];
+  canvasBlocks?: WorldGraphCanvasBlock[];
 }
 
 export interface WorldGraphMentionsQuery {

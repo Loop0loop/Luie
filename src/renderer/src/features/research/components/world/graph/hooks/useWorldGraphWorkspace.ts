@@ -57,6 +57,7 @@ export function useWorldGraphWorkspace() {
   );
 
   const graphEdges = graphData?.edges ?? [];
+  const graphCanvasBlocks = graphData?.canvasBlocks ?? [];
 
   const timelineNodes = useMemo(
     () =>
@@ -82,6 +83,7 @@ export function useWorldGraphWorkspace() {
     currentProjectTitle: currentProject?.title ?? "프로젝트 없음",
     graphNodes,
     graphEdges,
+    graphCanvasBlocks,
     timelineNodes,
     notes,
     notesLoading,

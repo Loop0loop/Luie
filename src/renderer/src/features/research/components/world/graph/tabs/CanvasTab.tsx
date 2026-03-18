@@ -2,7 +2,11 @@ import { useCallback, useMemo } from "react";
 import { getDefaultRelationForPair } from "@shared/constants/worldRelationRules";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { CanvasView } from "../views/CanvasView";
-import type { EntityRelation, WorldGraphNode } from "@shared/types";
+import type {
+  EntityRelation,
+  WorldGraphCanvasBlock,
+  WorldGraphNode,
+} from "@shared/types";
 
 const buildNodeName = (entityType: string) => {
   switch (entityType) {
@@ -23,6 +27,7 @@ type CanvasTabProps = {
   projectId: string | null;
   graphNodes: WorldGraphNode[];
   graphEdges: EntityRelation[];
+  graphCanvasBlocks: WorldGraphCanvasBlock[];
   selectedNodeId: string | null;
   autoLayoutTrigger: number;
   onSelectNode: (nodeId: string | null) => void;
@@ -34,6 +39,7 @@ export function CanvasTab({
   projectId,
   graphNodes,
   graphEdges,
+  graphCanvasBlocks,
   selectedNodeId,
   autoLayoutTrigger,
   onSelectNode,
@@ -51,6 +57,9 @@ export function CanvasTab({
   );
   const createRelation = useWorldBuildingStore((state) => state.createRelation);
   const deleteRelation = useWorldBuildingStore((state) => state.deleteRelation);
+  const setGraphCanvasBlocks = useWorldBuildingStore(
+    (state) => state.setGraphCanvasBlocks,
+  );
 
   const effectiveSelectedNodeId =
     selectedNodeId && graphNodes.some((node) => node.id === selectedNodeId)
@@ -165,6 +174,7 @@ export function CanvasTab({
     <CanvasView
       nodes={graphNodes}
       edges={graphEdges}
+      canvasBlocks={graphCanvasBlocks}
       selectedNodeId={effectiveSelectedNodeId}
       autoLayoutTrigger={autoLayoutTrigger}
       onSelectNode={onSelectNode}
@@ -174,6 +184,9 @@ export function CanvasTab({
       onCreateBlock={handleCreateCanvasBlock}
       onAddTimelineBranch={handleAddTimelineBranch}
       onCreateNote={onCreateNote}
+      onCanvasBlocksCommit={(blocks) => {
+        void setGraphCanvasBlocks(blocks);
+      }}
       onNodePositionCommit={({ id, x, y }) => {
         void updateGraphNodePosition({ id, positionX: x, positionY: y });
       }}

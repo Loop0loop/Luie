@@ -39,7 +39,7 @@ function CanvasMemoBlockNodeInner({
   );
 
   return (
-    <div className="group relative cursor-grab active:cursor-grabbing">
+    <div className="group relative cursor-default">
       <NodeToolbar isVisible={selected} position={Position.Top} offset={8}>
         <div className="flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#11151c]/95 p-1 shadow-xl backdrop-blur-md">
           <Button
@@ -88,11 +88,9 @@ function CanvasMemoBlockNodeInner({
       />
 
       <div
-        className="flex w-[280px] flex-col overflow-hidden rounded-xl border transition-all"
+        className="nodrag nopan flex w-[280px] flex-col overflow-hidden rounded-xl border transition-all"
         style={{
-          background: selected
-            ? "rgba(255,255,255,0.04)"
-            : "rgba(255,255,255,0.025)",
+          background: selected ? "#1a1f28" : "#171c24",
           borderColor: selected
             ? "rgba(255,255,255,0.28)"
             : "rgba(255,255,255,0.10)",
@@ -100,6 +98,8 @@ function CanvasMemoBlockNodeInner({
             ? "0 0 0 1px rgba(255,255,255,0.1), 0 8px 24px rgba(0,0,0,0.28)"
             : "0 2px 8px rgba(0,0,0,0.18)",
         }}
+        onMouseDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
         <div
           className="border-b px-4 py-2.5"

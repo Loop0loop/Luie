@@ -15,7 +15,10 @@ const logger = createLogger("WorldReplicaService");
 
 const toJsonString = (value: unknown): string => JSON.stringify(value ?? null);
 
-const parseJsonSafely = (value: string, context: Record<string, unknown>): unknown | null => {
+const parseJsonSafely = (
+  value: string,
+  context: Record<string, unknown>,
+): unknown | null => {
   try {
     return JSON.parse(value) as unknown;
   } catch (error) {
@@ -27,7 +30,9 @@ const parseJsonSafely = (value: string, context: Record<string, unknown>): unkno
   }
 };
 
-const toIsoString = (value: Date | string | null | undefined): string | undefined => {
+const toIsoString = (
+  value: Date | string | null | undefined,
+): string | undefined => {
   if (!value) return undefined;
   if (value instanceof Date) {
     return value.toISOString();
@@ -118,17 +123,10 @@ export class WorldReplicaService {
       });
 
       if (input.docType === "graph") {
-        try {
-          await projectService.ensureImmediatePackageExport(
-            input.projectId,
-            "world-document:graph",
-          );
-        } catch (error) {
-          logger.warn("Failed to export .luie after graph document save", {
-            projectId: input.projectId,
-            error,
-          });
-        }
+        await projectService.ensureImmediatePackageExport(
+          input.projectId,
+          "world-document:graph",
+        );
       }
     } catch (error) {
       logger.error("Failed to save replica world document", {
@@ -144,7 +142,9 @@ export class WorldReplicaService {
     }
   }
 
-  async getScrapMemos(projectId: string): Promise<WorldReplicaScrapMemosResult> {
+  async getScrapMemos(
+    projectId: string,
+  ): Promise<WorldReplicaScrapMemosResult> {
     try {
       await this.ensureDbReady();
       const [documentRow, memoRows] = await Promise.all([
@@ -201,7 +201,7 @@ export class WorldReplicaService {
               id: row.id,
               title: row.title,
               content: row.content,
-              tags: Array.isArray(parsedTags) ? parsedTags as string[] : [],
+              tags: Array.isArray(parsedTags) ? (parsedTags as string[]) : [],
               updatedAt: row.updatedAt.toISOString(),
             };
           }),

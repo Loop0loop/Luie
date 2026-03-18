@@ -36,82 +36,122 @@ const genId = () => Math.random().toString(36).substring(2, 9);
  * Timeline Node for React Flow
  * Implements a recursive branching structure based on Boardmix/XMind UX.
  */
-export const CanvasTimelineBlockNode = memo(({ id, data, selected }: NodeProps<CanvasTimelineBlockData>) => {
-  const { label, sequence = [], onUpdateSequence, onDelete } = data;
-  const [activeInternalNodeId, setActiveInternalNodeId] = useState<string | null>(null);
+export const CanvasTimelineBlockNode = memo(
+  ({ id, data, selected }: NodeProps<CanvasTimelineBlockData>) => {
+    const { sequence = [], onUpdateSequence, onDelete } = data;
+    const [activeInternalNodeId, setActiveInternalNodeId] = useState<
+      string | null
+    >(null);
 
-  // State update logic for recursive branches
-  const handleAction = useCallback((action: string, targetId: string, payload: { content?: string } = {}) => {
-    const traverseAndApply = (seq: TimelineSequenceNode[]): TimelineSequenceNode[] => {
-      return seq.reduce((acc: TimelineSequenceNode[], node) => {
-        let updatedNode = { ...node };
+    // State update logic for recursive branches
+    const handleAction = useCallback(
+      (
+        action: string,
+        targetId: string,
+        payload: { content?: string } = {},
+      ) => {
+        const traverseAndApply = (
+          seq: TimelineSequenceNode[],
+        ): TimelineSequenceNode[] => {
+          return seq.reduce((acc: TimelineSequenceNode[], node) => {
+            let updatedNode = { ...node };
 
-        // 1. Delete Logic
-        if (action === "delete" && node.id === targetId) {
-          return acc;
-        }
+            // 1. Delete Logic
+            if (action === "delete" && node.id === targetId) {
+              return acc;
+            }
 
-        // Recursive traversal for branches
-        updatedNode.topBranches = node.topBranches.map(traverseAndApply).filter(b => b.length > 0);
-        updatedNode.bottomBranches = node.bottomBranches.map(traverseAndApply).filter(b => b.length > 0);
+            // Recursive traversal for branches
+            updatedNode.topBranches = node.topBranches
+              .map(traverseAndApply)
+              .filter((b) => b.length > 0);
+            updatedNode.bottomBranches = node.bottomBranches
+              .map(traverseAndApply)
+              .filter((b) => b.length > 0);
 
-        // 2. Node specific updates
-        if (node.id === targetId) {
-          switch (action) {
-            case "update": updatedNode.content = payload.content ?? ""; break;
-            case "toggle_hold": updatedNode.isHeld = !node.isHeld; break;
-            case "branch_top":
-              updatedNode.topBranches.push([{ id: genId(), content: "", isHeld: false, topBranches: [], bottomBranches: [] }]);
-              break;
-            case "branch_bottom":
-              updatedNode.bottomBranches.push([{ id: genId(), content: "", isHeld: false, topBranches: [], bottomBranches: [] }]);
-              break;
-          }
-        }
+            // 2. Node specific updates
+            if (node.id === targetId) {
+              switch (action) {
+                case "update":
+                  updatedNode.content = payload.content ?? "";
+                  break;
+                case "toggle_hold":
+                  updatedNode.isHeld = !node.isHeld;
+                  break;
+                case "branch_top":
+                  updatedNode.topBranches.push([
+                    {
+                      id: genId(),
+                      content: "",
+                      isHeld: false,
+                      topBranches: [],
+                      bottomBranches: [],
+                    },
+                  ]);
+                  break;
+                case "branch_bottom":
+                  updatedNode.bottomBranches.push([
+                    {
+                      id: genId(),
+                      content: "",
+                      isHeld: false,
+                      topBranches: [],
+                      bottomBranches: [],
+                    },
+                  ]);
+                  break;
+              }
+            }
 
-        acc.push(updatedNode);
+            acc.push(updatedNode);
 
-        // 3. Sequential extension
-        if (action === "add_main" && node.id === targetId) {
-          acc.push({ id: genId(), content: "", isHeld: false, topBranches: [], bottomBranches: [] });
-        }
+            // 3. Sequential extension
+            if (action === "add_main" && node.id === targetId) {
+              acc.push({
+                id: genId(),
+                content: "",
+                isHeld: false,
+                topBranches: [],
+                bottomBranches: [],
+              });
+            }
 
-        return acc;
-      }, []);
-    };
+            return acc;
+          }, []);
+        };
 
-    const nextSequence = traverseAndApply(sequence);
-    onUpdateSequence?.(id, nextSequence);
-  }, [id, sequence, onUpdateSequence]);
+        const nextSequence = traverseAndApply(sequence);
+        onUpdateSequence?.(id, nextSequence);
+      },
+      [id, sequence, onUpdateSequence],
+    );
 
-  return (
-    <div className="relative flex flex-col items-start p-4 bg-transparent select-none">
-      <NodeToolbar isVisible={selected} position={Position.Top} offset={20}>
-        <div className="flex items-center gap-1 p-1 rounded-full border border-white/10 bg-background/90 shadow-2xl backdrop-blur-md">
-          <div className="flex items-center px-3 py-1 text-[10px] font-black tracking-widest text-amber-500 uppercase border-r border-white/10">
-            {label || "Timeline"}
+    return (
+      <div className="relative flex flex-col items-start p-4 bg-transparent select-none">
+        <NodeToolbar isVisible={selected} position={Position.Top} offset={20}>
+          <div className="flex items-center gap-1 p-1 rounded-full border border-white/10 bg-background/90 shadow-2xl backdrop-blur-md">
+            <Button
+              size="icon-xs"
+              variant="ghost"
+              onClick={() => onDelete?.(id)}
+              className="w-7 h-7 rounded-full text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
           </div>
-          <Button
-            size="icon-xs"
-            variant="ghost"
-            onClick={() => onDelete?.(id)}
-            className="w-7 h-7 rounded-full text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-      </NodeToolbar>
+        </NodeToolbar>
 
-      <SequenceRender
-        sequence={sequence}
-        isMainTrack={true}
-        activeNodeId={activeInternalNodeId}
-        setActiveNodeId={setActiveInternalNodeId}
-        onAction={handleAction}
-      />
-    </div>
-  );
-});
+        <SequenceRender
+          sequence={sequence}
+          isMainTrack={true}
+          activeNodeId={activeInternalNodeId}
+          setActiveNodeId={setActiveInternalNodeId}
+          onAction={handleAction}
+        />
+      </div>
+    );
+  },
+);
 
 // --- [Recursive Sequence Renderer] ---
 interface SequenceRenderProps {
@@ -122,16 +162,22 @@ interface SequenceRenderProps {
   onAction: (action: string, id: string, payload?: any) => void;
 }
 
-const SequenceRender = ({ sequence, isMainTrack, activeNodeId, setActiveNodeId, onAction }: SequenceRenderProps) => {
+const SequenceRender = ({
+  sequence,
+  isMainTrack,
+  activeNodeId,
+  setActiveNodeId,
+  onAction,
+}: SequenceRenderProps) => {
   if (!sequence?.length) return null;
 
   const node = sequence[0];
   const remainder = sequence.slice(1);
 
   const branches = [
-    ...node.topBranches.map(b => ({ type: "top", seq: b })),
+    ...node.topBranches.map((b) => ({ type: "top", seq: b })),
     { type: "main", seq: remainder },
-    ...node.bottomBranches.map(b => ({ type: "bottom", seq: b })),
+    ...node.bottomBranches.map((b) => ({ type: "bottom", seq: b })),
   ];
 
   return (
@@ -142,13 +188,17 @@ const SequenceRender = ({ sequence, isMainTrack, activeNodeId, setActiveNodeId, 
           isActive={activeNodeId === node.id}
           isMainTrack={isMainTrack}
           onClick={() => setActiveNodeId(node.id)}
-          onChange={(val: string) => onAction("update", node.id, { content: val })}
+          onChange={(val: string) =>
+            onAction("update", node.id, { content: val })
+          }
           onAction={(act: string) => onAction(act, node.id)}
         />
-        <div className={cn(
-          "w-12 transition-all duration-500",
-          isMainTrack ? "h-0.5 bg-amber-500/30" : "h-px bg-white/5"
-        )} />
+        <div
+          className={cn(
+            "w-12 transition-all duration-500",
+            isMainTrack ? "h-0.5 bg-amber-500/30" : "h-px bg-white/5",
+          )}
+        />
       </div>
 
       <div className="relative flex flex-col justify-center pl-12">
@@ -160,20 +210,29 @@ const SequenceRender = ({ sequence, isMainTrack, activeNodeId, setActiveNodeId, 
           const isEnd = isMainBranch && !branch.seq.length;
 
           return (
-            <div key={index} className="relative flex items-center py-4 min-h-[100px]">
+            <div
+              key={index}
+              className="relative flex items-center py-4 min-h-[100px]"
+            >
               {!isOnly && (
-                <div className={cn(
-                  "absolute left-0 w-12 border-l-2 border-white/5",
-                  isFirst ? "top-1/2 bottom-0 rounded-tl-3xl border-t-2" : "",
-                  isLast ? "top-0 bottom-1/2 rounded-bl-3xl border-b-2" : "",
-                  !isFirst && !isLast ? "top-0 bottom-0" : ""
-                )} />
+                <div
+                  className={cn(
+                    "absolute left-0 w-12 border-l-2 border-white/5",
+                    isFirst ? "top-1/2 bottom-0 rounded-tl-3xl border-t-2" : "",
+                    isLast ? "top-0 bottom-1/2 rounded-bl-3xl border-b-2" : "",
+                    !isFirst && !isLast ? "top-0 bottom-0" : "",
+                  )}
+                />
               )}
 
-              <div className={cn(
-                "absolute left-0 top-1/2 w-12 h-px -translate-y-1/2",
-                isMainTrack && isMainBranch ? "bg-amber-500/20 h-0.5" : "bg-white/5"
-              )} />
+              <div
+                className={cn(
+                  "absolute left-0 top-1/2 w-12 h-px -translate-y-1/2",
+                  isMainTrack && isMainBranch
+                    ? "bg-amber-500/20 h-0.5"
+                    : "bg-white/5",
+                )}
+              />
 
               <div className="pl-12">
                 {isEnd ? (
@@ -183,7 +242,7 @@ const SequenceRender = ({ sequence, isMainTrack, activeNodeId, setActiveNodeId, 
                       "flex items-center justify-center w-10 h-10 transition-all duration-300 border-2 border-dashed rounded-full bg-background/50",
                       isMainTrack
                         ? "border-amber-500/20 text-amber-500/40 hover:border-amber-500 hover:text-amber-500 hover:bg-amber-500/5"
-                        : "border-white/5 text-muted-foreground/20 hover:border-white/20 hover:text-muted-foreground"
+                        : "border-white/5 text-muted-foreground/20 hover:border-white/20 hover:text-muted-foreground",
                     )}
                   >
                     <Plus className="w-5 h-5" />
@@ -207,7 +266,14 @@ const SequenceRender = ({ sequence, isMainTrack, activeNodeId, setActiveNodeId, 
 };
 
 // --- [Internal Card Component] ---
-const InternalNodeCard = ({ node, isActive, isMainTrack, onClick, onChange, onAction }: any) => {
+const InternalNodeCard = ({
+  node,
+  isActive,
+  isMainTrack,
+  onClick,
+  onChange,
+  onAction,
+}: any) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -231,10 +297,20 @@ const InternalNodeCard = ({ node, isActive, isMainTrack, onClick, onChange, onAc
             </Button>
           </div>
           <div className="flex items-center px-1 border-r border-white/5 mr-1 gap-0.5">
-            <Button size="icon-xs" variant="ghost" onClick={() => onAction("branch_top")} className="w-8 h-8 text-muted-foreground hover:text-indigo-400">
+            <Button
+              size="icon-xs"
+              variant="ghost"
+              onClick={() => onAction("branch_top")}
+              className="w-8 h-8 text-muted-foreground hover:text-indigo-400"
+            >
               <ArrowUpRight className="w-4 h-4" />
             </Button>
-            <Button size="icon-xs" variant="ghost" onClick={() => onAction("branch_bottom")} className="w-8 h-8 text-muted-foreground hover:text-indigo-400">
+            <Button
+              size="icon-xs"
+              variant="ghost"
+              onClick={() => onAction("branch_bottom")}
+              className="w-8 h-8 text-muted-foreground hover:text-indigo-400"
+            >
               <ArrowDownRight className="w-4 h-4" />
             </Button>
           </div>
@@ -243,9 +319,18 @@ const InternalNodeCard = ({ node, isActive, isMainTrack, onClick, onChange, onAc
               size="icon-xs"
               variant="ghost"
               onClick={() => onAction("toggle_hold")}
-              className={cn("w-8 h-8", node.isHeld ? "text-amber-400 bg-amber-500/10" : "text-muted-foreground")}
+              className={cn(
+                "w-8 h-8",
+                node.isHeld
+                  ? "text-amber-400 bg-amber-500/10"
+                  : "text-muted-foreground",
+              )}
             >
-              {node.isHeld ? <PlayCircle className="w-4 h-4" /> : <PauseCircle className="w-4 h-4" />}
+              {node.isHeld ? (
+                <PlayCircle className="w-4 h-4" />
+              ) : (
+                <PauseCircle className="w-4 h-4" />
+              )}
             </Button>
           </div>
           <div className="flex items-center pl-1">
@@ -263,7 +348,10 @@ const InternalNodeCard = ({ node, isActive, isMainTrack, onClick, onChange, onAc
 
       {/* Quick Add Button on Hover */}
       <button
-        onClick={(e) => { e.stopPropagation(); onAction("add_main"); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onAction("add_main");
+        }}
         className="absolute -right-8 flex items-center justify-center w-6 h-6 bg-amber-500 text-black rounded-full shadow-lg opacity-0 group-hover/card:opacity-100 transition-all z-30 hover:scale-110 active:scale-95"
       >
         <Plus className="w-4 h-4" strokeWidth={3} />
@@ -273,17 +361,29 @@ const InternalNodeCard = ({ node, isActive, isMainTrack, onClick, onChange, onAc
         onClick={onClick}
         className={cn(
           "relative flex items-center w-[220px] p-4 bg-secondary/40 border-2 rounded-2xl transition-all duration-300 shadow-sm",
-          node.isHeld ? "border-dashed border-white/5 opacity-40 grayscale" : "border-white/5",
+          node.isHeld
+            ? "border-dashed border-white/5 opacity-40 grayscale"
+            : "border-white/5",
           isActive
             ? "bg-secondary border-amber-500 ring-4 ring-amber-500/5 shadow-2xl scale-[1.05] z-40"
-            : "hover:bg-secondary/60 hover:border-white/10"
+            : "hover:bg-secondary/60 hover:border-white/10",
         )}
       >
-        <div className={cn(
-          "mr-3.5 flex-shrink-0 p-1.5 rounded-full transition-colors",
-          node.isHeld ? "text-amber-500/40" : isMainTrack ? "bg-amber-500/10 text-amber-500" : "text-muted-foreground/30"
-        )}>
-          {node.isHeld ? <PauseCircle className="w-4 h-4" /> : <GitCommit className="w-4 h-4" strokeWidth={3} />}
+        <div
+          className={cn(
+            "mr-3.5 flex-shrink-0 p-1.5 rounded-full transition-colors",
+            node.isHeld
+              ? "text-amber-500/40"
+              : isMainTrack
+                ? "bg-amber-500/10 text-amber-500"
+                : "text-muted-foreground/30",
+          )}
+        >
+          {node.isHeld ? (
+            <PauseCircle className="w-4 h-4" />
+          ) : (
+            <GitCommit className="w-4 h-4" strokeWidth={3} />
+          )}
         </div>
 
         <textarea
@@ -294,15 +394,34 @@ const InternalNodeCard = ({ node, isActive, isMainTrack, onClick, onChange, onAc
           rows={1}
           className={cn(
             "w-full text-[13px] font-bold bg-transparent outline-none resize-none overflow-hidden text-foreground/90 placeholder:text-foreground/20",
-            node.isHeld && "line-through opacity-50"
+            node.isHeld && "line-through opacity-50",
           )}
         />
 
+        {/* Top Handle */}
+        <Handle
+          type="source"
+          position={Position.Top}
+          id={`${node.id}-t`}
+          className={cn(
+            "!-top-1.5 !w-3 !h-3 !bg-amber-500 !border-2 !border-[#1c2128] transition-all shadow-glow hover:!scale-150 hover:!bg-amber-400",
+            isActive
+              ? "!opacity-100"
+              : "!opacity-0 group-hover/card:!opacity-100",
+          )}
+        />
+
+        {/* Bottom Handle */}
         <Handle
           type="source"
           position={Position.Bottom}
-          id={`${node.id}-h`}
-          className="!-bottom-1.5 !w-3 !h-3 !bg-amber-500 !border-none !opacity-0 group-hover/card:!opacity-100 transition-all shadow-glow"
+          id={`${node.id}-b`}
+          className={cn(
+            "!-bottom-1.5 !w-3 !h-3 !bg-amber-500 !border-2 !border-[#1c2128] transition-all shadow-glow hover:!scale-150 hover:!bg-amber-400",
+            isActive
+              ? "!opacity-100"
+              : "!opacity-0 group-hover/card:!opacity-100",
+          )}
         />
       </div>
     </div>

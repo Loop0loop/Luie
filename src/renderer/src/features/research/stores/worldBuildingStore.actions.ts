@@ -2,6 +2,7 @@ import { api } from "@shared/api";
 import type {
   EntityRelationCreateInput,
   EntityRelationUpdateInput,
+  WorldGraphCanvasBlock,
   WorldGraphData,
   WorldEntityCreateInput,
   WorldEntityUpdateInput,
@@ -60,6 +61,7 @@ type WorldBuildingActions = Pick<
   | "createRelation"
   | "updateRelation"
   | "deleteRelation"
+  | "setGraphCanvasBlocks"
 >;
 
 function updateGraphNodeSelection(input: UpdateGraphNodeInput) {
@@ -136,10 +138,13 @@ export function createWorldBuildingActions(
           GRAPH_REPLICA_TIMEOUT_MS,
           "worldStorage.getDocument",
         ).catch(async (error) => {
-          await api.logger.warn("Falling back to base graph without replica document", {
-            projectId,
-            error: String(error),
-          });
+          await api.logger.warn(
+            "Falling back to base graph without replica document",
+            {
+              projectId,
+              error: String(error),
+            },
+          );
           return null;
         });
 
@@ -202,7 +207,9 @@ export function createWorldBuildingActions(
     },
 
     updateGraphNodePosition: async (input: WorldEntityUpdatePositionInput) => {
-      const current = get().graphData?.nodes.find((node) => node.id === input.id);
+      const current = get().graphData?.nodes.find(
+        (node) => node.id === input.id,
+      );
       const projectId = get().activeProjectId;
       if (!current || !projectId) return;
 
@@ -221,7 +228,9 @@ export function createWorldBuildingActions(
       await persistGraphDocument(projectId, get().graphData);
     },
 
-    updateGraphNodePositionsBatch: async (inputs: WorldEntityUpdatePositionInput[]) => {
+    updateGraphNodePositionsBatch: async (
+      inputs: WorldEntityUpdatePositionInput[],
+    ) => {
       if (inputs.length === 0) return;
 
       const projectId = get().activeProjectId;
@@ -263,7 +272,9 @@ export function createWorldBuildingActions(
       await persistGraphDocument(projectId, get().graphData);
     },
 
-    updateWorldEntityPosition: async (input: WorldEntityUpdatePositionInput) => {
+    updateWorldEntityPosition: async (
+      input: WorldEntityUpdatePositionInput,
+    ) => {
       await get().updateGraphNodePosition(input);
     },
 
@@ -296,7 +307,9 @@ export function createWorldBuildingActions(
       }),
 
     updateWorldEntity: async (input: WorldEntityUpdateInput) => {
-      const current = get().graphData?.nodes.find((node) => node.id === input.id);
+      const current = get().graphData?.nodes.find(
+        (node) => node.id === input.id,
+      );
       if (!current) return;
 
       await get().updateGraphNode({
@@ -366,6 +379,26 @@ export function createWorldBuildingActions(
       }));
       await persistGraphDocument(projectId, get().graphData);
       return true;
+    },
+
+    setGraphCanvasBlocks: async (blocks: WorldGraphCanvasBlock[]) => {
+      const projectId = get().activeProjectId;
+      if (!projectId) return;
+
+      set((state) => {
+        if (!state.graphData) {
+          return state;
+        }
+
+        return {
+          graphData: {
+            ...state.graphData,
+            canvasBlocks: blocks,
+          },
+        };
+      });
+
+      await persistGraphDocument(projectId, get().graphData);
     },
   };
 }
