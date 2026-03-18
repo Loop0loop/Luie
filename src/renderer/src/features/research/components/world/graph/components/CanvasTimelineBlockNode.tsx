@@ -6,11 +6,13 @@ import {
   ArrowDownRight,
   GitCommit,
   ArrowRight,
+  Maximize2,
+  Palette,
   PauseCircle,
   PlayCircle,
 } from "lucide-react";
 import type { NodeProps } from "reactflow";
-import { Position, NodeToolbar, Handle } from "reactflow";
+import { Position, Handle, useReactFlow } from "reactflow";
 import { cn } from "@renderer/lib/utils";
 import { Button } from "@renderer/components/ui/button";
 
@@ -26,6 +28,17 @@ export type TimelineSequenceNode = {
 export type CanvasTimelineBlockData = {
   label: string;
   sequence: TimelineSequenceNode[];
+  color?: string;
+  onChangeColor?: (id: string) => void;
+  onDataChange?: (
+    id: string,
+    patch: Partial<
+      Omit<
+        CanvasTimelineBlockData,
+        "onChangeColor" | "onUpdateSequence" | "onDelete" | "onDataChange"
+      >
+    >,
+  ) => void;
   onUpdateSequence?: (id: string, newSequence: TimelineSequenceNode[]) => void;
   onDelete?: (id: string) => void;
 };
@@ -38,10 +51,17 @@ const genId = () => Math.random().toString(36).substring(2, 9);
  */
 export const CanvasTimelineBlockNode = memo(
   ({ id, data, selected }: NodeProps<CanvasTimelineBlockData>) => {
-    const { sequence = [], onUpdateSequence, onDelete } = data;
+    const { sequence = [], onUpdateSequence } = data;
+    const reactFlow = useReactFlow();
     const [activeInternalNodeId, setActiveInternalNodeId] = useState<
       string | null
     >(null);
+
+    useEffect(() => {
+      if (!selected) {
+        setActiveInternalNodeId(null);
+      }
+    }, [selected]);
 
     // State update logic for recursive branches
     const handleAction = useCallback(
@@ -126,28 +146,82 @@ export const CanvasTimelineBlockNode = memo(
       [id, sequence, onUpdateSequence],
     );
 
+    const handleZoom = useCallback(() => {
+      const node = reactFlow.getNode(id);
+      if (!node) {
+        return;
+      }
+
+      void reactFlow.fitBounds(
+        {
+          x: node.position.x,
+          y: node.position.y,
+          width: node.width ?? 360,
+          height: node.height ?? 220,
+        },
+        { padding: 0.45, duration: 220 },
+      );
+    }, [id, reactFlow]);
+
     return (
-      <div className="relative flex flex-col items-start p-4 bg-transparent select-none">
-        <NodeToolbar isVisible={selected} position={Position.Top} offset={20}>
-          <div className="flex items-center gap-1 p-1 rounded-full border border-white/10 bg-background/90 shadow-2xl backdrop-blur-md">
-            <Button
-              size="icon-xs"
-              variant="ghost"
-              onClick={() => onDelete?.(id)}
-              className="w-7 h-7 rounded-full text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
-          </div>
-        </NodeToolbar>
+      <div className="relative flex flex-col items-start p-4 bg-transparent">
+        <div className="mb-3 w-full max-w-[320px] rounded-xl border border-white/10 bg-[#11151c]/90 px-3 py-2 backdrop-blur">
+          <input
+            value={data.label ?? ""}
+            onChange={(event) => {
+              data.onDataChange?.(id, { label: event.target.value });
+            }}
+            placeholder="타임라인 제목"
+            className="nodrag nopan w-full bg-transparent text-[13px] font-semibold text-fg/90 placeholder:text-fg/30 focus:outline-none"
+          />
+        </div>
 
         <SequenceRender
           sequence={sequence}
           isMainTrack={true}
+          isTimelineSelected={selected}
           activeNodeId={activeInternalNodeId}
           setActiveNodeId={setActiveInternalNodeId}
           onAction={handleAction}
+          onChangeColor={() => data.onChangeColor?.(id)}
+          onZoom={handleZoom}
         />
+
+        {(
+          [
+            Position.Top,
+            Position.Bottom,
+            Position.Left,
+            Position.Right,
+          ] as const
+        ).map((position) => (
+          <span key={`${id}-${position}-handles`}>
+            <Handle
+              key={`${id}-${position}-source`}
+              type="source"
+              position={position}
+              className={cn(
+                "!h-2.5 !w-2.5 !border-0 transition-opacity",
+                selected
+                  ? "opacity-100 pointer-events-auto"
+                  : "opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto",
+              )}
+              style={{ background: data.color ?? "#f59e0b" }}
+            />
+            <Handle
+              key={`${id}-${position}-target`}
+              type="target"
+              position={position}
+              className={cn(
+                "!h-2.5 !w-2.5 !border-0 transition-opacity",
+                selected
+                  ? "opacity-100 pointer-events-auto"
+                  : "opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto",
+              )}
+              style={{ background: data.color ?? "#f59e0b" }}
+            />
+          </span>
+        ))}
       </div>
     );
   },
@@ -157,16 +231,22 @@ export const CanvasTimelineBlockNode = memo(
 interface SequenceRenderProps {
   sequence: TimelineSequenceNode[];
   isMainTrack: boolean;
+  isTimelineSelected: boolean;
   activeNodeId: string | null;
   setActiveNodeId: (id: string | null) => void;
+  onChangeColor: () => void;
+  onZoom: () => void;
   onAction: (action: string, id: string, payload?: any) => void;
 }
 
 const SequenceRender = ({
   sequence,
   isMainTrack,
+  isTimelineSelected,
   activeNodeId,
   setActiveNodeId,
+  onChangeColor,
+  onZoom,
   onAction,
 }: SequenceRenderProps) => {
   if (!sequence?.length) return null;
@@ -186,12 +266,15 @@ const SequenceRender = ({
         <InternalNodeCard
           node={node}
           isActive={activeNodeId === node.id}
+          canShowToolbar={isTimelineSelected}
           isMainTrack={isMainTrack}
           onClick={() => setActiveNodeId(node.id)}
           onChange={(val: string) =>
             onAction("update", node.id, { content: val })
           }
           onAction={(act: string) => onAction(act, node.id)}
+          onChangeColor={onChangeColor}
+          onZoom={onZoom}
         />
         <div
           className={cn(
@@ -251,8 +334,11 @@ const SequenceRender = ({
                   <SequenceRender
                     sequence={branch.seq}
                     isMainTrack={isMainTrack && isMainBranch}
+                    isTimelineSelected={isTimelineSelected}
                     activeNodeId={activeNodeId}
                     setActiveNodeId={setActiveNodeId}
+                    onChangeColor={onChangeColor}
+                    onZoom={onZoom}
                     onAction={onAction}
                   />
                 )}
@@ -269,12 +355,16 @@ const SequenceRender = ({
 const InternalNodeCard = ({
   node,
   isActive,
+  canShowToolbar,
   isMainTrack,
   onClick,
   onChange,
+  onChangeColor,
+  onZoom,
   onAction,
 }: any) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const reactFlow = useReactFlow();
 
   useEffect(() => {
     if (isActive && textareaRef.current && !node.content) {
@@ -284,7 +374,7 @@ const InternalNodeCard = ({
 
   return (
     <div className="relative flex items-center group/card">
-      {isActive && (
+      {isActive && canShowToolbar && (
         <div className="absolute -top-14 left-1/2 -translate-x-1/2 flex items-center p-1 bg-popover/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-300">
           <div className="flex items-center px-1 border-r border-white/5 mr-1 gap-0.5">
             <Button
@@ -318,6 +408,24 @@ const InternalNodeCard = ({
             <Button
               size="icon-xs"
               variant="ghost"
+              onClick={onChangeColor}
+              className="w-8 h-8 text-muted-foreground hover:text-indigo-300 hover:bg-indigo-500/10"
+            >
+              <Palette className="w-4 h-4" />
+            </Button>
+            <Button
+              size="icon-xs"
+              variant="ghost"
+              onClick={onZoom}
+              className="w-8 h-8 text-muted-foreground hover:text-foreground"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="flex items-center px-1 border-r border-white/5 mr-1">
+            <Button
+              size="icon-xs"
+              variant="ghost"
               onClick={() => onAction("toggle_hold")}
               className={cn(
                 "w-8 h-8",
@@ -334,6 +442,25 @@ const InternalNodeCard = ({
             </Button>
           </div>
           <div className="flex items-center pl-1">
+            <Button
+              size="icon-xs"
+              variant="ghost"
+              onClick={() => {
+                const flowNode = reactFlow.getNode(node.id);
+                if (!flowNode) return;
+                void reactFlow.setCenter(
+                  flowNode.position.x + (flowNode.width ?? 220) / 2,
+                  flowNode.position.y + (flowNode.height ?? 120) / 2,
+                  {
+                    zoom: 1.2,
+                    duration: 220,
+                  },
+                );
+              }}
+              className="w-8 h-8 text-muted-foreground hover:text-foreground"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </Button>
             <Button
               size="icon-xs"
               variant="ghost"
@@ -393,18 +520,29 @@ const InternalNodeCard = ({
           placeholder="사건 기록..."
           rows={1}
           className={cn(
-            "w-full text-[13px] font-bold bg-transparent outline-none resize-none overflow-hidden text-foreground/90 placeholder:text-foreground/20",
+            "nodrag nopan w-full text-[13px] font-bold bg-transparent outline-none resize-none overflow-hidden text-foreground/90 placeholder:text-foreground/20",
             node.isHeld && "line-through opacity-50",
           )}
         />
 
         {/* Top Handle */}
         <Handle
+          type="target"
+          position={Position.Top}
+          id={`${node.id}-t-in`}
+          className={cn(
+            "!-top-1.5 !w-3 !h-3 !bg-amber-500 !border-2 !border-[#1c2128] transition-all shadow-glow hover:!scale-150 hover:!bg-amber-400 pointer-events-none group-hover/card:pointer-events-auto",
+            isActive
+              ? "!opacity-100"
+              : "!opacity-0 group-hover/card:!opacity-100",
+          )}
+        />
+        <Handle
           type="source"
           position={Position.Top}
-          id={`${node.id}-t`}
+          id={`${node.id}-t-out`}
           className={cn(
-            "!-top-1.5 !w-3 !h-3 !bg-amber-500 !border-2 !border-[#1c2128] transition-all shadow-glow hover:!scale-150 hover:!bg-amber-400",
+            "!-top-1.5 !w-3 !h-3 !bg-amber-500 !border-2 !border-[#1c2128] transition-all shadow-glow hover:!scale-150 hover:!bg-amber-400 pointer-events-none group-hover/card:pointer-events-auto",
             isActive
               ? "!opacity-100"
               : "!opacity-0 group-hover/card:!opacity-100",
@@ -413,11 +551,22 @@ const InternalNodeCard = ({
 
         {/* Bottom Handle */}
         <Handle
+          type="target"
+          position={Position.Bottom}
+          id={`${node.id}-b-in`}
+          className={cn(
+            "!-bottom-1.5 !w-3 !h-3 !bg-amber-500 !border-2 !border-[#1c2128] transition-all shadow-glow hover:!scale-150 hover:!bg-amber-400 pointer-events-none group-hover/card:pointer-events-auto",
+            isActive
+              ? "!opacity-100"
+              : "!opacity-0 group-hover/card:!opacity-100",
+          )}
+        />
+        <Handle
           type="source"
           position={Position.Bottom}
-          id={`${node.id}-b`}
+          id={`${node.id}-b-out`}
           className={cn(
-            "!-bottom-1.5 !w-3 !h-3 !bg-amber-500 !border-2 !border-[#1c2128] transition-all shadow-glow hover:!scale-150 hover:!bg-amber-400",
+            "!-bottom-1.5 !w-3 !h-3 !bg-amber-500 !border-2 !border-[#1c2128] transition-all shadow-glow hover:!scale-150 hover:!bg-amber-400 pointer-events-none group-hover/card:pointer-events-auto",
             isActive
               ? "!opacity-100"
               : "!opacity-0 group-hover/card:!opacity-100",

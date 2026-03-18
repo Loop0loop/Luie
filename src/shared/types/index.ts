@@ -982,12 +982,28 @@ export interface WorldGraphCanvasTimelineSequenceNode {
 export interface WorldGraphCanvasTimelineBlockData {
   label: string;
   sequence: WorldGraphCanvasTimelineSequenceNode[];
+  color?: string;
 }
 
 export interface WorldGraphCanvasMemoBlockData {
   title: string;
   tags: string[];
   body: string;
+  color?: string;
+}
+
+export type WorldGraphCanvasEdgeDirection =
+  | "unidirectional"
+  | "bidirectional"
+  | "none";
+
+export interface WorldGraphCanvasEdge {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  relation: string;
+  color?: string;
+  direction?: WorldGraphCanvasEdgeDirection;
 }
 
 export type WorldGraphCanvasBlock =
@@ -1010,6 +1026,7 @@ export interface WorldGraphData {
   nodes: WorldGraphNode[];
   edges: EntityRelation[];
   canvasBlocks?: WorldGraphCanvasBlock[];
+  canvasEdges?: WorldGraphCanvasEdge[];
 }
 
 export interface WorldGraphMentionsQuery {

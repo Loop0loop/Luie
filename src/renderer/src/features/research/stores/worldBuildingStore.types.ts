@@ -9,6 +9,7 @@ import type {
   WorldEntityUpdateInput,
   WorldEntityUpdatePositionInput,
   WorldGraphCanvasBlock,
+  WorldGraphCanvasEdge,
   WorldGraphData,
   WorldGraphNode,
 } from "@shared/types";
@@ -72,6 +73,7 @@ export interface WorldBuildingState {
   updateRelation: (input: EntityRelationUpdateInput) => Promise<boolean>;
   deleteRelation: (id: string) => Promise<boolean>;
   setGraphCanvasBlocks: (blocks: WorldGraphCanvasBlock[]) => Promise<void>;
+  setGraphCanvasEdges: (edges: WorldGraphCanvasEdge[]) => Promise<void>;
 }
 
 export const INITIAL_WORLD_BUILDING_STATE = {

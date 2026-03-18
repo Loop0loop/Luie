@@ -58,6 +58,7 @@ export function useWorldGraphWorkspace() {
 
   const graphEdges = graphData?.edges ?? [];
   const graphCanvasBlocks = graphData?.canvasBlocks ?? [];
+  const graphCanvasEdges = graphData?.canvasEdges ?? [];
 
   const timelineNodes = useMemo(
     () =>
@@ -84,6 +85,7 @@ export function useWorldGraphWorkspace() {
     graphNodes,
     graphEdges,
     graphCanvasBlocks,
+    graphCanvasEdges,
     timelineNodes,
     notes,
     notesLoading,

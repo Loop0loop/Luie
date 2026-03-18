@@ -1,10 +1,10 @@
 import { useCallback, useMemo } from "react";
-import { getDefaultRelationForPair } from "@shared/constants/worldRelationRules";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { CanvasView } from "../views/CanvasView";
 import type {
   EntityRelation,
   WorldGraphCanvasBlock,
+  WorldGraphCanvasEdge,
   WorldGraphNode,
 } from "@shared/types";
 
@@ -28,6 +28,7 @@ type CanvasTabProps = {
   graphNodes: WorldGraphNode[];
   graphEdges: EntityRelation[];
   graphCanvasBlocks: WorldGraphCanvasBlock[];
+  graphCanvasEdges: WorldGraphCanvasEdge[];
   selectedNodeId: string | null;
   autoLayoutTrigger: number;
   onSelectNode: (nodeId: string | null) => void;
@@ -40,6 +41,7 @@ export function CanvasTab({
   graphNodes,
   graphEdges,
   graphCanvasBlocks,
+  graphCanvasEdges,
   selectedNodeId,
   autoLayoutTrigger,
   onSelectNode,
@@ -55,10 +57,13 @@ export function CanvasTab({
   const deleteGraphNode = useWorldBuildingStore(
     (state) => state.deleteGraphNode,
   );
-  const createRelation = useWorldBuildingStore((state) => state.createRelation);
   const deleteRelation = useWorldBuildingStore((state) => state.deleteRelation);
+  const createRelation = useWorldBuildingStore((state) => state.createRelation);
   const setGraphCanvasBlocks = useWorldBuildingStore(
     (state) => state.setGraphCanvasBlocks,
+  );
+  const setGraphCanvasEdges = useWorldBuildingStore(
+    (state) => state.setGraphCanvasEdges,
   );
 
   const effectiveSelectedNodeId =
@@ -110,34 +115,31 @@ export function CanvasTab({
     [deleteGraphNode, onSelectNode, selectedNodeId],
   );
 
-  const handleCreateRelation = useCallback(
-    async ({ sourceId, targetId }: { sourceId: string; targetId: string }) => {
-      if (!projectId || sourceId === targetId) return;
-
-      const sourceNode = graphNodes.find((node) => node.id === sourceId);
-      const targetNode = graphNodes.find((node) => node.id === targetId);
-      if (!sourceNode || !targetNode) return;
-
-      await createRelation({
-        projectId,
-        sourceId,
-        sourceType: sourceNode.entityType,
-        targetId,
-        targetType: targetNode.entityType,
-        relation: getDefaultRelationForPair(
-          sourceNode.entityType,
-          targetNode.entityType,
-        ),
-      });
-    },
-    [createRelation, graphNodes, projectId],
-  );
-
   const handleDeleteRelation = useCallback(
     async (relationId: string) => {
       await deleteRelation(relationId);
     },
     [deleteRelation],
+  );
+
+  const handleCreateCanvasRelation = useCallback(
+    async ({ sourceId, targetId }: { sourceId: string; targetId: string }) => {
+      if (sourceId === targetId) return;
+
+      const nextEdge: WorldGraphCanvasEdge = {
+        id:
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        sourceId,
+        targetId,
+        relation: "related",
+        direction: "unidirectional",
+      };
+
+      await setGraphCanvasEdges([...graphCanvasEdges, nextEdge]);
+    },
+    [graphCanvasEdges, setGraphCanvasEdges],
   );
 
   const handleAddTimelineBranch = useCallback(
@@ -175,17 +177,21 @@ export function CanvasTab({
       nodes={graphNodes}
       edges={graphEdges}
       canvasBlocks={graphCanvasBlocks}
+      canvasEdges={graphCanvasEdges}
       selectedNodeId={effectiveSelectedNodeId}
       autoLayoutTrigger={autoLayoutTrigger}
       onSelectNode={onSelectNode}
       onDeleteNode={handleDeleteNode}
-      onCreateRelation={handleCreateRelation}
+      onCreateCanvasRelation={handleCreateCanvasRelation}
       onDeleteRelation={handleDeleteRelation}
       onCreateBlock={handleCreateCanvasBlock}
       onAddTimelineBranch={handleAddTimelineBranch}
       onCreateNote={onCreateNote}
       onCanvasBlocksCommit={(blocks) => {
         void setGraphCanvasBlocks(blocks);
+      }}
+      onCanvasEdgesCommit={(edges) => {
+        void setGraphCanvasEdges(edges);
       }}
       onNodePositionCommit={({ id, x, y }) => {
         void updateGraphNodePosition({ id, positionX: x, positionY: y });

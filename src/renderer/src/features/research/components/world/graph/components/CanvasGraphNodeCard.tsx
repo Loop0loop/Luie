@@ -8,6 +8,7 @@ import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
 export type CanvasGraphNodeData = {
   label: string;
   entityType: string;
+  color?: string;
   description: string;
   relationCount?: number;
   metaLabel?: string;

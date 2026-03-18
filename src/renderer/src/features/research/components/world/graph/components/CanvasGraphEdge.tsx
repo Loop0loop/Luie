@@ -1,5 +1,12 @@
 import { memo } from "react";
-import { ArrowRightLeft, Edit2, Palette, Trash2, Type } from "lucide-react";
+import {
+  ArrowRightLeft,
+  Edit2,
+  Maximize2,
+  Palette,
+  Trash2,
+  Type,
+} from "lucide-react";
 import type { EdgeProps } from "reactflow";
 import { BaseEdge, EdgeLabelRenderer, getBezierPath } from "reactflow";
 import { Button } from "@renderer/components/ui/button";
@@ -15,6 +22,7 @@ export type CanvasGraphEdgeData = {
   onChangeDirection?: (id: string) => void;
   onEditRelation?: (id: string) => void;
   onEdit?: (id: string) => void;
+  onZoom?: (id: string) => void;
 };
 
 function CanvasGraphEdgeInner({
@@ -95,51 +103,72 @@ function CanvasGraphEdgeInner({
                 className="h-7 w-7 rounded-md text-fg/70 hover:bg-white/10 hover:text-fg"
                 onClick={(e) => {
                   e.stopPropagation();
-                  data?.onChangeColor?.(id);
+                  data?.onZoom?.(id);
                 }}
-                title="색 변경"
+                title="확대"
               >
-                <Palette className="h-3.5 w-3.5" />
+                <Maximize2 className="h-3.5 w-3.5" />
               </Button>
-              <Button
-                type="button"
-                size="icon-xs"
-                variant="ghost"
-                className="h-7 w-7 rounded-md text-fg/70 hover:bg-white/10 hover:text-fg"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  data?.onChangeDirection?.(id);
-                }}
-                title="선 방향"
-              >
-                <ArrowRightLeft className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                type="button"
-                size="icon-xs"
-                variant="ghost"
-                className="h-7 w-7 rounded-md text-fg/70 hover:bg-white/10 hover:text-fg"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  data?.onEditRelation?.(id);
-                }}
-                title="관계 정의"
-              >
-                <Type className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                type="button"
-                size="icon-xs"
-                variant="ghost"
-                className="h-7 w-7 rounded-md text-fg/70 hover:bg-white/10 hover:text-fg"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  data?.onEdit?.(id);
-                }}
-                title="편집"
-              >
-                <Edit2 className="h-3.5 w-3.5" />
-              </Button>
+              {data?.onChangeColor ? (
+                <Button
+                  type="button"
+                  size="icon-xs"
+                  variant="ghost"
+                  className="h-7 w-7 rounded-md text-fg/70 hover:bg-white/10 hover:text-fg"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    data.onChangeColor?.(id);
+                  }}
+                  title="색 변경"
+                >
+                  <Palette className="h-3.5 w-3.5" />
+                </Button>
+              ) : null}
+              {data?.onChangeDirection ? (
+                <Button
+                  type="button"
+                  size="icon-xs"
+                  variant="ghost"
+                  className="h-7 w-7 rounded-md text-fg/70 hover:bg-white/10 hover:text-fg"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    data.onChangeDirection?.(id);
+                  }}
+                  title="선 방향"
+                >
+                  <ArrowRightLeft className="h-3.5 w-3.5" />
+                </Button>
+              ) : null}
+              {data?.onEditRelation ? (
+                <Button
+                  type="button"
+                  size="icon-xs"
+                  variant="ghost"
+                  className="h-7 w-7 rounded-md text-fg/70 hover:bg-white/10 hover:text-fg"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    data.onEditRelation?.(id);
+                  }}
+                  title="관계 편집"
+                >
+                  <Type className="h-3.5 w-3.5" />
+                </Button>
+              ) : null}
+              {data?.onEdit ? (
+                <Button
+                  type="button"
+                  size="icon-xs"
+                  variant="ghost"
+                  className="h-7 w-7 rounded-md text-fg/70 hover:bg-white/10 hover:text-fg"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    data.onEdit?.(id);
+                  }}
+                  title="수정"
+                >
+                  <Edit2 className="h-3.5 w-3.5" />
+                </Button>
+              ) : null}
             </div>
           )}
           {label && (

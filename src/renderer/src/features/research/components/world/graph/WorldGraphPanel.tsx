@@ -23,6 +23,7 @@ export function WorldGraphPanel() {
     graphNodes,
     graphEdges,
     graphCanvasBlocks,
+    graphCanvasEdges,
     timelineNodes,
     notes,
     graphLoading,
@@ -266,6 +267,7 @@ export function WorldGraphPanel() {
                 graphNodes={graphNodes}
                 graphEdges={graphEdges}
                 graphCanvasBlocks={graphCanvasBlocks}
+                graphCanvasEdges={graphCanvasEdges}
                 selectedNodeId={selectedNodeId}
                 onSelectNode={handleSelectNode}
                 onCreateNote={handleCreateNote}

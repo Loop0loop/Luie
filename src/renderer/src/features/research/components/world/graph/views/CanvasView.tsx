@@ -12,6 +12,8 @@ import ReactFlow, {
   applyNodeChanges,
   Background,
   BackgroundVariant,
+  ConnectionMode,
+  MarkerType,
   ReactFlowProvider,
   SelectionMode,
   type Connection,
@@ -26,6 +28,8 @@ import { api } from "@shared/api";
 import type {
   EntityRelation,
   WorldGraphCanvasBlock,
+  WorldGraphCanvasEdge,
+  WorldGraphCanvasEdgeDirection,
   WorldGraphCanvasMemoBlockData,
   WorldGraphCanvasTimelineBlockData,
   WorldGraphNode,
@@ -53,6 +57,14 @@ type AnyCanvasNodeData =
 const SMART_GUIDE_SNAP_PX = 10;
 const DEFAULT_NODE_WIDTH = 220;
 const DEFAULT_NODE_HEIGHT = 120;
+const CANVAS_EDGE_COLORS = [
+  "#f59e0b",
+  "#22d3ee",
+  "#a78bfa",
+  "#f472b6",
+  "#34d399",
+  "#f97316",
+] as const;
 
 const isCanvasLocalNodeType = (
   nodeType: string | undefined,
@@ -63,6 +75,7 @@ const toCanvasBlockNodes = (
   blocks: WorldGraphCanvasBlock[],
   input: {
     onDelete: (id: string) => void;
+    onBlockColorChange: (id: string) => void;
     onMemoChange: (
       id: string,
       patch: Partial<Omit<CanvasMemoBlockData, "onDelete" | "onDataChange">>,
@@ -70,6 +83,15 @@ const toCanvasBlockNodes = (
     onTimelineChange: (
       id: string,
       nextSequence: TimelineSequenceNode[],
+    ) => void;
+    onTimelineMetaChange: (
+      id: string,
+      patch: Partial<
+        Omit<
+          CanvasTimelineBlockData,
+          "onChangeColor" | "onUpdateSequence" | "onDelete" | "onDataChange"
+        >
+      >,
     ) => void;
   },
 ): Node<AnyCanvasNodeData>[] =>
@@ -87,7 +109,9 @@ const toCanvasBlockNodes = (
           title: block.data.title,
           tags: [...block.data.tags],
           body: block.data.body,
+          color: block.data.color,
           onDelete: input.onDelete,
+          onChangeColor: input.onBlockColorChange,
           onDataChange: input.onMemoChange,
         } satisfies CanvasMemoBlockData,
       };
@@ -104,6 +128,27 @@ const toCanvasBlockNodes = (
       data: {
         label: block.data.label,
         sequence: block.data.sequence,
+        color: block.data.color,
+        onDataChange: (id, patch) => {
+          if (Array.isArray(patch.sequence)) {
+            input.onTimelineChange(id, patch.sequence);
+          }
+
+          const timelineMetaPatch: Partial<
+            Omit<
+              CanvasTimelineBlockData,
+              "onChangeColor" | "onUpdateSequence" | "onDelete" | "onDataChange"
+            >
+          > = {};
+          if (typeof patch.label === "string") {
+            timelineMetaPatch.label = patch.label;
+          }
+
+          if (Object.keys(timelineMetaPatch).length > 0) {
+            input.onTimelineMetaChange(id, timelineMetaPatch);
+          }
+        },
+        onChangeColor: input.onBlockColorChange,
         onDelete: input.onDelete,
         onUpdateSequence: input.onTimelineChange,
       } satisfies CanvasTimelineBlockData,
@@ -124,6 +169,7 @@ const fromCanvasLocalNodes = (
           ? data.tags.filter((tag): tag is string => typeof tag === "string")
           : [],
         body: typeof data.body === "string" ? data.body : "",
+        color: typeof data.color === "string" ? data.color : undefined,
       };
       blocks.push({
         id: node.id,
@@ -140,6 +186,7 @@ const fromCanvasLocalNodes = (
       const payload: WorldGraphCanvasTimelineBlockData = {
         label: typeof data.label === "string" ? data.label : "",
         sequence: Array.isArray(data.sequence) ? data.sequence : [],
+        color: typeof data.color === "string" ? data.color : undefined,
       };
       blocks.push({
         id: node.id,
@@ -182,13 +229,15 @@ interface CanvasViewProps {
   nodes: WorldGraphNode[];
   edges: EntityRelation[];
   canvasBlocks: WorldGraphCanvasBlock[];
+  canvasEdges: WorldGraphCanvasEdge[];
   selectedNodeId: string | null;
   autoLayoutTrigger: number;
   onSelectNode: (nodeId: string | null) => void;
   onCanvasBlocksCommit?: (blocks: WorldGraphCanvasBlock[]) => void;
+  onCanvasEdgesCommit?: (edges: WorldGraphCanvasEdge[]) => void;
   onNodePositionCommit?: (input: { id: string; x: number; y: number }) => void;
   onDeleteNode?: (nodeId: string) => void;
-  onCreateRelation?: (input: {
+  onCreateCanvasRelation?: (input: {
     sourceId: string;
     targetId: string;
   }) => Promise<void>;
@@ -227,6 +276,8 @@ function decorateEdges(
 const buildFlowNodes = (
   nodes: WorldGraphNode[],
   onDeleteNode?: (nodeId: string) => void,
+  onNodeColorChange?: (nodeId: string) => void,
+  onNodeEdit?: (nodeId: string) => void,
   onAddTimelineBranch?: (sourceNodeId: string) => void,
 ): Node<CanvasGraphNodeData>[] => {
   return nodes.map((node, index) => ({
@@ -237,9 +288,17 @@ const buildFlowNodes = (
     data: {
       label: node.name,
       entityType: node.entityType,
+      color:
+        node.attributes && typeof node.attributes === "object"
+          ? ((node.attributes as Record<string, unknown>).canvasColor as
+              | string
+              | undefined)
+          : undefined,
       description: node.description?.trim() || "",
       date: (node.attributes as any)?.date || (node.attributes as any)?.time,
       onDelete: onDeleteNode,
+      onChangeColor: onNodeColorChange,
+      onEdit: onNodeEdit,
       onAddBranch: onAddTimelineBranch,
     },
   }));
@@ -247,26 +306,91 @@ const buildFlowNodes = (
 
 const buildFlowEdges = (
   edges: EntityRelation[],
-  onDeleteRelation?: (id: string) => void,
+  canvasEdges: WorldGraphCanvasEdge[],
+  handlers: {
+    onDeleteRelation?: (id: string) => void;
+    onDeleteCanvasEdge?: (id: string) => void;
+    onChangeCanvasEdgeColor?: (id: string) => void;
+    onChangeCanvasEdgeDirection?: (id: string) => void;
+    onEditCanvasEdgeRelation?: (id: string) => void;
+    onUpdateCanvasEdge?: (id: string) => void;
+    onZoomEdge?: (id: string) => void;
+  },
 ): Edge<CanvasGraphEdgeData>[] => {
-  const palette = {
+  const entityPalette = {
     stroke: "rgba(255,255,255,0.12)",
     selectedStroke: "#f59e0b",
     glow: "rgba(245,158,11,0.1)",
   };
 
-  return edges.map((edge) => ({
-    id: edge.id,
+  const graphEdges = edges.map((edge) => ({
+    id: `entity:${edge.id}`,
     source: edge.sourceId,
     target: edge.targetId,
     label: edge.relation.replaceAll("_", " "),
     type: "canvas-edge",
     data: {
-      palette,
-      onDelete: onDeleteRelation,
+      palette: entityPalette,
+      onDelete: () => handlers.onDeleteRelation?.(edge.id),
+      onZoom: () => handlers.onZoomEdge?.(`entity:${edge.id}`),
     },
     interactionWidth: 20,
-  }));
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      width: 16,
+      height: 16,
+      color: entityPalette.stroke,
+    },
+  })) satisfies Edge<CanvasGraphEdgeData>[];
+
+  const localEdges = canvasEdges.map((edge) => {
+    const direction = edge.direction ?? "unidirectional";
+    const color = edge.color ?? CANVAS_EDGE_COLORS[0];
+    const palette = {
+      stroke: color,
+      selectedStroke: color,
+      glow: `${color}55`,
+    };
+
+    return {
+      id: `canvas:${edge.id}`,
+      source: edge.sourceId,
+      target: edge.targetId,
+      label: edge.relation,
+      type: "canvas-edge",
+      data: {
+        palette,
+        onDelete: () => handlers.onDeleteCanvasEdge?.(edge.id),
+        onChangeColor: () => handlers.onChangeCanvasEdgeColor?.(edge.id),
+        onChangeDirection: () =>
+          handlers.onChangeCanvasEdgeDirection?.(edge.id),
+        onEditRelation: () => handlers.onEditCanvasEdgeRelation?.(edge.id),
+        onEdit: () => handlers.onUpdateCanvasEdge?.(edge.id),
+        onZoom: () => handlers.onZoomEdge?.(`canvas:${edge.id}`),
+      },
+      interactionWidth: 20,
+      markerStart:
+        direction === "bidirectional"
+          ? {
+              type: MarkerType.ArrowClosed,
+              width: 16,
+              height: 16,
+              color,
+            }
+          : undefined,
+      markerEnd:
+        direction === "none"
+          ? undefined
+          : {
+              type: MarkerType.ArrowClosed,
+              width: 16,
+              height: 16,
+              color,
+            },
+    } satisfies Edge<CanvasGraphEdgeData>;
+  });
+
+  return [...graphEdges, ...localEdges];
 };
 
 function mergeIncomingNodes(
@@ -364,6 +488,7 @@ function CanvasFlowSurface({
   graphNodes,
   graphEdges,
   canvasBlocks,
+  canvasEdges: _canvasEdges,
   timelineNodes,
   selectedNodeId,
   autoLayoutTrigger,
@@ -371,13 +496,13 @@ function CanvasFlowSurface({
   onCanvasBlocksCommit,
   onNodePositionCommit,
   onDeleteNode,
-  onCreateRelation,
-  onDeleteRelation,
+  onConnectNodes,
   onCreateBlock,
 }: {
   graphNodes: Node<CanvasGraphNodeData>[];
   graphEdges: Edge<CanvasGraphEdgeData>[];
   canvasBlocks: WorldGraphCanvasBlock[];
+  canvasEdges: WorldGraphCanvasEdge[];
   timelineNodes: WorldGraphNode[];
   selectedNodeId: string | null;
   autoLayoutTrigger: number;
@@ -385,11 +510,10 @@ function CanvasFlowSurface({
   onCanvasBlocksCommit?: (blocks: WorldGraphCanvasBlock[]) => void;
   onNodePositionCommit?: (input: { id: string; x: number; y: number }) => void;
   onDeleteNode?: (nodeId: string) => void;
-  onCreateRelation?: (input: {
+  onConnectNodes?: (input: {
     sourceId: string;
     targetId: string;
   }) => Promise<void>;
-  onDeleteRelation?: (relationId: string) => Promise<void>;
   onCreateBlock: () => void;
 }) {
   const [nodes, setNodes] = useState<Node<AnyCanvasNodeData>[]>(graphNodes);
@@ -404,8 +528,11 @@ function CanvasFlowSurface({
     y: null,
   });
   const draggingNodeIdRef = useRef<string | null>(null);
+  const dragConsumedClickRef = useRef(false);
+  const pendingSnapRef = useRef<{ x: number; y: number } | null>(null);
   const lastGuideSignatureRef = useRef<string | null>(null);
   const nodesRef = useRef<Node<AnyCanvasNodeData>[]>(graphNodes);
+  const edgesRef = useRef<Edge<CanvasGraphEdgeData>[]>(graphEdges);
   const reactFlow = useReactFlow<AnyCanvasNodeData>();
   const historyRef = useRef<Node<AnyCanvasNodeData>[][]>([]);
   const historyIndexRef = useRef(-1);
@@ -417,9 +544,92 @@ function CanvasFlowSurface({
     [onCanvasBlocksCommit],
   );
 
+  const handleCycleCanvasBlockColor = useCallback(
+    (id: string) => {
+      setNodes((currentNodes) => {
+        const next = currentNodes.map((node) => {
+          if (node.id !== id || !isCanvasLocalNodeType(node.type)) {
+            return node;
+          }
+
+          const color =
+            node.type === "canvas-memo"
+              ? (node.data as CanvasMemoBlockData).color
+              : (node.data as CanvasTimelineBlockData).color;
+          const current = color ?? CANVAS_EDGE_COLORS[0];
+          const index = CANVAS_EDGE_COLORS.indexOf(
+            current as (typeof CANVAS_EDGE_COLORS)[number],
+          );
+          const nextColor =
+            CANVAS_EDGE_COLORS[
+              (Math.max(0, index) + 1) % CANVAS_EDGE_COLORS.length
+            ];
+
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              color: nextColor,
+            },
+          };
+        });
+
+        commitCanvasBlocks(next);
+        return next;
+      });
+    },
+    [commitCanvasBlocks],
+  );
+
   useEffect(() => {
     nodesRef.current = nodes;
   }, [nodes]);
+
+  useEffect(() => {
+    edgesRef.current = edges;
+  }, [edges]);
+
+  const handleZoomEdgeInSurface = useCallback(
+    (edgeId: string) => {
+      const edge = edgesRef.current.find((item) => item.id === edgeId);
+      if (!edge) {
+        return;
+      }
+
+      const source = nodesRef.current.find((item) => item.id === edge.source);
+      const target = nodesRef.current.find((item) => item.id === edge.target);
+      if (!source || !target) {
+        return;
+      }
+
+      const sourceSize = getNodeDimensions(source);
+      const targetSize = getNodeDimensions(target);
+      const minX = Math.min(source.position.x, target.position.x);
+      const minY = Math.min(source.position.y, target.position.y);
+      const maxX = Math.max(
+        source.position.x + sourceSize.width,
+        target.position.x + targetSize.width,
+      );
+      const maxY = Math.max(
+        source.position.y + sourceSize.height,
+        target.position.y + targetSize.height,
+      );
+
+      void reactFlow.fitBounds(
+        {
+          x: minX,
+          y: minY,
+          width: Math.max(120, maxX - minX),
+          height: Math.max(80, maxY - minY),
+        },
+        {
+          padding: 0.35,
+          duration: 220,
+        },
+      );
+    },
+    [reactFlow],
+  );
 
   useEffect(() => {
     setNodes((currentNodes) =>
@@ -474,6 +684,27 @@ function CanvasFlowSurface({
             return next;
           });
         },
+        onTimelineMetaChange: (id, patch) => {
+          setNodes((innerCurrent) => {
+            const next = innerCurrent.map((node) => {
+              if (node.id !== id || node.type !== "canvas-timeline") {
+                return node;
+              }
+
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  ...patch,
+                },
+              };
+            });
+
+            commitCanvasBlocks(next);
+            return next;
+          });
+        },
+        onBlockColorChange: handleCycleCanvasBlockColor,
       });
 
       return syncCanvasLocalNodes(
@@ -482,11 +713,31 @@ function CanvasFlowSurface({
         draggingNodeIdRef.current,
       );
     });
-  }, [canvasBlocks, commitCanvasBlocks]);
+  }, [canvasBlocks, commitCanvasBlocks, handleCycleCanvasBlockColor]);
 
   useEffect(() => {
-    setEdges(decorateEdges(graphEdges, selectedEdgeId));
-  }, [graphEdges, selectedEdgeId]);
+    setEdges(
+      decorateEdges(
+        graphEdges.map((edge) => {
+          const palette = edge.data?.palette ?? {
+            stroke: "rgba(255,255,255,0.12)",
+            selectedStroke: "#f59e0b",
+            glow: "rgba(245,158,11,0.1)",
+          };
+
+          return {
+            ...edge,
+            data: {
+              ...edge.data,
+              palette,
+              onZoom: () => handleZoomEdgeInSurface(edge.id),
+            },
+          };
+        }),
+        selectedEdgeId,
+      ),
+    );
+  }, [graphEdges, handleZoomEdgeInSurface, selectedEdgeId]);
 
   useEffect(() => {
     setNodes((currentNodes) => {
@@ -606,7 +857,9 @@ function CanvasFlowSurface({
         title: "",
         tags: [],
         body: "",
+        color: undefined,
         onDelete: handleDeleteLocalNode,
+        onChangeColor: handleCycleCanvasBlockColor,
         onDataChange: handleMemoDataChange,
       },
     };
@@ -619,6 +872,7 @@ function CanvasFlowSurface({
   }, [
     commitCanvasBlocks,
     getViewportCenter,
+    handleCycleCanvasBlockColor,
     handleDeleteLocalNode,
     handleMemoDataChange,
     pushHistory,
@@ -633,6 +887,30 @@ function CanvasFlowSurface({
           }
           return { ...node, data: { ...node.data, sequence: nextSequence } };
         });
+        commitCanvasBlocks(next);
+        return next;
+      });
+    },
+    [commitCanvasBlocks],
+  );
+
+  const handleUpdateTimelineMeta = useCallback(
+    (nodeId: string, patch: Partial<CanvasTimelineBlockData>) => {
+      setNodes((current) => {
+        const next = current.map((node) => {
+          if (node.id !== nodeId || node.type !== "canvas-timeline") {
+            return node;
+          }
+
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              ...patch,
+            },
+          };
+        });
+
         commitCanvasBlocks(next);
         return next;
       });
@@ -663,6 +941,11 @@ function CanvasFlowSurface({
               bottomBranches: [],
             },
           ],
+          color: CANVAS_EDGE_COLORS[0],
+          onDataChange: (targetId, patch) => {
+            handleUpdateTimelineMeta(targetId, patch);
+          },
+          onChangeColor: handleCycleCanvasBlockColor,
           onDelete: handleDeleteLocalNode,
           onUpdateSequence: handleUpdateTimelineSequence,
         },
@@ -678,6 +961,8 @@ function CanvasFlowSurface({
       timelineNodes,
       getViewportCenter,
       handleDeleteLocalNode,
+      handleCycleCanvasBlockColor,
+      handleUpdateTimelineMeta,
       handleUpdateTimelineSequence,
       onSelectNode,
     ],
@@ -702,6 +987,11 @@ function CanvasFlowSurface({
             bottomBranches: [],
           },
         ],
+        color: CANVAS_EDGE_COLORS[0],
+        onDataChange: (targetId, patch) => {
+          handleUpdateTimelineMeta(targetId, patch);
+        },
+        onChangeColor: handleCycleCanvasBlockColor,
         onDelete: handleDeleteLocalNode,
         onUpdateSequence: handleUpdateTimelineSequence,
       },
@@ -715,7 +1005,9 @@ function CanvasFlowSurface({
   }, [
     commitCanvasBlocks,
     getViewportCenter,
+    handleCycleCanvasBlockColor,
     handleDeleteLocalNode,
+    handleUpdateTimelineMeta,
     handleUpdateTimelineSequence,
     pushHistory,
   ]);
@@ -736,12 +1028,35 @@ function CanvasFlowSurface({
   };
 
   const handleConnect = (connection: Connection) => {
-    if (!connection.source || !connection.target || !onCreateRelation) return;
-    void onCreateRelation({
+    if (!connection.source || !connection.target || !onConnectNodes) return;
+    void onConnectNodes({
       sourceId: connection.source,
       targetId: connection.target,
     });
   };
+
+  const isValidConnection = useCallback(
+    (connection: Connection) => {
+      if (!connection.source || !connection.target) {
+        return false;
+      }
+
+      if (connection.source === connection.target) {
+        return false;
+      }
+
+      return !edges.some((edge) => {
+        const sameForward =
+          edge.source === connection.source &&
+          edge.target === connection.target;
+        const sameReverse =
+          edge.source === connection.target &&
+          edge.target === connection.source;
+        return sameForward || sameReverse;
+      });
+    },
+    [edges],
+  );
 
   const viewport = reactFlow.getViewport();
   const guideScreenX =
@@ -763,7 +1078,12 @@ function CanvasFlowSurface({
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
         onConnect={handleConnect}
+        isValidConnection={isValidConnection}
         onNodeClick={(_, node) => {
+          if (dragConsumedClickRef.current) {
+            dragConsumedClickRef.current = false;
+            return;
+          }
           onSelectNode(node.id);
         }}
         onEdgeClick={(_, edge) => {
@@ -781,10 +1101,15 @@ function CanvasFlowSurface({
           setSelectedEdgeId(null);
         }}
         onEdgesDelete={(deletedEdges) => {
-          deletedEdges.forEach((edge) => void onDeleteRelation?.(edge.id));
+          deletedEdges.forEach((edge) => {
+            edge.data?.onDelete?.(edge.id);
+          });
         }}
         onNodeDragStart={(_, node) => {
           draggingNodeIdRef.current = node.id;
+          dragConsumedClickRef.current = true;
+          pendingSnapRef.current = null;
+          onSelectNode(null);
         }}
         onNodeDrag={(_, node) => {
           const allNodes = nodesRef.current;
@@ -827,7 +1152,20 @@ function CanvasFlowSurface({
             return { x: guideX, y: guideY };
           });
 
-          if (snapX !== node.position.x || snapY !== node.position.y) {
+          pendingSnapRef.current =
+            snapX !== node.position.x || snapY !== node.position.y
+              ? { x: snapX, y: snapY }
+              : null;
+        }}
+        onNodeDragStop={(_, node) => {
+          draggingNodeIdRef.current = null;
+          setGuideLines({ x: null, y: null });
+          lastGuideSignatureRef.current = null;
+
+          const pendingSnap = pendingSnapRef.current;
+          pendingSnapRef.current = null;
+
+          if (pendingSnap) {
             setNodes((currentNodes) =>
               currentNodes.map((currentNode) => {
                 if (currentNode.id !== node.id) {
@@ -836,23 +1174,19 @@ function CanvasFlowSurface({
                 return {
                   ...currentNode,
                   position: {
-                    x: snapX,
-                    y: snapY,
+                    x: pendingSnap.x,
+                    y: pendingSnap.y,
                   },
                 };
               }),
             );
           }
-        }}
-        onNodeDragStop={(_, node) => {
-          draggingNodeIdRef.current = null;
-          setGuideLines({ x: null, y: null });
-          lastGuideSignatureRef.current = null;
 
           const currentNode = nodesRef.current.find(
             (item) => item.id === node.id,
           );
-          const position = currentNode?.position ?? node.position;
+          const position =
+            pendingSnap ?? currentNode?.position ?? node.position;
 
           if (node.type === "custom-entity") {
             onNodePositionCommit?.({
@@ -865,12 +1199,19 @@ function CanvasFlowSurface({
           if (isCanvasLocalNodeType(node.type)) {
             commitCanvasBlocks(nodesRef.current);
           }
+
+          window.setTimeout(() => {
+            dragConsumedClickRef.current = false;
+          }, 0);
         }}
         deleteKeyCode={["Backspace", "Delete"]}
         panOnDrag={[2]}
         panOnScroll
-        selectionOnDrag
+        selectionOnDrag={false}
+        selectNodesOnDrag={false}
         selectionMode={SelectionMode.Partial}
+        onlyRenderVisibleElements
+        connectionMode={ConnectionMode.Loose}
         className="bg-[#0f1319]"
       >
         <Background
@@ -976,25 +1317,260 @@ export function CanvasView({
   nodes,
   edges,
   canvasBlocks,
+  canvasEdges,
   selectedNodeId,
   autoLayoutTrigger,
   onSelectNode,
   onCanvasBlocksCommit,
+  onCanvasEdgesCommit,
   onNodePositionCommit,
   onDeleteNode,
-  onCreateRelation,
+  onCreateCanvasRelation,
   onDeleteRelation,
   onCreateBlock,
   onAddTimelineBranch,
   onCreateNote: _onCreateNote,
 }: CanvasViewProps) {
-  const flowNodes = useMemo(
-    () => buildFlowNodes(nodes, onDeleteNode, onAddTimelineBranch),
-    [nodes, onDeleteNode, onAddTimelineBranch],
+  const handleCycleGraphNodeColor = useCallback(
+    (nodeId: string) => {
+      const node = nodes.find((item) => item.id === nodeId);
+      if (!node) {
+        return;
+      }
+
+      if (node.entityType === "Event") {
+        return;
+      }
+
+      const attributes =
+        node.attributes && typeof node.attributes === "object"
+          ? (node.attributes as Record<string, unknown>)
+          : {};
+      const current =
+        typeof attributes.canvasColor === "string"
+          ? attributes.canvasColor
+          : CANVAS_EDGE_COLORS[0];
+      const index = CANVAS_EDGE_COLORS.indexOf(
+        current as (typeof CANVAS_EDGE_COLORS)[number],
+      );
+      const nextColor =
+        CANVAS_EDGE_COLORS[
+          (Math.max(0, index) + 1) % CANVAS_EDGE_COLORS.length
+        ];
+
+      const payload = {
+        ...attributes,
+        canvasColor: nextColor,
+      };
+
+      void api.worldEntity.update({
+        id: node.id,
+        type: node.subType ?? "Concept",
+        attributes: payload,
+      });
+    },
+    [nodes],
   );
+
+  const handleEditGraphNode = useCallback(
+    (nodeId: string) => {
+      onSelectNode(nodeId);
+    },
+    [onSelectNode],
+  );
+
+  const flowNodes = useMemo(
+    () =>
+      buildFlowNodes(
+        nodes,
+        onDeleteNode,
+        handleCycleGraphNodeColor,
+        handleEditGraphNode,
+        onAddTimelineBranch,
+      ),
+    [
+      handleCycleGraphNodeColor,
+      handleEditGraphNode,
+      nodes,
+      onDeleteNode,
+      onAddTimelineBranch,
+    ],
+  );
+  const commitCanvasEdges = useCallback(
+    (nextEdges: WorldGraphCanvasEdge[]) => {
+      onCanvasEdgesCommit?.(nextEdges);
+    },
+    [onCanvasEdgesCommit],
+  );
+
+  const handleDeleteCanvasEdge = useCallback(
+    (edgeId: string) => {
+      commitCanvasEdges(canvasEdges.filter((edge) => edge.id !== edgeId));
+    },
+    [canvasEdges, commitCanvasEdges],
+  );
+
+  const handleCycleCanvasEdgeColor = useCallback(
+    (edgeId: string) => {
+      const nextEdges = canvasEdges.map((edge) => {
+        if (edge.id !== edgeId) {
+          return edge;
+        }
+
+        const current = edge.color ?? CANVAS_EDGE_COLORS[0];
+        const colorIndex = CANVAS_EDGE_COLORS.indexOf(
+          current as (typeof CANVAS_EDGE_COLORS)[number],
+        );
+        const nextColor =
+          CANVAS_EDGE_COLORS[
+            (Math.max(0, colorIndex) + 1) % CANVAS_EDGE_COLORS.length
+          ];
+
+        return {
+          ...edge,
+          color: nextColor,
+        };
+      });
+
+      commitCanvasEdges(nextEdges);
+    },
+    [canvasEdges, commitCanvasEdges],
+  );
+
+  const handleCycleCanvasEdgeDirection = useCallback(
+    (edgeId: string) => {
+      const nextEdges = canvasEdges.map((edge) => {
+        if (edge.id !== edgeId) {
+          return edge;
+        }
+
+        const current: WorldGraphCanvasEdgeDirection =
+          edge.direction ?? "unidirectional";
+        const nextDirection: WorldGraphCanvasEdgeDirection =
+          current === "unidirectional"
+            ? "bidirectional"
+            : current === "bidirectional"
+              ? "none"
+              : "unidirectional";
+
+        return {
+          ...edge,
+          direction: nextDirection,
+        };
+      });
+
+      commitCanvasEdges(nextEdges);
+    },
+    [canvasEdges, commitCanvasEdges],
+  );
+
+  const handleEditCanvasEdgeRelation = useCallback(
+    (edgeId: string) => {
+      const target = canvasEdges.find((edge) => edge.id === edgeId);
+      if (!target) {
+        return;
+      }
+
+      const nextRelation = window.prompt("관계를 입력하세요", target.relation);
+      if (nextRelation === null) {
+        return;
+      }
+
+      const trimmed = nextRelation.trim();
+      if (trimmed.length === 0) {
+        return;
+      }
+
+      commitCanvasEdges(
+        canvasEdges.map((edge) =>
+          edge.id === edgeId
+            ? {
+                ...edge,
+                relation: trimmed,
+              }
+            : edge,
+        ),
+      );
+    },
+    [canvasEdges, commitCanvasEdges],
+  );
+
+  const handleUpdateCanvasEdge = useCallback(
+    (edgeId: string) => {
+      const target = canvasEdges.find((edge) => edge.id === edgeId);
+      if (!target) {
+        return;
+      }
+
+      const nextRelation = window.prompt(
+        "수정할 관계명을 입력하세요",
+        target.relation,
+      );
+      if (nextRelation === null) {
+        return;
+      }
+
+      const trimmed = nextRelation.trim();
+      if (trimmed.length === 0) {
+        return;
+      }
+
+      commitCanvasEdges(
+        canvasEdges.map((edge) =>
+          edge.id === edgeId
+            ? {
+                ...edge,
+                relation: trimmed,
+              }
+            : edge,
+        ),
+      );
+    },
+    [canvasEdges, commitCanvasEdges],
+  );
+
   const flowEdges = useMemo(
-    () => buildFlowEdges(edges, (id) => void onDeleteRelation?.(id)),
-    [edges, onDeleteRelation],
+    () =>
+      buildFlowEdges(edges, canvasEdges, {
+        onDeleteRelation: (id) => void onDeleteRelation?.(id),
+        onDeleteCanvasEdge: handleDeleteCanvasEdge,
+        onChangeCanvasEdgeColor: handleCycleCanvasEdgeColor,
+        onChangeCanvasEdgeDirection: handleCycleCanvasEdgeDirection,
+        onEditCanvasEdgeRelation: handleEditCanvasEdgeRelation,
+        onUpdateCanvasEdge: handleUpdateCanvasEdge,
+      }),
+    [
+      canvasEdges,
+      edges,
+      handleCycleCanvasEdgeColor,
+      handleCycleCanvasEdgeDirection,
+      handleDeleteCanvasEdge,
+      handleEditCanvasEdgeRelation,
+      handleUpdateCanvasEdge,
+      onDeleteRelation,
+    ],
+  );
+
+  const handleConnectNodes = useCallback(
+    async ({ sourceId, targetId }: { sourceId: string; targetId: string }) => {
+      if (sourceId === targetId) {
+        return;
+      }
+
+      const existing = canvasEdges.some(
+        (edge) =>
+          (edge.sourceId === sourceId && edge.targetId === targetId) ||
+          (edge.sourceId === targetId && edge.targetId === sourceId),
+      );
+      if (existing) {
+        return;
+      }
+
+      if (onCreateCanvasRelation) {
+        await onCreateCanvasRelation({ sourceId, targetId });
+      }
+    },
+    [canvasEdges, onCreateCanvasRelation],
   );
   const timelineNodes = useMemo(
     () => nodes.filter((node) => node.entityType === "Event"),
@@ -1008,6 +1584,8 @@ export function CanvasView({
           graphNodes={flowNodes}
           graphEdges={flowEdges}
           canvasBlocks={canvasBlocks}
+          canvasEdges={canvasEdges}
+          onConnectNodes={handleConnectNodes}
           timelineNodes={timelineNodes}
           selectedNodeId={selectedNodeId}
           autoLayoutTrigger={autoLayoutTrigger}
@@ -1015,8 +1593,6 @@ export function CanvasView({
           onCanvasBlocksCommit={onCanvasBlocksCommit}
           onNodePositionCommit={onNodePositionCommit}
           onDeleteNode={onDeleteNode}
-          onCreateRelation={onCreateRelation}
-          onDeleteRelation={onDeleteRelation}
           onCreateBlock={onCreateBlock}
         />
       </ReactFlowProvider>

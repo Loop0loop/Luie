@@ -3,6 +3,7 @@ import type {
   EntityRelationCreateInput,
   EntityRelationUpdateInput,
   WorldGraphCanvasBlock,
+  WorldGraphCanvasEdge,
   WorldGraphData,
   WorldEntityCreateInput,
   WorldEntityUpdateInput,
@@ -62,6 +63,7 @@ type WorldBuildingActions = Pick<
   | "updateRelation"
   | "deleteRelation"
   | "setGraphCanvasBlocks"
+  | "setGraphCanvasEdges"
 >;
 
 function updateGraphNodeSelection(input: UpdateGraphNodeInput) {
@@ -394,6 +396,26 @@ export function createWorldBuildingActions(
           graphData: {
             ...state.graphData,
             canvasBlocks: blocks,
+          },
+        };
+      });
+
+      await persistGraphDocument(projectId, get().graphData);
+    },
+
+    setGraphCanvasEdges: async (edges: WorldGraphCanvasEdge[]) => {
+      const projectId = get().activeProjectId;
+      if (!projectId) return;
+
+      set((state) => {
+        if (!state.graphData) {
+          return state;
+        }
+
+        return {
+          graphData: {
+            ...state.graphData,
+            canvasEdges: edges,
           },
         };
       });
