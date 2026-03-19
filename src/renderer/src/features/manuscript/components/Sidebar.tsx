@@ -39,8 +39,6 @@ const TrashList = lazy(() =>
 );
 
 interface SidebarProps {
-  currentProjectTitle?: string;
-  currentProjectId?: string;
   onOpenSettings: () => void;
   onPrefetchSettings?: () => void;
   onSelectResearchItem: (
@@ -50,8 +48,6 @@ interface SidebarProps {
 }
 
 function Sidebar({
-  currentProjectTitle,
-  currentProjectId,
   onOpenSettings,
   onPrefetchSettings,
   onSelectResearchItem,
@@ -81,7 +77,9 @@ function Sidebar({
     activeChapterId,
     handleSelectChapter,
     handleAddChapter,
-  } = useSidebarLogic({ currentProjectTitle, currentProjectId, onSplitView });
+    currentProjectTitle,
+    currentProjectId,
+  } = useSidebarLogic({ onSplitView });
 
   const getItemKey = (index: number, item: SidebarItem): string => {
     if (item.type === "chapter") return item.chapter.id;
@@ -225,6 +223,7 @@ function Sidebar({
             id: item.id,
             title: meta.label,
           }}
+          disabled
           className="flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg transition-all"
         >
           <div
@@ -390,7 +389,7 @@ function Sidebar({
           <div
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
             onClick={() => void handleAction("delete", menuOpenId)}
-            style={{ color: "#ef4444" }}
+            style={{ color: "hsl(var(--destructive))" }}
           >
             <Trash2 className="icon-sm" /> {t("sidebar.menu.delete")}
           </div>

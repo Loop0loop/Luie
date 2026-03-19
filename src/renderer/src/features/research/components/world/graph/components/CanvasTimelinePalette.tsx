@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Clock3, GitBranchPlus, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { WorldGraphNode } from "@shared/types";
+import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
 
 type CanvasTimelinePaletteProps = {
   events: WorldGraphNode[];
@@ -26,6 +27,9 @@ export function CanvasTimelinePalette({
   onPickEvent,
 }: CanvasTimelinePaletteProps) {
   const { t } = useTranslation();
+  const eventTheme = ENTITY_TYPE_CANVAS_THEME.Event;
+  const characterTheme = ENTITY_TYPE_CANVAS_THEME.Character;
+  const worldTheme = ENTITY_TYPE_CANVAS_THEME.WorldEntity;
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -105,24 +109,16 @@ export function CanvasTimelinePalette({
 
   return (
     <div
-      className="absolute inset-0 z-30 flex justify-center pt-[72px]"
-      style={{ background: "rgba(7,9,13,0.55)", backdropFilter: "blur(4px)" }}
+      className="absolute inset-0 z-30 flex justify-center bg-canvas/70 pt-[72px] backdrop-blur-[4px]"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
-        className="w-full max-w-[580px] overflow-hidden rounded-xl shadow-[0_32px_80px_rgba(0,0,0,0.55)]"
-        style={{
-          background: "rgba(18,21,28,0.98)",
-          border: "1px solid rgba(255,255,255,0.09)",
-        }}
+        className="w-full max-w-[580px] overflow-hidden rounded-xl border border-white/10 bg-popover/95 shadow-2xl"
         onKeyDown={handleKeyDown}
       >
-        <div
-          className="flex items-center gap-3 px-4"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}
-        >
+        <div className="flex items-center gap-3 border-b border-white/10 px-4">
           <Search className="h-4 w-4 shrink-0 text-fg/38" />
           <input
             ref={inputRef}
@@ -166,7 +162,7 @@ export function CanvasTimelinePalette({
                 className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-none"
                 style={{
                   background: isActive
-                    ? "rgba(255,255,255,0.07)"
+                    ? "hsl(var(--foreground) / 0.08)"
                     : "transparent",
                 }}
               >
@@ -174,14 +170,16 @@ export function CanvasTimelinePalette({
                   className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
                   style={{
                     background: isActive
-                      ? "rgba(243,200,107,0.15)"
-                      : "rgba(255,255,255,0.05)",
+                      ? eventTheme.glow
+                      : "hsl(var(--foreground) / 0.06)",
                   }}
                 >
                   <Clock3
                     className="h-3.5 w-3.5"
                     style={{
-                      color: isActive ? "#f3c86b" : "rgba(255,255,255,0.4)",
+                      color: isActive
+                        ? eventTheme.accent
+                        : "hsl(var(--foreground) / 0.46)",
                     }}
                   />
                 </div>
@@ -190,8 +188,8 @@ export function CanvasTimelinePalette({
                     className="truncate text-[13px] font-medium"
                     style={{
                       color: isActive
-                        ? "rgba(255,255,255,0.95)"
-                        : "rgba(255,255,255,0.75)",
+                        ? "hsl(var(--foreground) / 0.95)"
+                        : "hsl(var(--foreground) / 0.76)",
                     }}
                   >
                     {event.name}
@@ -206,8 +204,9 @@ export function CanvasTimelinePalette({
                   className="shrink-0 text-[11px]"
                   style={{
                     color: isActive
-                      ? "rgba(243,200,107,0.7)"
-                      : "rgba(255,255,255,0.25)",
+                      ? eventTheme.accent
+                      : "hsl(var(--foreground) / 0.32)",
+                    opacity: isActive ? 0.7 : 1,
                   }}
                 >
                   {readEventDate(event, t("research.graph.timeline.undated"))}
@@ -220,7 +219,7 @@ export function CanvasTimelinePalette({
             style={{
               borderTop:
                 filteredEvents.length > 0
-                  ? "1px solid rgba(255,255,255,0.06)"
+                  ? "1px solid hsl(var(--foreground) / 0.08)"
                   : "none",
             }}
             className="pt-1"
@@ -239,7 +238,7 @@ export function CanvasTimelinePalette({
                   className="flex w-full items-center gap-3 px-4 py-2.5 text-left"
                   style={{
                     background: isActive
-                      ? "rgba(255,255,255,0.07)"
+                      ? "hsl(var(--foreground) / 0.08)"
                       : "transparent",
                   }}
                 >
@@ -247,14 +246,16 @@ export function CanvasTimelinePalette({
                     className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
                     style={{
                       background: isActive
-                        ? "rgba(119,185,255,0.15)"
-                        : "rgba(255,255,255,0.05)",
+                        ? characterTheme.glow
+                        : "hsl(var(--foreground) / 0.06)",
                     }}
                   >
                     <GitBranchPlus
                       className="h-3.5 w-3.5"
                       style={{
-                        color: isActive ? "#77b9ff" : "rgba(255,255,255,0.4)",
+                        color: isActive
+                          ? characterTheme.accent
+                          : "hsl(var(--foreground) / 0.46)",
                       }}
                     />
                   </div>
@@ -262,8 +263,8 @@ export function CanvasTimelinePalette({
                     className="text-[13px] font-medium"
                     style={{
                       color: isActive
-                        ? "rgba(255,255,255,0.95)"
-                        : "rgba(255,255,255,0.55)",
+                        ? "hsl(var(--foreground) / 0.95)"
+                        : "hsl(var(--foreground) / 0.58)",
                     }}
                   >
                     {t("research.graph.canvas.timelinePalette.createBlock")}
@@ -272,11 +273,11 @@ export function CanvasTimelinePalette({
                     className="ml-auto shrink-0 rounded border px-1.5 py-0.5 text-[10px]"
                     style={{
                       borderColor: isActive
-                        ? "rgba(255,255,255,0.18)"
-                        : "rgba(255,255,255,0.08)",
+                        ? "hsl(var(--foreground) / 0.2)"
+                        : "hsl(var(--foreground) / 0.1)",
                       color: isActive
-                        ? "rgba(255,255,255,0.45)"
-                        : "rgba(255,255,255,0.22)",
+                        ? "hsl(var(--foreground) / 0.5)"
+                        : "hsl(var(--foreground) / 0.28)",
                     }}
                   >
                     ↵
@@ -288,8 +289,11 @@ export function CanvasTimelinePalette({
         </div>
 
         <div
-          className="flex items-center gap-4 px-4 py-2"
-          style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+          className="flex items-center gap-4 border-t px-4 py-2"
+          style={{
+            borderTopColor: `hsl(var(--foreground) / 0.08)`,
+            color: worldTheme.accent,
+          }}
         >
           <span className="flex items-center gap-1 text-[11px] text-fg/28">
             <kbd className="rounded border border-white/10 px-1 py-px text-[9px]">

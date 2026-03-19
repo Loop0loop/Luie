@@ -27,7 +27,7 @@ export function GraphIconSidebar({
         size="icon"
         variant="outline"
         onClick={onToggleSidebar}
-        className="mb-3 h-10 w-10 rounded-xl border-border/60 bg-white/5 text-fg/80 hover:bg-white/10 hover:text-fg"
+        className="mb-3 h-10 w-10 rounded-xl border-border/60 bg-surface text-fg/80 hover:bg-surface-hover hover:text-fg"
         title={
           isSidebarOpen
             ? t("research.graph.iconSidebar.close")
@@ -60,8 +60,8 @@ export function GraphIconSidebar({
                 className={[
                   "flex h-10 w-10 items-center justify-center rounded-xl border transition",
                   active
-                    ? "border-border/70 bg-white/10 shadow-[0_0_0_1px_rgba(255,255,255,0.04)]"
-                    : "border-transparent bg-transparent group-hover:border-border/40 group-hover:bg-white/5",
+                    ? "border-border/70 bg-surface shadow-md"
+                    : "border-transparent bg-transparent group-hover:border-border/40 group-hover:bg-surface-hover",
                 ].join(" ")}
               >
                 <Icon className="h-4 w-4" />

@@ -141,7 +141,7 @@ export function TimelineView({
             className={cn(
               "w-3 h-3 rounded-full border-2 bg-background z-10 transition-all",
               active
-                ? "border-amber-400 scale-125 shadow-[0_0_10px_rgba(251,191,36,0.5)]"
+                ? "border-accent scale-125 shadow-lg"
                 : "border-white/10 group-hover/event:border-white/30",
             )}
           />
@@ -149,20 +149,20 @@ export function TimelineView({
 
         <Card
           className={cn(
-            "flex-1 rounded-2xl border transition-all duration-200 bg-[#161a21]/50 backdrop-blur-sm",
+            "flex-1 rounded-2xl border bg-secondary/50 backdrop-blur-sm transition-all duration-200",
             active
-              ? "border-amber-400/40 bg-amber-400/5 shadow-lg shadow-amber-900/10"
+              ? "border-accent/40 bg-accent/5 shadow-lg"
               : "border-white/5 hover:border-white/10 hover:bg-white/[0.02]",
           )}
         >
           <div className="px-4 py-3">
             <div className="flex items-center justify-between gap-2 mb-1">
-              <span className="text-[10px] font-black text-amber-400/60 tracking-wider uppercase">
+              <span className="text-[10px] font-black tracking-wider text-accent/70 uppercase">
                 {readEventDate(event, t("research.graph.timeline.undated"))}
               </span>
               <div className="flex items-center gap-1 opacity-0 group-hover/event:opacity-100 transition-opacity">
                 <select
-                  className="bg-[#0b0e13] border border-white/10 rounded px-1.5 py-0.5 text-[9px] text-fg/50 outline-none"
+                  className="rounded border border-border/60 bg-popover px-1.5 py-0.5 text-[9px] text-fg/60 outline-none"
                   value={readTimelineAttributes(event).segmentId || ""}
                   onChange={(e) =>
                     onUpdateEvent(event.id, {
@@ -198,7 +198,7 @@ export function TimelineView({
       <div className="max-w-3xl mx-auto py-12 px-12">
         <header className="mb-12">
           <div className="flex items-center gap-3 mb-2">
-            <Layout className="w-5 h-5 text-amber-400" />
+            <Layout className="w-5 h-5 text-accent" />
             <h1 className="text-2xl font-black tracking-tight text-fg">
               {currentTimeline?.name}
             </h1>
@@ -209,13 +209,13 @@ export function TimelineView({
         </header>
 
         <div className="space-y-16 relative">
-          <div className="absolute left-[5px] top-4 bottom-4 w-px bg-gradient-to-b from-amber-400/20 via-white/5 to-transparent" />
+          <div className="absolute left-[5px] top-4 bottom-4 w-px bg-gradient-to-b from-accent/25 via-border/40 to-transparent" />
 
           {currentTimeline?.segments.map((segment) => (
             <section key={segment.id} className="relative">
               <div className="flex items-center gap-4 mb-6 -ml-1">
-                <div className="w-3 h-3 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.4)]" />
-                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-amber-400/80 bg-amber-400/10 px-2.5 py-1 rounded-md">
+                <div className="h-3 w-3 rounded-full bg-accent shadow-lg" />
+                <h2 className="rounded-md bg-accent/10 px-2.5 py-1 text-xs font-black tracking-[0.2em] text-accent/80 uppercase">
                   {segment.name}
                 </h2>
               </div>

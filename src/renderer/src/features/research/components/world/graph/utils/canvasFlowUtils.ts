@@ -11,6 +11,7 @@ import type { CanvasGraphNodeData } from "../components/CanvasGraphNodeCard";
 import type { CanvasGraphEdgeData } from "../components/CanvasGraphEdge";
 import type { CanvasTimelineBlockData } from "../components/CanvasTimelineBlockNode";
 import type { CanvasMemoBlockData } from "../components/CanvasMemoBlockNode";
+import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
 
 export type AnyCanvasNodeData =
   | CanvasGraphNodeData
@@ -73,7 +74,12 @@ export const toCanvasBlockNodes = (
     ) => void;
     onTimelineChange: (
       id: string,
-      patch: Partial<Omit<CanvasTimelineBlockData, "onChangeColor" | "onDataChange" | "onDelete">>,
+      patch: Partial<
+        Omit<
+          CanvasTimelineBlockData,
+          "onChangeColor" | "onDataChange" | "onDelete"
+        >
+      >,
     ) => void;
   },
 ): Node<AnyCanvasNodeData>[] =>
@@ -178,8 +184,7 @@ export const syncCanvasLocalNodes = (
       return incoming;
     }
 
-    const preserveCurrentData =
-      incoming.id === lockedNodeId || isCanvasLocalNodeType(current.type);
+    const preserveCurrentData = incoming.id === lockedNodeId;
 
     return {
       ...incoming,
@@ -267,9 +272,9 @@ export const buildFlowEdges = (
   },
 ): Edge<CanvasGraphEdgeData>[] => {
   const entityPalette = {
-    stroke: "rgba(255,255,255,0.12)",
-    selectedStroke: "#f59e0b",
-    glow: "rgba(245,158,11,0.1)",
+    stroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.edge,
+    selectedStroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.selectedEdge,
+    glow: ENTITY_TYPE_CANVAS_THEME.WorldEntity.glow,
   };
 
   const graphEdges = edges.map((edge) => ({

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { NodeProps } from "reactflow";
 import { Handle, Position, NodeToolbar, useReactFlow } from "reactflow";
 import { Button } from "@renderer/components/ui/button";
+import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
 
 export type CanvasMemoBlockData = {
   title: string;
@@ -27,6 +28,7 @@ function CanvasMemoBlockNodeInner({
   const [tagInput, setTagInput] = useState("");
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const reactFlow = useReactFlow();
+  const memoTheme = ENTITY_TYPE_CANVAS_THEME.WorldEntity;
 
   const commitTagInput = useCallback(() => {
     const value = tagInput.trim();
@@ -47,7 +49,7 @@ function CanvasMemoBlockNodeInner({
   return (
     <div className="group relative cursor-default">
       <NodeToolbar isVisible={selected} position={Position.Top} offset={8}>
-        <div className="flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#11151c]/95 p-1 shadow-xl backdrop-blur-md">
+        <div className="flex items-center gap-0.5 rounded-lg border border-white/10 bg-popover/95 p-1 shadow-xl backdrop-blur-md">
           <Button
             type="button"
             size="icon-xs"
@@ -102,7 +104,7 @@ function CanvasMemoBlockNodeInner({
             type="button"
             size="icon-xs"
             variant="ghost"
-            className="h-7 w-7 rounded-md text-fg/60 hover:bg-white/8 hover:text-red-400"
+            className="h-7 w-7 rounded-md text-fg/60 hover:bg-destructive/10 hover:text-destructive"
             onClick={(e) => {
               e.stopPropagation();
               data.onDelete?.(id);
@@ -127,7 +129,7 @@ function CanvasMemoBlockNodeInner({
                 ? "!h-2 !w-2 !border-0 opacity-100 pointer-events-auto"
                 : "!h-2 !w-2 !border-0 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
             }
-            style={{ background: "rgba(255,255,255,0.5)" }}
+            style={{ background: memoTheme.handle }}
           />
           <Handle
             type="target"
@@ -138,7 +140,7 @@ function CanvasMemoBlockNodeInner({
                 ? "!h-2 !w-2 !border-0 opacity-100 pointer-events-auto"
                 : "!h-2 !w-2 !border-0 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
             }
-            style={{ background: "rgba(255,255,255,0.5)" }}
+            style={{ background: memoTheme.handle }}
           />
         </span>
       ))}
@@ -146,19 +148,18 @@ function CanvasMemoBlockNodeInner({
       <div
         className="flex w-[280px] flex-col overflow-hidden rounded-xl border transition-all"
         style={{
-          background: data.color ?? (selected ? "#1a1f28" : "#171c24"),
+          background:
+            data.color ??
+            (selected ? memoTheme.surface : "hsl(var(--secondary) / 0.64)"),
           borderColor: selected
-            ? "rgba(255,255,255,0.28)"
-            : "rgba(255,255,255,0.10)",
+            ? memoTheme.accent
+            : "hsl(var(--foreground) / 0.12)",
           boxShadow: selected
-            ? "0 0 0 1px rgba(255,255,255,0.1), 0 8px 24px rgba(0,0,0,0.28)"
+            ? `0 0 0 1px ${memoTheme.accent}22, 0 0 0 4px ${memoTheme.glow}, 0 8px 24px rgba(0,0,0,0.28)`
             : "0 2px 8px rgba(0,0,0,0.18)",
         }}
       >
-        <div
-          className="border-b px-4 py-2.5"
-          style={{ borderColor: "rgba(255,255,255,0.07)" }}
-        >
+        <div className="border-b border-white/10 px-4 py-2.5">
           <input
             ref={titleInputRef}
             type="text"
@@ -169,10 +170,7 @@ function CanvasMemoBlockNodeInner({
           />
         </div>
 
-        <div
-          className="border-b px-4 py-2"
-          style={{ borderColor: "rgba(255,255,255,0.07)" }}
-        >
+        <div className="border-b border-white/10 px-4 py-2">
           <div className="flex flex-wrap items-center gap-1.5">
             <Tag className="h-3 w-3 shrink-0 text-fg/30" />
             {(data.tags ?? []).map((tag, index) => (

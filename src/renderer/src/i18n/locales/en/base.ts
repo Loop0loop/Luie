@@ -604,6 +604,8 @@ export const enBase = {
   research: {
     title: {
       characters: "Characters",
+      events: "Events",
+      factions: "Factions",
       world: "World",
       scrap: "Scrap",
       analysis: "Analysis",

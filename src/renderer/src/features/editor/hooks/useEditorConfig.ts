@@ -28,11 +28,18 @@ export function useEditorConfig() {
       return "var(--font-sans)";
     }
 
-    return fontFamily === "serif"
-      ? "var(--font-serif)"
-      : fontFamily === "mono"
-        ? "var(--font-mono)"
-        : "var(--font-sans)";
+    if (fontFamily === "serif") {
+      return "var(--font-serif)";
+    }
+
+    if (fontFamily === "mono") {
+      return "var(--font-mono)";
+    }
+
+    const trimmedFamily = fontFamily.trim();
+    return trimmedFamily
+      ? `"${trimmedFamily}", var(--font-sans)`
+      : "var(--font-sans)";
   }, [fontFamily, fontPreset, customFontFamily]);
 
   return {

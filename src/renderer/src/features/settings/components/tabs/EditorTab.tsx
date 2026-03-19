@@ -3,12 +3,14 @@ import { Minus, Plus } from "lucide-react";
 import type { TFunction } from "i18next";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useShallow } from "zustand/react/shallow";
+import { useSystemFonts } from "@renderer/features/editor/hooks/useSystemFonts";
+import type { FontFamilyPreset } from "@shared/types";
 
-const FONT_FAMILIES = [
+const FONT_FAMILIES: Array<{ id: FontFamilyPreset; label: string }> = [
   { id: "system-ui", label: "System UI" },
   { id: "serif", label: "Serif" },
   { id: "mono", label: "Mono" },
-] as const;
+];
 
 interface EditorTabProps {
   t: TFunction;
@@ -42,6 +44,15 @@ export const EditorTab = memo(function EditorTab({
   );
 
   const [customInput, setCustomInput] = useState(customFontFamily ?? "");
+
+  const {
+    fonts: systemFonts,
+    isLoading: isLoadingSystemFonts,
+    isSupported: isSystemFontsSupported,
+  } = useSystemFonts();
+
+  const isPresetFont = (family: string): family is FontFamilyPreset =>
+    FONT_FAMILIES.some((f) => f.id === family);
 
   return (
     <div className="space-y-8 max-w-2xl">
@@ -118,6 +129,65 @@ export const EditorTab = memo(function EditorTab({
           </div>
         </button>
       </section>
+
+      {isSystemFontsSupported && (
+        <>
+          <div className="h-px bg-border my-6" />
+
+          <section className="space-y-4">
+            <h3 className="text-base font-semibold text-fg">
+              {t("settings.section.systemFonts", "System Fonts")}
+            </h3>
+            {isLoadingSystemFonts ? (
+              <div className="text-sm text-muted">{t("loading")}</div>
+            ) : systemFonts.length > 0 ? (
+              <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                {systemFonts.map((font) => {
+                  const isSelected =
+                    fontFamily === font.family &&
+                    !fontPreset &&
+                    !customFontFamily;
+                  const isDisabled = isPresetFont(font.family);
+                  return (
+                    <button
+                      key={font.family}
+                      onClick={() => {
+                        if (!isDisabled) {
+                          onApplySettings({
+                            fontFamily: font.family,
+                            fontPreset: undefined,
+                            customFontFamily: undefined,
+                          });
+                        }
+                      }}
+                      disabled={isDisabled}
+                      className={`p-3 rounded-lg border text-left transition-colors duration-150 ${
+                        isSelected
+                          ? "border-accent ring-1 ring-accent bg-accent/5"
+                          : "border-border hover:bg-surface-hover"
+                      } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                      <span
+                        className="text-lg block mb-1"
+                        style={{ fontFamily: font.family }}
+                      >
+                        Aa
+                      </span>
+                      <span className="text-xs text-muted truncate block">
+                        {font.family}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-sm text-muted">
+                {t("settings.systemFonts.none", "No system fonts available")}
+              </div>
+            )}
+          </section>
+        </>
+      )}
 
       <div className="h-px bg-border my-6" />
 

@@ -335,7 +335,7 @@ export function WorldGraphPanel() {
               {!hasLuieAttachment ? (
                 <Badge
                   variant="outline"
-                  className="border-amber-500/30 text-amber-200"
+                  className="border-border/70 text-muted-foreground"
                 >
                   {t("research.graph.header.replicaOnly")}
                 </Badge>
@@ -358,13 +358,13 @@ export function WorldGraphPanel() {
         </header>
 
         {graphError ? (
-          <div className="border-b border-red-400/20 bg-red-500/10 px-5 py-3 text-sm text-red-200">
+          <div className="border-b border-destructive/30 bg-destructive/10 px-5 py-3 text-sm text-destructive/90">
             {graphError}
           </div>
         ) : null}
 
         {!hasLuieAttachment ? (
-          <div className="border-b border-amber-400/20 bg-amber-500/10 px-5 py-3 text-sm text-amber-100">
+          <div className="border-b border-muted/50 bg-muted/25 px-5 py-3 text-sm text-muted-foreground">
             {t("research.graph.header.replicaNotice")}
           </div>
         ) : null}

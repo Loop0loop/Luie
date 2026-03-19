@@ -13,6 +13,7 @@ import {
 import type { EdgeProps } from "reactflow";
 import { BaseEdge, EdgeLabelRenderer, getBezierPath } from "reactflow";
 import { Button } from "@renderer/components/ui/button";
+import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
 import { CANVAS_EDGE_COLORS } from "../utils/canvasFlowUtils";
 
 export type CanvasGraphEdgeData = {
@@ -60,9 +61,9 @@ function CanvasGraphEdgeInner({
   });
 
   const palette = data?.palette ?? {
-    stroke: "rgba(255,255,255,0.22)",
-    selectedStroke: "rgba(255,255,255,0.95)",
-    glow: "rgba(255,255,255,0.18)",
+    stroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.edge,
+    selectedStroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.selectedEdge,
+    glow: ENTITY_TYPE_CANVAS_THEME.WorldEntity.glow,
   };
 
   const strokeColor = selected ? palette.selectedStroke : palette.stroke;
@@ -92,12 +93,12 @@ function CanvasGraphEdgeInner({
           className="nodrag nopan flex flex-col items-center gap-1.5"
         >
           {selected && (
-            <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-[#11151c]/95 p-1 shadow-xl backdrop-blur-md transition-all">
+            <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-popover/95 p-1 shadow-xl backdrop-blur-md transition-all">
               <Button
                 type="button"
                 size="icon-xs"
                 variant="ghost"
-                className="h-7 w-7 rounded-md text-fg/70 hover:bg-white/10 hover:text-red-400"
+                className="h-7 w-7 rounded-md text-fg/70 hover:bg-destructive/10 hover:text-destructive"
                 onClick={(e) => {
                   e.stopPropagation();
                   data?.onDelete?.(id);
@@ -136,7 +137,7 @@ function CanvasGraphEdgeInner({
                     <Palette className="h-3.5 w-3.5" />
                   </Button>
                   {showPalette && (
-                    <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-lg border border-white/10 bg-[#11151c]/95 p-1.5 shadow-xl backdrop-blur-md">
+                    <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-lg border border-white/10 bg-popover/95 p-1.5 shadow-xl backdrop-blur-md">
                       {CANVAS_EDGE_COLORS.map((color) => (
                         <button
                           key={color}
@@ -171,7 +172,7 @@ function CanvasGraphEdgeInner({
                     <ArrowRightLeft className="h-3.5 w-3.5" />
                   </Button>
                   {showDirection && (
-                    <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-lg border border-white/10 bg-[#11151c]/95 p-1 shadow-xl backdrop-blur-md">
+                    <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-lg border border-white/10 bg-popover/95 p-1 shadow-xl backdrop-blur-md">
                       <Button
                         type="button"
                         size="icon-xs"
@@ -255,13 +256,12 @@ function CanvasGraphEdgeInner({
           )}
           {label && (
             <div
-              className="rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-wide"
+              className="rounded-full border bg-popover/95 px-2.5 py-1 text-[11px] font-semibold tracking-wide"
               style={{
-                backgroundColor: "rgba(11,14,19,0.92)",
                 borderColor: strokeColor,
                 color: selected
-                  ? "rgba(255,255,255,0.92)"
-                  : "rgba(255,255,255,0.6)",
+                  ? "hsl(var(--foreground) / 0.92)"
+                  : "hsl(var(--foreground) / 0.62)",
               }}
             >
               {label}

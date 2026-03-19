@@ -607,11 +607,13 @@ export const jaBase = {
   },
   research: {
     title: {
-      characters: "Characters",
-      world: "World",
-      scrap: "Scrap",
+      characters: "登場人物",
+      events: "出来事",
+      factions: "勢力",
+      world: "世界観",
+      scrap: "資料スクラップ",
       analysis: "分析",
-      default: "Research",
+      default: "リサーチ",
     },
     graph: {
       tabs: {

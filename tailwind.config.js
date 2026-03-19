@@ -6,7 +6,7 @@ export default {
     extend: {
       colors: {
         // Design tokens (CSS variables)
-        canvas: "var(--bg-app)",
+        canvas: "var(--bg-canvas)",
         sidebar: "var(--bg-sidebar)",
         panel: "var(--bg-panel)",
 

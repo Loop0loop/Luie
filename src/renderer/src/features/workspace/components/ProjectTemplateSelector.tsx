@@ -11,6 +11,7 @@ import { ProjectContextMenu } from "./project-selector/ProjectContextMenu";
 import { TemplateGrid } from "./project-selector/TemplateGrid";
 import { ProjectActionDialogs } from "./project-selector/ProjectActionDialogs";
 import { RestoreBackupDialog } from "./project-selector/RestoreBackupDialog";
+import { ArrowLeft } from "lucide-react";
 
 interface ProjectTemplateSelectorProps {
   onSelectProject: (templateId: string, projectPath: string) => void;
@@ -244,6 +245,19 @@ export default function ProjectTemplateSelector({
               selectorState.handleSelectTemplate(tid, onSelectProject)
             }
           />
+
+          {activeCategory !== "all" && (
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
+              <button
+                type="button"
+                onClick={() => setActiveCategory("all")}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                {t("back", "Back")}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

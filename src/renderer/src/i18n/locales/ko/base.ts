@@ -601,11 +601,13 @@ export const koBase = {
   },
   research: {
     title: {
-      characters: "Characters",
-      world: "World",
-      scrap: "Scrap",
+      characters: "등장인물",
+      events: "사건",
+      factions: "세력",
+      world: "세계관",
+      scrap: "자료 스크랩",
       analysis: "분석",
-      default: "Research",
+      default: "연구",
     },
     graph: {
       tabs: {

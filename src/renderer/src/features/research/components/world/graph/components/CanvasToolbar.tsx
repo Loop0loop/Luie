@@ -17,7 +17,7 @@ export function CanvasToolbar({
 
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-6 z-10 flex justify-center">
-      <div className="pointer-events-auto flex items-center gap-1.5 rounded-2xl border border-white/8 bg-[#151920]/90 p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur">
+      <div className="pointer-events-auto flex items-center gap-1.5 rounded-2xl border border-white/10 bg-popover/90 p-1.5 shadow-2xl backdrop-blur">
         <Button
           type="button"
           size="icon"

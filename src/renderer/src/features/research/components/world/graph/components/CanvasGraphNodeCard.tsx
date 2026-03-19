@@ -36,12 +36,12 @@ function CanvasGraphNodeCardInner({
   return (
     <div className="group relative cursor-default">
       <NodeToolbar isVisible={selected} position={Position.Top} offset={8}>
-        <div className="flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#11151c]/95 p-1 shadow-xl backdrop-blur-md">
+        <div className="flex items-center gap-0.5 rounded-lg border border-white/10 bg-popover/95 p-1 shadow-xl backdrop-blur-md">
           <Button
             type="button"
             size="icon-xs"
             variant="ghost"
-            className="h-7 w-7 rounded-md text-fg/60 hover:bg-white/8 hover:text-red-400"
+            className="h-7 w-7 rounded-md text-fg/60 hover:bg-destructive/10 hover:text-destructive"
             onClick={(e) => {
               e.stopPropagation();
               data.onDelete?.(id);
@@ -163,11 +163,11 @@ function CanvasGraphNodeCardInner({
         className="flex min-w-[190px] max-w-[300px] flex-col gap-1 rounded-xl border px-5 py-3.5 transition-all"
         style={{
           background: selected
-            ? "rgba(255,255,255,0.04)"
-            : "rgba(255,255,255,0.025)",
+            ? `${theme.surface}`
+            : "hsl(var(--secondary) / 0.48)",
           borderColor: selected ? theme.accent : "rgba(255,255,255,0.12)",
           boxShadow: selected
-            ? `0 0 0 1px ${theme.accent}22, 0 8px 24px rgba(0,0,0,0.28)`
+            ? `0 0 0 1px ${theme.accent}22, 0 0 0 4px ${theme.glow}, 0 8px 24px rgba(0,0,0,0.28)`
             : `0 2px 8px rgba(0,0,0,0.18)`,
         }}
       >

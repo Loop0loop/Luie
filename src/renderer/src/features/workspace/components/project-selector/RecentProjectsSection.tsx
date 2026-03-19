@@ -112,7 +112,7 @@ export function RecentProjectsSection({
                   </svg>
                 </div>
                 <span
-                  className="text-xs font-medium text-fg truncate max-w-[120px]"
+                  className="text-xs font-medium text-[var(--text-primary)] truncate max-w-[120px]"
                   title={syncStatus.email}
                 >
                   {syncStatus.email}
@@ -120,7 +120,7 @@ export function RecentProjectsSection({
               </div>
               <button
                 type="button"
-                className="px-3 py-1.5 text-xs rounded-md bg-surface border border-border text-fg hover:bg-red-500/10 hover:text-red-400 transition-colors flex items-center gap-1.5 leading-none"
+                className="px-3 py-1.5 text-xs rounded-md bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-destructive/10 hover:text-destructive transition-colors flex items-center gap-1.5 leading-none"
                 onClick={() => onDisconnectGoogle?.()}
               >
                 <LogOut className="w-3 h-3" />
@@ -130,7 +130,7 @@ export function RecentProjectsSection({
           ) : (
             <button
               type="button"
-              className="px-4 py-1.5 text-xs font-medium rounded-md bg-white text-gray-800 hover:bg-gray-100 border border-gray-200 transition-colors shadow-sm flex items-center gap-2"
+              className="px-4 py-1.5 text-xs font-medium rounded-md bg-[var(--accent-bg)] text-[var(--accent-fg)] hover:bg-[var(--accent-bg-hover)] border border-[var(--accent-border)] transition-colors shadow-sm flex items-center gap-2"
               onClick={() => onConnectGoogle?.()}
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">

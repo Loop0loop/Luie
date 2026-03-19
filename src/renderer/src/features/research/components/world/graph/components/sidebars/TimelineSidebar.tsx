@@ -146,7 +146,7 @@ export function TimelineSidebar({
                         }
                       />
                       <button
-                        className="opacity-0 group-hover/seg:opacity-100 p-0.5 hover:text-red-400 transition-opacity"
+                        className="p-0.5 opacity-0 transition-opacity group-hover/seg:opacity-100 hover:text-destructive"
                         onClick={() =>
                           handleDeleteSegment(timeline.id, segment.id)
                         }
@@ -184,7 +184,7 @@ export function TimelineSidebar({
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 hover:text-red-400"
+            className="h-8 w-8 hover:text-destructive"
             onClick={() => handleDeleteTimeline(selectedTimelineId)}
           >
             <Trash2 className="w-3.5 h-3.5" />

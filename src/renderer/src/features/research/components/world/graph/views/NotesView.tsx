@@ -33,7 +33,7 @@ export function NotesView({
   if (!currentProjectId) {
     return (
       <div className="flex h-full items-center justify-center bg-canvas px-8">
-        <div className="max-w-md rounded-[24px] border border-dashed border-border/60 bg-white/5 px-6 py-8 text-center text-sm text-fg/65">
+        <div className="max-w-md rounded-[24px] border border-dashed border-border/60 bg-surface px-6 py-8 text-center text-sm text-fg/65">
           {t("research.graph.notes.noProject")}
         </div>
       </div>
@@ -51,14 +51,14 @@ export function NotesView({
   if (!activeNote) {
     return (
       <div className="flex h-full items-center justify-center bg-canvas px-8">
-        <div className="max-w-md rounded-[24px] border border-dashed border-border/60 bg-white/5 px-6 py-8 text-center">
+        <div className="max-w-md rounded-[24px] border border-dashed border-border/60 bg-surface px-6 py-8 text-center">
           <p className="text-sm text-fg/70">
             {t("research.graph.notes.empty")}
           </p>
           <button
             type="button"
             onClick={onCreateNote}
-            className="mt-5 rounded-xl border border-border/60 bg-white/10 px-4 py-2 text-sm text-fg transition hover:bg-white/15"
+            className="mt-5 rounded-xl border border-border/60 bg-surface px-4 py-2 text-sm text-fg transition hover:bg-surface-hover"
           >
             {t("research.graph.notes.createFirst")}
           </button>
@@ -85,7 +85,7 @@ export function NotesView({
           </Button>
         </div>
 
-        <Card className="border-white/10 bg-panel shadow-[0_24px_70px_rgba(0,0,0,0.38)]">
+        <Card className="border-white/10 bg-panel shadow-modal">
           <CardContent className="space-y-6 pt-8">
             <div className="space-y-3 text-center">
               <p className="text-[11px] uppercase tracking-[0.26em] text-fg/42">

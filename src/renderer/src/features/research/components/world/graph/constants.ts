@@ -128,7 +128,7 @@ export const ENTITY_TYPE_CANVAS_THEME: Record<
     selectedEdge: "rgba(150,212,255,0.95)",
     glow: "rgba(119,185,255,0.22)",
     surface:
-      "linear-gradient(180deg, rgba(22,27,35,0.98) 0%, rgba(14,18,25,0.98) 100%)",
+      "linear-gradient(180deg, hsl(var(--secondary) / 0.92) 0%, hsl(var(--canvas) / 0.96) 100%)",
     handle: "#b9dcff",
   },
   Event: {
@@ -137,7 +137,7 @@ export const ENTITY_TYPE_CANVAS_THEME: Record<
     selectedEdge: "rgba(252,223,135,0.96)",
     glow: "rgba(243,200,107,0.2)",
     surface:
-      "linear-gradient(180deg, rgba(34,28,18,0.98) 0%, rgba(20,17,12,0.98) 100%)",
+      "linear-gradient(180deg, hsl(var(--secondary) / 0.92) 0%, hsl(var(--canvas) / 0.96) 100%)",
     handle: "#ffe3a0",
   },
   Faction: {
@@ -146,7 +146,7 @@ export const ENTITY_TYPE_CANVAS_THEME: Record<
     selectedEdge: "rgba(251,165,184,0.95)",
     glow: "rgba(239,123,148,0.21)",
     surface:
-      "linear-gradient(180deg, rgba(34,19,24,0.98) 0%, rgba(20,12,16,0.98) 100%)",
+      "linear-gradient(180deg, hsl(var(--secondary) / 0.92) 0%, hsl(var(--canvas) / 0.96) 100%)",
     handle: "#ffb2c0",
   },
   Term: {
@@ -155,7 +155,7 @@ export const ENTITY_TYPE_CANVAS_THEME: Record<
     selectedEdge: "rgba(141,240,209,0.94)",
     glow: "rgba(79,212,180,0.2)",
     surface:
-      "linear-gradient(180deg, rgba(16,34,31,0.98) 0%, rgba(11,20,18,0.98) 100%)",
+      "linear-gradient(180deg, hsl(var(--secondary) / 0.92) 0%, hsl(var(--canvas) / 0.96) 100%)",
     handle: "#99f2de",
   },
   Place: {
@@ -164,7 +164,7 @@ export const ENTITY_TYPE_CANVAS_THEME: Record<
     selectedEdge: "rgba(180,238,157,0.95)",
     glow: "rgba(132,212,110,0.2)",
     surface:
-      "linear-gradient(180deg, rgba(22,31,18,0.98) 0%, rgba(13,19,11,0.98) 100%)",
+      "linear-gradient(180deg, hsl(var(--secondary) / 0.92) 0%, hsl(var(--canvas) / 0.96) 100%)",
     handle: "#c3f7aa",
   },
   Concept: {
@@ -173,7 +173,7 @@ export const ENTITY_TYPE_CANVAS_THEME: Record<
     selectedEdge: "rgba(224,188,255,0.95)",
     glow: "rgba(200,140,255,0.2)",
     surface:
-      "linear-gradient(180deg, rgba(28,20,34,0.98) 0%, rgba(17,13,21,0.98) 100%)",
+      "linear-gradient(180deg, hsl(var(--secondary) / 0.92) 0%, hsl(var(--canvas) / 0.96) 100%)",
     handle: "#e6c7ff",
   },
   Rule: {
@@ -182,7 +182,7 @@ export const ENTITY_TYPE_CANVAS_THEME: Record<
     selectedEdge: "rgba(208,188,255,0.95)",
     glow: "rgba(172,144,255,0.2)",
     surface:
-      "linear-gradient(180deg, rgba(23,21,34,0.98) 0%, rgba(14,12,21,0.98) 100%)",
+      "linear-gradient(180deg, hsl(var(--secondary) / 0.92) 0%, hsl(var(--canvas) / 0.96) 100%)",
     handle: "#d4c3ff",
   },
   Item: {
@@ -191,7 +191,7 @@ export const ENTITY_TYPE_CANVAS_THEME: Record<
     selectedEdge: "rgba(255,198,160,0.95)",
     glow: "rgba(255,154,98,0.2)",
     surface:
-      "linear-gradient(180deg, rgba(35,22,18,0.98) 0%, rgba(22,14,11,0.98) 100%)",
+      "linear-gradient(180deg, hsl(var(--secondary) / 0.92) 0%, hsl(var(--canvas) / 0.96) 100%)",
     handle: "#ffd1b3",
   },
   WorldEntity: {
@@ -200,7 +200,7 @@ export const ENTITY_TYPE_CANVAS_THEME: Record<
     selectedEdge: "rgba(225,231,238,0.95)",
     glow: "rgba(182,190,201,0.18)",
     surface:
-      "linear-gradient(180deg, rgba(25,28,34,0.98) 0%, rgba(14,17,21,0.98) 100%)",
+      "linear-gradient(180deg, hsl(var(--secondary) / 0.92) 0%, hsl(var(--canvas) / 0.96) 100%)",
     handle: "#e8edf3",
   },
 };

@@ -64,7 +64,7 @@ export function LibraryView({
     <div className="h-full overflow-y-auto bg-canvas">
       <div className="mx-auto max-w-6xl space-y-8 px-8 py-8">
         {error ? (
-          <div className="rounded-[24px] border border-red-400/20 bg-red-500/10 px-5 py-4 text-sm text-red-200">
+          <div className="rounded-[24px] border border-destructive/30 bg-destructive/10 px-5 py-4 text-sm text-destructive/90">
             {error}
           </div>
         ) : null}
@@ -181,7 +181,7 @@ export function LibraryView({
                 return (
                   <Card
                     key={plugin.pluginId}
-                    className="rounded-[24px] border border-border/60 bg-[#161a21]"
+                    className="rounded-[24px] border border-border/60 bg-panel"
                   >
                     <CardContent className="pt-4">
                       <div className="flex items-start gap-4">

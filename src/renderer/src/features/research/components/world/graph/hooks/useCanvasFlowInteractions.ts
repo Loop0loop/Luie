@@ -20,6 +20,7 @@ import {
   isTimelineInternalHandle,
   type AnyCanvasNodeData,
 } from "../utils/canvasFlowUtils";
+import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
 
 type UseCanvasFlowInteractionsInput = {
   graphNodes: Node<any>[];
@@ -125,9 +126,9 @@ export function useCanvasFlowInteractions({
       decorateEdges(
         graphEdges.map((edge) => {
           const palette = edge.data?.palette ?? {
-            stroke: "rgba(255,255,255,0.12)",
-            selectedStroke: "#f59e0b",
-            glow: "rgba(245,158,11,0.1)",
+            stroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.edge,
+            selectedStroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.selectedEdge,
+            glow: ENTITY_TYPE_CANVAS_THEME.WorldEntity.glow,
           };
 
           return {
@@ -451,7 +452,22 @@ export function useCanvasFlowInteractions({
       const pendingSnap = pendingSnapRef.current;
       pendingSnapRef.current = null;
 
-      if (pendingSnap) {
+      if (isCanvasLocalNodeType(node.type)) {
+        setNodes((currentNodes) => {
+          const nextNodes = pendingSnap
+            ? currentNodes.map((currentNode) =>
+                currentNode.id !== node.id
+                  ? currentNode
+                  : {
+                      ...currentNode,
+                      position: { x: pendingSnap.x, y: pendingSnap.y },
+                    },
+              )
+            : currentNodes;
+          commitCanvasBlocks(nextNodes);
+          return nextNodes;
+        });
+      } else if (pendingSnap) {
         setNodes((currentNodes) =>
           currentNodes.map((currentNode) =>
             currentNode.id !== node.id
@@ -469,10 +485,6 @@ export function useCanvasFlowInteractions({
 
       if (node.type === "custom-entity") {
         onNodePositionCommit?.({ id: node.id, x: position.x, y: position.y });
-      }
-
-      if (isCanvasLocalNodeType(node.type)) {
-        commitCanvasBlocks(nodesRef.current);
       }
 
       window.setTimeout(() => {

@@ -37,6 +37,7 @@ import {
   CANVAS_EDGE_COLORS,
   type AnyCanvasNodeData,
 } from "../utils/canvasFlowUtils";
+import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
 
 interface CanvasViewProps {
   nodes: WorldGraphNode[];
@@ -99,6 +100,8 @@ function CanvasFlowSurface({
   onAutoLayoutApplied?: () => void;
   onCreateBlock: (position?: { x: number; y: number }) => void;
 }) {
+  const worldTheme = ENTITY_TYPE_CANVAS_THEME.WorldEntity;
+  const eventTheme = ENTITY_TYPE_CANVAS_THEME.Event;
   const [timelinePaletteOpen, setTimelinePaletteOpen] = useState(false);
   const reactFlow = useReactFlow<AnyCanvasNodeData>();
   const pointerPlacementRef = useRef<{ x: number; y: number } | null>(null);
@@ -234,10 +237,10 @@ function CanvasFlowSurface({
         onlyRenderVisibleElements
         connectionMode={"loose" as ConnectionMode}
         style={{ cursor: "default" }}
-        className="bg-[#0f1319]"
+        className="bg-canvas"
       >
         <Background
-          color="rgba(255,255,255,0.04)"
+          color={worldTheme.glow}
           gap={32}
           size={1}
           variant={BackgroundVariant.Dots}
@@ -246,14 +249,22 @@ function CanvasFlowSurface({
 
       {guideScreenX !== null ? (
         <div
-          className="pointer-events-none absolute inset-y-0 z-20 w-px bg-amber-400/70"
-          style={{ left: `${guideScreenX}px` }}
+          className="pointer-events-none absolute inset-y-0 z-20 w-px"
+          style={{
+            left: `${guideScreenX}px`,
+            backgroundColor: eventTheme.accent,
+            opacity: 0.72,
+          }}
         />
       ) : null}
       {guideScreenY !== null ? (
         <div
-          className="pointer-events-none absolute inset-x-0 z-20 h-px bg-amber-400/70"
-          style={{ top: `${guideScreenY}px` }}
+          className="pointer-events-none absolute inset-x-0 z-20 h-px"
+          style={{
+            top: `${guideScreenY}px`,
+            backgroundColor: eventTheme.accent,
+            opacity: 0.72,
+          }}
         />
       ) : null}
 

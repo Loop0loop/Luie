@@ -454,7 +454,7 @@ export const syncResolveConflictArgsSchema = z.tuple([
 ]);
 
 export const editorSettingsSchema = z.strictObject({
-  fontFamily: z.enum(["system-ui", "serif", "mono"]),
+  fontFamily: z.union([z.enum(["system-ui", "serif", "mono"]), z.string()]),
   fontPreset: z
     .string()
     .optional()

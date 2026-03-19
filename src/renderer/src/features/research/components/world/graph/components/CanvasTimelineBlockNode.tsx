@@ -12,6 +12,7 @@ import type { NodeProps } from "reactflow";
 import { Position, Handle, useReactFlow } from "reactflow";
 import { cn } from "@renderer/lib/utils";
 import { Button } from "@renderer/components/ui/button";
+import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
 
 export type CanvasTimelineBlockData = {
   content: string;
@@ -41,6 +42,7 @@ export const CanvasTimelineBlockNode = memo(
       onDelete,
     } = data;
     const reactFlow = useReactFlow();
+    const eventTheme = ENTITY_TYPE_CANVAS_THEME.Event;
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const handleZoom = () => {
@@ -75,7 +77,7 @@ export const CanvasTimelineBlockNode = memo(
                   event.stopPropagation();
                   onChangeColor?.(id);
                 }}
-                className="w-8 h-8 text-muted-foreground hover:text-indigo-300 hover:bg-indigo-500/10"
+                className="w-8 h-8 text-muted-foreground hover:bg-accent/10 hover:text-accent"
               >
                 <Palette className="w-4 h-4" />
               </Button>
@@ -101,9 +103,7 @@ export const CanvasTimelineBlockNode = memo(
                 }}
                 className={cn(
                   "w-8 h-8",
-                  isHeld
-                    ? "text-amber-400 bg-amber-500/10"
-                    : "text-muted-foreground",
+                  isHeld ? "bg-secondary text-fg/70" : "text-muted-foreground",
                 )}
               >
                 {isHeld ? (
@@ -136,16 +136,25 @@ export const CanvasTimelineBlockNode = memo(
               ? "border-dashed border-white/5 opacity-40 grayscale"
               : "border-white/5",
             selected
-              ? "bg-secondary border-amber-500 ring-4 ring-amber-500/5 shadow-2xl scale-[1.05] z-40"
+              ? "bg-secondary ring-4 shadow-2xl scale-[1.05] z-40"
               : "hover:bg-secondary/60 hover:border-white/10",
           )}
-          style={{ backgroundColor: data.color }}
+          style={{
+            backgroundColor: data.color ?? eventTheme.surface,
+            ...(selected
+              ? {
+                  borderColor: eventTheme.accent,
+                  boxShadow: `0 0 0 1px ${eventTheme.accent}22, 0 0 0 4px ${eventTheme.glow}, 0 20px 32px rgba(0,0,0,0.32)`,
+                }
+              : null),
+          }}
         >
           <div
             className={cn(
               "mr-3.5 flex-shrink-0 p-1.5 rounded-full transition-colors",
-              isHeld ? "text-amber-500/40" : "bg-amber-500/10 text-amber-500",
+              isHeld ? "text-fg/45" : "text-fg/85",
             )}
+            style={isHeld ? undefined : { backgroundColor: eventTheme.glow }}
           >
             {isHeld ? (
               <PauseCircle className="w-4 h-4" />
@@ -183,22 +192,24 @@ export const CanvasTimelineBlockNode = memo(
               type="source"
               position={position}
               className={cn(
-                "!h-2.5 !w-2.5 !border-0 transition-opacity bg-amber-500",
+                "!h-2.5 !w-2.5 !border-0 transition-opacity",
                 selected
                   ? "opacity-100 pointer-events-auto"
                   : "opacity-0 group-hover/card:opacity-100 pointer-events-none group-hover/card:pointer-events-auto",
               )}
+              style={{ backgroundColor: eventTheme.handle }}
             />
             <Handle
               id={`${axis}-target`}
               type="target"
               position={position}
               className={cn(
-                "!h-2.5 !w-2.5 !border-0 transition-opacity bg-amber-500",
+                "!h-2.5 !w-2.5 !border-0 transition-opacity",
                 selected
                   ? "opacity-100 pointer-events-auto"
                   : "opacity-0 group-hover/card:opacity-100 pointer-events-none group-hover/card:pointer-events-auto",
               )}
+              style={{ backgroundColor: eventTheme.handle }}
             />
           </span>
         ))}

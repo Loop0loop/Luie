@@ -6,6 +6,7 @@ import { useWorldBuildingStore } from "@renderer/features/research/stores/worldB
 import type { WorldEntitySourceType } from "@shared/types";
 import { Trash2, Palette, Edit2, Maximize2 } from "lucide-react";
 import { Button } from "@renderer/components/ui/button";
+import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
 
 interface CustomEntityNodeProps {
   id: string;
@@ -36,6 +37,10 @@ export const CustomEntityNode = memo(
 
     const [isEditing, setIsEditing] = useState(false);
     const [editLabel, setEditLabel] = useState(label);
+    const theme =
+      ENTITY_TYPE_CANVAS_THEME[
+        entityType as keyof typeof ENTITY_TYPE_CANVAS_THEME
+      ] ?? ENTITY_TYPE_CANVAS_THEME.WorldEntity;
 
     useEffect(() => setEditLabel(label), [label]);
 
@@ -63,11 +68,17 @@ export const CustomEntityNode = memo(
         className={cn(
           "group relative flex flex-col min-w-[200px] max-w-[320px] rounded-2xl border bg-secondary/40 backdrop-blur-xl shadow-sm transition-all duration-300",
           selected
-            ? "border-amber-500 ring-4 ring-amber-500/5 shadow-2xl scale-[1.02]"
+            ? "ring-4 shadow-2xl scale-[1.02]"
             : "border-white/5 hover:border-white/10",
         )}
         style={{
-          backgroundColor: data.color ?? "rgba(20,24,30,0.9)",
+          background: data.color ?? theme.surface,
+          ...(selected
+            ? {
+                borderColor: theme.accent,
+                boxShadow: `0 0 0 1px ${theme.accent}22, 0 0 0 4px ${theme.glow}, 0 20px 32px rgba(0,0,0,0.32)`,
+              }
+            : null),
         }}
       >
         <NodeToolbar isVisible={selected} position={Position.Top} offset={12}>
@@ -126,7 +137,8 @@ export const CustomEntityNode = memo(
               onChange={(e) => setEditLabel(e.target.value)}
               onBlur={handleSave}
               onKeyDown={handleKeyDown}
-              className="w-full bg-transparent text-[15px] font-black tracking-tight text-foreground outline-none border-b-2 border-amber-500 pb-1"
+              className="w-full bg-transparent text-[15px] font-black tracking-tight text-foreground outline-none border-b-2 pb-1"
+              style={{ borderBottomColor: theme.accent }}
             />
           ) : (
             <div
@@ -157,22 +169,30 @@ export const CustomEntityNode = memo(
               position={h.pos}
               id={`${h.id}-source`}
               className={cn(
-                "!w-3 !h-3 !bg-amber-500 !border-2 !border-[#1c2128] transition-all hover:!scale-150 hover:!bg-amber-400",
+                "!w-3 !h-3 !border-2 transition-all hover:!scale-150",
                 selected
                   ? "!opacity-100 pointer-events-auto"
                   : "!opacity-0 group-hover:!opacity-100 pointer-events-none group-hover:pointer-events-auto",
               )}
+              style={{
+                backgroundColor: theme.handle,
+                borderColor: "hsl(var(--canvas) / 0.9)",
+              }}
             />
             <Handle
               type="target"
               position={h.pos}
               id={`${h.id}-target`}
               className={cn(
-                "!w-3 !h-3 !bg-amber-500 !border-2 !border-[#1c2128] transition-all hover:!scale-150 hover:!bg-amber-400",
+                "!w-3 !h-3 !border-2 transition-all hover:!scale-150",
                 selected
                   ? "!opacity-100 pointer-events-auto"
                   : "!opacity-0 group-hover:!opacity-100 pointer-events-none group-hover:pointer-events-auto",
               )}
+              style={{
+                backgroundColor: theme.handle,
+                borderColor: "hsl(var(--canvas) / 0.9)",
+              }}
             />
           </span>
         ))}

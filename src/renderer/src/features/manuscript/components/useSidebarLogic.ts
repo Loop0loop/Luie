@@ -33,23 +33,25 @@ export type SidebarItem =
   | { type: "trash-empty" };
 
 export function useSidebarLogic({
-  currentProjectTitle,
-  currentProjectId,
   onSplitView,
 }: {
-  currentProjectTitle?: string;
-  currentProjectId?: string;
   onSplitView?: (type: "vertical" | "horizontal", contentId: string) => void;
 }) {
   const { t } = useTranslation();
   const dialog = useDialog();
-  const updateProject = useProjectStore((state) => state.updateProject);
+  const { updateProject, currentProject } = useProjectStore((state) => {
+    const { updateProject: up, currentProject: cp } = state;
+    return { updateProject: up, currentProject: cp };
+  });
   const { setSidebarOpen, setManuscriptMenuOpen } = useUIStore(
     useShallow((state) => ({
       setSidebarOpen: state.setSidebarOpen,
       setManuscriptMenuOpen: state.setManuscriptMenuOpen,
     })),
   );
+
+  const currentProjectId = currentProject?.id;
+  const currentProjectTitle = currentProject?.title;
 
   const chapterManagement = useChapterManagement();
   const {
@@ -238,5 +240,7 @@ export function useSidebarLogic({
     activeChapterId,
     handleSelectChapter,
     handleAddChapter,
+    currentProjectTitle,
+    currentProjectId,
   };
 }

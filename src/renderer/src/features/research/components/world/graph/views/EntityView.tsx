@@ -6,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@renderer/components/ui/card";
+import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
 
 type EntityViewProps = {
   nodes: WorldGraphNode[];
@@ -32,6 +33,10 @@ export function EntityView({
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {nodes.map((node) => {
             const active = node.id === selectedNodeId;
+            const entityTheme =
+              ENTITY_TYPE_CANVAS_THEME[
+                node.entityType as keyof typeof ENTITY_TYPE_CANVAS_THEME
+              ] ?? ENTITY_TYPE_CANVAS_THEME.WorldEntity;
 
             return (
               <button
@@ -42,11 +47,22 @@ export function EntityView({
               >
                 <Card
                   className={[
-                    "rounded-[24px] border bg-[linear-gradient(180deg,rgba(20,24,31,0.94)_0%,rgba(13,17,22,0.98)_100%)] text-left transition",
+                    "rounded-[24px] border text-left transition",
                     active
-                      ? "border-cyan-300/40 shadow-[0_18px_38px_rgba(0,0,0,0.3)] ring-1 ring-cyan-200/30"
+                      ? "ring-1"
                       : "border-white/8 hover:-translate-y-0.5 hover:border-white/14",
                   ].join(" ")}
+                  style={
+                    active
+                      ? {
+                          background: entityTheme.surface,
+                          borderColor: `${entityTheme.accent}66`,
+                          boxShadow: `0 18px 38px rgba(0,0,0,0.3), 0 0 0 1px ${entityTheme.glow}`,
+                        }
+                      : {
+                          background: "hsl(var(--secondary) / 0.72)",
+                        }
+                  }
                 >
                   <CardHeader className="pb-0">
                     <div className="flex items-center justify-between gap-3">

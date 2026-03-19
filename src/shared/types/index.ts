@@ -455,7 +455,8 @@ export interface SearchResult {
 }
 
 // Settings Types
-export type FontFamily = "system-ui" | "serif" | "mono";
+export type FontFamilyPreset = "system-ui" | "serif" | "mono";
+export type FontFamily = FontFamilyPreset | string;
 
 export type FontPreset = "inter";
 
