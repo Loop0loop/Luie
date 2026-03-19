@@ -12,6 +12,7 @@ import type {
   WorldGraphCanvasEdge,
   WorldGraphData,
   WorldGraphNode,
+  WorldTimelineTrack,
 } from "@shared/types";
 
 export interface WorldFilter {
@@ -74,6 +75,7 @@ export interface WorldBuildingState {
   deleteRelation: (id: string) => Promise<boolean>;
   setGraphCanvasBlocks: (blocks: WorldGraphCanvasBlock[]) => Promise<void>;
   setGraphCanvasEdges: (edges: WorldGraphCanvasEdge[]) => Promise<void>;
+  setTimelines: (timelines: WorldTimelineTrack[]) => Promise<void>;
 }
 
 export const INITIAL_WORLD_BUILDING_STATE = {

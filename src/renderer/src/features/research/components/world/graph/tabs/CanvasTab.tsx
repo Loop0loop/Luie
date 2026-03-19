@@ -64,10 +64,7 @@ export function CanvasTab({
     (state) => state.setGraphCanvasEdges,
   );
 
-  const effectiveSelectedNodeId =
-    selectedNodeId && graphNodes.some((node) => node.id === selectedNodeId)
-      ? selectedNodeId
-      : (graphNodes[0]?.id ?? null);
+  const effectiveSelectedNodeId = selectedNodeId;
 
   const handleCreatePreset = useCallback(
     async (
@@ -151,7 +148,10 @@ export function CanvasTab({
         direction: "unidirectional",
       };
 
-      await setGraphCanvasEdges([...graphCanvasEdges, nextEdge]);
+      const latestCanvasEdges =
+        useWorldBuildingStore.getState().graphData?.canvasEdges ??
+        graphCanvasEdges;
+      await setGraphCanvasEdges([...latestCanvasEdges, nextEdge]);
     },
     [graphCanvasEdges, setGraphCanvasEdges],
   );

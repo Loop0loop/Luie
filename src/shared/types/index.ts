@@ -1024,11 +1024,23 @@ export type WorldGraphCanvasBlock =
       data: WorldGraphCanvasMemoBlockData;
     };
 
+export interface WorldTimelineSegment {
+  id: string;
+  name: string;
+}
+
+export interface WorldTimelineTrack {
+  id: string;
+  name: string;
+  segments: WorldTimelineSegment[];
+}
+
 export interface WorldGraphData {
   nodes: WorldGraphNode[];
   edges: EntityRelation[];
   canvasBlocks?: WorldGraphCanvasBlock[];
   canvasEdges?: WorldGraphCanvasEdge[];
+  timelines?: WorldTimelineTrack[];
 }
 
 export interface WorldGraphMentionsQuery {

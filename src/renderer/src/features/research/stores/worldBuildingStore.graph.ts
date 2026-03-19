@@ -123,14 +123,14 @@ export const toRelationSourceType = (
   entityType: WorldEntitySourceType,
 ): WorldEntitySourceType => entityType;
 
-
-
 export const appendNodeToGraph = (
   graphData: WorldGraphData | null,
   node: WorldGraphNode,
 ): WorldGraphData => ({
   nodes: graphData ? [...graphData.nodes, node] : [node],
   edges: graphData?.edges ?? [],
+  canvasBlocks: graphData?.canvasBlocks ?? [],
+  canvasEdges: graphData?.canvasEdges ?? [],
 });
 
 export const replaceNodeInGraph = (
@@ -167,8 +167,12 @@ export const removeNodeFromGraph = (
 ): WorldGraphData | null => {
   if (!graphData) return null;
   return {
+    ...graphData,
     nodes: graphData.nodes.filter((node) => node.id !== id),
     edges: graphData.edges.filter(
+      (edge) => edge.sourceId !== id && edge.targetId !== id,
+    ),
+    canvasEdges: (graphData.canvasEdges ?? []).filter(
       (edge) => edge.sourceId !== id && edge.targetId !== id,
     ),
   };
@@ -256,8 +260,6 @@ export const getResolvedRelationKind = (
   targetType: WorldEntitySourceType,
   relation?: EntityRelation["relation"],
 ) =>
-  relation ??
-  getDefaultRelationForPair(sourceType, targetType) ??
-  "belongs_to";
+  relation ?? getDefaultRelationForPair(sourceType, targetType) ?? "belongs_to";
 
 export { isWorldEntityBackedType };

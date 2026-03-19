@@ -26,7 +26,7 @@ export function NotesView({
 }: NotesViewProps) {
   if (!currentProjectId) {
     return (
-      <div className="flex h-full items-center justify-center bg-[#0f1319] px-8">
+      <div className="flex h-full items-center justify-center bg-canvas px-8">
         <div className="max-w-md rounded-[24px] border border-dashed border-border/60 bg-white/5 px-6 py-8 text-center text-sm text-fg/65">
           프로젝트를 열면 스크랩 노트가 여기에서 편집됩니다.
         </div>
@@ -36,7 +36,7 @@ export function NotesView({
 
   if (notesLoading) {
     return (
-      <div className="flex h-full items-center justify-center bg-[#0f1319] text-sm text-fg/65">
+      <div className="flex h-full items-center justify-center bg-canvas text-sm text-fg/65">
         노트를 불러오는 중입니다...
       </div>
     );
@@ -44,7 +44,7 @@ export function NotesView({
 
   if (!activeNote) {
     return (
-      <div className="flex h-full items-center justify-center bg-[#0f1319] px-8">
+      <div className="flex h-full items-center justify-center bg-canvas px-8">
         <div className="max-w-md rounded-[24px] border border-dashed border-border/60 bg-white/5 px-6 py-8 text-center">
           <p className="text-sm text-fg/70">아직 노트가 없습니다.</p>
           <button
@@ -60,7 +60,7 @@ export function NotesView({
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-[#0f1319] px-8 py-8">
+    <div className="h-full overflow-y-auto bg-canvas px-8 py-8">
       <div className="mx-auto max-w-3xl">
         <div className="mb-4 flex items-center justify-end gap-2">
           <Button
@@ -79,7 +79,7 @@ export function NotesView({
           </Button>
         </div>
 
-        <Card className="border-white/10 bg-[#161a21] shadow-[0_24px_70px_rgba(0,0,0,0.38)]">
+        <Card className="border-white/10 bg-panel shadow-[0_24px_70px_rgba(0,0,0,0.38)]">
           <CardContent className="space-y-6 pt-8">
             <div className="space-y-3 text-center">
               <p className="text-[11px] uppercase tracking-[0.26em] text-fg/42">
@@ -109,12 +109,12 @@ export function NotesView({
                       .filter(Boolean),
                   })
                 }
-                className="h-10 border-white/10 bg-[#0e1218] text-center"
+                className="h-10 border-white/10 bg-surface text-center"
                 placeholder="예: 떡밥, 시즌1, 설정"
               />
             </div>
 
-            <div className="rounded-[28px] border border-white/8 bg-[#0f1319] p-5">
+            <div className="rounded-[28px] border border-white/8 bg-surface p-5">
               <textarea
                 value={activeNote.content}
                 onChange={(event) =>

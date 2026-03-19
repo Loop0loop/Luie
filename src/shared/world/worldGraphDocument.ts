@@ -9,6 +9,8 @@ import type {
   WorldGraphCanvasTimelineSequenceNode,
   WorldGraphData,
   WorldGraphNode,
+  WorldTimelineTrack,
+  WorldTimelineSegment,
 } from "../types/index.js";
 
 type GraphNodeDocument = Pick<
@@ -29,6 +31,7 @@ type GraphDocumentPayload = {
   edges?: EntityRelation[];
   canvasBlocks?: WorldGraphCanvasBlock[];
   canvasEdges?: WorldGraphCanvasEdge[];
+  timelines?: WorldTimelineTrack[];
   updatedAt?: string;
 };
 
@@ -37,6 +40,39 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const toFiniteNumber = (value: unknown): number | null =>
   typeof value === "number" && Number.isFinite(value) ? value : null;
+
+const normalizeTimelines = (value: unknown): WorldTimelineTrack[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const normalized: WorldTimelineTrack[] = [];
+  for (const item of value) {
+    if (!isRecord(item) || typeof item.id !== "string") {
+      continue;
+    }
+
+    const segments: WorldTimelineSegment[] = [];
+    if (Array.isArray(item.segments)) {
+      for (const seg of item.segments) {
+        if (!isRecord(seg) || typeof seg.id !== "string") {
+          continue;
+        }
+        segments.push({
+          id: seg.id,
+          name: typeof seg.name === "string" ? seg.name : "New Segment",
+        });
+      }
+    }
+
+    normalized.push({
+      id: item.id,
+      name: typeof item.name === "string" ? item.name : "New Timeline",
+      segments,
+    });
+  }
+  return normalized;
+};
 
 const normalizeTimelineSequence = (
   value: unknown,
@@ -265,6 +301,7 @@ export const mergeWorldGraphLayout = (
 
   const canvasBlocks = normalizeCanvasBlocks(payload.canvasBlocks);
   const canvasEdges = normalizeCanvasEdges(payload.canvasEdges);
+  const timelines = normalizeTimelines(payload.timelines);
 
   const nextNodes =
     positions.size === 0
@@ -282,6 +319,7 @@ export const mergeWorldGraphLayout = (
     nodes: nextNodes,
     canvasBlocks,
     canvasEdges,
+    timelines,
   };
 };
 
@@ -291,6 +329,7 @@ export const buildWorldGraphDocument = (
 ): GraphDocumentPayload => {
   const canvasBlocks = graphData.canvasBlocks ?? [];
   const canvasEdges = graphData.canvasEdges ?? [];
+  const timelines = graphData.timelines ?? [];
 
   return {
     nodes: graphData.nodes.map((node) => ({
@@ -310,6 +349,7 @@ export const buildWorldGraphDocument = (
     })),
     ...(canvasBlocks.length > 0 ? { canvasBlocks } : {}),
     ...(canvasEdges.length > 0 ? { canvasEdges } : {}),
+    ...(timelines.length > 0 ? { timelines } : {}),
     updatedAt,
   };
 };

@@ -18,7 +18,7 @@ export function GraphIconSidebar({
   onToggleSidebar,
 }: GraphIconSidebarProps) {
   return (
-    <aside className="flex w-[64px] shrink-0 flex-col items-center border-r border-border/60 bg-[#111318] py-3">
+    <aside className="flex w-[64px] shrink-0 flex-col items-center border-r border-border/60 bg-panel py-3">
       <Button
         type="button"
         size="icon"

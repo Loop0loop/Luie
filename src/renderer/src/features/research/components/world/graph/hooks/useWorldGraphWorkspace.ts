@@ -3,7 +3,10 @@ import { useProjectStore } from "@renderer/features/project/stores/projectStore"
 import { useGraphPluginStore } from "@renderer/features/research/stores/graphPluginStore";
 import { useMemoStore } from "@renderer/features/research/stores/memoStore";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
-import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
+import {
+  getReadableLuieAttachmentPath,
+  hasReadableLuieAttachment,
+} from "@shared/projectAttachment";
 import { useWorldGraphLoader } from "./useWorldGraphLoader";
 
 const readEventDate = (attributes: unknown): string | null => {
@@ -27,6 +30,7 @@ export function useWorldGraphWorkspace() {
 
   const currentProject = useProjectStore((state) => state.currentItem);
   const attachmentPath = getReadableLuieAttachmentPath(currentProject);
+  const hasLuieAttachment = hasReadableLuieAttachment(currentProject);
 
   const activeProjectId = useWorldBuildingStore(
     (state) => state.activeProjectId,
@@ -59,6 +63,7 @@ export function useWorldGraphWorkspace() {
   const graphEdges = graphData?.edges ?? [];
   const graphCanvasBlocks = graphData?.canvasBlocks ?? [];
   const graphCanvasEdges = graphData?.canvasEdges ?? [];
+  const timelines = graphData?.timelines ?? [];
 
   const timelineNodes = useMemo(
     () =>
@@ -81,11 +86,13 @@ export function useWorldGraphWorkspace() {
     currentProject,
     projectId: currentProject?.id ?? null,
     projectPath: attachmentPath,
+    hasLuieAttachment,
     currentProjectTitle: currentProject?.title ?? "프로젝트 없음",
     graphNodes,
     graphEdges,
     graphCanvasBlocks,
     graphCanvasEdges,
+    timelines,
     timelineNodes,
     notes,
     notesLoading,

@@ -9,23 +9,34 @@ import {
   Layers,
   Database,
   Library,
+  Clock,
+  Layout,
+  PlusCircle,
+  Trash2,
 } from "lucide-react";
-import type { EntityRelation, ScrapMemo, WorldGraphNode } from "@shared/types";
 import { Badge } from "@renderer/components/ui/badge";
 import { Button } from "@renderer/components/ui/button";
 import { Input } from "@renderer/components/ui/input";
 import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { cn } from "@renderer/lib/utils";
+import type {
+  EntityRelation,
+  ScrapMemo,
+  WorldGraphNode,
+  WorldTimelineTrack,
+} from "@shared/types";
 import type { GraphSurfaceTab } from "../types";
 
 interface GraphActiveSidebarProps {
   activeTab: GraphSurfaceTab;
   currentProjectTitle: string;
   nodes: WorldGraphNode[];
+  timelines: WorldTimelineTrack[];
   timelineNodes: WorldGraphNode[];
   notes: ScrapMemo[];
   edges: EntityRelation[];
   selectedNode: WorldGraphNode | null;
+  selectedTimelineId: string | null;
   selectedNoteId: string | null;
   onClose: () => void;
   onCreatePreset: (
@@ -37,6 +48,8 @@ interface GraphActiveSidebarProps {
   onDeleteNode: () => void;
   onSelectNote: (noteId: string) => void;
   onCreateNote: () => void;
+  onSelectTimeline: (timelineId: string) => void;
+  onUpdateTimelines: (timelines: WorldTimelineTrack[]) => void;
   onAutoLayout: () => void;
   pluginSummary: {
     catalogCount: number;
@@ -179,44 +192,153 @@ const CanvasSidebar = ({ nodes, selectedNode, onSelectNode, onCreatePreset }: an
   );
 };
 
-const TimelineSidebar = ({ timelineNodes, selectedNode, onSelectNode }: any) => {
-  const sortedEvents = useMemo(() => 
-    [...timelineNodes].sort((a, b) => ((a.attributes as any)?.date || "").localeCompare((b.attributes as any)?.date || "")),
-    [timelineNodes]
-  );
+const TimelineSidebar = ({
+  timelines,
+  selectedTimelineId,
+  onSelectTimeline,
+  onUpdateTimelines,
+}: {
+  timelines: WorldTimelineTrack[];
+  timelineNodes: WorldGraphNode[];
+  selectedNode: WorldGraphNode | null;
+  selectedTimelineId: string | null;
+  onSelectNode: (id: string) => void;
+  onSelectTimeline: (id: string) => void;
+  onUpdateTimelines: (timelines: WorldTimelineTrack[]) => void;
+}) => {
+  const handleAddTimeline = () => {
+    const id = `timeline-${Date.now()}`;
+    const nextTimelines = [
+      ...timelines,
+      { id, name: "새 타임라인", segments: [] },
+    ];
+    onUpdateTimelines(nextTimelines);
+    onSelectTimeline(id);
+  };
+
+  const handleAddSegment = (timelineId: string) => {
+    const nextTimelines = timelines.map((t) => {
+      if (t.id !== timelineId) return t;
+      return {
+        ...t,
+        segments: [
+          ...t.segments,
+          { id: `segment-${Date.now()}`, name: "새 분계점" },
+        ],
+      };
+    });
+    onUpdateTimelines(nextTimelines);
+  };
+
+  const handleRenameTimeline = (id: string, name: string) => {
+    onUpdateTimelines(timelines.map(t => t.id === id ? { ...t, name } : t));
+  };
+
+  const handleRenameSegment = (timelineId: string, segmentId: string, name: string) => {
+    onUpdateTimelines(timelines.map(t => {
+      if (t.id !== timelineId) return t;
+      return {
+        ...t,
+        segments: t.segments.map(s => s.id === segmentId ? { ...s, name } : s)
+      };
+    }));
+  };
+
+  const handleDeleteTimeline = (id: string) => {
+    onUpdateTimelines(timelines.filter(t => t.id !== id));
+  };
+
+  const handleDeleteSegment = (timelineId: string, segmentId: string) => {
+    onUpdateTimelines(timelines.map(t => {
+      if (t.id !== timelineId) return t;
+      return {
+        ...t,
+        segments: t.segments.filter(s => s.id !== segmentId)
+      };
+    }));
+  };
 
   return (
-    <ScrollArea className="h-full bg-background/50">
-      <div className="p-6 relative">
-        <div className="absolute left-[31px] top-8 bottom-8 w-px bg-white/5" />
-        <div className="space-y-8">
-          {sortedEvents.map((event) => (
-            <div 
-              key={event.id}
-              className={cn(
-                "relative pl-10 group cursor-pointer transition-all",
-                selectedNode?.id === event.id ? "text-primary" : "text-muted-foreground hover:text-foreground"
+    <div className="flex flex-col h-full bg-background/50">
+      <ScrollArea className="flex-1">
+        <SidebarSection
+          title="Tracks"
+          actions={
+            <Button size="icon-xs" variant="ghost" onClick={handleAddTimeline}>
+              <PlusCircle className="w-3.5 h-3.5" />
+            </Button>
+          }
+        >
+          {timelines.length === 0 && (
+            <div className="px-4 py-8 text-center">
+              <p className="text-[11px] text-muted-foreground opacity-50">타임라인이 없습니다.</p>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="mt-2 text-[10px] uppercase font-black"
+                onClick={handleAddTimeline}
+              >
+                Create First Track
+              </Button>
+            </div>
+          )}
+          {timelines.map((timeline) => (
+            <div key={timeline.id} className="group/track">
+              <SidebarItem
+                label={timeline.name}
+                icon={Layout}
+                isActive={selectedTimelineId === timeline.id}
+                onClick={() => onSelectTimeline(timeline.id)}
+              />
+              {selectedTimelineId === timeline.id && (
+                <div className="ml-4 pl-4 border-l border-white/5 space-y-1 my-1">
+                  {timeline.segments.map((seg) => (
+                    <div key={seg.id} className="flex items-center gap-2 px-2 py-1 group/seg hover:bg-white/5 rounded-md">
+                      <Clock className="w-3 h-3 text-primary/40" />
+                      <input
+                        className="bg-transparent border-none text-[11px] font-medium text-muted-foreground focus:text-foreground outline-none flex-1 truncate"
+                        value={seg.name}
+                        onChange={(e) => handleRenameSegment(timeline.id, seg.id, e.target.value)}
+                      />
+                      <button 
+                        className="opacity-0 group-hover/seg:opacity-100 p-0.5 hover:text-red-400 transition-opacity"
+                        onClick={() => handleDeleteSegment(timeline.id, seg.id)}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    className="flex items-center gap-2 px-2 py-1 text-[10px] text-muted-foreground/60 hover:text-primary transition-colors"
+                    onClick={() => handleAddSegment(timeline.id)}
+                  >
+                    <Plus className="w-3 h-3" /> 분계점 추가
+                  </button>
+                </div>
               )}
-              onClick={() => onSelectNode(event.id)}
-            >
-              <div className={cn(
-                "absolute left-0 top-1 w-3 h-3 rounded-full border-2 bg-background z-10 transition-all",
-                selectedNode?.id === event.id ? "border-primary scale-150 shadow-[0_0_15px_rgba(245,158,11,0.4)]" : "border-white/10 group-hover:border-white/30"
-              )} />
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-black text-primary/60 tracking-widest uppercase">
-                  {(event.attributes as any)?.date || "Undated"}
-                </span>
-                <span className="text-[13px] font-bold leading-tight">{event.name}</span>
-                {event.description && (
-                  <span className="text-[11px] opacity-40 line-clamp-2 leading-relaxed">{event.description}</span>
-                )}
-              </div>
             </div>
           ))}
+        </SidebarSection>
+      </ScrollArea>
+      {selectedTimelineId && (
+        <div className="p-3 border-t border-white/5 bg-black/10 flex gap-2">
+          <Input 
+            className="h-8 text-[11px] bg-white/5 border-none"
+            placeholder="Rename Track..."
+            value={timelines.find(t => t.id === selectedTimelineId)?.name || ""}
+            onChange={(e) => handleRenameTimeline(selectedTimelineId, e.target.value)}
+          />
+          <Button 
+            size="icon" 
+            variant="ghost" 
+            className="h-8 w-8 hover:text-red-400"
+            onClick={() => handleDeleteTimeline(selectedTimelineId)}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
         </div>
-      </div>
-    </ScrollArea>
+      )}
+    </div>
   );
 };
 
@@ -327,19 +449,23 @@ export function GraphActiveSidebar({
   activeTab,
   currentProjectTitle,
   nodes,
+  timelines,
   timelineNodes,
   notes,
   selectedNode,
+  selectedTimelineId,
   selectedNoteId,
   onClose,
   onCreatePreset,
   onSelectNode,
   onSelectNote,
   onCreateNote,
+  onSelectTimeline,
+  onUpdateTimelines,
   pluginSummary,
 }: GraphActiveSidebarProps) {
   return (
-    <aside className="flex h-full flex-col border-r border-white/5 bg-[#0b0e13]">
+    <aside className="flex h-full flex-col border-r border-border/40 bg-sidebar">
       <div className="flex shrink-0 items-center justify-between h-12 px-4 border-b border-white/5">
         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 truncate">
           {currentProjectTitle}
@@ -350,10 +476,36 @@ export function GraphActiveSidebar({
       </div>
 
       <div className="flex-1 overflow-hidden">
-        {activeTab === "canvas" && <CanvasSidebar nodes={nodes} selectedNode={selectedNode} onSelectNode={onSelectNode} onCreatePreset={onCreatePreset} />}
-        {activeTab === "timeline" && <TimelineSidebar timelineNodes={timelineNodes} selectedNode={selectedNode} onSelectNode={onSelectNode} />}
-        {activeTab === "notes" && <NotesSidebar notes={notes} selectedNoteId={selectedNoteId} onSelectNote={onSelectNote} onCreateNote={onCreateNote} />}
-        {activeTab === "entity" && <EntitySidebar nodes={nodes} selectedNode={selectedNode} onSelectNode={onSelectNode} />}
+        {activeTab === "canvas" && (
+          <CanvasSidebar
+            nodes={nodes}
+            selectedNode={selectedNode}
+            onSelectNode={onSelectNode}
+            onCreatePreset={onCreatePreset}
+          />
+        )}
+        {activeTab === "timeline" && (
+          <TimelineSidebar
+            timelines={timelines}
+            timelineNodes={timelineNodes}
+            selectedNode={selectedNode}
+            selectedTimelineId={selectedTimelineId}
+            onSelectNode={onSelectNode}
+            onSelectTimeline={onSelectTimeline}
+            onUpdateTimelines={onUpdateTimelines}
+          />
+        )}
+        {activeTab === "notes" && (
+          <NotesSidebar
+            notes={notes}
+            selectedNoteId={selectedNoteId}
+            onSelectNote={onSelectNote}
+            onCreateNote={onCreateNote}
+          />
+        )}
+        {activeTab === "entity" && (
+          <EntitySidebar nodes={nodes} selectedNode={selectedNode} onSelectNode={onSelectNode} />
+        )}
         {activeTab === "library" && <LibrarySidebar pluginSummary={pluginSummary} />}
       </div>
     </aside>

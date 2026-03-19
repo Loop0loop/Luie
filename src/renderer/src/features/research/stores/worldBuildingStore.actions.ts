@@ -8,6 +8,7 @@ import type {
   WorldEntityCreateInput,
   WorldEntityUpdateInput,
   WorldEntityUpdatePositionInput,
+  WorldTimelineTrack,
 } from "@shared/types";
 import {
   buildWorldGraphDocument,
@@ -64,6 +65,7 @@ type WorldBuildingActions = Pick<
   | "deleteRelation"
   | "setGraphCanvasBlocks"
   | "setGraphCanvasEdges"
+  | "setTimelines"
 >;
 
 function updateGraphNodeSelection(input: UpdateGraphNodeInput) {
@@ -108,10 +110,16 @@ const persistGraphDocument = async (
   });
 
   if (!response.success) {
-    await api.logger.warn("Failed to save world graph document", {
+    await api.logger.error("Failed to save world graph document", {
       projectId,
       error: response.error,
     });
+
+    const message =
+      typeof response.error?.message === "string"
+        ? response.error.message
+        : "Failed to persist world graph document";
+    throw new Error(message);
   }
 };
 
@@ -416,6 +424,26 @@ export function createWorldBuildingActions(
           graphData: {
             ...state.graphData,
             canvasEdges: edges,
+          },
+        };
+      });
+
+      await persistGraphDocument(projectId, get().graphData);
+    },
+
+    setTimelines: async (timelines: WorldTimelineTrack[]) => {
+      const projectId = get().activeProjectId;
+      if (!projectId) return;
+
+      set((state) => {
+        if (!state.graphData) {
+          return state;
+        }
+
+        return {
+          graphData: {
+            ...state.graphData,
+            timelines: timelines,
           },
         };
       });

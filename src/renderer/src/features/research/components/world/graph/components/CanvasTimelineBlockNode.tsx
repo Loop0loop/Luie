@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, useRef, useCallback } from "react";
+import { memo, useState, useRef, useCallback, useEffect } from "react";
 import {
   Plus,
   Trash2,
@@ -57,11 +57,9 @@ export const CanvasTimelineBlockNode = memo(
       string | null
     >(null);
 
-    useEffect(() => {
-      if (!selected) {
-        setActiveInternalNodeId(null);
-      }
-    }, [selected]);
+    const effectiveActiveNodeId = selected
+      ? (activeInternalNodeId ?? sequence[0]?.id ?? null)
+      : null;
 
     // State update logic for recursive branches
     const handleAction = useCallback(
@@ -74,7 +72,7 @@ export const CanvasTimelineBlockNode = memo(
           seq: TimelineSequenceNode[],
         ): TimelineSequenceNode[] => {
           return seq.reduce((acc: TimelineSequenceNode[], node) => {
-            let updatedNode = { ...node };
+            const updatedNode = { ...node };
 
             // 1. Delete Logic
             if (action === "delete" && node.id === targetId) {
@@ -169,7 +167,7 @@ export const CanvasTimelineBlockNode = memo(
           sequence={sequence}
           isMainTrack={true}
           isTimelineSelected={selected}
-          activeNodeId={activeInternalNodeId}
+          activeNodeId={effectiveActiveNodeId}
           setActiveNodeId={setActiveInternalNodeId}
           onAction={handleAction}
           onChangeColor={() => data.onChangeColor?.(id)}
@@ -189,7 +187,11 @@ interface SequenceRenderProps {
   setActiveNodeId: (id: string | null) => void;
   onChangeColor: () => void;
   onZoom: () => void;
-  onAction: (action: string, id: string, payload?: any) => void;
+  onAction: (
+    action: string,
+    id: string,
+    payload?: { content?: string },
+  ) => void;
 }
 
 const SequenceRender = ({
@@ -249,6 +251,8 @@ const SequenceRender = ({
             <div
               key={index}
               className="relative flex items-center py-4 min-h-[100px]"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => event.stopPropagation()}
             >
               {!isOnly && (
                 <div
@@ -273,7 +277,10 @@ const SequenceRender = ({
               <div className="pl-12">
                 {isEnd ? (
                   <button
-                    onClick={() => onAction("add_main", node.id)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onAction("add_main", node.id);
+                    }}
                     className={cn(
                       "flex items-center justify-center w-10 h-10 transition-all duration-300 border-2 border-dashed rounded-full bg-background/50",
                       isMainTrack
@@ -315,7 +322,17 @@ const InternalNodeCard = ({
   onChangeColor,
   onZoom,
   onAction,
-}: any) => {
+}: {
+  node: TimelineSequenceNode;
+  isActive: boolean;
+  canShowToolbar: boolean;
+  isMainTrack: boolean;
+  onClick: () => void;
+  onChange: (value: string) => void;
+  onChangeColor: () => void;
+  onZoom: () => void;
+  onAction: (action: string) => void;
+}) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const reactFlow = useReactFlow();
 
@@ -326,14 +343,21 @@ const InternalNodeCard = ({
   }, [isActive, node.content]);
 
   return (
-    <div className="relative flex items-center group/card">
+    <div
+      className="relative flex items-center group/card"
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => event.stopPropagation()}
+    >
       {isActive && canShowToolbar && (
         <div className="absolute -top-14 left-1/2 -translate-x-1/2 flex items-center p-1 bg-popover/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-300">
           <div className="flex items-center px-1 border-r border-white/5 mr-1 gap-0.5">
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => onAction("add_main")}
+              onClick={(event) => {
+                event.stopPropagation();
+                onAction("add_main");
+              }}
               className="h-8 px-3 text-[11px] font-black tracking-tight text-foreground/70 hover:text-emerald-400 hover:bg-emerald-500/5"
             >
               <ArrowRight className="mr-1.5 w-3.5 h-3.5" /> 이어가기
@@ -343,7 +367,10 @@ const InternalNodeCard = ({
             <Button
               size="icon-xs"
               variant="ghost"
-              onClick={() => onAction("branch_top")}
+              onClick={(event) => {
+                event.stopPropagation();
+                onAction("branch_top");
+              }}
               className="w-8 h-8 text-muted-foreground hover:text-indigo-400"
             >
               <ArrowUpRight className="w-4 h-4" />
@@ -351,7 +378,10 @@ const InternalNodeCard = ({
             <Button
               size="icon-xs"
               variant="ghost"
-              onClick={() => onAction("branch_bottom")}
+              onClick={(event) => {
+                event.stopPropagation();
+                onAction("branch_bottom");
+              }}
               className="w-8 h-8 text-muted-foreground hover:text-indigo-400"
             >
               <ArrowDownRight className="w-4 h-4" />
@@ -361,7 +391,10 @@ const InternalNodeCard = ({
             <Button
               size="icon-xs"
               variant="ghost"
-              onClick={onChangeColor}
+              onClick={(event) => {
+                event.stopPropagation();
+                onChangeColor();
+              }}
               className="w-8 h-8 text-muted-foreground hover:text-indigo-300 hover:bg-indigo-500/10"
             >
               <Palette className="w-4 h-4" />
@@ -369,7 +402,10 @@ const InternalNodeCard = ({
             <Button
               size="icon-xs"
               variant="ghost"
-              onClick={onZoom}
+              onClick={(event) => {
+                event.stopPropagation();
+                onZoom();
+              }}
               className="w-8 h-8 text-muted-foreground hover:text-foreground"
             >
               <Maximize2 className="w-4 h-4" />
@@ -379,7 +415,10 @@ const InternalNodeCard = ({
             <Button
               size="icon-xs"
               variant="ghost"
-              onClick={() => onAction("toggle_hold")}
+              onClick={(event) => {
+                event.stopPropagation();
+                onAction("toggle_hold");
+              }}
               className={cn(
                 "w-8 h-8",
                 node.isHeld
@@ -398,7 +437,8 @@ const InternalNodeCard = ({
             <Button
               size="icon-xs"
               variant="ghost"
-              onClick={() => {
+              onClick={(event) => {
+                event.stopPropagation();
                 const flowNode = reactFlow.getNode(node.id);
                 if (!flowNode) return;
                 void reactFlow.setCenter(
@@ -417,7 +457,10 @@ const InternalNodeCard = ({
             <Button
               size="icon-xs"
               variant="ghost"
-              onClick={() => onAction("delete")}
+              onClick={(event) => {
+                event.stopPropagation();
+                onAction("delete");
+              }}
               className="w-8 h-8 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/5"
             >
               <Trash2 className="w-4 h-4" />
@@ -469,6 +512,8 @@ const InternalNodeCard = ({
         <textarea
           ref={textareaRef}
           value={node.content}
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
           onChange={(e) => onChange(e.target.value)}
           placeholder="사건 기록..."
           rows={1}

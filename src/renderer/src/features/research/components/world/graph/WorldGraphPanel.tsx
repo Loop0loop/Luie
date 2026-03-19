@@ -24,6 +24,8 @@ export function WorldGraphPanel() {
     graphEdges,
     graphCanvasBlocks,
     graphCanvasEdges,
+    hasLuieAttachment,
+    timelines,
     timelineNodes,
     notes,
     graphLoading,
@@ -40,10 +42,17 @@ export function WorldGraphPanel() {
   const addNote = useMemoStore((state) => state.addNote);
   const deleteNote = useMemoStore((state) => state.deleteNote);
   const loadPluginData = useGraphPluginStore((state) => state.loadData);
+  const setTimelines = useWorldBuildingStore((state) => state.setTimelines);
+  const updateGraphNode = useWorldBuildingStore(
+    (state) => state.updateGraphNode,
+  );
 
   const [activeTab, setActiveTab] = useState<GraphSurfaceTab>("canvas");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedTimelineId, setSelectedTimelineId] = useState<string | null>(
+    null,
+  );
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [autoLayoutTrigger, setAutoLayoutTrigger] = useState(0);
 
@@ -82,6 +91,22 @@ export function WorldGraphPanel() {
       document.addEventListener("mouseup", onMouseUp);
     },
     [sidebarWidth],
+  );
+
+  const handleUpdateEvent = useCallback(
+    (id: string, attributes: Record<string, any>) => {
+      const node = graphNodes.find((n) => n.id === id);
+      if (!node) return;
+      void updateGraphNode({
+        id,
+        entityType: node.entityType,
+        attributes: {
+          ...(node.attributes as any),
+          ...attributes,
+        },
+      });
+    },
+    [graphNodes, updateGraphNode],
   );
 
   const effectiveSelectedNoteId =
@@ -131,6 +156,12 @@ export function WorldGraphPanel() {
     [],
   );
 
+  useEffect(() => {
+    if (!selectedTimelineId && timelines.length > 0) {
+      setSelectedTimelineId(timelines[0].id);
+    }
+  }, [selectedTimelineId, timelines]);
+
   const handleSelectNode = useCallback(
     (nodeId: string | null) => {
       setSelectedNodeId(nodeId);
@@ -172,7 +203,7 @@ export function WorldGraphPanel() {
   const activeTabMeta = GRAPH_TAB_ITEMS.find((item) => item.id === activeTab);
 
   return (
-    <div className="flex h-full min-h-0 bg-[#0b0e13] text-fg">
+    <div className="flex h-full min-h-0 bg-canvas text-fg">
       <GraphIconSidebar
         activeTab={activeTab}
         isSidebarOpen={isSidebarOpen}
@@ -190,9 +221,11 @@ export function WorldGraphPanel() {
             currentProjectTitle={currentProjectTitle}
             nodes={graphNodes}
             edges={graphEdges}
+            timelines={timelines}
             timelineNodes={timelineNodes}
             notes={notes}
             selectedNode={selectedNode}
+            selectedTimelineId={selectedTimelineId}
             selectedNoteId={effectiveSelectedNoteId}
             onClose={() => setIsSidebarOpen(false)}
             onCreatePreset={handleCreatePreset}
@@ -201,6 +234,8 @@ export function WorldGraphPanel() {
             onDeleteNode={handleDeleteNode}
             onSelectNote={setSelectedNoteId}
             onCreateNote={handleCreateNote}
+            onSelectTimeline={setSelectedTimelineId}
+            onUpdateTimelines={setTimelines}
             onAutoLayout={() => setAutoLayoutTrigger((n) => n + 1)}
             pluginSummary={{
               catalogCount: catalog.length,
@@ -221,7 +256,7 @@ export function WorldGraphPanel() {
       ) : null}
 
       <section className="flex min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center justify-between border-b border-border/60 bg-[#11151c] px-5 py-4">
+        <header className="flex shrink-0 items-center justify-between border-b border-border/60 bg-panel px-5 py-4">
           <div>
             <p className="text-[11px] uppercase tracking-[0.24em] text-fg/45">
               World Graph
@@ -232,6 +267,11 @@ export function WorldGraphPanel() {
               </h1>
               <Badge variant="outline">{activeTabMeta?.label}</Badge>
               <Badge variant="secondary">{graphNodes.length} nodes</Badge>
+              {!hasLuieAttachment ? (
+                <Badge variant="outline" className="border-amber-500/30 text-amber-200">
+                  Replica only
+                </Badge>
+              ) : null}
             </div>
           </div>
 
@@ -252,6 +292,12 @@ export function WorldGraphPanel() {
         {graphError ? (
           <div className="border-b border-red-400/20 bg-red-500/10 px-5 py-3 text-sm text-red-200">
             {graphError}
+          </div>
+        ) : null}
+
+        {!hasLuieAttachment ? (
+          <div className="border-b border-amber-400/20 bg-amber-500/10 px-5 py-3 text-sm text-amber-100">
+            이 프로젝트는 현재 `.luie` attachment가 없어 graph canvas 변경사항이 replica 저장소 기준으로만 유지됩니다.
           </div>
         ) : null}
 
@@ -277,9 +323,13 @@ export function WorldGraphPanel() {
 
             {activeTab === "timeline" ? (
               <TimelineTab
+                timelines={timelines}
                 timelineNodes={timelineNodes}
                 selectedNodeId={selectedNodeId}
+                selectedTimelineId={selectedTimelineId}
                 onSelectNode={handleSelectNode}
+                onUpdateTimelines={setTimelines}
+                onUpdateEvent={handleUpdateEvent}
               />
             ) : null}
 
