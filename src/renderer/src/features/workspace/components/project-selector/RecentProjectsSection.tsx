@@ -182,7 +182,7 @@ export function RecentProjectsSection({
                           ? "bg-amber-500/15 text-amber-300"
                           : syncBadge === "syncError"
                             ? "bg-red-500/15 text-red-300"
-                            : "bg-zinc-500/15 text-zinc-300"
+                            : "bg-muted/15 text-muted"
                     }`}
                   >
                     {t(`settings.projectTemplate.sync.${syncBadge}`)}
@@ -191,7 +191,7 @@ export function RecentProjectsSection({
                     <span
                       className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
                         p.attachmentStatus === "detached"
-                          ? "bg-zinc-500/15 text-zinc-300"
+                          ? "bg-muted/15 text-muted"
                           : p.attachmentStatus ===
                               "unsupported-legacy-container"
                             ? "bg-amber-500/15 text-amber-300"

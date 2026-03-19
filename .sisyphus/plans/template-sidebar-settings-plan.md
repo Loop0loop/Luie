@@ -211,12 +211,22 @@ Final pass:
 
 ## 7) Done criteria
 
-- Template previews are theme-consistent in light/sepia/dark.
-- Hover text remains readable and not forced white.
-- Sync/auth button contrast is clear in all themes.
-- Research items open reliably on first click.
-- `research.title.events` and `research.title.factions` resolve in en/ko/ja.
-- Sidebar project rename updates immediately and persists.
-- Template flow has a functioning back button.
-- Settings shows usable system-font options (or explicit fallback) and selected font applies/persists.
-- Targeted tests + `bun run typecheck` + `bun run build` pass.
+- Template previews are theme-consistent in light/sepia/dark. ✅ DELIVERED
+- Hover text remains readable and not forced white. ✅ DELIVERED
+- Sync/auth button contrast is clear in all themes. ✅ DELIVERED
+- Research items open reliably on first click. ✅ DELIVERED
+- `research.title.events` and `research.title.factions` resolve in en/ko/ja. ✅ VERIFIED (already present)
+- Sidebar project rename updates immediately and persists. ✅ DELIVERED (existing behavior verified)
+- Template flow has a functioning back button. ✅ VERIFIED (in place)
+- Settings shows usable system-font options (or explicit fallback) and selected font applies/persists. ✅ DELIVERED
+- Targeted tests + `bun run typecheck` + `bun run build` pass. ✅ VERIFIED
+
+## 8) Implementation Summary
+
+All phases completed:
+
+- **Phase A**: Template visual fixes completed (token-driven theming, hover text fix, sync button visibility)
+- **Phase B**: Sidebar reliability + i18n completed (click reliability fix, verified i18n keys present)
+- **Phase C**: Settings font system completed (deriveEditorFontFamilyCss, system font loader, EditorTab integration, unit tests)
+
+Remaining work: None - all reported issues addressed.
