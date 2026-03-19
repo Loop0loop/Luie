@@ -16,6 +16,7 @@ import type {
   WorldGraphCanvasEdge,
   WorldGraphNode,
 } from "@shared/types";
+import { api } from "@shared/api";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { useCanvasBlockEditor } from "../hooks/useCanvasBlockEditor";
 import { useCanvasFlowInteractions } from "../hooks/useCanvasFlowInteractions";
@@ -62,7 +63,6 @@ interface CanvasViewProps {
   onAddTimelineBranch?: (sourceNodeId: string) => void;
 }
 
-
 function CanvasFlowSurface({
   graphNodes,
   graphEdges,
@@ -75,6 +75,7 @@ function CanvasFlowSurface({
   onNodePositionCommit,
   onDeleteNode,
   onConnectNodes,
+  onAutoLayoutApplied,
   onCreateBlock,
 }: {
   graphNodes: Node<CanvasGraphNodeData>[];
@@ -93,6 +94,7 @@ function CanvasFlowSurface({
     sourceHandle?: string | null;
     targetHandle?: string | null;
   }) => Promise<void>;
+  onAutoLayoutApplied?: () => void;
   onCreateBlock: (position?: { x: number; y: number }) => void;
 }) {
   const [timelinePaletteOpen, setTimelinePaletteOpen] = useState(false);
@@ -173,6 +175,7 @@ function CanvasFlowSurface({
     onNodePositionCommit,
     onDeleteNode,
     onConnectNodes,
+    onAutoLayoutApplied,
     reactFlow,
   });
 
@@ -563,6 +566,34 @@ export function CanvasView({
     [nodes],
   );
 
+  const handleAutoLayoutApplied = useCallback(() => {
+    if (flowNodes.length === 0) {
+      return;
+    }
+
+    const COLS = 4;
+    const COL_GAP = 280;
+    const ROW_GAP = 220;
+    const OFFSET_X = 120;
+    const OFFSET_Y = 120;
+
+    const updates = flowNodes.map((node, i) => ({
+      id: node.id,
+      x: OFFSET_X + (i % COLS) * COL_GAP,
+      y: OFFSET_Y + Math.floor(i / COLS) * ROW_GAP,
+    }));
+
+    Promise.all(
+      updates.map(async ({ id, x, y }) => {
+        await onNodePositionCommit?.({ id, x, y });
+      }),
+    ).catch((error) => {
+      void api.logger.warn("Failed to persist auto-layout node positions", {
+        error,
+      });
+    });
+  }, [flowNodes, onNodePositionCommit]);
+
   return (
     <div className="relative h-full bg-canvas">
       <ReactFlowProvider>
@@ -578,6 +609,7 @@ export function CanvasView({
           onCanvasBlocksCommit={onCanvasBlocksCommit}
           onNodePositionCommit={onNodePositionCommit}
           onDeleteNode={onDeleteNode}
+          onAutoLayoutApplied={handleAutoLayoutApplied}
           onCreateBlock={onCreateBlock}
         />
       </ReactFlowProvider>

@@ -38,7 +38,6 @@ interface GraphActiveSidebarProps {
   selectedNode: WorldGraphNode | null;
   selectedTimelineId: string | null;
   selectedNoteId: string | null;
-  onClose: () => void;
   onCreatePreset: (
     entityType: WorldGraphNode["entityType"],
     subType?: WorldGraphNode["subType"],
@@ -102,7 +101,7 @@ function SidebarItem({
   subLabel,
 }: {
   label: string;
-  icon: any;
+  icon: React.ElementType;
   isActive?: boolean;
   onClick?: () => void;
   subLabel?: string;
@@ -124,10 +123,18 @@ function SidebarItem({
 
 // ─── Tab Contents ────────────────────────────────────────────────────────────
 
-const CanvasSidebar = ({ nodes, selectedNode, onSelectNode, onCreatePreset }: any) => {
+const CanvasSidebar = ({ nodes, selectedNode, onSelectNode, onCreatePreset }: {
+  nodes: WorldGraphNode[];
+  selectedNode: WorldGraphNode | null;
+  onSelectNode: (id: string) => void;
+  onCreatePreset: (
+    entityType: WorldGraphNode["entityType"],
+    subType?: WorldGraphNode["subType"],
+  ) => void;
+}) => {
   const [search, setSearch] = useState("");
   const filteredNodes = useMemo(() => 
-    nodes.filter((n: any) => n.name.toLowerCase().includes(search.toLowerCase())),
+    nodes.filter((n: WorldGraphNode) => n.name.toLowerCase().includes(search.toLowerCase())),
     [nodes, search]
   );
 
@@ -153,7 +160,7 @@ const CanvasSidebar = ({ nodes, selectedNode, onSelectNode, onCreatePreset }: an
             </Button>
           }
         >
-          {filteredNodes.map((node: any) => (
+          {filteredNodes.map((node: WorldGraphNode) => (
             <SidebarItem
               key={node.id}
               label={node.name}
@@ -342,7 +349,12 @@ const TimelineSidebar = ({
   );
 };
 
-const NotesSidebar = ({ notes, selectedNoteId, onSelectNote, onCreateNote }: any) => {
+const NotesSidebar = ({ notes, selectedNoteId, onSelectNote, onCreateNote }: {
+  notes: ScrapMemo[];
+  selectedNoteId: string | null;
+  onSelectNote: (id: string) => void;
+  onCreateNote: () => void;
+}) => {
   const groupedNotes = useMemo(() => {
     const groups: Record<string, ScrapMemo[]> = { "Uncategorized": [] };
     notes.forEach((note: ScrapMemo) => {
@@ -384,7 +396,11 @@ const NotesSidebar = ({ notes, selectedNoteId, onSelectNote, onCreateNote }: any
   );
 };
 
-const EntitySidebar = ({ nodes, selectedNode, onSelectNode }: any) => {
+const EntitySidebar = ({ nodes, selectedNode, onSelectNode }: {
+  nodes: WorldGraphNode[];
+  selectedNode: WorldGraphNode | null;
+  onSelectNode: (id: string) => void;
+}) => {
   const groupedEntities = useMemo(() => {
     const groups: Record<string, WorldGraphNode[]> = {};
     nodes.forEach((node: WorldGraphNode) => {
@@ -413,7 +429,7 @@ const EntitySidebar = ({ nodes, selectedNode, onSelectNode }: any) => {
   );
 };
 
-const LibrarySidebar = ({ pluginSummary }: any) => (
+const LibrarySidebar = ({ pluginSummary }: { pluginSummary: GraphActiveSidebarProps["pluginSummary"] }) => (
   <div className="p-6 space-y-8 bg-background/50 h-full">
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-primary font-black text-[11px] uppercase tracking-widest">
@@ -455,7 +471,6 @@ export function GraphActiveSidebar({
   selectedNode,
   selectedTimelineId,
   selectedNoteId,
-  onClose,
   onCreatePreset,
   onSelectNode,
   onSelectNote,
@@ -470,9 +485,6 @@ export function GraphActiveSidebar({
         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 truncate">
           {currentProjectTitle}
         </span>
-        <Button size="icon-xs" variant="ghost" className="w-7 h-7 text-muted-foreground hover:text-foreground" onClick={onClose}>
-          <X className="w-4 h-4" />
-        </Button>
       </div>
 
       <div className="flex-1 overflow-hidden">

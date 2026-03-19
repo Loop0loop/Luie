@@ -48,7 +48,10 @@ export function WorldGraphPanel() {
   );
 
   const [activeTab, setActiveTab] = useState<GraphSurfaceTab>("canvas");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    const saved = localStorage.getItem("worldGraph_isSidebarOpen");
+    return saved !== null ? saved === "true" : true;
+  });
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedTimelineId, setSelectedTimelineId] = useState<string | null>(
     null,
@@ -59,32 +62,56 @@ export function WorldGraphPanel() {
   const SIDEBAR_MIN_WIDTH = 220;
   const SIDEBAR_MAX_WIDTH = 520;
   const SIDEBAR_DEFAULT_WIDTH = 320;
-  const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT_WIDTH);
+  
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = localStorage.getItem("worldGraph_sidebarWidth");
+    return saved ? parseInt(saved, 10) : SIDEBAR_DEFAULT_WIDTH;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("worldGraph_isSidebarOpen", String(isSidebarOpen));
+  }, [isSidebarOpen]);
+
+  useEffect(() => {
+    localStorage.setItem("worldGraph_sidebarWidth", String(sidebarWidth));
+  }, [sidebarWidth]);
   const isResizingRef = useRef(false);
   const resizeStartXRef = useRef(0);
   const resizeStartWidthRef = useRef(SIDEBAR_DEFAULT_WIDTH);
 
   const handleResizeMouseDown = useCallback(
-    (event: React.MouseEvent) => {
+    (event: React.MouseEvent, initialWidth?: number) => {
       event.preventDefault();
+      
+      const startWidth = initialWidth ?? sidebarWidth;
+      
       isResizingRef.current = true;
       resizeStartXRef.current = event.clientX;
-      resizeStartWidthRef.current = sidebarWidth;
-
-      const onMouseMove = (moveEvent: MouseEvent) => {
-        if (!isResizingRef.current) return;
-        const delta = moveEvent.clientX - resizeStartXRef.current;
-        const nextWidth = Math.min(
-          SIDEBAR_MAX_WIDTH,
-          Math.max(SIDEBAR_MIN_WIDTH, resizeStartWidthRef.current + delta),
-        );
-        setSidebarWidth(nextWidth);
-      };
+      resizeStartWidthRef.current = startWidth;
 
       const onMouseUp = () => {
         isResizingRef.current = false;
         document.removeEventListener("mousemove", onMouseMove);
         document.removeEventListener("mouseup", onMouseUp);
+      };
+
+      const onMouseMove = (moveEvent: MouseEvent) => {
+        if (!isResizingRef.current) return;
+        const delta = moveEvent.clientX - resizeStartXRef.current;
+        const rawWidth = resizeStartWidthRef.current + delta;
+        
+        if (rawWidth < 120) {
+          setIsSidebarOpen(false);
+          setSidebarWidth(SIDEBAR_DEFAULT_WIDTH);
+          onMouseUp();
+          return;
+        }
+
+        const nextWidth = Math.min(
+          SIDEBAR_MAX_WIDTH,
+          Math.max(SIDEBAR_MIN_WIDTH, rawWidth),
+        );
+        setSidebarWidth(nextWidth);
       };
 
       document.addEventListener("mousemove", onMouseMove);
@@ -94,14 +121,14 @@ export function WorldGraphPanel() {
   );
 
   const handleUpdateEvent = useCallback(
-    (id: string, attributes: Record<string, any>) => {
+    (id: string, attributes: Record<string, unknown>) => {
       const node = graphNodes.find((n) => n.id === id);
       if (!node) return;
       void updateGraphNode({
         id,
         entityType: node.entityType,
         attributes: {
-          ...(node.attributes as any),
+          ...(node.attributes as Record<string, unknown>),
           ...attributes,
         },
       });
@@ -113,6 +140,11 @@ export function WorldGraphPanel() {
     selectedNoteId && notes.some((note) => note.id === selectedNoteId)
       ? selectedNoteId
       : (notes[0]?.id ?? null);
+
+  const effectiveSelectedTimelineId =
+    selectedTimelineId && timelines.some((t) => t.id === selectedTimelineId)
+      ? selectedTimelineId
+      : (timelines[0]?.id ?? null);
 
   const handleSelectTab = useCallback((nextTab: GraphSurfaceTab) => {
     setActiveTab((current) => {
@@ -156,11 +188,6 @@ export function WorldGraphPanel() {
     [],
   );
 
-  useEffect(() => {
-    if (!selectedTimelineId && timelines.length > 0) {
-      setSelectedTimelineId(timelines[0].id);
-    }
-  }, [selectedTimelineId, timelines]);
 
   const handleSelectNode = useCallback(
     (nodeId: string | null) => {
@@ -204,12 +231,24 @@ export function WorldGraphPanel() {
 
   return (
     <div className="flex h-full min-h-0 bg-canvas text-fg">
-      <GraphIconSidebar
-        activeTab={activeTab}
-        isSidebarOpen={isSidebarOpen}
-        onSelectTab={handleSelectTab}
-        onToggleSidebar={() => setIsSidebarOpen((open) => !open)}
-      />
+      <div className="relative flex h-full shrink-0">
+        <GraphIconSidebar
+          activeTab={activeTab}
+          isSidebarOpen={isSidebarOpen}
+          onSelectTab={handleSelectTab}
+          onToggleSidebar={() => setIsSidebarOpen((open) => !open)}
+        />
+        {!isSidebarOpen && (
+          <div
+            className="absolute right-[calc(-5px/2)] top-0 z-10 h-full w-[5px] cursor-col-resize hover:bg-white/20 active:bg-white/30"
+            onMouseDown={(e) => {
+              setIsSidebarOpen(true);
+              setSidebarWidth(SIDEBAR_MIN_WIDTH);
+              handleResizeMouseDown(e, SIDEBAR_MIN_WIDTH);
+            }}
+          />
+        )}
+      </div>
 
       {isSidebarOpen ? (
         <div
@@ -225,9 +264,8 @@ export function WorldGraphPanel() {
             timelineNodes={timelineNodes}
             notes={notes}
             selectedNode={selectedNode}
-            selectedTimelineId={selectedTimelineId}
+            selectedTimelineId={effectiveSelectedTimelineId}
             selectedNoteId={effectiveSelectedNoteId}
-            onClose={() => setIsSidebarOpen(false)}
             onCreatePreset={handleCreatePreset}
             onSelectNode={handleSelectNode}
             onSaveNode={handleSaveNode}
@@ -326,7 +364,7 @@ export function WorldGraphPanel() {
                 timelines={timelines}
                 timelineNodes={timelineNodes}
                 selectedNodeId={selectedNodeId}
-                selectedTimelineId={selectedTimelineId}
+                selectedTimelineId={effectiveSelectedTimelineId}
                 onSelectNode={handleSelectNode}
                 onUpdateTimelines={setTimelines}
                 onUpdateEvent={handleUpdateEvent}

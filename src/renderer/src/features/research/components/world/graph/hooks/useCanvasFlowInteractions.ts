@@ -39,6 +39,7 @@ type UseCanvasFlowInteractionsInput = {
     sourceHandle?: string | null;
     targetHandle?: string | null;
   }) => Promise<void>;
+  onAutoLayoutApplied?: () => void;
   reactFlow: ReactFlowInstance<AnyCanvasNodeData>;
 };
 
@@ -55,6 +56,7 @@ export function useCanvasFlowInteractions({
   onNodePositionCommit,
   onDeleteNode,
   onConnectNodes,
+  onAutoLayoutApplied,
   reactFlow,
 }: UseCanvasFlowInteractionsInput) {
   const [edges, setEdges] = useState<Edge<CanvasGraphEdgeData>[]>(graphEdges);
@@ -73,6 +75,7 @@ export function useCanvasFlowInteractions({
   const lastGuideSignatureRef = useRef<string | null>(null);
   const nodesRef = useRef<Node<AnyCanvasNodeData>[]>(nodes);
   const edgesRef = useRef<Edge<CanvasGraphEdgeData>[]>(graphEdges);
+  const appliedAutoLayoutTriggerRef = useRef<number>(0);
 
   useEffect(() => {
     nodesRef.current = nodes;
@@ -159,6 +162,9 @@ export function useCanvasFlowInteractions({
 
   useEffect(() => {
     if (autoLayoutTrigger === 0) return;
+    if (autoLayoutTrigger === appliedAutoLayoutTriggerRef.current) return;
+
+    appliedAutoLayoutTriggerRef.current = autoLayoutTrigger;
     const COLS = 4;
     const COL_GAP = 280;
     const ROW_GAP = 220;
@@ -173,10 +179,11 @@ export function useCanvasFlowInteractions({
         },
       })),
     );
+    onAutoLayoutApplied?.();
     setTimeout(() => {
       void reactFlow.fitView({ padding: 0.24, duration: 300 });
     }, 50);
-  }, [autoLayoutTrigger, reactFlow, setNodes]);
+  }, [autoLayoutTrigger, onAutoLayoutApplied, reactFlow, setNodes]);
 
   const handleNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -372,11 +379,14 @@ export function useCanvasFlowInteractions({
     [commitCanvasBlocks, onDeleteNode, setNodes],
   );
 
-  const onEdgesDelete = useCallback((deletedEdges: Edge<CanvasGraphEdgeData>[]) => {
-    deletedEdges.forEach((edge) => {
-      edge.data?.onDelete?.(edge.id);
-    });
-  }, []);
+  const onEdgesDelete = useCallback(
+    (deletedEdges: Edge<CanvasGraphEdgeData>[]) => {
+      deletedEdges.forEach((edge) => {
+        edge.data?.onDelete?.(edge.id);
+      });
+    },
+    [],
+  );
 
   const onNodeDragStart = useCallback(
     (_event: unknown, node: Node<AnyCanvasNodeData>) => {
@@ -388,46 +398,49 @@ export function useCanvasFlowInteractions({
     [onSelectNode],
   );
 
-  const onNodeDrag = useCallback((_event: unknown, node: Node<AnyCanvasNodeData>) => {
-    const allNodes = nodesRef.current;
-    const dragged = allNodes.find((item) => item.id === node.id);
-    if (!dragged) return;
+  const onNodeDrag = useCallback(
+    (_event: unknown, node: Node<AnyCanvasNodeData>) => {
+      const allNodes = nodesRef.current;
+      const dragged = allNodes.find((item) => item.id === node.id);
+      if (!dragged) return;
 
-    const draggingNode: Node<AnyCanvasNodeData> = {
-      ...dragged,
-      position: { x: node.position.x, y: node.position.y },
-    };
-    const otherNodes = allNodes.filter((item) => item.id !== node.id);
+      const draggingNode: Node<AnyCanvasNodeData> = {
+        ...dragged,
+        position: { x: node.position.x, y: node.position.y },
+      };
+      const otherNodes = allNodes.filter((item) => item.id !== node.id);
 
-    const guideXMatch = findBestAxisGuide(draggingNode, otherNodes, "x");
-    const guideYMatch = findBestAxisGuide(draggingNode, otherNodes, "y");
+      const guideXMatch = findBestAxisGuide(draggingNode, otherNodes, "x");
+      const guideYMatch = findBestAxisGuide(draggingNode, otherNodes, "y");
 
-    const snapX = guideXMatch?.snapped ?? node.position.x;
-    const snapY = guideYMatch?.snapped ?? node.position.y;
-    const guideX = guideXMatch?.guide ?? null;
-    const guideY = guideYMatch?.guide ?? null;
+      const snapX = guideXMatch?.snapped ?? node.position.x;
+      const snapY = guideYMatch?.snapped ?? node.position.y;
+      const guideX = guideXMatch?.guide ?? null;
+      const guideY = guideYMatch?.guide ?? null;
 
-    const signature =
-      guideX !== null || guideY !== null
-        ? `${guideX ?? "none"}:${guideY ?? "none"}`
-        : null;
-    if (signature && signature !== lastGuideSignatureRef.current) {
-      lastGuideSignatureRef.current = signature;
-      void api.window.hapticFeedback();
-    } else if (!signature) {
-      lastGuideSignatureRef.current = null;
-    }
+      const signature =
+        guideX !== null || guideY !== null
+          ? `${guideX ?? "none"}:${guideY ?? "none"}`
+          : null;
+      if (signature && signature !== lastGuideSignatureRef.current) {
+        lastGuideSignatureRef.current = signature;
+        void api.window.hapticFeedback();
+      } else if (!signature) {
+        lastGuideSignatureRef.current = null;
+      }
 
-    setGuideLines((current) => {
-      if (current.x === guideX && current.y === guideY) return current;
-      return { x: guideX, y: guideY };
-    });
+      setGuideLines((current) => {
+        if (current.x === guideX && current.y === guideY) return current;
+        return { x: guideX, y: guideY };
+      });
 
-    pendingSnapRef.current =
-      snapX !== node.position.x || snapY !== node.position.y
-        ? { x: snapX, y: snapY }
-        : null;
-  }, []);
+      pendingSnapRef.current =
+        snapX !== node.position.x || snapY !== node.position.y
+          ? { x: snapX, y: snapY }
+          : null;
+    },
+    [],
+  );
 
   const onNodeDragStop = useCallback(
     (_event: unknown, node: Node<AnyCanvasNodeData>) => {

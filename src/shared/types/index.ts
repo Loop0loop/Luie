@@ -971,17 +971,9 @@ export interface WorldGraphNode {
   positionY: number;
 }
 
-export interface WorldGraphCanvasTimelineSequenceNode {
-  id: string;
+export interface WorldGraphCanvasTimelineBlockData {
   content: string;
   isHeld: boolean;
-  topBranches: WorldGraphCanvasTimelineSequenceNode[][];
-  bottomBranches: WorldGraphCanvasTimelineSequenceNode[][];
-}
-
-export interface WorldGraphCanvasTimelineBlockData {
-  label: string;
-  sequence: WorldGraphCanvasTimelineSequenceNode[];
   color?: string;
 }
 

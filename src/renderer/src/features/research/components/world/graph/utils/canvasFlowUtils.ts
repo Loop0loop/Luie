@@ -9,10 +9,7 @@ import type {
 } from "@shared/types";
 import type { CanvasGraphNodeData } from "../components/CanvasGraphNodeCard";
 import type { CanvasGraphEdgeData } from "../components/CanvasGraphEdge";
-import type {
-  CanvasTimelineBlockData,
-  TimelineSequenceNode,
-} from "../components/CanvasTimelineBlockNode";
+import type { CanvasTimelineBlockData } from "../components/CanvasTimelineBlockNode";
 import type { CanvasMemoBlockData } from "../components/CanvasMemoBlockNode";
 
 export type AnyCanvasNodeData =
@@ -76,16 +73,7 @@ export const toCanvasBlockNodes = (
     ) => void;
     onTimelineChange: (
       id: string,
-      nextSequence: TimelineSequenceNode[],
-    ) => void;
-    onTimelineMetaChange: (
-      id: string,
-      patch: Partial<
-        Omit<
-          CanvasTimelineBlockData,
-          "onChangeColor" | "onUpdateSequence" | "onDelete" | "onDataChange"
-        >
-      >,
+      patch: Partial<Omit<CanvasTimelineBlockData, "onChangeColor" | "onDataChange" | "onDelete">>,
     ) => void;
   },
 ): Node<AnyCanvasNodeData>[] =>
@@ -120,31 +108,12 @@ export const toCanvasBlockNodes = (
       },
       draggable: true,
       data: {
-        label: block.data.label,
-        sequence: block.data.sequence,
+        content: block.data.content,
+        isHeld: block.data.isHeld,
         color: block.data.color,
-        onDataChange: (id, patch) => {
-          if (Array.isArray(patch.sequence)) {
-            input.onTimelineChange(id, patch.sequence);
-          }
-
-          const timelineMetaPatch: Partial<
-            Omit<
-              CanvasTimelineBlockData,
-              "onChangeColor" | "onUpdateSequence" | "onDelete" | "onDataChange"
-            >
-          > = {};
-          if (typeof patch.label === "string") {
-            timelineMetaPatch.label = patch.label;
-          }
-
-          if (Object.keys(timelineMetaPatch).length > 0) {
-            input.onTimelineMetaChange(id, timelineMetaPatch);
-          }
-        },
+        onDataChange: input.onTimelineChange,
         onChangeColor: input.onBlockColorChange,
         onDelete: input.onDelete,
-        onUpdateSequence: input.onTimelineChange,
       } satisfies CanvasTimelineBlockData,
     };
   });
@@ -178,8 +147,8 @@ export const fromCanvasLocalNodes = (
     if (node.type === "canvas-timeline") {
       const data = node.data as CanvasTimelineBlockData;
       const payload: WorldGraphCanvasTimelineBlockData = {
-        label: typeof data.label === "string" ? data.label : "",
-        sequence: Array.isArray(data.sequence) ? data.sequence : [],
+        content: typeof data.content === "string" ? data.content : "",
+        isHeld: typeof data.isHeld === "boolean" ? data.isHeld : false,
         color: typeof data.color === "string" ? data.color : undefined,
       };
       blocks.push({
@@ -209,11 +178,15 @@ export const syncCanvasLocalNodes = (
       return incoming;
     }
 
+    const preserveCurrentData =
+      incoming.id === lockedNodeId || isCanvasLocalNodeType(current.type);
+
     return {
       ...incoming,
       position:
         incoming.id === lockedNodeId ? current.position : incoming.position,
       selected: current.selected,
+      data: preserveCurrentData ? current.data : incoming.data,
     };
   });
 
@@ -398,7 +371,9 @@ export function mergeIncomingNodes(
     } as Node<AnyCanvasNodeData>;
   });
 
-  const preservedLocals = localNodes.filter((node) => !incomingIds.has(node.id));
+  const preservedLocals = localNodes.filter(
+    (node) => !incomingIds.has(node.id),
+  );
   return [...merged, ...preservedLocals];
 }
 

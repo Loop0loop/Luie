@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Node, XYPosition } from "reactflow";
 import type { WorldGraphCanvasBlock, WorldGraphNode } from "@shared/types";
-import type {
-  CanvasTimelineBlockData,
-  TimelineSequenceNode,
-} from "../components/CanvasTimelineBlockNode";
+import type { CanvasTimelineBlockData } from "../components/CanvasTimelineBlockNode";
 import type { CanvasMemoBlockData } from "../components/CanvasMemoBlockNode";
 import {
   CANVAS_EDGE_COLORS,
@@ -141,24 +138,8 @@ export function useCanvasBlockEditor({
     [commitCanvasBlocks],
   );
 
-  const handleUpdateTimelineSequence = useCallback(
-    (nodeId: string, nextSequence: TimelineSequenceNode[]) => {
-      setNodes((current) => {
-        const next = current.map((node) => {
-          if (node.id !== nodeId || node.type !== "canvas-timeline") {
-            return node;
-          }
-          return { ...node, data: { ...node.data, sequence: nextSequence } };
-        });
-        commitCanvasBlocks(next);
-        return next;
-      });
-    },
-    [commitCanvasBlocks],
-  );
-
   const handleUpdateTimelineMeta = useCallback(
-    (nodeId: string, patch: Partial<CanvasTimelineBlockData>) => {
+    (nodeId: string, patch: Partial<Omit<CanvasTimelineBlockData, "onChangeColor" | "onDataChange" | "onDelete">>) => {
       setNodes((current) => {
         const next = current.map((node) => {
           if (node.id !== nodeId || node.type !== "canvas-timeline") {
@@ -227,23 +208,12 @@ export function useCanvasBlockEditor({
         position,
         draggable: true,
         data: {
-          label: source.name,
-          sequence: [
-            {
-              id: `seq-${Date.now()}`,
-              content: source.name,
-              isHeld: false,
-              topBranches: [],
-              bottomBranches: [],
-            },
-          ],
+          content: source.name,
+          isHeld: false,
           color: CANVAS_EDGE_COLORS[0],
-          onDataChange: (targetId, patch) => {
-            handleUpdateTimelineMeta(targetId, patch);
-          },
+          onDataChange: handleUpdateTimelineMeta,
           onChangeColor: handleCycleCanvasBlockColor,
           onDelete: handleDeleteLocalNode,
-          onUpdateSequence: handleUpdateTimelineSequence,
         },
       };
       setNodes((current) => {
@@ -259,7 +229,6 @@ export function useCanvasBlockEditor({
       handleDeleteLocalNode,
       handleCycleCanvasBlockColor,
       handleUpdateTimelineMeta,
-      handleUpdateTimelineSequence,
       onSelectNode,
       commitCanvasBlocks,
     ],
@@ -274,23 +243,12 @@ export function useCanvasBlockEditor({
       position,
       draggable: true,
       data: {
-        label: "",
-        sequence: [
-          {
-            id: `seq-${Date.now()}`,
-            content: "여정의 시작",
-            isHeld: false,
-            topBranches: [],
-            bottomBranches: [],
-          },
-        ],
+        content: "새 타임라인 블록",
+        isHeld: false,
         color: CANVAS_EDGE_COLORS[0],
-        onDataChange: (targetId, patch) => {
-          handleUpdateTimelineMeta(targetId, patch);
-        },
+        onDataChange: handleUpdateTimelineMeta,
         onChangeColor: handleCycleCanvasBlockColor,
         onDelete: handleDeleteLocalNode,
-        onUpdateSequence: handleUpdateTimelineSequence,
       },
     };
     setNodes((current) => {
@@ -304,7 +262,6 @@ export function useCanvasBlockEditor({
     handleCycleCanvasBlockColor,
     handleDeleteLocalNode,
     handleUpdateTimelineMeta,
-    handleUpdateTimelineSequence,
     pushHistory,
     resolvePlacementPosition,
   ]);
@@ -347,31 +304,12 @@ export function useCanvasBlockEditor({
             return next;
           });
         },
-        onTimelineChange: (id, nextSequence) => {
+        onTimelineChange: (id, patch) => {
           setNodes((innerCurrent) => {
             const next = innerCurrent.map((node) => {
               if (node.id !== id || node.type !== "canvas-timeline") {
                 return node;
               }
-              return {
-                ...node,
-                data: {
-                  ...node.data,
-                  sequence: nextSequence,
-                },
-              };
-            });
-            commitCanvasBlocks(next);
-            return next;
-          });
-        },
-        onTimelineMetaChange: (id, patch) => {
-          setNodes((innerCurrent) => {
-            const next = innerCurrent.map((node) => {
-              if (node.id !== id || node.type !== "canvas-timeline") {
-                return node;
-              }
-
               return {
                 ...node,
                 data: {
@@ -380,7 +318,6 @@ export function useCanvasBlockEditor({
                 },
               };
             });
-
             commitCanvasBlocks(next);
             return next;
           });

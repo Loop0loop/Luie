@@ -47,6 +47,16 @@ type StoreSetter<T> = (
 type StoreGetter<T> = () => T;
 const GRAPH_LOAD_TIMEOUT_MS = 8000;
 const GRAPH_REPLICA_TIMEOUT_MS = 4000;
+const graphPersistQueue = new Map<string, Promise<void>>();
+const graphLoadQueue = new Map<string, number>();
+const graphMutationVersion = new Map<string, number>();
+
+const readGraphMutationVersion = (projectId: string): number =>
+  graphMutationVersion.get(projectId) ?? 0;
+
+const markGraphMutation = (projectId: string): void => {
+  graphMutationVersion.set(projectId, readGraphMutationVersion(projectId) + 1);
+};
 
 type WorldBuildingActions = Pick<
   WorldBuildingState,
@@ -103,23 +113,40 @@ const persistGraphDocument = async (
 ): Promise<void> => {
   if (!graphData) return;
 
-  const response = await api.worldStorage.setDocument({
-    projectId,
-    docType: "graph",
-    payload: buildWorldGraphDocument(graphData),
-  });
+  markGraphMutation(projectId);
 
-  if (!response.success) {
-    await api.logger.error("Failed to save world graph document", {
-      projectId,
-      error: response.error,
+  const previousWrite = graphPersistQueue.get(projectId) ?? Promise.resolve();
+  const nextWrite = previousWrite
+    .catch(() => undefined)
+    .then(async () => {
+      const response = await api.worldStorage.setDocument({
+        projectId,
+        docType: "graph",
+        payload: buildWorldGraphDocument(graphData),
+      });
+
+      if (!response.success) {
+        await api.logger.error("Failed to save world graph document", {
+          projectId,
+          error: response.error,
+        });
+
+        const message =
+          typeof response.error?.message === "string"
+            ? response.error.message
+            : "Failed to persist world graph document";
+        throw new Error(message);
+      }
     });
 
-    const message =
-      typeof response.error?.message === "string"
-        ? response.error.message
-        : "Failed to persist world graph document";
-    throw new Error(message);
+  graphPersistQueue.set(projectId, nextWrite);
+
+  try {
+    await nextWrite;
+  } finally {
+    if (graphPersistQueue.get(projectId) === nextWrite) {
+      graphPersistQueue.delete(projectId);
+    }
   }
 };
 
@@ -135,6 +162,10 @@ export function createWorldBuildingActions(
 
   return {
     loadGraph: async (projectId) => {
+      const loadRequest = (graphLoadQueue.get(projectId) ?? 0) + 1;
+      graphLoadQueue.set(projectId, loadRequest);
+      const mutationVersionAtLoadStart = readGraphMutationVersion(projectId);
+
       set({ isLoading: true, error: null, activeProjectId: projectId });
       try {
         const graphResponse = await withTimeout(
@@ -171,11 +202,26 @@ export function createWorldBuildingActions(
           replicaPayload,
         );
 
+        const latestLoadRequest = graphLoadQueue.get(projectId) ?? 0;
+        if (latestLoadRequest !== loadRequest) {
+          return;
+        }
+
+        const latestMutationVersion = readGraphMutationVersion(projectId);
+        if (latestMutationVersion !== mutationVersionAtLoadStart) {
+          set({ isLoading: false });
+          return;
+        }
+
         set({
           graphData: mergedGraph,
           isLoading: false,
         });
       } catch (error) {
+        const latestLoadRequest = graphLoadQueue.get(projectId) ?? 0;
+        if (latestLoadRequest !== loadRequest) {
+          return;
+        }
         set({ error: String(error), isLoading: false });
       }
     },
@@ -443,7 +489,7 @@ export function createWorldBuildingActions(
         return {
           graphData: {
             ...state.graphData,
-            timelines: timelines,
+            timelines,
           },
         };
       });
