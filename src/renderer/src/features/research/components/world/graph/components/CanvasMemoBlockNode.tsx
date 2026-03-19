@@ -1,5 +1,6 @@
 import { memo, useState, useCallback, useRef } from "react";
 import { Edit2, Maximize2, Palette, Tag, Trash2, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { NodeProps } from "reactflow";
 import { Handle, Position, NodeToolbar, useReactFlow } from "reactflow";
 import { Button } from "@renderer/components/ui/button";
@@ -22,6 +23,7 @@ function CanvasMemoBlockNodeInner({
   data,
   selected,
 }: NodeProps<CanvasMemoBlockData>) {
+  const { t } = useTranslation();
   const [tagInput, setTagInput] = useState("");
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const reactFlow = useReactFlow();
@@ -55,7 +57,7 @@ function CanvasMemoBlockNodeInner({
               e.stopPropagation();
               data.onChangeColor?.(id);
             }}
-            title="색 변경"
+            title={t("research.graph.canvas.memo.changeColor")}
           >
             <Palette className="h-3.5 w-3.5" />
           </Button>
@@ -69,7 +71,7 @@ function CanvasMemoBlockNodeInner({
               titleInputRef.current?.focus();
               titleInputRef.current?.select();
             }}
-            title="편집"
+            title={t("research.graph.canvas.memo.edit")}
           >
             <Edit2 className="h-3.5 w-3.5" />
           </Button>
@@ -92,7 +94,7 @@ function CanvasMemoBlockNodeInner({
                 { padding: 0.5, duration: 220 },
               );
             }}
-            title="확대"
+            title={t("research.graph.canvas.memo.zoom")}
           >
             <Maximize2 className="h-3.5 w-3.5" />
           </Button>
@@ -105,7 +107,7 @@ function CanvasMemoBlockNodeInner({
               e.stopPropagation();
               data.onDelete?.(id);
             }}
-            title="삭제"
+            title={t("research.graph.canvas.memo.delete")}
           >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
@@ -162,7 +164,7 @@ function CanvasMemoBlockNodeInner({
             type="text"
             value={data.title}
             onChange={(e) => data.onDataChange?.(id, { title: e.target.value })}
-            placeholder="제목 없음"
+            placeholder={t("research.graph.canvas.memo.titlePlaceholder")}
             className="w-full bg-transparent text-[14px] font-semibold text-fg/90 placeholder:text-fg/28 focus:outline-none"
           />
         </div>
@@ -199,7 +201,7 @@ function CanvasMemoBlockNodeInner({
                 }
               }}
               onBlur={commitTagInput}
-              placeholder="태그 추가..."
+              placeholder={t("research.graph.canvas.memo.tagPlaceholder")}
               className="min-w-[64px] flex-1 bg-transparent text-[11px] text-fg/65 placeholder:text-fg/25 focus:outline-none"
             />
           </div>
@@ -209,7 +211,7 @@ function CanvasMemoBlockNodeInner({
           <textarea
             value={data.body}
             onChange={(e) => data.onDataChange?.(id, { body: e.target.value })}
-            placeholder="메모를 입력하세요..."
+            placeholder={t("research.graph.canvas.memo.bodyPlaceholder")}
             rows={4}
             className="w-full resize-none bg-transparent text-[12px] leading-relaxed text-fg/65 placeholder:text-fg/25 focus:outline-none"
           />

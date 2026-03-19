@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Layout } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { WorldGraphNode, WorldTimelineTrack } from "@shared/types";
 import { Card } from "@renderer/components/ui/card";
 import { cn } from "@renderer/lib/utils";
@@ -57,13 +58,13 @@ const readTimelineAttributes = (
   };
 };
 
-const readEventDate = (node: WorldGraphNode): string => {
+const readEventDate = (node: WorldGraphNode, fallback: string): string => {
   const attr = readTimelineAttributes(node);
   return typeof attr?.date === "string"
     ? attr.date
     : typeof attr?.time === "string"
       ? attr.time
-      : "날짜 미정";
+      : fallback;
 };
 
 export function TimelineView({
@@ -74,6 +75,7 @@ export function TimelineView({
   onSelectNode,
   onUpdateEvent,
 }: TimelineViewProps) {
+  const { t } = useTranslation();
   const currentTimeline = useMemo(
     () => timelines.find((t) => t.id === selectedTimelineId),
     [timelines, selectedTimelineId],
@@ -105,20 +107,21 @@ export function TimelineView({
     });
 
     // Sort within groups by date
+    const undated = t("research.graph.timeline.undated");
     Object.keys(groups).forEach((key) => {
       groups[key].sort((a, b) =>
-        readEventDate(a).localeCompare(readEventDate(b)),
+        readEventDate(a, undated).localeCompare(readEventDate(b, undated)),
       );
     });
 
     return groups;
-  }, [events, currentTimeline, selectedTimelineId]);
+  }, [events, currentTimeline, selectedTimelineId, t]);
 
   if (!selectedTimelineId) {
     return (
       <div className="flex h-full items-center justify-center bg-canvas px-8">
         <div className="max-w-md rounded-[24px] border border-dashed border-border/60 bg-white/5 px-6 py-8 text-center text-sm text-fg/65">
-          왼쪽 사이드바에서 타임라인 트랙을 선택하거나 새로 만들어주세요.
+          {t("research.graph.timeline.emptyTimelineSelection")}
         </div>
       </div>
     );
@@ -155,7 +158,7 @@ export function TimelineView({
           <div className="px-4 py-3">
             <div className="flex items-center justify-between gap-2 mb-1">
               <span className="text-[10px] font-black text-amber-400/60 tracking-wider uppercase">
-                {readEventDate(event)}
+                {readEventDate(event, t("research.graph.timeline.undated"))}
               </span>
               <div className="flex items-center gap-1 opacity-0 group-hover/event:opacity-100 transition-opacity">
                 <select
@@ -169,7 +172,7 @@ export function TimelineView({
                   }
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <option value="">이동...</option>
+                  <option value="">{t("research.graph.timeline.move")}</option>
                   {currentTimeline?.segments.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
@@ -201,7 +204,7 @@ export function TimelineView({
             </h1>
           </div>
           <p className="text-sm text-fg/40 font-medium">
-            분계점을 기준으로 사건을 정리합니다.
+            {t("research.graph.timeline.description")}
           </p>
         </header>
 
@@ -220,7 +223,7 @@ export function TimelineView({
               <div className="ml-8 space-y-4">
                 {groupedEvents[segment.id].length === 0 && (
                   <p className="text-[11px] text-fg/20 italic ml-4">
-                    이 분계점에 할당된 사건이 없습니다.
+                    {t("research.graph.timeline.emptySegment")}
                   </p>
                 )}
                 {groupedEvents[segment.id].map(renderEventCard)}
@@ -233,7 +236,7 @@ export function TimelineView({
               <div className="flex items-center gap-4 mb-6 -ml-1">
                 <div className="w-3 h-3 rounded-full border-2 border-white/10 bg-background" />
                 <h2 className="text-xs font-black uppercase tracking-[0.2em] text-fg/30 px-2.5 py-1">
-                  미분류 사건
+                  {t("research.graph.timeline.unassigned")}
                 </h2>
               </div>
 

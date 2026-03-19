@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { Node, XYPosition } from "reactflow";
 import type { WorldGraphCanvasBlock, WorldGraphNode } from "@shared/types";
 import type { CanvasTimelineBlockData } from "../components/CanvasTimelineBlockNode";
@@ -32,6 +33,7 @@ export function useCanvasBlockEditor({
   resolvePlacementPosition,
   draggingNodeIdRef,
 }: UseCanvasBlockEditorInput) {
+  const { t } = useTranslation();
   const [nodes, setNodes] = useState<Node<AnyCanvasNodeData>[]>(graphNodes);
   const historyRef = useRef<Node<AnyCanvasNodeData>[][]>([]);
   const historyIndexRef = useRef(-1);
@@ -139,7 +141,15 @@ export function useCanvasBlockEditor({
   );
 
   const handleUpdateTimelineMeta = useCallback(
-    (nodeId: string, patch: Partial<Omit<CanvasTimelineBlockData, "onChangeColor" | "onDataChange" | "onDelete">>) => {
+    (
+      nodeId: string,
+      patch: Partial<
+        Omit<
+          CanvasTimelineBlockData,
+          "onChangeColor" | "onDataChange" | "onDelete"
+        >
+      >,
+    ) => {
       setNodes((current) => {
         const next = current.map((node) => {
           if (node.id !== nodeId || node.type !== "canvas-timeline") {
@@ -243,7 +253,7 @@ export function useCanvasBlockEditor({
       position,
       draggable: true,
       data: {
-        content: "새 타임라인 블록",
+        content: t("research.graph.nodeDefaults.timelineBlock"),
         isHeld: false,
         color: CANVAS_EDGE_COLORS[0],
         onDataChange: handleUpdateTimelineMeta,
@@ -264,6 +274,7 @@ export function useCanvasBlockEditor({
     handleUpdateTimelineMeta,
     pushHistory,
     resolvePlacementPosition,
+    t,
   ]);
 
   useEffect(() => {

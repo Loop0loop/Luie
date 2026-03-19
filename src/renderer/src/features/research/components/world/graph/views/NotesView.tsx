@@ -1,4 +1,5 @@
 import type { ScrapMemo } from "@shared/types";
+import { useTranslation } from "react-i18next";
 import { Button } from "@renderer/components/ui/button";
 import { Card, CardContent } from "@renderer/components/ui/card";
 import { Input } from "@renderer/components/ui/input";
@@ -9,7 +10,10 @@ type NotesViewProps = {
   notesSaving: boolean;
   activeNote: ScrapMemo | null;
   onCreateNote: () => void;
-  onUpdateNote: (noteId: string, updates: Partial<Omit<ScrapMemo, "id">>) => void;
+  onUpdateNote: (
+    noteId: string,
+    updates: Partial<Omit<ScrapMemo, "id">>,
+  ) => void;
   onDeleteNote: (noteId: string) => void;
   onSaveNow: () => void;
 };
@@ -24,11 +28,13 @@ export function NotesView({
   onDeleteNote,
   onSaveNow,
 }: NotesViewProps) {
+  const { t } = useTranslation();
+
   if (!currentProjectId) {
     return (
       <div className="flex h-full items-center justify-center bg-canvas px-8">
         <div className="max-w-md rounded-[24px] border border-dashed border-border/60 bg-white/5 px-6 py-8 text-center text-sm text-fg/65">
-          프로젝트를 열면 스크랩 노트가 여기에서 편집됩니다.
+          {t("research.graph.notes.noProject")}
         </div>
       </div>
     );
@@ -37,7 +43,7 @@ export function NotesView({
   if (notesLoading) {
     return (
       <div className="flex h-full items-center justify-center bg-canvas text-sm text-fg/65">
-        노트를 불러오는 중입니다...
+        {t("research.graph.notes.loading")}
       </div>
     );
   }
@@ -46,13 +52,15 @@ export function NotesView({
     return (
       <div className="flex h-full items-center justify-center bg-canvas px-8">
         <div className="max-w-md rounded-[24px] border border-dashed border-border/60 bg-white/5 px-6 py-8 text-center">
-          <p className="text-sm text-fg/70">아직 노트가 없습니다.</p>
+          <p className="text-sm text-fg/70">
+            {t("research.graph.notes.empty")}
+          </p>
           <button
             type="button"
             onClick={onCreateNote}
             className="mt-5 rounded-xl border border-border/60 bg-white/10 px-4 py-2 text-sm text-fg transition hover:bg-white/15"
           >
-            첫 노트 만들기
+            {t("research.graph.notes.createFirst")}
           </button>
         </div>
       </div>
@@ -63,19 +71,17 @@ export function NotesView({
     <div className="h-full overflow-y-auto bg-canvas px-8 py-8">
       <div className="mx-auto max-w-3xl">
         <div className="mb-4 flex items-center justify-end gap-2">
-          <Button
-            onClick={onSaveNow}
-            size="sm"
-            variant="secondary"
-          >
-            {notesSaving ? "저장 중..." : "지금 저장"}
+          <Button onClick={onSaveNow} size="sm" variant="secondary">
+            {notesSaving
+              ? t("research.graph.notes.saving")
+              : t("research.graph.notes.saveNow")}
           </Button>
           <Button
             onClick={() => onDeleteNote(activeNote.id)}
             size="sm"
             variant="destructive"
           >
-            삭제
+            {t("research.graph.notes.delete")}
           </Button>
         </div>
 
@@ -83,7 +89,7 @@ export function NotesView({
           <CardContent className="space-y-6 pt-8">
             <div className="space-y-3 text-center">
               <p className="text-[11px] uppercase tracking-[0.26em] text-fg/42">
-                Note
+                {t("research.graph.notes.kicker")}
               </p>
               <Input
                 value={activeNote.title}
@@ -91,13 +97,13 @@ export function NotesView({
                   onUpdateNote(activeNote.id, { title: event.target.value })
                 }
                 className="mx-auto h-auto max-w-xl border-0 bg-transparent px-0 text-center text-2xl font-semibold tracking-tight text-fg shadow-none ring-0 focus-visible:ring-0"
-                placeholder="노트 제목"
+                placeholder={t("research.graph.notes.titlePlaceholder")}
               />
             </div>
 
             <div className="mx-auto max-w-xl">
               <p className="mb-2 text-center text-[11px] uppercase tracking-[0.24em] text-fg/42">
-                Tags
+                {t("research.graph.notes.tags")}
               </p>
               <Input
                 value={activeNote.tags.join(", ")}
@@ -110,7 +116,7 @@ export function NotesView({
                   })
                 }
                 className="h-10 border-white/10 bg-surface text-center"
-                placeholder="예: 떡밥, 시즌1, 설정"
+                placeholder={t("research.graph.notes.tagsPlaceholder")}
               />
             </div>
 
@@ -121,7 +127,7 @@ export function NotesView({
                   onUpdateNote(activeNote.id, { content: event.target.value })
                 }
                 className="min-h-[560px] w-full resize-none border-none bg-transparent text-base leading-8 text-fg/85 outline-none"
-                placeholder="설정, 메모, 장면 아이디어를 자유롭게 적으세요."
+                placeholder={t("research.graph.notes.bodyPlaceholder")}
               />
             </div>
           </CardContent>

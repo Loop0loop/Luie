@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { CanvasView } from "../views/CanvasView";
 import type {
@@ -8,18 +9,18 @@ import type {
   WorldGraphNode,
 } from "@shared/types";
 
-const buildNodeName = (entityType: string) => {
+const buildNodeName = (entityType: string, t: (key: string) => string) => {
   switch (entityType) {
     case "Character":
-      return "새 인물";
+      return t("research.graph.nodeDefaults.character");
     case "Event":
-      return "새 사건";
+      return t("research.graph.nodeDefaults.event");
     case "Place":
-      return "새 장소";
+      return t("research.graph.nodeDefaults.place");
     case "Concept":
-      return "새 개념";
+      return t("research.graph.nodeDefaults.concept");
     default:
-      return "새 엔티티";
+      return t("research.graph.nodeDefaults.entity");
   }
 };
 
@@ -46,6 +47,7 @@ export function CanvasTab({
   onSelectNode,
   onCreatedEntity,
 }: CanvasTabProps) {
+  const { t } = useTranslation();
   const createGraphNode = useWorldBuildingStore(
     (state) => state.createGraphNode,
   );
@@ -78,7 +80,7 @@ export function CanvasTab({
         projectId,
         entityType,
         subType,
-        name: buildNodeName(entityType),
+        name: buildNodeName(entityType, t),
         positionX: position?.x ?? 140 + graphNodes.length * 32,
         positionY: position?.y ?? 140 + graphNodes.length * 24,
       });
@@ -94,6 +96,7 @@ export function CanvasTab({
       projectId,
       onSelectNode,
       onCreatedEntity,
+      t,
     ],
   );
 
@@ -165,7 +168,7 @@ export function CanvasTab({
       const created = await createGraphNode({
         projectId,
         entityType: "Event",
-        name: "새 분계점",
+        name: t("research.graph.nodeDefaults.timelineBranch"),
         positionX: (sourceNode.positionX || 0) + 300,
         positionY: sourceNode.positionY || 0,
       });
@@ -183,7 +186,7 @@ export function CanvasTab({
 
       onSelectNode(created.id);
     },
-    [createGraphNode, createRelation, graphNodes, projectId, onSelectNode],
+    [createGraphNode, createRelation, graphNodes, projectId, onSelectNode, t],
   );
 
   return (
@@ -226,6 +229,7 @@ export function useCanvasTabSidebar({
   onSelectNode: (nodeId: string | null) => void;
   onCreatedEntity: (entityType: string, newNodeId: string) => void;
 }) {
+  const { t } = useTranslation();
   const createGraphNode = useWorldBuildingStore(
     (state) => state.createGraphNode,
   );
@@ -258,7 +262,7 @@ export function useCanvasTabSidebar({
         projectId,
         entityType,
         subType,
-        name: buildNodeName(entityType),
+        name: buildNodeName(entityType, t),
         positionX: 140 + graphNodes.length * 32,
         positionY: 140 + graphNodes.length * 24,
       });
@@ -274,6 +278,7 @@ export function useCanvasTabSidebar({
       projectId,
       onSelectNode,
       onCreatedEntity,
+      t,
     ],
   );
 

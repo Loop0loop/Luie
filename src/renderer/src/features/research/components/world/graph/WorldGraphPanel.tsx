@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { RefreshCcw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@renderer/components/ui/badge";
 import { Button } from "@renderer/components/ui/button";
 import { useGraphPluginStore } from "@renderer/features/research/stores/graphPluginStore";
@@ -19,6 +20,8 @@ import { EntityTab } from "./tabs/EntityTab";
 import { syncGraphEntitySelectionToWorkspace } from "@renderer/features/research/utils/graphEntitySync";
 
 export function WorldGraphPanel() {
+  const { t } = useTranslation();
+
   const {
     projectId,
     graphNodes,
@@ -163,7 +166,7 @@ export function WorldGraphPanel() {
     if (!projectId) return;
 
     const created = addNote(projectId, {
-      title: "새 스크랩",
+      title: t("research.graph.notes.defaultTitle"),
       content: "",
       tags: [],
     });
@@ -172,7 +175,7 @@ export function WorldGraphPanel() {
 
     setSelectedNoteId(created.id);
     setActiveTab("notes");
-  }, [addNote, projectId, setActiveTab, setSelectedNoteId]);
+  }, [addNote, projectId, setActiveTab, setSelectedNoteId, t]);
 
   const handleDeleteNote = useCallback(
     (noteId: string) => {
@@ -210,6 +213,24 @@ export function WorldGraphPanel() {
     },
     [graphNodes, selectNode],
   );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 1024px)");
+    const handleViewportChange = (event: MediaQueryListEvent) => {
+      if (event.matches) {
+        setSidebarOpen(false);
+      }
+    };
+
+    if (mediaQuery.matches) {
+      setSidebarOpen(false);
+    }
+
+    mediaQuery.addEventListener("change", handleViewportChange);
+    return () => {
+      mediaQuery.removeEventListener("change", handleViewportChange);
+    };
+  }, [setSidebarOpen]);
 
   useEffect(() => {
     if (!selectedNodeId) return;
@@ -257,7 +278,7 @@ export function WorldGraphPanel() {
       {isSidebarOpen ? (
         <div
           className="relative flex h-full shrink-0 flex-col"
-          style={{ width: sidebarWidth }}
+          style={{ width: `min(${sidebarWidth}px, calc(100vw - 72px))` }}
         >
           <GraphActiveSidebar
             activeTab={activeTab}
@@ -296,20 +317,26 @@ export function WorldGraphPanel() {
         <header className="flex shrink-0 items-center justify-between border-b border-border/60 bg-panel px-5 py-4">
           <div>
             <p className="text-[11px] uppercase tracking-[0.24em] text-fg/45">
-              World Graph
+              {t("research.graph.header.kicker")}
             </p>
-            <div className="mt-1 flex items-center gap-3">
+            <div className="mt-1 flex flex-wrap items-center gap-3">
               <h1 className="text-lg font-semibold text-fg">
                 {currentProjectTitle}
               </h1>
-              <Badge variant="outline">{activeTabMeta?.label}</Badge>
-              <Badge variant="secondary">{graphNodes.length} nodes</Badge>
+              <Badge variant="outline">
+                {activeTabMeta ? t(activeTabMeta.labelKey) : ""}
+              </Badge>
+              <Badge variant="secondary">
+                {t("research.graph.header.nodesCount", {
+                  count: graphNodes.length,
+                })}
+              </Badge>
               {!hasLuieAttachment ? (
                 <Badge
                   variant="outline"
                   className="border-amber-500/30 text-amber-200"
                 >
-                  Replica only
+                  {t("research.graph.header.replicaOnly")}
                 </Badge>
               ) : null}
             </div>
@@ -325,7 +352,7 @@ export function WorldGraphPanel() {
             }}
           >
             <RefreshCcw className="h-4 w-4" />
-            새로고침
+            {t("research.graph.header.refresh")}
           </Button>
         </header>
 
@@ -337,14 +364,13 @@ export function WorldGraphPanel() {
 
         {!hasLuieAttachment ? (
           <div className="border-b border-amber-400/20 bg-amber-500/10 px-5 py-3 text-sm text-amber-100">
-            이 프로젝트는 현재 `.luie` attachment가 없어 graph canvas 변경사항이
-            replica 저장소 기준으로만 유지됩니다.
+            {t("research.graph.header.replicaNotice")}
           </div>
         ) : null}
 
         {graphLoading && activeTab !== "notes" && activeTab !== "library" ? (
           <div className="flex flex-1 items-center justify-center text-sm text-fg/65">
-            그래프 데이터를 불러오는 중입니다...
+            {t("research.graph.header.loading")}
           </div>
         ) : (
           <div className="min-h-0 flex-1">

@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { Edit2, Palette, Search, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { NodeProps } from "reactflow";
 import { Handle, Position, NodeToolbar } from "reactflow";
 import { Button } from "@renderer/components/ui/button";
@@ -26,6 +27,7 @@ function CanvasGraphNodeCardInner({
   data,
   selected,
 }: NodeProps<CanvasGraphNodeData>) {
+  const { t } = useTranslation();
   const theme =
     ENTITY_TYPE_CANVAS_THEME[
       data.entityType as keyof typeof ENTITY_TYPE_CANVAS_THEME
@@ -44,7 +46,7 @@ function CanvasGraphNodeCardInner({
               e.stopPropagation();
               data.onDelete?.(id);
             }}
-            title="삭제"
+            title={t("research.graph.canvas.nodeCard.delete")}
           >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
@@ -57,7 +59,7 @@ function CanvasGraphNodeCardInner({
               e.stopPropagation();
               data.onChangeColor?.(id);
             }}
-            title="색 변경"
+            title={t("research.graph.canvas.nodeCard.changeColor")}
           >
             <Palette className="h-3.5 w-3.5" />
           </Button>
@@ -70,7 +72,7 @@ function CanvasGraphNodeCardInner({
               e.stopPropagation();
               data.onOpenEntity?.(id);
             }}
-            title="엔티티"
+            title={t("research.graph.canvas.nodeCard.openEntity")}
           >
             <Search className="h-3.5 w-3.5" />
           </Button>
@@ -83,7 +85,7 @@ function CanvasGraphNodeCardInner({
               e.stopPropagation();
               data.onEdit?.(id);
             }}
-            title="수정"
+            title={t("research.graph.canvas.nodeCard.edit")}
           >
             <Edit2 className="h-3.5 w-3.5" />
           </Button>

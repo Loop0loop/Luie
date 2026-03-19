@@ -6,6 +6,7 @@ import {
   RotateCcw,
   RotateCw,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 type CanvasFlowControlsProps = {
   onZoomIn: () => void;
@@ -24,28 +25,29 @@ export function CanvasFlowControls({
   onUndo,
   onRedo,
 }: CanvasFlowControlsProps) {
+  const { t } = useTranslation();
   return (
     <div className="absolute right-6 top-6 z-10 flex flex-col gap-3">
       <div className="flex flex-col overflow-hidden rounded-xl border border-white/10 bg-background/80 shadow-2xl backdrop-blur-xl">
         {[
           {
             icon: Plus,
-            title: "Zoom In",
+            title: t("research.graph.canvas.controls.zoomIn"),
             onClick: onZoomIn,
           },
           {
             icon: Minus,
-            title: "Zoom Out",
+            title: t("research.graph.canvas.controls.zoomOut"),
             onClick: onZoomOut,
           },
           {
             icon: RefreshCw,
-            title: "Fit View",
+            title: t("research.graph.canvas.controls.fitView"),
             onClick: onFitView,
           },
           {
             icon: Maximize2,
-            title: "Full Screen",
+            title: t("research.graph.canvas.controls.fitCanvas"),
             onClick: onFitCanvas,
           },
         ].map((control) => (
@@ -65,7 +67,7 @@ export function CanvasFlowControls({
         <button
           type="button"
           className="flex h-10 w-10 items-center justify-center border-b border-white/5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
-          title="Undo"
+          title={t("research.graph.canvas.controls.undo")}
           onClick={onUndo}
         >
           <RotateCcw className="h-4 w-4" />
@@ -73,7 +75,7 @@ export function CanvasFlowControls({
         <button
           type="button"
           className="flex h-10 w-10 items-center justify-center text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
-          title="Redo"
+          title={t("research.graph.canvas.controls.redo")}
           onClick={onRedo}
         >
           <RotateCw className="h-4 w-4" />

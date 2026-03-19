@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useGraphPluginStore } from "@renderer/features/research/stores/graphPluginStore";
 import { useMemoStore } from "@renderer/features/research/stores/memoStore";
@@ -26,6 +27,7 @@ const readEventDate = (attributes: unknown): string | null => {
 };
 
 export function useWorldGraphWorkspace() {
+  const { t } = useTranslation();
   useWorldGraphLoader();
 
   const currentProject = useProjectStore((state) => state.currentItem);
@@ -87,7 +89,8 @@ export function useWorldGraphWorkspace() {
     projectId: currentProject?.id ?? null,
     projectPath: attachmentPath,
     hasLuieAttachment,
-    currentProjectTitle: currentProject?.title ?? "프로젝트 없음",
+    currentProjectTitle:
+      currentProject?.title ?? t("research.graph.project.none"),
     graphNodes,
     graphEdges,
     graphCanvasBlocks,

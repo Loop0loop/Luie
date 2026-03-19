@@ -1,5 +1,11 @@
 import type { WorldGraphNode } from "@shared/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@renderer/components/ui/card";
+import { useTranslation } from "react-i18next";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@renderer/components/ui/card";
 
 type EntityViewProps = {
   nodes: WorldGraphNode[];
@@ -12,12 +18,14 @@ export function EntityView({
   selectedNodeId,
   onSelectNode,
 }: EntityViewProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="h-full overflow-y-auto bg-canvas px-8 py-8">
       {nodes.length === 0 ? (
         <div className="flex h-full items-center justify-center">
           <div className="rounded-[24px] border border-dashed border-border/60 bg-white/5 px-6 py-8 text-sm text-fg/65">
-            아직 엔티티가 없습니다.
+            {t("research.graph.entity.empty")}
           </div>
         </div>
       ) : (
@@ -43,17 +51,20 @@ export function EntityView({
                   <CardHeader className="pb-0">
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-[11px] uppercase tracking-[0.2em] text-fg/38">
-                        linked
+                        {t("research.graph.entity.linked")}
                       </span>
                       <span className="text-[11px] text-fg/45">
-                        {node.subType ?? "Canvas"}
+                        {node.subType ?? t("research.graph.entity.canvas")}
                       </span>
                     </div>
-                    <CardTitle className="text-lg text-fg">{node.name}</CardTitle>
+                    <CardTitle className="text-lg text-fg">
+                      {node.name}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="line-clamp-4 text-sm leading-7 text-fg/62">
-                      {node.description?.trim() || "설명이 아직 없습니다."}
+                      {node.description?.trim() ||
+                        t("research.graph.entity.noDescription")}
                     </p>
                   </CardContent>
                 </Card>

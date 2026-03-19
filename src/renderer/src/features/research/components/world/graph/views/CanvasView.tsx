@@ -10,6 +10,7 @@ import ReactFlow, {
   useReactFlow,
 } from "reactflow";
 import "reactflow/dist/style.css";
+import { useTranslation } from "react-i18next";
 import type {
   EntityRelation,
   WorldGraphCanvasBlock,
@@ -305,6 +306,7 @@ export function CanvasView({
   onCreateBlock,
   onAddTimelineBranch,
 }: CanvasViewProps) {
+  const { t } = useTranslation();
   const dialog = useDialog();
   const updateGraphNode = useWorldBuildingStore(
     (state) => state.updateGraphNode,
@@ -466,20 +468,23 @@ export function CanvasView({
 
   const handleEditCanvasEdgeRelation = useCallback(
     (edgeId: string) => {
-      void updateCanvasEdgeRelation(edgeId, "관계를 입력하세요");
+      void updateCanvasEdgeRelation(
+        edgeId,
+        t("research.graph.canvas.relation.editTitle"),
+      );
     },
-    [updateCanvasEdgeRelation],
+    [t, updateCanvasEdgeRelation],
   );
 
   const handleUpdateCanvasEdge = useCallback(
     (edgeId: string) => {
       void updateCanvasEdgeRelation(
         edgeId,
-        "수정할 관계명을 입력하세요",
-        "관계명을 변경합니다.",
+        t("research.graph.canvas.relation.updateTitle"),
+        t("research.graph.canvas.relation.updateMessage"),
       );
     },
-    [updateCanvasEdgeRelation],
+    [t, updateCanvasEdgeRelation],
   );
 
   const flowEdges = useMemo(

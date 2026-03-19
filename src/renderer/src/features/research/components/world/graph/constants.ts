@@ -12,47 +12,58 @@ import type { GraphCreatePreset, GraphSurfaceTab } from "./types";
 
 export const GRAPH_TAB_ITEMS: Array<{
   id: GraphSurfaceTab;
-  label: string;
-  description: string;
+  labelKey: string;
+  descriptionKey: string;
   Icon: LucideIcon;
 }> = [
   {
     id: "canvas",
-    label: "그래프",
-    description: "카드와 연결을 보는 메인 캔버스",
+    labelKey: "research.graph.tabs.canvas.label",
+    descriptionKey: "research.graph.tabs.canvas.description",
     Icon: Boxes,
   },
   {
     id: "timeline",
-    label: "타임라인",
-    description: "사건을 시간 순으로 정렬",
+    labelKey: "research.graph.tabs.timeline.label",
+    descriptionKey: "research.graph.tabs.timeline.description",
     Icon: Clock3,
   },
   {
     id: "notes",
-    label: "노트",
-    description: "스크랩 메모와 연동",
+    labelKey: "research.graph.tabs.notes.label",
+    descriptionKey: "research.graph.tabs.notes.description",
     Icon: StickyNote,
   },
   {
     id: "entity",
-    label: "엔티티",
-    description: "캔버스 엔티티를 한눈에 정리",
+    labelKey: "research.graph.tabs.entity.label",
+    descriptionKey: "research.graph.tabs.entity.description",
     Icon: Users,
   },
   {
     id: "library",
-    label: "라이브러리",
-    description: "그래프 플러그인 관리",
+    labelKey: "research.graph.tabs.library.label",
+    descriptionKey: "research.graph.tabs.library.description",
     Icon: LibraryBig,
   },
 ];
 
 export const GRAPH_CREATE_PRESETS: GraphCreatePreset[] = [
-  { entityType: "Character", label: "인물 추가" },
-  { entityType: "Event", label: "사건 추가" },
-  { entityType: "Place", subType: "Place", label: "장소 추가" },
-  { entityType: "Concept", subType: "Concept", label: "개념 추가" },
+  {
+    entityType: "Character",
+    label: "research.graph.presets.addCharacter",
+  },
+  { entityType: "Event", label: "research.graph.presets.addEvent" },
+  {
+    entityType: "Place",
+    subType: "Place",
+    label: "research.graph.presets.addPlace",
+  },
+  {
+    entityType: "Concept",
+    subType: "Concept",
+    label: "research.graph.presets.addConcept",
+  },
 ];
 
 export const ENTITY_TYPE_COLORS: Record<

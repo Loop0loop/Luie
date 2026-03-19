@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Clock3, GitBranchPlus, Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { WorldGraphNode } from "@shared/types";
 
 type CanvasTimelinePaletteProps = {
@@ -10,12 +11,12 @@ type CanvasTimelinePaletteProps = {
   onPickEvent: (nodeId: string) => void;
 };
 
-const readEventDate = (node: WorldGraphNode): string =>
+const readEventDate = (node: WorldGraphNode, fallback: string): string =>
   typeof node.attributes?.date === "string"
     ? node.attributes.date
     : typeof node.attributes?.time === "string"
       ? node.attributes.time
-      : "날짜 미정";
+      : fallback;
 
 export function CanvasTimelinePalette({
   events,
@@ -24,6 +25,7 @@ export function CanvasTimelinePalette({
   onCreateEvent,
   onPickEvent,
 }: CanvasTimelinePaletteProps) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -36,27 +38,31 @@ export function CanvasTimelinePalette({
       const haystack = [
         event.name,
         event.description ?? "",
-        readEventDate(event),
+        readEventDate(event, t("research.graph.timeline.undated")),
       ]
         .join(" ")
         .toLowerCase();
       return haystack.includes(normalized);
     });
-  }, [events, query]);
+  }, [events, query, t]);
 
   const totalItems = filteredEvents.length + 1;
 
   useEffect(() => {
     if (open) {
-      setQuery("");
-      setActiveIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 0);
-    }
-  }, [open]);
+      const timer = window.setTimeout(() => {
+        setQuery("");
+        setActiveIndex(0);
+        inputRef.current?.focus();
+      }, 0);
 
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [query]);
+      return () => {
+        window.clearTimeout(timer);
+      };
+    }
+
+    return;
+  }, [open]);
 
   useEffect(() => {
     if (!listRef.current) return;
@@ -122,8 +128,13 @@ export function CanvasTimelinePalette({
             ref={inputRef}
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="사건 검색 또는 새 타임라인 블럭 생성..."
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setActiveIndex(0);
+            }}
+            placeholder={t(
+              "research.graph.canvas.timelinePalette.searchPlaceholder",
+            )}
             className="w-full bg-transparent py-4 text-[14px] text-fg placeholder:text-fg/30 focus:outline-none"
           />
           <kbd className="shrink-0 rounded border border-white/12 px-1.5 py-0.5 text-[10px] text-fg/30">
@@ -134,7 +145,9 @@ export function CanvasTimelinePalette({
         <div ref={listRef} className="max-h-[400px] overflow-y-auto py-1.5">
           {filteredEvents.length === 0 && query.trim().length > 0 && (
             <p className="px-4 py-3 text-[12px] text-fg/35">
-              "{query}" 에 해당하는 사건이 없습니다.
+              {t("research.graph.canvas.timelinePalette.noMatch", {
+                query,
+              })}
             </p>
           )}
 
@@ -197,7 +210,7 @@ export function CanvasTimelinePalette({
                       : "rgba(255,255,255,0.25)",
                   }}
                 >
-                  {readEventDate(event)}
+                  {readEventDate(event, t("research.graph.timeline.undated"))}
                 </span>
               </button>
             );
@@ -253,7 +266,7 @@ export function CanvasTimelinePalette({
                         : "rgba(255,255,255,0.55)",
                     }}
                   >
-                    새 타임라인 블럭 생성
+                    {t("research.graph.canvas.timelinePalette.createBlock")}
                   </p>
                   <kbd
                     className="ml-auto shrink-0 rounded border px-1.5 py-0.5 text-[10px]"
@@ -282,19 +295,19 @@ export function CanvasTimelinePalette({
             <kbd className="rounded border border-white/10 px-1 py-px text-[9px]">
               ↑↓
             </kbd>
-            이동
+            {t("research.graph.canvas.timelinePalette.move")}
           </span>
           <span className="flex items-center gap-1 text-[11px] text-fg/28">
             <kbd className="rounded border border-white/10 px-1 py-px text-[9px]">
               ↵
             </kbd>
-            선택
+            {t("research.graph.canvas.timelinePalette.select")}
           </span>
           <span className="flex items-center gap-1 text-[11px] text-fg/28">
             <kbd className="rounded border border-white/10 px-1 py-px text-[9px]">
               ESC
             </kbd>
-            닫기
+            {t("research.graph.canvas.timelinePalette.close")}
           </span>
         </div>
       </div>

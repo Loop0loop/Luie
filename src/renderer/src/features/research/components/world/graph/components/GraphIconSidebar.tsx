@@ -1,4 +1,5 @@
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@renderer/components/ui/badge";
 import { Button } from "@renderer/components/ui/button";
 import { GRAPH_TAB_ITEMS } from "../constants";
@@ -17,6 +18,8 @@ export function GraphIconSidebar({
   onSelectTab,
   onToggleSidebar,
 }: GraphIconSidebarProps) {
+  const { t } = useTranslation();
+
   return (
     <aside className="flex w-[64px] shrink-0 flex-col items-center border-r border-border/60 bg-panel py-3">
       <Button
@@ -25,7 +28,11 @@ export function GraphIconSidebar({
         variant="outline"
         onClick={onToggleSidebar}
         className="mb-3 h-10 w-10 rounded-xl border-border/60 bg-white/5 text-fg/80 hover:bg-white/10 hover:text-fg"
-        title={isSidebarOpen ? "사이드바 닫기" : "사이드바 열기"}
+        title={
+          isSidebarOpen
+            ? t("research.graph.iconSidebar.close")
+            : t("research.graph.iconSidebar.open")
+        }
       >
         {isSidebarOpen ? (
           <PanelLeftClose className="h-4 w-4" />
@@ -35,8 +42,9 @@ export function GraphIconSidebar({
       </Button>
 
       <div className="flex w-full flex-1 flex-col items-center gap-1">
-        {GRAPH_TAB_ITEMS.map(({ id, label, Icon }) => {
+        {GRAPH_TAB_ITEMS.map(({ id, labelKey, Icon }) => {
           const active = id === activeTab;
+          const label = t(labelKey);
           return (
             <button
               key={id}
@@ -58,7 +66,10 @@ export function GraphIconSidebar({
               >
                 <Icon className="h-4 w-4" />
               </span>
-              <Badge variant={active ? "secondary" : "outline"} className="px-1.5 text-[10px]">
+              <Badge
+                variant={active ? "secondary" : "outline"}
+                className="px-1.5 text-[10px]"
+              >
                 {label}
               </Badge>
             </button>

@@ -1,4 +1,5 @@
 import { memo, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Trash2,
   Maximize2,
@@ -19,14 +20,26 @@ export type CanvasTimelineBlockData = {
   onChangeColor?: (id: string) => void;
   onDataChange?: (
     id: string,
-    patch: Partial<Omit<CanvasTimelineBlockData, "onChangeColor" | "onDataChange" | "onDelete">>
+    patch: Partial<
+      Omit<
+        CanvasTimelineBlockData,
+        "onChangeColor" | "onDataChange" | "onDelete"
+      >
+    >,
   ) => void;
   onDelete?: (id: string) => void;
 };
 
 export const CanvasTimelineBlockNode = memo(
   ({ id, data, selected }: NodeProps<CanvasTimelineBlockData>) => {
-    const { content = "", isHeld = false, onDataChange, onChangeColor, onDelete } = data;
+    const { t } = useTranslation();
+    const {
+      content = "",
+      isHeld = false,
+      onDataChange,
+      onChangeColor,
+      onDelete,
+    } = data;
     const reactFlow = useReactFlow();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -40,7 +53,7 @@ export const CanvasTimelineBlockNode = memo(
           width: node.width ?? 220,
           height: node.height ?? 120,
         },
-        { padding: 0.45, duration: 220 }
+        { padding: 0.45, duration: 220 },
       );
     };
 
@@ -88,10 +101,16 @@ export const CanvasTimelineBlockNode = memo(
                 }}
                 className={cn(
                   "w-8 h-8",
-                  isHeld ? "text-amber-400 bg-amber-500/10" : "text-muted-foreground"
+                  isHeld
+                    ? "text-amber-400 bg-amber-500/10"
+                    : "text-muted-foreground",
                 )}
               >
-                {isHeld ? <PlayCircle className="w-4 h-4" /> : <PauseCircle className="w-4 h-4" />}
+                {isHeld ? (
+                  <PlayCircle className="w-4 h-4" />
+                ) : (
+                  <PauseCircle className="w-4 h-4" />
+                )}
               </Button>
             </div>
             <div className="flex items-center pl-1">
@@ -113,20 +132,26 @@ export const CanvasTimelineBlockNode = memo(
         <div
           className={cn(
             "relative flex items-center w-[220px] p-4 bg-secondary/40 border-2 rounded-2xl transition-all duration-300 shadow-sm",
-            isHeld ? "border-dashed border-white/5 opacity-40 grayscale" : "border-white/5",
+            isHeld
+              ? "border-dashed border-white/5 opacity-40 grayscale"
+              : "border-white/5",
             selected
               ? "bg-secondary border-amber-500 ring-4 ring-amber-500/5 shadow-2xl scale-[1.05] z-40"
-              : "hover:bg-secondary/60 hover:border-white/10"
+              : "hover:bg-secondary/60 hover:border-white/10",
           )}
           style={{ backgroundColor: data.color }}
         >
           <div
             className={cn(
               "mr-3.5 flex-shrink-0 p-1.5 rounded-full transition-colors",
-              isHeld ? "text-amber-500/40" : "bg-amber-500/10 text-amber-500"
+              isHeld ? "text-amber-500/40" : "bg-amber-500/10 text-amber-500",
             )}
           >
-            {isHeld ? <PauseCircle className="w-4 h-4" /> : <GitCommit className="w-4 h-4" strokeWidth={3} />}
+            {isHeld ? (
+              <PauseCircle className="w-4 h-4" />
+            ) : (
+              <GitCommit className="w-4 h-4" strokeWidth={3} />
+            )}
           </div>
 
           <textarea
@@ -135,21 +160,23 @@ export const CanvasTimelineBlockNode = memo(
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
             onChange={(e) => onDataChange?.(id, { content: e.target.value })}
-            placeholder="사건 기록..."
+            placeholder={t("research.graph.canvas.timelineBlock.placeholder")}
             rows={1}
             className={cn(
               "w-full text-[13px] font-bold bg-transparent outline-none resize-none overflow-hidden text-foreground/90 placeholder:text-foreground/20",
-              isHeld && "line-through opacity-50"
+              isHeld && "line-through opacity-50",
             )}
           />
         </div>
 
-        {([
-          { position: Position.Top, axis: "top" },
-          { position: Position.Bottom, axis: "bottom" },
-          { position: Position.Left, axis: "left" },
-          { position: Position.Right, axis: "right" },
-        ] as const).map(({ position, axis }) => (
+        {(
+          [
+            { position: Position.Top, axis: "top" },
+            { position: Position.Bottom, axis: "bottom" },
+            { position: Position.Left, axis: "left" },
+            { position: Position.Right, axis: "right" },
+          ] as const
+        ).map(({ position, axis }) => (
           <span key={`${id}-${axis}-handles`}>
             <Handle
               id={`${axis}-source`}
@@ -159,7 +186,7 @@ export const CanvasTimelineBlockNode = memo(
                 "!h-2.5 !w-2.5 !border-0 transition-opacity bg-amber-500",
                 selected
                   ? "opacity-100 pointer-events-auto"
-                  : "opacity-0 group-hover/card:opacity-100 pointer-events-none group-hover/card:pointer-events-auto"
+                  : "opacity-0 group-hover/card:opacity-100 pointer-events-none group-hover/card:pointer-events-auto",
               )}
             />
             <Handle
@@ -170,14 +197,14 @@ export const CanvasTimelineBlockNode = memo(
                 "!h-2.5 !w-2.5 !border-0 transition-opacity bg-amber-500",
                 selected
                   ? "opacity-100 pointer-events-auto"
-                  : "opacity-0 group-hover/card:opacity-100 pointer-events-none group-hover/card:pointer-events-auto"
+                  : "opacity-0 group-hover/card:opacity-100 pointer-events-none group-hover/card:pointer-events-auto",
               )}
             />
           </span>
         ))}
       </div>
     );
-  }
+  },
 );
 
 CanvasTimelineBlockNode.displayName = "CanvasTimelineBlockNode";

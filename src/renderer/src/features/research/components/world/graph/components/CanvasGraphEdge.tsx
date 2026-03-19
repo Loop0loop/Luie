@@ -1,4 +1,5 @@
 import { memo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ArrowRightLeft,
   ArrowRight,
@@ -45,6 +46,7 @@ function CanvasGraphEdgeInner({
   selected,
   label,
 }: EdgeProps<CanvasGraphEdgeData>) {
+  const { t } = useTranslation();
   const [showPalette, setShowPalette] = useState(false);
   const [showDirection, setShowDirection] = useState(false);
   const [edgePath, labelX, labelY] = getBezierPath({
@@ -100,7 +102,7 @@ function CanvasGraphEdgeInner({
                   e.stopPropagation();
                   data?.onDelete?.(id);
                 }}
-                title="삭제"
+                title={t("research.graph.canvas.edge.delete")}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -113,7 +115,7 @@ function CanvasGraphEdgeInner({
                   e.stopPropagation();
                   data?.onZoom?.(id);
                 }}
-                title="확대"
+                title={t("research.graph.canvas.edge.zoom")}
               >
                 <Maximize2 className="h-3.5 w-3.5" />
               </Button>
@@ -129,7 +131,7 @@ function CanvasGraphEdgeInner({
                       setShowPalette((p) => !p);
                       setShowDirection(false);
                     }}
-                    title="색 변경"
+                    title={t("research.graph.canvas.edge.changeColor")}
                   >
                     <Palette className="h-3.5 w-3.5" />
                   </Button>
@@ -164,7 +166,7 @@ function CanvasGraphEdgeInner({
                       setShowDirection((d) => !d);
                       setShowPalette(false);
                     }}
-                    title="선 방향"
+                    title={t("research.graph.canvas.edge.direction")}
                   >
                     <ArrowRightLeft className="h-3.5 w-3.5" />
                   </Button>
@@ -180,9 +182,10 @@ function CanvasGraphEdgeInner({
                           data.onChangeDirection?.(id, "bidirectional");
                           setShowDirection(false);
                         }}
-                        title="양방향"
+                        title={t("research.graph.canvas.edge.bidirectional")}
                       >
-                        <ArrowRightLeft className="h-3.5 w-3.5" /> 양방향
+                        <ArrowRightLeft className="h-3.5 w-3.5" />
+                        {t("research.graph.canvas.edge.bidirectional")}
                       </Button>
                       <Button
                         type="button"
@@ -194,9 +197,10 @@ function CanvasGraphEdgeInner({
                           data.onChangeDirection?.(id, "unidirectional");
                           setShowDirection(false);
                         }}
-                        title="단방향"
+                        title={t("research.graph.canvas.edge.unidirectional")}
                       >
-                        <ArrowRight className="h-3.5 w-3.5" /> 단방향
+                        <ArrowRight className="h-3.5 w-3.5" />
+                        {t("research.graph.canvas.edge.unidirectional")}
                       </Button>
                       <Button
                         type="button"
@@ -208,9 +212,10 @@ function CanvasGraphEdgeInner({
                           data.onChangeDirection?.(id, "none");
                           setShowDirection(false);
                         }}
-                        title="무방향"
+                        title={t("research.graph.canvas.edge.none")}
                       >
-                        <Minus className="h-3.5 w-3.5" /> 무방향
+                        <Minus className="h-3.5 w-3.5" />
+                        {t("research.graph.canvas.edge.none")}
                       </Button>
                     </div>
                   )}
@@ -226,7 +231,7 @@ function CanvasGraphEdgeInner({
                     e.stopPropagation();
                     data.onEditRelation?.(id);
                   }}
-                  title="관계 편집"
+                  title={t("research.graph.canvas.edge.editRelation")}
                 >
                   <Type className="h-3.5 w-3.5" />
                 </Button>
@@ -241,7 +246,7 @@ function CanvasGraphEdgeInner({
                     e.stopPropagation();
                     data.onEdit?.(id);
                   }}
-                  title="수정"
+                  title={t("research.graph.canvas.edge.edit")}
                 >
                   <Edit2 className="h-3.5 w-3.5" />
                 </Button>

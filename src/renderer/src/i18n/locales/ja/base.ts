@@ -614,6 +614,163 @@ export const jaBase = {
       default: "Research",
     },
     graph: {
+      tabs: {
+        canvas: {
+          label: "グラフ",
+          description: "カードと接続を確認するメインキャンバス",
+        },
+        timeline: {
+          label: "タイムライン",
+          description: "出来事を時系列で整理",
+        },
+        notes: {
+          label: "ノート",
+          description: "スクラップメモと連携",
+        },
+        entity: {
+          label: "エンティティ",
+          description: "キャンバス上のエンティティを一覧表示",
+        },
+        library: {
+          label: "ライブラリ",
+          description: "グラフプラグインを管理",
+        },
+      },
+      presets: {
+        addCharacter: "人物を追加",
+        addEvent: "事件を追加",
+        addPlace: "場所を追加",
+        addConcept: "概念を追加",
+      },
+      nodeDefaults: {
+        character: "新しい人物",
+        event: "新しい事件",
+        place: "新しい場所",
+        concept: "新しい概念",
+        entity: "新しいエンティティ",
+        timelineBranch: "新しい分岐点",
+        timelineBlock: "新しいタイムラインブロック",
+      },
+      iconSidebar: {
+        close: "サイドバーを閉じる",
+        open: "サイドバーを開く",
+      },
+      project: {
+        none: "プロジェクトなし",
+      },
+      header: {
+        kicker: "World Graph",
+        nodesCount: "{{count}} nodes",
+        replicaOnly: "Replica only",
+        refresh: "再読み込み",
+        replicaNotice:
+          "このプロジェクトには現在 `.luie` attachment がないため、graph canvas の変更は replica ストレージにのみ保持されます。",
+        loading: "グラフデータを読み込んでいます...",
+      },
+      canvas: {
+        toolbar: {
+          newEntityBlock: "新しいエンティティブロック",
+          timelineBlock: "タイムラインブロック",
+          memoBlock: "メモブロック",
+        },
+        controls: {
+          zoomIn: "拡大",
+          zoomOut: "縮小",
+          fitView: "画面に合わせる",
+          fitCanvas: "キャンバスに合わせる",
+          undo: "元に戻す",
+          redo: "やり直す",
+        },
+        nodeCard: {
+          delete: "削除",
+          changeColor: "色変更",
+          openEntity: "エンティティ",
+          edit: "編集",
+        },
+        edge: {
+          delete: "削除",
+          zoom: "拡大",
+          changeColor: "色変更",
+          direction: "線の方向",
+          bidirectional: "双方向",
+          unidirectional: "単方向",
+          none: "無方向",
+          editRelation: "関係を編集",
+          edit: "編集",
+        },
+        memo: {
+          changeColor: "色変更",
+          edit: "編集",
+          zoom: "拡大",
+          delete: "削除",
+          titlePlaceholder: "無題",
+          tagPlaceholder: "タグを追加...",
+          bodyPlaceholder: "メモを入力してください...",
+        },
+        timelineBlock: {
+          placeholder: "出来事を記録...",
+        },
+        timelinePalette: {
+          searchPlaceholder:
+            "事件を検索するか、新しいタイムラインブロックを作成...",
+          noMatch: '"{{query}}" に一致する事件がありません。',
+          createBlock: "新しいタイムラインブロックを作成",
+          move: "移動",
+          select: "選択",
+          close: "閉じる",
+        },
+        relation: {
+          editTitle: "関係を入力してください",
+          updateTitle: "修正する関係名を入力してください",
+          updateMessage: "関係名を変更します。",
+        },
+      },
+      timeline: {
+        undated: "日付未定",
+        emptyTimelineSelection:
+          "左サイドバーでタイムライントラックを選択するか、新しく作成してください。",
+        move: "移動...",
+        description: "分岐点を基準に出来事を整理します。",
+        emptySegment: "このセグメントに割り当てられた出来事はありません。",
+        unassigned: "未分類の出来事",
+      },
+      notes: {
+        defaultTitle: "新しいスクラップ",
+        noProject:
+          "プロジェクトを開くと、ここでスクラップノートを編集できます。",
+        loading: "ノートを読み込んでいます...",
+        empty: "まだノートがありません。",
+        createFirst: "最初のノートを作成",
+        saving: "保存中...",
+        saveNow: "今すぐ保存",
+        delete: "削除",
+        kicker: "Note",
+        titlePlaceholder: "ノートタイトル",
+        tags: "Tags",
+        tagsPlaceholder: "例: 伏線, シーズン1, 設定",
+        bodyPlaceholder:
+          "設定、メモ、シーンのアイデアを自由に記録してください。",
+      },
+      library: {
+        installedKicker: "Installed Plugins",
+        installedTitle: "インストール済みプラグイン",
+        installedEmpty: "インストール済みプラグインはありません。",
+        uninstalling: "削除中...",
+        uninstall: "削除",
+        applying: "適用中...",
+        apply: "適用",
+        availableKicker: "Available Plugins",
+        availableTitle: "カタログ",
+        availableEmpty: "インストール可能なプラグインがありません。",
+        installing: "インストール中...",
+        install: "インストール",
+      },
+      entity: {
+        empty: "まだエンティティがありません。",
+        linked: "linked",
+        canvas: "Canvas",
+        noDescription: "説明はまだありません。",
+      },
       sidebar: {
         canvas: {
           search: "キャンバスを検索...",
