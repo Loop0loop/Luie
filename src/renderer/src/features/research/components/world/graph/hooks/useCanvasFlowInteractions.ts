@@ -211,6 +211,48 @@ export function useCanvasFlowInteractions({
   const handleConnect = useCallback(
     (connection: Connection) => {
       if (!connection.source || !connection.target || !onConnectNodes) return;
+
+      // Check for duplicate connection
+      const isDuplicate = edgesRef.current
+        .filter((edge) => edge.id.startsWith("canvas:"))
+        .some((edge) => {
+          const sameForward =
+            edge.source === connection.source &&
+            edge.target === connection.target &&
+            (edge.sourceHandle ?? null) === (connection.sourceHandle ?? null) &&
+            (edge.targetHandle ?? null) === (connection.targetHandle ?? null);
+          const sameReverse =
+            edge.source === connection.target &&
+            edge.target === connection.source &&
+            (edge.sourceHandle ?? null) === (connection.targetHandle ?? null) &&
+            (edge.targetHandle ?? null) === (connection.sourceHandle ?? null);
+          return sameForward || sameReverse;
+        });
+
+      if (isDuplicate) return;
+
+      // Optimistic update: add temporary edge immediately for instant visual feedback
+      const tempEdgeId = `canvas:temp-${Date.now()}`;
+      const tempEdge: Edge<CanvasGraphEdgeData> = {
+        id: tempEdgeId,
+        source: connection.source,
+        target: connection.target,
+        sourceHandle: connection.sourceHandle ?? undefined,
+        targetHandle: connection.targetHandle ?? undefined,
+        type: "canvas-edge",
+        data: {
+          palette: {
+            stroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.edge,
+            selectedStroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.selectedEdge,
+            glow: ENTITY_TYPE_CANVAS_THEME.WorldEntity.glow,
+          },
+          onDelete: () => {},
+        },
+      };
+
+      setEdges((currentEdges) => [...currentEdges, tempEdge]);
+
+      // Async save - will replace temp edge with real edge via useEffect
       void onConnectNodes({
         sourceId: connection.source,
         targetId: connection.target,
@@ -218,7 +260,7 @@ export function useCanvasFlowInteractions({
         targetHandle: connection.targetHandle,
       });
     },
-    [onConnectNodes],
+    [onConnectNodes, setEdges],
   );
 
   const isValidConnection = useCallback(

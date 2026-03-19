@@ -313,6 +313,8 @@ export const buildWorldGraphDocument = (
   graphData: WorldGraphData,
   updatedAt = new Date().toISOString(),
 ): GraphDocumentPayload => {
+  // Always include canvas data even if empty, to ensure proper overwrite on save
+  // This prevents stale data from persisting when all canvas content is deleted
   const canvasBlocks = graphData.canvasBlocks ?? [];
   const canvasEdges = graphData.canvasEdges ?? [];
   const timelines = graphData.timelines ?? [];
@@ -333,9 +335,10 @@ export const buildWorldGraphDocument = (
       ...edge,
       attributes: edge.attributes ?? null,
     })),
-    ...(canvasBlocks.length > 0 ? { canvasBlocks } : {}),
-    ...(canvasEdges.length > 0 ? { canvasEdges } : {}),
-    ...(timelines.length > 0 ? { timelines } : {}),
+    // Always include canvas data to properly overwrite stale data
+    canvasBlocks,
+    canvasEdges,
+    timelines,
     updatedAt,
   };
 };
