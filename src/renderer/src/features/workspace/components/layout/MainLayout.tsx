@@ -1,8 +1,17 @@
-import { type ReactNode, useState, useEffect } from 'react';
-import WindowBar from '@renderer/features/workspace/components/WindowBar';
-import { PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
-import { useUIStore } from '@renderer/features/workspace/stores/uiStore';
+import { type ReactNode, useState, useEffect } from "react";
+import WindowBar from "@renderer/features/workspace/components/WindowBar";
+import {
+  PanelRightClose,
+  PanelRightOpen,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
+import {
+  Panel,
+  Group as PanelGroup,
+  Separator as PanelResizeHandle,
+} from "react-resizable-panels";
+import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useShallow } from "zustand/react/shallow";
 import { useTranslation } from "react-i18next";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
@@ -48,7 +57,7 @@ export default function MainLayout({
       layoutSurfaceRatios: state.layoutSurfaceRatios,
       toggleLeftSidebar: state.toggleLeftSidebar,
       setRegionOpen: state.setRegionOpen,
-    }))
+    })),
   );
 
   const mainSidebarConfig = getLayoutSurfaceConfig("default.sidebar");
@@ -66,10 +75,26 @@ export default function MainLayout({
   const [isSidebarClosing, setIsSidebarClosing] = useState(false);
   const [isContextClosing, setIsContextClosing] = useState(false);
 
-  if (isSidebarOpen && !localSidebarOpen) {
+  const sidebarRatio =
+    layoutSurfaceRatios["default.sidebar"] ??
+    getLayoutSurfaceDefaultRatio("default.sidebar");
+  const contextRatio =
+    layoutSurfaceRatios["default.panel"] ??
+    getLayoutSurfaceDefaultRatio("default.panel");
+
+  const [sidebarDefaultSize, setSidebarDefaultSize] = useState(() =>
+    toPanelPercentSize(sidebarRatio),
+  );
+  const [contextDefaultSize, setContextDefaultSize] = useState(() =>
+    toPanelPercentSize(contextRatio),
+  );
+
+  useEffect(() => {
+    if (!isSidebarOpen || localSidebarOpen) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalSidebarOpen(true);
     setIsSidebarClosing(false);
-  }
+  }, [isSidebarOpen, localSidebarOpen]);
 
   useEffect(() => {
     if (!isSidebarOpen && localSidebarOpen) {
@@ -89,10 +114,24 @@ export default function MainLayout({
     return undefined;
   }, [isSidebarOpen, enableAnimations, localSidebarOpen]);
 
-  if (isContextOpen && !localContextOpen) {
+  useEffect(() => {
+    if (!isContextOpen || localContextOpen) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalContextOpen(true);
     setIsContextClosing(false);
-  }
+  }, [isContextOpen, localContextOpen]);
+
+  useEffect(() => {
+    if (localSidebarOpen) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSidebarDefaultSize(toPanelPercentSize(sidebarRatio));
+  }, [localSidebarOpen, sidebarRatio]);
+
+  useEffect(() => {
+    if (localContextOpen) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setContextDefaultSize(toPanelPercentSize(contextRatio));
+  }, [localContextOpen, contextRatio]);
 
   useEffect(() => {
     if (!isContextOpen && localContextOpen) {
@@ -112,11 +151,6 @@ export default function MainLayout({
     return undefined;
   }, [isContextOpen, enableAnimations, localContextOpen]);
 
-  const sidebarRatio =
-    layoutSurfaceRatios["default.sidebar"] ?? getLayoutSurfaceDefaultRatio("default.sidebar");
-  const contextRatio =
-    layoutSurfaceRatios["default.panel"] ?? getLayoutSurfaceDefaultRatio("default.panel");
-
   return (
     <div className="flex flex-col h-screen bg-app text-fg">
       <WindowBar />
@@ -131,7 +165,7 @@ export default function MainLayout({
         {localSidebarOpen && (
           <Panel
             id="sidebar-panel"
-            defaultSize={toPanelPercentSize(sidebarRatio)}
+            defaultSize={sidebarDefaultSize}
             minSize={toPanelPixelSize(mainSidebarConfig.minPx)}
             maxSize={toPanelPixelSize(mainSidebarConfig.maxPx)}
             className={`bg-sidebar border-r border-border overflow-hidden flex flex-col z-10 ${
@@ -147,7 +181,10 @@ export default function MainLayout({
         )}
 
         {localSidebarOpen && (
-          <PanelResizeHandle data-separator-feature="default.sidebar" className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative" />
+          <PanelResizeHandle
+            data-separator-feature="default.sidebar"
+            className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"
+          />
         )}
 
         {/* Main Content */}
@@ -160,7 +197,11 @@ export default function MainLayout({
             <button
               className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-colors duration-150 hover:bg-active hover:text-fg"
               onClick={toggleLeftSidebar}
-              title={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
+              title={
+                isSidebarOpen
+                  ? t("mainLayout.tooltip.sidebarCollapse")
+                  : t("mainLayout.tooltip.sidebarExpand")
+              }
             >
               {isSidebarOpen ? (
                 <PanelLeftClose className="icon-xl" />
@@ -174,7 +215,11 @@ export default function MainLayout({
             <button
               className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-colors duration-150 hover:bg-active hover:text-fg"
               onClick={() => setRegionOpen("rightPanel", !isContextOpen)}
-              title={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
+              title={
+                isContextOpen
+                  ? t("mainLayout.tooltip.contextCollapse")
+                  : t("mainLayout.tooltip.contextExpand")
+              }
             >
               {isContextOpen ? (
                 <PanelRightClose className="icon-xl" />
@@ -214,14 +259,17 @@ export default function MainLayout({
         </Panel>
 
         {localContextOpen && (
-          <PanelResizeHandle data-separator-feature="default.panel" className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative" />
+          <PanelResizeHandle
+            data-separator-feature="default.panel"
+            className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"
+          />
         )}
 
         {/* Context Panel */}
         {localContextOpen && (
           <Panel
             id="context-panel"
-            defaultSize={toPanelPercentSize(contextRatio)}
+            defaultSize={contextDefaultSize}
             minSize={toPanelPixelSize(mainContextConfig.minPx)}
             maxSize={toPanelPixelSize(mainContextConfig.maxPx)}
             className={`bg-panel border-l border-border overflow-hidden flex flex-col z-10 ${

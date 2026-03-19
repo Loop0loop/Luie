@@ -39,10 +39,8 @@ export function useSidebarLogic({
 }) {
   const { t } = useTranslation();
   const dialog = useDialog();
-  const { updateProject, currentProject } = useProjectStore((state) => {
-    const { updateProject: up, currentProject: cp } = state;
-    return { updateProject: up, currentProject: cp };
-  });
+  const updateProject = useProjectStore((state) => state.updateProject);
+  const currentProject = useProjectStore((state) => state.currentProject);
   const { setSidebarOpen, setManuscriptMenuOpen } = useUIStore(
     useShallow((state) => ({
       setSidebarOpen: state.setSidebarOpen,

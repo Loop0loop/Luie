@@ -42,7 +42,8 @@ const ExportWindow = lazy(
   () => import("@renderer/features/export/components/ExportWindow"),
 );
 const ProjectTemplateSelector = lazy(
-  () => import("@renderer/features/workspace/components/ProjectTemplateSelector"),
+  () =>
+    import("@renderer/features/workspace/components/ProjectTemplateSelector"),
 );
 const EditorRoot = lazy(
   () => import("@renderer/features/workspace/components/EditorRoot"),
@@ -70,12 +71,15 @@ type WindowMode =
   | "startup-wizard";
 
 const getWindowMode = (): WindowMode => {
+  if (typeof window === "undefined") return "app";
   if (window.location.hash === "#export") return "export";
   if (window.location.hash === "#world-graph") return "world-graph";
   if (window.location.hash === "#startup-wizard") return "startup-wizard";
   if (window.location.hash.startsWith("#auth-result")) return "oauth-result";
   return "app";
 };
+
+const getDefaultWindowMode = (): WindowMode => "app";
 
 export default function App() {
   const { t } = useTranslation();
@@ -85,10 +89,12 @@ export default function App() {
   });
   const [isBootstrapLoading, setIsBootstrapLoading] = useState(true);
   const uiModeIntegrityRef = useRef<UiModeIntegritySnapshot | null>(null);
-  const [windowMode, setWindowMode] = useState<WindowMode>(getWindowMode());
+  const [windowMode, setWindowMode] =
+    useState<WindowMode>(getDefaultWindowMode);
   const [quitPhase, setQuitPhase] = useState<AppQuitPhasePayload | null>(null);
 
   useEffect(() => {
+    setWindowMode(getWindowMode());
     const checkHash = () => {
       setWindowMode(getWindowMode());
     };
@@ -470,9 +476,7 @@ export default function App() {
   if (windowMode === "world-graph") {
     return (
       <>
-        <Suspense
-          fallback={appScreenFallback}
-        >
+        <Suspense fallback={appScreenFallback}>
           <div className="w-screen h-screen bg-app overflow-hidden">
             <WorldSection
               worldId={currentProject?.id || ""}

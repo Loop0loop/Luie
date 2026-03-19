@@ -10,6 +10,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createRoot, type Root } from "react-dom/client";
 import SidebarCharacterList from "../../src/renderer/src/features/manuscript/components/sections/SidebarCharacterList.js";
+import SidebarMemoList from "../../src/renderer/src/features/manuscript/components/sections/SidebarMemoList.js";
 import MemoMainView from "../../src/renderer/src/features/research/components/memo/MemoMainView.js";
 import ContextPanel from "../../src/renderer/src/features/workspace/components/panels/ContextPanel.js";
 import { useProjectStore } from "../../src/renderer/src/features/project/stores/projectStore.js";
@@ -17,6 +18,18 @@ import { useCharacterStore } from "../../src/renderer/src/features/research/stor
 import { useTermStore } from "../../src/renderer/src/features/research/stores/termStore.js";
 import { useMemoStore } from "../../src/renderer/src/features/research/stores/memoStore.js";
 import { useUIStore } from "../../src/renderer/src/features/workspace/stores/uiStore.js";
+
+const mockedMemoStorage = vi.hoisted(() => ({
+  loadScrapMemos: vi.fn(),
+  saveScrapMemos: vi.fn(),
+}));
+
+vi.mock(
+  "../../src/renderer/src/features/research/services/worldPackageStorage.js",
+  () => ({
+    worldPackageStorage: mockedMemoStorage,
+  }),
+);
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -117,6 +130,10 @@ describe("renderer rerender regression", () => {
     Object.assign(globalThis, {
       IS_REACT_ACT_ENVIRONMENT: true,
     });
+    mockedMemoStorage.loadScrapMemos.mockReset();
+    mockedMemoStorage.saveScrapMemos.mockReset();
+    mockedMemoStorage.loadScrapMemos.mockResolvedValue({ memos: [] });
+    mockedMemoStorage.saveScrapMemos.mockResolvedValue(undefined);
     localStorage.clear();
     document.body.innerHTML = "";
     resetStore(useProjectStore as unknown as ResettableStore);
@@ -332,5 +349,43 @@ describe("renderer rerender regression", () => {
       view.container.querySelectorAll("input"),
     ).find((element) => element.value === "Note B");
     expect(titleInput).toBeDefined();
+  });
+
+  it("SidebarMemoList loads memo notes once per project mount", async () => {
+    act(() => {
+      useProjectStore.setState({
+        currentItem: {
+          id: "project-1",
+          title: "Project One",
+          description: "",
+          projectPath: "/tmp/project-1.luie",
+          attachmentStatus: "attached",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        currentProject: {
+          id: "project-1",
+          title: "Project One",
+          description: "",
+          projectPath: "/tmp/project-1.luie",
+          attachmentStatus: "attached",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      });
+    });
+
+    const view = mountWithProfiler(<SidebarMemoList />);
+    mountedViews.push(view);
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mockedMemoStorage.loadScrapMemos).toHaveBeenCalledTimes(1);
+    expect(mockedMemoStorage.loadScrapMemos).toHaveBeenCalledWith(
+      "project-1",
+      "/tmp/project-1.luie",
+    );
   });
 });

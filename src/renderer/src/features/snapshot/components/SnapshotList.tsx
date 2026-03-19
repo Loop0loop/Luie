@@ -4,7 +4,7 @@ import { Clock, RotateCcw, GitCompare, Loader2 } from "lucide-react";
 import { Virtuoso } from "react-virtuoso";
 import { api } from "@shared/api";
 import { DraggableItem } from "@shared/ui/DraggableItem";
-import type { Snapshot } from '@shared/types';
+import type { Snapshot } from "@shared/types";
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useDialog } from "@shared/ui/useDialog";
@@ -50,7 +50,11 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
       { type: "module" },
     );
     workerRef.current = worker;
-    worker.onmessage = (event: MessageEvent<{ items: Array<{ snapshot: Snapshot; formattedDate: string }> }>) => {
+    worker.onmessage = (
+      event: MessageEvent<{
+        items: Array<{ snapshot: Snapshot; formattedDate: string }>;
+      }>,
+    ) => {
       setSnapshotItems(event.data?.items ?? []);
       setProcessing(false);
     };
@@ -73,7 +77,9 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
     setLoading(true);
     setError(null);
     try {
-      api.logger.info(`SnapshotList: Loading snapshots for chapter ${chapterId}`);
+      api.logger.info(
+        `SnapshotList: Loading snapshots for chapter ${chapterId}`,
+      );
       const res = await api.snapshot.getByChapter(chapterId);
       if (res.success && res.data) {
         setSnapshots(res.data);
@@ -106,7 +112,8 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
   }, [loadSnapshots, chapterId]);
 
   const displayItems = useMemo(
-    () => (snapshotItems.length > 0 ? snapshotItems : buildSnapshotItems(snapshots)),
+    () =>
+      snapshotItems.length > 0 ? snapshotItems : buildSnapshotItems(snapshots),
     [snapshotItems, buildSnapshotItems, snapshots],
   );
 
@@ -218,13 +225,20 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
             <DraggableItem
               key={item.snapshot.id}
               id={`snapshot-${item.snapshot.id}`}
-              data={{ type: "chapter", id: item.snapshot.id, title: `Snapshot: ${item.formattedDate}`, isSnapshot: true, content: item.snapshot.content }}
+              data={{
+                type: "chapter",
+                id: item.snapshot.id,
+                title: `Snapshot: ${item.formattedDate}`,
+                isSnapshot: true,
+                content: item.snapshot.content,
+              }}
             >
-              <div
-                className="p-3 border-b border-border hover:bg-surface-hover transition-colors group relative"
-              >
+              <div className="p-3 border-b border-border hover:bg-surface-hover transition-colors group relative">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-semibold text-fg">
+                  <span
+                    className="text-xs font-semibold text-fg"
+                    suppressHydrationWarning
+                  >
                     {item.formattedDate}
                   </span>
                   {item.snapshot.type === "MANUAL" && (
@@ -234,14 +248,20 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
                   )}
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      onClick={(e) => { e.stopPropagation(); handleCompare(item.snapshot); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCompare(item.snapshot);
+                      }}
                       className="p-1 hover:bg-active rounded text-accent"
                       title={t("snapshot.list.compareTitle")}
                     >
                       <GitCompare className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={(e) => { e.stopPropagation(); handleRestore(item.snapshot); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRestore(item.snapshot);
+                      }}
                       className="p-1 hover:bg-active rounded text-muted hover:text-fg"
                       title={t("snapshot.list.restoreTitle")}
                     >
@@ -250,7 +270,8 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
                   </div>
                 </div>
                 <div className="text-[11px] text-muted line-clamp-2">
-                  {item.snapshot.description || t("snapshot.list.autoDescription")}
+                  {item.snapshot.description ||
+                    t("snapshot.list.autoDescription")}
                 </div>
               </div>
             </DraggableItem>

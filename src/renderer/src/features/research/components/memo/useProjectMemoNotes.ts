@@ -1,6 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useMemoStore } from "@renderer/features/research/stores/memoStore";
 import type { Note } from "@renderer/features/research/stores/memo.types";
+
+const EMPTY_NOTES: Note[] = [];
 
 type UseProjectMemoNotesOptions = {
   defaultNotes?: Note[];
@@ -23,17 +25,25 @@ export function useProjectMemoNotes(options: UseProjectMemoNotesOptions) {
   const deleteNote = useMemoStore((state) => state.deleteNote);
   const loadNotes = useMemoStore((state) => state.loadNotes);
   const flushSave = useMemoStore((state) => state.flushSave);
+  const fallbackNotesRef = useRef<Note[]>(
+    defaultNotes.length > 0 ? defaultNotes : EMPTY_NOTES,
+  );
+
+  useEffect(() => {
+    fallbackNotesRef.current =
+      defaultNotes.length > 0 ? defaultNotes : EMPTY_NOTES;
+  }, [defaultNotes]);
 
   useEffect(() => {
     if (!projectId) return;
-    void loadNotes(projectId, projectPath, defaultNotes);
+    void loadNotes(projectId, projectPath, fallbackNotesRef.current);
 
     return () => {
       if (flushOnCleanup) {
         void flushSave();
       }
     };
-  }, [defaultNotes, flushOnCleanup, flushSave, loadNotes, projectId, projectPath]);
+  }, [flushOnCleanup, flushSave, loadNotes, projectId, projectPath]);
 
   return {
     addNote,

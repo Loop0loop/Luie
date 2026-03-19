@@ -17,9 +17,11 @@ const WorldPanel = lazy(
   () => import("@renderer/features/research/components/WorldPanel"),
 );
 const SnapshotList = lazy(() =>
-  import("@renderer/features/snapshot/components/SnapshotList").then((module) => ({
-    default: module.SnapshotList,
-  })),
+  import("@renderer/features/snapshot/components/SnapshotList").then(
+    (module) => ({
+      default: module.SnapshotList,
+    }),
+  ),
 );
 const TrashList = lazy(() =>
   import("@renderer/features/trash/components/TrashList").then((module) => ({
@@ -106,7 +108,10 @@ function TrashPanel(props: {
             </div>
           }
         >
-          <TrashList projectId={currentProjectId} refreshKey={trashRefreshKey} />
+          <TrashList
+            projectId={currentProjectId}
+            refreshKey={trashRefreshKey}
+          />
         </Suspense>
       ) : (
         <div className="px-4 py-4 text-center text-xs italic text-muted">
@@ -146,14 +151,19 @@ export function GoogleDocsRightPanel({
   rightPanelRatio,
   trashRefreshKey,
 }: GoogleDocsRightPanelProps) {
-  const enableAnimations = useEditorStore(state => state.enableAnimations);
+  const enableAnimations = useEditorStore((state) => state.enableAnimations);
   const [renderedTab, setRenderedTab] = useState(activeRightTab);
   const [isClosing, setIsClosing] = useState(false);
+  const [panelDefaultSize, setPanelDefaultSize] = useState(() =>
+    toPanelPercentSize(rightPanelRatio),
+  );
 
-  if (activeRightTab && activeRightTab !== renderedTab) {
+  useEffect(() => {
+    if (!activeRightTab || activeRightTab === renderedTab) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRenderedTab(activeRightTab);
     setIsClosing(false);
-  }
+  }, [activeRightTab, renderedTab]);
 
   useEffect(() => {
     if (!activeRightTab && renderedTab) {
@@ -173,6 +183,12 @@ export function GoogleDocsRightPanel({
     return undefined;
   }, [activeRightTab, enableAnimations, renderedTab]);
 
+  useEffect(() => {
+    if (renderedTab) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPanelDefaultSize(toPanelPercentSize(rightPanelRatio));
+  }, [rightPanelRatio, renderedTab]);
+
   if (!renderedTab) {
     return null;
   }
@@ -182,7 +198,9 @@ export function GoogleDocsRightPanel({
       <PanelResizeHandle
         data-separator-feature={activePanelSurface}
         className={`relative z-20 w-1 shrink-0 cursor-col-resize bg-border/40 transition-colors hover:bg-accent/60 focus-visible:bg-accent/60 ${
-          enableAnimations && isClosing ? "opacity-0 transition-opacity duration-200" : ""
+          enableAnimations && isClosing
+            ? "opacity-0 transition-opacity duration-200"
+            : ""
         }`}
       >
         <div className="absolute inset-y-0 -left-1 -right-1" />
@@ -191,7 +209,7 @@ export function GoogleDocsRightPanel({
       <Panel
         key={`right-context-panel-${renderedTab}`}
         id={`right-context-panel-${renderedTab}`}
-        defaultSize={toPanelPercentSize(rightPanelRatio)}
+        defaultSize={panelDefaultSize}
         minSize={toPanelPixelSize(rightPanelMinPx)}
         maxSize={toPanelPixelSize(rightPanelMaxPx)}
         onMouseDownCapture={onFocus}

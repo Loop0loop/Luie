@@ -80,7 +80,10 @@ export default function SidebarMemoList() {
               <div className="font-medium text-sm truncate">
                 {note.title || t("project.defaults.untitled")}
               </div>
-              <div className="text-xs text-muted-foreground truncate opacity-70">
+              <div
+                className="text-xs text-muted-foreground truncate opacity-70"
+                suppressHydrationWarning
+              >
                 {new Date(note.updatedAt).toLocaleDateString()}
               </div>
             </div>

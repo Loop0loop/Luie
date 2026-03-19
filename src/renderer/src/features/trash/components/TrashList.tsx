@@ -3,7 +3,7 @@ import { RotateCcw, Trash2, Clock } from "lucide-react";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import { api } from "@shared/api";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
-import type { Chapter } from '@shared/types';
+import type { Chapter } from "@shared/types";
 import { useTranslation } from "react-i18next";
 import { useDialog } from "@shared/ui/useDialog";
 
@@ -15,7 +15,11 @@ interface TrashListProps {
 
 type TrashItem = Chapter & { deletedAt?: string | Date | null };
 
-export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashListProps) {
+export function TrashList({
+  projectId,
+  refreshKey,
+  onRestoreChapter,
+}: TrashListProps) {
   const { t } = useTranslation();
   const dialog = useDialog();
   const [items, setItems] = useState<TrashItem[]>([]);
@@ -137,9 +141,10 @@ export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashList
     <div className="flex flex-col h-full overflow-y-auto">
       {items.map((item) => {
         const deletedAt = item.deletedAt ? new Date(item.deletedAt) : null;
-        const deletedLabel = deletedAt && !Number.isNaN(deletedAt.getTime())
-          ? deletedAt.toLocaleString()
-          : "";
+        const deletedLabel =
+          deletedAt && !Number.isNaN(deletedAt.getTime())
+            ? deletedAt.toLocaleString()
+            : "";
 
         return (
           <DraggableItem
@@ -147,16 +152,17 @@ export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashList
             id={`trash-${item.id}`}
             data={{ type: "trash", id: item.id, title: item.title }}
           >
-            <div
-              className="p-3 border-b border-border hover:bg-surface-hover transition-colors group"
-            >
+            <div className="p-3 border-b border-border hover:bg-surface-hover transition-colors group">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-semibold text-fg truncate">
                   {item.title}
                 </span>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
-                    onClick={(e) => { e.stopPropagation(); handleRestore(item.id); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRestore(item.id);
+                    }}
                     className="p-1 hover:bg-active rounded text-muted hover:text-fg"
                     title={t("trash.restore")}
                     disabled={restoringId === item.id || purgingId === item.id}
@@ -164,7 +170,10 @@ export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashList
                     <RotateCcw className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    onClick={(e) => { e.stopPropagation(); handlePurge(item.id); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePurge(item.id);
+                    }}
                     className="p-1 hover:bg-active rounded text-red-400 hover:text-red-300"
                     title={t("trash.purge")}
                     disabled={restoringId === item.id || purgingId === item.id}
@@ -173,7 +182,7 @@ export function TrashList({ projectId, refreshKey, onRestoreChapter }: TrashList
                   </button>
                 </div>
               </div>
-              <div className="text-[11px] text-muted">
+              <div className="text-[11px] text-muted" suppressHydrationWarning>
                 {deletedLabel || t("trash.deleted")}
               </div>
             </div>
