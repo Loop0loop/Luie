@@ -607,6 +607,39 @@ export const koBase = {
       analysis: "분석",
       default: "Research",
     },
+    graph: {
+      sidebar: {
+        canvas: {
+          search: "캔버스 검색...",
+          explorer: "탐색기",
+          details: "상세",
+          properties: "속성",
+          bioLog: "설명 / 로그",
+        },
+        timeline: {
+          tracks: "트랙",
+          empty: "타임라인이 없습니다.",
+          createFirstTrack: "첫 트랙 만들기",
+          addSegment: "분계점 추가",
+          renamePlaceholder: "트랙 이름 변경...",
+          defaultName: "새 타임라인",
+          defaultSegmentName: "새 분계점",
+        },
+        notes: {
+          uncategorized: "미분류",
+          untitled: "제목 없는 노트",
+          newNote: "새 노트",
+        },
+        library: {
+          coreRuntime: "코어 런타임",
+          activeModules: "활성 모듈",
+          catalogItems: "카탈로그 항목",
+          schemaTemplates: "스키마 템플릿",
+          syncing: "동기화 중...",
+          reloadEnvironment: "환경 다시 불러오기",
+        },
+      },
+    },
     tooltip: {
       closePanel: "Close Panel",
     },

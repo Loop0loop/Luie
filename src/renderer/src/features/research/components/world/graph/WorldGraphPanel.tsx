@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { RefreshCcw } from "lucide-react";
 import { Badge } from "@renderer/components/ui/badge";
 import { Button } from "@renderer/components/ui/button";
 import { useGraphPluginStore } from "@renderer/features/research/stores/graphPluginStore";
 import { useMemoStore } from "@renderer/features/research/stores/memoStore";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
+import { useWorldGraphUiStore } from "@renderer/features/research/stores/worldGraphUiStore";
 import { GRAPH_TAB_ITEMS } from "./constants";
 import { useWorldGraphWorkspace } from "./hooks/useWorldGraphWorkspace";
 import type { GraphSurfaceTab } from "./types";
@@ -47,34 +48,33 @@ export function WorldGraphPanel() {
     (state) => state.updateGraphNode,
   );
 
-  const [activeTab, setActiveTab] = useState<GraphSurfaceTab>("canvas");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
-    const saved = localStorage.getItem("worldGraph_isSidebarOpen");
-    return saved !== null ? saved === "true" : true;
-  });
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [selectedTimelineId, setSelectedTimelineId] = useState<string | null>(
-    null,
+  const activeTab = useWorldGraphUiStore((state) => state.activeTab);
+  const setActiveTab = useWorldGraphUiStore((state) => state.setActiveTab);
+  const isSidebarOpen = useWorldGraphUiStore((state) => state.isSidebarOpen);
+  const setSidebarOpen = useWorldGraphUiStore((state) => state.setSidebarOpen);
+  const selectedNodeId = useWorldGraphUiStore((state) => state.selectedNodeId);
+  const selectNode = useWorldGraphUiStore((state) => state.selectNode);
+  const selectedTimelineId = useWorldGraphUiStore(
+    (state) => state.selectedTimelineId,
   );
-  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
-  const [autoLayoutTrigger, setAutoLayoutTrigger] = useState(0);
+  const setSelectedTimelineId = useWorldGraphUiStore(
+    (state) => state.setSelectedTimelineId,
+  );
+  const selectedNoteId = useWorldGraphUiStore((state) => state.selectedNoteId);
+  const setSelectedNoteId = useWorldGraphUiStore(
+    (state) => state.setSelectedNoteId,
+  );
+  const autoLayoutTrigger = useWorldGraphUiStore(
+    (state) => state.autoLayoutTrigger,
+  );
 
   const SIDEBAR_MIN_WIDTH = 220;
   const SIDEBAR_MAX_WIDTH = 520;
   const SIDEBAR_DEFAULT_WIDTH = 320;
-  
-  const [sidebarWidth, setSidebarWidth] = useState(() => {
-    const saved = localStorage.getItem("worldGraph_sidebarWidth");
-    return saved ? parseInt(saved, 10) : SIDEBAR_DEFAULT_WIDTH;
-  });
-
-  useEffect(() => {
-    localStorage.setItem("worldGraph_isSidebarOpen", String(isSidebarOpen));
-  }, [isSidebarOpen]);
-
-  useEffect(() => {
-    localStorage.setItem("worldGraph_sidebarWidth", String(sidebarWidth));
-  }, [sidebarWidth]);
+  const sidebarWidth = useWorldGraphUiStore((state) => state.sidebarWidth);
+  const setSidebarWidth = useWorldGraphUiStore(
+    (state) => state.setSidebarWidth,
+  );
   const isResizingRef = useRef(false);
   const resizeStartXRef = useRef(0);
   const resizeStartWidthRef = useRef(SIDEBAR_DEFAULT_WIDTH);
@@ -82,9 +82,9 @@ export function WorldGraphPanel() {
   const handleResizeMouseDown = useCallback(
     (event: React.MouseEvent, initialWidth?: number) => {
       event.preventDefault();
-      
+
       const startWidth = initialWidth ?? sidebarWidth;
-      
+
       isResizingRef.current = true;
       resizeStartXRef.current = event.clientX;
       resizeStartWidthRef.current = startWidth;
@@ -99,9 +99,9 @@ export function WorldGraphPanel() {
         if (!isResizingRef.current) return;
         const delta = moveEvent.clientX - resizeStartXRef.current;
         const rawWidth = resizeStartWidthRef.current + delta;
-        
+
         if (rawWidth < 120) {
-          setIsSidebarOpen(false);
+          setSidebarOpen(false);
           setSidebarWidth(SIDEBAR_DEFAULT_WIDTH);
           onMouseUp();
           return;
@@ -117,7 +117,7 @@ export function WorldGraphPanel() {
       document.addEventListener("mousemove", onMouseMove);
       document.addEventListener("mouseup", onMouseUp);
     },
-    [sidebarWidth],
+    [setSidebarOpen, setSidebarWidth, sidebarWidth],
   );
 
   const handleUpdateEvent = useCallback(
@@ -146,16 +146,18 @@ export function WorldGraphPanel() {
       ? selectedTimelineId
       : (timelines[0]?.id ?? null);
 
-  const handleSelectTab = useCallback((nextTab: GraphSurfaceTab) => {
-    setActiveTab((current) => {
-      if (current === nextTab) {
-        setIsSidebarOpen((open) => !open);
-        return current;
+  const handleSelectTab = useCallback(
+    (nextTab: GraphSurfaceTab) => {
+      if (activeTab === nextTab) {
+        setSidebarOpen(!isSidebarOpen);
+        return;
       }
-      setIsSidebarOpen(true);
-      return nextTab;
-    });
-  }, []);
+
+      setSidebarOpen(true);
+      setActiveTab(nextTab);
+    },
+    [activeTab, isSidebarOpen, setActiveTab, setSidebarOpen],
+  );
 
   const handleCreateNote = useCallback(() => {
     if (!projectId) return;
@@ -170,28 +172,31 @@ export function WorldGraphPanel() {
 
     setSelectedNoteId(created.id);
     setActiveTab("notes");
-  }, [addNote, projectId]);
+  }, [addNote, projectId, setActiveTab, setSelectedNoteId]);
 
   const handleDeleteNote = useCallback(
     (noteId: string) => {
       deleteNote(noteId);
-      setSelectedNoteId((current) => (current === noteId ? null : current));
+      if (selectedNoteId === noteId) {
+        setSelectedNoteId(null);
+      }
     },
-    [deleteNote],
+    [deleteNote, selectedNoteId, setSelectedNoteId],
   );
 
   const handleCreatedEntity = useCallback(
     (_entityType: string, _newNodeId: string) => {
       // Stay on current tab or default to canvas
-      setActiveTab((current) => current || "canvas");
+      if (!activeTab) {
+        setActiveTab("canvas");
+      }
     },
-    [],
+    [activeTab, setActiveTab],
   );
-
 
   const handleSelectNode = useCallback(
     (nodeId: string | null) => {
-      setSelectedNodeId(nodeId);
+      selectNode(nodeId);
       if (!nodeId) return;
 
       const node = graphNodes.find((item) => item.id === nodeId);
@@ -203,7 +208,7 @@ export function WorldGraphPanel() {
         name: node.name,
       });
     },
-    [graphNodes],
+    [graphNodes, selectNode],
   );
 
   useEffect(() => {
@@ -218,14 +223,13 @@ export function WorldGraphPanel() {
     });
   }, [graphNodes, selectedNodeId]);
 
-  const { selectedNode, handleCreatePreset, handleSaveNode, handleDeleteNode } =
-    useCanvasTabSidebar({
-      projectId,
-      graphNodes,
-      selectedNodeId,
-      onSelectNode: handleSelectNode,
-      onCreatedEntity: handleCreatedEntity,
-    });
+  const { selectedNode, handleCreatePreset } = useCanvasTabSidebar({
+    projectId,
+    graphNodes,
+    selectedNodeId,
+    onSelectNode: handleSelectNode,
+    onCreatedEntity: handleCreatedEntity,
+  });
 
   const activeTabMeta = GRAPH_TAB_ITEMS.find((item) => item.id === activeTab);
 
@@ -236,13 +240,13 @@ export function WorldGraphPanel() {
           activeTab={activeTab}
           isSidebarOpen={isSidebarOpen}
           onSelectTab={handleSelectTab}
-          onToggleSidebar={() => setIsSidebarOpen((open) => !open)}
+          onToggleSidebar={() => setSidebarOpen(!isSidebarOpen)}
         />
         {!isSidebarOpen && (
           <div
             className="absolute right-[calc(-5px/2)] top-0 z-10 h-full w-[5px] cursor-col-resize hover:bg-white/20 active:bg-white/30"
             onMouseDown={(e) => {
-              setIsSidebarOpen(true);
+              setSidebarOpen(true);
               setSidebarWidth(SIDEBAR_MIN_WIDTH);
               handleResizeMouseDown(e, SIDEBAR_MIN_WIDTH);
             }}
@@ -259,22 +263,17 @@ export function WorldGraphPanel() {
             activeTab={activeTab}
             currentProjectTitle={currentProjectTitle}
             nodes={graphNodes}
-            edges={graphEdges}
             timelines={timelines}
-            timelineNodes={timelineNodes}
             notes={notes}
             selectedNode={selectedNode}
             selectedTimelineId={effectiveSelectedTimelineId}
             selectedNoteId={effectiveSelectedNoteId}
             onCreatePreset={handleCreatePreset}
             onSelectNode={handleSelectNode}
-            onSaveNode={handleSaveNode}
-            onDeleteNode={handleDeleteNode}
             onSelectNote={setSelectedNoteId}
             onCreateNote={handleCreateNote}
             onSelectTimeline={setSelectedTimelineId}
             onUpdateTimelines={setTimelines}
-            onAutoLayout={() => setAutoLayoutTrigger((n) => n + 1)}
             pluginSummary={{
               catalogCount: catalog.length,
               installedCount: installed.length,
@@ -306,7 +305,10 @@ export function WorldGraphPanel() {
               <Badge variant="outline">{activeTabMeta?.label}</Badge>
               <Badge variant="secondary">{graphNodes.length} nodes</Badge>
               {!hasLuieAttachment ? (
-                <Badge variant="outline" className="border-amber-500/30 text-amber-200">
+                <Badge
+                  variant="outline"
+                  className="border-amber-500/30 text-amber-200"
+                >
                   Replica only
                 </Badge>
               ) : null}
@@ -335,7 +337,8 @@ export function WorldGraphPanel() {
 
         {!hasLuieAttachment ? (
           <div className="border-b border-amber-400/20 bg-amber-500/10 px-5 py-3 text-sm text-amber-100">
-            이 프로젝트는 현재 `.luie` attachment가 없어 graph canvas 변경사항이 replica 저장소 기준으로만 유지됩니다.
+            이 프로젝트는 현재 `.luie` attachment가 없어 graph canvas 변경사항이
+            replica 저장소 기준으로만 유지됩니다.
           </div>
         ) : null}
 

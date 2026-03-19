@@ -17,6 +17,7 @@ import type {
   WorldGraphNode,
 } from "@shared/types";
 import { api } from "@shared/api";
+import { useDialog } from "@shared/ui/useDialog";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { useCanvasBlockEditor } from "../hooks/useCanvasBlockEditor";
 import { useCanvasFlowInteractions } from "../hooks/useCanvasFlowInteractions";
@@ -304,6 +305,7 @@ export function CanvasView({
   onCreateBlock,
   onAddTimelineBranch,
 }: CanvasViewProps) {
+  const dialog = useDialog();
   const updateGraphNode = useWorldBuildingStore(
     (state) => state.updateGraphNode,
   );
@@ -379,6 +381,43 @@ export function CanvasView({
     [onCanvasEdgesCommit],
   );
 
+  const updateCanvasEdgeRelation = useCallback(
+    async (edgeId: string, title: string, message?: string) => {
+      const target = canvasEdges.find((edge) => edge.id === edgeId);
+      if (!target) {
+        return;
+      }
+
+      const nextRelation = await dialog.prompt({
+        title,
+        message,
+        defaultValue: target.relation,
+        placeholder: target.relation,
+      });
+
+      if (nextRelation === null) {
+        return;
+      }
+
+      const trimmed = nextRelation.trim();
+      if (trimmed.length === 0) {
+        return;
+      }
+
+      commitCanvasEdges(
+        canvasEdges.map((edge) =>
+          edge.id === edgeId
+            ? {
+                ...edge,
+                relation: trimmed,
+              }
+            : edge,
+        ),
+      );
+    },
+    [canvasEdges, commitCanvasEdges, dialog],
+  );
+
   const handleDeleteCanvasEdge = useCallback(
     (edgeId: string) => {
       commitCanvasEdges(canvasEdges.filter((edge) => edge.id !== edgeId));
@@ -427,67 +466,20 @@ export function CanvasView({
 
   const handleEditCanvasEdgeRelation = useCallback(
     (edgeId: string) => {
-      const target = canvasEdges.find((edge) => edge.id === edgeId);
-      if (!target) {
-        return;
-      }
-
-      const nextRelation = window.prompt("관계를 입력하세요", target.relation);
-      if (nextRelation === null) {
-        return;
-      }
-
-      const trimmed = nextRelation.trim();
-      if (trimmed.length === 0) {
-        return;
-      }
-
-      commitCanvasEdges(
-        canvasEdges.map((edge) =>
-          edge.id === edgeId
-            ? {
-                ...edge,
-                relation: trimmed,
-              }
-            : edge,
-        ),
-      );
+      void updateCanvasEdgeRelation(edgeId, "관계를 입력하세요");
     },
-    [canvasEdges, commitCanvasEdges],
+    [updateCanvasEdgeRelation],
   );
 
   const handleUpdateCanvasEdge = useCallback(
     (edgeId: string) => {
-      const target = canvasEdges.find((edge) => edge.id === edgeId);
-      if (!target) {
-        return;
-      }
-
-      const nextRelation = window.prompt(
+      void updateCanvasEdgeRelation(
+        edgeId,
         "수정할 관계명을 입력하세요",
-        target.relation,
-      );
-      if (nextRelation === null) {
-        return;
-      }
-
-      const trimmed = nextRelation.trim();
-      if (trimmed.length === 0) {
-        return;
-      }
-
-      commitCanvasEdges(
-        canvasEdges.map((edge) =>
-          edge.id === edgeId
-            ? {
-                ...edge,
-                relation: trimmed,
-              }
-            : edge,
-        ),
+        "관계명을 변경합니다.",
       );
     },
-    [canvasEdges, commitCanvasEdges],
+    [updateCanvasEdgeRelation],
   );
 
   const flowEdges = useMemo(

@@ -613,6 +613,39 @@ export const jaBase = {
       analysis: "分析",
       default: "Research",
     },
+    graph: {
+      sidebar: {
+        canvas: {
+          search: "キャンバスを検索...",
+          explorer: "エクスプローラー",
+          details: "詳細",
+          properties: "プロパティ",
+          bioLog: "説明 / ログ",
+        },
+        timeline: {
+          tracks: "トラック",
+          empty: "タイムラインがありません。",
+          createFirstTrack: "最初のトラックを作成",
+          addSegment: "セグメントを追加",
+          renamePlaceholder: "トラック名を変更...",
+          defaultName: "新しいタイムライン",
+          defaultSegmentName: "新しいセグメント",
+        },
+        notes: {
+          uncategorized: "未分類",
+          untitled: "無題ノート",
+          newNote: "新規ノート",
+        },
+        library: {
+          coreRuntime: "コアランタイム",
+          activeModules: "有効モジュール",
+          catalogItems: "カタログ項目",
+          schemaTemplates: "スキーマテンプレート",
+          syncing: "同期中...",
+          reloadEnvironment: "環境を再読み込み",
+        },
+      },
+    },
     tooltip: {
       closePanel: "パネルを閉じる",
     },

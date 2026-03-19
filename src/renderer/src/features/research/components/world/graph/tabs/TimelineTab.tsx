@@ -1,5 +1,8 @@
 import type { WorldGraphNode, WorldTimelineTrack } from "@shared/types";
-import { TimelineView } from "../views/TimelineView";
+import {
+  TimelineView,
+  type TimelineEventAttributesPatch,
+} from "../views/TimelineView";
 
 type TimelineTabProps = {
   timelines: WorldTimelineTrack[];
@@ -8,7 +11,7 @@ type TimelineTabProps = {
   selectedTimelineId: string | null;
   onSelectNode: (nodeId: string | null) => void;
   onUpdateTimelines: (timelines: WorldTimelineTrack[]) => void;
-  onUpdateEvent: (id: string, attributes: Record<string, any>) => void;
+  onUpdateEvent: (id: string, attributes: TimelineEventAttributesPatch) => void;
 };
 
 export function TimelineTab({

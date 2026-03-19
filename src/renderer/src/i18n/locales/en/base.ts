@@ -609,6 +609,39 @@ export const enBase = {
       analysis: "Analysis",
       default: "Research",
     },
+    graph: {
+      sidebar: {
+        canvas: {
+          search: "Search canvas...",
+          explorer: "Explorer",
+          details: "Details",
+          properties: "Properties",
+          bioLog: "Bio / Log",
+        },
+        timeline: {
+          tracks: "Tracks",
+          empty: "No timelines yet.",
+          createFirstTrack: "Create First Track",
+          addSegment: "Add Segment",
+          renamePlaceholder: "Rename Track...",
+          defaultName: "New Timeline",
+          defaultSegmentName: "New Segment",
+        },
+        notes: {
+          uncategorized: "Uncategorized",
+          untitled: "Untitled Note",
+          newNote: "New Note",
+        },
+        library: {
+          coreRuntime: "Core Runtime",
+          activeModules: "Active Modules",
+          catalogItems: "Catalog Items",
+          schemaTemplates: "Schema Templates",
+          syncing: "Syncing...",
+          reloadEnvironment: "Reload Environment",
+        },
+      },
+    },
     tooltip: {
       closePanel: "Close Panel",
     },
