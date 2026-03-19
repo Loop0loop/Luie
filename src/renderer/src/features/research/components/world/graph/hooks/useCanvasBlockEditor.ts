@@ -278,70 +278,82 @@ export function useCanvasBlockEditor({
   ]);
 
   useEffect(() => {
-    setNodes((currentNodes) =>
-      currentNodes.map((node) => {
-        const incoming = graphNodes.find((item) => item.id === node.id);
-        return incoming ?? node;
-      }),
-    );
+    const timer = window.setTimeout(() => {
+      setNodes((currentNodes) =>
+        currentNodes.map((node) => {
+          const incoming = graphNodes.find((item) => item.id === node.id);
+          return incoming ?? node;
+        }),
+      );
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [graphNodes]);
 
   useEffect(() => {
-    setNodes((currentNodes) => {
-      const incomingCanvasNodes = toCanvasBlockNodes(canvasBlocks, {
-        onDelete: (id) => {
-          setNodes((innerCurrent) => {
-            const next = innerCurrent.filter((node) => node.id !== id);
-            commitCanvasBlocks(next);
-            return next;
-          });
-        },
-        onMemoChange: (id, patch) => {
-          setNodes((innerCurrent) => {
-            const next = innerCurrent.map((node) => {
-              if (node.id !== id || node.type !== "canvas-memo") {
-                return node;
-              }
+    const timer = window.setTimeout(() => {
+      setNodes((currentNodes) => {
+        const incomingCanvasNodes = toCanvasBlockNodes(canvasBlocks, {
+          onDelete: (id) => {
+            setNodes((innerCurrent) => {
+              const next = innerCurrent.filter((node) => node.id !== id);
+              commitCanvasBlocks(next);
+              return next;
+            });
+          },
+          onMemoChange: (id, patch) => {
+            setNodes((innerCurrent) => {
+              const next = innerCurrent.map((node) => {
+                if (node.id !== id || node.type !== "canvas-memo") {
+                  return node;
+                }
 
-              return {
-                ...node,
-                data: {
-                  ...(node.data as CanvasMemoBlockData),
-                  ...patch,
-                },
-              };
+                return {
+                  ...node,
+                  data: {
+                    ...(node.data as CanvasMemoBlockData),
+                    ...patch,
+                  },
+                };
+              });
+              commitCanvasBlocks(next);
+              return next;
             });
-            commitCanvasBlocks(next);
-            return next;
-          });
-        },
-        onTimelineChange: (id, patch) => {
-          setNodes((innerCurrent) => {
-            const next = innerCurrent.map((node) => {
-              if (node.id !== id || node.type !== "canvas-timeline") {
-                return node;
-              }
-              return {
-                ...node,
-                data: {
-                  ...node.data,
-                  ...patch,
-                },
-              };
+          },
+          onTimelineChange: (id, patch) => {
+            setNodes((innerCurrent) => {
+              const next = innerCurrent.map((node) => {
+                if (node.id !== id || node.type !== "canvas-timeline") {
+                  return node;
+                }
+                return {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    ...patch,
+                  },
+                };
+              });
+              commitCanvasBlocks(next);
+              return next;
             });
-            commitCanvasBlocks(next);
-            return next;
-          });
-        },
-        onBlockColorChange: handleCycleCanvasBlockColor,
+          },
+          onBlockColorChange: handleCycleCanvasBlockColor,
+        });
+
+        return syncCanvasLocalNodes(
+          currentNodes,
+          incomingCanvasNodes,
+          draggingNodeIdRef.current,
+        );
       });
+    }, 0);
 
-      return syncCanvasLocalNodes(
-        currentNodes,
-        incomingCanvasNodes,
-        draggingNodeIdRef.current,
-      );
-    });
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [
     canvasBlocks,
     commitCanvasBlocks,

@@ -1,28 +1,14 @@
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { CanvasView } from "../views/CanvasView";
+import { buildGraphNodeDefaultName } from "./canvasNodeNaming";
 import type {
   EntityRelation,
   WorldGraphCanvasBlock,
   WorldGraphCanvasEdge,
   WorldGraphNode,
 } from "@shared/types";
-
-const buildNodeName = (entityType: string, t: (key: string) => string) => {
-  switch (entityType) {
-    case "Character":
-      return t("research.graph.nodeDefaults.character");
-    case "Event":
-      return t("research.graph.nodeDefaults.event");
-    case "Place":
-      return t("research.graph.nodeDefaults.place");
-    case "Concept":
-      return t("research.graph.nodeDefaults.concept");
-    default:
-      return t("research.graph.nodeDefaults.entity");
-  }
-};
 
 type CanvasTabProps = {
   projectId: string | null;
@@ -80,7 +66,7 @@ export function CanvasTab({
         projectId,
         entityType,
         subType,
-        name: buildNodeName(entityType, t),
+        name: buildGraphNodeDefaultName(entityType, t),
         positionX: position?.x ?? 140 + graphNodes.length * 32,
         positionY: position?.y ?? 140 + graphNodes.length * 24,
       });
@@ -214,97 +200,4 @@ export function CanvasTab({
       }}
     />
   );
-}
-
-export function useCanvasTabSidebar({
-  projectId,
-  graphNodes,
-  selectedNodeId,
-  onSelectNode,
-  onCreatedEntity,
-}: {
-  projectId: string | null;
-  graphNodes: WorldGraphNode[];
-  selectedNodeId: string | null;
-  onSelectNode: (nodeId: string | null) => void;
-  onCreatedEntity: (entityType: string, newNodeId: string) => void;
-}) {
-  const { t } = useTranslation();
-  const createGraphNode = useWorldBuildingStore(
-    (state) => state.createGraphNode,
-  );
-  const updateGraphNode = useWorldBuildingStore(
-    (state) => state.updateGraphNode,
-  );
-  const deleteGraphNode = useWorldBuildingStore(
-    (state) => state.deleteGraphNode,
-  );
-
-  const effectiveSelectedNodeId =
-    selectedNodeId && graphNodes.some((node) => node.id === selectedNodeId)
-      ? selectedNodeId
-      : (graphNodes[0]?.id ?? null);
-
-  const selectedNode = useMemo(
-    () =>
-      graphNodes.find((node) => node.id === effectiveSelectedNodeId) ?? null,
-    [effectiveSelectedNodeId, graphNodes],
-  );
-
-  const handleCreatePreset = useCallback(
-    async (
-      entityType: Parameters<typeof createGraphNode>[0]["entityType"],
-      subType?: Parameters<typeof createGraphNode>[0]["subType"],
-    ) => {
-      if (!projectId) return;
-
-      const created = await createGraphNode({
-        projectId,
-        entityType,
-        subType,
-        name: buildNodeName(entityType, t),
-        positionX: 140 + graphNodes.length * 32,
-        positionY: 140 + graphNodes.length * 24,
-      });
-
-      if (!created) return;
-
-      onSelectNode(created.id);
-      onCreatedEntity(entityType, created.id);
-    },
-    [
-      createGraphNode,
-      graphNodes.length,
-      projectId,
-      onSelectNode,
-      onCreatedEntity,
-      t,
-    ],
-  );
-
-  const handleSaveNode = useCallback(
-    async (input: { name: string; description: string }) => {
-      if (!selectedNode) return;
-
-      await updateGraphNode({
-        id: selectedNode.id,
-        entityType: selectedNode.entityType,
-        name: input.name.trim() || selectedNode.name,
-        description: input.description,
-        subType: selectedNode.subType,
-      });
-    },
-    [selectedNode, updateGraphNode],
-  );
-
-  const handleDeleteNode = useCallback(async () => {
-    if (!selectedNode) return;
-
-    const deleted = await deleteGraphNode(selectedNode.id);
-    if (deleted) {
-      onSelectNode(null);
-    }
-  }, [deleteGraphNode, onSelectNode, selectedNode]);
-
-  return { selectedNode, handleCreatePreset, handleSaveNode, handleDeleteNode };
 }

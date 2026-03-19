@@ -6,7 +6,6 @@ import type {
   WorldGraphCanvasEdgeDirection,
   WorldGraphCanvasMemoBlockData,
   WorldGraphCanvasTimelineBlockData,
-  WorldGraphCanvasTimelineSequenceNode,
   WorldGraphData,
   WorldGraphNode,
   WorldTimelineTrack,
@@ -74,47 +73,34 @@ const normalizeTimelines = (value: unknown): WorldTimelineTrack[] => {
   return normalized;
 };
 
-const normalizeTimelineSequence = (
-  value: unknown,
-): WorldGraphCanvasTimelineSequenceNode[] => {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  const normalized: WorldGraphCanvasTimelineSequenceNode[] = [];
-  for (const item of value) {
-    if (!isRecord(item) || typeof item.id !== "string") {
-      continue;
-    }
-
-    normalized.push({
-      id: item.id,
-      content: typeof item.content === "string" ? item.content : "",
-      isHeld: item.isHeld === true,
-      topBranches: Array.isArray(item.topBranches)
-        ? item.topBranches.map((branch) => normalizeTimelineSequence(branch))
-        : [],
-      bottomBranches: Array.isArray(item.bottomBranches)
-        ? item.bottomBranches.map((branch) => normalizeTimelineSequence(branch))
-        : [],
-    });
-  }
-  return normalized;
-};
-
 const normalizeTimelineData = (
   value: unknown,
 ): WorldGraphCanvasTimelineBlockData => {
   if (!isRecord(value)) {
     return {
-      label: "",
-      sequence: [],
+      content: "",
+      isHeld: false,
     };
   }
 
+  const sequenceFallback = Array.isArray(value.sequence)
+    ? value.sequence
+        .map((item) =>
+          isRecord(item) && typeof item.content === "string"
+            ? item.content
+            : null,
+        )
+        .find((item): item is string => Boolean(item && item.length > 0))
+    : null;
+
   return {
-    label: typeof value.label === "string" ? value.label : "",
-    sequence: normalizeTimelineSequence(value.sequence),
+    content:
+      typeof value.content === "string"
+        ? value.content
+        : typeof value.label === "string"
+          ? value.label
+          : (sequenceFallback ?? ""),
+    isHeld: value.isHeld === true,
     color: typeof value.color === "string" ? value.color : undefined,
   };
 };
