@@ -11,26 +11,31 @@ import type { CanvasGraphNodeData } from "../components/CanvasGraphNodeCard";
 import type { CanvasGraphEdgeData } from "../components/CanvasGraphEdge";
 import type { CanvasTimelineBlockData } from "../components/CanvasTimelineBlockNode";
 import type { CanvasMemoBlockData } from "../components/CanvasMemoBlockNode";
-import { ENTITY_TYPE_CANVAS_THEME } from "../shared/constants";
+import {
+  GRAPH_CANVAS_DEFAULT_EDGE_COLORS,
+  GRAPH_CANVAS_GUIDE_SNAP_DISTANCE_PX,
+  GRAPH_CANVAS_NODE_DEFAULT_HEIGHT_PX,
+  GRAPH_CANVAS_NODE_DEFAULT_WIDTH_PX,
+  GRAPH_CANVAS_RELATION_HINT_EDGE_PREFIX,
+  GRAPH_DEFAULT_NODE_COLUMN_GAP_PX,
+  GRAPH_DEFAULT_NODE_OFFSET_X_PX,
+  GRAPH_DEFAULT_NODE_OFFSET_Y_PX,
+  GRAPH_DEFAULT_NODE_ROW_GAP_PX,
+  GRAPH_ENTITY_CANVAS_THEME_TOKENS,
+} from "../shared";
 
 export type AnyCanvasNodeData =
   | CanvasGraphNodeData
   | CanvasTimelineBlockData
   | CanvasMemoBlockData;
 
-export const SMART_GUIDE_SNAP_PX = 10;
-export const DEFAULT_NODE_WIDTH = 220;
-export const DEFAULT_NODE_HEIGHT = 120;
-export const CANVAS_EDGE_COLORS = [
-  "#f59e0b",
-  "#22d3ee",
-  "#a78bfa",
-  "#f472b6",
-  "#34d399",
-  "#f97316",
-] as const;
+export const SMART_GUIDE_SNAP_PX = GRAPH_CANVAS_GUIDE_SNAP_DISTANCE_PX;
+export const DEFAULT_NODE_WIDTH = GRAPH_CANVAS_NODE_DEFAULT_WIDTH_PX;
+export const DEFAULT_NODE_HEIGHT = GRAPH_CANVAS_NODE_DEFAULT_HEIGHT_PX;
+export const CANVAS_EDGE_COLORS = GRAPH_CANVAS_DEFAULT_EDGE_COLORS;
 
-export const ENTITY_RELATION_HINT_EDGE_PREFIX = "entity-hint:";
+export const ENTITY_RELATION_HINT_EDGE_PREFIX =
+  GRAPH_CANVAS_RELATION_HINT_EDGE_PREFIX;
 
 export const buildEntityRelationHintEdgeId = (relationId: string): string =>
   `${ENTITY_RELATION_HINT_EDGE_PREFIX}${relationId}`;
@@ -234,11 +239,13 @@ export function readPosition(node: WorldGraphNode, index: number) {
     x:
       Number.isFinite(node.positionX) && node.positionX !== 0
         ? node.positionX
-        : 120 + fallbackColumn * 280,
+        : GRAPH_DEFAULT_NODE_OFFSET_X_PX +
+          fallbackColumn * GRAPH_DEFAULT_NODE_COLUMN_GAP_PX,
     y:
       Number.isFinite(node.positionY) && node.positionY !== 0
         ? node.positionY
-        : 120 + fallbackRow * 220,
+        : GRAPH_DEFAULT_NODE_OFFSET_Y_PX +
+          fallbackRow * GRAPH_DEFAULT_NODE_ROW_GAP_PX,
   };
 }
 
@@ -273,8 +280,8 @@ export const buildFlowNodes = (
       color:
         node.attributes && typeof node.attributes === "object"
           ? ((node.attributes as Record<string, unknown>)["canvasColor"] as
-            | string
-            | undefined)
+              | string
+              | undefined)
           : undefined,
       description: node.description?.trim() || "",
       date: readNodeDate(node.attributes),
@@ -318,9 +325,9 @@ export const buildFlowEdges = (
   );
 
   const entityPalette = {
-    stroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.edge,
-    selectedStroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.selectedEdge,
-    glow: ENTITY_TYPE_CANVAS_THEME.WorldEntity.glow,
+    stroke: GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity.edge,
+    selectedStroke: GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity.selectedEdge,
+    glow: GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity.glow,
   };
 
   const graphEdges = edges.map((edge) => {
@@ -385,21 +392,21 @@ export const buildFlowEdges = (
         markerStart:
           direction === "bidirectional"
             ? {
-              type: MarkerType.ArrowClosed,
-              width: 16,
-              height: 16,
-              color,
-            }
+                type: MarkerType.ArrowClosed,
+                width: 16,
+                height: 16,
+                color,
+              }
             : undefined,
         markerEnd:
           direction === "none"
             ? undefined
             : {
-              type: MarkerType.ArrowClosed,
-              width: 16,
-              height: 16,
-              color,
-            },
+                type: MarkerType.ArrowClosed,
+                width: 16,
+                height: 16,
+                color,
+              },
       } satisfies Edge<CanvasGraphEdgeData>;
     });
 

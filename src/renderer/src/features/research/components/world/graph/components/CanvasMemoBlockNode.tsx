@@ -4,7 +4,10 @@ import { useTranslation } from "react-i18next";
 import type { NodeProps } from "reactflow";
 import { Handle, Position, NodeToolbar, useReactFlow } from "reactflow";
 import { Button } from "@renderer/components/ui/button";
-import { ENTITY_TYPE_CANVAS_THEME } from "../shared/constants";
+import {
+  GRAPH_ENTITY_CANVAS_THEME_TOKENS,
+  GRAPH_FIT_VIEW_DURATION_SHORT_MS,
+} from "../shared";
 
 export type CanvasMemoBlockData = {
   title: string;
@@ -28,7 +31,7 @@ function CanvasMemoBlockNodeInner({
   const [tagInput, setTagInput] = useState("");
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const reactFlow = useReactFlow();
-  const memoTheme = ENTITY_TYPE_CANVAS_THEME.WorldEntity;
+  const memoTheme = GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity;
 
   const commitTagInput = useCallback(() => {
     const value = tagInput.trim();
@@ -93,7 +96,7 @@ function CanvasMemoBlockNodeInner({
                   width: node.width ?? 280,
                   height: node.height ?? 190,
                 },
-                { padding: 0.5, duration: 220 },
+                { padding: 0.5, duration: GRAPH_FIT_VIEW_DURATION_SHORT_MS },
               );
             }}
             title={t("research.graph.canvas.memo.zoom")}

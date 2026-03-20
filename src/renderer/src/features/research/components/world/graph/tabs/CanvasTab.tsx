@@ -13,8 +13,8 @@ import { buildNextCanvasBlockName } from "./canvasNodeNaming";
 import {
   buildEntityRelationHintEdgeId,
   generateLocalId,
-  CANVAS_EDGE_COLORS,
 } from "../utils/canvasFlowUtils";
+import { GRAPH_CANVAS_DEFAULT_EDGE_COLORS } from "../shared";
 
 type CanvasTabProps = {
   projectId: string | null;
@@ -344,7 +344,9 @@ export function CanvasTab({
             targetHandle: handles.target,
             relation: "next",
             direction: "unidirectional",
-            color: sourceCanvasBlock.data?.color ?? CANVAS_EDGE_COLORS[0],
+            color:
+              sourceCanvasBlock.data?.color ??
+              GRAPH_CANVAS_DEFAULT_EDGE_COLORS[0],
           },
         ]);
 

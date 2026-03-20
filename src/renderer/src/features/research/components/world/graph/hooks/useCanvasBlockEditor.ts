@@ -1,9 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Node, XYPosition } from "reactflow";
 import type { WorldGraphCanvasBlock, WorldGraphNode } from "@shared/types";
@@ -11,7 +6,6 @@ import type { CanvasTimelineBlockData } from "../components/CanvasTimelineBlockN
 import type { CanvasMemoBlockData } from "../components/CanvasMemoBlockNode";
 import type { CanvasGraphNodeData } from "../components/CanvasGraphNodeCard";
 import {
-  CANVAS_EDGE_COLORS,
   fromCanvasLocalNodes,
   generateLocalId,
   isCanvasLocalNodeType,
@@ -20,6 +14,7 @@ import {
   toCanvasBlockNodes,
   type AnyCanvasNodeData,
 } from "../utils/canvasFlowUtils";
+import { GRAPH_CANVAS_DEFAULT_EDGE_COLORS } from "../shared";
 
 type UseCanvasBlockEditorInput = {
   graphNodes: Node<CanvasGraphNodeData>[];
@@ -96,13 +91,13 @@ export function useCanvasBlockEditor({
             node.type === "canvas-memo"
               ? (node.data as CanvasMemoBlockData).color
               : (node.data as CanvasTimelineBlockData).color;
-          const current = color ?? CANVAS_EDGE_COLORS[0];
-          const index = CANVAS_EDGE_COLORS.indexOf(
-            current as (typeof CANVAS_EDGE_COLORS)[number],
+          const current = color ?? GRAPH_CANVAS_DEFAULT_EDGE_COLORS[0];
+          const index = GRAPH_CANVAS_DEFAULT_EDGE_COLORS.indexOf(
+            current as (typeof GRAPH_CANVAS_DEFAULT_EDGE_COLORS)[number],
           );
           const nextColor =
-            CANVAS_EDGE_COLORS[
-              (Math.max(0, index) + 1) % CANVAS_EDGE_COLORS.length
+            GRAPH_CANVAS_DEFAULT_EDGE_COLORS[
+              (Math.max(0, index) + 1) % GRAPH_CANVAS_DEFAULT_EDGE_COLORS.length
             ];
 
           return {
@@ -232,7 +227,7 @@ export function useCanvasBlockEditor({
         data: {
           content: source.name,
           isHeld: false,
-          color: CANVAS_EDGE_COLORS[0],
+          color: GRAPH_CANVAS_DEFAULT_EDGE_COLORS[0],
           onDataChange: handleUpdateTimelineMeta,
           onChangeColor: handleCycleCanvasBlockColor,
           onDelete: handleDeleteLocalNode,
@@ -267,7 +262,7 @@ export function useCanvasBlockEditor({
       data: {
         content: t("research.graph.nodeDefaults.timelineBlock"),
         isHeld: false,
-        color: CANVAS_EDGE_COLORS[0],
+        color: GRAPH_CANVAS_DEFAULT_EDGE_COLORS[0],
         onDataChange: handleUpdateTimelineMeta,
         onChangeColor: handleCycleCanvasBlockColor,
         onDelete: handleDeleteLocalNode,

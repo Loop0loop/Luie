@@ -15,8 +15,10 @@ import type { NodeProps } from "reactflow";
 import { Position, Handle, NodeToolbar } from "reactflow";
 import { cn } from "@renderer/lib/utils";
 import { Button } from "@renderer/components/ui/button";
-import { ENTITY_TYPE_CANVAS_THEME } from "../shared/constants";
-import { CANVAS_EDGE_COLORS } from "../utils/canvasFlowUtils";
+import {
+  GRAPH_CANVAS_DEFAULT_EDGE_COLORS,
+  GRAPH_ENTITY_CANVAS_THEME_TOKENS,
+} from "../shared";
 
 export type CanvasTimelineBlockData = {
   content: string;
@@ -42,13 +44,8 @@ export type CanvasTimelineBlockData = {
 export const CanvasTimelineBlockNode = memo(
   ({ id, data, selected }: NodeProps<CanvasTimelineBlockData>) => {
     const { t } = useTranslation();
-    const {
-      content = "",
-      isHeld = false,
-      onDataChange,
-      onDelete,
-    } = data;
-    const eventTheme = ENTITY_TYPE_CANVAS_THEME.Event;
+    const { content = "", isHeld = false, onDataChange, onDelete } = data;
+    const eventTheme = GRAPH_ENTITY_CANVAS_THEME_TOKENS.Event;
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [paletteOpen, setPaletteOpen] = useState(false);
 
@@ -103,14 +100,16 @@ export const CanvasTimelineBlockNode = memo(
                 }}
                 className={cn(
                   "w-8 h-8 hover:bg-accent/10 hover:text-accent",
-                  paletteOpen ? "bg-accent/10 text-accent" : "text-muted-foreground"
+                  paletteOpen
+                    ? "bg-accent/10 text-accent"
+                    : "text-muted-foreground",
                 )}
               >
                 <Palette className="w-4 h-4" />
               </Button>
               {paletteOpen && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 flex gap-1 bg-popover/95 backdrop-blur-xl border border-white/10 rounded-lg shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95">
-                  {CANVAS_EDGE_COLORS.map((c) => (
+                  {GRAPH_CANVAS_DEFAULT_EDGE_COLORS.map((c) => (
                     <button
                       key={c}
                       type="button"
@@ -187,9 +186,9 @@ export const CanvasTimelineBlockNode = memo(
             backgroundColor: data.color ?? eventTheme.surface,
             ...(selected
               ? {
-                borderColor: eventTheme.accent,
-                boxShadow: `0 0 0 1px ${eventTheme.accent}22, 0 0 0 4px ${eventTheme.glow}, 0 20px 32px rgba(0,0,0,0.32)`,
-              }
+                  borderColor: eventTheme.accent,
+                  boxShadow: `0 0 0 1px ${eventTheme.accent}22, 0 0 0 4px ${eventTheme.glow}, 0 20px 32px rgba(0,0,0,0.32)`,
+                }
               : null),
           }}
         >

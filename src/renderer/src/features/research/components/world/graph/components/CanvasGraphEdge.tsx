@@ -13,8 +13,10 @@ import {
 import type { EdgeProps } from "reactflow";
 import { BaseEdge, EdgeLabelRenderer, getBezierPath } from "reactflow";
 import { Button } from "@renderer/components/ui/button";
-import { ENTITY_TYPE_CANVAS_THEME } from "../shared/constants";
-import { CANVAS_EDGE_COLORS } from "../utils/canvasFlowUtils";
+import {
+  GRAPH_CANVAS_DEFAULT_EDGE_COLORS,
+  GRAPH_ENTITY_CANVAS_THEME_TOKENS,
+} from "../shared";
 
 export type CanvasGraphEdgeData = {
   palette: {
@@ -61,9 +63,9 @@ function CanvasGraphEdgeInner({
   });
 
   const palette = data?.palette ?? {
-    stroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.edge,
-    selectedStroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.selectedEdge,
-    glow: ENTITY_TYPE_CANVAS_THEME.WorldEntity.glow,
+    stroke: GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity.edge,
+    selectedStroke: GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity.selectedEdge,
+    glow: GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity.glow,
   };
 
   const strokeColor = selected ? palette.selectedStroke : palette.stroke;
@@ -138,7 +140,7 @@ function CanvasGraphEdgeInner({
                   </Button>
                   {showPalette && (
                     <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-lg border border-white/10 bg-popover/95 p-1.5 shadow-xl backdrop-blur-md">
-                      {CANVAS_EDGE_COLORS.map((color) => (
+                      {GRAPH_CANVAS_DEFAULT_EDGE_COLORS.map((color) => (
                         <button
                           key={color}
                           type="button"

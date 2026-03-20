@@ -7,7 +7,7 @@ import { useGraphPluginStore } from "@renderer/features/research/stores/graphPlu
 import { useMemoStore } from "@renderer/features/research/stores/memoStore";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { useWorldGraphUiStore } from "@renderer/features/research/stores/worldGraphUiStore";
-import { GRAPH_TAB_ITEMS } from "./shared/constants";
+import { GRAPH_SIDEBAR_WIDTH, GRAPH_SURFACE_TAB_ITEMS } from "./shared";
 import { useWorldGraphWorkspace } from "./hooks/useWorldGraphWorkspace";
 import type { GraphSurfaceTab } from "./types";
 import { GraphActiveSidebar } from "./components/GraphActiveSidebar";
@@ -72,16 +72,13 @@ export function WorldGraphPanel() {
     (state) => state.autoLayoutTrigger,
   );
 
-  const SIDEBAR_MIN_WIDTH = 220;
-  const SIDEBAR_MAX_WIDTH = 520;
-  const SIDEBAR_DEFAULT_WIDTH = 320;
   const sidebarWidth = useWorldGraphUiStore((state) => state.sidebarWidth);
   const setSidebarWidth = useWorldGraphUiStore(
     (state) => state.setSidebarWidth,
   );
   const isResizingRef = useRef(false);
   const resizeStartXRef = useRef(0);
-  const resizeStartWidthRef = useRef(SIDEBAR_DEFAULT_WIDTH);
+  const resizeStartWidthRef = useRef<number>(GRAPH_SIDEBAR_WIDTH.default);
 
   const handleResizeMouseDown = useCallback(
     (event: React.MouseEvent, initialWidth?: number) => {
@@ -104,16 +101,16 @@ export function WorldGraphPanel() {
         const delta = moveEvent.clientX - resizeStartXRef.current;
         const rawWidth = resizeStartWidthRef.current + delta;
 
-        if (rawWidth < 120) {
+        if (rawWidth < GRAPH_SIDEBAR_WIDTH.collapseThreshold) {
           setSidebarOpen(false);
-          setSidebarWidth(SIDEBAR_DEFAULT_WIDTH);
+          setSidebarWidth(GRAPH_SIDEBAR_WIDTH.default);
           onMouseUp();
           return;
         }
 
         const nextWidth = Math.min(
-          SIDEBAR_MAX_WIDTH,
-          Math.max(SIDEBAR_MIN_WIDTH, rawWidth),
+          GRAPH_SIDEBAR_WIDTH.max,
+          Math.max(GRAPH_SIDEBAR_WIDTH.min, rawWidth),
         );
         setSidebarWidth(nextWidth);
       };
@@ -255,7 +252,9 @@ export function WorldGraphPanel() {
       onCreatedEntity: handleCreatedEntity,
     });
 
-  const activeTabMeta = GRAPH_TAB_ITEMS.find((item) => item.id === activeTab);
+  const activeTabMeta = GRAPH_SURFACE_TAB_ITEMS.find(
+    (item) => item.id === activeTab,
+  );
 
   return (
     <div className="flex h-full min-h-0 bg-canvas text-fg">
@@ -271,8 +270,8 @@ export function WorldGraphPanel() {
             className="absolute right-[calc(-5px/2)] top-0 z-10 h-full w-[5px] cursor-col-resize hover:bg-white/20 active:bg-white/30"
             onMouseDown={(e) => {
               setSidebarOpen(true);
-              setSidebarWidth(SIDEBAR_MIN_WIDTH);
-              handleResizeMouseDown(e, SIDEBAR_MIN_WIDTH);
+              setSidebarWidth(GRAPH_SIDEBAR_WIDTH.min);
+              handleResizeMouseDown(e, GRAPH_SIDEBAR_WIDTH.min);
             }}
           />
         )}

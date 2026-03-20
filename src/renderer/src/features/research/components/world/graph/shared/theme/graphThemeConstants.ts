@@ -1,72 +1,6 @@
-import {
-  Boxes,
-  Clock3,
-  LibraryBig,
-  Package2,
-  StickyNote,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
 import type { WorldEntitySourceType } from "@shared/types";
-import type { GraphCreatePreset, GraphSurfaceTab } from "../types";
 
-export const GRAPH_TAB_ITEMS: Array<{
-  id: GraphSurfaceTab;
-  labelKey: string;
-  descriptionKey: string;
-  Icon: LucideIcon;
-}> = [
-    {
-      id: "canvas",
-      labelKey: "research.graph.tabs.canvas.label",
-      descriptionKey: "research.graph.tabs.canvas.description",
-      Icon: Boxes,
-    },
-    {
-      id: "timeline",
-      labelKey: "research.graph.tabs.timeline.label",
-      descriptionKey: "research.graph.tabs.timeline.description",
-      Icon: Clock3,
-    },
-    {
-      id: "notes",
-      labelKey: "research.graph.tabs.notes.label",
-      descriptionKey: "research.graph.tabs.notes.description",
-      Icon: StickyNote,
-    },
-    {
-      id: "entity",
-      labelKey: "research.graph.tabs.entity.label",
-      descriptionKey: "research.graph.tabs.entity.description",
-      Icon: Users,
-    },
-    {
-      id: "library",
-      labelKey: "research.graph.tabs.library.label",
-      descriptionKey: "research.graph.tabs.library.description",
-      Icon: LibraryBig,
-    },
-  ];
-
-export const GRAPH_CREATE_PRESETS: GraphCreatePreset[] = [
-  {
-    entityType: "Character",
-    label: "research.graph.presets.addCharacter",
-  },
-  { entityType: "Event", label: "research.graph.presets.addEvent" },
-  {
-    entityType: "Place",
-    subType: "Place",
-    label: "research.graph.presets.addPlace",
-  },
-  {
-    entityType: "Concept",
-    subType: "Concept",
-    label: "research.graph.presets.addConcept",
-  },
-];
-
-export const ENTITY_TYPE_COLORS: Record<
+export const GRAPH_ENTITY_BADGE_COLOR_TOKENS: Record<
   WorldEntitySourceType,
   {
     chip: string;
@@ -111,7 +45,7 @@ export const ENTITY_TYPE_COLORS: Record<
   },
 };
 
-export const ENTITY_TYPE_CANVAS_THEME: Record<
+export const GRAPH_ENTITY_CANVAS_THEME_TOKENS: Record<
   WorldEntitySourceType,
   {
     accent: string;
@@ -204,15 +138,3 @@ export const ENTITY_TYPE_CANVAS_THEME: Record<
     handle: "#e8edf3",
   },
 };
-
-export const GRAPH_FALLBACK_CANVAS_SIZE = {
-  width: 1800,
-  height: 1200,
-};
-
-export const GRAPH_NODE_CARD_SIZE = {
-  width: 220,
-  height: 132,
-};
-
-export const GRAPH_PLUGIN_EMPTY_ICON = Package2;

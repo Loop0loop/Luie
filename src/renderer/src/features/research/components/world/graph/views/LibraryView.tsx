@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@renderer/components/ui/card";
-import { GRAPH_PLUGIN_EMPTY_ICON } from "../shared/constants";
+import { GRAPH_PLUGIN_EMPTY_STATE_ICON } from "../shared";
 
 type LibraryViewProps = {
   currentProjectId: string | null;
@@ -177,7 +177,7 @@ export function LibraryView({
           ) : (
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
               {available.map((plugin) => {
-                const Icon = GRAPH_PLUGIN_EMPTY_ICON;
+                const Icon = GRAPH_PLUGIN_EMPTY_STATE_ICON;
                 return (
                   <Card
                     key={plugin.pluginId}

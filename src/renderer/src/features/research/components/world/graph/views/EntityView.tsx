@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@renderer/components/ui/card";
-import { ENTITY_TYPE_CANVAS_THEME } from "../shared/constants";
+import { GRAPH_ENTITY_CANVAS_THEME_TOKENS } from "../shared";
 
 type EntityViewProps = {
   nodes: WorldGraphNode[];
@@ -34,9 +34,9 @@ export function EntityView({
           {nodes.map((node) => {
             const active = node.id === selectedNodeId;
             const entityTheme =
-              ENTITY_TYPE_CANVAS_THEME[
-              node.entityType as keyof typeof ENTITY_TYPE_CANVAS_THEME
-              ] ?? ENTITY_TYPE_CANVAS_THEME.WorldEntity;
+              GRAPH_ENTITY_CANVAS_THEME_TOKENS[
+                node.entityType as keyof typeof GRAPH_ENTITY_CANVAS_THEME_TOKENS
+              ] ?? GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity;
 
             return (
               <button
@@ -55,13 +55,13 @@ export function EntityView({
                   style={
                     active
                       ? {
-                        background: entityTheme.surface,
-                        borderColor: `${entityTheme.accent}66`,
-                        boxShadow: `0 18px 38px rgba(0,0,0,0.3), 0 0 0 1px ${entityTheme.glow}`,
-                      }
+                          background: entityTheme.surface,
+                          borderColor: `${entityTheme.accent}66`,
+                          boxShadow: `0 18px 38px rgba(0,0,0,0.3), 0 0 0 1px ${entityTheme.glow}`,
+                        }
                       : {
-                        background: "hsl(var(--secondary) / 0.72)",
-                      }
+                          background: "hsl(var(--secondary) / 0.72)",
+                        }
                   }
                 >
                   <CardHeader className="pb-0">

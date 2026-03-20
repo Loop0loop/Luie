@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Clock3, GitBranchPlus, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { WorldGraphNode } from "@shared/types";
-import { ENTITY_TYPE_CANVAS_THEME } from "../shared/constants";
+import { GRAPH_ENTITY_CANVAS_THEME_TOKENS } from "../shared";
 
 type CanvasTimelinePaletteProps = {
   events: WorldGraphNode[];
@@ -27,9 +27,9 @@ export function CanvasTimelinePalette({
   onPickEvent,
 }: CanvasTimelinePaletteProps) {
   const { t } = useTranslation();
-  const eventTheme = ENTITY_TYPE_CANVAS_THEME.Event;
-  const characterTheme = ENTITY_TYPE_CANVAS_THEME.Character;
-  const worldTheme = ENTITY_TYPE_CANVAS_THEME.WorldEntity;
+  const eventTheme = GRAPH_ENTITY_CANVAS_THEME_TOKENS.Event;
+  const characterTheme = GRAPH_ENTITY_CANVAS_THEME_TOKENS.Character;
+  const worldTheme = GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity;
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);

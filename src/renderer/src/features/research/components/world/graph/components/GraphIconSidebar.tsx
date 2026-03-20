@@ -2,7 +2,7 @@ import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@renderer/components/ui/badge";
 import { Button } from "@renderer/components/ui/button";
-import { GRAPH_TAB_ITEMS } from "../shared/constants";
+import { GRAPH_SURFACE_TAB_ITEMS } from "../shared";
 import type { GraphSurfaceTab } from "../types";
 
 type GraphIconSidebarProps = {
@@ -42,7 +42,7 @@ export function GraphIconSidebar({
       </Button>
 
       <div className="flex w-full flex-1 flex-col items-center gap-1">
-        {GRAPH_TAB_ITEMS.map(({ id, labelKey, Icon }) => {
+        {GRAPH_SURFACE_TAB_ITEMS.map(({ id, labelKey, Icon }) => {
           const active = id === activeTab;
           const label = t(labelKey);
           return (

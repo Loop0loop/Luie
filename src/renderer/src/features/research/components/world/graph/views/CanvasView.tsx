@@ -34,10 +34,26 @@ import {
 import {
   buildFlowEdges,
   buildFlowNodes,
-  CANVAS_EDGE_COLORS,
   type AnyCanvasNodeData,
 } from "../utils/canvasFlowUtils";
-import { ENTITY_TYPE_CANVAS_THEME } from "../shared/constants";
+import {
+  GRAPH_CANVAS_DEFAULT_EDGE_COLORS,
+  GRAPH_DEFAULT_NODE_COLUMNS,
+  GRAPH_DEFAULT_NODE_COLUMN_GAP_PX,
+  GRAPH_DEFAULT_NODE_OFFSET_X_PX,
+  GRAPH_DEFAULT_NODE_OFFSET_Y_PX,
+  GRAPH_DEFAULT_NODE_ROW_GAP_PX,
+  GRAPH_ENTITY_CANVAS_THEME_TOKENS,
+  GRAPH_FLOW_BACKGROUND_DOT_GAP_PX,
+  GRAPH_FLOW_BACKGROUND_DOT_SIZE_PX,
+  GRAPH_FLOW_DEFAULT_VIEWPORT,
+  GRAPH_FLOW_MAX_ZOOM,
+  GRAPH_FLOW_MIN_ZOOM,
+  GRAPH_FIT_VIEW_PADDING_CANVAS,
+  GRAPH_FIT_VIEW_PADDING_DEFAULT,
+  GRAPH_VIEWPORT_CREATE_OFFSET,
+  GRAPH_VIEWPORT_FALLBACK_SIZE,
+} from "../shared";
 
 interface CanvasViewProps {
   nodes: WorldGraphNode[];
@@ -48,11 +64,11 @@ interface CanvasViewProps {
   autoLayoutTrigger: number;
   onSelectNode: (nodeId: string | null) => void;
   onCanvasBlocksCommit?:
-  | ((blocks: WorldGraphCanvasBlock[]) => void)
-  | ((blocks: WorldGraphCanvasBlock[]) => Promise<void>);
+    | ((blocks: WorldGraphCanvasBlock[]) => void)
+    | ((blocks: WorldGraphCanvasBlock[]) => Promise<void>);
   onCanvasEdgesCommit?:
-  | ((edges: WorldGraphCanvasEdge[]) => void)
-  | ((edges: WorldGraphCanvasEdge[]) => Promise<void>);
+    | ((edges: WorldGraphCanvasEdge[]) => void)
+    | ((edges: WorldGraphCanvasEdge[]) => Promise<void>);
   onNodePositionCommit?: (input: { id: string; x: number; y: number }) => void;
   onDeleteNode?: (nodeId: string) => void;
   onCreateCanvasRelation?: (input: {
@@ -108,8 +124,8 @@ function CanvasFlowSurface({
     direction: "up" | "down" | "left" | "right",
   ) => void;
 }) {
-  const worldTheme = ENTITY_TYPE_CANVAS_THEME.WorldEntity;
-  const eventTheme = ENTITY_TYPE_CANVAS_THEME.Event;
+  const worldTheme = GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity;
+  const eventTheme = GRAPH_ENTITY_CANVAS_THEME_TOKENS.Event;
   const [timelinePaletteOpen, setTimelinePaletteOpen] = useState(false);
   const reactFlow = useReactFlow<AnyCanvasNodeData>();
   const pointerPlacementRef = useRef<{ x: number; y: number } | null>(null);
@@ -123,11 +139,11 @@ function CanvasFlowSurface({
           ? viewportReader()
           : { x: 0, y: 0, zoom: 1 };
       const el = document.querySelector(".react-flow");
-      const width = el?.clientWidth ?? 800;
-      const height = el?.clientHeight ?? 600;
+      const width = el?.clientWidth ?? GRAPH_VIEWPORT_FALLBACK_SIZE.width;
+      const height = el?.clientHeight ?? GRAPH_VIEWPORT_FALLBACK_SIZE.height;
       return {
-        x: (-x + width / 2) / zoom - 140,
-        y: (-y + height / 2) / zoom - 60,
+        x: (-x + width / 2) / zoom - GRAPH_VIEWPORT_CREATE_OFFSET.x,
+        y: (-y + height / 2) / zoom - GRAPH_VIEWPORT_CREATE_OFFSET.y,
       };
     }
 
@@ -216,9 +232,9 @@ function CanvasFlowSurface({
         edges={edges}
         nodeTypes={CANVAS_NODE_TYPES}
         edgeTypes={CANVAS_EDGE_TYPES}
-        minZoom={0.4}
-        maxZoom={2}
-        defaultViewport={{ x: 0, y: 0, zoom: 0.85 }}
+        minZoom={GRAPH_FLOW_MIN_ZOOM}
+        maxZoom={GRAPH_FLOW_MAX_ZOOM}
+        defaultViewport={GRAPH_FLOW_DEFAULT_VIEWPORT}
         proOptions={{ hideAttribution: true }}
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
@@ -250,8 +266,8 @@ function CanvasFlowSurface({
       >
         <Background
           color={worldTheme.glow}
-          gap={32}
-          size={1}
+          gap={GRAPH_FLOW_BACKGROUND_DOT_GAP_PX}
+          size={GRAPH_FLOW_BACKGROUND_DOT_SIZE_PX}
           variant={BackgroundVariant.Dots}
         />
       </ReactFlow>
@@ -280,8 +296,12 @@ function CanvasFlowSurface({
       <CanvasFlowControls
         onZoomIn={() => void reactFlow.zoomIn()}
         onZoomOut={() => void reactFlow.zoomOut()}
-        onFitView={() => void reactFlow.fitView({ padding: 0.2 })}
-        onFitCanvas={() => void reactFlow.fitView({ padding: 0.05 })}
+        onFitView={() =>
+          void reactFlow.fitView({ padding: GRAPH_FIT_VIEW_PADDING_DEFAULT })
+        }
+        onFitCanvas={() =>
+          void reactFlow.fitView({ padding: GRAPH_FIT_VIEW_PADDING_CANVAS })
+        }
         onUndo={handleUndo}
         onRedo={handleRedo}
       />
@@ -346,13 +366,13 @@ export function CanvasView({
       const current =
         typeof attributes["canvasColor"] === "string"
           ? (attributes["canvasColor"] as string)
-          : CANVAS_EDGE_COLORS[0];
-      const index = CANVAS_EDGE_COLORS.indexOf(
-        current as (typeof CANVAS_EDGE_COLORS)[number],
+          : GRAPH_CANVAS_DEFAULT_EDGE_COLORS[0];
+      const index = GRAPH_CANVAS_DEFAULT_EDGE_COLORS.indexOf(
+        current as (typeof GRAPH_CANVAS_DEFAULT_EDGE_COLORS)[number],
       );
       const nextColor =
-        CANVAS_EDGE_COLORS[
-        (Math.max(0, index) + 1) % CANVAS_EDGE_COLORS.length
+        GRAPH_CANVAS_DEFAULT_EDGE_COLORS[
+          (Math.max(0, index) + 1) % GRAPH_CANVAS_DEFAULT_EDGE_COLORS.length
         ];
 
       const payload = {
@@ -430,9 +450,9 @@ export function CanvasView({
         canvasEdges.map((edge) =>
           edge.id === edgeId
             ? {
-              ...edge,
-              relation: trimmed,
-            }
+                ...edge,
+                relation: trimmed,
+              }
             : edge,
         ),
       );
@@ -588,11 +608,11 @@ export function CanvasView({
       return;
     }
 
-    const COLS = 4;
-    const COL_GAP = 280;
-    const ROW_GAP = 220;
-    const OFFSET_X = 120;
-    const OFFSET_Y = 120;
+    const COLS = GRAPH_DEFAULT_NODE_COLUMNS;
+    const COL_GAP = GRAPH_DEFAULT_NODE_COLUMN_GAP_PX;
+    const ROW_GAP = GRAPH_DEFAULT_NODE_ROW_GAP_PX;
+    const OFFSET_X = GRAPH_DEFAULT_NODE_OFFSET_X_PX;
+    const OFFSET_Y = GRAPH_DEFAULT_NODE_OFFSET_Y_PX;
 
     const updates = flowNodes.map((node, i) => ({
       id: node.id,
@@ -600,10 +620,16 @@ export function CanvasView({
       y: OFFSET_Y + Math.floor(i / COLS) * ROW_GAP,
     }));
 
-    Promise.all(
-      updates.map(async ({ id, x, y }) => {
-        await onNodePositionCommit?.({ id, x, y });
-      }),
+    void Promise.all(
+      updates
+        .map(({ id, x, y }) => onNodePositionCommit?.({ id, x, y }))
+        .filter(
+          (
+            work,
+          ): work is ReturnType<
+            NonNullable<CanvasViewProps["onNodePositionCommit"]>
+          > => work !== undefined,
+        ),
     ).catch((error) => {
       void api.logger.warn("Failed to persist auto-layout node positions", {
         error,

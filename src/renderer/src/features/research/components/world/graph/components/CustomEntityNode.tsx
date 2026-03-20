@@ -6,7 +6,10 @@ import { useWorldBuildingStore } from "@renderer/features/research/stores/worldB
 import type { WorldEntitySourceType } from "@shared/types";
 import { Trash2, Palette, Edit2, Maximize2 } from "lucide-react";
 import { Button } from "@renderer/components/ui/button";
-import { ENTITY_TYPE_CANVAS_THEME } from "../shared/constants";
+import {
+  GRAPH_ENTITY_CANVAS_THEME_TOKENS,
+  GRAPH_FIT_VIEW_DURATION_SHORT_MS,
+} from "../shared";
 
 interface CustomEntityNodeProps {
   id: string;
@@ -38,9 +41,9 @@ export const CustomEntityNode = memo(
     const [isEditing, setIsEditing] = useState(false);
     const [editLabel, setEditLabel] = useState(label);
     const theme =
-      ENTITY_TYPE_CANVAS_THEME[
-        entityType as keyof typeof ENTITY_TYPE_CANVAS_THEME
-      ] ?? ENTITY_TYPE_CANVAS_THEME.WorldEntity;
+      GRAPH_ENTITY_CANVAS_THEME_TOKENS[
+        entityType as keyof typeof GRAPH_ENTITY_CANVAS_THEME_TOKENS
+      ] ?? GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity;
 
     const effectiveEditLabel = isEditing ? editLabel : label;
 
@@ -118,7 +121,10 @@ export const CustomEntityNode = memo(
                         width: node.width ?? 260,
                         height: node.height ?? 160,
                       },
-                      { padding: 0.45, duration: 220 },
+                      {
+                        padding: 0.45,
+                        duration: GRAPH_FIT_VIEW_DURATION_SHORT_MS,
+                      },
                     );
                     return;
                   }

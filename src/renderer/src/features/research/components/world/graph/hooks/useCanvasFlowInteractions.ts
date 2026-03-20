@@ -27,7 +27,21 @@ import {
   isTimelineInternalHandle,
   type AnyCanvasNodeData,
 } from "../utils/canvasFlowUtils";
-import { ENTITY_TYPE_CANVAS_THEME } from "../shared/constants";
+import {
+  GRAPH_AUTO_LAYOUT_FIT_VIEW_DELAY_MS,
+  GRAPH_DEFAULT_NODE_COLUMNS,
+  GRAPH_DEFAULT_NODE_COLUMN_GAP_PX,
+  GRAPH_DEFAULT_NODE_OFFSET_X_PX,
+  GRAPH_DEFAULT_NODE_OFFSET_Y_PX,
+  GRAPH_DEFAULT_NODE_ROW_GAP_PX,
+  GRAPH_EDGE_ZOOM_FIT_PADDING,
+  GRAPH_EDGE_ZOOM_MIN_BOUNDS,
+  GRAPH_ENTITY_CANVAS_THEME_TOKENS,
+  GRAPH_FIT_VIEW_DURATION_AUTO_LAYOUT_MS,
+  GRAPH_FIT_VIEW_DURATION_SHORT_MS,
+  GRAPH_FIT_VIEW_PADDING_AUTO_LAYOUT,
+  GRAPH_FIT_VIEW_PADDING_DEFAULT,
+} from "../shared";
 
 type UseCanvasFlowInteractionsInput = {
   graphNodes: Node<CanvasGraphNodeData>[];
@@ -154,10 +168,13 @@ export function useCanvasFlowInteractions({
         {
           x: minX,
           y: minY,
-          width: Math.max(120, maxX - minX),
-          height: Math.max(80, maxY - minY),
+          width: Math.max(GRAPH_EDGE_ZOOM_MIN_BOUNDS.width, maxX - minX),
+          height: Math.max(GRAPH_EDGE_ZOOM_MIN_BOUNDS.height, maxY - minY),
         },
-        { padding: 0.35, duration: 220 },
+        {
+          padding: GRAPH_EDGE_ZOOM_FIT_PADDING,
+          duration: GRAPH_FIT_VIEW_DURATION_SHORT_MS,
+        },
       );
     },
     [reactFlow],
@@ -168,9 +185,10 @@ export function useCanvasFlowInteractions({
       decorateEdges(
         edgeList.map((edge) => {
           const palette = edge.data?.palette ?? {
-            stroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.edge,
-            selectedStroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.selectedEdge,
-            glow: ENTITY_TYPE_CANVAS_THEME.WorldEntity.glow,
+            stroke: GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity.edge,
+            selectedStroke:
+              GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity.selectedEdge,
+            glow: GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity.glow,
           };
 
           return {
@@ -219,11 +237,11 @@ export function useCanvasFlowInteractions({
     if (autoLayoutTrigger === appliedAutoLayoutTriggerRef.current) return;
 
     appliedAutoLayoutTriggerRef.current = autoLayoutTrigger;
-    const COLS = 4;
-    const COL_GAP = 280;
-    const ROW_GAP = 220;
-    const OFFSET_X = 120;
-    const OFFSET_Y = 120;
+    const COLS = GRAPH_DEFAULT_NODE_COLUMNS;
+    const COL_GAP = GRAPH_DEFAULT_NODE_COLUMN_GAP_PX;
+    const ROW_GAP = GRAPH_DEFAULT_NODE_ROW_GAP_PX;
+    const OFFSET_X = GRAPH_DEFAULT_NODE_OFFSET_X_PX;
+    const OFFSET_Y = GRAPH_DEFAULT_NODE_OFFSET_Y_PX;
     setNodes((currentNodes) =>
       currentNodes.map((node, i) => ({
         ...node,
@@ -235,8 +253,11 @@ export function useCanvasFlowInteractions({
     );
     onAutoLayoutApplied?.();
     setTimeout(() => {
-      void reactFlow.fitView({ padding: 0.24, duration: 300 });
-    }, 50);
+      void reactFlow.fitView({
+        padding: GRAPH_FIT_VIEW_PADDING_AUTO_LAYOUT,
+        duration: GRAPH_FIT_VIEW_DURATION_AUTO_LAYOUT_MS,
+      });
+    }, GRAPH_AUTO_LAYOUT_FIT_VIEW_DELAY_MS);
   }, [autoLayoutTrigger, onAutoLayoutApplied, reactFlow, setNodes]);
 
   const handleNodesChange = useCallback(
@@ -303,9 +324,10 @@ export function useCanvasFlowInteractions({
         type: "canvas-edge",
         data: {
           palette: {
-            stroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.edge,
-            selectedStroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.selectedEdge,
-            glow: ENTITY_TYPE_CANVAS_THEME.WorldEntity.glow,
+            stroke: GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity.edge,
+            selectedStroke:
+              GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity.selectedEdge,
+            glow: GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity.glow,
           },
           onDelete: () => {},
         },
@@ -405,19 +427,22 @@ export function useCanvasFlowInteractions({
 
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "0") {
         event.preventDefault();
-        void reactFlow.fitView({ padding: 0.2, duration: 220 });
+        void reactFlow.fitView({
+          padding: GRAPH_FIT_VIEW_PADDING_DEFAULT,
+          duration: GRAPH_FIT_VIEW_DURATION_SHORT_MS,
+        });
         return;
       }
 
       if ((event.metaKey || event.ctrlKey) && event.key === "=") {
         event.preventDefault();
-        void reactFlow.zoomIn({ duration: 180 });
+        void reactFlow.zoomIn({ duration: GRAPH_FIT_VIEW_DURATION_SHORT_MS });
         return;
       }
 
       if ((event.metaKey || event.ctrlKey) && event.key === "-") {
         event.preventDefault();
-        void reactFlow.zoomOut({ duration: 180 });
+        void reactFlow.zoomOut({ duration: GRAPH_FIT_VIEW_DURATION_SHORT_MS });
       }
     };
 

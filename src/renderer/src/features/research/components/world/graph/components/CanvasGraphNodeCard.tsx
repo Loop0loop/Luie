@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { NodeProps } from "reactflow";
 import { Handle, Position, NodeToolbar } from "reactflow";
 import { Button } from "@renderer/components/ui/button";
-import { ENTITY_TYPE_CANVAS_THEME } from "../shared/constants";
+import { GRAPH_ENTITY_CANVAS_THEME_TOKENS } from "../shared";
 
 export type CanvasGraphNodeData = {
   label: string;
@@ -32,9 +32,9 @@ function CanvasGraphNodeCardInner({
 }: NodeProps<CanvasGraphNodeData>) {
   const { t } = useTranslation();
   const theme =
-    ENTITY_TYPE_CANVAS_THEME[
-    data.entityType as keyof typeof ENTITY_TYPE_CANVAS_THEME
-    ] ?? ENTITY_TYPE_CANVAS_THEME.WorldEntity;
+    GRAPH_ENTITY_CANVAS_THEME_TOKENS[
+      data.entityType as keyof typeof GRAPH_ENTITY_CANVAS_THEME_TOKENS
+    ] ?? GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity;
 
   return (
     <div className="group relative cursor-default">
