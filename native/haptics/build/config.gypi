@@ -498,6 +498,6 @@
     "nodedir": "/Users/user/.nvm/versions/node/v22.22.0",
     "standalone_static_library": 1,
     "local_prefix": "/Users/user/Luie",
-    "user_agent": "bun/1.3.10 npm/? node/v24.3.0 darwin arm64"
+    "user_agent": "bun/1.3.11 npm/? node/v24.3.0 darwin arm64"
   }
 }

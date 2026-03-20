@@ -1,27 +1,35 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import type { Node, XYPosition } from "reactflow";
 import type { WorldGraphCanvasBlock, WorldGraphNode } from "@shared/types";
 import type { CanvasTimelineBlockData } from "../components/CanvasTimelineBlockNode";
 import type { CanvasMemoBlockData } from "../components/CanvasMemoBlockNode";
+import type { CanvasGraphNodeData } from "../components/CanvasGraphNodeCard";
 import {
   CANVAS_EDGE_COLORS,
   fromCanvasLocalNodes,
   generateLocalId,
   isCanvasLocalNodeType,
+  mergeIncomingNodes,
   syncCanvasLocalNodes,
   toCanvasBlockNodes,
   type AnyCanvasNodeData,
 } from "../utils/canvasFlowUtils";
 
 type UseCanvasBlockEditorInput = {
-  graphNodes: Node<AnyCanvasNodeData>[];
+  graphNodes: Node<CanvasGraphNodeData>[];
   canvasBlocks: WorldGraphCanvasBlock[];
   timelineNodes: WorldGraphNode[];
   onCanvasBlocksCommit?: (blocks: WorldGraphCanvasBlock[]) => void;
   onSelectNode: (nodeId: string | null) => void;
   resolvePlacementPosition: () => XYPosition;
   draggingNodeIdRef: React.MutableRefObject<string | null>;
+  onAddTimelineBranch?: (sourceNodeId: string) => void;
 };
 
 export function useCanvasBlockEditor({
@@ -32,6 +40,7 @@ export function useCanvasBlockEditor({
   onSelectNode,
   resolvePlacementPosition,
   draggingNodeIdRef,
+  onAddTimelineBranch,
 }: UseCanvasBlockEditorInput) {
   const { t } = useTranslation();
   const [nodes, setNodes] = useState<Node<AnyCanvasNodeData>[]>(graphNodes);
@@ -279,12 +288,22 @@ export function useCanvasBlockEditor({
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setNodes((currentNodes) =>
-        currentNodes.map((node) => {
-          const incoming = graphNodes.find((item) => item.id === node.id);
-          return incoming ?? node;
-        }),
-      );
+      setNodes((currentNodes) => {
+        const graphOnlyCurrent = currentNodes.filter(
+          (node) => !isCanvasLocalNodeType(node.type),
+        );
+        const localNodes = currentNodes.filter((node) =>
+          isCanvasLocalNodeType(node.type),
+        );
+
+        const mergedGraphNodes = mergeIncomingNodes(
+          graphOnlyCurrent as Node<CanvasGraphNodeData>[],
+          graphNodes,
+          draggingNodeIdRef.current,
+        );
+
+        return [...mergedGraphNodes, ...localNodes];
+      });
     }, 0);
 
     return () => {
@@ -341,6 +360,7 @@ export function useCanvasBlockEditor({
             });
           },
           onBlockColorChange: handleCycleCanvasBlockColor,
+          onAddBranch: onAddTimelineBranch,
         });
 
         return syncCanvasLocalNodes(
@@ -359,6 +379,7 @@ export function useCanvasBlockEditor({
     commitCanvasBlocks,
     draggingNodeIdRef,
     handleCycleCanvasBlockColor,
+    onAddTimelineBranch,
   ]);
 
   return {

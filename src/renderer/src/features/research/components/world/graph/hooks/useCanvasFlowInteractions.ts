@@ -74,9 +74,46 @@ export function useCanvasFlowInteractions({
   const dragConsumedClickRef = useRef(false);
   const pendingSnapRef = useRef<{ x: number; y: number } | null>(null);
   const lastGuideSignatureRef = useRef<string | null>(null);
+  const lastHapticAtRef = useRef<number>(0);
+  const pendingGuideRef = useRef<{ x: number | null; y: number | null } | null>(
+    null,
+  );
+  const guideRafRef = useRef<number | null>(null);
   const nodesRef = useRef<Node<AnyCanvasNodeData>[]>(nodes);
   const edgesRef = useRef<Edge<CanvasGraphEdgeData>[]>(graphEdges);
   const appliedAutoLayoutTriggerRef = useRef<number>(0);
+
+  useEffect(() => {
+    return () => {
+      if (guideRafRef.current !== null) {
+        window.cancelAnimationFrame(guideRafRef.current);
+      }
+    };
+  }, []);
+
+  const scheduleGuideLines = useCallback(
+    (x: number | null, y: number | null) => {
+      pendingGuideRef.current = { x, y };
+      if (guideRafRef.current !== null) {
+        return;
+      }
+
+      guideRafRef.current = window.requestAnimationFrame(() => {
+        guideRafRef.current = null;
+        const next = pendingGuideRef.current;
+        if (!next) {
+          return;
+        }
+        setGuideLines((current) => {
+          if (current.x === next.x && current.y === next.y) {
+            return current;
+          }
+          return next;
+        });
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     nodesRef.current = nodes;
@@ -283,7 +320,7 @@ export function useCanvasFlowInteractions({
 
         const block = canvasBlocks.find((node) => node.id === nodeId);
         if (!block) return null;
-        return block.type === "timeline" ? "canvas-timeline" : "canvas-memo";
+        return block.type === "memo" ? "canvas-memo" : "canvas-timeline";
       };
 
       const sourceType =
@@ -326,7 +363,7 @@ export function useCanvasFlowInteractions({
     return typeof viewportReader === "function"
       ? viewportReader()
       : { x: 0, y: 0, zoom: 1 };
-  }, [reactFlow, nodes, guideLines]);
+  }, [reactFlow, guideLines]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -466,29 +503,30 @@ export function useCanvasFlowInteractions({
           ? `${guideX ?? "none"}:${guideY ?? "none"}`
           : null;
       if (signature && signature !== lastGuideSignatureRef.current) {
+        const now = Date.now();
         lastGuideSignatureRef.current = signature;
-        void api.window.hapticFeedback();
+        if (now - lastHapticAtRef.current >= 80) {
+          lastHapticAtRef.current = now;
+          void api.window.hapticFeedback();
+        }
       } else if (!signature) {
         lastGuideSignatureRef.current = null;
       }
 
-      setGuideLines((current) => {
-        if (current.x === guideX && current.y === guideY) return current;
-        return { x: guideX, y: guideY };
-      });
+      scheduleGuideLines(guideX, guideY);
 
       pendingSnapRef.current =
         snapX !== node.position.x || snapY !== node.position.y
           ? { x: snapX, y: snapY }
           : null;
     },
-    [],
+    [scheduleGuideLines],
   );
 
   const onNodeDragStop = useCallback(
     (_event: unknown, node: Node<AnyCanvasNodeData>) => {
       draggingNodeIdRef.current = null;
-      setGuideLines({ x: null, y: null });
+      scheduleGuideLines(null, null);
       lastGuideSignatureRef.current = null;
 
       const pendingSnap = pendingSnapRef.current;
@@ -533,7 +571,7 @@ export function useCanvasFlowInteractions({
         dragConsumedClickRef.current = false;
       }, 0);
     },
-    [commitCanvasBlocks, onNodePositionCommit, setNodes],
+    [commitCanvasBlocks, onNodePositionCommit, scheduleGuideLines, setNodes],
   );
 
   const guideScreenX =

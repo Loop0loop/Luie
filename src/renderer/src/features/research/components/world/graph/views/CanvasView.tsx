@@ -80,6 +80,7 @@ function CanvasFlowSurface({
   onConnectNodes,
   onAutoLayoutApplied,
   onCreateBlock,
+  onAddTimelineBranch,
 }: {
   graphNodes: Node<CanvasGraphNodeData>[];
   graphEdges: Edge<CanvasGraphEdgeData>[];
@@ -99,6 +100,7 @@ function CanvasFlowSurface({
   }) => Promise<void>;
   onAutoLayoutApplied?: () => void;
   onCreateBlock: (position?: { x: number; y: number }) => void;
+  onAddTimelineBranch?: (sourceNodeId: string) => void;
 }) {
   const worldTheme = ENTITY_TYPE_CANVAS_THEME.WorldEntity;
   const eventTheme = ENTITY_TYPE_CANVAS_THEME.Event;
@@ -147,6 +149,7 @@ function CanvasFlowSurface({
     onSelectNode,
     resolvePlacementPosition,
     draggingNodeIdRef,
+    onAddTimelineBranch,
   });
   const {
     edges,
@@ -619,6 +622,7 @@ export function CanvasView({
           onDeleteNode={onDeleteNode}
           onAutoLayoutApplied={handleAutoLayoutApplied}
           onCreateBlock={onCreateBlock}
+          onAddTimelineBranch={onAddTimelineBranch}
         />
       </ReactFlowProvider>
     </div>

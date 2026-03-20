@@ -7,6 +7,7 @@ import {
   PauseCircle,
   PlayCircle,
   GitCommit,
+  Plus,
 } from "lucide-react";
 import type { NodeProps } from "reactflow";
 import { Position, Handle, useReactFlow } from "reactflow";
@@ -24,11 +25,12 @@ export type CanvasTimelineBlockData = {
     patch: Partial<
       Omit<
         CanvasTimelineBlockData,
-        "onChangeColor" | "onDataChange" | "onDelete"
+        "onChangeColor" | "onDataChange" | "onDelete" | "onAddBranch"
       >
     >,
   ) => void;
   onDelete?: (id: string) => void;
+  onAddBranch?: (id: string) => void;
 };
 
 export const CanvasTimelineBlockNode = memo(
@@ -176,14 +178,25 @@ export const CanvasTimelineBlockNode = memo(
               isHeld && "line-through opacity-50",
             )}
           />
+
+          <Button
+            type="button"
+            size="icon-xs"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              data.onAddBranch?.(id);
+            }}
+            className="absolute -right-3 h-6 w-6 rounded-full border border-border bg-surface text-muted opacity-0 shadow-sm transition-opacity hover:bg-surface-hover hover:text-fg group-hover/card:opacity-100"
+          >
+            <Plus className="h-3 w-3" />
+          </Button>
         </div>
 
         {(
           [
             { position: Position.Top, axis: "top" },
             { position: Position.Bottom, axis: "bottom" },
-            { position: Position.Left, axis: "left" },
-            { position: Position.Right, axis: "right" },
           ] as const
         ).map(({ position, axis }) => (
           <span key={`${id}-${axis}-handles`}>
@@ -192,9 +205,9 @@ export const CanvasTimelineBlockNode = memo(
               type="source"
               position={position}
               className={cn(
-                "!h-2.5 !w-2.5 !border-0 transition-opacity",
+                "!h-3 !w-3 !border-0 transition-all",
                 selected
-                  ? "opacity-100 pointer-events-auto"
+                  ? "opacity-100 pointer-events-auto scale-110 shadow-sm"
                   : "opacity-0 group-hover/card:opacity-100 pointer-events-none group-hover/card:pointer-events-auto",
               )}
               style={{ backgroundColor: eventTheme.handle }}
@@ -204,9 +217,9 @@ export const CanvasTimelineBlockNode = memo(
               type="target"
               position={position}
               className={cn(
-                "!h-2.5 !w-2.5 !border-0 transition-opacity",
+                "!h-3 !w-3 !border-0 transition-all",
                 selected
-                  ? "opacity-100 pointer-events-auto"
+                  ? "opacity-100 pointer-events-auto scale-110 shadow-sm"
                   : "opacity-0 group-hover/card:opacity-100 pointer-events-none group-hover/card:pointer-events-auto",
               )}
               style={{ backgroundColor: eventTheme.handle }}

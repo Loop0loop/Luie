@@ -7,6 +7,7 @@ import type {
   WorldGraphCanvasEdge,
   WorldGraphNode,
 } from "@shared/types";
+import { buildNextCanvasBlockName } from "./canvasNodeNaming";
 
 type CanvasTabProps = {
   projectId: string | null;
@@ -54,11 +55,16 @@ export function CanvasTab({
   const handleCreateCanvasBlock = useCallback(
     (position?: { x: number; y: number }) => {
       if (!projectId) return;
+
+      const nextName = buildNextCanvasBlockName(
+        graphNodes.map((node) => node.name),
+      );
+
       void createGraphNode({
         projectId,
         entityType: "WorldEntity",
         subType: "Place",
-        name: "새로운 블럭",
+        name: nextName,
         positionX: position?.x ?? 140 + graphNodes.length * 32,
         positionY: position?.y ?? 140 + graphNodes.length * 24,
       }).then((created) => {
@@ -107,6 +113,33 @@ export function CanvasTab({
     }) => {
       if (sourceId === targetId) return;
 
+      const resolveEntityType = (nodeId: string) => {
+        const node =
+          useWorldBuildingStore
+            .getState()
+            .graphData?.nodes.find((item) => item.id === nodeId) ??
+          graphNodes.find((item) => item.id === nodeId);
+
+        return node?.entityType;
+      };
+
+      const sourceType = resolveEntityType(sourceId);
+      const targetType = resolveEntityType(targetId);
+
+      if (sourceType && targetType && projectId) {
+        const created = await createRelation({
+          projectId,
+          sourceId,
+          sourceType,
+          targetId,
+          targetType,
+          relation: "belongs_to",
+        });
+        if (created) {
+          return;
+        }
+      }
+
       const nextEdge: WorldGraphCanvasEdge = {
         id:
           typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -125,7 +158,13 @@ export function CanvasTab({
         graphCanvasEdges;
       await setGraphCanvasEdges([...latestCanvasEdges, nextEdge]);
     },
-    [graphCanvasEdges, setGraphCanvasEdges],
+    [
+      createRelation,
+      graphCanvasEdges,
+      graphNodes,
+      projectId,
+      setGraphCanvasEdges,
+    ],
   );
 
   const handleAddTimelineBranch = useCallback(

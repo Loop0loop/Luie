@@ -77,10 +77,11 @@ export const toCanvasBlockNodes = (
       patch: Partial<
         Omit<
           CanvasTimelineBlockData,
-          "onChangeColor" | "onDataChange" | "onDelete"
+          "onChangeColor" | "onDataChange" | "onDelete" | "onAddBranch"
         >
       >,
     ) => void;
+    onAddBranch?: (id: string) => void;
   },
 ): Node<AnyCanvasNodeData>[] =>
   blocks.map((block) => {
@@ -120,6 +121,7 @@ export const toCanvasBlockNodes = (
         onDataChange: input.onTimelineChange,
         onChangeColor: input.onBlockColorChange,
         onDelete: input.onDelete,
+        onAddBranch: input.onAddBranch,
       } satisfies CanvasTimelineBlockData,
     };
   });
