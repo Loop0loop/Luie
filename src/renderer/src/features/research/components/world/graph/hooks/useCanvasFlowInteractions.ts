@@ -1,6 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  applyEdgeChanges,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
+import {
   applyNodeChanges,
   type Connection,
   type Edge,
@@ -12,6 +18,7 @@ import {
 import { api } from "@shared/api";
 import type { WorldGraphCanvasBlock } from "@shared/types";
 import type { CanvasGraphEdgeData } from "../components/CanvasGraphEdge";
+import type { CanvasGraphNodeData } from "../components/CanvasGraphNodeCard";
 import {
   decorateEdges,
   findBestAxisGuide,
@@ -23,7 +30,7 @@ import {
 import { ENTITY_TYPE_CANVAS_THEME } from "../shared/constants";
 
 type UseCanvasFlowInteractionsInput = {
-  graphNodes: Node<any>[];
+  graphNodes: Node<CanvasGraphNodeData>[];
   graphEdges: Edge<CanvasGraphEdgeData>[];
   canvasBlocks: WorldGraphCanvasBlock[];
   selectedNodeId: string | null;
@@ -60,7 +67,9 @@ export function useCanvasFlowInteractions({
   onAutoLayoutApplied,
   reactFlow,
 }: UseCanvasFlowInteractionsInput) {
-  const [edges, setEdges] = useState<Edge<CanvasGraphEdgeData>[]>(graphEdges);
+  const [pendingEdges, setPendingEdges] = useState<Edge<CanvasGraphEdgeData>[]>(
+    [],
+  );
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [guideLines, setGuideLines] = useState<{
     x: number | null;
@@ -119,10 +128,6 @@ export function useCanvasFlowInteractions({
     nodesRef.current = nodes;
   }, [nodes]);
 
-  useEffect(() => {
-    edgesRef.current = edges;
-  }, [edges]);
-
   const handleZoomEdgeInSurface = useCallback(
     (edgeId: string) => {
       const edge = edgesRef.current.find((item) => item.id === edgeId);
@@ -158,10 +163,10 @@ export function useCanvasFlowInteractions({
     [reactFlow],
   );
 
-  useEffect(() => {
-    setEdges(
+  const buildDecoratedEdges = useCallback(
+    (edgeList: Edge<CanvasGraphEdgeData>[], selectedId: string | null) =>
       decorateEdges(
-        graphEdges.map((edge) => {
+        edgeList.map((edge) => {
           const palette = edge.data?.palette ?? {
             stroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.edge,
             selectedStroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.selectedEdge,
@@ -177,10 +182,25 @@ export function useCanvasFlowInteractions({
             },
           };
         }),
-        selectedEdgeId,
+        selectedId,
       ),
-    );
-  }, [graphEdges, handleZoomEdgeInSurface, selectedEdgeId]);
+    [handleZoomEdgeInSurface],
+  );
+
+  const effectiveSelectedEdgeId = selectedNodeId ? null : selectedEdgeId;
+
+  const edges = useMemo(
+    () =>
+      buildDecoratedEdges(
+        [...graphEdges, ...pendingEdges],
+        effectiveSelectedEdgeId,
+      ),
+    [buildDecoratedEdges, effectiveSelectedEdgeId, graphEdges, pendingEdges],
+  );
+
+  useEffect(() => {
+    edgesRef.current = edges;
+  }, [edges]);
 
   useEffect(() => {
     setNodes((currentNodes) => {
@@ -193,10 +213,6 @@ export function useCanvasFlowInteractions({
       }));
     });
   }, [selectedNodeId, setNodes]);
-
-  useEffect(() => {
-    if (selectedNodeId) setSelectedEdgeId(null);
-  }, [selectedNodeId]);
 
   useEffect(() => {
     if (autoLayoutTrigger === 0) return;
@@ -230,20 +246,28 @@ export function useCanvasFlowInteractions({
     [setNodes],
   );
 
-  const handleEdgesChange = useCallback(
-    (changes: EdgeChange[]) => {
-      setEdges((currentEdges) =>
-        decorateEdges(applyEdgeChanges(changes, currentEdges), selectedEdgeId),
+  const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
+    const selectedChange = [...changes]
+      .reverse()
+      .find((change) => change.type === "select");
+    if (selectedChange?.type === "select") {
+      setSelectedEdgeId(selectedChange.selected ? selectedChange.id : null);
+    }
+
+    const removedEdgeIds = new Set(
+      changes
+        .filter(
+          (change): change is EdgeChange & { type: "remove" } =>
+            change.type === "remove",
+        )
+        .map((change) => change.id),
+    );
+    if (removedEdgeIds.size > 0) {
+      setPendingEdges((currentEdges) =>
+        currentEdges.filter((edge) => !removedEdgeIds.has(edge.id)),
       );
-      const selectedChange = [...changes]
-        .reverse()
-        .find((change) => change.type === "select");
-      if (selectedChange?.type === "select") {
-        setSelectedEdgeId(selectedChange.selected ? selectedChange.id : null);
-      }
-    },
-    [selectedEdgeId],
-  );
+    }
+  }, []);
 
   const handleConnect = useCallback(
     (connection: Connection) => {
@@ -283,11 +307,11 @@ export function useCanvasFlowInteractions({
             selectedStroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.selectedEdge,
             glow: ENTITY_TYPE_CANVAS_THEME.WorldEntity.glow,
           },
-          onDelete: () => { },
+          onDelete: () => {},
         },
       };
 
-      setEdges((currentEdges) => [...currentEdges, tempEdge]);
+      setPendingEdges((currentEdges) => [...currentEdges, tempEdge]);
 
       // Async save - will replace temp edge with real edge via useEffect
       void onConnectNodes({
@@ -295,9 +319,13 @@ export function useCanvasFlowInteractions({
         targetId: connection.target,
         sourceHandle: connection.sourceHandle,
         targetHandle: connection.targetHandle,
+      }).finally(() => {
+        setPendingEdges((currentEdges) =>
+          currentEdges.filter((edge) => edge.id !== tempEdgeId),
+        );
       });
     },
-    [onConnectNodes, setEdges],
+    [onConnectNodes],
   );
 
   const isValidConnection = useCallback(
@@ -363,7 +391,7 @@ export function useCanvasFlowInteractions({
     return typeof viewportReader === "function"
       ? viewportReader()
       : { x: 0, y: 0, zoom: 1 };
-  }, [reactFlow, guideLines]);
+  }, [reactFlow]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -431,7 +459,7 @@ export function useCanvasFlowInteractions({
     onSelectNode(null);
   }, [onSelectNode]);
 
-  const onPaneMouseMove = useCallback((event: MouseEvent | any) => {
+  const onPaneMouseMove = useCallback((event: ReactMouseEvent) => {
     pointerPlacementRef.current = { x: event.clientX, y: event.clientY };
   }, []);
 
@@ -536,13 +564,13 @@ export function useCanvasFlowInteractions({
         setNodes((currentNodes) => {
           const nextNodes = pendingSnap
             ? currentNodes.map((currentNode) =>
-              currentNode.id !== node.id
-                ? currentNode
-                : {
-                  ...currentNode,
-                  position: { x: pendingSnap.x, y: pendingSnap.y },
-                },
-            )
+                currentNode.id !== node.id
+                  ? currentNode
+                  : {
+                      ...currentNode,
+                      position: { x: pendingSnap.x, y: pendingSnap.y },
+                    },
+              )
             : currentNodes;
           commitCanvasBlocks(nextNodes);
           return nextNodes;
@@ -553,9 +581,9 @@ export function useCanvasFlowInteractions({
             currentNode.id !== node.id
               ? currentNode
               : {
-                ...currentNode,
-                position: { x: pendingSnap.x, y: pendingSnap.y },
-              },
+                  ...currentNode,
+                  position: { x: pendingSnap.x, y: pendingSnap.y },
+                },
           ),
         );
       }

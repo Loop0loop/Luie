@@ -176,32 +176,41 @@ export function useCanvasTabSidebar({
           edge.targetId === selectedNode.id,
       );
 
-      for (const edge of connectedEdges) {
-        const sourceId =
-          edge.sourceId === selectedNode.id ? created.id : edge.sourceId;
-        const targetId =
-          edge.targetId === selectedNode.id ? created.id : edge.targetId;
+      const relationInputs = connectedEdges
+        .map((edge) => {
+          const sourceId =
+            edge.sourceId === selectedNode.id ? created.id : edge.sourceId;
+          const targetId =
+            edge.targetId === selectedNode.id ? created.id : edge.targetId;
 
-        if (sourceId === targetId) continue;
+          if (sourceId === targetId) {
+            return null;
+          }
 
-        const sourceType =
-          edge.sourceId === selectedNode.id
-            ? created.entityType
-            : edge.sourceType;
-        const targetType =
-          edge.targetId === selectedNode.id
-            ? created.entityType
-            : edge.targetType;
+          const sourceType =
+            edge.sourceId === selectedNode.id
+              ? created.entityType
+              : edge.sourceType;
+          const targetType =
+            edge.targetId === selectedNode.id
+              ? created.entityType
+              : edge.targetType;
 
-        await createRelation({
-          projectId,
-          sourceId,
-          targetId,
-          sourceType,
-          targetType,
-          relation: edge.relation,
-        });
-      }
+          return {
+            projectId,
+            sourceId,
+            targetId,
+            sourceType,
+            targetType,
+            relation: edge.relation,
+          };
+        })
+        .filter(
+          (input): input is Parameters<typeof createRelation>[0] =>
+            input !== null,
+        );
+
+      await Promise.all(relationInputs.map((input) => createRelation(input)));
 
       await deleteGraphNode(selectedNode.id);
       onSelectNode(created.id);

@@ -1,4 +1,4 @@
-import { memo, useState, useEffect } from "react";
+import { memo, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { Handle, Position, NodeToolbar, useReactFlow } from "reactflow";
 import { cn } from "@renderer/lib/utils";
@@ -39,10 +39,10 @@ export const CustomEntityNode = memo(
     const [editLabel, setEditLabel] = useState(label);
     const theme =
       ENTITY_TYPE_CANVAS_THEME[
-      entityType as keyof typeof ENTITY_TYPE_CANVAS_THEME
+        entityType as keyof typeof ENTITY_TYPE_CANVAS_THEME
       ] ?? ENTITY_TYPE_CANVAS_THEME.WorldEntity;
 
-    useEffect(() => setEditLabel(label), [label]);
+    const effectiveEditLabel = isEditing ? editLabel : label;
 
     const handleSave = () => {
       setIsEditing(false);
@@ -75,9 +75,9 @@ export const CustomEntityNode = memo(
           background: data.color ?? theme.surface,
           ...(selected
             ? {
-              borderColor: theme.accent,
-              boxShadow: `0 0 0 1px ${theme.accent}22, 0 0 0 4px ${theme.glow}, 0 20px 32px rgba(0,0,0,0.32)`,
-            }
+                borderColor: theme.accent,
+                boxShadow: `0 0 0 1px ${theme.accent}22, 0 0 0 4px ${theme.glow}, 0 20px 32px rgba(0,0,0,0.32)`,
+              }
             : null),
         }}
       >
@@ -89,7 +89,10 @@ export const CustomEntityNode = memo(
               {
                 icon: Edit2,
                 title: "Rename",
-                onClick: () => setIsEditing(true),
+                onClick: () => {
+                  setEditLabel(label);
+                  setIsEditing(true);
+                },
               },
               {
                 icon: Trash2,
@@ -133,7 +136,7 @@ export const CustomEntityNode = memo(
           {isEditing ? (
             <input
               autoFocus
-              value={editLabel}
+              value={effectiveEditLabel}
               onChange={(e) => setEditLabel(e.target.value)}
               onBlur={handleSave}
               onKeyDown={handleKeyDown}
@@ -143,7 +146,10 @@ export const CustomEntityNode = memo(
           ) : (
             <div
               className="text-[15px] font-black tracking-tight text-foreground/90 leading-tight break-words cursor-text"
-              onDoubleClick={() => setIsEditing(true)}
+              onDoubleClick={() => {
+                setEditLabel(label);
+                setIsEditing(true);
+              }}
             >
               {label || "Untitled Entity"}
             </div>
