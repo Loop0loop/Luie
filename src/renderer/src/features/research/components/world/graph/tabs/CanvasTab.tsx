@@ -56,15 +56,15 @@ export function CanvasTab({
       if (!projectId) return;
       void createGraphNode({
         projectId,
-        entityType: "Concept",
-        subType: "Concept",
+        entityType: "WorldEntity",
+        subType: "Place",
         name: "새로운 블럭",
         positionX: position?.x ?? 140 + graphNodes.length * 32,
         positionY: position?.y ?? 140 + graphNodes.length * 24,
       }).then((created) => {
         if (!created) return;
         onSelectNode(created.id);
-        onCreatedEntity("Concept", created.id);
+        onCreatedEntity("WorldEntity", created.id);
       });
     },
     [

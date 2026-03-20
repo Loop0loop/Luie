@@ -1,4 +1,5 @@
 import type {
+  WorldEntitySourceType,
   ScrapMemo,
   WorldGraphNode,
   WorldTimelineTrack,
@@ -21,6 +22,10 @@ export interface GraphActiveSidebarProps {
   selectedNoteId: string | null;
   onCreatePreset: (
     entityType: WorldGraphNode["entityType"],
+    subType?: WorldGraphNode["subType"],
+  ) => void;
+  onChangeNodeType?: (
+    entityType: WorldEntitySourceType,
     subType?: WorldGraphNode["subType"],
   ) => void;
   onSelectNode: (nodeId: string) => void;
@@ -48,6 +53,7 @@ export function GraphActiveSidebar({
   selectedTimelineId,
   selectedNoteId,
   onCreatePreset,
+  onChangeNodeType,
   onSelectNode,
   onSelectNote,
   onCreateNote,
@@ -70,6 +76,7 @@ export function GraphActiveSidebar({
             selectedNode={selectedNode}
             onSelectNode={onSelectNode}
             onCreatePreset={onCreatePreset}
+            onChangeNodeType={onChangeNodeType}
           />
         ) : null}
         {activeTab === "timeline" ? (

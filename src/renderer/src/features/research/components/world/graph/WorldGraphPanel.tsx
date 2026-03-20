@@ -245,13 +245,15 @@ export function WorldGraphPanel() {
     });
   }, [graphNodes, selectedNodeId]);
 
-  const { selectedNode, handleCreatePreset } = useCanvasTabSidebar({
-    projectId,
-    graphNodes,
-    selectedNodeId,
-    onSelectNode: handleSelectNode,
-    onCreatedEntity: handleCreatedEntity,
-  });
+  const { selectedNode, handleCreatePreset, handleChangeNodeType } =
+    useCanvasTabSidebar({
+      projectId,
+      graphNodes,
+      graphEdges,
+      selectedNodeId,
+      onSelectNode: handleSelectNode,
+      onCreatedEntity: handleCreatedEntity,
+    });
 
   const activeTabMeta = GRAPH_TAB_ITEMS.find((item) => item.id === activeTab);
 
@@ -291,6 +293,7 @@ export function WorldGraphPanel() {
             selectedTimelineId={effectiveSelectedTimelineId}
             selectedNoteId={effectiveSelectedNoteId}
             onCreatePreset={handleCreatePreset}
+            onChangeNodeType={handleChangeNodeType}
             onSelectNode={handleSelectNode}
             onSelectNote={setSelectedNoteId}
             onCreateNote={handleCreateNote}

@@ -79,10 +79,9 @@ export function clearGraphBackedSelection(
   }
 }
 
-export async function syncGraphEntitySelectionToWorkspace(node: Pick<
-  WorldGraphNode,
-  "id" | "entityType" | "name"
->): Promise<void> {
+export async function syncGraphEntitySelectionToWorkspace(
+  node: Pick<WorldGraphNode, "id" | "entityType" | "name">,
+): Promise<void> {
   const uiStore = useUIStore.getState();
 
   switch (node.entityType) {
@@ -149,6 +148,15 @@ export async function syncGraphEntitySelectionToWorkspace(node: Pick<
         uiStore.setWorldTab("terms");
         uiStore.setMainView({ type: "world", id: node.id });
       }
+      return;
+    }
+    case "Place":
+    case "Concept":
+    case "Rule":
+    case "Item":
+    case "WorldEntity": {
+      uiStore.setWorldTab("terms");
+      uiStore.setMainView({ type: "world", id: node.id });
       return;
     }
     default:

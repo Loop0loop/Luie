@@ -5,20 +5,41 @@ import { Badge } from "@renderer/components/ui/badge";
 import { Button } from "@renderer/components/ui/button";
 import { Input } from "@renderer/components/ui/input";
 import { ScrollArea } from "@renderer/components/ui/scroll-area";
-import type { WorldGraphNode } from "@shared/types";
+import type { WorldEntitySourceType, WorldGraphNode } from "@shared/types";
 import { SidebarItem, SidebarSection } from "./SidebarPrimitives";
+
+export const BLOCK_TYPE_OPTIONS: Array<{
+  label: string;
+  entityType: WorldEntitySourceType;
+  subType?: WorldGraphNode["subType"];
+}> = [
+  { label: "block", entityType: "WorldEntity", subType: "Place" },
+  { label: "character", entityType: "Character" },
+  { label: "event", entityType: "Event" },
+  { label: "faction", entityType: "Faction" },
+  { label: "place", entityType: "Place", subType: "Place" },
+  { label: "concept", entityType: "Concept", subType: "Concept" },
+  { label: "rule", entityType: "Rule", subType: "Rule" },
+  { label: "item", entityType: "Item", subType: "Item" },
+  { label: "term", entityType: "Term" },
+];
 
 export function CanvasSidebar({
   nodes,
   selectedNode,
   onSelectNode,
   onCreatePreset,
+  onChangeNodeType,
 }: {
   nodes: WorldGraphNode[];
   selectedNode: WorldGraphNode | null;
   onSelectNode: (id: string) => void;
   onCreatePreset: (
     entityType: WorldGraphNode["entityType"],
+    subType?: WorldGraphNode["subType"],
+  ) => void;
+  onChangeNodeType?: (
+    entityType: WorldEntitySourceType,
     subType?: WorldGraphNode["subType"],
   ) => void;
 }) {
@@ -83,6 +104,28 @@ export function CanvasSidebar({
                   >
                     {selectedNode.entityType}
                   </Badge>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {BLOCK_TYPE_OPTIONS.map((option) => {
+                    const active =
+                      selectedNode.entityType === option.entityType &&
+                      (option.subType === undefined ||
+                        selectedNode.subType === option.subType);
+                    return (
+                      <Button
+                        key={`${option.entityType}:${option.subType ?? "-"}`}
+                        type="button"
+                        size="sm"
+                        variant={active ? "secondary" : "ghost"}
+                        className="h-6 px-2 text-[10px] uppercase tracking-wide"
+                        onClick={() =>
+                          onChangeNodeType?.(option.entityType, option.subType)
+                        }
+                      >
+                        {option.label}
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
               {selectedNode.description ? (

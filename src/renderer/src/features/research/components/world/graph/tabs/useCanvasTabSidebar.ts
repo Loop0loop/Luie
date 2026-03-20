@@ -1,18 +1,39 @@
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
-import type { WorldGraphNode } from "@shared/types";
+import type {
+  EntityRelation,
+  WorldEntitySourceType,
+  WorldGraphNode,
+} from "@shared/types";
 import { buildGraphNodeDefaultName } from "./canvasNodeNaming";
+
+const WORLD_ENTITY_TYPE_SET = new Set([
+  "WorldEntity",
+  "Place",
+  "Concept",
+  "Rule",
+  "Item",
+] as const);
+
+const isWorldEntityType = (
+  value: WorldEntitySourceType,
+): value is "WorldEntity" | "Place" | "Concept" | "Rule" | "Item" =>
+  WORLD_ENTITY_TYPE_SET.has(
+    value as "WorldEntity" | "Place" | "Concept" | "Rule" | "Item",
+  );
 
 export function useCanvasTabSidebar({
   projectId,
   graphNodes,
+  graphEdges,
   selectedNodeId,
   onSelectNode,
   onCreatedEntity,
 }: {
   projectId: string | null;
   graphNodes: WorldGraphNode[];
+  graphEdges: EntityRelation[];
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string | null) => void;
   onCreatedEntity: (entityType: string, newNodeId: string) => void;
@@ -27,6 +48,7 @@ export function useCanvasTabSidebar({
   const deleteGraphNode = useWorldBuildingStore(
     (state) => state.deleteGraphNode,
   );
+  const createRelation = useWorldBuildingStore((state) => state.createRelation);
 
   const effectiveSelectedNodeId = selectedNodeId;
 
@@ -91,8 +113,122 @@ export function useCanvasTabSidebar({
     }
   }, [deleteGraphNode, effectiveSelectedNodeId, graphNodes, onSelectNode]);
 
+  const handleChangeNodeType = useCallback(
+    async (
+      entityType: Parameters<typeof createGraphNode>[0]["entityType"],
+      subType?: Parameters<typeof createGraphNode>[0]["subType"],
+    ) => {
+      const selectedNode = graphNodes.find(
+        (node) => node.id === effectiveSelectedNodeId,
+      );
+      if (!selectedNode || !projectId) return;
+
+      if (
+        selectedNode.entityType === entityType &&
+        (selectedNode.subType ?? undefined) === (subType ?? undefined)
+      ) {
+        return;
+      }
+
+      const canUpdateInPlace =
+        isWorldEntityType(selectedNode.entityType) &&
+        isWorldEntityType(entityType);
+
+      if (canUpdateInPlace) {
+        await updateGraphNode({
+          id: selectedNode.id,
+          entityType,
+          subType:
+            entityType === "WorldEntity"
+              ? (subType ?? selectedNode.subType ?? "Place")
+              : (subType ?? selectedNode.subType),
+          name: selectedNode.name,
+          description: selectedNode.description ?? undefined,
+          attributes:
+            selectedNode.attributes &&
+            typeof selectedNode.attributes === "object"
+              ? (selectedNode.attributes as Record<string, unknown>)
+              : undefined,
+        });
+        onCreatedEntity(entityType, selectedNode.id);
+        return;
+      }
+
+      const created = await createGraphNode({
+        projectId,
+        entityType,
+        subType,
+        name: selectedNode.name,
+        description: selectedNode.description ?? undefined,
+        positionX: selectedNode.positionX,
+        positionY: selectedNode.positionY,
+        attributes:
+          selectedNode.attributes && typeof selectedNode.attributes === "object"
+            ? (selectedNode.attributes as Record<string, unknown>)
+            : undefined,
+      });
+
+      if (!created) return;
+
+      const connectedEdges = graphEdges.filter(
+        (edge) =>
+          edge.sourceId === selectedNode.id ||
+          edge.targetId === selectedNode.id,
+      );
+
+      for (const edge of connectedEdges) {
+        const sourceId =
+          edge.sourceId === selectedNode.id ? created.id : edge.sourceId;
+        const targetId =
+          edge.targetId === selectedNode.id ? created.id : edge.targetId;
+
+        if (sourceId === targetId) continue;
+
+        const sourceType =
+          edge.sourceId === selectedNode.id
+            ? created.entityType
+            : edge.sourceType;
+        const targetType =
+          edge.targetId === selectedNode.id
+            ? created.entityType
+            : edge.targetType;
+
+        await createRelation({
+          projectId,
+          sourceId,
+          targetId,
+          sourceType,
+          targetType,
+          relation: edge.relation,
+        });
+      }
+
+      await deleteGraphNode(selectedNode.id);
+      onSelectNode(created.id);
+      onCreatedEntity(entityType, created.id);
+    },
+    [
+      createGraphNode,
+      createRelation,
+      deleteGraphNode,
+      effectiveSelectedNodeId,
+      graphEdges,
+      graphNodes,
+      onCreatedEntity,
+      onSelectNode,
+      projectId,
+      updateGraphNode,
+    ],
+  );
+
   const selectedNode =
     graphNodes.find((node) => node.id === effectiveSelectedNodeId) ?? null;
 
-  return { selectedNode, handleCreatePreset, handleSaveNode, handleDeleteNode };
+  return {
+    selectedNode,
+    handleCreatePreset,
+    handleSaveNode,
+    handleDeleteNode,
+    handleChangeNodeType,
+  };
 }
