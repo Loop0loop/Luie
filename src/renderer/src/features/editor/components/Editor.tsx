@@ -1,5 +1,9 @@
 import { memo, useEffect, useRef, useState } from "react";
-import { useEditor, EditorContent, type Editor as TiptapEditor } from "@tiptap/react";
+import {
+  useEditor,
+  EditorContent,
+  type Editor as TiptapEditor,
+} from "@tiptap/react";
 import "@renderer/styles/components/editor.css";
 import { cn } from "@shared/types/utils";
 import EditorToolbar from "@renderer/features/editor/components/EditorToolbar";
@@ -57,7 +61,8 @@ function Editor({
 }: EditorProps) {
   const { t } = useTranslation();
   const dialog = useDialog();
-  const { fontFamilyCss, fontSize, lineHeight, getFontFamily } = useEditorConfig();
+  const { fontFamilyCss, fontSize, lineHeight, getFontFamily } =
+    useEditorConfig();
   const { updateStats } = useEditorStats();
   const [isMobileView, setIsMobileView] = useState(false);
 
@@ -127,7 +132,6 @@ function Editor({
         const { from } = editor.state.selection;
         const $pos = editor.state.doc.resolve(from);
 
-
         // Find the node around the cursor
         const node = $pos.nodeAfter || $pos.nodeBefore || $pos.parent;
         if (node && (node.isText || node.textContent)) {
@@ -135,12 +139,16 @@ function Editor({
           const charStore = useCharacterStore.getState();
           const termStore = useTermStore.getState();
 
-          const char = charStore.characters.find((c: Character) => text.includes(c.name));
+          const char = charStore.characters.find((c: Character) =>
+            text.includes(c.name),
+          );
           if (char) {
             EditorSyncBus.emit("FOCUS_ENTITY", { entityId: char.id });
             return;
           }
-          const term = termStore.terms.find((termItem: Term) => text.includes(termItem.term));
+          const term = termStore.terms.find((termItem: Term) =>
+            text.includes(termItem.term),
+          );
           if (term) {
             EditorSyncBus.emit("FOCUS_ENTITY", { entityId: term.id });
             return;
@@ -172,8 +180,12 @@ function Editor({
     const handleJump = (payload: { entityId: string }) => {
       const charStore = useCharacterStore.getState();
       const termStore = useTermStore.getState();
-      const char = charStore.characters.find((item: Character) => item.id === payload.entityId);
-      const term = termStore.terms.find((item: Term) => item.id === payload.entityId);
+      const char = charStore.characters.find(
+        (item: Character) => item.id === payload.entityId,
+      );
+      const term = termStore.terms.find(
+        (item: Term) => item.id === payload.entityId,
+      );
       // Note: Factions/Events/Places etc might need to be resolved via worldEntity store
       // but for now characters and terms are the main searchable entities.
       const name = char?.name || term?.term;
@@ -182,7 +194,10 @@ function Editor({
         const docText = editor.getText();
         const normalizedText = docText.toLowerCase();
         const normalizedQuery = name.toLowerCase().trim();
-        const index = normalizedQuery.length > 0 ? normalizedText.indexOf(normalizedQuery) : -1;
+        const index =
+          normalizedQuery.length > 0
+            ? normalizedText.indexOf(normalizedQuery)
+            : -1;
 
         if (index >= 0) {
           editor.commands.focus();
@@ -208,7 +223,7 @@ function Editor({
     if (editor.commands.setDiff) {
       editor.commands.setDiff({
         comparisonContent,
-        mode: diffMode
+        mode: diffMode,
       });
     }
   }, [editor, comparisonContent, diffMode]);
@@ -218,8 +233,10 @@ function Editor({
     const current = editor.getHTML();
     if (current !== initialContent) {
       editor.commands.setContent(initialContent);
+      setContent(initialContent);
     }
-  }, [editor, initialContent]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor, chapterId]);
 
   useEffect(() => {
     if (!editor || !chapterId) return;
@@ -230,7 +247,10 @@ function Editor({
       const text = editor.getText();
       const normalizedText = text.toLowerCase();
       const normalizedQuery = pendingQuery.toLowerCase().trim();
-      const index = normalizedQuery.length > 0 ? normalizedText.indexOf(normalizedQuery) : -1;
+      const index =
+        normalizedQuery.length > 0
+          ? normalizedText.indexOf(normalizedQuery)
+          : -1;
 
       try {
         editor.commands.focus();
@@ -291,9 +311,10 @@ function Editor({
         <div
           className={cn(
             "w-full flex flex-col flex-1 min-h-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] bg-transparent border-none shadow-none m-0",
-            isMobileView && "w-107.5 max-w-107.5 h-[95%] mx-auto my-5 border-8 border-[#2c2c2e] rounded-[48px] bg-editor-bg shadow-[0_0_0_2px_rgba(69,69,69,0.9),0_25px_50px_-12px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.05)] overflow-hidden relative",
+            isMobileView &&
+              "w-107.5 max-w-107.5 h-[95%] mx-auto my-5 border-8 border-[#2c2c2e] rounded-[48px] bg-editor-bg shadow-[0_0_0_2px_rgba(69,69,69,0.9),0_25px_50px_-12px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.05)] overflow-hidden relative",
             // If not scrollable (Docs mode), we don't want h-full constraining it, we want it to check mobile view or just flow
-            !scrollable && "h-auto"
+            !scrollable && "h-auto",
           )}
           data-mobile={isMobileView}
         >
@@ -309,7 +330,7 @@ function Editor({
               className={cn(
                 "w-full border-none bg-transparent pb-4 text-2xl font-bold text-foreground outline-none shrink-0 placeholder:text-muted-foreground",
                 isMobileView && "px-6",
-                readOnly && "pointer-events-none opacity-80"
+                readOnly && "pointer-events-none opacity-80",
               )}
               placeholder={t("editor.placeholder.title")}
               value={title}
@@ -324,14 +345,16 @@ function Editor({
           <div
             className={cn(
               "flex flex-col relative flex-1",
-              isMobileView && "pt-8 h-full overflow-hidden px-6"
+              isMobileView && "pt-8 h-full overflow-hidden px-6",
             )}
             style={{
               fontFamily: getFontFamily(),
               fontSize: `${fontSize}px`,
               lineHeight,
               height: isMobileView ? "100%" : undefined,
-              minHeight: !isMobileView ? "var(--text-editor-min-height)" : undefined,
+              minHeight: !isMobileView
+                ? "var(--text-editor-min-height)"
+                : undefined,
             }}
             data-testid="editor-content"
           >
@@ -348,14 +371,9 @@ function Editor({
         </div>
       </div>
 
-      {!hideFooter && (
-        <StatusFooter onOpenExport={handleOpenExport} />
-      )}
+      {!hideFooter && <StatusFooter onOpenExport={handleOpenExport} />}
     </div>
   );
 }
-
-
-
 
 export default memo(Editor);

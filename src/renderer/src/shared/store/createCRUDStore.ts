@@ -56,7 +56,9 @@ export function createAliasSetter<
   TStore extends { items: TItem[]; currentItem: TItem | null },
   TItem,
 >(
-  set: (partial: Partial<TStore> | ((state: TStore) => Partial<TStore>)) => void,
+  set: (
+    partial: Partial<TStore> | ((state: TStore) => Partial<TStore>),
+  ) => void,
   aliasItemsKey: keyof TStore,
   aliasCurrentKey: keyof TStore,
 ) {
@@ -152,15 +154,57 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
         const response = await apiClient.update(input);
         if (response.success && response.data) {
           const updatedItem = response.data;
-          set((state) => ({
-            items: state.items.map((item) =>
-              item.id === updatedItem.id ? updatedItem : item,
-            ),
-            currentItem:
-              state.currentItem?.id === updatedItem.id
-                ? updatedItem
-                : state.currentItem,
-          }));
+          set((state) => {
+            const existingItem = state.items.find(
+              (item) => item.id === updatedItem.id,
+            );
+            const existingCurrent = state.currentItem;
+            const inputHasContent = Object.prototype.hasOwnProperty.call(
+              input,
+              "content",
+            );
+            const existingHasContent =
+              existingItem && "content" in existingItem;
+            const updatedHasContent = "content" in updatedItem;
+            const needsContentMerge =
+              !inputHasContent &&
+              existingHasContent &&
+              updatedHasContent &&
+              existingItem;
+
+            type ItemWithContent = { content: unknown };
+            const existingContent = existingItem
+              ? (existingItem as unknown as ItemWithContent).content
+              : undefined;
+            const existingCurrentContent = existingCurrent
+              ? (existingCurrent as unknown as ItemWithContent).content
+              : undefined;
+
+            const mergedItem: T = needsContentMerge
+              ? {
+                  ...updatedItem,
+                  content: existingContent,
+                }
+              : updatedItem;
+
+            const mergedCurrent: T =
+              existingCurrent?.id === updatedItem.id && needsContentMerge
+                ? {
+                    ...updatedItem,
+                    content: existingCurrentContent,
+                  }
+                : updatedItem;
+
+            return {
+              items: state.items.map((item) =>
+                item.id === mergedItem.id ? mergedItem : item,
+              ),
+              currentItem:
+                state.currentItem?.id === mergedCurrent.id
+                  ? mergedCurrent
+                  : state.currentItem,
+            };
+          });
         } else {
           set({ error: response.error?.message });
         }
