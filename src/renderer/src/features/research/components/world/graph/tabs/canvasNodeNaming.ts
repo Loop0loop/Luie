@@ -20,16 +20,22 @@ export const buildNextCanvasBlockName = (
   existingNames: string[],
   baseName = "새로운 블럭",
 ): string => {
+  const normalizeName = (name: string): string =>
+    name.trim().toLocaleLowerCase();
+
+  const normalizedBaseName = normalizeName(baseName);
   const normalized = new Set(
-    existingNames.map((name) => name.trim()).filter((name) => name.length > 0),
+    existingNames
+      .map((name) => normalizeName(name))
+      .filter((name) => name.length > 0),
   );
 
-  if (!normalized.has(baseName)) {
+  if (!normalized.has(normalizedBaseName)) {
     return baseName;
   }
 
   let index = 1;
-  while (normalized.has(`${baseName} ${index}`)) {
+  while (normalized.has(normalizeName(`${baseName} ${index}`))) {
     index += 1;
   }
 

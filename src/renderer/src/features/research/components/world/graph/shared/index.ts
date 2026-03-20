@@ -39,3 +39,19 @@ export {
   GRAPH_CANVAS_NODE_CARD_BASE_SIZE,
 } from "./sizing/graphSizingConstants";
 export { GRAPH_ENTITY_CREATE_PRESETS } from "./presets/graphPresetConstants";
+export {
+  GRAPH_PERF_SCOPE,
+  GRAPH_PERF_LOCAL_STORAGE_KEY,
+  GRAPH_PERF_BATCH_FLUSH_INTERVAL_MS,
+  GRAPH_PERF_BATCH_MAX_RECORDS,
+  GRAPH_PERF_FRAME_SAMPLE_MAX_MS,
+  type GraphPerfScope,
+} from "./instrumentation/graphPerfConstants";
+export {
+  flushGraphPerfMetrics,
+  initializeGraphPerfInstrumentation,
+  isGraphPerfInstrumentationEnabled,
+  setGraphPerfInstrumentationEnabled,
+  startGraphPerfTimer,
+  trackGraphPerfDuration,
+} from "./instrumentation/graphPerfMetrics";

@@ -10,3 +10,4 @@ Always answer in Korean
 
 
 final rounud -> type check
+no use GPT 5.4 / Opus 4.6

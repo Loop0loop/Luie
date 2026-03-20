@@ -25,6 +25,17 @@ export type CanvasGraphNodeData = {
   ) => void;
 };
 
+const NODE_HANDLE_BASE_CLASS = "!h-2 !w-2 !border-0 transition-opacity";
+const NODE_HANDLE_VISIBLE_CLASS = "opacity-100 pointer-events-auto";
+const NODE_HANDLE_HOVER_CLASS =
+  "opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto";
+
+const buildNodeHandleClass = (selected: boolean): string =>
+  [
+    NODE_HANDLE_BASE_CLASS,
+    selected ? NODE_HANDLE_VISIBLE_CLASS : NODE_HANDLE_HOVER_CLASS,
+  ].join(" ");
+
 function CanvasGraphNodeCardInner({
   id,
   data,
@@ -35,6 +46,7 @@ function CanvasGraphNodeCardInner({
     GRAPH_ENTITY_CANVAS_THEME_TOKENS[
       data.entityType as keyof typeof GRAPH_ENTITY_CANVAS_THEME_TOKENS
     ] ?? GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity;
+  const handleClassName = buildNodeHandleClass(selected);
 
   return (
     <div className="group relative cursor-default">
@@ -112,66 +124,42 @@ function CanvasGraphNodeCardInner({
         type="target"
         position={Position.Top}
         id="top-in"
-        className={
-          selected
-            ? "!h-2 !w-2 !border-0 opacity-100 pointer-events-auto"
-            : "!h-2 !w-2 !border-0 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
-        }
+        className={handleClassName}
         style={{ background: theme.handle }}
       />
       <Handle
         type="source"
         position={Position.Top}
         id="top-out"
-        className={
-          selected
-            ? "!h-2 !w-2 !border-0 opacity-100 pointer-events-auto"
-            : "!h-2 !w-2 !border-0 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
-        }
+        className={handleClassName}
         style={{ background: theme.handle }}
       />
       <Handle
         type="target"
         position={Position.Bottom}
         id="bottom-in"
-        className={
-          selected
-            ? "!h-2 !w-2 !border-0 opacity-100 pointer-events-auto"
-            : "!h-2 !w-2 !border-0 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
-        }
+        className={handleClassName}
         style={{ background: theme.handle }}
       />
       <Handle
         type="source"
         position={Position.Bottom}
         id="bottom-out"
-        className={
-          selected
-            ? "!h-2 !w-2 !border-0 opacity-100 pointer-events-auto"
-            : "!h-2 !w-2 !border-0 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
-        }
+        className={handleClassName}
         style={{ background: theme.handle }}
       />
       <Handle
         type="target"
         position={Position.Left}
         id="left-in"
-        className={
-          selected
-            ? "!h-2 !w-2 !border-0 opacity-100 pointer-events-auto"
-            : "!h-2 !w-2 !border-0 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
-        }
+        className={handleClassName}
         style={{ background: theme.handle }}
       />
       <Handle
         type="source"
         position={Position.Right}
         id="right-out"
-        className={
-          selected
-            ? "!h-2 !w-2 !border-0 opacity-100 pointer-events-auto"
-            : "!h-2 !w-2 !border-0 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
-        }
+        className={handleClassName}
         style={{ background: theme.handle }}
       />
 

@@ -264,6 +264,8 @@ export function useChapterManagement() {
       const fallbackTitle = chapterForSave?.title ?? "";
 
       const normalizedTitle = title.trim() || fallbackTitle;
+      const previousTitle = chapterForSave?.title ?? "";
+      const previousContent = chapterForSave?.content ?? "";
       const lastSaved = lastSavedRef.current;
       if (
         lastSaved &&
@@ -274,12 +276,43 @@ export function useChapterManagement() {
         return;
       }
 
+      if (normalizedTitle !== previousTitle || newContent !== previousContent) {
+        useChapterStore.setState((state) => {
+          const nextItems = state.items.map((item) =>
+            item.id === chapterId
+              ? {
+                  ...item,
+                  title: normalizedTitle,
+                  content: newContent,
+                }
+              : item,
+          );
+
+          const nextCurrent =
+            state.currentItem?.id === chapterId
+              ? {
+                  ...state.currentItem,
+                  title: normalizedTitle,
+                  content: newContent,
+                }
+              : state.currentItem;
+
+          return {
+            items: nextItems,
+            currentItem: nextCurrent,
+            chapters: nextItems,
+            currentChapter: nextCurrent,
+          };
+        });
+      }
+
       api.logger.info(`Saving: ${normalizedTitle}`);
-      await updateChapter({
-        id: chapterId,
-        title: normalizedTitle,
-        content: newContent,
-      });
+      if (normalizedTitle !== previousTitle) {
+        await updateChapter({
+          id: chapterId,
+          title: normalizedTitle,
+        });
+      }
 
       lastSavedRef.current = {
         chapterId,

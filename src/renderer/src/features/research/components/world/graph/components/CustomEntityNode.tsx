@@ -6,10 +6,9 @@ import { useWorldBuildingStore } from "@renderer/features/research/stores/worldB
 import type { WorldEntitySourceType } from "@shared/types";
 import { Trash2, Palette, Edit2, Maximize2 } from "lucide-react";
 import { Button } from "@renderer/components/ui/button";
-import {
-  GRAPH_ENTITY_CANVAS_THEME_TOKENS,
-  GRAPH_FIT_VIEW_DURATION_SHORT_MS,
-} from "../shared";
+import { GRAPH_FIT_VIEW_DURATION_SHORT_MS } from "../shared/layout/graphLayoutConstants";
+import { GRAPH_CANVAS_NODE_CARD_BASE_SIZE } from "../shared/sizing/graphSizingConstants";
+import { GRAPH_ENTITY_CANVAS_THEME_TOKENS } from "../shared/theme/graphThemeConstants";
 
 interface CustomEntityNodeProps {
   id: string;
@@ -118,8 +117,11 @@ export const CustomEntityNode = memo(
                       {
                         x: node.position.x,
                         y: node.position.y,
-                        width: node.width ?? 260,
-                        height: node.height ?? 160,
+                        width:
+                          node.width ?? GRAPH_CANVAS_NODE_CARD_BASE_SIZE.width,
+                        height:
+                          node.height ??
+                          GRAPH_CANVAS_NODE_CARD_BASE_SIZE.height,
                       },
                       {
                         padding: 0.45,

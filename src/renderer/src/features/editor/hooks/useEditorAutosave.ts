@@ -38,7 +38,12 @@ export function useEditorAutosave({
   }, [saveStatus]);
 
   const lastSavedRef = useRef({ title, content });
+  const latestDraftRef = useRef({ title, content });
   const retryCount = useRef(0);
+  const isSaveInFlightRef = useRef(false);
+  const pendingDraftRef = useRef<{ title: string; content: string } | null>(
+    null,
+  );
 
   // ✅ Separate timer refs so each can be individually cleared
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -55,6 +60,16 @@ export function useEditorAutosave({
       // Guard: don't update state if unmounted
       if (!isMountedRef.current) return;
 
+      if (isSaveInFlightRef.current) {
+        pendingDraftRef.current = {
+          title: latestDraftRef.current.title,
+          content: latestDraftRef.current.content,
+        };
+        return;
+      }
+
+      isSaveInFlightRef.current = true;
+
       setSaveStatus("saving");
       try {
         await Promise.resolve(onSave(currentTitle, currentContent));
@@ -64,7 +79,11 @@ export function useEditorAutosave({
         lastSavedRef.current = { title: currentTitle, content: currentContent };
         setSaveStatus("saved");
         retryCount.current = 0;
-        api.lifecycle?.setDirty?.(false);
+        const latestDraft = latestDraftRef.current;
+        const isLatestDraftSaved =
+          latestDraft.title === currentTitle &&
+          latestDraft.content === currentContent;
+        api.lifecycle?.setDirty?.(!isLatestDraftSaved);
 
         // ✅ Track idle reset timer so we can cancel on unmount
         if (idleResetTimerRef.current) clearTimeout(idleResetTimerRef.current);
@@ -80,21 +99,42 @@ export function useEditorAutosave({
         if (retryCount.current < RETRY_DELAYS.length) {
           const delay = RETRY_DELAYS[retryCount.current];
           retryCount.current++;
-          showToast(
-            t("editor.autosave.retryingIn", { seconds: delay / 1000 }),
-            "info",
-            2000,
-          );
+          const latestDraft = latestDraftRef.current;
+          const stillLatestDraft =
+            latestDraft.title === currentTitle &&
+            latestDraft.content === currentContent;
+          if (stillLatestDraft) {
+            showToast(
+              t("editor.autosave.retryingIn", { seconds: delay / 1000 }),
+              "info",
+              2000,
+            );
 
-          // ✅ Track retry timer so we can cancel on unmount
-          if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
-          retryTimerRef.current = setTimeout(() => {
-            if (isMountedRef.current) {
-              performSaveRef.current?.(currentTitle, currentContent);
-            }
-          }, delay);
+            // ✅ Track retry timer so we can cancel on unmount
+            if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+            retryTimerRef.current = setTimeout(() => {
+              if (!isMountedRef.current) {
+                return;
+              }
+              const latest = latestDraftRef.current;
+              performSaveRef.current?.(latest.title, latest.content);
+            }, delay);
+          }
         } else {
           showToast(t("editor.autosave.failed"), "error");
+        }
+      } finally {
+        isSaveInFlightRef.current = false;
+
+        const pendingDraft = pendingDraftRef.current;
+        if (pendingDraft) {
+          pendingDraftRef.current = null;
+          if (
+            pendingDraft.title !== lastSavedRef.current.title ||
+            pendingDraft.content !== lastSavedRef.current.content
+          ) {
+            void performSave(pendingDraft.title, pendingDraft.content);
+          }
         }
       }
     },
@@ -107,6 +147,8 @@ export function useEditorAutosave({
 
   // Debounced save trigger
   useEffect(() => {
+    latestDraftRef.current = { title, content };
+
     if (!onSave) return;
 
     if (

@@ -14,7 +14,7 @@ import {
   buildEntityRelationHintEdgeId,
   generateLocalId,
 } from "../utils/canvasFlowUtils";
-import { GRAPH_CANVAS_DEFAULT_EDGE_COLORS } from "../shared";
+import { GRAPH_CANVAS_DEFAULT_EDGE_COLORS } from "../shared/canvas/graphCanvasConstants";
 
 type CanvasTabProps = {
   projectId: string | null;
@@ -65,9 +65,31 @@ export function CanvasTab({
     (position?: { x: number; y: number }) => {
       if (!projectId) return;
 
+      const existingNameSet = new Set(
+        graphNodes
+          .filter(
+            (node) =>
+              node.entityType === "WorldEntity" &&
+              (node.subType === "Place" || !node.subType),
+          )
+          .map((node) => node.name.trim().toLocaleLowerCase())
+          .filter((name) => name.length > 0),
+      );
+
       const nextName = buildNextCanvasBlockName(
         graphNodes.map((node) => node.name),
       );
+
+      if (existingNameSet.has(nextName.trim().toLocaleLowerCase())) {
+        dialog.toast(
+          t(
+            "research.graph.canvas.duplicateBlockName",
+            "동일한 이름의 블럭이 이미 존재합니다.",
+          ),
+          "info",
+        );
+        return;
+      }
 
       void createGraphNode({
         projectId,
@@ -82,7 +104,15 @@ export function CanvasTab({
         onCreatedEntity("WorldEntity", created.id);
       });
     },
-    [createGraphNode, graphNodes, onCreatedEntity, onSelectNode, projectId],
+    [
+      createGraphNode,
+      dialog,
+      graphNodes,
+      onCreatedEntity,
+      onSelectNode,
+      projectId,
+      t,
+    ],
   );
 
   const handleDeleteNode = useCallback(

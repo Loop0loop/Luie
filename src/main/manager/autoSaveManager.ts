@@ -496,8 +496,20 @@ export class AutoSaveManager extends EventEmitter {
 
     const timer = setInterval(() => {
       void this.enqueueProjectTask(projectId, async () => {
+        const activeConfig = this.getConfig(projectId);
+        const now = Date.now();
         const pendingSaves = Array.from(this.pendingSaves.entries()).filter(
-          ([, pending]) => pending.projectId === projectId,
+          ([chapterId, pending]) => {
+            if (pending.projectId !== projectId) {
+              return false;
+            }
+
+            const lastTouchedAt = this.lastSaveAt.get(chapterId) ?? 0;
+            const hasRecentTypingSignal =
+              now - lastTouchedAt < activeConfig.debounceMs;
+
+            return !hasRecentTypingSignal;
+          },
         );
         await pendingSaves.reduce<Promise<void>>(
           (chain, [chapterId]) =>

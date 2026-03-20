@@ -4,10 +4,9 @@ import { useTranslation } from "react-i18next";
 import type { NodeProps } from "reactflow";
 import { Handle, Position, NodeToolbar, useReactFlow } from "reactflow";
 import { Button } from "@renderer/components/ui/button";
-import {
-  GRAPH_ENTITY_CANVAS_THEME_TOKENS,
-  GRAPH_FIT_VIEW_DURATION_SHORT_MS,
-} from "../shared";
+import { GRAPH_FIT_VIEW_DURATION_SHORT_MS } from "../shared/layout/graphLayoutConstants";
+import { GRAPH_CANVAS_NODE_CARD_BASE_SIZE } from "../shared/sizing/graphSizingConstants";
+import { GRAPH_ENTITY_CANVAS_THEME_TOKENS } from "../shared/theme/graphThemeConstants";
 
 export type CanvasMemoBlockData = {
   title: string;
@@ -93,8 +92,9 @@ function CanvasMemoBlockNodeInner({
                 {
                   x: node.position.x,
                   y: node.position.y,
-                  width: node.width ?? 280,
-                  height: node.height ?? 190,
+                  width: node.width ?? GRAPH_CANVAS_NODE_CARD_BASE_SIZE.width,
+                  height:
+                    node.height ?? GRAPH_CANVAS_NODE_CARD_BASE_SIZE.height,
                 },
                 { padding: 0.5, duration: GRAPH_FIT_VIEW_DURATION_SHORT_MS },
               );

@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useGraphPluginStore } from "@renderer/features/research/stores/graphPluginStore";
 import { useMemoStore } from "@renderer/features/research/stores/memoStore";
@@ -34,22 +35,34 @@ export function useWorldGraphWorkspace() {
   const attachmentPath = getReadableLuieAttachmentPath(currentProject);
   const hasLuieAttachment = hasReadableLuieAttachment(currentProject);
 
-  const activeProjectId = useWorldBuildingStore(
-    (state) => state.activeProjectId,
+  const { activeProjectId, storedGraphData, graphLoading, graphError } =
+    useWorldBuildingStore(
+      useShallow((state) => ({
+        activeProjectId: state.activeProjectId,
+        storedGraphData: state.graphData,
+        graphLoading: state.isLoading,
+        graphError: state.error,
+      })),
+    );
+
+  const { notes, notesLoading, notesSaving } = useMemoStore(
+    useShallow((state) => ({
+      notes: state.notes,
+      notesLoading: state.isLoading,
+      notesSaving: state.isSaving,
+    })),
   );
-  const storedGraphData = useWorldBuildingStore((state) => state.graphData);
-  const graphLoading = useWorldBuildingStore((state) => state.isLoading);
-  const graphError = useWorldBuildingStore((state) => state.error);
 
-  const notes = useMemoStore((state) => state.notes);
-  const notesLoading = useMemoStore((state) => state.isLoading);
-  const notesSaving = useMemoStore((state) => state.isSaving);
-
-  const catalog = useGraphPluginStore((state) => state.catalog);
-  const installed = useGraphPluginStore((state) => state.installed);
-  const templates = useGraphPluginStore((state) => state.templates);
-  const pluginsLoading = useGraphPluginStore((state) => state.isLoading);
-  const pluginError = useGraphPluginStore((state) => state.error);
+  const { catalog, installed, templates, pluginsLoading, pluginError } =
+    useGraphPluginStore(
+      useShallow((state) => ({
+        catalog: state.catalog,
+        installed: state.installed,
+        templates: state.templates,
+        pluginsLoading: state.isLoading,
+        pluginError: state.error,
+      })),
+    );
 
   const graphData =
     activeProjectId === currentProject?.id ? storedGraphData : null;

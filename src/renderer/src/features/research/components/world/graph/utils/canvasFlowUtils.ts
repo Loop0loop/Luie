@@ -12,17 +12,20 @@ import type { CanvasGraphEdgeData } from "../components/CanvasGraphEdge";
 import type { CanvasTimelineBlockData } from "../components/CanvasTimelineBlockNode";
 import type { CanvasMemoBlockData } from "../components/CanvasMemoBlockNode";
 import {
-  GRAPH_CANVAS_DEFAULT_EDGE_COLORS,
   GRAPH_CANVAS_GUIDE_SNAP_DISTANCE_PX,
-  GRAPH_CANVAS_NODE_DEFAULT_HEIGHT_PX,
+  GRAPH_CANVAS_DEFAULT_EDGE_COLORS,
   GRAPH_CANVAS_NODE_DEFAULT_WIDTH_PX,
+  GRAPH_CANVAS_NODE_DEFAULT_HEIGHT_PX,
   GRAPH_CANVAS_RELATION_HINT_EDGE_PREFIX,
+} from "../shared/canvas/graphCanvasConstants";
+import {
+  GRAPH_DEFAULT_NODE_COLUMNS,
   GRAPH_DEFAULT_NODE_COLUMN_GAP_PX,
   GRAPH_DEFAULT_NODE_OFFSET_X_PX,
   GRAPH_DEFAULT_NODE_OFFSET_Y_PX,
   GRAPH_DEFAULT_NODE_ROW_GAP_PX,
-  GRAPH_ENTITY_CANVAS_THEME_TOKENS,
-} from "../shared";
+} from "../shared/layout/graphLayoutConstants";
+import { GRAPH_ENTITY_CANVAS_THEME_TOKENS } from "../shared/theme/graphThemeConstants";
 
 export type AnyCanvasNodeData =
   | CanvasGraphNodeData
@@ -232,8 +235,8 @@ export const syncCanvasLocalNodes = (
 };
 
 export function readPosition(node: WorldGraphNode, index: number) {
-  const fallbackColumn = index % 4;
-  const fallbackRow = Math.floor(index / 4);
+  const fallbackColumn = index % GRAPH_DEFAULT_NODE_COLUMNS;
+  const fallbackRow = Math.floor(index / GRAPH_DEFAULT_NODE_COLUMNS);
 
   return {
     x:

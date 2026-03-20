@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -36,14 +36,13 @@ import {
   buildFlowNodes,
   type AnyCanvasNodeData,
 } from "../utils/canvasFlowUtils";
+import { persistAutoLayoutNodePositions } from "../utils/autoLayoutPersistence";
 import {
-  GRAPH_CANVAS_DEFAULT_EDGE_COLORS,
   GRAPH_DEFAULT_NODE_COLUMNS,
   GRAPH_DEFAULT_NODE_COLUMN_GAP_PX,
   GRAPH_DEFAULT_NODE_OFFSET_X_PX,
   GRAPH_DEFAULT_NODE_OFFSET_Y_PX,
   GRAPH_DEFAULT_NODE_ROW_GAP_PX,
-  GRAPH_ENTITY_CANVAS_THEME_TOKENS,
   GRAPH_FLOW_BACKGROUND_DOT_GAP_PX,
   GRAPH_FLOW_BACKGROUND_DOT_SIZE_PX,
   GRAPH_FLOW_DEFAULT_VIEWPORT,
@@ -53,7 +52,10 @@ import {
   GRAPH_FIT_VIEW_PADDING_DEFAULT,
   GRAPH_VIEWPORT_CREATE_OFFSET,
   GRAPH_VIEWPORT_FALLBACK_SIZE,
-} from "../shared";
+} from "../shared/layout/graphLayoutConstants";
+import { GRAPH_CANVAS_DEFAULT_EDGE_COLORS } from "../shared/canvas/graphCanvasConstants";
+import { GRAPH_ENTITY_CANVAS_THEME_TOKENS } from "../shared/theme/graphThemeConstants";
+import { initializeGraphPerfInstrumentation } from "../shared/instrumentation/graphPerfMetrics";
 
 interface CanvasViewProps {
   nodes: WorldGraphNode[];
@@ -209,6 +211,47 @@ function CanvasFlowSurface({
     reactFlow,
   });
 
+  const handleZoomIn = useCallback(() => {
+    void reactFlow.zoomIn();
+  }, [reactFlow]);
+
+  const handleZoomOut = useCallback(() => {
+    void reactFlow.zoomOut();
+  }, [reactFlow]);
+
+  const handleFitView = useCallback(() => {
+    void reactFlow.fitView({ padding: GRAPH_FIT_VIEW_PADDING_DEFAULT });
+  }, [reactFlow]);
+
+  const handleFitCanvas = useCallback(() => {
+    void reactFlow.fitView({ padding: GRAPH_FIT_VIEW_PADDING_CANVAS });
+  }, [reactFlow]);
+
+  const handleToolbarCreateBlock = useCallback(() => {
+    onCreateBlock(resolvePlacementPosition());
+  }, [onCreateBlock, resolvePlacementPosition]);
+
+  const handleOpenTimelinePalette = useCallback(() => {
+    setTimelinePaletteOpen(true);
+  }, []);
+
+  const handleCloseTimelinePalette = useCallback(() => {
+    setTimelinePaletteOpen(false);
+  }, []);
+
+  const handleCreateTimelineFromPalette = useCallback(() => {
+    handleCreateTimelineBlock();
+    setTimelinePaletteOpen(false);
+  }, [handleCreateTimelineBlock]);
+
+  const handlePickTimelineFromPalette = useCallback(
+    (nodeId: string) => {
+      handlePickTimelineEvent(nodeId);
+      setTimelinePaletteOpen(false);
+    },
+    [handlePickTimelineEvent],
+  );
+
   return (
     <div className="absolute inset-0">
       <style>
@@ -294,36 +337,26 @@ function CanvasFlowSurface({
       ) : null}
 
       <CanvasFlowControls
-        onZoomIn={() => void reactFlow.zoomIn()}
-        onZoomOut={() => void reactFlow.zoomOut()}
-        onFitView={() =>
-          void reactFlow.fitView({ padding: GRAPH_FIT_VIEW_PADDING_DEFAULT })
-        }
-        onFitCanvas={() =>
-          void reactFlow.fitView({ padding: GRAPH_FIT_VIEW_PADDING_CANVAS })
-        }
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onFitView={handleFitView}
+        onFitCanvas={handleFitCanvas}
         onUndo={handleUndo}
         onRedo={handleRedo}
       />
 
       <CanvasToolbar
-        onCreateBlock={() => onCreateBlock(resolvePlacementPosition())}
-        onOpenTimelinePalette={() => setTimelinePaletteOpen(true)}
+        onCreateBlock={handleToolbarCreateBlock}
+        onOpenTimelinePalette={handleOpenTimelinePalette}
         onCreateNote={handleCreateMemo}
       />
 
       <CanvasTimelinePalette
         open={timelinePaletteOpen}
         events={timelineNodes}
-        onClose={() => setTimelinePaletteOpen(false)}
-        onCreateEvent={() => {
-          handleCreateTimelineBlock();
-          setTimelinePaletteOpen(false);
-        }}
-        onPickEvent={(nodeId) => {
-          handlePickTimelineEvent(nodeId);
-          setTimelinePaletteOpen(false);
-        }}
+        onClose={handleCloseTimelinePalette}
+        onCreateEvent={handleCreateTimelineFromPalette}
+        onPickEvent={handlePickTimelineFromPalette}
       />
     </div>
   );
@@ -351,6 +384,10 @@ export function CanvasView({
   const updateGraphNode = useWorldBuildingStore(
     (state) => state.updateGraphNode,
   );
+
+  useEffect(() => {
+    initializeGraphPerfInstrumentation();
+  }, []);
 
   const handleCycleGraphNodeColor = useCallback(
     (nodeId: string) => {
@@ -620,20 +657,14 @@ export function CanvasView({
       y: OFFSET_Y + Math.floor(i / COLS) * ROW_GAP,
     }));
 
-    void Promise.all(
-      updates
-        .map(({ id, x, y }) => onNodePositionCommit?.({ id, x, y }))
-        .filter(
-          (
-            work,
-          ): work is ReturnType<
-            NonNullable<CanvasViewProps["onNodePositionCommit"]>
-          > => work !== undefined,
-        ),
-    ).catch((error) => {
-      void api.logger.warn("Failed to persist auto-layout node positions", {
-        error,
-      });
+    void persistAutoLayoutNodePositions({
+      updates,
+      onNodePositionCommit,
+      onError: (error) => {
+        void api.logger.warn("Failed to persist auto-layout node positions", {
+          error,
+        });
+      },
     });
   }, [flowNodes, onNodePositionCommit]);
 

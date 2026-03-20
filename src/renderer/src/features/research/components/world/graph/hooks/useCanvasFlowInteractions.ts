@@ -36,12 +36,17 @@ import {
   GRAPH_DEFAULT_NODE_ROW_GAP_PX,
   GRAPH_EDGE_ZOOM_FIT_PADDING,
   GRAPH_EDGE_ZOOM_MIN_BOUNDS,
-  GRAPH_ENTITY_CANVAS_THEME_TOKENS,
   GRAPH_FIT_VIEW_DURATION_AUTO_LAYOUT_MS,
   GRAPH_FIT_VIEW_DURATION_SHORT_MS,
   GRAPH_FIT_VIEW_PADDING_AUTO_LAYOUT,
   GRAPH_FIT_VIEW_PADDING_DEFAULT,
-} from "../shared";
+} from "../shared/layout/graphLayoutConstants";
+import { GRAPH_ENTITY_CANVAS_THEME_TOKENS } from "../shared/theme/graphThemeConstants";
+import { GRAPH_PERF_SCOPE } from "../shared/instrumentation/graphPerfConstants";
+import {
+  startGraphPerfTimer,
+  trackGraphPerfDuration,
+} from "../shared/instrumentation/graphPerfMetrics";
 
 type UseCanvasFlowInteractionsInput = {
   graphNodes: Node<CanvasGraphNodeData>[];
@@ -102,6 +107,8 @@ export function useCanvasFlowInteractions({
     null,
   );
   const guideRafRef = useRef<number | null>(null);
+  const lastFrameSampleAtRef = useRef<number>(0);
+  const dragStartedAtRef = useRef<Map<string, number>>(new Map());
   const nodesRef = useRef<Node<AnyCanvasNodeData>[]>(nodes);
   const edgesRef = useRef<Edge<CanvasGraphEdgeData>[]>(graphEdges);
   const appliedAutoLayoutTriggerRef = useRef<number>(0);
@@ -336,16 +343,32 @@ export function useCanvasFlowInteractions({
       setPendingEdges((currentEdges) => [...currentEdges, tempEdge]);
 
       // Async save - will replace temp edge with real edge via useEffect
+      const edgeCreateTimer = startGraphPerfTimer({
+        scope: GRAPH_PERF_SCOPE.canvasFlow,
+        metric: "edge.create.latency",
+        meta: {
+          sourceId: connection.source,
+          targetId: connection.target,
+        },
+      });
+
       void onConnectNodes({
         sourceId: connection.source,
         targetId: connection.target,
         sourceHandle: connection.sourceHandle,
         targetHandle: connection.targetHandle,
-      }).finally(() => {
-        setPendingEdges((currentEdges) =>
-          currentEdges.filter((edge) => edge.id !== tempEdgeId),
-        );
-      });
+      })
+        .then(() => {
+          edgeCreateTimer.complete();
+        })
+        .catch((error) => {
+          edgeCreateTimer.fail(error);
+        })
+        .finally(() => {
+          setPendingEdges((currentEdges) =>
+            currentEdges.filter((edge) => edge.id !== tempEdgeId),
+          );
+        });
     },
     [onConnectNodes],
   );
@@ -415,40 +438,62 @@ export function useCanvasFlowInteractions({
       : { x: 0, y: 0, zoom: 1 };
   }, [reactFlow]);
 
+  const isTypingTarget = useCallback((target: EventTarget | null): boolean => {
+    if (!(target instanceof HTMLElement)) {
+      return false;
+    }
+    return (
+      target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA" ||
+      target.isContentEditable
+    );
+  }, []);
+
+  const handleResetView = useCallback(() => {
+    void reactFlow.fitView({
+      padding: GRAPH_FIT_VIEW_PADDING_DEFAULT,
+      duration: GRAPH_FIT_VIEW_DURATION_SHORT_MS,
+    });
+  }, [reactFlow]);
+
+  const handleZoomInShortcut = useCallback(() => {
+    void reactFlow.zoomIn({ duration: GRAPH_FIT_VIEW_DURATION_SHORT_MS });
+  }, [reactFlow]);
+
+  const handleZoomOutShortcut = useCallback(() => {
+    void reactFlow.zoomOut({ duration: GRAPH_FIT_VIEW_DURATION_SHORT_MS });
+  }, [reactFlow]);
+
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      const isTyping =
-        target?.tagName === "INPUT" ||
-        target?.tagName === "TEXTAREA" ||
-        target?.isContentEditable;
-
-      if (isTyping) return;
+      if (isTypingTarget(event.target)) return;
 
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "0") {
         event.preventDefault();
-        void reactFlow.fitView({
-          padding: GRAPH_FIT_VIEW_PADDING_DEFAULT,
-          duration: GRAPH_FIT_VIEW_DURATION_SHORT_MS,
-        });
+        handleResetView();
         return;
       }
 
       if ((event.metaKey || event.ctrlKey) && event.key === "=") {
         event.preventDefault();
-        void reactFlow.zoomIn({ duration: GRAPH_FIT_VIEW_DURATION_SHORT_MS });
+        handleZoomInShortcut();
         return;
       }
 
       if ((event.metaKey || event.ctrlKey) && event.key === "-") {
         event.preventDefault();
-        void reactFlow.zoomOut({ duration: GRAPH_FIT_VIEW_DURATION_SHORT_MS });
+        handleZoomOutShortcut();
       }
     };
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [reactFlow]);
+  }, [
+    handleResetView,
+    handleZoomInShortcut,
+    handleZoomOutShortcut,
+    isTypingTarget,
+  ]);
 
   const onNodeClick = useCallback(
     (_event: unknown, node: Node<AnyCanvasNodeData>) => {
@@ -524,6 +569,9 @@ export function useCanvasFlowInteractions({
   const onNodeDragStart = useCallback(
     (_event: unknown, node: Node<AnyCanvasNodeData>) => {
       draggingNodeIdRef.current = node.id;
+      const now = performance.now();
+      dragStartedAtRef.current.set(node.id, now);
+      lastFrameSampleAtRef.current = now;
       dragConsumedClickRef.current = false;
       pendingSnapRef.current = null;
       onSelectNode(null);
@@ -533,6 +581,20 @@ export function useCanvasFlowInteractions({
 
   const onNodeDrag = useCallback(
     (_event: unknown, node: Node<AnyCanvasNodeData>) => {
+      const now = performance.now();
+      if (now - lastFrameSampleAtRef.current >= 200) {
+        const frameDuration = now - lastFrameSampleAtRef.current;
+        if (lastFrameSampleAtRef.current !== 0) {
+          trackGraphPerfDuration({
+            scope: GRAPH_PERF_SCOPE.canvasFlow,
+            metric: "frame.time",
+            durationMs: Number(frameDuration.toFixed(1)),
+            status: "ok",
+          });
+        }
+      }
+      lastFrameSampleAtRef.current = now;
+
       const allNodes = nodesRef.current;
       const dragged = allNodes.find((item) => item.id === node.id);
       if (!dragged) return;
@@ -584,6 +646,20 @@ export function useCanvasFlowInteractions({
 
       const pendingSnap = pendingSnapRef.current;
       pendingSnapRef.current = null;
+
+      const dragStartAt = dragStartedAtRef.current.get(node.id);
+      dragStartedAtRef.current.delete(node.id);
+      if (typeof dragStartAt === "number") {
+        trackGraphPerfDuration({
+          scope: GRAPH_PERF_SCOPE.canvasFlow,
+          metric: "drag.latency",
+          durationMs: Number((performance.now() - dragStartAt).toFixed(1)),
+          status: "ok",
+          meta: {
+            nodeType: node.type,
+          },
+        });
+      }
 
       if (isCanvasLocalNodeType(node.type)) {
         setNodes((currentNodes) => {

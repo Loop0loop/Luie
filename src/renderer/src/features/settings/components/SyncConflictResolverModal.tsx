@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, X, Check, RefreshCcw } from "lucide-react";
 import type { SyncStatus } from "@shared/types";
@@ -29,6 +29,26 @@ export function SyncConflictResolverModal({
   const hasConflicts = conflicts.total > 0;
   const refreshDisabled = isBusy || isRefreshing || !!resolvingKey;
   const conflictItems = conflicts.items ?? [];
+  const dateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }),
+    [],
+  );
+  const displayConflictItems = useMemo(
+    () =>
+      conflictItems.map((item) => ({
+        ...item,
+        itemKey: `${item.type}:${item.id}`,
+        localUpdatedLabel: dateFormatter.format(new Date(item.localUpdatedAt)),
+        remoteUpdatedLabel: dateFormatter.format(
+          new Date(item.remoteUpdatedAt),
+        ),
+      })),
+    [conflictItems, dateFormatter],
+  );
 
   const handleRefresh = async () => {
     if (refreshDisabled) return;
@@ -104,15 +124,15 @@ export function SyncConflictResolverModal({
                 )}
               </span>
             </div>
-          ) : conflictItems.length > 0 ? (
+          ) : displayConflictItems.length > 0 ? (
             <>
-              {conflictItems.map((item, index) => {
-                const itemKey = `${item.type}:${item.id}`;
+              {displayConflictItems.map((item, index) => {
+                const itemKey = item.itemKey;
                 const itemIsResolving = resolvingKey === itemKey;
                 return (
                   <div
                     key={itemKey}
-                    className="rounded-lg border border-border bg-surface"
+                    className="rounded-lg border border-border bg-surface [contain:content]"
                   >
                     <div className="px-4 py-2 border-b border-border text-sm font-semibold text-fg">
                       {item.type === "chapter"
@@ -127,7 +147,7 @@ export function SyncConflictResolverModal({
                           suppressHydrationWarning
                         >
                           {t("settings.sync.conflicts.keepLocal", "Keep Local")}{" "}
-                          · {new Date(item.localUpdatedAt).toLocaleString()}
+                          · {item.localUpdatedLabel}
                         </div>
                         <pre className="text-xs whitespace-pre-wrap break-words max-h-40 overflow-auto text-fg m-0">
                           {item.localPreview || "(empty)"}
@@ -154,7 +174,7 @@ export function SyncConflictResolverModal({
                             "settings.sync.conflicts.keepRemote",
                             "Keep Cloud",
                           )}{" "}
-                          · {new Date(item.remoteUpdatedAt).toLocaleString()}
+                          · {item.remoteUpdatedLabel}
                         </div>
                         <pre className="text-xs whitespace-pre-wrap break-words max-h-40 overflow-auto text-fg m-0">
                           {item.remotePreview || "(empty)"}

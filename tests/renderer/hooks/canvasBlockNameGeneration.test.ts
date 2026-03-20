@@ -15,4 +15,13 @@ describe("buildNextCanvasBlockName", () => {
     ]);
     expect(next).toBe("새로운 블럭 3");
   });
+
+  it("treats case-variant names as duplicates", () => {
+    const next = buildNextCanvasBlockName([
+      "새로운 블럭",
+      "  새로운 블럭 1  ",
+      "새로운 블럭 2",
+    ]);
+    expect(next).toBe("새로운 블럭 3");
+  });
 });

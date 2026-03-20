@@ -146,7 +146,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             <X className="w-5 h-5" />
           </button>
 
-          <div className="flex-1 overflow-y-auto p-10 scrollbar-hide">
+          <div className="flex-1 overflow-y-auto p-10 scrollbar-hide [contain:content]">
             <Suspense fallback={settingsTabFallback}>
               {activeTab === "appearance" && (
                 <AppearanceTab

@@ -3,25 +3,15 @@ import { useTranslation } from "react-i18next";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import type {
   EntityRelation,
-  WorldEntitySourceType,
+  WorldEntityType,
   WorldGraphNode,
 } from "@shared/types";
 import { buildGraphNodeDefaultName } from "./canvasNodeNaming";
-
-const WORLD_ENTITY_TYPE_SET = new Set([
-  "WorldEntity",
-  "Place",
-  "Concept",
-  "Rule",
-  "Item",
-] as const);
-
-const isWorldEntityType = (
-  value: WorldEntitySourceType,
-): value is "WorldEntity" | "Place" | "Concept" | "Rule" | "Item" =>
-  WORLD_ENTITY_TYPE_SET.has(
-    value as "WorldEntity" | "Place" | "Concept" | "Rule" | "Item",
-  );
+import {
+  buildMigratedRelationInputs,
+  canUpdateTypeInPlace,
+  findDuplicateTargetNode,
+} from "./canvasNodeConversion";
 
 export function useCanvasTabSidebar({
   projectId,
@@ -130,9 +120,10 @@ export function useCanvasTabSidebar({
         return;
       }
 
-      const canUpdateInPlace =
-        isWorldEntityType(selectedNode.entityType) &&
-        isWorldEntityType(entityType);
+      const canUpdateInPlace = canUpdateTypeInPlace(
+        selectedNode.entityType,
+        entityType,
+      );
 
       if (canUpdateInPlace) {
         await updateGraphNode({
@@ -154,6 +145,32 @@ export function useCanvasTabSidebar({
         return;
       }
 
+      const duplicateTargetNode = findDuplicateTargetNode({
+        nodes: graphNodes,
+        selectedNodeId: selectedNode.id,
+        selectedNodeName: selectedNode.name,
+        nextEntityType: entityType,
+        nextSubType: subType as WorldEntityType | undefined,
+      });
+
+      if (duplicateTargetNode) {
+        const relationInputs = buildMigratedRelationInputs({
+          projectId,
+          selectedNodeId: selectedNode.id,
+          targetNode: {
+            id: duplicateTargetNode.id,
+            entityType: duplicateTargetNode.entityType,
+          },
+          graphEdges,
+        });
+
+        await Promise.all(relationInputs.map((input) => createRelation(input)));
+        await deleteGraphNode(selectedNode.id);
+        onSelectNode(duplicateTargetNode.id);
+        onCreatedEntity(entityType, duplicateTargetNode.id);
+        return;
+      }
+
       const created = await createGraphNode({
         projectId,
         entityType,
@@ -170,45 +187,15 @@ export function useCanvasTabSidebar({
 
       if (!created) return;
 
-      const connectedEdges = graphEdges.filter(
-        (edge) =>
-          edge.sourceId === selectedNode.id ||
-          edge.targetId === selectedNode.id,
-      );
-
-      const relationInputs = connectedEdges
-        .map((edge) => {
-          const sourceId =
-            edge.sourceId === selectedNode.id ? created.id : edge.sourceId;
-          const targetId =
-            edge.targetId === selectedNode.id ? created.id : edge.targetId;
-
-          if (sourceId === targetId) {
-            return null;
-          }
-
-          const sourceType =
-            edge.sourceId === selectedNode.id
-              ? created.entityType
-              : edge.sourceType;
-          const targetType =
-            edge.targetId === selectedNode.id
-              ? created.entityType
-              : edge.targetType;
-
-          return {
-            projectId,
-            sourceId,
-            targetId,
-            sourceType,
-            targetType,
-            relation: edge.relation,
-          };
-        })
-        .filter(
-          (input): input is Parameters<typeof createRelation>[0] =>
-            input !== null,
-        );
+      const relationInputs = buildMigratedRelationInputs({
+        projectId,
+        selectedNodeId: selectedNode.id,
+        targetNode: {
+          id: created.id,
+          entityType: created.entityType,
+        },
+        graphEdges,
+      });
 
       await Promise.all(relationInputs.map((input) => createRelation(input)));
 
