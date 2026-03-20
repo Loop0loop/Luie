@@ -7,7 +7,7 @@ import { useGraphPluginStore } from "@renderer/features/research/stores/graphPlu
 import { useMemoStore } from "@renderer/features/research/stores/memoStore";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { useWorldGraphUiStore } from "@renderer/features/research/stores/worldGraphUiStore";
-import { GRAPH_TAB_ITEMS } from "./constants";
+import { GRAPH_TAB_ITEMS } from "./shared/constants";
 import { useWorldGraphWorkspace } from "./hooks/useWorldGraphWorkspace";
 import type { GraphSurfaceTab } from "./types";
 import { GraphActiveSidebar } from "./components/GraphActiveSidebar";

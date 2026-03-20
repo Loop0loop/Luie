@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@renderer/components/ui/card";
-import { GRAPH_PLUGIN_EMPTY_ICON } from "../constants";
+import { GRAPH_PLUGIN_EMPTY_ICON } from "../shared/constants";
 
 type LibraryViewProps = {
   currentProjectId: string | null;

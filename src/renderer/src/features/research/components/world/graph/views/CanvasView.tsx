@@ -37,7 +37,7 @@ import {
   CANVAS_EDGE_COLORS,
   type AnyCanvasNodeData,
 } from "../utils/canvasFlowUtils";
-import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
+import { ENTITY_TYPE_CANVAS_THEME } from "../shared/constants";
 
 interface CanvasViewProps {
   nodes: WorldGraphNode[];
@@ -48,11 +48,11 @@ interface CanvasViewProps {
   autoLayoutTrigger: number;
   onSelectNode: (nodeId: string | null) => void;
   onCanvasBlocksCommit?:
-    | ((blocks: WorldGraphCanvasBlock[]) => void)
-    | ((blocks: WorldGraphCanvasBlock[]) => Promise<void>);
+  | ((blocks: WorldGraphCanvasBlock[]) => void)
+  | ((blocks: WorldGraphCanvasBlock[]) => Promise<void>);
   onCanvasEdgesCommit?:
-    | ((edges: WorldGraphCanvasEdge[]) => void)
-    | ((edges: WorldGraphCanvasEdge[]) => Promise<void>);
+  | ((edges: WorldGraphCanvasEdge[]) => void)
+  | ((edges: WorldGraphCanvasEdge[]) => Promise<void>);
   onNodePositionCommit?: (input: { id: string; x: number; y: number }) => void;
   onDeleteNode?: (nodeId: string) => void;
   onCreateCanvasRelation?: (input: {
@@ -63,7 +63,10 @@ interface CanvasViewProps {
   }) => Promise<void>;
   onDeleteRelation?: (relationId: string) => Promise<void>;
   onCreateBlock: (position?: { x: number; y: number }) => void;
-  onAddTimelineBranch?: (sourceNodeId: string) => void;
+  onAddTimelineBranch?: (
+    sourceNodeId: string,
+    direction: "up" | "down" | "left" | "right",
+  ) => void;
 }
 
 function CanvasFlowSurface({
@@ -100,7 +103,10 @@ function CanvasFlowSurface({
   }) => Promise<void>;
   onAutoLayoutApplied?: () => void;
   onCreateBlock: (position?: { x: number; y: number }) => void;
-  onAddTimelineBranch?: (sourceNodeId: string) => void;
+  onAddTimelineBranch?: (
+    sourceNodeId: string,
+    direction: "up" | "down" | "left" | "right",
+  ) => void;
 }) {
   const worldTheme = ENTITY_TYPE_CANVAS_THEME.WorldEntity;
   const eventTheme = ENTITY_TYPE_CANVAS_THEME.Event;
@@ -346,7 +352,7 @@ export function CanvasView({
       );
       const nextColor =
         CANVAS_EDGE_COLORS[
-          (Math.max(0, index) + 1) % CANVAS_EDGE_COLORS.length
+        (Math.max(0, index) + 1) % CANVAS_EDGE_COLORS.length
         ];
 
       const payload = {
@@ -383,10 +389,10 @@ export function CanvasView({
         onAddTimelineBranch,
       ),
     [
-      handleCycleGraphNodeColor,
-      handleEditGraphNode,
       nodes,
       onDeleteNode,
+      handleCycleGraphNodeColor,
+      handleEditGraphNode,
       onAddTimelineBranch,
     ],
   );
@@ -424,9 +430,9 @@ export function CanvasView({
         canvasEdges.map((edge) =>
           edge.id === edgeId
             ? {
-                ...edge,
-                relation: trimmed,
-              }
+              ...edge,
+              relation: trimmed,
+            }
             : edge,
         ),
       );

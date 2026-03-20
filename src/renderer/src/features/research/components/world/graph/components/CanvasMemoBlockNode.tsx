@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { NodeProps } from "reactflow";
 import { Handle, Position, NodeToolbar, useReactFlow } from "reactflow";
 import { Button } from "@renderer/components/ui/button";
-import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
+import { ENTITY_TYPE_CANVAS_THEME } from "../shared/constants";
 
 export type CanvasMemoBlockData = {
   title: string;

@@ -20,7 +20,7 @@ import {
   isTimelineInternalHandle,
   type AnyCanvasNodeData,
 } from "../utils/canvasFlowUtils";
-import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
+import { ENTITY_TYPE_CANVAS_THEME } from "../shared/constants";
 
 type UseCanvasFlowInteractionsInput = {
   graphNodes: Node<any>[];
@@ -283,7 +283,7 @@ export function useCanvasFlowInteractions({
             selectedStroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.selectedEdge,
             glow: ENTITY_TYPE_CANVAS_THEME.WorldEntity.glow,
           },
-          onDelete: () => {},
+          onDelete: () => { },
         },
       };
 
@@ -536,13 +536,13 @@ export function useCanvasFlowInteractions({
         setNodes((currentNodes) => {
           const nextNodes = pendingSnap
             ? currentNodes.map((currentNode) =>
-                currentNode.id !== node.id
-                  ? currentNode
-                  : {
-                      ...currentNode,
-                      position: { x: pendingSnap.x, y: pendingSnap.y },
-                    },
-              )
+              currentNode.id !== node.id
+                ? currentNode
+                : {
+                  ...currentNode,
+                  position: { x: pendingSnap.x, y: pendingSnap.y },
+                },
+            )
             : currentNodes;
           commitCanvasBlocks(nextNodes);
           return nextNodes;
@@ -553,9 +553,9 @@ export function useCanvasFlowInteractions({
             currentNode.id !== node.id
               ? currentNode
               : {
-                  ...currentNode,
-                  position: { x: pendingSnap.x, y: pendingSnap.y },
-                },
+                ...currentNode,
+                position: { x: pendingSnap.x, y: pendingSnap.y },
+              },
           ),
         );
       }

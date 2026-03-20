@@ -29,7 +29,10 @@ type UseCanvasBlockEditorInput = {
   onSelectNode: (nodeId: string | null) => void;
   resolvePlacementPosition: () => XYPosition;
   draggingNodeIdRef: React.MutableRefObject<string | null>;
-  onAddTimelineBranch?: (sourceNodeId: string) => void;
+  onAddTimelineBranch?: (
+    sourceNodeId: string,
+    direction: "up" | "down" | "left" | "right",
+  ) => void;
 };
 
 export function useCanvasBlockEditor({
@@ -309,7 +312,7 @@ export function useCanvasBlockEditor({
     return () => {
       window.clearTimeout(timer);
     };
-  }, [graphNodes]);
+  }, [graphNodes, draggingNodeIdRef]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

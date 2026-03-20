@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Clock3, GitBranchPlus, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { WorldGraphNode } from "@shared/types";
-import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
+import { ENTITY_TYPE_CANVAS_THEME } from "../shared/constants";
 
 type CanvasTimelinePaletteProps = {
   events: WorldGraphNode[];

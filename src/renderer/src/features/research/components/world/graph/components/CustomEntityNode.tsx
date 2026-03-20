@@ -6,7 +6,7 @@ import { useWorldBuildingStore } from "@renderer/features/research/stores/worldB
 import type { WorldEntitySourceType } from "@shared/types";
 import { Trash2, Palette, Edit2, Maximize2 } from "lucide-react";
 import { Button } from "@renderer/components/ui/button";
-import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
+import { ENTITY_TYPE_CANVAS_THEME } from "../shared/constants";
 
 interface CustomEntityNodeProps {
   id: string;
@@ -39,7 +39,7 @@ export const CustomEntityNode = memo(
     const [editLabel, setEditLabel] = useState(label);
     const theme =
       ENTITY_TYPE_CANVAS_THEME[
-        entityType as keyof typeof ENTITY_TYPE_CANVAS_THEME
+      entityType as keyof typeof ENTITY_TYPE_CANVAS_THEME
       ] ?? ENTITY_TYPE_CANVAS_THEME.WorldEntity;
 
     useEffect(() => setEditLabel(label), [label]);
@@ -75,9 +75,9 @@ export const CustomEntityNode = memo(
           background: data.color ?? theme.surface,
           ...(selected
             ? {
-                borderColor: theme.accent,
-                boxShadow: `0 0 0 1px ${theme.accent}22, 0 0 0 4px ${theme.glow}, 0 20px 32px rgba(0,0,0,0.32)`,
-              }
+              borderColor: theme.accent,
+              boxShadow: `0 0 0 1px ${theme.accent}22, 0 0 0 4px ${theme.glow}, 0 20px 32px rgba(0,0,0,0.32)`,
+            }
             : null),
         }}
       >

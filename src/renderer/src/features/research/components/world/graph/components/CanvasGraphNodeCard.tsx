@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { NodeProps } from "reactflow";
 import { Handle, Position, NodeToolbar } from "reactflow";
 import { Button } from "@renderer/components/ui/button";
-import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
+import { ENTITY_TYPE_CANVAS_THEME } from "../shared/constants";
 
 export type CanvasGraphNodeData = {
   label: string;
@@ -19,7 +19,10 @@ export type CanvasGraphNodeData = {
   onEdit?: (id: string) => void;
   onChangeColor?: (id: string) => void;
   onOpenEntity?: (id: string) => void;
-  onAddBranch?: (id: string) => void;
+  onAddBranch?: (
+    id: string,
+    direction: "up" | "down" | "left" | "right",
+  ) => void;
 };
 
 function CanvasGraphNodeCardInner({
@@ -30,7 +33,7 @@ function CanvasGraphNodeCardInner({
   const { t } = useTranslation();
   const theme =
     ENTITY_TYPE_CANVAS_THEME[
-      data.entityType as keyof typeof ENTITY_TYPE_CANVAS_THEME
+    data.entityType as keyof typeof ENTITY_TYPE_CANVAS_THEME
     ] ?? ENTITY_TYPE_CANVAS_THEME.WorldEntity;
 
   return (
@@ -70,7 +73,7 @@ function CanvasGraphNodeCardInner({
             className="h-7 w-7 rounded-md text-fg/60 hover:bg-white/8 hover:text-fg"
             onClick={(e) => {
               e.stopPropagation();
-              data.onAddBranch?.(id);
+              data.onAddBranch?.(id, "right");
             }}
             title={t("research.graph.canvas.nodeCard.addBranch")}
           >

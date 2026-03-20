@@ -2,7 +2,7 @@ import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@renderer/components/ui/badge";
 import { Button } from "@renderer/components/ui/button";
-import { GRAPH_TAB_ITEMS } from "../constants";
+import { GRAPH_TAB_ITEMS } from "../shared/constants";
 import type { GraphSurfaceTab } from "../types";
 
 type GraphIconSidebarProps = {

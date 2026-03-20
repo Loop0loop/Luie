@@ -13,7 +13,7 @@ import {
 import type { EdgeProps } from "reactflow";
 import { BaseEdge, EdgeLabelRenderer, getBezierPath } from "reactflow";
 import { Button } from "@renderer/components/ui/button";
-import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
+import { ENTITY_TYPE_CANVAS_THEME } from "../shared/constants";
 import { CANVAS_EDGE_COLORS } from "../utils/canvasFlowUtils";
 
 export type CanvasGraphEdgeData = {

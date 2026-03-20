@@ -8,7 +8,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { WorldEntitySourceType } from "@shared/types";
-import type { GraphCreatePreset, GraphSurfaceTab } from "./types";
+import type { GraphCreatePreset, GraphSurfaceTab } from "../types";
 
 export const GRAPH_TAB_ITEMS: Array<{
   id: GraphSurfaceTab;
@@ -16,37 +16,37 @@ export const GRAPH_TAB_ITEMS: Array<{
   descriptionKey: string;
   Icon: LucideIcon;
 }> = [
-  {
-    id: "canvas",
-    labelKey: "research.graph.tabs.canvas.label",
-    descriptionKey: "research.graph.tabs.canvas.description",
-    Icon: Boxes,
-  },
-  {
-    id: "timeline",
-    labelKey: "research.graph.tabs.timeline.label",
-    descriptionKey: "research.graph.tabs.timeline.description",
-    Icon: Clock3,
-  },
-  {
-    id: "notes",
-    labelKey: "research.graph.tabs.notes.label",
-    descriptionKey: "research.graph.tabs.notes.description",
-    Icon: StickyNote,
-  },
-  {
-    id: "entity",
-    labelKey: "research.graph.tabs.entity.label",
-    descriptionKey: "research.graph.tabs.entity.description",
-    Icon: Users,
-  },
-  {
-    id: "library",
-    labelKey: "research.graph.tabs.library.label",
-    descriptionKey: "research.graph.tabs.library.description",
-    Icon: LibraryBig,
-  },
-];
+    {
+      id: "canvas",
+      labelKey: "research.graph.tabs.canvas.label",
+      descriptionKey: "research.graph.tabs.canvas.description",
+      Icon: Boxes,
+    },
+    {
+      id: "timeline",
+      labelKey: "research.graph.tabs.timeline.label",
+      descriptionKey: "research.graph.tabs.timeline.description",
+      Icon: Clock3,
+    },
+    {
+      id: "notes",
+      labelKey: "research.graph.tabs.notes.label",
+      descriptionKey: "research.graph.tabs.notes.description",
+      Icon: StickyNote,
+    },
+    {
+      id: "entity",
+      labelKey: "research.graph.tabs.entity.label",
+      descriptionKey: "research.graph.tabs.entity.description",
+      Icon: Users,
+    },
+    {
+      id: "library",
+      labelKey: "research.graph.tabs.library.label",
+      descriptionKey: "research.graph.tabs.library.description",
+      Icon: LibraryBig,
+    },
+  ];
 
 export const GRAPH_CREATE_PRESETS: GraphCreatePreset[] = [
   {

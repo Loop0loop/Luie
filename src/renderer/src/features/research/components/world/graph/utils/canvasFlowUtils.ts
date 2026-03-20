@@ -11,7 +11,7 @@ import type { CanvasGraphNodeData } from "../components/CanvasGraphNodeCard";
 import type { CanvasGraphEdgeData } from "../components/CanvasGraphEdge";
 import type { CanvasTimelineBlockData } from "../components/CanvasTimelineBlockNode";
 import type { CanvasMemoBlockData } from "../components/CanvasMemoBlockNode";
-import { ENTITY_TYPE_CANVAS_THEME } from "../constants";
+import { ENTITY_TYPE_CANVAS_THEME } from "../shared/constants";
 
 export type AnyCanvasNodeData =
   | CanvasGraphNodeData
@@ -29,6 +29,22 @@ export const CANVAS_EDGE_COLORS = [
   "#34d399",
   "#f97316",
 ] as const;
+
+export const ENTITY_RELATION_HINT_EDGE_PREFIX = "entity-hint:";
+
+export const buildEntityRelationHintEdgeId = (relationId: string): string =>
+  `${ENTITY_RELATION_HINT_EDGE_PREFIX}${relationId}`;
+
+export const isEntityRelationHintEdge = (edgeId: string): boolean =>
+  edgeId.startsWith(ENTITY_RELATION_HINT_EDGE_PREFIX);
+
+export const parseEntityRelationHintId = (edgeId: string): string | null => {
+  if (!isEntityRelationHintEdge(edgeId)) {
+    return null;
+  }
+  const relationId = edgeId.slice(ENTITY_RELATION_HINT_EDGE_PREFIX.length);
+  return relationId.length > 0 ? relationId : null;
+};
 
 const readNodeDate = (
   attributes: WorldGraphNode["attributes"],
@@ -66,7 +82,7 @@ export const isCanvasLocalNodeType = (
 export const toCanvasBlockNodes = (
   blocks: WorldGraphCanvasBlock[],
   input: {
-    onDelete: (id: string) => void;
+    onDelete?: (id: string) => void;
     onBlockColorChange: (id: string) => void;
     onMemoChange: (
       id: string,
@@ -81,7 +97,10 @@ export const toCanvasBlockNodes = (
         >
       >,
     ) => void;
-    onAddBranch?: (id: string) => void;
+    onAddBranch?: (
+      id: string,
+      direction: "up" | "down" | "left" | "right",
+    ) => void;
   },
 ): Node<AnyCanvasNodeData>[] =>
   blocks.map((block) => {
@@ -121,7 +140,14 @@ export const toCanvasBlockNodes = (
         onDataChange: input.onTimelineChange,
         onChangeColor: input.onBlockColorChange,
         onDelete: input.onDelete,
-        onAddBranch: input.onAddBranch,
+        onAddBranch: (
+          id: string,
+          direction: "up" | "down" | "left" | "right",
+        ) => {
+          if (input.onAddBranch) {
+            input.onAddBranch(id, direction);
+          }
+        },
       } satisfies CanvasTimelineBlockData,
     };
   });
@@ -231,7 +257,10 @@ export const buildFlowNodes = (
   onDeleteNode?: (nodeId: string) => void,
   onNodeColorChange?: (nodeId: string) => void,
   onNodeEdit?: (nodeId: string) => void,
-  onAddTimelineBranch?: (sourceNodeId: string) => void,
+  onAddTimelineBranch?: (
+    sourceNodeId: string,
+    direction: "up" | "down" | "left" | "right",
+  ) => void,
 ): Node<CanvasGraphNodeData>[] => {
   return nodes.map((node, index) => ({
     id: node.id,
@@ -244,8 +273,8 @@ export const buildFlowNodes = (
       color:
         node.attributes && typeof node.attributes === "object"
           ? ((node.attributes as Record<string, unknown>)["canvasColor"] as
-              | string
-              | undefined)
+            | string
+            | undefined)
           : undefined,
       description: node.description?.trim() || "",
       date: readNodeDate(node.attributes),
@@ -273,83 +302,106 @@ export const buildFlowEdges = (
     onZoomEdge?: (id: string) => void;
   },
 ): Edge<CanvasGraphEdgeData>[] => {
+  const relationHandleHints = new Map(
+    canvasEdges
+      .map((edge) => {
+        const relationId = parseEntityRelationHintId(edge.id);
+        if (!relationId) {
+          return null;
+        }
+        return [relationId, edge] as const;
+      })
+      .filter(
+        (entry): entry is readonly [string, WorldGraphCanvasEdge] =>
+          entry !== null,
+      ),
+  );
+
   const entityPalette = {
     stroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.edge,
     selectedStroke: ENTITY_TYPE_CANVAS_THEME.WorldEntity.selectedEdge,
     glow: ENTITY_TYPE_CANVAS_THEME.WorldEntity.glow,
   };
 
-  const graphEdges = edges.map((edge) => ({
-    id: `entity:${edge.id}`,
-    source: edge.sourceId,
-    target: edge.targetId,
-    label: edge.relation.replaceAll("_", " "),
-    type: "canvas-edge",
-    data: {
-      palette: entityPalette,
-      onDelete: () => handlers.onDeleteRelation?.(edge.id),
-      onZoom: () => handlers.onZoomEdge?.(`entity:${edge.id}`),
-    },
-    interactionWidth: 20,
-    markerEnd: {
-      type: MarkerType.ArrowClosed,
-      width: 16,
-      height: 16,
-      color: entityPalette.stroke,
-    },
-  })) satisfies Edge<CanvasGraphEdgeData>[];
-
-  const localEdges = canvasEdges.map((edge) => {
-    const direction = edge.direction ?? "unidirectional";
-    const color = edge.color ?? CANVAS_EDGE_COLORS[0];
-    const palette = {
-      stroke: color,
-      selectedStroke: color,
-      glow: `${color}55`,
-    };
+  const graphEdges = edges.map((edge) => {
+    const relationHint = relationHandleHints.get(edge.id);
 
     return {
-      id: `canvas:${edge.id}`,
+      id: `entity:${edge.id}`,
       source: edge.sourceId,
-      sourceHandle: edge.sourceHandle,
+      sourceHandle: relationHint?.sourceHandle,
       target: edge.targetId,
-      targetHandle: edge.targetHandle,
-      label: edge.relation,
+      targetHandle: relationHint?.targetHandle,
+      label: edge.relation.replaceAll("_", " "),
       type: "canvas-edge",
       data: {
-        palette,
-        onDelete: () => handlers.onDeleteCanvasEdge?.(edge.id),
-        onChangeColor: (_id: string, nextColor: string) =>
-          handlers.onChangeCanvasEdgeColor?.(edge.id, nextColor),
-        onChangeDirection: (
-          _id: string,
-          nextDirection: "unidirectional" | "bidirectional" | "none",
-        ) => handlers.onChangeCanvasEdgeDirection?.(edge.id, nextDirection),
-        onEditRelation: () => handlers.onEditCanvasEdgeRelation?.(edge.id),
-        onEdit: () => handlers.onUpdateCanvasEdge?.(edge.id),
-        onZoom: () => handlers.onZoomEdge?.(`canvas:${edge.id}`),
+        palette: entityPalette,
+        onDelete: () => handlers.onDeleteRelation?.(edge.id),
+        onZoom: () => handlers.onZoomEdge?.(`entity:${edge.id}`),
       },
       interactionWidth: 20,
-      markerStart:
-        direction === "bidirectional"
-          ? {
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        width: 16,
+        height: 16,
+        color: entityPalette.stroke,
+      },
+    } satisfies Edge<CanvasGraphEdgeData>;
+  });
+
+  const localEdges = canvasEdges
+    .filter((edge) => !isEntityRelationHintEdge(edge.id))
+    .map((edge) => {
+      const direction = edge.direction ?? "unidirectional";
+      const color = edge.color ?? CANVAS_EDGE_COLORS[0];
+      const palette = {
+        stroke: color,
+        selectedStroke: color,
+        glow: `${color}55`,
+      };
+
+      return {
+        id: `canvas:${edge.id}`,
+        source: edge.sourceId,
+        sourceHandle: edge.sourceHandle,
+        target: edge.targetId,
+        targetHandle: edge.targetHandle,
+        label: edge.relation,
+        type: "canvas-edge",
+        data: {
+          palette,
+          onDelete: () => handlers.onDeleteCanvasEdge?.(edge.id),
+          onChangeColor: (_id: string, nextColor: string) =>
+            handlers.onChangeCanvasEdgeColor?.(edge.id, nextColor),
+          onChangeDirection: (
+            _id: string,
+            nextDirection: "unidirectional" | "bidirectional" | "none",
+          ) => handlers.onChangeCanvasEdgeDirection?.(edge.id, nextDirection),
+          onEditRelation: () => handlers.onEditCanvasEdgeRelation?.(edge.id),
+          onEdit: () => handlers.onUpdateCanvasEdge?.(edge.id),
+          onZoom: () => handlers.onZoomEdge?.(`canvas:${edge.id}`),
+        },
+        interactionWidth: 20,
+        markerStart:
+          direction === "bidirectional"
+            ? {
               type: MarkerType.ArrowClosed,
               width: 16,
               height: 16,
               color,
             }
-          : undefined,
-      markerEnd:
-        direction === "none"
-          ? undefined
-          : {
+            : undefined,
+        markerEnd:
+          direction === "none"
+            ? undefined
+            : {
               type: MarkerType.ArrowClosed,
               width: 16,
               height: 16,
               color,
             },
-    } satisfies Edge<CanvasGraphEdgeData>;
-  });
+      } satisfies Edge<CanvasGraphEdgeData>;
+    });
 
   return [...graphEdges, ...localEdges];
 };

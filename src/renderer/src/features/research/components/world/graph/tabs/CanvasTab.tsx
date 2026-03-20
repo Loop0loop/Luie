@@ -1,5 +1,7 @@
 import { useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
+import { useDialog } from "@shared/ui/useDialog";
 import { CanvasView } from "../views/CanvasView";
 import type {
   EntityRelation,
@@ -8,6 +10,11 @@ import type {
   WorldGraphNode,
 } from "@shared/types";
 import { buildNextCanvasBlockName } from "./canvasNodeNaming";
+import {
+  buildEntityRelationHintEdgeId,
+  generateLocalId,
+  CANVAS_EDGE_COLORS,
+} from "../utils/canvasFlowUtils";
 
 type CanvasTabProps = {
   projectId: string | null;
@@ -32,6 +39,8 @@ export function CanvasTab({
   onSelectNode,
   onCreatedEntity,
 }: CanvasTabProps) {
+  const { t } = useTranslation();
+  const dialog = useDialog();
   const createGraphNode = useWorldBuildingStore(
     (state) => state.createGraphNode,
   );
@@ -73,30 +82,75 @@ export function CanvasTab({
         onCreatedEntity("WorldEntity", created.id);
       });
     },
-    [
-      createGraphNode,
-      graphNodes.length,
-      onCreatedEntity,
-      onSelectNode,
-      projectId,
-    ],
+    [createGraphNode, graphNodes, onCreatedEntity, onSelectNode, projectId],
   );
 
   const handleDeleteNode = useCallback(
     async (nodeId: string) => {
+      const targetNode = graphNodes.find((node) => node.id === nodeId);
+      if (!targetNode) {
+        return;
+      }
+
+      const confirmed = await dialog.confirm({
+        title: t(
+          "research.graph.canvas.deleteEntityTitle",
+          "정말 삭제하시겠습니까?",
+        ),
+        message: t(
+          "research.graph.canvas.deleteEntityMessage",
+          `"${targetNode.name}" 항목과 연결된 관계가 삭제됩니다.`,
+        ),
+        confirmLabel: t("common.delete", "삭제"),
+        cancelLabel: t("common.cancel", "취소"),
+        isDestructive: true,
+      });
+      if (!confirmed) {
+        return;
+      }
+
+      const latestCanvasEdges =
+        useWorldBuildingStore.getState().graphData?.canvasEdges ??
+        graphCanvasEdges;
+      const nextCanvasEdges = latestCanvasEdges.filter(
+        (edge) => edge.sourceId !== nodeId && edge.targetId !== nodeId,
+      );
+      if (nextCanvasEdges.length !== latestCanvasEdges.length) {
+        await setGraphCanvasEdges(nextCanvasEdges);
+      }
+
       const deleted = await deleteGraphNode(nodeId);
       if (deleted && selectedNodeId === nodeId) {
         onSelectNode(null);
       }
     },
-    [deleteGraphNode, onSelectNode, selectedNodeId],
+    [
+      deleteGraphNode,
+      dialog,
+      graphCanvasEdges,
+      graphNodes,
+      onSelectNode,
+      selectedNodeId,
+      setGraphCanvasEdges,
+      t,
+    ],
   );
 
   const handleDeleteRelation = useCallback(
     async (relationId: string) => {
       await deleteRelation(relationId);
+      const latestCanvasEdges =
+        useWorldBuildingStore.getState().graphData?.canvasEdges ??
+        graphCanvasEdges;
+      const hintId = buildEntityRelationHintEdgeId(relationId);
+      const withoutHint = latestCanvasEdges.filter(
+        (edge) => edge.id !== hintId,
+      );
+      if (withoutHint.length !== latestCanvasEdges.length) {
+        await setGraphCanvasEdges(withoutHint);
+      }
     },
-    [deleteRelation],
+    [deleteRelation, graphCanvasEdges, setGraphCanvasEdges],
   );
 
   const handleCreateCanvasRelation = useCallback(
@@ -126,6 +180,18 @@ export function CanvasTab({
       const sourceType = resolveEntityType(sourceId);
       const targetType = resolveEntityType(targetId);
 
+      const normalizedSourceHandle =
+        typeof sourceHandle === "string" && sourceHandle.length > 0
+          ? sourceHandle
+          : undefined;
+      const normalizedTargetHandle =
+        typeof targetHandle === "string" && targetHandle.length > 0
+          ? targetHandle
+          : undefined;
+      const shouldPersistHandleHint =
+        normalizedSourceHandle !== undefined &&
+        normalizedTargetHandle !== undefined;
+
       if (sourceType && targetType && projectId) {
         const created = await createRelation({
           projectId,
@@ -136,6 +202,25 @@ export function CanvasTab({
           relation: "belongs_to",
         });
         if (created) {
+          if (shouldPersistHandleHint) {
+            const latestCanvasEdges =
+              useWorldBuildingStore.getState().graphData?.canvasEdges ??
+              graphCanvasEdges;
+            const hintId = buildEntityRelationHintEdgeId(created.id);
+            const withoutHint = latestCanvasEdges.filter(
+              (edge) => edge.id !== hintId,
+            );
+            const nextHint: WorldGraphCanvasEdge = {
+              id: hintId,
+              sourceId,
+              sourceHandle: normalizedSourceHandle,
+              targetId,
+              targetHandle: normalizedTargetHandle,
+              relation: "",
+              direction: "none",
+            };
+            await setGraphCanvasEdges([...withoutHint, nextHint]);
+          }
           return;
         }
       }
@@ -168,43 +253,115 @@ export function CanvasTab({
   );
 
   const handleAddTimelineBranch = useCallback(
-    async (sourceNodeId: string) => {
+    async (
+      sourceNodeId: string,
+      direction: "up" | "down" | "left" | "right",
+    ) => {
       if (!projectId) return;
-      const sourceNode = graphNodes.find((n) => n.id === sourceNodeId);
-      if (!sourceNode) return;
 
-      const sourceY = sourceNode.positionY || 0;
-      const siblingEvents = graphNodes.filter(
-        (node) => node.entityType === "Event" && node.id !== sourceNodeId,
+      const sourceGraphNode = graphNodes.find((n) => n.id === sourceNodeId);
+      const sourceCanvasBlock = graphCanvasBlocks.find(
+        (n) => n.id === sourceNodeId,
       );
-      const hasUpper = siblingEvents.some(
-        (node) => (node.positionY || 0) < sourceY,
-      );
-      const branchDirection = hasUpper ? 1 : -1;
-      const targetY = sourceY + 220 * branchDirection;
 
-      const created = await createGraphNode({
-        projectId,
-        entityType: "Event",
-        name: "새로운 블럭",
-        positionX: sourceNode.positionX || 0,
-        positionY: targetY,
-      });
+      if (!sourceGraphNode && !sourceCanvasBlock) return;
 
-      if (!created) return;
+      let targetX =
+        sourceGraphNode?.positionX ?? sourceCanvasBlock?.positionX ?? 0;
+      let targetY =
+        sourceGraphNode?.positionY ?? sourceCanvasBlock?.positionY ?? 0;
 
-      await createRelation({
-        projectId,
-        sourceId: sourceNodeId,
-        sourceType: sourceNode.entityType,
-        targetId: created.id,
-        targetType: "Event",
-        relation: "causes",
-      });
+      if (direction === "up") {
+        targetY -= 220;
+      } else if (direction === "down") {
+        targetY += 220;
+      } else if (direction === "left") {
+        targetX -= 300;
+      } else if (direction === "right") {
+        targetX += 300;
+      }
 
-      onSelectNode(created.id);
+      const getHandles = (dir: string) => {
+        switch (dir) {
+          case "up":
+            return { source: "top-out", target: "bottom-in" };
+          case "down":
+            return { source: "bottom-out", target: "top-in" };
+          case "left":
+            return { source: "left-out", target: "right-in" };
+          case "right":
+            return { source: "right-out", target: "left-in" };
+          default:
+            return { source: "right-out", target: "left-in" };
+        }
+      };
+
+      const handles = getHandles(direction);
+
+      if (sourceGraphNode) {
+        const created = await createGraphNode({
+          projectId,
+          entityType: "Event",
+          name: "새로운 블럭",
+          positionX: targetX,
+          positionY: targetY,
+        });
+
+        if (!created) return;
+
+        // Ensure canvas relationships and hints are rendered perfectly
+        await handleCreateCanvasRelation({
+          sourceId: sourceNodeId,
+          targetId: created.id,
+          sourceHandle: handles.source,
+          targetHandle: handles.target,
+        });
+
+        onSelectNode(created.id);
+      } else if (sourceCanvasBlock) {
+        const newBlockId = generateLocalId("t");
+
+        setGraphCanvasBlocks([
+          ...graphCanvasBlocks,
+          {
+            id: newBlockId,
+            type: "timeline",
+            positionX: targetX,
+            positionY: targetY,
+            data: { content: "", isHeld: false },
+          },
+        ]);
+
+        const edgeId = generateLocalId("e");
+
+        setGraphCanvasEdges([
+          ...graphCanvasEdges,
+          {
+            id: edgeId,
+            sourceId: sourceNodeId,
+            targetId: newBlockId,
+            sourceHandle: handles.source,
+            targetHandle: handles.target,
+            relation: "next",
+            direction: "unidirectional",
+            color: sourceCanvasBlock.data?.color ?? CANVAS_EDGE_COLORS[0],
+          },
+        ]);
+
+        onSelectNode(newBlockId);
+      }
     },
-    [createGraphNode, createRelation, graphNodes, projectId, onSelectNode],
+    [
+      createGraphNode,
+      handleCreateCanvasRelation,
+      graphNodes,
+      graphCanvasBlocks,
+      graphCanvasEdges,
+      projectId,
+      onSelectNode,
+      setGraphCanvasBlocks,
+      setGraphCanvasEdges,
+    ],
   );
 
   return (
