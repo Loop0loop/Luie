@@ -18,7 +18,11 @@ import {
   EMERGENCY_SNAPSHOT_INTERVAL_MS,
 } from "../../shared/constants/index.js";
 import { AutoSaveMirrorStore } from "./autoSave/autoSaveMirrorStore.js";
-import type { AutoSaveConfig, PendingSave } from "./autoSave/autoSaveTypes.js";
+import type {
+  AutoSaveConfig,
+  AutoSaveRuntimeStats,
+  PendingSave,
+} from "./autoSave/autoSaveTypes.js";
 import {
   createScheduledSnapshot,
   flushAllPendingSaves,
@@ -50,6 +54,26 @@ export class AutoSaveManager extends EventEmitter {
   private configs = new Map<string, AutoSaveConfig>();
   private pendingSaves = new Map<string, PendingSave>();
   private lastSaveAt = new Map<string, number>();
+  private firstQueuedAt = new Map<string, number>();
+
+  private stats = {
+    triggered: 0,
+    skippedDisabled: 0,
+    skippedMissingChapter: 0,
+    duplicateTriggers: 0,
+    scheduled: 0,
+    rescheduled: 0,
+    saveStarted: 0,
+    saveSucceeded: 0,
+    saveFailed: 0,
+    validationBlocked: 0,
+    queueDelayTotalMs: 0,
+    queueDelaySamples: 0,
+    saveDurationTotalMs: 0,
+    saveDurationSamples: 0,
+    lastQueueDelayMs: 0,
+    lastSaveDurationMs: 0,
+  };
 
   // Snapshot state
   private snapshotTimers = new Map<string, NodeJS.Timeout>();
@@ -98,6 +122,37 @@ export class AutoSaveManager extends EventEmitter {
     return Array.from(this.pendingSaves.keys());
   }
 
+  getRuntimeStats(): AutoSaveRuntimeStats {
+    const averageQueueDelayMs =
+      this.stats.queueDelaySamples > 0
+        ? this.stats.queueDelayTotalMs / this.stats.queueDelaySamples
+        : 0;
+    const averageSaveDurationMs =
+      this.stats.saveDurationSamples > 0
+        ? this.stats.saveDurationTotalMs / this.stats.saveDurationSamples
+        : 0;
+
+    return {
+      triggered: this.stats.triggered,
+      skippedDisabled: this.stats.skippedDisabled,
+      skippedMissingChapter: this.stats.skippedMissingChapter,
+      duplicateTriggers: this.stats.duplicateTriggers,
+      scheduled: this.stats.scheduled,
+      rescheduled: this.stats.rescheduled,
+      saveStarted: this.stats.saveStarted,
+      saveSucceeded: this.stats.saveSucceeded,
+      saveFailed: this.stats.saveFailed,
+      validationBlocked: this.stats.validationBlocked,
+      lastQueueDelayMs: this.stats.lastQueueDelayMs,
+      averageQueueDelayMs,
+      lastSaveDurationMs: this.stats.lastSaveDurationMs,
+      averageSaveDurationMs,
+      pendingCount: this.pendingSaves.size,
+      scheduledCount: this.saveTimers.size,
+      snapshotQueueLength: this.snapshotQueue.length,
+    };
+  }
+
   async forgetChapter(projectId: string, chapterId: string): Promise<void> {
     const timer = this.saveTimers.get(chapterId);
     if (timer) {
@@ -107,6 +162,7 @@ export class AutoSaveManager extends EventEmitter {
 
     this.pendingSaves.delete(chapterId);
     this.lastSaveAt.delete(chapterId);
+    this.firstQueuedAt.delete(chapterId);
 
     const snapshotKey = `${projectId}:${chapterId}`;
     this.lastSnapshotAt.delete(snapshotKey);
@@ -153,9 +209,11 @@ export class AutoSaveManager extends EventEmitter {
   // ─── Trigger Save (entry point from IPC) ─────────────────────────────────
 
   async triggerSave(chapterId: string, content: string, projectId: string) {
+    this.stats.triggered += 1;
     const config = this.getConfig(projectId);
 
     if (!config.enabled) {
+      this.stats.skippedDisabled += 1;
       return;
     }
 
@@ -169,6 +227,7 @@ export class AutoSaveManager extends EventEmitter {
       String((chapter as { projectId: unknown }).projectId) !== projectId ||
       Boolean((chapter as { deletedAt?: unknown }).deletedAt)
     ) {
+      this.stats.skippedMissingChapter += 1;
       logger.info("Skipping auto-save for missing/deleted chapter", {
         chapterId,
         projectId,
@@ -177,6 +236,13 @@ export class AutoSaveManager extends EventEmitter {
     }
 
     // Track pending content
+    const existingPending = this.pendingSaves.get(chapterId);
+    if (existingPending && existingPending.content === content) {
+      this.stats.duplicateTriggers += 1;
+    }
+    if (!this.firstQueuedAt.has(chapterId)) {
+      this.firstQueuedAt.set(chapterId, Date.now());
+    }
     this.pendingSaves.set(chapterId, { chapterId, content, projectId });
     this.lastSaveAt.set(chapterId, Date.now());
 
@@ -208,6 +274,7 @@ export class AutoSaveManager extends EventEmitter {
     const existingTimer = this.saveTimers.get(chapterId);
     if (existingTimer) {
       clearTimeout(existingTimer);
+      this.stats.rescheduled += 1;
     }
 
     const timer = setTimeout(async () => {
@@ -218,6 +285,7 @@ export class AutoSaveManager extends EventEmitter {
     }
 
     this.saveTimers.set(chapterId, timer);
+    this.stats.scheduled += 1;
   }
 
   // ─── Core Save Logic ─────────────────────────────────────────────────────
@@ -225,6 +293,16 @@ export class AutoSaveManager extends EventEmitter {
   private async performSave(chapterId: string) {
     const pending = this.pendingSaves.get(chapterId);
     if (!pending) return;
+
+    const saveStartedAt = Date.now();
+    this.stats.saveStarted += 1;
+    const queuedAt = this.firstQueuedAt.get(chapterId);
+    if (queuedAt) {
+      const queueDelayMs = Math.max(0, saveStartedAt - queuedAt);
+      this.stats.lastQueueDelayMs = queueDelayMs;
+      this.stats.queueDelayTotalMs += queueDelayMs;
+      this.stats.queueDelaySamples += 1;
+    }
 
     try {
       const chapterService = await loadChapterService();
@@ -236,6 +314,7 @@ export class AutoSaveManager extends EventEmitter {
       this.pendingSaves.delete(chapterId);
       this.saveTimers.delete(chapterId);
       this.lastSaveAt.delete(chapterId);
+      this.firstQueuedAt.delete(chapterId);
       this.emit("saved", { chapterId });
 
       // Post-save: update mirror and maybe enqueue snapshot
@@ -251,9 +330,15 @@ export class AutoSaveManager extends EventEmitter {
       );
 
       logger.info("Auto-save completed", { chapterId });
+      this.stats.saveSucceeded += 1;
+      const durationMs = Math.max(0, Date.now() - saveStartedAt);
+      this.stats.lastSaveDurationMs = durationMs;
+      this.stats.saveDurationTotalMs += durationMs;
+      this.stats.saveDurationSamples += 1;
     } catch (error) {
       // Validation-blocked save: still create safety snapshot
       if (isServiceError(error) && error.code === ErrorCode.VALIDATION_FAILED) {
+        this.stats.validationBlocked += 1;
         logger.warn(
           "Auto-save blocked by validation; writing safety snapshot",
           {
@@ -290,10 +375,21 @@ export class AutoSaveManager extends EventEmitter {
         this.pendingSaves.delete(chapterId);
         this.saveTimers.delete(chapterId);
         this.lastSaveAt.delete(chapterId);
+        this.firstQueuedAt.delete(chapterId);
         this.emit("save-blocked", { chapterId, error });
+        this.stats.saveFailed += 1;
+        const durationMs = Math.max(0, Date.now() - saveStartedAt);
+        this.stats.lastSaveDurationMs = durationMs;
+        this.stats.saveDurationTotalMs += durationMs;
+        this.stats.saveDurationSamples += 1;
         return;
       }
 
+      this.stats.saveFailed += 1;
+      const durationMs = Math.max(0, Date.now() - saveStartedAt);
+      this.stats.lastSaveDurationMs = durationMs;
+      this.stats.saveDurationTotalMs += durationMs;
+      this.stats.saveDurationSamples += 1;
       logger.error("Auto-save failed", error);
       if (this.listenerCount("error") > 0) {
         this.emit("error", { chapterId, error });
@@ -535,6 +631,7 @@ export class AutoSaveManager extends EventEmitter {
         this.saveTimers.delete(chapterId);
         this.pendingSaves.delete(chapterId);
         this.lastSaveAt.delete(chapterId);
+        this.firstQueuedAt.delete(chapterId);
       }
     }
   }

@@ -19,6 +19,13 @@ type ProjectExportState = {
   dirty: boolean;
 };
 
+type ProjectExportReasonStats = {
+  scheduled: number;
+  immediate: number;
+  started: number;
+  failed: number;
+};
+
 const DEFAULT_STATE = (): ProjectExportState => ({
   timer: null,
   inFlight: null,
@@ -27,6 +34,7 @@ const DEFAULT_STATE = (): ProjectExportState => ({
 
 export class ProjectExportQueue {
   private states = new Map<string, ProjectExportState>();
+  private reasonStats = new Map<string, ProjectExportReasonStats>();
 
   constructor(
     private readonly debounceMs: number,
@@ -55,15 +63,59 @@ export class ProjectExportQueue {
     state.timer = null;
   }
 
+  private normalizeReason(reason?: string): string {
+    const normalized = typeof reason === "string" ? reason.trim() : "";
+    return normalized.length > 0 ? normalized : "unspecified";
+  }
+
+  private trackReason(
+    reason: string | undefined,
+    key: keyof ProjectExportReasonStats,
+  ): void {
+    const reasonKey = this.normalizeReason(reason);
+    const current = this.reasonStats.get(reasonKey) ?? {
+      scheduled: 0,
+      immediate: 0,
+      started: 0,
+      failed: 0,
+    };
+    current[key] += 1;
+    this.reasonStats.set(reasonKey, current);
+
+    const totalEvents =
+      current.scheduled + current.immediate + current.started + current.failed;
+    if (totalEvents === 1 || totalEvents % 25 === 0) {
+      this.logger.info("Project export queue reason stats", {
+        reason: reasonKey,
+        ...current,
+      });
+    }
+  }
+
+  getReasonStats(): Record<string, ProjectExportReasonStats> {
+    return Object.fromEntries(
+      Array.from(this.reasonStats.entries()).map(([reason, stats]) => [
+        reason,
+        { ...stats },
+      ]),
+    );
+  }
+
   schedule(projectId: string, reason?: string): void {
     const state = this.getOrCreate(projectId);
     state.dirty = true;
     this.clearTimer(state);
+    this.trackReason(reason, "scheduled");
 
     state.timer = setTimeout(() => {
       state.timer = null;
       void this.runLoop(projectId, reason).catch((error) => {
-        this.logger.error("Failed to export project package", { projectId, reason, error });
+        this.trackReason(reason, "failed");
+        this.logger.error("Failed to export project package", {
+          projectId,
+          reason,
+          error,
+        });
       });
     }, this.debounceMs);
   }
@@ -72,10 +124,12 @@ export class ProjectExportQueue {
     const state = this.getOrCreate(projectId);
     state.dirty = true;
     this.clearTimer(state);
+    this.trackReason(reason, "immediate");
     return await this.runLoop(projectId, reason ?? "immediate");
   }
 
   private async runLoop(projectId: string, reason?: string): Promise<boolean> {
+    this.trackReason(reason, "started");
     const state = this.getOrCreate(projectId);
     if (state.inFlight) {
       state.dirty = true;
@@ -93,7 +147,12 @@ export class ProjectExportQueue {
 
     const task = execute()
       .catch((error) => {
-        this.logger.error("Failed to run package export", { projectId, reason, error });
+        this.trackReason(reason, "failed");
+        this.logger.error("Failed to run package export", {
+          projectId,
+          reason,
+          error,
+        });
         throw error;
       })
       .finally(() => {
@@ -107,7 +166,9 @@ export class ProjectExportQueue {
 
   async flush(timeoutMs = 8_000): Promise<ProjectExportQueueFlushResult> {
     const pendingProjectIds = Array.from(this.states.entries())
-      .filter(([, state]) => Boolean(state.timer || state.inFlight || state.dirty))
+      .filter(([, state]) =>
+        Boolean(state.timer || state.inFlight || state.dirty),
+      )
       .map(([projectId]) => projectId);
 
     if (pendingProjectIds.length === 0) {
@@ -128,7 +189,10 @@ export class ProjectExportQueue {
         flushed += 1;
       } catch (error) {
         failed += 1;
-        this.logger.error("Failed to flush pending package export", { projectId, error });
+        this.logger.error("Failed to flush pending package export", {
+          projectId,
+          error,
+        });
       }
     });
 

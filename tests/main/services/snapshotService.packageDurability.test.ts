@@ -11,15 +11,19 @@ const mocked = vi.hoisted(() => ({
   snapshotFindFirst: vi.fn(),
   chapterUpdate: vi.fn(),
   projectFindMany: vi.fn(),
-  writeFullSnapshotArtifact: vi.fn(),
-  cleanupOrphanSnapshotArtifacts: vi.fn(async () => ({
+  writeFullSnapshotArtifact: vi.fn(async (..._args: unknown[]) => undefined),
+  cleanupOrphanSnapshotArtifacts: vi.fn(async (..._args: unknown[]) => ({
     scanned: 0,
     deleted: 0,
   })),
-  listSnapshotRestoreCandidates: vi.fn(async () => []),
-  writeEmergencySnapshotFile: vi.fn(async () => undefined),
-  importSnapshotFromFile: vi.fn(),
-  ensureImmediatePackageExport: vi.fn(async () => undefined),
+  listSnapshotRestoreCandidates: vi.fn(
+    async (..._args: unknown[]): Promise<unknown[]> => [],
+  ),
+  writeEmergencySnapshotFile: vi.fn(async (..._args: unknown[]) => undefined),
+  importSnapshotFromFile: vi.fn(async (..._args: unknown[]) => ({
+    id: "imported-snapshot",
+  })),
+  persistPackageAfterMutation: vi.fn(async (..._args: unknown[]) => undefined),
 }));
 
 vi.mock("../../../src/main/database/index.js", () => ({
@@ -47,8 +51,8 @@ vi.mock("../../../src/main/database/index.js", () => ({
 
 vi.mock("../../../src/main/services/core/projectService.js", () => ({
   projectService: {
-    ensureImmediatePackageExport: (...args: unknown[]) =>
-      mocked.ensureImmediatePackageExport(...args),
+    persistPackageAfterMutation: (projectId: string, reason: string) =>
+      mocked.persistPackageAfterMutation(projectId, reason),
   },
 }));
 
@@ -116,14 +120,14 @@ describe("SnapshotService package durability", () => {
     });
 
     expect(created).toMatchObject({ id: "snapshot-1" });
-    expect(mocked.ensureImmediatePackageExport).toHaveBeenCalledWith(
+    expect(mocked.persistPackageAfterMutation).toHaveBeenCalledWith(
       "project-1",
       "snapshot:create",
     );
   });
 
   it("fails snapshot creation and writes an emergency file when canonical .luie export fails", async () => {
-    mocked.ensureImmediatePackageExport.mockRejectedValueOnce(
+    mocked.persistPackageAfterMutation.mockRejectedValueOnce(
       new Error("disk failure"),
     );
     const service = new SnapshotService();
@@ -166,11 +170,11 @@ describe("SnapshotService package durability", () => {
     await service.restoreSnapshot("snapshot-1");
     await service.pruneSnapshots("project-1");
 
-    expect(mocked.ensureImmediatePackageExport).toHaveBeenCalledWith(
+    expect(mocked.persistPackageAfterMutation).toHaveBeenCalledWith(
       "project-1",
       "snapshot:restore",
     );
-    expect(mocked.ensureImmediatePackageExport).toHaveBeenCalledWith(
+    expect(mocked.persistPackageAfterMutation).toHaveBeenCalledWith(
       "project-1",
       "snapshot:prune",
     );

@@ -38,10 +38,7 @@ export class FactionService {
             logger.info("Faction created successfully", {
                 factionId: faction.id,
             });
-            await projectService.ensureImmediatePackageExport(
-                input.projectId,
-                "faction:create",
-            );
+            await projectService.persistPackageAfterMutation(input.projectId, "faction:create");
             return faction;
         } catch (error) {
             logger.error("Failed to create faction", error);
@@ -114,10 +111,7 @@ export class FactionService {
             logger.info("Faction updated successfully", {
                 factionId: faction.id,
             });
-            await projectService.ensureImmediatePackageExport(
-                String(faction.projectId),
-                "faction:update",
-            );
+            await projectService.persistPackageAfterMutation(String(faction.projectId), "faction:update");
             return faction;
         } catch (error) {
             logger.error("Failed to update faction", error);
@@ -164,10 +158,7 @@ export class FactionService {
 
             logger.info("Faction deleted successfully", { factionId: id });
             if (projectId) {
-                await projectService.ensureImmediatePackageExport(
-                    projectId,
-                    "faction:delete",
-                );
+                await projectService.persistPackageAfterMutation(projectId, "faction:delete");
             }
             return { success: true };
         } catch (error) {

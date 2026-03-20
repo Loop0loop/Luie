@@ -78,7 +78,11 @@ export async function createGraphNodeFromInput(
         positionY,
       });
       return response.success && response.data
-        ? toWorldEntityNode(response.data)
+        ? withNodePosition(
+            toWorldEntityNode(response.data),
+            positionX,
+            positionY,
+          )
         : null;
     }
   }
@@ -140,7 +144,8 @@ export async function updateGraphNodeFromInput(
         term: input.name,
         definition: input.description,
         category:
-          Array.isArray(input.attributes?.tags) && input.attributes.tags.length > 0
+          Array.isArray(input.attributes?.tags) &&
+          input.attributes.tags.length > 0
             ? String(input.attributes.tags[0])
             : undefined,
       });
@@ -155,7 +160,10 @@ export async function updateGraphNodeFromInput(
     default: {
       const response = await api.worldEntity.update({
         id: input.id,
-        type: resolveWorldEntityType(input.entityType, input.subType ?? current.subType),
+        type: resolveWorldEntityType(
+          input.entityType,
+          input.subType ?? current.subType,
+        ),
         name: input.name,
         description: input.description,
         attributes: input.attributes,

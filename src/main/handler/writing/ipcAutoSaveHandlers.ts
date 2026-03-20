@@ -4,7 +4,12 @@ import { autoSaveArgsSchema } from "../../../shared/schemas/index.js";
 import type { LoggerLike } from "../core/types.js";
 
 type AutoSaveManagerLike = {
-  triggerSave: (chapterId: string, content: string, projectId: string) => Promise<void>;
+  triggerSave: (
+    chapterId: string,
+    content: string,
+    projectId: string,
+  ) => Promise<void>;
+  getRuntimeStats?: () => unknown;
 };
 
 export function registerAutoSaveIPCHandlers(
@@ -17,8 +22,17 @@ export function registerAutoSaveIPCHandlers(
       logTag: "AUTO_SAVE",
       failMessage: "Failed to auto save",
       argsSchema: autoSaveArgsSchema,
-      handler: async (chapterId: string, content: string, projectId: string) => {
+      handler: async (
+        chapterId: string,
+        content: string,
+        projectId: string,
+      ) => {
         await autoSaveManager.triggerSave(chapterId, content, projectId);
+        logger.info("AUTO_SAVE accepted", {
+          chapterId,
+          projectId,
+          stats: autoSaveManager.getRuntimeStats?.(),
+        });
         return { success: true };
       },
     },

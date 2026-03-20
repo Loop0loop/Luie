@@ -46,6 +46,12 @@ import { collectDuplicateProjectPathGroups } from "./project/projectPathReconcil
 
 const logger = createLogger("ProjectService");
 
+const DEBOUNCED_PACKAGE_EXPORT_REASONS = new Set<string>([
+  "chapter:update",
+  "world-document:graph",
+  "snapshot:create",
+]);
+
 const loadProjectExportEngine = async () =>
   (await import("./project/projectExportEngine.js"))
     .exportProjectPackageWithOptions;
@@ -804,10 +810,19 @@ export class ProjectService {
     }
   }
 
-  async ensureImmediatePackageExport(
+  private shouldDebouncePackageExport(reason: string): boolean {
+    return DEBOUNCED_PACKAGE_EXPORT_REASONS.has(reason);
+  }
+
+  async persistPackageAfterMutation(
     projectId: string,
     reason: string,
   ): Promise<void> {
+    if (this.shouldDebouncePackageExport(reason)) {
+      this.schedulePackageExport(projectId, `${reason}:debounced`);
+      return;
+    }
+
     const result = await this.attemptImmediatePackageExport(projectId, reason);
     if (!result.error) {
       return;
@@ -822,6 +837,13 @@ export class ProjectService {
       },
       result.error,
     );
+  }
+
+  async ensureImmediatePackageExport(
+    projectId: string,
+    reason: string,
+  ): Promise<void> {
+    await this.persistPackageAfterMutation(projectId, reason);
   }
 
   async flushPendingExports(timeoutMs = 8_000): Promise<{

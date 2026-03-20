@@ -1,8 +1,6 @@
 import { useCallback } from "react";
-import { useTranslation } from "react-i18next";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { CanvasView } from "../views/CanvasView";
-import { buildGraphNodeDefaultName } from "./canvasNodeNaming";
 import type {
   EntityRelation,
   WorldGraphCanvasBlock,
@@ -33,7 +31,6 @@ export function CanvasTab({
   onSelectNode,
   onCreatedEntity,
 }: CanvasTabProps) {
-  const { t } = useTranslation();
   const createGraphNode = useWorldBuildingStore(
     (state) => state.createGraphNode,
   );
@@ -54,43 +51,29 @@ export function CanvasTab({
 
   const effectiveSelectedNodeId = selectedNodeId;
 
-  const handleCreatePreset = useCallback(
-    async (
-      entityType: Parameters<typeof createGraphNode>[0]["entityType"],
-      subType?: Parameters<typeof createGraphNode>[0]["subType"],
-      position?: { x: number; y: number },
-    ) => {
+  const handleCreateCanvasBlock = useCallback(
+    (position?: { x: number; y: number }) => {
       if (!projectId) return;
-
-      const created = await createGraphNode({
+      void createGraphNode({
         projectId,
-        entityType,
-        subType,
-        name: buildGraphNodeDefaultName(entityType, t),
+        entityType: "Concept",
+        subType: "Concept",
+        name: "새로운 블럭",
         positionX: position?.x ?? 140 + graphNodes.length * 32,
         positionY: position?.y ?? 140 + graphNodes.length * 24,
+      }).then((created) => {
+        if (!created) return;
+        onSelectNode(created.id);
+        onCreatedEntity("Concept", created.id);
       });
-
-      if (!created) return;
-
-      onSelectNode(created.id);
-      onCreatedEntity(entityType, created.id);
     },
     [
       createGraphNode,
       graphNodes.length,
-      projectId,
-      onSelectNode,
       onCreatedEntity,
-      t,
+      onSelectNode,
+      projectId,
     ],
-  );
-
-  const handleCreateCanvasBlock = useCallback(
-    (position?: { x: number; y: number }) => {
-      void handleCreatePreset("Concept", "Concept", position);
-    },
-    [handleCreatePreset],
   );
 
   const handleDeleteNode = useCallback(
@@ -151,12 +134,22 @@ export function CanvasTab({
       const sourceNode = graphNodes.find((n) => n.id === sourceNodeId);
       if (!sourceNode) return;
 
+      const sourceY = sourceNode.positionY || 0;
+      const siblingEvents = graphNodes.filter(
+        (node) => node.entityType === "Event" && node.id !== sourceNodeId,
+      );
+      const hasUpper = siblingEvents.some(
+        (node) => (node.positionY || 0) < sourceY,
+      );
+      const branchDirection = hasUpper ? 1 : -1;
+      const targetY = sourceY + 220 * branchDirection;
+
       const created = await createGraphNode({
         projectId,
         entityType: "Event",
-        name: t("research.graph.nodeDefaults.timelineBranch"),
-        positionX: (sourceNode.positionX || 0) + 300,
-        positionY: sourceNode.positionY || 0,
+        name: "새로운 블럭",
+        positionX: sourceNode.positionX || 0,
+        positionY: targetY,
       });
 
       if (!created) return;
@@ -172,7 +165,7 @@ export function CanvasTab({
 
       onSelectNode(created.id);
     },
-    [createGraphNode, createRelation, graphNodes, projectId, onSelectNode, t],
+    [createGraphNode, createRelation, graphNodes, projectId, onSelectNode],
   );
 
   return (

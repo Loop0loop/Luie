@@ -682,6 +682,7 @@ export const enBase = {
         nodeCard: {
           delete: "Delete",
           changeColor: "Change color",
+          addBranch: "Add up/down block",
           openEntity: "Entity",
           edit: "Edit",
         },

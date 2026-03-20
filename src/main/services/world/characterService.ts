@@ -55,10 +55,7 @@ export class CharacterService {
         includeCharacters: true,
         includeTerms: false,
       });
-      await projectService.ensureImmediatePackageExport(
-        input.projectId,
-        "character:create",
-      );
+      await projectService.persistPackageAfterMutation(input.projectId, "character:create");
       return character;
     } catch (error) {
       logger.error("Failed to create character", error);
@@ -144,10 +141,7 @@ export class CharacterService {
           includeTerms: false,
         });
       }
-      await projectService.ensureImmediatePackageExport(
-        String(character.projectId),
-        "character:update",
-      );
+      await projectService.persistPackageAfterMutation(String(character.projectId), "character:update");
       return character;
     } catch (error) {
       logger.error("Failed to update character", error);
@@ -197,10 +191,7 @@ export class CharacterService {
 
       logger.info("Character deleted successfully", { characterId: id });
       if (projectId) {
-        await projectService.ensureImmediatePackageExport(
-          projectId,
-          "character:delete",
-        );
+        await projectService.persistPackageAfterMutation(projectId, "character:delete");
       }
       return { success: true };
     } catch (error) {
@@ -290,10 +281,7 @@ export class CharacterService {
         });
 
         logger.info("First appearance updated", { characterId, chapterId });
-        await projectService.ensureImmediatePackageExport(
-          String(character.projectId),
-          "character:update-first-appearance",
-        );
+        await projectService.persistPackageAfterMutation(String(character.projectId), "character:update-first-appearance");
       }
     } catch (error) {
       logger.error("Failed to update first appearance", error);

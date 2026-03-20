@@ -50,10 +50,7 @@ export class TermService {
         includeCharacters: false,
         includeTerms: true,
       });
-      await projectService.ensureImmediatePackageExport(
-        input.projectId,
-        "term:create",
-      );
+      await projectService.persistPackageAfterMutation(input.projectId, "term:create");
       return term;
     } catch (error) {
       logger.error("Failed to create term", error);
@@ -134,10 +131,7 @@ export class TermService {
           includeTerms: true,
         });
       }
-      await projectService.ensureImmediatePackageExport(
-        String(term.projectId),
-        "term:update",
-      );
+      await projectService.persistPackageAfterMutation(String(term.projectId), "term:update");
       return term;
     } catch (error) {
       logger.error("Failed to update term", error);
@@ -185,10 +179,7 @@ export class TermService {
 
       logger.info("Term deleted successfully", { termId: id });
       if (projectId) {
-        await projectService.ensureImmediatePackageExport(
-          projectId,
-          "term:delete",
-        );
+        await projectService.persistPackageAfterMutation(projectId, "term:delete");
       }
       return { success: true };
     } catch (error) {
@@ -272,10 +263,7 @@ export class TermService {
         });
 
         logger.info("First appearance updated", { termId, chapterId });
-        await projectService.ensureImmediatePackageExport(
-          String(term.projectId),
-          "term:update-first-appearance",
-        );
+        await projectService.persistPackageAfterMutation(String(term.projectId), "term:update-first-appearance");
       }
     } catch (error) {
       logger.error("Failed to update first appearance", error);

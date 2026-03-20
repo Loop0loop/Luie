@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Edit2, Palette, Search, Trash2 } from "lucide-react";
+import { Edit2, Palette, Plus, Search, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { NodeProps } from "reactflow";
 import { Handle, Position, NodeToolbar } from "reactflow";
@@ -62,6 +62,19 @@ function CanvasGraphNodeCardInner({
             title={t("research.graph.canvas.nodeCard.changeColor")}
           >
             <Palette className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            type="button"
+            size="icon-xs"
+            variant="ghost"
+            className="h-7 w-7 rounded-md text-fg/60 hover:bg-white/8 hover:text-fg"
+            onClick={(e) => {
+              e.stopPropagation();
+              data.onAddBranch?.(id);
+            }}
+            title={t("research.graph.canvas.nodeCard.addBranch")}
+          >
+            <Plus className="h-3.5 w-3.5" />
           </Button>
           <Button
             type="button"

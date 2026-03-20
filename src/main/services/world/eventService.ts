@@ -38,10 +38,7 @@ export class EventService {
             logger.info("Event created successfully", {
                 eventId: event.id,
             });
-            await projectService.ensureImmediatePackageExport(
-                input.projectId,
-                "event:create",
-            );
+            await projectService.persistPackageAfterMutation(input.projectId, "event:create");
             return event;
         } catch (error) {
             logger.error("Failed to create event", error);
@@ -114,10 +111,7 @@ export class EventService {
             logger.info("Event updated successfully", {
                 eventId: event.id,
             });
-            await projectService.ensureImmediatePackageExport(
-                String(event.projectId),
-                "event:update",
-            );
+            await projectService.persistPackageAfterMutation(String(event.projectId), "event:update");
             return event;
         } catch (error) {
             logger.error("Failed to update event", error);
@@ -164,10 +158,7 @@ export class EventService {
 
             logger.info("Event deleted successfully", { eventId: id });
             if (projectId) {
-                await projectService.ensureImmediatePackageExport(
-                    projectId,
-                    "event:delete",
-                );
+                await projectService.persistPackageAfterMutation(projectId, "event:delete");
             }
             return { success: true };
         } catch (error) {

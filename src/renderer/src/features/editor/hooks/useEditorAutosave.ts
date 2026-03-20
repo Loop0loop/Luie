@@ -13,10 +13,16 @@ interface UseEditorAutosaveProps {
 
 const RETRY_DELAYS = [1000, 2000, 5000];
 
-export function useEditorAutosave({ onSave, title, content }: UseEditorAutosaveProps) {
+export function useEditorAutosave({
+  onSave,
+  title,
+  content,
+}: UseEditorAutosaveProps) {
   const { showToast } = useToast();
   const { t } = useTranslation();
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveStatus, setSaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
 
   // 🔐 Unmount guard — prevents setState after component is gone
   const isMountedRef = useRef(true);
@@ -39,52 +45,61 @@ export function useEditorAutosave({ onSave, title, content }: UseEditorAutosaveP
   const idleResetTimerRef = useRef<NodeJS.Timeout | null>(null);
   const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const performSaveRef = useRef<((currentTitle: string, currentContent: string) => void) | null>(null);
+  const performSaveRef = useRef<
+    ((currentTitle: string, currentContent: string) => void) | null
+  >(null);
 
-  const performSave = useCallback(async (currentTitle: string, currentContent: string) => {
-    if (!onSave) return;
-    // Guard: don't update state if unmounted
-    if (!isMountedRef.current) return;
-
-    setSaveStatus("saving");
-    try {
-      await Promise.resolve(onSave(currentTitle, currentContent));
-
+  const performSave = useCallback(
+    async (currentTitle: string, currentContent: string) => {
+      if (!onSave) return;
+      // Guard: don't update state if unmounted
       if (!isMountedRef.current) return;
 
-      lastSavedRef.current = { title: currentTitle, content: currentContent };
-      setSaveStatus("saved");
-      retryCount.current = 0;
-      api.lifecycle?.setDirty?.(false);
+      setSaveStatus("saving");
+      try {
+        await Promise.resolve(onSave(currentTitle, currentContent));
 
-      // ✅ Track idle reset timer so we can cancel on unmount
-      if (idleResetTimerRef.current) clearTimeout(idleResetTimerRef.current);
-      idleResetTimerRef.current = setTimeout(() => {
-        if (isMountedRef.current) setSaveStatus("idle");
-      }, 2000);
-    } catch (error) {
-      api.logger.error("Autosave failed", error);
+        if (!isMountedRef.current) return;
 
-      if (!isMountedRef.current) return;
-      setSaveStatus("error");
+        lastSavedRef.current = { title: currentTitle, content: currentContent };
+        setSaveStatus("saved");
+        retryCount.current = 0;
+        api.lifecycle?.setDirty?.(false);
 
-      if (retryCount.current < RETRY_DELAYS.length) {
-        const delay = RETRY_DELAYS[retryCount.current];
-        retryCount.current++;
-        showToast(t("editor.autosave.retryingIn", { seconds: delay / 1000 }), "info", 2000);
+        // ✅ Track idle reset timer so we can cancel on unmount
+        if (idleResetTimerRef.current) clearTimeout(idleResetTimerRef.current);
+        idleResetTimerRef.current = setTimeout(() => {
+          if (isMountedRef.current) setSaveStatus("idle");
+        }, 2000);
+      } catch (error) {
+        api.logger.error("Autosave failed", error);
 
-        // ✅ Track retry timer so we can cancel on unmount
-        if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
-        retryTimerRef.current = setTimeout(() => {
-          if (isMountedRef.current) {
-            performSaveRef.current?.(currentTitle, currentContent);
-          }
-        }, delay);
-      } else {
-        showToast(t("editor.autosave.failed"), "error");
+        if (!isMountedRef.current) return;
+        setSaveStatus("error");
+
+        if (retryCount.current < RETRY_DELAYS.length) {
+          const delay = RETRY_DELAYS[retryCount.current];
+          retryCount.current++;
+          showToast(
+            t("editor.autosave.retryingIn", { seconds: delay / 1000 }),
+            "info",
+            2000,
+          );
+
+          // ✅ Track retry timer so we can cancel on unmount
+          if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+          retryTimerRef.current = setTimeout(() => {
+            if (isMountedRef.current) {
+              performSaveRef.current?.(currentTitle, currentContent);
+            }
+          }, delay);
+        } else {
+          showToast(t("editor.autosave.failed"), "error");
+        }
       }
-    }
-  }, [onSave, showToast, t]);
+    },
+    [onSave, showToast, t],
+  );
 
   useEffect(() => {
     performSaveRef.current = performSave;

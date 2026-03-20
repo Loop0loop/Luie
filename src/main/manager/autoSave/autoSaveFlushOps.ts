@@ -31,29 +31,48 @@ export const createScheduledSnapshot = async (
   chapterId?: string,
 ): Promise<void> => {
   try {
-    const [chapterService, snapshotService] = await Promise.all([
+    const snapshotService = await loadSnapshotService();
+
+    const latestSnapshot = chapterId
+      ? await snapshotService.getLatestSnapshot(chapterId)
+      : null;
+    if (latestSnapshot?.createdAt) {
+      const latestAt =
+        latestSnapshot.createdAt instanceof Date
+          ? latestSnapshot.createdAt.getTime()
+          : new Date(String(latestSnapshot.createdAt)).getTime();
+      if (Number.isFinite(latestAt) && Date.now() - latestAt < 60_000) {
+        logger.info("Skipping scheduled snapshot (recent snapshot exists)", {
+          projectId,
+          chapterId,
+        });
+        return;
+      }
+    }
+
+    const [chapterService, snapshotServiceInstance] = await Promise.all([
       loadChapterService(),
-      loadSnapshotService(),
+      Promise.resolve(snapshotService),
     ]);
     if (chapterId) {
       const chapter = await chapterService.getChapter(chapterId);
       const chapterData = chapter as { id?: unknown; content?: unknown };
 
-      await snapshotService.createSnapshot({
+      await snapshotServiceInstance.createSnapshot({
         projectId,
         chapterId: String(chapterData.id ?? chapterId),
         content: String(chapterData.content ?? ""),
         description: `자동 스냅샷 ${new Date().toLocaleString()}`,
       });
     } else {
-      await snapshotService.createSnapshot({
+      await snapshotServiceInstance.createSnapshot({
         projectId,
         content: JSON.stringify({ timestamp: Date.now() }),
         description: `프로젝트 스냅샷 ${new Date().toLocaleString()}`,
       });
     }
 
-    await snapshotService.deleteOldSnapshots(
+    await snapshotServiceInstance.deleteOldSnapshots(
       projectId,
       DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT,
     );

@@ -26,10 +26,13 @@ const mocked = vi.hoisted(() => {
     scrapMemoDeleteMany,
     scrapMemoCreateMany,
     transactionClient,
-    transaction: vi.fn(async (callback: (client: typeof transactionClient) => unknown) =>
-      await callback(transactionClient),
+    transaction: vi.fn(
+      async (callback: (client: typeof transactionClient) => unknown) =>
+        await callback(transactionClient),
     ),
-    ensureImmediatePackageExport: vi.fn(async () => undefined),
+    persistPackageAfterMutation: vi.fn(
+      async (_projectId?: string, _reason?: string) => undefined,
+    ),
   };
 });
 
@@ -54,8 +57,8 @@ vi.mock("../../../src/main/database/index.js", () => ({
 
 vi.mock("../../../src/main/services/core/projectService.js", () => ({
   projectService: {
-    ensureImmediatePackageExport: (...args: unknown[]) =>
-      mocked.ensureImmediatePackageExport(...args),
+    persistPackageAfterMutation: (projectId: string, reason: string) =>
+      mocked.persistPackageAfterMutation(projectId, reason),
   },
 }));
 
@@ -225,7 +228,7 @@ describe("worldReplicaService", () => {
       },
     });
 
-    expect(mocked.ensureImmediatePackageExport).toHaveBeenCalledWith(
+    expect(mocked.persistPackageAfterMutation).toHaveBeenCalledWith(
       "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
       "world-document:graph",
     );

@@ -10,7 +10,13 @@ import {
 } from "../../../../shared/world/worldDocumentCodec.js";
 import type { WorldScrapMemosData } from "../../../../shared/types/index.js";
 
-export type WorldDocumentType = "synopsis" | "plot" | "drawing" | "mindmap" | "graph" | "scrap";
+export type WorldDocumentType =
+  | "synopsis"
+  | "plot"
+  | "drawing"
+  | "mindmap"
+  | "graph"
+  | "scrap";
 
 type LoggerLike = {
   warn: (message: string, data?: unknown) => void;
@@ -39,10 +45,13 @@ const decodeWorldDocumentPayload = (
   if (parsed !== null) {
     return parsed;
   }
-  logger.warn("Invalid sync world document payload string; using default payload", {
-    projectId,
-    docType,
-  });
+  logger.warn(
+    "Invalid sync world document payload string; using default payload",
+    {
+      projectId,
+      docType,
+    },
+  );
   return null;
 };
 
@@ -51,7 +60,12 @@ export const normalizeSynopsisPayload = (
   payload: unknown,
   logger: LoggerLike,
 ): Record<string, unknown> => {
-  const decoded = decodeWorldDocumentPayload(projectId, "synopsis", payload, logger);
+  const decoded = decodeWorldDocumentPayload(
+    projectId,
+    "synopsis",
+    payload,
+    logger,
+  );
   if (!isRecord(decoded)) {
     return { synopsis: "", status: "draft" };
   }
@@ -72,7 +86,8 @@ export const normalizeSynopsisPayload = (
     normalized.targetAudience = decoded.targetAudience;
   }
   if (typeof decoded.logline === "string") normalized.logline = decoded.logline;
-  if (typeof decoded.updatedAt === "string") normalized.updatedAt = decoded.updatedAt;
+  if (typeof decoded.updatedAt === "string")
+    normalized.updatedAt = decoded.updatedAt;
 
   return normalized;
 };
@@ -82,7 +97,12 @@ export const normalizePlotPayload = (
   payload: unknown,
   logger: LoggerLike,
 ): Record<string, unknown> => {
-  const decoded = decodeWorldDocumentPayload(projectId, "plot", payload, logger);
+  const decoded = decodeWorldDocumentPayload(
+    projectId,
+    "plot",
+    payload,
+    logger,
+  );
   if (!isRecord(decoded)) {
     return { columns: [] };
   }
@@ -114,7 +134,8 @@ export const normalizePlotPayload = (
 
   return {
     columns,
-    updatedAt: typeof decoded.updatedAt === "string" ? decoded.updatedAt : undefined,
+    updatedAt:
+      typeof decoded.updatedAt === "string" ? decoded.updatedAt : undefined,
   };
 };
 
@@ -123,7 +144,12 @@ export const normalizeDrawingPayload = (
   payload: unknown,
   logger: LoggerLike,
 ): Record<string, unknown> => {
-  const decoded = decodeWorldDocumentPayload(projectId, "drawing", payload, logger);
+  const decoded = decodeWorldDocumentPayload(
+    projectId,
+    "drawing",
+    payload,
+    logger,
+  );
   if (!isRecord(decoded)) {
     return { paths: [] };
   }
@@ -133,8 +159,10 @@ export const normalizeDrawingPayload = (
     tool: toWorldDrawingTool(decoded.tool),
     iconType: toWorldDrawingIcon(decoded.iconType),
     color: typeof decoded.color === "string" ? decoded.color : undefined,
-    lineWidth: typeof decoded.lineWidth === "number" ? decoded.lineWidth : undefined,
-    updatedAt: typeof decoded.updatedAt === "string" ? decoded.updatedAt : undefined,
+    lineWidth:
+      typeof decoded.lineWidth === "number" ? decoded.lineWidth : undefined,
+    updatedAt:
+      typeof decoded.updatedAt === "string" ? decoded.updatedAt : undefined,
   };
 };
 
@@ -143,7 +171,12 @@ export const normalizeMindmapPayload = (
   payload: unknown,
   logger: LoggerLike,
 ): Record<string, unknown> => {
-  const decoded = decodeWorldDocumentPayload(projectId, "mindmap", payload, logger);
+  const decoded = decodeWorldDocumentPayload(
+    projectId,
+    "mindmap",
+    payload,
+    logger,
+  );
   if (!isRecord(decoded)) {
     return { nodes: [], edges: [] };
   }
@@ -151,7 +184,8 @@ export const normalizeMindmapPayload = (
   return {
     nodes: normalizeWorldMindmapNodes(decoded.nodes),
     edges: normalizeWorldMindmapEdges(decoded.edges),
-    updatedAt: typeof decoded.updatedAt === "string" ? decoded.updatedAt : undefined,
+    updatedAt:
+      typeof decoded.updatedAt === "string" ? decoded.updatedAt : undefined,
   };
 };
 
@@ -160,22 +194,41 @@ export const normalizeGraphPayload = (
   payload: unknown,
   logger: LoggerLike,
 ): Record<string, unknown> => {
-  const decoded = decodeWorldDocumentPayload(projectId, "graph", payload, logger);
+  const decoded = decodeWorldDocumentPayload(
+    projectId,
+    "graph",
+    payload,
+    logger,
+  );
   if (!isRecord(decoded)) {
-    return { nodes: [], edges: [] };
+    return {
+      nodes: [],
+      edges: [],
+      canvasBlocks: [],
+      canvasEdges: [],
+      timelines: [],
+    };
   }
 
-  const nodes = Array.isArray(decoded.nodes)
-    ? decoded.nodes.filter((node): node is Record<string, unknown> => isRecord(node))
-    : [];
-  const edges = Array.isArray(decoded.edges)
-    ? decoded.edges.filter((edge): edge is Record<string, unknown> => isRecord(edge))
-    : [];
+  const filterRecordArray = (value: unknown): Record<string, unknown>[] =>
+    Array.isArray(value)
+      ? value.filter((item): item is Record<string, unknown> => isRecord(item))
+      : [];
+
+  const nodes = filterRecordArray(decoded.nodes);
+  const edges = filterRecordArray(decoded.edges);
+  const canvasBlocks = filterRecordArray(decoded.canvasBlocks);
+  const canvasEdges = filterRecordArray(decoded.canvasEdges);
+  const timelines = filterRecordArray(decoded.timelines);
 
   return {
     nodes,
     edges,
-    updatedAt: typeof decoded.updatedAt === "string" ? decoded.updatedAt : undefined,
+    canvasBlocks,
+    canvasEdges,
+    timelines,
+    updatedAt:
+      typeof decoded.updatedAt === "string" ? decoded.updatedAt : undefined,
   };
 };
 
@@ -194,7 +247,12 @@ export const normalizeScrapPayload = (
     updatedAt: memo.updatedAt,
   }));
 
-  const decoded = decodeWorldDocumentPayload(projectId, "scrap", payload, logger);
+  const decoded = decodeWorldDocumentPayload(
+    projectId,
+    "scrap",
+    payload,
+    logger,
+  );
   if (!isRecord(decoded)) {
     return {
       memos: normalizedFallbackMemos,
@@ -208,6 +266,9 @@ export const normalizeScrapPayload = (
       normalizedFallbackMemos.length > 0
         ? normalizedFallbackMemos
         : normalized.memos,
-    updatedAt: typeof normalized.updatedAt === "string" ? normalized.updatedAt : updatedAtFallback,
+    updatedAt:
+      typeof normalized.updatedAt === "string"
+        ? normalized.updatedAt
+        : updatedAtFallback,
   };
 };

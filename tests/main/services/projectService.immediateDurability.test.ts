@@ -51,7 +51,7 @@ describe("ProjectService immediate package durability", () => {
       .mockImplementation(() => {});
 
     await expect(
-      service.ensureImmediatePackageExport("project-1", "chapter:update"),
+      service.ensureImmediatePackageExport("project-1", "chapter:create"),
     ).rejects.toMatchObject({
       code: "FS_2002",
       message: "Failed to persist canonical .luie after mutation",
@@ -59,7 +59,26 @@ describe("ProjectService immediate package durability", () => {
 
     expect(scheduleSpy).toHaveBeenCalledWith(
       "project-1",
-      "chapter:update:retry",
+      "chapter:create:retry",
+    );
+  });
+
+  it("routes mutation persistence through centralized policy API", async () => {
+    const service = new ProjectService();
+    const immediateSpy = vi
+      .spyOn(service, "attemptImmediatePackageExport")
+      .mockResolvedValue({ exported: true });
+    const scheduleSpy = vi
+      .spyOn(service, "schedulePackageExport")
+      .mockImplementation(() => {});
+
+    await service.persistPackageAfterMutation("project-1", "chapter:create");
+    await service.persistPackageAfterMutation("project-1", "chapter:update");
+
+    expect(immediateSpy).toHaveBeenCalledWith("project-1", "chapter:create");
+    expect(scheduleSpy).toHaveBeenCalledWith(
+      "project-1",
+      "chapter:update:debounced",
     );
   });
 });

@@ -122,10 +122,7 @@ export class EntityRelationService {
             const relation = await client.entityRelation.create({ data });
 
             logger.info("Entity relation created", { relationId: relation.id });
-            await projectService.ensureImmediatePackageExport(
-                input.projectId,
-                "entity-relation:create",
-            );
+            await projectService.persistPackageAfterMutation(input.projectId, "entity-relation:create");
             return toEntityRelation(relation as RawRow);
         } catch (error) {
             logger.error("Failed to create entity relation", error);
@@ -205,10 +202,7 @@ export class EntityRelationService {
             });
 
             logger.info("Entity relation updated", { relationId: relation.id });
-            await projectService.ensureImmediatePackageExport(
-                String(current.projectId),
-                "entity-relation:update",
-            );
+            await projectService.persistPackageAfterMutation(String(current.projectId), "entity-relation:update");
             return toEntityRelation(relation as RawRow);
         } catch (error) {
             logger.error("Failed to update entity relation", error);
@@ -234,10 +228,7 @@ export class EntityRelationService {
             const client = await this.getClient();
             const deleted = await client.entityRelation.delete({ where: { id } });
             logger.info("Entity relation deleted", { relationId: id });
-            await projectService.ensureImmediatePackageExport(
-                String(deleted.projectId),
-                "entity-relation:delete",
-            );
+            await projectService.persistPackageAfterMutation(String(deleted.projectId), "entity-relation:delete");
             return { success: true };
         } catch (error) {
             logger.error("Failed to delete entity relation", error);
@@ -409,10 +400,7 @@ export class EntityRelationService {
             });
             removedRelations += result.count;
             if (result.count > 0) {
-                await projectService.ensureImmediatePackageExport(
-                    projectId,
-                    "entity-relation:cleanup-orphans",
-                );
+                await projectService.persistPackageAfterMutation(projectId, "entity-relation:cleanup-orphans");
             }
         }
 

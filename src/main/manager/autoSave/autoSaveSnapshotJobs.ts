@@ -50,16 +50,9 @@ export const maybeCreateEmergencySnapshot = async (input: {
   lastSnapshotAtByChapterKey.set(key, now);
 
   try {
-    const snapshotService = await loadSnapshotService();
-    await snapshotService.createSnapshot({
-      projectId,
-      chapterId,
-      content,
-      description: `긴급 마이크로 스냅샷 ${new Date().toLocaleString()}`,
-    });
     await writeTimestampedMirror(projectId, chapterId, content);
   } catch (error) {
-    logger.warn("Failed to create emergency micro snapshot", {
+    logger.warn("Failed to write emergency micro mirror", {
       error,
       chapterId,
     });

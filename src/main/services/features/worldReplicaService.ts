@@ -123,10 +123,7 @@ export class WorldReplicaService {
       });
 
       if (input.docType === "graph") {
-        await projectService.ensureImmediatePackageExport(
-          input.projectId,
-          "world-document:graph",
-        );
+        await projectService.persistPackageAfterMutation(input.projectId, "world-document:graph");
       }
     } catch (error) {
       logger.error("Failed to save replica world document", {

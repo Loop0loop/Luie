@@ -15,6 +15,11 @@ import {
 
 export function useChapterManagement() {
   const pendingChapterIdRef = useRef<string | null>(null);
+  const lastSavedRef = useRef<{
+    chapterId: string;
+    title: string;
+    content: string;
+  } | null>(null);
   const currentProject = useProjectStore((state) => state.currentItem);
   const hasLuieAttachment = hasReadableLuieAttachment(currentProject);
   const {
@@ -32,7 +37,7 @@ export function useChapterManagement() {
       create: state.create,
       update: state.update,
       delete: state.delete,
-    }))
+    })),
   );
 
   const projectChapters = useMemo(
@@ -46,7 +51,10 @@ export function useChapterManagement() {
       currentChapter.projectId === currentProject?.id &&
       projectChapters.some((chapter) => chapter.id === currentChapter.id)
     ) {
-      return projectChapters.find((chapter) => chapter.id === currentChapter.id) ?? currentChapter;
+      return (
+        projectChapters.find((chapter) => chapter.id === currentChapter.id) ??
+        currentChapter
+      );
     }
 
     return projectChapters[0];
@@ -64,7 +72,8 @@ export function useChapterManagement() {
       }
 
       const target = chapters.find(
-        (chapter) => chapter.id === id && chapter.projectId === currentProject.id,
+        (chapter) =>
+          chapter.id === id && chapter.projectId === currentProject.id,
       );
 
       if (!target) {
@@ -99,6 +108,7 @@ export function useChapterManagement() {
 
   useEffect(() => {
     if (!currentProject) {
+      lastSavedRef.current = null;
       if (currentChapter) {
         setCurrentChapter(null);
       }
@@ -108,7 +118,9 @@ export function useChapterManagement() {
     const pendingChapterId = pendingChapterIdRef.current;
     if (pendingChapterId) {
       const pendingTarget = chapters.find(
-        (chapter) => chapter.id === pendingChapterId && chapter.projectId === currentProject.id,
+        (chapter) =>
+          chapter.id === pendingChapterId &&
+          chapter.projectId === currentProject.id,
       );
       if (pendingTarget) {
         pendingChapterIdRef.current = null;
@@ -127,7 +139,9 @@ export function useChapterManagement() {
       return;
     }
 
-    const nextChapter = chapters.find((chapter) => chapter.projectId === currentProject.id) ?? null;
+    const nextChapter =
+      chapters.find((chapter) => chapter.projectId === currentProject.id) ??
+      null;
     if ((nextChapter?.id ?? null) !== (currentChapter?.id ?? null)) {
       setCurrentChapter(nextChapter);
     }
@@ -146,7 +160,12 @@ export function useChapterManagement() {
     if (created) {
       setCurrentChapter(created);
     }
-  }, [currentProject, createChapter, projectChapters.length, setCurrentChapter]);
+  }, [
+    currentProject,
+    createChapter,
+    projectChapters.length,
+    setCurrentChapter,
+  ]);
 
   const handleRenameChapter = useCallback(
     async (id: string, title: string) => {
@@ -180,7 +199,13 @@ export function useChapterManagement() {
         setCurrentChapter(created);
       }
     },
-    [projectChapters, currentProject, createChapter, updateChapter, setCurrentChapter],
+    [
+      projectChapters,
+      currentProject,
+      createChapter,
+      updateChapter,
+      setCurrentChapter,
+    ],
   );
 
   const handleDeleteChapter = useCallback(
@@ -188,8 +213,12 @@ export function useChapterManagement() {
       const chaptersInCurrentProject = chapters.filter(
         (chapter) => chapter.projectId === currentProject?.id,
       );
-      const currentIndex = chaptersInCurrentProject.findIndex((chapter) => chapter.id === id);
-      const remaining = chaptersInCurrentProject.filter((chapter) => chapter.id !== id);
+      const currentIndex = chaptersInCurrentProject.findIndex(
+        (chapter) => chapter.id === id,
+      );
+      const remaining = chaptersInCurrentProject.filter(
+        (chapter) => chapter.id !== id,
+      );
       const deletingActiveChapter = activeChapterId === id;
 
       await deleteChapter(id);
@@ -200,7 +229,13 @@ export function useChapterManagement() {
         setCurrentChapter(fallback ?? null);
       }
     },
-    [chapters, currentProject?.id, deleteChapter, activeChapterId, setCurrentChapter],
+    [
+      chapters,
+      currentProject?.id,
+      deleteChapter,
+      activeChapterId,
+      setCurrentChapter,
+    ],
   );
 
   const handleSave = useCallback(
@@ -215,19 +250,42 @@ export function useChapterManagement() {
       );
 
       if (!chapterBelongsToCurrentProject) {
-        api.logger.warn("handleSave: Blocked stale chapter save after project switch", {
-          chapterId,
-          currentProjectId: currentProject.id,
-        });
+        api.logger.warn(
+          "handleSave: Blocked stale chapter save after project switch",
+          {
+            chapterId,
+            currentProjectId: currentProject.id,
+          },
+        );
         return;
       }
 
-      api.logger.info(`Saving: ${title}`);
+      const chapterForSave = chapters.find((c) => c.id === chapterId) ?? null;
+      const fallbackTitle = chapterForSave?.title ?? "";
+
+      const normalizedTitle = title.trim() || fallbackTitle;
+      const lastSaved = lastSavedRef.current;
+      if (
+        lastSaved &&
+        lastSaved.chapterId === chapterId &&
+        lastSaved.title === normalizedTitle &&
+        lastSaved.content === newContent
+      ) {
+        return;
+      }
+
+      api.logger.info(`Saving: ${normalizedTitle}`);
       await updateChapter({
         id: chapterId,
-        title,
+        title: normalizedTitle,
         content: newContent,
       });
+
+      lastSavedRef.current = {
+        chapterId,
+        title: normalizedTitle,
+        content: newContent,
+      };
 
       try {
         await api.autoSave(chapterId, newContent, currentProject.id);
@@ -241,7 +299,13 @@ export function useChapterManagement() {
         });
       }
     },
-    [activeChapterId, updateChapter, currentProject, chapters, hasLuieAttachment],
+    [
+      activeChapterId,
+      updateChapter,
+      currentProject,
+      chapters,
+      hasLuieAttachment,
+    ],
   );
 
   const activeChapterTitle = activeChapter?.title || "";

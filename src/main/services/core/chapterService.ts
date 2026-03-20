@@ -187,10 +187,7 @@ export class ChapterService {
         wordCount: chapter.wordCount,
         order: chapter.order,
       });
-      await projectService.ensureImmediatePackageExport(
-        input.projectId,
-        "chapter:create",
-      );
+      await projectService.persistPackageAfterMutation(input.projectId, "chapter:create");
       return chapter;
     } catch (error) {
       logger.error("Failed to create chapter", error);
@@ -270,6 +267,26 @@ export class ChapterService {
       );
       if (input.synopsis !== undefined) updateData.synopsis = input.synopsis;
 
+      if (Object.keys(updateData).length === 0) {
+        return await db.getClient().chapter.findUnique({
+          where: { id: input.id },
+        });
+      }
+
+      const hasOnlyContentUpdate =
+        Object.keys(updateData).length === 2 &&
+        Object.prototype.hasOwnProperty.call(updateData, "content") &&
+        Object.prototype.hasOwnProperty.call(updateData, "wordCount");
+
+      if (
+        hasOnlyContentUpdate &&
+        String(current?.content ?? "") === String(input.content ?? "")
+      ) {
+        return await db.getClient().chapter.findUnique({
+          where: { id: input.id },
+        });
+      }
+
       const updatedChapter = await db.getClient().chapter.update({
         where: { id: input.id },
         data: updateData,
@@ -288,10 +305,7 @@ export class ChapterService {
         wordCount: updatedChapter.wordCount,
         order: updatedChapter.order,
       });
-      await projectService.ensureImmediatePackageExport(
-        String((updatedChapter as { projectId: unknown }).projectId),
-        "chapter:update",
-      );
+      await projectService.persistPackageAfterMutation(String((updatedChapter as { projectId: unknown }).projectId), "chapter:update");
       return updatedChapter;
     } catch (error) {
       logger.error("Failed to update chapter", error);
@@ -344,10 +358,7 @@ export class ChapterService {
 
       logger.info("Chapter soft-deleted successfully", { chapterId: id });
       if ((chapter as { projectId?: unknown })?.projectId) {
-        await projectService.ensureImmediatePackageExport(
-          String((chapter as { projectId: unknown }).projectId),
-          "chapter:delete",
-        );
+        await projectService.persistPackageAfterMutation(String((chapter as { projectId: unknown }).projectId), "chapter:delete");
       }
       return deleted;
     } catch (error) {
@@ -416,10 +427,7 @@ export class ChapterService {
       });
 
       logger.info("Chapter restored successfully", { chapterId: id });
-      await projectService.ensureImmediatePackageExport(
-        String(current.projectId),
-        "chapter:restore",
-      );
+      await projectService.persistPackageAfterMutation(String(current.projectId), "chapter:restore");
       return restored;
     } catch (error) {
       logger.error("Failed to restore chapter", error);
@@ -466,10 +474,7 @@ export class ChapterService {
 
       logger.info("Chapter purged successfully", { chapterId: id });
       if ((chapter as { projectId?: unknown })?.projectId) {
-        await projectService.ensureImmediatePackageExport(
-          String((chapter as { projectId: unknown }).projectId),
-          "chapter:purge",
-        );
+        await projectService.persistPackageAfterMutation(String((chapter as { projectId: unknown }).projectId), "chapter:purge");
       }
       return { success: true };
     } catch (error) {
@@ -497,10 +502,7 @@ export class ChapterService {
       logger.info("Chapters reordered successfully", { projectId });
       const chapterSearchCacheService = await loadChapterSearchCacheService();
       await chapterSearchCacheService.rebuildProject(projectId);
-      await projectService.ensureImmediatePackageExport(
-        projectId,
-        "chapter:reorder",
-      );
+      await projectService.persistPackageAfterMutation(projectId, "chapter:reorder");
       return { success: true };
     } catch (error) {
       logger.error("Failed to reorder chapters", error);

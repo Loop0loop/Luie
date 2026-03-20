@@ -680,6 +680,7 @@ export const koBase = {
         nodeCard: {
           delete: "삭제",
           changeColor: "색 변경",
+          addBranch: "위/아래 블럭 추가",
           openEntity: "엔티티",
           edit: "수정",
         },

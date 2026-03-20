@@ -686,6 +686,7 @@ export const jaBase = {
         nodeCard: {
           delete: "削除",
           changeColor: "色変更",
+          addBranch: "上下ブロックを追加",
           openEntity: "エンティティ",
           edit: "編集",
         },

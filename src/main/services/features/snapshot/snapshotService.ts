@@ -37,10 +37,7 @@ export class SnapshotService {
       | "snapshot:delete-old"
       | "snapshot:prune";
   }): Promise<void> {
-    await projectService.ensureImmediatePackageExport(
-      input.projectId,
-      input.reason,
-    );
+    await projectService.persistPackageAfterMutation(input.projectId, input.reason);
   }
 
   private scheduleOrphanArtifactCleanup(): void {

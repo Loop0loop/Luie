@@ -54,7 +54,7 @@ export default function MemoMainView() {
       </div>
 
       <textarea
-        className="flex-1 w-full border-none bg-transparent resize-none outline-none leading-relaxed text-lg text-muted placeholder:text-muted font-serif"
+        className="flex-1 w-full border-none bg-transparent resize-none outline-none leading-relaxed text-lg text-fg/90 placeholder:text-fg/40 font-serif"
         value={activeNote.content}
         onChange={(e) => updateNote(activeNote.id, { content: e.target.value })}
         placeholder={t("memo.placeholder.body")}
