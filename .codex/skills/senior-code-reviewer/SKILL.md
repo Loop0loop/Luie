@@ -130,7 +130,7 @@ State one of: `Production-ready`, `Risky`, or `Not acceptable`.
 - Prefer better structure or a better split of responsibilities over minor style comments.
 
 ### 6. Optional Improvements
-
+    
 - Include only non-blocking refinements that are genuinely worth considering.
 
 ## Tone
