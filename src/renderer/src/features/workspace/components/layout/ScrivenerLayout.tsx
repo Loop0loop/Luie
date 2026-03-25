@@ -23,14 +23,15 @@ import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type GroupI
 import {
   getLayoutSurfaceConfig,
   getLayoutSurfaceDefaultRatio,
+  getResponsivePanelSize,
   toPanelPercentSize,
-  toPanelPixelSize,
 } from "@shared/constants/layoutSizing";
 import { toPercentSize } from "@shared/constants/sidebarSizing";
 import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import {
   groupLayoutMatchesPanels,
 } from "@renderer/features/workspace/utils/panelGroupLayout";
+import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 
 interface ScrivenerLayoutProps {
   children?: ReactNode;
@@ -74,6 +75,7 @@ export default function ScrivenerLayout({
     }))
   );
   const editorSplitGroupRef = useRef<GroupImperativeHandle | null>(null);
+  const scrivenerLayoutGroupRef = useRef<HTMLDivElement | null>(null);
   const previousPanelCountRef = useRef(panels.length);
 
   const binderConfig = getLayoutSurfaceConfig("scrivener.binder");
@@ -90,6 +92,15 @@ export default function ScrivenerLayout({
   const inspectorRatio =
     layoutSurfaceRatios["scrivener.inspector"] ??
     getLayoutSurfaceDefaultRatio("scrivener.inspector");
+  const scrivenerLayoutGroupWidth = useElementWidth(scrivenerLayoutGroupRef);
+  const binderSize = getResponsivePanelSize(
+    scrivenerLayoutGroupWidth,
+    binderConfig,
+  );
+  const inspectorSize = getResponsivePanelSize(
+    scrivenerLayoutGroupWidth,
+    inspectorConfig,
+  );
 
   useEffect(() => {
     const previousPanelCount = previousPanelCountRef.current;
@@ -168,6 +179,7 @@ export default function ScrivenerLayout({
           orientation="horizontal"
           className="flex w-full h-full flex-1 overflow-hidden relative"
           id="scrivener-layout-group"
+          elementRef={scrivenerLayoutGroupRef}
           onLayoutChanged={onLayoutChanged}
         >
 
@@ -177,8 +189,8 @@ export default function ScrivenerLayout({
               <Panel
                 id="sidebar"
                 defaultSize={toPanelPercentSize(binderRatio)}
-                minSize={toPanelPixelSize(binderConfig.minPx)}
-                maxSize={toPanelPixelSize(binderConfig.maxPx)}
+                minSize={binderSize.minSize}
+                maxSize={binderSize.maxSize}
                 className="bg-panel border-r border-border flex flex-col shrink-0 min-w-0"
               >
                 {sidebar}
@@ -286,8 +298,8 @@ export default function ScrivenerLayout({
               <Panel
                 id="inspector"
                 defaultSize={toPanelPercentSize(inspectorRatio)}
-                minSize={toPanelPixelSize(inspectorConfig.minPx)}
-                maxSize={toPanelPixelSize(inspectorConfig.maxPx)}
+                minSize={inspectorSize.minSize}
+                maxSize={inspectorSize.maxSize}
                 className="bg-panel flex flex-col shrink-0 min-w-0"
               >
                 {/* Floating Toggle wrapper */}

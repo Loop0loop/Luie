@@ -181,4 +181,34 @@ describe("FocusHoverSidebar", () => {
     });
     expect(sidebar.className).toContain("-translate-x-full");
   });
+
+  it("does not reopen while hover open is suppressed", () => {
+    mountedView = mountView();
+    const sidebar = Array.from(mountedView.container.querySelectorAll("div")).find(
+      (node) =>
+        node.className.includes("fixed z-50") &&
+        node.className.includes("bg-panel"),
+    ) as HTMLDivElement;
+
+    dispatchMouseMove(100, 120);
+    expect(sidebar.className).toContain("translate-x-0");
+
+    act(() => {
+      mountedView?.root.render(
+        <FocusHoverSidebar
+          side="left"
+          topOffset={40}
+          activationWidthPx={120}
+          closeDelayMs={200}
+          suppressHoverOpen
+        >
+          <div>sidebar body</div>
+        </FocusHoverSidebar>,
+      );
+    });
+
+    dispatchMouseMove(40, 120);
+
+    expect(sidebar.className).toContain("-translate-x-full");
+  });
 });

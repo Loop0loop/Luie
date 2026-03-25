@@ -20,6 +20,8 @@ interface FocusHoverSidebarProps {
   closeTolerancePx?: number;
   /** 사이드바를 닫기 전 대기 시간(ms). */
   closeDelayMs?: number;
+  /** 강제로 hover-open을 막습니다. explicit close 직후 재개방 방지용입니다. */
+  suppressHoverOpen?: boolean;
 }
 
 export default function FocusHoverSidebar({
@@ -33,6 +35,7 @@ export default function FocusHoverSidebar({
   activationWidthPx,
   closeTolerancePx = 12,
   closeDelayMs = 220,
+  suppressHoverOpen = false,
 }: FocusHoverSidebarProps) {
   const [isHoverOpen, setIsHoverOpen] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -135,6 +138,11 @@ export default function FocusHoverSidebar({
       const e = latestMouseEventRef.current;
       if (!e) return;
 
+      if (suppressHoverOpen) {
+        closeHoverSidebar();
+        return;
+      }
+
       // 드래그(마우스 버튼 down) 중에는 hover 토글을 막아
       // 리사이즈/드래그 중 사이드바가 튀어나오는 UX를 방지한다.
       if (e.buttons !== 0) return;
@@ -206,6 +214,7 @@ export default function FocusHoverSidebar({
     side,
     topOffset,
     triggerWidthPx,
+    suppressHoverOpen,
   ]);
 
   const topStyle = `${topOffset}px`;

@@ -1,14 +1,16 @@
+import { useRef } from "react";
 import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { Menu } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
-import { toPanelPercentSize, toPanelPixelSize } from "@shared/constants/layoutSizing";
+import { getResponsivePanelSize, toPanelPercentSize } from "@shared/constants/layoutSizing";
 import { GoogleDocsEditorColumn } from "./GoogleDocsEditorColumn";
 import { GoogleDocsHeader } from "./GoogleDocsHeader";
 import { GoogleDocsPanelRail } from "./GoogleDocsPanelRail";
 import { GoogleDocsRightPanel } from "./GoogleDocsRightPanel";
 import type { GoogleDocsLayoutProps } from "./googleDocsLayout.types";
 import { useGoogleDocsLayoutState } from "./useGoogleDocsLayoutState";
+import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 
 export default function GoogleDocsLayout({
   children,
@@ -47,6 +49,15 @@ export default function GoogleDocsLayout({
     setTrashRefreshKey,
     trashRefreshKey,
   } = useGoogleDocsLayoutState();
+  const docsLayoutGroupRef = useRef<HTMLDivElement | null>(null);
+  const docsLayoutGroupWidth = useElementWidth(docsLayoutGroupRef);
+  const docsSidebarSize = getResponsivePanelSize(
+    docsLayoutGroupWidth,
+    docsSidebarConfig,
+  );
+  const rightPanelSize = rightPanelConfig
+    ? getResponsivePanelSize(docsLayoutGroupWidth, rightPanelConfig)
+    : null;
 
   return (
     <div className="flex h-screen flex-col bg-background font-sans text-foreground transition-colors duration-200">
@@ -82,6 +93,7 @@ export default function GoogleDocsLayout({
           orientation="horizontal"
           className="relative flex h-full w-full flex-1 overflow-hidden"
           id="docs-layout-group"
+          elementRef={docsLayoutGroupRef}
           onLayoutChanged={onLayoutChanged}
         >
           {isSidebarOpen && (
@@ -89,8 +101,8 @@ export default function GoogleDocsLayout({
               <Panel
                 id="left-sidebar"
                 defaultSize={toPanelPercentSize(docsSidebarRatio)}
-                minSize={toPanelPixelSize(docsSidebarConfig.minPx)}
-                maxSize={toPanelPixelSize(docsSidebarConfig.maxPx)}
+                minSize={docsSidebarSize.minSize}
+                maxSize={docsSidebarSize.maxSize}
                 className="flex min-w-0 shrink-0 flex-col overflow-hidden border-r border-border bg-background"
               >
                 {sidebar}
@@ -128,8 +140,7 @@ export default function GoogleDocsLayout({
             onFocus={() => setFocusedClosableTarget({ kind: "docs-tab" })}
             onRefreshTrash={() => setTrashRefreshKey((current) => current + 1)}
             onSaveChapter={onSaveChapter}
-            rightPanelMaxPx={rightPanelConfig?.maxPx ?? 760}
-            rightPanelMinPx={rightPanelConfig?.minPx ?? 320}
+            rightPanelSize={rightPanelSize}
             rightPanelRatio={rightPanelRatio ?? 0}
             trashRefreshKey={trashRefreshKey}
           />

@@ -160,8 +160,13 @@ const getViewportWidth = (): number =>
     ? window.innerWidth
     : 1440;
 
+const getResponsiveReferenceWidth = (containerWidthPx: number): number =>
+  Number.isFinite(containerWidthPx) && containerWidthPx > 0
+    ? containerWidthPx
+    : getViewportWidth();
+
 export const isLayoutSurfaceId = (value: string): value is LayoutSurfaceId =>
-  value in LAYOUT_SURFACE_CONFIG;
+  Object.prototype.hasOwnProperty.call(LAYOUT_SURFACE_CONFIG, value);
 
 export const getLayoutSurfaceConfig = (
   surface: LayoutSurfaceId,
@@ -266,6 +271,31 @@ export const getEditorLayoutPanelSurface = (
 
 export const toPanelPercentSize = (value: number): string =>
   `${clampLayoutSurfaceRatio("default.panel", value)}%`;
+
+export const toPanelPercentSizeFromPixels = (
+  containerWidthPx: number,
+  valuePx: number,
+): string =>
+  `${Number(
+    clampNumber(
+      (valuePx / getResponsiveReferenceWidth(containerWidthPx)) * 100,
+      0,
+      100,
+    ).toFixed(3),
+  )}%`;
+
+export type ResponsivePanelSize = {
+  minSize: string;
+  maxSize: string;
+};
+
+export const getResponsivePanelSize = (
+  containerWidthPx: number,
+  config: Pick<LayoutSurfaceConfig, "minPx" | "maxPx">,
+): ResponsivePanelSize => ({
+  minSize: toPanelPercentSizeFromPixels(containerWidthPx, config.minPx),
+  maxSize: toPanelPercentSizeFromPixels(containerWidthPx, config.maxPx),
+});
 
 export const toPanelPixelSize = (value: number): string =>
   `${Math.max(0, Math.round(value))}px`;

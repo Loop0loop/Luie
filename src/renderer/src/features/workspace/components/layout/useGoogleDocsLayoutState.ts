@@ -2,19 +2,18 @@ import { useCallback, useMemo, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { openDocsRightTab } from "@renderer/features/workspace/services/docsPanelService";
-import {
-  getDocsLayoutPanelSurface,
-  getLayoutSurfaceConfig,
-  getLayoutSurfaceDefaultRatio,
-  type DocsLayoutPanelTab,
-} from "@shared/constants/layoutSizing";
-import type { LayoutPersistEntry } from "@renderer/features/workspace/hooks/useLayoutPersist";
+import type { DocsLayoutPanelTab } from "@shared/constants/layoutSizing";
 import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import {
   EDITOR_RULER_DEFAULT_MARGIN_LEFT_PX,
   EDITOR_RULER_DEFAULT_MARGIN_RIGHT_PX,
 } from "@shared/constants/configs";
 import type { DocsPageMargins } from "./googleDocsLayout.types";
+import {
+  buildDocsLayoutPersistEntries,
+  getActiveDocsRightTab,
+  getDocsLayoutSurfaceState,
+} from "../../utils/docsLayoutModel";
 
 export function useGoogleDocsLayoutState() {
   const [trashRefreshKey, setTrashRefreshKey] = useState(0);
@@ -26,7 +25,9 @@ export function useGoogleDocsLayoutState() {
 
   const {
     isSidebarOpen,
-    activeRightTab,
+    docsRightTab,
+    rightPanelActiveTab,
+    isRightPanelOpen,
     isPanelRailOpen,
     layoutSurfaceRatios,
     setRegionOpen,
@@ -36,9 +37,9 @@ export function useGoogleDocsLayoutState() {
   } = useUIStore(
     useShallow((state) => ({
       isSidebarOpen: state.regions.leftSidebar.open,
-      activeRightTab: state.regions.rightPanel.open
-        ? state.docsRightTab ?? state.regions.rightPanel.activeTab
-        : null,
+      docsRightTab: state.docsRightTab,
+      rightPanelActiveTab: state.regions.rightPanel.activeTab,
+      isRightPanelOpen: state.regions.rightPanel.open,
       isPanelRailOpen: state.regions.rightRail.open,
       layoutSurfaceRatios: state.layoutSurfaceRatios,
       setRegionOpen: state.setRegionOpen,
@@ -46,6 +47,12 @@ export function useGoogleDocsLayoutState() {
       setPanelRailOpen: state.setBinderBarOpen,
       setFocusedClosableTarget: state.setFocusedClosableTarget,
     })),
+  );
+
+  const activeRightTab = getActiveDocsRightTab(
+    isRightPanelOpen,
+    docsRightTab,
+    rightPanelActiveTab,
   );
 
   const handleRightTabClick = useCallback(
@@ -61,36 +68,19 @@ export function useGoogleDocsLayoutState() {
     [activeRightTab, closeRightPanel, setFocusedClosableTarget],
   );
 
-  const docsSidebarConfig = getLayoutSurfaceConfig("docs.sidebar");
-  const layoutEntries = useMemo<LayoutPersistEntry[]>(() => {
-    const entries: LayoutPersistEntry[] = [
-      { id: "left-sidebar", surface: "docs.sidebar" },
-    ];
-
-    if (activeRightTab) {
-      entries.push({
-        id: `right-context-panel-${activeRightTab}`,
-        surface: getDocsLayoutPanelSurface(activeRightTab),
-      });
-    }
-
-    return entries;
-  }, [activeRightTab]);
+  const layoutEntries = useMemo(
+    () => buildDocsLayoutPersistEntries(activeRightTab),
+    [activeRightTab],
+  );
   const onLayoutChanged = useLayoutPersist(layoutEntries);
 
-  const docsSidebarRatio =
-    layoutSurfaceRatios["docs.sidebar"] ??
-    getLayoutSurfaceDefaultRatio("docs.sidebar");
-  const activePanelSurface = activeRightTab
-    ? getDocsLayoutPanelSurface(activeRightTab)
-    : null;
-  const rightPanelRatio = activePanelSurface
-    ? layoutSurfaceRatios[activePanelSurface] ??
-      getLayoutSurfaceDefaultRatio(activePanelSurface)
-    : null;
-  const rightPanelConfig = activePanelSurface
-    ? getLayoutSurfaceConfig(activePanelSurface)
-    : null;
+  const {
+    activePanelSurface,
+    docsSidebarConfig,
+    docsSidebarRatio,
+    rightPanelConfig,
+    rightPanelRatio,
+  } = getDocsLayoutSurfaceState(layoutSurfaceRatios, activeRightTab);
 
   return {
     activePanelSurface,

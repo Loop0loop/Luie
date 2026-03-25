@@ -5,10 +5,11 @@ import { useTranslation } from "react-i18next";
 import { Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
 import Editor from "@renderer/features/editor/components/Editor";
 import {
+  type ResponsivePanelSize,
   toPanelPercentSize,
-  toPanelPixelSize,
   type DocsLayoutPanelTab,
 } from "@shared/constants/layoutSizing";
+import { getDocsRightPanelId } from "../../utils/docsLayoutModel";
 
 const ResearchPanel = lazy(
   () => import("@renderer/features/research/components/ResearchPanel"),
@@ -43,8 +44,7 @@ type GoogleDocsRightPanelProps = {
   onFocus: () => void;
   onRefreshTrash: () => void;
   onSaveChapter?: (title: string, content: string) => void | Promise<void>;
-  rightPanelMaxPx: number;
-  rightPanelMinPx: number;
+  rightPanelSize: ResponsivePanelSize | null;
   rightPanelRatio: number;
   trashRefreshKey: number;
 };
@@ -146,17 +146,13 @@ export function GoogleDocsRightPanel({
   onFocus,
   onRefreshTrash,
   onSaveChapter,
-  rightPanelMaxPx,
-  rightPanelMinPx,
+  rightPanelSize,
   rightPanelRatio,
   trashRefreshKey,
 }: GoogleDocsRightPanelProps) {
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
   const [renderedTab, setRenderedTab] = useState(activeRightTab);
   const [isClosing, setIsClosing] = useState(false);
-  const [panelDefaultSize, setPanelDefaultSize] = useState(() =>
-    toPanelPercentSize(rightPanelRatio),
-  );
 
   useEffect(() => {
     if (!activeRightTab || activeRightTab === renderedTab) return;
@@ -183,13 +179,7 @@ export function GoogleDocsRightPanel({
     return undefined;
   }, [activeRightTab, enableAnimations, renderedTab]);
 
-  useEffect(() => {
-    if (renderedTab) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPanelDefaultSize(toPanelPercentSize(rightPanelRatio));
-  }, [rightPanelRatio, renderedTab]);
-
-  if (!renderedTab) {
+  if (!renderedTab || !rightPanelSize) {
     return null;
   }
 
@@ -207,11 +197,11 @@ export function GoogleDocsRightPanel({
       </PanelResizeHandle>
 
       <Panel
-        key={`right-context-panel-${renderedTab}`}
-        id={`right-context-panel-${renderedTab}`}
-        defaultSize={panelDefaultSize}
-        minSize={toPanelPixelSize(rightPanelMinPx)}
-        maxSize={toPanelPixelSize(rightPanelMaxPx)}
+        key={getDocsRightPanelId(renderedTab)}
+        id={getDocsRightPanelId(renderedTab)}
+        defaultSize={toPanelPercentSize(rightPanelRatio)}
+        minSize={rightPanelSize.minSize}
+        maxSize={rightPanelSize.maxSize}
         onMouseDownCapture={onFocus}
         className={`flex min-w-0 shrink-0 flex-col overflow-hidden border-l border-border bg-background ${
           enableAnimations

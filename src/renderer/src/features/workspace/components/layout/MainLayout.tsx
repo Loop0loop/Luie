@@ -1,4 +1,4 @@
-import { type ReactNode, useState, useEffect } from "react";
+import { type ReactNode, useState, useEffect, useRef } from "react";
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import {
   PanelRightClose,
@@ -20,11 +20,12 @@ import StatusFooter from "@shared/ui/StatusFooter";
 import {
   getLayoutSurfaceConfig,
   getLayoutSurfaceDefaultRatio,
+  getResponsivePanelSize,
   toPanelPercentSize,
-  toPanelPixelSize,
 } from "@shared/constants/layoutSizing";
 import { toPercentSize } from "@shared/constants/sidebarSizing";
 import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
+import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -62,6 +63,16 @@ export default function MainLayout({
 
   const mainSidebarConfig = getLayoutSurfaceConfig("default.sidebar");
   const mainContextConfig = getLayoutSurfaceConfig("default.panel");
+  const mainLayoutGroupRef = useRef<HTMLDivElement | null>(null);
+  const mainLayoutGroupWidth = useElementWidth(mainLayoutGroupRef);
+  const mainSidebarSize = getResponsivePanelSize(
+    mainLayoutGroupWidth,
+    mainSidebarConfig,
+  );
+  const mainContextSize = getResponsivePanelSize(
+    mainLayoutGroupWidth,
+    mainContextConfig,
+  );
 
   const onLayoutChanged = useLayoutPersist([
     { id: "sidebar-panel", surface: "default.sidebar" },
@@ -159,6 +170,7 @@ export default function MainLayout({
         id="main-layout-group"
         orientation="horizontal"
         className="flex flex-1 overflow-hidden relative w-full h-full"
+        elementRef={mainLayoutGroupRef}
         onLayoutChanged={onLayoutChanged}
       >
         {/* Sidebar */}
@@ -166,8 +178,8 @@ export default function MainLayout({
           <Panel
             id="sidebar-panel"
             defaultSize={sidebarDefaultSize}
-            minSize={toPanelPixelSize(mainSidebarConfig.minPx)}
-            maxSize={toPanelPixelSize(mainSidebarConfig.maxPx)}
+            minSize={mainSidebarSize.minSize}
+            maxSize={mainSidebarSize.maxSize}
             className={`bg-sidebar border-r border-border overflow-hidden flex flex-col z-10 ${
               enableAnimations
                 ? isSidebarClosing
@@ -270,8 +282,8 @@ export default function MainLayout({
           <Panel
             id="context-panel"
             defaultSize={contextDefaultSize}
-            minSize={toPanelPixelSize(mainContextConfig.minPx)}
-            maxSize={toPanelPixelSize(mainContextConfig.maxPx)}
+            minSize={mainContextSize.minSize}
+            maxSize={mainContextSize.maxSize}
             className={`bg-panel border-l border-border overflow-hidden flex flex-col z-10 ${
               enableAnimations
                 ? isContextClosing

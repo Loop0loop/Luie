@@ -3,8 +3,8 @@ import { ChevronLeft } from "lucide-react";
 import { Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
 import FocusHoverSidebar from "@renderer/features/manuscript/components/FocusHoverSidebar";
 import {
-    toPanelPercentSize,
-    toPanelPixelSize,
+  getResponsivePanelSize,
+  toPanelPercentSize,
 } from "@shared/constants/layoutSizing";
 import { BinderSidebarPanelBody } from "./BinderSidebarPanelBody";
 import { BinderSidebarTabs } from "./BinderSidebarTabs";
@@ -13,12 +13,16 @@ import { useBinderSidebarState } from "./useBinderSidebarState";
 interface BinderSidebarProps {
     activeChapterId?: string;
     currentProjectId?: string;
+    onManualClose?: () => void;
+    groupWidthPx: number;
     sidebarTopOffset: number;
 }
 
 export function BinderSidebar({
     activeChapterId,
     currentProjectId,
+    onManualClose,
+    groupWidthPx,
     sidebarTopOffset: _sidebarTopOffset,
 }: BinderSidebarProps) {
     const { t } = useTranslation();
@@ -33,6 +37,11 @@ export function BinderSidebar({
         setRegionOpen,
         widthConfig,
     } = useBinderSidebarState();
+    const binderSize = getResponsivePanelSize(groupWidthPx, widthConfig);
+    const handleClosePanel = () => {
+        onManualClose?.();
+        setActiveRightTab(null);
+    };
 
     if (!activeRightTab) return null;
 
@@ -45,8 +54,8 @@ export function BinderSidebar({
             <Panel
                 id={`binder-sidebar-${activeRightTab}`}
                 defaultSize={toPanelPercentSize(savedRatio)}
-                minSize={toPanelPixelSize(widthConfig.minPx)}
-                maxSize={toPanelPixelSize(widthConfig.maxPx)}
+                minSize={binderSize.minSize}
+                maxSize={binderSize.maxSize}
                 onResize={handleResize}
                 onMouseDownCapture={() => {
                     setFocusedClosableTarget({ kind: "docs-tab" });
@@ -58,7 +67,7 @@ export function BinderSidebar({
                     activeTab={activeRightTab}
                     currentProjectId={currentProjectId}
                     onBackToSnapshotList={() => setActiveRightTab("snapshot")}
-                    onClose={() => setActiveRightTab(null)}
+                    onClose={handleClosePanel}
                     t={t}
                 />
 
@@ -83,7 +92,13 @@ export function BinderSidebar({
     );
 }
 
-export function BinderSidebarRail({ sidebarTopOffset }: { sidebarTopOffset: number }) {
+export function BinderSidebarRail({
+    sidebarTopOffset,
+    suppressHoverOpen = false,
+}: {
+    sidebarTopOffset: number;
+    suppressHoverOpen?: boolean;
+}) {
     const { t } = useTranslation();
     const {
         activeRightTab,
@@ -114,6 +129,7 @@ export function BinderSidebarRail({ sidebarTopOffset }: { sidebarTopOffset: numb
             topOffset={sidebarTopOffset}
             activationWidthPx={84}
             closeDelayMs={240}
+            suppressHoverOpen={suppressHoverOpen}
         >
             <div className="h-full flex flex-row shadow-xl">
                 <BinderSidebarTabs

@@ -3,6 +3,7 @@ import {
   useRef,
   useEffect,
   useState,
+  useCallback,
 } from "react";
 import { type Editor } from "@tiptap/react";
 import { Panel, Group as PanelGroup } from "react-resizable-panels";
@@ -16,6 +17,7 @@ import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { BinderSidebar, BinderSidebarRail } from "@renderer/features/manuscript/components/BinderSidebar";
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@shared/constants/configs";
 import { toPercentSize } from "@shared/constants/sidebarSizing";
+import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 
 interface EditorLayoutProps {
   children?: ReactNode;
@@ -50,8 +52,14 @@ export default function EditorLayout({
 
   const maxWidth = useEditorStore((state) => state.maxWidth);
   const activeRightTab = useUIStore((state) => state.docsRightTab);
+  const [isBinderRailHoverSuppressed, setIsBinderRailHoverSuppressed] =
+    useState(false);
+  const binderRailHoverSuppressionTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
 
   const ribbonRef = useRef<HTMLDivElement>(null);
+  const editorLayoutGroupRef = useRef<HTMLDivElement>(null);
   const [ribbonHeight, setRibbonHeight] = useState(56);
 
   useEffect(() => {
@@ -63,6 +71,29 @@ export default function EditorLayout({
     });
     observer.observe(ribbonRef.current);
     return () => observer.disconnect();
+  }, []);
+
+  const editorLayoutGroupWidth = useElementWidth(editorLayoutGroupRef);
+
+  useEffect(
+    () => () => {
+      if (binderRailHoverSuppressionTimeoutRef.current !== null) {
+        clearTimeout(binderRailHoverSuppressionTimeoutRef.current);
+        binderRailHoverSuppressionTimeoutRef.current = null;
+      }
+    },
+    [],
+  );
+
+  const handleBinderSidebarManualClose = useCallback(() => {
+    if (binderRailHoverSuppressionTimeoutRef.current !== null) {
+      clearTimeout(binderRailHoverSuppressionTimeoutRef.current);
+    }
+    setIsBinderRailHoverSuppressed(true);
+    binderRailHoverSuppressionTimeoutRef.current = setTimeout(() => {
+      binderRailHoverSuppressionTimeoutRef.current = null;
+      setIsBinderRailHoverSuppressed(false);
+    }, 250);
   }, []);
 
   const isMacOS = navigator.platform.toLowerCase().includes("mac");
@@ -106,6 +137,7 @@ export default function EditorLayout({
             orientation="horizontal"
             className="flex w-full h-full flex-1 overflow-hidden relative"
             id="editor-layout-group"
+            elementRef={editorLayoutGroupRef}
           >
             <Panel
               id="main-editor-view"
@@ -148,6 +180,8 @@ export default function EditorLayout({
             <BinderSidebar
               activeChapterId={activeChapterId}
               currentProjectId={currentProjectId}
+              groupWidthPx={editorLayoutGroupWidth}
+              onManualClose={handleBinderSidebarManualClose}
               sidebarTopOffset={sidebarTopOffset}
             />
 
@@ -162,7 +196,10 @@ export default function EditorLayout({
             )}
           </PanelGroup>
 
-          <BinderSidebarRail sidebarTopOffset={sidebarTopOffset} />
+          <BinderSidebarRail
+            sidebarTopOffset={sidebarTopOffset}
+            suppressHoverOpen={isBinderRailHoverSuppressed}
+          />
         </div>
       </div>
     </div>
