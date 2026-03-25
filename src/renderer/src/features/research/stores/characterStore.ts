@@ -27,7 +27,7 @@ interface CharacterStore extends BaseCharacterStore {
   loadCharacter: (id: string) => Promise<void>;
   createCharacter: (input: CharacterCreateInput) => Promise<void>;
   updateCharacter: (input: CharacterUpdateInput) => Promise<void>;
-  deleteCharacter: (id: string) => Promise<void>;
+  deleteCharacter: (id: string) => Promise<boolean>;
   setCurrentCharacter: (character: Character | null) => void;
 
   // 호환성 필드
@@ -92,13 +92,19 @@ export const useCharacterStore = create<CharacterStore>((set, _get, store) => {
   const deleteCharacterWithSync = async (id: string) => {
     const projectId = useProjectStore.getState().currentItem?.id;
     if (!projectId) {
-      return;
+      return false;
     }
 
-    await runWithProjectLock(mutationLocks, projectId, async () => {
-      await crudSlice.delete(id);
-      await reloadCurrentGraph(projectId);
-    });
+    return (
+      (await runWithProjectLock(mutationLocks, projectId, async () => {
+        const deleted = await crudSlice.delete(id);
+        if (!deleted) {
+          return false;
+        }
+        await reloadCurrentGraph(projectId);
+        return true;
+      })) ?? false
+    );
   };
 
   return {
@@ -114,9 +120,7 @@ export const useCharacterStore = create<CharacterStore>((set, _get, store) => {
     updateCharacter: async (input: CharacterUpdateInput) => {
       await updateCharacterWithSync(input);
     },
-    deleteCharacter: async (id: string) => {
-      await deleteCharacterWithSync(id);
-    },
+    deleteCharacter: async (id: string) => await deleteCharacterWithSync(id),
     setCurrentCharacter: (character: Character | null) =>
       crudSlice.setCurrent(character),
 

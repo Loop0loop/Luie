@@ -16,7 +16,7 @@ export interface CRUDStore<T extends BaseItem, CreateInput, UpdateInput> {
   loadOne: (id: string) => Promise<void>;
   create: (input: CreateInput) => Promise<T | null>;
   update: (input: UpdateInput) => Promise<void>;
-  delete: (id: string) => Promise<void>;
+  delete: (id: string) => Promise<boolean>;
   setCurrent: (item: T | null) => void;
 }
 
@@ -132,6 +132,9 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
 
     create: async (input: CreateInput) => {
       if (createInFlight) {
+        const message = `Failed to create ${name}: another create request is already in flight.`;
+        set({ error: message });
+        api.logger.warn(message);
         return null;
       }
       createInFlight = true;
@@ -233,12 +236,15 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
             currentItem:
               state.currentItem?.id === id ? null : state.currentItem,
           }));
+          return true;
         } else {
           set({ error: response.error?.message });
+          return false;
         }
       } catch (error) {
         api.logger.error(`Failed to delete ${name}:`, error);
         set({ error: (error as Error).message });
+        return false;
       } finally {
         set({ isLoading: false });
       }

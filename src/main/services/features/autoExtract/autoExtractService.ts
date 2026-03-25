@@ -73,11 +73,11 @@ class AutoExtractService {
 
     const [characters, terms] = (await Promise.all([
       db.getClient().character.findMany({
-        where: { projectId },
+        where: { projectId, deletedAt: null },
         select: { id: true, name: true, description: true },
       }),
       db.getClient().term.findMany({
-        where: { projectId },
+        where: { projectId, deletedAt: null },
         select: { id: true, term: true, definition: true, category: true },
       }),
     ])) as [

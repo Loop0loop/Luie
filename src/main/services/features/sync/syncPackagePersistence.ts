@@ -52,6 +52,7 @@ export const buildProjectPackagePayload = async (input: {
   hydrateMissingWorldDocsFromPackage: (
     worldDocs: Map<WorldDocumentType, unknown>,
     projectPath: string,
+    skippedDocTypes?: Set<WorldDocumentType>,
   ) => Promise<void>;
   logger: LoggerLike;
 }): Promise<LuiePackageExportData | null> => {
@@ -90,13 +91,22 @@ export const buildProjectPackagePayload = async (input: {
     }));
 
   const worldDocs = new Map<WorldDocumentType, unknown>();
+  const deletedWorldDocTypes = new Set<WorldDocumentType>();
   for (const doc of sortByUpdatedAtDesc(bundle.worldDocuments)) {
-    if (doc.projectId !== projectId || doc.deletedAt) continue;
+    if (doc.projectId !== projectId) continue;
+    if (doc.deletedAt) {
+      deletedWorldDocTypes.add(doc.docType as WorldDocumentType);
+      continue;
+    }
     if (worldDocs.has(doc.docType as WorldDocumentType)) continue;
     worldDocs.set(doc.docType as WorldDocumentType, doc.payload);
   }
 
-  await hydrateMissingWorldDocsFromPackage(worldDocs, projectPath);
+  await hydrateMissingWorldDocsFromPackage(
+    worldDocs,
+    projectPath,
+    deletedWorldDocTypes,
+  );
 
   const memos = bundle.memos
     .filter((item) => item.projectId === projectId && !item.deletedAt)
@@ -190,6 +200,7 @@ export const persistBundleToLuiePackages = async (input: {
   hydrateMissingWorldDocsFromPackage: (
     worldDocs: Map<WorldDocumentType, unknown>,
     projectPath: string,
+    skippedDocTypes?: Set<WorldDocumentType>,
   ) => Promise<void>;
   buildProjectPackagePayload?: (args: {
     bundle: SyncBundle;
@@ -199,6 +210,7 @@ export const persistBundleToLuiePackages = async (input: {
     hydrateMissingWorldDocsFromPackage: (
       worldDocs: Map<WorldDocumentType, unknown>,
       projectPath: string,
+      skippedDocTypes?: Set<WorldDocumentType>,
     ) => Promise<void>;
     logger: LoggerLike;
   }) => Promise<LuiePackageExportData | null>;

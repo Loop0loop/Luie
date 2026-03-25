@@ -38,6 +38,7 @@ export class EventService {
             logger.info("Event created successfully", {
                 eventId: event.id,
             });
+            await projectService.touchProject(input.projectId);
             await projectService.persistPackageAfterMutation(input.projectId, "event:create");
             return event;
         } catch (error) {
@@ -57,7 +58,7 @@ export class EventService {
                 where: { id },
             });
 
-            if (!event) {
+            if (!event || event.deletedAt) {
                 throw new ServiceError(
                     ErrorCode.DB_QUERY_FAILED,
                     "Event not found",
@@ -75,7 +76,7 @@ export class EventService {
     async getAllEvents(projectId: string) {
         try {
             const events = await db.getClient().event.findMany({
-                where: { projectId },
+                where: { projectId, deletedAt: null },
                 orderBy: { createdAt: "asc" },
             });
 
@@ -103,6 +104,18 @@ export class EventService {
                 updateData.attributes = JSON.stringify(input.attributes);
             }
 
+            const current = await db.getClient().event.findUnique({
+                where: { id: input.id },
+                select: { id: true, projectId: true, deletedAt: true },
+            });
+            if (!current || current.deletedAt) {
+                throw new ServiceError(
+                    ErrorCode.DB_QUERY_FAILED,
+                    "Event not found",
+                    { id: input.id },
+                );
+            }
+
             const event = await db.getClient().event.update({
                 where: { id: input.id },
                 data: updateData,
@@ -111,6 +124,7 @@ export class EventService {
             logger.info("Event updated successfully", {
                 eventId: event.id,
             });
+            await projectService.touchProject(String(event.projectId));
             await projectService.persistPackageAfterMutation(String(event.projectId), "event:update");
             return event;
         } catch (error) {
@@ -136,13 +150,14 @@ export class EventService {
         try {
             const event = await db.getClient().event.findUnique({
                 where: { id },
-                select: { projectId: true },
+                select: { projectId: true, deletedAt: true },
             });
 
             const projectId =
                 (event as { projectId?: unknown })?.projectId
                     ? String((event as { projectId: unknown }).projectId)
                     : null;
+            const now = new Date();
 
             await db.getClient().$transaction(async (tx: Prisma.TransactionClient) => {
                 if (projectId) {
@@ -153,11 +168,18 @@ export class EventService {
                         },
                     });
                 }
-                await tx.event.deleteMany({ where: { id } });
+                await tx.event.updateMany({
+                    where: { id },
+                    data: {
+                        deletedAt: now,
+                        updatedAt: now,
+                    },
+                });
             });
 
             logger.info("Event deleted successfully", { eventId: id });
             if (projectId) {
+                await projectService.touchProject(projectId);
                 await projectService.persistPackageAfterMutation(projectId, "event:delete");
             }
             return { success: true };

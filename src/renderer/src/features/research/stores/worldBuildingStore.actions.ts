@@ -141,6 +141,18 @@ const persistGraphDocument = async (
             : "Failed to persist world graph document";
         throw new Error(message);
       }
+
+      const packageExportResult = response.data as
+        | { packageExportError?: string }
+        | null
+        | undefined;
+      if (packageExportResult?.packageExportError) {
+        await api.logger.error("Failed to export world graph into .luie", {
+          projectId,
+          error: packageExportResult.packageExportError,
+        });
+        throw new Error(packageExportResult.packageExportError);
+      }
     });
 
   graphPersistQueue.set(projectId, nextWrite);

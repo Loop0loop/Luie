@@ -249,10 +249,10 @@ export class EntityRelationService {
         try {
             const client = await this.getClient();
             const [characters, factions, events, terms, worldEntities, edges] = await Promise.all([
-                client.character.findMany({ where: { projectId } }),
-                client.faction.findMany({ where: { projectId } }),
-                client.event.findMany({ where: { projectId } }),
-                client.term.findMany({ where: { projectId } }),
+                client.character.findMany({ where: { projectId, deletedAt: null } }),
+                client.faction.findMany({ where: { projectId, deletedAt: null } }),
+                client.event.findMany({ where: { projectId, deletedAt: null } }),
+                client.term.findMany({ where: { projectId, deletedAt: null } }),
                 client.worldEntity.findMany({ where: { projectId } }),
                 client.entityRelation.findMany({ where: { projectId } }),
             ]);
@@ -359,13 +359,13 @@ export class EntityRelationService {
         let orphanRelations = 0;
         let removedRelations = 0;
 
-        for (const project of projects) {
+            for (const project of projects) {
             const projectId = String(project.id);
             const [characters, factions, events, terms, worldEntities, relations] = await Promise.all([
-                client.character.findMany({ where: { projectId }, select: { id: true } }),
-                client.faction.findMany({ where: { projectId }, select: { id: true } }),
-                client.event.findMany({ where: { projectId }, select: { id: true } }),
-                client.term.findMany({ where: { projectId }, select: { id: true } }),
+                client.character.findMany({ where: { projectId, deletedAt: null }, select: { id: true } }),
+                client.faction.findMany({ where: { projectId, deletedAt: null }, select: { id: true } }),
+                client.event.findMany({ where: { projectId, deletedAt: null }, select: { id: true } }),
+                client.term.findMany({ where: { projectId, deletedAt: null }, select: { id: true } }),
                 client.worldEntity.findMany({ where: { projectId }, select: { id: true } }),
                 client.entityRelation.findMany({
                     where: { projectId },

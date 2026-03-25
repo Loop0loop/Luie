@@ -20,7 +20,7 @@ interface TermStore extends BaseTermStore {
   loadTerm: (id: string) => Promise<void>;
   createTerm: (input: TermCreateInput) => Promise<void>;
   updateTerm: (input: TermUpdateInput) => Promise<void>;
-  deleteTerm: (id: string) => Promise<void>;
+  deleteTerm: (id: string) => Promise<boolean>;
   setCurrentTerm: (term: Term | null) => void;
 
   // 호환성 필드
@@ -84,13 +84,19 @@ export const useTermStore = create<TermStore>((set, _get, store) => {
   const deleteTermWithSync = async (id: string) => {
     const projectId = useProjectStore.getState().currentItem?.id;
     if (!projectId) {
-      return;
+      return false;
     }
 
-    await runWithProjectLock(mutationLocks, projectId, async () => {
-      await crudSlice.delete(id);
-      await reloadCurrentGraph(projectId);
-    });
+    return (
+      (await runWithProjectLock(mutationLocks, projectId, async () => {
+        const deleted = await crudSlice.delete(id);
+        if (!deleted) {
+          return false;
+        }
+        await reloadCurrentGraph(projectId);
+        return true;
+      })) ?? false
+    );
   };
 
   return {
@@ -106,9 +112,7 @@ export const useTermStore = create<TermStore>((set, _get, store) => {
     updateTerm: async (input: TermUpdateInput) => {
       await updateTermWithSync(input);
     },
-    deleteTerm: async (id: string) => {
-      await deleteTermWithSync(id);
-    },
+    deleteTerm: async (id: string) => await deleteTermWithSync(id),
     setCurrentTerm: (term: Term | null) => crudSlice.setCurrent(term),
 
     // 호환성을 위한 속성 매핑 (초기값)

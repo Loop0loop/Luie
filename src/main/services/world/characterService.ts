@@ -55,6 +55,7 @@ export class CharacterService {
         includeCharacters: true,
         includeTerms: false,
       });
+      await projectService.touchProject(input.projectId);
       await projectService.persistPackageAfterMutation(input.projectId, "character:create");
       return character;
     } catch (error) {
@@ -81,6 +82,13 @@ export class CharacterService {
           { id },
         );
       }
+      if ("deletedAt" in character && character.deletedAt) {
+        throw new ServiceError(
+          ErrorCode.CHARACTER_NOT_FOUND,
+          "Character not found",
+          { id },
+        );
+      }
 
       const appearanceCacheService = await loadAppearanceCacheService();
       const appearances =
@@ -98,7 +106,7 @@ export class CharacterService {
   async getAllCharacters(projectId: string) {
     try {
       const characters = await db.getClient().character.findMany({
-        where: { projectId },
+        where: { projectId, deletedAt: null },
         orderBy: { createdAt: "asc" },
       });
 
@@ -127,6 +135,18 @@ export class CharacterService {
         updateData.attributes = JSON.stringify(input.attributes);
       }
 
+      const current = await db.getClient().character.findUnique({
+        where: { id: input.id },
+        select: { id: true, projectId: true, deletedAt: true },
+      });
+      if (!current || current.deletedAt) {
+        throw new ServiceError(
+          ErrorCode.CHARACTER_NOT_FOUND,
+          "Character not found",
+          { id: input.id },
+        );
+      }
+
       const character = await db.getClient().character.update({
         where: { id: input.id },
         data: updateData,
@@ -141,6 +161,7 @@ export class CharacterService {
           includeTerms: false,
         });
       }
+      await projectService.touchProject(String(character.projectId));
       await projectService.persistPackageAfterMutation(String(character.projectId), "character:update");
       return character;
     } catch (error) {
@@ -166,12 +187,13 @@ export class CharacterService {
     try {
       const character = await db.getClient().character.findUnique({
         where: { id },
-        select: { projectId: true },
+        select: { projectId: true, deletedAt: true },
       });
 
       const projectId = (character as { projectId?: unknown })?.projectId
         ? String((character as { projectId: unknown }).projectId)
         : null;
+      const now = new Date();
 
       await db
         .getClient()
@@ -184,13 +206,20 @@ export class CharacterService {
               },
             });
           }
-          await tx.character.deleteMany({ where: { id } });
+          await tx.character.updateMany({
+            where: { id },
+            data: {
+              deletedAt: now,
+              updatedAt: now,
+            },
+          });
         });
       const appearanceCacheService = await loadAppearanceCacheService();
       await appearanceCacheService.clearCharacterEntity(id);
 
       logger.info("Character deleted successfully", { characterId: id });
       if (projectId) {
+        await projectService.touchProject(projectId);
         await projectService.persistPackageAfterMutation(projectId, "character:delete");
       }
       return { success: true };
@@ -239,7 +268,7 @@ export class CharacterService {
         new Set(appearances.map((appearance) => appearance.characterId)),
       );
       const characters = await db.getClient().character.findMany({
-        where: { id: { in: characterIds } },
+        where: { id: { in: characterIds }, deletedAt: null },
       });
       const characterById = new Map(
         characters.map((character) => [String(character.id), character]),
@@ -266,7 +295,7 @@ export class CharacterService {
         where: { id: characterId },
       });
 
-      if (!character) {
+      if (!character || character.deletedAt) {
         throw new ServiceError(
           ErrorCode.CHARACTER_NOT_FOUND,
           "Character not found",
@@ -281,6 +310,7 @@ export class CharacterService {
         });
 
         logger.info("First appearance updated", { characterId, chapterId });
+        await projectService.touchProject(String(character.projectId));
         await projectService.persistPackageAfterMutation(String(character.projectId), "character:update-first-appearance");
       }
     } catch (error) {
@@ -303,6 +333,7 @@ export class CharacterService {
             { name: { contains: query } },
             { description: { contains: query } },
           ],
+          deletedAt: null,
         },
         orderBy: { name: "asc" },
       });

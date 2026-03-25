@@ -135,6 +135,7 @@ describe("createCRUDStore", () => {
     expect(apiClient.create).toHaveBeenCalledTimes(1);
 
     await expect(secondCreate).resolves.toBeNull();
+    expect(store.getState().error).toContain("already in flight");
 
     createDeferred.resolve({
       success: true,
@@ -153,5 +154,33 @@ describe("createCRUDStore", () => {
       name: "Hero",
     });
     await store.getState().loadAll("project-1");
+  });
+
+  it("returns false and surfaces an error when delete fails", async () => {
+    const loadDeferred = deferred<IPCResponse<Item[]>>();
+    const apiClient = createApiClient(
+      Promise.resolve({
+        success: true,
+        data: {
+          id: "item-1",
+          name: "Hero",
+        },
+      }),
+      loadDeferred.promise,
+    );
+    apiClient.delete.mockResolvedValue({
+      success: false,
+      error: {
+        message: "Item was not found",
+      },
+    });
+
+    const store = create(
+      createCRUDSlice<Item, CreateInput, UpdateInput>(apiClient, "Item"),
+    );
+
+    await expect(store.getState().delete("item-1")).resolves.toBe(false);
+    expect(store.getState().error).toBe("Item was not found");
+    expect(apiClient.delete).toHaveBeenCalledWith("item-1");
   });
 });

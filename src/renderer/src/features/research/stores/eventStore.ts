@@ -26,7 +26,7 @@ interface EventStore extends BaseEventStore {
     loadEvent: (id: string) => Promise<void>;
     createEvent: (input: EventCreateInput) => Promise<void>;
     updateEvent: (input: EventUpdateInput) => Promise<void>;
-    deleteEvent: (id: string) => Promise<void>;
+    deleteEvent: (id: string) => Promise<boolean>;
     setCurrentEvent: (event: Event | null) => void;
 
     events: Event[];
@@ -90,13 +90,19 @@ export const useEventStore = create<EventStore>((set, _get, store) => {
     const deleteEventWithSync = async (id: string) => {
         const projectId = useProjectStore.getState().currentItem?.id;
         if (!projectId) {
-            return;
+            return false;
         }
 
-        await runWithProjectLock(mutationLocks, projectId, async () => {
-            await crudSlice.delete(id);
-            await reloadCurrentGraph(projectId);
-        });
+        return (
+            (await runWithProjectLock(mutationLocks, projectId, async () => {
+                const deleted = await crudSlice.delete(id);
+                if (!deleted) {
+                    return false;
+                }
+                await reloadCurrentGraph(projectId);
+                return true;
+            })) ?? false
+        );
     };
 
     return {
@@ -112,9 +118,7 @@ export const useEventStore = create<EventStore>((set, _get, store) => {
         updateEvent: async (input: EventUpdateInput) => {
             await updateEventWithSync(input);
         },
-        deleteEvent: async (id: string) => {
-            await deleteEventWithSync(id);
-        },
+        deleteEvent: async (id: string) => await deleteEventWithSync(id),
         setCurrentEvent: (event: Event | null) =>
             crudSlice.setCurrent(event),
 

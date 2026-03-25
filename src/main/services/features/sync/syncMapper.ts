@@ -133,13 +133,23 @@ const getEntityBaselineTimestamp = (
   return toTimestamp(entityMap[entityId]);
 };
 
-const chooseLatest = <T extends { updatedAt: string }>(
+const chooseLatest = <T extends { updatedAt: string; deletedAt?: string | null }>(
   left: T,
   right: T,
 ): [winner: T, loser: T] => {
-  return toTimestamp(left.updatedAt) >= toTimestamp(right.updatedAt)
-    ? [left, right]
-    : [right, left];
+  const leftUpdatedAt = toTimestamp(left.updatedAt);
+  const rightUpdatedAt = toTimestamp(right.updatedAt);
+  if (leftUpdatedAt !== rightUpdatedAt) {
+    return leftUpdatedAt > rightUpdatedAt ? [left, right] : [right, left];
+  }
+
+  const leftDeleted = Boolean(left.deletedAt);
+  const rightDeleted = Boolean(right.deletedAt);
+  if (leftDeleted !== rightDeleted) {
+    return leftDeleted ? [left, right] : [right, left];
+  }
+
+  return [left, right];
 };
 
 const mergeEntityList = <T extends { id: string; updatedAt: string }>(

@@ -27,7 +27,7 @@ interface ProjectStore extends BaseProjectStore {
     description?: string,
     projectPath?: string,
   ) => Promise<void>;
-  deleteProject: (id: string) => Promise<void>;
+  deleteProject: (id: string) => Promise<boolean>;
   deleteProjectWithOptions: (input: { id: string; deleteFile?: boolean }) => Promise<void>;
   setCurrentProject: (project: Project | null) => void;
 
@@ -64,7 +64,7 @@ export const useProjectStore = create<ProjectStore>((set, _get, store) => {
       description?: string,
       projectPath?: string,
     ) => crudSlice.update({ id, title, description, projectPath }),
-    deleteProject: (id: string) => crudSlice.delete(id),
+    deleteProject: async (id: string) => await crudSlice.delete(id),
     deleteProjectWithOptions: async (input: { id: string; deleteFile?: boolean }) => {
       setWithAlias({ isLoading: true, error: null } as Partial<ProjectStore>);
       try {

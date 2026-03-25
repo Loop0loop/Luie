@@ -22,7 +22,7 @@ type WorldReplicaServiceLike = {
     projectId: string;
     docType: ReplicaWorldDocumentType;
     payload: unknown;
-  }) => Promise<void>;
+  }) => Promise<unknown>;
   getScrapMemos: (projectId: string) => Promise<unknown>;
   setScrapMemos: (input: {
     projectId: string;

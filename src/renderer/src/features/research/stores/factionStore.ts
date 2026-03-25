@@ -26,7 +26,7 @@ interface FactionStore extends BaseFactionStore {
     loadFaction: (id: string) => Promise<void>;
     createFaction: (input: FactionCreateInput) => Promise<void>;
     updateFaction: (input: FactionUpdateInput) => Promise<void>;
-    deleteFaction: (id: string) => Promise<void>;
+    deleteFaction: (id: string) => Promise<boolean>;
     setCurrentFaction: (faction: Faction | null) => void;
 
     factions: Faction[];
@@ -90,13 +90,19 @@ export const useFactionStore = create<FactionStore>((set, _get, store) => {
     const deleteFactionWithSync = async (id: string) => {
         const projectId = useProjectStore.getState().currentItem?.id;
         if (!projectId) {
-            return;
+            return false;
         }
 
-        await runWithProjectLock(mutationLocks, projectId, async () => {
-            await crudSlice.delete(id);
-            await reloadCurrentGraph(projectId);
-        });
+        return (
+            (await runWithProjectLock(mutationLocks, projectId, async () => {
+                const deleted = await crudSlice.delete(id);
+                if (!deleted) {
+                    return false;
+                }
+                await reloadCurrentGraph(projectId);
+                return true;
+            })) ?? false
+        );
     };
 
     return {
@@ -112,9 +118,7 @@ export const useFactionStore = create<FactionStore>((set, _get, store) => {
         updateFaction: async (input: FactionUpdateInput) => {
             await updateFactionWithSync(input);
         },
-        deleteFaction: async (id: string) => {
-            await deleteFactionWithSync(id);
-        },
+        deleteFaction: async (id: string) => await deleteFactionWithSync(id),
         setCurrentFaction: (faction: Faction | null) =>
             crudSlice.setCurrent(faction),
 

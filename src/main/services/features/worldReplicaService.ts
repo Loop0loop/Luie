@@ -15,6 +15,10 @@ const logger = createLogger("WorldReplicaService");
 
 const toJsonString = (value: unknown): string => JSON.stringify(value ?? null);
 
+type WorldReplicaDocumentSetResult = {
+  packageExportError?: string;
+};
+
 const parseJsonSafely = (
   value: string,
   context: Record<string, unknown>,
@@ -102,7 +106,7 @@ export class WorldReplicaService {
     projectId: string;
     docType: ReplicaWorldDocumentType;
     payload: unknown;
-  }): Promise<void> {
+  }): Promise<WorldReplicaDocumentSetResult> {
     try {
       await this.ensureDbReady();
       await db.getClient().worldDocument.upsert({
@@ -128,12 +132,21 @@ export class WorldReplicaService {
           "world-document:graph",
         );
         if (exportResult.error) {
+          const message =
+            exportResult.error instanceof Error
+              ? exportResult.error.message
+              : String(exportResult.error);
           logger.warn("Graph replica saved but immediate .luie export failed", {
             projectId: input.projectId,
             error: exportResult.error,
           });
+          return {
+            packageExportError: message,
+          };
         }
       }
+
+      return {};
     } catch (error) {
       logger.error("Failed to save replica world document", {
         ...input,

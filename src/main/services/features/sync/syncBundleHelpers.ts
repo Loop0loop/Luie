@@ -66,11 +66,12 @@ export const buildProjectPackagePayloadForSync = async (input: {
     projectId: input.projectId,
     projectPath: input.projectPath,
     localSnapshots: input.localSnapshots,
-    hydrateMissingWorldDocsFromPackage: async (worldDocs, targetProjectPath) =>
+    hydrateMissingWorldDocsFromPackage: async (worldDocs, targetProjectPath, skippedDocTypes) =>
       await hydrateMissingWorldDocsFromPackage(
         worldDocs,
         targetProjectPath,
         input.logger,
+        skippedDocTypes,
       ),
     logger: input.logger,
   });

@@ -37,6 +37,7 @@ export const buildSyncProjectPackagePayload = async (input: {
   hydrateMissingWorldDocsFromPackage: (
     worldDocs: Map<SyncBundle["worldDocuments"][number]["docType"], unknown>,
     targetProjectPath: string,
+    skippedDocTypes?: Set<SyncBundle["worldDocuments"][number]["docType"]>,
   ) => Promise<void>;
   logger: LoggerLike;
 }): Promise<LuiePackageExportData | null> => {
@@ -56,6 +57,7 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
   hydrateMissingWorldDocsFromPackage: (
     worldDocs: Map<SyncBundle["worldDocuments"][number]["docType"], unknown>,
     projectPath: string,
+    skippedDocTypes?: Set<SyncBundle["worldDocuments"][number]["docType"]>,
   ) => Promise<void>;
   buildProjectPackagePayload: (args: {
     bundle: SyncBundle;

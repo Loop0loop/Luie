@@ -136,4 +136,36 @@ describe("characterStore mutation locking", () => {
       name: "Hero",
     });
   });
+
+  it("skips graph refresh when delete fails", async () => {
+    mockedApi.character.delete.mockResolvedValue({
+      success: false,
+      error: {
+        message: "Character was not found",
+      },
+    });
+
+    useProjectStore.setState({
+      currentItem: {
+        id: "project-1",
+        title: "Novel",
+        description: "",
+        createdAt: new Date("2026-03-10T00:00:00.000Z"),
+        updatedAt: new Date("2026-03-10T00:00:00.000Z"),
+      },
+      currentProject: {
+        id: "project-1",
+        title: "Novel",
+        description: "",
+        createdAt: new Date("2026-03-10T00:00:00.000Z"),
+        updatedAt: new Date("2026-03-10T00:00:00.000Z"),
+      },
+    });
+
+    await expect(
+      useCharacterStore.getState().deleteCharacter("char-1"),
+    ).resolves.toBe(false);
+    expect(mockedApi.character.delete).toHaveBeenCalledWith("char-1");
+    expect(mockedRefresh.refreshWorldGraph).not.toHaveBeenCalled();
+  });
 });

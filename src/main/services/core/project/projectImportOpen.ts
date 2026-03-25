@@ -422,6 +422,26 @@ export const openLuieProjectPackage = async (input: {
     select: { id: true, updatedAt: true },
   })) as ExistingProjectLookup;
 
+  const packageUpdatedAt = typeof meta.updatedAt === "string" ? Date.parse(meta.updatedAt) : NaN;
+  const localUpdatedAt = existing?.updatedAt instanceof Date ? existing.updatedAt.getTime() : NaN;
+  if (
+    existing &&
+    Number.isFinite(packageUpdatedAt) &&
+    Number.isFinite(localUpdatedAt) &&
+    localUpdatedAt > packageUpdatedAt
+  ) {
+    input.logger.warn("Skipping stale .luie import; local project is newer", {
+      projectId: existing.id,
+      packagePath: resolvedPath,
+      packageUpdatedAt: meta.updatedAt,
+      localUpdatedAt: existing.updatedAt.toISOString(),
+    });
+    return {
+      project: await input.getProjectById(existing.id),
+      conflict: "db-newer" as const,
+    };
+  }
+
   const chaptersMeta = meta.chapters ?? [];
   const collections = await readLuieImportCollections(resolvedPath, input.logger);
   const chaptersForCreate = await buildChapterCreateRows({

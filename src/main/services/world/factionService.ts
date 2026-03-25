@@ -38,6 +38,7 @@ export class FactionService {
             logger.info("Faction created successfully", {
                 factionId: faction.id,
             });
+            await projectService.touchProject(input.projectId);
             await projectService.persistPackageAfterMutation(input.projectId, "faction:create");
             return faction;
         } catch (error) {
@@ -57,7 +58,7 @@ export class FactionService {
                 where: { id },
             });
 
-            if (!faction) {
+            if (!faction || faction.deletedAt) {
                 throw new ServiceError(
                     ErrorCode.DB_QUERY_FAILED,
                     "Faction not found",
@@ -75,7 +76,7 @@ export class FactionService {
     async getAllFactions(projectId: string) {
         try {
             const factions = await db.getClient().faction.findMany({
-                where: { projectId },
+                where: { projectId, deletedAt: null },
                 orderBy: { createdAt: "asc" },
             });
 
@@ -103,6 +104,18 @@ export class FactionService {
                 updateData.attributes = JSON.stringify(input.attributes);
             }
 
+            const current = await db.getClient().faction.findUnique({
+                where: { id: input.id },
+                select: { id: true, projectId: true, deletedAt: true },
+            });
+            if (!current || current.deletedAt) {
+                throw new ServiceError(
+                    ErrorCode.DB_QUERY_FAILED,
+                    "Faction not found",
+                    { id: input.id },
+                );
+            }
+
             const faction = await db.getClient().faction.update({
                 where: { id: input.id },
                 data: updateData,
@@ -111,6 +124,7 @@ export class FactionService {
             logger.info("Faction updated successfully", {
                 factionId: faction.id,
             });
+            await projectService.touchProject(String(faction.projectId));
             await projectService.persistPackageAfterMutation(String(faction.projectId), "faction:update");
             return faction;
         } catch (error) {
@@ -136,13 +150,14 @@ export class FactionService {
         try {
             const faction = await db.getClient().faction.findUnique({
                 where: { id },
-                select: { projectId: true },
+                select: { projectId: true, deletedAt: true },
             });
 
             const projectId =
                 (faction as { projectId?: unknown })?.projectId
                     ? String((faction as { projectId: unknown }).projectId)
                     : null;
+            const now = new Date();
 
             await db.getClient().$transaction(async (tx: Prisma.TransactionClient) => {
                 if (projectId) {
@@ -153,11 +168,18 @@ export class FactionService {
                         },
                     });
                 }
-                await tx.faction.deleteMany({ where: { id } });
+                await tx.faction.updateMany({
+                    where: { id },
+                    data: {
+                        deletedAt: now,
+                        updatedAt: now,
+                    },
+                });
             });
 
             logger.info("Faction deleted successfully", { factionId: id });
             if (projectId) {
+                await projectService.touchProject(projectId);
                 await projectService.persistPackageAfterMutation(projectId, "faction:delete");
             }
             return { success: true };

@@ -56,6 +56,7 @@ export interface Character {
   attributes?: Record<string, unknown> | string | null;
   createdAt: string | Date;
   updatedAt: string | Date;
+  deletedAt?: string | Date | null;
 }
 
 export interface Term {
@@ -68,6 +69,7 @@ export interface Term {
   firstAppearance?: string | null;
   createdAt: string | Date;
   updatedAt: string | Date;
+  deletedAt?: string | Date | null;
 }
 
 export interface Event {
@@ -79,6 +81,7 @@ export interface Event {
   attributes?: Record<string, unknown> | string | null;
   createdAt: string | Date;
   updatedAt: string | Date;
+  deletedAt?: string | Date | null;
 }
 
 export interface Faction {
@@ -90,6 +93,7 @@ export interface Faction {
   attributes?: Record<string, unknown> | string | null;
   createdAt: string | Date;
   updatedAt: string | Date;
+  deletedAt?: string | Date | null;
 }
 
 export interface Snapshot {
@@ -252,6 +256,7 @@ export type CharacterExportRecord = {
   attributes?: string | null;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt?: Date | null;
 };
 
 export type TermExportRecord = {
@@ -262,6 +267,7 @@ export type TermExportRecord = {
   firstAppearance?: string | null;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt?: Date | null;
 };
 
 export type EventExportRecord = {
@@ -272,6 +278,7 @@ export type EventExportRecord = {
   attributes?: string | null;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt?: Date | null;
 };
 
 export type FactionExportRecord = {
@@ -282,6 +289,7 @@ export type FactionExportRecord = {
   attributes?: string | null;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt?: Date | null;
 };
 
 export type SnapshotExportRecord = {

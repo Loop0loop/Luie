@@ -30,6 +30,7 @@ export class SearchService {
         const characters = (await db.getClient().character.findMany({
           where: {
             projectId: input.projectId,
+            deletedAt: null,
             OR: [
               { name: { contains: input.query } },
               { description: { contains: input.query } },
@@ -55,6 +56,7 @@ export class SearchService {
         const terms = (await db.getClient().term.findMany({
           where: {
             projectId: input.projectId,
+            deletedAt: null,
             OR: [
               { term: { contains: input.query } },
               { definition: { contains: input.query } },
@@ -145,13 +147,13 @@ export class SearchService {
   async getQuickAccess(projectId: string) {
     try {
       const recentTerms = (await db.getClient().term.findMany({
-        where: { projectId },
+        where: { projectId, deletedAt: null },
         orderBy: { createdAt: "desc" },
         take: 5,
       })) as Array<{ id: string; term: string; definition?: string | null }>;
 
       const recentCharacters = (await db.getClient().character.findMany({
-        where: { projectId },
+        where: { projectId, deletedAt: null },
         orderBy: { createdAt: "desc" },
         take: 5,
       })) as Array<{ id: string; name: string; description?: string | null }>;

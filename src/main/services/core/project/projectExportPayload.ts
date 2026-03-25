@@ -93,37 +93,41 @@ export const buildExportChapterData = (chapters: ChapterExportRecord[]) => {
 };
 
 export const buildExportCharacterData = (characters: CharacterExportRecord[]) => {
-  return characters.map((character) => {
-    let attributes: unknown = undefined;
-    if (character.attributes) {
-      try {
-        attributes = JSON.parse(character.attributes);
-      } catch {
-        attributes = character.attributes;
+  return characters
+    .filter((character) => !character.deletedAt)
+    .map((character) => {
+      let attributes: unknown = undefined;
+      if (character.attributes) {
+        try {
+          attributes = JSON.parse(character.attributes);
+        } catch {
+          attributes = character.attributes;
+        }
       }
-    }
-    return {
-      id: character.id,
-      name: character.name,
-      description: character.description,
-      firstAppearance: character.firstAppearance,
-      attributes,
-      createdAt: character.createdAt,
-      updatedAt: character.updatedAt,
-    };
-  });
+      return {
+        id: character.id,
+        name: character.name,
+        description: character.description,
+        firstAppearance: character.firstAppearance,
+        attributes,
+        createdAt: character.createdAt,
+        updatedAt: character.updatedAt,
+      };
+    });
 };
 
 export const buildExportTermData = (terms: TermExportRecord[]) => {
-  return terms.map((term) => ({
-    id: term.id,
-    term: term.term,
-    definition: term.definition,
-    category: term.category,
-    firstAppearance: term.firstAppearance,
-    createdAt: term.createdAt,
-    updatedAt: term.updatedAt,
-  }));
+  return terms
+    .filter((term) => !term.deletedAt)
+    .map((term) => ({
+      id: term.id,
+      term: term.term,
+      definition: term.definition,
+      category: term.category,
+      firstAppearance: term.firstAppearance,
+      createdAt: term.createdAt,
+      updatedAt: term.updatedAt,
+    }));
 };
 
 export const buildExportSnapshotData = (

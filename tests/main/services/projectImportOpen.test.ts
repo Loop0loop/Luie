@@ -198,7 +198,9 @@ describe("projectImportOpen", () => {
       packagePath: "/tmp/project-1.luie",
       logger,
       exportRecoveredPackage: vi.fn(),
-      getProjectById: vi.fn(),
+      getProjectById: vi.fn(async (projectId: string) => ({
+        id: projectId,
+      })),
     });
 
     expect(result).toMatchObject({
@@ -236,6 +238,40 @@ describe("projectImportOpen", () => {
           nodes: [],
           edges: [],
         }),
+      }),
+    );
+  });
+
+  it("skips stale package imports when the local database is newer", async () => {
+    mocked.findUnique.mockResolvedValue({
+      id: "project-1",
+      updatedAt: new Date("2026-03-12T04:00:00.000Z"),
+    });
+
+    const logger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+    };
+
+    const result = await openLuieProjectPackage({
+      packagePath: "/tmp/project-1.luie",
+      logger,
+      exportRecoveredPackage: vi.fn(),
+      getProjectById: vi.fn(async (projectId: string) => ({
+        id: projectId,
+      })),
+    });
+
+    expect(result).toMatchObject({
+      conflict: "db-newer",
+      project: { id: "project-1" },
+    });
+    expect(mocked.applyProjectImportTransaction).not.toHaveBeenCalled();
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Skipping stale .luie import; local project is newer",
+      expect.objectContaining({
+        projectId: "project-1",
+        packagePath: "/tmp/project-1.luie",
       }),
     );
   });

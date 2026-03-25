@@ -99,6 +99,7 @@ model Character {
   attributes      String? // JSON field for flexible attributes
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
 
   // Relations
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -116,6 +117,7 @@ model Event {
   attributes      String? // JSON field for flexible attributes
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
 
   // Relations
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -133,6 +135,7 @@ model Faction {
   attributes      String? // JSON field for flexible attributes
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
 
   // Relations
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -185,6 +188,7 @@ model Term {
   firstAppearance String? // User-visible metadata with optional auto-fill; not rebuildable cache
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
 
   // Relations
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)

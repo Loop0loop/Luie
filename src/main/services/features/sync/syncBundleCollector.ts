@@ -142,6 +142,7 @@ const appendCharacterRecords = (
   for (const row of characters) {
     const characterId = toNullableString(row.id);
     if (!characterId) continue;
+    const characterDeletedAt = toNullableString(row.deletedAt);
     bundle.characters.push({
       id: characterId,
       userId,
@@ -152,6 +153,7 @@ const appendCharacterRecords = (
       attributes: toNullableString(row.attributes),
       createdAt: toIsoString(row.createdAt),
       updatedAt: toIsoString(row.updatedAt),
+      deletedAt: characterDeletedAt,
     });
   }
 };
@@ -165,6 +167,7 @@ const appendTermRecords = (
   for (const row of terms) {
     const termId = toNullableString(row.id);
     if (!termId) continue;
+    const termDeletedAt = toNullableString(row.deletedAt);
     bundle.terms.push({
       id: termId,
       userId,
@@ -176,6 +179,7 @@ const appendTermRecords = (
       firstAppearance: toNullableString(row.firstAppearance),
       createdAt: toIsoString(row.createdAt),
       updatedAt: toIsoString(row.updatedAt),
+      deletedAt: termDeletedAt,
     });
   }
 };
@@ -458,9 +462,10 @@ export const hydrateMissingWorldDocsFromPackage = async (
   worldDocs: Map<WorldDocumentType, unknown>,
   projectPath: string,
   logger: LoggerLike,
+  skippedDocTypes: Set<WorldDocumentType> = new Set(),
 ): Promise<void> => {
   const missingDocTypes = WORLD_DOCUMENT_TYPES.filter(
-    (docType) => !worldDocs.has(docType),
+    (docType) => !worldDocs.has(docType) && !skippedDocTypes.has(docType),
   );
   if (missingDocTypes.length === 0) return;
 

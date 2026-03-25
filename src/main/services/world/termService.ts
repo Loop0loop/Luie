@@ -50,6 +50,7 @@ export class TermService {
         includeCharacters: false,
         includeTerms: true,
       });
+      await projectService.touchProject(input.projectId);
       await projectService.persistPackageAfterMutation(input.projectId, "term:create");
       return term;
     } catch (error) {
@@ -69,7 +70,7 @@ export class TermService {
         where: { id },
       });
 
-      if (!term) {
+      if (!term || term.deletedAt) {
         throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
           id,
         });
@@ -91,7 +92,7 @@ export class TermService {
   async getAllTerms(projectId: string) {
     try {
       const terms = await db.getClient().term.findMany({
-        where: { projectId },
+        where: { projectId, deletedAt: null },
         orderBy: { term: "asc" },
       });
 
@@ -119,6 +120,16 @@ export class TermService {
       if (input.firstAppearance !== undefined)
         updateData.firstAppearance = input.firstAppearance;
 
+      const current = await db.getClient().term.findUnique({
+        where: { id: input.id },
+        select: { id: true, projectId: true, deletedAt: true },
+      });
+      if (!current || current.deletedAt) {
+        throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
+          id: input.id,
+        });
+      }
+
       const term = await db.getClient().term.update({
         where: { id: input.id },
         data: updateData,
@@ -131,6 +142,7 @@ export class TermService {
           includeTerms: true,
         });
       }
+      await projectService.touchProject(String(term.projectId));
       await projectService.persistPackageAfterMutation(String(term.projectId), "term:update");
       return term;
     } catch (error) {
@@ -156,10 +168,11 @@ export class TermService {
     try {
       const term = await db.getClient().term.findUnique({
         where: { id },
-        select: { projectId: true },
+        select: { projectId: true, deletedAt: true },
       });
 
       const projectId = term?.projectId ? String(term.projectId) : null;
+      const now = new Date();
 
       await db
         .getClient()
@@ -172,13 +185,20 @@ export class TermService {
               },
             });
           }
-          await tx.term.deleteMany({ where: { id } });
+          await tx.term.updateMany({
+            where: { id },
+            data: {
+              deletedAt: now,
+              updatedAt: now,
+            },
+          });
         });
       const appearanceCacheService = await loadAppearanceCacheService();
       await appearanceCacheService.clearTermEntity(id);
 
       logger.info("Term deleted successfully", { termId: id });
       if (projectId) {
+        await projectService.touchProject(projectId);
         await projectService.persistPackageAfterMutation(projectId, "term:delete");
       }
       return { success: true };
@@ -225,7 +245,7 @@ export class TermService {
         new Set(appearances.map((appearance) => appearance.termId)),
       );
       const terms = await db.getClient().term.findMany({
-        where: { id: { in: termIds } },
+        where: { id: { in: termIds }, deletedAt: null },
       });
       const termById = new Map(terms.map((term) => [String(term.id), term]));
 
@@ -250,7 +270,7 @@ export class TermService {
         where: { id: termId },
       });
 
-      if (!term) {
+      if (!term || term.deletedAt) {
         throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
           termId,
         });
@@ -263,6 +283,7 @@ export class TermService {
         });
 
         logger.info("First appearance updated", { termId, chapterId });
+        await projectService.touchProject(String(term.projectId));
         await projectService.persistPackageAfterMutation(String(term.projectId), "term:update-first-appearance");
       }
     } catch (error) {
@@ -285,6 +306,7 @@ export class TermService {
             { term: { contains: query } },
             { definition: { contains: query } },
           ],
+          deletedAt: null,
         },
         orderBy: { term: "asc" },
       });
@@ -307,6 +329,7 @@ export class TermService {
         where: {
           projectId,
           category,
+          deletedAt: null,
         },
         orderBy: { term: "asc" },
       });

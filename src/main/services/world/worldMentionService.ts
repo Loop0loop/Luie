@@ -63,30 +63,38 @@ export class WorldMentionService {
       case "Character": {
         const row = (await client.character.findUnique({
           where: { id: entityId },
-          select: { name: true },
+          select: { name: true, deletedAt: true },
         })) as NamedRow | null;
-        return typeof row?.name === "string" ? row.name : null;
+        return row && !("deletedAt" in row && row.deletedAt)
+          ? (typeof row.name === "string" ? row.name : null)
+          : null;
       }
       case "Faction": {
         const row = (await client.faction.findUnique({
           where: { id: entityId },
-          select: { name: true },
+          select: { name: true, deletedAt: true },
         })) as NamedRow | null;
-        return typeof row?.name === "string" ? row.name : null;
+        return row && !("deletedAt" in row && row.deletedAt)
+          ? (typeof row.name === "string" ? row.name : null)
+          : null;
       }
       case "Event": {
         const row = (await client.event.findUnique({
           where: { id: entityId },
-          select: { name: true },
+          select: { name: true, deletedAt: true },
         })) as NamedRow | null;
-        return typeof row?.name === "string" ? row.name : null;
+        return row && !("deletedAt" in row && row.deletedAt)
+          ? (typeof row.name === "string" ? row.name : null)
+          : null;
       }
       case "Term": {
         const row = (await client.term.findUnique({
           where: { id: entityId },
-          select: { term: true },
+          select: { term: true, deletedAt: true },
         })) as TermRow | null;
-        return typeof row?.term === "string" ? row.term : null;
+        return row && !("deletedAt" in row && row.deletedAt)
+          ? (typeof row.term === "string" ? row.term : null)
+          : null;
       }
       case "Place":
       case "Concept":
@@ -132,11 +140,11 @@ export class WorldMentionService {
     const chapterIds = Array.from(
       new Set(appearanceRows.map((row) => row.chapterId)),
     );
-    const chapters = (await client.chapter.findMany({
-      where: {
-        id: { in: chapterIds },
-        projectId: query.projectId,
-        deletedAt: null,
+      const chapters = (await client.chapter.findMany({
+        where: {
+          id: { in: chapterIds },
+          projectId: query.projectId,
+          deletedAt: null,
       },
       select: { id: true, title: true },
     })) as Array<{ id: string; title: string }>;

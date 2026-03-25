@@ -30,8 +30,10 @@ const mocked = vi.hoisted(() => {
       async (callback: (client: typeof transactionClient) => unknown) =>
         await callback(transactionClient),
     ),
-    persistPackageAfterMutation: vi.fn(
-      async (_projectId?: string, _reason?: string) => undefined,
+    attemptImmediatePackageExport: vi.fn(
+      async (_projectId?: string, _reason?: string) => ({
+        exported: true,
+      }),
     ),
   };
 });
@@ -57,8 +59,8 @@ vi.mock("../../../src/main/database/index.js", () => ({
 
 vi.mock("../../../src/main/services/core/projectService.js", () => ({
   projectService: {
-    persistPackageAfterMutation: (projectId: string, reason: string) =>
-      mocked.persistPackageAfterMutation(projectId, reason),
+    attemptImmediatePackageExport: (projectId: string, reason: string) =>
+      mocked.attemptImmediatePackageExport(projectId, reason),
   },
 }));
 
@@ -67,6 +69,9 @@ import { worldReplicaService } from "../../../src/main/services/features/worldRe
 describe("worldReplicaService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocked.attemptImmediatePackageExport.mockResolvedValue({
+      exported: true,
+    });
   });
 
   it("returns missing document state when no replica row exists", async () => {
@@ -210,27 +215,50 @@ describe("worldReplicaService", () => {
   });
 
   it("triggers package export when the graph document is updated", async () => {
-    await worldReplicaService.setDocument({
-      projectId: "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
-      docType: "graph",
-      payload: {
-        nodes: [
-          {
-            id: "character-1",
-            entityType: "Character",
-            name: "Alice",
-            positionX: 120,
-            positionY: 240,
-          },
-        ],
-        edges: [],
-        updatedAt: "2026-03-13T09:00:00.000Z",
-      },
-    });
+    await expect(
+      worldReplicaService.setDocument({
+        projectId: "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
+        docType: "graph",
+        payload: {
+          nodes: [
+            {
+              id: "character-1",
+              entityType: "Character",
+              name: "Alice",
+              positionX: 120,
+              positionY: 240,
+            },
+          ],
+          edges: [],
+          updatedAt: "2026-03-13T09:00:00.000Z",
+        },
+      }),
+    ).resolves.toEqual({});
 
-    expect(mocked.persistPackageAfterMutation).toHaveBeenCalledWith(
+    expect(mocked.attemptImmediatePackageExport).toHaveBeenCalledWith(
       "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
       "world-document:graph",
     );
+  });
+
+  it("surfaces graph package export failures without hiding them", async () => {
+    mocked.attemptImmediatePackageExport.mockResolvedValueOnce({
+      exported: false,
+      error: new Error("export failed"),
+    });
+
+    await expect(
+      worldReplicaService.setDocument({
+        projectId: "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
+        docType: "graph",
+        payload: {
+          nodes: [],
+          edges: [],
+          updatedAt: "2026-03-13T09:00:00.000Z",
+        },
+      }),
+    ).resolves.toEqual({
+      packageExportError: "export failed",
+    });
   });
 });

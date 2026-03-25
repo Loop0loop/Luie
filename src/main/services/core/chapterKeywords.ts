@@ -24,9 +24,10 @@ async function updateCharacterFirstAppearance(
     select: {
       projectId: true,
       firstAppearance: true,
+      deletedAt: true,
     },
   });
-  if (!character?.projectId || character.firstAppearance) return;
+  if (!character?.projectId || character.firstAppearance || character.deletedAt) return;
 
   await db.getClient().character.update({
     where: { id: characterId },
@@ -47,9 +48,10 @@ async function updateTermFirstAppearance(
     select: {
       projectId: true,
       firstAppearance: true,
+      deletedAt: true,
     },
   });
-  if (!term?.projectId || term.firstAppearance) return;
+  if (!term?.projectId || term.firstAppearance || term.deletedAt) return;
 
   await db.getClient().term.update({
     where: { id: termId },
@@ -84,13 +86,13 @@ async function trackKeywordAppearancesInternal(
   const [characters, terms] = await Promise.all([
     includeCharacters
       ? db.getClient().character.findMany({
-          where: { projectId },
+          where: { projectId, deletedAt: null },
           select: { id: true, name: true },
         })
       : Promise.resolve([]),
     includeTerms
       ? db.getClient().term.findMany({
-          where: { projectId },
+          where: { projectId, deletedAt: null },
           select: { id: true, term: true },
         })
       : Promise.resolve([]),

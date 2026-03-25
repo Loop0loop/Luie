@@ -772,6 +772,15 @@ export class ProjectService {
     };
   }
 
+  async touchProject(projectId: string): Promise<void> {
+    await db.getClient().project.update({
+      where: { id: projectId },
+      data: {
+        updatedAt: new Date(),
+      },
+    });
+  }
+
   schedulePackageExport(projectId: string, reason?: string) {
     this.exportQueue.schedule(projectId, reason);
   }
