@@ -127,6 +127,8 @@ function CanvasMemoBlockNodeInner({
             type="source"
             position={position}
             id={`${position}-out`}
+            isConnectableStart
+            isConnectableEnd={false}
             className={
               selected
                 ? "!h-2 !w-2 !border-0 opacity-100 pointer-events-auto"
@@ -138,6 +140,8 @@ function CanvasMemoBlockNodeInner({
             type="target"
             position={position}
             id={`${position}-in`}
+            isConnectableStart={false}
+            isConnectableEnd
             className={
               selected
                 ? "!h-2 !w-2 !border-0 opacity-100 pointer-events-auto"

@@ -16,7 +16,7 @@ import {
   type ReactFlowInstance,
 } from "reactflow";
 import { api } from "@shared/api";
-import type { WorldGraphCanvasBlock } from "@shared/types";
+import type { WorldGraphCanvasBlock, WorldGraphCanvasEdge } from "@shared/types";
 import type { CanvasGraphEdgeData } from "../components/CanvasGraphEdge";
 import type { CanvasGraphNodeData } from "../components/CanvasGraphNodeCard";
 import {
@@ -52,14 +52,16 @@ type UseCanvasFlowInteractionsInput = {
   graphNodes: Node<CanvasGraphNodeData>[];
   graphEdges: Edge<CanvasGraphEdgeData>[];
   canvasBlocks: WorldGraphCanvasBlock[];
+  canvasEdges: WorldGraphCanvasEdge[];
   selectedNodeId: string | null;
   autoLayoutTrigger: number;
   nodes: Node<AnyCanvasNodeData>[];
   setNodes: React.Dispatch<React.SetStateAction<Node<AnyCanvasNodeData>[]>>;
   commitCanvasBlocks: (snapshot: Node<AnyCanvasNodeData>[]) => void;
+  commitCanvasEdges?: (snapshot: WorldGraphCanvasEdge[]) => void;
   onSelectNode: (nodeId: string | null) => void;
   onNodePositionCommit?: (input: { id: string; x: number; y: number }) => void;
-  onDeleteNode?: (nodeId: string) => void;
+  onDeleteNode?: (nodeId: string) => void | Promise<void>;
   onConnectNodes?: (input: {
     sourceId: string;
     targetId: string;
@@ -74,11 +76,13 @@ export function useCanvasFlowInteractions({
   graphNodes,
   graphEdges,
   canvasBlocks,
+  canvasEdges,
   selectedNodeId,
   autoLayoutTrigger,
   nodes,
   setNodes,
   commitCanvasBlocks,
+  commitCanvasEdges,
   onSelectNode,
   onNodePositionCommit,
   onDeleteNode,
@@ -377,6 +381,24 @@ export function useCanvasFlowInteractions({
     (connection: Connection) => {
       if (!connection.source || !connection.target) return false;
       if (connection.source === connection.target) return false;
+      if (
+        connection.sourceHandle &&
+        !(
+          connection.sourceHandle.endsWith("-source") ||
+          connection.sourceHandle.endsWith("-out")
+        )
+      ) {
+        return false;
+      }
+      if (
+        connection.targetHandle &&
+        !(
+          connection.targetHandle.endsWith("-target") ||
+          connection.targetHandle.endsWith("-in")
+        )
+      ) {
+        return false;
+      }
 
       const nodesSnapshot = nodesRef.current;
       const sourceNode = nodesSnapshot.find(
@@ -534,12 +556,15 @@ export function useCanvasFlowInteractions({
   }, []);
 
   const onNodesDelete = useCallback(
-    (deletedNodes: Node<AnyCanvasNodeData>[]) => {
+    async (deletedNodes: Node<AnyCanvasNodeData>[]) => {
       const deletedIds = new Set(deletedNodes.map((node) => node.id));
 
-      deletedNodes.forEach((node) => {
-        if (node.type === "custom-entity") onDeleteNode?.(node.id);
-      });
+      for (const node of deletedNodes) {
+        if (node.type !== "custom-entity") {
+          continue;
+        }
+        await onDeleteNode?.(node.id);
+      }
 
       const hasLocalCanvasNode = deletedNodes.some((node) =>
         isCanvasLocalNodeType(node.type),
@@ -548,13 +573,29 @@ export function useCanvasFlowInteractions({
         setNodes((currentNodes) => {
           const next = currentNodes.filter((node) => !deletedIds.has(node.id));
           commitCanvasBlocks(next);
+          if (commitCanvasEdges) {
+            const nextEdges = canvasEdges.filter(
+              (edge) =>
+                !deletedIds.has(edge.sourceId) &&
+                !deletedIds.has(edge.targetId),
+            );
+            commitCanvasEdges(nextEdges);
+          }
           return next;
         });
+        onSelectNode(null);
       }
 
       setSelectedEdgeId(null);
     },
-    [commitCanvasBlocks, onDeleteNode, setNodes],
+    [
+      canvasEdges,
+      commitCanvasBlocks,
+      commitCanvasEdges,
+      onDeleteNode,
+      onSelectNode,
+      setNodes,
+    ],
   );
 
   const onEdgesDelete = useCallback(

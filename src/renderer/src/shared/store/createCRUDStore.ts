@@ -88,6 +88,8 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
   apiClient: APIClient<T, CreateInput, UpdateInput>,
   name: string,
 ): StateCreator<CRUDStore<T, CreateInput, UpdateInput>> {
+  let createInFlight = false;
+
   return (set) => ({
     items: [],
     currentItem: null,
@@ -129,6 +131,10 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
     },
 
     create: async (input: CreateInput) => {
+      if (createInFlight) {
+        return null;
+      }
+      createInFlight = true;
       set({ isLoading: true, error: null });
       try {
         const response = await apiClient.create(input);
@@ -144,6 +150,7 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
         set({ error: (error as Error).message });
         return null;
       } finally {
+        createInFlight = false;
         set({ isLoading: false });
       }
     },

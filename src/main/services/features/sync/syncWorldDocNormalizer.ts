@@ -8,6 +8,11 @@ import {
   toWorldDrawingIcon,
   toWorldDrawingTool,
 } from "../../../../shared/world/worldDocumentCodec.js";
+import {
+  normalizeCanvasBlocks,
+  normalizeCanvasEdges,
+  normalizeTimelines,
+} from "../../../../shared/world/worldGraphDocument.js";
 import type { WorldScrapMemosData } from "../../../../shared/types/index.js";
 
 export type WorldDocumentType =
@@ -53,6 +58,26 @@ const decodeWorldDocumentPayload = (
     },
   );
   return null;
+};
+
+const dedupeRecordArrayById = (
+  items: Record<string, unknown>[],
+): Record<string, unknown>[] => {
+  const seen = new Set<string>();
+  const deduped: Record<string, unknown>[] = [];
+
+  for (let index = items.length - 1; index >= 0; index -= 1) {
+    const item = items[index];
+    const id = item.id;
+    if (typeof id !== "string" || seen.has(id)) {
+      continue;
+    }
+
+    seen.add(id);
+    deduped.unshift(item);
+  }
+
+  return deduped;
 };
 
 export const normalizeSynopsisPayload = (
@@ -215,11 +240,11 @@ export const normalizeGraphPayload = (
       ? value.filter((item): item is Record<string, unknown> => isRecord(item))
       : [];
 
-  const nodes = filterRecordArray(decoded.nodes);
-  const edges = filterRecordArray(decoded.edges);
-  const canvasBlocks = filterRecordArray(decoded.canvasBlocks);
-  const canvasEdges = filterRecordArray(decoded.canvasEdges);
-  const timelines = filterRecordArray(decoded.timelines);
+  const nodes = dedupeRecordArrayById(filterRecordArray(decoded.nodes));
+  const edges = dedupeRecordArrayById(filterRecordArray(decoded.edges));
+  const canvasBlocks = normalizeCanvasBlocks(decoded.canvasBlocks);
+  const canvasEdges = normalizeCanvasEdges(decoded.canvasEdges);
+  const timelines = normalizeTimelines(decoded.timelines);
 
   return {
     nodes,

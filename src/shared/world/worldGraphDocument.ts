@@ -40,7 +40,48 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const toFiniteNumber = (value: unknown): number | null =>
   typeof value === "number" && Number.isFinite(value) ? value : null;
 
-const normalizeTimelines = (value: unknown): WorldTimelineTrack[] => {
+const hasOwn = (value: object, key: string): boolean =>
+  Object.prototype.hasOwnProperty.call(value, key);
+
+const dedupeByIdLastWins = <T extends { id: string }>(
+  items: readonly T[],
+): T[] => {
+  const seen = new Set<string>();
+  const deduped: T[] = [];
+
+  for (let index = items.length - 1; index >= 0; index -= 1) {
+    const item = items[index];
+    if (seen.has(item.id)) {
+      continue;
+    }
+    seen.add(item.id);
+    deduped.unshift(item);
+  }
+
+  return deduped;
+};
+
+const normalizeTimelineSegments = (value: unknown): WorldTimelineSegment[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const segments: WorldTimelineSegment[] = [];
+  for (const item of value) {
+    if (!isRecord(item) || typeof item.id !== "string") {
+      continue;
+    }
+
+    segments.push({
+      id: item.id,
+      name: typeof item.name === "string" ? item.name : "New Segment",
+    });
+  }
+
+  return dedupeByIdLastWins(segments);
+};
+
+export const normalizeTimelines = (value: unknown): WorldTimelineTrack[] => {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -51,18 +92,7 @@ const normalizeTimelines = (value: unknown): WorldTimelineTrack[] => {
       continue;
     }
 
-    const segments: WorldTimelineSegment[] = [];
-    if (Array.isArray(item.segments)) {
-      for (const seg of item.segments) {
-        if (!isRecord(seg) || typeof seg.id !== "string") {
-          continue;
-        }
-        segments.push({
-          id: seg.id,
-          name: typeof seg.name === "string" ? seg.name : "New Segment",
-        });
-      }
-    }
+    const segments = normalizeTimelineSegments(item.segments);
 
     normalized.push({
       id: item.id,
@@ -70,7 +100,7 @@ const normalizeTimelines = (value: unknown): WorldTimelineTrack[] => {
       segments,
     });
   }
-  return normalized;
+  return dedupeByIdLastWins(normalized);
 };
 
 const normalizeTimelineData = (
@@ -138,7 +168,7 @@ const normalizeCanvasEdgeDirection = (
   return "unidirectional";
 };
 
-const normalizeCanvasEdges = (value: unknown): WorldGraphCanvasEdge[] => {
+export const normalizeCanvasEdges = (value: unknown): WorldGraphCanvasEdge[] => {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -181,10 +211,12 @@ const normalizeCanvasEdges = (value: unknown): WorldGraphCanvasEdge[] => {
     });
   }
 
-  return edges;
+  return dedupeByIdLastWins(edges);
 };
 
-const normalizeCanvasBlocks = (value: unknown): WorldGraphCanvasBlock[] => {
+export const normalizeCanvasBlocks = (
+  value: unknown,
+): WorldGraphCanvasBlock[] => {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -222,7 +254,7 @@ const normalizeCanvasBlocks = (value: unknown): WorldGraphCanvasBlock[] => {
     }
   }
 
-  return blocks;
+  return dedupeByIdLastWins(blocks);
 };
 
 const stripTransientGraphPosition = (
@@ -285,11 +317,17 @@ export const mergeWorldGraphLayout = (
     }
   }
 
-  const canvasBlocks = normalizeCanvasBlocks(payload.canvasBlocks);
-  const canvasEdges = normalizeCanvasEdges(payload.canvasEdges);
-  const timelines = normalizeTimelines(payload.timelines);
+  const canvasBlocks = hasOwn(payload, "canvasBlocks")
+    ? normalizeCanvasBlocks(payload.canvasBlocks)
+    : normalizeCanvasBlocks(graphData.canvasBlocks);
+  const canvasEdges = hasOwn(payload, "canvasEdges")
+    ? normalizeCanvasEdges(payload.canvasEdges)
+    : normalizeCanvasEdges(graphData.canvasEdges);
+  const timelines = hasOwn(payload, "timelines")
+    ? normalizeTimelines(payload.timelines)
+    : normalizeTimelines(graphData.timelines);
 
-  const nextNodes =
+  const nextNodes = dedupeByIdLastWins(
     positions.size === 0
       ? graphData.nodes
       : graphData.nodes.map((node) => {
@@ -298,11 +336,13 @@ export const mergeWorldGraphLayout = (
             return node;
           }
           return applyGraphNodePosition(node, position.x, position.y);
-        });
+        }),
+  );
 
   return {
     ...graphData,
     nodes: nextNodes,
+    edges: dedupeByIdLastWins(graphData.edges),
     canvasBlocks,
     canvasEdges,
     timelines,
@@ -315,12 +355,14 @@ export const buildWorldGraphDocument = (
 ): GraphDocumentPayload => {
   // Always include canvas data even if empty, to ensure proper overwrite on save
   // This prevents stale data from persisting when all canvas content is deleted
-  const canvasBlocks = graphData.canvasBlocks ?? [];
-  const canvasEdges = graphData.canvasEdges ?? [];
-  const timelines = graphData.timelines ?? [];
+  const nodes = dedupeByIdLastWins(graphData.nodes);
+  const edges = dedupeByIdLastWins(graphData.edges);
+  const canvasBlocks = normalizeCanvasBlocks(graphData.canvasBlocks);
+  const canvasEdges = normalizeCanvasEdges(graphData.canvasEdges);
+  const timelines = normalizeTimelines(graphData.timelines);
 
   return {
-    nodes: graphData.nodes.map((node) => ({
+    nodes: nodes.map((node) => ({
       id: node.id,
       entityType: node.entityType,
       subType: node.subType,
@@ -331,7 +373,7 @@ export const buildWorldGraphDocument = (
       positionX: node.positionX,
       positionY: node.positionY,
     })),
-    edges: graphData.edges.map((edge) => ({
+    edges: edges.map((edge) => ({
       ...edge,
       attributes: edge.attributes ?? null,
     })),

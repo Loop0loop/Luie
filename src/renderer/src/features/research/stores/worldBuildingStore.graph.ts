@@ -127,7 +127,12 @@ export const appendNodeToGraph = (
   graphData: WorldGraphData | null,
   node: WorldGraphNode,
 ): WorldGraphData => ({
-  nodes: graphData ? [...graphData.nodes, node] : [node],
+  nodes: graphData
+    ? [
+        ...graphData.nodes.filter((currentNode) => currentNode.id !== node.id),
+        node,
+      ]
+    : [node],
   edges: graphData?.edges ?? [],
   canvasBlocks: graphData?.canvasBlocks ?? [],
   canvasEdges: graphData?.canvasEdges ?? [],
@@ -183,11 +188,12 @@ export const appendRelationToGraph = (
   relation: EntityRelation,
 ): WorldGraphData | null => {
   if (!graphData) return null;
-  const exists = graphData.edges.some((edge) => edge.id === relation.id);
-  if (exists) return graphData;
   return {
     ...graphData,
-    edges: [...graphData.edges, relation],
+    edges: [
+      ...graphData.edges.filter((edge) => edge.id !== relation.id),
+      relation,
+    ],
   };
 };
 

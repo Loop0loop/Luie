@@ -260,6 +260,8 @@ export const CanvasTimelineBlockNode = memo(
               id={`${axis}-out`}
               type="source"
               position={position}
+              isConnectableStart
+              isConnectableEnd={false}
               className={cn(
                 "!h-3 !w-3 !border-0 transition-all",
                 selected
@@ -272,6 +274,8 @@ export const CanvasTimelineBlockNode = memo(
               id={`${axis}-in`}
               type="target"
               position={position}
+              isConnectableStart={false}
+              isConnectableEnd
               className={cn(
                 "!h-3 !w-3 !border-0 transition-all",
                 selected

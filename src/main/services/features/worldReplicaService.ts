@@ -123,7 +123,16 @@ export class WorldReplicaService {
       });
 
       if (input.docType === "graph") {
-        await projectService.persistPackageAfterMutation(input.projectId, "world-document:graph");
+        const exportResult = await projectService.attemptImmediatePackageExport(
+          input.projectId,
+          "world-document:graph",
+        );
+        if (exportResult.error) {
+          logger.warn("Graph replica saved but immediate .luie export failed", {
+            projectId: input.projectId,
+            error: exportResult.error,
+          });
+        }
       }
     } catch (error) {
       logger.error("Failed to save replica world document", {

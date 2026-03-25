@@ -47,23 +47,40 @@ const runBackgroundTask = (label: string, task: () => Promise<unknown>) => {
     });
 };
 
-root.render(
-  <React.StrictMode>
-    <GlobalErrorBoundary>
-      <ToastProvider>
-        <DialogProvider>
-          <App />
-        </DialogProvider>
-      </ToastProvider>
-    </GlobalErrorBoundary>
-  </React.StrictMode>,
-);
+const renderApp = () => {
+  root.render(
+    <React.StrictMode>
+      <GlobalErrorBoundary>
+        <ToastProvider>
+          <DialogProvider>
+            <App />
+          </DialogProvider>
+        </ToastProvider>
+      </GlobalErrorBoundary>
+    </React.StrictMode>,
+  );
 
-logStartup("Renderer root mounted", { elapsedMs: elapsedMs() });
+  logStartup("Renderer root mounted", { elapsedMs: elapsedMs() });
 
-requestAnimationFrame(() => {
-  logStartup("Renderer first frame painted", { elapsedMs: elapsedMs() });
-});
+  requestAnimationFrame(() => {
+    logStartup("Renderer first frame painted", { elapsedMs: elapsedMs() });
+  });
+};
+
+void i18nPromise
+  .catch((error) => {
+    emitOperationalLog(startupLogger, "warn", "Renderer i18n init failed", {
+      schemaVersion: OBSERVABILITY_EVENT_SCHEMA_VERSION,
+      domain: "performance",
+      event: "renderer.startup.initI18n.failed",
+      scope: "renderer-startup",
+      elapsedMs: elapsedMs(),
+      error: String(error),
+    });
+  })
+  .finally(() => {
+    renderApp();
+  });
 
 runBackgroundTask("setupRenderer", setupRenderer);
 runBackgroundTask("initI18n", () => i18nPromise);

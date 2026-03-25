@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Node, XYPosition } from "reactflow";
-import type { WorldGraphCanvasBlock, WorldGraphNode } from "@shared/types";
+import type {
+  WorldGraphCanvasBlock,
+  WorldGraphCanvasEdge,
+  WorldGraphNode,
+} from "@shared/types";
 import type { CanvasTimelineBlockData } from "../components/CanvasTimelineBlockNode";
 import type { CanvasMemoBlockData } from "../components/CanvasMemoBlockNode";
 import type { CanvasGraphNodeData } from "../components/CanvasGraphNodeCard";
@@ -19,8 +23,10 @@ import { GRAPH_CANVAS_DEFAULT_EDGE_COLORS } from "../shared";
 type UseCanvasBlockEditorInput = {
   graphNodes: Node<CanvasGraphNodeData>[];
   canvasBlocks: WorldGraphCanvasBlock[];
+  canvasEdges: WorldGraphCanvasEdge[];
   timelineNodes: WorldGraphNode[];
   onCanvasBlocksCommit?: (blocks: WorldGraphCanvasBlock[]) => void;
+  onCanvasEdgesCommit?: (edges: WorldGraphCanvasEdge[]) => void;
   onSelectNode: (nodeId: string | null) => void;
   resolvePlacementPosition: () => XYPosition;
   draggingNodeIdRef: React.MutableRefObject<string | null>;
@@ -33,8 +39,10 @@ type UseCanvasBlockEditorInput = {
 export function useCanvasBlockEditor({
   graphNodes,
   canvasBlocks,
+  canvasEdges,
   timelineNodes,
   onCanvasBlocksCommit,
+  onCanvasEdgesCommit,
   onSelectNode,
   resolvePlacementPosition,
   draggingNodeIdRef,
@@ -44,12 +52,56 @@ export function useCanvasBlockEditor({
   const [nodes, setNodes] = useState<Node<AnyCanvasNodeData>[]>(graphNodes);
   const historyRef = useRef<Node<AnyCanvasNodeData>[][]>([]);
   const historyIndexRef = useRef(-1);
+  const pendingCanvasBlocksCommitRef = useRef<
+    Node<AnyCanvasNodeData>[] | null
+  >(null);
+  const canvasBlocksCommitTimerRef = useRef<number | null>(null);
 
   const commitCanvasBlocks = useCallback(
     (snapshot: Node<AnyCanvasNodeData>[]) => {
+      pendingCanvasBlocksCommitRef.current = null;
+      if (canvasBlocksCommitTimerRef.current !== null) {
+        clearTimeout(canvasBlocksCommitTimerRef.current);
+        canvasBlocksCommitTimerRef.current = null;
+      }
       onCanvasBlocksCommit?.(fromCanvasLocalNodes(snapshot));
     },
     [onCanvasBlocksCommit],
+  );
+
+  const flushPendingCanvasBlocksCommit = useCallback(() => {
+    const pending = pendingCanvasBlocksCommitRef.current;
+    pendingCanvasBlocksCommitRef.current = null;
+    if (canvasBlocksCommitTimerRef.current !== null) {
+      clearTimeout(canvasBlocksCommitTimerRef.current);
+      canvasBlocksCommitTimerRef.current = null;
+    }
+    if (!pending) {
+      return;
+    }
+    commitCanvasBlocks(pending);
+  }, [commitCanvasBlocks]);
+
+  const scheduleCanvasBlocksCommit = useCallback(
+    (snapshot: Node<AnyCanvasNodeData>[]) => {
+      pendingCanvasBlocksCommitRef.current = snapshot;
+      if (canvasBlocksCommitTimerRef.current !== null) {
+        return;
+      }
+
+      canvasBlocksCommitTimerRef.current = window.setTimeout(() => {
+        canvasBlocksCommitTimerRef.current = null;
+        flushPendingCanvasBlocksCommit();
+      }, 120);
+    },
+    [flushPendingCanvasBlocksCommit],
+  );
+
+  const commitCanvasEdges = useCallback(
+    (snapshot: WorldGraphCanvasEdge[]) => {
+      onCanvasEdgesCommit?.(snapshot);
+    },
+    [onCanvasEdgesCommit],
   );
 
   const pushHistory = useCallback((snapshot: Node<AnyCanvasNodeData>[]) => {
@@ -109,11 +161,11 @@ export function useCanvasBlockEditor({
           };
         });
 
-        commitCanvasBlocks(next);
+        scheduleCanvasBlocksCommit(next);
         return next;
       });
     },
-    [commitCanvasBlocks],
+    [scheduleCanvasBlocksCommit],
   );
 
   const handleDeleteLocalNode = useCallback(
@@ -121,10 +173,17 @@ export function useCanvasBlockEditor({
       setNodes((current) => {
         const next = current.filter((node) => node.id !== id);
         commitCanvasBlocks(next);
+        const nextEdges = canvasEdges.filter(
+          (edge) => edge.sourceId !== id && edge.targetId !== id,
+        );
+        if (nextEdges.length !== canvasEdges.length) {
+          commitCanvasEdges(nextEdges);
+        }
         return next;
       });
+      onSelectNode(null);
     },
-    [commitCanvasBlocks],
+    [canvasEdges, commitCanvasBlocks, commitCanvasEdges, onSelectNode],
   );
 
   const handleMemoDataChange = useCallback(
@@ -140,11 +199,11 @@ export function useCanvasBlockEditor({
             data: { ...(node.data as CanvasMemoBlockData), ...patch },
           };
         });
-        commitCanvasBlocks(next);
+        scheduleCanvasBlocksCommit(next);
         return next;
       });
     },
-    [commitCanvasBlocks],
+    [scheduleCanvasBlocksCommit],
   );
 
   const handleUpdateTimelineMeta = useCallback(
@@ -172,11 +231,11 @@ export function useCanvasBlockEditor({
           };
         });
 
-        commitCanvasBlocks(next);
+        scheduleCanvasBlocksCommit(next);
         return next;
       });
     },
-    [commitCanvasBlocks],
+    [scheduleCanvasBlocksCommit],
   );
 
   const handleCreateMemo = useCallback(() => {
@@ -285,100 +344,96 @@ export function useCanvasBlockEditor({
   ]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setNodes((currentNodes) => {
-        const graphOnlyCurrent = currentNodes.filter(
-          (node) => !isCanvasLocalNodeType(node.type),
-        );
-        const localNodes = currentNodes.filter((node) =>
-          isCanvasLocalNodeType(node.type),
-        );
+    setNodes((currentNodes) => {
+      const graphOnlyCurrent = currentNodes.filter(
+        (node) => !isCanvasLocalNodeType(node.type),
+      );
+      const localNodes = currentNodes.filter((node) =>
+        isCanvasLocalNodeType(node.type),
+      );
 
-        const mergedGraphNodes = mergeIncomingNodes(
-          graphOnlyCurrent as Node<CanvasGraphNodeData>[],
-          graphNodes,
-          draggingNodeIdRef.current,
-        );
+      const mergedGraphNodes = mergeIncomingNodes(
+        graphOnlyCurrent as Node<CanvasGraphNodeData>[],
+        graphNodes,
+        draggingNodeIdRef.current,
+      );
 
-        return [...mergedGraphNodes, ...localNodes];
-      });
-    }, 0);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
+      return [...mergedGraphNodes, ...localNodes];
+    });
   }, [graphNodes, draggingNodeIdRef]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setNodes((currentNodes) => {
-        const incomingCanvasNodes = toCanvasBlockNodes(canvasBlocks, {
-          onDelete: (id) => {
-            setNodes((innerCurrent) => {
-              const next = innerCurrent.filter((node) => node.id !== id);
-              commitCanvasBlocks(next);
-              return next;
-            });
-          },
-          onMemoChange: (id, patch) => {
-            setNodes((innerCurrent) => {
-              const next = innerCurrent.map((node) => {
-                if (node.id !== id || node.type !== "canvas-memo") {
-                  return node;
-                }
+    setNodes((currentNodes) => {
+      const incomingCanvasNodes = toCanvasBlockNodes(canvasBlocks, {
+        onDelete: (id) => {
+          setNodes((innerCurrent) => {
+            const next = innerCurrent.filter((node) => node.id !== id);
+            commitCanvasBlocks(next);
+            return next;
+          });
+        },
+        onMemoChange: (id, patch) => {
+          setNodes((innerCurrent) => {
+            const next = innerCurrent.map((node) => {
+              if (node.id !== id || node.type !== "canvas-memo") {
+                return node;
+              }
 
-                return {
-                  ...node,
-                  data: {
-                    ...(node.data as CanvasMemoBlockData),
-                    ...patch,
-                  },
-                };
-              });
-              commitCanvasBlocks(next);
-              return next;
+              return {
+                ...node,
+                data: {
+                  ...(node.data as CanvasMemoBlockData),
+                  ...patch,
+                },
+              };
             });
-          },
-          onTimelineChange: (id, patch) => {
-            setNodes((innerCurrent) => {
-              const next = innerCurrent.map((node) => {
-                if (node.id !== id || node.type !== "canvas-timeline") {
-                  return node;
-                }
-                return {
-                  ...node,
-                  data: {
-                    ...node.data,
-                    ...patch,
-                  },
-                };
-              });
-              commitCanvasBlocks(next);
-              return next;
+            scheduleCanvasBlocksCommit(next);
+            return next;
+          });
+        },
+        onTimelineChange: (id, patch) => {
+          setNodes((innerCurrent) => {
+            const next = innerCurrent.map((node) => {
+              if (node.id !== id || node.type !== "canvas-timeline") {
+                return node;
+              }
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  ...patch,
+                },
+              };
             });
-          },
-          onBlockColorChange: handleCycleCanvasBlockColor,
-          onAddBranch: onAddTimelineBranch,
-        });
-
-        return syncCanvasLocalNodes(
-          currentNodes,
-          incomingCanvasNodes,
-          draggingNodeIdRef.current,
-        );
+            scheduleCanvasBlocksCommit(next);
+            return next;
+          });
+        },
+        onBlockColorChange: handleCycleCanvasBlockColor,
+        onAddBranch: onAddTimelineBranch,
       });
-    }, 0);
 
-    return () => {
-      window.clearTimeout(timer);
-    };
+      return syncCanvasLocalNodes(
+        currentNodes,
+        incomingCanvasNodes,
+        draggingNodeIdRef.current,
+      );
+    });
   }, [
     canvasBlocks,
     commitCanvasBlocks,
     draggingNodeIdRef,
     handleCycleCanvasBlockColor,
     onAddTimelineBranch,
+    scheduleCanvasBlocksCommit,
   ]);
+
+  useEffect(
+    () => () => {
+      flushPendingCanvasBlocksCommit();
+    },
+    [flushPendingCanvasBlocksCommit],
+  );
 
   return {
     nodes,

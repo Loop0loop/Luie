@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
+  ConnectionMode,
   ReactFlowProvider,
   SelectionMode,
-  type ConnectionMode,
   type Edge,
   type Node,
   useReactFlow,
@@ -57,6 +57,9 @@ import { GRAPH_CANVAS_DEFAULT_EDGE_COLORS } from "../shared/canvas/graphCanvasCo
 import { GRAPH_ENTITY_CANVAS_THEME_TOKENS } from "../shared/theme/graphThemeConstants";
 import { initializeGraphPerfInstrumentation } from "../shared/instrumentation/graphPerfMetrics";
 
+const STABLE_CANVAS_NODE_TYPES = CANVAS_NODE_TYPES;
+const STABLE_CANVAS_EDGE_TYPES = CANVAS_EDGE_TYPES;
+
 interface CanvasViewProps {
   nodes: WorldGraphNode[];
   edges: EntityRelation[];
@@ -72,7 +75,7 @@ interface CanvasViewProps {
     | ((edges: WorldGraphCanvasEdge[]) => void)
     | ((edges: WorldGraphCanvasEdge[]) => Promise<void>);
   onNodePositionCommit?: (input: { id: string; x: number; y: number }) => void;
-  onDeleteNode?: (nodeId: string) => void;
+  onDeleteNode?: (nodeId: string) => void | Promise<void>;
   onCreateCanvasRelation?: (input: {
     sourceId: string;
     targetId: string;
@@ -91,11 +94,13 @@ function CanvasFlowSurface({
   graphNodes,
   graphEdges,
   canvasBlocks,
+  canvasEdges,
   timelineNodes,
   selectedNodeId,
   autoLayoutTrigger,
   onSelectNode,
   onCanvasBlocksCommit,
+  onCanvasEdgesCommit,
   onNodePositionCommit,
   onDeleteNode,
   onConnectNodes,
@@ -106,13 +111,15 @@ function CanvasFlowSurface({
   graphNodes: Node<CanvasGraphNodeData>[];
   graphEdges: Edge<CanvasGraphEdgeData>[];
   canvasBlocks: WorldGraphCanvasBlock[];
+  canvasEdges: WorldGraphCanvasEdge[];
   timelineNodes: WorldGraphNode[];
   selectedNodeId: string | null;
   autoLayoutTrigger: number;
   onSelectNode: (nodeId: string | null) => void;
   onCanvasBlocksCommit?: (blocks: WorldGraphCanvasBlock[]) => void;
+  onCanvasEdgesCommit?: (edges: WorldGraphCanvasEdge[]) => void;
   onNodePositionCommit?: (input: { id: string; x: number; y: number }) => void;
-  onDeleteNode?: (nodeId: string) => void;
+  onDeleteNode?: (nodeId: string) => void | Promise<void>;
   onConnectNodes?: (input: {
     sourceId: string;
     targetId: string;
@@ -168,8 +175,10 @@ function CanvasFlowSurface({
   } = useCanvasBlockEditor({
     graphNodes,
     canvasBlocks,
+    canvasEdges,
     timelineNodes,
     onCanvasBlocksCommit,
+    onCanvasEdgesCommit,
     onSelectNode,
     resolvePlacementPosition,
     draggingNodeIdRef,
@@ -198,11 +207,13 @@ function CanvasFlowSurface({
     graphNodes,
     graphEdges,
     canvasBlocks,
+    canvasEdges,
     selectedNodeId,
     autoLayoutTrigger,
     nodes,
     setNodes,
     commitCanvasBlocks,
+    commitCanvasEdges: onCanvasEdgesCommit,
     onSelectNode,
     onNodePositionCommit,
     onDeleteNode,
@@ -273,8 +284,8 @@ function CanvasFlowSurface({
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        nodeTypes={CANVAS_NODE_TYPES}
-        edgeTypes={CANVAS_EDGE_TYPES}
+        nodeTypes={STABLE_CANVAS_NODE_TYPES}
+        edgeTypes={STABLE_CANVAS_EDGE_TYPES}
         minZoom={GRAPH_FLOW_MIN_ZOOM}
         maxZoom={GRAPH_FLOW_MAX_ZOOM}
         defaultViewport={GRAPH_FLOW_DEFAULT_VIEWPORT}
@@ -303,7 +314,7 @@ function CanvasFlowSurface({
         selectionOnDrag={true}
         selectionMode={SelectionMode.Partial}
         onlyRenderVisibleElements
-        connectionMode={"loose" as ConnectionMode}
+        connectionMode={ConnectionMode.Strict}
         style={{ cursor: "default" }}
         className="bg-canvas"
       >
@@ -462,7 +473,9 @@ export function CanvasView({
 
   const updateCanvasEdgeRelation = useCallback(
     async (edgeId: string, title: string, message?: string) => {
-      const target = canvasEdges.find((edge) => edge.id === edgeId);
+      const latestCanvasEdges =
+        useWorldBuildingStore.getState().graphData?.canvasEdges ?? canvasEdges;
+      const target = latestCanvasEdges.find((edge) => edge.id === edgeId);
       if (!target) {
         return;
       }
@@ -484,7 +497,7 @@ export function CanvasView({
       }
 
       commitCanvasEdges(
-        canvasEdges.map((edge) =>
+        latestCanvasEdges.map((edge) =>
           edge.id === edgeId
             ? {
                 ...edge,
@@ -499,14 +512,18 @@ export function CanvasView({
 
   const handleDeleteCanvasEdge = useCallback(
     (edgeId: string) => {
-      commitCanvasEdges(canvasEdges.filter((edge) => edge.id !== edgeId));
+      const latestCanvasEdges =
+        useWorldBuildingStore.getState().graphData?.canvasEdges ?? canvasEdges;
+      commitCanvasEdges(latestCanvasEdges.filter((edge) => edge.id !== edgeId));
     },
     [canvasEdges, commitCanvasEdges],
   );
 
   const handleChangeCanvasEdgeColor = useCallback(
     (edgeId: string, nextColor: string) => {
-      const nextEdges = canvasEdges.map((edge) => {
+      const latestCanvasEdges =
+        useWorldBuildingStore.getState().graphData?.canvasEdges ?? canvasEdges;
+      const nextEdges = latestCanvasEdges.map((edge) => {
         if (edge.id !== edgeId) {
           return edge;
         }
@@ -527,7 +544,9 @@ export function CanvasView({
       edgeId: string,
       nextDirection: "unidirectional" | "bidirectional" | "none",
     ) => {
-      const nextEdges = canvasEdges.map((edge) => {
+      const latestCanvasEdges =
+        useWorldBuildingStore.getState().graphData?.canvasEdges ?? canvasEdges;
+      const nextEdges = latestCanvasEdges.map((edge) => {
         if (edge.id !== edgeId) {
           return edge;
         }
@@ -566,15 +585,24 @@ export function CanvasView({
 
   const flowEdges = useMemo(
     () =>
-      buildFlowEdges(edges, canvasEdges, {
-        onDeleteRelation: (id) => void onDeleteRelation?.(id),
-        onDeleteCanvasEdge: handleDeleteCanvasEdge,
-        onChangeCanvasEdgeColor: handleChangeCanvasEdgeColor,
-        onChangeCanvasEdgeDirection: handleChangeCanvasEdgeDirection,
-        onEditCanvasEdgeRelation: handleEditCanvasEdgeRelation,
-        onUpdateCanvasEdge: handleUpdateCanvasEdge,
-      }),
+      buildFlowEdges(
+        edges,
+        canvasEdges,
+        {
+          graphNodeIds: new Set(nodes.map((node) => node.id)),
+          canvasBlockIds: new Set(canvasBlocks.map((block) => block.id)),
+        },
+        {
+          onDeleteRelation: (id) => void onDeleteRelation?.(id),
+          onDeleteCanvasEdge: handleDeleteCanvasEdge,
+          onChangeCanvasEdgeColor: handleChangeCanvasEdgeColor,
+          onChangeCanvasEdgeDirection: handleChangeCanvasEdgeDirection,
+          onEditCanvasEdgeRelation: handleEditCanvasEdgeRelation,
+          onUpdateCanvasEdge: handleUpdateCanvasEdge,
+        },
+      ),
     [
+      canvasBlocks,
       canvasEdges,
       edges,
       handleChangeCanvasEdgeColor,
@@ -602,10 +630,15 @@ export function CanvasView({
         return;
       }
 
+      const latestCanvasEdges =
+        useWorldBuildingStore.getState().graphData?.canvasEdges ?? canvasEdges;
       const normalize = (value?: string | null) => value ?? null;
       const sourceKey = normalize(sourceHandle);
       const targetKey = normalize(targetHandle);
-      const existing = canvasEdges.some((edge) => {
+      const existingCanonical = edges.some(
+        (edge) => edge.sourceId === sourceId && edge.targetId === targetId,
+      );
+      const existingCanvas = latestCanvasEdges.some((edge) => {
         const edgeSourceKey = normalize(edge.sourceHandle);
         const edgeTargetKey = normalize(edge.targetHandle);
         const sameForward =
@@ -620,7 +653,7 @@ export function CanvasView({
           edgeTargetKey === sourceKey;
         return sameForward || sameReverse;
       });
-      if (existing) {
+      if (existingCanonical || existingCanvas) {
         return;
       }
 
@@ -633,7 +666,7 @@ export function CanvasView({
         });
       }
     },
-    [canvasEdges, onCreateCanvasRelation],
+    [canvasEdges, edges, onCreateCanvasRelation],
   );
   const timelineNodes = useMemo(
     () => nodes.filter((node) => node.entityType === "Event"),
@@ -675,12 +708,14 @@ export function CanvasView({
           graphNodes={flowNodes}
           graphEdges={flowEdges}
           canvasBlocks={canvasBlocks}
+          canvasEdges={canvasEdges}
           onConnectNodes={handleConnectNodes}
           timelineNodes={timelineNodes}
           selectedNodeId={selectedNodeId}
           autoLayoutTrigger={autoLayoutTrigger}
           onSelectNode={onSelectNode}
           onCanvasBlocksCommit={onCanvasBlocksCommit}
+          onCanvasEdgesCommit={onCanvasEdgesCommit}
           onNodePositionCommit={onNodePositionCommit}
           onDeleteNode={onDeleteNode}
           onAutoLayoutApplied={handleAutoLayoutApplied}

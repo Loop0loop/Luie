@@ -87,6 +87,158 @@ export const isCanvasLocalNodeType = (
 ): nodeType is "canvas-timeline" | "canvas-memo" =>
   nodeType === "canvas-timeline" || nodeType === "canvas-memo";
 
+type CanvasHandleDirection = "source" | "target";
+type CanvasHandleSide = "top" | "bottom" | "left" | "right";
+export type CanvasEndpointNodeKind = "graph" | "canvas" | "unknown";
+
+const HANDLE_DIRECTION_ALIASES: Record<string, CanvasHandleDirection> = {
+  source: "source",
+  out: "source",
+  target: "target",
+  in: "target",
+};
+
+const HANDLE_SIDE_ALIASES: Record<string, CanvasHandleSide> = {
+  t: "top",
+  top: "top",
+  b: "bottom",
+  bottom: "bottom",
+  l: "left",
+  left: "left",
+  r: "right",
+  right: "right",
+};
+
+const parseHandleToken = (
+  handle: string,
+): { side: CanvasHandleSide; direction: CanvasHandleDirection } | null => {
+  const parts = handle.split("-");
+  if (parts.length !== 2) {
+    return null;
+  }
+
+  const [rawSide, rawDirection] = parts;
+  const side = HANDLE_SIDE_ALIASES[rawSide.toLowerCase()];
+  const direction = HANDLE_DIRECTION_ALIASES[rawDirection.toLowerCase()];
+  if (!side || !direction) {
+    return null;
+  }
+
+  return { side, direction };
+};
+
+export const resolveCanvasEndpointNodeKind = (
+  nodeId: string,
+  graphNodeIds: ReadonlySet<string>,
+  canvasBlockIds: ReadonlySet<string>,
+): CanvasEndpointNodeKind => {
+  if (graphNodeIds.has(nodeId)) {
+    return "graph";
+  }
+  if (canvasBlockIds.has(nodeId)) {
+    return "canvas";
+  }
+  return "unknown";
+};
+
+export const canonicalizeHandleForNodeKind = (
+  handle: string | null | undefined,
+  nodeKind: CanvasEndpointNodeKind,
+): string | undefined => {
+  if (typeof handle !== "string" || handle.length === 0) {
+    return undefined;
+  }
+
+  const parsed = parseHandleToken(handle);
+  if (!parsed) {
+    return undefined;
+  }
+
+  if (nodeKind === "graph") {
+    const side = parsed.side[0];
+    const direction = parsed.direction === "source" ? "source" : "target";
+    return `${side}-${direction}`;
+  }
+
+  if (nodeKind === "canvas") {
+    const direction = parsed.direction === "source" ? "out" : "in";
+    return `${parsed.side}-${direction}`;
+  }
+
+  return undefined;
+};
+
+export type NormalizedHandlePairForNodeKinds = {
+  sourceHandle: string;
+  targetHandle: string;
+  orientation: "canonical" | "reversed";
+};
+
+export const normalizeHandlePairForNodeKinds = (input: {
+  sourceHandle: string | null | undefined;
+  targetHandle: string | null | undefined;
+  sourceNodeKind: CanvasEndpointNodeKind;
+  targetNodeKind: CanvasEndpointNodeKind;
+}): NormalizedHandlePairForNodeKinds | null => {
+  const source = canonicalizeHandleForNodeKind(
+    input.sourceHandle,
+    input.sourceNodeKind,
+  );
+  const target = canonicalizeHandleForNodeKind(
+    input.targetHandle,
+    input.targetNodeKind,
+  );
+
+  if (!source || !target) {
+    return null;
+  }
+
+  const sourceIsSourceHandle =
+    source.endsWith("-source") || source.endsWith("-out");
+  const sourceIsTargetHandle =
+    source.endsWith("-target") || source.endsWith("-in");
+  const targetIsSourceHandle =
+    target.endsWith("-source") || target.endsWith("-out");
+  const targetIsTargetHandle =
+    target.endsWith("-target") || target.endsWith("-in");
+
+  if (sourceIsTargetHandle && targetIsSourceHandle) {
+    return {
+      sourceHandle: target,
+      targetHandle: source,
+      orientation: "reversed",
+    };
+  }
+
+  if (!sourceIsSourceHandle || !targetIsTargetHandle) {
+    return null;
+  }
+
+  return {
+    sourceHandle: source,
+    targetHandle: target,
+    orientation: "canonical",
+  };
+};
+
+const dedupeByIdLastWins = <T extends { id: string }>(
+  items: readonly T[],
+): T[] => {
+  const seen = new Set<string>();
+  const deduped: T[] = [];
+
+  for (let index = items.length - 1; index >= 0; index -= 1) {
+    const item = items[index];
+    if (seen.has(item.id)) {
+      continue;
+    }
+    seen.add(item.id);
+    deduped.unshift(item);
+  }
+
+  return deduped;
+};
+
 export const toCanvasBlockNodes = (
   blocks: WorldGraphCanvasBlock[],
   input: {
@@ -203,7 +355,7 @@ export const fromCanvasLocalNodes = (
     }
   }
 
-  return blocks;
+  return dedupeByIdLastWins(blocks);
 };
 
 export const syncCanvasLocalNodes = (
@@ -231,7 +383,7 @@ export const syncCanvasLocalNodes = (
     };
   });
 
-  return [...nonLocal, ...nextLocal];
+  return dedupeByIdLastWins([...nonLocal, ...nextLocal]);
 };
 
 export function readPosition(node: WorldGraphNode, index: number) {
@@ -272,7 +424,7 @@ export const buildFlowNodes = (
     direction: "up" | "down" | "left" | "right",
   ) => void,
 ): Node<CanvasGraphNodeData>[] => {
-  return nodes.map((node, index) => ({
+  return dedupeByIdLastWins(nodes).map((node, index) => ({
     id: node.id,
     type: "custom-entity",
     draggable: true,
@@ -299,6 +451,10 @@ export const buildFlowNodes = (
 export const buildFlowEdges = (
   edges: EntityRelation[],
   canvasEdges: WorldGraphCanvasEdge[],
+  nodeContext: {
+    graphNodeIds: ReadonlySet<string>;
+    canvasBlockIds: ReadonlySet<string>;
+  },
   handlers: {
     onDeleteRelation?: (id: string) => void;
     onDeleteCanvasEdge?: (id: string) => void;
@@ -312,8 +468,11 @@ export const buildFlowEdges = (
     onZoomEdge?: (id: string) => void;
   },
 ): Edge<CanvasGraphEdgeData>[] => {
+  const normalizedEdges = dedupeByIdLastWins(edges);
+  const normalizedCanvasEdges = dedupeByIdLastWins(canvasEdges);
+
   const relationHandleHints = new Map(
-    canvasEdges
+    normalizedCanvasEdges
       .map((edge) => {
         const relationId = parseEntityRelationHintId(edge.id);
         if (!relationId) {
@@ -333,15 +492,31 @@ export const buildFlowEdges = (
     glow: GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity.glow,
   };
 
-  const graphEdges = edges.map((edge) => {
+  const graphEdges = normalizedEdges.map((edge) => {
     const relationHint = relationHandleHints.get(edge.id);
+    const sourceNodeKind = resolveCanvasEndpointNodeKind(
+      edge.sourceId,
+      nodeContext.graphNodeIds,
+      nodeContext.canvasBlockIds,
+    );
+    const targetNodeKind = resolveCanvasEndpointNodeKind(
+      edge.targetId,
+      nodeContext.graphNodeIds,
+      nodeContext.canvasBlockIds,
+    );
+    const normalizedHint = normalizeHandlePairForNodeKinds({
+      sourceHandle: relationHint?.sourceHandle,
+      targetHandle: relationHint?.targetHandle,
+      sourceNodeKind,
+      targetNodeKind,
+    });
 
     return {
       id: `entity:${edge.id}`,
       source: edge.sourceId,
-      sourceHandle: relationHint?.sourceHandle,
+      sourceHandle: normalizedHint?.sourceHandle,
       target: edge.targetId,
-      targetHandle: relationHint?.targetHandle,
+      targetHandle: normalizedHint?.targetHandle,
       label: edge.relation.replaceAll("_", " "),
       type: "canvas-edge",
       data: {
@@ -359,7 +534,7 @@ export const buildFlowEdges = (
     } satisfies Edge<CanvasGraphEdgeData>;
   });
 
-  const localEdges = canvasEdges
+  const localEdges = normalizedCanvasEdges
     .filter((edge) => !isEntityRelationHintEdge(edge.id))
     .map((edge) => {
       const direction = edge.direction ?? "unidirectional";
@@ -369,13 +544,29 @@ export const buildFlowEdges = (
         selectedStroke: color,
         glow: `${color}55`,
       };
+      const sourceNodeKind = resolveCanvasEndpointNodeKind(
+        edge.sourceId,
+        nodeContext.graphNodeIds,
+        nodeContext.canvasBlockIds,
+      );
+      const targetNodeKind = resolveCanvasEndpointNodeKind(
+        edge.targetId,
+        nodeContext.graphNodeIds,
+        nodeContext.canvasBlockIds,
+      );
+      const normalizedHandles = normalizeHandlePairForNodeKinds({
+        sourceHandle: edge.sourceHandle,
+        targetHandle: edge.targetHandle,
+        sourceNodeKind,
+        targetNodeKind,
+      });
 
       return {
         id: `canvas:${edge.id}`,
         source: edge.sourceId,
-        sourceHandle: edge.sourceHandle,
+        sourceHandle: normalizedHandles?.sourceHandle,
         target: edge.targetId,
-        targetHandle: edge.targetHandle,
+        targetHandle: normalizedHandles?.targetHandle,
         label: edge.relation,
         type: "canvas-edge",
         data: {
@@ -413,7 +604,7 @@ export const buildFlowEdges = (
       } satisfies Edge<CanvasGraphEdgeData>;
     });
 
-  return [...graphEdges, ...localEdges];
+  return dedupeByIdLastWins([...graphEdges, ...localEdges]);
 };
 
 export function mergeIncomingNodes(
@@ -443,7 +634,7 @@ export function mergeIncomingNodes(
   const preservedLocals = localNodes.filter(
     (node) => !incomingIds.has(node.id),
   );
-  return [...merged, ...preservedLocals];
+  return dedupeByIdLastWins([...merged, ...preservedLocals]);
 }
 
 let localNodeCounter = 0;

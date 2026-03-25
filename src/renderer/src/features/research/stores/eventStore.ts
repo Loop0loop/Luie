@@ -11,6 +11,9 @@ import {
     type EventUpdateInput,
 } from "@shared/types";
 import { api } from "@shared/api";
+import { useProjectStore } from "@renderer/features/project/stores/projectStore";
+import { refreshWorldGraph } from "@renderer/features/research/utils/worldGraphRefresh";
+import { runWithProjectLock } from "@renderer/features/research/utils/projectMutationLock";
 
 type BaseEventStore = CRUDStore<
     Event,
@@ -36,6 +39,7 @@ export const useEventStore = create<EventStore>((set, _get, store) => {
         "events",
         "currentEvent",
     );
+    const mutationLocks = new Set<string>();
 
     const apiClient = withProjectScopedGetAll(api.event);
 
@@ -45,17 +49,72 @@ export const useEventStore = create<EventStore>((set, _get, store) => {
         EventUpdateInput
     >(apiClient, "Event")(setWithAlias, _get, store);
 
+    const reloadCurrentGraph = async (projectId?: string | null) => {
+        await refreshWorldGraph(
+            projectId ?? useProjectStore.getState().currentItem?.id,
+        );
+    };
+
+    const createEventWithSync = async (input: EventCreateInput) => {
+        const projectId =
+            input.projectId ?? useProjectStore.getState().currentItem?.id;
+        if (!projectId) {
+            return null;
+        }
+
+        return await runWithProjectLock(mutationLocks, projectId, async () => {
+            const created = await crudSlice.create({
+                ...input,
+                projectId,
+            });
+            if (!created) {
+                return null;
+            }
+            await reloadCurrentGraph(projectId);
+            return created;
+        });
+    };
+
+    const updateEventWithSync = async (input: EventUpdateInput) => {
+        const projectId = useProjectStore.getState().currentItem?.id;
+        if (!projectId) {
+            return;
+        }
+
+        await runWithProjectLock(mutationLocks, projectId, async () => {
+            await crudSlice.update(input);
+            await reloadCurrentGraph(projectId);
+        });
+    };
+
+    const deleteEventWithSync = async (id: string) => {
+        const projectId = useProjectStore.getState().currentItem?.id;
+        if (!projectId) {
+            return;
+        }
+
+        await runWithProjectLock(mutationLocks, projectId, async () => {
+            await crudSlice.delete(id);
+            await reloadCurrentGraph(projectId);
+        });
+    };
+
     return {
         ...crudSlice,
+        create: createEventWithSync,
+        update: updateEventWithSync,
+        delete: deleteEventWithSync,
         loadEvents: (projectId: string) => crudSlice.loadAll(projectId),
         loadEvent: (id: string) => crudSlice.loadOne(id),
         createEvent: async (input: EventCreateInput) => {
-            await crudSlice.create(input);
+            await createEventWithSync(input);
         },
         updateEvent: async (input: EventUpdateInput) => {
-            await crudSlice.update(input);
+            await updateEventWithSync(input);
         },
-        deleteEvent: (id: string) => crudSlice.delete(id),
+        deleteEvent: async (id: string) => {
+            await deleteEventWithSync(id);
+        },
         setCurrentEvent: (event: Event | null) =>
             crudSlice.setCurrent(event),
 

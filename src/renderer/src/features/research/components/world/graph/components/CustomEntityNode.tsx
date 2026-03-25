@@ -182,6 +182,8 @@ export const CustomEntityNode = memo(
               type="source"
               position={h.pos}
               id={`${h.id}-source`}
+              isConnectableStart
+              isConnectableEnd={false}
               className={cn(
                 "!w-3 !h-3 !border-2 transition-all hover:!scale-150",
                 selected
@@ -197,6 +199,8 @@ export const CustomEntityNode = memo(
               type="target"
               position={h.pos}
               id={`${h.id}-target`}
+              isConnectableStart={false}
+              isConnectableEnd
               className={cn(
                 "!w-3 !h-3 !border-2 transition-all hover:!scale-150",
                 selected

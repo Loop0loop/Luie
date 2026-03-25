@@ -11,6 +11,9 @@ import {
     type FactionUpdateInput,
 } from "@shared/types";
 import { api } from "@shared/api";
+import { useProjectStore } from "@renderer/features/project/stores/projectStore";
+import { refreshWorldGraph } from "@renderer/features/research/utils/worldGraphRefresh";
+import { runWithProjectLock } from "@renderer/features/research/utils/projectMutationLock";
 
 type BaseFactionStore = CRUDStore<
     Faction,
@@ -36,6 +39,7 @@ export const useFactionStore = create<FactionStore>((set, _get, store) => {
         "factions",
         "currentFaction",
     );
+    const mutationLocks = new Set<string>();
 
     const apiClient = withProjectScopedGetAll(api.faction);
 
@@ -45,17 +49,72 @@ export const useFactionStore = create<FactionStore>((set, _get, store) => {
         FactionUpdateInput
     >(apiClient, "Faction")(setWithAlias, _get, store);
 
+    const reloadCurrentGraph = async (projectId?: string | null) => {
+        await refreshWorldGraph(
+            projectId ?? useProjectStore.getState().currentItem?.id,
+        );
+    };
+
+    const createFactionWithSync = async (input: FactionCreateInput) => {
+        const projectId =
+            input.projectId ?? useProjectStore.getState().currentItem?.id;
+        if (!projectId) {
+            return null;
+        }
+
+        return await runWithProjectLock(mutationLocks, projectId, async () => {
+            const created = await crudSlice.create({
+                ...input,
+                projectId,
+            });
+            if (!created) {
+                return null;
+            }
+            await reloadCurrentGraph(projectId);
+            return created;
+        });
+    };
+
+    const updateFactionWithSync = async (input: FactionUpdateInput) => {
+        const projectId = useProjectStore.getState().currentItem?.id;
+        if (!projectId) {
+            return;
+        }
+
+        await runWithProjectLock(mutationLocks, projectId, async () => {
+            await crudSlice.update(input);
+            await reloadCurrentGraph(projectId);
+        });
+    };
+
+    const deleteFactionWithSync = async (id: string) => {
+        const projectId = useProjectStore.getState().currentItem?.id;
+        if (!projectId) {
+            return;
+        }
+
+        await runWithProjectLock(mutationLocks, projectId, async () => {
+            await crudSlice.delete(id);
+            await reloadCurrentGraph(projectId);
+        });
+    };
+
     return {
         ...crudSlice,
+        create: createFactionWithSync,
+        update: updateFactionWithSync,
+        delete: deleteFactionWithSync,
         loadFactions: (projectId: string) => crudSlice.loadAll(projectId),
         loadFaction: (id: string) => crudSlice.loadOne(id),
         createFaction: async (input: FactionCreateInput) => {
-            await crudSlice.create(input);
+            await createFactionWithSync(input);
         },
         updateFaction: async (input: FactionUpdateInput) => {
-            await crudSlice.update(input);
+            await updateFactionWithSync(input);
         },
-        deleteFaction: (id: string) => crudSlice.delete(id),
+        deleteFaction: async (id: string) => {
+            await deleteFactionWithSync(id);
+        },
         setCurrentFaction: (faction: Faction | null) =>
             crudSlice.setCurrent(faction),
 

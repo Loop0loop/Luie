@@ -13,6 +13,9 @@ import type {
 import {
   buildWorldGraphDocument,
   mergeWorldGraphLayout,
+  normalizeCanvasBlocks,
+  normalizeCanvasEdges,
+  normalizeTimelines,
 } from "@shared/world/worldGraphDocument";
 import {
   appendNodeToGraph,
@@ -50,6 +53,7 @@ const GRAPH_REPLICA_TIMEOUT_MS = 4000;
 const graphPersistQueue = new Map<string, Promise<void>>();
 const graphLoadQueue = new Map<string, number>();
 const graphMutationVersion = new Map<string, number>();
+const graphNodeCreateLocks = new Set<string>();
 
 const readGraphMutationVersion = (projectId: string): number =>
   graphMutationVersion.get(projectId) ?? 0;
@@ -160,12 +164,15 @@ export function createWorldBuildingActions(
       graphLoadQueue.set(projectId, loadRequest);
       const mutationVersionAtLoadStart = readGraphMutationVersion(projectId);
 
-      set({
+      set((state) => ({
         isLoading: true,
         error: null,
         activeProjectId: projectId,
-        graphData: null,
-      });
+        // Keep the current graph visible during same-project reloads so
+        // in-flight mutations can rebase against a real snapshot.
+        graphData:
+          state.activeProjectId === projectId ? state.graphData : null,
+      }));
       try {
         const graphResponse = await withTimeout(
           api.worldGraph.get(projectId),
@@ -236,29 +243,38 @@ export function createWorldBuildingActions(
       const projectId = input.projectId || get().activeProjectId;
       if (!projectId) return null;
 
-      const nextNode = await createGraphNodeFromInput(projectId, input);
-      if (!nextNode) return null;
-
-      if (get().activeProjectId !== projectId) {
-        return nextNode;
+      if (graphNodeCreateLocks.has(projectId)) {
+        return null;
       }
 
-      let nextGraphSnapshot: WorldGraphData | null = null;
+      graphNodeCreateLocks.add(projectId);
+      try {
+        const nextNode = await createGraphNodeFromInput(projectId, input);
+        if (!nextNode) return null;
 
-      set((state) => {
-        if (state.activeProjectId !== projectId) {
-          return state;
+        if (get().activeProjectId !== projectId) {
+          return nextNode;
         }
-        const nextGraph = appendNodeToGraph(state.graphData, nextNode);
-        nextGraphSnapshot = nextGraph;
-        return {
-          graphData: nextGraph,
-        };
-      });
-      await syncGraphBackedStore(nextNode.entityType, projectId);
-      await persistGraphDocument(projectId, nextGraphSnapshot);
 
-      return nextNode;
+        let nextGraphSnapshot: WorldGraphData | null = null;
+
+        set((state) => {
+          if (state.activeProjectId !== projectId) {
+            return state;
+          }
+          const nextGraph = appendNodeToGraph(state.graphData, nextNode);
+          nextGraphSnapshot = nextGraph;
+          return {
+            graphData: nextGraph,
+          };
+        });
+        await syncGraphBackedStore(nextNode.entityType, projectId);
+        await persistGraphDocument(projectId, nextGraphSnapshot);
+
+        return nextNode;
+      } finally {
+        graphNodeCreateLocks.delete(projectId);
+      }
     },
 
     updateGraphNode: async (input) => {
@@ -530,6 +546,7 @@ export function createWorldBuildingActions(
     setGraphCanvasBlocks: async (blocks: WorldGraphCanvasBlock[]) => {
       const projectId = get().activeProjectId;
       if (!projectId) return;
+      const nextCanvasBlocks = normalizeCanvasBlocks(blocks);
 
       let nextGraphSnapshot: WorldGraphData | null = null;
 
@@ -543,7 +560,7 @@ export function createWorldBuildingActions(
 
         nextGraphSnapshot = {
           ...state.graphData,
-          canvasBlocks: blocks,
+          canvasBlocks: nextCanvasBlocks,
         };
         return {
           graphData: nextGraphSnapshot,
@@ -556,6 +573,7 @@ export function createWorldBuildingActions(
     setGraphCanvasEdges: async (edges: WorldGraphCanvasEdge[]) => {
       const projectId = get().activeProjectId;
       if (!projectId) return;
+      const nextCanvasEdges = normalizeCanvasEdges(edges);
 
       let nextGraphSnapshot: WorldGraphData | null = null;
 
@@ -569,7 +587,7 @@ export function createWorldBuildingActions(
 
         nextGraphSnapshot = {
           ...state.graphData,
-          canvasEdges: edges,
+          canvasEdges: nextCanvasEdges,
         };
         return {
           graphData: nextGraphSnapshot,
@@ -582,6 +600,7 @@ export function createWorldBuildingActions(
     setTimelines: async (timelines: WorldTimelineTrack[]) => {
       const projectId = get().activeProjectId;
       if (!projectId) return;
+      const nextTimelines = normalizeTimelines(timelines);
 
       let nextGraphSnapshot: WorldGraphData | null = null;
 
@@ -595,7 +614,7 @@ export function createWorldBuildingActions(
 
         nextGraphSnapshot = {
           ...state.graphData,
-          timelines,
+          timelines: nextTimelines,
         };
         return {
           graphData: nextGraphSnapshot,

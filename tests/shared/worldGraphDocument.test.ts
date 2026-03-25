@@ -105,6 +105,9 @@ describe("worldGraphDocument", () => {
         },
       ],
       edges: [],
+      canvasBlocks: [],
+      canvasEdges: [],
+      timelines: [],
       updatedAt: "2026-03-13T09:00:00.000Z",
     });
   });
@@ -147,5 +150,243 @@ describe("worldGraphDocument", () => {
         },
       },
     });
+  });
+
+  it("preserves canvas layout when a payload omits canvas sections", () => {
+    const graphData: WorldGraphData = {
+      nodes: [
+        {
+          id: "character-1",
+          entityType: "Character",
+          name: "Alice",
+          attributes: null,
+          positionX: 0,
+          positionY: 0,
+        },
+      ],
+      edges: [],
+      canvasBlocks: [
+        {
+          id: "block-1",
+          type: "memo",
+          positionX: 12,
+          positionY: 24,
+          data: {
+            title: "Memo",
+            tags: ["tag"],
+            body: "Body",
+          },
+        },
+      ],
+      canvasEdges: [
+        {
+          id: "edge-1",
+          sourceId: "block-1",
+          targetId: "character-1",
+          relation: "related",
+          direction: "unidirectional",
+        },
+      ],
+      timelines: [
+        {
+          id: "timeline-1",
+          name: "Timeline",
+          segments: [{ id: "segment-1", name: "Segment" }],
+        },
+      ],
+    };
+
+    const merged = mergeWorldGraphLayout(graphData, {
+      nodes: [
+        {
+          id: "character-1",
+          entityType: "Character",
+          name: "Alice",
+          positionX: 300,
+          positionY: 400,
+        },
+      ],
+    });
+
+    expect(merged.canvasBlocks).toEqual(graphData.canvasBlocks);
+    expect(merged.canvasEdges).toEqual(graphData.canvasEdges);
+    expect(merged.timelines).toEqual(graphData.timelines);
+    expect(merged.nodes[0]).toMatchObject({
+      positionX: 300,
+      positionY: 400,
+    });
+  });
+
+  it("dedupes graph document arrays before saving", () => {
+    const graphData: WorldGraphData = {
+      nodes: [
+        {
+          id: "node-1",
+          entityType: "Character",
+          name: "First",
+          attributes: null,
+          positionX: 1,
+          positionY: 2,
+        },
+        {
+          id: "node-1",
+          entityType: "Character",
+          name: "Second",
+          attributes: null,
+          positionX: 3,
+          positionY: 4,
+        },
+      ],
+      edges: [
+        {
+          id: "edge-1",
+          projectId: "project-1",
+          sourceId: "node-1",
+          sourceType: "Character",
+          targetId: "node-2",
+          targetType: "Event",
+          relation: "belongs_to",
+          attributes: null,
+          sourceWorldEntityId: null,
+          targetWorldEntityId: null,
+          createdAt: "2026-03-13T08:00:00.000Z",
+          updatedAt: "2026-03-13T08:00:00.000Z",
+        },
+        {
+          id: "edge-1",
+          projectId: "project-1",
+          sourceId: "node-1",
+          sourceType: "Character",
+          targetId: "node-2",
+          targetType: "Event",
+          relation: "causes",
+          attributes: null,
+          sourceWorldEntityId: null,
+          targetWorldEntityId: null,
+          createdAt: "2026-03-13T09:00:00.000Z",
+          updatedAt: "2026-03-13T09:00:00.000Z",
+        },
+      ],
+      canvasBlocks: [
+        {
+          id: "block-1",
+          type: "memo",
+          positionX: 10,
+          positionY: 20,
+          data: {
+            title: "First",
+            tags: [],
+            body: "One",
+          },
+        },
+        {
+          id: "block-1",
+          type: "memo",
+          positionX: 30,
+          positionY: 40,
+          data: {
+            title: "Second",
+            tags: ["tag"],
+            body: "Two",
+            color: "#112233",
+          },
+        },
+      ],
+      canvasEdges: [
+        {
+          id: "canvas-1",
+          sourceId: "block-1",
+          targetId: "node-1",
+          relation: "related",
+          direction: "unidirectional",
+        },
+        {
+          id: "canvas-1",
+          sourceId: "block-1",
+          targetId: "node-2",
+          relation: "linked",
+          direction: "bidirectional",
+          color: "#abcdef",
+        },
+      ],
+      timelines: [
+        {
+          id: "timeline-1",
+          name: "First",
+          segments: [{ id: "segment-1", name: "Old Segment" }],
+        },
+        {
+          id: "timeline-1",
+          name: "Second",
+          segments: [{ id: "segment-1", name: "New Segment" }],
+        },
+      ],
+    };
+
+    expect(buildWorldGraphDocument(graphData, "2026-03-13T09:00:00.000Z")).toEqual(
+      {
+        nodes: [
+          {
+            id: "node-1",
+            entityType: "Character",
+            subType: undefined,
+            name: "Second",
+            description: null,
+            firstAppearance: null,
+            attributes: null,
+            positionX: 3,
+            positionY: 4,
+          },
+        ],
+        edges: [
+          {
+            id: "edge-1",
+            projectId: "project-1",
+            sourceId: "node-1",
+            sourceType: "Character",
+            targetId: "node-2",
+            targetType: "Event",
+            relation: "causes",
+            attributes: null,
+            sourceWorldEntityId: null,
+            targetWorldEntityId: null,
+            createdAt: "2026-03-13T09:00:00.000Z",
+            updatedAt: "2026-03-13T09:00:00.000Z",
+          },
+        ],
+        canvasBlocks: [
+          {
+            id: "block-1",
+            type: "memo",
+            positionX: 30,
+            positionY: 40,
+            data: {
+              title: "Second",
+              tags: ["tag"],
+              body: "Two",
+              color: "#112233",
+            },
+          },
+        ],
+        canvasEdges: [
+          {
+            id: "canvas-1",
+            sourceId: "block-1",
+            targetId: "node-2",
+            relation: "linked",
+            direction: "bidirectional",
+            color: "#abcdef",
+          },
+        ],
+        timelines: [
+          {
+            id: "timeline-1",
+            name: "Second",
+            segments: [{ id: "segment-1", name: "New Segment" }],
+          },
+        ],
+        updatedAt: "2026-03-13T09:00:00.000Z",
+      },
+    );
   });
 });
