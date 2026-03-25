@@ -167,6 +167,96 @@ export const upsertCharacters = async (
   }
 };
 
+export const upsertEvents = async (
+  prisma: Prisma.TransactionClient,
+  events: SyncBundle["events"],
+  deletedProjectIds: Set<string>,
+): Promise<void> => {
+  for (const event of events) {
+    if (deletedProjectIds.has(event.projectId)) continue;
+    const existing = (await prisma.event.findUnique({
+      where: { id: event.id },
+      select: { id: true },
+    })) as { id?: string } | null;
+
+    if (event.deletedAt) {
+      if (existing?.id) await prisma.event.delete({ where: { id: event.id } });
+      continue;
+    }
+
+    const data = {
+      name: event.name,
+      description: event.description,
+      firstAppearance: event.firstAppearance,
+      attributes:
+        typeof event.attributes === "string"
+          ? event.attributes
+          : JSON.stringify(event.attributes ?? null),
+      updatedAt: new Date(event.updatedAt),
+      project: {
+        connect: { id: event.projectId },
+      },
+    };
+
+    if (existing?.id) {
+      await prisma.event.update({ where: { id: event.id }, data });
+    } else {
+      await prisma.event.create({
+        data: {
+          id: event.id,
+          ...data,
+          createdAt: new Date(event.createdAt),
+        },
+      });
+    }
+  }
+};
+
+export const upsertFactions = async (
+  prisma: Prisma.TransactionClient,
+  factions: SyncBundle["factions"],
+  deletedProjectIds: Set<string>,
+): Promise<void> => {
+  for (const faction of factions) {
+    if (deletedProjectIds.has(faction.projectId)) continue;
+    const existing = (await prisma.faction.findUnique({
+      where: { id: faction.id },
+      select: { id: true },
+    })) as { id?: string } | null;
+
+    if (faction.deletedAt) {
+      if (existing?.id) await prisma.faction.delete({ where: { id: faction.id } });
+      continue;
+    }
+
+    const data = {
+      name: faction.name,
+      description: faction.description,
+      firstAppearance: faction.firstAppearance,
+      attributes:
+        typeof faction.attributes === "string"
+          ? faction.attributes
+          : JSON.stringify(faction.attributes ?? null),
+      updatedAt: new Date(faction.updatedAt),
+      project: {
+        connect: { id: faction.projectId },
+      },
+    };
+
+    if (existing?.id) {
+      await prisma.faction.update({ where: { id: faction.id }, data });
+    } else {
+      await prisma.faction.create({
+        data: {
+          id: faction.id,
+          ...data,
+          createdAt: new Date(faction.createdAt),
+        },
+      });
+    }
+  }
+};
+
 export const upsertTerms = async (
   prisma: Prisma.TransactionClient,
   terms: SyncBundle["terms"],
@@ -423,6 +513,15 @@ export const applyReplicaWorldState = async (
           createdAt: new Date(memo.updatedAt),
           updatedAt: new Date(memo.updatedAt),
         })),
+      });
+    }
+
+    if (deletedDocTypes.size > 0 || worldDocMap.size > 0 || memos.length > 0) {
+      await prisma.project.update({
+        where: { id: project.id },
+        data: {
+          updatedAt: new Date(),
+        },
       });
     }
   }

@@ -110,16 +110,23 @@ export class SnapshotService {
 
       await writeFullSnapshotArtifact(snapshotId, input);
 
-      const snapshot = await db.getClient().snapshot.create({
-        data: {
-          id: snapshotId,
-          projectId: input.projectId,
-          chapterId: input.chapterId,
-          content: input.content,
-          contentLength,
-          type: snapshotType,
-          description: input.description,
-        },
+      const snapshot = await db.getClient().$transaction(async (prisma) => {
+        const created = await prisma.snapshot.create({
+          data: {
+            id: snapshotId,
+            projectId: input.projectId,
+            chapterId: input.chapterId,
+            content: input.content,
+            contentLength,
+            type: snapshotType,
+            description: input.description,
+          },
+        });
+        await prisma.project.update({
+          where: { id: input.projectId },
+          data: { updatedAt: new Date() },
+        });
+        return created;
       });
 
       logger.info("Snapshot created successfully", { snapshotId: snapshot.id });
@@ -232,8 +239,16 @@ export class SnapshotService {
         select: { projectId: true },
       });
 
-      await db.getClient().snapshot.delete({
-        where: { id },
+      await db.getClient().$transaction(async (prisma) => {
+        await prisma.snapshot.delete({
+          where: { id },
+        });
+        if ((snapshot as { projectId?: unknown })?.projectId) {
+          await prisma.project.update({
+            where: { id: String((snapshot as { projectId: unknown }).projectId) },
+            data: { updatedAt: new Date() },
+          });
+        }
       });
       this.queueOrphanArtifactCleanup(id);
 
@@ -282,16 +297,23 @@ export class SnapshotService {
           { snapshotId },
         );
       }
+      const chapterId = snapshot.chapterId;
 
       const nextContent =
         typeof snapshot.content === "string" ? snapshot.content : "";
 
-      await db.getClient().chapter.update({
-        where: { id: snapshot.chapterId },
-        data: {
-          content: nextContent,
-          wordCount: nextContent.length,
-        },
+      await db.getClient().$transaction(async (prisma) => {
+        await prisma.chapter.update({
+          where: { id: chapterId },
+          data: {
+            content: nextContent,
+            wordCount: nextContent.length,
+          },
+        });
+        await prisma.project.update({
+          where: { id: snapshot.projectId },
+          data: { updatedAt: new Date() },
+        });
       });
 
       logger.info("Snapshot restored successfully", {
@@ -358,13 +380,15 @@ export class SnapshotService {
       }
 
       const toDelete = allSnapshots.slice(keepCount) as Array<{ id: string }>;
-      const deletePromises = toDelete.map((snapshot) =>
-        db.getClient().snapshot.delete({
-          where: { id: snapshot.id },
-        }),
-      );
-
-      await Promise.all(deletePromises);
+      await db.getClient().$transaction(async (prisma) => {
+        await prisma.snapshot.deleteMany({
+          where: { id: { in: toDelete.map((snapshot) => snapshot.id) } },
+        });
+        await prisma.project.update({
+          where: { id: projectId },
+          data: { updatedAt: new Date() },
+        });
+      });
       for (const snapshot of toDelete) {
         this.queueOrphanArtifactCleanup(snapshot.id);
       }
@@ -445,8 +469,14 @@ export class SnapshotService {
         return { success: true, deletedCount: 0 };
       }
 
-      await db.getClient().snapshot.deleteMany({
-        where: { id: { in: toDelete } },
+      await db.getClient().$transaction(async (prisma) => {
+        await prisma.snapshot.deleteMany({
+          where: { id: { in: toDelete } },
+        });
+        await prisma.project.update({
+          where: { id: projectId },
+          data: { updatedAt: new Date() },
+        });
       });
       for (const snapshotId of toDelete) {
         this.queueOrphanArtifactCleanup(snapshotId);

@@ -44,7 +44,11 @@ export class WorldEntityService {
             });
 
             logger.info("World entity created", { entityId: entity.id });
-            await projectService.persistPackageAfterMutation(String(entity.projectId), "world-entity:create");
+            await projectService.touchProject(String(entity.projectId));
+            await projectService.persistPackageAfterMutation(
+                String(entity.projectId),
+                "world-entity:create",
+            );
             return entity;
         } catch (error) {
             logger.error("Failed to create world entity", error);
@@ -115,7 +119,11 @@ export class WorldEntityService {
             });
 
             logger.info("World entity updated", { entityId: entity.id });
-            await projectService.persistPackageAfterMutation(String(entity.projectId), "world-entity:update");
+            await projectService.touchProject(String(entity.projectId));
+            await projectService.persistPackageAfterMutation(
+                String(entity.projectId),
+                "world-entity:update",
+            );
             return entity;
         } catch (error) {
             logger.error("Failed to update world entity", error);
@@ -143,7 +151,11 @@ export class WorldEntityService {
                 data: { positionX: input.positionX, positionY: input.positionY },
             });
 
-            await projectService.persistPackageAfterMutation(String(entity.projectId), "world-entity:update-position");
+            await projectService.touchProject(String(entity.projectId));
+            await projectService.persistPackageAfterMutation(
+                String(entity.projectId),
+                "world-entity:update-position",
+            );
             return entity;
         } catch (error) {
             logger.error("Failed to update world entity position", error);
@@ -192,7 +204,11 @@ export class WorldEntityService {
 
             logger.info("World entity deleted", { entityId: id });
             if (projectId) {
-                await projectService.persistPackageAfterMutation(projectId, "world-entity:delete");
+                await projectService.touchProject(projectId);
+                await projectService.persistPackageAfterMutation(
+                    projectId,
+                    "world-entity:delete",
+                );
             }
             return { success: true };
         } catch (error) {

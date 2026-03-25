@@ -8,6 +8,8 @@ import {
   collectDeletedProjectIds,
   upsertChapter,
   upsertCharacters,
+  upsertEvents,
+  upsertFactions,
   upsertProjects,
   upsertTerms,
 } from "./syncLocalApply.js";
@@ -102,6 +104,8 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
         input.bundle.characters,
         deletedProjectIds,
       );
+      await upsertEvents(tx, input.bundle.events, deletedProjectIds);
+      await upsertFactions(tx, input.bundle.factions, deletedProjectIds);
       await upsertTerms(tx, input.bundle.terms, deletedProjectIds);
       await applyReplicaWorldState(tx, input.bundle, deletedProjectIds);
       await applyChapterTombstones(

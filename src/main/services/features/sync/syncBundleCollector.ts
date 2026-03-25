@@ -158,6 +158,56 @@ const appendCharacterRecords = (
   }
 };
 
+const appendEventRecords = (
+  bundle: SyncBundle,
+  userId: string,
+  projectId: string,
+  events: Array<Record<string, unknown>>,
+): void => {
+  for (const row of events) {
+    const eventId = toNullableString(row.id);
+    if (!eventId) continue;
+    const eventDeletedAt = toNullableString(row.deletedAt);
+    bundle.events.push({
+      id: eventId,
+      userId,
+      projectId,
+      name: toNullableString(row.name) ?? "Event",
+      description: toNullableString(row.description),
+      firstAppearance: toNullableString(row.firstAppearance),
+      attributes: toNullableString(row.attributes),
+      createdAt: toIsoString(row.createdAt),
+      updatedAt: toIsoString(row.updatedAt),
+      deletedAt: eventDeletedAt,
+    });
+  }
+};
+
+const appendFactionRecords = (
+  bundle: SyncBundle,
+  userId: string,
+  projectId: string,
+  factions: Array<Record<string, unknown>>,
+): void => {
+  for (const row of factions) {
+    const factionId = toNullableString(row.id);
+    if (!factionId) continue;
+    const factionDeletedAt = toNullableString(row.deletedAt);
+    bundle.factions.push({
+      id: factionId,
+      userId,
+      projectId,
+      name: toNullableString(row.name) ?? "Faction",
+      description: toNullableString(row.description),
+      firstAppearance: toNullableString(row.firstAppearance),
+      attributes: toNullableString(row.attributes),
+      createdAt: toIsoString(row.createdAt),
+      updatedAt: toIsoString(row.updatedAt),
+      deletedAt: factionDeletedAt,
+    });
+  }
+};
+
 const appendTermRecords = (
   bundle: SyncBundle,
   userId: string,
@@ -364,6 +414,22 @@ const collectProjectBundleData = async (
     projectId,
     Array.isArray(projectRow.characters)
       ? (projectRow.characters as Array<Record<string, unknown>>)
+      : [],
+  );
+  appendEventRecords(
+    bundle,
+    userId,
+    projectId,
+    Array.isArray(projectRow.events)
+      ? (projectRow.events as Array<Record<string, unknown>>)
+      : [],
+  );
+  appendFactionRecords(
+    bundle,
+    userId,
+    projectId,
+    Array.isArray(projectRow.factions)
+      ? (projectRow.factions as Array<Record<string, unknown>>)
       : [],
   );
   appendTermRecords(

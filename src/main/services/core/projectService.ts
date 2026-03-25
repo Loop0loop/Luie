@@ -52,6 +52,12 @@ const DEBOUNCED_PACKAGE_EXPORT_REASONS = new Set<string>([
   "snapshot:create",
 ]);
 
+type PackageExportAttemptResult = {
+  exported: boolean;
+  skipped?: boolean;
+  error?: unknown;
+};
+
 const loadProjectExportEngine = async () =>
   (await import("./project/projectExportEngine.js"))
     .exportProjectPackageWithOptions;
@@ -795,16 +801,44 @@ export class ProjectService {
   async attemptImmediatePackageExport(
     projectId: string,
     reason: string,
-  ): Promise<{ exported: boolean; error?: unknown }> {
+  ): Promise<PackageExportAttemptResult> {
     try {
+      const projectPath = await getProjectAttachmentPath(projectId);
+      if (!projectPath || !projectPath.toLowerCase().endsWith(".luie")) {
+        logger.info(
+          "Skipped immediate project package export (no canonical .luie attachment)",
+          {
+            projectId,
+            reason,
+            projectPath,
+          },
+        );
+        return { exported: false, skipped: true };
+      }
+
       const exported = await this.exportProjectPackageNow(projectId, reason);
       if (!exported) {
-        logger.info("Skipped immediate project package export", {
+        const error = new ServiceError(
+          ErrorCode.FS_WRITE_FAILED,
+          "Failed to export canonical .luie",
+          {
+            projectId,
+            reason,
+            projectPath,
+          },
+        );
+        this.schedulePackageExport(projectId, `${reason}:retry`);
+        logger.warn("Immediate project package export returned no output; queued retry", {
           projectId,
           reason,
+          projectPath,
         });
+        return {
+          exported: false,
+          error,
+        };
       }
-      return { exported };
+      return { exported: true };
     } catch (error) {
       this.schedulePackageExport(projectId, `${reason}:retry`);
       logger.warn("Immediate project package export failed; queued retry", {
@@ -833,7 +867,10 @@ export class ProjectService {
     }
 
     const result = await this.attemptImmediatePackageExport(projectId, reason);
-    if (!result.error) {
+    if (result.skipped) {
+      return;
+    }
+    if (result.exported && !result.error) {
       return;
     }
 

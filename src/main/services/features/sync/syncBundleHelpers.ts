@@ -24,6 +24,8 @@ export const buildLocalBundleFromDatabase = async (input: {
     include: {
       chapters: true,
       characters: true,
+      events: true,
+      factions: true,
       scrapMemos: {
         orderBy: [{ sortOrder: "asc" }, { updatedAt: "desc" }],
       },
@@ -81,6 +83,8 @@ export const countBundleRows = (bundle: SyncBundle): number =>
   bundle.projects.length +
   bundle.chapters.length +
   bundle.characters.length +
+  bundle.events.length +
+  bundle.factions.length +
   bundle.terms.length +
   bundle.worldDocuments.length +
   bundle.memos.length +

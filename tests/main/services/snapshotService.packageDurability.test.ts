@@ -10,7 +10,26 @@ const mocked = vi.hoisted(() => ({
   snapshotDeleteMany: vi.fn(),
   snapshotFindFirst: vi.fn(),
   chapterUpdate: vi.fn(),
+  projectUpdate: vi.fn(),
   projectFindMany: vi.fn(),
+  transaction: vi.fn(async (callback: (client: unknown) => unknown) => {
+    return await callback({
+      snapshot: {
+        create: mocked.snapshotCreate,
+        findUnique: mocked.snapshotFindUnique,
+        findMany: mocked.snapshotFindMany,
+        delete: mocked.snapshotDelete,
+        deleteMany: mocked.snapshotDeleteMany,
+        findFirst: mocked.snapshotFindFirst,
+      },
+      chapter: {
+        update: mocked.chapterUpdate,
+      },
+      project: {
+        update: mocked.projectUpdate,
+      },
+    });
+  }),
   writeFullSnapshotArtifact: vi.fn(async (..._args: unknown[]) => undefined),
   cleanupOrphanSnapshotArtifacts: vi.fn(async (..._args: unknown[]) => ({
     scanned: 0,
@@ -43,8 +62,10 @@ vi.mock("../../../src/main/database/index.js", () => ({
         update: mocked.chapterUpdate,
       },
       project: {
+        update: mocked.projectUpdate,
         findMany: mocked.projectFindMany,
       },
+      $transaction: mocked.transaction,
     }),
   },
 }));
@@ -120,6 +141,12 @@ describe("SnapshotService package durability", () => {
     });
 
     expect(created).toMatchObject({ id: "snapshot-1" });
+    expect(mocked.projectUpdate).toHaveBeenCalledWith({
+      where: { id: "project-1" },
+      data: {
+        updatedAt: expect.any(Date),
+      },
+    });
     expect(mocked.persistPackageAfterMutation).toHaveBeenCalledWith(
       "project-1",
       "snapshot:create",
@@ -170,6 +197,12 @@ describe("SnapshotService package durability", () => {
     await service.restoreSnapshot("snapshot-1");
     await service.pruneSnapshots("project-1");
 
+    expect(mocked.projectUpdate).toHaveBeenCalledWith({
+      where: { id: "project-1" },
+      data: {
+        updatedAt: expect.any(Date),
+      },
+    });
     expect(mocked.persistPackageAfterMutation).toHaveBeenCalledWith(
       "project-1",
       "snapshot:restore",

@@ -122,6 +122,7 @@ export class EntityRelationService {
             const relation = await client.entityRelation.create({ data });
 
             logger.info("Entity relation created", { relationId: relation.id });
+            await projectService.touchProject(input.projectId);
             await projectService.persistPackageAfterMutation(input.projectId, "entity-relation:create");
             return toEntityRelation(relation as RawRow);
         } catch (error) {
@@ -202,6 +203,7 @@ export class EntityRelationService {
             });
 
             logger.info("Entity relation updated", { relationId: relation.id });
+            await projectService.touchProject(String(current.projectId));
             await projectService.persistPackageAfterMutation(String(current.projectId), "entity-relation:update");
             return toEntityRelation(relation as RawRow);
         } catch (error) {
@@ -228,6 +230,7 @@ export class EntityRelationService {
             const client = await this.getClient();
             const deleted = await client.entityRelation.delete({ where: { id } });
             logger.info("Entity relation deleted", { relationId: id });
+            await projectService.touchProject(String(deleted.projectId));
             await projectService.persistPackageAfterMutation(String(deleted.projectId), "entity-relation:delete");
             return { success: true };
         } catch (error) {
@@ -400,6 +403,7 @@ export class EntityRelationService {
             });
             removedRelations += result.count;
             if (result.count > 0) {
+                await projectService.touchProject(projectId);
                 await projectService.persistPackageAfterMutation(projectId, "entity-relation:cleanup-orphans");
             }
         }

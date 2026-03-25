@@ -3,13 +3,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocked = vi.hoisted(() => {
   const worldDocumentFindUnique = vi.fn();
   const worldDocumentUpsert = vi.fn();
-  const scrapMemoFindMany = vi.fn();
   const scrapMemoDeleteMany = vi.fn();
   const scrapMemoCreateMany = vi.fn();
+  const projectUpdate = vi.fn();
+  const scrapMemoFindMany = vi.fn();
 
   const transactionClient = {
     worldDocument: {
       upsert: worldDocumentUpsert,
+    },
+    project: {
+      update: projectUpdate,
     },
     scrapMemo: {
       deleteMany: scrapMemoDeleteMany,
@@ -22,6 +26,7 @@ const mocked = vi.hoisted(() => {
     disconnect: vi.fn(async () => undefined),
     worldDocumentFindUnique,
     worldDocumentUpsert,
+    projectUpdate,
     scrapMemoFindMany,
     scrapMemoDeleteMany,
     scrapMemoCreateMany,
@@ -157,6 +162,12 @@ describe("worldReplicaService", () => {
     });
 
     expect(mocked.transaction).toHaveBeenCalledTimes(1);
+    expect(mocked.projectUpdate).toHaveBeenCalledWith({
+      where: { id: "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1" },
+      data: {
+        updatedAt: expect.any(Date),
+      },
+    });
     expect(mocked.worldDocumentUpsert).toHaveBeenCalledWith({
       where: {
         projectId_docType: {
@@ -235,6 +246,12 @@ describe("worldReplicaService", () => {
       }),
     ).resolves.toEqual({});
 
+    expect(mocked.projectUpdate).toHaveBeenCalledWith({
+      where: { id: "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1" },
+      data: {
+        updatedAt: expect.any(Date),
+      },
+    });
     expect(mocked.attemptImmediatePackageExport).toHaveBeenCalledWith(
       "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
       "world-document:graph",

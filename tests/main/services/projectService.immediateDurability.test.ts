@@ -1,4 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
+
+vi.mock("../../../src/main/services/core/project/projectAttachmentStore.js", () => ({
+  getProjectAttachmentPath: vi.fn(async () => "/tmp/project-1.luie"),
+}));
+
 import { ProjectService } from "../../../src/main/services/core/projectService.js";
 
 describe("ProjectService immediate package durability", () => {
@@ -80,5 +85,24 @@ describe("ProjectService immediate package durability", () => {
       "project-1",
       "chapter:update:debounced",
     );
+  });
+
+  it("skips immediate export when the project is not attached to a .luie package", async () => {
+    vi.mocked(
+      await import("../../../src/main/services/core/project/projectAttachmentStore.js"),
+    ).getProjectAttachmentPath.mockResolvedValueOnce(null);
+
+    const service = new ProjectService();
+    const exportSpy = vi
+      .spyOn(service, "exportProjectPackageNow")
+      .mockResolvedValue(true);
+
+    await expect(
+      service.attemptImmediatePackageExport("project-1", "chapter:update"),
+    ).resolves.toMatchObject({
+      exported: false,
+      skipped: true,
+    });
+    expect(exportSpy).not.toHaveBeenCalled();
   });
 });

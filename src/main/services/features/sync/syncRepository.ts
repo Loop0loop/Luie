@@ -3,6 +3,8 @@ import type {
   SyncBundle,
   SyncChapterRecord,
   SyncCharacterRecord,
+  SyncEventRecord,
+  SyncFactionRecord,
   SyncMemoRecord,
   SyncProjectRecord,
   SyncTermRecord,
@@ -136,6 +138,46 @@ const mapCharacterRow = (row: DbRow): SyncCharacterRecord | null => {
   };
 };
 
+const mapEventRow = (row: DbRow): SyncEventRecord | null => {
+  const id = toNullableString(row.id);
+  const userId = toNullableString(row.user_id);
+  const projectId = toNullableString(row.project_id);
+  if (!id || !userId || !projectId) return null;
+
+  return {
+    id,
+    userId,
+    projectId,
+    name: toStringOrFallback(row.name, "Event"),
+    description: toNullableString(row.description),
+    firstAppearance: toNullableString(row.first_appearance),
+    attributes: normalizeJsonValue(row.attributes),
+    createdAt: toIsoString(row.created_at),
+    updatedAt: toIsoString(row.updated_at),
+    deletedAt: toNullableString(row.deleted_at),
+  };
+};
+
+const mapFactionRow = (row: DbRow): SyncFactionRecord | null => {
+  const id = toNullableString(row.id);
+  const userId = toNullableString(row.user_id);
+  const projectId = toNullableString(row.project_id);
+  if (!id || !userId || !projectId) return null;
+
+  return {
+    id,
+    userId,
+    projectId,
+    name: toStringOrFallback(row.name, "Faction"),
+    description: toNullableString(row.description),
+    firstAppearance: toNullableString(row.first_appearance),
+    attributes: normalizeJsonValue(row.attributes),
+    createdAt: toIsoString(row.created_at),
+    updatedAt: toIsoString(row.updated_at),
+    deletedAt: toNullableString(row.deleted_at),
+  };
+};
+
 const mapTermRow = (row: DbRow): SyncTermRecord | null => {
   const id = toNullableString(row.id);
   const userId = toNullableString(row.user_id);
@@ -244,6 +286,8 @@ class SyncRepository {
       projectsRaw,
       chaptersRaw,
       charactersRaw,
+      eventsRaw,
+      factionsRaw,
       termsRaw,
       worldDocsRaw,
       memosRaw,
@@ -252,6 +296,8 @@ class SyncRepository {
       this.fetchTableRaw("projects", accessToken, userId),
       this.fetchTableRaw("chapters", accessToken, userId),
       this.fetchTableRaw("characters", accessToken, userId),
+      this.fetchTableRaw("events", accessToken, userId),
+      this.fetchTableRaw("factions", accessToken, userId),
       this.fetchTableRaw("terms", accessToken, userId),
       this.fetchTableRaw("world_documents", accessToken, userId),
       this.fetchTableRaw("memos", accessToken, userId),
@@ -261,6 +307,8 @@ class SyncRepository {
     bundle.projects = projectsRaw.map(mapProjectRow).filter((row): row is SyncProjectRecord => row !== null);
     bundle.chapters = chaptersRaw.map(mapChapterRow).filter((row): row is SyncChapterRecord => row !== null);
     bundle.characters = charactersRaw.map(mapCharacterRow).filter((row): row is SyncCharacterRecord => row !== null);
+    bundle.events = eventsRaw.map(mapEventRow).filter((row): row is SyncEventRecord => row !== null);
+    bundle.factions = factionsRaw.map(mapFactionRow).filter((row): row is SyncFactionRecord => row !== null);
     bundle.terms = termsRaw.map(mapTermRow).filter((row): row is SyncTermRecord => row !== null);
     bundle.worldDocuments = worldDocsRaw
       .map(mapWorldDocumentRow)
@@ -303,6 +351,36 @@ class SyncRepository {
     );
 
     const characterRows = bundle.characters.map((record) =>
+      normalizeToRow({
+        id: record.id,
+        user_id: record.userId,
+        project_id: record.projectId,
+        name: record.name,
+        description: record.description ?? null,
+        first_appearance: record.firstAppearance ?? null,
+        attributes: normalizeJsonValue(record.attributes),
+        created_at: record.createdAt,
+        updated_at: record.updatedAt,
+        deleted_at: record.deletedAt ?? null,
+      }),
+    );
+
+    const eventRows = bundle.events.map((record) =>
+      normalizeToRow({
+        id: record.id,
+        user_id: record.userId,
+        project_id: record.projectId,
+        name: record.name,
+        description: record.description ?? null,
+        first_appearance: record.firstAppearance ?? null,
+        attributes: normalizeJsonValue(record.attributes),
+        created_at: record.createdAt,
+        updated_at: record.updatedAt,
+        deleted_at: record.deletedAt ?? null,
+      }),
+    );
+
+    const factionRows = bundle.factions.map((record) =>
       normalizeToRow({
         id: record.id,
         user_id: record.userId,
@@ -373,6 +451,8 @@ class SyncRepository {
     await this.upsertTable("projects", accessToken, projectRows, "id,user_id");
     await this.upsertTable("chapters", accessToken, chapterRows, "id,user_id");
     await this.upsertTable("characters", accessToken, characterRows, "id,user_id");
+    await this.upsertTable("events", accessToken, eventRows, "id,user_id");
+    await this.upsertTable("factions", accessToken, factionRows, "id,user_id");
     await this.upsertTable("terms", accessToken, termRows, "id,user_id");
     await this.upsertTable("world_documents", accessToken, worldDocumentRows, "id,user_id");
     await this.upsertTable("memos", accessToken, memoRows, "id,user_id");

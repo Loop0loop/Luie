@@ -109,21 +109,27 @@ export class WorldReplicaService {
   }): Promise<WorldReplicaDocumentSetResult> {
     try {
       await this.ensureDbReady();
-      await db.getClient().worldDocument.upsert({
-        where: {
-          projectId_docType: {
+      await db.getClient().$transaction(async (prisma) => {
+        await prisma.worldDocument.upsert({
+          where: {
+            projectId_docType: {
+              projectId: input.projectId,
+              docType: input.docType,
+            },
+          },
+          update: {
+            payload: toJsonString(input.payload),
+          },
+          create: {
             projectId: input.projectId,
             docType: input.docType,
+            payload: toJsonString(input.payload),
           },
-        },
-        update: {
-          payload: toJsonString(input.payload),
-        },
-        create: {
-          projectId: input.projectId,
-          docType: input.docType,
-          payload: toJsonString(input.payload),
-        },
+        });
+        await prisma.project.update({
+          where: { id: input.projectId },
+          data: { updatedAt: new Date() },
+        });
       });
 
       if (input.docType === "graph") {
@@ -131,7 +137,7 @@ export class WorldReplicaService {
           input.projectId,
           "world-document:graph",
         );
-        if (exportResult.error) {
+        if (exportResult.error || (!exportResult.exported && !exportResult.skipped)) {
           const message =
             exportResult.error instanceof Error
               ? exportResult.error.message
@@ -299,6 +305,10 @@ export class WorldReplicaService {
             })),
           });
         }
+        await prisma.project.update({
+          where: { id: input.projectId },
+          data: { updatedAt: new Date() },
+        });
       });
     } catch (error) {
       logger.error("Failed to save replica scrap memos", {

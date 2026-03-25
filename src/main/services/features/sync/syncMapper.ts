@@ -48,6 +48,22 @@ export type SyncCharacterRecord = SyncEntityBase & {
   createdAt: string;
 };
 
+export type SyncEventRecord = SyncEntityBase & {
+  name: string;
+  description?: string | null;
+  firstAppearance?: string | null;
+  attributes?: unknown;
+  createdAt: string;
+};
+
+export type SyncFactionRecord = SyncEntityBase & {
+  name: string;
+  description?: string | null;
+  firstAppearance?: string | null;
+  attributes?: unknown;
+  createdAt: string;
+};
+
 export type SyncTermRecord = SyncEntityBase & {
   term: string;
   definition?: string | null;
@@ -91,6 +107,8 @@ export type SyncBundle = {
   projects: SyncProjectRecord[];
   chapters: SyncChapterRecord[];
   characters: SyncCharacterRecord[];
+  events: SyncEventRecord[];
+  factions: SyncFactionRecord[];
   terms: SyncTermRecord[];
   worldDocuments: SyncWorldDocumentRecord[];
   memos: SyncMemoRecord[];
@@ -107,6 +125,8 @@ export const createEmptySyncBundle = (): SyncBundle => ({
   projects: [],
   chapters: [],
   characters: [],
+  events: [],
+  factions: [],
   terms: [],
   worldDocuments: [],
   memos: [],
@@ -361,6 +381,14 @@ const applyTombstonesToBundle = (bundle: SyncBundle): SyncBundle => {
         (character) => !isProjectDeleted(character.projectId),
       ),
     ),
+    events: filterByTombstone(
+      "event",
+      bundle.events.filter((event) => !isProjectDeleted(event.projectId)),
+    ),
+    factions: filterByTombstone(
+      "faction",
+      bundle.factions.filter((faction) => !isProjectDeleted(faction.projectId)),
+    ),
     terms: filterByTombstone(
       "term",
       bundle.terms.filter((term) => !isProjectDeleted(term.projectId)),
@@ -470,6 +498,8 @@ export const mergeSyncBundles = (
     projects: mergeEntityList(local.projects, remote.projects),
     chapters: chapterMerged.merged,
     characters: mergeEntityList(local.characters, remote.characters),
+    events: mergeEntityList(local.events, remote.events),
+    factions: mergeEntityList(local.factions, remote.factions),
     terms: mergeEntityList(local.terms, remote.terms),
     worldDocuments: mergeWorldDocs(local.worldDocuments, remote.worldDocuments),
     memos: memoMerged.merged,
