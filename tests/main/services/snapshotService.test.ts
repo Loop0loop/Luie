@@ -1,3 +1,7 @@
+// TEST_LEVEL: REAL_DB_INTEGRATION
+// PROVES: snapshot service create/restore behavior against the real test database with targeted policy spies
+// DOES_NOT_PROVE: fully unmocked persistence durability or UI/Electron orchestration
+
 import { describe, it, expect, vi, beforeAll } from "vitest";
 import { SnapshotService } from "../../../src/main/services/features/snapshot/snapshotService.js";
 import { ChapterService } from "../../../src/main/services/core/chapterService.js";
@@ -16,6 +20,9 @@ beforeAll(() => {
   vi.spyOn(projectService, "attemptImmediatePackageExport").mockResolvedValue({
     exported: false,
   });
+  vi.spyOn(projectService, "persistPackageAfterMutation").mockResolvedValue(
+    undefined,
+  );
   vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(() => {});
 });
 

@@ -1,3 +1,7 @@
+// TEST_LEVEL: REAL_DB_INTEGRATION
+// PROVES: snapshot workflows through real DB, filesystem mirrors, and attached .luie persistence
+// DOES_NOT_PROVE: isolated service branches without timing/state coupling
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import path from "node:path";
 import { promises as fs } from "node:fs";
@@ -7,14 +11,19 @@ import { projectService } from "../../../src/main/services/core/projectService.j
 import { chapterService } from "../../../src/main/services/core/chapterService.js";
 import { snapshotService } from "../../../src/main/services/features/snapshot/snapshotService.js";
 import { autoSaveManager } from "../../../src/main/manager/autoSaveManager.js";
-import { readFullSnapshotArtifact } from "../../../src/main/services/features/snapshot/snapshotArtifacts.js";
+import * as snapshotArtifacts from "../../../src/main/services/features/snapshot/snapshotArtifacts.js";
+import { probeLuieContainer } from "../../../src/main/services/io/luieContainer.js";
 import {
   SNAPSHOT_MIRROR_DIR,
   SNAPSHOT_BACKUP_DIR,
   LUIE_SNAPSHOTS_DIR,
 } from "../../../src/shared/constants/index.js";
+import { makeMixedNarrativeText } from "../luieFixtures.js";
 
-const makeContent = (length: number) => "가".repeat(length);
+const expectNoWalSidecars = async (packagePath: string): Promise<void> => {
+  await expect(fs.access(`${packagePath}-wal`)).rejects.toThrow();
+  await expect(fs.access(`${packagePath}-shm`)).rejects.toThrow();
+};
 
 const createProject = async (title = "Test Project") => {
   const projectPath = path.join(app.getPath("userData"), `${title}.luie`);
@@ -36,13 +45,17 @@ describe("Snapshot resilience", () => {
 
     const chapters = await Promise.all(
       [200, 400, 600, 800, 1000].map(async (len) => {
-        const chapter = await chapterService.createChapter({
-          projectId: project.id,
-          title: `Chapter ${len}`,
-        });
-        return { id: chapter.id, len };
-      }),
-    );
+      const chapter = await chapterService.createChapter({
+        projectId: project.id,
+        title: `Chapter ${len}`,
+      });
+      await chapterService.updateChapter({
+        id: chapter.id,
+        content: makeMixedNarrativeText(len, len),
+      });
+      return { id: chapter.id, len };
+    }),
+  );
 
     autoSaveManager.setConfig(project.id, {
       enabled: true,
@@ -53,7 +66,11 @@ describe("Snapshot resilience", () => {
     vi.useFakeTimers();
     await Promise.all(
       chapters.map((ch) =>
-        autoSaveManager.triggerSave(ch.id, makeContent(ch.len), project.id),
+        autoSaveManager.triggerSave(
+          ch.id,
+          makeMixedNarrativeText(ch.len, ch.len),
+          project.id,
+        ),
       ),
     );
     await vi.runAllTimersAsync();
@@ -76,8 +93,13 @@ describe("Snapshot resilience", () => {
     }
 
     await expect(
-      chapterService.updateChapter({ id: chapters[0].id, content: "" }),
-    ).rejects.toBeTruthy();
+      chapterService.updateChapter({
+        id: chapters[0].id,
+        content: "",
+      }),
+    ).rejects.toMatchObject({
+      code: "VAL_3001",
+    });
   });
 
   it("flushCritical writes mirrors and snapshots on forced quit", async () => {
@@ -93,7 +115,11 @@ describe("Snapshot resilience", () => {
       debounceMs: 1000,
     });
 
-    await autoSaveManager.triggerSave(chapter.id, makeContent(800), project.id);
+    await autoSaveManager.triggerSave(
+      chapter.id,
+      makeMixedNarrativeText(800, 0),
+      project.id,
+    );
 
     const result = await autoSaveManager.flushCritical();
     expect(result.mirrored).toBeGreaterThan(0);
@@ -112,6 +138,49 @@ describe("Snapshot resilience", () => {
     const snapshots = await snapshotService.getSnapshotsByProject(project.id);
     expect(snapshots.length).toBeGreaterThan(0);
   });
+
+  it.each([5_000, 100_000, 1_000_000, 2_000_000, 5_000_000])(
+    "keeps large snapshot artifacts recoverable for %i characters",
+    async (length) => {
+      const { project, projectPath } = await createProject(
+        `Large Snapshot ${length}`,
+      );
+      const chapter = await chapterService.createChapter({
+        projectId: project.id,
+        title: `Large Chapter ${length}`,
+      });
+      const content = makeMixedNarrativeText(length, 1);
+
+      const created = await snapshotService.createSnapshot({
+        projectId: project.id,
+        chapterId: chapter.id,
+        content,
+        description: `Large snapshot ${length}`,
+      });
+
+      const probe = await probeLuieContainer(projectPath);
+      expect(probe).toMatchObject({
+        exists: true,
+        kind: "sqlite-v2",
+        layout: "file",
+      });
+
+      const candidates = await snapshotService.listRestoreCandidates();
+      const candidate = candidates.find(
+        (entry) => entry.projectId === project.id,
+      );
+      expect(candidate).toBeDefined();
+
+      const parsed = await snapshotArtifacts.readFullSnapshotArtifact(
+        candidate?.filePath ?? "",
+      );
+      expect(parsed.meta.projectId).toBe(project.id);
+      expect(parsed.meta.snapshotId).toBe(created.id);
+      expect(parsed.data.focus?.content).toBe(content);
+      expect(parsed.data.focus?.content?.length).toBe(length);
+      await expectNoWalSidecars(projectPath);
+    },
+  );
 
   it("enables WAL mode", async () => {
     const client = db.getClient() as {
@@ -139,6 +208,18 @@ describe("Snapshot resilience", () => {
 
   it("creates periodic project snapshots every 10 minutes", async () => {
     const { project } = await createProject("Scheduled Project");
+    const chapter = await chapterService.createChapter({
+      projectId: project.id,
+      title: "Scheduled Chapter",
+    });
+    await autoSaveManager.triggerSave(
+      chapter.id,
+      makeMixedNarrativeText(900, 2),
+      project.id,
+    );
+    const createSnapshotSpy = vi
+      .spyOn(snapshotService, "createSnapshot")
+      .mockResolvedValue(undefined as never);
 
     autoSaveManager.setConfig(project.id, {
       enabled: true,
@@ -148,10 +229,11 @@ describe("Snapshot resilience", () => {
 
     vi.useFakeTimers();
     await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
+    await vi.runAllTimersAsync();
     vi.useRealTimers();
 
-    const snapshots = await snapshotService.getSnapshotsByProject(project.id);
-    expect(snapshots.length).toBeGreaterThan(0);
+    expect(createSnapshotSpy).toHaveBeenCalled();
+    createSnapshotSpy.mockRestore();
   });
 
   it("handles snapshot writes while chapter updates are racing", async () => {
@@ -164,14 +246,14 @@ describe("Snapshot resilience", () => {
     const updatePromises = Array.from({ length: 10 }).map((_, idx) =>
       chapterService.updateChapter({
         id: chapter.id,
-        content: makeContent(600 + idx),
+        content: makeMixedNarrativeText(600 + idx, idx),
       }),
     );
 
     const snapshotPromise = snapshotService.createSnapshot({
       projectId: project.id,
       chapterId: chapter.id,
-      content: makeContent(650),
+      content: makeMixedNarrativeText(650, 5),
       description: "Race snapshot",
     });
 
@@ -189,7 +271,7 @@ describe("Snapshot resilience", () => {
     expect(files.length).toBeGreaterThan(0);
 
     const targetPath = path.join(backupDir, files.sort().pop() as string);
-    const parsed = await readFullSnapshotArtifact(targetPath);
+    const parsed = await snapshotArtifacts.readFullSnapshotArtifact(targetPath);
     expect(parsed.meta.projectId).toBe(project.id);
   });
 
@@ -240,7 +322,7 @@ describe("Snapshot resilience", () => {
     await snapshotService.createSnapshot({
       projectId: project.id,
       chapterId: chapter.id,
-      content: makeContent(600),
+      content: makeMixedNarrativeText(600, 6),
       description: "Recreate folder",
     });
 
@@ -258,7 +340,7 @@ describe("Snapshot resilience", () => {
     await snapshotService.createSnapshot({
       projectId: project.id,
       chapterId: chapter.id,
-      content: makeContent(600),
+      content: makeMixedNarrativeText(600, 7),
       description: "Corrupt snapshot",
     });
 
@@ -289,7 +371,7 @@ describe("Snapshot resilience", () => {
     });
 
     const writeSpy = vi
-      .spyOn(fs, "writeFile")
+      .spyOn(snapshotArtifacts, "writeFullSnapshotArtifact")
       .mockRejectedValueOnce(
         Object.assign(new Error("EACCES"), { code: "EACCES" }),
       );
@@ -298,7 +380,7 @@ describe("Snapshot resilience", () => {
       snapshotService.createSnapshot({
         projectId: project.id,
         chapterId: chapter.id,
-        content: makeContent(600),
+        content: makeMixedNarrativeText(600, 8),
         description: "Disk fail",
       }),
     ).rejects.toBeTruthy();

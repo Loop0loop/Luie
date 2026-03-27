@@ -1,3 +1,7 @@
+// TEST_LEVEL: REAL_DB_INTEGRATION
+// PROVES: project service behavior against real SQLite/Prisma state and attached .luie files
+// DOES_NOT_PROVE: pure end-to-end app startup or renderer-side behavior
+
 import { describe, it, expect, vi, beforeAll } from "vitest";
 import path from "node:path";
 import { promises as fs } from "node:fs";
@@ -7,8 +11,16 @@ import {
   projectService,
 } from "../../../src/main/services/core/projectService.js";
 import { db } from "../../../src/main/database/index.js";
-import { readLuieEntry } from "../../../src/main/utils/luiePackage.js";
 import { ErrorCode } from "../../../src/shared/constants/errorCode.js";
+import {
+  probeLuieContainer,
+  readLuieContainerEntry,
+  writeLuieContainer,
+} from "../../../src/main/services/io/luieContainer.js";
+import {
+  makeExactMixedByteText,
+  makeMixedNarrativeText,
+} from "../luieFixtures.js";
 
 const localProjectService = new ProjectService();
 
@@ -73,14 +85,14 @@ describe("ProjectService", () => {
       projectPath,
     });
 
-    await fs.writeFile(projectPath, "not-a-zip", "utf-8");
+    await fs.writeFile(projectPath, "not-a-sqlite", "utf-8");
 
     const result = await localProjectService.openLuieProject(projectPath);
     expect(result.recovery).toBe(true);
     expect(result.project.id).toBe(created.id);
   });
 
-  it("fails open when .luie world documents are invalid without deleting existing db data", async () => {
+  it("fails open when a legacy .luie directory package is attached without deleting existing db data", async () => {
     const projectPath = path.join(
       app.getPath("userData"),
       "Invalid Import Project.luie",
@@ -174,47 +186,88 @@ describe("ProjectService", () => {
     await fs.rm(projectPath, { recursive: true, force: true });
   });
 
-  it("keeps readable world docs when one .luie world file read fails during export", async () => {
-    const projectPath = path.join(
-      app.getPath("userData"),
-      "Partial World Export.luie",
-    );
-    await fs.rm(projectPath, { recursive: true, force: true });
+  it.each([5_000, 100_000, 1_000_000, 2_000_000, 5_000_000])(
+    "keeps readable world docs when one sqlite-backed .luie world file read fails during export for %i chars",
+    async (length) => {
+      const projectPath = path.join(
+        app.getPath("userData"),
+        `Partial World Export ${length}.luie`,
+      );
+      await fs.rm(projectPath, { recursive: true, force: true });
 
-    const created = await localProjectService.createProject({
-      title: "Partial World Export",
-      projectPath,
-    });
-    const projectId = String(created.id);
+      const created = await localProjectService.createProject({
+        title: `Partial World Export ${length}`,
+        projectPath,
+      });
+      const projectId = String(created.id);
+      const synopsis = makeMixedNarrativeText(length, 0);
+      const unreadablePlot = makeExactMixedByteText(5 * 1024 * 1024 + 1);
+      const logger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+      };
 
-    await fs.mkdir(path.join(projectPath, "world"), { recursive: true });
-    await fs.writeFile(
-      path.join(projectPath, "world", "synopsis.json"),
-      JSON.stringify(
-        { synopsis: "keep this synopsis", status: "working" },
-        null,
-        2,
-      ),
-      "utf-8",
-    );
-    await fs.writeFile(
-      path.join(projectPath, "world", "plot.json"),
-      "x".repeat(5 * 1024 * 1024 + 16),
-      "utf-8",
-    );
+      await writeLuieContainer({
+        targetPath: projectPath,
+        payload: {
+          meta: {
+            projectId,
+            title: `Partial World Export ${length}`,
+          },
+          chapters: [],
+          characters: [],
+          terms: [],
+          synopsis: {
+            synopsis,
+            status: "working",
+          },
+          plot: {
+            columns: [
+              {
+                id: "plot-col",
+                title: unreadablePlot,
+                cards: [],
+              },
+            ],
+          },
+          drawing: { paths: [] },
+          mindmap: { nodes: [], edges: [] },
+          memos: { memos: [] },
+          graph: { nodes: [], edges: [] },
+          snapshots: [],
+        },
+        logger,
+      });
 
-    await localProjectService.exportProjectPackage(projectId);
+      await localProjectService.exportProjectPackage(projectId);
 
-    const synopsisRaw = await readLuieEntry(projectPath, "world/synopsis.json");
-    expect(synopsisRaw).not.toBeNull();
-    expect(JSON.parse(synopsisRaw ?? "{}")).toMatchObject({
-      synopsis: "keep this synopsis",
-      status: "working",
-    });
+      const probe = await probeLuieContainer(projectPath);
+      expect(probe).toMatchObject({
+        exists: true,
+        kind: "sqlite-v2",
+        layout: "file",
+      });
 
-    await localProjectService.deleteProject(projectId);
-    await fs.rm(projectPath, { recursive: true, force: true });
-  });
+      const synopsisRaw = await readLuieContainerEntry(
+        projectPath,
+        "world/synopsis.json",
+        logger,
+      );
+      expect(synopsisRaw).not.toBeNull();
+      expect(JSON.parse(synopsisRaw ?? "{}")).toMatchObject({
+        synopsis,
+        status: "working",
+      });
+
+      await expect(fs.access(`${projectPath}-wal`)).rejects.toThrow();
+      await expect(fs.access(`${projectPath}-shm`)).rejects.toThrow();
+
+      await localProjectService.deleteProject(projectId);
+      await fs.rm(projectPath, { recursive: true, force: true });
+    },
+  );
 
   it("rejects invalid projectPath on create and update", async () => {
     await expect(

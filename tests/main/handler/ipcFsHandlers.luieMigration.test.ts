@@ -1,3 +1,7 @@
+// TEST_LEVEL: HANDLER_INTEGRATION
+// PROVES: IPC handler behavior for SQLite-only .luie operations and explicit legacy rejection
+// DOES_NOT_PROVE: full Electron app runtime or renderer interaction
+
 import os from "node:os";
 import path from "node:path";
 import * as fsp from "node:fs/promises";
@@ -9,6 +13,11 @@ import {
   LUIE_PACKAGE_FORMAT,
   LUIE_PACKAGE_VERSION,
 } from "../../../src/shared/constants/index.js";
+import {
+  probeLuieContainer,
+  readLuieContainerEntry,
+} from "../../../src/main/services/io/luieContainer.js";
+import { makeMixedNarrativeText } from "../luieFixtures.js";
 
 const mocked = vi.hoisted(() => {
   const handlerMap = new Map<
@@ -54,105 +63,210 @@ vi.mock("electron", () => ({
   },
 }));
 
-describe("ipcFsHandlers legacy .luie migration", () => {
+describe("ipcFsHandlers sqlite-only .luie behavior", () => {
   let tempRoot = "";
 
-  beforeEach(() => {
-    mocked.handlerMap.clear();
-    mocked.openDialogPath = "";
-  });
+  const registerFsHandlers = async () => {
+    const { registerFsIPCHandlers } = await import(
+      "../../../src/main/handler/system/ipcFsHandlers.js"
+    );
+    registerFsIPCHandlers(mocked.logger);
+  };
+
+  const prepareWorkspace = async (prefix: string): Promise<string> => {
+    await registerFsHandlers();
+
+    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), prefix));
+    const workspaceDir = path.join(tempRoot, "workspace");
+    await fsp.mkdir(workspaceDir, { recursive: true });
+    mocked.openDialogPath = workspaceDir;
+
+    const selectDirectoryHandler = mocked.handlerMap.get(
+      IPC_CHANNELS.FS_SELECT_DIRECTORY,
+    );
+    expect(selectDirectoryHandler).toBeDefined();
+    const selectResponse = (await selectDirectoryHandler?.({})) as {
+      success: boolean;
+    };
+    expect(selectResponse.success).toBe(true);
+
+    return workspaceDir;
+  };
 
   afterEach(async () => {
     if (tempRoot) {
       await fsp.rm(tempRoot, { recursive: true, force: true });
       tempRoot = "";
     }
+    mocked.handlerMap.clear();
+    mocked.openDialogPath = "";
   });
 
-  it("skips symlink entries when migrating directory package to zip", async () => {
-    const { registerFsIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcFsHandlers.js"
+  beforeEach(() => {
+    mocked.handlerMap.clear();
+    mocked.openDialogPath = "";
+  });
+
+  it("writes FS_SAVE_PROJECT output as sqlite-backed .luie and preserves the chapter body", async () => {
+    const workspaceDir = await prepareWorkspace("luie-fs-save-project-");
+    const saveProjectHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_SAVE_PROJECT);
+    expect(saveProjectHandler).toBeDefined();
+
+    const content = makeMixedNarrativeText(5_000, 0);
+    const saveResponse = (await saveProjectHandler?.(
+      {},
+      "SQLite Save Project",
+      workspaceDir,
+      content,
+    )) as {
+      success: boolean;
+      data?: { path: string; projectDir: string };
+    };
+
+    expect(saveResponse.success).toBe(true);
+    const savedPath = saveResponse.data?.path;
+    expect(savedPath).toBeTruthy();
+
+    const probe = await probeLuieContainer(savedPath ?? "");
+    expect(probe).toMatchObject({
+      exists: true,
+      kind: "sqlite-v2",
+      layout: "file",
+    });
+
+    const metaRaw = await readLuieContainerEntry(savedPath ?? "", "meta.json", mocked.logger);
+    const chapterRaw = await readLuieContainerEntry(
+      savedPath ?? "",
+      "manuscript/legacy-import.md",
+      mocked.logger,
     );
-    registerFsIPCHandlers(mocked.logger);
 
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-fs-migration-"));
-    const workspaceDir = path.join(tempRoot, "workspace");
-    await fsp.mkdir(workspaceDir, { recursive: true });
-    mocked.openDialogPath = workspaceDir;
+    expect(metaRaw).not.toBeNull();
+    expect(JSON.parse(metaRaw ?? "{}")).toMatchObject({
+      title: "SQLite Save Project",
+      format: LUIE_PACKAGE_FORMAT,
+      container: LUIE_PACKAGE_CONTAINER_DIR,
+      version: LUIE_PACKAGE_VERSION,
+    });
+    expect(chapterRaw).toBe(content);
+    await expect(fsp.access(`${savedPath}-wal`)).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+    await expect(fsp.access(`${savedPath}-shm`)).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+  });
 
-    const packageDir = path.join(workspaceDir, "legacy-package.luie");
-    const manuscriptDir = path.join(packageDir, "manuscript");
-    await fsp.mkdir(manuscriptDir, { recursive: true });
-    await fsp.writeFile(path.join(manuscriptDir, "chapter-1.md"), "# kept", "utf-8");
+  it("normalizes required .luie meta fields during create", async () => {
+    const workspaceDir = await prepareWorkspace("luie-fs-create-");
+    const createLuieHandler = mocked.handlerMap.get(
+      IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE,
+    );
+    expect(createLuieHandler).toBeDefined();
 
-    const outsideFile = path.join(tempRoot, "outside-secret.md");
-    await fsp.writeFile(outsideFile, "SECRET_OUTSIDE", "utf-8");
+    const packagePath = path.join(workspaceDir, "normalized-meta.luie");
+    const createResponse = (await createLuieHandler?.(
+      {},
+      packagePath,
+      {
+        title: "Normalized Meta",
+      },
+    )) as { success: boolean };
 
-    const symlinkPath = path.join(manuscriptDir, "link.md");
-    try {
-      await fsp.symlink(outsideFile, symlinkPath);
-    } catch (error) {
-      const fsError = error as NodeJS.ErrnoException;
-      if (fsError?.code === "EPERM" || fsError?.code === "EACCES") {
-        return;
-      }
-      throw error;
-    }
+    expect(createResponse.success).toBe(true);
 
-    const selectDirectoryHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_SELECT_DIRECTORY);
-    expect(selectDirectoryHandler).toBeDefined();
-    const selectResponse = (await selectDirectoryHandler?.({})) as { success: boolean };
-    expect(selectResponse.success).toBe(true);
+    const probe = await probeLuieContainer(packagePath);
+    expect(probe.kind).toBe("sqlite-v2");
 
-    const writeProjectFileHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_WRITE_PROJECT_FILE);
+    const metaResponse = (await readLuieContainerEntry(
+      packagePath,
+      "meta.json",
+      mocked.logger,
+    )) as string | null;
+    expect(metaResponse).not.toBeNull();
+    const parsedMeta = JSON.parse(metaResponse ?? "{}") as Record<string, unknown>;
+    expect(parsedMeta.format).toBe(LUIE_PACKAGE_FORMAT);
+    expect(parsedMeta.container).toBe(LUIE_PACKAGE_CONTAINER_DIR);
+    expect(parsedMeta.version).toBe(LUIE_PACKAGE_VERSION);
+    expect(parsedMeta.title).toBe("Normalized Meta");
+    expect(typeof parsedMeta.createdAt).toBe("string");
+    expect(typeof parsedMeta.updatedAt).toBe("string");
+  });
+
+  it.each([
+    { field: "format", meta: { format: "tampered", title: "Invalid" } },
+    { field: "container", meta: { container: "tar", title: "Invalid" } },
+    { field: "version", meta: { version: 999, title: "Invalid" } },
+  ])("rejects invalid meta $field during create", async ({ meta }) => {
+    const workspaceDir = await prepareWorkspace(`luie-fs-invalid-${String(meta)}`);
+    const createLuieHandler = mocked.handlerMap.get(
+      IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE,
+    );
+    expect(createLuieHandler).toBeDefined();
+
+    const packagePath = path.join(workspaceDir, "invalid-meta.luie");
+    const response = (await createLuieHandler?.({}, packagePath, meta)) as {
+      success: boolean;
+      error?: { code?: string };
+    };
+
+    expect(response.success).toBe(false);
+    expect(response.error?.code).toBe(ErrorCode.FS_WRITE_FAILED);
+    await expect(fsp.access(packagePath)).rejects.toThrow();
+  });
+
+  it("replaces sqlite entry content on writeProjectFile", async () => {
+    const workspaceDir = await prepareWorkspace("luie-fs-replace-entry-");
+    const createLuieHandler = mocked.handlerMap.get(
+      IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE,
+    );
+    expect(createLuieHandler).toBeDefined();
+
+    const packagePath = path.join(workspaceDir, "replace-entry.luie");
+    const createResponse = (await createLuieHandler?.(
+      {},
+      packagePath,
+      {
+        projectId: "project-1",
+        title: "Replace Entry",
+      },
+    )) as { success: boolean };
+    expect(createResponse.success).toBe(true);
+
+    const writeProjectFileHandler = mocked.handlerMap.get(
+      IPC_CHANNELS.FS_WRITE_PROJECT_FILE,
+    );
     expect(writeProjectFileHandler).toBeDefined();
+
+    const nextSynopsis = {
+      synopsis: "updated value",
+      status: "working",
+    };
     const writeResponse = (await writeProjectFileHandler?.(
       {},
-      packageDir,
+      packagePath,
       "world/synopsis.json",
-      JSON.stringify({ synopsis: "ok" }),
+      JSON.stringify(nextSynopsis, null, 2),
     )) as { success: boolean };
     expect(writeResponse.success).toBe(true);
 
-    const readLuieEntryHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_READ_LUIE_ENTRY);
-    expect(readLuieEntryHandler).toBeDefined();
-
-    const chapterResponse = (await readLuieEntryHandler?.(
-      {},
-      packageDir,
-      "manuscript/chapter-1.md",
-    )) as { success: boolean; data: string | null };
-    expect(chapterResponse.success).toBe(true);
-    expect(chapterResponse.data).toBe("# kept");
-
-    const symlinkResponse = (await readLuieEntryHandler?.(
-      {},
-      packageDir,
-      "manuscript/link.md",
-    )) as { success: boolean; data: string | null };
-    expect(symlinkResponse.success).toBe(true);
-    expect(symlinkResponse.data).toBeNull();
+    const readResponse = (await readLuieContainerEntry(
+      packagePath,
+      "world/synopsis.json",
+      mocked.logger,
+    )) as string | null;
+    expect(readResponse).not.toBeNull();
+    expect(JSON.parse(readResponse ?? "{}")).toMatchObject(nextSynopsis);
   });
 
   it("fails writeProjectFile when target .luie package is missing", async () => {
-    const { registerFsIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcFsHandlers.js"
+    const workspaceDir = await prepareWorkspace("luie-fs-missing-package-");
+    const writeProjectFileHandler = mocked.handlerMap.get(
+      IPC_CHANNELS.FS_WRITE_PROJECT_FILE,
     );
-    registerFsIPCHandlers(mocked.logger);
-
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-fs-missing-package-"));
-    const workspaceDir = path.join(tempRoot, "workspace");
-    await fsp.mkdir(workspaceDir, { recursive: true });
-    mocked.openDialogPath = workspaceDir;
-
-    const selectDirectoryHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_SELECT_DIRECTORY);
-    expect(selectDirectoryHandler).toBeDefined();
-    const selectResponse = (await selectDirectoryHandler?.({})) as { success: boolean };
-    expect(selectResponse.success).toBe(true);
+    expect(writeProjectFileHandler).toBeDefined();
 
     const missingPackagePath = path.join(workspaceDir, "missing-package.luie");
-    const writeProjectFileHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_WRITE_PROJECT_FILE);
-    expect(writeProjectFileHandler).toBeDefined();
     const writeResponse = (await writeProjectFileHandler?.(
       {},
       missingPackagePath,
@@ -168,80 +282,13 @@ describe("ipcFsHandlers legacy .luie migration", () => {
     await expect(fsp.access(missingPackagePath)).rejects.toThrow();
   });
 
-  it("replaces existing .luie entry content on writeProjectFile", async () => {
-    const { registerFsIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcFsHandlers.js"
-    );
-    registerFsIPCHandlers(mocked.logger);
-
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-fs-replace-entry-"));
-    const workspaceDir = path.join(tempRoot, "workspace");
-    await fsp.mkdir(workspaceDir, { recursive: true });
-    mocked.openDialogPath = workspaceDir;
-
-    const selectDirectoryHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_SELECT_DIRECTORY);
-    expect(selectDirectoryHandler).toBeDefined();
-    const selectResponse = (await selectDirectoryHandler?.({})) as { success: boolean };
-    expect(selectResponse.success).toBe(true);
-
-    const packagePath = path.join(workspaceDir, "replace-entry.luie");
-    const createLuieHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE);
-    expect(createLuieHandler).toBeDefined();
-    const createResponse = (await createLuieHandler?.(
-      {},
-      packagePath,
-      { projectId: "project-1", title: "Replace Entry" },
-    )) as { success: boolean };
-    expect(createResponse.success).toBe(true);
-
-    const writeProjectFileHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_WRITE_PROJECT_FILE);
-    expect(writeProjectFileHandler).toBeDefined();
-    const nextSynopsis = { synopsis: "updated value", status: "working" };
-    const writeResponse = (await writeProjectFileHandler?.(
-      {},
-      packagePath,
-      "world/synopsis.json",
-      JSON.stringify(nextSynopsis, null, 2),
-    )) as { success: boolean };
-    expect(writeResponse.success).toBe(true);
-
-    const readLuieEntryHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_READ_LUIE_ENTRY);
-    expect(readLuieEntryHandler).toBeDefined();
-    const readResponse = (await readLuieEntryHandler?.(
-      {},
-      packagePath,
-      "world/synopsis.json",
-    )) as { success: boolean; data: string | null };
-    expect(readResponse.success).toBe(true);
-    expect(readResponse.data).not.toBeNull();
-    expect(JSON.parse(readResponse.data ?? "{}")).toMatchObject(nextSynopsis);
-  });
-
   it("blocks direct .luie overwrite via FS_WRITE_FILE", async () => {
-    const { registerFsIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcFsHandlers.js"
-    );
-    registerFsIPCHandlers(mocked.logger);
-
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-fs-block-direct-luie-write-"));
-    const workspaceDir = path.join(tempRoot, "workspace");
-    await fsp.mkdir(workspaceDir, { recursive: true });
-    mocked.openDialogPath = workspaceDir;
-
-    const selectDirectoryHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_SELECT_DIRECTORY);
-    expect(selectDirectoryHandler).toBeDefined();
-    const selectResponse = (await selectDirectoryHandler?.({})) as { success: boolean };
-    expect(selectResponse.success).toBe(true);
-
+    const workspaceDir = await prepareWorkspace("luie-fs-block-direct-write-");
     const writeFileHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_WRITE_FILE);
     expect(writeFileHandler).toBeDefined();
 
     const packagePath = path.join(workspaceDir, "blocked-direct-write.luie");
-    const response = (await writeFileHandler?.(
-      {},
-      packagePath,
-      "should-fail",
-    )) as {
+    const response = (await writeFileHandler?.({}, packagePath, "should-fail")) as {
       success: boolean;
       error?: { code?: string };
     };
@@ -251,28 +298,30 @@ describe("ipcFsHandlers legacy .luie migration", () => {
     await expect(fsp.access(packagePath)).rejects.toThrow();
   });
 
-  it("restores existing .luie file when createLuiePackage fails", async () => {
-    const { registerFsIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcFsHandlers.js"
+  it("preserves an existing sqlite package when createLuiePackage fails", async () => {
+    const workspaceDir = await prepareWorkspace("luie-fs-create-rollback-");
+    const createLuieHandler = mocked.handlerMap.get(
+      IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE,
     );
-    registerFsIPCHandlers(mocked.logger);
-
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-fs-create-rollback-"));
-    const workspaceDir = path.join(tempRoot, "workspace");
-    await fsp.mkdir(workspaceDir, { recursive: true });
-    mocked.openDialogPath = workspaceDir;
-
-    const selectDirectoryHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_SELECT_DIRECTORY);
-    expect(selectDirectoryHandler).toBeDefined();
-    const selectResponse = (await selectDirectoryHandler?.({})) as { success: boolean };
-    expect(selectResponse.success).toBe(true);
+    expect(createLuieHandler).toBeDefined();
 
     const packagePath = path.join(workspaceDir, "existing-package.luie");
-    const legacyContent = "LEGACY_PACKAGE_CONTENT";
-    await fsp.writeFile(packagePath, legacyContent, "utf-8");
+    const validResponse = (await createLuieHandler?.(
+      {},
+      packagePath,
+      {
+        title: "Before Failure",
+      },
+    )) as { success: boolean };
+    expect(validResponse.success).toBe(true);
 
-    const createLuieHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE);
-    expect(createLuieHandler).toBeDefined();
+    const beforeMeta = await readLuieContainerEntry(
+      packagePath,
+      "meta.json",
+      mocked.logger,
+    );
+    expect(beforeMeta).not.toBeNull();
+
     const createResponse = (await createLuieHandler?.(
       {},
       packagePath,
@@ -280,78 +329,75 @@ describe("ipcFsHandlers legacy .luie migration", () => {
     )) as { success: boolean };
     expect(createResponse.success).toBe(false);
 
-    const restoredContent = await fsp.readFile(packagePath, "utf-8");
-    expect(restoredContent).toBe(legacyContent);
+    const afterMeta = await readLuieContainerEntry(
+      packagePath,
+      "meta.json",
+      mocked.logger,
+    );
+    expect(afterMeta).toBe(beforeMeta);
   });
 
-  it("writes FS_SAVE_PROJECT output as zip .luie and preserves legacy content", async () => {
-    const { registerFsIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcFsHandlers.js"
+  it("rejects legacy zip package reads explicitly", async () => {
+    const workspaceDir = await prepareWorkspace("luie-fs-legacy-zip-");
+    const readLuieEntryHandler = mocked.handlerMap.get(
+      IPC_CHANNELS.FS_READ_LUIE_ENTRY,
     );
-    registerFsIPCHandlers(mocked.logger);
-
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-fs-save-project-"));
-    const workspaceDir = path.join(tempRoot, "workspace");
-    await fsp.mkdir(workspaceDir, { recursive: true });
-    mocked.openDialogPath = workspaceDir;
-
-    const selectDirectoryHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_SELECT_DIRECTORY);
-    expect(selectDirectoryHandler).toBeDefined();
-    const selectResponse = (await selectDirectoryHandler?.({})) as { success: boolean };
-    expect(selectResponse.success).toBe(true);
-
-    const saveProjectHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_SAVE_PROJECT);
-    expect(saveProjectHandler).toBeDefined();
-    const saveResponse = (await saveProjectHandler?.(
-      {},
-      "Legacy Save Project",
-      workspaceDir,
-      "LEGACY_CONTENT_BODY",
-    )) as {
-      success: boolean;
-      data?: { path: string; projectDir: string };
-    };
-    expect(saveResponse.success).toBe(true);
-    const savedPath = saveResponse.data?.path;
-    expect(savedPath).toBeTruthy();
-
-    const fileBuffer = await fsp.readFile(savedPath ?? "");
-    expect(fileBuffer[0]).toBe(0x50); // 'P'
-    expect(fileBuffer[1]).toBe(0x4b); // 'K'
-
-    const readLuieEntryHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_READ_LUIE_ENTRY);
     expect(readLuieEntryHandler).toBeDefined();
 
-    const metaResponse = (await readLuieEntryHandler?.(
-      {},
-      savedPath,
-      "meta.json",
-    )) as { success: boolean; data: string | null };
-    expect(metaResponse.success).toBe(true);
-    expect(metaResponse.data).not.toBeNull();
-    expect(JSON.parse(metaResponse.data ?? "{}")).toMatchObject({
-      title: "Legacy Save Project",
-    });
+    const packagePath = path.join(workspaceDir, "legacy-project.luie");
+    await fsp.writeFile(packagePath, Buffer.from([0x50, 0x4b, 0x03, 0x04]));
 
-    const legacyContentResponse = (await readLuieEntryHandler?.(
+    const response = (await readLuieEntryHandler?.(
       {},
-      savedPath,
-      "manuscript/legacy-import.md",
-    )) as { success: boolean; data: string | null };
-    expect(legacyContentResponse.success).toBe(true);
-    expect(legacyContentResponse.data).toBe("LEGACY_CONTENT_BODY");
+      packagePath,
+      "meta.json",
+    )) as {
+      success: boolean;
+      error?: { code?: string };
+    };
+
+    expect(response.success).toBe(false);
+    expect(response.error?.code).toBe(ErrorCode.LUIE_LEGACY_FORMAT_UNSUPPORTED);
+  });
+
+  it("rejects legacy directory package reads explicitly", async () => {
+    const workspaceDir = await prepareWorkspace("luie-fs-legacy-dir-");
+    const readLuieEntryHandler = mocked.handlerMap.get(
+      IPC_CHANNELS.FS_READ_LUIE_ENTRY,
+    );
+    expect(readLuieEntryHandler).toBeDefined();
+
+    const packagePath = path.join(workspaceDir, "legacy-directory.luie");
+    await fsp.mkdir(path.join(packagePath, "manuscript"), { recursive: true });
+    await fsp.writeFile(
+      path.join(packagePath, "meta.json"),
+      JSON.stringify({ title: "Legacy Dir" }, null, 2),
+      "utf8",
+    );
+
+    const response = (await readLuieEntryHandler?.(
+      {},
+      packagePath,
+      "meta.json",
+    )) as {
+      success: boolean;
+      error?: { code?: string };
+    };
+
+    expect(response.success).toBe(false);
+    expect(response.error?.code).toBe(ErrorCode.LUIE_LEGACY_FORMAT_UNSUPPORTED);
   });
 
   it("grants read-only permission when selecting non-.luie file", async () => {
+    const workspaceDir = await prepareWorkspace("luie-fs-select-file-read-only-");
+    const textFilePath = path.join(workspaceDir, "notes.txt");
+    await fsp.writeFile(textFilePath, "initial", "utf-8");
+    mocked.openDialogPath = textFilePath;
+
     const { registerFsIPCHandlers } = await import(
       "../../../src/main/handler/system/ipcFsHandlers.js"
     );
     registerFsIPCHandlers(mocked.logger);
-
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-fs-select-file-read-only-"));
-    const textFilePath = path.join(tempRoot, "notes.txt");
-    await fsp.writeFile(textFilePath, "initial", "utf-8");
-    mocked.openDialogPath = textFilePath;
 
     const selectFileHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_SELECT_FILE);
     expect(selectFileHandler).toBeDefined();
@@ -360,213 +406,5 @@ describe("ipcFsHandlers legacy .luie migration", () => {
     })) as { success: boolean; data?: string | null };
     expect(selectResponse.success).toBe(true);
     expect(selectResponse.data).toBe(textFilePath);
-
-    const readFileHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_READ_FILE);
-    expect(readFileHandler).toBeDefined();
-    const readResponse = (await readFileHandler?.({}, textFilePath)) as {
-      success: boolean;
-      data?: string;
-    };
-    expect(readResponse.success).toBe(true);
-    expect(readResponse.data).toBe("initial");
-
-    const writeFileHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_WRITE_FILE);
-    expect(writeFileHandler).toBeDefined();
-    const writeResponse = (await writeFileHandler?.({}, textFilePath, "updated")) as {
-      success: boolean;
-      error?: { code?: string };
-    };
-    expect(writeResponse.success).toBe(false);
-    expect(writeResponse.error?.code).toBe(ErrorCode.FS_PERMISSION_DENIED);
-  });
-
-  it("rejects .luie package with invalid meta format", async () => {
-    const { registerFsIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcFsHandlers.js"
-    );
-    registerFsIPCHandlers(mocked.logger);
-
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-fs-invalid-meta-format-"));
-    const workspaceDir = path.join(tempRoot, "workspace");
-    await fsp.mkdir(workspaceDir, { recursive: true });
-    mocked.openDialogPath = workspaceDir;
-
-    const selectDirectoryHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_SELECT_DIRECTORY);
-    expect(selectDirectoryHandler).toBeDefined();
-    const selectResponse = (await selectDirectoryHandler?.({})) as { success: boolean };
-    expect(selectResponse.success).toBe(true);
-
-    const createLuieHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE);
-    expect(createLuieHandler).toBeDefined();
-    const packagePath = path.join(workspaceDir, "invalid-format.luie");
-    const response = (await createLuieHandler?.(
-      {},
-      packagePath,
-      {
-        format: "tampered",
-        title: "Invalid",
-      },
-    )) as { success: boolean; error?: { code?: string } };
-
-    expect(response.success).toBe(false);
-    expect(response.error?.code).toBe(ErrorCode.FS_WRITE_FAILED);
-    await expect(fsp.access(packagePath)).rejects.toThrow();
-  });
-
-  it("rejects .luie package with invalid meta container", async () => {
-    const { registerFsIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcFsHandlers.js"
-    );
-    registerFsIPCHandlers(mocked.logger);
-
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-fs-invalid-meta-container-"));
-    const workspaceDir = path.join(tempRoot, "workspace");
-    await fsp.mkdir(workspaceDir, { recursive: true });
-    mocked.openDialogPath = workspaceDir;
-
-    const selectDirectoryHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_SELECT_DIRECTORY);
-    expect(selectDirectoryHandler).toBeDefined();
-    const selectResponse = (await selectDirectoryHandler?.({})) as { success: boolean };
-    expect(selectResponse.success).toBe(true);
-
-    const createLuieHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE);
-    expect(createLuieHandler).toBeDefined();
-    const packagePath = path.join(workspaceDir, "invalid-container.luie");
-    const response = (await createLuieHandler?.(
-      {},
-      packagePath,
-      {
-        container: "tar",
-        title: "Invalid",
-      },
-    )) as { success: boolean; error?: { code?: string } };
-
-    expect(response.success).toBe(false);
-    expect(response.error?.code).toBe(ErrorCode.FS_WRITE_FAILED);
-    await expect(fsp.access(packagePath)).rejects.toThrow();
-  });
-
-  it("rejects .luie package with invalid meta version", async () => {
-    const { registerFsIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcFsHandlers.js"
-    );
-    registerFsIPCHandlers(mocked.logger);
-
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-fs-invalid-meta-version-"));
-    const workspaceDir = path.join(tempRoot, "workspace");
-    await fsp.mkdir(workspaceDir, { recursive: true });
-    mocked.openDialogPath = workspaceDir;
-
-    const selectDirectoryHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_SELECT_DIRECTORY);
-    expect(selectDirectoryHandler).toBeDefined();
-    const selectResponse = (await selectDirectoryHandler?.({})) as { success: boolean };
-    expect(selectResponse.success).toBe(true);
-
-    const createLuieHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE);
-    expect(createLuieHandler).toBeDefined();
-    const packagePath = path.join(workspaceDir, "invalid-version.luie");
-    const response = (await createLuieHandler?.(
-      {},
-      packagePath,
-      {
-        version: 999,
-        title: "Invalid",
-      },
-    )) as { success: boolean; error?: { code?: string } };
-
-    expect(response.success).toBe(false);
-    expect(response.error?.code).toBe(ErrorCode.FS_WRITE_FAILED);
-    await expect(fsp.access(packagePath)).rejects.toThrow();
-  });
-
-  it("normalizes required .luie meta fields during create", async () => {
-    const { registerFsIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcFsHandlers.js"
-    );
-    registerFsIPCHandlers(mocked.logger);
-
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-fs-normalized-meta-"));
-    const workspaceDir = path.join(tempRoot, "workspace");
-    await fsp.mkdir(workspaceDir, { recursive: true });
-    mocked.openDialogPath = workspaceDir;
-
-    const selectDirectoryHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_SELECT_DIRECTORY);
-    expect(selectDirectoryHandler).toBeDefined();
-    const selectResponse = (await selectDirectoryHandler?.({})) as { success: boolean };
-    expect(selectResponse.success).toBe(true);
-
-    const createLuieHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE);
-    expect(createLuieHandler).toBeDefined();
-    const packagePath = path.join(workspaceDir, "normalized-meta.luie");
-    const createResponse = (await createLuieHandler?.(
-      {},
-      packagePath,
-      {
-        title: "Normalized Meta",
-      },
-    )) as { success: boolean };
-    expect(createResponse.success).toBe(true);
-
-    const readLuieEntryHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_READ_LUIE_ENTRY);
-    expect(readLuieEntryHandler).toBeDefined();
-    const metaResponse = (await readLuieEntryHandler?.({}, packagePath, "meta.json")) as {
-      success: boolean;
-      data: string | null;
-    };
-    expect(metaResponse.success).toBe(true);
-    const parsedMeta = JSON.parse(metaResponse.data ?? "{}") as Record<string, unknown>;
-    expect(parsedMeta.format).toBe(LUIE_PACKAGE_FORMAT);
-    expect(parsedMeta.container).toBe(LUIE_PACKAGE_CONTAINER_DIR);
-    expect(parsedMeta.version).toBe(LUIE_PACKAGE_VERSION);
-    expect(typeof parsedMeta.createdAt).toBe("string");
-    expect(typeof parsedMeta.updatedAt).toBe("string");
-  });
-
-  it("repairs legacy directory meta while migrating to .luie zip", async () => {
-    const { registerFsIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcFsHandlers.js"
-    );
-    registerFsIPCHandlers(mocked.logger);
-
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-fs-legacy-meta-repair-"));
-    const workspaceDir = path.join(tempRoot, "workspace");
-    await fsp.mkdir(workspaceDir, { recursive: true });
-    mocked.openDialogPath = workspaceDir;
-
-    const packageDir = path.join(workspaceDir, "legacy-repair.luie");
-    await fsp.mkdir(path.join(packageDir, "world"), { recursive: true });
-    await fsp.writeFile(
-      path.join(packageDir, "meta.json"),
-      JSON.stringify({ title: "Legacy Title" }, null, 2),
-      "utf-8",
-    );
-
-    const selectDirectoryHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_SELECT_DIRECTORY);
-    expect(selectDirectoryHandler).toBeDefined();
-    const selectResponse = (await selectDirectoryHandler?.({})) as { success: boolean };
-    expect(selectResponse.success).toBe(true);
-
-    const writeProjectFileHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_WRITE_PROJECT_FILE);
-    expect(writeProjectFileHandler).toBeDefined();
-    const writeResponse = (await writeProjectFileHandler?.(
-      {},
-      packageDir,
-      "world/synopsis.json",
-      JSON.stringify({ synopsis: "ok" }),
-    )) as { success: boolean };
-    expect(writeResponse.success).toBe(true);
-
-    const readLuieEntryHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_READ_LUIE_ENTRY);
-    expect(readLuieEntryHandler).toBeDefined();
-    const metaResponse = (await readLuieEntryHandler?.({}, packageDir, "meta.json")) as {
-      success: boolean;
-      data: string | null;
-    };
-    expect(metaResponse.success).toBe(true);
-    const parsedMeta = JSON.parse(metaResponse.data ?? "{}") as Record<string, unknown>;
-    expect(parsedMeta.title).toBe("Legacy Title");
-    expect(parsedMeta.format).toBe(LUIE_PACKAGE_FORMAT);
-    expect(parsedMeta.container).toBe(LUIE_PACKAGE_CONTAINER_DIR);
-    expect(parsedMeta.version).toBe(LUIE_PACKAGE_VERSION);
   });
 });

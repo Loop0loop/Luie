@@ -2,12 +2,9 @@ import {
   LUIE_PACKAGE_CONTAINER_DIR,
   LUIE_PACKAGE_FORMAT,
   LUIE_PACKAGE_VERSION,
-  LUIE_PACKAGE_META_FILENAME,
 } from "../../../shared/constants/index.js";
 import { ErrorCode } from "../../../shared/constants/errorCode.js";
 import { ServiceError } from "../../utils/serviceError.js";
-import { readZipEntryContent } from "../../utils/luiePackage.js";
-import type { LoggerLike } from "./luiePackageTypes.js";
 
 const isCompatibleLuieVersion = (value: unknown): boolean => {
   if (typeof value === "number") return value === LUIE_PACKAGE_VERSION;
@@ -135,28 +132,4 @@ export const normalizeLuieMetaForWrite = (
     createdAt,
     updatedAt,
   };
-};
-
-export const verifyLuieZipIntegrity = async (
-  zipPath: string,
-  logger: LoggerLike,
-): Promise<void> => {
-  const metaRaw = await readZipEntryContent(zipPath, LUIE_PACKAGE_META_FILENAME, logger);
-  if (!metaRaw) {
-    throw new ServiceError(
-      ErrorCode.FS_WRITE_FAILED,
-      "Generated .luie package is missing meta.json",
-      { zipPath },
-    );
-  }
-
-  const parsedMeta = parseObjectJson(metaRaw);
-  if (!parsedMeta) {
-    throw new ServiceError(
-      ErrorCode.FS_WRITE_FAILED,
-      "Generated .luie package metadata is invalid",
-      { zipPath },
-    );
-  }
-  validateLuieMetaCompatibility(parsedMeta, { source: zipPath });
 };

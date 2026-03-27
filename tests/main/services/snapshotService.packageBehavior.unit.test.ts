@@ -1,4 +1,9 @@
+// TEST_LEVEL: UNIT_MOCKED
+// PROVES: snapshot service branch behavior, fallback handling, and mocked persistence policy
+// DOES_NOT_PROVE: real filesystem durability or end-to-end .luie persistence
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { makeMixedNarrativeText } from "../luieFixtures.js";
 
 const mocked = vi.hoisted(() => ({
   initialize: vi.fn(async () => undefined),
@@ -45,28 +50,55 @@ const mocked = vi.hoisted(() => ({
   persistPackageAfterMutation: vi.fn(async (..._args: unknown[]) => undefined),
 }));
 
+const mockedDeleteMany = vi.fn(async () => ({ count: 0 }));
+
+const makeMockClient = () => ({
+  snapshot: {
+    create: mocked.snapshotCreate,
+    findUnique: mocked.snapshotFindUnique,
+    findMany: mocked.snapshotFindMany,
+    delete: mocked.snapshotDelete,
+    deleteMany: mocked.snapshotDeleteMany,
+    findFirst: mocked.snapshotFindFirst,
+  },
+  chapter: {
+    update: mocked.chapterUpdate,
+    deleteMany: mockedDeleteMany,
+  },
+  project: {
+    update: mocked.projectUpdate,
+    findMany: mocked.projectFindMany,
+    deleteMany: mockedDeleteMany,
+  },
+  term: {
+    deleteMany: mockedDeleteMany,
+  },
+  character: {
+    deleteMany: mockedDeleteMany,
+  },
+  projectAttachment: {
+    deleteMany: mockedDeleteMany,
+  },
+  projectLocalState: {
+    deleteMany: mockedDeleteMany,
+  },
+  projectSettings: {
+    deleteMany: mockedDeleteMany,
+  },
+  scrapMemo: {
+    deleteMany: mockedDeleteMany,
+  },
+  worldDocument: {
+    deleteMany: mockedDeleteMany,
+  },
+  $transaction: mocked.transaction,
+});
+
 vi.mock("../../../src/main/database/index.js", () => ({
   db: {
     initialize: mocked.initialize,
     disconnect: mocked.disconnect,
-    getClient: () => ({
-      snapshot: {
-        create: mocked.snapshotCreate,
-        findUnique: mocked.snapshotFindUnique,
-        findMany: mocked.snapshotFindMany,
-        delete: mocked.snapshotDelete,
-        deleteMany: mocked.snapshotDeleteMany,
-        findFirst: mocked.snapshotFindFirst,
-      },
-      chapter: {
-        update: mocked.chapterUpdate,
-      },
-      project: {
-        update: mocked.projectUpdate,
-        findMany: mocked.projectFindMany,
-      },
-      $transaction: mocked.transaction,
-    }),
+    getClient: () => makeMockClient(),
   },
 }));
 
@@ -107,7 +139,7 @@ vi.mock(
 
 import { SnapshotService } from "../../../src/main/services/features/snapshot/snapshotService.js";
 
-describe("SnapshotService package durability", () => {
+describe("SnapshotService package behavior", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocked.snapshotCreate.mockResolvedValue({
@@ -237,4 +269,32 @@ describe("SnapshotService package durability", () => {
       }),
     ]);
   });
+
+  it.each([5_000, 100_000, 1_000_000, 2_000_000, 5_000_000])(
+    "routes %i-character snapshot bodies through immediate persistence",
+    async (length) => {
+      const service = new SnapshotService();
+      const content = makeMixedNarrativeText(length, 0);
+
+      const created = await service.createSnapshot({
+        projectId: "project-1",
+        chapterId: "chapter-1",
+        content,
+        description: `snapshot-${length}`,
+      });
+
+      expect(created).toMatchObject({ id: "snapshot-1" });
+      expect(mocked.snapshotCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            content,
+          }),
+        }),
+      );
+      expect(mocked.persistPackageAfterMutation).toHaveBeenCalledWith(
+        "project-1",
+        "snapshot:create",
+      );
+    },
+  );
 });

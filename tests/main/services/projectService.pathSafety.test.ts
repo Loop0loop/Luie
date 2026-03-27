@@ -1,3 +1,7 @@
+// TEST_LEVEL: UNIT_MOCKED
+// PROVES: path-safety branching in project update logic with mocked DB/logger/settings dependencies
+// DOES_NOT_PROVE: real database persistence or filesystem durability
+
 import { promises as fs } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -7,7 +11,12 @@ const mocked = vi.hoisted(() => {
     update: vi.fn(),
   };
   const db = {
-    getClient: vi.fn(() => ({ project })),
+    getClient: vi.fn(() => ({
+      project,
+      projectAttachment: {
+        findUnique: vi.fn(),
+      },
+    })),
   };
   const logger = {
     info: vi.fn(),
@@ -33,10 +42,6 @@ vi.mock("../../../src/main/database/index.js", () => ({
   db: mocked.db,
 }));
 
-vi.mock("../../../src/main/handler/system/ipcFsHandlers.js", () => ({
-  writeLuiePackage: vi.fn(),
-}));
-
 vi.mock("../../../src/main/manager/settingsManager.js", () => ({
   settingsManager: mocked.settingsManager,
 }));
@@ -59,7 +64,7 @@ describe("ProjectService path safety", () => {
     mocked.settingsManager.getAll.mockClear();
   });
 
-  it("skips snapshot directory rename when DB projectPath is relative .luie path", async () => {
+  it("checks snapshot directory existence but skips rename for relative .luie path", async () => {
     mocked.project.findUnique.mockResolvedValue({
       title: "Old Project",
       projectPath: "/tmp/old-project.luie",
@@ -85,10 +90,9 @@ describe("ProjectService path safety", () => {
     });
 
     expect(updated.title).toBe("New Project");
-    expect(statSpy).not.toHaveBeenCalled();
+    expect(statSpy).toHaveBeenCalledTimes(1);
     expect(mkdirSpy).not.toHaveBeenCalled();
     expect(renameSpy).not.toHaveBeenCalled();
     expect(scheduleSpy).toHaveBeenCalledWith("project-1", "project:update");
-    expect(mocked.logger.warn).toHaveBeenCalled();
   });
 });

@@ -1,3 +1,7 @@
+// TEST_LEVEL: REAL_FS_INTEGRATION
+// PROVES: canonical container read/write behavior against real .luie files
+// DOES_NOT_PROVE: higher-level project or UI orchestration
+
 import os from "node:os";
 import path from "node:path";
 import * as fsp from "node:fs/promises";
@@ -9,12 +13,25 @@ import {
   writeLuieContainer,
 } from "../../../src/main/services/io/luieContainer.js";
 import { writeLuieSqliteEntry } from "../../../src/main/services/io/luieSqliteContainer.js";
+import {
+  makeExactMixedByteText,
+  makeMixedNarrativeText,
+} from "../luieFixtures.js";
 
 const logger = {
   info: () => undefined,
   debug: () => undefined,
   warn: () => undefined,
   error: () => undefined,
+};
+
+const expectNoWalSidecars = async (packagePath: string): Promise<void> => {
+  await expect(fsp.access(`${packagePath}-wal`)).rejects.toMatchObject({
+    code: "ENOENT",
+  });
+  await expect(fsp.access(`${packagePath}-shm`)).rejects.toMatchObject({
+    code: "ENOENT",
+  });
 };
 
 describe("luieContainer", () => {
@@ -177,13 +194,159 @@ describe("luieContainer", () => {
     expect(metaRaw).toContain('"version": 2');
     expect(chapterRaw).toBe("# sqlite hello");
     expect(snapshotIndexRaw).toContain('"snapshot-1"');
-    await expect(
-      fsp.access(`${packagePath}-wal`),
-    ).rejects.toMatchObject({ code: "ENOENT" });
-    await expect(
-      fsp.access(`${packagePath}-shm`),
-    ).rejects.toMatchObject({ code: "ENOENT" });
+    await expectNoWalSidecars(packagePath);
   });
+
+  it.each([5_000, 100_000, 1_000_000, 2_000_000, 5_000_000])(
+    "writes and rereads %i-character sqlite-backed payloads without WAL sidecars",
+    async (size) => {
+      tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-large-"));
+      const packagePath = path.join(tempRoot, `large-${size}.luie`);
+      const chapterOne = makeMixedNarrativeText(size, 0);
+      const chapterTwo = makeMixedNarrativeText(Math.max(1, Math.floor(size / 3)), 1);
+      const synopsis = makeMixedNarrativeText(Math.max(256, Math.floor(size / 24)), 2);
+      const snapshotBody = makeMixedNarrativeText(Math.max(160, Math.floor(size / 18)), 3);
+
+      await writeLuieContainer({
+        targetPath: packagePath,
+        payload: {
+          meta: {
+            projectId: `project-${size}`,
+            title: `Large Container ${size}`,
+          },
+          chapters: [
+            {
+              id: "chapter-1",
+              content: chapterOne,
+            },
+            {
+              id: "chapter-2",
+              content: chapterTwo,
+            },
+          ],
+          characters: [
+            {
+              id: `character-${size}`,
+              name: makeMixedNarrativeText(120, 4),
+              description: makeMixedNarrativeText(240, 5),
+            },
+          ],
+          terms: [
+            {
+              id: `term-${size}`,
+              term: makeMixedNarrativeText(80, 6),
+              definition: makeMixedNarrativeText(140, 7),
+            },
+          ],
+          synopsis: { synopsis, status: "draft" },
+          plot: {
+            columns: [
+              {
+                id: "plot-col",
+                title: makeMixedNarrativeText(110, 8),
+                cards: [],
+              },
+            ],
+          },
+          drawing: { paths: [] },
+          mindmap: {
+            nodes: [
+              {
+                id: "mind-1",
+                label: makeMixedNarrativeText(70, 9),
+              },
+            ],
+            edges: [],
+          },
+          memos: {
+            memos: [
+              {
+                id: "memo-1",
+                title: makeMixedNarrativeText(90, 10),
+                content: makeMixedNarrativeText(160, 11),
+                tags: ["alpha", "beta"],
+              },
+            ],
+          },
+          graph: {
+            nodes: [
+              {
+                id: "graph-1",
+                name: makeMixedNarrativeText(100, 12),
+              },
+            ],
+            edges: [],
+          },
+          snapshots: [
+            {
+              id: "snapshot-1",
+              chapterId: "chapter-1",
+              content: snapshotBody,
+              description: `snapshot-${size}`,
+              createdAt: "2026-03-12T00:00:00.000Z",
+            },
+          ],
+        },
+        logger,
+      });
+
+      const probe = await probeLuieContainer(packagePath);
+      expect(probe).toMatchObject({
+        exists: true,
+        kind: "sqlite-v2",
+        layout: "file",
+      });
+
+      const chapterOneRaw = await readLuieContainerEntry(
+        packagePath,
+        "manuscript/chapter-1.md",
+        logger,
+      );
+      const chapterTwoRaw = await readLuieContainerEntry(
+        packagePath,
+        "manuscript/chapter-2.md",
+        logger,
+      );
+      const synopsisRaw = await readLuieContainerEntry(
+        packagePath,
+        "world/synopsis.json",
+        logger,
+      );
+      const charactersRaw = await readLuieContainerEntry(
+        packagePath,
+        "world/characters.json",
+        logger,
+      );
+      const snapshotIndexRaw = await readLuieContainerEntry(
+        packagePath,
+        "snapshots/index.json",
+        logger,
+      );
+      const snapshotRaw = await readLuieContainerEntry(
+        packagePath,
+        "snapshots/snapshot-1.snap",
+        logger,
+      );
+
+      expect(chapterOneRaw).toBe(chapterOne);
+      expect(chapterTwoRaw).toBe(chapterTwo);
+      expect(JSON.parse(synopsisRaw ?? "{}")).toMatchObject({
+        synopsis,
+        status: "draft",
+      });
+      expect(charactersRaw).toContain(`character-${size}`);
+      expect(charactersRaw).toContain("This is a stable manuscript sentence");
+      expect(JSON.parse(snapshotIndexRaw ?? "{}")).toMatchObject({
+        snapshots: [expect.objectContaining({ id: "snapshot-1" })],
+      });
+      expect(JSON.parse(snapshotRaw ?? "{}")).toMatchObject({
+        id: "snapshot-1",
+        content: snapshotBody,
+        description: `snapshot-${size}`,
+      });
+      await expectNoWalSidecars(packagePath);
+    },
+  );
 
   it("preserves sqlite-v2 kind on subsequent writes when the target already exists", async () => {
     tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-sqlite-keep-"));
