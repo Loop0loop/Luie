@@ -24,8 +24,6 @@ export function useExportManager() {
     const [isExporting, setIsExporting] = useState(false);
 
     useEffect(() => {
-        document.documentElement.setAttribute("data-theme", "dark");
-
         if (!chapterId) {
             setLoadError(t("exportWindow.error.missingChapterId"));
             return;
