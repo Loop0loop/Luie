@@ -1,4 +1,5 @@
 import { app, BrowserWindow, session, dialog } from "electron";
+// type imports
 import type { WebContents } from "electron";
 import { settingsManager, windowManager } from "../manager/index.js";
 import { projectService } from "../services/core/projectService.js";
@@ -16,22 +17,24 @@ type AppReadyOptions = {
   onFirstRendererReady?: () => void;
 };
 
-const STARTUP_MAINTENANCE_DELAY_MS = 1500;
-const FIRST_RENDERER_FALLBACK_MS = 8000;
+const STARTUP_MAINTENANCE_DELAY_MS = 1500; // Renderer가 준비 된 후 1.5s 뒤에 mainInstance 작업 실행
+const FIRST_RENDERER_FALLBACK_MS = 8000; // 8s 지나면 강제로 Renderer 준비완료처리 -> 무한로딩 방지
 
 const loadAutoSaveManager = async () =>
-  (await import("../manager/autoSaveManager.js")).autoSaveManager;
+  (await import("../manager/autoSaveManager.js")).autoSaveManager; // 시작 로딩 줄이기 위하여 lazy inport
 
+// CSP : isPacked? 
 const buildProdCspPolicy = () =>
   [
-    "default-src 'self'",
-    "script-src 'self'",
+    "default-src 'self'", // 기본적으로 자기 자신만 허용
+    "script-src 'self'", // 자기 자신의 스크립트만 허용
     "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-    "img-src 'self' data: https:",
+    "img-src 'self' data: https:", // img나 fonts는 허용
     "font-src 'self' data: https://cdn.jsdelivr.net",
-    "connect-src 'self'",
+    "connect-src 'self'", // 자기 자신의 연결만 허용
   ].join("; ");
 
+  // CSP : dev
 const buildDevCspPolicy = () =>
   [
     "default-src 'self' http://localhost:5173 ws://localhost:5173",
@@ -43,14 +46,15 @@ const buildDevCspPolicy = () =>
     "worker-src 'self' blob:",
   ].join("; ");
 
+  // 어떠한 CSP 정책을 쓸지 결정
 const resolveCspPolicy = (isDev: boolean): string | null => {
   if (!isDev) {
     return buildProdCspPolicy();
   }
-  return process.env.LUIE_DEV_CSP === "1" ? buildDevCspPolicy() : null;
+  return process.env.LUIE_DEV_CSP === "1" ? buildDevCspPolicy() : null; // null 허용이유? -> HMR이나 개발서거가 자주 꺠질 수 있기 때문
 };
 
-const isFileUrl = (url: string): boolean => url.startsWith("file://");
+const isFileUrl = (url: string): boolean => url.startsWith("file://"); // 먼저 URL이 file:// 인지 검사
 const isResizeObserverNoise = (message: string): boolean =>
   message.includes(
     "ResizeObserver loop completed with undelivered notifications",
@@ -60,6 +64,7 @@ const isReactFlowNodeTypesWarning = (message: string): boolean =>
     "[React Flow]: It looks like you've created a new nodeTypes or edgeTypes object.",
   );
 
+// Renderer 프로레스가 죽었을 때 실행
 const handleRendererCrash = async (
   logger: Logger,
   webContents: WebContents,
@@ -68,16 +73,18 @@ const handleRendererCrash = async (
   logger.error("Renderer process crashed", {
     killed,
     webContentsId: webContents.id,
-  });
+  }); // 왜 죽었는지 기록
 
   try {
-    const autoSaveManager = await loadAutoSaveManager();
+    const autoSaveManager = await loadAutoSaveManager(); // 최대한 데이터는 저장할려 시도
     await autoSaveManager.flushCritical();
     logger.info("Emergency save completed after crash");
   } catch (error) {
     logger.error("Failed to save during crash recovery", error);
   }
 
+
+  // 다이로그로 사용자에게 재시작 선택
   const mainWindow = windowManager.getMainWindow();
   if (mainWindow && !mainWindow.isDestroyed()) {
     const response = await dialog.showMessageBox(mainWindow, {
@@ -93,9 +100,9 @@ const handleRendererCrash = async (
       windowManager.closeMainWindow();
       setTimeout(() => {
         windowManager.createMainWindow();
-      }, 500);
+      }, 500); // 창 닫은 후 0.5s 뒤에 MainWindow만 다시 띄우기
     } else {
-      app.quit();
+      app.quit(); // 앱 완전 종료
     }
   }
 };
@@ -118,7 +125,7 @@ const runDeferredStartupMaintenance = async (logger: Logger): Promise<void> => {
   }
 
   try {
-    await projectService.reconcileProjectPathDuplicates();
+    await projectService.reconcileProjectPathDuplicates(); // 프로젝트 중복 문제 해결
   } catch (error) {
     logger.warn("Project path duplicate reconciliation skipped", error);
   }
@@ -155,11 +162,16 @@ export const registerAppReady = (
     const isDev = isDevEnv();
     const cspPolicy = resolveCspPolicy(isDev);
 
-    let rendererReadyForCurrentMainWindow = false;
-    let firstRendererStartupHookTriggered = false;
-    let startupMaintenanceScheduled = false;
-    let fallbackTimer: NodeJS.Timeout | null = null;
 
+    let rendererReadyForCurrentMainWindow = false; // 현재 MainWindow Renderer Ready 판정여부 -> Renderer Ready : True
+    let firstRendererStartupHookTriggered = false; // onFirstRendererReady()의 실행여부 -> sync 초기화 한번만 실행하려고
+    let startupMaintenanceScheduled = false; // 뒤에서 돌릴 mainInstance 작업이 예약됬는지 판명 -> scheduleStartUpMaintenance 한번만 예약
+    let fallbackTimer: NodeJS.Timeout | null = null; // Renderer Ready fallback 타이머 
+
+
+    /**
+     * @description Main Renderer 준비완료 처리 함수
+     */
     const triggerFirstRendererReady = (reason: string): void => {
       if (!rendererReadyForCurrentMainWindow) {
         rendererReadyForCurrentMainWindow = true;
@@ -174,6 +186,10 @@ export const registerAppReady = (
         });
       }
 
+
+      /**
+       * onFirstRendererReady() Callback 실행
+       */
       if (firstRendererStartupHookTriggered || !options.onFirstRendererReady) {
         return;
       }
@@ -187,41 +203,52 @@ export const registerAppReady = (
       }
     };
 
-    const scheduleStartupMaintenance = (reason: string): void => {
-      if (startupMaintenanceScheduled) return;
+    
+    const scheduleStartupMaintenance = (reason: string): void => { // 앱을 보여준 후 무거운 후처리 작업을 조금 뒤 에약
+      if (startupMaintenanceScheduled) return; // 이미 됬으면 종료
       startupMaintenanceScheduled = true;
       logger.info("Deferred startup maintenance scheduled", {
         reason,
-        delayMs: STARTUP_MAINTENANCE_DELAY_MS,
+        delayMs: STARTUP_MAINTENANCE_DELAY_MS, // 1.5s 뒤 mainInstance실행
       });
       setTimeout(() => {
         void runDeferredStartupMaintenance(logger);
       }, STARTUP_MAINTENANCE_DELAY_MS);
     };
 
+
     const startMainWindowFlow = (reason: string): void => {
-      const existingMainWindow = windowManager.getMainWindow();
-      if (existingMainWindow && !existingMainWindow.isDestroyed()) {
+      /**
+       * @description 이미 MainWindow가 있으면 재사용
+       * - 이미 살아있는 MainWindow가 있으면 새로 만들지않음
+       * - 안 보이면 보여주기만 하고 끝
+       */
+      const existingMainWindow = windowManager.getMainWindow(); 
+      if (existingMainWindow && !existingMainWindow.isDestroyed()) { 
         if (!existingMainWindow.isVisible()) {
           windowManager.showMainWindow();
         }
         return;
       }
 
-      rendererReadyForCurrentMainWindow = false;
+      rendererReadyForCurrentMainWindow = false; // New MainWindow flow 시작되므로 상태 초기화
 
+      // MainWindow 시작 로그
       logger.info("Starting main window flow", {
         reason,
         startupElapsedMs: Date.now() - startupStartedAtMs,
       });
 
+      /**
+       * @description 백그라운드에 준비만 시켜놓음
+       */
       windowManager.createMainWindow({ deferShow: true });
       logger.info("Startup checkpoint: main window requested", {
         startupElapsedMs: Date.now() - startupStartedAtMs,
       });
 
       const bootstrapStartedAt = Date.now();
-      void ensureBootstrapReady()
+      void ensureBootstrapReady() // bootstrap 준비확인 -> log용으로 확인하는 흐름
         .then((status) => {
           logger.info("Startup checkpoint: bootstrap ready", {
             isReady: status.isReady,
@@ -240,6 +267,14 @@ export const registerAppReady = (
       if (fallbackTimer) {
         clearTimeout(fallbackTimer);
       }
+
+      /** 
+       * fallback 타이머 시작
+       * - Renderer Event가 안오거나
+       * - 너무 오래 걸리거나
+       * - 어딘가 꼬일경우
+       * => 8초 후에 강제로 Renderer준비 완료 처리
+       */
       fallbackTimer = setTimeout(() => {
         if (!rendererReadyForCurrentMainWindow) {
           triggerFirstRendererReady("fallback-timeout");

@@ -12,7 +12,7 @@ import { app } from "electron";
 import path from "node:path";
 import { createLogger, configureLogger, LogLevel } from "../shared/logger/index.js";
 import { LOG_DIR_NAME, LOG_FILE_NAME } from "../shared/constants/index.js";
-import { registerSingleInstance } from "./lifecycle/singleInstance.js";
+import { registerSingleInstance } from "./lifecycle/singleInstance.js"; // 중복 실행 방지 모듈
 const isDefaultApp = process.defaultApp === true;
 const startupStartedAtMs = Date.now();
 
@@ -24,6 +24,7 @@ const configureMainLogger = () => {
   });
   return createLogger("Main");
 };
+// 파일 로그 설정
 
 const registerLuieProtocol = async (
   logger: ReturnType<typeof createLogger>,
@@ -31,7 +32,7 @@ const registerLuieProtocol = async (
   const { settingsManager } = await import("./manager/settingsManager.js");
   const protocol = "luie";
   let registered = false;
-  const appEntry = app.getAppPath();
+  const appEntry = app.getAppPath(); //현재 Electron의 실행중인 실제 엔트리 경로를 가져온다.
   if (isDefaultApp) {
     if (appEntry) {
       registered = app.setAsDefaultProtocolClient(protocol, process.execPath, [appEntry]);
@@ -45,7 +46,7 @@ const registerLuieProtocol = async (
     const syncSettings = settingsManager.getSyncSettings();
     if (!syncSettings.connected) {
       settingsManager.setSyncSettings({ lastError: reason });
-    }
+    }// 프로토콜 등록 실패
     logger.warn("Failed to register custom protocol for OAuth callback", {
       protocol,
       defaultApp: isDefaultApp,
@@ -53,7 +54,7 @@ const registerLuieProtocol = async (
     });
     return;
   }
-
+// 프로토콜 등록 및 실패 시 설정에 대한 오류 기록
   const syncSettings = settingsManager.getSyncSettings();
   if (
     syncSettings.lastError?.startsWith("SYNC_PROTOCOL_REGISTRATION_FAILED:")
@@ -123,7 +124,7 @@ if (!registerSingleInstance(bootstrapLogger)) {
     startupStartedAtMs,
     onFirstRendererReady: () => {
       const syncInitializeStartedAt = Date.now();
-      syncService.initialize();
+      syncService.initialize(); // Sync Services Ready
       logger.info("Startup checkpoint: sync service initialized", {
         elapsedMs: Date.now() - syncInitializeStartedAt,
         startupElapsedMs: Date.now() - startupStartedAtMs,

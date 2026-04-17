@@ -7,6 +7,7 @@ import {
   WINDOW_TRAFFIC_LIGHT_Y,
 } from "../../../shared/constants/index.js"
 
+// windowBackground 
 export const WINDOW_BACKGROUND_COLOR = "#f4f4f5"
 
 export const resolveWindowIconPath = (): string | undefined => {
