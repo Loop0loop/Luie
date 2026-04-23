@@ -1,8 +1,9 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -70,32 +71,91 @@ const resolveNodeGypBin = () => {
   throw new Error("node-gyp not found in node_modules");
 };
 
-const nodeGypBin = resolveNodeGypBin();
-console.log(
-  `[build-native-haptics] using node-gyp: ${path.relative(repoRoot, nodeGypBin)}`,
-);
+export const resolvePythonExecutable = ({
+  repoRootPath = repoRoot,
+  env = process.env,
+} = {}) => {
+  const pythonVersionFilePath = path.resolve(repoRootPath, ".python-version");
 
-const result = spawnSync(process.execPath, [nodeGypBin, "rebuild"], {
-  cwd: addonDir,
-  stdio: "inherit",
-  env: {
-    ...process.env,
-    npm_config_devdir: nodeGypCacheDir,
-    npm_config_nodedir: nodeDir,
-  },
-});
+  if (!existsSync(pythonVersionFilePath)) {
+    return null;
+  }
 
-if (result.status !== 0) {
-  process.exit(result.status ?? 1);
-}
+  const pythonVersion = readFileSync(pythonVersionFilePath, "utf8").trim();
 
-if (!existsSync(releaseBinaryPath)) {
-  console.error(
-    "[build-native-haptics] build completed but output binary is missing",
+  if (!pythonVersion) {
+    return null;
+  }
+
+  const pyenvRoot = env.PYENV_ROOT ?? path.resolve(os.homedir(), ".pyenv");
+  const candidatePaths = [
+    path.resolve(pyenvRoot, "versions", pythonVersion, "bin", "python"),
+    path.resolve(pyenvRoot, "versions", pythonVersion, "bin", "python3"),
+  ];
+
+  return candidatePaths.find((candidate) => existsSync(candidate)) ?? null;
+};
+
+export const runNativeHapticsBuild = () => {
+  if (process.platform !== "darwin") {
+    console.log("[build-native-haptics] skipping: macOS only");
+    process.exit(0);
+  }
+
+  if (!existsSync(addonDir)) {
+    console.log("[build-native-haptics] skipping: addon directory missing");
+    process.exit(0);
+  }
+
+  const nodeGypBin = resolveNodeGypBin();
+  const pythonExecutable = resolvePythonExecutable({ repoRootPath: repoRoot });
+
+  console.log(
+    `[build-native-haptics] using node-gyp: ${path.relative(repoRoot, nodeGypBin)}`,
   );
-  process.exit(1);
-}
 
-console.log(
-  `[build-native-haptics] built: ${path.relative(repoRoot, releaseBinaryPath)}`,
-);
+  if (pythonExecutable) {
+    console.log(
+      `[build-native-haptics] using python: ${path.relative(repoRoot, pythonExecutable)}`,
+    );
+  }
+
+  const result = spawnSync(process.execPath, [nodeGypBin, "rebuild"], {
+    cwd: addonDir,
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      npm_config_devdir: nodeGypCacheDir,
+      npm_config_nodedir: nodeDir,
+      ...(pythonExecutable
+        ? {
+            npm_config_python: pythonExecutable,
+            PYTHON: pythonExecutable,
+          }
+        : {}),
+    },
+  });
+
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1);
+  }
+
+  if (!existsSync(releaseBinaryPath)) {
+    console.error(
+      "[build-native-haptics] build completed but output binary is missing",
+    );
+    process.exit(1);
+  }
+
+  console.log(
+    `[build-native-haptics] built: ${path.relative(repoRoot, releaseBinaryPath)}`,
+  );
+};
+
+const isExecutedDirectly =
+  process.argv[1] &&
+  pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
+
+if (isExecutedDirectly) {
+  runNativeHapticsBuild();
+}

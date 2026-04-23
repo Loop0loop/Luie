@@ -110,7 +110,6 @@
     "@types/dagre": "0.7.54",
     "@types/diff": "8.0.0",
     "@types/node": "25.4.0",
-    "@types/pnpm": "1.3.10",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@types/yauzl": "2.10.3",
