@@ -157,6 +157,16 @@
     "overrides": {
       "hono": "4.11.7",
       "lodash": "4.17.23"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "better-sqlite3",
+      "electron",
+      "electron-winstaller",
+      "esbuild",
+      "lzma-native",
+      "prisma",
+      "protobufjs"
+    ]
   }
 }
