@@ -25,7 +25,11 @@ const sharedDefine = {
   __APP_VERSION__: JSON.stringify(appVersion),
   __APP_NAME__: JSON.stringify(appName),
 };
-const mainExternal = [/^@prisma-cache\/client(?:\/.*)?$/];
+const mainExternal = [
+  /^@prisma-cache\/client(?:\/.*)?$/,
+  /^drizzle-orm(?:\/.*)?$/,
+  /^better-sqlite3(?:\/.*)?$/,
+];
 
 const isNodeModule = (id: string): boolean => id.includes("/node_modules/");
 const rendererManualChunks = (id: string): string | undefined => {

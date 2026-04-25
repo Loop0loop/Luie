@@ -3,10 +3,17 @@ import { createRequire } from "node:module";
 import * as path from "node:path";
 import { app } from "electron";
 import type { PrismaClient as GeneratedCachePrismaClient } from "@prisma-cache/client";
+import BetterSqliteDatabase from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
 import { CACHE_DB_NAME } from "../../shared/constants/index.js";
 import { createLogger } from "../../shared/logger/index.js";
 import { isProdEnv, isTestEnv } from "../utils/environment.js";
 import { ensureSafeAbsolutePath } from "../utils/pathValidation.js";
+import * as cacheSchema from "./cacheSchema.js";
+import type {
+  CacheDrizzleClient,
+  DrizzleDatabaseHandle,
+} from "./databaseTypes.js";
 import {
   getPrismaBinPath,
   loadPrismaBetterSqlite3,
@@ -24,8 +31,11 @@ const require = createRequire(import.meta.url);
 const logger = createLogger("CacheDatabaseService");
 const CACHE_ENV_KEY = "CACHE_DATABASE_URL";
 const RUNTIME_CACHE_ENV_KEY = "LUIE_RUNTIME_CACHE_DATABASE_URL";
-type CachePrismaClientCtor = typeof import("@prisma-cache/client")["PrismaClient"];
+type CachePrismaClientCtor = new (options?: unknown) => GeneratedCachePrismaClient;
 type CachePrismaClient = GeneratedCachePrismaClient;
+type CachePrismaClientModule = {
+  PrismaClient?: CachePrismaClientCtor;
+};
 
 let cachePrismaClientCtor: CachePrismaClientCtor | null = null;
 
@@ -34,9 +44,7 @@ const loadCachePrismaClientCtor = (): CachePrismaClientCtor => {
     return cachePrismaClientCtor;
   }
 
-  const moduleExports = require("@prisma-cache/client") as typeof import(
-    "@prisma-cache/client"
-  );
+  const moduleExports = require("@prisma-cache/client") as CachePrismaClientModule;
   if (typeof moduleExports.PrismaClient !== "function") {
     throw new Error("Prisma cache client constructor is unavailable");
   }
@@ -55,6 +63,7 @@ type PreparedCacheDatabaseContext = {
 class CacheDatabaseService {
   private static instance: CacheDatabaseService;
   private prisma: CachePrismaClient | null = null;
+  private drizzleHandle: DrizzleDatabaseHandle<CacheDrizzleClient> | null = null;
   private dbPath: string | null = null;
   private initPromise: Promise<void> | null = null;
 
@@ -92,6 +101,7 @@ class CacheDatabaseService {
 
     await this.applySchema(context);
     ensurePackagedCacheSqliteSchema(context.dbPath, logger);
+    this.drizzleHandle = this.createDrizzleClient(context);
     this.prisma = this.createPrismaClient(context);
 
     try {
@@ -104,6 +114,17 @@ class CacheDatabaseService {
     }
 
     logger.info("Cache database service initialized");
+  }
+
+  private createDrizzleClient(
+    context: PreparedCacheDatabaseContext,
+  ): DrizzleDatabaseHandle<CacheDrizzleClient> {
+    const sqlite = new BetterSqliteDatabase(context.dbPath);
+    sqlite.pragma("journal_mode = WAL");
+    sqlite.pragma("foreign_keys = ON");
+    sqlite.pragma("busy_timeout = 5000");
+    const client = drizzle(sqlite, { schema: cacheSchema });
+    return { sqlite, client };
   }
 
   private createPrismaClient(
@@ -265,6 +286,13 @@ class CacheDatabaseService {
     return this.prisma;
   }
 
+  getDrizzleClient(): CacheDrizzleClient {
+    if (!this.drizzleHandle) {
+      throw new Error("Cache database is not initialized. Call cacheDb.initialize() first.");
+    }
+    return this.drizzleHandle.client;
+  }
+
   getDatabasePath(): string {
     if (!this.dbPath) {
       throw new Error("Cache database path not initialized");
@@ -280,10 +308,14 @@ class CacheDatabaseService {
         });
       });
     }
-    if (!this.prisma) return;
+    if (!this.prisma && !this.drizzleHandle) return;
 
-    await this.prisma.$disconnect();
+    if (this.prisma) {
+      await this.prisma.$disconnect();
+    }
     this.prisma = null;
+    this.drizzleHandle?.sqlite.close();
+    this.drizzleHandle = null;
     logger.info("Cache database disconnected");
   }
 }

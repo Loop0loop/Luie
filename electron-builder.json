@@ -102,6 +102,11 @@
     {
       "from": "native/haptics/build/Release/luie_haptics.node",
       "to": "native/haptics/build/Release/luie_haptics.node"
+    },
+    {
+      "from": "drizzle",
+      "to": "drizzle",
+      "filter": ["**/*"]
     }
   ],
   "publish": [

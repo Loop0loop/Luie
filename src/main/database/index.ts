@@ -5,10 +5,13 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { app } from "electron";
+import BetterSqliteDatabase from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
 import { DB_NAME } from "../../shared/constants/index.js";
 import { createLogger } from "../../shared/logger/index.js";
 import { isProdEnv, isTestEnv } from "../utils/environment.js";
 import { ensureSafeAbsolutePath } from "../utils/pathValidation.js";
+import * as schema from "./schema.js";
 import { seedIfEmpty } from "./seedDefaults.js";
 import {
   getPrismaBinPath,
@@ -22,6 +25,8 @@ import {
 import { ensurePackagedSqliteSchema } from "./databaseSchemaBootstrap.js";
 import type {
   PreparedDatabaseContext,
+  DrizzleDatabaseHandle,
+  MainDrizzleClient,
   PrismaClient,
 } from "./databaseTypes.js";
 
@@ -31,6 +36,7 @@ const RUNTIME_DB_ENV_KEY = "LUIE_RUNTIME_DATABASE_URL";
 class DatabaseService {
   private static instance: DatabaseService;
   private prisma: PrismaClient | null = null;
+  private drizzleHandle: DrizzleDatabaseHandle<MainDrizzleClient> | null = null;
   private dbPath: string | null = null;
   private initPromise: Promise<void> | null = null;
 
@@ -72,6 +78,7 @@ class DatabaseService {
     });
 
     await this.applySchema(context);
+    this.drizzleHandle = this.createDrizzleClient(context);
     this.prisma = this.createPrismaClient(context);
 
     if (context.isPackaged) {
@@ -94,6 +101,17 @@ class DatabaseService {
     }
 
     logger.info("Database service initialized");
+  }
+
+  private createDrizzleClient(
+    context: PreparedDatabaseContext,
+  ): DrizzleDatabaseHandle<MainDrizzleClient> {
+    const sqlite = new BetterSqliteDatabase(context.dbPath);
+    sqlite.pragma("journal_mode = WAL");
+    sqlite.pragma("foreign_keys = ON");
+    sqlite.pragma("busy_timeout = 5000");
+    const client = drizzle(sqlite, { schema });
+    return { sqlite, client };
   }
 
   private createPrismaClient(context: PreparedDatabaseContext): PrismaClient {
@@ -309,6 +327,13 @@ class DatabaseService {
     return this.prisma;
   }
 
+  getDrizzleClient(): MainDrizzleClient {
+    if (!this.drizzleHandle) {
+      throw new Error("Database is not initialized. Call db.initialize() first.");
+    }
+    return this.drizzleHandle.client;
+  }
+
   getDatabasePath(): string {
     if (!this.dbPath) {
       throw new Error("Database path not initialized");
@@ -322,12 +347,16 @@ class DatabaseService {
         logger.error("Database initialization failed before disconnect", { error });
       });
     }
-    if (!this.prisma) {
+    if (!this.prisma && !this.drizzleHandle) {
       return;
     }
 
-    await this.prisma.$disconnect();
+    if (this.prisma) {
+      await this.prisma.$disconnect();
+    }
     this.prisma = null;
+    this.drizzleHandle?.sqlite.close();
+    this.drizzleHandle = null;
     logger.info("Database disconnected");
   }
 }

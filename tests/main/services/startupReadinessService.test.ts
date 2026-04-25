@@ -17,8 +17,8 @@ const mocked = vi.hoisted(() => {
     supabaseSource,
     initializeDb: vi.fn(async () => undefined),
     executeRaw: vi.fn(async () => undefined),
-    getAccessToken: vi.fn(() => ({ token: null })),
-    getRefreshToken: vi.fn(() => ({ token: null })),
+    getAccessToken: vi.fn((): { token: string | null } => ({ token: null })),
+    getRefreshToken: vi.fn((): { token: string | null } => ({ token: null })),
   };
 });
 
@@ -37,9 +37,18 @@ vi.mock("electron", () => ({
 
 vi.mock("../../../src/main/database/index.js", () => ({
   db: {
-    initialize: (...args: unknown[]) => mocked.initializeDb(...args),
+    initialize: () => mocked.initializeDb(),
     getClient: () => ({
-      $executeRawUnsafe: (...args: unknown[]) => mocked.executeRaw(...args),
+      $executeRawUnsafe: () => mocked.executeRaw(),
+    }),
+  },
+}));
+
+vi.mock("../../../src/main/database/cacheDb.js", () => ({
+  cacheDb: {
+    initialize: () => mocked.initializeDb(),
+    getClient: () => ({
+      $executeRawUnsafe: () => mocked.executeRaw(),
     }),
   },
 }));
@@ -62,8 +71,8 @@ vi.mock("../../../src/main/services/features/sync/supabaseEnv.js", () => ({
 
 vi.mock("../../../src/main/services/features/sync/syncAuthService.js", () => ({
   syncAuthService: {
-    getAccessToken: (...args: unknown[]) => mocked.getAccessToken(...args),
-    getRefreshToken: (...args: unknown[]) => mocked.getRefreshToken(...args),
+    getAccessToken: () => mocked.getAccessToken(),
+    getRefreshToken: () => mocked.getRefreshToken(),
   },
 }));
 
