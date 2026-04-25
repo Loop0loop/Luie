@@ -1,3 +1,4 @@
+import { eq, desc } from "drizzle-orm";
 import {
   LUIE_MANUSCRIPT_DIR,
   LUIE_PACKAGE_CONTAINER_DIR,
@@ -9,6 +10,7 @@ import {
 import type { LuiePackageExportData } from "../../io/luiePackageTypes.js";
 import { writeLuieContainer } from "../../io/luieContainer.js";
 import { db } from "../../../database/index.js";
+import { project as projectTable, snapshot as snapshotTable } from "../../../database/schema.js";
 import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
 import { projectService } from "../../core/projectService.js";
 import { getProjectAttachmentPath } from "../../core/project/projectAttachmentStore.js";
@@ -222,24 +224,33 @@ export const persistBundleToLuiePackages = async (input: {
   const failedProjects: string[] = [];
   const persistedProjects: PersistedLuiePackage[] = [];
   for (const project of bundle.projects) {
-    const [localProject, projectPath] = await Promise.all([
-      db.getClient().project.findUnique({
-        where: { id: project.id },
-        select: {
-          snapshots: {
-            orderBy: { createdAt: "desc" },
-            select: {
-              id: true,
-              chapterId: true,
-              content: true,
-              description: true,
-              createdAt: true,
-            },
-          },
-        },
-      }) as Promise<{
-        snapshots?: SnapshotRecord[];
-      } | null>,
+    const store = db.getDrizzleClient();
+    const [projRows, snapshotRows] = await Promise.all([
+      store.select().from(projectTable).where(eq(projectTable.id, project.id)).limit(1),
+      store
+        .select({
+          id: snapshotTable.id,
+          chapterId: snapshotTable.chapterId,
+          content: snapshotTable.content,
+          description: snapshotTable.description,
+          createdAt: snapshotTable.createdAt,
+        })
+        .from(snapshotTable)
+        .where(eq(snapshotTable.projectId, project.id))
+        .orderBy(desc(snapshotTable.createdAt)),
+    ]);
+    const projectRow = projRows[0] ?? null;
+    const localProject = projectRow
+      ? {
+          ...projectRow,
+          snapshots: snapshotRows.map((row) => ({
+            ...row,
+            createdAt: new Date(row.createdAt),
+          })),
+        }
+      : null;
+    const [, projectPath] = await Promise.all([
+      Promise.resolve(localProject),
       getProjectAttachmentPath(project.id),
     ]);
 

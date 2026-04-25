@@ -3,7 +3,9 @@
  */
 
 import { randomUUID } from "node:crypto";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "../../../database/index.js";
+import { chapter, project, snapshot } from "../../../database/schema.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import {
   ErrorCode,
@@ -110,32 +112,28 @@ export class SnapshotService {
 
       await writeFullSnapshotArtifact(snapshotId, input);
 
-      const snapshot = await db.getClient().$transaction(async (prisma) => {
-        const created = await prisma.snapshot.create({
-          data: {
-            id: snapshotId,
-            projectId: input.projectId,
-            chapterId: input.chapterId,
-            content: input.content,
-            contentLength,
-            type: snapshotType,
-            description: input.description,
-          },
-        });
-        await prisma.project.update({
-          where: { id: input.projectId },
-          data: { updatedAt: new Date() },
-        });
-        return created;
+      const now = new Date().toISOString();
+      const created = await db.getDrizzleClient().transaction(async (tx) => {
+        const [result] = await tx.insert(snapshot).values({
+          id: snapshotId,
+          projectId: input.projectId,
+          chapterId: input.chapterId,
+          content: input.content,
+          contentLength,
+          type: snapshotType,
+          description: input.description,
+        }).returning();
+        await tx.update(project).set({ updatedAt: now }).where(eq(project.id, input.projectId));
+        return result;
       });
 
-      logger.info("Snapshot created successfully", { snapshotId: snapshot.id });
+      logger.info("Snapshot created successfully", { snapshotId: created.id });
       await this.ensureImmediatePackageExport({
         projectId: input.projectId,
         reason: "snapshot:create",
       });
       this.scheduleOrphanArtifactCleanup();
-      return snapshot;
+      return created;
     } catch (error) {
       this.queueOrphanArtifactCleanup(snapshotId);
       await writeEmergencySnapshotFile(input, logger, error);
@@ -156,11 +154,10 @@ export class SnapshotService {
 
   async getSnapshot(id: string) {
     try {
-      const snapshot = await db.getClient().snapshot.findUnique({
-        where: { id },
-      });
+      const rows = await db.getDrizzleClient().select().from(snapshot).where(eq(snapshot.id, id)).limit(1);
+      const found = rows[0] ?? null;
 
-      if (!snapshot) {
+      if (!found) {
         throw new ServiceError(
           ErrorCode.SNAPSHOT_RESTORE_FAILED,
           "Snapshot not found",
@@ -168,7 +165,7 @@ export class SnapshotService {
         );
       }
 
-      return snapshot;
+      return found;
     } catch (error) {
       logger.error("Failed to get snapshot", error);
       throw new ServiceError(
@@ -182,10 +179,7 @@ export class SnapshotService {
 
   async getSnapshotsByProject(projectId: string) {
     try {
-      const snapshots = await db.getClient().snapshot.findMany({
-        where: { projectId },
-        orderBy: { createdAt: "desc" },
-      });
+      const snapshots = await db.getDrizzleClient().select().from(snapshot).where(eq(snapshot.projectId, projectId)).orderBy(desc(snapshot.createdAt));
 
       return snapshots;
     } catch (error) {
@@ -201,10 +195,7 @@ export class SnapshotService {
 
   async getSnapshotsByChapter(chapterId: string) {
     try {
-      const snapshots = await db.getClient().snapshot.findMany({
-        where: { chapterId },
-        orderBy: { createdAt: "desc" },
-      });
+      const snapshots = await db.getDrizzleClient().select().from(snapshot).where(eq(snapshot.chapterId, chapterId)).orderBy(desc(snapshot.createdAt));
 
       return snapshots;
     } catch (error) {
@@ -234,28 +225,22 @@ export class SnapshotService {
 
   async deleteSnapshot(id: string) {
     try {
-      const snapshot = await db.getClient().snapshot.findUnique({
-        where: { id },
-        select: { projectId: true },
-      });
+      const rows = await db.getDrizzleClient().select({ projectId: snapshot.projectId }).from(snapshot).where(eq(snapshot.id, id)).limit(1);
+      const found = rows[0] ?? null;
 
-      await db.getClient().$transaction(async (prisma) => {
-        await prisma.snapshot.delete({
-          where: { id },
-        });
-        if ((snapshot as { projectId?: unknown })?.projectId) {
-          await prisma.project.update({
-            where: { id: String((snapshot as { projectId: unknown }).projectId) },
-            data: { updatedAt: new Date() },
-          });
+      const now = new Date().toISOString();
+      await db.getDrizzleClient().transaction(async (tx) => {
+        await tx.delete(snapshot).where(eq(snapshot.id, id));
+        if (found?.projectId) {
+          await tx.update(project).set({ updatedAt: now }).where(eq(project.id, found.projectId));
         }
       });
       this.queueOrphanArtifactCleanup(id);
 
       logger.info("Snapshot deleted successfully", { snapshotId: id });
-      if ((snapshot as { projectId?: unknown })?.projectId) {
+      if (found?.projectId) {
         await this.ensureImmediatePackageExport({
-          projectId: String((snapshot as { projectId: unknown }).projectId),
+          projectId: found.projectId,
           reason: "snapshot:delete",
         });
       }
@@ -273,16 +258,10 @@ export class SnapshotService {
 
   async restoreSnapshot(snapshotId: string) {
     try {
-      const snapshot = (await db.getClient().snapshot.findUnique({
-        where: { id: snapshotId },
-      })) as {
-        id: string;
-        projectId: string;
-        chapterId?: string | null;
-        content?: string | null;
-      } | null;
+      const rows = await db.getDrizzleClient().select().from(snapshot).where(eq(snapshot.id, snapshotId)).limit(1);
+      const found = rows[0] ?? null;
 
-      if (!snapshot) {
+      if (!found) {
         throw new ServiceError(
           ErrorCode.SNAPSHOT_RESTORE_FAILED,
           "Snapshot not found",
@@ -290,45 +269,40 @@ export class SnapshotService {
         );
       }
 
-      if (!snapshot.chapterId) {
+      if (!found.chapterId) {
         throw new ServiceError(
           ErrorCode.SNAPSHOT_RESTORE_FAILED,
           "Cannot restore project-level snapshot",
           { snapshotId },
         );
       }
-      const chapterId = snapshot.chapterId;
+      const chapterId = found.chapterId;
 
       const nextContent =
-        typeof snapshot.content === "string" ? snapshot.content : "";
+        typeof found.content === "string" ? found.content : "";
 
-      await db.getClient().$transaction(async (prisma) => {
-        await prisma.chapter.update({
-          where: { id: chapterId },
-          data: {
-            content: nextContent,
-            wordCount: nextContent.length,
-          },
-        });
-        await prisma.project.update({
-          where: { id: snapshot.projectId },
-          data: { updatedAt: new Date() },
-        });
+      const now = new Date().toISOString();
+      await db.getDrizzleClient().transaction(async (tx) => {
+        await tx.update(chapter).set({
+          content: nextContent,
+          wordCount: nextContent.length,
+        }).where(eq(chapter.id, chapterId));
+        await tx.update(project).set({ updatedAt: now }).where(eq(project.id, found.projectId));
       });
 
       logger.info("Snapshot restored successfully", {
         snapshotId,
-        chapterId: snapshot.chapterId,
+        chapterId: found.chapterId,
       });
 
       await this.ensureImmediatePackageExport({
-        projectId: String(snapshot.projectId),
+        projectId: found.projectId,
         reason: "snapshot:restore",
       });
 
       return {
         success: true,
-        chapterId: snapshot.chapterId,
+        chapterId: found.chapterId,
       };
     } catch (error) {
       logger.error("Failed to restore snapshot", error);
@@ -370,27 +344,20 @@ export class SnapshotService {
     keepCount: number = DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT,
   ) {
     try {
-      const allSnapshots = await db.getClient().snapshot.findMany({
-        where: { projectId },
-        orderBy: { createdAt: "desc" },
-      });
+      const allSnapshots = await db.getDrizzleClient().select().from(snapshot).where(eq(snapshot.projectId, projectId)).orderBy(desc(snapshot.createdAt));
 
       if (allSnapshots.length <= keepCount) {
         return { success: true, deletedCount: 0 };
       }
 
-      const toDelete = allSnapshots.slice(keepCount) as Array<{ id: string }>;
-      await db.getClient().$transaction(async (prisma) => {
-        await prisma.snapshot.deleteMany({
-          where: { id: { in: toDelete.map((snapshot) => snapshot.id) } },
-        });
-        await prisma.project.update({
-          where: { id: projectId },
-          data: { updatedAt: new Date() },
-        });
+      const toDelete = allSnapshots.slice(keepCount);
+      const now = new Date().toISOString();
+      await db.getDrizzleClient().transaction(async (tx) => {
+        await tx.delete(snapshot).where(and(eq(snapshot.projectId, projectId), inArray(snapshot.id, toDelete.map((s) => s.id))));
+        await tx.update(project).set({ updatedAt: now }).where(eq(project.id, projectId));
       });
-      for (const snapshot of toDelete) {
-        this.queueOrphanArtifactCleanup(snapshot.id);
+      for (const s of toDelete) {
+        this.queueOrphanArtifactCleanup(s.id);
       }
 
       logger.info("Old snapshots deleted successfully", {
@@ -422,11 +389,7 @@ export class SnapshotService {
     const SEVEN_DAYS = 7 * ONE_DAY;
 
     try {
-      const snapshots = (await db.getClient().snapshot.findMany({
-        where: { projectId, type: "AUTO" },
-        orderBy: { createdAt: "desc" },
-        select: { id: true, createdAt: true },
-      })) as Array<{ id: string; createdAt: Date }>;
+      const snapshots = await db.getDrizzleClient().select({ id: snapshot.id, createdAt: snapshot.createdAt }).from(snapshot).where(and(eq(snapshot.projectId, projectId), eq(snapshot.type, "AUTO"))).orderBy(desc(snapshot.createdAt));
 
       if (snapshots.length === 0) {
         return { success: true, deletedCount: 0 };
@@ -437,10 +400,7 @@ export class SnapshotService {
       const dayBuckets = new Set<string>();
 
       for (const snap of snapshots) {
-        const createdAt =
-          snap.createdAt instanceof Date
-            ? snap.createdAt
-            : new Date(String(snap.createdAt));
+        const createdAt = new Date(snap.createdAt);
         const age = now - createdAt.getTime();
 
         if (age < ONE_DAY) {
@@ -469,17 +429,13 @@ export class SnapshotService {
         return { success: true, deletedCount: 0 };
       }
 
-      await db.getClient().$transaction(async (prisma) => {
-        await prisma.snapshot.deleteMany({
-          where: { id: { in: toDelete } },
-        });
-        await prisma.project.update({
-          where: { id: projectId },
-          data: { updatedAt: new Date() },
-        });
+      const updateNow = new Date().toISOString();
+      await db.getDrizzleClient().transaction(async (tx) => {
+        await tx.delete(snapshot).where(and(eq(snapshot.projectId, projectId), inArray(snapshot.id, toDelete)));
+        await tx.update(project).set({ updatedAt: updateNow }).where(eq(project.id, projectId));
       });
-      for (const snapshotId of toDelete) {
-        this.queueOrphanArtifactCleanup(snapshotId);
+      for (const sid of toDelete) {
+        this.queueOrphanArtifactCleanup(sid);
       }
 
       logger.info("Snapshots pruned", {
@@ -505,13 +461,11 @@ export class SnapshotService {
   }
 
   async pruneSnapshotsAllProjects() {
-    const projects = await db.getClient().project.findMany({
-      select: { id: true },
-    });
+    const projects = await db.getDrizzleClient().select({ id: project.id }).from(project);
 
     const results = await Promise.all(
-      projects.map((project: { id: string }) =>
-        this.pruneSnapshots(String(project.id)),
+      projects.map((p) =>
+        this.pruneSnapshots(p.id),
       ),
     );
 
@@ -525,12 +479,10 @@ export class SnapshotService {
 
   async getLatestSnapshot(chapterId: string) {
     try {
-      const snapshot = await db.getClient().snapshot.findFirst({
-        where: { chapterId },
-        orderBy: { createdAt: "desc" },
-      });
+      const rows = await db.getDrizzleClient().select().from(snapshot).where(eq(snapshot.chapterId, chapterId)).orderBy(desc(snapshot.createdAt)).limit(1);
+      const found = rows[0] ?? null;
 
-      return snapshot;
+      return found;
     } catch (error) {
       logger.error("Failed to get latest snapshot", error);
       throw new ServiceError(

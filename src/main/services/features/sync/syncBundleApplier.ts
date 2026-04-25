@@ -1,4 +1,3 @@
-import type { Prisma } from "@prisma/client";
 import type { LuiePackageExportData } from "../../io/luiePackageTypes.js";
 import { db } from "../../../database/index.js";
 import {
@@ -83,10 +82,10 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
     logger: input.logger,
   });
 
-  const prisma = db.getClient();
+  const client = db.getDrizzleClient();
   const deletedProjectIds = collectDeletedProjectIds(input.bundle);
   try {
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await client.transaction(async (tx) => {
       await applyProjectDeletes(tx, deletedProjectIds);
       await upsertProjects(
         tx,

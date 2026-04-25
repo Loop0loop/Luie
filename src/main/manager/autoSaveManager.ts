@@ -2,9 +2,11 @@
 
 import { EventEmitter } from "events";
 import { promises as fs } from "fs";
+import { eq } from "drizzle-orm";
 import { createLogger } from "../../shared/logger/index.js";
 import { ErrorCode } from "../../shared/constants/index.js";
 import { isServiceError } from "../utils/serviceError.js";
+import { chapter } from "../database/schema.js";
 import {
   DEFAULT_AUTO_SAVE_DEBOUNCE_MS,
   DEFAULT_AUTO_SAVE_INTERVAL_MS,
@@ -218,14 +220,17 @@ export class AutoSaveManager extends EventEmitter {
     }
 
     const db = await loadDb();
-    const chapter = await db.getClient().chapter.findUnique({
-      where: { id: chapterId },
-      select: { projectId: true, deletedAt: true },
-    });
+    const store = db.getDrizzleClient();
+    const chapters = await store
+      .select({ projectId: chapter.projectId, deletedAt: chapter.deletedAt })
+      .from(chapter)
+      .where(eq(chapter.id, chapterId))
+      .limit(1);
+    const chapterData = chapters[0] ?? null;
     if (
-      !chapter ||
-      String((chapter as { projectId: unknown }).projectId) !== projectId ||
-      Boolean((chapter as { deletedAt?: unknown }).deletedAt)
+      !chapterData ||
+      String(chapterData.projectId) !== projectId ||
+      Boolean(chapterData.deletedAt)
     ) {
       this.stats.skippedMissingChapter += 1;
       logger.info("Skipping auto-save for missing/deleted chapter", {

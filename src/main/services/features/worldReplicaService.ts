@@ -1,3 +1,4 @@
+import { eq, and, asc, desc } from "drizzle-orm";
 import { WORLD_SCRAP_MEMOS_SCHEMA_VERSION } from "../../../shared/constants/persistence.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
@@ -8,6 +9,7 @@ import type {
   WorldScrapMemosData,
 } from "../../../shared/types/index.js";
 import { db } from "../../database/index.js";
+import { project, scrapMemo, worldDocument } from "../../database/schema.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import { projectService } from "../core/projectService.js";
 
@@ -61,14 +63,8 @@ export class WorldReplicaService {
   }): Promise<WorldReplicaDocumentResult> {
     try {
       await this.ensureDbReady();
-      const row = await db.getClient().worldDocument.findUnique({
-        where: {
-          projectId_docType: {
-            projectId: input.projectId,
-            docType: input.docType,
-          },
-        },
-      });
+      const results = await db.getDrizzleClient().select().from(worldDocument).where(and(eq(worldDocument.projectId, input.projectId), eq(worldDocument.docType, input.docType))).limit(1);
+      const row = results[0];
 
       if (!row) {
         return { found: false, payload: null };
@@ -79,14 +75,14 @@ export class WorldReplicaService {
         return {
           found: false,
           payload: null,
-          updatedAt: row.updatedAt.toISOString(),
+          updatedAt: toIsoString(row.updatedAt),
         };
       }
 
       return {
         found: true,
         payload,
-        updatedAt: row.updatedAt.toISOString(),
+        updatedAt: toIsoString(row.updatedAt),
       };
     } catch (error) {
       logger.error("Failed to get replica world document", {
@@ -109,27 +105,20 @@ export class WorldReplicaService {
   }): Promise<WorldReplicaDocumentSetResult> {
     try {
       await this.ensureDbReady();
-      await db.getClient().$transaction(async (prisma) => {
-        await prisma.worldDocument.upsert({
-          where: {
-            projectId_docType: {
-              projectId: input.projectId,
-              docType: input.docType,
-            },
-          },
-          update: {
-            payload: toJsonString(input.payload),
-          },
-          create: {
+      await db.getDrizzleClient().transaction(async (tx) => {
+        const existing = await tx.select().from(worldDocument).where(and(eq(worldDocument.projectId, input.projectId), eq(worldDocument.docType, input.docType))).limit(1);
+        if (existing.length > 0) {
+          await tx.update(worldDocument).set({ payload: toJsonString(input.payload), updatedAt: new Date().toISOString() }).where(and(eq(worldDocument.projectId, input.projectId), eq(worldDocument.docType, input.docType)));
+        } else {
+          await tx.insert(worldDocument).values({
+            id: crypto.randomUUID(),
             projectId: input.projectId,
             docType: input.docType,
             payload: toJsonString(input.payload),
-          },
-        });
-        await prisma.project.update({
-          where: { id: input.projectId },
-          data: { updatedAt: new Date() },
-        });
+            updatedAt: new Date().toISOString(),
+          });
+        }
+        await tx.update(project).set({ updatedAt: new Date().toISOString() }).where(eq(project.id, input.projectId));
       });
 
       if (input.docType === "graph") {
@@ -172,20 +161,11 @@ export class WorldReplicaService {
   ): Promise<WorldReplicaScrapMemosResult> {
     try {
       await this.ensureDbReady();
-      const [documentRow, memoRows] = await Promise.all([
-        db.getClient().worldDocument.findUnique({
-          where: {
-            projectId_docType: {
-              projectId,
-              docType: "scrap",
-            },
-          },
-        }),
-        db.getClient().scrapMemo.findMany({
-          where: { projectId },
-          orderBy: [{ sortOrder: "asc" }, { updatedAt: "desc" }],
-        }),
+      const [documentRowResults, memoRows] = await Promise.all([
+        db.getDrizzleClient().select().from(worldDocument).where(and(eq(worldDocument.projectId, projectId), eq(worldDocument.docType, "scrap"))).limit(1),
+        db.getDrizzleClient().select().from(scrapMemo).where(eq(scrapMemo.projectId, projectId)).orderBy(asc(scrapMemo.sortOrder), desc(scrapMemo.updatedAt)),
       ]);
+      const documentRow = documentRowResults[0];
 
       if (documentRow) {
         const payload = parseJsonSafely(documentRow.payload, {
@@ -207,7 +187,7 @@ export class WorldReplicaService {
               data: {
                 schemaVersion: WORLD_SCRAP_MEMOS_SCHEMA_VERSION,
                 memos: [],
-                updatedAt: documentRow.updatedAt.toISOString(),
+                updatedAt: toIsoString(documentRow.updatedAt),
               },
             }
           : { found: false, data: null };
@@ -227,7 +207,7 @@ export class WorldReplicaService {
               title: row.title,
               content: row.content,
               tags: Array.isArray(parsedTags) ? (parsedTags as string[]) : [],
-              updatedAt: row.updatedAt.toISOString(),
+              updatedAt: toIsoString(row.updatedAt),
             };
           }),
           updatedAt:
@@ -268,47 +248,36 @@ export class WorldReplicaService {
         updatedAt: input.data.updatedAt,
       };
 
-      await db.getClient().$transaction(async (prisma) => {
-        await prisma.worldDocument.upsert({
-          where: {
-            projectId_docType: {
-              projectId: input.projectId,
-              docType: "scrap",
-            },
-          },
-          update: {
-            payload: toJsonString(payload),
-          },
-          create: {
+      await db.getDrizzleClient().transaction(async (tx) => {
+        const existing = await tx.select().from(worldDocument).where(and(eq(worldDocument.projectId, input.projectId), eq(worldDocument.docType, "scrap"))).limit(1);
+        if (existing.length > 0) {
+          await tx.update(worldDocument).set({ payload: toJsonString(payload), updatedAt: new Date().toISOString() }).where(and(eq(worldDocument.projectId, input.projectId), eq(worldDocument.docType, "scrap")));
+        } else {
+          await tx.insert(worldDocument).values({
+            id: crypto.randomUUID(),
             projectId: input.projectId,
             docType: "scrap",
             payload: toJsonString(payload),
-          },
-        });
+            updatedAt: new Date().toISOString(),
+          });
+        }
 
-        await prisma.scrapMemo.deleteMany({
-          where: { projectId: input.projectId },
-        });
+        await tx.delete(scrapMemo).where(eq(scrapMemo.projectId, input.projectId));
 
         if (payload.memos.length > 0) {
           const fallbackNow = new Date();
-          await prisma.scrapMemo.createMany({
-            data: payload.memos.map((memo, index) => ({
-              id: memo.id,
-              projectId: input.projectId,
-              title: memo.title,
-              content: memo.content,
-              tags: JSON.stringify(memo.tags),
-              sortOrder: index,
-              createdAt: fallbackNow,
-              updatedAt: parseDateInput(memo.updatedAt, fallbackNow),
-            })),
-          });
+          await tx.insert(scrapMemo).values(payload.memos.map((memo, index) => ({
+            id: memo.id,
+            projectId: input.projectId,
+            title: memo.title,
+            content: memo.content,
+            tags: JSON.stringify(memo.tags),
+            sortOrder: index,
+            createdAt: fallbackNow.toISOString(),
+            updatedAt: memo.updatedAt ?? fallbackNow.toISOString(),
+          })));
         }
-        await prisma.project.update({
-          where: { id: input.projectId },
-          data: { updatedAt: new Date() },
-        });
+        await tx.update(project).set({ updatedAt: new Date().toISOString() }).where(eq(project.id, input.projectId));
       });
     } catch (error) {
       logger.error("Failed to save replica scrap memos", {

@@ -1,7 +1,6 @@
-import type { Prisma } from "@prisma/client";
+import { and, eq } from "drizzle-orm";
 import { DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS } from "../../../../shared/constants/index.js";
 import { createLogger } from "../../../../shared/logger/index.js";
-import type { WorldScrapMemosData } from "../../../../shared/types/index.js";
 import type { SyncBundle } from "./syncMapper.js";
 import type { SyncChapterRecord } from "./syncMapper.js";
 import {
@@ -12,6 +11,18 @@ import {
   normalizeScrapPayload,
   normalizeSynopsisPayload,
 } from "./syncWorldDocNormalizer.js";
+import type { DbLike } from "../../../database/databaseTypes.js";
+import {
+  chapter,
+  character,
+  event,
+  faction,
+  project,
+  projectSettings,
+  scrapMemo,
+  term,
+  worldDocument,
+} from "../../../database/schema.js";
 
 const logger = createLogger("SyncLocalApply");
 
@@ -29,297 +40,281 @@ export const collectDeletedProjectIds = (bundle: SyncBundle): Set<string> => {
 };
 
 export const applyProjectDeletes = async (
-  prisma: Prisma.TransactionClient,
+  tx: DbLike,
   deletedProjectIds: Set<string>,
 ): Promise<void> => {
   for (const projectId of deletedProjectIds) {
-    const existing = (await prisma.project.findUnique({
-      where: { id: projectId },
-      select: { id: true },
-    })) as { id?: string } | null;
+    const existingRows = await tx.select({ id: project.id })
+      .from(project)
+      .where(eq(project.id, projectId))
+      .limit(1);
+    const existing = existingRows[0] ?? null;
     if (!existing?.id) continue;
-    await prisma.project.delete({ where: { id: projectId } });
+    await tx.delete(project).where(eq(project.id, projectId));
   }
 };
 
 export const upsertProjects = async (
-  prisma: Prisma.TransactionClient,
+  tx: DbLike,
   projects: SyncBundle["projects"],
   deletedProjectIds: Set<string>,
 ): Promise<void> => {
-  for (const project of projects) {
-    if (project.deletedAt || deletedProjectIds.has(project.id)) continue;
-    const existing = (await prisma.project.findUnique({
-      where: { id: project.id },
-      select: { id: true },
-    })) as { id?: string } | null;
+  for (const proj of projects) {
+    if (proj.deletedAt || deletedProjectIds.has(proj.id)) continue;
+    const existingRows = await tx.select({ id: project.id })
+      .from(project)
+      .where(eq(project.id, proj.id))
+      .limit(1);
+    const existing = existingRows[0] ?? null;
 
     if (existing?.id) {
-      await prisma.project.update({
-        where: { id: project.id },
-        data: {
-          title: project.title,
-          description: project.description,
-          updatedAt: new Date(project.updatedAt),
-        },
-      });
+      await tx.update(project)
+        .set({
+          title: proj.title,
+          description: proj.description,
+          updatedAt: new Date(proj.updatedAt).toISOString(),
+        })
+        .where(eq(project.id, proj.id));
       continue;
     }
 
-    await prisma.project.create({
-      data: {
-        id: project.id,
-        title: project.title,
-        description: project.description,
-        createdAt: new Date(project.createdAt),
-        updatedAt: new Date(project.updatedAt),
-        settings: {
-          create: {
-            autoSave: true,
-            autoSaveInterval: DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
-          },
-        },
-      },
+    await tx.insert(project).values({
+      id: proj.id,
+      title: proj.title,
+      description: proj.description,
+      createdAt: new Date(proj.createdAt).toISOString(),
+      updatedAt: new Date(proj.updatedAt).toISOString(),
+    });
+
+    await tx.insert(projectSettings).values({
+      id: proj.id,
+      projectId: proj.id,
+      autoSave: true,
+      autoSaveInterval: DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
     });
   }
 };
 
 export const upsertChapter = async (
-  prisma: Prisma.TransactionClient,
-  chapter: SyncChapterRecord,
+  tx: DbLike,
+  ch: SyncChapterRecord,
 ): Promise<void> => {
-  const existing = (await prisma.chapter.findUnique({
-    where: { id: chapter.id },
-    select: { id: true },
-  })) as { id?: string } | null;
+  const existingRows = await tx.select({ id: chapter.id })
+    .from(chapter)
+    .where(eq(chapter.id, ch.id))
+    .limit(1);
+  const existing = existingRows[0] ?? null;
 
   const data = {
-    title: chapter.title,
-    content: chapter.content,
-    synopsis: chapter.synopsis,
-    order: chapter.order,
-    wordCount: chapter.wordCount,
-    updatedAt: new Date(chapter.updatedAt),
-    deletedAt: chapter.deletedAt ? new Date(chapter.deletedAt) : null,
-    project: {
-      connect: { id: chapter.projectId },
-    },
+    title: ch.title,
+    content: ch.content,
+    synopsis: ch.synopsis,
+    order: ch.order,
+    wordCount: ch.wordCount,
+    updatedAt: new Date(ch.updatedAt).toISOString(),
+    deletedAt: ch.deletedAt ? new Date(ch.deletedAt).toISOString() : null,
+    projectId: ch.projectId,
   };
 
   if (existing?.id) {
-    await prisma.chapter.update({
-      where: { id: chapter.id },
-      data,
-    });
+    await tx.update(chapter)
+      .set(data)
+      .where(eq(chapter.id, ch.id));
   } else {
-    await prisma.chapter.create({
-      data: {
-        id: chapter.id,
-        ...data,
-        createdAt: new Date(chapter.createdAt),
-      },
+    await tx.insert(chapter).values({
+      id: ch.id,
+      ...data,
+      createdAt: new Date(ch.createdAt).toISOString(),
     });
   }
 };
 
 export const upsertCharacters = async (
-  prisma: Prisma.TransactionClient,
+  tx: DbLike,
   characters: SyncBundle["characters"],
   deletedProjectIds: Set<string>,
 ): Promise<void> => {
-  for (const character of characters) {
-    if (deletedProjectIds.has(character.projectId)) continue;
-    const existing = (await prisma.character.findUnique({
-      where: { id: character.id },
-      select: { id: true },
-    })) as { id?: string } | null;
+  for (const char of characters) {
+    if (deletedProjectIds.has(char.projectId)) continue;
+    const existingRows = await tx.select({ id: character.id })
+      .from(character)
+      .where(eq(character.id, char.id))
+      .limit(1);
+    const existing = existingRows[0] ?? null;
 
-    if (character.deletedAt) {
-      if (existing?.id) await prisma.character.delete({ where: { id: character.id } });
+    if (char.deletedAt) {
+      if (existing?.id) await tx.delete(character).where(eq(character.id, char.id));
       continue;
     }
 
     const data = {
-      name: character.name,
-      description: character.description,
-      firstAppearance: character.firstAppearance,
+      name: char.name,
+      description: char.description,
+      firstAppearance: char.firstAppearance,
       attributes:
-        typeof character.attributes === "string"
-          ? character.attributes
-          : JSON.stringify(character.attributes ?? null),
-      updatedAt: new Date(character.updatedAt),
-      project: {
-        connect: { id: character.projectId },
-      },
+        typeof char.attributes === "string"
+          ? char.attributes
+          : JSON.stringify(char.attributes ?? null),
+      updatedAt: new Date(char.updatedAt).toISOString(),
+      projectId: char.projectId,
     };
 
     if (existing?.id) {
-      await prisma.character.update({ where: { id: character.id }, data });
+      await tx.update(character).set(data).where(eq(character.id, char.id));
     } else {
-      await prisma.character.create({
-        data: {
-          id: character.id,
-          ...data,
-          createdAt: new Date(character.createdAt),
-        },
+      await tx.insert(character).values({
+        id: char.id,
+        ...data,
+        createdAt: new Date(char.createdAt).toISOString(),
       });
     }
   }
 };
 
 export const upsertEvents = async (
-  prisma: Prisma.TransactionClient,
+  tx: DbLike,
   events: SyncBundle["events"],
   deletedProjectIds: Set<string>,
 ): Promise<void> => {
-  for (const event of events) {
-    if (deletedProjectIds.has(event.projectId)) continue;
-    const existing = (await prisma.event.findUnique({
-      where: { id: event.id },
-      select: { id: true },
-    })) as { id?: string } | null;
+  for (const ev of events) {
+    if (deletedProjectIds.has(ev.projectId)) continue;
+    const existingRows = await tx.select({ id: event.id })
+      .from(event)
+      .where(eq(event.id, ev.id))
+      .limit(1);
+    const existing = existingRows[0] ?? null;
 
-    if (event.deletedAt) {
-      if (existing?.id) await prisma.event.delete({ where: { id: event.id } });
+    if (ev.deletedAt) {
+      if (existing?.id) await tx.delete(event).where(eq(event.id, ev.id));
       continue;
     }
 
     const data = {
-      name: event.name,
-      description: event.description,
-      firstAppearance: event.firstAppearance,
+      name: ev.name,
+      description: ev.description,
+      firstAppearance: ev.firstAppearance,
       attributes:
-        typeof event.attributes === "string"
-          ? event.attributes
-          : JSON.stringify(event.attributes ?? null),
-      updatedAt: new Date(event.updatedAt),
-      project: {
-        connect: { id: event.projectId },
-      },
+        typeof ev.attributes === "string"
+          ? ev.attributes
+          : JSON.stringify(ev.attributes ?? null),
+      updatedAt: new Date(ev.updatedAt).toISOString(),
+      projectId: ev.projectId,
     };
 
     if (existing?.id) {
-      await prisma.event.update({ where: { id: event.id }, data });
+      await tx.update(event).set(data).where(eq(event.id, ev.id));
     } else {
-      await prisma.event.create({
-        data: {
-          id: event.id,
-          ...data,
-          createdAt: new Date(event.createdAt),
-        },
+      await tx.insert(event).values({
+        id: ev.id,
+        ...data,
+        createdAt: new Date(ev.createdAt).toISOString(),
       });
     }
   }
 };
 
 export const upsertFactions = async (
-  prisma: Prisma.TransactionClient,
+  tx: DbLike,
   factions: SyncBundle["factions"],
   deletedProjectIds: Set<string>,
 ): Promise<void> => {
-  for (const faction of factions) {
-    if (deletedProjectIds.has(faction.projectId)) continue;
-    const existing = (await prisma.faction.findUnique({
-      where: { id: faction.id },
-      select: { id: true },
-    })) as { id?: string } | null;
+  for (const fac of factions) {
+    if (deletedProjectIds.has(fac.projectId)) continue;
+    const existingRows = await tx.select({ id: faction.id })
+      .from(faction)
+      .where(eq(faction.id, fac.id))
+      .limit(1);
+    const existing = existingRows[0] ?? null;
 
-    if (faction.deletedAt) {
-      if (existing?.id) await prisma.faction.delete({ where: { id: faction.id } });
+    if (fac.deletedAt) {
+      if (existing?.id) await tx.delete(faction).where(eq(faction.id, fac.id));
       continue;
     }
 
     const data = {
-      name: faction.name,
-      description: faction.description,
-      firstAppearance: faction.firstAppearance,
+      name: fac.name,
+      description: fac.description,
+      firstAppearance: fac.firstAppearance,
       attributes:
-        typeof faction.attributes === "string"
-          ? faction.attributes
-          : JSON.stringify(faction.attributes ?? null),
-      updatedAt: new Date(faction.updatedAt),
-      project: {
-        connect: { id: faction.projectId },
-      },
+        typeof fac.attributes === "string"
+          ? fac.attributes
+          : JSON.stringify(fac.attributes ?? null),
+      updatedAt: new Date(fac.updatedAt).toISOString(),
+      projectId: fac.projectId,
     };
 
     if (existing?.id) {
-      await prisma.faction.update({ where: { id: faction.id }, data });
+      await tx.update(faction).set(data).where(eq(faction.id, fac.id));
     } else {
-      await prisma.faction.create({
-        data: {
-          id: faction.id,
-          ...data,
-          createdAt: new Date(faction.createdAt),
-        },
+      await tx.insert(faction).values({
+        id: fac.id,
+        ...data,
+        createdAt: new Date(fac.createdAt).toISOString(),
       });
     }
   }
 };
 
 export const upsertTerms = async (
-  prisma: Prisma.TransactionClient,
+  tx: DbLike,
   terms: SyncBundle["terms"],
   deletedProjectIds: Set<string>,
 ): Promise<void> => {
-  for (const term of terms) {
-    if (deletedProjectIds.has(term.projectId)) continue;
-    const existing = (await prisma.term.findUnique({
-      where: { id: term.id },
-      select: { id: true },
-    })) as { id?: string } | null;
+  for (const t of terms) {
+    if (deletedProjectIds.has(t.projectId)) continue;
+    const existingRows = await tx.select({ id: term.id })
+      .from(term)
+      .where(eq(term.id, t.id))
+      .limit(1);
+    const existing = existingRows[0] ?? null;
 
-    if (term.deletedAt) {
-      if (existing?.id) await prisma.term.delete({ where: { id: term.id } });
+    if (t.deletedAt) {
+      if (existing?.id) await tx.delete(term).where(eq(term.id, t.id));
       continue;
     }
 
     const data = {
-      term: term.term,
-      definition: term.definition,
-      category: term.category,
-      order: term.order,
-      firstAppearance: term.firstAppearance,
-      updatedAt: new Date(term.updatedAt),
-      project: {
-        connect: { id: term.projectId },
-      },
+      term: t.term,
+      definition: t.definition,
+      category: t.category,
+      order: t.order,
+      firstAppearance: t.firstAppearance,
+      updatedAt: new Date(t.updatedAt).toISOString(),
+      projectId: t.projectId,
     };
 
     if (existing?.id) {
-      await prisma.term.update({ where: { id: term.id }, data });
+      await tx.update(term).set(data).where(eq(term.id, t.id));
     } else {
-      await prisma.term.create({
-        data: {
-          id: term.id,
-          ...data,
-          createdAt: new Date(term.createdAt),
-        },
+      await tx.insert(term).values({
+        id: t.id,
+        ...data,
+        createdAt: new Date(t.createdAt).toISOString(),
       });
     }
   }
 };
 
 export const applyChapterTombstones = async (
-  prisma: Prisma.TransactionClient,
+  tx: DbLike,
   tombstones: SyncBundle["tombstones"],
   deletedProjectIds: Set<string>,
 ): Promise<void> => {
   for (const tombstone of tombstones) {
     if (tombstone.entityType !== "chapter") continue;
     if (deletedProjectIds.has(tombstone.projectId)) continue;
-    const existing = (await prisma.chapter.findUnique({
-      where: { id: tombstone.entityId },
-      select: { id: true, projectId: true },
-    })) as { id?: string; projectId?: string } | null;
+    const existingRows = await tx.select({ id: chapter.id, projectId: chapter.projectId })
+      .from(chapter)
+      .where(eq(chapter.id, tombstone.entityId))
+      .limit(1);
+    const existing = existingRows[0] ?? null;
     if (!existing?.id || existing.projectId !== tombstone.projectId) continue;
-    await prisma.chapter.update({
-      where: { id: tombstone.entityId },
-      data: {
-        deletedAt: new Date(tombstone.deletedAt),
-        updatedAt: new Date(tombstone.updatedAt),
-      },
-    });
+    await tx.update(chapter)
+      .set({
+        deletedAt: new Date(tombstone.deletedAt).toISOString(),
+        updatedAt: new Date(tombstone.updatedAt).toISOString(),
+      })
+      .where(eq(chapter.id, tombstone.entityId));
   }
 };
 
@@ -402,21 +397,21 @@ const normalizeWorldDocumentPayload = (
 };
 
 export const applyReplicaWorldState = async (
-  prisma: Prisma.TransactionClient,
+  tx: DbLike,
   bundle: SyncBundle,
   deletedProjectIds: Set<string>,
 ): Promise<void> => {
   const activeProjects = bundle.projects.filter(
-    (project) => !project.deletedAt && !deletedProjectIds.has(project.id),
+    (proj) => !proj.deletedAt && !deletedProjectIds.has(proj.id),
   );
 
-  for (const project of activeProjects) {
+  for (const proj of activeProjects) {
     const { active: worldDocMap, deleted: deletedDocTypes } = buildWorldDocumentMap(
       bundle.worldDocuments,
-      project.id,
+      proj.id,
     );
     const memos = bundle.memos
-      .filter((memo) => memo.projectId === project.id && !memo.deletedAt)
+      .filter((memo) => memo.projectId === proj.id && !memo.deletedAt)
       .map((memo) => ({
         id: memo.id,
         title: memo.title,
@@ -426,12 +421,8 @@ export const applyReplicaWorldState = async (
       }));
 
     for (const docType of deletedDocTypes) {
-      await prisma.worldDocument.deleteMany({
-        where: {
-          projectId: project.id,
-          docType,
-        },
-      });
+      await tx.delete(worldDocument)
+        .where(and(eq(worldDocument.projectId, proj.id), eq(worldDocument.docType, docType)));
     }
 
     for (const [docType, doc] of worldDocMap.entries()) {
@@ -439,90 +430,80 @@ export const applyReplicaWorldState = async (
         continue;
       }
       const normalizedPayload = normalizeWorldDocumentPayload(
-        project.id,
+        proj.id,
         docType,
         doc.payload,
         doc.updatedAt,
         memos,
       );
-      await prisma.worldDocument.upsert({
-        where: {
-          projectId_docType: {
-            projectId: project.id,
-            docType,
-          },
-        },
-        update: {
-          payload: JSON.stringify(normalizedPayload),
-        },
-        create: {
-          projectId: project.id,
+      await tx.insert(worldDocument)
+        .values({
+          id: `${proj.id}:${docType}`,
+          projectId: proj.id,
           docType,
           payload: JSON.stringify(normalizedPayload),
-        },
-      });
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        .onConflictDoUpdate({
+          target: [worldDocument.projectId, worldDocument.docType],
+          set: {
+            payload: JSON.stringify(normalizedPayload),
+            updatedAt: new Date().toISOString(),
+          },
+        });
     }
 
     const normalizedScrapPayload = normalizeScrapPayload(
-      project.id,
+      proj.id,
       worldDocMap.get("scrap")?.payload,
       memos,
-      project.updatedAt,
+      proj.updatedAt,
       logger,
-    ) as unknown as WorldScrapMemosData;
+    );
 
     if (worldDocMap.has("scrap") || memos.length > 0) {
-      await prisma.worldDocument.upsert({
-        where: {
-          projectId_docType: {
-            projectId: project.id,
-            docType: "scrap",
+      await tx.insert(worldDocument)
+        .values({
+          id: `${proj.id}:scrap`,
+          projectId: proj.id,
+          docType: "scrap",
+          payload: JSON.stringify(normalizedScrapPayload),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        .onConflictDoUpdate({
+          target: [worldDocument.projectId, worldDocument.docType],
+          set: {
+            payload: JSON.stringify(normalizedScrapPayload),
+            updatedAt: new Date().toISOString(),
           },
-        },
-        update: {
-          payload: JSON.stringify(normalizedScrapPayload),
-        },
-        create: {
-          projectId: project.id,
-          docType: "scrap",
-          payload: JSON.stringify(normalizedScrapPayload),
-        },
-      });
+        });
     } else if (deletedDocTypes.has("scrap")) {
-      await prisma.worldDocument.deleteMany({
-        where: {
-          projectId: project.id,
-          docType: "scrap",
-        },
-      });
+      await tx.delete(worldDocument)
+        .where(and(eq(worldDocument.projectId, proj.id), eq(worldDocument.docType, "scrap")));
     }
 
-    await prisma.scrapMemo.deleteMany({
-      where: { projectId: project.id },
-    });
+    await tx.delete(scrapMemo).where(eq(scrapMemo.projectId, proj.id));
 
-    if (normalizedScrapPayload.memos.length > 0) {
-      await prisma.scrapMemo.createMany({
-        data: normalizedScrapPayload.memos.map((memo, index) => ({
-          id: memo.id,
-          projectId: project.id,
-          title: memo.title,
-          content: memo.content,
-          tags: JSON.stringify(memo.tags),
-          sortOrder: index,
-          createdAt: new Date(memo.updatedAt),
-          updatedAt: new Date(memo.updatedAt),
-        })),
-      });
+    const scrapMemoRows = normalizedScrapPayload.memos.map((memo, index) => ({
+      id: memo.id,
+      projectId: proj.id,
+      title: memo.title,
+      content: memo.content,
+      tags: JSON.stringify(memo.tags),
+      sortOrder: index,
+      createdAt: new Date(memo.updatedAt).toISOString(),
+      updatedAt: new Date(memo.updatedAt).toISOString(),
+    }));
+    if (scrapMemoRows.length > 0) {
+      await tx.insert(scrapMemo).values(scrapMemoRows);
     }
 
     if (deletedDocTypes.size > 0 || worldDocMap.size > 0 || memos.length > 0) {
-      await prisma.project.update({
-        where: { id: project.id },
-        data: {
-          updatedAt: new Date(),
-        },
-      });
+      await tx.update(project)
+        .set({ updatedAt: new Date().toISOString() })
+        .where(eq(project.id, proj.id));
     }
   }
 };

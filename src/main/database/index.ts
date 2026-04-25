@@ -89,6 +89,8 @@ class DatabaseService {
       }
     }
 
+    // WAL pragmas applied via Drizzle's underlying sqlite connection (see createDrizzleClient)
+    // TODO: Remove this Prisma-based WAL block in Phase 7
     if (this.prisma.$executeRawUnsafe) {
       try {
         await this.prisma.$executeRawUnsafe("PRAGMA journal_mode=WAL;");
@@ -114,6 +116,7 @@ class DatabaseService {
     return { sqlite, client };
   }
 
+  // TODO: Remove in Phase 7 — Prisma client creation replaced by Drizzle
   private createPrismaClient(context: PreparedDatabaseContext): PrismaClient {
     try {
       const PrismaBetterSqlite3 = loadPrismaBetterSqlite3();
@@ -327,6 +330,10 @@ class DatabaseService {
     return this.prisma;
   }
 
+  /**
+   * Returns the Drizzle ORM client. Use this in all Phase 4+ services.
+   * @deprecated Phase 7: getClient() will also return Drizzle. Use getDrizzleClient() for now.
+   */
   getDrizzleClient(): MainDrizzleClient {
     if (!this.drizzleHandle) {
       throw new Error("Database is not initialized. Call db.initialize() first.");
@@ -352,6 +359,7 @@ class DatabaseService {
     }
 
     if (this.prisma) {
+      // TODO: Remove Prisma disconnect in Phase 7
       await this.prisma.$disconnect();
     }
     this.prisma = null;

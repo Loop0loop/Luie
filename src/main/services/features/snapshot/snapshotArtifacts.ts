@@ -1,7 +1,16 @@
 import { app } from "electron";
 import { promises as fs, type Dirent } from "fs";
 import path from "path";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "../../../database/index.js";
+import {
+  chapter as chapterTable,
+  character as characterTable,
+  project as projectTable,
+  projectSettings as projectSettingsTable,
+  snapshot as snapshotTable,
+  term as termTable,
+} from "../../../database/schema.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import {
   APP_VERSION,
@@ -309,14 +318,13 @@ export async function cleanupOrphanSnapshotArtifacts(options?: {
       : 0;
   const now = Date.now();
 
+  const store = db.getDrizzleClient();
   const persistedSnapshots = targetIds
-    ? await db.getClient().snapshot.findMany({
-        where: { id: { in: Array.from(targetIds) } },
-        select: { id: true },
-      })
-    : await db.getClient().snapshot.findMany({
-        select: { id: true },
-      });
+    ? await store
+        .select({ id: snapshotTable.id })
+        .from(snapshotTable)
+        .where(inArray(snapshotTable.id, Array.from(targetIds)))
+    : await store.select({ id: snapshotTable.id }).from(snapshotTable);
   const persistedSnapshotIds = new Set(
     persistedSnapshots.map((snapshot: { id: string }) => snapshot.id),
   );
@@ -374,18 +382,62 @@ export async function writeFullSnapshotArtifact(
     chapterId: input.chapterId,
   });
 
-  const [project, projectPath] = await Promise.all([
-    db.getClient().project.findUnique({
-      where: { id: input.projectId },
-      include: {
-        settings: true,
-        chapters: { orderBy: { order: "asc" } },
-        characters: true,
-        terms: true,
-      },
-    }) as Promise<ProjectSnapshotRecord | null>,
-    getProjectAttachmentPath(input.projectId),
-  ]);
+  const store = db.getDrizzleClient();
+
+  const [projRows, settingsRows, chaptersRows, charactersRows, termsRows, projectPath] =
+    await Promise.all([
+      store.select().from(projectTable).where(eq(projectTable.id, input.projectId)).limit(1),
+      store.select().from(projectSettingsTable).where(eq(projectSettingsTable.projectId, input.projectId)).limit(1),
+      store.select().from(chapterTable).where(and(eq(chapterTable.projectId, input.projectId), isNull(chapterTable.deletedAt))).orderBy(asc(chapterTable.order)),
+      store.select().from(characterTable).where(and(eq(characterTable.projectId, input.projectId), isNull(characterTable.deletedAt))),
+      store.select().from(termTable).where(and(eq(termTable.projectId, input.projectId), isNull(termTable.deletedAt))),
+      getProjectAttachmentPath(input.projectId),
+    ]);
+
+  const projectRow = projRows[0] ?? null;
+  const settingsRow = settingsRows[0] ?? null;
+
+  const assembledProject: ProjectSnapshotRecord | null = projectRow
+    ? {
+        id: projectRow.id,
+        title: projectRow.title,
+        description: projectRow.description,
+        projectPath: projectRow.projectPath,
+        createdAt: new Date(projectRow.createdAt),
+        updatedAt: new Date(projectRow.updatedAt),
+        settings: settingsRow ?? undefined,
+        chapters: chaptersRows.map((ch) => ({
+          id: ch.id,
+          title: ch.title,
+          content: ch.content,
+          synopsis: ch.synopsis,
+          order: ch.order,
+          wordCount: ch.wordCount,
+          createdAt: new Date(ch.createdAt),
+          updatedAt: new Date(ch.updatedAt),
+        })),
+        characters: charactersRows.map((ch) => ({
+          id: ch.id,
+          name: ch.name,
+          description: ch.description,
+          firstAppearance: ch.firstAppearance,
+          attributes: ch.attributes ? JSON.parse(ch.attributes) : undefined,
+          createdAt: new Date(ch.createdAt),
+          updatedAt: new Date(ch.updatedAt),
+        })),
+        terms: termsRows.map((t) => ({
+          id: t.id,
+          term: t.term,
+          definition: t.definition,
+          category: t.category,
+          firstAppearance: t.firstAppearance,
+          createdAt: new Date(t.createdAt),
+          updatedAt: new Date(t.updatedAt),
+        })),
+      }
+    : null;
+
+  const project = assembledProject;
 
   if (!project) {
     throw new ServiceError(ErrorCode.PROJECT_NOT_FOUND, "Project not found", {

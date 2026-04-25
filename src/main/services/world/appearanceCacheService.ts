@@ -1,10 +1,8 @@
-const loadCacheDb = async () =>
-  (await import("../../database/cacheDb.js")).cacheDb;
+import { eq } from "drizzle-orm";
+import { cacheDb } from "../../database/cacheDb.js";
+import { characterAppearance, termAppearance } from "../../database/cacheSchema.js";
 
-const getCacheClient = async () => {
-  const cacheDb = await loadCacheDb();
-  return cacheDb.getClient();
-};
+const getCacheClient = () => cacheDb.getDrizzleClient();
 
 export type CachedCharacterAppearance = {
   id: string;
@@ -26,6 +24,24 @@ export type CachedTermAppearance = {
   createdAt: Date;
 };
 
+function mapCharacterAppearanceRow(
+  row: typeof characterAppearance.$inferSelect,
+): CachedCharacterAppearance {
+  return {
+    ...row,
+    createdAt: new Date(row.createdAt),
+  };
+}
+
+function mapTermAppearanceRow(
+  row: typeof termAppearance.$inferSelect,
+): CachedTermAppearance {
+  return {
+    ...row,
+    createdAt: new Date(row.createdAt),
+  };
+}
+
 class AppearanceCacheService {
   async recordCharacterAppearance(input: {
     projectId: string;
@@ -34,16 +50,19 @@ class AppearanceCacheService {
     position: number;
     context?: string;
   }): Promise<CachedCharacterAppearance> {
-    const client = await getCacheClient();
-    return await client.characterAppearance.create({
-      data: {
+    const db = getCacheClient();
+    const [row] = await db
+      .insert(characterAppearance)
+      .values({
+        id: crypto.randomUUID(),
         projectId: input.projectId,
         characterId: input.characterId,
         chapterId: input.chapterId,
         position: input.position,
-        context: input.context,
-      },
-    });
+        context: input.context ?? null,
+      })
+      .returning();
+    return mapCharacterAppearanceRow(row);
   }
 
   async recordTermAppearance(input: {
@@ -53,126 +72,129 @@ class AppearanceCacheService {
     position: number;
     context?: string;
   }): Promise<CachedTermAppearance> {
-    const client = await getCacheClient();
-    return await client.termAppearance.create({
-      data: {
+    const db = getCacheClient();
+    const [row] = await db
+      .insert(termAppearance)
+      .values({
+        id: crypto.randomUUID(),
         projectId: input.projectId,
         termId: input.termId,
         chapterId: input.chapterId,
         position: input.position,
-        context: input.context,
-      },
-    });
+        context: input.context ?? null,
+      })
+      .returning();
+    return mapTermAppearanceRow(row);
   }
 
   async getCharacterAppearancesByChapter(
     chapterId: string,
   ): Promise<CachedCharacterAppearance[]> {
-    const client = await getCacheClient();
-    return await client.characterAppearance.findMany({
-      where: { chapterId },
-      orderBy: { position: "asc" },
-    });
+    const db = getCacheClient();
+    const rows = await db
+      .select()
+      .from(characterAppearance)
+      .where(eq(characterAppearance.chapterId, chapterId))
+      .orderBy(characterAppearance.position);
+    return rows.map(mapCharacterAppearanceRow);
   }
 
   async getTermAppearancesByChapter(
     chapterId: string,
   ): Promise<CachedTermAppearance[]> {
-    const client = await getCacheClient();
-    return await client.termAppearance.findMany({
-      where: { chapterId },
-      orderBy: { position: "asc" },
-    });
+    const db = getCacheClient();
+    const rows = await db
+      .select()
+      .from(termAppearance)
+      .where(eq(termAppearance.chapterId, chapterId))
+      .orderBy(termAppearance.position);
+    return rows.map(mapTermAppearanceRow);
   }
 
   async getCharacterAppearancesByEntity(
     characterId: string,
     limit?: number,
   ): Promise<CachedCharacterAppearance[]> {
-    const client = await getCacheClient();
-    return await client.characterAppearance.findMany({
-      where: { characterId },
-      orderBy: { createdAt: "asc" },
-      take: limit,
-    });
+    const db = getCacheClient();
+    const rows = await db
+      .select()
+      .from(characterAppearance)
+      .where(eq(characterAppearance.characterId, characterId))
+      .orderBy(characterAppearance.createdAt)
+      .limit(limit ?? 100_000);
+    return rows.map(mapCharacterAppearanceRow);
   }
 
   async getTermAppearancesByEntity(
     termId: string,
     limit?: number,
   ): Promise<CachedTermAppearance[]> {
-    const client = await getCacheClient();
-    return await client.termAppearance.findMany({
-      where: { termId },
-      orderBy: { createdAt: "asc" },
-      take: limit,
-    });
+    const db = getCacheClient();
+    const rows = await db
+      .select()
+      .from(termAppearance)
+      .where(eq(termAppearance.termId, termId))
+      .orderBy(termAppearance.createdAt)
+      .limit(limit ?? 100_000);
+    return rows.map(mapTermAppearanceRow);
   }
 
   async clearChapter(chapterId: string): Promise<void> {
-    const client = await getCacheClient();
+    const db = getCacheClient();
     await Promise.all([
-      client.characterAppearance.deleteMany({
-        where: { chapterId },
-      }),
-      client.termAppearance.deleteMany({
-        where: { chapterId },
-      }),
+      db.delete(characterAppearance).where(eq(characterAppearance.chapterId, chapterId)),
+      db.delete(termAppearance).where(eq(termAppearance.chapterId, chapterId)),
     ]);
   }
 
   async clearCharacterChapter(chapterId: string): Promise<void> {
-    const client = await getCacheClient();
-    await client.characterAppearance.deleteMany({
-      where: { chapterId },
-    });
+    const db = getCacheClient();
+    await db
+      .delete(characterAppearance)
+      .where(eq(characterAppearance.chapterId, chapterId));
   }
 
   async clearTermChapter(chapterId: string): Promise<void> {
-    const client = await getCacheClient();
-    await client.termAppearance.deleteMany({
-      where: { chapterId },
-    });
+    const db = getCacheClient();
+    await db
+      .delete(termAppearance)
+      .where(eq(termAppearance.chapterId, chapterId));
   }
 
   async clearProject(projectId: string): Promise<void> {
-    const client = await getCacheClient();
+    const db = getCacheClient();
     await Promise.all([
-      client.characterAppearance.deleteMany({
-        where: { projectId },
-      }),
-      client.termAppearance.deleteMany({
-        where: { projectId },
-      }),
+      db.delete(characterAppearance).where(eq(characterAppearance.projectId, projectId)),
+      db.delete(termAppearance).where(eq(termAppearance.projectId, projectId)),
     ]);
   }
 
   async clearCharacterProject(projectId: string): Promise<void> {
-    const client = await getCacheClient();
-    await client.characterAppearance.deleteMany({
-      where: { projectId },
-    });
+    const db = getCacheClient();
+    await db
+      .delete(characterAppearance)
+      .where(eq(characterAppearance.projectId, projectId));
   }
 
   async clearTermProject(projectId: string): Promise<void> {
-    const client = await getCacheClient();
-    await client.termAppearance.deleteMany({
-      where: { projectId },
-    });
+    const db = getCacheClient();
+    await db
+      .delete(termAppearance)
+      .where(eq(termAppearance.projectId, projectId));
   }
 
   async clearCharacterEntity(characterId: string): Promise<void> {
-    const client = await getCacheClient();
-    await client.characterAppearance.deleteMany({
-      where: { characterId },
-    });
+    const db = getCacheClient();
+    await db
+      .delete(characterAppearance)
+      .where(eq(characterAppearance.characterId, characterId));
   }
 
   async clearTermEntity(termId: string): Promise<void> {
-    const client = await getCacheClient();
-    await client.termAppearance.deleteMany({
-      where: { termId },
-    });
+    const db = getCacheClient();
+    await db
+      .delete(termAppearance)
+      .where(eq(termAppearance.termId, termId));
   }
 }
 

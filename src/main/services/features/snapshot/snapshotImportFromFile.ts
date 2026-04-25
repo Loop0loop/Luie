@@ -2,8 +2,9 @@ import { promises as fsPromises } from "fs";
 import path from "path";
 import { randomUUID } from "node:crypto";
 import { app } from "electron";
-import type { Prisma } from "@prisma/client";
+import { eq } from "drizzle-orm";
 import { db } from "../../../database/index.js";
+import * as schema from "../../../database/schema.js";
 import {
   DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
   LUIE_PACKAGE_CONTAINER_DIR,
@@ -14,6 +15,8 @@ import {
 import { sanitizeName } from "../../../../shared/utils/sanitize.js";
 import { writeLuieContainer } from "../../io/luieContainer.js";
 import { readFullSnapshotArtifact } from "./snapshotArtifacts.js";
+
+const { project, projectSettings, chapter, character, term } = schema;
 
 type LoggerLike = {
   info: (message: string, data?: unknown) => void;
@@ -76,110 +79,113 @@ const createImportedProject = async (
 ): Promise<ImportTransactionResult> => {
   const { autoSave, autoSaveInterval } = resolveAutoSaveSettings(snapshot.data.settings);
   const projectData = snapshot.data.project;
+  const now = new Date().toISOString();
 
-  const result = await db.getClient().$transaction(
-    async (tx: Prisma.TransactionClient) => {
-      const created = await tx.project.create({
-        data: {
-          title: projectData.title || "Recovered Snapshot",
-          description: projectData.description ?? undefined,
-          projectPath,
-          settings: {
-            create: {
-              autoSave,
-              autoSaveInterval,
-            },
-          },
-        },
-        include: {
-          settings: true,
-        },
-      });
+  const store = db.getDrizzleClient();
+  const result = await store.transaction(async (tx) => {
+    const [proj] = await tx.insert(project).values({
+      id: randomUUID(),
+      title: projectData.title || "Recovered Snapshot",
+      description: projectData.description ?? undefined,
+      projectPath,
+      createdAt: now,
+      updatedAt: now,
+    }).returning();
 
-      const projectId = created.id;
-      const chapterIdMap = new Map<string, string>();
-      const characterIdMap = new Map<string, string>();
-      const termIdMap = new Map<string, string>();
+    const projectId = proj.id;
 
-      const chaptersForCreate = snapshot.data.chapters.map((chapter, index) => {
-        const nextId = randomUUID();
-        chapterIdMap.set(chapter.id, nextId);
-        return {
-          id: nextId,
-          projectId,
-          title: chapter.title,
-          content: chapter.content ?? "",
-          synopsis: chapter.synopsis ?? null,
-          order: typeof chapter.order === "number" ? chapter.order : index,
-          wordCount: chapter.wordCount ?? 0,
-        };
-      });
+    await tx.insert(projectSettings).values({
+      id: projectId,
+      projectId,
+      autoSave,
+      autoSaveInterval,
+    });
 
-      const charactersForCreate = snapshot.data.characters.map((character) => {
-        const nextId = randomUUID();
-        characterIdMap.set(character.id, nextId);
-        return {
-          id: nextId,
-          projectId,
-          name: character.name,
-          description: character.description ?? null,
-          firstAppearance: character.firstAppearance ?? null,
-          attributes:
-            typeof character.attributes === "string"
-              ? character.attributes
-              : character.attributes
-                ? JSON.stringify(character.attributes)
-                : null,
-        };
-      });
+    const chapterIdMap = new Map<string, string>();
+    const characterIdMap = new Map<string, string>();
+    const termIdMap = new Map<string, string>();
 
-      const termsForCreate = snapshot.data.terms.map((term) => {
-        const nextId = randomUUID();
-        termIdMap.set(term.id, nextId);
-        return {
-          id: nextId,
-          projectId,
-          term: term.term,
-          definition: term.definition ?? null,
-          category: term.category ?? null,
-          firstAppearance: term.firstAppearance ?? null,
-        };
-      });
-
-      if (chaptersForCreate.length > 0) {
-        await tx.chapter.createMany({
-          data: chaptersForCreate,
-        });
-      }
-
-      if (charactersForCreate.length > 0) {
-        await tx.character.createMany({
-          data: charactersForCreate,
-        });
-      }
-
-      if (termsForCreate.length > 0) {
-        await tx.term.createMany({
-          data: termsForCreate,
-        });
-      }
-
+    const chaptersForCreate = snapshot.data.chapters.map((chapterItem, index) => {
+      const nextId = randomUUID();
+      chapterIdMap.set(chapterItem.id, nextId);
       return {
-        created: {
-          id: created.id,
-          title: created.title,
-          description: created.description,
-          createdAt: created.createdAt,
-          updatedAt: created.updatedAt,
-        },
-        chapterIdMap,
-        characterIdMap,
-        termIdMap,
+        id: nextId,
+        projectId,
+        title: chapterItem.title,
+        content: chapterItem.content ?? "",
+        synopsis: chapterItem.synopsis ?? null,
+        order: typeof chapterItem.order === "number" ? chapterItem.order : index,
+        wordCount: chapterItem.wordCount ?? 0,
+        createdAt: now,
+        updatedAt: now,
       };
-    },
-  );
+    });
 
-  return result as ImportTransactionResult;
+    const charactersForCreate = snapshot.data.characters.map((characterItem) => {
+      const nextId = randomUUID();
+      characterIdMap.set(characterItem.id, nextId);
+      return {
+        id: nextId,
+        projectId,
+        name: characterItem.name,
+        description: characterItem.description ?? null,
+        firstAppearance: characterItem.firstAppearance ?? null,
+        attributes:
+          typeof characterItem.attributes === "string"
+            ? characterItem.attributes
+            : characterItem.attributes
+              ? JSON.stringify(characterItem.attributes)
+              : null,
+        createdAt: now,
+        updatedAt: now,
+      };
+    });
+
+    const termsForCreate = snapshot.data.terms.map((termItem) => {
+      const nextId = randomUUID();
+      termIdMap.set(termItem.id, nextId);
+      return {
+        id: nextId,
+        projectId,
+        term: termItem.term,
+        definition: termItem.definition ?? null,
+        category: termItem.category ?? null,
+        firstAppearance: termItem.firstAppearance ?? null,
+        order: 0,
+        createdAt: now,
+        updatedAt: now,
+      };
+    });
+
+    if (chaptersForCreate.length > 0) {
+      await tx.insert(chapter).values(chaptersForCreate);
+    }
+
+    if (charactersForCreate.length > 0) {
+      await tx.insert(character).values(charactersForCreate);
+    }
+
+    if (termsForCreate.length > 0) {
+      await tx.insert(term).values(termsForCreate);
+    }
+
+    const created: ImportedProject = {
+      id: proj.id,
+      title: proj.title,
+      description: proj.description,
+      createdAt: new Date(proj.createdAt),
+      updatedAt: new Date(proj.updatedAt),
+    };
+
+    return {
+      created,
+      chapterIdMap,
+      characterIdMap,
+      termIdMap,
+    };
+  });
+
+  return result;
 };
 
 const buildPackageMeta = (created: ImportedProject) => ({
@@ -199,7 +205,7 @@ const rollbackImportedProject = async (
   logger: LoggerLike,
 ): Promise<void> => {
   try {
-    await db.getClient().project.delete({ where: { id: projectId } });
+    await db.getDrizzleClient().delete(project).where(eq(project.id, projectId));
   } catch (rollbackError) {
     logger.error("Failed to rollback project after snapshot .luie import failure", {
       projectId,
@@ -224,32 +230,32 @@ export const importSnapshotFromFile = async (
       targetPath: projectPath,
       payload: {
         meta,
-        chapters: snapshot.data.chapters.map((chapter) => ({
-          id: chapterIdMap.get(chapter.id) ?? chapter.id,
-          content: chapter.content ?? "",
+        chapters: snapshot.data.chapters.map((chapterItem) => ({
+          id: chapterIdMap.get(chapterItem.id) ?? chapterItem.id,
+          content: chapterItem.content ?? "",
         })),
-        characters: snapshot.data.characters.map((character) => ({
-          id: characterIdMap.get(character.id) ?? character.id,
-          name: character.name,
-          description: character.description ?? null,
-          firstAppearance: character.firstAppearance ?? null,
+        characters: snapshot.data.characters.map((characterItem) => ({
+          id: characterIdMap.get(characterItem.id) ?? characterItem.id,
+          name: characterItem.name,
+          description: characterItem.description ?? null,
+          firstAppearance: characterItem.firstAppearance ?? null,
           attributes:
-            typeof character.attributes === "string"
-              ? character.attributes
-              : character.attributes
-                ? JSON.stringify(character.attributes)
+            typeof characterItem.attributes === "string"
+              ? characterItem.attributes
+              : characterItem.attributes
+                ? JSON.stringify(characterItem.attributes)
                 : null,
-          createdAt: new Date(character.createdAt),
-          updatedAt: new Date(character.updatedAt),
+          createdAt: new Date(characterItem.createdAt),
+          updatedAt: new Date(characterItem.updatedAt),
         })),
-        terms: snapshot.data.terms.map((term) => ({
-          id: termIdMap.get(term.id) ?? term.id,
-          term: term.term,
-          definition: term.definition ?? null,
-          category: term.category ?? null,
-          firstAppearance: term.firstAppearance ?? null,
-          createdAt: new Date(term.createdAt),
-          updatedAt: new Date(term.updatedAt),
+        terms: snapshot.data.terms.map((termItem) => ({
+          id: termIdMap.get(termItem.id) ?? termItem.id,
+          term: termItem.term,
+          definition: termItem.definition ?? null,
+          category: termItem.category ?? null,
+          firstAppearance: termItem.firstAppearance ?? null,
+          createdAt: new Date(termItem.createdAt),
+          updatedAt: new Date(termItem.updatedAt),
         })),
         snapshots: [],
       },

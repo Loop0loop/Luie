@@ -147,8 +147,8 @@ class StartupReadinessService {
     try {
       const cacheDb = await loadCacheDb();
       await Promise.all([db.initialize(), cacheDb.initialize()]);
-      db.getClient();
-      cacheDb.getClient();
+      db.getDrizzleClient();
+      cacheDb.getDrizzleClient();
       return buildCheck("sqliteConnect", true, "SQLite connection ready");
     } catch (error) {
       return buildCheck("sqliteConnect", false, this.toErrorMessage(error));

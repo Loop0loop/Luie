@@ -2,7 +2,9 @@
  * Search service - 통합 검색 (고유명사 우선)
  */
 
+import { and, desc, eq, isNull, like, or } from "drizzle-orm";
 import { db } from "../../database/index.js";
+import { character, term } from "../../database/schema.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import type { SearchQuery } from "../../../shared/types/index.js";
@@ -27,17 +29,25 @@ export class SearchService {
       const results: SearchResult[] = [];
 
       if (input.type === "all" || input.type === "character") {
-        const characters = (await db.getClient().character.findMany({
-          where: {
-            projectId: input.projectId,
-            deletedAt: null,
-            OR: [
-              { name: { contains: input.query } },
-              { description: { contains: input.query } },
-            ],
-          },
-          take: 10,
-        })) as Array<{ id: string; name: string; description?: string | null }>;
+        const characters = await db
+          .getDrizzleClient()
+          .select({
+            id: character.id,
+            name: character.name,
+            description: character.description,
+          })
+          .from(character)
+          .where(
+            and(
+              eq(character.projectId, input.projectId),
+              isNull(character.deletedAt),
+              or(
+                like(character.name, `%${input.query}%`),
+                like(character.description ?? "", `%${input.query}%`),
+              ),
+            ),
+          )
+          .limit(10);
 
         characters.forEach((char) => {
           results.push({
@@ -53,31 +63,35 @@ export class SearchService {
       }
 
       if (input.type === "all" || input.type === "term") {
-        const terms = (await db.getClient().term.findMany({
-          where: {
-            projectId: input.projectId,
-            deletedAt: null,
-            OR: [
-              { term: { contains: input.query } },
-              { definition: { contains: input.query } },
-            ],
-          },
-          take: 10,
-        })) as Array<{
-          id: string;
-          term: string;
-          definition?: string | null;
-          category?: string | null;
-        }>;
+        const terms = await db
+          .getDrizzleClient()
+          .select({
+            id: term.id,
+            term: term.term,
+            definition: term.definition,
+            category: term.category,
+          })
+          .from(term)
+          .where(
+            and(
+              eq(term.projectId, input.projectId),
+              isNull(term.deletedAt),
+              or(
+                like(term.term, `%${input.query}%`),
+                like(term.definition ?? "", `%${input.query}%`),
+              ),
+            ),
+          )
+          .limit(10);
 
-        terms.forEach((term) => {
+        terms.forEach((t) => {
           results.push({
             type: "term",
-            id: term.id,
-            title: term.term,
-            description: term.definition ?? undefined,
+            id: t.id,
+            title: t.term,
+            description: t.definition ?? undefined,
             metadata: {
-              category: term.category ?? undefined,
+              category: t.category ?? undefined,
             },
           });
         });
@@ -146,24 +160,35 @@ export class SearchService {
 
   async getQuickAccess(projectId: string) {
     try {
-      const recentTerms = (await db.getClient().term.findMany({
-        where: { projectId, deletedAt: null },
-        orderBy: { createdAt: "desc" },
-        take: 5,
-      })) as Array<{ id: string; term: string; definition?: string | null }>;
+      const client = db.getDrizzleClient();
+      const recentTerms = await client
+        .select({
+          id: term.id,
+          term: term.term,
+          definition: term.definition,
+        })
+        .from(term)
+        .where(and(eq(term.projectId, projectId), isNull(term.deletedAt)))
+        .orderBy(desc(term.createdAt))
+        .limit(5);
 
-      const recentCharacters = (await db.getClient().character.findMany({
-        where: { projectId, deletedAt: null },
-        orderBy: { createdAt: "desc" },
-        take: 5,
-      })) as Array<{ id: string; name: string; description?: string | null }>;
+      const recentCharacters = await client
+        .select({
+          id: character.id,
+          name: character.name,
+          description: character.description,
+        })
+        .from(character)
+        .where(and(eq(character.projectId, projectId), isNull(character.deletedAt)))
+        .orderBy(desc(character.createdAt))
+        .limit(5);
 
       const results: SearchResult[] = [
-        ...recentTerms.map((term) => ({
+        ...recentTerms.map((t) => ({
           type: "term" as const,
-          id: term.id,
-          title: term.term,
-          description: term.definition ?? undefined,
+          id: t.id,
+          title: t.term,
+          description: t.definition ?? undefined,
         })),
         ...recentCharacters.map((char) => ({
           type: "character" as const,

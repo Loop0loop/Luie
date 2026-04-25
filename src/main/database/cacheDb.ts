@@ -104,6 +104,7 @@ class CacheDatabaseService {
     this.drizzleHandle = this.createDrizzleClient(context);
     this.prisma = this.createPrismaClient(context);
 
+    // TODO: Remove this Prisma-based WAL block in Phase 7
     try {
       await this.prisma.$executeRawUnsafe("PRAGMA journal_mode=WAL;");
       await this.prisma.$executeRawUnsafe("PRAGMA synchronous=FULL;");
@@ -127,6 +128,7 @@ class CacheDatabaseService {
     return { sqlite, client };
   }
 
+  // TODO: Remove in Phase 7 — Prisma client creation replaced by Drizzle
   private createPrismaClient(
     context: PreparedCacheDatabaseContext,
   ): CachePrismaClient {
@@ -286,6 +288,10 @@ class CacheDatabaseService {
     return this.prisma;
   }
 
+  /**
+   * Returns the Drizzle ORM client for the cache database.
+   * @deprecated Phase 7: getClient() will also return Drizzle.
+   */
   getDrizzleClient(): CacheDrizzleClient {
     if (!this.drizzleHandle) {
       throw new Error("Cache database is not initialized. Call cacheDb.initialize() first.");
@@ -311,6 +317,7 @@ class CacheDatabaseService {
     if (!this.prisma && !this.drizzleHandle) return;
 
     if (this.prisma) {
+      // TODO: Remove Prisma disconnect in Phase 7
       await this.prisma.$disconnect();
     }
     this.prisma = null;
