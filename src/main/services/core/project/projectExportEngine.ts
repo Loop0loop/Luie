@@ -42,6 +42,16 @@ import {
   buildWorldSynopsis,
 } from "./projectExportPayload.js";
 import {
+  toChapterExportDto,
+  toCharacterExportDto,
+  toEntityRelationExportDto,
+  toEventExportDto,
+  toFactionExportDto,
+  toSnapshotExportDto,
+  toTermExportDto,
+  toWorldEntityExportDto,
+} from "./projectExportMapper.js";
+import {
   LuieWorldDrawingSchema,
   LuieWorldGraphSchema,
   LuieWorldMindmapSchema,
@@ -158,7 +168,7 @@ const getProjectForExport = async (projectId: string): Promise<ProjectExportReco
     store
       .select()
       .from(worldEntity)
-      .where(eq(worldEntity.projectId, projectId)),
+      .where(and(eq(worldEntity.projectId, projectId), isNull(worldEntity.deletedAt))),
     store
       .select()
       .from(entityRelation)
@@ -170,9 +180,6 @@ const getProjectForExport = async (projectId: string): Promise<ProjectExportReco
       .orderBy(desc(snapshot.createdAt)),
   ]);
 
-  // TODO(Phase 4-prep): Replace Prisma-shaped ProjectExportRecord with ORM-independent Export DTO.
-  // Current cast is temporary during Prisma→Drizzle dual mode.
-  // See src/shared/types/index.ts ProjectExportRecord — needs ORM-independent DTO with mapper functions.
   return {
     id: proj.id,
     title: proj.title,
@@ -180,14 +187,14 @@ const getProjectForExport = async (projectId: string): Promise<ProjectExportReco
     createdAt: new Date(proj.createdAt),
     updatedAt: new Date(proj.updatedAt),
     projectPath: proj.projectPath ?? null,
-    chapters: chapters as unknown as ProjectExportRecord["chapters"],
-    characters: characters as unknown as ProjectExportRecord["characters"],
-    terms: terms as unknown as ProjectExportRecord["terms"],
-    events: eventsRows as unknown as ProjectExportRecord["events"],
-    factions: factionsRows as unknown as ProjectExportRecord["factions"],
-    worldEntities: worldEntitiesRows as unknown as ProjectExportRecord["worldEntities"],
-    entityRelations: entityRelationsRows as unknown as ProjectExportRecord["entityRelations"],
-    snapshots: snapshotsRows as unknown as ProjectExportRecord["snapshots"],
+    chapters: chapters.map(toChapterExportDto),
+    characters: characters.map(toCharacterExportDto),
+    terms: terms.map(toTermExportDto),
+    events: eventsRows.map(toEventExportDto),
+    factions: factionsRows.map(toFactionExportDto),
+    worldEntities: worldEntitiesRows.map(toWorldEntityExportDto),
+    entityRelations: entityRelationsRows.map(toEntityRelationExportDto),
+    snapshots: snapshotsRows.map(toSnapshotExportDto),
   };
 };
 

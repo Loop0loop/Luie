@@ -2,7 +2,6 @@ import { eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { db } from "../../../database/index.js";
 import * as schema from "../../../database/schema.js";
-import type { MainDrizzleClient } from "../../../database/databaseTypes.js";
 import { DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS } from "../../../../shared/constants/index.js";
 import { WORLD_SCRAP_MEMOS_SCHEMA_VERSION } from "../../../../shared/constants/persistence.js";
 import { normalizeWorldScrapPayload } from "../../../../shared/world/worldDocumentCodec.js";
@@ -341,9 +340,7 @@ export const applyProjectImportTransaction = async (
     if (importedScrapState.memoRows.length > 0) {
       await tx.insert(scrapMemo).values(importedScrapState.memoRows);
     }
-    // TODO(Phase 4-prep): Widen setProjectAttachmentPath client parameter type to accept
-    // transaction type (DbLike pattern) instead of casting tx as unknown as MainDrizzleClient.
-    await setProjectAttachmentPath(resolvedProjectId, resolvedPath, tx as unknown as MainDrizzleClient);
+    await setProjectAttachmentPath(resolvedProjectId, resolvedPath, tx);
     return createdProject;
   });
 

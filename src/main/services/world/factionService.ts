@@ -90,7 +90,7 @@ export class FactionService {
         } catch (error) {
             logger.error("Failed to get all factions", error);
             throw new ServiceError(
-                ErrorCode.FACTION_NOT_FOUND,
+                ErrorCode.DB_QUERY_FAILED,
                 "Failed to get all factions",
                 { projectId },
                 error,

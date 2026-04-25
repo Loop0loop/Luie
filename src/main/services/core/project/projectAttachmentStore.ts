@@ -2,7 +2,7 @@ import path from "node:path";
 import { eq, inArray } from "drizzle-orm";
 import { db } from "../../../database/index.js";
 import * as schema from "../../../database/schema.js";
-import type { MainDrizzleClient } from "../../../database/databaseTypes.js";
+import type { MainDrizzleClient, DbLike } from "../../../database/databaseTypes.js";
 import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
 
 const { project, projectAttachment } = schema;
@@ -71,14 +71,14 @@ const getAttachmentPathMap = async (
 
 const clearLegacyProjectPathIfPresent = async (
   projectId: string,
-  client?: MainDrizzleClient,
+  client?: DbLike,
 ): Promise<void> => {
-  const currentLegacyPath = await getLegacyProjectAttachmentPath(projectId, client);
+  const currentLegacyPath = await getLegacyProjectAttachmentPath(projectId, client as MainDrizzleClient);
   if (currentLegacyPath === null) {
     return;
   }
 
-  await getClient(client)
+  await (client ?? db.getDrizzleClient())
     .update(project)
     .set({ projectPath: null })
     .where(eq(project.id, projectId));
@@ -209,9 +209,9 @@ export const migrateLegacyProjectAttachments = async (
 export const setProjectAttachmentPath = async (
   projectId: string,
   projectPath: string | null,
-  client?: MainDrizzleClient,
+  client?: DbLike,
 ): Promise<void> => {
-  const store = getClient(client);
+  const store = client ?? db.getDrizzleClient();
   const normalizedProjectPath = toNullableString(projectPath);
 
   if (normalizedProjectPath) {

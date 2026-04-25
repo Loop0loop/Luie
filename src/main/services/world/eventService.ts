@@ -90,7 +90,7 @@ export class EventService {
         } catch (error) {
             logger.error("Failed to get all events", error);
             throw new ServiceError(
-                ErrorCode.EVENT_NOT_FOUND,
+                ErrorCode.DB_QUERY_FAILED,
                 "Failed to get all events",
                 { projectId },
                 error,
