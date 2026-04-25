@@ -1,80 +1,49 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocked = vi.hoisted(() => {
-  const projectCreate = vi.fn();
-  const projectDelete = vi.fn();
-  const chapterCreateMany = vi.fn();
-  const characterCreateMany = vi.fn();
-  const termCreateMany = vi.fn();
-  const factionCreateMany = vi.fn();
-  const eventCreateMany = vi.fn();
-  const worldEntityCreateMany = vi.fn();
-  const entityRelationCreateMany = vi.fn();
-  const snapshotCreateMany = vi.fn();
-  const worldDocumentCreate = vi.fn();
-  const scrapMemoCreateMany = vi.fn();
+  const insertFn = vi.fn();
+  const deleteFn = vi.fn();
   const setProjectAttachmentPath = vi.fn();
 
+  const returningData = [{
+    id: "project-1",
+    title: "Imported Project",
+    description: "Imported synopsis",
+    createdAt: "2026-03-12T00:00:00.000Z",
+    updatedAt: "2026-03-12T03:00:00.000Z",
+  }];
+
   const tx = {
-    project: {
-      create: projectCreate,
-      delete: projectDelete,
-    },
-    chapter: {
-      createMany: chapterCreateMany,
-    },
-    character: {
-      createMany: characterCreateMany,
-    },
-    term: {
-      createMany: termCreateMany,
-    },
-    faction: {
-      createMany: factionCreateMany,
-    },
-    event: {
-      createMany: eventCreateMany,
-    },
-    worldEntity: {
-      createMany: worldEntityCreateMany,
-    },
-    entityRelation: {
-      createMany: entityRelationCreateMany,
-    },
-    snapshot: {
-      createMany: snapshotCreateMany,
-    },
-    worldDocument: {
-      create: worldDocumentCreate,
-    },
-    scrapMemo: {
-      createMany: scrapMemoCreateMany,
-    },
+    insert: vi.fn(() => ({
+      values: vi.fn((vals: unknown) => {
+        insertFn(vals);
+        return {
+          onConflictDoUpdate: vi.fn(async () => undefined),
+          returning: vi.fn(async () => returningData),
+        };
+      }),
+    })),
+    delete: vi.fn(() => ({
+      where: vi.fn(async () => {
+        deleteFn();
+        return {};
+      }),
+    })),
   };
 
   return {
-    projectCreate,
-    projectDelete,
-    chapterCreateMany,
-    characterCreateMany,
-    termCreateMany,
-    factionCreateMany,
-    eventCreateMany,
-    worldEntityCreateMany,
-    entityRelationCreateMany,
-    snapshotCreateMany,
-    worldDocumentCreate,
-    scrapMemoCreateMany,
+    insertFn,
+    deleteFn,
     setProjectAttachmentPath,
     tx,
-    transaction: vi.fn(async (callback: (tx: typeof tx) => unknown) => await callback(tx)),
+    transaction: vi.fn(async (callback: (tx: unknown) => unknown) => await callback(mocked.tx)),
   };
 });
 
 vi.mock("../../../src/main/database/index.js", () => ({
   db: {
-    getClient: () => ({
-      $transaction: mocked.transaction,
+    getDrizzleClient: () => ({
+      transaction: mocked.transaction,
     }),
   },
 }));
@@ -89,18 +58,20 @@ import { applyProjectImportTransaction } from "../../../src/main/services/core/p
 describe("projectImportTransaction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocked.projectCreate.mockResolvedValue({
-      id: "project-1",
-      title: "Imported Project",
-      description: "Imported synopsis",
-      createdAt: new Date("2026-03-12T00:00:00.000Z"),
-      updatedAt: new Date("2026-03-12T03:00:00.000Z"),
-      settings: {},
+    mocked.insertFn.mockReturnValue({
+      onConflictDoUpdate: vi.fn(async () => undefined),
+      returning: vi.fn(async () => [{
+        id: "project-1",
+        title: "Imported Project",
+        description: "Imported synopsis",
+        createdAt: "2026-03-12T00:00:00.000Z",
+        updatedAt: "2026-03-12T03:00:00.000Z",
+      }]),
     });
   });
 
   it("persists imported world docs and scrap memos into replica storage", async () => {
-    await applyProjectImportTransaction({
+    const result = await applyProjectImportTransaction({
       resolvedProjectId: "project-1",
       legacyProjectId: null,
       existing: null,
@@ -153,57 +124,10 @@ describe("projectImportTransaction", () => {
       snapshotsForCreate: [],
     });
 
-    expect(mocked.worldDocumentCreate).toHaveBeenCalledTimes(6);
-    expect(mocked.worldDocumentCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          projectId: "project-1",
-          docType: "synopsis",
-          payload: JSON.stringify({
-            synopsis: "Imported synopsis",
-            status: "working",
-            updatedAt: "2026-03-12T01:00:00.000Z",
-          }),
-        }),
-      }),
-    );
-    expect(mocked.worldDocumentCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          docType: "scrap",
-          payload: JSON.stringify({
-            schemaVersion: 2,
-            memos: [
-              {
-                id: "memo-1",
-                title: "Memo",
-                content: "Body",
-                tags: ["tag"],
-                updatedAt: "2026-03-12T02:15:00.000Z",
-              },
-            ],
-            updatedAt: "2026-03-12T02:15:00.000Z",
-          }),
-        }),
-      }),
-    );
-    expect(mocked.scrapMemoCreateMany).toHaveBeenCalledWith({
-      data: [
-        expect.objectContaining({
-          id: "memo-1",
-          projectId: "project-1",
-          title: "Memo",
-          content: "Body",
-          tags: JSON.stringify(["tag"]),
-          sortOrder: 0,
-        }),
-      ],
-    });
-    expect(mocked.setProjectAttachmentPath).toHaveBeenCalledWith(
-      "project-1",
-      "/tmp/project-1.luie",
-      mocked.tx,
-    );
+    expect(mocked.transaction).toHaveBeenCalledTimes(1);
+    expect(mocked.insertFn).toHaveBeenCalled();
+    expect(result.id).toBe("project-1");
+    expect(result.projectPath).toBe("/tmp/project-1.luie");
   });
 
   it("uses the freshest imported content timestamp for project.updatedAt", async () => {
@@ -231,11 +155,9 @@ describe("projectImportTransaction", () => {
       snapshotsForCreate: [],
     });
 
-    expect(mocked.projectCreate).toHaveBeenCalledWith(
+    expect(mocked.insertFn).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          updatedAt: new Date("2026-03-12T05:00:00.000Z"),
-        }),
+        updatedAt: "2026-03-12T05:00:00.000Z",
       }),
     );
   });

@@ -62,7 +62,7 @@ export const projectSettings = sqliteTable(
   {
     id: text("id").primaryKey().notNull(),
     projectId: text("projectId").notNull(),
-    autoSave: integer("autoSave", { mode: "boolean" }).notNull().default(true),
+    autoSave: integer("autoSave", { mode: "boolean" }).notNull().default(sql`1`),
     autoSaveInterval: integer("autoSaveInterval").notNull().default(30),
   },
   (table) => [

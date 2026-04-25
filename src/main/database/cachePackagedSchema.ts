@@ -1,3 +1,4 @@
+// TODO: Remove in Phase 7 — replaced by Drizzle migrations in drizzle/cache/
 export const CACHE_PACKAGED_SCHEMA_REQUIRED_TABLES = [
   "CharacterAppearance",
   "TermAppearance",

@@ -1,5 +1,8 @@
-import type { Prisma } from "@prisma/client";
+import { eq } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
 import { db } from "../../../database/index.js";
+import * as schema from "../../../database/schema.js";
+import type { MainDrizzleClient } from "../../../database/databaseTypes.js";
 import { DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS } from "../../../../shared/constants/index.js";
 import { WORLD_SCRAP_MEMOS_SCHEMA_VERSION } from "../../../../shared/constants/persistence.js";
 import { normalizeWorldScrapPayload } from "../../../../shared/world/worldDocumentCodec.js";
@@ -15,6 +18,8 @@ import type {
   WorldEntityCreateRow,
 } from "./projectImportCodec.js";
 import { setProjectAttachmentPath } from "./projectAttachmentStore.js";
+
+const { project, projectSettings, chapter, character, term, faction, event, worldEntity, entityRelation, snapshot: snapshotTable, worldDocument: worldDocumentTable, scrapMemo } = schema;
 
 type ExistingProjectLookup = { id: string; updatedAt: Date } | null;
 
@@ -99,8 +104,8 @@ const resolveImportedAt = (input: {
   collectPayloadUpdatedAt(input.worldScrapMemos);
   collectPayloadUpdatedAt(input.worldGraph);
 
-  for (const snapshot of input.snapshotsForCreate) {
-    latestTimestamp = Math.max(latestTimestamp, snapshot.createdAt.getTime());
+  for (const snap of input.snapshotsForCreate) {
+    latestTimestamp = Math.max(latestTimestamp, snap.createdAt.getTime());
   }
 
   return new Date(latestTimestamp);
@@ -120,8 +125,8 @@ const buildImportedWorldDocumentRows = (input: {
     projectId: string;
     docType: ReplicaWorldDocumentType;
     payload: string;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
   }> = [];
 
   const pushDocument = (
@@ -133,13 +138,13 @@ const buildImportedWorldDocumentRows = (input: {
       projectId: input.projectId,
       docType,
       payload: toJsonString(payload),
-      createdAt: input.importedAt,
+      createdAt: input.importedAt.toISOString(),
       updatedAt: parseDateInput(
         typeof payload === "object" && payload !== null
           ? (payload as Record<string, unknown>).updatedAt
           : undefined,
         input.importedAt,
-      ),
+      ).toISOString(),
     });
   };
 
@@ -181,8 +186,8 @@ const buildImportedScrapMemoState = (
       content: memo.content,
       tags: JSON.stringify(memo.tags),
       sortOrder: index,
-      createdAt: importedAt,
-      updatedAt: parseDateInput(memo.updatedAt, importedAt),
+      createdAt: importedAt.toISOString(),
+      updatedAt: parseDateInput(memo.updatedAt, importedAt).toISOString(),
     })),
   };
 };
@@ -244,85 +249,104 @@ export const applyProjectImportTransaction = async (
     worldGraph,
   });
 
-  const project = (await db.getClient().$transaction(async (
-    tx: Prisma.TransactionClient,
-  ) => {
+  const result = await db.getDrizzleClient().transaction(async (tx) => {
     if (legacyProjectId) {
-      await tx.project.delete({ where: { id: legacyProjectId } });
+      await tx.delete(project).where(eq(project.id, legacyProjectId));
     }
 
     if (existing) {
-      await tx.project.delete({ where: { id: resolvedProjectId } });
+      await tx.delete(project).where(eq(project.id, resolvedProjectId));
     }
 
-    const project = await tx.project.create({
-      data: {
-        id: resolvedProjectId,
-        title: meta.title ?? "Recovered Project",
-        description:
-          (typeof meta.description === "string" ? meta.description : undefined) ??
-          importedSynopsisText ??
-          undefined,
-        createdAt: meta.createdAt ? new Date(meta.createdAt) : undefined,
-        updatedAt: importedAt,
-        settings: {
-          create: {
-            autoSave: true,
-            autoSaveInterval: DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
-          },
-        },
-      },
-      include: { settings: true },
+    const now = importedAt.toISOString();
+    const projectRows = await tx.insert(project).values({
+      id: resolvedProjectId,
+      title: meta.title ?? "Recovered Project",
+      description:
+        (typeof meta.description === "string" ? meta.description : undefined) ??
+        importedSynopsisText ??
+        undefined,
+      createdAt: meta.createdAt ? new Date(meta.createdAt).toISOString() : now,
+      updatedAt: now,
+    }).returning();
+
+    const createdProject = projectRows[0];
+
+    await tx.insert(projectSettings).values({
+      id: resolvedProjectId,
+      projectId: resolvedProjectId,
+      autoSave: true,
+      autoSaveInterval: DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
     });
 
     if (chaptersForCreate.length > 0) {
-      await tx.chapter.createMany({ data: chaptersForCreate });
+      await tx.insert(chapter).values(chaptersForCreate.map((c) => ({
+        ...c,
+        createdAt: now,
+        updatedAt: now,
+      })));
     }
     if (charactersForCreate.length > 0) {
-      await tx.character.createMany({ data: charactersForCreate });
+      await tx.insert(character).values(charactersForCreate.map((c) => ({
+        ...c,
+        createdAt: now,
+        updatedAt: now,
+      })));
     }
     if (termsForCreate.length > 0) {
-      await tx.term.createMany({ data: termsForCreate });
+      await tx.insert(term).values(termsForCreate.map((t) => ({
+        ...t,
+        createdAt: now,
+        updatedAt: now,
+        order: 0,
+      })));
     }
     if (factionsForCreate.length > 0) {
-      await tx.faction.createMany({ data: factionsForCreate });
+      await tx.insert(faction).values(factionsForCreate.map((f) => ({
+        ...f,
+        createdAt: now,
+        updatedAt: now,
+      })));
     }
     if (eventsForCreate.length > 0) {
-      await tx.event.createMany({ data: eventsForCreate });
+      await tx.insert(event).values(eventsForCreate.map((e) => ({
+        ...e,
+        createdAt: now,
+        updatedAt: now,
+      })));
     }
     if (worldEntitiesForCreate.length > 0) {
-      await tx.worldEntity.createMany({ data: worldEntitiesForCreate });
+      await tx.insert(worldEntity).values(worldEntitiesForCreate.map((w) => ({
+        ...w,
+        createdAt: now,
+        updatedAt: now,
+      })));
     }
     if (relationsForCreate.length > 0) {
-      await tx.entityRelation.createMany({ data: relationsForCreate });
+      await tx.insert(entityRelation).values(relationsForCreate.map((r) => ({
+        ...r,
+        createdAt: now,
+        updatedAt: now,
+      })));
     }
     if (snapshotsForCreate.length > 0) {
-      await tx.snapshot.createMany({ data: snapshotsForCreate });
+      await tx.insert(snapshotTable).values(snapshotsForCreate.map((s) => ({
+        ...s,
+        createdAt: s.createdAt.toISOString(),
+      })));
     }
-    for (const worldDocument of worldDocumentsForCreate) {
-      await tx.worldDocument.create({
-        data: worldDocument,
-      });
+    for (const wd of worldDocumentsForCreate) {
+      await tx.insert(worldDocumentTable).values({ ...wd, id: randomUUID() });
     }
     if (importedScrapState.memoRows.length > 0) {
-      await tx.scrapMemo.createMany({
-        data: importedScrapState.memoRows,
-      });
+      await tx.insert(scrapMemo).values(importedScrapState.memoRows);
     }
-    await setProjectAttachmentPath(resolvedProjectId, resolvedPath, tx);
-    return project;
-  })) as {
-    id: string;
-    title: string;
-    description?: string | null;
-    projectPath?: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-    settings?: unknown;
-  };
+    await setProjectAttachmentPath(resolvedProjectId, resolvedPath, tx as unknown as MainDrizzleClient);
+    return createdProject;
+  });
 
   return {
-    ...project,
+    ...result,
     projectPath: resolvedPath,
   };
 };

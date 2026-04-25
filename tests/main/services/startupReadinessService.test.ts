@@ -41,6 +41,11 @@ vi.mock("../../../src/main/database/index.js", () => ({
     getClient: () => ({
       $executeRawUnsafe: () => mocked.executeRaw(),
     }),
+    getDrizzleClient: () => ({
+      select: vi.fn(() => ({
+        from: vi.fn(() => Promise.resolve([{ value: 0 }])),
+      })),
+    }),
   },
 }));
 
@@ -50,6 +55,7 @@ vi.mock("../../../src/main/database/cacheDb.js", () => ({
     getClient: () => ({
       $executeRawUnsafe: () => mocked.executeRaw(),
     }),
+    getDrizzleClient: () => ({}),
   },
 }));
 

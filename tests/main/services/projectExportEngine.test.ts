@@ -22,11 +22,36 @@ vi.mock("../../../src/main/database/index.js", () => ({
   db: {
     initialize: vi.fn(async () => undefined),
     disconnect: vi.fn(async () => undefined),
-    getClient: () => ({
-      project: {
-        findUnique: mocked.projectFindUnique,
-      },
-    }),
+    getDrizzleClient: () => {
+      const projectData = mocked.projectFindUnique();
+      let queryIndex = 0;
+      const makeTerminal = (result: unknown) =>
+        Object.assign(Promise.resolve(result), {
+          select: vi.fn(() => makeTerminal([])),
+          from: vi.fn(() => makeTerminal([])),
+          where: vi.fn(() => makeTerminal([])),
+          orderBy: vi.fn(() => makeTerminal([])),
+          limit: vi.fn(() => makeTerminal([])),
+        });
+      return {
+        select: vi.fn(() => ({
+          from: vi.fn(() => ({
+            where: vi.fn(() => {
+              queryIndex++;
+              if (queryIndex === 1) {
+                return makeTerminal([projectData]);
+              }
+              if (queryIndex === 2) {
+                return Object.assign(Promise.resolve(projectData.chapters ?? []), {
+                  orderBy: vi.fn(() => Promise.resolve(projectData.chapters ?? [])),
+                });
+              }
+              return makeTerminal([]);
+            }),
+          })),
+        })),
+      };
+    },
   },
 }));
 
@@ -127,6 +152,7 @@ describe("projectExportEngine", () => {
     const logger = {
       info: vi.fn(),
       warn: vi.fn(),
+      error: vi.fn(),
     };
 
     const exported = await exportProjectPackageWithOptions({
@@ -165,6 +191,7 @@ describe("projectExportEngine", () => {
     const logger = {
       info: vi.fn(),
       warn: vi.fn(),
+      error: vi.fn(),
     };
 
     const exported = await exportProjectPackageWithOptions({
@@ -217,6 +244,7 @@ describe("projectExportEngine", () => {
     const logger = {
       info: vi.fn(),
       warn: vi.fn(),
+      error: vi.fn(),
     };
 
     await exportProjectPackageWithOptions({
@@ -300,6 +328,7 @@ describe("projectExportEngine", () => {
     const logger = {
       info: vi.fn(),
       warn: vi.fn(),
+      error: vi.fn(),
     };
 
     await exportProjectPackageWithOptions({

@@ -6,11 +6,13 @@ import { describe, it, expect, vi, beforeAll } from "vitest";
 import path from "node:path";
 import { promises as fs } from "node:fs";
 import { app } from "electron";
+import { eq } from "drizzle-orm";
 import {
   ProjectService,
   projectService,
 } from "../../../src/main/services/core/projectService.js";
 import { db } from "../../../src/main/database/index.js";
+import * as schema from "../../../src/main/database/schema.js";
 import { ErrorCode } from "../../../src/shared/constants/errorCode.js";
 import {
   probeLuieContainer,
@@ -56,22 +58,24 @@ describe("ProjectService", () => {
     ).rejects.toBeDefined();
   });
 
-  it("reuses prisma client (db cache)", async () => {
-    const clientA = db.getClient();
-    const clientB = db.getClient();
+  it("reuses drizzle client (db cache)", async () => {
+    const clientA = db.getDrizzleClient();
+    const clientB = db.getDrizzleClient();
     expect(clientA).toBe(clientB);
   });
 
-  it("reinitializes prisma client after disconnect", async () => {
-    const clientBeforeDisconnect = db.getClient();
+  it("reinitializes drizzle client after disconnect", async () => {
+    const clientBeforeDisconnect = db.getDrizzleClient();
 
     await db.disconnect();
     await db.initialize();
 
-    const clientAfterReconnect = db.getClient();
+    const clientAfterReconnect = db.getDrizzleClient();
     expect(clientAfterReconnect).not.toBe(clientBeforeDisconnect);
-    const projectCount = await clientAfterReconnect.project.count();
-    expect(typeof projectCount).toBe("number");
+    const projectCount = await clientAfterReconnect
+      .select({ id: schema.project.id })
+      .from(schema.project);
+    expect(typeof projectCount.length).toBe("number");
   });
 
   it("recovers .luie from db when package is corrupted", async () => {
@@ -89,7 +93,7 @@ describe("ProjectService", () => {
 
     const result = await localProjectService.openLuieProject(projectPath);
     expect(result.recovery).toBe(true);
-    expect(result.project.id).toBe(created.id);
+    expect((result.project as { id: string }).id).toBe(created.id);
   });
 
   it("fails open when a legacy .luie directory package is attached without deleting existing db data", async () => {
@@ -107,12 +111,12 @@ describe("ProjectService", () => {
     const projectId = String(created.id);
 
     const protectedCharacterId = `protected-char-${Date.now()}`;
-    await db.getClient().character.create({
-      data: {
-        id: protectedCharacterId,
-        projectId,
-        name: "Protected Character",
-      },
+    await db.getDrizzleClient().insert(schema.character).values({
+      id: protectedCharacterId,
+      projectId,
+      name: "Protected Character",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
 
     await fs.mkdir(path.join(projectPath, "manuscript"), { recursive: true });
@@ -176,11 +180,12 @@ describe("ProjectService", () => {
       localProjectService.openLuieProject(projectPath),
     ).rejects.toBeDefined();
 
-    const protectedCharacter = await db.getClient().character.findUnique({
-      where: { id: protectedCharacterId },
-      select: { id: true },
-    });
-    expect(protectedCharacter?.id).toBe(protectedCharacterId);
+    const protectedCharacter = await db.getDrizzleClient()
+      .select({ id: schema.character.id })
+      .from(schema.character)
+      .where(eq(schema.character.id, protectedCharacterId))
+      .limit(1);
+    expect(protectedCharacter[0]?.id).toBe(protectedCharacterId);
 
     await localProjectService.deleteProject(projectId);
     await fs.rm(projectPath, { recursive: true, force: true });
@@ -309,18 +314,20 @@ describe("ProjectService", () => {
       projectPath: validPath,
     });
 
-    await db.getClient().project.update({
-      where: { id: created.id as string },
-      data: { projectPath: null },
-    });
-    await db.getClient().projectAttachment.upsert({
-      where: { projectId: created.id as string },
-      create: {
-        projectId: created.id as string,
+    await db.getDrizzleClient()
+      .update(schema.project)
+      .set({ projectPath: null })
+      .where(eq(schema.project.id, created.id as string));
+    const now1 = new Date().toISOString();
+    await db.getDrizzleClient().insert(schema.projectAttachment).values({
+      projectId: created.id as string,
+      projectPath: "relative/unsafe.luie",
+      updatedAt: now1,
+    }).onConflictDoUpdate({
+      target: schema.projectAttachment.projectId,
+      set: {
         projectPath: "relative/unsafe.luie",
-      },
-      update: {
-        projectPath: "relative/unsafe.luie",
+        updatedAt: now1,
       },
     });
 
@@ -342,18 +349,20 @@ describe("ProjectService", () => {
       projectPath: validPath,
     });
 
-    await db.getClient().project.update({
-      where: { id: created.id as string },
-      data: { projectPath: null },
-    });
-    await db.getClient().projectAttachment.upsert({
-      where: { projectId: created.id as string },
-      create: {
-        projectId: created.id as string,
+    await db.getDrizzleClient()
+      .update(schema.project)
+      .set({ projectPath: null })
+      .where(eq(schema.project.id, created.id as string));
+    const now2 = new Date().toISOString();
+    await db.getDrizzleClient().insert(schema.projectAttachment).values({
+      projectId: created.id as string,
+      projectPath: "relative/unsafe.luie",
+      updatedAt: now2,
+    }).onConflictDoUpdate({
+      target: schema.projectAttachment.projectId,
+      set: {
         projectPath: "relative/unsafe.luie",
-      },
-      update: {
-        projectPath: "relative/unsafe.luie",
+        updatedAt: now2,
       },
     });
 
@@ -399,25 +408,28 @@ describe("ProjectService", () => {
       projectPath: path.join(app.getPath("userData"), "duplicate-path-c.luie"),
     });
 
-    await db.getClient().projectAttachment.deleteMany({
-      where: {
-        projectId: {
-          in: [String(first.id), String(second.id), String(third.id)],
-        },
-      },
-    });
-    await db.getClient().project.update({
-      where: { id: String(first.id) },
-      data: { projectPath: sharedPath },
-    });
-    await db.getClient().project.update({
-      where: { id: String(second.id) },
-      data: { projectPath: sharedPath },
-    });
-    await db.getClient().project.update({
-      where: { id: String(third.id) },
-      data: { projectPath: sharedPath },
-    });
+    await db.getDrizzleClient()
+      .delete(schema.projectAttachment)
+      .where(eq(schema.projectAttachment.projectId, String(first.id)));
+    await db.getDrizzleClient()
+      .delete(schema.projectAttachment)
+      .where(eq(schema.projectAttachment.projectId, String(second.id)));
+    await db.getDrizzleClient()
+      .delete(schema.projectAttachment)
+      .where(eq(schema.projectAttachment.projectId, String(third.id)));
+    const now3 = new Date().toISOString();
+    await db.getDrizzleClient()
+      .update(schema.project)
+      .set({ projectPath: sharedPath, updatedAt: now3 })
+      .where(eq(schema.project.id, String(first.id)));
+    await db.getDrizzleClient()
+      .update(schema.project)
+      .set({ projectPath: sharedPath, updatedAt: now3 })
+      .where(eq(schema.project.id, String(second.id)));
+    await db.getDrizzleClient()
+      .update(schema.project)
+      .set({ projectPath: sharedPath, updatedAt: now3 })
+      .where(eq(schema.project.id, String(third.id)));
 
     const reconciliation =
       await localProjectService.reconcileProjectPathDuplicates();

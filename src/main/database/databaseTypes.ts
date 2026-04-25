@@ -1,4 +1,5 @@
 import type { PrismaClient as GeneratedPrismaClient } from "@prisma/client";
+// TODO: Remove in Phase 7 — Prisma types replaced by Drizzle types
 import type Database from "better-sqlite3";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as cacheSchema from "./cacheSchema.js";

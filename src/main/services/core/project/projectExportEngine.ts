@@ -1,5 +1,7 @@
+import { eq, and, isNull, asc, desc } from "drizzle-orm";
 import type { z } from "zod";
 import { db } from "../../../database/index.js";
+import * as schema from "../../../database/schema.js";
 import {
   LUIE_PACKAGE_EXTENSION,
   LUIE_WORLD_DIR,
@@ -47,6 +49,8 @@ import {
   LuieWorldScrapMemosSchema,
   LuieWorldSynopsisSchema,
 } from "./projectLuieSchemas.js";
+
+const { project, chapter, character, term, faction, event, worldEntity, entityRelation, snapshot } = schema;
 
 type LoggerLike = LuieWriterLogger & {
   info: (message: string, details?: unknown) => void;
@@ -109,19 +113,79 @@ const createEmptyParsedWorldPayload = (): ParsedWorldPayload => ({
 });
 
 const getProjectForExport = async (projectId: string): Promise<ProjectExportRecord | null> => {
-  return (await db.getClient().project.findUnique({
-    where: { id: projectId },
-    include: {
-      chapters: { where: { deletedAt: null }, orderBy: { order: "asc" } },
-      characters: { where: { deletedAt: null } },
-      terms: { where: { deletedAt: null } },
-      factions: { where: { deletedAt: null } },
-      events: { where: { deletedAt: null } },
-      worldEntities: true,
-      entityRelations: true,
-      snapshots: { orderBy: { createdAt: "desc" } },
-    },
-  })) as ProjectExportRecord | null;
+  const store = db.getDrizzleClient();
+
+  const projectRows = await store
+    .select()
+    .from(project)
+    .where(eq(project.id, projectId))
+    .limit(1);
+
+  if (projectRows.length === 0) return null;
+  const proj = projectRows[0];
+
+  const [
+    chapters,
+    characters,
+    terms,
+    factionsRows,
+    eventsRows,
+    worldEntitiesRows,
+    entityRelationsRows,
+    snapshotsRows,
+  ] = await Promise.all([
+    store
+      .select()
+      .from(chapter)
+      .where(and(eq(chapter.projectId, projectId), isNull(chapter.deletedAt)))
+      .orderBy(asc(chapter.order)),
+    store
+      .select()
+      .from(character)
+      .where(and(eq(character.projectId, projectId), isNull(character.deletedAt))),
+    store
+      .select()
+      .from(term)
+      .where(and(eq(term.projectId, projectId), isNull(term.deletedAt))),
+    store
+      .select()
+      .from(faction)
+      .where(and(eq(faction.projectId, projectId), isNull(faction.deletedAt))),
+    store
+      .select()
+      .from(event)
+      .where(and(eq(event.projectId, projectId), isNull(event.deletedAt))),
+    store
+      .select()
+      .from(worldEntity)
+      .where(eq(worldEntity.projectId, projectId)),
+    store
+      .select()
+      .from(entityRelation)
+      .where(eq(entityRelation.projectId, projectId)),
+    store
+      .select()
+      .from(snapshot)
+      .where(eq(snapshot.projectId, projectId))
+      .orderBy(desc(snapshot.createdAt)),
+  ]);
+
+  return {
+    id: proj.id,
+    title: proj.title,
+    description: proj.description,
+    createdAt: new Date(proj.createdAt),
+    updatedAt: new Date(proj.updatedAt),
+    projectPath: proj.projectPath ?? null,
+    chapters: chapters as unknown as ProjectExportRecord["chapters"],
+    characters: characters as unknown as ProjectExportRecord["characters"],
+    terms: terms as unknown as ProjectExportRecord["terms"],
+    events: eventsRows as unknown as ProjectExportRecord["events"],
+    factions: factionsRows as unknown as ProjectExportRecord["factions"],
+    worldEntities: worldEntitiesRows as unknown as ProjectExportRecord["worldEntities"],
+    entityRelations: entityRelationsRows as unknown as ProjectExportRecord["entityRelations"],
+    snapshots: snapshotsRows as unknown as ProjectExportRecord["snapshots"],
+  };
 };
 
 const resolveExportPath = (

@@ -1,6 +1,11 @@
+// TODO: Remove in Phase 7 — replaced by Drizzle migrate() baseline flow
 import { createRequire } from "node:module";
+import { createHash } from "node:crypto";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import {
-  CACHE_PACKAGED_SCHEMA_BOOTSTRAP_SQL,
   CACHE_PACKAGED_SCHEMA_COLUMN_PATCHES,
   CACHE_PACKAGED_SCHEMA_FTS_BOOTSTRAP_SQL,
   CACHE_PACKAGED_SCHEMA_OPTIONAL_FTS_COLUMNS,
@@ -9,6 +14,7 @@ import {
   CACHE_PACKAGED_SCHEMA_REQUIRED_COLUMNS,
   CACHE_PACKAGED_SCHEMA_REQUIRED_TABLES,
 } from "./cachePackagedSchema.js";
+import { resolveMigrationPathContext } from "./migrationPathResolver.js";
 
 const require = createRequire(import.meta.url);
 
@@ -20,13 +26,17 @@ type LoggerLike = {
 type SqliteStatementLike = {
   get: (params?: unknown) => unknown;
   all: (params?: unknown) => unknown[];
+  run?: (...params: unknown[]) => unknown;
 };
 
 type SqliteDatabaseLike = {
   exec: (sql: string) => void;
   prepare: (sql: string) => SqliteStatementLike;
   close: () => void;
+  pragma?: (sql: string) => unknown;
 };
+
+const DRIZZLE_MIGRATIONS_TABLE = "__drizzle_migrations";
 
 function openSqliteDatabase(dbPath: string): SqliteDatabaseLike {
   try {
@@ -37,6 +47,7 @@ function openSqliteDatabase(dbPath: string): SqliteDatabaseLike {
       prepare: (sql: string) => {
         get: (params?: unknown) => unknown;
         all: (params?: unknown) => unknown[];
+        run: (params?: unknown) => unknown;
       };
       close: () => void;
       pragma: (sql: string) => unknown;
@@ -46,6 +57,7 @@ function openSqliteDatabase(dbPath: string): SqliteDatabaseLike {
       exec: (sql) => database.exec(sql),
       prepare: (sql) => database.prepare(sql),
       close: () => database.close(),
+      pragma: (sql) => database.pragma(sql),
     };
   } catch {
     const { DatabaseSync } = require("node:sqlite") as {
@@ -64,6 +76,20 @@ function openSqliteDatabase(dbPath: string): SqliteDatabaseLike {
       prepare: (sql) => database.prepare(sql),
       close: () => database.close(),
     };
+  }
+}
+
+function openBetterSqlite3ForDrizzle(dbPath: string): {
+  database: unknown;
+  available: boolean;
+} {
+  try {
+    const BetterSqlite3Ctor = require("better-sqlite3") as new (
+      p: string,
+    ) => unknown;
+    return { database: new BetterSqlite3Ctor(dbPath), available: true };
+  } catch {
+    return { database: null, available: false };
   }
 }
 
@@ -93,6 +119,88 @@ function sqliteTableHasColumn(
     .prepare(`PRAGMA table_info("${escapedTableName}")`)
     .all() as Array<{ name?: string }>;
   return rows.some((row) => row.name === columnName);
+}
+
+function computeMigrationHash(sqlContent: string): string {
+  return createHash("sha256").update(sqlContent).digest("hex").slice(0, 16);
+}
+
+function markInitialMigrationAsApplied(
+  database: SqliteDatabaseLike,
+  migrationsFolder: string,
+  logger: LoggerLike,
+): void {
+  const journalPath = path.join(migrationsFolder, "meta", "_journal.json");
+  if (!fs.existsSync(journalPath)) {
+    logger.warn("Drizzle cache journal not found; skipping baseline migration marking", {
+      migrationsFolder,
+    });
+    return;
+  }
+
+  const journal = JSON.parse(
+    fs.readFileSync(journalPath, "utf-8"),
+  ) as {
+    entries: Array<{ idx: number; tag: string; version: string }>;
+  };
+
+  database.exec(
+    `CREATE TABLE IF NOT EXISTS "${DRIZZLE_MIGRATIONS_TABLE}" (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      hash TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );`,
+  );
+
+  const existingHashes = database
+    .prepare(`SELECT hash FROM "${DRIZZLE_MIGRATIONS_TABLE}"`)
+    .all() as Array<{ hash: string }>;
+  const existingHashSet = new Set(existingHashes.map((r) => r.hash));
+
+  let appliedCount = 0;
+  const insertStmt = database.prepare(
+    `INSERT INTO "${DRIZZLE_MIGRATIONS_TABLE}" (hash, created_at) VALUES (?, ?)`,
+  );
+
+  for (const entry of journal.entries) {
+    const migrationPath = path.join(migrationsFolder, `${entry.tag}.sql`);
+    if (!fs.existsSync(migrationPath)) continue;
+
+    const sqlContent = fs.readFileSync(migrationPath, "utf-8");
+    const hash = computeMigrationHash(sqlContent);
+
+    if (existingHashSet.has(hash)) continue;
+    if (!insertStmt.run) continue;
+
+    insertStmt.run(hash, new Date().toISOString());
+    appliedCount += 1;
+  }
+
+  logger.info("Marked initial Drizzle cache migrations as applied (baseline from Prisma)", {
+    migrationsFolder,
+    appliedCount,
+  });
+}
+
+function runDrizzleMigrate(
+  dbPath: string,
+  migrationsFolder: string,
+  logger: LoggerLike,
+): void {
+  const drizzleResult = openBetterSqlite3ForDrizzle(dbPath);
+  if (!drizzleResult.available) {
+    logger.warn("better-sqlite3 unavailable for cache Drizzle migrate; skipping", {
+      dbPath,
+    });
+    return;
+  }
+
+  try {
+    const drizzleDb = drizzle(drizzleResult.database as never);
+    migrate(drizzleDb, { migrationsFolder });
+  } finally {
+    (drizzleResult.database as { close: () => void }).close();
+  }
 }
 
 export function dropPackagedCacheOptionalFtsArtifacts(
@@ -125,7 +233,7 @@ export function dropPackagedCacheOptionalFtsArtifacts(
     }
 
     if (droppedTables.size > 0) {
-      logger.info("Dropped unmanaged cache FTS artifacts before Prisma schema push", {
+      logger.info("Dropped unmanaged cache FTS artifacts before Drizzle migration", {
         dbPath,
         droppedTables: Array.from(droppedTables),
       });
@@ -143,7 +251,18 @@ export function ensurePackagedCacheSqliteSchema(
 
   try {
     database.exec("PRAGMA journal_mode = WAL;");
-    database.exec(CACHE_PACKAGED_SCHEMA_BOOTSTRAP_SQL);
+
+    const ctx = resolveMigrationPathContext("cache");
+    const migrationsFolder = ctx.migrationsFolder;
+
+    const hasCacheTable = sqliteTableExists(database, "ChapterSearchDocument");
+    const hasDrizzleMigrations = sqliteTableExists(database, DRIZZLE_MIGRATIONS_TABLE);
+
+    if (hasCacheTable && !hasDrizzleMigrations) {
+      markInitialMigrationAsApplied(database, migrationsFolder, logger);
+    }
+
+    runDrizzleMigrate(dbPath, migrationsFolder, logger);
 
     let optionalFtsEnabled = true;
     try {
@@ -200,10 +319,11 @@ export function ensurePackagedCacheSqliteSchema(
       return;
     }
 
-    logger.info("Packaged cache SQLite bootstrap schema ensured", {
+    logger.info("Packaged cache SQLite Drizzle migration ensured", {
       dbPath,
       patchedColumns,
       optionalFtsEnabled,
+      wasPrismaBaseline: hasCacheTable && !hasDrizzleMigrations,
     });
   } finally {
     database.close();

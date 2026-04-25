@@ -18,48 +18,31 @@ vi.mock("../../../src/main/database/index.js", () => ({
   db: {
     initialize: mocked.initialize,
     disconnect: mocked.disconnect,
-    getClient: () => ({
-      snapshot: {
-        deleteMany: mocked.deleteMany,
-      },
-      termAppearance: {
-        deleteMany: mocked.deleteMany,
-      },
-      characterAppearance: {
-        deleteMany: mocked.deleteMany,
-      },
-      term: {
-        deleteMany: mocked.deleteMany,
-      },
-      character: {
-        deleteMany: mocked.deleteMany,
-      },
-      chapter: {
-        deleteMany: mocked.deleteMany,
-      },
-      projectSettings: {
-        deleteMany: mocked.deleteMany,
-      },
-      project: {
-        create: mocked.projectCreate,
-        update: mocked.projectUpdate,
-        findUnique: mocked.projectFindUnique,
-        findMany: vi.fn(),
-        deleteMany: mocked.deleteMany,
-      },
-      projectAttachment: {
-        findMany: vi.fn(async () => []),
-        findUnique: vi.fn(async () => null),
-        findFirst: vi.fn(async () => null),
-        upsert: vi.fn(),
-        deleteMany: mocked.deleteMany,
-      },
-      projectLocalState: {
-        findMany: vi.fn(async () => []),
-        findUnique: vi.fn(async () => null),
-        upsert: vi.fn(),
-        deleteMany: mocked.deleteMany,
-      },
+    getDrizzleClient: () => ({
+      select: vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(() => ({
+            limit: vi.fn(async () => []),
+          })),
+        })),
+      })),
+      insert: vi.fn(() => ({
+        values: vi.fn(() => ({
+          onConflictDoUpdate: vi.fn(async () => undefined),
+          returning: vi.fn(async () => []),
+        })),
+      })),
+      update: vi.fn(() => ({
+        set: vi.fn(() => ({
+          where: vi.fn(() => ({
+            returning: vi.fn(async () => []),
+          })),
+        })),
+      })),
+      delete: vi.fn(() => ({
+        where: vi.fn(async () => undefined),
+      })),
+      transaction: vi.fn(async (cb: (tx: unknown) => unknown) => await cb({})),
     }),
   },
 }));

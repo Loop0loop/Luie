@@ -1,69 +1,67 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocked = vi.hoisted(() => {
-  const relationCreate = vi.fn();
-  const relationFindUnique = vi.fn();
-  const relationUpdate = vi.fn();
-  const relationDelete = vi.fn();
+  const relationInsertReturning = vi.fn();
+  const relationSelect = vi.fn();
+  const relationUpdateReturning = vi.fn();
+  const relationDeleteReturning = vi.fn();
   const relationDeleteMany = vi.fn();
   const relationFindMany = vi.fn();
   const projectFindMany = vi.fn();
-  const projectTouch = vi.fn(async () => undefined);
-  const projectPersist = vi.fn(async () => undefined);
-  const transaction = vi.fn(async (callback: (client: unknown) => unknown) => {
-    return await callback({
-      entityRelation: {
-        deleteMany: relationDeleteMany,
-      },
-    });
-  });
+  const projectSelect = vi.fn();
+  const projectTouch = vi.fn(async (_projectId: string) => undefined);
+  const projectPersist = vi.fn(async (_projectId: string, _reason: string) => undefined);
+
+  const chainableInsert = {
+    values: vi.fn(() => ({ returning: relationInsertReturning })),
+  };
+  const chainableSelect = {
+    from: vi.fn(() => ({
+      where: vi.fn(() => ({
+        limit: vi.fn(() => Promise.resolve([])),
+        orderBy: vi.fn(() => Promise.resolve([])),
+      })),
+      orderBy: vi.fn(() => Promise.resolve([])),
+    })),
+  };
+  const chainableUpdate = {
+    set: vi.fn(() => ({
+      where: vi.fn(() => ({ returning: relationDeleteReturning })),
+    })),
+  };
+  const chainableDelete = {
+    where: vi.fn(() => ({ returning: relationDeleteReturning })),
+  };
+
+  const drizzleClient = {
+    insert: vi.fn(() => chainableInsert),
+    select: vi.fn(() => chainableSelect),
+    update: vi.fn(() => chainableUpdate),
+    delete: vi.fn(() => chainableDelete),
+    transaction: vi.fn(async (callback: (tx: unknown) => unknown) => {
+      return await callback(drizzleClient);
+    }),
+  };
 
   return {
-    relationCreate,
-    relationFindUnique,
-    relationUpdate,
-    relationDelete,
+    relationInsertReturning,
+    relationSelect,
+    relationUpdateReturning,
+    relationDeleteReturning,
     relationDeleteMany,
     relationFindMany,
     projectFindMany,
+    projectSelect,
     projectTouch,
     projectPersist,
-    transaction,
+    drizzleClient,
   };
 });
 
 vi.mock("../../../src/main/database/index.js", () => ({
   db: {
     initialize: vi.fn(async () => undefined),
-    getClient: () => ({
-      entityRelation: {
-        create: mocked.relationCreate,
-        findUnique: mocked.relationFindUnique,
-        update: mocked.relationUpdate,
-        delete: mocked.relationDelete,
-        deleteMany: mocked.relationDeleteMany,
-        findMany: mocked.relationFindMany,
-      },
-      project: {
-        findMany: mocked.projectFindMany,
-      },
-      character: {
-        findMany: vi.fn(async () => []),
-      },
-      faction: {
-        findMany: vi.fn(async () => []),
-      },
-      event: {
-        findMany: vi.fn(async () => []),
-      },
-      term: {
-        findMany: vi.fn(async () => []),
-      },
-      worldEntity: {
-        findMany: vi.fn(async () => []),
-      },
-      $transaction: mocked.transaction,
-    }),
+    getDrizzleClient: () => mocked.drizzleClient,
   },
 }));
 
@@ -80,22 +78,10 @@ import { EntityRelationService } from "../../../src/main/services/world/entityRe
 describe("EntityRelationService freshness", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocked.relationCreate.mockResolvedValue({ id: "relation-1" });
-    mocked.relationFindUnique.mockResolvedValue({
-      id: "relation-1",
-      projectId: "project-1",
-      sourceType: "Character",
-      targetType: "Event",
-    });
-    mocked.relationUpdate.mockResolvedValue({
-      id: "relation-1",
-      projectId: "project-1",
-    });
-    mocked.relationDelete.mockResolvedValue({
-      id: "relation-1",
-      projectId: "project-1",
-    });
+    mocked.relationInsertReturning.mockResolvedValue([{ id: "relation-1", projectId: "project-1" }]);
+    mocked.relationDeleteReturning.mockResolvedValue([{ id: "relation-1", projectId: "project-1" }]);
     mocked.projectFindMany.mockResolvedValue([{ id: "project-1" }]);
+    mocked.projectSelect.mockResolvedValue([{ id: "project-1" }]);
   });
 
   it("touches project freshness after relation create and delete", async () => {
@@ -107,7 +93,7 @@ describe("EntityRelationService freshness", () => {
       sourceType: "Character",
       targetId: "event-1",
       targetType: "Event",
-      relation: "involved_in",
+      relation: "belongs_to",
     });
 
     await service.deleteRelation("relation-1");

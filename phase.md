@@ -32,73 +32,73 @@
 **목표**: Drizzle 인프라 구축, Prisma와 병행 운영 가능한 상태 만들기. **앱은 여전히 Prisma로 100% 동작**.
 
 ### 0.1 의존성 설치
-- `drizzle-orm`, `drizzle-kit` 설치 (`better-sqlite3`는 이미 존재)
-- `@prisma/client`, `@prisma/adapter-better-sqlite3`, `prisma`는 **아직 제거하지 않음** (Phase 7에서 최종 제거)
+- [x] `drizzle-orm`, `drizzle-kit` 설치 (`better-sqlite3`는 이미 존재)
+- [x] `@prisma/client`, `@prisma/adapter-better-sqlite3`, `prisma`는 **아직 제거하지 않음** (Phase 7에서 최종 제거)
 
 ### 0.2 Schema 변환
-- `prisma/schema.prisma` 14개 모델 → `src/main/database/schema.ts` (Drizzle table definitions)
-- `prisma-cache/schema.prisma` 3개 모델 → `src/main/database/cacheSchema.ts`
-- 인덱스, relation, defaults, soft-delete 필드 모두 Drizzle 문법으로 명시
-- **Prisma `@unique`, `@@unique`, `@@index`를 Drizzle schema에 1:1 반영**
-- **upsert 대상 필드가 실제 SQLite UNIQUE/PRIMARY KEY로 존재하는지 검증**
-- **FTS5 가상 테이블**: Drizzle schema에 포함 불가 → 별도 `src/main/database/fts5Schema.sql`로 분리
+- [x] `prisma/schema.prisma` 14개 모델 → `src/main/database/schema.ts` (Drizzle table definitions)
+- [x] `prisma-cache/schema.prisma` 3개 모델 → `src/main/database/cacheSchema.ts`
+- [x] 인덱스, relation, defaults, soft-delete 필드 모두 Drizzle 문법으로 명시
+- [x] **Prisma `@unique`, `@@unique`, `@@index`를 Drizzle schema에 1:1 반영**
+- [x] **upsert 대상 필드가 실제 SQLite UNIQUE/PRIMARY KEY로 존재하는지 검증**
+- [x] **FTS5 가상 테이블**: Drizzle schema에 포함 불가 → 별도 `drizzle/cache/fts5.sql`로 분리
 
 ### 0.3 Drizzle Config
-- `drizzle.main.config.ts`, `drizzle.cache.config.ts` 생성 (SQLite, better-sqlite3 driver)
-- Migration 폴더 분리: `drizzle/main/`, `drizzle/cache/`
-- `drizzle-kit generate`로 초기 migration SQL 생성
-- **테이블명/컬럼명 naming strategy 고정**:
+- [x] `drizzle.main.config.ts`, `drizzle.cache.config.ts` 생성 (SQLite, better-sqlite3 driver)
+- [x] Migration 폴더 분리: `drizzle/main/`, `drizzle/cache/`
+- [x] `drizzle-kit generate`로 초기 migration SQL 생성
+- [x] **테이블명/컬럼명 naming strategy 고정**:
   - Drizzle `sqliteTable()`의 첫 번째 인자는 **기존 Prisma가 만든 실제 SQLite table name과 동일하게** 유지
   - 컬럼명도 기존 DB 컬럼명과 동일하게 유지
   - snake_case/camelCase 임의 변경 금지
   - 예: Prisma `model Project` → SQLite 테이블명 확인 후 `sqliteTable("Project", ...)` 또는 `sqliteTable("projects", ...)`로 정확히 매칭
 
 ### 0.4 Database Service Refactoring (Dual Mode) — **핵심**
-- `src/main/database/index.ts`:
-  - 기존 `getClient()` → **Prisma client 그대로 반환 (변경 없음)**
-  - `getDrizzleClient()` → **신규 추가**, Drizzle client 초기화 및 반환
-  - `initialize()` 순서 명시:
+- [x] `src/main/database/index.ts`:
+  - [x] 기존 `getClient()` → **Prisma client 그대로 반환 (변경 없음)**
+  - [x] `getDrizzleClient()` → **신규 추가**, Drizzle client 초기화 및 반환
+  - [x] `initialize()` 순서 명시:
     1. SQLite 파일 경로 확정
     2. Drizzle raw connection 생성
     3. PRAGMA 적용 (`journal_mode=WAL`, `foreign_keys=ON`, `busy_timeout=5000`)
     4. Drizzle migration/bootstrap 실행
     5. Prisma client 생성
     6. 서비스 layer 사용 가능 상태로 전환
-  - `$disconnect()` → Prisma disconnect 유지, Drizzle client close 추가
-- `src/main/database/cacheDb.ts`:
-  - 기존 `getClient()` → Prisma client 그대로 반환 (변경 없음)
-  - `getDrizzleClient()` → 신규 추가 (캐시 DB용 Drizzle client)
-  - 동일한 initialize 순서 적용
-- **서비스 레이어는 아직 Prisma를 계속 사용 (중단 없음)**
+  - [x] `$disconnect()` → Prisma disconnect 유지, Drizzle client close 추가
+- [x] `src/main/database/cacheDb.ts`:
+  - [x] 기존 `getClient()` → Prisma client 그대로 반환 (변경 없음)
+  - [x] `getDrizzleClient()` → 신규 추가 (캐시 DB용)
+  - [x] 동일한 initialize 순서 적용
+- [x] **서비스 레이어는 아직 Prisma를 계속 사용 (중단 없음)**
 
 ### 0.5 Migration 런타임 전략
-- **선택**: `drizzle-orm/better-sqlite3`의 `migrate(db, migrationsFolder)` 사용 (권장)
-- **핵심 추가**: `src/main/database/migrationPathResolver.ts` 생성
+- [x] **선택**: `drizzle-orm/better-sqlite3`의 `migrate(db, migrationsFolder)` 사용 (권장)
+- [x] **핵심 추가**: `src/main/database/migrationPathResolver.ts` 생성
   - dev/prod/test/packaged 환경별 `migrationsFolder` 절대 경로 반환
   - main DB는 `drizzle/main`, cache DB는 `drizzle/cache`로 분리
   - packaged app: `process.resourcesPath` 기준으로 `drizzle/{main,cache}` 탐색
   - dev: `path.resolve("drizzle/{main,cache}")`
-- `src/main/database/databaseSchemaBootstrap.ts`: 기존 raw SQL → `migrate(db, migrationsFolder)` 호출로 교체
-- `src/main/database/cacheSchemaBootstrap.ts`: 동일하게 `migrate()` 호출 + FTS5 SQL 별도 실행
+- [x] `src/main/database/databaseSchemaBootstrap.ts`: 기존 raw SQL → `migrate(db, migrationsFolder)` 호출로 교체
+- [x] `src/main/database/cacheSchemaBootstrap.ts`: 동일하게 `migrate()` 호출 + packaged-safe FTS5 SQL 별도 실행
 
 ### 0.6 Build 설정 (Partial)
-- `electron-builder.json`: Drizzle migration SQL 포함 경로 추가 (`drizzle/**/*`)
-- `electron.vite.config.ts`:
-  - `mainExternal`에 `drizzle-orm`, `better-sqlite3` 추가 (번들링 최적화)
-  - `@prisma-cache/client` external은 **아직 제거하지 않음** (Phase 7에서 제거)
+- [x] `electron-builder.json`: Drizzle migration SQL 포함 경로 추가 (`drizzle/**/*`)
+- [x] `electron.vite.config.ts`:
+  - [x] `mainExternal`에 `drizzle-orm`, `better-sqlite3` 추가 (번들링 최적화)
+  - [x] `@prisma-cache/client` external은 **아직 제거하지 않음** (Phase 7에서 제거)
 
 ### 0.7 테스트 Helper 생성
-- `tests/helpers/drizzleMock.ts` 생성:
+- [x] `tests/helpers/drizzleMock.ts` 생성:
   - `mockSelectOne()`, `mockSelectMany()`, `mockInsert()`, `mockUpdateReturning()`, `mockDelete()`, `mockTransaction()`
-  - Prisma mock 구조(`{ project: { findUnique } }`)에서 Drizzle 체이닝 mock으로 전환
-- **권장**: mock보다 in-memory/temp SQLite REAL DB 테스트로 전환
+  - [x] Prisma mock 구조(`{ project: { findUnique } }`)에서 Drizzle 체이닝 mock으로 전환
+- [ ] **권장**: mock보다 in-memory/temp SQLite REAL DB 테스트로 전환
   - projectService, chapterService, snapshotService, syncLocalApply, searchService, projectImportTransaction, projectExportEngine 등 복잡한 서비스는 REAL DB가 더 가치 있음
 
 ### 0.8 Schema Parity Test — **핵심**
-- 기존 Prisma가 생성한 SQLite DB와 Drizzle schema의 동등성 검증
-- `PRAGMA table_info(table)`로 컬럼명/타입/nullable/default 비교
-- `PRAGMA index_list(table)`로 인덱스 비교
-- `PRAGMA foreign_key_list(table)`로 외래키 비교
+- [x] 기존 Prisma가 생성한 SQLite DB와 Drizzle schema의 동등성 검증
+- [x] `PRAGMA table_info(table)`로 컬럼명/타입/nullable/default 비교
+- [x] `PRAGMA index_list(table)`로 인덱스 비교
+- [x] `PRAGMA foreign_key_list(table)`로 외래키 비교
 - **확인 항목**:
   - nullable 여부 (`.notNull()` 누락 여부)
   - default value (`default(now())`, `default("")`, `default(0)` 등)
@@ -109,15 +109,15 @@
   - Boolean 저장 (SQLite integer boolean 매핑)
   - JSON field 저장 형식 (text vs blob/json mode)
   - soft-delete 필드 (`deletedAt` nullable)
-- 누락된 column/default/index/foreign key가 있으면 Phase 0에서 수정
+- [x] 누락된 column/default/index/foreign key가 있으면 Phase 0에서 수정
 
 **완료 기준**:
-- [ ] `drizzle-kit generate`로 migration SQL 생성 가능
-- [ ] `db.getDrizzleClient()`로 Drizzle 쿼리 실행 가능
-- [ ] `db.getClient()`는 여전히 Prisma 반환 (기존 서비스/테스트 전부 통과)
-- [ ] `migrate()` 함수로 DB bootstrap 정상 동작
-- [ ] migrationPathResolver로 dev/packaged 경로 모두 정상
-- [ ] **Schema Parity Test 통과 (기존 Prisma DB와 Drizzle schema 100% 동등)**
+- [x] `drizzle-kit generate`로 migration SQL 생성 가능
+- [x] `db.getDrizzleClient()`로 Drizzle 쿼리 실행 가능
+- [x] `db.getClient()`는 여전히 Prisma 반환 (기존 서비스/테스트 전부 통과)
+- [x] `migrate()` 함수로 DB bootstrap 정상 동작
+- [x] migrationPathResolver로 dev/packaged 경로 모두 정상
+- [x] **Schema Parity Test 통과 (기존 Prisma DB와 Drizzle schema 100% 동등)**
 
 ---
 

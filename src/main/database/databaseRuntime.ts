@@ -1,3 +1,4 @@
+// TODO: Remove in Phase 7 — Prisma runtime utilities replaced by Drizzle migrate()
 import { spawn } from "node:child_process";
 import { constants as fsConstants } from "node:fs";
 import * as fs from "node:fs/promises";

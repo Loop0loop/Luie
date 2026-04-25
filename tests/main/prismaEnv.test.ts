@@ -16,16 +16,18 @@ vi.mock("electron", () => ({
   },
 }));
 
-describe("initDatabaseEnv", () => {
+describe("initDatabaseEnv (Drizzle runtime)", () => {
   let originalDatabaseUrl: string | undefined;
   let originalNodeEnv: string | undefined;
   let originalVitest: string | undefined;
+  let originalRuntimeDbUrl: string | undefined;
 
   beforeEach(() => {
     vi.resetModules();
     originalDatabaseUrl = process.env.DATABASE_URL;
     originalNodeEnv = process.env.NODE_ENV;
     originalVitest = process.env.VITEST;
+    originalRuntimeDbUrl = process.env.LUIE_RUNTIME_DATABASE_URL;
   });
 
   afterEach(() => {
@@ -45,6 +47,12 @@ describe("initDatabaseEnv", () => {
       delete process.env.VITEST;
     } else {
       process.env.VITEST = originalVitest;
+    }
+
+    if (originalRuntimeDbUrl === undefined) {
+      delete process.env.LUIE_RUNTIME_DATABASE_URL;
+    } else {
+      process.env.LUIE_RUNTIME_DATABASE_URL = originalRuntimeDbUrl;
     }
   });
 

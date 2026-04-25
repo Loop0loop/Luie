@@ -8,6 +8,13 @@
       "when": 1777101179854,
       "tag": "0000_lean_vengeance",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1777102840713,
+      "tag": "0001_careless_puff_adder",
+      "breakpoints": true
     }
   ]
 }

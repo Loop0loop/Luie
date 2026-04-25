@@ -17,6 +17,7 @@ const mocked = vi.hoisted(() => {
     access,
     readLuieContainerEntry,
     findUnique,
+    findUniqueResult: [] as Array<{ id: string; updatedAt: string }>,
     findProjectByAttachmentPath,
     setProjectAttachmentPath,
     applyProjectImportTransaction,
@@ -45,10 +46,14 @@ vi.mock("../../../src/main/services/io/luieContainer.js", () => ({
 
 vi.mock("../../../src/main/database/index.js", () => ({
   db: {
-    getClient: () => ({
-      project: {
-        findUnique: mocked.findUnique,
-      },
+    getDrizzleClient: () => ({
+      select: vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(() => ({
+            limit: vi.fn(async () => mocked.findUniqueResult),
+          })),
+        })),
+      })),
     }),
   },
 }));
@@ -86,7 +91,7 @@ describe("projectImportOpen", () => {
 
     mocked.access.mockResolvedValue(undefined);
     mocked.findProjectByAttachmentPath.mockResolvedValue(null);
-    mocked.findUnique.mockResolvedValue(null);
+    mocked.findUniqueResult = [];
     mocked.buildChapterCreateRows.mockResolvedValue([
       {
         id: "chapter-1",
@@ -192,6 +197,7 @@ describe("projectImportOpen", () => {
     const logger = {
       info: vi.fn(),
       warn: vi.fn(),
+      error: vi.fn(),
     };
 
     const result = await openLuieProjectPackage({
@@ -243,14 +249,15 @@ describe("projectImportOpen", () => {
   });
 
   it("skips stale package imports when the local database is newer", async () => {
-    mocked.findUnique.mockResolvedValue({
+    mocked.findUniqueResult = [{
       id: "project-1",
-      updatedAt: new Date("2026-03-12T04:00:00.000Z"),
-    });
+      updatedAt: "2026-03-12T04:00:00.000Z",
+    }];
 
     const logger = {
       info: vi.fn(),
       warn: vi.fn(),
+      error: vi.fn(),
     };
 
     const result = await openLuieProjectPackage({

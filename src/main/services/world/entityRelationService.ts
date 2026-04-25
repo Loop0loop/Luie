@@ -2,7 +2,7 @@
  * EntityRelation service — 세계관 6종 관계 CRUD + 그래프 조회
  */
 
-import type { Prisma } from "@prisma/client";
+import { eq, asc, inArray, isNull, and } from "drizzle-orm";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import {
@@ -23,6 +23,15 @@ import type {
 import { ServiceError } from "../../utils/serviceError.js";
 import { projectService } from "../core/projectService.js";
 import { db } from "../../database/index.js";
+import {
+    entityRelation,
+    character,
+    faction,
+    event,
+    term,
+    worldEntity,
+    project,
+} from "../../database/schema.js";
 
 const logger = createLogger("EntityRelationService");
 
@@ -50,15 +59,6 @@ type RawRow = {
     updatedAt?: string | Date;
     [key: string]: unknown;
 };
-
-function isPrismaNotFoundError(error: unknown): boolean {
-    return (
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        (error as { code?: unknown }).code === "P2025"
-    );
-}
 
 function parseAttributes(raw: string | null | undefined): WorldEntityAttributes | null {
     if (!raw) return null;
@@ -89,7 +89,7 @@ function toEntityRelation(row: RawRow): EntityRelation {
 export class EntityRelationService {
     private async getClient() {
         await db.initialize();
-        return db.getClient();
+        return db.getDrizzleClient();
     }
 
     async createRelation(input: EntityRelationCreateInput) {
@@ -104,7 +104,8 @@ export class EntityRelationService {
                 );
             }
 
-            const data: Prisma.EntityRelationUncheckedCreateInput = {
+            const insertData: typeof entityRelation.$inferInsert = {
+                id: crypto.randomUUID(),
                 projectId: input.projectId,
                 sourceId: input.sourceId,
                 sourceType: input.sourceType,
@@ -112,21 +113,31 @@ export class EntityRelationService {
                 targetType: input.targetType,
                 relation: input.relation,
                 attributes: input.attributes ? JSON.stringify(input.attributes) : null,
+                updatedAt: new Date().toISOString(),
             };
 
             // FK 연결 — WorldEntity-backed 타입인 경우 DB FK 설정
-            if (isWorldEntityBackedType(input.sourceType)) data.sourceWorldEntityId = input.sourceId;
-            if (isWorldEntityBackedType(input.targetType)) data.targetWorldEntityId = input.targetId;
+            if (isWorldEntityBackedType(input.sourceType)) insertData.sourceWorldEntityId = input.sourceId;
+            if (isWorldEntityBackedType(input.targetType)) insertData.targetWorldEntityId = input.targetId;
 
             const client = await this.getClient();
-            const relation = await client.entityRelation.create({ data });
+            const [result] = await client.insert(entityRelation).values(insertData).returning();
 
-            logger.info("Entity relation created", { relationId: relation.id });
+            if (!result) {
+                throw new ServiceError(
+                    ErrorCode.ENTITY_RELATION_CREATE_FAILED,
+                    "Failed to create entity relation",
+                    { input },
+                );
+            }
+
+            logger.info("Entity relation created", { relationId: result.id });
             await projectService.touchProject(input.projectId);
             await projectService.persistPackageAfterMutation(input.projectId, "entity-relation:create");
-            return toEntityRelation(relation as RawRow);
+            return toEntityRelation(result as RawRow);
         } catch (error) {
             logger.error("Failed to create entity relation", error);
+            if (error instanceof ServiceError) throw error;
             throw new ServiceError(
                 ErrorCode.ENTITY_RELATION_CREATE_FAILED,
                 "Failed to create entity relation",
@@ -139,10 +150,7 @@ export class EntityRelationService {
     async getAllRelations(projectId: string) {
         try {
             const client = await this.getClient();
-            const relations = await client.entityRelation.findMany({
-                where: { projectId },
-                orderBy: { createdAt: "asc" },
-            });
+            const relations = await client.select().from(entityRelation).where(eq(entityRelation.projectId, projectId)).orderBy(asc(entityRelation.createdAt));
 
             return relations.map(toEntityRelation);
         } catch (error) {
@@ -159,9 +167,8 @@ export class EntityRelationService {
     async updateRelation(input: EntityRelationUpdateInput) {
         try {
             const client = await this.getClient();
-            const current = await client.entityRelation.findUnique({
-                where: { id: input.id },
-            });
+            const currentResults = await client.select().from(entityRelation).where(eq(entityRelation.id, input.id)).limit(1);
+            const current = currentResults[0];
             if (!current) {
                 throw new ServiceError(
                     ErrorCode.ENTITY_RELATION_NOT_FOUND,
@@ -197,25 +204,23 @@ export class EntityRelationService {
                 updateData.attributes = JSON.stringify(input.attributes);
             }
 
-            const relation = await client.entityRelation.update({
-                where: { id: input.id },
-                data: updateData,
-            });
+            const [updated] = await client.update(entityRelation).set(updateData).where(eq(entityRelation.id, input.id)).returning();
 
-            logger.info("Entity relation updated", { relationId: relation.id });
-            await projectService.touchProject(String(current.projectId));
-            await projectService.persistPackageAfterMutation(String(current.projectId), "entity-relation:update");
-            return toEntityRelation(relation as RawRow);
-        } catch (error) {
-            logger.error("Failed to update entity relation", error);
-            if (isPrismaNotFoundError(error)) {
+            if (!updated) {
                 throw new ServiceError(
                     ErrorCode.ENTITY_RELATION_NOT_FOUND,
                     "Entity relation not found",
                     { id: input.id },
-                    error,
                 );
             }
+
+            logger.info("Entity relation updated", { relationId: updated.id });
+            await projectService.touchProject(String(current.projectId));
+            await projectService.persistPackageAfterMutation(String(current.projectId), "entity-relation:update");
+            return toEntityRelation(updated as RawRow);
+        } catch (error) {
+            logger.error("Failed to update entity relation", error);
+            if (error instanceof ServiceError) throw error;
             throw new ServiceError(
                 ErrorCode.ENTITY_RELATION_UPDATE_FAILED,
                 "Failed to update entity relation",
@@ -228,13 +233,21 @@ export class EntityRelationService {
     async deleteRelation(id: string) {
         try {
             const client = await this.getClient();
-            const deleted = await client.entityRelation.delete({ where: { id } });
+            const [deleted] = await client.delete(entityRelation).where(eq(entityRelation.id, id)).returning();
+            if (!deleted) {
+                throw new ServiceError(
+                    ErrorCode.ENTITY_RELATION_NOT_FOUND,
+                    "Entity relation not found",
+                    { id },
+                );
+            }
             logger.info("Entity relation deleted", { relationId: id });
             await projectService.touchProject(String(deleted.projectId));
             await projectService.persistPackageAfterMutation(String(deleted.projectId), "entity-relation:delete");
             return { success: true };
         } catch (error) {
             logger.error("Failed to delete entity relation", error);
+            if (error instanceof ServiceError) throw error;
             throw new ServiceError(
                 ErrorCode.ENTITY_RELATION_DELETE_FAILED,
                 "Failed to delete entity relation",
@@ -252,12 +265,12 @@ export class EntityRelationService {
         try {
             const client = await this.getClient();
             const [characters, factions, events, terms, worldEntities, edges] = await Promise.all([
-                client.character.findMany({ where: { projectId, deletedAt: null } }),
-                client.faction.findMany({ where: { projectId, deletedAt: null } }),
-                client.event.findMany({ where: { projectId, deletedAt: null } }),
-                client.term.findMany({ where: { projectId, deletedAt: null } }),
-                client.worldEntity.findMany({ where: { projectId } }),
-                client.entityRelation.findMany({ where: { projectId } }),
+                client.select().from(character).where(and(eq(character.projectId, projectId), isNull(character.deletedAt))),
+                client.select().from(faction).where(and(eq(faction.projectId, projectId), isNull(faction.deletedAt))),
+                client.select().from(event).where(and(eq(event.projectId, projectId), isNull(event.deletedAt))),
+                client.select().from(term).where(and(eq(term.projectId, projectId), isNull(term.deletedAt))),
+                client.select().from(worldEntity).where(eq(worldEntity.projectId, projectId)),
+                client.select().from(entityRelation).where(eq(entityRelation.projectId, projectId)),
             ]);
 
             const nodes: WorldGraphNode[] = [
@@ -354,26 +367,21 @@ export class EntityRelationService {
     }> {
         const dryRun = options?.dryRun ?? false;
         const client = await this.getClient();
-        const projects = await client.project.findMany({
-            select: { id: true },
-        });
+        const projects = await client.select({ id: project.id }).from(project);
 
         let scannedRelations = 0;
         let orphanRelations = 0;
         let removedRelations = 0;
 
-            for (const project of projects) {
-            const projectId = String(project.id);
+            for (const proj of projects) {
+            const projectId = String(proj.id);
             const [characters, factions, events, terms, worldEntities, relations] = await Promise.all([
-                client.character.findMany({ where: { projectId, deletedAt: null }, select: { id: true } }),
-                client.faction.findMany({ where: { projectId, deletedAt: null }, select: { id: true } }),
-                client.event.findMany({ where: { projectId, deletedAt: null }, select: { id: true } }),
-                client.term.findMany({ where: { projectId, deletedAt: null }, select: { id: true } }),
-                client.worldEntity.findMany({ where: { projectId }, select: { id: true } }),
-                client.entityRelation.findMany({
-                    where: { projectId },
-                    select: { id: true, sourceId: true, targetId: true },
-                }),
+                client.select({ id: character.id }).from(character).where(and(eq(character.projectId, projectId), isNull(character.deletedAt))),
+                client.select({ id: faction.id }).from(faction).where(and(eq(faction.projectId, projectId), isNull(faction.deletedAt))),
+                client.select({ id: event.id }).from(event).where(and(eq(event.projectId, projectId), isNull(event.deletedAt))),
+                client.select({ id: term.id }).from(term).where(and(eq(term.projectId, projectId), isNull(term.deletedAt))),
+                client.select({ id: worldEntity.id }).from(worldEntity).where(eq(worldEntity.projectId, projectId)),
+                client.select({ id: entityRelation.id, sourceId: entityRelation.sourceId, targetId: entityRelation.targetId }).from(entityRelation).where(eq(entityRelation.projectId, projectId)),
             ]);
 
             const nodeIds = new Set<string>([
@@ -395,14 +403,9 @@ export class EntityRelationService {
                 continue;
             }
 
-            const result = await client.entityRelation.deleteMany({
-                where: {
-                    projectId,
-                    id: { in: orphanIds },
-                },
-            });
-            removedRelations += result.count;
-            if (result.count > 0) {
+            const result = await client.delete(entityRelation).where(and(eq(entityRelation.projectId, projectId), inArray(entityRelation.id, orphanIds)));
+            removedRelations += result.changes;
+            if (result.changes > 0) {
                 await projectService.touchProject(projectId);
                 await projectService.persistPackageAfterMutation(projectId, "entity-relation:cleanup-orphans");
             }

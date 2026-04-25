@@ -1,14 +1,14 @@
-import type { Prisma } from "@prisma/client";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "../../../database/index.js";
+import * as schema from "../../../database/schema.js";
+import type { MainDrizzleClient } from "../../../database/databaseTypes.js";
 
-type ProjectLocalStateClient = {
-  projectLocalState: Prisma.TransactionClient["projectLocalState"];
-};
+const { projectLocalState } = schema;
 
 const getClient = (
-  client?: ProjectLocalStateClient,
-): ProjectLocalStateClient =>
-  client ?? (db.getClient() as unknown as ProjectLocalStateClient);
+  client?: MainDrizzleClient,
+): MainDrizzleClient =>
+  client ?? db.getDrizzleClient();
 
 const toDateOrNull = (value: unknown): Date | null => {
   if (value instanceof Date) {
@@ -28,30 +28,33 @@ const toTimestamp = (value: unknown): number => {
 
 export const getProjectLastOpenedAt = async (
   projectId: string,
-  client?: ProjectLocalStateClient,
+  client?: MainDrizzleClient,
 ): Promise<Date | null> => {
-  const row = (await getClient(client).projectLocalState.findUnique({
-    where: { projectId },
-    select: { lastOpenedAt: true },
-  })) as { lastOpenedAt?: Date | string | null } | null;
+  const row = await getClient(client)
+    .select({ lastOpenedAt: projectLocalState.lastOpenedAt })
+    .from(projectLocalState)
+    .where(eq(projectLocalState.projectId, projectId))
+    .limit(1);
 
-  return toDateOrNull(row?.lastOpenedAt);
+  return row.length > 0 ? toDateOrNull(row[0].lastOpenedAt) : null;
 };
 
 export const markProjectOpened = async (
   projectId: string,
   openedAt = new Date(),
-  client?: ProjectLocalStateClient,
+  client?: MainDrizzleClient,
 ): Promise<Date> => {
   const timestamp = new Date(openedAt);
-  await getClient(client).projectLocalState.upsert({
-    where: { projectId },
-    create: {
-      projectId,
-      lastOpenedAt: timestamp,
-    },
-    update: {
-      lastOpenedAt: timestamp,
+  const store = getClient(client);
+  await store.insert(projectLocalState).values({
+    projectId,
+    lastOpenedAt: timestamp.toISOString(),
+    updatedAt: timestamp.toISOString(),
+  }).onConflictDoUpdate({
+    target: projectLocalState.projectId,
+    set: {
+      lastOpenedAt: timestamp.toISOString(),
+      updatedAt: timestamp.toISOString(),
     },
   });
   return timestamp;
@@ -61,24 +64,20 @@ export const hydrateProjectsWithLocalState = async <
   T extends { id: string },
 >(
   projects: T[],
-  client?: ProjectLocalStateClient,
+  client?: MainDrizzleClient,
 ): Promise<Array<T & { lastOpenedAt: Date | null }>> => {
   if (projects.length === 0) {
     return [];
   }
 
-  const rows = (await getClient(client).projectLocalState.findMany({
-    where: {
-      projectId: { in: projects.map((project) => project.id) },
-    },
-    select: {
-      projectId: true,
-      lastOpenedAt: true,
-    },
-  })) as Array<{
-    projectId: string;
-    lastOpenedAt?: Date | string | null;
-  }>;
+  const projectIds = projects.map((project) => project.id);
+  const rows = await getClient(client)
+    .select({
+      projectId: projectLocalState.projectId,
+      lastOpenedAt: projectLocalState.lastOpenedAt,
+    })
+    .from(projectLocalState)
+    .where(inArray(projectLocalState.projectId, projectIds));
 
   const lastOpenedAtByProjectId = new Map(
     rows.map((row) => [

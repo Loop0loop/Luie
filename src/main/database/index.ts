@@ -83,7 +83,7 @@ class DatabaseService {
 
     if (context.isPackaged) {
       try {
-        await seedIfEmpty(this.prisma as Parameters<typeof seedIfEmpty>[0]);
+        await seedIfEmpty(this.getDrizzleClient());
       } catch (error) {
         logger.error("Failed to seed packaged database", { error });
       }

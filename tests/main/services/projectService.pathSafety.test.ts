@@ -6,18 +6,6 @@ import { promises as fs } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocked = vi.hoisted(() => {
-  const project = {
-    findUnique: vi.fn(),
-    update: vi.fn(),
-  };
-  const db = {
-    getClient: vi.fn(() => ({
-      project,
-      projectAttachment: {
-        findUnique: vi.fn(),
-      },
-    })),
-  };
   const logger = {
     info: vi.fn(),
     warn: vi.fn(),
@@ -31,15 +19,23 @@ const mocked = vi.hoisted(() => {
   };
 
   return {
-    db,
-    project,
     logger,
     settingsManager,
   };
 });
 
 vi.mock("../../../src/main/database/index.js", () => ({
-  db: mocked.db,
+  db: {
+    getDrizzleClient: vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      limit: vi.fn(async () => [{ title: "Old Project", projectPath: "/tmp/old-project.luie" }]),
+      update: vi.fn().mockReturnThis(),
+      set: vi.fn().mockReturnThis(),
+      returning: vi.fn(async () => [{ id: "project-1", title: "New Project", projectPath: "relative/unsafe-path.luie" }]),
+    })),
+  },
 }));
 
 vi.mock("../../../src/main/manager/settingsManager.js", () => ({
@@ -52,9 +48,6 @@ vi.mock("../../../src/shared/logger/index.js", () => ({
 
 describe("ProjectService path safety", () => {
   beforeEach(() => {
-    mocked.db.getClient.mockClear();
-    mocked.project.findUnique.mockReset();
-    mocked.project.update.mockReset();
     mocked.logger.info.mockClear();
     mocked.logger.warn.mockClear();
     mocked.logger.error.mockClear();
@@ -65,17 +58,6 @@ describe("ProjectService path safety", () => {
   });
 
   it("checks snapshot directory existence but skips rename for relative .luie path", async () => {
-    mocked.project.findUnique.mockResolvedValue({
-      title: "Old Project",
-      projectPath: "/tmp/old-project.luie",
-    });
-    mocked.project.update.mockResolvedValue({
-      id: "project-1",
-      title: "New Project",
-      description: null,
-      projectPath: "relative/unsafe-path.luie",
-    });
-
     const statSpy = vi.spyOn(fs, "stat");
     const mkdirSpy = vi.spyOn(fs, "mkdir");
     const renameSpy = vi.spyOn(fs, "rename");

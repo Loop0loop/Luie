@@ -2,8 +2,9 @@
  * Term service - 고유명사 사전 관리 비즈니스 로직
  */
 
-import type { Prisma } from "@prisma/client";
+import { eq, isNull, like, or, asc, and, inArray } from "drizzle-orm";
 import { db } from "../../database/index.js";
+import { term, entityRelation } from "../../database/schema.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import type {
@@ -20,41 +21,42 @@ const loadAppearanceCacheService = async () =>
 
 const logger = createLogger("TermService");
 
-function isPrismaNotFoundError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: unknown }).code === "P2025"
-  );
-}
-
 export class TermService {
   async createTerm(input: TermCreateInput) {
     try {
       logger.info("Creating term", input);
 
-      const term = await db.getClient().term.create({
-        data: {
-          projectId: input.projectId,
-          term: input.term,
-          definition: input.definition,
-          category: input.category,
-          order: input.order,
-          firstAppearance: input.firstAppearance,
-        },
-      });
+      const now = new Date().toISOString();
+      const [result] = await db.getDrizzleClient().insert(term).values({
+        id: crypto.randomUUID(),
+        projectId: input.projectId,
+        term: input.term,
+        definition: input.definition ?? null,
+        category: input.category ?? null,
+        order: input.order ?? 0,
+        firstAppearance: input.firstAppearance ?? null,
+        updatedAt: now,
+      }).returning();
 
-      logger.info("Term created successfully", { termId: term.id });
+      if (!result) {
+        throw new ServiceError(
+          ErrorCode.TERM_CREATE_FAILED,
+          "Failed to create term",
+          { input },
+        );
+      }
+
+      logger.info("Term created successfully", { termId: result.id });
       await rebuildProjectKeywordAppearances(input.projectId, {
         includeCharacters: false,
         includeTerms: true,
       });
       await projectService.touchProject(input.projectId);
       await projectService.persistPackageAfterMutation(input.projectId, "term:create");
-      return term;
+      return result;
     } catch (error) {
       logger.error("Failed to create term", error);
+      if (error instanceof ServiceError) throw error;
       throw new ServiceError(
         ErrorCode.TERM_CREATE_FAILED,
         "Failed to create term",
@@ -66,11 +68,15 @@ export class TermService {
 
   async getTerm(id: string) {
     try {
-      const term = await db.getClient().term.findUnique({
-        where: { id },
-      });
+      const results = await db.getDrizzleClient().select().from(term).where(eq(term.id, id)).limit(1);
 
-      if (!term || term.deletedAt) {
+      if (results.length === 0) {
+        throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
+          id,
+        });
+      }
+      const t = results[0];
+      if (t.deletedAt) {
         throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
           id,
         });
@@ -80,23 +86,21 @@ export class TermService {
       const appearances =
         await appearanceCacheService.getTermAppearancesByEntity(id);
       return {
-        ...term,
+        ...t,
         appearances,
       };
     } catch (error) {
       logger.error("Failed to get term", error);
+      if (error instanceof ServiceError) throw error;
       throw error;
     }
   }
 
   async getAllTerms(projectId: string) {
     try {
-      const terms = await db.getClient().term.findMany({
-        where: { projectId, deletedAt: null },
-        orderBy: { term: "asc" },
-      });
+      const results = await db.getDrizzleClient().select().from(term).where(and(eq(term.projectId, projectId), isNull(term.deletedAt))).orderBy(asc(term.term));
 
-      return terms;
+      return results;
     } catch (error) {
       logger.error("Failed to get all terms", error);
       throw new ServiceError(
@@ -110,7 +114,7 @@ export class TermService {
 
   async updateTerm(input: TermUpdateInput) {
     try {
-      const updateData: Record<string, unknown> = {};
+      const updateData: Partial<typeof term.$inferInsert> = {};
 
       if (input.term !== undefined) updateData.term = input.term;
       if (input.definition !== undefined)
@@ -120,41 +124,35 @@ export class TermService {
       if (input.firstAppearance !== undefined)
         updateData.firstAppearance = input.firstAppearance;
 
-      const current = await db.getClient().term.findUnique({
-        where: { id: input.id },
-        select: { id: true, projectId: true, deletedAt: true },
-      });
+      const currentResults = await db.getDrizzleClient().select({ id: term.id, projectId: term.projectId, deletedAt: term.deletedAt }).from(term).where(eq(term.id, input.id)).limit(1);
+      const current = currentResults[0];
       if (!current || current.deletedAt) {
         throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
           id: input.id,
         });
       }
 
-      const term = await db.getClient().term.update({
-        where: { id: input.id },
-        data: updateData,
-      });
+      const [updated] = await db.getDrizzleClient().update(term).set(updateData).where(eq(term.id, input.id)).returning();
 
-      logger.info("Term updated successfully", { termId: term.id });
+      if (!updated) {
+        throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
+          id: input.id,
+        });
+      }
+
+      logger.info("Term updated successfully", { termId: updated.id });
       if (input.term !== undefined) {
-        await rebuildProjectKeywordAppearances(String(term.projectId), {
+        await rebuildProjectKeywordAppearances(String(updated.projectId), {
           includeCharacters: false,
           includeTerms: true,
         });
       }
-      await projectService.touchProject(String(term.projectId));
-      await projectService.persistPackageAfterMutation(String(term.projectId), "term:update");
-      return term;
+      await projectService.touchProject(String(updated.projectId));
+      await projectService.persistPackageAfterMutation(String(updated.projectId), "term:update");
+      return updated;
     } catch (error) {
       logger.error("Failed to update term", error);
-      if (isPrismaNotFoundError(error)) {
-        throw new ServiceError(
-          ErrorCode.TERM_NOT_FOUND,
-          "Term not found",
-          { id: input.id },
-          error,
-        );
-      }
+      if (error instanceof ServiceError) throw error;
       throw new ServiceError(
         ErrorCode.TERM_UPDATE_FAILED,
         "Failed to update term",
@@ -166,33 +164,18 @@ export class TermService {
 
   async deleteTerm(id: string) {
     try {
-      const term = await db.getClient().term.findUnique({
-        where: { id },
-        select: { projectId: true, deletedAt: true },
+      const currentResults = await db.getDrizzleClient().select({ projectId: term.projectId, deletedAt: term.deletedAt }).from(term).where(eq(term.id, id)).limit(1);
+      const current = currentResults[0];
+
+      const projectId = current?.projectId ?? null;
+      const now = new Date().toISOString();
+
+      await db.getDrizzleClient().transaction(async (tx) => {
+        if (projectId) {
+          await tx.delete(entityRelation).where(or(eq(entityRelation.sourceId, id), eq(entityRelation.targetId, id)));
+        }
+        await tx.update(term).set({ deletedAt: now, updatedAt: now }).where(eq(term.id, id));
       });
-
-      const projectId = term?.projectId ? String(term.projectId) : null;
-      const now = new Date();
-
-      await db
-        .getClient()
-        .$transaction(async (tx: Prisma.TransactionClient) => {
-          if (projectId) {
-            await tx.entityRelation.deleteMany({
-              where: {
-                projectId,
-                OR: [{ sourceId: id }, { targetId: id }],
-              },
-            });
-          }
-          await tx.term.updateMany({
-            where: { id },
-            data: {
-              deletedAt: now,
-              updatedAt: now,
-            },
-          });
-        });
       const appearanceCacheService = await loadAppearanceCacheService();
       await appearanceCacheService.clearTermEntity(id);
 
@@ -244,10 +227,8 @@ export class TermService {
       const termIds = Array.from(
         new Set(appearances.map((appearance) => appearance.termId)),
       );
-      const terms = await db.getClient().term.findMany({
-        where: { id: { in: termIds }, deletedAt: null },
-      });
-      const termById = new Map(terms.map((term) => [String(term.id), term]));
+      const terms = await db.getDrizzleClient().select().from(term).where(and(inArray(term.id, termIds), isNull(term.deletedAt)));
+      const termById = new Map(terms.map((t) => [t.id, t]));
 
       return appearances.map((appearance) => ({
         ...appearance,
@@ -266,28 +247,25 @@ export class TermService {
 
   async updateFirstAppearance(termId: string, chapterId: string) {
     try {
-      const term = await db.getClient().term.findUnique({
-        where: { id: termId },
-      });
+      const results = await db.getDrizzleClient().select().from(term).where(eq(term.id, termId)).limit(1);
+      const t = results[0];
 
-      if (!term || term.deletedAt) {
+      if (!t || t.deletedAt) {
         throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
           termId,
         });
       }
 
-      if (!term.firstAppearance) {
-        await db.getClient().term.update({
-          where: { id: termId },
-          data: { firstAppearance: chapterId },
-        });
+      if (!t.firstAppearance) {
+        await db.getDrizzleClient().update(term).set({ firstAppearance: chapterId }).where(eq(term.id, termId));
 
         logger.info("First appearance updated", { termId, chapterId });
-        await projectService.touchProject(String(term.projectId));
-        await projectService.persistPackageAfterMutation(String(term.projectId), "term:update-first-appearance");
+        await projectService.touchProject(String(t.projectId));
+        await projectService.persistPackageAfterMutation(String(t.projectId), "term:update-first-appearance");
       }
     } catch (error) {
       logger.error("Failed to update first appearance", error);
+      if (error instanceof ServiceError) throw error;
       throw new ServiceError(
         ErrorCode.TERM_UPDATE_FAILED,
         "Failed to update first appearance",
@@ -299,19 +277,10 @@ export class TermService {
 
   async searchTerms(projectId: string, query: string) {
     try {
-      const terms = await db.getClient().term.findMany({
-        where: {
-          projectId,
-          OR: [
-            { term: { contains: query } },
-            { definition: { contains: query } },
-          ],
-          deletedAt: null,
-        },
-        orderBy: { term: "asc" },
-      });
+      const searchPattern = `%${query}%`;
+      const results = await db.getDrizzleClient().select().from(term).where(and(eq(term.projectId, projectId), or(like(term.term, searchPattern), like(term.definition, searchPattern)), isNull(term.deletedAt))).orderBy(asc(term.term));
 
-      return terms;
+      return results;
     } catch (error) {
       logger.error("Failed to search terms", error);
       throw new ServiceError(
@@ -325,16 +294,9 @@ export class TermService {
 
   async getTermsByCategory(projectId: string, category: string) {
     try {
-      const terms = await db.getClient().term.findMany({
-        where: {
-          projectId,
-          category,
-          deletedAt: null,
-        },
-        orderBy: { term: "asc" },
-      });
+      const results = await db.getDrizzleClient().select().from(term).where(and(eq(term.projectId, projectId), eq(term.category, category), isNull(term.deletedAt))).orderBy(asc(term.term));
 
-      return terms;
+      return results;
     } catch (error) {
       logger.error("Failed to get terms by category", error);
       throw new ServiceError(

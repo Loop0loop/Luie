@@ -1,5 +1,6 @@
-import type { Prisma } from "@prisma/client";
+import { eq, isNull, asc, and, or } from "drizzle-orm";
 import { db } from "../../database/index.js";
+import { faction, entityRelation } from "../../database/schema.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import type {
@@ -11,38 +12,39 @@ import { ServiceError } from "../../utils/serviceError.js";
 
 const logger = createLogger("FactionService");
 
-function isPrismaNotFoundError(error: unknown): boolean {
-    return (
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        (error as { code?: unknown }).code === "P2025"
-    );
-}
-
 export class FactionService {
     async createFaction(input: FactionCreateInput) {
         try {
             logger.info("Creating faction", input);
 
-            const faction = await db.getClient().faction.create({
-                data: {
-                    projectId: input.projectId,
-                    name: input.name,
-                    description: input.description,
-                    firstAppearance: input.firstAppearance,
-                    attributes: input.attributes ? JSON.stringify(input.attributes) : null,
-                },
-            });
+            const now = new Date().toISOString();
+            const [result] = await db.getDrizzleClient().insert(faction).values({
+                id: crypto.randomUUID(),
+                projectId: input.projectId,
+                name: input.name,
+                description: input.description ?? null,
+                firstAppearance: input.firstAppearance ?? null,
+                attributes: input.attributes ? JSON.stringify(input.attributes) : null,
+                updatedAt: now,
+            }).returning();
+
+            if (!result) {
+                throw new ServiceError(
+                    ErrorCode.DB_QUERY_FAILED,
+                    "Failed to create faction",
+                    { input },
+                );
+            }
 
             logger.info("Faction created successfully", {
-                factionId: faction.id,
+                factionId: result.id,
             });
             await projectService.touchProject(input.projectId);
             await projectService.persistPackageAfterMutation(input.projectId, "faction:create");
-            return faction;
+            return result;
         } catch (error) {
             logger.error("Failed to create faction", error);
+            if (error instanceof ServiceError) throw error;
             throw new ServiceError(
                 ErrorCode.DB_QUERY_FAILED,
                 "Failed to create faction",
@@ -54,11 +56,17 @@ export class FactionService {
 
     async getFaction(id: string) {
         try {
-            const faction = await db.getClient().faction.findUnique({
-                where: { id },
-            });
+            const results = await db.getDrizzleClient().select().from(faction).where(eq(faction.id, id)).limit(1);
 
-            if (!faction || faction.deletedAt) {
+            if (results.length === 0) {
+                throw new ServiceError(
+                    ErrorCode.DB_QUERY_FAILED,
+                    "Faction not found",
+                    { id },
+                );
+            }
+            const f = results[0];
+            if (f.deletedAt) {
                 throw new ServiceError(
                     ErrorCode.DB_QUERY_FAILED,
                     "Faction not found",
@@ -66,21 +74,19 @@ export class FactionService {
                 );
             }
 
-            return faction;
+            return f;
         } catch (error) {
             logger.error("Failed to get faction", error);
+            if (error instanceof ServiceError) throw error;
             throw error;
         }
     }
 
     async getAllFactions(projectId: string) {
         try {
-            const factions = await db.getClient().faction.findMany({
-                where: { projectId, deletedAt: null },
-                orderBy: { createdAt: "asc" },
-            });
+            const results = await db.getDrizzleClient().select().from(faction).where(and(eq(faction.projectId, projectId), isNull(faction.deletedAt))).orderBy(asc(faction.createdAt));
 
-            return factions;
+            return results;
         } catch (error) {
             logger.error("Failed to get all factions", error);
             throw new ServiceError(
@@ -94,7 +100,7 @@ export class FactionService {
 
     async updateFaction(input: FactionUpdateInput) {
         try {
-            const updateData: Record<string, unknown> = {};
+            const updateData: Partial<typeof faction.$inferInsert> = {};
 
             if (input.name !== undefined) updateData.name = input.name;
             if (input.description !== undefined) updateData.description = input.description;
@@ -104,10 +110,8 @@ export class FactionService {
                 updateData.attributes = JSON.stringify(input.attributes);
             }
 
-            const current = await db.getClient().faction.findUnique({
-                where: { id: input.id },
-                select: { id: true, projectId: true, deletedAt: true },
-            });
+            const currentResults = await db.getDrizzleClient().select({ id: faction.id, projectId: faction.projectId, deletedAt: faction.deletedAt }).from(faction).where(eq(faction.id, input.id)).limit(1);
+            const current = currentResults[0];
             if (!current || current.deletedAt) {
                 throw new ServiceError(
                     ErrorCode.DB_QUERY_FAILED,
@@ -116,27 +120,25 @@ export class FactionService {
                 );
             }
 
-            const faction = await db.getClient().faction.update({
-                where: { id: input.id },
-                data: updateData,
-            });
+            const [updated] = await db.getDrizzleClient().update(faction).set(updateData).where(eq(faction.id, input.id)).returning();
 
-            logger.info("Faction updated successfully", {
-                factionId: faction.id,
-            });
-            await projectService.touchProject(String(faction.projectId));
-            await projectService.persistPackageAfterMutation(String(faction.projectId), "faction:update");
-            return faction;
-        } catch (error) {
-            logger.error("Failed to update faction", error);
-            if (isPrismaNotFoundError(error)) {
+            if (!updated) {
                 throw new ServiceError(
                     ErrorCode.DB_QUERY_FAILED,
                     "Faction not found",
                     { id: input.id },
-                    error,
                 );
             }
+
+            logger.info("Faction updated successfully", {
+                factionId: updated.id,
+            });
+            await projectService.touchProject(String(updated.projectId));
+            await projectService.persistPackageAfterMutation(String(updated.projectId), "faction:update");
+            return updated;
+        } catch (error) {
+            logger.error("Failed to update faction", error);
+            if (error instanceof ServiceError) throw error;
             throw new ServiceError(
                 ErrorCode.DB_QUERY_FAILED,
                 "Failed to update faction",
@@ -148,33 +150,17 @@ export class FactionService {
 
     async deleteFaction(id: string) {
         try {
-            const faction = await db.getClient().faction.findUnique({
-                where: { id },
-                select: { projectId: true, deletedAt: true },
-            });
+            const currentResults = await db.getDrizzleClient().select({ projectId: faction.projectId, deletedAt: faction.deletedAt }).from(faction).where(eq(faction.id, id)).limit(1);
+            const current = currentResults[0];
 
-            const projectId =
-                (faction as { projectId?: unknown })?.projectId
-                    ? String((faction as { projectId: unknown }).projectId)
-                    : null;
-            const now = new Date();
+            const projectId = current?.projectId ?? null;
+            const now = new Date().toISOString();
 
-            await db.getClient().$transaction(async (tx: Prisma.TransactionClient) => {
+            await db.getDrizzleClient().transaction(async (tx) => {
                 if (projectId) {
-                    await tx.entityRelation.deleteMany({
-                        where: {
-                            projectId,
-                            OR: [{ sourceId: id }, { targetId: id }],
-                        },
-                    });
+                    await tx.delete(entityRelation).where(or(eq(entityRelation.sourceId, id), eq(entityRelation.targetId, id)));
                 }
-                await tx.faction.updateMany({
-                    where: { id },
-                    data: {
-                        deletedAt: now,
-                        updatedAt: now,
-                    },
-                });
+                await tx.update(faction).set({ deletedAt: now, updatedAt: now }).where(eq(faction.id, id));
             });
 
             logger.info("Faction deleted successfully", { factionId: id });

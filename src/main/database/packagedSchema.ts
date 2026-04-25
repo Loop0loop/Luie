@@ -1,3 +1,4 @@
+// TODO: Remove in Phase 7 — replaced by Drizzle migrations in drizzle/main/
 // Packaged SQLite bootstrap schema mirrors the current local runtime surface.
 // It includes canonical project tables, replica tables for detached/offline
 // editing, and app-local attachment metadata. `Project.projectPath` remains as
@@ -63,6 +64,11 @@ export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
   },
   {
     table: "Character",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Character" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "Character",
     column: "firstAppearance",
     sql: 'ALTER TABLE "Character" ADD COLUMN "firstAppearance" TEXT;',
   },
@@ -70,6 +76,21 @@ export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
     table: "Character",
     column: "attributes",
     sql: 'ALTER TABLE "Character" ADD COLUMN "attributes" TEXT;',
+  },
+  {
+    table: "Event",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Event" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "Faction",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Faction" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "Term",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Term" ADD COLUMN "deletedAt" DATETIME;',
   },
 ];
 
@@ -81,12 +102,12 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
   ProjectLocalState: ["projectId", "lastOpenedAt"],
   ProjectSettings: ["id", "projectId", "autoSave", "autoSaveInterval"],
   Chapter: ["id", "projectId", "order", "wordCount", "deletedAt"],
-  Character: ["id", "projectId", "firstAppearance", "attributes"],
-  Event: ["id", "projectId", "name"],
-  Faction: ["id", "projectId", "name"],
+  Character: ["id", "projectId", "firstAppearance", "attributes", "deletedAt"],
+  Event: ["id", "projectId", "name", "deletedAt"],
+  Faction: ["id", "projectId", "name", "deletedAt"],
   WorldDocument: ["id", "projectId", "docType", "payload"],
   ScrapMemo: ["id", "projectId", "title", "content", "tags", "sortOrder", "updatedAt"],
-  Term: ["id", "projectId", "term", "order"],
+  Term: ["id", "projectId", "term", "order", "deletedAt"],
   Snapshot: ["id", "projectId", "content", "contentLength", "type"],
   WorldEntity: ["id", "projectId", "type", "name", "positionX", "positionY"],
   EntityRelation: ["id", "projectId", "sourceId", "targetId", "relation"],
@@ -118,7 +139,7 @@ CREATE TABLE IF NOT EXISTS "ProjectLocalState" (
 CREATE TABLE IF NOT EXISTS "ProjectSettings" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,
-    "autoSave" BOOLEAN NOT NULL DEFAULT true,
+    "autoSave" BOOLEAN NOT NULL DEFAULT 1,
     "autoSaveInterval" INTEGER NOT NULL DEFAULT 30,
     CONSTRAINT "ProjectSettings_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -144,6 +165,7 @@ CREATE TABLE IF NOT EXISTS "Character" (
     "attributes" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME,
     CONSTRAINT "Character_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "Event" (
@@ -155,6 +177,7 @@ CREATE TABLE IF NOT EXISTS "Event" (
     "attributes" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME,
     CONSTRAINT "Event_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "Faction" (
@@ -166,6 +189,7 @@ CREATE TABLE IF NOT EXISTS "Faction" (
     "attributes" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME,
     CONSTRAINT "Faction_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "WorldDocument" (
@@ -198,6 +222,7 @@ CREATE TABLE IF NOT EXISTS "Term" (
     "firstAppearance" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME,
     CONSTRAINT "Term_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "Snapshot" (

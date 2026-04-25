@@ -6,10 +6,6 @@ import {
   dropPackagedCacheOptionalFtsArtifacts,
   ensurePackagedCacheSqliteSchema,
 } from "../../../src/main/database/cacheSchemaBootstrap.js";
-import {
-  getPrismaBinPath,
-  runPrismaCommand,
-} from "../../../src/main/database/databaseRuntime.js";
 
 const logger = {
   info: () => {},
@@ -24,7 +20,7 @@ async function createTempDbPath(): Promise<string> {
   return path.join(tempDir, "cache.sqlite");
 }
 
-describe("cache prisma push compatibility", () => {
+describe("cache Drizzle migration compatibility", () => {
   afterEach(async () => {
     await Promise.all(
       tempDirs.splice(0).map(async (tempDir) => {
@@ -33,41 +29,57 @@ describe("cache prisma push compatibility", () => {
     );
   });
 
-  it("drops unmanaged FTS artifacts before pushing the Prisma cache schema", async () => {
+  it("drops unmanaged FTS artifacts before applying Drizzle cache migrations", async () => {
     const dbPath = await createTempDbPath();
     ensurePackagedCacheSqliteSchema(dbPath, logger);
 
-    const prismaPath = getPrismaBinPath(process.cwd());
-    const schemaPath = path.join(process.cwd(), "prisma-cache", "schema.prisma");
-    const env = {
-      ...process.env,
-      DATABASE_URL: `file:${dbPath}`,
-      CACHE_DATABASE_URL: `file:${dbPath}`,
-    };
-
-    let initialPushError: unknown;
+    const database = await import("better-sqlite3").then((m) => new m.default(dbPath));
     try {
-      await runPrismaCommand(
-        prismaPath,
-        ["db", "push", "--accept-data-loss", `--schema=${schemaPath}`],
-        env,
-      );
-    } catch (error) {
-      initialPushError = error;
+      const tables = database
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE '%fts%' ORDER BY name;",
+        )
+        .all() as Array<{ name: string }>;
+
+      expect(tables.some((t) => t.name.includes("fts"))).toBe(true);
+
+      dropPackagedCacheOptionalFtsArtifacts(dbPath, logger);
+
+      const tablesAfterDrop = database
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE '%fts%' ORDER BY name;",
+        )
+        .all() as Array<{ name: string }>;
+
+      expect(tablesAfterDrop.some((t) => t.name.includes("fts"))).toBe(false);
+    } finally {
+      database.close();
     }
+  });
 
-    expect(initialPushError).toMatchObject({
-      stderr: expect.stringContaining("ChapterSearchDocumentFts_config"),
-    });
+  it("applies Drizzle baseline migration on new cache database", async () => {
+    const dbPath = await createTempDbPath();
+    ensurePackagedCacheSqliteSchema(dbPath, logger);
 
-    dropPackagedCacheOptionalFtsArtifacts(dbPath, logger);
+    const database = await import("better-sqlite3").then((m) => new m.default(dbPath));
+    try {
+      const hasChapterSearchDocument = database
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'ChapterSearchDocument' LIMIT 1;",
+        )
+        .get();
 
-    await expect(
-      runPrismaCommand(
-        prismaPath,
-        ["db", "push", "--accept-data-loss", `--schema=${schemaPath}`],
-        env,
-      ),
-    ).resolves.toBeUndefined();
+      expect(hasChapterSearchDocument).toBeTruthy();
+
+      const hasDrizzleMigrations = database
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = '__drizzle_migrations' LIMIT 1;",
+        )
+        .get();
+
+      expect(hasDrizzleMigrations).toBeTruthy();
+    } finally {
+      database.close();
+    }
   });
 });

@@ -17,10 +17,14 @@ vi.mock("../../../src/main/database/index.js", () => ({
   db: {
     initialize: vi.fn(async () => undefined),
     disconnect: vi.fn(async () => undefined),
-    getClient: () => ({
-      project: {
-        findUnique: mocked.projectFindUnique,
-      },
+    getDrizzleClient: () => ({
+      select: vi.fn().mockReturnThis(),
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      limit: vi.fn(async () => [{ id: "project-1" }]),
+      update: vi.fn().mockReturnThis(),
+      set: vi.fn().mockReturnThis(),
+      returning: vi.fn(async () => [{ id: "project-1", title: "Project 1" }]),
     }),
   },
 }));
@@ -34,8 +38,8 @@ vi.mock("../../../src/main/services/core/project/projectPathPolicy.js", () => ({
   findProjectPathConflict: (...args: unknown[]) =>
     mocked.findProjectPathConflict(...args),
   normalizeProjectPath: (value?: string) => value,
-  normalizeLuiePackagePath: (...args: unknown[]) =>
-    mocked.normalizeLuiePackagePath(...args),
+  normalizeLuiePackagePath: (value: string) =>
+    mocked.normalizeLuiePackagePath(value),
   renameSnapshotDirectoryForProjectTitleChange: vi.fn(),
 }));
 
@@ -54,7 +58,7 @@ vi.mock("../../../src/main/services/core/project/projectAttachmentStore.js", () 
 }));
 
 vi.mock("../../../src/main/services/core/project/projectListStatus.js", () => ({
-  withProjectPathStatus: (...args: unknown[]) => mocked.withProjectPathStatus(...args),
+  withProjectPathStatus: (projects: unknown[]) => mocked.withProjectPathStatus(projects),
 }));
 
 vi.mock("../../../src/main/services/core/project/projectLocalStateStore.js", () => ({
@@ -119,12 +123,12 @@ describe("ProjectService package attachment flows", () => {
     vi.spyOn(service, "getProject").mockResolvedValue({
       id: "project-1",
       title: "Project 1",
-      createdAt: new Date("2026-03-12T00:00:00.000Z"),
-      updatedAt: new Date("2026-03-12T00:00:00.000Z"),
+      createdAt: "2026-03-12T00:00:00.000Z",
+      updatedAt: "2026-03-12T00:00:00.000Z",
       projectPath: "/tmp/attached.luie",
       attachmentStatus: "attached",
       pathMissing: false,
-    });
+    } as never);
 
     const attached = await service.attachProjectPackage(
       "project-1",
@@ -182,12 +186,12 @@ describe("ProjectService package attachment flows", () => {
     vi.spyOn(service, "getProject").mockResolvedValue({
       id: "project-1",
       title: "Project 1",
-      createdAt: new Date("2026-03-12T00:00:00.000Z"),
-      updatedAt: new Date("2026-03-12T00:00:00.000Z"),
+      createdAt: "2026-03-12T00:00:00.000Z",
+      updatedAt: "2026-03-12T00:00:00.000Z",
       projectPath: "/tmp/new-target.luie",
       attachmentStatus: "attached",
       pathMissing: false,
-    });
+    } as never);
 
     const materialized = await service.materializeProjectPackage(
       "project-1",

@@ -2,7 +2,9 @@
  * Project service - 프로젝트 관리 비즈니스 로직
  */
 
+import { eq, and, isNull, asc } from "drizzle-orm";
 import { db } from "../../database/index.js";
+import * as schema from "../../database/schema.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import {
   ErrorCode,
@@ -166,30 +168,33 @@ export class ProjectService {
         }
       }
 
-      const project = await db.getClient().project.create({
-        data: {
-          title: input.title,
-          description: input.description,
-          settings: {
-            create: {
-              autoSave: true,
-              autoSaveInterval: DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
-            },
-          },
-        },
-        include: {
-          settings: true,
-        },
+      const store = db.getDrizzleClient();
+      const now = new Date().toISOString();
+      const projectRows = await store.insert(schema.project).values({
+        id: crypto.randomUUID(),
+        title: input.title,
+        description: input.description ?? null,
+        createdAt: now,
+        updatedAt: now,
+      }).returning();
+
+      const created = projectRows[0];
+
+      await store.insert(schema.projectSettings).values({
+        id: created.id,
+        projectId: created.id,
+        autoSave: true,
+        autoSaveInterval: DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
       });
 
-      const projectId = String(project.id);
+      const projectId = String(created.id);
       if (projectPath !== undefined) {
         await setProjectAttachmentPath(projectId, projectPath);
       }
       logger.info("Project created successfully", { projectId });
       this.schedulePackageExport(projectId, "project:create");
       return {
-        ...project,
+        ...created,
         projectPath: projectPath ?? null,
       };
     } catch (error) {
@@ -307,14 +312,17 @@ export class ProjectService {
         packagePath,
         "packagePath",
       );
-      const [existing, conflict, meta] = await Promise.all([
-        db.getClient().project.findUnique({
-          where: { id: projectId },
-          select: { id: true },
-        }),
+      const [existingRows, conflict, meta] = await Promise.all([
+        db.getDrizzleClient()
+          .select({ id: schema.project.id })
+          .from(schema.project)
+          .where(eq(schema.project.id, projectId))
+          .limit(1),
         findProjectPathConflict(normalizedPath, projectId),
         this.readLuieMetaForAttachment(normalizedPath),
       ]);
+
+      const existing = existingRows.length > 0 ? existingRows[0] : null;
 
       if (!existing?.id) {
         throw new ServiceError(
@@ -392,14 +400,17 @@ export class ProjectService {
   async materializeProjectPackage(projectId: string, targetPath: string) {
     try {
       const normalizedPath = normalizeLuiePackagePath(targetPath, "targetPath");
-      const [existing, conflict, currentAttachmentPath] = await Promise.all([
-        db.getClient().project.findUnique({
-          where: { id: projectId },
-          select: { id: true },
-        }),
+      const [existingRows, conflict, currentAttachmentPath] = await Promise.all([
+        db.getDrizzleClient()
+          .select({ id: schema.project.id })
+          .from(schema.project)
+          .where(eq(schema.project.id, projectId))
+          .limit(1),
         findProjectPathConflict(normalizedPath, projectId),
         getProjectAttachmentPath(projectId),
       ]);
+
+      const existing = existingRows.length > 0 ? existingRows[0] : null;
 
       if (!existing?.id) {
         throw new ServiceError(
@@ -463,26 +474,30 @@ export class ProjectService {
 
   async getProject(id: string) {
     try {
-      const project = await db.getClient().project.findUnique({
-        where: { id },
-        include: {
-          settings: true,
-          chapters: {
-            where: { deletedAt: null },
-            orderBy: { order: "asc" },
-          },
-          characters: true,
-          terms: true,
-        },
-      });
+      const store = db.getDrizzleClient();
+      const [projectRows, settingsRows, chaptersRows, charactersRows, termsRows] = await Promise.all([
+        store.select().from(schema.project).where(eq(schema.project.id, id)).limit(1),
+        store.select().from(schema.projectSettings).where(eq(schema.projectSettings.projectId, id)).limit(1),
+        store.select().from(schema.chapter).where(and(eq(schema.chapter.projectId, id), isNull(schema.chapter.deletedAt))).orderBy(asc(schema.chapter.order)),
+        store.select().from(schema.character).where(eq(schema.character.projectId, id)),
+        store.select().from(schema.term).where(eq(schema.term.projectId, id)),
+      ]);
 
-      if (!project) {
+      if (projectRows.length === 0) {
         throw new ServiceError(
           ErrorCode.PROJECT_NOT_FOUND,
           "Project not found",
           { id },
         );
       }
+
+      const project = {
+        ...projectRows[0],
+        settings: settingsRows[0] ?? null,
+        chapters: chaptersRows,
+        characters: charactersRows,
+        terms: termsRows,
+      };
 
       const projectWithAttachment = {
         ...project,
@@ -499,30 +514,26 @@ export class ProjectService {
 
   async getAllProjects() {
     try {
-      const projects = await db.getClient().project.findMany({
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      });
+      const projects = await db.getDrizzleClient()
+        .select({
+          id: schema.project.id,
+          title: schema.project.title,
+          description: schema.project.description,
+          createdAt: schema.project.createdAt,
+          updatedAt: schema.project.updatedAt,
+        })
+        .from(schema.project);
 
       const normalizedProjects = projects.map(
-        (project: {
-          id: string;
-          title: string;
-          description: string | null;
-          createdAt: Date;
-          updatedAt: Date;
-        }) => ({
+        (project) => ({
           ...project,
           id: String(project.id),
           description:
             typeof project.description === "string"
               ? project.description
               : null,
+          createdAt: new Date(project.createdAt),
+          updatedAt: new Date(project.updatedAt),
         }),
       );
 
@@ -570,21 +581,29 @@ export class ProjectService {
         }
       }
 
-      const [current, currentProjectPath] = await Promise.all([
-        db.getClient().project.findUnique({
-          where: { id: input.id },
-          select: { title: true },
-        }),
+      const [currentRows, currentProjectPath] = await Promise.all([
+        db.getDrizzleClient()
+          .select({ title: schema.project.title })
+          .from(schema.project)
+          .where(eq(schema.project.id, input.id))
+          .limit(1),
         getProjectAttachmentPath(input.id),
       ]);
 
-      const project = await db.getClient().project.update({
-        where: { id: input.id },
-        data: {
+      const current = currentRows.length > 0 ? currentRows[0] : null;
+
+      const now = new Date().toISOString();
+      const projectRows = await db.getDrizzleClient()
+        .update(schema.project)
+        .set({
           title: input.title,
           description: input.description,
-        },
-      });
+          updatedAt: now,
+        })
+        .where(eq(schema.project.id, input.id))
+        .returning();
+
+      const project = projectRows[0];
 
       const nextProjectPath =
         normalizedProjectPath === undefined
@@ -642,13 +661,16 @@ export class ProjectService {
     let queuedProjectDelete = false;
 
     try {
-      const [existing, projectPath] = await Promise.all([
-        db.getClient().project.findUnique({
-          where: { id: request.id },
-          select: { id: true },
-        }),
+      const [existingRows, projectPath] = await Promise.all([
+        db.getDrizzleClient()
+          .select({ id: schema.project.id })
+          .from(schema.project)
+          .where(eq(schema.project.id, request.id))
+          .limit(1),
         getProjectAttachmentPath(request.id),
       ]);
+
+      const existing = existingRows.length > 0 ? existingRows[0] : null;
 
       if (!existing?.id) {
         throw new ServiceError(
@@ -669,9 +691,9 @@ export class ProjectService {
       });
       queuedProjectDelete = true;
 
-      await db.getClient().project.delete({
-        where: { id: request.id },
-      });
+      await db.getDrizzleClient()
+        .delete(schema.project)
+        .where(eq(schema.project.id, request.id));
       try {
         const [appearanceCacheService, chapterSearchCacheService] =
           await Promise.all([
@@ -715,10 +737,13 @@ export class ProjectService {
 
   async removeProjectFromList(id: string) {
     try {
-      const existing = await db.getClient().project.findUnique({
-        where: { id },
-        select: { id: true },
-      });
+      const existingRows = await db.getDrizzleClient()
+        .select({ id: schema.project.id })
+        .from(schema.project)
+        .where(eq(schema.project.id, id))
+        .limit(1);
+
+      const existing = existingRows.length > 0 ? existingRows[0] : null;
 
       if (!existing?.id) {
         throw new ServiceError(
@@ -728,9 +753,9 @@ export class ProjectService {
         );
       }
 
-      await db.getClient().project.delete({
-        where: { id },
-      });
+      await db.getDrizzleClient()
+        .delete(schema.project)
+        .where(eq(schema.project.id, id));
       try {
         const [appearanceCacheService, chapterSearchCacheService] =
           await Promise.all([
@@ -779,12 +804,10 @@ export class ProjectService {
   }
 
   async touchProject(projectId: string): Promise<void> {
-    await db.getClient().project.update({
-      where: { id: projectId },
-      data: {
-        updatedAt: new Date(),
-      },
-    });
+    await db.getDrizzleClient()
+      .update(schema.project)
+      .set({ updatedAt: new Date().toISOString() })
+      .where(eq(schema.project.id, projectId));
   }
 
   schedulePackageExport(projectId: string, reason?: string) {

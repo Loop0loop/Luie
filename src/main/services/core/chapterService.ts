@@ -5,7 +5,9 @@
 import { app } from "electron";
 import * as fs from "fs/promises";
 import path from "path";
+import { eq, and, isNull, desc, asc, sql } from "drizzle-orm";
 import { db } from "../../database/index.js";
+import * as schema from "../../database/schema.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import {
   ErrorCode,
@@ -22,6 +24,8 @@ import { trackKeywordAppearances } from "./chapterKeywords.js";
 import { sanitizeName } from "../../../shared/utils/sanitize.js";
 import { isTestEnv } from "../../utils/environment.js";
 
+const { chapter, project } = schema;
+
 const logger = createLogger("ChapterService");
 
 const loadAutoSaveManager = async () =>
@@ -34,26 +38,18 @@ const loadChapterSearchCacheService = async () =>
   (await import("../features/chapterSearchCacheService.js"))
     .chapterSearchCacheService;
 
-function isPrismaNotFoundError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: unknown }).code === "P2025"
-  );
-}
-
 export class ChapterService {
   private async resolveProjectTitle(
     projectId: string | undefined,
   ): Promise<string> {
     if (!projectId) return "Unknown";
-    const project = await db.getClient().project.findUnique({
-      where: { id: projectId },
-      select: { title: true },
-    });
-    return typeof (project as { title?: unknown } | null)?.title === "string"
-      ? String((project as { title: string }).title)
+    const rows = await db.getDrizzleClient()
+      .select({ title: project.title })
+      .from(project)
+      .where(eq(project.id, projectId))
+      .limit(1);
+    return rows.length > 0 && typeof rows[0].title === "string"
+      ? rows[0].title
       : "Unknown";
   }
 
@@ -154,41 +150,47 @@ export class ChapterService {
       }
       logger.info("Creating chapter", input);
 
-      const maxOrder = await db.getClient().chapter.findFirst({
-        where: { projectId: input.projectId, deletedAt: null },
-        orderBy: { order: "desc" },
-        select: { order: true },
-      });
+      const store = db.getDrizzleClient();
+      const maxOrderRows = await store
+        .select({ order: chapter.order })
+        .from(chapter)
+        .where(and(eq(chapter.projectId, input.projectId), isNull(chapter.deletedAt)))
+        .orderBy(desc(chapter.order))
+        .limit(1);
 
       const maxOrderValue =
-        typeof (maxOrder as { order?: unknown })?.order === "number"
-          ? (maxOrder as { order: number }).order
+        maxOrderRows.length > 0 && typeof maxOrderRows[0].order === "number"
+          ? maxOrderRows[0].order
           : 0;
       const nextOrder = input.order ?? maxOrderValue + 1;
 
-      const chapter = await db.getClient().chapter.create({
-        data: {
-          projectId: input.projectId,
-          title: input.title,
-          synopsis: input.synopsis,
-          order: nextOrder,
-          content: "",
-        },
-      });
+      const now = new Date().toISOString();
+      const inserted = await store.insert(chapter).values({
+        id: crypto.randomUUID(),
+        projectId: input.projectId,
+        title: input.title,
+        synopsis: input.synopsis ?? null,
+        order: nextOrder,
+        content: "",
+        createdAt: now,
+        updatedAt: now,
+      }).returning();
 
-      logger.info("Chapter created successfully", { chapterId: chapter.id });
+      const created = inserted[0];
+
+      logger.info("Chapter created successfully", { chapterId: created.id });
       const chapterSearchCacheService = await loadChapterSearchCacheService();
       await chapterSearchCacheService.upsertChapter({
-        chapterId: String(chapter.id),
-        projectId: String(chapter.projectId),
-        title: chapter.title,
-        synopsis: chapter.synopsis ?? null,
-        content: chapter.content,
-        wordCount: chapter.wordCount,
-        order: chapter.order,
+        chapterId: String(created.id),
+        projectId: String(created.projectId),
+        title: created.title,
+        synopsis: created.synopsis ?? null,
+        content: created.content,
+        wordCount: created.wordCount,
+        order: created.order,
       });
       await projectService.persistPackageAfterMutation(input.projectId, "chapter:create");
-      return chapter;
+      return created;
     } catch (error) {
       logger.error("Failed to create chapter", error);
       if (error instanceof ServiceError) {
@@ -205,11 +207,14 @@ export class ChapterService {
 
   async getChapter(id: string) {
     try {
-      const chapter = await db.getClient().chapter.findFirst({
-        where: { id, deletedAt: null },
-      });
+      const store = db.getDrizzleClient();
+      const rows = await store
+        .select()
+        .from(chapter)
+        .where(and(eq(chapter.id, id), isNull(chapter.deletedAt)))
+        .limit(1);
 
-      if (!chapter) {
+      if (rows.length === 0) {
         throw new ServiceError(
           ErrorCode.CHAPTER_NOT_FOUND,
           "Chapter not found",
@@ -217,7 +222,7 @@ export class ChapterService {
         );
       }
 
-      return chapter;
+      return rows[0];
     } catch (error) {
       logger.error("Failed to get chapter", error);
       throw error;
@@ -226,10 +231,11 @@ export class ChapterService {
 
   async getAllChapters(projectId: string) {
     try {
-      const chapters = await db.getClient().chapter.findMany({
-        where: { projectId, deletedAt: null },
-        orderBy: { order: "asc" },
-      });
+      const chapters = await db.getDrizzleClient()
+        .select()
+        .from(chapter)
+        .where(and(eq(chapter.projectId, projectId), isNull(chapter.deletedAt)))
+        .orderBy(asc(chapter.order));
 
       return chapters;
     } catch (error) {
@@ -245,11 +251,15 @@ export class ChapterService {
 
   async updateChapter(input: ChapterUpdateInput) {
     try {
-      const current = await db.getClient().chapter.findUnique({
-        where: { id: input.id },
-        select: { projectId: true, content: true, deletedAt: true },
-      });
-      if ((current as { deletedAt?: unknown } | null)?.deletedAt) {
+      const store = db.getDrizzleClient();
+      const currentRows = await store
+        .select({ projectId: chapter.projectId, content: chapter.content, deletedAt: chapter.deletedAt })
+        .from(chapter)
+        .where(eq(chapter.id, input.id))
+        .limit(1);
+
+      const current = currentRows.length > 0 ? currentRows[0] : null;
+      if (current?.deletedAt) {
         throw new ServiceError(
           ErrorCode.VALIDATION_FAILED,
           "Cannot update a deleted chapter",
@@ -268,9 +278,12 @@ export class ChapterService {
       if (input.synopsis !== undefined) updateData.synopsis = input.synopsis;
 
       if (Object.keys(updateData).length === 0) {
-        return await db.getClient().chapter.findUnique({
-          where: { id: input.id },
-        });
+        const existing = await store
+          .select()
+          .from(chapter)
+          .where(eq(chapter.id, input.id))
+          .limit(1);
+        return existing.length > 0 ? existing[0] : null;
       }
 
       const hasOnlyContentUpdate =
@@ -282,15 +295,30 @@ export class ChapterService {
         hasOnlyContentUpdate &&
         String(current?.content ?? "") === String(input.content ?? "")
       ) {
-        return await db.getClient().chapter.findUnique({
-          where: { id: input.id },
-        });
+        const existing = await store
+          .select()
+          .from(chapter)
+          .where(eq(chapter.id, input.id))
+          .limit(1);
+        return existing.length > 0 ? existing[0] : null;
       }
 
-      const updatedChapter = await db.getClient().chapter.update({
-        where: { id: input.id },
-        data: updateData,
-      });
+      const now = new Date().toISOString();
+      const updated = await store
+        .update(chapter)
+        .set({ ...(updateData as Partial<typeof chapter.$inferInsert>), updatedAt: now })
+        .where(eq(chapter.id, input.id))
+        .returning();
+
+      if (updated.length === 0) {
+        throw new ServiceError(
+          ErrorCode.CHAPTER_NOT_FOUND,
+          "Chapter not found",
+          { id: input.id },
+        );
+      }
+
+      const updatedChapter = updated[0];
 
       logger.info("Chapter updated successfully", {
         chapterId: updatedChapter.id,
@@ -298,27 +326,19 @@ export class ChapterService {
       const chapterSearchCacheService = await loadChapterSearchCacheService();
       await chapterSearchCacheService.upsertChapter({
         chapterId: String(updatedChapter.id),
-        projectId: String((updatedChapter as { projectId: unknown }).projectId),
+        projectId: String(updatedChapter.projectId),
         title: updatedChapter.title,
         synopsis: updatedChapter.synopsis ?? null,
         content: updatedChapter.content,
         wordCount: updatedChapter.wordCount,
         order: updatedChapter.order,
       });
-      await projectService.persistPackageAfterMutation(String((updatedChapter as { projectId: unknown }).projectId), "chapter:update");
+      await projectService.persistPackageAfterMutation(String(updatedChapter.projectId), "chapter:update");
       return updatedChapter;
     } catch (error) {
       logger.error("Failed to update chapter", error);
       if (error instanceof ServiceError) {
         throw error;
-      }
-      if (isPrismaNotFoundError(error)) {
-        throw new ServiceError(
-          ErrorCode.CHAPTER_NOT_FOUND,
-          "Chapter not found",
-          { id: input.id },
-          error,
-        );
       }
       throw new ServiceError(
         ErrorCode.CHAPTER_UPDATE_FAILED,
@@ -331,20 +351,33 @@ export class ChapterService {
 
   async deleteChapter(id: string) {
     try {
-      const chapter = await db.getClient().chapter.findUnique({
-        where: { id },
-        select: { projectId: true },
-      });
+      const store = db.getDrizzleClient();
+      const chapterRows = await store
+        .select({ projectId: chapter.projectId })
+        .from(chapter)
+        .where(eq(chapter.id, id))
+        .limit(1);
 
-      const deleted = await db.getClient().chapter.update({
-        where: { id },
-        data: { deletedAt: new Date() },
-      });
+      const chapterData = chapterRows.length > 0 ? chapterRows[0] : null;
 
-      if ((chapter as { projectId?: unknown })?.projectId) {
+      const deleted = await store
+        .update(chapter)
+        .set({ deletedAt: new Date().toISOString() })
+        .where(eq(chapter.id, id))
+        .returning();
+
+      if (deleted.length === 0) {
+        throw new ServiceError(
+          ErrorCode.CHAPTER_NOT_FOUND,
+          "Chapter not found",
+          { id },
+        );
+      }
+
+      if (chapterData?.projectId) {
         const autoSaveManager = await loadAutoSaveManager();
         await autoSaveManager.forgetChapter(
-          String((chapter as { projectId: unknown }).projectId),
+          String(chapterData.projectId),
           id,
         );
       }
@@ -357,10 +390,10 @@ export class ChapterService {
       await chapterSearchCacheService.clearChapter(id);
 
       logger.info("Chapter soft-deleted successfully", { chapterId: id });
-      if ((chapter as { projectId?: unknown })?.projectId) {
-        await projectService.persistPackageAfterMutation(String((chapter as { projectId: unknown }).projectId), "chapter:delete");
+      if (chapterData?.projectId) {
+        await projectService.persistPackageAfterMutation(String(chapterData.projectId), "chapter:delete");
       }
-      return deleted;
+      return deleted[0];
     } catch (error) {
       logger.error("Failed to delete chapter", error);
       throw new ServiceError(
@@ -374,10 +407,11 @@ export class ChapterService {
 
   async getDeletedChapters(projectId: string) {
     try {
-      return await db.getClient().chapter.findMany({
-        where: { projectId, deletedAt: { not: null } },
-        orderBy: { deletedAt: "desc" },
-      });
+      return await db.getDrizzleClient()
+        .select()
+        .from(chapter)
+        .where(and(eq(chapter.projectId, projectId), sql`${chapter.deletedAt} IS NOT NULL`))
+        .orderBy(desc(chapter.deletedAt));
     } catch (error) {
       logger.error("Failed to get deleted chapters", error);
       throw new ServiceError(
@@ -391,11 +425,14 @@ export class ChapterService {
 
   async restoreChapter(id: string) {
     try {
-      const current = await db.getClient().chapter.findUnique({
-        where: { id },
-        select: { projectId: true, content: true },
-      });
+      const store = db.getDrizzleClient();
+      const currentRows = await store
+        .select({ projectId: chapter.projectId, content: chapter.content })
+        .from(chapter)
+        .where(eq(chapter.id, id))
+        .limit(1);
 
+      const current = currentRows.length > 0 ? currentRows[0] : null;
       if (!current?.projectId) {
         throw new ServiceError(
           ErrorCode.CHAPTER_NOT_FOUND,
@@ -404,12 +441,20 @@ export class ChapterService {
         );
       }
 
-      const restored = await db.getClient().chapter.update({
-        where: { id },
-        data: {
-          deletedAt: null,
-        },
-      });
+      const restored = await store
+        .update(chapter)
+        .set({ deletedAt: null })
+        .where(eq(chapter.id, id))
+        .returning();
+
+      if (restored.length === 0) {
+        throw new ServiceError(
+          ErrorCode.CHAPTER_NOT_FOUND,
+          "Chapter not found",
+          { id },
+        );
+      }
+
       await trackKeywordAppearances(
         id,
         String(current.content ?? ""),
@@ -417,27 +462,22 @@ export class ChapterService {
       );
       const chapterSearchCacheService = await loadChapterSearchCacheService();
       await chapterSearchCacheService.upsertChapter({
-        chapterId: String(restored.id),
+        chapterId: String(restored[0].id),
         projectId: String(current.projectId),
-        title: restored.title,
-        synopsis: restored.synopsis ?? null,
-        content: restored.content,
-        wordCount: restored.wordCount,
-        order: restored.order,
+        title: restored[0].title,
+        synopsis: restored[0].synopsis ?? null,
+        content: restored[0].content,
+        wordCount: restored[0].wordCount,
+        order: restored[0].order,
       });
 
       logger.info("Chapter restored successfully", { chapterId: id });
       await projectService.persistPackageAfterMutation(String(current.projectId), "chapter:restore");
-      return restored;
+      return restored[0];
     } catch (error) {
       logger.error("Failed to restore chapter", error);
-      if (isPrismaNotFoundError(error)) {
-        throw new ServiceError(
-          ErrorCode.CHAPTER_NOT_FOUND,
-          "Chapter not found",
-          { id },
-          error,
-        );
+      if (error instanceof ServiceError) {
+        throw error;
       }
       throw new ServiceError(
         ErrorCode.CHAPTER_UPDATE_FAILED,
@@ -450,12 +490,19 @@ export class ChapterService {
 
   async purgeChapter(id: string) {
     try {
-      const chapter = await db.getClient().chapter.findUnique({
-        where: { id },
-        select: { projectId: true },
-      });
+      const store = db.getDrizzleClient();
+      const chapterRows = await store
+        .select({ projectId: chapter.projectId })
+        .from(chapter)
+        .where(eq(chapter.id, id))
+        .limit(1);
 
-      await db.getClient().chapter.delete({ where: { id } });
+      const chapterData = chapterRows.length > 0 ? chapterRows[0] : null;
+
+      await store
+        .delete(chapter)
+        .where(eq(chapter.id, id));
+
       const [appearanceCacheService, chapterSearchCacheService] =
         await Promise.all([
           loadAppearanceCacheService(),
@@ -464,17 +511,17 @@ export class ChapterService {
       await appearanceCacheService.clearChapter(id);
       await chapterSearchCacheService.clearChapter(id);
 
-      if ((chapter as { projectId?: unknown })?.projectId) {
+      if (chapterData?.projectId) {
         const autoSaveManager = await loadAutoSaveManager();
         await autoSaveManager.forgetChapter(
-          String((chapter as { projectId: unknown }).projectId),
+          String(chapterData.projectId),
           id,
         );
       }
 
       logger.info("Chapter purged successfully", { chapterId: id });
-      if ((chapter as { projectId?: unknown })?.projectId) {
-        await projectService.persistPackageAfterMutation(String((chapter as { projectId: unknown }).projectId), "chapter:purge");
+      if (chapterData?.projectId) {
+        await projectService.persistPackageAfterMutation(String(chapterData.projectId), "chapter:purge");
       }
       return { success: true };
     } catch (error) {
@@ -490,14 +537,18 @@ export class ChapterService {
 
   async reorderChapters(projectId: string, chapterIds: string[]) {
     try {
-      await db.getClient().$transaction(
-        chapterIds.map((id, index) =>
-          db.getClient().chapter.update({
-            where: { id },
-            data: { order: index + 1 },
-          }),
-        ),
-      );
+      const store = db.getDrizzleClient();
+      await store.transaction(async (tx) => {
+        const now = new Date().toISOString();
+        for (let index = 0; index < chapterIds.length; index++) {
+          const id = chapterIds[index];
+          // eslint-disable-next-line no-await-in-loop
+          await tx
+            .update(chapter)
+            .set({ order: index + 1, updatedAt: now })
+            .where(eq(chapter.id, id));
+        }
+      });
 
       logger.info("Chapters reordered successfully", { projectId });
       const chapterSearchCacheService = await loadChapterSearchCacheService();

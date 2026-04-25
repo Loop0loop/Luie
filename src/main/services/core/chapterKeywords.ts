@@ -1,8 +1,12 @@
+import { eq, and, isNull } from "drizzle-orm";
 import { createLogger } from "../../../shared/logger/index.js";
 import { SEARCH_CONTEXT_RADIUS } from "../../../shared/constants/index.js";
 import { db } from "../../database/index.js";
+import * as schema from "../../database/schema.js";
 import { keywordExtractor } from "../../core/keywordExtractor.js";
 import { projectService } from "./projectService.js";
+
+const { character, term, chapter } = schema;
 
 const loadAppearanceCacheService = async () =>
   (await import("../world/appearanceCacheService.js")).appearanceCacheService;
@@ -19,22 +23,26 @@ async function updateCharacterFirstAppearance(
   characterId: string,
   chapterId: string,
 ): Promise<void> {
-  const character = await db.getClient().character.findUnique({
-    where: { id: characterId },
-    select: {
-      projectId: true,
-      firstAppearance: true,
-      deletedAt: true,
-    },
-  });
-  if (!character?.projectId || character.firstAppearance || character.deletedAt) return;
+  const rows = await db.getDrizzleClient()
+    .select({
+      projectId: character.projectId,
+      firstAppearance: character.firstAppearance,
+      deletedAt: character.deletedAt,
+    })
+    .from(character)
+    .where(eq(character.id, characterId))
+    .limit(1);
 
-  await db.getClient().character.update({
-    where: { id: characterId },
-    data: { firstAppearance: chapterId },
-  });
+  if (rows.length === 0) return;
+  const char = rows[0];
+  if (!char.projectId || char.firstAppearance || char.deletedAt) return;
+
+  await db.getDrizzleClient()
+    .update(character)
+    .set({ firstAppearance: chapterId })
+    .where(eq(character.id, characterId));
   await projectService.attemptImmediatePackageExport(
-    String(character.projectId),
+    String(char.projectId),
     "character:update-first-appearance",
   );
 }
@@ -43,22 +51,26 @@ async function updateTermFirstAppearance(
   termId: string,
   chapterId: string,
 ): Promise<void> {
-  const term = await db.getClient().term.findUnique({
-    where: { id: termId },
-    select: {
-      projectId: true,
-      firstAppearance: true,
-      deletedAt: true,
-    },
-  });
-  if (!term?.projectId || term.firstAppearance || term.deletedAt) return;
+  const rows = await db.getDrizzleClient()
+    .select({
+      projectId: term.projectId,
+      firstAppearance: term.firstAppearance,
+      deletedAt: term.deletedAt,
+    })
+    .from(term)
+    .where(eq(term.id, termId))
+    .limit(1);
 
-  await db.getClient().term.update({
-    where: { id: termId },
-    data: { firstAppearance: chapterId },
-  });
+  if (rows.length === 0) return;
+  const t = rows[0];
+  if (!t.projectId || t.firstAppearance || t.deletedAt) return;
+
+  await db.getDrizzleClient()
+    .update(term)
+    .set({ firstAppearance: chapterId })
+    .where(eq(term.id, termId));
   await projectService.attemptImmediatePackageExport(
-    String(term.projectId),
+    String(t.projectId),
     "term:update-first-appearance",
   );
 }
@@ -83,28 +95,29 @@ async function trackKeywordAppearancesInternal(
     }
   }
 
+  const store = db.getDrizzleClient();
+  const notDeleted = isNull(character.deletedAt);
+  const termNotDeleted = isNull(term.deletedAt);
+
   const [characters, terms] = await Promise.all([
     includeCharacters
-      ? db.getClient().character.findMany({
-          where: { projectId, deletedAt: null },
-          select: { id: true, name: true },
-        })
+      ? store
+          .select({ id: character.id, name: character.name })
+          .from(character)
+          .where(and(eq(character.projectId, projectId), notDeleted))
       : Promise.resolve([]),
     includeTerms
-      ? db.getClient().term.findMany({
-          where: { projectId, deletedAt: null },
-          select: { id: true, term: true },
-        })
+      ? store
+          .select({ id: term.id, term: term.term })
+          .from(term)
+          .where(and(eq(term.projectId, projectId), termNotDeleted))
       : Promise.resolve([]),
   ]);
 
-  const typedCharacters = characters as Array<{ id: string; name: string }>;
-  const typedTerms = terms as Array<{ id: string; term: string }>;
-
   keywordExtractor.setKnownCharacters(
-    typedCharacters.map((character) => character.name),
+    characters.map((c) => c.name),
   );
-  keywordExtractor.setKnownTerms(typedTerms.map((term) => term.term));
+  keywordExtractor.setKnownTerms(terms.map((t) => t.term));
 
   const keywords = keywordExtractor.extractFromText(content);
 
@@ -113,13 +126,13 @@ async function trackKeywordAppearancesInternal(
     for (const keyword of keywords.filter(
       (entry) => entry.type === "character",
     )) {
-      const character = typedCharacters.find(
+      const char = characters.find(
         (entry) => entry.name === keyword.text,
       );
-      if (!character) continue;
+      if (!char) continue;
 
       await appearanceCacheService.recordCharacterAppearance({
-        characterId: String(character.id),
+        characterId: String(char.id),
         projectId,
         chapterId,
         position: keyword.position,
@@ -130,18 +143,18 @@ async function trackKeywordAppearancesInternal(
         ),
       });
 
-      await updateCharacterFirstAppearance(String(character.id), chapterId);
+      await updateCharacterFirstAppearance(String(char.id), chapterId);
     }
   }
 
   if (includeTerms) {
     const appearanceCacheService = await loadAppearanceCacheService();
     for (const keyword of keywords.filter((entry) => entry.type === "term")) {
-      const term = typedTerms.find((entry) => entry.term === keyword.text);
-      if (!term) continue;
+      const t = terms.find((entry) => entry.term === keyword.text);
+      if (!t) continue;
 
       await appearanceCacheService.recordTermAppearance({
-        termId: String(term.id),
+        termId: String(t.id),
         projectId,
         chapterId,
         position: keyword.position,
@@ -152,7 +165,7 @@ async function trackKeywordAppearancesInternal(
         ),
       });
 
-      await updateTermFirstAppearance(String(term.id), chapterId);
+      await updateTermFirstAppearance(String(t.id), chapterId);
     }
   }
 
@@ -203,22 +216,16 @@ export async function rebuildProjectKeywordAppearances(
       await appearanceCacheService.clearTermProject(projectId);
     }
 
-    const chapters = (await db.getClient().chapter.findMany({
-      where: {
-        projectId,
-        deletedAt: null,
-      },
-      select: {
-        id: true,
-        content: true,
-      },
-      orderBy: { order: "asc" },
-    })) as Array<{ id: string; content: string }>;
+    const chapters = await db.getDrizzleClient()
+      .select({ id: chapter.id, content: chapter.content })
+      .from(chapter)
+      .where(and(eq(chapter.projectId, projectId), isNull(chapter.deletedAt)))
+      .orderBy(chapter.order);
 
-    for (const chapter of chapters) {
+    for (const ch of chapters) {
       await trackKeywordAppearancesInternal(
-        chapter.id,
-        chapter.content,
+        ch.id,
+        ch.content,
         projectId,
         {
           clearExisting: false,

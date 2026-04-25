@@ -2,8 +2,9 @@
  * Character service - 캐릭터 관리 비즈니스 로직
  */
 
-import type { Prisma } from "@prisma/client";
+import { eq, isNull, like, or, asc, and, inArray } from "drizzle-orm";
 import { db } from "../../database/index.js";
+import { character, entityRelation } from "../../database/schema.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import type {
@@ -20,36 +21,36 @@ const loadAppearanceCacheService = async () =>
 
 const logger = createLogger("CharacterService");
 
-export const getWorldDbClient = () => db.getClient();
-
-function isPrismaNotFoundError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: unknown }).code === "P2025"
-  );
-}
+export const getWorldDbClient = () => db.getDrizzleClient();
 
 export class CharacterService {
   async createCharacter(input: CharacterCreateInput) {
     try {
       logger.info("Creating character", input);
 
-      const character = await db.getClient().character.create({
-        data: {
-          projectId: input.projectId,
-          name: input.name,
-          description: input.description,
-          firstAppearance: input.firstAppearance,
-          attributes: input.attributes
-            ? JSON.stringify(input.attributes)
-            : null,
-        },
-      });
+      const now = new Date().toISOString();
+      const [result] = await db.getDrizzleClient().insert(character).values({
+        id: crypto.randomUUID(),
+        projectId: input.projectId,
+        name: input.name,
+        description: input.description ?? null,
+        firstAppearance: input.firstAppearance ?? null,
+        attributes: input.attributes
+          ? JSON.stringify(input.attributes)
+          : null,
+        updatedAt: now,
+      }).returning();
+
+      if (!result) {
+        throw new ServiceError(
+          ErrorCode.CHARACTER_CREATE_FAILED,
+          "Failed to create character",
+          { input },
+        );
+      }
 
       logger.info("Character created successfully", {
-        characterId: character.id,
+        characterId: result.id,
       });
       await rebuildProjectKeywordAppearances(input.projectId, {
         includeCharacters: true,
@@ -57,9 +58,10 @@ export class CharacterService {
       });
       await projectService.touchProject(input.projectId);
       await projectService.persistPackageAfterMutation(input.projectId, "character:create");
-      return character;
+      return result;
     } catch (error) {
       logger.error("Failed to create character", error);
+      if (error instanceof ServiceError) throw error;
       throw new ServiceError(
         ErrorCode.CHARACTER_CREATE_FAILED,
         "Failed to create character",
@@ -71,18 +73,17 @@ export class CharacterService {
 
   async getCharacter(id: string) {
     try {
-      const character = await db.getClient().character.findUnique({
-        where: { id },
-      });
+      const results = await db.getDrizzleClient().select().from(character).where(eq(character.id, id)).limit(1);
 
-      if (!character) {
+      if (results.length === 0) {
         throw new ServiceError(
           ErrorCode.CHARACTER_NOT_FOUND,
           "Character not found",
           { id },
         );
       }
-      if ("deletedAt" in character && character.deletedAt) {
+      const char = results[0];
+      if (char.deletedAt) {
         throw new ServiceError(
           ErrorCode.CHARACTER_NOT_FOUND,
           "Character not found",
@@ -94,23 +95,21 @@ export class CharacterService {
       const appearances =
         await appearanceCacheService.getCharacterAppearancesByEntity(id);
       return {
-        ...character,
+        ...char,
         appearances,
       };
     } catch (error) {
       logger.error("Failed to get character", error);
+      if (error instanceof ServiceError) throw error;
       throw error;
     }
   }
 
   async getAllCharacters(projectId: string) {
     try {
-      const characters = await db.getClient().character.findMany({
-        where: { projectId, deletedAt: null },
-        orderBy: { createdAt: "asc" },
-      });
+      const results = await db.getDrizzleClient().select().from(character).where(and(eq(character.projectId, projectId), isNull(character.deletedAt))).orderBy(asc(character.createdAt));
 
-      return characters;
+      return results;
     } catch (error) {
       logger.error("Failed to get all characters", error);
       throw new ServiceError(
@@ -124,7 +123,7 @@ export class CharacterService {
 
   async updateCharacter(input: CharacterUpdateInput) {
     try {
-      const updateData: Record<string, unknown> = {};
+      const updateData: Partial<typeof character.$inferInsert> = {};
 
       if (input.name !== undefined) updateData.name = input.name;
       if (input.description !== undefined)
@@ -135,10 +134,8 @@ export class CharacterService {
         updateData.attributes = JSON.stringify(input.attributes);
       }
 
-      const current = await db.getClient().character.findUnique({
-        where: { id: input.id },
-        select: { id: true, projectId: true, deletedAt: true },
-      });
+      const currentResults = await db.getDrizzleClient().select({ id: character.id, projectId: character.projectId, deletedAt: character.deletedAt }).from(character).where(eq(character.id, input.id)).limit(1);
+      const current = currentResults[0];
       if (!current || current.deletedAt) {
         throw new ServiceError(
           ErrorCode.CHARACTER_NOT_FOUND,
@@ -147,33 +144,31 @@ export class CharacterService {
         );
       }
 
-      const character = await db.getClient().character.update({
-        where: { id: input.id },
-        data: updateData,
-      });
+      const [updated] = await db.getDrizzleClient().update(character).set(updateData).where(eq(character.id, input.id)).returning();
 
-      logger.info("Character updated successfully", {
-        characterId: character.id,
-      });
-      if (input.name !== undefined) {
-        await rebuildProjectKeywordAppearances(String(character.projectId), {
-          includeCharacters: true,
-          includeTerms: false,
-        });
-      }
-      await projectService.touchProject(String(character.projectId));
-      await projectService.persistPackageAfterMutation(String(character.projectId), "character:update");
-      return character;
-    } catch (error) {
-      logger.error("Failed to update character", error);
-      if (isPrismaNotFoundError(error)) {
+      if (!updated) {
         throw new ServiceError(
           ErrorCode.CHARACTER_NOT_FOUND,
           "Character not found",
           { id: input.id },
-          error,
         );
       }
+
+      logger.info("Character updated successfully", {
+        characterId: updated.id,
+      });
+      if (input.name !== undefined) {
+        await rebuildProjectKeywordAppearances(String(updated.projectId), {
+          includeCharacters: true,
+          includeTerms: false,
+        });
+      }
+      await projectService.touchProject(String(updated.projectId));
+      await projectService.persistPackageAfterMutation(String(updated.projectId), "character:update");
+      return updated;
+    } catch (error) {
+      logger.error("Failed to update character", error);
+      if (error instanceof ServiceError) throw error;
       throw new ServiceError(
         ErrorCode.CHARACTER_UPDATE_FAILED,
         "Failed to update character",
@@ -185,35 +180,18 @@ export class CharacterService {
 
   async deleteCharacter(id: string) {
     try {
-      const character = await db.getClient().character.findUnique({
-        where: { id },
-        select: { projectId: true, deletedAt: true },
+      const currentResults = await db.getDrizzleClient().select({ projectId: character.projectId, deletedAt: character.deletedAt }).from(character).where(eq(character.id, id)).limit(1);
+      const current = currentResults[0];
+
+      const projectId = current?.projectId ?? null;
+      const now = new Date().toISOString();
+
+      await db.getDrizzleClient().transaction(async (tx) => {
+        if (projectId) {
+          await tx.delete(entityRelation).where(or(eq(entityRelation.sourceId, id), eq(entityRelation.targetId, id)));
+        }
+        await tx.update(character).set({ deletedAt: now, updatedAt: now }).where(eq(character.id, id));
       });
-
-      const projectId = (character as { projectId?: unknown })?.projectId
-        ? String((character as { projectId: unknown }).projectId)
-        : null;
-      const now = new Date();
-
-      await db
-        .getClient()
-        .$transaction(async (tx: Prisma.TransactionClient) => {
-          if (projectId) {
-            await tx.entityRelation.deleteMany({
-              where: {
-                projectId,
-                OR: [{ sourceId: id }, { targetId: id }],
-              },
-            });
-          }
-          await tx.character.updateMany({
-            where: { id },
-            data: {
-              deletedAt: now,
-              updatedAt: now,
-            },
-          });
-        });
       const appearanceCacheService = await loadAppearanceCacheService();
       await appearanceCacheService.clearCharacterEntity(id);
 
@@ -267,11 +245,9 @@ export class CharacterService {
       const characterIds = Array.from(
         new Set(appearances.map((appearance) => appearance.characterId)),
       );
-      const characters = await db.getClient().character.findMany({
-        where: { id: { in: characterIds }, deletedAt: null },
-      });
+      const characters = await db.getDrizzleClient().select().from(character).where(and(inArray(character.id, characterIds), isNull(character.deletedAt)));
       const characterById = new Map(
-        characters.map((character) => [String(character.id), character]),
+        characters.map((c) => [c.id, c]),
       );
 
       return appearances.map((appearance) => ({
@@ -291,11 +267,10 @@ export class CharacterService {
 
   async updateFirstAppearance(characterId: string, chapterId: string) {
     try {
-      const character = await db.getClient().character.findUnique({
-        where: { id: characterId },
-      });
+      const results = await db.getDrizzleClient().select().from(character).where(eq(character.id, characterId)).limit(1);
+      const char = results[0];
 
-      if (!character || character.deletedAt) {
+      if (!char || char.deletedAt) {
         throw new ServiceError(
           ErrorCode.CHARACTER_NOT_FOUND,
           "Character not found",
@@ -303,18 +278,16 @@ export class CharacterService {
         );
       }
 
-      if (!character.firstAppearance) {
-        await db.getClient().character.update({
-          where: { id: characterId },
-          data: { firstAppearance: chapterId },
-        });
+      if (!char.firstAppearance) {
+        await db.getDrizzleClient().update(character).set({ firstAppearance: chapterId }).where(eq(character.id, characterId));
 
         logger.info("First appearance updated", { characterId, chapterId });
-        await projectService.touchProject(String(character.projectId));
-        await projectService.persistPackageAfterMutation(String(character.projectId), "character:update-first-appearance");
+        await projectService.touchProject(String(char.projectId));
+        await projectService.persistPackageAfterMutation(String(char.projectId), "character:update-first-appearance");
       }
     } catch (error) {
       logger.error("Failed to update first appearance", error);
+      if (error instanceof ServiceError) throw error;
       throw new ServiceError(
         ErrorCode.CHARACTER_UPDATE_FAILED,
         "Failed to update first appearance",
@@ -326,19 +299,10 @@ export class CharacterService {
 
   async searchCharacters(projectId: string, query: string) {
     try {
-      const characters = await db.getClient().character.findMany({
-        where: {
-          projectId,
-          OR: [
-            { name: { contains: query } },
-            { description: { contains: query } },
-          ],
-          deletedAt: null,
-        },
-        orderBy: { name: "asc" },
-      });
+      const searchPattern = `%${query}%`;
+      const results = await db.getDrizzleClient().select().from(character).where(and(eq(character.projectId, projectId), or(like(character.name, searchPattern), like(character.description, searchPattern)), isNull(character.deletedAt))).orderBy(asc(character.name));
 
-      return characters;
+      return results;
     } catch (error) {
       logger.error("Failed to search characters", error);
       throw new ServiceError(

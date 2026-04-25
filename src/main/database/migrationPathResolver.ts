@@ -23,7 +23,7 @@ export const resolveMigrationPathContext = (
   const isTest = isTestEnv();
   const basePath = isPackaged ? process.resourcesPath : resolveProjectRoot();
   const migrationsFolder = path.join(basePath, DRIZZLE_MIGRATIONS_ROOT_DIR, kind);
-  const fts5SchemaPath = path.join(basePath, "src", "main", "database", "fts5Schema.sql");
+  const fts5SchemaPath = path.join(basePath, DRIZZLE_MIGRATIONS_ROOT_DIR, "cache", "fts5.sql");
 
   return {
     kind,

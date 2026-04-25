@@ -1,12 +1,11 @@
 import path from "node:path";
-import type { Prisma } from "@prisma/client";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "../../../database/index.js";
+import * as schema from "../../../database/schema.js";
+import type { MainDrizzleClient } from "../../../database/databaseTypes.js";
 import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
 
-type ProjectAttachmentClient = {
-  project: Prisma.TransactionClient["project"];
-  projectAttachment: Prisma.TransactionClient["projectAttachment"];
-};
+const { project, projectAttachment } = schema;
 
 export type ProjectAttachmentEntry = {
   id: string;
@@ -15,8 +14,8 @@ export type ProjectAttachmentEntry = {
   updatedAt: Date;
 };
 
-const getClient = (client?: ProjectAttachmentClient): ProjectAttachmentClient =>
-  client ?? (db.getClient() as unknown as ProjectAttachmentClient);
+const getClient = (client?: MainDrizzleClient): MainDrizzleClient =>
+  client ?? db.getDrizzleClient();
 
 const toNullableString = (value: unknown): string | null =>
   typeof value === "string" && value.trim().length > 0 ? value : null;
@@ -28,29 +27,25 @@ const toProjectPathKey = (projectPath: string): string => {
 
 const getLegacyProjectAttachmentPath = async (
   projectId: string,
-  client?: ProjectAttachmentClient,
+  client?: MainDrizzleClient,
 ): Promise<string | null> => {
-  const project = (await getClient(client).project.findUnique({
-    where: { id: projectId },
-    select: { projectPath: true },
-  })) as { projectPath?: string | null } | null;
+  const rows = await getClient(client)
+    .select({ projectPath: project.projectPath })
+    .from(project)
+    .where(eq(project.id, projectId))
+    .limit(1);
 
-  return toNullableString(project?.projectPath);
+  return rows.length > 0 ? toNullableString(rows[0].projectPath) : null;
 };
 
 const getLegacyProjectAttachmentMap = async (
   projectIds: string[],
-  client?: ProjectAttachmentClient,
+  client?: MainDrizzleClient,
 ): Promise<Map<string, string | null>> => {
-  const rows = (await getClient(client).project.findMany({
-    where: {
-      id: { in: projectIds },
-    },
-    select: {
-      id: true,
-      projectPath: true,
-    },
-  })) as Array<{ id: string; projectPath?: string | null }>;
+  const rows = await getClient(client)
+    .select({ id: project.id, projectPath: project.projectPath })
+    .from(project)
+    .where(inArray(project.id, projectIds));
 
   return new Map(
     rows.map((row) => [String(row.id), toNullableString(row.projectPath)]),
@@ -59,17 +54,15 @@ const getLegacyProjectAttachmentMap = async (
 
 const getAttachmentPathMap = async (
   projectIds: string[],
-  client?: ProjectAttachmentClient,
+  client?: MainDrizzleClient,
 ): Promise<Map<string, string | null>> => {
-  const rows = (await getClient(client).projectAttachment.findMany({
-    where: {
-      projectId: { in: projectIds },
-    },
-    select: {
-      projectId: true,
-      projectPath: true,
-    },
-  })) as Array<{ projectId: string; projectPath?: string | null }>;
+  const rows = await getClient(client)
+    .select({
+      projectId: projectAttachment.projectId,
+      projectPath: projectAttachment.projectPath,
+    })
+    .from(projectAttachment)
+    .where(inArray(projectAttachment.projectId, projectIds));
 
   return new Map(
     rows.map((row) => [String(row.projectId), toNullableString(row.projectPath)]),
@@ -78,37 +71,38 @@ const getAttachmentPathMap = async (
 
 const clearLegacyProjectPathIfPresent = async (
   projectId: string,
-  client?: ProjectAttachmentClient,
+  client?: MainDrizzleClient,
 ): Promise<void> => {
   const currentLegacyPath = await getLegacyProjectAttachmentPath(projectId, client);
   if (currentLegacyPath === null) {
     return;
   }
 
-  await getClient(client).project.update({
-    where: { id: projectId },
-    data: { projectPath: null },
-  });
+  await getClient(client)
+    .update(project)
+    .set({ projectPath: null })
+    .where(eq(project.id, projectId));
 };
 
 export const getProjectAttachmentPath = async (
   projectId: string,
-  client?: ProjectAttachmentClient,
+  client?: MainDrizzleClient,
 ): Promise<string | null> => {
-  const attachment = (await getClient(client).projectAttachment.findUnique({
-    where: { projectId },
-    select: { projectPath: true },
-  })) as { projectPath?: string | null } | null;
+  const rows = await getClient(client)
+    .select({ projectPath: projectAttachment.projectPath })
+    .from(projectAttachment)
+    .where(eq(projectAttachment.projectId, projectId))
+    .limit(1);
 
-  if (attachment) {
-    return toNullableString(attachment.projectPath);
+  if (rows.length > 0) {
+    return toNullableString(rows[0].projectPath);
   }
 
   return await getLegacyProjectAttachmentPath(projectId, client);
 };
 
 export const migrateLegacyProjectAttachments = async (
-  client?: ProjectAttachmentClient,
+  client?: MainDrizzleClient,
 ): Promise<{
   migratedRecords: number;
   clearedLegacyRecords: number;
@@ -116,23 +110,13 @@ export const migrateLegacyProjectAttachments = async (
 }> => {
   const store = getClient(client);
   const [projects, existingAttachments] = await Promise.all([
-    store.project.findMany({
-      select: {
-        id: true,
-        projectPath: true,
-        updatedAt: true,
-      },
-    }),
-    store.projectAttachment.findMany({
-      select: {
-        projectId: true,
-        projectPath: true,
-      },
-    }),
-  ]) as [
-    Array<{ id: string; projectPath?: string | null; updatedAt: Date }>,
-    Array<{ projectId: string; projectPath?: string | null }>,
-  ];
+    store
+      .select({ id: project.id, projectPath: project.projectPath, updatedAt: project.updatedAt })
+      .from(project),
+    store
+      .select({ projectId: projectAttachment.projectId, projectPath: projectAttachment.projectPath })
+      .from(projectAttachment),
+  ]);
 
   const claimedPathKeys = new Map<string, string>();
   const projectsWithAttachment = new Set<string>();
@@ -160,7 +144,7 @@ export const migrateLegacyProjectAttachments = async (
   let skippedInvalidRecords = 0;
 
   const legacyRows = [...projects].sort(
-    (left, right) => right.updatedAt.getTime() - left.updatedAt.getTime(),
+    (left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
   );
 
   for (const row of legacyRows) {
@@ -170,10 +154,10 @@ export const migrateLegacyProjectAttachments = async (
     }
 
     if (projectsWithAttachment.has(String(row.id))) {
-      await store.project.update({
-        where: { id: String(row.id) },
-        data: { projectPath: null },
-      });
+      await store
+        .update(project)
+        .set({ projectPath: null })
+        .where(eq(project.id, String(row.id)));
       clearedLegacyRecords += 1;
       continue;
     }
@@ -192,20 +176,22 @@ export const migrateLegacyProjectAttachments = async (
       continue;
     }
 
-    await store.projectAttachment.upsert({
-      where: { projectId: String(row.id) },
-      create: {
-        projectId: String(row.id),
+    const now = new Date().toISOString();
+    await store.insert(projectAttachment).values({
+      projectId: String(row.id),
+      projectPath: safeProjectPath,
+      updatedAt: now,
+    }).onConflictDoUpdate({
+      target: projectAttachment.projectId,
+      set: {
         projectPath: safeProjectPath,
-      },
-      update: {
-        projectPath: safeProjectPath,
+        updatedAt: now,
       },
     });
-    await store.project.update({
-      where: { id: String(row.id) },
-      data: { projectPath: null },
-    });
+    await store
+      .update(project)
+      .set({ projectPath: null })
+      .where(eq(project.id, String(row.id)));
 
     claimedPathKeys.set(pathKey, String(row.id));
     projectsWithAttachment.add(String(row.id));
@@ -223,26 +209,28 @@ export const migrateLegacyProjectAttachments = async (
 export const setProjectAttachmentPath = async (
   projectId: string,
   projectPath: string | null,
-  client?: ProjectAttachmentClient,
+  client?: MainDrizzleClient,
 ): Promise<void> => {
   const store = getClient(client);
   const normalizedProjectPath = toNullableString(projectPath);
 
   if (normalizedProjectPath) {
-    await store.projectAttachment.upsert({
-      where: { projectId },
-      create: {
-        projectId,
+    const now = new Date().toISOString();
+    await store.insert(projectAttachment).values({
+      projectId,
+      projectPath: normalizedProjectPath,
+      updatedAt: now,
+    }).onConflictDoUpdate({
+      target: projectAttachment.projectId,
+      set: {
         projectPath: normalizedProjectPath,
-      },
-      update: {
-        projectPath: normalizedProjectPath,
+        updatedAt: now,
       },
     });
   } else {
-    await store.projectAttachment.deleteMany({
-      where: { projectId },
-    });
+    await store
+      .delete(projectAttachment)
+      .where(eq(projectAttachment.projectId, projectId));
   }
 
   await clearLegacyProjectPathIfPresent(projectId, client);
@@ -252,7 +240,7 @@ export const hydrateProjectsWithAttachmentPaths = async <
   T extends { id: string },
 >(
   projects: T[],
-  client?: ProjectAttachmentClient,
+  client?: MainDrizzleClient,
 ): Promise<Array<T & { projectPath: string | null }>> => {
   if (projects.length === 0) {
     return [];
@@ -264,30 +252,26 @@ export const hydrateProjectsWithAttachmentPaths = async <
     getLegacyProjectAttachmentMap(projectIds, client),
   ]);
 
-  return projects.map((project) => ({
-    ...project,
-    projectPath: attachmentPathByProjectId.has(project.id)
-      ? (attachmentPathByProjectId.get(project.id) ?? null)
-      : (legacyPathByProjectId.get(project.id) ?? null),
+  return projects.map((p) => ({
+    ...p,
+    projectPath: attachmentPathByProjectId.has(p.id)
+      ? (attachmentPathByProjectId.get(p.id) ?? null)
+      : (legacyPathByProjectId.get(p.id) ?? null),
   }));
 };
 
 export const listProjectAttachmentEntries = async (
-  client?: ProjectAttachmentClient,
+  client?: MainDrizzleClient,
 ): Promise<ProjectAttachmentEntry[]> => {
-  const rows = (await getClient(client).project.findMany({
-    select: {
-      id: true,
-      title: true,
-      projectPath: true,
-      updatedAt: true,
-    },
-  })) as Array<{
-    id: string;
-    title?: string | null;
-    projectPath?: string | null;
-    updatedAt: Date;
-  }>;
+  const store = getClient(client);
+  const rows = await store
+    .select({
+      id: project.id,
+      title: project.title,
+      projectPath: project.projectPath,
+      updatedAt: project.updatedAt,
+    })
+    .from(project);
 
   const attachmentPathByProjectId = await getAttachmentPathMap(
     rows.map((row) => String(row.id)),
@@ -300,75 +284,69 @@ export const listProjectAttachmentEntries = async (
     projectPath: attachmentPathByProjectId.has(String(row.id))
       ? (attachmentPathByProjectId.get(String(row.id)) ?? null)
       : toNullableString(row.projectPath),
-    updatedAt: row.updatedAt,
+    updatedAt: new Date(row.updatedAt),
   }));
 };
 
 export const findProjectByAttachmentPath = async (
   projectPath: string,
-  client?: ProjectAttachmentClient,
+  client?: MainDrizzleClient,
 ): Promise<ProjectAttachmentEntry | null> => {
   const store = getClient(client);
-  const attachment = (await store.projectAttachment.findFirst({
-    where: { projectPath },
-    select: {
-      projectId: true,
-      projectPath: true,
-    },
-  })) as {
-    projectId: string;
-    projectPath?: string | null;
-  } | null;
+  const attachment = await store
+    .select({
+      projectId: projectAttachment.projectId,
+      projectPath: projectAttachment.projectPath,
+    })
+    .from(projectAttachment)
+    .where(eq(projectAttachment.projectPath, projectPath))
+    .limit(1);
 
-  if (attachment) {
-    const project = (await store.project.findUnique({
-      where: { id: attachment.projectId },
-      select: {
-        id: true,
-        title: true,
-        updatedAt: true,
-      },
-    })) as {
-      id: string;
-      title?: string | null;
-      updatedAt: Date;
-    } | null;
+  if (attachment.length > 0) {
+    const att = attachment[0];
+    const projRows = await store
+      .select({
+        id: project.id,
+        title: project.title,
+        updatedAt: project.updatedAt,
+      })
+      .from(project)
+      .where(eq(project.id, att.projectId))
+      .limit(1);
 
-    if (!project) {
+    if (projRows.length === 0) {
       return null;
     }
 
+    const proj = projRows[0];
     return {
-      id: String(project.id),
-      title: typeof project.title === "string" ? project.title : "",
-      projectPath: toNullableString(attachment.projectPath),
-      updatedAt: project.updatedAt,
+      id: String(proj.id),
+      title: typeof proj.title === "string" ? proj.title : "",
+      projectPath: toNullableString(att.projectPath),
+      updatedAt: new Date(proj.updatedAt),
     };
   }
 
-  const row = (await store.project.findFirst({
-    where: { projectPath },
-    select: {
-      id: true,
-      title: true,
-      projectPath: true,
-      updatedAt: true,
-    },
-  })) as {
-    id: string;
-    title?: string | null;
-    projectPath?: string | null;
-    updatedAt: Date;
-  } | null;
+  const row = await store
+    .select({
+      id: project.id,
+      title: project.title,
+      projectPath: project.projectPath,
+      updatedAt: project.updatedAt,
+    })
+    .from(project)
+    .where(eq(project.projectPath, projectPath))
+    .limit(1);
 
-  if (!row) {
+  if (row.length === 0) {
     return null;
   }
 
+  const r = row[0];
   return {
-    id: String(row.id),
-    title: typeof row.title === "string" ? row.title : "",
-    projectPath: toNullableString(row.projectPath),
-    updatedAt: row.updatedAt,
+    id: String(r.id),
+    title: typeof r.title === "string" ? r.title : "",
+    projectPath: toNullableString(r.projectPath),
+    updatedAt: new Date(r.updatedAt),
   };
 };

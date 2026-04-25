@@ -1,5 +1,6 @@
-import type { Prisma } from "@prisma/client";
+import { eq, isNull, asc, and, or } from "drizzle-orm";
 import { db } from "../../database/index.js";
+import { event, entityRelation } from "../../database/schema.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import type {
@@ -11,38 +12,39 @@ import { ServiceError } from "../../utils/serviceError.js";
 
 const logger = createLogger("EventService");
 
-function isPrismaNotFoundError(error: unknown): boolean {
-    return (
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        (error as { code?: unknown }).code === "P2025"
-    );
-}
-
 export class EventService {
     async createEvent(input: EventCreateInput) {
         try {
             logger.info("Creating event", input);
 
-            const event = await db.getClient().event.create({
-                data: {
-                    projectId: input.projectId,
-                    name: input.name,
-                    description: input.description,
-                    firstAppearance: input.firstAppearance,
-                    attributes: input.attributes ? JSON.stringify(input.attributes) : null,
-                },
-            });
+            const now = new Date().toISOString();
+            const [result] = await db.getDrizzleClient().insert(event).values({
+                id: crypto.randomUUID(),
+                projectId: input.projectId,
+                name: input.name,
+                description: input.description ?? null,
+                firstAppearance: input.firstAppearance ?? null,
+                attributes: input.attributes ? JSON.stringify(input.attributes) : null,
+                updatedAt: now,
+            }).returning();
+
+            if (!result) {
+                throw new ServiceError(
+                    ErrorCode.DB_QUERY_FAILED,
+                    "Failed to create event",
+                    { input },
+                );
+            }
 
             logger.info("Event created successfully", {
-                eventId: event.id,
+                eventId: result.id,
             });
             await projectService.touchProject(input.projectId);
             await projectService.persistPackageAfterMutation(input.projectId, "event:create");
-            return event;
+            return result;
         } catch (error) {
             logger.error("Failed to create event", error);
+            if (error instanceof ServiceError) throw error;
             throw new ServiceError(
                 ErrorCode.DB_QUERY_FAILED,
                 "Failed to create event",
@@ -54,11 +56,17 @@ export class EventService {
 
     async getEvent(id: string) {
         try {
-            const event = await db.getClient().event.findUnique({
-                where: { id },
-            });
+            const results = await db.getDrizzleClient().select().from(event).where(eq(event.id, id)).limit(1);
 
-            if (!event || event.deletedAt) {
+            if (results.length === 0) {
+                throw new ServiceError(
+                    ErrorCode.DB_QUERY_FAILED,
+                    "Event not found",
+                    { id },
+                );
+            }
+            const e = results[0];
+            if (e.deletedAt) {
                 throw new ServiceError(
                     ErrorCode.DB_QUERY_FAILED,
                     "Event not found",
@@ -66,21 +74,19 @@ export class EventService {
                 );
             }
 
-            return event;
+            return e;
         } catch (error) {
             logger.error("Failed to get event", error);
+            if (error instanceof ServiceError) throw error;
             throw error;
         }
     }
 
     async getAllEvents(projectId: string) {
         try {
-            const events = await db.getClient().event.findMany({
-                where: { projectId, deletedAt: null },
-                orderBy: { createdAt: "asc" },
-            });
+            const results = await db.getDrizzleClient().select().from(event).where(and(eq(event.projectId, projectId), isNull(event.deletedAt))).orderBy(asc(event.createdAt));
 
-            return events;
+            return results;
         } catch (error) {
             logger.error("Failed to get all events", error);
             throw new ServiceError(
@@ -94,7 +100,7 @@ export class EventService {
 
     async updateEvent(input: EventUpdateInput) {
         try {
-            const updateData: Record<string, unknown> = {};
+            const updateData: Partial<typeof event.$inferInsert> = {};
 
             if (input.name !== undefined) updateData.name = input.name;
             if (input.description !== undefined) updateData.description = input.description;
@@ -104,10 +110,8 @@ export class EventService {
                 updateData.attributes = JSON.stringify(input.attributes);
             }
 
-            const current = await db.getClient().event.findUnique({
-                where: { id: input.id },
-                select: { id: true, projectId: true, deletedAt: true },
-            });
+            const currentResults = await db.getDrizzleClient().select({ id: event.id, projectId: event.projectId, deletedAt: event.deletedAt }).from(event).where(eq(event.id, input.id)).limit(1);
+            const current = currentResults[0];
             if (!current || current.deletedAt) {
                 throw new ServiceError(
                     ErrorCode.DB_QUERY_FAILED,
@@ -116,27 +120,25 @@ export class EventService {
                 );
             }
 
-            const event = await db.getClient().event.update({
-                where: { id: input.id },
-                data: updateData,
-            });
+            const [updated] = await db.getDrizzleClient().update(event).set(updateData).where(eq(event.id, input.id)).returning();
 
-            logger.info("Event updated successfully", {
-                eventId: event.id,
-            });
-            await projectService.touchProject(String(event.projectId));
-            await projectService.persistPackageAfterMutation(String(event.projectId), "event:update");
-            return event;
-        } catch (error) {
-            logger.error("Failed to update event", error);
-            if (isPrismaNotFoundError(error)) {
+            if (!updated) {
                 throw new ServiceError(
                     ErrorCode.DB_QUERY_FAILED,
                     "Event not found",
                     { id: input.id },
-                    error,
                 );
             }
+
+            logger.info("Event updated successfully", {
+                eventId: updated.id,
+            });
+            await projectService.touchProject(String(updated.projectId));
+            await projectService.persistPackageAfterMutation(String(updated.projectId), "event:update");
+            return updated;
+        } catch (error) {
+            logger.error("Failed to update event", error);
+            if (error instanceof ServiceError) throw error;
             throw new ServiceError(
                 ErrorCode.DB_QUERY_FAILED,
                 "Failed to update event",
@@ -148,33 +150,17 @@ export class EventService {
 
     async deleteEvent(id: string) {
         try {
-            const event = await db.getClient().event.findUnique({
-                where: { id },
-                select: { projectId: true, deletedAt: true },
-            });
+            const currentResults = await db.getDrizzleClient().select({ projectId: event.projectId, deletedAt: event.deletedAt }).from(event).where(eq(event.id, id)).limit(1);
+            const current = currentResults[0];
 
-            const projectId =
-                (event as { projectId?: unknown })?.projectId
-                    ? String((event as { projectId: unknown }).projectId)
-                    : null;
-            const now = new Date();
+            const projectId = current?.projectId ?? null;
+            const now = new Date().toISOString();
 
-            await db.getClient().$transaction(async (tx: Prisma.TransactionClient) => {
+            await db.getDrizzleClient().transaction(async (tx) => {
                 if (projectId) {
-                    await tx.entityRelation.deleteMany({
-                        where: {
-                            projectId,
-                            OR: [{ sourceId: id }, { targetId: id }],
-                        },
-                    });
+                    await tx.delete(entityRelation).where(or(eq(entityRelation.sourceId, id), eq(entityRelation.targetId, id)));
                 }
-                await tx.event.updateMany({
-                    where: { id },
-                    data: {
-                        deletedAt: now,
-                        updatedAt: now,
-                    },
-                });
+                await tx.update(event).set({ deletedAt: now, updatedAt: now }).where(eq(event.id, id));
             });
 
             logger.info("Event deleted successfully", { eventId: id });

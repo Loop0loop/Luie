@@ -2,8 +2,8 @@
  * WorldEntity service — 세계관 엔티티(Place/Concept/Rule/Item) CRUD
  */
 
+import { eq, asc, or } from "drizzle-orm";
 import { createLogger } from "../../../shared/logger/index.js";
-import type { Prisma } from "@prisma/client";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import type {
     WorldEntityCreateInput,
@@ -13,45 +13,47 @@ import type {
 import { ServiceError } from "../../utils/serviceError.js";
 import { projectService } from "../core/projectService.js";
 import { getWorldDbClient } from "./characterService.js";
+import { worldEntity, entityRelation } from "../../database/schema.js";
 
 const logger = createLogger("WorldEntityService");
-
-function isPrismaNotFoundError(error: unknown): boolean {
-    return (
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        (error as { code?: unknown }).code === "P2025"
-    );
-}
 
 export class WorldEntityService {
     async createWorldEntity(input: WorldEntityCreateInput) {
         try {
             logger.info("Creating world entity", input);
 
-            const entity = await getWorldDbClient().worldEntity.create({
-                data: {
-                    projectId: input.projectId,
-                    type: input.type,
-                    name: input.name,
-                    description: input.description,
-                    firstAppearance: input.firstAppearance,
-                    attributes: input.attributes ? JSON.stringify(input.attributes) : null,
-                    positionX: input.positionX ?? 0,
-                    positionY: input.positionY ?? 0,
-                },
-            });
+            const now = new Date().toISOString();
+            const [result] = await getWorldDbClient().insert(worldEntity).values({
+                id: crypto.randomUUID(),
+                projectId: input.projectId,
+                type: input.type,
+                name: input.name,
+                description: input.description ?? null,
+                firstAppearance: input.firstAppearance ?? null,
+                attributes: input.attributes ? JSON.stringify(input.attributes) : null,
+                positionX: input.positionX ?? 0,
+                positionY: input.positionY ?? 0,
+                updatedAt: now,
+            }).returning();
 
-            logger.info("World entity created", { entityId: entity.id });
-            await projectService.touchProject(String(entity.projectId));
+            if (!result) {
+                throw new ServiceError(
+                    ErrorCode.WORLD_ENTITY_CREATE_FAILED,
+                    "Failed to create world entity",
+                    { input },
+                );
+            }
+
+            logger.info("World entity created", { entityId: result.id });
+            await projectService.touchProject(String(result.projectId));
             await projectService.persistPackageAfterMutation(
-                String(entity.projectId),
+                String(result.projectId),
                 "world-entity:create",
             );
-            return entity;
+            return result;
         } catch (error) {
             logger.error("Failed to create world entity", error);
+            if (error instanceof ServiceError) throw error;
             throw new ServiceError(
                 ErrorCode.WORLD_ENTITY_CREATE_FAILED,
                 "Failed to create world entity",
@@ -63,11 +65,9 @@ export class WorldEntityService {
 
     async getWorldEntity(id: string) {
         try {
-            const entity = await getWorldDbClient().worldEntity.findUnique({
-                where: { id },
-            });
+            const results = await getWorldDbClient().select().from(worldEntity).where(eq(worldEntity.id, id)).limit(1);
 
-            if (!entity) {
+            if (results.length === 0) {
                 throw new ServiceError(
                     ErrorCode.WORLD_ENTITY_NOT_FOUND,
                     "World entity not found",
@@ -75,21 +75,19 @@ export class WorldEntityService {
                 );
             }
 
-            return entity;
+            return results[0];
         } catch (error) {
             logger.error("Failed to get world entity", error);
+            if (error instanceof ServiceError) throw error;
             throw error;
         }
     }
 
     async getAllWorldEntities(projectId: string) {
         try {
-            const entities = await getWorldDbClient().worldEntity.findMany({
-                where: { projectId },
-                orderBy: { createdAt: "asc" },
-            });
+            const results = await getWorldDbClient().select().from(worldEntity).where(eq(worldEntity.projectId, projectId)).orderBy(asc(worldEntity.createdAt));
 
-            return entities;
+            return results;
         } catch (error) {
             logger.error("Failed to get all world entities", error);
             throw new ServiceError(
@@ -103,7 +101,7 @@ export class WorldEntityService {
 
     async updateWorldEntity(input: WorldEntityUpdateInput) {
         try {
-            const updateData: Record<string, unknown> = {};
+            const updateData: Partial<typeof worldEntity.$inferInsert> = {};
 
             if (input.type !== undefined) updateData.type = input.type;
             if (input.name !== undefined) updateData.name = input.name;
@@ -113,28 +111,26 @@ export class WorldEntityService {
                 updateData.attributes = JSON.stringify(input.attributes);
             }
 
-            const entity = await getWorldDbClient().worldEntity.update({
-                where: { id: input.id },
-                data: updateData,
-            });
+            const [updated] = await getWorldDbClient().update(worldEntity).set(updateData).where(eq(worldEntity.id, input.id)).returning();
 
-            logger.info("World entity updated", { entityId: entity.id });
-            await projectService.touchProject(String(entity.projectId));
-            await projectService.persistPackageAfterMutation(
-                String(entity.projectId),
-                "world-entity:update",
-            );
-            return entity;
-        } catch (error) {
-            logger.error("Failed to update world entity", error);
-            if (isPrismaNotFoundError(error)) {
+            if (!updated) {
                 throw new ServiceError(
                     ErrorCode.WORLD_ENTITY_NOT_FOUND,
                     "World entity not found",
                     { id: input.id },
-                    error,
                 );
             }
+
+            logger.info("World entity updated", { entityId: updated.id });
+            await projectService.touchProject(String(updated.projectId));
+            await projectService.persistPackageAfterMutation(
+                String(updated.projectId),
+                "world-entity:update",
+            );
+            return updated;
+        } catch (error) {
+            logger.error("Failed to update world entity", error);
+            if (error instanceof ServiceError) throw error;
             throw new ServiceError(
                 ErrorCode.WORLD_ENTITY_UPDATE_FAILED,
                 "Failed to update world entity",
@@ -146,27 +142,25 @@ export class WorldEntityService {
 
     async updateWorldEntityPosition(input: WorldEntityUpdatePositionInput) {
         try {
-            const entity = await getWorldDbClient().worldEntity.update({
-                where: { id: input.id },
-                data: { positionX: input.positionX, positionY: input.positionY },
-            });
+            const [updated] = await getWorldDbClient().update(worldEntity).set({ positionX: input.positionX, positionY: input.positionY }).where(eq(worldEntity.id, input.id)).returning();
 
-            await projectService.touchProject(String(entity.projectId));
-            await projectService.persistPackageAfterMutation(
-                String(entity.projectId),
-                "world-entity:update-position",
-            );
-            return entity;
-        } catch (error) {
-            logger.error("Failed to update world entity position", error);
-            if (isPrismaNotFoundError(error)) {
+            if (!updated) {
                 throw new ServiceError(
                     ErrorCode.WORLD_ENTITY_NOT_FOUND,
                     "World entity not found",
                     { id: input.id },
-                    error,
                 );
             }
+
+            await projectService.touchProject(String(updated.projectId));
+            await projectService.persistPackageAfterMutation(
+                String(updated.projectId),
+                "world-entity:update-position",
+            );
+            return updated;
+        } catch (error) {
+            logger.error("Failed to update world entity position", error);
+            if (error instanceof ServiceError) throw error;
             throw new ServiceError(
                 ErrorCode.WORLD_ENTITY_UPDATE_FAILED,
                 "Failed to update position",
@@ -178,28 +172,21 @@ export class WorldEntityService {
 
     async deleteWorldEntity(id: string) {
         try {
-            const entity = await getWorldDbClient().worldEntity.findUnique({
-                where: { id },
-                select: { projectId: true },
-            });
+            const currentResults = await getWorldDbClient().select({ projectId: worldEntity.projectId }).from(worldEntity).where(eq(worldEntity.id, id)).limit(1);
+            const current = currentResults[0];
 
-            const projectId = entity?.projectId ? String(entity.projectId) : null;
+            const projectId = current?.projectId ?? null;
 
-            await getWorldDbClient().$transaction(async (tx: Prisma.TransactionClient) => {
+            await getWorldDbClient().transaction(async (tx) => {
                 if (projectId) {
-                    await tx.entityRelation.deleteMany({
-                        where: {
-                            projectId,
-                            OR: [
-                                { sourceId: id },
-                                { targetId: id },
-                                { sourceWorldEntityId: id },
-                                { targetWorldEntityId: id },
-                            ],
-                        },
-                    });
+                    await tx.delete(entityRelation).where(or(
+                        eq(entityRelation.sourceId, id),
+                        eq(entityRelation.targetId, id),
+                        eq(entityRelation.sourceWorldEntityId, id),
+                        eq(entityRelation.targetWorldEntityId, id),
+                    ));
                 }
-                await tx.worldEntity.deleteMany({ where: { id } });
+                await tx.delete(worldEntity).where(eq(worldEntity.id, id));
             });
 
             logger.info("World entity deleted", { entityId: id });

@@ -1,7 +1,9 @@
+import { eq } from "drizzle-orm";
 import { promises as fs } from "fs";
 import { randomUUID } from "node:crypto";
 import type { z } from "zod";
 import { db } from "../../../database/index.js";
+import * as schema from "../../../database/schema.js";
 import {
   ErrorCode,
   LUIE_PACKAGE_EXTENSION,
@@ -417,10 +419,14 @@ export const openLuieProjectPackage = async (input: {
   }
 
   const { resolvedProjectId, legacyProjectId } = resolveImportIdentity(meta, existingByPath);
-  const existing = (await db.getClient().project.findUnique({
-    where: { id: resolvedProjectId },
-    select: { id: true, updatedAt: true },
-  })) as ExistingProjectLookup;
+  const existingRow = await db.getDrizzleClient()
+    .select({ id: schema.project.id, updatedAt: schema.project.updatedAt })
+    .from(schema.project)
+    .where(eq(schema.project.id, resolvedProjectId))
+    .limit(1);
+  const existing: ExistingProjectLookup = existingRow.length > 0
+    ? { id: existingRow[0].id, updatedAt: new Date(existingRow[0].updatedAt) }
+    : null;
 
   const packageUpdatedAt = typeof meta.updatedAt === "string" ? Date.parse(meta.updatedAt) : NaN;
   const localUpdatedAt = existing?.updatedAt instanceof Date ? existing.updatedAt.getTime() : NaN;
