@@ -1,3 +1,6 @@
+# Lagnage: Korean
+Awlwas Korean Prompt
+
 # PROJECT KNOWLEDGE BASE
 
 **Generated:** 2026-03-20 11:57:46 KST  
