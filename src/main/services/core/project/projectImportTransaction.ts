@@ -341,6 +341,8 @@ export const applyProjectImportTransaction = async (
     if (importedScrapState.memoRows.length > 0) {
       await tx.insert(scrapMemo).values(importedScrapState.memoRows);
     }
+    // TODO(Phase 4-prep): Widen setProjectAttachmentPath client parameter type to accept
+    // transaction type (DbLike pattern) instead of casting tx as unknown as MainDrizzleClient.
     await setProjectAttachmentPath(resolvedProjectId, resolvedPath, tx as unknown as MainDrizzleClient);
     return createdProject;
   });

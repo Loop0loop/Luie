@@ -30,7 +30,7 @@ export class FactionService {
 
             if (!result) {
                 throw new ServiceError(
-                    ErrorCode.DB_QUERY_FAILED,
+                    ErrorCode.FACTION_CREATE_FAILED,
                     "Failed to create faction",
                     { input },
                 );
@@ -46,7 +46,7 @@ export class FactionService {
             logger.error("Failed to create faction", error);
             if (error instanceof ServiceError) throw error;
             throw new ServiceError(
-                ErrorCode.DB_QUERY_FAILED,
+                ErrorCode.FACTION_CREATE_FAILED,
                 "Failed to create faction",
                 { input },
                 error,
@@ -60,7 +60,7 @@ export class FactionService {
 
             if (results.length === 0) {
                 throw new ServiceError(
-                    ErrorCode.DB_QUERY_FAILED,
+                    ErrorCode.FACTION_NOT_FOUND,
                     "Faction not found",
                     { id },
                 );
@@ -68,7 +68,7 @@ export class FactionService {
             const f = results[0];
             if (f.deletedAt) {
                 throw new ServiceError(
-                    ErrorCode.DB_QUERY_FAILED,
+                    ErrorCode.FACTION_NOT_FOUND,
                     "Faction not found",
                     { id },
                 );
@@ -90,7 +90,7 @@ export class FactionService {
         } catch (error) {
             logger.error("Failed to get all factions", error);
             throw new ServiceError(
-                ErrorCode.DB_QUERY_FAILED,
+                ErrorCode.FACTION_NOT_FOUND,
                 "Failed to get all factions",
                 { projectId },
                 error,
@@ -114,7 +114,7 @@ export class FactionService {
             const current = currentResults[0];
             if (!current || current.deletedAt) {
                 throw new ServiceError(
-                    ErrorCode.DB_QUERY_FAILED,
+                    ErrorCode.FACTION_NOT_FOUND,
                     "Faction not found",
                     { id: input.id },
                 );
@@ -124,7 +124,7 @@ export class FactionService {
 
             if (!updated) {
                 throw new ServiceError(
-                    ErrorCode.DB_QUERY_FAILED,
+                    ErrorCode.FACTION_UPDATE_FAILED,
                     "Faction not found",
                     { id: input.id },
                 );
@@ -140,7 +140,7 @@ export class FactionService {
             logger.error("Failed to update faction", error);
             if (error instanceof ServiceError) throw error;
             throw new ServiceError(
-                ErrorCode.DB_QUERY_FAILED,
+                ErrorCode.FACTION_UPDATE_FAILED,
                 "Failed to update faction",
                 { input },
                 error,
@@ -160,7 +160,14 @@ export class FactionService {
                 if (projectId) {
                     await tx.delete(entityRelation).where(or(eq(entityRelation.sourceId, id), eq(entityRelation.targetId, id)));
                 }
-                await tx.update(faction).set({ deletedAt: now, updatedAt: now }).where(eq(faction.id, id));
+                const [result] = await tx.update(faction).set({ deletedAt: now, updatedAt: now }).where(eq(faction.id, id)).returning({ id: faction.id });
+                if (!result) {
+                    throw new ServiceError(
+                        ErrorCode.FACTION_NOT_FOUND,
+                        "Faction not found",
+                        { id },
+                    );
+                }
             });
 
             logger.info("Faction deleted successfully", { factionId: id });
@@ -172,7 +179,7 @@ export class FactionService {
         } catch (error) {
             logger.error("Failed to delete faction", error);
             throw new ServiceError(
-                ErrorCode.DB_QUERY_FAILED,
+                ErrorCode.FACTION_DELETE_FAILED,
                 "Failed to delete faction",
                 { id },
                 error,

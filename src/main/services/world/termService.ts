@@ -174,7 +174,12 @@ export class TermService {
         if (projectId) {
           await tx.delete(entityRelation).where(or(eq(entityRelation.sourceId, id), eq(entityRelation.targetId, id)));
         }
-        await tx.update(term).set({ deletedAt: now, updatedAt: now }).where(eq(term.id, id));
+        const [result] = await tx.update(term).set({ deletedAt: now, updatedAt: now }).where(eq(term.id, id)).returning({ id: term.id });
+        if (!result) {
+          throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
+            id,
+          });
+        }
       });
       const appearanceCacheService = await loadAppearanceCacheService();
       await appearanceCacheService.clearTermEntity(id);

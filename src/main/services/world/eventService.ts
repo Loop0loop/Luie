@@ -30,7 +30,7 @@ export class EventService {
 
             if (!result) {
                 throw new ServiceError(
-                    ErrorCode.DB_QUERY_FAILED,
+                    ErrorCode.EVENT_CREATE_FAILED,
                     "Failed to create event",
                     { input },
                 );
@@ -46,7 +46,7 @@ export class EventService {
             logger.error("Failed to create event", error);
             if (error instanceof ServiceError) throw error;
             throw new ServiceError(
-                ErrorCode.DB_QUERY_FAILED,
+                ErrorCode.EVENT_CREATE_FAILED,
                 "Failed to create event",
                 { input },
                 error,
@@ -60,7 +60,7 @@ export class EventService {
 
             if (results.length === 0) {
                 throw new ServiceError(
-                    ErrorCode.DB_QUERY_FAILED,
+                    ErrorCode.EVENT_NOT_FOUND,
                     "Event not found",
                     { id },
                 );
@@ -68,7 +68,7 @@ export class EventService {
             const e = results[0];
             if (e.deletedAt) {
                 throw new ServiceError(
-                    ErrorCode.DB_QUERY_FAILED,
+                    ErrorCode.EVENT_NOT_FOUND,
                     "Event not found",
                     { id },
                 );
@@ -90,7 +90,7 @@ export class EventService {
         } catch (error) {
             logger.error("Failed to get all events", error);
             throw new ServiceError(
-                ErrorCode.DB_QUERY_FAILED,
+                ErrorCode.EVENT_NOT_FOUND,
                 "Failed to get all events",
                 { projectId },
                 error,
@@ -114,7 +114,7 @@ export class EventService {
             const current = currentResults[0];
             if (!current || current.deletedAt) {
                 throw new ServiceError(
-                    ErrorCode.DB_QUERY_FAILED,
+                    ErrorCode.EVENT_NOT_FOUND,
                     "Event not found",
                     { id: input.id },
                 );
@@ -124,7 +124,7 @@ export class EventService {
 
             if (!updated) {
                 throw new ServiceError(
-                    ErrorCode.DB_QUERY_FAILED,
+                    ErrorCode.EVENT_UPDATE_FAILED,
                     "Event not found",
                     { id: input.id },
                 );
@@ -140,7 +140,7 @@ export class EventService {
             logger.error("Failed to update event", error);
             if (error instanceof ServiceError) throw error;
             throw new ServiceError(
-                ErrorCode.DB_QUERY_FAILED,
+                ErrorCode.EVENT_UPDATE_FAILED,
                 "Failed to update event",
                 { input },
                 error,
@@ -160,7 +160,14 @@ export class EventService {
                 if (projectId) {
                     await tx.delete(entityRelation).where(or(eq(entityRelation.sourceId, id), eq(entityRelation.targetId, id)));
                 }
-                await tx.update(event).set({ deletedAt: now, updatedAt: now }).where(eq(event.id, id));
+                const [result] = await tx.update(event).set({ deletedAt: now, updatedAt: now }).where(eq(event.id, id)).returning({ id: event.id });
+                if (!result) {
+                    throw new ServiceError(
+                        ErrorCode.EVENT_NOT_FOUND,
+                        "Event not found",
+                        { id },
+                    );
+                }
             });
 
             logger.info("Event deleted successfully", { eventId: id });
@@ -172,7 +179,7 @@ export class EventService {
         } catch (error) {
             logger.error("Failed to delete event", error);
             throw new ServiceError(
-                ErrorCode.DB_QUERY_FAILED,
+                ErrorCode.EVENT_DELETE_FAILED,
                 "Failed to delete event",
                 { id },
                 error,

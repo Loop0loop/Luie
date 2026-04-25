@@ -691,9 +691,18 @@ export class ProjectService {
       });
       queuedProjectDelete = true;
 
-      await db.getDrizzleClient()
+      const deletedRows = await db.getDrizzleClient()
         .delete(schema.project)
-        .where(eq(schema.project.id, request.id));
+        .where(eq(schema.project.id, request.id))
+        .returning({ id: schema.project.id });
+
+      if (!deletedRows.length) {
+        throw new ServiceError(
+          ErrorCode.PROJECT_NOT_FOUND,
+          "Project not found",
+          { id: request.id },
+        );
+      }
       try {
         const [appearanceCacheService, chapterSearchCacheService] =
           await Promise.all([
@@ -753,9 +762,18 @@ export class ProjectService {
         );
       }
 
-      await db.getDrizzleClient()
+      const deletedRows = await db.getDrizzleClient()
         .delete(schema.project)
-        .where(eq(schema.project.id, id));
+        .where(eq(schema.project.id, id))
+        .returning({ id: schema.project.id });
+
+      if (!deletedRows.length) {
+        throw new ServiceError(
+          ErrorCode.PROJECT_NOT_FOUND,
+          "Project not found",
+          { id },
+        );
+      }
       try {
         const [appearanceCacheService, chapterSearchCacheService] =
           await Promise.all([

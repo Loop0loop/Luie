@@ -170,6 +170,9 @@ const getProjectForExport = async (projectId: string): Promise<ProjectExportReco
       .orderBy(desc(snapshot.createdAt)),
   ]);
 
+  // TODO(Phase 4-prep): Replace Prisma-shaped ProjectExportRecord with ORM-independent Export DTO.
+  // Current cast is temporary during Prisma→Drizzle dual mode.
+  // See src/shared/types/index.ts ProjectExportRecord — needs ORM-independent DTO with mapper functions.
   return {
     id: proj.id,
     title: proj.title,

@@ -2,7 +2,7 @@
  * WorldEntity service — 세계관 엔티티(Place/Concept/Rule/Item) CRUD
  */
 
-import { eq, asc, or } from "drizzle-orm";
+import { eq, asc, or, and, isNull } from "drizzle-orm";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import type {
@@ -85,7 +85,7 @@ export class WorldEntityService {
 
     async getAllWorldEntities(projectId: string) {
         try {
-            const results = await getWorldDbClient().select().from(worldEntity).where(eq(worldEntity.projectId, projectId)).orderBy(asc(worldEntity.createdAt));
+            const results = await getWorldDbClient().select().from(worldEntity).where(and(eq(worldEntity.projectId, projectId), isNull(worldEntity.deletedAt))).orderBy(asc(worldEntity.createdAt));
 
             return results;
         } catch (error) {
@@ -175,28 +175,41 @@ export class WorldEntityService {
             const currentResults = await getWorldDbClient().select({ projectId: worldEntity.projectId }).from(worldEntity).where(eq(worldEntity.id, id)).limit(1);
             const current = currentResults[0];
 
-            const projectId = current?.projectId ?? null;
+            if (!current) {
+                throw new ServiceError(
+                    ErrorCode.WORLD_ENTITY_NOT_FOUND,
+                    "World entity not found",
+                    { id },
+                );
+            }
+
+            const projectId = current.projectId;
+            const now = new Date().toISOString();
 
             await getWorldDbClient().transaction(async (tx) => {
-                if (projectId) {
-                    await tx.delete(entityRelation).where(or(
-                        eq(entityRelation.sourceId, id),
-                        eq(entityRelation.targetId, id),
-                        eq(entityRelation.sourceWorldEntityId, id),
-                        eq(entityRelation.targetWorldEntityId, id),
-                    ));
+                await tx.delete(entityRelation).where(or(
+                    eq(entityRelation.sourceId, id),
+                    eq(entityRelation.targetId, id),
+                    eq(entityRelation.sourceWorldEntityId, id),
+                    eq(entityRelation.targetWorldEntityId, id),
+                ));
+
+                const [deleted] = await tx.update(worldEntity).set({ deletedAt: now, updatedAt: now }).where(eq(worldEntity.id, id)).returning({ id: worldEntity.id });
+                if (!deleted) {
+                    throw new ServiceError(
+                        ErrorCode.WORLD_ENTITY_NOT_FOUND,
+                        "World entity not found",
+                        { id },
+                    );
                 }
-                await tx.delete(worldEntity).where(eq(worldEntity.id, id));
             });
 
             logger.info("World entity deleted", { entityId: id });
-            if (projectId) {
-                await projectService.touchProject(projectId);
-                await projectService.persistPackageAfterMutation(
-                    projectId,
-                    "world-entity:delete",
-                );
-            }
+            await projectService.touchProject(projectId);
+            await projectService.persistPackageAfterMutation(
+                projectId,
+                "world-entity:delete",
+            );
             return { success: true };
         } catch (error) {
             logger.error("Failed to delete world entity", error);

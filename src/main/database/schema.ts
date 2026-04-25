@@ -253,6 +253,7 @@ export const worldEntity = sqliteTable(
     positionY: real("positionY").notNull().default(0),
     createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updatedAt").notNull(),
+    deletedAt: text("deletedAt"),
   },
   (table) => [
     index("WorldEntity_projectId_type_idx").on(table.projectId, table.type),

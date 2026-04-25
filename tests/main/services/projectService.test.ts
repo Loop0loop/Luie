@@ -1,5 +1,5 @@
 // TEST_LEVEL: REAL_DB_INTEGRATION
-// PROVES: project service behavior against real SQLite/Prisma state and attached .luie files
+// PROVES: project service behavior against real SQLite/Drizzle state and attached .luie files
 // DOES_NOT_PROVE: pure end-to-end app startup or renderer-side behavior
 
 import { describe, it, expect, vi, beforeAll } from "vitest";

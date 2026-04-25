@@ -23,32 +23,56 @@ vi.mock("../../../src/main/database/index.js", () => ({
     initialize: vi.fn(async () => undefined),
     disconnect: vi.fn(async () => undefined),
     getDrizzleClient: () => {
-      const projectData = mocked.projectFindUnique();
-      let queryIndex = 0;
       const makeTerminal = (result: unknown) =>
         Object.assign(Promise.resolve(result), {
           select: vi.fn(() => makeTerminal([])),
           from: vi.fn(() => makeTerminal([])),
           where: vi.fn(() => makeTerminal([])),
-          orderBy: vi.fn(() => makeTerminal([])),
-          limit: vi.fn(() => makeTerminal([])),
+          orderBy: vi.fn(() => makeTerminal(result)),
+          limit: vi.fn(() => makeTerminal(result)),
+        });
+      const makeAsyncTerminal = (dataPromise: Promise<unknown>) =>
+        Object.assign(dataPromise, {
+          select: vi.fn(() => makeTerminal([])),
+          from: vi.fn(() => makeTerminal([])),
+          where: vi.fn(() => makeTerminal([])),
+          orderBy: vi.fn(() => dataPromise),
+          limit: vi.fn(() => dataPromise),
         });
       return {
         select: vi.fn(() => ({
-          from: vi.fn(() => ({
-            where: vi.fn(() => {
-              queryIndex++;
-              if (queryIndex === 1) {
-                return makeTerminal([projectData]);
-              }
-              if (queryIndex === 2) {
-                return Object.assign(Promise.resolve(projectData.chapters ?? []), {
-                  orderBy: vi.fn(() => Promise.resolve(projectData.chapters ?? [])),
-                });
-              }
-              return makeTerminal([]);
-            }),
-          })),
+          from: vi.fn((table: unknown) => {
+            const tableName =
+              typeof table === "string"
+                ? table
+                : ((table as Record<string, unknown>)?.name as string) ?? "";
+            if (tableName === "Project") {
+              return {
+                where: vi.fn(() => {
+                  const dataPromise = mocked
+                    .projectFindUnique()
+                    .then((resolved: unknown) => [resolved]);
+                  return makeAsyncTerminal(dataPromise);
+                }),
+              };
+            }
+            if (tableName === "Chapter") {
+              return {
+                where: vi.fn(() => {
+                  const dataPromise = mocked
+                    .projectFindUnique()
+                    .then(
+                      (resolved: Record<string, unknown>) =>
+                        resolved.chapters ?? [],
+                    );
+                  return makeAsyncTerminal(dataPromise);
+                }),
+              };
+            }
+            return {
+              where: vi.fn(() => makeTerminal([])),
+            };
+          }),
         })),
       };
     },
@@ -152,7 +176,6 @@ describe("projectExportEngine", () => {
     const logger = {
       info: vi.fn(),
       warn: vi.fn(),
-      error: vi.fn(),
     };
 
     const exported = await exportProjectPackageWithOptions({
@@ -191,7 +214,6 @@ describe("projectExportEngine", () => {
     const logger = {
       info: vi.fn(),
       warn: vi.fn(),
-      error: vi.fn(),
     };
 
     const exported = await exportProjectPackageWithOptions({
@@ -244,7 +266,6 @@ describe("projectExportEngine", () => {
     const logger = {
       info: vi.fn(),
       warn: vi.fn(),
-      error: vi.fn(),
     };
 
     await exportProjectPackageWithOptions({
@@ -328,7 +349,6 @@ describe("projectExportEngine", () => {
     const logger = {
       info: vi.fn(),
       warn: vi.fn(),
-      error: vi.fn(),
     };
 
     await exportProjectPackageWithOptions({

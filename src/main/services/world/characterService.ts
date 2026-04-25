@@ -190,7 +190,14 @@ export class CharacterService {
         if (projectId) {
           await tx.delete(entityRelation).where(or(eq(entityRelation.sourceId, id), eq(entityRelation.targetId, id)));
         }
-        await tx.update(character).set({ deletedAt: now, updatedAt: now }).where(eq(character.id, id));
+        const [result] = await tx.update(character).set({ deletedAt: now, updatedAt: now }).where(eq(character.id, id)).returning({ id: character.id });
+        if (!result) {
+          throw new ServiceError(
+            ErrorCode.CHARACTER_NOT_FOUND,
+            "Character not found",
+            { id },
+          );
+        }
       });
       const appearanceCacheService = await loadAppearanceCacheService();
       await appearanceCacheService.clearCharacterEntity(id);
