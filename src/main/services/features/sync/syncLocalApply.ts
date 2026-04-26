@@ -39,71 +39,72 @@ export const collectDeletedProjectIds = (bundle: SyncBundle): Set<string> => {
   return deletedProjectIds;
 };
 
-export const applyProjectDeletes = async (
+export const applyProjectDeletes = (
   tx: DbLike,
   deletedProjectIds: Set<string>,
-): Promise<void> => {
+): void => {
   for (const projectId of deletedProjectIds) {
-    const existingRows = await tx.select({ id: project.id })
+    const existing = tx.select({ id: project.id })
       .from(project)
       .where(eq(project.id, projectId))
-      .limit(1);
-    const existing = existingRows[0] ?? null;
+      .limit(1)
+      .get();
     if (!existing?.id) continue;
-    await tx.delete(project).where(eq(project.id, projectId));
+    tx.delete(project).where(eq(project.id, projectId)).run();
   }
 };
 
-export const upsertProjects = async (
+export const upsertProjects = (
   tx: DbLike,
   projects: SyncBundle["projects"],
   deletedProjectIds: Set<string>,
-): Promise<void> => {
+): void => {
   for (const proj of projects) {
     if (proj.deletedAt || deletedProjectIds.has(proj.id)) continue;
-    const existingRows = await tx.select({ id: project.id })
+    const existing = tx.select({ id: project.id })
       .from(project)
       .where(eq(project.id, proj.id))
-      .limit(1);
-    const existing = existingRows[0] ?? null;
+      .limit(1)
+      .get();
 
     if (existing?.id) {
-      await tx.update(project)
+      tx.update(project)
         .set({
           title: proj.title,
           description: proj.description,
           updatedAt: new Date(proj.updatedAt).toISOString(),
         })
-        .where(eq(project.id, proj.id));
+        .where(eq(project.id, proj.id))
+        .run();
       continue;
     }
 
-    await tx.insert(project).values({
+    tx.insert(project).values({
       id: proj.id,
       title: proj.title,
       description: proj.description,
       createdAt: new Date(proj.createdAt).toISOString(),
       updatedAt: new Date(proj.updatedAt).toISOString(),
-    });
+    }).run();
 
-    await tx.insert(projectSettings).values({
+    tx.insert(projectSettings).values({
       id: proj.id,
       projectId: proj.id,
       autoSave: true,
       autoSaveInterval: DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
-    });
+    }).run();
   }
 };
 
-export const upsertChapter = async (
+export const upsertChapter = (
   tx: DbLike,
   ch: SyncChapterRecord,
-): Promise<void> => {
-  const existingRows = await tx.select({ id: chapter.id })
+): void => {
+  const existing = tx.select({ id: chapter.id })
     .from(chapter)
     .where(eq(chapter.id, ch.id))
-    .limit(1);
-  const existing = existingRows[0] ?? null;
+    .limit(1)
+    .get();
 
   const data = {
     title: ch.title,
@@ -117,33 +118,34 @@ export const upsertChapter = async (
   };
 
   if (existing?.id) {
-    await tx.update(chapter)
+    tx.update(chapter)
       .set(data)
-      .where(eq(chapter.id, ch.id));
+      .where(eq(chapter.id, ch.id))
+      .run();
   } else {
-    await tx.insert(chapter).values({
+    tx.insert(chapter).values({
       id: ch.id,
       ...data,
       createdAt: new Date(ch.createdAt).toISOString(),
-    });
+    }).run();
   }
 };
 
-export const upsertCharacters = async (
+export const upsertCharacters = (
   tx: DbLike,
   characters: SyncBundle["characters"],
   deletedProjectIds: Set<string>,
-): Promise<void> => {
+): void => {
   for (const char of characters) {
     if (deletedProjectIds.has(char.projectId)) continue;
-    const existingRows = await tx.select({ id: character.id })
+    const existing = tx.select({ id: character.id })
       .from(character)
       .where(eq(character.id, char.id))
-      .limit(1);
-    const existing = existingRows[0] ?? null;
+      .limit(1)
+      .get();
 
     if (char.deletedAt) {
-      if (existing?.id) await tx.delete(character).where(eq(character.id, char.id));
+      if (existing?.id) tx.delete(character).where(eq(character.id, char.id)).run();
       continue;
     }
 
@@ -160,32 +162,32 @@ export const upsertCharacters = async (
     };
 
     if (existing?.id) {
-      await tx.update(character).set(data).where(eq(character.id, char.id));
+      tx.update(character).set(data).where(eq(character.id, char.id)).run();
     } else {
-      await tx.insert(character).values({
+      tx.insert(character).values({
         id: char.id,
         ...data,
         createdAt: new Date(char.createdAt).toISOString(),
-      });
+      }).run();
     }
   }
 };
 
-export const upsertEvents = async (
+export const upsertEvents = (
   tx: DbLike,
   events: SyncBundle["events"],
   deletedProjectIds: Set<string>,
-): Promise<void> => {
+): void => {
   for (const ev of events) {
     if (deletedProjectIds.has(ev.projectId)) continue;
-    const existingRows = await tx.select({ id: event.id })
+    const existing = tx.select({ id: event.id })
       .from(event)
       .where(eq(event.id, ev.id))
-      .limit(1);
-    const existing = existingRows[0] ?? null;
+      .limit(1)
+      .get();
 
     if (ev.deletedAt) {
-      if (existing?.id) await tx.delete(event).where(eq(event.id, ev.id));
+      if (existing?.id) tx.delete(event).where(eq(event.id, ev.id)).run();
       continue;
     }
 
@@ -202,32 +204,32 @@ export const upsertEvents = async (
     };
 
     if (existing?.id) {
-      await tx.update(event).set(data).where(eq(event.id, ev.id));
+      tx.update(event).set(data).where(eq(event.id, ev.id)).run();
     } else {
-      await tx.insert(event).values({
+      tx.insert(event).values({
         id: ev.id,
         ...data,
         createdAt: new Date(ev.createdAt).toISOString(),
-      });
+      }).run();
     }
   }
 };
 
-export const upsertFactions = async (
+export const upsertFactions = (
   tx: DbLike,
   factions: SyncBundle["factions"],
   deletedProjectIds: Set<string>,
-): Promise<void> => {
+): void => {
   for (const fac of factions) {
     if (deletedProjectIds.has(fac.projectId)) continue;
-    const existingRows = await tx.select({ id: faction.id })
+    const existing = tx.select({ id: faction.id })
       .from(faction)
       .where(eq(faction.id, fac.id))
-      .limit(1);
-    const existing = existingRows[0] ?? null;
+      .limit(1)
+      .get();
 
     if (fac.deletedAt) {
-      if (existing?.id) await tx.delete(faction).where(eq(faction.id, fac.id));
+      if (existing?.id) tx.delete(faction).where(eq(faction.id, fac.id)).run();
       continue;
     }
 
@@ -244,32 +246,32 @@ export const upsertFactions = async (
     };
 
     if (existing?.id) {
-      await tx.update(faction).set(data).where(eq(faction.id, fac.id));
+      tx.update(faction).set(data).where(eq(faction.id, fac.id)).run();
     } else {
-      await tx.insert(faction).values({
+      tx.insert(faction).values({
         id: fac.id,
         ...data,
         createdAt: new Date(fac.createdAt).toISOString(),
-      });
+      }).run();
     }
   }
 };
 
-export const upsertTerms = async (
+export const upsertTerms = (
   tx: DbLike,
   terms: SyncBundle["terms"],
   deletedProjectIds: Set<string>,
-): Promise<void> => {
+): void => {
   for (const t of terms) {
     if (deletedProjectIds.has(t.projectId)) continue;
-    const existingRows = await tx.select({ id: term.id })
+    const existing = tx.select({ id: term.id })
       .from(term)
       .where(eq(term.id, t.id))
-      .limit(1);
-    const existing = existingRows[0] ?? null;
+      .limit(1)
+      .get();
 
     if (t.deletedAt) {
-      if (existing?.id) await tx.delete(term).where(eq(term.id, t.id));
+      if (existing?.id) tx.delete(term).where(eq(term.id, t.id)).run();
       continue;
     }
 
@@ -284,37 +286,38 @@ export const upsertTerms = async (
     };
 
     if (existing?.id) {
-      await tx.update(term).set(data).where(eq(term.id, t.id));
+      tx.update(term).set(data).where(eq(term.id, t.id)).run();
     } else {
-      await tx.insert(term).values({
+      tx.insert(term).values({
         id: t.id,
         ...data,
         createdAt: new Date(t.createdAt).toISOString(),
-      });
+      }).run();
     }
   }
 };
 
-export const applyChapterTombstones = async (
+export const applyChapterTombstones = (
   tx: DbLike,
   tombstones: SyncBundle["tombstones"],
   deletedProjectIds: Set<string>,
-): Promise<void> => {
+): void => {
   for (const tombstone of tombstones) {
     if (tombstone.entityType !== "chapter") continue;
     if (deletedProjectIds.has(tombstone.projectId)) continue;
-    const existingRows = await tx.select({ id: chapter.id, projectId: chapter.projectId })
+    const existing = tx.select({ id: chapter.id, projectId: chapter.projectId })
       .from(chapter)
       .where(eq(chapter.id, tombstone.entityId))
-      .limit(1);
-    const existing = existingRows[0] ?? null;
+      .limit(1)
+      .get();
     if (!existing?.id || existing.projectId !== tombstone.projectId) continue;
-    await tx.update(chapter)
+    tx.update(chapter)
       .set({
         deletedAt: new Date(tombstone.deletedAt).toISOString(),
         updatedAt: new Date(tombstone.updatedAt).toISOString(),
       })
-      .where(eq(chapter.id, tombstone.entityId));
+      .where(eq(chapter.id, tombstone.entityId))
+      .run();
   }
 };
 
@@ -396,11 +399,11 @@ const normalizeWorldDocumentPayload = (
   }
 };
 
-export const applyReplicaWorldState = async (
+export const applyReplicaWorldState = (
   tx: DbLike,
   bundle: SyncBundle,
   deletedProjectIds: Set<string>,
-): Promise<void> => {
+): void => {
   const activeProjects = bundle.projects.filter(
     (proj) => !proj.deletedAt && !deletedProjectIds.has(proj.id),
   );
@@ -421,8 +424,9 @@ export const applyReplicaWorldState = async (
       }));
 
     for (const docType of deletedDocTypes) {
-      await tx.delete(worldDocument)
-        .where(and(eq(worldDocument.projectId, proj.id), eq(worldDocument.docType, docType)));
+      tx.delete(worldDocument)
+        .where(and(eq(worldDocument.projectId, proj.id), eq(worldDocument.docType, docType)))
+        .run();
     }
 
     for (const [docType, doc] of worldDocMap.entries()) {
@@ -436,7 +440,7 @@ export const applyReplicaWorldState = async (
         doc.updatedAt,
         memos,
       );
-      await tx.insert(worldDocument)
+      tx.insert(worldDocument)
         .values({
           id: `${proj.id}:${docType}`,
           projectId: proj.id,
@@ -451,7 +455,8 @@ export const applyReplicaWorldState = async (
             payload: JSON.stringify(normalizedPayload),
             updatedAt: new Date().toISOString(),
           },
-        });
+        })
+        .run();
     }
 
     const normalizedScrapPayload = normalizeScrapPayload(
@@ -463,7 +468,7 @@ export const applyReplicaWorldState = async (
     );
 
     if (worldDocMap.has("scrap") || memos.length > 0) {
-      await tx.insert(worldDocument)
+      tx.insert(worldDocument)
         .values({
           id: `${proj.id}:scrap`,
           projectId: proj.id,
@@ -478,13 +483,15 @@ export const applyReplicaWorldState = async (
             payload: JSON.stringify(normalizedScrapPayload),
             updatedAt: new Date().toISOString(),
           },
-        });
+        })
+        .run();
     } else if (deletedDocTypes.has("scrap")) {
-      await tx.delete(worldDocument)
-        .where(and(eq(worldDocument.projectId, proj.id), eq(worldDocument.docType, "scrap")));
+      tx.delete(worldDocument)
+        .where(and(eq(worldDocument.projectId, proj.id), eq(worldDocument.docType, "scrap")))
+        .run();
     }
 
-    await tx.delete(scrapMemo).where(eq(scrapMemo.projectId, proj.id));
+    tx.delete(scrapMemo).where(eq(scrapMemo.projectId, proj.id)).run();
 
     const scrapMemoRows = normalizedScrapPayload.memos.map((memo, index) => ({
       id: memo.id,
@@ -497,13 +504,14 @@ export const applyReplicaWorldState = async (
       updatedAt: new Date(memo.updatedAt).toISOString(),
     }));
     if (scrapMemoRows.length > 0) {
-      await tx.insert(scrapMemo).values(scrapMemoRows);
+      tx.insert(scrapMemo).values(scrapMemoRows).run();
     }
 
     if (deletedDocTypes.size > 0 || worldDocMap.size > 0 || memos.length > 0) {
-      await tx.update(project)
+      tx.update(project)
         .set({ updatedAt: new Date().toISOString() })
-        .where(eq(project.id, proj.id));
+        .where(eq(project.id, proj.id))
+        .run();
     }
   }
 };

@@ -538,15 +538,15 @@ export class ChapterService {
   async reorderChapters(projectId: string, chapterIds: string[]) {
     try {
       const store = db.getClient();
-      await store.transaction(async (tx) => {
+      store.transaction((tx) => {
         const now = new Date().toISOString();
         for (let index = 0; index < chapterIds.length; index++) {
           const id = chapterIds[index];
-          // eslint-disable-next-line no-await-in-loop
-          await tx
+          tx
             .update(chapter)
             .set({ order: index + 1, updatedAt: now })
-            .where(eq(chapter.id, id));
+            .where(eq(chapter.id, id))
+            .run();
         }
       });
 

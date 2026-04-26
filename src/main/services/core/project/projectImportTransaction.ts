@@ -16,9 +16,9 @@ import type {
   TermCreateRow,
   WorldEntityCreateRow,
 } from "./projectImportCodec.js";
-import { setProjectAttachmentPath } from "./projectAttachmentStore.js";
 
-const { project, projectSettings, chapter, character, term, faction, event, worldEntity, entityRelation, snapshot: snapshotTable, worldDocument: worldDocumentTable, scrapMemo } = schema;
+
+const { project, projectSettings, chapter, character, term, faction, event, worldEntity, entityRelation, snapshot: snapshotTable, worldDocument: worldDocumentTable, scrapMemo, projectAttachment } = schema;
 
 type ExistingProjectLookup = { id: string; updatedAt: Date } | null;
 
@@ -248,17 +248,17 @@ export const applyProjectImportTransaction = async (
     worldGraph,
   });
 
-  const result = await db.getClient().transaction(async (tx) => {
+  const result = db.getClient().transaction((tx) => {
     if (legacyProjectId) {
-      await tx.delete(project).where(eq(project.id, legacyProjectId));
+      tx.delete(project).where(eq(project.id, legacyProjectId)).run();
     }
 
     if (existing) {
-      await tx.delete(project).where(eq(project.id, resolvedProjectId));
+      tx.delete(project).where(eq(project.id, resolvedProjectId)).run();
     }
 
     const now = importedAt.toISOString();
-    const projectRows = await tx.insert(project).values({
+    tx.insert(project).values({
       id: resolvedProjectId,
       title: meta.title ?? "Recovered Project",
       description:
@@ -267,80 +267,91 @@ export const applyProjectImportTransaction = async (
         undefined,
       createdAt: meta.createdAt ? new Date(meta.createdAt).toISOString() : now,
       updatedAt: now,
-    }).returning();
+    }).run();
 
-    const createdProject = projectRows[0];
+    const createdProject = tx.select().from(project).where(eq(project.id, resolvedProjectId)).get()!;
 
-    await tx.insert(projectSettings).values({
+    tx.insert(projectSettings).values({
       id: resolvedProjectId,
       projectId: resolvedProjectId,
       autoSave: true,
       autoSaveInterval: DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
-    });
+    }).run();
 
     if (chaptersForCreate.length > 0) {
-      await tx.insert(chapter).values(chaptersForCreate.map((c) => ({
+      tx.insert(chapter).values(chaptersForCreate.map((c) => ({
         ...c,
         createdAt: now,
         updatedAt: now,
-      })));
+      }))).run();
     }
     if (charactersForCreate.length > 0) {
-      await tx.insert(character).values(charactersForCreate.map((c) => ({
+      tx.insert(character).values(charactersForCreate.map((c) => ({
         ...c,
         createdAt: now,
         updatedAt: now,
-      })));
+      }))).run();
     }
     if (termsForCreate.length > 0) {
-      await tx.insert(term).values(termsForCreate.map((t) => ({
+      tx.insert(term).values(termsForCreate.map((t) => ({
         ...t,
         createdAt: now,
         updatedAt: now,
         order: 0,
-      })));
+      }))).run();
     }
     if (factionsForCreate.length > 0) {
-      await tx.insert(faction).values(factionsForCreate.map((f) => ({
+      tx.insert(faction).values(factionsForCreate.map((f) => ({
         ...f,
         createdAt: now,
         updatedAt: now,
-      })));
+      }))).run();
     }
     if (eventsForCreate.length > 0) {
-      await tx.insert(event).values(eventsForCreate.map((e) => ({
+      tx.insert(event).values(eventsForCreate.map((e) => ({
         ...e,
         createdAt: now,
         updatedAt: now,
-      })));
+      }))).run();
     }
     if (worldEntitiesForCreate.length > 0) {
-      await tx.insert(worldEntity).values(worldEntitiesForCreate.map((w) => ({
+      tx.insert(worldEntity).values(worldEntitiesForCreate.map((w) => ({
         ...w,
         createdAt: now,
         updatedAt: now,
-      })));
+      }))).run();
     }
     if (relationsForCreate.length > 0) {
-      await tx.insert(entityRelation).values(relationsForCreate.map((r) => ({
+      tx.insert(entityRelation).values(relationsForCreate.map((r) => ({
         ...r,
         createdAt: now,
         updatedAt: now,
-      })));
+      }))).run();
     }
     if (snapshotsForCreate.length > 0) {
-      await tx.insert(snapshotTable).values(snapshotsForCreate.map((s) => ({
+      tx.insert(snapshotTable).values(snapshotsForCreate.map((s) => ({
         ...s,
         createdAt: s.createdAt.toISOString(),
-      })));
+      }))).run();
     }
     for (const wd of worldDocumentsForCreate) {
-      await tx.insert(worldDocumentTable).values({ ...wd, id: randomUUID() });
+      tx.insert(worldDocumentTable).values({ ...wd, id: randomUUID() }).run();
     }
     if (importedScrapState.memoRows.length > 0) {
-      await tx.insert(scrapMemo).values(importedScrapState.memoRows);
+      tx.insert(scrapMemo).values(importedScrapState.memoRows).run();
     }
-    await setProjectAttachmentPath(resolvedProjectId, resolvedPath, tx);
+    const normalizedProjectPath = resolvedPath || null;
+    if (normalizedProjectPath) {
+      const now2 = new Date().toISOString();
+      tx.insert(projectAttachment).values({
+        projectId: resolvedProjectId,
+        projectPath: normalizedProjectPath,
+        updatedAt: now2,
+      }).onConflictDoUpdate({
+        target: projectAttachment.projectId,
+        set: { projectPath: normalizedProjectPath, updatedAt: now2 },
+      }).run();
+    }
     return createdProject;
   });
 

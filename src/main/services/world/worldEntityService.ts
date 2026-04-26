@@ -186,15 +186,15 @@ export class WorldEntityService {
             const projectId = current.projectId;
             const now = new Date().toISOString();
 
-            await getWorldDbClient().transaction(async (tx) => {
-                await tx.delete(entityRelation).where(or(
+            getWorldDbClient().transaction((tx) => {
+                tx.delete(entityRelation).where(or(
                     eq(entityRelation.sourceId, id),
                     eq(entityRelation.targetId, id),
                     eq(entityRelation.sourceWorldEntityId, id),
                     eq(entityRelation.targetWorldEntityId, id),
-                ));
+                )).run();
 
-                const [deleted] = await tx.update(worldEntity).set({ deletedAt: now, updatedAt: now }).where(eq(worldEntity.id, id)).returning({ id: worldEntity.id });
+                const deleted = tx.update(worldEntity).set({ deletedAt: now, updatedAt: now }).where(eq(worldEntity.id, id)).run();
                 if (!deleted) {
                     throw new ServiceError(
                         ErrorCode.WORLD_ENTITY_NOT_FOUND,

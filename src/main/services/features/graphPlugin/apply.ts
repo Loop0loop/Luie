@@ -19,8 +19,8 @@ export const replaceProjectWorldEntityGraph = async (
   const nodes = graphPayload.nodes ?? [];
   const edges = graphPayload.edges ?? [];
 
-  await client.transaction(async (tx) => {
-    await tx.delete(entityRelation).where(
+  client.transaction((tx) => {
+    tx.delete(entityRelation).where(
       and(
         eq(entityRelation.projectId, projectId),
         or(
@@ -28,11 +28,11 @@ export const replaceProjectWorldEntityGraph = async (
           isNotNull(entityRelation.targetWorldEntityId),
         ),
       ),
-    );
-    await tx.delete(worldEntity).where(eq(worldEntity.projectId, projectId));
+    ).run();
+    tx.delete(worldEntity).where(eq(worldEntity.projectId, projectId)).run();
 
     if (nodes.length > 0) {
-      await tx.insert(worldEntity).values(
+      tx.insert(worldEntity).values(
         nodes.map((node) => ({
           id: node.id,
           projectId,
@@ -49,11 +49,11 @@ export const replaceProjectWorldEntityGraph = async (
           createdAt: now.toISOString(),
           updatedAt: now.toISOString(),
         })),
-      );
+      ).run();
     }
 
     if (edges.length > 0) {
-      await tx.insert(entityRelation).values(
+      tx.insert(entityRelation).values(
         edges.map((edge) => ({
           id: edge.id,
           projectId,
@@ -81,7 +81,7 @@ export const replaceProjectWorldEntityGraph = async (
               ? new Date(edge.updatedAt).toISOString()
               : now.toISOString(),
         })),
-      );
+      ).run();
     }
   });
 };

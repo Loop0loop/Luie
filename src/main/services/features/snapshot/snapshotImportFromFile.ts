@@ -82,24 +82,25 @@ const createImportedProject = async (
   const now = new Date().toISOString();
 
   const store = db.getClient();
-  const result = await store.transaction(async (tx) => {
-    const [proj] = await tx.insert(project).values({
-      id: randomUUID(),
+  const result = store.transaction((tx) => {
+    const projectId = randomUUID();
+    tx.insert(project).values({
+      id: projectId,
       title: projectData.title || "Recovered Snapshot",
       description: projectData.description ?? undefined,
       projectPath,
       createdAt: now,
       updatedAt: now,
-    }).returning();
+    }).run();
 
-    const projectId = proj.id;
+    const proj = tx.select().from(project).where(eq(project.id, projectId)).get();
 
-    await tx.insert(projectSettings).values({
+    tx.insert(projectSettings).values({
       id: projectId,
       projectId,
       autoSave,
       autoSaveInterval,
-    });
+    }).run();
 
     const chapterIdMap = new Map<string, string>();
     const characterIdMap = new Map<string, string>();
@@ -158,15 +159,19 @@ const createImportedProject = async (
     });
 
     if (chaptersForCreate.length > 0) {
-      await tx.insert(chapter).values(chaptersForCreate);
+      tx.insert(chapter).values(chaptersForCreate).run();
     }
 
     if (charactersForCreate.length > 0) {
-      await tx.insert(character).values(charactersForCreate);
+      tx.insert(character).values(charactersForCreate).run();
     }
 
     if (termsForCreate.length > 0) {
-      await tx.insert(term).values(termsForCreate);
+      tx.insert(term).values(termsForCreate).run();
+    }
+
+    if (!proj) {
+      throw new Error("Failed to create project during import");
     }
 
     const created: ImportedProject = {

@@ -187,11 +187,11 @@ export class CharacterService {
       const projectId = current?.projectId ?? null;
       const now = new Date().toISOString();
 
-      await db.getClient().transaction(async (tx) => {
+      db.getClient().transaction((tx) => {
         if (projectId) {
-          await tx.delete(entityRelation).where(or(eq(entityRelation.sourceId, id), eq(entityRelation.targetId, id)));
+          tx.delete(entityRelation).where(or(eq(entityRelation.sourceId, id), eq(entityRelation.targetId, id))).run();
         }
-        const [result] = await tx.update(character).set({ deletedAt: now, updatedAt: now }).where(eq(character.id, id)).returning({ id: character.id });
+        const result = tx.update(character).set({ deletedAt: now, updatedAt: now }).where(eq(character.id, id)).run();
         if (!result) {
           throw new ServiceError(
             ErrorCode.CHARACTER_NOT_FOUND,

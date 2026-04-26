@@ -85,9 +85,9 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
   const client = db.getClient();
   const deletedProjectIds = collectDeletedProjectIds(input.bundle);
   try {
-    await client.transaction(async (tx) => {
-      await applyProjectDeletes(tx, deletedProjectIds);
-      await upsertProjects(
+    client.transaction((tx) => {
+      applyProjectDeletes(tx, deletedProjectIds);
+      upsertProjects(
         tx,
         input.bundle.projects,
         deletedProjectIds,
@@ -95,19 +95,19 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
 
       for (const chapter of input.bundle.chapters) {
         if (deletedProjectIds.has(chapter.projectId)) continue;
-        await upsertChapter(tx, chapter);
+        upsertChapter(tx, chapter);
       }
 
-      await upsertCharacters(
+      upsertCharacters(
         tx,
         input.bundle.characters,
         deletedProjectIds,
       );
-      await upsertEvents(tx, input.bundle.events, deletedProjectIds);
-      await upsertFactions(tx, input.bundle.factions, deletedProjectIds);
-      await upsertTerms(tx, input.bundle.terms, deletedProjectIds);
-      await applyReplicaWorldState(tx, input.bundle, deletedProjectIds);
-      await applyChapterTombstones(
+      upsertEvents(tx, input.bundle.events, deletedProjectIds);
+      upsertFactions(tx, input.bundle.factions, deletedProjectIds);
+      upsertTerms(tx, input.bundle.terms, deletedProjectIds);
+      applyReplicaWorldState(tx, input.bundle, deletedProjectIds);
+      applyChapterTombstones(
         tx,
         input.bundle.tombstones,
         deletedProjectIds,

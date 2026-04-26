@@ -113,18 +113,17 @@ export class SnapshotService {
       await writeFullSnapshotArtifact(snapshotId, input);
 
       const now = new Date().toISOString();
-      const created = await db.getClient().transaction(async (tx) => {
-        const [result] = await tx.insert(snapshot).values({
-          id: snapshotId,
-          projectId: input.projectId,
-          chapterId: input.chapterId,
-          content: input.content,
-          contentLength,
-          type: snapshotType,
-          description: input.description,
-        }).returning();
-        await tx.update(project).set({ updatedAt: now }).where(eq(project.id, input.projectId));
-        return result;
+      const [created] = await db.getClient().insert(snapshot).values({
+        id: snapshotId,
+        projectId: input.projectId,
+        chapterId: input.chapterId,
+        content: input.content,
+        contentLength,
+        type: snapshotType,
+        description: input.description,
+      }).returning();
+      db.getClient().transaction((tx) => {
+        tx.update(project).set({ updatedAt: now }).where(eq(project.id, input.projectId)).run();
       });
 
       logger.info("Snapshot created successfully", { snapshotId: created.id });
@@ -229,10 +228,10 @@ export class SnapshotService {
       const found = rows[0] ?? null;
 
       const now = new Date().toISOString();
-      await db.getClient().transaction(async (tx) => {
-        await tx.delete(snapshot).where(eq(snapshot.id, id));
+      db.getClient().transaction((tx) => {
+        tx.delete(snapshot).where(eq(snapshot.id, id)).run();
         if (found?.projectId) {
-          await tx.update(project).set({ updatedAt: now }).where(eq(project.id, found.projectId));
+          tx.update(project).set({ updatedAt: now }).where(eq(project.id, found.projectId)).run();
         }
       });
       this.queueOrphanArtifactCleanup(id);
@@ -282,12 +281,12 @@ export class SnapshotService {
         typeof found.content === "string" ? found.content : "";
 
       const now = new Date().toISOString();
-      await db.getClient().transaction(async (tx) => {
-        await tx.update(chapter).set({
+      db.getClient().transaction((tx) => {
+        tx.update(chapter).set({
           content: nextContent,
           wordCount: nextContent.length,
-        }).where(eq(chapter.id, chapterId));
-        await tx.update(project).set({ updatedAt: now }).where(eq(project.id, found.projectId));
+        }).where(eq(chapter.id, chapterId)).run();
+        tx.update(project).set({ updatedAt: now }).where(eq(project.id, found.projectId)).run();
       });
 
       logger.info("Snapshot restored successfully", {
@@ -352,9 +351,9 @@ export class SnapshotService {
 
       const toDelete = allSnapshots.slice(keepCount);
       const now = new Date().toISOString();
-      await db.getClient().transaction(async (tx) => {
-        await tx.delete(snapshot).where(and(eq(snapshot.projectId, projectId), inArray(snapshot.id, toDelete.map((s) => s.id))));
-        await tx.update(project).set({ updatedAt: now }).where(eq(project.id, projectId));
+      db.getClient().transaction((tx) => {
+        tx.delete(snapshot).where(and(eq(snapshot.projectId, projectId), inArray(snapshot.id, toDelete.map((s) => s.id)))).run();
+        tx.update(project).set({ updatedAt: now }).where(eq(project.id, projectId)).run();
       });
       for (const s of toDelete) {
         this.queueOrphanArtifactCleanup(s.id);
@@ -430,9 +429,9 @@ export class SnapshotService {
       }
 
       const updateNow = new Date().toISOString();
-      await db.getClient().transaction(async (tx) => {
-        await tx.delete(snapshot).where(and(eq(snapshot.projectId, projectId), inArray(snapshot.id, toDelete)));
-        await tx.update(project).set({ updatedAt: updateNow }).where(eq(project.id, projectId));
+      db.getClient().transaction((tx) => {
+        tx.delete(snapshot).where(and(eq(snapshot.projectId, projectId), inArray(snapshot.id, toDelete))).run();
+        tx.update(project).set({ updatedAt: updateNow }).where(eq(project.id, projectId)).run();
       });
       for (const sid of toDelete) {
         this.queueOrphanArtifactCleanup(sid);
