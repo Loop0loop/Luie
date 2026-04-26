@@ -1,11 +1,14 @@
 import { beforeAll, afterAll, beforeEach, vi } from "vitest";
 import * as path from "node:path";
 import * as fs from "node:fs";
+import { sql } from "drizzle-orm";
 import type { db as DbService } from "../src/main/database/index.js";
 import type { cacheDb as CacheDbService } from "../src/main/database/cacheDb.js";
+import * as schema from "../src/main/database/schema.js";
+import * as cacheSchema from "../src/main/database/cacheSchema.js";
 
 const testWorkerId = process.env.VITEST_POOL_ID ?? process.env.VITEST_WORKER_ID ?? String(process.pid);
-const testDbDir = path.join(process.cwd(), "prisma", ".tmp", `vitest-${testWorkerId}`);
+const testDbDir = path.join(process.cwd(), "drizzle", ".tmp", `vitest-${testWorkerId}`);
 const testDbPath = path.join(testDbDir, "db.sqlite");
 const testCacheDbPath = path.join(testDbDir, "cache.sqlite");
 const skipDbSetup = process.env.SKIP_DB_TEST_SETUP === "1";
@@ -23,25 +26,8 @@ vi.mock("electron", () => ({
   },
 }));
 
-type PrismaClient = ReturnType<(typeof DbService)["getClient"]> & {
-  projectAttachment?: {
-    deleteMany: (args: unknown) => Promise<{ count: number }>;
-  };
-  projectLocalState?: {
-    deleteMany: (args: unknown) => Promise<{ count: number }>;
-  };
-  projectSettings?: {
-    deleteMany: (args: unknown) => Promise<{ count: number }>;
-  };
-  scrapMemo?: {
-    deleteMany: (args: unknown) => Promise<{ count: number }>;
-  };
-  worldDocument?: {
-    deleteMany: (args: unknown) => Promise<{ count: number }>;
-  };
-};
-
-type CachePrismaClient = ReturnType<(typeof CacheDbService)["getClient"]>;
+type MainDbClient = ReturnType<(typeof DbService)["getClient"]>;
+type CacheDbClient = ReturnType<(typeof CacheDbService)["getClient"]>;
 
 let dbService: typeof DbService | null = null;
 let cacheDbService: typeof CacheDbService | null = null;
@@ -61,32 +47,28 @@ beforeAll(async () => {
 beforeEach(async () => {
   if (skipDbSetup) return;
   if (!dbService || !cacheDbService) return;
-  const client: PrismaClient = dbService.getClient();
-  const cacheClient: CachePrismaClient = cacheDbService.getClient();
-  await cacheClient.$executeRawUnsafe('DELETE FROM "ChapterSearchDocumentFts";');
-  await cacheClient.chapterSearchDocument.deleteMany({});
-  await client.snapshot.deleteMany({});
-  await cacheClient.termAppearance.deleteMany({});
-  await cacheClient.characterAppearance.deleteMany({});
-  if (client.scrapMemo?.deleteMany) {
-    await client.scrapMemo.deleteMany({});
+  const client: MainDbClient = dbService.getClient();
+  const cacheClient: CacheDbClient = cacheDbService.getClient();
+
+  try {
+    await cacheClient.run(sql`DELETE FROM "ChapterSearchDocumentFts"`);
+  } catch {
+    // FTS table may not exist in fresh databases
   }
-  if (client.worldDocument?.deleteMany) {
-    await client.worldDocument.deleteMany({});
-  }
-  if (client.projectLocalState?.deleteMany) {
-    await client.projectLocalState.deleteMany({});
-  }
-  if (client.projectAttachment?.deleteMany) {
-    await client.projectAttachment.deleteMany({});
-  }
-  await client.term.deleteMany({});
-  await client.character.deleteMany({});
-  await client.chapter.deleteMany({});
-  if (client.projectSettings?.deleteMany) {
-    await client.projectSettings.deleteMany({});
-  }
-  await client.project.deleteMany({});
+  await cacheClient.delete(cacheSchema.chapterSearchDocument).where(sql`1=1`);
+  await cacheClient.delete(cacheSchema.termAppearance).where(sql`1=1`);
+  await cacheClient.delete(cacheSchema.characterAppearance).where(sql`1=1`);
+
+  await client.delete(schema.snapshot).where(sql`1=1`);
+  await client.delete(schema.scrapMemo).where(sql`1=1`);
+  await client.delete(schema.worldDocument).where(sql`1=1`);
+  await client.delete(schema.projectLocalState).where(sql`1=1`);
+  await client.delete(schema.projectAttachment).where(sql`1=1`);
+  await client.delete(schema.term).where(sql`1=1`);
+  await client.delete(schema.character).where(sql`1=1`);
+  await client.delete(schema.chapter).where(sql`1=1`);
+  await client.delete(schema.projectSettings).where(sql`1=1`);
+  await client.delete(schema.project).where(sql`1=1`);
 });
 
 afterAll(async () => {

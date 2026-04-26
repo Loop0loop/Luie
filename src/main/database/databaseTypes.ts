@@ -1,5 +1,3 @@
-import type { PrismaClient as GeneratedPrismaClient } from "@prisma/client";
-// TODO: Remove in Phase 7 — Prisma types replaced by Drizzle types
 import type Database from "better-sqlite3";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as cacheSchema from "./cacheSchema.js";
@@ -11,10 +9,6 @@ export interface PreparedDatabaseContext {
   isPackaged: boolean;
   isTest: boolean;
 }
-
-export type PrismaRecord = Record<string, unknown>;
-
-export type PrismaClient = GeneratedPrismaClient;
 
 export type MainDrizzleClient = BetterSQLite3Database<typeof schema>;
 

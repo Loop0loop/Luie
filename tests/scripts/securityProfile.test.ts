@@ -9,7 +9,7 @@ describe("check-security-profile helpers", () => {
     const source = `
       const x = eval("1+1");
       const y = new Function("a", "return a")();
-      db.$queryRawUnsafe("select * from users");
+      db.$executeRawUnsafe("select * from users");
       const API_KEY = "super-secret-key";
     `;
 
@@ -20,7 +20,6 @@ describe("check-security-profile helpers", () => {
 
     expect(findings.some((item) => item.type === "eval-call")).toBe(true);
     expect(findings.some((item) => item.type === "new-function")).toBe(true);
-    expect(findings.some((item) => item.type === "prisma-unsafe-raw")).toBe(true);
     expect(findings.some((item) => item.type === "hardcoded-secret")).toBe(true);
   });
 

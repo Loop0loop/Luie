@@ -3,7 +3,6 @@ import {
   type ElectronApplication,
   type Page,
 } from "@playwright/test";
-import { execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
@@ -26,14 +25,6 @@ export async function launchApp(
   fs.mkdirSync(testDbDir, { recursive: true });
   const testDbPath = path.join(testDbDir, "test.db");
   const databaseUrl = `file:${testDbPath}`;
-
-  execSync("bun x prisma db push --accept-data-loss --force-reset", {
-    stdio: "inherit",
-    env: {
-      ...process.env,
-      DATABASE_URL: databaseUrl,
-    },
-  });
 
   const app = await electron.launch({
     args: [process.cwd()],

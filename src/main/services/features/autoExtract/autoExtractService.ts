@@ -1,7 +1,9 @@
 import "dotenv/config";
+import { and, eq, isNull } from "drizzle-orm";
 import { createLogger } from "../../../../shared/logger/index.js";
 import { AUTO_EXTRACT_DEBOUNCE_MS } from "../../../../shared/constants/index.js";
 import { db } from "../../../database/index.js";
+import { character, term } from "../../../database/schema.js";
 import { keywordExtractor } from "../../../core/keywordExtractor.js";
 import { characterService } from "../../world/characterService.js";
 import { termService } from "../../world/termService.js";
@@ -71,19 +73,10 @@ class AutoExtractService {
       return;
     }
 
-    const [characters, terms] = (await Promise.all([
-      db.getClient().character.findMany({
-        where: { projectId, deletedAt: null },
-        select: { id: true, name: true, description: true },
-      }),
-      db.getClient().term.findMany({
-        where: { projectId, deletedAt: null },
-        select: { id: true, term: true, definition: true, category: true },
-      }),
-    ])) as [
-      Array<{ id: string; name: string; description?: string | null }>,
-      Array<{ id: string; term: string; definition?: string | null; category?: string | null }>,
-    ];
+    const [characters, terms] = await Promise.all([
+      db.getDrizzleClient().select({ id: character.id, name: character.name, description: character.description }).from(character).where(and(eq(character.projectId, projectId), isNull(character.deletedAt))),
+      db.getDrizzleClient().select({ id: term.id, term: term.term, definition: term.definition, category: term.category }).from(term).where(and(eq(term.projectId, projectId), isNull(term.deletedAt))),
+    ]);
 
     keywordExtractor.setKnownCharacters(characters.map((c) => c.name));
     keywordExtractor.setKnownTerms(terms.map((t) => t.term));

@@ -1,20 +1,21 @@
 // TODO: Remove in Phase 7 — replaced by Drizzle migrate() baseline flow
+import * as crypto from "node:crypto";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { createHash } from "node:crypto";
 import {
-  resolveMigrationPathContext,
-} from "./migrationPathResolver.js";
+  PACKAGED_SCHEMA_COLUMN_PATCHES,
+} from "./packagedSchema.js";
+import { resolveMigrationPathContext } from "./migrationPathResolver.js";
+
+const DRIZZLE_MIGRATIONS_TABLE = "__drizzle_migrations";
 
 type LoggerLike = {
   info: (message: string, meta?: Record<string, unknown>) => void;
   warn: (message: string, meta?: Record<string, unknown>) => void;
 };
-
-const DRIZZLE_MIGRATIONS_TABLE = "__drizzle_migrations";
 
 function sqliteTableExists(
   database: InstanceType<typeof Database>,
@@ -28,8 +29,19 @@ function sqliteTableExists(
   return Boolean(row);
 }
 
+function sqliteTableHasColumn(
+  database: InstanceType<typeof Database>,
+  tableName: string,
+  columnName: string,
+): boolean {
+  const rows = database
+    .prepare(`PRAGMA table_info("${tableName.replace(/"/g, '""')}")`)
+    .all() as Array<{ name?: string }>;
+  return rows.some((row) => row.name === columnName);
+}
+
 function computeMigrationHash(sqlContent: string): string {
-  return createHash("sha256").update(sqlContent).digest("hex").slice(0, 16);
+  return crypto.createHash("sha256").update(sqlContent).digest("hex").slice(0, 16);
 }
 
 /**
@@ -125,6 +137,19 @@ export function ensurePackagedSqliteSchema(
 
     // Run Drizzle migrate — applies only migrations not yet in __drizzle_migrations
     migrate(drizzleDb, { migrationsFolder });
+
+    // Apply column patches for existing DBs that may be missing columns
+    // added after the initial schema was created (e.g. deletedAt on WorldEntity).
+    let patchedColumns = 0;
+    for (const patch of PACKAGED_SCHEMA_COLUMN_PATCHES) {
+      if (!sqliteTableExists(database, patch.table)) continue;
+      if (sqliteTableHasColumn(database, patch.table, patch.column)) continue;
+      database.exec(patch.sql);
+      patchedColumns += 1;
+    }
+    if (patchedColumns > 0) {
+      logger.info("Applied column patches to existing database", { patchedColumns });
+    }
 
     logger.info("Packaged SQLite Drizzle migration ensured", {
       dbPath,

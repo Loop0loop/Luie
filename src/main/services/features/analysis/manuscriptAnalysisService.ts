@@ -1,7 +1,9 @@
 import "dotenv/config";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import { createLogger } from "../../../../shared/logger/index.js";
 import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
 import { db } from "../../../database/index.js";
+import { chapter, character, project, term } from "../../../database/schema.js";
 import { manuscriptAnalyzer } from "../../../core/manuscriptAnalyzer.js";
 import type { AnalysisItem, AnalysisContext } from "../../../../shared/types/analysis.js";
 import type { Character, Chapter, Term } from "../../../../shared/types/index.js";
@@ -186,27 +188,17 @@ export class ManuscriptAnalysisService {
     chapterId: string,
     projectId: string,
   ): Promise<Pick<Chapter, "id" | "title" | "content"> | null> {
-    const chapter = await db.getClient().chapter.findFirst({
-      where: {
-        id: chapterId,
-        projectId,
-        deletedAt: null,
-      },
-      select: {
-        id: true,
-        title: true,
-        content: true,
-      },
-    });
+    const results = await db.getDrizzleClient().select({ id: chapter.id, title: chapter.title, content: chapter.content }).from(chapter).where(and(eq(chapter.id, chapterId), eq(chapter.projectId, projectId), isNull(chapter.deletedAt))).limit(1);
+    const ch = results[0];
 
-    if (!chapter) {
+    if (!ch) {
       return null;
     }
 
     return {
-      id: String(chapter.id),
-      title: chapter.title,
-      content: chapter.content ?? "",
+      id: String(ch.id),
+      title: ch.title,
+      content: ch.content ?? "",
     };
   }
 
@@ -214,30 +206,14 @@ export class ManuscriptAnalysisService {
     chapterId: string,
     projectId: string,
   ): Promise<AnalysisSourcePayload> {
-    const [project, projectPath] = await Promise.all([
-      db.getClient().project.findUnique({
-        where: { id: projectId },
-        select: {
-          characters: {
-            select: {
-              name: true,
-              description: true,
-            },
-          },
-          terms: {
-            orderBy: { order: "asc" },
-            select: {
-              term: true,
-              definition: true,
-              category: true,
-            },
-          },
-        },
-      }),
+    const [projectRow, projectPath, characters, terms] = await Promise.all([
+      db.getDrizzleClient().select({ id: project.id }).from(project).where(eq(project.id, projectId)).limit(1),
       getProjectAttachmentPath(projectId),
+      db.getDrizzleClient().select({ name: character.name, description: character.description }).from(character).where(and(eq(character.projectId, projectId), isNull(character.deletedAt))).orderBy(asc(character.createdAt)),
+      db.getDrizzleClient().select({ term: term.term, definition: term.definition, category: term.category }).from(term).where(and(eq(term.projectId, projectId), isNull(term.deletedAt))).orderBy(asc(term.order)),
     ]);
 
-    if (!project) {
+    if (!projectRow) {
       throw new Error("Project not found");
     }
 
@@ -250,8 +226,8 @@ export class ManuscriptAnalysisService {
       });
       return {
         chapter: luieChapter,
-        characters: project.characters,
-        terms: project.terms,
+        characters,
+        terms,
         source: "luie",
       };
     }
@@ -269,8 +245,8 @@ export class ManuscriptAnalysisService {
     });
     return {
       chapter: databaseChapter,
-      characters: project.characters,
-      terms: project.terms,
+      characters,
+      terms,
       source: "db",
     };
   }

@@ -29,6 +29,7 @@ plugin/installed/*
 !plugin/installed/index.json
 dev-cache.db-shm
 dev-cache.db-wal
+/drizzle/migrations
 
 
 

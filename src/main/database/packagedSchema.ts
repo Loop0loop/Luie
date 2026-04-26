@@ -92,6 +92,11 @@ export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
     column: "deletedAt",
     sql: 'ALTER TABLE "Term" ADD COLUMN "deletedAt" DATETIME;',
   },
+  {
+    table: "WorldEntity",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "WorldEntity" ADD COLUMN "deletedAt" DATETIME;',
+  },
 ];
 
 export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyArray<string>>> = {
@@ -109,7 +114,7 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
   ScrapMemo: ["id", "projectId", "title", "content", "tags", "sortOrder", "updatedAt"],
   Term: ["id", "projectId", "term", "order", "deletedAt"],
   Snapshot: ["id", "projectId", "content", "contentLength", "type"],
-  WorldEntity: ["id", "projectId", "type", "name", "positionX", "positionY"],
+  WorldEntity: ["id", "projectId", "type", "name", "positionX", "positionY", "deletedAt"],
   EntityRelation: ["id", "projectId", "sourceId", "targetId", "relation"],
 };
 
@@ -247,6 +252,7 @@ CREATE TABLE IF NOT EXISTS "WorldEntity" (
     "attributes" TEXT,
     "positionX" REAL NOT NULL DEFAULT 0,
     "positionY" REAL NOT NULL DEFAULT 0,
+    "deletedAt" DATETIME,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "WorldEntity_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE

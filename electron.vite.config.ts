@@ -26,7 +26,6 @@ const sharedDefine = {
   __APP_NAME__: JSON.stringify(appName),
 };
 const mainExternal = [
-  /^@prisma-cache\/client(?:\/.*)?$/,
   /^drizzle-orm(?:\/.*)?$/,
   /^better-sqlite3(?:\/.*)?$/,
 ];

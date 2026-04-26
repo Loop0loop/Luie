@@ -77,7 +77,7 @@ describe("initDatabaseEnv (Drizzle runtime)", () => {
     const { initDatabaseEnv } = await import("../../src/main/prismaEnv.js");
     initDatabaseEnv();
 
-    expect(process.env.DATABASE_URL).toBe(`file:${path.join(process.cwd(), "prisma", ".tmp", "test.db")}`);
+    expect(process.env.DATABASE_URL).toBe(`file:${path.join(process.cwd(), "drizzle", ".tmp", "test.db")}`);
   });
 
   it("uses development db path when not packaged and not test", async () => {
@@ -89,7 +89,7 @@ describe("initDatabaseEnv (Drizzle runtime)", () => {
     const { initDatabaseEnv } = await import("../../src/main/prismaEnv.js");
     initDatabaseEnv();
 
-    expect(process.env.DATABASE_URL).toBe(`file:${path.join(process.cwd(), "prisma", "dev.db")}`);
+    expect(process.env.DATABASE_URL).toBe(`file:${path.join(process.cwd(), "drizzle", "dev.db")}`);
   });
 
   it("uses userData db path when packaged", async () => {

@@ -1,5 +1,5 @@
 /**
- * Database service using Prisma Client
+ * Database service using Drizzle ORM
  */
 
 import * as fs from "node:fs/promises";
@@ -14,20 +14,14 @@ import { ensureSafeAbsolutePath } from "../utils/pathValidation.js";
 import * as schema from "./schema.js";
 import { seedIfEmpty } from "./seedDefaults.js";
 import {
-  getPrismaBinPath,
-  loadPrismaBetterSqlite3,
   pathExists,
-  PrismaClientCtor,
-  resolvePackagedSchemaMode,
   resolveSqliteDatasourceFromEnv,
-  runPrismaCommand,
 } from "./databaseRuntime.js";
 import { ensurePackagedSqliteSchema } from "./databaseSchemaBootstrap.js";
 import type {
   PreparedDatabaseContext,
   DrizzleDatabaseHandle,
   MainDrizzleClient,
-  PrismaClient,
 } from "./databaseTypes.js";
 
 const logger = createLogger("DatabaseService");
@@ -35,7 +29,6 @@ const RUNTIME_DB_ENV_KEY = "LUIE_RUNTIME_DATABASE_URL";
 
 class DatabaseService {
   private static instance: DatabaseService;
-  private prisma: PrismaClient | null = null;
   private drizzleHandle: DrizzleDatabaseHandle<MainDrizzleClient> | null = null;
   private dbPath: string | null = null;
   private initPromise: Promise<void> | null = null;
@@ -51,7 +44,7 @@ class DatabaseService {
   }
 
   async initialize(): Promise<void> {
-    if (this.prisma) {
+    if (this.drizzleHandle) {
       return;
     }
 
@@ -77,28 +70,14 @@ class DatabaseService {
       datasourceUrl: context.datasourceUrl,
     });
 
-    await this.applySchema(context);
+    ensurePackagedSqliteSchema(context.dbPath, logger);
     this.drizzleHandle = this.createDrizzleClient(context);
-    this.prisma = this.createPrismaClient(context);
 
     if (context.isPackaged) {
       try {
         await seedIfEmpty(this.getDrizzleClient());
       } catch (error) {
         logger.error("Failed to seed packaged database", { error });
-      }
-    }
-
-    // WAL pragmas applied via Drizzle's underlying sqlite connection (see createDrizzleClient)
-    // TODO: Remove this Prisma-based WAL block in Phase 7
-    if (this.prisma.$executeRawUnsafe) {
-      try {
-        await this.prisma.$executeRawUnsafe("PRAGMA journal_mode=WAL;");
-        await this.prisma.$executeRawUnsafe("PRAGMA synchronous=FULL;");
-        await this.prisma.$executeRawUnsafe("PRAGMA wal_autocheckpoint=1000;");
-        logger.info("SQLite WAL mode enabled");
-      } catch (error) {
-        logger.warn("Failed to enable WAL mode", { error });
       }
     }
 
@@ -114,37 +93,6 @@ class DatabaseService {
     sqlite.pragma("busy_timeout = 5000");
     const client = drizzle(sqlite, { schema });
     return { sqlite, client };
-  }
-
-  // TODO: Remove in Phase 7 — Prisma client creation replaced by Drizzle
-  private createPrismaClient(context: PreparedDatabaseContext): PrismaClient {
-    try {
-      const PrismaBetterSqlite3 = loadPrismaBetterSqlite3();
-      const adapter = new PrismaBetterSqlite3({
-        url: context.datasourceUrl,
-      });
-      return new PrismaClientCtor({
-        adapter: adapter as never,
-        log: ["error", "warn"],
-      } as never);
-    } catch (error) {
-      // In local dev/test, native ABI mismatch can happen when the addon was rebuilt for Electron.
-      // Fallback to Prisma default sqlite engine to keep tests and CLI workflows unblocked.
-      if (context.isPackaged) {
-        throw error;
-      }
-      logger.warn("Falling back to Prisma default sqlite engine (adapter unavailable)", {
-        error,
-        dbPath: context.dbPath,
-        isTest: context.isTest,
-      });
-      return new PrismaClientCtor({
-        datasources: {
-          db: { url: context.datasourceUrl },
-        },
-        log: ["error", "warn"],
-      } as never);
-    }
   }
 
   private async prepareDatabaseContext(): Promise<PreparedDatabaseContext> {
@@ -167,7 +115,7 @@ class DatabaseService {
       dbPath = ensureSafeAbsolutePath(path.join(userDataPath, DB_NAME), "dbPath");
       datasourceUrl = `file:${dbPath}`;
     } else {
-      dbPath = ensureSafeAbsolutePath(path.join(process.cwd(), "prisma", "app-dev.db"), "dbPath");
+      dbPath = ensureSafeAbsolutePath(path.join(process.cwd(), "drizzle", "app-dev.db"), "dbPath");
       datasourceUrl = `file:${dbPath}`;
     }
     process.env[RUNTIME_DB_ENV_KEY] = datasourceUrl;
@@ -189,150 +137,16 @@ class DatabaseService {
     };
   }
 
-  private async applySchema(context: PreparedDatabaseContext): Promise<void> {
-    const dbExists = await pathExists(context.dbPath);
-    const cwd = context.isPackaged ? process.resourcesPath : process.cwd();
-    const schemaPath = path.join(cwd, "prisma", "schema.prisma");
-    const prismaPath = getPrismaBinPath(cwd);
-    const migrationsDir = path.join(cwd, "prisma", "migrations");
-    const hasMigrations =
-      (await pathExists(migrationsDir)) &&
-      (await fs
-        .readdir(migrationsDir, { withFileTypes: true })
-        .then((entries) => entries.some((entry) => entry.isDirectory())));
-
-    const commandEnv = { ...process.env, DATABASE_URL: context.datasourceUrl };
-
-    if (context.isPackaged) {
-      await this.applyPackagedSchema(context, {
-        dbExists,
-        schemaPath,
-        prismaPath,
-        hasMigrations,
-        commandEnv,
-      });
-      return;
-    }
-
-    if (context.isTest) {
-      logger.info("Running test database push", {
-        dbPath: context.dbPath,
-        dbExists,
-        command: "db push",
-      });
-
-      try {
-        await runPrismaCommand(
-          prismaPath,
-          ["db", "push", "--accept-data-loss", `--schema=${schemaPath}`],
-          commandEnv,
-        );
-        logger.info("Test database push completed successfully");
-      } catch (error) {
-        const prismaError = error as { stdout?: string; stderr?: string };
-        logger.warn("Failed to push test database; falling back to SQLite bootstrap", {
-          error,
-          stdout: prismaError.stdout,
-          stderr: prismaError.stderr,
-          dbPath: context.dbPath,
-        });
-        ensurePackagedSqliteSchema(context.dbPath, logger);
-      }
-      return;
-    }
-
-    logger.info("Running development database push", {
-      dbPath: context.dbPath,
-      dbExists,
-      hasMigrations,
-      command: "db push",
-    });
-
-    try {
-      await runPrismaCommand(
-        prismaPath,
-        ["db", "push", "--accept-data-loss", `--schema=${schemaPath}`],
-        commandEnv,
-      );
-      logger.info("Development database ready");
-    } catch (error) {
-      const prismaError = error as { stdout?: string; stderr?: string };
-      logger.error("Failed to prepare development database", {
-        error,
-        stdout: prismaError.stdout,
-        stderr: prismaError.stderr,
-      });
-      throw error;
-    }
-  }
-
-  private async applyPackagedSchema(
-    context: PreparedDatabaseContext,
-    options: {
-      dbExists: boolean;
-      schemaPath: string;
-      prismaPath: string;
-      hasMigrations: boolean;
-      commandEnv: NodeJS.ProcessEnv;
-    },
-  ): Promise<void> {
-    const schemaMode = resolvePackagedSchemaMode();
-    if (schemaMode === "bootstrap") {
-      logger.info("Using packaged SQLite bootstrap schema mode", {
-        dbPath: context.dbPath,
-        schemaMode,
-      });
-      ensurePackagedSqliteSchema(context.dbPath, logger);
-      return;
-    }
-
-    const { dbExists, schemaPath, prismaPath, hasMigrations, commandEnv } = options;
-    const hasSchemaFile = await pathExists(schemaPath);
-    const hasPrismaBinary = await pathExists(prismaPath);
-
-    if (hasMigrations && hasSchemaFile && hasPrismaBinary) {
-      logger.info("Running production migrations", {
-        dbPath: context.dbPath,
-        dbExists,
-        command: "migrate deploy",
-      });
-
-      try {
-        await runPrismaCommand(prismaPath, ["migrate", "deploy", `--schema=${schemaPath}`], commandEnv);
-        logger.info("Production migrations applied successfully");
-      } catch (error) {
-        const prismaError = error as { stdout?: string; stderr?: string };
-        logger.warn("Production migrate deploy failed; using SQLite bootstrap fallback", {
-          error,
-          stdout: prismaError.stdout,
-          stderr: prismaError.stderr,
-          schemaMode,
-        });
-      }
-    } else {
-      logger.warn("Prisma migrate mode requested, but migration assets are missing; using SQLite bootstrap fallback", {
-        dbPath: context.dbPath,
-        hasMigrations,
-        hasSchemaFile,
-        hasPrismaBinary,
-        resourcesPath: process.resourcesPath,
-        schemaMode,
-      });
-    }
-
-    ensurePackagedSqliteSchema(context.dbPath, logger);
-  }
-
-  getClient(): PrismaClient {
-    if (!this.prisma) {
+  getClient(): MainDrizzleClient {
+    if (!this.drizzleHandle) {
       throw new Error("Database is not initialized. Call db.initialize() first.");
     }
-    return this.prisma;
+    return this.drizzleHandle.client;
   }
 
   /**
-   * Returns the Drizzle ORM client. Use this in all Phase 4+ services.
-   * @deprecated Phase 7: getClient() will also return Drizzle. Use getDrizzleClient() for now.
+   * Returns the Drizzle ORM client. Alias for getClient().
+   * @deprecated Use getClient() instead — both now return Drizzle.
    */
   getDrizzleClient(): MainDrizzleClient {
     if (!this.drizzleHandle) {
@@ -349,20 +163,15 @@ class DatabaseService {
   }
 
   async disconnect(): Promise<void> {
-    if (this.initPromise && !this.prisma) {
+    if (this.initPromise && !this.drizzleHandle) {
       await this.initPromise.catch((error) => {
         logger.error("Database initialization failed before disconnect", { error });
       });
     }
-    if (!this.prisma && !this.drizzleHandle) {
+    if (!this.drizzleHandle) {
       return;
     }
 
-    if (this.prisma) {
-      // TODO: Remove Prisma disconnect in Phase 7
-      await this.prisma.$disconnect();
-    }
-    this.prisma = null;
     this.drizzleHandle?.sqlite.close();
     this.drizzleHandle = null;
     logger.info("Database disconnected");

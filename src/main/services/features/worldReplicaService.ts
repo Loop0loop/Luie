@@ -46,12 +46,6 @@ const toIsoString = (
   return value;
 };
 
-const parseDateInput = (value: string | undefined, fallback: Date): Date => {
-  if (!value) return fallback;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? fallback : parsed;
-};
-
 export class WorldReplicaService {
   private async ensureDbReady(): Promise<void> {
     await db.initialize();
@@ -207,7 +201,7 @@ export class WorldReplicaService {
               title: row.title,
               content: row.content,
               tags: Array.isArray(parsedTags) ? (parsedTags as string[]) : [],
-              updatedAt: toIsoString(row.updatedAt),
+              updatedAt: row.updatedAt,
             };
           }),
           updatedAt:

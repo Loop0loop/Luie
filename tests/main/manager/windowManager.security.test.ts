@@ -113,7 +113,7 @@ class MockBrowserWindow {
 vi.mock("electron", () => ({
   app: {
     isPackaged: false,
-    getPath: () => path.join(process.cwd(), "prisma", ".tmp", "window-manager-test"),
+    getPath: () => path.join(process.cwd(), "drizzle", ".tmp", "window-manager-test"),
   },
   BrowserWindow: MockBrowserWindow,
 }));

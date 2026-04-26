@@ -1,6 +1,7 @@
 import { app } from "electron";
 import { promises as fs } from "fs";
 import path from "path";
+import { eq } from "drizzle-orm";
 import { writeGzipAtomic, readMaybeGzip } from "../../utils/atomicWrite.js";
 import {
   SNAPSHOT_MIRROR_DIR,
@@ -105,10 +106,13 @@ export class AutoSaveMirrorStore {
         const payload = await this.readMirrorPayload(filePath);
         if (!payload) continue;
 
-        const chapter = await db.getClient().chapter.findUnique({
-          where: { id: payload.chapterId },
-          select: { id: true, projectId: true, deletedAt: true },
-        });
+        const { chapter: chapterTable } = await import("../../database/schema.js");
+        const rows = await db.getClient().select({
+          id: chapterTable.id,
+          projectId: chapterTable.projectId,
+          deletedAt: chapterTable.deletedAt,
+        }).from(chapterTable).where(eq(chapterTable.id, payload.chapterId)).limit(1);
+        const chapter = rows[0] ?? null;
 
         if (!chapter) {
           this.logger.warn(

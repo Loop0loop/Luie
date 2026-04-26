@@ -33,12 +33,6 @@ const RULES = [
     message: "String-based setTimeout/setInterval is forbidden.",
   },
   {
-    type: "prisma-unsafe-raw",
-    severity: "error",
-    regex: /\.\$(?:queryRawUnsafe|executeRawUnsafe)\s*\(/g,
-    message: "Prisma unsafe raw query API is forbidden.",
-  },
-  {
     type: "hardcoded-secret",
     severity: "error",
     regex: /\b(?:api[_-]?key|secret|token|password)\b\s*[:=]\s*["'`][^"'`\n]{8,}["'`]/gi,
