@@ -3,6 +3,7 @@ import { constants as fsConstants } from "node:fs";
 import { access, mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { app, safeStorage } from "electron";
+import Database from "better-sqlite3";
 import { APP_DIR_NAME } from "../../../shared/constants/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import type {
@@ -12,6 +13,7 @@ import type {
 } from "../../../shared/types/index.js";
 import { db } from "../../database/index.js";
 import { settingsManager } from "../../manager/settingsManager.js";
+import { dbRecoveryService } from "./dbRecoveryService.js";
 import {
   getSupabaseConfig,
   getSupabaseConfigSource,
@@ -84,6 +86,7 @@ class StartupReadinessService {
     checks.push(await this.checkDataDirRW());
     checks.push(await this.checkDefaultLuiePath());
     checks.push(await this.checkSqliteConnect());
+    checks.push(await this.checkSqliteIntegrity());
     checks.push(await this.checkSqliteWal());
     checks.push(await this.checkSupabaseRuntimeConfig());
     checks.push(await this.checkSupabaseSession());
@@ -147,11 +150,56 @@ class StartupReadinessService {
     try {
       const cacheDb = await loadCacheDb();
       await Promise.all([db.initialize(), cacheDb.initialize()]);
-      db.getDrizzleClient();
-      cacheDb.getDrizzleClient();
+      db.getClient();
+      cacheDb.getClient();
       return buildCheck("sqliteConnect", true, "SQLite connection ready");
     } catch (error) {
       return buildCheck("sqliteConnect", false, this.toErrorMessage(error));
+    }
+  }
+
+  private async checkSqliteIntegrity(): Promise<StartupCheck> {
+    try {
+      const dbPath = db.getDatabasePath();
+      let sqlite: Database.Database | null = null;
+      try {
+        sqlite = new Database(dbPath, { fileMustExist: true, readonly: true });
+        const result = sqlite.pragma("integrity_check") as Array<{
+          integrity_check: string;
+        }>;
+        const failures = result.filter(
+          (row) => row.integrity_check.trim().toLowerCase() !== "ok",
+        );
+        if (failures.length > 0) {
+          throw new Error(
+            `DB_INTEGRITY_FAILED:${failures[0].integrity_check}`,
+          );
+        }
+      } finally {
+        sqlite?.close();
+      }
+      return buildCheck("sqliteIntegrity", true, "SQLite integrity check passed");
+    } catch (error) {
+      logger.warn("SQLite integrity check failed, attempting recovery", {
+        error,
+      });
+      try {
+        const recoveryResult = await dbRecoveryService.recoverFromWal();
+        if (recoveryResult.success) {
+          return buildCheck(
+            "sqliteIntegrity",
+            true,
+            "SQLite integrity recovered via WAL recovery",
+          );
+        }
+      } catch (recoveryError) {
+        logger.error("Recovery attempt also failed", { recoveryError });
+      }
+      return buildCheck(
+        "sqliteIntegrity",
+        false,
+        `Integrity check failed: ${this.toErrorMessage(error)}`,
+      );
     }
   }
 

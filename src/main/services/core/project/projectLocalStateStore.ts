@@ -8,7 +8,7 @@ const { projectLocalState } = schema;
 const getClient = (
   client?: MainDrizzleClient,
 ): MainDrizzleClient =>
-  client ?? db.getDrizzleClient();
+  client ?? db.getClient();
 
 const toDateOrNull = (value: unknown): Date | null => {
   if (value instanceof Date) {

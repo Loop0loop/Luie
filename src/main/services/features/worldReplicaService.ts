@@ -57,7 +57,7 @@ export class WorldReplicaService {
   }): Promise<WorldReplicaDocumentResult> {
     try {
       await this.ensureDbReady();
-      const results = await db.getDrizzleClient().select().from(worldDocument).where(and(eq(worldDocument.projectId, input.projectId), eq(worldDocument.docType, input.docType))).limit(1);
+      const results = await db.getClient().select().from(worldDocument).where(and(eq(worldDocument.projectId, input.projectId), eq(worldDocument.docType, input.docType))).limit(1);
       const row = results[0];
 
       if (!row) {
@@ -99,7 +99,7 @@ export class WorldReplicaService {
   }): Promise<WorldReplicaDocumentSetResult> {
     try {
       await this.ensureDbReady();
-      await db.getDrizzleClient().transaction(async (tx) => {
+      await db.getClient().transaction(async (tx) => {
         const existing = await tx.select().from(worldDocument).where(and(eq(worldDocument.projectId, input.projectId), eq(worldDocument.docType, input.docType))).limit(1);
         if (existing.length > 0) {
           await tx.update(worldDocument).set({ payload: toJsonString(input.payload), updatedAt: new Date().toISOString() }).where(and(eq(worldDocument.projectId, input.projectId), eq(worldDocument.docType, input.docType)));
@@ -156,8 +156,8 @@ export class WorldReplicaService {
     try {
       await this.ensureDbReady();
       const [documentRowResults, memoRows] = await Promise.all([
-        db.getDrizzleClient().select().from(worldDocument).where(and(eq(worldDocument.projectId, projectId), eq(worldDocument.docType, "scrap"))).limit(1),
-        db.getDrizzleClient().select().from(scrapMemo).where(eq(scrapMemo.projectId, projectId)).orderBy(asc(scrapMemo.sortOrder), desc(scrapMemo.updatedAt)),
+        db.getClient().select().from(worldDocument).where(and(eq(worldDocument.projectId, projectId), eq(worldDocument.docType, "scrap"))).limit(1),
+        db.getClient().select().from(scrapMemo).where(eq(scrapMemo.projectId, projectId)).orderBy(asc(scrapMemo.sortOrder), desc(scrapMemo.updatedAt)),
       ]);
       const documentRow = documentRowResults[0];
 
@@ -242,7 +242,7 @@ export class WorldReplicaService {
         updatedAt: input.data.updatedAt,
       };
 
-      await db.getDrizzleClient().transaction(async (tx) => {
+      await db.getClient().transaction(async (tx) => {
         const existing = await tx.select().from(worldDocument).where(and(eq(worldDocument.projectId, input.projectId), eq(worldDocument.docType, "scrap"))).limit(1);
         if (existing.length > 0) {
           await tx.update(worldDocument).set({ payload: toJsonString(payload), updatedAt: new Date().toISOString() }).where(and(eq(worldDocument.projectId, input.projectId), eq(worldDocument.docType, "scrap")));

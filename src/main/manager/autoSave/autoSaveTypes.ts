@@ -8,6 +8,7 @@ export interface PendingSave {
   chapterId: string;
   content: string;
   projectId: string;
+  timestamp: number;
 }
 
 export interface AutoSaveRuntimeStats {

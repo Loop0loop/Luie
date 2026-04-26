@@ -18,7 +18,7 @@ export class EventService {
             logger.info("Creating event", input);
 
             const now = new Date().toISOString();
-            const [result] = await db.getDrizzleClient().insert(event).values({
+            const [result] = await db.getClient().insert(event).values({
                 id: crypto.randomUUID(),
                 projectId: input.projectId,
                 name: input.name,
@@ -56,7 +56,7 @@ export class EventService {
 
     async getEvent(id: string) {
         try {
-            const results = await db.getDrizzleClient().select().from(event).where(eq(event.id, id)).limit(1);
+            const results = await db.getClient().select().from(event).where(eq(event.id, id)).limit(1);
 
             if (results.length === 0) {
                 throw new ServiceError(
@@ -84,7 +84,7 @@ export class EventService {
 
     async getAllEvents(projectId: string) {
         try {
-            const results = await db.getDrizzleClient().select().from(event).where(and(eq(event.projectId, projectId), isNull(event.deletedAt))).orderBy(asc(event.createdAt));
+            const results = await db.getClient().select().from(event).where(and(eq(event.projectId, projectId), isNull(event.deletedAt))).orderBy(asc(event.createdAt));
 
             return results;
         } catch (error) {
@@ -110,7 +110,7 @@ export class EventService {
                 updateData.attributes = JSON.stringify(input.attributes);
             }
 
-            const currentResults = await db.getDrizzleClient().select({ id: event.id, projectId: event.projectId, deletedAt: event.deletedAt }).from(event).where(eq(event.id, input.id)).limit(1);
+            const currentResults = await db.getClient().select({ id: event.id, projectId: event.projectId, deletedAt: event.deletedAt }).from(event).where(eq(event.id, input.id)).limit(1);
             const current = currentResults[0];
             if (!current || current.deletedAt) {
                 throw new ServiceError(
@@ -120,7 +120,7 @@ export class EventService {
                 );
             }
 
-            const [updated] = await db.getDrizzleClient().update(event).set(updateData).where(eq(event.id, input.id)).returning();
+            const [updated] = await db.getClient().update(event).set(updateData).where(eq(event.id, input.id)).returning();
 
             if (!updated) {
                 throw new ServiceError(
@@ -150,13 +150,13 @@ export class EventService {
 
     async deleteEvent(id: string) {
         try {
-            const currentResults = await db.getDrizzleClient().select({ projectId: event.projectId, deletedAt: event.deletedAt }).from(event).where(eq(event.id, id)).limit(1);
+            const currentResults = await db.getClient().select({ projectId: event.projectId, deletedAt: event.deletedAt }).from(event).where(eq(event.id, id)).limit(1);
             const current = currentResults[0];
 
             const projectId = current?.projectId ?? null;
             const now = new Date().toISOString();
 
-            await db.getDrizzleClient().transaction(async (tx) => {
+            await db.getClient().transaction(async (tx) => {
                 if (projectId) {
                     await tx.delete(entityRelation).where(or(eq(entityRelation.sourceId, id), eq(entityRelation.targetId, id)));
                 }

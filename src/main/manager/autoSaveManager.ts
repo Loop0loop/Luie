@@ -220,7 +220,7 @@ export class AutoSaveManager extends EventEmitter {
     }
 
     const db = await loadDb();
-    const store = db.getDrizzleClient();
+    const store = db.getClient();
     const chapters = await store
       .select({ projectId: chapter.projectId, deletedAt: chapter.deletedAt })
       .from(chapter)
@@ -248,7 +248,7 @@ export class AutoSaveManager extends EventEmitter {
     if (!this.firstQueuedAt.has(chapterId)) {
       this.firstQueuedAt.set(chapterId, Date.now());
     }
-    this.pendingSaves.set(chapterId, { chapterId, content, projectId });
+    this.pendingSaves.set(chapterId, { chapterId, content, projectId, timestamp: Date.now() });
     this.lastSaveAt.set(chapterId, Date.now());
 
     // Immediately write mirror (crash safety net)
@@ -637,10 +637,10 @@ export class AutoSaveManager extends EventEmitter {
 
   private cleanupOldEntries() {
     const now = Date.now();
-    for (const [chapterId, timestamp] of Array.from(
-      this.lastSaveAt.entries(),
+    for (const [chapterId, pending] of Array.from(
+      this.pendingSaves.entries(),
     )) {
-      if (now - timestamp > AUTO_SAVE_STALE_THRESHOLD_MS) {
+      if (now - pending.timestamp > AUTO_SAVE_STALE_THRESHOLD_MS) {
         const timer = this.saveTimers.get(chapterId);
         if (timer) {
           clearTimeout(timer);
@@ -649,6 +649,7 @@ export class AutoSaveManager extends EventEmitter {
         this.pendingSaves.delete(chapterId);
         this.lastSaveAt.delete(chapterId);
         this.firstQueuedAt.delete(chapterId);
+        logger.info("Cleaned up stale pending save", { chapterId });
       }
     }
   }

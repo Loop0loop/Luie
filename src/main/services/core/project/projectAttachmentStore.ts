@@ -15,7 +15,7 @@ export type ProjectAttachmentEntry = {
 };
 
 const getClient = (client?: MainDrizzleClient): MainDrizzleClient =>
-  client ?? db.getDrizzleClient();
+  client ?? db.getClient();
 
 const toNullableString = (value: unknown): string | null =>
   typeof value === "string" && value.trim().length > 0 ? value : null;
@@ -78,7 +78,7 @@ const clearLegacyProjectPathIfPresent = async (
     return;
   }
 
-  await (client ?? db.getDrizzleClient())
+  await (client ?? db.getClient())
     .update(project)
     .set({ projectPath: null })
     .where(eq(project.id, projectId));
@@ -211,7 +211,7 @@ export const setProjectAttachmentPath = async (
   projectPath: string | null,
   client?: DbLike,
 ): Promise<void> => {
-  const store = client ?? db.getDrizzleClient();
+  const store = client ?? db.getClient();
   const normalizedProjectPath = toNullableString(projectPath);
 
   if (normalizedProjectPath) {

@@ -728,6 +728,7 @@ export type StartupCheckKey =
   | "dataDirRW"
   | "defaultLuiePath"
   | "sqliteConnect"
+  | "sqliteIntegrity"
   | "sqliteWal"
   | "supabaseRuntimeConfig"
   | "supabaseSession";

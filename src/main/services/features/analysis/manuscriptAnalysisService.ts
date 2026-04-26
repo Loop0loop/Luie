@@ -188,7 +188,7 @@ export class ManuscriptAnalysisService {
     chapterId: string,
     projectId: string,
   ): Promise<Pick<Chapter, "id" | "title" | "content"> | null> {
-    const results = await db.getDrizzleClient().select({ id: chapter.id, title: chapter.title, content: chapter.content }).from(chapter).where(and(eq(chapter.id, chapterId), eq(chapter.projectId, projectId), isNull(chapter.deletedAt))).limit(1);
+    const results = await db.getClient().select({ id: chapter.id, title: chapter.title, content: chapter.content }).from(chapter).where(and(eq(chapter.id, chapterId), eq(chapter.projectId, projectId), isNull(chapter.deletedAt))).limit(1);
     const ch = results[0];
 
     if (!ch) {
@@ -207,10 +207,10 @@ export class ManuscriptAnalysisService {
     projectId: string,
   ): Promise<AnalysisSourcePayload> {
     const [projectRow, projectPath, characters, terms] = await Promise.all([
-      db.getDrizzleClient().select({ id: project.id }).from(project).where(eq(project.id, projectId)).limit(1),
+      db.getClient().select({ id: project.id }).from(project).where(eq(project.id, projectId)).limit(1),
       getProjectAttachmentPath(projectId),
-      db.getDrizzleClient().select({ name: character.name, description: character.description }).from(character).where(and(eq(character.projectId, projectId), isNull(character.deletedAt))).orderBy(asc(character.createdAt)),
-      db.getDrizzleClient().select({ term: term.term, definition: term.definition, category: term.category }).from(term).where(and(eq(term.projectId, projectId), isNull(term.deletedAt))).orderBy(asc(term.order)),
+      db.getClient().select({ name: character.name, description: character.description }).from(character).where(and(eq(character.projectId, projectId), isNull(character.deletedAt))).orderBy(asc(character.createdAt)),
+      db.getClient().select({ term: term.term, definition: term.definition, category: term.category }).from(term).where(and(eq(term.projectId, projectId), isNull(term.deletedAt))).orderBy(asc(term.order)),
     ]);
 
     if (!projectRow) {

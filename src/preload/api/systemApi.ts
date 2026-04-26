@@ -52,6 +52,8 @@ export function createSystemApi({
         };
       },
       quit: () => safeInvoke(IPC_CHANNELS.APP_QUIT),
+      manualSave: () =>
+        safeInvoke<{ success: boolean }>(IPC_CHANNELS.MANUAL_SAVE),
     },
     logger: loggerApi,
     settings: {

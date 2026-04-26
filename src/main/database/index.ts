@@ -75,7 +75,7 @@ class DatabaseService {
 
     if (context.isPackaged) {
       try {
-        await seedIfEmpty(this.getDrizzleClient());
+        await seedIfEmpty(this.getClient());
       } catch (error) {
         logger.error("Failed to seed packaged database", { error });
       }
@@ -138,17 +138,6 @@ class DatabaseService {
   }
 
   getClient(): MainDrizzleClient {
-    if (!this.drizzleHandle) {
-      throw new Error("Database is not initialized. Call db.initialize() first.");
-    }
-    return this.drizzleHandle.client;
-  }
-
-  /**
-   * Returns the Drizzle ORM client. Alias for getClient().
-   * @deprecated Use getClient() instead — both now return Drizzle.
-   */
-  getDrizzleClient(): MainDrizzleClient {
     if (!this.drizzleHandle) {
       throw new Error("Database is not initialized. Call db.initialize() first.");
     }

@@ -74,8 +74,8 @@ class AutoExtractService {
     }
 
     const [characters, terms] = await Promise.all([
-      db.getDrizzleClient().select({ id: character.id, name: character.name, description: character.description }).from(character).where(and(eq(character.projectId, projectId), isNull(character.deletedAt))),
-      db.getDrizzleClient().select({ id: term.id, term: term.term, definition: term.definition, category: term.category }).from(term).where(and(eq(term.projectId, projectId), isNull(term.deletedAt))),
+      db.getClient().select({ id: character.id, name: character.name, description: character.description }).from(character).where(and(eq(character.projectId, projectId), isNull(character.deletedAt))),
+      db.getClient().select({ id: term.id, term: term.term, definition: term.definition, category: term.category }).from(term).where(and(eq(term.projectId, projectId), isNull(term.deletedAt))),
     ]);
 
     keywordExtractor.setKnownCharacters(characters.map((c) => c.name));

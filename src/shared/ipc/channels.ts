@@ -67,6 +67,7 @@ export const IPC_CHANNELS = {
 
   // Auto Save
   AUTO_SAVE: "auto-save",
+  MANUAL_SAVE: "manual-save",
 
   // Search
   SEARCH: "search",

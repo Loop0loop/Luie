@@ -318,7 +318,7 @@ export async function cleanupOrphanSnapshotArtifacts(options?: {
       : 0;
   const now = Date.now();
 
-  const store = db.getDrizzleClient();
+  const store = db.getClient();
   const persistedSnapshots = targetIds
     ? await store
         .select({ id: snapshotTable.id })
@@ -382,7 +382,7 @@ export async function writeFullSnapshotArtifact(
     chapterId: input.chapterId,
   });
 
-  const store = db.getDrizzleClient();
+  const store = db.getClient();
 
   const [projRows, settingsRows, chaptersRows, charactersRows, termsRows, projectPath] =
     await Promise.all([

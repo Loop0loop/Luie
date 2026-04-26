@@ -9,6 +9,7 @@ import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import type { SearchQuery } from "../../../shared/types/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
+import { escapeLike } from "../../utils/queryHelpers.js";
 
 const loadChapterSearchCacheService = async () =>
   (await import("./chapterSearchCacheService.js")).chapterSearchCacheService;
@@ -27,10 +28,10 @@ export class SearchService {
   async search(input: SearchQuery): Promise<SearchResult[]> {
     try {
       const results: SearchResult[] = [];
+      const escapedQuery = escapeLike(input.query);
 
       if (input.type === "all" || input.type === "character") {
-        const characters = await db
-          .getDrizzleClient()
+        const characters = await db.getClient()
           .select({
             id: character.id,
             name: character.name,
@@ -42,8 +43,8 @@ export class SearchService {
               eq(character.projectId, input.projectId),
               isNull(character.deletedAt),
               or(
-                like(character.name, `%${input.query}%`),
-                like(character.description ?? "", `%${input.query}%`),
+                like(character.name, `%${escapedQuery}%`),
+                like(character.description ?? "", `%${escapedQuery}%`),
               ),
             ),
           )
@@ -63,8 +64,7 @@ export class SearchService {
       }
 
       if (input.type === "all" || input.type === "term") {
-        const terms = await db
-          .getDrizzleClient()
+        const terms = await db.getClient()
           .select({
             id: term.id,
             term: term.term,
@@ -77,8 +77,8 @@ export class SearchService {
               eq(term.projectId, input.projectId),
               isNull(term.deletedAt),
               or(
-                like(term.term, `%${input.query}%`),
-                like(term.definition ?? "", `%${input.query}%`),
+                like(term.term, `%${escapedQuery}%`),
+                like(term.definition ?? "", `%${escapedQuery}%`),
               ),
             ),
           )
@@ -160,7 +160,7 @@ export class SearchService {
 
   async getQuickAccess(projectId: string) {
     try {
-      const client = db.getDrizzleClient();
+      const client = db.getClient();
       const recentTerms = await client
         .select({
           id: term.id,

@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { cacheDb } from "../../database/cacheDb.js";
 import { characterAppearance, termAppearance } from "../../database/cacheSchema.js";
 
-const getCacheClient = () => cacheDb.getDrizzleClient();
+const getCacheClient = () => cacheDb.getClient();
 
 export type CachedCharacterAppearance = {
   id: string;

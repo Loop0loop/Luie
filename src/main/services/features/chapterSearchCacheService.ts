@@ -5,8 +5,8 @@ import { chapterSearchDocument } from "../../database/cacheSchema.js";
 import { chapter } from "../../database/schema.js";
 import { createLogger } from "../../../shared/logger/index.js";
 
-const getCacheClient = () => cacheDb.getDrizzleClient();
-const getMainClient = () => db.getDrizzleClient();
+const getCacheClient = () => cacheDb.getClient();
+const getMainClient = () => db.getClient();
 
 export type CachedChapterSearchDocument = {
   chapterId: string;

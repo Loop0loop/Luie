@@ -123,7 +123,7 @@ const createEmptyParsedWorldPayload = (): ParsedWorldPayload => ({
 });
 
 const getProjectForExport = async (projectId: string): Promise<ProjectExportRecord | null> => {
-  const store = db.getDrizzleClient();
+  const store = db.getClient();
 
   const projectRows = await store
     .select()

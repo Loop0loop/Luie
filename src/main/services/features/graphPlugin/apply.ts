@@ -15,7 +15,7 @@ export const replaceProjectWorldEntityGraph = async (
   now: Date,
 ) => {
   validateWorldEntityGraph(graphPayload);
-  const client = db.getDrizzleClient();
+  const client = db.getClient();
   const nodes = graphPayload.nodes ?? [];
   const edges = graphPayload.edges ?? [];
 

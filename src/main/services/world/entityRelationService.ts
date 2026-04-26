@@ -89,7 +89,7 @@ function toEntityRelation(row: RawRow): EntityRelation {
 export class EntityRelationService {
     private async getClient() {
         await db.initialize();
-        return db.getDrizzleClient();
+        return db.getClient();
     }
 
     async createRelation(input: EntityRelationCreateInput) {

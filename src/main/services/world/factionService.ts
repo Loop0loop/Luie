@@ -18,7 +18,7 @@ export class FactionService {
             logger.info("Creating faction", input);
 
             const now = new Date().toISOString();
-            const [result] = await db.getDrizzleClient().insert(faction).values({
+            const [result] = await db.getClient().insert(faction).values({
                 id: crypto.randomUUID(),
                 projectId: input.projectId,
                 name: input.name,
@@ -56,7 +56,7 @@ export class FactionService {
 
     async getFaction(id: string) {
         try {
-            const results = await db.getDrizzleClient().select().from(faction).where(eq(faction.id, id)).limit(1);
+            const results = await db.getClient().select().from(faction).where(eq(faction.id, id)).limit(1);
 
             if (results.length === 0) {
                 throw new ServiceError(
@@ -84,7 +84,7 @@ export class FactionService {
 
     async getAllFactions(projectId: string) {
         try {
-            const results = await db.getDrizzleClient().select().from(faction).where(and(eq(faction.projectId, projectId), isNull(faction.deletedAt))).orderBy(asc(faction.createdAt));
+            const results = await db.getClient().select().from(faction).where(and(eq(faction.projectId, projectId), isNull(faction.deletedAt))).orderBy(asc(faction.createdAt));
 
             return results;
         } catch (error) {
@@ -110,7 +110,7 @@ export class FactionService {
                 updateData.attributes = JSON.stringify(input.attributes);
             }
 
-            const currentResults = await db.getDrizzleClient().select({ id: faction.id, projectId: faction.projectId, deletedAt: faction.deletedAt }).from(faction).where(eq(faction.id, input.id)).limit(1);
+            const currentResults = await db.getClient().select({ id: faction.id, projectId: faction.projectId, deletedAt: faction.deletedAt }).from(faction).where(eq(faction.id, input.id)).limit(1);
             const current = currentResults[0];
             if (!current || current.deletedAt) {
                 throw new ServiceError(
@@ -120,7 +120,7 @@ export class FactionService {
                 );
             }
 
-            const [updated] = await db.getDrizzleClient().update(faction).set(updateData).where(eq(faction.id, input.id)).returning();
+            const [updated] = await db.getClient().update(faction).set(updateData).where(eq(faction.id, input.id)).returning();
 
             if (!updated) {
                 throw new ServiceError(
@@ -150,13 +150,13 @@ export class FactionService {
 
     async deleteFaction(id: string) {
         try {
-            const currentResults = await db.getDrizzleClient().select({ projectId: faction.projectId, deletedAt: faction.deletedAt }).from(faction).where(eq(faction.id, id)).limit(1);
+            const currentResults = await db.getClient().select({ projectId: faction.projectId, deletedAt: faction.deletedAt }).from(faction).where(eq(faction.id, id)).limit(1);
             const current = currentResults[0];
 
             const projectId = current?.projectId ?? null;
             const now = new Date().toISOString();
 
-            await db.getDrizzleClient().transaction(async (tx) => {
+            await db.getClient().transaction(async (tx) => {
                 if (projectId) {
                     await tx.delete(entityRelation).where(or(eq(entityRelation.sourceId, id), eq(entityRelation.targetId, id)));
                 }

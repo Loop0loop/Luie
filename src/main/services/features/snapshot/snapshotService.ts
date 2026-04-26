@@ -113,7 +113,7 @@ export class SnapshotService {
       await writeFullSnapshotArtifact(snapshotId, input);
 
       const now = new Date().toISOString();
-      const created = await db.getDrizzleClient().transaction(async (tx) => {
+      const created = await db.getClient().transaction(async (tx) => {
         const [result] = await tx.insert(snapshot).values({
           id: snapshotId,
           projectId: input.projectId,
@@ -154,7 +154,7 @@ export class SnapshotService {
 
   async getSnapshot(id: string) {
     try {
-      const rows = await db.getDrizzleClient().select().from(snapshot).where(eq(snapshot.id, id)).limit(1);
+      const rows = await db.getClient().select().from(snapshot).where(eq(snapshot.id, id)).limit(1);
       const found = rows[0] ?? null;
 
       if (!found) {
@@ -179,7 +179,7 @@ export class SnapshotService {
 
   async getSnapshotsByProject(projectId: string) {
     try {
-      const snapshots = await db.getDrizzleClient().select().from(snapshot).where(eq(snapshot.projectId, projectId)).orderBy(desc(snapshot.createdAt));
+      const snapshots = await db.getClient().select().from(snapshot).where(eq(snapshot.projectId, projectId)).orderBy(desc(snapshot.createdAt));
 
       return snapshots;
     } catch (error) {
@@ -195,7 +195,7 @@ export class SnapshotService {
 
   async getSnapshotsByChapter(chapterId: string) {
     try {
-      const snapshots = await db.getDrizzleClient().select().from(snapshot).where(eq(snapshot.chapterId, chapterId)).orderBy(desc(snapshot.createdAt));
+      const snapshots = await db.getClient().select().from(snapshot).where(eq(snapshot.chapterId, chapterId)).orderBy(desc(snapshot.createdAt));
 
       return snapshots;
     } catch (error) {
@@ -225,11 +225,11 @@ export class SnapshotService {
 
   async deleteSnapshot(id: string) {
     try {
-      const rows = await db.getDrizzleClient().select({ projectId: snapshot.projectId }).from(snapshot).where(eq(snapshot.id, id)).limit(1);
+      const rows = await db.getClient().select({ projectId: snapshot.projectId }).from(snapshot).where(eq(snapshot.id, id)).limit(1);
       const found = rows[0] ?? null;
 
       const now = new Date().toISOString();
-      await db.getDrizzleClient().transaction(async (tx) => {
+      await db.getClient().transaction(async (tx) => {
         await tx.delete(snapshot).where(eq(snapshot.id, id));
         if (found?.projectId) {
           await tx.update(project).set({ updatedAt: now }).where(eq(project.id, found.projectId));
@@ -258,7 +258,7 @@ export class SnapshotService {
 
   async restoreSnapshot(snapshotId: string) {
     try {
-      const rows = await db.getDrizzleClient().select().from(snapshot).where(eq(snapshot.id, snapshotId)).limit(1);
+      const rows = await db.getClient().select().from(snapshot).where(eq(snapshot.id, snapshotId)).limit(1);
       const found = rows[0] ?? null;
 
       if (!found) {
@@ -282,7 +282,7 @@ export class SnapshotService {
         typeof found.content === "string" ? found.content : "";
 
       const now = new Date().toISOString();
-      await db.getDrizzleClient().transaction(async (tx) => {
+      await db.getClient().transaction(async (tx) => {
         await tx.update(chapter).set({
           content: nextContent,
           wordCount: nextContent.length,
@@ -344,7 +344,7 @@ export class SnapshotService {
     keepCount: number = DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT,
   ) {
     try {
-      const allSnapshots = await db.getDrizzleClient().select().from(snapshot).where(eq(snapshot.projectId, projectId)).orderBy(desc(snapshot.createdAt));
+      const allSnapshots = await db.getClient().select().from(snapshot).where(eq(snapshot.projectId, projectId)).orderBy(desc(snapshot.createdAt));
 
       if (allSnapshots.length <= keepCount) {
         return { success: true, deletedCount: 0 };
@@ -352,7 +352,7 @@ export class SnapshotService {
 
       const toDelete = allSnapshots.slice(keepCount);
       const now = new Date().toISOString();
-      await db.getDrizzleClient().transaction(async (tx) => {
+      await db.getClient().transaction(async (tx) => {
         await tx.delete(snapshot).where(and(eq(snapshot.projectId, projectId), inArray(snapshot.id, toDelete.map((s) => s.id))));
         await tx.update(project).set({ updatedAt: now }).where(eq(project.id, projectId));
       });
@@ -389,7 +389,7 @@ export class SnapshotService {
     const SEVEN_DAYS = 7 * ONE_DAY;
 
     try {
-      const snapshots = await db.getDrizzleClient().select({ id: snapshot.id, createdAt: snapshot.createdAt }).from(snapshot).where(and(eq(snapshot.projectId, projectId), eq(snapshot.type, "AUTO"))).orderBy(desc(snapshot.createdAt));
+      const snapshots = await db.getClient().select({ id: snapshot.id, createdAt: snapshot.createdAt }).from(snapshot).where(and(eq(snapshot.projectId, projectId), eq(snapshot.type, "AUTO"))).orderBy(desc(snapshot.createdAt));
 
       if (snapshots.length === 0) {
         return { success: true, deletedCount: 0 };
@@ -430,7 +430,7 @@ export class SnapshotService {
       }
 
       const updateNow = new Date().toISOString();
-      await db.getDrizzleClient().transaction(async (tx) => {
+      await db.getClient().transaction(async (tx) => {
         await tx.delete(snapshot).where(and(eq(snapshot.projectId, projectId), inArray(snapshot.id, toDelete)));
         await tx.update(project).set({ updatedAt: updateNow }).where(eq(project.id, projectId));
       });
@@ -461,7 +461,7 @@ export class SnapshotService {
   }
 
   async pruneSnapshotsAllProjects() {
-    const projects = await db.getDrizzleClient().select({ id: project.id }).from(project);
+    const projects = await db.getClient().select({ id: project.id }).from(project);
 
     const results = await Promise.all(
       projects.map((p) =>
@@ -479,7 +479,7 @@ export class SnapshotService {
 
   async getLatestSnapshot(chapterId: string) {
     try {
-      const rows = await db.getDrizzleClient().select().from(snapshot).where(eq(snapshot.chapterId, chapterId)).orderBy(desc(snapshot.createdAt)).limit(1);
+      const rows = await db.getClient().select().from(snapshot).where(eq(snapshot.chapterId, chapterId)).orderBy(desc(snapshot.createdAt)).limit(1);
       const found = rows[0] ?? null;
 
       return found;

@@ -23,7 +23,7 @@ async function updateCharacterFirstAppearance(
   characterId: string,
   chapterId: string,
 ): Promise<void> {
-  const rows = await db.getDrizzleClient()
+  const rows = await db.getClient()
     .select({
       projectId: character.projectId,
       firstAppearance: character.firstAppearance,
@@ -37,7 +37,7 @@ async function updateCharacterFirstAppearance(
   const char = rows[0];
   if (!char.projectId || char.firstAppearance || char.deletedAt) return;
 
-  await db.getDrizzleClient()
+  await db.getClient()
     .update(character)
     .set({ firstAppearance: chapterId })
     .where(eq(character.id, characterId));
@@ -51,7 +51,7 @@ async function updateTermFirstAppearance(
   termId: string,
   chapterId: string,
 ): Promise<void> {
-  const rows = await db.getDrizzleClient()
+  const rows = await db.getClient()
     .select({
       projectId: term.projectId,
       firstAppearance: term.firstAppearance,
@@ -65,7 +65,7 @@ async function updateTermFirstAppearance(
   const t = rows[0];
   if (!t.projectId || t.firstAppearance || t.deletedAt) return;
 
-  await db.getDrizzleClient()
+  await db.getClient()
     .update(term)
     .set({ firstAppearance: chapterId })
     .where(eq(term.id, termId));
@@ -95,7 +95,7 @@ async function trackKeywordAppearancesInternal(
     }
   }
 
-  const store = db.getDrizzleClient();
+  const store = db.getClient();
   const notDeleted = isNull(character.deletedAt);
   const termNotDeleted = isNull(term.deletedAt);
 
@@ -216,7 +216,7 @@ export async function rebuildProjectKeywordAppearances(
       await appearanceCacheService.clearTermProject(projectId);
     }
 
-    const chapters = await db.getDrizzleClient()
+    const chapters = await db.getClient()
       .select({ id: chapter.id, content: chapter.content })
       .from(chapter)
       .where(and(eq(chapter.projectId, projectId), isNull(chapter.deletedAt)))

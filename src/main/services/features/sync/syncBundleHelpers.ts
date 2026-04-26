@@ -34,7 +34,7 @@ export const buildLocalBundleFromDatabase = async (input: {
   pendingProjectDeletes: SyncPendingProjectDelete[];
   userId: string;
 }): Promise<SyncBundle> => {
-  const store = db.getDrizzleClient();
+  const store = db.getClient();
 
   const projects = await store.select().from(project);
   const projectIds = projects.map((p) => p.id);

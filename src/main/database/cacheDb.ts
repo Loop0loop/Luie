@@ -139,17 +139,6 @@ class CacheDatabaseService {
     return this.drizzleHandle.client;
   }
 
-  /**
-   * Returns the Drizzle ORM client for cache database. Alias for getClient().
-   * @deprecated Use getClient() instead — both now return Drizzle.
-   */
-  getDrizzleClient(): CacheDrizzleClient {
-    if (!this.drizzleHandle) {
-      throw new Error("Cache database is not initialized. Call cacheDb.initialize() first.");
-    }
-    return this.drizzleHandle.client;
-  }
-
   getDatabasePath(): string {
     if (!this.dbPath) {
       throw new Error("Cache database path not initialized");

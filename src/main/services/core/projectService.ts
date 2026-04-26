@@ -168,7 +168,7 @@ export class ProjectService {
         }
       }
 
-      const store = db.getDrizzleClient();
+      const store = db.getClient();
       const now = new Date().toISOString();
       const projectRows = await store.insert(schema.project).values({
         id: crypto.randomUUID(),
@@ -313,7 +313,7 @@ export class ProjectService {
         "packagePath",
       );
       const [existingRows, conflict, meta] = await Promise.all([
-        db.getDrizzleClient()
+        db.getClient()
           .select({ id: schema.project.id })
           .from(schema.project)
           .where(eq(schema.project.id, projectId))
@@ -401,7 +401,7 @@ export class ProjectService {
     try {
       const normalizedPath = normalizeLuiePackagePath(targetPath, "targetPath");
       const [existingRows, conflict, currentAttachmentPath] = await Promise.all([
-        db.getDrizzleClient()
+        db.getClient()
           .select({ id: schema.project.id })
           .from(schema.project)
           .where(eq(schema.project.id, projectId))
@@ -474,7 +474,7 @@ export class ProjectService {
 
   async getProject(id: string) {
     try {
-      const store = db.getDrizzleClient();
+      const store = db.getClient();
       const [projectRows, settingsRows, chaptersRows, charactersRows, termsRows] = await Promise.all([
         store.select().from(schema.project).where(eq(schema.project.id, id)).limit(1),
         store.select().from(schema.projectSettings).where(eq(schema.projectSettings.projectId, id)).limit(1),
@@ -514,7 +514,7 @@ export class ProjectService {
 
   async getAllProjects() {
     try {
-      const projects = await db.getDrizzleClient()
+      const projects = await db.getClient()
         .select({
           id: schema.project.id,
           title: schema.project.title,
@@ -582,7 +582,7 @@ export class ProjectService {
       }
 
       const [currentRows, currentProjectPath] = await Promise.all([
-        db.getDrizzleClient()
+        db.getClient()
           .select({ title: schema.project.title })
           .from(schema.project)
           .where(eq(schema.project.id, input.id))
@@ -593,7 +593,7 @@ export class ProjectService {
       const current = currentRows.length > 0 ? currentRows[0] : null;
 
       const now = new Date().toISOString();
-      const projectRows = await db.getDrizzleClient()
+      const projectRows = await db.getClient()
         .update(schema.project)
         .set({
           title: input.title,
@@ -662,7 +662,7 @@ export class ProjectService {
 
     try {
       const [existingRows, projectPath] = await Promise.all([
-        db.getDrizzleClient()
+        db.getClient()
           .select({ id: schema.project.id })
           .from(schema.project)
           .where(eq(schema.project.id, request.id))
@@ -691,7 +691,7 @@ export class ProjectService {
       });
       queuedProjectDelete = true;
 
-      const deletedRows = await db.getDrizzleClient()
+      const deletedRows = await db.getClient()
         .delete(schema.project)
         .where(eq(schema.project.id, request.id))
         .returning({ id: schema.project.id });
@@ -746,7 +746,7 @@ export class ProjectService {
 
   async removeProjectFromList(id: string) {
     try {
-      const existingRows = await db.getDrizzleClient()
+      const existingRows = await db.getClient()
         .select({ id: schema.project.id })
         .from(schema.project)
         .where(eq(schema.project.id, id))
@@ -762,7 +762,7 @@ export class ProjectService {
         );
       }
 
-      const deletedRows = await db.getDrizzleClient()
+      const deletedRows = await db.getClient()
         .delete(schema.project)
         .where(eq(schema.project.id, id))
         .returning({ id: schema.project.id });
@@ -822,7 +822,7 @@ export class ProjectService {
   }
 
   async touchProject(projectId: string): Promise<void> {
-    await db.getDrizzleClient()
+    await db.getClient()
       .update(schema.project)
       .set({ updatedAt: new Date().toISOString() })
       .where(eq(schema.project.id, projectId));

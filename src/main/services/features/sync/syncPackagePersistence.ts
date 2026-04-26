@@ -224,7 +224,7 @@ export const persistBundleToLuiePackages = async (input: {
   const failedProjects: string[] = [];
   const persistedProjects: PersistedLuiePackage[] = [];
   for (const project of bundle.projects) {
-    const store = db.getDrizzleClient();
+    const store = db.getClient();
     const [projRows, snapshotRows] = await Promise.all([
       store.select().from(projectTable).where(eq(projectTable.id, project.id)).limit(1),
       store

@@ -419,7 +419,7 @@ export const openLuieProjectPackage = async (input: {
   }
 
   const { resolvedProjectId, legacyProjectId } = resolveImportIdentity(meta, existingByPath);
-  const existingRow = await db.getDrizzleClient()
+  const existingRow = await db.getClient()
     .select({ id: schema.project.id, updatedAt: schema.project.updatedAt })
     .from(schema.project)
     .where(eq(schema.project.id, resolvedProjectId))

@@ -82,7 +82,7 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
     logger: input.logger,
   });
 
-  const client = db.getDrizzleClient();
+  const client = db.getClient();
   const deletedProjectIds = collectDeletedProjectIds(input.bundle);
   try {
     await client.transaction(async (tx) => {

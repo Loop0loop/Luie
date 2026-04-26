@@ -248,7 +248,7 @@ export const applyProjectImportTransaction = async (
     worldGraph,
   });
 
-  const result = await db.getDrizzleClient().transaction(async (tx) => {
+  const result = await db.getClient().transaction(async (tx) => {
     if (legacyProjectId) {
       await tx.delete(project).where(eq(project.id, legacyProjectId));
     }

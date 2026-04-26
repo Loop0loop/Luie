@@ -43,7 +43,7 @@ export class ChapterService {
     projectId: string | undefined,
   ): Promise<string> {
     if (!projectId) return "Unknown";
-    const rows = await db.getDrizzleClient()
+    const rows = await db.getClient()
       .select({ title: project.title })
       .from(project)
       .where(eq(project.id, projectId))
@@ -150,7 +150,7 @@ export class ChapterService {
       }
       logger.info("Creating chapter", input);
 
-      const store = db.getDrizzleClient();
+      const store = db.getClient();
       const maxOrderRows = await store
         .select({ order: chapter.order })
         .from(chapter)
@@ -207,7 +207,7 @@ export class ChapterService {
 
   async getChapter(id: string) {
     try {
-      const store = db.getDrizzleClient();
+      const store = db.getClient();
       const rows = await store
         .select()
         .from(chapter)
@@ -231,7 +231,7 @@ export class ChapterService {
 
   async getAllChapters(projectId: string) {
     try {
-      const chapters = await db.getDrizzleClient()
+      const chapters = await db.getClient()
         .select()
         .from(chapter)
         .where(and(eq(chapter.projectId, projectId), isNull(chapter.deletedAt)))
@@ -251,7 +251,7 @@ export class ChapterService {
 
   async updateChapter(input: ChapterUpdateInput) {
     try {
-      const store = db.getDrizzleClient();
+      const store = db.getClient();
       const currentRows = await store
         .select({ projectId: chapter.projectId, content: chapter.content, deletedAt: chapter.deletedAt })
         .from(chapter)
@@ -351,7 +351,7 @@ export class ChapterService {
 
   async deleteChapter(id: string) {
     try {
-      const store = db.getDrizzleClient();
+      const store = db.getClient();
       const chapterRows = await store
         .select({ projectId: chapter.projectId })
         .from(chapter)
@@ -407,7 +407,7 @@ export class ChapterService {
 
   async getDeletedChapters(projectId: string) {
     try {
-      return await db.getDrizzleClient()
+      return await db.getClient()
         .select()
         .from(chapter)
         .where(and(eq(chapter.projectId, projectId), sql`${chapter.deletedAt} IS NOT NULL`))
@@ -425,7 +425,7 @@ export class ChapterService {
 
   async restoreChapter(id: string) {
     try {
-      const store = db.getDrizzleClient();
+      const store = db.getClient();
       const currentRows = await store
         .select({ projectId: chapter.projectId, content: chapter.content })
         .from(chapter)
@@ -490,7 +490,7 @@ export class ChapterService {
 
   async purgeChapter(id: string) {
     try {
-      const store = db.getDrizzleClient();
+      const store = db.getClient();
       const chapterRows = await store
         .select({ projectId: chapter.projectId })
         .from(chapter)
@@ -537,7 +537,7 @@ export class ChapterService {
 
   async reorderChapters(projectId: string, chapterIds: string[]) {
     try {
-      const store = db.getDrizzleClient();
+      const store = db.getClient();
       await store.transaction(async (tx) => {
         const now = new Date().toISOString();
         for (let index = 0; index < chapterIds.length; index++) {

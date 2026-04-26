@@ -81,7 +81,7 @@ const createImportedProject = async (
   const projectData = snapshot.data.project;
   const now = new Date().toISOString();
 
-  const store = db.getDrizzleClient();
+  const store = db.getClient();
   const result = await store.transaction(async (tx) => {
     const [proj] = await tx.insert(project).values({
       id: randomUUID(),
@@ -205,7 +205,7 @@ const rollbackImportedProject = async (
   logger: LoggerLike,
 ): Promise<void> => {
   try {
-    await db.getDrizzleClient().delete(project).where(eq(project.id, projectId));
+    await db.getClient().delete(project).where(eq(project.id, projectId));
   } catch (rollbackError) {
     logger.error("Failed to rollback project after snapshot .luie import failure", {
       projectId,

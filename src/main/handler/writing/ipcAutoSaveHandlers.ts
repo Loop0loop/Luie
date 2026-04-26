@@ -9,6 +9,7 @@ type AutoSaveManagerLike = {
     content: string,
     projectId: string,
   ) => Promise<void>;
+  flushAll: () => Promise<void>;
   getRuntimeStats?: () => unknown;
 };
 
@@ -31,6 +32,18 @@ export function registerAutoSaveIPCHandlers(
         logger.info("AUTO_SAVE accepted", {
           chapterId,
           projectId,
+          stats: autoSaveManager.getRuntimeStats?.(),
+        });
+        return { success: true };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.MANUAL_SAVE,
+      logTag: "MANUAL_SAVE",
+      failMessage: "Failed to manual save",
+      handler: async () => {
+        await autoSaveManager.flushAll();
+        logger.info("MANUAL_SAVE completed", {
           stats: autoSaveManager.getRuntimeStats?.(),
         });
         return { success: true };

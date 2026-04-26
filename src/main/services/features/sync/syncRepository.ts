@@ -21,6 +21,26 @@ const logger = createLogger("SyncRepository");
 
 type DbRow = Record<string, unknown>;
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 1000;
+
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+): Promise<Response> {
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response;
+    } catch (error) {
+      if (attempt === MAX_RETRIES) throw error;
+      await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * Math.pow(2, attempt - 1)));
+    }
+  }
+  throw new Error("UNREACHABLE: retry loop exited without result or throw");
+}
+
 const toNullableString = (value: unknown): string | null =>
   typeof value === "string" ? value : null;
 
@@ -67,18 +87,6 @@ const normalizeToRow = (value: Record<string, unknown>): Record<string, unknown>
     }
   }
   return next;
-};
-
-const toResponseError = async (
-  kind: "FETCH" | "UPSERT",
-  table: string,
-  response: Response,
-): Promise<Error> => {
-  const body = await response.text();
-  if (response.status === 404 && body.includes("PGRST205")) {
-    return new Error(`SUPABASE_SCHEMA_MISSING:${table}`);
-  }
-  return new Error(`SUPABASE_${kind}_FAILED:${table}:${response.status}:${body}`);
 };
 
 const mapProjectRow = (row: DbRow): SyncProjectRecord | null => {
@@ -475,23 +483,16 @@ class SyncRepository {
     query.set("select", "*");
     query.set("user_id", `eq.${userId}`);
 
-    const response = await fetch(`${config.url}/rest/v1/${table}?${query.toString()}`, {
-      method: "GET",
-      headers: {
-        apikey: config.anonKey,
-        Authorization: `Bearer ${accessToken}`,
+    const response = await fetchWithRetry(
+      `${config.url}/rest/v1/${table}?${query.toString()}`,
+      {
+        method: "GET",
+        headers: {
+          apikey: config.anonKey,
+          Authorization: `Bearer ${accessToken}`,
+        },
       },
-    });
-
-    if (!response.ok) {
-      const error = await toResponseError("FETCH", table, response);
-      logger.warn("Failed to fetch sync table", {
-        table,
-        status: response.status,
-        error: error.message,
-      });
-      throw error;
-    }
+    );
 
     const payload = (await response.json()) as unknown;
     return Array.isArray(payload) ? (payload as DbRow[]) : [];
@@ -507,7 +508,7 @@ class SyncRepository {
 
     const config = getSupabaseConfigOrThrow();
 
-    const response = await fetch(
+    await fetchWithRetry(
       `${config.url}/rest/v1/${table}?on_conflict=${encodeURIComponent(onConflict)}`,
       {
         method: "POST",
@@ -520,10 +521,6 @@ class SyncRepository {
         body: JSON.stringify(rows),
       },
     );
-
-    if (!response.ok) {
-      throw await toResponseError("UPSERT", table, response);
-    }
   }
 
 }

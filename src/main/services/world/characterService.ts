@@ -15,13 +15,14 @@ import type {
 import { rebuildProjectKeywordAppearances } from "../core/chapterKeywords.js";
 import { projectService } from "../core/projectService.js";
 import { ServiceError } from "../../utils/serviceError.js";
+import { escapeLike } from "../../utils/queryHelpers.js";
 
 const loadAppearanceCacheService = async () =>
   (await import("./appearanceCacheService.js")).appearanceCacheService;
 
 const logger = createLogger("CharacterService");
 
-export const getWorldDbClient = () => db.getDrizzleClient();
+export const getWorldDbClient = () => db.getClient();
 
 export class CharacterService {
   async createCharacter(input: CharacterCreateInput) {
@@ -29,7 +30,7 @@ export class CharacterService {
       logger.info("Creating character", input);
 
       const now = new Date().toISOString();
-      const [result] = await db.getDrizzleClient().insert(character).values({
+      const [result] = await db.getClient().insert(character).values({
         id: crypto.randomUUID(),
         projectId: input.projectId,
         name: input.name,
@@ -73,7 +74,7 @@ export class CharacterService {
 
   async getCharacter(id: string) {
     try {
-      const results = await db.getDrizzleClient().select().from(character).where(eq(character.id, id)).limit(1);
+      const results = await db.getClient().select().from(character).where(eq(character.id, id)).limit(1);
 
       if (results.length === 0) {
         throw new ServiceError(
@@ -107,7 +108,7 @@ export class CharacterService {
 
   async getAllCharacters(projectId: string) {
     try {
-      const results = await db.getDrizzleClient().select().from(character).where(and(eq(character.projectId, projectId), isNull(character.deletedAt))).orderBy(asc(character.createdAt));
+      const results = await db.getClient().select().from(character).where(and(eq(character.projectId, projectId), isNull(character.deletedAt))).orderBy(asc(character.createdAt));
 
       return results;
     } catch (error) {
@@ -134,7 +135,7 @@ export class CharacterService {
         updateData.attributes = JSON.stringify(input.attributes);
       }
 
-      const currentResults = await db.getDrizzleClient().select({ id: character.id, projectId: character.projectId, deletedAt: character.deletedAt }).from(character).where(eq(character.id, input.id)).limit(1);
+      const currentResults = await db.getClient().select({ id: character.id, projectId: character.projectId, deletedAt: character.deletedAt }).from(character).where(eq(character.id, input.id)).limit(1);
       const current = currentResults[0];
       if (!current || current.deletedAt) {
         throw new ServiceError(
@@ -144,7 +145,7 @@ export class CharacterService {
         );
       }
 
-      const [updated] = await db.getDrizzleClient().update(character).set(updateData).where(eq(character.id, input.id)).returning();
+      const [updated] = await db.getClient().update(character).set(updateData).where(eq(character.id, input.id)).returning();
 
       if (!updated) {
         throw new ServiceError(
@@ -180,13 +181,13 @@ export class CharacterService {
 
   async deleteCharacter(id: string) {
     try {
-      const currentResults = await db.getDrizzleClient().select({ projectId: character.projectId, deletedAt: character.deletedAt }).from(character).where(eq(character.id, id)).limit(1);
+      const currentResults = await db.getClient().select({ projectId: character.projectId, deletedAt: character.deletedAt }).from(character).where(eq(character.id, id)).limit(1);
       const current = currentResults[0];
 
       const projectId = current?.projectId ?? null;
       const now = new Date().toISOString();
 
-      await db.getDrizzleClient().transaction(async (tx) => {
+      await db.getClient().transaction(async (tx) => {
         if (projectId) {
           await tx.delete(entityRelation).where(or(eq(entityRelation.sourceId, id), eq(entityRelation.targetId, id)));
         }
@@ -252,7 +253,7 @@ export class CharacterService {
       const characterIds = Array.from(
         new Set(appearances.map((appearance) => appearance.characterId)),
       );
-      const characters = await db.getDrizzleClient().select().from(character).where(and(inArray(character.id, characterIds), isNull(character.deletedAt)));
+      const characters = await db.getClient().select().from(character).where(and(inArray(character.id, characterIds), isNull(character.deletedAt)));
       const characterById = new Map(
         characters.map((c) => [c.id, c]),
       );
@@ -274,7 +275,7 @@ export class CharacterService {
 
   async updateFirstAppearance(characterId: string, chapterId: string) {
     try {
-      const results = await db.getDrizzleClient().select().from(character).where(eq(character.id, characterId)).limit(1);
+      const results = await db.getClient().select().from(character).where(eq(character.id, characterId)).limit(1);
       const char = results[0];
 
       if (!char || char.deletedAt) {
@@ -286,7 +287,7 @@ export class CharacterService {
       }
 
       if (!char.firstAppearance) {
-        await db.getDrizzleClient().update(character).set({ firstAppearance: chapterId }).where(eq(character.id, characterId));
+        await db.getClient().update(character).set({ firstAppearance: chapterId }).where(eq(character.id, characterId));
 
         logger.info("First appearance updated", { characterId, chapterId });
         await projectService.touchProject(String(char.projectId));
@@ -306,8 +307,8 @@ export class CharacterService {
 
   async searchCharacters(projectId: string, query: string) {
     try {
-      const searchPattern = `%${query}%`;
-      const results = await db.getDrizzleClient().select().from(character).where(and(eq(character.projectId, projectId), or(like(character.name, searchPattern), like(character.description, searchPattern)), isNull(character.deletedAt))).orderBy(asc(character.name));
+      const searchPattern = `%${escapeLike(query)}%`;
+      const results = await db.getClient().select().from(character).where(and(eq(character.projectId, projectId), or(like(character.name, searchPattern), like(character.description, searchPattern)), isNull(character.deletedAt))).orderBy(asc(character.name));
 
       return results;
     } catch (error) {

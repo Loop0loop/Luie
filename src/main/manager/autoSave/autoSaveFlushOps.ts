@@ -37,10 +37,7 @@ export const createScheduledSnapshot = async (
       ? await snapshotService.getLatestSnapshot(chapterId)
       : null;
     if (latestSnapshot?.createdAt) {
-      const latestAt =
-        latestSnapshot.createdAt instanceof Date
-          ? latestSnapshot.createdAt.getTime()
-          : new Date(String(latestSnapshot.createdAt)).getTime();
+      const latestAt = new Date(latestSnapshot.createdAt).getTime();
       if (Number.isFinite(latestAt) && Date.now() - latestAt < 60_000) {
         logger.info("Skipping scheduled snapshot (recent snapshot exists)", {
           projectId,

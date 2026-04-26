@@ -379,6 +379,7 @@ export type RendererApi = {
     ) => () => void;
     onUpdateState: (callback: (status: AppUpdateState) => void) => () => void;
     quit: () => Promise<IPCResponse<unknown>>;
+    manualSave: () => Promise<IPCResponse<{ success: boolean }>>;
   };
   window: {
     maximize: () => Promise<IPCResponse<unknown>>;

@@ -15,6 +15,7 @@ import type {
 import { rebuildProjectKeywordAppearances } from "../core/chapterKeywords.js";
 import { projectService } from "../core/projectService.js";
 import { ServiceError } from "../../utils/serviceError.js";
+import { escapeLike } from "../../utils/queryHelpers.js";
 
 const loadAppearanceCacheService = async () =>
   (await import("./appearanceCacheService.js")).appearanceCacheService;
@@ -27,7 +28,7 @@ export class TermService {
       logger.info("Creating term", input);
 
       const now = new Date().toISOString();
-      const [result] = await db.getDrizzleClient().insert(term).values({
+      const [result] = await db.getClient().insert(term).values({
         id: crypto.randomUUID(),
         projectId: input.projectId,
         term: input.term,
@@ -68,7 +69,7 @@ export class TermService {
 
   async getTerm(id: string) {
     try {
-      const results = await db.getDrizzleClient().select().from(term).where(eq(term.id, id)).limit(1);
+      const results = await db.getClient().select().from(term).where(eq(term.id, id)).limit(1);
 
       if (results.length === 0) {
         throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
@@ -98,7 +99,7 @@ export class TermService {
 
   async getAllTerms(projectId: string) {
     try {
-      const results = await db.getDrizzleClient().select().from(term).where(and(eq(term.projectId, projectId), isNull(term.deletedAt))).orderBy(asc(term.term));
+      const results = await db.getClient().select().from(term).where(and(eq(term.projectId, projectId), isNull(term.deletedAt))).orderBy(asc(term.term));
 
       return results;
     } catch (error) {
@@ -124,7 +125,7 @@ export class TermService {
       if (input.firstAppearance !== undefined)
         updateData.firstAppearance = input.firstAppearance;
 
-      const currentResults = await db.getDrizzleClient().select({ id: term.id, projectId: term.projectId, deletedAt: term.deletedAt }).from(term).where(eq(term.id, input.id)).limit(1);
+      const currentResults = await db.getClient().select({ id: term.id, projectId: term.projectId, deletedAt: term.deletedAt }).from(term).where(eq(term.id, input.id)).limit(1);
       const current = currentResults[0];
       if (!current || current.deletedAt) {
         throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
@@ -132,7 +133,7 @@ export class TermService {
         });
       }
 
-      const [updated] = await db.getDrizzleClient().update(term).set(updateData).where(eq(term.id, input.id)).returning();
+      const [updated] = await db.getClient().update(term).set(updateData).where(eq(term.id, input.id)).returning();
 
       if (!updated) {
         throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
@@ -164,13 +165,13 @@ export class TermService {
 
   async deleteTerm(id: string) {
     try {
-      const currentResults = await db.getDrizzleClient().select({ projectId: term.projectId, deletedAt: term.deletedAt }).from(term).where(eq(term.id, id)).limit(1);
+      const currentResults = await db.getClient().select({ projectId: term.projectId, deletedAt: term.deletedAt }).from(term).where(eq(term.id, id)).limit(1);
       const current = currentResults[0];
 
       const projectId = current?.projectId ?? null;
       const now = new Date().toISOString();
 
-      await db.getDrizzleClient().transaction(async (tx) => {
+      await db.getClient().transaction(async (tx) => {
         if (projectId) {
           await tx.delete(entityRelation).where(or(eq(entityRelation.sourceId, id), eq(entityRelation.targetId, id)));
         }
@@ -232,7 +233,7 @@ export class TermService {
       const termIds = Array.from(
         new Set(appearances.map((appearance) => appearance.termId)),
       );
-      const terms = await db.getDrizzleClient().select().from(term).where(and(inArray(term.id, termIds), isNull(term.deletedAt)));
+      const terms = await db.getClient().select().from(term).where(and(inArray(term.id, termIds), isNull(term.deletedAt)));
       const termById = new Map(terms.map((t) => [t.id, t]));
 
       return appearances.map((appearance) => ({
@@ -252,7 +253,7 @@ export class TermService {
 
   async updateFirstAppearance(termId: string, chapterId: string) {
     try {
-      const results = await db.getDrizzleClient().select().from(term).where(eq(term.id, termId)).limit(1);
+      const results = await db.getClient().select().from(term).where(eq(term.id, termId)).limit(1);
       const t = results[0];
 
       if (!t || t.deletedAt) {
@@ -262,7 +263,7 @@ export class TermService {
       }
 
       if (!t.firstAppearance) {
-        await db.getDrizzleClient().update(term).set({ firstAppearance: chapterId }).where(eq(term.id, termId));
+        await db.getClient().update(term).set({ firstAppearance: chapterId }).where(eq(term.id, termId));
 
         logger.info("First appearance updated", { termId, chapterId });
         await projectService.touchProject(String(t.projectId));
@@ -282,8 +283,8 @@ export class TermService {
 
   async searchTerms(projectId: string, query: string) {
     try {
-      const searchPattern = `%${query}%`;
-      const results = await db.getDrizzleClient().select().from(term).where(and(eq(term.projectId, projectId), or(like(term.term, searchPattern), like(term.definition, searchPattern)), isNull(term.deletedAt))).orderBy(asc(term.term));
+      const searchPattern = `%${escapeLike(query)}%`;
+      const results = await db.getClient().select().from(term).where(and(eq(term.projectId, projectId), or(like(term.term, searchPattern), like(term.definition, searchPattern)), isNull(term.deletedAt))).orderBy(asc(term.term));
 
       return results;
     } catch (error) {
@@ -299,7 +300,7 @@ export class TermService {
 
   async getTermsByCategory(projectId: string, category: string) {
     try {
-      const results = await db.getDrizzleClient().select().from(term).where(and(eq(term.projectId, projectId), eq(term.category, category), isNull(term.deletedAt))).orderBy(asc(term.term));
+      const results = await db.getClient().select().from(term).where(and(eq(term.projectId, projectId), eq(term.category, category), isNull(term.deletedAt))).orderBy(asc(term.term));
 
       return results;
     } catch (error) {
