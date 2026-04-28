@@ -16,7 +16,10 @@ export function createWindowApi({
         autoSave.setRendererDirty(Boolean(dirty));
       },
       onQuitPhase: (callback) => {
-        const listener = (_event: IpcRendererEvent, payload: AppQuitPhasePayload) => {
+        const listener = (
+          _event: IpcRendererEvent,
+          payload: AppQuitPhasePayload,
+        ) => {
           callback(payload);
         };
         ipcRenderer.on(IPC_CHANNELS.APP_QUIT_PHASE, listener);
@@ -29,10 +32,14 @@ export function createWindowApi({
       maximize: () => safeInvoke(IPC_CHANNELS.WINDOW_MAXIMIZE),
       close: () => safeInvoke(IPC_CHANNELS.WINDOW_CLOSE),
       toggleFullscreen: () => safeInvoke(IPC_CHANNELS.WINDOW_TOGGLE_FULLSCREEN),
-      setFullscreen: (flag) => safeInvoke(IPC_CHANNELS.WINDOW_SET_FULLSCREEN, flag),
+      setFullscreen: (flag) =>
+        safeInvoke(IPC_CHANNELS.WINDOW_SET_FULLSCREEN, flag),
       openExport: (chapterId) =>
-        safeInvokeCore("window.openExport", IPC_CHANNELS.WINDOW_OPEN_EXPORT, chapterId),
-      hapticFeedback: () => safeInvoke(IPC_CHANNELS.WORLD_GRAPH_HAPTIC_FEEDBACK),
+        safeInvokeCore(
+          "window.openExport",
+          IPC_CHANNELS.WINDOW_OPEN_EXPORT,
+          chapterId,
+        ),
       openWorldGraph: () => safeInvoke(IPC_CHANNELS.WINDOW_OPEN_WORLD_GRAPH),
     },
   };

@@ -13,7 +13,7 @@ src/main/
 ├── handler/         # IPC registration and domain handler modules
 ├── services/        # core/world/features/io service layers
 ├── manager/         # window/settings/autosave runtime managers
-├── database/        # Prisma/sqlite bootstrap and schema apply
+├── database/        # Drizzle/sqlite bootstrap and schema apply
 └── utils/           # environment/path/security helpers
 ```
 

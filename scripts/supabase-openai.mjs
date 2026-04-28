@@ -41,10 +41,16 @@ const projectRef = parseProjectRef(
 const openAiApiKey = process.env.OPENAI_API_KEY?.trim() ?? "";
 
 const runSupabase = (args) => {
-  const result = spawnSync("bun", ["x", "supabase", ...args], {
-    stdio: "inherit",
-    env: process.env,
-  });
+  const packageManagerCommand =
+    process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+  const result = spawnSync(
+    packageManagerCommand,
+    ["exec", "supabase", ...args],
+    {
+      stdio: "inherit",
+      env: process.env,
+    },
+  );
   if (result.error) {
     console.error(
       "[supabase-openai] failed to run Supabase CLI:",

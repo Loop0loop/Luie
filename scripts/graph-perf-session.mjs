@@ -7,7 +7,7 @@ console.log('[graph-perf] instrumentation enabled:', localStorage.getItem(KEY));
 `;
 
 const child = spawn(
-  process.platform === "win32" ? "bun.cmd" : "bun",
+  process.platform === "win32" ? "pnpm.cmd" : "pnpm",
   ["run", "dev"],
   {
     stdio: "inherit",

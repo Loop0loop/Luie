@@ -1,4 +1,5 @@
 # Lagnage: Korean
+
 Awlwas Korean Prompt
 
 # PROJECT KNOWLEDGE BASE
@@ -9,7 +10,7 @@ Awlwas Korean Prompt
 
 ## OVERVIEW
 
-Electron desktop app for long-form writing workflows. Stack: Electron 40 + React 19 + TypeScript 5 + Prisma/SQLite + Bun toolchain.
+Electron desktop app for long-form writing workflows. Stack: Electron 40 + React 19 + TypeScript 5 + Drizzle/SQLite + pnpm toolchain.
 
 ## STRUCTURE
 
@@ -21,7 +22,6 @@ Luie/
 ├── src/shared/                # cross-process contracts/constants/types/ui-safe shared code
 ├── tests/                     # main/renderer/dom/e2e/script test suites
 ├── scripts/                   # quality gates + release/build utility scripts
-├── native/                    # native addons (haptics)
 ├── supabase/                  # backend function/config boundary
 └── plugin/                    # plugin packaging area
 ```
@@ -34,26 +34,26 @@ Luie/
 | IPC contract additions          | `src/shared/ipc/channels.ts`, `src/main/handler/**`, `src/preload/api/**`                | Add channel/type/schema together; keep main/preload/renderer aligned    |
 | Renderer feature changes        | `src/renderer/src/features/**`                                                           | Feature-first folders; world graph lives under `research`               |
 | Shared constants/types          | `src/shared/constants/**`, `src/shared/types/**`                                         | Cross-process safe only                                                 |
-| Build or packaging issues       | `electron.vite.config.ts`, `electron-builder.json`, `scripts/**`, `.github/workflows/**` | Bun scripts orchestrate native build + package                          |
+| Build or packaging issues       | `electron.vite.config.ts`, `electron-builder.json`, `scripts/**`, `.github/workflows/**` | pnpm scripts orchestrate build + package                                |
 | Test behavior / env differences | `vitest.config.ts`, `tests/**`, `package.json` scripts                                   | `SKIP_DB_TEST_SETUP=1` appears in targeted suites                       |
 
 ## CODE MAP
 
-| Symbol/Module                  | Type           | Location                                     | Role                                                  |
-| ------------------------------ | -------------- | -------------------------------------------- | ----------------------------------------------------- |
-| `registerAllIPCHandlers`       | function       | `src/main/handler/index.ts`                  | Main IPC registration hub                             |
-| `db` (`DatabaseService`)       | singleton      | `src/main/database/index.ts`                 | DB init/migration/bootstrap + Prisma client lifecycle |
-| `registerAppReady`             | lifecycle      | `src/main/lifecycle/appReady.ts`             | Main window flow + deferred maintenance               |
-| `createRendererApi` bridge     | module         | `src/preload/index.ts` + `src/preload/api/*` | Controlled renderer capability surface                |
-| `IPC_CHANNELS`                 | constant map   | `src/shared/ipc/channels.ts`                 | Canonical channel registry                            |
-| `features/*` stores/components | domain modules | `src/renderer/src/features/**`               | UI/business domains (editor/research/workspace/etc.)  |
+| Symbol/Module                  | Type           | Location                                     | Role                                                   |
+| ------------------------------ | -------------- | -------------------------------------------- | ------------------------------------------------------ |
+| `registerAllIPCHandlers`       | function       | `src/main/handler/index.ts`                  | Main IPC registration hub                              |
+| `db` (`DatabaseService`)       | singleton      | `src/main/database/index.ts`                 | DB init/migration/bootstrap + Drizzle client lifecycle |
+| `registerAppReady`             | lifecycle      | `src/main/lifecycle/appReady.ts`             | Main window flow + deferred maintenance                |
+| `createRendererApi` bridge     | module         | `src/preload/index.ts` + `src/preload/api/*` | Controlled renderer capability surface                 |
+| `IPC_CHANNELS`                 | constant map   | `src/shared/ipc/channels.ts`                 | Canonical channel registry                             |
+| `features/*` stores/components | domain modules | `src/renderer/src/features/**`               | UI/business domains (editor/research/workspace/etc.)   |
 
 ## CONVENTIONS (PROJECT-SPECIFIC)
 
-- Package manager is **Bun** (`packageManager: bun@1.3.10`) even though some docs mention pnpm.
+- Package manager is **pnpm** (`packageManager: pnpm@10.23.0`).
 - TypeScript strictness is tightened with `noUnusedLocals`, `noUnusedParameters`, `noImplicitReturns`, `noFallthroughCasesInSwitch`.
 - Aliases: `@renderer/* -> src/renderer/src/*`, `@shared/* -> src/shared/*`.
-- Build flow usually requires native/pre steps (`predev`, `prebuild`, `postinstall` include native/prisma work).
+- Build flow usually requires pre steps (`predev`, `postinstall` include Electron rebuild work).
 - Renderer DOM tests are split by glob to `jsdom` (`tests/dom/**/*.test.tsx`), default test env is `node`.
 
 ## ANTI-PATTERNS (THIS PROJECT)
@@ -72,14 +72,14 @@ Luie/
 ## COMMANDS
 
 ```bash
-bun dev
-bun run typecheck
-bun run build
-bun run lint
-bun run qa:core
-SKIP_DB_TEST_SETUP=1 bun vitest tests/renderer/hooks/canvasBlockNameGeneration.test.ts
-bun run build:mac:arm64
-bun run build:win:x64
+pnpm dev
+pnpm run typecheck
+pnpm run build
+pnpm run lint
+pnpm run qa:core
+SKIP_DB_TEST_SETUP=1 pnpm vitest tests/renderer/hooks/canvasBlockNameGeneration.test.ts
+pnpm run build:mac:arm64
+pnpm run build:win:x64
 ```
 
 ## NOTES

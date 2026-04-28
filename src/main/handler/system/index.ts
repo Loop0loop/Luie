@@ -1,5 +1,4 @@
 import { registerFsIPCHandlers } from "./ipcFsHandlers.js";
-import { registerHapticIPCHandlers } from "./ipcHapticHandlers.js";
 import { registerLoggerIPCHandlers } from "./ipcLoggerHandlers.js";
 import { registerPluginIPCHandlers } from "./ipcPluginHandlers.js";
 import { registerRecoveryIPCHandlers } from "./ipcRecoveryHandlers.js";
@@ -15,7 +14,6 @@ export function registerSystemHandlers(options: {
   registerLoggerIPCHandlers(options.logger);
   registerFsIPCHandlers(options.logger);
   registerWindowIPCHandlers(options.logger);
-  registerHapticIPCHandlers(options.logger);
   registerSettingsIPCHandlers(options.logger);
   registerStartupIPCHandlers(options.logger);
   registerRecoveryIPCHandlers(options.logger);

@@ -15,8 +15,10 @@ import {
   type NodeChange,
   type ReactFlowInstance,
 } from "reactflow";
-import { api } from "@shared/api";
-import type { WorldGraphCanvasBlock, WorldGraphCanvasEdge } from "@shared/types";
+import type {
+  WorldGraphCanvasBlock,
+  WorldGraphCanvasEdge,
+} from "@shared/types";
 import type { CanvasGraphEdgeData } from "../components/CanvasGraphEdge";
 import type { CanvasGraphNodeData } from "../components/CanvasGraphNodeCard";
 import {
@@ -106,7 +108,6 @@ export function useCanvasFlowInteractions({
   const dragConsumedClickRef = useRef(false);
   const pendingSnapRef = useRef<{ x: number; y: number } | null>(null);
   const lastGuideSignatureRef = useRef<string | null>(null);
-  const lastHapticAtRef = useRef<number>(0);
   const pendingGuideRef = useRef<{ x: number | null; y: number | null } | null>(
     null,
   );
@@ -659,12 +660,7 @@ export function useCanvasFlowInteractions({
           ? `${guideX ?? "none"}:${guideY ?? "none"}`
           : null;
       if (signature && signature !== lastGuideSignatureRef.current) {
-        const now = Date.now();
         lastGuideSignatureRef.current = signature;
-        if (now - lastHapticAtRef.current >= 80) {
-          lastHapticAtRef.current = now;
-          void api.window.hapticFeedback();
-        }
       } else if (!signature) {
         lastGuideSignatureRef.current = null;
       }

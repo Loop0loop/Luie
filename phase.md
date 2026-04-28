@@ -428,7 +428,7 @@
   - `drizzle-orm`, `better-sqlite3` external 유지
 
 ### 7.4 통합 검증
-- `pnpm run build:mac:arm64` (또는 `bun run build:mac:arm64`)
+- `pnpm run build:mac:arm64`
 - 패키징된 앱에서 DB 초기화/CRUD/검색 정상 동작 확인
 - `.luie` 파일 export/import 정상 확인
 - `qa:core` 전체 통과

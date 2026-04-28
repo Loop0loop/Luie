@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-`scripts/` hosts operational guardrails: dependency/security checks, IPC contract checks, renderer-store checks, build warning regression, release helpers, and native/prisma sync utilities.
+`scripts/` hosts operational guardrails: dependency/security checks, IPC contract checks, renderer-store checks, build warning regression, release helpers, and Drizzle utilities.
 
 ## WHERE TO LOOK
 
@@ -12,8 +12,8 @@
 | Escape hatch and security policy | `check-no-escape-hatches.mjs`, `check-security-profile.mjs`                                            | Blocks unsafe TypeScript/security patterns  |
 | IPC/preload contract validation  | `check-ipc-contract-map.mjs`, `check-ipc-handler-schemas.mjs`, `check-preload-contract-regression.mjs` | Prevents boundary drift                     |
 | Renderer/state policy            | `check-renderer-store-usage.mjs`, `check-persist-contracts.mjs`                                        | Store and persistence invariants            |
-| Build/release helpers            | `release-mac.mjs`, `ci/sync-release-version-from-tag.mjs`, `verify-packaged-prisma.mjs`                | Packaging/release pipeline glue             |
-| Native/asset generation          | `build-native-haptics.mjs`, `generate-app-icons.mjs`, `sync-prisma-client.mjs`                         | Prebuild/postinstall requirements           |
+| Build/release helpers            | `release-mac.mjs`, `ci/sync-release-version-from-tag.mjs`, `verify-packaged-drizzle.mjs`               | Packaging/release pipeline glue             |
+| Asset generation                 | `generate-app-icons.mjs`                                                                               | Prebuild requirements                       |
 
 ## CONVENTIONS
 

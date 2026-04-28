@@ -1,27 +1,34 @@
 import { describe, expect, it, vi } from "vitest";
+import {
+  project,
+  scrapMemo,
+  worldDocument,
+} from "../../../src/main/database/schema.js";
 import { applyReplicaWorldState } from "../../../src/main/services/features/sync/syncLocalApply.js";
 import { createEmptySyncBundle } from "../../../src/main/services/features/sync/syncMapper.js";
 
 describe("syncLocalApply.applyReplicaWorldState", () => {
-  it("touches project freshness when world documents are materialized", async () => {
-    const projectUpdate = vi.fn(async () => undefined);
-    const worldDocumentDeleteMany = vi.fn(async () => undefined);
-    const worldDocumentUpsert = vi.fn(async () => undefined);
-    const scrapMemoDeleteMany = vi.fn(async () => undefined);
-    const scrapMemoCreateMany = vi.fn(async () => undefined);
+  it("touches project freshness when world documents are materialized", () => {
+    const worldDocumentValues: unknown[] = [];
+    const projectUpdates: unknown[] = [];
 
-    const prisma = {
-      project: {
-        update: projectUpdate,
-      },
-      worldDocument: {
-        deleteMany: worldDocumentDeleteMany,
-        upsert: worldDocumentUpsert,
-      },
-      scrapMemo: {
-        deleteMany: scrapMemoDeleteMany,
-        createMany: scrapMemoCreateMany,
-      },
+    const run = vi.fn();
+    const where = vi.fn(() => ({ run }));
+    const onConflictDoUpdate = vi.fn(() => ({ run }));
+    const tx = {
+      delete: vi.fn(() => ({ where })),
+      insert: vi.fn((table: unknown) => ({
+        values: vi.fn((values: unknown) => {
+          if (table === worldDocument) worldDocumentValues.push(values);
+          return { onConflictDoUpdate, run };
+        }),
+      })),
+      update: vi.fn((table: unknown) => ({
+        set: vi.fn((values: unknown) => {
+          if (table === project) projectUpdates.push(values);
+          return { where };
+        }),
+      })),
     } as never;
 
     const bundle = createEmptySyncBundle();
@@ -44,14 +51,25 @@ describe("syncLocalApply.applyReplicaWorldState", () => {
       updatedAt: "2026-03-03T00:00:00.000Z",
     });
 
-    await applyReplicaWorldState(prisma, bundle, new Set());
+    applyReplicaWorldState(tx, bundle, new Set());
 
-    expect(worldDocumentUpsert).toHaveBeenCalledTimes(1);
-    expect(projectUpdate).toHaveBeenCalledWith({
-      where: { id: "project-1" },
-      data: {
-        updatedAt: expect.any(Date),
-      },
+    expect(tx.insert).toHaveBeenCalledWith(worldDocument);
+    expect(worldDocumentValues).toHaveLength(1);
+    expect(worldDocumentValues[0]).toMatchObject({
+      id: "project-1:synopsis",
+      projectId: "project-1",
+      docType: "synopsis",
+    });
+    expect(
+      JSON.parse((worldDocumentValues[0] as { payload: string }).payload),
+    ).toMatchObject({
+      synopsis: "hello",
+    });
+
+    expect(tx.delete).toHaveBeenCalledWith(scrapMemo);
+    expect(tx.update).toHaveBeenCalledWith(project);
+    expect(projectUpdates[0]).toMatchObject({
+      updatedAt: expect.any(String),
     });
   });
 });

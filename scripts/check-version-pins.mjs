@@ -26,7 +26,7 @@ const CHECK_FIELDS = [
   "devDependencies",
   "optionalDependencies",
 ];
-const REQUIRED_PACKAGE_MANAGER = "bun@1.3.10";
+const REQUIRED_PACKAGE_MANAGER = "pnpm@10.23.0";
 
 const pkg = JSON.parse(await fs.readFile(packageJsonPath, "utf8"));
 const findings = [];
