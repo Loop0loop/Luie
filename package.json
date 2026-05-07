@@ -7,32 +7,32 @@
   "author": "Luie Team",
   "license": "MIT",
   "private": true,
-  "packageManager": "pnpm@10.23.0",
+  "packageManager": "bun@1.3.13",
   "scripts": {
-    "predev": "pnpm rebuild:electron",
+    "predev": "bun rebuild:electron",
     "dev": "electron-vite",
     "build": "electron-vite build",
     "build:debug-profile": "LUIE_DEBUG_PROFILE=1 electron-vite build",
     "graph:profile": "node scripts/graph-perf-session.mjs",
-    "prepreview": "pnpm rebuild:electron",
+    "prepreview": "bun rebuild:electron",
     "preview": "electron-vite preview",
-    "preview:prod": "pnpm run build && NODE_ENV=production electron .",
-    "build:mac": "pnpm build:mac:arm64 && pnpm build:mac:universal && node scripts/release-mac.mjs",
-    "build:mac:package": "pnpm build:mac:arm64",
-    "build:mac:arm64": "pnpm generate && pnpm run build && ELECTRON_BUILDER_CACHE=.cache/electron-builder pnpm exec electron-builder --mac --arm64 --config electron-builder.json",
-    "build:mac:universal": "pnpm generate && pnpm run build && ELECTRON_BUILDER_CACHE=.cache/electron-builder pnpm exec electron-builder --mac --universal --config electron-builder.json",
-    "build:win": "pnpm build:win:x64",
-    "build:win:x64": "pnpm generate && pnpm run build && pnpm exec electron-builder --win --x64 --config electron-builder.json --publish never",
-    "build:win:arm64": "pnpm generate && pnpm run build && pnpm exec electron-builder --win --arm64 --config electron-builder.json --publish never",
-    "build:win:all": "pnpm build:win:x64 && pnpm build:win:arm64",
-    "build:linux": "pnpm generate && pnpm run build && pnpm exec electron-builder --linux --config electron-builder.json",
-    "postinstall": "pnpm run rebuild:electron",
+    "preview:prod": "bun run build && NODE_ENV=production electron .",
+    "build:mac": "bun build:mac:arm64 && bun build:mac:universal && node scripts/release-mac.mjs",
+    "build:mac:package": "bun build:mac:arm64",
+    "build:mac:arm64": "bun generate && bun run build && DEBUG=electron-builder,electron-notarize ELECTRON_BUILDER_CACHE=.cache/electron-builder bun exec electron-builder --mac --arm64 --config electron-builder.json --publish never",
+    "build:mac:universal": "bun generate && bun run build && DEBUG=electron-builder,electron-notarize ELECTRON_BUILDER_CACHE=.cache/electron-builder bun exec electron-builder --mac --universal --config electron-builder.json --publish never",
+    "build:win": "bun build:win:x64",
+    "build:win:x64": "bun generate && bun run build && bun exec electron-builder --win --x64 --config electron-builder.json --publish never",
+    "build:win:arm64": "bun generate && bun run build && bun exec electron-builder --win --arm64 --config electron-builder.json --publish never",
+    "build:win:all": "bun build:win:x64 && bun build:win:arm64",
+    "build:linux": "bun generate && bun run build && bun exec electron-builder --linux --config electron-builder.json",
+    "postinstall": "bun run rebuild:electron",
     "rebuild:electron": "electron-rebuild --force --module-dir . -w better-sqlite3",
-    "generate": "pnpm generate:icons",
-    "generate:drizzle": "pnpm generate:drizzle:main && pnpm generate:drizzle:cache",
+    "generate": "bun generate:icons",
+    "generate:drizzle": "bun generate:drizzle:main && bun generate:drizzle:cache",
     "generate:drizzle:main": "drizzle-kit generate --config=drizzle.main.config.ts",
     "generate:drizzle:cache": "drizzle-kit generate --config=drizzle.cache.config.ts",
-    "check:drizzle": "pnpm check:drizzle:main && pnpm check:drizzle:cache",
+    "check:drizzle": "bun check:drizzle:main && bun check:drizzle:cache",
     "check:drizzle:main": "drizzle-kit check --config=drizzle.main.config.ts",
     "check:drizzle:cache": "drizzle-kit check --config=drizzle.cache.config.ts",
     "generate:icons": "node scripts/generate-app-icons.mjs",
@@ -56,17 +56,17 @@
     "check:preload-contract-regression": "node scripts/check-preload-contract-regression.mjs",
     "check:core-complexity": "node scripts/check-core-complexity.mjs",
     "verify:packaged-drizzle": "node scripts/verify-packaged-drizzle.mjs",
-    "lint-all": "pnpm run check:deps && pnpm run check:no-native-dialogs && pnpm run check:i18n-parity && pnpm run check:no-escape-hatches && pnpm run check:version-pins && pnpm run check:ipc-contract-map && pnpm run check:ipc-handler-schemas && pnpm run check:security-profile && pnpm run check:renderer-store-usage && pnpm run check:persist-contracts && pnpm run check:preload-contract-regression && eslint src --ext .ts,.tsx",
+    "lint-all": "bun run check:deps && bun run check:no-native-dialogs && bun run check:i18n-parity && bun run check:no-escape-hatches && bun run check:version-pins && bun run check:ipc-contract-map && bun run check:ipc-handler-schemas && bun run check:security-profile && bun run check:renderer-store-usage && bun run check:persist-contracts && bun run check:preload-contract-regression && eslint src --ext .ts,.tsx",
     "lint": "eslint src --ext .ts,.tsx",
-    "qa:core": "pnpm -s typecheck && pnpm -s lint && pnpm -s check:renderer-store-usage && pnpm -s check:ipc-handler-schemas && pnpm -s check:persist-contracts && pnpm -s check:core-complexity && pnpm -s check:target-file-drift && pnpm -s check:build-warning-regression && SKIP_DB_TEST_SETUP=1 pnpm -s vitest tests/main/lifecycle/deepLink.test.ts tests/main/handler/ipcWindowHandlers.test.ts tests/main/handler/ipcInputValidation.test.ts tests/main/services/syncAuthService.test.ts tests/main/services/syncService.test.ts tests/main/services/syncMapper.test.ts tests/main/services/syncRepository.test.ts tests/main/services/exportService.test.ts tests/renderer/hooks/useTermDragDrop.test.ts tests/renderer/services/exportEntryService.test.ts tests/renderer/services/worldPackageStorage.test.ts tests/renderer/stores/projectLayoutStore.test.ts tests/renderer/stores/projectLayoutStore.persist.test.ts tests/renderer/stores/uiStore.persist.test.ts tests/renderer/stores/memoStore.test.ts tests/renderer/utils/sanitizeHtml.test.ts tests/shared/utils/exportContentNormalization.test.ts tests/dom/focusHoverSidebar.test.tsx tests/dom/rendererRerenderRegression.test.tsx tests/dom/appOperationalScenarios.test.tsx tests/dom/projectInitOperationalScenarios.test.tsx tests/scripts/buildWarningNormalization.test.ts tests/scripts/preloadContractRegression.test.ts tests/scripts/ipcContractMap.test.ts tests/scripts/ipcHandlerSchemas.test.ts tests/scripts/dependencyIntegrity.test.ts tests/scripts/securityProfile.test.ts tests/scripts/rendererStoreUsage.test.ts tests/scripts/persistContracts.test.ts",
+    "qa:core": "bun -s typecheck && bun -s lint && bun -s check:renderer-store-usage && bun -s check:ipc-handler-schemas && bun -s check:persist-contracts && bun -s check:core-complexity && bun -s check:target-file-drift && bun -s check:build-warning-regression && SKIP_DB_TEST_SETUP=1 bun -s vitest tests/main/lifecycle/deepLink.test.ts tests/main/handler/ipcWindowHandlers.test.ts tests/main/handler/ipcInputValidation.test.ts tests/main/services/syncAuthService.test.ts tests/main/services/syncService.test.ts tests/main/services/syncMapper.test.ts tests/main/services/syncRepository.test.ts tests/main/services/exportService.test.ts tests/renderer/hooks/useTermDragDrop.test.ts tests/renderer/services/exportEntryService.test.ts tests/renderer/services/worldPackageStorage.test.ts tests/renderer/stores/projectLayoutStore.test.ts tests/renderer/stores/projectLayoutStore.persist.test.ts tests/renderer/stores/uiStore.persist.test.ts tests/renderer/stores/memoStore.test.ts tests/renderer/utils/sanitizeHtml.test.ts tests/shared/utils/exportContentNormalization.test.ts tests/dom/focusHoverSidebar.test.tsx tests/dom/rendererRerenderRegression.test.tsx tests/dom/appOperationalScenarios.test.tsx tests/dom/projectInitOperationalScenarios.test.tsx tests/scripts/buildWarningNormalization.test.ts tests/scripts/preloadContractRegression.test.ts tests/scripts/ipcContractMap.test.ts tests/scripts/ipcHandlerSchemas.test.ts tests/scripts/dependencyIntegrity.test.ts tests/scripts/securityProfile.test.ts tests/scripts/rendererStoreUsage.test.ts tests/scripts/persistContracts.test.ts",
     "format": "prettier --write \"src/**/*.{ts,tsx,json}\"",
-    "test": "pnpm rebuild better-sqlite3 && vitest",
+    "test": "bun rebuild better-sqlite3 && vitest",
     "test:ui-mode-integrity": "SKIP_DB_TEST_SETUP=1 vitest tests/renderer/services/uiModeIntegrity.test.ts tests/renderer/services/layoutModeActions.integrity.test.ts tests/renderer/stores/editorStore.uiModeIntegrity.test.ts",
     "test:prepare": "electron-rebuild --force",
-    "test:e2e": "pnpm test:prepare && pnpm build && playwright test --project=e2e",
-    "test:stress": "pnpm test:prepare && pnpm build && playwright test --project=stress",
-    "test:vr": "pnpm build && playwright test --project=visual",
-    "test:smoke": "pnpm test:prepare && pnpm build && playwright test --project=smoke"
+    "test:e2e": "bun test:prepare && bun build && playwright test --project=e2e",
+    "test:stress": "bun test:prepare && bun build && playwright test --project=stress",
+    "test:vr": "bun build && playwright test --project=visual",
+    "test:smoke": "bun test:prepare && bun build && playwright test --project=smoke"
   },
   "dependencies": {
     "@google/genai": "1.44.0",
@@ -85,6 +85,7 @@
     "@dnd-kit/core": "6.3.1",
     "@dnd-kit/sortable": "10.0.0",
     "@dnd-kit/utilities": "3.2.2",
+    "@electron/notarize": "2.5.0",
     "@eslint/js": "10.0.1",
     "@fontsource-variable/inter": "5.2.8",
     "@playwright/test": "1.58.2",
@@ -123,6 +124,7 @@
     "diff": "8.0.3",
     "dompurify": "3.3.2",
     "dotenv": "17.3.1",
+    "dotenv-cli": "11.0.0",
     "drizzle-kit": "0.31.10",
     "electron": "40.8.0",
     "electron-builder": "26.8.1",
@@ -158,11 +160,7 @@
     "vitest": "4.0.18",
     "zustand": "5.0.11"
   },
-  "pnpm": {
-    "overrides": {
-      "hono": "4.11.10",
-      "lodash": "4.17.23"
-    },
+  "bun": {
     "onlyBuiltDependencies": [
       "better-sqlite3",
       "electron",
@@ -172,5 +170,9 @@
       "protobufjs",
       "supabase"
     ]
+  },
+  "overrides": {
+    "hono": "4.11.10",
+    "lodash": "4.17.23"
   }
 }

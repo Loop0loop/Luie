@@ -48,8 +48,13 @@
     "category": "public.app-category.productivity",
     "icon": "build/icons/icon.icns",
     "artifactName": "Luie-${version}-${arch}.${ext}",
-    "target": ["dmg", "pkg", "zip"]
+    "target": ["dmg", "zip"],
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false,
+    "entitlements": "build/entitlements.mac.plist",
+    "entitlementsInherit": "build/entitlements.mac.plist"
   },
+  "afterSign": "scripts/notarize.mjs",
   "dmg": {
     "artifactName": "Luie-${version}-${arch}.${ext}"
   },

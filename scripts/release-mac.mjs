@@ -203,7 +203,7 @@ async function uploadAsset({ release, token, fileName, fileBuffer }) {
 async function main() {
   const token = process.env.GITHUB_TOKEN;
   if (!token) {
-    fail("GITHUB_TOKEN is required for pnpm build:mac");
+    fail("GITHUB_TOKEN is required for macOS release upload");
   }
 
   const packageJsonPath = path.join(repoRoot, "package.json");
