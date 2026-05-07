@@ -107,7 +107,7 @@ async function ensureRelease({ owner, repo, tag, token, commitish }) {
     throw new Error(`Failed to query release for ${tag}: ${existingResponse.status} ${message}`);
   }
 
-  return githubJson(`https://api.github.com/repos/${owner}/${repo}/releases`, token, {
+  const createResponse = await githubRequest(`https://api.github.com/repos/${owner}/${repo}/releases`, token, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -121,6 +121,23 @@ async function ensureRelease({ owner, repo, tag, token, commitish }) {
       generate_release_notes: true,
     }),
   });
+
+  const createText = await createResponse.text();
+  const createData = createText ? JSON.parse(createText) : null;
+
+  if (createResponse.ok) {
+    return createData;
+  }
+
+  if (createResponse.status === 422) {
+    const retryResponse = await githubRequest(releaseByTagUrl, token);
+    if (retryResponse.ok) {
+      return retryResponse.json();
+    }
+  }
+
+  const reason = createData?.message ? `: ${createData.message}` : "";
+  throw new Error(`Failed to create release for ${tag}: ${createResponse.status}${reason}`);
 }
 
 async function collectMacAssets(version) {

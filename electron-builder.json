@@ -65,7 +65,7 @@
   "win": {
     "icon": "build/icons/icon.ico",
     "executableName": "Luie",
-    "target": ["nsis-web", "portable"]
+    "target": ["nsis-web"]
   },
   "nsis": {
     "oneClick": true,

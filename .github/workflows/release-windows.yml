@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-windows-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -47,10 +47,29 @@ jobs:
         id: release_meta
         run: node scripts/ci/sync-release-version-from-tag.mjs
 
-      - name: Build and publish Windows packages
+      - name: Build Windows nsis-web package
+        run: bun run generate && bun run build && bunx electron-builder --win nsis-web --${{ matrix.arch }} --config electron-builder.json --publish never
+
+      - name: Upload Windows assets to release
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bun run generate && bun run build && bun exec electron-builder --win --${{ matrix.arch }} --config electron-builder.json --publish always
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 \
+            || gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --generate-notes \
+            || gh release view "$RELEASE_TAG" >/dev/null
+
+          shopt -s nullglob
+          assets=(dist/*.exe dist/*.7z dist/*.yml dist/*.blockmap)
+          if [ "${#assets[@]}" -eq 0 ]; then
+            echo "No Windows release assets found in dist"
+            exit 1
+          fi
+
+          gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
