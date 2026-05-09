@@ -76,6 +76,8 @@ const DefaultToolbar = ({
   const { t } = useTranslation();
   const fontSize = useEditorStore((state) => state.fontSize);
   const setFontSize = useEditorStore((state) => state.setFontSize);
+  const wordSpacing = useEditorStore((state) => state.wordSpacing ?? 0.04);
+  const updateSettings = useEditorStore((state) => state.updateSettings);
 
   return (
     <div className="flex items-center justify-between h-9 px-2">
@@ -100,6 +102,28 @@ const DefaultToolbar = ({
           tabIndex={-1}
         />
         <ToggleButton onClick={() => setFontSize(fontSize + EDITOR_TOOLBAR_FONT_STEP)}>
+          <span style={{ fontSize: "var(--editor-toolbar-plus-minus-font-size)" }}>+</span>
+        </ToggleButton>
+
+        <Divider />
+
+        {/* Word Spacing */}
+        <ToggleButton
+          onClick={() => updateSettings({ wordSpacing: Math.max(0, Number((wordSpacing - 0.01).toFixed(2))) })}
+          title={t("toolbar.tooltip.wordSpacingDecrease", "어간 줄이기")}
+        >
+          <span style={{ fontSize: "var(--editor-toolbar-plus-minus-font-size)" }}>-</span>
+        </ToggleButton>
+        <span
+          className="text-xs font-medium text-muted w-14 text-center select-none cursor-default"
+          title={t("toolbar.tooltip.wordSpacing", "어간")}
+        >
+          어간 {wordSpacing.toFixed(2)}
+        </span>
+        <ToggleButton
+          onClick={() => updateSettings({ wordSpacing: Math.min(0.2, Number((wordSpacing + 0.01).toFixed(2))) })}
+          title={t("toolbar.tooltip.wordSpacingIncrease", "어간 늘리기")}
+        >
           <span style={{ fontSize: "var(--editor-toolbar-plus-minus-font-size)" }}>+</span>
         </ToggleButton>
 
@@ -189,6 +213,8 @@ const DocsToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
   const { t } = useTranslation();
   const fontSize = useEditorStore((state) => state.fontSize);
   const setFontSize = useEditorStore((state) => state.setFontSize);
+  const wordSpacing = useEditorStore((state) => state.wordSpacing ?? 0.04);
+  const updateSettings = useEditorStore((state) => state.updateSettings);
 
   return (
     <div className="flex flex-wrap items-center gap-1 justify-center w-full px-2">
@@ -207,6 +233,15 @@ const DocsToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
         <button onClick={() => setFontSize(Math.max(EDITOR_TOOLBAR_FONT_MIN, fontSize - EDITOR_TOOLBAR_FONT_STEP))} className="px-2 hover:bg-hover">-</button>
         <input className="w-8 text-center text-xs bg-transparent outline-none" value={fontSize} readOnly />
         <button onClick={() => setFontSize(fontSize + EDITOR_TOOLBAR_FONT_STEP)} className="px-2 hover:bg-hover">+</button>
+      </div>
+
+      <div className="w-px h-5 bg-border mx-2" />
+
+      {/* Word Spacing */}
+      <div className="flex items-center border border-border/50 rounded overflow-hidden h-7 bg-background" title={t("toolbar.tooltip.wordSpacing", "어간")}>
+        <button onClick={() => updateSettings({ wordSpacing: Math.max(0, Number((wordSpacing - 0.01).toFixed(2))) })} className="px-2 hover:bg-hover text-xs">-</button>
+        <span className="w-16 text-center text-xs text-muted select-none">어{wordSpacing.toFixed(2)}</span>
+        <button onClick={() => updateSettings({ wordSpacing: Math.min(0.2, Number((wordSpacing + 0.01).toFixed(2))) })} className="px-2 hover:bg-hover text-xs">+</button>
       </div>
 
       <div className="w-px h-5 bg-border mx-2" />
@@ -323,11 +358,11 @@ const WordToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
 }
 
 const ScrivenerToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
-  // Format Bar
   const { t } = useTranslation();
-
   const fontSize = useEditorStore((state) => state.fontSize);
   const setFontSize = useEditorStore((state) => state.setFontSize);
+  const wordSpacing = useEditorStore((state) => state.wordSpacing ?? 0.04);
+  const updateSettings = useEditorStore((state) => state.updateSettings);
 
   return (
     <div className="flex items-center gap-2 p-1 bg-surface border-b border-border shadow-inner px-3">
@@ -336,6 +371,15 @@ const ScrivenerToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
         <button onClick={() => setFontSize(Math.max(EDITOR_TOOLBAR_FONT_MIN, fontSize - EDITOR_TOOLBAR_FONT_STEP))} className="hover:text-accent">-</button>
         <span className="text-xs w-6 text-center">{fontSize}</span>
         <button onClick={() => setFontSize(fontSize + EDITOR_TOOLBAR_FONT_STEP)} className="hover:text-accent">+</button>
+      </div>
+
+      <div className="w-px h-4 bg-border mx-1" />
+
+      {/* Word Spacing */}
+      <div className="flex items-center gap-1 bg-background border border-border rounded px-1" title={t("toolbar.tooltip.wordSpacing", "어간")}>
+        <button onClick={() => updateSettings({ wordSpacing: Math.max(0, Number((wordSpacing - 0.01).toFixed(2))) })} className="hover:text-accent text-xs">-</button>
+        <span className="text-xs w-10 text-center text-muted select-none">어{wordSpacing.toFixed(2)}</span>
+        <button onClick={() => updateSettings({ wordSpacing: Math.min(0.2, Number((wordSpacing + 0.01).toFixed(2))) })} className="hover:text-accent text-xs">+</button>
       </div>
 
       <div className="w-px h-4 bg-border mx-1" />

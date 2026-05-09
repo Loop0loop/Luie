@@ -36,7 +36,7 @@ export function BinderSidebar({
         setFocusedClosableTarget,
         setRegionOpen,
         widthConfig,
-    } = useBinderSidebarState();
+    } = useBinderSidebarState(currentProjectId ?? null);
     const binderSize = getResponsivePanelSize(groupWidthPx, widthConfig);
     const handleClosePanel = () => {
         onManualClose?.();

@@ -6,7 +6,7 @@ import {
   useCallback,
 } from "react";
 import { type Editor } from "@tiptap/react";
-import { Panel, Group as PanelGroup } from "react-resizable-panels";
+import { Panel, Group as PanelGroup, type Layout } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
 import FocusHoverSidebar from "@renderer/features/manuscript/components/FocusHoverSidebar";
 import Ribbon from "@renderer/features/editor/components/Ribbon";
@@ -18,6 +18,7 @@ import { BinderSidebar, BinderSidebarRail } from "@renderer/features/manuscript/
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@shared/constants/configs";
 import { toPercentSize } from "@shared/constants/sidebarSizing";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
+import { getPanelLayoutValue } from "@renderer/features/workspace/hooks/useLayoutPersist";
 
 interface EditorLayoutProps {
   children?: ReactNode;
@@ -52,6 +53,7 @@ export default function EditorLayout({
 
   const maxWidth = useEditorStore((state) => state.maxWidth);
   const activeRightTab = useUIStore((state) => state.docsRightTab);
+  const updatePanelSize = useUIStore((state) => state.updatePanelSize);
   const [isBinderRailHoverSuppressed, setIsBinderRailHoverSuppressed] =
     useState(false);
   const binderRailHoverSuppressionTimeoutRef = useRef<ReturnType<
@@ -74,6 +76,17 @@ export default function EditorLayout({
   }, []);
 
   const editorLayoutGroupWidth = useElementWidth(editorLayoutGroupRef);
+
+  const handleEditorLayoutChanged = useCallback(
+    (layout: Layout) => {
+      additionalPanelIds.forEach((panelId, panelIndex) => {
+        const rawSize = getPanelLayoutValue(layout, panelId, panelIndex + 1);
+        if (typeof rawSize !== "number" || !Number.isFinite(rawSize)) return;
+        updatePanelSize(panelId, rawSize);
+      });
+    },
+    [additionalPanelIds, updatePanelSize],
+  );
 
   useEffect(
     () => () => {
@@ -138,6 +151,7 @@ export default function EditorLayout({
             className="flex w-full h-full flex-1 overflow-hidden relative"
             id="editor-layout-group"
             elementRef={editorLayoutGroupRef}
+            onLayoutChanged={handleEditorLayoutChanged}
           >
             <Panel
               id="main-editor-view"

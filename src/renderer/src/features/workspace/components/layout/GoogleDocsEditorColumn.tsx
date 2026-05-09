@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
+import { useCallback, type ReactNode } from "react";
 import type { Editor as TiptapEditor } from "@tiptap/react";
-import { Group as PanelGroup, Panel } from "react-resizable-panels";
+import { Group as PanelGroup, Panel, type Layout } from "react-resizable-panels";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import EditorToolbar from "@renderer/features/editor/components/EditorToolbar";
 import { EditorRuler } from "@renderer/features/editor/components/EditorRuler";
@@ -11,6 +11,8 @@ import {
   EDITOR_PAGE_VERTICAL_PADDING_PX,
 } from "@shared/constants/configs";
 import { toPercentSize } from "@shared/constants/sidebarSizing";
+import { getPanelLayoutValue } from "@renderer/features/workspace/hooks/useLayoutPersist";
+import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import type { DocsPageMargins } from "./googleDocsLayout.types";
 
 type GoogleDocsEditorColumnProps = {
@@ -34,6 +36,18 @@ export function GoogleDocsEditorColumn({
   pageMargins,
   setPageMargins,
 }: GoogleDocsEditorColumnProps) {
+  const updatePanelSize = useUIStore((state) => state.updatePanelSize);
+  const handleDocsEditorLayoutChanged = useCallback(
+    (layout: Layout) => {
+      additionalPanelIds.forEach((panelId, panelIndex) => {
+        const rawSize = getPanelLayoutValue(layout, panelId, panelIndex + 1);
+        if (typeof rawSize !== "number" || !Number.isFinite(rawSize)) return;
+        updatePanelSize(panelId, rawSize);
+      });
+    },
+    [additionalPanelIds, updatePanelSize],
+  );
+
   return (
     <Panel
       id="center-content"
@@ -51,6 +65,7 @@ export function GoogleDocsEditorColumn({
           orientation="horizontal"
           className="relative flex h-full w-full flex-1 overflow-hidden"
           id="docs-editor-split-group"
+          onLayoutChanged={handleDocsEditorLayoutChanged}
         >
           <Panel
             id="editor-main-panel"

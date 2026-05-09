@@ -55,6 +55,7 @@ const settingsTabFallback = (
 );
 
 export default function SettingsModal({ onClose }: SettingsModalProps) {
+  const settings = useSettingsManager();
   const {
     t,
     i18n,
@@ -92,7 +93,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     handleSyncNow,
     handleToggleAutoSync,
     handleResolveConflict,
-  } = useSettingsManager();
+  } = settings;
 
   const tabs = useMemo(
     () =>
@@ -163,8 +164,10 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                   t={t}
                   localFontSize={localFontSize}
                   localLineHeight={localLineHeight}
+                  localWordSpacing={settings.localWordSpacing}
                   onSetLocalFontSize={setLocalFontSize}
                   onSetLocalLineHeight={setLocalLineHeight}
+                  onSetLocalWordSpacing={settings.setLocalWordSpacing}
                 />
               )}
 

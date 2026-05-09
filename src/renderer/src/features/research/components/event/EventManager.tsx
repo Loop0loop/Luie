@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useCallback, useRef } from "react";
 import {
   Panel,
   Group as PanelGroup,
@@ -15,6 +15,8 @@ import {
 } from "@renderer/features/research/components/event/useEventManager";
 import { EventSidebarList } from "@renderer/features/research/components/event/EventSidebarList";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { useProjectLayoutStore } from "@renderer/features/workspace/stores/projectLayoutStore";
+import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useShallow } from "zustand/react/shallow";
 import {
   clampSidebarWidth,
@@ -28,11 +30,19 @@ import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hook
 
 export default function EventManager() {
   const { t } = useTranslation();
-  const { sidebarWidths, setSidebarWidth } = useUIStore(
+  const { sidebarWidths, setSidebarWidth, uiHasHydrated } = useUIStore(
     useShallow((state) => ({
       sidebarWidths: state.sidebarWidths,
       setSidebarWidth: state.setSidebarWidth,
+      uiHasHydrated: state.hasHydrated,
     })),
+  );
+  const currentProjectId = useProjectStore((state) => state.currentProject?.id);
+  const projectLayoutHasHydrated = useProjectLayoutStore(
+    (state) => state.hasHydrated,
+  );
+  const upsertProjectLayout = useProjectLayoutStore(
+    (state) => state.upsertProjectLayout,
   );
   const sidebarFeature = "eventSidebar" as const;
   const sidebarConfig = getSidebarWidthConfig(sidebarFeature);
@@ -40,8 +50,30 @@ export default function EventManager() {
     sidebarFeature,
     sidebarWidths[sidebarFeature] || getSidebarDefaultWidth(sidebarFeature),
   );
+  const commitSidebarWidth = useCallback(
+    (feature: string, width: number) => {
+      setSidebarWidth(feature, width);
+      if (!currentProjectId || !uiHasHydrated || !projectLayoutHasHydrated) {
+        return;
+      }
+      upsertProjectLayout(currentProjectId, {
+        sidebarWidths: {
+          [feature]: width,
+        },
+      });
+    },
+    [
+      currentProjectId,
+      projectLayoutHasHydrated,
+      setSidebarWidth,
+      uiHasHydrated,
+      upsertProjectLayout,
+    ],
+  );
   const { onResize: handleSidebarResize, resizeHandleProps } =
-    useSidebarResizeCommit(sidebarFeature, setSidebarWidth);
+    useSidebarResizeCommit(sidebarFeature, commitSidebarWidth, {
+      initialWidth: sidebarWidth,
+    });
   const containerRef = useRef<HTMLDivElement | null>(null);
   const panelGroupRef = useRef<GroupImperativeHandle | null>(null);
 

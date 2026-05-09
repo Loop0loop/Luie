@@ -31,6 +31,7 @@ import { DEFAULT_SCRIVENER_SECTIONS } from "./uiStore.types";
 import type {
   ContextTab,
   MainView,
+  RightPanelContent,
   ResizablePanelData,
   ScrivenerSectionId,
   UIStore,
@@ -39,6 +40,25 @@ import type {
 const DEFAULT_SIDEBAR_WIDTHS: Record<string, number> = buildDefaultSidebarWidths();
 const DEFAULT_LAYOUT_SURFACE_RATIOS: Record<LayoutSurfaceId, number> =
   buildDefaultLayoutSurfaceRatios();
+
+export const buildStablePanelId = (content: RightPanelContent): string => {
+  if (content.type === "research" && content.tab) {
+    if (content.id) {
+      return `research-${content.tab}-${content.id}`;
+    }
+    return `research-${content.tab}`;
+  }
+  if (content.type === "editor" && content.id) {
+    return `editor-${content.id}`;
+  }
+  if (content.type === "export") {
+    return "export-preview";
+  }
+  if (content.type === "snapshot" && content.snapshot?.id) {
+    return `snapshot-${content.snapshot.id}`;
+  }
+  return `panel-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+};
 
 export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) => ({
   view: DEFAULT_UI_VIEW as UIStore["view"],
@@ -79,7 +99,7 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
       }
 
       const newPanel: ResizablePanelData = {
-        id: `panel-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: buildStablePanelId(content),
         content,
         size: state.panels.length === 0 ? 100 : 50,
       };

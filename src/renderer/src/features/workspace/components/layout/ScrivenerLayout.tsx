@@ -1,6 +1,7 @@
 import {
   type ReactNode,
   Suspense,
+  useCallback,
   useEffect,
   useRef,
 } from "react";
@@ -20,7 +21,7 @@ import MemoMainView from "@renderer/features/research/components/memo/MemoMainVi
 import AnalysisSection from "@renderer/features/research/components/AnalysisSection";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { Menu, ChevronRight } from "lucide-react";
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type GroupImperativeHandle } from "react-resizable-panels";
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type GroupImperativeHandle, type Layout } from "react-resizable-panels";
 import {
   getLayoutSurfaceConfig,
   getLayoutSurfaceDefaultRatio,
@@ -28,7 +29,10 @@ import {
   toPanelPercentSize,
 } from "@shared/constants/layoutSizing";
 import { toPercentSize } from "@shared/constants/sidebarSizing";
-import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
+import {
+  getPanelLayoutValue,
+  useLayoutPersist,
+} from "@renderer/features/workspace/hooks/useLayoutPersist";
 import {
   groupLayoutMatchesPanels,
 } from "@renderer/features/workspace/utils/panelGroupLayout";
@@ -65,6 +69,7 @@ export default function ScrivenerLayout({
     isSidebarOpen,
     isInspectorOpen,
     setRegionOpen,
+    updatePanelSize,
   } = useUIStore(
     useShallow((state) => ({
       mainView: state.mainView,
@@ -73,11 +78,22 @@ export default function ScrivenerLayout({
       isSidebarOpen: state.regions.leftSidebar.open,
       isInspectorOpen: state.regions.rightPanel.open,
       setRegionOpen: state.setRegionOpen,
+      updatePanelSize: state.updatePanelSize,
     }))
   );
   const editorSplitGroupRef = useRef<GroupImperativeHandle | null>(null);
   const scrivenerLayoutGroupRef = useRef<HTMLDivElement | null>(null);
   const previousPanelCountRef = useRef(panels.length);
+  const handleEditorSplitLayoutChanged = useCallback(
+    (layout: Layout) => {
+      panels.forEach((panel, panelIndex) => {
+        const rawSize = getPanelLayoutValue(layout, panel.id, panelIndex + 1);
+        if (typeof rawSize !== "number" || !Number.isFinite(rawSize)) return;
+        updatePanelSize(panel.id, rawSize);
+      });
+    },
+    [panels, updatePanelSize],
+  );
 
   const { wordCount, charCount } = useEditorStatsStore(
     useShallow((state) => ({
@@ -253,6 +269,7 @@ export default function ScrivenerLayout({
                 className="flex w-full h-full flex-1 overflow-hidden relative"
                 groupRef={editorSplitGroupRef}
                 id="scrivener-editor-split-group"
+                onLayoutChanged={handleEditorSplitLayoutChanged}
               >
                 <Panel
                   id="editor-content"

@@ -1,0 +1,401 @@
+/* ============================================================
+   LUIE EDITOR — WRITER-FIRST TYPOGRAPHY
+   Reference: Obsidian, Notion, iA Writer
+   Korean-first: natural spacing, paragraph rhythm, hierarchy
+   ============================================================ */
+
+/* ── Typewriter Scroll ── */
+[data-editor-scroll-container="true"] {
+    scroll-padding-top: 42vh;
+    scroll-padding-bottom: 42vh;
+}
+
+/* ── Base Scope ──────────────────────────────────────────────
+   ProseMirror handles its own whitespace internally.
+   Do NOT set white-space: pre-wrap here — it collapses visible
+   spaces between words in Tiptap's text node rendering.
+   ─────────────────────────────────────────────────────────── */
+.tiptap .ProseMirror {
+    outline: none;
+    flex: 1;
+    min-height: 100%;
+    height: auto;
+    width: 100%;
+    color: var(--text-primary);
+
+    /* Korean-tuned typography */
+    font-size: 1rem;
+    line-height: 1.85;
+    letter-spacing: 0.025em;
+    word-spacing: 0.06em;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+
+    /* Rendering quality */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-kerning: normal;
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+}
+
+/* Typewriter tail space */
+.tiptap .ProseMirror::after {
+    content: "";
+    display: block;
+    height: var(--editor-typewriter-tail-space, 42vh);
+}
+
+/* ── Placeholder ── */
+.tiptap .ProseMirror p.is-editor-empty:first-child::before {
+    color: var(--text-tertiary);
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+}
+
+/* ── Paragraphs ─────────────────────────────────────────────
+   Notion/Obsidian: no top margin, consistent bottom gap.
+   Creates visual "breath" between ideas without hard breaks.
+   ─────────────────────────────────────────────────────────── */
+.tiptap .ProseMirror p {
+    margin-top: 0;
+    margin-bottom: 0.75em;
+}
+
+/* ── Headings ── */
+.tiptap .ProseMirror h1,
+.tiptap .ProseMirror h2,
+.tiptap .ProseMirror h3,
+.tiptap .ProseMirror h4 {
+    color: var(--text-primary);
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.45em;
+}
+
+.tiptap .ProseMirror h1 {
+    font-size: 2em;
+    margin-top: 1.8em;
+}
+
+.tiptap .ProseMirror h2 {
+    font-size: 1.5em;
+    font-weight: 600;
+    margin-top: 1.5em;
+}
+
+.tiptap .ProseMirror h3 {
+    font-size: 1.2em;
+    font-weight: 600;
+    margin-top: 1.2em;
+    color: var(--text-secondary);
+}
+
+.tiptap .ProseMirror h4 {
+    font-size: 1em;
+    font-weight: 600;
+    margin-top: 1em;
+    color: var(--text-secondary);
+}
+
+/* ── Divider ── */
+.tiptap .ProseMirror hr {
+    border: none;
+    border-top: 1px solid var(--text-primary);
+    opacity: 0.12;
+    margin: 2.2em 0;
+}
+
+/* ── Lists ───────────────────────────────────────────────────
+   Tailwind resets list-style, so we restore them explicitly.
+   ─────────────────────────────────────────────────────────── */
+.tiptap .ProseMirror ul {
+    list-style-type: disc;
+    padding-left: 1.6em;
+    margin: 0.5em 0;
+}
+
+.tiptap .ProseMirror ol {
+    list-style-type: decimal;
+    padding-left: 1.6em;
+    margin: 0.5em 0;
+}
+
+.tiptap .ProseMirror ul ul,
+.tiptap .ProseMirror ol ul {
+    list-style-type: circle;
+    margin: 0.15em 0;
+}
+
+.tiptap .ProseMirror ol ol,
+.tiptap .ProseMirror ul ol {
+    list-style-type: lower-alpha;
+    margin: 0.15em 0;
+}
+
+.tiptap .ProseMirror li {
+    margin: 0.25em 0;
+    line-height: 1.7;
+}
+
+.tiptap .ProseMirror li > p {
+    margin-top: 0.1em;
+    margin-bottom: 0.1em;
+}
+
+/* ── Task Lists ── */
+.tiptap .ProseMirror ul[data-type="taskList"] {
+    list-style: none;
+    padding-left: 0;
+}
+
+.tiptap .ProseMirror li[data-type="taskItem"] {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0.3rem 0;
+    padding: 0.1rem 0;
+}
+
+.tiptap .ProseMirror li[data-type="taskItem"] label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    margin-top: 0.2em;
+    user-select: none;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.tiptap .ProseMirror li[data-type="taskItem"] input[type="checkbox"] {
+    appearance: auto;
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    margin: 0;
+    accent-color: var(--accent-bg, #2563eb);
+}
+
+.tiptap .ProseMirror li[data-type="taskItem"] div {
+    flex: 1;
+    margin: 0;
+}
+
+.tiptap .ProseMirror li[data-type="taskItem"][data-checked="true"] div {
+    color: var(--text-tertiary);
+    text-decoration: line-through;
+}
+
+/* ── Blockquote ─────────────────────────────────────────────
+   Writer mode: left border accent, italic, subdued color.
+   Used for quotes, inner monologue, flashback passages.
+   ─────────────────────────────────────────────────────────── */
+.tiptap .ProseMirror blockquote {
+    border-left: 3px solid var(--accent-bg, #2563eb);
+    padding: 0.2em 0 0.2em 1.2rem;
+    margin: 1.4em 0;
+    color: var(--text-secondary);
+    font-style: italic;
+    background: transparent;
+}
+
+.tiptap .ProseMirror blockquote p {
+    margin: 0.4em 0;
+}
+
+/* ── Inline Code ── */
+.tiptap .ProseMirror code {
+    background-color: var(--bg-active);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    color: var(--text-accent, #2563eb);
+    letter-spacing: 0;
+    word-spacing: 0;
+}
+
+/* ── Code Block ── */
+.tiptap .ProseMirror pre {
+    background-color: var(--bg-secondary);
+    border-radius: 6px;
+    padding: 1.1em 1.2em;
+    margin: 1.4em 0;
+    border: 1px solid var(--border-default);
+    border-left: 3px solid var(--accent-bg, #2563eb);
+    white-space: pre-wrap;
+    word-break: break-all;
+    overflow-wrap: break-word;
+    overflow: visible;
+}
+
+.tiptap .ProseMirror pre code {
+    background-color: transparent;
+    padding: 0;
+    font-size: 0.875em;
+    font-family: var(--font-mono);
+    color: var(--text-accent, #2563eb);
+    letter-spacing: 0;
+    word-spacing: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+    display: block;
+}
+
+/* ── Callout ── */
+.tiptap .ProseMirror .callout {
+    padding: 0.9rem 1.1rem;
+    background-color: var(--bg-secondary);
+    border-radius: 6px;
+    border: 1px solid var(--border-default);
+    border-left: 3px solid var(--accent-bg, #2563eb);
+    margin: 1.4em 0;
+    color: var(--text-primary);
+}
+
+.tiptap .ProseMirror .callout p {
+    margin: 0.4em 0;
+}
+
+.tiptap .ProseMirror .callout p:first-child { margin-top: 0; }
+.tiptap .ProseMirror .callout p:last-child { margin-bottom: 0; }
+
+/* ── Toggle / Details ── */
+.tiptap .ProseMirror details {
+    border: none;
+    padding: 0;
+    margin: 0.5em 0;
+    background: transparent;
+}
+
+.tiptap .ProseMirror summary {
+    cursor: pointer;
+    list-style: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    color: var(--text-primary);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    transition: background-color 0.15s ease;
+    user-select: none;
+}
+
+.tiptap .ProseMirror summary:hover {
+    background-color: var(--bg-hover, rgba(0, 0, 0, 0.05));
+}
+
+.tiptap .ProseMirror summary::-webkit-details-marker {
+    display: none;
+}
+
+.tiptap .ProseMirror details.toggle {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    margin: 0.5em 0;
+}
+
+.tiptap .ProseMirror details.toggle > div {
+    padding-left: 1.5rem;
+    margin-top: 0.2rem;
+    color: var(--text-secondary);
+}
+
+.tiptap .ProseMirror details.toggle summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 0.5rem;
+    transform-origin: center;
+    transition: transform 0.15s ease;
+    color: var(--text-secondary);
+    font-size: 1em;
+}
+
+.tiptap .ProseMirror details.toggle[open] summary::before {
+    transform: rotate(90deg);
+}
+
+/* ── Smart Link Highlight ────────────────────────────────────
+   Project-specific entity mention highlighting.
+   Entity type colors are injected via CSS variables on the
+   editor root element. Do NOT modify this section.
+   ─────────────────────────────────────────────────────────── */
+.tiptap .ProseMirror .smart-link-highlight {
+    cursor: pointer;
+    border-radius: 3px;
+    padding: 0.08em 0.3em;
+    background-color: var(--bg-active, rgba(123, 126, 252, 0.1));
+    font-weight: 500;
+    transition: background-color 0.15s ease;
+    text-decoration: none;
+    position: relative;
+    z-index: 10;
+}
+
+.tiptap .ProseMirror .smart-link-highlight[data-type="character"] {
+    color: var(--entity-character-color, #2563eb);
+}
+
+.tiptap .ProseMirror .smart-link-highlight[data-type="event"] {
+    color: var(--entity-event-color, #d97706);
+}
+
+.tiptap .ProseMirror .smart-link-highlight[data-type="faction"] {
+    color: var(--entity-faction-color, #059669);
+}
+
+.tiptap .ProseMirror .smart-link-highlight[data-type="term"] {
+    color: var(--entity-term-color, #7c3aed);
+}
+
+.tiptap .ProseMirror .smart-link-highlight:not([data-type]) {
+    color: var(--accent-bg, #2563eb);
+}
+
+.tiptap .ProseMirror .smart-link-highlight:hover {
+    background-color: var(--bg-element-hover, rgba(0, 0, 0, 0.08));
+}
+
+/* ── Hyperlink ── */
+.tiptap .ProseMirror a {
+    color: var(--text-accent, #2563eb);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+}
+
+.tiptap .ProseMirror a:hover {
+    opacity: 0.75;
+}
+
+/* ── Text Marks ── */
+.tiptap .ProseMirror mark {
+    background-color: color-mix(in srgb, var(--accent-bg, #2563eb) 20%, transparent);
+    color: inherit;
+    border-radius: 2px;
+    padding: 0.05em 0.1em;
+}
+
+.tiptap .ProseMirror s {
+    color: var(--text-tertiary);
+}
+
+/* ── Selection ── */
+.tiptap .ProseMirror ::selection {
+    background-color: var(--editor-selection, #bfdbfe);
+}
+
+/* ── Custom Scrollbar ── */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background-color: var(--border-default); border-radius: 3px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: var(--text-tertiary); }

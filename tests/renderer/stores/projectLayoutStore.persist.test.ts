@@ -158,12 +158,36 @@ describe("projectLayoutStore persist rehydrate", () => {
             activeChapterId: null,
             scrollYByChapter: {},
           },
+          workspace: {
+            panels: [
+              {
+                id: "research-character",
+                content: {
+                  type: "research",
+                  tab: "character",
+                },
+                size: 64,
+              },
+              {
+                id: "research-faction",
+                content: {
+                  type: "research",
+                  tab: "faction",
+                },
+                size: 42,
+              },
+            ],
+          },
           sidebarWidths: {
+            characterSidebar: 336,
             docsBinder: 312,
+            factionSidebar: 348,
             docsWorld: 640,
           },
           layoutSurfaceRatios: {
             "docs.sidebar": 21,
+            "docs.panel.character": 39,
+            "docs.panel.faction": 41,
             "docs.panel.world": 42,
           },
         },
@@ -178,8 +202,30 @@ describe("projectLayoutStore persist rehydrate", () => {
     expect(state.docs.rightTab).toBe("world");
     expect(state.scrivener.sections.events).toBe(true);
     expect(state.scrivener.sections.analysis).toBe(true);
+    expect(state.sidebarWidths.characterSidebar).toBe(336);
     expect(state.sidebarWidths.docsBinder).toBe(312);
+    expect(state.sidebarWidths.factionSidebar).toBe(348);
+    expect(state.layoutSurfaceRatios["docs.panel.character"]).toBe(39);
+    expect(state.layoutSurfaceRatios["docs.panel.faction"]).toBe(41);
     expect(state.layoutSurfaceRatios["docs.panel.world"]).toBe(42);
+    expect(state.workspace.panels).toEqual([
+      {
+        id: "research-character",
+        content: {
+          type: "research",
+          tab: "character",
+        },
+        size: 64,
+      },
+      {
+        id: "research-faction",
+        content: {
+          type: "research",
+          tab: "faction",
+        },
+        size: 42,
+      },
+    ]);
     expect(warn).not.toHaveBeenCalled();
   });
 

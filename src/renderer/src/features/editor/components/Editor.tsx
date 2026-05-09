@@ -64,7 +64,7 @@ function Editor({
 }: EditorProps) {
   const { t } = useTranslation();
   const dialog = useDialog();
-  const { fontFamilyCss, fontSize, lineHeight, getFontFamily } =
+  const { fontFamilyCss, fontSize, lineHeight, wordSpacing, getFontFamily } =
     useEditorConfig();
   const entityColors = useEditorStore((state) => state.entityColors);
   const { updateStats } = useEditorStats();
@@ -164,7 +164,7 @@ function Editor({
       editorProps: {
         attributes: {
           class: "tiptap flex-1 flex flex-col outline-none h-full",
-          style: `font-family: ${fontFamilyCss}; font-size: ${fontSize}px; line-height: ${lineHeight};`,
+          style: `font-family: ${fontFamilyCss}; font-size: ${fontSize}px; line-height: ${lineHeight}; word-spacing: ${wordSpacing}em; --editor-line-height: ${lineHeight};`,
         },
         handleClick: handleSmartLinkClick,
       },

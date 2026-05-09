@@ -108,4 +108,71 @@ describe("projectLayoutStore", () => {
     const saved = projectLayoutModule.useProjectLayoutStore.getState().getProjectLayout("project-a");
     expect(saved.docs.rightTab).toBe("snapshot");
   });
+
+  it("merges sidebar widths and layout ratios without dropping existing values", () => {
+    const store = projectLayoutModule.useProjectLayoutStore.getState();
+
+    store.upsertProjectLayout("project-a", {
+      sidebarWidths: {
+        characterSidebar: 330,
+      },
+      layoutSurfaceRatios: {
+        "docs.panel.character": 38,
+      },
+    });
+    store.upsertProjectLayout("project-a", {
+      sidebarWidths: {
+        factionSidebar: 350,
+      },
+      layoutSurfaceRatios: {
+        "docs.panel.faction": 41,
+      },
+    });
+
+    const saved = projectLayoutModule.useProjectLayoutStore
+      .getState()
+      .getProjectLayout("project-a");
+    expect(saved.sidebarWidths.characterSidebar).toBe(330);
+    expect(saved.sidebarWidths.factionSidebar).toBe(350);
+    expect(saved.layoutSurfaceRatios["docs.panel.character"]).toBe(38);
+    expect(saved.layoutSurfaceRatios["docs.panel.faction"]).toBe(41);
+  });
+
+  it("stores workspace research panel layout with its last split size", () => {
+    const store = projectLayoutModule.useProjectLayoutStore.getState();
+
+    store.upsertProjectLayout("project-a", {
+      workspace: {
+        panels: [
+          {
+            id: "research-character",
+            content: { type: "research", tab: "character" },
+            size: 62.5,
+          },
+          {
+            id: "research-faction",
+            content: { type: "research", tab: "faction" },
+            size: 37.5,
+          },
+        ],
+      },
+    });
+
+    const saved = projectLayoutModule.useProjectLayoutStore
+      .getState()
+      .getProjectLayout("project-a");
+
+    expect(saved.workspace.panels).toEqual([
+      {
+        id: "research-character",
+        content: { type: "research", tab: "character" },
+        size: 62.5,
+      },
+      {
+        id: "research-faction",
+        content: { type: "research", tab: "faction" },
+        size: 37.5,
+      },
+    ]);
+  });
 });

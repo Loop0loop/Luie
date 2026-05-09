@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import type { Layout } from "react-resizable-panels";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { useProjectLayoutStore } from "@renderer/features/workspace/stores/projectLayoutStore";
 import {
   normalizeLayoutSurfaceRatioInput,
   type LayoutSurfaceId,
@@ -16,49 +17,61 @@ export interface LayoutPersistEntry {
   surface: LayoutSurfaceId;
 }
 
-export const getPanelRatioFromLayout = (
+type UseLayoutPersistOptions = {
+  projectId?: string | null;
+};
+
+const readPanelLayoutValue = (value: unknown): unknown => {
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+
+  const valueRecord = value as Record<string, unknown>;
+  if (typeof valueRecord.size === "number") {
+    return valueRecord.size;
+  }
+  if (typeof valueRecord.asPercentage === "number") {
+    return valueRecord.asPercentage;
+  }
+  if (typeof valueRecord.percentage === "number") {
+    return valueRecord.percentage;
+  }
+  if (typeof valueRecord.flexGrow === "number") {
+    return valueRecord.flexGrow;
+  }
+  return value;
+};
+
+export const getPanelLayoutValue = (
   layout: unknown,
-  entry: LayoutPersistEntry,
+  panelId: string,
   index: number,
 ): unknown => {
-  const readLayoutValue = (value: unknown): unknown => {
-    if (!value || typeof value !== "object") {
-      return value;
-    }
-
-    const valueRecord = value as Record<string, unknown>;
-    if (typeof valueRecord.size === "number") {
-      return valueRecord.size;
-    }
-    if (typeof valueRecord.asPercentage === "number") {
-      return valueRecord.asPercentage;
-    }
-    if (typeof valueRecord.percentage === "number") {
-      return valueRecord.percentage;
-    }
-    if (typeof valueRecord.flexGrow === "number") {
-      return valueRecord.flexGrow;
-    }
-    return value;
-  };
-
   const recordLayout =
     layout && typeof layout === "object" && !Array.isArray(layout)
       ? (layout as Record<string, unknown>)
       : null;
 
   if (recordLayout) {
-    const keyed = recordLayout[entry.id];
+    const keyed = recordLayout[panelId];
     if (keyed !== undefined) {
-      return readLayoutValue(keyed);
+      return readPanelLayoutValue(keyed);
     }
   }
 
   if (Array.isArray(layout)) {
-    return readLayoutValue(layout[index]);
+    return readPanelLayoutValue(layout[index]);
   }
 
   return undefined;
+};
+
+export const getPanelRatioFromLayout = (
+  layout: unknown,
+  entry: LayoutPersistEntry,
+  index: number,
+): unknown => {
+  return getPanelLayoutValue(layout, entry.id, index);
 };
 
 /**
@@ -67,11 +80,23 @@ export const getPanelRatioFromLayout = (
  * so layout-level surfaces can persist ratios directly and remain responsive
  * across different monitor widths.
  */
-export function useLayoutPersist(entries: LayoutPersistEntry[]) {
+export function useLayoutPersist(
+  entries: LayoutPersistEntry[],
+  options?: UseLayoutPersistOptions,
+) {
   const setLayoutSurfaceRatio = useUIStore(
     (state) => state.setLayoutSurfaceRatio,
   );
+  const uiHasHydrated = useUIStore((state) => state.hasHydrated);
+  const projectLayoutHasHydrated = useProjectLayoutStore(
+    (state) => state.hasHydrated,
+  );
+  const upsertProjectLayout = useProjectLayoutStore(
+    (state) => state.upsertProjectLayout,
+  );
   const entriesRef = useRef(entries);
+  const projectIdRef = useRef(options?.projectId ?? null);
+  const canPersistProjectRef = useRef(false);
   const lastCommitRef = useRef(
     new Map<LayoutSurfaceId, { ratio: number; timestampMs: number }>(),
   );
@@ -84,13 +109,30 @@ export function useLayoutPersist(entries: LayoutPersistEntry[]) {
     entriesRef.current = entries;
   }, [entries]);
 
+  useEffect(() => {
+    projectIdRef.current = options?.projectId ?? null;
+    canPersistProjectRef.current = uiHasHydrated && projectLayoutHasHydrated;
+  }, [options?.projectId, projectLayoutHasHydrated, uiHasHydrated]);
+
   const flushPendingCommits = useCallback(() => {
     const pendingEntries = Array.from(pendingCommitRef.current.entries());
     pendingCommitRef.current.clear();
+    const projectPatch: Partial<Record<LayoutSurfaceId, number>> = {};
     for (const [surface, ratio] of pendingEntries) {
       setLayoutSurfaceRatio(surface, ratio);
+      projectPatch[surface] = ratio;
     }
-  }, [setLayoutSurfaceRatio]);
+    const projectId = projectIdRef.current;
+    if (
+      projectId &&
+      canPersistProjectRef.current &&
+      Object.keys(projectPatch).length > 0
+    ) {
+      upsertProjectLayout(projectId, {
+        layoutSurfaceRatios: projectPatch as Record<LayoutSurfaceId, number>,
+      });
+    }
+  }, [setLayoutSurfaceRatio, upsertProjectLayout]);
 
   const scheduleCommitFlush = useCallback(() => {
     if (flushTimeoutRef.current !== null) return;
@@ -124,6 +166,9 @@ export function useLayoutPersist(entries: LayoutPersistEntry[]) {
         const nowMs = Date.now();
         for (const [index, entry] of entriesRef.current.entries()) {
           const rawLayoutValue = getPanelRatioFromLayout(layout, entry, index);
+          if (rawLayoutValue === undefined) {
+            continue;
+          }
 
           const nextRatio = normalizeLayoutSurfaceRatioInput(
             entry.surface,

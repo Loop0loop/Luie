@@ -1,4 +1,4 @@
-import { type ReactNode, useState, useEffect, useRef } from "react";
+import { type ReactNode, useCallback, useState, useEffect, useRef } from "react";
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import {
   PanelRightClose,
@@ -10,6 +10,7 @@ import {
   Panel,
   Group as PanelGroup,
   Separator as PanelResizeHandle,
+  type Layout,
 } from "react-resizable-panels";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useShallow } from "zustand/react/shallow";
@@ -24,7 +25,10 @@ import {
   toPanelPercentSize,
 } from "@shared/constants/layoutSizing";
 import { toPercentSize } from "@shared/constants/sidebarSizing";
-import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
+import {
+  getPanelLayoutValue,
+  useLayoutPersist,
+} from "@renderer/features/workspace/hooks/useLayoutPersist";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 
 interface MainLayoutProps {
@@ -51,6 +55,7 @@ export default function MainLayout({
     layoutSurfaceRatios,
     toggleLeftSidebar,
     setRegionOpen,
+    updatePanelSize,
   } = useUIStore(
     useShallow((state) => ({
       isSidebarOpen: state.regions.leftSidebar.open,
@@ -58,6 +63,7 @@ export default function MainLayout({
       layoutSurfaceRatios: state.layoutSurfaceRatios,
       toggleLeftSidebar: state.toggleLeftSidebar,
       setRegionOpen: state.setRegionOpen,
+      updatePanelSize: state.updatePanelSize,
     })),
   );
 
@@ -78,6 +84,16 @@ export default function MainLayout({
     { id: "sidebar-panel", surface: "default.sidebar" },
     { id: "context-panel", surface: "default.panel" },
   ]);
+  const onContentLayoutChanged = useCallback(
+    (layout: Layout) => {
+      additionalPanelIds.forEach((panelId, panelIndex) => {
+        const rawSize = getPanelLayoutValue(layout, panelId, panelIndex + 1);
+        if (typeof rawSize !== "number" || !Number.isFinite(rawSize)) return;
+        updatePanelSize(panelId, rawSize);
+      });
+    },
+    [additionalPanelIds, updatePanelSize],
+  );
 
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
 
@@ -246,6 +262,7 @@ export default function MainLayout({
               id="main-layout-content-group"
               orientation="horizontal"
               className="flex w-full h-full flex-1 overflow-hidden relative"
+              onLayoutChanged={onContentLayoutChanged}
             >
               <Panel
                 id="main-primary-content"

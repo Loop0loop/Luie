@@ -15,6 +15,7 @@ type SidebarWidthSetter = (feature: string, width: number) => void;
 
 type UseSidebarResizeCommitOptions = {
   idleMs?: number;
+  initialWidth?: number;
 };
 
 export const isSidebarResizeInteractionKey = (key: string): boolean =>
@@ -36,11 +37,15 @@ export function createSidebarResizeCommitController(
   feature: SidebarWidthFeature,
   setSidebarWidth: SidebarWidthSetter,
   idleMs: number,
+  initialWidth?: number,
 ): SidebarResizeCommitController {
   let isInteracting = false;
   let pendingWidth: number | null = null;
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  let lastCommittedWidth: number | null = null;
+  let lastCommittedWidth =
+    typeof initialWidth === "number" && Number.isFinite(initialWidth)
+      ? clampSidebarWidth(feature, Math.round(initialWidth))
+      : null;
 
   const clearScheduledFlush = () => {
     if (timeoutId === null) return;
@@ -86,11 +91,28 @@ export function createSidebarResizeCommitController(
       }
     },
     onResize: (panelSize: PanelSize) => {
-      if (!isInteracting) {
+      if (
+        typeof panelSize.inPixels !== "number" ||
+        !Number.isFinite(panelSize.inPixels)
+      ) {
         return;
       }
 
-      pendingWidth = clampSidebarWidth(feature, Math.round(panelSize.inPixels));
+      const nextWidth = clampSidebarWidth(feature, Math.round(panelSize.inPixels));
+      if (!isInteracting) {
+        if (lastCommittedWidth === null) {
+          lastCommittedWidth = nextWidth;
+          return;
+        }
+        if (Math.abs(lastCommittedWidth - nextWidth) < 1) {
+          return;
+        }
+        pendingWidth = nextWidth;
+        flushPendingWidth();
+        return;
+      }
+
+      pendingWidth = nextWidth;
       scheduleFlush();
     },
     dispose: () => {
@@ -117,8 +139,14 @@ export function useSidebarResizeCommit(
 ) {
   const idleMs = options?.idleMs ?? SIDEBAR_RESIZE_COMMIT_IDLE_MS;
   const controller = useMemo(
-    () => createSidebarResizeCommitController(feature, setSidebarWidth, idleMs),
-    [feature, idleMs, setSidebarWidth],
+    () =>
+      createSidebarResizeCommitController(
+        feature,
+        setSidebarWidth,
+        idleMs,
+        options?.initialWidth,
+      ),
+    [feature, idleMs, options?.initialWidth, setSidebarWidth],
   );
 
   const onResize = useCallback(

@@ -477,6 +477,7 @@ export const editorSettingsSchema = z.strictObject({
   customFontFamily: z.string().max(200).optional(),
   fontSize: z.number().int().positive(),
   lineHeight: z.number().positive(),
+  wordSpacing: z.number().min(0).max(0.2).optional().default(0.04),
   maxWidth: z.number().int().positive(),
   spellcheckEnabled: z.boolean().optional().default(true),
   theme: z.enum(["light", "dark", "sepia"]),
@@ -623,6 +624,21 @@ const projectLayoutStateSchema = z.strictObject({
   editor: z.strictObject({
     activeChapterId: z.string().nullable(),
     scrollYByChapter: z.record(z.string(), z.number()),
+  }).optional(),
+  workspace: z.strictObject({
+    panels: z.array(
+      z.strictObject({
+        id: z.string().min(1),
+        content: z.strictObject({
+          type: z.enum(["research", "editor", "export"]),
+          id: z.string().optional(),
+          tab: z
+            .enum(["character", "world", "event", "faction", "scrap", "analysis"])
+            .optional(),
+        }),
+        size: z.number().finite(),
+      }),
+    ),
   }).optional(),
   sidebarWidths: z.record(z.string(), z.number().finite()).optional(),
   layoutSurfaceRatios: z.record(z.string(), z.number().finite()).optional(),

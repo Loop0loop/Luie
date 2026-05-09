@@ -15,7 +15,7 @@ import {
   getDocsLayoutSurfaceState,
 } from "../../utils/docsLayoutModel";
 
-export function useGoogleDocsLayoutState() {
+export function useGoogleDocsLayoutState(projectId?: string | null) {
   const [trashRefreshKey, setTrashRefreshKey] = useState(0);
   const [pageMargins, setPageMargins] = useState<DocsPageMargins>({
     left: EDITOR_RULER_DEFAULT_MARGIN_LEFT_PX,
@@ -72,7 +72,7 @@ export function useGoogleDocsLayoutState() {
     () => buildDocsLayoutPersistEntries(activeRightTab),
     [activeRightTab],
   );
-  const onLayoutChanged = useLayoutPersist(layoutEntries);
+  const onLayoutChanged = useLayoutPersist(layoutEntries, { projectId });
 
   const {
     activePanelSurface,

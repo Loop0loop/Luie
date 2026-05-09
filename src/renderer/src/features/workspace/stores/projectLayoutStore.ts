@@ -17,7 +17,13 @@ import {
   type ProjectLayoutPersistedState,
   projectLayoutPersistedStateSchema,
 } from "@shared/schemas";
-import type { DocsRightTab, ScrivenerSectionId, ScrivenerSectionsState } from "./uiStore";
+import type {
+  DocsRightTab,
+  ResearchTab,
+  ResizablePanelData,
+  ScrivenerSectionId,
+  ScrivenerSectionsState,
+} from "./uiStore";
 import {
   buildMigrationEventData,
   buildRecoveryEventData,
@@ -65,6 +71,22 @@ const DEFAULT_SCRIVENER_SECTIONS: ScrivenerSectionsState = {
   trash: false,
 };
 
+const PERSISTABLE_RESEARCH_TABS = new Set<ResearchTab>([
+  "character",
+  "world",
+  "event",
+  "faction",
+  "scrap",
+  "analysis",
+]);
+
+const WORKSPACE_PANEL_MIN_SIZE = 15;
+const WORKSPACE_PANEL_MAX_SIZE = 90;
+
+export type ProjectWorkspaceLayoutState = {
+  panels: ResizablePanelData[];
+};
+
 export type ProjectLayoutState = {
   main: {
     sidebarOpen: boolean;
@@ -84,6 +106,7 @@ export type ProjectLayoutState = {
     activeChapterId: string | null;
     scrollYByChapter: Record<string, number>;
   };
+  workspace: ProjectWorkspaceLayoutState;
   sidebarWidths: Record<string, number>;
   layoutSurfaceRatios: Record<LayoutSurfaceId, number>;
 };
@@ -106,6 +129,9 @@ const createDefaultProjectLayoutState = (): ProjectLayoutState => ({
   editor: {
     activeChapterId: null,
     scrollYByChapter: {},
+  },
+  workspace: {
+    panels: [],
   },
   sidebarWidths: buildDefaultSidebarWidths(),
   layoutSurfaceRatios: buildDefaultLayoutSurfaceRatios(),
@@ -180,6 +206,71 @@ const sanitizeScrivenerSections = (input: unknown): ScrivenerSectionsState => {
   return next;
 };
 
+const normalizeWorkspacePanelSize = (size: unknown): number | null => {
+  if (typeof size !== "number" || !Number.isFinite(size)) return null;
+  return Math.min(
+    WORKSPACE_PANEL_MAX_SIZE,
+    Math.max(WORKSPACE_PANEL_MIN_SIZE, size),
+  );
+};
+
+export const sanitizeWorkspacePanels = (
+  input: unknown,
+): ResizablePanelData[] => {
+  if (!Array.isArray(input)) return [];
+
+  const panels: ResizablePanelData[] = [];
+  const seenIds = new Set<string>();
+
+  for (const candidate of input) {
+    if (!isRecord(candidate) || typeof candidate.id !== "string") continue;
+    if (seenIds.has(candidate.id)) continue;
+
+    const size = normalizeWorkspacePanelSize(candidate.size);
+    if (size === null) continue;
+
+    const content = isRecord(candidate.content) ? candidate.content : {};
+    if (content.type === "research") {
+      const tab = content.tab;
+      if (typeof tab !== "string" || !PERSISTABLE_RESEARCH_TABS.has(tab as ResearchTab)) {
+        continue;
+      }
+      panels.push({
+        id: candidate.id,
+        content: {
+          type: "research",
+          ...(typeof content.id === "string" ? { id: content.id } : {}),
+          tab: tab as ResearchTab,
+        },
+        size,
+      });
+      seenIds.add(candidate.id);
+      continue;
+    }
+
+    if (content.type === "editor" && typeof content.id === "string") {
+      panels.push({
+        id: candidate.id,
+        content: { type: "editor", id: content.id },
+        size,
+      });
+      seenIds.add(candidate.id);
+      continue;
+    }
+
+    if (content.type === "export") {
+      panels.push({
+        id: candidate.id,
+        content: { type: "export" },
+        size,
+      });
+      seenIds.add(candidate.id);
+    }
+  }
+
+  return panels.slice(0, 3);
+};
+
 export const sanitizePersistedDocsRightTab = (
   tab: DocsRightTab | PersistedDocsRightTab | null | undefined,
 ): PersistedDocsRightTab => {
@@ -197,6 +288,7 @@ const sanitizeProjectLayoutState = (input: unknown): ProjectLayoutState => {
   const docsInput = isRecord(input.docs) ? input.docs : {};
   const scrivenerInput = isRecord(input.scrivener) ? input.scrivener : {};
   const editorInput = isRecord(input.editor) ? input.editor : {};
+  const workspaceInput = isRecord(input.workspace) ? input.workspace : {};
 
   return {
     main: {
@@ -241,6 +333,9 @@ const sanitizeProjectLayoutState = (input: unknown): ProjectLayoutState => {
             Object.entries(editorInput.scrollYByChapter).filter(([, v]) => typeof v === "number")
           ) as Record<string, number>)
         : defaults.editor.scrollYByChapter,
+    },
+    workspace: {
+      panels: sanitizeWorkspacePanels(workspaceInput.panels),
     },
     sidebarWidths: normalizeSidebarWidthsWithMigrations(input.sidebarWidths),
     layoutSurfaceRatios: normalizeLayoutSurfaceRatiosWithMigrations(
@@ -349,6 +444,12 @@ const mergeProjectLayoutState = (
         ...(patch.editor?.scrollYByChapter ?? {}),
       },
     },
+    workspace: patch.workspace
+      ? {
+          ...previous.workspace,
+          panels: sanitizeWorkspacePanels(patch.workspace.panels),
+        }
+      : previous.workspace,
     sidebarWidths: patch.sidebarWidths
       ? normalizeSidebarWidthsWithMigrations({
           ...previous.sidebarWidths,

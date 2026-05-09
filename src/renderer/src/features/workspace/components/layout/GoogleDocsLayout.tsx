@@ -48,7 +48,7 @@ export default function GoogleDocsLayout({
     setRegionOpen,
     setTrashRefreshKey,
     trashRefreshKey,
-  } = useGoogleDocsLayoutState();
+  } = useGoogleDocsLayoutState(currentProjectId ?? null);
   const docsLayoutGroupRef = useRef<HTMLDivElement | null>(null);
   const docsLayoutGroupWidth = useElementWidth(docsLayoutGroupRef);
   const docsSidebarSize = getResponsivePanelSize(

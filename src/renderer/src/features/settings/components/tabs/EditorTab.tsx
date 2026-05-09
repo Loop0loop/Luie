@@ -16,16 +16,20 @@ interface EditorTabProps {
   t: TFunction;
   localFontSize: number;
   localLineHeight: number;
+  localWordSpacing: number;
   onSetLocalFontSize: (value: number) => void;
   onSetLocalLineHeight: (value: number) => void;
+  onSetLocalWordSpacing: (value: number) => void;
 }
 
 export const EditorTab = memo(function EditorTab({
   t,
   localFontSize,
   localLineHeight,
+  localWordSpacing,
   onSetLocalFontSize,
   onSetLocalLineHeight,
+  onSetLocalWordSpacing,
 }: EditorTabProps) {
   const {
     fontFamily,
@@ -324,6 +328,44 @@ export const EditorTab = memo(function EditorTab({
                 );
                 onSetLocalLineHeight(next);
                 onApplySettings({ lineHeight: next });
+              }}
+              className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h3 className="text-base font-semibold text-fg">
+              {t("settings.section.wordSpacing", "어간")}
+            </h3>
+            <p className="text-xs text-muted mt-0.5">
+              {t("settings.wordSpacing.description", "단어 사이 간격을 조절합니다")}
+            </p>
+          </div>
+          <div className="flex items-center gap-3 bg-surface border border-border rounded-lg p-1">
+            <button
+              onClick={() => {
+                const next = Math.max(0, Number((localWordSpacing - 0.01).toFixed(2)));
+                onSetLocalWordSpacing(next);
+                onApplySettings({ wordSpacing: next });
+              }}
+              className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+            <span className="text-sm font-medium text-fg w-14 text-center">
+              {localWordSpacing.toFixed(2)}em
+            </span>
+            <button
+              onClick={() => {
+                const next = Math.min(0.2, Number((localWordSpacing + 0.01).toFixed(2)));
+                onSetLocalWordSpacing(next);
+                onApplySettings({ wordSpacing: next });
               }}
               className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
             >

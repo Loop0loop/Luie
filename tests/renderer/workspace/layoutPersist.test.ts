@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getPanelRatioFromLayout } from "../../../src/renderer/src/features/workspace/hooks/useLayoutPersist.js";
+import {
+  getPanelLayoutValue,
+  getPanelRatioFromLayout,
+} from "../../../src/renderer/src/features/workspace/hooks/useLayoutPersist.js";
 
 describe("useLayoutPersist layout parsing", () => {
   it("reads numeric ratios from keyed layouts", () => {
@@ -40,5 +43,18 @@ describe("useLayoutPersist layout parsing", () => {
         0,
       ),
     ).toBe(17);
+  });
+
+  it("reads workspace panel ratios by stable panel id", () => {
+    expect(
+      getPanelLayoutValue(
+        {
+          "main-primary-content": { size: 36 },
+          "research-character": { size: 64 },
+        },
+        "research-character",
+        1,
+      ),
+    ).toBe(64);
   });
 });
