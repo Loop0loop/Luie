@@ -493,6 +493,12 @@ export const editorSettingsSchema = z.strictObject({
     .pipe(z.enum(["default", "docs", "editor", "scrivener"]))
     .catch("default"),
   enableAnimations: z.boolean().optional().default(true),
+  entityColors: z.object({
+    character: z.string(),
+    event: z.string(),
+    faction: z.string(),
+    term: z.string(),
+  }).optional(),
 });
 
 export const settingsAutoSaveSchema = z.strictObject({
@@ -549,6 +555,8 @@ const uiMainViewSchema = z.strictObject({
 const uiScrivenerSectionsSchema = z.strictObject({
   manuscript: z.boolean(),
   characters: z.boolean(),
+  events: z.boolean(),
+  factions: z.boolean(),
   world: z.boolean(),
   scrap: z.boolean(),
   snapshots: z.boolean(),
@@ -616,6 +624,8 @@ const projectLayoutStateSchema = z.strictObject({
     activeChapterId: z.string().nullable(),
     scrollYByChapter: z.record(z.string(), z.number()),
   }).optional(),
+  sidebarWidths: z.record(z.string(), z.number().finite()).optional(),
+  layoutSurfaceRatios: z.record(z.string(), z.number().finite()).optional(),
 });
 
 export const projectLayoutPersistedStateSchema = z.strictObject({

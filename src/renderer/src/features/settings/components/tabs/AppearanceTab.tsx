@@ -27,6 +27,7 @@ export const AppearanceTab = memo(function AppearanceTab({
         themeTexture,
         uiMode,
         enableAnimations,
+        entityColors,
         updateSettings: onApplySettings,
     } = useEditorStore(
         useShallow((state) => ({
@@ -37,6 +38,7 @@ export const AppearanceTab = memo(function AppearanceTab({
             themeTexture: state.themeTexture,
             uiMode: state.uiMode,
             enableAnimations: state.enableAnimations,
+            entityColors: state.entityColors,
             updateSettings: state.updateSettings,
         }))
     );
@@ -239,6 +241,41 @@ export const AppearanceTab = memo(function AppearanceTab({
                         <span className="text-sm font-semibold text-fg mb-1">{t("settings.appearance.atmosphere.warm.title")}</span>
                         <span className="text-xs text-muted">{t("settings.appearance.atmosphere.warm.description")}</span>
                     </button>
+                </div>
+            </section>
+
+            <div className="h-px bg-border my-6" />
+
+            <section className="space-y-4">
+                <div>
+                    <h3 className="text-base font-semibold text-fg">{t("settings.appearance.entityColors.title", "세계관 요소 색상")}</h3>
+                    <p className="text-sm text-muted mt-1">{t("settings.appearance.entityColors.description", "에디터 및 그래프에서 표시되는 요소들의 고유 색상을 지정합니다.")}</p>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {(["character", "event", "faction", "term"] as const).map((type) => (
+                        <div key={type} className="flex flex-col items-center gap-2 p-3 rounded-xl border border-border bg-surface hover:bg-surface-hover transition-colors">
+                            <span className="text-sm font-medium text-fg capitalize">{t(`research.graph.entity.${type}`, type)}</span>
+                            <div className="relative w-8 h-8 rounded-full overflow-hidden border border-border/50 ring-2 ring-transparent focus-within:ring-accent transition-all cursor-pointer">
+                                <input
+                                    type="color"
+                                    value={entityColors?.[type as keyof typeof entityColors] ?? "#000000"}
+                                    onChange={(e) => {
+                                        onApplySettings({
+                                            entityColors: {
+                                                character: entityColors?.character ?? "#2563eb",
+                                                event: entityColors?.event ?? "#d97706",
+                                                faction: entityColors?.faction ?? "#059669",
+                                                term: entityColors?.term ?? "#7c3aed",
+                                                [type]: e.target.value
+                                            }
+                                        });
+                                    }}
+                                    className="absolute -top-2 -left-2 w-12 h-12 cursor-pointer border-0 p-0 m-0"
+                                    title={t(`research.graph.entity.${type}`, type)}
+                                />
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </section>
 

@@ -5,6 +5,15 @@ import {
   STORAGE_KEY_PROJECT_LAYOUT,
 } from "@shared/constants";
 import {
+  buildDefaultLayoutSurfaceRatios,
+  normalizeLayoutSurfaceRatiosWithMigrations,
+  type LayoutSurfaceId,
+} from "@shared/constants/layoutSizing";
+import {
+  buildDefaultSidebarWidths,
+  normalizeSidebarWidthsWithMigrations,
+} from "@shared/constants/sidebarSizing";
+import {
   type ProjectLayoutPersistedState,
   projectLayoutPersistedStateSchema,
 } from "@shared/schemas";
@@ -75,6 +84,8 @@ export type ProjectLayoutState = {
     activeChapterId: string | null;
     scrollYByChapter: Record<string, number>;
   };
+  sidebarWidths: Record<string, number>;
+  layoutSurfaceRatios: Record<LayoutSurfaceId, number>;
 };
 
 const createDefaultProjectLayoutState = (): ProjectLayoutState => ({
@@ -96,6 +107,8 @@ const createDefaultProjectLayoutState = (): ProjectLayoutState => ({
     activeChapterId: null,
     scrollYByChapter: {},
   },
+  sidebarWidths: buildDefaultSidebarWidths(),
+  layoutSurfaceRatios: buildDefaultLayoutSurfaceRatios(),
 });
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -229,6 +242,11 @@ const sanitizeProjectLayoutState = (input: unknown): ProjectLayoutState => {
           ) as Record<string, number>)
         : defaults.editor.scrollYByChapter,
     },
+    sidebarWidths: normalizeSidebarWidthsWithMigrations(input.sidebarWidths),
+    layoutSurfaceRatios: normalizeLayoutSurfaceRatiosWithMigrations(
+      input.layoutSurfaceRatios,
+      input.sidebarWidths,
+    ),
   };
 };
 
@@ -329,6 +347,21 @@ const mergeProjectLayoutState = (
         ...(patch.editor?.scrollYByChapter ?? {}),
       },
     },
+    sidebarWidths: patch.sidebarWidths
+      ? normalizeSidebarWidthsWithMigrations({
+          ...previous.sidebarWidths,
+          ...patch.sidebarWidths,
+        })
+      : previous.sidebarWidths,
+    layoutSurfaceRatios: patch.layoutSurfaceRatios
+      ? normalizeLayoutSurfaceRatiosWithMigrations(
+          {
+            ...previous.layoutSurfaceRatios,
+            ...patch.layoutSurfaceRatios,
+          },
+          patch.sidebarWidths ?? previous.sidebarWidths,
+        )
+      : previous.layoutSurfaceRatios,
   };
 };
 

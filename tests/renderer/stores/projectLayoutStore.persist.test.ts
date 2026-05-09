@@ -104,6 +104,8 @@ describe("projectLayoutStore persist rehydrate", () => {
             sections: {
               manuscript: true,
               characters: true,
+              events: false,
+              factions: false,
               world: false,
               scrap: false,
               snapshots: false,
@@ -143,12 +145,26 @@ describe("projectLayoutStore persist rehydrate", () => {
             sections: {
               manuscript: true,
               characters: false,
+              events: true,
+              factions: false,
               world: true,
               scrap: false,
               snapshots: false,
               analysis: true,
               trash: false,
             },
+          },
+          editor: {
+            activeChapterId: null,
+            scrollYByChapter: {},
+          },
+          sidebarWidths: {
+            docsBinder: 312,
+            docsWorld: 640,
+          },
+          layoutSurfaceRatios: {
+            "docs.sidebar": 21,
+            "docs.panel.world": 42,
           },
         },
       },
@@ -159,7 +175,10 @@ describe("projectLayoutStore persist rehydrate", () => {
       .getProjectLayout("project-1");
     expect(state.main.sidebarOpen).toBe(false);
     expect(state.docs.rightTab).toBe("world");
+    expect(state.scrivener.sections.events).toBe(true);
     expect(state.scrivener.sections.analysis).toBe(true);
+    expect(state.sidebarWidths.docsBinder).toBe(312);
+    expect(state.layoutSurfaceRatios["docs.panel.world"]).toBe(42);
     expect(warn).not.toHaveBeenCalled();
   });
 
@@ -184,6 +203,8 @@ describe("projectLayoutStore persist rehydrate", () => {
               sections: {
                 manuscript: true,
                 characters: false,
+                events: false,
+                factions: false,
                 world: false,
                 scrap: false,
                 snapshots: false,

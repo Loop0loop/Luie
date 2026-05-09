@@ -7,6 +7,7 @@ import {
 import "@renderer/styles/components/editor.css";
 import { cn } from "@shared/types/utils";
 import EditorToolbar from "@renderer/features/editor/components/EditorToolbar";
+import EditorBubbleMenu from "@renderer/features/editor/components/EditorBubbleMenu";
 import { useBufferedInput } from "@renderer/features/editor/hooks/useBufferedInput";
 import { useEditorAutosave } from "@renderer/features/editor/hooks/useEditorAutosave";
 import { useEditorStats } from "@renderer/features/editor/hooks/useEditorStats";
@@ -23,6 +24,7 @@ import { useSmartLinkClickHandler } from "@renderer/features/editor/components/h
 import { useTypewriterScroll } from "@renderer/features/editor/components/hooks/useTypewriterScroll";
 import StatusFooter from "@shared/ui/StatusFooter";
 import { EditorSyncBus } from "@renderer/features/workspace/utils/EditorSyncBus";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { useTermStore } from "@renderer/features/research/stores/termStore";
 import type { Character, Term } from "@shared/types";
@@ -64,6 +66,7 @@ function Editor({
   const dialog = useDialog();
   const { fontFamilyCss, fontSize, lineHeight, getFontFamily } =
     useEditorConfig();
+  const entityColors = useEditorStore((state) => state.entityColors);
   const { updateStats } = useEditorStats();
   const [isMobileView, setIsMobileView] = useState(false);
 
@@ -289,6 +292,12 @@ function Editor({
     <div
       className="flex flex-col h-full w-full bg-transparent text-foreground relative box-border overflow-hidden"
       data-testid="editor"
+      style={{
+        "--entity-character-color": entityColors?.character ?? "#2563eb",
+        "--entity-event-color": entityColors?.event ?? "#d97706",
+        "--entity-faction-color": entityColors?.faction ?? "#059669",
+        "--entity-term-color": entityColors?.term ?? "#7c3aed",
+      } as React.CSSProperties}
     >
       {!hideToolbar && (
         <div className="shrink-0 border-b border-border z-10">
@@ -370,6 +379,7 @@ function Editor({
                   : "block h-auto",
               )}
             />
+            {editor && <EditorBubbleMenu editor={editor} />}
           </div>
         </div>
       </div>

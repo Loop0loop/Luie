@@ -209,9 +209,9 @@
   --bg-active: rgba(255, 255, 255, 0.12);
 
   /* Text */
-  --text-primary: #ededed; /* High contrast white-ish */
-  --text-secondary: #a1a1aa; /* Zinc-400 */
-  --text-tertiary: #52525b; /* Zinc-600 */
+  --text-primary: #ffffff; /* Brighter for clear readability */
+  --text-secondary: #d4d4d8; /* Zinc-300 */
+  --text-tertiary: #a1a1aa; /* Zinc-400 */
   --text-accent: #60a5fa; /* Blue-400 */
   --text-on-accent: #ffffff;
 

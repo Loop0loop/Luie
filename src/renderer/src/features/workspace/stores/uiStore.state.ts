@@ -12,6 +12,7 @@ import {
   buildDefaultSidebarWidths,
   getSynchronizedSidebarWidthFeatures,
   normalizeSidebarWidthInput,
+  normalizeSidebarWidthsWithMigrations,
 } from "@shared/constants/sidebarSizing";
 import {
   clearFocusedClosableTarget,
@@ -19,6 +20,7 @@ import {
   setFocusedClosableTarget as setTransientFocusedClosableTarget,
 } from "@renderer/features/workspace/stores/closableFocusStore";
 import {
+  buildRegionsFromLegacyState,
   cloneRegions,
   DEFAULT_REGIONS,
   getRightPanelTabByFeature,
@@ -306,6 +308,27 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
         regions: nextRegions,
       };
     }),
+  setSidebarWidths: (widths) =>
+    set((state) => {
+      const normalizedSidebarWidths = normalizeSidebarWidthsWithMigrations({
+        ...state.sidebarWidths,
+        ...widths,
+      });
+      const nextRegions = buildRegionsFromLegacyState({
+        isSidebarOpen: state.isSidebarOpen,
+        isContextOpen: state.isContextOpen,
+        docsRightTab: state.docsRightTab,
+        isBinderBarOpen: state.isBinderBarOpen,
+        scrivenerSidebarOpen: state.scrivenerSidebarOpen,
+        scrivenerInspectorOpen: state.scrivenerInspectorOpen,
+        sidebarWidths: normalizedSidebarWidths,
+        regions: state.regions,
+      });
+      return {
+        sidebarWidths: normalizedSidebarWidths,
+        regions: nextRegions,
+      };
+    }),
   setLayoutSurfaceRatio: (surface, ratio) =>
     set((state) => {
       const normalizedRatios = normalizeLayoutSurfaceRatiosWithMigrations({
@@ -323,6 +346,19 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
           ...state.layoutSurfaceRatios,
           [surface]: nextRatio,
         },
+      };
+    }),
+  setLayoutSurfaceRatios: (ratios) =>
+    set((state) => {
+      const normalizedRatios = normalizeLayoutSurfaceRatiosWithMigrations(
+        {
+          ...state.layoutSurfaceRatios,
+          ...ratios,
+        },
+        state.sidebarWidths,
+      );
+      return {
+        layoutSurfaceRatios: normalizedRatios,
       };
     }),
   setRegionOpen: (region, open) => {

@@ -1,5 +1,10 @@
 import { useEffect, useRef } from "react";
 import type { EditorUiMode } from "@shared/types";
+import {
+  normalizeLayoutSurfaceRatiosWithMigrations,
+  type LayoutSurfaceId,
+} from "@shared/constants/layoutSizing";
+import { normalizeSidebarWidthsWithMigrations } from "@shared/constants/sidebarSizing";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import {
   sanitizePersistedDocsRightTab,
@@ -22,6 +27,8 @@ export function useProjectLayoutPersistence(
   const scrivenerSidebarOpen = useUIStore((state) => state.scrivenerSidebarOpen);
   const scrivenerInspectorOpen = useUIStore((state) => state.scrivenerInspectorOpen);
   const scrivenerSections = useUIStore((state) => state.scrivenerSections);
+  const sidebarWidths = useUIStore((state) => state.sidebarWidths);
+  const layoutSurfaceRatios = useUIStore((state) => state.layoutSurfaceRatios);
 
   const setSidebarOpen = useUIStore((state) => state.setSidebarOpen);
   const setContextOpen = useUIStore((state) => state.setContextOpen);
@@ -30,6 +37,8 @@ export function useProjectLayoutPersistence(
   const setScrivenerSidebarOpen = useUIStore((state) => state.setScrivenerSidebarOpen);
   const setScrivenerInspectorOpen = useUIStore((state) => state.setScrivenerInspectorOpen);
   const setScrivenerSections = useUIStore((state) => state.setScrivenerSections);
+  const setSidebarWidths = useUIStore((state) => state.setSidebarWidths);
+  const setLayoutSurfaceRatios = useUIStore((state) => state.setLayoutSurfaceRatios);
 
   const upsertProjectLayout = useProjectLayoutStore((state) => state.upsertProjectLayout);
   const getProjectLayout = useProjectLayoutStore((state) => state.getProjectLayout);
@@ -46,17 +55,34 @@ export function useProjectLayoutPersistence(
   ): boolean =>
     left.manuscript === right.manuscript &&
     left.characters === right.characters &&
+    left.events === right.events &&
+    left.factions === right.factions &&
     left.world === right.world &&
     left.scrap === right.scrap &&
     left.snapshots === right.snapshots &&
     left.analysis === right.analysis &&
     left.trash === right.trash;
 
+  const areNumberRecordsEqual = (
+    left: Record<string, number>,
+    right: Record<string, number>,
+  ): boolean => {
+    const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
+    for (const key of keys) {
+      if (Math.abs((left[key] ?? 0) - (right[key] ?? 0)) >= 0.1) {
+        return false;
+      }
+    }
+    return true;
+  };
+
   useEffect(() => {
     if (!projectId || !hasHydrated || !isSupportedMode) return;
 
     const saved = getProjectLayout(projectId);
     isRestoringRef.current = true;
+    setSidebarWidths(saved.sidebarWidths);
+    setLayoutSurfaceRatios(saved.layoutSurfaceRatios);
 
     if (uiMode === "default") {
       setSidebarOpen(saved.main.sidebarOpen);
@@ -94,6 +120,8 @@ export function useProjectLayoutPersistence(
     setScrivenerInspectorOpen,
     setScrivenerSections,
     setScrivenerSidebarOpen,
+    setLayoutSurfaceRatios,
+    setSidebarWidths,
     setSidebarOpen,
     uiMode,
     hasHydrated,
@@ -104,11 +132,31 @@ export function useProjectLayoutPersistence(
     if (!projectId || !hasHydrated || !isSupportedMode || isRestoringRef.current) return;
 
     const saved = getProjectLayout(projectId);
+    const normalizedSidebarWidths = normalizeSidebarWidthsWithMigrations(sidebarWidths);
+    const normalizedLayoutSurfaceRatios = normalizeLayoutSurfaceRatiosWithMigrations(
+      layoutSurfaceRatios,
+      normalizedSidebarWidths,
+    );
+    const layoutPatch: Pick<
+      ProjectLayoutState,
+      "sidebarWidths" | "layoutSurfaceRatios"
+    > = {
+      sidebarWidths: normalizedSidebarWidths,
+      layoutSurfaceRatios:
+        normalizedLayoutSurfaceRatios as Record<LayoutSurfaceId, number>,
+    };
+    const hasLayoutSizingChanged =
+      !areNumberRecordsEqual(saved.sidebarWidths, normalizedSidebarWidths) ||
+      !areNumberRecordsEqual(
+        saved.layoutSurfaceRatios,
+        normalizedLayoutSurfaceRatios,
+      );
 
     if (uiMode === "default") {
       if (
         saved.main.sidebarOpen === isSidebarOpen &&
-        saved.main.contextOpen === isContextOpen
+        saved.main.contextOpen === isContextOpen &&
+        !hasLayoutSizingChanged
       ) {
         return;
       }
@@ -117,6 +165,7 @@ export function useProjectLayoutPersistence(
           sidebarOpen: isSidebarOpen,
           contextOpen: isContextOpen,
         },
+        ...layoutPatch,
       });
       return;
     }
@@ -126,7 +175,8 @@ export function useProjectLayoutPersistence(
       if (
         saved.docs.sidebarOpen === isSidebarOpen &&
         saved.docs.binderBarOpen === isBinderBarOpen &&
-        saved.docs.rightTab === sanitizedTab
+        saved.docs.rightTab === sanitizedTab &&
+        !hasLayoutSizingChanged
       ) {
         return;
       }
@@ -136,6 +186,7 @@ export function useProjectLayoutPersistence(
           binderBarOpen: isBinderBarOpen,
           rightTab: sanitizedTab,
         },
+        ...layoutPatch,
       });
       return;
     }
@@ -144,7 +195,8 @@ export function useProjectLayoutPersistence(
       if (
         saved.scrivener.sidebarOpen === scrivenerSidebarOpen &&
         saved.scrivener.inspectorOpen === scrivenerInspectorOpen &&
-        areScrivenerSectionsEqual(saved.scrivener.sections, scrivenerSections)
+        areScrivenerSectionsEqual(saved.scrivener.sections, scrivenerSections) &&
+        !hasLayoutSizingChanged
       ) {
         return;
       }
@@ -154,6 +206,7 @@ export function useProjectLayoutPersistence(
           inspectorOpen: scrivenerInspectorOpen,
           sections: scrivenerSections,
         },
+        ...layoutPatch,
       });
     }
   }, [
@@ -161,10 +214,12 @@ export function useProjectLayoutPersistence(
     isBinderBarOpen,
     isContextOpen,
     isSidebarOpen,
+    layoutSurfaceRatios,
     projectId,
     scrivenerInspectorOpen,
     scrivenerSections,
     scrivenerSidebarOpen,
+    sidebarWidths,
     uiMode,
     hasHydrated,
     isSupportedMode,

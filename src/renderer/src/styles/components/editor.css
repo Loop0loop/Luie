@@ -19,7 +19,9 @@
     color: var(--text-primary);
     line-height: 1.7; /* Optimum line height for long-form reading */
     font-size: 1rem;
-    word-break: break-word;
+    word-break: keep-all; /* Korean typography standard to preserve words */
+    overflow-wrap: break-word; /* Wrap long words if needed */
+    white-space: pre-wrap; /* Preserve spaces and line breaks */
 }
 
 /* Typewriter scrolling space */
@@ -298,12 +300,32 @@
     border-radius: 4px;
     padding: 0.1em 0.35em;
     background-color: var(--bg-active, rgba(123, 126, 252, 0.1)); /* Subtle background */
-    color: var(--accent-primary, #2563eb);
     font-weight: 500;
     transition: all 0.2s ease;
     text-decoration: none;
     position: relative;
     z-index: 10;
+}
+
+.tiptap .ProseMirror .smart-link-highlight[data-type="character"] {
+    color: var(--entity-character-color, #2563eb);
+}
+
+.tiptap .ProseMirror .smart-link-highlight[data-type="event"] {
+    color: var(--entity-event-color, #d97706);
+}
+
+.tiptap .ProseMirror .smart-link-highlight[data-type="faction"] {
+    color: var(--entity-faction-color, #059669);
+}
+
+.tiptap .ProseMirror .smart-link-highlight[data-type="term"] {
+    color: var(--entity-term-color, #7c3aed);
+}
+
+/* Fallback if no data-type */
+.tiptap .ProseMirror .smart-link-highlight:not([data-type]) {
+    color: var(--accent-primary, #2563eb);
 }
 
 .tiptap .ProseMirror .smart-link-highlight:hover {

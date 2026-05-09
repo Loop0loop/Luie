@@ -145,7 +145,9 @@ export interface UIStore {
   ) => void;
   setScrivenerSections: (sections: Partial<ScrivenerSectionsState>) => void;
   setSidebarWidth: (feature: string, width: number) => void;
+  setSidebarWidths: (widths: Record<string, number>) => void;
   setLayoutSurfaceRatio: (surface: LayoutSurfaceId, ratio: number) => void;
+  setLayoutSurfaceRatios: (ratios: Record<string, number>) => void;
   setRegionOpen: (region: RegionId, open: boolean) => void;
   setRegionWidth: (
     region: Exclude<RegionId, "rightRail">,

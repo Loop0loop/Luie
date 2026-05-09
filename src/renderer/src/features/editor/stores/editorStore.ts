@@ -49,6 +49,12 @@ const DEFAULT_SETTINGS: EditorSettings = {
   themeTexture: DEFAULT_EDITOR_THEME_TEXTURE as ThemeTexture,
   uiMode: "default",
   enableAnimations: true,
+  entityColors: {
+    character: "#2563eb", // blue-600
+    event: "#d97706", // amber-600
+    faction: "#059669", // emerald-600
+    term: "#7c3aed", // violet-600
+  },
 };
 
 export const useEditorStore = create<EditorStore>((set, get) => ({
@@ -85,6 +91,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       themeTexture: current.themeTexture ?? DEFAULT_EDITOR_THEME_TEXTURE,
       uiMode: current.uiMode ?? "default",
       enableAnimations: current.enableAnimations ?? true,
+      entityColors: current.entityColors ?? DEFAULT_SETTINGS.entityColors,
       ...newSettings,
     };
     const response = await api.settings.setEditor(updated);

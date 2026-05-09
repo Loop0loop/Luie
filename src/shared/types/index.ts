@@ -783,6 +783,12 @@ export interface EditorSettings {
   themeTexture: ThemeTexture;
   uiMode: EditorUiMode;
   enableAnimations: boolean;
+  entityColors?: {
+    character: string;
+    event: string;
+    faction: string;
+    term: string;
+  };
 }
 
 export interface AppSettings {

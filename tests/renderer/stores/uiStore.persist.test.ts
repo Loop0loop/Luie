@@ -107,6 +107,17 @@ describe("uiStore persist rehydrate", () => {
         mainSidebar: 288,
         docsWorld: 360,
       },
+      scrivenerSections: {
+        manuscript: true,
+        characters: false,
+        events: true,
+        factions: true,
+        world: false,
+        scrap: false,
+        snapshots: false,
+        analysis: true,
+        trash: false,
+      },
       regions: {
         leftSidebar: {
           open: false,
@@ -139,6 +150,8 @@ describe("uiStore persist rehydrate", () => {
     expect(state.contextTab).toBe("characters");
     expect(state.regions.leftSidebar.widthPx).toBe(288);
     expect(state.regions.rightPanel.activeTab).toBe("world");
+    expect(state.scrivenerSections.events).toBe(true);
+    expect(state.scrivenerSections.factions).toBe(true);
     expect(warn).not.toHaveBeenCalled();
   });
 
