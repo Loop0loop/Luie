@@ -16,6 +16,51 @@ export interface LayoutPersistEntry {
   surface: LayoutSurfaceId;
 }
 
+export const getPanelRatioFromLayout = (
+  layout: unknown,
+  entry: LayoutPersistEntry,
+  index: number,
+): unknown => {
+  const readLayoutValue = (value: unknown): unknown => {
+    if (!value || typeof value !== "object") {
+      return value;
+    }
+
+    const valueRecord = value as Record<string, unknown>;
+    if (typeof valueRecord.size === "number") {
+      return valueRecord.size;
+    }
+    if (typeof valueRecord.asPercentage === "number") {
+      return valueRecord.asPercentage;
+    }
+    if (typeof valueRecord.percentage === "number") {
+      return valueRecord.percentage;
+    }
+    if (typeof valueRecord.flexGrow === "number") {
+      return valueRecord.flexGrow;
+    }
+    return value;
+  };
+
+  const recordLayout =
+    layout && typeof layout === "object" && !Array.isArray(layout)
+      ? (layout as Record<string, unknown>)
+      : null;
+
+  if (recordLayout) {
+    const keyed = recordLayout[entry.id];
+    if (keyed !== undefined) {
+      return readLayoutValue(keyed);
+    }
+  }
+
+  if (Array.isArray(layout)) {
+    return readLayoutValue(layout[index]);
+  }
+
+  return undefined;
+};
+
 /**
  * Hook that wires Group.onLayoutChanged to uiStore.setLayoutSurfaceRatio.
  * react-resizable-panels already reports stable percentages after each drag,
@@ -78,42 +123,7 @@ export function useLayoutPersist(entries: LayoutPersistEntry[]) {
       try {
         const nowMs = Date.now();
         for (const [index, entry] of entriesRef.current.entries()) {
-          const rawLayoutValue = (() => {
-            const recordLayout =
-              layout && typeof layout === "object" && !Array.isArray(layout)
-                ? (layout as Record<string, unknown>)
-                : null;
-
-            if (recordLayout) {
-              const keyed = recordLayout[entry.id];
-              if (keyed !== undefined) {
-                if (
-                  keyed &&
-                  typeof keyed === "object" &&
-                  "size" in keyed &&
-                  typeof (keyed as { size?: unknown }).size === "number"
-                ) {
-                  return (keyed as { size: number }).size;
-                }
-                return keyed;
-              }
-            }
-
-            if (Array.isArray(layout)) {
-              const indexed = layout[index];
-              if (
-                indexed &&
-                typeof indexed === "object" &&
-                "size" in indexed &&
-                typeof (indexed as { size?: unknown }).size === "number"
-              ) {
-                return (indexed as { size: number }).size;
-              }
-              return indexed;
-            }
-
-            return undefined;
-          })();
+          const rawLayoutValue = getPanelRatioFromLayout(layout, entry, index);
 
           const nextRatio = normalizeLayoutSurfaceRatioInput(
             entry.surface,

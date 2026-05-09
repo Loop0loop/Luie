@@ -301,6 +301,7 @@ const migrateProjectLayoutPersistedState = (
 };
 
 interface ProjectLayoutStore {
+  hasHydrated: boolean;
   byProject: Record<string, ProjectLayoutState>;
   upsertProjectLayout: (
     projectId: string,
@@ -308,6 +309,7 @@ interface ProjectLayoutStore {
   ) => void;
   getProjectLayout: (projectId: string) => ProjectLayoutState;
   clearProjectLayout: (projectId: string) => void;
+  setHasHydrated: (value: boolean) => void;
 }
 
 const mergeProjectLayoutState = (
@@ -368,6 +370,7 @@ const mergeProjectLayoutState = (
 export const useProjectLayoutStore = create<ProjectLayoutStore>()(
   persist(
     (set, get) => ({
+      hasHydrated: false,
       byProject: {},
       upsertProjectLayout: (projectId, patch) =>
         set((state) => {
@@ -392,6 +395,10 @@ export const useProjectLayoutStore = create<ProjectLayoutStore>()(
           delete next[projectId];
           return { byProject: next };
         }),
+      setHasHydrated: (hasHydrated) =>
+        set((state) =>
+          state.hasHydrated === hasHydrated ? state : { hasHydrated },
+        ),
     }),
     {
       name: STORAGE_KEY_PROJECT_LAYOUT,
@@ -451,7 +458,7 @@ export const useProjectLayoutStore = create<ProjectLayoutStore>()(
           },
         });
 
-        return (_state, error) => {
+        return (state, error) => {
           if (error) {
             timer.fail(getBrowserLogger(), error, {
               action: "rehydrate_failed",
@@ -460,12 +467,14 @@ export const useProjectLayoutStore = create<ProjectLayoutStore>()(
               "drop_rehydrate_failure",
               error instanceof Error ? error.message : String(error),
             );
+            state?.setHasHydrated(true);
             return;
           }
 
           timer.complete(getBrowserLogger(), {
             action: "rehydrate_completed",
           });
+          state?.setHasHydrated(true);
         };
       },
     },

@@ -40,6 +40,9 @@ export function useProjectLayoutPersistence(
   const setSidebarWidths = useUIStore((state) => state.setSidebarWidths);
   const setLayoutSurfaceRatios = useUIStore((state) => state.setLayoutSurfaceRatios);
 
+  const projectLayoutHasHydrated = useProjectLayoutStore(
+    (state) => state.hasHydrated,
+  );
   const upsertProjectLayout = useProjectLayoutStore((state) => state.upsertProjectLayout);
   const getProjectLayout = useProjectLayoutStore((state) => state.getProjectLayout);
 
@@ -77,7 +80,9 @@ export function useProjectLayoutPersistence(
   };
 
   useEffect(() => {
-    if (!projectId || !hasHydrated || !isSupportedMode) return;
+    if (!projectId || !hasHydrated || !projectLayoutHasHydrated || !isSupportedMode) {
+      return;
+    }
 
     const saved = getProjectLayout(projectId);
     isRestoringRef.current = true;
@@ -125,11 +130,20 @@ export function useProjectLayoutPersistence(
     setSidebarOpen,
     uiMode,
     hasHydrated,
+    projectLayoutHasHydrated,
     isSupportedMode,
   ]);
 
   useEffect(() => {
-    if (!projectId || !hasHydrated || !isSupportedMode || isRestoringRef.current) return;
+    if (
+      !projectId ||
+      !hasHydrated ||
+      !projectLayoutHasHydrated ||
+      !isSupportedMode ||
+      isRestoringRef.current
+    ) {
+      return;
+    }
 
     const saved = getProjectLayout(projectId);
     const normalizedSidebarWidths = normalizeSidebarWidthsWithMigrations(sidebarWidths);
@@ -222,6 +236,7 @@ export function useProjectLayoutPersistence(
     sidebarWidths,
     uiMode,
     hasHydrated,
+    projectLayoutHasHydrated,
     isSupportedMode,
     getProjectLayout,
     upsertProjectLayout,

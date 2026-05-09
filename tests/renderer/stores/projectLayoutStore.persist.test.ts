@@ -173,6 +173,7 @@ describe("projectLayoutStore persist rehydrate", () => {
     const state = module.useProjectLayoutStore
       .getState()
       .getProjectLayout("project-1");
+    expect(module.useProjectLayoutStore.getState().hasHydrated).toBe(true);
     expect(state.main.sidebarOpen).toBe(false);
     expect(state.docs.rightTab).toBe("world");
     expect(state.scrivener.sections.events).toBe(true);
