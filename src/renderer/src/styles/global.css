@@ -167,12 +167,12 @@
 
   /* Typography */
   --font-sans:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", Roboto, "Helvetica Neue",
     Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   --font-serif:
-    "Merriweather", Georgia, Cambria, "Times New Roman", Times, serif;
+    "KoPub Batang", "KoPubBatang", "Noto Serif KR", "Nanum Myeongjo", "Batang", "Merriweather", Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "D2Coding", "NanumGothicCoding", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     "Courier New", monospace;
 
   /* Backwards-compatible aliases */

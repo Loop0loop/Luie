@@ -304,13 +304,13 @@ function Editor({
       <div
         className={cn(
           "flex-1 flex flex-col min-h-0",
-          scrollable ? "overflow-y-auto px-10 py-5" : "",
+          scrollable ? "overflow-y-scroll px-10 py-5" : "",
         )}
         data-editor-scroll-container={scrollable ? "true" : undefined}
       >
         <div
           className={cn(
-            "w-full flex flex-col flex-1 min-h-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] bg-transparent border-none shadow-none m-0",
+            "w-full max-w-[800px] mx-auto flex flex-col flex-1 min-h-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] bg-transparent border-none shadow-none m-0",
             isMobileView &&
               "w-107.5 max-w-107.5 h-[95%] mx-auto my-5 border-8 border-[#2c2c2e] rounded-[48px] bg-editor-bg shadow-[0_0_0_2px_rgba(69,69,69,0.9),0_25px_50px_-12px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.05)] overflow-hidden relative",
             // If not scrollable (Docs mode), we don't want h-full constraining it, we want it to check mobile view or just flow

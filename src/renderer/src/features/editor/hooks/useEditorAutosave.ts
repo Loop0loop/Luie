@@ -21,7 +21,7 @@ export function useEditorAutosave({
   const { showToast } = useToast();
   const { t } = useTranslation();
   const [saveStatus, setSaveStatus] = useState<
-    "idle" | "saving" | "saved" | "error"
+    "idle" | "saving" | "saved" | "error" | "unsaved"
   >("idle");
 
   // 🔐 Unmount guard — prevents setState after component is gone
@@ -85,11 +85,7 @@ export function useEditorAutosave({
           latestDraft.content === currentContent;
         api.lifecycle?.setDirty?.(!isLatestDraftSaved);
 
-        // ✅ Track idle reset timer so we can cancel on unmount
-        if (idleResetTimerRef.current) clearTimeout(idleResetTimerRef.current);
-        idleResetTimerRef.current = setTimeout(() => {
-          if (isMountedRef.current) setSaveStatus("idle");
-        }, 2000);
+        // Removed idle reset logic so "saved" status stays visible
       } catch (error) {
         api.logger.error("Autosave failed", error);
 
@@ -156,10 +152,12 @@ export function useEditorAutosave({
       content === lastSavedRef.current.content
     ) {
       api.lifecycle?.setDirty?.(false);
+      setSaveStatus("saved");
       return;
     }
 
     api.lifecycle?.setDirty?.(true);
+    setSaveStatus("unsaved");
 
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
 

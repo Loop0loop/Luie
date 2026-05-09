@@ -106,7 +106,7 @@ export default function Ribbon({
             title={t("toolbar.tooltip.toggleMobileView")}
           >
             {(maxWidth && maxWidth <= 500) ? <Smartphone className="w-3.5 h-3.5" /> : <Monitor className="w-3.5 h-3.5" />}
-            <span>{(maxWidth && maxWidth <= 500) ? t("view.mobile") : t("view.pc")}</span>
+            <span>{(maxWidth && maxWidth <= 500) ? t("toolbar.view.mobile") : t("toolbar.view.desktop")}</span>
           </button>
         </div>
 

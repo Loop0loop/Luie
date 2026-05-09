@@ -11,6 +11,7 @@ import Ribbon from "@renderer/features/editor/components/Ribbon";
 import InspectorPanel from "@renderer/features/editor/components/InspectorPanel";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useShallow } from "zustand/react/shallow";
+import { useEditorStatsStore } from "@renderer/features/editor/stores/editorStatsStore";
 import WikiDetailView from "@renderer/features/research/components/wiki/WikiDetailView";
 import EventDetailView from "@renderer/features/research/components/event/EventDetailView";
 import FactionDetailView from "@renderer/features/research/components/faction/FactionDetailView";
@@ -77,6 +78,13 @@ export default function ScrivenerLayout({
   const editorSplitGroupRef = useRef<GroupImperativeHandle | null>(null);
   const scrivenerLayoutGroupRef = useRef<HTMLDivElement | null>(null);
   const previousPanelCountRef = useRef(panels.length);
+
+  const { wordCount, charCount } = useEditorStatsStore(
+    useShallow((state) => ({
+      wordCount: state.wordCount,
+      charCount: state.charCount,
+    }))
+  );
 
   const binderConfig = getLayoutSurfaceConfig("scrivener.binder");
   const inspectorConfig = getLayoutSurfaceConfig("scrivener.inspector");
@@ -259,7 +267,7 @@ export default function ScrivenerLayout({
                     </div>
                   ) : (
                     <div
-                      className="h-full w-full overflow-y-auto custom-scrollbar p-8 bg-panel text-fg"
+                      className="h-full w-full overflow-y-scroll custom-scrollbar p-8 bg-panel text-fg"
                       data-editor-scroll-container="true"
                     >
                       <div className="max-w-3xl mx-auto min-h-[500px]">
@@ -283,7 +291,11 @@ export default function ScrivenerLayout({
 
             {/* Scrivener Info Line */}
             <div className="h-6 bg-surface border-t border-border flex items-center px-3 text-xs text-muted justify-between shrink-0">
-              <span>{/* Word Count etc */}</span>
+              <span>
+                {t("editor.status.charLabel")} {charCount}
+                {t("editor.status.separator")}
+                {t("editor.status.wordLabel")} {wordCount}
+              </span>
               <span>{t("scrivener.target", { count: 2000 })}</span>
             </div>
           </Panel>

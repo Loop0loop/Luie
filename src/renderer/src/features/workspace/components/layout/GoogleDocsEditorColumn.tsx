@@ -59,7 +59,7 @@ export function GoogleDocsEditorColumn({
           >
             <EditorDropZones />
             <main
-              className="custom-scrollbar relative flex flex-1 flex-col items-center overflow-y-auto bg-sidebar"
+              className="custom-scrollbar relative flex flex-1 flex-col items-center overflow-y-scroll bg-sidebar"
               data-editor-scroll-container="true"
             >
               <div className="sticky top-0 z-30 flex w-full shrink-0 justify-center bg-sidebar/95 pb-2 pt-4 select-none backdrop-blur-sm">

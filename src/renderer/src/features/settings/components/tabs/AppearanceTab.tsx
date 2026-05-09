@@ -180,7 +180,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                     <p className="text-sm text-muted mt-1">{t("settings.uiMode.description")}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                    {(["default", "docs", "editor", "scrivener"] as const).map((mode) => (
+                    {(["default", "docs", "editor", "scrivener", "focus"] as const).map((mode) => (
                         <button
                             key={mode}
                             onClick={() => onApplySettings({ uiMode: mode })}
@@ -194,6 +194,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                                 {mode === "docs" && t("settings.uiMode.docs")}
                                 {mode === "editor" && t("settings.uiMode.editor")}
                                 {mode === "scrivener" && t("settings.uiMode.scrivener")}
+                                {mode === "focus" && t("settings.uiMode.focus")}
                             </div>
                         </button>
                     ))}
