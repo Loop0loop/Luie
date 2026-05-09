@@ -17,8 +17,8 @@ const WARNING_SUFFIX =
 const WINDOWS_ABSOLUTE_PATH_RE = /^[A-Za-z]:[\\/]/;
 
 const runBuild = async () => {
-  const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-  const child = spawn(pnpmCommand, ["-s", "build"], {
+  const bunCommand = process.platform === "win32" ? "bun.cmd" : "bun";
+  const child = spawn(bunCommand, ["run", "build"], {
     cwd: process.cwd(),
     stdio: ["ignore", "pipe", "pipe"],
     env: process.env,

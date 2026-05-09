@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 import {
   analyzePreloadContract,
   CORE_METHODS,
@@ -6,6 +9,11 @@ import {
 } from "../../scripts/check-preload-contract-regression.mjs";
 
 const preloadSource = readPreloadSourceTreeSync();
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const rendererApiSource = readFileSync(
+  path.join(repoRoot, "src/shared/api/index.ts"),
+  "utf-8",
+);
 
 describe("preload contract regression analyzer", () => {
   it("passes for current preload source with non-regressive limits", () => {
@@ -55,5 +63,18 @@ describe("preload contract regression analyzer", () => {
     expect(analysis.exceedsNeverCount).toBe(true);
     expect(analysis.exceedsUnknownCount).toBe(true);
     expect(CORE_METHODS.length).toBeGreaterThan(0);
+  });
+
+  it("only exposes the constrained api object in the main world", () => {
+    const exposedNames = Array.from(
+      preloadSource.matchAll(/contextBridge\.exposeInMainWorld\(\s*["']([^"']+)["']/g),
+      (match) => match[1],
+    );
+
+    expect(exposedNames).toEqual(["api"]);
+  });
+
+  it("does not publish raw ipcRenderer or generic invoke/send methods on RendererApi", () => {
+    expect(rendererApiSource).not.toMatch(/\b(?:ipcRenderer|invoke|send)\s*:/);
   });
 });

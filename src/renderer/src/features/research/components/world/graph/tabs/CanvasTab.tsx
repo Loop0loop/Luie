@@ -422,6 +422,7 @@ export function CanvasTab({
       onSelectNode,
       setGraphCanvasBlocks,
       setGraphCanvasEdges,
+      t,
     ],
   );
 

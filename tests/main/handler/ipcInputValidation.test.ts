@@ -15,10 +15,17 @@ const mocked = vi.hoisted(() => {
     setAutoSync: vi.fn(),
     resolveConflict: vi.fn(),
   };
+  let appIsPackaged = true;
 
   return {
     handlerMap,
     syncService,
+    get appIsPackaged() {
+      return appIsPackaged;
+    },
+    set appIsPackaged(next: boolean) {
+      appIsPackaged = next;
+    },
     logger: {
       info: vi.fn(),
       warn: vi.fn(),
@@ -32,6 +39,9 @@ vi.mock("electron", () => ({
   app: {
     quit: vi.fn(),
     getVersion: vi.fn(() => "0.0.0-test"),
+    get isPackaged() {
+      return mocked.appIsPackaged;
+    },
   },
   ipcMain: {
     handle: vi.fn(
@@ -66,6 +76,8 @@ describe("IPC input validation", () => {
     mocked.syncService.setAutoSync.mockReset();
     mocked.syncService.resolveConflict.mockReset();
     mocked.logger.warn.mockReset();
+    mocked.appIsPackaged = true;
+    delete process.env.LUIE_ALLOW_RUNTIME_SUPABASE_CONFIG_WRITE;
   });
 
   it("returns INVALID_INPUT for malformed WINDOW_SET_FULLSCREEN payload", async () => {
@@ -237,5 +249,90 @@ describe("IPC input validation", () => {
 
     expect(response.success).toBe(false);
     expect(response.error?.code).toBe(ErrorCode.INVALID_INPUT);
+  });
+
+  it("returns permission error for valid SYNC_SET_RUNTIME_CONFIG in packaged builds", async () => {
+    const { registerSyncIPCHandlers } =
+      await import("../../../src/main/handler/system/ipcSyncHandlers.js");
+    registerSyncIPCHandlers(mocked.logger);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.SYNC_SET_RUNTIME_CONFIG);
+    expect(handler).toBeDefined();
+
+    const response = (await handler?.(
+      {},
+      {
+        url: "https://example.supabase.co",
+        anonKey: "1234567890abcdef",
+      },
+    )) as {
+      success: boolean;
+      error?: { code: string };
+    };
+
+    expect(response.success).toBe(false);
+    expect(response.error?.code).toBe(ErrorCode.FS_PERMISSION_DENIED);
+  });
+
+  it("returns INVALID_INPUT for oversized CHAPTER_UPDATE content", async () => {
+    const chapterService = {
+      createChapter: vi.fn(),
+      getChapter: vi.fn(),
+      getAllChapters: vi.fn(),
+      getDeletedChapters: vi.fn(),
+      updateChapter: vi.fn(),
+      deleteChapter: vi.fn(),
+      restoreChapter: vi.fn(),
+      purgeChapter: vi.fn(),
+      reorderChapters: vi.fn(),
+    };
+    const { registerChapterIPCHandlers } =
+      await import("../../../src/main/handler/project/ipcChapterHandlers.js");
+    registerChapterIPCHandlers(mocked.logger, chapterService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.CHAPTER_UPDATE);
+    expect(handler).toBeDefined();
+
+    const response = (await handler?.(
+      {},
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        content: "a".repeat(10_000_001),
+      },
+    )) as {
+      success: boolean;
+      error?: { code: string };
+    };
+
+    expect(response.success).toBe(false);
+    expect(response.error?.code).toBe(ErrorCode.INVALID_INPUT);
+    expect(chapterService.updateChapter).not.toHaveBeenCalled();
+  });
+
+  it("returns INVALID_INPUT for oversized AUTO_SAVE content", async () => {
+    const autoSaveManager = {
+      triggerSave: vi.fn(),
+      flushAll: vi.fn(),
+    };
+    const { registerAutoSaveIPCHandlers } =
+      await import("../../../src/main/handler/writing/ipcAutoSaveHandlers.js");
+    registerAutoSaveIPCHandlers(mocked.logger, autoSaveManager);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.AUTO_SAVE);
+    expect(handler).toBeDefined();
+
+    const response = (await handler?.(
+      {},
+      "11111111-1111-4111-8111-111111111111",
+      "a".repeat(10_000_001),
+      "22222222-2222-4222-8222-222222222222",
+    )) as {
+      success: boolean;
+      error?: { code: string };
+    };
+
+    expect(response.success).toBe(false);
+    expect(response.error?.code).toBe(ErrorCode.INVALID_INPUT);
+    expect(autoSaveManager.triggerSave).not.toHaveBeenCalled();
   });
 });

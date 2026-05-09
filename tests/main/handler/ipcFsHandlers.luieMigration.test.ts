@@ -259,6 +259,66 @@ describe("ipcFsHandlers sqlite-only .luie behavior", () => {
     expect(JSON.parse(readResponse ?? "{}")).toMatchObject(nextSynopsis);
   });
 
+  it.each(["../escape.json", "/tmp/escape.json"])(
+    "rejects unsafe writeProjectFile entry path %s",
+    async (relativePath) => {
+      const workspaceDir = await prepareWorkspace("luie-fs-unsafe-entry-");
+      const createLuieHandler = mocked.handlerMap.get(
+        IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE,
+      );
+      expect(createLuieHandler).toBeDefined();
+
+      const packagePath = path.join(workspaceDir, "unsafe-entry.luie");
+      const createResponse = (await createLuieHandler?.(
+        {},
+        packagePath,
+        {
+          projectId: "project-unsafe-entry",
+          title: "Unsafe Entry",
+        },
+      )) as { success: boolean };
+      expect(createResponse.success).toBe(true);
+
+      const writeProjectFileHandler = mocked.handlerMap.get(
+        IPC_CHANNELS.FS_WRITE_PROJECT_FILE,
+      );
+      expect(writeProjectFileHandler).toBeDefined();
+
+      const writeResponse = (await writeProjectFileHandler?.(
+        {},
+        packagePath,
+        relativePath,
+        JSON.stringify({ value: "blocked" }),
+      )) as { success: boolean; error?: { code?: string } };
+
+      expect(writeResponse.success).toBe(false);
+      expect(writeResponse.error?.code).toBe(ErrorCode.INVALID_INPUT);
+    },
+  );
+
+  it("rejects writeProjectFile for unapproved package paths", async () => {
+    await prepareWorkspace("luie-fs-unapproved-package-");
+    const outsideRoot = path.join(tempRoot, "outside-approved-workspace");
+    await fsp.mkdir(outsideRoot, { recursive: true });
+    const packagePath = path.join(outsideRoot, "outside-session.luie");
+    await fsp.writeFile(packagePath, Buffer.from("SQLite format 3\u0000", "utf8"));
+
+    const writeProjectFileHandler = mocked.handlerMap.get(
+      IPC_CHANNELS.FS_WRITE_PROJECT_FILE,
+    );
+    expect(writeProjectFileHandler).toBeDefined();
+
+    const writeResponse = (await writeProjectFileHandler?.(
+      {},
+      packagePath,
+      "world/synopsis.json",
+      JSON.stringify({ synopsis: "blocked" }),
+    )) as { success: boolean; error?: { code?: string } };
+
+    expect(writeResponse.success).toBe(false);
+    expect(writeResponse.error?.code).toBe(ErrorCode.FS_PERMISSION_DENIED);
+  });
+
   it("fails writeProjectFile when target .luie package is missing", async () => {
     const workspaceDir = await prepareWorkspace("luie-fs-missing-package-");
     const writeProjectFileHandler = mocked.handlerMap.get(

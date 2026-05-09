@@ -1,8 +1,10 @@
+import { app } from "electron";
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
 import type * as SettingsManagerModule from "../../manager/settingsManager.js";
 import type * as SupabaseEnvModule from "../../services/features/sync/supabaseEnv.js";
+import { ErrorCode } from "../../../shared/constants/errorCode.js";
 import {
   syncRuntimeConfigSetArgsSchema,
   syncRuntimeConfigValidateArgsSchema,
@@ -11,6 +13,7 @@ import {
 } from "../../../shared/schemas/index.js";
 import type { RuntimeSupabaseConfig } from "../../../shared/types/index.js";
 import { syncService } from "../../services/features/sync/syncService.js";
+import { ServiceError } from "../../utils/serviceError.js";
 
 const loadSettingsManager = (() => {
   let cached: Promise<typeof SettingsManagerModule> | null = null;
@@ -31,6 +34,9 @@ const loadSupabaseEnvModule = (() => {
     return cached;
   };
 })();
+
+const isRuntimeConfigWriteAllowed = (): boolean =>
+  !app.isPackaged || process.env.LUIE_ALLOW_RUNTIME_SUPABASE_CONFIG_WRITE === "1";
 
 export function registerSyncIPCHandlers(logger: LoggerLike): void {
   registerIpcHandlers(logger, [
@@ -97,6 +103,12 @@ export function registerSyncIPCHandlers(logger: LoggerLike): void {
       failMessage: "Failed to set runtime Supabase config",
       argsSchema: syncRuntimeConfigSetArgsSchema,
       handler: async (config: RuntimeSupabaseConfig) => {
+        if (!isRuntimeConfigWriteAllowed()) {
+          throw new ServiceError(
+            ErrorCode.FS_PERMISSION_DENIED,
+            "Runtime Supabase config writes are disabled in packaged builds",
+          );
+        }
         const [{ settingsManager }, supabaseEnv] = await Promise.all([
           loadSettingsManager(),
           loadSupabaseEnvModule(),

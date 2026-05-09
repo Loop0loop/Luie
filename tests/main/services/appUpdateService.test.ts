@@ -8,6 +8,8 @@ const mocked = vi.hoisted(() => {
   const appGetVersion = vi.fn(() => "1.0.0");
   const appRelaunch = vi.fn();
   const appExit = vi.fn();
+  const appQuit = vi.fn();
+  const shellOpenPath = vi.fn(async () => "");
   const browserGetAllWindows = vi.fn(() => []);
   const userDataPath = `/tmp/luie-update-service-${process.pid}`;
 
@@ -15,6 +17,8 @@ const mocked = vi.hoisted(() => {
     appGetVersion,
     appRelaunch,
     appExit,
+    appQuit,
+    shellOpenPath,
     browserGetAllWindows,
     userDataPath,
     get appIsPackaged() {
@@ -32,9 +36,13 @@ vi.mock("electron", () => ({
     getPath: () => mocked.userDataPath,
     relaunch: (...args: unknown[]) => mocked.appRelaunch(...args),
     exit: (...args: unknown[]) => mocked.appExit(...args),
+    quit: (...args: unknown[]) => mocked.appQuit(...args),
     get isPackaged() {
       return mocked.appIsPackaged;
     },
+  },
+  shell: {
+    openPath: (...args: unknown[]) => mocked.shellOpenPath(...args),
   },
   BrowserWindow: {
     getAllWindows: (...args: unknown[]) => mocked.browserGetAllWindows(...args),
@@ -49,6 +57,9 @@ describe("appUpdateService", () => {
     mocked.appGetVersion.mockReturnValue("1.0.0");
     mocked.appRelaunch.mockReset();
     mocked.appExit.mockReset();
+    mocked.appQuit.mockReset();
+    mocked.shellOpenPath.mockReset();
+    mocked.shellOpenPath.mockResolvedValue("");
     mocked.browserGetAllWindows.mockReset();
     mocked.browserGetAllWindows.mockReturnValue([]);
     mocked.appIsPackaged = true;
@@ -167,10 +178,83 @@ describe("appUpdateService", () => {
     expect(result.message).toBe("UPDATE_APPLY_OK_TEST_MODE");
     expect(mocked.appRelaunch).not.toHaveBeenCalled();
     expect(mocked.appExit).not.toHaveBeenCalled();
+    expect(mocked.shellOpenPath).not.toHaveBeenCalled();
 
     const currentRaw = await fs.readFile(path.join(updateDir, "current.json"), "utf-8");
     const current = JSON.parse(currentRaw) as { version: string };
     expect(current.version).toBe("1.2.0");
+  });
+
+  it("rejects pending artifacts outside the update directory before launch", async () => {
+    const payload = Buffer.from("external-pending-artifact");
+    const sha256 = createHash("sha256").update(payload).digest("hex");
+    const updateDir = path.join(mocked.userDataPath, "updates");
+    const outsideDir = path.join(mocked.userDataPath, "outside-updates");
+    await fs.mkdir(updateDir, { recursive: true });
+    await fs.mkdir(outsideDir, { recursive: true });
+
+    const artifactPath = path.join(outsideDir, "luie-1.3.0.dmg");
+    await fs.writeFile(artifactPath, payload);
+    await fs.writeFile(
+      path.join(updateDir, "pending.json"),
+      JSON.stringify(
+        {
+          version: "1.3.0",
+          filePath: artifactPath,
+          sha256,
+          size: payload.length,
+          sourceUrl: "https://updates.example.com/luie-1.3.0.dmg",
+          downloadedAt: "2026-02-28T00:00:00.000Z",
+        },
+        null,
+        2,
+      ),
+      "utf-8",
+    );
+
+    const { appUpdateService } = await import(
+      "../../../src/main/services/features/appUpdate/appUpdateService.js"
+    );
+    const result = await appUpdateService.applyUpdate();
+
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("UPDATE_APPLY_NO_PENDING_ARTIFACT");
+    expect(mocked.shellOpenPath).not.toHaveBeenCalled();
+  });
+
+  it("launches verified installer artifacts only from the update directory", async () => {
+    const payload = Buffer.from("installer-pending-artifact");
+    const sha256 = createHash("sha256").update(payload).digest("hex");
+    const updateDir = path.join(mocked.userDataPath, "updates");
+    await fs.mkdir(updateDir, { recursive: true });
+
+    const artifactPath = path.join(updateDir, "luie-1.4.0.dmg");
+    await fs.writeFile(artifactPath, payload);
+    await fs.writeFile(
+      path.join(updateDir, "pending.json"),
+      JSON.stringify(
+        {
+          version: "1.4.0",
+          filePath: artifactPath,
+          sha256,
+          size: payload.length,
+          sourceUrl: "https://updates.example.com/luie-1.4.0.dmg",
+          downloadedAt: "2026-02-28T00:00:00.000Z",
+        },
+        null,
+        2,
+      ),
+      "utf-8",
+    );
+
+    const { appUpdateService } = await import(
+      "../../../src/main/services/features/appUpdate/appUpdateService.js"
+    );
+    const result = await appUpdateService.applyUpdate();
+
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("UPDATE_APPLY_INSTALLER_LAUNCHED");
+    expect(mocked.shellOpenPath).toHaveBeenCalledWith(artifactPath);
   });
 
   it("rolls back to rollback metadata when checksum is valid", async () => {

@@ -40,7 +40,9 @@ const getBrowserPurifier = (): ReturnType<typeof createDOMPurify> | null => {
   }
 
   if (!cachedPurifier) {
-    cachedPurifier = createDOMPurify(window);
+    cachedPurifier = createDOMPurify(
+      window as unknown as Parameters<typeof createDOMPurify>[0],
+    );
   }
 
   return cachedPurifier;

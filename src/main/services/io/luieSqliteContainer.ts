@@ -28,6 +28,7 @@ import type {
 
 const SQLITE_JOURNAL_MODE = "DELETE";
 const MAX_LUIE_ENTRY_SIZE_BYTES = 5 * 1024 * 1024;
+export const MAX_LUIE_PACKAGE_SIZE_BYTES = 256 * 1024 * 1024;
 
 const SQLITE_CONTAINER_BOOTSTRAP_SQL = `
 CREATE TABLE IF NOT EXISTS "LuieContainerInfo" (
@@ -60,7 +61,7 @@ type SqliteContainerEntryRow = {
 
 const normalizeEntryPathOrThrow = (entryPath: string): string => {
   const normalized = normalizeZipPath(entryPath);
-  if (!normalized || !isSafeZipPath(normalized)) {
+  if (!normalized || !isSafeZipPath(entryPath) || !isSafeZipPath(normalized)) {
     throw new ServiceError(
       ErrorCode.FS_READ_FAILED,
       "Invalid .luie sqlite entry path",
@@ -81,6 +82,28 @@ const openSqliteContainer = (
     readonly: options.readonly,
     fileMustExist: options.fileMustExist,
   });
+};
+
+const assertLuiePackageWithinSizeLimit = async (targetPath: string): Promise<void> => {
+  const stat = await fsp.stat(targetPath);
+  if (!stat.isFile()) {
+    throw new ServiceError(
+      ErrorCode.FS_READ_FAILED,
+      "SQLite-backed .luie package path is not a file",
+      { packagePath: targetPath },
+    );
+  }
+  if (stat.size > MAX_LUIE_PACKAGE_SIZE_BYTES) {
+    throw new ServiceError(
+      ErrorCode.FS_READ_FAILED,
+      "SQLite-backed .luie package is too large",
+      {
+        packagePath: targetPath,
+        size: stat.size,
+        maxSizeBytes: MAX_LUIE_PACKAGE_SIZE_BYTES,
+      },
+    );
+  }
 };
 
 const assertSupportedSqliteContainer = (
@@ -148,6 +171,7 @@ export const readLuieSqliteEntry = async (
   entryPath: string,
 ): Promise<string | null> => {
   const normalizedEntryPath = normalizeEntryPathOrThrow(entryPath);
+  await assertLuiePackageWithinSizeLimit(targetPath);
   const database = openSqliteContainer(targetPath, {
     readonly: true,
     fileMustExist: true,
@@ -267,6 +291,7 @@ export const writeLuieSqliteEntry = async (input: {
   const metaEntryPath = normalizeEntryPathOrThrow(LUIE_PACKAGE_META_FILENAME);
 
   await withPackageWriteLock(input.targetPath, async () => {
+    await assertLuiePackageWithinSizeLimit(input.targetPath);
     const database = openSqliteContainer(input.targetPath, {
       readonly: false,
       fileMustExist: true,

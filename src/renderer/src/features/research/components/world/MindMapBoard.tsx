@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { User, Image as ImageIcon } from "lucide-react";
 import { useMindMapBoard } from "@renderer/features/research/components/world/useMindMapBoard";
 import type { MindMapNodeData } from "@renderer/features/research/components/world/MindMapNodeData";
+import { normalizeSafeMindMapImageUrl } from "@renderer/features/research/components/world/mindMapImageUrlSafety";
 
 // Custom Node for MindMap - Character Card Style
 const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
@@ -29,10 +30,12 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
   };
 
   const handleImageUpload = (url: string) => {
+    const safeUrl = normalizeSafeMindMapImageUrl(url);
+    if (!safeUrl) return;
     setNodes((nds: Node<MindMapNodeData>[]) =>
       nds.map((node: Node<MindMapNodeData>) =>
         node.id === id
-          ? { ...node, data: { ...node.data, image: url } }
+          ? { ...node, data: { ...node.data, image: safeUrl } }
           : node,
       ),
     );

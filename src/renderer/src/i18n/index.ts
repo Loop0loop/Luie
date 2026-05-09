@@ -14,7 +14,9 @@ const detectInitialLanguage = (): SupportedLanguage => {
     if (stored) {
       return normalizeLanguage(stored);
     }
-  } catch {}
+  } catch {
+    // Local storage may be unavailable in restricted renderer contexts.
+  }
 
   return normalizeLanguage(navigator.language);
 };

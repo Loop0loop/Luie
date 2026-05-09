@@ -16,6 +16,10 @@ export const normalizeZipPath = (inputPath: string) =>
     .replace(/^\//, "");
 
 export const isSafeZipPath = (inputPath: string) => {
+  const posixInputPath = inputPath.replace(/\\/g, "/");
+  if (posixInputPath.startsWith("/") || path.win32.isAbsolute(inputPath)) {
+    return false;
+  }
   const normalized = normalizeZipPath(inputPath);
   if (!normalized) return false;
   if (normalized.startsWith("../") || normalized.startsWith("..\\")) return false;

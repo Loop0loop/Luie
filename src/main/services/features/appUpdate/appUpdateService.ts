@@ -54,6 +54,18 @@ export class AppUpdateService {
     return path.join(this.getUpdateDir(), ROLLBACK_META_FILE);
   }
 
+  private isPathInsideUpdateDir(filePath: string): boolean {
+    const updateDir = path.resolve(this.getUpdateDir());
+    const resolvedFilePath = path.resolve(filePath);
+    const relativePath = path.relative(updateDir, resolvedFilePath);
+    return (
+      relativePath === "" ||
+      (relativePath.length > 0 &&
+        !relativePath.startsWith("..") &&
+        !path.isAbsolute(relativePath))
+    );
+  }
+
   private broadcastState(): void {
     const windows = BrowserWindow.getAllWindows();
     for (const win of windows) {
@@ -199,6 +211,7 @@ export class AppUpdateService {
       const raw = await fsp.readFile(metaPath, "utf-8");
       const parsed = JSON.parse(raw) as unknown;
       if (!isSafeArtifact(parsed)) return null;
+      if (!this.isPathInsideUpdateDir(parsed.filePath)) return null;
       return parsed;
     } catch {
       return null;

@@ -610,6 +610,7 @@ export function CanvasView({
       handleDeleteCanvasEdge,
       handleEditCanvasEdgeRelation,
       handleUpdateCanvasEdge,
+      nodes,
       onDeleteRelation,
     ],
   );

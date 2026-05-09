@@ -42,8 +42,8 @@ const TARGET_RULE_IDS = new Set([
 const BLOCKING_RULE_IDS = new Set(["complexity", "max-depth"]);
 
 const packageManagerCommand =
-  process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-const args = ["exec", "eslint", ...TARGET_FILES, "--format", "json"];
+  process.platform === "win32" ? "bun.cmd" : "bun";
+const args = ["x", "eslint", ...TARGET_FILES, "--format", "json"];
 
 for (const rule of RULE_OVERRIDES) {
   args.push("--rule", rule);

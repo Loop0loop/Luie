@@ -143,8 +143,12 @@ export const writeProjectPackageEntry = async (
   logger: LoggerLike,
 ): Promise<{ path: string }> => {
   const normalized = normalizeZipPath(relativePath);
-  if (!normalized || !isSafeZipPath(normalized)) {
-    throw new Error("INVALID_RELATIVE_PATH");
+  if (!normalized || !isSafeZipPath(relativePath) || !isSafeZipPath(normalized)) {
+    throw new ServiceError(
+      ErrorCode.INVALID_INPUT,
+      "Invalid .luie package entry path",
+      { relativePath },
+    );
   }
 
   const safeProjectRoot = await assertAllowedFsPath(projectRoot, {

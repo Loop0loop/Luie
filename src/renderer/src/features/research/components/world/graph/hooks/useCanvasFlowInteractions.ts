@@ -560,12 +560,11 @@ export function useCanvasFlowInteractions({
     async (deletedNodes: Node<AnyCanvasNodeData>[]) => {
       const deletedIds = new Set(deletedNodes.map((node) => node.id));
 
-      for (const node of deletedNodes) {
-        if (node.type !== "custom-entity") {
-          continue;
-        }
-        await onDeleteNode?.(node.id);
-      }
+      await Promise.all(
+        deletedNodes
+          .filter((node) => node.type === "custom-entity")
+          .map((node) => onDeleteNode?.(node.id)),
+      );
 
       const hasLocalCanvasNode = deletedNodes.some((node) =>
         isCanvasLocalNodeType(node.type),

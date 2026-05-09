@@ -252,7 +252,20 @@ const flushAsync = async () => {
   await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
   });
+};
+
+const waitForDom = async (
+  getElement: () => Element | null,
+  message: string,
+): Promise<Element> => {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const element = getElement();
+    if (element) return element;
+    await flushAsync();
+  }
+  throw new Error(`${message}. Current text: ${document.body.textContent ?? ""}`);
 };
 
 const clickButtonByText = async (
@@ -343,9 +356,13 @@ describe("app operational scenarios", () => {
     await clickButtonByText(view.container, "Retry bootstrap");
     await flushAsync();
 
-    expect(
-      view.container.querySelector('[data-testid="project-template-selector"]'),
-    ).not.toBeNull();
+    await waitForDom(
+      () =>
+        view.container.querySelector(
+          '[data-testid="project-template-selector"]',
+        ),
+      "Project template selector was not rendered after bootstrap retry",
+    );
     expect(mocked.shortcutState.loadShortcuts).toHaveBeenCalledTimes(1);
   });
 
@@ -388,9 +405,10 @@ describe("app operational scenarios", () => {
     mountedViews.push(view);
     await flushAsync();
 
-    expect(
-      view.container.querySelector('[data-testid="editor-root"]'),
-    ).not.toBeNull();
+    await waitForDom(
+      () => view.container.querySelector('[data-testid="editor-root"]'),
+      "Editor root was not rendered for missing-path project",
+    );
     expect(mocked.showToast).toHaveBeenCalledWith(
       "Open from local data",
       "info",

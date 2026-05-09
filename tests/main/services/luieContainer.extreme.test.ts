@@ -13,7 +13,10 @@ import {
   readLuieContainerEntry,
   writeLuieContainer,
 } from "../../../src/main/services/io/luieContainer.js";
-import { writeLuieSqliteEntry } from "../../../src/main/services/io/luieSqliteContainer.js";
+import {
+  MAX_LUIE_PACKAGE_SIZE_BYTES,
+  writeLuieSqliteEntry,
+} from "../../../src/main/services/io/luieSqliteContainer.js";
 import {
   makeDeepPath,
   makeExactMixedByteText,
@@ -492,6 +495,21 @@ describe("luieContainer extreme scenarios", () => {
     await expect(
       readLuieContainerEntry(packagePath, "meta.json", logger),
     ).rejects.toBeTruthy();
+  });
+
+  it("rejects oversized sqlite packages before opening the database", async () => {
+    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-oversized-"));
+    const packagePath = path.join(tempRoot, "oversized.luie");
+    await fsp.writeFile(packagePath, Buffer.from("SQLite format 3\u0000", "utf8"));
+    await fsp.truncate(packagePath, MAX_LUIE_PACKAGE_SIZE_BYTES + 1);
+
+    const probe = await probeLuieContainer(packagePath);
+    expect(probe.kind).toBe("sqlite-v2");
+    await expect(
+      readLuieContainerEntry(packagePath, "meta.json", logger),
+    ).rejects.toMatchObject({
+      code: ErrorCode.FS_READ_FAILED,
+    });
   });
 
   it("survives 100 repeated save-read cycles without WAL sidecars", async () => {

@@ -82,12 +82,48 @@ type WorldGraphUiState = {
 };
 
 const WORLD_GRAPH_UI_STORAGE_KEY = "worldGraph_ui";
+const WORLD_GRAPH_UI_SCHEMA_VERSION = 1;
 const DEFAULT_SIDEBAR_WIDTH = 320;
 const MIN_SIDEBAR_WIDTH = 220;
 const MAX_SIDEBAR_WIDTH = 520;
+const GRAPH_IDE_TABS = new Set<GraphIdeTab>([
+  "canvas",
+  "timeline",
+  "notes",
+  "entity",
+  "library",
+]);
 
 const clampSidebarWidth = (width: number): number =>
   Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, Math.round(width)));
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+const sanitizeNullableString = (value: unknown): string | null =>
+  typeof value === "string" && value.length > 0 ? value : null;
+
+const sanitizePersistedWorldGraphUiState = (
+  input: unknown,
+): Partial<WorldGraphUiState> => {
+  if (!isRecord(input)) return {};
+  const activeTab = GRAPH_IDE_TABS.has(input.activeTab as GraphIdeTab)
+    ? (input.activeTab as GraphIdeTab)
+    : undefined;
+
+  return {
+    ...(activeTab ? { activeTab } : {}),
+    ...(typeof input.isSidebarOpen === "boolean"
+      ? { isSidebarOpen: input.isSidebarOpen }
+      : {}),
+    ...(typeof input.sidebarWidth === "number" && Number.isFinite(input.sidebarWidth)
+      ? { sidebarWidth: clampSidebarWidth(input.sidebarWidth) }
+      : {}),
+    selectedNodeId: sanitizeNullableString(input.selectedNodeId),
+    selectedTimelineId: sanitizeNullableString(input.selectedTimelineId),
+    selectedNoteId: sanitizeNullableString(input.selectedNoteId),
+  };
+};
 
 const createNoopStorage = (): StateStorage => ({
   getItem: () => null,
@@ -199,11 +235,19 @@ export const useWorldGraphUiStore = create<WorldGraphUiState>()(
     }),
     {
       name: WORLD_GRAPH_UI_STORAGE_KEY,
+      version: WORLD_GRAPH_UI_SCHEMA_VERSION,
       storage: createJSONStorage(() =>
         typeof localStorage === "undefined"
           ? createNoopStorage()
           : localStorage,
       ),
+      migrate: (persistedState) =>
+        sanitizePersistedWorldGraphUiState(persistedState),
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        ...sanitizePersistedWorldGraphUiState(persistedState),
+      }),
+      onRehydrateStorage: () => () => undefined,
       partialize: (state) => ({
         activeTab: state.activeTab,
         isSidebarOpen: state.isSidebarOpen,

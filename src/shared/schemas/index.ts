@@ -63,7 +63,7 @@ export const chapterCreateSchema = z.object({
 export const chapterUpdateSchema = z.object({
   id: z.string().uuid("Invalid chapter ID"),
   title: z.string().min(1, "Title is required").optional(),
-  content: z.string().optional(),
+  content: baseContentSchema.optional(),
   synopsis: z.string().optional(),
 });
 
@@ -141,7 +141,7 @@ export const snapshotIdSchema = z.string().uuid("Invalid snapshot ID");
 
 export const autoSaveArgsSchema = z.tuple([
   chapterIdSchema,
-  z.string(),
+  baseContentSchema,
   projectIdSchema,
 ]);
 

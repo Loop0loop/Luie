@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SyncSettings } from "../../../src/shared/types/index.js";
 import type { SyncBundle } from "../../../src/main/services/features/sync/syncMapper.js";
 
+const flushStartupAuthCheck = async (): Promise<void> => {
+  await new Promise((resolve) => setTimeout(resolve, 100));
+};
+
 const mocked = vi.hoisted(() => {
   const syncSettings: SyncSettings = {
     connected: false,
@@ -132,6 +136,152 @@ vi.mock("../../../src/main/database/index.js", () => ({
   },
 }));
 
+vi.mock("../../../src/main/services/features/sync/syncBundleHelpers.js", async (importOriginal) => {
+  const actual = await importOriginal<
+    typeof import("../../../src/main/services/features/sync/syncBundleHelpers.js")
+  >();
+  const { buildLocalSyncBundle } = await vi.importActual<
+    typeof import("../../../src/main/services/features/sync/syncBundleCollector.js")
+  >("../../../src/main/services/features/sync/syncBundleCollector.js");
+
+  return {
+    ...actual,
+    buildLocalBundleFromDatabase: async (input: {
+      logger: { warn: (message: string, details?: unknown) => void };
+      pendingProjectDeletes: NonNullable<SyncSettings["pendingProjectDeletes"]>;
+      userId: string;
+    }) =>
+      await buildLocalSyncBundle({
+        userId: input.userId,
+        pendingProjectDeletes: input.pendingProjectDeletes,
+        projectRows: await mocked.prisma.project.findMany(),
+        logger: input.logger,
+      }),
+  };
+});
+
+vi.mock("../../../src/main/services/features/sync/syncBundleApplier.js", async (importOriginal) => {
+  const actual = await importOriginal<
+    typeof import("../../../src/main/services/features/sync/syncBundleApplier.js")
+  >();
+
+  return {
+    ...actual,
+    applyMergedBundleToLocalFirstLuie: async (input: {
+      bundle: SyncBundle;
+      buildProjectPackagePayload: (args: {
+        bundle: SyncBundle;
+        projectId: string;
+        projectPath: string;
+        localSnapshots: Array<{
+          id: string;
+          chapterId: string | null;
+          content: string;
+          description: string | null;
+          createdAt: Date;
+        }>;
+      }) => Promise<unknown>;
+    }) => {
+      const persistedPackages: Array<{ projectId: string; projectPath: string }> = [];
+      const failedProjectIds: string[] = [];
+
+      for (const project of input.bundle.projects) {
+        const localProject = (await mocked.prisma.project.findUnique({
+          where: { id: project.id },
+        })) as { projectPath?: string | null; snapshots?: unknown[] } | null;
+        const projectPath = localProject?.projectPath;
+        if (
+          typeof projectPath !== "string" ||
+          !projectPath.toLowerCase().endsWith(".luie")
+        ) {
+          continue;
+        }
+        if (!projectPath.startsWith("/")) {
+          continue;
+        }
+
+        try {
+          const payload = await input.buildProjectPackagePayload({
+            bundle: input.bundle,
+            projectId: project.id,
+            projectPath,
+            localSnapshots: [],
+          });
+          await mocked.writeLuieContainer({
+            targetPath: projectPath,
+            payload,
+          });
+          persistedPackages.push({ projectId: project.id, projectPath });
+        } catch {
+          failedProjectIds.push(project.id);
+        }
+      }
+
+      if (failedProjectIds.length > 0) {
+        throw new Error(`SYNC_LUIE_PERSIST_FAILED:${failedProjectIds.join(",")}`);
+      }
+
+      for (const worldDocument of input.bundle.worldDocuments) {
+        if (worldDocument.docType === "scrap") continue;
+        const payload =
+          worldDocument.payload && typeof worldDocument.payload === "object"
+            ? { ...worldDocument.payload, updatedAt: worldDocument.updatedAt }
+            : { updatedAt: worldDocument.updatedAt };
+        await mocked.prisma.worldDocument.upsert({
+          where: {
+            projectId_docType: {
+              projectId: worldDocument.projectId,
+              docType: worldDocument.docType,
+            },
+          },
+          update: {
+            payload: JSON.stringify(payload),
+          },
+          create: {
+            projectId: worldDocument.projectId,
+            docType: worldDocument.docType,
+            payload: JSON.stringify(payload),
+          },
+        });
+      }
+
+      const memoProjectIds = new Set(input.bundle.memos.map((memo) => memo.projectId));
+      for (const projectId of memoProjectIds) {
+        const projectMemos = input.bundle.memos.filter(
+          (memo) => memo.projectId === projectId,
+        );
+        await mocked.prisma.scrapMemo.deleteMany({
+          where: { projectId },
+        });
+        if (projectMemos.length > 0) {
+          await mocked.prisma.scrapMemo.createMany({
+            data: projectMemos.map((memo, index) => ({
+              id: memo.id,
+              projectId: memo.projectId,
+              title: memo.title,
+              content: memo.content,
+              tags: JSON.stringify(memo.tags),
+              sortOrder: index,
+            })),
+          });
+        }
+      }
+
+      try {
+        await mocked.prisma.$transaction(async () => undefined);
+      } catch (error) {
+        for (const persistedPackage of persistedPackages) {
+          await mocked.openLuieProject(persistedPackage.projectPath);
+        }
+        throw new Error(
+          `SYNC_DB_CACHE_APPLY_FAILED:${persistedPackages.map((item) => item.projectId).join(",") || "none"}`,
+          { cause: error },
+        );
+      }
+    },
+  };
+});
+
 vi.mock("../../../src/main/services/features/sync/syncAuthService.js", () => ({
   syncAuthService: {
     isConfigured: () => true,
@@ -144,12 +294,28 @@ vi.mock("../../../src/main/services/features/sync/syncAuthService.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/features/sync/syncRepository.js", () => ({
-  syncRepository: {
-    fetchBundle: (...args: unknown[]) => mocked.fetchBundle(...args),
-    upsertBundle: (...args: unknown[]) => mocked.upsertBundle(...args),
-  },
-}));
+vi.mock("../../../src/main/services/features/sync/syncRepository.js", () => {
+  const normalizeBundle = (bundle: Partial<SyncBundle>): SyncBundle => ({
+    projects: bundle.projects ?? [],
+    chapters: bundle.chapters ?? [],
+    characters: bundle.characters ?? [],
+    events: bundle.events ?? [],
+    factions: bundle.factions ?? [],
+    terms: bundle.terms ?? [],
+    worldDocuments: bundle.worldDocuments ?? [],
+    memos: bundle.memos ?? [],
+    snapshots: bundle.snapshots ?? [],
+    tombstones: bundle.tombstones ?? [],
+  });
+
+  return {
+    syncRepository: {
+      fetchBundle: async (...args: unknown[]) =>
+        normalizeBundle((await mocked.fetchBundle(...args)) as Partial<SyncBundle>),
+      upsertBundle: (...args: unknown[]) => mocked.upsertBundle(...args),
+    },
+  };
+});
 
 vi.mock("../../../src/main/services/core/projectService.js", () => ({
   projectService: {
@@ -160,6 +326,7 @@ vi.mock("../../../src/main/services/core/projectService.js", () => ({
 vi.mock("../../../src/main/manager/settingsManager.js", () => ({
   settingsManager: {
     getSyncSettings: () => ({ ...mocked.syncSettings }),
+    getRuntimeSupabaseConfig: () => undefined,
     setSyncSettings: (patch: Partial<SyncSettings>) => {
       for (const [key, value] of Object.entries(patch)) {
         if (value === undefined) {
@@ -261,6 +428,7 @@ describe("SyncService auth hardening", () => {
     const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();
     service.initialize();
+    await flushStartupAuthCheck();
 
     const status = service.getStatus();
     expect(status.connected).toBe(true);
@@ -283,6 +451,7 @@ describe("SyncService auth hardening", () => {
     const { SyncService } = await import("../../../src/main/services/features/sync/syncService.js");
     const service = new SyncService();
     service.initialize();
+    await flushStartupAuthCheck();
     expect(service.getStatus().lastError).toContain("SYNC_TOKEN_DECRYPT_FAILED");
     expect(service.getStatus().connected).toBe(true);
     expect(service.getStatus().health).toBe("degraded");
