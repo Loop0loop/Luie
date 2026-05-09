@@ -18,10 +18,12 @@ interface EditorTabProps {
   localLineHeight: number;
   localLetterSpacing: number;
   localWordSpacing: number;
+  localParagraphSpacing: number;
   onSetLocalFontSize: (value: number) => void;
   onSetLocalLineHeight: (value: number) => void;
   onSetLocalLetterSpacing: (value: number) => void;
   onSetLocalWordSpacing: (value: number) => void;
+  onSetLocalParagraphSpacing: (value: number) => void;
 }
 
 export const EditorTab = memo(function EditorTab({
@@ -30,10 +32,12 @@ export const EditorTab = memo(function EditorTab({
   localLineHeight,
   localLetterSpacing,
   localWordSpacing,
+  localParagraphSpacing,
   onSetLocalFontSize,
   onSetLocalLineHeight,
   onSetLocalLetterSpacing,
   onSetLocalWordSpacing,
+  onSetLocalParagraphSpacing,
 }: EditorTabProps) {
   const {
     fontFamily,
@@ -408,6 +412,44 @@ export const EditorTab = memo(function EditorTab({
                 const next = Math.min(0.2, Number((localWordSpacing + 0.01).toFixed(2)));
                 onSetLocalWordSpacing(next);
                 onApplySettings({ wordSpacing: next });
+              }}
+              className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h3 className="text-base font-semibold text-fg">
+              {t("settings.section.paragraphSpacing", "문단 간격")}
+            </h3>
+            <p className="text-xs text-muted mt-0.5">
+              {t("settings.paragraphSpacing.description", "엔터 후 문단 사이 간격을 조절합니다")}
+            </p>
+          </div>
+          <div className="flex items-center gap-3 bg-surface border border-border rounded-lg p-1">
+            <button
+              onClick={() => {
+                const next = Math.max(0, Number((localParagraphSpacing - 0.1).toFixed(1)));
+                onSetLocalParagraphSpacing(next);
+                onApplySettings({ paragraphSpacing: next });
+              }}
+              className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+            <span className="text-sm font-medium text-fg w-14 text-center">
+              {localParagraphSpacing.toFixed(1)}em
+            </span>
+            <button
+              onClick={() => {
+                const next = Math.min(3.0, Number((localParagraphSpacing + 0.1).toFixed(1)));
+                onSetLocalParagraphSpacing(next);
+                onApplySettings({ paragraphSpacing: next });
               }}
               className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
             >

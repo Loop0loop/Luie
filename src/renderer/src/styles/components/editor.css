@@ -86,7 +86,7 @@
    ================================================================ */
 .tiptap .ProseMirror p {
     margin-top: 0;
-    margin-bottom: 1em;
+    margin-bottom: var(--editor-paragraph-spacing, 1em);
     /* --editor-line-height 는 Editor.tsx에서 ProseMirror root에 CSS var로 주입된다.
        fallback 1.4 = 커서가 한국어 글자와 거의 같은 높이로 보이는 최적값 */
     line-height: var(--editor-line-height, 1.4);

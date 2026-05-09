@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect } from "react";
+import { lazy, Suspense, useRef, useState, useEffect } from "react";
 import { History } from "lucide-react";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useTranslation } from "react-i18next";
@@ -9,6 +9,7 @@ import {
   toPanelPercentSize,
   type DocsLayoutPanelTab,
 } from "@shared/constants/layoutSizing";
+import { beginLayoutRestoring } from "@renderer/features/workspace/hooks/useProjectLayoutPersistence";
 import { getDocsRightPanelId } from "../../utils/docsLayoutModel";
 
 const ResearchPanel = lazy(
@@ -153,6 +154,25 @@ export function GoogleDocsRightPanel({
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
   const [renderedTab, setRenderedTab] = useState(activeRightTab);
   const [isClosing, setIsClosing] = useState(false);
+  const restoreFrameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!activeRightTab) return;
+    const endRestoring = beginLayoutRestoring();
+    restoreFrameRef.current = requestAnimationFrame(() => {
+      restoreFrameRef.current = requestAnimationFrame(() => {
+        restoreFrameRef.current = null;
+        endRestoring();
+      });
+    });
+    return () => {
+      if (restoreFrameRef.current !== null) {
+        cancelAnimationFrame(restoreFrameRef.current);
+        restoreFrameRef.current = null;
+      }
+      endRestoring();
+    };
+  }, [activeRightTab, rightPanelRatio]);
 
   useEffect(() => {
     if (!activeRightTab || activeRightTab === renderedTab) return;

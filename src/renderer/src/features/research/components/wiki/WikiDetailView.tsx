@@ -228,34 +228,31 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
   const allInfoboxFields = [...currentTemplate.fields, ...customFields];
 
   return (
-    <div className="flex-1 overflow-auto p-8 sm:p-6 flex flex-col gap-6 bg-panel text-fg min-w-0">
-      {/* 1. AUTHENTIC NAMUWIKI HEADER */}
-      <div className="border-b-2 border-(--namu-border) pb-4 mb-6 flex flex-col gap-3">
-        <div className="flex items-start gap-3">
+    <div className="flex-1 overflow-auto px-8 py-7 sm:px-6 sm:py-6 flex flex-col gap-6 bg-panel text-fg min-w-0">
+      {/* HEADER */}
+      <div className="flex flex-col gap-2.5 pb-5 border-b border-(--namu-border)">
+        <div className="flex items-center gap-2">
           <BufferedInput
-            className="text-3xl font-extrabold text-fg leading-tight border-none bg-transparent w-full focus:outline-none"
+            className="text-[26px] font-extrabold text-fg leading-tight border-none bg-transparent flex-1 focus:outline-none min-w-0"
             value={character.name}
             onSave={(val) => handleUpdate("name", val)}
           />
           <button
             type="button"
             onClick={handleDeleteCharacter}
-            className="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-destructive/10 hover:text-destructive"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-destructive/10 hover:text-destructive"
             title={t("character.wiki.deleteCharacterTitle")}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
-        <div className="text-[13px] text-muted bg-surface border border-border px-3 py-1.5 rounded self-start flex items-center gap-2">
-          <span className="font-bold">
-            {t("character.classificationLabel")}
-          </span>
-          <span className="text-(--namu-link) cursor-pointer hover:underline">
-            {t(currentTemplate.nameKey)}
-          </span>
-          <span className="text-border">|</span>
+        <div className="flex items-center gap-1.5 text-[12px] text-muted">
+          <span className="font-medium">{t("character.classificationLabel")}</span>
+          <span className="text-border/60">·</span>
+          <span className="text-(--namu-link)">{t(currentTemplate.nameKey)}</span>
+          <span className="text-border/60">·</span>
           <BufferedInput
-            className="inline w-auto font-semibold text-(--namu-link) bg-transparent border-none p-1 focus:outline-none focus:bg-active rounded-sm"
+            className="inline min-w-[60px] font-medium text-(--namu-link) bg-transparent border-none p-0 focus:outline-none focus:bg-active focus:rounded-sm focus:px-1 transition-all"
             value={character.description || ""}
             placeholder={t("character.uncategorized")}
             onSave={(val) => handleUpdate("description", val)}
@@ -267,17 +264,17 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
       <div className="@container">
         <div className="flex flex-col @min-[700px]:flex-row gap-8 items-start min-h-0">
           {/* LEFT: Content & TOC */}
-          <div className="flex-1 flex flex-col gap-8 min-w-75 w-full @min-[700px]:order-1 order-2">
-            {/* TOC (Inline) */}
-            <div className="bg-(--namu-table-bg) border border-(--namu-border) p-4 inline-block min-w-50 rounded">
-              <div className="font-bold text-center mb-3 text-fg text-sm">
+          <div className="flex-1 flex flex-col gap-7 min-w-75 w-full @min-[700px]:order-1 order-2">
+            {/* TOC */}
+            <div className="bg-(--namu-table-bg) border border-(--namu-border) rounded-lg p-4 inline-block self-start min-w-48">
+              <div className="text-[11px] font-semibold text-muted uppercase tracking-wider mb-2.5">
                 {t("character.tocLabel")}
               </div>
-              <div className="flex flex-col gap-1.5 text-sm">
+              <div className="flex flex-col gap-1 text-[13px]">
                 {sections.map((sec) => (
                   <a
                     key={sec.id}
-                    className="text-(--namu-link) no-underline cursor-pointer hover:underline"
+                    className="text-(--namu-link) no-underline cursor-pointer hover:underline leading-snug py-0.5"
                     href={`#${sec.id}`}
                   >
                     {sec.label}
@@ -303,8 +300,9 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
             <button
               type="button"
               onClick={addSection}
-              className="p-3 border-2 border-dashed border-border rounded-lg text-center text-subtle cursor-pointer mt-4 w-full bg-transparent hover:text-fg hover:border-fg transition-colors"
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border border-dashed border-border text-[13px] text-muted bg-transparent cursor-pointer hover:border-accent/40 hover:text-accent transition-colors duration-150"
             >
+              <span className="text-base leading-none">+</span>
               {t("character.addSection")}
             </button>
           </div>

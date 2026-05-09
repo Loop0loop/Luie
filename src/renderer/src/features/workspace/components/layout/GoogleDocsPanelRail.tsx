@@ -1,7 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Calendar,
-  ChevronLeft,
   Globe,
   Plus,
   Shield,
@@ -137,15 +136,7 @@ export function GoogleDocsPanelRail({
       </div>
 
       {!isOpen && (
-        <div className="absolute right-0 top-1/2 z-20 flex -translate-y-1/2 items-center">
-          <button
-            onClick={() => onToggleOpen(true)}
-            className="flex h-12 w-8 cursor-pointer items-center justify-center rounded-l-lg border border-r-0 border-border bg-background text-muted-foreground shadow-md transition-colors hover:bg-surface-hover"
-            title={t("sidebar.toggle.open")}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-        </div>
+        null
       )}
     </>
   );

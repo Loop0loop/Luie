@@ -155,6 +155,11 @@ describe("projectLayoutStore", () => {
             size: 37.5,
           },
         ],
+        researchPanelSizes: {
+          character: 62.5,
+          event: 48,
+          faction: 37.5,
+        },
       },
     });
 
@@ -174,5 +179,48 @@ describe("projectLayoutStore", () => {
         size: 37.5,
       },
     ]);
+    expect(saved.workspace.researchPanelSizes).toEqual({
+      character: 62.5,
+      event: 48,
+      faction: 37.5,
+    });
+  });
+
+  it("keeps independent research panel sizes when only one tab is updated", () => {
+    const store = projectLayoutModule.useProjectLayoutStore.getState();
+
+    store.upsertProjectLayout("project-a", {
+      workspace: {
+        researchPanelSizes: {
+          character: 61,
+          event: 44,
+          faction: 39,
+          world: 53,
+          scrap: 47,
+          analysis: 58,
+        },
+      },
+    });
+
+    store.upsertProjectLayout("project-a", {
+      workspace: {
+        researchPanelSizes: {
+          event: 50,
+        },
+      },
+    });
+
+    const saved = projectLayoutModule.useProjectLayoutStore
+      .getState()
+      .getProjectLayout("project-a");
+
+    expect(saved.workspace.researchPanelSizes).toEqual({
+      character: 61,
+      event: 50,
+      faction: 39,
+      world: 53,
+      scrap: 47,
+      analysis: 58,
+    });
   });
 });

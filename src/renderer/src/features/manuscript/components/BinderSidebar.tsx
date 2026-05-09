@@ -1,7 +1,8 @@
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft } from "lucide-react";
 import { Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
 import FocusHoverSidebar from "@renderer/features/manuscript/components/FocusHoverSidebar";
+import { beginLayoutRestoring } from "@renderer/features/workspace/hooks/useProjectLayoutPersistence";
 import {
   getResponsivePanelSize,
   toPanelPercentSize,
@@ -38,9 +39,30 @@ export function BinderSidebar({
         widthConfig,
     } = useBinderSidebarState(currentProjectId ?? null);
     const binderSize = getResponsivePanelSize(groupWidthPx, widthConfig);
+    const restoreFrameRef = useRef<number | null>(null);
+
+    useEffect(() => {
+        if (!activeRightTab) return;
+        const endRestoring = beginLayoutRestoring();
+        restoreFrameRef.current = requestAnimationFrame(() => {
+            restoreFrameRef.current = requestAnimationFrame(() => {
+                restoreFrameRef.current = null;
+                endRestoring();
+            });
+        });
+        return () => {
+            if (restoreFrameRef.current !== null) {
+                cancelAnimationFrame(restoreFrameRef.current);
+                restoreFrameRef.current = null;
+            }
+            endRestoring();
+        };
+    }, [activeRightTab, savedRatio]);
+
     const handleClosePanel = () => {
         onManualClose?.();
         setActiveRightTab(null);
+        setRegionOpen("rightRail", false);
     };
 
     if (!activeRightTab) return null;
@@ -110,17 +132,7 @@ export function BinderSidebarRail({
     if (activeRightTab) return null;
 
     if (!isRightRailOpen) {
-        return (
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
-                <button
-                    onClick={() => setRegionOpen("rightRail", true)}
-                    className="w-8 h-12 bg-background border border-r-0 border-border shadow-sm rounded-l-lg flex items-center justify-center hover:bg-surface-hover transition-colors duration-150 text-muted-foreground"
-                    title={t("sidebar.toggle.open")}
-                >
-                    <ChevronLeft className="w-5 h-5" />
-                </button>
-            </div>
-        );
+        return null;
     }
 
     return (

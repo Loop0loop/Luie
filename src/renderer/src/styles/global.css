@@ -481,6 +481,26 @@ button {
   font-family: inherit;
 }
 
+html[data-animations="off"],
+html[data-animations="off"] *,
+html[data-layout-restoring="true"],
+html[data-layout-restoring="true"] * {
+  scroll-behavior: auto !important;
+}
+
+html[data-animations="off"] *,
+html[data-animations="off"] *::before,
+html[data-animations="off"] *::after,
+html[data-layout-restoring="true"] *,
+html[data-layout-restoring="true"] *::before,
+html[data-layout-restoring="true"] *::after {
+  animation-delay: 0ms !important;
+  animation-duration: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-delay: 0ms !important;
+  transition-duration: 0ms !important;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;

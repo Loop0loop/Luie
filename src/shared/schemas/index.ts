@@ -479,6 +479,7 @@ export const editorSettingsSchema = z.strictObject({
   lineHeight: z.number().positive(),
   letterSpacing: z.number().min(0).max(0.3).optional().default(0.05),
   wordSpacing: z.number().min(0).max(0.2).optional().default(0.06),
+  paragraphSpacing: z.number().min(0).max(3).optional().default(1.0),
   maxWidth: z.number().int().positive(),
   spellcheckEnabled: z.boolean().optional().default(true),
   theme: z.enum(["light", "dark", "sepia"]),
@@ -640,6 +641,12 @@ const projectLayoutStateSchema = z.strictObject({
         size: z.number().finite(),
       }),
     ),
+    researchPanelSizes: z
+      .record(
+        z.enum(["character", "world", "event", "faction", "scrap", "analysis"]),
+        z.number().finite(),
+      )
+      .optional(),
   }).optional(),
   sidebarWidths: z.record(z.string(), z.number().finite()).optional(),
   layoutSurfaceRatios: z.record(z.string(), z.number().finite()).optional(),

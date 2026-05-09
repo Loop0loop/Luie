@@ -85,6 +85,7 @@ const WORKSPACE_PANEL_MAX_SIZE = 90;
 
 export type ProjectWorkspaceLayoutState = {
   panels: ResizablePanelData[];
+  researchPanelSizes: Partial<Record<ResearchTab, number>>;
 };
 
 export type ProjectLayoutState = {
@@ -111,6 +112,10 @@ export type ProjectLayoutState = {
   layoutSurfaceRatios: Record<LayoutSurfaceId, number>;
 };
 
+type ProjectLayoutPatch = Partial<Omit<ProjectLayoutState, "workspace">> & {
+  workspace?: Partial<ProjectWorkspaceLayoutState>;
+};
+
 const createDefaultProjectLayoutState = (): ProjectLayoutState => ({
   main: {
     sidebarOpen: true,
@@ -132,6 +137,7 @@ const createDefaultProjectLayoutState = (): ProjectLayoutState => ({
   },
   workspace: {
     panels: [],
+    researchPanelSizes: {},
   },
   sidebarWidths: buildDefaultSidebarWidths(),
   layoutSurfaceRatios: buildDefaultLayoutSurfaceRatios(),
@@ -212,6 +218,21 @@ const normalizeWorkspacePanelSize = (size: unknown): number | null => {
     WORKSPACE_PANEL_MAX_SIZE,
     Math.max(WORKSPACE_PANEL_MIN_SIZE, size),
   );
+};
+
+const sanitizeResearchPanelSizes = (
+  input: unknown,
+): Partial<Record<ResearchTab, number>> => {
+  if (!isRecord(input)) return {};
+
+  const sizes: Partial<Record<ResearchTab, number>> = {};
+  for (const tab of PERSISTABLE_RESEARCH_TABS) {
+    const size = normalizeWorkspacePanelSize(input[tab]);
+    if (size !== null) {
+      sizes[tab] = size;
+    }
+  }
+  return sizes;
 };
 
 export const sanitizeWorkspacePanels = (
@@ -336,6 +357,9 @@ const sanitizeProjectLayoutState = (input: unknown): ProjectLayoutState => {
     },
     workspace: {
       panels: sanitizeWorkspacePanels(workspaceInput.panels),
+      researchPanelSizes: sanitizeResearchPanelSizes(
+        workspaceInput.researchPanelSizes,
+      ),
     },
     sidebarWidths: normalizeSidebarWidthsWithMigrations(input.sidebarWidths),
     layoutSurfaceRatios: normalizeLayoutSurfaceRatiosWithMigrations(
@@ -400,7 +424,7 @@ interface ProjectLayoutStore {
   byProject: Record<string, ProjectLayoutState>;
   upsertProjectLayout: (
     projectId: string,
-    patch: Partial<ProjectLayoutState>,
+    patch: ProjectLayoutPatch,
   ) => void;
   getProjectLayout: (projectId: string) => ProjectLayoutState;
   clearProjectLayout: (projectId: string) => void;
@@ -409,7 +433,7 @@ interface ProjectLayoutStore {
 
 const mergeProjectLayoutState = (
   previous: ProjectLayoutState,
-  patch: Partial<ProjectLayoutState>,
+  patch: ProjectLayoutPatch,
 ): ProjectLayoutState => {
   const patchedSections = patch.scrivener?.sections;
   return {
@@ -447,7 +471,17 @@ const mergeProjectLayoutState = (
     workspace: patch.workspace
       ? {
           ...previous.workspace,
-          panels: sanitizeWorkspacePanels(patch.workspace.panels),
+          panels: patch.workspace.panels
+            ? sanitizeWorkspacePanels(patch.workspace.panels)
+            : previous.workspace.panels,
+          researchPanelSizes: patch.workspace.researchPanelSizes
+            ? {
+                ...previous.workspace.researchPanelSizes,
+                ...sanitizeResearchPanelSizes(
+                  patch.workspace.researchPanelSizes,
+                ),
+              }
+            : previous.workspace.researchPanelSizes,
         }
       : previous.workspace,
     sidebarWidths: patch.sidebarWidths

@@ -776,6 +776,7 @@ export interface EditorSettings {
   lineHeight: number;
   letterSpacing: number;
   wordSpacing: number;
+  paragraphSpacing: number;
   maxWidth: number;
   spellcheckEnabled: boolean;
   theme: EditorTheme;

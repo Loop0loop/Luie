@@ -177,6 +177,14 @@ describe("projectLayoutStore persist rehydrate", () => {
                 size: 42,
               },
             ],
+            researchPanelSizes: {
+              character: 64,
+              event: 51,
+              faction: 42,
+              world: 57,
+              scrap: 46,
+              analysis: 59,
+            },
           },
           sidebarWidths: {
             characterSidebar: 336,
@@ -226,6 +234,14 @@ describe("projectLayoutStore persist rehydrate", () => {
         size: 42,
       },
     ]);
+    expect(state.workspace.researchPanelSizes).toEqual({
+      character: 64,
+      event: 51,
+      faction: 42,
+      world: 57,
+      scrap: 46,
+      analysis: 59,
+    });
     expect(warn).not.toHaveBeenCalled();
   });
 

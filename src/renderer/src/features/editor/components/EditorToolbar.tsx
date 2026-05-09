@@ -52,7 +52,7 @@ const ToggleButton = ({
   <button
     className={cn(
       "flex items-center justify-center rounded text-muted hover:bg-hover hover:text-fg transition-colors disabled:opacity-50 disabled:pointer-events-none",
-      active && "bg-active text-accent",
+      active && "bg-accent/15 text-accent",
       className || "w-7 h-7"
     )}
     title={title}
@@ -78,6 +78,7 @@ const DefaultToolbar = ({
   const setFontSize = useEditorStore((state) => state.setFontSize);
   const letterSpacing = useEditorStore((state) => state.letterSpacing ?? 0.05);
   const wordSpacing = useEditorStore((state) => state.wordSpacing ?? 0.06);
+  const paragraphSpacing = useEditorStore((state) => state.paragraphSpacing ?? 1.0);
   const updateSettings = useEditorStore((state) => state.updateSettings);
 
   return (
@@ -146,6 +147,28 @@ const DefaultToolbar = ({
         <ToggleButton
           onClick={() => updateSettings({ wordSpacing: Math.min(0.2, Number((wordSpacing + 0.01).toFixed(2))) })}
           title={t("toolbar.tooltip.wordSpacingIncrease", "어간 늘리기")}
+        >
+          <span style={{ fontSize: "var(--editor-toolbar-plus-minus-font-size)" }}>+</span>
+        </ToggleButton>
+
+        <Divider />
+
+        {/* Paragraph Spacing (문단 간격) */}
+        <ToggleButton
+          onClick={() => updateSettings({ paragraphSpacing: Math.max(0, Number((paragraphSpacing - 0.1).toFixed(1))) })}
+          title={t("toolbar.tooltip.paragraphSpacingDecrease", "문단 간격 줄이기")}
+        >
+          <span style={{ fontSize: "var(--editor-toolbar-plus-minus-font-size)" }}>-</span>
+        </ToggleButton>
+        <span
+          className="text-xs font-medium text-muted w-14 text-center select-none cursor-default"
+          title={t("toolbar.tooltip.paragraphSpacing", "문단 간격")}
+        >
+          문단 {paragraphSpacing.toFixed(1)}
+        </span>
+        <ToggleButton
+          onClick={() => updateSettings({ paragraphSpacing: Math.min(3.0, Number((paragraphSpacing + 0.1).toFixed(1))) })}
+          title={t("toolbar.tooltip.paragraphSpacingIncrease", "문단 간격 늘리기")}
         >
           <span style={{ fontSize: "var(--editor-toolbar-plus-minus-font-size)" }}>+</span>
         </ToggleButton>
@@ -238,6 +261,7 @@ const DocsToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
   const setFontSize = useEditorStore((state) => state.setFontSize);
   const letterSpacing = useEditorStore((state) => state.letterSpacing ?? 0.05);
   const wordSpacing = useEditorStore((state) => state.wordSpacing ?? 0.06);
+  const paragraphSpacing = useEditorStore((state) => state.paragraphSpacing ?? 1.0);
   const updateSettings = useEditorStore((state) => state.updateSettings);
 
   return (
@@ -275,6 +299,15 @@ const DocsToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
         <button onClick={() => updateSettings({ wordSpacing: Math.max(0, Number((wordSpacing - 0.01).toFixed(2))) })} className="px-2 hover:bg-hover text-xs">-</button>
         <span className="w-16 text-center text-xs text-muted select-none">어{wordSpacing.toFixed(2)}</span>
         <button onClick={() => updateSettings({ wordSpacing: Math.min(0.2, Number((wordSpacing + 0.01).toFixed(2))) })} className="px-2 hover:bg-hover text-xs">+</button>
+      </div>
+
+      <div className="w-px h-5 bg-border mx-2" />
+
+      {/* Paragraph Spacing (문단 간격) */}
+      <div className="flex items-center border border-border/50 rounded overflow-hidden h-7 bg-background" title={t("toolbar.tooltip.paragraphSpacing", "문단 간격")}>
+        <button onClick={() => updateSettings({ paragraphSpacing: Math.max(0, Number((paragraphSpacing - 0.1).toFixed(1))) })} className="px-2 hover:bg-hover text-xs">-</button>
+        <span className="w-16 text-center text-xs text-muted select-none">문단{paragraphSpacing.toFixed(1)}</span>
+        <button onClick={() => updateSettings({ paragraphSpacing: Math.min(3.0, Number((paragraphSpacing + 0.1).toFixed(1))) })} className="px-2 hover:bg-hover text-xs">+</button>
       </div>
 
       <div className="w-px h-5 bg-border mx-2" />
@@ -396,6 +429,7 @@ const ScrivenerToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
   const setFontSize = useEditorStore((state) => state.setFontSize);
   const letterSpacing = useEditorStore((state) => state.letterSpacing ?? 0.05);
   const wordSpacing = useEditorStore((state) => state.wordSpacing ?? 0.06);
+  const paragraphSpacing = useEditorStore((state) => state.paragraphSpacing ?? 1.0);
   const updateSettings = useEditorStore((state) => state.updateSettings);
 
   return (
@@ -423,6 +457,15 @@ const ScrivenerToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
         <button onClick={() => updateSettings({ wordSpacing: Math.max(0, Number((wordSpacing - 0.01).toFixed(2))) })} className="hover:text-accent text-xs">-</button>
         <span className="text-xs w-10 text-center text-muted select-none">어{wordSpacing.toFixed(2)}</span>
         <button onClick={() => updateSettings({ wordSpacing: Math.min(0.2, Number((wordSpacing + 0.01).toFixed(2))) })} className="hover:text-accent text-xs">+</button>
+      </div>
+
+      <div className="w-px h-4 bg-border mx-1" />
+
+      {/* Paragraph Spacing (문단 간격) */}
+      <div className="flex items-center gap-1 bg-background border border-border rounded px-1" title={t("toolbar.tooltip.paragraphSpacing", "문단 간격")}>
+        <button onClick={() => updateSettings({ paragraphSpacing: Math.max(0, Number((paragraphSpacing - 0.1).toFixed(1))) })} className="hover:text-accent text-xs">-</button>
+        <span className="text-xs w-10 text-center text-muted select-none">문{paragraphSpacing.toFixed(1)}</span>
+        <button onClick={() => updateSettings({ paragraphSpacing: Math.min(3.0, Number((paragraphSpacing + 0.1).toFixed(1))) })} className="hover:text-accent text-xs">+</button>
       </div>
 
       <div className="w-px h-4 bg-border mx-1" />

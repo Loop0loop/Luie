@@ -1,6 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import {
+  sanitizePersistedDocsRightTab,
+  useProjectLayoutStore,
+} from "@renderer/features/workspace/stores/projectLayoutStore";
 import { openDocsRightTab } from "@renderer/features/workspace/services/docsPanelService";
 import type { DocsLayoutPanelTab } from "@shared/constants/layoutSizing";
 import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
@@ -32,8 +36,9 @@ export function useGoogleDocsLayoutState(projectId?: string | null) {
     layoutSurfaceRatios,
     setRegionOpen,
     closeRightPanel,
-    setPanelRailOpen,
+    setBinderBarOpen,
     setFocusedClosableTarget,
+    uiHasHydrated,
   } = useUIStore(
     useShallow((state) => ({
       isSidebarOpen: state.regions.leftSidebar.open,
@@ -44,9 +49,16 @@ export function useGoogleDocsLayoutState(projectId?: string | null) {
       layoutSurfaceRatios: state.layoutSurfaceRatios,
       setRegionOpen: state.setRegionOpen,
       closeRightPanel: state.closeRightPanel,
-      setPanelRailOpen: state.setBinderBarOpen,
+      setBinderBarOpen: state.setBinderBarOpen,
       setFocusedClosableTarget: state.setFocusedClosableTarget,
+      uiHasHydrated: state.hasHydrated,
     })),
+  );
+  const projectLayoutHasHydrated = useProjectLayoutStore(
+    (state) => state.hasHydrated,
+  );
+  const upsertProjectLayout = useProjectLayoutStore(
+    (state) => state.upsertProjectLayout,
   );
 
   const activeRightTab = getActiveDocsRightTab(
@@ -73,6 +85,29 @@ export function useGoogleDocsLayoutState(projectId?: string | null) {
     [activeRightTab],
   );
   const onLayoutChanged = useLayoutPersist(layoutEntries, { projectId });
+
+  const setPanelRailOpen = useCallback(
+    (open: boolean) => {
+      setBinderBarOpen(open);
+      if (!projectId || !uiHasHydrated || !projectLayoutHasHydrated) return;
+      upsertProjectLayout(projectId, {
+        docs: {
+          sidebarOpen: isSidebarOpen,
+          binderBarOpen: open,
+          rightTab: sanitizePersistedDocsRightTab(activeRightTab),
+        },
+      });
+    },
+    [
+      activeRightTab,
+      isSidebarOpen,
+      projectId,
+      projectLayoutHasHydrated,
+      setBinderBarOpen,
+      uiHasHydrated,
+      upsertProjectLayout,
+    ],
+  );
 
   const {
     activePanelSurface,

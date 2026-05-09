@@ -128,7 +128,11 @@ export interface UIStore {
   setView: (view: UIStore["view"]) => void;
   setContextTab: (tab: ContextTab) => void;
   setWorldTab: (tab: WorldTab) => void;
-  addPanel: (content: RightPanelContent, insertAt?: number) => void;
+  addPanel: (
+    content: RightPanelContent,
+    insertAt?: number,
+    initialSize?: number,
+  ) => void;
   removePanel: (id: string) => void;
   updatePanelSize: (id: string, size: number) => void;
   setPanels: (panels: ResizablePanelData[]) => void;

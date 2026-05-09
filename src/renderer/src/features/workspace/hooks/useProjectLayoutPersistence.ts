@@ -17,6 +17,24 @@ import {
 const isDocsLikeMode = (uiMode: EditorUiMode): boolean =>
   uiMode === "docs" || uiMode === "editor";
 
+let layoutRestoringDepth = 0;
+
+export const beginLayoutRestoring = (): (() => void) => {
+  if (typeof document === "undefined") return () => {};
+  layoutRestoringDepth += 1;
+  document.documentElement.setAttribute("data-layout-restoring", "true");
+
+  let active = true;
+  return () => {
+    if (!active) return;
+    active = false;
+    layoutRestoringDepth = Math.max(0, layoutRestoringDepth - 1);
+    if (layoutRestoringDepth === 0) {
+      document.documentElement.removeAttribute("data-layout-restoring");
+    }
+  };
+};
+
 export function useProjectLayoutPersistence(
   projectId: string | null | undefined,
   uiMode: EditorUiMode,
@@ -52,6 +70,8 @@ export function useProjectLayoutPersistence(
 
   const isRestoringRef = useRef(false);
   const restoreTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const restoreFrameRef = useRef<number | null>(null);
+  const endLayoutRestoringRef = useRef<(() => void) | null>(null);
 
   const isSupportedMode =
     uiMode === "default" || isDocsLikeMode(uiMode) || uiMode === "scrivener";
@@ -105,6 +125,21 @@ export function useProjectLayoutPersistence(
       })),
     );
 
+  const buildResearchPanelSizes = (
+    saved: ProjectLayoutState["workspace"]["researchPanelSizes"],
+    inputPanels: ResizablePanelData[],
+  ): ProjectLayoutState["workspace"]["researchPanelSizes"] => {
+    const next = { ...saved };
+    for (const panel of inputPanels) {
+      if (panel.content.type !== "research" || !panel.content.tab) continue;
+      if (typeof panel.size !== "number" || !Number.isFinite(panel.size)) {
+        continue;
+      }
+      next[panel.content.tab] = panel.size;
+    }
+    return next;
+  };
+
   const areWorkspacePanelsEqual = (
     left: ResizablePanelData[],
     right: ResizablePanelData[],
@@ -123,6 +158,19 @@ export function useProjectLayoutPersistence(
     });
   };
 
+  const areResearchPanelSizesEqual = (
+    left: ProjectLayoutState["workspace"]["researchPanelSizes"],
+    right: ProjectLayoutState["workspace"]["researchPanelSizes"],
+  ): boolean => {
+    const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
+    for (const key of keys) {
+      if (Math.abs((left[key as keyof typeof left] ?? 0) - (right[key as keyof typeof right] ?? 0)) >= 0.1) {
+        return false;
+      }
+    }
+    return true;
+  };
+
   useEffect(() => {
     if (!projectId || !hasHydrated || !projectLayoutHasHydrated || !isSupportedMode) {
       return;
@@ -130,6 +178,8 @@ export function useProjectLayoutPersistence(
 
     const saved = getProjectLayout(projectId);
     isRestoringRef.current = true;
+    endLayoutRestoringRef.current?.();
+    endLayoutRestoringRef.current = beginLayoutRestoring();
     setSidebarWidths(saved.sidebarWidths);
     setLayoutSurfaceRatios(saved.layoutSurfaceRatios);
     setPanels(saved.workspace.panels);
@@ -150,16 +200,33 @@ export function useProjectLayoutPersistence(
     if (restoreTimerRef.current) {
       clearTimeout(restoreTimerRef.current);
     }
+    if (restoreFrameRef.current !== null) {
+      cancelAnimationFrame(restoreFrameRef.current);
+      restoreFrameRef.current = null;
+    }
     restoreTimerRef.current = setTimeout(() => {
       isRestoringRef.current = false;
       restoreTimerRef.current = null;
-    }, 0);
+      restoreFrameRef.current = requestAnimationFrame(() => {
+        restoreFrameRef.current = requestAnimationFrame(() => {
+          restoreFrameRef.current = null;
+          endLayoutRestoringRef.current?.();
+          endLayoutRestoringRef.current = null;
+        });
+      });
+    }, 80);
 
     return () => {
       if (restoreTimerRef.current) {
         clearTimeout(restoreTimerRef.current);
         restoreTimerRef.current = null;
       }
+      if (restoreFrameRef.current !== null) {
+        cancelAnimationFrame(restoreFrameRef.current);
+        restoreFrameRef.current = null;
+      }
+      endLayoutRestoringRef.current?.();
+      endLayoutRestoringRef.current = null;
     };
   }, [
     getProjectLayout,
@@ -198,6 +265,10 @@ export function useProjectLayoutPersistence(
       normalizedSidebarWidths,
     );
     const workspacePanels = serializeWorkspacePanels(panels);
+    const researchPanelSizes = buildResearchPanelSizes(
+      saved.workspace.researchPanelSizes,
+      workspacePanels,
+    );
     const layoutPatch: Pick<
       ProjectLayoutState,
       "sidebarWidths" | "layoutSurfaceRatios" | "workspace"
@@ -207,6 +278,7 @@ export function useProjectLayoutPersistence(
         normalizedLayoutSurfaceRatios as Record<LayoutSurfaceId, number>,
       workspace: {
         panels: workspacePanels,
+        researchPanelSizes,
       },
     };
     const hasLayoutSizingChanged =
@@ -215,7 +287,11 @@ export function useProjectLayoutPersistence(
         saved.layoutSurfaceRatios,
         normalizedLayoutSurfaceRatios,
       ) ||
-      !areWorkspacePanelsEqual(saved.workspace.panels, workspacePanels);
+      !areWorkspacePanelsEqual(saved.workspace.panels, workspacePanels) ||
+      !areResearchPanelSizesEqual(
+        saved.workspace.researchPanelSizes,
+        researchPanelSizes,
+      );
 
     if (uiMode === "default") {
       if (

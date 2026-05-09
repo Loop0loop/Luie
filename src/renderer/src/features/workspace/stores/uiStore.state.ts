@@ -86,7 +86,7 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
   setWorldTab: (worldTab) =>
     set((state) => (state.worldTab === worldTab ? state : { worldTab })),
 
-  addPanel: (content, insertAt) => {
+  addPanel: (content, insertAt, initialSize) => {
     let nextFocusedPanelId: string | null = null;
     set((state) => {
       const existing = state.panels.find((panel) =>
@@ -101,7 +101,12 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
       const newPanel: ResizablePanelData = {
         id: buildStablePanelId(content),
         content,
-        size: state.panels.length === 0 ? 100 : 50,
+        size:
+          typeof initialSize === "number" && Number.isFinite(initialSize)
+            ? Math.min(90, Math.max(15, initialSize))
+            : state.panels.length === 0
+              ? 100
+              : 50,
       };
       const newPanels = [...state.panels];
       if (insertAt !== undefined && insertAt >= 0 && insertAt <= newPanels.length) {
@@ -109,10 +114,12 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
       } else {
         newPanels.push(newPanel);
       }
-      const sizePerPanel = 100 / newPanels.length;
-      newPanels.forEach((panel) => {
-        panel.size = sizePerPanel;
-      });
+      if (initialSize === undefined || !Number.isFinite(initialSize)) {
+        const sizePerPanel = 100 / newPanels.length;
+        newPanels.forEach((panel) => {
+          panel.size = sizePerPanel;
+        });
+      }
       nextFocusedPanelId = newPanel.id;
       return {
         ...state,
@@ -458,19 +465,15 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
       const isAlreadyOpen =
         state.regions.rightPanel.open &&
         state.regions.rightPanel.activeTab === nextTab &&
-        state.docsRightTab === nextTab &&
-        state.regions.rightRail.open &&
-        state.isBinderBarOpen;
+        state.docsRightTab === nextTab;
       if (isAlreadyOpen) return state;
       const nextRegions = cloneRegions(state.regions);
       nextRegions.rightPanel.open = true;
       nextRegions.rightPanel.activeTab = nextTab;
-      nextRegions.rightRail.open = true;
       return {
         docsRightTab: nextTab,
         isContextOpen: true,
         scrivenerInspectorOpen: true,
-        isBinderBarOpen: true,
         regions: nextRegions,
       };
     });

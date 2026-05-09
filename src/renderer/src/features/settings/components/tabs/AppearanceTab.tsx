@@ -103,7 +103,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                         <button
                             key={accent}
                             onClick={() => onApplySettings({ themeAccent: accent })}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${themeAccent === accent ? "ring-2 ring-offset-2 ring-text-primary scale-110" : "hover:scale-110"
+                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${themeAccent === accent ? "ring-2 ring-offset-2 ring-accent scale-110" : "hover:scale-110"
                                 }`}
                             style={{
                                 backgroundColor: `var(--color-bg-${accent}, ${accent === "blue"
@@ -163,7 +163,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                                 key={c}
                                 onClick={() => onApplySettings({ themeContrast: c })}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${themeContrast === c
-                                    ? "bg-text-primary text-bg-app border-transparent"
+                                    ? "bg-accent text-accent-fg border-transparent"
                                     : "border-border text-muted hover:text-fg"
                                     }`}
                             >
@@ -223,7 +223,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                     <button
                         onClick={() => onApplySettings({ themeTemp: "neutral" })}
                         className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-colors duration-150 ${themeTemp === "neutral"
-                            ? "border-text-secondary bg-text-secondary/5 ring-1 ring-text-secondary"
+                            ? "border-accent bg-accent/5 ring-1 ring-accent"
                             : "border-border hover:bg-surface-hover"
                             }`}
                     >
