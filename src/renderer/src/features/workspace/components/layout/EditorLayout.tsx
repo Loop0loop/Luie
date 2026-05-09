@@ -149,13 +149,13 @@ export default function EditorLayout({
 
                 {/* Scrollable Editor Area */}
                 <div
-                  className="flex-1 h-full overflow-y-scroll bg-sidebar flex flex-col items-center custom-scrollbar shrink-0 relative"
+                  className="flex-1 h-full overflow-y-scroll bg-background flex flex-col items-center custom-scrollbar shrink-0 relative"
                   data-editor-scroll-container="true"
                 >
-                  {/* A4 페이지 (max-width 적용) */}
+                  {/* Editor Container (No Paper Shadow) */}
                   <div
-                    className="min-h-[1056px] bg-surface text-fg shadow-xl border border-border py-12 px-12 my-8 transition-shadow duration-150 ease-out shrink-0"
-                    style={{ width: maxWidth ?? 816 }}
+                    className="min-h-full bg-transparent text-fg py-12 px-8 transition-all duration-150 ease-out shrink-0"
+                    style={{ width: maxWidth ?? 816, maxWidth: "100%" }}
                   >
                     {/* 챕터 제목 */}
                     {activeChapterTitle && (

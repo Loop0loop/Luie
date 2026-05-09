@@ -125,7 +125,7 @@ export const koWorkspace = {
       check: "체크박스로 진행 관리",
       toggle: "접고 펼칠 수 있는 섹션",
       quote: "대사/인용문 강조",
-      callout: "주석/메모 박스",
+      callout: "콜아웃 (강조 박스)",
       divider: "장면 전환 구분",
     },
     label: {
@@ -137,7 +137,7 @@ export const koWorkspace = {
       check: "할 일 목록",
       toggle: "토글 섹션",
       quote: "인용",
-      callout: "메모(콜아웃)",
+      callout: "콜아웃",
       divider: "장면 구분선",
     },
     toggleTitle: "토글 제목",

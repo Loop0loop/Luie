@@ -11,6 +11,7 @@ import { useBufferedInput } from "@renderer/features/editor/hooks/useBufferedInp
 import { useEditorAutosave } from "@renderer/features/editor/hooks/useEditorAutosave";
 import { useEditorStats } from "@renderer/features/editor/hooks/useEditorStats";
 import { useEditorConfig } from "@renderer/features/editor/hooks/useEditorConfig";
+import { useEditorScrollRestoration } from "@renderer/features/editor/hooks/useEditorScrollRestoration";
 import { api } from "@shared/api";
 import { useTranslation } from "react-i18next";
 import { useDialog } from "@shared/ui/useDialog";
@@ -92,6 +93,8 @@ function Editor({
     title,
     content,
   });
+
+  useEditorScrollRestoration(chapterId);
 
   // Tiptap Extensions imported remotely
 

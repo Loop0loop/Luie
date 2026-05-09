@@ -669,7 +669,7 @@ export const koBase = {
         toolbar: {
           newEntityBlock: "새 엔티티 블럭",
           timelineBlock: "타임라인 블럭",
-          memoBlock: "메모 블럭",
+          callout: "콜아웃",
         },
         controls: {
           zoomIn: "확대",

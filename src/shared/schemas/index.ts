@@ -612,6 +612,10 @@ const projectLayoutStateSchema = z.strictObject({
     inspectorOpen: z.boolean(),
     sections: uiScrivenerSectionsSchema,
   }),
+  editor: z.strictObject({
+    activeChapterId: z.string().nullable(),
+    scrollYByChapter: z.record(z.string(), z.number()),
+  }).optional(),
 });
 
 export const projectLayoutPersistedStateSchema = z.strictObject({

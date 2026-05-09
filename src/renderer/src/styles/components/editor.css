@@ -3,24 +3,33 @@
     scroll-padding-bottom: 42vh;
 }
 
-/* Editor Content Styles */
+/* ==========================================================================
+   EDITOR TYPOGRAPHY SYSTEM (Obsidian / Notion Style)
+   Reset and redefine all elements inside the editor scope to prevent 
+   global CSS resets (like Tailwind) from breaking the formatting.
+   ========================================================================== */
 
-/* Base ProseMirror */
+/* Base Scope */
 .tiptap .ProseMirror {
     outline: none;
     flex: 1;
     min-height: 100%;
     height: auto;
     width: 100%;
-    color: var(--editor-text, var(--text-primary));
+    color: var(--text-primary);
+    line-height: 1.7; /* Optimum line height for long-form reading */
+    font-size: 1rem;
+    word-break: break-word;
 }
 
+/* Typewriter scrolling space */
 .tiptap .ProseMirror::after {
     content: "";
     display: block;
     height: var(--editor-typewriter-tail-space, 42vh);
 }
   
+/* Placeholder */
 .tiptap .ProseMirror p.is-editor-empty:first-child::before {
     color: var(--text-tertiary);
     content: attr(data-placeholder);
@@ -28,45 +37,92 @@
     height: 0;
     pointer-events: none;
 }
+
+/* --- Block Elements (Paragraphs, Headings) --- */
+
+.tiptap .ProseMirror p {
+    margin-top: 0.6em;
+    margin-bottom: 0.6em;
+}
+
+.tiptap .ProseMirror h1,
+.tiptap .ProseMirror h2,
+.tiptap .ProseMirror h3,
+.tiptap .ProseMirror h4 {
+    color: var(--text-primary);
+    line-height: 1.3;
+    font-weight: 700;
+}
   
 .tiptap .ProseMirror h1 {
-    font-size: 2em;
-    font-weight: 700;
-    margin-top: 1em;
-    margin-bottom: 0.5em;
+    font-size: 2.2em;
+    margin-top: 1.6em;
+    margin-bottom: 0.6em;
+    letter-spacing: -0.02em;
 }
   
 .tiptap .ProseMirror h2 {
-    font-size: 1.5em;
-    font-weight: 700;
-    margin-top: 1em;
+    font-size: 1.6em;
+    font-weight: 600;
+    margin-top: 1.5em;
     margin-bottom: 0.5em;
+    letter-spacing: -0.01em;
 }
   
 .tiptap .ProseMirror h3 {
     font-size: 1.25em;
     font-weight: 600;
-    margin-top: 1em;
-    margin-bottom: 0.5em;
+    margin-top: 1.3em;
+    margin-bottom: 0.4em;
+    color: var(--text-secondary); /* Slightly softer to show hierarchy */
 }
-  
+
+/* --- Dividers (hr) --- */
+.tiptap .ProseMirror hr {
+    border: none;
+    border-top: 1px solid var(--text-primary);
+    opacity: 0.15; /* Make it subtle, not pure white/black */
+    margin: 2em 0;
+}
+
+/* --- Lists (ul, ol, li) --- */
+/* We must explicitly define list styles because Tailwind resets them */
 .tiptap .ProseMirror ul {
-    padding-left: 1.5em;
-    margin: 1em 0;
     list-style-type: disc;
+    padding-left: 1.6em;
+    margin: 0.6em 0;
 }
-  
+
 .tiptap .ProseMirror ol {
-    padding-left: 1.5em;
-    margin: 1em 0;
     list-style-type: decimal;
+    padding-left: 1.6em;
+    margin: 0.6em 0;
 }
-  
-.tiptap .ProseMirror li {
+
+/* Nested lists */
+.tiptap .ProseMirror ul ul,
+.tiptap .ProseMirror ol ul {
+    list-style-type: circle;
+    margin: 0.2em 0;
+}
+
+.tiptap .ProseMirror ol ol,
+.tiptap .ProseMirror ul ol {
+    list-style-type: lower-alpha;
     margin: 0.2em 0;
 }
   
-/* Task List (Checkboxes) */
+.tiptap .ProseMirror li {
+    margin: 0.3em 0;
+}
+
+/* Tiptap sometimes wraps li text in a p */
+.tiptap .ProseMirror li > p {
+    margin-top: 0.1em;
+    margin-bottom: 0.1em;
+}
+  
+/* --- Task Lists (Checkboxes) --- */
 .tiptap .ProseMirror ul[data-type="taskList"] {
     list-style: none;
     padding-left: 0;
@@ -76,13 +132,13 @@
     display: flex;
     flex-direction: row;
     align-items: flex-start;
-    margin: 0.2rem 0;
+    margin: 0.3rem 0;
     gap: 0.5rem;
     padding: 0.15rem 0;
 }
   
 .tiptap .ProseMirror li[data-type="taskItem"] label {
-    margin-top: 2px; /* Align checkbox with text line height */
+    margin-top: 0.2em; /* Align checkbox with text */
     user-select: none;
     cursor: pointer;
     display: flex;
@@ -98,17 +154,11 @@
     height: 16px;
     cursor: pointer;
     margin: 0;
-    accent-color: var(--accent-primary, #7b7efc);
+    accent-color: var(--accent-bg, #2563eb);
 }
   
 .tiptap .ProseMirror li[data-type="taskItem"] div {
     flex: 1;
-    /* Ensure paragraph inside task item doesn't add extra margin */
-    margin: 0;
-    padding-top: 1px;
-}
-  
-.tiptap .ProseMirror li[data-type="taskItem"] p {
     margin: 0;
 }
   
@@ -117,83 +167,80 @@
     text-decoration: line-through;
 }
   
-/* Blockquote (Quote/Callout) */
+/* --- Blockquote (회상 / 내면) --- */
 .tiptap .ProseMirror blockquote {
-    border-left: 4px solid var(--border-default);
-    padding-left: 1rem;
-    padding-right: 1rem;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-    margin: 1em 0;
-    background-color: var(--bg-hover);
-    border-radius: 4px;
-    color: var(--text-primary);
+    border-left: 2px solid var(--border-default); /* 아주 얇고 은은한 선 */
+    padding-left: 1.2rem;
+    margin: 1.2em 0;
+    color: var(--text-secondary); /* 본문보다 한 톤 낮춤 */
+    font-style: italic; /* 살짝 기울임 */
+    background: transparent; /* 공간 단절 방지 */
 }
   
 .tiptap .ProseMirror blockquote p {
     margin: 0.5em 0;
 }
   
-.tiptap .ProseMirror blockquote p:first-child {
-    margin-top: 0;
-}
-  
-.tiptap .ProseMirror blockquote p:last-child {
-    margin-bottom: 0;
-}
-  
-/* Inline Code */
+/* --- Inline & Block Code (시스템 상태창) --- */
 .tiptap .ProseMirror code {
-    background-color: var(--bg-secondary);
+    background-color: var(--bg-active);
     padding: 0.2em 0.4em;
     border-radius: 4px;
-    font-family: var(--font-mono);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 0.9em;
-    color: var(--text-primary);
+    color: var(--text-accent, #2563eb);
 }
   
-/* Code Block */
 .tiptap .ProseMirror pre {
-    background-color: var(--bg-secondary);
+    position: relative;
+    background-color: var(--bg-secondary); /* 본문보다 1단계 명도 차이 */
     border-radius: 6px;
-    padding: 1em;
-    margin: 1em 0;
-    overflow-x: auto;
+    padding: 1.2em;
+    margin: 1.5em 0;
+    border: 1px solid var(--border-default);
+    border-left: 4px solid var(--accent-primary, #2563eb); /* 콜아웃과 동일한 강조 선 */
+    white-space: pre-wrap; /* 줄바꿈 허용 (가로 스크롤 방지) */
+    word-break: break-all; /* 긴 단어나 URL도 줄바꿈 */
+    overflow-wrap: break-word;
+    overflow: visible; /* 세로/가로 스크롤 완벽 제거 */
 }
   
 .tiptap .ProseMirror pre code {
     background-color: transparent;
     padding: 0;
     font-size: 0.9em;
+    color: var(--text-accent, #2563eb); /* 시스템 보이스 컬러 */
+    white-space: pre-wrap;
+    word-break: break-all;
+    overflow-wrap: break-word;
+    display: block; /* code 요소가 인라인이라 발생하는 문제 방지 */
 }
   
-/* Callout - Simple Bordered Box */
+/* --- Callout (강력한 작가 메타: 경고/메모) --- */
+/* --- Callout (강조된 시스템 메시지 / 공지창) --- */
 .tiptap .ProseMirror .callout {
-    padding: 1rem;
-    background-color: var(--bg-secondary);
-    border-radius: 8px;
+    position: relative;
+    padding: 1rem 1.2rem;
+    background-color: var(--bg-secondary); 
+    border-radius: 6px;
     border: 1px solid var(--border-default);
-    border-left: 4px solid var(--accent-primary, #7b7efc);
-    margin: 1em 0;
+    border-left: 4px solid var(--accent-primary, #2563eb);
+    margin: 1.5em 0;
+    color: var(--text-primary);
 }
-  
+
 .tiptap .ProseMirror .callout p {
     margin: 0.5em 0;
 }
+
+.tiptap .ProseMirror .callout p:first-child { margin-top: 0; }
+.tiptap .ProseMirror .callout p:last-child { margin-bottom: 0; }
   
-.tiptap .ProseMirror .callout p:first-child {
-    margin-top: 0;
-}
-  
-.tiptap .ProseMirror .callout p:last-child {
-    margin-bottom: 0;
-}
-  
-/* Details / Toggle */
+/* --- Details / Toggle (메타 정보: 설정집/더미 원고) --- */
 .tiptap .ProseMirror details {
     border: none;
     padding: 0;
-    margin: 0.2em 0;
+    margin: 0.5em 0;
     background: transparent;
 }
   
@@ -203,18 +250,32 @@
     font-weight: 500;
     display: flex;
     align-items: center;
+    color: var(--text-primary); /* 깔끔한 텍스트 */
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
 }
-/* Hide default marker in some browsers if we want custom */
+
+.tiptap .ProseMirror summary:hover {
+    background-color: var(--bg-hover, rgba(0, 0, 0, 0.05));
+}
+
 .tiptap .ProseMirror summary::-webkit-details-marker {
     display: none;
 }
   
 .tiptap .ProseMirror details.toggle {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-default);
-    border-radius: 8px;
-    padding: 0.6rem 0.8rem;
-    margin: 0.6rem 0;
+    background: transparent; 
+    border: none; 
+    border-radius: 0;
+    padding: 0;
+    margin: 0.5em 0;
+}
+
+.tiptap .ProseMirror details.toggle > div {
+    padding-left: 1.6rem; /* 들여쓰기로 종속됨을 표현 */
+    margin-top: 0.2rem;
+    color: var(--text-secondary); /* 내용은 살짝 명도 낮춤 */
 }
   
 .tiptap .ProseMirror details.toggle summary::before {
@@ -223,29 +284,33 @@
     margin-right: 0.5rem;
     transform-origin: center;
     transition: transform 0.15s ease;
+    color: var(--text-secondary);
+    font-size: 1.1em;
 }
   
 .tiptap .ProseMirror details.toggle[open] summary::before {
     transform: rotate(90deg);
 }
 
-/* Smart Link Highlight */
+/* --- Smart Link Highlight (Mention/Reference Style) --- */
 .tiptap .ProseMirror .smart-link-highlight {
     cursor: pointer;
-    border-bottom: 2px solid rgba(123, 126, 252, 1); /* Stronger underline */
+    border-radius: 4px;
+    padding: 0.1em 0.35em;
+    background-color: var(--bg-active, rgba(123, 126, 252, 0.1)); /* Subtle background */
+    color: var(--accent-primary, #2563eb);
+    font-weight: 500;
     transition: all 0.2s ease;
     text-decoration: none;
-    color: inherit;
-    position: relative; /* Ensure it catches events */
-    z-index: 99;
+    position: relative;
+    z-index: 10;
 }
 
 .tiptap .ProseMirror .smart-link-highlight:hover {
-    background-color: rgba(123, 126, 252, 0.2); /* Slight background on hover */
-    border-bottom-color: rgba(123, 126, 252, 1);
+    background-color: var(--bg-hover, rgba(123, 126, 252, 0.2));
 }
 
-/* Custom Scrollbar */
+/* --- Custom Scrollbar --- */
 .custom-scrollbar::-webkit-scrollbar {
     height: 6px;
     width: 6px;

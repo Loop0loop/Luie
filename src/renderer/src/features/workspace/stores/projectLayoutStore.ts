@@ -71,6 +71,10 @@ export type ProjectLayoutState = {
     inspectorOpen: boolean;
     sections: ScrivenerSectionsState;
   };
+  editor: {
+    activeChapterId: string | null;
+    scrollYByChapter: Record<string, number>;
+  };
 };
 
 const createDefaultProjectLayoutState = (): ProjectLayoutState => ({
@@ -87,6 +91,10 @@ const createDefaultProjectLayoutState = (): ProjectLayoutState => ({
     sidebarOpen: true,
     inspectorOpen: true,
     sections: { ...DEFAULT_SCRIVENER_SECTIONS },
+  },
+  editor: {
+    activeChapterId: null,
+    scrollYByChapter: {},
   },
 });
 
@@ -175,6 +183,7 @@ const sanitizeProjectLayoutState = (input: unknown): ProjectLayoutState => {
   const mainInput = isRecord(input.main) ? input.main : {};
   const docsInput = isRecord(input.docs) ? input.docs : {};
   const scrivenerInput = isRecord(input.scrivener) ? input.scrivener : {};
+  const editorInput = isRecord(input.editor) ? input.editor : {};
 
   return {
     main: {
@@ -208,6 +217,17 @@ const sanitizeProjectLayoutState = (input: unknown): ProjectLayoutState => {
           ? scrivenerInput.inspectorOpen
           : defaults.scrivener.inspectorOpen,
       sections: sanitizeScrivenerSections(scrivenerInput.sections),
+    },
+    editor: {
+      activeChapterId:
+        typeof editorInput.activeChapterId === "string" || editorInput.activeChapterId === null
+          ? editorInput.activeChapterId
+          : defaults.editor.activeChapterId,
+      scrollYByChapter: isRecord(editorInput.scrollYByChapter)
+        ? (Object.fromEntries(
+            Object.entries(editorInput.scrollYByChapter).filter(([, v]) => typeof v === "number")
+          ) as Record<string, number>)
+        : defaults.editor.scrollYByChapter,
     },
   };
 };
@@ -300,6 +320,14 @@ const mergeProjectLayoutState = (
             ...patchedSections,
           }
         : previous.scrivener.sections,
+    },
+    editor: {
+      ...previous.editor,
+      ...(patch.editor ?? {}),
+      scrollYByChapter: {
+        ...previous.editor?.scrollYByChapter,
+        ...(patch.editor?.scrollYByChapter ?? {}),
+      },
     },
   };
 };
