@@ -41,7 +41,8 @@ export function useEditorConfig() {
   const customFontFamily = useEditorStore((state) => state.customFontFamily);
   const fontSize = useEditorStore((state) => state.fontSize);
   const lineHeight = useEditorStore((state) => state.lineHeight);
-  const wordSpacing = useEditorStore((state) => state.wordSpacing ?? 0.04);
+  const letterSpacing = useEditorStore((state) => state.letterSpacing ?? 0.05);
+  const wordSpacing = useEditorStore((state) => state.wordSpacing ?? 0.06);
 
   useEffect(() => {
     if (fontPreset === "inter") {
@@ -61,6 +62,7 @@ export function useEditorConfig() {
     fontFamilyCss,
     fontSize,
     lineHeight,
+    letterSpacing,
     wordSpacing,
     getFontFamily: () => fontFamilyCss,
   };

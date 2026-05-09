@@ -774,6 +774,7 @@ export interface EditorSettings {
   customFontFamily?: string;
   fontSize: number;
   lineHeight: number;
+  letterSpacing: number;
   wordSpacing: number;
   maxWidth: number;
   spellcheckEnabled: boolean;

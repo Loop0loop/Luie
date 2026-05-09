@@ -64,7 +64,7 @@ function Editor({
 }: EditorProps) {
   const { t } = useTranslation();
   const dialog = useDialog();
-  const { fontFamilyCss, fontSize, lineHeight, wordSpacing, getFontFamily } =
+  const { fontFamilyCss, fontSize, lineHeight, letterSpacing, wordSpacing, getFontFamily } =
     useEditorConfig();
   const entityColors = useEditorStore((state) => state.entityColors);
   const { updateStats } = useEditorStats();
@@ -164,7 +164,7 @@ function Editor({
       editorProps: {
         attributes: {
           class: "tiptap flex-1 flex flex-col outline-none h-full",
-          style: `font-family: ${fontFamilyCss}; font-size: ${fontSize}px; line-height: ${lineHeight}; word-spacing: ${wordSpacing}em; --editor-line-height: ${lineHeight};`,
+          style: `font-family: ${fontFamilyCss}; font-size: ${fontSize}px; line-height: ${lineHeight};`,
         },
         handleClick: handleSmartLinkClick,
       },
@@ -297,6 +297,10 @@ function Editor({
         "--entity-event-color": entityColors?.event ?? "#d97706",
         "--entity-faction-color": entityColors?.faction ?? "#059669",
         "--entity-term-color": entityColors?.term ?? "#7c3aed",
+        // 자간/어간: CSS custom property로 주입 → editorProps dep array 무관하게 reactive
+        "--editor-letter-spacing": `${letterSpacing}em`,
+        "--editor-word-spacing": `${wordSpacing}em`,
+        "--editor-line-height": String(lineHeight),
       } as React.CSSProperties}
     >
       {!hideToolbar && (

@@ -16,9 +16,11 @@ interface EditorTabProps {
   t: TFunction;
   localFontSize: number;
   localLineHeight: number;
+  localLetterSpacing: number;
   localWordSpacing: number;
   onSetLocalFontSize: (value: number) => void;
   onSetLocalLineHeight: (value: number) => void;
+  onSetLocalLetterSpacing: (value: number) => void;
   onSetLocalWordSpacing: (value: number) => void;
 }
 
@@ -26,9 +28,11 @@ export const EditorTab = memo(function EditorTab({
   t,
   localFontSize,
   localLineHeight,
+  localLetterSpacing,
   localWordSpacing,
   onSetLocalFontSize,
   onSetLocalLineHeight,
+  onSetLocalLetterSpacing,
   onSetLocalWordSpacing,
 }: EditorTabProps) {
   const {
@@ -328,6 +332,44 @@ export const EditorTab = memo(function EditorTab({
                 );
                 onSetLocalLineHeight(next);
                 onApplySettings({ lineHeight: next });
+              }}
+              className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h3 className="text-base font-semibold text-fg">
+              {t("settings.section.letterSpacing", "자간")}
+            </h3>
+            <p className="text-xs text-muted mt-0.5">
+              {t("settings.letterSpacing.description", "글자 사이 간격을 조절합니다")}
+            </p>
+          </div>
+          <div className="flex items-center gap-3 bg-surface border border-border rounded-lg p-1">
+            <button
+              onClick={() => {
+                const next = Math.max(0, Number((localLetterSpacing - 0.01).toFixed(2)));
+                onSetLocalLetterSpacing(next);
+                onApplySettings({ letterSpacing: next });
+              }}
+              className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+            <span className="text-sm font-medium text-fg w-14 text-center">
+              {localLetterSpacing.toFixed(2)}em
+            </span>
+            <button
+              onClick={() => {
+                const next = Math.min(0.3, Number((localLetterSpacing + 0.01).toFixed(2)));
+                onSetLocalLetterSpacing(next);
+                onApplySettings({ letterSpacing: next });
               }}
               className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
             >

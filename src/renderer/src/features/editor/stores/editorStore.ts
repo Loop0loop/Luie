@@ -14,6 +14,7 @@ export type { EditorSettings, EditorTheme, FontFamily, FontPreset };
 import {
   DEFAULT_EDITOR_FONT_SIZE,
   DEFAULT_EDITOR_LINE_HEIGHT,
+  DEFAULT_EDITOR_LETTER_SPACING,
   DEFAULT_EDITOR_WORD_SPACING,
   DEFAULT_EDITOR_MAX_WIDTH,
   DEFAULT_EDITOR_THEME,
@@ -41,6 +42,7 @@ const DEFAULT_SETTINGS: EditorSettings = {
   customFontFamily: undefined,
   fontSize: DEFAULT_EDITOR_FONT_SIZE,
   lineHeight: DEFAULT_EDITOR_LINE_HEIGHT,
+  letterSpacing: DEFAULT_EDITOR_LETTER_SPACING,
   wordSpacing: DEFAULT_EDITOR_WORD_SPACING,
   maxWidth: DEFAULT_EDITOR_MAX_WIDTH,
   spellcheckEnabled: true,
@@ -86,6 +88,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       lineHeight: current.lineHeight,
       maxWidth: current.maxWidth,
       spellcheckEnabled: current.spellcheckEnabled ?? true,
+      letterSpacing: current.letterSpacing ?? DEFAULT_EDITOR_LETTER_SPACING,
       wordSpacing: current.wordSpacing ?? DEFAULT_EDITOR_WORD_SPACING,
       theme: current.theme,
       themeTemp: current.themeTemp ?? DEFAULT_EDITOR_THEME_TEMP,

@@ -164,9 +164,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                   t={t}
                   localFontSize={localFontSize}
                   localLineHeight={localLineHeight}
+                  localLetterSpacing={settings.localLetterSpacing}
                   localWordSpacing={settings.localWordSpacing}
                   onSetLocalFontSize={setLocalFontSize}
                   onSetLocalLineHeight={setLocalLineHeight}
+                  onSetLocalLetterSpacing={settings.setLocalLetterSpacing}
                   onSetLocalWordSpacing={settings.setLocalWordSpacing}
                 />
               )}

@@ -76,7 +76,8 @@ const DefaultToolbar = ({
   const { t } = useTranslation();
   const fontSize = useEditorStore((state) => state.fontSize);
   const setFontSize = useEditorStore((state) => state.setFontSize);
-  const wordSpacing = useEditorStore((state) => state.wordSpacing ?? 0.04);
+  const letterSpacing = useEditorStore((state) => state.letterSpacing ?? 0.05);
+  const wordSpacing = useEditorStore((state) => state.wordSpacing ?? 0.06);
   const updateSettings = useEditorStore((state) => state.updateSettings);
 
   return (
@@ -107,7 +108,29 @@ const DefaultToolbar = ({
 
         <Divider />
 
-        {/* Word Spacing */}
+        {/* Letter Spacing (자간) */}
+        <ToggleButton
+          onClick={() => updateSettings({ letterSpacing: Math.max(0, Number((letterSpacing - 0.01).toFixed(2))) })}
+          title={t("toolbar.tooltip.letterSpacingDecrease", "자간 줄이기")}
+        >
+          <span style={{ fontSize: "var(--editor-toolbar-plus-minus-font-size)" }}>-</span>
+        </ToggleButton>
+        <span
+          className="text-xs font-medium text-muted w-14 text-center select-none cursor-default"
+          title={t("toolbar.tooltip.letterSpacing", "자간")}
+        >
+          자간 {letterSpacing.toFixed(2)}
+        </span>
+        <ToggleButton
+          onClick={() => updateSettings({ letterSpacing: Math.min(0.3, Number((letterSpacing + 0.01).toFixed(2))) })}
+          title={t("toolbar.tooltip.letterSpacingIncrease", "자간 늘리기")}
+        >
+          <span style={{ fontSize: "var(--editor-toolbar-plus-minus-font-size)" }}>+</span>
+        </ToggleButton>
+
+        <Divider />
+
+        {/* Word Spacing (어간) */}
         <ToggleButton
           onClick={() => updateSettings({ wordSpacing: Math.max(0, Number((wordSpacing - 0.01).toFixed(2))) })}
           title={t("toolbar.tooltip.wordSpacingDecrease", "어간 줄이기")}
@@ -213,7 +236,8 @@ const DocsToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
   const { t } = useTranslation();
   const fontSize = useEditorStore((state) => state.fontSize);
   const setFontSize = useEditorStore((state) => state.setFontSize);
-  const wordSpacing = useEditorStore((state) => state.wordSpacing ?? 0.04);
+  const letterSpacing = useEditorStore((state) => state.letterSpacing ?? 0.05);
+  const wordSpacing = useEditorStore((state) => state.wordSpacing ?? 0.06);
   const updateSettings = useEditorStore((state) => state.updateSettings);
 
   return (
@@ -237,7 +261,16 @@ const DocsToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
 
       <div className="w-px h-5 bg-border mx-2" />
 
-      {/* Word Spacing */}
+      {/* Letter Spacing (자간) */}
+      <div className="flex items-center border border-border/50 rounded overflow-hidden h-7 bg-background" title={t("toolbar.tooltip.letterSpacing", "자간")}>
+        <button onClick={() => updateSettings({ letterSpacing: Math.max(0, Number((letterSpacing - 0.01).toFixed(2))) })} className="px-2 hover:bg-hover text-xs">-</button>
+        <span className="w-16 text-center text-xs text-muted select-none">자{letterSpacing.toFixed(2)}</span>
+        <button onClick={() => updateSettings({ letterSpacing: Math.min(0.3, Number((letterSpacing + 0.01).toFixed(2))) })} className="px-2 hover:bg-hover text-xs">+</button>
+      </div>
+
+      <div className="w-px h-5 bg-border mx-2" />
+
+      {/* Word Spacing (어간) */}
       <div className="flex items-center border border-border/50 rounded overflow-hidden h-7 bg-background" title={t("toolbar.tooltip.wordSpacing", "어간")}>
         <button onClick={() => updateSettings({ wordSpacing: Math.max(0, Number((wordSpacing - 0.01).toFixed(2))) })} className="px-2 hover:bg-hover text-xs">-</button>
         <span className="w-16 text-center text-xs text-muted select-none">어{wordSpacing.toFixed(2)}</span>
@@ -361,7 +394,8 @@ const ScrivenerToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
   const { t } = useTranslation();
   const fontSize = useEditorStore((state) => state.fontSize);
   const setFontSize = useEditorStore((state) => state.setFontSize);
-  const wordSpacing = useEditorStore((state) => state.wordSpacing ?? 0.04);
+  const letterSpacing = useEditorStore((state) => state.letterSpacing ?? 0.05);
+  const wordSpacing = useEditorStore((state) => state.wordSpacing ?? 0.06);
   const updateSettings = useEditorStore((state) => state.updateSettings);
 
   return (
@@ -375,7 +409,16 @@ const ScrivenerToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
 
       <div className="w-px h-4 bg-border mx-1" />
 
-      {/* Word Spacing */}
+      {/* Letter Spacing (자간) */}
+      <div className="flex items-center gap-1 bg-background border border-border rounded px-1" title={t("toolbar.tooltip.letterSpacing", "자간")}>
+        <button onClick={() => updateSettings({ letterSpacing: Math.max(0, Number((letterSpacing - 0.01).toFixed(2))) })} className="hover:text-accent text-xs">-</button>
+        <span className="text-xs w-10 text-center text-muted select-none">자{letterSpacing.toFixed(2)}</span>
+        <button onClick={() => updateSettings({ letterSpacing: Math.min(0.3, Number((letterSpacing + 0.01).toFixed(2))) })} className="hover:text-accent text-xs">+</button>
+      </div>
+
+      <div className="w-px h-4 bg-border mx-1" />
+
+      {/* Word Spacing (어간) */}
       <div className="flex items-center gap-1 bg-background border border-border rounded px-1" title={t("toolbar.tooltip.wordSpacing", "어간")}>
         <button onClick={() => updateSettings({ wordSpacing: Math.max(0, Number((wordSpacing - 0.01).toFixed(2))) })} className="hover:text-accent text-xs">-</button>
         <span className="text-xs w-10 text-center text-muted select-none">어{wordSpacing.toFixed(2)}</span>

@@ -40,14 +40,16 @@
     color: var(--text-primary);
 
     /* ── 타이포그래피 핵심 수치 ── */
-    /* font-size, line-height, word-spacing 은 editorProps.attributes.style
-       (inline)로 주입된다. CSS 하드코딩 시 inline style과 충돌하므로 제거. */
+    /* font-size, line-height 는 editorProps.attributes.style (inline)로 주입.
+       letter-spacing, word-spacing 은 Editor 외부 컨테이너에서
+       CSS custom property로 주입 → store 변경 시 즉시 반영(reactive). */
     font-size: 1rem;
-    letter-spacing: 0.02em;
+    letter-spacing: var(--editor-letter-spacing, 0.05em);
+    word-spacing: var(--editor-word-spacing, 0.06em);
     word-break: keep-all;
     overflow-wrap: break-word;
 
-    /* 커서(caret)를 accent 색상으로 — stark white/black보다 덜 자극적 */
+    /* 커서(caret)를 accent 색상으로 */
     caret-color: var(--accent-bg, #2563eb);
 
     /* ── 렌더링 품질 ── */
