@@ -15,6 +15,7 @@ import { DraggableItem } from "@shared/ui/DraggableItem";
 import type { DocsLayoutPanelTab } from "@shared/constants/layoutSizing";
 import type { DragItemType } from "@shared/ui/GlobalDragContext";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { useAnimatedPresence } from "@renderer/features/workspace/hooks/useAnimatedPresence";
 
 type RailTabConfig = {
   dataType: DragItemType;
@@ -87,15 +88,21 @@ export function GoogleDocsPanelRail({
 }: GoogleDocsPanelRailProps) {
   const { t } = useTranslation();
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
+  const { isExiting, shouldRender } = useAnimatedPresence(isOpen, {
+    durationMs: 180,
+    enabled: enableAnimations,
+  });
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
 
   return (
     <div
       className={cn(
         "z-10 flex h-full w-14 shrink-0 flex-col items-center gap-4 overflow-hidden border-l border-border bg-background py-4",
         enableAnimations
-          ? "transition-all duration-300 ease-in-out"
+          ? isExiting
+            ? "animate-out slide-out-to-right fade-out duration-180"
+            : "animate-in slide-in-from-right fade-in duration-180"
           : "transition-none",
       )}
     >

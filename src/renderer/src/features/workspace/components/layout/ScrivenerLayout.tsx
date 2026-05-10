@@ -13,6 +13,7 @@ import InspectorPanel from "@renderer/features/editor/components/InspectorPanel"
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useShallow } from "zustand/react/shallow";
 import { useEditorStatsStore } from "@renderer/features/editor/stores/editorStatsStore";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import WikiDetailView from "@renderer/features/research/components/wiki/WikiDetailView";
 import EventDetailView from "@renderer/features/research/components/event/EventDetailView";
 import FactionDetailView from "@renderer/features/research/components/faction/FactionDetailView";
@@ -21,7 +22,14 @@ import MemoMainView from "@renderer/features/research/components/memo/MemoMainVi
 import AnalysisSection from "@renderer/features/research/components/AnalysisSection";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { Menu, ChevronRight } from "lucide-react";
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, type GroupImperativeHandle, type Layout } from "react-resizable-panels";
+import {
+  Panel,
+  Group as PanelGroup,
+  Separator as PanelResizeHandle,
+  type GroupImperativeHandle,
+  type Layout,
+  type PanelImperativeHandle,
+} from "react-resizable-panels";
 import {
   getLayoutSurfaceConfig,
   getLayoutSurfaceDefaultRatio,
@@ -37,6 +45,11 @@ import {
   groupLayoutMatchesPanels,
 } from "@renderer/features/workspace/utils/panelGroupLayout";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
+import {
+  useAnimatedPresence,
+  useCollapsingPanelAnimation,
+  useExpandingPanelAnimation,
+} from "@renderer/features/workspace/hooks/useAnimatedPresence";
 
 interface ScrivenerLayoutProps {
   children?: ReactNode;
@@ -83,7 +96,24 @@ export default function ScrivenerLayout({
   );
   const editorSplitGroupRef = useRef<GroupImperativeHandle | null>(null);
   const scrivenerLayoutGroupRef = useRef<HTMLDivElement | null>(null);
+  const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
+  const inspectorPanelRef = useRef<PanelImperativeHandle | null>(null);
   const previousPanelCountRef = useRef(panels.length);
+  const enableAnimations = useEditorStore((state) => state.enableAnimations);
+  const {
+    isEntering: isSidebarEntering,
+    isExiting: isSidebarClosing,
+    shouldRender: shouldRenderSidebar,
+  } = useAnimatedPresence(isSidebarOpen, {
+    enabled: enableAnimations,
+  });
+  const {
+    isEntering: isInspectorEntering,
+    isExiting: isInspectorClosing,
+    shouldRender: shouldRenderInspector,
+  } = useAnimatedPresence(isInspectorOpen, {
+    enabled: enableAnimations,
+  });
   const handleEditorSplitLayoutChanged = useCallback(
     (layout: Layout) => {
       panels.forEach((panel, panelIndex) => {
@@ -116,6 +146,28 @@ export default function ScrivenerLayout({
   const inspectorRatio =
     layoutSurfaceRatios["scrivener.inspector"] ??
     getLayoutSurfaceDefaultRatio("scrivener.inspector");
+  useCollapsingPanelAnimation(sidebarPanelRef, isSidebarClosing, {
+    enabled: enableAnimations,
+  });
+  useExpandingPanelAnimation(
+    sidebarPanelRef,
+    isSidebarEntering,
+    toPanelPercentSize(binderRatio),
+    {
+      enabled: enableAnimations,
+    },
+  );
+  useCollapsingPanelAnimation(inspectorPanelRef, isInspectorClosing, {
+    enabled: enableAnimations,
+  });
+  useExpandingPanelAnimation(
+    inspectorPanelRef,
+    isInspectorEntering,
+    toPanelPercentSize(inspectorRatio),
+    {
+      enabled: enableAnimations,
+    },
+  );
   const scrivenerLayoutGroupWidth = useElementWidth(scrivenerLayoutGroupRef);
   const binderSize = getResponsivePanelSize(
     scrivenerLayoutGroupWidth,
@@ -208,19 +260,33 @@ export default function ScrivenerLayout({
         >
 
           {/* Pane 1: Binder (Sidebar) */}
-          {isSidebarOpen && (
+          {shouldRenderSidebar && (
             <>
               <Panel
                 id="sidebar"
+                panelRef={sidebarPanelRef}
+                collapsible
+                collapsedSize={0}
+                data-panel-animated="true"
                 defaultSize={toPanelPercentSize(binderRatio)}
                 minSize={binderSize.minSize}
                 maxSize={binderSize.maxSize}
-                className="bg-panel border-r border-border flex flex-col shrink-0 min-w-0"
+                className={`bg-panel border-r border-border flex flex-col shrink-0 min-w-0 overflow-hidden ${
+                  enableAnimations
+                    ? isSidebarClosing
+                      ? "animate-out slide-out-to-left fade-out duration-200"
+                      : "animate-in slide-in-from-left fade-in duration-200"
+                    : ""
+                }`}
               >
                 {sidebar}
               </Panel>
 
-              <PanelResizeHandle data-separator-feature="scrivener.binder" className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative">
+              <PanelResizeHandle data-separator-feature="scrivener.binder" className={`w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative ${
+                enableAnimations && isSidebarClosing
+                  ? "opacity-0 transition-opacity duration-200"
+                  : ""
+              }`}>
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
             </>
@@ -236,7 +302,7 @@ export default function ScrivenerLayout({
             <div className="h-8 bg-surface border-b border-border flex items-center px-4 justify-between shrink-0">
               <div className="flex items-center gap-2 overflow-hidden">
                 {/* Floating Sidebar Toggle when closed */}
-                {!isSidebarOpen && (
+                {!shouldRenderSidebar && (
                   <button
                     onClick={() => setRegionOpen("leftSidebar", true)}
                     className="p-1 rounded hover:bg-surface-hover text-muted-foreground transition-colors mr-2 shrink-0"
@@ -250,7 +316,7 @@ export default function ScrivenerLayout({
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                {!isInspectorOpen && (
+                {!shouldRenderInspector && (
                   <button
                     onClick={() => setRegionOpen("rightPanel", true)}
                     className="p-1 rounded hover:bg-surface-hover text-muted-foreground transition-colors shrink-0"
@@ -318,18 +384,32 @@ export default function ScrivenerLayout({
           </Panel>
 
           {/* Pane 3: Inspector (Right) */}
-          {isInspectorOpen && (
+          {shouldRenderInspector && (
             <>
-              <PanelResizeHandle data-separator-feature="scrivener.inspector" className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative">
+              <PanelResizeHandle data-separator-feature="scrivener.inspector" className={`w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative ${
+                enableAnimations && isInspectorClosing
+                  ? "opacity-0 transition-opacity duration-200"
+                  : ""
+              }`}>
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
 
               <Panel
                 id="inspector"
+                panelRef={inspectorPanelRef}
+                collapsible
+                collapsedSize={0}
+                data-panel-animated="true"
                 defaultSize={toPanelPercentSize(inspectorRatio)}
                 minSize={inspectorSize.minSize}
                 maxSize={inspectorSize.maxSize}
-                className="bg-panel flex flex-col shrink-0 min-w-0"
+                className={`bg-panel flex flex-col shrink-0 min-w-0 overflow-hidden ${
+                  enableAnimations
+                    ? isInspectorClosing
+                      ? "animate-out slide-out-to-right fade-out duration-200"
+                      : "animate-in slide-in-from-right fade-in duration-200"
+                    : ""
+                }`}
               >
                 {/* Floating Toggle wrapper */}
                 <div className="flex items-center justify-between border-b border-border bg-surface px-2 shadow-sm min-h-[32px] shrink-0">
@@ -352,7 +432,7 @@ export default function ScrivenerLayout({
             </>
           )}
 
-          {!isSidebarOpen && !isInspectorOpen && (
+          {!shouldRenderSidebar && !shouldRenderInspector && (
             <Panel
               id="scrivener-layout-placeholder"
               defaultSize={0}

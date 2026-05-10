@@ -11,6 +11,7 @@ import {
   Group as PanelGroup,
   Separator as PanelResizeHandle,
   type Layout,
+  type PanelImperativeHandle,
 } from "react-resizable-panels";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useShallow } from "zustand/react/shallow";
@@ -30,6 +31,12 @@ import {
   useLayoutPersist,
 } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
+import {
+  useAnimatedPresence,
+  useCollapsingPanelAnimation,
+  useExpandingPanelAnimation,
+} from "@renderer/features/workspace/hooks/useAnimatedPresence";
+import { SidebarCollapseStrip } from "@renderer/features/workspace/components/SidebarCollapseStrip";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -70,6 +77,8 @@ export default function MainLayout({
   const mainSidebarConfig = getLayoutSurfaceConfig("default.sidebar");
   const mainContextConfig = getLayoutSurfaceConfig("default.panel");
   const mainLayoutGroupRef = useRef<HTMLDivElement | null>(null);
+  const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
+  const contextPanelRef = useRef<PanelImperativeHandle | null>(null);
   const mainLayoutGroupWidth = useElementWidth(mainLayoutGroupRef);
   const mainSidebarSize = getResponsivePanelSize(
     mainLayoutGroupWidth,
@@ -97,10 +106,20 @@ export default function MainLayout({
 
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
 
-  const [localSidebarOpen, setLocalSidebarOpen] = useState(isSidebarOpen);
-  const [localContextOpen, setLocalContextOpen] = useState(isContextOpen);
-  const [isSidebarClosing, setIsSidebarClosing] = useState(false);
-  const [isContextClosing, setIsContextClosing] = useState(false);
+  const {
+    isEntering: isSidebarEntering,
+    isExiting: isSidebarClosing,
+    shouldRender: shouldRenderSidebar,
+  } = useAnimatedPresence(isSidebarOpen, {
+    enabled: enableAnimations,
+  });
+  const {
+    isEntering: isContextEntering,
+    isExiting: isContextClosing,
+    shouldRender: shouldRenderContext,
+  } = useAnimatedPresence(isContextOpen, {
+    enabled: enableAnimations,
+  });
 
   const sidebarRatio =
     layoutSurfaceRatios["default.sidebar"] ??
@@ -115,72 +134,43 @@ export default function MainLayout({
   const [contextDefaultSize, setContextDefaultSize] = useState(() =>
     toPanelPercentSize(contextRatio),
   );
+  useCollapsingPanelAnimation(sidebarPanelRef, isSidebarClosing, {
+    enabled: enableAnimations,
+  });
+  useExpandingPanelAnimation(sidebarPanelRef, isSidebarEntering, sidebarDefaultSize, {
+    enabled: enableAnimations,
+  });
+  useCollapsingPanelAnimation(contextPanelRef, isContextClosing, {
+    enabled: enableAnimations,
+  });
+  useExpandingPanelAnimation(contextPanelRef, isContextEntering, contextDefaultSize, {
+    enabled: enableAnimations,
+  });
 
   useEffect(() => {
-    if (!isSidebarOpen || localSidebarOpen) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLocalSidebarOpen(true);
-    setIsSidebarClosing(false);
-  }, [isSidebarOpen, localSidebarOpen]);
-
-  useEffect(() => {
-    if (!isSidebarOpen && localSidebarOpen) {
-      if (enableAnimations) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setIsSidebarClosing(true);
-        const timer = setTimeout(() => {
-          setLocalSidebarOpen(false);
-          setIsSidebarClosing(false);
-        }, 200);
-        return () => clearTimeout(timer);
-      } else {
-        setLocalSidebarOpen(false);
-        return undefined;
-      }
-    }
-    return undefined;
-  }, [isSidebarOpen, enableAnimations, localSidebarOpen]);
-
-  useEffect(() => {
-    if (!isContextOpen || localContextOpen) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLocalContextOpen(true);
-    setIsContextClosing(false);
-  }, [isContextOpen, localContextOpen]);
-
-  useEffect(() => {
-    if (localSidebarOpen) return;
+    if (shouldRenderSidebar) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSidebarDefaultSize(toPanelPercentSize(sidebarRatio));
-  }, [localSidebarOpen, sidebarRatio]);
+  }, [shouldRenderSidebar, sidebarRatio]);
 
   useEffect(() => {
-    if (localContextOpen) return;
+    if (shouldRenderContext) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setContextDefaultSize(toPanelPercentSize(contextRatio));
-  }, [localContextOpen, contextRatio]);
-
-  useEffect(() => {
-    if (!isContextOpen && localContextOpen) {
-      if (enableAnimations) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setIsContextClosing(true);
-        const timer = setTimeout(() => {
-          setLocalContextOpen(false);
-          setIsContextClosing(false);
-        }, 200);
-        return () => clearTimeout(timer);
-      } else {
-        setLocalContextOpen(false);
-        return undefined;
-      }
-    }
-    return undefined;
-  }, [isContextOpen, enableAnimations, localContextOpen]);
+  }, [shouldRenderContext, contextRatio]);
 
   return (
     <div className="flex flex-col h-screen bg-app text-fg">
       <WindowBar />
+
+      <div className="relative flex-1 min-h-0">
+        {!shouldRenderSidebar && sidebar && (
+          <SidebarCollapseStrip
+            onExpand={() => setRegionOpen("leftSidebar", true)}
+          >
+            {sidebar}
+          </SidebarCollapseStrip>
+        )}
 
       <PanelGroup
         id="main-layout-group"
@@ -190,9 +180,13 @@ export default function MainLayout({
         onLayoutChanged={onLayoutChanged}
       >
         {/* Sidebar */}
-        {localSidebarOpen && (
+        {shouldRenderSidebar && (
           <Panel
             id="sidebar-panel"
+            panelRef={sidebarPanelRef}
+            collapsible
+            collapsedSize={0}
+            data-panel-animated="true"
             defaultSize={sidebarDefaultSize}
             minSize={mainSidebarSize.minSize}
             maxSize={mainSidebarSize.maxSize}
@@ -208,7 +202,7 @@ export default function MainLayout({
           </Panel>
         )}
 
-        {localSidebarOpen && (
+        {shouldRenderSidebar && (
           <PanelResizeHandle
             data-separator-feature="default.sidebar"
             className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"
@@ -287,7 +281,7 @@ export default function MainLayout({
           <StatusFooter onOpenExport={onOpenExport} />
         </Panel>
 
-        {localContextOpen && (
+        {shouldRenderContext && (
           <PanelResizeHandle
             data-separator-feature="default.panel"
             className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"
@@ -295,9 +289,13 @@ export default function MainLayout({
         )}
 
         {/* Context Panel */}
-        {localContextOpen && (
+        {shouldRenderContext && (
           <Panel
             id="context-panel"
+            panelRef={contextPanelRef}
+            collapsible
+            collapsedSize={0}
+            data-panel-animated="true"
             defaultSize={contextDefaultSize}
             minSize={mainContextSize.minSize}
             maxSize={mainContextSize.maxSize}
@@ -313,7 +311,7 @@ export default function MainLayout({
           </Panel>
         )}
 
-        {!localSidebarOpen && !localContextOpen && (
+        {!shouldRenderSidebar && !shouldRenderContext && (
           <Panel
             id="main-layout-placeholder"
             defaultSize={0}
@@ -323,6 +321,7 @@ export default function MainLayout({
           />
         )}
       </PanelGroup>
+      </div>
     </div>
   );
 }

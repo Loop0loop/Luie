@@ -501,6 +501,12 @@ html[data-layout-restoring="true"] *::after {
   transition-duration: 0ms !important;
 }
 
+html[data-animations="on"] [data-panel][data-panel-animated="true"] {
+  transition-duration: 200ms;
+  transition-property: flex-basis, flex-grow, width, max-width;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
