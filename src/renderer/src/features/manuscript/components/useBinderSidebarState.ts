@@ -5,13 +5,19 @@ import {
   getEditorLayoutPanelSurface,
   getLayoutSurfaceConfig,
   getLayoutSurfaceDefaultRatio,
+  type LayoutSurfaceId,
 } from "@shared/constants/layoutSizing";
 import { useLayoutSurfaceResizeCommit } from "@renderer/features/workspace/hooks/useLayoutSurfaceResizeCommit";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import {
+  sanitizePersistedDocsRightTab,
+  useProjectLayoutStore,
+} from "@renderer/features/workspace/stores/projectLayoutStore";
 import { BINDER_VALID_TABS, type BinderTab } from "./binderSidebar.shared";
 
-export function useBinderSidebarState() {
+export function useBinderSidebarState(projectId?: string | null) {
   const {
+    isSidebarOpen,
     docsRightTab,
     rightPanelOpen,
     rightPanelActiveTab,
@@ -23,8 +29,10 @@ export function useBinderSidebarState() {
     layoutSurfaceRatios,
     setLayoutSurfaceRatio,
     setFocusedClosableTarget,
+    uiHasHydrated,
   } = useUIStore(
     useShallow((state) => ({
+      isSidebarOpen: state.regions.leftSidebar.open,
       docsRightTab: state.docsRightTab,
       rightPanelOpen: state.regions.rightPanel.open,
       rightPanelActiveTab: state.regions.rightPanel.activeTab,
@@ -36,7 +44,26 @@ export function useBinderSidebarState() {
       layoutSurfaceRatios: state.layoutSurfaceRatios,
       setLayoutSurfaceRatio: state.setLayoutSurfaceRatio,
       setFocusedClosableTarget: state.setFocusedClosableTarget,
+      uiHasHydrated: state.hasHydrated,
     })),
+  );
+  const projectLayoutHasHydrated = useProjectLayoutStore(
+    (state) => state.hasHydrated,
+  );
+  const upsertProjectLayout = useProjectLayoutStore(
+    (state) => state.upsertProjectLayout,
+  );
+
+  const persistLayoutSurfaceRatio = useCallback(
+    (surface: LayoutSurfaceId, ratio: number) => {
+      if (!projectId || !uiHasHydrated || !projectLayoutHasHydrated) return;
+      upsertProjectLayout(projectId, {
+        layoutSurfaceRatios: {
+          [surface]: ratio,
+        } as Record<LayoutSurfaceId, number>,
+      });
+    },
+    [projectId, projectLayoutHasHydrated, uiHasHydrated, upsertProjectLayout],
   );
 
   const activeTabCandidate = rightPanelOpen
@@ -58,38 +85,69 @@ export function useBinderSidebarState() {
     [closeRightPanel, openRightPanelTab],
   );
 
+  const setRailOpen = useCallback(
+    (open: boolean) => {
+      setRegionOpen("rightRail", open);
+      if (!projectId || !uiHasHydrated || !projectLayoutHasHydrated) return;
+      upsertProjectLayout(projectId, {
+        docs: {
+          sidebarOpen: isSidebarOpen,
+          binderBarOpen: open,
+          rightTab: sanitizePersistedDocsRightTab(activeRightTab),
+        },
+      });
+    },
+    [
+      activeRightTab,
+      isSidebarOpen,
+      projectId,
+      projectLayoutHasHydrated,
+      setRegionOpen,
+      uiHasHydrated,
+      upsertProjectLayout,
+    ],
+  );
+
   const resizeHandlers = {
     character: useLayoutSurfaceResizeCommit(
       getEditorLayoutPanelSurface("character"),
       setLayoutSurfaceRatio,
+      { onCommit: persistLayoutSurfaceRatio },
     ),
     event: useLayoutSurfaceResizeCommit(
       getEditorLayoutPanelSurface("event"),
       setLayoutSurfaceRatio,
+      { onCommit: persistLayoutSurfaceRatio },
     ),
     faction: useLayoutSurfaceResizeCommit(
       getEditorLayoutPanelSurface("faction"),
       setLayoutSurfaceRatio,
+      { onCommit: persistLayoutSurfaceRatio },
     ),
     world: useLayoutSurfaceResizeCommit(
       getEditorLayoutPanelSurface("world"),
       setLayoutSurfaceRatio,
+      { onCommit: persistLayoutSurfaceRatio },
     ),
     scrap: useLayoutSurfaceResizeCommit(
       getEditorLayoutPanelSurface("scrap"),
       setLayoutSurfaceRatio,
+      { onCommit: persistLayoutSurfaceRatio },
     ),
     analysis: useLayoutSurfaceResizeCommit(
       getEditorLayoutPanelSurface("analysis"),
       setLayoutSurfaceRatio,
+      { onCommit: persistLayoutSurfaceRatio },
     ),
     snapshot: useLayoutSurfaceResizeCommit(
       getEditorLayoutPanelSurface("snapshot"),
       setLayoutSurfaceRatio,
+      { onCommit: persistLayoutSurfaceRatio },
     ),
     trash: useLayoutSurfaceResizeCommit(
       getEditorLayoutPanelSurface("trash"),
       setLayoutSurfaceRatio,
+      { onCommit: persistLayoutSurfaceRatio },
     ),
   } satisfies Record<BinderTab, (panelSize: PanelSize) => void>;
 
@@ -125,7 +183,7 @@ export function useBinderSidebarState() {
       isRightRailOpen,
       savedRatio,
       setActiveRightTab,
-      setRegionOpen,
+      setRailOpen,
       widthConfig,
     }),
     [
@@ -134,7 +192,7 @@ export function useBinderSidebarState() {
       isRightRailOpen,
       savedRatio,
       setActiveRightTab,
-      setRegionOpen,
+      setRailOpen,
       widthConfig,
     ],
   );

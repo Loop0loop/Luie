@@ -104,6 +104,8 @@ describe("projectLayoutStore persist rehydrate", () => {
             sections: {
               manuscript: true,
               characters: true,
+              events: false,
+              factions: false,
               world: false,
               scrap: false,
               snapshots: false,
@@ -143,12 +145,58 @@ describe("projectLayoutStore persist rehydrate", () => {
             sections: {
               manuscript: true,
               characters: false,
+              events: true,
+              factions: false,
               world: true,
               scrap: false,
               snapshots: false,
               analysis: true,
               trash: false,
             },
+          },
+          editor: {
+            activeChapterId: null,
+            scrollYByChapter: {},
+          },
+          workspace: {
+            panels: [
+              {
+                id: "research-character",
+                content: {
+                  type: "research",
+                  tab: "character",
+                },
+                size: 64,
+              },
+              {
+                id: "research-faction",
+                content: {
+                  type: "research",
+                  tab: "faction",
+                },
+                size: 42,
+              },
+            ],
+            researchPanelSizes: {
+              character: 64,
+              event: 51,
+              faction: 42,
+              world: 57,
+              scrap: 46,
+              analysis: 59,
+            },
+          },
+          sidebarWidths: {
+            characterSidebar: 336,
+            docsBinder: 312,
+            factionSidebar: 348,
+            docsWorld: 640,
+          },
+          layoutSurfaceRatios: {
+            "docs.sidebar": 21,
+            "docs.panel.character": 39,
+            "docs.panel.faction": 41,
+            "docs.panel.world": 42,
           },
         },
       },
@@ -157,9 +205,96 @@ describe("projectLayoutStore persist rehydrate", () => {
     const state = module.useProjectLayoutStore
       .getState()
       .getProjectLayout("project-1");
+    expect(module.useProjectLayoutStore.getState().hasHydrated).toBe(true);
     expect(state.main.sidebarOpen).toBe(false);
     expect(state.docs.rightTab).toBe("world");
+    expect(state.scrivener.sections.events).toBe(true);
     expect(state.scrivener.sections.analysis).toBe(true);
+    expect(state.sidebarWidths.characterSidebar).toBe(336);
+    expect(state.sidebarWidths.docsBinder).toBe(312);
+    expect(state.sidebarWidths.factionSidebar).toBe(348);
+    expect(state.layoutSurfaceRatios["docs.panel.character"]).toBe(39);
+    expect(state.layoutSurfaceRatios["docs.panel.faction"]).toBe(41);
+    expect(state.layoutSurfaceRatios["docs.panel.world"]).toBe(42);
+    expect(state.workspace.panels).toEqual([
+      {
+        id: "research-character",
+        content: {
+          type: "research",
+          tab: "character",
+        },
+        size: 64,
+      },
+      {
+        id: "research-faction",
+        content: {
+          type: "research",
+          tab: "faction",
+        },
+        size: 42,
+      },
+    ]);
+    expect(state.workspace.researchPanelSizes).toEqual({
+      character: 64,
+      event: 51,
+      faction: 42,
+      world: 57,
+      scrap: 46,
+      analysis: 59,
+    });
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("rehydrates partial research panel sizes without resetting project layout", async () => {
+    const { module, warn } = await loadProjectLayoutStore({
+      byProject: {
+        "project-1": {
+          main: {
+            sidebarOpen: true,
+            contextOpen: true,
+          },
+          docs: {
+            sidebarOpen: false,
+            binderBarOpen: false,
+            rightTab: "character",
+          },
+          scrivener: {
+            sidebarOpen: true,
+            inspectorOpen: true,
+            sections: {
+              manuscript: true,
+              characters: true,
+              events: false,
+              factions: false,
+              world: false,
+              scrap: false,
+              snapshots: false,
+              analysis: false,
+              trash: false,
+            },
+          },
+          editor: {
+            activeChapterId: null,
+            scrollYByChapter: {},
+          },
+          workspace: {
+            panels: [],
+            researchPanelSizes: {
+              character: 64,
+            },
+          },
+          sidebarWidths: {},
+          layoutSurfaceRatios: {},
+        },
+      },
+    });
+
+    const state = module.useProjectLayoutStore
+      .getState()
+      .getProjectLayout("project-1");
+    expect(state.docs.sidebarOpen).toBe(false);
+    expect(state.docs.binderBarOpen).toBe(false);
+    expect(state.workspace.researchPanelSizes).toEqual({ character: 64 });
     expect(warn).not.toHaveBeenCalled();
   });
 
@@ -184,6 +319,8 @@ describe("projectLayoutStore persist rehydrate", () => {
               sections: {
                 manuscript: true,
                 characters: false,
+                events: false,
+                factions: false,
                 world: false,
                 scrap: false,
                 snapshots: false,

@@ -4,10 +4,9 @@ import { useEditorStatsStore } from "@renderer/features/editor/stores/editorStat
 
 interface StatusFooterProps {
   onOpenExport?: () => void;
-  hideExport?: boolean;
 }
 
-export default function StatusFooter({ onOpenExport, hideExport }: StatusFooterProps) {
+export default function StatusFooter({ onOpenExport }: StatusFooterProps) {
   const { t } = useTranslation();
   const { wordCount, charCount, saveStatus } = useEditorStatsStore();
 
@@ -27,6 +26,12 @@ export default function StatusFooter({ onOpenExport, hideExport }: StatusFooterP
             <span>{t("editor.status.saved")}</span>
           </>
         )}
+        {saveStatus === "unsaved" && (
+          <>
+            <div className="w-2 h-2 rounded-full bg-accent-bg animate-pulse mr-0.5" />
+            <span>{t("editor.status.unsaved")}</span>
+          </>
+        )}
         {saveStatus === "error" && (
           <span className="text-danger-fg">{t("editor.status.error")}</span>
         )}
@@ -38,7 +43,7 @@ export default function StatusFooter({ onOpenExport, hideExport }: StatusFooterP
         {t("editor.status.wordLabel")} {wordCount}
       </span>
 
-      {!hideExport && onOpenExport && (
+      {onOpenExport && (
         <button
           className="flex items-center gap-1.5 px-2 py-1 -mr-2 rounded hover:bg-hover hover:text-fg transition-colors"
           onClick={onOpenExport}

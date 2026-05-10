@@ -1,15 +1,25 @@
-import { lazy, Suspense, useState, useEffect } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { History } from "lucide-react";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useTranslation } from "react-i18next";
-import { Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
+import {
+  Panel,
+  Separator as PanelResizeHandle,
+  type PanelImperativeHandle,
+} from "react-resizable-panels";
 import Editor from "@renderer/features/editor/components/Editor";
 import {
   type ResponsivePanelSize,
   toPanelPercentSize,
   type DocsLayoutPanelTab,
 } from "@shared/constants/layoutSizing";
+import { beginLayoutRestoring } from "@renderer/features/workspace/hooks/useProjectLayoutPersistence";
 import { getDocsRightPanelId } from "../../utils/docsLayoutModel";
+import {
+  useAnimatedPresence,
+  useCollapsingPanelAnimation,
+  useExpandingPanelAnimation,
+} from "@renderer/features/workspace/hooks/useAnimatedPresence";
 
 const ResearchPanel = lazy(
   () => import("@renderer/features/research/components/ResearchPanel"),
@@ -152,34 +162,59 @@ export function GoogleDocsRightPanel({
 }: GoogleDocsRightPanelProps) {
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
   const [renderedTab, setRenderedTab] = useState(activeRightTab);
-  const [isClosing, setIsClosing] = useState(false);
+  const restoreFrameRef = useRef<number | null>(null);
+  const panelRef = useRef<PanelImperativeHandle | null>(null);
+  const {
+    isEntering,
+    isExiting: isClosing,
+    shouldRender: shouldRenderPanel,
+  } =
+    useAnimatedPresence(Boolean(activeRightTab), {
+      enabled: enableAnimations,
+    });
+  useCollapsingPanelAnimation(panelRef, isClosing, {
+    enabled: enableAnimations,
+  });
+  useExpandingPanelAnimation(
+    panelRef,
+    isEntering,
+    toPanelPercentSize(rightPanelRatio),
+    {
+      enabled: enableAnimations,
+    },
+  );
+
+  useLayoutEffect(() => {
+    if (!activeRightTab) return;
+    const endRestoring = beginLayoutRestoring();
+    restoreFrameRef.current = requestAnimationFrame(() => {
+      restoreFrameRef.current = requestAnimationFrame(() => {
+        restoreFrameRef.current = null;
+        endRestoring();
+      });
+    });
+    return () => {
+      if (restoreFrameRef.current !== null) {
+        cancelAnimationFrame(restoreFrameRef.current);
+        restoreFrameRef.current = null;
+      }
+      endRestoring();
+    };
+  }, [activeRightTab, rightPanelRatio]);
 
   useEffect(() => {
     if (!activeRightTab || activeRightTab === renderedTab) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setRenderedTab(activeRightTab);
-    setIsClosing(false);
   }, [activeRightTab, renderedTab]);
 
   useEffect(() => {
-    if (!activeRightTab && renderedTab) {
-      if (enableAnimations) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setIsClosing(true);
-        const timer = setTimeout(() => {
-          setRenderedTab(null);
-          setIsClosing(false);
-        }, 200);
-        return () => clearTimeout(timer);
-      } else {
-        setRenderedTab(null);
-        return undefined;
-      }
-    }
-    return undefined;
-  }, [activeRightTab, enableAnimations, renderedTab]);
+    if (shouldRenderPanel || !renderedTab) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRenderedTab(null);
+  }, [renderedTab, shouldRenderPanel]);
 
-  if (!renderedTab || !rightPanelSize) {
+  if (!shouldRenderPanel || !renderedTab || !rightPanelSize) {
     return null;
   }
 
@@ -199,6 +234,10 @@ export function GoogleDocsRightPanel({
       <Panel
         key={getDocsRightPanelId(renderedTab)}
         id={getDocsRightPanelId(renderedTab)}
+        panelRef={panelRef}
+        collapsible
+        collapsedSize={0}
+        data-panel-animated="true"
         defaultSize={toPanelPercentSize(rightPanelRatio)}
         minSize={rightPanelSize.minSize}
         maxSize={rightPanelSize.maxSize}

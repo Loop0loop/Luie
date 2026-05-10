@@ -8,10 +8,12 @@ import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { api } from "@shared/api";
 import { hasReadableLuieAttachment } from "@shared/projectAttachment";
+import type { Chapter } from "@shared/types";
 import {
   consumePendingChapterNavigation,
   onChapterNavigationRequest,
 } from "@renderer/features/workspace/services/chapterNavigation";
+import { useProjectLayoutStore } from "@renderer/features/workspace/stores/projectLayoutStore";
 
 export function useChapterManagement() {
   const pendingChapterIdRef = useRef<string | null>(null);
@@ -60,6 +62,9 @@ export function useChapterManagement() {
     return projectChapters[0];
   }, [currentChapter, currentProject?.id, projectChapters]);
 
+  const upsertProjectLayout = useProjectLayoutStore((state) => state.upsertProjectLayout);
+  const getProjectLayout = useProjectLayoutStore((state) => state.getProjectLayout);
+
   const activeChapterId = activeChapter?.id ?? null;
 
   const content = activeChapter?.content ?? "";
@@ -90,8 +95,16 @@ export function useChapterManagement() {
         return;
       }
       setCurrentChapter(target);
+
+      // Persist active chapter selection
+      upsertProjectLayout(currentProject.id, {
+        editor: {
+          activeChapterId: target.id,
+          scrollYByChapter: getProjectLayout(currentProject.id).editor.scrollYByChapter,
+        },
+      });
     },
-    [chapters, currentChapter?.id, currentProject, setCurrentChapter],
+    [chapters, currentChapter?.id, currentProject, setCurrentChapter, upsertProjectLayout, getProjectLayout],
   );
 
   useEffect(() => {
@@ -139,13 +152,23 @@ export function useChapterManagement() {
       return;
     }
 
-    const nextChapter =
-      chapters.find((chapter) => chapter.projectId === currentProject.id) ??
-      null;
+    // Restore from persisted layout if available
+    const savedLayout = getProjectLayout(currentProject.id);
+    const persistedChapterId = savedLayout.editor.activeChapterId;
+    let nextChapter: Chapter | null = null;
+    
+    if (persistedChapterId) {
+      nextChapter = chapters.find((chapter) => chapter.projectId === currentProject.id && chapter.id === persistedChapterId) ?? null;
+    }
+    
+    if (!nextChapter) {
+      nextChapter = chapters.find((chapter) => chapter.projectId === currentProject.id) ?? null;
+    }
+    
     if ((nextChapter?.id ?? null) !== (currentChapter?.id ?? null)) {
       setCurrentChapter(nextChapter);
     }
-  }, [chapters, currentChapter, currentProject, setCurrentChapter]);
+  }, [chapters, currentChapter, currentProject, setCurrentChapter, getProjectLayout]);
 
   const handleAddChapter = useCallback(async () => {
     if (!currentProject) {

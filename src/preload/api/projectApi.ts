@@ -67,6 +67,9 @@ export function createProjectApi({
       getAll: (projectId) => safeInvoke(IPC_CHANNELS.CHARACTER_GET_ALL, projectId),
       update: (input) => safeInvoke(IPC_CHANNELS.CHARACTER_UPDATE, input),
       delete: (id) => safeInvoke(IPC_CHANNELS.CHARACTER_DELETE, id),
+      generateImage: (input) => safeInvoke(IPC_CHANNELS.CHARACTER_GENERATE_IMAGE, input),
+      generateQuote: (input) => safeInvoke(IPC_CHANNELS.CHARACTER_GENERATE_QUOTE, input),
+      generateStats: (input) => safeInvoke(IPC_CHANNELS.CHARACTER_GENERATE_STATS, input),
     },
     event: {
       create: (input) => safeInvoke(IPC_CHANNELS.EVENT_CREATE, input),

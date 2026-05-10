@@ -183,4 +183,47 @@ describe("createCRUDStore", () => {
     expect(store.getState().error).toBe("Item was not found");
     expect(apiClient.delete).toHaveBeenCalledWith("item-1");
   });
+
+  it("ignores stale loadAll responses when a newer project load finishes first", async () => {
+    const firstLoad = deferred<IPCResponse<Item[]>>();
+    const secondLoad = deferred<IPCResponse<Item[]>>();
+    const apiClient = createApiClient(
+      Promise.resolve({
+        success: true,
+        data: {
+          id: "item-1",
+          name: "Created",
+        },
+      }),
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
+    );
+    apiClient.getAll.mockImplementationOnce(() => firstLoad.promise);
+    apiClient.getAll.mockImplementationOnce(() => secondLoad.promise);
+    const store = create(
+      createCRUDSlice<Item, CreateInput, UpdateInput>(apiClient, "Item"),
+    );
+
+    const stalePromise = store.getState().loadAll("project-1");
+    const freshPromise = store.getState().loadAll("project-2");
+
+    secondLoad.resolve({
+      success: true,
+      data: [{ id: "fresh", name: "Fresh" }],
+    });
+    await freshPromise;
+    expect(store.getState().items).toEqual([{ id: "fresh", name: "Fresh" }]);
+    expect(store.getState().isLoading).toBe(false);
+
+    firstLoad.resolve({
+      success: true,
+      data: [{ id: "stale", name: "Stale" }],
+    });
+    await stalePromise;
+
+    expect(store.getState().items).toEqual([{ id: "fresh", name: "Fresh" }]);
+    expect(store.getState().isLoading).toBe(false);
+  });
 });

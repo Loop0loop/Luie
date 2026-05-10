@@ -89,7 +89,7 @@ export default function FocusLayout({
         )}
       >
          <span className="text-xs font-medium text-muted-foreground/40 font-mono">
-            {wordCount ?? 0} words
+            {t("editor.status.wordLabel")} {wordCount ?? 0}
          </span>
       </div>
 

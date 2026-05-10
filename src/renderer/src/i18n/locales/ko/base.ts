@@ -73,6 +73,7 @@ export const koBase = {
       docs: "Google Docs 스타일",
       editor: "에디터 모드",
       scrivener: "Scrivener 스타일",
+      focus: "집중 모드",
     },
     menuBar: {
       description:
@@ -126,9 +127,9 @@ export const koBase = {
       mobile: "모바일",
     },
     font: {
-      systemUi: "시스템 UI",
-      serif: "명조체",
-      mono: "모노",
+      systemUi: "고딕체 (기본)",
+      serif: "명조체 (Serif)",
+      mono: "고정폭 (Mono)",
       helper: {
         primary:
           "기본적으로 시스템 폰트를 사용합니다. Inter는 선택 가능한 내장 폰트입니다.",
@@ -557,10 +558,11 @@ export const koBase = {
       legacyUnsupportedAttachment:
         "현재 앱은 구형 package .luie를 지원하지 않습니다.",
     },
-    templateDescription: "{templateId} 템플릿으로 생성됨",
+    templateDescription: "",
   },
   sidebar: {
-    title: "PROJECT BINDER",
+    explorerTitle: "탐색기",
+    title: "프로젝트",
     menu: {
       openBelow: "아래에 열기",
       openRight: "오른쪽에 열기",
@@ -569,18 +571,18 @@ export const koBase = {
       delete: "삭제하기",
     },
     defaultProjectTitle: "프로젝트",
-    binderTitle: "PROJECT BINDER",
+    binderTitle: "프로젝트",
     section: {
-      manuscript: "원고 (Manuscript)",
-      research: "연구 (Research)",
-      trash: "휴지통 (Trash)",
-      snapshot: "스냅샷 (History)",
+      manuscript: "원고",
+      research: "자료",
+      trash: "휴지통",
+      snapshot: "버전 기록",
     },
     item: {
-      characters: "등장인물 (Characters)",
-      world: "세계관 (World)",
+      characters: "등장인물",
+      world: "세계관",
       scrap: "자료 스크랩",
-      synopsis: "시놉시스 (Synopsis)",
+      synopsis: "작품 개요",
     },
     action: {
       new: "새 회차 추가",
@@ -667,7 +669,7 @@ export const koBase = {
         toolbar: {
           newEntityBlock: "새 엔티티 블럭",
           timelineBlock: "타임라인 블럭",
-          memoBlock: "메모 블럭",
+          callout: "콜아웃",
         },
         controls: {
           zoomIn: "확대",
@@ -855,6 +857,7 @@ export const koBase = {
       body: "내용을 입력하세요... ('/'를 입력하여 명령어 확인)",
     },
     status: {
+      unsaved: "수정됨",
       saving: "저장 중...",
       saved: "저장 완료",
       error: "저장 실패",
@@ -881,6 +884,85 @@ export const koBase = {
     },
     actions: {
       retry: "다시 시도",
+    },
+  },
+  toolbar: {
+    tooltip: {
+      undo: "실행 취소",
+      redo: "다시 실행",
+      bold: "굵게",
+      italic: "기울임꼴",
+      underline: "밑줄",
+      strikethrough: "취소선",
+      textColor: "글자 색",
+      highlight: "형광펜",
+      alignLeft: "왼쪽 정렬",
+      alignCenter: "가운데 정렬",
+      alignRight: "오른쪽 정렬",
+      bulletList: "글머리 기호",
+      orderedList: "번호 매기기",
+      toggleMobileView: "화면 보기 전환",
+      openWorldGraph: "세계관 그래프 열기",
+    },
+    view: {
+      mobile: "모바일 화면",
+      desktop: "PC 화면",
+      graph: "그래프",
+    },
+    ribbon: {
+      home: "홈",
+      insert: "삽입",
+      draw: "그리기",
+      view: "보기",
+      paste: "붙여넣기",
+    },
+  },
+  inspector: {
+    noSelection: "선택된 챕터가 없습니다.",
+    tab: {
+      synopsis: "시놉시스",
+      metadata: "메타데이터",
+      notes: "노트",
+      snapshots: "스냅샷",
+    },
+    synopsis: {
+      placeholder: "해당 챕터의 주요 사건이나 요약을 작성하세요.",
+    },
+    section: {
+      image: "대표 이미지",
+    },
+    image: {
+      placeholder: "이미지 추가",
+    },
+    meta: {
+      created: "생성 일시",
+      modified: "수정 일시",
+      words: "단어 수",
+      label: "라벨",
+      status: "상태",
+    },
+    label: {
+      none: "없음",
+      concept: "구상",
+      draft: "초고",
+    },
+    status: {
+      todo: "예정",
+      inprogress: "작성 중",
+      done: "완료",
+    },
+    notes: {
+      document: "문서 노트",
+      comingSoon: "준비 중입니다...",
+    },
+  },
+  scrivener: {
+    target: "목표: {{count}} 단어",
+    inspector: {
+      open: "인스펙터 열기",
+      close: "인스펙터 닫기",
+      title: "인스펙터 (INSPECTOR)",
+      loading: "불러오는 중...",
     },
   },
 } as const;

@@ -1,0 +1,7 @@
+{
+  "enabledPlugins": {
+    "circleback@claude-plugins-official": true,
+    "bkit@bkit-marketplace": true,
+    "context-mode@context-mode": true
+  }
+}

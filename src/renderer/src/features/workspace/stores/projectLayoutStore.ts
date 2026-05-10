@@ -5,10 +5,25 @@ import {
   STORAGE_KEY_PROJECT_LAYOUT,
 } from "@shared/constants";
 import {
+  buildDefaultLayoutSurfaceRatios,
+  normalizeLayoutSurfaceRatiosWithMigrations,
+  type LayoutSurfaceId,
+} from "@shared/constants/layoutSizing";
+import {
+  buildDefaultSidebarWidths,
+  normalizeSidebarWidthsWithMigrations,
+} from "@shared/constants/sidebarSizing";
+import {
   type ProjectLayoutPersistedState,
   projectLayoutPersistedStateSchema,
 } from "@shared/schemas";
-import type { DocsRightTab, ScrivenerSectionId, ScrivenerSectionsState } from "./uiStore";
+import type {
+  DocsRightTab,
+  ResearchTab,
+  ResizablePanelData,
+  ScrivenerSectionId,
+  ScrivenerSectionsState,
+} from "./uiStore";
 import {
   buildMigrationEventData,
   buildRecoveryEventData,
@@ -56,6 +71,23 @@ const DEFAULT_SCRIVENER_SECTIONS: ScrivenerSectionsState = {
   trash: false,
 };
 
+const PERSISTABLE_RESEARCH_TABS = new Set<ResearchTab>([
+  "character",
+  "world",
+  "event",
+  "faction",
+  "scrap",
+  "analysis",
+]);
+
+const WORKSPACE_PANEL_MIN_SIZE = 15;
+const WORKSPACE_PANEL_MAX_SIZE = 90;
+
+export type ProjectWorkspaceLayoutState = {
+  panels: ResizablePanelData[];
+  researchPanelSizes: Partial<Record<ResearchTab, number>>;
+};
+
 export type ProjectLayoutState = {
   main: {
     sidebarOpen: boolean;
@@ -71,6 +103,17 @@ export type ProjectLayoutState = {
     inspectorOpen: boolean;
     sections: ScrivenerSectionsState;
   };
+  editor: {
+    activeChapterId: string | null;
+    scrollYByChapter: Record<string, number>;
+  };
+  workspace: ProjectWorkspaceLayoutState;
+  sidebarWidths: Record<string, number>;
+  layoutSurfaceRatios: Record<LayoutSurfaceId, number>;
+};
+
+type ProjectLayoutPatch = Partial<Omit<ProjectLayoutState, "workspace">> & {
+  workspace?: Partial<ProjectWorkspaceLayoutState>;
 };
 
 const createDefaultProjectLayoutState = (): ProjectLayoutState => ({
@@ -88,6 +131,16 @@ const createDefaultProjectLayoutState = (): ProjectLayoutState => ({
     inspectorOpen: true,
     sections: { ...DEFAULT_SCRIVENER_SECTIONS },
   },
+  editor: {
+    activeChapterId: null,
+    scrollYByChapter: {},
+  },
+  workspace: {
+    panels: [],
+    researchPanelSizes: {},
+  },
+  sidebarWidths: buildDefaultSidebarWidths(),
+  layoutSurfaceRatios: buildDefaultLayoutSurfaceRatios(),
 });
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -159,6 +212,86 @@ const sanitizeScrivenerSections = (input: unknown): ScrivenerSectionsState => {
   return next;
 };
 
+const normalizeWorkspacePanelSize = (size: unknown): number | null => {
+  if (typeof size !== "number" || !Number.isFinite(size)) return null;
+  return Math.min(
+    WORKSPACE_PANEL_MAX_SIZE,
+    Math.max(WORKSPACE_PANEL_MIN_SIZE, size),
+  );
+};
+
+const sanitizeResearchPanelSizes = (
+  input: unknown,
+): Partial<Record<ResearchTab, number>> => {
+  if (!isRecord(input)) return {};
+
+  const sizes: Partial<Record<ResearchTab, number>> = {};
+  for (const tab of PERSISTABLE_RESEARCH_TABS) {
+    const size = normalizeWorkspacePanelSize(input[tab]);
+    if (size !== null) {
+      sizes[tab] = size;
+    }
+  }
+  return sizes;
+};
+
+export const sanitizeWorkspacePanels = (
+  input: unknown,
+): ResizablePanelData[] => {
+  if (!Array.isArray(input)) return [];
+
+  const panels: ResizablePanelData[] = [];
+  const seenIds = new Set<string>();
+
+  for (const candidate of input) {
+    if (!isRecord(candidate) || typeof candidate.id !== "string") continue;
+    if (seenIds.has(candidate.id)) continue;
+
+    const size = normalizeWorkspacePanelSize(candidate.size);
+    if (size === null) continue;
+
+    const content = isRecord(candidate.content) ? candidate.content : {};
+    if (content.type === "research") {
+      const tab = content.tab;
+      if (typeof tab !== "string" || !PERSISTABLE_RESEARCH_TABS.has(tab as ResearchTab)) {
+        continue;
+      }
+      panels.push({
+        id: candidate.id,
+        content: {
+          type: "research",
+          ...(typeof content.id === "string" ? { id: content.id } : {}),
+          tab: tab as ResearchTab,
+        },
+        size,
+      });
+      seenIds.add(candidate.id);
+      continue;
+    }
+
+    if (content.type === "editor" && typeof content.id === "string") {
+      panels.push({
+        id: candidate.id,
+        content: { type: "editor", id: content.id },
+        size,
+      });
+      seenIds.add(candidate.id);
+      continue;
+    }
+
+    if (content.type === "export") {
+      panels.push({
+        id: candidate.id,
+        content: { type: "export" },
+        size,
+      });
+      seenIds.add(candidate.id);
+    }
+  }
+
+  return panels.slice(0, 3);
+};
+
 export const sanitizePersistedDocsRightTab = (
   tab: DocsRightTab | PersistedDocsRightTab | null | undefined,
 ): PersistedDocsRightTab => {
@@ -175,6 +308,8 @@ const sanitizeProjectLayoutState = (input: unknown): ProjectLayoutState => {
   const mainInput = isRecord(input.main) ? input.main : {};
   const docsInput = isRecord(input.docs) ? input.docs : {};
   const scrivenerInput = isRecord(input.scrivener) ? input.scrivener : {};
+  const editorInput = isRecord(input.editor) ? input.editor : {};
+  const workspaceInput = isRecord(input.workspace) ? input.workspace : {};
 
   return {
     main: {
@@ -209,6 +344,28 @@ const sanitizeProjectLayoutState = (input: unknown): ProjectLayoutState => {
           : defaults.scrivener.inspectorOpen,
       sections: sanitizeScrivenerSections(scrivenerInput.sections),
     },
+    editor: {
+      activeChapterId:
+        typeof editorInput.activeChapterId === "string" || editorInput.activeChapterId === null
+          ? editorInput.activeChapterId
+          : defaults.editor.activeChapterId,
+      scrollYByChapter: isRecord(editorInput.scrollYByChapter)
+        ? (Object.fromEntries(
+            Object.entries(editorInput.scrollYByChapter).filter(([, v]) => typeof v === "number")
+          ) as Record<string, number>)
+        : defaults.editor.scrollYByChapter,
+    },
+    workspace: {
+      panels: sanitizeWorkspacePanels(workspaceInput.panels),
+      researchPanelSizes: sanitizeResearchPanelSizes(
+        workspaceInput.researchPanelSizes,
+      ),
+    },
+    sidebarWidths: normalizeSidebarWidthsWithMigrations(input.sidebarWidths),
+    layoutSurfaceRatios: normalizeLayoutSurfaceRatiosWithMigrations(
+      input.layoutSurfaceRatios,
+      input.sidebarWidths,
+    ),
   };
 };
 
@@ -263,18 +420,20 @@ const migrateProjectLayoutPersistedState = (
 };
 
 interface ProjectLayoutStore {
+  hasHydrated: boolean;
   byProject: Record<string, ProjectLayoutState>;
   upsertProjectLayout: (
     projectId: string,
-    patch: Partial<ProjectLayoutState>,
+    patch: ProjectLayoutPatch,
   ) => void;
   getProjectLayout: (projectId: string) => ProjectLayoutState;
   clearProjectLayout: (projectId: string) => void;
+  setHasHydrated: (value: boolean) => void;
 }
 
 const mergeProjectLayoutState = (
   previous: ProjectLayoutState,
-  patch: Partial<ProjectLayoutState>,
+  patch: ProjectLayoutPatch,
 ): ProjectLayoutState => {
   const patchedSections = patch.scrivener?.sections;
   return {
@@ -301,12 +460,52 @@ const mergeProjectLayoutState = (
           }
         : previous.scrivener.sections,
     },
+    editor: {
+      ...previous.editor,
+      ...(patch.editor ?? {}),
+      scrollYByChapter: {
+        ...previous.editor?.scrollYByChapter,
+        ...(patch.editor?.scrollYByChapter ?? {}),
+      },
+    },
+    workspace: patch.workspace
+      ? {
+          ...previous.workspace,
+          panels: patch.workspace.panels
+            ? sanitizeWorkspacePanels(patch.workspace.panels)
+            : previous.workspace.panels,
+          researchPanelSizes: patch.workspace.researchPanelSizes
+            ? {
+                ...previous.workspace.researchPanelSizes,
+                ...sanitizeResearchPanelSizes(
+                  patch.workspace.researchPanelSizes,
+                ),
+              }
+            : previous.workspace.researchPanelSizes,
+        }
+      : previous.workspace,
+    sidebarWidths: patch.sidebarWidths
+      ? normalizeSidebarWidthsWithMigrations({
+          ...previous.sidebarWidths,
+          ...patch.sidebarWidths,
+        })
+      : previous.sidebarWidths,
+    layoutSurfaceRatios: patch.layoutSurfaceRatios
+      ? normalizeLayoutSurfaceRatiosWithMigrations(
+          {
+            ...previous.layoutSurfaceRatios,
+            ...patch.layoutSurfaceRatios,
+          },
+          patch.sidebarWidths ?? previous.sidebarWidths,
+        )
+      : previous.layoutSurfaceRatios,
   };
 };
 
 export const useProjectLayoutStore = create<ProjectLayoutStore>()(
   persist(
     (set, get) => ({
+      hasHydrated: false,
       byProject: {},
       upsertProjectLayout: (projectId, patch) =>
         set((state) => {
@@ -331,6 +530,10 @@ export const useProjectLayoutStore = create<ProjectLayoutStore>()(
           delete next[projectId];
           return { byProject: next };
         }),
+      setHasHydrated: (hasHydrated) =>
+        set((state) =>
+          state.hasHydrated === hasHydrated ? state : { hasHydrated },
+        ),
     }),
     {
       name: STORAGE_KEY_PROJECT_LAYOUT,
@@ -390,7 +593,7 @@ export const useProjectLayoutStore = create<ProjectLayoutStore>()(
           },
         });
 
-        return (_state, error) => {
+        return (state, error) => {
           if (error) {
             timer.fail(getBrowserLogger(), error, {
               action: "rehydrate_failed",
@@ -399,12 +602,14 @@ export const useProjectLayoutStore = create<ProjectLayoutStore>()(
               "drop_rehydrate_failure",
               error instanceof Error ? error.message : String(error),
             );
+            state?.setHasHydrated(true);
             return;
           }
 
           timer.complete(getBrowserLogger(), {
             action: "rehydrate_completed",
           });
+          state?.setHasHydrated(true);
         };
       },
     },

@@ -125,7 +125,7 @@ export const koWorkspace = {
       check: "체크박스로 진행 관리",
       toggle: "접고 펼칠 수 있는 섹션",
       quote: "대사/인용문 강조",
-      callout: "주석/메모 박스",
+      callout: "콜아웃 (강조 박스)",
       divider: "장면 전환 구분",
     },
     label: {
@@ -137,11 +137,42 @@ export const koWorkspace = {
       check: "할 일 목록",
       toggle: "토글 섹션",
       quote: "인용",
-      callout: "메모(콜아웃)",
+      callout: "콜아웃",
       divider: "장면 구분선",
     },
     toggleTitle: "토글 제목",
     calloutContent: "메모 내용",
+  },
+  editor: {
+    bubbleMenu: {
+      bold: "굵게",
+      italic: "기울임",
+      underline: "밑줄",
+      strikethrough: "취소선",
+      highlight: "형광펜",
+      textColor: "글자 색상",
+      quote: "선택한 텍스트를 대사로 전환",
+      addTerm: "선택한 단어를 사전에 즉시 등록",
+      emptySelection: "단어를 선택해주세요.",
+      addTermSuccess: "단어장에 등록 완료: \"{{text}}\""
+    },
+    status: {
+      saving: "저장 중...",
+      saved: "저장됨",
+      unsaved: "변경사항 있음",
+      error: "저장 실패",
+      charLabel: "글자 수:",
+      separator: " | ",
+      wordLabel: "단어 수:",
+    },
+    placeholder: {
+      title: "제목을 입력하세요...",
+      body: "여기에 이야기를 작성하세요...",
+    },
+    actions: {
+      quickExport: "내보내기",
+      quickExportTitle: "빠른 내보내기",
+    }
   },
   event: {
     viewAllTitle: "전체 보기",

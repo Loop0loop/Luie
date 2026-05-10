@@ -3,16 +3,38 @@
  */
 
 import { useCallback } from "react";
-import { useUIStore, type ResearchTab, type ContextTab } from "@renderer/features/workspace/stores/uiStore";
+import {
+  useUIStore,
+  type ContextTab,
+  type ResearchTab,
+  type RightPanelContent,
+} from "@renderer/features/workspace/stores/uiStore";
+import { useProjectStore } from "@renderer/features/project/stores/projectStore";
+import { useProjectLayoutStore } from "@renderer/features/workspace/stores/projectLayoutStore";
 import type { Snapshot } from "@shared/types";
 
 export function useSplitView() {
   const panels = useUIStore((state) => state.panels);
   const contextTab = useUIStore((state) => state.contextTab);
-  const addPanel = useUIStore((state) => state.addPanel);
+  const addPanelBase = useUIStore((state) => state.addPanel);
   const removePanel = useUIStore((state) => state.removePanel);
   const setPanels = useUIStore((state) => state.setPanels);
   const setContextTab = useUIStore((state) => state.setContextTab);
+  const currentProjectId = useProjectStore((state) => state.currentItem?.id);
+  const getProjectLayout = useProjectLayoutStore((state) => state.getProjectLayout);
+
+  const addPanel = useCallback(
+    (content: RightPanelContent, insertAt?: number) => {
+      const initialSize =
+        content.type === "research" && content.tab && currentProjectId
+          ? getProjectLayout(currentProjectId).workspace.researchPanelSizes[
+              content.tab
+            ]
+          : undefined;
+      addPanelBase(content, insertAt, initialSize);
+    },
+    [addPanelBase, currentProjectId, getProjectLayout],
+  );
 
   const handleSelectResearchItem = useCallback(
     (type: ResearchTab) => {

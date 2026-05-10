@@ -4,6 +4,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
 } from "react";
 import { useTranslation } from "react-i18next";
@@ -113,6 +114,7 @@ export default function App() {
   const themeContrast = useEditorStore((state) => state.themeContrast);
   const themeAccent = useEditorStore((state) => state.themeAccent);
   const themeTexture = useEditorStore((state) => state.themeTexture);
+  const enableAnimations = useEditorStore((state) => state.enableAnimations);
 
   const refreshBootstrapStatus = useCallback(async () => {
     setIsBootstrapLoading(true);
@@ -199,7 +201,7 @@ export default function App() {
     return unsubscribe;
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     if (themeTemp)
       document.documentElement.setAttribute("data-temp", themeTemp);
@@ -208,7 +210,18 @@ export default function App() {
     if (themeAccent)
       document.documentElement.setAttribute("data-accent", themeAccent);
     document.documentElement.setAttribute("data-texture", String(themeTexture));
-  }, [theme, themeTemp, themeContrast, themeAccent, themeTexture]);
+    document.documentElement.setAttribute(
+      "data-animations",
+      enableAnimations ? "on" : "off",
+    );
+  }, [
+    theme,
+    themeTemp,
+    themeContrast,
+    themeAccent,
+    themeTexture,
+    enableAnimations,
+  ]);
 
   useEffect(() => {
     if (!bootstrapStatus.isReady) return;

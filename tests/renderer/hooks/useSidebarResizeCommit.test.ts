@@ -19,7 +19,7 @@ describe("useSidebarResizeCommit controller", () => {
     vi.useRealTimers();
   });
 
-  it("ignores resize events that were not triggered by a user interaction", () => {
+  it("uses the first passive resize as a baseline", () => {
     const setSidebarWidth = vi.fn();
     const controller = createSidebarResizeCommitController(
       "memoSidebar",
@@ -31,6 +31,23 @@ describe("useSidebarResizeCommit controller", () => {
     vi.advanceTimersByTime(200);
 
     expect(setSidebarWidth).not.toHaveBeenCalled();
+
+    controller.dispose();
+  });
+
+  it("commits passive resize events that differ from the initial width", () => {
+    const setSidebarWidth = vi.fn();
+    const controller = createSidebarResizeCommitController(
+      "characterSidebar",
+      setSidebarWidth,
+      140,
+      280,
+    );
+
+    controller.onResize(createPanelSize(340));
+
+    expect(setSidebarWidth).toHaveBeenCalledTimes(1);
+    expect(setSidebarWidth).toHaveBeenCalledWith("characterSidebar", 340);
 
     controller.dispose();
   });

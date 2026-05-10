@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useDialog } from '@shared/ui/useDialog';
 import { api } from "@shared/api";
@@ -22,14 +22,28 @@ export function useExportManager() {
     const [chapter, setChapter] = useState<{ title: string; content: string; projectId: string } | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [isExporting, setIsExporting] = useState(false);
+    const isMountedRef = useRef(true);
+    const loadRequestIdRef = useRef(0);
 
     useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+            loadRequestIdRef.current += 1;
+        };
+    }, []);
+
+    useEffect(() => {
+        const requestId = ++loadRequestIdRef.current;
         if (!chapterId) {
             setLoadError(t("exportWindow.error.missingChapterId"));
             return;
         }
 
         api.chapter.get(chapterId).then((response) => {
+            if (!isMountedRef.current || requestId !== loadRequestIdRef.current) {
+                return;
+            }
             if (response.success && response.data) {
                 const chapterData = response.data as Chapter;
                 setChapter({
@@ -41,6 +55,9 @@ export function useExportManager() {
                 setLoadError(response.error?.message || t("exportWindow.error.loadFailed"));
             }
         }).catch((error: unknown) => {
+            if (!isMountedRef.current || requestId !== loadRequestIdRef.current) {
+                return;
+            }
             setLoadError(error instanceof Error ? error.message : t("exportWindow.error.unknown"));
         });
     }, [chapterId, t]);
@@ -115,6 +132,10 @@ export function useExportManager() {
                 startPageNumber,
             });
 
+            if (!isMountedRef.current) {
+                return;
+            }
+
             if (response.success && response.data) {
                 const result = response.data as { success: boolean; filePath?: string; error?: string; message?: string };
                 if (result.success) {
@@ -139,6 +160,9 @@ export function useExportManager() {
                 );
             }
         } catch (error) {
+            if (!isMountedRef.current) {
+                return;
+            }
             void api.logger.error("Export error", {
                 error: error instanceof Error ? error.message : String(error),
             });
@@ -150,7 +174,9 @@ export function useExportManager() {
                 5000,
             );
         } finally {
-            setIsExporting(false);
+            if (isMountedRef.current) {
+                setIsExporting(false);
+            }
         }
     };
 

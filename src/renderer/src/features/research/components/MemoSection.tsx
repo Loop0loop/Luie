@@ -25,6 +25,7 @@ import {
 } from "@renderer/features/research/components/memo/useMemoManager";
 import { MemoSidebarList } from "@renderer/features/research/components/memo/MemoSidebarList";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { useProjectLayoutStore } from "@renderer/features/workspace/stores/projectLayoutStore";
 import { useMemoStore } from "@renderer/features/research/stores/memoStore";
 import {
   clampSidebarWidth,
@@ -37,6 +38,7 @@ import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
 import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
 import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
 import { useToast } from "@shared/ui/ToastContext";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 
 const MEMO_SIDEBAR_PANEL_ID = "memo-sidebar";
 const MEMO_CONTENT_PANEL_ID = "memo-content";
@@ -93,11 +95,18 @@ function MemoSectionInner({
 }) {
   const { t } = useTranslation();
   const { showToast } = useToast();
-  const { sidebarWidths, setSidebarWidth } = useUIStore(
+  const { sidebarWidths, setSidebarWidth, uiHasHydrated } = useUIStore(
     useShallow((state) => ({
       sidebarWidths: state.sidebarWidths,
       setSidebarWidth: state.setSidebarWidth,
+      uiHasHydrated: state.hasHydrated,
     })),
+  );
+  const projectLayoutHasHydrated = useProjectLayoutStore(
+    (state) => state.hasHydrated,
+  );
+  const upsertProjectLayout = useProjectLayoutStore(
+    (state) => state.upsertProjectLayout,
   );
 
   const sidebarFeature = "memoSidebar" as const;
@@ -137,19 +146,36 @@ function MemoSectionInner({
   const commitMemoSidebarWidth = useCallback(
     (_feature: string, widthPx: number) => {
       setSidebarWidth(sidebarFeature, widthPx);
+      if (projectId && uiHasHydrated && projectLayoutHasHydrated) {
+        upsertProjectLayout(projectId, {
+          sidebarWidths: {
+            [sidebarFeature]: widthPx,
+          },
+        });
+      }
       writeLocalStorageJson(STORAGE_KEY_MEMO_SIDEBAR_LAYOUT, {
         sidebarWidthPx: widthPx,
       });
     },
-    [setSidebarWidth, sidebarFeature],
+    [
+      projectId,
+      projectLayoutHasHydrated,
+      setSidebarWidth,
+      sidebarFeature,
+      uiHasHydrated,
+      upsertProjectLayout,
+    ],
   );
 
   const { onResize: handleMemoSidebarResize, resizeHandleProps } =
-    useSidebarResizeCommit(sidebarFeature, commitMemoSidebarWidth);
+    useSidebarResizeCommit(sidebarFeature, commitMemoSidebarWidth, {
+      initialWidth: memoSidebarWidthPx,
+    });
   const containerRef = useRef<HTMLDivElement | null>(null);
   const panelGroupRef = useRef<GroupImperativeHandle | null>(null);
+  const enableAnimations = useEditorStore((state) => state.enableAnimations);
 
-  useFixedPixelPanelGroupLayout({
+  const { isLayoutReady } = useFixedPixelPanelGroupLayout({
     containerRef,
     groupRef: panelGroupRef,
     fixedPanels: [
@@ -163,6 +189,9 @@ function MemoSectionInner({
     flexPanelId: MEMO_CONTENT_PANEL_ID,
     flexPanelMinPercent: MEMO_CONTENT_MIN_SIZE_PERCENT,
   });
+  const shouldHideUntilLayoutReady =
+    !enableAnimations &&
+    (!uiHasHydrated || !projectLayoutHasHydrated || !isLayoutReady);
 
   useShortcutCommand((command) => {
     if (command.type === "scrap.addMemo") {
@@ -183,7 +212,13 @@ function MemoSectionInner({
   }, [saveError, showToast, t]);
 
   return (
-    <div ref={containerRef} className="flex flex-col h-full bg-sidebar/30">
+    <div
+      ref={containerRef}
+      className="flex flex-col h-full bg-sidebar/30"
+      style={{
+        visibility: shouldHideUntilLayoutReady ? "hidden" : undefined,
+      }}
+    >
       <PanelGroup
         groupRef={panelGroupRef}
         orientation="horizontal"

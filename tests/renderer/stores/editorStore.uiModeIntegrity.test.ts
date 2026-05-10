@@ -20,24 +20,32 @@ const mocked = vi.hoisted(() => {
   };
 });
 
-vi.mock("../../../src/renderer/src/services/api", () => ({
+vi.mock("../../../src/shared/api", () => ({
   api: mocked.api,
 }));
 
-import { useEditorStore } from "../../../src/renderer/src/stores/editorStore.js";
+import { useEditorStore } from "../../../src/renderer/src/features/editor/stores/editorStore.js";
 
 const BASE_SETTINGS: EditorSettings = {
   fontFamily: "mono",
-  fontPreset: "victor-mono",
+  fontPreset: "inter",
   fontSize: 19,
   lineHeight: 1.65,
   maxWidth: 1000,
+  spellcheckEnabled: true,
   theme: "dark",
   themeTemp: "cool",
   themeContrast: "high",
   themeAccent: "violet",
   themeTexture: false,
   uiMode: "default",
+  enableAnimations: true,
+  entityColors: {
+    character: "#2563eb",
+    event: "#d97706",
+    faction: "#059669",
+    term: "#7c3aed",
+  },
 };
 
 function readEditorSettings(): EditorSettings {
@@ -48,12 +56,15 @@ function readEditorSettings(): EditorSettings {
     fontSize: state.fontSize,
     lineHeight: state.lineHeight,
     maxWidth: state.maxWidth,
+    spellcheckEnabled: state.spellcheckEnabled,
     theme: state.theme,
     themeTemp: state.themeTemp,
     themeContrast: state.themeContrast,
     themeAccent: state.themeAccent,
     themeTexture: state.themeTexture,
     uiMode: state.uiMode,
+    enableAnimations: state.enableAnimations,
+    entityColors: state.entityColors,
   };
 }
 

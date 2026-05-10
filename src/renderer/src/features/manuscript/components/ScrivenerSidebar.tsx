@@ -50,7 +50,7 @@ export default function ScrivenerSidebar({
   return (
     <div className="flex flex-col h-full w-full bg-sidebar select-none overflow-hidden text-sm">
       {/* Top Header - maybe "Explorer"? Optional. */}
-      <div className="px-4 py-2 text-[11px] font-bold text-muted-foreground uppercase tracking-wider bg-sidebar shadow-sm shrink-0 z-10">
+      <div className="px-4 py-2 text-xs font-semibold text-muted-foreground bg-sidebar shadow-sm shrink-0 z-10">
         {t("sidebar.explorerTitle") || "Explorer"}
       </div>
 
@@ -221,7 +221,7 @@ function CollapsibleSection({
             <ChevronRight className="w-4 h-4" />
           )}
         </div>
-        <div className="font-bold text-[11px] uppercase tracking-wide text-foreground/80 group-hover:text-foreground flex-1 truncate">
+        <div className="font-semibold text-xs text-foreground/80 group-hover:text-foreground flex-1 truncate">
           {title}
         </div>
         {actions && (

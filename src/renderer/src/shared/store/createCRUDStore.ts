@@ -89,6 +89,8 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
   name: string,
 ): StateCreator<CRUDStore<T, CreateInput, UpdateInput>> {
   let createInFlight = false;
+  let loadAllRequestId = 0;
+  let loadOneRequestId = 0;
 
   return (set) => ({
     items: [],
@@ -97,36 +99,54 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
     error: null,
 
     loadAll: async (parentId?: string) => {
+      const requestId = ++loadAllRequestId;
       set({ isLoading: true, error: null });
       try {
         const response = await apiClient.getAll(parentId);
+        if (requestId !== loadAllRequestId) {
+          return;
+        }
         if (response.success && response.data) {
           set({ items: response.data });
         } else {
           set({ items: [], error: response.error?.message });
         }
       } catch (error) {
+        if (requestId !== loadAllRequestId) {
+          return;
+        }
         api.logger.error(`Failed to load ${name}s:`, error);
         set({ items: [], error: (error as Error).message });
       } finally {
-        set({ isLoading: false });
+        if (requestId === loadAllRequestId) {
+          set({ isLoading: false });
+        }
       }
     },
 
     loadOne: async (id: string) => {
+      const requestId = ++loadOneRequestId;
       set({ isLoading: true, error: null });
       try {
         const response = await apiClient.get(id);
+        if (requestId !== loadOneRequestId) {
+          return;
+        }
         if (response.success && response.data) {
           set({ currentItem: response.data });
         } else {
           set({ currentItem: null, error: response.error?.message });
         }
       } catch (error) {
+        if (requestId !== loadOneRequestId) {
+          return;
+        }
         api.logger.error(`Failed to load ${name}:`, error);
         set({ currentItem: null, error: (error as Error).message });
       } finally {
-        set({ isLoading: false });
+        if (requestId === loadOneRequestId) {
+          set({ isLoading: false });
+        }
       }
     },
 

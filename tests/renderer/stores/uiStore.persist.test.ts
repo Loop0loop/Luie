@@ -107,6 +107,17 @@ describe("uiStore persist rehydrate", () => {
         mainSidebar: 288,
         docsWorld: 360,
       },
+      scrivenerSections: {
+        manuscript: true,
+        characters: false,
+        events: true,
+        factions: true,
+        world: false,
+        scrap: false,
+        snapshots: false,
+        analysis: true,
+        trash: false,
+      },
       regions: {
         leftSidebar: {
           open: false,
@@ -139,6 +150,8 @@ describe("uiStore persist rehydrate", () => {
     expect(state.contextTab).toBe("characters");
     expect(state.regions.leftSidebar.widthPx).toBe(288);
     expect(state.regions.rightPanel.activeTab).toBe("world");
+    expect(state.scrivenerSections.events).toBe(true);
+    expect(state.scrivenerSections.factions).toBe(true);
     expect(warn).not.toHaveBeenCalled();
   });
 
@@ -153,5 +166,46 @@ describe("uiStore persist rehydrate", () => {
 
     expect(module.useUIStore.getState().view).toBe(DEFAULT_UI_VIEW);
     expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("does not reopen the binder rail when opening a right panel tab", async () => {
+    const { module } = await loadUiStore({
+      view: "editor",
+      docsRightTab: null,
+      regions: {
+        leftSidebar: {
+          open: true,
+          widthPx: 288,
+        },
+        rightPanel: {
+          open: false,
+          activeTab: null,
+          widthByTab: {
+            character: 300,
+            event: 301,
+            faction: 302,
+            world: 360,
+            scrap: 304,
+            analysis: 305,
+            snapshot: 306,
+            trash: 307,
+            editor: 308,
+            export: 309,
+          },
+        },
+        rightRail: {
+          open: false,
+        },
+      },
+    });
+
+    module.useUIStore.getState().openRightPanelTab("character");
+
+    const state = module.useUIStore.getState();
+    expect(state.regions.rightPanel.open).toBe(true);
+    expect(state.regions.rightPanel.activeTab).toBe("character");
+    expect(state.docsRightTab).toBe("character");
+    expect(state.regions.rightRail.open).toBe(false);
+    expect(state.isBinderBarOpen).toBe(false);
   });
 });
