@@ -28,9 +28,6 @@ export function useEditorAutosave({
   const isMountedRef = useRef(true);
   useEffect(() => {
     isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
   }, []);
 
   useEffect(() => {
@@ -176,9 +173,25 @@ export function useEditorAutosave({
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
       if (idleResetTimerRef.current) clearTimeout(idleResetTimerRef.current);
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      const latestDraft = latestDraftRef.current;
+      if (
+        onSave &&
+        (latestDraft.title !== lastSavedRef.current.title ||
+          latestDraft.content !== lastSavedRef.current.content)
+      ) {
+        void Promise.resolve(onSave(latestDraft.title, latestDraft.content))
+          .then(() => {
+            lastSavedRef.current = latestDraft;
+            api.lifecycle?.setDirty?.(false);
+          })
+          .catch((error) => {
+            api.logger.error("Autosave flush on unmount failed", error);
+          });
+      }
       retryCount.current = 0;
+      isMountedRef.current = false;
     };
-  }, []);
+  }, [onSave]);
 
   return { saveStatus };
 }

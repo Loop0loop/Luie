@@ -122,6 +122,43 @@ export type RendererApi = {
       attributes?: Record<string, unknown>;
     }) => Promise<IPCResponse<Character>>;
     delete: (id: string) => Promise<IPCResponse<unknown>>;
+    generateImage: (input: {
+      name: string;
+      tagline?: string;
+      roles?: string[];
+      keywords?: string[];
+      overview?: string;
+      personality?: string;
+      background?: string;
+      appearance?: string;
+      relations?: string;
+      notes?: string;
+    }) => Promise<IPCResponse<string>>;
+    generateQuote: (input: {
+      name: string;
+      tagline?: string;
+      roles?: string[];
+      keywords?: string[];
+      overview?: string;
+      personality?: string;
+      background?: string;
+      appearance?: string;
+      relations?: string;
+      notes?: string;
+    }) => Promise<IPCResponse<string>>;
+    generateStats: (input: {
+      name: string;
+      tagline?: string;
+      roles?: string[];
+      keywords?: string[];
+      overview?: string;
+      personality?: string;
+      background?: string;
+      appearance?: string;
+      relations?: string;
+      notes?: string;
+      axes: Array<{ label: string; value: number }>;
+    }) => Promise<IPCResponse<Array<{ label: string; value: number }>>>;
   };
   term: {
     create: (input: {

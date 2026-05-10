@@ -13,6 +13,7 @@ import "@renderer/styles/global.css";
 const rendererStartupStartedAt = performance.now();
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 const i18nPromise = initI18n();
+const setupRendererPromise = setupRenderer();
 
 const startupLogger = window.api?.logger ?? null;
 
@@ -29,12 +30,12 @@ const logStartup = (message: string, data?: Record<string, unknown>) => {
 const elapsedMs = () =>
   Number((performance.now() - rendererStartupStartedAt).toFixed(1));
 
-const runBackgroundTask = (label: string, task: () => Promise<unknown>) => {
+const logAsyncTask = (label: string, promise: Promise<unknown>) => {
   const timer = createPerformanceTimer({
     scope: "renderer-startup",
     event: `renderer.startup.${label}`,
   });
-  void task()
+  void promise
     .then(() => {
       timer.complete(startupLogger, {
         elapsedMs: elapsedMs(),
@@ -67,20 +68,21 @@ const renderApp = () => {
   });
 };
 
-void i18nPromise
-  .catch((error) => {
-    emitOperationalLog(startupLogger, "warn", "Renderer i18n init failed", {
+void Promise.allSettled([i18nPromise, setupRendererPromise]).then((results) => {
+  results.forEach((result, index) => {
+    if (result.status === "fulfilled") return;
+    const label = index === 0 ? "initI18n" : "setupRenderer";
+    emitOperationalLog(startupLogger, "warn", `Renderer ${label} failed`, {
       schemaVersion: OBSERVABILITY_EVENT_SCHEMA_VERSION,
       domain: "performance",
-      event: "renderer.startup.initI18n.failed",
+      event: `renderer.startup.${label}.failed`,
       scope: "renderer-startup",
       elapsedMs: elapsedMs(),
-      error: String(error),
+      error: String(result.reason),
     });
-  })
-  .finally(() => {
-    renderApp();
   });
+  renderApp();
+});
 
-runBackgroundTask("setupRenderer", setupRenderer);
-runBackgroundTask("initI18n", () => i18nPromise);
+logAsyncTask("setupRenderer", setupRendererPromise);
+logAsyncTask("initI18n", i18nPromise);

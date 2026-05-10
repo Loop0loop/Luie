@@ -1,4 +1,5 @@
 import { registerCharacterIPCHandlers } from "./ipcCharacterHandlers.js";
+import { registerCharacterAIIPCHandlers } from "./ipcCharacterAIHandlers.js";
 import { registerTermIPCHandlers } from "./ipcTermHandlers.js";
 import { registerEventIPCHandlers } from "./ipcEventHandlers.js";
 import { registerFactionIPCHandlers } from "./ipcFactionHandlers.js";
@@ -29,4 +30,5 @@ export function registerWorldHandlers(options: {
     options.worldMentionService,
   );
   registerWorldStorageIPCHandlers(options.logger, options.worldReplicaService);
+  registerCharacterAIIPCHandlers(options.logger);
 }

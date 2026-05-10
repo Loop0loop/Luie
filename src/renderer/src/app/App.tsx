@@ -4,6 +4,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
 } from "react";
 import { useTranslation } from "react-i18next";
@@ -200,7 +201,7 @@ export default function App() {
     return unsubscribe;
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     if (themeTemp)
       document.documentElement.setAttribute("data-temp", themeTemp);

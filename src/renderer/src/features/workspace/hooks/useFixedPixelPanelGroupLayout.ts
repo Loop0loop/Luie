@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type MutableRefObject } from "react";
 import type { GroupImperativeHandle } from "react-resizable-panels";
 import { groupLayoutMatchesPanels } from "@renderer/features/workspace/utils/panelGroupLayout";
+import { beginLayoutRestoring } from "./useProjectLayoutPersistence";
 
 type FixedPanelSpec = {
   id: string;
@@ -98,6 +99,32 @@ export function useFixedPixelPanelGroupLayout({
     }
 
     lastLayoutSignatureRef.current = signature;
+    const endRestoring = beginLayoutRestoring();
+    let ended = false;
+    let firstFrame: number | null = null;
+    let secondFrame: number | null = null;
+    const finishRestoring = () => {
+      if (ended) return;
+      ended = true;
+      endRestoring();
+    };
     group.setLayout(nextLayout);
+    firstFrame = requestAnimationFrame(() => {
+      firstFrame = null;
+      secondFrame = requestAnimationFrame(() => {
+        secondFrame = null;
+        finishRestoring();
+      });
+    });
+
+    return () => {
+      if (firstFrame !== null) {
+        cancelAnimationFrame(firstFrame);
+      }
+      if (secondFrame !== null) {
+        cancelAnimationFrame(secondFrame);
+      }
+      finishRestoring();
+    };
   }, [containerWidth, fixedPanels, flexPanelId, flexPanelMinPercent, groupRef]);
 }

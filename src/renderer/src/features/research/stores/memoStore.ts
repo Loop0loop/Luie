@@ -93,6 +93,13 @@ export const useMemoStore = create<MemoStore>((set, get) => {
     }, DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS);
   };
 
+  const flushPendingSave = async (): Promise<void> => {
+    clearSaveTimer();
+    await pendingSave;
+    pendingSave = persistNotes();
+    await pendingSave;
+  };
+
   return {
     activeProjectId: null,
     activeProjectPath: null,
@@ -102,9 +109,8 @@ export const useMemoStore = create<MemoStore>((set, get) => {
     error: null,
     saveError: null,
     loadNotes: async (projectId, projectPath, fallbackNotes = []) => {
-      clearSaveTimer();
-
       if (!projectId) {
+        await flushPendingSave();
         set({
           activeProjectId: null,
           activeProjectPath: null,
@@ -126,6 +132,8 @@ export const useMemoStore = create<MemoStore>((set, get) => {
       ) {
         return;
       }
+
+      await flushPendingSave();
 
       set({
         activeProjectId: projectId,
@@ -263,10 +271,7 @@ export const useMemoStore = create<MemoStore>((set, get) => {
       }
     },
     flushSave: async () => {
-      clearSaveTimer();
-      await pendingSave;
-      pendingSave = persistNotes();
-      await pendingSave;
+      await flushPendingSave();
     },
     reset: () => {
       clearSaveTimer();

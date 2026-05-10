@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RotateCcw, Trash2, Clock } from "lucide-react";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import { api } from "@shared/api";
@@ -26,24 +26,43 @@ export function TrashList({
   const [loading, setLoading] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [purgingId, setPurgingId] = useState<string | null>(null);
+  const loadRequestIdRef = useRef(0);
+  const isMountedRef = useRef(true);
 
   const reloadChapters = useChapterStore((state) => state.loadAll);
 
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      loadRequestIdRef.current += 1;
+    };
+  }, []);
+
   const loadTrash = useCallback(async () => {
     if (!projectId) return;
+    const requestId = ++loadRequestIdRef.current;
     setLoading(true);
     try {
       const response = await api.chapter.getDeleted(projectId);
+      if (!isMountedRef.current || requestId !== loadRequestIdRef.current) {
+        return;
+      }
       if (response.success && response.data) {
         setItems(response.data as TrashItem[]);
       } else {
         setItems([]);
       }
     } catch (error) {
+      if (!isMountedRef.current || requestId !== loadRequestIdRef.current) {
+        return;
+      }
       api.logger.error("Failed to load trash", error);
       setItems([]);
     } finally {
-      setLoading(false);
+      if (isMountedRef.current && requestId === loadRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   }, [projectId]);
 

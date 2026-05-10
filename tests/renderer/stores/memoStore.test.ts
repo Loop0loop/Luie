@@ -186,6 +186,54 @@ describe("memoStore", () => {
     expect(resetState.error).toBeNull();
   });
 
+  it("flushes pending memo changes before switching project scope", async () => {
+    mocked.storage.loadScrapMemos
+      .mockResolvedValueOnce({ memos: [] })
+      .mockResolvedValueOnce({
+        memos: [
+          {
+            ...sampleNote,
+            id: "memo-2",
+            title: "Project two",
+          },
+        ],
+      });
+
+    await memoStoreModule.useMemoStore
+      .getState()
+      .loadNotes("project-1", "/tmp/project-1.luie");
+
+    const added = memoStoreModule.useMemoStore.getState().addNote("project-1", {
+      title: "Unsaved",
+      content: "Must flush before switch",
+      tags: ["pending"],
+    });
+
+    expect(added).not.toBeNull();
+
+    await memoStoreModule.useMemoStore
+      .getState()
+      .loadNotes("project-2", "/tmp/project-2.luie");
+
+    expect(mocked.storage.saveScrapMemos).toHaveBeenCalledWith(
+      "project-1",
+      "/tmp/project-1.luie",
+      expect.objectContaining({
+        memos: [
+          expect.objectContaining({
+            id: added!.id,
+            content: "Must flush before switch",
+            tags: ["pending"],
+          }),
+        ],
+      }),
+    );
+
+    expect(memoStoreModule.useMemoStore.getState().activeProjectId).toBe(
+      "project-2",
+    );
+  });
+
   it("ignores stale memo loads that resolve after a project switch", async () => {
     let resolveProjectOne: ((value: { memos: typeof sampleNote[] }) => void) | null =
       null;

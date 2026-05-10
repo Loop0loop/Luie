@@ -8,6 +8,7 @@ import {
 } from "@shared/constants/configs";
 import { editorSettingsSchema } from "@shared/schemas/index.js";
 import { api } from "@shared/api";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 
 /**
  * Register a global unhandledrejection listener so that Promise rejections
@@ -69,7 +70,12 @@ function setupResizeObserverWarningFilter(): void {
 
 type ThemeSeed = Pick<
   EditorSettings,
-  "theme" | "themeTemp" | "themeContrast" | "themeAccent" | "themeTexture"
+  | "theme"
+  | "themeTemp"
+  | "themeContrast"
+  | "themeAccent"
+  | "themeTexture"
+  | "enableAnimations"
 >;
 
 const DEFAULT_THEME_SEED: ThemeSeed = {
@@ -78,6 +84,7 @@ const DEFAULT_THEME_SEED: ThemeSeed = {
   themeContrast: DEFAULT_EDITOR_THEME_CONTRAST,
   themeAccent: DEFAULT_EDITOR_THEME_ACCENT,
   themeTexture: DEFAULT_EDITOR_THEME_TEXTURE,
+  enableAnimations: true,
 };
 
 const applyThemeSeed = (theme: ThemeSeed): void => {
@@ -87,6 +94,10 @@ const applyThemeSeed = (theme: ThemeSeed): void => {
   root.setAttribute("data-contrast", theme.themeContrast);
   root.setAttribute("data-accent", theme.themeAccent);
   root.setAttribute("data-texture", String(theme.themeTexture));
+  root.setAttribute(
+    "data-animations",
+    theme.enableAnimations ? "on" : "off",
+  );
 };
 
 const toThemeSeed = (settings: EditorSettings): ThemeSeed => ({
@@ -95,6 +106,7 @@ const toThemeSeed = (settings: EditorSettings): ThemeSeed => ({
   themeContrast: settings.themeContrast,
   themeAccent: settings.themeAccent,
   themeTexture: settings.themeTexture,
+  enableAnimations: settings.enableAnimations,
 });
 
 export const setupRenderer = async (): Promise<void> => {
@@ -115,6 +127,7 @@ export const setupRenderer = async (): Promise<void> => {
       return;
     }
 
+    useEditorStore.setState(parsed.data);
     applyThemeSeed(toThemeSeed(parsed.data));
   } catch {
     // Best-effort setup: defaults are already applied.
