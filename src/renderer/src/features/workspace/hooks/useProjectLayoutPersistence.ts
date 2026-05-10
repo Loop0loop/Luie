@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import type { EditorUiMode } from "@shared/types";
 import {
   normalizeLayoutSurfaceRatiosWithMigrations,
@@ -171,7 +171,7 @@ export function useProjectLayoutPersistence(
     return true;
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!projectId || !hasHydrated || !projectLayoutHasHydrated || !isSupportedMode) {
       return;
     }

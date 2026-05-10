@@ -42,10 +42,10 @@ export default function GoogleDocsLayout({
     pageMargins,
     rightPanelConfig,
     rightPanelRatio,
+    setDocsSidebarOpen,
     setFocusedClosableTarget,
     setPageMargins,
     setPanelRailOpen,
-    setRegionOpen,
     setTrashRefreshKey,
     trashRefreshKey,
   } = useGoogleDocsLayoutState(currentProjectId ?? null);
@@ -73,14 +73,14 @@ export default function GoogleDocsLayout({
         onOpenSettings={onOpenSettings}
         onRenameChapter={onRenameChapter}
         onRightTabClick={handleRightTabClick}
-        onToggleSidebar={(open) => setRegionOpen("leftSidebar", open)}
+        onToggleSidebar={setDocsSidebarOpen}
       />
 
       <div className="relative flex flex-1 flex-row overflow-hidden">
         {!isSidebarOpen && (
           <div className="pointer-events-auto absolute left-4 top-4 z-50">
             <button
-              onClick={() => setRegionOpen("leftSidebar", true)}
+              onClick={() => setDocsSidebarOpen(true)}
               className="flex h-10 w-10 items-center justify-center rounded-full border border-border/50 bg-background text-muted-foreground shadow-sm transition-colors duration-150 hover:bg-surface-hover"
               title={t("sidebar.toggle.open")}
             >

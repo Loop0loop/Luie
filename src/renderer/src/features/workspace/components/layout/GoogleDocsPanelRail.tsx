@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Calendar,
+  ChevronLeft,
   Globe,
   Plus,
   Shield,
@@ -85,59 +86,50 @@ export function GoogleDocsPanelRail({
 }: GoogleDocsPanelRailProps) {
   const { t } = useTranslation();
 
+  if (!isOpen) return null;
+
   return (
-    <>
-      <div
-        className={cn(
-          "z-10 flex h-full shrink-0 flex-col items-center gap-4 overflow-hidden border-l border-border bg-background py-4 transition-all duration-300 ease-in-out",
-          isOpen ? "w-14 opacity-100" : "w-0 border-l-0 opacity-0",
-        )}
+    <div className="z-10 flex h-full w-14 shrink-0 flex-col items-center gap-4 overflow-hidden border-l border-border bg-background py-4 transition-all duration-300 ease-in-out">
+      <button
+        onClick={() => onToggleOpen(false)}
+        className="mb-2 flex h-8 w-full items-center justify-center border-b border-border/50 transition-colors hover:bg-surface-hover"
+        title={t("sidebar.toggle.close")}
       >
-        <button
-          onClick={() => onToggleOpen(false)}
-          className="mb-2 flex h-8 w-full items-center justify-center border-b border-border/50 transition-colors hover:bg-surface-hover"
-          title={t("sidebar.toggle.close")}
-        >
-          <ChevronLeft className="h-4 w-4 rotate-180 text-muted-foreground" />
-        </button>
+        <ChevronLeft className="h-4 w-4 rotate-180 text-muted-foreground" />
+      </button>
 
-        {RAIL_TABS.map((tab) => {
-          const title = tab.titleFallback
-            ? t(tab.titleKey, tab.titleFallback)
-            : t(tab.titleKey);
-          return (
-            <DraggableItem
-              key={tab.id}
-              id={`binder-icon-${tab.tab}`}
-              data={{ type: tab.dataType, id: tab.id, title }}
-            >
-              <button
-                onClick={() => onSelectTab(tab.tab)}
-                className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-hover hover:text-fg",
-                  activeRightTab === tab.tab && "bg-accent/15 text-accent",
-                )}
-                title={title}
-              >
-                <tab.icon className="h-5 w-5" />
-              </button>
-            </DraggableItem>
-          );
-        })}
-
-        <div className="mt-auto">
-          <button
-            className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-hover hover:text-fg"
-            title={t("menu.extensions")}
+      {RAIL_TABS.map((tab) => {
+        const title = tab.titleFallback
+          ? t(tab.titleKey, tab.titleFallback)
+          : t(tab.titleKey);
+        return (
+          <DraggableItem
+            key={tab.id}
+            id={`binder-icon-${tab.tab}`}
+            data={{ type: tab.dataType, id: tab.id, title }}
           >
-            <Plus className="h-5 w-5 text-muted-foreground" />
-          </button>
-        </div>
-      </div>
+            <button
+              onClick={() => onSelectTab(tab.tab)}
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-hover hover:text-fg",
+                activeRightTab === tab.tab && "bg-accent/15 text-accent",
+              )}
+              title={title}
+            >
+              <tab.icon className="h-5 w-5" />
+            </button>
+          </DraggableItem>
+        );
+      })}
 
-      {!isOpen && (
-        null
-      )}
-    </>
+      <div className="mt-auto">
+        <button
+          className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-hover hover:text-fg"
+          title={t("menu.extensions")}
+        >
+          <Plus className="h-5 w-5 text-muted-foreground" />
+        </button>
+      </div>
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
 import FocusHoverSidebar from "@renderer/features/manuscript/components/FocusHoverSidebar";
@@ -35,13 +35,13 @@ export function BinderSidebar({
         savedRatio,
         setActiveRightTab,
         setFocusedClosableTarget,
-        setRegionOpen,
+        setRailOpen,
         widthConfig,
     } = useBinderSidebarState(currentProjectId ?? null);
     const binderSize = getResponsivePanelSize(groupWidthPx, widthConfig);
     const restoreFrameRef = useRef<number | null>(null);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (!activeRightTab) return;
         const endRestoring = beginLayoutRestoring();
         restoreFrameRef.current = requestAnimationFrame(() => {
@@ -62,7 +62,7 @@ export function BinderSidebar({
     const handleClosePanel = () => {
         onManualClose?.();
         setActiveRightTab(null);
-        setRegionOpen("rightRail", false);
+        setRailOpen(false);
     };
 
     if (!activeRightTab) return null;
@@ -96,7 +96,7 @@ export function BinderSidebar({
                 {isPanelRailOpen ? (
                     <BinderSidebarTabs
                         activeTab={activeRightTab}
-                        onCloseRail={() => setRegionOpen("rightRail", false)}
+                        onCloseRail={() => setRailOpen(false)}
                         onTabClick={handleRightTabClick}
                         t={t}
                     />
@@ -104,7 +104,7 @@ export function BinderSidebar({
                     <BinderSidebarTabs
                         activeTab={activeRightTab}
                         compact
-                        onOpenRail={() => setRegionOpen("rightRail", true)}
+                        onOpenRail={() => setRailOpen(true)}
                         onTabClick={handleRightTabClick}
                         t={t}
                     />
@@ -115,9 +115,11 @@ export function BinderSidebar({
 }
 
 export function BinderSidebarRail({
+    currentProjectId,
     sidebarTopOffset,
     suppressHoverOpen = false,
 }: {
+    currentProjectId?: string | null;
     sidebarTopOffset: number;
     suppressHoverOpen?: boolean;
 }) {
@@ -126,8 +128,8 @@ export function BinderSidebarRail({
         activeRightTab,
         isRightRailOpen,
         setActiveRightTab,
-        setRegionOpen,
-    } = useBinderSidebarState();
+        setRailOpen,
+    } = useBinderSidebarState(currentProjectId ?? null);
 
     if (activeRightTab) return null;
 
@@ -146,7 +148,7 @@ export function BinderSidebarRail({
             <div className="h-full flex flex-row shadow-xl">
                 <BinderSidebarTabs
                     activeTab={activeRightTab}
-                    onCloseRail={() => setRegionOpen("rightRail", false)}
+                    onCloseRail={() => setRailOpen(false)}
                     onTabClick={setActiveRightTab}
                     t={t}
                 />

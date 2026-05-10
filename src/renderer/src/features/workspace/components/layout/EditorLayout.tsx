@@ -211,6 +211,7 @@ export default function EditorLayout({
           </PanelGroup>
 
           <BinderSidebarRail
+            currentProjectId={currentProjectId}
             sidebarTopOffset={sidebarTopOffset}
             suppressHoverOpen={isBinderRailHoverSuppressed}
           />

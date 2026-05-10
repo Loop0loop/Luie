@@ -9,11 +9,15 @@ import {
 } from "@shared/constants/layoutSizing";
 import { useLayoutSurfaceResizeCommit } from "@renderer/features/workspace/hooks/useLayoutSurfaceResizeCommit";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
-import { useProjectLayoutStore } from "@renderer/features/workspace/stores/projectLayoutStore";
+import {
+  sanitizePersistedDocsRightTab,
+  useProjectLayoutStore,
+} from "@renderer/features/workspace/stores/projectLayoutStore";
 import { BINDER_VALID_TABS, type BinderTab } from "./binderSidebar.shared";
 
 export function useBinderSidebarState(projectId?: string | null) {
   const {
+    isSidebarOpen,
     docsRightTab,
     rightPanelOpen,
     rightPanelActiveTab,
@@ -25,8 +29,10 @@ export function useBinderSidebarState(projectId?: string | null) {
     layoutSurfaceRatios,
     setLayoutSurfaceRatio,
     setFocusedClosableTarget,
+    uiHasHydrated,
   } = useUIStore(
     useShallow((state) => ({
+      isSidebarOpen: state.regions.leftSidebar.open,
       docsRightTab: state.docsRightTab,
       rightPanelOpen: state.regions.rightPanel.open,
       rightPanelActiveTab: state.regions.rightPanel.activeTab,
@@ -38,9 +44,9 @@ export function useBinderSidebarState(projectId?: string | null) {
       layoutSurfaceRatios: state.layoutSurfaceRatios,
       setLayoutSurfaceRatio: state.setLayoutSurfaceRatio,
       setFocusedClosableTarget: state.setFocusedClosableTarget,
+      uiHasHydrated: state.hasHydrated,
     })),
   );
-  const uiHasHydrated = useUIStore((state) => state.hasHydrated);
   const projectLayoutHasHydrated = useProjectLayoutStore(
     (state) => state.hasHydrated,
   );
@@ -77,6 +83,29 @@ export function useBinderSidebarState(projectId?: string | null) {
       openRightPanelTab(tab);
     },
     [closeRightPanel, openRightPanelTab],
+  );
+
+  const setRailOpen = useCallback(
+    (open: boolean) => {
+      setRegionOpen("rightRail", open);
+      if (!projectId || !uiHasHydrated || !projectLayoutHasHydrated) return;
+      upsertProjectLayout(projectId, {
+        docs: {
+          sidebarOpen: isSidebarOpen,
+          binderBarOpen: open,
+          rightTab: sanitizePersistedDocsRightTab(activeRightTab),
+        },
+      });
+    },
+    [
+      activeRightTab,
+      isSidebarOpen,
+      projectId,
+      projectLayoutHasHydrated,
+      setRegionOpen,
+      uiHasHydrated,
+      upsertProjectLayout,
+    ],
   );
 
   const resizeHandlers = {
@@ -154,7 +183,7 @@ export function useBinderSidebarState(projectId?: string | null) {
       isRightRailOpen,
       savedRatio,
       setActiveRightTab,
-      setRegionOpen,
+      setRailOpen,
       widthConfig,
     }),
     [
@@ -163,7 +192,7 @@ export function useBinderSidebarState(projectId?: string | null) {
       isRightRailOpen,
       savedRatio,
       setActiveRightTab,
-      setRegionOpen,
+      setRailOpen,
       widthConfig,
     ],
   );

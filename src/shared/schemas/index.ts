@@ -642,7 +642,7 @@ const projectLayoutStateSchema = z.strictObject({
       }),
     ),
     researchPanelSizes: z
-      .record(
+      .partialRecord(
         z.enum(["character", "world", "event", "faction", "scrap", "analysis"]),
         z.number().finite(),
       )

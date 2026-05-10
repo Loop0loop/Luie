@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef, useState, useEffect } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { History } from "lucide-react";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useTranslation } from "react-i18next";
@@ -156,7 +156,7 @@ export function GoogleDocsRightPanel({
   const [isClosing, setIsClosing] = useState(false);
   const restoreFrameRef = useRef<number | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!activeRightTab) return;
     const endRestoring = beginLayoutRestoring();
     restoreFrameRef.current = requestAnimationFrame(() => {

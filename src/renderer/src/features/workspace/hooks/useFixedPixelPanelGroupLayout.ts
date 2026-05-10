@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MutableRefObject } from "react";
+import { useLayoutEffect, useRef, useState, type MutableRefObject } from "react";
 import type { GroupImperativeHandle } from "react-resizable-panels";
 import { groupLayoutMatchesPanels } from "@renderer/features/workspace/utils/panelGroupLayout";
 
@@ -33,7 +33,7 @@ export function useFixedPixelPanelGroupLayout({
   const [containerWidth, setContainerWidth] = useState(0);
   const lastLayoutSignatureRef = useRef<string | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
@@ -54,7 +54,7 @@ export function useFixedPixelPanelGroupLayout({
     return () => observer.disconnect();
   }, [containerRef]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const group = groupRef.current;
     if (!group || containerWidth <= 0) return;
 

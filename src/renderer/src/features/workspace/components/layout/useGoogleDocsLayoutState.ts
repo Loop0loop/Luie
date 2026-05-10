@@ -109,6 +109,29 @@ export function useGoogleDocsLayoutState(projectId?: string | null) {
     ],
   );
 
+  const setDocsSidebarOpen = useCallback(
+    (open: boolean) => {
+      setRegionOpen("leftSidebar", open);
+      if (!projectId || !uiHasHydrated || !projectLayoutHasHydrated) return;
+      upsertProjectLayout(projectId, {
+        docs: {
+          sidebarOpen: open,
+          binderBarOpen: isPanelRailOpen,
+          rightTab: sanitizePersistedDocsRightTab(activeRightTab),
+        },
+      });
+    },
+    [
+      activeRightTab,
+      isPanelRailOpen,
+      projectId,
+      projectLayoutHasHydrated,
+      setRegionOpen,
+      uiHasHydrated,
+      upsertProjectLayout,
+    ],
+  );
+
   const {
     activePanelSurface,
     docsSidebarConfig,
@@ -130,6 +153,7 @@ export function useGoogleDocsLayoutState(projectId?: string | null) {
     pageMargins,
     rightPanelConfig,
     rightPanelRatio,
+    setDocsSidebarOpen,
     setFocusedClosableTarget,
     setPageMargins,
     setPanelRailOpen,

@@ -245,6 +245,59 @@ describe("projectLayoutStore persist rehydrate", () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
+  it("rehydrates partial research panel sizes without resetting project layout", async () => {
+    const { module, warn } = await loadProjectLayoutStore({
+      byProject: {
+        "project-1": {
+          main: {
+            sidebarOpen: true,
+            contextOpen: true,
+          },
+          docs: {
+            sidebarOpen: false,
+            binderBarOpen: false,
+            rightTab: "character",
+          },
+          scrivener: {
+            sidebarOpen: true,
+            inspectorOpen: true,
+            sections: {
+              manuscript: true,
+              characters: true,
+              events: false,
+              factions: false,
+              world: false,
+              scrap: false,
+              snapshots: false,
+              analysis: false,
+              trash: false,
+            },
+          },
+          editor: {
+            activeChapterId: null,
+            scrollYByChapter: {},
+          },
+          workspace: {
+            panels: [],
+            researchPanelSizes: {
+              character: 64,
+            },
+          },
+          sidebarWidths: {},
+          layoutSurfaceRatios: {},
+        },
+      },
+    });
+
+    const state = module.useProjectLayoutStore
+      .getState()
+      .getProjectLayout("project-1");
+    expect(state.docs.sidebarOpen).toBe(false);
+    expect(state.docs.binderBarOpen).toBe(false);
+    expect(state.workspace.researchPanelSizes).toEqual({ character: 64 });
+    expect(warn).not.toHaveBeenCalled();
+  });
+
   it("falls back to defaults when persisted payload comes from a future version", async () => {
     const { module, warn } = await loadProjectLayoutStore(
       {
