@@ -281,6 +281,7 @@ function ColorTheme({ value, onChange }: ColorThemeProps) {
 // ── CharacterVisualPanel ──────────────────────────────────────────────────
 
 type CharacterVisualPanelProps = {
+  characterId: string;
   characterName: string;
   attrs: Pick<
     CharacterWikiAttrs,
@@ -299,7 +300,7 @@ type CharacterVisualPanelProps = {
   >;
 };
 
-export function CharacterVisualPanel({ characterName, attrs }: CharacterVisualPanelProps) {
+export function CharacterVisualPanel({ characterId, characterName, attrs }: CharacterVisualPanelProps) {
   const {
     characterColor,
     generatedImage,
@@ -320,7 +321,7 @@ export function CharacterVisualPanel({ characterName, attrs }: CharacterVisualPa
     generateQuote,
     generateAll,
     generateStats,
-  } = useCharacterAI();
+  } = useCharacterAI(characterId);
 
   /** All wiki sections bundled into one context object for AI calls. */
   const buildInput = (): CharacterAIInput => ({

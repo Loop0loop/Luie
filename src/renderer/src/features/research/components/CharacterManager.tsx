@@ -27,6 +27,8 @@ import {
 } from "@shared/constants/sidebarSizing";
 import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
 import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
+import { useCollapsibleSidebar } from "@renderer/features/workspace/hooks/useCollapsibleSidebar";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 
 export default function CharacterManager() {
   const { t } = useTranslation();
@@ -70,14 +72,17 @@ export default function CharacterManager() {
       upsertProjectLayout,
     ],
   );
-  const { onResize: handleSidebarResize, resizeHandleProps } =
+  const { onResize: baseOnResize, resizeHandleProps } =
     useSidebarResizeCommit(sidebarFeature, commitSidebarWidth, {
       initialWidth: sidebarWidth,
     });
   const containerRef = useRef<HTMLDivElement | null>(null);
   const panelGroupRef = useRef<GroupImperativeHandle | null>(null);
+  const enableAnimations = useEditorStore((state) => state.enableAnimations);
+  const { isCollapsed, onResize: handleSidebarResize } =
+    useCollapsibleSidebar(baseOnResize);
 
-  useFixedPixelPanelGroupLayout({
+  const { isLayoutReady } = useFixedPixelPanelGroupLayout({
     containerRef,
     groupRef: panelGroupRef,
     fixedPanels: [
@@ -86,11 +91,15 @@ export default function CharacterManager() {
         widthPx: sidebarWidth,
         minPx: sidebarConfig.minPx,
         maxPx: sidebarConfig.maxPx,
+        collapsed: isCollapsed,
       },
     ],
     flexPanelId: "main",
     flexPanelMinPercent: 20,
   });
+  const shouldHideUntilLayoutReady =
+    !enableAnimations &&
+    (!uiHasHydrated || !projectLayoutHasHydrated || !isLayoutReady);
 
   const {
     selectedCharacterId,
@@ -107,6 +116,9 @@ export default function CharacterManager() {
     <div
       ref={containerRef}
       className="flex w-full h-full bg-canvas overflow-hidden"
+      style={{
+        visibility: shouldHideUntilLayoutReady ? "hidden" : undefined,
+      }}
     >
       <PanelGroup
         groupRef={panelGroupRef}
@@ -119,6 +131,8 @@ export default function CharacterManager() {
           defaultSize={toPxSize(sidebarWidth)}
           minSize={toPxSize(sidebarConfig.minPx)}
           maxSize={toPxSize(sidebarConfig.maxPx)}
+          collapsible
+          collapsedSize={toPxSize(0)}
           onResize={handleSidebarResize}
           className="bg-sidebar border-r border-border flex flex-col overflow-y-auto"
         >

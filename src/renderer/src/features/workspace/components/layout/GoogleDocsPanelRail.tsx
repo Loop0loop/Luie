@@ -14,6 +14,7 @@ import { cn } from "@shared/types/utils";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import type { DocsLayoutPanelTab } from "@shared/constants/layoutSizing";
 import type { DragItemType } from "@shared/ui/GlobalDragContext";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 
 type RailTabConfig = {
   dataType: DragItemType;
@@ -85,11 +86,19 @@ export function GoogleDocsPanelRail({
   onToggleOpen,
 }: GoogleDocsPanelRailProps) {
   const { t } = useTranslation();
+  const enableAnimations = useEditorStore((state) => state.enableAnimations);
 
   if (!isOpen) return null;
 
   return (
-    <div className="z-10 flex h-full w-14 shrink-0 flex-col items-center gap-4 overflow-hidden border-l border-border bg-background py-4 transition-all duration-300 ease-in-out">
+    <div
+      className={cn(
+        "z-10 flex h-full w-14 shrink-0 flex-col items-center gap-4 overflow-hidden border-l border-border bg-background py-4",
+        enableAnimations
+          ? "transition-all duration-300 ease-in-out"
+          : "transition-none",
+      )}
+    >
       <button
         onClick={() => onToggleOpen(false)}
         className="mb-2 flex h-8 w-full items-center justify-center border-b border-border/50 transition-colors hover:bg-surface-hover"

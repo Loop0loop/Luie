@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { parseStructuredAttributes } from "@renderer/features/research/utils/parseStructuredAttributes";
@@ -58,7 +58,6 @@ export function useCharacterWikiAttrs(): CharacterWikiAttrs {
 
   const attrs = useMemo(
     () => parseStructuredAttributes(character?.attributes),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [character?.attributes],
   );
 
@@ -68,7 +67,9 @@ export function useCharacterWikiAttrs(): CharacterWikiAttrs {
    * reading the latest attribute state at call time.
    */
   const attrsRef = useRef(attrs);
-  attrsRef.current = attrs;
+  useEffect(() => {
+    attrsRef.current = attrs;
+  }, [attrs]);
 
   const update = useCallback(
     (key: string, value: unknown) => {

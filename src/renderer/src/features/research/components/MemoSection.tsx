@@ -38,6 +38,7 @@ import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
 import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
 import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
 import { useToast } from "@shared/ui/ToastContext";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 
 const MEMO_SIDEBAR_PANEL_ID = "memo-sidebar";
 const MEMO_CONTENT_PANEL_ID = "memo-content";
@@ -172,8 +173,9 @@ function MemoSectionInner({
     });
   const containerRef = useRef<HTMLDivElement | null>(null);
   const panelGroupRef = useRef<GroupImperativeHandle | null>(null);
+  const enableAnimations = useEditorStore((state) => state.enableAnimations);
 
-  useFixedPixelPanelGroupLayout({
+  const { isLayoutReady } = useFixedPixelPanelGroupLayout({
     containerRef,
     groupRef: panelGroupRef,
     fixedPanels: [
@@ -187,6 +189,9 @@ function MemoSectionInner({
     flexPanelId: MEMO_CONTENT_PANEL_ID,
     flexPanelMinPercent: MEMO_CONTENT_MIN_SIZE_PERCENT,
   });
+  const shouldHideUntilLayoutReady =
+    !enableAnimations &&
+    (!uiHasHydrated || !projectLayoutHasHydrated || !isLayoutReady);
 
   useShortcutCommand((command) => {
     if (command.type === "scrap.addMemo") {
@@ -207,7 +212,13 @@ function MemoSectionInner({
   }, [saveError, showToast, t]);
 
   return (
-    <div ref={containerRef} className="flex flex-col h-full bg-sidebar/30">
+    <div
+      ref={containerRef}
+      className="flex flex-col h-full bg-sidebar/30"
+      style={{
+        visibility: shouldHideUntilLayoutReady ? "hidden" : undefined,
+      }}
+    >
       <PanelGroup
         groupRef={panelGroupRef}
         orientation="horizontal"

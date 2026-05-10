@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@shared/api";
 import type { RadarAxis } from "../types";
 
@@ -9,6 +9,10 @@ type AsyncStatus = "idle" | "loading" | "error";
 type AsyncState = {
   status: AsyncStatus;
   error?: string;
+};
+
+type ScopedAsyncState = AsyncState & {
+  scopeKey: string;
 };
 
 export type CharacterAIInput = Parameters<typeof api.character.generateImage>[0];
@@ -46,72 +50,142 @@ function toUserMessage(errorMessage: string, fallback: string): string {
 
 // ── Hook ──────────────────────────────────────────────────────────────────
 
-export function useCharacterAI(): UseCharacterAI {
-  const [imageState, setImageState] = useState<AsyncState>(IDLE);
-  const [quoteState, setQuoteState] = useState<AsyncState>(IDLE);
-  const [statsState, setStatsState] = useState<AsyncState>(IDLE);
+export function useCharacterAI(scopeKey: string): UseCharacterAI {
+  const [imageState, setImageState] = useState<ScopedAsyncState>({
+    ...IDLE,
+    scopeKey,
+  });
+  const [quoteState, setQuoteState] = useState<ScopedAsyncState>({
+    ...IDLE,
+    scopeKey,
+  });
+  const [statsState, setStatsState] = useState<ScopedAsyncState>({
+    ...IDLE,
+    scopeKey,
+  });
+  const activeScopeRef = useRef(scopeKey);
+  const isMountedRef = useRef(true);
+  const imageRequestIdRef = useRef(0);
+  const quoteRequestIdRef = useRef(0);
+  const statsRequestIdRef = useRef(0);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      imageRequestIdRef.current += 1;
+      quoteRequestIdRef.current += 1;
+      statsRequestIdRef.current += 1;
+    };
+  }, []);
+
+  useEffect(() => {
+    activeScopeRef.current = scopeKey;
+    imageRequestIdRef.current += 1;
+    quoteRequestIdRef.current += 1;
+    statsRequestIdRef.current += 1;
+  }, [scopeKey]);
+
+  const isActive = useCallback((requestId: number, startedScopeKey: string, currentRequestId: number) => (
+    isMountedRef.current &&
+    activeScopeRef.current === startedScopeKey &&
+    requestId === currentRequestId
+  ), []);
 
   const generateImage = useCallback(
     async (input: CharacterAIInput, onSuccess: (url: string) => void) => {
-      setImageState(LOADING);
+      const requestId = ++imageRequestIdRef.current;
+      const startedScopeKey = activeScopeRef.current;
+      setImageState({ ...LOADING, scopeKey: startedScopeKey });
       try {
         const res = await api.character.generateImage(input);
+        if (!isActive(requestId, startedScopeKey, imageRequestIdRef.current)) {
+          return;
+        }
         if (res.success && res.data) {
           onSuccess(res.data);
-          setImageState(IDLE);
+          setImageState({ ...IDLE, scopeKey: startedScopeKey });
         } else {
-          setImageState(failed("이미지 생성에 실패했습니다"));
+          setImageState({
+            ...failed("이미지 생성에 실패했습니다"),
+            scopeKey: startedScopeKey,
+          });
         }
       } catch (err) {
+        if (!isActive(requestId, startedScopeKey, imageRequestIdRef.current)) {
+          return;
+        }
         const msg = err instanceof Error
           ? toUserMessage(err.message, "이미지 생성에 실패했습니다")
           : "이미지 생성에 실패했습니다";
-        setImageState(failed(msg));
+        setImageState({ ...failed(msg), scopeKey: startedScopeKey });
       }
     },
-    [],
+    [isActive],
   );
 
   const generateQuote = useCallback(
     async (input: CharacterAIInput, onSuccess: (quote: string) => void) => {
-      setQuoteState(LOADING);
+      const requestId = ++quoteRequestIdRef.current;
+      const startedScopeKey = activeScopeRef.current;
+      setQuoteState({ ...LOADING, scopeKey: startedScopeKey });
       try {
         const res = await api.character.generateQuote(input);
+        if (!isActive(requestId, startedScopeKey, quoteRequestIdRef.current)) {
+          return;
+        }
         if (res.success && res.data) {
           onSuccess(res.data);
-          setQuoteState(IDLE);
+          setQuoteState({ ...IDLE, scopeKey: startedScopeKey });
         } else {
-          setQuoteState(failed("대사 생성에 실패했습니다"));
+          setQuoteState({
+            ...failed("대사 생성에 실패했습니다"),
+            scopeKey: startedScopeKey,
+          });
         }
       } catch (err) {
+        if (!isActive(requestId, startedScopeKey, quoteRequestIdRef.current)) {
+          return;
+        }
         const msg = err instanceof Error
           ? toUserMessage(err.message, "대사 생성에 실패했습니다")
           : "대사 생성에 실패했습니다";
-        setQuoteState(failed(msg));
+        setQuoteState({ ...failed(msg), scopeKey: startedScopeKey });
       }
     },
-    [],
+    [isActive],
   );
 
   const generateStats = useCallback(
     async (input: CharacterStatsInput, onSuccess: (axes: RadarAxis[]) => void) => {
-      setStatsState(LOADING);
+      const requestId = ++statsRequestIdRef.current;
+      const startedScopeKey = activeScopeRef.current;
+      setStatsState({ ...LOADING, scopeKey: startedScopeKey });
       try {
         const res = await api.character.generateStats(input);
+        if (!isActive(requestId, startedScopeKey, statsRequestIdRef.current)) {
+          return;
+        }
         if (res.success && res.data) {
           onSuccess(res.data as RadarAxis[]);
-          setStatsState(IDLE);
+          setStatsState({ ...IDLE, scopeKey: startedScopeKey });
         } else {
-          setStatsState(failed("스탯 분석에 실패했습니다"));
+          setStatsState({
+            ...failed("스탯 분석에 실패했습니다"),
+            scopeKey: startedScopeKey,
+          });
         }
       } catch (err) {
+        if (!isActive(requestId, startedScopeKey, statsRequestIdRef.current)) {
+          return;
+        }
         const msg = err instanceof Error
           ? toUserMessage(err.message, "스탯 분석에 실패했습니다")
           : "스탯 분석에 실패했습니다";
-        setStatsState(failed(msg));
+        setStatsState({ ...failed(msg), scopeKey: startedScopeKey });
       }
     },
-    [],
+    [isActive],
   );
 
   const generateAll = useCallback(
@@ -128,14 +202,21 @@ export function useCharacterAI(): UseCharacterAI {
     [generateImage, generateQuote],
   );
 
+  const scopedImageState =
+    imageState.scopeKey === scopeKey ? imageState : IDLE;
+  const scopedQuoteState =
+    quoteState.scopeKey === scopeKey ? quoteState : IDLE;
+  const scopedStatsState =
+    statsState.scopeKey === scopeKey ? statsState : IDLE;
+
   return {
-    imageState,
-    quoteState,
-    statsState,
+    imageState: scopedImageState,
+    quoteState: scopedQuoteState,
+    statsState: scopedStatsState,
     isGenerating:
-      imageState.status === "loading" ||
-      quoteState.status === "loading" ||
-      statsState.status === "loading",
+      scopedImageState.status === "loading" ||
+      scopedQuoteState.status === "loading" ||
+      scopedStatsState.status === "loading",
     generateImage,
     generateQuote,
     generateStats,

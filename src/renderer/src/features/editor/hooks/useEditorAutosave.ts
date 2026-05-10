@@ -13,6 +13,12 @@ interface UseEditorAutosaveProps {
 
 const RETRY_DELAYS = [1000, 2000, 5000];
 
+const clearTimerRef = (timerRef: { current: NodeJS.Timeout | null }) => {
+  const timer = timerRef.current;
+  if (timer) clearTimeout(timer);
+  timerRef.current = null;
+};
+
 export function useEditorAutosave({
   onSave,
   title,
@@ -41,6 +47,11 @@ export function useEditorAutosave({
   const pendingDraftRef = useRef<{ title: string; content: string } | null>(
     null,
   );
+  const onSaveRef = useRef(onSave);
+
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
 
   // ✅ Separate timer refs so each can be individually cleared
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -170,16 +181,17 @@ export function useEditorAutosave({
   // ✅ Full cleanup on unmount: cancel ALL pending timers + reset retry state
   useEffect(() => {
     return () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-      if (idleResetTimerRef.current) clearTimeout(idleResetTimerRef.current);
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      clearTimerRef(debounceTimerRef);
+      clearTimerRef(idleResetTimerRef);
+      clearTimerRef(retryTimerRef);
       const latestDraft = latestDraftRef.current;
+      const save = onSaveRef.current;
       if (
-        onSave &&
+        save &&
         (latestDraft.title !== lastSavedRef.current.title ||
           latestDraft.content !== lastSavedRef.current.content)
       ) {
-        void Promise.resolve(onSave(latestDraft.title, latestDraft.content))
+        void Promise.resolve(save(latestDraft.title, latestDraft.content))
           .then(() => {
             lastSavedRef.current = latestDraft;
             api.lifecycle?.setDirty?.(false);
@@ -191,7 +203,7 @@ export function useEditorAutosave({
       retryCount.current = 0;
       isMountedRef.current = false;
     };
-  }, [onSave]);
+  }, []);
 
   return { saveStatus };
 }

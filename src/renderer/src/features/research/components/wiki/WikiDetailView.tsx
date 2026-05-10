@@ -14,6 +14,14 @@ import { CharacterVisualPanel } from "./CharacterVisualPanel";
 import { useCharacterWikiAttrs } from "./hooks/useCharacterWikiAttrs";
 import { type CharacterViewMode, CHARACTER_VIEW_MODE_KEY } from "./types";
 
+const getViewModeStorageKey = (id?: string) =>
+  id ? `${CHARACTER_VIEW_MODE_KEY}:${id}` : CHARACTER_VIEW_MODE_KEY;
+
+const readViewMode = (id?: string): CharacterViewMode => {
+  const stored = localStorage.getItem(getViewModeStorageKey(id));
+  return stored === "visual" || stored === "wiki" ? stored : "wiki";
+};
+
 // ── AddTagInline ──────────────────────────────────────────────────────────
 
 type AddTagInlineProps = {
@@ -94,14 +102,23 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
   // ── Attribute hook ──────────────────────────────────────────────────────
   const attrs = useCharacterWikiAttrs();
 
-  // ── View mode (persisted in localStorage) ──────────────────────────────
-  const [viewMode, setViewMode] = useState<CharacterViewMode>(
-    () => (localStorage.getItem(CHARACTER_VIEW_MODE_KEY) as CharacterViewMode) ?? "wiki",
-  );
+  // ── View mode (persisted per character) ────────────────────────────────
+  const currentViewModeStorageKey = getViewModeStorageKey(character?.id ?? characterId);
+  const [viewModeState, setViewModeState] = useState<{
+    storageKey: string;
+    mode: CharacterViewMode;
+  }>(() => ({
+    storageKey: getViewModeStorageKey(characterId),
+    mode: readViewMode(characterId),
+  }));
+  const viewMode =
+    viewModeState.storageKey === currentViewModeStorageKey
+      ? viewModeState.mode
+      : readViewMode(character?.id ?? characterId);
 
   const switchViewMode = (mode: CharacterViewMode) => {
-    setViewMode(mode);
-    localStorage.setItem(CHARACTER_VIEW_MODE_KEY, mode);
+    setViewModeState({ storageKey: currentViewModeStorageKey, mode });
+    localStorage.setItem(currentViewModeStorageKey, mode);
   };
 
   // ── Character load ──────────────────────────────────────────────────────
@@ -332,7 +349,7 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
         </>
       ) : (
         /* Visual: full-width visualization panel */
-        <CharacterVisualPanel characterName={character.name} attrs={attrs} />
+        <CharacterVisualPanel characterId={character.id} characterName={character.name} attrs={attrs} />
       )}
     </div>
   );
