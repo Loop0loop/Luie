@@ -20,6 +20,9 @@ import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@shared/constants/configs";
 import { SIDEBAR_WIDTH_CONFIG, toPercentSize } from "@shared/constants/sidebarSizing";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 import { getPanelLayoutValue } from "@renderer/features/workspace/hooks/useLayoutPersist";
+import { cn } from "@shared/types/utils";
+
+const ENABLE_LEGACY_BINDER_SIDEBAR = false;
 
 interface EditorLayoutProps {
   children?: ReactNode;
@@ -57,23 +60,28 @@ export default function EditorLayout({
   const updatePanelSize = useUIStore((state) => state.updatePanelSize);
   const [isBinderRailHoverSuppressed, setIsBinderRailHoverSuppressed] =
     useState(false);
+  const [isCompactBinderServing, setIsCompactBinderServing] = useState(false);
   const binderRailHoverSuppressionTimeoutRef = useRef<ReturnType<
     typeof setTimeout
   > | null>(null);
 
-  const ribbonRef = useRef<HTMLDivElement>(null);
   const editorLayoutGroupRef = useRef<HTMLDivElement>(null);
-  const [ribbonHeight, setRibbonHeight] = useState(56);
+  const [isToolbarVisible, setIsToolbarVisible] = useState(false);
+  const toolbarHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    if (!ribbonRef.current) return;
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setRibbonHeight(entry.contentRect.height);
-      }
-    });
-    observer.observe(ribbonRef.current);
-    return () => observer.disconnect();
+  const showToolbar = useCallback(() => {
+    if (toolbarHideTimerRef.current !== null) {
+      clearTimeout(toolbarHideTimerRef.current);
+      toolbarHideTimerRef.current = null;
+    }
+    setIsToolbarVisible(true);
+  }, []);
+
+  const scheduleHide = useCallback(() => {
+    toolbarHideTimerRef.current = setTimeout(() => {
+      toolbarHideTimerRef.current = null;
+      setIsToolbarVisible(false);
+    }, 400);
   }, []);
 
   const editorLayoutGroupWidth = useElementWidth(editorLayoutGroupRef);
@@ -95,6 +103,10 @@ export default function EditorLayout({
         clearTimeout(binderRailHoverSuppressionTimeoutRef.current);
         binderRailHoverSuppressionTimeoutRef.current = null;
       }
+      if (toolbarHideTimerRef.current !== null) {
+        clearTimeout(toolbarHideTimerRef.current);
+        toolbarHideTimerRef.current = null;
+      }
     },
     [],
   );
@@ -110,24 +122,13 @@ export default function EditorLayout({
     }, 250);
   }, []);
 
-  const isMacOS = navigator.platform.toLowerCase().includes("mac");
-  const sidebarTopOffset = (isMacOS ? EDITOR_WINDOW_BAR_HEIGHT_PX : 0) + ribbonHeight;
+  const isMacOS = navigator.userAgent.toLowerCase().includes("mac");
+  const sidebarTopOffset = isMacOS ? EDITOR_WINDOW_BAR_HEIGHT_PX : 0;
 
   return (
     <div className="flex flex-col h-screen w-screen bg-app text-fg overflow-hidden relative">
       {/* 1. App Window Bar */}
       <WindowBar title={activeChapterTitle || t("editor.layoutTitle")} />
-
-      {/* 2. Toolbar */}
-      <div ref={ribbonRef}>
-        <Ribbon
-          editor={editor}
-          onOpenSettings={onOpenSettings}
-          activeChapterId={activeChapterId}
-          onOpenExportPreview={onOpenExport}
-          onOpenWorldGraph={onOpenWorldGraph}
-        />
-      </div>
 
       {/* 3. Main Area (Horizontal Flex) */}
       <div className="flex-1 overflow-hidden relative flex flex-row">
@@ -148,6 +149,30 @@ export default function EditorLayout({
 
         {/* CENTER: 메인 에디터 영역 */}
         <div className="flex-1 h-full overflow-hidden flex flex-row relative">
+
+          {/* Hover trigger strip — activates floating toolbar */}
+          <div
+            className="absolute inset-x-0 top-0 z-30 h-7 pointer-events-auto"
+            onMouseEnter={showToolbar}
+          />
+
+          {/* Floating Toolbar Overlay */}
+          <div
+            className={cn(
+              "absolute inset-x-0 top-0 z-40 transition-opacity duration-200",
+              isToolbarVisible ? "opacity-100" : "opacity-0 pointer-events-none",
+            )}
+            onMouseEnter={showToolbar}
+            onMouseLeave={scheduleHide}
+          >
+            <Ribbon
+              editor={editor}
+              onOpenSettings={onOpenSettings}
+              activeChapterId={activeChapterId}
+              onOpenExportPreview={onOpenExport}
+              onOpenWorldGraph={onOpenWorldGraph}
+            />
+          </div>
 
           {/* Editor Column Wrapper */}
           <PanelGroup
@@ -195,13 +220,15 @@ export default function EditorLayout({
 
             {additionalPanels}
 
-            <BinderSidebar
-              activeChapterId={activeChapterId}
-              currentProjectId={currentProjectId}
-              groupWidthPx={editorLayoutGroupWidth}
-              onManualClose={handleBinderSidebarManualClose}
-              sidebarTopOffset={sidebarTopOffset}
-            />
+            {ENABLE_LEGACY_BINDER_SIDEBAR && !isCompactBinderServing && (
+              <BinderSidebar
+                activeChapterId={activeChapterId}
+                currentProjectId={currentProjectId}
+                groupWidthPx={editorLayoutGroupWidth}
+                onManualClose={handleBinderSidebarManualClose}
+                sidebarTopOffset={sidebarTopOffset}
+              />
+            )}
 
             {!activeRightTab && additionalPanelIds.length === 0 && (
               <Panel
@@ -215,8 +242,11 @@ export default function EditorLayout({
           </PanelGroup>
 
           <BinderBarCompactHover
+            activeChapterId={activeChapterId}
+            currentProjectId={currentProjectId}
             sidebarTopOffset={sidebarTopOffset}
             suppressHoverOpen={isBinderRailHoverSuppressed}
+            onServingStateChange={setIsCompactBinderServing}
           />
         </div>
       </div>

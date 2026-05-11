@@ -7,6 +7,7 @@ import {
   getResponsivePanelSize,
   toPanelPercentSize,
 } from "@shared/constants/layoutSizing";
+import { api } from "@shared/api";
 import { BinderSidebarPanelBody } from "./BinderSidebarPanelBody";
 import { BinderSidebarTabs } from "./BinderSidebarTabs";
 import { useBinderSidebarState } from "./useBinderSidebarState";
@@ -43,6 +44,10 @@ export function BinderSidebar({
 
     useLayoutEffect(() => {
         if (!activeRightTab) return;
+        void api.logger.warn("legacy-binder.rendered", {
+            activeRightTab,
+            currentProjectId: currentProjectId ?? null,
+        });
         const endRestoring = beginLayoutRestoring();
         restoreFrameRef.current = requestAnimationFrame(() => {
             restoreFrameRef.current = requestAnimationFrame(() => {
@@ -57,7 +62,7 @@ export function BinderSidebar({
             }
             endRestoring();
         };
-    }, [activeRightTab, savedRatio]);
+    }, [activeRightTab, savedRatio, currentProjectId]);
 
     const handleClosePanel = () => {
         onManualClose?.();
