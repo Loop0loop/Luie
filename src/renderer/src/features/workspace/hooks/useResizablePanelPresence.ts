@@ -17,6 +17,29 @@ type ResizablePanelPresenceState = {
   shouldRender: boolean;
 };
 
+const isPanelRegistrationError = (error: unknown): boolean =>
+  error instanceof Error &&
+  (error.message.startsWith("Layout not found for Panel") ||
+    error.message.startsWith("Panel constraints not found for Panel") ||
+    error.message.startsWith("Group ") && error.message.endsWith(" not found"));
+
+const safelyUsePanel = <T>(
+  panelRef: RefObject<PanelImperativeHandle | null>,
+  panelAction: (panel: PanelImperativeHandle) => T,
+): T | undefined => {
+  const panel = panelRef.current;
+  if (!panel) return undefined;
+
+  try {
+    return panelAction(panel);
+  } catch (error) {
+    if (isPanelRegistrationError(error)) {
+      return undefined;
+    }
+    throw error;
+  }
+};
+
 export function useResizablePanelPresence({
   durationMs = 200,
   enableAnimations,
@@ -55,7 +78,7 @@ export function useResizablePanelPresence({
     setIsClosing(true);
     suppressLayoutPersistenceFor(durationMs + 160);
     const frameId = window.requestAnimationFrame(() => {
-      panelRef.current?.collapse();
+      safelyUsePanel(panelRef, (panel) => panel.collapse());
     });
     const timer = window.setTimeout(() => {
       setShouldRender(false);
@@ -79,9 +102,12 @@ export function useResizablePanelPresence({
     if (!enableAnimations || !isOpening || !shouldRender) return undefined;
 
     suppressLayoutPersistenceFor(durationMs + 160);
-    panelRef.current?.resize("0%");
+    let resizeFrameId: number | null = null;
     const frameId = window.requestAnimationFrame(() => {
-      panelRef.current?.resize(openSize);
+      safelyUsePanel(panelRef, (panel) => panel.resize("0%"));
+      resizeFrameId = window.requestAnimationFrame(() => {
+        safelyUsePanel(panelRef, (panel) => panel.resize(openSize));
+      });
     });
     const timer = window.setTimeout(() => {
       setIsOpening(false);
@@ -89,6 +115,9 @@ export function useResizablePanelPresence({
 
     return () => {
       window.cancelAnimationFrame(frameId);
+      if (resizeFrameId !== null) {
+        window.cancelAnimationFrame(resizeFrameId);
+      }
       window.clearTimeout(timer);
     };
   }, [
@@ -102,10 +131,11 @@ export function useResizablePanelPresence({
 
   useLayoutEffect(() => {
     if (!isOpen || !shouldRender) return;
-    const panel = panelRef.current;
-    if (!panel?.isCollapsed()) return;
+    const isCollapsed = safelyUsePanel(panelRef, (panel) => panel.isCollapsed());
+    // Skip if panel not yet registered or is already expanded
+    if (isCollapsed !== true) return;
     suppressLayoutPersistenceFor(durationMs + 160);
-    panel.resize(openSize);
+    safelyUsePanel(panelRef, (currentPanel) => currentPanel.resize(openSize));
     setIsClosing(false);
     setIsOpening(false);
   }, [durationMs, isOpen, openSize, panelRef, shouldRender]);

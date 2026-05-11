@@ -8,7 +8,13 @@ node_modules/
 dist/
 /out
 
+
+# bkit
 .bkit/audit
+.bkit/runtime
+.bkit/state
+
+
 # Logs
 logs
 *.log
@@ -31,6 +37,14 @@ dev-cache.db-shm
 dev-cache.db-wal
 /drizzle/migrations
 
+
+# Dizzle
+drizzle/app-dev-cache.db-shm
+drizzle/app-dev-cache.db-wal
+drizzle/app-dev.db-shm
+drizzle/app-dev.db-wal
+drizzle/cache
+drizzle/.tmp
 
 
 # Editor
